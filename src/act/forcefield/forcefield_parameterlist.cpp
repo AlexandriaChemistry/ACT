@@ -66,8 +66,8 @@ void ForceFieldParameterList::addOption(const std::string &option, const std::st
          Potential::COULOMB_SLATER   == pot_ ) &&
         option.compare("chargetype") == 0)
     {
-        auto qdist = name2ChargeType(value);
-        pot_ =  chargeTypeToPotential(qdist);
+        auto qdist = name2ChargeDistributionType(value);
+        pot_ =  chargeDistributionTypeToPotential(qdist);
     }
     else
     {

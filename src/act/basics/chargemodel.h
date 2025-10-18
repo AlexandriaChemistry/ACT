@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2020,2023
+ * Copyright (C) 2014-2020,2023,2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -49,7 +49,7 @@ namespace alexandria
  * \inpublicapi
  * \ingroup module_alexandria
  */
-enum class ChargeType {
+enum class ChargeDistributionType {
     //! Point charges
     Point,
     //! Gaussian-distributed charges
@@ -62,10 +62,10 @@ enum class ChargeType {
 std::vector<std::string> qdnames();
 
 //! \brief Return the string corresping to ct
-const std::string &chargeTypeName(ChargeType ct);
+const std::string &chargeDistributionTypeName(ChargeDistributionType ct);
 
 //! \brief Return the ChargeType corresponding to name
-ChargeType name2ChargeType(const std::string &name);
+ChargeDistributionType name2ChargeDistributionType(const std::string &name);
 
 /*! \brief
  * Enumerated type holding the charge generation algorithms

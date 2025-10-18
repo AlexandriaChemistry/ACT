@@ -155,7 +155,7 @@ private:
     //! Whether or not shells are present
     gmx_bool                         bHaveShell_  = false;
     //! The charge type used in the force field
-    ChargeType                       ChargeType_  = ChargeType::Point;
+    ChargeDistributionType           ChargeDistributionType_  = ChargeDistributionType::Point;
     //! Number of particles in the compound
     size_t                           natom_       = 0;
     //! Epsilon R

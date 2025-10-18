@@ -197,9 +197,9 @@ int gentop(int argc, char *argv[])
     {
         my_pol.assign(" polarizable");
     }
-    auto qType = potentialToChargeType(fs.potential());
+    auto qType = potentialToChargeDistributionType(fs.potential());
     printf("Using%s force field file %s and charge distribution model %s\n",
-           my_pol.c_str(), gentop_fnm, chargeTypeName(qType).c_str());
+           my_pol.c_str(), gentop_fnm, chargeDistributionTypeName(qType).c_str());
     msghandler.write(gmx::formatString("Read force field information. There are %zu atomtypes.\n",
                                        pd.getNatypes()));
 
