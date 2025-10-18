@@ -111,13 +111,13 @@ const char *potentialToGromacsString(Potential p);
  * \param[in] c The charge type
  * \return Corresponding Coulomb potential
  */
-Potential chargeTypeToPotential(ChargeType c);
+Potential chargeDistributionTypeToPotential(ChargeDistributionType c);
 
 /*! \brief Convenience function
  * \param[in] p The potential
  * \return Corresponding charge type
  */
-ChargeType potentialToChargeType(Potential p);
+ChargeDistributionType potentialToChargeDistributionType(Potential p);
 
 } // namespace alexandria
 

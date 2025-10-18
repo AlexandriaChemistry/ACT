@@ -64,7 +64,7 @@ QgenAcm::QgenAcm(ForceField                 *pd,
         return;
     }
     auto qt     = pd->findForces(InteractionType::ELECTROSTATICS);
-    ChargeType_ = potentialToChargeType(qt->potential());
+    ChargeDistributionType_ = potentialToChargeDistributionType(qt->potential());
     bHaveShell_ = pd->polarizable();
     eQGEN_      = eQgen::OK;
     natom_      = atoms.size();
@@ -337,23 +337,23 @@ double QgenAcm::calcJ(rvec    xI,
     rvec_sub(xI, xJ, dx);
     r = norm(dx);
     
-    if (r == 0 && ChargeType_ == ChargeType::Point)
+    if (r == 0 && ChargeDistributionType_ == ChargeDistributionType::Point)
     {
         gmx_fatal(FARGS, "Zero distance between atoms!\n");
     }
-    switch (ChargeType_)
+    switch (ChargeDistributionType_)
     {
-    case ChargeType::Point:
+    case ChargeDistributionType::Point:
         {
             eTot = Coulomb_PP(r);
             break;
         }
-    case ChargeType::Gaussian:
+    case ChargeDistributionType::Gaussian:
         {
             eTot = Coulomb_GG(r, zetaI, zetaJ);
             break;
         }
-    case ChargeType::Slater:
+    case ChargeDistributionType::Slater:
         {
             eTot = Coulomb_SS(r, rowI, rowJ, zetaI, zetaJ);
             break;

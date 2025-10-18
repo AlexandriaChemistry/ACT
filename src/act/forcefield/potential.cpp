@@ -208,20 +208,20 @@ const char *potentialToGromacsString(Potential p)
     }
 }
 
-static const std::map<ChargeType, Potential> cp = {
-    { ChargeType::Point, Potential::COULOMB_POINT },
-    { ChargeType::Gaussian, Potential::COULOMB_GAUSSIAN },
-    { ChargeType::Slater, Potential::COULOMB_SLATER }
+static const std::map<ChargeDistributionType, Potential> cp = {
+    { ChargeDistributionType::Point, Potential::COULOMB_POINT },
+    { ChargeDistributionType::Gaussian, Potential::COULOMB_GAUSSIAN },
+    { ChargeDistributionType::Slater, Potential::COULOMB_SLATER }
 };
 
-Potential chargeTypeToPotential(ChargeType c)
+Potential chargeDistributionTypeToPotential(ChargeDistributionType c)
 {
     return cp.find(c)->second;
 }
 
-ChargeType potentialToChargeType(Potential p)
+ChargeDistributionType potentialToChargeDistributionType(Potential p)
 {
-    ChargeType ct = ChargeType::Point;
+    ChargeDistributionType ct = ChargeDistributionType::Point;
     for (const auto &cccp : cp)
     {
         if (cccp.second == p)
