@@ -329,7 +329,8 @@ void TrainForceFieldPrinter::analyse_multipoles(MsgHandler                      
                     flag = " MULTI";
                 }
                 tw->writeStringFormatted("%s-Electronic Norm %g RMS = %g (%s)%s:\n",
-                        qTypeName(qt).c_str(), factor*std::sqrt(delta), factor*rms, unit, flag.c_str());
+                                         qPropertyTypeName(qt).c_str(),
+                                         factor*std::sqrt(delta), factor*rms, unit, flag.c_str());
                 for(const auto &pm : formatMultipole(mpo, diff))
                 {
                     tw->writeLine(pm);
@@ -418,7 +419,6 @@ static void write_q_histo(gmx::TextWriter                  *tw,
                           const char                       *qhisto,
                           std::map<std::string, gmx_stats> *lsqt,
                           const gmx_output_env_t           *oenv,
-                          qtStats                          *lsq_charge,
                           bool                              useOffset)
 {
     std::vector<std::string> types;
@@ -436,13 +436,8 @@ static void write_q_histo(gmx::TextWriter                  *tw,
         hh = xvgropen(qhisto, "Histogram for charges", "q (e)", "a.u.", oenv);
         xvgrLegend(hh, types, oenv);
     }
-    auto model = qTypeName(qType::Calc);
-    auto gs    = lsq_charge->find(qType::Calc);
-    if (gs != lsq_charge->end())
-    {
-        print_stats(tw, "All Partial Charges", "e", 1.0, &gs->second, true,
-                    qTypeName(qType::CM5).c_str(), model.c_str(), useOffset);
-    }
+    auto model = qPropertyTypeName(qPropertyType::ACM);
+
     for (auto &q : *lsqt)
     {
         if (q.second.get_npoints() > 0)
@@ -555,15 +550,15 @@ void TrainForceFieldPrinter::analysePolarisability(gmx::TextWriter     *tw,
         if (qelec.hasPolarizability())
         {
             auto aelec = qelec.polarizabilityTensor();
-            lsq_isoPol_[ims][qType::Calc].add_point(qelec.isotropicPolarizability(),
+            lsq_isoPol_[ims][qPropertyType::ACM].add_point(qelec.isotropicPolarizability(),
                                                qcalc->isotropicPolarizability(),
                                                0, 0);
-            lsq_anisoPol_[ims][qType::Calc].add_point(qelec.anisotropicPolarizability(),
+            lsq_anisoPol_[ims][qPropertyType::ACM].add_point(qelec.anisotropicPolarizability(),
                                                  qcalc->anisotropicPolarizability(),
                                                  0, 0);
             for (int mm = 0; mm < DIM; mm++)
             {
-                lsq_alpha_[ims][qType::Calc].add_point(aelec[mm][mm], acalc[mm][mm], 0, 0);
+                lsq_alpha_[ims][qPropertyType::ACM].add_point(aelec[mm][mm], acalc[mm][mm], 0, 0);
             }
         }
     }
@@ -574,32 +569,8 @@ void TrainForceFieldPrinter::printAtoms(gmx::TextWriter              *tw,
                                         const std::vector<gmx::RVec> &coords,
                                         const std::vector<gmx::RVec> &forces)
 {
-    std::map<qType, const std::vector<double> > qQM;
-    std::vector<qType>                          typeQM = { 
-        qType::CM5, qType::ESP, qType::Hirshfeld, qType::Mulliken,
-        qType::RESP, qType::BCC
-    };
-    for(auto &qt : typeQM)
-    {
-        for(auto qp = mol->qProps()->begin(); qp < mol->qProps()->end(); ++qp)
-        {
-            auto qelec = qp->qPqmConst();
-            if (qelec.qtype() == qt)
-            {
-                std::vector qq = qelec.charge();
-                qQM.insert({qt, std::move(qq)});
-            }
-        }
-    }
-    tw->writeStringFormatted("Atom   Type            ACM");
-    for(auto &qt : qQM)
-    {
-        if (!qQM.find(qt.first)->second.empty())
-        {
-            tw->writeStringFormatted("%10s", qTypeName(qt.first).c_str());
-        }
-    }
-    tw->writeStringFormatted("        x        y   z(pm)          fx         fy fz(kJ/mol nm)     qtot\n");
+    std::map<qPropertyType, const std::vector<double> > qQM;
+    tw->writeStringFormatted("Atom   Type            ACM        x        y   z(pm)          fx         fy fz(kJ/mol nm)     qtot\n");
     int      i       = 0;
     double   qtot    = 0;
     auto    &myatoms = mol->atomsConst();
@@ -614,13 +585,6 @@ void TrainForceFieldPrinter::printAtoms(gmx::TextWriter              *tw,
                     myatoms[j].ffType().c_str(),
                     qCalc);
             qtot += qCalc;
-            for(auto &qt : qQM)
-            {
-                if (!qQM.find(qt.first)->second.empty())
-                {
-                    tw->writeStringFormatted("  %8.4f", qt.second[i]);
-                }
-            }
             tw->writeStringFormatted(" %8.3f %8.3f %8.3f %10.3f %10.3f %10.3f  %10g\n", 
                                      convertFromGromacs(coords[j][XX], "pm"),
                                      convertFromGromacs(coords[j][YY], "pm"),
@@ -1106,7 +1070,7 @@ void TrainForceFieldPrinter::printEnergyForces(MsgHandler                       
         {
             if (ff.haveQM() && ff.haveACT())
             {
-                lsq_epot_[ims][qType::Calc].add_point(ff.eqm(), ff.eact(), 0, 0);
+                lsq_epot_[ims][qPropertyType::ACM].add_point(ff.eqm(), ff.eact(), 0, 0);
                 myepot.add_point(ff.eqm(), ff.eact(), 0, 0);
             }
         }
@@ -1141,7 +1105,7 @@ void TrainForceFieldPrinter::printEnergyForces(MsgHandler                       
                 {
                     auto eqm  = ie.second.eqm();
                     auto eact = ie.second.eact();
-                    lsq_einter_[ie.first][ims][qType::Calc].add_point(eqm, eact, 0, 0);
+                    lsq_einter_[ie.first][ims][qPropertyType::ACM].add_point(eqm, eact, 0, 0);
                     myeinter[ie.first].add_point(eqm, eact, 0, 0);
                 }
             }
@@ -1404,10 +1368,10 @@ void TrainForceFieldPrinter::printOutliers(gmx::TextWriter                      
     auto   label   = gmx::formatString("%s-%s",
                                        interactionTypeToString(itype).c_str(), iMolSelectName(ims));
     tw->writeStringFormatted("\nOverview of %s outliers for %s (Diff > %.3f)\n",
-            label.c_str(), qTypeName(qType::Calc).c_str(), epotMax);
+            label.c_str(), qPropertyTypeName(qPropertyType::ACM).c_str(), epotMax);
     tw->writeStringFormatted("----------------------------------\n");
     tw->writeStringFormatted("%-40s  %12s  %12s  %12s\n", "Name",
-            "Reference", qTypeName(qType::Calc).c_str(), "ACT-Ref.");
+            "Reference", qPropertyTypeName(qPropertyType::ACM).c_str(), "ACT-Ref.");
     int noutlier = 0;
     if (bIntermolecular)
     {
@@ -1476,7 +1440,7 @@ void TrainForceFieldPrinter::print(MsgHandler                  *msghandler,
         for(auto &ims : iMolSelectNames())
         {
             qtStats qmpo;
-            for (auto &i : qTypes())
+            for (auto &i : qPropertyTypes())
             {
                 gmx_stats gmult;
                 qmpo.insert({ i.first, std::move(gmult) });
@@ -1494,7 +1458,7 @@ void TrainForceFieldPrinter::print(MsgHandler                  *msghandler,
             lsq_freq.insert({ ims.first, std::move(freq) });
         }
         qtStats qesp, qepot;
-        for (auto &i : qTypes())
+        for (auto &i : qPropertyTypes())
         {
             //TODO Add checks for existence
             gmx_stats gesp;
@@ -1506,13 +1470,13 @@ void TrainForceFieldPrinter::print(MsgHandler                  *msghandler,
         lsq_epot_.insert({ ims.first, std::move(qepot) });
         
         gmx_stats galpha;
-        lsq_alpha_.insert(std::pair<iMolSelect, qtStats>(ims.first, {{ qType::Calc, galpha }}));
+        lsq_alpha_.insert(std::pair<iMolSelect, qtStats>(ims.first, {{ qPropertyType::ACM, galpha }}));
         gmx_stats giso;
-        lsq_isoPol_.insert(std::pair<iMolSelect, qtStats>(ims.first, {{ qType::Calc, giso }}));
+        lsq_isoPol_.insert(std::pair<iMolSelect, qtStats>(ims.first, {{ qPropertyType::ACM, giso }}));
         gmx_stats ganiso;
-        lsq_anisoPol_.insert(std::pair<iMolSelect, qtStats>(ims.first, {{ qType::Calc, ganiso }}));
+        lsq_anisoPol_.insert(std::pair<iMolSelect, qtStats>(ims.first, {{ qPropertyType::ACM, ganiso }}));
         gmx_stats gcharge;
-        lsq_charge.insert(std::pair<iMolSelect, qtStats>(ims.first, {{ qType::Calc, gcharge }}));
+        lsq_charge.insert(std::pair<iMolSelect, qtStats>(ims.first, {{ qPropertyType::ACM, gcharge }}));
     
         for (auto ai : pd->particleTypesConst())
         {
@@ -1535,7 +1499,7 @@ void TrainForceFieldPrinter::print(MsgHandler                  *msghandler,
         std::map<iMolSelect, qtStats> qinter;
         for(auto &ims : iMolSelectNames())
         {
-            for (auto &i : qTypes())
+            for (auto &i : qPropertyTypes())
             {
                 gmx_stats ginter;
                 qinter[ims.first].insert({ i.first, std::move(ginter) });
@@ -1575,7 +1539,7 @@ void TrainForceFieldPrinter::print(MsgHandler                  *msghandler,
 
             // Now compute all the ESP RMSDs and multipoles and print it.
             tw->writeStringFormatted("Electrostatic properties.\n");
-            for (auto &i : qTypes())
+            for (auto &i : qPropertyTypes())
             {
                 for(auto qp = mol->qProps()->begin(); qp < mol->qProps()->end(); ++qp)
                 {
@@ -1601,7 +1565,7 @@ void TrainForceFieldPrinter::print(MsgHandler                  *msghandler,
                             warning.assign(" EEE");
                         }
                         tw->writeStringFormatted("ESP rms: %8.3f (kJ/mol e) rrms: %8.3f CosAngle: %6.3f - %s%s\n",
-                                rms, rrms, cosesp, qTypeName(qi).c_str(), warning.c_str());   
+                                rms, rrms, cosesp, qPropertyTypeName(qi).c_str(), warning.c_str());   
                         if (mol->datasetType() == ims)
                         {
                             auto ep = qresp->espPoints();
@@ -1672,14 +1636,14 @@ void TrainForceFieldPrinter::print(MsgHandler                  *msghandler,
         bool header = true;
         
         tw->writeStringFormatted("\n*** Results for %s data set ***\n", iMolSelectName(ims.first));
-        for (auto &i : qTypes())
+        for (auto &i : qPropertyTypes())
         {
             auto qt = i.first;
-            if (qt == qType::Elec)
+            if (qt == qPropertyType::Elec)
             {
                 continue;
             }
-            std::string name = gmx::formatString("%s-%s", qTypeName(qt).c_str(), ims.second);
+            std::string name = gmx::formatString("%s-%s", qPropertyTypeName(qt).c_str(), ims.second);
             if (lsq_epot_[ims.first][qt].get_npoints() > 0)
             {
                 print_stats(tw, "Potential energy", "kJ/mol", 1.0, &lsq_epot_[ims.first][qt],
@@ -1696,13 +1660,13 @@ void TrainForceFieldPrinter::print(MsgHandler                  *msghandler,
                     header = false;
                 }
             }
-            if (lsq_rmsf_[ims.first].get_npoints() > 0 && qt == qType::Calc)
+            if (lsq_rmsf_[ims.first].get_npoints() > 0 && qt == qPropertyType::ACM)
             {
                 print_stats(tw, "RMS Force", "kJ/mol nm", 1.0, &lsq_rmsf_[ims.first],
                             header, "QM/DFT", name.c_str(), useOffset_);
                 header = false;
             }
-            if (lsq_freq_.get_npoints() > 0 && qt == qType::Calc)
+            if (lsq_freq_.get_npoints() > 0 && qt == qPropertyType::ACM)
             {
                 print_stats(tw, "Frequencies", mpo_unit2(MolPropObservable::FREQUENCY),
                             1.0, &lsq_freq_, header, "QM/DFT", name.c_str(), useOffset_);
@@ -1716,22 +1680,21 @@ void TrainForceFieldPrinter::print(MsgHandler                  *msghandler,
                 print_stats(tw, mpo_name(mpo), mpo_unit2(mpo), 1.0,
                             &lsq_multi[mpo][ims.first][qt],   header, "Electronic", name.c_str(), useOffset_);
             }
-            if (bPolar && qt == qType::Calc)
+            if (bPolar && qt == qPropertyType::ACM)
             {
                 std::string polunit("Angstrom3");
                 auto polfactor = convertFromGromacs(1.0, polunit);
                 print_stats(tw, "Polariz. components", polunit.c_str(), polfactor,
-                            &lsq_alpha_[ims.first][qType::Calc],    header, "Electronic", name.c_str(), useOffset_);
+                            &lsq_alpha_[ims.first][qPropertyType::ACM],    header, "Electronic", name.c_str(), useOffset_);
                 print_stats(tw, "Isotropic Polariz.", polunit.c_str(), polfactor,
-                            &lsq_isoPol_[ims.first][qType::Calc],   header, "Electronic", name.c_str(), useOffset_);
+                            &lsq_isoPol_[ims.first][qPropertyType::ACM],   header, "Electronic", name.c_str(), useOffset_);
                 print_stats(tw, "Anisotropic Polariz.", polunit.c_str(), polfactor,
-                            &lsq_anisoPol_[ims.first][qType::Calc], header, "Electronic", name.c_str(), useOffset_);
+                            &lsq_anisoPol_[ims.first][qPropertyType::ACM], header, "Electronic", name.c_str(), useOffset_);
             }
         }
     }
     write_q_histo(tw, opt2fn_null("-qhisto", filenm.size(), filenm.data()),
-                  &lsqt[iMolSelect::Train], oenv,
-                  &(lsq_charge[iMolSelect::Train]), useOffset_);
+                  &lsqt[iMolSelect::Train], oenv, useOffset_);
 
     const char *alex  = "Alexandria";
     for(auto &mpo : mpoMultiPoles)
@@ -1775,15 +1738,16 @@ void TrainForceFieldPrinter::print(MsgHandler                  *msghandler,
     }
     // List outliers based on the deviation in the Electrostatic Potential
     real espAver;
-    if (eStats::OK == lsq_esp[iMolSelect::Train][qType::Calc].get_rmsd(&espAver))
+    if (eStats::OK == lsq_esp[iMolSelect::Train][qPropertyType::ACM].get_rmsd(&espAver))
     {
         int nout = 0;
         double espMax = 1.5*espAver;
         tw->writeStringFormatted("\nOverview of ESP outliers for %s (RMSD > %.3f)\n",
-                qTypeName(qType::Calc).c_str(), espMax);
+                qPropertyTypeName(qPropertyType::ACM).c_str(), espMax);
         tw->writeStringFormatted("----------------------------------\n");
         tw->writeStringFormatted("%-40s  %12s  %12s\n", "Name",
-                qTypeName(qType::Calc).c_str(), qTypeName(qType::ESP).c_str());
+                                 qPropertyTypeName(qPropertyType::ACM).c_str(),
+                                 qPropertyTypeName(qPropertyType::ESP).c_str());
         for (auto mol = actmol->begin(); mol < actmol->end(); ++mol)
         {
             for(auto qp = mol->qProps()->begin(); qp < mol->qProps()->end(); ++qp)
@@ -1810,11 +1774,11 @@ void TrainForceFieldPrinter::print(MsgHandler                  *msghandler,
     }
     real epotRmsd = 0;
     if (
-        eStats::OK == lsq_epot_[iMolSelect::Train][qType::Calc].get_rmsd(&epotRmsd))
+        eStats::OK == lsq_epot_[iMolSelect::Train][qPropertyType::ACM].get_rmsd(&epotRmsd))
     {
         for(const auto &ims : { iMolSelect::Train, iMolSelect::Test })
         {
-            if (lsq_epot_[ims][qType::Calc].get_npoints() > 0)
+            if (lsq_epot_[ims][qPropertyType::ACM].get_npoints() > 0)
             {
                 // List outliers based on the deviation in the Potential energy ...
                 printOutliers(tw, ims, epotRmsd, false, InteractionType::EPOT, actmol);
@@ -1824,11 +1788,11 @@ void TrainForceFieldPrinter::print(MsgHandler                  *msghandler,
     for(const auto &tt : terms_)
     {
         real einterRmsd = 0;
-        if (eStats::OK == lsq_einter_[tt][iMolSelect::Train][qType::Calc].get_rmsd(&einterRmsd))
+        if (eStats::OK == lsq_einter_[tt][iMolSelect::Train][qPropertyType::ACM].get_rmsd(&einterRmsd))
         {
             for(const auto &ims : { iMolSelect::Train, iMolSelect::Test })
             {
-                if (lsq_einter_[tt][ims][qType::Calc].get_npoints() > 0)
+                if (lsq_einter_[tt][ims][qPropertyType::ACM].get_npoints() > 0)
                 {
                     // ... and the interaction energies.
                     printOutliers(tw, ims, einterRmsd, true, tt, actmol);

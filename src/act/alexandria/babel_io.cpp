@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2024
+ * Copyright (C) 2014-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -327,9 +327,9 @@ static bool babel2ACT(alexandria::MsgHandler                   *msg_handler,
     std::string                formula;
     std::string                attr;
     std::string                value;
-    const char                *reference   = "Spoel2022a";
-    const char                *actmol       = "AMM";
-    const char                *myprogram   = "ACT2022";
+    const char                *reference   = "Spoel2025a";
+    const char                *actmol      = "AMM";
+    const char                *myprogram   = "ACT2026";
 
     /* Variables to read a Gaussian log file */
     char                      *g09ptr;
@@ -621,30 +621,22 @@ static bool babel2ACT(alexandria::MsgHandler                   *msg_handler,
             ca.SetChain(myres->GetChainNum(), myres->GetChain());
             if (inputformat == einfGaussian)
             {
-                for (const auto &cs : qTypes())
+                for (const auto &cs : { "Mulliken", "ESP", "BCC", "RESP", "CM5", "Hirshfeld" })
                 {
-                    if (cs.first == qType::Mulliken ||
-                        cs.first == qType::ESP ||
-                        cs.first == qType::Hirshfeld ||
-                        cs.first == qType::CM5)
+                    std::string qstr(cs);
+                    qstr.append(" charges");
+                    OBpd = (OpenBabel::OBPairData *) mol->GetData(qstr.c_str());
+                    if (nullptr != OBpd)
                     {
-                        std::string qstr = cs.second;
-                        qstr.append(" charges");
-                        OBpd = (OpenBabel::OBPairData *) mol->GetData(qstr.c_str());
-                        if (nullptr != OBpd)
+                        auto OBpc = (OpenBabel::OBPcharge *) mol->GetData(qstr.c_str());
+                        if (OBpc && !OBpc->GetPartialCharge().empty())
                         {
-                            auto OBpc = (OpenBabel::OBPcharge *) mol->GetData(qstr.c_str());
-                            if (OBpc && !OBpc->GetPartialCharge().empty())
-                            {
-                                ca.AddCharge(cs.second.c_str(),
-                                             OBpc->GetPartialCharge()[atom->GetIdx()-1]);
-                            }
-                            else
-                            {
-                                fprintf(stderr, "Inconsistency reading %s from %s", qstr.c_str(), g09);
-                                return false;
-                                
-                            }
+                            ca.AddCharge(cs, OBpc->GetPartialCharge()[atom->GetIdx()-1]);
+                        }
+                        else
+                        {
+                            fprintf(stderr, "Inconsistency reading %s from %s", qstr.c_str(), g09);
+                            return false;
                         }
                     }
                 }

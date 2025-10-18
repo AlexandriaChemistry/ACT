@@ -196,7 +196,7 @@ class QtypeTest : public gmx::test::CommandLineTestBase
                 }
 
                 checker_.checkSequence(q.begin(), q.end(), qlabel.c_str());
-                QtypeProps qp(qType::Calc, myatoms, coords);
+                QtypeProps qp(qPropertyType::ACM, myatoms, coords);
                 qp.initializeMoments();
                 qp.setQandX(q, coords);
                 qp.calcMoments();

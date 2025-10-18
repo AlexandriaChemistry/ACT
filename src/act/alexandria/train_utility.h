@@ -63,10 +63,10 @@ namespace alexandria
 {
 
 class MsgHandler;
-using qtStats = std::map<qType, gmx_stats>;
+using qtStats = std::map<qPropertyType, gmx_stats>;
 
 
-/*! \brief Class to managa output from force field training
+/*! \brief Class to manage output from force field training
  */
 class TrainForceFieldPrinter
 {
