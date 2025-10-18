@@ -141,7 +141,7 @@ class QgenResp
          */
         void setAtomInfo(MsgHandler                   *msg_handler,
                          const std::vector<ActAtom>   &atoms,
-                         const ForceField             *pd,
+                         ForceField                   *pd,
                          const int                     qtotal);
 
         size_t natoms() const { return nAtom_; }
@@ -158,11 +158,6 @@ class QgenResp
          * \param[in] q Vector containing new charges
          */
         void updateAtomCharges(const std::vector<ActAtom> &atoms);
-
-        /*! \brief Update the charges
-         * \param[in] q Vector containing new charges
-         */
-        void updateAtomCharges(const std::vector<double> &q);
 
         const std::string &getStoichiometry() const { return stoichiometry_; }
 
@@ -308,6 +303,7 @@ class QgenResp
 
         //! Total number of parameters
         std::vector<double>      q_;
+        std::vector<ForceFieldParameter *> charge_;
         std::vector<double>      zeta_;
         std::vector<int>         atomnumber_;
         std::vector<int>         row_;

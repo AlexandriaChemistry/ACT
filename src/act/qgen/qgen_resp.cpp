@@ -71,33 +71,27 @@ void QgenResp::updateAtomCoords(const std::vector<gmx::RVec> &x)
     }
 }
 
-void QgenResp::updateAtomCharges(const std::vector<double> &q)
-{
-    if (nAtom_ != q.size())
-    {
-        GMX_THROW(gmx::InternalError(gmx::formatString("Inconsistency between number of resp atoms %zu and charge array entries %lu", nAtom_, q.size()).c_str()));
-    }
-    for (size_t i = 0; i < nAtom_; i++)
-    {
-        q_[i] = q[i];
-    }
-}
-
 void QgenResp::updateAtomCharges(const std::vector<ActAtom> &atoms)
 {
     if (nAtom_ != atoms.size())
     {
         GMX_THROW(gmx::InternalError(gmx::formatString("Inconsistency between number of resp atoms %zu and topology atoms %lu", nAtom_, atoms.size()).c_str()));
     }
+    qshell_  = 0;
     for (size_t i = 0; i < nAtom_; i++)
     {
         q_[i] = atoms[i].charge();
+        if (!mutable_[i])
+        {
+            q_[i]    = charge_[i]->value();
+            qshell_ += q_[i];
+        }
     }
 }
 
 void QgenResp::setAtomInfo(MsgHandler                   *msg_handler,
                            const std::vector<ActAtom>   &atoms,
-                           const alexandria::ForceField *pd,
+                           alexandria::ForceField       *pd,
                            const int                     qtotal)
 {
     if (nAtom_ != 0)
@@ -119,8 +113,9 @@ void QgenResp::setAtomInfo(MsgHandler                   *msg_handler,
     {
         auto atype = pd->findParticleType(atoms[i].ffType());
         auto ztype = atype->interactionTypeToIdentifier(InteractionType::ELECTROSTATICS);
-        auto qparm = atype->parameterConst("charge");
-        q_.push_back(qparm.value());
+        auto qparm = atype->parameter("charge");
+        q_.push_back(qparm->value());
+        charge_.push_back(qparm);
         row_.push_back(atype->row());
         if (haveZeta)
         {
@@ -131,8 +126,8 @@ void QgenResp::setAtomInfo(MsgHandler                   *msg_handler,
             zeta_.push_back(0.0);
         }
         
-        mutable_.push_back(qparm.mutability() == Mutability::ACM);
-        if (qparm.mutability() != Mutability::ACM)
+        mutable_.push_back(qparm->mutability() == Mutability::ACM);
+        if (qparm->mutability() != Mutability::ACM)
         {
             nFixed_++;
             qshell_ += q_[i];
@@ -283,7 +278,8 @@ void QgenResp::regularizeCharges(MsgHandler *msg_handler)
         }
     }
     double dq = (qtot_ - (qtot + qshell_))/(nAtom_-nFixed_);
-    if (msg_handler)
+    // If the algorithm works well, dq should be negligable.
+    if (msg_handler && fabs(dq) > 0.001)
     {
         msg_handler->msg(ACTStatus::Warning,
                          gmx::formatString("Found qtot %g, should be %d. Subtracting %g from each atom.", qtot, qtot_, dq));

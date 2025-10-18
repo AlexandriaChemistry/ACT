@@ -566,7 +566,7 @@ public:
      * \param[in]  maxESP  Percentage of the ESP points to consider (<= 100)
      */
     void getExpProps(MsgHandler                                 *msghandler,
-                     const ForceField                           *pd,
+                     ForceField                                 *pd,
                      const std::map<MolPropObservable, iqmType> &iqm,
                      real                                        watoms = 0,
                      int                                         maxESP = 100);
@@ -671,7 +671,7 @@ public:
      * \param[in] oenv
      */
     void GenerateCube(MsgHandler                   *msghandler,
-                      const ForceField             *pd,
+                      ForceField                   *pd,
                       const std::vector<gmx::RVec> &coords,
                       const ForceComputer          *forceComp,
                       real                          spacing,
