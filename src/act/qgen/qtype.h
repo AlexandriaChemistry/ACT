@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2021-2023
+ * Copyright (C) 2021-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -54,43 +54,29 @@ class MsgHandler;
 /*! \brief Enumerated type to differentiate the charge types 
  * and properties derived from the charges.
  */
-enum class qType { 
+enum class qPropertyType { 
     //! Alexandria Charge Model derived property
-    Calc,
-    //! Electrostatic potential derived point charges
+    ACM,
+    //! ESP derived charges and their properties
     ESP,
-    //! Restrained electrostatic potential method
-    RESP,
-    //! AM1 Bond-charge correction method
-    BCC,
-    //! Mulliken charges
-    Mulliken,
-    //! Hirshfeld charges
-    Hirshfeld,
-    //! CM5 charges
-    CM5,
-    //! Gasteiger charges
-    Gasteiger,
     //! Electronic properties straight from DFT or QC calcs
-    Elec,
-    //! Alexandria charge model charges
-    ACM
+    Elec
 };
 
 /*! \brief return string corresponding to charge type
  */
-const std::string &qTypeName(qType qt);
+const std::string &qPropertyTypeName(qPropertyType qt);
 
 /*! \brief convert string to qtype
  * \param[in] type The string
- * \return a qType.
+ * \return a qPropertyType.
  * \throws if not found
  */
-qType stringToQtype(const std::string &type);
+qPropertyType stringToQtype(const std::string &type);
 
-/*! \brief Return a complete map of qTypes and their names
+/*! \brief Return a complete map of qPropertyTypes and their names
  */
-const std::map<qType, std::string> &qTypes();
+const std::map<qPropertyType, std::string> &qPropertyTypes();
 
 /*! Class to hold electrostatic properties.
  * To compare the properties of different models we have this class
@@ -101,7 +87,7 @@ class QtypeProps
 {
  private:
     //! Identity
-    qType                  qtype_      = qType::Calc;
+    qPropertyType          qtype_      = qPropertyType::ACM;
     //! Electrostatic moments
     std::map<MolPropObservable, std::vector<double> > multipoles_;
     //! Polarizability tensor
@@ -133,17 +119,17 @@ class QtypeProps
      * \param[in] atoms  The atoms in this compound
      * \param[in] coords and their coordinates
      */
-    QtypeProps(qType                         qtype,
+    QtypeProps(qPropertyType                 qtype,
                const std::vector<ActAtom>   &atoms,
                const std::vector<gmx::RVec> &coords);
 
-    //! Return my qType
-    qType qtype() const { return qtype_; }
+    //! Return my qPropertyType
+    qPropertyType qtype() const { return qtype_; }
 
-    /*! Set my qType
+    /*! Set my qPropertyType
      * \param[in] qtype The type
      */
-    void setQtype(qType qtype) { qtype_ = qtype; }
+    void setQtype(qPropertyType qtype) { qtype_ = qtype; }
 
     //! Initialize variables for multipoles
     void initializeMoments();

@@ -330,11 +330,6 @@ void ACMFitnessComputer::fillDevComputers(MsgHandler *msghandler,
     {
         bdc_ = new BoundsDevComputer(sii_->optIndexPtr(), zetaDiff);
     }
-    if (sii_->target(iMolSelect::Train, eRMS::CHARGE)->weight() > 0 ||
-        sii_->target(iMolSelect::Train, eRMS::CM5)->weight() > 0)
-    {
-        devComputers_.push_back(new ChargeCM5DevComputer());
-    }
     if (sii_->target(iMolSelect::Train, eRMS::ESP)->weight() > 0)
     {
         devComputers_.push_back(new EspDevComputer(molgen_->fit("zeta")));
