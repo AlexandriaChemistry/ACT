@@ -135,11 +135,9 @@ int min_complex(int argc, char *argv[])
         if (msghandler.ok())
         {
             std::vector<gmx::RVec> forces(actmol.atomsConst().size());
-            
-            std::vector<double> myq;
+            // TODO Not the correct algorithm!
             auto alg   = pd.chargeGenerationAlgorithm();
-            auto qtype = qType::Calc;
-            actmol.GenerateCharges(&msghandler, &pd, forceComp, alg, qtype, myq, &coords, &forces);
+            actmol.generateCharges(&msghandler, &pd, forceComp, alg, &coords, &forces);
         }
         if (msghandler.ok())
         {

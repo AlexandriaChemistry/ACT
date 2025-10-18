@@ -41,7 +41,7 @@
 #include <vector>
 
 #include "act/alexandria/alex_modules.h"
-#include "act/alexandria/fetch_charges.h"
+#include "act/alexandria/compound_reader.h"
 #include "act/alexandria/train_utility.h"
 #include "act/basics/msg_handler.h"
 #include "act/forcefield/forcefield.h"
@@ -115,7 +115,6 @@ MolGen::MolGen(const CommunicationRecord *cr)
 void MolGen::addFilenames(std::vector<t_filenm> *filenms)
 {
     filenms->push_back({ efXML, "-mp",      "allmols", ffREAD   });
-    filenms->push_back({ efXML, "-charges", "charges", ffOPTRD  });
 }
 
 void MolGen::addOptions(std::vector<t_pargs>          *pargs,
@@ -182,9 +181,7 @@ void MolGen::addOptions(std::vector<t_pargs>          *pargs,
         { "-maxpot", FALSE, etINT, { &maxpot_},
           "Fraction of ESP points to use when training on it. Number given in percent." },
         { "-watoms", FALSE, etREAL, { &watoms_},
-          "Weight for the potential on the atoms in training on ESP. Should be 0 in most cases, except possibly when using Slater distributions." },
-        { "-qtype", FALSE, etSTR, {&qTypeString_},
-          "Charge type to use" }
+          "Weight for the potential on the atoms in training on ESP. Should be 0 in most cases, except possibly when using Slater distributions." }
     };
     doAddOptions(pargs, pa_general.size(), pa_general.data());
 }
@@ -199,14 +196,9 @@ bool MolGen::hasMolPropObservable(MolPropObservable mpo) const
     return hasMPO;
 }
 
-bool MolGen::checkOptions(MsgHandler                  *msghandler,
-                          const std::vector<t_filenm> &filenames,
-                          ForceField                  *pd)
+void MolGen::checkOptions(MsgHandler *msghandler,
+                          ForceField *pd)
 {
-    std::set iTypeElec  = { InteractionType::ELECTROSTATICS, InteractionType::ELECTRONEGATIVITYEQUALIZATION,
-                            InteractionType::BONDCORRECTIONS, InteractionType::POLARIZATION };
-    bool Electrostatics = false;
-
     for(auto toFit = fit_.begin(); toFit != fit_.end(); )
     {
         InteractionType itype;
@@ -215,7 +207,6 @@ bool MolGen::checkOptions(MsgHandler                  *msghandler,
             msghandler->msg(ACTStatus::Verbose,
                             gmx::formatString("Found parameter '%s' to train, interactiontype '%s'",
                                               toFit->first.c_str(), interactionTypeToString(itype).c_str()));
-            Electrostatics = Electrostatics || isVsite(itype) || (iTypeElec.end() != iTypeElec.find(itype));
             toFit++;
         }
         else
@@ -226,14 +217,6 @@ bool MolGen::checkOptions(MsgHandler                  *msghandler,
             toFit = fit_.erase(toFit);
         }
     }
-    auto charge_fn = opt2fn_null("-charges", filenames.size(), filenames.data());
-    if (Electrostatics && charge_fn && strlen(charge_fn) > 0)
-    {
-        msghandler->msg(ACTStatus::Error,
-                        "supplying a chargemap cannot be combined with changing parameters related to electrostatic interactions.");
-        return false;
-    }
-    return true;
 }
 
 void MolGen::optionsFinished()
@@ -772,13 +755,13 @@ size_t MolGen::Read(MsgHandler                          *msghandler,
                     const std::vector<t_filenm>         &filenms,
                     ForceField                          *pd,
                     const MolSelect                     &gms,
-                    const std::map<eRMS, FittingTarget> &targets)
+                    const std::map<eRMS, FittingTarget> &targets,
+                    CompoundReader                      *compR)
 {
     int                              nwarn    = 0;
     std::map<ACTMessage, int>         imm_count;
     ACTMessage                        imm      = ACTMessage::OK;
     std::vector<alexandria::MolProp> mp;
-    chargeMap                        qmap;
     auto forceComp = new ForceComputer();
     print_memory_usage(debug);
 
@@ -789,36 +772,10 @@ size_t MolGen::Read(MsgHandler                          *msghandler,
     if (cr_->isMaster())
     {
         MolPropRead(msghandler, molfn, &mp);
-        auto qmapfn = opt2fn_null("-charges", filenms.size(), filenms.data());
-        if (qmapfn && strlen(qmapfn) > 0)
-        {
-            auto qt = qType::ACM;
-            if (nullptr != qTypeString_)
-            {
-                qt = stringToQtype(qTypeString_);
-            }
-            std::set<std::string> lookup;
-            for(const auto &ims : gms.imolSelect())
-            {
-                // Split potential dimers since we need to get charges of
-                // monomers in the charge map only.
-                for(const auto &comp : split(ims.iupac(), '#'))
-                {
-                    lookup.insert(comp);
-                }
-            }
-            qmap = fetchChargeMap(msghandler, pd, forceComp, qmapfn, lookup, qt);
-        }
         // Even if we did not read a file, we have to tell the other processors
         // about it.
-        broadcastChargeMap(cr_, &qmap);
-        msghandler->msg(ACTStatus::Info,
-                        gmx::formatString("Read %zu compounds from %s", mp.size(), molfn));
-        if (qmap.size() > 0)
-        {
-            msghandler->msg(ACTStatus::Info,
-                            gmx::formatString("Read chargemap containing %lu entries from %s", qmap.size(), qmapfn));
-        }
+        broadcastChargeMap(cr_, compR->chargeMap());
+
         print_memory_usage(debug);
         for (auto mpi = mp.begin(); mpi < mp.end(); )
         {
@@ -844,7 +801,7 @@ size_t MolGen::Read(MsgHandler                          *msghandler,
     else
     {
         // Other processors receive the qmap from the master.
-        broadcastChargeMap(cr_, &qmap);
+        broadcastChargeMap(cr_, compR->chargeMap());
     }
     /* Generate topology for Molecules and distribute them among the nodes */
     std::string      method, basis;
@@ -865,8 +822,8 @@ size_t MolGen::Read(MsgHandler                          *msghandler,
             { MolPropObservable::CHARGE,            iqmType::QM }
         };
     int  root  = 0;
-    auto alg   = pd->chargeGenerationAlgorithm();
-    auto qtype = qType::Calc;
+    auto qmap  = compR->chargeMapConst();
+    auto alg   = compR->algorithm();
     if (cr_->isMaster())
     {
         msghandler->msg(ACTStatus::Info,
@@ -931,10 +888,9 @@ size_t MolGen::Read(MsgHandler                          *msghandler,
                 }
                 else
                 {
-                    std::vector<double> dummy;
                     std::vector<gmx::RVec> forces(actmol.atomsConst().size());
-                    actmol.GenerateCharges(msghandler, pd, forceComp, alg,
-                                           qtype, dummy, &coords, &forces, true);
+                    actmol.generateCharges(msghandler, pd, forceComp, alg,
+                                           &coords, &forces, true);
                 }
                 if (!msghandler->ok())
                 {
@@ -1125,9 +1081,8 @@ size_t MolGen::Read(MsgHandler                          *msghandler,
                 else
                 {
                     std::vector<gmx::RVec> forces(actmol.atomsConst().size());
-                    std::vector<double> dummy;
-                    actmol.GenerateCharges(msghandler, pd, forceComp, alg,
-                                           qtype, dummy, &coords, &forces, true);
+                    actmol.generateCharges(msghandler, pd, forceComp, alg,
+                                           &coords, &forces, true);
                 }
             }
             if (cr_->isMiddleMan())

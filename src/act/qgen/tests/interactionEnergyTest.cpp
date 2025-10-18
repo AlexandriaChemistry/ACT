@@ -180,13 +180,16 @@ protected:
             auto forceComp = new ForceComputer();
             std::vector<gmx::RVec> forces(mp_.atomsConst().size());
             std::vector<gmx::RVec> coords = mp_.xOriginal();
-            auto alg = ChargeGenerationAlgorithm::NONE;
+            auto alg = pd->chargeGenerationAlgorithm();
             if (!qcustom.empty())
             {
                 alg = ChargeGenerationAlgorithm::Custom;
+                mp_.setCharges(qcustom);
             }
-            mp_.GenerateCharges(&msghandler, pd, forceComp, alg, qType::Calc, qcustom, &coords, &forces);
-            
+            else
+            {
+                mp_.generateCharges(&msghandler, pd, forceComp, alg, &coords, &forces);
+            }
             std::vector<double> qtotValues;
             auto myatoms = mp_.atomsConst();
             for (size_t atom = 0; atom < myatoms.size(); atom++)

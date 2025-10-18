@@ -879,7 +879,7 @@ void ACTMol::calculateInteractionEnergy(MsgHandler                        *msgha
 }
 
 ACTMessage ACTMol::GenerateAcmCharges(MsgHandler             *msg_handler,
-                                      const ForceField       *pd,
+                                      ForceField             *pd,
                                       const ForceComputer    *forceComp,
                                       std::vector<gmx::RVec> *coords,
                                       std::vector<gmx::RVec> *forces)
@@ -976,130 +976,135 @@ void ACTMol::updateQprops(const ForceField          *pd,
     }
 }
 
-void ACTMol::GenerateCharges(MsgHandler                *msghandler,
-                             const ForceField          *pd,
+void ACTMol::minimizeShells(MsgHandler                *msghandler,
+                            const ForceField          *pd,
+                            const ForceComputer       *forceComp,
+                            std::vector<gmx::RVec>    *coords,
+                            std::vector<gmx::RVec>    *forces)
+{
+    // If we have shells, we still have to minimize them,
+    // but we may want to know the energies anyway.
+    std::map<InteractionType, double> energies;
+    forceComp->compute(msghandler, pd, topology_, coords,
+                       forces, &energies);
+}
+
+void ACTMol::setCharges(MsgHandler       *msghandler,
+                        const ForceField *pd,
+                        const char       *qread)
+{
+    std::vector<double> qnew;
+    auto exper = findExperimentConst(JobType::OPT);
+    if (nullptr == exper)
+    {
+        exper  = findExperimentConst(JobType::TOPOLOGY);
+    }
+    if (nullptr != exper)
+    {
+        for (auto &ca : exper->calcAtomConst())
+        {
+            if (!ca.hasCharge(qread))
+            {
+                break;
+            }
+            else
+            {
+                qnew.push_back(ca.charge(qread));
+            }
+        }
+    }
+    if (qnew.empty())
+    {
+        msghandler->msg(ACTStatus::Error, ACTMessage::NoMolpropCharges,
+                        getMolname());
+        return;
+    }
+    size_t j = 0;
+    auto myatoms = atoms();
+    for(size_t i = 0; i < myatoms->size(); i++)
+    {
+        if ((*myatoms)[i].pType() == ActParticle::Atom)
+        {
+            (*myatoms)[i].setCharge(qnew[j++]);
+        }
+        else if ((*myatoms)[i].pType() == ActParticle::Shell)
+        {
+            const auto &pId = (*myatoms)[i].ffType();
+            if (!pd->hasParticleType(pId))
+            {
+                msghandler->msg(ACTStatus::Error, ACTMessage::AtomTypes,
+                                getMolname());
+                return;
+            }
+            auto piter = pd->findParticleType(pId);
+            auto q = piter->charge();
+            (*myatoms)[i].setCharge(q);
+            // TODO Do not use -1 here, but particle.core()
+            (*myatoms)[i-1].setCharge(qnew[j-1]-q);
+        }
+    }
+    fraghandler_->setCharges(*myatoms);
+}
+
+void ACTMol::setCharges(MsgHandler       *msghandler,
+                        const ForceField *pd)
+{
+    auto myatoms = atoms();
+    msghandler->msg(ACTStatus::Warning,
+                    gmx::formatString("WARNING! Using charges from force field for %s!\n", getMolname().c_str()));
+    for (size_t i = 0; i < myatoms->size(); i++)
+    {
+        auto atype = (*myatoms)[i].ffType();
+        auto ptype = pd->findParticleType(atype);
+        auto qval  = ptype->parameterConst("charge").value();
+        (*myatoms)[i].setCharge(qval);
+    }
+    fraghandler_->setCharges(*myatoms);
+}
+
+void ACTMol::setCharges(const std::vector<double> &qcustom)
+{
+    auto myatoms = atoms();
+    for (size_t i = 0; i < myatoms->size(); i++)
+    {
+        (*myatoms)[i].setCharge(qcustom[i]);
+    }
+    fraghandler_->setCharges(*myatoms);
+}
+
+void ACTMol::setCharges(MsgHandler       *msghandler,
+                        const ChargeMap  &qmap)
+{
+    fraghandler_->setCharges(msghandler, qmap);
+    if (!fraghandler_->fetchCharges(atoms()))
+    {
+        msghandler->msg(ACTStatus::Error,
+                        gmx::formatString("Mismatch in number of atoms between fragmenthandler and topology"));
+    }
+}
+                        
+void ACTMol::generateCharges(MsgHandler                *msghandler,
+                             ForceField                *pd,
                              const ForceComputer       *forceComp,
                              ChargeGenerationAlgorithm  algorithm,
-                             qType                      qtype,
-                             const std::vector<double> &qcustom,
                              std::vector<gmx::RVec>    *coords,
                              std::vector<gmx::RVec>    *forces,
                              bool                       updateQProps)
 {
+    if (algorithm == ChargeGenerationAlgorithm::Read ||
+        algorithm == ChargeGenerationAlgorithm::Custom ||
+        algorithm == ChargeGenerationAlgorithm::NONE)
+    {
+        return;
+    }
     bool converged   = false;
 
     // TODO check whether this needed
     std::map<InteractionType, double> energies;
     auto myatoms = atoms();
-    if (algorithm == ChargeGenerationAlgorithm::Custom)
-    {
-        GMX_RELEASE_ASSERT(atomsConst().size() == qcustom.size(),
-                           gmx::formatString("Number of particles (%lu) does not match the number of custom charges (%lu).", atomsConst().size(), qcustom.size()).c_str());
-    }
-    else if (algorithm == ChargeGenerationAlgorithm::NONE)
-    {
-        algorithm = pd->chargeGenerationAlgorithm();
-        // Check whether there are free charges
-        bool allFixed = true;
-        for (size_t i = 0; i < myatoms->size(); i++)
-        {
-            auto atype = (*myatoms)[i].ffType();
-            auto ptype = pd->findParticleType(atype);
-            auto qff = ptype->parameterConst("charge");
-            if (qff.mutability() == Mutability::ACM)
-            {
-                allFixed = false;
-            }
-        }    
-        if (allFixed)
-        {
-            algorithm = ChargeGenerationAlgorithm::NONE;
-        }
-    }
     fraghandler_->setChargeGenerationAlgorithm(algorithm);
     switch (algorithm)
     {
-    case ChargeGenerationAlgorithm::NONE:
-        {
-            msghandler->msg(ACTStatus::Warning,
-                            gmx::formatString("WARNING! Using fixed charges for %s!\n", getMolname().c_str()));
-            for (size_t i = 0; i < myatoms->size(); i++)
-            {
-                auto atype = (*myatoms)[i].ffType();
-                auto ptype = pd->findParticleType(atype);
-                auto qval  = ptype->parameterConst("charge").value();
-                (*myatoms)[i].setCharge(qval);
-            }
-            // If we have shells, we still have to minimize them,
-            // but we may want to know the energies anyway.
-            forceComp->compute(msghandler, pd, topology_, coords,
-                               forces, &energies);
-            fraghandler_->setCharges(*myatoms);
-        }
-        break;
-    case ChargeGenerationAlgorithm::Read:
-        {
-            std::vector<double> qread;
-            auto exper = findExperimentConst(JobType::OPT);
-            if (nullptr == exper)
-            {
-                exper  = findExperimentConst(JobType::TOPOLOGY);
-            }
-            if (nullptr != exper)
-            {
-                for (auto &ca : exper->calcAtomConst())
-                {
-                    if (!ca.hasCharge(qtype))
-                    {
-                        break;
-                    }
-                    else
-                    {
-                        qread.push_back(ca.charge(qtype));
-                    }
-                }
-            }
-            if (qread.empty())
-            {
-                msghandler->msg(ACTStatus::Error, ACTMessage::NoMolpropCharges,
-                                getMolname());
-                return;
-            }
-            size_t j = 0;
-            for(size_t i = 0; i < myatoms->size(); i++)
-            {
-                if ((*myatoms)[i].pType() == ActParticle::Atom)
-                {
-                    (*myatoms)[i].setCharge(qread[j++]);
-                }
-                else if ((*myatoms)[i].pType() == ActParticle::Shell)
-                {
-                    const auto &pId = (*myatoms)[i].ffType();
-                    if (!pd->hasParticleType(pId))
-                    {
-                        msghandler->msg(ACTStatus::Error, ACTMessage::AtomTypes,
-                                        getMolname());
-                        return;
-                    }
-                    auto piter = pd->findParticleType(pId);
-                    auto q = piter->charge();
-                    (*myatoms)[i].setCharge(q);
-                    // TODO Do not use -1 here, but particle.core()
-                    (*myatoms)[i-1].setCharge(qread[j-1]-q);
-                }
-            }
-            fraghandler_->setCharges(*myatoms);
-        }
-        break;
-    case ChargeGenerationAlgorithm::Custom:
-        {
-            for (size_t i = 0; i < myatoms->size(); i++)
-            {
-                (*myatoms)[i].setCharge(qcustom[i]);
-            }
-            fraghandler_->setCharges(*myatoms);
-            return;
-        }
     case ChargeGenerationAlgorithm::ESP:
         {
             int    maxiter = 5;
@@ -1172,6 +1177,11 @@ void ACTMol::GenerateCharges(MsgHandler                *msghandler,
                     return;
                 }
             }
+            if (!foundESP)
+            {
+                msghandler->msg(ACTStatus::Error, ACTMessage::ChargeGeneration,
+                                "No ESP data found to fit charges to, check your input.");
+            }
         }
         break;
     case ChargeGenerationAlgorithm::EEM:
@@ -1180,8 +1190,10 @@ void ACTMol::GenerateCharges(MsgHandler                *msghandler,
             (void) GenerateAcmCharges(msghandler, pd, forceComp, coords, forces);
         }
         break;
+    default:
+        break;
     }
-    if (updateQProps)
+    if (msghandler->ok() && updateQProps)
     {
         updateQprops(pd, forceComp, forces);
     }
@@ -1468,7 +1480,7 @@ void ACTMol::GenerateCube(MsgHandler                   *msghandler,
             
                 if (reffn)
                 {
-                    grref.setAtomInfo(atomsConst(), pd, totalCharge());
+                    grref.setAtomInfo(msghandler, atomsConst(), pd, totalCharge());
                     grref.updateAtomCoords(coords);
                     grref.setAtomSymmetry(symmetric_charges_);
                     grref.readCube(reffn, FALSE);
@@ -1577,7 +1589,6 @@ void ACTMol::getExpProps(MsgHandler                                 *msghandler,
         auto     xatom = experCoords(myexp.getCoordinates());
         setBasisset(myexp.getBasisset());
         setMethod(myexp.getMethod());
-        std::vector<double> q;
         for (auto prop : props)
         {
             // Check whether this property is in the "Wanted" list
@@ -1598,25 +1609,12 @@ void ACTMol::getExpProps(MsgHandler                                 *msghandler,
                                               getMolname().c_str()));
             switch (prop.first)
             {
-            case MolPropObservable::CHARGE:
-                {
-                    std::string         reference;
-                    std::string         lot;
-                    if (myexp.getCharges(&q, qType::Calc, &reference, &lot))
-                    {
-                        qprop = true;
-                    }
-                    msghandler->msg(ACTStatus::Debug,
-                                    gmx::formatString("Found %zu charges for %s",
-                                                      q.size(), getMolname().c_str()));
-                    break;
-                }
             case MolPropObservable::POTENTIAL:
                 {
                     auto qgr = actq.qgenResp();
                     auto &qt = pd->findForcesConst(InteractionType::ELECTROSTATICS);
                     qgr->setChargeType(potentialToChargeType(qt.potential()));
-                    qgr->setAtomInfo(atomsConst(), pd, totalCharge());
+                    qgr->setAtomInfo(msghandler, atomsConst(), pd, totalCharge());
                     qgr->updateAtomCoords(xatom);
                     qgr->setAtomSymmetry(symmetric_charges_);
                     qgr->summary(msghandler);
@@ -1700,6 +1698,7 @@ void ACTMol::getExpProps(MsgHandler                                 *msghandler,
                     }
                 }
                 break;
+            case MolPropObservable::CHARGE:
             case MolPropObservable::FREQUENCY:
             case MolPropObservable::INTENSITY:
             case MolPropObservable::HF:
@@ -1719,17 +1718,8 @@ void ACTMol::getExpProps(MsgHandler                                 *msghandler,
         }
         if (qprop)
         {
-            if (q.empty())
-            {
-                q.resize(xatom.size(), 0.0);
-                // TODO Check whether this is needed. Likely it is here, since it is the first time.
-                qcalc->setQandX(atomsConst(), xatom);
-            }
-            else
-            {
-                // TODO Check whether this is needed. Likely it is here, since it is the first time.
-                qcalc->setQandX(q, xatom);
-            }
+            // TODO Check whether this is needed. Likely it is here, since it is the first time.
+            qcalc->setQandX(atomsConst(), xatom);
             qcalc->initializeMoments();
             qcalc->calcMoments(msghandler);
             qProps_.push_back(std::move(actq));

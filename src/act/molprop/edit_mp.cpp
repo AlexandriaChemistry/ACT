@@ -91,9 +91,8 @@ static bool dump_molecule(MsgHandler        *msghandler,
         {
             std::vector<double> dummy;
             std::vector<gmx::RVec> forces(actmol.atomsConst().size());
-            actmol.GenerateCharges(msghandler, &pd, forceComp,
-                                   pd.chargeGenerationAlgorithm(),
-                                   qType::ACM, dummy, &coords, &forces);
+            actmol.generateCharges(msghandler, &pd, forceComp,
+                                   pd.chargeGenerationAlgorithm(), &coords, &forces);
         }
     }
     if (!msghandler->ok())

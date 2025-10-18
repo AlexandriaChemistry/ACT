@@ -201,6 +201,18 @@ ForceFieldParameterMap *ForceFieldParameterList::findParameters(const Identifier
     return &params->second;
 }
 
+const ForceFieldParameterMap *ForceFieldParameterList::findParametersPtrConst(const Identifier &identifier) const
+{
+    auto params = parameters_.find(identifier);
+    
+    if (params == parameters_.end())
+    {
+        GMX_THROW(gmx::InvalidInputError(gmx::formatString("4. No such identifier %s in mutable parameter list for %s", identifier.id().c_str(), potentialToString(pot_).c_str()).c_str()));
+    }
+    
+    return &params->second;
+}
+
 bool ForceFieldParameterList::parameterExists(const Identifier &identifier) const
 {
     return parameters_.end() != parameters_.find(identifier);

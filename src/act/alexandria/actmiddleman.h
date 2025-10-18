@@ -83,15 +83,17 @@ namespace alexandria
          * \param[in] gach       GA Config handler
          * \param[in] bch        Bayes Config handler
          * \param[in] oenv       GROMACS output environment
+         * \param[in] algorithm  The charge generation algorithm
          * \param[in] openConvFiles Whether or not to create convergence files
          */
-        ACTMiddleMan(MsgHandler           *msghandler,
-                     MolGen               *mg,
-                     StaticIndividualInfo *sii,
-                     GAConfigHandler      *gach,
-                     BayesConfigHandler   *bch,
-                     gmx_output_env_t     *oenv,
-                     bool                  openConvFiles);
+        ACTMiddleMan(MsgHandler                *msghandler,
+                     MolGen                    *mg,
+                     StaticIndividualInfo      *sii,
+                     GAConfigHandler           *gach,
+                     BayesConfigHandler        *bch,
+                     gmx_output_env_t          *oenv,
+                     ChargeGenerationAlgorithm  algorithm,
+                     bool                       openConvFiles);
         
         /*! \brief Run the helper process
          * \param[in] msghandler Message and status handler

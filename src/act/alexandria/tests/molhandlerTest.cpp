@@ -139,7 +139,7 @@ protected:
         EXPECT_TRUE(readOK);
         std::vector<ACTMol> mps;
         // Needed for GenerateCharges
-        auto alg = ChargeGenerationAlgorithm::NONE;
+        auto alg = pd->chargeGenerationAlgorithm();
         double shellTolerance = ftoler;
         int    shellMaxIter   = 100;
         auto forceComp = new ForceComputer(shellTolerance, shellMaxIter);
@@ -160,7 +160,7 @@ protected:
                 }
                 std::vector<gmx::RVec> forces(mm.atomsConst().size());
                 std::vector<gmx::RVec> coords = mm.xOriginal();
-                mm.GenerateCharges(&msghandler, pd, forceComp, alg, qType::Calc, qcustom, &coords, &forces);
+                mm.generateCharges(&msghandler, pd, forceComp, alg, &coords, &forces);
                 if (msghandler.ok())
                 {
                     mps.push_back(mm);

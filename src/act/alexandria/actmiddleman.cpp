@@ -31,13 +31,14 @@
 namespace alexandria
 {
  
-ACTMiddleMan::ACTMiddleMan(MsgHandler           *msghandler,
-                           MolGen               *mg,
-                           StaticIndividualInfo *sii,
-                           GAConfigHandler      *gach,
-                           BayesConfigHandler   *bch,
-                           gmx_output_env_t     *oenv,
-                           bool                  openConvFiles)
+ACTMiddleMan::ACTMiddleMan(MsgHandler                *msghandler,
+                           MolGen                    *mg,
+                           StaticIndividualInfo      *sii,
+                           GAConfigHandler           *gach,
+                           BayesConfigHandler        *bch,
+                           gmx_output_env_t          *oenv,
+                           ChargeGenerationAlgorithm  algorithm,
+                           bool                       openConvFiles)
 : gach_(gach), id_(sii->commRec()->middleManOrdinal())
 {
     // This ica
@@ -57,11 +58,11 @@ ACTMiddleMan::ACTMiddleMan(MsgHandler           *msghandler,
     forceComp_ = new ForceComputer(bch->shellToler(), bch->shellMaxIter());
 
     // Fitness computer FIXME: what about those false flags?
-    fitComp_ = new ACMFitnessComputer(msghandler, sii, mg, false, forceComp_);
+    fitComp_ = new ACMFitnessComputer(msghandler, sii, mg, false, forceComp_, algorithm);
     
     if (gach->optimizer() == OptimizerAlg::GA)
     {
-        mutator_ = new alexandria::PercentMutator(sii, dis(gen), gach->percent());
+        mutator_ = new alexandria::PercentMutator(sii, dis(gen), algorithm, gach->percent());
     }
     else
     {
@@ -69,6 +70,7 @@ ACTMiddleMan::ACTMiddleMan(MsgHandler           *msghandler,
         auto mut = new alexandria::MCMCMutator(dis(gen),
                                                bch, fitComp_, sii,
                                                bch->evaluateTestset(),
+                                               algorithm, 
                                                gach->maxGenerations());
         if (openConvFiles)
         {
@@ -124,7 +126,8 @@ void ACTMiddleMan::run(MsgHandler *msghandler)
         cr->recv(master, &mode);
         if (mode == TrainFFMiddlemanMode::MUTATION)
         {
-            mutator_->mutate(msghandler, ind_->genomePtr(), ind_->bestGenomePtr(), gach_->prMut());
+            mutator_->mutate(msghandler, ind_->genomePtr(), ind_->bestGenomePtr(), 
+                             gach_->prMut());
             
             if (gach_->optimizer() == OptimizerAlg::GA)
             {

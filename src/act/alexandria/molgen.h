@@ -37,13 +37,13 @@
 
 #include <map>
 
+#include "act/alexandria/actmol.h"
+#include "act/alexandria/compound_reader.h"
+#include "act/alexandria/molselect.h"
+#include "act/utility/communicationrecord.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/mdrunutility/mdmodules.h"
 #include "gromacs/utility/real.h"
-
-#include "act/utility/communicationrecord.h"
-#include "molselect.h"
-#include "actmol.h"
 
 namespace alexandria
 {
@@ -265,8 +265,6 @@ private:
     bool                            qsymm_      = false;
     //! String for command line to harvest the options to fit
     char                           *fitString_ = nullptr;
-    //! Charge type to use
-    char                           *qTypeString_ = nullptr;
     //! Map to determine whether or not to fit a parameter type
     std::map<std::string, bool>     fit_;
     //! The molecules used in the optimization
@@ -327,15 +325,12 @@ public:
      */
     void addFilenames(std::vector<t_filenm> *filenms);
 
-    /*! \brief Check whether options make sense.
+    /*! \brief Check whether fitting options make sense.
      * \params[in] msghandler For logging and status
-     * \params[in] filenames  List of filenames
      * \params[in] pd         ForceField for information
-     * \return true if options are consistent, false otherwise.
      */
-    bool checkOptions(MsgHandler                  *msghandler,
-                      const std::vector<t_filenm> &filenames,
-                      ForceField                  *pd);
+    void checkOptions(MsgHandler *msghandler,
+                      ForceField *pd);
 
     /*! \brief Process options after parsing
      */
@@ -420,13 +415,15 @@ public:
      * \param[in] filenms  Information about filenames
      * \param[in] pd       Pointer to ForceField object
      * \param[in] gms      The molecule selection
+     * \param[in] compR    Compound reader with charge information
      * \return number of molecules read and processed correctly
      */
     size_t Read(MsgHandler                          *msghandler,
                 const std::vector<t_filenm>         &filenms,
                 ForceField                          *pd,
                 const MolSelect                     &gms,
-                const std::map<eRMS, FittingTarget> &targets);
+                const std::map<eRMS, FittingTarget> &targets,
+                CompoundReader                      *compR);
 
 };
 

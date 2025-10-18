@@ -591,6 +591,7 @@ void readForceField(const std::string &fileName,
     // Generate maps
     pd->checkForPolarizability();
     pd->checkConsistency(debug);
+    pd->guessChargeGenerationAlgorithm();
     generateDependentParameter(pd, true);
     if (nullptr != debug)
     {

@@ -735,7 +735,7 @@ int b2(int argc, char *argv[])
         print_header(msghandler.tw(), pa, fnm);
     }
     gendimers.finishOptions(fnm);
-    compR.optionsOK(&msghandler, fnm);
+    compR.optionsFinished(&msghandler, fnm);
     if (!msghandler.ok())
     {
         return 1;

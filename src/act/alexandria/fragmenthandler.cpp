@@ -34,6 +34,7 @@
 #include "act/qgen/qgen_acm.h"
 #include "act/molprop/fragment.h"
 #include "act/utility/stringutil.h"
+#include "gromacs/math/vec.h"
 
 namespace alexandria
 {    
@@ -190,7 +191,7 @@ void FragmentHandler::fetchCharges(std::vector<double> *qq)
 eQgen FragmentHandler::generateCharges(MsgHandler                   *msg_handler,
                                        const std::string            &molname,
                                        const std::vector<gmx::RVec> &x,
-                                       const ForceField             *pd,
+                                       ForceField                   *pd,
                                        std::vector<ActAtom>         *atoms,
                                        const std::vector<int>       &symmetric_charges)
 {
@@ -297,7 +298,7 @@ bool FragmentHandler::fetchCharges(std::vector<ActAtom> *atoms)
 }
 
 void FragmentHandler::setCharges(MsgHandler      *msghandler,
-                                 const chargeMap &qmap)
+                                 const ChargeMap &qmap)
 {
     for(size_t i = 0; i < ids_.size() && msghandler->ok(); i++)
     {

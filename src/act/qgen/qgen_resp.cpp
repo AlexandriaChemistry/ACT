@@ -95,13 +95,15 @@ void QgenResp::updateAtomCharges(const std::vector<ActAtom> &atoms)
     }
 }
 
-void QgenResp::setAtomInfo(const std::vector<ActAtom>   &atoms,
+void QgenResp::setAtomInfo(MsgHandler                   *msg_handler,
+                           const std::vector<ActAtom>   &atoms,
                            const alexandria::ForceField *pd,
                            const int                     qtotal)
 {
     if (nAtom_ != 0)
     {
-        fprintf(stderr, "setAtomInfo called more than once. Ignoring second time.\n");
+        msg_handler->msg(ACTStatus::Warning,
+                         "setAtomInfo called more than once. Ignoring second time.");
         return;
     }
     GMX_RELEASE_ASSERT(nAtom_ == 0 || (nAtom_ == atoms.size()),
@@ -216,7 +218,7 @@ void QgenResp::writeHisto(const std::string      &fn,
     {
         fprintf(fp, "%10g  %10g\n", x[i], y[i]);
     }
-    fclose(fp);
+    xvgrclose(fp);
 }
 
 void QgenResp::copyGrid(QgenResp &src)
@@ -267,6 +269,7 @@ void QgenResp::plotLsq(const gmx_output_env_t *oenv,
         fprintf(fp, "%10g  %10g\n", x, y);
     }
     fprintf(fp, "&\n");
+    xvgrclose(fp);
 }
 
 void QgenResp::regularizeCharges(MsgHandler *msg_handler)
@@ -437,7 +440,7 @@ void QgenResp::optimizeCharges(MsgHandler *msg_handler,
     int                   ncolumn  = fitQ_;
     if (ncolumn == 0)
     {
-        fprintf(stderr, "No charges to fit with RESP. Check your input.\n");
+        msg_handler->msg(ACTStatus::Warning, "No charges to fit with RESP. Check your input.");
         return;
     }
     MatrixWrapper         lhs(ncolumn, nrow);

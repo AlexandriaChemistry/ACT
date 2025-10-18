@@ -151,7 +151,8 @@ void OptACM::initChargeGeneration(iMolSelect ims)
     }
 }
 
-int OptACM::initMaster(const std::vector<t_filenm> &fnm)
+int OptACM::initMaster(const std::vector<t_filenm> &fnm,
+                       ChargeGenerationAlgorithm    algorithm)
 {
     ga::ProbabilityComputer *probComputer = nullptr;
     // ProbabilityComputer
@@ -185,8 +186,7 @@ int OptACM::initMaster(const std::vector<t_filenm> &fnm)
     forceComp_ = new ForceComputer(gmx::square(bch_.shellToler()),
                                    bch_.shellMaxIter(), bch_.shellMaxDistance());
     // Fitness computer
-    // FIXME: what about the flags? Here it is a bit more clear that they should be all false?
-    fitComp_ = new ACMFitnessComputer(&msghandler_, sii_, &mg_, false, forceComp_);
+    fitComp_ = new ACMFitnessComputer(&msghandler_, sii_, &mg_, bRemoveMol_, forceComp_, algorithm);
     // Check whether we have to do anything
     if (fitComp_->numDevComputers() == 0)
     {
@@ -220,12 +220,12 @@ int OptACM::initMaster(const std::vector<t_filenm> &fnm)
 
     if (gach_.optimizer() == OptimizerAlg::GA)
     {
-        mutator_ = new alexandria::PercentMutator(sii_, dis(gen), gach_.percent());
+        mutator_ = new alexandria::PercentMutator(sii_, dis(gen), algorithm, gach_.percent());
     }
     else
     {
         auto mut = new alexandria::MCMCMutator(dis(gen), &bch_, fitComp_, sii_, bch_.evaluateTestset(),
-                                               gach_.maxGenerations());
+                                               algorithm, gach_.maxGenerations());
         // TODO Only open these files when we are optimizing in verbose mode.
         if (msghandler_.verbose())
         {
@@ -504,8 +504,8 @@ void OptACM::printGenomeTable(const std::map<iMolSelect, ga::Genome> &genome,
     }
 }
 
-bool OptACM::runMaster(bool        optimize,
-                       bool        sensitivity)
+bool OptACM::runMaster(bool optimize,
+                       bool sensitivity)
 {
     GMX_RELEASE_ASSERT(commRec_.nodeType() == NodeType::Master,
                        "I thought I was the master...");
@@ -621,7 +621,7 @@ bool OptACM::runMaster(bool        optimize,
 
 int train_ff(int argc, char *argv[])
 {
-    static const char          *desc[] = {
+    std::vector<const char *> desc = {
         "train_ff reads a series of molecules and corresponding physico-chemical",
         "properties from a file. The properties can either originate from",
         "experimental data or from quantum chemistry calculations.",
@@ -699,27 +699,26 @@ int train_ff(int argc, char *argv[])
     }
     std::vector<t_filenm>       filenms =
     {
-        { efXML, "-ff",   "aff",         ffRDMULT },
-        { efDAT, "-sel",  "molselect",   ffREAD   },
-        { efXVG, "-conv", "param_conv" , ffWRITE  },
-        { efXVG, "-chi2", "chi_squared", ffWRITE  },
+        { efXML, "-ff",   "aff",           ffRDMULT },
+        { efDAT, "-sel",  "molselect",     ffREAD   },
+        { efXVG, "-conv", "param_conv" ,   ffWRITE  },
+        { efXVG, "-chi2", "chi_squared",   ffWRITE  },
         { efDAT, "-fitness", "ga_fitness", ffWRITE }
     };
 
     alexandria::OptACM opt;
     opt.add_options(&pargs, &filenms);
+    CompoundReader compR;
+    compR.addOptions(&pargs, &filenms, &desc);
     printer.addOptions(&pargs);
     printer.addFileOptions(&filenms);
 
     if (!parse_common_args(&argc,
                            argv,
                            PCA_CAN_VIEW,
-                           filenms.size(),
-                           filenms.data(),
-                           pargs.size(),
-                           pargs.data(),
-                           asize(desc),
-                           desc,
+                           filenms.size(), filenms.data(),
+                           pargs.size(), pargs.data(),
+                           desc.size(), desc.data(),
                            0,
                            nullptr,
                            &oenv))
@@ -738,6 +737,9 @@ int train_ff(int argc, char *argv[])
     // Fills id and prefix in sii
     // Calls optionsFinished() for MolGen instance.
     opt.optionsFinished(filenms);
+
+    // Check charge reader options
+    compR.optionsFinished(opt.msgHandler(), filenms);
     auto tw = opt.msgHandler()->tw();
     if (opt.commRec()->isMaster())
     {
@@ -799,7 +801,7 @@ int train_ff(int argc, char *argv[])
     bool optionsOk = true;
     if (opt.commRec()->isMaster())
     {
-        optionsOk = opt.mg()->checkOptions(opt.msgHandler(), filenms, opt.sii()->forcefield());
+        opt.mg()->checkOptions(opt.msgHandler(), opt.sii()->forcefield());
     }
     opt.commRec()->bcast(&optionsOk, MPI_COMM_WORLD);
     if (!optionsOk)
@@ -809,7 +811,7 @@ int train_ff(int argc, char *argv[])
 
     // MolGen read being called here!
     if (0 == opt.mg()->Read(opt.msgHandler(), filenms, opt.sii()->forcefield(), gms,
-                            opt.sii()->fittingTargetsConst(iMolSelect::Train)))
+                            opt.sii()->fittingTargetsConst(iMolSelect::Train), &compR))
     {
         opt.msgHandler()->fatal("Training set is empty on one or more of the nodes, check your input and your command line flags. Rerun with -v 5 flag");
     }
@@ -860,7 +862,7 @@ int train_ff(int argc, char *argv[])
     {
         if (opt.sii()->nParam() > 0)
         {
-            initOK = opt.initMaster(filenms);
+            initOK = opt.initMaster(filenms, compR.algorithm());
         }
         // Let the other nodes know whether all is well.
         if (opt.commRec()->isParallel())
@@ -907,7 +909,8 @@ int train_ff(int argc, char *argv[])
                     // Master and Individuals (middle-men) need to initialize more,
                     // so let's go.
                     ACTMiddleMan middleman(opt.msgHandler(), opt.mg(), opt.sii(), opt.gach(),
-                                           opt.bch(), opt.oenv(), opt.msgHandler()->verbose());
+                                           opt.bch(), opt.oenv(), compR.algorithm(),
+                                           opt.msgHandler()->verbose());
                     middleman.run(opt.msgHandler());
                 }
             }
@@ -917,7 +920,7 @@ int train_ff(int argc, char *argv[])
                 {
                     ACTHelper helper(opt.msgHandler(), opt.sii(), opt.mg(),
                                      opt.bch()->shellToler(),
-                                     opt.bch()->shellMaxIter());
+                                     opt.bch()->shellMaxIter(), compR.algorithm());
                     helper.run(opt.msgHandler());
                 }
             }
