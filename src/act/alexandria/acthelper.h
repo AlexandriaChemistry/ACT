@@ -59,17 +59,19 @@ namespace alexandria
          * \param[in] mg           Information about this helpers molecules
          * \param[in] shellToler   Tolerance for minimizing shell positions
          * \param[in] shellMaxIter Max # iterations for the same
+         * \param[in] algorithm    The charge generation algorithm
          */
-        ACTHelper(MsgHandler           *msghandler,
-                  StaticIndividualInfo *sii,
-                  MolGen               *mg,
-                  double                shellToler,
-                  int                   shellMaxIter);
+        ACTHelper(MsgHandler                *msghandler,
+                  StaticIndividualInfo      *sii,
+                  MolGen                    *mg,
+                  double                     shellToler,
+                  int                        shellMaxIter,
+                  ChargeGenerationAlgorithm  algorithm);
         
         /*! \brief Run the helper process
          * \param[in] msghandler Message and status handler
          */
-        void run(MsgHandler *msghandler);    
+        void run(MsgHandler *msghandler);
     };
     
 } // namespace alexandria

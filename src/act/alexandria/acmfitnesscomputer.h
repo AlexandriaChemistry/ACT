@@ -73,6 +73,8 @@ private:
     MolGen *molgen_;
     //! \brief Whether or not to remove molecules that fail to converge in the shell minimization
     bool removeMol_;
+    //! Charge generation algorithm
+    ChargeGenerationAlgorithm  algorithm_;
     //! \brief Amount of times calcDeviation() has been called
     int numberCalcDevCalled_ = 0;
 
@@ -102,12 +104,13 @@ public:
      * \param[in] mg         pointer to molgen
      * \param[in] removeMol  Whether or not to remove molecules that fail to converge in the shell minimization
      */
-    ACMFitnessComputer(MsgHandler            *msghandler,
-                       StaticIndividualInfo  *sii,
-                       MolGen                *molgen,
-                       const bool             removeMol,
-                       ForceComputer         *forceComp)
-        : sii_(sii), forceComp_(forceComp), molgen_(molgen), removeMol_(removeMol)
+    ACMFitnessComputer(MsgHandler                *msghandler,
+                       StaticIndividualInfo      *sii,
+                       MolGen                    *molgen,
+                       const bool                 removeMol,
+                       ForceComputer             *forceComp,
+                       ChargeGenerationAlgorithm  algorithm)
+        : sii_(sii), forceComp_(forceComp), molgen_(molgen), removeMol_(removeMol), algorithm_(algorithm)
     {
         fillDevComputers(msghandler, molgen->zetaDiff(),
                          molgen->hasMolPropObservable(MolPropObservable::INDUCTIONCORRECTION));
@@ -116,12 +119,13 @@ public:
     /*! \brief Do the actual computation
      * \param[in] msghandler Message Handler
      * \param[in] genome    The genome
+     * \param[in] algorithm The charge generation algorithm
      * \param[in] trgtFit   The selection to compute
      * \param[in] forceComp The force computer
      */
-    void compute(MsgHandler *msghandler,
-                 ga::Genome *genome,
-                 iMolSelect  trgtFit);
+    void compute(MsgHandler                *msghandler,
+                 ga::Genome                *genome,
+                 iMolSelect                 trgtFit);
 
     /*! \brief Distributes the parameters from middlemen to helpers
      * \param[in] msghandler Message Handler
@@ -143,13 +147,14 @@ public:
     /*! \brief Computes deviation from target
      * \param[in] msghandler Message Handler
      * \param[in] task       The task at hand
+     * \param[in] algorithm  The charge generation algorithm
      * \param[in] ims        The dataset to do computations on
      * \return the square deviation
      */
-    double calcDeviation(MsgHandler *msghandler,
-                         CalcDev     task,
-                         iMolSelect  ims);
-
+    double calcDeviation(MsgHandler                *msghandler,
+                         CalcDev                    task,
+                         iMolSelect                 ims);
+    
     //! \return the number of devComputers
     size_t numDevComputers() const { return devComputers_.size(); }
 };

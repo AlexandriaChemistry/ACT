@@ -240,13 +240,13 @@ public:
     /*! \brief
      * Function that fetches charges from this QM
      * \param[out] q         The charges
-     * \param[in]  qtype     The charge type
+     * \param[in]  qread     The charge type
      * \param[out] reference The literature reference (if nullptr this is ignored)
      * \param[out] lot       The level of theory (if nullptr this is ignored)
      * \return true if successful
      */
     bool getCharges(std::vector<double> *q,
-                    qType                qtype,
+                    const char          *qread,
                     std::string         *reference,
                     std::string         *lot) const;
 

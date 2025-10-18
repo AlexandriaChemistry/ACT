@@ -149,8 +149,8 @@ protected:
 
         std::vector<double> qcustom;
         std::vector<gmx::RVec> forces(mp.atomsConst().size());
-        mp.GenerateCharges(&msghandler, pd, forceComp, ChargeGenerationAlgorithm::ESP,
-                           qType::ESP, qcustom, &coords, &forces, true);
+        mp.generateCharges(&msghandler, pd, forceComp, ChargeGenerationAlgorithm::ESP,
+                           &coords, &forces, true);
         
         std::vector<double> qtotValues;
         auto atoms = mp.atomsConst();

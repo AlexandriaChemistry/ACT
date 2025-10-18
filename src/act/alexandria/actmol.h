@@ -474,27 +474,59 @@ public:
     void updateQprops(const ForceField          *pd,
                       const ForceComputer       *forceComp,
                       std::vector<gmx::RVec>    *forces);
-    /*! \brief
-     * Generate atomic partial charges
+
+    /*! \brief Minimize shell positions
      *
      * \param[in]  msghandler Message Handler
      * \param[in]  pd        Data structure containing atomic properties
      * \param[in]  forceComp Force computer utility
-     * \param[in]  algorithm The algorithm for determining charges,
-     *                       if NONE it is read from the ForceField structure.
-     * \param[in]  qtype     If algorithm is Read this type of charges will
-     *                       be extracted from the molprop structure.
-     * \param[in]  qcustom   Custom (user-provided) charges
+     * \param[out] coords    The coordinates, will be updated for shells
+     * \param[out] forces    This routine will compute energies and forces.
+     */
+    void minimizeShells(MsgHandler                *msghandler,
+                        const ForceField          *pd,
+                        const ForceComputer       *forceComp,
+                        std::vector<gmx::RVec>    *coords,
+                        std::vector<gmx::RVec>    *forces);
+    /*! \brief Copy charges from input (molprop)
+     * \param[in] msghandler Message Handler
+     * \param[in] pd         The force field
+     * \param[in] qread      The type to read, e.g. Mulliken
+     */
+    void setCharges(MsgHandler       *msghandler,
+                    const ForceField *pd,
+                    const char       *qread);
+    /*! \brief Copy charges from force field to topologies
+     * \param[in] msghandler Message Handler
+     * \param[in] pd         The force field
+     */
+    void setCharges(MsgHandler       *msghandler,
+                    const ForceField *pd);
+    /*! \brief Copy charges from array to topologies
+     * \param[in] qcustom    The charges
+     */
+    void setCharges(const std::vector<double> &qcustom);
+    /*! \brief Copy charges from qmap to topologies
+     * \param[in] msghandler Message Handler
+     * \param[in] qmap       The charge map
+     */
+    void setCharges(MsgHandler       *msghandler,
+                    const ChargeMap  &qmap);
+    /*! \brief
+     * Generate or copy atomic partial charges
+     *
+     * \param[in]  msghandler Message Handler
+     * \param[in]  pd        Data structure containing atomic properties
+     * \param[in]  forceComp Force computer utility
+     * \param[in]  algorithm The algorithm for determining charges.
      * \param[out] coords    The coordinates, will be updated for shells
      * \param[out] forces    This routine will compute energies and forces.
      * \param[in]  updateQprops Whether or not to update the qprops (dipoles, quadrupoles etc.)
      */
-    void GenerateCharges(MsgHandler                *msghandler,
-                         const ForceField          *pd,
+    void generateCharges(MsgHandler                *msghandler,
+                         ForceField                *pd,
                          const ForceComputer       *forceComp,
                          ChargeGenerationAlgorithm  algorithm,
-                         qType                      qtype,
-                         const std::vector<double> &qcustom,
                          std::vector<gmx::RVec>    *coords,
                          std::vector<gmx::RVec>    *forces,
                          bool                       updateQProps = false);
@@ -509,7 +541,7 @@ public:
      * \param[out] forces     The forces
      */
     ACTMessage GenerateAcmCharges(MsgHandler             *msg_handler,
-                                  const ForceField       *pd,
+                                  ForceField             *pd,
                                   const ForceComputer    *forceComp,
                                   std::vector<gmx::RVec> *coords,
                                   std::vector<gmx::RVec> *forces);

@@ -36,14 +36,15 @@
 namespace alexandria
 {
     
-ACTHelper::ACTHelper(MsgHandler           *msghandler,
-                     StaticIndividualInfo *sii,
-                     MolGen               *mg,
-                     double                shellToler,
-                     int                   shellMaxIter)
+ACTHelper::ACTHelper(MsgHandler                *msghandler,
+                     StaticIndividualInfo      *sii,
+                     MolGen                    *mg,
+                     double                     shellToler,
+                     int                        shellMaxIter,
+                     ChargeGenerationAlgorithm  algorithm)
 {
     forceComp_ = new ForceComputer(shellToler, shellMaxIter);
-    fitComp_   = new ACMFitnessComputer(msghandler, sii, mg, false, forceComp_);
+    fitComp_   = new ACMFitnessComputer(msghandler, sii, mg, false, forceComp_, algorithm);
 }
 
 void ACTHelper::run(MsgHandler *msghandler)

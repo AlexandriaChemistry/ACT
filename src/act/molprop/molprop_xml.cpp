@@ -801,8 +801,7 @@ static void mp_process_tree(MsgHandler                        *msg_handler,
                             {
                                 if (xmlFound(xbuf, { aq }))
                                 {
-                                    ca.AddCharge(stringToQtype(rmap[aq]),
-                                                 xbuf_atof(xbuf, aq, true));
+                                    ca.AddCharge(rmap[aq].c_str(), xbuf_atof(xbuf, aq, true));
                                     clean_xbuf(xbuf, { aq });
                                 }
                             }
@@ -1131,7 +1130,7 @@ static void add_xml_molprop(xmlNodePtr     parent,
 
             for (auto &q : ca.chargesConst())
             {
-                (void) add_xml_child_val(grandchild, qTypeName(q.first),
+                (void) add_xml_child_val(grandchild, q.first,
                                          gmx::formatString("%g", q.second).c_str());
                 //add_xml_string(atomptr, rmap[MolPropXml::TYPE], qTypeName(q.first));
             }

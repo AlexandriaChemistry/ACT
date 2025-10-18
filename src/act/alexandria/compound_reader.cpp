@@ -44,7 +44,9 @@ namespace alexandria
 static std::vector<const char *> crDesc = {
     "It is highly recommended to provide the [TT]-charges[tt] option",
     "with a molprop file that will be used to generate charges for the",
-    "file specified with the [TT]-f[tt] option.[PAR]"
+    "file specified with the [TT]-f[tt] option.",
+    "This file can also be used to read charges from, if present",
+    "with the [TT]-qqm[tt] flag.[PAR]", 
     "Alternatively, you can use the [TT]-db 'molecule(s)'[tt]",
     "option to extract one or more compounds from the molprop file.[PAR]",
 };
@@ -69,16 +71,16 @@ void CompoundReader::addOptions(std::vector<t_pargs>      *pargs,
     std::vector<t_pargs> mypargs = {
         { "-f",      FALSE, etSTR,  {&filename_},
           "Molecular structure file in e.g. pdb format" },
-        { "-generateCharges", FALSE, etBOOL, {&genCharges_},
-          "Generate charges for your compound(s) using the Alexandria Charge Model." },
         { "-db",     FALSE, etSTR,  {&dbname_},
           "Read one or more molecules from the database rather than from a file. To specify multiple molecules please use quotes, e.g. [TT]-db[tt] 'water methane ammonia'." },
         { "-oneH", FALSE, etBOOL, {&oneH_},
           "Map all different hydrogen atom types back to H, mainly for debugging." },
         { "-qtot",   FALSE, etREAL, {&qtot_},
           "Combined charge of the molecule(s). This will be taken from the input file by default, but that is not always reliable. If the -qcustom flag is supplied, that will be used instead." },
+        { "-qalg",   FALSE, etSTR,  {&qalgorithm_},
+          "Algorithm to generate charges. Can be either of NONE (read from force field), EEM or SQE (depending on force field parameter availability), ESP (fit to electrostatic potential which then must be present in the input molprop file, -charges option), Custom (see flag -qcustom below) or Read (see flag -qqm below)" },
         { "-qqm",    FALSE, etSTR,  {&qqm_},
-          "Use a method from quantum mechanics that needs to be present in the input file. For instance, ESP, Hirshfeld, CM5 or Mulliken may be available but check your input." },
+          "Use a method from quantum mechanics that needs to be present in the input file. For instance, qESP, qHirshfeld, qCM5 or qMulliken may be available but check your input." },
         { "-qcustom", FALSE, etSTR, {&qcustom_}, 
           "Here a quoted string of custom charges can be provided such that a third party source can be used. It is then possible to generate multipoles and compare the ESP to a quantum chemistry result. The number of charges provided must match the number of particles (including shells if present in the force field used)." }
     };
@@ -88,8 +90,8 @@ void CompoundReader::addOptions(std::vector<t_pargs>      *pargs,
     }
 }
 
-void CompoundReader::optionsOK(MsgHandler                  *msghandler,
-                               const std::vector<t_filenm> &filenm)
+void CompoundReader::optionsFinished(MsgHandler                  *msghandler,
+                                     const std::vector<t_filenm> &filenm)
 {
     if (strlen(filename_) == 0 && strlen(dbname_) == 0)
     {
@@ -108,36 +110,46 @@ void CompoundReader::optionsOK(MsgHandler                  *msghandler,
     {
         qmapfn_.assign(qfn);
     }
-    if (!qmapfn_.empty() && (strlen(qcustom_) > 0 || genCharges_))
+    if (strlen(qalgorithm_) > 0)
     {
-        msghandler->msg(ACTStatus::Error,
-                        "If you provide a charge map please do not provide a custom charge string or a QM charge selection or the generateCharges flag at the same time.");
-        return;
+        qAlgorithm_ = nameToChargeGenerationAlgorithm(qalgorithm_);
+    }
+    else
+    {
+        if (strlen(qcustom_) > 0)
+        {
+            qAlgorithm_ = ChargeGenerationAlgorithm::Custom;
+        }
+        else if (strlen(qqm_) > 0)
+        {
+            qAlgorithm_ = ChargeGenerationAlgorithm::Read;
+        }
     }
     if (strlen(dbname_) > 0 && qmapfn_.empty())
     {
         msghandler->msg(ACTStatus::Error,
                         "Please provide -charges flag in conjunction with -db.");
-        return;
     }
-    if (strlen(qcustom_) > 0 && strlen(qqm_) > 0)
+    else if (qAlgorithm_ == ChargeGenerationAlgorithm::ESP && qmapfn_.empty())
+    {
+        msghandler->msg(ACTStatus::Error,
+                        "Please provide -charges flag when choosing ESP fitting.");
+    }
+    else if (strlen(qcustom_) > 0 && strlen(qqm_) > 0)
     {
         msghandler->msg(ACTStatus::Error,
                         "Please do not provide both the custom charges and the QM charge type to read.");
-        return;
     }
-    if (genCharges_ && (strlen(qcustom_) > 0 || strlen(qqm_) > 0))
+    else if (strlen(qalgorithm_) > 0 && (strlen(qcustom_) > 0 || strlen(qqm_) > 0))
     {
         msghandler->msg(ACTStatus::Error,
-                        "Please do not provide both the generateCharges flag and either custom charges or the QM charge type to read.");
-        return;
+                        "Please do not provide both a charge algorithm and either custom charges or the QM charge type to read.");
     }
 }
 
 void CompoundReader::setCharges(MsgHandler          *msghandler,
                                 ForceField          &pd,
                                 ACTMol              *mol,
-                                const chargeMap     &qmap,
                                 const ForceComputer *forceComp,
                                 bool                 warnQtot)
 {
@@ -153,49 +165,31 @@ void CompoundReader::setCharges(MsgHandler          *msghandler,
     if (msghandler->ok())
     {
         std::vector<gmx::RVec> coords = mol->xOriginal();
-        auto fragments  = mol->fragmentHandler();
-        if (!qmap.empty())
+        std::vector<gmx::RVec> forces(mol->atomsConst().size());
+        if (qAlgorithm_ == ChargeGenerationAlgorithm::Custom)
         {
-            fragments->setCharges(msghandler, qmap);
-            if (msghandler->ok())
+            std::vector<double> qcustom;
+            auto mycharges = gmx::splitString(qcustom_);
+            for(auto &q : mycharges)
             {
-                // Copy charges to the high-level topology as well
-                fragments->fetchCharges(mol->atoms());
+                qcustom.push_back(my_atof(q.c_str(), "custom q"));
             }
-            else
-            {
-                msghandler->msg(ACTStatus::Error,
-                                gmx::formatString("CompoundReader: not all compounds present in the charge map %s", qmapfn_.c_str()));
-                return;
-            }
+            mol->setCharges(qcustom);
+            mol->minimizeShells(msghandler, &pd, forceComp, &coords, &forces);
+        }
+        else if (qAlgorithm_ == ChargeGenerationAlgorithm::NONE)
+        {
+            mol->setCharges(msghandler, &pd);
+            mol->minimizeShells(msghandler, &pd, forceComp, &coords, &forces);
+        }
+        else if (qAlgorithm_ == ChargeGenerationAlgorithm::Read)
+        {
+            mol->setCharges(msghandler, qmap_);
+            mol->minimizeShells(msghandler, &pd, forceComp, &coords, &forces);
         }
         else
         {
-            std::vector<gmx::RVec> forces(mol->atomsConst().size());
-
-            std::vector<double> myq;
-            auto alg   = pd.chargeGenerationAlgorithm();
-            auto qtype = qType::Calc;
-            if (strlen(qcustom_) > 0)
-            {
-                auto mycharges = gmx::splitString(qcustom_);
-                for(auto &q : mycharges)
-                {
-                    myq.push_back(my_atof(q.c_str(), "custom q"));
-                }
-                alg = ChargeGenerationAlgorithm::Custom;
-            }
-            else if (strlen(qqm_) > 0)
-            {
-                alg   = ChargeGenerationAlgorithm::Read;
-                qtype = stringToQtype(qqm_);
-            }
-            if (!genCharges_)
-            {
-                msghandler->msg(ACTStatus::Warning,
-                                gmx::formatString("Using %s to generate charges. It is recommended to use a charge database instead of this option.\n", chargeGenerationAlgorithmName(alg).c_str()));
-            }
-            mol->GenerateCharges(msghandler, &pd, forceComp, alg, qtype, myq, &coords, &forces,
+            mol->generateCharges(msghandler, &pd, forceComp, qAlgorithm_, &coords, &forces,
                                  msghandler->verbose());
         }
     }
@@ -310,21 +304,15 @@ std::vector<ACTMol> CompoundReader::read(MsgHandler          *msghandler,
         }
         msghandler->msg(ACTStatus::Info, msg);
     }
-    chargeMap qmap;
     if (!qmapfn_.empty())
     {
         std::vector<MolProp> mps;
         MolPropRead(msghandler, qmapfn_.c_str(), &mps);
-        auto qtype = qType::ACM;
-        if (strlen(qqm_) > 0)
-        {
-            qtype = stringToQtype(qqm_);
-        }
-        qmap = fetchChargeMap(msghandler, &pd, forceComp, mps, lookup, qtype);
+        qmap_ = fetchChargeMap(msghandler, &pd, forceComp, mps, lookup, qAlgorithm_, qqm_);
         msghandler->msg(ACTStatus::Info,
                         gmx::formatString("CompoundReader read %lu out of %lu entries into charge map from %s\n",
-                                          qmap.size(), lookup.size(), qmapfn_.c_str()));
-        
+                                          qmap_.size(), lookup.size(), qmapfn_.c_str()));
+
         // Throw away those compounds that are not in the selection
         if (!lookup.empty() && !readCoordinates)
         {
@@ -332,7 +320,7 @@ std::vector<ACTMol> CompoundReader::read(MsgHandler          *msghandler,
             {
                 if ((lookup.find(mp->getMolname()) == lookup.end() &&
                      lookup.find(mp->getIupac()) == lookup.end()) ||
-                    (qmap.find(mp->getInchi()) == qmap.end()))
+                    (qmap_.find(mp->getInchi()) == qmap_.end()))
                 {
                     mp = mps.erase(mp);
                 }
@@ -367,7 +355,7 @@ std::vector<ACTMol> CompoundReader::read(MsgHandler          *msghandler,
         bool warnQtot = mols.size() == 1;
         for(auto mol = mols.begin(); mol < mols.end(); )
         {
-            setCharges(msghandler, pd, &(*mol), qmap, forceComp, warnQtot);
+            setCharges(msghandler, pd, &(*mol), forceComp, warnQtot);
             if (msghandler->ok())
             {
                 // Load all the other properties of the compounds as well

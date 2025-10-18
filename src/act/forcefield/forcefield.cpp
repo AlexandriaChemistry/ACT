@@ -222,23 +222,23 @@ bool ForceField::typeToInteractionType(const std::string &type,
     }
 }
 
-ChargeGenerationAlgorithm ForceField::chargeGenerationAlgorithm() const
+void ForceField::guessChargeGenerationAlgorithm()
 {
     if (interactionPresent(InteractionType::ELECTRONEGATIVITYEQUALIZATION))
     {
         // TODO: Add check for number of interactions?
         if (interactionPresent(InteractionType::BONDCORRECTIONS))
         {
-            return ChargeGenerationAlgorithm::SQE;
+            ChargeGenerationAlgorithm_ = ChargeGenerationAlgorithm::SQE;
         }
         else
         {
-            return ChargeGenerationAlgorithm::EEM;
+            ChargeGenerationAlgorithm_ = ChargeGenerationAlgorithm::EEM;
         }
     }
     else
     {
-        return ChargeGenerationAlgorithm::NONE;
+        ChargeGenerationAlgorithm_ =  ChargeGenerationAlgorithm::NONE;
     } 
 }
 

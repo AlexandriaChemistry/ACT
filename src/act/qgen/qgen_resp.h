@@ -132,13 +132,15 @@ class QgenResp
         
         /*! \brief Set the inforamtion about atoms
          * The size of arrays in atoms and x is checked and compared 
-         * to what was there previously if anything. 
+         * to what was there previously if anything.
+         * \param[in] msg_handler For writing messages and warnings
          * \param[in] atoms  The ACT atoms structure
          * \param[in] pd     The force field
          * \param[in] qtotal Total charge of the compound, needed when
          *                   generating charges
          */
-        void setAtomInfo(const std::vector<ActAtom>   &atoms,
+        void setAtomInfo(MsgHandler                   *msg_handler,
+                         const std::vector<ActAtom>   &atoms,
                          const ForceField             *pd,
                          const int                     qtotal);
 

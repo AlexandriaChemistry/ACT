@@ -41,20 +41,16 @@
 namespace alexandria
 {
 
-chargeMap fetchChargeMap(MsgHandler                  *msghandler,
+ChargeMap fetchChargeMap(MsgHandler                  *msghandler,
                          ForceField                  *pd,
                          const ForceComputer         *forceComp,
                          const std::vector<MolProp>  &mps,
                          const std::set<std::string> &lookup,
-                         qType                        qt)
+                         ChargeGenerationAlgorithm    algorithm,
+                         const char                  *qread)
 {
     AlexandriaMols amols;
-    auto alg = pd->chargeGenerationAlgorithm();
-    if (qType::ACM != qt)
-    {
-        alg = ChargeGenerationAlgorithm::Read;
-    }
-    chargeMap qmap;
+    ChargeMap      qmap;
     for(auto mp = mps.begin(); mp < mps.end(); ++mp)
     {
         auto &frags = mp->fragments();
@@ -88,26 +84,34 @@ chargeMap fetchChargeMap(MsgHandler                  *msghandler,
         alexandria::ACTMol actmol;
         actmol.Merge(&(*mp));
         actmol.GenerateTopology(msghandler, pd, missingParameters::Error);
+        // Add charges according to the algorithm selected
+        std::vector<std::pair<Identifier, double>> newq;
         if (!msghandler->ok())
         {
             msghandler->resetStatus();
             continue;
         }
-        std::vector<gmx::RVec> coords = actmol.xOriginal();
-        std::map<MolPropObservable, iqmType> iqm = {
-            { MolPropObservable::CHARGE, iqmType::QM }
-        };
-        actmol.getExpProps(msghandler, pd, iqm, 0.0, 100);
-
-        std::vector<double> dummy;
-        std::vector<gmx::RVec> forces(actmol.atomsConst().size());
-        actmol.GenerateCharges(msghandler, pd, forceComp, alg,
-                               qt, dummy, &coords, &forces);
+        if (algorithm == ChargeGenerationAlgorithm::Read)
+        {
+            actmol.setCharges(msghandler, pd, qread);
+        }
+        else
+        {
+            if (algorithm == ChargeGenerationAlgorithm::ESP)
+            {
+                std::map<MolPropObservable, iqmType> iqm = {
+                    { MolPropObservable::POTENTIAL, iqmType::QM }
+                };
+                actmol.getExpProps(msghandler, pd, iqm, 0.0, 100);
+            }
+            std::vector<gmx::RVec> forces(actmol.atomsConst().size());
+            std::vector<gmx::RVec> coords = actmol.xOriginal();
+            actmol.generateCharges(msghandler, pd, forceComp, algorithm,
+                                   &coords, &forces);
+        }
         if (msghandler->ok())
         {
-            // Add ACM charges
-            std::vector<std::pair<Identifier, double>> newq;
-            for(auto atom: actmol.atomsConst())
+            for(auto &atom: actmol.atomsConst())
             {
                 newq.push_back({atom.id(), atom.charge()});
             }
@@ -121,20 +125,21 @@ chargeMap fetchChargeMap(MsgHandler                  *msghandler,
     return qmap;
 }
 
-chargeMap fetchChargeMap(MsgHandler                  *msghandler,
+ChargeMap fetchChargeMap(MsgHandler                  *msghandler,
                          ForceField                  *pd,
                          const ForceComputer         *forceComp,
                          const char                  *charge_fn,
                          const std::set<std::string> &lookup,
-                         qType                        qt)
+                         ChargeGenerationAlgorithm    algorithm,
+                         const char                  *qread)
 {
     std::vector<MolProp> mps;
     MolPropRead(msghandler, charge_fn, &mps);
-    return fetchChargeMap(msghandler, pd, forceComp, mps, lookup, qt);
+    return fetchChargeMap(msghandler, pd, forceComp, mps, lookup, algorithm, qread);
 }
 
 void broadcastChargeMap(const CommunicationRecord *cr,
-                        chargeMap                 *qmap)
+                        ChargeMap                 *qmap)
 {
     auto mycomm = MPI_COMM_WORLD;
     int nqmap   = qmap->size();

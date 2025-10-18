@@ -160,9 +160,6 @@ public:
 
     /*!
      * \brief Constructor
-     * \param[in] logfile         pointer to log file (may be nullptr)
-     * \param[in] verbose         Print information to the log file
-     * \param[in] flush           Flush output immediately rather than letting the OS buffer it. Don't use for production simulations.
      * \param[in] seed            seed coming from the middle man creating this mutator
      * \param[in] bch             pointer to BayesConfigHandler object
      * \param[in] fitComp         pointer to ACMFitnessComputer object
@@ -170,14 +167,16 @@ public:
      * \param[in] nParam          size of the force field parameter vector
      * \param[in] evaluateTestSet Whether or not to evaluate the test set
      *                            every once in a while
+     * \param[in] algorithm       The charge generation algorithm
      * \param[in] maxGenerations  If this is part of the HYBRID training this may be needed for annealing
      */
-    MCMCMutator(int                   seed,
-                BayesConfigHandler   *bch,
-                ACMFitnessComputer   *fitComp,
-                StaticIndividualInfo *sii,
-                bool                  evaluateTestSet,
-                int                   maxGenerations);
+    MCMCMutator(int                        seed,
+                BayesConfigHandler        *bch,
+                ACMFitnessComputer        *fitComp,
+                StaticIndividualInfo      *sii,
+                bool                       evaluateTestSet,
+                ChargeGenerationAlgorithm  algorithm,
+                int                        maxGenerations);
  
     /*!
      * \brief Run the Markov chain Monte carlo (MCMC) simulation
@@ -187,10 +186,10 @@ public:
      * \param[in]  prMut      Probability for mutation. 
      *                   Abused as a boolean for evaluating the test set here, if > 0.
      */
-    virtual void mutate(MsgHandler *msghandler,
-                        ga::Genome *genome,
-                        ga::Genome *bestGenome,
-                        double      prMut);
+    virtual void mutate(MsgHandler                *msghandler,
+                        ga::Genome                *genome,
+                        ga::Genome                *bestGenome,
+                        double                     prMut);
 
     //! \return the number of calls to the objective function MCMCMutator::MCMC() routine
     size_t numberObjectiveFunctionCalls() const
@@ -214,9 +213,9 @@ public:
     /*!
      * \brief Perform a sensitivity analysis by systematically changing all parameters and
      * re-evaluating the \f$ \chi^2 \f$.
-     * \param[in]  msghandler The message and status handler
-     * \param[in] genome Pointer to genome
-     * \param[in] ims    Dataset to perform sensitivity analysis on
+     * \param[in] msghandler The message and status handler
+     * \param[in] genome     Pointer to genome
+     * \param[in] ims        Dataset to perform sensitivity analysis on
      */
     void sensitivityAnalysis(MsgHandler *msghandler,
                              ga::Genome *genome,

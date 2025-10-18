@@ -61,7 +61,7 @@ void initACTMol(const char          *molname,
         std::vector<alexandria::MolProp> molprops;
         double        qtot     = 0;
         // Charge gen params
-        auto alg = ChargeGenerationAlgorithm::NONE;
+        auto alg = pd->chargeGenerationAlgorithm();
         std::vector<double> qcustom;
         bool userqtot = false;
         matrix box;
@@ -102,7 +102,7 @@ void initACTMol(const char          *molname,
                 {
                     std::vector<gmx::RVec> forces(mm.atomsConst().size());
                     std::vector<gmx::RVec> coords = mm.xOriginal();
-                    mm.GenerateCharges(&msghandler, pd, fcomp, alg, qType::Calc, qcustom, &coords, &forces, true);
+                    mm.generateCharges(&msghandler, pd, fcomp, alg, &coords, &forces, true);
                 }
                 if (msghandler.ok())
                 {

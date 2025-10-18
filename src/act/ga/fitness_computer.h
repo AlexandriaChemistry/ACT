@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2022
+ * Copyright (C) 2014-2022,2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -34,6 +34,7 @@
 #ifndef GA_FITNESSCOMPUTER_H
 #define GA_FITNESSCOMPUTER_H
 
+#include "act/basics/chargemodel.h"
 #include "act/basics/msg_handler.h"
 #include "genome.h"
 
@@ -51,12 +52,12 @@ public:
     /*!
      * \brief Compute the fitness of a genome
      * \param[in] msghandler Message Handler
-     * \param[in] genome  The genome
-     * \param[in] trgtFit The target for fitness computation. Either Train or Test
+     * \param[in] genome     The genome
+     * \param[in] trgtFit    The target for fitness computation. Either Train or Test
      */
-    virtual void compute(alexandria::MsgHandler *msghandler,
-                         Genome                 *genome,
-                         iMolSelect              trgtFit) = 0;
+    virtual void compute(alexandria::MsgHandler                *msghandler,
+                         Genome                                *genome,
+                         iMolSelect                             trgtFit) = 0;
     
 };
 

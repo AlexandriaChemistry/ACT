@@ -636,7 +636,7 @@ static bool babel2ACT(alexandria::MsgHandler                   *msg_handler,
                             auto OBpc = (OpenBabel::OBPcharge *) mol->GetData(qstr.c_str());
                             if (OBpc && !OBpc->GetPartialCharge().empty())
                             {
-                                ca.AddCharge(stringToQtype(cs.second),
+                                ca.AddCharge(cs.second.c_str(),
                                              OBpc->GetPartialCharge()[atom->GetIdx()-1]);
                             }
                             else

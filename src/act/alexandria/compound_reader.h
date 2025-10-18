@@ -55,38 +55,41 @@ namespace alexandria
         char   *qqm_        = (char *)"";
         //! String of custom charges
         char   *qcustom_    = (char *)"";
-        //! Whether to generate charges from the force field
-        bool    genCharges_ = false;
-        //! File name for reading structure from
-        char   *filename_   = (char *)"";
+        //! String for charge algorithm
+        char   *qalgorithm_ = (char *)"";
+        //! How to generate charges, either from the force field, by reading, or fitting ESP
+        ChargeGenerationAlgorithm qAlgorithm_ = ChargeGenerationAlgorithm::NONE;
+        //! File name for reading structures from
+        char   *filename_  = (char *)"";
         //! Molecule name to use if there is none in the input file
         char   *molnm_      = (char *)"";
         //! List of compounds/dimers to extract from charges files
         char   *dbname_     = (char *)"";
         //! Map back hydrogen atoms to one type
-        bool               oneH_                 = false;
-        //! Name of the charge map file
+        bool    oneH_       = false;
+        //! Name of the molprop file that contains charges or reference structures for generating charges
         std::string qmapfn_;
+        //! Data structure for charges
+        ChargeMap   qmap_;
+
         /*! Read molecule from a single file
-         * \param[in] msghandler Error and message handler, check whether ok after returning
-         * \param[in] pd   The force field
-         * \param[out] mol The molecule
+         * \param[in]  msghandler Error and message handler, check whether ok after returning
+         * \param[in]  pd         The force field
+         * \param[out] mol        The molecule
          */
         void readFile(MsgHandler *msghandler,
                       ForceField &pd,
                       ACTMol     *mol);
         /*! Set charges for a single molecule
-         * \param[in] msghandler Error and message handler, check whether ok after returning
-         * \param[in]  pd        The force field
-         * \param[out] mol       The molecule
-         * \param[in]  qmap      A charge map
-         * \param[in]  forceComp A force computer
-         * \param[in]  warnQtot  Print a warning when qtot does not match the input
+         * \param[in]  msghandler Error and message handler, check whether ok after returning
+         * \param[in]  pd         The force field
+         * \param[out] mol        The molecule
+         * \param[in]  forceComp  A force computer
+         * \param[in]  warnQtot   Print a warning when qtot does not match the input
          */
         void setCharges(MsgHandler          *msghandler,
                         ForceField          &pd,
                         ACTMol              *mol,
-                        const chargeMap     &qmap,
                         const ForceComputer *forceComp,
                         bool                 warnQtot);
     public:
@@ -106,11 +109,23 @@ namespace alexandria
          * \param[in] msghandler Error and message handler
          * \param[in] filenm The filenames after processing
          */
-        void optionsOK(MsgHandler                  *msghandler,
-                       const std::vector<t_filenm> &filenm);
+        void optionsFinished(MsgHandler                  *msghandler,
+                             const std::vector<t_filenm> &filenm);
 
         //! \return whether there is one H only
         bool oneH() const { return oneH_; }
+
+        //! \return the charge to read
+        const char *qread() const { return qqm_; }
+
+        //! \return the charge algorithm
+        ChargeGenerationAlgorithm algorithm() const { return qAlgorithm_; }
+
+        //! \return charge map
+        const ChargeMap &chargeMapConst() const { return qmap_; }
+
+        //! \return charge map for editing
+        ChargeMap *chargeMap() { return &qmap_; }
 
         /*! \brief Do the actual reading and processing
          * \param[in] pd        The force field

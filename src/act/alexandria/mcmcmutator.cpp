@@ -47,13 +47,14 @@
 namespace alexandria
 {
 
-MCMCMutator::MCMCMutator(int                   seed,
-                         BayesConfigHandler   *bch,
-                         ACMFitnessComputer   *fitComp,
-                         StaticIndividualInfo *sii,
-                         bool                  evaluateTestSet,
-                         int                   maxGenerations)
-    : Mutator(seed), evaluateTestSet_(evaluateTestSet), gen_(seed), dis_(std::uniform_int_distribution<size_t>(0, sii->nParam()-1))
+MCMCMutator::MCMCMutator(int                        seed,
+                         BayesConfigHandler        *bch,
+                         ACMFitnessComputer        *fitComp,
+                         StaticIndividualInfo      *sii,
+                         bool                       evaluateTestSet,
+                         ChargeGenerationAlgorithm  algorithm,
+                         int                        maxGenerations)
+    : Mutator(seed, algorithm), evaluateTestSet_(evaluateTestSet), gen_(seed), dis_(std::uniform_int_distribution<size_t>(0, sii->nParam()-1))
 {
     bch_     = bch;
     fitComp_ = fitComp;
@@ -66,10 +67,10 @@ MCMCMutator::MCMCMutator(int                   seed,
     maxGenerations_ = maxGenerations;
 }
 
-void MCMCMutator::mutate(MsgHandler        *msghandler,
-                         ga::Genome        *genome,
-                         ga::Genome        *bestGenome,
-                         gmx_unused double  prMut)
+void MCMCMutator::mutate(MsgHandler                *msghandler,
+                         ga::Genome                *genome,
+                         ga::Genome                *bestGenome,
+                         gmx_unused double          prMut)
 {
     int    nsum             = 0;
     size_t nParam           = genome->nBase();
@@ -445,9 +446,9 @@ void MCMCMutator::printChi2Step(const std::map<iMolSelect, double> &chi2,
     }
 }                    
 
-void MCMCMutator::sensitivityAnalysis(MsgHandler *msghandler,
-                                      ga::Genome *genome,
-                                      iMolSelect  ims)
+void MCMCMutator::sensitivityAnalysis(MsgHandler                *msghandler,
+                                      ga::Genome                *genome,
+                                      iMolSelect                 ims)
 {
     
     std::vector<double> *param = genome->basesPtr();
