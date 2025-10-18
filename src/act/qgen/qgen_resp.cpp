@@ -112,8 +112,8 @@ void QgenResp::setAtomInfo(MsgHandler                   *msg_handler,
     qtot_    = qtotal;
     qshell_  = 0;
     auto qt       = pd->findForcesConst(InteractionType::ELECTROSTATICS);
-    auto eqtModel = potentialToChargeType(qt.potential());
-    bool haveZeta = eqtModel != ChargeType::Point;
+    auto eqtModel = potentialToChargeDistributionType(qt.potential());
+    bool haveZeta = eqtModel != ChargeDistributionType::Point;
     nFixed_ = 0;
     for (size_t i = 0; i < atoms.size(); i++)
     {
@@ -358,11 +358,11 @@ real QgenResp::getStatistics(MsgHandler *msg_handler,
     return rms_;
 }
 
-static double calcJ(ChargeType  chargeType,
-                    rvec        espx,
-                    rvec        rax,
-                    double      zeta,
-                    int         row)
+static double calcJ(ChargeDistributionType chargeType,
+                    rvec                   espx,
+                    rvec                   rax,
+                    double                 zeta,
+                    int                    row)
 {
     rvec   dx;
     double r    = 0;
@@ -372,17 +372,17 @@ static double calcJ(ChargeType  chargeType,
     r = norm(dx);
     if (zeta <= 0)
     {
-        chargeType = ChargeType::Point;
+        chargeType = ChargeDistributionType::Point;
     }
-    if (chargeType == ChargeType::Point && r == 0)
+    if (chargeType == ChargeDistributionType::Point && r == 0)
     {
         gmx_fatal(FARGS, "Zero distance between the atom and the grid. Zeta = %g", zeta);
     }
-    if (ChargeType::Gaussian == chargeType)
+    if (ChargeDistributionType::Gaussian == chargeType)
     {
         eTot = Nuclear_GG(r, zeta);
     }
-    else if (ChargeType::Slater == chargeType)
+    else if (ChargeDistributionType::Slater == chargeType)
     {
         eTot = Nuclear_SS(r, row, zeta);
     }
@@ -412,7 +412,7 @@ void QgenResp::calcPot(MsgHandler *msg_handler,
         // Loop over RESP atoms
         for (size_t j = 0; j < nAtom_; j++)
         {
-            auto epot = calcJ(ChargeType_, espx, x_[j], zeta_[j],
+            auto epot = calcJ(ChargeDistributionType_, espx, x_[j], zeta_[j],
                               row_[j]);
             qtot += q_[j];
             vv += (scale_factor*q_[j]*epot);
@@ -465,7 +465,7 @@ void QgenResp::optimizeCharges(MsgHandler *msg_handler,
         {
             // Compute potential due to this partice at grid
             // position j
-            auto pot = scale_factor*calcJ(ChargeType_, espx, x_[ii],
+            auto pot = scale_factor*calcJ(ChargeDistributionType_, espx, x_[ii],
                                           zeta_[ii], row_[ii]);
             // If this is a mutable atom
             // TODO check with symmetric charges and virtual sites

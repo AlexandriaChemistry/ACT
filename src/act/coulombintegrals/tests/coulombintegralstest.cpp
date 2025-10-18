@@ -92,7 +92,7 @@ void check_force(const std::vector<double> &potential,
  * \param[in] jzeta Distribution width atom j (may be 0)
  * \param[in] checker The checker data structure
  */
-void testCoulomb(alexandria::ChargeType           cd,
+void testCoulomb(alexandria::ChargeDistributionType           cd,
                  int                              irow,
                  int                              jrow,
                  double                           izeta,
@@ -122,7 +122,7 @@ void testCoulomb(alexandria::ChargeType           cd,
         
         switch (cd)
         {
-        case alexandria::ChargeType::Gaussian:
+        case alexandria::ChargeDistributionType::Gaussian:
             if (izeta > 0 || jzeta > 0 || i > 0)
             {
                 coulomb[i] = Coulomb_GG(r,  izeta, jzeta);
@@ -140,7 +140,7 @@ void testCoulomb(alexandria::ChargeType           cd,
                 nforce[i]   = -DNuclear_GG(r, izeta);
             }
             break;
-        case alexandria::ChargeType::Slater:
+        case alexandria::ChargeDistributionType::Slater:
             if (izeta > 0 || jzeta > 0 || i > 0)
             {
                 coulomb[i] = Coulomb_SS(r,  irow, jrow, izeta, jzeta);
@@ -158,13 +158,13 @@ void testCoulomb(alexandria::ChargeType           cd,
                 nforce[i]   = -DNuclear_SS(r, irow, izeta);
             }
             break;
-        case alexandria::ChargeType::Point:
+        case alexandria::ChargeDistributionType::Point:
             break;
         }
     }
-    auto name = alexandria::chargeTypeName(cd).c_str();
+    auto name = alexandria::chargeDistributionTypeName(cd).c_str();
     char buf[256];
-    if (cd == alexandria::ChargeType::Slater)
+    if (cd == alexandria::ChargeDistributionType::Slater)
     {
         checker->checkInt64(irow, "irow");
         checker->checkInt64(jrow, "jrow");
@@ -205,7 +205,7 @@ class SlaterTest : public ::testing::TestWithParam<std::tuple<std::tuple<int, in
         }
         void runTest()
         {
-            testCoulomb(alexandria::ChargeType::Slater, irow_, jrow_, xi_, xj_, &checker_);
+            testCoulomb(alexandria::ChargeDistributionType::Slater, irow_, jrow_, xi_, xj_, &checker_);
         }
 };
 
@@ -227,7 +227,7 @@ class GaussianTest : public ::testing::TestWithParam<std::tuple<double, double> 
         }
         void runTest()
         {
-            testCoulomb(alexandria::ChargeType::Gaussian, 0, 0, xi_, xj_, &checker_);
+            testCoulomb(alexandria::ChargeDistributionType::Gaussian, 0, 0, xi_, xj_, &checker_);
         }
 
 };

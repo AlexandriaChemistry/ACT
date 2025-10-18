@@ -134,9 +134,9 @@ protected:
         // Needed for GenerateCharges
         auto forceComp = new ForceComputer();
         auto qt = pd->findForcesConst(InteractionType::ELECTROSTATICS);
-        auto ct = potentialToChargeType(qt.potential());
+        auto ct = potentialToChargeDistributionType(qt.potential());
         
-        EXPECT_FALSE(ChargeType::Slater  == ct);
+        EXPECT_FALSE(ChargeDistributionType::Slater  == ct);
 
         std::vector<gmx::RVec> coords = mp.xOriginal();
         
@@ -163,7 +163,7 @@ protected:
         EXPECT_TRUE(std::abs(qtotal) < 1e-3);
         char buf[256];
         snprintf(buf, sizeof(buf), "qtotValuesEqdModel_%s",
-                  chargeTypeName(ct).c_str());
+                 chargeDistributionTypeName(ct).c_str());
         checker_.checkSequence(qtotValues.begin(),
                                qtotValues.end(), buf);
     }

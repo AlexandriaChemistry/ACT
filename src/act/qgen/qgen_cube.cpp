@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2021
+ * Copyright (C) 2014-2021,2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -463,18 +463,18 @@ void QgenResp::calcRho()
             gmx::RVec            dx;
             rvec_sub(ep_[i].esp(), x_[j], dx);
             double               r     = norm(dx);
-            if (ChargeType::Gaussian == ChargeType_)
+            if (ChargeDistributionType::Gaussian == ChargeDistributionType_)
             {
                 vv = q_[j]*Nuclear_GG(r, zeta_[j]);
             }
-            else if (ChargeType::Slater == ChargeType_)
+            else if (ChargeDistributionType::Slater == ChargeDistributionType_)
             {
                 vv = q_[j]*Nuclear_SS(r, row_[j], zeta_[j]);
             }
             else
             {
                 gmx_fatal(FARGS, "Unsupported charge model %s",
-                          chargeTypeName(ChargeType_).c_str());
+                          chargeDistributionTypeName(ChargeDistributionType_).c_str());
             }
             V  += vv;
         }
