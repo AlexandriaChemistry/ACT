@@ -329,8 +329,19 @@ class ForceField
     SymchargesConstIterator getSymchargesEnd() const { return symcharges_.end(); }
     
     //! Return the charge generation algorithm used
-    ChargeGenerationAlgorithm chargeGenerationAlgorithm() const;
-    
+    ChargeGenerationAlgorithm chargeGenerationAlgorithm() const { return ChargeGenerationAlgorithm_; };
+
+    /*! \brief Set the charge generation algorithm
+     * \param cga The charge generation algorithm to use
+     */
+    void setChargeGenerationAlgorithm(ChargeGenerationAlgorithm cga)
+    {
+        ChargeGenerationAlgorithm_ = cga;
+    }
+
+    //! \brief Guess the algorithm based on force field content
+    void guessChargeGenerationAlgorithm();
+
     //! Return whether the model used is polarizable.     
     bool polarizable() const { return polarizable_; }
     
@@ -400,7 +411,7 @@ private:
     std::map<InteractionType, ForceFieldParameterList> forces_;
     std::vector<Symcharges>               symcharges_;
     bool                                  polarizable_ = false;
-    ChargeGenerationAlgorithm             ChargeGenerationAlgorithm_ = ChargeGenerationAlgorithm::EEM;
+    ChargeGenerationAlgorithm             ChargeGenerationAlgorithm_ = ChargeGenerationAlgorithm::NONE;
     
     gmx_bool strcasestrStart(std::string needle, std::string haystack);
 

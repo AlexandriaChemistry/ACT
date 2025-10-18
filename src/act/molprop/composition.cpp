@@ -41,6 +41,7 @@
 
 #include "act/utility/communicationrecord.h"
 #include "act/utility/units.h"
+#include "gromacs/utility/stringutil.h"
 
 namespace alexandria
 {
@@ -103,7 +104,7 @@ CommunicationStatus CalcAtom::Receive(const CommunicationRecord *cr, int src)
             cr->recv(src, &type);
             double q;
             cr->recv(src, &q);
-            AddCharge(stringToQtype(type), q);
+            AddCharge(type.c_str(), q);
         }
     }
     if (cr->mh())
@@ -140,7 +141,7 @@ CommunicationStatus CalcAtom::BroadCast(const CommunicationRecord *cr,
         {
             for (auto &qi : q_)
             {
-                std::string type = qTypeName(qi.first);
+                std::string type(qi.first);
                 cr->bcast(&type, comm);
                 cr->bcast(&qi.second, comm);
             }
@@ -153,7 +154,7 @@ CommunicationStatus CalcAtom::BroadCast(const CommunicationRecord *cr,
                 cr->bcast(&type, comm);
                 double q;
                 cr->bcast(&q, comm);
-                AddCharge(stringToQtype(type), q);
+                AddCharge(type.c_str(), q);
             }
         }
     }
@@ -187,7 +188,7 @@ CommunicationStatus CalcAtom::Send(const CommunicationRecord *cr, int dest) cons
 
         for (const auto &qi : q_)
         {
-            std::string type = qTypeName(qi.first);
+            std::string type(qi.first);
             cr->send(dest, type);
             cr->send(dest, qi.second);
         }

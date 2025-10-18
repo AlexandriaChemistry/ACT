@@ -237,6 +237,13 @@ class ForceFieldParameterList
      * \param[in] identifier Name of the atomtype or bond
      * \return vector of parameters
      */
+    const ForceFieldParameterMap *findParametersPtrConst(const Identifier &identifier) const;
+
+    /*! \brief Find map of parameters for editing
+     * Will throw an exception when identifier is not found
+     * \param[in] identifier Name of the atomtype or bond
+     * \return vector of parameters
+     */
     ForceFieldParameterMap *findParameters(const Identifier &identifier);
 
     /*! \brief Convenience function to look up specific parameter

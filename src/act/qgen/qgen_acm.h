@@ -39,10 +39,10 @@
 
 #include <vector>
 
+#include "act/alexandria/topology.h"
 #include "act/molprop/molprop.h"
 #include "act/forcefield/forcefield.h"
 #include "gromacs/math/vectypes.h"
-#include "gromacs/mdtypes/state.h"
 
 /*! \brief Charge generation status
  */
@@ -83,6 +83,9 @@ public:
     
     /*! \brief Constructor
      * 
+     * Note that the force field cannot be const because we copy pointer
+     * to data inside it. If the force field is const, these pointers
+     * disappear after closing the constructor.
      * \param[in] pd     Force field information
      * \param[in] atoms  Atoms data
      * \param[in] bonds  Bond data

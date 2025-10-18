@@ -301,7 +301,7 @@ void Experiment::getReferenceLot(std::string *reference,
 }
 
 bool Experiment::getCharges(std::vector<double> *q,
-                            qType                qtype,
+                            const char          *qread,
                             std::string         *reference,
                             std::string         *lot) const
 {
@@ -309,9 +309,9 @@ bool Experiment::getCharges(std::vector<double> *q,
     int i = 0;
     for (auto &mai : calcAtomConst())
     {
-        if (mai.hasCharge(qtype))
+        if (mai.hasCharge(qread))
         {
-            (*q)[i] = mai.charge(qtype);
+            (*q)[i] = mai.charge(qread);
             i++;
         }
     }

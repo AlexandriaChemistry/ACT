@@ -173,13 +173,16 @@ class QtypeTest : public gmx::test::CommandLineTestBase
                 // Needed for GenerateCharges
                 std::vector<gmx::RVec> forces(actmol.atomsConst().size());
                 std::vector<gmx::RVec> coords = actmol.xOriginal();
-                auto alg = ChargeGenerationAlgorithm::NONE;
+                auto alg = pd->chargeGenerationAlgorithm();
                 if (!qcustom.empty())
                 {
                     alg = ChargeGenerationAlgorithm::Custom;
+                    actmol.setCharges(qcustom);
                 }
-                actmol.GenerateCharges(&msghandler, pd, forceComp, alg, qType::Calc, qcustom, &coords, &forces, true);
-                
+                else
+                {
+                    actmol.generateCharges(&msghandler, pd, forceComp, alg, &coords, &forces, true);
+                }
                 std::vector<double> q;
                 auto myatoms = actmol.atomsConst();
                 for (size_t atom = 0; atom < myatoms.size(); atom++)

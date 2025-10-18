@@ -57,14 +57,16 @@ public:
 
     /*!
      * Constructor
-     * \param[in] sii     Pointer to StaticindividualInfo instance
-     * \param[in] seed    seed passed by the middle man creating this
-     * \param[in] percent Maximum allowed change
+     * \param[in] sii       Pointer to StaticindividualInfo instance
+     * \param[in] seed      seed passed by the middle man creating this
+     * \param[in] algorithm The charge generation algorithm
+     * \param[in] percent   Maximum allowed change
      */
-    PercentMutator(StaticIndividualInfo *sii,
-                   int                   seed,
-                   double                percent)
-    : ga::Mutator(seed), sii_(sii), percent_(percent) {}                
+    PercentMutator(StaticIndividualInfo                  *sii,
+                   int                                    seed,
+                   alexandria::ChargeGenerationAlgorithm  algorithm,
+                   double                                 percent)
+        : ga::Mutator(seed, algorithm), sii_(sii), percent_(percent) {}                
 
     /*! \brief Do the actual mutation
      * \param[inout] genome     The genome to mutate

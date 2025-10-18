@@ -105,7 +105,7 @@ int nma(int argc, char *argv[])
     msghandler.optionsFinished(fnm, &cr);
 
     sch.check_pargs(&msghandler);
-    compR.optionsOK(&msghandler, fnm);
+    compR.optionsFinished(&msghandler, fnm);
     if (!msghandler.ok())
     {
         return 1;

@@ -47,9 +47,9 @@ namespace alexandria
 * BEGIN: ACMFitnessComputer            *
 * * * * * * * * * * * * * * * * * * * */
 
-void ACMFitnessComputer::compute(MsgHandler *msghandler,
-                                 ga::Genome *genome,
-                                 iMolSelect  trgtFit)
+void ACMFitnessComputer::compute(MsgHandler                *msghandler,
+                                 ga::Genome                *genome,
+                                 iMolSelect                 trgtFit)
 {
     if (nullptr == genome)
     {
@@ -160,9 +160,9 @@ void ACMFitnessComputer::distributeParameters(MsgHandler                *msghand
     }
 }
 
-double ACMFitnessComputer::calcDeviation(MsgHandler *msghandler,
-                                         CalcDev     task,
-                                         iMolSelect  ims)
+double ACMFitnessComputer::calcDeviation(MsgHandler                 *msghandler,
+                                         CalcDev                     task,
+                                         iMolSelect                  ims)
 {
     msghandler->writeDebug("CalcDev starting");
 
@@ -236,12 +236,14 @@ double ACMFitnessComputer::calcDeviation(MsgHandler *msghandler,
             // Run charge generation including shell minimization
             std::vector<gmx::RVec> forces(actmol->atomsConst().size(), { 0, 0, 0 });
             std::vector<gmx::RVec> coords = actmol->xOriginal();
-            ACTMessage imm = actmol->GenerateAcmCharges(msghandler, sii_->forcefield(), forceComp_, &coords, &forces);
+            actmol->generateCharges(msghandler, sii_->forcefield(), forceComp_,
+                                    algorithm_, &coords, &forces, true);
 
             // Check whether we have to disable this compound
-            if (ACTMessage::OK != imm && removeMol_)
+            if (!msghandler->ok() && removeMol_)
             {
                 actmol->setSupport(eSupport::No);
+                msghandler->resetStatus();
                 continue;
             }
 
@@ -249,7 +251,8 @@ double ACMFitnessComputer::calcDeviation(MsgHandler *msghandler,
 
             if (devComputers_.size() == 0)
             {
-                printf("No devComputers\n");
+                msghandler->msg(ACTStatus::Warning,
+                                "No devComputers: no deviation from reference values will be computed.");
             }
             for (DevComputer *mydev : devComputers_)
             {

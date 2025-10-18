@@ -155,8 +155,8 @@ public:
      * \param[in] sensitivity If true, a sensitivity analysis will be done
      * \return true if better parameters were found.
      */
-    bool runMaster(bool        optimize,
-                   bool        sensitivity);
+    bool runMaster(bool optimize,
+                   bool sensitivity);
 
     /* * * * * * * * * * * * * * * * * * * * * *
     * BEGIN: Initializing stuff                *
@@ -164,10 +164,12 @@ public:
 
     /*! \brief Initialize the main components of the
      * Genetic Algorithm, just on the master.
-     * \param[in] fnm Names of files selected by user
+     * \param[in] fnm       Names of files selected by user
+     * \param[in] algorithm Will be passed on to mutator
      * \return 1 of all is well, 0 otherwise
      */
-    int initMaster(const std::vector<t_filenm> &fnm);
+    int initMaster(const std::vector<t_filenm> &fnm,
+                   ChargeGenerationAlgorithm    algorithm);
 
     /* * * * * * * * * * * * * * * * * * * * * *
     * END: Initializing stuff                  *

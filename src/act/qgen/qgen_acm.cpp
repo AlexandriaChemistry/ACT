@@ -82,7 +82,7 @@ QgenAcm::QgenAcm(ForceField                 *pd,
     {
         auto atype = pd->findParticleType(atoms[i].ffType());
         atomicNumber_.push_back(atype->atomnumber());
-        auto qparm = atype->parameter("charge");
+        auto qparm = atype->parameterConst("charge");
         if (atype->hasInteractionType(entype))
         {
             const auto &acmtype = atype->interactionTypeToIdentifier(entype);
@@ -101,7 +101,7 @@ QgenAcm::QgenAcm(ForceField                 *pd,
         // we need all atoms connected by bonds. As a result when using SQE the
         // non-ACM particles will be used in the SQE algorithm as well.
         if (atype->hasInteractionType(entype) && 
-            ((qparm->mutability() == Mutability::ACM) ||
+            ((qparm.mutability() == Mutability::ACM) ||
              (haveBCC && atoms[i].pType() == ActParticle::Atom)))
         {
             eta_.push_back(eem->findParameterTypeConst(acmtypes.back(), "eta").value());
@@ -115,7 +115,9 @@ QgenAcm::QgenAcm(ForceField                 *pd,
         {
             fixed_.push_back(i);
             q_.push_back(atoms[i].charge());
-            charge_.push_back(atype->parameter("charge"));
+            // TODO Do we really need pointers?
+            auto p = new ForceFieldParameter(atype->parameterConst("charge"));
+            charge_.push_back(p);
             eta_.push_back(0.0);
             chi0_.push_back(0.0);
             row_.push_back(0);
@@ -131,9 +133,11 @@ QgenAcm::QgenAcm(ForceField                 *pd,
         {
             zeta_.push_back(0.0);
         }
-        if (atype->hasInteractionType(bctype))
+        if (atype->hasInteractionType(entype))
         {
-            auto acmtype = atype->interactionTypeToIdentifier(bctype);
+            // TODO this code does not make sense, if there is no BCC, the EEM
+            // values will not be stored and updated.
+            auto acmtype = atype->interactionTypeToIdentifier(entype);
             auto acm     = eem->findParameters(acmtype);
             acm_id_.push_back(acm);
         }

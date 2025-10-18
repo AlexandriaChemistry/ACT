@@ -160,7 +160,7 @@ int gentop(int argc, char *argv[])
     cr.init(cr.size());
     msghandler.optionsFinished(fnm, &cr);
     
-    compR.optionsOK(&msghandler, fnm);
+    compR.optionsFinished(&msghandler, fnm);
     if (!msghandler.ok())
     {
         return 1;

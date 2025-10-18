@@ -109,7 +109,7 @@ namespace alexandria
         eQgen generateCharges(MsgHandler                   *msg_handler,
                               const std::string            &molname,
                               const std::vector<gmx::RVec> &x,
-                              const ForceField             *pd,
+                              ForceField                   *pd,
                               std::vector<ActAtom>         *atoms,
                               const std::vector<int>       &symmetric_charges);
 
@@ -131,7 +131,7 @@ namespace alexandria
          * \param[in] qmap       The charge map
          */
         void setCharges(MsgHandler      *msghandler,
-                        const chargeMap &qmap);
+                        const ChargeMap &qmap);
         //! \return whether charges are fixed or not
         bool fixedCharges() const { return fixedQ_; }
         /*! \brief Set the charge generation algorithm to use
