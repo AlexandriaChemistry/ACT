@@ -93,12 +93,6 @@ void CompoundReader::addOptions(std::vector<t_pargs>      *pargs,
 void CompoundReader::optionsFinished(MsgHandler                  *msghandler,
                                      const std::vector<t_filenm> &filenm)
 {
-    if (strlen(filename_) == 0 && strlen(dbname_) == 0)
-    {
-        msghandler->msg(ACTStatus::Error,
-                        "Please provide either a filename (-f flag) with a compound/dimer structure to optimize or simulate, or a compound/dimer from the charges database (-db flag).");
-        return;
-    }
     if (strlen(filename_) != 0 && strlen(dbname_) != 0)
     {
         msghandler->msg(ACTStatus::Error,
@@ -129,11 +123,6 @@ void CompoundReader::optionsFinished(MsgHandler                  *msghandler,
     {
         msghandler->msg(ACTStatus::Error,
                         "Please provide -charges flag in conjunction with -db.");
-    }
-    else if (qAlgorithm_ == ChargeGenerationAlgorithm::ESP && qmapfn_.empty())
-    {
-        msghandler->msg(ACTStatus::Error,
-                        "Please provide -charges flag when choosing ESP fitting.");
     }
     else if (strlen(qcustom_) > 0 && strlen(qqm_) > 0)
     {

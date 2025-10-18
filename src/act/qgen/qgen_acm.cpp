@@ -115,9 +115,7 @@ QgenAcm::QgenAcm(ForceField                 *pd,
         {
             fixed_.push_back(i);
             q_.push_back(atoms[i].charge());
-            // TODO Do we really need pointers?
-            auto p = new ForceFieldParameter(atype->parameterConst("charge"));
-            charge_.push_back(p);
+            charge_.push_back(atype->parameter("charge"));
             eta_.push_back(0.0);
             chi0_.push_back(0.0);
             row_.push_back(0);
