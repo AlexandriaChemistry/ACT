@@ -50,32 +50,25 @@
 namespace alexandria
 {
 
-static std::map<qType, std::string> qTypeNames = {
-    { qType::ESP,       "qESP"        },
-    { qType::RESP,      "qRESP"       },
-    { qType::BCC,       "qBCC"        },
-    { qType::Mulliken,  "qMulliken"   },
-    { qType::Hirshfeld, "qHirshfeld"  },
-    { qType::CM5,       "qCM5"        },
-    { qType::Calc,      "Alexandria"  },
-    { qType::Gasteiger, "Gasteiger"   },
-    { qType::Elec,      "Electronic"  },
-    { qType::ACM,       "qACM"        }
+static std::map<qPropertyType, std::string> qPropertyTypeNames = {
+    { qPropertyType::ACM,  "ACM" },
+    { qPropertyType::ESP,  "ESP" },
+    { qPropertyType::Elec, "Electronic" }
 };
 
-const std::string &qTypeName(qType qt)
+const std::string &qPropertyTypeName(qPropertyType qt)
 {
-    return qTypeNames[qt];
+    return qPropertyTypeNames[qt];
 }
 
-const std::map<qType, std::string> &qTypes()
+const std::map<qPropertyType, std::string> &qPropertyTypes()
 {
-    return qTypeNames;
+    return qPropertyTypeNames;
 }
 
-qType stringToQtype(const std::string &type)
+qPropertyType stringToQtype(const std::string &type)
 {
-    for (const auto &qn : qTypeNames)
+    for (const auto &qn : qPropertyTypeNames)
     {
         if (qn.second.compare(type) == 0)
         {
@@ -84,10 +77,10 @@ qType stringToQtype(const std::string &type)
     }
     GMX_THROW(gmx::InvalidInputError(gmx::formatString("Unknown charge type %s", type.c_str()).c_str()));
     // To make the compiler happy
-    return qType::ESP;
+    return qPropertyType::ACM;
 }
 
-QtypeProps::QtypeProps(qType                         qtype,
+QtypeProps::QtypeProps(qPropertyType                 qtype,
                        const std::vector<ActAtom>   &atoms,
                        const std::vector<gmx::RVec> &coords) : qtype_(qtype)
 {
@@ -151,7 +144,7 @@ void QtypeProps::setX(const std::vector<gmx::RVec> &x)
     GMX_RELEASE_ASSERT(q_.size() == x.size(),
                        gmx::formatString("Charge array (%d) should be the same size as coordinates (%d) for %s",
                                          static_cast<int>(q_.size()), static_cast<int>(x.size()), 
-                                         qTypeName(qtype_).c_str()).c_str());
+                                         qPropertyTypeName(qtype_).c_str()).c_str());
     x_ = x;
 }
 
@@ -251,7 +244,8 @@ void QtypeProps::calcPolarizability(const ForceField    *pd,
                                     const Topology      *top,
                                     const ForceComputer *forceComp)
 {
-    GMX_RELEASE_ASSERT(qType::Calc == qtype_, "Will only compute polarizability for Alexandria models");
+    GMX_RELEASE_ASSERT(qPropertyType::Elec != qtype_,
+                       "Will only compute polarizability for Alexandria models");
     
     std::map<InteractionType, double> energies;
     gmx::RVec                         field  = { 0, 0, 0 };
@@ -294,8 +288,8 @@ void QtypeProps::calcPolarizability(const ForceField    *pd,
 
 void QtypeProps::calcMoments(MsgHandler *msg_handler)
 {
-    GMX_RELEASE_ASSERT(q_.size() > 0, gmx::formatString("No charges for %s", qTypeName(qtype_).c_str()).c_str());
-    GMX_RELEASE_ASSERT(x_.size() > 0, gmx::formatString("No coordinates for %s", qTypeName(qtype_).c_str()).c_str());
+    GMX_RELEASE_ASSERT(q_.size() > 0, gmx::formatString("No charges for %s", qPropertyTypeName(qtype_).c_str()).c_str());
+    GMX_RELEASE_ASSERT(x_.size() > 0, gmx::formatString("No coordinates for %s", qPropertyTypeName(qtype_).c_str()).c_str());
     bool AllZero = true;
     for(size_t i = 0; AllZero && i < atomNumber_.size(); i++)
     {

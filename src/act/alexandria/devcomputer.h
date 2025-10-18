@@ -158,32 +158,6 @@ public:
 };
 
 /*!
- * DevComputer that computes the deviation of the (CM5) charge
- * -> eRMS::CHARGE & eRMS::CM5
- */
-class ChargeCM5DevComputer : public DevComputer
-{
-
-public:
-
-    /*! \brief Create a new DevComputer
-     * @param tw        Pointer to TextWriter
-     * @param verbose   whether we are in verbose mode
-     */
-    ChargeCM5DevComputer()
-        : DevComputer("ChargeCM5")
-    {}
-
-    virtual void calcDeviation(MsgHandler                    *msghandler,
-                               const ForceComputer           *forceComputer,
-                               ACTMol                        *actmol,
-                               std::vector<gmx::RVec>        *coords,
-                               std::map<eRMS, FittingTarget> *targets,
-                               const ForceField              *forcefield);
-
-};
-
-/*!
  * DevComputer that computes the deviation of the electrostatic potential -> eRMS::ESP
  */
 class EspDevComputer : public DevComputer
