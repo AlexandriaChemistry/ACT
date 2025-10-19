@@ -158,7 +158,8 @@ enum class MolPropXml {
     qMulliken,
     qRESP,
     qBCC,
-    qACM
+    qACM,
+    qMBIS
 };
 
 const std::map<MolPropXml, MolPropObservable> xoMap = {
@@ -174,7 +175,8 @@ const std::map<MolPropXml, MolPropObservable> xoMap = {
 
 const std::set<MolPropXml> allCharges = {
     MolPropXml::qESP, MolPropXml::qCM5, MolPropXml::qMulliken,
-    MolPropXml::qHirshfeld, MolPropXml::qACM, MolPropXml::qBCC, MolPropXml::qRESP
+    MolPropXml::qHirshfeld, MolPropXml::qACM, MolPropXml::qBCC,
+    MolPropXml::qRESP, MolPropXml::qMBIS
 };
 
 std::map<const std::string, MolPropXml> xmlxxx =
@@ -242,6 +244,7 @@ std::map<const std::string, MolPropXml> xmlxxx =
     { "V",                MolPropXml::dV             },
     { "qESP",             MolPropXml::qESP           },
     { "qRESP",            MolPropXml::qRESP          },
+    { "qMBIS",            MolPropXml::qMBIS          },
     { "qBCC",             MolPropXml::qBCC           },
     { "qCM5",             MolPropXml::qCM5           },
     { "qHirshfeld",       MolPropXml::qHirshfeld     },
@@ -801,7 +804,7 @@ static void mp_process_tree(MsgHandler                        *msg_handler,
                             {
                                 if (xmlFound(xbuf, { aq }))
                                 {
-                                    ca.AddCharge(rmap[aq].c_str(), xbuf_atof(xbuf, aq, true));
+                                    ca.AddCharge(rmap[aq], xbuf_atof(xbuf, aq, true));
                                     clean_xbuf(xbuf, { aq });
                                 }
                             }

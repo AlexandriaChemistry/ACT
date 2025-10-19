@@ -808,6 +808,11 @@ int train_ff(int argc, char *argv[])
     {
         return 0;
     }
+    // Read charges file if needed
+    {
+        ForceComputer forceComp;
+        compR.read(opt.msgHandler(), *opt.sii()->forcefield(), &forceComp);
+    }
 
     // MolGen read being called here!
     if (0 == opt.mg()->Read(opt.msgHandler(), filenms, opt.sii()->forcefield(), gms,

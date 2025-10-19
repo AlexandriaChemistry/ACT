@@ -140,7 +140,7 @@ void QgenResp::summary(MsgHandler *msg_handler)
     if (msg_handler)
     {
         msg_handler->msg(ACTStatus::Info,
-                         gmx::formatString("There are %zu atoms for (R)ESP fitting.", nAtom_));
+                         gmx::formatString("There are %zu ESP value and %zu atoms for (R)ESP fitting if requested.", nEsp(), nAtom_));
         std::string msg;
         for (size_t i = 0; (i < nAtom_); i++)
         {
@@ -279,10 +279,10 @@ void QgenResp::regularizeCharges(MsgHandler *msg_handler)
     }
     double dq = (qtot_ - (qtot + qshell_))/(nAtom_-nFixed_);
     // If the algorithm works well, dq should be negligable.
-    if (msg_handler && fabs(dq) > 0.001)
+    if (msg_handler && fabs(dq) > 0.01)
     {
         msg_handler->msg(ACTStatus::Warning,
-                         gmx::formatString("Found qtot %g, should be %d. Subtracting %g from each atom.", qtot, qtot_, dq));
+                         gmx::formatString("Found qtot %g, should be %d. Subtracting %g from each atom.", qtot+qshell_, qtot_, dq));
     }
     for (size_t ii = 0; ii < nAtom_; ii++)
     {

@@ -129,7 +129,9 @@ void CompoundReader::optionsFinished(MsgHandler                  *msghandler,
         msghandler->msg(ACTStatus::Error,
                         "Please do not provide both the custom charges and the QM charge type to read.");
     }
-    else if (strlen(qalgorithm_) > 0 && (strlen(qcustom_) > 0 || strlen(qqm_) > 0))
+    else if (strlen(qalgorithm_) > 0 && 
+             ((strlen(qcustom_) > 0 && qAlgorithm_ != ChargeGenerationAlgorithm::Custom) || 
+              (strlen(qqm_) > 0 && qAlgorithm_ != ChargeGenerationAlgorithm::Custom)))
     {
         msghandler->msg(ACTStatus::Error,
                         "Please do not provide both a charge algorithm and either custom charges or the QM charge type to read.");
@@ -272,8 +274,16 @@ std::vector<ACTMol> CompoundReader::read(MsgHandler          *msghandler,
     }
     if (lookup.empty())
     {
-        msghandler->msg(ACTStatus::Info,
-                        gmx::formatString("CompoundReader will include all compounds from %s\n.", qmapfn_.c_str()));
+        if (!qmapfn_.empty())
+        {
+            msghandler->msg(ACTStatus::Info,
+                            gmx::formatString("CompoundReader will include all compounds from %s\n.", qmapfn_.c_str()));
+        }
+        else
+        {
+            // No lookup and no file.
+            return {};
+        }
     }
     else
     {

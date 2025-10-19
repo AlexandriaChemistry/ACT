@@ -49,6 +49,7 @@
 #include "act/basics/msg_handler.h"
 #include "act/forcefield/forcefield_parameter.h"
 #include "act/forcefield/forcefield_parametername.h"
+#include "act/molprop/composition.h"
 #include "act/molprop/experiment.h"
 #include "act/molprop/molprop_util.h"
 #include "act/molprop/multipole_names.h"
@@ -989,9 +990,9 @@ void ACTMol::minimizeShells(MsgHandler                *msghandler,
                        forces, &energies);
 }
 
-void ACTMol::setCharges(MsgHandler       *msghandler,
-                        const ForceField *pd,
-                        const char       *qread)
+void ACTMol::setCharges(MsgHandler        *msghandler,
+                        const ForceField  *pd,
+                        const std::string &qread)
 {
     std::vector<double> qnew;
     auto exper = findExperimentConst(JobType::OPT);

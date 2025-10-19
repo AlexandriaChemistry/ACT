@@ -501,9 +501,9 @@ public:
      * \param[in] pd         The force field
      * \param[in] qread      The type to read, e.g. Mulliken
      */
-    void setCharges(MsgHandler       *msghandler,
-                    const ForceField *pd,
-                    const char       *qread);
+    void setCharges(MsgHandler        *msghandler,
+                    const ForceField  *pd,
+                    const std::string &qread);
     /*! \brief Copy charges from force field to topologies
      * \param[in] msghandler Message Handler
      * \param[in] pd         The force field
