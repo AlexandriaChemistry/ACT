@@ -104,7 +104,7 @@ CommunicationStatus CalcAtom::Receive(const CommunicationRecord *cr, int src)
             cr->recv(src, &type);
             double q;
             cr->recv(src, &q);
-            AddCharge(type.c_str(), q);
+            AddCharge(type, q);
         }
     }
     if (cr->mh())
@@ -154,7 +154,7 @@ CommunicationStatus CalcAtom::BroadCast(const CommunicationRecord *cr,
                 cr->bcast(&type, comm);
                 double q;
                 cr->bcast(&q, comm);
-                AddCharge(type.c_str(), q);
+                AddCharge(type, q);
             }
         }
     }

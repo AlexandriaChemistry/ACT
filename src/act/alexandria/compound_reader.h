@@ -58,7 +58,7 @@ namespace alexandria
         //! String for charge algorithm
         char   *qalgorithm_ = (char *)"";
         //! How to generate charges, either from the force field, by reading, or fitting ESP
-        ChargeGenerationAlgorithm qAlgorithm_ = ChargeGenerationAlgorithm::NONE;
+        ChargeGenerationAlgorithm qAlgorithm_ = ChargeGenerationAlgorithm::SQE;
         //! File name for reading structures from
         char   *filename_  = (char *)"";
         //! Molecule name to use if there is none in the input file
