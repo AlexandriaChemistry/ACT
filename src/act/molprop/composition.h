@@ -289,13 +289,13 @@ private:
     double                  fx_ = 0, fy_ = 0, fz_ = 0;
     int                     atomID_ = 0, residueNumber_ = 0, chainId_ = 0;
     char                    chain_ = ' ';
-    std::map<const char *, double> q_;
+    std::map<std::string, double> q_;
 public:
     //! Default constructor
     CalcAtom() {}
     
     //! Constructor initiating the name, type and atomid
-    CalcAtom(const char *name, const char *obtype, int atomid)
+    CalcAtom(std::string &name, std::string &obtype, int atomid)
     {
         name_.assign(name); obType_.assign(obtype); atomID_ = atomid;
     };
@@ -318,7 +318,7 @@ public:
      * \param[in] type Charge type
      * \param[in] q    The charge
      */
-    void AddCharge(const char *type, double q)
+    void AddCharge(const std::string &type, double q)
     {
         q_.insert_or_assign(type, q);
     }
@@ -327,7 +327,7 @@ public:
      * \param[in] type Charge type
      * \return true if found
      */
-    bool hasCharge(const char *type) const
+    bool hasCharge(const std::string &type) const
     {
         return q_.find(type) != q_.end();
     }
@@ -336,13 +336,13 @@ public:
      * \param[in] type Charge type
      * \return charge if found, or crash otherwise
      */
-    double charge(const char *type) const
+    double charge(const std::string &type) const
     {
         return q_.find(type)->second;
     }
     
     //! \brief Return the whole charge map
-    const std::map<const char *, double> &chargesConst() const { return q_; }
+    const std::map<std::string, double> &chargesConst() const { return q_; }
     
     //! Return the atom id of the atom
     int getAtomid() const { return atomID_; }

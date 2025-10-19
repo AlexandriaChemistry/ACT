@@ -61,7 +61,11 @@ ChargeMap fetchChargeMap(MsgHandler                  *msghandler,
         }
         bool addThisMol = false;
         // Check lookup table of compounds
-        if (!lookup.empty())
+        if (lookup.empty())
+        {
+            addThisMol = true;
+        }
+        else
         {
             addThisMol = lookup.find(mp->getIupac()) != lookup.end();
             if (!addThisMol)
