@@ -218,6 +218,10 @@ int geometry_ff(int argc, char *argv[])
     {
         gms.read(selfile);
         print_memory_usage(debug);
+        if (gms.nMol() == gms.countDimers())
+        {
+            msghandler.fatal("Selection file contains dimers instead of monomers.");
+        }
         printf("There are %d molecules in the selection file %s.\n",
                (gms.count(iMolSelect::Train) + gms.count(iMolSelect::Test)), selfile);
         tw->writeStringFormatted("# There are %d molecules.\n#\n", (gms.count(iMolSelect::Train) + gms.count(iMolSelect::Test)));
