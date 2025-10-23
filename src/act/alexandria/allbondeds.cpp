@@ -217,14 +217,14 @@ void AllBondeds::addBonded(MsgHandler                   *msghandler,
                                          x[atomid[2]],
                                          x[atomid[3]],
                                          r_ij, r_kj, r_kl, mm, nn);
-            if (refValue < 0)
-            {
-                refValue += 360;
-            }
             // All angles should be within -90 to +90
-            while (refValue > 90)
+            if (refValue > 90)
             {
                 refValue -= 180;
+            }
+            if (refValue < -90)
+            {
+                refValue += 180;
             }
         }
         break;
