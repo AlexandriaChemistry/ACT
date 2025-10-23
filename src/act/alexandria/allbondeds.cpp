@@ -221,13 +221,10 @@ void AllBondeds::addBonded(MsgHandler                   *msghandler,
             {
                 refValue += 360;
             }
-            if (InteractionType::IMPROPER_DIHEDRALS == iType)
+            // All angles should be within -90 to +90
+            while (refValue > 90)
             {
-                // All angles should be within -90 to +90
-                while (refValue > 90)
-                {
-                    refValue -= 180;
-                }
+                refValue -= 180;
             }
         }
         break;
