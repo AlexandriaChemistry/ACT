@@ -53,6 +53,7 @@ class IMolSelect
         int         index_;
         
     public:
+        //! Constructor
         IMolSelect(const std::string &iupac, iMolSelect status, int index)
             :
                 iupac_(iupac), 
@@ -65,6 +66,9 @@ class IMolSelect
         iMolSelect status() const { return status_; }
         
         int index() const { return index_; }
+
+        //! \return true if this is in fact a dimer
+        bool isDimer() const { return iupac_.find("#") != std::string::npos; };
 };
 
 class MolSelect
@@ -91,7 +95,7 @@ public:
     void read(const char *filename);
     
     size_t nMol() const { return ims_.size(); }
-    
+
     /*! \brief Get data set for iupac
      * \param[in]  iupac The molecule name
      * \param[out] ims   The data set
@@ -113,6 +117,14 @@ public:
         return std::count_if(ims_.begin(), ims_.end(),
                              [ims](IMolSelect const &i)
                                  { return i.status() == ims; });
+    }
+
+    //! \return number of dimers in the data selection
+    size_t countDimers() const
+    {
+        return std::count_if(ims_.begin(), ims_.end(),
+                             [](IMolSelect const &i)
+                                 { return i.isDimer(); });
     }
 
     //! Broadcast my data

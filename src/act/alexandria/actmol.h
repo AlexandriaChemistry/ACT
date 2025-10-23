@@ -299,13 +299,21 @@ public:
 
     //! \return a GROMACS style array with energy terms
     const real *energyTerms() const;
-    
+
     /*! \brief
      * Return a coordinate vector of the molecule corresponding to the first experiment
      * with Jobtype Opt or Topology or SP. The array includes shells and/or vsites.
      * \throws if not suitable experiment is present.
      */
     std::vector<gmx::RVec> xOriginal() const;
+
+    /*! \brief
+     * Return a modified coordinate vector of the molecule based on the input.
+     * The output array includes shells and/or vsites.
+     * \param[in] xxx Input coordinates
+     * \return Modified coordinate array.
+     */
+    std::vector<gmx::RVec> experCoords(const std::vector<gmx::RVec> &xxx) const;
 
     /*! \brief
      * Constructor

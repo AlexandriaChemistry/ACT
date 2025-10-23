@@ -199,14 +199,14 @@ void ACTMol::checkAtoms(MsgHandler       *msghandler,
     }
 }
 
-static std::vector<gmx::RVec> experCoords(const std::vector<gmx::RVec> &xxx,
-                                          const Topology               *topology)
+std::vector<gmx::RVec> ACTMol::experCoords(const std::vector<gmx::RVec> &xxx) const
 {
-    auto myatoms = topology->atoms();
+    auto topol = topology();
+    auto myatoms = topol->atoms();
     if (myatoms.empty())
     {
         // Called this function too early?
-        return xxx;
+        GMX_THROW(gmx::InternalError("No topology to generate coordinates"));
     }
     gmx::RVec fzero = { 0, 0, 0 };
     std::vector<gmx::RVec> coords(myatoms.size(), fzero);
@@ -244,7 +244,7 @@ static std::vector<gmx::RVec> experCoords(const std::vector<gmx::RVec> &xxx,
         }
     }
     ForceComputer fcomp;
-    fcomp.generateVsites(topology, &coords);
+    fcomp.generateVsites(topol, &coords);
     return coords;
 }
 
@@ -274,7 +274,7 @@ std::vector<gmx::RVec> ACTMol::xOriginal() const
         }
     }
 
-    return experCoords(exper->getCoordinates(), topology_);
+    return experCoords(exper->getCoordinates());
 }
 
 void ACTMol::forceEnergyMaps(MsgHandler                                                        *msghandler,
@@ -306,7 +306,7 @@ void ACTMol::forceEnergyMaps(MsgHandler                                         
     for (auto &exper : experimentConst())
     {
         // We compute either interaction energies or normal energies for one experiment
-        auto coords  = experCoords(exper.getCoordinates(), topology_);
+        auto coords  = experCoords(exper.getCoordinates());
         bool doInter = false;
         for(auto &ie : interE)
         {
@@ -1574,7 +1574,7 @@ void ACTMol::getExpProps(MsgHandler                                 *msghandler,
         auto     qelec = actq.qPqm();
         auto     qcalc = actq.qPact();
         auto     props = myexp.propertiesConst();
-        auto     xatom = experCoords(myexp.getCoordinates(), topology_);
+        auto     xatom = experCoords(myexp.getCoordinates());
         setBasisset(myexp.getBasisset());
         setMethod(myexp.getMethod());
         std::vector<double> q;

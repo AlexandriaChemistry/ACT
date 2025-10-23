@@ -156,7 +156,10 @@ void AllBondeds::addBondeds(MsgHandler             *msghandler,
     // Loop over experiments
     for (const auto &exper : mmi.experimentConst())
     {
-        addBonded(msghandler, iType, mmi, bondId, atomid, exper.getCoordinates());
+        // If there are shells or virtual sites, the coordinates will not match.
+        // But there is a simple routine to fix it.
+        auto coords = mmi.experCoords(exper.getCoordinates());
+        addBonded(msghandler, iType, mmi, bondId, atomid, coords);
     }
 }
 
@@ -218,12 +221,10 @@ void AllBondeds::addBonded(MsgHandler                   *msghandler,
             {
                 refValue += 360;
             }
-            if (InteractionType::IMPROPER_DIHEDRALS == iType)
+            // All angles should be within -90 to +90
+            while (refValue > 90)
             {
-                while (refValue > 170)
-                {
-                    refValue -= 180;
-                }
+                refValue -= 180;
             }
         }
         break;
