@@ -121,9 +121,9 @@ namespace alexandria
         //! Default force constant for Urey-Bradley
         real                                               kub_       = 30000;
         //! Tolerance for warning about large sigma in bond-lengths (pm)
-        real                                               bond_tol_  = 5;
+        real                                               bond_tol_  = 8;
         //! Tolerance for warning about large sigma in angles (degrees)
-        real                                               angle_tol_ = 5;
+        real                                               angle_tol_ = 8;
         //! Scaling factor for setting min and max for force parameters
         real                                               factor_    = 0.5;
         //! Scaling factor for setting min and max for bond lengths
