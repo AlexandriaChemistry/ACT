@@ -723,7 +723,7 @@ int train_ff(int argc, char *argv[])
                            nullptr,
                            &oenv))
     {
-        return 0;
+        return 1;
     }
 
     // Set output environment in the optimization driver
@@ -740,6 +740,11 @@ int train_ff(int argc, char *argv[])
 
     // Check charge reader options
     compR.optionsFinished(opt.msgHandler(), filenms);
+    if (!opt.msgHandler()->ok())
+    {
+        opt.msgHandler()->msg(ACTStatus::Error, "Please fix errors written above.");
+        return 1;
+    }
     auto tw = opt.msgHandler()->tw();
     if (opt.commRec()->isMaster())
     {

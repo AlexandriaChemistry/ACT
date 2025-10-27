@@ -133,7 +133,7 @@ void CompoundReader::optionsFinished(MsgHandler                  *msghandler,
              ((strlen(qcustom_) > 0 && qAlgorithm_ != ChargeGenerationAlgorithm::Custom) || 
               (strlen(qqm_) > 0 && qAlgorithm_ != ChargeGenerationAlgorithm::Custom)))
     {
-        msghandler->msg(ACTStatus::Error,
+        msghandler->msg(ACTStatus::Warning,
                         "Please do not provide both a charge algorithm and either custom charges or the QM charge type to read.");
     }
 }
@@ -151,8 +151,6 @@ void CompoundReader::setCharges(MsgHandler          *msghandler,
                                           mol->totalCharge(), qtot_));
     }
     
-    mol->GenerateTopology(msghandler, &pd, missingParameters::Error);
-
     if (msghandler->ok())
     {
         std::vector<gmx::RVec> coords = mol->xOriginal();
@@ -354,11 +352,12 @@ std::vector<ACTMol> CompoundReader::read(MsgHandler          *msghandler,
         bool warnQtot = mols.size() == 1;
         for(auto mol = mols.begin(); mol < mols.end(); )
         {
-            setCharges(msghandler, pd, &(*mol), forceComp, warnQtot);
+            mol->GenerateTopology(msghandler, &pd, missingParameters::Error);
+            // Load all the other properties of the compounds
+            mol->getExpProps(msghandler, &pd, {{ MolPropObservable::POTENTIAL, iqmType::QM }});
             if (msghandler->ok())
             {
-                // Load all the other properties of the compounds as well
-                mol->getExpProps(msghandler, &pd, {});
+                setCharges(msghandler, pd, &(*mol), forceComp, warnQtot);
             }
             if (!msghandler->ok())
             {
