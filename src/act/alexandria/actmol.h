@@ -153,9 +153,6 @@ private:
     //! Resp calculation structure
     QgenResp           QgenResp_;
 public:
-    //! Default constructor
-    ACTQprop() {}
-
     /*! \brief Constructor initializing both QtypeProps
      * \param[in] atoms The atoms
      * \param[in] x     The coordinates
@@ -401,12 +398,25 @@ public:
     /*! \brief
      * \return atoms data for editing
      */
-    std::vector<ActAtom> *atoms() { return topology_->atomsPtr(); }
-
+    std::vector<ActAtom> *atoms()
+    {
+        if (!topology_)
+        {
+            GMX_THROW(gmx::InternalError("No topology created yet."));
+        }
+        return topology_->atomsPtr();
+    }
     /*! \brief
      * \return atoms data for reading only
      */
-    const std::vector<ActAtom> &atomsConst() { return topology_->atoms(); }
+    const std::vector<ActAtom> &atomsConst()
+    {
+        if (!topology_)
+        {
+            GMX_THROW(gmx::InternalError("No topology created yet."));
+        }
+        return topology_->atoms();
+    }
 
     //! \return the QtypeProps vector for editing
     std::vector<ACTQprop> *qProps() { return &qProps_; }

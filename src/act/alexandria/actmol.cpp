@@ -68,6 +68,10 @@ namespace alexandria
 ACTQprop::ACTQprop(const std::vector<ActAtom>   &atoms,
                    const std::vector<gmx::RVec> &x)
 {
+    if (atoms.empty())
+    {
+        GMX_THROW(gmx::InternalError("No atoms when initializing ACTQprop"));
+    }
     qPqm_.setQandX(atoms, x);
     qPact_.setQandX(atoms, x);
     qPact_.initializeMoments();
@@ -80,6 +84,10 @@ ACTQprop::ACTQprop(const std::vector<ActAtom>   &atoms,
 
 void ACTQprop::copyRespQ()
 {
+    if (isAtom_.empty())
+    {
+        GMX_THROW(gmx::InternalError("No atoms when initializing ACTQprop"));
+    }
     if (QgenResp_.nEsp() > 0)
     {
         std::vector<double> q = qPqm_.charge();
@@ -1583,11 +1591,11 @@ void ACTMol::getExpProps(MsgHandler                                 *msghandler,
     for (const auto &myexp : experimentConst())
     {
         bool     qprop = false;
-        ACTQprop actq;
+        auto     xatom = experCoords(myexp.getCoordinates(), topology_);
+        ACTQprop actq(myatoms, xatom);
         auto     qelec = actq.qPqm();
         auto     qcalc = actq.qPact();
         auto     props = myexp.propertiesConst();
-        auto     xatom = experCoords(myexp.getCoordinates(), topology_);
         setBasisset(myexp.getBasisset());
         setMethod(myexp.getMethod());
         for (auto prop : props)
