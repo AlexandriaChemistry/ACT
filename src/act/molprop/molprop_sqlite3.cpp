@@ -228,7 +228,7 @@ static void getClasses(MsgHandler           *msg_handler,
 }
 #endif
 
-void ReadSqlite3(MsgHandler                      *msg_handler,
+void ReadSqlite3(gmx_unused MsgHandler           *msg_handler,
                  gmx_unused const char           *sqlite_file,
                  gmx_unused std::vector<MolProp> *mp,
                  gmx_unused double                ref_temperature)
