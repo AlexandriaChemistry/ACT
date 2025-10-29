@@ -1083,7 +1083,6 @@ class FFGenerator:
                     setParam(atp, vdwcorr, "aexp", 0, 0, Fixed, "kJ/mol")
                     setParam(atp, vdwcorr, "bexp", 10, 50, Fixed, "1/nm")
                 # In both cases a vsite param is needed
-                
                 setParam(atp, vdwcorr, "vsite", vs, vs, Fixed, "")
             
         # Atomtypes corresponding to virtual sites
