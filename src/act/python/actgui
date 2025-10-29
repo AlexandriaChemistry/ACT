@@ -1074,12 +1074,17 @@ class FFGenerator:
         def setVDWcorr(atp:str, turnOn:bool):
             if self.needVDWcorr:
                 vdwcorr = "VDWCORRECTION"
+                vs      = 0
                 if turnOn:
                     setParam(atp, vdwcorr, "aexp", 0, 50000, Bounded, "kJ/mol")
                     setParam(atp, vdwcorr, "bexp", 10, 50, Bounded, "1/nm")
+                    vs = 1
                 else:
                     setParam(atp, vdwcorr, "aexp", 0, 0, Fixed, "kJ/mol")
                     setParam(atp, vdwcorr, "bexp", 10, 50, Fixed, "1/nm")
+                # In both cases a vsite param is needed
+                
+                setParam(atp, vdwcorr, "vsite", vs, vs, Fixed, "")
             
         # Atomtypes corresponding to virtual sites
         # First check whether we need any VDWCORRECTION at all
@@ -1254,7 +1259,7 @@ class FFGenerator:
                     for param in comb_rules[itype]:
                         cmd += f" {itype}:{param}:{comb_rules[itype][param]}"
                 if self.needVDWcorr:
-                    cmd += " VDWCORRECTION:aexp:Arithmetic VDWCORRECTION:bexp:Arithmetic "
+                    cmd += " VDWCORRECTION:aexp:Arithmetic VDWCORRECTION:bexp:Arithmetic VDWCORRECTION:vsite:Kronecker "
                 cmd += " '"
             if self.verbose:
                 print(f"Command line: {cmd}")
