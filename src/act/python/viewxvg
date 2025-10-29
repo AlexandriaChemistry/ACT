@@ -393,7 +393,7 @@ def plot_once(axs, args):
 
         if args.bar:
             datasets[filenumber].do_bars(
-                thisax
+                thisax,
             )
         else:
             datasets[filenumber].do_lines(
