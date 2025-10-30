@@ -114,7 +114,7 @@ class DataSet:
                 print("File %s has no data" % filenm)
         else:
             if viewDebug:
-                print("Read %d labels and %d legends from %d dataset(s) in input file %d\n" % (len(label), len(legend), len(dataset), setcount+1))
+                print("Read %d labels and %d legends from %d dataset(s) in input file %d" % (len(label), len(legend), len(dataset), setcount+1))
             for d in dataset:
                 self.dataset.append(d)
             for k in legend:
@@ -216,15 +216,14 @@ class DataSet:
         elif args.legendfontsize > 0 and self.have_label():
             thisax.legend(loc='upper left', bbox_to_anchor=(args.legend_x, args.legend_y), fontsize=args.legendfontsize)
 
-    def do_bars(self, thisax, idx, total_datasets, group_width=0.9):
+    def do_bars(self, thisax, argcolors, idx, total_datasets, setcount, group_width):
+        print_label = False
+        if args.labels:
+            print_label = True
+        else:
+            print_label = len(self.label) == len(self.dataset)
         if viewDebug:
-            print("Doing bar graphs")
-        # Check stuff
-        if len(self.dataset) == 0:
-            return
-        if len(self.dataset[0].x) == 0:
-            return
-        
+            print("%d labels read in file nr %d" % ( len(self.label), setcount+1 ) )
         for n in range(len(self.dataset)):
             xy = self.dataset[n]
 
@@ -250,7 +249,17 @@ class DataSet:
             # Place each bar relative to center x
             xpos = x + offset
 
-            thisax.bar(xpos, xy.y, width=bar_width, bottom=0.0, align="center", label=self.label[n])
+            #Colors and labels
+            mylabel  = None
+            if len(self.label) > n and self.label[n] not in args.ignore:
+                if print_label:
+                    mylabel = self.label[n]
+            mycolor=argcolors[n]
+            if viewDebug:
+                print(f"\t mylabel  {n+1} = {mylabel}")
+                print(f"\t mycolor  {n+1} = {mycolor}\n")
+
+            thisax.bar(xpos, xy.y, width=bar_width, bottom=0.0, align="center", label=mylabel, color=mycolor)
 
     def do_lines(self, thisax, argcolors, arglines, argmarkers, setcount):
         print_label = False
@@ -260,7 +269,7 @@ class DataSet:
             print_label = len(self.label) == len(self.dataset)
 
         if viewDebug:
-            print("%d labels read in file nr %d: %s" % ( len(self.label), setcount+1, self.label ) )
+            print("%d labels read in file nr %d" % ( len(self.label), setcount+1) )
         for n in range(len(self.dataset)):
             mylabel  = None
             if len(self.label) > n and self.label[n] not in args.ignore:
@@ -336,7 +345,7 @@ def plot_once(axs, args):
     yymax = max(ymaxs)
 
     if viewDebug:
-        print("Total datasets found: ", total_datasets)
+        print("Total datasets found: ", total_datasets, "\n")
 
     #Define colors markers and linstyles before going in to loop
     colors = args.colors if args.colors else []
@@ -350,7 +359,7 @@ def plot_once(axs, args):
     # Build a color list long enough for all datasets (maximum is the length of defcolors)     
     if len(colors) < total_datasets:
         if viewDebug:
-            print("More datasets than color inputs. Adding colors.")
+            print("More datasets than color inputs. Adding colors.\n")
         # Repeat appending from defcolors
         c = 0
         while len(colors) < total_datasets:
@@ -359,6 +368,8 @@ def plot_once(axs, args):
 
     idx = 0
     # Plot one dataset at a time
+    if args.bar and viewDebug:
+        print("Doing bar graphs\n")
     for filenumber in range(len(args.filename)):
         # Shortcut for the current axis
         thisax = axs.flat[filenumber % numaxs]
@@ -407,10 +418,12 @@ def plot_once(axs, args):
         if args.bar:
             # Pass color list for the datasets in this file so bars can be colored
             datasets[filenumber].do_bars(
-                thisax, 
+                thisax,
+                these_colors,
                 idx, 
                 total_datasets, 
-                group_width=0.9, 
+                filenumber,
+                group_width=0.9,   
             )
         else:
             datasets[filenumber].do_lines(
