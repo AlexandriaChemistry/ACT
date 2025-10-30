@@ -216,7 +216,7 @@ class DataSet:
         elif args.legendfontsize > 0 and self.have_label():
             thisax.legend(loc='upper left', bbox_to_anchor=(args.legend_x, args.legend_y), fontsize=args.legendfontsize)
 
-    def do_bars(self, thisax):
+    def do_bars(self, thisax, idx, total_datasets, group_width=0.9):
         if viewDebug:
             print("Doing bar graphs")
         # Check stuff
@@ -224,20 +224,33 @@ class DataSet:
             return
         if len(self.dataset[0].x) == 0:
             return
-        # Determine how wide bars should be.
-        xmin = self.dataset[0].x[0]
-        xmax = xmin
-        # First determine extent
-        for n in range(len(self.dataset)):
-            for k in range(len(self.dataset[n].x)):
-                xmin = min(xmin, self.dataset[n].x[k])
-                xmax = max(xmin, self.dataset[n].x[k])
-        # All bars together shoudl be 0.75 of the width
-        # Not sure why we need a factor of 2.
-        bar_width = 2*0.75/((xmax-xmin)*len(self.dataset))
+        
         for n in range(len(self.dataset)):
             xy = self.dataset[n]
-            thisax.bar(xy.x, xy.y, bar_width, bottom=0.0, align="center", label=self.label[n])
+
+            x = np.asarray(xy.x)
+            #Compute a suitable spacing based on mean difference between x values
+            if len(x) > 1:
+                # sort justin case
+                xs_sorted = np.sort(x)
+                spacing = np.mean(np.diff(xs_sorted)) #mean difference between each consecutive value
+                if spacing == 0:
+                    spacing = 1.0
+            else:
+                spacing = 1.0
+
+            # total width for the whole group of bars (all datasets) at each x
+            total_group_width = spacing * group_width
+            # width of a single bar (split group among total_bars)
+            bar_width = total_group_width / total_datasets
+
+            current_index = idx + n
+            # compute an offset for the local dataset (placement of bar for each x value)
+            offset = (current_index - (total_datasets - 1) / 2.0) * bar_width
+            # Place each bar relative to center x
+            xpos = x + offset
+
+            thisax.bar(xpos, xy.y, width=bar_width, bottom=0.0, align="center", label=self.label[n])
 
     def do_lines(self, thisax, argcolors, arglines, argmarkers, setcount):
         print_label = False
@@ -392,8 +405,12 @@ def plot_once(axs, args):
             thisax.set_yscale('log')
 
         if args.bar:
+            # Pass color list for the datasets in this file so bars can be colored
             datasets[filenumber].do_bars(
-                thisax,
+                thisax, 
+                idx, 
+                total_datasets, 
+                group_width=0.9, 
             )
         else:
             datasets[filenumber].do_lines(
