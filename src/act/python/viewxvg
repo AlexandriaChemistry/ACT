@@ -219,9 +219,25 @@ class DataSet:
     def do_bars(self, thisax):
         if viewDebug:
             print("Doing bar graphs")
+        # Check stuff
+        if len(self.dataset) == 0:
+            return
+        if len(self.dataset[0].x) == 0:
+            return
+        # Determine how wide bars should be.
+        xmin = self.dataset[0].x[0]
+        xmax = xmin
+        # First determine extent
+        for n in range(len(self.dataset)):
+            for k in range(len(self.dataset[n].x)):
+                xmin = min(xmin, self.dataset[n].x[k])
+                xmax = max(xmin, self.dataset[n].x[k])
+        # All bars together shoudl be 0.75 of the width
+        # Not sure why we need a factor of 2.
+        bar_width = 2*0.75/((xmax-xmin)*len(self.dataset))
         for n in range(len(self.dataset)):
             xy = self.dataset[n]
-            thisax.bar(xy.x, xy.y, width=0.8/len(xy.y), bottom=0.0, align="center", label=self.label[n])
+            thisax.bar(xy.x, xy.y, bar_width, bottom=0.0, align="center", label=self.label[n])
 
     def do_lines(self, thisax, argcolors, arglines, argmarkers, setcount):
         print_label = False
@@ -378,7 +394,6 @@ def plot_once(axs, args):
         if args.bar:
             datasets[filenumber].do_bars(
                 thisax,
-                these_colors,
             )
         else:
             datasets[filenumber].do_lines(
