@@ -88,11 +88,9 @@ private:
     /*!
      * \brief Fill the devComputers vector according to the needs of the user
      * \param[in] msghandler                  Message Handler
-     * \param[in] zetadiff                    Allowed difference in zeta between cores and shells (if both have distributed charges)
      * \param[in] haveInductionCorrectionData Whether or not this energy term is present in the input data
      */
     void fillDevComputers(MsgHandler *msghandler,
-                          double      zetaDiff,
                           bool        haveInductionCorrectionData);
 
 public:
@@ -112,7 +110,7 @@ public:
                        ChargeGenerationAlgorithm  algorithm)
         : sii_(sii), forceComp_(forceComp), molgen_(molgen), removeMol_(removeMol), algorithm_(algorithm)
     {
-        fillDevComputers(msghandler, molgen->zetaDiff(),
+        fillDevComputers(msghandler,
                          molgen->hasMolPropObservable(MolPropObservable::INDUCTIONCORRECTION));
     }
 

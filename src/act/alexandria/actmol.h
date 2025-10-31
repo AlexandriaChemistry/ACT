@@ -408,7 +408,7 @@ public:
      */
     std::vector<ActAtom> *atoms()
     {
-        if (!topology_)
+        if (topology_ == nullptr)
         {
             GMX_THROW(gmx::InternalError("No topology created yet."));
         }
@@ -419,7 +419,7 @@ public:
      */
     const std::vector<ActAtom> &atomsConst()
     {
-        if (!topology_)
+        if (topology_ == nullptr)
         {
             GMX_THROW(gmx::InternalError("No topology created yet."));
         }
