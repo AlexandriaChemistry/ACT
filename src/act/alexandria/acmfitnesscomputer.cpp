@@ -249,9 +249,6 @@ double ACMFitnessComputer::calcDeviation(MsgHandler                 *msghandler,
                 msghandler->msg(ACTStatus::Warning,
                                 "No devComputers: no deviation from reference values will be computed.");
             }
-            // Check ACM charges
-            bdc_->calcDeviation(msghandler, forceComp_, &(*actmol), nullptr,
-                                targets, sii_->forcefield());
             for (DevComputer *mydev : devComputers_)
             {
                 mydev->calcDeviation(msghandler, forceComp_, &(*actmol), &coords, targets, sii_->forcefield());
@@ -324,7 +321,7 @@ void ACMFitnessComputer::fillDevComputers(MsgHandler *msghandler,
 {
     if (sii_->target(iMolSelect::Train, eRMS::BOUNDS)->weight() > 0)
     {
-        bdc_ = new BoundsDevComputer(sii_->optIndexPtr());
+        devComputers_.push_back(new BoundsDevComputer(sii_->optIndexPtr()));
     }
     if (sii_->target(iMolSelect::Train, eRMS::ESP)->weight() > 0)
     {

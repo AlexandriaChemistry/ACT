@@ -61,8 +61,6 @@ class ACMFitnessComputer : public ga::FitnessComputer
 {
 
 private: 
-    //! \brief A pointer to the BoundsDevComputer.
-    BoundsDevComputer         *bdc_  = nullptr;
     //! \brief A vector of devComputers.
     std::vector<DevComputer*>  devComputers_;
     //! \brief StaticIndividualInfo pointer
