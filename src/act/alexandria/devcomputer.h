@@ -103,21 +103,15 @@ private:
 
     //! Information about each force field parameter
     std::vector<OptimizationIndex> *optIndex_;
-    //! Difference between shell and core zeta to contribute to the unphysical
-    double zetaDiff_ = 2;
 public:
 
     /*! \brief Create a new BoundsDevComputer
-     * @param tw        Pointer to TextWriter
-     * @param verbose   whether we are in verbose mode
      * @param optIndex  pointer to vector containing information about each force field parameter
      */
-    BoundsDevComputer(std::vector<OptimizationIndex> *optIndex,
-                      double                          zetaDiff)
+    BoundsDevComputer(std::vector<OptimizationIndex> *optIndex)
         : DevComputer("Bounds")
     {
         optIndex_ = optIndex;
-        zetaDiff_ = zetaDiff;
     }
 
     virtual void calcDeviation(MsgHandler                    *msghandler,

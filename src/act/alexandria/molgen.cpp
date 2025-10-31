@@ -60,15 +60,12 @@ namespace alexandria
 
 std::map<eRMS, const char *> ermsNames = {
     { eRMS::BOUNDS,     "BOUNDS"     },
-    { eRMS::UNPHYSICAL, "UNPHYSICAL" },
-    { eRMS::CHARGE,     "CHARGE"     },
     { eRMS::MU,         "MU"         },
     { eRMS::QUAD,       "QUAD"       },
     { eRMS::OCT,        "OCT"        },
     { eRMS::HEXADEC,    "HEXADEC"    },
     { eRMS::FREQUENCY,  "FREQUENCY"  },
     { eRMS::INTENSITY,  "INTENSITY"  },
-    { eRMS::CM5,        "CM5"        },
     { eRMS::ESP,        "ESP"        },
     { eRMS::EPOT,       "EPOT"       },
     { eRMS::Interaction,"Interaction"},
@@ -126,16 +123,12 @@ void MolGen::addOptions(std::vector<t_pargs>          *pargs,
           "Minimum number of data points to optimize force field parameters" },
         { "-qsymm",  FALSE, etBOOL, {&qsymm_},
           "Symmetrize the charges on symmetric groups, e.g. CH3, NH2. The list of groups to symmetrize is specified in the force field file." },
-        { "-zetadiff", FALSE, etREAL, {&zetaDiff_},
-          "Difference between core and shell zeta to count as unphysical" },
         { "-lb",  FALSE, etBOOL, {&loadBalance_},
           "Try to divide the computational load evenly over helpers." },
         { "-fit", FALSE, etSTR, {&fitString_},
           "Quoted list of parameters to fit,  e.g. 'alpha zeta'." },
         { "-fc_bound",    FALSE, etREAL, {targets->find(eRMS::BOUNDS)->second.weightPtr()},
-          "Force constant in the penalty function for going outside the borders given with the fitting options (see below)." },
-        { "-fc_unphysical",  FALSE, etREAL, {targets->find(eRMS::UNPHYSICAL)->second.weightPtr()},
-          "Force constant in the penalty function for unphysical combinations of parameters. In particular this parameter penalized that shell zeta is larger the core zeta." },
+          "Force constant in the penalty function for going outside the borders given with the fitting options. In particular this parameter penalizes 'unchemical' charges as determined by the bounds set in the force field file. This is applied to charges that are determined using the Alexandria Charge Model only." },
         { "-fc_epot",    FALSE, etREAL, {targets->find(eRMS::EPOT)->second.weightPtr()},
           "Force constant in the penalty function for the deviation of the potential energy of the compound from the reference." },
         { "-fc_inter",    FALSE, etREAL, {targets->find(eRMS::Interaction)->second.weightPtr()},
@@ -170,10 +163,6 @@ void MolGen::addOptions(std::vector<t_pargs>          *pargs,
           "Force constant in the penalty function for the deviation of the magnitude of the hexedecapole components from the reference." },
         { "-fc_esp",   FALSE, etREAL, {targets->find(eRMS::ESP)->second.weightPtr()},
           "Force constant in the penalty function for the deviation of the magnitude of the electrostatic potential from the reference." },
-        { "-fc_charge",  FALSE, etREAL, {targets->find(eRMS::CHARGE)->second.weightPtr()},
-          "Force constant in the penalty function for 'unchemical' charges as determined by the bounds set in the force field file. This is applied to charges that are determined using the Alexandria Charge Model only." },
-        { "-fc_cm5",  FALSE, etREAL, {targets->find(eRMS::CM5)->second.weightPtr()},
-          "Force constant in the penalty function for deviation from CM5 charges." },
         { "-fc_polar",  FALSE, etREAL, {targets->find(eRMS::Polar)->second.weightPtr()},
           "Force constant in the penalty function for deviation of the six independent components of the molecular polarizability tensor from the reference." },
         { "-ener_boltz_temp", FALSE, etREAL, { &ener_boltz_temp_},
@@ -732,17 +721,14 @@ static double computeCost(const ACTMol                         *actmol,
                 w += 7*gmx::square(myexp.NAtom());
                 break;
             case eRMS::BOUNDS:
-            case eRMS::UNPHYSICAL:
                 // Too small to measure
                 break;
-            case eRMS::CHARGE:
             case eRMS::MU:
             case eRMS::QUAD:
             case eRMS::OCT:
             case eRMS::HEXADEC:
             case eRMS::FREQUENCY:
             case eRMS::INTENSITY:
-            case eRMS::CM5:
             case eRMS::TOT:
                 break;
             }

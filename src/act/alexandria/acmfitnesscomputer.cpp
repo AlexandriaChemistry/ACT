@@ -194,11 +194,6 @@ double ACMFitnessComputer::calcDeviation(MsgHandler                 *msghandler,
     // Reset the chi2 in FittingTargets for the given dataset in ims
     sii_->resetChiSquared(ims);
 
-    // If actMaster or actMiddleMan, penalize out of bounds
-    if (cr->isMasterOrMiddleMan() && bdc_)
-    {
-        bdc_->calcDeviation(msghandler, forceComp_, nullptr, nullptr, targets, sii_->forcefield());
-    }
 
     // Loop over molecules
     int ntrain = 0;
@@ -254,6 +249,9 @@ double ACMFitnessComputer::calcDeviation(MsgHandler                 *msghandler,
                 msghandler->msg(ACTStatus::Warning,
                                 "No devComputers: no deviation from reference values will be computed.");
             }
+            // Check ACM charges
+            bdc_->calcDeviation(msghandler, forceComp_, &(*actmol), nullptr,
+                                targets, sii_->forcefield());
             for (DevComputer *mydev : devComputers_)
             {
                 mydev->calcDeviation(msghandler, forceComp_, &(*actmol), &coords, targets, sii_->forcefield());
@@ -322,13 +320,11 @@ void ACMFitnessComputer::computeMultipoles(std::map<eRMS, FittingTarget> *target
 }
 
 void ACMFitnessComputer::fillDevComputers(MsgHandler *msghandler,
-                                          double      zetaDiff,
                                           bool        haveInductionCorrectionData)
 {
-    if (sii_->target(iMolSelect::Train, eRMS::BOUNDS)->weight() > 0 ||
-        sii_->target(iMolSelect::Train, eRMS::UNPHYSICAL)->weight() > 0)
+    if (sii_->target(iMolSelect::Train, eRMS::BOUNDS)->weight() > 0)
     {
-        bdc_ = new BoundsDevComputer(sii_->optIndexPtr(), zetaDiff);
+        bdc_ = new BoundsDevComputer(sii_->optIndexPtr());
     }
     if (sii_->target(iMolSelect::Train, eRMS::ESP)->weight() > 0)
     {

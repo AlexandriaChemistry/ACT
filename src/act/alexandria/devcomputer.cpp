@@ -79,98 +79,30 @@ static double l2_regularizer(double x, double min, double max)
 * BEGIN: BoundsDevComputer                 *
 * * * * * * * * * * * * * * * * * * * * * */
 
-void BoundsDevComputer::calcDeviation(MsgHandler                        *msghandler,
+void BoundsDevComputer::calcDeviation(MsgHandler                        *,
                                       const ForceComputer               *,
-                                      ACTMol                            *,
+                                      ACTMol                            *mol,
                                       std::vector<gmx::RVec>            *,
                                       std::map<eRMS, FittingTarget>     *targets,
                                       const ForceField                  *forcefield)
 {
     auto   mytarget = targets->find(eRMS::BOUNDS);
-    if (targets->end() != mytarget)
+    if (targets->end() == mytarget)
     {
-        double bound = 0;
-        for (auto &optIndex : *optIndex_)
-        {
-            InteractionType iType = optIndex.iType();
-            ForceFieldParameter p;
-            if (iType == InteractionType::CHARGE)
-            {
-                p = forcefield->findParticleType(optIndex.particleType())->parameterConst(optIndex.parameterType());
-            }
-            else if (forcefield->interactionPresent(iType))
-            {
-                auto &fs = forcefield->findForcesConst(iType);
-                p = fs.findParameterTypeConst(optIndex.id(), optIndex.parameterType());
-            }
-            if (p.mutability() == Mutability::Bounded)
-            {
-                real db = l2_regularizer(p.value(), p.minimum(), p.maximum());
-                bound += db;
-                if (db != 0.0)
-                {
-                    msghandler->msg(ACTStatus::Warning,
-                                    gmx::formatString("Variable %s is %g, should be within %g and %g\n",
-                                                      optIndex.name().c_str(),
-                                                      p.value(), p.minimum(), p.maximum()));
-                }
-            }
-        }
-        mytarget->second.increase(1, bound);
+        return;
     }
-    mytarget = targets->find(eRMS::UNPHYSICAL);
-    if (targets->end() != mytarget)
+    double bound = 0;
+    // Check ACM charges
+    for(const auto &atom: mol->atomsConst())
     {
-        double bound = 0;
-        // Check whether shell zeta > core zeta. Only for polarizable models.
-        auto   itype = InteractionType::ELECTROSTATICS;
-        if (forcefield->polarizable() && forcefield->interactionPresent(itype))
+        auto pt = atom.ffType();
+        auto p  = forcefield->findParticleType(pt)->parameterConst("charge");
+        if (p.mutability() == Mutability::ACM && p.maximum() > p.minimum())
         {
-            auto &fs             = forcefield->findForcesConst(itype);
-            std::string poltype  = "poltype";
-            std::string zetatype = "zetatype";
-            for(const auto &p : forcefield->particleTypesConst())
-            {
-                if (p.second.hasOption(poltype))
-                {
-                    auto coreID  = Identifier(p.second.optionValue(zetatype));
-                    auto shell   = forcefield->findParticleType(p.second.optionValue(poltype));
-                    auto shellID = Identifier(shell->optionValue(zetatype));
-                    auto fpshell = fs.findParameterTypeConst(shellID, "zeta");
-                    auto fpcore  = fs.findParameterTypeConst(coreID, "zeta");
-                    if (fpshell.ntrain() > 0 && fpcore.ntrain() > 0)
-                    {
-                        double deltaZeta = zetaDiff_ - (fpcore.value() - fpshell.value());
-                        if (deltaZeta > 0)
-                        {
-                            bound += gmx::square(deltaZeta);
-                        }
-                    }
-                }
-            }
+            bound += l2_regularizer(atom.charge(), p.minimum(), p.maximum());
         }
-        itype = InteractionType::BONDS;
-        if (forcefield->interactionPresent(itype))
-        {
-            auto &fs = forcefield->findForcesConst(itype);
-            if (fs.potential() == Potential::CUBIC_BONDS)
-            {
-                auto cubic_name = potentialToParameterName(fs.potential());
-                for(const auto &ffp : fs.parametersConst())
-                {
-                    auto param = ffp.second;
-                    auto rmax  = param[cubic_name[cubicRMAX]].value();
-                    auto blen  = param[cubic_name[cubicLENGTH]].value();
-                    // We want the maximum in the potential to be at least 0.1 nm further away than then minimum
-                    if (rmax < blen+0.1)
-                    {
-                        bound += gmx::square(rmax-blen-0.1);
-                    }
-                }
-            }
-        }
-        mytarget->second.increase(1, bound);
     }
+    mytarget->second.increase(1, bound);
 }
 
 /* * * * * * * * * * * * * * * * * * * * * *

@@ -52,10 +52,6 @@ namespace alexandria
 enum class eRMS { 
     //! Parameters going out of bound
     BOUNDS,
-    //! Unphysical parameters
-    UNPHYSICAL,
-    //! Charge
-    CHARGE,
     //! Molecular dipole
     MU,
     //! Molecular quadrupole
@@ -68,8 +64,6 @@ enum class eRMS {
     FREQUENCY,
     //! Infrared intensities
     INTENSITY,
-    //! Deviation from CM5 charge
-    CM5,
     //! Deviation from Electrostatic potential
     ESP,
     //! Potential energy deviation
@@ -271,8 +265,6 @@ private:
     std::vector<alexandria::ACTMol>  actmol_;
     //! Whether or not to load balance the inputs
     bool                            loadBalance_ = true;
-    //! Difference between core and shell zeta to count as unphysical
-    double                          zetaDiff_ = 2;    
     //! Boltzmann weighting temperature of energies, if larger than zero
     double                          ener_boltz_temp_ = 0;
     //! Fraction of ESP points to read (in percent)
@@ -388,9 +380,6 @@ public:
     
     //! Return all the parameter types to fit
     std::map<std::string, bool> typesToFit() const { return fit_; }
-
-    //! Zeta difference
-    double zetaDiff() const { return zetaDiff_; }
 
     //! Boltzmann weighting temperature for energies
     double enerBoltzTemp() const { return ener_boltz_temp_; }
