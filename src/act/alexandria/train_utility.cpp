@@ -319,8 +319,8 @@ void TrainForceFieldPrinter::analyse_multipoles(MsgHandler                      
                     auto tc = Tcalc[i];
                     auto te = Telec[i];
                     diff.push_back(tc-te);
-                        delta += gmx::square(tc-te);
-                        lsq_multi[mpo][mol->datasetType()][qt].add_point(factor*te, factor*tc, 0, 0);
+                    delta += gmx::square(tc-te);
+                    lsq_multi_[mpo][mol->datasetType()][qt].add_point(factor*te, factor*tc, 0, 0);
                 }
                 double rms = std::sqrt(delta/Tcalc.size());
                 std::string flag("");
@@ -1431,7 +1431,6 @@ void TrainForceFieldPrinter::print(MsgHandler                  *msghandler,
     const auto pd = sii->forcefield();
     int        n  = 0;
     std::map<iMolSelect, qtStats>                               lsq_charge, lsq_esp;
-    std::map<MolPropObservable, std::map<iMolSelect, qtStats> > lsq_multi;
     std::map<iMolSelect, std::map<std::string, gmx_stats> >     lsqt;
     std::map<iMolSelect, gmx_stats>                             lsq_rmsf, lsq_freq;
     for (auto &mpo : mpoMultiPoles)
@@ -1447,7 +1446,7 @@ void TrainForceFieldPrinter::print(MsgHandler                  *msghandler,
             }
             mq_multi.insert({ ims.first, qmpo });
         }
-        lsq_multi.insert({ mpo, std::move(mq_multi) });
+        lsq_multi_.insert({ mpo, std::move(mq_multi) });
     }
     for(auto &ims : iMolSelectNames())
     {
@@ -1678,7 +1677,7 @@ void TrainForceFieldPrinter::print(MsgHandler                  *msghandler,
             for(auto &mpo : mpoMultiPoles)
             {
                 print_stats(tw, mpo_name(mpo), mpo_unit2(mpo), 1.0,
-                            &lsq_multi[mpo][ims.first][qt],   header, "Electronic", name.c_str(), useOffset_);
+                            &lsq_multi_[mpo][ims.first][qt],   header, "Electronic", name.c_str(), useOffset_);
             }
             if (bPolar && qt == qPropertyType::ACM)
             {
@@ -1703,7 +1702,7 @@ void TrainForceFieldPrinter::print(MsgHandler                  *msghandler,
         std::string title   = gmx::formatString("%s components (%s)", mpo_name(mpo),
                                                 mpo_unit2(mpo));
         print_corr(opt2fn_null(cmdFlag.c_str(), filenm.size(), filenm.data()),
-                   nullptr, title.c_str(), alex, lsq_multi[mpo], oenv);
+                   nullptr, title.c_str(), alex, lsq_multi_[mpo], oenv);
     }
     print_corr(opt2fn_null("-epotcorr", filenm.size(), filenm.data()),
                nullptr, "Potential energy (kJ/mol)", alex,
