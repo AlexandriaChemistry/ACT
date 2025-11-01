@@ -110,7 +110,7 @@ private:
     std::map<iMolSelect, gmx_stats>    lsq_rmsf_;
     gmx_stats                          lsq_freq_;
     //! Statistics for multipoles
-    std::map<MolPropObservable, std::map<iMolSelect, qtStats> > lsq_multi;
+    std::map<MolPropObservable, std::map<iMolSelect, qtStats> > lsq_multi_;
     //! Interaction energy terms
     std::vector<InteractionType> terms_;
 
