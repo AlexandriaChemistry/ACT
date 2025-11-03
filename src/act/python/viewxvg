@@ -212,9 +212,7 @@ class DataSet:
         else:
             thisax.set_ylabel(texify(self.legends["ylabel"]), fontsize=args.axislabelfontsize, labelpad=args.axislabelfontsize*0.5)
         # Legend box placement
-        if args.squarefig and self.have_label():
-            thisax.legend(loc='upper left', bbox_to_anchor=(args.legend_x, args.legend_y), fontsize=args.legendfontsize if args.legendfontsize <= args.axislabelfontsize else args.axislabelfontsize*0.75)
-        elif args.legendfontsize > 0 and self.have_label():
+        if args.legendfontsize > 0 and self.have_label():
             thisax.legend(loc='upper left', bbox_to_anchor=(args.legend_x, args.legend_y), fontsize=args.legendfontsize)
 
     def do_bars(self, thisax, argcolors, idx, total_datasets, setcount, group_width):
@@ -445,8 +443,8 @@ def plot_once(axs, args):
         for aa in ['x', 'y']:
             thisax.tick_params(axis=aa, labelsize=args.tickfontsize)
             
-        # If x- or ylabels are not the same they should not be scaled together, fetching local maximas and minimas. 
-        if args.panels:
+        # If x- or ylabels are not the same they should not be scaled together, fetching local minimas and maximas. 
+        if args.panels and args.equalaxes == False: #If equalaxes, use global minimas ans maximas
             if datasets[0].legends.get("xlabel") != datasets[-1].legends.get("xlabel"):
                 xxmin = xmins[filenumber]
                 xxmax = xmaxs[filenumber]
@@ -502,25 +500,26 @@ if __name__ == '__main__':
 
     nfiles  = len(args.filename)
     ncolumn = 1
-    
-    if args.squarefig:
-        if args.panels:
-            xframe = args.axislabelfontsize/3
-            yframe = xframe*2
-        else:
-            xframe = args.axislabelfontsize/3
-            yframe = xframe
-    else:
-        xframe = args.xframe
-        yframe = args.yframe
 
     if args.panels:
         nrow    = int(math.sqrt(nfiles))
         ncolumn = int(nfiles/nrow)
         if nfiles % nrow != 0:
             ncolumn += 1
+        if args.squarefig:
+            xframe = (args.axislabelfontsize/3)*nrow
+            yframe = (args.axislabelfontsize/3)*ncolumn
+        else:
+            xframe = args.xframe
+            yframe = args.yframe
         fig, axs = plt.subplots(ncolumn, nrow, figsize=(xframe, yframe), constrained_layout=True) #constrained_layout=True usually more recommended than plt.tight_layout()
     else:
+        if args.squarefig:
+            xframe = args.axislabelfontsize/3
+            yframe = xframe
+        else:
+            xframe = args.xframe
+            yframe = args.yframe
         fig, axs = plt.subplots(figsize=(xframe, yframe), constrained_layout=True)
         axs = np.array([axs])
 
