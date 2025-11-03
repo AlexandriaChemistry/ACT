@@ -1591,7 +1591,17 @@ void ACTMol::getExpProps(MsgHandler                                 *msghandler,
     for (const auto &myexp : experimentConst())
     {
         bool     qprop = false;
-        auto     xatom = experCoords(myexp.getCoordinates());
+        auto     xcoords = myexp.getCoordinates();
+        if (xcoords.empty())
+        {
+            msghandler->msg(ACTStatus::Warning,
+                            gmx::formatString("No atomic coordinates for %s in experiment %s/%s datafile %s",
+                                              getMolname().c_str(),
+                                              myexp.getMethod().c_str(), myexp.getBasisset().c_str(),
+                                              myexp.getDatafile().c_str()));
+            continue;
+        }
+        auto     xatom = experCoords(xcoords);
         ACTQprop actq(myatoms, xatom);
         auto     qelec = actq.qPqm();
         auto     qcalc = actq.qPact();
