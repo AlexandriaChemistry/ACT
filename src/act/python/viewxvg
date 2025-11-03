@@ -445,6 +445,15 @@ def plot_once(axs, args):
         for aa in ['x', 'y']:
             thisax.tick_params(axis=aa, labelsize=args.tickfontsize)
             
+        # If x- or ylabels are not the same they should not be scaled together, fetching local maximas and minimas. 
+        if args.panels:
+            if datasets[0].legends.get("xlabel") != datasets[-1].legends.get("xlabel"):
+                xxmin = xmins[filenumber]
+                xxmax = xmaxs[filenumber]
+            if datasets[0].legends.get("ylabel") != datasets[-1].legends.get("ylabel"):
+                yymin = ymins[filenumber]
+                yymax = ymaxs[filenumber]
+
         # Scale the plot such that the content is visible
         deltax = (xxmax-xxmin)*0.05
         thisax.set_xlim(xxmin-deltax, xxmax+deltax)
