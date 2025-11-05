@@ -770,10 +770,10 @@ class CombRule:
                                                    "gamma": "HogervorstSigma", "delta": arith },
                        "WANG_BUCKINGHAM": { "sigma": "InverseSquare", "epsilon": "HogervorstEpsilon",
                                             "gamma": "MasonGamma" },
-                       "LJ14_7": { "sigma": geom, "epsilon": "Volumetric",
+                       "LJ14_7": { "sigma": "Volumetric", "epsilon": geom, 
                                    "gamma": arith, "delta": arith },
                        "LJ12_6": { "sigma": geom, "epsilon": geom },
-                       "LJ8_6": { "sigma": arith, "epsilon": "Volumetric" },
+                       "LJ8_6": { "sigma": "Volumetric", "epsilon": geom },
                        "MACDANIEL_SCHMIDT": { "a1dexp": geom, "a2dexp": geom, "bdexp": arith },
                        "MORSE_BONDS": { "bondlength": arith, "De": "Kronecker", "beta": arith, "D0": geom }
                       }
