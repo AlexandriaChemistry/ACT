@@ -35,8 +35,10 @@
 
 #include "act/alexandria/babel_io.h"
 #include "act/alexandria/fetch_charges.h"
+#include "act/alexandria/molselect.h"
 #include "act/basics/msg_handler.h"
 #include "act/molprop/molprop_xml.h"
+#include "act/utility/stringutil.h"
 
 namespace alexandria
 {
@@ -49,6 +51,14 @@ static std::vector<const char *> crDesc = {
     "with the [TT]-qqm[tt] flag.[PAR]", 
     "Alternatively, you can use the [TT]-db 'molecule(s)'[tt]",
     "option to extract one or more compounds from the molprop file.[PAR]",
+    "A selection of molecules into a training set and a test set (or ignore set)",
+    "can be made using option [TT]-sel[tt]. The format of this file is:[PAR]",
+    "iupac|Train[PAR]",
+    "iupac|Test[PAR]",
+    "iupac|Ignore[PAR]",
+    "and you should ideally have a line for each molecule in the molecule database",
+    "([TT]-mp[tt] option). Missing molecules will be ignored. Selection files",
+    "can be generated using the [TT]molselect[tt] script."
 };
 
 void CompoundReader::addOptions(std::vector<t_pargs>      *pargs,
@@ -56,7 +66,8 @@ void CompoundReader::addOptions(std::vector<t_pargs>      *pargs,
                                 std::vector<const char *> *desc)
 {
     std::vector<t_filenm>     fnm = {
-        { efXML, "-charges", "molprop",    ffOPTRD }
+        { efXML, "-charges", "molprop",    ffOPTRD },
+        { efDAT, "-sel",  "molselect",     ffOPTRD }
     };
     for (const auto &fn : fnm)
     {
@@ -93,7 +104,19 @@ void CompoundReader::addOptions(std::vector<t_pargs>      *pargs,
 void CompoundReader::optionsFinished(MsgHandler                  *msghandler,
                                      const std::vector<t_filenm> &filenm)
 {
-    if (strlen(filename_) != 0 && strlen(dbname_) != 0)
+    // molselect?
+    auto mfn = opt2fn_null("-sel", filenm.size(), filenm.data());
+    if (mfn != nullptr)
+    {
+        if (strlen(filename_) != 0 || strlen(dbname_) != 0)
+        {
+            msghandler->msg(ACTStatus::Error,
+                            "Please provide just one of the flags -f and -db and -sel.");
+            return;
+        }
+        molselect_.read(mfn);
+    }
+    else if (strlen(filename_) != 0 && strlen(dbname_) != 0)
     {
         msghandler->msg(ACTStatus::Error,
                         "Please provide just one of the flags -f and -db.");
@@ -231,43 +254,58 @@ std::vector<ACTMol> CompoundReader::read(MsgHandler          *msghandler,
                                          const ForceComputer *forceComp)
 {
     std::vector<ACTMol>   mols;
+    bool                  readCoordinates = false;
     std::set<std::string> lookup;
-    // Try reading from a file first
-    bool readCoordinates = strlen(filename_) > 0;
-    if (readCoordinates)
+    if (molselect_.nMol() > 0)
     {
-        ACTMol mol;
-        readFile(msghandler, pd, &mol);
-        if (msghandler->ok())
+        for(const auto &ims: molselect_.imolSelect())
         {
-            auto fp = mol.fragmentPtr();
-            if (fp)
+            const auto cccs = split(ims.iupac(), '#');
+            for(const auto &ccc : cccs)
             {
-                for(auto ic = fp->begin(); ic < fp->end(); ++ic)
-                {
-                    if (!ic->iupac().empty())
-                    {
-                        lookup.insert(ic->iupac());
-                    }
-                    else
-                    {
-                        lookup.insert(ic->inchi());
-                    }
-                }
+                lookup.insert(ccc);
             }
-            else
-            {
-                lookup.insert(mol.getMolname());
-            }
-            mols.push_back(mol);
         }
     }
-    else if (strlen(dbname_) > 0)
+    else
     {
-        // Determine what compounds the usesr selected
-        for(const auto &mymol : split(dbname_, ' '))
+        // Try reading from a file first
+        readCoordinates = strlen(filename_) > 0;
+        if (readCoordinates)
         {
-            lookup.insert(mymol);
+            ACTMol mol;
+            readFile(msghandler, pd, &mol);
+            if (msghandler->ok())
+            {
+                auto fp = mol.fragmentPtr();
+                if (fp)
+                {
+                    for(auto ic = fp->begin(); ic < fp->end(); ++ic)
+                    {
+                        if (!ic->iupac().empty())
+                        {
+                            lookup.insert(ic->iupac());
+                        }
+                        else
+                        {
+                            lookup.insert(ic->inchi());
+                        }
+                    }
+                }
+                else
+                {
+                    lookup.insert(mol.getMolname());
+                }
+                mols.push_back(mol);
+            }
+        }
+        else if (strlen(dbname_) > 0)
+        {
+            // Determine what compounds the usesr selected
+            for(const auto &mymol : split(dbname_, ' '))
+            {
+                lookup.insert(mymol);
+            }
         }
     }
     if (lookup.empty())
@@ -353,8 +391,11 @@ std::vector<ACTMol> CompoundReader::read(MsgHandler          *msghandler,
         for(auto mol = mols.begin(); mol < mols.end(); )
         {
             mol->GenerateTopology(msghandler, &pd, missingParameters::Error);
-            // Load all the other properties of the compounds
-            mol->getExpProps(msghandler, &pd, {{ MolPropObservable::POTENTIAL, iqmType::QM }});
+            if (msghandler->ok())
+            {
+                // Load all the other properties of the compounds
+                mol->getExpProps(msghandler, &pd, {{ MolPropObservable::POTENTIAL, iqmType::QM }});
+            }
             if (msghandler->ok())
             {
                 setCharges(msghandler, pd, &(*mol), forceComp, warnQtot);
