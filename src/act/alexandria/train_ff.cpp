@@ -662,14 +662,6 @@ int train_ff(int argc, char *argv[])
         "added if atoms from row VI or VII in the periodic table have a positive",
         "charge. The penalty is equal to the force constant given on the command line",
         "time the square of the charge.[PAR]",
-        "A selection of molecules into a training set and a test set (or ignore set)",
-        "can be made using option [TT]-sel[tt]. The format of this file is:[PAR]",
-        "iupac|Train[PAR]",
-        "iupac|Test[PAR]",
-        "iupac|Ignore[PAR]",
-        "and you should ideally have a line for each molecule in the molecule database",
-        "([TT]-mp[tt] option). Missing molecules will be ignored. Selection files",
-        "can be generated using the [TT]molselect[tt] script."
     };
 
     bool                bcompress           = false;
@@ -700,7 +692,6 @@ int train_ff(int argc, char *argv[])
     std::vector<t_filenm>       filenms =
     {
         { efXML, "-ff",   "aff",           ffRDMULT },
-        { efDAT, "-sel",  "molselect",     ffREAD   },
         { efXVG, "-conv", "param_conv" ,   ffWRITE  },
         { efXVG, "-chi2", "chi_squared",   ffWRITE  },
         { efDAT, "-fitness", "ga_fitness", ffWRITE }
@@ -749,7 +740,7 @@ int train_ff(int argc, char *argv[])
     if (opt.commRec()->isMaster())
     {
         print_memory_usage(debug);
-        gms.read(opt2fn_null("-sel", filenms.size(), filenms.data()));
+        gms = compR.molselect();
         if (tw)
         {
             print_header(tw, pargs, filenms);

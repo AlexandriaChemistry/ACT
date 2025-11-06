@@ -38,6 +38,7 @@
 #include <vector>
     
 #include "act/alexandria/actmol.h"
+#include "act/alexandria/molselect.h"
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/commandline/pargs.h"
 
@@ -71,6 +72,8 @@ namespace alexandria
         std::string qmapfn_;
         //! Data structure for charges
         ChargeMap   qmap_;
+        //! MolSelect structre if data was provided by the user
+        MolSelect   molselect_;
 
         /*! Read molecule from a single file
          * \param[in]  msghandler Error and message handler, check whether ok after returning
@@ -128,15 +131,20 @@ namespace alexandria
         ChargeMap *chargeMap() { return &qmap_; }
 
         /*! \brief Do the actual reading and processing
-         * \param[in] pd        The force field
-         * \param[in] forceComp A force computer
+         * \param[in] msghandler Error and message handler
+         * \param[in] pd         The force field
+         * \param[in] forceComp  A force computer
+         * \param[in] molselect  Selections if not something else is passed on the command line
          * \return A vector of zero or more compounds
          */
         std::vector<ACTMol> read(MsgHandler          *msghandler,
                                  ForceField          &pd,
                                  const ForceComputer *forceComp);
-        
-        //! Return true if user provided charges
+
+        //! \return the molselect structure (may be empty!)
+        const MolSelect &molselect() const { return molselect_; }
+
+        //! \return true if user provided charges
         bool userQtot() const { return strlen(qcustom_) > 0; }
     };
     
