@@ -318,11 +318,13 @@ public:
     void addFilenames(std::vector<t_filenm> *filenms);
 
     /*! \brief Check whether fitting options make sense.
-     * \params[in] msghandler For logging and status
-     * \params[in] pd         ForceField for information
+     * \param[in] msghandler For logging and status
+     * \param[in] pd         ForceField for information
+     * \param[in] alg        Allow checking flags for compatibility with algorithm
      */
-    void checkOptions(MsgHandler *msghandler,
-                      ForceField *pd);
+    void checkOptions(MsgHandler                *msghandler,
+                      ForceField                *pd,
+                      ChargeGenerationAlgorithm  alg);
 
     /*! \brief Process options after parsing
      */

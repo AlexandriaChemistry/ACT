@@ -124,6 +124,11 @@ namespace alexandria
         //! \return the charge algorithm
         ChargeGenerationAlgorithm algorithm() const { return qAlgorithm_; }
 
+        /*! \brief Set the charge algorithm
+         * \param[in] qA The new algorithm
+         */
+        void setAlgorithm(ChargeGenerationAlgorithm qA) { qAlgorithm_ = qA; }
+
         //! \return charge map
         const ChargeMap &chargeMapConst() const { return qmap_; }
 

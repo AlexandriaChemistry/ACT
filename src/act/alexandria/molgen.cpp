@@ -185,25 +185,38 @@ bool MolGen::hasMolPropObservable(MolPropObservable mpo) const
     return hasMPO;
 }
 
-void MolGen::checkOptions(MsgHandler *msghandler,
-                          ForceField *pd)
+void MolGen::checkOptions(MsgHandler                *msghandler,
+                          ForceField                *pd,
+                          ChargeGenerationAlgorithm  alg)
 {
     for(auto toFit = fit_.begin(); toFit != fit_.end(); )
     {
         InteractionType itype;
-        if (pd->typeToInteractionType(toFit->first, &itype))
-        {
-            msghandler->msg(ACTStatus::Verbose,
-                            gmx::formatString("Found parameter '%s' to train, interactiontype '%s'",
-                                              toFit->first.c_str(), interactionTypeToString(itype).c_str()));
-            toFit++;
-        }
-        else
+        if (!pd->typeToInteractionType(toFit->first, &itype))
         {
             msghandler->msg(ACTStatus::Warning,
                             gmx::formatString("Ignoring training parameter '%s' not present in force field.",
                                               toFit->first.c_str()));
             toFit = fit_.erase(toFit);
+        }
+        else
+        {
+            std::set<InteractionType> elec = { InteractionType::ELECTROSTATICS, InteractionType::POLARIZATION,
+                                               InteractionType::ELECTRONEGATIVITYEQUALIZATION, InteractionType::BONDCORRECTIONS };
+            if (alg == ChargeGenerationAlgorithm::ESP && (elec.find(itype) != elec.end() || isVsite(itype)))
+            {
+                msghandler->msg(ACTStatus::Warning,
+                                gmx::formatString("Cannot train parameter '%s' in conjunction with using the ESP algorithm for charge generation.",
+                                                  toFit->first.c_str()));
+                toFit = fit_.erase(toFit);
+            }
+            else
+            {
+                msghandler->msg(ACTStatus::Verbose,
+                                gmx::formatString("Found parameter '%s' to train, interactiontype '%s'",
+                                                  toFit->first.c_str(), interactionTypeToString(itype).c_str()));
+                toFit++;
+            }
         }
     }
 }

@@ -797,7 +797,7 @@ int train_ff(int argc, char *argv[])
     bool optionsOk = true;
     if (opt.commRec()->isMaster())
     {
-        opt.mg()->checkOptions(opt.msgHandler(), opt.sii()->forcefield());
+        opt.mg()->checkOptions(opt.msgHandler(), opt.sii()->forcefield(), compR.algorithm());
     }
     opt.commRec()->bcast(&optionsOk, MPI_COMM_WORLD);
     if (!optionsOk)
@@ -815,6 +815,13 @@ int train_ff(int argc, char *argv[])
                             opt.sii()->fittingTargetsConst(iMolSelect::Train), &compR))
     {
         opt.msgHandler()->fatal("Training set is empty on one or more of the nodes, check your input and your command line flags. Rerun with -v 5 flag");
+    }
+    if (compR.algorithm() == ChargeGenerationAlgorithm::ESP)
+    {
+        // By now, we have initialized all the charges.
+        // This means we can fix those, but also that no charge related parameters can be trained.
+        // TODO: The latter needs to be implemented to prevent errors.
+        compR.setAlgorithm(ChargeGenerationAlgorithm::Read);
     }
 
     // StaticIndividualInfo things
