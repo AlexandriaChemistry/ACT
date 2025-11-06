@@ -804,10 +804,11 @@ int train_ff(int argc, char *argv[])
     {
         return 0;
     }
-    // Read charges file if needed
+    // Read charges file if needed. No need to store the ACTmols being returned
     {
         ForceComputer forceComp;
-        compR.read(opt.msgHandler(), *opt.sii()->forcefield(), &forceComp);
+        (void) compR.read(opt.msgHandler(), *opt.sii()->forcefield(),
+                          &forceComp);
     }
 
     // MolGen read being called here!
