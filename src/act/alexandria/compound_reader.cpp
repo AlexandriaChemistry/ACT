@@ -254,8 +254,13 @@ std::vector<ACTMol> CompoundReader::read(MsgHandler          *msghandler,
                                          const ForceComputer *forceComp)
 {
     std::vector<ACTMol>   mols;
+    if (qmapfn_.empty())
+    {
+        return mols;
+    }
     bool                  readCoordinates = false;
     std::set<std::string> lookup;
+    std::string           lookupSource;
     if (molselect_.nMol() > 0)
     {
         for(const auto &ims: molselect_.imolSelect())
@@ -266,6 +271,8 @@ std::vector<ACTMol> CompoundReader::read(MsgHandler          *msghandler,
                 lookup.insert(ccc);
             }
         }
+        // For printing further down
+        lookupSource.assign("selection file");
     }
     else
     {
@@ -298,6 +305,9 @@ std::vector<ACTMol> CompoundReader::read(MsgHandler          *msghandler,
                 }
                 mols.push_back(mol);
             }
+            // For printing further down
+            lookupSource.assign("file ");
+            lookupSource += filename_;
         }
         else if (strlen(dbname_) > 0)
         {
@@ -306,6 +316,8 @@ std::vector<ACTMol> CompoundReader::read(MsgHandler          *msghandler,
             {
                 lookup.insert(mymol);
             }
+            // For printing further down
+            lookupSource.assign("the command line flag -db");
         }
     }
     if (lookup.empty())
@@ -328,15 +340,7 @@ std::vector<ACTMol> CompoundReader::read(MsgHandler          *msghandler,
         {
             msg += gmx::formatString(" '%s'", lu.c_str());
         }
-        if (strlen(dbname_) > 0)
-        {
-            msg += " in the charges molprop.";
-        }
-        else
-        {
-            msg += " in ";
-            msg += filename_;
-        }
+        msg += lookupSource;
         msghandler->msg(ACTStatus::Info, msg);
     }
     if (!qmapfn_.empty())
