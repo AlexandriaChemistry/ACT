@@ -70,9 +70,9 @@ void CompoundReader::addOptions(std::vector<t_pargs>      *pargs,
 
     std::vector<t_pargs> mypargs = {
         { "-f",      FALSE, etSTR,  {&filename_},
-          "Molecular structure file in e.g. pdb format" },
+          "Molecular structure file in e.g. pdb format. Is ignored with train_ff." },
         { "-db",     FALSE, etSTR,  {&dbname_},
-          "Read one or more molecules from the database rather than from a file. To specify multiple molecules please use quotes, e.g. [TT]-db[tt] 'water methane ammonia'." },
+          "Read one or more molecules from the database rather than from a file. To specify multiple molecules please use quotes, e.g. [TT]-db[tt] 'water methane ammonia'. Is ignored with train_ff." },
         { "-oneH", FALSE, etBOOL, {&oneH_},
           "Map all different hydrogen atom types back to H, mainly for debugging." },
         { "-qtot",   FALSE, etREAL, {&qtot_},
