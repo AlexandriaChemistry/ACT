@@ -3,6 +3,14 @@ debugXvgUtils = False
         
 def interpret_legend(line:str):
     legval = None
+
+    #find and save subtitle if one exists
+    legkey = "subtitle"
+    if line.find(legkey) >= 0:
+        legval = line[line.find(legkey)+len(legkey)+1:].strip()
+        legval = legval[1:-1]
+        return legkey, legval
+
     legkey = "title"
     if line.find(legkey) >= 0:
         legval = line[line.find(legkey)+len(legkey)+1:].strip()
