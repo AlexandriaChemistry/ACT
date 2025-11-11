@@ -114,19 +114,16 @@ public:
                const std::string &datafile,
                JobType            jtype);
     
-    //#define EXPERIMENT_DESTRUCTOR 1
-#ifdef EXPERIMENT_DESTRUCTOR
     //! Destructor
     ~Experiment();
     
     Experiment(const Experiment& other);
 
-    Experiment& operator=(const Experiment& copyFrom) = default;
+    //    Experiment& operator=(const Experiment& copyFrom) = default;
     
     Experiment(Experiment &&other);
 
-    Experiment& operator=(Experiment &&) = default;
-#endif
+    //Experiment& operator=(Experiment &&) = default;
 
     //! Return the type of data
     DataSource dataSource() const { return dataSource_; }

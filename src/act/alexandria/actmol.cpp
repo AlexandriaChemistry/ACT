@@ -210,12 +210,17 @@ void ACTMol::checkAtoms(MsgHandler       *msghandler,
 
 std::vector<gmx::RVec> ACTMol::experCoords(const std::vector<gmx::RVec> &xxx) const
 {
-    auto topol = topology();
+    auto topol   = topology();
     auto myatoms = topol->atoms();
     if (myatoms.empty())
     {
         // Called this function too early?
-        GMX_THROW(gmx::InternalError("No topology to generate coordinates"));
+        GMX_THROW(gmx::InternalError("No topology to generate coordinates."));
+    }
+    else if (xxx.empty())
+    {
+        // Called this function too early?
+        GMX_THROW(gmx::InternalError("No coordinates."));
     }
     gmx::RVec fzero = { 0, 0, 0 };
     std::vector<gmx::RVec> coords(myatoms.size(), fzero);

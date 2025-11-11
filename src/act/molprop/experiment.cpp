@@ -103,16 +103,15 @@ Experiment::Experiment(const std::string &program,
       jobtype_(jtype)
 {}
 
-#ifdef EXPERIMENT_DESTRUCTOR
 Experiment::~Experiment()
 {
     for(auto &mp : property_)
     {
         for(auto pp = mp.second.begin(); pp < mp.second.end(); ++pp)
         {
-            if (*pp)
+            if (*pp != nullptr)
             {
-                delete *pp;
+                pp = mp.second.erase(pp);
             }
         }
     }
@@ -120,10 +119,22 @@ Experiment::~Experiment()
 
 Experiment::Experiment(const Experiment& other)// = default;
 {
-    auto oprops = other.propertiesConst();
+    reference_    = other.getReference();
+    conformation_ = other.getConformation();
+    program_      = other.getProgram();
+    method_       = other.getMethod();
+    basisset_     = other.getBasisset();
+    datafile_     = other.getDatafile();
+    jobtype_      = other.getJobtype();
+    catom_        = other.calcAtomConst();
+    coordinates_  = other.getCoordinates();
+    forces_       = other.getForces();
+    id_           = other.id();
+    dataSource_   = other.dataSource();
+
+    auto oprops   = other.propertiesConst();
     for(auto &op : oprops)
     {
-        
         property_.insert({ op.first, {} });
         for(auto &gp : op.second)
         {
@@ -134,6 +145,19 @@ Experiment::Experiment(const Experiment& other)// = default;
 
 Experiment::Experiment(Experiment &&other)
 {
+    reference_    = other.getReference();
+    conformation_ = other.getConformation();
+    program_      = other.getProgram();
+    method_       = other.getMethod();
+    basisset_     = other.getBasisset();
+    datafile_     = other.getDatafile();
+    jobtype_      = other.getJobtype();
+    catom_        = other.calcAtomConst();
+    coordinates_  = other.getCoordinates();
+    forces_       = other.getForces();
+    id_           = other.id();
+    dataSource_   = other.dataSource();
+
     auto oprops = other.properties();
     for(auto &op : *oprops)
     {
@@ -145,8 +169,6 @@ Experiment::Experiment(Experiment &&other)
         }
     }
 }
-
-#endif
 
 void Experiment::Dump(gmx::TextWriter *tw) const
 {
@@ -190,7 +212,7 @@ void Experiment::addProperty(MolPropObservable mpo, GenericProperty *gp)
     if (property_.find(mpo) == property_.end())
     {
         std::vector<GenericProperty *> gpnew;
-        property_.insert(std::pair<MolPropObservable, std::vector<GenericProperty *>>(mpo, gpnew));
+        property_.insert({ mpo, std::move(gpnew) });
     }
     property_.find(mpo)->second.push_back(std::move(gp));
 }
@@ -207,25 +229,9 @@ int Experiment::Merge(const Experiment *src)
             addProperty(mpo, gp);
         }
     }
+    std::copy(src->calcAtomConst().begin(), src->calcAtomConst().end(),
+              std::back_inserter(catom_));
 
-    for (auto &cai : src->calcAtomConst())
-    {
-        double   x, y, z;
-        CalcAtom caa(cai.getName(), cai.getObtype(), cai.getAtomid());
-
-        cai.coords(&x, &y, &z);
-        caa.setCoordUnit(cai.coordUnit());
-        caa.setCoords(x, y, z);
-        cai.forces(&x, &y, &z);
-        caa.setForceUnit(cai.forceUnit());
-        caa.setForces(x, y, z);
-        caa.setResidue(cai.residueName(), cai.residueNumber());
-        for (const auto &aci : cai.chargesConst())
-        {
-            caa.AddCharge(aci.first, aci.second);
-        }
-        AddAtom(caa);
-    }
     return nwarn;
 }
 
