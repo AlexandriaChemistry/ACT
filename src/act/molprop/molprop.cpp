@@ -482,11 +482,9 @@ std::vector<std::string> MolProp::Merge(const MolProp *src)
     }
     if (NBond() == 0)
     {
-        for (auto &bi : src->bondsConst())
-        {
-            alexandria::Bond bb(bi.aI(), bi.aJ(), bi.bondOrder());
-            AddBond(bb);
-        }
+        std::copy(src->bondsConst().begin(), 
+                  src->bondsConst().end(),
+                  std::back_inserter(bond_));
     }
     else
     {
@@ -510,39 +508,9 @@ std::vector<std::string> MolProp::Merge(const MolProp *src)
         }
     }
 
-    for (auto &ei : src->experimentConst())
-    {
-        if (dsExperiment == ei.dataSource())
-        {
-            Experiment ex(ei.getReference(), ei.getConformation());
-            int nwarn = ex.Merge(&ei);
-            if (nwarn > 0)
-            {
-                warnings.push_back("Problem adding experiment");
-            }
-            else
-            {
-                AddExperiment(ex);
-            }
-        }
-        else
-        {
-            auto jtype = ei.getJobtype();
-            Experiment ca(ei.getProgram(), ei.getMethod(),
-                          ei.getBasisset(), ei.getReference(),
-                          ei.getConformation(), ei.getDatafile(),
-                          jtype);
-            int nwarn = ca.Merge(&ei);
-            if (nwarn > 0)
-            {
-                warnings.push_back("Problem adding calculation");
-            }
-            else
-            {
-                AddExperiment(ca);
-            }
-        }
-    }
+    std::copy(src->experimentConst().begin(), src->experimentConst().end(),
+              std::back_inserter(exper_));
+
     return warnings;
 }
 

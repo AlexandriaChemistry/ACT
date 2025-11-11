@@ -931,7 +931,7 @@ bool readBabel(alexandria::MsgHandler           *msg_handler,
                       maxPotential, nsymm, jobType, userqtot, qtot, addHydrogen, g09,
                       inputformat))
         {
-            mpt->push_back(mp);
+            mpt->push_back(std::move(mp));
         }
         //delete mol;
     }

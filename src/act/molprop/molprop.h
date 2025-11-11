@@ -296,9 +296,9 @@ public:
     Experiment *findExperiment(JobType job);
     
     //! Add an experiment
-    void AddExperiment(const Experiment &myexp) 
+    void AddExperiment(Experiment myexp)
     {
-        exper_.push_back(myexp); 
+        exper_.push_back(std::move(myexp));
         exper_.back().setId(exper_.size()-1);
     }
 
