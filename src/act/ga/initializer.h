@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2022
+ * Copyright (C) 2014-2022,2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -30,10 +30,8 @@
  * \author Julian Ramon Marrades Furquet <julian@marrad.es>
  */
 
-
 #ifndef GA_INITIALIZER_H
 #define GA_INITIALIZER_H
-
 
 #include "individual.h"
 
@@ -43,7 +41,6 @@
 
 namespace ga
 {
-
 
 /*!
 * \brief Abstract class for initializing and randomizing Individual/Genome instances
@@ -59,8 +56,10 @@ public:
      */
     virtual Individual *initialize() = 0;
 
-    /*!
-     * \brief Randomize a Genome object
+    //! Default destructor
+    virtual ~Initializer() = default;
+
+    /*! \brief Randomize a Genome object
      * \param[in] genome the Genome to randomize
      */
     virtual void randomizeGenome(Genome *genome) = 0;

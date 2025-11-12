@@ -86,6 +86,9 @@ public:
         gen.seed(seed);
     }
 
+    //! Default destructor
+    virtual ~RouletteSelector() = default;
+
     virtual int select(const std::vector<Genome> *pop);
 
 };

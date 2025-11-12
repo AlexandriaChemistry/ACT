@@ -57,7 +57,6 @@
 #include "act/forcefield/forcefield.h"
 #include "act/forcefield/forcefield_tables.h"
 #include "act/forcefield/forcefield_xml.h"
-#include "act/ga/npointcrossover.h"
 #include "act/ga/penalizer.h"
 #include "act/molprop/molprop_util.h"
 #include "act/utility/memory_check.h"
@@ -68,6 +67,7 @@
 #include "gromacs/statistics/statistics.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
+
 namespace alexandria
 {
 
@@ -97,6 +97,22 @@ OptACM::~OptACM()
     if (mutator_)
     {
         delete mutator_;
+    }
+    if (probComputer_)
+    {
+        delete probComputer_;
+    }
+    if (initializer_)
+    {
+        delete initializer_;
+    }
+    if (crossover_)
+    {
+        delete crossover_;
+    }
+    if (sii_)
+    {
+        delete sii_;
     }
 }
 
@@ -174,23 +190,22 @@ void OptACM::initChargeGeneration(iMolSelect ims)
 int OptACM::initMaster(const std::vector<t_filenm> &fnm,
                        ChargeGenerationAlgorithm    algorithm)
 {
-    ga::ProbabilityComputer *probComputer = nullptr;
     // ProbabilityComputer
     switch (gach_.probabilityComputerAlg())
     {
     case ProbabilityComputerAlg::pcRANK:
         {
-            probComputer = new ga::RankProbabilityComputer(gach_.popSize());
+            probComputer_ = new ga::RankProbabilityComputer(gach_.popSize());
             break;
         }
     case ProbabilityComputerAlg::pcFITNESS:
         {
-            probComputer = new ga::FitnessProbabilityComputer(gach_.popSize());
+            probComputer_ = new ga::FitnessProbabilityComputer(gach_.popSize());
             break;
         }
     case ProbabilityComputerAlg::pcBOLTZMANN:
         {
-            probComputer = new ga::BoltzmannProbabilityComputer(
+            probComputer_ = new ga::BoltzmannProbabilityComputer(
                 gach_.boltzTemp(), gach_.maxGenerations(),
                 gach_.boltzAnneal(), gach_.popSize()
             );
@@ -236,7 +251,7 @@ int OptACM::initMaster(const std::vector<t_filenm> &fnm,
     }
 
     // Initializer
-    auto *initializer = new ACMInitializer(sii_, gach_.randomInit(), dis(gen));
+    auto *initializer_ = new ACMInitializer(sii_, gach_.randomInit(), dis(gen));
 
     if (gach_.optimizer() == OptimizerAlg::GA)
     {
@@ -258,7 +273,7 @@ int OptACM::initMaster(const std::vector<t_filenm> &fnm,
     }
 
     // Selector
-    auto *selector = new ga::RouletteSelector(dis(gen));
+    selector_ = new ga::RouletteSelector(dis(gen));
 
     auto tw = msghandler_.tw();
     // Penalizer(s)
@@ -280,7 +295,7 @@ int OptACM::initMaster(const std::vector<t_filenm> &fnm,
         penalizers->push_back(
             new ga::VolumeFractionPenalizer(
                 oenv_, gach_.logVolume(), totalVolume,
-                gach_.vfpVolFracLimit(), gach_.vfpPopFrac(), initializer
+                gach_.vfpVolFracLimit(), gach_.vfpPopFrac(), initializer_
             )
         );
     }
@@ -294,7 +309,7 @@ int OptACM::initMaster(const std::vector<t_filenm> &fnm,
             new ga::CatastrophePenalizer(dis(gen),
                                          gach_.cpGenInterval(),
                                          gach_.cpPopFrac(),
-                                         initializer, gach_.popSize()
+                                         initializer_, gach_.popSize()
             )
         );
     }
@@ -320,7 +335,7 @@ int OptACM::initMaster(const std::vector<t_filenm> &fnm,
     // Initialize the optimizer
     if (gach_.optimizer() == OptimizerAlg::MCMC)
     {
-        ga_ = new ga::MCMC(initializer, fitComp_, mutator_, sii_, &gach_);
+        ga_ = new ga::MCMC(initializer_, fitComp_, mutator_, sii_, &gach_);
     }
     else
     {
@@ -332,12 +347,13 @@ int OptACM::initMaster(const std::vector<t_filenm> &fnm,
             gach_.setCrossovers(1);
         }
 
-        auto *crossover = new ga::NPointCrossover(sii_->nParam(),
-                                                  gach_.nCrossovers(),
-                                                  dis(gen));
+        crossover_ = new ga::NPointCrossover(sii_->nParam(),
+                                             gach_.nCrossovers(),
+                                             dis(gen));
 
         // We pass the global seed to the optimizer
-        ga_ = new ga::HybridGAMC(initializer, fitComp_, probComputer, selector, crossover,
+        ga_ = new ga::HybridGAMC(initializer_, fitComp_, probComputer_,
+                                 selector_, crossover_,
                                  mutator_, terminators, penalizers, sii_, &gach_,
                                  opt2fn("-fitness", fnm.size(), fnm.data()),
                                  opt2fn_null("-gpin", fnm.size(), fnm.data()),

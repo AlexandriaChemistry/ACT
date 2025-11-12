@@ -48,6 +48,7 @@
 #include "act/forces/forcecomputer.h"
 #include "act/ga/genetic_algorithm.h"
 #include "act/ga/mutator.h"
+#include "act/ga/npointcrossover.h"
 #include "act/utility/communicationrecord.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/mdlib/force.h"
@@ -95,15 +96,22 @@ private:
 
     // This is for MASTER node
     //! GeneticAlgorithm instance
-    ga::GeneticAlgorithm *ga_          = nullptr;
+    ga::GeneticAlgorithm    *ga_           = nullptr;
 
     //! Pointer to ForceComputer
-    ForceComputer        *forceComp_   = nullptr;
+    ForceComputer           *forceComp_    = nullptr;
     //! Pointer to ACMFitnessComputer since it will be initialized later
-    ACMFitnessComputer   *fitComp_     = nullptr;
+    ACMFitnessComputer      *fitComp_      = nullptr;
     //! Storing the mutator used
-    ga::Mutator          *mutator_     = nullptr;
-    
+    ga::Mutator             *mutator_      = nullptr;
+    //! Probability
+    ga::ProbabilityComputer *probComputer_ = nullptr;
+    //! Initializer
+    ACMInitializer          *initializer_  = nullptr;
+    //! Selector
+    ga::RouletteSelector    *selector_     = nullptr;
+    //! CrossOver
+    ga::NPointCrossover     *crossover_    = nullptr;
     /*!
      * \brief Print to log file (if it exists), the estimated number of times
      * we will call calcDeviation per dataset
