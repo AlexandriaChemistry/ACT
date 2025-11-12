@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2022
+ * Copyright (C) 2014-2022,2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -41,13 +41,10 @@
 
 #include "genome.h"
 
-
 namespace ga
 {
 
-
-/*!
- * \brief Abstract class to perform crossover.
+/*! \brief Abstract class to perform crossover.
  * Given two \ref Individual (parents), it will mix their genomes to generate two new Individual (children)
  */
 class Crossover
@@ -74,8 +71,10 @@ protected:
         gen_base.seed(seed);
     }
 
-    /*!
-     * \brief Pick a random gene index
+    //! Default destructor
+    virtual ~Crossover() = default;
+
+    /*! \brief Pick a random gene index
      * \return the selected index
      */
     size_t randIndex() { return dis_base(gen_base); }
