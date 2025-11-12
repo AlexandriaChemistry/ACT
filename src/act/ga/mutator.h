@@ -71,6 +71,8 @@ protected:
 
 public:
 
+    virtual ~Mutator() = default;
+
     /*!
      * \brief Mutate genes of a Genome (in place)
      * \param[in]  msghandler   The message and status handler

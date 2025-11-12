@@ -80,6 +80,26 @@ void my_fclose(FILE *fp)
     }
 }
 
+OptACM::~OptACM()
+{
+    if (ga_)
+    {
+        delete ga_;
+    }
+    if (forceComp_)
+    {
+        delete forceComp_;
+    }
+    if (fitComp_)
+    {
+        delete fitComp_;
+    }
+    if (mutator_)
+    {
+        delete mutator_;
+    }
+}
+
 void OptACM::add_options(std::vector<t_pargs>  *pargs,
                          std::vector<t_filenm> *fnms)
 {
