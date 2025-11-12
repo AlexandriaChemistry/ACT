@@ -84,7 +84,7 @@ public:
     bool operator==(size_t index) const { return index == index_; }
 };
 
-Topology::Topology(const std::vector<Bond> &bonds)
+void Topology::init(const std::vector<Bond> &bonds)
 {
     for(const auto &b : bonds)
     {

@@ -106,7 +106,7 @@ void initACTMol(const char          *molname,
                 }
                 if (msghandler.ok())
                 {
-                    mps->push_back(mm);
+                    mps->push_back(std::move(mm));
                 }
             }
         }

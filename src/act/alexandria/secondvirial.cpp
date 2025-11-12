@@ -283,10 +283,10 @@ void ReRunner::rerun(MsgHandler       *msghandler,
             auto atomStart  = actmol->fragmentHandler()->atomStart();
             std::vector<gmx::RVec> com        = { { 0, 0, 0 }, { 0, 0, 0 } };
             std::vector<double>    mtot       = { 0, 0 };
-            auto      tops  = actmol->fragmentHandler()->topologies();
+            const auto &tops  = actmol->fragmentHandler()->topologies();
             for(int kk = 0; kk < 2; kk++)
             {
-                auto natom = tops[kk]->atoms().size();
+                auto natom = tops[kk].atoms().size();
                 for(size_t i = atomStart[kk]; i < atomStart[kk]+natom; i++)
                 {
                     gmx::RVec mr1;
@@ -343,8 +343,8 @@ void ReRunner::runB2(CommunicationRecord         *cr,
 {
     // Compute the relative masses
     std::vector<double> masses = {
-        actmol->fragmentHandler()->topologies()[0]->mass(),
-        actmol->fragmentHandler()->topologies()[1]->mass()
+        actmol->fragmentHandler()->topologies()[0].mass(),
+        actmol->fragmentHandler()->topologies()[1].mass()
     };
     int ndimer = 0;
     int nrest  = 0;
@@ -487,10 +487,10 @@ void ReRunner::runB2(CommunicationRecord         *cr,
             std::vector<double>    mtot       = { 0, 0 };
             std::vector<gmx::RVec> torque     = { { 0, 0, 0 }, { 0, 0, 0 } };
             std::vector<gmx::RVec> torqueRot  = { { 0, 0, 0 }, { 0, 0, 0 } };
-            auto      tops  = actmol->fragmentHandler()->topologies();
+            const auto &tops  = actmol->fragmentHandler()->topologies();
             for(int kk = 0; kk < 2; kk++)
             {
-                auto natom = tops[kk]->atoms().size();
+                auto natom = tops[kk].atoms().size();
                 for(size_t i = atomStart[kk]; i < atomStart[kk]+natom; i++)
                 {
                     gmx::RVec mr1;

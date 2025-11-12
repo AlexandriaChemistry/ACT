@@ -271,11 +271,10 @@ private:
     {
     }
 
-    /*! Constructor
-     * This code copies relevant structures from the outside world
+    /*! \brief This code copies relevant structures from the outside world
      * \param[in] bonds The bonds connecting this molecule.
      */
-    Topology(const std::vector<Bond> &bonds);
+    void init(const std::vector<Bond> &bonds);
 
     //! Return the name
     const std::string &moleculeName() const { return moleculeName_; }
