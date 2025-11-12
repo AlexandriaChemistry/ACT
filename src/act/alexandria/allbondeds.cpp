@@ -617,15 +617,15 @@ void AllBondeds::extractGeometries(MsgHandler                 *msghandler,
                     continue;
                 }
             }
-            auto top = mmi.topology();
-            for(const auto &entry : top->entries())
+            for(const auto &entry : mmi.topology()->entries())
             {
                 for (const auto &topentry : entry.second)
                 {
-                    addBondeds(msghandler, entry.first, mmi, topentry->id(), topentry->atomIndices());
+                    addBondeds(msghandler, entry.first, mmi, topentry->id(),
+                               topentry->atomIndices());
                 }
             }
-            actmols->push_back(mmi);
+            actmols->push_back(std::move(mmi));
         }
     }
 }

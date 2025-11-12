@@ -49,7 +49,7 @@ namespace alexandria
         //! What algorithm do we use for generating charges
         ChargeGenerationAlgorithm          algorithm_ = ChargeGenerationAlgorithm::EEM;
         //! A complete topology for each fragment is needed to compute energies
-        std::vector<Topology *>            topologies_;
+        std::vector<Topology>              topologies_;
         //! And a vector of bonds
         std::vector<std::vector<Bond> >    bonds_;
         //! Fragment InChi identifiers
@@ -63,7 +63,9 @@ namespace alexandria
         //! Total number of atoms
         size_t                             natoms_ = 0;
     public:
-        /*! Constructor
+        //! Constructor does nothing
+        FragmentHandler() {}
+        /*! Initialize stuff
          * \param[in] msghandler    Message handler
          * \param[in] pd            Force field data
          * \param[in] coordinates   The atomic coordinates, may be extended if shells are present.
@@ -72,13 +74,13 @@ namespace alexandria
          * \param[in] fragments     The fragmentation information
          * \param[in] missing       How to deal with missing parameters
          */
-        FragmentHandler(MsgHandler                   *msghandler,
-                        ForceField                   *pd,
-                        const std::vector<gmx::RVec> &coordinates,
-                        const std::vector<ActAtom>   &atoms,
-                        const std::vector<Bond>      &bonds,
-                        const std::vector<Fragment>  *fragments,
-                        missingParameters             missing);
+        void init(MsgHandler                   *msghandler,
+                  ForceField                   *pd,
+                  const std::vector<gmx::RVec> &coordinates,
+                  const std::vector<ActAtom>   &atoms,
+                  const std::vector<Bond>      &bonds,
+                  const std::vector<Fragment>  *fragments,
+                  missingParameters             missing);
 
         /*! \brief Fetch charges for all atoms
          * \param[out] qq Vector that will be reinitialized at correct length
@@ -92,10 +94,10 @@ namespace alexandria
         const std::vector<size_t> atomStart() const { return atomStart_; }
 
         //! \return the vector of Topology structures
-        const std::vector<Topology *> topologies() const { return topologies_; }
+        const std::vector<Topology> &topologies() const { return topologies_; }
 
         //! \return the vector of Topology structures
-        std::vector<Topology *> &topologiesPtr() { return topologies_; }
+        std::vector<Topology> &topologiesPtr() { return topologies_; }
 
         /*! \brief Generate charges for all fragments
          * \param[in]  msg_handler Debug storage, may be nullptr

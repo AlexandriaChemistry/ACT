@@ -274,7 +274,7 @@ private:
     //! Energy terms for this compounds
     std::map<MolPropObservable, double> energy_;
     //! Molecular Topology
-    Topology                      *topology_      = nullptr;
+    Topology                       topology_;
     //! All the atoms, but not shells or vsites
     std::vector<int>               realAtoms_; 
     //! Reference data for devcomputer
@@ -288,7 +288,7 @@ private:
     std::vector<int>               symmetric_charges_;
     eSupport                       eSupp_         = eSupport::Local;
     //! Structure to manage charge generation
-    FragmentHandler               *fraghandler_   = nullptr;
+    FragmentHandler                fraghandler_;
     iMolSelect                     dataset_type_  = iMolSelect::Ignore;
     //! Internal storage for original coords
     std::vector<gmx::RVec>         xOriginal_;
@@ -408,22 +408,14 @@ public:
      */
     std::vector<ActAtom> *atoms()
     {
-        if (topology_ == nullptr)
-        {
-            GMX_THROW(gmx::InternalError("No topology created yet."));
-        }
-        return topology_->atomsPtr();
+        return topology_.atomsPtr();
     }
     /*! \brief
      * \return atoms data for reading only
      */
     const std::vector<ActAtom> &atomsConst()
     {
-        if (topology_ == nullptr)
-        {
-            GMX_THROW(gmx::InternalError("No topology created yet."));
-        }
-        return topology_->atoms();
+        return topology_.atoms();
     }
 
     //! \return the QtypeProps vector for editing
@@ -453,12 +445,16 @@ public:
 
     /*! \brief Return the fragment handler
      */
-    FragmentHandler *fragmentHandler() const { return fraghandler_; }
+    FragmentHandler *fragmentHandler() { return &fraghandler_; }
+    
+    /*! \brief Return the fragment handler
+     */
+    const FragmentHandler *fragmentHandler() const { return &fraghandler_; }
     
     /*! \brief
      * \return atoms data
      */
-    const std::vector<ActAtom> &atomsConst() const { return topology_->atoms(); }
+    const std::vector<ActAtom> &atomsConst() const { return topology_.atoms(); }
     
     /*! \brief Return the bond order
      * \param[in] ai Atom I
@@ -479,10 +475,10 @@ public:
                           missingParameters  missing);
     
     //! Return the ACT topology structure
-    const Topology *topology() const { return topology_; }
+    const Topology *topology() const { return &topology_; }
     
     //! Return the ACT topology structure for editing
-    Topology *topologyPtr() { return topology_; }
+    Topology *topologyPtr() { return &topology_; }
     /*! \brief
      * Update internal structures with electric moments etc.
      * \param[in]  pd        Data structure containing atomic properties

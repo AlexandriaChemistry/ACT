@@ -163,7 +163,7 @@ protected:
                 mm.generateCharges(&msghandler, pd, forceComp, alg, &coords, &forces);
                 if (msghandler.ok())
                 {
-                    mps.push_back(mm);
+                    mps.push_back(std::move(mm));
                 }
             }
         }

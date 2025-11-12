@@ -213,7 +213,7 @@ protected:
                     for(size_t f = 0; f < atomStart.size(); f++)
                     {
                         double qt    = 0;
-                        auto   natom = fh->topologies()[f]->atoms().size();
+                        auto   natom = fh->topologies()[f].atoms().size();
                         for(size_t atom = atomStart[f]; atom < atomStart[f]+natom; atom++)
                         {
                             qt += myatoms[atom].charge();

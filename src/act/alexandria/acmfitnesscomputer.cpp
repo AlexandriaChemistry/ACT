@@ -225,7 +225,7 @@ double ACMFitnessComputer::calcDeviation(MsgHandler                 *msghandler,
             // Fill the fragments too if there are any
             for(auto &ft : actmol->fragmentHandler()->topologiesPtr())
             {
-                ft->fillParameters(msghandler, sii_->forcefield(), missingParameters::Error);
+                ft.fillParameters(msghandler, sii_->forcefield(), missingParameters::Error);
             }
 
             // Run charge generation including shell minimization

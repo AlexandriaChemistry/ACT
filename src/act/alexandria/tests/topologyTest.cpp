@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria program.
  *
- * Copyright (C) 2021-2023
+ * Copyright (C) 2021-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -101,7 +101,8 @@ protected:
     void testAngles (const std::vector<gmx::RVec> &xx)
     {
         gmx::test::TestReferenceChecker myCheck(this->rootChecker());
-        Topology top(bonds_);
+        Topology top;
+        top.init(bonds_);
         top.makeAngles(&msghandler_, nullptr, xx, 175.0);
         auto &angles = top.entry(InteractionType::ANGLES);
         myCheck.checkInteger(angles.size(), "#angles");
@@ -118,7 +119,8 @@ protected:
     void testLinearAngles (const std::vector<gmx::RVec> &xx)
     {
         gmx::test::TestReferenceChecker myCheck(this->rootChecker());
-        Topology top(bonds_);
+        Topology top;
+        top.init(bonds_);
         top.makeAngles(&msghandler_, nullptr, xx, 175.0);
         {
             auto &angles = top.entry(InteractionType::ANGLES);
@@ -147,7 +149,8 @@ protected:
     void testImpropers (double PlanarAngleMax)
     {
         gmx::test::TestReferenceChecker myCheck(this->rootChecker());
-        Topology top(bonds_);
+        Topology top;
+        top.init(bonds_);
         top.makeImpropers(&msghandler_, nullptr, x_, PlanarAngleMax);
         auto &imps = top.entry(InteractionType::IMPROPER_DIHEDRALS);
         myCheck.checkInteger(imps.size(), "#impropers");
@@ -164,7 +167,8 @@ protected:
     void testPropers (const std::vector<gmx::RVec> &xx)
     {
         gmx::test::TestReferenceChecker myCheck(this->rootChecker());
-        Topology top(bonds_);
+        Topology top;
+        top.init(bonds_);
         top.makeAngles(&msghandler_, nullptr, xx, 175.0);
         top.makePropers(&msghandler_, nullptr);
         auto &imps = top.entry(InteractionType::PROPER_DIHEDRALS);
@@ -182,7 +186,8 @@ protected:
                          const TopologyEntryVector &entry)
     {
         gmx::test::TestReferenceChecker myCheck(this->rootChecker());
-        Topology top(bonds_);
+        Topology top;
+        top.init(bonds_);
         top.addEntry(itype, entry);
         auto &imps = top.entry(itype);
         myCheck.checkInteger(imps.size(), "#custom");
@@ -219,7 +224,8 @@ TEST_F (TopologyTest, OneBond){
 }
 
 TEST_F (TopologyTest, FindBond){
-    Topology top(bonds_);
+    Topology top;
+    top.init(bonds_);
     for(const auto &b : bonds_)
     {
         auto bb = top.findBond(b.aI(), b.aJ());
@@ -228,7 +234,8 @@ TEST_F (TopologyTest, FindBond){
 }
 
 TEST_F (TopologyTest, DontFindBond){
-    Topology top(bonds_);
+    Topology top;
+    top.init(bonds_);
     EXPECT_THROW((void) top.findBond(8, 9), gmx::InternalError);
 }
 

@@ -303,7 +303,7 @@ std::vector<ACTMol> CompoundReader::read(MsgHandler          *msghandler,
                 {
                     lookup.insert(mol.getMolname());
                 }
-                mols.push_back(mol);
+                mols.push_back(std::move(mol));
             }
             // For printing further down
             lookupSource.assign("file ");
@@ -378,7 +378,7 @@ std::vector<ACTMol> CompoundReader::read(MsgHandler          *msghandler,
             {
                 ACTMol mm;
                 mm.Merge(&mp);
-                mols.push_back(mm);
+                mols.push_back(std::move(mm));
             }
         }
     }

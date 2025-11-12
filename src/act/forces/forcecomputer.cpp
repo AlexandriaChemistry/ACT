@@ -411,7 +411,8 @@ void ForceComputer::plot(MsgHandler        *msghandler,
                     bbb.push_back(Bond(linear_bonds[i].first, linear_bonds[i].second, bos[i]));
                 }
             }
-            Topology               top(bbb);
+            Topology top;
+            top.init(bbb);
 
             auto subtype = i2s.find(itype);
             if (i2s.end() != subtype)
