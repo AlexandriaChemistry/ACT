@@ -114,6 +114,10 @@ OptACM::~OptACM()
     {
         delete sii_;
     }
+    if (selector_)
+    {
+        delete selector_;
+    }
 }
 
 void OptACM::add_options(std::vector<t_pargs>  *pargs,
