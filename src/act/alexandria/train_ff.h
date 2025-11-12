@@ -127,6 +127,9 @@ public:
         sii_ = new StaticIndividualInfo(&commRec_);
     }
 
+    //! Destructor
+    ~OptACM();
+
     /*! \brief Add my options to the command line
      * \param[inout] pargs   Flags
      * \param[inout] fnms  File names

@@ -96,6 +96,9 @@ public:
     //! \brief Default constructor
     GeneticAlgorithm() {}
 
+    //! \brief Default destructor
+    virtual ~GeneticAlgorithm() = default;
+
     /*!
      * \brief Constructor for self-building
      */

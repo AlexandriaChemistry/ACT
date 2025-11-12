@@ -49,6 +49,9 @@ class FitnessComputer
 
 public:
 
+    //!\brief Default destructor
+    virtual ~FitnessComputer() = default;
+
     /*!
      * \brief Compute the fitness of a genome
      * \param[in] msghandler Message Handler
