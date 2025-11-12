@@ -112,8 +112,6 @@ private:
     alexandria::StaticIndividualInfo *sii_;
     //! GAConfigHandler pointer
     alexandria::GAConfigHandler      *gach_;
-    //! The force computer
-    alexandria::ForceComputer        *forceComp_;
 public:
     /*!
      * \brief Constructor for self-building
@@ -126,9 +124,7 @@ public:
     : GeneticAlgorithm(initializer, fitnessComputer, nullptr, nullptr, nullptr,
                        mutator, nullptr, nullptr, gach->popSize()),
       sii_(sii), gach_(gach)
-    {
-        forceComp_ = new alexandria::ForceComputer();
-    }
+    {}
 
     //! \copydocs ga::GeneticAlgorithm::evolve
     virtual bool evolve(alexandria::MsgHandler       *msghandler,
