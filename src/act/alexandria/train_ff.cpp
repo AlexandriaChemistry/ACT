@@ -134,6 +134,11 @@ OptACM::~OptACM()
             delete x;
         }
     }
+    if (oenv_)
+    {
+        output_env_done(oenv_);
+        oenv_ = nullptr;
+    }
 }
 
 void OptACM::add_options(std::vector<t_pargs>  *pargs,
@@ -273,7 +278,7 @@ int OptACM::initMaster(const std::vector<t_filenm> &fnm,
     }
 
     // Initializer
-    auto *initializer_ = new ACMInitializer(sii_, gach_.randomInit(), dis(gen));
+    initializer_ = new ACMInitializer(sii_, gach_.randomInit(), dis(gen));
 
     if (gach_.optimizer() == OptimizerAlg::GA)
     {
