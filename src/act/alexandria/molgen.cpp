@@ -854,7 +854,7 @@ size_t MolGen::Read(MsgHandler                          *msghandler,
                 alexandria::ACTMol actmol;
                 msghandler->msg(ACTStatus::Debug, mpi->getMolname());
 
-                actmol.Merge(&(*mpi));
+                actmol.Merge(std::move(&(*mpi)));
                 actmol.GenerateTopology(msghandler, pd, missingParameters::Error);
                 if (!msghandler->ok())
                 {
