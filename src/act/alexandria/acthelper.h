@@ -33,6 +33,7 @@
 #ifndef ACT_ACTHELPER_H
 #define ACT_ACTHELPER_H
 
+#include "act/alexandria/acmfitnesscomputer.h"
 #include "act/basics/msg_handler.h"
 #include "act/forces/forcecomputer.h"
 
@@ -40,7 +41,6 @@ namespace alexandria
 {
     // Declare some classes rather than including headers.
     class StaticIndividualInfo;
-    class ACMFitnessComputer;
     class MolGen;
    
     /*! \brief Class that runs the deviation calculations only
@@ -49,9 +49,9 @@ namespace alexandria
     {
     private:
         //! Fitness computer
-        ACMFitnessComputer *fitComp_;
+        ACMFitnessComputer fitComp_;
         //! Force computer
-        ForceComputer      *forceComp_;
+        ForceComputer      forceComp_;
     public:
         /*! \brief Constructor
          * \param[in] msghandler   Message and status handler

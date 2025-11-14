@@ -118,6 +118,22 @@ OptACM::~OptACM()
     {
         delete selector_;
     }
+    // Delete the penalizers
+    for (auto x : penalizers_)
+    {
+        if (x)
+        {
+            delete x;
+        }
+    }
+    // Delete the terminators
+    for (auto x : terminators_)
+    {
+        if (x)
+        {
+            delete x;
+        }
+    }
 }
 
 void OptACM::add_options(std::vector<t_pargs>  *pargs,
@@ -222,10 +238,12 @@ int OptACM::initMaster(const std::vector<t_filenm> &fnm,
         sii_->makeIndividualDir();  // We need to call this before opening working files!
     }
     // Force computer
-    forceComp_ = new ForceComputer(gmx::square(bch_.shellToler()),
-                                   bch_.shellMaxIter(), bch_.shellMaxDistance());
+    forceComp_ = new ForceComputer();
+    forceComp_->init(gmx::square(bch_.shellToler()),
+                     bch_.shellMaxIter(), bch_.shellMaxDistance());
     // Fitness computer
-    fitComp_ = new ACMFitnessComputer(&msghandler_, sii_, &mg_, bRemoveMol_, forceComp_, algorithm);
+    fitComp_ = new ACMFitnessComputer();
+    fitComp_->init(&msghandler_, sii_, &mg_, bRemoveMol_, forceComp_, algorithm);
     // Check whether we have to do anything
     if (fitComp_->numDevComputers() == 0)
     {
@@ -280,8 +298,6 @@ int OptACM::initMaster(const std::vector<t_filenm> &fnm,
     selector_ = new ga::RouletteSelector(dis(gen));
 
     auto tw = msghandler_.tw();
-    // Penalizer(s)
-    std::vector<ga::Penalizer*> *penalizers = new std::vector<ga::Penalizer*>();
     // VolumeFractionPenalizer
     const double totalVolume = sii_->getParamSpaceVolume(gach_.logVolume());
     if (tw)
@@ -296,7 +312,7 @@ int OptACM::initMaster(const std::vector<t_filenm> &fnm,
         {
             tw->writeStringFormatted("Appending a VolumeFractionPenalizer to the list of penalizers...\n");
         }
-        penalizers->push_back(
+        penalizers_.push_back(
             new ga::VolumeFractionPenalizer(
                 oenv_, gach_.logVolume(), totalVolume,
                 gach_.vfpVolFracLimit(), gach_.vfpPopFrac(), initializer_
@@ -309,7 +325,7 @@ int OptACM::initMaster(const std::vector<t_filenm> &fnm,
         {
             tw->writeStringFormatted("Appending a CatastrophePenalizer to the list of penalizers...\n");
         }
-        penalizers->push_back(
+        penalizers_.push_back(
             new ga::CatastrophePenalizer(dis(gen),
                                          gach_.cpGenInterval(),
                                          gach_.cpPopFrac(),
@@ -319,12 +335,11 @@ int OptACM::initMaster(const std::vector<t_filenm> &fnm,
     }
 
     // Terminator(s)
-    std::vector<ga::Terminator*> *terminators = new std::vector<ga::Terminator*>;
     if (tw)
     {
         tw->writeStringFormatted("Appending a GenerationTerminator to the list of terminators...\n");
     }
-    terminators->push_back(new ga::GenerationTerminator(gach_.maxGenerations()));
+    terminators_.push_back(new ga::GenerationTerminator(gach_.maxGenerations()));
     // maxGenerations will always be positive!
     // If maxTestGenerations is enabled and there is something to test as well
     if (gach_.maxTestGenerations() != -1 && mg_.iMolSelectSize(iMolSelect::Test) > 0)
@@ -333,7 +348,7 @@ int OptACM::initMaster(const std::vector<t_filenm> &fnm,
         {
             tw->writeString("Appending a TestGenTerminator to the list of terminators...\n");
         }
-        terminators->push_back(new ga::TestGenTerminator(gach_.maxTestGenerations()));
+        terminators_.push_back(new ga::TestGenTerminator(gach_.maxTestGenerations()));
     }
 
     // Initialize the optimizer
@@ -358,7 +373,8 @@ int OptACM::initMaster(const std::vector<t_filenm> &fnm,
         // We pass the global seed to the optimizer
         ga_ = new ga::HybridGAMC(initializer_, fitComp_, probComputer_,
                                  selector_, crossover_,
-                                 mutator_, terminators, penalizers, sii_, &gach_,
+                                 mutator_, &terminators_, &penalizers_,
+                                 sii_, &gach_,
                                  opt2fn("-fitness", fnm.size(), fnm.data()),
                                  opt2fn_null("-gpin", fnm.size(), fnm.data()),
                                  opt2fn("-gpout", fnm.size(), fnm.data()),
@@ -645,14 +661,6 @@ bool OptACM::runMaster(bool optimize,
         // Now compute the test compounds, with the best Train parameters.
         ims = iMolSelect::Test;
         fitComp_->calcDeviation(&msghandler_, CalcDev::ComputeAll, ims);
-    }
-    // Delete the penalizers
-    if (nullptr != ga_->penalizers())
-    {
-        for (auto pen : *ga_->penalizers())
-        {
-            delete pen;
-        }
     }
 
     return bMinimum;

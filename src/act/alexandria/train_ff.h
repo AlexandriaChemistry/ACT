@@ -112,6 +112,10 @@ private:
     ga::RouletteSelector    *selector_     = nullptr;
     //! CrossOver
     ga::NPointCrossover     *crossover_    = nullptr;
+    //! Terminators
+    std::vector<ga::Terminator*> terminators_;
+    //! Penalizers
+    std::vector<ga::Penalizer*>  penalizers_;
     /*!
      * \brief Print to log file (if it exists), the estimated number of times
      * we will call calcDeviation per dataset

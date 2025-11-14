@@ -74,9 +74,9 @@ class OpenMMXmlTest : public gmx::test::CommandLineTestBase
         msghandler.setPrintLevel(ACTStatus::Warning);
         auto ff         = getForceField(forceField);
         double rmsToler = 0.0000001;
-        auto fcomp = new ForceComputer(rmsToler, 25);
+        ForceComputer fcomp(rmsToler, 25);
         std::vector<ACTMol> mps;
-        initACTMol(fileName.c_str(), ff, fcomp, &mps);
+        initACTMol(fileName.c_str(), ff, &fcomp, &mps);
 
         auto tmpFile  = tfm.getTemporaryFilePath("xml");
         writeOpenMM(&msghandler, tmpFile, ff, mps, mDrude, numberAtypes);

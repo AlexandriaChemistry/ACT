@@ -58,31 +58,23 @@ static double dotProdRvec(const std::vector<bool>      &isShell,
     return dpr;
 }
 
-ForceComputer::ForceComputer(double  msForce,
-                             int     maxiter,
-                             double  maxShellDistance)
+void ForceComputer::init(double  msForce,
+                         int     maxiter,
+                         double  maxShellDistance)
 {
     msForceToler_     = msForce;
     maxiter_          = maxiter;
     maxShellDistance_ = maxShellDistance;
     clear_mat(box_);
     real dt = 0.001;
-    vsiteHandler_ = new VsiteHandler(box_, dt);
-}
-
-ForceComputer::~ForceComputer()
-{
-    if (vsiteHandler_)
-    {
-        delete vsiteHandler_;
-    }
+    vsiteHandler_.init(box_, dt);
 }
 
 void ForceComputer::constructVsiteCoordinates(const Topology         *top,
                                               std::vector<gmx::RVec> *coordinates) const
 {
     // Construct virtual site coordinates
-    vsiteHandler_->constructPositions(top, coordinates, box_);
+    vsiteHandler_.constructPositions(top, coordinates, box_);
 }
 
 void ForceComputer::spreadVsiteForces(const Topology         *top,
@@ -90,7 +82,7 @@ void ForceComputer::spreadVsiteForces(const Topology         *top,
                                       std::vector<gmx::RVec> *forces) const
 {
     // Spread virtual site forces
-    vsiteHandler_->distributeForces(top, *coordinates, forces, box_);
+    vsiteHandler_.distributeForces(top, *coordinates, forces, box_);
 }
                               
 void ForceComputer::compute(MsgHandler                        *msg_handler,

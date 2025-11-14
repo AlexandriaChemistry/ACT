@@ -749,7 +749,7 @@ int b2(int argc, char *argv[])
     
     (void) pd.verifyCheckSum(stderr);
 
-    auto  forceComp = new ForceComputer(shellToler, 100);
+    ForceComputer forceComp(shellToler, 100);
     
     JsonTree jtree("SecondVirialCoefficient");
     if (msghandler.info())
@@ -757,7 +757,7 @@ int b2(int argc, char *argv[])
         forceFieldSummary(&jtree, &pd);
     }
 
-    std::vector<ACTMol> actmols = compR.read(&msghandler, pd, forceComp);
+    std::vector<ACTMol> actmols = compR.read(&msghandler, pd, &forceComp);
     auto &actmol = actmols[0];
     std::vector<gmx::RVec> coords = actmol.xOriginal();
 
@@ -767,7 +767,7 @@ int b2(int argc, char *argv[])
         {
             actmol.topology()->dump(debug);
         }
-        rerun.setFunctions(forceComp, &gendimers, oenv);
+        rerun.setFunctions(&forceComp, &gendimers, oenv);
         rerun.runB2(&cr, &msghandler, &pd, &actmol, maxdimers, fnm);
     }
     if (json && cr.isMaster())

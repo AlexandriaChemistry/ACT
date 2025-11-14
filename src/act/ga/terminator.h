@@ -76,6 +76,8 @@ public:
                            const GenePool  *pool,
                            const int        generationNumber) = 0;
 
+    //! Default destructor
+    virtual ~Terminator() = default;
 };
 
 /*!
