@@ -107,11 +107,15 @@ Experiment::~Experiment()
 {
     for(auto &mp : property_)
     {
-        for(auto pp = mp.second.begin(); pp < mp.second.end(); ++pp)
+        for(auto pp = mp.second.begin(); pp != mp.second.end(); )
         {
             if (*pp != nullptr)
             {
                 pp = mp.second.erase(pp);
+            }
+            else
+            {
+                ++pp;
             }
         }
     }
