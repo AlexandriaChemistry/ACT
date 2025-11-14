@@ -479,7 +479,7 @@ static void get_polarizability(std::map<MolPropXml, std::string> *xbuf,
                                            xbuf_atof(xbuf, MolPropXml::qYZ, false),
                                            xbuf_atof(xbuf, MolPropXml::AVERAGE, false),
                                            xbuf_atof(xbuf, MolPropXml::ERROR, false));
-    last->addProperty(MolPropObservable::POLARIZABILITY, mdp);
+    last->addProperty(MolPropObservable::POLARIZABILITY, std::move(mdp));
     clean_xbuf(xbuf,
                { MolPropXml::TEMPERATURE, MolPropXml::qXX, MolPropXml::qYY, MolPropXml::qZZ,
                  MolPropXml::qXY, MolPropXml::qXZ, MolPropXml::qYZ, MolPropXml::AVERAGE,
@@ -594,7 +594,7 @@ static void mp_process_tree(MsgHandler                        *msg_handler,
                             {
                                 auto mpo    = xoMap.find(ff)->second;
                                 auto myfreq = new Harmonics(xbuf->find(ff)->second, 0, mpo);
-                                last->addProperty(mpo, myfreq);
+                                last->addProperty(mpo, std::move(myfreq));
                             }
                             mp_process_tree(msg_handler, tree->children, molprops, xbuf);
                         }
@@ -662,8 +662,9 @@ static void mp_process_tree(MsgHandler                        *msg_handler,
                                 auto mpo = MolPropObservable::POTENTIAL;
                                 if (!last->hasProperty(mpo))
                                 {
-                                    last->addProperty(mpo, new ElectrostaticPotential((*xbuf)[MolPropXml::X_UNIT],
-                                                                                      (*xbuf)[MolPropXml::V_UNIT]));
+                                    auto ep = new ElectrostaticPotential((*xbuf)[MolPropXml::X_UNIT],
+                                                                         (*xbuf)[MolPropXml::V_UNIT]);
+                                    last->addProperty(mpo, std::move(ep));
                                 }
                                 // TODO make this more rigorous and less ugly.
                                 auto myesp = static_cast<ElectrostaticPotential *>(*last->property(mpo)->begin());
@@ -704,7 +705,7 @@ static void mp_process_tree(MsgHandler                        *msg_handler,
                                 myclean.push_back(x.first);
                             }
                         }
-                        last->addProperty(mpo, mq);
+                        last->addProperty(mpo, std::move(mq));
                         clean_xbuf(xbuf, { MolPropXml::TYPE, MolPropXml::UNIT, MolPropXml::TEMPERATURE });
                         clean_xbuf(xbuf, myclean);
                     }
@@ -749,7 +750,7 @@ static void mp_process_tree(MsgHandler                        *msg_handler,
                                                                string2phase((*xbuf)[MolPropXml::PHASE]),
                                                                xbuf_atof(xbuf, MolPropXml::AVERAGE, true),
                                                                xbuf_atof(xbuf, MolPropXml::ERROR, false));
-                                last->addProperty(mpo, me);
+                                last->addProperty(mpo, std::move(me));
                             }
                             else if (msg_handler)
                             {

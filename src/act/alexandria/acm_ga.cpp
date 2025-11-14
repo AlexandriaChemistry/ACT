@@ -169,7 +169,8 @@ bool MCMC::evolve(alexandria::MsgHandler       *msghandler,
 
     // Save last population
     lastPop_ = pool;
-    
+    // Clean
+    delete ind;
     return bMinimum;
 }
 
@@ -612,6 +613,11 @@ bool HybridGAMC::evolve(alexandria::MsgHandler       *msghandler,
 
     // Save last population
     lastPop_ = *(pool[pold]);
+    // Clean
+    for (int i = 0; i < 2; i++)
+    {
+        delete pool[i];
+    }
 
     return bMinimum;
 }

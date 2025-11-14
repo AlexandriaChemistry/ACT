@@ -68,6 +68,7 @@ main(int argc, char *argv[])
         {
             printf("%s", act_goodbye().c_str());
         }
+        done_commrec(cr);
         return rc;
     }
     catch (const std::exception &ex)
