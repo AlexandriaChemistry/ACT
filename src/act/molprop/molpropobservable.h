@@ -208,7 +208,7 @@ public:
     }
 
     //! Destructor
-    //virtual ~GenericProperty() {};
+    virtual ~GenericProperty() = default;
 
     //GenericProperty(const GenericProperty& copyFrom) = default;
     //GenericProperty& operator=(const GenericProperty& copyFrom) = default;
@@ -344,7 +344,7 @@ public:
                        MolPropObservable  mpo);
                        
     //! Destructor
-    //~MolecularMultipole() {}
+    ~MolecularMultipole() = default;
     
     //MolecularMultipole(const MolecularMultipole& copyFrom) = default;
     //MolecularMultipole& operator=(const MolecularMultipole& copyFrom) = default;
@@ -436,7 +436,7 @@ public:
               MolPropObservable  mpo);
 
     //! Destructor    
-    //~Harmonics() {}
+    ~Harmonics() = default;
 
     //Harmonics(const Harmonics& copyFrom) = default;
     //Harmonics& operator=(const Harmonics& copyFrom) = default;
@@ -536,7 +536,7 @@ public:
                             double xy, double xz, double yz,
                             double average, double error);
     
-    //~MolecularPolarizability() {}
+    ~MolecularPolarizability() = default;
     
     //MolecularPolarizability(const MolecularPolarizability& copyFrom) = default;
     //MolecularPolarizability& operator=(const MolecularPolarizability& copyFrom) = default;
@@ -627,7 +627,7 @@ public:
                     double average,
                     double error);
                     
-    //~MolecularEnergy() {}
+    ~MolecularEnergy() = default;
     
     //MolecularEnergy(const MolecularEnergy& copyFrom) = default;
     //MolecularEnergy& operator=(const MolecularEnergy& copyFrom) = default;
@@ -718,7 +718,7 @@ public:
     ElectrostaticPotential(const std::string &xyzInputUnit,
                            const std::string &vInputUnit);
     
-    //~ElectrostaticPotential() {}
+    ~ElectrostaticPotential() = default;
     
     //ElectrostaticPotential(const ElectrostaticPotential& copyFrom) = default;
     //ElectrostaticPotential& operator=(const ElectrostaticPotential& copyFrom) = default;
