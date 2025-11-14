@@ -1064,8 +1064,14 @@ static gmx_unused int spread_vsiten(const std::vector<int> &ia,
 namespace alexandria
 {
 
-VsiteHandler::VsiteHandler(matrix &box,
-                           real    dt)
+VsiteHandler::VsiteHandler()
+{
+    matrix box;
+    clear_mat(box);
+    init(box, dt_);
+}
+
+void VsiteHandler::init(matrix &box, real dt)
 {
     set_pbc(&pbc_, -1, box);
     // TODO More checking.
@@ -1073,13 +1079,18 @@ VsiteHandler::VsiteHandler(matrix &box,
     {
         GMX_THROW(gmx::InvalidInputError(gmx::formatString("No support for periodic boundary conditions").c_str()));
     }
-    dt_ = dt;
+    dt_      = dt;
+    initPBC_ = true;
 }
 
 void VsiteHandler::constructPositions(const Topology          *top,
                                       std::vector<gmx::RVec>  *coordinates,
-                                      const gmx_unused matrix &box)
+                                      const gmx_unused matrix &box) const
 {
+    if (!initPBC_)
+    {
+        GMX_THROW(gmx::InternalError("PBC has not been initiated"));
+    }
     // Ugly shortcut...
     std::vector<gmx::RVec>    &x      = *coordinates;
     for (const auto &entry: top->entries())
@@ -1217,8 +1228,12 @@ void VsiteHandler::constructPositions(const Topology          *top,
 void VsiteHandler::distributeForces(const Topology               *top,
                                     const std::vector<gmx::RVec> &coords,
                                     std::vector<gmx::RVec>       *forces,
-                                    const gmx_unused matrix      &box)
+                                    const gmx_unused matrix      &box) const
 {
+    if (!initPBC_)
+    {
+        GMX_THROW(gmx::InternalError("PBC has not been initiated"));
+    }
     bool     VirCorr = false;
     matrix   dxdf    = { { 0 } };
     rvec    *fshift  = nullptr;

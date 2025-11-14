@@ -33,13 +33,11 @@
 #ifndef ACT_ACTMIDDLEMAN_H
 #define ACT_ACTMIDDLEMAN_H
 
-#include "gromacs/fileio/oenv.h"
-#include "gromacs/mdtypes/commrec.h"
-
+#include "act/alexandria/acmfitnesscomputer.h"
+#include "act/alexandria/confighandler.h"
+#include "act/alexandria/staticindividualinfo.h"
 #include "act/ga/mutator.h"
-
-#include "confighandler.h"
-#include "staticindividualinfo.h"
+#include "gromacs/fileio/oenv.h"
 
 namespace gmx
 {
@@ -60,7 +58,7 @@ namespace alexandria
     {
     private:
         //! Fitness computer
-        ACMFitnessComputer   *fitComp_;
+        ACMFitnessComputer    fitComp_;
         //! Mutator
         ga::Mutator          *mutator_;
         //! Individual
@@ -68,7 +66,7 @@ namespace alexandria
         //! Config handler for GA
         GAConfigHandler      *gach_;
         //! Force computer
-        ForceComputer        *forceComp_;
+        ForceComputer         forceComp_;
         //! My ID
         int                   id_;
 

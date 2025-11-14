@@ -50,30 +50,40 @@ class ForceComputer
 {
 private:
     //! Convergence criterium for minimizing shells: mean square force
-    double         msForceToler_;
+    double         msForceToler_     = 1e-6;
     //! Maximum number of iterations to spend on minimizing shells
-    int            maxiter_;
+    int            maxiter_          = 25;
     //! Maximum allowed distance for shells to be away from their core
-    double         maxShellDistance_;
+    double         maxShellDistance_ = 0.04;
     //! Electric field to be optionally applied
     gmx::RVec      field_ = { 0.0, 0.0, 0.0 };
     //! Box for periodic boundaries
-    matrix         box_;
+    matrix         box_   = { { 0 } };
     //! Virtual site handler
-    VsiteHandler  *vsiteHandler_;
+    VsiteHandler   vsiteHandler_;
 
  public:
-    /*! \brief Constructor
+    //! \brief Default constructor
+    ForceComputer() {}
+    /*! \brief Constructor with initialization of variables
      * \param[in] msForce          The tolerance for the mean square force on shells
      * \param[in] maxiter          The maximum number of iterations for shell minimization
      * \param[in] maxShellDistance Maximum allowed distance (nm) for shells to be away from their core
      */
-    ForceComputer(double   msForce = 1e-6, 
+    ForceComputer(double   msForce,
                   int      maxiter = 25,
-                  double   maxShellDistance = 0.04);
-
-    //! \brief Destructor
-    ~ForceComputer();
+                  double   maxShellDistance = 0.04)
+    {
+        init(msForce, maxiter, maxShellDistance);
+    }
+    /*! \brief Initialization of variables
+     * \param[in] msForce          The tolerance for the mean square force on shells
+     * \param[in] maxiter          The maximum number of iterations for shell minimization
+     * \param[in] maxShellDistance Maximum allowed distance (nm) for shells to be away from their core
+     */
+    void init(double   msForce = 1e-6,
+              int      maxiter = 25,
+              double   maxShellDistance = 0.04);
 
     void constructVsiteCoordinates(const Topology         *top,
                                    std::vector<gmx::RVec> *coordinates) const;
@@ -159,7 +169,7 @@ private:
     void generateVsites(const Topology         *top,
                         std::vector<gmx::RVec> *coordinates)
     {
-        vsiteHandler_->constructPositions(top, coordinates, box_);
+        vsiteHandler_.constructPositions(top, coordinates, box_);
     }
 };
 

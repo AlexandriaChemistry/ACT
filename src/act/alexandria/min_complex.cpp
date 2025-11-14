@@ -112,7 +112,8 @@ int min_complex(int argc, char *argv[])
         shellToler = sch.forceTolerance()/10;
         tw->writeStringFormatted("Shell tolerance larger than atom tolerance, changing it to %g\n", shellToler);
     }
-    auto  forceComp = new ForceComputer(shellToler, 100);
+    ForceComputer forceComp;
+    forceComp.init(shellToler, 100);
     print_header(tw, pa, fnm);
     
     std::vector<MolProp> mps;
@@ -137,7 +138,7 @@ int min_complex(int argc, char *argv[])
             std::vector<gmx::RVec> forces(actmol.atomsConst().size());
             // TODO Not the correct algorithm!
             auto alg   = pd.chargeGenerationAlgorithm();
-            actmol.generateCharges(&msghandler, &pd, forceComp, alg, &coords, &forces);
+            actmol.generateCharges(&msghandler, &pd, &forceComp, alg, &coords, &forces);
         }
         if (msghandler.ok())
         {
@@ -147,15 +148,14 @@ int min_complex(int argc, char *argv[])
             std::vector<gmx::RVec> xmin   = coords;
             std::map<InteractionType, double> energies;
             eMin = molhandler.minimizeCoordinates(&msghandler, &pd, &actmol,
-                                                  forceComp, sch,
-                                                  &xmin, &energies, 
+                                                  &forceComp, sch, &xmin, &energies, 
                                                   {});
     
             if (eMinimizeStatus::OK == eMin)
             {
                 std::vector<gmx::RVec> interactionForces;
                 std::map<InteractionType, double> einter;
-                actmol.calculateInteractionEnergy(&msghandler, &pd, forceComp,
+                actmol.calculateInteractionEnergy(&msghandler, &pd, &forceComp,
                                                   &einter, &interactionForces,
                                                   &xmin, true);
 

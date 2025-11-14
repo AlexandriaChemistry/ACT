@@ -761,7 +761,7 @@ size_t MolGen::Read(MsgHandler                          *msghandler,
     std::map<ACTMessage, int>         imm_count;
     ACTMessage                        imm      = ACTMessage::OK;
     std::vector<alexandria::MolProp> mp;
-    auto forceComp = new ForceComputer();
+    ForceComputer forceComp;
     print_memory_usage(debug);
 
     //  Now  we have read the forcefield and spread it to processors
@@ -883,12 +883,12 @@ size_t MolGen::Read(MsgHandler                          *msghandler,
                         msghandler->msg(ACTStatus::Warning, ACTMessage::NoMolpropCharges, actmol.getMolname());
                     }
                     std::vector<gmx::RVec> forces(actmol.atomsConst().size());
-                    actmol.updateQprops(pd, forceComp, &forces);
+                    actmol.updateQprops(pd, &forceComp, &forces);
                 }
                 else
                 {
                     std::vector<gmx::RVec> forces(actmol.atomsConst().size());
-                    actmol.generateCharges(msghandler, pd, forceComp, alg,
+                    actmol.generateCharges(msghandler, pd, &forceComp, alg,
                                            &coords, &forces, true);
                 }
                 if (!msghandler->ok())
@@ -1080,7 +1080,7 @@ size_t MolGen::Read(MsgHandler                          *msghandler,
                 else
                 {
                     std::vector<gmx::RVec> forces(actmol.atomsConst().size());
-                    actmol.generateCharges(msghandler, pd, forceComp, alg,
+                    actmol.generateCharges(msghandler, pd, &forceComp, alg,
                                            &coords, &forces, true);
                 }
             }

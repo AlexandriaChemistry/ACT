@@ -93,21 +93,26 @@ private:
 
 public:
 
-    /*!
-     * Constructor
+    //! \brief Constructor
+    ACMFitnessComputer() {}
+    /*! Initalize stuff
      * \param[in] msghandler Message Handler
      * \param[in] sii        pointer to StaticIndividualInfo
      * \param[in] mg         pointer to molgen
      * \param[in] removeMol  Whether or not to remove molecules that fail to converge in the shell minimization
      */
-    ACMFitnessComputer(MsgHandler                *msghandler,
-                       StaticIndividualInfo      *sii,
-                       MolGen                    *molgen,
-                       const bool                 removeMol,
-                       ForceComputer             *forceComp,
-                       ChargeGenerationAlgorithm  algorithm)
-        : sii_(sii), forceComp_(forceComp), molgen_(molgen), removeMol_(removeMol), algorithm_(algorithm)
+    void init(MsgHandler                *msghandler,
+              StaticIndividualInfo      *sii,
+              MolGen                    *molgen,
+              const bool                 removeMol,
+              ForceComputer             *forceComp,
+              ChargeGenerationAlgorithm  algorithm)
     {
+        sii_       = sii;
+        forceComp_ = forceComp;
+        molgen_    = molgen;
+        removeMol_ = removeMol;
+        algorithm_ = algorithm;
         fillDevComputers(msghandler,
                          molgen->hasMolPropObservable(MolPropObservable::INDUCTIONCORRECTION));
     }

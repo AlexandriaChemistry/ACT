@@ -225,13 +225,13 @@ protected:
             }
             // Now the energies
             double rmsToler = 0.00001;
-            auto fcomp = new ForceComputer(rmsToler, 25);
+            ForceComputer fcomp(rmsToler, 25);
             if (mp_.fragmentHandler()->topologies().size() > 1)
             {
                 std::vector<gmx::RVec> forces;
                 std::vector<gmx::RVec> coords = mp_.xOriginal();
                 std::map<InteractionType, double> einter;
-                mp_.calculateInteractionEnergy(&msghandler, pd, fcomp, &einter, &forces, &coords, true);
+                mp_.calculateInteractionEnergy(&msghandler, pd, &fcomp, &einter, &forces, &coords, true);
                 for(const auto &e : einter)
                 {
                     checker_.checkReal(e.second, interactionTypeToString(e.first).c_str());
@@ -244,7 +244,7 @@ protected:
                 EXPECT_TRUE(std::abs(esum - einter[iepot]) <= toler);
                 // Check what happens when we sum induction correction into induction
                 std::map<InteractionType, double> einter2;
-                mp_.calculateInteractionEnergy(&msghandler, pd, fcomp, &einter2, &forces, &coords, true);
+                mp_.calculateInteractionEnergy(&msghandler, pd, &fcomp, &einter2, &forces, &coords, true);
                 EXPECT_TRUE(std::abs(einter2[iepot]-einter[iepot]) <= toler);
             }
         }

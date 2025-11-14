@@ -29,7 +29,6 @@
 
 #include <vector>
     
-#include "acmfitnesscomputer.h"
 #include "bayes.h"
 #include "act/basics/dataset.h"
 
@@ -43,15 +42,15 @@ ACTHelper::ACTHelper(MsgHandler                *msghandler,
                      int                        shellMaxIter,
                      ChargeGenerationAlgorithm  algorithm)
 {
-    forceComp_ = new ForceComputer(shellToler, shellMaxIter);
-    fitComp_   = new ACMFitnessComputer(msghandler, sii, mg, false, forceComp_, algorithm);
+    forceComp_.init(shellToler, shellMaxIter);
+    fitComp_.init(msghandler, sii, mg, false, &forceComp_, algorithm);
 }
 
 void ACTHelper::run(MsgHandler *msghandler)
 {
     // H E L P E R   N O D E
     CalcDev cd = CalcDev::Compute;
-    cd = fitComp_->distributeTasks(cd);
+    cd = fitComp_.distributeTasks(cd);
     while (CalcDev::Stop != cd)
     {
         if (debug)
@@ -67,14 +66,14 @@ void ACTHelper::run(MsgHandler *msghandler)
                 std::vector<double> dummy;
                 std::set<int>       changed;
                 // Get the new parameters to evaluate
-                fitComp_->distributeParameters(msghandler, &dummy, changed);
+                fitComp_.distributeParameters(msghandler, &dummy, changed);
             }
             break;
         case CalcDev::Compute:
             // Evaluate on my part of the dataset. The second flag
             // is not used inside the routine for helper, instead a
             // new dataset is distributed from the master or middlemen.
-            (void) fitComp_->calcDeviation(msghandler, cd, iMolSelect::Train);
+            (void) fitComp_.calcDeviation(msghandler, cd, iMolSelect::Train);
             break;
         case CalcDev::ComputeAll:
         case CalcDev::Stop:
@@ -82,7 +81,7 @@ void ACTHelper::run(MsgHandler *msghandler)
             // This should never happen, but without the compiler will complain.
             break;
         }
-        cd = fitComp_->distributeTasks(cd);
+        cd = fitComp_.distributeTasks(cd);
     }
 }
 

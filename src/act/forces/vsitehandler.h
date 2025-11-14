@@ -41,19 +41,23 @@ class VsiteHandler
 {
 private:
     //! GROMACS structure for periodic boundary conditions
-    t_pbc pbc_;
+    t_pbc pbc_     = { 0 };
     //! Integration time step
-    real  dt_;
-    
+    real  dt_      = 0.001; // ps
+    //! Whether pbc has been initiated
+    bool  initPBC_ = false;
  public:
-    /*! \brief Constructor
+    //! \brief Constructor
+    VsiteHandler();
+    
+    /*! Initialize vars
      * If the box has zero edges (determinant is zero) it will be assumed that no periodic
      * boundary conditions are to be taken into account. If not, the program will crash, since
      * PBC is not supported (yet). https://github.com/dspoel/ACT/issues/127
      * \param[in] box The box edges.
      * \param[in] dt  The integration time step 
      */
-    VsiteHandler(matrix &box, real dt);
+    void init(matrix &box, real dt);
 
     /*! Construct vsite positions
      * \param[in]  top         The molecular topology
@@ -63,7 +67,7 @@ private:
      */
     void constructPositions(const Topology         *top,
                             std::vector<gmx::RVec> *coordinates,
-                            const matrix           &box);
+                            const matrix           &box) const;
                  
     /*! \brief Distribute the forces back to atoms
      * \param[in]  top         The molecular topology
@@ -74,7 +78,7 @@ private:
     void distributeForces(const Topology               *top,
                           const std::vector<gmx::RVec> &coords,
                           std::vector<gmx::RVec>       *forces,
-                          const matrix                 &box);
+                          const matrix                 &box) const;
    
 };
 

@@ -55,10 +55,10 @@ ACTMiddleMan::ACTMiddleMan(MsgHandler                *msghandler,
     ind_ = static_cast<ACMIndividual *>(initializer->initialize());
 
     // Create force computer
-    forceComp_ = new ForceComputer(bch->shellToler(), bch->shellMaxIter());
+    forceComp_.init(bch->shellToler(), bch->shellMaxIter());
 
     // Fitness computer FIXME: what about those false flags?
-    fitComp_ = new ACMFitnessComputer(msghandler, sii, mg, false, forceComp_, algorithm);
+    fitComp_.init(msghandler, sii, mg, false, &forceComp_, algorithm);
     
     if (gach->optimizer() == OptimizerAlg::GA)
     {
@@ -68,7 +68,7 @@ ACTMiddleMan::ACTMiddleMan(MsgHandler                *msghandler,
     {
         // FIXME: we need to make some logfiles for the middlemen, because they apparently cannot write to the global logfile
         auto mut = new alexandria::MCMCMutator(dis(gen),
-                                               bch, fitComp_, sii,
+                                               bch, &fitComp_, sii,
                                                bch->evaluateTestset(),
                                                algorithm, 
                                                gach->maxGenerations());
@@ -94,10 +94,10 @@ void ACTMiddleMan::run(MsgHandler *msghandler)
         cr->recv(master, ind_->genomePtr()->basesPtr());
     }
     // Start by computing my own fitness
-    fitComp_->compute(msghandler, ind_->genomePtr(), iMolSelect::Train);
+    fitComp_.compute(msghandler, ind_->genomePtr(), iMolSelect::Train);
     if (gach_->evaluateTestset())
     {
-        fitComp_->compute(msghandler, ind_->genomePtr(), iMolSelect::Test);
+        fitComp_.compute(msghandler, ind_->genomePtr(), iMolSelect::Test);
     }
     // I.
     // Send my initial genome and fitness to the master if needed
@@ -131,7 +131,7 @@ void ACTMiddleMan::run(MsgHandler *msghandler)
             
             if (gach_->optimizer() == OptimizerAlg::GA)
             {
-                fitComp_->compute(msghandler, ind_->genomePtr(), ims);
+                fitComp_.compute(msghandler, ind_->genomePtr(), ims);
                 // IV.
                 // Send the mutated vector
                 cr->send(master, *ind_->genomePtr()->basesPtr());
@@ -141,7 +141,7 @@ void ACTMiddleMan::run(MsgHandler *msghandler)
                 cr->send(master, ind_->genome().fitness(ims));
                 if (gach_->evaluateTestset())
                 {
-                    fitComp_->compute(msghandler, ind_->genomePtr(), iMolSelect::Test);
+                    fitComp_.compute(msghandler, ind_->genomePtr(), iMolSelect::Test);
                     cr->send(master, ind_->genome().fitness(iMolSelect::Test));
                 }
             }
@@ -157,14 +157,14 @@ void ACTMiddleMan::run(MsgHandler *msghandler)
                 cr->send(master, ind_->bestGenome().fitness(ims));
                 if (gach_->evaluateTestset())
                 {
-                    fitComp_->compute(msghandler, ind_->bestGenomePtr(), iMolSelect::Test);
+                    fitComp_.compute(msghandler, ind_->bestGenomePtr(), iMolSelect::Test);
                     cr->send(master, ind_->bestGenome().fitness(iMolSelect::Test));
                 }
             }
         }
         else if (mode == TrainFFMiddlemanMode::FITNESS)
         {
-            fitComp_->compute(msghandler, ind_->genomePtr(), ims);
+            fitComp_.compute(msghandler, ind_->genomePtr(), ims);
             cr->send(master, ind_->genome().fitness(ims));
         }
         cont = cr->recv_data(master);
@@ -186,7 +186,7 @@ void ACTMiddleMan::printStatistics(gmx::TextWriter *tw)
 
 void ACTMiddleMan::stopHelpers()
 {
-    (void) fitComp_->distributeTasks(CalcDev::Stop);
+    (void) fitComp_.distributeTasks(CalcDev::Stop);
 }
 
 } // namespace alexandria

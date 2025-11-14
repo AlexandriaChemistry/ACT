@@ -110,7 +110,8 @@ protected:
         {
             std::vector<gmx::RVec> coords = mp_.xOriginal();
 
-            VsiteHandler vh(box, dt);
+            VsiteHandler vh;
+            vh.init(box, dt);
             vh.constructPositions(mp_.topology(), &coords, box);
 
             gmx::test::TestReferenceChecker checker_(this->rootChecker());
@@ -137,7 +138,8 @@ protected:
         {
             std::vector<gmx::RVec> coords = mp_.xOriginal();
 
-            VsiteHandler vh(box, dt);
+            VsiteHandler vh;
+            vh.init(box, dt);
             vh.constructPositions(mp_.topology(), &coords, box);
             gmx::RVec fzero = { 0, 0, 0 };
             std::vector<gmx::RVec> forces(coords.size(), fzero);
