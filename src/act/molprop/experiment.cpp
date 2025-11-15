@@ -230,7 +230,7 @@ int Experiment::Merge(const Experiment *src)
         auto mpo = prop.first;
         for (auto &gp : prop.second)
         {
-            addProperty(mpo, gp);
+            addProperty(mpo, std::move(gp));
         }
     }
     std::copy(src->calcAtomConst().begin(), src->calcAtomConst().end(),
