@@ -851,10 +851,10 @@ size_t MolGen::Read(MsgHandler                          *msghandler,
                 // Reset status to not let one compound ruin for all the others
                 msghandler->resetStatus();
                 // If we got here, we found the correct molprop
-                alexandria::ACTMol actmol;
                 msghandler->msg(ACTStatus::Debug, mpi->getMolname());
-
-                actmol.Merge(std::move(&(*mpi)));
+                // Copy the data
+                alexandria::ACTMol actmol;
+                actmol.Merge(&(*mpi));
                 actmol.GenerateTopology(msghandler, pd, missingParameters::Error);
                 if (!msghandler->ok())
                 {
