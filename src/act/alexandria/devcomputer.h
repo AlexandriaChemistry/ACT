@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2022
+ * Copyright (C) 2014-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -72,6 +72,8 @@ protected:
     {}
 
 public:
+    //! \brief Destructor
+    virtual ~DevComputer() = default;
 
     /*! \brief Computes a component of the chi-squared deviation.
      * Put the value into the appropriate FittingTarget.

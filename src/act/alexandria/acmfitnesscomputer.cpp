@@ -46,6 +46,13 @@ namespace alexandria
 /* * * * * * * * * * * * * * * * * * * *
 * BEGIN: ACMFitnessComputer            *
 * * * * * * * * * * * * * * * * * * * */
+ACMFitnessComputer::~ACMFitnessComputer()
+{
+    for(auto &d : devComputers_)
+    {
+        delete d;
+    }
+}
 
 void ACMFitnessComputer::compute(MsgHandler                *msghandler,
                                  ga::Genome                *genome,
