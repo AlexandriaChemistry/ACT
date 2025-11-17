@@ -563,13 +563,13 @@ void AllBondeds::updateForceField(gmx::TextWriter *tw,
     }
 }
 
-void AllBondeds::extractGeometries(MsgHandler                 *msghandler,
-                                   const std::vector<MolProp> &mp,
-                                   std::vector<ACTMol>        *actmols,
-                                   ForceField                 *pd,
-                                   const MolSelect            &gms)
+void AllBondeds::extractGeometries(MsgHandler           *msghandler,
+                                   std::vector<MolProp> *mp,
+                                   std::vector<ACTMol>  *actmols,
+                                   ForceField           *pd,
+                                   const MolSelect      &gms)
 {
-    for (auto mpi = mp.begin(); mpi < mp.end(); mpi++)
+    for (auto mpi = mp->begin(); mpi < mp->end(); mpi++)
     {
         iMolSelect imol;
         if ((gms.status(mpi->getIupac(), &imol) ||
@@ -577,7 +577,7 @@ void AllBondeds::extractGeometries(MsgHandler                 *msghandler,
             (imol == iMolSelect::Train || imol == iMolSelect::Test))
         {
             alexandria::ACTMol mmi;
-            mmi.Merge(&(*mpi));
+            mmi.Merge(std::move(&(*mpi)));
             if (mmi.getMolname().size() == 0)
             {
                 msghandler->msg(ACTStatus::Warning,

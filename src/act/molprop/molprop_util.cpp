@@ -160,7 +160,7 @@ std::vector<std::string> merge_xml(MsgHandler                             *msg_h
             continue;
         }
         MolPropRead(msg_handler, fn.c_str(), &mp);
-        for (auto mpi : mp)
+        for (auto &mpi : mp)
         {
             mpout->push_back(std::move(mpi));
         }
@@ -188,8 +188,8 @@ std::vector<std::string> merge_xml(MsgHandler                             *msg_h
     return warnings;
 }
 
-static bool comp_mp_molname(alexandria::MolProp ma,
-                            alexandria::MolProp mb)
+static bool comp_mp_molname(alexandria::MolProp &ma,
+                            alexandria::MolProp &mb)
 {
     std::string mma = ma.getMolname();
     std::string mmb = mb.getMolname();
@@ -197,8 +197,8 @@ static bool comp_mp_molname(alexandria::MolProp ma,
     return (mma.compare(mmb) < 0);
 }
 
-static bool comp_mp_formula(alexandria::MolProp ma,
-                            alexandria::MolProp mb)
+static bool comp_mp_formula(alexandria::MolProp &ma,
+                            alexandria::MolProp &mb)
 {
     std::string fma = ma.formula();
     std::string fmb = mb.formula();
@@ -228,8 +228,8 @@ static int count_elements(std::map<const char *, int> comp, const char *elem)
     }
 }
 
-static bool comp_mp_elem(alexandria::MolProp ma,
-                         alexandria::MolProp mb)
+static bool comp_mp_elem(alexandria::MolProp &ma,
+                         alexandria::MolProp &mb)
 {
     int         i;
     auto mcia = ma.composition();
@@ -272,8 +272,8 @@ static bool comp_mp_elem(alexandria::MolProp ma,
     return comp_mp_molname(ma, mb);
 }
 
-static bool comp_mp_index(alexandria::MolProp ma,
-                          alexandria::MolProp mb)
+static bool comp_mp_index(alexandria::MolProp &ma,
+                          alexandria::MolProp &mb)
 {
     return (ma.getIndex() < mb.getIndex());
 }

@@ -268,19 +268,20 @@ static void check_mp(MsgHandler           *msghandler,
                     basis  = ci.getBasisset();
                 }
                 double T = 0;
-                auto gp = m->qmProperty(MolPropObservable::DIPOLE, T, JobType::OPT);
-                if (gp)
                 {
-                    std::vector<double> mu = gp->getVector();
-                    name_mu nmu = { ci.getDatafile(), { mu[XX], mu[YY], mu[ZZ] } };
-                    mus.push_back(nmu);
+                    auto &gp = m->qmProperty(MolPropObservable::DIPOLE, T, JobType::OPT);
+                    if (gp)
+                    {
+                        std::vector<double> mu = gp->getVector();
+                        name_mu nmu = { ci.getDatafile(), { mu[XX], mu[YY], mu[ZZ] } };
+                        mus.push_back(nmu);
+                    }
                 }
-                
                 auto Xcalc = ci.getCoordinates();
-                gp = m->qmProperty(MolPropObservable::POTENTIAL, T, JobType::OPT);
+                auto &gp = m->qmProperty(MolPropObservable::POTENTIAL, T, JobType::OPT);
                 if (gp)
                 {
-                    auto ep  = static_cast<const ElectrostaticPotential *>(gp);
+                    const ElectrostaticPotential *ep = static_cast<ElectrostaticPotential *>(gp.get());
                     auto xyz = ep->xyz();
                     if (xyz.size() >= Xcalc.size() && Xcalc.size() > 1)
                     {
@@ -362,11 +363,11 @@ static void gen_ehist(MsgHandler                 *msghandler,
         for(auto mps : mpset)
         {
             histo[mps] = gmx_stats();
-            for(auto eee : mp->experimentConst())
+            for(auto &eee : mp->experimentConst())
             {
                 if (eee.hasProperty(mps))
                 {
-                    for (auto prop : eee.propertyConst(mps))
+                    for (auto &prop : eee.propertyConst(mps))
                     {
                         histo[mps].add_point(prop->getValue());
                     }
@@ -559,7 +560,7 @@ int edit_mp(int argc, char *argv[])
             {
                 MolProp mp;
                 mp.BroadCast(&cr, root, comm);
-                mpt.push_back(mp);
+                mpt.push_back(std::move(mp));
             }
         }
         else
@@ -570,7 +571,7 @@ int edit_mp(int argc, char *argv[])
             {
                 MolProp mp;
                 mp.Receive(&cr, cr.superior());
-                mpt.push_back(mp);
+                mpt.push_back(std::move(mp));
             }
         }
     }

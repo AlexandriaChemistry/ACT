@@ -437,7 +437,7 @@ std::vector<std::string> MolProp::sameCompound(const MolProp *other)
     return warnings;
 }
 
-std::vector<std::string> MolProp::Merge(const MolProp *src)
+std::vector<std::string> MolProp::Merge(MolProp *src)
 {
     std::vector<std::string> warnings;
     std::string              stmp;
@@ -507,9 +507,10 @@ std::vector<std::string> MolProp::Merge(const MolProp *src)
             }
         }
     }
-
-    std::copy(src->experimentConst().begin(), src->experimentConst().end(),
-              std::back_inserter(exper_));
+    for(auto ee = src->experiment()->begin(); ee != src->experiment()->end(); ++ee)
+    {
+        exper_.push_back(std::move(*ee));
+    }
 
     return warnings;
 }
@@ -597,9 +598,30 @@ Experiment *MolProp::findExperiment(JobType job)
     return nullptr;
 }
 
-const GenericProperty *MolProp::qmProperty(MolPropObservable  mpo, 
-                                           double             T,
-                                           JobType            jt) const
+bool MolProp::hasQMProperty(MolPropObservable mpo, 
+                            double            T,
+                            JobType           jt) const
+{
+    for(auto ei = exper_.begin(); ei < exper_.end(); ++ei)
+    {
+        if (ei->hasProperty(mpo))
+        {
+            for (const auto &pp : ei->propertyConst(mpo))
+            { 
+                if (ei->getJobtype() == jt &&
+                    bCheckTemperature(T, pp->getTemperature()))
+                {
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
+}
+
+const std::unique_ptr<GenericProperty> &MolProp::qmProperty(MolPropObservable  mpo, 
+                                                            double             T,
+                                                            JobType            jt) const
 {
     for(auto ei = exper_.begin(); ei < exper_.end(); ++ei)
     {
@@ -615,11 +637,11 @@ const GenericProperty *MolProp::qmProperty(MolPropObservable  mpo,
             }
         }
     }
-    return nullptr;
+    GMX_THROW(gmx::InvalidInputError(gmx::formatString("No such QM property %s", mpo_name(mpo))));
 }
 
-const GenericProperty *MolProp::expProperty(MolPropObservable  mpo, 
-                                            double             T) const
+const std::unique_ptr<GenericProperty> &MolProp::expProperty(MolPropObservable  mpo, 
+                                                             double             T) const
 {
     for(auto ei = exper_.begin(); ei < exper_.end(); ++ei)
     {
@@ -635,7 +657,7 @@ const GenericProperty *MolProp::expProperty(MolPropObservable  mpo,
             }
         }
     }
-    return nullptr;
+    GMX_THROW(gmx::InvalidInputError(gmx::formatString("No such Experimental property %s", mpo_name(mpo))));
 }
 
 CommunicationStatus MolProp::Send(const CommunicationRecord *cr, int dest) const
@@ -827,7 +849,7 @@ CommunicationStatus MolProp::BroadCast(const CommunicationRecord *cr,
                 cs = ex.BroadCast(cr, root, comm);
                 if (CommunicationStatus::OK == cs)
                 {
-                    AddExperiment(ex);
+                    AddExperiment(std::move(ex));
                 }
             }
             if (cr->mh() && cr->mh()->debug())
@@ -916,7 +938,7 @@ CommunicationStatus MolProp::Receive(const CommunicationRecord *cr, int src)
             cs = ex.Receive(cr, src);
             if (CommunicationStatus::OK == cs)
             {
-                AddExperiment(ex);
+                AddExperiment(std::move(ex));
             }
         }
 

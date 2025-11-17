@@ -189,16 +189,16 @@ namespace alexandria
              
         /*! \brief Extract bond lengths, angles etc. from molecules
          * \param[in]  msghandler Message handler
-         * \param[in]  mp     MolProp array
+         * \param[in]  mp     MolProp array (will be destroyed)
          * \param[out] actmols ACTMol array will be filled here
          * \param[in]  pd     Force field structure
          * \param[in]  gms    Selection of compounds
          */                          
-        void extractGeometries(MsgHandler                 *msghandler,
-                               const std::vector<MolProp> &mp,
-                               std::vector<ACTMol>        *actmols,
-                               ForceField                 *pd,
-                               const MolSelect            &gms);
+        void extractGeometries(MsgHandler           *msghandler,
+                               std::vector<MolProp> *mp,
+                               std::vector<ACTMol>  *actmols,
+                               ForceField           *pd,
+                               const MolSelect      &gms);
 
         /*! \brief Write how many bonds etc. were found
          * \param[in] fp File to write to

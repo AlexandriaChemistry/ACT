@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2024
+ * Copyright (C) 2014-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -344,23 +344,23 @@ void ReadSqlite3(gmx_unused MsgHandler           *msg_handler,
                             }
                             alexandria::Experiment exper(ref, "minimum");
                             std::string exp_type("experiment");
-                            GenericProperty *gp;
+
                             switch (mpo)
                             {
                             case MolPropObservable::POLARIZABILITY:
                                 {
-                                    gp = new MolecularPolarizability(exp_type, unit,
-                                                                     temperature, 0, 0, 0, 0, 0, 0,
-                                                                     value, error);
+                                    exper.addProperty(mpo, std::make_unique<MolecularPolarizability>(exp_type, unit,
+                                                                                                     temperature, 0, 0, 0, 0, 0, 0,
+                                                                                                     value, error));
                                     break;
                                 }
                             case MolPropObservable::DIPOLE:
                                 {
-                                    auto mm = new MolecularMultipole(exp_type, unit, temperature,
-                                                                MolPropObservable::DIPOLE);
+                                    auto mm = std::make_unique<MolecularMultipole>(exp_type, unit, temperature,
+                                                                                   MolPropObservable::DIPOLE);
                                     mm->setValue("average", value);
                                     mm->setValue("error", error);
-                                    gp = reinterpret_cast<GenericProperty *>(mm);
+                                    exper.addProperty(mpo, std::move(mm));
                                     break;
                                 }
                             case MolPropObservable::DGFORM:
@@ -374,14 +374,15 @@ void ReadSqlite3(gmx_unused MsgHandler           *msg_handler,
                             case MolPropObservable::CP:
                             case MolPropObservable::CV:
                                 {
-                                    gp = new MolecularEnergy(mpo, exp_type, unit, temperature, ePhase::GAS, value, error);
+                                    exper.addProperty(mpo, std::make_unique<MolecularEnergy>(mpo, exp_type,
+                                                                                             unit, temperature, ePhase::GAS, value, error));
                                     break;
                                 }
                             default:
                                 gmx_fatal(FARGS, "Unsupported property %s", prop);
                             }
-                            exper.addProperty(mpo, gp);
-                            mpi->AddExperiment(exper);
+
+                            mpi->AddExperiment(std::move(exper));
                         }
                     }
                     const char *iupac = keyptr->iupac().c_str();

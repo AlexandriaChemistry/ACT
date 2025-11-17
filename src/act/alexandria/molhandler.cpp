@@ -221,30 +221,26 @@ static void outputFreqInten(const ACTMol               *mol,
                             const std::vector<double> &intensities,
                             std::vector<std::string>  *output)
 {
-    std::vector<GenericProperty *> harm;
     auto mpo = MolPropObservable::FREQUENCY;
     const char *unit = mpo_unit2(mpo);
+    double delta = 0;
     for (auto &ee : mol->experimentConst())
     {
         if (ee.hasMolPropObservable(mpo))
         {
-            harm = ee.propertyConst(mpo);
+            auto &harm = ee.propertyConst(mpo);
+            output->push_back(gmx::formatString("Electronic vibrational frequencies: (%s):", unit));
+            size_t k = 0;
+            std::string freq;
+            for(auto &ff : harm[0]->getVector())
+            {
+                freq += gmx::formatString("  %10g", convertFromGromacs(ff, unit));
+                delta += gmx::square(ff - frequencies[k]);
+                k++;
+            }
+            output->push_back(freq);
             break;
         }
-    }
-    double delta = 0;
-    if (!harm.empty())
-    {
-        output->push_back(gmx::formatString("Electronic vibrational frequencies: (%s):", unit));
-        size_t k = 0;
-        std::string freq;
-        for(auto &ff : harm[0]->getVector())
-        {
-            freq += gmx::formatString("  %10g", convertFromGromacs(ff, unit));
-            delta += gmx::square(ff - frequencies[k]);
-            k++;
-        }
-        output->push_back(freq);
     }
     output->push_back(gmx::formatString("Alexandria vibrational frequencies: (%s):", unit));
     std::string actfreq;

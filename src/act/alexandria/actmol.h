@@ -655,7 +655,7 @@ public:
      * \param[in] iTypes Interaction types
      * \param[in] updateZeta Whether to update the atomic zeta as well
      */
-    void UpdateIdef(const ForceField                      *pd,
+    void UpdateIdef(const ForceField                   *pd,
                     const std::vector<InteractionType> &iTypes,
                     bool                                updateZeta);
     

@@ -702,10 +702,10 @@ static double computeCost(const ACTMol                         *actmol,
                     auto mpo = MolPropObservable::POTENTIAL;
                     if (myexp.hasProperty(mpo))
                     {
-                        auto eee = myexp.propertyConst(mpo);
+                        auto &eee = myexp.propertyConst(mpo);
                         for (size_t k = 0; k < eee.size(); k++)
                         {
-                            auto esp = static_cast<const ElectrostaticPotential *>(eee[k]);
+                            auto esp = static_cast<const ElectrostaticPotential *>(eee[k].get());
                             w += esp->V().size();
                         }
                     }

@@ -44,13 +44,18 @@ namespace alexandria
 ChargeMap fetchChargeMap(MsgHandler                  *msghandler,
                          ForceField                  *pd,
                          const ForceComputer         *forceComp,
-                         const std::vector<MolProp>  &mps,
+                         const char                  *charge_fn,
+                         std::vector<ACTMol>         *mols,
                          const std::set<std::string> &lookup,
                          ChargeGenerationAlgorithm    algorithm,
                          const char                  *qread)
 {
-    AlexandriaMols amols;
-    ChargeMap      qmap;
+    AlexandriaMols       amols;
+    ChargeMap            qmap;
+    // Clear old data if present
+    mols->clear();
+    std::vector<MolProp> mps;
+    MolPropRead(msghandler, charge_fn, &mps);
     for(auto mp = mps.begin(); mp < mps.end(); ++mp)
     {
         auto &frags = mp->fragments();
@@ -86,7 +91,7 @@ ChargeMap fetchChargeMap(MsgHandler                  *msghandler,
             continue;
         }
         alexandria::ACTMol actmol;
-        actmol.Merge(&(*mp));
+        actmol.Merge(std::move(&(*mp)));
         actmol.GenerateTopology(msghandler, pd, missingParameters::Error);
         // Add charges according to the algorithm selected
         std::vector<std::pair<Identifier, double>> newq;
@@ -120,6 +125,7 @@ ChargeMap fetchChargeMap(MsgHandler                  *msghandler,
                 newq.push_back({atom.id(), atom.charge()});
             }
             qmap.insert( { frags[0].inchi(), newq } );
+            mols->push_back(std::move(actmol));
         }
         else
         {
@@ -127,19 +133,6 @@ ChargeMap fetchChargeMap(MsgHandler                  *msghandler,
         }
     }
     return qmap;
-}
-
-ChargeMap fetchChargeMap(MsgHandler                  *msghandler,
-                         ForceField                  *pd,
-                         const ForceComputer         *forceComp,
-                         const char                  *charge_fn,
-                         const std::set<std::string> &lookup,
-                         ChargeGenerationAlgorithm    algorithm,
-                         const char                  *qread)
-{
-    std::vector<MolProp> mps;
-    MolPropRead(msghandler, charge_fn, &mps);
-    return fetchChargeMap(msghandler, pd, forceComp, mps, lookup, algorithm, qread);
 }
 
 void broadcastChargeMap(const CommunicationRecord *cr,

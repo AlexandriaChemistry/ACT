@@ -38,6 +38,7 @@
 #include <string.h>
 
 #include <map>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -117,11 +118,11 @@ public:
     /*! \brief
      * Merge the content of another MolProp into this one
      *
-     * \param[in] mpi The object to be merged into the present one
+     * \param[in] mpi The object to be merged into the present one. Will be destroyed!
      * \return List of warnings, if empty the molprops are merged fine
      * \todo Check and double check
      */
-    std::vector<std::string> Merge(const MolProp *mpi);
+    std::vector<std::string> Merge(MolProp *mpi);
     
     //! Dump the contents of this object to a text writer
     void Dump(gmx::TextWriter *tw) const;
@@ -177,7 +178,11 @@ public:
     
     //! Return the IUPAC International Chemical Identifier (InChI) see http://www.iupac.org/home/publications/e-resources/inchi.html
     const std::string &getInchi() const { return inchi_; }
-    
+ 
+    bool hasQMProperty(MolPropObservable                       mpo, 
+                       double                                  T,
+                       JobType                                 jt) const;
+   
     /*! \brief Find a QM property according to JobType below
      * \param[in] mpo The property of interest
      * \param[in] T   The temperature at which the property
@@ -187,9 +192,9 @@ public:
      *                the first in the list will be returned.
      * \return the property of interest or nullptr if not found
      */
-    const GenericProperty *qmProperty(MolPropObservable  mpo, 
-                                      double             T,
-                                      JobType            jt) const;
+    const std::unique_ptr<GenericProperty> &qmProperty(MolPropObservable  mpo, 
+                                                       double             T,
+                                                       JobType            jt) const;
 
     /*! \brief Find an Experimental property
      * \param[in] mpo The property of interest
@@ -198,8 +203,8 @@ public:
      *                may be returned.
      * \return the property of interest or nullptr if not found
      */
-    const GenericProperty *expProperty(MolPropObservable  mpo, 
-                                       double             T) const;
+    const std::unique_ptr<GenericProperty> &expProperty(MolPropObservable  mpo, 
+                                                        double             T) const;
 
     //! Add a classification category for this molecule
     void AddCategory(const std::string &category)

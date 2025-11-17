@@ -156,11 +156,11 @@ class QtypeTest : public gmx::test::CommandLineTestBase
 
             // Now loop over molprops, there may be more than one
             int mp_index = 1;
-            for(const auto &molprop : molprops)
+            for(auto &molprop : molprops)
             {
                 alexandria::ACTMol actmol;
 
-                actmol.Merge(&molprop);
+                actmol.Merge(std::move(&molprop));
                 MsgHandler msghandler;
                 // Generate charges and topology
                 actmol.GenerateTopology(&msghandler, pd,

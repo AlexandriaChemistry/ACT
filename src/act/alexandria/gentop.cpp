@@ -204,7 +204,8 @@ int gentop(int argc, char *argv[])
                                        pd.getNatypes()));
 
     auto forceComp = new ForceComputer();
-    std::vector<ACTMol> actmols = compR.read(&msghandler, pd, forceComp);
+    std::vector<ACTMol> actmols;
+    compR.read(&msghandler, pd, forceComp, &actmols);
     // Write information about force field
     msghandler.write("");
     for (const auto &ii : pd.info())

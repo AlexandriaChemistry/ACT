@@ -451,9 +451,9 @@ static void get_harmonics(std::map<MolPropXml, std::string> *xbuf,
     {
         for(const auto &ff : clean1)
         {
-            auto gps  = last->property(xoMap.find(ff)->second);
-            
-            auto harm = static_cast<Harmonics *>((*gps)[0]);
+            auto mpo  = xoMap.find(ff)->second;
+            auto *gps = last->property(mpo);
+            Harmonics *harm = static_cast<Harmonics *>(gps->begin()->get());
             harm->addValue(xbuf_atof(xbuf, ff, true));
         }
     }
@@ -468,17 +468,17 @@ static void get_polarizability(std::map<MolPropXml, std::string> *xbuf,
     {
         mytype.assign("experiment");
     }
-    auto mdp = new MolecularPolarizability(mytype,
-                                           (*xbuf)[MolPropXml::UNIT],
-                                           xbuf_atof(xbuf, MolPropXml::TEMPERATURE, true),
-                                           xbuf_atof(xbuf, MolPropXml::qXX, false),
-                                           xbuf_atof(xbuf, MolPropXml::qYY, false),
-                                           xbuf_atof(xbuf, MolPropXml::qZZ, false),
-                                           xbuf_atof(xbuf, MolPropXml::qXY, false),
-                                           xbuf_atof(xbuf, MolPropXml::qXZ, false),
-                                           xbuf_atof(xbuf, MolPropXml::qYZ, false),
-                                           xbuf_atof(xbuf, MolPropXml::AVERAGE, false),
-                                           xbuf_atof(xbuf, MolPropXml::ERROR, false));
+    auto mdp = std::make_unique<MolecularPolarizability>(mytype,
+                                                         (*xbuf)[MolPropXml::UNIT],
+                                                         xbuf_atof(xbuf, MolPropXml::TEMPERATURE, true),
+                                                         xbuf_atof(xbuf, MolPropXml::qXX, false),
+                                                         xbuf_atof(xbuf, MolPropXml::qYY, false),
+                                                         xbuf_atof(xbuf, MolPropXml::qZZ, false),
+                                                         xbuf_atof(xbuf, MolPropXml::qXY, false),
+                                                         xbuf_atof(xbuf, MolPropXml::qXZ, false),
+                                                         xbuf_atof(xbuf, MolPropXml::qYZ, false),
+                                                         xbuf_atof(xbuf, MolPropXml::AVERAGE, false),
+                                                         xbuf_atof(xbuf, MolPropXml::ERROR, false));
     last->addProperty(MolPropObservable::POLARIZABILITY, std::move(mdp));
     clean_xbuf(xbuf,
                { MolPropXml::TEMPERATURE, MolPropXml::qXX, MolPropXml::qYY, MolPropXml::qZZ,
@@ -546,7 +546,7 @@ static void mp_process_tree(MsgHandler                        *msg_handler,
                     {
                         MolProp mp;
                         get_molecule_attributes(xbuf, &mp);
-                        molprops->push_back(mp);
+                        molprops->push_back(std::move(mp));
                         mpt = &(molprops->back());
                         mp_process_tree(msg_handler, tree->children, molprops, xbuf);
                         clean_xbuf(xbuf, { elem });
@@ -593,7 +593,7 @@ static void mp_process_tree(MsgHandler                        *msg_handler,
                             for (const auto &ff : clean1)
                             {
                                 auto mpo    = xoMap.find(ff)->second;
-                                auto myfreq = new Harmonics(xbuf->find(ff)->second, 0, mpo);
+                                auto myfreq = std::make_unique<Harmonics>(xbuf->find(ff)->second, 0, mpo);
                                 last->addProperty(mpo, std::move(myfreq));
                             }
                             mp_process_tree(msg_handler, tree->children, molprops, xbuf);
@@ -662,12 +662,12 @@ static void mp_process_tree(MsgHandler                        *msg_handler,
                                 auto mpo = MolPropObservable::POTENTIAL;
                                 if (!last->hasProperty(mpo))
                                 {
-                                    auto ep = new ElectrostaticPotential((*xbuf)[MolPropXml::X_UNIT],
-                                                                         (*xbuf)[MolPropXml::V_UNIT]);
+                                    auto ep = std::make_unique<ElectrostaticPotential>((*xbuf)[MolPropXml::X_UNIT],
+                                                                                       (*xbuf)[MolPropXml::V_UNIT]);
                                     last->addProperty(mpo, std::move(ep));
                                 }
                                 // TODO make this more rigorous and less ugly.
-                                auto myesp = static_cast<ElectrostaticPotential *>(*last->property(mpo)->begin());
+                                ElectrostaticPotential *myesp = static_cast<ElectrostaticPotential *>(last->property(mpo)->begin()->get());
                                 myesp->addPoint(atoi((*xbuf)[MolPropXml::ESPID].c_str()),
                                                 xbuf_atof(xbuf, MolPropXml::dX, true),
                                                 xbuf_atof(xbuf, MolPropXml::dY, true),
@@ -691,10 +691,10 @@ static void mp_process_tree(MsgHandler                        *msg_handler,
                     {
                         mp_process_tree(msg_handler, tree->children, molprops, xbuf);
                         MolPropObservable mpo = xoMap.find(elem)->second;
-                        auto mq = new MolecularMultipole((*xbuf)[MolPropXml::TYPE],
-                                                         (*xbuf)[MolPropXml::UNIT],
-                                                         xbuf_atof(xbuf, MolPropXml::TEMPERATURE, true),
-                                                         mpo);
+                        auto mq = std::make_unique<MolecularMultipole>((*xbuf)[MolPropXml::TYPE],
+                                                                       (*xbuf)[MolPropXml::UNIT],
+                                                                       xbuf_atof(xbuf, MolPropXml::TEMPERATURE, true),
+                                                                       mpo);
                         std::vector<MolPropXml> myclean;
                         for(auto &x : *xbuf)
                         {
@@ -745,11 +745,11 @@ static void mp_process_tree(MsgHandler                        *msg_handler,
                                 {
                                     mytype = exp_type;
                                 }
-                                auto me  = new MolecularEnergy(mpo, mytype, (*xbuf)[MolPropXml::UNIT],
-                                                               xbuf_atof(xbuf, MolPropXml::TEMPERATURE, true),
-                                                               string2phase((*xbuf)[MolPropXml::PHASE]),
-                                                               xbuf_atof(xbuf, MolPropXml::AVERAGE, true),
-                                                               xbuf_atof(xbuf, MolPropXml::ERROR, false));
+                                auto me  = std::make_unique<MolecularEnergy>(mpo, mytype, (*xbuf)[MolPropXml::UNIT],
+                                                                             xbuf_atof(xbuf, MolPropXml::TEMPERATURE, true),
+                                                                             string2phase((*xbuf)[MolPropXml::PHASE]),
+                                                                             xbuf_atof(xbuf, MolPropXml::AVERAGE, true),
+                                                                             xbuf_atof(xbuf, MolPropXml::ERROR, false));
                                 last->addProperty(mpo, std::move(me));
                             }
                             else if (msg_handler)
@@ -829,7 +829,7 @@ static void mp_process_tree(MsgHandler                        *msg_handler,
                                               (*xbuf)[MolPropXml::BASISSET], (*xbuf)[MolPropXml::REFERENCE],
                                               (*xbuf)[MolPropXml::CONFORMATION], (*xbuf)[MolPropXml::DATAFILE],
                                               string2jobType((*xbuf)[MolPropXml::JOBTYPE]));
-                            mpt->AddExperiment(mycalc);
+                            mpt->AddExperiment(std::move(mycalc));
                             clean_xbuf(xbuf, cleanme);
                             clean_xbuf(xbuf, { MolPropXml::JOBTYPE });
                         }
@@ -843,7 +843,7 @@ static void mp_process_tree(MsgHandler                        *msg_handler,
                                     conf = (*xbuf)[MolPropXml::CONFORMATION];
                                 }
                                 Experiment myexp((*xbuf)[MolPropXml::REFERENCE], conf);
-                                mpt->AddExperiment(myexp);
+                                mpt->AddExperiment(std::move(myexp));
                                 clean_xbuf(xbuf, { MolPropXml::CONFORMATION, MolPropXml::REFERENCE  });
                             }
                             else
@@ -958,10 +958,10 @@ static void add_properties(xmlNodePtr        exp,
                 }
             case MolPropObservable::FREQUENCY:
                 {
-                    auto inten = exper.propertyConst(MolPropObservable::INTENSITY);
-                    auto iii   = static_cast<Harmonics *>(inten[0]);
-                    auto fval  = prop->getVector();
-                    auto ival  = iii->getVector();
+                    auto      &inten = exper.propertyConst(MolPropObservable::INTENSITY);
+                    Harmonics *iii   = static_cast<Harmonics *>(inten[0].get());
+                    auto       fval  = prop->getVector();
+                    auto       ival  = iii->getVector();
                     if (fval.size() == ival.size() && !fval.empty())
                     {
                         child = add_xml_child(exp, rmap[MolPropXml::HARMONICS]);
@@ -1002,8 +1002,8 @@ static void add_properties(xmlNodePtr        exp,
                 }
             case MolPropObservable::POLARIZABILITY:
                 {
-                    auto pprop = static_cast<MolecularPolarizability *>(prop);
-                    auto mq    = pprop->getTensor();
+                    MolecularPolarizability *pprop = static_cast<MolecularPolarizability *>(prop.get());
+                    auto                     mq    = pprop->getTensor();
                     
                     child = add_xml_child(exp, rmap[MolPropXml::POLARIZABILITY]);
                     add_xml_string(child, rmap[MolPropXml::TYPE], prop->getType());
@@ -1024,12 +1024,12 @@ static void add_properties(xmlNodePtr        exp,
                 }
             case MolPropObservable::POTENTIAL:
                 {
-                    auto eprop = static_cast<ElectrostaticPotential *>(prop);
-                    auto x_unit = eprop->getXYZunit();
-                    auto v_unit = eprop->getVunit();
-                    auto espid  = eprop->espid();
-                    auto xyz    = eprop->xyz();
-                    auto V      = eprop->V();
+                    ElectrostaticPotential *eprop  = static_cast<ElectrostaticPotential *>(prop.get());
+                    auto                    x_unit = eprop->getXYZunit();
+                    auto                    v_unit = eprop->getVunit();
+                    auto                    espid  = eprop->espid();
+                    auto                    xyz    = eprop->xyz();
+                    auto                    V      = eprop->V();
 
                     std::string x_unitOut("pm");
                     std::string V_unitOut("Hartree/e");

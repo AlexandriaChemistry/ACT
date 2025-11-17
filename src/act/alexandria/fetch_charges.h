@@ -47,6 +47,8 @@
 namespace alexandria
 {
 
+class ACTMol;
+
 /*! \brief chargeMap definition.
  * First string is the molecule identifier, which should be the InChi.
  * Vector contains pairs of identifier and charge.
@@ -59,35 +61,20 @@ typedef std::map<std::string, std::vector<std::pair<Identifier, double> > > Char
  * For polarizable models the charge of the shell are added explicitly in the list, and the same
  * goes for virtual sites. The fragment id (InChi) is used as the string in the returned map.
  *
- * \param[in] msghandler The message handler
- * \param[in] pd        The force field structure
- * \param[in] forceComp A force computer
- * \param[in] charge_fn The name of a molprop file
- * \param[in] lookup    Set of compounds to look up. If empty charges for all compounds will be determined.
- * \param[in] qread     Charge type if read
+ * \param[in]  msghandler The message handler
+ * \param[in]  pd         The force field structure
+ * \param[in]  forceComp  A force computer
+ * \param[in]  charge_fn  The name of a molprop file
+ * \param[out] mols       The molecules
+ * \param[in]  lookup     Set of compounds to look up. If empty charges for all compounds will be determined.
+ * \param[in]  qread      Charge type if read
  * \return the map.
  */
 ChargeMap fetchChargeMap(MsgHandler                  *msghandler,
                          ForceField                  *pd,
                          const ForceComputer         *forceComp,
                          const char                  *charge_fn,
-                         const std::set<std::string> &lookup,
-                         ChargeGenerationAlgorithm    algorithm,
-                         const char                  *qread);
-
-/*! \brief Generate charges for all compounds in a molprop file.
- * \param[in] msghandler The message handler
- * \param[in] pd        The force field structure
- * \param[in] forceComp A force computer
- * \param[in] mps       Vector of molprops read previously
- * \param[in] lookup    Set of compounds to look up. If empty charges for all compounds will be determined.
- * \param[in] qread     Charge type if read
- * \return the map, see above.
- */
-ChargeMap fetchChargeMap(MsgHandler                  *msghandler,
-                         ForceField                  *pd,
-                         const ForceComputer         *forceComp,
-                         const std::vector<MolProp>  &mps,
+                         std::vector<ACTMol>         *mols,
                          const std::set<std::string> &lookup,
                          ChargeGenerationAlgorithm    algorithm,
                          const char                  *qread);

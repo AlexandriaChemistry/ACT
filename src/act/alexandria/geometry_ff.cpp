@@ -272,7 +272,7 @@ int geometry_ff(int argc, char *argv[])
         return 0;
     }
     std::vector<ACTMol> actmols;
-    bonds.extractGeometries(&msghandler, mp, &actmols, &pd, gms);
+    bonds.extractGeometries(&msghandler, &mp, &actmols, &pd, gms);
     
     print_memory_usage(debug);
     if (bHisto)

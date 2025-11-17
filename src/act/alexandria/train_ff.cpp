@@ -860,8 +860,8 @@ int train_ff(int argc, char *argv[])
     // Read charges file if needed. No need to store the ACTmols being returned
     {
         ForceComputer forceComp;
-        (void) compR.read(opt.msgHandler(), *opt.sii()->forcefield(),
-                          &forceComp);
+        std::vector<ACTMol> actmols;
+        compR.read(opt.msgHandler(), *opt.sii()->forcefield(), &forceComp, &actmols);
     }
 
     // MolGen read being called here!

@@ -274,7 +274,7 @@ bool ACTMol::hasMolPropObservable(MolPropObservable mpo) const
 
 std::vector<gmx::RVec> ACTMol::xOriginal() const
 {
-    auto exper = findExperimentConst(JobType::OPT);
+    const Experiment *exper = findExperimentConst(JobType::OPT);
     if (nullptr == exper)
     {
         exper = findExperimentConst(JobType::TOPOLOGY);
@@ -317,7 +317,7 @@ void ACTMol::forceEnergyMaps(MsgHandler                                         
         { MolPropObservable::CHARGETRANSFER,    InteractionType::CHARGETRANSFER }
     };
     GMX_RELEASE_ASSERT(forceComp, "No force computer supplied");
-    for (auto &exper : experimentConst())
+    for (const auto &exper : experimentConst())
     {
         // We compute either interaction energies or normal energies for one experiment
         auto coords  = experCoords(exper.getCoordinates());
@@ -380,7 +380,7 @@ void ACTMol::forceEnergyMaps(MsgHandler                                         
                 {
                     if (exper.hasProperty(mpo))
                     {
-                        auto propvec = exper.propertyConst(mpo);
+                        auto &propvec = exper.propertyConst(mpo);
                         if (propvec.size() != 1)
                         {
                             msghandler->fatal(gmx::formatString("Expected just one QM value per experiment for %s iso %zu", mpo_name(mpo), propvec.size()).c_str());
@@ -410,7 +410,7 @@ void ACTMol::forceEnergyMaps(MsgHandler                                         
             std::vector<gmx::RVec> forces(myatoms.size(), fzero);
             forceComp->compute(msghandler, pd, &topology_,
                                &coords, &forces, &energies);
-            auto eprops = exper.propertyConst(MolPropObservable::DELTAE0);
+            auto &eprops = exper.propertyConst(MolPropObservable::DELTAE0);
             if (eprops.size() > 1)
             {
                 msghandler->fatal("Multiple energies for this experiment");
@@ -485,6 +485,12 @@ void ACTMol::GenerateTopology(MsgHandler        *msghandler,
 {
     std::string btype1, btype2;
 
+    if (atomsConst().size() > 0)
+    {
+        msghandler->msg(ACTStatus::Warning,
+                        "There is a topology already");
+        return;
+    }
     msghandler->msg(ACTStatus::Debug,
                     gmx::formatString("Generating topology for %s",
                                       getMolname().c_str()));
@@ -1007,7 +1013,7 @@ void ACTMol::setCharges(MsgHandler        *msghandler,
                         const std::string &qread)
 {
     std::vector<double> qnew;
-    auto exper = findExperimentConst(JobType::OPT);
+    const Experiment *exper = findExperimentConst(JobType::OPT);
     if (nullptr == exper)
     {
         exper  = findExperimentConst(JobType::TOPOLOGY);
@@ -1308,10 +1314,14 @@ std::vector<std::string> ACTMol::generateCommercials(const ForceField           
         T = -1;
         for(auto &mpo : mpoMultiPoles)
         {
-            auto gp = qmProperty(mpo, T, JobType::OPT);
-            if (!gp)
+            MolecularMultipole *gp = nullptr;
+            for(const auto jt : { JobType::OPT, JobType::TOPOLOGY })
             {
-                gp = qmProperty(mpo, T, JobType::TOPOLOGY);
+                if (hasQMProperty(mpo, T, jt))
+                {
+                    gp = static_cast<MolecularMultipole *>(qmProperty(mpo, T, jt).get());
+                    break;
+                }
             }
             if (gp)
             {
@@ -1541,29 +1551,25 @@ void ACTMol::GenerateCube(MsgHandler                   *msghandler,
 void ACTMol::getHarmonics()
 {
     for(auto &mpo : { MolPropObservable::FREQUENCY, 
-                     MolPropObservable::INTENSITY })
+                      MolPropObservable::INTENSITY })
     {
-        std::vector<GenericProperty *> harm;
-        for (auto &ee : experimentConst())
+        for (const auto &ee : experimentConst())
         {
             if (ee.hasMolPropObservable(mpo))
             {
-                harm = ee.propertyConst(mpo);
+                const std::vector<std::unique_ptr<GenericProperty> > &harm = ee.propertyConst(mpo);
+                for(auto &ff : harm[0]->getVector())
+                {
+                    if (mpo == MolPropObservable::FREQUENCY)
+                    {
+                        ref_frequencies_.push_back(ff);
+                    }
+                    else
+                    {
+                        ref_intensities_.push_back(ff);
+                    }
+                }
                 break;
-            }
-        }
-        if (!harm.empty())
-        {
-            for(auto &ff : harm[0]->getVector())
-            {
-                if (mpo == MolPropObservable::FREQUENCY)
-                {
-                    ref_frequencies_.push_back(ff);
-                }
-                else
-                {
-                    ref_intensities_.push_back(ff);
-                }
             }
         }
     }
@@ -1609,10 +1615,10 @@ void ACTMol::getExpProps(MsgHandler                                 *msghandler,
         ACTQprop actq(myatoms, xatom);
         auto     qelec = actq.qPqm();
         auto     qcalc = actq.qPact();
-        auto     props = myexp.propertiesConst();
+        auto    &props = myexp.propertiesConst();
         setBasisset(myexp.getBasisset());
         setMethod(myexp.getMethod());
-        for (auto prop : props)
+        for (auto &prop : props)
         {
             // Check whether this property is in the "Wanted" list
             if (!iqm.empty())
@@ -1624,7 +1630,7 @@ void ACTMol::getExpProps(MsgHandler                                 *msghandler,
                 }
             }
             // Fetch the property from this experiment
-            auto gp = myexp.propertyConst(prop.first);
+            auto &gp = myexp.propertyConst(prop.first);
             msghandler->msg(ACTStatus::Debug,
                             gmx::formatString("Found %zu %s values for %s",
                                               gp.size(),
@@ -1648,12 +1654,12 @@ void ACTMol::getExpProps(MsgHandler                                 *msghandler,
                     std::uniform_real_distribution<> uniform(0.0, 1.0);
                     double                           cutoff = 0.01*maxESP;
 
-                    auto eee = prop.second;
+                    auto &eee = prop.second;
                     for (size_t k = 0; k < eee.size(); k++)
                     {
-                        auto esp = static_cast<const ElectrostaticPotential *>(eee[k]);
-                        auto xyz = esp->xyz();
-                        auto V   = esp->V();
+                        auto *esp = static_cast<const ElectrostaticPotential *>(eee[k].get());
+                        auto  xyz = esp->xyz();
+                        auto  V   = esp->V();
                         for(size_t ll = 0; ll < V.size(); ll++)
                         {
                             auto val = uniform(gen);
@@ -1676,7 +1682,7 @@ void ACTMol::getExpProps(MsgHandler                                 *msghandler,
                 {
                     for(auto mygp = gp.begin(); mygp < gp.end(); ++mygp)
                     {
-                        auto multprop = static_cast<const MolecularMultipole *>(*mygp);
+                        auto *multprop = static_cast<const MolecularMultipole *>(mygp->get());
                         qelec->setMultipole(prop.first, multprop->getVector());
                         qprop = true;
                     }
@@ -1686,7 +1692,7 @@ void ACTMol::getExpProps(MsgHandler                                 *msghandler,
                 {
                     for(auto mygp = gp.begin(); mygp < gp.end(); ++mygp)
                     {
-                        auto polprop = static_cast<const MolecularPolarizability *>(*mygp);
+                        auto *polprop = static_cast<const MolecularPolarizability *>(mygp->get());
                         qelec->setPolarizabilityTensor(polprop->getTensor());
                         qprop = true;
                     }
@@ -1696,7 +1702,7 @@ void ACTMol::getExpProps(MsgHandler                                 *msghandler,
                 {
                     for(auto mygp = gp.begin(); mygp < gp.end(); ++mygp)
                     {
-                        auto ieprop = static_cast<const MolecularEnergy *>(*mygp);
+                        auto *ieprop = static_cast<const MolecularEnergy *>(mygp->get());
                         energy_.insert(std::pair<MolPropObservable, double>(prop.first, ieprop->getValue()));
                         foundNothing = false;
                     }
@@ -1715,7 +1721,7 @@ void ACTMol::getExpProps(MsgHandler                                 *msghandler,
                 {
                     for(auto mygp = gp.begin(); mygp < gp.end(); ++mygp)
                     {
-                        auto eprop = static_cast<const MolecularEnergy *>(*mygp);
+                        auto *eprop = static_cast<const MolecularEnergy *>(mygp->get());
                         energy_.insert(std::pair<MolPropObservable, double>(prop.first, eprop->getValue()));
                         foundNothing = false;
                     }
