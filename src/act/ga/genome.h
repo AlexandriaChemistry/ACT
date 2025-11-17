@@ -53,10 +53,10 @@ private:
     double              probability_ = 0.0;
 public:
     //! Constructor
-    Genome(const std::vector<double> genome,
-           FitnessMap                fitness) : 
+    Genome(const std::vector<double> &genome,
+           FitnessMap                 fitness) : 
     genome_(genome), fitness_(fitness) {}
-    
+
     //! Empty constructor
     Genome() {}
     
