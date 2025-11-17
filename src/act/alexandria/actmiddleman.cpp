@@ -30,7 +30,19 @@
 
 namespace alexandria
 {
- 
+
+ACTMiddleMan::~ACTMiddleMan()
+{
+    if (mutator_)
+    {
+        delete mutator_;
+    }
+    if (ind_)
+    {
+        delete ind_;
+    }
+}
+
 ACTMiddleMan::ACTMiddleMan(MsgHandler                *msghandler,
                            MolGen                    *mg,
                            StaticIndividualInfo      *sii,
