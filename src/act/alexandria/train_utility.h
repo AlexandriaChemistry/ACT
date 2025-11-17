@@ -109,6 +109,9 @@ private:
     //! Statistics for RMSF and frequencies.
     std::map<iMolSelect, gmx_stats>    lsq_rmsf_;
     gmx_stats                          lsq_freq_;
+    //! Command line stuff
+    std::map<MolPropObservable, std::string> mpoOpt_;
+    std::map<MolPropObservable, std::string> mpoFnm_;
     //! Statistics for multipoles
     std::map<MolPropObservable, std::map<iMolSelect, qtStats> > lsq_multi_;
     //! Interaction energy terms

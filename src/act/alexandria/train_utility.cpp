@@ -519,12 +519,12 @@ void TrainForceFieldPrinter::addFileOptions(std::vector<t_filenm> *filenm)
     }
     for(auto &mpo : mpoMultiPoles)
     {
-        std::string cmdFlag = gmx::formatString("-%scorr", mpo_name(mpo));
-        std::string defFnm  = gmx::formatString("%s_corr", mpo_name(mpo));
+        mpoOpt_.insert({ mpo, gmx::formatString("-%scorr", mpo_name(mpo)) });
+        mpoFnm_.insert({ mpo, gmx::formatString("%s_corr", mpo_name(mpo)) });
         t_filenm multi;
         multi.ftp  = efXVG;
-        multi.opt  = strdup(cmdFlag.c_str());
-        multi.fn   = strdup(defFnm.c_str());
+        multi.opt  = mpoOpt_[mpo].c_str();
+        multi.fn   = mpoFnm_[mpo].c_str();
         multi.flag = ffOPTWR;
         filenm->push_back(std::move(multi));
     }
