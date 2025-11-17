@@ -66,7 +66,7 @@ bool MCMC::evolve(alexandria::MsgHandler       *msghandler,
     // Create a gene pool
     GenePool pool(sii_->nParam());
     // Create and add our own individual (Will be the first one in the pool)
-    auto *ind = static_cast<alexandria::ACMIndividual *>(initializer()->initialize());
+    auto *ind = std::move(static_cast<alexandria::ACMIndividual *>(initializer()->initialize()));
 
     // Compute its fitness
     auto tw = msghandler->tw();

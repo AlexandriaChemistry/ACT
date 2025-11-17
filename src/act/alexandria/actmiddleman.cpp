@@ -64,7 +64,7 @@ ACTMiddleMan::ACTMiddleMan(MsgHandler                *msghandler,
     ACMInitializer initializer(sii, gach->randomInit(), dis(gen));
     
     // Create and initialize the individual
-    ind_ = static_cast<ACMIndividual *>(initializer.initialize());
+    ind_ = std::move(static_cast<ACMIndividual *>(initializer.initialize()));
 
     // Create force computer
     forceComp_.init(bch->shellToler(), bch->shellMaxIter());
