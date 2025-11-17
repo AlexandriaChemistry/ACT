@@ -181,13 +181,13 @@ void alexandria_molprop_stats_table(MsgHandler           *msg_handler,
                     (mpi.SearchCategory(i.getName()) == 1))
                 {
                     double Texp  = -1;
-                    auto   gpexp = mpi.expProperty(mpo, Texp);
+                    auto  &gpexp = mpi.expProperty(mpo, Texp);
                     if (gpexp)
                     {
                         double exp_val = gpexp->getValue();
                         double exp_err = gpexp->getError();
                         double Tqm     = -1;
-                        auto   gpqm    = mpi.qmProperty(mpo, Tqm, JobType::OPT);
+                        auto  &gpqm    = mpi.qmProperty(mpo, Tqm, JobType::OPT);
                         if (gpqm)
                         {
                             double qm_val = gpqm->getValue();
@@ -239,13 +239,13 @@ void alexandria_molprop_stats_table(MsgHandler           *msg_handler,
                 mpi->hasAllAtomTypes())
             {
                 double Texp = -1;
-                auto gpexp = mpi->expProperty(mpo, Texp);
+                auto  &gpexp = mpi->expProperty(mpo, Texp);
                 if (gpexp)
                 {
                     double Tqm     = -1;
                     double exp_err = gpexp->getError();
                     double exp_val = gpexp->getValue();
-                    auto   gpqm = mpi->qmProperty(mpo, Tqm, JobType::OPT);
+                    auto  &gpqm = mpi->qmProperty(mpo, Tqm, JobType::OPT);
                     if (gpqm)
                     {
                         double qm_err = gpqm->getError();
@@ -857,7 +857,7 @@ void alexandria_molprop_prop_table(FILE                 *fp,
         {
             std::vector<ExpData>  ed;
             std::vector<CalcData> cd;
-            for (auto ei : mpi.experimentConst())
+            for (auto &ei : mpi.experimentConst())
             {
                 for(const auto &prop : ei.propertiesConst())
                 {

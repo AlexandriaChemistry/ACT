@@ -145,7 +145,7 @@ protected:
                 }
                 for (auto &propi : ci.propertiesConst())
                 {
-                    for(auto gp : propi.second)
+                    for(auto &gp : propi.second)
                     {
                         const char *mpostr = mpo_name(propi.first);
                         double fac = convertFromGromacs(1.0, gp->getInputUnit());
@@ -153,7 +153,7 @@ protected:
                         {
                         case alexandria::MolPropObservable::POLARIZABILITY:
                             {
-                                auto gpp = static_cast<MolecularPolarizability *>(gp);
+                                auto gpp = static_cast<MolecularPolarizability *>(gp.get());
                                 myCheck.checkDouble(gpp->getValue()*fac,
                                                     gmx::formatString("%s %s %s average", mpostr, gpp->getType(), cbuf).c_str());
                                 myCheck.checkDouble(gpp->getError()*fac,

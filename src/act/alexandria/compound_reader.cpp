@@ -246,17 +246,17 @@ void CompoundReader::readFile(MsgHandler *msghandler,
                         gmx::formatString("Failed to import coordinate file %s using OpenBabel", filename_));
         return;
     }
-    mol->Merge(&mps[0]);
+    mol->Merge(std::move(&mps[0]));
 }
 
-std::vector<ACTMol> CompoundReader::read(MsgHandler          *msghandler,
-                                         ForceField          &pd,
-                                         const ForceComputer *forceComp)
+void CompoundReader::read(MsgHandler          *msghandler,
+                          ForceField          &pd,
+                          const ForceComputer *forceComp,
+                          std::vector<ACTMol> *mols)
 {
-    std::vector<ACTMol>   mols;
     if (qmapfn_.empty())
     {
-        return mols;
+        return;
     }
     bool                  readCoordinates = false;
     std::set<std::string> lookup;
@@ -303,10 +303,10 @@ std::vector<ACTMol> CompoundReader::read(MsgHandler          *msghandler,
                 {
                     lookup.insert(mol.getMolname());
                 }
-                mols.push_back(std::move(mol));
+                mols->push_back(std::move(mol));
             }
             // For printing further down
-            lookupSource.assign("file ");
+            lookupSource.assign(" from file ");
             lookupSource += filename_;
         }
         else if (strlen(dbname_) > 0)
@@ -317,7 +317,7 @@ std::vector<ACTMol> CompoundReader::read(MsgHandler          *msghandler,
                 lookup.insert(mymol);
             }
             // For printing further down
-            lookupSource.assign("the command line flag -db");
+            lookupSource.assign(" from the command line flag -db");
         }
     }
     if (lookup.empty())
@@ -330,7 +330,7 @@ std::vector<ACTMol> CompoundReader::read(MsgHandler          *msghandler,
         else
         {
             // No lookup and no file.
-            return {};
+            return;
         }
     }
     else
@@ -345,45 +345,14 @@ std::vector<ACTMol> CompoundReader::read(MsgHandler          *msghandler,
     }
     if (!qmapfn_.empty())
     {
-        std::vector<MolProp> mps;
-        MolPropRead(msghandler, qmapfn_.c_str(), &mps);
-        qmap_ = fetchChargeMap(msghandler, &pd, forceComp, mps, lookup, qAlgorithm_, qqm_);
+        qmap_ = fetchChargeMap(msghandler, &pd, forceComp, qmapfn_.c_str(),
+                               mols, lookup, qAlgorithm_, qqm_);
         msghandler->msg(ACTStatus::Info,
                         gmx::formatString("CompoundReader read %lu out of %lu entries into charge map from %s\n",
                                           qmap_.size(), lookup.size(), qmapfn_.c_str()));
-
-        // Throw away those compounds that are not in the selection
-        if (!lookup.empty() && !readCoordinates)
-        {
-            for(auto mp = mps.begin(); mp < mps.end(); )
-            {
-                if ((lookup.find(mp->getMolname()) == lookup.end() &&
-                     lookup.find(mp->getIupac()) == lookup.end()) ||
-                    (qmap_.find(mp->getInchi()) == qmap_.end()))
-                {
-                    mp = mps.erase(mp);
-                }
-                else
-                {
-                    msghandler->msg(ACTStatus::Info,
-                                    gmx::formatString("Successfully read %s (%s) from molprop file %s\n",
-                                                      mp->getMolname().c_str(), mp->getIupac().c_str(), qmapfn_.c_str()));
-                    ++mp;
-                }
-            }
-        }
-        if (!readCoordinates)
-        {
-            for(auto mp : mps)
-            {
-                ACTMol mm;
-                mm.Merge(&mp);
-                mols.push_back(std::move(mm));
-            }
-        }
     }
     // Did we find any molecule?
-    if (mols.empty())
+    if (mols->empty())
     {
         msghandler->msg(ACTStatus::Error, "Couldn't find any molecule!");
     }
@@ -391,8 +360,8 @@ std::vector<ACTMol> CompoundReader::read(MsgHandler          *msghandler,
     {
         // Only warn about the total charge for monomers
         // since we cannot know how charge is divided between molecules.
-        bool warnQtot = mols.size() == 1;
-        for(auto mol = mols.begin(); mol < mols.end(); )
+        bool warnQtot = mols->size() == 1;
+        for(auto mol = mols->begin(); mol != mols->end(); )
         {
             mol->GenerateTopology(msghandler, &pd, missingParameters::Error);
             if (msghandler->ok())
@@ -411,7 +380,7 @@ std::vector<ACTMol> CompoundReader::read(MsgHandler          *msghandler,
                                                   mol->getMolname().c_str(), filename_));
                 // Prevent false positives, delete compound and reset status
                 msghandler->resetStatus();
-                mol = mols.erase(mol);
+                mol = mols->erase(mol);
             }
             else
             {
@@ -419,7 +388,6 @@ std::vector<ACTMol> CompoundReader::read(MsgHandler          *msghandler,
             }
         }
     }
-    return mols;
 }
 
 }

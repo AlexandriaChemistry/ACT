@@ -431,7 +431,7 @@ static bool babel2ACT(alexandria::MsgHandler                   *msg_handler,
         mol->SetTotalCharge(*qtot);
         *qtot = mol->GetTotalCharge();
     }
-    mpt->AddExperiment(exp);
+    mpt->AddExperiment(std::move(exp));
     if (nullptr != molnm)
     {
         mpt->SetMolname(molnm);
@@ -477,45 +477,45 @@ static bool babel2ACT(alexandria::MsgHandler                   *msg_handler,
         {
             {
                 auto mpo = MolPropObservable::DHFORM;
-                auto me  = new alexandria::MolecularEnergy(mpo, qm_type, energyUnit,
-                                                           0, ePhase::GAS,
-                                                           alexandria::convertToGromacs(DeltaHf0, energyUnit), 0);
-                mpt->LastExperiment()->addProperty(mpo, me);
+                auto me  = std::make_unique<alexandria::MolecularEnergy>(mpo, qm_type, energyUnit,
+                                                                         0, ePhase::GAS,
+                                                                         alexandria::convertToGromacs(DeltaHf0, energyUnit), 0);
+                mpt->LastExperiment()->addProperty(mpo, std::move(me));
             }
             {
                 auto mpo = MolPropObservable::DHFORM;
-                auto me  = new alexandria::MolecularEnergy(mpo, qm_type, energyUnit,
-                                                           temperature, ePhase::GAS,
-                                                           alexandria::convertToGromacs(DeltaHfT, energyUnit), 0);
-                mpt->LastExperiment()->addProperty(mpo, me);
+                auto me  = std::make_unique<alexandria::MolecularEnergy>(mpo, qm_type, energyUnit,
+                                                                         temperature, ePhase::GAS,
+                                                                         alexandria::convertToGromacs(DeltaHfT, energyUnit), 0);
+                mpt->LastExperiment()->addProperty(mpo, std::move(me));
             }
             {
                 auto mpo = MolPropObservable::DGFORM;
-                auto me  = new alexandria::MolecularEnergy(mpo, qm_type, energyUnit,
-                                                           temperature, ePhase::GAS,
-                                                           alexandria::convertToGromacs(DeltaGfT, energyUnit), 0);
-                mpt->LastExperiment()->addProperty(mpo, me);
+                auto me  = std::make_unique<alexandria::MolecularEnergy>(mpo, qm_type, energyUnit,
+                                                                         temperature, ePhase::GAS,
+                                                                         alexandria::convertToGromacs(DeltaGfT, energyUnit), 0);
+                mpt->LastExperiment()->addProperty(mpo, std::move(me));
             }
             {
                 auto mpo = MolPropObservable::DSFORM;
-                auto me  = new alexandria::MolecularEnergy(mpo, qm_type, entropyUnit,
-                                                           temperature, ePhase::GAS,
-                                                           alexandria::convertToGromacs(DeltaSfT, entropyUnit), 0);
-                mpt->LastExperiment()->addProperty(mpo, me);
+                auto me  = std::make_unique<alexandria::MolecularEnergy>(mpo, qm_type, entropyUnit,
+                                                                         temperature, ePhase::GAS,
+                                                                         alexandria::convertToGromacs(DeltaSfT, entropyUnit), 0);
+                mpt->LastExperiment()->addProperty(mpo, std::move(me));
             }
             {
                 auto mpo = MolPropObservable::ENTROPY;
-                auto me  = new alexandria::MolecularEnergy(mpo, qm_type, entropyUnit,
-                                                           temperature, ePhase::GAS,
-                                                           alexandria::convertToGromacs(S0T, entropyUnit), 0);
-                mpt->LastExperiment()->addProperty(mpo, me);
+                auto me  = std::make_unique<alexandria::MolecularEnergy>(mpo, qm_type, entropyUnit,
+                                                                         temperature, ePhase::GAS,
+                                                                         alexandria::convertToGromacs(S0T, entropyUnit), 0);
+                mpt->LastExperiment()->addProperty(mpo, std::move(me));
             }
             {
                 auto mpo = MolPropObservable::CP;
-                auto me  = new alexandria::MolecularEnergy(mpo, qm_type, entropyUnit,
-                                                           temperature, ePhase::GAS,
-                                                           alexandria::convertToGromacs(CPT, entropyUnit), 0);
-                mpt->LastExperiment()->addProperty(mpo, me);
+                auto me  = std::make_unique<alexandria::MolecularEnergy>(mpo, qm_type, entropyUnit,
+                                                                         temperature, ePhase::GAS,
+                                                                         alexandria::convertToGromacs(CPT, entropyUnit), 0);
+                mpt->LastExperiment()->addProperty(mpo, std::move(me));
             }
             std::vector<MolPropObservable> mpos = { 
                 MolPropObservable::STRANS, 
@@ -524,17 +524,17 @@ static bool babel2ACT(alexandria::MsgHandler                   *msg_handler,
             };
             for (size_t i = 0; (i < mpos.size()); i++)
             {
-                auto me = new alexandria::MolecularEnergy(mpos[i], qm_type, entropyUnit,
-                                                          temperature, ePhase::GAS,
-                                                          alexandria::convertToGromacs(Scomponents[i], entropyUnit), 0);
-                mpt->LastExperiment()->addProperty(mpos[i], me);
+                auto me = std::make_unique<alexandria::MolecularEnergy>(mpos[i], qm_type, entropyUnit,
+                                                                        temperature, ePhase::GAS,
+                                                                        alexandria::convertToGromacs(Scomponents[i], entropyUnit), 0);
+                mpt->LastExperiment()->addProperty(mpos[i], std::move(me));
             }
             {
                 auto mpo = MolPropObservable::ZPE;
-                auto me  = new alexandria::MolecularEnergy(mpo, qm_type, energyUnit,
-                                                           0, ePhase::GAS,
-                                                           alexandria::convertToGromacs(ZPE, energyUnit), 0);
-                mpt->LastExperiment()->addProperty(mpo, me);
+                auto me  = std::make_unique<alexandria::MolecularEnergy>(mpo, qm_type, energyUnit,
+                                                                         0, ePhase::GAS,
+                                                                         alexandria::convertToGromacs(ZPE, energyUnit), 0);
+                mpt->LastExperiment()->addProperty(mpo, std::move(me));
             }
         }
     }
@@ -542,10 +542,10 @@ static bool babel2ACT(alexandria::MsgHandler                   *msg_handler,
     // HF Eenergy
     { 
         auto mpo = MolPropObservable::HF;
-        auto me  = new alexandria::MolecularEnergy(mpo, qm_type, energyUnit,
-                                                   0, ePhase::GAS, 
-                                                   alexandria::convertToGromacs(mol->GetEnergy(), energyUnit), 0);
-        mpt->LastExperiment()->addProperty(mpo, me);
+        auto me  = std::make_unique<alexandria::MolecularEnergy>(mpo, qm_type, energyUnit,
+                                                                 0, ePhase::GAS, 
+                                                                 alexandria::convertToGromacs(mol->GetEnergy(), energyUnit), 0);
+        mpt->LastExperiment()->addProperty(mpo, std::move(me));
     }
 
     if (addHydrogen)
@@ -561,23 +561,23 @@ static bool babel2ACT(alexandria::MsgHandler                   *msg_handler,
         if (!freq.empty())
         {
             auto mpo = MolPropObservable::FREQUENCY;
-            auto hf  = new Harmonics(mpo_unit2(mpo), 0, mpo);
+            auto hf  = std::make_unique<Harmonics>(mpo_unit2(mpo), 0, mpo);
             for (const auto &f : freq)
             {
                 hf->addValue(f);
             }
-            mpt->LastExperiment()->addProperty(mpo, hf);
+            mpt->LastExperiment()->addProperty(mpo, std::move(hf));
         }
         auto inten   = vibdata->GetIntensities();
         if (!inten.empty())
         {
             auto mpo = MolPropObservable::INTENSITY;
-            auto hf  = new Harmonics(mpo_unit2(mpo), 0, mpo);
+            auto hf  = std::make_unique<Harmonics>(mpo_unit2(mpo), 0, mpo);
             for (const auto &f : inten)
             {
                 hf->addValue(f);
             }
-            mpt->LastExperiment()->addProperty(mpo, hf);
+            mpt->LastExperiment()->addProperty(mpo, std::move(hf));
         }
     }
 
@@ -672,11 +672,11 @@ static bool babel2ACT(alexandria::MsgHandler                   *msg_handler,
         auto dipole = (OpenBabel::OBVectorData *) my_dipole;
         OpenBabel::vector3 v3  = dipole->GetData();
         auto               mpo = MolPropObservable::DIPOLE;
-        auto               dp  = new alexandria::MolecularMultipole(qm_type, "D", 0.0, mpo);
+        auto               dp  = std::make_unique<alexandria::MolecularMultipole>(qm_type, "D", 0.0, mpo);
         dp->setValue(multipoleName({ XX }), v3.GetX());
         dp->setValue(multipoleName({ YY }), v3.GetY());
         dp->setValue(multipoleName({ ZZ }), v3.GetZ());
-        mpt->LastExperiment()->addProperty(mpo, dp);
+        mpt->LastExperiment()->addProperty(mpo, std::move(dp));
     }
     
     // Quadrupole
@@ -688,14 +688,14 @@ static bool babel2ACT(alexandria::MsgHandler                   *msg_handler,
         double                          mm[9];
         m3.GetArray(mm);
         auto mpo = MolPropObservable::QUADRUPOLE;
-        auto mq  = new alexandria::MolecularMultipole(qm_type, "B", 0.0, mpo);
+        auto mq  = std::make_unique<alexandria::MolecularMultipole>(qm_type, "B", 0.0, mpo);
         mq->setValue(multipoleName({ XX, XX }), mm[0]);
         mq->setValue(multipoleName({ XX, YY }), mm[1]);
         mq->setValue(multipoleName({ XX, ZZ }), mm[2]);
         mq->setValue(multipoleName({ YY, YY }), mm[4]);
         mq->setValue(multipoleName({ YY, ZZ }), mm[5]);
         mq->setValue(multipoleName({ ZZ, ZZ }), mm[8]);
-        mpt->LastExperiment()->addProperty(mpo, mq);
+        mpt->LastExperiment()->addProperty(mpo, std::move(mq));
     }
 
     // Polarizability
@@ -708,10 +708,10 @@ static bool babel2ACT(alexandria::MsgHandler                   *msg_handler,
         m3.GetArray(mm);
         alpha = (mm[0]+mm[4]+mm[8])/3.0;
 
-        auto mdp = new alexandria::MolecularPolarizability(qm_type, "Bohr3",
-                                                           0.0, mm[0], mm[4], mm[8],
-                                                           mm[1], mm[2], mm[5], alpha, 0);
-        mpt->LastExperiment()->addProperty(MolPropObservable::POLARIZABILITY, mdp);
+        auto mdp = std::make_unique<alexandria::MolecularPolarizability>(qm_type, "Bohr3",
+                                                                        0.0, mm[0], mm[4], mm[8],
+                                                                        mm[1], mm[2], mm[5], alpha, 0);
+        mpt->LastExperiment()->addProperty(MolPropObservable::POLARIZABILITY, std::move(mdp));
     }
 
     // Electrostatic potential
@@ -722,14 +722,14 @@ static bool babel2ACT(alexandria::MsgHandler                   *msg_handler,
         OpenBabel::OBFreeGridPoint                     *fgp;
         OpenBabel::OBFreeGridPointIterator              fgpi;
         int                                             espid  = 0;
-        auto espv = new ElectrostaticPotential("Angstrom", "Hartree/e");
+        auto espv = std::make_unique<ElectrostaticPotential>("Angstrom", "Hartree/e");
         
         fgpi = espptr->BeginPoints();
         for (fgp = espptr->BeginPoint(fgpi); (nullptr != fgp); fgp = espptr->NextPoint(fgpi))
         {
             espv->addPoint(++espid, fgp->GetX(), fgp->GetY(), fgp->GetZ(), fgp->GetV());
         }
-        mpt->LastExperiment()->addProperty(MolPropObservable::POTENTIAL, espv);
+        mpt->LastExperiment()->addProperty(MolPropObservable::POTENTIAL, std::move(espv));
     }
     return true;
 }

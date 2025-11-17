@@ -136,7 +136,8 @@ int nma(int argc, char *argv[])
         forceFieldSummary(&jtree, &pd);
     }
 
-    std::vector<ACTMol> actmols = compR.read(&msghandler, pd, &forceComp);
+    std::vector<ACTMol> actmols;
+    compR.read(&msghandler, pd, &forceComp, &actmols);
     if (actmols.empty())
     {
         return 1;

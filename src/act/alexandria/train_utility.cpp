@@ -549,11 +549,11 @@ void TrainForceFieldPrinter::analysePolarisability(gmx::TextWriter     *tw,
         {
             auto aelec = qelec.polarizabilityTensor();
             lsq_isoPol_[ims][qPropertyType::ACM].add_point(qelec.isotropicPolarizability(),
-                                               qcalc->isotropicPolarizability(),
-                                               0, 0);
+                                                           qcalc->isotropicPolarizability(),
+                                                           0, 0);
             lsq_anisoPol_[ims][qPropertyType::ACM].add_point(qelec.anisotropicPolarizability(),
-                                                 qcalc->anisotropicPolarizability(),
-                                                 0, 0);
+                                                             qcalc->anisotropicPolarizability(),
+                                                             0, 0);
             for (int mm = 0; mm < DIM; mm++)
             {
                 lsq_alpha_[ims][qPropertyType::ACM].add_point(aelec[mm][mm], acalc[mm][mm], 0, 0);
@@ -983,17 +983,16 @@ void TrainForceFieldPrinter::writeMolpropsEnergies(MsgHandler          *msghandl
             { MolPropObservable::CHARGETRANSFER,      InteractionType::CHARGETRANSFER       }
         };
 
-        MolProp mpnew = *mol->molProp();
+        MolProp *mpnew = mol->molProp();
 
         size_t ii = 0;
-        for (auto &exper : *mpnew.experiment())
+        for (auto &exper : *mpnew->experiment())
         {
             exper.setReference("Spoel2025a");
             exper.setProgram(version);
             exper.setMethod("train_ff");
             exper.setBasisset(pd->filename());
-            std::map<MolPropObservable, std::vector<GenericProperty *> > newprops;
-            auto allprops = exper.properties();
+            const auto allprops = exper.properties();
             for(auto prop = allprops->begin(); prop != allprops->end(); prop++)
             {
                 auto ie = interE.find(prop->first);
@@ -1003,11 +1002,11 @@ void TrainForceFieldPrinter::writeMolpropsEnergies(MsgHandler          *msghandl
                     {
                         // Can only handle one energy at a time
                         fprintf(stderr, "More than one energy %s in experiment data structure for %s\n",
-                                mpo_name(prop->first), mpnew.getMolname().c_str());
+                                mpo_name(prop->first), mpnew->getMolname().c_str());
                     }
                     else
                     {
-                        auto me    = static_cast<MolecularEnergy *>(prop->second[0]);
+                        auto me    = static_cast<MolecularEnergy *>(prop->second[0].get());
                         auto ae    = interactionEnergyMap[ii].find(ie->second);
                         if (ae != interactionEnergyMap[ii].end())
                         {
@@ -1024,7 +1023,7 @@ void TrainForceFieldPrinter::writeMolpropsEnergies(MsgHandler          *msghandl
             }
             ii += 1;
         }
-        mps.push_back(mpnew);
+        mps.push_back(std::move(*mpnew));
     }
     MolPropWrite(mpout, mps, false);
 }
@@ -1151,7 +1150,7 @@ void TrainForceFieldPrinter::printEnergyForces(MsgHandler                       
                 return false;
             }
         });
-        auto expers = mol->experimentConst();
+        auto &expers = mol->experimentConst();
         for(const auto &iem : interactionEnergyMap)
         {
             std::string myline;
@@ -1296,7 +1295,7 @@ static void dump_xyz(const std::string &label,
                      const ACTMol      *mol,
                      const ACTEnergy   &actener)
 {
-    auto expconst = mol->experimentConst();
+    auto &expconst = mol->experimentConst();
     if (static_cast<size_t>(actener.id()) < expconst.size())
     {
         auto filename = gmx::formatString("%s-%d.xyz", label.c_str(), actener.id());

@@ -136,15 +136,16 @@ namespace alexandria
         ChargeMap *chargeMap() { return &qmap_; }
 
         /*! \brief Do the actual reading and processing
-         * \param[in] msghandler Error and message handler
-         * \param[in] pd         The force field
-         * \param[in] forceComp  A force computer
-         * \param[in] molselect  Selections if not something else is passed on the command line
-         * \return A vector of zero or more compounds
+         * \param[in]  msghandler Error and message handler
+         * \param[in]  pd         The force field
+         * \param[in]  forceComp  A force computer
+         * \param[in]  molselect  Selections if not something else is passed on the command line
+         * \param[out] mols       The ACTMol structures
          */
-        std::vector<ACTMol> read(MsgHandler          *msghandler,
-                                 ForceField          &pd,
-                                 const ForceComputer *forceComp);
+        void read(MsgHandler          *msghandler,
+                  ForceField          &pd,
+                  const ForceComputer *forceComp,
+                  std::vector<ACTMol> *mols);
 
         //! \return the molselect structure (may be empty!)
         const MolSelect &molselect() const { return molselect_; }

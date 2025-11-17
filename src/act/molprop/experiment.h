@@ -36,6 +36,7 @@
 #define ACT_MOLPROP_EXPERIMENT_H
 
 #include <map>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -113,17 +114,6 @@ public:
                const std::string &conformation,
                const std::string &datafile,
                JobType            jtype);
-    
-    //! Destructor
-    ~Experiment();
-    
-    Experiment(const Experiment& other);
-
-    //    Experiment& operator=(const Experiment& copyFrom) = default;
-    
-    Experiment(Experiment &&other);
-
-    //Experiment& operator=(Experiment &&) = default;
 
     //! Return the type of data
     DataSource dataSource() const { return dataSource_; }
@@ -136,6 +126,8 @@ public:
     
     //! Get the id
     int id() const { return id_; }
+
+    void addProperty(MolPropObservable mpo, std::unique_ptr<GenericProperty>);
 
     /*! \brief Whether a property is present
      * \param[in] mpo Theproperty
@@ -150,7 +142,7 @@ public:
      * \param[in] mpo The property to look for
      * \return The property stuctures
      */
-    std::vector<GenericProperty *> *property(MolPropObservable mpo)
+    std::vector<std::unique_ptr<GenericProperty> > *property(MolPropObservable mpo)
     {
         return &property_[mpo];
     }
@@ -158,21 +150,16 @@ public:
      * \param[in] mpo The property to look for
      * \return The property stuctures
      */
-    const std::vector<GenericProperty *> &propertyConst(MolPropObservable mpo)
+    const std::vector<std::unique_ptr<GenericProperty> > &propertyConst(MolPropObservable mpo) const
     {
-        return property_[mpo];
+        return property_.find(mpo)->second;
     }
-    /*! Add property data
-     * \param[in] mpo
-     * \param[in] gp
-     */  
-    void addProperty(MolPropObservable mpo, GenericProperty *gp);
-    
+
     //! \return map of properties for inspection only
-    const std::map<MolPropObservable, std::vector<GenericProperty *> > &propertiesConst() const { return property_; }
+    const std::map<MolPropObservable, std::vector<std::unique_ptr<GenericProperty> > > &propertiesConst() const { return property_; }
 
     //! \return map of properties for editing
-    std::map<MolPropObservable, std::vector<GenericProperty *> > *properties() { return &property_; }
+    std::map<MolPropObservable, std::vector<std::unique_ptr<GenericProperty> > > *properties() { return &property_; }
 
     //! Return the molecular conformation
     const std::string &getConformation() const { return conformation_; }
@@ -248,7 +235,7 @@ public:
                     std::string         *lot) const;
 
     //! Merge in another object. Return number of warnings.
-    int Merge(const Experiment *src);
+    int Merge(Experiment *src);
     
     /*! \brief
      * Sends this object over an MPI connection
@@ -287,10 +274,10 @@ public:
         return property_.end() != property_.find(mpo);
     }
     
-    const std::vector<GenericProperty *> &propertyConst(MolPropObservable mpo) const
-    {
-        return property_.find(mpo)->second;
-    }
+    //    const std::vector<std::unique_ptr<GenericProperty> > &propertyConst(MolPropObservable mpo) const
+    //{
+    //  return property_.find(mpo)->second;
+    //}
 private:
     /*! \brief Utility to get reference and lot
      * \param[out] reference Reference to literature, if not nullptr
@@ -310,7 +297,7 @@ private:
     
     //! Experiment ID
     int                                  id_ = 0;
-    std::map<MolPropObservable, std::vector<GenericProperty *> > property_;
+    std::map<MolPropObservable, std::vector<std::unique_ptr<GenericProperty > > > property_;
     
     // std::vector<ElectrostaticPotential>  potential_;
     std::vector<gmx::RVec>               coordinates_;

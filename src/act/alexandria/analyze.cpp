@@ -165,7 +165,7 @@ static void write_corr_xvg(MsgHandler                       *msg_handler,
         {
             bExp      = false;
             {
-                auto gp = mpi.expProperty(mpo, Texp);
+                auto &gp = mpi.expProperty(mpo, Texp);
                 if (gp)
                 {
                     exp_val   = gp->getValue();
@@ -174,7 +174,7 @@ static void write_corr_xvg(MsgHandler                       *msg_handler,
             }
             bQM = false;
             {
-                auto gp = mpi.qmProperty(mpo, Tqm, JobType::OPT);
+                auto &gp = mpi.qmProperty(mpo, Tqm, JobType::OPT);
                 if (gp)
                 {
                     qm_val   = gp->getValue();

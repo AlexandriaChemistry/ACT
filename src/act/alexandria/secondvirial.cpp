@@ -757,7 +757,8 @@ int b2(int argc, char *argv[])
         forceFieldSummary(&jtree, &pd);
     }
 
-    std::vector<ACTMol> actmols = compR.read(&msghandler, pd, &forceComp);
+    std::vector<ACTMol> actmols;
+    compR.read(&msghandler, pd, &forceComp, &actmols);
     auto &actmol = actmols[0];
     std::vector<gmx::RVec> coords = actmol.xOriginal();
 

@@ -141,7 +141,8 @@ int simulate(int argc, char *argv[])
 
     ForceComputer forceComp;
     forceComp.init(shellToler, sch.maxIter());
-    std::vector<ACTMol> actmols = compR.read(&msghandler, pd, &forceComp);
+    std::vector<ACTMol> actmols;
+    compR.read(&msghandler, pd, &forceComp, &actmols);
     if (actmols.empty())
     {
         fprintf(stderr, "Could not read or process molecules. Please check the log file for more information.\n");
