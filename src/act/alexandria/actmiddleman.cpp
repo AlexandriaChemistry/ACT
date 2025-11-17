@@ -49,10 +49,10 @@ ACTMiddleMan::ACTMiddleMan(MsgHandler                *msghandler,
     // Default constructor to cover all available (positive) range
     std::uniform_int_distribution<int> dis(0);
     
-    auto initializer = new ACMInitializer(sii, gach->randomInit(), dis(gen));
+    ACMInitializer initializer(sii, gach->randomInit(), dis(gen));
     
     // Create and initialize the individual
-    ind_ = static_cast<ACMIndividual *>(initializer->initialize());
+    ind_ = static_cast<ACMIndividual *>(initializer.initialize());
 
     // Create force computer
     forceComp_.init(bch->shellToler(), bch->shellMaxIter());
@@ -77,7 +77,7 @@ ACTMiddleMan::ACTMiddleMan(MsgHandler                *msghandler,
             mut->openParamConvFiles(oenv);
             mut->openChi2ConvFile(oenv);
         }
-        mutator_ = mut;
+        mutator_ = std::move(mut);
     }
 }
     

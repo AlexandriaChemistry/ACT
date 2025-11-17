@@ -296,7 +296,7 @@ int OptACM::initMaster(const std::vector<t_filenm> &fnm,
             mut->openParamConvFiles(oenv_);
             mut->openChi2ConvFile(oenv_);
         }
-        mutator_ = mut;
+        mutator_ = std::move(mut);
     }
 
     // Selector

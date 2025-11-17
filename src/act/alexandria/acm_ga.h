@@ -63,8 +63,6 @@ private:
     alexandria::StaticIndividualInfo *sii_;
     //! GAConfigHandler pointer
     alexandria::GAConfigHandler      *gach_;
-    //! The force computer
-    alexandria::ForceComputer        *forceComp_;
     //! Output filename for fitness files
     const char                       *fitnessFile_;
     //! Gene pool input (may be null pointer)
@@ -95,9 +93,7 @@ public:
                        mutator, terminators, penalizers, gach->popSize()),
       sii_(sii), gach_(gach), fitnessFile_(fitnessFileName),
       gpin_(genePoolIn), gpout_(genePoolOut), seed_(seed)
-    {
-        forceComp_ = new alexandria::ForceComputer();
-    }
+    {}
 
     //! \copydocs ga::GeneticAlgorithm::evolve
     virtual bool evolve(alexandria::MsgHandler       *msghandler,
