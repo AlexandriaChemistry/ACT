@@ -78,6 +78,7 @@ main(int argc, char *argv[])
                     sfree(argv[i]);
                 }
             }
+            sfree(argv);
         }
         done_commrec(cr);
         return rc;

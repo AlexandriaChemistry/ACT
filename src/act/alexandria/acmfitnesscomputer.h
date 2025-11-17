@@ -95,6 +95,10 @@ public:
 
     //! \brief Constructor
     ACMFitnessComputer() {}
+
+    //! \brief Destructor
+    virtual ~ACMFitnessComputer();
+
     /*! Initalize stuff
      * \param[in] msghandler Message Handler
      * \param[in] sii        pointer to StaticIndividualInfo
