@@ -60,11 +60,11 @@ namespace alexandria
         //! Fitness computer
         ACMFitnessComputer    fitComp_;
         //! Mutator
-        ga::Mutator          *mutator_;
+        ga::Mutator          *mutator_ = nullptr;
         //! Individual
-        ACMIndividual        *ind_;
+        ACMIndividual        *ind_     = nullptr;
         //! Config handler for GA
-        GAConfigHandler      *gach_;
+        GAConfigHandler      *gach_    = nullptr;
         //! Force computer
         ForceComputer         forceComp_;
         //! My ID
@@ -92,7 +92,10 @@ namespace alexandria
                      gmx_output_env_t          *oenv,
                      ChargeGenerationAlgorithm  algorithm,
                      bool                       openConvFiles);
-        
+
+        //! \brief Destructor
+        ~ACTMiddleMan();
+
         /*! \brief Run the helper process
          * \param[in] msghandler Message and status handler
          */
