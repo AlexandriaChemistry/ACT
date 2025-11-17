@@ -208,7 +208,7 @@ bool HybridGAMC::evolve(alexandria::MsgHandler       *msghandler,
     pool[pnew] = new GenePool(sii_->nParam()); 
     
     // Create and add our own individual (Will be the first one in the pool)
-    auto *ind = static_cast<alexandria::ACMIndividual *>(initializer()->initialize());
+    auto *ind = std::move(static_cast<alexandria::ACMIndividual *>(initializer()->initialize()));
     // Check whether we need to read a gene pool
     int read = 0;
     if (gpin_)
