@@ -29,15 +29,14 @@
     
 #include <cstdio>
 
-#include "gromacs/utility/gmxassert.h"
+#include "act/basics/dataset.h"
+#include "act/utility/communicationrecord.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/stringutil.h"
 
-#include "act/utility/communicationrecord.h"
-
 namespace ga
 {
-    
+
 std::string Genome::print(const char *name) const
 {
     std::string out = gmx::formatString("%s.\nGenome: [ ", name);
@@ -103,7 +102,7 @@ void Genome::setBase(size_t index, double value)
     }
     genome_[index] = value;
 }
-    
+
 void Genome::Send(const alexandria::CommunicationRecord *cr, int dest) const
 {
     cr->send(dest, genome_);
