@@ -33,15 +33,15 @@
  * \author Julian Ramon Marrades Furquet <julian@marrad.es>
  */
 
-
 #ifndef ALEXANDRIA_ACMINITIALIZER_H
 #define ALEXANDRIA_ACMINITIALIZER_H
 
-#include "act/ga//initializer.h"
-#include "staticindividualinfo.h"
-
-#include <time.h>
+#include <memory>
 #include <random>
+
+#include "act/alexandria/acmindividual.h"
+#include "act/alexandria/staticindividualinfo.h"
+#include "act/ga/initializer.h"
 
 namespace alexandria
 {
@@ -78,7 +78,7 @@ public:
                    bool                    randInit,
                    int                     seed);
 
-    ga::Individual *initialize() override;
+    ACMIndividual *initialize() override;
 
     void randomizeGenome(ga::Genome *genome) override;
 

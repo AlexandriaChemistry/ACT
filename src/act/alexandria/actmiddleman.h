@@ -58,17 +58,17 @@ namespace alexandria
     {
     private:
         //! Fitness computer
-        ACMFitnessComputer    fitComp_;
+        ACMFitnessComputer              fitComp_;
         //! Mutator
-        ga::Mutator          *mutator_ = nullptr;
+        ga::Mutator                    *mutator_      = nullptr;
         //! Individual
-        ACMIndividual        *ind_     = nullptr;
+        std::unique_ptr<ACMIndividual>  ind_;
         //! Config handler for GA
-        GAConfigHandler      *gach_    = nullptr;
+        GAConfigHandler                *gach_         = nullptr;
         //! Force computer
-        ForceComputer         forceComp_;
+        ForceComputer                   forceComp_;
         //! My ID
-        int                   id_;
+        int                             id_;
 
         //! \brief Stop my helpers
         void stopHelpers();
