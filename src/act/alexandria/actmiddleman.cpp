@@ -37,10 +37,6 @@ ACTMiddleMan::~ACTMiddleMan()
     {
         delete mutator_;
     }
-    if (ind_)
-    {
-        delete ind_;
-    }
 }
 
 ACTMiddleMan::ACTMiddleMan(MsgHandler                *msghandler,
@@ -64,7 +60,7 @@ ACTMiddleMan::ACTMiddleMan(MsgHandler                *msghandler,
     ACMInitializer initializer(sii, gach->randomInit(), dis(gen));
     
     // Create and initialize the individual
-    ind_ = std::move(static_cast<ACMIndividual *>(initializer.initialize()));
+    ind_.reset(std::move(initializer.initialize()));
 
     // Create force computer
     forceComp_.init(bch->shellToler(), bch->shellMaxIter());

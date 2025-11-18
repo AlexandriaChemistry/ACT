@@ -57,7 +57,7 @@ ACMInitializer::ACMInitializer(StaticIndividualInfo *sii,
     gen_.seed(seed);
 }
 
-ga::Individual *ACMInitializer::initialize()
+ACMIndividual *ACMInitializer::initialize()
 {
     int id   = sii_->commRec()->middleManOrdinal();
     auto ind = new ACMIndividual(id, sii_);

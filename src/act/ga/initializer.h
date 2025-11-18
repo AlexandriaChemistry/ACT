@@ -35,9 +35,8 @@
 
 #include "individual.h"
 
-#include <time.h>
+#include <memory>
 #include <random>
-
 
 namespace ga
 {
