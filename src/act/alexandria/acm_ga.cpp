@@ -618,7 +618,7 @@ bool HybridGAMC::evolve(alexandria::MsgHandler       *msghandler,
     {
         delete pool[i];
     }
-
+    delete ind;
     return bMinimum;
 }
 
