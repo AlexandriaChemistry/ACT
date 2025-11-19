@@ -75,14 +75,14 @@ namespace alexandria
         //! MolSelect structre if data was provided by the user
         MolSelect   molselect_;
 
-        /*! Read molecule from a single file
+        /*! Read molecule(s) from a single file
          * \param[in]  msghandler Error and message handler, check whether ok after returning
          * \param[in]  pd         The force field
          * \param[out] mol        The molecule
          */
-        void readFile(MsgHandler *msghandler,
-                      ForceField &pd,
-                      ACTMol     *mol);
+        void readFile(MsgHandler          *msghandler,
+                      ForceField          &pd,
+                      std::vector<ACTMol> *mols);
         /*! Set charges for a single molecule
          * \param[in]  msghandler Error and message handler, check whether ok after returning
          * \param[in]  pd         The force field

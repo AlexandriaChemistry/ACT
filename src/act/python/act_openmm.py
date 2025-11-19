@@ -1630,12 +1630,6 @@ class ActOpenMMSim:
                     if self.verbose:
                         self.txt.write("Will update force settings %s\n" % myforce.getName())
                     myforce.updateParametersInContext(self.simulation.context)
-        # not sure if this is redundant; moved from update_positions
-        for fff in [ "custom_vdw", "custom_coulomb" ]:
-            if hasattr(self, fff):
-                force = getattr(self, fff)
-                if hasattr(force, "updateParametersInContext"):
-                    force.updateParametersInContext(self.simulation.context)
 
     def dhvap(self, epot:float)->float:
         if None == self.emonomer:

@@ -207,9 +207,9 @@ void CompoundReader::setCharges(MsgHandler          *msghandler,
     }
 }
 
-void CompoundReader::readFile(MsgHandler *msghandler,
-                              ForceField &pd,
-                              ACTMol     *mol)
+void CompoundReader::readFile(MsgHandler          *msghandler,
+                              ForceField          &pd,
+                              std::vector<ACTMol> *mols)
 {
     matrix box;
     clear_mat(box);
@@ -233,20 +233,18 @@ void CompoundReader::readFile(MsgHandler *msghandler,
                         gmx::formatString("Reading %s failed.\n", filename_));
         return;
     }
-
-    if (mps.size() > 1)
-    {
-        msghandler->msg(ACTStatus::Warning,
-                        gmx::formatString("will only use the first compound (out of %zu) in %s\n",
-                                          mps.size(), filename_));
-    }
     if (mps.size() == 0)
     {
         msghandler->msg(ACTStatus::Error,
                         gmx::formatString("Failed to import coordinate file %s using OpenBabel", filename_));
         return;
     }
-    mol->Merge(std::move(&mps[0]));
+    for(auto &mp : mps)
+    {
+        ACTMol amol;
+        amol.Merge(std::move(&mp));
+        mols->push_back(std::move(amol));
+    }
 }
 
 void CompoundReader::read(MsgHandler          *msghandler,
@@ -254,13 +252,13 @@ void CompoundReader::read(MsgHandler          *msghandler,
                           const ForceComputer *forceComp,
                           std::vector<ACTMol> *mols)
 {
-    if (qmapfn_.empty())
+    bool                  readCoordinates = strlen(filename_) > 0;
+    std::set<std::string> lookup;
+    std::string           lookupSource;
+    if (qmapfn_.empty() && !readCoordinates)
     {
         return;
     }
-    bool                  readCoordinates = false;
-    std::set<std::string> lookup;
-    std::string           lookupSource;
     if (molselect_.nMol() > 0)
     {
         for(const auto &ims: molselect_.imolSelect())
@@ -277,33 +275,33 @@ void CompoundReader::read(MsgHandler          *msghandler,
     else
     {
         // Try reading from a file first
-        readCoordinates = strlen(filename_) > 0;
         if (readCoordinates)
         {
-            ACTMol mol;
-            readFile(msghandler, pd, &mol);
+            readFile(msghandler, pd, mols);
             if (msghandler->ok())
             {
-                auto fp = mol.fragmentPtr();
-                if (fp)
+                for(auto mol = mols->begin(); mol < mols->end(); ++mol)
                 {
-                    for(auto ic = fp->begin(); ic < fp->end(); ++ic)
+                    auto fp = mol->fragmentPtr();
+                    if (fp)
                     {
-                        if (!ic->iupac().empty())
+                        for(auto ic = fp->begin(); ic < fp->end(); ++ic)
                         {
-                            lookup.insert(ic->iupac());
-                        }
-                        else
-                        {
-                            lookup.insert(ic->inchi());
+                            if (!ic->iupac().empty())
+                            {
+                                lookup.insert(ic->iupac());
+                            }
+                            else
+                            {
+                                lookup.insert(ic->inchi());
+                            }
                         }
                     }
+                    else
+                    {
+                        lookup.insert(mol->getMolname());
+                    }
                 }
-                else
-                {
-                    lookup.insert(mol.getMolname());
-                }
-                mols->push_back(std::move(mol));
             }
             // For printing further down
             lookupSource.assign(" from file ");

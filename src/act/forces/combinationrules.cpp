@@ -243,7 +243,7 @@ void evalCombinationRule(Potential                                    ftype,
             {
                 if (includePair)
                 {
-                    value = combineTwo(CombRule::Geometric,
+                    value = combineTwo(CombRule::Arithmetic,
                                        ivdw.find(param.first)->second.value(),
                                        jvdw.find(param.first)->second.value());
                 }
@@ -393,8 +393,8 @@ static void generateParameterPairs(ForceField      *pd,
                     auto ptj = pd->findParticleType(aj)->apType();
                     // The pair will be included only if one particle is a vsite
                     // and the other an atom.
-                    includePair = ((ActParticle::Atom != pti && ActParticle::Atom == ptj) ||
-                                   (ActParticle::Atom != ptj && ActParticle::Atom == pti));
+                    includePair = ((ActParticle::Vsite == pti && ActParticle::Atom == ptj) ||
+                                   (ActParticle::Vsite == ptj && ActParticle::Atom == pti));
                 }
             }
             auto &jparam = jvdw.second;
