@@ -1258,7 +1258,7 @@ class FFGenerator:
                     for param in comb_rules[itype]:
                         cmd += f" {itype}:{param}:{comb_rules[itype][param]}"
                 if self.needVDWcorr:
-                    cmd += " VDWCORRECTION:aexp:Arithmetic VDWCORRECTION:bexp:Arithmetic VDWCORRECTION:vsite:Kronecker "
+                    cmd += " VDWCORRECTION:aexp:Kronecker VDWCORRECTION:bexp:Arithmetic VDWCORRECTION:vsite:Geometric "
                 cmd += " '"
             if self.verbose:
                 print(f"Command line: {cmd}")

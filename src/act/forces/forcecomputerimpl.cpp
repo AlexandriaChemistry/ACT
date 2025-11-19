@@ -233,7 +233,8 @@ static double lowBornMayer(const std::vector<int>       &indices,
     auto eeexp  = aexp*std::exp(-bexp*dr2*rinv);
     if (debug)
     {
-        fprintf(debug, "lowBornMayer r %g eeexp %g aexp %g bexp %g\n", dr2*rinv, eeexp, aexp, bexp);
+        fprintf(debug, "lowBornMayer ai %d aj %d r %g eeexp %g aexp %g bexp %g\n",
+                ai, aj, dr2*rinv, eeexp, aexp, bexp);
     }
     real fexp  = bexp*eeexp*rinv;
     pairforces(fexp, dx, indices, forces);
