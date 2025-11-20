@@ -5,30 +5,30 @@ def interpret_legend(line:str):
     legval = None
 
     #find and save subtitle if one exists
-    legkey = "subtitle"
-    if line.find(legkey) >= 0:
-        legval = line[line.find(legkey)+len(legkey)+1:].strip()
+    labkey = "subtitle"
+    if line.find(labkey) >= 0:
+        legval = line[line.find(labkey)+len(labkey)+1:].strip()
         legval = legval[1:-1]
-        return legkey, legval
+        return labkey, legval
 
-    legkey = "title"
-    if line.find(legkey) >= 0:
-        legval = line[line.find(legkey)+len(legkey)+1:].strip()
+    labkey = "title"
+    if line.find(labkey) >= 0:
+        legval = line[line.find(labkey)+len(labkey)+1:].strip()
         legval = legval[1:-1]
-        return legkey, legval
+        return labkey, legval
     
     for axis in [ "x", "y" ]:
-        legkey  = axis+"axis"
-        legkey2 = "label" 
-        if line.find(legkey) >= 0 and line.find(legkey2) >= 0:
-            legval = line[line.find(legkey2)+len(legkey2)+1:].strip()
+        labkey  = axis+"axis"
+        labkey2 = " label" #Space is added to avoid ticklegends for old Grace purposes
+        if line.find(labkey) >= 0 and line.find(labkey2) >= 0:
+            legval = line[line.find(labkey2)+len(labkey2)+1:].strip()
             legval = legval[1:-1]
             return axis+"label", legval
-    labkey = "legend"
-    if line.find(labkey) >= 0 and line[0] == 's':
-        labval = line[line.find(labkey)+len(labkey)+1:].strip()
+    legkey = "legend"
+    if line.find(legkey) >= 0 and line[0] == 's':
+        labval = line[line.find(legkey)+len(legkey)+1:].strip()
         labval = labval[1:-1]
-        return labkey, labval
+        return legkey, labval
     return None, None
 
 class xvgDataSet:
@@ -64,8 +64,8 @@ class xvgDataSet:
             self.ymax = max(self.ymax, y)
 
 def read_xvg(filename:str, residual:bool=False, filelabel:bool=False):
-    legends  = {}
-    labels   = []
+    labels  = {}
+    legends   = []
     dataset  = []
     numwords = None
     newset   = None
@@ -82,14 +82,14 @@ def read_xvg(filename:str, residual:bool=False, filelabel:bool=False):
                 if myline.find("type") >= 0 and myline.find("loctype") < 0:
                     dataset.append(xvgDataSet(myline))
                 elif len(myline) > 0:
-                    legkey, legval = interpret_legend(myline)
-                    if legkey and legval:
-                        if legkey == "legend":
+                    labkey, legval = interpret_legend(myline)
+                    if labkey and legval:
+                        if labkey == "legend":
                             if filelabel:
                                 legval += " " + filename
-                            labels.append(legval)
+                            legends.append(legval)
                         else:
-                            legends[legkey] = legval
+                            labels[labkey] = legval
                 continue
             
             w = line.split()
@@ -141,8 +141,8 @@ def read_xvg(filename:str, residual:bool=False, filelabel:bool=False):
                         
     if residual:
         ylabel = "ylabel"
-        if not ylabel in legends:
-            legends[ylabel] = ""
-        legends[ylabel] += " (Residual)"
-    return labels, legends, dataset
+        if not ylabel in labels:
+            labels[ylabel] = ""
+        labels[ylabel] += " (Residual)"
+    return legends, labels, dataset
     
