@@ -283,10 +283,8 @@ class DataSet:
             else:
                 myline = "None" #plot function only accepts None as a string
             mymarker = "None"
-            if args.marker or (args.mark1st and setcount == 0) or (args.marker is None and args.linestyle is None):
+            if args.marker or (args.marker is None and args.linestyle is None):
                 mymarker = argmarkers[n]
-                if args.mark1st and setcount == 0:
-                    myline = "None"
             mycolor = argcolors[n]
             if viewDebug:
                 print(f"\t mylabel  {n+1} = {mylabel}")
