@@ -187,22 +187,30 @@ void CompoundReader::setCharges(MsgHandler          *msghandler,
                 qcustom.push_back(my_atof(q.c_str(), "custom q"));
             }
             mol->setCharges(qcustom);
-            mol->minimizeShells(msghandler, &pd, forceComp, &coords, &forces);
         }
         else if (qAlgorithm_ == ChargeGenerationAlgorithm::NONE)
         {
             mol->setCharges(msghandler, &pd);
-            mol->minimizeShells(msghandler, &pd, forceComp, &coords, &forces);
         }
-        else if (qAlgorithm_ == ChargeGenerationAlgorithm::Read)
-        {
-            mol->setCharges(msghandler, qmap_);
-            mol->minimizeShells(msghandler, &pd, forceComp, &coords, &forces);
-        }
-        else
+        else if (strlen(filename_) > 0 && qmap_.empty())
         {
             mol->generateCharges(msghandler, &pd, forceComp, qAlgorithm_, &coords, &forces,
                                  msghandler->verbose());
+        }
+        else
+        {
+            mol->setCharges(msghandler, qmap_);
+        }
+        mol->minimizeShells(msghandler, &pd, forceComp, &coords, &forces);
+        if (msghandler->debug())
+        {
+            auto msg = gmx::formatString("CHARGES for %s", mol->getMolname().c_str());
+            auto ac = mol->atomsConst();
+            for(size_t i = 0; i < ac.size(); i++)
+            {
+                msg += gmx::formatString(" %s-%zu %g", ac[i].name().c_str(), i+1, ac[i].charge());
+            }
+            msghandler->writeDebug(msg);
         }
     }
 }
@@ -343,8 +351,18 @@ void CompoundReader::read(MsgHandler          *msghandler,
     }
     if (!qmapfn_.empty())
     {
-        qmap_ = fetchChargeMap(msghandler, &pd, forceComp, qmapfn_.c_str(),
-                               mols, lookup, qAlgorithm_, qqm_);
+        if (readCoordinates)
+        {
+            // If we read molecules from an input file, we do not want to overwrite them
+            std::vector<ACTMol> temp_mols;
+            qmap_ = fetchChargeMap(msghandler, &pd, forceComp, qmapfn_.c_str(),
+                                   &temp_mols, lookup, qAlgorithm_, qqm_);
+        }
+        else
+        {
+            qmap_ = fetchChargeMap(msghandler, &pd, forceComp, qmapfn_.c_str(),
+                                   mols, lookup, qAlgorithm_, qqm_);
+        }
         msghandler->msg(ACTStatus::Info,
                         gmx::formatString("CompoundReader read %lu out of %lu entries into charge map from %s\n",
                                           qmap_.size(), lookup.size(), qmapfn_.c_str()));

@@ -75,26 +75,6 @@ namespace alexandria
         //! MolSelect structre if data was provided by the user
         MolSelect   molselect_;
 
-        /*! Read molecule(s) from a single file
-         * \param[in]  msghandler Error and message handler, check whether ok after returning
-         * \param[in]  pd         The force field
-         * \param[out] mol        The molecule
-         */
-        void readFile(MsgHandler          *msghandler,
-                      ForceField          &pd,
-                      std::vector<ACTMol> *mols);
-        /*! Set charges for a single molecule
-         * \param[in]  msghandler Error and message handler, check whether ok after returning
-         * \param[in]  pd         The force field
-         * \param[out] mol        The molecule
-         * \param[in]  forceComp  A force computer
-         * \param[in]  warnQtot   Print a warning when qtot does not match the input
-         */
-        void setCharges(MsgHandler          *msghandler,
-                        ForceField          &pd,
-                        ACTMol              *mol,
-                        const ForceComputer *forceComp,
-                        bool                 warnQtot);
     public:
         // Constructor
         CompoundReader() {}
@@ -135,6 +115,26 @@ namespace alexandria
         //! \return charge map for editing
         ChargeMap *chargeMap() { return &qmap_; }
 
+        /*! Read molecule(s) from a single file
+         * \param[in]  msghandler Error and message handler, check whether ok after returning
+         * \param[in]  pd         The force field
+         * \param[out] mol        The molecule
+         */
+        void readFile(MsgHandler          *msghandler,
+                      ForceField          &pd,
+                      std::vector<ACTMol> *mols);
+        /*! Set charges for a single molecule
+         * \param[in]  msghandler Error and message handler, check whether ok after returning
+         * \param[in]  pd         The force field
+         * \param[out] mol        The molecule
+         * \param[in]  forceComp  A force computer
+         * \param[in]  warnQtot   Print a warning when qtot does not match the input
+         */
+        void setCharges(MsgHandler          *msghandler,
+                        ForceField          &pd,
+                        ACTMol              *mol,
+                        const ForceComputer *forceComp,
+                        bool                 warnQtot);
         /*! \brief Do the actual reading and processing
          * \param[in]  msghandler Error and message handler
          * \param[in]  pd         The force field
