@@ -55,50 +55,68 @@ namespace alexandria
 class CompoundReaderTest : public gmx::test::CommandLineTestBase
 {
 protected:
-    MsgHandler             msghandler_;
-    std::vector<Bond>      bonds_;
-    std::vector<gmx::RVec> x_, y_;
-    gmx::test::TestReferenceChecker checker_;
+    MsgHandler                       msghandler_;
+    CompoundReader                   compR_;
+    ForceComputer                    forceComp_;
+    ForceField                      *pd;
+    std::string                      qopt_;
+    std::string                      fopt_;
+    std::string                      charges_;
+    gmx::test::TestReferenceChecker  checker_;
 
     //! Constructor that does initialization
     CompoundReaderTest() : checker_(this->rootChecker())
     {
         auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, 5e-2);
         checker_.setDefaultTolerance(tolerance);
+        pd = getForceField("ff-hh");
+        qopt_.assign("-charges");
+        fopt_.assign("-f");
+        charges_ = gmx::test::TestFileManager::getInputFilePath("mp2-hh.xml");
     }
 
     //! Static initiation, only run once every test.
     static void SetUpTestCase()
     {
     }
-    
+    void hack_fnm(std::vector<t_filenm> *filenm)
+    {
+        for(auto &fn : *filenm)
+        {
+            if (qopt_.compare(fn.opt) == 0)
+            {
+                fn.fn    = charges_.c_str();
+                fn.filenames.push_back(charges_);
+                fn.flag &= ffSET;
+            }
+        }
+    }
+    void hack_pargs(std::vector<t_pargs> *pargs, std::string &infile)
+    {
+        for(auto &pa : *pargs)
+        {
+            if (fopt_.compare(pa.option) == 0 && infile.size() > 0)
+            {
+                *pa.u.c = infile.c_str();
+                pa.bSet = true;
+            }
+        }
+    }
     //! Do the actual testing
     void testCompoundReader ()
     {
-        CompoundReader            compR;
-        ForceComputer             forceComp;
         std::vector<ACTMol>       mols;
         std::vector<t_filenm>     filenm;
         std::vector<t_pargs>      pargs;
         std::vector<const char *> desc;
+        CompoundReader            compR_;
 
-        auto pd      = getForceField("ff-hh");
-        auto charges = gmx::test::TestFileManager::getInputFilePath("mp2-hh.xml");
-        compR.addOptions(&pargs, &filenm, &desc);
-        std::string qstr("-charges");
-        for(auto &fn : filenm)
-        {
-            if (qstr.compare(fn.opt) == 0)
-            {
-                fn.fn    = charges.c_str();
-                fn.filenames.push_back(charges);
-                fn.flag &= ffSET;
-            }
-        }
-        compR.optionsFinished(&msghandler_, filenm);
-        checker_.checkString(compR.qread(), "Charge type to read");
-        checker_.checkString(chargeGenerationAlgorithmName(compR.algorithm()).c_str(), "Algorithm");
-        compR.read(&msghandler_, *pd, &forceComp, &mols);
+        compR_.addOptions(&pargs, &filenm, &desc);
+        hack_fnm(&filenm);
+        compR_.optionsFinished(&msghandler_, filenm);
+        checker_.checkString(compR_.qread(), "Charge type to read");
+        checker_.checkString(chargeGenerationAlgorithmName(compR_.algorithm()).c_str(), "Algorithm");
+        compR_.read(&msghandler_, *pd, &forceComp_, &mols);
         checker_.checkInt64(mols.size(), "Number of molecules");
         for(const auto &mol : mols)
         {
@@ -108,6 +126,37 @@ protected:
             {
                 std::string aname = gmx::formatString("%s-%s-%d", mol.formula().c_str(), atom.name().c_str(), i);
                 checker_.checkDouble(atom.charge(), aname.c_str());
+                i += 1;
+            }
+        }
+    }
+
+    //! Do the actual testing
+    void testCompoundReaderFile (const std::string &input)
+    {
+        std::vector<ACTMol>       mols;
+        std::vector<t_filenm>     filenm;
+        std::vector<t_pargs>      pargs;
+        std::vector<const char *> desc;
+        CompoundReader            compR_;
+
+        std::string infile = gmx::test::TestFileManager::getInputFilePath(input);
+        compR_.addOptions(&pargs, &filenm, &desc);
+        hack_pargs(&pargs, infile);
+        compR_.optionsFinished(&msghandler_, filenm);
+        checker_.checkString(compR_.qread(), "Charge type to read");
+        checker_.checkString(chargeGenerationAlgorithmName(compR_.algorithm()).c_str(), "Algorithm");
+        compR_.read(&msghandler_, *pd, &forceComp_, &mols);
+        checker_.checkInt64(mols.size(), "Number of molecules");
+        for(const auto &mol : mols)
+        {
+            const auto &atoms = mol.atomsConst();
+            int i = 1;
+            for(const auto &atom : atoms)
+            {
+                std::string aname = gmx::formatString("%s-%s-%d", mol.formula().c_str(), atom.name().c_str(), i);
+                checker_.checkDouble(atom.charge(), aname.c_str());
+                i += 1;
             }
         }
     }
@@ -116,11 +165,19 @@ protected:
     static void TearDownTestCase()
     {
     }
-    
+
 };
 
 TEST_F (CompoundReaderTest, Count){
     testCompoundReader();
+}
+
+TEST_F (CompoundReaderTest, HCl){
+    testCompoundReaderFile("hydrogen-chloride.sdf");
+}
+
+TEST_F (CompoundReaderTest, Dimer){
+    testCompoundReaderFile("hydrogen-bromide#hydrogen-fluoride.pdb");
 }
 
 } // namespace alexandria
