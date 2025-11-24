@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="Charge type to read"></String>
+  <String Name="Algorithm">SQE</String>
+  <Int64 Name="Number of molecules">4</Int64>
+  <Real Name="BrH-Br-1">0.54738153550442503</Real>
+  <Real Name="BrH-H-1">0.36355888247927493</Real>
+  <Real Name="BrH-v2br1-1">-0.91094041798369996</Real>
+  <Real Name="ClH-Cl-1">0.87933812690985547</Real>
+  <Real Name="ClH-H-1">0.4814516656011445</Real>
+  <Real Name="ClH-v2cl1-1">-1.360789792511</Real>
+  <Real Name="FH-F-1">-0.027935974707273742</Real>
+  <Real Name="FH-H-1">0.49069420282997378</Real>
+  <Real Name="FH-v2f1-1">-0.46275822812270001</Real>
+  <Real Name="HI-I-1">1.2594651057938273</Real>
+  <Real Name="HI-H-1">0.29301732501917277</Real>
+  <Real Name="HI-v2i1-1">-1.5524824308130001</Real>
+</ReferenceData>
