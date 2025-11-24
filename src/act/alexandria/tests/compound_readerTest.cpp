@@ -117,22 +117,23 @@ protected:
         checker_.checkString(compR_.qread(), "Charge type to read");
         checker_.checkString(chargeGenerationAlgorithmName(compR_.algorithm()).c_str(), "Algorithm");
         compR_.read(&msghandler_, *pd, &forceComp_, &mols);
-        checker_.checkInt64(mols.size(), "Number of molecules");
-        for(const auto &mol : mols)
+        auto &qMap = compR_.chargeMapConst();
+        checker_.checkInt64(qMap.size(), "Number of molecules");
+        int i = 1;
+        for(const auto &mol : qMap)
         {
-            const auto &atoms = mol.atomsConst();
-            int i = 1;
-            for(const auto &atom : atoms)
+            for(const auto &atom : mol.second)
             {
-                std::string aname = gmx::formatString("%s-%s-%d", mol.formula().c_str(), atom.name().c_str(), i);
-                checker_.checkDouble(atom.charge(), aname.c_str());
+                std::string aname = gmx::formatString("%s-%d",
+                                                      atom.first.id().c_str(), i);
+                checker_.checkDouble(atom.second, aname.c_str());
                 i += 1;
             }
         }
     }
 
     //! Do the actual testing
-    void testCompoundReaderFile (const std::string &input)
+    void testCompoundReaderFile (const std::string &input, bool hackFNM)
     {
         std::vector<ACTMol>       mols;
         std::vector<t_filenm>     filenm;
@@ -143,6 +144,10 @@ protected:
         std::string infile = gmx::test::TestFileManager::getInputFilePath(input);
         compR_.addOptions(&pargs, &filenm, &desc);
         hack_pargs(&pargs, infile);
+        if (hackFNM)
+        {
+            hack_fnm(&filenm);
+        }
         compR_.optionsFinished(&msghandler_, filenm);
         checker_.checkString(compR_.qread(), "Charge type to read");
         checker_.checkString(chargeGenerationAlgorithmName(compR_.algorithm()).c_str(), "Algorithm");
@@ -173,11 +178,27 @@ TEST_F (CompoundReaderTest, Count){
 }
 
 TEST_F (CompoundReaderTest, HCl){
-    testCompoundReaderFile("hydrogen-chloride.sdf");
+    testCompoundReaderFile("hydrogen-chloride.sdf", false);
 }
 
 TEST_F (CompoundReaderTest, Dimer){
-    testCompoundReaderFile("hydrogen-bromide#hydrogen-fluoride.pdb");
+    testCompoundReaderFile("hydrogen-bromide#hydrogen-fluoride.pdb", false);
+}
+
+TEST_F (CompoundReaderTest, Fluorane){
+    testCompoundReaderFile("fluorane.sdf", false);
+}
+
+TEST_F (CompoundReaderTest, HCl_Charges){
+    testCompoundReaderFile("hydrogen-chloride.sdf", true);
+}
+
+TEST_F (CompoundReaderTest, Dimer_Charges){
+    testCompoundReaderFile("hydrogen-bromide#hydrogen-fluoride.pdb", true);
+}
+
+TEST_F (CompoundReaderTest, Fluorane_Charges){
+    testCompoundReaderFile("fluorane.sdf", true);
 }
 
 } // namespace alexandria
