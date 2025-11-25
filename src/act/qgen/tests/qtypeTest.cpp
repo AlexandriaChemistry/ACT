@@ -142,7 +142,7 @@ class QtypeTest : public gmx::test::CommandLineTestBase
             bool   userqtot   = !qcustom.empty();
             double qtot_babel = qtotal;
             matrix box;
-            EXPECT_TRUE(readBabel(pd, dataName.c_str(), &molprops,
+            EXPECT_TRUE(readBabel(nullptr, pd, dataName.c_str(), &molprops,
                                   molname.c_str(), molname.c_str(),
                                   conf, &method, &basis, maxpot,
                                   nsymm, jobtype, userqtot,
@@ -156,11 +156,11 @@ class QtypeTest : public gmx::test::CommandLineTestBase
 
             // Now loop over molprops, there may be more than one
             int mp_index = 1;
-            for(const auto &molprop : molprops)
+            for(auto &molprop : molprops)
             {
                 alexandria::ACTMol actmol;
 
-                actmol.Merge(&molprop);
+                actmol.Merge(std::move(&molprop));
                 MsgHandler msghandler;
                 // Generate charges and topology
                 actmol.GenerateTopology(&msghandler, pd,
@@ -173,13 +173,16 @@ class QtypeTest : public gmx::test::CommandLineTestBase
                 // Needed for GenerateCharges
                 std::vector<gmx::RVec> forces(actmol.atomsConst().size());
                 std::vector<gmx::RVec> coords = actmol.xOriginal();
-                auto alg = ChargeGenerationAlgorithm::NONE;
+                auto alg = pd->chargeGenerationAlgorithm();
                 if (!qcustom.empty())
                 {
                     alg = ChargeGenerationAlgorithm::Custom;
+                    actmol.setCharges(qcustom);
                 }
-                actmol.GenerateCharges(&msghandler, pd, forceComp, alg, qType::Calc, qcustom, &coords, &forces, true);
-                
+                else
+                {
+                    actmol.generateCharges(&msghandler, pd, forceComp, alg, &coords, &forces, true);
+                }
                 std::vector<double> q;
                 auto myatoms = actmol.atomsConst();
                 for (size_t atom = 0; atom < myatoms.size(); atom++)
@@ -193,7 +196,7 @@ class QtypeTest : public gmx::test::CommandLineTestBase
                 }
 
                 checker_.checkSequence(q.begin(), q.end(), qlabel.c_str());
-                QtypeProps qp(qType::Calc, myatoms, coords);
+                QtypeProps qp(qPropertyType::ACM, myatoms, coords);
                 qp.initializeMoments();
                 qp.setQandX(q, coords);
                 qp.calcMoments();

@@ -35,6 +35,7 @@
 #include <random>
 #include <time.h>
 
+#include "act/basics/chargemodel.h"
 #include "act/basics/msg_handler.h"
 #include "act/ga/genome.h"
 
@@ -46,26 +47,31 @@ namespace ga
 class Mutator
 {
 private:
-    // Ranom number generation
+    //! Ranom number generation
     std::random_device                      rd_base;
     std::mt19937                            gen_base;
     std::uniform_real_distribution<double>  dis_base;
-
+    //! Charge generation
+    alexandria::ChargeGenerationAlgorithm   algorithm_;
 protected:
 
     /*! \brief Constructor
      * \param[in] seed seed for the random number generator
      */
-    Mutator(int seed)
+    Mutator(int                                    seed,
+            alexandria::ChargeGenerationAlgorithm  algorithm)
     : gen_base(rd_base()), dis_base(std::uniform_real_distribution<double>(0.0, 1.0))
     {
         gen_base.seed(seed);
+        algorithm_ = algorithm;
     }
 
     //! \return a random number in \f$ [0, 1] \f$
     double randNum() { return dis_base(gen_base); }
 
 public:
+
+    virtual ~Mutator() = default;
 
     /*!
      * \brief Mutate genes of a Genome (in place)
@@ -82,15 +88,18 @@ public:
     /*!
      * \brief Perform a sensitivity analysis by systematically changing all parameters and
      * re-evaluating the \f$ \chi^2 \f$.
-     * \param[in]  msghandler The message and status handler
-     * \param[in] genome Pointer to genome
-     * \param[in] ims    Dataset to perform sensitivity analysis on
+     * \param[in] msghandler The message and status handler
+     * \param[in] genome     Pointer to genome
+     * \param[in] ims        Dataset to perform sensitivity analysis on
      */
     virtual void sensitivityAnalysis(alexandria::MsgHandler *msghandler,
                                      Genome                 *bestGenome,
                                      iMolSelect              ims) = 0;
 
     virtual bool foundMinimum() = 0;
+
+    //! \return the ChargeGenerationAlgorithm
+    alexandria::ChargeGenerationAlgorithm algorithm() const { return algorithm_; }
 };
 
 

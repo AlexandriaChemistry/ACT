@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2023
+ * Copyright (C) 2014-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -52,6 +52,7 @@ namespace alexandria
 {
 
 class ForceField;
+class MsgHandler;
 
 /*! \brief Class to store one grid point and it's potential.
  * The structure store both the reference and the calculated
@@ -110,14 +111,14 @@ class QgenResp
     public:
         QgenResp() {}
 
-        ChargeType chargeType() const { return ChargeType_; }
+        ChargeDistributionType chargeType() const { return ChargeDistributionType_; }
 
         /*! \brief Set option for ESP charge generation
          *
          * \param[in] qd Charge distribution type
          */
-        void setChargeType(ChargeType qd)
-        { ChargeType_ = qd; }
+        void setChargeDistributionType(ChargeDistributionType qd)
+        { ChargeDistributionType_ = qd; }
 
         real getMolecularCharge() const { return qtot_; }
 
@@ -127,18 +128,20 @@ class QgenResp
 
         const EspPoint &espPoint(size_t index) const {return ep_[index]; }
 
-        void summary(FILE *gp);
+        void summary(MsgHandler *msg_handler);
         
         /*! \brief Set the inforamtion about atoms
          * The size of arrays in atoms and x is checked and compared 
-         * to what was there previously if anything. 
+         * to what was there previously if anything.
+         * \param[in] msg_handler For writing messages and warnings
          * \param[in] atoms  The ACT atoms structure
          * \param[in] pd     The force field
          * \param[in] qtotal Total charge of the compound, needed when
          *                   generating charges
          */
-        void setAtomInfo(const std::vector<ActAtom>   &atoms,
-                         const ForceField             *pd,
+        void setAtomInfo(MsgHandler                   *msg_handler,
+                         const std::vector<ActAtom>   &atoms,
+                         ForceField                   *pd,
                          const int                     qtotal);
 
         size_t natoms() const { return nAtom_; }
@@ -155,11 +158,6 @@ class QgenResp
          * \param[in] q Vector containing new charges
          */
         void updateAtomCharges(const std::vector<ActAtom> &atoms);
-
-        /*! \brief Update the charges
-         * \param[in] q Vector containing new charges
-         */
-        void updateAtomCharges(const std::vector<double> &q);
 
         const std::string &getStoichiometry() const { return stoichiometry_; }
 
@@ -184,9 +182,13 @@ class QgenResp
 
         void copyGrid(QgenResp &src);
 
-        void calcStatistics();
+        void calcStatistics(MsgHandler *msg_handler);
 
-        real getStatistics(real *rrms, real *cosangle, real *mse, real *mae);
+        real getStatistics(MsgHandler *msg_handler,
+                           real       *rrms,
+                           real       *cosangle,
+                           real       *mse,
+                           real       *mae);
 
         void plotLsq(const gmx_output_env_t *oenv,
                      const char             *ESPcorr);
@@ -197,7 +199,8 @@ class QgenResp
          *
          * \param[in] epsilonr  Relative dielectric constant
          */
-        void calcPot(double epsilonr);
+        void calcPot(MsgHandler *msg_handler,
+                     double      epsilonr);
 
         void calcVShell();
 
@@ -237,12 +240,16 @@ class QgenResp
          *
          * Optimizes the charges using matrix inversion. No restraints are
          * taken into account, except total charge and charge symmetries.
-         * \param[in] epsilonr Relative dielectric constant.
+         * \param[in] msg_handler For debugging and info
+         * \param[in] epsilonr    Relative dielectric constant.
          */
-        void optimizeCharges(double epsilonr);
+        void optimizeCharges(MsgHandler *msg_handler,
+                             double      epsilonr);
 
-        // Make sure the total charge is correct and that symmetry is obeyed
-        void regularizeCharges();
+        /*! \brief Make sure the total charge is correct and that symmetry is obeyed
+         * \param[in] msg_handler For debugging and info
+         */
+        void regularizeCharges(MsgHandler *msg_handler);
 
         void potcomp(const char             *potcomp,
                      const gmx_output_env_t *oenv);
@@ -277,7 +284,7 @@ class QgenResp
 
         void setZeta(int atom, double zeta) { zeta_[atom] = zeta; }
 
-        ChargeType                ChargeType_  = ChargeType::Point;
+        ChargeDistributionType    ChargeDistributionType_  = ChargeDistributionType::Point;
         int                       qtot_        = 0;
         double                    qshell_      = 0;
         double                    rms_         = 0;
@@ -296,6 +303,7 @@ class QgenResp
 
         //! Total number of parameters
         std::vector<double>      q_;
+        std::vector<ForceFieldParameter *> charge_;
         std::vector<double>      zeta_;
         std::vector<int>         atomnumber_;
         std::vector<int>         row_;

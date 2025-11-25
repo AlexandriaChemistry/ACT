@@ -198,33 +198,41 @@ private:
     std::vector<int>                                          realAtoms_;
 
     /*! Generate virtual sites for atoms.
+     * \param[in] msghandler Message handler
      * \param[in]    pd       The force field
      * \param[inout] atomList The atom and coordinate list that may be extended
      * \return map containing number of entries added for each interaction type
      */
-    std::map<InteractionType, size_t> makeVsite1s(const ForceField *pd,
+    std::map<InteractionType, size_t> makeVsite1s(MsgHandler       *msghandler,
+                                                  const ForceField *pd,
                                                   AtomList         *atomList);
     /*! Generate virtual sites for bonds.
+     * \param[in] msghandler Message handler
      * \param[in]    pd       The force field
      * \param[inout] atomList The atom and coordinate list that may be extended
      * \return map containing number of entries added for each interaction type
      */
-    std::map<InteractionType, size_t> makeVsite2s(const ForceField *pd,
+    std::map<InteractionType, size_t> makeVsite2s(MsgHandler       *msghandler,
+                                                  const ForceField *pd,
                                                   AtomList         *atomList);
 
     /*! \brief Generate three body vsites
+     * \param[in] msghandler Message handler
      * \param[in]    pd       The force field
      * \param[inout] atomList The linked list of particles
      * \return map containing number of entries added for each interaction type
      */
-    std::map<InteractionType, size_t> makeVsite3s(const ForceField *pd,
+    std::map<InteractionType, size_t> makeVsite3s(MsgHandler       *msghandler,
+                                                  const ForceField *pd,
                                                   AtomList         *atomList);
 
     /*! \brief Add identifiers to interactions
+     * \param[in] msghandler Message handler
      * \param[in] pd The force field structure
      * \param[in] itype The interaction type for which to do this
      */
-    void setEntryIdentifiers(const ForceField *pd,
+    void setEntryIdentifiers(MsgHandler       *msghandler,
+                             const ForceField *pd,
                              InteractionType   itype);
 
     /*! Add polarizabilities to the topology if needed
@@ -248,23 +256,13 @@ private:
                                            const std::vector<double> &bondOrder,
                                            CanSwap                    cs) const;
 
-    /*! \brief Remove interactions that should not be there in the first place.
-     * If two atoms are in the exclusion list, their shells should be as well.
-     * This routine checks for such interactions (Coulomb or VDW) and removes them.
-     * For vsites, they inherit the exclusions from their constructing atoms.
-     * \param[inout] pairs      The pair list
-     * \param[in]    exclusions The exclusions
-     */
-    void fixExclusions(TopologyEntryVector                 *pairs,
-                       const std::vector<std::vector<int>> &exclusions);
-
-    /*! \brief Generate exclusions and remove pairs
-     * \param[inout] pairs The list of all atom pairs
-     * \param[in] nrexcl   The number of exclusions to generate for Coulomb interactions (max 2)
+    /*! \brief Generate exclusions 
+     * \param[in] msghandler To store information and errors
+     * \param[in] nrexcl     The number of exclusions to generate (max 2)
      * \return list of exclusions
      */
-    std::vector<std::vector<int>> generateExclusions(TopologyEntryVector *pairs,
-                                                     int                  nrexcl);
+    std::vector<std::set<size_t>> generateExclusions(MsgHandler *msghandler,
+                                                     int         nrexcl);
     //! \brief Add vsite identifiers to the cores such that they can be used for exclusions
     void addVsitesToCores();
 
@@ -273,11 +271,10 @@ private:
     {
     }
 
-    /*! Constructor
-     * This code copies relevant structures from the outside world
+    /*! \brief This code copies relevant structures from the outside world
      * \param[in] bonds The bonds connecting this molecule.
      */
-    Topology(const std::vector<Bond> &bonds);
+    void init(const std::vector<Bond> &bonds);
 
     //! Return the name
     const std::string &moleculeName() const { return moleculeName_; }
@@ -299,7 +296,7 @@ private:
     void addAtom(const ActAtom &atom) { atoms_.push_back(atom); }
 
     //! Debugging stuff
-    void dumpPairlist(FILE *fp, InteractionType itype) const;
+    void dumpPairlist(gmx::TextWriter *tw, InteractionType itype) const;
 
     //! \return the array of real atoms
     const std::vector<int> &realAtoms() const { return realAtoms_; }
@@ -363,29 +360,34 @@ private:
     /*! Generate the angles
      * To generate angles we need the coordinates to check whether
      * there is a linear geometry.
+     * \param[in] msghandler Message handler
      * \param[in] pd             The force field
      * \param[in] x              The atomic coordinates
      * \param[in] LinearAngleMin Minimum angle to be considered linear (degrees)
      */
-    void makeAngles(const ForceField             *pd,
+    void makeAngles(MsgHandler                   *msghandler,
+                    const ForceField             *pd,
                     const std::vector<gmx::RVec> &x,
                     double                        LinearAngleMin);
 
     /*! Generate the impropers
      * To generate impropers we need the coordinates to check whether
      * there is a planar geometry.
+     * \param[in] msghandler Message handler
      * \param[in] pd             The force field
      * \param[in] x              The atomic coordinates
      * \param[in] PlanarAngleMax Maximum angle to be considered planar (degrees)
       */
-    void makeImpropers(const ForceField             *pd,
+    void makeImpropers(MsgHandler                   *msghandler,
+                       const ForceField             *pd,
                        const std::vector<gmx::RVec> &x,
                        double                        PlanarAngleMax);
 
     /*! Generate the proper dihedrals
      * \param[in] pd The force field
      */
-    void makePropers(const ForceField *pd);
+    void makePropers(MsgHandler       *msghandler,
+                     const ForceField *pd);
 
     /*! \brief Add a custom list of interactions
      * \param[in] itype The interaction type (should not yet exist)
@@ -398,11 +400,15 @@ private:
     size_t nAtoms() const { return atoms_.size(); }
 
     /*! Generate the non-bonded pair list based on just the atoms
-     * \param[in] pd     Force field needed to set identifiers.
-     * \param[in] natoms The number of atoms
+     * \param[in] msghandler Message handler
+     * \param[in] pd         Force field needed to set identifiers.
+     * \param[in] natoms     The number of atoms
+     * \param[in] exclusion  The excluded particle pairs
      */
-    void makePairs(const ForceField *pd,
-                   InteractionType   itype);
+    void makePairs(MsgHandler                          *msghandler,
+                   const ForceField                    *pd,
+                   InteractionType                      itype,
+                   const std::vector<std::set<size_t>> &exclusions);
 
     /*! Add shell pairs
      * Based on the atom pair list, add interaction between atoms and shell

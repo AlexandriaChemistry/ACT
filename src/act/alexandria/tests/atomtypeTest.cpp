@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2019-2024
+ * Copyright (C) 2019-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -90,8 +90,10 @@ protected:
             bool   userqtot = false;
             double qtot     = 0.0;
             matrix box;
-            bool readOK = readBabel(pd, dataName.c_str(), &molprops, molname, molname,
-                                    conf, &method, &basis, maxpot, nsymm, jobtype, userqtot, &qtot, false, box, true);
+            bool readOK = readBabel(nullptr, pd, dataName.c_str(), &molprops,
+                                    molname, molname,
+                                    conf, &method, &basis, maxpot, nsymm,
+                                    jobtype, userqtot, &qtot, false, box, true);
             EXPECT_TRUE(readOK);
             for(auto &molprop: molprops)
             {

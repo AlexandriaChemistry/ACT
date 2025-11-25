@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2024
+ * Copyright (C) 2014-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -36,7 +36,7 @@
 
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/textwriter.h"
-
+#include "act/basics/msg_handler.h"
 #include "act/utility/units.h"
 
 namespace alexandria
@@ -103,51 +103,6 @@ Experiment::Experiment(const std::string &program,
       jobtype_(jtype)
 {}
 
-#ifdef EXPERIMENT_DESTRUCTOR
-Experiment::~Experiment()
-{
-    for(auto &mp : property_)
-    {
-        for(auto pp = mp.second.begin(); pp < mp.second.end(); ++pp)
-        {
-            if (*pp)
-            {
-                delete *pp;
-            }
-        }
-    }
-}
-
-Experiment::Experiment(const Experiment& other)// = default;
-{
-    auto oprops = other.propertiesConst();
-    for(auto &op : oprops)
-    {
-        
-        property_.insert({ op.first, {} });
-        for(auto &gp : op.second)
-        {
-            property_[op.first].push_back(gp);
-        }
-    }
-}
-
-Experiment::Experiment(Experiment &&other)
-{
-    auto oprops = other.properties();
-    for(auto &op : *oprops)
-    {
-        property_.insert({ op.first, {} });
-        for(auto &gp : op.second)
-        {
-            property_[op.first].push_back(gp);
-            gp = nullptr;
-        }
-    }
-}
-
-#endif
-
 void Experiment::Dump(gmx::TextWriter *tw) const
 {
     if (nullptr != tw)
@@ -185,47 +140,28 @@ void Experiment::Dump(gmx::TextWriter *tw) const
     }
 }
 
-void Experiment::addProperty(MolPropObservable mpo, GenericProperty *gp)
-{
-    if (property_.find(mpo) == property_.end())
-    {
-        std::vector<GenericProperty *> gpnew;
-        property_.insert(std::pair<MolPropObservable, std::vector<GenericProperty *>>(mpo, gpnew));
-    }
-    property_.find(mpo)->second.push_back(std::move(gp));
-}
-        
-int Experiment::Merge(const Experiment *src)
+int Experiment::Merge(Experiment *src)
 {
     int nwarn = 0;
 
-    for (auto &prop : src->property_)
+    for (auto p = src->property_.begin(); p != src->property_.end(); ++p)
     {
-        auto mpo = prop.first;
-        for (auto &gp : prop.second)
+        auto mpo = p->first;
+        if (property_.find(mpo) == property_.end())
         {
-            addProperty(mpo, gp);
+            std::vector<std::unique_ptr<GenericProperty> > gpnew;
+            property_.insert({ mpo, std::move(gpnew) });
+        }
+        //std::move(p->second.begin(), p->second.end(),
+        //        std::back_inserter(property_[mpo]));
+        for (auto gp = p->second.begin(); gp != p->second.end(); ++gp)
+        {
+            property_[mpo].push_back(std::move(*gp));
         }
     }
+    std::copy(src->calcAtomConst().begin(), src->calcAtomConst().end(),
+              std::back_inserter(catom_));
 
-    for (auto &cai : src->calcAtomConst())
-    {
-        double   x, y, z;
-        CalcAtom caa(cai.getName(), cai.getObtype(), cai.getAtomid());
-
-        cai.coords(&x, &y, &z);
-        caa.setCoordUnit(cai.coordUnit());
-        caa.setCoords(x, y, z);
-        cai.forces(&x, &y, &z);
-        caa.setForceUnit(cai.forceUnit());
-        caa.setForces(x, y, z);
-        caa.setResidue(cai.residueName(), cai.residueNumber());
-        for (const auto &aci : cai.chargesConst())
-        {
-            caa.AddCharge(aci.first, aci.second);
-        }
-        AddAtom(caa);
-    }
     return nwarn;
 }
 
@@ -280,6 +216,16 @@ void Experiment::AddAtom(CalcAtom ca)
     }
 }
 
+void Experiment::addProperty(MolPropObservable mpo, std::unique_ptr<GenericProperty> gp)
+{
+    if (property_.find(mpo) == property_.end())
+    {
+        std::vector<std::unique_ptr<GenericProperty> > gpnew;
+        property_.insert({ mpo, std::move(gpnew) });
+    }
+    property_.find(mpo)->second.push_back(std::move(gp));
+}
+
 void Experiment::getReferenceLot(std::string *reference,
                                  std::string *lot) const
 {
@@ -301,7 +247,7 @@ void Experiment::getReferenceLot(std::string *reference,
 }
 
 bool Experiment::getCharges(std::vector<double> *q,
-                            qType                qtype,
+                            const char          *qread,
                             std::string         *reference,
                             std::string         *lot) const
 {
@@ -309,9 +255,9 @@ bool Experiment::getCharges(std::vector<double> *q,
     int i = 0;
     for (auto &mai : calcAtomConst())
     {
-        if (mai.hasCharge(qtype))
+        if (mai.hasCharge(qread))
         {
-            (*q)[i] = mai.charge(qtype);
+            (*q)[i] = mai.charge(qread);
             i++;
         }
     }
@@ -362,10 +308,9 @@ CommunicationStatus Experiment::Send(const CommunicationRecord *cr, int dest) co
         }
     }
 
-    if ((CommunicationStatus::OK != cs) && (nullptr != debug))
+    if (CommunicationStatus::OK != cs && cr->mh() && cr->mh()->debug())
     {
-        fprintf(debug, "Trying to send Experiment, status %s\n", cs_name(cs));
-        fflush(debug);
+        cr->mh()->writeDebug(gmx::formatString("Failed to send Experiment, status %s\n", cs_name(cs)));
     }
     return cs;
 }
@@ -393,12 +338,12 @@ CommunicationStatus Experiment::BroadCast(const CommunicationRecord *cr,
         // BroadCast number of properties
         size_t nprop = property_.size();
         cr->bcast(&nprop, comm);
-        if (debug && cr->rank() == root)
+        if (cr->rank() == root && cr->mh() && cr->mh()->debug())
         {
             for (auto &p : property_)
             {
                 std::string mpo_str(mpo_name(p.first));
-                fprintf(debug, "Will broadcast mpo_name '%s'\n", mpo_str.c_str());
+                cr->mh()->writeDebug(gmx::formatString("Will broadcast mpo_name '%s'\n", mpo_str.c_str()));
             }
         }
         auto thisProp = property_.begin();
@@ -420,21 +365,31 @@ CommunicationStatus Experiment::BroadCast(const CommunicationRecord *cr,
                 mpo_str = mpo_name(thisProp->first);
             }
             cr->bcast(&mpo_str, comm);
-            if (debug && root != cr->rank())
+            if (root != cr->rank() && cr->mh() && cr->mh()->debug())
             {
-                fprintf(debug, "Received broadcast string '%s' n = %zu\n", mpo_str.c_str(), n);
+                cr->mh()->writeDebug(gmx::formatString("Received broadcast string '%s' n = %zu\n", mpo_str.c_str(), n));
             }
             MolPropObservable mpo;
             if (!stringToMolPropObservable(mpo_str, &mpo))
             {
                 GMX_THROW(gmx::InternalError(gmx::formatString("Received unknown string '%s' for a MolPropObservable", mpo_str.c_str()).c_str()));
             }
-            for(size_t propid = 0; propid < np; propid++)
+            if (property_.find(mpo) == property_.end())
             {
-                GenericProperty *gp = nullptr;
+                std::vector<std::unique_ptr<GenericProperty> > gpnew;
+                property_.insert({ mpo, std::move(gpnew) });
+            }
+            // Loop over properties that root has read
+            int npp = thisProp->second.size();
+            cr->bcast(&npp, comm);
+            for(int ipp = 0; ipp < npp; ++ipp)
+            {
+                auto &pp = thisProp->second[ipp];
+                // Make storage
+                // Now broadcast content
                 if (root == cr->rank())
                 {
-                    gp = thisProp->second[propid];
+                    pp->BroadCast(cr, root, comm);
                 }
                 else
                 {
@@ -445,18 +400,21 @@ CommunicationStatus Experiment::BroadCast(const CommunicationRecord *cr,
                     case MolPropObservable::OCTUPOLE:
                     case MolPropObservable::HEXADECAPOLE:
                         {
-                            gp = new MolecularMultipole;
+                            auto gp = std::make_unique<MolecularMultipole>();
+                            property_.find(mpo)->second.push_back(std::move(gp));
                             break;
                         }
                     case MolPropObservable::POLARIZABILITY:
                         {
-                            gp = new MolecularPolarizability;
+                            auto gp = std::make_unique<MolecularPolarizability>();
+                            property_.find(mpo)->second.push_back(std::move(gp));
                             break;
                     }
                     case MolPropObservable::FREQUENCY:
                     case MolPropObservable::INTENSITY:
                         {
-                            gp = new Harmonics;
+                            auto gp = std::make_unique<Harmonics>();
+                            property_.find(mpo)->second.push_back(std::move(gp));
                             break;
                         }
                     case MolPropObservable::HF:
@@ -480,28 +438,25 @@ CommunicationStatus Experiment::BroadCast(const CommunicationRecord *cr,
                     case MolPropObservable::CV:
                     case MolPropObservable::ZPE:
                         {
-                            gp = new MolecularEnergy;
+                            auto gp = std::make_unique<MolecularEnergy>();
+                            property_.find(mpo)->second.push_back(std::move(gp));
                             break;
                         }
                     case MolPropObservable::POTENTIAL:
                         {
-                            gp = new ElectrostaticPotential;
+                            auto gp = std::make_unique<ElectrostaticPotential>();
+                            property_.find(mpo)->second.push_back(std::move(gp));
                             break;
                         }
                     case MolPropObservable::CHARGE:
                     case MolPropObservable::COORDINATES:
+                    default:
                         {
                             gmx_fatal(FARGS, "Don't know what to do...");
                         }
                     }
-                }
-                if (gp)
-                {
-                    gp->BroadCast(cr, root, comm);
-                    if (root != cr->rank())
-                    {
-                        addProperty(mpo, gp);
-                    }
+                    // Now get the contents
+                    property_.find(mpo)->second.back()->BroadCast(cr, root, comm);
                 }
             }
             // Find next property to broadcast from the root.
@@ -532,10 +487,9 @@ CommunicationStatus Experiment::BroadCast(const CommunicationRecord *cr,
         }
     }
 
-    if ((CommunicationStatus::OK != cs) && (nullptr != debug))
+    if ((CommunicationStatus::OK != cs) && cr->mh() && cr->mh()->debug())
     {
-        fprintf(debug, "Trying to receive Experiment, status %s\n", cs_name(cs));
-        fflush(debug);
+        cr->mh()->writeDebug(gmx::formatString("Failed to receive Experiment, status %s\n", cs_name(cs)));
     }
     return cs;
 }
@@ -575,7 +529,6 @@ CommunicationStatus Experiment::Receive(const CommunicationRecord *cr, int src)
             cr->recv(src, &ngp);
             for (size_t n = 0; n < ngp; n++)
             {
-                GenericProperty *gp = nullptr;
                 switch (mpo)
                 {
                 case MolPropObservable::DIPOLE:
@@ -583,18 +536,21 @@ CommunicationStatus Experiment::Receive(const CommunicationRecord *cr, int src)
                 case MolPropObservable::OCTUPOLE:
                 case MolPropObservable::HEXADECAPOLE:
                     {
-                       gp = new MolecularMultipole;
-                       break;
+                        auto gp = std::make_unique<MolecularMultipole>();
+                        addProperty(mpo, std::move(gp));
+                        break;
                     }
                 case MolPropObservable::POLARIZABILITY:
                     {
-                        gp = new MolecularPolarizability;
+                        auto gp = std::make_unique<MolecularPolarizability>();
+                        addProperty(mpo, std::move(gp));
                         break;
                     }
                 case MolPropObservable::FREQUENCY:
                 case MolPropObservable::INTENSITY:
                     {
-                        gp = new Harmonics;
+                        auto gp = std::make_unique<Harmonics>();
+                        addProperty(mpo, std::move(gp));
                         break;
                     }
                 case MolPropObservable::HF:
@@ -618,12 +574,14 @@ CommunicationStatus Experiment::Receive(const CommunicationRecord *cr, int src)
                 case MolPropObservable::CV:
                 case MolPropObservable::ZPE:
                     {
-                        gp = new MolecularEnergy;
-                        break;
+                        auto gp = std::make_unique<MolecularEnergy>();
+                        addProperty(mpo, std::move(gp));
+                       break;
                     }
                 case MolPropObservable::POTENTIAL:
                     {
-                        gp = new ElectrostaticPotential;
+                        auto gp = std::make_unique<ElectrostaticPotential>();
+                        addProperty(mpo, std::move(gp));
                         break;
                     }
                 case MolPropObservable::CHARGE:
@@ -632,12 +590,8 @@ CommunicationStatus Experiment::Receive(const CommunicationRecord *cr, int src)
                         gmx_fatal(FARGS, "Don't know what to do...");
                     }
                 }
-                if (gp)
-                {
-                    gp->Receive(cr, src);
-                    addProperty(mpo, gp);
-                }
-
+                // Now fetch content
+                property_.find(mpo)->second.back()->Receive(cr, src);
             }
         } 
         
@@ -655,10 +609,9 @@ CommunicationStatus Experiment::Receive(const CommunicationRecord *cr, int src)
         }
     }
 
-    if ((CommunicationStatus::OK != cs) && (nullptr != debug))
+    if ((CommunicationStatus::OK != cs) && cr->mh() && cr->mh()->debug())
     {
-        fprintf(debug, "Trying to receive Experiment, status %s\n", cs_name(cs));
-        fflush(debug);
+        cr->mh()->writeDebug(gmx::formatString("Failed to receive Experiment, status %s\n", cs_name(cs)));
     }
     return cs;
 }

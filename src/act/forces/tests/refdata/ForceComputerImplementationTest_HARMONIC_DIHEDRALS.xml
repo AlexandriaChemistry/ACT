@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Real Name="Epot">13.470797553330399</Real>
+  <Sequence Name="Forces">
+    <Int Name="Length">4</Int>
+    <Vector>
+      <Real Name="X">116.06376503168586</Real>
+      <Real Name="Y">0</Real>
+      <Real Name="Z">0</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-225.77578172830431</Real>
+      <Real Name="Y">63.517483350673857</Real>
+      <Real Name="Z">-63.517483350673878</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">98.163383360132272</Real>
+      <Real Name="Y">-179.00381671553544</Real>
+      <Real Name="Z">179.00381671553549</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">11.548633336486189</Real>
+      <Real Name="Y">115.48633336486157</Real>
+      <Real Name="Z">-115.48633336486161</Real>
+    </Vector>
+  </Sequence>
+  <Real Name="IMPROPER_DIHEDRALS">13.470797553330399</Real>
+</ReferenceData>

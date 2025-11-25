@@ -37,13 +37,13 @@
 
 #include <map>
 
+#include "act/alexandria/actmol.h"
+#include "act/alexandria/compound_reader.h"
+#include "act/alexandria/molselect.h"
+#include "act/utility/communicationrecord.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/mdrunutility/mdmodules.h"
 #include "gromacs/utility/real.h"
-
-#include "act/utility/communicationrecord.h"
-#include "molselect.h"
-#include "actmol.h"
 
 namespace alexandria
 {
@@ -52,10 +52,6 @@ namespace alexandria
 enum class eRMS { 
     //! Parameters going out of bound
     BOUNDS,
-    //! Unphysical parameters
-    UNPHYSICAL,
-    //! Charge
-    CHARGE,
     //! Molecular dipole
     MU,
     //! Molecular quadrupole
@@ -68,8 +64,6 @@ enum class eRMS {
     FREQUENCY,
     //! Infrared intensities
     INTENSITY,
-    //! Deviation from CM5 charge
-    CM5,
     //! Deviation from Electrostatic potential
     ESP,
     //! Potential energy deviation
@@ -265,16 +259,12 @@ private:
     bool                            qsymm_      = false;
     //! String for command line to harvest the options to fit
     char                           *fitString_ = nullptr;
-    //! Charge type to use
-    char                           *qTypeString_ = nullptr;
     //! Map to determine whether or not to fit a parameter type
     std::map<std::string, bool>     fit_;
     //! The molecules used in the optimization
     std::vector<alexandria::ACTMol>  actmol_;
     //! Whether or not to load balance the inputs
     bool                            loadBalance_ = true;
-    //! Difference between core and shell zeta to count as unphysical
-    double                          zetaDiff_ = 2;    
     //! Boltzmann weighting temperature of energies, if larger than zero
     double                          ener_boltz_temp_ = 0;
     //! Fraction of ESP points to read (in percent)
@@ -327,15 +317,14 @@ public:
      */
     void addFilenames(std::vector<t_filenm> *filenms);
 
-    /*! \brief Check whether options make sense.
-     * \params[in] msghandler For logging and status
-     * \params[in] filenames  List of filenames
-     * \params[in] pd         ForceField for information
-     * \return true if options are consistent, false otherwise.
+    /*! \brief Check whether fitting options make sense.
+     * \param[in] msghandler For logging and status
+     * \param[in] pd         ForceField for information
+     * \param[in] alg        Allow checking flags for compatibility with algorithm
      */
-    bool checkOptions(MsgHandler                  *msghandler,
-                      const std::vector<t_filenm> &filenames,
-                      ForceField                  *pd);
+    void checkOptions(MsgHandler                *msghandler,
+                      ForceField                *pd,
+                      ChargeGenerationAlgorithm  alg);
 
     /*! \brief Process options after parsing
      */
@@ -394,9 +383,6 @@ public:
     //! Return all the parameter types to fit
     std::map<std::string, bool> typesToFit() const { return fit_; }
 
-    //! Zeta difference
-    double zetaDiff() const { return zetaDiff_; }
-
     //! Boltzmann weighting temperature for energies
     double enerBoltzTemp() const { return ener_boltz_temp_; }
 
@@ -420,13 +406,15 @@ public:
      * \param[in] filenms  Information about filenames
      * \param[in] pd       Pointer to ForceField object
      * \param[in] gms      The molecule selection
+     * \param[in] compR    Compound reader with charge information
      * \return number of molecules read and processed correctly
      */
     size_t Read(MsgHandler                          *msghandler,
                 const std::vector<t_filenm>         &filenms,
                 ForceField                          *pd,
                 const MolSelect                     &gms,
-                const std::map<eRMS, FittingTarget> &targets);
+                const std::map<eRMS, FittingTarget> &targets,
+                CompoundReader                      *compR);
 
 };
 

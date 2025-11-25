@@ -41,7 +41,7 @@
 #include <vector>
 
 #include "act/alexandria/alex_modules.h"
-#include "act/alexandria/fetch_charges.h"
+#include "act/alexandria/compound_reader.h"
 #include "act/alexandria/train_utility.h"
 #include "act/basics/msg_handler.h"
 #include "act/forcefield/forcefield.h"
@@ -60,15 +60,12 @@ namespace alexandria
 
 std::map<eRMS, const char *> ermsNames = {
     { eRMS::BOUNDS,     "BOUNDS"     },
-    { eRMS::UNPHYSICAL, "UNPHYSICAL" },
-    { eRMS::CHARGE,     "CHARGE"     },
     { eRMS::MU,         "MU"         },
     { eRMS::QUAD,       "QUAD"       },
     { eRMS::OCT,        "OCT"        },
     { eRMS::HEXADEC,    "HEXADEC"    },
     { eRMS::FREQUENCY,  "FREQUENCY"  },
     { eRMS::INTENSITY,  "INTENSITY"  },
-    { eRMS::CM5,        "CM5"        },
     { eRMS::ESP,        "ESP"        },
     { eRMS::EPOT,       "EPOT"       },
     { eRMS::Interaction,"Interaction"},
@@ -115,7 +112,6 @@ MolGen::MolGen(const CommunicationRecord *cr)
 void MolGen::addFilenames(std::vector<t_filenm> *filenms)
 {
     filenms->push_back({ efXML, "-mp",      "allmols", ffREAD   });
-    filenms->push_back({ efXML, "-charges", "charges", ffOPTRD  });
 }
 
 void MolGen::addOptions(std::vector<t_pargs>          *pargs,
@@ -127,16 +123,12 @@ void MolGen::addOptions(std::vector<t_pargs>          *pargs,
           "Minimum number of data points to optimize force field parameters" },
         { "-qsymm",  FALSE, etBOOL, {&qsymm_},
           "Symmetrize the charges on symmetric groups, e.g. CH3, NH2. The list of groups to symmetrize is specified in the force field file." },
-        { "-zetadiff", FALSE, etREAL, {&zetaDiff_},
-          "Difference between core and shell zeta to count as unphysical" },
         { "-lb",  FALSE, etBOOL, {&loadBalance_},
           "Try to divide the computational load evenly over helpers." },
         { "-fit", FALSE, etSTR, {&fitString_},
           "Quoted list of parameters to fit,  e.g. 'alpha zeta'." },
         { "-fc_bound",    FALSE, etREAL, {targets->find(eRMS::BOUNDS)->second.weightPtr()},
-          "Force constant in the penalty function for going outside the borders given with the fitting options (see below)." },
-        { "-fc_unphysical",  FALSE, etREAL, {targets->find(eRMS::UNPHYSICAL)->second.weightPtr()},
-          "Force constant in the penalty function for unphysical combinations of parameters. In particular this parameter penalized that shell zeta is larger the core zeta." },
+          "Force constant in the penalty function for going outside the borders given with the fitting options. In particular this parameter penalizes 'unchemical' charges as determined by the bounds set in the force field file. This is applied to charges that are determined using the Alexandria Charge Model only." },
         { "-fc_epot",    FALSE, etREAL, {targets->find(eRMS::EPOT)->second.weightPtr()},
           "Force constant in the penalty function for the deviation of the potential energy of the compound from the reference." },
         { "-fc_inter",    FALSE, etREAL, {targets->find(eRMS::Interaction)->second.weightPtr()},
@@ -171,10 +163,6 @@ void MolGen::addOptions(std::vector<t_pargs>          *pargs,
           "Force constant in the penalty function for the deviation of the magnitude of the hexedecapole components from the reference." },
         { "-fc_esp",   FALSE, etREAL, {targets->find(eRMS::ESP)->second.weightPtr()},
           "Force constant in the penalty function for the deviation of the magnitude of the electrostatic potential from the reference." },
-        { "-fc_charge",  FALSE, etREAL, {targets->find(eRMS::CHARGE)->second.weightPtr()},
-          "Force constant in the penalty function for 'unchemical' charges as determined by the bounds set in the force field file. This is applied to charges that are determined using the Alexandria Charge Model only." },
-        { "-fc_cm5",  FALSE, etREAL, {targets->find(eRMS::CM5)->second.weightPtr()},
-          "Force constant in the penalty function for deviation from CM5 charges." },
         { "-fc_polar",  FALSE, etREAL, {targets->find(eRMS::Polar)->second.weightPtr()},
           "Force constant in the penalty function for deviation of the six independent components of the molecular polarizability tensor from the reference." },
         { "-ener_boltz_temp", FALSE, etREAL, { &ener_boltz_temp_},
@@ -182,9 +170,7 @@ void MolGen::addOptions(std::vector<t_pargs>          *pargs,
         { "-maxpot", FALSE, etINT, { &maxpot_},
           "Fraction of ESP points to use when training on it. Number given in percent." },
         { "-watoms", FALSE, etREAL, { &watoms_},
-          "Weight for the potential on the atoms in training on ESP. Should be 0 in most cases, except possibly when using Slater distributions." },
-        { "-qtype", FALSE, etSTR, {&qTypeString_},
-          "Charge type to use" }
+          "Weight for the potential on the atoms in training on ESP. Should be 0 in most cases, except possibly when using Slater distributions." }
     };
     doAddOptions(pargs, pa_general.size(), pa_general.data());
 }
@@ -199,38 +185,40 @@ bool MolGen::hasMolPropObservable(MolPropObservable mpo) const
     return hasMPO;
 }
 
-bool MolGen::checkOptions(MsgHandler                  *msghandler,
-                          const std::vector<t_filenm> &filenames,
-                          ForceField                  *pd)
+void MolGen::checkOptions(MsgHandler                *msghandler,
+                          ForceField                *pd,
+                          ChargeGenerationAlgorithm  alg)
 {
-    std::set iTypeElec  = { InteractionType::ELECTROSTATICS, InteractionType::ELECTRONEGATIVITYEQUALIZATION,
-                            InteractionType::BONDCORRECTIONS, InteractionType::POLARIZATION };
-    bool Electrostatics = false;
-
     for(auto toFit = fit_.begin(); toFit != fit_.end(); )
     {
         InteractionType itype;
-        if (pd->typeToInteractionType(toFit->first, &itype))
-        {
-            Electrostatics = Electrostatics || isVsite(itype) || (iTypeElec.end() != iTypeElec.find(itype));
-            toFit++;
-        }
-        else
+        if (!pd->typeToInteractionType(toFit->first, &itype))
         {
             msghandler->msg(ACTStatus::Warning,
                             gmx::formatString("Ignoring training parameter '%s' not present in force field.",
                                               toFit->first.c_str()));
             toFit = fit_.erase(toFit);
         }
+        else
+        {
+            std::set<InteractionType> elec = { InteractionType::ELECTROSTATICS, InteractionType::POLARIZATION,
+                                               InteractionType::ELECTRONEGATIVITYEQUALIZATION, InteractionType::BONDCORRECTIONS };
+            if (alg == ChargeGenerationAlgorithm::ESP && (elec.find(itype) != elec.end() || isVsite(itype)))
+            {
+                msghandler->msg(ACTStatus::Warning,
+                                gmx::formatString("Cannot train parameter '%s' in conjunction with using the ESP algorithm for charge generation.",
+                                                  toFit->first.c_str()));
+                toFit = fit_.erase(toFit);
+            }
+            else
+            {
+                msghandler->msg(ACTStatus::Verbose,
+                                gmx::formatString("Found parameter '%s' to train, interactiontype '%s'",
+                                                  toFit->first.c_str(), interactionTypeToString(itype).c_str()));
+                toFit++;
+            }
+        }
     }
-    auto charge_fn = opt2fn_null("-charges", filenames.size(), filenames.data());
-    if (Electrostatics && charge_fn && strlen(charge_fn) > 0)
-    {
-        msghandler->msg(ACTStatus::Error,
-                        "supplying a chargemap cannot be combined with changing parameters related to electrostatic interactions.");
-        return false;
-    }
-    return true;
 }
 
 void MolGen::optionsFinished()
@@ -262,7 +250,7 @@ void MolGen::fillIopt(ForceField *pd,
         if (pd->typeToInteractionType(fit.first, &itype))
         {
             iOpt_.insert({ itype, true });
-            msghandler->msg(ACTStatus::Debug,
+            msghandler->msg(ACTStatus::Verbose,
                             gmx::formatString("Adding parameter %s to fitting\n", fit.first.c_str()));
         }
         else
@@ -367,7 +355,8 @@ void MolGen::checkDataSufficiency(MsgHandler *msghandler,
             // parameters. That means that if there is no support in the
             // training set for a compound, we can not compute charges
             // or other parameters for the Test or Ignore set either.
-            if (mol.datasetType() != iMolSelect::Train)
+            if (mol.datasetType() != iMolSelect::Train ||
+                !mol.topology())
             {
                 continue;
             }
@@ -560,34 +549,60 @@ void MolGen::checkDataSufficiency(MsgHandler *msghandler,
         {
             // Now we check all molecules, including the Test and Ignore
             // set.
-            bool keep = true;
-            auto myatoms = mol.topology()->atoms();
-            for(size_t i = 0; i < myatoms.size(); i++)
+            bool keep = mol.topology() != nullptr;
+            if (keep)
             {
-                auto atype = pd->findParticleType(myatoms[i].ffType());
-                for(auto &itype : atomicItypes)
+                auto myatoms = mol.topology()->atoms();
+                for(size_t i = 0; i < myatoms.size(); i++)
                 {
-                    if (optimize(itype))
+                    auto atype = pd->findParticleType(myatoms[i].ffType());
+                    for(auto &itype : atomicItypes)
                     {
-                        if (atype->hasInteractionType(itype))
+                        if (optimize(itype))
                         {
-                            auto fplist = pd->findForces(itype);
-                            auto ztype  = atype->interactionTypeToIdentifier(itype);
-                            if (!ztype.id().empty())
+                            if (atype->hasInteractionType(itype))
                             {
-                                for(auto &force : fplist->findParametersConst(ztype))
+                                auto fplist = pd->findForces(itype);
+                                auto ztype  = atype->interactionTypeToIdentifier(itype);
+                                if (!ztype.id().empty())
                                 {
-                                    if (force.second.isMutable() &&
-                                        force.second.ntrain() < mindata_)
+                                    for(auto &force : fplist->findParametersConst(ztype))
+                                    {
+                                        if (force.second.isMutable() &&
+                                            force.second.ntrain() < mindata_)
+                                        {
+                                            if (msghandler->debug())
+                                            {
+                                                msghandler->msg(ACTStatus::Debug,
+                                                                gmx::formatString("No support for %s - %s in %s. Ntrain is %d, should be at least %d.\n",
+                                                                                  ztype.id().c_str(),
+                                                                                  interactionTypeToString(itype).c_str(),
+                                                                                  mol.getMolname().c_str(),
+                                                                                  force.second.ntrain(),
+                                                                                  mindata_));
+                                            }
+                                            keep = false;
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                            else if (itype == InteractionType::CHARGE)
+                            {
+                                std::string ccc("charge");
+                                if (atype->hasParameter(ccc))
+                                {
+                                    auto p = atype->parameter(ccc);
+                                    if (p->isMutable() && p->ntrain() < mindata_)
                                     {
                                         if (msghandler->debug())
                                         {
                                             msghandler->msg(ACTStatus::Debug,
                                                             gmx::formatString("No support for %s - %s in %s. Ntrain is %d, should be at least %d.\n",
-                                                                              ztype.id().c_str(),
+                                                                              ccc.c_str(),
                                                                               interactionTypeToString(itype).c_str(),
                                                                               mol.getMolname().c_str(),
-                                                                              force.second.ntrain(),
+                                                                              p->ntrain(),
                                                                               mindata_));
                                         }
                                         keep = false;
@@ -596,38 +611,15 @@ void MolGen::checkDataSufficiency(MsgHandler *msghandler,
                                 }
                             }
                         }
-                        else if (itype == InteractionType::CHARGE)
+                        if (!keep)
                         {
-                            std::string ccc("charge");
-                            if (atype->hasParameter(ccc))
-                            {
-                                auto p = atype->parameter(ccc);
-                                if (p->isMutable() && p->ntrain() < mindata_)
-                                {
-                                    if (msghandler->debug())
-                                    {
-                                        msghandler->msg(ACTStatus::Debug,
-                                                        gmx::formatString("No support for %s - %s in %s. Ntrain is %d, should be at least %d.\n",
-                                                                          ccc.c_str(),
-                                                                          interactionTypeToString(itype).c_str(),
-                                                                          mol.getMolname().c_str(),
-                                                                          p->ntrain(),
-                                                                          mindata_));
-                                    }
-                                    keep = false;
-                                    break;
-                                }
-                            }
+                            break;
                         }
                     }
                     if (!keep)
                     {
                         break;
                     }
-                }
-                if (!keep)
-                {
-                    break;
                 }
             }
             if (!keep)
@@ -710,10 +702,10 @@ static double computeCost(const ACTMol                         *actmol,
                     auto mpo = MolPropObservable::POTENTIAL;
                     if (myexp.hasProperty(mpo))
                     {
-                        auto eee = myexp.propertyConst(mpo);
+                        auto &eee = myexp.propertyConst(mpo);
                         for (size_t k = 0; k < eee.size(); k++)
                         {
-                            auto esp = static_cast<const ElectrostaticPotential *>(eee[k]);
+                            auto esp = static_cast<const ElectrostaticPotential *>(eee[k].get());
                             w += esp->V().size();
                         }
                     }
@@ -742,17 +734,14 @@ static double computeCost(const ACTMol                         *actmol,
                 w += 7*gmx::square(myexp.NAtom());
                 break;
             case eRMS::BOUNDS:
-            case eRMS::UNPHYSICAL:
                 // Too small to measure
                 break;
-            case eRMS::CHARGE:
             case eRMS::MU:
             case eRMS::QUAD:
             case eRMS::OCT:
             case eRMS::HEXADEC:
             case eRMS::FREQUENCY:
             case eRMS::INTENSITY:
-            case eRMS::CM5:
             case eRMS::TOT:
                 break;
             }
@@ -765,14 +754,14 @@ size_t MolGen::Read(MsgHandler                          *msghandler,
                     const std::vector<t_filenm>         &filenms,
                     ForceField                          *pd,
                     const MolSelect                     &gms,
-                    const std::map<eRMS, FittingTarget> &targets)
+                    const std::map<eRMS, FittingTarget> &targets,
+                    CompoundReader                      *compR)
 {
     int                              nwarn    = 0;
     std::map<ACTMessage, int>         imm_count;
     ACTMessage                        imm      = ACTMessage::OK;
     std::vector<alexandria::MolProp> mp;
-    chargeMap                        qmap;
-    auto forceComp = new ForceComputer();
+    ForceComputer forceComp;
     print_memory_usage(debug);
 
     //  Now  we have read the forcefield and spread it to processors
@@ -781,37 +770,11 @@ size_t MolGen::Read(MsgHandler                          *msghandler,
     auto molfn = opt2fn("-mp", filenms.size(),filenms.data());
     if (cr_->isMaster())
     {
-        MolPropRead(molfn, &mp);
-        auto qmapfn = opt2fn_null("-charges", filenms.size(), filenms.data());
-        if (qmapfn && strlen(qmapfn) > 0)
-        {
-            auto qt = qType::ACM;
-            if (nullptr != qTypeString_)
-            {
-                qt = stringToQtype(qTypeString_);
-            }
-            std::set<std::string> lookup;
-            for(const auto &ims : gms.imolSelect())
-            {
-                // Split potential dimers since we need to get charges of
-                // monomers in the charge map only.
-                for(const auto &comp : split(ims.iupac(), '#'))
-                {
-                    lookup.insert(comp);
-                }
-            }
-            qmap = fetchChargeMap(msghandler, pd, forceComp, qmapfn, lookup, qt);
-        }
+        MolPropRead(msghandler, molfn, &mp);
         // Even if we did not read a file, we have to tell the other processors
         // about it.
-        broadcastChargeMap(cr_, &qmap);
-        msghandler->msg(ACTStatus::Info,
-                        gmx::formatString("Read %zu compounds from %s", mp.size(), molfn));
-        if (qmap.size() > 0)
-        {
-            msghandler->msg(ACTStatus::Info,
-                            gmx::formatString("Read chargemap containing %lu entries from %s", qmap.size(), qmapfn));
-        }
+        broadcastChargeMap(cr_, compR->chargeMap());
+
         print_memory_usage(debug);
         for (auto mpi = mp.begin(); mpi < mp.end(); )
         {
@@ -837,7 +800,7 @@ size_t MolGen::Read(MsgHandler                          *msghandler,
     else
     {
         // Other processors receive the qmap from the master.
-        broadcastChargeMap(cr_, &qmap);
+        broadcastChargeMap(cr_, compR->chargeMap());
     }
     /* Generate topology for Molecules and distribute them among the nodes */
     std::string      method, basis;
@@ -858,8 +821,8 @@ size_t MolGen::Read(MsgHandler                          *msghandler,
             { MolPropObservable::CHARGE,            iqmType::QM }
         };
     int  root  = 0;
-    auto alg   = pd->chargeGenerationAlgorithm();
-    auto qtype = qType::Calc;
+    auto qmap  = compR->chargeMapConst();
+    auto alg   = compR->algorithm();
     if (cr_->isMaster())
     {
         msghandler->msg(ACTStatus::Info,
@@ -888,9 +851,9 @@ size_t MolGen::Read(MsgHandler                          *msghandler,
                 // Reset status to not let one compound ruin for all the others
                 msghandler->resetStatus();
                 // If we got here, we found the correct molprop
-                alexandria::ACTMol actmol;
                 msghandler->msg(ACTStatus::Debug, mpi->getMolname());
-
+                // Copy the data
+                alexandria::ACTMol actmol;
                 actmol.Merge(&(*mpi));
                 actmol.GenerateTopology(msghandler, pd, missingParameters::Error);
                 if (!msghandler->ok())
@@ -919,13 +882,14 @@ size_t MolGen::Read(MsgHandler                          *msghandler,
                     {
                         msghandler->msg(ACTStatus::Warning, ACTMessage::NoMolpropCharges, actmol.getMolname());
                     }
+                    std::vector<gmx::RVec> forces(actmol.atomsConst().size());
+                    actmol.updateQprops(pd, &forceComp, &forces);
                 }
                 else
                 {
-                    std::vector<double> dummy;
                     std::vector<gmx::RVec> forces(actmol.atomsConst().size());
-                    actmol.GenerateCharges(msghandler, pd, forceComp, alg,
-                                           qtype, dummy, &coords, &forces, true);
+                    actmol.generateCharges(msghandler, pd, &forceComp, alg,
+                                           &coords, &forces, true);
                 }
                 if (!msghandler->ok())
                 {
@@ -1091,9 +1055,10 @@ size_t MolGen::Read(MsgHandler                          *msghandler,
             }
             actmol.GenerateTopology(msghandler, pd, missingParameters::Error);
 
-            std::vector<gmx::RVec> coords = actmol.xOriginal();
+            std::vector<gmx::RVec> coords;
             if (msghandler->ok())
             {
+                coords = actmol.xOriginal();
                 actmol.getExpProps(msghandler, pd, iqmMap, watoms_, maxpot_);
             }
             if (msghandler->ok())
@@ -1115,9 +1080,8 @@ size_t MolGen::Read(MsgHandler                          *msghandler,
                 else
                 {
                     std::vector<gmx::RVec> forces(actmol.atomsConst().size());
-                    std::vector<double> dummy;
-                    actmol.GenerateCharges(msghandler, pd, forceComp, alg,
-                                           qtype, dummy, &coords, &forces, true);
+                    actmol.generateCharges(msghandler, pd, &forceComp, alg,
+                                           &coords, &forces, true);
                 }
             }
             if (cr_->isMiddleMan())

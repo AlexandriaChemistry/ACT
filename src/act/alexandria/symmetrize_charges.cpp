@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2023
+ * Copyright (C) 2014-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -71,42 +71,46 @@ void get_symmetrized_charges(Topology         *topology,
     }
     else
     {
-        auto &bonds = topology->entry(InteractionType::BONDS);
-        for (auto symcharges = pd->getSymchargesBegin();
-             symcharges != pd->getSymchargesEnd(); symcharges++)
+        auto ib = InteractionType::BONDS;
+        if (topology->hasEntry(ib))
         {
-            for (size_t i = 0; i < atoms->size(); i++)
+            auto &bonds = topology->entry(ib);
+            for (auto symcharges = pd->getSymchargesBegin();
+                 symcharges != pd->getSymchargesEnd(); symcharges++)
             {
-                if (symcharges->getCentral().compare((*atoms)[i].element()) == 0)
+                for (size_t i = 0; i < atoms->size(); i++)
                 {
-                    int              hsmin = -1;
-                    std::vector<int> hs;
-                    for (const auto &jj : bonds)
+                    if (symcharges->getCentral().compare((*atoms)[i].element()) == 0)
                     {
-                        size_t ai = jj->atomIndex(0);
-                        size_t aj = jj->atomIndex(1);
-                        
-                        if (ai == i && 
-                            symcharges->getAttached().compare((*atoms)[aj].element()) == 0)
+                        int              hsmin = -1;
+                        std::vector<int> hs;
+                        for (const auto &jj : bonds)
                         {
-                            hs.push_back(aj);
+                            size_t ai = jj->atomIndex(0);
+                            size_t aj = jj->atomIndex(1);
+                            
+                            if (ai == i && 
+                                symcharges->getAttached().compare((*atoms)[aj].element()) == 0)
+                            {
+                                hs.push_back(aj);
+                            }
+                            else if (aj == i &&
+                                     symcharges->getAttached().compare((*atoms)[ai].element()) == 0)
+                            {
+                                hs.push_back(ai);
+                            }
+                            if ((hs.size() > 0) && (hsmin == -1 || hs.back() < hsmin))
+                            {
+                                hsmin = hs.back();
+                            }
                         }
-                        else if (aj == i &&
-                                 symcharges->getAttached().compare((*atoms)[ai].element()) == 0)
+                        if ((static_cast<int>(hs.size()) == symcharges->getNumattach()) &&
+                            (hsmin != -1))
                         {
-                            hs.push_back(ai);
-                        }
-                        if ((hs.size() > 0) && (hsmin == -1 || hs.back() < hsmin))
-                        {
-                            hsmin = hs.back();
-                        }
-                    }
-                    if ((static_cast<int>(hs.size()) == symcharges->getNumattach()) &&
-                        (hsmin != -1))
-                    {
-                        for (int k = 0; k < symcharges->getNumattach(); k++)
-                        {
-                            (*sym_charges)[hs[k]] = hsmin;
+                            for (int k = 0; k < symcharges->getNumattach(); k++)
+                            {
+                                (*sym_charges)[hs[k]] = hsmin;
+                            }
                         }
                     }
                 }

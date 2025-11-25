@@ -121,9 +121,9 @@ namespace alexandria
         //! Default force constant for Urey-Bradley
         real                                               kub_       = 30000;
         //! Tolerance for warning about large sigma in bond-lengths (pm)
-        real                                               bond_tol_  = 5;
+        real                                               bond_tol_  = 8;
         //! Tolerance for warning about large sigma in angles (degrees)
-        real                                               angle_tol_ = 5;
+        real                                               angle_tol_ = 8;
         //! Scaling factor for setting min and max for force parameters
         real                                               factor_    = 0.5;
         //! Scaling factor for setting min and max for bond lengths
@@ -144,12 +144,27 @@ namespace alexandria
          * \param[in] mmi     Molecule structure
          * \param[in] bondId  The bond identifier
          * \param[in] atomid  List of atoms involved in the interaction
+         * \param[in] x       The coordinates
           */
-        void addBonded(MsgHandler             *msghandler,
-                       InteractionType         iType,
-                       const ACTMol           &mmi,
-                       const Identifier       &bondId,         
-                       const std::vector<int> &atomid);
+        void addBonded(MsgHandler                   *msghandler,
+                       InteractionType               iType,
+                       const ACTMol                 &mmi,
+                       const Identifier             &bondId,         
+                       const std::vector<int>       &atomid,
+                       const std::vector<gmx::RVec> &x);
+
+        /*! \brief Add bonds etc. for one molecule and list of atoms
+         * \param[in] msghandler Message handler
+         * \param[in] iType   InteractionType
+         * \param[in] mmi     Molecule structure
+         * \param[in] bondId  The bond identifier
+         * \param[in] atomid  List of atoms involved in the interaction
+          */
+        void addBondeds(MsgHandler             *msghandler,
+                        InteractionType         iType,
+                        const ACTMol           &mmi,
+                        const Identifier       &bondId,         
+                        const std::vector<int> &atomid);
 
     public:
         //! Constructor
@@ -174,16 +189,16 @@ namespace alexandria
              
         /*! \brief Extract bond lengths, angles etc. from molecules
          * \param[in]  msghandler Message handler
-         * \param[in]  mp     MolProp array
+         * \param[in]  mp     MolProp array (will be destroyed)
          * \param[out] actmols ACTMol array will be filled here
          * \param[in]  pd     Force field structure
          * \param[in]  gms    Selection of compounds
          */                          
-        void extractGeometries(MsgHandler                 *msghandler,
-                               const std::vector<MolProp> &mp,
-                               std::vector<ACTMol>        *actmols,
-                               ForceField                 *pd,
-                               const MolSelect            &gms);
+        void extractGeometries(MsgHandler           *msghandler,
+                               std::vector<MolProp> *mp,
+                               std::vector<ACTMol>  *actmols,
+                               ForceField           *pd,
+                               const MolSelect      &gms);
 
         /*! \brief Write how many bonds etc. were found
          * \param[in] fp File to write to

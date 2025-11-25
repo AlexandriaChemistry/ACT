@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2024
+ * Copyright (C) 2014-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -41,6 +41,7 @@
 #include <string>
 #include <vector>
 
+#include "act/basics/msg_handler.h"
 #include "act/molprop/composition.h"
 #include "act/utility/communicationrecord.h"
 #include "act/utility/units.h"
@@ -267,7 +268,8 @@ bool MolProp::renumberResidues()
     return true;
 }
 
-void MolProp::generateFragments(const ForceField *pd)
+void MolProp::generateFragments(MsgHandler       *msg_handler,
+                                const ForceField *pd)
 {
     auto catom = LastExperiment()->calcAtomConst();
     int  natom = catom.size();
@@ -339,10 +341,11 @@ void MolProp::generateFragments(const ForceField *pd)
         // Add atom to set
         fragMols[fragI].insert(i);
     }
-    if (debug)
+    if (msg_handler && msg_handler->debug())
     {
-        fprintf(debug, "There are %zu distinct compounds in %d atoms and %zu bonds.\n", fragMols.size(),
-                natom, bond_.size());
+        msg_handler->writeDebug(gmx::formatString("There are %zu distinct compounds in %d atoms and %zu bonds.\n",
+                                                  fragMols.size(),
+                                                  natom, bond_.size()));
     }
     int  fi    = 0;
     for(auto &fm : fragMols)
@@ -434,7 +437,7 @@ std::vector<std::string> MolProp::sameCompound(const MolProp *other)
     return warnings;
 }
 
-std::vector<std::string> MolProp::Merge(const MolProp *src)
+std::vector<std::string> MolProp::Merge(MolProp *src)
 {
     std::vector<std::string> warnings;
     std::string              stmp;
@@ -479,11 +482,9 @@ std::vector<std::string> MolProp::Merge(const MolProp *src)
     }
     if (NBond() == 0)
     {
-        for (auto &bi : src->bondsConst())
-        {
-            alexandria::Bond bb(bi.aI(), bi.aJ(), bi.bondOrder());
-            AddBond(bb);
-        }
+        std::copy(src->bondsConst().begin(), 
+                  src->bondsConst().end(),
+                  std::back_inserter(bond_));
     }
     else
     {
@@ -506,40 +507,11 @@ std::vector<std::string> MolProp::Merge(const MolProp *src)
             }
         }
     }
-
-    for (auto &ei : src->experimentConst())
+    for(auto ee = src->experiment()->begin(); ee != src->experiment()->end(); ++ee)
     {
-        if (dsExperiment == ei.dataSource())
-        {
-            Experiment ex(ei.getReference(), ei.getConformation());
-            int nwarn = ex.Merge(&ei);
-            if (nwarn > 0)
-            {
-                warnings.push_back("Problem adding experiment");
-            }
-            else
-            {
-                AddExperiment(ex);
-            }
-        }
-        else
-        {
-            auto jtype = ei.getJobtype();
-            Experiment ca(ei.getProgram(), ei.getMethod(),
-                          ei.getBasisset(), ei.getReference(),
-                          ei.getConformation(), ei.getDatafile(),
-                          jtype);
-            int nwarn = ca.Merge(&ei);
-            if (nwarn > 0)
-            {
-                warnings.push_back("Problem adding calculation");
-            }
-            else
-            {
-                AddExperiment(ca);
-            }
-        }
+        exper_.push_back(std::move(*ee));
     }
+
     return warnings;
 }
 
@@ -626,9 +598,30 @@ Experiment *MolProp::findExperiment(JobType job)
     return nullptr;
 }
 
-const GenericProperty *MolProp::qmProperty(MolPropObservable  mpo, 
-                                           double             T,
-                                           JobType            jt) const
+bool MolProp::hasQMProperty(MolPropObservable mpo, 
+                            double            T,
+                            JobType           jt) const
+{
+    for(auto ei = exper_.begin(); ei < exper_.end(); ++ei)
+    {
+        if (ei->hasProperty(mpo))
+        {
+            for (const auto &pp : ei->propertyConst(mpo))
+            { 
+                if (ei->getJobtype() == jt &&
+                    bCheckTemperature(T, pp->getTemperature()))
+                {
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
+}
+
+const std::unique_ptr<GenericProperty> &MolProp::qmProperty(MolPropObservable  mpo, 
+                                                            double             T,
+                                                            JobType            jt) const
 {
     for(auto ei = exper_.begin(); ei < exper_.end(); ++ei)
     {
@@ -644,11 +637,11 @@ const GenericProperty *MolProp::qmProperty(MolPropObservable  mpo,
             }
         }
     }
-    return nullptr;
+    GMX_THROW(gmx::InvalidInputError(gmx::formatString("No such QM property %s", mpo_name(mpo))));
 }
 
-const GenericProperty *MolProp::expProperty(MolPropObservable  mpo, 
-                                            double             T) const
+const std::unique_ptr<GenericProperty> &MolProp::expProperty(MolPropObservable  mpo, 
+                                                             double             T) const
 {
     for(auto ei = exper_.begin(); ei < exper_.end(); ++ei)
     {
@@ -664,12 +657,12 @@ const GenericProperty *MolProp::expProperty(MolPropObservable  mpo,
             }
         }
     }
-    return nullptr;
+    GMX_THROW(gmx::InvalidInputError(gmx::formatString("No such Experimental property %s", mpo_name(mpo))));
 }
 
 CommunicationStatus MolProp::Send(const CommunicationRecord *cr, int dest) const
 {
-    CommunicationStatus                cs = CommunicationStatus::OK;
+    CommunicationStatus cs = CommunicationStatus::OK;
 
     /* Generic stuff */
     if (CommunicationStatus::SEND_DATA == cr->send_data(dest))
@@ -704,10 +697,9 @@ CommunicationStatus MolProp::Send(const CommunicationRecord *cr, int dest) const
                 {
                     std::string sii(si);
                     cr->send(dest, sii);
-                    if (nullptr != debug)
+                    if (cr->mh() && cr->mh()->debug())
                     {
-                        fprintf(debug, "Sent category %s\n", si.c_str());
-                        fflush(debug);
+                        cr->mh()->writeDebug(gmx::formatString("Sent category %s\n", si.c_str()));
                     }
                 }
             }
@@ -738,11 +730,10 @@ CommunicationStatus MolProp::Send(const CommunicationRecord *cr, int dest) const
                 }
             }
         }
-        if (nullptr != debug)
+        if (cr->mh() && cr->mh()->debug())
         {
-            fprintf(debug, "Sent MolProp %s, status %s\n",
-                    getMolname().c_str(), cs_name(cs));
-            fflush(debug);
+            cr->mh()->writeDebug(gmx::formatString("Sent MolProp %s, status %s\n",
+                                                   getMolname().c_str(), cs_name(cs)));
         }
     }
     return cs;
@@ -800,10 +791,9 @@ CommunicationStatus MolProp::BroadCast(const CommunicationRecord *cr,
                 if (!str.empty())
                 {
                     AddCategory(str);
-                    if (nullptr != debug)
+                    if (cr->mh() && cr->mh()->debug())
                     {
-                        fprintf(debug, "Received a category %s\n", str.c_str());
-                        fflush(debug);
+                        cr->mh()->writeDebug(gmx::formatString("Received a category %s\n", str.c_str()));
                     }
                 }
                 else
@@ -845,11 +835,10 @@ CommunicationStatus MolProp::BroadCast(const CommunicationRecord *cr,
             {
                 exper_[n].BroadCast(cr, root, comm);
             }
-            if (debug)
+            if (cr->mh() && cr->mh()->debug())
             {
-                fprintf(debug, "Broadcast %zu experiments for mol %s\n",
-                        exper_.size(), getMolname().c_str());
-                fflush(debug);
+                cr->mh()->writeDebug(gmx::formatString("Broadcast %zu experiments for mol %s\n",
+                                                       exper_.size(), getMolname().c_str()));
             }
         }
         else
@@ -860,14 +849,13 @@ CommunicationStatus MolProp::BroadCast(const CommunicationRecord *cr,
                 cs = ex.BroadCast(cr, root, comm);
                 if (CommunicationStatus::OK == cs)
                 {
-                    AddExperiment(ex);
+                    AddExperiment(std::move(ex));
                 }
             }
-            if (nullptr != debug)
+            if (cr->mh() && cr->mh()->debug())
             {
-                fprintf(debug, "Received %zu experiments from %d for mol %s\n",
-                        exper_.size(), root, getMolname().c_str());
-                fflush(debug);
+                cr->mh()->writeDebug(gmx::formatString("Received %zu experiments from %d for mol %s\n",
+                                                       exper_.size(), root, getMolname().c_str()));
             }
         }
     }
@@ -894,9 +882,9 @@ CommunicationStatus MolProp::Receive(const CommunicationRecord *cr, int src)
         cr->recv(src, &Nexper);
         cr->recv(src, &Nfrag);
 
-        if (nullptr != debug)
+        if (cr->mh() && cr->mh()->debug())
         {
-            fprintf(debug, "Got molname %s\n", getMolname().c_str());
+            cr->mh()->writeDebug(gmx::formatString("Got molname %s\n", getMolname().c_str()));
         }
         //! Receive Bonds
         cs = CommunicationStatus::OK;
@@ -920,10 +908,9 @@ CommunicationStatus MolProp::Receive(const CommunicationRecord *cr, int src)
                 if (!str.empty())
                 {
                     AddCategory(str);
-                    if (nullptr != debug)
+                    if (cr->mh() && cr->mh()->debug())
                     {
-                        fprintf(debug, "Received a category %s\n", str.c_str());
-                        fflush(debug);
+                        cr->mh()->writeDebug(gmx::formatString("Received a category %s\n", str.c_str()));
                     }
                 }
                 else
@@ -951,17 +938,16 @@ CommunicationStatus MolProp::Receive(const CommunicationRecord *cr, int src)
             cs = ex.Receive(cr, src);
             if (CommunicationStatus::OK == cs)
             {
-                AddExperiment(ex);
+                AddExperiment(std::move(ex));
             }
         }
 
-        if (nullptr != debug)
+        if (cr->mh() && cr->mh()->debug())
         {
-            fprintf(debug, "Received %zu experiments from %d for mol %s\n",
-                    exper_.size(), src, getMolname().c_str());
-            fprintf(debug, "Received MolProp %s, status %s\n",
-                    getMolname().c_str(), cs_name(cs));
-            fflush(debug);
+            cr->mh()->writeDebug(gmx::formatString("Received %zu experiments from %d for mol %s\n",
+                                                   exper_.size(), src, getMolname().c_str()));
+            cr->mh()->writeDebug(gmx::formatString("Received MolProp %s, status %s\n",
+                                                   getMolname().c_str(), cs_name(cs)));
         }
     }
     return cs;

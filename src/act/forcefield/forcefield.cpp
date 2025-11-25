@@ -167,56 +167,78 @@ bool ForceField::typeToInteractionType(const std::string &type,
 {
     if (type2Itype_.empty())
     {
-        type2Itype_.insert({"charge", InteractionType::CHARGE});
+        type2Itype_.insert({InteractionType::CHARGE, { "charge" } });
         for(const auto &fs : forcesConst())
         {
             auto iType = fs.first;
+            std::set<std::string> params;
             for(const auto &fp : fs.second.parametersConst())
             {
                 for(const auto &myfp : fp.second)
                 {
-                    auto mytype = myfp.first;
-                    if (type2Itype_.find(mytype) != type2Itype_.end() &&
-                        type2Itype_.find(mytype)->second != iType)
-                    {
-                        GMX_THROW(gmx::InvalidInputError(gmx::formatString("Parameter type %s used for more than one InteractionType (%s and %s).",
-                                                                           mytype.c_str(),
-                                                                           interactionTypeToString(iType).c_str(),
-                                                                           interactionTypeToString(type2Itype_.find(mytype)->second).c_str()).c_str()));
-                    }
-                    type2Itype_.insert({mytype, iType});
+                    params.insert(myfp.first);
                 }
             }
+            type2Itype_.insert({iType, params});
         }
     }
-    if (type2Itype_.find(type) == type2Itype_.end())
+    size_t colon = type.find(":");
+    if (colon != std::string::npos)
     {
-        return false;
+        auto ittt = type.substr(0, colon);
+        InteractionType itp;
+        if (stringToInteractionType(ittt, &itp))
+        {
+            auto iii  = type2Itype_.find(itp);
+            if (iii == type2Itype_.end())
+            {
+                GMX_THROW(gmx::InvalidInputError(gmx::formatString("No such interaction type '%s' in force field", ittt.c_str()).c_str()));
+            }
+            auto ptype = type.substr(colon+1, type.size());
+            if (iii->second.find(ptype) == iii->second.end())
+            {
+                GMX_THROW(gmx::InvalidInputError(gmx::formatString("No such parameter '%s' for interaction type '%s' in force field",
+                                                                   ptype.c_str(), ittt.c_str()).c_str()));
+            }
+            *itype = itp;
+            return true;
+        }
+        else
+        {
+            GMX_THROW(gmx::InvalidInputError(gmx::formatString("No such interaction type '%s' in force field", ittt.c_str()).c_str()));
+        }
     }
     else
     {
-        *itype = type2Itype_.find(type)->second;
-        return true;
+        for (auto tt : type2Itype_)
+        {
+            if (tt.second.find(type) != tt.second.end())
+            {
+                *itype = tt.first;
+                return true;
+            }
+        }
+        return false;
     }
 }
 
-ChargeGenerationAlgorithm ForceField::chargeGenerationAlgorithm() const
+void ForceField::guessChargeGenerationAlgorithm()
 {
     if (interactionPresent(InteractionType::ELECTRONEGATIVITYEQUALIZATION))
     {
         // TODO: Add check for number of interactions?
         if (interactionPresent(InteractionType::BONDCORRECTIONS))
         {
-            return ChargeGenerationAlgorithm::SQE;
+            ChargeGenerationAlgorithm_ = ChargeGenerationAlgorithm::SQE;
         }
         else
         {
-            return ChargeGenerationAlgorithm::EEM;
+            ChargeGenerationAlgorithm_ = ChargeGenerationAlgorithm::EEM;
         }
     }
     else
     {
-        return ChargeGenerationAlgorithm::NONE;
+        ChargeGenerationAlgorithm_ =  ChargeGenerationAlgorithm::NONE;
     } 
 }
 
@@ -435,7 +457,11 @@ CommunicationStatus ForceField::BroadCast(const CommunicationRecord *cr,
                     ForceFieldParameterList fs;
                     std::string             key;
                     cr->bcast(&key, comm);
-                    InteractionType iType = stringToInteractionType(key.c_str());
+                    InteractionType iType;
+                    if (!stringToInteractionType(key, &iType))
+                    {
+                        GMX_THROW(gmx::InternalError("Incorrect interaction type"));
+                    }
                     cs                    = fs.BroadCast(cr, root, comm);
                     if (CommunicationStatus::OK == cs && cr->rank() != root)
                     {
@@ -512,7 +538,11 @@ CommunicationStatus ForceField::Receive(const CommunicationRecord *cr, int src)
             ForceFieldParameterList fs;
             std::string             key;
             cr->recv(src, &key);
-            InteractionType iType = stringToInteractionType(key.c_str());
+            InteractionType iType;
+            if (!stringToInteractionType(key, &iType))
+            {
+                GMX_THROW(gmx::InternalError("Incorrect interaction type"));
+            }
             cs                    = fs.Receive(cr, src);
             if (CommunicationStatus::OK == cs)
             {

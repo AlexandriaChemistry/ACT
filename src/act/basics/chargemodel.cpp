@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2019
+ * Copyright (C) 2019,2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -44,26 +44,26 @@
 namespace alexandria
 {
 
-std::map<ChargeType, const std::string> ct2Name =
+std::map<ChargeDistributionType, const std::string> ct2Name =
     {
-        { ChargeType::Point,    "Point"    },
-        { ChargeType::Gaussian, "Gaussian" },
-        { ChargeType::Slater,   "Slater"   }
+        { ChargeDistributionType::Point,    "Point"    },
+        { ChargeDistributionType::Gaussian, "Gaussian" },
+        { ChargeDistributionType::Slater,   "Slater"   }
     };
 
-std::map<const std::string, ChargeType> name2CT;
+std::map<const std::string, ChargeDistributionType> name2CT;
 
 std::vector<std::string> qdnames()
 {
     std::vector<std::string> qdn = {
-        ct2Name[ChargeType::Point],
-        ct2Name[ChargeType::Gaussian],
-        ct2Name[ChargeType::Slater]
+        ct2Name[ChargeDistributionType::Point],
+        ct2Name[ChargeDistributionType::Gaussian],
+        ct2Name[ChargeDistributionType::Slater]
     };
     return qdn;
 }
 
-ChargeType name2ChargeType(const std::string &name)
+ChargeDistributionType name2ChargeDistributionType(const std::string &name)
 {
     if (name2CT.empty())
     {
@@ -80,7 +80,7 @@ ChargeType name2ChargeType(const std::string &name)
     return cc->second;
 }
 
-const std::string &chargeTypeName(ChargeType ct)
+const std::string &chargeDistributionTypeName(ChargeDistributionType ct)
 {
     auto cc = ct2Name.find(ct);
 

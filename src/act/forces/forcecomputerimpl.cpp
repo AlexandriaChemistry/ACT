@@ -60,11 +60,11 @@ static inline void pairforces(double                  fscalar,
     f[indices[1]][ZZ] -= fijZ;
 }
 
-static void computeLJ12_6(const TopologyEntryVector             &pairs,
-                          gmx_unused const std::vector<ActAtom> &atoms,
-                          const std::vector<gmx::RVec>          *coordinates,
-                          std::vector<gmx::RVec>                *forces,
-                          std::map<InteractionType, double>     *energies)
+static double computeLJ12_6(const TopologyEntryVector             &pairs,
+                            gmx_unused const std::vector<ActAtom> &atoms,
+                            const std::vector<gmx::RVec>          *coordinates,
+                            std::vector<gmx::RVec>                *forces,
+                            std::map<InteractionType, double>     *energies)
 {
     double erep  = 0;
     double edisp = 0;
@@ -73,8 +73,8 @@ static void computeLJ12_6(const TopologyEntryVector             &pairs,
     {
         // Get the parameters. We have to know their names to do this.
         auto &params    = b->params();
-        auto sig_ij     = params[lj12_6SIGMA_IJ];
-        auto eps_ij     = params[lj12_6EPSILON_IJ];
+        auto sig_ij     = params[lj12_6SIGMA];
+        auto eps_ij     = params[lj12_6EPSILON];
         auto sig6       = gmx::square(sig_ij*sig_ij*sig_ij);
         auto c6         = 4*eps_ij*sig6;
         auto c12        = c6*sig6;
@@ -106,13 +106,15 @@ static void computeLJ12_6(const TopologyEntryVector             &pairs,
     }
     energies->insert({InteractionType::EXCHANGE, erep});
     energies->insert({InteractionType::DISPERSION, edisp});
+
+    return erep + edisp;
 }
 
-static void computeLJ8_6(const TopologyEntryVector             &pairs,
-                         gmx_unused const std::vector<ActAtom> &atoms,
-                         const std::vector<gmx::RVec>          *coordinates,
-                         std::vector<gmx::RVec>                *forces,
-                         std::map<InteractionType, double>     *energies)
+static double computeLJ8_6(const TopologyEntryVector             &pairs,
+                           gmx_unused const std::vector<ActAtom> &atoms,
+                           const std::vector<gmx::RVec>          *coordinates,
+                           std::vector<gmx::RVec>                *forces,
+                           std::map<InteractionType, double>     *energies)
 {   
     double erep  = 0;
     double edisp = 0;
@@ -121,8 +123,8 @@ static void computeLJ8_6(const TopologyEntryVector             &pairs,
     {   
         // Get the parameters. We have to know their names to do this.
         auto &params    = b->params();
-        auto sig_ij     = params[lj8_6SIGMA_IJ];
-        auto eps_ij     = params[lj8_6EPSILON_IJ];
+        auto sig_ij     = params[lj8_6SIGMA];
+        auto eps_ij     = params[lj8_6EPSILON];
         auto sig6       = gmx::square(sig_ij*sig_ij*sig_ij);
         auto c6         = 4*eps_ij*sig6;
         auto c8         = 0.75*c6*sig_ij*sig_ij;
@@ -154,13 +156,15 @@ static void computeLJ8_6(const TopologyEntryVector             &pairs,
     }
     energies->insert({InteractionType::EXCHANGE, erep});
     energies->insert({InteractionType::DISPERSION, edisp});
+
+    return erep + edisp;
 } 
 
-static void computeLJ14_7(const TopologyEntryVector             &pairs,
-                          gmx_unused const std::vector<ActAtom> &atoms,
-                          const std::vector<gmx::RVec>          *coordinates,
-                          std::vector<gmx::RVec>                *forces,
-                          std::map<InteractionType, double>     *energies)
+static double computeLJ14_7(const TopologyEntryVector             &pairs,
+                            gmx_unused const std::vector<ActAtom> &atoms,
+                            const std::vector<gmx::RVec>          *coordinates,
+                            std::vector<gmx::RVec>                *forces,
+                            std::map<InteractionType, double>     *energies)
 {
     double erep  = 0;
     double edisp = 0;
@@ -169,8 +173,8 @@ static void computeLJ14_7(const TopologyEntryVector             &pairs,
     {
         // Get the parameters. We have to know their names to do this.
         auto &params    = b->params();
-        auto sigma      = params[lj14_7SIGMA_IJ];
-        auto epsilon    = params[lj14_7EPSILON_IJ];
+        auto sigma      = params[lj14_7SIGMA];
+        auto epsilon    = params[lj14_7EPSILON];
         real f147       = 0;
         // Get the atom indices
         auto &indices   = b->atomIndices();
@@ -183,8 +187,8 @@ static void computeLJ14_7(const TopologyEntryVector             &pairs,
         real eerep = 0, eedisp = 0;
         if (epsilon > 0)
         {
-            auto gamma      = params[lj14_7GAMMA_IJ];
-            auto delta      = params[lj14_7DELTA_IJ];
+            auto gamma      = params[lj14_7GAMMA];
+            auto delta      = params[lj14_7DELTA];
             real rstar      = dr2*rinv/sigma;
             real delta1     = delta + 1;
             real gamma1     = gamma + 1;
@@ -208,9 +212,37 @@ static void computeLJ14_7(const TopologyEntryVector             &pairs,
     }
     energies->insert({InteractionType::EXCHANGE, erep});
     energies->insert({InteractionType::DISPERSION, edisp});
+
+    return erep + edisp;
 }
 
-static void computeExponential(const TopologyEntryVector             &pairs,
+static double lowBornMayer(const std::vector<int>       &indices,
+                           const std::vector<gmx::RVec> &x,
+                           double                        aexp,
+                           double                        bexp,
+                           std::vector<gmx::RVec>       *forces)
+{
+    // Get the atom indices
+    auto ai         = indices[0];
+    auto aj         = indices[1];
+    rvec dx;
+    rvec_sub(x[ai], x[aj], dx);
+    auto dr2        = iprod(dx, dx);
+    auto rinv       = gmx::invsqrt(dr2);
+
+    auto eeexp  = aexp*std::exp(-bexp*dr2*rinv);
+    if (debug)
+    {
+        fprintf(debug, "lowBornMayer ai %d aj %d r %g eeexp %g aexp %g bexp %g\n",
+                ai, aj, dr2*rinv, eeexp, aexp, bexp);
+    }
+    real fexp  = bexp*eeexp*rinv;
+    pairforces(fexp, dx, indices, forces);
+
+    return eeexp;
+}
+
+static double computeBornMayer(const TopologyEntryVector             &pairs,
                                gmx_unused const std::vector<ActAtom> &atoms,
                                const std::vector<gmx::RVec>          *coordinates,
                                std::vector<gmx::RVec>                *forces,
@@ -222,40 +254,55 @@ static void computeExponential(const TopologyEntryVector             &pairs,
     {
         // Get the parameters. We have to know their names to do this.
         auto &params    = b->params();
-        // Get the atom indices
-        auto &indices   = b->atomIndices();
-        auto ai         = indices[0];
-        auto aj         = indices[1];
-        rvec dx;
-        rvec_sub(x[ai], x[aj], dx);
-        auto dr2        = iprod(dx, dx);
-        auto rinv       = gmx::invsqrt(dr2);
         // Charge transfer correction, according to Eqn. 20, Walker et al.
         // https://doi.org/10.1002/jcc.26954
-        real aexp       = params[expA_IJ];
-        if (aexp > 0)
-        {
-            real bexp   = params[expB_IJ];
-            auto eeexp  = -aexp*std::exp(-bexp*dr2*rinv);
-            if (debug)
-            {
-                fprintf(debug, "vdwcorr r  %g  eeexp %g aexp %g bexp %g\n", dr2*rinv, eeexp, aexp, bexp);
-            }
-            real fexp  = bexp*eeexp;
-            eexp      += eeexp;
-
-            real fbond  = fexp*rinv;
-            pairforces(fbond, dx, indices, forces);
-        }
+        eexp += lowBornMayer(b->atomIndices(), *coordinates, -params[expA],
+                             params[expB], forces);
     }
     energies->insert({InteractionType::VDWCORRECTION, eexp});
+
+    return eexp;
 }
 
-static void computeDoubleExponential(const TopologyEntryVector             &pairs,
-                                     gmx_unused const std::vector<ActAtom> &atoms,
-                                     const std::vector<gmx::RVec>          *coordinates,
-                                     std::vector<gmx::RVec>                *forces,
-                                     std::map<InteractionType, double>     *energies)
+static double lowSlaterISA(const std::vector<int>       &indices,
+                           const std::vector<gmx::RVec> &x,
+                           double                        aexp,
+                           double                        bexp,
+                           std::vector<gmx::RVec>       *forces)
+{
+    static const double third = 1.0/3.0;
+    // Get the atom indices
+    auto ai         = indices[0];
+    auto aj         = indices[1];
+    rvec dx;
+    rvec_sub(x[ai], x[aj], dx);
+    auto dr2        = iprod(dx, dx);
+    auto rinv       = gmx::invsqrt(dr2);
+    auto dr         = rinv*dr2;
+    // Beyond Born-Mayer: Improved Models for Short-Range Repulsion in ab Initio Force Fields
+    // Mary J. Van Vleet, Alston J. Misquitta, Anthony J. Stone, and J. R. Schmidt
+    // J. Chem. Theory Comput. 12 (2016) 3851-3870
+    real br    = bexp*dr;
+    real Pbr   = (br*br*third + br + 1);
+    real aterm = aexp*std::exp(-br);
+    auto eeexp = aterm*Pbr;
+    if (debug)
+    {
+        fprintf(debug, "SlaterISA r  %g  eeexp %g aexp %g bexp %g aterm %g P(br) %g\n",
+                dr, eeexp, aexp, bexp, aterm, Pbr);
+    }
+    real fexp  = bexp*eeexp - bexp*aterm*(2*br*third + 1);
+    real fbond = fexp*rinv;
+    pairforces(fbond, dx, indices, forces);
+
+    return eeexp;
+}
+
+static double computeSlaterISA(const TopologyEntryVector             &pairs,
+                               gmx_unused const std::vector<ActAtom> &atoms,
+                               const std::vector<gmx::RVec>          *coordinates,
+                               std::vector<gmx::RVec>                *forces,
+                               std::map<InteractionType, double>     *energies)
 {
     double eexp  = 0;
     auto   x     = *coordinates;
@@ -263,12 +310,31 @@ static void computeDoubleExponential(const TopologyEntryVector             &pair
     {
         // Get the parameters. We have to know their names to do this.
         auto &params    = b->params();
-        real aexp       = params[dexpA1_IJ] - params[dexpA2_IJ];
+        eexp += lowSlaterISA(b->atomIndices(), *coordinates, params[expA], params[expB], forces);
+    }
+    energies->insert({InteractionType::EXCHANGE, eexp});
+
+    return eexp;
+}
+
+static double computeDoubleExponential(const TopologyEntryVector             &pairs,
+                                       gmx_unused const std::vector<ActAtom> &atoms,
+                                       const std::vector<gmx::RVec>          *coordinates,
+                                       std::vector<gmx::RVec>                *forces,
+                                       std::map<InteractionType, double>     *energies)
+{
+    double eexp  = 0;
+    auto   x     = *coordinates;
+    for (const auto &b : pairs)
+    {
+        // Get the parameters. We have to know their names to do this.
+        auto &params    = b->params();
+        real aexp       = params[dexpA1] - params[dexpA2];
         if (aexp == 0)
         {
             continue;
         }
-        real bexp       = params[dexpB_IJ];
+        real bexp       = params[dexpB];
         // Get the atom indices
         auto &indices   = b->atomIndices();
         auto ai         = indices[0];
@@ -289,13 +355,15 @@ static void computeDoubleExponential(const TopologyEntryVector             &pair
         pairforces(fbond, dx, indices, forces);
     }
     energies->insert({InteractionType::INDUCTIONCORRECTION, eexp});
+
+    return eexp;
 }
 
-static void computeWBH(const TopologyEntryVector             &pairs,
-                       gmx_unused const std::vector<ActAtom> &atoms,
-                       const std::vector<gmx::RVec>          *coordinates,
-                       std::vector<gmx::RVec>                *forces,
-                       std::map<InteractionType, double>     *energies)
+static double computeWBH(const TopologyEntryVector             &pairs,
+                         gmx_unused const std::vector<ActAtom> &atoms,
+                         const std::vector<gmx::RVec>          *coordinates,
+                         std::vector<gmx::RVec>                *forces,
+                         std::map<InteractionType, double>     *energies)
 {
     double erep  = 0;
     double edisp = 0;
@@ -304,9 +372,9 @@ static void computeWBH(const TopologyEntryVector             &pairs,
     {
         // Get the parameters. We have to know their names to do this.
         auto &params    = b->params();
-        auto sigma      = params[wbhSIGMA_IJ];
-        auto epsilon    = params[wbhEPSILON_IJ];
-        auto gamma      = params[wbhGAMMA_IJ];
+        auto sigma      = params[wbhSIGMA];
+        auto epsilon    = params[wbhEPSILON];
+        auto gamma      = params[wbhGAMMA];
         if (epsilon > 0 && gamma > 0 && sigma > 0)
         {
             // Get the atom indices
@@ -330,13 +398,15 @@ static void computeWBH(const TopologyEntryVector             &pairs,
     }
     energies->insert({InteractionType::EXCHANGE, erep});
     energies->insert({InteractionType::DISPERSION, edisp});
+
+    return erep + edisp;
 }
 
-static void computeBuckingham(const TopologyEntryVector             &pairs,
-                              gmx_unused const std::vector<ActAtom> &atoms,
-                              const std::vector<gmx::RVec>          *coordinates,
-                              std::vector<gmx::RVec>                *forces,
-                              std::map<InteractionType, double>     *energies)
+static double computeBuckingham(const TopologyEntryVector             &pairs,
+                                gmx_unused const std::vector<ActAtom> &atoms,
+                                const std::vector<gmx::RVec>          *coordinates,
+                                std::vector<gmx::RVec>                *forces,
+                                std::map<InteractionType, double>     *energies)
 {
     double erep  = 0;
     double edisp = 0;
@@ -345,9 +415,9 @@ static void computeBuckingham(const TopologyEntryVector             &pairs,
     {
         // Get the parameters. We have to know their names to do this.
         auto &params    = b->params();
-        auto Abh  = params[bhA_IJ];
-        auto bbh  = params[bhB_IJ];
-        auto c6bh = params[bhC6_IJ];
+        auto Abh  = params[bhA];
+        auto bbh  = params[bhB];
+        auto c6bh = params[bhC6];
         if (Abh > 0 && bbh > 0 && c6bh > 0)
         {
             // Get the atom indices
@@ -372,71 +442,137 @@ static void computeBuckingham(const TopologyEntryVector             &pairs,
     }
     energies->insert({InteractionType::EXCHANGE, erep});
     energies->insert({InteractionType::DISPERSION, edisp});
+
+    return erep + edisp;
 }
 
-static void computeTangToennies(const TopologyEntryVector             &pairs,
-                                gmx_unused const std::vector<ActAtom> &atoms,
-                                const std::vector<gmx::RVec>          *coordinates,
-                                std::vector<gmx::RVec>                *forces,
-                                std::map<InteractionType, double>     *energies)
+static double TT_Dispersion(const std::vector<int>       &indices,
+                            const std::vector<gmx::RVec> &x,
+                            double                        bDisp,
+                            const std::vector<double>    &ctt,
+                            std::vector<gmx::RVec>       *forces)
+{
+    static const int fac[11] = { 1, 1, 2, 6, 24, 120, 720, 5040, 40320, 362880, 3628800 };
+    std::vector<double> br(11);
+    rvec dx;
+    rvec_sub(x[indices[0]], x[indices[1]], dx);
+    auto dr2     = iprod(dx, dx);
+    auto rinv1   = gmx::invsqrt(dr2);
+    auto rinv2   = rinv1*rinv1;
+    real bDispr  = bDisp*dr2*rinv1;
+    real ebrDisp = std::exp(-bDispr);
+    real eedisp  = 0;
+    real fdisp   = 0;
+    real rinvn   = rinv2*rinv2*rinv2;
+    br[0] = 1;
+    for(int k = 1; k < 11; k++)
+    {
+        br[k] = br[k-1]*bDispr;
+    }
+    for (int m = 3; m <= 5; m++)
+    {
+        real fk  = 0;
+        real dfk = 0;
+        int  nn  = 2*m;
+        for (int k = 0; k <= nn; k++)
+        {
+            fk  += br[k]/fac[k];
+            if (k > 0)
+            {
+                dfk += k*bDisp*br[k-1]/fac[k];
+            }
+        }
+        real ed = -(1-ebrDisp*fk)*ctt[m-3]*rinvn;
+        eedisp += ed;
+        fdisp  += ed*nn*rinv1;
+        fdisp  += ctt[m-3]*rinvn*(bDisp*ebrDisp*fk - ebrDisp*dfk);
+        rinvn  *= rinv2;
+    }
+    if (debug)
+    {
+        fprintf(debug, "TT_Dispersion ai %d aj %d dr %g bDisp %g c6 %g c8 %g c10 %g edisp: %g fdisp: %g\n",
+                indices[0], indices[1], 1/rinv1, bDisp, ctt[0], ctt[1], ctt[2], eedisp, fdisp);
+    }
+    real fbond = fdisp*rinv1;
+    pairforces(fbond, dx, indices, forces);
+
+    return eedisp;
+}
+
+static double computeTangToennies(const TopologyEntryVector             &pairs,
+                                  gmx_unused const std::vector<ActAtom> &atoms,
+                                  const std::vector<gmx::RVec>          *coordinates,
+                                  std::vector<gmx::RVec>                *forces,
+                                  std::map<InteractionType, double>     *energies)
 {
     double erep  = 0;
     double edisp = 0;
-    auto   x     = *coordinates;
-    int    fac[10] = { 1, 1, 2, 6, 24, 120, 720, 5040, 40320, 362880 };
     for (const auto &b : pairs)
     {
         // Get the parameters. We have to know their names to do this.
         auto &params    = b->params();
-        auto Att   = params[ttA_IJ];
-        auto btt   = params[ttB_IJ];
-        double ctt[3] = { params[ttC6_IJ], params[ttC8_IJ], params[ttC10_IJ] };
-
-        // Get the atom indices
-        auto &indices   = b->atomIndices();
-        rvec dx;
-        rvec_sub(x[indices[0]], x[indices[1]], dx);
-        auto dr2    = iprod(dx, dx);
-        auto rinv   = gmx::invsqrt(dr2);
-        auto rinv2  = rinv*rinv;
-        real br     = btt*dr2*rinv;
-        real ebr    = std::exp(-br);
-        real eerep  = Att*ebr;
-        real frep   = btt*eerep;
-        real eedisp = 0;
-        real fdisp  = 0;
-        real rinvn  = rinv2*rinv2*rinv2;
-        for (int m = 0; m < 3; m++)
-        {
-            real fk = 0;
-            real pp = 1;
-            for (int k = 0; k < 2*(m+3); k++)
-            {
-                fk += pp/fac[k];
-                pp  = pp*br;
-            }
-            eedisp -= ctt[0]*rinvn*(1-ebr*fk);
-            rinvn  *= rinv2;
-        }
-        erep     += eerep;
-        edisp    += eedisp;
-        if (debug)
-        {
-            fprintf(debug, "Tang-Toennies ai %d aj %d dr %g A %g b %g c6 %g c8 %g c10 %g erep: %g edisp: %g\n",
-                    indices[0], indices[1], 1/rinv, Att, btt, ctt[0], ctt[1], ctt[2], eerep, eedisp);
-        }
-        real fbond = frep+fdisp;
-        pairforces(fbond, dx, indices, forces);
+        // Call low level routines
+        erep  += lowBornMayer(b->atomIndices(), *coordinates, params[ttA], params[ttB], forces);
+        edisp += TT_Dispersion(b->atomIndices(), *coordinates, params[ttB],
+                               { params[ttC6], params[ttC8], params[ttC10] }, forces);
     }
     energies->insert({InteractionType::EXCHANGE, erep});
     energies->insert({InteractionType::DISPERSION, edisp});
+
+    return erep + edisp;
 }
 
-static void computeNonBonded(const TopologyEntryVector             &pairs,
-                             gmx_unused const std::vector<ActAtom> &atoms,
-                             const std::vector<gmx::RVec>          *coordinates,
-                             std::vector<gmx::RVec>                *forces,
-                             std::map<InteractionType, double>     *energies)
+static double computeTT2b(const TopologyEntryVector             &pairs,
+                          gmx_unused const std::vector<ActAtom> &atoms,
+                          const std::vector<gmx::RVec>          *coordinates,
+                          std::vector<gmx::RVec>                *forces,
+                          std::map<InteractionType, double>     *energies)
+{
+    double erep  = 0;
+    double edisp = 0;
+    for (const auto &b : pairs)
+    {
+        // Get the parameters. We have to know their names to do this.
+        auto &params    = b->params();
+        // Call low level routines
+        erep  += lowBornMayer(b->atomIndices(), *coordinates, params[tt2bA], params[tt2bBexch], forces);
+        edisp += TT_Dispersion(b->atomIndices(), *coordinates, params[tt2bBdisp],
+                               { params[tt2bC6], params[tt2bC8], params[tt2bC10] }, forces);
+    }
+    energies->insert({InteractionType::EXCHANGE, erep});
+    energies->insert({InteractionType::DISPERSION, edisp});
+
+    return erep + edisp;
+}
+
+static double computeSlater_ISA_TT(const TopologyEntryVector             &pairs,
+                                   gmx_unused const std::vector<ActAtom> &atoms,
+                                   const std::vector<gmx::RVec>          *coordinates,
+                                   std::vector<gmx::RVec>                *forces,
+                                   std::map<InteractionType, double>     *energies)
+{
+    double erep  = 0;
+    double edisp = 0;
+    for (const auto &b : pairs)
+    {
+        // Get the parameters. We have to know their names to do this.
+        auto &params    = b->params();
+        // Call low level routines
+        erep  += lowSlaterISA(b->atomIndices(), *coordinates, params[SIttA], params[SIttBexch], forces);
+        edisp += TT_Dispersion(b->atomIndices(), *coordinates, params[SIttBdisp],
+                               { params[SIttC6], params[SIttC8], params[SIttC10] }, forces);
+    }
+    energies->insert({InteractionType::EXCHANGE, erep});
+    energies->insert({InteractionType::DISPERSION, edisp});
+
+    return erep + edisp;
+}
+
+static double computeNonBonded(const TopologyEntryVector             &pairs,
+                               gmx_unused const std::vector<ActAtom> &atoms,
+                               const std::vector<gmx::RVec>          *coordinates,
+                               std::vector<gmx::RVec>                *forces,
+                               std::map<InteractionType, double>     *energies)
 {
     double erep  = 0;
     double edisp = 0;
@@ -445,10 +581,10 @@ static void computeNonBonded(const TopologyEntryVector             &pairs,
     {
         // Get the parameters. We have to know their names to do this.
         auto &params    = b->params();
-        auto rmin       = params[gbhRMIN_IJ];
-        auto epsilon    = params[gbhEPSILON_IJ];
-        auto gamma      = params[gbhGAMMA_IJ];
-        auto delta      = params[gbhDELTA_IJ];
+        auto rmin       = params[gbhRMIN];
+        auto epsilon    = params[gbhEPSILON];
+        auto gamma      = params[gbhGAMMA];
+        auto delta      = params[gbhDELTA];
         if (epsilon > 0 && gamma > 0 && rmin > 0 && delta > 0)
         {
             // Get the atom indices
@@ -483,13 +619,15 @@ static void computeNonBonded(const TopologyEntryVector             &pairs,
     }
     energies->insert({InteractionType::EXCHANGE, erep});
     energies->insert({InteractionType::DISPERSION, edisp});
+
+    return erep + edisp;
 }
 
-static void gmx_unused computeNonBondedTest(const TopologyEntryVector             &pairs,
-                                            gmx_unused const std::vector<ActAtom> &atoms,
-                                            const std::vector<gmx::RVec>          *coordinates,
-                                            std::vector<gmx::RVec>                *forces,
-                                            std::map<InteractionType, double>     *energies)
+static double gmx_unused computeNonBondedTest(const TopologyEntryVector             &pairs,
+                                              gmx_unused const std::vector<ActAtom> &atoms,
+                                              const std::vector<gmx::RVec>          *coordinates,
+                                              std::vector<gmx::RVec>                *forces,
+                                              std::map<InteractionType, double>     *energies)
 {
     double erep  = 0;
     double edisp = 0;
@@ -498,10 +636,10 @@ static void gmx_unused computeNonBondedTest(const TopologyEntryVector           
     {
         // Get the parameters. We have to know their names to do this.
         auto &params    = b->params();
-        auto rmin       = params[gbhRMIN_IJ];
-        auto epsilon    = params[gbhEPSILON_IJ];
-        auto gamma      = params[gbhGAMMA_IJ];
-        auto delta      = params[gbhDELTA_IJ];
+        auto rmin       = params[gbhRMIN];
+        auto epsilon    = params[gbhEPSILON];
+        auto gamma      = params[gbhGAMMA];
+        auto delta      = params[gbhDELTA];
         if (epsilon > 0 && gamma > 0 && rmin > 0 && delta > 0)
         {
             // Get the atom indices
@@ -534,13 +672,15 @@ static void gmx_unused computeNonBondedTest(const TopologyEntryVector           
     }
     energies->insert({InteractionType::EXCHANGE, erep});
     energies->insert({InteractionType::DISPERSION, edisp});
+
+    return erep + edisp;
 }
 
-static void computeCoulombGaussian(const TopologyEntryVector         &pairs,
-                                   const std::vector<ActAtom>        &atoms,
-                                   const std::vector<gmx::RVec>      *coordinates,
-                                   std::vector<gmx::RVec>            *forces,
-                                   std::map<InteractionType, double> *energies)
+static double computeCoulombGaussian(const TopologyEntryVector         &pairs,
+                                     const std::vector<ActAtom>        &atoms,
+                                     const std::vector<gmx::RVec>      *coordinates,
+                                     std::vector<gmx::RVec>            *forces,
+                                     std::map<InteractionType, double> *energies)
 {
     double ebond = 0;
     auto   x     = *coordinates;
@@ -552,8 +692,8 @@ static void computeCoulombGaussian(const TopologyEntryVector         &pairs,
         auto ai       = indices[0];
         auto aj       = indices[1];
         auto &params= b->params();
-        auto izeta  = params[coulZETAI];
-        auto jzeta  = params[coulZETAJ];
+        auto izeta  = params[coulZETA];
+        auto jzeta  = params[coulZETA2];
         // Get the atom indices
         real qq         = ONE_4PI_EPS0*atoms[ai].charge()*atoms[aj].charge();
         rvec dx;
@@ -583,13 +723,15 @@ static void computeCoulombGaussian(const TopologyEntryVector         &pairs,
         fprintf(debug, "vcoul %g vcoul_pc %g\n", ebond, vc_pt);
     }
     energies->insert({InteractionType::ELECTROSTATICS, ebond});
+
+    return ebond;
 }
 
-static void computeCoulombSlater(const TopologyEntryVector         &pairs,
-                                 const std::vector<ActAtom>        &atoms,
-                                 const std::vector<gmx::RVec>      *coordinates,
-                                 std::vector<gmx::RVec>            *forces,
-                                 std::map<InteractionType, double> *energies)
+static double computeCoulombSlater(const TopologyEntryVector         &pairs,
+                                   const std::vector<ActAtom>        &atoms,
+                                   const std::vector<gmx::RVec>      *coordinates,
+                                   std::vector<gmx::RVec>            *forces,
+                                   std::map<InteractionType, double> *energies)
 {
     double ebond = 0;
     auto   x     = *coordinates;
@@ -601,8 +743,8 @@ static void computeCoulombSlater(const TopologyEntryVector         &pairs,
         auto aj       = indices[1];
         // Get the parameters. We have to know their names to do this.
         auto &params= b->params();
-        auto izeta  = params[coulZETAI];
-        auto jzeta  = params[coulZETAJ];
+        auto izeta  = params[coulZETA];
+        auto jzeta  = params[coulZETA2];
         auto irow   = atoms[ai].row();
         auto jrow   = atoms[aj].row();
         real qq     = ONE_4PI_EPS0*atoms[ai].charge()*atoms[aj].charge();
@@ -630,14 +772,16 @@ static void computeCoulombSlater(const TopologyEntryVector         &pairs,
         }
     }
     energies->insert({InteractionType::ELECTROSTATICS, ebond});
+
+    return ebond;
 }
 
 #ifdef FUTURE
-static void computePartridge(const TopologyEntryVector             &angles,
-                             gmx_unused const std::vector<ActAtom> &atoms,
-                             const std::vector<gmx::RVec>          *coordinates,
-                             std::vector<gmx::RVec>                *forces,
-                             std::map<InteractionType, double>     *energies)
+static double computePartridge(const TopologyEntryVector             &angles,
+                               gmx_unused const std::vector<ActAtom> &atoms,
+                               const std::vector<gmx::RVec>          *coordinates,
+                               std::vector<gmx::RVec>                *forces,
+                               std::map<InteractionType, double>     *energies)
 {
     // Energy function according to 
     // The determination of an accurate isotope dependent potential energy 
@@ -692,6 +836,8 @@ static void computePartridge(const TopologyEntryVector             &angles,
         }                                          
     }
     energies->insert({InteractionType::ANGLES, , energy});
+
+    return energy;
 }
 #endif
 
@@ -706,19 +852,20 @@ static void harmonic(real k, real x0, real x, real *V, real *F)
     *V  = half*k*dx2;
 }
 
-static void computeDummy(gmx_unused const TopologyEntryVector         &bonds,
-                         gmx_unused const std::vector<ActAtom>        &atoms,
-                         gmx_unused const std::vector<gmx::RVec>      *coordinates,
-                         gmx_unused std::vector<gmx::RVec>            *forces,
-                         gmx_unused std::map<InteractionType, double> *energies)
+static double computeDummy(gmx_unused const TopologyEntryVector         &bonds,
+                           gmx_unused const std::vector<ActAtom>        &atoms,
+                           gmx_unused const std::vector<gmx::RVec>      *coordinates,
+                           gmx_unused std::vector<gmx::RVec>            *forces,
+                           gmx_unused std::map<InteractionType, double> *energies)
 {
+    return 0;
 }
 
-static void computeBonds(const TopologyEntryVector             &bonds,
-                         gmx_unused const std::vector<ActAtom> &atoms,
-                         const std::vector<gmx::RVec>          *coordinates,
-                         std::vector<gmx::RVec>                *forces,
-                         std::map<InteractionType, double>     *energies)
+static double computeBonds(const TopologyEntryVector             &bonds,
+                           gmx_unused const std::vector<ActAtom> &atoms,
+                           const std::vector<gmx::RVec>          *coordinates,
+                           std::vector<gmx::RVec>                *forces,
+                           std::map<InteractionType, double>     *energies)
 {
     if (nullptr == coordinates || nullptr == forces)
     {
@@ -752,13 +899,15 @@ static void computeBonds(const TopologyEntryVector             &bonds,
         pairforces(fbond, dx, indices, forces);
     }
     energies->insert({InteractionType::BONDS, ebond});
+
+    return ebond;
 }
 
-static void computeCubic(const TopologyEntryVector             &bonds,
-                         gmx_unused const std::vector<ActAtom> &atoms,
-                         const std::vector<gmx::RVec>          *coordinates,
-                         std::vector<gmx::RVec>                *forces,
-                         std::map<InteractionType, double>     *energies)
+static double computeCubic(const TopologyEntryVector             &bonds,
+                           gmx_unused const std::vector<ActAtom> &atoms,
+                           const std::vector<gmx::RVec>          *coordinates,
+                           std::vector<gmx::RVec>                *forces,
+                           std::map<InteractionType, double>     *energies)
 {
     if (nullptr == coordinates || nullptr == forces)
     {
@@ -797,13 +946,15 @@ static void computeCubic(const TopologyEntryVector             &bonds,
         pairforces(fbond, dx, indices, forces);
     }
     energies->insert({InteractionType::BONDS, ebond});
+
+    return ebond;
 }
 
-static void computeMorse(const TopologyEntryVector             &bonds,
-                         gmx_unused const std::vector<ActAtom> &atoms,
-                         const std::vector<gmx::RVec>          *coordinates,
-                         std::vector<gmx::RVec>                *forces,
-                         std::map<InteractionType, double>     *energies)
+static double computeMorse(const TopologyEntryVector             &bonds,
+                           gmx_unused const std::vector<ActAtom> &atoms,
+                           const std::vector<gmx::RVec>          *coordinates,
+                           std::vector<gmx::RVec>                *forces,
+                           std::map<InteractionType, double>     *energies)
 {
     double  ebond = 0;
     auto    x     = *coordinates;
@@ -819,10 +970,11 @@ static void computeMorse(const TopologyEntryVector             &bonds,
         auto D0         = params[morseD0];
         rvec dx;
         rvec_sub(x[indices[0]], x[indices[1]], dx);
-        auto dr2        = iprod(dx, dx);
-        auto dr         = std::sqrt(dr2);
+        auto dr         = norm(dx);
         auto expterm    = std::exp(-beta*(dr-bondlength));
-        auto vbond      = De*expterm*(expterm - 2) + D0;
+        auto expterm_1  = 1-expterm;
+        //        auto vbond      = De*expterm*(expterm - 2) + D0;
+        auto vbond      = De*(expterm_1*expterm_1 - 1) + D0;
         auto fbond      = 2*De*beta*expterm*(expterm-1)/dr;
         ebond          += vbond;
         if (debug)
@@ -833,13 +985,15 @@ static void computeMorse(const TopologyEntryVector             &bonds,
         pairforces(fbond, dx, indices, forces);
     }
     energies->insert({InteractionType::BONDS, ebond});
+
+    return ebond;
 }
 
-static void computeHua(const TopologyEntryVector             &bonds,
-                       gmx_unused const std::vector<ActAtom> &atoms,
-                       const std::vector<gmx::RVec>          *coordinates,
-                       std::vector<gmx::RVec>                *forces,
-                       std::map<InteractionType, double>     *energies)
+static double computeHua(const TopologyEntryVector             &bonds,
+                         gmx_unused const std::vector<ActAtom> &atoms,
+                         const std::vector<gmx::RVec>          *coordinates,
+                         std::vector<gmx::RVec>                *forces,
+                         std::map<InteractionType, double>     *energies)
 {
     double  ebond = 0;
     auto    x     = *coordinates;
@@ -867,13 +1021,15 @@ static void computeHua(const TopologyEntryVector             &bonds,
         pairforces(fbond, dx, indices, forces);
     }
     energies->insert({InteractionType::BONDS, ebond});
+
+    return ebond;
 }
 
-static void computeLinearAngles(const TopologyEntryVector             &angles,
-                                gmx_unused const std::vector<ActAtom> &atoms,
-                                const std::vector<gmx::RVec>          *coordinates,
-                                std::vector<gmx::RVec>                *forces,
-                                std::map<InteractionType, double>     *energies)
+static double computeLinearAngles(const TopologyEntryVector             &angles,
+                                  gmx_unused const std::vector<ActAtom> &atoms,
+                                  const std::vector<gmx::RVec>          *coordinates,
+                                  std::vector<gmx::RVec>                *forces,
+                                  std::map<InteractionType, double>     *energies)
 {
     double  ebond = 0;
     auto    x     = *coordinates;
@@ -909,14 +1065,15 @@ static void computeLinearAngles(const TopologyEntryVector             &angles,
         ebond += 0.5*klin*dr2;
     }
     energies->insert({InteractionType::LINEAR_ANGLES, ebond});
+
+    return ebond;
 }
 
-// It is not finished yes, needs to be double checked. 
-static void computeAngles(const TopologyEntryVector             &angles,
-                          gmx_unused const std::vector<ActAtom> &atoms,
-                          const std::vector<gmx::RVec>          *coordinates,
-                          std::vector<gmx::RVec>                *forces,
-                          std::map<InteractionType, double>     *energies)
+static double computeAngles(const TopologyEntryVector             &angles,
+                            gmx_unused const std::vector<ActAtom> &atoms,
+                            const std::vector<gmx::RVec>          *coordinates,
+                            std::vector<gmx::RVec>                *forces,
+                            std::map<InteractionType, double>     *energies)
 {
     double  energy = 0, costh = 0;
     auto    x     = *coordinates;
@@ -976,14 +1133,15 @@ static void computeAngles(const TopologyEntryVector             &angles,
         }                                          
     }
     energies->insert({InteractionType::ANGLES, energy});
+
+    return energy;
 }
 
-// It is not finished yes, needs to be double checked. 
-static void computeUreyBradley(const TopologyEntryVector             &angles,
-                               gmx_unused const std::vector<ActAtom> &atoms,
-                               const std::vector<gmx::RVec>          *coordinates,
-                               std::vector<gmx::RVec>                *forces,
-                               std::map<InteractionType, double>     *energies)
+static double computeUreyBradley(const TopologyEntryVector             &angles,
+                                 gmx_unused const std::vector<ActAtom> &atoms,
+                                 const std::vector<gmx::RVec>          *coordinates,
+                                 std::vector<gmx::RVec>                *forces,
+                                 std::map<InteractionType, double>     *energies)
 {
     double  energy = 0, costh = 0;
     auto    x     = *coordinates;
@@ -1058,13 +1216,15 @@ static void computeUreyBradley(const TopologyEntryVector             &angles,
         }                                          
     }
     energies->insert({InteractionType::ANGLES, energy});
+
+    return energy;
 }
 
-static void computePolarization(const TopologyEntryVector             &bonds,
-                                gmx_unused const std::vector<ActAtom> &atoms,
-                                const std::vector<gmx::RVec>          *coordinates,
-                                std::vector<gmx::RVec>                *forces,
-                                std::map<InteractionType, double>     *energies)
+static double computePolarization(const TopologyEntryVector             &bonds,
+                                  gmx_unused const std::vector<ActAtom> &atoms,
+                                  const std::vector<gmx::RVec>          *coordinates,
+                                  std::vector<gmx::RVec>                *forces,
+                                  std::map<InteractionType, double>     *energies)
 {
     const real half = 0.5;
     double ebond    = 0;
@@ -1121,6 +1281,7 @@ static void computePolarization(const TopologyEntryVector             &bonds,
     }
     energies->insert({InteractionType::POLARIZATION, ebond});
 
+    return ebond;
 }
 
 static void do_dih_fup_noshiftf(int i, int j, int k, int l, real ddphi,
@@ -1179,11 +1340,11 @@ static real dih_angle(const rvec xi, const rvec xj, const rvec xk, const rvec xl
     return phi;
 }
 
-static void computeFourDihs(const TopologyEntryVector             &propers,
-                            gmx_unused const std::vector<ActAtom> &atoms,
-                            const std::vector<gmx::RVec>          *coordinates,
-                            std::vector<gmx::RVec>                *forces,
-                            std::map<InteractionType, double>     *energies)
+static double computeFourDihs(const TopologyEntryVector             &propers,
+                              gmx_unused const std::vector<ActAtom> &atoms,
+                              const std::vector<gmx::RVec>          *coordinates,
+                              std::vector<gmx::RVec>                *forces,
+                              std::map<InteractionType, double>     *energies)
 {
     double energy = 0;
     auto   x      = *coordinates;
@@ -1228,13 +1389,15 @@ static void computeFourDihs(const TopologyEntryVector             &propers,
         energy += v;
     }
     energies->insert({InteractionType::PROPER_DIHEDRALS, energy});
+
+    return energy;
 }
 
-static void computeImpropers(const TopologyEntryVector             &impropers,
-                             gmx_unused const std::vector<ActAtom> &atoms,
-                             const std::vector<gmx::RVec>          *coordinates,
-                             std::vector<gmx::RVec>                *forces,
-                             std::map<InteractionType, double>     *energies)
+static double computeImpropers(const TopologyEntryVector             &impropers,
+                               gmx_unused const std::vector<ActAtom> &atoms,
+                               const std::vector<gmx::RVec>          *coordinates,
+                               std::vector<gmx::RVec>                *forces,
+                               std::map<InteractionType, double>     *energies)
 {
     double  energy = 0;
     auto    x     = *coordinates;
@@ -1264,13 +1427,15 @@ static void computeImpropers(const TopologyEntryVector             &impropers,
                             forces);
     }
     energies->insert({InteractionType::IMPROPER_DIHEDRALS, energy});
+
+    return energy;
 }
 
-static void computePropers(const TopologyEntryVector             &propers,
-                           gmx_unused const std::vector<ActAtom> &atoms,
-                           const std::vector<gmx::RVec>          *coordinates,
-                           std::vector<gmx::RVec>                *forces,
-                           std::map<InteractionType, double>     *energies)
+static double computePropers(const TopologyEntryVector             &propers,
+                             gmx_unused const std::vector<ActAtom> &atoms,
+                             const std::vector<gmx::RVec>          *coordinates,
+                             std::vector<gmx::RVec>                *forces,
+                             std::map<InteractionType, double>     *energies)
 {
     double energy = 0;
     auto   x      = *coordinates;
@@ -1306,6 +1471,8 @@ static void computePropers(const TopologyEntryVector             &propers,
                             forces);
     }
     energies->insert({InteractionType::PROPER_DIHEDRALS, energy});
+
+    return energy;
 }
 
 std::map<Potential, bondForceComputer> bondForceComputerMap = {
@@ -1322,9 +1489,12 @@ std::map<Potential, bondForceComputer> bondForceComputerMap = {
     { Potential::BUCKINGHAM,             computeBuckingham      },
     { Potential::WANG_BUCKINGHAM,        computeWBH             },
     { Potential::TANG_TOENNIES,          computeTangToennies    },
+    { Potential::TT2b,                   computeTT2b            },
+    { Potential::SLATER_ISA_TT,          computeSlater_ISA_TT   },
     { Potential::GENERALIZED_BUCKINGHAM, computeNonBonded       },
-    { Potential::EXPONENTIAL,            computeExponential     },
-    { Potential::DOUBLEEXPONENTIAL,      computeDoubleExponential },
+    { Potential::BORN_MAYER,             computeBornMayer       },
+    { Potential::SLATER_ISA,             computeSlaterISA       },
+    { Potential::MACDANIEL_SCHMIDT,      computeDoubleExponential },
     { Potential::COULOMB_POINT,          computeCoulombGaussian },
     { Potential::COULOMB_GAUSSIAN,       computeCoulombGaussian },
     { Potential::COULOMB_SLATER,         computeCoulombSlater   },

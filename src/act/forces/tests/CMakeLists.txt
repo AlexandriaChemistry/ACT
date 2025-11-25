@@ -41,6 +41,7 @@ gmx_add_unit_test(
     # files with code for tests
     combinationRuleTest.cpp
     forcecomputerutilsTest.cpp
+    forceComputerImplementationTest.cpp
     vsiteTest.cpp
     # pseudo-library for code for alexandria
     )

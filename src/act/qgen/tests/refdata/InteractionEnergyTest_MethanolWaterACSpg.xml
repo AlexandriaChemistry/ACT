@@ -4,36 +4,35 @@
   <Int Name="qtotSize">18</Int>
   <Sequence Name="qtotValuesEqdAlgorithm_SQE">
     <Int Name="Length">18</Int>
-    <Real>0.81274657048058174</Real>
+    <Real>0.81274656918662247</Real>
     <Real>-1.2</Real>
-    <Real>1.0038329309858494</Real>
+    <Real>1.0038329320118144</Real>
     <Real>-0.80000000000000004</Real>
-    <Real>0.82923570551470649</Real>
+    <Real>0.82923570405227576</Real>
     <Real>-1.2</Real>
-    <Real>0.98472826433962057</Real>
+    <Real>0.98472826491642895</Real>
     <Real>-0.80000000000000004</Real>
-    <Real>0.98472826433962057</Real>
+    <Real>0.98472826491642895</Real>
     <Real>-0.80000000000000004</Real>
-    <Real>0.98472826433962057</Real>
+    <Real>0.98472826491642895</Real>
     <Real>-0.80000000000000004</Real>
-    <Real>0.99835316659093265</Real>
+    <Real>0.99835316744135971</Real>
     <Real>-0.80000000000000004</Real>
-    <Real>0.8032936668181343</Real>
+    <Real>0.8032936651172804</Real>
     <Real>-1.2</Real>
-    <Real>0.99835316659093265</Real>
+    <Real>0.99835316744135971</Real>
     <Real>-0.80000000000000004</Real>
   </Sequence>
-  <Real Name="Molecule 1 charge">-7.7715611723760958e-16</Real>
-  <Real Name="Molecule 2 charge">-4.4408920985006262e-16</Real>
+  <Real Name="Molecule 1 charge">-5.5511151231257827e-16</Real>
+  <Real Name="Molecule 2 charge">-2.2204460492503131e-16</Real>
   <Real Name="BONDS">2.2737367544323206e-13</Real>
   <Real Name="ANGLES">-2.7755575615628914e-17</Real>
   <Real Name="DISPERSION">-5.0375504048393243</Real>
   <Real Name="EXCHANGE">53.182866988368922</Real>
-  <Real Name="COULOMB">0.94744684249751288</Real>
-  <Real Name="POLARIZATION">0</Real>
-  <Real Name="INDUCTION">0.0041200782712764727</Real>
-  <Real Name="INDUCTIONCORRECTION">-0.20698472783533362</Real>
-  <Real Name="ALLELEC">0.74458219293345573</Real>
-  <Real Name="EXCHIND">52.980002338804866</Real>
-  <Real Name="EPOT">48.889898776462701</Real>
+  <Real Name="COULOMB">0.94744692751397963</Real>
+  <Real Name="INDUCTION">-0.20698474702775371</Real>
+  <Real Name="INDUCTIONCORRECTION">0.0041200786440240833</Real>
+  <Real Name="ALLELEC">0.74458225913025</Real>
+  <Real Name="EXCHIND">52.980002319985189</Real>
+  <Real Name="EPOT">48.889898842659363</Real>
 </ReferenceData>

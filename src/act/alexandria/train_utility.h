@@ -63,10 +63,10 @@ namespace alexandria
 {
 
 class MsgHandler;
-using qtStats = std::map<qType, gmx_stats>;
+using qtStats = std::map<qPropertyType, gmx_stats>;
 
 
-/*! \brief Class to managa output from force field training
+/*! \brief Class to manage output from force field training
  */
 class TrainForceFieldPrinter
 {
@@ -109,8 +109,11 @@ private:
     //! Statistics for RMSF and frequencies.
     std::map<iMolSelect, gmx_stats>    lsq_rmsf_;
     gmx_stats                          lsq_freq_;
+    //! Command line stuff
+    std::map<MolPropObservable, std::string> mpoOpt_;
+    std::map<MolPropObservable, std::string> mpoFnm_;
     //! Statistics for multipoles
-    std::map<MolPropObservable, std::map<iMolSelect, qtStats> > lsq_multi;
+    std::map<MolPropObservable, std::map<iMolSelect, qtStats> > lsq_multi_;
     //! Interaction energy terms
     std::vector<InteractionType> terms_;
 
@@ -122,7 +125,7 @@ private:
                                const ForceComputer *forceComp);
     
     //! \brief Analyses dipoles, quadrupoles, etc.
-    void analyse_multipoles(gmx::TextWriter                                 *tw,
+    void analyse_multipoles(MsgHandler                                      *msg_handler,
                             const std::vector<alexandria::ACTMol>::iterator &mol,
                             std::map<MolPropObservable, double>              toler,
                             const ForceField                                *pd,
@@ -139,7 +142,8 @@ private:
      * \param[in]    forceComp The force computer
      * \param[inout] mols      Vector of molecules, will be modified
      */
-    void writeMolpropsEnergies(const char          *mpout,
+    void writeMolpropsEnergies(MsgHandler          *msghandler,
+                               const char          *mpout,
                                const ForceField    *pd,
                                const ForceComputer *forceComp,
                                std::vector<ACTMol> *mols);

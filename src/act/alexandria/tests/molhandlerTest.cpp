@@ -129,19 +129,21 @@ protected:
         dataName        = gmx::test::TestFileManager::getInputFilePath(molname);
         double qtot     = 0;
         bool   userqtot = false;
+        MsgHandler msghandler;
+        msghandler.setPrintLevel(ACTStatus::Warning);
         matrix box;
-        bool readOK = readBabel(pd, dataName.c_str(), &molprops, molname, molname,
+        bool readOK = readBabel(&msghandler, pd, dataName.c_str(), &molprops,
+                                molname, molname,
                                 conf, &method, &basis,
                                 maxpot, nsymm, jobtype, userqtot, &qtot, false, box, true);
         EXPECT_TRUE(readOK);
         std::vector<ACTMol> mps;
         // Needed for GenerateCharges
-        auto alg = ChargeGenerationAlgorithm::NONE;
+        auto alg = pd->chargeGenerationAlgorithm();
         double shellTolerance = ftoler;
         int    shellMaxIter   = 100;
         auto forceComp = new ForceComputer(shellTolerance, shellMaxIter);
         std::vector<double>    qcustom;
-        MsgHandler msghandler;
         if (readOK)
         {
             for(auto &molprop: molprops)
@@ -158,10 +160,10 @@ protected:
                 }
                 std::vector<gmx::RVec> forces(mm.atomsConst().size());
                 std::vector<gmx::RVec> coords = mm.xOriginal();
-                mm.GenerateCharges(&msghandler, pd, forceComp, alg, qType::Calc, qcustom, &coords, &forces);
+                mm.generateCharges(&msghandler, pd, forceComp, alg, &coords, &forces);
                 if (msghandler.ok())
                 {
-                    mps.push_back(mm);
+                    mps.push_back(std::move(mm));
                 }
             }
         }
@@ -171,7 +173,7 @@ protected:
             std::vector<gmx::RVec> forces(mp.atomsConst().size());
             std::vector<gmx::RVec> coords = mp.xOriginal();
             std::map<InteractionType, double> eBefore;
-            (void) forceComp->compute(pd, mp.topology(), &coords, &forces, &eBefore);
+            forceComp->compute(&msghandler, pd, mp.topology(), &coords, &forces, &eBefore);
             add_energies(pd, &checker_, eBefore, "before");
             
             MolHandler mh;
@@ -252,6 +254,7 @@ protected:
                 
                 double scale_factor = 1;
                 AtomizationEnergy atomenergy;
+                atomenergy.read();
                 ThermoChemistry tc(&mp, coords, atomenergy, freq, eAfter[InteractionType::EPOT],
                                    298.15, 1, scale_factor);
                 checker_.checkReal(tc.ZPE(),  "Zero point energy (kJ/mol)");
@@ -308,7 +311,7 @@ TEST_F (MolHandlerTest, UracilNoFreq)
 
 TEST_F (MolHandlerTest, CarbonDioxideNoFreqPol)
 {
-    test("carbon-dioxide.sdf", "ACS-pg", false);
+    test("carbon-dioxide.sdf", "ACS-pg", false, 1e-8);
 }
 
 TEST_F (MolHandlerTest, HydrogenChlorideNoFreqPol)
@@ -362,7 +365,7 @@ TEST_F (MolHandlerTest, Uracil)
 
 TEST_F (MolHandlerTest, CarbonDioxidePol)
 {
-    test("carbon-dioxide.sdf", "ACS-pg", true);
+    test("carbon-dioxide.sdf", "ACS-pg", true, 1e-10);
 }
 
 TEST_F (MolHandlerTest, HydrogenChloridePol)

@@ -297,9 +297,11 @@ private:
     //! Checkpointing on or not?
     bool checkPoint_         = false;
     //! Tolerance for shell
-    double shellToler_       = 1e-4;
+    double shellToler_       = 1e-3;
     //! Maxiter for shell optimization
-    int shellMaxIter_        = 10;
+    int shellMaxIter_        = 25;
+    //! Max distance between shell and core
+    double shellMaxDistance_ = 0.02;
 public:
     /*!
      * \brief Add command-line arguments to a vector
@@ -409,6 +411,9 @@ public:
 
     //! \return shell iterations
     int shellMaxIter() const { return shellMaxIter_; }
+
+    //! \return max shell distance from core
+    double shellMaxDistance() const { return shellMaxDistance_; }
 };
 
 enum class eMinimizeAlgorithm {
@@ -440,6 +445,8 @@ private:
     bool               writeShells_          = false;
     //! Minmize (before MD)
     bool               minimize_             = false;
+    //! Compute energies and quit
+    bool               singlePoint_          = false;
     //! Minimization algorithm
     eMinimizeAlgorithm minAlg_               = eMinimizeAlgorithm::LBFGS;
     //! Tolerance on mean square force for minimizer.
@@ -500,6 +507,9 @@ public:
     //! \return whether or not to minimize the energy with respect to input coordinates
     bool minimize() const { return minimize_; }
     
+    //! \return whether or not to do a single point energy calculation
+    bool singlePoint() const { return singlePoint_; }
+
     //! Set the minimize option
     void setMinimize(bool minimize) { minimize_ = minimize; }
 

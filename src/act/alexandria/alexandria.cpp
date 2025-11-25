@@ -42,10 +42,10 @@
 #include "gromacs/commandline/cmdlinemodulemanager.h"
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/mdtypes/commrec.h"
-//#include "gromacs/utility/baseversion.h"
 #include "gromacs/utility/binaryinformation.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/init.h"
+#include "gromacs/utility/smalloc.h"
 
 int
 main(int argc, char *argv[])
@@ -68,6 +68,19 @@ main(int argc, char *argv[])
         {
             printf("%s", act_goodbye().c_str());
         }
+        else
+        {
+            // Cleanup
+            for(int i = 0; i < argc; i++)
+            {
+                if (argv[i])
+                {
+                    sfree(argv[i]);
+                }
+            }
+            sfree(argv);
+        }
+        done_commrec(cr);
         return rc;
     }
     catch (const std::exception &ex)

@@ -34,6 +34,7 @@
  */
 #include "devcomputer.h"
 
+#include <map>
 #include <numeric>
 #include <string>
 #include <vector>
@@ -44,7 +45,11 @@
 #include "act/utility/units.h"
 #include "gromacs/math/vecdump.h"
 #include "gromacs/topology/atoms.h"
+#include "gromacs/utility/real.h"
 #include "gromacs/utility/textwriter.h"
+
+// Precompute max argument for exp function at compile time.
+static const double DOUBLE_MAX_LOG = std::log(GMX_DOUBLE_MAX);
 
 namespace alexandria
 {
@@ -74,193 +79,34 @@ static double l2_regularizer(double x, double min, double max)
 * BEGIN: BoundsDevComputer                 *
 * * * * * * * * * * * * * * * * * * * * * */
 
-void BoundsDevComputer::calcDeviation(MsgHandler                        *msghandler,
+void BoundsDevComputer::calcDeviation(MsgHandler                        *,
                                       const ForceComputer               *,
-                                      ACTMol                            *,
+                                      ACTMol                            *mol,
                                       std::vector<gmx::RVec>            *,
                                       std::map<eRMS, FittingTarget>     *targets,
                                       const ForceField                  *forcefield)
 {
     auto   mytarget = targets->find(eRMS::BOUNDS);
-    if (targets->end() != mytarget)
+    if (targets->end() == mytarget)
     {
-        double bound = 0;
-        for (auto &optIndex : *optIndex_)
-        {
-            InteractionType iType = optIndex.iType();
-            ForceFieldParameter p;
-            if (iType == InteractionType::CHARGE)
-            {
-                p = forcefield->findParticleType(optIndex.particleType())->parameterConst(optIndex.parameterType());
-            }
-            else if (forcefield->interactionPresent(iType))
-            {
-                auto &fs = forcefield->findForcesConst(iType);
-                p = fs.findParameterTypeConst(optIndex.id(), optIndex.parameterType());
-            }
-            if (p.mutability() == Mutability::Bounded)
-            {
-                real db = l2_regularizer(p.value(), p.minimum(), p.maximum());
-                bound += db;
-                if (db != 0.0)
-                {
-                    msghandler->msg(ACTStatus::Warning,
-                                    gmx::formatString("Variable %s is %g, should be within %g and %g\n",
-                                                      optIndex.name().c_str(),
-                                                      p.value(), p.minimum(), p.maximum()));
-                }
-            }
-        }
-        mytarget->second.increase(1, bound);
+        return;
     }
-    mytarget = targets->find(eRMS::UNPHYSICAL);
-    if (targets->end() != mytarget)
+    double bound = 0;
+    // Check ACM charges
+    for(const auto &atom: mol->atomsConst())
     {
-        double bound = 0;
-        // Check whether shell zeta > core zeta. Only for polarizable models.
-        auto   itype = InteractionType::ELECTROSTATICS;
-        if (forcefield->polarizable() && forcefield->interactionPresent(itype))
+        auto pt = atom.ffType();
+        auto p  = forcefield->findParticleType(pt)->parameterConst("charge");
+        if (p.mutability() == Mutability::ACM && p.maximum() > p.minimum())
         {
-            auto &fs             = forcefield->findForcesConst(itype);
-            std::string poltype  = "poltype";
-            std::string zetatype = "zetatype";
-            for(const auto &p : forcefield->particleTypesConst())
-            {
-                if (p.second.hasOption(poltype))
-                {
-                    auto coreID  = Identifier(p.second.optionValue(zetatype));
-                    auto shell   = forcefield->findParticleType(p.second.optionValue(poltype));
-                    auto shellID = Identifier(shell->optionValue(zetatype));
-                    auto fpshell = fs.findParameterTypeConst(shellID, "zeta");
-                    auto fpcore  = fs.findParameterTypeConst(coreID, "zeta");
-                    if (fpshell.ntrain() > 0 && fpcore.ntrain() > 0)
-                    {
-                        double deltaZeta = zetaDiff_ - (fpcore.value() - fpshell.value());
-                        if (deltaZeta > 0)
-                        {
-                            bound += gmx::square(deltaZeta);
-                        }
-                    }
-                }
-            }
+            bound += l2_regularizer(atom.charge(), p.minimum(), p.maximum());
         }
-        itype = InteractionType::BONDS;
-        if (forcefield->interactionPresent(itype))
-        {
-            auto &fs = forcefield->findForcesConst(itype);
-            if (fs.potential() == Potential::CUBIC_BONDS)
-            {
-                for(const auto &ffp : fs.parametersConst())
-                {
-                    auto param = ffp.second;
-                    auto rmax  = param[cubic_name[cubicRMAX]].value();
-                    auto blen  = param[cubic_name[cubicLENGTH]].value();
-                    // We want the maximum in the potential to be at least 0.1 nm further away than then minimum
-                    if (rmax < blen+0.1)
-                    {
-                        bound += gmx::square(rmax-blen-0.1);
-                    }
-                }
-            }
-        }
-        mytarget->second.increase(1, bound);
     }
+    mytarget->second.increase(1, bound);
 }
 
 /* * * * * * * * * * * * * * * * * * * * * *
 * END: BoundsDevComputer                   *
-* * * * * * * * * * * * * * * * * * * * * */
-
-/* * * * * * * * * * * * * * * * * * * * * *
-* BEGIN: ChargeCM5DevComputer              *
-* * * * * * * * * * * * * * * * * * * * * */
-
-void ChargeCM5DevComputer::calcDeviation(MsgHandler                    *msghandler,
-                                         const ForceComputer           *,
-                                         ACTMol                        *actmol,
-                                         std::vector<gmx::RVec>        *,
-                                         std::map<eRMS, FittingTarget> *targets,
-                                         const ForceField              *forcefield)
-{
-    double qtot = 0;
-    int i = 0;
-    const auto &myatoms = actmol->atomsConst();
-    std::vector<double> qcm5;
-    auto qProps = actmol->qPropsConst();
-    for(auto qp = qProps.begin(); qp < qProps.end(); ++qp)
-    {
-        auto qqm = qp->qPqmConst();
-        if (qType::CM5 == qqm.qtype())
-        {
-            qcm5 = qqm.charge();
-            if (debug)
-            {
-                for (size_t j = 0; j < myatoms.size(); j++)
-                {
-                    msghandler->msg(ACTStatus::Debug,
-                                    gmx::formatString("Charge %lu. CM5 = %g ACM = %g\n",
-                                                      j, qcm5[j], myatoms[j].charge()));
-                }
-            }
-        }
-    }
-    // Iterate over the atoms
-    for (size_t j = 0; j < myatoms.size(); j++)
-    {
-        if (myatoms[j].pType() == ActParticle::Shell)
-        {
-            continue;
-        }
-        auto                       atype = forcefield->findParticleType(myatoms[j].ffType());
-        const ForceFieldParameter &qparm = atype->parameterConst("charge");
-        double qj  = myatoms[j].charge();
-        double qjj = qj;
-        for(const auto &ss : myatoms[j].shells())
-        {
-            qjj += myatoms[ss].charge();
-        }
-        qtot += qjj;
-        switch (qparm.mutability())
-        {
-        case Mutability::Fixed:
-            if (qparm.value() != qj)
-            {
-                msghandler->msg(ACTStatus::Fatal,
-                                gmx::formatString("Fixed charge for atom %s in %s was changed from %g to %g",
-                                                    myatoms[j].name().c_str(),
-                                                    actmol->getMolname().c_str(), qparm.value(), qj).c_str());
-            }
-            break;
-        case Mutability::ACM:
-        case Mutability::Bounded:
-            {
-                if ((*targets).find(eRMS::CHARGE)->second.weight() > 0)
-                {
-                    if (qparm.maximum() > qparm.minimum())
-                    {
-                        (*targets).find(eRMS::CHARGE)->second.increase(1, l2_regularizer(qjj, qparm.minimum(), qparm.maximum()));
-                    }
-                }
-            }
-            break;
-        case Mutability::Dependent:
-        case Mutability::Free:
-            break;
-        }
-        if (!qcm5.empty() &&
-            qparm.mutability() != Mutability::Fixed &&
-            (*targets).find(eRMS::CM5)->second.weight() > 0)
-        {
-            real dq2 = gmx::square(qjj - qcm5[i]);
-            (*targets).find(eRMS::CM5)->second.increase(1, dq2);
-        }
-        i += 1;
-    }
-    (*targets).find(eRMS::CHARGE)->second.increase(1, gmx::square(qtot - actmol->totalCharge()));            
-}
-
-/* * * * * * * * * * * * * * * * * * * * * *
-* END: ChargeCM5DevComputer                *
 * * * * * * * * * * * * * * * * * * * * * */
 
 /* * * * * * * * * * * * * * * * * * * * * *
@@ -298,7 +144,8 @@ void EspDevComputer::calcDeviation(MsgHandler                    *msghandler,
         // Need to call the force routine to update shells and/or vsites
         if (doForce)
         {
-            forceComputer->compute(forcefield, topology, &coords, &forces, &energies);
+            forceComputer->compute(msghandler, forcefield, topology, &coords,
+                                   &forces, &energies);
             qgr->updateAtomCoords(coords);
         }
         if (msghandler->debug())
@@ -310,9 +157,9 @@ void EspDevComputer::calcDeviation(MsgHandler                    *msghandler,
         {
             epsilonr = 1;
         }
-        qgr->calcPot(epsilonr);
+        qgr->calcPot(msghandler, epsilonr);
         real   mae, mse;
-        real   rms   = qgr->getStatistics(&rrms, &cosangle, &mae, &mse);
+        real   rms   = qgr->getStatistics(msghandler, &rrms, &cosangle, &mae, &mse);
         double myRms = convertToGromacs(rms, "Hartree/e");
         size_t nEsp  = qgr->nEsp();
         (*targets).find(eRMS::ESP)->second.increase(nEsp, gmx::square(myRms)*nEsp);
@@ -436,7 +283,7 @@ void MultiPoleDevComputer::calcDeviation(MsgHandler                    *msghandl
                 std::vector<gmx::RVec>            forces;
                 std::map<InteractionType, double> energies;
                 auto                              myx = qact.x();
-                forceComputer->compute(forcefield, topology, &myx, &forces, &energies);
+                forceComputer->compute(msghandler, forcefield, topology, &myx, &forces, &energies);
                 qact.setX(myx);
             }
             qact.calcMoments();
@@ -620,7 +467,8 @@ void ForceEnergyDevComputer::calcDeviation(MsgHandler                    *msghan
     }
     if (doForce2 || doEpot || doInter)
     {
-        actmol->forceEnergyMaps(forcefield, forceComputer, &forceMap, &energyMap,
+        actmol->forceEnergyMaps(msghandler, forcefield,
+                                forceComputer, &forceMap, &energyMap,
                                 &interactionEnergyMap, &enerComponentMap, separateInductionCorrection_);
         if (doForce2 && !forceMap.empty())
         {
@@ -628,11 +476,15 @@ void ForceEnergyDevComputer::calcDeviation(MsgHandler                    *msghan
             {
                 for(const auto &ff : fstruct)
                 {
-                    if (std::isnan(ff.second))
+                    if (!std::isfinite(ff.second))
                     {
-                        printf("Force for %s is NaN\n", actmol->getMolname().c_str());
+                        msghandler->msg(ACTStatus::Warning,
+                                        gmx::formatString("Force for %s is NaN\n", actmol->getMolname().c_str()));
                     }
-                    tf->second.increase(1, gmx::square(ff.first-ff.second));
+                    else
+                    {
+                        tf->second.increase(1, gmx::square(ff.first-ff.second));
+                    }
                 }
             }
         }
@@ -652,23 +504,27 @@ void ForceEnergyDevComputer::calcDeviation(MsgHandler                    *msghan
             }
             for(const auto &ff : energyMap)
             {
-                if (std::isnan(ff.eact()))
+                // std::isfinite checks for both Inf and NaN values.
+                if (ff.haveACT())
                 {
-                    msghandler->msg(ACTStatus::Warning,
-                                    gmx::formatString("Energy for %s is NaN\n", actmol->getMolname().c_str()));
-                }
-                else
-                {
-                    if (ff.haveQM() && ff.haveACT())
+                    if (!std::isfinite(ff.eact()))
                     {
-                        double eqm    = ff.eqm();
-                        double mydev2 = gmx::square(eqm-ff.eact());
-                        double weight = 1;
-                        if (beta > 0)
+                        msghandler->msg(ACTStatus::Warning,
+                                        gmx::formatString("Energy for %s is NaN\n", actmol->getMolname().c_str()));
+                    }
+                    else
+                    {
+                        if (ff.haveQM())
                         {
-                            weight = exp(-beta*(eqm-eqmMin));
+                            double eqm    = ff.eqm();
+                            double mydev2 = gmx::square(eqm-ff.eact());
+                            double weight = 1;
+                            if (beta > 0)
+                            {
+                                weight = exp(-beta*(eqm-eqmMin));
+                            }
+                            te->second.increase(weight, mydev2);
                         }
-                        te->second.increase(weight, mydev2);
                     }
                 }
             }
@@ -693,13 +549,16 @@ void ForceEnergyDevComputer::calcDeviation(MsgHandler                    *msghan
             }
             // Check whether we should sum the induction terms
             bool sumInductionTerms = false;
-            if (targets->find(eRMS::DeltaHF) == targets->end())
+            auto tdhf = targets->find(eRMS::DeltaHF);
+            if (tdhf == targets->end() || tdhf->second.weight() == 0)
             {
                 // No -fc_deltahf option was passed
                 if (targets->find(eRMS::Induction) != targets->end())
                 {
                     sumInductionTerms = true;
                 }
+                std::map<bool, const char *> bool_names = { { false, "False" }, { true, "True" } };
+                msghandler->msg(ACTStatus::Debug, gmx::formatString("Sum induction terms: %s", bool_names[sumInductionTerms]));
             }
             for(auto &iem : interactionEnergyMap)
             {
@@ -710,7 +569,22 @@ void ForceEnergyDevComputer::calcDeviation(MsgHandler                    *msghan
                     if (iem.end() != ff && ff->second.haveQM())
                     {
                         auto eqm =  ff->second.eqm();
-                        weight = exp(-beta*(eqm-eqmMin));
+                        if (beta > 0)
+                        {
+                            // Argument should always be positive
+                            double earg = beta*(eqm-eqmMin);
+                            // Check whether exponentiating will work
+                            if (earg < DOUBLE_MAX_LOG)
+                            {
+                                weight = exp(-earg);
+                            }
+                            else
+                            {
+                                // Otherwise the weight is (close to) zero.
+                                // Totally zero will not work due to checks later.
+                                weight = 1e-8;
+                            }
+                        }
                     }
                 }
                 for(const auto &rms: rmsE)
@@ -720,40 +594,25 @@ void ForceEnergyDevComputer::calcDeviation(MsgHandler                    *msghan
                     {
                         continue;
                     }
-                    if (iem.find(rms.second) == iem.end())
+                    auto myff = iem.find(rms.second);
+                    if (myff != iem.end())
                     {
-                        continue;
-                    }
-                    if (sumInductionTerms &&
-                        (eRMS::DeltaHF == rms.first || eRMS::Induction == rms.first))
-                    {
-                        if (eRMS::Induction == rms.first)
-                        {
-                            auto &find = iem.find(InteractionType::INDUCTION)->second;
-                            auto &fic  = iem.find(InteractionType::INDUCTIONCORRECTION)->second;
-                            if (find.haveQM() && find.haveACT())
-                            {
-                                // Difficult to make this fool-proof. If the data is not consistent
-                                // with the command-line options used, things may break.
-                                auto eqm  = find.eqm();
-                                auto eact = find.eact();
-                                if (fic.haveQM() && fic.haveACT())
-                                {
-                                    eqm  += fic.eqm();
-                                    eact += fic.eact();
-                                }
-                                ti->second.increase(weight, gmx::square(eqm-eact));
-                            }
-                        }
-                    }
-                    else
-                    {
-                        auto &ff  = iem.find(rms.second)->second;
+                        auto &ff = myff->second;
                         if (ff.haveQM() && ff.haveACT())
                         {
                             auto eqm  = ff.eqm();
                             auto eact = ff.eact();
-                            ti->second.increase(weight, gmx::square(eqm-eact));
+                            if (std::isfinite(eact))
+                            {
+                                ti->second.increase(weight, gmx::square(eqm-eact));
+                            }
+                            else
+                            {
+                                // We do not want to deal with infinite numbers but it should
+                                // be clear that this is a very bad parameter set.
+                                eact = 1e16;
+                                ti->second.increase(weight, gmx::square(eqm-eact));
+                            }
                         }
                     }
                 }

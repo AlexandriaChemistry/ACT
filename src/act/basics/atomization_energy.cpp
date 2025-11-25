@@ -101,13 +101,16 @@ class AtomizationEnergyTerm
     const std::string &ref() const { return ref_; }
 };
 
-AtomizationEnergy::AtomizationEnergy()
+void AtomizationEnergy::read(MsgHandler *msg_handler)
 {
     const char *acd     = "ACTDATA";
     auto        actdata = std::getenv(acd);
     if (nullptr == actdata || strlen(actdata) == 0)
     {
-        fprintf(stderr, "Please set the environment variable %s to the correct directory.\n", acd);
+        if (msg_handler)
+        {
+            msg_handler->fatal(gmx::formatString("Please set the environment variable '%s' to point to the correct directory. Maybe you should source the ACTRC file first.", acd));
+        }
         return;
     }
     std::vector<const char *> ahof = {
@@ -134,9 +137,9 @@ AtomizationEnergy::AtomizationEnergy()
                         terms_.push_back(new AtomizationEnergyTerm(words[0], charge, words[2], words[3], temperature,
                                                                    value, mult, words[7], words[8]));
                     }
-                    else if (debug)
+                    else if (msg_handler)
                     {
-                        fprintf(debug, "Funny line '%s' in '%s'\n", line.c_str(), infile.c_str());
+                        msg_handler->writeDebug(gmx::formatString("Funny line '%s' in '%s'\n", line.c_str(), infile.c_str()));
                     }
                 }
             }
@@ -147,9 +150,10 @@ AtomizationEnergy::AtomizationEnergy()
             fprintf(stderr, "Cannot find %s\n", infile.c_str());
         }
     }
-    if (debug)
+    if (msg_handler)
     {
-        fprintf(debug, "Read %zu terms for atomization energy\n", terms_.size());
+        msg_handler->msg(ACTStatus::Info,
+                         gmx::formatString("Read %zu terms for atomization energy\n", terms_.size()));
     }
 }
 

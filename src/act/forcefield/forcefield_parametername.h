@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2022-2024
+ * Copyright (C) 2022-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -37,130 +37,72 @@
 namespace alexandria
 {
 
-    enum { lj12_6SIGMA = 0, lj12_6EPSILON = 1, lj12_6SIGMA_IJ = 2, lj12_6EPSILON_IJ = 3, lj12_6NR = 4 };
+    enum { lj12_6SIGMA, lj12_6EPSILON, lj12_6NR };
 
-    extern const char *lj12_6_name[lj12_6NR];
+    enum { lj8_6SIGMA, lj8_6EPSILON, lj8_6NR };
 
-    enum { lj8_6SIGMA = 0, lj8_6EPSILON = 1, lj8_6SIGMA_IJ = 2, lj8_6EPSILON_IJ = 3, lj8_6NR = 4 };
+    enum { wbhSIGMA, wbhEPSILON, wbhGAMMA, wbhNR };
 
-    extern const char *lj8_6_name[lj8_6NR];
+    enum { bhA, bhB, bhC6, bhNR };
 
-    enum { wbhSIGMA = 0, wbhEPSILON = 1, wbhGAMMA = 2, wbhSIGMA_IJ = 3, wbhEPSILON_IJ = 4, wbhGAMMA_IJ = 5, wbhNR = 6 };
+    enum { ttA, ttB, ttC6, ttC8, ttC10, ttNR };
 
-    extern const char *wbh_name[wbhNR];
+    enum { SIttA, SIttBexch, SIttBdisp, SIttC6, SIttC8, SIttC10, SIttNR };
 
-    enum { bhA = 0, bhB = 1, bhC6 = 2, bhA_IJ = 3, bhB_IJ = 4, bhC6_IJ = 5, bhNR = 6 };
+    enum { tt2bA, tt2bBexch, tt2bBdisp, tt2bC6, tt2bC8, tt2bC10, tt2bNR };
 
-    extern const char *bh_name[bhNR];
+    enum { lj14_7SIGMA, lj14_7EPSILON, lj14_7GAMMA, lj14_7DELTA,
+           lj14_7NR };
 
-    enum { ttA = 0, ttB = 1, ttC6 = 2, ttC8 = 3, ttC10 = 4, ttA_IJ = 5, ttB_IJ = 6, ttC6_IJ = 7, ttC8_IJ = 8, ttC10_IJ = 9, ttNR = 10 };
+    enum { expA, expB, expVSite, expNR };
 
-    extern const char *tt_name[ttNR];
+    enum { dexpA1, dexpA2, dexpB, dexpNR };
 
-    enum { lj14_7SIGMA = 0, lj14_7EPSILON = 1, lj14_7GAMMA = 2, lj14_7DELTA = 3,
-           lj14_7SIGMA_IJ = 4, lj14_7EPSILON_IJ = 5, lj14_7GAMMA_IJ = 6, lj14_7DELTA_IJ = 7, lj14_7NR = 8 };
+    enum { gbhRMIN, gbhEPSILON, gbhGAMMA, gbhDELTA, gbhNR };
 
-    extern const char *lj14_7_name[lj14_7NR];
+    enum { coulZETA, coulZETA2, coulNR };
 
-    enum { expA = 0, expB = 1, expA_IJ = 2, expB_IJ = 3, expNR = 4 };
+    enum { bondKB, bondLENGTH, bondENERGY, bondNR };
 
-    extern const char *exp_name[expNR];
+    enum { cubicLENGTH, cubicRMAX, cubicKB, cubicDE, cubicNR };
 
-    enum { dexpA1 = 0, dexpA2 = 1, dexpB = 2, dexpA1_IJ = 3, dexpA2_IJ = 4, dexpB_IJ = 5, dexpNR = 6 };
+    enum { angleKT, angleANGLE, angleNR };
 
-    extern const char *dexp_name[dexpNR];
+    enum { ubKT, ubANGLE, ubR13, ubKUB, ubNR };
 
-    enum { gbhRMIN = 0, gbhEPSILON = 1, gbhGAMMA = 2, gbhDELTA = 3, gbhRMIN_IJ = 4, gbhEPSILON_IJ = 5, gbhGAMMA_IJ = 6, gbhDELTA_IJ = 7, gbhNR = 8 };
+    enum { psANGLE, psRIJ0, psRJK0, psNR };
 
-    extern const char *gbh_name[gbhNR];
+    enum { polALPHA, polRHYPER, polFCHYPER, polNR };
 
-    enum { coulZETA = 0, coulZETAI = 1, coulZETAJ = 2, coulNR = 3 };
+    enum { morseBETA, morseDE, morseD0, morseLENGTH, morseNR };
 
-    extern const char *coul_name[coulNR];
+    enum { huaLENGTH, huaDE, huaB, huaC, huaNR };
 
-    enum { bondKB = 0, bondLENGTH = 1, bondENERGY = 2, bondNR = 3 };
+    enum { linangA, linangKLIN, linangNR };
 
-    extern const char *bond_name[bondNR];
+    enum { idihKPHI, idihNR };
 
-    enum { cubicLENGTH = 0, cubicRMAX = 1, cubicKB = 2, cubicDE = 3, cubicNR = 4 };
+    enum { fdihC0, fdihC1, fdihC2, fdihC3, fdihC4, fdihC5, fdihNR };
 
-    extern const char *cubic_name[cubicNR];
+    enum { pdihANGLE, pdihKP, pdihMULT, pdihNR };
 
-    enum { angleKT = 0, angleANGLE = 1, angleNR = 2 };
+    enum { vsite1A, vsite1NR };
 
-    extern const char *angle_name[angleNR];
+    enum { vsite2A, vsite2NR };
 
-    enum { ubKT = 0, ubANGLE = 1, ubR13 = 2, ubKUB = 3, ubNR = 4 };
+    enum { vsite2fdA, vsite2fdNR };
 
-    extern const char *ub_name[ubNR];
+    enum { vsite3A,vsite3B, vsite3NR };
 
-    enum { psANGLE = 0, psRIJ0 = 1, psRJK0 = 2, psNR = 3 };
+    enum { vsite3sA, vsite3sNR };
 
-    extern const char *ps_names[psNR];
+    enum { vsite3fdA, vsite3fdB, vsite3fdNR };
 
-    enum { polALPHA = 0, polRHYPER = 1, polFCHYPER = 2, polNR = 3 };
+    enum { vsite3fadA, vsite3fadB, vsite3fadNR };
 
-    extern const char *pol_name[polNR];
+    enum { vsite3outA, vsite3outB, vsite3outC,  vsite3outNR };
 
-    enum { morseBETA = 0, morseDE = 1, morseD0 = 2, morseLENGTH = 3, morseNR = 4 };
-
-    extern const char *morse_name[morseNR];
-
-    enum { huaLENGTH = 0, huaDE = 1, huaB = 2, huaC = 3, huaNR = 4 };
-
-    extern const char *hua_name[huaNR];
-
-    enum { linangA = 0, linangKLIN = 1, linangNR = 2 };
-
-    extern const char *linang_name[linangNR];
-
-    enum { idihKPHI = 0, idihNR = 1 };
-
-    extern const char *idih_name[idihNR];
-
-    enum { fdihC0 = 0, fdihC1 = 1, fdihC2 = 2, fdihC3 = 3, fdihC4 = 4, fdihC5 = 5, fdihNR = 6 };
-
-    extern const char *fdih_name[fdihNR];
-
-    enum { pdihANGLE = 0, pdihKP = 1, pdihMULT = 2, pdihNR = 3 };
-
-    extern const char *pdih_name[pdihNR];
-
-    enum { vsite1A = 0, vsite1NR = 1 };
-
-    extern const char *vsite1_name[vsite1NR];
-
-    enum { vsite2A = 0, vsite2NR = 1 };
-
-    extern const char *vsite2_name[vsite2NR];
-
-    enum { vsite2fdA = 0, vsite2fdNR = 1 };
-
-    extern const char *vsite2fd_name[vsite2fdNR];
-
-    enum { vsite3A = 0,vsite3B = 1, vsite3NR = 2 };
-
-    extern const char *vsite3_name[vsite3NR];
-
-    enum { vsite3sA = 0, vsite3sNR = 1 };
-
-    extern const char *vsite3s_name[vsite3sNR];
-
-    enum { vsite3fdA = 0, vsite3fdB = 1, vsite3fdNR = 2 };
-
-    extern const char *vsite3fd_name[vsite3fdNR];
-
-    enum { vsite3fadA = 0, vsite3fadB = 1, vsite3fadNR = 2 };
-
-    extern const char *vsite3fad_name[vsite3fadNR];
-
-    enum { vsite3outA = 0, vsite3outB = 1, vsite3outC = 2,  vsite3outNR = 3 };
-
-    extern const char *vsite3out_name[vsite3outNR];
-
-    enum { vsite3outsA = 0, vsite3outsC = 1,  vsite3outsNR = 2 };
-
-    extern const char *vsite3outs_name[vsite3outsNR];
+    enum { vsite3outsA, vsite3outsC,  vsite3outsNR };
 
 } // namespace alexandria
 

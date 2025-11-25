@@ -48,6 +48,7 @@
 #include "act/forces/forcecomputer.h"
 #include "act/ga/genetic_algorithm.h"
 #include "act/ga/mutator.h"
+#include "act/ga/npointcrossover.h"
 #include "act/utility/communicationrecord.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/mdlib/force.h"
@@ -90,20 +91,31 @@ private:
     GAConfigHandler       gach_;
     //! StaticIndividualInfo instance
     StaticIndividualInfo *sii_;
-    //! Base name for FF output
-    std::string           baseOutputFileName_;
+    //! Base names for FF output
+    std::map<iMolSelect, std::string> outputFileName_;
 
     // This is for MASTER node
     //! GeneticAlgorithm instance
-    ga::GeneticAlgorithm *ga_          = nullptr;
+    ga::GeneticAlgorithm    *ga_           = nullptr;
 
     //! Pointer to ForceComputer
-    ForceComputer        *forceComp_   = nullptr;
+    ForceComputer           *forceComp_    = nullptr;
     //! Pointer to ACMFitnessComputer since it will be initialized later
-    ACMFitnessComputer   *fitComp_     = nullptr;
+    ACMFitnessComputer      *fitComp_      = nullptr;
     //! Storing the mutator used
-    ga::Mutator          *mutator_     = nullptr;
-    
+    ga::Mutator             *mutator_      = nullptr;
+    //! Probability
+    ga::ProbabilityComputer *probComputer_ = nullptr;
+    //! Initializer
+    ACMInitializer          *initializer_  = nullptr;
+    //! Selector
+    ga::RouletteSelector    *selector_     = nullptr;
+    //! CrossOver
+    ga::NPointCrossover     *crossover_    = nullptr;
+    //! Terminators
+    std::vector<ga::Terminator*> terminators_;
+    //! Penalizers
+    std::vector<ga::Penalizer*>  penalizers_;
     /*!
      * \brief Print to log file (if it exists), the estimated number of times
      * we will call calcDeviation per dataset
@@ -126,6 +138,9 @@ public:
     {
         sii_ = new StaticIndividualInfo(&commRec_);
     }
+
+    //! Destructor
+    ~OptACM();
 
     /*! \brief Add my options to the command line
      * \param[inout] pargs   Flags
@@ -155,8 +170,8 @@ public:
      * \param[in] sensitivity If true, a sensitivity analysis will be done
      * \return true if better parameters were found.
      */
-    bool runMaster(bool        optimize,
-                   bool        sensitivity);
+    bool runMaster(bool optimize,
+                   bool sensitivity);
 
     /* * * * * * * * * * * * * * * * * * * * * *
     * BEGIN: Initializing stuff                *
@@ -164,10 +179,12 @@ public:
 
     /*! \brief Initialize the main components of the
      * Genetic Algorithm, just on the master.
-     * \param[in] fnm Names of files selected by user
+     * \param[in] fnm       Names of files selected by user
+     * \param[in] algorithm Will be passed on to mutator
      * \return 1 of all is well, 0 otherwise
      */
-    int initMaster(const std::vector<t_filenm> &fnm);
+    int initMaster(const std::vector<t_filenm> &fnm,
+                   ChargeGenerationAlgorithm    algorithm);
 
     /* * * * * * * * * * * * * * * * * * * * * *
     * END: Initializing stuff                  *

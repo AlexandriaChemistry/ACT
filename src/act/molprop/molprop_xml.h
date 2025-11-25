@@ -41,6 +41,8 @@
 namespace alexandria
 {
 
+    class MsgHandler;
+    
 /*! \brief
  * Write a vector of molprops to an XML file
  *
@@ -68,11 +70,13 @@ void MolPropWrite(const char                 *fn,
  * \todo Implement using a serialized protocol rather than reading the
  * whole file into memory. Since we have a vector of molprops this should
  * be straightforward.
- * \param[in]  fn         The file name to read from
- * \param[out] mpt        The vector of MolProp
+ * \param[in]  msg_handler For info and debugging
+ * \param[in]  fn          The file name to read from
+ * \param[out] mpt         The vector of MolProp
  * \ingroup module_alexandria
  */
-void MolPropRead(const char           *fn,
+void MolPropRead(MsgHandler           *msg_handler,
+                 const char           *fn,
                  std::vector<MolProp> *mpt);
 
 } // namespace alexandria

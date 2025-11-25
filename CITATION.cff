@@ -6,17 +6,32 @@ authors:
   orcid: "https://orcid.org/0000-0002-7659-8526"
 - family-names: "Marrades"
   given-names: "Julian"
-- family-names: "van Maaren"
-  given-names: "Paul J."
-  orcid: "https://orcid.org/0000-0002-6068-4585"
+  orcid: "https://orcid.org/0000-0003-2747-5658"
+- family-names: "Kriz"
+  given-names: "Kristian"
+  orcid: "https://orcid.org/0000-0001-9072-0949"
+- family-names: "Hosseini"
+  given-names: "A. Najla"
+  orcid: "https://orcid.org/0000-0002-9610-5151"
+- family-names: "Nordman"
+  given-names: "Alfred T."
+  orcid: "https://orcid.org/0000-0002-6101-4823"
+- family-names: "Paolo"
+  given-names: "Joao"
+  orcid: "http://orcid.org/0000-0002-1036-5965"
 - family-names: "Walz"
   given-names: "Marie-Madeleine"
   orcid: "https://orcid.org/0000-0002-3932-5780"
+- family-names: "van Maaren"
+  given-names: "Paul J."
+  orcid: "https://orcid.org/0000-0002-6068-4585"
 - family-names: "Ghahremanpour"
   given-names: "Mohammad M."
   orcid: "https://orcid.org/0000-0002-1129-6041"
-title: "Alexandria Chemistry Tookit"
-version: 0.98
-doi: 10.5281/zenodo.6363016
-date-released: 2023-09-01
-url: "https://github.com/dspoel/ACT"
+title: "Evolutionary machine learning of physics-based force elds in high-dimensional parameter-space"
+journal: "Digital Discovery"
+year: 2025
+version: 1.0
+doi: 10.1039/d5dd00178a
+date-released: 2025-04-01
+url: "https://github.com/AlexandriaChemistry/ACT"

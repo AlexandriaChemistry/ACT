@@ -103,6 +103,12 @@ static void generate_bcc(ForceField *pd,
                 if (bonds.parameterExists(bondId))
                 {
                     auto entype = InteractionType::ELECTRONEGATIVITYEQUALIZATION;
+                    // Only mkae bcc entries if needed.
+                    if (!ai.second.hasInteractionType(entype) ||
+                        !aj.second.hasInteractionType(entype))
+                    {
+                        continue;
+                    }
                     auto zi = ai.second.interactionTypeToIdentifier(entype).id();
                     auto zj = aj.second.interactionTypeToIdentifier(entype).id();
                     if (!zi.empty() && !zj.empty())
@@ -144,7 +150,7 @@ int geometry_ff(int argc, char *argv[])
         { efXML, "-mp",  "allmols",      ffRDMULT },
         { efXML, "-ff",  "aff",          ffOPTRD },
         { efXML, "-o",   "aff_out",      ffWRITE },
-        { efDAT, "-sel", "molselect",    ffREAD },
+        { efDAT, "-sel", "molselect",    ffOPTRD },
         { efCSV, "-de",  "dissociation", ffOPTWR }
     };
 
@@ -207,20 +213,35 @@ int geometry_ff(int argc, char *argv[])
     tw->writeStringFormatted("# This file was created %s", ctime(&my_t));
     tw->writeStringFormatted("# The Alexandria Chemistry Toolkit.\n#\n");
 
-    auto selfile = opt2fn("-sel", fnm.size(), fnm.data());
-    gms.read(selfile);
-    print_memory_usage(debug);
-    printf("There are %d molecules in the selection file %s.\n",
-           (gms.count(iMolSelect::Train) + gms.count(iMolSelect::Test)), selfile);
-    tw->writeStringFormatted("# There are %d molecules.\n#\n", (gms.count(iMolSelect::Train) + gms.count(iMolSelect::Test)));
-
+    auto selfile = opt2fn_null("-sel", fnm.size(), fnm.data());
+    if (selfile)
+    {
+        gms.read(selfile);
+        print_memory_usage(debug);
+        if (gms.nMol() == gms.countDimers())
+        {
+            msghandler.fatal("Selection file contains dimers instead of monomers.");
+        }
+        printf("There are %d molecules in the selection file %s.\n",
+               (gms.count(iMolSelect::Train) + gms.count(iMolSelect::Test)), selfile);
+        tw->writeStringFormatted("# There are %d molecules.\n#\n", (gms.count(iMolSelect::Train) + gms.count(iMolSelect::Test)));
+    }
+    else
+    {
+        printf("Will use all molecules in the molprop file(s) as the selection.\n");
+    }
     /* Read standard atom properties */
     print_memory_usage(debug);
 
     /* Read ForceField file */
+    auto myff = opt2fn_null("-ff", fnm.size(), fnm.data());
+    if (!myff)
+    {
+        msghandler.fatal("Please pass me a force field file name");
+    }
     try
     {
-        readForceField(opt2fn_null("-ff", fnm.size(), fnm.data()), &pd);
+        readForceField(myff, &pd);
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     print_memory_usage(debug);
@@ -230,9 +251,17 @@ int geometry_ff(int argc, char *argv[])
     pd.setPolarizable(false);
 
     /* Read Molprops */
-    auto warnings = merge_xml(opt2fns("-mp", fnm.size(), fnm.data()), &mp);
+    auto warnings = merge_xml(&msghandler, opt2fns("-mp", fnm.size(), fnm.data()), &mp);
     print_memory_usage(debug);
-
+    if (!selfile)
+    {
+        // Extract molecule names from the molprops
+        int index = 0;
+        for (const auto &m : mp)
+        {
+            gms.addOne(m.getIupac(), index++, iMolSelect::Train);
+        }
+    }
     if (warnings.size() > static_cast<size_t>(maxwarn))
     {
         fprintf(stderr, "Too many warnings. Terminating.\n");
@@ -243,7 +272,7 @@ int geometry_ff(int argc, char *argv[])
         return 0;
     }
     std::vector<ACTMol> actmols;
-    bonds.extractGeometries(&msghandler, mp, &actmols, &pd, gms);
+    bonds.extractGeometries(&msghandler, &mp, &actmols, &pd, gms);
     
     print_memory_usage(debug);
     if (bHisto)

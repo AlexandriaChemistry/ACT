@@ -140,7 +140,7 @@ def install_openbabel(anonymous, clone, destination, prefix, build_type, CXX, CC
             swdir = "openbabel-" + oblatest[:-7]
         # See if we succeeded, if so let's go
         if not os.path.isdir(swdir):
-            sys.exit("No directory %s. You may want to use the '-clone_OB' flag" % swdir)
+            sys.exit("No directory %s. Failed to log in to github.com. You may want to use the '-anon' flag along with '-clone_OB'." % swdir)
 
     else:
         print("Will not clone or fetch openbabel again since directory %s exists." % swdir)

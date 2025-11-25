@@ -45,4 +45,4 @@ install(PROGRAMS viewxvg DESTINATION bin)
 install(PROGRAMS view_fitness DESTINATION bin)
 install(PROGRAMS donchev2molprop DESTINATION bin)
 install(PROGRAMS ncia2molprop DESTINATION bin)
-
+install(PROGRAMS actgui DESTINATION bin)

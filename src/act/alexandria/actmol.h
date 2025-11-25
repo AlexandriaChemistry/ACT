@@ -153,9 +153,6 @@ private:
     //! Resp calculation structure
     QgenResp           QgenResp_;
 public:
-    //! Default constructor
-    ACTQprop() {}
-
     /*! \brief Constructor initializing both QtypeProps
      * \param[in] atoms The atoms
      * \param[in] x     The coordinates
@@ -277,16 +274,21 @@ private:
     //! Energy terms for this compounds
     std::map<MolPropObservable, double> energy_;
     //! Molecular Topology
-    Topology                      *topology_      = nullptr;
+    Topology                       topology_;
     //! All the atoms, but not shells or vsites
     std::vector<int>               realAtoms_; 
-    // Reference data for devcomputer
+    //! Reference data for devcomputer
     std::vector<double>            ref_frequencies_;
     std::vector<double>            ref_intensities_;
+    //! QM method used for data
+    std::string                    method_;
+    //! QM basis set used for data
+    std::string                    basis_;
+    //! Charge symmetry 
     std::vector<int>               symmetric_charges_;
     eSupport                       eSupp_         = eSupport::Local;
     //! Structure to manage charge generation
-    FragmentHandler               *fraghandler_   = nullptr;
+    FragmentHandler                fraghandler_;
     iMolSelect                     dataset_type_  = iMolSelect::Ignore;
     //! Internal storage for original coords
     std::vector<gmx::RVec>         xOriginal_;
@@ -294,13 +296,21 @@ public:
 
     //! \return a GROMACS style array with energy terms
     const real *energyTerms() const;
-    
+
     /*! \brief
      * Return a coordinate vector of the molecule corresponding to the first experiment
      * with Jobtype Opt or Topology or SP. The array includes shells and/or vsites.
      * \throws if not suitable experiment is present.
      */
     std::vector<gmx::RVec> xOriginal() const;
+
+    /*! \brief
+     * Return a modified coordinate vector of the molecule based on the input.
+     * The output array includes shells and/or vsites.
+     * \param[in] xxx Input coordinates
+     * \return Modified coordinate array.
+     */
+    std::vector<gmx::RVec> experCoords(const std::vector<gmx::RVec> &xxx) const;
 
     /*! \brief
      * Constructor
@@ -369,6 +379,7 @@ public:
      * reference energies paired with a map of ACT energy components. The 
      * InteractionType index points to the energy type in the
      * energyComponentsMap.
+     * \param[in]  msghandler                 A message handler
      * \param[in]  pd                         The force field structure
      * \param[in]  forceComp                  The force computer utility
      * \param[out] forceMap                   The forces
@@ -377,7 +388,8 @@ public:
      * \param[out] energyComponentsMap        The energy components
      * \param[in] separateInductionCorrection Whether to store InductionCorrection separately or add it to Induction
      */
-    void forceEnergyMaps(const ForceField                                                  *pd,
+    void forceEnergyMaps(MsgHandler                                                        *msghandler,
+                         const ForceField                                                  *pd,
                          const ForceComputer                                               *forceComp,
                          std::vector<std::vector<std::pair<double, double> > >             *forceMap,
                          std::vector<ACTEnergy>                                            *energyMap,
@@ -394,18 +406,36 @@ public:
     /*! \brief
      * \return atoms data for editing
      */
-    std::vector<ActAtom> *atoms() { return topology_->atomsPtr(); }
-
+    std::vector<ActAtom> *atoms()
+    {
+        return topology_.atomsPtr();
+    }
     /*! \brief
      * \return atoms data for reading only
      */
-    const std::vector<ActAtom> &atomsConst() { return topology_->atoms(); }
+    const std::vector<ActAtom> &atomsConst()
+    {
+        return topology_.atoms();
+    }
 
     //! \return the QtypeProps vector for editing
     std::vector<ACTQprop> *qProps() { return &qProps_; }
 
     //! \return the QtypeProps vector for reading
     const std::vector<ACTQprop> &qPropsConst() const { return qProps_; }
+
+    //! \return the level of theory used for data
+    std::string levelOfTheory();
+
+    /*! \brief Set QM basis set 
+     * \param[in] basis Will be new basis set if not empty
+     */
+    void setBasisset(const std::string &basis) { if (!basis.empty()) basis_ = basis; }
+
+    /*! \brief Set QM method 
+     * \param[in] method Will be new method if not empty
+     */
+    void setMethod(const std::string &method) { if (!method.empty()) method_ = method; }
 
     /*! Whether data is present
      * \param[in] mpo The observable to look for
@@ -415,12 +445,16 @@ public:
 
     /*! \brief Return the fragment handler
      */
-    FragmentHandler *fragmentHandler() const { return fraghandler_; }
+    FragmentHandler *fragmentHandler() { return &fraghandler_; }
+    
+    /*! \brief Return the fragment handler
+     */
+    const FragmentHandler *fragmentHandler() const { return &fraghandler_; }
     
     /*! \brief
      * \return atoms data
      */
-    const std::vector<ActAtom> &atomsConst() const { return topology_->atoms(); }
+    const std::vector<ActAtom> &atomsConst() const { return topology_.atoms(); }
     
     /*! \brief Return the bond order
      * \param[in] ai Atom I
@@ -441,45 +475,87 @@ public:
                           missingParameters  missing);
     
     //! Return the ACT topology structure
-    const Topology *topology() const { return topology_; }
+    const Topology *topology() const { return &topology_; }
     
     //! Return the ACT topology structure for editing
-    Topology *topologyPtr() { return topology_; }
-    
+    Topology *topologyPtr() { return &topology_; }
     /*! \brief
-     * Generate atomic partial charges
+     * Update internal structures with electric moments etc.
+     * \param[in]  pd        Data structure containing atomic properties
+     * \param[in]  forceComp Force computer utility
+     * \param[out] forces    This routine will compute energies and forces.
+     */
+    void updateQprops(const ForceField          *pd,
+                      const ForceComputer       *forceComp,
+                      std::vector<gmx::RVec>    *forces);
+
+    /*! \brief Minimize shell positions
      *
      * \param[in]  msghandler Message Handler
      * \param[in]  pd        Data structure containing atomic properties
      * \param[in]  forceComp Force computer utility
-     * \param[in]  algorithm The algorithm for determining charges,
-     *                       if NONE it is read from the ForceField structure.
-     * \param[in]  qtype     If algorithm is Read this type of charges will
-     *                       be extracted from the molprop structure.
-     * \param[in]  qcustom   Custom (user-provided) charges
+     * \param[out] coords    The coordinates, will be updated for shells
+     * \param[out] forces    This routine will compute energies and forces.
+     */
+    void minimizeShells(MsgHandler                *msghandler,
+                        const ForceField          *pd,
+                        const ForceComputer       *forceComp,
+                        std::vector<gmx::RVec>    *coords,
+                        std::vector<gmx::RVec>    *forces);
+    /*! \brief Copy charges from input (molprop)
+     * \param[in] msghandler Message Handler
+     * \param[in] pd         The force field
+     * \param[in] qread      The type to read, e.g. Mulliken
+     */
+    void setCharges(MsgHandler        *msghandler,
+                    const ForceField  *pd,
+                    const std::string &qread);
+    /*! \brief Copy charges from force field to topologies
+     * \param[in] msghandler Message Handler
+     * \param[in] pd         The force field
+     */
+    void setCharges(MsgHandler       *msghandler,
+                    const ForceField *pd);
+    /*! \brief Copy charges from array to topologies
+     * \param[in] qcustom    The charges
+     */
+    void setCharges(const std::vector<double> &qcustom);
+    /*! \brief Copy charges from qmap to topologies
+     * \param[in] msghandler Message Handler
+     * \param[in] qmap       The charge map
+     */
+    void setCharges(MsgHandler       *msghandler,
+                    const ChargeMap  &qmap);
+    /*! \brief
+     * Generate or copy atomic partial charges
+     *
+     * \param[in]  msghandler Message Handler
+     * \param[in]  pd        Data structure containing atomic properties
+     * \param[in]  forceComp Force computer utility
+     * \param[in]  algorithm The algorithm for determining charges.
      * \param[out] coords    The coordinates, will be updated for shells
      * \param[out] forces    This routine will compute energies and forces.
      * \param[in]  updateQprops Whether or not to update the qprops (dipoles, quadrupoles etc.)
      */
-    void GenerateCharges(MsgHandler                *msghandler,
-                         const ForceField          *pd,
+    void generateCharges(MsgHandler                *msghandler,
+                         ForceField                *pd,
                          const ForceComputer       *forceComp,
                          ChargeGenerationAlgorithm  algorithm,
-                         qType                      qtype,
-                         const std::vector<double> &qcustom,
                          std::vector<gmx::RVec>    *coords,
                          std::vector<gmx::RVec>    *forces,
-                         bool                       updateQprops = false);
+                         bool                       updateQProps = false);
     /*! \brief
      * Generate atomic partial charges using EEM or SQE.
      * If shells are present they will be minimized.
      *
-     * \param[in]  pd        Data structure containing atomic properties
-     * \param[in]  forceComp The force computer
-     * \param[out] coords    The coordinates, will be updated for shells
-     * \param[out] forces    The forces
+     * \param[in]  msghandler Message and status handler 
+     * \param[in]  pd         Data structure containing atomic properties
+     * \param[in]  forceComp  The force computer
+     * \param[out] coords     The coordinates, will be updated for shells
+     * \param[out] forces     The forces
      */
-    ACTMessage GenerateAcmCharges(const ForceField       *pd,
+    ACTMessage GenerateAcmCharges(MsgHandler             *msg_handler,
+                                  ForceField             *pd,
                                   const ForceComputer    *forceComp,
                                   std::vector<gmx::RVec> *coords,
                                   std::vector<gmx::RVec> *forces);
@@ -496,32 +572,38 @@ public:
      * \param[in]  maxESP  Percentage of the ESP points to consider (<= 100)
      */
     void getExpProps(MsgHandler                                 *msghandler,
-                     const ForceField                           *pd,
+                     ForceField                                 *pd,
                      const std::map<MolPropObservable, iqmType> &iqm,
                      real                                        watoms = 0,
                      int                                         maxESP = 100);
-    
+
+
+    /*!\brief Generate molecule info
+     *
+     * \param[in] pd          The force field
+     * \param[in] forceComp   The force computer utility
+     * \param[in] coords      The coordinates
+     * \return a text about the compound including properties and citation infor
+     */
+    std::vector<std::string> generateCommercials(const ForceField             *pd,
+                                                 const ForceComputer          *forceComp,
+                                                 const std::vector<gmx::RVec> &coords);
+
     /*! \brief
      * Print the topology that was generated previously in GROMACS format.
      *
-     * \param[in] fn        File name
-     * \param[in] bVerbose  Verbose
-     * \param[in] pd        Data structure containing atomic properties
-     * \param[in] forceComp The force computer utility
-     * \param[in] cr        Communication record
-     * \param[in] coords    The coordinates
-     * \param[in] method    QC method
-     * \param[in] basis     QC basis set
-     * \param[in] bITP      Whether or not to write an itp file iso top file
+     * \param[in] msg_handler For warning and status
+     * \param[in] fn          File name
+     * \param[in] pd          Data structure containing atomic properties
+     * \param[in] forceComp   The force computer utility
+     * \param[in] coords      The coordinates
+     * \param[in] bITP        Whether or not to write an itp file iso top file
      */
-    void PrintTopology(const char                   *fn,
-                       bool                          bVerbose,
+    void PrintTopology(MsgHandler                   *msg_handler,
+                       const char                   *fn,
                        const ForceField             *pd,
                        const ForceComputer          *forceComp,
-                       const CommunicationRecord    *cr,
                        const std::vector<gmx::RVec> &coords,
-                       const std::string            &method,
-                       const std::string            &basis,
                        bool                          bITP = false);
     
     //! \brief Update GROMACS data structures
@@ -550,6 +632,7 @@ public:
      * where f are the fragments. Importantly the individual components
      * of the energy are stored.
      * For a polarizable model the shell positions are minimized.
+     * \param[in] msghandler                  A message handler
      * \param[in] pd                          The force field
      * \param[in] forceComputer               The code to run the calculations.
      * \param[out] einter                     The interaction energy components
@@ -557,7 +640,8 @@ public:
      * \param[inout] coords                   Atomic coordinates (shell positions can be updated)
      * \param[in] separateInductionCorrection Whether to store InductionCorrection separately or add it to Induction
      */
-    void calculateInteractionEnergy(const ForceField                  *pd,
+    void calculateInteractionEnergy(MsgHandler                        *msghandler,
+                                    const ForceField                  *pd,
                                     const ForceComputer               *forceComputer,
                                     std::map<InteractionType, double> *einter,
                                     std::vector<gmx::RVec>            *interactionForces,
@@ -571,13 +655,14 @@ public:
      * \param[in] iTypes Interaction types
      * \param[in] updateZeta Whether to update the atomic zeta as well
      */
-    void UpdateIdef(const ForceField                      *pd,
+    void UpdateIdef(const ForceField                   *pd,
                     const std::vector<InteractionType> &iTypes,
                     bool                                updateZeta);
     
     /*! \brief
      * Generate cube
      *
+     * \param[in] msghandler  For debugging and information
      * \param[in] pd          Data structure containing atomic properties
      * \param[in] coords      Atomic coordinates
      * \param[in] spacing     The grid space
@@ -591,20 +676,21 @@ public:
      * \param[in] diffhistfn
      * \param[in] oenv
      */
-    void GenerateCube(const ForceField             *pd,
+    void GenerateCube(MsgHandler                   *msghandler,
+                      ForceField                   *pd,
                       const std::vector<gmx::RVec> &coords,
                       const ForceComputer          *forceComp,
-                      real                    spacing,
-                      real                    border,
-                      const char             *reffn,
-                      const char             *pcfn,
-                      const char             *pdbdifffn,
-                      const char             *potfn,
-                      const char             *rhofn,
-                      const char             *hisfn,
-                      const char             *difffn,
-                      const char             *diffhistfn,
-                      const gmx_output_env_t *oenv);
+                      real                          spacing,
+                      real                          border,
+                      const char                   *reffn,
+                      const char                   *pcfn,
+                      const char                   *pdbdifffn,
+                      const char                   *potfn,
+                      const char                   *rhofn,
+                      const char                   *hisfn,
+                      const char                   *difffn,
+                      const char                   *diffhistfn,
+                      const gmx_output_env_t       *oenv);
     
     /*! \brief
      * Print the coordinates corresponding to topology after adding shell particles and/or vsites.

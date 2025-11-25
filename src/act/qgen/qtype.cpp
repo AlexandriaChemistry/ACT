@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2021-2023
+ * Copyright (C) 2021-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -38,6 +38,7 @@
 #include <random>
 
 #include "act/alexandria/topology.h"
+#include "act/basics/msg_handler.h"
 #include "act/forces/forcecomputer.h"
 #include "act/molprop/multipole_names.h"
 #include "act/utility/units.h"
@@ -49,32 +50,25 @@
 namespace alexandria
 {
 
-static std::map<qType, std::string> qTypeNames = {
-    { qType::ESP,       "qESP"        },
-    { qType::RESP,      "qRESP"       },
-    { qType::BCC,       "qBCC"        },
-    { qType::Mulliken,  "qMulliken"   },
-    { qType::Hirshfeld, "qHirshfeld"  },
-    { qType::CM5,       "qCM5"        },
-    { qType::Calc,      "Alexandria"  },
-    { qType::Gasteiger, "Gasteiger"   },
-    { qType::Elec,      "Electronic"  },
-    { qType::ACM,       "qACM"        }
+static std::map<qPropertyType, std::string> qPropertyTypeNames = {
+    { qPropertyType::ACM,  "ACM" },
+    { qPropertyType::ESP,  "ESP" },
+    { qPropertyType::Elec, "Electronic" }
 };
 
-const std::string &qTypeName(qType qt)
+const std::string &qPropertyTypeName(qPropertyType qt)
 {
-    return qTypeNames[qt];
+    return qPropertyTypeNames[qt];
 }
 
-const std::map<qType, std::string> &qTypes()
+const std::map<qPropertyType, std::string> &qPropertyTypes()
 {
-    return qTypeNames;
+    return qPropertyTypeNames;
 }
 
-qType stringToQtype(const std::string &type)
+qPropertyType stringToQtype(const std::string &type)
 {
-    for (const auto &qn : qTypeNames)
+    for (const auto &qn : qPropertyTypeNames)
     {
         if (qn.second.compare(type) == 0)
         {
@@ -83,10 +77,10 @@ qType stringToQtype(const std::string &type)
     }
     GMX_THROW(gmx::InvalidInputError(gmx::formatString("Unknown charge type %s", type.c_str()).c_str()));
     // To make the compiler happy
-    return qType::ESP;
+    return qPropertyType::ACM;
 }
 
-QtypeProps::QtypeProps(qType                         qtype,
+QtypeProps::QtypeProps(qPropertyType                 qtype,
                        const std::vector<ActAtom>   &atoms,
                        const std::vector<gmx::RVec> &coords) : qtype_(qtype)
 {
@@ -150,7 +144,7 @@ void QtypeProps::setX(const std::vector<gmx::RVec> &x)
     GMX_RELEASE_ASSERT(q_.size() == x.size(),
                        gmx::formatString("Charge array (%d) should be the same size as coordinates (%d) for %s",
                                          static_cast<int>(q_.size()), static_cast<int>(x.size()), 
-                                         qTypeName(qtype_).c_str()).c_str());
+                                         qPropertyTypeName(qtype_).c_str()).c_str());
     x_ = x;
 }
 
@@ -250,14 +244,15 @@ void QtypeProps::calcPolarizability(const ForceField    *pd,
                                     const Topology      *top,
                                     const ForceComputer *forceComp)
 {
-    GMX_RELEASE_ASSERT(qType::Calc == qtype_, "Will only compute polarizability for Alexandria models");
+    GMX_RELEASE_ASSERT(qPropertyType::Elec != qtype_,
+                       "Will only compute polarizability for Alexandria models");
     
     std::map<InteractionType, double> energies;
     gmx::RVec                         field  = { 0, 0, 0 };
     std::vector<gmx::RVec>            coords = x_;
     std::vector<gmx::RVec>            forces(x_.size());
     
-    forceComp->compute(pd, top, &coords, &forces, &energies, field);
+    forceComp->compute(nullptr, pd, top, &coords, &forces, &energies, field);
     setQ(top->atoms());
     setX(coords);
     calcMoments();
@@ -278,7 +273,7 @@ void QtypeProps::calcPolarizability(const ForceField    *pd,
     for (int m = 0; m < DIM; m++)
     {
         field[m] = efield;
-        forceComp->compute(pd, top, &coords, &forces, &energies, field);
+        forceComp->compute(nullptr, pd, top, &coords, &forces, &energies, field);
         setX(coords);
         field[m] = 0;
         calcMoments();
@@ -291,10 +286,10 @@ void QtypeProps::calcPolarizability(const ForceField    *pd,
     setPolarizabilityTensor(alpha);
 }
 
-void QtypeProps::calcMoments()
+void QtypeProps::calcMoments(MsgHandler *msg_handler)
 {
-    GMX_RELEASE_ASSERT(q_.size() > 0, gmx::formatString("No charges for %s", qTypeName(qtype_).c_str()).c_str());
-    GMX_RELEASE_ASSERT(x_.size() > 0, gmx::formatString("No coordinates for %s", qTypeName(qtype_).c_str()).c_str());
+    GMX_RELEASE_ASSERT(q_.size() > 0, gmx::formatString("No charges for %s", qPropertyTypeName(qtype_).c_str()).c_str());
+    GMX_RELEASE_ASSERT(x_.size() > 0, gmx::formatString("No coordinates for %s", qPropertyTypeName(qtype_).c_str()).c_str());
     bool AllZero = true;
     for(size_t i = 0; AllZero && i < atomNumber_.size(); i++)
     {
@@ -328,7 +323,7 @@ void QtypeProps::calcMoments()
             {
                 if (hasMultipole(quad))
                 {
-                    multipoles_[quad][qindex++] += q_[i]*(r[m]*r[n]);
+                    multipoles_[quad][qindex++] += 1.5*q_[i]*(r[m]*r[n]);
                 }
                 for (int o = n; o < DIM; o++)
                 {
@@ -349,12 +344,12 @@ void QtypeProps::calcMoments()
     }
     if (hasMultipole(quad))
     {
-        if (debug)
+        if (msg_handler)
         {
-            fprintf(debug, "Quadrupole: %7.3f %7.3f %7.3f\n", 
-                    multipoles_[quad][multipoleIndex({XX, XX})],
-                    multipoles_[quad][multipoleIndex({YY, YY})],
-                    multipoles_[quad][multipoleIndex({ZZ, ZZ})]);
+            msg_handler->writeDebug(gmx::formatString("Quadrupole: %7.3f %7.3f %7.3f\n", 
+                                                      multipoles_[quad][multipoleIndex({XX, XX})],
+                                                      multipoles_[quad][multipoleIndex({YY, YY})],
+                                                      multipoles_[quad][multipoleIndex({ZZ, ZZ})]));
         }
         // Compute trace divided by 3
         double tr = 0.0;
@@ -367,12 +362,12 @@ void QtypeProps::calcMoments()
         {
             multipoles_[quad][multipoleIndex({m, m})] -= tr;
         }
-        if (debug)
+        if (msg_handler)
         {
-            fprintf(debug, "Traceless:  %7.3f %7.3f %7.3f\n", 
-                    multipoles_[quad][multipoleIndex({XX, XX})],
-                    multipoles_[quad][multipoleIndex({YY, YY})],
-                    multipoles_[quad][multipoleIndex({ZZ, ZZ})]);
+            msg_handler->writeDebug(gmx::formatString("Traceless:  %7.3f %7.3f %7.3f\n", 
+                                                      multipoles_[quad][multipoleIndex({XX, XX})],
+                                                      multipoles_[quad][multipoleIndex({YY, YY})],
+                                                      multipoles_[quad][multipoleIndex({ZZ, ZZ})]));
         }
     }
 }

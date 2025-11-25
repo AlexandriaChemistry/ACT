@@ -136,6 +136,9 @@ class ForceFieldParameter
     //! \brief Return unit of parameter
     const std::string &unit() const { return unit_; }
     
+    //! \brief Set unit of parameter
+    void setUnit(const std::string &unit) { unit_ = unit; }
+    
     //! \brief Return index (an externally determined identifier)
     size_t index() const { return index_; }
 
@@ -311,7 +314,7 @@ class ForceFieldParameter
     //! Maximum allowed value for the parameter
     double       maximum_             = 0;
     //! In what way this parameter is mutable
-    Mutability   mutability_          = Mutability::Free;
+    Mutability   mutability_          = Mutability::Fixed;
     /*! Whether or not to throw an exception in case value or
      * uncertainty is set incorrectly
      */

@@ -57,7 +57,6 @@
 #include "act/forcefield/forcefield.h"
 #include "act/forcefield/forcefield_tables.h"
 #include "act/forcefield/forcefield_xml.h"
-#include "act/ga/npointcrossover.h"
 #include "act/ga/penalizer.h"
 #include "act/molprop/molprop_util.h"
 #include "act/utility/memory_check.h"
@@ -68,6 +67,7 @@
 #include "gromacs/statistics/statistics.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
+
 namespace alexandria
 {
 
@@ -77,6 +77,67 @@ void my_fclose(FILE *fp)
     if (myerrno != 0)
     {
         fprintf(stderr, "Error %d closing file\n", myerrno);
+    }
+}
+
+OptACM::~OptACM()
+{
+    if (ga_)
+    {
+        delete ga_;
+    }
+    if (forceComp_)
+    {
+        delete forceComp_;
+    }
+    if (fitComp_)
+    {
+        delete fitComp_;
+    }
+    if (mutator_)
+    {
+        delete mutator_;
+    }
+    if (probComputer_)
+    {
+        delete probComputer_;
+    }
+    if (initializer_)
+    {
+        delete initializer_;
+    }
+    if (crossover_)
+    {
+        delete crossover_;
+    }
+    if (sii_)
+    {
+        delete sii_;
+    }
+    if (selector_)
+    {
+        delete selector_;
+    }
+    // Delete the penalizers
+    for (auto x : penalizers_)
+    {
+        if (x)
+        {
+            delete x;
+        }
+    }
+    // Delete the terminators
+    for (auto x : terminators_)
+    {
+        if (x)
+        {
+            delete x;
+        }
+    }
+    if (oenv_)
+    {
+        output_env_done(oenv_);
+        oenv_ = nullptr;
     }
 }
 
@@ -92,7 +153,8 @@ void OptACM::add_options(std::vector<t_pargs>  *pargs,
         pargs->push_back(pa[i]);
     }
     std::vector<t_filenm> filenames = {
-        { efXML, "-o",     "train_ff", ffWRITE },
+        { efXML, "-o",     "ff_train", ffWRITE },
+        { efXML, "-otest", "ff_test",  ffWRITE },
         { efCSV, "-gpin",  "genepool", ffOPTRD },
         { efCSV, "-gpout", "genepool", ffWRITE }
     };
@@ -120,11 +182,7 @@ void OptACM::optionsFinished(const std::vector<t_filenm> &filenames)
     msghandler_.optionsFinished(filenames, &commRec_);
     mg_.optionsFinished();
     const int nmiddlemen = gach_.popSize();  // MASTER now makes the work of a middleman too
-    if (debug)
-    {
-        fprintf(debug, "nmiddlemen = %d\n", nmiddlemen);
-        fflush(debug);
-    }
+    msghandler_.writeDebug(gmx::formatString("nmiddlemen = %d", nmiddlemen));
     // Update the communication record and do necessary checks.
     commRec_.init(nmiddlemen);
     // Set prefix and id in sii_
@@ -132,8 +190,9 @@ void OptACM::optionsFinished(const std::vector<t_filenm> &filenames)
     // Set output file for FF parameters
     if (commRec_.isMaster())
     {
-        baseOutputFileName_.assign(opt2fn("-o", filenames.size(), filenames.data()));
-        sii_->setOutputFile(baseOutputFileName_);
+        outputFileName_.insert({iMolSelect::Train, opt2fn("-o", filenames.size(), filenames.data())});
+        outputFileName_.insert({iMolSelect::Test, opt2fn("-otest", filenames.size(), filenames.data())});
+        sii_->setOutputFile(outputFileName_[iMolSelect::Train]);
     }
 }
 
@@ -153,25 +212,25 @@ void OptACM::initChargeGeneration(iMolSelect ims)
     }
 }
 
-int OptACM::initMaster(const std::vector<t_filenm> &fnm)
+int OptACM::initMaster(const std::vector<t_filenm> &fnm,
+                       ChargeGenerationAlgorithm    algorithm)
 {
-    ga::ProbabilityComputer *probComputer = nullptr;
     // ProbabilityComputer
     switch (gach_.probabilityComputerAlg())
     {
     case ProbabilityComputerAlg::pcRANK:
         {
-            probComputer = new ga::RankProbabilityComputer(gach_.popSize());
+            probComputer_ = new ga::RankProbabilityComputer(gach_.popSize());
             break;
         }
     case ProbabilityComputerAlg::pcFITNESS:
         {
-            probComputer = new ga::FitnessProbabilityComputer(gach_.popSize());
+            probComputer_ = new ga::FitnessProbabilityComputer(gach_.popSize());
             break;
         }
     case ProbabilityComputerAlg::pcBOLTZMANN:
         {
-            probComputer = new ga::BoltzmannProbabilityComputer(
+            probComputer_ = new ga::BoltzmannProbabilityComputer(
                 gach_.boltzTemp(), gach_.maxGenerations(),
                 gach_.boltzAnneal(), gach_.popSize()
             );
@@ -185,9 +244,11 @@ int OptACM::initMaster(const std::vector<t_filenm> &fnm)
     }
     // Force computer
     forceComp_ = new ForceComputer();
+    forceComp_->init(gmx::square(bch_.shellToler()),
+                     bch_.shellMaxIter(), bch_.shellMaxDistance());
     // Fitness computer
-    // FIXME: what about the flags? Here it is a bit more clear that they should be all false?
-    fitComp_ = new ACMFitnessComputer(&msghandler_, sii_, &mg_, false, forceComp_);
+    fitComp_ = new ACMFitnessComputer();
+    fitComp_->init(&msghandler_, sii_, &mg_, bRemoveMol_, forceComp_, algorithm);
     // Check whether we have to do anything
     if (fitComp_->numDevComputers() == 0)
     {
@@ -217,16 +278,16 @@ int OptACM::initMaster(const std::vector<t_filenm> &fnm)
     }
 
     // Initializer
-    auto *initializer = new ACMInitializer(sii_, gach_.randomInit(), dis(gen));
+    initializer_ = new ACMInitializer(sii_, gach_.randomInit(), dis(gen));
 
     if (gach_.optimizer() == OptimizerAlg::GA)
     {
-        mutator_ = new alexandria::PercentMutator(sii_, dis(gen), gach_.percent());
+        mutator_ = new alexandria::PercentMutator(sii_, dis(gen), algorithm, gach_.percent());
     }
     else
     {
         auto mut = new alexandria::MCMCMutator(dis(gen), &bch_, fitComp_, sii_, bch_.evaluateTestset(),
-                                               gach_.maxGenerations());
+                                               algorithm, gach_.maxGenerations());
         // TODO Only open these files when we are optimizing in verbose mode.
         if (msghandler_.verbose())
         {
@@ -235,27 +296,13 @@ int OptACM::initMaster(const std::vector<t_filenm> &fnm)
             mut->openParamConvFiles(oenv_);
             mut->openChi2ConvFile(oenv_);
         }
-        mutator_ = mut;
+        mutator_ = std::move(mut);
     }
 
     // Selector
-    auto *selector = new ga::RouletteSelector(dis(gen));
+    selector_ = new ga::RouletteSelector(dis(gen));
 
     auto tw = msghandler_.tw();
-    // Crossover
-    if (gach_.nCrossovers() >= static_cast<int>(sii_->nParam()))
-    {
-        tw->writeStringFormatted("The order of the crossover operator should be smaller than the amount of parameters. You chose -n_crossovers %i, but there are %lu parameters. Changing n_crossovers to 1.",
-                gach_.nCrossovers(), sii_->nParam());
-        gach_.setCrossovers(1);
-    }
-
-    auto *crossover = new ga::NPointCrossover(sii_->nParam(),
-                                              gach_.nCrossovers(),
-                                              dis(gen));
-
-    // Penalizer(s)
-    std::vector<ga::Penalizer*> *penalizers = new std::vector<ga::Penalizer*>();
     // VolumeFractionPenalizer
     const double totalVolume = sii_->getParamSpaceVolume(gach_.logVolume());
     if (tw)
@@ -270,10 +317,10 @@ int OptACM::initMaster(const std::vector<t_filenm> &fnm)
         {
             tw->writeStringFormatted("Appending a VolumeFractionPenalizer to the list of penalizers...\n");
         }
-        penalizers->push_back(
+        penalizers_.push_back(
             new ga::VolumeFractionPenalizer(
                 oenv_, gach_.logVolume(), totalVolume,
-                gach_.vfpVolFracLimit(), gach_.vfpPopFrac(), initializer
+                gach_.vfpVolFracLimit(), gach_.vfpPopFrac(), initializer_
             )
         );
     }
@@ -283,22 +330,21 @@ int OptACM::initMaster(const std::vector<t_filenm> &fnm)
         {
             tw->writeStringFormatted("Appending a CatastrophePenalizer to the list of penalizers...\n");
         }
-        penalizers->push_back(
+        penalizers_.push_back(
             new ga::CatastrophePenalizer(dis(gen),
                                          gach_.cpGenInterval(),
                                          gach_.cpPopFrac(),
-                                         initializer, gach_.popSize()
+                                         initializer_, gach_.popSize()
             )
         );
     }
 
     // Terminator(s)
-    std::vector<ga::Terminator*> *terminators = new std::vector<ga::Terminator*>;
     if (tw)
     {
         tw->writeStringFormatted("Appending a GenerationTerminator to the list of terminators...\n");
     }
-    terminators->push_back(new ga::GenerationTerminator(gach_.maxGenerations()));
+    terminators_.push_back(new ga::GenerationTerminator(gach_.maxGenerations()));
     // maxGenerations will always be positive!
     // If maxTestGenerations is enabled and there is something to test as well
     if (gach_.maxTestGenerations() != -1 && mg_.iMolSelectSize(iMolSelect::Test) > 0)
@@ -307,19 +353,33 @@ int OptACM::initMaster(const std::vector<t_filenm> &fnm)
         {
             tw->writeString("Appending a TestGenTerminator to the list of terminators...\n");
         }
-        terminators->push_back(new ga::TestGenTerminator(gach_.maxTestGenerations()));
+        terminators_.push_back(new ga::TestGenTerminator(gach_.maxTestGenerations()));
     }
 
     // Initialize the optimizer
     if (gach_.optimizer() == OptimizerAlg::MCMC)
     {
-        ga_ = new ga::MCMC(initializer, fitComp_, mutator_, sii_, &gach_);
+        ga_ = new ga::MCMC(initializer_, fitComp_, mutator_, sii_, &gach_);
     }
     else
     {
+        // Crossover
+        if (gach_.nCrossovers() >= static_cast<int>(sii_->nParam()))
+        {
+            tw->writeStringFormatted("The order of the crossover operator should be smaller than the amount of parameters. You chose -n_crossovers %i, but there are %lu parameters. Changing n_crossovers to 1.",
+                                     gach_.nCrossovers(), sii_->nParam());
+            gach_.setCrossovers(1);
+        }
+
+        crossover_ = new ga::NPointCrossover(sii_->nParam(),
+                                             gach_.nCrossovers(),
+                                             dis(gen));
+
         // We pass the global seed to the optimizer
-        ga_ = new ga::HybridGAMC(initializer, fitComp_, probComputer, selector, crossover,
-                                 mutator_, terminators, penalizers, sii_, &gach_,
+        ga_ = new ga::HybridGAMC(initializer_, fitComp_, probComputer_,
+                                 selector_, crossover_,
+                                 mutator_, &terminators_, &penalizers_,
+                                 sii_, &gach_,
                                  opt2fn("-fitness", fnm.size(), fnm.data()),
                                  opt2fn_null("-gpin", fnm.size(), fnm.data()),
                                  opt2fn("-gpout", fnm.size(), fnm.data()),
@@ -411,9 +471,9 @@ void OptACM::printGenomeTable(const std::map<iMolSelect, ga::Genome> &genome,
     std::vector<std::string> headerNames{ "CLASS", "NAME" };
     for (const auto &pair : genome)
     {
-        headerNames.push_back(gmx::formatString("BEST (%s)", iMolSelectName(pair.first)));
+        headerNames.push_back(gmx::formatString("BEST (%s)      ", iMolSelectName(pair.first)));
     }
-    const std::vector<std::string> tmpHeaderNames{"MIN", "MAX", "MEAN", "STDEV", "MEDIAN"};
+    const std::vector<std::string> tmpHeaderNames{"MIN", "MAX", "MEAN", "STDEV", "MEDIAN" };
     headerNames.insert(headerNames.end(), tmpHeaderNames.begin(), tmpHeaderNames.end());
     // Get header sizes
     const int FLOAT_SIZE = 14;  // Adjusted for the %g formatting plus negative numbers
@@ -422,7 +482,7 @@ void OptACM::printGenomeTable(const std::map<iMolSelect, ga::Genome> &genome,
     {
         sizes.push_back(FLOAT_SIZE);
     }
-    std::vector<int> tmpSizes{FLOAT_SIZE, FLOAT_SIZE, FLOAT_SIZE, FLOAT_SIZE, FLOAT_SIZE};
+    std::vector<int> tmpSizes{FLOAT_SIZE, FLOAT_SIZE, FLOAT_SIZE, FLOAT_SIZE, FLOAT_SIZE };
     sizes.insert(sizes.end(), tmpSizes.begin(), tmpSizes.end());
     // Adjust size for class field
     const auto paramClass = sii_->paramClass();
@@ -443,7 +503,7 @@ void OptACM::printGenomeTable(const std::map<iMolSelect, ga::Genome> &genome,
             sizes[1] = pName.size();
         }
     }
-    const size_t TOTAL_WIDTH = static_cast<size_t>(std::accumulate(sizes.begin(), sizes.end(), 0)) + 3*(sizes.size()-1) + 4;
+    const size_t TOTAL_WIDTH = static_cast<size_t>(std::accumulate(sizes.begin(), sizes.end(), 0)) + 3*(sizes.size()-1) + 4 + 4;
     const std::string HLINE(TOTAL_WIDTH, '-');
     // Print header
     tw->writeStringFormatted("%s\n|", HLINE.c_str());
@@ -458,7 +518,10 @@ void OptACM::printGenomeTable(const std::map<iMolSelect, ga::Genome> &genome,
     const std::vector<double> mean   = pop.mean();
     const std::vector<double> stdev  = pop.stdev();
     const std::vector<double> median = pop.median();
+    auto optIndex = *sii_->optIndexPtr();
+
     // Print the parameter information
+    bool hitWall = false;
     for (size_t i = 0; i < paramClass.size(); i++)
     {
         for (size_t j = 0; j < paramNames.size(); j++)
@@ -471,10 +534,20 @@ void OptACM::printGenomeTable(const std::map<iMolSelect, ga::Genome> &genome,
                                      sizes[0], paramClass[i].c_str(),
                                      sizes[1], paramNames[j].c_str());
             size_t k = 2;
+            double value = 0;
+            auto ffp = optIndex[j].forceFieldParameter();
             for (const auto &pair : genome)
             {
-                tw->writeStringFormatted(" %-*g |",
-                                         sizes[k], pair.second.base(j));
+                value = pair.second.base(j);
+                if (ffp->minimum() == value || ffp->maximum() == value)
+                {
+                    tw->writeStringFormatted(" %-*g (W) |", sizes[k], value);
+                    hitWall = true;
+                }
+                else
+                {
+                    tw->writeStringFormatted(" %-*g     |", sizes[k], value);
+                }
                 k++;
             }
             tw->writeStringFormatted(" %-*g | %-*g | %-*g | %-*g | %-*g |\n%s\n",
@@ -486,10 +559,14 @@ void OptACM::printGenomeTable(const std::map<iMolSelect, ga::Genome> &genome,
                                      HLINE.c_str());
         }
     }
+    if (hitWall)
+    {
+        tw->writeStringFormatted("(W) indicates this parameter hit the wall.\n\n");
+    }
 }
 
-bool OptACM::runMaster(bool        optimize,
-                       bool        sensitivity)
+bool OptACM::runMaster(bool optimize,
+                       bool sensitivity)
 {
     GMX_RELEASE_ASSERT(commRec_.nodeType() == NodeType::Master,
                        "I thought I was the master...");
@@ -509,7 +586,7 @@ bool OptACM::runMaster(bool        optimize,
         bMinimum = ga_->evolve(&msghandler_, &bestGenome);
         if (tw)
         {
-            tw->writeStringFormatted("\nHere are the best parameters I found, together with some summary statistics of the last population:\n");
+            tw->writeStringFormatted("\nHere are the best parameters found, together with some summary statistics of the last population:\n");
         }
         printGenomeTable(bestGenome, ga_->getLastPop());
     }
@@ -546,17 +623,20 @@ bool OptACM::runMaster(bool        optimize,
             }
         }
         // Save force field of best individual(s)
-        for (const auto &pair : bestGenome)
         {
             std::set<int> changed;
-            sii_->updateForceField(changed, pair.second.bases());
-            auto myfilenm = gmx::formatString("%s-", iMolSelectName(pair.first)) + baseOutputFileName_;
-            tw->writeStringFormatted("Will save best force field to %s\n", myfilenm.c_str());
-            sii_->saveState(true, myfilenm);
+            for (const auto &pair : bestGenome)
+            {
+                sii_->updateForceField(&msghandler_, changed, pair.second.bases());
+                auto myfilenm = outputFileName_[pair.first];
+                tw->writeStringFormatted("Will save best %s force field to %s\n",
+                                         iMolSelectName(pair.first),
+                                         myfilenm.c_str());
+                sii_->saveState(true, myfilenm);
+            }
+            // FIXME: resetting the train parameters for the TrainFFPrinter. We may have to work on that if we want to show the best test parameters too
+            sii_->updateForceField(&msghandler_, changed, bestGenome.find(iMolSelect::Train)->second.bases());
         }
-        // FIXME: resetting the train parameters for the TrainFFPrinter. We may have to work on that if we want to show the best test parameters too
-        std::set<int> changed;
-        sii_->updateForceField(changed, bestGenome.find(iMolSelect::Train)->second.bases());
     }
     else if (optimize)
     {
@@ -580,20 +660,12 @@ bool OptACM::runMaster(bool        optimize,
         auto bbb = bestGenome.find(ims);
         if (bestGenome.end() != bbb)
         {
-            sii_->updateForceField(changed, bbb->second.bases());
+            sii_->updateForceField(&msghandler_, changed, bbb->second.bases());
             fitComp_->calcDeviation(&msghandler_, CalcDev::ComputeAll, ims);
         }
         // Now compute the test compounds, with the best Train parameters.
         ims = iMolSelect::Test;
         fitComp_->calcDeviation(&msghandler_, CalcDev::ComputeAll, ims);
-    }
-    // Delete the penalizers
-    if (nullptr != ga_->penalizers())
-    {
-        for (auto pen : *ga_->penalizers())
-        {
-            delete pen;
-        }
     }
 
     return bMinimum;
@@ -602,7 +674,7 @@ bool OptACM::runMaster(bool        optimize,
 
 int train_ff(int argc, char *argv[])
 {
-    static const char          *desc[] = {
+    std::vector<const char *> desc = {
         "train_ff reads a series of molecules and corresponding physico-chemical",
         "properties from a file. The properties can either originate from",
         "experimental data or from quantum chemistry calculations.",
@@ -643,14 +715,6 @@ int train_ff(int argc, char *argv[])
         "added if atoms from row VI or VII in the periodic table have a positive",
         "charge. The penalty is equal to the force constant given on the command line",
         "time the square of the charge.[PAR]",
-        "A selection of molecules into a training set and a test set (or ignore set)",
-        "can be made using option [TT]-sel[tt]. The format of this file is:[PAR]",
-        "iupac|Train[PAR]",
-        "iupac|Test[PAR]",
-        "iupac|Ignore[PAR]",
-        "and you should ideally have a line for each molecule in the molecule database",
-        "([TT]-mp[tt] option). Missing molecules will be ignored. Selection files",
-        "can be generated using the [TT]molselect[tt] script."
     };
 
     bool                bcompress           = false;
@@ -680,32 +744,30 @@ int train_ff(int argc, char *argv[])
     }
     std::vector<t_filenm>       filenms =
     {
-        { efXML, "-ff",   "aff",         ffRDMULT },
-        { efDAT, "-sel",  "molselect",   ffREAD   },
-        { efXVG, "-conv", "param_conv" , ffWRITE  },
-        { efXVG, "-chi2", "chi_squared", ffWRITE  },
+        { efXML, "-ff",   "aff",           ffRDMULT },
+        { efXVG, "-conv", "param_conv" ,   ffWRITE  },
+        { efXVG, "-chi2", "chi_squared",   ffWRITE  },
         { efDAT, "-fitness", "ga_fitness", ffWRITE }
     };
 
     alexandria::OptACM opt;
     opt.add_options(&pargs, &filenms);
+    CompoundReader compR;
+    compR.addOptions(&pargs, &filenms, &desc);
     printer.addOptions(&pargs);
     printer.addFileOptions(&filenms);
 
     if (!parse_common_args(&argc,
                            argv,
                            PCA_CAN_VIEW,
-                           filenms.size(),
-                           filenms.data(),
-                           pargs.size(),
-                           pargs.data(),
-                           asize(desc),
-                           desc,
+                           filenms.size(), filenms.data(),
+                           pargs.size(), pargs.data(),
+                           desc.size(), desc.data(),
                            0,
                            nullptr,
                            &oenv))
     {
-        return 0;
+        return 1;
     }
 
     // Set output environment in the optimization driver
@@ -719,11 +781,19 @@ int train_ff(int argc, char *argv[])
     // Fills id and prefix in sii
     // Calls optionsFinished() for MolGen instance.
     opt.optionsFinished(filenms);
+
+    // Check charge reader options
+    compR.optionsFinished(opt.msgHandler(), filenms);
+    if (!opt.msgHandler()->ok())
+    {
+        opt.msgHandler()->msg(ACTStatus::Error, "Please fix errors written above.");
+        return 1;
+    }
     auto tw = opt.msgHandler()->tw();
     if (opt.commRec()->isMaster())
     {
         print_memory_usage(debug);
-        gms.read(opt2fn_null("-sel", filenms.size(), filenms.data()));
+        gms = compR.molselect();
         if (tw)
         {
             print_header(tw, pargs, filenms);
@@ -780,21 +850,33 @@ int train_ff(int argc, char *argv[])
     bool optionsOk = true;
     if (opt.commRec()->isMaster())
     {
-        optionsOk = opt.mg()->checkOptions(opt.msgHandler(), filenms, opt.sii()->forcefield());
+        opt.mg()->checkOptions(opt.msgHandler(), opt.sii()->forcefield(), compR.algorithm());
     }
     opt.commRec()->bcast(&optionsOk, MPI_COMM_WORLD);
     if (!optionsOk)
     {
         return 0;
     }
+    // Read charges file if needed. No need to store the ACTmols being returned
+    {
+        ForceComputer forceComp;
+        std::vector<ACTMol> actmols;
+        compR.read(opt.msgHandler(), *opt.sii()->forcefield(), &forceComp, &actmols);
+    }
 
     // MolGen read being called here!
     if (0 == opt.mg()->Read(opt.msgHandler(), filenms, opt.sii()->forcefield(), gms,
-                            opt.sii()->fittingTargetsConst(iMolSelect::Train)))
+                            opt.sii()->fittingTargetsConst(iMolSelect::Train), &compR))
     {
-        GMX_THROW(gmx::InvalidInputError("Training set is empty, check your input. Rerun with -v option or -debug 1"));
+        opt.msgHandler()->fatal("Training set is empty on one or more of the nodes, check your input and your command line flags. Rerun with -v 5 flag");
     }
-
+    if (compR.algorithm() == ChargeGenerationAlgorithm::ESP)
+    {
+        // By now, we have initialized all the charges.
+        // This means we can fix those, but also that no charge related parameters can be trained.
+        // TODO: The latter needs to be implemented to prevent errors.
+        compR.setAlgorithm(ChargeGenerationAlgorithm::Read);
+    }
 
     // StaticIndividualInfo things
     {
@@ -842,7 +924,7 @@ int train_ff(int argc, char *argv[])
     {
         if (opt.sii()->nParam() > 0)
         {
-            initOK = opt.initMaster(filenms);
+            initOK = opt.initMaster(filenms, compR.algorithm());
         }
         // Let the other nodes know whether all is well.
         if (opt.commRec()->isParallel())
@@ -889,7 +971,8 @@ int train_ff(int argc, char *argv[])
                     // Master and Individuals (middle-men) need to initialize more,
                     // so let's go.
                     ACTMiddleMan middleman(opt.msgHandler(), opt.mg(), opt.sii(), opt.gach(),
-                                           opt.bch(), opt.oenv(), opt.msgHandler()->verbose());
+                                           opt.bch(), opt.oenv(), compR.algorithm(),
+                                           opt.msgHandler()->verbose());
                     middleman.run(opt.msgHandler());
                 }
             }
@@ -899,7 +982,7 @@ int train_ff(int argc, char *argv[])
                 {
                     ACTHelper helper(opt.msgHandler(), opt.sii(), opt.mg(),
                                      opt.bch()->shellToler(),
-                                     opt.bch()->shellMaxIter());
+                                     opt.bch()->shellMaxIter(), compR.algorithm());
                     helper.run(opt.msgHandler());
                 }
             }

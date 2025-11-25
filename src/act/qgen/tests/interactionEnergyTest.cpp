@@ -147,7 +147,7 @@ protected:
         bool   userqtot   = !qcustom.empty();
         double qtot_babel = myqtot;
         matrix box;
-        EXPECT_TRUE(readBabel(pd, dataName.c_str(), &molprops,
+        EXPECT_TRUE(readBabel(nullptr, pd, dataName.c_str(), &molprops,
                               molname.c_str(), molname.c_str(),
                               conf, &method, &basis, maxpot, nsymm,
                               jobtype, userqtot, &qtot_babel, false, box, oneH));
@@ -168,6 +168,7 @@ protected:
             }
             mp_.Merge(&molprop);
             MsgHandler msghandler;
+            msghandler.setPrintLevel(ACTStatus::Warning);
             // Generate charges and topology
             mp_.GenerateTopology(&msghandler, pd, missingParameters::Ignore);
             if (!msghandler.ok())
@@ -179,13 +180,16 @@ protected:
             auto forceComp = new ForceComputer();
             std::vector<gmx::RVec> forces(mp_.atomsConst().size());
             std::vector<gmx::RVec> coords = mp_.xOriginal();
-            auto alg = ChargeGenerationAlgorithm::NONE;
+            auto alg = pd->chargeGenerationAlgorithm();
             if (!qcustom.empty())
             {
                 alg = ChargeGenerationAlgorithm::Custom;
+                mp_.setCharges(qcustom);
             }
-            mp_.GenerateCharges(&msghandler, pd, forceComp, alg, qType::Calc, qcustom, &coords, &forces);
-            
+            else
+            {
+                mp_.generateCharges(&msghandler, pd, forceComp, alg, &coords, &forces);
+            }
             std::vector<double> qtotValues;
             auto myatoms = mp_.atomsConst();
             for (size_t atom = 0; atom < myatoms.size(); atom++)
@@ -209,7 +213,7 @@ protected:
                     for(size_t f = 0; f < atomStart.size(); f++)
                     {
                         double qt    = 0;
-                        auto   natom = fh->topologies()[f]->atoms().size();
+                        auto   natom = fh->topologies()[f].atoms().size();
                         for(size_t atom = atomStart[f]; atom < atomStart[f]+natom; atom++)
                         {
                             qt += myatoms[atom].charge();
@@ -221,13 +225,13 @@ protected:
             }
             // Now the energies
             double rmsToler = 0.00001;
-            auto fcomp = new ForceComputer(rmsToler, 25);
+            ForceComputer fcomp(rmsToler, 25);
             if (mp_.fragmentHandler()->topologies().size() > 1)
             {
                 std::vector<gmx::RVec> forces;
                 std::vector<gmx::RVec> coords = mp_.xOriginal();
                 std::map<InteractionType, double> einter;
-                mp_.calculateInteractionEnergy(pd, fcomp, &einter, &forces, &coords, true);
+                mp_.calculateInteractionEnergy(&msghandler, pd, &fcomp, &einter, &forces, &coords, true);
                 for(const auto &e : einter)
                 {
                     checker_.checkReal(e.second, interactionTypeToString(e.first).c_str());
@@ -236,7 +240,12 @@ protected:
                                einter[InteractionType::INDUCTIONCORRECTION] +
                                einter[InteractionType::DISPERSION] + einter[InteractionType::EXCHANGE]);
                 double toler = 1e-3;
-                EXPECT_TRUE(std::abs(esum - einter[InteractionType::EPOT]) <= toler);
+                auto iepot = InteractionType::EPOT;
+                EXPECT_TRUE(std::abs(esum - einter[iepot]) <= toler);
+                // Check what happens when we sum induction correction into induction
+                std::map<InteractionType, double> einter2;
+                mp_.calculateInteractionEnergy(&msghandler, pd, &fcomp, &einter2, &forces, &coords, true);
+                EXPECT_TRUE(std::abs(einter2[iepot]-einter[iepot]) <= toler);
             }
         }
     }

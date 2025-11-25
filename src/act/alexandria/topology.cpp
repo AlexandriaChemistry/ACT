@@ -38,6 +38,7 @@
 #include <list>
 #include <map>
 #include <set>
+#include <string>
 #include <vector>
 
 #include "act/basics/interactiontype.h"
@@ -83,7 +84,7 @@ public:
     bool operator==(size_t index) const { return index == index_; }
 };
 
-Topology::Topology(const std::vector<Bond> &bonds)
+void Topology::init(const std::vector<Bond> &bonds)
 {
     for(const auto &b : bonds)
     {
@@ -91,22 +92,22 @@ Topology::Topology(const std::vector<Bond> &bonds)
     }
 }
 
-static void dump_entry(FILE                      *fp,
+static void dump_entry(MsgHandler                *msghandler,
                        const TopologyEntryVector &entries,
                        const std::string         &label)
 {
-    if (nullptr == fp)
+    if (msghandler->printLevel() != ACTStatus::Debug)
     {
         return;
     }
     for(auto &entry : entries)
     {
-        fprintf(fp, "%s", label.c_str());
+        std::string str = label;
         for (auto &ai : entry->atomIndices())
         {
-            fprintf(fp, " %d", ai);
+            str.append(" " + std::to_string(ai));
         }
-        fprintf(fp, "\n");
+        msghandler->writeDebug(str);
     }
 }
 
@@ -134,7 +135,12 @@ void Topology::addShells(MsgHandler       *msghandler,
     /* Add Polarization to the plist. */
     TopologyEntryVector pols;
     auto &fs  = pd->findForcesConst(InteractionType::POLARIZATION);
-
+    auto pol_name = potentialToParameterName(fs.potential());
+    if (pol_name.empty())
+    {
+        msghandler->msg(ACTStatus::Fatal, "Polarization function not defined in FF file");
+        return;
+    }
     // Loop through the atomList.
     for (auto iter = atomList->begin(); iter != atomList->end(); iter = std::next(iter))
     {
@@ -190,7 +196,7 @@ void Topology::addShells(MsgHandler       *msghandler,
     if (!pols.empty())
     {
         addEntry(InteractionType::POLARIZATION, pols);
-        dump_entry(debug, pols, "The pols");
+        dump_entry(msghandler, pols, "The pols");
     }
 }
 
@@ -205,9 +211,7 @@ void Topology::addBond(const Bond &bond)
     {
         entries_.insert({ itb, TopologyEntryVector{} });
     }
-       entries_[itb].push_back(std::any_cast<Bond>(std::move(bond)));
-
-
+    entries_[itb].push_back(std::any_cast<Bond>(std::move(bond)));
 }
 
 double Topology::mass() const
@@ -309,7 +313,8 @@ const TopologyEntry *Topology::findTopologyEntry(const TopologyEntryVector &entr
     }
 }
 
-void Topology::makeAngles(const ForceField             *pd,
+void Topology::makeAngles(MsgHandler                   *msghandler,
+                          const ForceField             *pd,
                           const std::vector<gmx::RVec> &x,
                           double                        LinearAngleMin)
 {
@@ -381,7 +386,7 @@ void Topology::makeAngles(const ForceField             *pd,
         entries_.insert({ InteractionType::ANGLES, std::move(angles) });
         if (pd)
         {
-            setEntryIdentifiers(pd, InteractionType::ANGLES);
+            setEntryIdentifiers(msghandler, pd, InteractionType::ANGLES);
         }
     }
     if (!linangles.empty())
@@ -389,12 +394,13 @@ void Topology::makeAngles(const ForceField             *pd,
         entries_.insert({ InteractionType::LINEAR_ANGLES, std::move(linangles) });
         if (pd)
         {
-            setEntryIdentifiers(pd, InteractionType::LINEAR_ANGLES);
+            setEntryIdentifiers(msghandler, pd, InteractionType::LINEAR_ANGLES);
         }
     }
 }
 
-void Topology::makeImpropers(const ForceField             *pd,
+void Topology::makeImpropers(MsgHandler                   *msghandler,
+                             const ForceField             *pd,
                              const std::vector<gmx::RVec> &x,
                              double                        PlanarAngleMax)
 {
@@ -451,138 +457,34 @@ void Topology::makeImpropers(const ForceField             *pd,
         entries_.insert({ InteractionType::IMPROPER_DIHEDRALS, std::move(impropers) });
         if (pd)
         {
-            setEntryIdentifiers(pd, InteractionType::IMPROPER_DIHEDRALS);
+            setEntryIdentifiers(msghandler, pd, InteractionType::IMPROPER_DIHEDRALS);
         }
     }
 }
 
-void Topology::makePairs(const ForceField *pd,
-                         InteractionType   itype)
+void Topology::makePairs(MsgHandler                          *msghandler,
+                         const ForceField                    *pd,
+                         InteractionType                      itype,
+                         const std::vector<std::set<size_t>> &exclusions)
 {
     TopologyEntryVector pairs{};
     for(size_t i = 0; i < atoms_.size(); i++)
     {
-        // Check for exclusions is done later.
         for(size_t j = i+1; j < atoms_.size(); j++)
         {
-            pairs.push_back(AtomPair(i, j));
+            if (exclusions[i].find(j) == exclusions[i].end())
+            {
+                pairs.push_back(AtomPair(i, j));
+            }
         }
     }
+    // Finally insert the identifiers
     if (!pairs.empty())
     {
-        // Now time for exclusions
-        int nexcl;
-        if (!ffOption(*pd, itype, "nexcl", &nexcl))
+        entries_.insert({itype, std::move(pairs) });
+        if (pd)
         {
-            GMX_THROW(gmx::InvalidInputError(gmx::formatString("The number of exclusions is not specified for %s in %s", interactionTypeToString(itype).c_str(), pd->filename().c_str())));
-        }
-        //! Non bonded exclusions, array is length of number of atoms
-        auto exclusions = generateExclusions(&pairs, nexcl);
-        fixExclusions(&pairs, exclusions);
-        // Finally insert the identifiers
-        if (!pairs.empty())
-        {
-            entries_.insert({itype, std::move(pairs) });
-            if (pd)
-            {
-                setEntryIdentifiers(pd, itype);
-            }
-        }
-    }
-}
-
-void Topology::fixExclusions(TopologyEntryVector                 *pairs,
-                             const std::vector<std::vector<int>> &exclusions)
-{
-    // Loop over all exclusions
-    for(size_t ai = 0; ai < exclusions.size(); ++ai)
-    {
-        if (ActParticle::Atom != atoms_[ai].pType())
-        {
-            continue;
-        }
-        for(size_t jj = 0; jj < exclusions[ai].size(); ++jj)
-        {
-            size_t aj = exclusions[ai][jj];
-            if (ActParticle::Atom != atoms_[aj].pType())
-            {
-                continue;
-            }
-            // Check whether these particles have shells
-            auto sv_i = atoms_[ai].vsites();
-            for(auto si : atoms_[ai].shells())
-            {
-                sv_i.push_back(si);
-            }
-            for(size_t si : sv_i)
-            {
-                auto sv_j = atoms_[aj].vsites();
-                for(auto sj : atoms_[aj].shells())
-                {
-                    sv_j.push_back(sj);
-                }
-                for(size_t sj : sv_j)
-                {
-                    // See whether this interaction exists
-                    auto it = pairs->begin();
-                    while (pairs->end() != it)
-                    {
-                        size_t aai = (*it)->atomIndex(0);
-                        size_t aaj = (*it)->atomIndex(1);
-                        if (((aai == si || aai == ai) && (aaj == sj || aaj == aj)) ||
-                            ((aaj == si || aaj == ai) && (aai == sj || aai == aj)))
-                        {
-                            it = pairs->erase(it);
-                        }
-                        else
-                        {
-                            ++it;
-                        }
-                    }
-                }
-            }
-        }
-    }
-    // Now remove interactions with vsites that are excluded
-    // from the constructing atoms.
-    for(size_t i = 0; i < atoms_.size(); i++)
-    {
-        if (ActParticle::Vsite == atoms_[i].pType())
-        {
-            // Each vsite has two or more cores
-            for (size_t core : atoms_[i].cores())
-            {
-                std::vector<int> cores_shells_vsites = atoms_[core].shells();
-                for(auto vs : atoms_[core].vsites())
-                {
-                    cores_shells_vsites.push_back(vs);
-                }
-                cores_shells_vsites.push_back(core);
-                for (size_t csv : cores_shells_vsites)
-                {
-                    // Loop over the exclusions for this itype and core or its shells
-                    for (size_t jj = 0; jj < exclusions[csv].size(); ++jj)
-                    {
-                        size_t aj = exclusions[csv][jj];
-                        // Now check the pair list
-                        auto it   = pairs->begin();
-                        while (pairs->end() != it)
-                        {
-                            size_t aai = (*it)->atomIndex(0);
-                            size_t aaj = (*it)->atomIndex(1);
-                            // If we find an interaction with the vsite, remove it.
-                            if ((aai == i && aaj == aj) || (aaj == i && aai == aj))
-                            {
-                                it = pairs->erase(it);
-                            }
-                            else
-                            {
-                                ++it;
-                            }
-                        }
-                    }
-                }
-            }
+            setEntryIdentifiers(msghandler, pd, itype);
         }
     }
 }
@@ -646,7 +548,8 @@ void  Topology::addShellPairs()
     }
 }
 
-void Topology::makePropers(const ForceField *pd)
+void Topology::makePropers(MsgHandler       *msghandler,
+                           const ForceField *pd)
 {
     auto ia = InteractionType::ANGLES;
     if (entries_.find(ia) == entries_.end())
@@ -702,12 +605,13 @@ void Topology::makePropers(const ForceField *pd)
         entries_.insert({ InteractionType::PROPER_DIHEDRALS, std::move(propers) });
         if (pd)
         {
-            setEntryIdentifiers(pd, InteractionType::PROPER_DIHEDRALS);
+            setEntryIdentifiers(msghandler, pd, InteractionType::PROPER_DIHEDRALS);
         }
     }
 }
 
-std::map<InteractionType, size_t> Topology::makeVsite1s(const ForceField *pd,
+std::map<InteractionType, size_t> Topology::makeVsite1s(MsgHandler       *msghandler,
+                                                        const ForceField *pd,
                                                         AtomList         *atomList)
 {
     if (!pd)
@@ -729,11 +633,15 @@ std::map<InteractionType, size_t> Topology::makeVsite1s(const ForceField *pd,
     for(auto atom = atomList->begin(); atom != atomList->end(); atom++)
     {
         auto aa = atom->atom();
+        // First find the bond type for this atom
+        const auto ptype1 = pd->findParticleType(aa.ffType());
         for(const auto &mm : fs.parametersConst())
         {
-            auto faa   = mm.first.atoms();
-            if (aa.ffType() == faa[0])
+            // Use the type of the atom to compare to the force field
+            auto faa = mm.first.atoms();
+            if (ptype1->id().id() == faa[0])
             {
+                // The vsite however, should have the same bond as atom type.
                 const auto ptype = pd->findParticleType(faa[1]);
                 std::string vstype;
                 ActAtom newatom(ptype->id().id(), vstype, ptype->id().id(),
@@ -749,22 +657,18 @@ std::map<InteractionType, size_t> Topology::makeVsite1s(const ForceField *pd,
                 atomList->insert(std::next(atom), ActAtomListItem(newatom, vs1, vzero));
                 // Create new topology entry
                 Vsite1 vsnew(atom->index(), vs1);
-                if (debug)
-                {
-                    fprintf(debug, "Adding vs1 %s-%lu %d\n",
-                            aa.element().c_str(), atom->index(), vs1);
-                }
+                msghandler->writeDebug(gmx::formatString("Adding vs1 %s-%lu %d\n",
+                                                         aa.element().c_str(), atom->index(), vs1));
                 // Special bond order for vsites
                 vsnew.addBondOrder(9);
                 v1top.push_back(std::any_cast<Vsite1>(std::move(vsnew)));
-                break;
             }
         }
     }
     // If we did find any vsite1 instances, add the whole vector to the topology.
     // A very subtle programming issue arises here:
     // after the std::move operation, the vector is empty
-    // and therefore vsite2.size() == 0. Hence we have to store the size in a variable.
+    // and therefore vsite1.size() == 0. Hence we have to store the size in a variable.
     std::map<InteractionType, size_t> num_v1;
     if (!v1top.empty())
     {
@@ -774,7 +678,8 @@ std::map<InteractionType, size_t> Topology::makeVsite1s(const ForceField *pd,
     return num_v1;
 }
 
-std::map<InteractionType, size_t> Topology::makeVsite2s(const ForceField *pd,
+std::map<InteractionType, size_t> Topology::makeVsite2s(MsgHandler       *msghandler,
+                                                        const ForceField *pd,
                                                         AtomList         *atomList)
 {
     if (!pd)
@@ -796,26 +701,22 @@ std::map<InteractionType, size_t> Topology::makeVsite2s(const ForceField *pd,
             }
         }
     }
-    if (debug)
+    if (ffvs.empty())
     {
-        if (ffvs.empty())
-        {
-            fprintf(debug, "Force field does not contain any two particle virtual sites.\n");
-            return {};
-        }
-        else
-        {
-            fprintf(debug, "There are %zu non-empty two particle vsite entries in the force field.\n",
-                    ffvs.size());
-        }
+        msghandler->msg(ACTStatus::Verbose,
+                        "Force field does not contain any two particle virtual sites.");
+        return {};
+    }
+    else
+    {
+        msghandler->msg(ACTStatus::Verbose,
+                        gmx::formatString("There are %zu non-empty two particle vsite entries in the force field.",
+                                          ffvs.size()));
     }
     auto itype_bonds = InteractionType::BONDS;
     if (entries_.find(itype_bonds) == entries_.end())
     {
-        if (debug)
-        {
-            fprintf(debug, "There are no bonds to generate vsites3 from.\n");
-        }
+        msghandler->writeDebug("There are no bonds to generate vsites3 from.");
         return {};
     }
     auto &bonds     = entry(itype_bonds);
@@ -861,10 +762,8 @@ std::map<InteractionType, size_t> Topology::makeVsite2s(const ForceField *pd,
                 auto bai    = pti->optionValue("bondtype");
                 auto baj    = ptj->optionValue("bondtype");
                 
-                if (debug)
-                {
-                    fprintf(debug, "Found bond %s %s\n", bai.c_str(), baj.c_str());
-                }
+                msghandler->writeDebug(gmx::formatString("Found bond %s %s", bai.c_str(), baj.c_str()));
+
                 bool found   = false;
                 if (border[0] == vsbo[0])
                 {
@@ -912,12 +811,10 @@ std::map<InteractionType, size_t> Topology::makeVsite2s(const ForceField *pd,
                         atomList->insert(std::next(iter), ActAtomListItem(newatom, vs2, vzero));
                         // Create new topology entry
                         Vsite2 vsnew(ai, aj, vs2);
-                        if (debug)
-                        {
-                            fprintf(debug, "Adding vs2 %s-%d %s-%d %d\n",
-                                    atoms_[ai].element().c_str(), ai,
-                                    atoms_[aj].element().c_str(), aj, vs2);
-                        }
+                        msghandler->writeDebug(gmx::formatString("Adding vs2 %s-%d %s-%d %d",
+                                                                 atoms_[ai].element().c_str(), ai,
+                                                                 atoms_[aj].element().c_str(), aj, vs2));
+
                         // Add bond orders, copied from the bond.
                         for (auto b : border)
                         {
@@ -943,7 +840,8 @@ std::map<InteractionType, size_t> Topology::makeVsite2s(const ForceField *pd,
     return num_v2;
 }
 
-std::map<InteractionType, size_t> Topology::makeVsite3s(const ForceField *pd,
+std::map<InteractionType, size_t> Topology::makeVsite3s(MsgHandler       *msghandler,
+                                                        const ForceField *pd,
                                                         AtomList         *atomList)
 {
     if (!pd)
@@ -968,26 +866,19 @@ std::map<InteractionType, size_t> Topology::makeVsite3s(const ForceField *pd,
             }
         }
     }
-    if (debug)
+    if (ffvs.empty())
     {
-        if (ffvs.empty())
-        {
-            fprintf(debug, "Force field does not contain any three particle virtual sites.\n");
-            return {};
-        }
-        else
-        {
-            fprintf(debug, "There are %zu non-empty three particle vsite entries in the force field.\n",
-                    ffvs.size());
-        }
+        msghandler->writeDebug("Force field does not contain any three particle virtual sites.");
+        return {};
+    }
+    else
+    {
+        msghandler->writeDebug(gmx::formatString("There are %zu non-empty three particle vsite entries in the force field.", ffvs.size()));
     }
     auto itype_angles = InteractionType::ANGLES;
     if (entries_.find(itype_angles) == entries_.end())
     {
-        if (debug)
-        {
-            fprintf(debug, "There are no angles to generate vsites3 from.\n");
-        }
+        msghandler->writeDebug("There are no angles to generate vsites3 from.");
         return {};
     }
     // Count the number of interactions of each type that we find
@@ -997,10 +888,8 @@ std::map<InteractionType, size_t> Topology::makeVsite3s(const ForceField *pd,
         TopologyEntryVector v3top;
         for (const auto &fvs : myffvs.second.parametersConst())
         {
-            if (debug)
-            {
-                fprintf(debug, "Checking vsite %s\n", fvs.first.id().c_str());
-            }
+            msghandler->writeDebug(gmx::formatString("Checking vsite %s", fvs.first.id().c_str()));
+
             auto vsatoms = fvs.first.atoms();
             auto vsbo    = fvs.first.bondOrders();
             auto &angles     = entry(itype_angles);
@@ -1018,10 +907,8 @@ std::map<InteractionType, size_t> Topology::makeVsite3s(const ForceField *pd,
                 auto bai    = pd->findParticleType(atoms_[ai].ffType())->optionValue("bondtype");
                 auto baj    = pd->findParticleType(atoms_[aj].ffType())->optionValue("bondtype");
                 auto bak    = pd->findParticleType(atoms_[ak].ffType())->optionValue("bondtype");
-                if (debug)
-                {
-                    fprintf(debug, "Found angle %s %s %s\n", bai.c_str(), baj.c_str(), bak.c_str());
-                }
+                msghandler->writeDebug(gmx::formatString("Found angle %s %s %s", bai.c_str(), baj.c_str(), bak.c_str()));
+
 
                 bool found   = false;
                 if (border[0] == vsbo[0] && border[1] == vsbo[1] &&
@@ -1068,14 +955,11 @@ std::map<InteractionType, size_t> Topology::makeVsite3s(const ForceField *pd,
                         newatom.addCore(aj);
                         newatom.addCore(ak);
                         newatom.setResidueNumber(atoms_[ai].residueNumber());
-                        if (debug)
-                        {
-                            fprintf(debug, "Adding %s %s%d %s%d %s%d %d\n",
-                                    interactionTypeToString(myffvs.first).c_str(),
-                                    atoms_[ai].element().c_str(), ai,
-                                    atoms_[aj].element().c_str(), aj,
-                                    atoms_[ak].element().c_str(), ak, vs3);
-                        }
+                        msghandler->writeDebug(gmx::formatString("Adding %s %s%d %s%d %s%d %d",
+                                                                 interactionTypeToString(myffvs.first).c_str(),
+                                                                 atoms_[ai].element().c_str(), ai,
+                                                                 atoms_[aj].element().c_str(), aj,
+                                                                 atoms_[ak].element().c_str(), ak, vs3));
 
                         gmx::RVec vzero = {0, 0, 0};
                         size_t after = std::max({ai, aj, ak});
@@ -1160,9 +1044,9 @@ void Topology::renumberAtoms(const std::vector<int> &renumber)
     }
 }
 
-void Topology::dumpPairlist(FILE *fp, InteractionType itype) const
+void Topology::dumpPairlist(gmx::TextWriter *tw, InteractionType itype) const
 {
-    if (nullptr == fp)
+    if (nullptr == tw)
     {
         return;
     }
@@ -1172,8 +1056,9 @@ void Topology::dumpPairlist(FILE *fp, InteractionType itype) const
     }
     for(const auto &pl : entry(itype))
     {
-        fprintf(fp, "PAIRLIST %s %d %d\n", interactionTypeToString(itype).c_str(),
-                pl->atomIndex(0), pl->atomIndex(1));
+        tw->writeLine(gmx::formatString("PAIRLIST %s %d %d",
+                                        interactionTypeToString(itype).c_str(),
+                                        pl->atomIndex(0), pl->atomIndex(1)));
     }
 }
 
@@ -1238,7 +1123,7 @@ void Topology::GenerateAtoms(MsgHandler             *msghandler,
             }
             else
             {
-                msghandler->msg(ACTStatus::Warning,
+                msghandler->msg(ACTStatus::Error,
                                 ACTMessage::AtomTypes,
                                 gmx::formatString("Cannot find atomtype %s (atom %zu) in forcefield, there are %d atomtypes.",
                                                   cai.getObtype().c_str(), atoms_.size(), pd->nParticleTypes()).c_str());
@@ -1250,14 +1135,13 @@ void Topology::GenerateAtoms(MsgHandler             *msghandler,
     else
     {
         msghandler->msg(ACTStatus::Error, ACTMessage::Topology,
-                        "Could not make topology");
+                        "No structure to make topology for.");
     }
-    msghandler->msg(ACTStatus::Debug,
-                    gmx::formatString("Tried to convert '%s' to ACT. LOT is '%s/%s'. Natoms is %zu. Result: %s.",
-                                      mol->getMolname().c_str(),
-                                      ci->getMethod().c_str(),
-                                      ci->getBasisset().c_str(), atoms_.size(),
-                                      actMessage(imm)).c_str());
+    msghandler->writeDebug(gmx::formatString("Tried to convert '%s' to ACT. LOT is '%s/%s'. Natoms is %zu. Result: %s.",
+                                             mol->getMolname().c_str(),
+                                             ci->getMethod().c_str(),
+                                             ci->getBasisset().c_str(), atoms_.size(),
+                                             actMessage(imm)).c_str());
 }
 
 void Topology::build(MsgHandler             *msghandler,
@@ -1281,32 +1165,27 @@ void Topology::build(MsgHandler             *msghandler,
     }
 
     // Before we can do anything we need to "identify" the bonds
-    setEntryIdentifiers(pd, InteractionType::BONDS);
+    setEntryIdentifiers(msghandler, pd, InteractionType::BONDS);
 
     // Check whether we have virtual sites in the force field.
-    auto nv1 = makeVsite1s(pd, &atomList);
-    auto nv2 = makeVsite2s(pd, &atomList);
+    auto nv1 = makeVsite1s(msghandler, pd, &atomList);
+    auto nv2 = makeVsite2s(msghandler, pd, &atomList);
 
     // Before we can make three-particle vsites, we need to create
     // angles, but only temporarily.
-    makeAngles(pd, *x, LinearAngleMin);
-    auto nv3 = makeVsite3s(pd, &atomList);
-    if (debug && (nv2.size() > 0 || nv3.size() > 0))
+    makeAngles(msghandler, pd, *x, LinearAngleMin);
+    auto nv3 = makeVsite3s(msghandler, pd, &atomList);
+    if (msghandler->debug() && (nv2.size() > 0 || nv3.size() > 0))
     {
-        fprintf(debug, "Added");
-        for(const auto nn : nv1)
+        std::string str = "Added";
+        for(const auto &mm : { nv1, nv2, nv3 })
         {
-            fprintf(debug, " %zu %s", nn.second, interactionTypeToString(nn.first).c_str());
+            for(const auto &nn : mm)
+            {
+                str += " " + std::to_string(nn.second) + " " + interactionTypeToString(nn.first);
+            }
         }
-        for(const auto nn : nv2)
-        {
-            fprintf(debug, " %zu %s", nn.second, interactionTypeToString(nn.first).c_str());
-        }
-        for(const auto nn : nv3)
-        {
-            fprintf(debug, " %zu %s", nn.second, interactionTypeToString(nn.first).c_str());
-        }
-        fprintf(debug, "\n");
+        msghandler->writeDebug(str);
     }
     // Now throw away the angles again since we need to reorder the
     // lists of atoms and vsites.
@@ -1322,18 +1201,17 @@ void Topology::build(MsgHandler             *msghandler,
     {
         return;
     }
-    if (debug)
+    if (msghandler->debug())
     {
         auto nshell = atomList.size()-nRealAtoms;
-        for(const auto nn : nv2)
+        for(const auto &mm : { nv1, nv2, nv3 })
         {
-            nshell -= nn.second;
+            for(const auto &nn : mm)
+            {
+                nshell -= nn.second;
+            }
         }
-        for(const auto nn : nv3)
-        {
-            nshell -= nn.second;
-        }
-        fprintf(debug, "Added %zu shells\n", nshell);
+        msghandler->writeDebug(gmx::formatString("Added %zu shells", nshell));
     }
     // Now there will be no more changes to the atomList and we can copy it back.
     std::vector<int> renumber(atomList.size(), 0);
@@ -1367,25 +1245,25 @@ void Topology::build(MsgHandler             *msghandler,
     }
     // Renumber the atoms in the TopologyEntries that have been created so far.
     renumberAtoms(renumber);
-    setEntryIdentifiers(pd, InteractionType::POLARIZATION);
+    setEntryIdentifiers(msghandler, pd, InteractionType::POLARIZATION);
     for(const auto nn : nv1)
     {
-        setEntryIdentifiers(pd, nn.first);
+        setEntryIdentifiers(msghandler, pd, nn.first);
     }
     for(const auto nn : nv2)
     {
-        setEntryIdentifiers(pd, nn.first);
+        setEntryIdentifiers(msghandler, pd, nn.first);
     }
     for(const auto nn : nv3)
     {
-        setEntryIdentifiers(pd, nn.first);
+        setEntryIdentifiers(msghandler, pd, nn.first);
     }
     // Add vsite ids to cores
     addVsitesToCores();
 
     // Now make angles etc.
-    makeAngles(pd, *x, LinearAngleMin);
-    makeImpropers(pd, *x, PlanarAngleMax);
+    makeAngles(msghandler, pd, *x, LinearAngleMin);
+    makeImpropers(msghandler, pd, *x, PlanarAngleMax);
     // Check whether we have dihedrals in the force field.
     if (pd->interactionPresent(InteractionType::PROPER_DIHEDRALS))
     {
@@ -1393,31 +1271,40 @@ void Topology::build(MsgHandler             *msghandler,
         auto &fs = pd->findForcesConst(InteractionType::PROPER_DIHEDRALS);
         if (!fs.empty() || missingParameters::Generate == missing)
         {
-            makePropers(pd);
+            makePropers(msghandler, pd);
         }
     }
-    makePairs(pd, InteractionType::VDW);
-    makePairs(pd, InteractionType::ELECTROSTATICS);
-    auto itqt = InteractionType::VDWCORRECTION;
-    if (pd->interactionPresent(itqt))
+    int nexcl;
+    auto myItype = InteractionType::ELECTROSTATICS;
+    if (!ffOption(*pd, myItype, "nexcl", &nexcl))
     {
-        makePairs(pd, itqt);
+        msghandler->fatal(gmx::formatString("The number of exclusions is not specified for %s in %s", interactionTypeToString(myItype).c_str(), pd->filename().c_str()));
+    }
+    auto exclusions = generateExclusions(msghandler, nexcl);
+    makePairs(msghandler, pd, InteractionType::VDW, exclusions);
+    makePairs(msghandler, pd, InteractionType::ELECTROSTATICS, exclusions);
+    auto itqt = InteractionType::VDWCORRECTION;
+    // If the interaction has no parameters even though it is present, ignore
+    if (pd->interactionPresent(itqt) && !pd->findForcesConst(itqt).empty())
+    {
+        makePairs(msghandler, pd, itqt, exclusions);
     }
     auto itic = InteractionType::INDUCTIONCORRECTION;
-    if (pd->interactionPresent(itic))
+    // If the interaction has no parameters even though it is present, ignore
+    if (pd->interactionPresent(itic) && !pd->findForcesConst(itic).empty())
     {
-        makePairs(pd, itic);
+        makePairs(msghandler, pd, itic, exclusions);
     }
     if (missing != missingParameters::Generate)
     {
         fillParameters(msghandler, pd, missing);
     }
-    if (debug)
+    if (msghandler->debug())
     {
-        dumpPairlist(debug, InteractionType::ELECTROSTATICS);
-        dumpPairlist(debug, InteractionType::VDW);
-        dumpPairlist(debug, InteractionType::VDWCORRECTION);
-        dumpPairlist(debug, InteractionType::INDUCTIONCORRECTION);
+        dumpPairlist(msghandler->twDebug(), InteractionType::ELECTROSTATICS);
+        dumpPairlist(msghandler->twDebug(), InteractionType::VDW);
+        dumpPairlist(msghandler->twDebug(), InteractionType::VDWCORRECTION);
+        dumpPairlist(msghandler->twDebug(), InteractionType::INDUCTIONCORRECTION);
     }
 }
 
@@ -1462,127 +1349,126 @@ void Topology::addEntry(InteractionType            itype,
     }
 }
 
-std::vector<std::vector<int>> Topology::generateExclusions(TopologyEntryVector *pairs,
-                                                           int                  nrexcl)
+std::vector<std::set<size_t>> Topology::generateExclusions(MsgHandler *msghandler,
+                                                           int         nrexcl)
 {
+    msghandler->msg(ACTStatus::Debug,
+                    gmx::formatString("Will generate %d exclusions", nrexcl));
     std::vector<std::set<size_t>> exclusions;
     exclusions.resize(atoms_.size());
-    for(auto &myEntry: entries_)
+    // First directly connected shells and vsites
+    for (size_t i = 0; i < atoms_.size(); i++)
     {
-        switch (myEntry.first)
+        if (atoms_[i].pType() == ActParticle::Atom)
         {
-        case InteractionType::BONDS:
-            if (nrexcl > 0)
+            for (const auto s : atoms_[i].shells())
             {
-                for(auto &b : myEntry.second)
-                {
-                    auto a = b->atomIndices();
-                    exclusions[a[0]].insert(a[1]);
-                    exclusions[a[1]].insert(a[0]);
-                }
+                // Shells typically have one core but vsites can have more than one
+                exclusions[i].insert(s);
+                exclusions[s].insert(i);
             }
-            break;
-        case InteractionType::VSITE1:
-            for(auto &b : myEntry.second)
+            for (const auto v : atoms_[i].vsites())
+            {
+                // Shells typically have one core but vsites can have more than one
+                exclusions[i].insert(v);
+                exclusions[v].insert(i);
+            }
+        }    
+    }
+    auto bonds = entries_.find(InteractionType::BONDS);
+    if (bonds != entries_.end())
+    {
+        if (nrexcl > 0)
+        {
+            // Add first neighbors, assuming these are atoms only
+            for(auto &b : bonds->second)
             {
                 auto a = b->atomIndices();
                 exclusions[a[0]].insert(a[1]);
                 exclusions[a[1]].insert(a[0]);
             }
-            break;
-        case InteractionType::VSITE2:
-        case InteractionType::VSITE2FD:
-            for(auto &b : myEntry.second)
+        }
+        if (nrexcl > 1)
+        {
+            for(const auto itype : { InteractionType::ANGLES, InteractionType::LINEAR_ANGLES })
             {
-                auto a = b->atomIndices();
-                for (int m = 0; m < 2; m++)
+                auto angles = entries_.find(itype);
+                if (angles != entries_.end())
                 {
-                    exclusions[a[m]].insert(a[2]);
-                    exclusions[a[2]].insert(a[m]);
-                }
-            }
-            break;
-        case InteractionType::POLARIZATION:
-            for(auto &b : myEntry.second)
-            {
-                auto a = b->atomIndices();
-                exclusions[a[0]].insert(a[1]);
-                exclusions[a[1]].insert(a[0]);
-            }
-            break;
-        case InteractionType::ANGLES:
-        case InteractionType::LINEAR_ANGLES:
-            if (nrexcl > 1)
-            {
-                for(auto &b : myEntry.second)
-                {
-                    auto a = b->atomIndices();
-                    exclusions[a[0]].insert(a[2]);
-                    exclusions[a[2]].insert(a[0]);
-                }
-            }
-            break;
-        case InteractionType::VSITE3:
-        case InteractionType::VSITE3S:
-        case InteractionType::VSITE3OUT:
-        case InteractionType::VSITE3OUTS:
-            for(auto &b : myEntry.second)
-            {
-                auto a = b->atomIndices();
-                for (int m = 0; m < 3; m++)
-                {
-                    exclusions[a[m]].insert(a[3]);
-                        exclusions[a[3]].insert(a[m]);
-                }
-            }
-            break;
-        case InteractionType::PROPER_DIHEDRALS:
-            {
-                if (nrexcl > 2)
-                {
-                    for(auto &b : myEntry.second)
+                    // Add first neighbors, assuming these are atoms only
+                    for(auto &b : angles->second)
                     {
                         auto a = b->atomIndices();
-                        for (int m = 0; m < 3; m++)
-                        {
-                            exclusions[a[m]].insert(a[3]);
-                            exclusions[a[3]].insert(a[m]);
-                        }
+                        exclusions[a[0]].insert(a[2]);
+                        exclusions[a[2]].insert(a[0]);
                     }
                 }
             }
-            break;
-        case InteractionType::VDW:
-        case InteractionType::VDWCORRECTION:
-        case InteractionType::INDUCTIONCORRECTION:
-        case InteractionType::ELECTROSTATICS:
-        case InteractionType::IMPROPER_DIHEDRALS:
-            break;
-        default: // throws
-            GMX_THROW(gmx::InternalError(gmx::formatString("Interaction type %s not handled when making exclusions.",
-                                                           interactionTypeToString(myEntry.first).c_str()).c_str()));
-            break;
+        }
+        if (nrexcl > 2)
+        {
+            auto dihs = entries_.find(InteractionType::PROPER_DIHEDRALS);
+            if (dihs != entries_.end())
+            {
+                // Add first neighbors, assuming these are atoms only
+                for(auto &b : dihs->second)
+                {
+                    auto a = b->atomIndices();
+                    exclusions[a[0]].insert(a[3]);
+                    exclusions[a[3]].insert(a[0]);
+                }
+            }
+        }
+        if (nrexcl > 3)
+        {
+            msghandler->msg(ACTStatus::Warning, "Cannot handle more than 3 exclusions.");
         }
     }
-    std::vector<std::vector<int> > pp(exclusions.size());
-    for(size_t ai = 0; ai < exclusions.size(); ai++)
+    // Now replicate the exclusions of atoms to their vsites and shells
+    for (size_t i = 0; i < atoms_.size(); i++)
     {
-        for(auto aj : exclusions[ai])
+        if (atoms_[i].pType() == ActParticle::Atom)
         {
-            pp[ai].push_back(aj);
-            for(auto pp = pairs->begin(); pp < pairs->end(); ++pp)
+            continue;
+        }
+        for (const auto cc : atoms_[i].cores())
+        {
+            for (const auto c : exclusions[cc])
             {
-                size_t a0 = (*pp)->atomIndex(0);
-                size_t a1 = (*pp)->atomIndex(1);
-                if ((ai == a0 && aj == a1) || (ai == a1 && aj == a0))
+                // Shells typically have one core but vsites can have more than one
+                exclusions[i].insert(c);
+                exclusions[c].insert(i);
+                // Now add the shells of c
+                for (const auto s : atoms_[c].shells())
                 {
-                    pairs->erase(pp);
-                    break;
+                    exclusions[i].insert(s);
+                    exclusions[s].insert(i);
+                }
+                // Now add the vsites of c
+                for (const auto v : atoms_[c].vsites())
+                {
+                    exclusions[i].insert(v);
+                    exclusions[v].insert(i);
                 }
             }
         }
     }
-    return pp;
+    if (msghandler->printLevel() == ACTStatus::Debug)
+    {
+        auto tw = msghandler->twDebug();
+        for(size_t i = 0; i < atoms_.size(); i++)
+        {
+            std::string str = gmx::formatString("%-10s  %-10s %2zu exclusions:",
+                                                atoms_[i].name().c_str(),
+                                                actParticleToString(atoms_[i].pType()).c_str(), i);
+            for (const auto j : exclusions[i])
+            {
+                str += gmx::formatString("  %2zu", j);
+            }
+            tw->writeLine(str);
+        }
+    }
+    return exclusions;
 }
 
 void Topology::dump(FILE *fp) const
@@ -1605,27 +1491,26 @@ void Topology::dump(FILE *fp) const
     }
 }
 
-static void fillParams(MsgHandler                    *msghandler,
-                       const ForceFieldParameterList &fs,
-                       const Identifier              &btype,
-                       int                            nr,
-                       int                            independent,
-                       const char                    *param_names[],
-                       std::vector<double>           *param)
+static void fillParams(MsgHandler                      *msghandler,
+                       const ForceFieldParameterList   &fs,
+                       const Identifier                &btype,
+                       int                              independent,
+                       const std::vector<const char *> &param_names,
+                       std::vector<double>             *param)
 {
     auto ff = fs.findParameterMapConst(btype);
     std::string msg = potentialToString(fs.potential()) + " " + btype.id();
     if (ff.empty())
     {
-        msghandler->msg(ACTStatus::Warning, ACTMessage::MissingFFParameter, msg);
+        msghandler->msg(ACTStatus::Error, ACTMessage::MissingFFParameter, msg);
         return;
     }
     if (param->empty())
     {
-        param->resize(nr, 0);
+        param->resize(param_names.size(), 0);
     }
     int found = 0;
-    for (int i = 0; i < nr; i++)
+    for (size_t i = 0; i < param_names.size(); i++)
     {
         auto fp      = ff.find(param_names[i]);
         double value = 0;
@@ -1662,52 +1547,12 @@ void Topology::fillParameters(MsgHandler        *msghandler,
 
             const auto          &topID = topentry->id();
             std::vector<double>  param;
-            struct ppp
-            {
-                int nr;
-                int independent;
-                const char **names;
-            };
-            std::map<Potential, ppp> allPot = {
-                { Potential::LJ12_6, { lj12_6NR, lj12_6NR/2, lj12_6_name } },
-                { Potential::LJ8_6, { lj8_6NR, lj8_6NR/2, lj8_6_name } },
-                { Potential::LJ14_7, { lj14_7NR, lj14_7NR/2, lj14_7_name } },
-                { Potential::BUCKINGHAM, { bhNR,  bhNR/2, bh_name } },
-                { Potential::TANG_TOENNIES, { ttNR, ttNR/2, tt_name } },
-                { Potential::WANG_BUCKINGHAM, { wbhNR, wbhNR/2, wbh_name } },
-                { Potential::GENERALIZED_BUCKINGHAM, { gbhNR, gbhNR/2, gbh_name } },
-                { Potential::EXPONENTIAL, { expNR, expNR/2, exp_name } },
-                { Potential::DOUBLEEXPONENTIAL, { dexpNR, dexpNR/2, dexp_name } },
-                // TODO remove hardcoded number of independent parameters
-                { Potential::COULOMB_GAUSSIAN, { coulNR, 2, coul_name } },
-                { Potential::COULOMB_SLATER, { coulNR, 2, coul_name } },
-                { Potential::COULOMB_POINT, { coulNR, 2, coul_name } },
-                { Potential::MORSE_BONDS, { morseNR, morseNR, morse_name } },
-                { Potential::HUA_BONDS, { huaNR, huaNR, hua_name } },
-                { Potential::CUBIC_BONDS, { cubicNR, cubicNR, cubic_name } },
-                { Potential::HARMONIC_BONDS, { bondNR, bondNR, bond_name } },
-                { Potential::HARMONIC_ANGLES, { angleNR, angleNR, angle_name } },
-                { Potential::UREY_BRADLEY_ANGLES, { ubNR, ubNR, ub_name } },
-                { Potential::LINEAR_ANGLES, { linangNR, linangNR, linang_name } },
-                { Potential::HARMONIC_DIHEDRALS, { idihNR, idihNR, idih_name } },
-                { Potential::FOURIER_DIHEDRALS, { fdihNR, fdihNR, fdih_name } },
-                { Potential::POLARIZATION, { polNR, polNR, pol_name } },
-                { Potential::PROPER_DIHEDRALS, { pdihNR, pdihNR, pdih_name } },
-                { Potential::VSITE1, { vsite1NR, vsite1NR, vsite1_name } },
-                { Potential::VSITE2, { vsite2NR, vsite2NR, vsite2_name } },
-                { Potential::VSITE2FD, { vsite2fdNR, vsite2fdNR, vsite2fd_name } },
-                { Potential::VSITE3, { vsite3NR, vsite3NR, vsite3_name } },
-                { Potential::VSITE3S, { vsite3sNR, vsite3sNR, vsite3s_name } },
-                { Potential::VSITE3FD, { vsite3fdNR, vsite3fdNR, vsite3fd_name } },
-                { Potential::VSITE3OUT, { vsite3outNR, vsite3outNR, vsite3out_name } },
-                { Potential::VSITE3OUTS, { vsite3outsNR, vsite3outsNR, vsite3outs_name } }
-            };
 
-            auto pp = allPot.find(fs.potential());
-            if (allPot.end() != pp)
+            auto pp = potprops.find(fs.potential());
+            if (potprops.end() != pp)
             {
-                fillParams(msghandler, fs, topID, pp->second.nr,
-                           pp->second.independent, pp->second.names, &param);
+                fillParams(msghandler, fs, topID, 
+                           pp->second.param.size(), pp->second.param, &param);
             }
             else
             {
@@ -1720,19 +1565,35 @@ void Topology::fillParameters(MsgHandler        *msghandler,
             }
             else
             {
-                if (!msghandler->ok() && missing == missingParameters::Error)
+                if (!msghandler->ok())
                 {
-                    msghandler->msg(ACTStatus::Warning, ACTMessage::MissingFFParameter,
-                                    gmx::formatString("Force field does not contain all %s parameters for %s, using zero's.", potentialToString(fs.potential()).c_str(), topID.id().c_str()));
+                    auto msg = gmx::formatString("Force field only contains %zu/%zu %s parameters for %s, using zero's.", 
+                                                 param.size(),
+                                                 pp->second.param.size(),
+                                                 potentialToString(fs.potential()).c_str(), topID.id().c_str());
+                    if (missing == missingParameters::Error)
+                    {
+                        msghandler->msg(ACTStatus::Error, ACTMessage::MissingFFParameter, msg);
+                        return;
+                    }
+                    else
+                    {
+                        msghandler->msg(ACTStatus::Warning, ACTMessage::MissingFFParameter, msg);
+                    }
+                    tp = entry.second.erase(tp);
                 }
-                topentry->setParams(param);
-                ++tp;
+                else
+                {
+                    topentry->setParams(param);
+                    ++tp;
+                }
             }
         }
     }
 }
 
-void Topology::setEntryIdentifiers(const ForceField *pd,
+void Topology::setEntryIdentifiers(MsgHandler       *msghandler,
+                                   const ForceField *pd,
                                    InteractionType   itype)
 {
     if (!hasEntry(itype) || !pd->interactionPresent(itype))
@@ -1781,6 +1642,12 @@ void Topology::setEntryIdentifiers(const ForceField *pd,
                     }
                     break;
                 }
+            case InteractionType::VSITE1:
+                // Special treatment for vsite1, see https://github.com/AlexandriaChemistry/ACT/issues/962
+                {
+                    btype.push_back(atype->id().id());
+                }
+                break;
             default: // does something
                 {
                     auto itype = InteractionType::BONDS;
@@ -1804,10 +1671,10 @@ void Topology::setEntryIdentifiers(const ForceField *pd,
                                                 fs.canSwap()) });
             }
         }
-        else if (debug)
+        else if (msghandler->debug())
         {
-            fprintf(debug, "Could not find identifier for %s for atomtype '%s'\n",
-                    interactionTypeToString(itype).c_str(), atypes.c_str());
+            msghandler->writeDebug(gmx::formatString("Could not find identifier for %s for atomtype '%s'",
+                                                     interactionTypeToString(itype).c_str(), atypes.c_str()));
         }
     }
 }

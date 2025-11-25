@@ -32,6 +32,7 @@
 #include <cstdlib>
 
 #include "act/basics/chargemodel.h"
+#include "act/basics/msg_handler.h"
 #include "act/forcefield/forcefield_parametername.h"
 #include "act/forces/forcecomputerimpl.h"
 #include "act/qgen/qtype.h"
@@ -57,29 +58,23 @@ static double dotProdRvec(const std::vector<bool>      &isShell,
     return dpr;
 }
 
-ForceComputer::ForceComputer(double   msForce,
-                             int      maxiter)
+void ForceComputer::init(double  msForce,
+                         int     maxiter,
+                         double  maxShellDistance)
 {
-    msForceToler_ = msForce;
-    maxiter_      = maxiter;
+    msForceToler_     = msForce;
+    maxiter_          = maxiter;
+    maxShellDistance_ = maxShellDistance;
     clear_mat(box_);
     real dt = 0.001;
-    vsiteHandler_ = new VsiteHandler(box_, dt);
-}
-
-ForceComputer::~ForceComputer()
-{
-    if (vsiteHandler_)
-    {
-        delete vsiteHandler_;
-    }
+    vsiteHandler_.init(box_, dt);
 }
 
 void ForceComputer::constructVsiteCoordinates(const Topology         *top,
                                               std::vector<gmx::RVec> *coordinates) const
 {
     // Construct virtual site coordinates
-    vsiteHandler_->constructPositions(top, coordinates, box_);
+    vsiteHandler_.constructPositions(top, coordinates, box_);
 }
 
 void ForceComputer::spreadVsiteForces(const Topology         *top,
@@ -87,23 +82,25 @@ void ForceComputer::spreadVsiteForces(const Topology         *top,
                                       std::vector<gmx::RVec> *forces) const
 {
     // Spread virtual site forces
-    vsiteHandler_->distributeForces(top, *coordinates, forces, box_);
+    vsiteHandler_.distributeForces(top, *coordinates, forces, box_);
 }
                               
-double ForceComputer::compute(const ForceField                  *pd,
-                              const Topology                    *top,
-                              std::vector<gmx::RVec>            *coordinates,
-                              std::vector<gmx::RVec>            *forces,
-                              std::map<InteractionType, double> *energies,
-                              const gmx::RVec                   &field,
-                              bool                               resetShells,
-                              std::set<int>                      relax) const
+void ForceComputer::compute(MsgHandler                        *msg_handler,
+                            const ForceField                  *pd,
+                            const Topology                    *top,
+                            std::vector<gmx::RVec>            *coordinates,
+                            std::vector<gmx::RVec>            *forces,
+                            std::map<InteractionType, double> *energies,
+                            const gmx::RVec                   &field,
+                            bool                               resetShells,
+                            std::set<int>                      relax) const
 {
     constructVsiteCoordinates(top, coordinates);
+    // Short-cut
+    auto &atoms = top->atoms();
     // Reset shells if needed
     if (resetShells)
     {
-        auto &atoms = top->atoms();
         for(size_t i = 0; i < top->nAtoms(); i++)
         {
             for(int sh : atoms[i].shells())
@@ -128,8 +125,9 @@ double ForceComputer::compute(const ForceField                  *pd,
         // One over force constant for this particle
         std::vector<double> fcShell_1;
         auto &ffpl  = pd->findForcesConst(itype);
+        auto pol_name = potentialToParameterName(ffpl.potential());
         int  nshell = 0;
-        for(auto &aa : top->atoms())
+        for(auto &aa : atoms)
         {
             bool bIS = aa.pType() == ActParticle::Shell;
             isShell.push_back(bIS);
@@ -152,6 +150,8 @@ double ForceComputer::compute(const ForceField                  *pd,
         int   iter = 1;
         // Golden ratio, may be used for overrelaxation
         // double gold     = 0.5*(1+std::sqrt(5.0));
+        // Prevent shells from flying off.
+        real maxShellDistance2 = gmx::square(maxShellDistance_);
         while (msForce > msForceToler_ && iter < maxiter_)
         {
             // Loop over polarizabilities
@@ -168,12 +168,41 @@ double ForceComputer::compute(const ForceField                  *pd,
                     {
                         (*coordinates)[shell][m] += (*forces)[shell][m] * fcShell_1[shell];
                     }
+                    // Check distance from core, if there is only one
+                    if (atoms[shell].cores().size() == 1)
+                    {
+                        int core = atoms[shell].cores()[0];
+                        rvec dx;
+                        rvec_sub((*coordinates)[shell], (*coordinates)[core], dx);
+                        real dx2 = iprod(dx, dx);
+                        if (dx2 > maxShellDistance2)
+                        {
+                            // Move back the shell/drude to the wall distance
+                            real scale = std::sqrt(maxShellDistance2/dx2);
+                            for (int m = 0; m < DIM; m++)
+                            {
+                                (*coordinates)[shell][m] = (*coordinates)[core][m] + scale*dx[m];
+                            } 
+                        }
+                    }
                 }
             }
             // Do next calculation
             computeOnce(pd, top, coordinates, forces, energies, field);
             msForce  = dotProdRvec(isShell, *forces)/nshell;
             iter    += 1;
+        }
+        if (msg_handler && msg_handler->debug())
+        {
+            if (msForce > msForceToler_)
+            {
+                msg_handler->msg(ACTStatus::Warning,
+                                 gmx::formatString("Shell optimization did not converge. RMS force is %g", std::sqrt(msForce/pols.size())));
+            }
+            else
+            {
+                msg_handler->msg(ACTStatus::Debug, "Shell optimization converged");
+            }
         }
     }
     {
@@ -229,7 +258,6 @@ double ForceComputer::compute(const ForceField                  *pd,
     }
     // Spread forces to atoms
     spreadVsiteForces(top, coordinates, forces);
-    return msForce;
 }
 
 void ForceComputer::computeOnce(const ForceField                  *pd,
@@ -263,16 +291,25 @@ void ForceComputer::computeOnce(const ForceField                  *pd,
         {
             // Now do the calculations and store the energy
             std::map<InteractionType, double> my_energy;
-            bfc(entry.second, atoms, coordinates, forces, &my_energy);
-            for(const auto &me : my_energy)
+            auto ener = bfc(entry.second, atoms, coordinates, forces, &my_energy);
+            if (my_energy.size() > 1)
             {
-                if (energies->find(me.first) != energies->end())
+                for(const auto &me : my_energy)
                 {
-                    GMX_THROW(gmx::InternalError(gmx::formatString("Energy term %s occurs twice",
-                                                                   interactionTypeToString(me.first).c_str()).c_str()));
+                    if (energies->find(me.first) != energies->end())
+                    {
+                        GMX_THROW(gmx::InternalError(gmx::formatString("Energy term %s occurs twice",
+                                                                       interactionTypeToString(me.first).c_str()).c_str()));
+                    }
+                    energies->insert_or_assign( me.first, me.second );
+                    epot += me.second;
                 }
-                energies->insert_or_assign( me.first, me.second );
-                epot += me.second;
+            }
+            else
+            {
+                energies->insert_or_assign( entry.first, ener );
+
+                epot += ener;
             }
         }
         else if (debug && !isVsite(entry.first))
@@ -366,7 +403,8 @@ void ForceComputer::plot(MsgHandler        *msghandler,
                     bbb.push_back(Bond(linear_bonds[i].first, linear_bonds[i].second, bos[i]));
                 }
             }
-            Topology               top(bbb);
+            Topology top;
+            top.init(bbb);
 
             auto subtype = i2s.find(itype);
             if (i2s.end() != subtype)
@@ -408,7 +446,7 @@ void ForceComputer::plot(MsgHandler        *msghandler,
                               pd, &coordinates, 175.0, 5.0, missingParameters::Error);
                     forces.resize(top.nAtoms(), rvnul);
                     // First atom is zero, second must be the other particle
-                    size_t jatom = 1+top.atoms()[0].shells().size();
+                    size_t jatom = 1+top.atoms()[0].shells().size()+top.atoms()[0].vsites().size();
                     if (jatom == 0)
                     {
                         GMX_THROW(gmx::InternalError(gmx::formatString("Could not find a second atom to make a plot, there are %zu atoms, interactionType %s, id %s", top.nAtoms(), interactionTypeToString(itype).c_str(), f.first.id().c_str()).c_str()));

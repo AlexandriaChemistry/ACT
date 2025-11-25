@@ -119,7 +119,8 @@ void StaticIndividualInfo::fillForceField(gmx::TextWriter *tw,
     }
 }
 
-void StaticIndividualInfo::updateForceField(const std::set<int>       &changed,
+void StaticIndividualInfo::updateForceField(MsgHandler                *msghandler,
+                                            const std::set<int>       &changed,
                                             const std::vector<double> &bases)
 {
     if (bases.size() == 0)
@@ -128,9 +129,10 @@ void StaticIndividualInfo::updateForceField(const std::set<int>       &changed,
     }
     if (bases.size() != optIndex().size())
     {
-        GMX_THROW(gmx::InternalError(gmx::formatString("Number of parameters to update in forcefield (%zu) does not match the known number of parameters (%zu)",
-                                                       bases.size(),
-                                                       optIndex().size()).c_str()));
+        msghandler->msg(ACTStatus::Error,
+                        gmx::formatString("Number of parameters to update in forcefield (%zu) does not match the known number of parameters (%zu)",
+                                          bases.size(),
+                                          optIndex().size()).c_str());
     }
     std::set<int> mychanged = changed;
     if (mychanged.empty())
@@ -151,10 +153,11 @@ void StaticIndividualInfo::updateForceField(const std::set<int>       &changed,
         if (p)
         {
             auto iType = optIndex_[n].iType();
-            if (debug)
+            if (msghandler->debug())
             {
-                fprintf(debug, "Updating %s parameter %d (set size %lu) to %g\n",
-                        interactionTypeToString(iType).c_str(), n, mychanged.size(), bases[n]);
+                msghandler->writeDebug(gmx::formatString("Updating %s parameter %d (set size %lu) to %g\n",
+                                                         interactionTypeToString(iType).c_str(), n,
+                                                         mychanged.size(), bases[n]));
             }
             p->setValue(bases[n]);
             p->setUpdated(true);
@@ -174,15 +177,7 @@ void StaticIndividualInfo::updateForceField(const std::set<int>       &changed,
 
 void StaticIndividualInfo::saveState(bool updateCheckSum)
 {
-    pd_.updateTimeStamp();
-    if (updateCheckSum)
-    {
-        pd_.updateCheckSum();
-    }
-    if (!outputFile_.empty())
-    {
-        writeForceField(outputFile_, &pd_, false);
-    }
+    saveState(updateCheckSum, outputFile_);
 }
 
 void StaticIndividualInfo::saveState(bool updateCheckSum, const std::string &fname)
@@ -348,7 +343,8 @@ void StaticIndividualInfo::generateOptimizationIndex(gmx::TextWriter           *
                 {
                     for(auto &param : fpl.second)
                     {
-                        if (mg->fit(param.first))
+                        std::string pf2 = interactionTypeToString(fs.first) + ":" + param.first;
+                        if (mg->fit(param.first) || mg->fit(pf2))
                         {
                             if (param.second.isMutable() && param.second.ntrain() >= mg->mindata())
                             {
@@ -356,8 +352,10 @@ void StaticIndividualInfo::generateOptimizationIndex(gmx::TextWriter           *
                             }
                             else if (debug)
                             {
-                                fprintf(debug, "WARNING: Not enough data to train %s-%s\n",
-                                        fpl.first.id().c_str(), param.first.c_str());
+                                fprintf(debug, "WARNING: Not enough data (%d/%d) to train %s-%s (mut %s)\n",
+                                        param.second.ntrain(), mg->mindata(),
+                                        fpl.first.id().c_str(), param.first.c_str(),
+                                        mutabilityName(param.second.mutability()).c_str());
                             }
                         }
                     }
@@ -476,7 +474,7 @@ void StaticIndividualInfo::fillVectors(unsigned int mindata)
                 defaultParam_.push_back(p.value());
                 paramNames_.push_back(optIndex.name());
                 paramNamesWOClass_.push_back(
-                                             optIndex.name().substr(0, optIndex.name().rfind("-"))
+                                             optIndex.name().substr(0, optIndex.name().rfind(" "))
                                              );
                 mutability_.push_back(p.mutability());
                 lowerBound_.push_back(p.minimum());
@@ -549,28 +547,33 @@ void StaticIndividualInfo::assignParamClassIndex()
     {
         for (size_t j = 0; j < paramNames_.size(); j++)
         {
-            const auto tokenizedName = gmx::splitDelimitedString(paramNames_[j], '-');
+            const auto tokenizedName = gmx::splitDelimitedString(paramNames_[j], ' ');
             if (std::find(tokenizedName.begin(), tokenizedName.end(), paramClass_[i]) != tokenizedName.end())
             {
                 paramClassIndex_[j] = i;
             }
+            else
+            {
+                const auto pclass = gmx::splitDelimitedString(paramClass_[i], ':');
+                if (pclass.size() == 2)
+                {
+                    // We found a paramclass with interactiontype prepended.
+                    if (std::find(tokenizedName.begin(), tokenizedName.end(), pclass[1]) != tokenizedName.end())
+                    {
+                        paramClassIndex_[j] = i;
+                    }
+                }
+            }
         }
     }
 
-    // Now check for params which were not assigned a class and give them class "Other"
-    bool restClass = false;
+    // Now check for params which were not assigned a class and generate an error
     for (size_t i = 0; i < paramClassIndex_.size(); i++)
     {
         if (paramClassIndex_[i] == notFound)
         {
-            if (!restClass)  // If <i> is the first parameter without a class
-            {
-                // Append "Other" to the list of classes
-                paramClass_.push_back("Other");
-                restClass = true;
-            }
-            // Give class "Other" to parameter <i>
-            paramClassIndex_[i] = paramClass_.size() - 1;
+            GMX_THROW(gmx::InvalidInputError(gmx::formatString("Parameter class %s was not found",
+                                                               paramClass_[i].c_str())));
         }
     }
 }

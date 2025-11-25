@@ -105,7 +105,7 @@ int nma(int argc, char *argv[])
     msghandler.optionsFinished(fnm, &cr);
 
     sch.check_pargs(&msghandler);
-    compR.optionsOK(&msghandler, fnm);
+    compR.optionsFinished(&msghandler, fnm);
     if (!msghandler.ok())
     {
         return 1;
@@ -126,7 +126,8 @@ int nma(int argc, char *argv[])
                        gmx::formatString("Shell tolerance larger than atom tolerance, changing it to %g",
                                          shellToler));
     }
-    auto  forceComp = new ForceComputer(shellToler, 100);
+    ForceComputer forceComp;
+    forceComp.init(shellToler, 100);
     print_header(msghandler.tw(), pa, fnm);
     
     JsonTree jtree("simulate");
@@ -135,7 +136,8 @@ int nma(int argc, char *argv[])
         forceFieldSummary(&jtree, &pd);
     }
 
-    std::vector<ACTMol> actmols = compR.read(&msghandler, pd, forceComp);
+    std::vector<ACTMol> actmols;
+    compR.read(&msghandler, pd, &forceComp, &actmols);
     if (actmols.empty())
     {
         return 1;
@@ -154,7 +156,7 @@ int nma(int argc, char *argv[])
     if (sch.minimize())
     {
         std::map<InteractionType, double> energies;
-        eMin = molhandler.minimizeCoordinates(&msghandler, &pd, &actmol, forceComp, sch,
+        eMin = molhandler.minimizeCoordinates(&msghandler, &pd, &actmol, &forceComp, sch,
                                               &xmin, &energies, {});
         if (eMinimizeStatus::OK == eMin)
         {
@@ -190,8 +192,9 @@ int nma(int argc, char *argv[])
     }
     if (eMinimizeStatus::OK == eMin)
     {
-        AtomizationEnergy        atomenergy;
-        doFrequencyAnalysis(&pd, &actmol, molhandler, forceComp, &xmin,
+        AtomizationEnergy atomenergy;
+        atomenergy.read(&msghandler);
+        doFrequencyAnalysis(&pd, &actmol, molhandler, &forceComp, &xmin,
                             atomenergy, nullptr, &jtree,
                             opt2fn_null("-ir", fnm.size(), fnm.data()),
                             linewidth, oenv, msghandler.verbose());

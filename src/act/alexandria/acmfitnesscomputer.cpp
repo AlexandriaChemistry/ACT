@@ -46,10 +46,17 @@ namespace alexandria
 /* * * * * * * * * * * * * * * * * * * *
 * BEGIN: ACMFitnessComputer            *
 * * * * * * * * * * * * * * * * * * * */
+ACMFitnessComputer::~ACMFitnessComputer()
+{
+    for(auto &d : devComputers_)
+    {
+        delete d;
+    }
+}
 
-void ACMFitnessComputer::compute(MsgHandler *msghandler,
-                                 ga::Genome *genome,
-                                 iMolSelect  trgtFit)
+void ACMFitnessComputer::compute(MsgHandler                *msghandler,
+                                 ga::Genome                *genome,
+                                 iMolSelect                 trgtFit)
 {
     if (nullptr == genome)
     {
@@ -58,7 +65,7 @@ void ACMFitnessComputer::compute(MsgHandler *msghandler,
     // First send around parameters. This code is run on master only.
     distributeTasks(CalcDev::Parameters);
     std::set<int> changed;
-    distributeParameters(genome->basesPtr(), changed);
+    distributeParameters(msghandler, genome->basesPtr(), changed);
     // Then do the computation
     auto cd = distributeTasks(CalcDev::Compute);
     double fitness = calcDeviation(msghandler, cd, trgtFit);
@@ -112,7 +119,8 @@ CalcDev ACMFitnessComputer::distributeTasks(CalcDev task)
     }
 }
 
-void ACMFitnessComputer::distributeParameters(const std::vector<double> *params,
+void ACMFitnessComputer::distributeParameters(MsgHandler                *msghandler,
+                                              const std::vector<double> *params,
                                               const std::set<int>       &changed)
 {
     if (debug)
@@ -137,7 +145,7 @@ void ACMFitnessComputer::distributeParameters(const std::vector<double> *params,
             cr->recv(src, &mc);
             mychanged.insert(mc);
         }
-        sii_->updateForceField(mychanged, myparams);
+        sii_->updateForceField(msghandler, mychanged, myparams);
     }
     else 
     {
@@ -151,7 +159,7 @@ void ACMFitnessComputer::distributeParameters(const std::vector<double> *params,
                 cr->send(dest, iset);
             }
         }
-        sii_->updateForceField(changed, *params);
+        sii_->updateForceField(msghandler, changed, *params);
     }
     if (debug)
     {
@@ -159,14 +167,12 @@ void ACMFitnessComputer::distributeParameters(const std::vector<double> *params,
     }
 }
 
-double ACMFitnessComputer::calcDeviation(MsgHandler *msghandler,
-                                         CalcDev     task,
-                                         iMolSelect  ims)
+double ACMFitnessComputer::calcDeviation(MsgHandler                 *msghandler,
+                                         CalcDev                     task,
+                                         iMolSelect                  ims)
 {
-    if (debug)
-    {
-        fprintf(debug, "CalcDev starting\n");
-    }
+    msghandler->writeDebug("CalcDev starting");
+
     auto cr = sii_->commRec();
     // Send / receive molselect group.ks
     if (cr->isHelper())
@@ -182,29 +188,19 @@ double ACMFitnessComputer::calcDeviation(MsgHandler *msghandler,
             cr->send(dest, ims);
         }
     }
-    if (debug)
-    {
-        fprintf(debug, "CalcDev Going to compute dataset %s\n",
-                iMolSelectName(ims));
-    }
+    msghandler->writeDebug(gmx::formatString("CalcDev Going to compute dataset %s\n",
+                                             iMolSelectName(ims)));
+
     // Gather fitting targets
     std::map<eRMS, FittingTarget> *targets = sii_->fittingTargets(ims);
     if (nullptr == targets)
     {
-        if (debug)
-        {
-            fprintf(debug, "Cannot find targets for %s\n", iMolSelectName(ims));
-        }
+        msghandler->writeDebug(gmx::formatString("Cannot find targets for %s\n", iMolSelectName(ims)));
         return 0;
     }
     // Reset the chi2 in FittingTargets for the given dataset in ims
     sii_->resetChiSquared(ims);
 
-    // If actMaster or actMiddleMan, penalize out of bounds
-    if (cr->isMasterOrMiddleMan() && bdc_)
-    {
-        bdc_->calcDeviation(msghandler, forceComp_, nullptr, nullptr, targets, sii_->forcefield());
-    }
 
     // Loop over molecules
     int ntrain = 0;
@@ -212,13 +208,9 @@ double ACMFitnessComputer::calcDeviation(MsgHandler *msghandler,
     auto mymols = molgen_->actmolsPtr();
     for (auto actmol = mymols->begin(); actmol < mymols->end(); ++actmol)
     {
-        if (debug)
-        {
-            fprintf(debug, "CalcDev: mol %s dataset %s\n",
-                    actmol->getMolname().c_str(),
-                    iMolSelectName(actmol->datasetType()));
-            fflush(debug);
-        }
+        msghandler->writeDebug(gmx::formatString("CalcDev: mol %s dataset %s\n",
+                                                 actmol->getMolname().c_str(),
+                                                 iMolSelectName(actmol->datasetType())));
         if (ims != actmol->datasetType())
         {
             continue;
@@ -240,18 +232,20 @@ double ACMFitnessComputer::calcDeviation(MsgHandler *msghandler,
             // Fill the fragments too if there are any
             for(auto &ft : actmol->fragmentHandler()->topologiesPtr())
             {
-                ft->fillParameters(msghandler, sii_->forcefield(), missingParameters::Error);
+                ft.fillParameters(msghandler, sii_->forcefield(), missingParameters::Error);
             }
 
             // Run charge generation including shell minimization
             std::vector<gmx::RVec> forces(actmol->atomsConst().size(), { 0, 0, 0 });
             std::vector<gmx::RVec> coords = actmol->xOriginal();
-            ACTMessage imm = actmol->GenerateAcmCharges(sii_->forcefield(), forceComp_, &coords, &forces);
+            actmol->generateCharges(msghandler, sii_->forcefield(), forceComp_,
+                                    algorithm_, &coords, &forces, true);
 
             // Check whether we have to disable this compound
-            if (ACTMessage::OK != imm && removeMol_)
+            if (!msghandler->ok() && removeMol_)
             {
                 actmol->setSupport(eSupport::No);
+                msghandler->resetStatus();
                 continue;
             }
 
@@ -259,19 +253,16 @@ double ACMFitnessComputer::calcDeviation(MsgHandler *msghandler,
 
             if (devComputers_.size() == 0)
             {
-                printf("No devComputers\n");
+                msghandler->msg(ACTStatus::Warning,
+                                "No devComputers: no deviation from reference values will be computed.");
             }
             for (DevComputer *mydev : devComputers_)
             {
                 mydev->calcDeviation(msghandler, forceComp_, &(*actmol), &coords, targets, sii_->forcefield());
             }
-            if (debug)
-            {
-                fprintf(debug, "CalcDev: rank %d mol %s #energies %zu tw %g\n",
-                        cr->rank(), actmol->getMolname().c_str(), actmol->experimentConst().size(),
-                        targets->find(eRMS::EPOT)->second.totalWeight());
-                fflush(debug);
-            }
+            msghandler->writeDebug(gmx::formatString("CalcDev: rank %d mol %s #energies %zu tw %g\n",
+                                                     cr->rank(), actmol->getMolname().c_str(), actmol->experimentConst().size(),
+                                                     targets->find(eRMS::EPOT)->second.totalWeight()));
             nlocal++;
         }
     }
@@ -282,8 +273,9 @@ double ACMFitnessComputer::calcDeviation(MsgHandler *msghandler,
     auto etot = targets->find(erms);
     if (targets->end() == etot)
     {
-        GMX_THROW(gmx::InternalError(gmx::formatString("Cannot find %s in targets.",
-                                                       rmsName(erms)).c_str()));
+        msghandler->msg(ACTStatus::Error, 
+                        gmx::formatString("Cannot find %s in targets.",
+                                          rmsName(erms)).c_str());
     }
     numberCalcDevCalled_ += 1;
     if (etot->second.chiSquared() == 0 && ntrain > 0)
@@ -300,13 +292,14 @@ double ACMFitnessComputer::calcDeviation(MsgHandler *msghandler,
         msg += "\n";
         for(const auto &ttt: *targets)
         {
-            if (ttt.second.weight() > 0)
+            if (ttt.second.weight() > 0 || ttt.second.totalWeight() > 0 )
             {
-                msg += gmx::formatString("Weight for %s is %g\n", rmsName(ttt.second.erms()),
-                                         ttt.second.weight());
+                msg += gmx::formatString("Weight for %s %g, totalWeight %g chiSquared %g\n", rmsName(ttt.second.erms()),
+                                         ttt.second.weight(), ttt.second.totalWeight(),
+                                         ttt.second.chiSquared());
             }
         }
-        GMX_THROW(gmx::InvalidInputError(msg.c_str()));
+        msghandler->msg(ACTStatus::Fatal, msg);
     }
     
     return etot->second.chiSquared();
@@ -331,18 +324,11 @@ void ACMFitnessComputer::computeMultipoles(std::map<eRMS, FittingTarget> *target
 }
 
 void ACMFitnessComputer::fillDevComputers(MsgHandler *msghandler,
-                                          double      zetaDiff,
                                           bool        haveInductionCorrectionData)
 {
-    if (sii_->target(iMolSelect::Train, eRMS::BOUNDS)->weight() > 0 ||
-        sii_->target(iMolSelect::Train, eRMS::UNPHYSICAL)->weight() > 0)
+    if (sii_->target(iMolSelect::Train, eRMS::BOUNDS)->weight() > 0)
     {
-        bdc_ = new BoundsDevComputer(sii_->optIndexPtr(), zetaDiff);
-    }
-    if (sii_->target(iMolSelect::Train, eRMS::CHARGE)->weight() > 0 ||
-        sii_->target(iMolSelect::Train, eRMS::CM5)->weight() > 0)
-    {
-        devComputers_.push_back(new ChargeCM5DevComputer());
+        devComputers_.push_back(new BoundsDevComputer(sii_->optIndexPtr()));
     }
     if (sii_->target(iMolSelect::Train, eRMS::ESP)->weight() > 0)
     {
@@ -393,13 +379,12 @@ void ACMFitnessComputer::fillDevComputers(MsgHandler *msghandler,
         };
         // Not a nice place to check stuff and throw but we have to pass the information
         // needed to the devComputer.
-        double dhfWeight = sii_->target(iMolSelect::Train, eRMS::DeltaHF)->weight();
-        if (!((dhfWeight >  0 && haveInductionCorrectionData) ||
-              (dhfWeight == 0 && !haveInductionCorrectionData)))
+        double dhfWeight   = sii_->target(iMolSelect::Train, eRMS::DeltaHF)->weight();
+        if (dhfWeight > 0 && !haveInductionCorrectionData)
         {
-            std::string msg = gmx::formatString("Inconstent input. Induction correction energies%s present but -fc_deltaHF is %g",
-                                                haveInductionCorrectionData ? "" : " not", dhfWeight);
-            GMX_THROW(gmx::InvalidInputError(msg.c_str()));
+            std::string msg = gmx::formatString("Inconstent input. No induction correction energies present but -fc_deltaHF is %g",
+                                                dhfWeight);
+            msghandler->msg(ACTStatus::Error, msg);
         }
         auto devcomp     = new ForceEnergyDevComputer(boltzmann);
         if (msghandler->info())

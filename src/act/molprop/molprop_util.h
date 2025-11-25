@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2023
+ * Copyright (C) 2014-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -139,11 +139,13 @@ class QmCount
 void generate_index(std::vector<MolProp> *mp);
 
 /*! \brief Will merge multiple molprop files.
+ * \param[in] msg_handler For info and debugging
  * \param[in] infiles     MolProp filenames
  * \param[in] mp          The molprop vector
  * \return List of warning messages, if empty all is fine
  */
-std::vector<std::string> merge_xml(const gmx::ArrayRef<const std::string> &infiles,
+std::vector<std::string> merge_xml(MsgHandler                             *msg_handler,
+                                   const gmx::ArrayRef<const std::string> &infiles,
                                    std::vector<alexandria::MolProp>       *mp);
 
 /*! \brief Check the available molprops to see what kind of calculations are stored.
@@ -164,13 +166,15 @@ void find_calculations(const std::vector<alexandria::MolProp> &mp,
  * Function that uses the std::sort routine and can apply different sorting
  * keys.
  *
- * \param[inout]  mp        The vector of MolProp
- * \param[in]     mpsa      The algorithm used for sorting
- * \param[in]     apt       Database of atom properties
- * \param[in]     gms       Optional structure containing selection criteria
+ * \param[in]     msg_handler For info and debugging
+ * \param[inout]  mp          The vector of MolProp
+ * \param[in]     mpsa        The algorithm used for sorting
+ * \param[in]     apt         Database of atom properties
+ * \param[in]     gms         Optional structure containing selection criteria
  * \ingroup module_alexandria
  */
-void MolPropSort(std::vector<MolProp> *mp,
+void MolPropSort(MsgHandler           *msg_handler,
+                 std::vector<MolProp> *mp,
                  MolPropSortAlgorithm  mpsa,
                  gmx_atomprop_t        apt,
                  const MolSelect      &gms);
@@ -187,12 +191,4 @@ void splitLot(const char  *lot,
               std::string *method,
               std::string *basis);
 
-/*! \brief Utility to generate a lot
- *
- * \param[out] method QM method
- * \param[out] basis  QM basis set
- * \return  Level of theory
- */
-std::string makeLot(const std::string &method,
-                    const std::string &basis);
 #endif

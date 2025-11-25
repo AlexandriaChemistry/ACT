@@ -4,11 +4,11 @@
   <Int Name="qtotSize">8</Int>
   <Sequence Name="qtotValuesEqdAlgorithm_SQE">
     <Int Name="Length">8</Int>
-    <Real>0.80320125431789124</Real>
+    <Real>0.8032012526105925</Real>
     <Real>-1.2</Real>
-    <Real>0.99839937284105429</Real>
+    <Real>0.99839937369470366</Real>
     <Real>-0.80000000000000004</Real>
-    <Real>0.99839937284105429</Real>
+    <Real>0.99839937369470366</Real>
     <Real>-0.80000000000000004</Real>
     <Real>7.6130000000000004</Real>
     <Real>-8.6129999999999995</Real>
@@ -19,11 +19,10 @@
   <Real Name="ANGLES">0</Real>
   <Real Name="DISPERSION">-1.2555968574211771</Real>
   <Real Name="EXCHANGE">0.060466574094877386</Real>
-  <Real Name="COULOMB">-9.1652665841974112</Real>
-  <Real Name="POLARIZATION">0</Real>
-  <Real Name="INDUCTION">-0.055719652553028798</Real>
-  <Real Name="INDUCTIONCORRECTION">-3.5103203011535458</Real>
-  <Real Name="ALLELEC">-12.731306537903986</Real>
-  <Real Name="EXCHIND">-3.5055733796116972</Real>
-  <Real Name="EPOT">-13.926436821230368</Real>
+  <Real Name="COULOMB">-9.16526741749351</Real>
+  <Real Name="INDUCTION">-3.5103206054162532</Real>
+  <Real Name="INDUCTIONCORRECTION">-0.055719657551251967</Real>
+  <Real Name="ALLELEC">-12.731307680461017</Real>
+  <Real Name="EXCHIND">-3.5055736888726279</Real>
+  <Real Name="EPOT">-13.926437963787293</Real>
 </ReferenceData>

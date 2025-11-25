@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria program.
  *
- * Copyright (C) 2020-2022
+ * Copyright (C) 2020-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -48,14 +48,12 @@ namespace
 {
 
 TEST(InteractionTypeTest, stringToInteractionType) {
-    EXPECT_TRUE(stringToInteractionType("BONDCORRECTIONS") == InteractionType::BONDCORRECTIONS);
-    EXPECT_FALSE(stringToInteractionType("BONDS") == InteractionType::ANGLES);
-    InteractionType itype = InteractionType::ANGLES;
-    EXPECT_THROW(itype = stringToInteractionType("FOO"), gmx::InvalidInputError);
-    // Code will not be reached in normal cases but the compiler
-    // warns about itype not being used otherwise.
-    printf("This should not happen. itype = %s\n",
-           interactionTypeToString(itype).c_str());
+    InteractionType iType;
+    EXPECT_TRUE(stringToInteractionType("BONDCORRECTIONS", &iType));
+    EXPECT_TRUE(iType == InteractionType::BONDCORRECTIONS);
+    EXPECT_TRUE(stringToInteractionType("BONDS", &iType));
+    EXPECT_FALSE(iType == InteractionType::ANGLES);
+    EXPECT_FALSE(stringToInteractionType("FOO", &iType));
 }
 
 }

@@ -38,6 +38,7 @@
 #include <vector>
     
 #include "act/alexandria/actmol.h"
+#include "act/alexandria/molselect.h"
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/commandline/pargs.h"
 
@@ -55,40 +56,25 @@ namespace alexandria
         char   *qqm_        = (char *)"";
         //! String of custom charges
         char   *qcustom_    = (char *)"";
-        //! Whether to generate charges from the force field
-        bool    genCharges_ = false;
-        //! File name for reading structure from
-        char   *filename_   = (char *)"";
+        //! String for charge algorithm
+        char   *qalgorithm_ = (char *)"";
+        //! How to generate charges, either from the force field, by reading, or fitting ESP
+        ChargeGenerationAlgorithm qAlgorithm_ = ChargeGenerationAlgorithm::SQE;
+        //! File name for reading structures from
+        char   *filename_  = (char *)"";
         //! Molecule name to use if there is none in the input file
         char   *molnm_      = (char *)"";
         //! List of compounds/dimers to extract from charges files
         char   *dbname_     = (char *)"";
         //! Map back hydrogen atoms to one type
-        bool               oneH_                 = false;
-        //! Name of the charge map file
+        bool    oneH_       = false;
+        //! Name of the molprop file that contains charges or reference structures for generating charges
         std::string qmapfn_;
-        /*! Read molecule from a single file
-         * \param[in] msghandler Error and message handler, check whether ok after returning
-         * \param[in] pd   The force field
-         * \param[out] mol The molecule
-         */
-        void readFile(MsgHandler *msghandler,
-                      ForceField &pd,
-                      ACTMol     *mol);
-        /*! Set charges for a single molecule
-         * \param[in] msghandler Error and message handler, check whether ok after returning
-         * \param[in]  pd        The force field
-         * \param[out] mol       The molecule
-         * \param[in]  qmap      A charge map
-         * \param[in]  forceComp A force computer
-         * \param[in]  warnQtot  Print a warning when qtot does not match the input
-         */
-        void setCharges(MsgHandler          *msghandler,
-                        ForceField          &pd,
-                        ACTMol              *mol,
-                        const chargeMap     &qmap,
-                        const ForceComputer *forceComp,
-                        bool                 warnQtot);
+        //! Data structure for charges
+        ChargeMap   qmap_;
+        //! MolSelect structre if data was provided by the user
+        MolSelect   molselect_;
+
     public:
         // Constructor
         CompoundReader() {}
@@ -106,22 +92,65 @@ namespace alexandria
          * \param[in] msghandler Error and message handler
          * \param[in] filenm The filenames after processing
          */
-        void optionsOK(MsgHandler                  *msghandler,
-                       const std::vector<t_filenm> &filenm);
+        void optionsFinished(MsgHandler                  *msghandler,
+                             const std::vector<t_filenm> &filenm);
 
         //! \return whether there is one H only
         bool oneH() const { return oneH_; }
 
-        /*! \brief Do the actual reading and processing
-         * \param[in] pd        The force field
-         * \param[in] forceComp A force computer
-         * \return A vector of zero or more compounds
+        //! \return the charge to read
+        const char *qread() const { return qqm_; }
+
+        //! \return the charge algorithm
+        ChargeGenerationAlgorithm algorithm() const { return qAlgorithm_; }
+
+        /*! \brief Set the charge algorithm
+         * \param[in] qA The new algorithm
          */
-        std::vector<ACTMol> read(MsgHandler          *msghandler,
-                                 ForceField          &pd,
-                                 const ForceComputer *forceComp);
-        
-        //! Return true if user provided charges
+        void setAlgorithm(ChargeGenerationAlgorithm qA) { qAlgorithm_ = qA; }
+
+        //! \return charge map
+        const ChargeMap &chargeMapConst() const { return qmap_; }
+
+        //! \return charge map for editing
+        ChargeMap *chargeMap() { return &qmap_; }
+
+        /*! Read molecule(s) from a single file
+         * \param[in]  msghandler Error and message handler, check whether ok after returning
+         * \param[in]  pd         The force field
+         * \param[out] mol        The molecule
+         */
+        void readFile(MsgHandler          *msghandler,
+                      ForceField          &pd,
+                      std::vector<ACTMol> *mols);
+        /*! Set charges for a single molecule
+         * \param[in]  msghandler Error and message handler, check whether ok after returning
+         * \param[in]  pd         The force field
+         * \param[out] mol        The molecule
+         * \param[in]  forceComp  A force computer
+         * \param[in]  warnQtot   Print a warning when qtot does not match the input
+         */
+        void setCharges(MsgHandler          *msghandler,
+                        ForceField          &pd,
+                        ACTMol              *mol,
+                        const ForceComputer *forceComp,
+                        bool                 warnQtot);
+        /*! \brief Do the actual reading and processing
+         * \param[in]  msghandler Error and message handler
+         * \param[in]  pd         The force field
+         * \param[in]  forceComp  A force computer
+         * \param[in]  molselect  Selections if not something else is passed on the command line
+         * \param[out] mols       The ACTMol structures
+         */
+        void read(MsgHandler          *msghandler,
+                  ForceField          &pd,
+                  const ForceComputer *forceComp,
+                  std::vector<ACTMol> *mols);
+
+        //! \return the molselect structure (may be empty!)
+        const MolSelect &molselect() const { return molselect_; }
+
+        //! \return true if user provided charges
         bool userQtot() const { return strlen(qcustom_) > 0; }
     };
     

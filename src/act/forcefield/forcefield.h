@@ -37,6 +37,7 @@
 
 #include <algorithm>
 #include <map>
+#include <set>
 #include <vector>
 
 #include "gromacs/utility/stringutil.h"
@@ -328,8 +329,19 @@ class ForceField
     SymchargesConstIterator getSymchargesEnd() const { return symcharges_.end(); }
     
     //! Return the charge generation algorithm used
-    ChargeGenerationAlgorithm chargeGenerationAlgorithm() const;
-    
+    ChargeGenerationAlgorithm chargeGenerationAlgorithm() const { return ChargeGenerationAlgorithm_; };
+
+    /*! \brief Set the charge generation algorithm
+     * \param cga The charge generation algorithm to use
+     */
+    void setChargeGenerationAlgorithm(ChargeGenerationAlgorithm cga)
+    {
+        ChargeGenerationAlgorithm_ = cga;
+    }
+
+    //! \brief Guess the algorithm based on force field content
+    void guessChargeGenerationAlgorithm();
+
     //! Return whether the model used is polarizable.     
     bool polarizable() const { return polarizable_; }
     
@@ -388,18 +400,18 @@ class ForceField
     void checkConsistency(FILE *fplog) const;
     
     //! \return a constant \p type2Itype_ reference
-    const std::map<std::string, InteractionType> &type2Itype() const { return type2Itype_; }
+    const std::map<InteractionType, std::set<std::string>> &type2Itype() const { return type2Itype_; }
     
 private:
     std::string                           checkSum_;
     std::string                           timeStamp_;
-    std::map<std::string, InteractionType> type2Itype_;
+    std::map<InteractionType, std::set<std::string>> type2Itype_;
     std::string                           filename_;
     std::map<Identifier, ParticleType>    alexandria_;
     std::map<InteractionType, ForceFieldParameterList> forces_;
     std::vector<Symcharges>               symcharges_;
     bool                                  polarizable_ = false;
-    ChargeGenerationAlgorithm             ChargeGenerationAlgorithm_ = ChargeGenerationAlgorithm::EEM;
+    ChargeGenerationAlgorithm             ChargeGenerationAlgorithm_ = ChargeGenerationAlgorithm::NONE;
     
     gmx_bool strcasestrStart(std::string needle, std::string haystack);
 

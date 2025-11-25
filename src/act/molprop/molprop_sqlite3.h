@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2020 
+ * Copyright (C) 2014-2020,2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -40,15 +40,17 @@
 
 namespace alexandria
 {
-
+    class MsgHandler;
     /*! \brief Read an sqlite database to extract values
+     * \param[in]  msg_handler     For debugging info
      * \param[in]  sqlite_file     The file name
      * \param[out] mp              Molecular properties
      * \param[in]  ref_temperature The T to select properties at
      */
-void ReadSqlite3(const char           *sqlite_file,
-                 std::vector<MolProp> *mp,
-                 double                ref_temperature);
+    void ReadSqlite3(MsgHandler           *msg_handler,
+                     const char           *sqlite_file,
+                     std::vector<MolProp> *mp,
+                     double                ref_temperature);
 
 } // namespace alexandria
 

@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2022
+ * Copyright (C) 2014-2022,2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -53,6 +53,9 @@ public:
      */
     virtual void compute(      std::vector<Genome> *pop,
                          const int                  generation) = 0;
+
+    virtual ~ProbabilityComputer() = default;
+
 };
 
 /*!

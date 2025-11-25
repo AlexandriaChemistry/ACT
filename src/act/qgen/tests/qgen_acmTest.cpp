@@ -146,7 +146,7 @@ class AcmTest : public gmx::test::CommandLineTestBase
             bool   userqtot   = !qcustom.empty();
             double qtot_babel = myqtot;
             matrix box;
-            EXPECT_TRUE(readBabel(pd, dataName.c_str(), &molprops,
+            EXPECT_TRUE(readBabel(nullptr, pd, dataName.c_str(), &molprops,
                                   molname.c_str(), molname.c_str(),
                                   conf, &method, &basis, maxpot,
                                   nsymm, jobtype, userqtot ,&qtot_babel,
@@ -168,6 +168,7 @@ class AcmTest : public gmx::test::CommandLineTestBase
             }
             mp_.Merge(&molprop);
             MsgHandler msghandler;
+            msghandler.setPrintLevel(ACTStatus::Warning);
             // Uncomment in case of issues
             // msghandler.setACTStatus(ACTStatus::Debug);
             // Generate charges and topology
@@ -182,13 +183,16 @@ class AcmTest : public gmx::test::CommandLineTestBase
             auto forceComp = new ForceComputer();
             std::vector<gmx::RVec> forces(mp_.atomsConst().size());
             std::vector<gmx::RVec> coords = mp_.xOriginal();
-            auto alg = ChargeGenerationAlgorithm::NONE;
+            auto alg = pd->chargeGenerationAlgorithm();
             if (!qcustom.empty())
             {
                 alg = ChargeGenerationAlgorithm::Custom;
+                mp_.setCharges(qcustom);
             }
-            mp_.GenerateCharges(&msghandler, pd, forceComp, alg, qType::Calc, qcustom, &coords, &forces);
-            
+            else
+            {
+                mp_.generateCharges(&msghandler, pd, forceComp, alg, &coords, &forces);
+            }
             std::vector<double> qtotValues;
             auto myatoms = mp_.atomsConst();
             for (size_t atom = 0; atom < myatoms.size(); atom++)
@@ -210,7 +214,7 @@ class AcmTest : public gmx::test::CommandLineTestBase
                 {
                     for(size_t f = 0; f < atomStart.size(); f++)
                     {
-                        auto   natom = fh->topologies()[f]->atoms().size();
+                        auto   natom = fh->topologies()[f].atoms().size();
                         double qt    = 0;
                         for(size_t atom = atomStart[f]; atom < atomStart[f]+natom; atom++)
                         {

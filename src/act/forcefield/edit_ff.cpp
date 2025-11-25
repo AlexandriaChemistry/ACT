@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2024
+ * Copyright (C) 2014-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -40,6 +40,7 @@
 
 #include "act/alexandria/alex_modules.h"
 #include "act/basics/interactiontype.h"
+#include "act/basics/msg_handler.h"
 #include "act/basics/mutability.h"
 #include "act/forces/forcecomputer.h"
 #include "act/forcefield/act_checksum.h"
@@ -252,6 +253,50 @@ static void modifyInteraction(ForceField *pd,
     }
 }
 
+static void removeParticles(ForceField *pd,
+                            const std::string &particle)
+{
+    for (const auto &s : gmx::splitString(particle))
+    {
+        // First remove all the forces involving s
+        auto forces = pd->forces();
+        for (auto f = forces->begin(); f != forces->end(); ++f)
+        {
+            auto params = f->second.parameters();
+            for (auto fp = params->begin(); fp != params->end(); )
+            {
+                auto myatoms = fp->first.atoms();
+                bool found = false;
+                for (const auto &mya : myatoms)
+                {
+                    found = found || mya == s;
+                }
+                if (found)
+                {
+                    fp = params->erase(fp);
+                }
+                else
+                {
+                    ++fp;
+                }
+            }
+        }
+        // Then remove s itself
+        auto ptypes = pd->particleTypes();
+        for (auto p = ptypes->begin(); p != ptypes->end(); )
+        {
+            if (s == p->first.id())
+            {
+                p = ptypes->erase(p);
+            }
+            else
+            {
+                ++p;
+            }
+        }
+    }
+}
+
 static void modifyForceField(ForceField *pd,
                              const std::string &paramType,
                              const std::string &particle,
@@ -453,7 +498,8 @@ static void dumpForceField(ForceField        *pd,
     printf("Stored %d parameters in %s\n", nparm, filenm.c_str());
 }
 
-static void plotInteractions(ForceField           *pd,
+static void plotInteractions(MsgHandler        *msghandler,
+                             ForceField        *pd,
                              const std::string &analyze)
 {
     bool found;
@@ -462,11 +508,10 @@ static void plotInteractions(ForceField           *pd,
     {
         return;
     }
-    MsgHandler msghandler;
     ForceComputer fc;
     for(auto &m : myset)
     {
-        fc.plot(&msghandler, pd, m);
+        fc.plot(msghandler, pd, m);
     }
 }
 
@@ -654,27 +699,6 @@ static void compare_pd(ForceField *pd1,
     }
 }
 
-static void copyDeToD0(ForceField *pd)
-{
-    auto fs = pd->findForces(InteractionType::BONDS);
-    if (fs->potential() != Potential::MORSE_BONDS)
-    {
-        printf("Not using Morse in force field file %s\n", pd->filename().c_str());
-        return;
-    }
-    auto ppp = fs->parameters();
-    for (auto &p : (*ppp))
-    {
-        auto &param = p.second;
-        if (param.find(morse_name[morseDE]) != param.end() && 
-            param.find(morse_name[morseD0]) != param.end())
-        {
-            double De = param.find(morse_name[morseDE])->second.value();
-            param.find(morse_name[morseD0])->second.setValue(-De);
-        }
-    }
-}
-
 static void addBondEnergy(ForceField *pd)
 {
     auto fs = pd->findForces(InteractionType::BONDS);
@@ -685,6 +709,7 @@ static void addBondEnergy(ForceField *pd)
         return;
     }
     auto ppp = fs->parameters();
+    auto bond_name = potentialToParameterName(Potential::HARMONIC_BONDS);
     for (auto &p : (*ppp))
     {
         auto &param = p.second;
@@ -721,7 +746,7 @@ int edit_ff(int argc, char*argv[])
     CombRuleUtil crule;
     crule.addInfo(&desc);
     gmx_output_env_t                *oenv;
-    t_filenm                         fnm[] = {
+    std::vector<t_filenm> fnm = {
         { efXML, "-ff",   "aff_in" , ffREAD  },
         { efXML, "-ff2",  "aff_in2", ffOPTRD },
         { efXML, "-o",    "aff_out", ffOPTWR },
@@ -739,12 +764,12 @@ int edit_ff(int argc, char*argv[])
     gmx_bool     force      = false;
     gmx_bool     stretch    = false;
     gmx_bool     plot       = false;
-    gmx_bool     De2D0      = false;
     gmx_bool     bondenergy = false;
     gmx_bool     forceWrite = false;
     gmx_bool     bcast      = false;
     gmx_bool     bounds     = false;
     gmx_bool     verbose    = false;
+    gmx_bool     remove     = false;
     static char *missing    = (char *)"";
     static char *replace    = (char *)"";
     static char *implant    = (char *)"";
@@ -765,6 +790,8 @@ int edit_ff(int argc, char*argv[])
           "Maximum value of parameter." },
         { "-mut",    FALSE, etSTR,  {&mutability},
           "Set the mutability for the given parameters to the value. The following values are supported: Free, Fixed, Bounded" },
+        { "-del",    FALSE, etBOOL,  {&remove},
+          "Together with the -a flag, will remove all interactions containing this particle" },
         { "-force",  FALSE, etBOOL, {&force},
           "Will change also non-mutable parameters. Use with care!" },
         { "-stretch", FALSE, etBOOL, {&stretch},
@@ -781,43 +808,43 @@ int edit_ff(int argc, char*argv[])
           "Replace either the EEM, the BONDS or OTHER parameters in file one [TT]-f[ff] by those from file two [TT]-f2[tt] and store in another [TT]-o[tt]." },
         { "-implant", FALSE, etSTR, {&implant},
           "Implant (write over) either the EEM, the BONDS or OTHER parameters in file one [TT]-f[ff] by those from file two [TT]-f2[tt] and store in another [TT]-o[tt]. Only parameters with ntrain larger than zero will be copied. This can be used to merge training data from multiple runs." },
-        { "-de2d0", FALSE, etBOOL, {&De2D0},
-          "This is a hack to copy -De to D0 in the Morse potential" },
         { "-bondenergy", FALSE, etBOOL, {&bondenergy},
           "This is a hack to a bondenergy field to the BOND potential" },
         { "-plot",    FALSE, etBOOL, {&plot},
           "Plot many interactions as a function of distance or angle" },
         { "-bcast",   FALSE, etBOOL, {&bcast},
           "Use broadcast rather than send/receive to communicate force field" },
-        { "-v", FALSE, etBOOL, {&verbose},
-          "Print more stuff during processing" },
         { "-write",   FALSE, etBOOL, {&forceWrite},
           "Write out a force field file even if there were no changes" }
     };
-    int NFILE  = asize(fnm);
     crule.addPargs(&pa);
-    if (!parse_common_args(&argc, argv, 0, NFILE, fnm, pa.size(), pa.data(),
+    MsgHandler msghandler;
+    msghandler.addOptions(&pa, &fnm, "edit_ff");
+    if (!parse_common_args(&argc, argv, 0, fnm.size(), fnm.data(), pa.size(), pa.data(),
                            desc.size(), desc.data(), 0, nullptr, &oenv))
     {
         return 0;
     }
+
     CommunicationRecord cr;
     cr.init(cr.size());
+    msghandler.optionsFinished(fnm, &cr);
+
     ForceField pd;
     if (cr.isMaster())
     {
         try 
         {
-            alexandria::readForceField(opt2fn("-ff", NFILE, fnm), &pd);
+            alexandria::readForceField(opt2fn("-ff", fnm.size(), fnm.data()), &pd);
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
         (void) pd.verifyCheckSum(stderr, forcefieldCheckSum(&pd));
-        if (opt2bSet("-ff2", NFILE, fnm))
+        if (opt2bSet("-ff2", fnm.size(), fnm.data()))
         {
             alexandria::ForceField pd2;
             try
             {
-                alexandria::readForceField(opt2fn("-ff2", NFILE, fnm), &pd2);
+                alexandria::readForceField(opt2fn("-ff2", fnm.size(), fnm.data()), &pd2);
             }
             GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
             (void) pd2.verifyCheckSum(stderr, forcefieldCheckSum(&pd2));
@@ -845,23 +872,23 @@ int edit_ff(int argc, char*argv[])
         }
         else if (strlen(analyze) > 0)
         {
-            auto dumpfn = opt2fn_null("-dump", NFILE, fnm);
+            auto dumpfn = opt2fn_null("-dump", fnm.size(), fnm.data());
             if (strlen(particle) > 0 && dumpfn)
             {
                 dumpForceField(&pd, analyze, particle, dumpfn);
             }
             else if (plot)
             {
-                plotInteractions(&pd, analyze);
+                plotInteractions(&msghandler, &pd, analyze);
             }
-        }
-        else if (De2D0)
-        {
-            copyDeToD0(&pd);
         }
         else if (bondenergy)
         {
             addBondEnergy(&pd);
+        }
+        else if (remove)
+        {
+            removeParticles(&pd, particle);
         }
         else
         {
@@ -900,10 +927,7 @@ int edit_ff(int argc, char*argv[])
             fst.second = pd.findForces(fst.first);
         }
     }
-    int nRuleChanged = crule.extract(pa,
-                                     its[InteractionType::VDW],
-                                     its[InteractionType::VDWCORRECTION],
-                                     its[InteractionType::INDUCTIONCORRECTION]);
+    int nRuleChanged = crule.extract(&pd);
     if (nRuleChanged > 0)
     {
         printf("Inserted %d new style combination rules from command line.\n",
@@ -918,7 +942,7 @@ int edit_ff(int argc, char*argv[])
     {
         its[InteractionType::VDW]->removeOption("combination_rule");
     }
-    if (opt2bSet("-o", NFILE, fnm))
+    if (opt2bSet("-o", fnm.size(), fnm.data()))
     {
         if (cr.isParallel())
         {
@@ -927,7 +951,7 @@ int edit_ff(int argc, char*argv[])
             if (cr.isMaster())
             {
             
-                std::string outfile(opt2fn("-o", NFILE, fnm));
+                std::string outfile(opt2fn("-o", fnm.size(), fnm.data()));
                 printf("Will send force field to my helpers to write %s\n", outfile.c_str());
                 if (bcast)
                 {
@@ -973,7 +997,7 @@ int edit_ff(int argc, char*argv[])
             {
                 pd.updateTimeStamp();
                 pd.setCheckSum(checkSum);
-                writeForceField(opt2fn("-o", NFILE, fnm), &pd, 0);
+                writeForceField(opt2fn("-o", fnm.size(), fnm.data()), &pd, 0);
             }
         }
     }

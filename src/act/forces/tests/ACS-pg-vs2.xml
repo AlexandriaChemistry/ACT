@@ -22435,16 +22435,16 @@
   </interaction>
   <interaction type="VSITE2FD" function="VSITE2FD" canswap="false">
     <parameterlist identifier="br_b~h_b!v2">
-      <parameter type="vs2a" unit="" value="1.05" uncertainty="0" minimum="-1.5" maximum="1.5" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="vs2fd_a" unit="" value="-0.2" uncertainty="0" minimum="-1.5" maximum="1.5" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="cl_b~h_b!v2">
-      <parameter type="vs2a" unit="" value="1.05" uncertainty="0" minimum="-1.5" maximum="1.5" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="vs2fd_a" unit="" value="1.05" uncertainty="0" minimum="-1.5" maximum="1.5" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="f_b~h_b!v2f1">
-      <parameter type="vs2a" unit="" value="1.05" uncertainty="0" minimum="-1.5" maximum="1.5" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="vs2fd_a" unit="" value="1.05" uncertainty="0" minimum="-1.5" maximum="1.5" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
     <parameterlist identifier="i_b~h_b!v2">
-      <parameter type="vs2a" unit="" value="1.05" uncertainty="0" minimum="-1.5" maximum="1.5" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="vs2fd_a" unit="" value="1.05" uncertainty="0" minimum="-1.5" maximum="1.5" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
   </interaction>
   <interaction type="ELECTRONEGATIVITYEQUALIZATION" function="" canswap="true">

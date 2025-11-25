@@ -69,9 +69,9 @@ protected:
     MolpropTest()
     {
         aps_  = gmx_atomprop_init();
-        
+
         std::string mpFile = fileManager().getInputFilePath("molprop.xml");
-        MolPropRead(mpFile.c_str(), &mp_);
+        MolPropRead(nullptr, mpFile.c_str(), &mp_);
     }
 
     //! Static initiation, only run once every test.
@@ -112,6 +112,14 @@ protected:
     {
         int mol = 1;
         gmx::test::TestReferenceChecker myCheck(this->rootChecker());
+        std::map<const char *,std::pair<int, int> > t_elem = {
+            { "XX", { XX, XX } },
+            { "YY", { YY, YY } },
+            { "ZZ", { ZZ, ZZ } },
+            { "XY", { XX, YY } },
+            { "XZ", { XX, ZZ } },
+            { "YZ", { YY, ZZ } }
+        };
         for (auto &mpi : mp_)
         {
             char mbuf[512];
@@ -137,23 +145,15 @@ protected:
                 }
                 for (auto &propi : ci.propertiesConst())
                 {
-                    for(auto gp : propi.second)
+                    for(auto &gp : propi.second)
                     {
-                        std::map<const char *,std::pair<int, int> > t_elem = {
-                            { "XX", { XX, XX } },
-                            { "YY", { YY, YY } },
-                            { "ZZ", { ZZ, ZZ } },
-                            { "XY", { XX, YY } },
-                            { "XZ", { XX, ZZ } },
-                            { "YZ", { YY, ZZ } } 
-                        }; 
                         const char *mpostr = mpo_name(propi.first);
                         double fac = convertFromGromacs(1.0, gp->getInputUnit());
                         switch(propi.first)
                         {
                         case alexandria::MolPropObservable::POLARIZABILITY:
                             {
-                                auto gpp = static_cast<MolecularPolarizability *>(gp);
+                                auto gpp = static_cast<MolecularPolarizability *>(gp.get());
                                 myCheck.checkDouble(gpp->getValue()*fac,
                                                     gmx::formatString("%s %s %s average", mpostr, gpp->getType(), cbuf).c_str());
                                 myCheck.checkDouble(gpp->getError()*fac,

@@ -42,6 +42,7 @@ namespace alexandria
 {
 
 class QtypeProps;
+class MsgHandler;
 
 /*! \brief Class to compute all the forces in a molecule or complex
  */
@@ -49,26 +50,40 @@ class ForceComputer
 {
 private:
     //! Convergence criterium for minimizing shells: mean square force
-    double         msForceToler_;
+    double         msForceToler_     = 1e-6;
     //! Maximum number of iterations to spend on minimizing shells
-    int            maxiter_;
+    int            maxiter_          = 25;
+    //! Maximum allowed distance for shells to be away from their core
+    double         maxShellDistance_ = 0.04;
     //! Electric field to be optionally applied
     gmx::RVec      field_ = { 0.0, 0.0, 0.0 };
     //! Box for periodic boundaries
-    matrix         box_;
+    matrix         box_   = { { 0 } };
     //! Virtual site handler
-    VsiteHandler  *vsiteHandler_;
+    VsiteHandler   vsiteHandler_;
 
  public:
-    /*! \brief Constructor
-     * \param[in] msForce The tolerance for the mean square force on shells
-     * \param[in] maxiter The maximum number of iterations for shell minimization
+    //! \brief Default constructor
+    ForceComputer() {}
+    /*! \brief Constructor with initialization of variables
+     * \param[in] msForce          The tolerance for the mean square force on shells
+     * \param[in] maxiter          The maximum number of iterations for shell minimization
+     * \param[in] maxShellDistance Maximum allowed distance (nm) for shells to be away from their core
      */
-    ForceComputer(double   msForce = 1e-6,
-                  int      maxiter = 25);
-
-    //! \brief Destructor
-    ~ForceComputer();
+    ForceComputer(double   msForce,
+                  int      maxiter = 25,
+                  double   maxShellDistance = 0.04)
+    {
+        init(msForce, maxiter, maxShellDistance);
+    }
+    /*! \brief Initialization of variables
+     * \param[in] msForce          The tolerance for the mean square force on shells
+     * \param[in] maxiter          The maximum number of iterations for shell minimization
+     * \param[in] maxShellDistance Maximum allowed distance (nm) for shells to be away from their core
+     */
+    void init(double   msForce = 1e-6,
+              int      maxiter = 25,
+              double   maxShellDistance = 0.04);
 
     void constructVsiteCoordinates(const Topology         *top,
                                    std::vector<gmx::RVec> *coordinates) const;
@@ -94,6 +109,9 @@ private:
                      const gmx::RVec                   &field) const;
     /*! Do complete energy/force computation.
      * If shells are present their positions will be minimized.
+     * If the shell minimization does not converge a warning will
+     * be written.
+     * \param[in]  msg_handler For debugging, may be nullptr
      * \param[in]  pd          Pointer to force field structure
      * \param[in]  top         The molecular topology
      * \param[in]  charges     The charges for all particles
@@ -104,16 +122,16 @@ private:
      * \param[in]  field       Optional electric field to be applied
      * \param[in]  resetShells Set the position of the shells to that of the connecting atoms
      * \param[in]  relax       Specify the shell indices that should be relaxed. If empty, all shells will be relaxed.
-     * \return The mean square force on the shells, or zero if not present.
      */
-    double compute(const ForceField                  *pd,
-                   const Topology                    *top,
-                   std::vector<gmx::RVec>            *coordinates,
-                   std::vector<gmx::RVec>            *forces,
-                   std::map<InteractionType, double> *energies,
-                   const gmx::RVec                   &field = { 0.0, 0.0, 0.0 },
-                   bool                               resetShells = true,
-                   std::set<int>                      relax = {}) const;
+    void compute(MsgHandler                        *msg_handler,
+                 const ForceField                  *pd,
+                 const Topology                    *top,
+                 std::vector<gmx::RVec>            *coordinates,
+                 std::vector<gmx::RVec>            *forces,
+                 std::map<InteractionType, double> *energies,
+                 const gmx::RVec                   &field = { 0.0, 0.0, 0.0 },
+                 bool                               resetShells = true,
+                 std::set<int>                      relax = {}) const;
                  
     /*! \brief Return the ACT potential used
      * In practice this converts the InteractionType to the ftype
@@ -151,7 +169,7 @@ private:
     void generateVsites(const Topology         *top,
                         std::vector<gmx::RVec> *coordinates)
     {
-        vsiteHandler_->constructPositions(top, coordinates, box_);
+        vsiteHandler_.constructPositions(top, coordinates, box_);
     }
 };
 

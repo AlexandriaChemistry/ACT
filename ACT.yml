@@ -15,5 +15,6 @@ dependencies:
   - SWIG>=4.0.2
   - Graphviz
   - openmpi>=5.0.5
+  - pillow>=11.3.0
   - pip:
     - PubChemPy

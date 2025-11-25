@@ -116,7 +116,7 @@ int simulate(int argc, char *argv[])
     msghandler.optionsFinished(fnm, &cr);
 
     sch.check_pargs(&msghandler);
-    compR.optionsOK(&msghandler, fnm);
+    compR.optionsFinished(&msghandler, fnm);
     if (!msghandler.ok())
     {
         return 1;
@@ -139,8 +139,10 @@ int simulate(int argc, char *argv[])
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     (void) pd.verifyCheckSum(stderr);
 
-    auto forceComp = new ForceComputer(shellToler, sch.maxIter());
-    std::vector<ACTMol> actmols = compR.read(&msghandler, pd, forceComp);
+    ForceComputer forceComp;
+    forceComp.init(shellToler, sch.maxIter());
+    std::vector<ACTMol> actmols;
+    compR.read(&msghandler, pd, &forceComp, &actmols);
     if (actmols.empty())
     {
         fprintf(stderr, "Could not read or process molecules. Please check the log file for more information.\n");
@@ -162,7 +164,7 @@ int simulate(int argc, char *argv[])
         {
             auto qCalc = qp->qPact();
             qCalc->initializeMoments();
-            qCalc->calcPolarizability(&pd, actmol.topology(), forceComp);
+            qCalc->calcPolarizability(&pd, actmol.topology(), &forceComp);
             auto alpha = qCalc->polarizabilityTensor();
             std::string unit("A^3");
             double fac = convertFromGromacs(1, unit);
@@ -184,7 +186,7 @@ int simulate(int argc, char *argv[])
     /* Generate output file for debugging if requested */
     if (gendimers.hasTrajectory())
     {
-        rerun.setFunctions(forceComp, &gendimers, oenv);
+        rerun.setFunctions(&forceComp, &gendimers, oenv);
         rerun.setEInteraction(actmol.fragmentHandler()->topologies().size() > 1);
         rerun.rerun(&msghandler, &pd, &actmol, msghandler.verbose());
     }
@@ -193,7 +195,39 @@ int simulate(int argc, char *argv[])
         MolHandler molhandler;
         std::vector<gmx::RVec> coords = actmol.xOriginal();
         std::vector<gmx::RVec> xmin   = coords;
-        if (sch.minimize())
+        auto nfrag = actmol.fragmentHandler()->topologies().size();
+        msghandler.msg(ACTStatus::Info, gmx::formatString("There are %lu fragments.", nfrag));
+        if (sch.singlePoint())
+        {
+            std::map<InteractionType, double> energies;
+            std::vector<gmx::RVec> forces(actmol.atomsConst().size());
+            forceComp.compute(&msghandler, &pd, actmol.topology(), &xmin, &forces, &energies);
+            JsonTree jtener("Energies before");
+            std::string unit("kJ/mol");
+            for (const auto &ener : energies)
+            {
+                auto val = gmx::formatString("%.4f", ener.second);
+                jtener.addValueUnit(interactionTypeToString(ener.first),
+                                    val.c_str(), unit);
+            }
+            jtree.addObject(jtener);
+            if (nfrag == 2)
+            {
+                // Make a copy to keep the correct shell coordinates when saving the structure.
+                auto newxmin = xmin;
+                std::map<InteractionType, double> einter;
+                std::vector<gmx::RVec>            interactionForces;
+                actmol.calculateInteractionEnergy(&msghandler, &pd, &forceComp, &einter,
+                                                  &interactionForces, &newxmin, true);
+                for(const auto &ei : einter)
+                {
+                    msghandler.msg(ACTStatus::Info,
+                                   gmx::formatString("Interaction energy %s: %g",
+                                                     interactionTypeToString(ei.first).c_str(), ei.second));
+                }
+            }
+        }
+        else if (sch.minimize())
         {
             std::vector<int> freeze;
             auto freezeName = opt2fn_null("-freeze", fnm.size(),fnm.data());
@@ -216,7 +250,7 @@ int simulate(int argc, char *argv[])
             std::map<InteractionType, double> energies;
             {
                 std::vector<gmx::RVec> forces(actmol.atomsConst().size());
-                (void) forceComp->compute(&pd, actmol.topology(), &xmin, &forces, &energies);
+                forceComp.compute(&msghandler, &pd, actmol.topology(), &xmin, &forces, &energies);
                 JsonTree jtener("Energies before");
                 std::string unit("kJ/mol");
                 for (const auto &ener : energies)
@@ -227,7 +261,7 @@ int simulate(int argc, char *argv[])
                 }
                 jtree.addObject(jtener);
             }
-            eMin = molhandler.minimizeCoordinates(&msghandler, &pd, &actmol, forceComp, sch,
+            eMin = molhandler.minimizeCoordinates(&msghandler, &pd, &actmol, &forceComp, sch,
                                                   &xmin, &energies, freeze);
             if (eMinimizeStatus::OK == eMin)
             {
@@ -235,15 +269,13 @@ int simulate(int argc, char *argv[])
                 msghandler.msg(ACTStatus::Info,
                                gmx::formatString("Final energy: %g RMSD wrt original structure %g nm.",
                                                  energies[InteractionType::EPOT], rmsd));
-                auto nfrag = actmol.fragmentHandler()->topologies().size();
-                printf("There are %lu fragments\n", nfrag);
                 if (nfrag == 2)
                 {
                     // Make a copy to keep the correct shell coordinates when saving the structure.
                     auto newxmin = xmin;
                     std::map<InteractionType, double> einter;
                     std::vector<gmx::RVec>            interactionForces;
-                    actmol.calculateInteractionEnergy(&pd, forceComp, &einter,
+                    actmol.calculateInteractionEnergy(&msghandler, &pd, &forceComp, &einter,
                                                       &interactionForces, &newxmin, true);
                     for(const auto &ei : einter)
                     {
@@ -265,7 +297,7 @@ int simulate(int argc, char *argv[])
         }
         if (eMinimizeStatus::OK == eMin && sch.nsteps() > 0)
         {
-            molhandler.simulate(&msghandler, &pd, &actmol, forceComp, sch,
+            molhandler.simulate(&msghandler, &pd, &actmol, &forceComp, sch,
                                 opt2fn("-o", fnm.size(),fnm.data()),
                                 opt2fn("-e", fnm.size(),fnm.data()),
                                 oenv);

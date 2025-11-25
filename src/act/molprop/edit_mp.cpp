@@ -91,9 +91,8 @@ static bool dump_molecule(MsgHandler        *msghandler,
         {
             std::vector<double> dummy;
             std::vector<gmx::RVec> forces(actmol.atomsConst().size());
-            actmol.GenerateCharges(msghandler, &pd, forceComp,
-                                   pd.chargeGenerationAlgorithm(),
-                                   qType::ACM, dummy, &coords, &forces);
+            actmol.generateCharges(msghandler, &pd, forceComp,
+                                   pd.chargeGenerationAlgorithm(), &coords, &forces);
         }
     }
     if (!msghandler->ok())
@@ -269,19 +268,20 @@ static void check_mp(MsgHandler           *msghandler,
                     basis  = ci.getBasisset();
                 }
                 double T = 0;
-                auto gp = m->qmProperty(MolPropObservable::DIPOLE, T, JobType::OPT);
-                if (gp)
                 {
-                    std::vector<double> mu = gp->getVector();
-                    name_mu nmu = { ci.getDatafile(), { mu[XX], mu[YY], mu[ZZ] } };
-                    mus.push_back(nmu);
+                    auto &gp = m->qmProperty(MolPropObservable::DIPOLE, T, JobType::OPT);
+                    if (gp)
+                    {
+                        std::vector<double> mu = gp->getVector();
+                        name_mu nmu = { ci.getDatafile(), { mu[XX], mu[YY], mu[ZZ] } };
+                        mus.push_back(nmu);
+                    }
                 }
-                
                 auto Xcalc = ci.getCoordinates();
-                gp = m->qmProperty(MolPropObservable::POTENTIAL, T, JobType::OPT);
+                auto &gp = m->qmProperty(MolPropObservable::POTENTIAL, T, JobType::OPT);
                 if (gp)
                 {
-                    auto ep  = static_cast<const ElectrostaticPotential *>(gp);
+                    const ElectrostaticPotential *ep = static_cast<ElectrostaticPotential *>(gp.get());
                     auto xyz = ep->xyz();
                     if (xyz.size() >= Xcalc.size() && Xcalc.size() > 1)
                     {
@@ -314,7 +314,7 @@ static void check_mp(MsgHandler           *msghandler,
                 }
             }
             // Check dipoles
-            if (debug)
+            if (msghandler->debug())
             {
                 for(const auto &mi : mus)
                 {
@@ -363,11 +363,11 @@ static void gen_ehist(MsgHandler                 *msghandler,
         for(auto mps : mpset)
         {
             histo[mps] = gmx_stats();
-            for(auto eee : mp->experimentConst())
+            for(auto &eee : mp->experimentConst())
             {
                 if (eee.hasProperty(mps))
                 {
-                    for (auto prop : eee.propertyConst(mps))
+                    for (auto &prop : eee.propertyConst(mps))
                     {
                         histo[mps].add_point(prop->getValue());
                     }
@@ -511,11 +511,12 @@ int edit_mp(int argc, char *argv[])
     int root  = 0;
     if (cr.isMaster())
     {
-        auto warnings = merge_xml(fns, &mpt);
+        auto warnings = merge_xml(&msghandler, fns, &mpt);
         int mptsize = mpt.size();
         if (warnings.size() <= static_cast<size_t>(maxwarn))
         {
-            ReadSqlite3(opt2fn_null("-db", fnm.size(), fnm.data()), &mpt, temperature);
+            ReadSqlite3(&msghandler, opt2fn_null("-db", fnm.size(), fnm.data()),
+                        &mpt, temperature);
 
             printf("Read %d molecules\n", mptsize);
         }
@@ -559,7 +560,7 @@ int edit_mp(int argc, char *argv[])
             {
                 MolProp mp;
                 mp.BroadCast(&cr, root, comm);
-                mpt.push_back(mp);
+                mpt.push_back(std::move(mp));
             }
         }
         else
@@ -570,7 +571,7 @@ int edit_mp(int argc, char *argv[])
             {
                 MolProp mp;
                 mp.Receive(&cr, cr.superior());
-                mpt.push_back(mp);
+                mpt.push_back(std::move(mp));
             }
         }
     }

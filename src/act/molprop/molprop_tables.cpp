@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2023
+ * Copyright (C) 2014-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -140,7 +140,8 @@ static void stats_header(LongTable         &lt,
     lt.printHeader();
 }
 
-void alexandria_molprop_stats_table(FILE                 *fp,
+void alexandria_molprop_stats_table(MsgHandler           *msg_handler,
+                                    FILE                 *fp,
                                     MolPropObservable     mpo,
                                     std::vector<MolProp> &mp,
                                     const QmCount        &qmc,
@@ -180,22 +181,22 @@ void alexandria_molprop_stats_table(FILE                 *fp,
                     (mpi.SearchCategory(i.getName()) == 1))
                 {
                     double Texp  = -1;
-                    auto   gpexp = mpi.expProperty(mpo, Texp);
+                    auto  &gpexp = mpi.expProperty(mpo, Texp);
                     if (gpexp)
                     {
                         double exp_val = gpexp->getValue();
                         double exp_err = gpexp->getError();
                         double Tqm     = -1;
-                        auto   gpqm    = mpi.qmProperty(mpo, Tqm, JobType::OPT);
+                        auto  &gpqm    = mpi.qmProperty(mpo, Tqm, JobType::OPT);
                         if (gpqm)
                         {
                             double qm_val = gpqm->getValue();
                             double qm_err = gpqm->getValue();
-                            if (debug)
+                            if (msg_handler && msg_handler->debug())
                             {
-                                fprintf(debug, "%s %s - TAB4\n",
-                                        mpi.getMolname().c_str(),
-                                        i.getName().c_str());
+                                msg_handler->writeDebug(gmx::formatString("%s %s - TAB4\n",
+                                                                          mpi.getMolname().c_str(),
+                                                                          i.getName().c_str()));
                             }
                             lsq.add_point(exp_val, qm_val, exp_err, qm_err);
                             nexpres = 1;
@@ -238,13 +239,13 @@ void alexandria_molprop_stats_table(FILE                 *fp,
                 mpi->hasAllAtomTypes())
             {
                 double Texp = -1;
-                auto gpexp = mpi->expProperty(mpo, Texp);
+                auto  &gpexp = mpi->expProperty(mpo, Texp);
                 if (gpexp)
                 {
                     double Tqm     = -1;
                     double exp_err = gpexp->getError();
                     double exp_val = gpexp->getValue();
-                    auto   gpqm = mpi->qmProperty(mpo, Tqm, JobType::OPT);
+                    auto  &gpqm = mpi->qmProperty(mpo, Tqm, JobType::OPT);
                     if (gpqm)
                     {
                         double qm_err = gpqm->getError();
@@ -856,7 +857,7 @@ void alexandria_molprop_prop_table(FILE                 *fp,
         {
             std::vector<ExpData>  ed;
             std::vector<CalcData> cd;
-            for (auto ei : mpi.experimentConst())
+            for (auto &ei : mpi.experimentConst())
             {
                 for(const auto &prop : ei.propertiesConst())
                 {
@@ -884,10 +885,10 @@ void alexandria_molprop_prop_table(FILE                 *fp,
             int nqm = 0;
             for (int nexp = 0; (nexp < (int)ed.size()); nexp++)
             {
-                if (nullptr != debug)
+                if (msg_handler && msg_handler->debug())
                 {
-                    fprintf(debug, "Found %d experiments and %d calculations\n",
-                            (int)ed.size(), nqm);
+                    msg_handler->writeDebug(gmx::formatString("Found %d experiments and %d calculations\n",
+                                                              (int)ed.size(), nqm));
                 }
                 if ((bPrintAll || (ed.size() > 0))  && (nqm > 0))
                 {

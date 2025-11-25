@@ -61,8 +61,6 @@ class ACMFitnessComputer : public ga::FitnessComputer
 {
 
 private: 
-    //! \brief A pointer to the BoundsDevComputer.
-    BoundsDevComputer         *bdc_  = nullptr;
     //! \brief A vector of devComputers.
     std::vector<DevComputer*>  devComputers_;
     //! \brief StaticIndividualInfo pointer
@@ -73,6 +71,8 @@ private:
     MolGen *molgen_;
     //! \brief Whether or not to remove molecules that fail to converge in the shell minimization
     bool removeMol_;
+    //! Charge generation algorithm
+    ChargeGenerationAlgorithm  algorithm_;
     //! \brief Amount of times calcDeviation() has been called
     int numberCalcDevCalled_ = 0;
 
@@ -86,50 +86,61 @@ private:
     /*!
      * \brief Fill the devComputers vector according to the needs of the user
      * \param[in] msghandler                  Message Handler
-     * \param[in] zetadiff                    Allowed difference in zeta between cores and shells (if both have distributed charges)
      * \param[in] haveInductionCorrectionData Whether or not this energy term is present in the input data
      */
     void fillDevComputers(MsgHandler *msghandler,
-                          double      zetaDiff,
                           bool        haveInductionCorrectionData);
 
 public:
 
-    /*!
-     * Constructor
+    //! \brief Constructor
+    ACMFitnessComputer() {}
+
+    //! \brief Destructor
+    virtual ~ACMFitnessComputer();
+
+    /*! Initalize stuff
      * \param[in] msghandler Message Handler
      * \param[in] sii        pointer to StaticIndividualInfo
      * \param[in] mg         pointer to molgen
      * \param[in] removeMol  Whether or not to remove molecules that fail to converge in the shell minimization
      */
-    ACMFitnessComputer(MsgHandler            *msghandler,
-                       StaticIndividualInfo  *sii,
-                       MolGen                *molgen,
-                       const bool             removeMol,
-                       ForceComputer         *forceComp)
-        : sii_(sii), forceComp_(forceComp), molgen_(molgen), removeMol_(removeMol)
+    void init(MsgHandler                *msghandler,
+              StaticIndividualInfo      *sii,
+              MolGen                    *molgen,
+              const bool                 removeMol,
+              ForceComputer             *forceComp,
+              ChargeGenerationAlgorithm  algorithm)
     {
-        fillDevComputers(msghandler, molgen->zetaDiff(),
+        sii_       = sii;
+        forceComp_ = forceComp;
+        molgen_    = molgen;
+        removeMol_ = removeMol;
+        algorithm_ = algorithm;
+        fillDevComputers(msghandler,
                          molgen->hasMolPropObservable(MolPropObservable::INDUCTIONCORRECTION));
     }
 
     /*! \brief Do the actual computation
      * \param[in] msghandler Message Handler
      * \param[in] genome    The genome
+     * \param[in] algorithm The charge generation algorithm
      * \param[in] trgtFit   The selection to compute
      * \param[in] forceComp The force computer
      */
-    void compute(MsgHandler *msghandler,
-                 ga::Genome *genome,
-                 iMolSelect  trgtFit);
+    void compute(MsgHandler                *msghandler,
+                 ga::Genome                *genome,
+                 iMolSelect                 trgtFit);
 
     /*! \brief Distributes the parameters from middlemen to helpers
+     * \param[in] msghandler Message Handler
      * \param[in] params   The force field parameters
      * \param[in] changed  Indication of which parameters have changed and for which
      *                     the forcefield should be updated. If empty, all parameters will
      *                     be updated.
      */
-    void distributeParameters(const std::vector<double> *params,
+    void distributeParameters(MsgHandler                *msghandler,
+                              const std::vector<double> *params,
                               const std::set<int>       &changed);
                      
     /*! \brief Distribute the work
@@ -141,13 +152,14 @@ public:
     /*! \brief Computes deviation from target
      * \param[in] msghandler Message Handler
      * \param[in] task       The task at hand
+     * \param[in] algorithm  The charge generation algorithm
      * \param[in] ims        The dataset to do computations on
      * \return the square deviation
      */
-    double calcDeviation(MsgHandler *msghandler,
-                         CalcDev     task,
-                         iMolSelect  ims);
-
+    double calcDeviation(MsgHandler                *msghandler,
+                         CalcDev                    task,
+                         iMolSelect                 ims);
+    
     //! \return the number of devComputers
     size_t numDevComputers() const { return devComputers_.size(); }
 };

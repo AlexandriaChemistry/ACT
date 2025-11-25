@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2024
+ * Copyright (C) 2014-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -39,10 +39,10 @@
 
 #include <vector>
 
+#include "act/alexandria/topology.h"
 #include "act/molprop/molprop.h"
 #include "act/forcefield/forcefield.h"
 #include "gromacs/math/vectypes.h"
-#include "gromacs/mdtypes/state.h"
 
 /*! \brief Charge generation status
  */
@@ -65,6 +65,7 @@ namespace alexandria
 {
 
 class ForceFieldParameter;
+class MsgHandler;
 
 /*! \brief Class governing charge generation
  *
@@ -82,6 +83,9 @@ public:
     
     /*! \brief Constructor
      * 
+     * Note that the force field cannot be const because we copy pointer
+     * to data inside it. If the force field is const, these pointers
+     * disappear after closing the constructor.
      * \param[in] pd     Force field information
      * \param[in] atoms  Atoms data
      * \param[in] bonds  Bond data
@@ -94,14 +98,14 @@ public:
     
     /*! \brief Routine that computes the charges
      * 
-     * \param[in]  fp      File for logging information
-     * \param[in]  molname Molecule name for output
-     * \param[in]  pd      Force field information
-     * \param[out] atoms   Atoms structure, charges will be updated in this
-     * \param[in]  x       Atomic coordinates    
-     * \param[in]  bonds   List of bonds in this compound
+     * \param[in]  msg_handler For logging and debugging
+     * \param[in]  molname     Molecule name for output
+     * \param[in]  pd          Force field information
+     * \param[out] atoms       Atoms structure, charges will be updated in this
+     * \param[in]  x           Atomic coordinates    
+     * \param[in]  bonds       List of bonds in this compound
      */
-    eQgen generateCharges(FILE                         *fp,
+    eQgen generateCharges(MsgHandler                   *msg_handler,
                           const std::string            &molname,
                           const ForceField             *pd,
                           std::vector<ActAtom>         *atoms,
@@ -138,10 +142,10 @@ public:
     
 private:
     /*! \brief Write debug information
-     * \param[in] fp The file pointer to write to
-     * \param[in] atoms Information about the atoms
+     * \param[in] msg_handler To write to
+     * \param[in] atoms       Information about the atoms
      */
-    void dump(FILE                       *fp, 
+    void dump(MsgHandler                 *msg_handler,
               const std::vector<ActAtom> *atoms) const;
     
     //! Status of the algorithm
@@ -151,7 +155,7 @@ private:
     //! Whether or not shells are present
     gmx_bool                         bHaveShell_  = false;
     //! The charge type used in the force field
-    ChargeType                       ChargeType_  = ChargeType::Point;
+    ChargeDistributionType           ChargeDistributionType_  = ChargeDistributionType::Point;
     //! Number of particles in the compound
     size_t                           natom_       = 0;
     //! Epsilon R
@@ -236,28 +240,30 @@ private:
     
     /*! \brief Compute shell potential at atom position
      * This takes into account all the shells in the molecule.
-     * \param[in] top_ndx  Atom number
-     * \param[in] atoms    Atom information
-     * \param[in] epsilonr Relative  dielectric constant
+     * \param[in] msg_handler For debug output
+     * \param[in] top_ndx     Atom number
+     * \param[in] atoms       Atom information
+     * \param[in] epsilonr    Relative  dielectric constant
      * \return The potential
      */
-    double calcJcs(int                         top_ndx,
+    double calcJcs(MsgHandler                 *msg_handler,
+                   int                         top_ndx,
                    const std::vector<ActAtom> &atoms,
                    double                      epsilonr);
     
     /*! \brief Solve the matrix equation to determine charges
-     * \param[in] fp File pointer for optional outptu
+     * \param[in] msg_handler For debug output and info
      * If something goes wrong, eQGEN_ will be set.
      */
-    void solveEEM(FILE *fp);
+    void solveEEM(MsgHandler *msg_handler);
     
     /*! \brief Perform the split charge equilibration algorithm
      *
-     * \param[in] fp    File for logging
-     * \param[in] bonds List of bonds in the compound
+     * \param[in] msg_handler For debug output and info
+     * \param[in] bonds       List of bonds in the compound
      * If something goes wrong, eQGEN_ will be set.
      */
-    void solveSQE(FILE                    *fp,
+    void solveSQE(MsgHandler              *msg_handler,
                   const std::vector<Bond> &bonds);
     
     /*! \brief update the positions
@@ -266,10 +272,12 @@ private:
     void updatePositions(const std::vector<gmx::RVec> &x);
     
     /*! \brief Compute the right/hand side of the matrix equation
-     * \param[in] atoms    Atom information
-     * \param[in] epsilonr The relative dielectric constant
+     * \param[in] msg_handler For debug output
+     * \param[in] atoms       Atom information
+     * \param[in] epsilonr    The relative dielectric constant
      */
-    void calcRhs(const std::vector<ActAtom> &atoms,
+    void calcRhs(MsgHandler                 *msg_handler,
+                 const std::vector<ActAtom> &atoms,
                  double                      epsilonr);
 };
 }

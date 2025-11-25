@@ -128,7 +128,7 @@ int gentop(int argc, char *argv[])
         { "-box",    FALSE, etRVEC, {mybox},
           "If set will replace the simulation box in the output coordinate file." },
         { "-mDrude", FALSE, etREAL, {&mDrude},
-          "Mass to use for the drude particle if any. Default is 0.1 Da" },
+          "Mass to use for the drude/shell particles in OpenMM output, if there are any. If set to zero, the masses from the input force field will be retained." },
         { "-allowmissing", FALSE, etBOOL, {&bAllowMissing},
           "Make a topology even if there are no force field parameters for all interactions" },
         { "-nsymm", FALSE, etINT, {&nsymm},
@@ -160,7 +160,7 @@ int gentop(int argc, char *argv[])
     cr.init(cr.size());
     msghandler.optionsFinished(fnm, &cr);
     
-    compR.optionsOK(&msghandler, fnm);
+    compR.optionsFinished(&msghandler, fnm);
     if (!msghandler.ok())
     {
         return 1;
@@ -197,14 +197,21 @@ int gentop(int argc, char *argv[])
     {
         my_pol.assign(" polarizable");
     }
-    auto qType = potentialToChargeType(fs.potential());
+    auto qType = potentialToChargeDistributionType(fs.potential());
     printf("Using%s force field file %s and charge distribution model %s\n",
-           my_pol.c_str(), gentop_fnm, chargeTypeName(qType).c_str());
+           my_pol.c_str(), gentop_fnm, chargeDistributionTypeName(qType).c_str());
     msghandler.write(gmx::formatString("Read force field information. There are %zu atomtypes.\n",
                                        pd.getNatypes()));
 
     auto forceComp = new ForceComputer();
-    std::vector<ACTMol> actmols = compR.read(&msghandler, pd, forceComp);
+    std::vector<ACTMol> actmols;
+    compR.read(&msghandler, pd, forceComp, &actmols);
+    // Write information about force field
+    msghandler.write("");
+    for (const auto &ii : pd.info())
+    {
+        msghandler.write(ii);
+    }
 
     int mp_index   = 1;
     for(auto actmol = actmols.begin(); actmol < actmols.end(); ++actmol)
@@ -212,8 +219,8 @@ int gentop(int argc, char *argv[])
         std::vector<gmx::RVec> forces(actmol->atomsConst().size());
         std::vector<gmx::RVec> coords = actmol->xOriginal();
         forceComp->generateVsites(actmol->topology(), &coords);
-
-        actmol->GenerateCube(&pd, coords, forceComp,
+        actmol->updateQprops(&pd, forceComp, &forces);
+        actmol->GenerateCube(&msghandler, &pd, coords, forceComp,
                              spacing, border,
                              opt2fn_null("-ref",      fnm.size(), fnm.data()),
                              opt2fn_null("-pc",       fnm.size(), fnm.data()),
@@ -234,9 +241,14 @@ int gentop(int argc, char *argv[])
         {
             std::string tfn = gmx::formatString("%s%s", index.c_str(),
                                                 bITP ? ftp2fn(efITP, fnm.size(), fnm.data()) : ftp2fn(efTOP, fnm.size(), fnm.data()));
-            actmol->PrintTopology(tfn.c_str(), msghandler.verbose(), &pd, forceComp,
-                                  &cr, coords, method, basis, bITP);
+            actmol->PrintTopology(&msghandler, tfn.c_str(), &pd, forceComp,
+                                  coords, bITP);
         }
+        for(const auto &c : actmol->generateCommercials(&pd, forceComp, coords))
+        {
+            msghandler.write(c);
+        }
+
         if (opt2bSet("-c", fnm.size(), fnm.data()))
         {
             matrix box = { { 5, 0, 0 }, { 0, 5, 0 }, { 0, 0, 5 }};
@@ -262,7 +274,6 @@ int gentop(int argc, char *argv[])
                         &pd, actmols, mDrude, ntrain, addNumbersToAtoms);
         }
     }
-    printf("\nPlease check the %s file for warnings and error messages.\n", msghandler.filename().c_str());
     if (!msghandler.ok())
     {
         status = 1;

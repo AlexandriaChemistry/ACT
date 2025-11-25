@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2020-2024
+ * Copyright (C) 2020-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -36,6 +36,7 @@
 #include <map>
 
 #include "act/basics/chargemodel.h"
+#include "act/forcefield/potential.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
@@ -46,6 +47,11 @@ namespace alexandria
 
 ForceFieldParameterList::ForceFieldParameterList(const std::string &function,
                                                  CanSwap            canSwap) : canSwap_(canSwap)
+{
+    setFunction(function);
+}
+
+void ForceFieldParameterList::setFunction(const std::string &function)
 {
     if (!stringToPotential(function, &pot_))
     {
@@ -60,8 +66,8 @@ void ForceFieldParameterList::addOption(const std::string &option, const std::st
          Potential::COULOMB_SLATER   == pot_ ) &&
         option.compare("chargetype") == 0)
     {
-        auto qdist = name2ChargeType(value);
-        pot_ =  chargeTypeToPotential(qdist);
+        auto qdist = name2ChargeDistributionType(value);
+        pot_ =  chargeDistributionTypeToPotential(qdist);
     }
     else
     {
@@ -184,6 +190,18 @@ ForceFieldParameter *ForceFieldParameterList::findParameterType(const Identifier
 }
 
 ForceFieldParameterMap *ForceFieldParameterList::findParameters(const Identifier &identifier)
+{
+    auto params = parameters_.find(identifier);
+    
+    if (params == parameters_.end())
+    {
+        GMX_THROW(gmx::InvalidInputError(gmx::formatString("4. No such identifier %s in mutable parameter list for %s", identifier.id().c_str(), potentialToString(pot_).c_str()).c_str()));
+    }
+    
+    return &params->second;
+}
+
+const ForceFieldParameterMap *ForceFieldParameterList::findParametersPtrConst(const Identifier &identifier) const
 {
     auto params = parameters_.find(identifier);
     

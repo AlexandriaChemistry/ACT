@@ -96,8 +96,10 @@ protected:
         bool   userqtot = false;
         double qtot     = 0;
         matrix box;
-        EXPECT_TRUE(readBabel(pd, dataName.c_str(), &molprops, molnm, iupac, conf, &method, &basis,
-                              maxpot, nsymm, jobtype, userqtot, &qtot, false, box, true));
+        EXPECT_TRUE(readBabel(nullptr, pd, dataName.c_str(), &molprops,
+                              molnm, iupac, conf, &method, &basis,
+                              maxpot, nsymm, jobtype, userqtot, &qtot,
+                              false, box, true));
                     
         EXPECT_TRUE(qtot == 0.0);
         ACTMol mp;
@@ -122,6 +124,7 @@ protected:
         ForceField   *pd = getForceField(qdist);
         auto mp = readMolecule(pd);
         MsgHandler msghandler;
+        msghandler.setPrintLevel(ACTStatus::Warning);
         mp.GenerateTopology(&msghandler, pd, missingParameters::Ignore);
         EXPECT_TRUE(msghandler.ok());
         if (!msghandler.ok())
@@ -131,9 +134,9 @@ protected:
         // Needed for GenerateCharges
         auto forceComp = new ForceComputer();
         auto qt = pd->findForcesConst(InteractionType::ELECTROSTATICS);
-        auto ct = potentialToChargeType(qt.potential());
+        auto ct = potentialToChargeDistributionType(qt.potential());
         
-        EXPECT_FALSE(ChargeType::Slater  == ct);
+        EXPECT_FALSE(ChargeDistributionType::Slater  == ct);
 
         std::vector<gmx::RVec> coords = mp.xOriginal();
         
@@ -146,8 +149,8 @@ protected:
 
         std::vector<double> qcustom;
         std::vector<gmx::RVec> forces(mp.atomsConst().size());
-        mp.GenerateCharges(&msghandler, pd, forceComp, ChargeGenerationAlgorithm::ESP,
-                           qType::ESP, qcustom, &coords, &forces, true);
+        mp.generateCharges(&msghandler, pd, forceComp, ChargeGenerationAlgorithm::ESP,
+                           &coords, &forces, true);
         
         std::vector<double> qtotValues;
         auto atoms = mp.atomsConst();
@@ -160,7 +163,7 @@ protected:
         EXPECT_TRUE(std::abs(qtotal) < 1e-3);
         char buf[256];
         snprintf(buf, sizeof(buf), "qtotValuesEqdModel_%s",
-                 chargeTypeName(ct).c_str());
+                 chargeDistributionTypeName(ct).c_str());
         checker_.checkSequence(qtotValues.begin(),
                                qtotValues.end(), buf);
     }

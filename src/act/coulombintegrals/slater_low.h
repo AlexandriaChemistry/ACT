@@ -34,7 +34,13 @@
 #endif
 
 #if HAVE_LIBCLN
+// CLN uses some code that is not allowed by modern compilers
+// with the -Werror flag
+#pragma clang diagnostic ignored "-Wcast-function-type-mismatch"
+#pragma clang diagnostic ignored "-Wmismatched-tags"
 #include <cln/cln.h>
+#pragma clang diagnostic pop
+#pragma clang diagnostic pop
 
 using namespace cln;
 #define PRECISION 80

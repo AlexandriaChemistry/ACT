@@ -112,11 +112,12 @@ int min_complex(int argc, char *argv[])
         shellToler = sch.forceTolerance()/10;
         tw->writeStringFormatted("Shell tolerance larger than atom tolerance, changing it to %g\n", shellToler);
     }
-    auto  forceComp = new ForceComputer(shellToler, 100);
+    ForceComputer forceComp;
+    forceComp.init(shellToler, 100);
     print_header(tw, pa, fnm);
     
     std::vector<MolProp> mps;
-    MolPropRead(opt2fn("-mp", fnm.size(), fnm.data()), &mps);
+    MolPropRead(&msghandler, opt2fn("-mp", fnm.size(), fnm.data()), &mps);
     for(auto mp = mps.begin(); mp < mps.end(); ++mp)
     {
         if (mp->fragments().size() != 2)
@@ -135,11 +136,9 @@ int min_complex(int argc, char *argv[])
         if (msghandler.ok())
         {
             std::vector<gmx::RVec> forces(actmol.atomsConst().size());
-            
-            std::vector<double> myq;
+            // TODO Not the correct algorithm!
             auto alg   = pd.chargeGenerationAlgorithm();
-            auto qtype = qType::Calc;
-            actmol.GenerateCharges(&msghandler, &pd, forceComp, alg, qtype, myq, &coords, &forces);
+            actmol.generateCharges(&msghandler, &pd, &forceComp, alg, &coords, &forces);
         }
         if (msghandler.ok())
         {
@@ -149,15 +148,16 @@ int min_complex(int argc, char *argv[])
             std::vector<gmx::RVec> xmin   = coords;
             std::map<InteractionType, double> energies;
             eMin = molhandler.minimizeCoordinates(&msghandler, &pd, &actmol,
-                                                  forceComp, sch,
-                                                  &xmin, &energies, 
+                                                  &forceComp, sch, &xmin, &energies, 
                                                   {});
     
             if (eMinimizeStatus::OK == eMin)
             {
                 std::vector<gmx::RVec> interactionForces;
                 std::map<InteractionType, double> einter;
-                actmol.calculateInteractionEnergy(&pd, forceComp, &einter, &interactionForces, &xmin, true);
+                actmol.calculateInteractionEnergy(&msghandler, &pd, &forceComp,
+                                                  &einter, &interactionForces,
+                                                  &xmin, true);
 
                 auto rmsd = molhandler.coordinateRmsd(&actmol, coords, &xmin);
                 tw->writeStringFormatted("%s final energy: %g. Interaction energy: %g. RMSD wrt original structure %g nm.\n",

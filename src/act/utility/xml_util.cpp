@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2024
+ * Copyright (C) 2014-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -50,7 +50,7 @@ void add_xml_int(xmlNodePtr ptr, const std::string &name, int val)
 
 void add_xml_double(xmlNodePtr ptr, const std::string &name, double val)
 {
-    std::string buf = gmx::formatString("%.14g", val);
+    std::string buf = gmx::formatString("%.13g", val);
     if (xmlSetProp(ptr, (xmlChar *)name.c_str(), (xmlChar *)buf.c_str()) == 0)
     {
         gmx_fatal(FARGS, "XML problem setting %s to %g", name.c_str(), val);

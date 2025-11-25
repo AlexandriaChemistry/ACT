@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2023,2024
+ * Copyright (C) 2023-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -36,8 +36,6 @@
 #include <string>
 
 #include "act/utility/stringutil.h"
-#include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/textreader.h"
 
@@ -116,18 +114,26 @@ AlexandriaMols::AlexandriaMols()
             }
         }
     }
-    if (debug)
+}
+
+void AlexandriaMols::dump(FILE *fp)
+{
+    if (fp)
     {
-        fprintf(debug, "There are %zu molecules and %zu synonyms\n", mols_.size(), nameToInChi_.size());
+        fprintf(fp, "There are %zu molecules and %zu synonyms\n", mols_.size(), nameToInChi_.size());
         for(const auto &n2i : nameToInChi_)
         {
-            fprintf(debug, "%s %s\n", n2i.first.c_str(), n2i.second.c_str());
+            fprintf(fp, "%s %s\n", n2i.first.c_str(), n2i.second.c_str());
         }
     }
 }
       
 const AlexandriaMol *AlexandriaMols::findInChi(const std::string &inchi) const
 {
+    if (inchi.size() == 0)
+    {
+        return nullptr;
+    }
     auto mptr = mols_.find(inchi);
     if (mols_.end() == mptr)
     {

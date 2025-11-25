@@ -33,13 +33,11 @@
 #ifndef ACT_ACTMIDDLEMAN_H
 #define ACT_ACTMIDDLEMAN_H
 
-#include "gromacs/fileio/oenv.h"
-#include "gromacs/mdtypes/commrec.h"
-
+#include "act/alexandria/acmfitnesscomputer.h"
+#include "act/alexandria/confighandler.h"
+#include "act/alexandria/staticindividualinfo.h"
 #include "act/ga/mutator.h"
-
-#include "confighandler.h"
-#include "staticindividualinfo.h"
+#include "gromacs/fileio/oenv.h"
 
 namespace gmx
 {
@@ -60,17 +58,17 @@ namespace alexandria
     {
     private:
         //! Fitness computer
-        ACMFitnessComputer   *fitComp_;
+        ACMFitnessComputer              fitComp_;
         //! Mutator
-        ga::Mutator          *mutator_;
+        ga::Mutator                    *mutator_      = nullptr;
         //! Individual
-        ACMIndividual        *ind_;
+        std::unique_ptr<ACMIndividual>  ind_;
         //! Config handler for GA
-        GAConfigHandler      *gach_;
+        GAConfigHandler                *gach_         = nullptr;
         //! Force computer
-        ForceComputer        *forceComp_;
+        ForceComputer                   forceComp_;
         //! My ID
-        int                   id_;
+        int                             id_;
 
         //! \brief Stop my helpers
         void stopHelpers();
@@ -83,16 +81,21 @@ namespace alexandria
          * \param[in] gach       GA Config handler
          * \param[in] bch        Bayes Config handler
          * \param[in] oenv       GROMACS output environment
+         * \param[in] algorithm  The charge generation algorithm
          * \param[in] openConvFiles Whether or not to create convergence files
          */
-        ACTMiddleMan(MsgHandler           *msghandler,
-                     MolGen               *mg,
-                     StaticIndividualInfo *sii,
-                     GAConfigHandler      *gach,
-                     BayesConfigHandler   *bch,
-                     gmx_output_env_t     *oenv,
-                     bool                  openConvFiles);
-        
+        ACTMiddleMan(MsgHandler                *msghandler,
+                     MolGen                    *mg,
+                     StaticIndividualInfo      *sii,
+                     GAConfigHandler           *gach,
+                     BayesConfigHandler        *bch,
+                     gmx_output_env_t          *oenv,
+                     ChargeGenerationAlgorithm  algorithm,
+                     bool                       openConvFiles);
+
+        //! \brief Destructor
+        ~ACTMiddleMan();
+
         /*! \brief Run the helper process
          * \param[in] msghandler Message and status handler
          */

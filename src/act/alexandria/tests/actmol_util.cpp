@@ -61,16 +61,18 @@ void initACTMol(const char          *molname,
         std::vector<alexandria::MolProp> molprops;
         double        qtot     = 0;
         // Charge gen params
-        auto alg = ChargeGenerationAlgorithm::NONE;
+        auto alg = pd->chargeGenerationAlgorithm();
         std::vector<double> qcustom;
         bool userqtot = false;
         matrix box;
-        bool readOK = readBabel(pd, dataName.c_str(), &molprops, molname, molname,
+        MsgHandler msghandler;
+        msghandler.setPrintLevel(ACTStatus::Warning);
+        bool readOK = readBabel(&msghandler, pd, dataName.c_str(), &molprops,
+                                molname, molname,
                                 conf, &method, &basis,
                                 maxpot, nsymm, jobtype, userqtot,
                                 &qtot, false, box, true);
         EXPECT_TRUE(readOK);
-        MsgHandler msghandler;
         // Uncomment in case of issues
         // msghandler.setACTStatus(ACTStatus::Debug);
 
@@ -100,11 +102,11 @@ void initACTMol(const char          *molname,
                 {
                     std::vector<gmx::RVec> forces(mm.atomsConst().size());
                     std::vector<gmx::RVec> coords = mm.xOriginal();
-                    mm.GenerateCharges(&msghandler, pd, fcomp, alg, qType::Calc, qcustom, &coords, &forces, true);
+                    mm.generateCharges(&msghandler, pd, fcomp, alg, &coords, &forces, true);
                 }
                 if (msghandler.ok())
                 {
-                    mps->push_back(mm);
+                    mps->push_back(std::move(mm));
                 }
             }
         }

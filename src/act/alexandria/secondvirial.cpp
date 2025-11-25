@@ -278,15 +278,15 @@ void ReRunner::rerun(MsgHandler       *msghandler,
         if (eInter_)
         {
             std::map<InteractionType, double> energies;
-            forceComp_->compute(pd, actmol->topology(),
+            forceComp_->compute(msghandler, pd, actmol->topology(),
                                 &coords, &forces, &energies);
             auto atomStart  = actmol->fragmentHandler()->atomStart();
             std::vector<gmx::RVec> com        = { { 0, 0, 0 }, { 0, 0, 0 } };
             std::vector<double>    mtot       = { 0, 0 };
-            auto      tops  = actmol->fragmentHandler()->topologies();
+            const auto &tops  = actmol->fragmentHandler()->topologies();
             for(int kk = 0; kk < 2; kk++)
             {
-                auto natom = tops[kk]->atoms().size();
+                auto natom = tops[kk].atoms().size();
                 for(size_t i = atomStart[kk]; i < atomStart[kk]+natom; i++)
                 {
                     gmx::RVec mr1;
@@ -315,7 +315,7 @@ void ReRunner::rerun(MsgHandler       *msghandler,
         }
         else
         {
-            forceComp_->compute(pd, actmol->topology(),
+            forceComp_->compute(msghandler, pd, actmol->topology(),
                                 &coords, &forces, &energies);
             for(const auto &ee : energies)
             {
@@ -343,8 +343,8 @@ void ReRunner::runB2(CommunicationRecord         *cr,
 {
     // Compute the relative masses
     std::vector<double> masses = {
-        actmol->fragmentHandler()->topologies()[0]->mass(),
-        actmol->fragmentHandler()->topologies()[1]->mass()
+        actmol->fragmentHandler()->topologies()[0].mass(),
+        actmol->fragmentHandler()->topologies()[1].mass()
     };
     int ndimer = 0;
     int nrest  = 0;
@@ -478,7 +478,8 @@ void ReRunner::runB2(CommunicationRecord         *cr,
             }
             std::vector<gmx::RVec> forces(coords.size());
             std::map<InteractionType, double> einter;
-            actmol->calculateInteractionEnergy(pd, forceComp_, &einter, &forces, &coords, true);
+            actmol->calculateInteractionEnergy(msghandler, pd, forceComp_,
+                                               &einter, &forces, &coords, true);
 
             auto atomStart  = actmol->fragmentHandler()->atomStart();
             std::vector<gmx::RVec> f          = { { 0, 0, 0 }, { 0, 0, 0 } };
@@ -486,10 +487,10 @@ void ReRunner::runB2(CommunicationRecord         *cr,
             std::vector<double>    mtot       = { 0, 0 };
             std::vector<gmx::RVec> torque     = { { 0, 0, 0 }, { 0, 0, 0 } };
             std::vector<gmx::RVec> torqueRot  = { { 0, 0, 0 }, { 0, 0, 0 } };
-            auto      tops  = actmol->fragmentHandler()->topologies();
+            const auto &tops  = actmol->fragmentHandler()->topologies();
             for(int kk = 0; kk < 2; kk++)
             {
-                auto natom = tops[kk]->atoms().size();
+                auto natom = tops[kk].atoms().size();
                 for(size_t i = atomStart[kk]; i < atomStart[kk]+natom; i++)
                 {
                     gmx::RVec mr1;
@@ -734,7 +735,7 @@ int b2(int argc, char *argv[])
         print_header(msghandler.tw(), pa, fnm);
     }
     gendimers.finishOptions(fnm);
-    compR.optionsOK(&msghandler, fnm);
+    compR.optionsFinished(&msghandler, fnm);
     if (!msghandler.ok())
     {
         return 1;
@@ -748,7 +749,7 @@ int b2(int argc, char *argv[])
     
     (void) pd.verifyCheckSum(stderr);
 
-    auto  forceComp = new ForceComputer(shellToler, 100);
+    ForceComputer forceComp(shellToler, 100);
     
     JsonTree jtree("SecondVirialCoefficient");
     if (msghandler.info())
@@ -756,7 +757,8 @@ int b2(int argc, char *argv[])
         forceFieldSummary(&jtree, &pd);
     }
 
-    std::vector<ACTMol> actmols = compR.read(&msghandler, pd, forceComp);
+    std::vector<ACTMol> actmols;
+    compR.read(&msghandler, pd, &forceComp, &actmols);
     auto &actmol = actmols[0];
     std::vector<gmx::RVec> coords = actmol.xOriginal();
 
@@ -766,7 +768,7 @@ int b2(int argc, char *argv[])
         {
             actmol.topology()->dump(debug);
         }
-        rerun.setFunctions(forceComp, &gendimers, oenv);
+        rerun.setFunctions(&forceComp, &gendimers, oenv);
         rerun.runB2(&cr, &msghandler, &pd, &actmol, maxdimers, fnm);
     }
     if (json && cr.isMaster())

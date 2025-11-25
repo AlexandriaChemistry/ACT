@@ -86,8 +86,8 @@ static std::map<std::string, std::map<std::string, std::string>> read_atomtypes(
     while (tr.readLine(&tmp))
     {
         auto ptr = split(tmp, '|');
-        // There should be at least 37 columns, but could be more.
-        if (37 <= ptr.size())
+        // There should be at least 30 columns, but could be more.
+        if (30 <= ptr.size())
         {
             if (value.empty())
             {
@@ -117,28 +117,6 @@ static std::map<std::string, std::map<std::string, std::string>> read_atomtypes(
     }
 
     return table;
-}
-
-static bool minmaxmut(const std::string                  &atomtype,
-                      std::map<std::string, std::string> &myatype,
-                      const std::string                  &key,
-                      double                             *min,
-                      double                             *max,
-                      Mutability                         *mut)
-{
-    auto minkey = key + "_min";
-    auto maxkey = key + "_max";
-    auto mutkey = key + "_mutability";
-
-    *min = my_atof(myatype[minkey].c_str(), minkey.c_str());
-    *max = my_atof(myatype[maxkey].c_str(), maxkey.c_str());
-
-    if (!nameToMutability(myatype[mutkey], mut))
-    {
-        return false;
-        GMX_THROW(gmx::InvalidInputError(gmx::formatString("Invalid Mutability '%s' for %s in atomtype %s", myatype[mutkey].c_str(), key.c_str(), atomtype.c_str()).c_str()));
-    }
-    return true;
 }
 
 static void add_vsites(const char *vsfile,
@@ -181,7 +159,12 @@ static void add_vsites(const char *vsfile,
             GMX_THROW(gmx::InvalidInputError(gmx::formatString("Unknown vsite type %s on line %d in file %s",
                                                                ptr[0].c_str(), lineno, vsfile).c_str()));
         }
-        auto itype = stringToInteractionType(ptr[1]);
+        InteractionType itype;
+        if (!stringToInteractionType(ptr[1], &itype))
+        {
+            GMX_THROW(gmx::InvalidInputError(gmx::formatString("Invalid InteractionType '%s' on line %d in file %s",
+                                                               ptr[1].c_str(), lineno, vsfile).c_str()));
+        }
 
         switch (itype)
         {
@@ -191,6 +174,7 @@ static void add_vsites(const char *vsfile,
                 Identifier vs(itype, myId, CanSwap::Yes);
                 // Not a lot of information here, but we need something for downstream processing.
                 ForceFieldParameter vs1param("", 1, 0, 0, 1, 1, Mutability::Fixed, false, false);
+                auto vsite1_name = potentialToParameterName(Potential::VSITE1);
                 i2f[itype].addParameter(vs, vsite1_name[vsite1A], vs1param);
             }
             break;
@@ -205,10 +189,12 @@ static void add_vsites(const char *vsfile,
                                              Mutability::Bounded, false, false);
                 if (InteractionType::VSITE2 == itype)
                 {
+                    auto vsite2_name = potentialToParameterName(Potential::VSITE2);
                     i2f[itype].addParameter(vs, vsite2_name[vsite2A], vs2param);
                 }
                 else
                 {
+                    auto vsite2fd_name = potentialToParameterName(Potential::VSITE2FD);
                     i2f[itype].addParameter(vs, vsite2fd_name[vsite2fdA], vs2param);
                 }
             }
@@ -230,15 +216,18 @@ static void add_vsites(const char *vsfile,
                                                Mutability::Bounded, false, false);
                 if (itype == InteractionType::VSITE3)
                 {
+                    auto vsite3_name = potentialToParameterName(Potential::VSITE3);
                     i2f[itype].addParameter(vs, vsite3_name[vsite3A], vs3param_a);
                     i2f[itype].addParameter(vs, vsite3_name[vsite3B], vs3param_b);
                 }
                 else if (itype == InteractionType::VSITE3S)
                 {
+                    auto vsite3s_name = potentialToParameterName(Potential::VSITE3S);
                     i2f[itype].addParameter(vs, vsite3s_name[vsite3sA], vs3param_a);
                 }
                 else
                 {
+                    auto vsite3fd_name = potentialToParameterName(Potential::VSITE3FD);
                     i2f[itype].addParameter(vs, vsite3fd_name[vsite3fdA], vs3param_a);
                     i2f[itype].addParameter(vs, vsite3fd_name[vsite3fdB], vs3param_b);
                 }
@@ -264,6 +253,7 @@ static void add_vsites(const char *vsfile,
                                                       Mutability::Bounded, false, false);
                     ForceFieldParameter vs3outparam_c("", (cmin+cmax)/2, 0, 0, cmin, cmax,
                                                       Mutability::Bounded, false, false);
+                    auto vsite3out_name = potentialToParameterName(Potential::VSITE3OUT);
                     i2f[itype].addParameter(vs, vsite3out_name[vsite3outA], vs3outparam_a);
                     i2f[itype].addParameter(vs, vsite3out_name[vsite3outB], vs3outparam_b);
                     i2f[itype].addParameter(vs, vsite3out_name[vsite3outC], vs3outparam_c);
@@ -274,6 +264,7 @@ static void add_vsites(const char *vsfile,
                     double cmax = my_atof(ptr[6], "vsite_parameter_max");
                     ForceFieldParameter vs3outparam_c("", (cmin+cmax)/2, 0, 0, cmin, cmax,
                                                       Mutability::Bounded, false, false);
+                    auto vsite3outs_name = potentialToParameterName(Potential::VSITE3OUTS);
                     i2f[itype].addParameter(vs, vsite3outs_name[vsite3outsA], vs3outparam_a);
                     i2f[itype].addParameter(vs, vsite3outs_name[vsite3outsC], vs3outparam_c);
                 }
@@ -301,13 +292,13 @@ int gen_ff(int argc, char*argv[])
     {
         "gen_ff generates a new force field file based on a specification",
         "provided by the user in one or more csv files and command line options.[PAR]",
-        "Most important is the atomtypes file for which there are some",
-        "examples. In addition a file containing virtual sites can be provided.",
+        "Most important is the atomtypes file which is generated by the ACT GUI.",
+        "In addition a file containing virtual sites can be provided.",
         "with the [TT]-vs[tt] option. Default is not to add virtual sites.[PAR]"
         "In order to work the ACTDATA environment variable should point to",
         "the directory where some input files are located, namely:[BR]",
         "atomprops.csv - containing properties for atoms.[BR]",
-        "symmetric_charges.csv - containing groups of atoms that should have symmetric charges.",
+        "symmetric_charges.csv - containing groups of atoms that should have symmetric charges (optional).",
     };
     CombRuleUtil crule;
     crule.addInfo(&desc);
@@ -316,26 +307,54 @@ int gen_ff(int argc, char*argv[])
     int               nexclvdw = 2;
     double            epsilonr = 1;
     bool              qsymm    = true;
-    const char *qdn2[]    = { nullptr, "Gaussian", "Point", "Slater", nullptr };
-    const char *bondfn[]  = { nullptr, "BONDS", "HUA", "MORSE", "CUBICBONDS", nullptr };
-    const char *anglefn[] = { nullptr, "ANGLES", "UREYBRADLEY", nullptr };
-    const char *dihfn[]   = { nullptr, "FOURDIHS", "PDIHS", nullptr };
-    std::vector<Potential> nbpot = {
+    std::vector<const char *>qdn2    = { nullptr, "GAUSSIAN", "POINT", "SLATER", nullptr };
+    std::vector<const char *>bondfn  = { nullptr };
+    for (const auto &p : { Potential::HARMONIC_BONDS, Potential::MORSE_BONDS,
+                           Potential::CUBIC_BONDS, Potential::HUA_BONDS })
+    {
+        bondfn.push_back(potentialToString(p).c_str());
+    }
+    bondfn.push_back(nullptr);
+    
+    std::vector<const char *>anglefn = { nullptr };
+    for (const auto &p : { Potential::HARMONIC_ANGLES, Potential::UREY_BRADLEY_ANGLES })
+    {
+        anglefn.push_back(potentialToString(p).c_str());
+    }
+    anglefn.push_back(nullptr);
+
+    std::vector<const char *>dihfn   = { nullptr };
+    for (const auto &p : { Potential::FOURIER_DIHEDRALS, Potential::PROPER_DIHEDRALS } )
+    {
+        dihfn.push_back(potentialToString(p).c_str());
+    }
+    dihfn.push_back(nullptr);
+
+    std::vector<Potential> nbpot     = {
         Potential::LJ12_6, Potential::LJ14_7, Potential::LJ8_6, 
         Potential::GENERALIZED_BUCKINGHAM, Potential::WANG_BUCKINGHAM,
-        Potential::BUCKINGHAM, Potential::TANG_TOENNIES };
+        Potential::BUCKINGHAM, Potential::TANG_TOENNIES, Potential::TT2b,
+        Potential::SLATER_ISA_TT };
     std::vector<const char *> vdwfn = { nullptr };
     for(const auto &nbp : nbpot)
     {
         vdwfn.push_back(potentialToString(nbp).c_str());
     }
     vdwfn.push_back(nullptr);
-    
+    std::vector<Potential> icfunc = { Potential::MACDANIEL_SCHMIDT, Potential::MORSE_BONDS };
+    std::vector<const char *> icfn = { nullptr };
+    for(const auto &nbp : icfunc)
+    {
+        icfn.push_back(potentialToString(nbp).c_str());
+    }
+    icfn.push_back(nullptr);
+
     std::vector<t_filenm> fnm = {
         { efCSV, "-f",   "atomtypes", ffREAD  },
         { efCSV, "-vs",  "vsites",    ffOPTRD },
         { efXML, "-o" ,  "ffout",     ffWRITE }
     };
+    gmx_bool useVdwCorr = false;
     std::vector<t_pargs> pa =
     {
         { "-nexclqq", FALSE, etINT,  {&nexclqq},
@@ -346,16 +365,20 @@ int gen_ff(int argc, char*argv[])
           "Relative dielectric constant. 1 is recommended for polarizable force fields, but maybe 1.7 might work for non-polarizable force fields instead of charge scaling." },
         { "-qsymm", FALSE, etBOOL, {&qsymm},
           "Implement symmetrization of charges in the force field" },
-        { "-qdist", FALSE, etENUM, {qdn2},
-          "Charge distribution type, can be either" },
-        { "-bondfn", FALSE, etENUM, {bondfn},
+        { "-qdist", FALSE, etENUM, {qdn2.data()},
+         "Charge distribution type, can be either" },
+        { "-bondfn", FALSE, etENUM, {bondfn.data()},
           "Function to use for covalent bonds, can be either" },
-        { "-anglefn", FALSE, etENUM, {anglefn},
+        { "-anglefn", FALSE, etENUM, {anglefn.data()},
           "Function to use for covalent angles, can be either" },
-        { "-dihfn", FALSE, etENUM, {dihfn},
+        { "-dihfn", FALSE, etENUM, {dihfn.data()},
           "Function to use for proper dihedrals, can be either" },
         { "-vdwfn", FALSE, etENUM, {vdwfn.data()},
-          "Function to use for Van der Waals interactions, can be either" }
+          "Function to use for Van der Waals interactions, can be either" },
+        { "-vdwcorr", FALSE, etBOOL, {&useVdwCorr},
+          "Add exchange correction to vsites" },
+        { "-icfn", FALSE, etENUM, {icfn.data()},
+          "Function to use for induction correction interactions, can be either" }
     };
     crule.addPargs(&pa);
 
@@ -378,39 +401,16 @@ int gen_ff(int argc, char*argv[])
     std::vector<std::string> options = {
         "acmtype", "bondtype", "element", "poltype", "row", "zetatype"
     };
-    ForceFieldParameterList pols("Polarization", CanSwap::No);
-    auto qdist = name2ChargeType(qdn2[0]);
-    auto qpot  = chargeTypeToPotential(qdist);
-    ForceFieldParameterList coulomb(potentialToString(qpot), CanSwap::Yes);
-    coulomb.addOption("epsilonr", gmx_ftoa(epsilonr));
-    coulomb.addOption("nexcl", gmx_itoa(nexclqq));
-    ForceFieldParameterList vdw(vdwfn[0], CanSwap::Yes);
-    ForceFieldParameterList vdwcorr(potentialToString(Potential::EXPONENTIAL), CanSwap::Yes);
-    ForceFieldParameterList induccorr(potentialToString(Potential::DOUBLEEXPONENTIAL), CanSwap::Yes);
-    induccorr.addOption("nexcl", gmx_itoa(nexclqq));
-    // Combination rules
-    crule.extract(pa, &vdw, &vdwcorr, &induccorr);
-    vdw.addOption("nexcl", gmx_itoa(nexclvdw));
-    vdwcorr.addOption("nexcl", gmx_itoa(nexclvdw));
-    ForceFieldParameterList eem("", CanSwap::No);
+
     // Check for Point charges
-    std::string ppp("Point");
+    std::string ppp("POINT");
     bool bPoint = ppp.compare(qdn2[0]) == 0;
     if (bPoint)
     {
         printf("You selected point charges. Oh dear...\n");
     }
-    // Default VDW params
-    std::map<std::string, ForceFieldParameter> DP = {
-        { bh_name[bhA],   ForceFieldParameter("kJ/mol", 0, 0, 0, 0, 1e6, Mutability::Bounded, true, true) },
-        { bh_name[bhB],   ForceFieldParameter("1/nm", 30, 0, 0, 10, 50, Mutability::Bounded, true, true) },
-        { bh_name[bhC6],  ForceFieldParameter("kJ/mol nm6", 0, 0, 0, 0, 10, Mutability::Bounded, true, true) },
-        { tt_name[ttA],   ForceFieldParameter("kJ/mol", 0, 0, 1, 0, 1e6, Mutability::Bounded, true, true) },
-        { tt_name[ttB],   ForceFieldParameter("1/nm", 30, 0, 0, 10, 50, Mutability::Bounded, true, true) },
-        { tt_name[ttC6],  ForceFieldParameter("kJ/mol nm6", 0, 0, 0, 0, 10, Mutability::Bounded, true, true) },
-        { tt_name[ttC8],  ForceFieldParameter("kJ/mol nm8", 0, 0, 0, 0, 1e3, Mutability::Bounded, true, true) },
-        { tt_name[ttC10], ForceFieldParameter("kJ/mol nm10", 0, 0, 0, 0, 1e5, Mutability::Bounded, true, true) }
-    };
+    
+    std::map<InteractionType, ForceFieldParameterList> ffpl;
     for(const auto &entry : table)
     {
         // Generate particle type
@@ -441,27 +441,27 @@ int gen_ff(int argc, char*argv[])
         {
             atomnumber = apropsptr->second.atomnumber();
         }
-        std::string zetatype("zetatype");
         ptp.setOption("atomnumber", gmx::formatString("%d", atomnumber));
         ptp.setOption("vdwtype", entry.first);
         ptp.setOption("vdwcorrtype", entry.first);
         ptp.setOption("induccorrtype", entry.first);
         // Now "parameters"
-        auto mass       = aprops.find(elem)->second.mass();
+        auto mass       = apropsptr->second.mass();
         ptp.addForceFieldParameter("mass",
                                    ForceFieldParameter("Da", mass, 0, 1, mass,
                                                        mass, Mutability::Fixed,
                                                        true, true));
-        double vmin = my_atof(table[entry.first]["q_min"].c_str(), "q_min");
-        double vmax = my_atof(table[entry.first]["q_max"].c_str(), "q_max");
-        Mutability vmut;
-        std::string qmut("charge_mutability");
+        double vmin = my_atof(table[entry.first][":q:min"].c_str(), ":q:min");
+        double vmax = my_atof(table[entry.first][":q:max"].c_str(), ":q:max");
+        std::string vunit = table[entry.first][":q:unit"];
+        Mutability  vmut;
+        std::string qmut(":q:mut");
         if (!nameToMutability(table[entry.first][qmut], &vmut))
         {
             GMX_THROW(gmx::InvalidInputError(gmx::formatString("Invalid Mutability '%s' for charge in atomtype %s", table[entry.first][qmut].c_str(), entry.first.c_str()).c_str()));
         }
         ptp.addForceFieldParameter("charge",
-                                   ForceFieldParameter("e", (vmin+vmax)/2,
+                                   ForceFieldParameter(vunit, (vmin+vmax)/2,
                                                        0, 0, vmin,
                                                        vmax, vmut,
                                                        true, false));
@@ -469,132 +469,139 @@ int gen_ff(int argc, char*argv[])
         pd.addParticleType(ptp);
 
         auto myatype = table[entry.first];
-        // Now add force field parameters
-        if (ActParticle::Shell == apType)
+        std::map<InteractionType, std::map<std::string, ForceFieldParameter>> atomparams;
+        std::map<InteractionType, std::map<std::string, bool>>                nonNegative;
+        for (const auto &key : myatype)
         {
-            if (minmaxmut(entry.first, myatype, "alpha", &vmin, &vmax, &vmut))
+            auto content = split(key.first, ':');
+            if (content.size() != 3)
             {
-                pols.addParameter(entry.first, "alpha",
-                                  ForceFieldParameter("Angstrom3", (vmin+vmax)/2, 0, 0, vmin, vmax, vmut, true, true));
-                pols.addParameter(entry.first, "rhyper",
-                                  ForceFieldParameter("nm", 0.02, 0, 0, 0, 0.05, Mutability::Fixed, true, true));
-                pols.addParameter(entry.first, "fchyper",
-                                  ForceFieldParameter("kJ/mol nm4", 0, 0, 0, 0, 5e8, Mutability::Fixed, true, true));
+                continue;
             }
-        }
-        // Charge transfer / Van der waals correction
-        std::map<std::string, std::string> vdwcorrparm = { { exp_name[expA], "kJ/mol" },
-                                                           { exp_name[expB], "1/nm"} };
-        for(const auto &vdwcorrp : vdwcorrparm)
-        {
-            if (minmaxmut(entry.first, myatype, vdwcorrp.first, &vmin, &vmax, &vmut))
+            InteractionType iType;
+            if (!stringToInteractionType(content[0], &iType))
             {
-                vdwcorr.addParameter(entry.first, vdwcorrp.first,
-                                     ForceFieldParameter(vdwcorrp.second, (vmin+vmax)/2, 0, 0, vmin, vmax, vmut, true, true));
-            }
-        }
-        // Induction correction
-        std::map<std::string, std::string> iccorrparm = { { dexp_name[dexpA1], "kJ/mol" },
-                                                          { dexp_name[dexpA2], "kJ/mol" },
-                                                          { dexp_name[dexpB], "1/nm"} };
-        for(const auto &iccorrp : iccorrparm)
-        {
-            if (minmaxmut(entry.first, myatype, iccorrp.first, &vmin, &vmax, &vmut))
-            {
-                induccorr.addParameter(entry.first, iccorrp.first,
-                                       ForceFieldParameter(iccorrp.second, (vmin+vmax)/2, 0, 0, vmin, vmax, vmut, true, true));
-            }
-        }
-        // Charge distribution
-        if (!myatype[zetatype].empty() &&
-            minmaxmut(entry.first, myatype, "zeta", &vmin, &vmax, &vmut))
-        {
-            if (bPoint)
-            {
-                vmin = vmax = 0;
-                vmut = Mutability::Fixed;
-            }
-            coulomb.addParameter(myatype["zetatype"], "zeta",
-                                 ForceFieldParameter("1/nm", (vmin+vmax)/2, 0, 0, vmin, vmax, vmut, true, true));
-        }
-        // Van der Waals
-        {
-            std::map<std::string, std::string> vdwlist;
-            std::map<std::string, std::string> rename;
-            switch (vdw.potential())
-            {
-            case Potential::LJ12_6:
-                vdwlist = { { "sigma", "nm" }, { "epsilon", "kJ/mol" } };
-                break;
-            case Potential::LJ8_6:
-                vdwlist = { { "sigma", "nm" }, { "epsilon", "kJ/mol" } };
-                break;
-            case Potential::LJ14_7:
-                vdwlist = { { "sigma", "nm" }, { "epsilon", "kJ/mol" }, { "gamma", "" }, { "delta", "" } };
-                break;
-            case Potential::BUCKINGHAM:
-                vdwlist = { { bh_name[bhA], "kJ/mol" }, 
-                            { bh_name[bhB], "1/nm" },
-                            { bh_name[bhC6], "kJ/mol nm^6" } };
-                break;
-            case Potential::WANG_BUCKINGHAM:
-                vdwlist = { { "sigma", "nm" }, { "epsilon", "kJ/mol" }, { "gamma", "" } };
-                break;
-            case Potential::GENERALIZED_BUCKINGHAM:
-                vdwlist = { { "sigma", "nm" }, { "epsilon", "kJ/mol" }, { "gamma", "" }, { "delta", "" } };
-                rename.insert({"sigma", "rmin"});
-                break;
-            case Potential::TANG_TOENNIES:
-                vdwlist = { { tt_name[ttA], "kJ/mol" }, 
-                            { tt_name[ttB], "1/nm" },
-                            { tt_name[ttC6], "kJ/mol nm^6" },
-                            { tt_name[ttC8], "kJ/mol nm^8" },
-                            { tt_name[ttC10], "kJ/mol nm^10" } };
-                break;
-            default: // throws
-                GMX_THROW(gmx::InvalidInputError("Unknown function for Van der Waals interactions"));
-            }
-            for(const auto &vl : vdwlist)
-            {
-                if (minmaxmut(entry.first, myatype, vl.first, &vmin, &vmax, &vmut))
+                if (!content[0].empty())
                 {
-                    std::string key = vl.first;
-                    if (rename.find(key) != rename.end())
-                    {
-                        key = rename[key];
-                    }
-                    vdw.addParameter(entry.first, key,
-                                     ForceFieldParameter(vl.second, (vmin+vmax)/2, 0, 0, vmin, vmax, vmut, true, true));
+                    fprintf(stderr, "Unknown interaction type '%s' ignored\n",
+                            content[0].c_str());
                 }
-                else
+                continue;
+            }
+            auto value = myatype[key.first];
+            if (atomparams.find(iType) == atomparams.end())
+            {
+                atomparams[iType] = {};
+            }
+            if (nonNegative.find(iType) == nonNegative.end())
+            {
+                nonNegative[iType] = {};
+            }
+            auto pName = content[1];
+            if (atomparams[iType].find(pName) == atomparams[iType].end())
+            {
+                atomparams[iType][pName] = {};
+            }
+            if (content[2] == "unit")
+            {
+                atomparams[iType][pName].setUnit(value);
+            }
+            else if (content[2] == "nonneg")
+            {
+                nonNegative[iType][pName] = value == "True";
+            }
+            else if (content[2] == "mut")
+            {
+                Mutability mut;
+                if (nameToMutability(value, &mut))
                 {
-                    // Use default values
-                    auto dp = DP.find(vl.first);
-                    if (DP.end() != dp)
-                    {
-                        vdw.addParameter(entry.first, vl.first, dp->second);
-                    }
+                    atomparams[iType][pName].setMutability(mut);
+                }
+                else if (!value.empty())
+                {
+                    fprintf(stderr, "Incomprehensible Mutability '%s' for atype '%s' parameter %s\n", value.c_str(), entry.first.c_str(), pName.c_str());
+                }
+            }
+            else
+            {
+                double v = my_atof(value.c_str(), content[2].c_str());
+
+                if (content[2] == "min")
+                {
+                    atomparams[iType][pName].setMinimum(v);
+                    atomparams[iType][pName].setValue(v);
+                }
+                else if (content[2] == "max")
+                {
+                    atomparams[iType][pName].setMaximum(v);
                 }
             }
         }
-        // EEM parameters
+        for (auto ap=atomparams.begin(); ap != atomparams.end(); ++ap)
         {
-            std::map<std::string, std::string> eemlist = {
-                { "eta", "eV" },
-                { "chi", "eV" }
-            };
-            for(const auto &vl : eemlist)
+            std::string key = entry.first;
+            if (ap->first == InteractionType::ELECTRONEGATIVITYEQUALIZATION)
             {
-                if (minmaxmut(entry.first, myatype, vl.first, &vmin, &vmax, &vmut))
+                key = table[entry.first]["acmtype"];
+            }
+            else if (ap->first == InteractionType::ELECTROSTATICS)
+            {
+                key = table[entry.first]["zetatype"];
+            }
+            if (!key.empty())
+            {
+                for(auto pname : ap->second)
                 {
-                    eem.addParameter(myatype[zetatype], vl.first,
-                                     ForceFieldParameter(vl.second, (vmin+vmax)/2, 0, 1, vmin, vmax, vmut, true, true));
+                    if (nonNegative[ap->first][pname.first])
+                    {
+                        pname.second.setNonNegative();
+                    }
+                    ffpl[ap->first].addParameter(key, pname.first, pname.second);
                 }
             }
         }
     }
-    pd.addForces(InteractionType::POLARIZATION, pols);
-    pd.addForces(InteractionType::ELECTROSTATICS, coulomb);
+    // Now add the necessary terms to the final force field.
+    std::set<InteractionType> nonbond = { InteractionType::ELECTROSTATICS,
+        InteractionType::VDW, InteractionType::VDWCORRECTION,
+        InteractionType::INDUCTIONCORRECTION };
+    for(auto &fp : ffpl)
+    {
+        if (nonbond.find(fp.first) != nonbond.end())
+        {
+            fp.second.addOption("nexcl", gmx_itoa(nexclqq));
+            fp.second.setCanSwap(CanSwap::Yes);
+        }
+        if (fp.first == InteractionType::ELECTROSTATICS)
+        {
+            fp.second.addOption("epsilonr", gmx_ftoa(epsilonr));
+            std::string coul("COULOMB_");
+            coul.append(qdn2[0]);
+            fp.second.setFunction(coul);
+        }
+        else if (fp.first == InteractionType::VDW)
+        {
+            fp.second.setFunction(vdwfn[0]);
+        } 
+        else if (fp.first == InteractionType::VDWCORRECTION && useVdwCorr)
+        {
+            fp.second.setFunction(potentialToString(Potential::BORN_MAYER));
+        } 
+        else if (fp.first == InteractionType::INDUCTIONCORRECTION &&
+                 icfn[0])
+        {
+            fp.second.setFunction(icfn[0]);
+        } 
+        pd.addForces(fp.first, fp.second);
+    }
+    // Polarization function
+    auto itPol = InteractionType::POLARIZATION;
+    if (pd.interactionPresent(itPol))
+    {
+        auto fsp = pd.findForces(itPol);
+        fsp->setFunction(potentialToString(Potential::POLARIZATION));
+    }
+    // Bonded functions need to be added
     ForceFieldParameterList bonds(bondfn[0], CanSwap::Yes);
     pd.addForces(InteractionType::BONDS, bonds);
     ForceFieldParameterList angles(anglefn[0], CanSwap::Yes);
@@ -605,10 +612,9 @@ int gen_ff(int argc, char*argv[])
     pd.addForces(InteractionType::IMPROPER_DIHEDRALS, idihs);
     ForceFieldParameterList pdihs(dihfn[0], CanSwap::Yes);
     pd.addForces(InteractionType::PROPER_DIHEDRALS, pdihs);
-    pd.addForces(InteractionType::VDW, vdw);
-    pd.addForces(InteractionType::VDWCORRECTION, vdwcorr);
-    pd.addForces(InteractionType::INDUCTIONCORRECTION, induccorr);
-    pd.addForces(InteractionType::ELECTRONEGATIVITYEQUALIZATION, eem);
+    
+    // Combination rules after adding the forces and parameters only, since it will look them up.
+    crule.extract(&pd);
     // Virtual sites
     add_vsites(opt2fn_null("-vs", fnm.size(), fnm.data()), &pd);
     if (qsymm)

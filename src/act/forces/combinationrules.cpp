@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2024
+ * Copyright (C) 2014-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -69,7 +69,8 @@ const std::string &combinationRuleName(CombRule c)
     auto crfind = combRuleName.find(c);
     if (crfind == combRuleName.end())
     {
-        GMX_THROW(gmx::InternalError("Unsupported combination rule"));
+        GMX_THROW(gmx::InternalError(gmx::formatString("Unsupported combination rule %d",
+                                                       static_cast<int>(c)).c_str()));
     }
     return crfind->second;
 }
@@ -209,19 +210,6 @@ void evalCombinationRule(Potential                                    ftype,
 {
     // Fudge unit
     std::string unit("kJ/mol");
-    // Defining some strings that we may or may not need
-    const std::string cepsilon(lj14_7_name[lj14_7EPSILON]);
-    const std::string cgamma(lj14_7_name[lj14_7GAMMA]);
-
-    std::string       cdist;
-    if (ftype == Potential::GENERALIZED_BUCKINGHAM)
-    {
-        cdist = gbh_name[gbhRMIN];
-    }
-    else
-    {
-        cdist = lj14_7_name[lj14_7SIGMA];
-    }
 
     // We use dependent mutability to show these are not independent params
     auto mutd = Mutability::Dependent;
@@ -239,14 +227,17 @@ void evalCombinationRule(Potential                                    ftype,
             {
                 allrules += " " + c.first;
             }
-            GMX_THROW(gmx::InvalidInputError(gmx::formatString("Parameter %s not found. There are combination rules for:%s.", param.first.c_str(), allrules.c_str()).c_str()));
+            GMX_THROW(gmx::InvalidInputError(gmx::formatString("Parameter %s not found. There are combination rules for: %s.", param.first.c_str(), allrules.c_str()).c_str()));
         }
         auto   crule = combrule.find(param.first)->second;
         double value = 0;
-        if (Potential::EXPONENTIAL == ftype ||
-            Potential::DOUBLEEXPONENTIAL == ftype ||
+        if (Potential::BORN_MAYER == ftype ||
+            Potential::MACDANIEL_SCHMIDT == ftype ||
             Potential::BUCKINGHAM == ftype ||
-            Potential::TANG_TOENNIES == ftype)
+            Potential::TANG_TOENNIES == ftype ||
+            Potential::TT2b == ftype ||
+            Potential::SLATER_ISA_TT == ftype ||
+            Potential::MORSE_BONDS == ftype)
         {
             if (CombRule::Kronecker == crule)
             {
@@ -270,6 +261,39 @@ void evalCombinationRule(Potential                                    ftype,
         }
         else
         {
+            // Defining some strings that we may or may not need
+            auto vdwname = potentialToParameterName(ftype);
+            std::string cdist, cepsilon, cgamma;
+            switch (ftype)
+            {
+            case Potential::GENERALIZED_BUCKINGHAM:
+                cdist    = vdwname[gbhRMIN];
+                cepsilon = vdwname[gbhEPSILON];
+                cgamma   = vdwname[gbhGAMMA];
+                break;
+            case Potential::WANG_BUCKINGHAM:
+                cdist    = vdwname[wbhSIGMA];
+                cepsilon = vdwname[wbhEPSILON];
+                cgamma   = vdwname[wbhGAMMA];
+                break;
+            case Potential::LJ14_7:
+                cdist    = vdwname[lj14_7SIGMA];
+                cepsilon = vdwname[lj14_7EPSILON];
+                cgamma   = vdwname[lj14_7GAMMA];
+                break;
+            case Potential::LJ12_6:
+                cdist    = vdwname[lj12_6SIGMA];
+                cepsilon = vdwname[lj12_6EPSILON];
+                break;
+            case Potential::LJ8_6:
+                cdist    = vdwname[lj8_6SIGMA];
+                cepsilon = vdwname[lj8_6EPSILON];
+                break;
+            default:
+                gmx_fatal(FARGS, "Please implement support for potential '%s' ftype %d",
+                          potentialToString(ftype).c_str(),
+                          static_cast<int>(ftype));   
+            }
             auto ieps = ivdw.find(cepsilon)->second.value();
             auto jeps = jvdw.find(cepsilon)->second.value();
             double igam = 0;
@@ -310,8 +334,8 @@ void evalCombinationRule(Potential                                    ftype,
                 break;
             }
         }
-        std::string pij = param.first + "_ij";
-        pmap->insert_or_assign(pij, ForceFieldParameter(unit, value, 0, 1, value, value, mutd, true, true));
+        pmap->insert_or_assign(param.first,
+                               ForceFieldParameter(unit, value, 0, 1, value, value, mutd, true, true));
     }
 }
 
@@ -331,6 +355,7 @@ static void generateParameterPairs(ForceField      *pd,
     ForceFieldParameterListMap *parm = forcesVdw->parameters();;
     
     // Now do the double loop
+    int nid = 0;
     for (auto &ivdw : *forcesVdw->parameters())
     {
         auto &iid    = ivdw.first;
@@ -355,9 +380,10 @@ static void generateParameterPairs(ForceField      *pd,
                 continue;
             }
             // Test whether or not to include this pair.
-            // This will only be used in case the potential is exponential.
+            // This will only be used with the Kronecker combination rule.
             bool includePair = true;
-            if (Potential::EXPONENTIAL == forcesVdw->potential())
+            if (Potential::BORN_MAYER == forcesVdw->potential() || 
+                Potential::MORSE_BONDS == forcesVdw->potential())
             {
                 auto ai = iid.atoms()[0];
                 auto aj = jid.atoms()[0];
@@ -388,7 +414,14 @@ static void generateParameterPairs(ForceField      *pd,
 
             parm->insert_or_assign(Identifier({ iid.id(), jid.id() }, { 1 }, CanSwap::Yes),
                                    std::move(pmap));
+            nid += 1;
         }
+    }
+    if (debug)
+    {
+        int np = forcesVdw->parameters()->size();
+        fprintf(debug, "Made %d/%d identifiers for %s in generateParameterPairs\n", nid, np,
+                interactionTypeToString(itype).c_str());
     }
     // Phew, we're done!
 }
@@ -402,7 +435,8 @@ static void generateCoulombParameterPairs(ForceField *pd, bool force)
     
     // We use dependent mutability to show these are not independent params
     auto mutd = Mutability::Dependent;
-    auto zeta = coul_name[coulZETA];
+    auto cname = potentialToParameterName(Potential::COULOMB_GAUSSIAN);
+    auto zeta = cname[coulZETA];
     // Finally add the new parameters to the exisiting list
     auto fold = forcesCoul->parameters();
     // Now do the double loop
@@ -433,18 +467,18 @@ static void generateCoulombParameterPairs(ForceField *pd, bool force)
             if (oldfp == fold->end())
             {
                 ForceFieldParameterMap ffpm = {
-                    { coul_name[coulZETAI], 
+                    { cname[coulZETA], 
                       ForceFieldParameter(unit, izeta, 0, 0, izeta, izeta, mutd, false, true) },
-                    { coul_name[coulZETAJ],
+                    { cname[coulZETA2],
                       ForceFieldParameter(unit, jzeta, 0, 0, jzeta, jzeta, mutd, false, true) }
                 };
                 fold->insert({pairID, ffpm});
             }
             else
             {
-                auto &pi = oldfp->second.find(coul_name[coulZETAI])->second;
+                auto &pi = oldfp->second.find(cname[coulZETA])->second;
                 pi.forceSetValue(izeta);
-                auto &pj = oldfp->second.find(coul_name[coulZETAJ])->second;
+                auto &pj = oldfp->second.find(cname[coulZETA2])->second;
                 pj.forceSetValue(jzeta);
             }
         }

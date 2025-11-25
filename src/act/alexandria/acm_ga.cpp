@@ -66,7 +66,7 @@ bool MCMC::evolve(alexandria::MsgHandler       *msghandler,
     // Create a gene pool
     GenePool pool(sii_->nParam());
     // Create and add our own individual (Will be the first one in the pool)
-    auto *ind = static_cast<alexandria::ACMIndividual *>(initializer()->initialize());
+    auto ind = static_cast<alexandria::ACMIndividual *>(initializer()->initialize());
 
     // Compute its fitness
     auto tw = msghandler->tw();
@@ -169,7 +169,8 @@ bool MCMC::evolve(alexandria::MsgHandler       *msghandler,
 
     // Save last population
     lastPop_ = pool;
-    
+    // Clean
+    delete ind;
     return bMinimum;
 }
 
@@ -207,7 +208,7 @@ bool HybridGAMC::evolve(alexandria::MsgHandler       *msghandler,
     pool[pnew] = new GenePool(sii_->nParam()); 
     
     // Create and add our own individual (Will be the first one in the pool)
-    auto *ind = static_cast<alexandria::ACMIndividual *>(initializer()->initialize());
+    auto ind = static_cast<alexandria::ACMIndividual *>(initializer()->initialize());
     // Check whether we need to read a gene pool
     int read = 0;
     if (gpin_)
@@ -557,9 +558,9 @@ bool HybridGAMC::evolve(alexandria::MsgHandler       *msghandler,
         // Check if a better genome (for train) was found, and update if so
         const auto tmpGenome   = pool[pold]->getBest(imstr);
         const auto tmpBest     = (*bestGenome)[imstr];
-        time_t my_time = std::time(nullptr);
+        time_t my_time     = std::time(nullptr);
         time_t diff_time   = my_time - start_time;
-        time_t finish_time = my_time + (diff_time / (generation+1)) * (gach_->maxGenerations() - generation);
+        time_t finish_time = my_time + (diff_time / generation) * (gach_->maxGenerations() - generation);
         std::string t_now(std::ctime(&my_time));
         std::string t_finish(std::ctime(&finish_time));
         // regex code from https://www.systutorials.com/how-to-remove-newline-characters-from-a-string-in-c/
@@ -580,6 +581,10 @@ bool HybridGAMC::evolve(alexandria::MsgHandler       *msghandler,
             {
                 pool[pold]->write(gpout_);
             }
+        }
+        else
+        {
+            msghandler->write(mess_start);
         }
         if (gach_->evaluateTestset())
         {
@@ -608,7 +613,12 @@ bool HybridGAMC::evolve(alexandria::MsgHandler       *msghandler,
 
     // Save last population
     lastPop_ = *(pool[pold]);
-
+    // Clean
+    for (int i = 0; i < 2; i++)
+    {
+        delete pool[i];
+    }
+    delete ind;
     return bMinimum;
 }
 

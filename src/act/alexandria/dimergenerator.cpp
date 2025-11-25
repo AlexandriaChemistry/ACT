@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2022-2024
+ * Copyright (C) 2022-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -240,7 +240,7 @@ void DimerGenerator::generateRandomNumbers(int ndimers)
 std::vector<std::vector<gmx::RVec>> DimerGenerator::generateDimers(FILE         *logFile,
                                                                    const ACTMol *actmol)
 {
-    auto fragptr = actmol->fragmentHandler();
+    const auto fragptr = actmol->fragmentHandler();
     if (fragptr->topologies().size() != 2)
     {
         gmx_fatal(FARGS, "Cannot generate dimers, numer of compounds is %lu",
@@ -252,11 +252,11 @@ std::vector<std::vector<gmx::RVec>> DimerGenerator::generateDimers(FILE         
     // Split the coordinates into two fragments
     auto atomStart = fragptr->atomStart();
     // Topologies
-    auto tops = fragptr->topologies();
+    const auto &tops = fragptr->topologies();
     std::vector<gmx::RVec> xmOrig[2];
     for(int m = 0; m < 2; m++)
     {
-        auto   atoms   = tops[m]->atoms();
+        auto   atoms   = tops[m].atoms();
         for(size_t j = atomStart[m]; j < atomStart[m]+atoms.size(); j++)
         {
             xmOrig[m].push_back(xorig[j]);
@@ -268,7 +268,7 @@ std::vector<std::vector<gmx::RVec>> DimerGenerator::generateDimers(FILE         
     {
         // Compute center of mass
         clear_rvec(com[m]);
-        auto   atoms   = tops[m]->atoms();
+        auto   atoms   = tops[m].atoms();
         double totmass = 0;
         for(size_t j = 0; j < atoms.size(); j++)
         {
@@ -319,7 +319,7 @@ std::vector<std::vector<gmx::RVec>> DimerGenerator::generateDimers(FILE         
         for(int m = 0; m < 2; m++)
         {
             fprintf(logFile, " x[%d]", m);
-            auto   atoms   = tops[m]->atoms();
+            auto   atoms   = tops[m].atoms();
             for(size_t j = 0; j < atoms.size(); j++)
             {
                 fprintf(logFile, " %g %g %g", xrand[m][j][XX],
@@ -338,7 +338,7 @@ std::vector<std::vector<gmx::RVec>> DimerGenerator::generateDimers(FILE         
             dist += idist*binWidth_;
         }
         gmx::RVec trans = { 0, 0, dist };
-        auto      atoms = tops[1]->atoms();
+        auto      atoms = tops[1].atoms();
         for(size_t j = 0; j < atoms.size(); j++)
         {
             rvec_inc(xrand[1][j], trans);
@@ -346,7 +346,7 @@ std::vector<std::vector<gmx::RVec>> DimerGenerator::generateDimers(FILE         
         coords[idist].resize(xorig.size());
         for(int m = 0; m < 2; m++)
         {
-            auto   atoms   = tops[m]->atoms();
+            auto   atoms   = tops[m].atoms();
             for(size_t j = atomStart[m]; j < atomStart[m]+atoms.size(); j++)
             {
                 auto jindex = j - atomStart[m];
