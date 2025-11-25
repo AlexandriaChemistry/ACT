@@ -161,14 +161,15 @@ def gen_pdb_system(dimername: str, dist: float, dimer: bool, atom1_s: int, atom2
     return output_pdb
 
 
-def get_final_energies(mylog: str) -> dict:
+def get_final_energies(mylog: str, printEpot:bool) -> dict:
     ener     = {}
     energies = [ "DISPERSION", "EXCHANGE", "COULOMB", "INDUCTION", "EPOT" ]
     with open(mylog, "r") as inf:
         for line in inf:
             words = line.split()
             for e in energies:
-                if e in line and "Interaction energy" in line:
+                needle = f"Interaction energy {e}:"
+                if needle in line:
                     try:
                         ename = e
                         if "EPOT" == e:
@@ -176,7 +177,7 @@ def get_final_energies(mylog: str) -> dict:
                         ener[ename] = float(words[4])
                     except ValueError:
                         print(f"Funny line '{line.strip()}' in {os.getcwd()}/{mylog}")
-            if "EPOT:" in line and "value" in line:
+            if "EPOT:" in line and "value" in line and printEpot:
                 try:
                     ener["EPOT"] = float(words[2][:-1])
                 except ValueError:
@@ -243,7 +244,7 @@ def run_dimer(system: str, root: str, c1: str, c2: str, xml: str,
             print(f"Error generating PDB file or running simulation: {e}")
         os.chdir("..")
 
-def fetch_energy(c1: str, c2: str, pol: bool, vs: bool, rmin: float, distances: list):
+def fetch_energy(c1: str, c2: str, pol: bool, vs: bool, rmin: float, distances: list, printEpot:bool):
     label = f"{c1}#{c2}"
     efn = f"{c1}#{c2}.xvg"
     ener = None
@@ -257,8 +258,8 @@ def fetch_energy(c1: str, c2: str, pol: bool, vs: bool, rmin: float, distances: 
         ddstr = ("%04d" % dd)
         mylog = os.path.join(ddstr, "simulation.log")
         if os.path.exists(mylog):
-            edimer = get_final_energies(mylog)
-            if len(edimer) == 6:
+            edimer = get_final_energies(mylog, printEpot)
+            if len(edimer) >= 5:
                 if ener is None:
                     ener = open(efn, "w")
                     ener.write("@ yaxis label \"Energy (kJ/mol)\"\n")
@@ -271,6 +272,8 @@ def fetch_energy(c1: str, c2: str, pol: bool, vs: bool, rmin: float, distances: 
                 for e in edimer:
                     ener.write(f"  {edimer[e]:10g}")
                 ener.write("\n")
+            else:
+                print("Could not read energies in %s" % mylog)
 
     if ener:
         ener.close()
@@ -288,7 +291,8 @@ def analyze_ff(ff: str) -> (bool, bool):
 
 def run_one(vdw: str, xml: str, system: str, rmin: float,
             atom1_s, atom2_s, end_dist: float,
-            pdb_path: str, nstep: float, molprop:str):
+            pdb_path: str, nstep: float, molprop:str,
+            printEpot:bool):
     global final_distance
     if not os.path.exists(xml):
         print(f"No such force field file '{xml}'")
@@ -317,7 +321,7 @@ def run_one(vdw: str, xml: str, system: str, rmin: float,
     run_dimer(system, root, c1, c2, xml, force, pol, vs, rmin, atom1_s, atom2_s, end_dist, pdb_path, nstep, molprop)
 
     print(final_distance)
-    fetch_energy(c1, c2, pol, vs, rmin, final_distance)
+    fetch_energy(c1, c2, pol, vs, rmin, final_distance, printEpot)
     os.chdir("../..")
 
 def plot_curves(xmls: dict):
@@ -359,10 +363,14 @@ def plot_curves(xmls: dict):
         os.chdir("..")
 
     for dimer, plots_list in plots.items():
-        cmd = f"viewxvg -mk o x + -pdf {dimer} -title {dimer} -noshow -legend_x 0.7 -legend_y 0.5 -alfs 14 -lfs 14 -tickfs 14 -f "
+        pdf = f"{dimer}.pdf"
+        cmd = f"plotxvg -mk o x + -save {pdf} -title {dimer} -noshow -legend_x 0.7 -legend_y 0.5 -alfs 14 -lfs 14 -tickfs 14 -f "
         cmd += " ".join(p["xvg"] for p in plots_list)
-        cmd += " -label " + " ".join(p["legend"] for p in plots_list)
         os.system(cmd)
+        if os.path.exists(pdf):
+            print("Plotted %s" % pdf)
+        else:
+            print("Failed to plot %s" % pdf)
 
 def parse_args():
     parser = argparse.ArgumentParser(description="""
@@ -382,6 +390,7 @@ def parse_args():
     parser.add_argument("-atom1", "--atom1", help="Atom1 in the first monomer is used for distance calculation (e.g. 1)", type=int, default=None)
     parser.add_argument("-atom2", "--atom2", help="Atom2 in the second monomer for distance calc (e.g. 11)", type=int, default=None)
     parser.add_argument("-dbg", "--debug", help="Write more debugging output", action="store_true")
+    parser.add_argument("-epot", "--printEpot", help="Print potential energy as well", action="store_true")
     args = parser.parse_args()
     if args.debug:
         Debug = True
@@ -424,7 +433,7 @@ if __name__ == "__main__":
             run_one(vdw, fullxml[vdw], system,  args.rmin,
                     args.atom1, args.atom2,
                     args.rmax, pdb_path, args.nstep,
-                    molprop)
+                    molprop, args.printEpot)
     plot_curves(fullxml)
-    print(f"Checkout output files in {results}")
+    print(f"Check output files in {results}")
     os.chdir("..")
