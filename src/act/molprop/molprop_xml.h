@@ -55,7 +55,7 @@ namespace alexandria
  * \param[in] fn         The file name to write to
  * \param[in] mpt        The vector of MolProp
  * \param[in] bCompress  Determines whether zlib compression is used when writing
- * \ingroup module_alexandria
+ * \ingroup group_molprop
  */
 void MolPropWrite(const char                 *fn,
                   const std::vector<MolProp> &mpt,
@@ -73,7 +73,7 @@ void MolPropWrite(const char                 *fn,
  * \param[in]  msg_handler For info and debugging
  * \param[in]  fn          The file name to read from
  * \param[out] mpt         The vector of MolProp
- * \ingroup module_alexandria
+ * \ingroup group_molprop
  */
 void MolPropRead(MsgHandler           *msg_handler,
                  const char           *fn,

@@ -187,6 +187,11 @@ int MolProp::symmetryNumber() const
     return symm;
 }
 
+/*! \brief Convert element to atom name
+ * \param[in] elem The element
+ * \param[in] n    The index
+ * \return atom name
+ */
 static std::string strNum2aa(const std::string &elem, int n)
 {
     if (n > 1)
@@ -199,6 +204,10 @@ static std::string strNum2aa(const std::string &elem, int n)
     }
 }
 
+/*! \brief Turn atomic compisition into a formula
+ * \param[in] comp The elements and counts
+ * \return a chemical formula
+ */
 static std::string comp2formula(std::map<std::string, int> &comp)
 {
     std::string form;

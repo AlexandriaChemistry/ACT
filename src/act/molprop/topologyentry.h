@@ -188,7 +188,7 @@ typedef std::vector<BaseContainer<TopologyEntry>> TopologyEntryVector;
  * Atom pair in a molecule
  *
  * \inpublicapi
- * \ingroup module_alexandria
+ * \ingroup group_molprop
  */
 class AtomPair : public TopologyEntry
 {
@@ -248,7 +248,7 @@ class AtomPair : public TopologyEntry
  * and stored in molprop files.
  *
  * \inpublicapi
- * \ingroup module_alexandria
+ * \ingroup group_molprop
  */
 class Bond : public TopologyEntry
 {
@@ -302,7 +302,7 @@ using BondConstIterator = typename std::vector<Bond>::const_iterator;
  * of the second bond.
  *
  * \inpublicapi
- * \ingroup module_alexandria
+ * \ingroup group_molprop
  */
 class Angle : public TopologyEntry
 {
@@ -349,7 +349,7 @@ class Angle : public TopologyEntry
  * Atom i should be the first atom in all bonds.
  *
  * \inpublicapi
- * \ingroup module_alexandria
+ * \ingroup group_molprop
  */
 class Improper : public TopologyEntry
 {
@@ -385,7 +385,7 @@ class Improper : public TopologyEntry
  * bij, bjk, bkl in a molecule.
  *
  * \inpublicapi
- * \ingroup module_alexandria
+ * \ingroup group_molprop
  */
 class Proper : public TopologyEntry
 {
@@ -420,7 +420,7 @@ class Proper : public TopologyEntry
  * Virtual site on an atom.
  *
  * \inpublicapi
- * \ingroup module_alexandria
+ * \ingroup group_molprop
  */
 class Vsite1 : public TopologyEntry
 {
@@ -461,7 +461,7 @@ class Vsite1 : public TopologyEntry
  * Virtual site on a linear bond.
  *
  * \inpublicapi
- * \ingroup module_alexandria
+ * \ingroup group_molprop
  */
 class Vsite2 : public TopologyEntry
 {
@@ -503,7 +503,7 @@ class Vsite2 : public TopologyEntry
  * Virtual site based on 3 particles
  *
  * \inpublicapi
- * \ingroup module_alexandria
+ * \ingroup group_molprop
  */
 class Vsite3 : public TopologyEntry
 {

@@ -63,7 +63,7 @@ namespace alexandria
  * \param[in] gms   Structure containing selections of which molecules to output
  * \param[in] ims   The actual selection of the right set
  * \todo Transform iQM to enum
- * \ingroup module_alexandria
+ * \ingroup group_molprop
  */
 void alexandria_molprop_stats_table(MsgHandler           *msg_handler,
                                     FILE                 *fp,
@@ -83,7 +83,7 @@ void alexandria_molprop_stats_table(MsgHandler           *msg_handler,
  * \param[in] gms   Structure containing selections of which molecules to output
  * \param[in] ims   The actual selection of the right set
  * \todo Transform ims to enum
- * \ingroup module_alexandria
+ * \ingroup group_molprop
  */
 void alexandria_molprop_composition_table(FILE                 *fp,
                                           std::vector<MolProp>  mp,
@@ -96,7 +96,7 @@ void alexandria_molprop_composition_table(FILE                 *fp,
  * \param[out] fp    File pointer to write to
  * \param[in] catmin Mininum number of molecules in a category for it to be printed
  * \param[in] cList  Structure containing all categories and the number of molecules per category
- * \ingroup module_alexandria
+ * \ingroup group_molprop
  */
 void alexandria_molprop_category_table(FILE                    *fp,
                                        int                      catmin,
@@ -118,7 +118,7 @@ void alexandria_molprop_category_table(FILE                    *fp,
  * \param[in] ims   The actual selection of the right set
  * \todo Transform ims to enum
  * \todo Introduce enum to switch between absolute and relative tolerance
- * \ingroup module_alexandria
+ * \ingroup group_molprop
  */
 void alexandria_molprop_prop_table(FILE                             *fp,
                                    MolPropObservable                 eprop,
@@ -141,7 +141,7 @@ void alexandria_molprop_prop_table(FILE                             *fp,
  * \param[in] mp    Array of molecules
  * \param[in] lot   Level of theory in 'A/B' format
  * \todo More explanation text
- * \ingroup module_alexandria
+ * \ingroup group_molprop
  */
 void alexandria_molprop_atomtype_table(FILE                       *fp,
                                        bool                        bPolar,

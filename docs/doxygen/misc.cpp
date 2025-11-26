@@ -85,3 +85,19 @@ provide back-ports or mappings to available standard library implementations
 as appropriate.
 */
 
+/*!
+\namespace alexandria
+\brief
+Generic ACT namespace.
+
+\inpublicapi
+*/
+
+/*!
+\libinternal
+\defgroup group_molprop Code related to the molprop class.
+\brief Store molecular properties and coordinates.
+
+Includes reading and writing to XML files.
+*/
+

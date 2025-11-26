@@ -58,7 +58,7 @@
  * Contains all classes related to alexandria force field tools
  *
  * \inpublicapi
- * \ingroup module_alexandria
+ * \ingroup group_molprop
  */
 namespace alexandria
 {
@@ -70,7 +70,7 @@ class MsgHandler;
  * Contains molecular properties from a range of sources.
  *
  * \inpublicapi
- * \ingroup module_alexandria
+ * \ingroup group_molprop
  */
 class MolProp
 {

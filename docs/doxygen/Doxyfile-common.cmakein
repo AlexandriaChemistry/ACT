@@ -95,6 +95,7 @@ EXTRACT_LOCAL_CLASSES  = NO
 EXTRACT_STATIC         = YES
 
 ALIASES               += Gromacs=GROMACS
+ALIASES               += Act=ACT
 ALIASES               += linktodevmanual{2}="<A HREF=\"../../dev-manual/\1.html\">\2</A>"
 ALIASES               += linktodevmanual{3}="<A HREF=\"../../dev-manual/\1.html#\2\">\3</A>"
 

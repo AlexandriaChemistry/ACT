@@ -65,8 +65,10 @@
 namespace alexandria
 {
 
+//! \brief Map to count the occurence of strings, e.g. atom names.
 typedef std::map<const std::string, int> stringCount;
 
+//! \brief Dump important parts of a MolProp to the msghandler
 static bool dump_molecule(MsgHandler        *msghandler,
                           ForceComputer     *forceComp,
                           stringCount       *atomTypeCount,
@@ -211,6 +213,7 @@ static bool dump_molecule(MsgHandler        *msghandler,
     return true;
 }
 
+//! \brief Check the contents of molprop structures
 static void check_mp(MsgHandler           *msghandler,
                      const char           *ffname,
                      std::vector<MolProp> *mp)
@@ -349,6 +352,7 @@ static void check_mp(MsgHandler           *msghandler,
     }
 }
 
+//! \brief Generate energy histogram.
 static void gen_ehist(MsgHandler                 *msghandler,
                       const std::vector<MolProp> *mpt,
                       gmx_output_env_t           *oenv,
@@ -412,6 +416,10 @@ static void gen_ehist(MsgHandler                 *msghandler,
     }
 }
 
+/*! \brief Update internal molecule information.
+ * This will use an external data file, alexandria.csv, containing
+ * information about > 9000 molecules.
+ */
 static void updateMolInfo(MsgHandler           *msghandler,
                           std::vector<MolProp> *mpt)
 {
@@ -438,6 +446,11 @@ static void updateMolInfo(MsgHandler           *msghandler,
     }
 }
 
+/*! \brief Function to modify molprop files in a number of ways.
+ * \param[in] argc Number of command line arguments
+ * \param[in] argv The command line arguments
+ * \return 0 if ok, another value otherwise.
+ */
 int edit_mp(int argc, char *argv[])
 {
     static const char               *desc[] =

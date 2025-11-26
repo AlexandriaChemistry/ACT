@@ -63,11 +63,10 @@ void generate_index(std::vector<MolProp> *mp)
  * Merge multiple molprops for molecules into one, e.g. one molprop for water
  * one for methane etc.
  *
+ * \param[in]     msg_handler For storing warnings etc.
  * \param[inout]  mp        The vector of MolProps
- * \param[in]     doubles   File name for dumping output, can be nullptr
- * \param[in]     bForceMerge If true all molprops for a compound are merged
- * \return the number of remaining molprops
- * \ingroup module_alexandria
+ * \param[in]     warnings  To store warnings as well!
+ * \ingroup group_molprop
  */
 static void MergeDoubleMolprops(MsgHandler                       *msg_handler,
                                 std::vector<alexandria::MolProp> *mp,
@@ -188,6 +187,7 @@ std::vector<std::string> merge_xml(MsgHandler                             *msg_h
     return warnings;
 }
 
+//! \brief Compare MolProp by molname for sorting
 static bool comp_mp_molname(alexandria::MolProp &ma,
                             alexandria::MolProp &mb)
 {
@@ -197,6 +197,7 @@ static bool comp_mp_molname(alexandria::MolProp &ma,
     return (mma.compare(mmb) < 0);
 }
 
+//! \brief Compare MolProp by formula for sorting
 static bool comp_mp_formula(alexandria::MolProp &ma,
                             alexandria::MolProp &mb)
 {
@@ -215,6 +216,7 @@ static bool comp_mp_formula(alexandria::MolProp &ma,
 
 gmx_atomprop_t my_aps;
 
+//! \brief Count how often a specific element occurs
 static int count_elements(std::map<const char *, int> comp, const char *elem)
 {
     auto mm = comp.find(elem);
@@ -228,6 +230,7 @@ static int count_elements(std::map<const char *, int> comp, const char *elem)
     }
 }
 
+//! \brief Compare MolProp by elements for sorting
 static bool comp_mp_elem(alexandria::MolProp &ma,
                          alexandria::MolProp &mb)
 {
@@ -272,6 +275,7 @@ static bool comp_mp_elem(alexandria::MolProp &ma,
     return comp_mp_molname(ma, mb);
 }
 
+//! \brief Compare MolProp by index for sorting
 static bool comp_mp_index(alexandria::MolProp &ma,
                           alexandria::MolProp &mb)
 {

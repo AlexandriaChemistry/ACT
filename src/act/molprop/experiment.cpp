@@ -42,6 +42,7 @@
 namespace alexandria
 {
 
+//! \brief Map JobType to a string
 std::map<JobType, const char *> job_name =
 {
     { JobType::OPT,      "Opt"      },
