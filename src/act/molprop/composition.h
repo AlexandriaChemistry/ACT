@@ -51,7 +51,7 @@ namespace alexandria
  * Specifies the name of an atom type and the number in a molecular composition
  *
  * \inpublicapi
- * \ingroup module_alexandria
+ * \ingroup group_molprop
  */
 class AtomNum
 {
@@ -143,7 +143,7 @@ using  AtomNumConstIterator = typename std::vector<AtomNum>::const_iterator;
  * Contains the molecular composition in terms of atoms
  *
  * \inpublicapi
- * \ingroup module_alexandria
+ * \ingroup group_molprop
  */
 class MolecularComposition
 {
@@ -279,7 +279,7 @@ using MolecularCompositionConstIterator = typename std::vector<MolecularComposit
  * Charge values based on different methods.
  *
  * \inpublicapi
- * \ingroup module_alexandria
+ * \ingroup group_molprop
  */
 class CalcAtom
 {

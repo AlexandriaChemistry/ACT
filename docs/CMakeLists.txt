@@ -58,20 +58,15 @@ mark_as_advanced(SOURCE_MD5SUM)
 
 set(EXPECTED_DOXYGEN_VERSION 1.8.5)
 
-set(EXPECTED_SPHINX_VERSION 1.6.1)
-
 if (DEFINED PYTHON_EXECUTABLE)
     # Keep quiet on subsequent runs of cmake
     set(PythonInterp_FIND_QUIETLY ON)
 endif()
 find_package(Python3)
 
-
-if (NOT ${PYTHON_VERSION_MAJOR} EQUAL 3)
-    find_package(Sphinx ${EXPECTED_SPHINX_VERSION} QUIET COMPONENTS pygments)
-else()
-    MESSAGE(STATUS "Can not build documentation with Python 3")
-endif()
+# Load Sphinx and determine the version
+find_package(Sphinx)
+set(EXPECTED_SPHINX_VERSION FIND_SPHINX_VERSION)
 
 # Even if we aren't going to make the full webpage, set up to put all
 # the documentation output in the same place, for convenience
@@ -104,7 +99,7 @@ if (SPHINX_FOUND)
     set(SPHINX_EXTENSION_PATH ${CMAKE_CURRENT_SOURCE_DIR})
     # As the manual build now depends also on Sphinx, the inclusion path needs
     # to be set after we know the basic information for Sphinx.
-    add_subdirectory(manual)
+#    add_subdirectory(manual)
     if (SOURCE_MD5SUM STREQUAL "unknown")
         # But for testing the webpage build (e.g. from the repo) we
         # need a default value.

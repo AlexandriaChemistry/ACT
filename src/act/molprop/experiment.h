@@ -91,7 +91,7 @@ DataSource dataSourceFromName(const std::string &name);
  * conformation of the molecule (if known).
  *
  * \inpublicapi
- * \ingroup module_alexandria
+ * \ingroup group_molprop
  */
 class Experiment
 {
