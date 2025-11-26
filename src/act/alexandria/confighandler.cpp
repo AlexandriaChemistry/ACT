@@ -48,6 +48,7 @@
 namespace alexandria
 {
 
+//! \brief Map OptimizerAlg to string
 std::map<OptimizerAlg, std::string> opt2str =
     {
         { OptimizerAlg::MCMC,   "MCMC"   },
@@ -75,6 +76,7 @@ const std::string &optimizerAlgToString(OptimizerAlg opt)
     return opt2str[opt];
 }
 
+//! \brief Map ProbabilityComputerAlg to string
 std::map<ProbabilityComputerAlg, std::string> prob2str =
     {
         { ProbabilityComputerAlg::pcRANK,      "RANK"      },
@@ -218,7 +220,9 @@ bool BayesConfigHandler::anneal(int generation,
 * BEGIN: GAConfigHandler                   *
 * * * * * * * * * * * * * * * * * * * * * */
 
+//! \brief Couple of string to use in cmdline option for the algorithm
 static const char *optimizerStr[5] = {nullptr, "MCMC", "GA", "HYBRID", nullptr};
+//! \brief Couple of string to use in cmdline option for the probabilityComputer
 static const char *probStr[5] = {nullptr, "RANK", "FITNESS", "BOLTZMANN", nullptr};
 
 void GAConfigHandler::add_options(std::vector<t_pargs>             *pargs,
@@ -358,8 +362,10 @@ void GAConfigHandler::check_pargs(MsgHandler *msghandler)
 * BEGIN: SimulationConfigHandler           *
 * * * * * * * * * * * * * * * * * * * * * */
 
+//! \brief Couple of string to use in cmdline option for the minimizer algorithm
 static const char *eminAlgs[5] = {nullptr, "LBFGS", "Newton", "Steep", nullptr};
 
+//! \brief Map from enum to string
 std::map<eMinimizeAlgorithm, std::string> eMinAlg2String = {
     { eMinimizeAlgorithm::LBFGS,  "LBFGS"  },
     { eMinimizeAlgorithm::Steep,  "Steep"  },

@@ -43,6 +43,7 @@
 namespace alexandria
 {
 
+//! \brief Description of the compound reader for the command line help
 static std::vector<const char *> crDesc = {
     "It is highly recommended to provide the [TT]-charges[tt] option",
     "with a molprop file that will be used to generate charges for the",
