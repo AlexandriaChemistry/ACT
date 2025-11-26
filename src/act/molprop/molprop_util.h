@@ -45,8 +45,7 @@
 /*! \brief
  * Enumerated type for MolPropSort function
  *
- * \inpublicapi
- * \ingroup module_alexandria
+ * \ingroup group_molprop
  */
 enum MolPropSortAlgorithm {
     MPSA_MOLNAME     = 0,
@@ -171,7 +170,7 @@ void find_calculations(const std::vector<alexandria::MolProp> &mp,
  * \param[in]     mpsa        The algorithm used for sorting
  * \param[in]     apt         Database of atom properties
  * \param[in]     gms         Optional structure containing selection criteria
- * \ingroup module_alexandria
+ * \ingroup group_molprop
  */
 void MolPropSort(MsgHandler           *msg_handler,
                  std::vector<MolProp> *mp,

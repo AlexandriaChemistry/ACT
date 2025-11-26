@@ -22,11 +22,21 @@ Doxygen documentation file for directories in the source tree.
 
 /*!
 \libinternal
-\dir src/alexandria
+\dir src/act/alexandria
 \brief Source code for ACT
  */
 /*!
 \libinternal
-\dir src/alexandria/tests
+\dir src/act/alexandria/tests
+\brief Test source code for ACT
+ */
+/*!
+\libinternal
+\dir src/act/basics
+\brief Source code for ACT
+ */
+/*!
+\libinternal
+\dir src/act/basics/tests
 \brief Test source code for ACT
  */

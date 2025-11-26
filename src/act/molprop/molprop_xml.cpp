@@ -82,6 +82,7 @@ static const char *xmltypes[] = {
 };
 #define NXMLTYPES sizeof(xmltypes)/sizeof(xmltypes[0])
 
+//! \brief Enum for distinguishing content types in molprop files.
 enum class MolPropXml {
     MOLECULES,
     MOLECULE,

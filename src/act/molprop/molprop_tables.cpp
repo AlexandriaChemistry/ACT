@@ -87,6 +87,7 @@ typedef struct {
     int         nqm;
 } t_sm_lsq;
 
+//! \brief Print a header for a statistics table
 static void stats_header(LongTable         &lt,
                          const char        *mpo_name,
                          const char        *mpo_unit,
@@ -466,6 +467,7 @@ void alexandria_molprop_composition_table(FILE                 *fp,
 }
 #endif
 
+//! \brief Print a header for a category table
 static void category_header(LongTable &lt)
 {
     char longbuf[STRLEN];
@@ -698,6 +700,7 @@ void alexandria_molprop_atomtype_table(FILE                       *fp,
 }
 #endif
 
+//! \brief Print a header for a property table
 static void prop_header(LongTable     &lt,
                         const char    *property,
                         const char    *unit,

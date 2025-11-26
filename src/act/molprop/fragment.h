@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2022
+ * Copyright (C) 2022-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -51,7 +51,7 @@ namespace alexandria
  * Contains fragment properties
  *
  * \inpublicapi
- * \ingroup module_alexandria
+ * \ingroup group_molprop
  */
 class Fragment
 {
@@ -169,7 +169,8 @@ class Fragment
     //! Return a string containing the atom numbers
     const std::string &atomString() const { return atomString_; }
     
-    /*! \return the content of this fragment to a tw
+    /*! \brief Write the content of this fragment to a tw
+     * \param[in] tw A text writer object
      */
     void dump(gmx::TextWriter *tw) const;
     

@@ -52,8 +52,7 @@ namespace alexandria
 /*! \brief
  * Enumerated type holding the types of observables stored in MolProp
  *
- * \inpublicapi
- * \ingroup module_alexandria
+ * \ingroup group_molprop
  */
 enum class MolPropObservable {
     //! Electrostatic potential
@@ -121,8 +120,7 @@ enum class MolPropObservable {
 /*! \brief
  * Enum to select either QM or Experimental data or either
  *
- * \inpublicapi
- * \ingroup module_alexandria
+ * \ingroup group_molprop
  */
 enum iqmType {
     //! Experimental data only
@@ -148,8 +146,8 @@ const char *mpo_name(MolPropObservable MPO);
 const char *mpo_unit2(MolPropObservable MPO);
 
 /*! \brief Deduct MolPropObservable from string
- * \param[in]   str The string to use
- * \param[[out] mpo The corresponding MolPropObservable
+ * \param[in]  str The string to use
+ * \param[out] mpo The corresponding MolPropObservable
  * \return false if there is no corresponding MolPropObservable, true if there is
  */
 bool stringToMolPropObservable(const std::string &str, MolPropObservable *mpo);
@@ -159,8 +157,7 @@ bool stringToMolPropObservable(const std::string &str, MolPropObservable *mpo);
 /*! \brief
  * Generic molecular property base clase
  *
- * \inpublicapi
- * \ingroup module_alexandria
+ * \ingroup group_molprop
  */
 class GenericProperty
 {
@@ -313,6 +310,7 @@ public:
     
 };
 
+//! \brief Iterator over a vector of GenericProperty values.
 typedef std::vector<GenericProperty>::const_iterator GPConstIterator;
 
 /*! \brief
@@ -444,8 +442,7 @@ public:
     //Harmonics& operator=(Harmonics &&) = default;
 
     /*! \brief Add a value and convert it to internal units.
-     * \param[in] frequency The frequency
-     * \param[in] intensity The intensity value
+     * \param[in] value The frequency
      */
     void addValue(double value);
     
@@ -503,8 +500,7 @@ public:
  * along with the average molecular polarizability and the error if known.
  * The values are dependent on the orientation of the molecule.
  *
- * \inpublicapi
- * \ingroup module_alexandria
+ * \ingroup group_molprop
  */
 class MolecularPolarizability : public GenericProperty
 {
@@ -598,8 +594,7 @@ public:
  * on quantum chemistry calculations or experimental data.
  * For example the Enthalpy of formation at different temperatures.
  *
- * \inpublicapi
- * \ingroup module_alexandria
+ * \ingroup group_molprop
  */
 class MolecularEnergy : public GenericProperty
 {
@@ -687,8 +682,7 @@ public:
  * The electrostatic potential (ESP) can be computed using quantum chemistry and
  * stored in this class.
  *
- * \inpublicapi
- * \ingroup module_alexandria
+ * \ingroup group_molprop
  */
 class ElectrostaticPotential : public GenericProperty
 {

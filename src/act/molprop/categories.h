@@ -44,7 +44,7 @@
  * Contains classes related to alexandria force field tools
  *
  * \inpublicapi
- * \ingroup module_alexandria
+ * \ingroup group_molprop
  */
 namespace alexandria
 {
