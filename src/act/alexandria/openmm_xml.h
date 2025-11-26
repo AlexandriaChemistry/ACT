@@ -49,7 +49,6 @@ namespace alexandria
      * \param[in] pd         Pointer to a ForceField class instance
      * \param[in] actmols    The ACT molecule structures
      * \param[in] mDrude     Mass to use for the drude particle if any
-     * \param[in] compress   Whether or not to write a compressed file
      * \param[in] ntrain     Minimum number of training data to store a parameter to OpenMM
      * \param[in] addNumbersToAtoms Will add integer index to all atom types
      */

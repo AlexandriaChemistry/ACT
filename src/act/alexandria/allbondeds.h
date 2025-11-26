@@ -76,10 +76,10 @@ namespace alexandria
         void addPoint(double x);
     
         /*! Write a histogram
-         * \param[in] fn
+         * \param[in] fn_prefix
          * \param[in] xaxis
          * \param[in] oenv
-         * \param[in] spacing
+         * \param[in] binwidth
          */
         void writeHistogram(const char             *fn_prefix,
                             const char             *xaxis,
@@ -201,7 +201,7 @@ namespace alexandria
                                const MolSelect      &gms);
 
         /*! \brief Write how many bonds etc. were found
-         * \param[in] fp File to write to
+         * \param[in] tw Text writer to write to
          */
         void writeSummary(gmx::TextWriter *tw);
 

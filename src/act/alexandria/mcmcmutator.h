@@ -164,7 +164,6 @@ public:
      * \param[in] bch             pointer to BayesConfigHandler object
      * \param[in] fitComp         pointer to ACMFitnessComputer object
      * \param[in] sii             pointer to StaticIndividualInfo object
-     * \param[in] nParam          size of the force field parameter vector
      * \param[in] evaluateTestSet Whether or not to evaluate the test set
      *                            every once in a while
      * \param[in] algorithm       The charge generation algorithm

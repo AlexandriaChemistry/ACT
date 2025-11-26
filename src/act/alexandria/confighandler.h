@@ -178,7 +178,7 @@ public:
     OptimizerAlg optimizer() const { return optAlg_; }
 
     /*! \brief Set the optimizer algorithm
-     * \param[in] alg The new algorithm
+     * \param[in] optAlg The new algorithm
      */
     void setOptimizerAlg(OptimizerAlg optAlg) { optAlg_ = optAlg; }
     

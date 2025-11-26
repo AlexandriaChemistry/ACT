@@ -52,7 +52,6 @@ enum class NodeType {
 /*! \brief
  * Enumerated type holding the result status of communication operations
  *
- * \inpublicapi
  * \ingroup module_alexandria
  */
 enum CommunicationStatus {
@@ -66,7 +65,6 @@ enum CommunicationStatus {
 
 /*!
  * \brief Operation modes of the middleman in train_ff
- * \inpublicapi
  * \ingroup module_alexandria
  */
 enum class TrainFFMiddlemanMode {
@@ -151,7 +149,7 @@ public:
     /*! \brief Initiate the internal data once and for all.
      * This routine should be called exactly once. 
      * Only constant data can be extracted from this.
-     * \param[in] nmiddlemen The number of middlemen. Knowing the total 
+     * \param[in] nmiddleman The number of middlemen. Knowing the total 
      *                       number of cores is then sufficient to derive
      *                       the rest.
      * \return Outcome of the initiation.
@@ -239,7 +237,7 @@ public:
      *           LOW LEVEL ROUTINES                  *
      *************************************************/
     /*! Broadcast data to helpers or all processors from the master.
-     * \param[inout] str  Pointer to the string
+     * \param[inout] t    Pointer to data
      * \param[in]    comm MPI communicator
      * \param[in]    root Who is the root of this communicatione
      */

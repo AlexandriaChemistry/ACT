@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2024
+ * Copyright (C) 2014-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -124,7 +124,7 @@ public:
 
     /*! \brief Send an OptimizationIndex
      * \param[in] cr   The communication information
-     * \param[in] dest The destination processor
+     * \param[in] src  The source processor
      */
     CommunicationStatus receive(const CommunicationRecord *cr,
                                 int                        src);

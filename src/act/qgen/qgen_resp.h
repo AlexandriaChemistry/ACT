@@ -83,7 +83,7 @@ public:
     double vCalc() const { return vCalc_; }
     
     /*! \brief Set the calculated potential at this grid point
-     * \param[in] vCalc The new potential
+     * \param[in] vcalc The new potential
      */
     void setVCalc(double vcalc) { vCalc_ = vcalc; }
 

@@ -70,6 +70,7 @@ public:
      * \param[in] fp         The file pointer to write to
      * \param[in] bLandscape Whether or not to print in landscape orientation
      * \param[in] font       The font to use
+     * \param[in] spacing    Whether or not to add space somewhere
      */
     LongTable(FILE *fp, bool bLandscape, const char *font, bool spacing=false);
     

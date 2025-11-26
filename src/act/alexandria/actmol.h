@@ -385,7 +385,7 @@ public:
      * \param[out] forceMap                   The forces
      * \param[out] energyMap                  The energy components for a single structure
      * \param[out] interactionEnergyMap       The interaction energies
-     * \param[out] energyComponentsMap        The energy components
+     * \param[out] energyComponentMap         The energy components
      * \param[in] separateInductionCorrection Whether to store InductionCorrection separately or add it to Induction
      */
     void forceEnergyMaps(MsgHandler                                                        *msghandler,
@@ -529,13 +529,13 @@ public:
     /*! \brief
      * Generate or copy atomic partial charges
      *
-     * \param[in]  msghandler Message Handler
-     * \param[in]  pd        Data structure containing atomic properties
-     * \param[in]  forceComp Force computer utility
-     * \param[in]  algorithm The algorithm for determining charges.
-     * \param[out] coords    The coordinates, will be updated for shells
-     * \param[out] forces    This routine will compute energies and forces.
-     * \param[in]  updateQprops Whether or not to update the qprops (dipoles, quadrupoles etc.)
+     * \param[in]  msghandler   Message Handler
+     * \param[in]  pd           Data structure containing atomic properties
+     * \param[in]  forceComp    Force computer utility
+     * \param[in]  algorithm    The algorithm for determining charges.
+     * \param[out] coords       The coordinates, will be updated for shells
+     * \param[out] forces       This routine will compute energies and forces.
+     * \param[in]  updateQProps Whether or not to update the qprops (dipoles, quadrupoles etc.)
      */
     void generateCharges(MsgHandler                *msghandler,
                          ForceField                *pd,
@@ -548,11 +548,11 @@ public:
      * Generate atomic partial charges using EEM or SQE.
      * If shells are present they will be minimized.
      *
-     * \param[in]  msghandler Message and status handler 
-     * \param[in]  pd         Data structure containing atomic properties
-     * \param[in]  forceComp  The force computer
-     * \param[out] coords     The coordinates, will be updated for shells
-     * \param[out] forces     The forces
+     * \param[in]  msg_handler Message and status handler 
+     * \param[in]  pd          Data structure containing atomic properties
+     * \param[in]  forceComp   The force computer
+     * \param[out] coords      The coordinates, will be updated for shells
+     * \param[out] forces      The forces
      */
     ACTMessage GenerateAcmCharges(MsgHandler             *msg_handler,
                                   ForceField             *pd,
@@ -665,10 +665,12 @@ public:
      * \param[in] msghandler  For debugging and information
      * \param[in] pd          Data structure containing atomic properties
      * \param[in] coords      Atomic coordinates
+     * \param[in] forceComp   Force computer
      * \param[in] spacing     The grid space
      * \param[in] border      The amount of space around the molecule
      * \param[in] reffn
      * \param[in] pcfn
+     * \param[in] pdbdifffn
      * \param[in] potfn
      * \param[in] rhofn
      * \param[in] hisfn

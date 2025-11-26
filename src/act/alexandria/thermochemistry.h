@@ -58,7 +58,7 @@ enum class TCComponent {
 };
 
 /*! \brief Get name corresponding to TCComponent
- * \param[in] tcc The ThermoChemistry component
+ * \param[in] tc The ThermoChemistry component
  * \return string corresponding to tcc
  */
 const std::string &tcComponentName(TCComponent tc);

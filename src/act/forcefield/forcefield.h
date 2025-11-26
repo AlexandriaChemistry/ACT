@@ -77,7 +77,7 @@ class ForceField
 
         /*! \brief
          * Set the force field checksum
-         * \param[in] version Force field checksum
+         * \param[in] checkSum New Force field checksum
          */
         void setCheckSum(const std::string &checkSum)
         {

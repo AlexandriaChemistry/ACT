@@ -63,6 +63,8 @@ namespace alexandria
 {
 
 class MsgHandler;
+
+//! \brief Short-cut for property-dependent statistics
 using qtStats = std::map<qPropertyType, gmx_stats>;
 
 
@@ -137,10 +139,11 @@ private:
                     const std::vector<gmx::RVec> &forces);
     
     /*! \brief Write ACT energies to a molprop file
-     * \param[in]    mpout     File name to write to
-     * \param[in]    pd        A force field
-     * \param[in]    forceComp The force computer
-     * \param[inout] mols      Vector of molecules, will be modified
+     * \param[in]    msghandler For warnings etc.
+     * \param[in]    mpout      File name to write to
+     * \param[in]    pd         A force field
+     * \param[in]    forceComp  The force computer
+     * \param[inout] mols       Vector of molecules, will be modified
      */
     void writeMolpropsEnergies(MsgHandler          *msghandler,
                                const char          *mpout,
@@ -175,7 +178,7 @@ public:
     void addOptions(std::vector<t_pargs> *pargs);
     
     /*! \brief Add my files to the list of command line arguments
-     * \param[out] pargs The vector to add to
+     * \param[out] filenm The vector to add to
      */
     void addFileOptions(std::vector<t_filenm> *filenm);
 
@@ -217,7 +220,7 @@ void print_header(gmx::TextWriter             *tw,
  * \param[in]    atomenergy   The atomization energy data
  * \param[out]   lsq_freq_all Statistics structure, may be nullptr
  * \param[inout] jtree        Output structure
- * \paran[in]    spcetrumFileName If not nullptr, a simulated IR spectrum will be written to this file
+ * \param[in]    spectrumFileName If not nullptr, a simulated IR spectrum will be written to this file
  * \param[in]    lineWidth    The Lorentzian line width for printing a spectrum
  * \param[in]    oenv         Structure to print xvg files
  * \param[in]    debugNMA     Will provide excessive printing statements

@@ -93,9 +93,9 @@ class Identifier
                CanSwap            canSwap);
 
     /*! \brief Constructor
-     * \param[in] atoms     Vector containing atom/bond names
-     * \param[in] bondorder The bond order in case of bonds
-     * \param[in] canSwap   Can the order of the atoms be swapped
+     * \param[in] atoms      Vector containing atom/bond names
+     * \param[in] bondorders The bond order in case of bonds
+     * \param[in] canSwap    Can the order of the atoms be swapped
      */
     Identifier(const std::vector<std::string> &atoms,
                const std::vector<double>      &bondorders,

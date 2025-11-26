@@ -354,9 +354,10 @@ public:
     }
     
     /*! \brief Do the writing of the force field file
-     * \param[in] fileName The name of the file
-     * \param[in] pd       The ACT force field
-     * \param[in] actmols  The ACT molecules
+     * \param[in] msghandler For wirting warnings etc.
+     * \param[in] fileName   The name of the file
+     * \param[in] pd         The ACT force field
+     * \param[in] actmols    The ACT molecules
      */
     void writeXml(MsgHandler                *msghandler,
                   const std::string         &fileName,

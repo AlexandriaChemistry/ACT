@@ -71,6 +71,7 @@ void doAddOptions(std::vector<t_pargs> *pargs, size_t npa, t_pargs pa[])
 namespace alexandria
 {
 
+//! \brief Print statistics info
 static void print_stats(gmx::TextWriter *tw,
                         const char      *prop,
                         const char      *unit,
@@ -153,6 +154,7 @@ static void print_stats(gmx::TextWriter *tw,
     }
 }
 
+//! \brief Print xvg file for correlation plot
 static void print_lsq_set(FILE *fp, const gmx_stats &lsq)
 {
     fprintf(fp, "@type nxy\n");
@@ -165,6 +167,7 @@ static void print_lsq_set(FILE *fp, const gmx_stats &lsq)
     fprintf(fp, "&\n");
 }
 
+//! \brief Add symbol information to xvg file
 static void xvgr_symbolize(FILE                           *xvgf,
                            const std::vector<std::string>  leg,
                            const gmx_output_env_t         *oenv)
@@ -177,6 +180,7 @@ static void xvgr_symbolize(FILE                           *xvgf,
     }
 }
 
+//! \brief Print a polarizability tensor
 static void print_one_alpha(gmx::TextWriter *tw,
                             const std::string &label,
                             const tensor alpha)
@@ -340,6 +344,7 @@ void TrainForceFieldPrinter::analyse_multipoles(MsgHandler                      
     }
 }
 
+//! \brief Print correlation plots
 static void print_corr(const char                    *outfile,
                        const char                    *title,
                        const char                    *xaxis,
@@ -379,6 +384,7 @@ static void print_corr(const char                    *outfile,
     }
 }
 
+//! \brief And another function for printing correlation plots
 static void print_corr(const char                      *outfile,
                        const char                      *title,
                        const char                      *xaxis,
@@ -415,6 +421,7 @@ static void print_corr(const char                      *outfile,
     }
 }
 
+//! \brief Write charge histograms
 static void write_q_histo(gmx::TextWriter                  *tw,
                           const char                       *qhisto,
                           std::map<std::string, gmx_stats> *lsqt,
@@ -618,8 +625,11 @@ void TrainForceFieldPrinter::printAtoms(gmx::TextWriter              *tw,
 }
 
 /*! Store coordinates to a file, first original, then minimized.
+ * \param[in] atoms The atoms
  * \param[in] pdb   File name
  * \param[in] title Text string
+ * \param[in] xorig Original coordinates
+ * \param[in] xmin  Minimized coordinates
  */
 static void writeCoordinates(const std::vector<ActAtom>  &atoms,
                              const std::string           &pdb,
@@ -639,6 +649,7 @@ static void writeCoordinates(const std::vector<ActAtom>  &atoms,
     gmx_fio_fclose(out);
 }
 
+//! \brief Normalize a vector to 1
 static void normalize_vector(std::vector<double> *v)
 {
     double total = 0;
@@ -657,6 +668,7 @@ static void normalize_vector(std::vector<double> *v)
     }
 }
 
+//! \brief Plot an Infrared spectrum
 static void plot_spectrum(const char                *filenm,
                           const std::string         &molname,
                           double                     lineWidth,

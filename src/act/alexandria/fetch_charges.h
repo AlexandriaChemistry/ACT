@@ -67,6 +67,7 @@ typedef std::map<std::string, std::vector<std::pair<Identifier, double> > > Char
  * \param[in]  charge_fn  The name of a molprop file
  * \param[out] mols       The molecules
  * \param[in]  lookup     Set of compounds to look up. If empty charges for all compounds will be determined.
+ * \param[in]  algorithm  Method to generate charges
  * \param[in]  qread      Charge type if read
  * \return the map.
  */

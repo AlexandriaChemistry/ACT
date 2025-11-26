@@ -172,8 +172,8 @@ public:
 
     /*! \brief
      * Increase the chi2 by delta. 
-     * \param[in] ndata Number of data points
-     * \param[in] delta Change in chiSquared
+     * \param[in] weight Weight to add to totalWeight_
+     * \param[in] delta  Change in chiSquared
      */
     void increase(real weight, real delta)
     {
@@ -406,6 +406,7 @@ public:
      * \param[in] filenms  Information about filenames
      * \param[in] pd       Pointer to ForceField object
      * \param[in] gms      The molecule selection
+     * \param[in] targets  The Fitting Targets
      * \param[in] compR    Compound reader with charge information
      * \return number of molecules read and processed correctly
      */

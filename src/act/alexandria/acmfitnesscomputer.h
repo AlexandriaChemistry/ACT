@@ -102,8 +102,10 @@ public:
     /*! Initalize stuff
      * \param[in] msghandler Message Handler
      * \param[in] sii        pointer to StaticIndividualInfo
-     * \param[in] mg         pointer to molgen
+     * \param[in] molgen     pointer to molgen
      * \param[in] removeMol  Whether or not to remove molecules that fail to converge in the shell minimization
+     * \param[in] forceComp  Pointer to ForceComputer
+     * \param[in] algorithm  Charge generation algorithm
      */
     void init(MsgHandler                *msghandler,
               StaticIndividualInfo      *sii,
@@ -124,9 +126,7 @@ public:
     /*! \brief Do the actual computation
      * \param[in] msghandler Message Handler
      * \param[in] genome    The genome
-     * \param[in] algorithm The charge generation algorithm
      * \param[in] trgtFit   The selection to compute
-     * \param[in] forceComp The force computer
      */
     void compute(MsgHandler                *msghandler,
                  ga::Genome                *genome,
@@ -152,7 +152,6 @@ public:
     /*! \brief Computes deviation from target
      * \param[in] msghandler Message Handler
      * \param[in] task       The task at hand
-     * \param[in] algorithm  The charge generation algorithm
      * \param[in] ims        The dataset to do computations on
      * \return the square deviation
      */

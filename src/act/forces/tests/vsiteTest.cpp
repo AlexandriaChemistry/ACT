@@ -31,7 +31,7 @@
  *
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  * \author A. Najla Hosseini <atiyeh.hosseini@icm.uu.se>
- * \ingroup module_listed-forces
+ * \ingroup group_forces_tests
  */
 #include "actpre.h"
 

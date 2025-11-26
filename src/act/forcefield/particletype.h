@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2021
+ * Copyright (C) 2014-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -69,9 +69,9 @@ class ParticleType
     /*! \brief
      * ParticleType constructor
      *
-     * \param[in] id              Identifier
-     * \param[in] desc            Description
-     * \param[in] gmxParticleType GROMACS particle type
+     * \param[in] id     Identifier
+     * \param[in] desc   Description
+     * \param[in] apType ACT particle type
      */
     ParticleType(const Identifier  &id,
                  const std::string &desc,
