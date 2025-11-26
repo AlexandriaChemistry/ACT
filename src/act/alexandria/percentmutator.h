@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2022
+ * Copyright (C) 2014-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -68,16 +68,13 @@ public:
                    double                                 percent)
         : ga::Mutator(seed, algorithm), sii_(sii), percent_(percent) {}                
 
-    /*! \brief Do the actual mutation
-     * \param[inout] genome     The genome to mutate
-     * \param[out]   bestGenome The best genome found
-     * \param[in]    prMut      Probability for mutation
-     */
+    //! \copydoc ga::Mutator::mutate
     virtual void mutate(MsgHandler *msghandler,
                         ga::Genome *genome,
                         ga::Genome *bestGenome,
                         double      prMut);
 
+    //! \copydoc ga::Mutator::sensitivityAnalysis
     virtual void sensitivityAnalysis(MsgHandler *,
                                      ga::Genome *,
                                      iMolSelect) {}

@@ -60,9 +60,10 @@ class ForceFieldTable
     /*! \brief
      * Generates a LaTeX tables containing force field data.
      *
-     * \param[in] fp     File pointer to write to
-     * \param[in] pd     Force field data
-     * \param[in] ntrain Minimum number of training points to include
+     * \param[in] fp         File pointer to write to
+     * \param[in] pd         Force field data
+     * \param[in] ntrain     Minimum number of training points to include
+     * \param[in] printSigma Whether to print standard deviation
      */
     ForceFieldTable(FILE              *fp, 
                     const ForceField  *pd,
@@ -73,14 +74,15 @@ class ForceFieldTable
      * Generates a LaTeX table containing the subtypes
      * for particle types
      *
-     * \param[in]info Text to add to the caption of the table
+     * \param[in] info Text to add to the caption of the table
      */
     void subtype_table(const std::string &info);
 
     /*! \brief
      * Generate a LaTeX table for the interaction specified.
      *
-     * \param[in] info   Text to add to the caption of the table
+     * \param[in] itype The interaction type
+     * \param[in] info  Text to add to the caption of the table
      */
     void itype_table(InteractionType    itype,
                      const std::string &info);

@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2022
+ * Copyright (C) 2014-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -74,7 +74,6 @@ public:
      * \brief Property constructor
      * \param[in] id            the ID of the individual
      * \param[in] sii           pointer to StaticIndividualInfo instance
-     * \param[in] outputFile    the base name for Force Field output files
      */
     ACMIndividual(const int             id,
                   StaticIndividualInfo *sii) : ga::Individual(), id_(id), sii_(sii) {}
@@ -150,7 +149,7 @@ public:
 
     /*!
      * \brief Set a new best parameter vector
-     * \param[in] param the new best parameter vector
+     * \param[in] genome The new best genome
      */
     void setBestGenome(const ga::Genome &genome) { bestGenome_ = genome; }
 

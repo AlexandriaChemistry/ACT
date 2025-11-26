@@ -114,7 +114,6 @@ private:
      * \param[in]  msg_handler For debugging, may be nullptr
      * \param[in]  pd          Pointer to force field structure
      * \param[in]  top         The molecular topology
-     * \param[in]  charges     The charges for all particles
      * \param[in]  coordinates The atomic coordinates. Coordinates of
      *                         shell particles may be changed.
      * \param[out] forces      The atomic forces

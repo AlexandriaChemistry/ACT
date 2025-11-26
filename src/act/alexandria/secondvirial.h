@@ -51,8 +51,8 @@ namespace alexandria
 {
 
 /*! \brief Print a force field summary
- * \param[input] jtree JSon tree
- * \param[in]    pd    The force field
+ * \param[in] jtree JSon tree
+ * \param[in] pd    The force field
  */
 void forceFieldSummary(JsonTree      *jtree,
                        const ForceField *pd);

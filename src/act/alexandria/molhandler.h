@@ -66,8 +66,6 @@ public:
      * \param[in]  mol        Molecule to get the hessian for
      * \param[in]  forceComp  Force Computer utility
      * \param[inout] coords   Atomic coordinates to operate on
-     * \param[in]  crtmp      Temporary communication record for one core.
-     *                        FIXME: another method without this
      * \param[in]  atomIndex  Vector containing the indices of the real 
      *                        atoms, not shells or vsites.
      *                        FIXME: Create another method without this argument, then
@@ -130,8 +128,9 @@ public:
      * \param[in] pd           Pointer to force field structure
      * \param[in] mol          The molecule object (will be modified)
      * \param[in] forceComp    Force Computer utility
-     * \param[in] sch          Configuration options
+     * \param[in] simConfig    Configuration options
      * \param[inout] coords    The coordinates to be minimized
+     * \param[in] energies     The energies per interaction type
      * \param[in] freeze       List of atoms (not shells) that will not be
      *                         moved during the minimization.
      * \return Status flag

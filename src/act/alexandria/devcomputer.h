@@ -178,7 +178,7 @@ private:
 public:
 
     /*! \brief Create a new DevComputer
-     * @param fit       whether we fit zeta parameters
+     * @param fitZeta whether we fit zeta parameters
      */
     EspDevComputer(const bool       fitZeta)
         : DevComputer("ESP")
@@ -231,8 +231,6 @@ private:
 public:
 
     /*! \brief Create a new MultiPoleDevComputer
-     * @param tw       Pointer to TextWriter
-     * @param verbose  Whether we are in verbose mode
      * @param mpo      The MolPropObservable, e.g. quadrupole
      */
     MultiPoleDevComputer(MolPropObservable mpo)

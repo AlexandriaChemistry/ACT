@@ -123,7 +123,7 @@ public:
     void resetAllRandom(size_t ndimer) { allRandom_.resize(ndimer); }
 
     /*! \brief Set the random numbers
-     * \param[in] allRand The new random numbers
+     * \param[in] newRand The new random numbers
      */
     void addRandomNumbers(const std::vector<double> &newRand)
     {
@@ -158,7 +158,7 @@ public:
      * 
      * \param[in]  logFile   For debugging info, may be a nullptr
      * \param[in]  actmol    The description of the two fragments
-     * \parma[in]  maxdimer  The number of different dimers to generate
+     * \param[in]  maxdimer  The number of different dimers to generate
      * \param[out] coords    The coordinate sets
      * \param[in]  outcoords Output file name for the generated coordinates.
      *                       If nullptr, they will not be written.

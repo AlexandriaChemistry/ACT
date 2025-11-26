@@ -50,7 +50,7 @@ namespace alexandria
 /*! \brief Rotate all atoms in index using matrix trans 
  * \param[in]    index  List of atom numbers
  * \param[inout] x      The coordinates
- * \param[in]    matrix The 3x3 rotation matrix
+ * \param[in]    trans  The 3x3 rotation matrix
  */
 void rotate_atoms(const std::vector<int> &index,
                   std::vector<gmx::RVec> *x,
@@ -59,7 +59,6 @@ void rotate_atoms(const std::vector<int> &index,
 /*! \brief Compute principal components
  * Atoms are mass weighted and it is assumed that the center of 
  * mass is in the origin!
- * \param[in]  n       Size of the index array
  * \param[in]  index   List of atom numbers
  * \param[in]  mass    Atomic masses
  * \param[in]  x       The coordinates

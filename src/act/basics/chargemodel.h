@@ -46,7 +46,6 @@ namespace alexandria
 /*! \brief
  * Enumerated type holding the charge models used in ForceField files
  *
- * \inpublicapi
  * \ingroup module_alexandria
  */
 enum class ChargeDistributionType {
@@ -70,7 +69,6 @@ ChargeDistributionType name2ChargeDistributionType(const std::string &name);
 /*! \brief
  * Enumerated type holding the charge generation algorithms
  *
- * \inpublicapi
  * \ingroup module_alexandria
  */
 enum class ChargeGenerationAlgorithm {

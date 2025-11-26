@@ -95,7 +95,7 @@ public:
       gpin_(genePoolIn), gpout_(genePoolOut), seed_(seed)
     {}
 
-    //! \copydocs ga::GeneticAlgorithm::evolve
+    //! \copydoc ga::GeneticAlgorithm::evolve
     virtual bool evolve(alexandria::MsgHandler       *msghandler,
                         std::map<iMolSelect, Genome> *bestGenome);
 
@@ -122,7 +122,7 @@ public:
       sii_(sii), gach_(gach)
     {}
 
-    //! \copydocs ga::GeneticAlgorithm::evolve
+    //! \copydoc ga::GeneticAlgorithm::evolve
     virtual bool evolve(alexandria::MsgHandler       *msghandler,
                         std::map<iMolSelect, Genome> *bestGenome);
 
