@@ -61,6 +61,7 @@
 namespace alexandria
 {
 
+//! \brief Generate bond charge corrections from bonds
 static void generate_bcc(ForceField *pd,
                          double   delta_eta)
 {
@@ -136,6 +137,11 @@ static void generate_bcc(ForceField *pd,
     printf("Have generated %zu entries for bond charge correction (SQE algorithm).\n", bcc->parameters()->size());
 }
 
+/*! \brief Tool to analyze molecular geometries and update a force field
+ * \param[in] argc Number of arguments on the cmd line
+ * \param[in] argv The actual arguments
+ * \return 0 if ok, 1 otherwise
+ */
 int geometry_ff(int argc, char *argv[])
 {
     std::vector<const char *> desc = {

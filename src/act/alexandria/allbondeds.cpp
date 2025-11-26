@@ -298,6 +298,7 @@ void AllBondeds::writeHistogram(const gmx_output_env_t *oenv)
     }
 }
 
+//! \return The Distance between the 1-3 atoms in an angle
 static real calc_r13(const ForceField    *pd,
                      const Identifier &bondId,
                      const real        angle)

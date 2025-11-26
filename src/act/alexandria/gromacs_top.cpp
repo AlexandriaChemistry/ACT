@@ -124,6 +124,7 @@ static void print_bondeds(MsgHandler                *msg_handler,
     fprintf(out, "\n");
 }
 
+//! \brief Print exclusions to a topology file
 static void print_excl(FILE *out, const Topology *top)
 {
     // For GROMACS type output files we only look at VANDERWAALS
@@ -154,6 +155,7 @@ static void print_excl(FILE *out, const Topology *top)
     fprintf (out, "\n");
 }
 
+//! \brief Print the system part of a gromacs topology
 static void print_top_system(FILE *out, const char *title)
 {
     fprintf(out, "[ %s ]\n", dir2str(d_system));
@@ -177,6 +179,7 @@ void print_top_mols(FILE *out, const char *title,
     }
 }
 
+//! \brief Print the atoms to a gromacs top
 static void print_atoms(FILE                           *out,
                         const std::vector<ActAtom>     &atoms,
                         const std::vector<std::string> &residueNames)

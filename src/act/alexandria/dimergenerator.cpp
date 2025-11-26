@@ -50,6 +50,7 @@
 namespace alexandria
 {
 
+//! \brief Description for command line
 static std::vector<const char *> dg_desc = {
     "If a trajectory or a series of structures of the same compound is passed (in GROMACS format), ",
     "the energies will be computed for those structures and no simulation will be performed.[PAR]"
@@ -127,6 +128,7 @@ void DimerGenerator::finishOptions(const std::vector<t_filenm> &fnm)
     trajname_ = opt2fn_null("-traj", fnm.size(), fnm.data());
 }
 
+//! \brief Print coordinates to xyz file
 static void dump_coords(const char                                *outcoords,
                         const ACTMol                              *actmol,
                         const std::vector<std::vector<gmx::RVec>> &coords)

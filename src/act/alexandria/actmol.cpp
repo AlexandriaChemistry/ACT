@@ -448,6 +448,13 @@ void ACTMol::forceEnergyMaps(MsgHandler                                         
     }
 }
 
+/*! \brief Determine whether a molecule has linear coordinates
+ * This routine will only work for subsequent atoms. 
+ * TODO: It should use bond information
+ * \param[in] myatoms The atom class
+ * \param[in] coords  The coordinates
+ * \return Whether there are three subsequent atoms in the molecule on a line
+ */
 static bool isLinearMolecule(const std::vector<ActAtom>   &myatoms,
                              const std::vector<gmx::RVec> &coords)
 {
@@ -589,6 +596,7 @@ double ACTMol::bondOrder(int ai, int aj) const
     return topology_.findBond(ai, aj).bondOrder();
 }
 
+//! \brief Dump an energy map to the messagehandler in debug mode
 static void printEmap(MsgHandler *msghandler,
                       const std::map<InteractionType, double> *e)
 {
@@ -607,6 +615,7 @@ static void printEmap(MsgHandler *msghandler,
     msghandler->writeDebug(str);
 }
 
+//! \brief Check whether the energies are reasonable
 static void checkEnergies(MsgHandler                              *msghandler,
                           const char                              *info,
                           const std::map<InteractionType, double> &einter)
@@ -1262,6 +1271,7 @@ void ACTMol::PrintConformation(const char                   *fn,
     gmx_conect_done(conect);
 }
 
+//! \brief Add information on a tensor to the commercials
 static void add_tensor(std::vector<std::string> *commercials,
                        const std::string        &title,
                        const char               *unit,

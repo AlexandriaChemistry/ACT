@@ -91,10 +91,18 @@ bool is_linear(const rvec xi, const rvec xj,
     return false;
 }
 
-real calc_relposition(const ForceField                  *pd,
+real calc_relposition(const ForceField               *pd,
                       const std::vector<std::string> &atoms,
                       const std::vector<double>      &bondOrders)
 {
+    if (atoms.size() != 3)
+    {
+        GMX_THROW(gmx::InternalError("calc_relposition called with incorrect number of atoms"));
+    }
+    if (bondOrders.size() != 2)
+    {
+        GMX_THROW(gmx::InternalError("calc_relposition called with incorrect number of bondOrders"));
+    }
     double b0 = 0, b1 = 0, relative_position = 0;
 
     Identifier aij({atoms[0], atoms[1]}, { bondOrders[0] }, CanSwap::Yes);
@@ -112,7 +120,6 @@ real calc_relposition(const ForceField                  *pd,
 
     return relative_position;
 }
-
 
 std::vector<double> getDoubles(const std::string &s)
 {

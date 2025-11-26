@@ -136,7 +136,9 @@ public:
     }
 };
 
+//! \brief Map to match interaction type to energies
 typedef std::map<InteractionType, ACTEnergy> ACTEnergyMap;
+//! \brief Vector of the above
 typedef std::vector<ACTEnergyMap>            ACTEnergyMapVector;
 
 /*! \brief Class to hold corresponding QM (reference) adn ACT props
@@ -235,7 +237,6 @@ private:
      *
      * \param[in]  fp    File to write (debug) information to
      * \param[in]  pd    Data structure containing atomic properties
-     * \param[out] atoms Structure to modify with new particles.
      */
     void addShells(FILE             *fp,
                    const ForceField *pd);
@@ -320,8 +321,12 @@ public:
     //! \return the molprop object
     MolProp *molProp() { return MolProp::self(); }
 
+    //! \return the dataset type
     iMolSelect datasetType() const { return dataset_type_; }
-    
+
+    /*! \brief Update the dataset type
+     * \param[in] dataset_type The new type
+     */
     void set_datasetType(iMolSelect dataset_type) 
     {
         dataset_type_ = dataset_type;
