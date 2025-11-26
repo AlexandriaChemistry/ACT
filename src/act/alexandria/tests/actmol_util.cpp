@@ -30,7 +30,7 @@
  * Implements test of bonded force routines
  *
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
- * \ingroup module_listed-forces
+ * \ingroup group_act_tests
  */
 #include "actpre.h"
 #include "actmol_util.h"

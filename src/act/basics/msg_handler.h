@@ -208,7 +208,7 @@ class MsgHandler
         std::string filename() const { return filename_; }
 
         /*! Set verbosity level for printing
-         * \param[in] verbose Whether or not to print a lot
+         * \param[in] level New print level determines how much to print
          */
         void setPrintLevel(ACTStatus level) { printLevel_ = level; }
 
@@ -226,7 +226,6 @@ class MsgHandler
                    const char *msg);
 
         /*! \brief Fatal error message, will throw a fatal error
-         * \param[in] actm The message type
          * \param[in] msg  Additional information to provide
          */
         void fatal(const std::string &msg) { fatal(ACTMessage::Silent, msg.c_str()); }
@@ -259,12 +258,12 @@ class MsgHandler
         void flush();
 
         /*! \brief Just write a string
-         * \param[in] str String
+         * \param[in] s String to write
          */
         void write(const std::string &s) const { if (tw_) tw_->writeLine(s); }
 
         /*! \brief Just write a string
-         * \param[in] str String
+         * \param[in] s String
          */
         void writeDebug(const std::string &s) const { if (twdebug_) twdebug_->writeLine(s); }
 

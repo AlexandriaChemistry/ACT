@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2024
+ * Copyright (C) 2024,2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -111,24 +111,29 @@ public:
 
     /*! \brief Do the integration of the exponent weight functions
      * Compute classical B2 and quantum correction.
-     * \param[in]  iTemp    Temperature index
-     * \param[in]  binWidth The bin width in the arrays
-     * \param[in]  beta     Boltzmann factor
-     * \param[in]  inertia  Moments of inertia of the two compounds
+     * \param[in]  iTemp      Temperature index
+     * \param[in]  binWidth   The bin width in the arrays
+     * \param[in]  beta       Boltzmann factor
+     * \param[in]  mass       The atomic masses
+     * \param[in]  inertia    Moments of inertia of the two compounds
      * \param[out] Bclass     Classical B2
      * \param[out] BqmForce   Force contribution to B2 (first order only)
      * \param[out] BqmTorque1 Contribution due to torque on compound 1
      * \param[out] BqmTorque2 Contribution due to torque on compound 2
      */
-    void integrate(int iTemp, double binWidth, double beta,
+    void integrate(int                           iTemp,
+                   double                        binWidth,
+                   double                        beta,
                    const std::vector<double>    &mass,
                    const std::vector<gmx::RVec> &inertia,
-                   double *Bclass, double *BqmForce,
-                   double *BqmTorque1, double *BqmTorque2);
+                   double                       *Bclass,
+                   double                       *BqmForce,
+                   double                       *BqmTorque1,
+                   double                       *BqmTorque2);
 
     /*! \brief Generate plot with Mayer functions for all temperatures
-     * \param[in] fmayer       The output file name
-     * \param[in] temperatures The T used
+     * \param[in] fmayer The output file name
+     * \param[in] oenv   GROMACS output environment
      */
     void plotMayer(const char                *fmayer,
                    gmx_output_env_t          *oenv);

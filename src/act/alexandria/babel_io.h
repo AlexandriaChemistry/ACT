@@ -110,6 +110,7 @@ class BabelFiles
  * \param[out] qtot        Total charge as deduced by OB from the input. 
  * \param[in]  addHydrogen If true, hydrogens will be added
  * \param[out] box         Unit cell if present, in gromacs format.
+ * \param[in]  oneH        Remap all hydrogen atom types to "h"
  * \param[in]  renameAtoms If true, openbabel type will be converted to Alexandria
  * \returns true if everything succeeded, false otherwise
  * \ingroup module_alexandria

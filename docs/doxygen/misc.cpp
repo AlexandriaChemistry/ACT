@@ -95,9 +95,37 @@ Generic ACT namespace.
 
 /*!
 \libinternal
-\defgroup group_molprop Code related to the molprop class.
+\defgroup group_molprop Code related to the MolProp class.
 \brief Store molecular properties and coordinates.
 
 Includes reading and writing to XML files.
+*/
+
+/*!
+\libinternal
+\defgroup group_forcefield Code related to the ForceField class.
+\brief Store force field parameters and settings
+
+Includes reading and writing to XML files.
+*/
+
+/*!
+\libinternal
+\defgroup group_act_tests Code related to testing anything ACT
+\brief Various tests and utilities
+*/
+
+/*!
+\libinternal
+\defgroup group_forces_tests Code related to testing forces
+\brief Various tests and utilities
+*/
+
+/*!
+\libinternal
+\defgroup module_alexandria Code related to ACT in general
+\brief Generic ACT module.
+
+Should be split in different groups.
 */
 

@@ -70,10 +70,10 @@ private:
                             const matrix           &box) const;
                  
     /*! \brief Distribute the forces back to atoms
-     * \param[in]  top         The molecular topology
-     * \param[in]  coordinates The atomic coordinates.
-     * \param[out] forces      The forces on the atoms
-     * \param[out] box         The periodic box
+     * \param[in]  top    The molecular topology
+     * \param[in]  coords The atomic coordinates.
+     * \param[out] forces The forces on the atoms
+     * \param[out] box    The periodic box
      */
     void distributeForces(const Topology               *top,
                           const std::vector<gmx::RVec> &coords,

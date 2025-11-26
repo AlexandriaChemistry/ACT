@@ -163,7 +163,7 @@ public:
     double charge() const { return charge_; }
 
     /*! set the charge
-     * \param[in] charge The new value
+     * \param[in] newcharge The new value
      */
     void setCharge(double newcharge) { charge_ = newcharge; }
 

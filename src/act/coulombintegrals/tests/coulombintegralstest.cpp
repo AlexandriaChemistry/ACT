@@ -30,7 +30,7 @@
  * Implements test of Coulomb routines
  *
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
- * \ingroup module_correlationfunctions
+ * \ingroup group_forces_tests
  */
 #include <config.h>
 

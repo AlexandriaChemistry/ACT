@@ -118,7 +118,7 @@ namespace alexandria
         /*! Read molecule(s) from a single file
          * \param[in]  msghandler Error and message handler, check whether ok after returning
          * \param[in]  pd         The force field
-         * \param[out] mol        The molecule
+         * \param[out] mols       The molecule
          */
         void readFile(MsgHandler          *msghandler,
                       ForceField          &pd,
@@ -139,7 +139,6 @@ namespace alexandria
          * \param[in]  msghandler Error and message handler
          * \param[in]  pd         The force field
          * \param[in]  forceComp  A force computer
-         * \param[in]  molselect  Selections if not something else is passed on the command line
          * \param[out] mols       The ACTMol structures
          */
         void read(MsgHandler          *msghandler,
