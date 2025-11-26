@@ -50,15 +50,24 @@ class ForceField;
 class Topology;
 class MsgHandler;
 
+//! \brief Print the gromacs t_mols
 void print_top_mols(FILE *out, const char *title,
                     int nmol, t_mols *mols);
 
+//! \brief Print the topology header including commercials
 void print_top_header(FILE                           *fp,
                       const ForceField               *pd,
                       bool                            bPol,
                       const std::vector<std::string> &commercials,
                       bool                            bItp);
 
+/*! \brief Write a gromacs topology
+ * \param[in] msg_handler For warnings etc.
+ * \param[in] out         The file to print to
+ * \param[in] molname     The molecule name
+ * \param[in] topology    ACT structure
+ * \param[in] pd          The force field
+ */
 void write_top(MsgHandler          *msg_handler,
                FILE                *out,
                char                *molname,

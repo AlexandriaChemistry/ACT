@@ -85,6 +85,7 @@ OptimizerAlg stringToOptimizerAlg(const std::string &str);
  */
 const std::string &optimizerAlgToString(OptimizerAlg opt);
 
+//! \brief Enum for probability computer
 enum class ProbabilityComputerAlg { pcRANK, pcFITNESS, pcBOLTZMANN };
 
 /*! \brief Convert string into ProbabilityComputerAlg
@@ -416,12 +417,18 @@ public:
     double shellMaxDistance() const { return shellMaxDistance_; }
 };
 
+//! \brief Enum for selecting the coordinate minimizer in simulate
 enum class eMinimizeAlgorithm {
     LBFGS, Steep, Newton
 };
 
+//! \brief Map algorithm to string
 const std::string &eMinimizeAlgorithmToString(eMinimizeAlgorithm e);
 
+/*! \brief Map string to algorithm
+ * \param[in] str The string
+ * \return the algorithm corresponding to the string or the default if string does not match any known minimizer
+ */
 eMinimizeAlgorithm stringToEMinimizeAlgorithm(const std::string &str);
 
 class SimulationConfigHandler : ConfigHandler

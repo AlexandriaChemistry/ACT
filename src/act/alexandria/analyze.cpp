@@ -96,6 +96,7 @@ private:
         const std::string ref() const { return ref_; }
 };
 
+//! \brief Increase the reference count. This class could be replaced by a map.
 static void add_refc(std::vector<RefCount> *rc, std::string ref)
 {
     for (auto r = rc->begin(); r < rc->end(); ++r)
@@ -109,6 +110,7 @@ static void add_refc(std::vector<RefCount> *rc, std::string ref)
     rc->push_back(RefCount(ref));
 }
 
+//! \brief Another routine to make a correlation plot
 static void write_corr_xvg(MsgHandler                       *msg_handler,
                            const char                       *fn,
                            std::vector<alexandria::MolProp> &mp,
@@ -230,6 +232,7 @@ static void write_corr_xvg(MsgHandler                       *msg_handler,
     do_view(oenv, fn, nullptr);
 }
 
+//! \brief Analyze a vector of molprops
 static void alexandria_molprop_analyze(MsgHandler                        *msg_handler,
                                        std::vector<alexandria::MolProp>  &mp,
                                        MolPropObservable                  mpo,
@@ -335,7 +338,11 @@ static void alexandria_molprop_analyze(MsgHandler                        *msg_ha
     }
 }
 
-
+/*! \brief Tool to analyze molecules properties
+ * \param[in] argc Number of arguments on the cmd line
+ * \param[in] argv The actual arguments
+ * \return 0 if ok, 1 otherwise
+ */
 int analyze(int argc, char *argv[])
 {
     static const char               *desc[] = {

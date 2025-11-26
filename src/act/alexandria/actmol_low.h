@@ -66,24 +66,46 @@ enum class missingParameters
     Generate 
 }; 
 
+//! \return true if the four atoms are in a plane
 bool is_planar(const rvec   xi,  const rvec xj,
                const rvec   xk,  const rvec xl,
                const t_pbc *pbc, real phi_toler);
 
+//! \return true if the three atoms are on a line
 bool is_linear(const rvec xi, const rvec xj,
                const rvec xk, const t_pbc *pbc,
                real th_toler);
 
+/*! \brief relative position of an atom on a bond
+ * This needs at least three atoms and two bond orders or it will throw
+ * \param[in] pd  Force Field to look up bond lengths
+ * \param[in] atoms Should be exactly three atoms
+ * \param[in] bondOrders Should be exactly two
+ * \return relative position
+ */
 real calc_relposition(const ForceField               *pd,
                       const std::vector<std::string> &atoms,
                       const std::vector<double>      &bondOrders);
 
+//! \brief Convert string to an array of doubles
 std::vector<double> getDoubles(const std::string &s);
 
+//! \brief Make sure atoms are within a box
 void put_in_box(int natom, matrix box, rvec x[], real dbox);
 
+/*! \brief Compute a rotation matrix
+ * \param[in]  target_vec The vector to rotate to
+ * \param[in]  ref_vec    The vector to rotate from
+ * \param[out] rotmatrix  The matrix that accomplishes the rotation
+ */
 void calc_rotmatrix(rvec target_vec, rvec ref_vec, matrix rotmatrix);
 
+/*! \brief Compute atomization energy for a molecule
+ * \param[in] atoms The atom elements etc.
+ * \param[in] atomenergy Table of components of the atomization energy
+ * \param[in] temperature The temperature at which to compute the energy
+ * \return The total atomization energy
+ */
 double computeAtomizationEnergy(const std::vector<ActAtom> &atoms,
                                 const AtomizationEnergy    &atomenergy,
                                 double                      temperature);

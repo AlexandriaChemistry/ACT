@@ -45,6 +45,7 @@
 namespace alexandria
 {
 
+//! \brief Map from enum to string
 std::map<CalcDev, const char *> cdMap =
     {
         { CalcDev::Compute, "Compute" },
@@ -53,6 +54,7 @@ std::map<CalcDev, const char *> cdMap =
         { CalcDev::Stop, "Stop" }
     };
 
+//! \return a string corresponding to a CalcDev.
 const char *calcDevName(CalcDev cd)
 {
     return cdMap[cd];

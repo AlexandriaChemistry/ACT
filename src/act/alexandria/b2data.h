@@ -74,6 +74,11 @@ private:
     //! Copy of temperature array
     std::vector<double>                 temperatures_;
 public:
+    /*! \brief Constructor
+     * \param[in] nbins        Number of bins
+     * \param[in] binwidth     The bin width
+     * \param[in] temperatures Ts at which to compute the second virial
+     */
     B2Data(int                        nbins,
            double                     binwidth,
            const std::vector<double> &temperatures);
