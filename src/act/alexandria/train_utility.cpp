@@ -1903,19 +1903,9 @@ void print_header(gmx::TextWriter             *tw,
         {
             tw->writeStringFormatted(" Properties: %s, Filename(s)", flag.c_str());
         }
-        if ((f.flag & ffMULT) == ffMULT)
+        for(auto &fnm : f.filenames)
         {
-            for(auto &fnm : f.filenames)
-            {
-                tw->writeStringFormatted(" %s", fnm.c_str());
-            }
-        }
-        else
-        {
-            if (nullptr != f.fn)
-            {
-                tw->writeStringFormatted(" %s", f.fn);
-            }
+            tw->writeStringFormatted(" %s", fnm.c_str());
         }
         tw->writeStringFormatted("\n");
     }
