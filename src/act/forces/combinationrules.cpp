@@ -285,6 +285,11 @@ void evalCombinationRule(Potential                                    ftype,
                 cdist    = vdwname[lj12_6SIGMA];
                 cepsilon = vdwname[lj12_6EPSILON];
                 break;
+            case Potential::LJ12_6_4:
+                cdist    = vdwname[lj12_6_4SIGMA];
+                cepsilon = vdwname[lj12_6_4EPSILON];
+                cgamma   = vdwname[lj12_6_4GAMMA];
+                break;
             case Potential::LJ8_6:
                 cdist    = vdwname[lj8_6SIGMA];
                 cepsilon = vdwname[lj8_6EPSILON];
