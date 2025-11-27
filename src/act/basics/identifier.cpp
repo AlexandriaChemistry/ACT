@@ -47,6 +47,7 @@
 namespace alexandria
 {
 
+//! \brief Map from enum CanSwap to string
 std::map<CanSwap, std::string> cs2string =
     {
         { CanSwap::No,       "false"    },
@@ -88,6 +89,7 @@ static std::map<double, char> BondOrderDelimeter =
  */
 static std::map<char, double> ReverseBondOrderDelimeter;
 
+//! \brief routine to createReverseBondOrderDelimeter
 static void createReverseBondOrderDelimeter()
 {
     if (ReverseBondOrderDelimeter.empty())

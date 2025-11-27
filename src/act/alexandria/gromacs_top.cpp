@@ -47,6 +47,7 @@
 namespace alexandria
 {
 
+//! \return topology function index for bonds, angles etc.
 static int get_subtype(directive d, int ftype)
 {
     int i;
@@ -63,6 +64,7 @@ static int get_subtype(directive d, int ftype)
     return 1;
 }
 
+//! \brief Print bonded interactions to topology file
 static void print_bondeds(MsgHandler                *msg_handler,
                           FILE                      *out,
                           directive                  d,

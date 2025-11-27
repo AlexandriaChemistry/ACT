@@ -39,7 +39,9 @@
 #ifndef SLATERINTEGRALS_H
 #define SLATERINTEGRALS_H
 
+//! \brief Largest allowed row number for Slater interactions
 #define SLATER_MAX 3
+//! \brief Largest allowed row number for Slater interactions when using CLN library
 #define SLATER_MAX_CLN SLATER_MAX
 
 /*! \brief 

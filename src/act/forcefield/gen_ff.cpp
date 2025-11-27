@@ -58,6 +58,7 @@
 namespace alexandria
 {
 
+//! \brief Add symmetric charges to force field
 static void add_symm_charges(ForceField *pd)
 {
     auto            actdata  = getenv("ACTDATA");
@@ -76,6 +77,7 @@ static void add_symm_charges(ForceField *pd)
     }
 }
 
+//! \brief Read atomtypes from a filename
 static std::map<std::string, std::map<std::string, std::string>> read_atomtypes(const char *filename)
 {
     std::map<std::string, std::map<std::string, std::string> > table;
@@ -119,6 +121,7 @@ static std::map<std::string, std::map<std::string, std::string>> read_atomtypes(
     return table;
 }
 
+//! \brief Add virtual sites to a force field
 static void add_vsites(const char *vsfile,
                        ForceField *pd)
 {
@@ -286,6 +289,11 @@ static void add_vsites(const char *vsfile,
     }
 }
 
+/*! \brief Tool to generate a force field from scratch
+ * \param[in] argc Number of arguments on the cmd line
+ * \param[in] argv The actual arguments
+ * \return 0 if ok, 1 otherwise
+ */
 int gen_ff(int argc, char*argv[])
 {
     std::vector<const char *> desc =

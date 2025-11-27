@@ -48,6 +48,7 @@
 namespace alexandria
 {
 
+//! Map string to RotationAlgorithm
 std::map<std::string, RotationAlgorithm> stringToRotationAlgorithm = {
     { "Cartesian", RotationAlgorithm::Cartesian },
     { "Polar", RotationAlgorithm::Polar },

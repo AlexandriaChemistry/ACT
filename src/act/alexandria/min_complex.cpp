@@ -53,6 +53,11 @@
 namespace alexandria
 {
 
+/*! \brief Tool to find the lowest energy complex and store a minimized structure
+ * \param[in] argc Number of arguments on the cmd line
+ * \param[in] argv The actual arguments
+ * \return 0 if ok, 1 otherwise
+ */
 int min_complex(int argc, char *argv[])
 {
     std::vector<const char *> desc = {

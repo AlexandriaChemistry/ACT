@@ -47,6 +47,7 @@
 namespace alexandria
 {
 
+//! \brief Map enum ACTMessage to string
 std::map<ACTMessage, const char *> ACTMessages = {
     { ACTMessage::Silent,                   nullptr },
     { ACTMessage::Unknown,                  "Unknown status" },
@@ -84,6 +85,7 @@ std::map<ACTMessage, const char *> ACTMessages = {
     { ACTMessage::MinimizationFailed,       "Minimization failed" }
 };
 
+//! \brief Map enum ACTStatus to string
 std::map<ACTStatus, const char *> statnm = {
     { ACTStatus::Fatal, "Fatal" },
     { ACTStatus::Error, "Error" },

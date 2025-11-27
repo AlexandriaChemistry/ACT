@@ -195,6 +195,7 @@ static void print_one_alpha(gmx::TextWriter *tw,
                              "", "", fac*alpha[ZZ][ZZ]);
  }
 
+//! \brief Print polarizability values
 static void print_polarizability(gmx::TextWriter   *tw,
                                  const std::string &molname,
                                  const QtypeProps  *qelec,
@@ -745,6 +746,7 @@ static void plot_spectrum(const char                *filenm,
     xvgrclose(xvg);
 }
 
+//! \brief Add thermochemistry info to JSON
 static void addThermo(JsonTree                  *jtree, 
                       alexandria::ACTMol        *mol,
                       std::vector<gmx::RVec>    *coords,
@@ -915,6 +917,7 @@ void doFrequencyAnalysis(const ForceField         *pd,
     jtree->addObject(tctree);
 }
 
+//! \return statistics in a string
 static std::string low_print_stats(gmx_stats  *stats,
                                    const char *label,
                                    const char *compound)
@@ -930,6 +933,7 @@ static std::string low_print_stats(gmx_stats  *stats,
                              label, rmsd, mse, mae, 100*R, stats->get_npoints(), compound);
 }
 
+//! \brief specific printing of diatomic properties
 static void print_diatomics(const alexandria::ACTMol                                                  *mol,
                             const std::vector<std::pair<double, std::map<InteractionType, double> > > &energyComponentMap,
                             const gmx_output_env_t                                                    *oenv)
@@ -1303,6 +1307,7 @@ void TrainForceFieldPrinter::printEnergyForces(MsgHandler                       
     }
 }
 
+//! Dump atomic coords to xyz file
 static void dump_xyz(const std::string &label,
                      const ACTMol      *mol,
                      const ACTEnergy   &actener)
@@ -1337,6 +1342,7 @@ static void dump_xyz(const std::string &label,
     }
 }
 
+//! \brief Low-level printing of energies
 static int printLow(gmx::TextWriter   *tw,
                     const ACTMol      *mol,
                     const ACTEnergy   &ener,

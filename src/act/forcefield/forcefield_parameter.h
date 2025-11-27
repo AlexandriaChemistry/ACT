@@ -231,6 +231,7 @@ class ForceFieldParameter
         calculateInternalValue();
     }
 
+    //! \return true if parameter should not be negative
     bool nonNegative() const { return nonNegative_; }
     
     //! \brief Return maximum allowed value

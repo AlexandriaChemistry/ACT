@@ -59,6 +59,7 @@
 namespace alexandria
 {
 
+//! \brief Merge parameters from multiple force fields into one
 static void merge_parameter(const std::vector<alexandria::ForceField> &pds,
                             alexandria::InteractionType                iType,
                             const std::string                         &parameter,

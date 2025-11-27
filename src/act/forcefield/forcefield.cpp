@@ -637,7 +637,7 @@ void ForceField::receiveParticles(const CommunicationRecord *cr, int src)
                        "Communication did not end correctly");
 }
 
-/* Force Field Parameter Lists */
+//! Force Field Parameter Lists
 static std::vector<InteractionType> eemlist = 
     { InteractionType::BONDCORRECTIONS,
       InteractionType::ELECTROSTATICS,
@@ -896,10 +896,11 @@ void ForceField::calcDependent()
     }
 }
 
-bool ffOption(const ForceField  &pd,
-              InteractionType    itype,
-              const std::string &name,
-              std::string       *value)
+//! \copydoc alexandria::ffOption
+template <> bool ffOption(const ForceField  &pd,
+                          InteractionType    itype,
+                          const std::string &name,
+                          std::string       *value)
 {
     if (!pd.interactionPresent(itype))
     {
@@ -914,10 +915,11 @@ bool ffOption(const ForceField  &pd,
     return true;
 }
 
-bool ffOption(const ForceField  &pd,
-              InteractionType    itype,
-              const std::string &name,
-              int               *value)
+//! \copydoc alexandria::ffOption
+template <> bool ffOption(const ForceField  &pd,
+                          InteractionType    itype,
+                          const std::string &name,
+                          int               *value)
 {
     std::string vstr;
     if (!ffOption(pd, itype, name, &vstr))
@@ -928,10 +930,11 @@ bool ffOption(const ForceField  &pd,
     return true;
 }
 
-bool ffOption(const ForceField  &pd,
-              InteractionType    itype,
-              const std::string &name,
-              double            *value)
+//! \copydoc alexandria::ffOption
+template <> bool ffOption(const ForceField  &pd,
+                          InteractionType    itype,
+                          const std::string &name,
+                          double            *value)
 {
     std::string vstr;
     if (!ffOption(pd, itype, name, &vstr))

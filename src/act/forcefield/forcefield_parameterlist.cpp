@@ -128,6 +128,7 @@ size_t ForceFieldParameterList::parameterId(const Identifier &identifier) const
     }
 }
 
+//! \brief Placeholder for an empty ForceFieldParameterMap
 static ForceFieldParameterMap EmptyForceFieldParameterMap{};
 
 const ForceFieldParameterMap &ForceFieldParameterList::findParameterMapConst(const Identifier &identifier) const

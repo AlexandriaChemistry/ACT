@@ -48,6 +48,7 @@ typedef struct
     std::string name, description;
 } NameDescr;
 
+//! \brief map enum InteractionType to name and description
 std::map<InteractionType, NameDescr> eitNames = {
     { InteractionType::BONDS,              { "BONDS", "bonded forces" } },
     { InteractionType::ANGLES,             { "ANGLES", "angle forces" } },
@@ -162,7 +163,7 @@ int interactionTypeToNatoms(InteractionType iType)
     return 0;
 }
 
-// Presorted set, just in case it speeds up finding, although it shouldn't matter.
+//! Presorted set, just in case it speeds up finding, although it shouldn't matter.
 static const std::set myvs = { InteractionType::VSITE1, InteractionType::VSITE2, InteractionType::VSITE2FD,
                                InteractionType::VSITE3, InteractionType::VSITE3FAD, InteractionType::VSITE3FD,
                                InteractionType::VSITE3OUT, InteractionType::VSITE3OUTS, InteractionType::VSITE3S };

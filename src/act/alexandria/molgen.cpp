@@ -58,6 +58,7 @@
 namespace alexandria
 {
 
+//! \brief Map eRMS enum to string
 std::map<eRMS, const char *> ermsNames = {
     { eRMS::BOUNDS,     "BOUNDS"     },
     { eRMS::MU,         "MU"         },
@@ -653,6 +654,7 @@ void MolGen::checkDataSufficiency(MsgHandler *msghandler,
     msghandler->write(gmx::formatString("There are %zu molecules left to optimize the parameters for.\n", nmol));
 }
 
+//! \brief Increase warning/error message count
 static void incrementImmCount(std::map<ACTMessage, int> *map, ACTMessage imm) // Called in read method
 {
     if (map->find(imm) == map->end())
@@ -683,6 +685,7 @@ void MolGen::countTargetSize() // Called in read method
     }
 }
 
+//! \brief Estimage computational cost for computing chi2
 static double computeCost(const ACTMol                         *actmol,
                           const std::map<eRMS, FittingTarget> &targets)
 {

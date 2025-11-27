@@ -138,11 +138,9 @@ public:
      */
     void resetChiSquared(iMolSelect ims);
     
-    /*!
-     * \brief Add up the \f$ \chi^2 \f$ components
+    /*! \brief Add up the \f$ \chi^2 \f$ components
      * Sum over the energies of the cores if desired.
      * Also multiplies the terms by the weighting factors.
-     * \param[in] cr        Pointer to communication record
      * \param[in] parallel  Whether or not to sum in parallel
      * \param[in] ims       The selection dataset to sum
      */

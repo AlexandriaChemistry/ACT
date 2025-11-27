@@ -55,7 +55,7 @@
 
 namespace alexandria
 {
-
+//! \brief string for XML file
 const char *xmltypes[] = {
     nullptr,
     "XML_ELEMENT_NODE",
@@ -191,10 +191,13 @@ std::map<const std::string, xmlEntry> xml_pd =
     { "angle",                     xmlEntry::ANGLE            }
 };
 
+//! \brief map from enum to string
 std::map<xmlEntry, const std::string> rmap_pd = {};
 
+//! \brief map from enum to string
 typedef std::map<xmlEntry, std::string> xmlBuffer;
 
+//! \return string corresponding to enum xmlEntry
 static const char *exml_names(xmlEntry xml)
 {
     if (rmap_pd.empty())
@@ -207,6 +210,7 @@ static const char *exml_names(xmlEntry xml)
     return rmap_pd[xml].c_str();
 }
 
+//! \return whether the string is nullptr
 static bool NNlow(xmlBuffer *xbuf, xmlEntry xml, bool obligatory)
 {
     if (xbuf->find(xml) == xbuf->end())
@@ -226,16 +230,19 @@ static bool NNlow(xmlBuffer *xbuf, xmlEntry xml, bool obligatory)
     return true;
 }
 
+//! \return true if this is an obligatory parameter
 static bool NNobligatory(xmlBuffer *xbuf, xmlEntry xml)
 {
     return NNlow(xbuf, xml, true);
 }
 
+//! \return true if entry is not a nullptr
 static bool NN(xmlBuffer *xbuf, xmlEntry xml)
 {
     return NNlow(xbuf, xml, false);
 }
 
+//! \brief Fill buffer with n spaces. DANGEROUS
 static void sp(int n, char buf[], int maxindent)
 {
     int i;
@@ -252,6 +259,7 @@ static void sp(int n, char buf[], int maxindent)
     buf[i] = '\0';
 }
 
+//! \brief From xml entry to double precision number
 static double xbuf_atof(xmlBuffer *xbuf, xmlEntry  xbuf_index)
 {
     auto xb = xbuf->find(xbuf_index);
@@ -264,6 +272,7 @@ static double xbuf_atof(xmlBuffer *xbuf, xmlEntry  xbuf_index)
     return my_atof(xb->second.c_str(), rm);
 }
 
+//! \brief Process attributes from xml file
 static void processAttr(FILE       *fp, 
                         xmlAttrPtr  attr,
                         xmlBuffer  *xbuf,
@@ -491,6 +500,7 @@ static void processAttr(FILE       *fp,
 #undef xbufString
 }
 
+//! \brief Process the whole xml tree
 static void processTree(FILE          *fp, 
                         xmlBuffer     *xbuf,
                         xmlNodePtr     tree,
@@ -599,6 +609,7 @@ void readForceField(const std::string &fileName,
     }
 }
 
+//! \brief Add a value to a parent
 static void addOption(xmlNodePtr         parent,
                       const std::string &key,
                       const std::string &value)
@@ -608,6 +619,7 @@ static void addOption(xmlNodePtr         parent,
     add_xml_char(baby, exml_names(xmlEntry::VALUE), value.c_str());
 }
 
+//! \brief Add a combination rule to a parent
 static void addCombRule(xmlNodePtr         parent,
                         const std::string &parameter,
                         const std::string &rule)
@@ -617,6 +629,7 @@ static void addCombRule(xmlNodePtr         parent,
     add_xml_char(baby, exml_names(xmlEntry::RULE), rule.c_str());
 }
 
+//! \brief Add a complete force field parameter
 static void addParameter(xmlNodePtr parent, const std::string &type,
                          const ForceFieldParameter &param)
 {
@@ -633,6 +646,7 @@ static void addParameter(xmlNodePtr parent, const std::string &type,
                  param.nonNegative() ? "yes" : "no");
 }
 
+//! Add a complete force field
 static void addXmlForceField(xmlNodePtr parent, const ForceField *pd)
 {
     std::string  geometry, name,

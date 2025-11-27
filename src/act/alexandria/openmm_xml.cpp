@@ -67,6 +67,7 @@
 namespace alexandria
 {
 
+//! Obsolete
 static int minTrain(const ForceFieldParameterMap &ffpm)
 {
     // TODO: Remove or implement something that works.
@@ -169,6 +170,7 @@ enum class xmlEntryOpenMM {
     PARTICLE
 };
 
+//! Map from string to xml element
 std::map<const std::string, xmlEntryOpenMM> xmlyyyOpenMM =
 {
     { "ForceField",                xmlEntryOpenMM::FORCEFIELD       },
@@ -234,11 +236,11 @@ std::map<const std::string, xmlEntryOpenMM> xmlyyyOpenMM =
     { "DrudeForce",                xmlEntryOpenMM::DRUDEFORCE              },
     { "Particle",                  xmlEntryOpenMM::PARTICLE                } 
 };
-    
+
+//! Map xml element to string
 std::map<xmlEntryOpenMM, const std::string> rmapyyyOpenMM = {};
 
-typedef std::map<xmlEntryOpenMM, std::string> xmlBufferOpenMM;
-
+//! Map xml element to string, will make lookup table at the first call
 static const char *exml_names(xmlEntryOpenMM xmlOpenMM)
 {
     if (rmapyyyOpenMM.empty())
@@ -251,16 +253,19 @@ static const char *exml_names(xmlEntryOpenMM xmlOpenMM)
     return rmapyyyOpenMM[xmlOpenMM].c_str();
 }
 
+//! \brief List of OpenMM classes
 std::vector<xmlEntryOpenMM> class_vec = {xmlEntryOpenMM::CLASS1, xmlEntryOpenMM::CLASS2, xmlEntryOpenMM::CLASS3, xmlEntryOpenMM::CLASS4};
+//! \brief List of OpenMM types
 std::vector<xmlEntryOpenMM> type_vec  = {xmlEntryOpenMM::TYPE1, xmlEntryOpenMM::TYPE2, xmlEntryOpenMM::TYPE3, xmlEntryOpenMM::TYPE4}; 
 
+//! \return String with index attached for OpenMM ffs
 static std::string nameIndex(const std::string &name, int index)
 {
     std::string ni = name + gmx::formatString("_%d", index);
     return ni;
 }
 
-/////// adding+, real atoms are from 1 to 3 for water for cores and shells alike
+//! \return the index of the real atom associated with index
 static int tellme_RealAtom(int                         index, 
                            const std::vector<ActAtom> &myatoms)
 {
@@ -287,33 +292,33 @@ static int tellme_RealAtom(int                         index,
 class OpenMMWriter
 {
 private:
-    // Mass of the drude particle
+    //! Mass of the drude particle
     double mDrude_                = 0.1;
-    // Whether or not to add numbers to atomtypes
+    //! Whether or not to add numbers to atomtypes
     bool   addNumbersToAtomTypes_ = true;
-    // Minimum number of training points needed to specify output
+    //! Minimum number of training points needed to specify output
     int    ntrain_                = 1;
-    // Number of exclusions, should be the same for all forces
+    //! Number of exclusions, should be the same for all forces
     int    nexcl_                 = -1;
-    // Mapping from InteractionType to xml branch
+    //! Mapping from InteractionType to xml branch
     std::map<InteractionType, xmlNodePtr> xmlMap_;
-    
+    //! Add a mass to a parent
     void addXmlElemMass(xmlNodePtr          parent,
                         const ForceField   *pd,
                         const ParticleType *aType);
-    
+    //! Add the bonds to a residue
     void addXmlResidueBonds(xmlNodePtr           residuePtr,
                             const ForceField    *pd,
                             const Topology      *topol);
-
+    //! Add multiple bonds
     void addBondAtoms(xmlNodePtr                      parent,
                       const std::vector<std::string> &atoms);
-
+    //! Add nonbonded potential
     void addXmlNonbonded(MsgHandler                      *msghandler,
                          xmlNodePtr                       parent,
                          const ForceField                *pd,
                          const std::map<std::string, int> &ffTypeMap);
-
+    //! Add special forces
     void addXmlSpecial(xmlNodePtr                       parent,
                        const ForceField                *pd,
                        const std::map<std::string, int> &ffTypeMap);
@@ -323,30 +328,35 @@ private:
                     const std::vector<std::string>  &atoms,
                     const std::vector<const char *> &param_names,
                     const std::vector<double>       &params);
-
+    //! Add the Drude particle interaction energy parameters
     void addXmlPolarization(xmlNodePtr                        parent,
                             const ForceField                 *pd,
                             const std::map<std::string, int> &ffTypeMap,
                             double                            epsr_fac);
-
+    //! Add a complete force field for the molecules
     void addXmlForceField(MsgHandler                *msghandler,
                           xmlNodePtr                 parent,
                           const ForceField          *pd,
                           const std::vector<ACTMol> &actmols);
-                          
+    //! Add topology entries
     void addTopologyEntries(MsgHandler                                        *msghandler,
                             const ForceField                                  *pd,
                             std::map<InteractionType, std::set<std::string> > *BondClassUsed,
                             const Topology                                    *topology);
-
+    //! Generate internal structures
     void makeXmlMap(xmlNodePtr        parent,
                     const ForceField *pd);
-
+    //! Set the number of exclusions
     void setNexcl(int nexcl);
-
+    //! \return the number of exclusions
     int nexcl() const { return nexcl_; }
 
 public:
+    /*! \brief Constructor
+     * \param[in] mDrude            Drude mass
+     * \param[in] addNumbersToAtoms Whether or not to add numbers to atom names
+     * \param[in] ntrain            Minimum number of training data allowed per parameter to use it
+     */
     OpenMMWriter(double mDrude,
                  bool   addNumbersToAtoms,
                  int    ntrain) : mDrude_(mDrude), addNumbersToAtomTypes_(addNumbersToAtoms), ntrain_(ntrain)
@@ -416,6 +426,7 @@ void OpenMMWriter::addXmlElemMass(xmlNodePtr          parent,
     }
 }
 
+//! Add a bond to a residue
 static void addXmlResidueBond(xmlNodePtr         residuePtr,
                               const std::string &atom1,
                               const std::string &atom2)
@@ -497,6 +508,7 @@ void OpenMMWriter::addXmlBond(xmlNodePtr                       parent,
     }
 }
 
+//! \brief Add global parameter
 static void add_global(xmlNodePtr ptr,
                        const std::string &name,
                        int value)
@@ -506,6 +518,7 @@ static void add_global(xmlNodePtr ptr,
     add_xml_int(gp, exml_names(xmlEntryOpenMM::DEFAULTVALUE), value);
 }
 
+//! \brief Add potential entry
 static void add_potential(xmlNodePtr       parent,
                           const Potential &p)
 {
@@ -513,6 +526,7 @@ static void add_potential(xmlNodePtr       parent,
     add_global(parent, "pot-" + potentialToString(p), 1);
 }
 
+//! Add combination rule
 static void add_combrules(xmlNodePtr                     parent,
                           const ForceFieldParameterList &fs)
 {
@@ -910,6 +924,7 @@ void OpenMMWriter::addXmlPolarization(xmlNodePtr                        parent,
     }
 }
 
+//! \return true if this is a non-bonded interaction
 static bool isNB(InteractionType itype)
 {
     std::set<InteractionType> NB = { InteractionType::ELECTROSTATICS,
@@ -1118,6 +1133,7 @@ void OpenMMWriter::addTopologyEntries(MsgHandler                                
     }
 }
 
+//! Add a value attribute to a parent
 static void add_xml_weight(xmlNodePtr  parent,
                            const char *wname,
                            double      w)
