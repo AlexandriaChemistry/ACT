@@ -167,6 +167,24 @@ TEST_F (ForceComputerImplementationTest, LJ12_6)
     testPot(Potential::LJ12_6, top, &x);
 }
 
+TEST_F (ForceComputerImplementationTest, LJ12_6_4)
+{
+    std::vector<gmx::RVec> x = {
+        { 0, 0, 0   },
+        { 0, 0, 0.5 }
+    };
+    // Generate topology info
+    TopologyEntryVector top{};
+    top.push_back(AtomPair(0, 1));
+    std::vector<double> params(3);
+    params[lj12_6_4SIGMA]   = 0.5;
+    params[lj12_6_4EPSILON] = 0.25;
+    params[lj12_6_4GAMMA]   = 0.5;
+    top[0]->setParams(params);
+
+    testPot(Potential::LJ12_6_4, top, &x);
+}
+
 TEST_F (ForceComputerImplementationTest, LJ14_7)
 {
     std::vector<gmx::RVec> x = {

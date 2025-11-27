@@ -825,6 +825,18 @@ void OpenMMWriter::addXmlNonbonded(MsgHandler                      *msghandler,
                     }
                 }
                 break;
+            case Potential::LJ12_6_4:
+                sigma   = param[pnames[lj12_6_4SIGMA]].internalValue();
+                epsilon = param[pnames[lj12_6_4EPSILON]].internalValue();
+                scaleSigma = 1.0;
+                for(size_t j = 0; j < param.size(); j++)
+                {
+                    if (Mutability::Dependent != param[pnames[j]].mutability())
+                    {
+                        add_xml_double(nbParamPtr, pnames[j], param[pnames[j]].internalValue());
+                    }
+                }
+                break;
             case Potential::TT2b:
             case Potential::SLATER_ISA_TT:
                 // TODO Get better values
@@ -1105,6 +1117,7 @@ void OpenMMWriter::addTopologyEntries(MsgHandler                                
                 case Potential::COULOMB_GAUSSIAN:
                 case Potential::COULOMB_SLATER:
                 case Potential::LJ12_6:
+                case Potential::LJ12_6_4:
                 case Potential::LJ14_7:
                 case Potential::LJ8_6:
                 case Potential::WANG_BUCKINGHAM:

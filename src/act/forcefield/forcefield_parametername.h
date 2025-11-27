@@ -38,8 +38,10 @@ namespace alexandria
 {
 
     enum { lj12_6SIGMA, lj12_6EPSILON, lj12_6NR };
-
+    
     enum { lj8_6SIGMA, lj8_6EPSILON, lj8_6NR };
+    
+    enum { lj12_6_4SIGMA, lj12_6_4EPSILON, lj12_6_4GAMMA, lj12_6_4NR };
 
     enum { wbhSIGMA, wbhEPSILON, wbhGAMMA, wbhNR };
 

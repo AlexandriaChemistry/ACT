@@ -33,11 +33,13 @@ class VdW(Enum):
     WBHAM  = 4
     GBHAM  = 5
     TT2b   = 6
+    LJ12_6_4 = 7
 
 # Map strings to VdW entries.
 VdWDict = {
     'LJ8_6':  { "func": VdW.LJ8_6, "params": [ "sigma", "epsilon" ] },
     'LJ12_6': { "func": VdW.LJ12_6, "params": [ "sigma", "epsilon" ] },
+    'LJ12_6_4': { "func": VdW.LJ12_6_4, "params": [ "sigma", "epsilon", "gamma" ] },
     'LJ14_7': { "func": VdW.LJ14_7, "params": [ "sigma", "epsilon", "gamma", "delta" ] },
     'WANG_BUCKINGHAM':  { "func": VdW.WBHAM, "params": [ "sigma", "epsilon", "gamma" ] },
     'GENERALIZED_BUCKINGHAM': { "func": VdW.GBHAM, "params": [ "rmin",  "epsilon", "gamma", "delta" ] },
