@@ -53,6 +53,7 @@
 namespace alexandria
 {
 
+//! Components of thermochemistry propertis
 enum class TCComponent {
     Translation, Rotation, Vibration, Total
 };
@@ -137,6 +138,7 @@ public:
     /*! \brief Constructor that computes everything at once
      * \param[in] actmol       Molecule info
      * \param[in] coords       The coordinates
+     * \param[in] atomenergy   Atomization energies
      * \param[in] frequencies  The vibrational frequencies in 1/ps
      * \param[in] epot         The potential energy for the molecule
      * \param[in] temperature  Temperature (K)

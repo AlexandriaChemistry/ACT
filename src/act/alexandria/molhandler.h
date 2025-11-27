@@ -46,10 +46,12 @@
 namespace alexandria
 {
 
+//! \brief enum to distinguish result of minimizer
 enum class eMinimizeStatus {
     OK, TooManySteps, Solver, NoMinimum
 };
 
+//! Convert enum to string
 const std::string &eMinimizeStatusToString(eMinimizeStatus e);
 
 /*! \brief Handles molecules by performing algorithms on them
@@ -80,7 +82,6 @@ public:
      *                        If nullptr it will not be used. This can be used to compute
      *                        infrared intensities from a NMA. See Henschel et al.
      *                        J. Chem. Theory Comput. 16 (2020) 3307-3315.
-     * \return the potential energy of the input structure
      */
     void computeHessian(const ForceField                  *pd,
                         const ACTMol                      *mol,

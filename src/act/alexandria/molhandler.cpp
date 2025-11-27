@@ -65,6 +65,7 @@
 namespace alexandria
 {
 
+//! Map enum to string for eMinimizeStatus
 std::map<eMinimizeStatus, std::string> eMinStat2String = {
     { eMinimizeStatus::OK,           "OK"             },
     { eMinimizeStatus::TooManySteps, "Too many steps" },
@@ -187,6 +188,7 @@ void MolHandler::computeHessian(const ForceField                  *pd,
     forceComp->compute(nullptr, pd, mol->topology(), coords, &fzero, energyZero);
 }
 
+//! \brief Compute frequencies
 static void computeFrequencies(const std::vector<double> &eigenvalues,
                                size_t                     rot_trans,
                                std::vector<double>       *frequencies,
@@ -216,6 +218,7 @@ static void computeFrequencies(const std::vector<double> &eigenvalues,
     }
 }
 
+//! \brief Generate output of frequencies and intensities
 static void outputFreqInten(const ACTMol               *mol,
                             const std::vector<double> &frequencies,
                             const std::vector<double> &intensities,
@@ -267,6 +270,7 @@ static void outputFreqInten(const ACTMol               *mol,
     }
 }
 
+//! \brief Solve the eigenvalue equation using the Eigen package
 static void solveEigen(const MatrixWrapper          &hessian,
                        const std::vector<int>       &atomIndex,
                        const std::vector<ActAtom>   &atoms,
@@ -382,6 +386,7 @@ static void solveEigen(const MatrixWrapper          &hessian,
     computeFrequencies(eigenvalues, rot_trans, frequencies, output);
 }
 
+//! \brief Sort Frequencies and Intensities
 static void resortFreqIntens(std::vector<double> *frequencies, 
                              std::vector<double> *intensities,
                              double               freq_toler)
@@ -501,6 +506,7 @@ void MolHandler::nma(const ForceField         *pd,
 
 }
 
+//! \brief Yet another routine to print energies
 static void printEnergies(gmx::TextWriter *tw, int myIter,
                           double msAtomForce,
                           double msShellForce,
@@ -527,6 +533,7 @@ static void printEnergies(gmx::TextWriter *tw, int myIter,
     tw->writeLineFormatted(" (VANDERWAALS %.5f)", evdw);
 }
 
+//! \return the mean square force on atoms
 static double msForce(const std::vector<int>       &theAtoms,
                       const std::vector<gmx::RVec> &forces)
 {
@@ -545,6 +552,7 @@ static double msForce(const std::vector<int>       &theAtoms,
     }
 }
 
+//! \brief Increment the coordinates with a delta
 static void updateCoords(const std::vector<int>       &theAtoms,
                          const std::vector<gmx::RVec> &xold,
                          std::vector<gmx::RVec>       *xnew,
@@ -567,14 +575,22 @@ static void updateCoords(const std::vector<int>       &theAtoms,
 class StlbfgsHandler
 {
 private:
+    //! Pointer to force field
     const ForceField                  *pd_;
+    //! Pointer to molecule
     const ACTMol                      *mol_;
+    //! Pointer to force computer
     const ForceComputer               *forceComp_;
+    //! Atomic corrdinates
     std::vector<gmx::RVec>             coords_;
+    //! Atomic forces
     std::vector<gmx::RVec>             forces_;
+    //! Energies per interaction type
     std::map<InteractionType, double>  energies_;
+    //! Vector of real atoms
     const std::vector<int>             theAtoms_;
 public:
+    //! Constructor
     StlbfgsHandler(const ForceField    *pd,
                    const ACTMol        *mol,
                    const ForceComputer *forceComp,
@@ -586,22 +602,31 @@ public:
         forces_.resize(mol_->atomsConst().size(), vzero);
     }
 
+    //! \return the molecule
     const ACTMol *mol() const { return mol_; }
 
+    //! \return the force field
     const ForceField *pd() const { return pd_; }
 
+    //! \return the force computer
     const ForceComputer *forceComp() const { return forceComp_; }
 
+    //! \return the coordinates
     std::vector<gmx::RVec> *coordinates() { return &coords_; }
 
+    //! \return the forces
     std::vector<gmx::RVec> *forces() { return &forces_; }
 
+    //! \return the energy mao
     std::map<InteractionType, double> *energies() { return &energies_; }
 
+    //! \return a particular energy
     double energy(InteractionType itype) { return energies_[itype]; }
 
+    //! \return the atom indices
     const std::vector<int> &theAtoms() const { return theAtoms_; }
 
+    //! \brief print force on frozen atom
     void printFrozenForce(gmx::TextWriter *tw, const std::vector<int> &myFreeze)
     {
         if (tw && myFreeze.size() == 2)
@@ -643,9 +668,10 @@ public:
     }
 };
 
-// The return of the son of global variables. Easy but ugly.
+//! The return of the son of global variables. Easy but ugly.
 static StlbfgsHandler *lbfgs = nullptr;
 
+//! \brief callback function for lbfgs minimizer
 static void func(const std::vector<double> &x, double &f, std::vector<double> &g)
 {
     auto theAtoms = lbfgs->theAtoms();
@@ -1146,6 +1172,7 @@ double MolHandler::coordinateRmsd(const ACTMol                 *mol,
     return std::sqrt(msd/mol->nRealAtoms());
 }
 
+//! \brief Write energy legend to xvg file
 static void energyLegend(FILE                                    *exvg, 
                          const std::map<InteractionType, double> &energies,
                          const gmx_output_env_t                  *oenv)
@@ -1161,11 +1188,13 @@ static void energyLegend(FILE                                    *exvg,
     xvgr_legend(exvg, enames.size(), enames.data(), oenv);
 }
 
+//! \brief Compute square norm of vector
 static double rvecNormSquared(const gmx::RVec &v)
 {
     return v[XX]*v[XX]+v[YY]*v[YY]+v[ZZ]*v[ZZ];
 }
 
+//! \brief Print energies to a file
 static void printEnergies(FILE                                    *exvg, 
                           int                                      step, 
                           double                                   deltat, 
@@ -1189,6 +1218,7 @@ static void printEnergies(FILE                                    *exvg,
     fprintf(exvg, " %.5f %.5f %.5f\n", ekin, ekin+epot, temp);
 }
 
+//! \brief Make arrays the length of the number of atoms
 static void initArrays(const ACTMol           *mol,
                        std::vector<gmx::RVec> *coordinates, 
                        std::vector<gmx::RVec> *velocities, 

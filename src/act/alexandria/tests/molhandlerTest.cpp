@@ -65,6 +65,7 @@ namespace alexandria
 namespace
 {
 
+//! \brief Add energies to a checker
 static void add_energies(const ForceField                        *pd,
                          gmx::test::TestReferenceChecker         *checker,
                          const std::map<InteractionType, double> &energies,

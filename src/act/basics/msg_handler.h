@@ -48,6 +48,7 @@ namespace alexandria
 
 class CommunicationRecord;
 
+//! \brief Enum to distinguish ACT messages
 enum class ACTMessage
     {
         //! Silent, do not print anything

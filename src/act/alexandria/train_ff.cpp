@@ -671,7 +671,11 @@ bool OptACM::runMaster(bool optimize,
     return bMinimum;
 }
 
-
+/*! \brief Tool to perform force field trainings
+ * \param[in] argc Number of arguments on the cmd line
+ * \param[in] argv The actual arguments
+ * \return 0 if ok, 1 otherwise
+ */
 int train_ff(int argc, char *argv[])
 {
     std::vector<const char *> desc = {

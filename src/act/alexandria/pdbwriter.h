@@ -7,6 +7,7 @@
 namespace alexandria
 {
 
+//! Function to write a pdb file.
 void pdbWriter(FILE                           *out, 
                const char                     *title,
                const std::vector<ActAtom>     &atoms,

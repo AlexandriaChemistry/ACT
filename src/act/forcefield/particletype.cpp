@@ -100,6 +100,7 @@ void ParticleType::setOption(const std::string &key,
     }
 }
 
+//! \return "simplified" interactiontype
 static InteractionType remapInteractionType(InteractionType itype)
 {
     if (itype == InteractionType::BONDCORRECTIONS)
@@ -194,6 +195,7 @@ double ParticleType::charge() const
     return 0.0;
 }
 
+//! \return int from string, else 0. DANGEROUS.
 static int myatoi(const std::string &str)
 {
     int d;

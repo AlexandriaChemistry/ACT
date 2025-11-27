@@ -58,6 +58,11 @@
 namespace alexandria
 {
 
+/*! \brief Tool to perform simple simulations and minimations
+ * \param[in] argc Number of arguments on the cmd line
+ * \param[in] argv The actual arguments
+ * \return 0 if ok, 1 otherwise
+ */
 int simulate(int argc, char *argv[])
 {
     std::vector<const char *> desc = {

@@ -51,24 +51,26 @@ class AtomizationEnergyTest : public gmx::test::CommandLineTestBase
 protected:
     //! Checking data structure
     gmx::test::TestReferenceChecker checker_;
+    //! The atomization energy
     alexandria::AtomizationEnergy   atomenergy_;
     
-    //! Init set tolecrance
+    //! Init set tolerance
     AtomizationEnergyTest () : checker_(this->rootChecker())
     {
         auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, 5e-2);
         checker_.setDefaultTolerance(tolerance);
         atomenergy_.read();
     }
+    //! Dump the database to a csv file
     void dump()
     {
         atomenergy_.dump("test.csv");
     }
     /*! \brief test the atomization energies
-     * This is done by rotating tensor p on tensor q and computing the
      * RMSD after rotating.
-     * \param[in] p First tensor
-     * \param[in] q Second tensor
+     * \param[in] elem   Element
+     * \param[in] T      temperature
+     * \param[in] charge Electric charge
      */
     void test(const std::string &elem, double T, int charge = 0)
     {

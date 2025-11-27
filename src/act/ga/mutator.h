@@ -89,7 +89,7 @@ public:
      * \brief Perform a sensitivity analysis by systematically changing all parameters and
      * re-evaluating the \f$ \chi^2 \f$.
      * \param[in] msghandler The message and status handler
-     * \param[in] genome     Pointer to genome
+     * \param[in] bestGenome Pointer to genome
      * \param[in] ims        Dataset to perform sensitivity analysis on
      */
     virtual void sensitivityAnalysis(alexandria::MsgHandler *msghandler,

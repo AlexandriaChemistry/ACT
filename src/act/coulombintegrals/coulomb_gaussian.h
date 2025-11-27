@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2022
+ * Copyright (C) 2014-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -33,7 +33,6 @@
  * precision arithmetic.
  *
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
- * \inpublicapi
  * \ingroup module_alexandria
  */
 #ifndef COULOMB_GAUSSIAN_H
@@ -41,6 +40,14 @@
 
 #include "act/coulombintegrals/gaussian_integrals.h"
 
+/*! \brief Compute Coulomb interaction energy and force
+ * \param[in] qq     Product of charges
+ * \param[in] izeta  Distribution width for first particle
+ * \param[in] jzeta  Distribution width for first particle
+ * \param[in] r      Distance
+ * \param[out] velec Energy
+ * \param[out] felec Force
+ */
 static void coulomb_gaussian(real qq, real izeta, real jzeta,
                              real r, real *velec, real *felec)
 {

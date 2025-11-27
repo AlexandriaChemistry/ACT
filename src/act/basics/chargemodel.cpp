@@ -44,6 +44,7 @@
 namespace alexandria
 {
 
+//! \brief Map from enum to string
 std::map<ChargeDistributionType, const std::string> ct2Name =
     {
         { ChargeDistributionType::Point,    "Point"    },
@@ -51,6 +52,7 @@ std::map<ChargeDistributionType, const std::string> ct2Name =
         { ChargeDistributionType::Slater,   "Slater"   }
     };
 
+//! \brief Map from string to enum
 std::map<const std::string, ChargeDistributionType> name2CT;
 
 std::vector<std::string> qdnames()
@@ -92,6 +94,7 @@ const std::string &chargeDistributionTypeName(ChargeDistributionType ct)
     return cc->second;
 }
 
+//! \brief Map from enum to string
 std::map<ChargeGenerationAlgorithm, const std::string> cg2Name =
     {
         { ChargeGenerationAlgorithm::NONE,      "None"      },
@@ -102,6 +105,7 @@ std::map<ChargeGenerationAlgorithm, const std::string> cg2Name =
         { ChargeGenerationAlgorithm::Read,      "Read"      }
     };
 
+//! \brief Map from string to enum
 std::map<const std::string, ChargeGenerationAlgorithm> name2CG;
 
 ChargeGenerationAlgorithm nameToChargeGenerationAlgorithm(const std::string &name)

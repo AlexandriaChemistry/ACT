@@ -54,7 +54,7 @@ namespace gmx
 
 namespace
 {
-
+//! \brief Check that force is the negative derivative of the potential
 void check_force(const std::vector<double> &potential,
                  const std::vector<double> &force,
                  double                     dx)
@@ -381,6 +381,7 @@ const std::vector<std::tuple<double, double> > make_xiIdentical()
     };
 };
 
+//! Generate vector of tuples with identical Xi values
 static auto c_xiIdentical = make_xiIdentical();
 
 INSTANTIATE_TEST_CASE_P(IdenticalXi, SlaterTest, ::testing::Combine(::testing::ValuesIn(c_rows), ::testing::ValuesIn(c_xiIdentical)));

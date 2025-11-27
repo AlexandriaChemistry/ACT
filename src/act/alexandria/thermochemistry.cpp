@@ -55,6 +55,7 @@
 namespace alexandria
 {
 
+//! \brief Map from enum to string
 std::map<TCComponent, std::string> tccMap = {
     { TCComponent::Translation, "Translation" },
     { TCComponent::Rotation,    "Rotation"    },
@@ -177,6 +178,7 @@ double ThermoChemistry::rotationalEntropy(double      temperature,
     return universalGasConstant * SR;
 }
 
+//! \brief Compute rotational constants
 static void calcTheta(const ACTMol                 *actmol,
                       const std::vector<gmx::RVec> &coords,
                       rvec                          theta)
