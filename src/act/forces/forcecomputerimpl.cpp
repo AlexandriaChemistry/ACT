@@ -110,6 +110,66 @@ static double computeLJ12_6(const TopologyEntryVector             &pairs,
     return erep + edisp;
 }
 
+static double computeLJ12_6_4(const TopologyEntryVector             &pairs,
+                              gmx_unused const std::vector<ActAtom> &atoms,
+                              const std::vector<gmx::RVec>          *coordinates,
+                              std::vector<gmx::RVec>                *forces,
+                              std::map<InteractionType, double>     *energies)
+{
+    double erep  = 0; // Pauli repulsion (1/r^12)
+    double edisp = 0; // dipole-dipole (1/r^6)
+    double emid  = 0; // monopole-induced dipole (mid) (1/r^4) 
+
+    auto   &x    = *coordinates;
+    for (const auto &b : pairs)
+    {
+        // Get the parameters. We have to know their names to do this.
+        auto &params    = b->params();
+        auto sig_ij     = params[lj12_6_4SIGMA];
+        auto eps_ij     = params[lj12_6_4EPSILON];
+        auto gamma      = params[lj12_6_4GAMMA];
+        auto sig6       = gmx::square(sig_ij*sig_ij*sig_ij);
+        auto c6         = 4*eps_ij*sig6;
+        auto c12        = c6*sig6;
+        // Get the atom indices
+        auto &indices   = b->atomIndices();
+        auto ai         = indices[0];
+        auto aj         = indices[1];
+        rvec dx;
+        rvec_sub(x[ai], x[aj], dx);
+        auto dr2        = iprod(dx, dx);
+        auto rinv       = gmx::invsqrt(dr2);
+        auto rinv2      = rinv*rinv;
+        auto rinv4      = rinv2*rinv2;
+        auto rinv6      = rinv2*rinv2*rinv2;
+        // Calculate energy terms
+        auto vvdw_mid   = -gamma*rinv4; 
+        auto vvdw_disp  = -c6*rinv6; 
+        auto vvdw_rep   = c12*rinv6*rinv6;
+        // Calculate force
+        auto flj        = (12*vvdw_rep + 6*vvdw_disp + 4*vvdw_mid)*rinv2;
+
+        if (debug)
+        {
+            fprintf(debug, "ACT ai %d aj %d vvdw_rep: %10g vvdw_disp: %10g vvdw_mid: 10%g c6: %10g c12: %10g gamma: %10g\n",
+                    ai, aj, vvdw_rep, vvdw_disp, vvdw_mid, c6, c12, gamma);
+        }
+        pairforces(flj, dx, indices, forces);
+        erep      += vvdw_rep;
+        edisp     += vvdw_disp;
+        emid      += vvdw_mid;
+    }
+    if (debug)
+    {
+        fprintf(debug, "ACT erep: %10g edisp %10g emid %10g\n", erep, edisp, emid);
+    }
+    energies->insert({InteractionType::EXCHANGE, erep});
+    energies->insert({InteractionType::DISPERSION, edisp});
+    energies->insert({InteractionType::INDUCTION, emid});
+
+    return erep + edisp + emid;
+}
+
 static double computeLJ8_6(const TopologyEntryVector             &pairs,
                            gmx_unused const std::vector<ActAtom> &atoms,
                            const std::vector<gmx::RVec>          *coordinates,
@@ -1484,6 +1544,7 @@ std::map<Potential, bondForceComputer> bondForceComputerMap = {
     { Potential::HARMONIC_ANGLES,        computeAngles          },
     { Potential::LINEAR_ANGLES,          computeLinearAngles    },
     { Potential::LJ12_6,                 computeLJ12_6          },
+    { Potential::LJ12_6_4,               computeLJ12_6_4        },
     { Potential::LJ8_6,                  computeLJ8_6           },
     { Potential::LJ14_7,                 computeLJ14_7          },
     { Potential::BUCKINGHAM,             computeBuckingham      },
