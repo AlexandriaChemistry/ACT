@@ -63,6 +63,7 @@
 namespace alexandria
 {
 
+//! Map b2Type to string
 const std::map<b2Type, std::string> b2Type2str = {
     { b2Type::Classical, "B2(Classical)" },
     { b2Type::Force, "B2(Force)" },
@@ -678,6 +679,11 @@ void ReRunner::runB2(CommunicationRecord         *cr,
     }
 }
 
+/*! \brief Tool to compute second virial
+ * \param[in] argc Number of arguments on the cmd line
+ * \param[in] argv The actual arguments
+ * \return 0 if ok, 1 otherwise
+ */
 int b2(int argc, char *argv[])
 {
     std::vector<const char *> desc = {

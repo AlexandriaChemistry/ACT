@@ -42,8 +42,10 @@
 
 #include "gromacs/math/functions.h"
 
+//! \brief Precompute a constant
 const double invsqrt_pi = 1.0/std::sqrt(M_PI);
 
+//! \return the square of x
 static inline gmx_unused double sqr(double x)
 {
     return x*x;

@@ -245,7 +245,7 @@ private:
                    AtomList         *atomList);
 
     /*! \brief Find a topology entry matching the inputs if it exists
-     * \param[in] itype     The InteractionType
+     * \param[in] entries   TopologyEntryVectors
      * \param[in] aindex    The atom indices
      * \param[in] bondOrder The array of bond orders
      * \param[in] cs        Whether or not the order of the atoms can be swapped
@@ -384,6 +384,7 @@ private:
                        double                        PlanarAngleMax);
 
     /*! Generate the proper dihedrals
+     * \param[in] msghandler Message handler
      * \param[in] pd The force field
      */
     void makePropers(MsgHandler       *msghandler,
@@ -391,7 +392,7 @@ private:
 
     /*! \brief Add a custom list of interactions
      * \param[in] itype The interaction type (should not yet exist)
-     * \param[in] vec   The new interactions
+     * \param[in] entry The new interactions
      */
     void addEntry(InteractionType            itype,
                   const TopologyEntryVector &entry);
@@ -402,8 +403,8 @@ private:
     /*! Generate the non-bonded pair list based on just the atoms
      * \param[in] msghandler Message handler
      * \param[in] pd         Force field needed to set identifiers.
-     * \param[in] natoms     The number of atoms
-     * \param[in] exclusion  The excluded particle pairs
+     * \param[in] itype      The interaction type
+     * \param[in] exclusions The excluded particle pairs
      */
     void makePairs(MsgHandler                          *msghandler,
                    const ForceField                    *pd,

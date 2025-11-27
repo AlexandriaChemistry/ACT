@@ -92,6 +92,7 @@ void Topology::init(const std::vector<Bond> &bonds)
     }
 }
 
+//! Print to msghandler
 static void dump_entry(MsgHandler                *msghandler,
                        const TopologyEntryVector &entries,
                        const std::string         &label)
@@ -1491,6 +1492,7 @@ void Topology::dump(FILE *fp) const
     }
 }
 
+//! \brief Low-level parameter filling
 static void fillParams(MsgHandler                      *msghandler,
                        const ForceFieldParameterList   &fs,
                        const Identifier                &btype,

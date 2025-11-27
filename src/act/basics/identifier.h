@@ -42,6 +42,7 @@
 
 namespace alexandria
 {
+    //! \brief enum describing whether and how atom order swapping is allowed in interactions
     enum class CanSwap {
         //! The order of atoms in an interaction cannot be swapped
         No,
@@ -53,7 +54,7 @@ namespace alexandria
         Linear,
         //! Special case for vsite2
         Vsite2,
-        //
+        //! Special case for vsite3
         Vsite3,
     };
 

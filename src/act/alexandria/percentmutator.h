@@ -75,9 +75,9 @@ public:
                         double      prMut);
 
     //! \copydoc ga::Mutator::sensitivityAnalysis
-    virtual void sensitivityAnalysis(MsgHandler *,
-                                     ga::Genome *,
-                                     iMolSelect) {}
+    virtual void sensitivityAnalysis(gmx_unused MsgHandler *msghandler,
+                                     gmx_unused ga::Genome *bestGenome,
+                                     gmx_unused iMolSelect  ims) {}
     
     //! \return whether a minimum was found
     bool foundMinimum() { return false; }

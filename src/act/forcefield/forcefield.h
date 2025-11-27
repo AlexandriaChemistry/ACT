@@ -422,6 +422,7 @@ private:
     }
 };
 
+template<typename T>
 /*! \brief Extract option value from a force field component
  * \param[in]  pd    The force field
  * \param[in]  itype The InteractionType
@@ -432,17 +433,7 @@ private:
 bool ffOption(const ForceField  &pd,
               InteractionType    itype,
               const std::string &name,
-              int               *value);
-                 
-bool ffOption(const ForceField  &pd,
-              InteractionType    itype,
-              const std::string &name,
-              std::string       *value);
-              
-bool ffOption(const ForceField  &pd,
-              InteractionType    itype,
-              const std::string &name,
-              double            *value);
+              T                 *value);
 
 }
 #endif

@@ -57,6 +57,7 @@
 namespace alexandria
 {
 
+//! \brief Set parameter limits
 static void setMinMaxMut(FILE *fp,
                          ForceFieldParameter *pp,
                          bool bSetMin, double pmin,
@@ -176,6 +177,7 @@ static void setMinMaxMut(FILE *fp,
     }
 }
 
+//! \brief Change parameters for one particle
 static void modifyParticle(const std::string &paramType,
                            ParticleType      *particle,
                            bool bSetMin, double pmin,
@@ -211,6 +213,7 @@ static void modifyParticle(const std::string &paramType,
     }
 }
 
+//! \brief Modify parameters for one interaction
 static void modifyInteraction(ForceField *pd,
                               InteractionType itype,
                               const std::string &paramType,
@@ -253,6 +256,7 @@ static void modifyInteraction(ForceField *pd,
     }
 }
 
+//! \brief Remove particles from a FF
 static void removeParticles(ForceField *pd,
                             const std::string &particle)
 {
@@ -297,6 +301,7 @@ static void removeParticles(ForceField *pd,
     }
 }
 
+//! \brief Modify everything that the user has requested
 static void modifyForceField(ForceField *pd,
                              const std::string &paramType,
                              const std::string &particle,
@@ -377,6 +382,7 @@ static void modifyForceField(ForceField *pd,
     }
 }
 
+//! \return subset of interactions corresponding to user input
 static const std::set<InteractionType> &findInteractionMap(const std::string &analyze,
                                                            bool              *found)
 {
@@ -420,6 +426,7 @@ static const std::set<InteractionType> &findInteractionMap(const std::string &an
     }
 }
 
+//! \brief Investigate FF and print interesting observations
 static void analyzeForceField(ForceField *pd)
 {
     unsigned int mindata   = 1;
@@ -456,6 +463,7 @@ static void analyzeForceField(ForceField *pd)
     }
 }
 
+//! \brief Dump select information from a force field to a file
 static void dumpForceField(ForceField        *pd,
                            const std::string &analyze,
                            const std::string &particle,
@@ -498,6 +506,7 @@ static void dumpForceField(ForceField        *pd,
     printf("Stored %d parameters in %s\n", nparm, filenm.c_str());
 }
 
+//! \brief Plot potential curves to many xvg files
 static void plotInteractions(MsgHandler        *msghandler,
                              ForceField        *pd,
                              const std::string &analyze)
@@ -515,6 +524,7 @@ static void plotInteractions(MsgHandler        *msghandler,
     }
 }
 
+//! \brief Copy missing information from a reference FF to an output FF
 static void copy_missing(const ForceField  *pdref,
                          ForceField        *pdout,
                          const std::string &analyze,
@@ -575,6 +585,7 @@ static void copy_missing(const ForceField  *pdref,
     }
 }
 
+//! \brief Implant specific values to a FF from a reference
 static void implant_values(const ForceField  *pdref,
                            ForceField        *pdout,
                            const std::string &analyze,
@@ -651,6 +662,7 @@ static void implant_values(const ForceField  *pdref,
     }
 }
 
+//! \brief Compare to force field for a specific parameter
 static void compare_pd(ForceField *pd1,
                        ForceField *pd2,
                        const std::string   &ptype)
@@ -699,6 +711,7 @@ static void compare_pd(ForceField *pd1,
     }
 }
 
+//! \brief Ass missing BondEnergy to harmonic bonds, maybe obsolete
 static void addBondEnergy(ForceField *pd)
 {
     auto fs = pd->findForces(InteractionType::BONDS);
@@ -725,6 +738,11 @@ static void addBondEnergy(ForceField *pd)
     }
 }
 
+/*! \brief Tool to manipulate force field files
+ * \param[in] argc Number of arguments on the cmd line
+ * \param[in] argv The actual arguments
+ * \return 0 if ok, 1 otherwise
+ */
 int edit_ff(int argc, char*argv[])
 {
     std::vector<const char *> desc =

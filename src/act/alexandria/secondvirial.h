@@ -57,8 +57,10 @@ namespace alexandria
 void forceFieldSummary(JsonTree      *jtree,
                        const ForceField *pd);
 
+//! \brief Components of the second virial
 enum class b2Type { Classical, Force, Torque1, Torque2, Total };
 
+//! Map from enum to string for b2Type
 extern const std::map<b2Type, std::string> b2Type2str;
 
 /*! \brief Convert b2Type to string
@@ -102,6 +104,7 @@ private:
 
 
 public:
+    //! \brief Constructor
     ReRunner(bool computeB2) : computeB2_(computeB2) {}
     
     /*! \brief Make copies of utilities

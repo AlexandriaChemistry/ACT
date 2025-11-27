@@ -38,6 +38,7 @@
 namespace alexandria
 {
 
+//! \brief Map from enum to string
 std::map<ActParticle, std::string> aptNames = {
     { ActParticle::Atom, "Atom" },
     { ActParticle::Vsite, "VSite" },

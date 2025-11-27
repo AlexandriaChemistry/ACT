@@ -197,6 +197,7 @@ public:
     //! \return whether or not we remove problematic compounds
     bool removeMol() const { return bRemoveMol_; }
 
+    //! \return The communication record
     const CommunicationRecord *commRec() const { return &commRec_; }
 
     /*! \brief Set the output environment pointer \p oenv_

@@ -42,6 +42,7 @@
 namespace alexandria
 {
 
+//! \brief Generate velocities according to Maxwell distribution
 static void low_mspeed(real                        tempi,
                        const std::vector<ActAtom> &atoms,
                        std::vector<gmx::RVec>     *v,
@@ -106,6 +107,7 @@ void maxwell_speed(real                        tempi,
     low_mspeed(tempi, atoms, v, &rng);
 }
 
+//! \brief Compute center of mass
 static real calc_cm(const std::vector<ActAtom>   &atoms,
                     const std::vector<gmx::RVec> &x,
                     std::vector<gmx::RVec>       *v,
