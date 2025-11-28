@@ -1,7 +1,7 @@
 on:
   push:
     branches:
-      - main
+      - issue349
 permissions:
   contents: write
 
@@ -16,7 +16,7 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           working-directory: .
-          doxyfile-path: docs/doxygen/Doxyfile
+          doxyfile-path: docs/doxygen/Doxyfile-full
           html-output-folder: docs/html
           branch: issue349
           # env_list_file: path/to/env.list  # Uncomment and set if needed (see below)
