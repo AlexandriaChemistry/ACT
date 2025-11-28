@@ -10,7 +10,7 @@ understand the overall implementation without reading extensive documentation.
 ======================
 
 The %main() method for the wrapper binary is implemented in
-`src/programs/gmx.cpp`.  This is a very simple code that does these basic
+`src/act/alexandria/alexandria.cpp`.  This is a very simple code that does these basic
 tasks:
  1. Initializes \Gromacs structures using gmx::initForCommandLine()
     (see \ref page_usinglibrary).
@@ -63,23 +63,23 @@ method.  This method:
 Command line help
 -----------------
 
-To handle the `gmx help ...` command, as well as for `gmx -h` and for
-`gmx` _module_ `-h`, the command line manager internally creates a module that
+To handle the `alexandria help ...` command, as well as for `alexandria -h` and for
+`alexandria` _module_ `-h`, the command line manager internally creates a module that
 handles the `help` command.  All command lines containing the `-h`, as well as
-invocation of `gmx` without any arguments, are translated to corresponding
-`gmx help` commands.  For example, `gmx` _module_ `-h` is handled exactly like
-`gmx help` _module_.  Note that if `-h` is specified for a module, the command
+invocation of `alexandria` without any arguments, are translated to corresponding
+`alexandria help` commands.  For example, `alexandria` _module_ `-h` is handled exactly like
+`alexandria help` _module_.  Note that if `-h` is specified for a module, the command
 line manager throws away all the other arguments before passing control to the
 module.
 
 After the above translations, the internal help module handles all the help
 output.  All the help is organized into a hierarchy of gmx::IHelpTopic
 instances.  The help module internally creates a root help topic that is
-printed with `gmx help`.  If there are additional words after the `gmx help`
+printed with `alexandria help`.  If there are additional words after the `alexandria help`
 command, then those are taken to specify the topic to show in the hierarchy.
 
 gmx::CommandLineModuleManager internally creates a help topic for each added
-module.  These topics are shown when `gmx help` _module_ is invoked.
+module.  These topics are shown when `alexandria help` _module_ is invoked.
 They forward the request to the actual module (to
 gmx::ICommandLineModule::writeHelp()).
 
@@ -93,7 +93,7 @@ Help in other formats
 
 The build system provides a target, `make sphinx-programs`, that generates
 reStructuredText help for the commands, which in turn is used to generate man
-and HTML help.  Internally, this executes `gmx help -export rst`, which
+and HTML help.  Internally, this executes `alexandria help -export rst`, which
 triggers special handling in the internal help module.
 See documentation for
 \linktodevmanual{build-system,special targets in the build system} for details
