@@ -18,6 +18,6 @@ jobs:
           working-directory: .
           doxyfile-path: docs/doxygen/Doxyfile
           html-output-folder: docs/html
-          branch: main
+          branch: issue349
           # env_list_file: path/to/env.list  # Uncomment and set if needed (see below)
 
