@@ -64,5 +64,6 @@ jobs:
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
+          destination_dir: ${{ steps.deployment.outputs.page_url }}
           publish_dir: ${{ github.workspace }}/build/docs/htmp/doxygen/html-full
       - run: echo "🍏 This job's status is ${{ job.status }}."
