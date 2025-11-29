@@ -20,7 +20,7 @@ jobs:
         run: |
           sudo apt update
           sudo apt-get update
-          sudo apt-get -y install gcc  libopenmpi-dev openmpi-bin libeigen3-dev swig libxml2
+          sudo apt-get -y install gcc  libopenmpi-dev openmpi-bin libeigen3-dev swig libxml2 doxygen graphviz pygments
       - name: Install openbabel
         run: |
           wget https://github.com/dspoel/openbabel/archive/refs/tags/openbabel-alexandria-0.91.tar.gz
@@ -57,3 +57,11 @@ jobs:
           ./bin/statistics-test
           ./bin/wang-buckingham-test
       - run: echo "🍏 This job's status is ${{ job.status }}."
+      - name: Install documentation
+        run: |
+          make doxygen-full
+      - name: Deploy
+          uses: peaceiris/actions-gh-pages@v3
+          with:
+            github_token: ${{ secrets.GITHUB_TOKEN }}
+            publish_dir: docs/html/doxygen/html-full/
