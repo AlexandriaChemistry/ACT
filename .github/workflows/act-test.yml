@@ -2,7 +2,7 @@ name: Alexandria Chemistry Toolkit code submission test
 run-name: ${{ github.actor }} is testing ACT using GitHub Actions
 on: [push]
 jobs:
-  Explore-GitHub-Actions: 
+  Explore-GitHub-Actions:
     runs-on: ubuntu-24.04
     steps:
       - run: echo "🎉 The job was automatically triggered by a ${{ github.event_name }} event."
@@ -56,4 +56,4 @@ jobs:
           ./bin/sobol-test
           ./bin/statistics-test
           ./bin/wang-buckingham-test
-    - run: echo "🍏 This job's status is ${{ job.status }}."
+      - run: echo "🍏 This job's status is ${{ job.status }}."
