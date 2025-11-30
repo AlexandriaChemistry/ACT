@@ -114,7 +114,6 @@ protected:
     
     /*! \brief Actual testing routine
      * \param[in] qdist The charge distribution type
-     * \param[in] qSymm Whether or not to use charge symmetry
      */
     void testResp(const std::string &qdist)
     {

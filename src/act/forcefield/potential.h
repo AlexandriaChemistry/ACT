@@ -40,6 +40,7 @@
 namespace alexandria
 {
 
+//! \brief Interaction potentials implemented in the ACT
 enum class Potential
     { 
         NONE,
@@ -54,14 +55,22 @@ enum class Potential
         VSITE1, VSITE2, VSITE2FD, VSITE3, VSITE3S, VSITE3FD, VSITE3FAD, VSITE3OUT, VSITE3OUTS
     };
 
+//! \brief Structure containing information about Potential functions
 typedef struct {
+    //! \brief String corresponding to potential function
     const std::string         name;
+    //! \brief Corresponding type in GROMACS (if present)
     int                       ftype;
+    //! \brief List of parameter names
     std::vector<const char *> param;
+    //! \brief Energy expression used to populate OpenMM force field files
     const std::string         energy;
+    //! \brief A prefactor for implementing combination rules in OpenMM force field files
     const std::string         prefactor;
 } PotentialProperties;
 
+/*! \brief Map from Potential to it's PotentialProperties
+ */
 extern std::map<Potential, PotentialProperties> potprops;
 
 /*! \brief Convert potential into string
@@ -99,7 +108,6 @@ bool stringToPotential(const std::string &pname, Potential *p);
  * \param[in] p  The potential
  * \return The gromacs type or -1 if not found
  */
-
 int potentialToGromacsType(Potential p);
 /*! \brief Convenience function
  * \param[in] p  The potential

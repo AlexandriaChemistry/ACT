@@ -226,8 +226,9 @@ class QtypeProps
      */
     const std::vector<double> getMultipole(MolPropObservable mpo) const;
 
-    /*! \brief Set quadrupole tensor
-     * \param[in] quad The quadrupole tensor
+    /*! \brief Set multipole values
+     * \param[in] mpo  The type of multipole
+     * \param[in] mult The multipoles
      */
     void setMultipole(MolPropObservable mpo, const std::vector<double> &mult);
 

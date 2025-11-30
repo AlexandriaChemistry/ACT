@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2024
+ * Copyright (C) 2014-2025
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -69,7 +69,9 @@ class Symcharges
         int         numattach_;
 };
 
+//!\brief  Shortcut for iterator over Symcharges
 using SymchargesIterator      = typename std::vector<Symcharges>::iterator;
+//!\brief  Shortcut for const_iterator over Symcharges
 using SymchargesConstIterator = typename std::vector<Symcharges>::const_iterator;
 
 /*! \brief Utility to make command line information about combrules

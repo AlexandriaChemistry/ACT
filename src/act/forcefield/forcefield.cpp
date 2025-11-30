@@ -896,7 +896,7 @@ void ForceField::calcDependent()
     }
 }
 
-//! \copydoc alexandria::ffOption
+//! \brief Implementation of alexandria::ffOption for std::string
 template <> bool ffOption(const ForceField  &pd,
                           InteractionType    itype,
                           const std::string &name,
@@ -915,7 +915,7 @@ template <> bool ffOption(const ForceField  &pd,
     return true;
 }
 
-//! \copydoc alexandria::ffOption
+//! \brief Implementation of alexandria::ffOption for int
 template <> bool ffOption(const ForceField  &pd,
                           InteractionType    itype,
                           const std::string &name,
@@ -930,7 +930,7 @@ template <> bool ffOption(const ForceField  &pd,
     return true;
 }
 
-//! \copydoc alexandria::ffOption
+//! \brief Implementation of alexandria::ffOption for double
 template <> bool ffOption(const ForceField  &pd,
                           InteractionType    itype,
                           const std::string &name,

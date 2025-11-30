@@ -208,6 +208,7 @@ const char *potentialToGromacsString(Potential p)
     }
 }
 
+//! \brief Map from ChargeDistributionType to Potential for Coulomb interactions
 static const std::map<ChargeDistributionType, Potential> cp = {
     { ChargeDistributionType::Point, Potential::COULOMB_POINT },
     { ChargeDistributionType::Gaussian, Potential::COULOMB_GAUSSIAN },

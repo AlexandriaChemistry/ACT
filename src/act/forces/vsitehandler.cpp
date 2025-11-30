@@ -1074,7 +1074,7 @@ VsiteHandler::VsiteHandler()
 void VsiteHandler::init(matrix &box, real dt)
 {
     set_pbc(&pbc_, -1, box);
-    // TODO More checking.
+    //! \todo More checking.
     if (pbc_.ePBC != epbcNONE)
     {
         GMX_THROW(gmx::InvalidInputError(gmx::formatString("No support for periodic boundary conditions").c_str()));
