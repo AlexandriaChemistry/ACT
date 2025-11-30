@@ -71,21 +71,24 @@ enum class inputFormat {
 class InteractionEnergyTest : public gmx::test::CommandLineTestBase
 {
 protected:
+    //! For checking values computed in these tests
     gmx::test::TestReferenceChecker checker_;
+    //! Our testing molecule
     alexandria::ACTMol               mp_;
 
-    //init set tolerance
+    //! Init set tolerance
     InteractionEnergyTest () : checker_(this->rootChecker())
     {
         auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, 1e-5);
         checker_.setDefaultTolerance(tolerance);
     }
     
-    // Static initiation, only run once every test.
+    //! Static initiation, only run once every test.
     static void SetUpTestCase()
     {
     }
-    
+
+    //! Actual testing routine
     void testAcm(const std::string               &model, 
                  inputFormat                      inputformat, 
                  const std::string               &molname, 
@@ -249,7 +252,8 @@ protected:
             }
         }
     }
-            
+
+    //! \brief For cleaning
     static void TearDownTestCase()
     {
     }

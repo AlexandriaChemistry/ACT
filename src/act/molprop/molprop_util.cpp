@@ -214,7 +214,8 @@ static bool comp_mp_formula(alexandria::MolProp &ma,
     }
 }
 
-gmx_atomprop_t my_aps;
+//! \brief Global variable for sorting
+static gmx_atomprop_t my_aps;
 
 //! \brief Count how often a specific element occurs
 static int count_elements(std::map<const char *, int> comp, const char *elem)

@@ -39,6 +39,7 @@
 namespace alexandria
 {
 
+//! Map CommunicationStatus tp string
 std::map<CommunicationStatus, const char*> csToString = {
     { CommunicationStatus::OK,        "Communication OK"        },
     { CommunicationStatus::DONE,      "Communication Done"      },
@@ -48,6 +49,7 @@ std::map<CommunicationStatus, const char*> csToString = {
     { CommunicationStatus::TWOINIT,   "Double initiation"       }
 };
 
+//! Map bool to string
 std::map<bool, const char *> boolName = {
     { false, "false" },
     { true, "true" }
@@ -58,12 +60,14 @@ const char *cs_name(CommunicationStatus cs)
     return csToString[cs];
 };
 
+//! \brief Map NodeType to string
 std::map<NodeType, const char *> ntToString = {
     { NodeType::Master,    "Master"    },
     { NodeType::MiddleMan, "MiddleMan" },
     { NodeType::Helper,    "Helper"    }  
 };
 
+//! \brief Evaluate return value and crash if needed.
 static void check_return(const char *msg, int returnvalue)
 {
     switch (returnvalue)
@@ -333,6 +337,7 @@ void CommunicationRecord::recv_low( int src, void *buf, int bufsize) const
     check_return("MPI_Wait failed", MPI_Wait(&req, &status));
 }
 
+//! \brief Broadcase a string
 template <> void CommunicationRecord::bcast<std::string>(std::string *str, MPI_Comm comm, int root) const
 {
     check_init_done();
@@ -345,18 +350,21 @@ template <> void CommunicationRecord::bcast<std::string>(std::string *str, MPI_C
     check_return("MPI_Bcast", MPI_Bcast((void *)str->data(), ssize, MPI_BYTE, root, comm));
 }
     
+//! \brief Broadcase an int
 template <> void CommunicationRecord::bcast<int>(int *i, MPI_Comm comm, int root) const
 {
     check_init_done();
     check_return("MPI_Bcast", MPI_Bcast((void *)i, 1, MPI_INT, root, comm));
 }
 
+//! \brief Broadcase an unsigned int
 template <> void CommunicationRecord::bcast<unsigned int>(unsigned int *i, MPI_Comm comm, int root) const
 {
     check_init_done();
     check_return("MPI_Bcast", MPI_Bcast((void *)i, 1, MPI_UNSIGNED, root, comm));
 }
 
+//! \brief Broadcase a bool
 template <> void CommunicationRecord::bcast<bool>(bool *b, MPI_Comm comm, int root) const
 {
     check_init_done();
@@ -365,18 +373,21 @@ template <> void CommunicationRecord::bcast<bool>(bool *b, MPI_Comm comm, int ro
     *b = d;
 }
 
+//! \brief Broadcase a double
 template <> void CommunicationRecord::bcast<double>(double *d, MPI_Comm comm, int root) const
 {
     check_init_done();
     check_return("MPI_Bcast", MPI_Bcast((void *)d, 1, MPI_DOUBLE, root, comm));
 }
 
+//! \brief Broadcase a size_t
 template <> void CommunicationRecord::bcast<size_t>(size_t *d, MPI_Comm comm, int root) const
 {
     check_init_done();
     check_return("MPI_Bcast", MPI_Bcast((void *)d, 1, MPI_UNSIGNED_LONG, root, comm));
 }
 
+//! \brief Broadcase a vector of doubles
 template <> void CommunicationRecord::bcast<std::vector<double>>(std::vector<double> *d,
                                                                  MPI_Comm             comm,
                                                                  int                  root) const
@@ -392,6 +403,7 @@ template <> void CommunicationRecord::bcast<std::vector<double>>(std::vector<dou
     check_return("MPI_Bcast", MPI_Bcast((void *)d->data(), ssize, MPI_DOUBLE, root, comm));
 }
 
+//! \brief Send a string
 template <> void CommunicationRecord::send<std::string>(int dest, const std::string &str) const
 {
     check_init_done();
@@ -408,6 +420,7 @@ template <> void CommunicationRecord::send<std::string>(int dest, const std::str
     }
 }
 
+//! \brief Receive a string
 template <> void CommunicationRecord::recv<std::string>(int src, std::string *str) const
 {
     check_init_done();
@@ -429,6 +442,7 @@ template <> void CommunicationRecord::recv<std::string>(int src, std::string *st
     }
 }
 
+//! \brief Send a double
 template <> void CommunicationRecord::send<double>(int dest, const double &d) const
 {
     check_init_done();
@@ -439,6 +453,7 @@ template <> void CommunicationRecord::send<double>(int dest, const double &d) co
     send_low(dest, &d, sizeof(d));
 }
 
+//! \brief Receive a double
 template <> void CommunicationRecord::recv<double>(int src, double *dd) const
 {
     check_init_done();
@@ -450,6 +465,7 @@ template <> void CommunicationRecord::recv<double>(int src, double *dd) const
     }
 }
 
+//! \brief Send an int
 template <> void CommunicationRecord::send<int>(int dest, const int &d) const
 {
     check_init_done();
@@ -460,6 +476,7 @@ template <> void CommunicationRecord::send<int>(int dest, const int &d) const
     send_low(dest, &d, sizeof(d));
 }
 
+//! \brief Send an unsigned int
 template <> void CommunicationRecord::send<unsigned int>(int dest, const unsigned int &d) const
 {
     check_init_done();
@@ -470,6 +487,7 @@ template <> void CommunicationRecord::send<unsigned int>(int dest, const unsigne
     send_low(dest, &d, sizeof(d));
 }
 
+//! \brief Send a size_t
 template <> void CommunicationRecord::send<size_t>(int dest, const size_t &d) const
 {
     check_init_done();
@@ -480,6 +498,7 @@ template <> void CommunicationRecord::send<size_t>(int dest, const size_t &d) co
     send_low(dest, &d, sizeof(d));
 }
 
+//! \brief Send a bool
 template <> void CommunicationRecord::send<bool>(int dest, const bool &b) const
 {
     check_init_done();
@@ -491,6 +510,7 @@ template <> void CommunicationRecord::send<bool>(int dest, const bool &b) const
     send_low(dest, &d, sizeof(d));
 }
 
+//! \brief Receive an int
 template <> void CommunicationRecord::recv<int>(int src, int *t) const
 {
     check_init_done();
@@ -501,6 +521,7 @@ template <> void CommunicationRecord::recv<int>(int src, int *t) const
     }
 }
 
+//! \brief Receive an unsigned int
 template <> void CommunicationRecord::recv<unsigned int>(int src, unsigned int *t) const
 {
     check_init_done();
@@ -511,6 +532,7 @@ template <> void CommunicationRecord::recv<unsigned int>(int src, unsigned int *
     }
 }
 
+//! \brief Receive a size_t
 template <> void CommunicationRecord::recv<size_t>(int src, size_t *t) const
 {
     check_init_done();
@@ -521,6 +543,7 @@ template <> void CommunicationRecord::recv<size_t>(int src, size_t *t) const
     }
 }
 
+//! \brief Receive a bool
 template <> void CommunicationRecord::recv<bool>(int src, bool *b) const
 {
     check_init_done();
@@ -534,12 +557,14 @@ template <> void CommunicationRecord::recv<bool>(int src, bool *b) const
     }
 }
 
+//! \brief Send a TrainFFMiddlemanMode
 template <> void CommunicationRecord::send<TrainFFMiddlemanMode>(int dest, const TrainFFMiddlemanMode &mode) const
 {
     check_init_done();
     send(dest, static_cast<int>(mode));
 }
 
+//! \brief Receive a TrainFFMiddlemanMode
 template <> void CommunicationRecord::recv<TrainFFMiddlemanMode>(int src, TrainFFMiddlemanMode *t) const
 {
     check_init_done();
@@ -548,6 +573,7 @@ template <> void CommunicationRecord::recv<TrainFFMiddlemanMode>(int src, TrainF
     *t = static_cast<TrainFFMiddlemanMode>(i);
 }
 
+//! \brief iMolSelect to int
 std::map<iMolSelect, int> imsInt = 
     {
         { iMolSelect::Train, 3 },
@@ -555,6 +581,7 @@ std::map<iMolSelect, int> imsInt =
         { iMolSelect::Ignore, 13 }
     };
     
+//! \brief Send a iMolSelect
 template <> void CommunicationRecord::send<iMolSelect>(int dest, const iMolSelect &ims) const
 {
     if (msg_handler_)
@@ -566,6 +593,7 @@ template <> void CommunicationRecord::send<iMolSelect>(int dest, const iMolSelec
     send_low(dest, &d, sizeof(d));
 }   
 
+//! \brief Receive a iMolSelect
 template <> void CommunicationRecord::recv<iMolSelect>(int src, iMolSelect *t) const
 {
     int d;
@@ -588,6 +616,7 @@ template <> void CommunicationRecord::recv<iMolSelect>(int src, iMolSelect *t) c
     GMX_THROW(gmx::InternalError(gmx::formatString("Received unknown iMolSelect, int code %d", d).c_str()));
 }
 
+//! \brief Send a vector of doubles
 template <> void CommunicationRecord::send<std::vector<double>>(int dest,
                                                                 const std::vector<double> &d) const
 {
@@ -599,6 +628,7 @@ template <> void CommunicationRecord::send<std::vector<double>>(int dest,
     }
 }
 
+//! \brief Receive a vector of doubles
 template <> void CommunicationRecord::recv<std::vector<double>>(int src,
                                                                 std::vector<double> *d) const
 {
@@ -611,6 +641,7 @@ template <> void CommunicationRecord::recv<std::vector<double>>(int src,
     }
 }
 
+//! \brief Send a vector of RVec (e.g. coordinates)
 template <> void CommunicationRecord::send<std::vector<gmx::RVec>>(int dest,
                                                                    const std::vector<gmx::RVec> &d) const
 {
@@ -622,6 +653,7 @@ template <> void CommunicationRecord::send<std::vector<gmx::RVec>>(int dest,
     }
 }
 
+//! \brief Receive a vector of RVecs.
 template <> void CommunicationRecord::recv<std::vector<gmx::RVec>>(int src,
                                                                    std::vector<gmx::RVec> *d) const
 {
@@ -634,6 +666,7 @@ template <> void CommunicationRecord::recv<std::vector<gmx::RVec>>(int src,
     }
 }
 
+//! \brief Send a vector of ints
 template <> void CommunicationRecord::send<std::vector<int>>(int dest,
                                                              const std::vector<int> &d) const
 {
@@ -645,6 +678,7 @@ template <> void CommunicationRecord::send<std::vector<int>>(int dest,
     }
 }
 
+//! \brief Receive a vector of ints
 template <> void CommunicationRecord::recv<std::vector<int>>(int src,
                                                              std::vector<int> *d) const
 {
