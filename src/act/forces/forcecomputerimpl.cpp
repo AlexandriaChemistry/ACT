@@ -42,6 +42,12 @@
 namespace alexandria
 {
 
+/*! \brief Spread scalar force over two atoms
+ * \param[in]    fscalar The scalar force
+ * \param[in]    dx      The distance vector
+ * \param[in]    indices The atom indices
+ * \param[inout] forces  The forces to be updated
+ */
 static inline void pairforces(double                  fscalar,
                               const gmx::RVec        &dx,
                               const std::vector<int> &indices,
@@ -60,6 +66,14 @@ static inline void pairforces(double                  fscalar,
     f[indices[1]][ZZ] -= fijZ;
 }
 
+/*! \brief Compute Lennard-Jones 12-6 energy and forces
+ * \param[in]    pairs       The atom identifiers and parameters
+ * \param[in]    atoms       The atoms
+ * \param[in]    coordinates The coordinates of all particles
+ * \param[inout] forces      The forces on all particles
+ * \param[inout] energies    The energy per type
+ * \return total energy
+ */
 static double computeLJ12_6(const TopologyEntryVector             &pairs,
                             gmx_unused const std::vector<ActAtom> &atoms,
                             const std::vector<gmx::RVec>          *coordinates,
@@ -110,6 +124,14 @@ static double computeLJ12_6(const TopologyEntryVector             &pairs,
     return erep + edisp;
 }
 
+/*! \brief Compute Lennard-Jones 8-6 energy and forces
+ * \param[in]    pairs       The atom identifiers and parameters
+ * \param[in]    atoms       The atoms
+ * \param[in]    coordinates The coordinates of all particles
+ * \param[inout] forces      The forces on all particles
+ * \param[inout] energies    The energy per type
+ * \return total energy
+ */
 static double computeLJ8_6(const TopologyEntryVector             &pairs,
                            gmx_unused const std::vector<ActAtom> &atoms,
                            const std::vector<gmx::RVec>          *coordinates,
@@ -160,6 +182,14 @@ static double computeLJ8_6(const TopologyEntryVector             &pairs,
     return erep + edisp;
 } 
 
+/*! \brief Compute 14-7 energy and forces
+ * \param[in]    pairs       The atom identifiers and parameters
+ * \param[in]    atoms       The atoms
+ * \param[in]    coordinates The coordinates of all particles
+ * \param[inout] forces      The forces on all particles
+ * \param[inout] energies    The energy per type
+ * \return total energy
+ */
 static double computeLJ14_7(const TopologyEntryVector             &pairs,
                             gmx_unused const std::vector<ActAtom> &atoms,
                             const std::vector<gmx::RVec>          *coordinates,
@@ -216,6 +246,14 @@ static double computeLJ14_7(const TopologyEntryVector             &pairs,
     return erep + edisp;
 }
 
+/*! \brief Low-level utility to compute Born-Mayer energy and forces
+ * \param[in]    indices The atom identifiers and parameters
+ * \param[in]    x       The coordinates of all particles
+ * \param[in]    aexp    The prefactor in the energy expression
+ * \param[in]    bexp    The exponent in the energy expression
+ * \param[inout] forces      The forces on all particles
+ * \return total energy
+ */
 static double lowBornMayer(const std::vector<int>       &indices,
                            const std::vector<gmx::RVec> &x,
                            double                        aexp,
@@ -242,6 +280,14 @@ static double lowBornMayer(const std::vector<int>       &indices,
     return eeexp;
 }
 
+/*! \brief Compute Born-Mayer energy and forces
+ * \param[in]    pairs       The atom identifiers and parameters
+ * \param[in]    atoms       The atoms
+ * \param[in]    coordinates The coordinates of all particles
+ * \param[inout] forces      The forces on all particles
+ * \param[inout] energies    The energy per type
+ * \return total energy
+ */
 static double computeBornMayer(const TopologyEntryVector             &pairs,
                                gmx_unused const std::vector<ActAtom> &atoms,
                                const std::vector<gmx::RVec>          *coordinates,
@@ -264,6 +310,14 @@ static double computeBornMayer(const TopologyEntryVector             &pairs,
     return eexp;
 }
 
+/*! \brief Low-level utility to compute Slater-ISA energy and forces
+ * \param[in]    indices The atom identifiers and parameters
+ * \param[in]    x       The coordinates of all particles
+ * \param[in]    aexp    The prefactor in the energy expression
+ * \param[in]    bexp    The exponent in the energy expression
+ * \param[inout] forces      The forces on all particles
+ * \return total energy
+ */
 static double lowSlaterISA(const std::vector<int>       &indices,
                            const std::vector<gmx::RVec> &x,
                            double                        aexp,
@@ -298,6 +352,14 @@ static double lowSlaterISA(const std::vector<int>       &indices,
     return eeexp;
 }
 
+/*! \brief Compute Slater-ISA energy and forces
+ * \param[in]    pairs       The atom identifiers and parameters
+ * \param[in]    atoms       The atoms
+ * \param[in]    coordinates The coordinates of all particles
+ * \param[inout] forces      The forces on all particles
+ * \param[inout] energies    The energy per type
+ * \return total energy
+ */
 static double computeSlaterISA(const TopologyEntryVector             &pairs,
                                gmx_unused const std::vector<ActAtom> &atoms,
                                const std::vector<gmx::RVec>          *coordinates,
@@ -317,6 +379,14 @@ static double computeSlaterISA(const TopologyEntryVector             &pairs,
     return eexp;
 }
 
+/*! \brief Compute Double Exponential energy and forces
+ * \param[in]    pairs       The atom identifiers and parameters
+ * \param[in]    atoms       The atoms
+ * \param[in]    coordinates The coordinates of all particles
+ * \param[inout] forces      The forces on all particles
+ * \param[inout] energies    The energy per type
+ * \return total energy
+ */
 static double computeDoubleExponential(const TopologyEntryVector             &pairs,
                                        gmx_unused const std::vector<ActAtom> &atoms,
                                        const std::vector<gmx::RVec>          *coordinates,
@@ -359,6 +429,14 @@ static double computeDoubleExponential(const TopologyEntryVector             &pa
     return eexp;
 }
 
+/*! \brief Compute Wang-Buckinghma energy and forces
+ * \param[in]    pairs       The atom identifiers and parameters
+ * \param[in]    atoms       The atoms
+ * \param[in]    coordinates The coordinates of all particles
+ * \param[inout] forces      The forces on all particles
+ * \param[inout] energies    The energy per type
+ * \return total energy
+ */
 static double computeWBH(const TopologyEntryVector             &pairs,
                          gmx_unused const std::vector<ActAtom> &atoms,
                          const std::vector<gmx::RVec>          *coordinates,
@@ -402,6 +480,14 @@ static double computeWBH(const TopologyEntryVector             &pairs,
     return erep + edisp;
 }
 
+/*! \brief Compute Buckingham energy and forces
+ * \param[in]    pairs       The atom identifiers and parameters
+ * \param[in]    atoms       The atoms
+ * \param[in]    coordinates The coordinates of all particles
+ * \param[inout] forces      The forces on all particles
+ * \param[inout] energies    The energy per type
+ * \return total energy
+ */
 static double computeBuckingham(const TopologyEntryVector             &pairs,
                                 gmx_unused const std::vector<ActAtom> &atoms,
                                 const std::vector<gmx::RVec>          *coordinates,
@@ -446,6 +532,14 @@ static double computeBuckingham(const TopologyEntryVector             &pairs,
     return erep + edisp;
 }
 
+/*! \brief Low-level utility to compute Tang-Toennies dispersion energy and forces
+ * \param[in]    indices The atom identifiers and parameters
+ * \param[in]    x       The coordinates of all particles
+ * \param[in]    bDisp   The exponent in the energy expression
+ * \param[in]    ctt     The dispersion coefficient C6, C8, C10
+ * \param[inout] forces  The forces on all particles
+ * \return total energy
+ */
 static double TT_Dispersion(const std::vector<int>       &indices,
                             const std::vector<gmx::RVec> &x,
                             double                        bDisp,
@@ -499,6 +593,14 @@ static double TT_Dispersion(const std::vector<int>       &indices,
     return eedisp;
 }
 
+/*! \brief Compute Tang-Toennies energy and forces
+ * \param[in]    pairs       The atom identifiers and parameters
+ * \param[in]    atoms       The atoms
+ * \param[in]    coordinates The coordinates of all particles
+ * \param[inout] forces      The forces on all particles
+ * \param[inout] energies    The energy per type
+ * \return total energy
+ */
 static double computeTangToennies(const TopologyEntryVector             &pairs,
                                   gmx_unused const std::vector<ActAtom> &atoms,
                                   const std::vector<gmx::RVec>          *coordinates,
@@ -522,6 +624,14 @@ static double computeTangToennies(const TopologyEntryVector             &pairs,
     return erep + edisp;
 }
 
+/*! \brief Compute Tang-Toennies energy and forces with separate b in exponent
+ * \param[in]    pairs       The atom identifiers and parameters
+ * \param[in]    atoms       The atoms
+ * \param[in]    coordinates The coordinates of all particles
+ * \param[inout] forces      The forces on all particles
+ * \param[inout] energies    The energy per type
+ * \return total energy
+ */
 static double computeTT2b(const TopologyEntryVector             &pairs,
                           gmx_unused const std::vector<ActAtom> &atoms,
                           const std::vector<gmx::RVec>          *coordinates,
@@ -545,6 +655,14 @@ static double computeTT2b(const TopologyEntryVector             &pairs,
     return erep + edisp;
 }
 
+/*! \brief Compute Slater-ISA exchange and Tang-Toennies dispersion
+ * \param[in]    pairs       The atom identifiers and parameters
+ * \param[in]    atoms       The atoms
+ * \param[in]    coordinates The coordinates of all particles
+ * \param[inout] forces      The forces on all particles
+ * \param[inout] energies    The energy per type
+ * \return total energy
+ */
 static double computeSlater_ISA_TT(const TopologyEntryVector             &pairs,
                                    gmx_unused const std::vector<ActAtom> &atoms,
                                    const std::vector<gmx::RVec>          *coordinates,
@@ -568,6 +686,15 @@ static double computeSlater_ISA_TT(const TopologyEntryVector             &pairs,
     return erep + edisp;
 }
 
+/*! \brief Compute Generalized Buckingham energy and forces
+ * \param[in]    pairs       The atom identifiers and parameters
+ * \param[in]    atoms       The atoms
+ * \param[in]    coordinates The coordinates of all particles
+ * \param[inout] forces      The forces on all particles
+ * \param[inout] energies    The energy per type
+ * \todo rename function
+ * \return total energy
+ */
 static double computeNonBonded(const TopologyEntryVector             &pairs,
                                gmx_unused const std::vector<ActAtom> &atoms,
                                const std::vector<gmx::RVec>          *coordinates,
@@ -623,6 +750,14 @@ static double computeNonBonded(const TopologyEntryVector             &pairs,
     return erep + edisp;
 }
 
+/*! \brief Compute nothing right now
+ * \param[in]    pairs       The atom identifiers and parameters
+ * \param[in]    atoms       The atoms
+ * \param[in]    coordinates The coordinates of all particles
+ * \param[inout] forces      The forces on all particles
+ * \param[inout] energies    The energy per type
+ * \return total energy
+ */
 static double gmx_unused computeNonBondedTest(const TopologyEntryVector             &pairs,
                                               gmx_unused const std::vector<ActAtom> &atoms,
                                               const std::vector<gmx::RVec>          *coordinates,
@@ -676,6 +811,14 @@ static double gmx_unused computeNonBondedTest(const TopologyEntryVector         
     return erep + edisp;
 }
 
+/*! \brief Compute Coulomb energy and forces for Gaussian distributed charges
+ * \param[in]    pairs       The atom identifiers and parameters
+ * \param[in]    atoms       The atoms
+ * \param[in]    coordinates The coordinates of all particles
+ * \param[inout] forces      The forces on all particles
+ * \param[inout] energies    The energy per type
+ * \return total energy
+ */
 static double computeCoulombGaussian(const TopologyEntryVector         &pairs,
                                      const std::vector<ActAtom>        &atoms,
                                      const std::vector<gmx::RVec>      *coordinates,
@@ -727,6 +870,14 @@ static double computeCoulombGaussian(const TopologyEntryVector         &pairs,
     return ebond;
 }
 
+/*! \brief Compute Coulomb energy and forces for Slater-distributed charges
+ * \param[in]    pairs       The atom identifiers and parameters
+ * \param[in]    atoms       The atoms
+ * \param[in]    coordinates The coordinates of all particles
+ * \param[inout] forces      The forces on all particles
+ * \param[inout] energies    The energy per type
+ * \return total energy
+ */
 static double computeCoulombSlater(const TopologyEntryVector         &pairs,
                                    const std::vector<ActAtom>        &atoms,
                                    const std::vector<gmx::RVec>      *coordinates,
@@ -841,6 +992,13 @@ static double computePartridge(const TopologyEntryVector             &angles,
 }
 #endif
 
+/*! \brief Compute harmonic force and energy
+ * \param[in]  k  The force constant
+ * \param[in]  x0 The reference position/angle
+ * \param[in]  x  The actual position/angle
+ * \param[out] V  The energy
+ * \param[out] F  The scalar force
+ */
 static void harmonic(real k, real x0, real x, real *V, real *F)
 {
     const real half = 0.5;
@@ -852,6 +1010,14 @@ static void harmonic(real k, real x0, real x, real *V, real *F)
     *V  = half*k*dx2;
 }
 
+/*! \brief Compute nothing
+ * \param[in]    bonds       The atom identifiers and parameters
+ * \param[in]    atoms       The atoms
+ * \param[in]    coordinates The coordinates of all particles
+ * \param[inout] forces      The forces on all particles
+ * \param[inout] energies    The energy per type
+ * \return total energy
+ */
 static double computeDummy(gmx_unused const TopologyEntryVector         &bonds,
                            gmx_unused const std::vector<ActAtom>        &atoms,
                            gmx_unused const std::vector<gmx::RVec>      *coordinates,
@@ -861,6 +1027,14 @@ static double computeDummy(gmx_unused const TopologyEntryVector         &bonds,
     return 0;
 }
 
+/*! \brief Compute energy and forces for the harmonic bond potential
+ * \param[in]    bonds       The atom identifiers and parameters
+ * \param[in]    atoms       The atoms
+ * \param[in]    coordinates The coordinates of all particles
+ * \param[inout] forces      The forces on all particles
+ * \param[inout] energies    The energy per type
+ * \return total energy
+ */
 static double computeBonds(const TopologyEntryVector             &bonds,
                            gmx_unused const std::vector<ActAtom> &atoms,
                            const std::vector<gmx::RVec>          *coordinates,
@@ -903,6 +1077,14 @@ static double computeBonds(const TopologyEntryVector             &bonds,
     return ebond;
 }
 
+/*! \brief Compute energy and forces for the cubic bond potential
+ * \param[in]    bonds       The atom identifiers and parameters
+ * \param[in]    atoms       The atoms
+ * \param[in]    coordinates The coordinates of all particles
+ * \param[inout] forces      The forces on all particles
+ * \param[inout] energies    The energy per type
+ * \return total energy
+ */
 static double computeCubic(const TopologyEntryVector             &bonds,
                            gmx_unused const std::vector<ActAtom> &atoms,
                            const std::vector<gmx::RVec>          *coordinates,
@@ -950,6 +1132,14 @@ static double computeCubic(const TopologyEntryVector             &bonds,
     return ebond;
 }
 
+/*! \brief Compute energy and forces for the Morse bond potential
+ * \param[in]    bonds       The atom identifiers and parameters
+ * \param[in]    atoms       The atoms
+ * \param[in]    coordinates The coordinates of all particles
+ * \param[inout] forces      The forces on all particles
+ * \param[inout] energies    The energy per type
+ * \return total energy
+ */
 static double computeMorse(const TopologyEntryVector             &bonds,
                            gmx_unused const std::vector<ActAtom> &atoms,
                            const std::vector<gmx::RVec>          *coordinates,
@@ -989,6 +1179,14 @@ static double computeMorse(const TopologyEntryVector             &bonds,
     return ebond;
 }
 
+/*! \brief Compute energy and forces for the Hua bond potential
+ * \param[in]    bonds       The atom identifiers and parameters
+ * \param[in]    atoms       The atoms
+ * \param[in]    coordinates The coordinates of all particles
+ * \param[inout] forces      The forces on all particles
+ * \param[inout] energies    The energy per type
+ * \return total energy
+ */
 static double computeHua(const TopologyEntryVector             &bonds,
                          gmx_unused const std::vector<ActAtom> &atoms,
                          const std::vector<gmx::RVec>          *coordinates,
@@ -1025,6 +1223,14 @@ static double computeHua(const TopologyEntryVector             &bonds,
     return ebond;
 }
 
+/*! \brief Compute energy and forces for the linear angle potential
+ * \param[in]    angles      The atom identifiers and parameters
+ * \param[in]    atoms       The atoms
+ * \param[in]    coordinates The coordinates of all particles
+ * \param[inout] forces      The forces on all particles
+ * \param[inout] energies    The energy per type
+ * \return total energy
+ */
 static double computeLinearAngles(const TopologyEntryVector             &angles,
                                   gmx_unused const std::vector<ActAtom> &atoms,
                                   const std::vector<gmx::RVec>          *coordinates,
@@ -1069,6 +1275,14 @@ static double computeLinearAngles(const TopologyEntryVector             &angles,
     return ebond;
 }
 
+/*! \brief Compute energy and forces for the harmonic angle potential
+ * \param[in]    angles      The atom identifiers and parameters
+ * \param[in]    atoms       The atoms
+ * \param[in]    coordinates The coordinates of all particles
+ * \param[inout] forces      The forces on all particles
+ * \param[inout] energies    The energy per type
+ * \return total energy
+ */
 static double computeAngles(const TopologyEntryVector             &angles,
                             gmx_unused const std::vector<ActAtom> &atoms,
                             const std::vector<gmx::RVec>          *coordinates,
@@ -1137,6 +1351,14 @@ static double computeAngles(const TopologyEntryVector             &angles,
     return energy;
 }
 
+/*! \brief Compute energy and forces for the Urey-Bradley angle potential
+ * \param[in]    angles      The atom identifiers and parameters
+ * \param[in]    atoms       The atoms
+ * \param[in]    coordinates The coordinates of all particles
+ * \param[inout] forces      The forces on all particles
+ * \param[inout] energies    The energy per type
+ * \return total energy
+ */
 static double computeUreyBradley(const TopologyEntryVector             &angles,
                                  gmx_unused const std::vector<ActAtom> &atoms,
                                  const std::vector<gmx::RVec>          *coordinates,
@@ -1220,6 +1442,14 @@ static double computeUreyBradley(const TopologyEntryVector             &angles,
     return energy;
 }
 
+/*! \brief Compute energy and forces for the polarization potential
+ * \param[in]    bonds       The atom identifiers and parameters
+ * \param[in]    atoms       The atoms
+ * \param[in]    coordinates The coordinates of all particles
+ * \param[inout] forces      The forces on all particles
+ * \param[inout] energies    The energy per type
+ * \return total energy
+ */
 static double computePolarization(const TopologyEntryVector             &bonds,
                                   gmx_unused const std::vector<ActAtom> &atoms,
                                   const std::vector<gmx::RVec>          *coordinates,
@@ -1284,6 +1514,7 @@ static double computePolarization(const TopologyEntryVector             &bonds,
     return ebond;
 }
 
+//! \brief Low-level routine to update forces from dihedrals
 static void do_dih_fup_noshiftf(int i, int j, int k, int l, real ddphi,
                                 rvec r_ij, rvec r_kj, rvec r_kl,
                                 rvec m, rvec n,
@@ -1323,6 +1554,7 @@ static void do_dih_fup_noshiftf(int i, int j, int k, int l, real ddphi,
     }
 }
 
+//! \brief Low-level code to compute dihedral angles
 static real dih_angle(const rvec xi, const rvec xj, const rvec xk, const rvec xl,
                       rvec r_ij, rvec r_kj, rvec r_kl, rvec m, rvec n)
 {
@@ -1340,6 +1572,14 @@ static real dih_angle(const rvec xi, const rvec xj, const rvec xk, const rvec xl
     return phi;
 }
 
+/*! \brief Compute energy and forces for the Fourier dihedral potential
+ * \param[in]    propers     The atom identifiers and parameters
+ * \param[in]    atoms       The atoms
+ * \param[in]    coordinates The coordinates of all particles
+ * \param[inout] forces      The forces on all particles
+ * \param[inout] energies    The energy per type
+ * \return total energy
+ */
 static double computeFourDihs(const TopologyEntryVector             &propers,
                               gmx_unused const std::vector<ActAtom> &atoms,
                               const std::vector<gmx::RVec>          *coordinates,
@@ -1393,6 +1633,14 @@ static double computeFourDihs(const TopologyEntryVector             &propers,
     return energy;
 }
 
+/*! \brief Compute energy and forces for the harmonic improper dihedral potential
+ * \param[in]    impropers   The atom identifiers and parameters
+ * \param[in]    atoms       The atoms
+ * \param[in]    coordinates The coordinates of all particles
+ * \param[inout] forces      The forces on all particles
+ * \param[inout] energies    The energy per type
+ * \return total energy
+ */
 static double computeImpropers(const TopologyEntryVector             &impropers,
                                gmx_unused const std::vector<ActAtom> &atoms,
                                const std::vector<gmx::RVec>          *coordinates,
@@ -1431,6 +1679,14 @@ static double computeImpropers(const TopologyEntryVector             &impropers,
     return energy;
 }
 
+/*! \brief Compute energy and forces for the proper dihedral potential
+ * \param[in]    propers     The atom identifiers and parameters
+ * \param[in]    atoms       The atoms
+ * \param[in]    coordinates The coordinates of all particles
+ * \param[inout] forces      The forces on all particles
+ * \param[inout] energies    The energy per type
+ * \return total energy
+ */
 static double computePropers(const TopologyEntryVector             &propers,
                              gmx_unused const std::vector<ActAtom> &atoms,
                              const std::vector<gmx::RVec>          *coordinates,
@@ -1475,6 +1731,7 @@ static double computePropers(const TopologyEntryVector             &propers,
     return energy;
 }
 
+//! \brief Map Potential to function name
 std::map<Potential, bondForceComputer> bondForceComputerMap = {
     { Potential::NONE,                   computeDummy           },
     { Potential::HARMONIC_BONDS,         computeBonds           },

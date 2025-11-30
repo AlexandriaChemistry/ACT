@@ -115,7 +115,6 @@ public:
      * \brief Create a new VolumeFractionPenalizer
      * \param[in] oenv         gromacs output environment
      * \param[in] logVolume    true if volume in log scale, false otherwise
-     * \param[in] logfile      file to print log stuff to (may be nullptr)
      * \param[in] totalVolume  total volume of the parameter space
      * \param[in] volFracLimit if the volume of the population divided by
      *                         \p totalVolume is smaller than \p volFracLimit then
@@ -130,6 +129,12 @@ public:
                             const double             popFrac,
                                   Initializer       *initializer);
 
+    /*! \brief Do the penalization if the generation is just right
+     * \param[in]  tw         A text writer
+     * \param[out] pool       The gene pool to be penalized
+     * \param[in]  generation The GA generation
+     * \return true if penalties were handed out
+     */
     bool penalize(gmx::TextWriter *tw,
                   GenePool        *pool,
                   const int       generation) override;

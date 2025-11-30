@@ -35,6 +35,7 @@
 namespace alexandria
 {
 
+//! \brief Function type to compute different interactions
 typedef double (*bondForceComputer)(const TopologyEntryVector          &bonds,
                                     const std::vector<ActAtom>         &atoms,
                                     const std::vector<gmx::RVec>       *coordinates,

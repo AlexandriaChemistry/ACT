@@ -43,7 +43,7 @@
 
 /*! Add integer to xmlNode
  * \param[in] ptr  The XML structure
- * \paran[in] name The name of the variable
+ * \param[in] name The name of the variable
  * \param[in] val  The value of the variable
  * Will crash with fatal error if operation fails
  */
@@ -51,7 +51,7 @@ void add_xml_int(xmlNodePtr ptr, const std::string &name, int val);
 
 /*! Add double to xmlNode
  * \param[in] ptr  The XML structure
- * \paran[in] name The name of the variable
+ * \param[in] name The name of the variable
  * \param[in] val  The value of the variable
  * Will crash with fatal error if operation fails
  */
@@ -59,7 +59,7 @@ void add_xml_double(xmlNodePtr ptr, const std::string &name, double val);
 
 /*! Add integer to xmlNode
  * \param[in] ptr  The XML structure
- * \paran[in] name The name of the variable
+ * \param[in] name The name of the variable
  * \param[in] val  The value of the variable
  * Will crash with fatal error if operation fails
  */
@@ -67,7 +67,7 @@ void add_xml_char(xmlNodePtr ptr, const std::string &name, const char *val);
 
 /*! Add std::string to xmlNode
  * \param[in] ptr  The XML structure
- * \paran[in] name The name of the variable
+ * \param[in] name The name of the variable
  * \param[in] val  The value of the variable
  * Will crash with fatal error if operation fails
  */

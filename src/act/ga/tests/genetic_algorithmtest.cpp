@@ -74,7 +74,7 @@ namespace
 class GeneticAlgorithmTest : public gmx::test::CommandLineTestBase
 {
     protected:
- 
+        //! \brief Constructor  
         GeneticAlgorithmTest ()
         {
         }
@@ -84,10 +84,12 @@ class GeneticAlgorithmTest : public gmx::test::CommandLineTestBase
         {
         }
  
+        //! \brief Cleaning
         static void TearDownTestCase()
         {
         }
-    
+
+        //! \brief Test the genetic algorihm code
         void testIt(alexandria::OptimizerAlg alg,
                     int nElites, int popSize,
                     bool verbose, int ncrossovers, 
@@ -123,7 +125,7 @@ class GeneticAlgorithmTest : public gmx::test::CommandLineTestBase
             {
                 molgen.addFitOption(fs);
             }
-            // TODO check return value
+            //! \todo  check return value
             (void) molgen.Read(nullptr, mpDataName.c_str(), sii.forcefield(),
                                gms, sii.fittingTargetsConst(iMolSelect::Train),
                                false);
