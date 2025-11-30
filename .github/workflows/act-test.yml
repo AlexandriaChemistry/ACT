@@ -1,8 +1,8 @@
 name: Alexandria Chemistry Toolkit code submission test
-run-name: ${{ github.actor }} is testing ACT using GitHub Actions
+run-name: ${{ github.actor }} build and test ACT
 on: [push]
 jobs:
-  Explore-GitHub-Actions:
+  Build:
     runs-on: ubuntu-24.04
     steps:
       - run: echo "🎉 The job was automatically triggered by a ${{ github.event_name }} event."
@@ -40,7 +40,9 @@ jobs:
           export MPICXX=/usr/bin/g++
           export MPICC=/usr/bin/gcc
           cmake -DGMX_DOUBLE=ON -DGMX_X11=OFF -DBUILD_SHARED_LIBS=OFF -DCMAKE_PREFIX_PATH=${{ github.workspace }}/../tools -DGMX_OPENMP=OFF -DGMX_MPI=ON -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/../tools -DCMAKE_BUILD_TYPE=Release -DGMX_BUILD_MANUAL=OFF -DGMX_COMPACT_DOXYGEN=OFF -DREGRESSIONTEST_DOWNLOAD=OFF -DGMX_DEFAULT_SUFFIX=OFF -DCMAKE_CXX_COMPILER=${MPICXX} -DCMAKE_C_COMPILER=${MPICC} ..
-          make -j 4 install tests
+          make -j 4 install tests doxygen-full
+  Test:
+    needs: Build
       - name: Test the ACT
         run: |
           source ${{ github.workspace }}/../tools/bin/ACTRC
@@ -57,16 +59,14 @@ jobs:
           ./bin/sobol-test
           ./bin/statistics-test
           ./bin/wang-buckingham-test
-      - name: Documentation
-        run: |
-          cd ${{ github.workspace }}/build
-          make doxygen-full
-        # Deployment job
-        deploy:
-          environment:
-            name: github-pages
-            url: ${{ steps.deployment.outputs.page_url }}
+
+  Deploy:
+    needs: Build
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    # Deployment job
+    steps:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
-      - run: echo "🍏 This job's status is ${{ job.status }}."
