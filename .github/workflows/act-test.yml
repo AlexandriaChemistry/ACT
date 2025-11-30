@@ -34,7 +34,7 @@ jobs:
           make -j 4 install
       - name: Install ACT
         run: |
-          cd ${{ github.workspace }} 
+          cd ${{ github.workspace }}
           mkdir build; cd build
           export MPICXX=/usr/bin/g++
           export MPICC=/usr/bin/gcc
@@ -56,30 +56,4 @@ jobs:
           ./bin/sobol-test
           ./bin/statistics-test
           ./bin/wang-buckingham-test
-#      - name: Generate documentation
-#      - name: Deploy documentation
-#        uses: peaceiris/actions-gh-pages@v4
-#        with:
-#          github_token: ${{ secrets.GITHUB_TOKEN }}
-#          publish_dir: 
-      - name: Upload static files as artifact
-        id: deployment
-        run: |
-          cd ${{ github.workspace }}/build
-          make doxygen-full
-        uses: actions/upload-pages-artifact@v3 # or specific "vX.X.X" version tag for this action
-        with:
-          path: ${{ github.workspace }}/build/docs/htmp/doxygen/html-full
-
-  # Deployment job
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
-    needs: build
-    steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
-   - run: echo "🍏 This job's status is ${{ job.status }}."
+    - run: echo "🍏 This job's status is ${{ job.status }}."
