@@ -3,7 +3,7 @@ run-name: ${{ github.actor }} is testing ACT using GitHub Actions
 on: [push]
 jobs:
   Explore-GitHub-Actions:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     steps:
       - run: echo "🎉 The job was automatically triggered by a ${{ github.event_name }} event."
       - run: echo "🐧 This job is now running on a ${{ runner.os }} server hosted by GitHub!"
@@ -21,16 +21,6 @@ jobs:
           sudo apt update
           sudo apt-get update
           sudo apt-get -y install gcc  libopenmpi-dev openmpi-bin libeigen3-dev swig libxml2 doxygen graphviz
-      - name: Install documentation
-        run: |
-          cd ${{ github.workspace }}/build
-          make doxygen-full
-      - name: Deploy
-        uses: peaceiris/actions-gh-pages@v4
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          destination_dir: ${{ steps.deployment.outputs.page_url }}
-          publish_dir: ${{ github.workspace }}/build/docs/htmp/doxygen/html-full
       - name: Install openbabel
         run: |
           wget https://github.com/dspoel/openbabel/archive/refs/tags/openbabel-alexandria-0.91.tar.gz
@@ -66,4 +56,13 @@ jobs:
           ./bin/sobol-test
           ./bin/statistics-test
           ./bin/wang-buckingham-test
+      - name: Generate documentation
+        run: |
+          cd ${{ github.workspace }}/build
+          make doxygen-full
+      - name: Deploy documentation
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ${{ github.workspace }}/build/docs/htmp/doxygen/html-full
       - run: echo "🍏 This job's status is ${{ job.status }}."
