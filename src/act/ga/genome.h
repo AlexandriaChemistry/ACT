@@ -141,7 +141,7 @@ public:
     /*! \brief BroadCast to and from other processors
      * \param[in] cr   The communication record
      * \param[in] root The communication root
-     * \param[in] comm The MPI communicator
+     * \param[in] com  The MPI communicator
      */
     void BroadCast(const alexandria::CommunicationRecord *cr, int root, MPI_Comm com);
 

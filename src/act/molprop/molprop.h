@@ -178,7 +178,12 @@ public:
     
     //! Return the IUPAC International Chemical Identifier (InChI) see http://www.iupac.org/home/publications/e-resources/inchi.html
     const std::string &getInchi() const { return inchi_; }
- 
+
+    /*! Check whether a property is present
+     * \param[in] mpo The property being looked after
+     * \param[in] T   The temperature
+     * \param[in] jt  The jobtype of the QM calc
+     */ 
     bool hasQMProperty(MolPropObservable                       mpo, 
                        double                                  T,
                        JobType                                 jt) const;

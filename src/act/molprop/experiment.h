@@ -127,7 +127,12 @@ public:
     //! Get the id
     int id() const { return id_; }
 
-    void addProperty(MolPropObservable mpo, std::unique_ptr<GenericProperty>);
+    /*! \brief Add a property to this experiment
+     * \param[in] mpo The molpropobservable
+     * \param[in] gp  The generic property
+     */
+    void addProperty(MolPropObservable                mpo, 
+                     std::unique_ptr<GenericProperty> gp);
 
     /*! \brief Whether a property is present
      * \param[in] mpo Theproperty
@@ -268,7 +273,8 @@ public:
      */
     CommunicationStatus Receive(const CommunicationRecord *cr,
                                 int                        src);
-    
+
+    //! \return true if mpo is present in this experiment    
     bool hasMolPropObservable(MolPropObservable mpo) const
     {
         return property_.end() != property_.find(mpo);
