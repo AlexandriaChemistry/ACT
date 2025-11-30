@@ -56,7 +56,8 @@ private:
 protected:
 
     /*! \brief Constructor
-     * \param[in] seed seed for the random number generator
+     * \param[in] seed      seed for the random number generator
+     * \param[in] algorithm The algorithm used to generate partial charges
      */
     Mutator(int                                    seed,
             alexandria::ChargeGenerationAlgorithm  algorithm)
@@ -96,6 +97,7 @@ public:
                                      Genome                 *bestGenome,
                                      iMolSelect              ims) = 0;
 
+    //! \return whether a minimum was found
     virtual bool foundMinimum() = 0;
 
     //! \return the ChargeGenerationAlgorithm

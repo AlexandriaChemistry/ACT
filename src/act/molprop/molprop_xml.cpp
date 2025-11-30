@@ -163,6 +163,7 @@ enum class MolPropXml {
     qMBIS
 };
 
+//! \brief map from MolPropXml to MolPropObservable
 const std::map<MolPropXml, MolPropObservable> xoMap = {
     { MolPropXml::FREQUENCY,      MolPropObservable::FREQUENCY    },
     { MolPropXml::INTENSITY,      MolPropObservable::INTENSITY    },
@@ -174,12 +175,14 @@ const std::map<MolPropXml, MolPropObservable> xoMap = {
     { MolPropXml::HEXADECAPOLE,   MolPropObservable::HEXADECAPOLE }
 };
 
+//! \brief Set of charge parmameers that can be present
 const std::set<MolPropXml> allCharges = {
     MolPropXml::qESP, MolPropXml::qCM5, MolPropXml::qMulliken,
     MolPropXml::qHirshfeld, MolPropXml::qACM, MolPropXml::qBCC,
     MolPropXml::qRESP, MolPropXml::qMBIS
 };
 
+//! \brief Map string to MolPropXml
 std::map<const std::string, MolPropXml> xmlxxx =
 {
     { "molecules",        MolPropXml::MOLECULES      },
@@ -256,8 +259,10 @@ std::map<const std::string, MolPropXml> xmlxxx =
     { "fz",               MolPropXml::fZ             }
 };
 
+//! Map MolPropXml to strin
 std::map<MolPropXml, const std::string> rmap = {};
 
+//! \brief Utility to fill utility structures
 static void fillMaps()
 {
     rmap.clear();
@@ -309,12 +314,14 @@ static void fillMaps()
     }
 }
 
+//! Check whether parameter is empty
 static bool NN(const std::map<MolPropXml, std::string> *xbuf, MolPropXml index)
 {
     auto ptr = xbuf->find(index);
     return (xbuf->end() != ptr) && !ptr->second.empty();
 }
 
+//! \return true if all MolPropXml in the index have been read
 static bool xmlFound(const std::map<MolPropXml, std::string> *xbuf, 
                      const std::vector<MolPropXml>           &index)
 {
@@ -327,6 +334,7 @@ static bool xmlFound(const std::map<MolPropXml, std::string> *xbuf,
     return found;
 }
 
+//! \brief Extract double from xml buffer map or crash
 static double xbuf_atof(const std::map<MolPropXml, std::string> *xbuf, MolPropXml index, bool crash)
 {
     auto ptr = xbuf->find(index);
@@ -342,6 +350,7 @@ static double xbuf_atof(const std::map<MolPropXml, std::string> *xbuf, MolPropXm
     return 0.0;
 }
 
+//! \brief Extract int from xml buffer map or crash
 static int xbuf_atoi(const std::map<MolPropXml, std::string> *xbuf, MolPropXml index, bool crash)
 {
     auto ptr = xbuf->find(index);
@@ -357,6 +366,7 @@ static int xbuf_atoi(const std::map<MolPropXml, std::string> *xbuf, MolPropXml i
     return 0;
 }
 
+//! \brief Get XML attributes for an entry
 static void get_attributes(MsgHandler                        *msg_handler,
                            xmlAttrPtr                         attr,
                            std::map<MolPropXml, std::string> *xbuf)
@@ -388,6 +398,7 @@ static void get_attributes(MsgHandler                        *msg_handler,
     }
 }
 
+//! \brief Get molname from XML buffer if present
 static void get_molecule_attributes(std::map<MolPropXml, std::string> *xbuf,
                                     MolProp                           *mp)
 {
@@ -399,6 +410,7 @@ static void get_molecule_attributes(std::map<MolPropXml, std::string> *xbuf,
     }
 }
 
+//! \brief Get iupac etc. from XML buffer if present
 static void get_molinfo_attributes(std::map<MolPropXml, std::string> *xbuf,
                                    MolProp                           *mp)
 {
@@ -428,6 +440,7 @@ static void get_molinfo_attributes(std::map<MolPropXml, std::string> *xbuf,
     }
 }
 
+//! \brief Clean specific elements from XML buffer
 static void clean_xbuf(std::map<MolPropXml, std::string> *xbuf,
                        const std::vector<MolPropXml>     &clean)
 {
@@ -441,6 +454,7 @@ static void clean_xbuf(std::map<MolPropXml, std::string> *xbuf,
     }
 }
 
+//! \brief Extract harmonic analysis from XML buffer
 static void get_harmonics(std::map<MolPropXml, std::string> *xbuf,
                           Experiment                        *last)
 {
@@ -461,6 +475,7 @@ static void get_harmonics(std::map<MolPropXml, std::string> *xbuf,
     clean_xbuf(xbuf, clean1);
 }
 
+//! \brief Extract polarizability from XML buffer
 static void get_polarizability(std::map<MolPropXml, std::string> *xbuf,
                                Experiment                        *last)
 {
@@ -487,6 +502,7 @@ static void get_polarizability(std::map<MolPropXml, std::string> *xbuf,
                  MolPropXml::UNIT, MolPropXml::ERROR });
 }
 
+//! \brief Process a complete XML tree to fill a MolProp vector
 static void mp_process_tree(MsgHandler                        *msg_handler,
                             xmlNodePtr                         tree,
                             std::vector<MolProp>              *molprops,
@@ -1058,6 +1074,10 @@ static void add_properties(xmlNodePtr        exp,
     }
 }
 
+/*! \brief Add a MolProp to the XML tree
+ * \param[in] parent The XML tree
+ * \param[in] mp     The molprop to add
+ */
 static void add_xml_molprop(xmlNodePtr     parent,
                             const MolProp &mp)
 {

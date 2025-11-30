@@ -163,6 +163,12 @@ CatastrophePenalizer::CatastrophePenalizer(const int          seed,
     }
 }
 
+/*! \brief Print cause of rapid decline in population
+ * \param[in] tw          Text writer
+ * \param[in] generation  Generation number
+ * \param[in] percentage  Percentage of population that will die
+ * \param[in] gen         Part of the random number generation
+ */
 static void printCause(gmx::TextWriter *tw,
                        int              generation,
                        double           percentage,

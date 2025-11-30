@@ -57,10 +57,7 @@ class Terminator
 
 protected:
 
-    /*!
-     * \brief Constructor
-     * \param[in] outfile the file to write stuff to
-     */
+    /*! * \brief Constructor */
     Terminator() {}
 
 public:

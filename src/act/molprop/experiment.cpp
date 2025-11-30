@@ -217,7 +217,8 @@ void Experiment::AddAtom(CalcAtom ca)
     }
 }
 
-void Experiment::addProperty(MolPropObservable mpo, std::unique_ptr<GenericProperty> gp)
+void Experiment::addProperty(MolPropObservable                mpo,
+                             std::unique_ptr<GenericProperty> gp)
 {
     if (property_.find(mpo) == property_.end())
     {

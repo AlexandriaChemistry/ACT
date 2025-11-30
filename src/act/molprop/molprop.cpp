@@ -240,6 +240,10 @@ static std::string comp2formula(std::map<std::string, int> &comp)
     return form;
 }
 
+/*! Compare two fragments for sorting
+ * \param[in] a First fragment
+ * \param[in] b Second fragment
+ */
 static bool fragCompare(const Fragment &a, const Fragment &b)
 {
     int amin = *std::min_element(a.atoms().begin(), a.atoms().end());
