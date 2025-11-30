@@ -207,10 +207,8 @@ public:
     //! Destructor
     virtual ~GenericProperty() = default;
 
-    //GenericProperty(const GenericProperty& copyFrom) = default;
-    //GenericProperty& operator=(const GenericProperty& copyFrom) = default;
+    //! Copy constructor
     GenericProperty(GenericProperty &&) = default;
-    //GenericProperty& operator=(GenericProperty &&) = default;
 
     /*! \brief
      * Return the property type
@@ -302,10 +300,13 @@ public:
     virtual CommunicationStatus Receive(const CommunicationRecord *cr,
                                         int                        src);
 
+    //! \return stored Value
     virtual double getValue() const = 0;
-    
+
+    //! \return stored Error
     virtual double getError() const = 0;
-    
+
+    //! \return stored Vector
     virtual const std::vector<double> &getVector() const = 0;
     
 };
@@ -363,12 +364,14 @@ public:
     void setValue(const std::string &id, double value);
 
     void Dump(gmx::TextWriter *tw) const;
-    
+
+    //! \copydoc alexandria::GenericProperty::getValue
     double getValue() const
     {
         return average_;
     }
-    
+
+    //! \copydoc alexandria::GenericProperty::getError
     double getError() const
     {
         return error_;
@@ -446,14 +449,16 @@ public:
      */
     void addValue(double value);
     
-    //! \return the frequencies
+    //! \copydoc alexandria::GenericProperty::getVector
     const std::vector<double> &getVector() const { return values_; }
-    
+
+    //! \copydoc alexandria::GenericProperty::getValue
     double getValue() const
     {
         crash();
     }
-    
+
+    //! \copydoc alexandria::GenericProperty::getError
     double getError() const
     {
         crash();
@@ -541,13 +546,17 @@ public:
     
     //! Set all the elements of the polarizablity tensor and converts them to internal units
     void Set(double xx, double yy, double zz, double xy, double xz, double yz);
-    
+
+    //! \copydoc alexandria::GenericProperty::getValue
     double getValue() const;
-    
+
+    //! \copydoc alexandria::GenericProperty::getError
     double getError() const { return error_; }
-    
+
+    //! \copydoc alexandria::GenericProperty::getVector
     const std::vector<double> &getVector() const { crash(); }
 
+    //! \return a stored Tensor
     const tensor &getTensor() const
     {
         return alpha_;
@@ -636,10 +645,13 @@ public:
         error_   = error; 
     };
 
+    //! \copydoc alexandria::GenericProperty::getValue
     double getValue() const { return average_; }
-    
+
+    //! \copydoc alexandria::GenericProperty::getError
     double getError() const { return error_; }
 
+    //! \copydoc alexandria::GenericProperty::getVector
     const std::vector<double> &getVector() const { crash(); }
 
     void Dump(gmx::TextWriter *tw) const;
@@ -712,17 +724,13 @@ public:
     ElectrostaticPotential(const std::string &xyzInputUnit,
                            const std::string &vInputUnit);
     
-    //~ElectrostaticPotential() = default;
-    
-    //ElectrostaticPotential(const ElectrostaticPotential& copyFrom) = default;
-    //ElectrostaticPotential& operator=(const ElectrostaticPotential& copyFrom) = default;
-    //ElectrostaticPotential(ElectrostaticPotential &&) = default;
-    //ElectrostaticPotential& operator=(ElectrostaticPotential &&) = default;
-    
+    //! \copydoc alexandria::GenericProperty::getValue
     double getValue() const { crash(); }
-    
+
+    //! \copydoc alexandria::GenericProperty::getError
     double getError() const { crash(); }
 
+    //! \copydoc alexandria::GenericProperty::getVector
     const std::vector<double> &getVector() const { crash(); }
 
     /*! Fill the contents of the ESP

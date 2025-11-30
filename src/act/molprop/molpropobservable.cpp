@@ -49,6 +49,7 @@
 namespace alexandria
 {
 
+//! \brief Map from MolPropObservable to observable name
 std::map<MolPropObservable, const char *> mpo_name_ =
 {
     { MolPropObservable::POTENTIAL, "potential" }, 
@@ -82,6 +83,7 @@ std::map<MolPropObservable, const char *> mpo_name_ =
     { MolPropObservable::CHARGE, "charge" }
 };
 
+//! \brief Map from MolPropObservable to observable unit
 std::map<MolPropObservable, const char *> mpo_unit_ =
 {
     { MolPropObservable::POTENTIAL,         "kJ/mol e" }, 
@@ -143,6 +145,7 @@ bool stringToMolPropObservable(const std::string &str, MolPropObservable *mpo)
     return false;
 }
 
+//! \brief Print vector of values multiplied by factor to TextWriter
 static void print_values(gmx::TextWriter *tw, const std::vector<double> values, double factor)
 {
     tw->writeStringFormatted("  Values:");
