@@ -41,13 +41,18 @@ jobs:
           export MPICC=/usr/bin/gcc
           cmake -DGMX_DOUBLE=ON -DGMX_X11=OFF -DBUILD_SHARED_LIBS=OFF -DCMAKE_PREFIX_PATH=${{ github.workspace }}/../tools -DGMX_OPENMP=OFF -DGMX_MPI=ON -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/../tools -DCMAKE_BUILD_TYPE=Release -DGMX_BUILD_MANUAL=OFF -DGMX_COMPACT_DOXYGEN=OFF -DREGRESSIONTEST_DOWNLOAD=OFF -DGMX_DEFAULT_SUFFIX=OFF -DCMAKE_CXX_COMPILER=${MPICXX} -DCMAKE_C_COMPILER=${MPICC} ..
           make -j 4 install tests doxygen-full
+      - name: Upload static files as artifact
+        id: deployment
+        uses: actions/upload-pages-artifact@v3 # or specific "vX.X.X" version tag for this action
+        with:
+          path: ${{ github.workspace }}/build/docs/html/doxygen/html-full/
   Test:
     runs-on: ubuntu-24.04
     needs: Build
     steps:
       - name: Test the ACT
         run: |
-          source ${{ github.workspace }}/../tools/bin/ACTRC
+          source ${{ github.workspace }}/tools/bin/ACTRC
           cd ${{ github.workspace }}/build
           ./bin/basics-test
           ./bin/act-forces-test
