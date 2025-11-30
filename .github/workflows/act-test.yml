@@ -58,7 +58,6 @@ jobs:
           ./bin/statistics-test
           ./bin/wang-buckingham-test
       - name: Documentation
-        needs: build
         run: |
           cd ${{ github.workspace }}/build
           make doxygen-full
