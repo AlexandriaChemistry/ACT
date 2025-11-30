@@ -22,6 +22,7 @@ jobs:
           sudo apt-get update
           sudo apt-get -y install gcc  libopenmpi-dev openmpi-bin libeigen3-dev swig libxml2 doxygen graphviz
       - name: Install openbabel
+        id: build
         run: |
           wget https://github.com/dspoel/openbabel/archive/refs/tags/openbabel-alexandria-0.91.tar.gz
           tar xzf openbabel-alexandria-0.91.tar.gz
@@ -56,4 +57,17 @@ jobs:
           ./bin/sobol-test
           ./bin/statistics-test
           ./bin/wang-buckingham-test
+      - name: Documentation
+        needs: build
+        run: |
+          cd ${{ github.workspace }}/build
+          make doxygen-full
+        # Deployment job
+        deploy:
+          environment:
+            name: github-pages
+            url: ${{ steps.deployment.outputs.page_url }}
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
       - run: echo "🍏 This job's status is ${{ job.status }}."
