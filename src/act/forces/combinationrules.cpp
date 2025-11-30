@@ -344,6 +344,12 @@ void evalCombinationRule(Potential                                    ftype,
     }
 }
 
+/*! \brief Generation parameters using combination rules
+ * \param[in] pd    The force field
+ * \param[in] itype The interaction type
+ * \param[in] force If set, all interaction parameters will be recomputed, if not only the ones for which 
+ *                  at least one of the two constituting parameters changed will be reset.
+ */
 static void generateParameterPairs(ForceField      *pd,
                                    InteractionType  itype,
                                    bool             force)
@@ -431,6 +437,11 @@ static void generateParameterPairs(ForceField      *pd,
     // Phew, we're done!
 }
 
+/*! \brief Generate coulomb pair parameters
+ * \param[in] pd    The force field
+ * \param[in] force If set, all interaction parameters will be recomputed, if not only the ones for which 
+ *                  at least one of the two constituting parameters changed will be reset.
+ */
 static void generateCoulombParameterPairs(ForceField *pd, bool force)
 {
     auto forcesCoul = pd->findForces(InteractionType::ELECTROSTATICS);

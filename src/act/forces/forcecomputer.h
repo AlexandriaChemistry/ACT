@@ -85,11 +85,20 @@ private:
               int      maxiter = 25,
               double   maxShellDistance = 0.04);
 
+    /*! \brief Generate coordinates for virtual sites
+     * \param[in]    top         Molecular topology containing vsite information
+     * \param[inout] coordinates The atomic coordinates, will be updated only for vsites
+     */
     void constructVsiteCoordinates(const Topology         *top,
                                    std::vector<gmx::RVec> *coordinates) const;
-    void spreadVsiteForces(const Topology         *top,
-                           std::vector<gmx::RVec> *coordinates,
-                           std::vector<gmx::RVec> *forces) const;
+    /*! \brief Distribute forces on virtual sites to atoms
+     * \param[in]    top         Molecular topology containing vsite information
+     * \param[inout] coordinates The atomic coordinates
+     * \param[inout] forces      The atomic forces will be updated and vsite forces set to zero
+     */
+    void spreadVsiteForces(const Topology               *top,
+                           const std::vector<gmx::RVec> *coordinates,
+                           std::vector<gmx::RVec>       *forces) const;
 
     /*! Do one actual computations.
      * Will do one force/energy computation.
