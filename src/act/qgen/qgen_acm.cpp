@@ -249,6 +249,7 @@ double QgenAcm::getZeta(size_t atom)
     return 0;
 }
 
+//! \return Coulomb for a point charge without units
 static double Coulomb_PP(double r)
 {
     return 1/r;

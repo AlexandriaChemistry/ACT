@@ -71,6 +71,7 @@ public:
     //! Return myself or an inherited class in const form
     TopologyEntry *self() { return this; }
 
+    //! \return a pointer to this object
     const TopologyEntry *self() const { return this; }
 
     //! Return myself or an inherited class in non-const form
@@ -118,8 +119,14 @@ public:
      */
     void setBondOrder(size_t ai, double bo);
 
+    /*! \brief Return bond order for bond ai
+     * Bond order can be 1, 2, 3 as per usual, 1.5 for aromatic or 9 to indicate a virtual site
+     * \param[in] ai The bond index
+     * \return the corresponding bond order 
+     */
     double bondOrder(size_t ai) const { return bondOrder_[ai]; }
 
+    //! \brief Bond order for the first bond
     double bondOrder() const { return bondOrder_[0]; }
 
     //! Return the gromacs type
@@ -138,6 +145,7 @@ public:
      */
     void setParams(const std::vector<double> &param) { params_ = param; }
 
+    //! \return a parameter vector
     const std::vector<double> &params() const { return params_; }
 
     //! Return my identifier(s)

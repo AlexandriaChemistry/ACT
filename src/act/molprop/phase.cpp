@@ -41,6 +41,7 @@
 namespace alexandria
 {
 
+//! \brief Map string to ePhase
 static std::map<const std::string, ePhase> stringToPhase = 
     {
         { "gas",    ePhase::GAS },

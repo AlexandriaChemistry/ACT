@@ -37,6 +37,7 @@
 namespace alexandria
 {
 
+//! \brief MolPropObservable values corresponding to electric multipoles
 std::array<MolPropObservable, 4> mpoMultiPoles = { 
     MolPropObservable::DIPOLE,
     MolPropObservable::QUADRUPOLE,
@@ -44,11 +45,16 @@ std::array<MolPropObservable, 4> mpoMultiPoles = {
     MolPropObservable::HEXADECAPOLE
 };
 
+//! \brief Names of multipole components
 std::map<MolPropObservable, std::vector<std::string> >        multipole_names;
+//! \brief Map multipole element name to index
 std::map<MolPropObservable, std::map<std::string, int> >      multipole_map;
+//! \brief Map index to multipole element name
 std::map<MolPropObservable, std::map<int, std::string> >      multipole_rmap;
+//! \brief Map x, y, z ( 0, 1, 2 ) to index
 std::map<MolPropObservable, std::map<std::vector<int>, int> > multipole_index;
 
+//! \brief Map multipole index to MolPropObservable
 std::map<size_t, MolPropObservable> sizeMpo = {
     { 1, MolPropObservable::DIPOLE       },
     { 2, MolPropObservable::QUADRUPOLE   },
@@ -56,6 +62,7 @@ std::map<size_t, MolPropObservable> sizeMpo = {
     { 4, MolPropObservable::HEXADECAPOLE }
 };
 
+//! \brief Fill the maps with multipole names
 static void mk_names()
 {
     if (multipole_names.size() == 0)
