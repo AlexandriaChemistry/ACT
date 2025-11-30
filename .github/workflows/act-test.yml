@@ -4,6 +4,9 @@ on: [push]
 jobs:
   Build:
     runs-on: ubuntu-24.04
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - run: echo "🎉 The job was automatically triggered by a ${{ github.event_name }} event."
       - run: echo "🐧 This job is now running on a ${{ runner.os }} server hosted by GitHub!"
@@ -64,8 +67,5 @@ jobs:
           ./bin/wang-buckingham-test
 
       - name: Deploy to GitHub Pages
-        environment:
-          name: github-pages
-          url: ${{ steps.deployment.outputs.page_url }}
         id: deployment
         uses: actions/deploy-pages@v4
