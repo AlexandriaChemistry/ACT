@@ -39,6 +39,7 @@
 namespace alexandria
 {
 
+//! Add n spaces to a string.
 static void add_space(std::string *str, int n)
 {
     for(int i = 0; i < n; i++)

@@ -77,7 +77,8 @@ protected:
         auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, 5e-2);
         checker_.setDefaultTolerance(tolerance);
     }
-        
+
+    //! \return a specific molecule        
     ACTMol readMolecule(ForceField *pd)
     {
         std::vector<alexandria::MolProp> molprops;

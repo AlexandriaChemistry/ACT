@@ -927,6 +927,7 @@ void MolPropRead(MsgHandler           *msg_handler,
     print_memory_usage(debug);
 }
 
+//! \brief Add experiment properties to xml tree
 static void add_properties(xmlNodePtr        exp,
                            const Experiment &exper)
 {

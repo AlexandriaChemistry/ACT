@@ -73,20 +73,22 @@ enum class inputFormat {
 class QtypeTest : public gmx::test::CommandLineTestBase
 {
     protected:
+        //! For checking data produced against a reference
         gmx::test::TestReferenceChecker checker_;
 
-        //init set tolerance
+        //! Init set tolerance
         QtypeTest () : checker_(this->rootChecker())
         {
             auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, 1e-5);
             checker_.setDefaultTolerance(tolerance);
         }
 
-        // Static initiation, only run once every test.
+        //! Static initiation, only run once every test.
         static void SetUpTestCase()
         {
         }
 
+        //! \brief Do the real qType testing
         void testQtype(const std::string &model, inputFormat inputformat, 
                        const std::string &molname,
                        double qtotal,
@@ -218,6 +220,7 @@ class QtypeTest : public gmx::test::CommandLineTestBase
             }
         }
 
+        //! For cleaning
         static void TearDownTestCase()
         {
         }

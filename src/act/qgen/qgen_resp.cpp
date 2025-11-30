@@ -354,6 +354,14 @@ real QgenResp::getStatistics(MsgHandler *msg_handler,
     return rms_;
 }
 
+/*! \brief Compute electrostatic potential
+ * due to an atom at a grid point
+ * \param[in] chargeType The charge distribution type
+ * \param[in] espx       The position of the grid point
+ * \param[in] rax        The position of the atom
+ * \param[in] zeta       The distribution width of the charge
+ * \param[in] row        Row in the periodic table (Slaters only)
+ */
 static double calcJ(ChargeDistributionType chargeType,
                     rvec                   espx,
                     rvec                   rax,
