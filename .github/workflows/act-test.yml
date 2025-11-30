@@ -46,13 +46,9 @@ jobs:
         uses: actions/upload-pages-artifact@v3 # or specific "vX.X.X" version tag for this action
         with:
           path: ${{ github.workspace }}/build/docs/html/doxygen/html-full/
-  Test:
-    runs-on: ubuntu-24.04
-    needs: Build
-    steps:
       - name: Test the ACT
         run: |
-          source ${{ github.workspace }}/tools/bin/ACTRC
+          source ${{ github.workspace }}/../tools/bin/ACTRC
           cd ${{ github.workspace }}/build
           ./bin/basics-test
           ./bin/act-forces-test
@@ -67,14 +63,9 @@ jobs:
           ./bin/statistics-test
           ./bin/wang-buckingham-test
 
-  Deploy:
-    runs-on: ubuntu-24.04
-    needs: Build
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    # Deployment job
-    steps:
       - name: Deploy to GitHub Pages
+        environment:
+          name: github-pages
+          url: ${{ steps.deployment.outputs.page_url }}
         id: deployment
         uses: actions/deploy-pages@v4
