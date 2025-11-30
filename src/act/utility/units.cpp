@@ -46,6 +46,7 @@
 namespace alexandria
 {
 
+//! Map from string to unit properties
 const static std::map<const std::string, std::pair<const std::string, double> > unitConversion =
     {
         { "Angstrom",    { "nm", A2NM    } },

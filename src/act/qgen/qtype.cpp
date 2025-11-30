@@ -50,6 +50,7 @@
 namespace alexandria
 {
 
+//! \brief Map from qPropertyType to string
 static std::map<qPropertyType, std::string> qPropertyTypeNames = {
     { qPropertyType::ACM,  "ACM" },
     { qPropertyType::ESP,  "ESP" },

@@ -196,8 +196,8 @@ class QgenResp
         void calcRho();
 
         /*! \brief Compute the electrostatic potential based on charges.
-         *
-         * \param[in] epsilonr  Relative dielectric constant
+         * \param[in] msg_handler For warnings etc.
+         * \param[in] epsilonr    Relative dielectric constant
          */
         void calcPot(MsgHandler *msg_handler,
                      double      epsilonr);
