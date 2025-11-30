@@ -43,6 +43,13 @@
 namespace alexandria
 {
 
+/*! \brief Compute dot prot of a vector but only for shells
+ * Used to compute the mean square force on shell particles when
+ * minimizing the energy with respect to the shell positions.
+ * \param[in] isShell Whether or not the particles are shells
+ * \param[in] rv      The vector or RVec, usually forces
+ * \return The mean square force
+ */
 static double dotProdRvec(const std::vector<bool>      &isShell,
                           const std::vector<gmx::RVec> &rv)
 {
@@ -77,9 +84,9 @@ void ForceComputer::constructVsiteCoordinates(const Topology         *top,
     vsiteHandler_.constructPositions(top, coordinates, box_);
 }
 
-void ForceComputer::spreadVsiteForces(const Topology         *top,
-                                      std::vector<gmx::RVec> *coordinates,
-                                      std::vector<gmx::RVec> *forces) const
+void ForceComputer::spreadVsiteForces(const Topology               *top,
+                                      const std::vector<gmx::RVec> *coordinates,
+                                      std::vector<gmx::RVec>       *forces) const
 {
     // Spread virtual site forces
     vsiteHandler_.distributeForces(top, *coordinates, forces, box_);
@@ -160,7 +167,7 @@ void ForceComputer::compute(MsgHandler                        *msg_handler,
                 // Displace the shells according to the force
                 // Since the potential is harmonic we use Hooke's law
                 // F = k dx -> dx = F / k
-                // TODO Optimize this protocol using overrelaxation
+                //! \todo Optimize this protocol using overrelaxation
                 int shell = p->atomIndex(1);
                 if (relax.empty() || relax.end() != relax.find(shell))
                 {
@@ -525,7 +532,7 @@ void ForceComputer::plot(MsgHandler        *msghandler,
                 break;
             case InteractionType::LINEAR_ANGLES:
                 {
-                    // TODO take a into account
+                    //! \todo take a into account
                     std::vector<gmx::RVec> coordinates = { { 0, 0, 0 }, { 1, 0, 0 }, { 2, 0, 0 } };
                     top.build(msghandler,
                               pd, &coordinates, 175.0, 5.0, missingParameters::Error);

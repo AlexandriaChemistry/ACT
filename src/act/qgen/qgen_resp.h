@@ -57,7 +57,7 @@ class MsgHandler;
 /*! \brief Class to store one grid point and it's potential.
  * The structure store both the reference and the calculated
  * electrostatic potential.
- * TODO Make clear what unit is used.
+ * \todo Make clear what unit is used.
  */
 class EspPoint
 {
@@ -155,7 +155,7 @@ class QgenResp
         const std::vector<gmx::RVec> &coords() const { return x_; }
 
         /*! \brief Update the charges
-         * \param[in] q Vector containing new charges
+         * \param[in] atoms Vector containing atoms with new charges
          */
         void updateAtomCharges(const std::vector<ActAtom> &atoms);
 

@@ -133,7 +133,7 @@ QgenAcm::QgenAcm(ForceField                 *pd,
         }
         if (atype->hasInteractionType(entype))
         {
-            // TODO this code does not make sense, if there is no BCC, the EEM
+            //! \todo this code does not make sense, if there is no BCC, the EEM
             // values will not be stored and updated.
             auto acmtype = atype->interactionTypeToIdentifier(entype);
             auto acm     = eem->findParameters(acmtype);
@@ -141,7 +141,7 @@ QgenAcm::QgenAcm(ForceField                 *pd,
         }
         else
         {
-            // TODO check whether this actually can occur
+            //! \todo check whether this actually can occur
             acm_id_.push_back(nullptr);
         }
     }
@@ -216,7 +216,7 @@ void QgenAcm::updateParameters()
     // Update fixed charges
     for (size_t i = 0 ; i < fixed_.size(); i++)
     {
-        // TODO if fixed charges are in the atoms struct we do not need to look them up
+        //! \todo if fixed charges are in the atoms struct we do not need to look them up
         q_[fixed_[i]] = charge_[i]->value();
     }
 }
@@ -439,7 +439,7 @@ void QgenAcm::calcRhs(MsgHandler                 *msg_handler,
         auto nfi = nonFixed_[i];
         // Electronegativity
         rhs_[i]  = -chi0_[nfi]; 
-        // TODO Check this stuff: Delta_Eta * q0
+        //! \todo Check this stuff: Delta_Eta * q0
         // rhs_[i] += eta_[nfi]*q0_[i];
         if (bHaveShell_)
         {
