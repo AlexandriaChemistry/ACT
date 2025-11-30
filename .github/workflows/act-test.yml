@@ -43,6 +43,7 @@ jobs:
           make -j 4 install tests doxygen-full
   Test:
     needs: Build
+    steps:
       - name: Test the ACT
         run: |
           source ${{ github.workspace }}/../tools/bin/ACTRC
