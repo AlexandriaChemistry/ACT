@@ -524,9 +524,9 @@ int edit_mp(int argc, char *argv[])
     int root  = 0;
     if (cr.isMaster())
     {
-        auto warnings = merge_xml(&msghandler, fns, &mpt);
+        merge_xml(&msghandler, fns, &mpt);
         int mptsize = mpt.size();
-        if (warnings.size() <= static_cast<size_t>(maxwarn))
+        if (msghandler.ok())
         {
             ReadSqlite3(&msghandler, opt2fn_null("-db", fnm.size(), fnm.data()),
                         &mpt, temperature);
@@ -536,10 +536,6 @@ int edit_mp(int argc, char *argv[])
         else
         {
             fprintf(stderr, "Too many warnings, not generating output\n");
-            for (const auto &w : warnings)
-            {
-                fprintf(stderr, "%s\n", w.c_str());
-            }
             mpt.clear();
         }
             

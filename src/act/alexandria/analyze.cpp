@@ -469,14 +469,10 @@ int analyze(int argc, char *argv[])
 
     if (bMerge)
     {
-        auto warnings = merge_xml(&msghandler, mpname, &mp);
-        if (warnings.size() > static_cast<size_t>(maxwarn))
+        merge_xml(&msghandler, mpname, &mp);
+        if (!msghandler.ok())
         {
             fprintf(stderr, "Too many warnings. Terminating.\n");
-            for (const auto &w : warnings)
-            {
-                fprintf(stderr, "%s\n", w.c_str());
-            }
             return 0;
         }
     }

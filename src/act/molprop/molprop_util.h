@@ -141,11 +141,10 @@ void generate_index(std::vector<MolProp> *mp);
  * \param[in] msg_handler For info and debugging
  * \param[in] infiles     MolProp filenames
  * \param[in] mp          The molprop vector
- * \return List of warning messages, if empty all is fine
  */
-std::vector<std::string> merge_xml(MsgHandler                             *msg_handler,
-                                   const gmx::ArrayRef<const std::string> &infiles,
-                                   std::vector<alexandria::MolProp>       *mp);
+void merge_xml(MsgHandler                             *msg_handler,
+               const gmx::ArrayRef<const std::string> &infiles,
+               std::vector<alexandria::MolProp>       *mp);
 
 /*! \brief Check the available molprops to see what kind of calculations are stored.
  * \param[in]  mp       The molprops
