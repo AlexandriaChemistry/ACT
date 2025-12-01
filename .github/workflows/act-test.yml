@@ -31,9 +31,9 @@ jobs:
       - name: Install openbabel
         id: build
         run: |
-          wget https://github.com/dspoel/openbabel/archive/refs/tags/OpenBabel-Alexandria-0.93.tar.gz
-          tar xzf OpenBabel-Alexandria-0.93
-          cd openbabel-OpenBabel-Alexandria-0.93
+          wget https://github.com/dspoel/openbabel/archive/refs/tags/openbabel-alexandria-0.93.tar.gz
+          tar xzf openbabel-alexandria-0.93
+          cd openbabel-openbabel-alexandria-0.93
           mkdir build
           cd build
           export CXX=/usr/bin/g++
