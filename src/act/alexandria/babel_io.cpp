@@ -248,7 +248,7 @@ static bool addInchiToFragments(const AlexandriaMols    &amols,
         auto                  fatoms = fptr->atoms();
         std::map<int, int>    renumber;
         int                   count = 1;
-        FOR_ATOMS_OF_MOL (atom, *mol)
+        for (auto atom : OpenBabel::impl::MolGetAtoms(mol))
         {
             int idx = atom->GetIdx();
             if (std::find(fatoms.begin(), fatoms.end(), idx-1) != fatoms.end())
@@ -589,7 +589,7 @@ static bool babel2ACT(alexandria::MsgHandler                   *msg_handler,
     if (ff && (ff->Setup(*mol)))
     {
         ff->GetAtomTypes(*mol);
-        FOR_ATOMS_OF_MOL (atom, *mol)
+        for (auto atom : OpenBabel::impl::MolGetAtoms(mol))
         {
             // For our molecular fragments the indices start at 0
             atomIndices.push_back(atom->GetIdx()-1);
