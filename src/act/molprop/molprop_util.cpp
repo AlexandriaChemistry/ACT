@@ -64,13 +64,11 @@ void generate_index(std::vector<MolProp> *mp)
  * one for methane etc.
  *
  * \param[in]     msg_handler For storing warnings etc.
- * \param[inout]  mp        The vector of MolProps
- * \param[in]     warnings  To store warnings as well!
+ * \param[inout]  mp          The vector of MolProps
  * \ingroup group_molprop
  */
 static void MergeDoubleMolprops(MsgHandler                       *msg_handler,
-                                std::vector<alexandria::MolProp> *mp,
-                                std::vector<std::string>         *warnings)
+                                std::vector<alexandria::MolProp> *mp)
 {
     alexandria::MolPropIterator mpi, mmm[2];
     std::string                 molname[2];
@@ -101,7 +99,7 @@ static void MergeDoubleMolprops(MsgHandler                       *msg_handler,
                 {
                     for(const auto &w : warn)
                     {
-                        warnings->push_back(w);
+                        msg_handler->msg(ACTStatus::Warning, w);
                     }
                 }
                 else
@@ -111,7 +109,7 @@ static void MergeDoubleMolprops(MsgHandler                       *msg_handler,
                     {
                         for(const auto &w : warn)
                         {
-                            warnings->push_back(w);
+                            msg_handler->msg(ACTStatus::Warning, w);
                         }
                     }
                     mpi    = mp->erase(mmm[cur]);
@@ -145,9 +143,9 @@ static void MergeDoubleMolprops(MsgHandler                       *msg_handler,
     }
 }
 
-std::vector<std::string> merge_xml(MsgHandler                             *msg_handler,
-                                   const gmx::ArrayRef<const std::string> &filens,
-                                   std::vector<alexandria::MolProp>       *mpout)
+void merge_xml(MsgHandler                             *msg_handler,
+               const gmx::ArrayRef<const std::string> &filens,
+               std::vector<alexandria::MolProp>       *mpout)
 {
     int tmp;
 
@@ -179,12 +177,9 @@ std::vector<std::string> merge_xml(MsgHandler                             *msg_h
     }
     MolSelect gms;
     MolPropSort(msg_handler, mpout, MPSA_MOLNAME, nullptr, gms);
-    std::vector<std::string> warnings;
-    MergeDoubleMolprops(msg_handler, mpout, &warnings);
+    MergeDoubleMolprops(msg_handler, mpout);
     printf("There were %d total molecules before merging, %d after.\n",
            tmp, (int)mpout->size());
-
-    return warnings;
 }
 
 //! \brief Compare MolProp by molname for sorting
