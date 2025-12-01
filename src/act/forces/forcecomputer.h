@@ -55,8 +55,6 @@ private:
     int            maxiter_          = 25;
     //! Maximum allowed distance for shells to be away from their core
     double         maxShellDistance_ = 0.04;
-    //! Electric field to be optionally applied
-    gmx::RVec      field_ = { 0.0, 0.0, 0.0 };
     //! Box for periodic boundaries
     matrix         box_   = { { 0 } };
     //! Virtual site handler
