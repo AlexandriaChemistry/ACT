@@ -1747,8 +1747,13 @@ void ACTMol::getExpProps(MsgHandler                                 *msghandler,
             case MolPropObservable::STRANS:
             case MolPropObservable::SROT:
             case MolPropObservable::SVIB:
+            case MolPropObservable::SELEC:
             case MolPropObservable::CP:
             case MolPropObservable::CV:
+            case MolPropObservable::CVTRANS:
+            case MolPropObservable::CVROT:
+            case MolPropObservable::CVVIB:
+            case MolPropObservable::CVELEC:
                 break;
             case MolPropObservable::COORDINATES:
                 foundNothing = false;

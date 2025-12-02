@@ -66,6 +66,8 @@ class Experiment:
         self.frequencies = []
         self.intensities = []
         self.atoms = []
+        self.entropy = {}
+        self.cv = {}
         self.tcmap = None
         self.useForce = useForces
         
@@ -95,6 +97,15 @@ class Experiment:
     def add_polarisability(self, type, unit, temperature,
                            average, error, xx, yy, zz, xy, xz, yz):    
         self.polarisability.append({"type":type, "unit": unit, "temperature": str(temperature), "average": str(average), "error":str(error), "xx":xx, "yy":yy, "zz":zz, "xy":xy, "xz":xz, "yz":yz})
+
+    def add_cv_entropy(self, ecv:dict, temperature:float, phase:str):
+        myunit = "J/mol K"
+        unit   = "unit"
+        if unit in ecv:
+            myunit = ecv[unit]
+        for ee in ecv:
+            if not ee == unit:
+                self.add_energy(ee, myunit, temperature, phase, ecv[ee])
 
     def add_atom(self, name, obtype, atomid, coord_unit, x, y, z,
                  force_unit, fx, fy, fz, qmap=None):
@@ -301,6 +312,7 @@ class Molprops:
                     harm = ET.SubElement(myharm, "harmonic")
                     harm.set("frequency", ep.frequencies[k])
                     harm.set("intensity", ep.intensities[k])
+
             for atom in ep.atoms:
                 myatm   = ET.SubElement(exper, "atom")
                 testprops = [ "name", "obtype", "atomid", "coord_unit" ]
