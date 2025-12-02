@@ -78,8 +78,13 @@ std::map<MolPropObservable, const char *> mpo_name_ =
     { MolPropObservable::STRANS, "Strans" },
     { MolPropObservable::SROT, "Srot" },
     { MolPropObservable::SVIB, "Svib" },
-    { MolPropObservable::CP, "cp" },
-    { MolPropObservable::CV, "cv" },
+    { MolPropObservable::SELEC, "Selec" },
+    { MolPropObservable::CP, "Cp" },
+    { MolPropObservable::CV, "Cv" },
+    { MolPropObservable::CVTRANS, "Cvtrans" },
+    { MolPropObservable::CVROT, "Cvrot" },
+    { MolPropObservable::CVVIB, "Cvvib" },
+    { MolPropObservable::CVELEC, "Cvelec" },
     { MolPropObservable::CHARGE, "charge" }
 };
 
@@ -112,8 +117,13 @@ std::map<MolPropObservable, const char *> mpo_unit_ =
     { MolPropObservable::STRANS,            "J/mol K" },
     { MolPropObservable::SROT,              "J/mol K" },
     { MolPropObservable::SVIB,              "J/mol K" },
+    { MolPropObservable::SELEC,             "J/mol K" },
     { MolPropObservable::CP,                "J/mol K" },
     { MolPropObservable::CV,                "J/mol K" },
+    { MolPropObservable::CVTRANS,           "J/mol K" },
+    { MolPropObservable::CVROT,             "J/mol K" },
+    { MolPropObservable::CVVIB,             "J/mol K" },
+    { MolPropObservable::CVELEC,            "J/mol K" },
     { MolPropObservable::CHARGE,            "e" }
 };
 

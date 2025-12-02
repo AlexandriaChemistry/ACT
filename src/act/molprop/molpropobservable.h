@@ -105,10 +105,20 @@ enum class MolPropObservable {
     SROT,
     //! Vibrational entropy
     SVIB,
+    //! Electronic entropy
+    SELEC,
     //! Heat capacity at constant pressure
     CP,
     //! Heat capacity at constant volume
     CV,
+    //! Translational Cv
+    CVTRANS,
+    //! Rotational Cv
+    CVROT,
+    //! Vibrational Cv
+    CVVIB,
+    //! Electronic Cv
+    CVELEC,
     //! Zero point energy
     ZPE,
     //! Charge

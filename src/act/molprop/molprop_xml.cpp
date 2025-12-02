@@ -959,8 +959,13 @@ static void add_properties(xmlNodePtr        exp,
             case MolPropObservable::STRANS:
             case MolPropObservable::SROT:
             case MolPropObservable::SVIB:
+            case MolPropObservable::SELEC:
             case MolPropObservable::CP:
             case MolPropObservable::CV:
+            case MolPropObservable::CVTRANS:
+            case MolPropObservable::CVROT:
+            case MolPropObservable::CVVIB:
+            case MolPropObservable::CVELEC:
             case MolPropObservable::ZPE:
                 {
                     double average = prop->getValue();

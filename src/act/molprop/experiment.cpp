@@ -572,8 +572,13 @@ CommunicationStatus Experiment::Receive(const CommunicationRecord *cr, int src)
                 case MolPropObservable::STRANS:
                 case MolPropObservable::SROT:
                 case MolPropObservable::SVIB:
+                case MolPropObservable::SELEC:
                 case MolPropObservable::CP:
                 case MolPropObservable::CV:
+                case MolPropObservable::CVROT:
+                case MolPropObservable::CVTRANS:
+                case MolPropObservable::CVVIB:
+                case MolPropObservable::CVELEC:
                 case MolPropObservable::ZPE:
                     {
                         auto gp = std::make_unique<MolecularEnergy>();

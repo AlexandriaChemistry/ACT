@@ -110,10 +110,10 @@
   <Real Name="Srot electronic J/mol K 1-butanol calc 2 Theory 8 error">0</Real>
   <Real Name="Svib electronic J/mol K 1-butanol calc 2 Theory 9 value">17.327999999999999</Real>
   <Real Name="Svib electronic J/mol K 1-butanol calc 2 Theory 9 error">0</Real>
-  <Real Name="cp electronic J/mol K 1-butanol calc 2 Theory 10 value">31.603000000000002</Real>
-  <Real Name="cp electronic J/mol K 1-butanol calc 2 Theory 10 error">0</Real>
-  <Real Name="cv electronic J/mol K 1-butanol calc 2 Theory 11 value">23.289000000000001</Real>
-  <Real Name="cv electronic J/mol K 1-butanol calc 2 Theory 11 error">0</Real>
+  <Real Name="Cp electronic J/mol K 1-butanol calc 2 Theory 10 value">31.603000000000002</Real>
+  <Real Name="Cp electronic J/mol K 1-butanol calc 2 Theory 10 error">0</Real>
+  <Real Name="Cv electronic J/mol K 1-butanol calc 2 Theory 11 value">23.289000000000001</Real>
+  <Real Name="Cv electronic J/mol K 1-butanol calc 2 Theory 11 error">0</Real>
   <Real Name="ZPE electronic kJ/mol 1-butanol calc 2 Theory 12 value">0.13700000000000001</Real>
   <Real Name="ZPE electronic kJ/mol 1-butanol calc 2 Theory 12 error">0</Real>
   <Int Name="molecule 2, acetone, number of calcs">1</Int>
@@ -273,10 +273,10 @@
   <Real Name="Srot electronic J/mol K water calc 2 Theory 8 error">0</Real>
   <Real Name="Svib electronic J/mol K water calc 2 Theory 9 value">0.041000000000000002</Real>
   <Real Name="Svib electronic J/mol K water calc 2 Theory 9 error">0</Real>
-  <Real Name="cp electronic J/mol K water calc 2 Theory 10 value">14.316000000000001</Real>
-  <Real Name="cp electronic J/mol K water calc 2 Theory 10 error">0</Real>
-  <Real Name="cv electronic J/mol K water calc 2 Theory 11 value">6.0019999999999998</Real>
-  <Real Name="cv electronic J/mol K water calc 2 Theory 11 error">0</Real>
+  <Real Name="Cp electronic J/mol K water calc 2 Theory 10 value">14.316000000000001</Real>
+  <Real Name="Cp electronic J/mol K water calc 2 Theory 10 error">0</Real>
+  <Real Name="Cv electronic J/mol K water calc 2 Theory 11 value">6.0019999999999998</Real>
+  <Real Name="Cv electronic J/mol K water calc 2 Theory 11 error">0</Real>
   <Real Name="ZPE electronic kJ/mol water calc 2 Theory 12 value">0.021000000000000001</Real>
   <Real Name="ZPE electronic kJ/mol water calc 2 Theory 12 error">0</Real>
 </ReferenceData>
