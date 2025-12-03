@@ -95,6 +95,10 @@ enum class InteractionType
     VSITE3OUT,
     //! Virtual interaction sites determined by three atoms out of the plane, in a symmetric fashion
     VSITE3OUTS,
+    //! Virtual interaction sites determined by four atoms, e.g. an amine
+    VSITE4,
+    //! Virtual interaction sites determined by four atoms, two of which are symmetric
+    VSITE4S,
     //! Bond hardness and electronegativity needed to use the split charge equilibration algorithm
     BONDCORRECTIONS,
     //! Correction to the electronegativity difference between two atoms connected by a bond

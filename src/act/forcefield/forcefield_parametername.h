@@ -106,6 +106,10 @@ namespace alexandria
 
     enum { vsite3outsA, vsite3outsC,  vsite3outsNR };
 
+    enum { vsite4A, vsite4B, vsite4C, vsite4NR };
+
+    enum { vsite4sA, vsite4sB, vsite4sNR };
+
 } // namespace alexandria
 
 #endif

@@ -133,6 +133,21 @@ static gmx_unused void constr_vsite3(const rvec xi, const rvec xj, const rvec xk
     /* TOTAL: 17 flops */
 }
 
+static gmx_unused void constr_vsite4(const rvec xi, const rvec xj, const rvec xk, const rvec xl,
+                                     rvec x, real a, real b, real c)
+{
+    real d = 1 - a - b - c;
+    /* 3 flops */
+
+    for (int m = 0; m < DIM; m++)
+    {
+        x[m] = d*xj[m] + a*xi[m] + b*xk[m] + c*xl[m];
+    }
+    /* 21 Flops */
+
+    /* TOTAL: 24 flops */
+}
+
 static void constr_vsite3FD(const rvec xi, const rvec xj, const rvec xk, rvec x, real a, real b,
                             const t_pbc *pbc)
 {
@@ -209,7 +224,6 @@ static void constr_vsite3OUT(const rvec xi, const rvec xj, const rvec xk, rvec x
 static gmx_unused void constr_vsite4FD(const rvec xi, const rvec xj, const rvec xk, const rvec xl, rvec x,
                                        real a, real b, real c, const t_pbc *pbc)
 {
-    gmx_fatal(FARGS, "Fix code in constr_vsite4FD before using");
     rvec xij, xjk, xjl, temp;
     real d;
 
@@ -429,6 +443,32 @@ static void spread_vsite3(rvec ffi,
 
     clear_rvec(fav);
     /* TOTAL: 20 flops */
+}
+
+static void spread_vsite4(rvec ffi,
+                          rvec ffj,
+                          rvec ffk,
+                          rvec ffl,
+                          rvec fav,
+                          real a, real b, real c)
+{
+    rvec fi, fj, fk, fl;
+    real d = 1 - a - b - c;
+    /* 3 flops */
+    svmul(d, fav, fi);
+    svmul(a, fav, fi);
+    svmul(b, fav, fj);
+    svmul(c, fav, fk);
+    /* 12 flops */
+
+    rvec_inc(ffi, fi);
+    rvec_inc(ffj, fj);
+    rvec_inc(ffk, fk);
+    rvec_inc(ffl, fl);
+    /* 12 Flops */
+
+    clear_rvec(fav);
+    /* TOTAL: 30 flops */
 }
 
 static void spread_vsite3FD(const std::vector<int> &ia, real a, real b,
@@ -754,7 +794,7 @@ static void spread_vsite3OUT(const std::vector<int> &ia, real a, real b, real c,
     /* TOTAL: 54 flops */
 }
 
-static gmx_unused void spread_vsite4FD(const std::vector<int> &ia, real a, real b, real c,
+static void gmx_unused spread_vsite4FD(const std::vector<int> &ia, real a, real b, real c,
                                        const rvec x[], rvec f[], rvec fshift[],
                                        gmx_bool VirCorr, matrix dxdf,
                                        const t_pbc *pbc, const t_graph *g)
@@ -1194,30 +1234,14 @@ void VsiteHandler::constructPositions(const Topology          *top,
                     }
                 }
                 break;
-
-#ifdef LATER
-            case F_VSITE4FD:
-                aj = ia[3];
-                ak = ia[4];
-                al = ia[5];
-                b1 = ip[tp].vsite.b;
-                c1 = ip[tp].vsite.c;
-                constr_vsite4FD(x[ai], x[aj], x[ak], x[al], x[avsite], a1, b1, c1,
-                                pbc_null2);
+            case InteractionType::VSITE4:
+                constr_vsite4(x[atomIndices[0]], x[atomIndices[1]], x[atomIndices[2]], x[atomIndices[3]], 
+                              x[atomIndices[4]], params[vsite4A], params[vsite4B], params[vsite4C]);
                 break;
-            case F_VSITE4FDN:
-                aj = ia[3];
-                ak = ia[4];
-                al = ia[5];
-                b1 = ip[tp].vsite.b;
-                c1 = ip[tp].vsite.c;
-                constr_vsite4FDN(x[ai], x[aj], x[ak], x[al], x[avsite], a1, b1, c1,
-                                 pbc_null2);
+            case InteractionType::VSITE4S:
+                constr_vsite4(x[atomIndices[0]], x[atomIndices[1]], x[atomIndices[2]], x[atomIndices[3]], 
+                              x[atomIndices[4]], params[vsite4sA], params[vsite4sB], params[vsite4sB]);
                 break;
-            case F_VSITEN:
-                inc = constr_vsiten(ia, ip, x, pbc_null2);
-                break;
-#endif
             default: // throws
                 GMX_THROW(gmx::InternalError(gmx::formatString("Virtual site type %s not implemented yet.", interactionTypeToString(entry.first).c_str()).c_str()));
             }
@@ -1297,20 +1321,15 @@ void VsiteHandler::distributeForces(const Topology               *top,
                                      x, f, fshift, VirCorr, dxdf, &pbc_, g);
                 }
                 break;
-                //case F_VSITE4FD:
-                //b1 = ip[tp].vsite.b;
-                //c1 = ip[tp].vsite.c;
-                //spread_vsite4FD(ia, a1, b1, c1, x, f, fshift, VirCorr, dxdf, &pbc_2, g);
-                //break;
-                //case F_VSITE4FDN:
-                //b1 = ip[tp].vsite.b;
-                //c1 = ip[tp].vsite.c;
-                //spread_vsite4FDN(ia, a1, b1, c1, x, f, fshift, VirCorr, dxdf, &pbc_2, g);
-                //break;
-                //case F_VSITEN:
-                //      inc = spread_vsiten(ia, ip, x, f, fshift, &pbc_2, g);
-                //break;
-            default: // check
+            case InteractionType::VSITE4:
+                spread_vsite4(f[atomIndices[0]], f[atomIndices[1]], f[atomIndices[2]], f[atomIndices[3]], f[atomIndices[4]],
+                              params[vsite4A], params[vsite4B], params[vsite4C]);
+                break;
+            case InteractionType::VSITE4S:
+                spread_vsite4(f[atomIndices[0]], f[atomIndices[1]], f[atomIndices[2]], f[atomIndices[3]], f[atomIndices[4]],
+                              params[vsite4sA], params[vsite4sB], params[vsite4sB]);
+                break;
+            default: // Constructing throws, so that is sufficient
                 break;
             }
         }

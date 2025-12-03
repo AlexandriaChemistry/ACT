@@ -151,7 +151,11 @@ static void add_vsites(const char *vsfile,
         { InteractionType::VSITE3OUT,
           ForceFieldParameterList(potentialToString(Potential::VSITE3OUT),  CanSwap::No)     },
         { InteractionType::VSITE3OUTS,
-          ForceFieldParameterList(potentialToString(Potential::VSITE3OUTS), CanSwap::No)     }
+          ForceFieldParameterList(potentialToString(Potential::VSITE3OUTS), CanSwap::No)     },
+        { InteractionType::VSITE4,
+          ForceFieldParameterList(potentialToString(Potential::VSITE4),     CanSwap::No) },
+        { InteractionType::VSITE4S,
+          ForceFieldParameterList(potentialToString(Potential::VSITE4S),    CanSwap::No) }
     };
     while (tr.readLine(&tmp))
     {
@@ -270,6 +274,39 @@ static void add_vsites(const char *vsfile,
                     auto vsite3outs_name = potentialToParameterName(Potential::VSITE3OUTS);
                     i2f[itype].addParameter(vs, vsite3outs_name[vsite3outsA], vs3outparam_a);
                     i2f[itype].addParameter(vs, vsite3outs_name[vsite3outsC], vs3outparam_c);
+                }
+            }
+            break;
+        case InteractionType::VSITE4:
+        case InteractionType::VSITE4S:
+            {
+                std::string myId = ptr[2] + "!" + ptr[0];
+                
+                Identifier vs(itype, myId, CanSwap::No);
+                double amin = my_atof(ptr[3], "vsite_parameter_min");
+                double amax = my_atof(ptr[4], "vsite_parameter_max");
+                double bmin = my_atof(ptr[5], "vsite_parameter_min");
+                double bmax = my_atof(ptr[6], "vsite_parameter_max");
+                ForceFieldParameter vs4param_a("", (amin+amax)/2, 0, 0, amin, amax,
+                                               Mutability::Bounded, false, false);
+                ForceFieldParameter vs4param_b("", (bmin+bmax)/2, 0, 0, bmin, bmax,
+                                               Mutability::Bounded, false, false);
+                if (itype == InteractionType::VSITE4)
+                {
+                    double cmin = my_atof(ptr[7], "vsite_parameter_min");
+                    double cmax = my_atof(ptr[8], "vsite_parameter_max");
+                    ForceFieldParameter vs4param_c("", (cmin+cmax)/2, 0, 0, cmin, cmax,
+                                                   Mutability::Bounded, false, false);
+                    auto vsite4_name = potentialToParameterName(Potential::VSITE4);
+                    i2f[itype].addParameter(vs, vsite4_name[vsite4A], vs4param_a);
+                    i2f[itype].addParameter(vs, vsite4_name[vsite4B], vs4param_b);
+                    i2f[itype].addParameter(vs, vsite4_name[vsite4C], vs4param_c);
+                }
+                else if (itype == InteractionType::VSITE4S)
+                {
+                    auto vsite4s_name = potentialToParameterName(Potential::VSITE4S);
+                    i2f[itype].addParameter(vs, vsite4s_name[vsite4sA], vs4param_a);
+                    i2f[itype].addParameter(vs, vsite4s_name[vsite4sB], vs4param_b);
                 }
             }
             break;

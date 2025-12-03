@@ -1792,6 +1792,13 @@
       <parameter type="vs3b" unit="" value="-0.2" uncertainty="0" minimum="-1" maximum="1" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
   </interaction>
+  <interaction type="VSITE4" function="VSITE4" canswap="false">
+    <parameterlist identifier="n3_b~h_b~h_b~c3_b!v4">
+      <parameter type="vs4a" unit="" value="-0.2" uncertainty="0" minimum="-1" maximum="1" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="vs4b" unit="" value="-0.3" uncertainty="0" minimum="-1" maximum="1" ntrain="0" mutability="Bounded" nonnegative="no"/>
+      <parameter type="vs4c" unit="" value="-0.4" uncertainty="0" minimum="-1" maximum="1" ntrain="0" mutability="Bounded" nonnegative="no"/>
+    </parameterlist>
+  </interaction>
   <interaction type="VSITE3OUT" function="VSITE3OUT" canswap="false">
     <parameterlist identifier="h_b~o3_b~h_b!v3out">
       <parameter type="vs3out_a" unit="" value="-0.35" uncertainty="0" minimum="-1" maximum="2.17" ntrain="0" mutability="Bounded" nonnegative="no"/>
