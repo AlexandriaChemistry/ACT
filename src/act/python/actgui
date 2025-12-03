@@ -415,7 +415,8 @@ class FFOptions:
             "Site on water bisector": "vsite3_water_bisector.csv",
             "Site on alcohol COH bisector": "vsite3_alcohol_bisector.csv",
             "Lone pairs on water": "vsite3_water_lone_pairs.csv",
-            "Lone pairs on alcohol oxygen": "vsite3_alcohol_lone_pairs.csv"
+            "Lone pairs on alcohol oxygen": "vsite3_alcohol_lone_pairs.csv",
+            "Lone pair on amine nitrogen": "vsite4_amine.csv"
         }
         self.user_vs     = []
         self.user_params = []

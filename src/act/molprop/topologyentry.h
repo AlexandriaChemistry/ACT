@@ -556,6 +556,62 @@ class Vsite3 : public TopologyEntry
     }
 };
 
+/*! \brief
+ * Virtual site based on 4 particles
+ *
+ * \inpublicapi
+ * \ingroup group_molprop
+ */
+class Vsite4 : public TopologyEntry
+{
+public:
+    //! Default constructor
+    Vsite4() {}
+
+    //! Constructor setting the ids of the atoms and the bondorder
+    Vsite4(int ai, int aj, int ak, int al, int vs)
+    {
+        addAtom(ai);
+        addAtom(aj);
+        addAtom(ak);
+        addAtom(al);
+        addAtom(vs);
+    }
+
+    //! Returns the ids of the atoms and the bondorder
+    void get(int *ai, int *aj, int *ak, int *al, int *vs) const;
+
+    //! Returns the first atom id
+    int aI() const
+    {
+        return atomIndex(0);
+    }
+
+    //! Returns the second atom id
+    int aJ() const
+    {
+        return atomIndex(1);
+    }
+
+    //! Returns the third atom id
+    int aK() const
+    {
+        return atomIndex(2);
+    }
+
+    //! Returns the fourth atom id
+    int aL() const
+    {
+        return atomIndex(3);
+    }
+
+    //! \return virtual site ID
+    int vs() const
+    {
+        return atomIndex(4);
+    }
+};
+
 
 class Vsite3OUT : public TopologyEntry
 {
