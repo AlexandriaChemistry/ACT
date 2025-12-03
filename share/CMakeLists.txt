@@ -24,5 +24,6 @@ install(FILES
          vsite3_water_lone_pairs.csv
          vsite3_alcohol_bisector.csv
          vsite3_alcohol_lone_pairs.csv
+         vsite4_amine.csv
     DESTINATION ${ACT_INSTALL_ACTDATADIR}
     COMPONENT data)

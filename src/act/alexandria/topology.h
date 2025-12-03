@@ -225,6 +225,15 @@ private:
     std::map<InteractionType, size_t> makeVsite3s(MsgHandler       *msghandler,
                                                   const ForceField *pd,
                                                   AtomList         *atomList);
+    /*! \brief Generate four body vsites
+     * \param[in] msghandler Message handler
+     * \param[in]    pd       The force field
+     * \param[inout] atomList The linked list of particles
+     * \return map containing number of entries added for each interaction type
+     */
+    std::map<InteractionType, size_t> makeVsite4s(MsgHandler       *msghandler,
+                                                  const ForceField *pd,
+                                                  AtomList         *atomList);
 
     /*! \brief Add identifiers to interactions
      * \param[in] msghandler Message handler

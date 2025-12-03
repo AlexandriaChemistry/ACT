@@ -392,10 +392,10 @@ TEST(VSite4, nh3CanSwapNo)
     // Get the forcefield
     auto pd = getForceField(forcefield);
 
+    // 9 means v-site
     auto nh3 = Identifier({ "n3_b", "h_b", "h_b", "c3_b", "v4" }, { 1, 1, 1, 9 }, CanSwap::No);
     auto cnh = Identifier({ "n3_b", "h_b", "h_b", "h_b", "v4" }, { 1, 1, 1, 9 }, CanSwap::No);
     // Compare identifiers
-    //9 means v-site
     EXPECT_FALSE(nh3 == cnh);
     auto itype = InteractionType::VSITE4;
     EXPECT_TRUE(pd->interactionPresent(itype));
@@ -407,6 +407,24 @@ TEST(VSite4, nh3CanSwapNo)
     EXPECT_TRUE(fs.findParameterType(nh3, vsite4_name[vsite4B])->internalValue() == -0.3);
     EXPECT_TRUE(fs.findParameterType(nh3, vsite4_name[vsite4C])->internalValue() == -0.4);
     EXPECT_FALSE(fs.parameterExists(cnh));
+}
+
+TEST(VSite4S, nh3CanSwapNo)
+{
+    std::string forcefield("ACS-pg-vs3");
+    // Get the forcefield
+    auto pd = getForceField(forcefield);
+
+    auto nh3 = Identifier({ "n3_b", "c3_b", "h_b", "h_b", "v4" }, { 1, 1, 1, 9 }, CanSwap::No);
+    // Compare identifiers
+    auto itype = InteractionType::VSITE4S;
+    EXPECT_TRUE(pd->interactionPresent(itype));
+    auto fs = pd->findForcesConst(itype);
+    // Compare values
+    EXPECT_TRUE(fs.parameterExists(nh3));
+    auto vsite4_name = potentialToParameterName(Potential::VSITE4S);
+    EXPECT_TRUE(fs.findParameterType(nh3, vsite4_name[vsite4sA])->internalValue() == -0.3);
+    EXPECT_TRUE(fs.findParameterType(nh3, vsite4_name[vsite4sB])->internalValue() == -0.5);
 }
 
 }  // namespace
