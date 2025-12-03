@@ -456,9 +456,9 @@ static void spread_vsite4(rvec ffi,
     real d = 1 - a - b - c;
     /* 3 flops */
     svmul(d, fav, fi);
-    svmul(a, fav, fi);
-    svmul(b, fav, fj);
-    svmul(c, fav, fk);
+    svmul(a, fav, fj);
+    svmul(b, fav, fk);
+    svmul(c, fav, fl);
     /* 12 flops */
 
     rvec_inc(ffi, fi);
