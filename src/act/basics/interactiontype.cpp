@@ -76,6 +76,8 @@ std::map<InteractionType, NameDescr> eitNames = {
     { InteractionType::VSITE3FAD,          { "VSITE3FAD", "virtual sites with three constructing atoms and fixed angle and distance" } },
     { InteractionType::VSITE3OUT,          { "VSITE3OUT", "virtual sites with three contructing atoms, out of plane" } },
     { InteractionType::VSITE3OUTS,         { "VSITE3OUTS", "virtual sites with three contructing atoms, out of plane, symmetric with respect to the plane" } },
+    { InteractionType::VSITE4,             { "VSITE4", "virtual sites with four constructing atoms" } },
+    { InteractionType::VSITE4S,            { "VSITE4S", "virtual sites with four constructing atoms, two symmetric atoms" } },
     { InteractionType::ELECTROSTATICS,            { "COULOMB", "Coulomb interactions" } },
     { InteractionType::BONDCORRECTIONS,    { "BONDCORRECTIONS", "bond charge corrections" } },
     { InteractionType::ELECTRONEGATIVITYEQUALIZATION, { "ELECTRONEGATIVITYEQUALIZATION", "electronegativity equalization" } },
@@ -121,6 +123,9 @@ int interactionTypeToNatoms(InteractionType iType)
 {
     switch (iType)
     {
+    case InteractionType::VSITE4:
+    case InteractionType::VSITE4S:
+        return 5;
     case InteractionType::PROPER_DIHEDRALS:
     case InteractionType::IMPROPER_DIHEDRALS:
     case InteractionType::VSITE3FD:
