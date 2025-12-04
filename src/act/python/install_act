@@ -129,7 +129,7 @@ def install_openbabel(anonymous, clone, destination, prefix, build_type, CXX, CC
             else:
                 os.system("git clone git@github.com:dspoel/openbabel.git")
         else:
-            oblatest = "openbabel-alexandria-0.92.tar.gz"
+            oblatest = "openbabel-alexandria-0.93.tar.gz"
             if verbose:
                 print("Will try to fetch %s" % oblatest)
             url = "https://github.com/dspoel/openbabel/archive/refs/tags"
