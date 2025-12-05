@@ -1332,6 +1332,7 @@ void VsiteHandler::distributeForces(const Topology               *top,
             case InteractionType::VSITE4S:
                 spread_vsite4(f[atomIndices[0]], f[atomIndices[1]], f[atomIndices[2]], f[atomIndices[3]], f[atomIndices[4]],
                               params[vsite4sA], params[vsite4sB], params[vsite4sB]);
+                break;
             case InteractionType::VSITE4S3:
                 spread_vsite4(f[atomIndices[0]], f[atomIndices[1]], f[atomIndices[2]], f[atomIndices[3]], f[atomIndices[4]],
                               params[vsite4s3A], params[vsite4s3A], params[vsite4s3A]);
