@@ -120,6 +120,7 @@ std::map<Potential, PotentialProperties> potprops = {
     { Potential::VSITE3OUT, { "VSITE3OUT", F_VSITE3OUT, { "vs3out_a", "vs3out_b", "vs3out_c" }, "0", "" } },
     { Potential::VSITE4, { "VSITE4", -1, { "vs4a", "vs4b", "vs4c" }, "0", "" } },
     { Potential::VSITE4S, { "VSITE4S", -1, { "vs4sa", "vs4sb" }, "0", "" } },
+    { Potential::VSITE4S3, { "VSITE4S3", -1, { "vs4s3a" }, "0", "" } },
     { Potential::VSITE3OUTS, { "VSITE3OUTS", F_VSITE3OUTS, { "vs3outs_a", "vs3outs_c" }, "0", "" } }
 };
 

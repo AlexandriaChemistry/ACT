@@ -1030,7 +1030,8 @@ std::map<InteractionType, size_t> Topology::makeVsite4s(MsgHandler       *msghan
         return {};
     }
     std::vector<InteractionType> v4s = { InteractionType::VSITE4,
-                                         InteractionType::VSITE4S };
+                                         InteractionType::VSITE4S,
+                                         InteractionType::VSITE4S3 };
     std::map<InteractionType, ForceFieldParameterList> ffvs;
     for (const auto itype : v4s)
     {
