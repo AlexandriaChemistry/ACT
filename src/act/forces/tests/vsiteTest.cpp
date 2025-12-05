@@ -427,6 +427,23 @@ TEST(VSite4S, nh3CanSwapNo)
     EXPECT_TRUE(fs.findParameterType(nh3, vsite4_name[vsite4sB])->internalValue() == -0.5);
 }
 
+TEST(VSite4S3, nh3CanSwapNo)
+{
+    std::string forcefield("ACS-pg-vs3");
+    // Get the forcefield
+    auto pd = getForceField(forcefield);
+
+    auto nh3 = Identifier({ "n3_b", "h_b", "h_b", "h_b", "v4" }, { 1, 1, 1, 9 }, CanSwap::No);
+    // Compare identifiers
+    auto itype = InteractionType::VSITE4S3;
+    EXPECT_TRUE(pd->interactionPresent(itype));
+    auto fs = pd->findForcesConst(itype);
+    // Compare values
+    EXPECT_TRUE(fs.parameterExists(nh3));
+    auto vsite4_name = potentialToParameterName(Potential::VSITE4S3);
+    EXPECT_TRUE(fs.findParameterType(nh3, vsite4_name[vsite4s3A])->internalValue() == -0.2);
+}
+
 }  // namespace
 
 }  // namespace alexandria

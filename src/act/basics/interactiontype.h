@@ -99,6 +99,8 @@ enum class InteractionType
     VSITE4,
     //! Virtual interaction sites determined by four atoms, two of which are symmetric
     VSITE4S,
+    //! Virtual interaction sites determined by four atoms, three of which are symmetric (NH3)
+    VSITE4S3,
     //! Bond hardness and electronegativity needed to use the split charge equilibration algorithm
     BONDCORRECTIONS,
     //! Correction to the electronegativity difference between two atoms connected by a bond
