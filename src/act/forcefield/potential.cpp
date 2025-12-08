@@ -60,7 +60,7 @@ std::map<Potential, PotentialProperties> potprops = {
     { Potential::BORN_MAYER,
       { "BORN_MAYER", -1, { "aexp", "bexp", "vsite" },
         // Implement xor function for Kronecker combination rule
-        "-aexp*exp(-bexp*r); bexp=0.5*(bexp1+bexp2); aexp=select(vsite1*vsite2+(1-vsite1)*(1-vsite2),0,sqrt(aexp1*aexp2))",
+        "-aexp*exp(-bexp*r); bexp=0.5*(bexp1+bexp2); aexp=select(vsite1*vsite2+(1-vsite1)*(1-vsite2),0,0.5*(aexp1+aexp2))",
         "" } },
     { Potential::SLATER_ISA,
       { "SLATER_ISA", -1, { "aexp", "bexp" },
