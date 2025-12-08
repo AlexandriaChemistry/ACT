@@ -192,6 +192,18 @@ bool stringToPotential(const std::string &pname, Potential *p)
     return false;
 }
 
+Potential defaultPotential(InteractionType itype)
+{
+    std::map<InteractionType, Potential> special = {
+        { InteractionType::POSITION_RESTRAINT, Potential::POSITION_RESTRAINT }
+    };
+    if (special.find(itype) == special.end())
+    {
+        GMX_THROW(gmx::InternalError(gmx::formatString("Can not find suitable potential for interaction type %s", interactionTypeToString(itype).c_str())));
+    }
+    return special[itype];
+}
+
 int potentialToGromacsType(Potential p)
 {
     auto ppp = potprops.find(p);

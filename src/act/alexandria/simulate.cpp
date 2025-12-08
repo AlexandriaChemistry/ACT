@@ -154,6 +154,11 @@ int simulate(int argc, char *argv[])
         return 1;
     }
     auto &actmol = actmols[0];
+    // Check whether we need to add position restraints
+    if (sch.kFBPR() > 0)
+    {
+        actmol.topologyPtr()->addFBPR(&msghandler, sch.kFBPR(), sch.r0FBPR());
+    }
     JsonTree jtree("simulate");
     if (msghandler.info())
     {

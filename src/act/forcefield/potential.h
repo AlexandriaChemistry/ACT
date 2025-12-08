@@ -36,6 +36,7 @@
 #include <string>
 
 #include "act/basics/chargemodel.h"
+#include "act/basics/interactiontype.h"
 
 namespace alexandria
 {
@@ -72,6 +73,15 @@ typedef struct {
 /*! \brief Map from Potential to it's PotentialProperties
  */
 extern std::map<Potential, PotentialProperties> potprops;
+
+/*! \brief Return default potential corresponding to interaction type.
+ * Note that this only works for special potentials, not the ones that 
+ * really should be present in the force field.
+ * \param[in] itype The InteractionType
+ * \return Potential
+ * \throws if not found
+ */
+Potential defaultPotential(InteractionType itype);
 
 /*! \brief Convert potential into string
  * \param[in] p The potential type

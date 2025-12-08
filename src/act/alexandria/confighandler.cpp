@@ -411,7 +411,11 @@ void SimulationConfigHandler::add_options(std::vector<t_pargs>             *parg
         { "-toler",  FALSE, etREAL, {&forceToler_},
           "Convergence tolerance on the mean square atom force for the energy minimizer. If too small, energy minimization may not converge." },
         { "-overrelax", FALSE, etREAL, {&overRelax_},
-          "Apply overrelaxation (if > 1) to speed up minimization. Can be dangerous for poor energy functions." }
+          "Apply overrelaxation (if > 1) to speed up minimization. Can be dangerous for poor energy functions." },
+        { "-kfbpr", FALSE, etREAL, {&kFBPR_},
+          "Force constant (kJ/mol nm) for flat-bottom position restraints, zero means no restraints" },
+        { "-r0fbpr", FALSE, etREAL, {&r0FBPR_},
+          "Radius (nm) for flat-bottom position restraints (from origin)" }
     };
     for(auto &i : extra)
     {

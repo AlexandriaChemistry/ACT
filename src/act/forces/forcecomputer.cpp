@@ -290,10 +290,21 @@ void ForceComputer::computeOnce(const ForceField                  *pd,
         {
             continue;
         }
-        // Force field parameter list
-        auto &ffpl = pd->findForcesConst(entry.first);
-        // The function we need to do the math
-        auto bfc   = getBondForceComputer(ffpl.potential());
+        // Not all potentials are available in the force field,
+        // in particular restraint potentials.
+        Potential mypot;
+        if (pd->interactionPresent(entry.first))
+        {
+            // Force field parameter list
+            auto &ffpl = pd->findForcesConst(entry.first);
+            // The function we need to do the math
+            mypot = ffpl.potential();
+        }
+        else
+        {
+            mypot = defaultPotential(entry.first);
+        }
+        auto bfc   = getBondForceComputer(mypot);
         if (bfc)
         {
             // Now do the calculations and store the energy
@@ -322,7 +333,7 @@ void ForceComputer::computeOnce(const ForceField                  *pd,
         else if (debug && !isVsite(entry.first))
         {
             fprintf(debug, "Please implement a force function for type %s\n",
-                    potentialToString(ffpl.potential()).c_str());
+                    potentialToString(mypot).c_str());
         }
     }
     auto ivdwcorr = energies->find(InteractionType::VDWCORRECTION);
