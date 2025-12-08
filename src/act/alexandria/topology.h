@@ -347,6 +347,16 @@ private:
     void fillParameters(MsgHandler        *msghandler,
                         const ForceField  *pd,
                         missingParameters missing);
+
+    /*! \brief Special purpose routine to add position restraints to all atoms
+     * \param[in] msghandler For warnings etc.
+     * \param[in] kFBPR      Force constant for position restraints
+     * \param[in] r0FBPR     Radius for flat-bottom position restraints
+     */
+    void addFBPR(MsgHandler *msghandler,
+                 double      kFBPR,
+                 double      r0FBPR);
+
     //! \return the vector of atoms
     const std::vector<ActAtom> &atoms() const { return atoms_; }
 

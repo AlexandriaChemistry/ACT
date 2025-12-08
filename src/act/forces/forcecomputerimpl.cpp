@@ -80,8 +80,8 @@ static double computeFBPOSRE(const TopologyEntryVector             &aindex,
             }
             if (debug)
             {
-                fprintf(debug, "ACT FBPOSRES ai %d epr: %10g K: %g R0 %g\n",
-                        ai, epr, K, R0);
+                fprintf(debug, "ACT FBPOSRES ai %d epr: %10g K: %g R0 %g dr2 %g\n",
+                        ai, epr, K, R0, dr2);
             }
         }
     }

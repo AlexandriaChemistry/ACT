@@ -468,6 +468,10 @@ private:
     double             overRelax_            = 1.0;
     //! Maximum number of iterations for the energy minimizer, 0 is until convergence.
     int                maxIter_              = 100;
+    //! Force constant for flat-bottom position restraints, zero means no restraints
+    double             kFBPR_                = 0;
+    //! Radius for flat-bottom position restraints (from origin)
+    double             r0FBPR_               = 0;
 public:
     /*!
      * \brief Add command-line arguments to a vector
@@ -504,7 +508,13 @@ public:
 
     //! \return initial simulation temperature
     double temperature() const { return temperature_; }
-    
+
+    //! Force constant for flat-bottom position restraints, zero means no restraints"
+    double kFBPR() const { return kFBPR_; }
+
+    //! Radius for flat-bottom position restraints (from origin)
+    double r0FBPR() const { return r0FBPR_; }
+
     //! \return user provided random number seed
     int seed() const { return seed_; }
 

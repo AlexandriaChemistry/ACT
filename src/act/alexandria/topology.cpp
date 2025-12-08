@@ -1674,6 +1674,36 @@ void Topology::dump(FILE *fp) const
     }
 }
 
+void Topology::addFBPR(MsgHandler *msghandler,
+                       double      kFBPR,
+                       double      r0FBPR)
+{
+    if (atoms_.empty())
+    {
+        msghandler->msg(ACTStatus::Error, "No atoms to add position restraints to");
+        return;
+    }
+    auto ipr = InteractionType::POSITION_RESTRAINT;
+    if (hasEntry(ipr))
+    {
+        msghandler->msg(ACTStatus::Error, "Position restraints have been added already");
+        return;
+    }
+    TopologyEntryVector top{};
+    for(size_t a = 0; a < atoms_.size(); a++)
+    {
+        top.push_back(SingleAtom(a));
+        std::vector<double> params(2);
+        params[fbprK]  = kFBPR;
+        params[fbprR0] = r0FBPR;
+        top[a]->setParams(params);
+    }
+    addEntry(ipr, std::move(top));
+    msghandler->msg(ACTStatus::Verbose,
+                    gmx::formatString("Succesfully added %zu position restraints with K %g and R0 %g",
+                                      atoms_.size(), kFBPR, r0FBPR));
+}
+
 //! \brief Low-level parameter filling
 static void fillParams(MsgHandler                      *msghandler,
                        const ForceFieldParameterList   &fs,
