@@ -63,6 +63,8 @@ enum class InteractionType
     ELECTROSTATICS,
     //! Polarization interaction between an atom (core) or a virtual site and its directly connected shell.
     POLARIZATION,
+    //! Restraint energy
+    POSITION_RESTRAINT,
     //! Induction energy
     INDUCTION,
     //! Correction to induction

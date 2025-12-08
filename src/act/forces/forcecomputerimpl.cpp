@@ -42,6 +42,54 @@
 namespace alexandria
 {
 
+/*! \brief Compute flat-bottom position restraint energy and forces
+ * Note that this particular force operates on one atom at a time
+ * \param[in]    aindex      The atom identifiers and parameters
+ * \param[in]    atoms       The atoms
+ * \param[in]    coordinates The coordinates of all particles
+ * \param[inout] forces      The forces on all particles
+ * \param[inout] energies    The energy per type
+ * \return total energy
+ */
+static double computeFBPOSRE(const TopologyEntryVector             &aindex,
+                             gmx_unused const std::vector<ActAtom> &atoms,
+                             const std::vector<gmx::RVec>          *coordinates,
+                             std::vector<gmx::RVec>                *forces,
+                             std::map<InteractionType, double>     *energies)
+{
+    double epr  = 0;
+    auto   &x    = *coordinates;
+    for (const auto &b : aindex)
+    {
+        // Get the parameters. We have to know their names to do this.
+        auto &params = b->params();
+        auto K       = params[fbprK];
+        auto R0      = params[fbprR0];
+        // Get the atom indices
+        auto ai      = b->atomIndices()[0];
+        auto dr2     = iprod(x[ai], x[ai]);
+        if (dr2 > R0*R0)
+        {
+            auto r1   = std::sqrt(dr2);
+            auto dr   = r1-R0;
+            epr      += 0.5*K*dr*dr;
+            auto fpr  = -K/r1;
+            for (int m = 0; m < DIM; m++)
+            {
+                (*forces)[ai][m] += fpr*x[ai][m];
+            }
+            if (debug)
+            {
+                fprintf(debug, "ACT FBPOSRES ai %d epr: %10g K: %g R0 %g\n",
+                        ai, epr, K, R0);
+            }
+        }
+    }
+    energies->insert({InteractionType::POSITION_RESTRAINT, epr});
+
+    return epr;
+}
+
 /*! \brief Spread scalar force over two atoms
  * \param[in]    fscalar The scalar force
  * \param[in]    dx      The distance vector
@@ -1828,7 +1876,8 @@ std::map<Potential, bondForceComputer> bondForceComputerMap = {
     { Potential::HARMONIC_DIHEDRALS,     computeImpropers       },
     { Potential::PROPER_DIHEDRALS,       computePropers         },
     { Potential::FOURIER_DIHEDRALS,      computeFourDihs        },
-    { Potential::UREY_BRADLEY_ANGLES,    computeUreyBradley     }
+    { Potential::UREY_BRADLEY_ANGLES,    computeUreyBradley     },
+    { Potential::POSITION_RESTRAINT,     computeFBPOSRE         }
 };
 
 bondForceComputer getBondForceComputer(Potential pot)

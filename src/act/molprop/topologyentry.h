@@ -193,6 +193,49 @@ public:
 typedef std::vector<BaseContainer<TopologyEntry>> TopologyEntryVector;
 
 /*! \brief
+ * Single atom
+ *
+ * \inpublicapi
+ * \ingroup group_molprop
+ */
+class SingleAtom : public TopologyEntry
+{
+ public:
+    //! Default constructor
+    SingleAtom() {}
+
+    //! Constructor setting the ids of the atoms
+    SingleAtom(int ai) { Set(ai); }
+
+    //! Sets the ids of the atoms
+    void Set(int ai)
+    {
+        addAtom(ai);
+    }
+
+    //! Returns the ids of the atoms and the bondorder
+    void get(int *ai) const;
+
+    //! Returns the first atom id
+    int aI() const
+    {
+        return atomIndex(0);
+    }
+
+    /*! \brief Return whether two SingleAtoms are the same
+     * \param[in] other The other SingleAtom
+     * \return true if they are the same
+     */
+    bool operator==(const SingleAtom &other) const;
+
+    /*! \brief Return whether one SingleAtom is smaller than the other
+     * \param[in] other The other SingleAtom
+     * \return true if this pair is smaller
+     */
+    bool operator<(const SingleAtom &other) const;
+};
+
+/*! \brief
  * Atom pair in a molecule
  *
  * \inpublicapi
