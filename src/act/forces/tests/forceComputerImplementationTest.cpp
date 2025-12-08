@@ -894,6 +894,55 @@ TEST_F (ForceComputerImplementationTest, FOURIER_DIHEDRALS)
     testPot(Potential::FOURIER_DIHEDRALS, top, &x);
 }
 
+TEST_F (ForceComputerImplementationTest, FBPOSRES0)
+{
+    std::vector<gmx::RVec> x = {
+        { 0, 0, 0.5 }
+    };
+    // Generate topology info
+    TopologyEntryVector top{};
+    top.push_back(SingleAtom(0));
+    std::vector<double> params(2);
+    params[fbprK]  = 100;
+    params[fbprR0] = 1;
+    top[0]->setParams(params);
+
+    testPot(Potential::POSITION_RESTRAINT, top, &x);
+}
+
+TEST_F (ForceComputerImplementationTest, FBPOSRES1)
+{
+    std::vector<gmx::RVec> x = {
+        { 0, 0, 2 }
+    };
+    // Generate topology info
+    TopologyEntryVector top{};
+    top.push_back(SingleAtom(0));
+    std::vector<double> params(2);
+    params[fbprK]  = 100;
+    params[fbprR0] = 1;
+    top[0]->setParams(params);
+
+    testPot(Potential::POSITION_RESTRAINT, top, &x);
+}
+
+TEST_F (ForceComputerImplementationTest, FBPOSRES_1)
+{
+    // Test sign of the force as well
+    std::vector<gmx::RVec> x = {
+        { 0, 0, -2 }
+    };
+    // Generate topology info
+    TopologyEntryVector top{};
+    top.push_back(SingleAtom(0));
+    std::vector<double> params(2);
+    params[fbprK]  = 100;
+    params[fbprR0] = 1;
+    top[0]->setParams(params);
+
+    testPot(Potential::POSITION_RESTRAINT, top, &x);
+}
+
 }  // namespace
 
 }  // namespace alexandria

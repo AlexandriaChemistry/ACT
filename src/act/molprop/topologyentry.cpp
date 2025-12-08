@@ -218,6 +218,16 @@ bool AtomPair::operator<(const AtomPair &other) const
             (aI() == other.aJ() && aJ() < other.aI()));
 }
 
+bool SingleAtom::operator==(const SingleAtom &other) const
+{
+    return aI() == other.aI();
+}
+
+bool SingleAtom::operator<(const SingleAtom &other) const
+{
+    return aI() < other.aI();
+}
+
 bool Bond::operator==(const Bond &other) const
 {
     return ((aI() == other.aI() && aJ() == other.aJ()) ||

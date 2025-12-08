@@ -110,6 +110,7 @@ std::map<Potential, PotentialProperties> potprops = {
     { Potential::FOURIER_DIHEDRALS, { "FOURIER_DIHEDRALS", F_FOURDIHS, { "c0", "c1", "c2", "c3", "c4", "c5" }, "0", "" } },
     { Potential::PROPER_DIHEDRALS, { "PROPER_DIHEDRALS", F_PDIHS, { "phi0", "kp", "mult" }, "0", "" } },
     { Potential::POLARIZATION, { "POLARIZATION", F_POLARIZATION, { "alpha", "rhyper", "fchyper" }, "0", "" } },
+    { Potential::POSITION_RESTRAINT, { "POSITION_RESTRAINT", -1, { "k", "r0" }, "0", "" } },
     { Potential::VSITE1, { "VSITE1", F_VSITEN, { "vs1a" }, "0", "" } },
     { Potential::VSITE2, { "VSITE2", F_VSITE2, { "vs2a" }, "0", "" } },
     { Potential::VSITE2FD, { "VSITE2FD", F_VSITE2FD, { "vs2fd_a" }, "0", "" } },

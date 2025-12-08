@@ -64,6 +64,7 @@ std::map<InteractionType, NameDescr> eitNames = {
     { InteractionType::ALLELEC,            { "ALLELEC", "Sum over COULOMB, POLARIZATION and CHARGE TRANSFER" } },
     { InteractionType::EPOT,               { "EPOT", "Potential energy" } },
     { InteractionType::POLARIZATION,       { "POLARIZATION", "polarization" } },
+    { InteractionType::POSITION_RESTRAINT, { "POSITION_RESTRAINT", "Position restraint" } },
     { InteractionType::INDUCTION,          { "INDUCTION", "induction" } },
     { InteractionType::INDUCTIONCORRECTION,{ "INDUCTIONCORRECTION", "induction correction" } },
     { InteractionType::CONSTR,             { "CONSTR", "constraints" } },
