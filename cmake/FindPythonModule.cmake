@@ -56,10 +56,10 @@ function (find_python_module module)
 
     if (NOT ${_out_var})
         set(_status 1)
-        if (PYTHON_EXECUTABLE)
+        if (Python3_EXECUTABLE)
             # A module's location is usually a directory, but for binary modules
             # it's a .so file.
-            execute_process(COMMAND "${PYTHON_EXECUTABLE}" "-c"
+            execute_process(COMMAND "${Python3_EXECUTABLE}" "-c"
                 "import re, ${module}; print re.compile('/__init__.py.*').sub('',${module}.__file__)"
                 RESULT_VARIABLE _status
                 OUTPUT_VARIABLE _location
@@ -75,5 +75,5 @@ function (find_python_module module)
     include(FindPackageHandleStandardArgs)
     find_package_handle_standard_args(
         ${_find_package_module} DEFAULT_MSG
-        ${_out_var} PYTHON_EXECUTABLE)
+        ${_out_var} Python3_EXECUTABLE)
 endfunction()
