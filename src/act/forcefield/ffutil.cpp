@@ -25,12 +25,15 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor,
  * Boston, MA  02110-1301, USA.
  */
+#include "ffutil.h"
 
+#include "act/forcefield/forcefield.h"
+#include "act/forcefield/forcefield_parametername.h"
+#include "act/forces/combinationrules.h"
 
-#include "act/forcefield/combinationrules.h"
+namespace alexandria
+{
 
-    
-    
 /*! \brief Generation parameters using combination rules
  * \param[in] pd    The force field
  * \param[in] itype The interaction type
@@ -193,7 +196,6 @@ static void generateCoulombParameterPairs(ForceField *pd, bool force)
     }
     // Phew, we're done!
 }
-
     
 void generateDependentParameter(ForceField *pd, bool force)
 {
@@ -203,3 +205,4 @@ void generateDependentParameter(ForceField *pd, bool force)
     generateCoulombParameterPairs(pd, force);
 }
 
+} // namespace

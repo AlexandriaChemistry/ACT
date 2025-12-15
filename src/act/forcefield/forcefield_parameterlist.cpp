@@ -329,12 +329,13 @@ CommunicationStatus ForceFieldParameterList::BroadCast(const CommunicationRecord
                 cr->bcast(&key, comm);
                 cr->bcast(&value, comm);
             }
-            for(const auto &opt : combrules_)
+            for(auto opt = combrules_.begin(); opt != combrules_.end(); ++opt)
             {
-                std::string key   = opt.first;
-                std::string value = opt.second;
+                std::string key   = opt->first;
+                std::string value = combinationRuleName(opt->second.rule());
                 cr->bcast(&key, comm);
                 cr->bcast(&value, comm);
+                opt->second.ffpl()->BroadCast(cr, root, cr->comm_world());
             }
         }
         else
@@ -353,7 +354,15 @@ CommunicationStatus ForceFieldParameterList::BroadCast(const CommunicationRecord
                 std::string key, value;
                 cr->bcast(&key, comm);
                 cr->bcast(&value, comm);
-                combrules_.insert({key, value});
+                CombRule ccc;
+                if (combinationRuleRule(value, &ccc))
+                {
+                    ParamCombRule p(ccc);
+                    ForceFieldParameter ffp;
+                    ffp.BroadCast(cr, root, cr->comm_world());
+                    p.addForceFieldParameter(ffp);
+                    combrules_.insert({key, std::move(p)});
+                }
             }
         }
         if (debug)
@@ -528,28 +537,12 @@ CommunicationStatus ForceFieldParameterList::Receive(const CommunicationRecord *
 
 CombRuleSet getCombinationRule(const ForceFieldParameterList &vdw)
 {
-    CombRuleSet myCombRule;
     std::string oldCombRule("combination_rule");
     if (vdw.optionExists(oldCombRule))
     {
         GMX_THROW(gmx::InvalidInputError("Old style combination_rule not supported anymore"));
     }
-    else
-    {
-        for(const auto &opt : vdw.combinationRules())
-        {
-            CombRule cr;
-            if (combinationRuleRule(opt.second.first, &cr))
-            {
-                myCombRule.insert({ opt.first, cr });
-            }
-            else
-            {
-                GMX_THROW(gmx::InvalidInputError(gmx::formatString("Invalid combination rule name %s for parameter %s", opt.second.first.c_str(), opt.first.c_str()).c_str()));
-            }
-        }
-    }
-    return myCombRule;
+    return vdw.combinationRules();
 }
 
 } // namespace
