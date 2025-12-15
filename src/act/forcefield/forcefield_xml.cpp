@@ -46,7 +46,7 @@
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/futil.h"
 
-#include "act/forces/combinationrules.h"
+#include "act/forcefield/ffutil.h"
 #include "act/forcefield/forcefield_parameter.h"
 #include "act/forcefield/forcefield_parameterlist.h"
 #include "forcefield.h"
@@ -105,6 +105,7 @@ enum class xmlEntry {
     OPTION,
     COMBINATIONRULE,
     RULE,
+    EXPONENT,
     PARAMETERLIST,
     PARAMETER,
     UNCERTAINTY,
@@ -165,6 +166,7 @@ std::map<const std::string, xmlEntry> xml_pd =
     { "value",                     xmlEntry::VALUE            },
     { "option",                    xmlEntry::OPTION           },
     { "combinationrule",           xmlEntry::COMBINATIONRULE  },
+    { "exponent",                  xmlEntry::EXPONENT         },
     { "rule",                      xmlEntry::RULE             },
     { "uncertainty",               xmlEntry::UNCERTAINTY      },
     { "minimum",                   xmlEntry::MINIMUM          },
@@ -391,8 +393,14 @@ static void processAttr(FILE       *fp,
             if (xmlEntry::INTERACTION == parentEntry)
             {
                 auto fpl = pd->findForces(currentItype);
+                double exponent = 0;
+                if (NN(xbuf, xmlEntry::EXPONENT))
+                {
+                    exponent =  xbuf_atof(xbuf, xmlEntry::EXPONENT);
+                }
                 fpl->addCombinationRule(xbufString(xmlEntry::PARAMETER),
-                                        xbufString(xmlEntry::RULE));
+                                        xbufString(xmlEntry::RULE),
+                                        exponent);
             }
             else
             {
@@ -622,11 +630,13 @@ static void addOption(xmlNodePtr         parent,
 //! \brief Add a combination rule to a parent
 static void addCombRule(xmlNodePtr         parent,
                         const std::string &parameter,
-                        const std::string &rule)
+                        const std::string &rule,
+                        double             exponent)
 {
     auto baby = add_xml_child(parent, exml_names(xmlEntry::COMBINATIONRULE));
     add_xml_char(baby, exml_names(xmlEntry::PARAMETER), parameter.c_str());
     add_xml_char(baby, exml_names(xmlEntry::RULE), rule.c_str());
+    add_xml_double(baby, exml_names(xmlEntry::EXPONENT), exponent);
 }
 
 //! \brief Add a complete force field parameter
@@ -695,7 +705,7 @@ static void addXmlForceField(xmlNodePtr parent, const ForceField *pd)
         }
         for (auto &cr : fs.second.combinationRules())
         {
-            addCombRule(child, cr.first, cr.second);
+            addCombRule(child, cr.first, cr.second.first, cr.second.second);
         }
         for (auto &params : fs.second.parametersConst())
         {

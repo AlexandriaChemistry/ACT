@@ -36,12 +36,14 @@
 
 #include <algorithm>
 #include <map>
+#include <utility>
 
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "act/forcefield/forcefield_parameter.h"
 #include "act/forcefield/potential.h"
+#include "act/forces/combinationrules.h"
 #include "act/basics/identifier.h"
 #include "act/basics/interactiontype.h"
 
@@ -136,12 +138,17 @@ class ForceFieldParameterList
 
     /*! \brief Add function specific combination rule
      *
-     * \param[in] param  Name of the parameter
-     * \param[in] rule   String for the rule
+     * \param[in] param    Name of the parameter
+     * \param[in] rule     String for the rule
+     * \param[in] exponent Parameter used for Generalized mean only
      */
-    void addCombinationRule(const std::string &param, const std::string &rule)
+    void addCombinationRule(const std::string         &param,
+                            const std::string         &rule,
+                            const ForceFieldParameter &ffpl)
     {
-        combrules_[param] = rule;
+        ParamCombRule p(rule);
+        p.addForceFieldParameter(ffpl);
+        combrules_.insert( { param, std::move(p) } );
     }
     
     /*! \brief check whether a combination rule exists
@@ -154,13 +161,13 @@ class ForceFieldParameterList
         return combrules_.find(param) != combrules_.end();
     }
 
-    /*! \brief Extract the rule corresponding to an parameter
+    /*! \brief Extract the rule corresponding to a parameter
      *
      * \param[in] param Name of the parameter
      * \return Value
      * \throws gmx::InvalidInputError if the param is non-existent
      */
-    const std::string &combinationRule(const std::string &param) const
+    const ParamCombRule &combinationRule(const std::string &param) const
     {
         auto ov = combrules_.find(param);
         if (ov == combrules_.end())
@@ -172,7 +179,7 @@ class ForceFieldParameterList
     }
 
     //! Return the combination rule map
-    const std::map<std::string, std::string> &combinationRules() const { return combrules_; }
+    const CombRuleSet &combinationRules() const { return combrules_; }
 
     //! Return the parameters map as a const variable
     const ForceFieldParameterListMap &parametersConst() const { return parameters_; };
@@ -314,7 +321,7 @@ class ForceFieldParameterList
     std::map<std::string, std::string> options_;
         
     //! Map structure for combination rules associated with the parameter list
-    std::map<std::string, std::string> combrules_;
+    CombRuleSet combrules_;
         
     //! Map of parameters 
     ForceFieldParameterListMap parameters_;
@@ -323,6 +330,12 @@ class ForceFieldParameterList
     int counter_ = 0;
 };
 
+/*! \brief Extract a map of combination rules for each parameter
+ * \param[in] vdw Van der Waals list of ff params
+ * \return the map
+ */
+CombRuleSet getCombinationRule(const ForceFieldParameterList &vdw);
+    
 } // namespace
 
 #endif

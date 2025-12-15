@@ -92,7 +92,10 @@ std::vector<std::string> ForceField::info() const
         }
         for(const auto &cr : fs.second.combinationRules())
         {
-            out.push_back(gmx::formatString("    parameter %s combination rule %s", cr.first.c_str(), cr.second.c_str()));
+            out.push_back(gmx::formatString("    parameter %s combination rule %s parameter %g",
+                                            cr.first.c_str(),
+                                            combinationRuleName(cr.second.rule()).c_str(),
+                                            cr.second.ffplConst().value()));
         }
     }
     out.push_back("-----------------------------------------------");

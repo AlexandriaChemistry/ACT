@@ -92,12 +92,23 @@ int CombRuleUtil::extract(ForceField *pd)
                 if (pd->interactionPresent(itype))
                 {
                     auto fs = pd->findForces(itype);
-                    if (fs->combinationRuleExists(elements[1]) &&
-                        (fs->combinationRule(elements[1]) == elements[2]))
+                    CombRule cr;
+                    if (!combinationRuleRule(elements[2], &cr))
                     {
-                        changed += 1;
+                        fprintf(stderr, "Incorrection combination rule name '%s'\n", elements[2].c_str());
                     }
-                    fs->addCombinationRule(elements[1], elements[2]);
+                    else
+                    {
+                        //! \todo Check this logic
+                        if (fs->combinationRuleExists(elements[1]) &&
+                            (fs->combinationRule(elements[1]).rule() == cr))
+                        {
+                            changed += 1;
+                        }
+                        std::string unit;
+                        ForceFieldParameter ffp(unit, 0, 0, 0, -10, 10, Mutability::Bounded, true, false);
+                        fs->addCombinationRule(elements[1], elements[2], ffp);
+                    }
                 }
                 else
                 {
@@ -127,7 +138,9 @@ int CombRuleUtil::convert(ForceFieldParameterList *vdw)
         {
             for(auto &crule : getCombinationRule(*vdw))
             {
-                vdw->addCombinationRule(crule.first, combinationRuleName(crule.second));
+                vdw->addCombinationRule(crule.first,
+                                        combinationRuleName(crule.second.rule()),
+                                        crule.second.ffplConst());
                 changed += 1;
             }
         }

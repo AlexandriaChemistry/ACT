@@ -41,6 +41,7 @@
 #include "act/forces/combinationrules.h"
 #include "act/ga/genome.h"
 #include "act/utility/memory_check.h"
+#include "act/forcefield/ffutil.h"
 #include "act/forcefield/forcefield_xml.h"
 
 #include "gromacs/utility/stringutil.h"

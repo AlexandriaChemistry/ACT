@@ -526,4 +526,30 @@ CommunicationStatus ForceFieldParameterList::Receive(const CommunicationRecord *
     return cs;
 }
 
+CombRuleSet getCombinationRule(const ForceFieldParameterList &vdw)
+{
+    CombRuleSet myCombRule;
+    std::string oldCombRule("combination_rule");
+    if (vdw.optionExists(oldCombRule))
+    {
+        GMX_THROW(gmx::InvalidInputError("Old style combination_rule not supported anymore"));
+    }
+    else
+    {
+        for(const auto &opt : vdw.combinationRules())
+        {
+            CombRule cr;
+            if (combinationRuleRule(opt.second.first, &cr))
+            {
+                myCombRule.insert({ opt.first, cr });
+            }
+            else
+            {
+                GMX_THROW(gmx::InvalidInputError(gmx::formatString("Invalid combination rule name %s for parameter %s", opt.second.first.c_str(), opt.first.c_str()).c_str()));
+            }
+        }
+    }
+    return myCombRule;
+}
+
 } // namespace
