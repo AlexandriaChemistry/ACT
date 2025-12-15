@@ -93,13 +93,28 @@ void BoundsDevComputer::calcDeviation(MsgHandler                        *,
     }
     double bound = 0;
     // Check ACM charges
-    for(const auto &atom: mol->atomsConst())
+    auto atoms = mol->atomsConst();
+    for(const auto &atom: atoms)
     {
         auto pt = atom.ffType();
         auto p  = forcefield->findParticleType(pt)->parameterConst("charge");
         if (p.mutability() == Mutability::ACM && p.maximum() > p.minimum())
         {
-            bound += l2_regularizer(atom.charge(), p.minimum(), p.maximum());
+            double q = atom.charge();
+            // Add shell charge(s)
+            for(auto ss : atom.shells())
+            {
+                q += atoms[ss].charge();
+            }
+            // Add vsite 1 charge
+            for(auto vv : atom.vsites())
+            {
+                if (atoms[vv].cores().size() == 1)
+                {
+                    q += atoms[vv].charge();
+                }
+            }
+            bound += l2_regularizer(q, p.minimum(), p.maximum());
         }
     }
     mytarget->second.increase(1, bound);
