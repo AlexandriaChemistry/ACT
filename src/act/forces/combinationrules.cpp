@@ -61,7 +61,8 @@ const std::map<CombRule, const std::string> combRuleName =
         { CombRule::Volumetric, "Volumetric" },
         { CombRule::InverseSquare, "InverseSquare" },
         { CombRule::HalgrenEpsilon, "HalgrenEpsilon" },
-        { CombRule::Kronecker, "Kronecker" }
+        { CombRule::Kronecker, "Kronecker" },
+        { CombRule::GeneralizedMean, "GeneralizedMean" }
     };
 
 const std::string &combinationRuleName(CombRule c)
@@ -88,7 +89,23 @@ bool combinationRuleRule(const std::string &name, CombRule *cr)
     return false;
 }
 
-double combineTwo(CombRule comb, double x1, double x2)
+ParamCombRule::ParamCombRule(const std::string &rule)
+{
+    CombRule c;
+    if (!combinationRuleRule(rule, &c))
+    {
+        GMX_THROW(gmx::InvalidInputError(gmx::formatString("Unknown combination rule '%s' (note these are case-sensitive)", rule.c_str())));
+    }
+    rule_ = c;
+}
+
+/*! \brief Execute a simple combination rule
+ * \param[in] comb The combination rule to apply
+ * \param[in] x1   First value
+ * \param[in] x2   Second value
+ * \return The combined value
+ */
+static double combineTwo(CombRule comb, double x1, double x2)
 {
     switch (comb)
     {
@@ -140,7 +157,16 @@ double combineTwo(CombRule comb, double x1, double x2)
     return 0;
 }
 
-double combineHogervorstSigma(double e1, double e2, double g1, double g2, double s1, double s2)
+/*! \brief Execute a combination rule according to Hogervorst1971a https://doi.org/10.1016/0031-8914(71)90138-8
+ * \param[in] e1 First epsilon
+ * \param[in] e2 Second epsilon
+ * \param[in] g1 First gamma
+ * \param[in] g2 Second gamma
+ * \param[in] s1 First sigma
+ * \param[in] s2 Second sigma
+ * \return The combined value
+ */
+static double combineHogervorstSigma(double e1, double e2, double g1, double g2, double s1, double s2)
 {
     if (g1 <= 6 || g2 <= 6)
     {
@@ -157,7 +183,14 @@ double combineHogervorstSigma(double e1, double e2, double g1, double g2, double
     return std::pow((std::sqrt( tempi * tempj ) )* std::abs(gam12 - 6) / (gam12 * eps12), 1.0/6.0);
 }
 
-double combineWaldmanEpsilon(double e1, double e2, double s1, double s2)
+/*! \brief Execute a combination rule according to Waldman & Hagler https://doi.org/10.1002/jcc.540140909
+ * \param[in] e1 First epsilon
+ * \param[in] e2 Second epsilon
+ * \param[in] s1 First sigma
+ * \param[in] s2 Second sigma
+ * \return The combined value
+ */
+static double combineWaldmanEpsilon(double e1, double e2, double s1, double s2)
 {
     // Qi2106 Eqn 3.
     double s13 = s1*s1*s1;
@@ -169,44 +202,25 @@ double combineWaldmanEpsilon(double e1, double e2, double s1, double s2)
     return std::sqrt( e1 * e2 ) * ( 2 * s13 * s23 / (sqr(s13) + sqr(s23)));
 }
 
-double combineMasonGamma(double g1, double g2, double s1, double s2)
+/*! \brief Execute a combination rule according to Mason1955a https://doi.org/10.1063/1.1740561
+ * \param[in] g1 First gamma
+ * \param[in] g2 Second gamma
+ * \param[in] s1 First sigma
+ * \param[in] s2 Second sigma
+ * \return The combined value
+ */
+static double combineMasonGamma(double g1, double g2, double s1, double s2)
 {
     double sigmaIJ = combineTwo(CombRule::Geometric, s1, s2);
     return sigmaIJ * (0.5*((g1/s1)+(g2/s2)));
 }
 
-std::map<const std::string, CombRule> getCombinationRule(const ForceFieldParameterList &vdw)
-{
-    std::map<const std::string, CombRule> myCombRule;
-    std::string oldCombRule("combination_rule");
-    if (vdw.optionExists(oldCombRule))
-    {
-        GMX_THROW(gmx::InvalidInputError("Old style combination_rule not supported anymore"));
-    }
-    else
-    {
-        for(const auto &opt : vdw.combinationRules())
-        {
-            CombRule cr;
-            if (combinationRuleRule(opt.second, &cr))
-            {
-                myCombRule.insert({ opt.first, cr });
-            }
-            else
-            {
-                GMX_THROW(gmx::InvalidInputError(gmx::formatString("Invalid combination rule name %s for parameter %s", opt.second.c_str(), opt.first.c_str()).c_str()));
-            }
-        }
-    }
-    return myCombRule;
-}
-
-void evalCombinationRule(Potential                                    ftype,
-                         const std::map<const std::string, CombRule> &combrule,
-                         const ForceFieldParameterMap                &ivdw,
-                         const ForceFieldParameterMap                &jvdw,
-                         bool                                         includePair,
-                         ForceFieldParameterMap                      *pmap)
+void evalCombinationRule(Potential                     ftype,
+                         const CombRuleSet            &combrule,
+                         const ForceFieldParameterMap &ivdw,
+                         const ForceFieldParameterMap &jvdw,
+                         bool                          includePair,
+                         ForceFieldParameterMap       *pmap)
 {
     // Fudge unit
     std::string unit("kJ/mol");
@@ -239,7 +253,7 @@ void evalCombinationRule(Potential                                    ftype,
             Potential::SLATER_ISA_TT == ftype ||
             Potential::MORSE_BONDS == ftype)
         {
-            if (CombRule::Kronecker == crule)
+            if (CombRule::Kronecker == crule.rule())
             {
                 if (includePair)
                 {
@@ -254,7 +268,7 @@ void evalCombinationRule(Potential                                    ftype,
             }
             else
             {
-                value = combineTwo(crule,
+                value = combineTwo(crule.rule(),
                                    ivdw.find(param.first)->second.value(),
                                    jvdw.find(param.first)->second.value());
             }
@@ -316,12 +330,12 @@ void evalCombinationRule(Potential                                    ftype,
             {
                 GMX_THROW(gmx::InternalError(gmx::formatString("Parameter %s missing trying to apply combination rule %s for potential %s",
                                                                cdist.c_str(),
-                                                               combinationRuleName(crule).c_str(),
+                                                               combinationRuleName(crule.rule()).c_str(),
                                                                potentialToString(ftype).c_str()).c_str()));
             }
             isig = ivdw.find(cdist)->second.value();
             jsig = jvdw.find(cdist)->second.value();
-            switch (crule)
+            switch (crule.rule())
             {
             case CombRule::HogervorstSigma:
                 value = combineHogervorstSigma(ieps, jeps, igam, jgam, isig, jsig);
@@ -333,7 +347,7 @@ void evalCombinationRule(Potential                                    ftype,
                 value = combineMasonGamma(igam, jgam, isig, jsig);
                 break;
             default: // perform correct default action, replace by all values
-                value = combineTwo(crule,
+                value = combineTwo(crule.rule(),
                                    ivdw.find(param.first)->second.value(),
                                    jvdw.find(param.first)->second.value());
                 break;
@@ -342,177 +356,6 @@ void evalCombinationRule(Potential                                    ftype,
         pmap->insert_or_assign(param.first,
                                ForceFieldParameter(unit, value, 0, 1, value, value, mutd, true, true));
     }
-}
-
-/*! \brief Generation parameters using combination rules
- * \param[in] pd    The force field
- * \param[in] itype The interaction type
- * \param[in] force If set, all interaction parameters will be recomputed, if not only the ones for which 
- *                  at least one of the two constituting parameters changed will be reset.
- */
-static void generateParameterPairs(ForceField      *pd,
-                                   InteractionType  itype,
-                                   bool             force)
-{
-    // Do not crash if e.g. there is no VDWCORRECTION.
-    if (!pd->interactionPresent(itype))
-    {
-        return;
-    }
-    auto forcesVdw = pd->findForces(itype);
-    auto comb_rule = getCombinationRule(*forcesVdw);
-
-    // We temporarily store the new parameters here
-    ForceFieldParameterListMap *parm = forcesVdw->parameters();;
-    
-    // Now do the double loop
-    int nid = 0;
-    for (auto &ivdw : *forcesVdw->parameters())
-    {
-        auto &iid    = ivdw.first;
-        // Check whether this is a single atom parameter
-        if (iid.atoms().size() > 1)
-        {
-            continue;
-        }
-        auto &iparam = ivdw.second;
-        bool iupdated = false;
-        for(const auto &ip : iparam)
-        {
-            iupdated = iupdated || ip.second.updated();
-        }
-        for (auto &jvdw : *forcesVdw->parameters())
-        {
-            auto &jid    = jvdw.first;
-            // Check whether this is a single atom parameter and
-            // whether this is is larger or equal to iid.
-            if (jid.atoms().size() > 1 || jid.id() < iid.id())
-            {
-                continue;
-            }
-            // Test whether or not to include this pair.
-            // This will only be used with the Kronecker combination rule.
-            bool includePair = true;
-            if (Potential::BORN_MAYER == forcesVdw->potential() || 
-                Potential::MORSE_BONDS == forcesVdw->potential())
-            {
-                auto ai = iid.atoms()[0];
-                auto aj = jid.atoms()[0];
-                if (pd->hasParticleType(ai) && pd->hasParticleType(aj))
-                {
-                    auto pti = pd->findParticleType(ai)->apType();
-                    auto ptj = pd->findParticleType(aj)->apType();
-                    // The pair will be included only if one particle is a vsite
-                    // and the other an atom.
-                    includePair = ((ActParticle::Vsite == pti && ActParticle::Atom == ptj) ||
-                                   (ActParticle::Vsite == ptj && ActParticle::Atom == pti));
-                }
-            }
-            auto &jparam = jvdw.second;
-            bool jupdated = false;
-            for(const auto &jp : jparam)
-            {
-                jupdated = jupdated || jp.second.updated();
-            }
-            if (!(iupdated || jupdated || force))
-            {
-                continue;
-            }
-            // Fill the parameters, potential dependent
-            ForceFieldParameterMap pmap;
-            evalCombinationRule(forcesVdw->potential(),
-                                comb_rule, ivdw.second, jvdw.second, includePair, &pmap);
-
-            parm->insert_or_assign(Identifier({ iid.id(), jid.id() }, { 1 }, CanSwap::Yes),
-                                   std::move(pmap));
-            nid += 1;
-        }
-    }
-    if (debug)
-    {
-        int np = forcesVdw->parameters()->size();
-        fprintf(debug, "Made %d/%d identifiers for %s in generateParameterPairs\n", nid, np,
-                interactionTypeToString(itype).c_str());
-    }
-    // Phew, we're done!
-}
-
-/*! \brief Generate coulomb pair parameters
- * \param[in] pd    The force field
- * \param[in] force If set, all interaction parameters will be recomputed, if not only the ones for which 
- *                  at least one of the two constituting parameters changed will be reset.
- */
-static void generateCoulombParameterPairs(ForceField *pd, bool force)
-{
-    auto forcesCoul = pd->findForces(InteractionType::ELECTROSTATICS);
-    
-    // Fudge unit
-    std::string unit("kJ/mol");
-    
-    // We use dependent mutability to show these are not independent params
-    auto mutd = Mutability::Dependent;
-    auto cname = potentialToParameterName(Potential::COULOMB_GAUSSIAN);
-    auto zeta = cname[coulZETA];
-    // Finally add the new parameters to the exisiting list
-    auto fold = forcesCoul->parameters();
-    // Now do the double loop
-    int nid = 0;
-    for (auto &icoul : *forcesCoul->parameters())
-    {
-        auto &iid    = icoul.first;
-        // Check whether this is a single atom parameter
-        if (iid.atoms().size() > 1)
-        {
-            continue;
-        }
-        double izeta = icoul.second[zeta].internalValue();
-        for (auto &jcoul : *forcesCoul->parameters())
-        {
-            auto &jid    = jcoul.first;
-            // Check whether this is a single atom parameter and
-            // whether this is is larger or equal to iid.
-            if (jid.atoms().size() > 1 || jid.id() < iid.id() ||
-                (!icoul.second[zeta].updated() && !jcoul.second[zeta].updated() && !force))
-            {
-                continue;
-            }
-            double     jzeta  = jcoul.second[zeta].internalValue();
-            Identifier pairID({ iid.id(), jid.id() }, { 1 }, CanSwap::Yes);
-            nid += 1;
-            auto       oldfp  = fold->find(pairID);
-            if (oldfp == fold->end())
-            {
-                ForceFieldParameterMap ffpm = {
-                    { cname[coulZETA], 
-                      ForceFieldParameter(unit, izeta, 0, 0, izeta, izeta, mutd, false, true) },
-                    { cname[coulZETA2],
-                      ForceFieldParameter(unit, jzeta, 0, 0, jzeta, jzeta, mutd, false, true) }
-                };
-                fold->insert({pairID, ffpm});
-            }
-            else
-            {
-                auto &pi = oldfp->second.find(cname[coulZETA])->second;
-                pi.forceSetValue(izeta);
-                auto &pj = oldfp->second.find(cname[coulZETA2])->second;
-                pj.forceSetValue(jzeta);
-            }
-        }
-    }
-    if (debug)
-    {
-        int np = forcesCoul->parameters()->size();
-        fprintf(debug, "Made %d/%d identifiers in generateCoulombParameterPairs\n", nid, np);
-    }
-    // Phew, we're done!
-}
-
-void generateDependentParameter(ForceField *pd, bool force)
-{
-    generateParameterPairs(pd, InteractionType::VDW, force);
-    generateParameterPairs(pd, InteractionType::VDWCORRECTION, force);
-    generateParameterPairs(pd, InteractionType::INDUCTIONCORRECTION, force);
-    generateCoulombParameterPairs(pd, force);
 }
 
 } // namespace alexandria
