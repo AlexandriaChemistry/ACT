@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <!DOCTYPE alexandria_chemistry.dtd PUBLIC "alexandria_chemistry.dtd" "alexandria_chemistry.dtd">
 <alexandria_chemistry>
-  <version checksum="90e6377990ccb010a4ac787c5859f413" timestamp="2024-11-22 21:37:51"/>
+  <version checksum="4e2305275cadaefb162aa7ce9c2896c5" timestamp="2025-12-16 14:05:14"/>
   <particletypes>
     <particletype identifier="Be2+" type="Atom" description="beryllium ion">
       <option key="atomnumber" value="4"/>
@@ -14240,9 +14240,15 @@
   </interaction>
   <interaction type="VANDERWAALS" function="WANG_BUCKINGHAM" canswap="true">
     <option key="nexcl" value="0"/>
-    <combinationrule parameter="epsilon" rule="Geometric"/>
-    <combinationrule parameter="gamma" rule="Geometric"/>
-    <combinationrule parameter="sigma" rule="Geometric"/>
+    <combinationrule parameter="epsilon" rule="Geometric">
+      <parameter type="exponent" unit="" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Fixed" nonnegative="no"/>
+    </combinationrule>
+    <combinationrule parameter="gamma" rule="Geometric">
+      <parameter type="exponent" unit="" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Fixed" nonnegative="no"/>
+    </combinationrule>
+    <combinationrule parameter="sigma" rule="Geometric">
+      <parameter type="exponent" unit="" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Fixed" nonnegative="no"/>
+    </combinationrule>
     <parameterlist identifier="Be2+">
       <parameter type="epsilon" unit="kJ/mol" value="0.2" uncertainty="0" minimum="0.16" maximum="0.25" ntrain="0" mutability="Bounded" nonnegative="yes"/>
       <parameter type="gamma" unit="" value="10" uncertainty="0" minimum="8" maximum="12.5" ntrain="0" mutability="Bounded" nonnegative="yes"/>

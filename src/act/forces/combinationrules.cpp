@@ -99,13 +99,7 @@ ParamCombRule::ParamCombRule(const std::string &rule)
     rule_ = c;
 }
 
-/*! \brief Execute a simple combination rule
- * \param[in] comb The combination rule to apply
- * \param[in] x1   First value
- * \param[in] x2   Second value
- * \return The combined value
- */
-static double combineTwo(CombRule comb, double x1, double x2)
+double combineTwo(CombRule comb, double x1, double x2)
 {
     switch (comb)
     {
@@ -157,16 +151,7 @@ static double combineTwo(CombRule comb, double x1, double x2)
     return 0;
 }
 
-/*! \brief Execute a combination rule according to Hogervorst1971a https://doi.org/10.1016/0031-8914(71)90138-8
- * \param[in] e1 First epsilon
- * \param[in] e2 Second epsilon
- * \param[in] g1 First gamma
- * \param[in] g2 Second gamma
- * \param[in] s1 First sigma
- * \param[in] s2 Second sigma
- * \return The combined value
- */
-static double combineHogervorstSigma(double e1, double e2, double g1, double g2, double s1, double s2)
+double combineHogervorstSigma(double e1, double e2, double g1, double g2, double s1, double s2)
 {
     if (g1 <= 6 || g2 <= 6)
     {
@@ -183,14 +168,7 @@ static double combineHogervorstSigma(double e1, double e2, double g1, double g2,
     return std::pow((std::sqrt( tempi * tempj ) )* std::abs(gam12 - 6) / (gam12 * eps12), 1.0/6.0);
 }
 
-/*! \brief Execute a combination rule according to Waldman & Hagler https://doi.org/10.1002/jcc.540140909
- * \param[in] e1 First epsilon
- * \param[in] e2 Second epsilon
- * \param[in] s1 First sigma
- * \param[in] s2 Second sigma
- * \return The combined value
- */
-static double combineWaldmanEpsilon(double e1, double e2, double s1, double s2)
+double combineWaldmanEpsilon(double e1, double e2, double s1, double s2)
 {
     // Qi2106 Eqn 3.
     double s13 = s1*s1*s1;

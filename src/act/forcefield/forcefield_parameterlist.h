@@ -140,7 +140,19 @@ class ForceFieldParameterList
      *
      * \param[in] param    Name of the parameter
      * \param[in] rule     String for the rule
-     * \param[in] exponent Parameter used for Generalized mean only
+     */
+    void addCombinationRule(const std::string         &param,
+                            const std::string         &rule)
+    {
+        ParamCombRule p(rule);
+        combrules_.insert( { param, std::move(p) } );
+    }
+    
+    /*! \brief Add function specific combination rule
+     *
+     * \param[in] param Name of the parameter
+     * \param[in] rule  String for the rule
+     * \param[in] ffpl  Parameter used for GeneralizedMean only
      */
     void addCombinationRule(const std::string         &param,
                             const std::string         &rule,
@@ -167,7 +179,7 @@ class ForceFieldParameterList
      * \return Value
      * \throws gmx::InvalidInputError if the param is non-existent
      */
-    const ParamCombRule &combinationRule(const std::string &param) const
+    const ParamCombRule &combinationRuleConst(const std::string &param) const
     {
         auto ov = combrules_.find(param);
         if (ov == combrules_.end())
@@ -176,6 +188,23 @@ class ForceFieldParameterList
             GMX_THROW(gmx::InvalidInputError(buf.c_str()));
         }
         return ov->second;
+    }
+
+    /*! \brief Extract the rule corresponding to a parameter for editing
+     *
+     * \param[in] param Name of the parameter
+     * \return Value
+     * \throws gmx::InvalidInputError if the param is non-existent
+     */
+    ParamCombRule *combinationRule(const std::string &param)
+    {
+        auto ov = combrules_.find(param);
+        if (ov == combrules_.end())
+        {
+            auto buf = gmx::formatString("Unknown parameter %s", param.c_str());
+            GMX_THROW(gmx::InvalidInputError(buf.c_str()));
+        }
+        return &ov->second;
     }
 
     //! Return the combination rule map
