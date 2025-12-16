@@ -180,6 +180,24 @@ double combineWaldmanEpsilon(double e1, double e2, double s1, double s2)
     return std::sqrt( e1 * e2 ) * ( 2 * s13 * s23 / (sqr(s13) + sqr(s23)));
 }
 
+/*! \brief Combination rule using GeneralizedMean
+ * Mathematical background at https://en.wikipedia.org/wiki/Generalized_mean
+ * \param[in] x1       First value
+ * \param[in] x2       Second value
+ * \param[in] exponent Power to use
+ * \return the combined value
+ */
+double combineGeneralizedMean(double x1, double x2, double exponent)
+{
+    // See https://en.wikipedia.org/wiki/Generalized_mean
+    if (exponent == 0)
+    {
+        return std::sqrt(x1*x2);
+    }
+    double sum = std::pow(x1, exponent) + std::pow(x2, exponent);
+    return std::pow(0.5*sum, 1/exponent);
+}
+
 /*! \brief Execute a combination rule according to Mason1955a https://doi.org/10.1063/1.1740561
  * \param[in] g1 First gamma
  * \param[in] g2 Second gamma
@@ -243,6 +261,12 @@ void evalCombinationRule(Potential                     ftype,
                 {
                     value = 0;
                 }
+            }
+            else if (CombRule::GeneralizedMean == crule.rule())
+            {
+                value = combineGeneralizedMean(ivdw.find(param.first)->second.value(),
+                                               jvdw.find(param.first)->second.value(),
+                                               crule.ffplConst().value());
             }
             else
             {
@@ -315,6 +339,11 @@ void evalCombinationRule(Potential                     ftype,
             jsig = jvdw.find(cdist)->second.value();
             switch (crule.rule())
             {
+            case CombRule::GeneralizedMean:
+                value = combineGeneralizedMean(ivdw.find(param.first)->second.value(),
+                                               jvdw.find(param.first)->second.value(),
+                                               crule.ffplConst().value());
+                break;
             case CombRule::HogervorstSigma:
                 value = combineHogervorstSigma(ieps, jeps, igam, jgam, isig, jsig);
                 break;

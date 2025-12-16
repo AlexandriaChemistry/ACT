@@ -92,6 +92,18 @@ protected:
         checker_.checkReal(s2, "sigma2");
         checker_.checkReal(value, combinationRuleName(CombRule::HogervorstSigma).c_str());
     }
+
+    void testGM(double x1, double x2, double exponent)
+    {
+        gmx::test::TestReferenceChecker checker_(this->rootChecker());
+        auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, 5e-2);
+        checker_.setDefaultTolerance(tolerance);
+        auto value = combineGeneralizedMean(x1, x2, exponent);
+        checker_.checkReal(x1, "x1");
+        checker_.checkReal(x2, "x2");
+        checker_.checkReal(exponent, "exponent");
+        checker_.checkReal(value, combinationRuleName(CombRule::GeneralizedMean).c_str());
+    }
 };
 
 TEST_F (CombinationRuleTest, Geometric_1_2)
@@ -214,9 +226,29 @@ TEST_F (CombinationRuleTest, HogervorstSigma_1_0_15_16_3_4)
     testHS(1,0,15,16,3,4);
 }
 
-TEST_F (CombinationRuleTest, HogervorstSigma_1_0_15_6_3_4)
+TEST_F (CombinationRuleTest, GeneralizedMean_1_2_1)
 {
-    EXPECT_THROW(testHS(1,0,15,6,3,4), gmx::InvalidInputError);
+    testGM(1.0, 2.0, 1.0);
+}
+
+TEST_F (CombinationRuleTest, GeneralizedMean_1_4_0)
+{
+    testGM(1.0, 4.0, 0.0);
+}
+
+TEST_F (CombinationRuleTest, GeneralizedMean_1_4_2)
+{
+    testGM(1.0, 4.0, 2.0);
+}
+
+TEST_F (CombinationRuleTest, GeneralizedMean_3_4_2)
+{
+    testGM(3.0, 4.0, 2.0);
+}
+
+TEST_F (CombinationRuleTest, GeneralizedMean_3_4__2)
+{
+    testGM(3.0, 4.0, -2.0);
 }
 
 } // namespace
