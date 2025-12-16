@@ -29,6 +29,7 @@ defnm    = "DefaultName"
 comment  = "Comment"
 geom     = "Geometric"
 arith    = "Arithmetic"
+genmean  = "GeneralizedMean"
 pad1     = 5
 mypad    = ( pad1, pad1, pad1, pad1 )
 
@@ -756,7 +757,7 @@ class CombRule:
     def run(self, parent, functions:list):
         self.root = tk.Toplevel(parent)
         self.root.title("Combination Rule Selector")
-        self.all_rules = [ geom, arith, "Volumetric", "InverseSquare", "Kronecker",
+        self.all_rules = [ geom, arith, genmean, "Volumetric", "InverseSquare", "Kronecker",
                            "HogervorstEpsilon", "HogervorstSigma", 
                            "WaldmanSigma", "WaldmanEpsilon",
                            "HalgrenEpsilon", "QiSigma", "QiEpsilon",

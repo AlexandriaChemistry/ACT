@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Real Name="x1">3</Real>
+  <Real Name="x2">4</Real>
+  <Real Name="exponent">-2</Real>
+  <Real Name="GeneralizedMean">3.3941125496954281</Real>
+</ReferenceData>

@@ -100,6 +100,15 @@ const std::string &combinationRuleName(CombRule c);
  */
 bool combinationRuleRule(const std::string &name, CombRule *cr);
 
+/*! \brief Combination rule using GeneralizedMean
+ * Mathematical background at https://en.wikipedia.org/wiki/Generalized_mean
+ * \param[in] x1       First value
+ * \param[in] x2       Second value
+ * \param[in] exponent Power to use
+ * \return the combined value
+ */
+double combineGeneralizedMean(double x1, double x2, double exponent);
+
 /*! \brief Execute a simple combination rule
  * \param[in] comb The combination rule to apply
  * \param[in] x1   First value
