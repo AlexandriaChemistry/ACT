@@ -38,20 +38,20 @@
 #include <cstring>
 
 #include <map>
+#include <stack>
 
 #include <libxml/parser.h>
 #include <libxml/tree.h>
 
-#include "gromacs/topology/atoms.h"
-#include "gromacs/utility/cstringutil.h"
-#include "gromacs/utility/futil.h"
-
 #include "act/forcefield/ffutil.h"
+#include "act/forcefield/forcefield.h"
 #include "act/forcefield/forcefield_parameter.h"
 #include "act/forcefield/forcefield_parameterlist.h"
-#include "forcefield.h"
-#include "symcharges.h"
+#include "act/forcefield/symcharges.h"
 #include "act/utility/xml_util.h"
+//#include "gromacs/topology/atoms.h"
+#include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/futil.h"
 
 namespace alexandria
 {
@@ -105,7 +105,6 @@ enum class xmlEntry {
     OPTION,
     COMBINATIONRULE,
     RULE,
-    EXPONENT,
     PARAMETERLIST,
     PARAMETER,
     UNCERTAINTY,
@@ -166,7 +165,6 @@ std::map<const std::string, xmlEntry> xml_pd =
     { "value",                     xmlEntry::VALUE            },
     { "option",                    xmlEntry::OPTION           },
     { "combinationrule",           xmlEntry::COMBINATIONRULE  },
-    { "exponent",                  xmlEntry::EXPONENT         },
     { "rule",                      xmlEntry::RULE             },
     { "uncertainty",               xmlEntry::UNCERTAINTY      },
     { "minimum",                   xmlEntry::MINIMUM          },
@@ -275,12 +273,13 @@ static double xbuf_atof(xmlBuffer *xbuf, xmlEntry  xbuf_index)
 }
 
 //! \brief Process attributes from xml file
-static void processAttr(FILE       *fp, 
-                        xmlAttrPtr  attr,
-                        xmlBuffer  *xbuf,
-                        xmlEntry    elem,
-                        int         indent, 
-                        ForceField    *pd)
+static void processAttr(FILE                 *fp, 
+                        std::stack<xmlEntry> *entries,
+                        xmlAttrPtr            attr,
+                        xmlBuffer            *xbuf,
+                        xmlEntry              elem,
+                        int                   indent, 
+                        ForceField           *pd)
 {
     std::string attrname, attrval;
     char        buf[100];
@@ -314,9 +313,19 @@ static void processAttr(FILE       *fp,
      */
 #define xbufString(x) xbuf->find(x)->second
     // Some local variables that we need
-    static xmlEntry        parentEntry  = xmlEntry::GENTOP;
     static InteractionType currentItype = InteractionType::BONDS;
+    static std::string     combRuleParam;
     static Identifier      myIdentifier;
+    
+    xmlEntry parentEntry  = xmlEntry::GENTOP;
+    xmlEntry top = entries->top();
+    entries->pop();
+    if (!entries->empty())
+    {
+        parentEntry = entries->top();
+    }
+    entries->push(top);
+    
     switch (elem)
     {
     case xmlEntry::VERSION:
@@ -368,7 +377,6 @@ static void processAttr(FILE       *fp,
             }
             ForceFieldParameterList newparam(function, canSwap);
             pd->addForces(currentItype, newparam);
-            parentEntry = elem;
         }
         break;
     case xmlEntry::OPTION:
@@ -393,19 +401,14 @@ static void processAttr(FILE       *fp,
             if (xmlEntry::INTERACTION == parentEntry)
             {
                 auto fpl = pd->findForces(currentItype);
-                double exponent = 0;
-                if (NN(xbuf, xmlEntry::EXPONENT))
-                {
-                    exponent =  xbuf_atof(xbuf, xmlEntry::EXPONENT);
-                }
                 fpl->addCombinationRule(xbufString(xmlEntry::PARAMETER),
-                                        xbufString(xmlEntry::RULE),
-                                        exponent);
+                                        xbufString(xmlEntry::RULE));
+                combRuleParam.assign(xbufString(xmlEntry::PARAMETER));
             }
-            else
-            {
-                GMX_THROW(gmx::InvalidInputError("Combination rule data found in the wrong place"));
-            }
+            // else
+            //{
+            //  GMX_THROW(gmx::InvalidInputError(gmx::formatString("Combination rule data found in the wrong place, parent is %s",  rmap_pd[parentEntry].c_str())));
+            //}
         }
         break;
     case xmlEntry::PARAMETERLIST:
@@ -414,7 +417,6 @@ static void processAttr(FILE       *fp,
             myIdentifier = Identifier(currentItype,
                                       xbufString(xmlEntry::IDENTIFIER),
                                       pd->findForces(currentItype)->canSwap());
-            parentEntry = elem;
         }
         break;
     case xmlEntry::PARAMETER:
@@ -453,9 +455,20 @@ static void processAttr(FILE       *fp,
                 {
                     pd->findParticleType(myIdentifier)->addForceFieldParameter(xbufString(xmlEntry::TYPE), std::move(ffp));
                 }
+                else if (xmlEntry::COMBINATIONRULE == parentEntry)
+                {
+                    auto fs = pd->findForces(currentItype);
+                    if (!fs->combinationRuleExists(combRuleParam))
+                    {
+                        GMX_THROW(gmx::InternalError(gmx::formatString("Cannot find parameter '%s' for combination rules in %s", combRuleParam.c_str(), potentialToString(fs->potential()).c_str())));
+                    }
+                    auto pcr = fs->combinationRule(combRuleParam);
+                    pcr->addForceFieldParameter(std::move(ffp));
+                }
                 else
                 {
-                    GMX_THROW(gmx::InternalError("Don't know what to do with this parameter"));
+                    GMX_THROW(gmx::InternalError(gmx::formatString("Don't know what to do with parameter with parent %s",
+                                                                   rmap_pd[parentEntry].c_str())));
                 }
             }
             else
@@ -478,7 +491,6 @@ static void processAttr(FILE       *fp,
             myIdentifier = Identifier(xbufString(xmlEntry::IDENTIFIER));
             pd->addParticleType(ParticleType(myIdentifier,
                                              xbufString(xmlEntry::DESC), ept));
-            parentEntry = elem;
         }
         break;
     case xmlEntry::SYM_CHARGE:
@@ -509,11 +521,12 @@ static void processAttr(FILE       *fp,
 }
 
 //! \brief Process the whole xml tree
-static void processTree(FILE          *fp, 
-                        xmlBuffer     *xbuf,
-                        xmlNodePtr     tree,
-                        int            indent,
-                        ForceField       *pd)
+static void processTree(FILE                 *fp, 
+                        std::stack<xmlEntry> *entries,
+                        xmlBuffer            *xbuf,
+                        xmlNodePtr            tree,
+                        int                   indent,
+                        ForceField           *pd)
 {
     char             buf[100];
 
@@ -543,33 +556,35 @@ static void processTree(FILE          *fp,
             if (iter != xml_pd.end())
             {
                 auto elem = iter->second;
+                entries->push(elem);
                 if (elem != xmlEntry::GENTOP)
                 {
-                    processAttr(fp, tree->properties, xbuf, elem, indent+2, pd);
+                    processAttr(fp, entries, tree->properties, xbuf, elem, indent+2, pd);
                 }
 
                 if (tree->children)
                 {
-                    processTree(fp, xbuf, tree->children, indent+2, pd);
+                    processTree(fp, entries, xbuf, tree->children, indent+2, pd);
                 }
             }
+            if (entries->empty())
+            {
+                GMX_THROW(gmx::InternalError("Entries stack is empty while reading force field file."));
+            }
+            entries->pop();
         }
         tree = tree->next;
     }
 }
 
 void readForceField(const std::string &fileName,
-                 ForceField           *pd)
+                    ForceField        *pd)
 {
     xmlDocPtr   doc;
     std::string fn, fn2;
 
     rmap_pd.clear();
-    fn = fileName;
-    if (fn.empty())
-    {
-        fn.assign("ACM-g_2020.dat");
-    }
+    fn  = fileName;
     fn2 = gmx::findLibraryFile(fn, true, false);
     if (fn2.empty())
     {
@@ -602,7 +617,8 @@ void readForceField(const std::string &fileName,
 
     pd->setFilename(fn2);
     xmlBuffer xbuf;
-    processTree(debug, &xbuf, doc->children, 0, pd);
+    std::stack<xmlEntry> entries;
+    processTree(debug, &entries, &xbuf, doc->children, 0, pd);
 
     xmlFreeDoc(doc);
 
@@ -627,18 +643,6 @@ static void addOption(xmlNodePtr         parent,
     add_xml_char(baby, exml_names(xmlEntry::VALUE), value.c_str());
 }
 
-//! \brief Add a combination rule to a parent
-static void addCombRule(xmlNodePtr         parent,
-                        const std::string &parameter,
-                        const std::string &rule,
-                        double             exponent)
-{
-    auto baby = add_xml_child(parent, exml_names(xmlEntry::COMBINATIONRULE));
-    add_xml_char(baby, exml_names(xmlEntry::PARAMETER), parameter.c_str());
-    add_xml_char(baby, exml_names(xmlEntry::RULE), rule.c_str());
-    add_xml_double(baby, exml_names(xmlEntry::EXPONENT), exponent);
-}
-
 //! \brief Add a complete force field parameter
 static void addParameter(xmlNodePtr parent, const std::string &type,
                          const ForceFieldParameter &param)
@@ -654,6 +658,17 @@ static void addParameter(xmlNodePtr parent, const std::string &type,
     add_xml_char(baby, exml_names(xmlEntry::MUTABILITY), mutabilityName(param.mutability()).c_str());
     add_xml_char(baby, exml_names(xmlEntry::NONNEGATIVE),
                  param.nonNegative() ? "yes" : "no");
+}
+
+//! \brief Add a combination rule to a parent
+static void addCombRule(xmlNodePtr                 parent,
+                        const std::string         &parameter,
+                        const ParamCombRule       &pcr)
+{
+    auto baby = add_xml_child(parent, exml_names(xmlEntry::COMBINATIONRULE));
+    add_xml_char(baby, exml_names(xmlEntry::PARAMETER), parameter.c_str());
+    add_xml_char(baby, exml_names(xmlEntry::RULE), combinationRuleName(pcr.rule()).c_str());
+    addParameter(baby, "exponent", pcr.ffplConst());
 }
 
 //! Add a complete force field
@@ -705,7 +720,7 @@ static void addXmlForceField(xmlNodePtr parent, const ForceField *pd)
         }
         for (auto &cr : fs.second.combinationRules())
         {
-            addCombRule(child, cr.first, cr.second.first, cr.second.second);
+            addCombRule(child, cr.first, cr.second);
         }
         for (auto &params : fs.second.parametersConst())
         {

@@ -101,7 +101,7 @@ int CombRuleUtil::extract(ForceField *pd)
                     {
                         //! \todo Check this logic
                         if (fs->combinationRuleExists(elements[1]) &&
-                            (fs->combinationRule(elements[1]).rule() == cr))
+                            (fs->combinationRuleConst(elements[1]).rule() == cr))
                         {
                             changed += 1;
                         }

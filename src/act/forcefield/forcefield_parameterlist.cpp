@@ -267,7 +267,8 @@ CommunicationStatus ForceFieldParameterList::Send(const CommunicationRecord *cr,
         for(auto const &x : combrules_)
         {
             cr->send(dest, x.first);
-            cr->send(dest, x.second);
+            cr->send(dest, combinationRuleName(x.second.rule()));
+            x.second.ffplConst().Send(cr, dest);
         }
         cr->send(dest, parameters_.size());
         for(auto const &x : parameters_)
@@ -471,7 +472,11 @@ CommunicationStatus ForceFieldParameterList::Receive(const CommunicationRecord *
             std::string key, value;
             cr->recv(src, &key);
             cr->recv(src, &value);
-            combrules_.insert({key, value});
+            ForceFieldParameter ffp;
+            ffp.Receive(cr, src);
+            ParamCombRule pcr(value);
+            pcr.addForceFieldParameter(std::move(ffp));
+            combrules_.insert({key, std::move(pcr)});
         }
         if (debug)
         {

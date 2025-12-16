@@ -100,6 +100,34 @@ const std::string &combinationRuleName(CombRule c);
  */
 bool combinationRuleRule(const std::string &name, CombRule *cr);
 
+/*! \brief Execute a simple combination rule
+ * \param[in] comb The combination rule to apply
+ * \param[in] x1   First value
+ * \param[in] x2   Second value
+ * \return The combined value
+ */
+double combineTwo(CombRule comb, double x1, double x2);
+
+/*! \brief Execute a combination rule according to Waldman & Hagler https://doi.org/10.1002/jcc.540140909
+ * \param[in] e1 First epsilon
+ * \param[in] e2 Second epsilon
+ * \param[in] s1 First sigma
+ * \param[in] s2 Second sigma
+ * \return The combined value
+ */
+double combineWaldmanEpsilon(double e1, double e2, double s1, double s2);
+
+/*! \brief Execute a combination rule according to Hogervorst1971a https://doi.org/10.1016/0031-8914(71)90138-8
+ * \param[in] e1 First epsilon
+ * \param[in] e2 Second epsilon
+ * \param[in] g1 First gamma
+ * \param[in] g2 Second gamma
+ * \param[in] s1 First sigma
+ * \param[in] s2 Second sigma
+ * \return The combined value
+ */
+double combineHogervorstSigma(double e1, double e2, double g1, double g2, double s1, double s2);
+
 /*! \brief Generate combined force field parameter map
  * \param[in] ftype    The force function ACT style
  * \param[in] combrule Map of combination rules per parameter

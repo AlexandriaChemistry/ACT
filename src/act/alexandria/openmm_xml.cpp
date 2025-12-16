@@ -533,7 +533,8 @@ static void add_combrules(xmlNodePtr                     parent,
     const auto crules = fs.combinationRules();
     for(const auto &cr : crules)
     {
-        std::string name = "cr-" + cr.first + "_" + cr.second;
+        //! \todo Implement GeneralizedMean here and in act_openmm.py
+        std::string name = "cr-" + cr.first + "_" + combinationRuleName(cr.second.rule());
         add_global(parent, name, 1);
     }
 }
@@ -686,10 +687,10 @@ void OpenMMWriter::addXmlNonbonded(MsgHandler                      *msghandler,
                 msghandler->msg(ACTStatus::Warning,
                                 gmx::formatString("No combination rule for %s", cr_e.first.c_str()).c_str());
             }
-            else if (ccrr->second != cr_e.second)
+            else if (combinationRuleName(ccrr->second.rule()) != cr_e.second)
             {
                 msghandler->msg(ACTStatus::Warning,
-                                gmx::formatString("Combination rule %s is not supported by OpenMM for %s (use %s)", ccrr->second.c_str(), cr_e.first.c_str(), cr_e.second.c_str()));
+                                gmx::formatString("Combination rule %s is not supported by OpenMM for %s (use %s)", combinationRuleName(ccrr->second.rule()).c_str(), cr_e.first.c_str(), cr_e.second.c_str()));
             }
         }
     }
