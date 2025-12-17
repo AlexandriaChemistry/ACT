@@ -687,8 +687,8 @@ static void compare_pd(ForceField *pd1,
     {
         if (f2.parameterExists(id1.first))
         {
-            auto fp1 = f1.findParametersConst(id1.first);
-            auto fp2 = f2.findParametersConst(id1.first);
+            auto fp1 = f1.findParameterMapConst(id1.first);
+            auto fp2 = f2.findParameterMapConst(id1.first);
             auto p1  = fp1[ptype];
             auto p2  = fp2[ptype];
             if (p1.ntrain() > 0 && p2.ntrain() > 0 &&

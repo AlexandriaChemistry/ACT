@@ -95,7 +95,7 @@ protected:
         mol->Merge(&molprop);
         MsgHandler msghandler;
         // Uncomment in case of issues
-        // msghandler.setACTStatus(ACTStatus::Debug);
+        msghandler.setPrintLevel(ACTStatus::Debug);
         // Generate charges and topology
         mol->GenerateTopology(&msghandler, pd, missingParameters::Ignore);
 
@@ -106,7 +106,9 @@ protected:
     {
         ACTMol mp_;
 
-        if (setup(ff, molName, &mp_))
+        bool ok = setup(ff, molName, &mp_);
+        EXPECT_TRUE(ok);
+        if (ok)
         {
             std::vector<gmx::RVec> coords = mp_.xOriginal();
 
@@ -133,8 +135,9 @@ protected:
                const std::string &molName)
     {
         ACTMol mp_;
-        
-        if (setup(ff, molName, &mp_))
+        bool ok = setup(ff, molName, &mp_);
+        EXPECT_TRUE(ok);
+        if (ok)
         {
             std::vector<gmx::RVec> coords = mp_.xOriginal();
 

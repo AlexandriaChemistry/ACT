@@ -302,6 +302,15 @@ void MolGen::checkDataSufficiency(MsgHandler *msghandler,
                             }
                         }
                     }
+                    // Loop over combination rules
+                    for(auto crule : fplist->combinationRules())
+                    {
+                        if (fplist->combinationRule(crule.first)->ffplConst().mutability() == Mutability::Bounded)
+                        {
+                            // Set ntrain to something > 0 at once
+                            fplist->combinationRule(crule.first)->ffpl()->setNtrain(1);
+                        }
+                    }
                 }
                 else
                 {
@@ -567,7 +576,7 @@ void MolGen::checkDataSufficiency(MsgHandler *msghandler,
                                 auto ztype  = atype->interactionTypeToIdentifier(itype);
                                 if (!ztype.id().empty())
                                 {
-                                    for(auto &force : fplist->findParametersConst(ztype))
+                                    for(auto &force : fplist->findParameterMapConst(ztype))
                                     {
                                         if (force.second.isMutable() &&
                                             force.second.ntrain() < mindata_)

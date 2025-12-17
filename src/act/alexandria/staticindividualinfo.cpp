@@ -340,6 +340,7 @@ void StaticIndividualInfo::generateOptimizationIndex(gmx::TextWriter           *
         {
             if (mg->optimize(fs.first))
             {
+                // Loop over "normal" parameters
                 for(auto &fpl : fs.second.parametersConst())
                 {
                     for(auto &param : fpl.second)
@@ -361,6 +362,15 @@ void StaticIndividualInfo::generateOptimizationIndex(gmx::TextWriter           *
                         }
                     }
                 }
+                // Now check combination rules
+                for(auto crule : fs.second.combinationRules())
+                {
+                    if (fs.second.combinationRuleConst(crule.first).ffplConst().mutability() == Mutability::Bounded)
+                    {
+                        optIndex_.push_back(OptimizationIndex(fs.first, crule.first, "exponent"));
+                    }
+                }
+
             }
         }
         for(auto &pt : pd_.particleTypesConst())
@@ -394,6 +404,26 @@ void StaticIndividualInfo::generateOptimizationIndex(gmx::TextWriter           *
                                                      i.id().id().c_str(), i.parameterType().c_str(),
                                                      fs->second.minimum(), fs->second.maximum(),
                                                      fs->second.value());
+                        }
+                        else
+                        {
+                            GMX_THROW(gmx::InternalError(gmx::formatString("Cannot find %s in parameters",
+                                                                           i.id().id().c_str())));
+                        }
+                    }
+                    else
+                    {
+                        if (ff->second.combinationRuleExists(i.id().id()))
+                        {
+                            auto &fs = ff->second.combinationRuleConst(i.id().id()).ffplConst();
+                            tw->writeStringFormatted("%-20s %11s  %10g  %10g  %10g\n",
+                                                     i.id().id().c_str(), i.parameterType().c_str(),
+                                                     fs.minimum(), fs.maximum(), fs.value());
+                        }
+                        else
+                        {
+                            GMX_THROW(gmx::InternalError(gmx::formatString("Cannot find %s in parameters",
+                                                                           i.id().id().c_str())));
                         }
                     }
                 }
@@ -468,7 +498,21 @@ void StaticIndividualInfo::fillVectors(unsigned int mindata)
             }
             else if (pd_.interactionPresent(iType))
             {
-                p = pd_.findForcesConst(iType).findParameterTypeConst(optIndex.id(), optIndex.parameterType());
+                auto fs = pd_.findForcesConst(iType);
+                // First look in force parameters
+                if (fs.parameterExists(optIndex.id()))
+                {
+                    p = fs.findParameterTypeConst(optIndex.id(), optIndex.parameterType());
+                }
+                else
+                {
+                    // Look in combination rules
+                    if (fs.combinationRuleExists(optIndex.id().id()))
+                    {
+                        auto pcr = fs.combinationRuleConst(optIndex.id().id());
+                        p = pcr.ffplConst();
+                    }
+                }
             }
             if (p.ntrain() >= mindata)
             {
@@ -549,7 +593,7 @@ void StaticIndividualInfo::assignParamClassIndex()
         for (size_t j = 0; j < paramNames_.size(); j++)
         {
             const auto tokenizedName = gmx::splitDelimitedString(paramNames_[j], ' ');
-            if (std::find(tokenizedName.begin(), tokenizedName.end(), paramClass_[i]) != tokenizedName.end())
+            if (tokenizedName[1] == paramClass_[i])
             {
                 paramClassIndex_[j] = i;
             }
@@ -559,7 +603,7 @@ void StaticIndividualInfo::assignParamClassIndex()
                 if (pclass.size() == 2)
                 {
                     // We found a paramclass with interactiontype prepended.
-                    if (std::find(tokenizedName.begin(), tokenizedName.end(), pclass[1]) != tokenizedName.end())
+                    if (tokenizedName[1] == pclass[1])
                     {
                         paramClassIndex_[j] = i;
                     }

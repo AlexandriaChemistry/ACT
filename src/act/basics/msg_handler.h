@@ -208,10 +208,11 @@ class MsgHandler
         //! \return the file name (may be empty)
         std::string filename() const { return filename_; }
 
-        /*! Set verbosity level for printing
+        /*! Set verbosity level for printing.
+         * If no files are open, they will be opened as well.
          * \param[in] level New print level determines how much to print
          */
-        void setPrintLevel(ACTStatus level) { printLevel_ = level; }
+        void setPrintLevel(ACTStatus level);
 
         //! \return the current verbosity level
         ACTStatus printLevel() const { return printLevel_; }

@@ -353,7 +353,7 @@ void print_top_header(FILE                    *fp,
                 double sigma = 0, epsilon = 0, gamma = 0;
                 if (!vdwtype.id().empty() && vdw.parameterExists(vdwtype))
                 {
-                    auto myvdw = vdw.findParametersConst(vdwtype);
+                    auto myvdw = vdw.findParameterMapConst(vdwtype);
                     sigma      = myvdw["sigma"].value();
                     epsilon    = myvdw["epsilon"].value();
                     gamma      = myvdw["gamma"].value();
@@ -395,7 +395,7 @@ void print_top_header(FILE                    *fp,
             for (const auto &atype : pd->particleTypesConst())
             {
                 auto ztype     = atype.second.interactionTypeToIdentifier(InteractionType::ELECTROSTATICS);
-                auto eep       = eem.findParametersConst(ztype);
+                auto eep       = eem.findParameterMapConst(ztype);
                 if (ChargeDistributionType::Slater == iChargeDistributionType)
                 {
                     fprintf(fp, "%-7s  2  %d  %g\n", atype.second.id().id().c_str(),

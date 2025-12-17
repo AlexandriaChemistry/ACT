@@ -136,13 +136,13 @@ class ForceFieldParameterListTest : public gmx::test::CommandLineTestBase
                     }
                     else
                     {
-                        auto p = ff->findParametersConst(aa);
+                        auto p = ff->findParameterMapConst(aa);
                         checker_.checkInteger(p.size(), atom.c_str());
                     }
                 }
                 else
                 {
-                    EXPECT_THROW(auto p = ff->findParametersConst(aa), gmx::InvalidInputError);
+                    EXPECT_THROW(auto p = ff->findParameterMapConst(aa), gmx::InvalidInputError);
                 }
             }
         }
