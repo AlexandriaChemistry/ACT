@@ -437,9 +437,10 @@ void Topology::makeImpropers(MsgHandler                   *msghandler,
             // Need to check for both planarity and whether the
             // central atom is sp2 hybridized. Unfortunately,
             // sometimes the atoms_ is still empty while testing.
+            //! \todo Need to store hybridization in the atoms instead of guessing
             bool sp2 = (atoms_.empty() ||
-                        (atoms_[i].ffType().find("n2") >= 0 ||
-                         atoms_[i].ffType().find("c2") >= 0));
+                        (atoms_[i].ffType().find("n2") != std::string::npos ||
+                         atoms_[i].ffType().find("c2") != std::string::npos));
             if (sp2 &&
                 is_planar(myx[i], myx[jkl[0]], myx[jkl[1]], myx[jkl[2]],
                           nullptr, PlanarAngleMax))
