@@ -434,7 +434,15 @@ void Topology::makeImpropers(MsgHandler                   *msghandler,
             {
                 jkl.push_back(s);
             }
-            if (is_planar(myx[i], myx[jkl[0]], myx[jkl[1]], myx[jkl[2]], nullptr, PlanarAngleMax))
+            // Need to check for both planarity and whether the
+            // central atom is sp2 hybridized. Unfortunately,
+            // sometimes the atoms_ is still empty while testing.
+            bool sp2 = (atoms_.empty() ||
+                        (atoms_[i].ffType().find("n2") >= 0 ||
+                         atoms_[i].ffType().find("c2") >= 0));
+            if (sp2 &&
+                is_planar(myx[i], myx[jkl[0]], myx[jkl[1]], myx[jkl[2]],
+                          nullptr, PlanarAngleMax))
             {
                 Bond bjkl[3];
                 for(int m = 0; m < 3; m++)
