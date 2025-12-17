@@ -174,6 +174,20 @@ MsgHandler::~MsgHandler()
     }
 }
 
+void MsgHandler::setPrintLevel(ACTStatus level)
+{ 
+    printLevel_ = level;
+    if (printLevel_ == ACTStatus::Debug)
+    {
+        if (twdebug_ == nullptr)
+        {
+            std::string debugfn("act00000.debug");
+            twdebug_ = new gmx::TextWriter(debugfn);
+        }
+    }
+}
+
+
 void MsgHandler::flush()
 {
     if (tw_)

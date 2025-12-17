@@ -44,7 +44,21 @@ void OptimizationIndex::findForceFieldParameter(ForceField *pd)
 {
     if (iType_ != InteractionType::CHARGE)
     {
-        ffp_ = pd->findForces(iType_)->findParameterType(parameterId_, parameterType_);
+        auto fs = pd->findForces(iType_);
+        // First look in force parameters
+        if (fs->parameterExists(parameterId_))
+        {
+            ffp_ = fs->findParameterType(parameterId_, parameterType_);
+        }
+        else
+        {
+            // Look in combination rules
+            if (fs->combinationRuleExists(parameterId_.id()))
+            {
+                auto pcr = fs->combinationRule(parameterId_.id());
+                ffp_ = pcr->ffpl();
+            }
+        }
     }
     else if (pd->hasParticleType(particleType_))
     {

@@ -128,21 +128,7 @@ size_t ForceFieldParameterList::parameterId(const Identifier &identifier) const
     }
 }
 
-//! \brief Placeholder for an empty ForceFieldParameterMap
-static ForceFieldParameterMap EmptyForceFieldParameterMap{};
-
 const ForceFieldParameterMap &ForceFieldParameterList::findParameterMapConst(const Identifier &identifier) const
-{
-    auto iter = parameters_.find(identifier);
-    if (parameters_.end() == iter)
-    {
-        return EmptyForceFieldParameterMap;
-    }
-    
-    return iter->second;
-}
-
-const ForceFieldParameterMap &ForceFieldParameterList::findParametersConst(const Identifier &identifier) const
 {
     auto iter = parameters_.find(identifier);
     if (parameters_.end() == iter)
@@ -152,7 +138,6 @@ const ForceFieldParameterMap &ForceFieldParameterList::findParametersConst(const
                                                            parameters_.size(),
                                                            potentialToString(pot_).c_str()).c_str()));
     }
-    
     return iter->second;
 }
 

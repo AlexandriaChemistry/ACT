@@ -1712,13 +1712,14 @@ static void fillParams(MsgHandler                      *msghandler,
                        const std::vector<const char *> &param_names,
                        std::vector<double>             *param)
 {
-    auto ff = fs.findParameterMapConst(btype);
     std::string msg = potentialToString(fs.potential()) + " " + btype.id();
-    if (ff.empty())
+    if (!fs.parameterExists(btype))
     {
         msghandler->msg(ACTStatus::Error, ACTMessage::MissingFFParameter, msg);
         return;
     }
+    auto ff = fs.findParameterMapConst(btype);
+
     if (param->empty())
     {
         param->resize(param_names.size(), 0);
@@ -1765,7 +1766,7 @@ void Topology::fillParameters(MsgHandler        *msghandler,
             auto pp = potprops.find(fs.potential());
             if (potprops.end() != pp)
             {
-                fillParams(msghandler, fs, topID, 
+                fillParams(msghandler, fs, topID,
                            pp->second.param.size(), pp->second.param, &param);
             }
             else

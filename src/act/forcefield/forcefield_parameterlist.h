@@ -256,13 +256,6 @@ class ForceFieldParameterList
     size_t parameterId(const Identifier &identifier) const;
 
     /*! \brief Look up map of parameters
-     * Will throw an exception when identifier is not found
-     * \param[in] identifier Name of the atomtype or bond
-     * \return map of parameters
-     */
-    const ForceFieldParameterMap &findParametersConst(const Identifier &identifier) const;
-    
-    /*! \brief Look up map of parameters
      * \param[in] identifier Name of the atomtype or bond
      * \return map of parameters that maybe empty if not found
      */

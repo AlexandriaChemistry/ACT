@@ -620,7 +620,7 @@ void OpenMMWriter::addXmlSpecial(xmlNodePtr                       parent,
                             myId.id().c_str());
                     continue;
                 }
-                auto param      = fs.findParametersConst(Identifier(myId));
+                auto param      = fs.findParameterMapConst(Identifier(myId));
                 if (minTrain(param) >= ntrain_)
                 {
                     auto nbParamPtr = add_xml_child(specPtr, exml_names(xmlEntryOpenMM::ATOM_RES));
@@ -752,7 +752,7 @@ void OpenMMWriter::addXmlNonbonded(MsgHandler                      *msghandler,
                           vdwtype.c_str(), fft.first.c_str());
             }
             auto vdwId = Identifier(aType->optionValue(vdwtype));
-            auto param = fs.findParametersConst(Identifier(vdwId));
+            auto param = fs.findParameterMapConst(Identifier(vdwId));
             if (minTrain(param) < ntrain_)
             {
                 continue;
@@ -911,7 +911,7 @@ void OpenMMWriter::addXmlPolarization(xmlNodePtr                        parent,
                 {
 
                     std::string type1 = aType->optionValue("poltype");
-                    auto param        = fs.findParametersConst(Identifier(type1));
+                    auto param        = fs.findParameterMapConst(Identifier(type1));
                     if (minTrain(param) >= ntrain_)
                     {
                         auto alpha        = fs.findParameterTypeConst(Identifier({type1}),

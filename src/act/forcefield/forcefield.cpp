@@ -175,6 +175,10 @@ bool ForceField::typeToInteractionType(const std::string &type,
         {
             auto iType = fs.first;
             std::set<std::string> params;
+            if (iType == InteractionType::VDW)
+            {
+                params.insert("exponent");
+            }
             for(const auto &fp : fs.second.parametersConst())
             {
                 for(const auto &myfp : fp.second)
@@ -818,7 +822,7 @@ void ForceField::checkConsistency(FILE *fp) const
             }
             else
             {
-                auto eep = eem.findParametersConst(acmtype);
+                auto eep = eem.findParameterMapConst(acmtype);
                 double chi0 = eep["chi"].value();
                 double J00  = eep["eta"].value();
                 if (nullptr != fp)

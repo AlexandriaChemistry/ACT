@@ -587,7 +587,7 @@ void QgenResp::updateZeta(const std::vector<ActAtom> &atoms,
     {
         auto atype = pd->findParticleType(atoms[i].ffType());
         auto myid  = atype->interactionTypeToIdentifier(InteractionType::ELECTROSTATICS);
-        auto eep   = fs.findParametersConst(myid);
+        auto eep   = fs.findParameterMapConst(myid);
         zeta_[i]   = eep.find("zeta")->second.value();
     }
 }
