@@ -1153,22 +1153,23 @@ class FFGenerator:
                                         "bondtype": btype, "zetatype": ztype, "acmtype": acmtype,
                                         "poltype": stype, "radius": radius, "row": row }
                 # Highest charge for vsite1 and shells
+                qmin = -atomNR
+                qmut = Bounded
                 if vdwtp == Atom:
                     # Bounds are enforced using a L2_regularizer in train_ff
                     # but it is the sum of atom and vsite1 and shell that counts.
                     # See https://github.com/AlexandriaChemistry/ACT/issues/1079
                     qmin = atype_props[atp]["qmin"]
                     qmax = atype_props[atp]["qmax"]
-                    setParam(atype_name, "", "q", qmin, qmax, "ACM", "e", False)
+                    qmut = "ACM"
                 elif vdwtp == VSite:
                     # Highest charge for vsite1
                     qmax = 0
-                    setParam(atype_name, "", "q", -atomNR, 0, Bounded, "e", False)
                 elif vdwtp == Shell:
                     # Highest charge for shells. Shells with too small charges will move too far
                     # from the core, leading to unstable simulations.
                     qmax = -1
-                    setParam(atype_name, "", "q", -atomNR, qmax, Bounded, "e", False)
+                setParam(atype_name, "", "q", qmin, qmax, qmut, "e", False)
 
                 if qdist == Point or (vdwtp == Atom and haveVS1):
                     setParam(atype_name, coul, "zeta", 0, 0, Fixed, "1/nm")
