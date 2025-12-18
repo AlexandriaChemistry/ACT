@@ -121,26 +121,32 @@ def install_openbabel(anonymous, clone, destination, prefix, build_type, CXX, CC
     # Get working directory
     pwd = os.getcwd()
     swdir = "openbabel"
-    # Do we need to clone the repo?
-    if not os.path.isdir(swdir):
-        if clone:
+    if clone:
+        # Do we need to clone the repo?
+        if not os.path.isdir(swdir):
+            print("Will not clone or fetch openbabel again since directory %s exists." % swdir)
+        else:
             if anonymous:
                 os.system("git clone https://github.com/dspoel/openbabel.git")
             else:
                 os.system("git clone git@github.com:dspoel/openbabel.git")
-        else:
-            oblatest = "openbabel-alexandria-0.93.1.tar.gz"
-            if verbose:
-                print("Will try to fetch %s" % oblatest)
-            url = "https://github.com/dspoel/openbabel/archive/refs/tags"
-            os.system("curl -L %s/%s -o %s" % ( url, oblatest, oblatest ) )
-            if not os.path.exists(oblatest):
-                sys.exit("Could not download %s" % oblatest)
-            os.system("tar xzf %s" % oblatest)
-            swdir = "openbabel-" + oblatest[:-7]
-        # See if we succeeded, if so let's go
-        if not os.path.isdir(swdir):
-            sys.exit("No directory %s. Failed to log in to github.com. You may want to use the '-anon' flag along with '-clone_OB'." % swdir)
+        # Make sure we have the latest code
+        os.chdir(swdir)
+        os.system("git pull")
+        os.chdir("..")
+    else:
+        oblatest = "openbabel-alexandria-0.93.2.tar.gz"
+        if verbose:
+            print("Will try to fetch %s" % oblatest)
+        url = "https://github.com/dspoel/openbabel/archive/refs/tags"
+        os.system("curl -L %s/%s -o %s" % ( url, oblatest, oblatest ) )
+        if not os.path.exists(oblatest):
+            sys.exit("Could not download %s" % oblatest)
+        os.system("tar xzf %s" % oblatest)
+        swdir = "openbabel-" + oblatest[:-7]
+    # See if we succeeded, if so let's go
+    if not os.path.isdir(swdir):
+        sys.exit("No directory %s. Failed to log in to github.com. You may want to use the '-anon' flag along with '-clone_OB'." % swdir)
 
     else:
         print("Will not clone or fetch openbabel again since directory %s exists." % swdir)
@@ -194,7 +200,7 @@ def install_act(args, CXX, CC, HOST, prefix):
             os.chdir(swdir)
         os.system("git pull")
     else:
-        actversion = "1.0"
+        actversion = "1.1b"
         actlatest = ( "v%s.tar.gz" % actversion )
         url       = "https://github.com/AlexandriaChemistry/ACT/archive/refs/tags"
         os.system("curl -L %s/%s -o %s" % ( url, actlatest, actlatest ) )
