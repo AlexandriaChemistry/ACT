@@ -363,11 +363,15 @@ void StaticIndividualInfo::generateOptimizationIndex(gmx::TextWriter           *
                     }
                 }
                 // Now check combination rules
+                std::string exponent("exponent");
                 for(auto crule : fs.second.combinationRules())
                 {
                     if (fs.second.combinationRuleConst(crule.first).ffplConst().mutability() == Mutability::Bounded)
                     {
-                        optIndex_.push_back(OptimizationIndex(fs.first, crule.first, "exponent"));
+                        if (mg->fit(exponent))
+                        {
+                            optIndex_.push_back(OptimizationIndex(fs.first, crule.first, exponent));
+                        }
                     }
                 }
 
@@ -617,8 +621,10 @@ void StaticIndividualInfo::assignParamClassIndex()
     {
         if (paramClassIndex_[i] == notFound)
         {
-            GMX_THROW(gmx::InvalidInputError(gmx::formatString("Parameter class %s was not found",
-                                                               paramClass_[i].c_str())));
+            GMX_THROW(gmx::InvalidInputError(gmx::formatString("Parameter class %zu/%zu, paramName '%s'  was not found. There are %zu paramClass_ entries.",
+                                                               i, paramClassIndex_.size(),
+                                                               paramNames_[i].c_str(),
+                                                               paramClass_.size())));
         }
     }
 }
