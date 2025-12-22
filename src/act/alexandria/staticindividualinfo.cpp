@@ -368,7 +368,10 @@ void StaticIndividualInfo::generateOptimizationIndex(gmx::TextWriter           *
                 {
                     if (fs.second.combinationRuleConst(crule.first).ffplConst().mutability() == Mutability::Bounded)
                     {
-                        if (mg->fit(exponent))
+                        // Check both just exponent and interactionType specific version, in case
+                        // only the exponent of VANDERWAALS is to be trained but not others.
+                        std::string pf2 = interactionTypeToString(fs.first) + ":" + exponent;
+                        if (mg->fit(exponent) || mg->fit(pf2))
                         {
                             optIndex_.push_back(OptimizationIndex(fs.first, crule.first, exponent));
                         }
