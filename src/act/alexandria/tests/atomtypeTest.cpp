@@ -37,7 +37,7 @@
 
 #include <gtest/gtest.h>
 
-#include "act/import/babel_io.h"
+#include "act/import/import.h"
 #include "act/alexandria/fill_inputrec.h"
 #include "act/alexandria/actmol.h"
 #include "act/forcefield/forcefield.h"
@@ -90,11 +90,13 @@ protected:
             bool   userqtot = false;
             double qtot     = 0.0;
             matrix box;
-            bool readOK = readBabel(nullptr, pd, dataName.c_str(), &molprops,
-                                    molname, molname,
-                                    conf, &method, &basis, maxpot, nsymm,
-                                    jobtype, userqtot, &qtot, false, box, true);
-            EXPECT_TRUE(readOK);
+            MsgHandler msghandler;
+            msghandler.setPrintLevel(ACTStatus::Warning);
+            importFile(&msghandler, pd, dataName.c_str(), &molprops,
+                       molname, molname,
+                       conf, &method, &basis, maxpot, nsymm,
+                       jobtype, userqtot, &qtot, false, box, true);
+            EXPECT_TRUE(msghandler.ok());
             for(auto &molprop: molprops)
             {
                 std::vector<std::string> atypes;

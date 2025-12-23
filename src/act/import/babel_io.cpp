@@ -34,9 +34,9 @@
 
 #include "actpre.h"
 
-#include "babel_io.h"
+#include "import.h"
 
-#include "config.h"
+//#include "config.h"
 
 #include <cstdio>
 #include <cstdlib>
@@ -365,7 +365,7 @@ static bool babel2ACT(alexandria::MsgHandler                   *msg_handler,
                       bool                                      userqtot,
                       double                                   *qtot,
                       bool                                      addHydrogen,
-                      const char                               *g09,
+                      const std::string                        &filenm,
                       einformat                                 inputformat)
 {
     std::string                formula;
@@ -375,8 +375,6 @@ static bool babel2ACT(alexandria::MsgHandler                   *msg_handler,
     const char                *actmol      = "AMM";
     const char                *myprogram   = "ACT2026";
 
-    /* Variables to read a Gaussian log file */
-    char                      *g09ptr;
     alexandria::JobType jobtype = alexandria::string2jobType(jobType);
     auto conv = new OpenBabel::OBConversion(&std::cin, &std::cout);
 
@@ -443,21 +441,10 @@ static bool babel2ACT(alexandria::MsgHandler                   *msg_handler,
     {
         method->assign(OBpd->GetValue());
     }
-    g09ptr = (char *) strrchr(g09, '/');
-    if (nullptr == g09ptr)
-    {
-        g09ptr = (char *)g09;
-    }
-    else
-    {
-        g09ptr++;
-        if (strlen(g09ptr) == 0)
-        {
-            g09ptr = (char *)g09;
-        }
-    }
+    auto fff = gmx::splitDelimitedString(filenm, '/');
+    auto g09 = fff[fff.size()-1];
 
-    alexandria::Experiment exp(program, *method, basis, reference, conformation, g09ptr, jobtype);
+    alexandria::Experiment exp(program, *method, basis, reference, conformation, g09.c_str(), jobtype);
     // We don't just set this here, since the user may override the value
     // However, it seems that OB does not extract this correctly from
     // the input, unless it is a Gaussian log file.
@@ -467,7 +454,7 @@ static bool babel2ACT(alexandria::MsgHandler                   *msg_handler,
         if (qtest != *qtot)
         {
             fprintf(stderr,"WARNING: OpenBabel found a total charge of %g for compounds in '%s', will use %g as specified by user.\n",
-                    qtest, g09, *qtot);
+                    qtest, filenm.c_str(), *qtot);
         }
     }
     else
@@ -679,7 +666,7 @@ static bool babel2ACT(alexandria::MsgHandler                   *msg_handler,
                         }
                         else
                         {
-                            fprintf(stderr, "Inconsistency reading %s from %s", qstr.c_str(), g09);
+                            fprintf(stderr, "Inconsistency reading %s from %s", qstr.c_str(), filenm.c_str());
                             return false;
                         }
                     }
@@ -695,7 +682,7 @@ static bool babel2ACT(alexandria::MsgHandler                   *msg_handler,
         return false;
     }
     // Bonds
-    getBondsFromOpenBabel(mol, mpt, g09, forcefield.compare("alexandria") == 0);
+    getBondsFromOpenBabel(mol, mpt, filenm.c_str(), forcefield.compare("alexandria") == 0);
 
     // Convert atom types to Alexandria
     if (!g2a.empty())
@@ -933,38 +920,35 @@ static void OBUnitCell2Box(OpenBabel::OBUnitCell *ob, matrix box)
     }
 }
 
-bool readBabel(alexandria::MsgHandler           *msg_handler,
-               const ForceField                 *pd,
-               const char                       *g09,
-               std::vector<alexandria::MolProp> *mpt,
-               const char                       *molnm,
-               const char                       *iupac,
-               const char                       *conformation,
-               std::string                      *method,
-               std::string                      *basisset,
-               int                               maxPotential,
-               int                               nsymm,
-               const char                      *jobType,
-               bool                             userqtot,
-               double                          *qtot,
-               bool                             addHydrogen,
-               matrix                           box,
-               bool                             oneH,
-               bool                             renameAtoms)
+void importFile(alexandria::MsgHandler           *msg_handler,
+                const ForceField                 *pd,
+                const std::string                &filenm,
+                std::vector<alexandria::MolProp> *mpt,
+                const char                       *molnm,
+                const char                       *iupac,
+                const char                       *conformation,
+                std::string                      *method,
+                std::string                      *basisset,
+                int                               maxPotential,
+                int                               nsymm,
+                const char                      *jobType,
+                bool                             userqtot,
+                double                          *qtot,
+                bool                             addHydrogen,
+                matrix                           box,
+                bool                             oneH)
 {
     std::vector<OpenBabel::OBMol *> mols;
     einformat                       inputformat = einfNotGaussian;
-    bool                            read_ok     = readBabel(g09, &mols, &inputformat);
+    bool                            read_ok     = readBabel(filenm.c_str(), &mols, &inputformat);
     if (!read_ok)
     {
-        fprintf(stderr, "Failed reading %s\n", g09);
-        return false;
+        msg_handler->msg(ACTStatus::Error,
+                         gmx::formatString("Failed reading %s", filenm.c_str()));
+        return;
     }
     std::map<std::string, std::string> g2a;
-    if (renameAtoms)
-    {
-        gaffToAlexandria("", &g2a, oneH);
-    }
+    gaffToAlexandria("", &g2a, oneH);
     AlexandriaMols amols;
     
     for(auto &mol : mols)
@@ -972,7 +956,7 @@ bool readBabel(alexandria::MsgHandler           *msg_handler,
         alexandria::MolProp mp;
         if (babel2ACT(msg_handler,
                       pd, g2a, amols, mol, &mp, molnm, iupac, conformation, method, basisset, 
-                      maxPotential, nsymm, jobType, userqtot, qtot, addHydrogen, g09,
+                      maxPotential, nsymm, jobType, userqtot, qtot, addHydrogen, filenm,
                       inputformat))
         {
             mpt->push_back(std::move(mp));
@@ -984,7 +968,6 @@ bool readBabel(alexandria::MsgHandler           *msg_handler,
         auto OBUC = (OpenBabel::OBUnitCell *)mols[0]->GetData(OpenBabel::OBGenericDataType::UnitCell);
         OBUnitCell2Box(OBUC, box);
     }
-    return true;
 }
 
 bool SetMolpropAtomTypesAndBonds(alexandria::MolProp *mmm)
