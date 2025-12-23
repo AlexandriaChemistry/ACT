@@ -43,7 +43,7 @@
 #include <gtest/gtest.h>
 
 #include "act/alexandria/actmol.h"
-#include "act/alexandria/babel_io.h"
+#include "act/import/babel_io.h"
 #include "act/forcefield/forcefield_parametername.h"
 #include "act/forcefield/forcefield_utils.h"
 #include "act/forces/forcecomputer.h"
