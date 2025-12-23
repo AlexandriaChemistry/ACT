@@ -43,7 +43,7 @@
 #include <gtest/gtest.h>
 
 #include "act/alexandria/actmol.h"
-#include "act/import/babel_io.h"
+#include "act/import/import.h"
 #include "act/forcefield/forcefield_parametername.h"
 #include "act/forcefield/forcefield_utils.h"
 #include "act/forces/forcecomputer.h"
@@ -83,11 +83,14 @@ protected:
         std::string           basis;
         std::string fileName = gmx::formatString("%s.sdf", molName.c_str());
         std::string dataName = gmx::test::TestFileManager::getInputFilePath(fileName);
-        EXPECT_TRUE(readBabel(nullptr, pd, dataName.c_str(), &molprops,
-                              molName.c_str(), molName.c_str(),
-                              conf, &method, &basis, maxpot,
-                              nsymm, jobtype, userqtot ,&qtot_babel,
-                              false, box, true));
+        MsgHandler msghandler;
+        msghandler.setPrintLevel(ACTStatus::Warning);
+        importFile(&msghandler, pd, dataName.c_str(), &molprops,
+                   molName.c_str(), molName.c_str(),
+                   conf, &method, &basis, maxpot,
+                   nsymm, jobtype, userqtot ,&qtot_babel,
+                   false, box, true);
+        EXPECT_TRUE(msghandler.ok());
         EXPECT_TRUE(molprops.size() == 1);
         if (molprops.size() != 1)
         {
@@ -97,9 +100,8 @@ protected:
         alexandria::ACTMol               mp_;
 
         mol->Merge(&molprop);
-        MsgHandler msghandler;
         // Uncomment in case of issues
-        msghandler.setPrintLevel(ACTStatus::Debug);
+        // msghandler.setPrintLevel(ACTStatus::Debug);
         // Generate charges and topology
         mol->GenerateTopology(&msghandler, pd, missingParameters::Ignore);
 

@@ -34,7 +34,7 @@
 #include <cstdlib>
 
 #include "act/alexandria/alex_modules.h"
-#include "act/import/babel_io.h"
+#include "act/import/import.h"
 #include "act/alexandria/confighandler.h"
 #include "act/alexandria/compound_reader.h"
 #include "act/alexandria/molhandler.h"

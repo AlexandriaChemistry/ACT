@@ -39,7 +39,7 @@
 #include <gtest/gtest.h>
 
 #include "act/import/atype_mapping.h"
-#include "act/import/babel_io.h"
+#include "act/import/import.h"
 #include "act/alexandria/fill_inputrec.h"
 #include "act/alexandria/actmol.h"
 #include "act/basics/msg_handler.h"
@@ -97,11 +97,13 @@ protected:
         bool   userqtot = false;
         double qtot     = 0;
         matrix box;
-        EXPECT_TRUE(readBabel(nullptr, pd, dataName.c_str(), &molprops,
-                              molnm, iupac, conf, &method, &basis,
-                              maxpot, nsymm, jobtype, userqtot, &qtot,
-                              false, box, true));
-                    
+        MsgHandler msghandler;
+        msghandler.setPrintLevel(ACTStatus::Warning);
+        importFile(&msghandler, pd, dataName.c_str(), &molprops,
+                   molnm, iupac, conf, &method, &basis,
+                   maxpot, nsymm, jobtype, userqtot, &qtot,
+                   false, box, true);
+        EXPECT_TRUE(msghandler.ok());
         EXPECT_TRUE(qtot == 0.0);
         ACTMol mp;
         mp.Merge(&molprops[0]);
