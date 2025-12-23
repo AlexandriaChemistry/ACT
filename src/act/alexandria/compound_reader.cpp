@@ -33,7 +33,7 @@
     
 #include "compound_reader.h"
 
-#include "act/alexandria/babel_io.h"
+#include "act/import/babel_io.h"
 #include "act/alexandria/fetch_charges.h"
 #include "act/alexandria/molselect.h"
 #include "act/basics/msg_handler.h"

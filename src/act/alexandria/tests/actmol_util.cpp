@@ -34,9 +34,9 @@
  */
 #include "actpre.h"
 #include "actmol_util.h"
-#include "act/alexandria/babel_io.h"
+#include "act/import/babel_io.h"
 #include "act/alexandria/fill_inputrec.h"
-#include "act/alexandria/atype_mapping.h"
+#include "act/import/atype_mapping.h"
 #include "act/alexandria/actmol.h"
 #include "act/basics/msg_handler.h"
 

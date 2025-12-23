@@ -27,6 +27,7 @@
 
 target_sources(actLib
     PRIVATE
+           acm_ga.cpp
            acmfitnesscomputer.cpp
            acmindividual.cpp
            acminitializer.cpp
@@ -37,9 +38,7 @@ target_sources(actLib
            alex_modules.cpp
            allbondeds.cpp
            analyze.cpp
-           atype_mapping.cpp
            b2data.cpp
-           babel_io.cpp
            bayes.cpp
            compound_reader.cpp
            confighandler.cpp
@@ -73,7 +72,6 @@ target_sources(actLib
            train_ff.cpp
            train_utility.cpp          
            velocityhandler.cpp
-acm_ga.cpp
 	)
 	
 add_executable(alexandria alexandria.cpp ${actLib})
