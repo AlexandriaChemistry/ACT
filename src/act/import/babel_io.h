@@ -66,7 +66,6 @@ class MsgHandler;
  * \param[in]  addHydrogen If true, hydrogens will be added
  * \param[out] box         Unit cell if present, in gromacs format.
  * \param[in]  oneH        Remap all hydrogen atom types to "h"
- * \param[in]  renameAtoms If true, openbabel type will be converted to Alexandria
  * \returns true if everything succeeded, false otherwise
  * \ingroup module_alexandria
  */
@@ -86,8 +85,7 @@ bool readBabel(alexandria::MsgHandler           *msg_handler,
                double              *qtot,
                bool                 addHydrogen,
                matrix               box,
-               bool                 oneH,
-               bool                 renameAtoms = true);
+               bool                 oneH);
 
 /*! \brief Add atomtype to a Molprop object
  *

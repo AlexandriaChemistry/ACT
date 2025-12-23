@@ -34,7 +34,7 @@
  */
 #include "actpre.h"
 #include "actmol_util.h"
-#include "act/import/babel_io.h"
+#include "act/import/import.h"
 #include "act/alexandria/fill_inputrec.h"
 #include "act/import/atype_mapping.h"
 #include "act/alexandria/actmol.h"
@@ -67,47 +67,44 @@ void initACTMol(const char          *molname,
         matrix box;
         MsgHandler msghandler;
         msghandler.setPrintLevel(ACTStatus::Warning);
-        bool readOK = readBabel(&msghandler, pd, dataName.c_str(), &molprops,
-                                molname, molname,
-                                conf, &method, &basis,
-                                maxpot, nsymm, jobtype, userqtot,
-                                &qtot, false, box, true);
-        EXPECT_TRUE(readOK);
+        importFile(&msghandler, pd, dataName.c_str(), &molprops,
+                   molname, molname,
+                   conf, &method, &basis,
+                   maxpot, nsymm, jobtype, userqtot,
+                   &qtot, false, box, true);
+        EXPECT_TRUE(msghandler.ok());
         // Uncomment in case of issues
         // msghandler.setACTStatus(ACTStatus::Debug);
 
-        if (readOK)
+        for(auto &molprop : molprops)
         {
-            for(auto &molprop : molprops)
+            ACTMol mm;
+            mm.Merge(&molprop);
+            mm.GenerateTopology(&msghandler, pd,
+                                missingParameters::Ignore);
+            EXPECT_TRUE(msghandler.ok());
+            std::map<MolPropObservable, iqmType> iqmMap = 
+                {
+                    { MolPropObservable::DELTAE0,           iqmType::QM },
+                    { MolPropObservable::POTENTIAL,         iqmType::QM },
+                    { MolPropObservable::INTERACTIONENERGY, iqmType::QM },
+                    { MolPropObservable::DIPOLE,            iqmType::QM },
+                    { MolPropObservable::QUADRUPOLE,        iqmType::QM },
+                    { MolPropObservable::OCTUPOLE,          iqmType::QM },
+                    { MolPropObservable::HEXADECAPOLE,      iqmType::QM },
+                    { MolPropObservable::POLARIZABILITY,    iqmType::QM },
+                    { MolPropObservable::CHARGE,            iqmType::QM }
+                };
+            mm.getExpProps(&msghandler, pd, iqmMap, 0);
+            if (msghandler.ok())
             {
-                ACTMol mm;
-                mm.Merge(&molprop);
-                mm.GenerateTopology(&msghandler, pd,
-                                    missingParameters::Ignore);
-                EXPECT_TRUE(msghandler.ok());
-                std::map<MolPropObservable, iqmType> iqmMap = 
-                    {
-                        { MolPropObservable::DELTAE0,           iqmType::QM },
-                        { MolPropObservable::POTENTIAL,         iqmType::QM },
-                        { MolPropObservable::INTERACTIONENERGY, iqmType::QM },
-                        { MolPropObservable::DIPOLE,            iqmType::QM },
-                        { MolPropObservable::QUADRUPOLE,        iqmType::QM },
-                        { MolPropObservable::OCTUPOLE,          iqmType::QM },
-                        { MolPropObservable::HEXADECAPOLE,      iqmType::QM },
-                        { MolPropObservable::POLARIZABILITY,    iqmType::QM },
-                        { MolPropObservable::CHARGE,            iqmType::QM }
-                    };
-                mm.getExpProps(&msghandler, pd, iqmMap, 0);
-                if (msghandler.ok())
-                {
-                    std::vector<gmx::RVec> forces(mm.atomsConst().size());
-                    std::vector<gmx::RVec> coords = mm.xOriginal();
-                    mm.generateCharges(&msghandler, pd, fcomp, alg, &coords, &forces, true);
-                }
-                if (msghandler.ok())
-                {
-                    mps->push_back(std::move(mm));
-                }
+                std::vector<gmx::RVec> forces(mm.atomsConst().size());
+                std::vector<gmx::RVec> coords = mm.xOriginal();
+                mm.generateCharges(&msghandler, pd, fcomp, alg, &coords, &forces, true);
+            }
+            if (msghandler.ok())
+            {
+                mps->push_back(std::move(mm));
             }
         }
     }    

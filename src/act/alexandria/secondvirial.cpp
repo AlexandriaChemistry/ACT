@@ -37,7 +37,7 @@
 
 #include "act/alexandria/alex_modules.h"
 #include "act/import/atype_mapping.h"
-#include "act/import/babel_io.h"
+#include "act/import/import.h"
 #include "act/alexandria/b2data.h"
 #include "act/alexandria/compound_reader.h"
 #include "act/alexandria/confighandler.h"

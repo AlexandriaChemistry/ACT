@@ -448,6 +448,12 @@ else()
   endif()
 endif()
 
+find_package(RDKit)
+if(RDKit_FOUND)
+  add_definitions(-DHAVE_RDKIT)
+  include_directories(${RDKIT_INCLUDE_DIR})
+endif()
+
 # When compiling alexandria three extra libraries become obligatory
 # CLN, sqlite3 and openbabel
 option(GMX_ALEXANDRIA "Build alexandria tools" ON)

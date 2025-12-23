@@ -40,7 +40,7 @@
 #include <gtest/gtest.h>
 
 #include "act/import/atype_mapping.h"
-#include "act/import/babel_io.h"
+#include "act/import/import.h"
 #include "act/alexandria/fill_inputrec.h"
 #include "act/alexandria/molhandler.h"
 #include "act/alexandria/actmol.h"
@@ -133,11 +133,11 @@ protected:
         MsgHandler msghandler;
         msghandler.setPrintLevel(ACTStatus::Warning);
         matrix box;
-        bool readOK = readBabel(&msghandler, pd, dataName.c_str(), &molprops,
-                                molname, molname,
-                                conf, &method, &basis,
-                                maxpot, nsymm, jobtype, userqtot, &qtot, false, box, true);
-        EXPECT_TRUE(readOK);
+        importFile(&msghandler, pd, dataName.c_str(), &molprops,
+                   molname, molname,
+                   conf, &method, &basis,
+                   maxpot, nsymm, jobtype, userqtot, &qtot, false, box, true);
+        EXPECT_TRUE(msghandler.ok());
         std::vector<ACTMol> mps;
         // Needed for GenerateCharges
         auto alg = pd->chargeGenerationAlgorithm();
@@ -145,27 +145,24 @@ protected:
         int    shellMaxIter   = 100;
         auto forceComp = new ForceComputer(shellTolerance, shellMaxIter);
         std::vector<double>    qcustom;
-        if (readOK)
+        for(auto &molprop: molprops)
         {
-            for(auto &molprop: molprops)
+            ACTMol mm;
+            mm.Merge(&molprop);
+            // Generate charges and topology
+            mm.GenerateTopology(&msghandler, pd,
+                                missingParameters::Ignore);
+            EXPECT_TRUE(msghandler.ok());
+            if (!msghandler.ok())
             {
-                ACTMol mm;
-                mm.Merge(&molprop);
-                // Generate charges and topology
-                mm.GenerateTopology(&msghandler, pd,
-                                    missingParameters::Ignore);
-                EXPECT_TRUE(msghandler.ok());
-                if (!msghandler.ok())
-                {
-                    return;
-                }
-                std::vector<gmx::RVec> forces(mm.atomsConst().size());
-                std::vector<gmx::RVec> coords = mm.xOriginal();
-                mm.generateCharges(&msghandler, pd, forceComp, alg, &coords, &forces);
-                if (msghandler.ok())
-                {
-                    mps.push_back(std::move(mm));
-                }
+                return;
+            }
+            std::vector<gmx::RVec> forces(mm.atomsConst().size());
+            std::vector<gmx::RVec> coords = mm.xOriginal();
+            mm.generateCharges(&msghandler, pd, forceComp, alg, &coords, &forces);
+            if (msghandler.ok())
+            {
+                mps.push_back(std::move(mm));
             }
         }
         

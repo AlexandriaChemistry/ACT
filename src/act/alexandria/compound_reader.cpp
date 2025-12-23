@@ -33,7 +33,7 @@
     
 #include "compound_reader.h"
 
-#include "act/import/babel_io.h"
+#include "act/import/import.h"
 #include "act/alexandria/fetch_charges.h"
 #include "act/alexandria/molselect.h"
 #include "act/basics/msg_handler.h"
@@ -233,10 +233,11 @@ void CompoundReader::readFile(MsgHandler          *msghandler,
     int                  maxpot = 100;
     int                  nsymm  = 1;
     bool                 addHydrogen = false;
-    if (!readBabel(msghandler, &pd, filename_, &mps, molnm_, molnm_, "",
-                   &method,
-                   &basis, maxpot, nsymm, "Opt", userQtot(), &qtot_babel,
-                   addHydrogen, box, oneH_))
+    importFile(msghandler, &pd, filename_, &mps, molnm_, molnm_, "",
+               &method,
+               &basis, maxpot, nsymm, "Opt", userQtot(), &qtot_babel,
+               addHydrogen, box, oneH_);
+    if (!msghandler->ok())
     {
         msghandler->msg(ACTStatus::Error,
                         gmx::formatString("Reading %s failed.\n", filename_));

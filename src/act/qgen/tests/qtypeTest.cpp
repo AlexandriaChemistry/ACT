@@ -38,7 +38,7 @@
 #include <gtest/gtest.h>
 
 #include "act/import/atype_mapping.h"
-#include "act/import/babel_io.h"
+#include "act/import/import.h"
 #include "act/alexandria/fill_inputrec.h"
 #include "act/alexandria/actmol.h"
 #include "act/basics/msg_handler.h"
@@ -144,12 +144,14 @@ class QtypeTest : public gmx::test::CommandLineTestBase
             bool   userqtot   = !qcustom.empty();
             double qtot_babel = qtotal;
             matrix box;
-            EXPECT_TRUE(readBabel(nullptr, pd, dataName.c_str(), &molprops,
-                                  molname.c_str(), molname.c_str(),
-                                  conf, &method, &basis, maxpot,
-                                  nsymm, jobtype, userqtot,
-                                  &qtot_babel, false, box, true));
-
+            MsgHandler msghandler;
+            msghandler.setPrintLevel(ACTStatus::Warning);
+            importFile(&msghandler, pd, dataName.c_str(), &molprops,
+                       molname.c_str(), molname.c_str(),
+                       conf, &method, &basis, maxpot,
+                       nsymm, jobtype, userqtot,
+                       &qtot_babel, false, box, true);
+            EXPECT_TRUE(msghandler.ok());
             if (trustObCharge)
             {
                 EXPECT_TRUE(qtotal == qtot_babel);
