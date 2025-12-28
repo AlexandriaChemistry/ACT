@@ -78,6 +78,22 @@ void gmx_reset_stop_condition()
     // last_signal_name and usr_condition are left untouched by reset.
 }
 
+static void increment_stop_condition()
+{
+    if (stop_condition == gmx_stop_cond_none)
+    {
+        stop_condition = gmx_stop_cond_next_ns;
+    }
+    else if (stop_condition == gmx_stop_cond_next_ns)
+    {
+        stop_condition = gmx_stop_cond_next;
+    }
+    else if (stop_condition == gmx_stop_cond_next)
+    {
+        stop_condition = gmx_stop_cond_abort;
+    }
+}
+
 static void signal_handler(int n)
 {
     switch (n)
@@ -88,7 +104,7 @@ static void signal_handler(int n)
         case SIGTERM:
         case SIGINT:
             /* we explicitly set things up to allow this: */
-            stop_condition++;
+            increment_stop_condition();
             if (n == SIGINT)
             {
                 last_signal_name = 1;
