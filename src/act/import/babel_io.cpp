@@ -36,8 +36,6 @@
 
 #include "import.h"
 
-//#include "config.h"
-
 #include <cstdio>
 #include <cstdlib>
 
@@ -47,12 +45,9 @@
 #include <set>
 
 #include "gromacs/math/vec.h"
-#include "gromacs/topology/atomprop.h"
-#include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
-#include "gromacs/utility/real.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "act/import/atype_mapping.h"
@@ -64,6 +59,9 @@
 #include "act/molprop/multipole_names.h"
 #include "act/utility/stringutil.h"
 #include "act/utility/units.h"
+
+
+#ifndef HAVE_RDKIT
 
 // Include Open Babel classes for OBMol and OBConversion
 #if HAVE_LIBOPENBABEL3
@@ -1028,4 +1026,5 @@ bool SetMolpropAtomTypesAndBonds(alexandria::MolProp *mmm)
     return true;
 }
 
+#endif
 #endif

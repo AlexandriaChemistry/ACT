@@ -1,5 +1,5 @@
 # - Find OPENBABEL3
-# Find the OpenBabel version 2 library.
+# Find the OpenBabel version 3 library.
 #
 #  OPENBABEL3_INCLUDE_DIR - where to find openbabel/obconversion.h
 #  OPENBABEL3_LIBRARIES   - List of libraries when using OPENBABEL3
