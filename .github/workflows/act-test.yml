@@ -32,8 +32,8 @@ jobs:
         id: build
         run: |
           wget https://github.com/dspoel/openbabel/archive/refs/tags/openbabel-alexandria-0.93.3.tar.gz
-          tar xzf openbabel-alexandria-0.93.2.tar.gz
-          cd openbabel-openbabel-alexandria-0.93.2
+          tar xzf openbabel-alexandria-0.93.3.tar.gz
+          cd openbabel-openbabel-alexandria-0.93.3
           mkdir build
           cd build
           export CXX=/usr/bin/g++
