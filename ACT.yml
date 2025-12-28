@@ -10,7 +10,7 @@ dependencies:
   - pip>=21.0
   - NumPy
   - cmake>=3.13
-  - Eigen>=3.3
+  - Eigen>=5.0
   - LibXml2>=2.9.14
   - SWIG>=4.0.2
   - Graphviz
