@@ -89,6 +89,10 @@ protected:
                               nsymm, jobtype, userqtot ,&qtot_babel,
                               false, box, true));
         EXPECT_TRUE(molprops.size() == 1);
+        if (molprops.size() != 1)
+        {
+            return false;
+        }
         auto &molprop = molprops[0];
         alexandria::ACTMol               mp_;
 
