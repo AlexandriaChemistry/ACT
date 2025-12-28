@@ -35,28 +35,28 @@
 include(CheckCXXSourceCompiles)
 include(FindThreads)
 
-# Check whether both a suitable C++17-compatible compiler and standard
+# Check whether both a suitable C++20-compatible compiler and standard
 # library is available, and give a fatal error if not.
 #
-# Any required compiler flag for C++17 support is returned in
+# Any required compiler flag for C++20 support is returned in
 # ${FLAG}. The other parameters are only inputs, naming variables that
 # contain flags that may have been detected, or set by the user.
-function(GMX_TEST_CXX17 CXX17_CXX_FLAG_NAME STDLIB_CXX_FLAG_NAME STDLIB_LIBRARIES_NAME)
+function(GMX_TEST_CXX20 CXX20_CXX_FLAG_NAME STDLIB_CXX_FLAG_NAME STDLIB_LIBRARIES_NAME)
 
     # First check that the compiler is OK, and find the appropriate flag.
 
     if(WIN32 AND NOT MINGW)
-        set(CXX17_CXX_FLAG "/std:c++17 /Zc:__cplusplus")
+        set(CXX20_CXX_FLAG "/std:c++20 /Zc:__cplusplus")
     elseif(CYGWIN)
-        set(CXX17_CXX_FLAG "-std=gnu++17") #required for strdup
+        set(CXX20_CXX_FLAG "-std=gnu++20") #required for strdup
     else()
-        set(CXX17_CXX_FLAG "-std=c++17")
+        set(CXX20_CXX_FLAG "-std=c++20")
     endif()
-    CHECK_CXX_COMPILER_FLAG("${CXX17_CXX_FLAG}" CXXFLAG_STD_CXX0X)
+    CHECK_CXX_COMPILER_FLAG("${CXX20_CXX_FLAG}" CXXFLAG_STD_CXX0X)
     if(NOT CXXFLAG_STD_CXX0X)
-        set(CXX17_CXX_FLAG "")
+        set(CXX20_CXX_FLAG "")
     endif()
-    set(CMAKE_REQUIRED_FLAGS "${CXX17_CXX_FLAG}")
+    set(CMAKE_REQUIRED_FLAGS "${CXX20_CXX_FLAG}")
     check_cxx_source_compiles(
 "// Permit testing typeid keyword
 #include <typeinfo>
@@ -129,33 +129,33 @@ int main() {
   static_assert(true, \"if you see this, true somehow isn't\");
   // Test a lambda
   [=]{};
-}" CXX17_SUPPORTED)
+}" CXX20_SUPPORTED)
     if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
         if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS "4.8.1")
-            message(FATAL_ERROR "ACT requires version 4.8.1 or later of the GNU C++ compiler for complete C++17 support")
+            message(FATAL_ERROR "ACT requires version 4.8.1 or later of the GNU C++ compiler for complete C++20 support")
         endif()
     elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
         if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS "10.0")
-            message(FATAL_ERROR "ACT requires version 3.3 or later of the Clang C++ compiler for complete C++17 support")
+            message(FATAL_ERROR "ACT requires version 3.3 or later of the Clang C++ compiler for complete C++20 support")
         endif()
     elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
-        if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS "17.0.1")
-            message(FATAL_ERROR "ACT requires version 17.0.1 or later of the Intel C++ compiler for complete C++17 support")
+        if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS "20.0.1")
+            message(FATAL_ERROR "ACT requires version 20.0.1 or later of the Intel C++ compiler for complete C++20 support")
         endif()
     elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
         if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS "19.0.23026")
-            message(FATAL_ERROR "ACT requires version 2015 (19.0.23026) or later of the MSVC C++ compiler for complete C++17 support")
+            message(FATAL_ERROR "ACT requires version 2015 (19.0.23026) or later of the MSVC C++ compiler for complete C++20 support")
         endif()
     endif()
-    if(CXX17_SUPPORTED)
-        set(${CXX17_CXX_FLAG_NAME} ${CXX17_CXX_FLAG} PARENT_SCOPE)
+    if(CXX20_SUPPORTED)
+        set(${CXX20_CXX_FLAG_NAME} ${CXX20_CXX_FLAG} PARENT_SCOPE)
     else()
-        message(FATAL_ERROR "This version of ACT requires a C++17 compiler. Please use a newer compiler. See the installation guide for details.")
+        message(FATAL_ERROR "This version of ACT requires a C++20 compiler. Please use a newer compiler. See the installation guide for details.")
     endif()
 
     # Now check the standard library is OK
 
-    set(CMAKE_REQUIRED_FLAGS "${CXX17_CXX_FLAG} ${${STDLIB_CXX_FLAG_NAME}}")
+    set(CMAKE_REQUIRED_FLAGS "${CXX20_CXX_FLAG} ${${STDLIB_CXX_FLAG_NAME}}")
     set(CMAKE_REQUIRED_LIBRARIES "${${STDLIB_LIBRARIES_NAME}} ${CMAKE_THREAD_LIBS_INIT}")
     check_cxx_source_compiles(
 "#include <algorithm>
@@ -202,8 +202,8 @@ int main() {
   std::tie(tupleInt, tupleDouble) = theTuple;
   // Test std::string
   std::string message(\"hello\");
-}" CXX17_STDLIB_PRESENT)
-    if(NOT CXX17_STDLIB_PRESENT)
-        message(FATAL_ERROR "This version of ACT requires C++17-compatible standard library. Please use a newer compiler and/or a newer standard library.")
+}" CXX20_STDLIB_PRESENT)
+    if(NOT CXX20_STDLIB_PRESENT)
+        message(FATAL_ERROR "This version of ACT requires C++20-compatible standard library. Please use a newer compiler and/or a newer standard library.")
     endif()
 endfunction()

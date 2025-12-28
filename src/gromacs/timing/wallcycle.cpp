@@ -502,9 +502,9 @@ WallcycleCounts wallcycle_sum(const t_commrec *cr, gmx_wallcycle_t wc)
 {
     WallcycleCounts cycles_sum;
     wallcc_t       *wcc;
-    double          cycles[ewcNR+ewcsNR];
+    double          cycles[maxWallcycleCounts];
 #if GMX_MPI
-    double          cycles_n[ewcNR+ewcsNR+1];
+    double          cycles_n[maxWallcycleCounts+1];
 #endif
     int             i;
     int             nsum;
@@ -565,7 +565,7 @@ WallcycleCounts wallcycle_sum(const t_commrec *cr, gmx_wallcycle_t wc)
 #if GMX_MPI
     if (cr->nnodes > 1)
     {
-        double buf[ewcNR+ewcsNR+1];
+        double buf[maxWallcycleCounts+1];
 
         // TODO this code is used only at the end of the run, so we
         // can just do a simple reduce of haveInvalidCount in

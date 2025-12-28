@@ -57,7 +57,8 @@ typedef struct gmx_wallcycle *gmx_wallcycle_t;
 struct gmx_wallclock_gpu_nbnxn_t;
 struct gmx_wallclock_gpu_pme_t;
 
-typedef std::array<double, ewcNR+ewcsNR> WallcycleCounts;
+const int maxWallcycleCounts = static_cast<int>(ewcNR)+static_cast<int>(ewcsNR);
+typedef std::array<double, maxWallcycleCounts> WallcycleCounts;
 /* Convenience typedef */
 
 WallcycleCounts wallcycle_sum(const t_commrec *cr, gmx_wallcycle_t wc);
