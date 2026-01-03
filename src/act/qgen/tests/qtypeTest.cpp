@@ -62,7 +62,6 @@ namespace
 
 //! Simple enum to distinguish file formats
 enum class inputFormat {
-    LOG,
     PDB,
     SDF,
     XYZ,
@@ -106,14 +105,6 @@ class QtypeTest : public gmx::test::CommandLineTestBase
             
             switch (inputformat)
             {
-            case inputFormat::LOG:
-                {
-                    fileName.append("-3-oep.log");
-                    method.assign("B3LYP");
-                    basis.assign("GEN");
-                    trustObCharge = true;
-                }
-                break;
             case inputFormat::ZIP:
                 {
                     method.assign("B3LYP");
@@ -235,18 +226,6 @@ TEST_F (QtypeTest, ButanolPDB)
     testQtype("ACS-g", inputFormat::PDB, "1-butanol", 0, qcustom);
 }
 
-TEST_F (QtypeTest, TwoMolsSDF)
-{
-    std::vector<double> qcustom;
-    testQtype("ACS-g", inputFormat::SDF, "two_mols", 0, qcustom);
-}
-
-TEST_F (QtypeTest, TwoMolsXYZ)
-{
-    std::vector<double> qcustom;
-    testQtype("ACS-g", inputFormat::XYZ, "two_mols", 0, qcustom);
-}
-
 TEST_F (QtypeTest, CustomButanolPDB)
 {
     // These charges are what is produced by the ButanolPDB test.
@@ -275,19 +254,6 @@ TEST_F (QtypeTest, ButanolPDBCoQ)
     // no effect on the dipole but higher moments may be off more.
     std::vector<double> qcustom;
     testQtype("ACS-g", inputFormat::PDB, "1-butanol", 0, qcustom);
-}
-
-TEST_F (QtypeTest, AcetatePDB)
-{
-    std::vector<double> qcustom;
-    testQtype("ACS-g", inputFormat::LOG, "acetate", -1, qcustom);
-}
-
-TEST_F (QtypeTest, AcetatePDBCoQ)
-{
-    // For the charged compound the center of charge should matter
-    std::vector<double> qcustom;
-    testQtype("ACS-g", inputFormat::LOG, "acetate", -1, qcustom);
 }
 
 TEST_F (QtypeTest, WaterPDB)

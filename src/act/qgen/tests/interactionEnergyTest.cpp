@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria program.
  *
- * Copyright (C) 2014-2025
+ * Copyright (C) 2014-2026
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -61,10 +61,8 @@ namespace
 
 //! Simple enum to distinguish file formats
 enum class inputFormat {
-    LOG,
     PDB,
-    SDF,
-    ZIP
+    SDF
 };
 
 //! Class to test the Alexandria Charge Model
@@ -94,7 +92,6 @@ protected:
                  const std::string               &molname, 
                  std::vector<double>              qtotal,
                  const std::vector<double>       &qcustom,
-                 bool                             useHF,
                  bool                             oneH = true)
     {
         int                   maxpot    = 100;
@@ -107,29 +104,7 @@ protected:
         std::vector<alexandria::MolProp> molprops;
         bool                  trustObCharge = false;
         
-        if (inputformat == inputFormat::LOG)
-        {
-            if (useHF)
-            {
-                fileName.append(".log");
-                method.assign("HF");
-                basis.assign("3-21G");
-            }
-            else
-            {
-                fileName.append("-3-oep.log");
-                method.assign("B3LYP");
-                basis.assign("GEN");
-            }
-            trustObCharge = true;
-        }
-        else if (inputformat == inputFormat::ZIP)
-        {
-            method.assign("B3LYP");
-            basis.assign("GEN");
-            trustObCharge = true;
-        }
-        else if (inputformat == inputFormat::PDB)
+        if (inputformat == inputFormat::PDB)
         {
             fileName.append(".pdb");
         }
@@ -265,55 +240,55 @@ protected:
 TEST_F (InteractionEnergyTest, WaterDimerACSg)
 {
     std::vector<double> qcustom;
-    testAcm("ACS-g", inputFormat::PDB, "water_dimer", {0,0}, qcustom, false);
+    testAcm("ACS-g", inputFormat::PDB, "water_dimer", {0,0}, qcustom);
 }
 
 TEST_F (InteractionEnergyTest, WaterIodideACSg)
 {
     std::vector<double> qcustom;
-    testAcm("ACS-g", inputFormat::LOG, "water_I", {0,-1}, qcustom, true);
+    testAcm("ACS-g", inputFormat::SDF, "water_I", {0,-1}, qcustom);
 }
 
 TEST_F (InteractionEnergyTest, WaterDimerACSpg)
 {
     std::vector<double> qcustom;
-    testAcm("ACS-pg", inputFormat::PDB, "water_dimer", {0,0}, qcustom, false);
+    testAcm("ACS-pg", inputFormat::PDB, "water_dimer", {0,0}, qcustom);
 }
 
 TEST_F (InteractionEnergyTest, WaterIodideACSpg)
 {
     std::vector<double> qcustom;
-    testAcm("ACS-pg", inputFormat::LOG, "water_I", {0, -1}, qcustom, true);
+    testAcm("ACS-pg", inputFormat::SDF, "water_I", {0, -1}, qcustom);
 }
 
 TEST_F (InteractionEnergyTest, MethanolWaterACSg)
 {
     std::vector<double> qcustom;
-    testAcm("ACS-g", inputFormat::SDF, "methanol-water", {0,0}, qcustom, true);
+    testAcm("ACS-g", inputFormat::SDF, "methanol-water", {0,0}, qcustom);
 }
 
 TEST_F (InteractionEnergyTest, MethanolWaterACSpg)
 {
     std::vector<double> qcustom;
-    testAcm("ACS-pg", inputFormat::SDF, "methanol-water", {0,0}, qcustom, true);
+    testAcm("ACS-pg", inputFormat::SDF, "methanol-water", {0,0}, qcustom);
 }
 
 TEST_F (InteractionEnergyTest, AcetateWaterACSg)
 {
     std::vector<double> qcustom;
-    testAcm("ACS-g", inputFormat::SDF, "acetate-water", {-1,0}, qcustom, true);
+    testAcm("ACS-g", inputFormat::SDF, "acetate-water", {-1,0}, qcustom);
 }
 
 TEST_F (InteractionEnergyTest, AcetateWaterACSpg)
 {
     std::vector<double> qcustom;
-    testAcm("ACS-pg", inputFormat::SDF, "acetate-water", {-1,0}, qcustom, true);
+    testAcm("ACS-pg", inputFormat::SDF, "acetate-water", {-1,0}, qcustom);
 }
 
 TEST_F (InteractionEnergyTest, HydrogenFluorideDimerACSps)
 {
     std::vector<double> qcustom;
-    testAcm("ACS-ps", inputFormat::SDF, "hfdimer", {0,0}, qcustom, true, false);
+    testAcm("ACS-ps", inputFormat::SDF, "hfdimer", {0,0}, qcustom, false);
 }
 
 }

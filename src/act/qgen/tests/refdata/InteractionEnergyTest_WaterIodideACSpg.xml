@@ -4,25 +4,25 @@
   <Int Name="qtotSize">8</Int>
   <Sequence Name="qtotValuesEqdAlgorithm_SQE">
     <Int Name="Length">8</Int>
-    <Real>0.8032012526105925</Real>
+    <Real>0.80320126506398348</Real>
     <Real>-1.2</Real>
-    <Real>0.99839937369470366</Real>
+    <Real>0.99839936746800806</Real>
     <Real>-0.80000000000000004</Real>
-    <Real>0.99839937369470366</Real>
+    <Real>0.99839936746800806</Real>
     <Real>-0.80000000000000004</Real>
     <Real>7.6130000000000004</Real>
     <Real>-8.6129999999999995</Real>
   </Sequence>
-  <Real Name="Molecule 1 charge">-2.2204460492503131e-16</Real>
+  <Real Name="Molecule 1 charge">-4.4408920985006262e-16</Real>
   <Real Name="Molecule 2 charge">-0.99999999999999911</Real>
   <Real Name="BONDS">0</Real>
   <Real Name="ANGLES">0</Real>
-  <Real Name="DISPERSION">-1.2555968574211771</Real>
-  <Real Name="EXCHANGE">0.060466574094877386</Real>
-  <Real Name="COULOMB">-9.16526741749351</Real>
-  <Real Name="INDUCTION">-3.5103206054162532</Real>
-  <Real Name="INDUCTIONCORRECTION">-0.055719657551251967</Real>
-  <Real Name="ALLELEC">-12.731307680461017</Real>
-  <Real Name="EXCHIND">-3.5055736888726279</Real>
-  <Real Name="EPOT">-13.926437963787293</Real>
+  <Real Name="DISPERSION">-1.2555964615625945</Real>
+  <Real Name="EXCHANGE">0.060467436590442958</Real>
+  <Real Name="COULOMB">-9.1657304447901424</Real>
+  <Real Name="INDUCTION">-3.5103223185122072</Real>
+  <Real Name="INDUCTIONCORRECTION">-0.055722001805274424</Real>
+  <Real Name="ALLELEC">-12.731774765107623</Real>
+  <Real Name="EXCHIND">-3.5055768837270387</Real>
+  <Real Name="EPOT">-13.926903790078541</Real>
 </ReferenceData>

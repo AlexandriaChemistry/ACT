@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria program.
  *
- * Copyright (C) 2014-2025
+ * Copyright (C) 2014-2026
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -38,19 +38,15 @@
 
 #include <gtest/gtest.h>
 
-#include "act/import/atype_mapping.h"
-#include "act/import/import.h"
-#include "act/alexandria/fill_inputrec.h"
 #include "act/alexandria/actmol.h"
+#include "act/alexandria/fill_inputrec.h"
 #include "act/basics/msg_handler.h"
 #include "act/forcefield/forcefield.h"
 #include "act/forcefield/forcefield_utils.h"
 #include "act/forcefield/forcefield_xml.h"
+#include "act/import/atype_mapping.h"
+#include "act/import/import.h"
 #include "act/qgen/qgen_resp.h"
-#include "gromacs/gmxlib/network.h"
-#include "gromacs/mdrunutility/mdmodules.h"
-#include "gromacs/utility/logger.h"
-#include "gromacs/utility/physicalnodecommunicator.h"
 
 #include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"
@@ -79,7 +75,7 @@ protected:
     }
 
     //! \return a specific molecule        
-    ACTMol readMolecule(ForceField *pd)
+    bool readMolecule(ForceField *pd, ACTMol *mp)
     {
         std::vector<alexandria::MolProp> molprops;
 
@@ -104,10 +100,13 @@ protected:
                    maxpot, nsymm, jobtype, userqtot, &qtot,
                    false, box, true);
         EXPECT_TRUE(msghandler.ok());
+        if (!msghandler.ok())
+        {
+            return false;
+        }
         EXPECT_TRUE(qtot == 0.0);
-        ACTMol mp;
-        mp.Merge(&molprops[0]);
-        return mp;
+        mp->Merge(&molprops[0]);
+        return true;
     }
 
     //! Static initiation, only run once every test.
@@ -124,7 +123,11 @@ protected:
         std::string   method("B3LYP");
         std::string   basis("Gen");
         ForceField   *pd = getForceField(qdist);
-        auto mp = readMolecule(pd);
+        ACTMol        mp;
+        if (!readMolecule(pd, &mp))
+        {
+            return;
+        }
         MsgHandler msghandler;
         msghandler.setPrintLevel(ACTStatus::Warning);
         mp.GenerateTopology(&msghandler, pd, missingParameters::Ignore);

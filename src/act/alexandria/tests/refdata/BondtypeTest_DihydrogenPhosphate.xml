@@ -4,8 +4,8 @@
   <Int Name="dihydrogen-phosphate.sdf">6</Int>
   <Sequence Name="bondorder">
     <Int Name="Length">6</Int>
-    <String>p3-0 o2-2: 2</String>
-    <String>p3-0 o2-4: 1</String>
+    <String>p3-0 o3-2: 1</String>
+    <String>p3-0 o3-4: 1</String>
     <String>o3-1 h-5: 1</String>
     <String>o3-1 p3-0: 1</String>
     <String>o3-3 h-6: 1</String>

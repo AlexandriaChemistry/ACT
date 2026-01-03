@@ -127,7 +127,9 @@ protected:
         
         // Get forcefield
         auto pd         = getForceField(forcefield);
-        dataName        = gmx::test::TestFileManager::getInputFilePath(molname);
+        std::string moldir("mols/");
+        moldir += molname;
+        dataName        = gmx::test::TestFileManager::getInputFilePath(moldir);
         double qtot     = 0;
         bool   userqtot = false;
         MsgHandler msghandler;

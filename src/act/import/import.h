@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2024
+ * Copyright (C) 2014-2026
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -39,6 +39,9 @@
 
 #include "act/molprop/molprop.h"
 
+namespace alexandria
+{
+
 class MsgHandler;
 
 /*! \brief
@@ -65,23 +68,23 @@ class MsgHandler;
  * \param[out]   box         Unit cell if present, in gromacs format.
  * \param[in]    oneH        Remap all hydrogen atom types to "h"
  */
-void importFile(alexandria::MsgHandler           *msg_handler,
-                const alexandria::ForceField     *pd,
-                const std::string                &filenm,
-                std::vector<alexandria::MolProp> *mp,
-                const char                       *molnm,
-                const char                       *iupac,
-                const char                       *conf,
-                std::string                      *method,
-                std::string                      *basis,
-                int                               maxpot,
-                int                               nsymm,
-                const char                       *jobtype,
-                bool                              userqtot,
-                double                           *qtot,
-                bool                              addHydrogen,
-                matrix                            box,
-                bool                              oneH);
+void importFile(MsgHandler           *msg_handler,
+                const ForceField     *pd,
+                const std::string    &filenm,
+                std::vector<MolProp> *mp,
+                const char           *molnm,
+                const char           *iupac,
+                const char           *conf,
+                std::string          *method,
+                std::string          *basis,
+                int                   maxpot,
+                int                   nsymm,
+                const char           *jobtype,
+                bool                  userqtot,
+                double               *qtot,
+                bool                  addHydrogen,
+                matrix                box,
+                bool                  oneH);
 
 /*! \brief Add atomtype to a Molprop object
  *
@@ -91,6 +94,8 @@ void importFile(alexandria::MsgHandler           *msg_handler,
  * \param[inout] mmm Molprop object
  * \return true if successful, false otherwise
  */
-bool SetMolpropAtomTypesAndBonds(alexandria::MolProp *mmm);
+bool SetMolpropAtomTypesAndBonds(MolProp *mmm);
+
+}
 
 #endif

@@ -68,6 +68,13 @@ find_package(Python3)
 find_package(Sphinx)
 set(EXPECTED_SPHINX_VERSION FIND_SPHINX_VERSION)
 
+#find_package(Pygments)
+include(FindPythonModule)
+find_python_module(pygments ${_find_deps_options})
+if (PYTHONMODULE_PYGMENTS)
+    set(Sphinx_pygments_FOUND 1)
+endif()
+
 # Even if we aren't going to make the full webpage, set up to put all
 # the documentation output in the same place, for convenience
 set(HTML_OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}/html")

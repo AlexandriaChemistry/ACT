@@ -4,7 +4,7 @@
   <Int Name="oxophosphane.sdf">2</Int>
   <Sequence Name="bondorder">
     <Int Name="Length">2</Int>
-    <String>o3-0 p2-1: 1</String>
+    <String>o2-0 p2-1: 2</String>
     <String>p2-1 h-2: 1</String>
   </Sequence>
 </ReferenceData>

@@ -141,7 +141,9 @@ protected:
         std::vector<const char *> desc;
         CompoundReader            compR_;
 
-        std::string infile = gmx::test::TestFileManager::getInputFilePath(input);
+        std::string dirinput("mols/");
+        dirinput += input;
+        std::string infile = gmx::test::TestFileManager::getInputFilePath(dirinput);
         compR_.addOptions(&pargs, &filenm, &desc);
         hack_pargs(&pargs, infile);
         if (hackFNM)

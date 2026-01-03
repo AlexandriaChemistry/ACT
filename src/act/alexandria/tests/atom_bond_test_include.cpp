@@ -13,6 +13,11 @@ TEST_F (AtomtypeTest, DimethylCarbonate)
     testAtype("dimethyl-carbonate.pdb");
 }
 
+TEST_F (AtomtypeTest, DimethylCarbonateXYZ)
+{
+    testAtype("dimethyl-carbonate.xyz", false, 0);
+}
+
 TEST_F (AtomtypeTest, 1EthoxyethylPhosphorylOxyethane)
 {
     testAtype("1--ethoxyethylphosphoryl-oxyethane-3-oep.log.pdb");
@@ -76,6 +81,11 @@ TEST_F (AtomtypeTest, HistidineHdHe)
 TEST_F (AtomtypeTest, Nitromethane)
 {
     testAtype("nitromethane-3-oep.log.pdb");
+}
+
+TEST_F (AtomtypeTest, NitromethaneXYZ)
+{
+    testAtype("nitromethane.xyz", false, 0);
 }
 
 TEST_F (AtomtypeTest, SulfurDioxide)
@@ -213,6 +223,11 @@ TEST_F (AtomtypeTest, Isoxazole)
     testAtype("isoxazole.sdf");
 }
 
+TEST_F (AtomtypeTest, IsoxazoleXYZ)
+{
+    testAtype("isoxazole.xyz", false, 0);
+}
+
 TEST_F (AtomtypeTest, PhosphorusNitride)
 {
     testAtype("phosphorus-nitride.sdf");
@@ -236,6 +251,11 @@ TEST_F (AtomtypeTest, Phosphoethanoamine)
 TEST_F (AtomtypeTest, DihydrogenPhosphate)
 {
     testAtype("dihydrogen-phosphate.sdf");
+}
+
+TEST_F (AtomtypeTest, DihydrogenPhosphateXYZ)
+{
+    testAtype("dihydrogen-phosphate.xyz", false, -1);
 }
 
 TEST_F (AtomtypeTest, Pentafluorophosphorane)
@@ -266,6 +286,11 @@ TEST_F (AtomtypeTest, SulfurMonoxide)
 TEST_F (AtomtypeTest, Sulfate)
 {
     testAtype("sulfate.sdf");
+}
+
+TEST_F (AtomtypeTest, SulfateXYZ)
+{
+    testAtype("sulfate.xyz", false, -2);
 }
 
 TEST_F (AtomtypeTest, Methanethiol)

@@ -66,6 +66,8 @@ void initACTMol(const char          *molname,
         bool userqtot = false;
         matrix box;
         MsgHandler msghandler;
+        // Uncomment in case of issues
+        // msghandler.setPrintLevel(ACTStatus::Debug);
         msghandler.setPrintLevel(ACTStatus::Warning);
         importFile(&msghandler, pd, dataName.c_str(), &molprops,
                    molname, molname,
@@ -73,8 +75,6 @@ void initACTMol(const char          *molname,
                    maxpot, nsymm, jobtype, userqtot,
                    &qtot, false, box, true);
         EXPECT_TRUE(msghandler.ok());
-        // Uncomment in case of issues
-        // msghandler.setACTStatus(ACTStatus::Debug);
 
         for(auto &molprop : molprops)
         {

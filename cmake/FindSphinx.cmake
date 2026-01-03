@@ -69,11 +69,6 @@ set(_find_deps_options)
 if (Sphinx_FIND_QUIETLY)
     set(_find_deps_options QUIET)
 endif()
-include(FindPythonModule)
-find_python_module(pygments ${_find_deps_options})
-if (PYTHONMODULE_PYGMENTS)
-    set(Sphinx_pygments_FOUND 1)
-endif()
 
 include(FindPackageHandleStandardArgs)
 

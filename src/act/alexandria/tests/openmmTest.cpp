@@ -67,8 +67,7 @@ class OpenMMXmlTest : public gmx::test::CommandLineTestBase
                     double             mDrude = 0.1)
     {
         gmx::test::TestReferenceChecker checker(this->rootChecker());
-        //gmx::test::TextBlockMatcherPointer exact = ;
-        auto ifm   = gmx::test::TextFileMatch(gmx::test::ExactTextMatch()).createFileMatcher();
+        auto ifm = gmx::test::TextFileMatch(gmx::test::ExactTextMatch()).createFileMatcher();
         gmx::test::TestFileManager tfm;
         MsgHandler                 msghandler; 
         msghandler.setPrintLevel(ACTStatus::Warning);
@@ -76,7 +75,9 @@ class OpenMMXmlTest : public gmx::test::CommandLineTestBase
         double rmsToler = 0.0000001;
         ForceComputer fcomp(rmsToler, 25);
         std::vector<ACTMol> mps;
-        initACTMol(fileName.c_str(), ff, &fcomp, &mps);
+        std::string molfn("mols/");
+        molfn += fileName;
+        initACTMol(molfn.c_str(), ff, &fcomp, &mps);
 
         auto tmpFile  = tfm.getTemporaryFilePath("xml");
         writeOpenMM(&msghandler, tmpFile, ff, mps, mDrude, numberAtypes);

@@ -8,12 +8,6 @@ HETATM    5  N   UNL     1       0.174   0.006  -0.001  1.00  0.00           N
 HETATM    6  O   UNL     1       0.765  -1.059   0.037  1.00  0.00           O  
 HETATM    7  O   UNL     1       0.693   1.108   0.034  1.00  0.00           O  
 CONECT    1    4    2    5    3                                       
-CONECT    2    1                                                      
-CONECT    3    1                                                      
-CONECT    4    1                                                      
-CONECT    5    1    6    6    7                                       
-CONECT    5    7                                                      
-CONECT    6    5    5                                                 
-CONECT    7    5    5                                                 
+CONECT    5    6    7    7
 MASTER        0    0    0    0    0    0    0    0    7    0    7    0
 END
