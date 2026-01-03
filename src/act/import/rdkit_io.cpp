@@ -1,0 +1,499 @@
+/*
+ * This source file is part of the Alexandria Chemistry Toolkit.
+ *
+ * Copyright (C) 2025,2026
+ *
+ * Developers:
+ *             Mohammad Mehdi Ghahremanpour,
+ *             Julian Marrades,
+ *             Marie-Madeleine Walz,
+ *             Paul J. van Maaren,
+ *             David van der Spoel (Project leader)
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor,
+ * Boston, MA  02110-1301, USA.
+ */
+
+/*! \internal \brief
+ * Implements part of the alexandria program.
+ * \author David van der Spoel <david.vanderspoel@icm.uu.se>
+ */
+#include "actpre.h"
+
+#include "import.h"
+
+#include <set>
+#include <vector>
+
+#pragma GCC diagnostic ignored "-Werror=pragmas"
+#pragma clang diagnostic ignored "-Wdeprecated-copy-with-user-provided-dtor"
+#pragma GCC diagnostic ignored "-Wdeprecated-copy-dtor"
+#pragma GCC diagnostic ignored "-Wdeprecated-literal-operator"
+#include <GraphMol/FilterCatalog/FilterMatchers.h>
+#ifdef HAVE_DetermineBonds
+#include <GraphMol/DetermineBonds/DetermineBonds.h>
+#endif
+#include <GraphMol/FileParsers/MolSupplier.h>
+#include <GraphMol/FileParsers/MolWriters.h>
+#include <GraphMol/GeneralizedSubstruct/XQMol.h>
+#include <GraphMol/GraphMol.h>
+#include <GraphMol/inchi.h>
+#pragma GCC diagnostic pop
+#pragma clang diagnostic pop
+
+#include "act/basics/allmols.h"
+#include "act/basics/msg_handler.h"
+#include "act/forcefield/forcefield.h"
+#include "act/import/import_utils.h"
+#include "act/molprop/molprop.h"
+#include "act/utility/units.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/utility/stringutil.h"
+
+namespace alexandria
+{
+
+static std::string checkForSpecialAtomTypes(const RDKit::RWMol *mol,
+                                            const RDKit::Atom  *atom,
+                                            const std::string  &type,
+                                            bool                oneH)
+{
+    if (type == "o3" && atom->getTotalNumHs(true) == 2)
+    {
+        // Water
+        return "ow";
+    }
+    else if (type == "h" && !oneH)
+    {
+        std::set<std::string> halides = { "f", "cl", "br", "i" };
+        for(const auto &b : mol->atomBonds(atom))
+        {
+            auto otherAtom = b->getOtherAtom(atom);
+            if (otherAtom)
+            {
+                auto other = otherAtom->getSymbol();
+                if (otherAtom->getFormalCharge() == 0)
+                {
+                    // Convert to lower case for force field
+                    std::transform(other.begin(), other.end(), other.begin(), ::tolower);
+                }
+                if (other == "ow")
+                {
+                    return "hw";
+                }
+                else if (halides.find(other) != halides.end())
+                {
+                    return type + *halides.find(other);
+                }
+            }
+        }
+    }
+    return type;
+}
+
+static std::string getAtomType(MsgHandler         *msg_handler,
+                               const RDKit::RWMol *mol,
+                               const RDKit::Atom  *atom,
+                               bool                oneH)
+{
+    // Only add 1, 2, 3 suffix to some atoms
+    std::set<std::string> atomsWithSP = { "c", "n", "o", "p", "s" };
+    // Fetch element
+    std::string type  = atom->getSymbol();
+    std::string ltype = type;
+    // Convert to lower case for force field
+    std::transform(type.begin(), type.end(), ltype.begin(), ::tolower);
+    if (atomsWithSP.find(ltype) != atomsWithSP.end())
+    {
+        switch (atom->getHybridization())
+        {
+        case RDKit::Atom::HybridizationType::SP:
+            ltype += "1";
+            break;
+        case RDKit::Atom::HybridizationType::SP2:
+        case RDKit::Atom::HybridizationType::SP2D:
+            ltype += "2";
+            break;
+        case RDKit::Atom::HybridizationType::SP3:
+        case RDKit::Atom::HybridizationType::SP3D:
+        case RDKit::Atom::HybridizationType::SP3D2:
+            ltype += "3";
+            break;
+        case RDKit::Atom::HybridizationType::S:
+        case RDKit::Atom::HybridizationType::OTHER:
+        case RDKit::Atom::HybridizationType::UNSPECIFIED:
+            msg_handler->msg(ACTStatus::Warning, 
+                             gmx::formatString("Unknown hybridization state for atom %s",
+                                               type.c_str()));
+            break;
+        }
+        type = ltype;
+    }
+    else
+    {
+        switch (atom->getFormalCharge())
+        {
+        case -2:
+            type += "2-";
+            break;
+        case -1:
+            type += "-";
+            break;
+        case 0:
+            // These are likely not ions, use lower case atom types
+            type = ltype;
+            break;
+        case 1:
+            type += "+";
+            break;
+        case 2:
+            type += "2+";
+            break;
+        default:
+            msg_handler->msg(ACTStatus::Error, gmx::formatString("Don't know how to handle atom with formal charge %d", atom->getFormalCharge()));
+        }
+    }
+    return checkForSpecialAtomTypes(mol, atom, type, oneH);
+}
+
+static void addInchiToFragments(MsgHandler            *msg_handler,
+                                const AlexandriaMols  &amols,
+                                RDKit::RWMol          *mol,
+                                std::vector<Fragment> *fragptr)
+{
+    RDKit::ExtraInchiReturnValues rv;
+    if (fragptr->size() == 1)
+    {
+        auto inchi = MolToInchi(*mol, rv);
+        updateFragmentFromInchi(msg_handler, amols, inchi, &((*fragptr)[0]));
+    }
+    else
+    {
+        std::vector<std::unique_ptr<RDKit::ROMol>> molFrags;
+        RDKit::MolOps::getMolFrags(*mol, molFrags, false);
+        if (molFrags.size() != fragptr->size())
+        {
+            msg_handler->msg(ACTStatus::Warning,
+                             gmx::formatString("Number of fragments found by ACT (%zu) does not match RDKit (%zu)", fragptr->size(), molFrags.size()));
+        }
+        else
+        {
+            for(size_t i = 0; i < molFrags.size(); i++)
+            {
+                auto inchi = MolToInchi(*(molFrags[i]), rv);
+                updateFragmentFromInchi(msg_handler, amols, inchi, &((*fragptr)[i]));
+            }
+        }
+    }
+}
+
+static double bondTypeValue(MsgHandler            *msg_handler,
+                            RDKit::Bond::BondType  bt)
+{
+    double order = 0;
+    switch (bt)
+    {
+    case RDKit::Bond::BondType::SINGLE:
+        order = 1;
+        break;
+    case RDKit::Bond::BondType::DOUBLE:
+        order = 2;
+        break;
+    case RDKit::Bond::BondType::TRIPLE:
+        order = 3;
+        break;
+    case RDKit::Bond::BondType::AROMATIC:
+        order = 1.5;
+        break;
+    default:
+        msg_handler->msg(ACTStatus::Error, "Unknown bondtype");
+    }
+    return order;
+}
+
+/*! \brief Check whether special block is supported by force field
+ */
+static bool abeSupported(MsgHandler              *msg_handler,
+                         const ForceField        *pd,
+                         const AtomBondtypeEntry &abe)
+{
+    // Check whether atom types occur in FF
+    std::vector<const ParticleType *> ptypes;
+    for(const auto &atp : abe.atomtypes)
+    {
+        Identifier id(atp);
+        if (!pd->hasParticleType(id))
+        {
+            msg_handler->msg(ACTStatus::Error,
+                             gmx::formatString("Atom type %s not found in force field", atp.c_str()));
+            return false;
+        }
+        // Save particle type ptrs for bonds
+        ptypes.push_back(pd->findParticleType(id));
+    }
+    // Now check bonds
+    auto itype = InteractionType::BONDS;
+    if (!pd->interactionPresent(itype))
+    {
+        msg_handler->msg(ACTStatus::Error, "No bonds in force field");
+        return false;
+    }
+    auto fs = pd->findForcesConst(itype);
+    std::string bstr("bondtype");
+    for(const auto &sb : abe.bonds)
+    {
+        if (ptypes[sb.ai]->hasOption(bstr) &&
+            ptypes[sb.aj]->hasOption(bstr))
+        {
+            Identifier bondId({ ptypes[sb.ai]->optionValue(bstr),
+                    ptypes[sb.aj]->optionValue(bstr) },
+                              { sb.order },
+                              CanSwap::Yes);
+            if (!fs.parameterExists(bondId))
+            {
+                msg_handler->msg(ACTStatus::Error,
+                                 gmx::formatString("Bond %s not found in force field", bondId.id().c_str()));
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+/*! \brief Lookup and insert special atom types and bond orders.
+ * \param[in]    msg_handler For error and warning messages
+ * \param[in]    pd          A force field to check compatibility of special atoms and bonds
+ * \param[in]    mol2        An RDKit molecule
+ * \param[inout] exper       The Experiment structure that may be modified
+ * \param[inout] bonds       The bonds that may be modified
+ */
+static void lookUpSpecial(MsgHandler        *msg_handler,
+                          const ForceField  *pd,
+                          RDKit::RWMol      *mol2,
+                          Experiment        *exper,
+                          std::vector<Bond> *bonds)
+{
+    const std::string dbname("atom_bond.dat");
+    auto abe = getAtomBondtypeDB(dbname);
+    if (msg_handler->debug())
+    {
+        msg_handler->writeDebug(gmx::formatString("Read %zu AtomBondtype map entries from %s", abe.size(), dbname.c_str()));
+    }
+    // Now check whether we have any of those special cases.
+    for(size_t i = 0; i < abe.size(); i++)
+    {
+        // Make RDKit matcher for our pattern
+        RDKit::SmartsMatcher matcher(abe[i].name, abe[i].smarts);
+        // Check whether the pattern is valid, to prevent RDKit from throwing an exception
+        if (!matcher.isValid())
+        {
+            msg_handler->msg(ACTStatus::Warning,
+                             gmx::formatString("Smarts pattern '%s' invalid",
+                                               abe[i].smarts.c_str()));
+            printf("Smarts pattern '%s' invalid\n", abe[i].smarts.c_str());
+        }
+        else if (matcher.hasMatch(*mol2))
+        {
+            msg_handler->msg(ACTStatus::Verbose,
+                             gmx::formatString("Found match for %s",
+                                               abe[i].smarts.c_str()));
+            if (abeSupported(msg_handler, pd, abe[i]))
+            {
+                const int NOTSET = -666;
+                std::vector<RDKit::FilterMatch> matchVect;
+                matcher.getMatches(*mol2, matchVect);
+                std::vector<int> mapAtoms(exper->NAtom(), NOTSET);
+                for(const auto &mv : matchVect)
+                {
+                    printf("Smarts %s matches\n", abe[i].name.c_str());
+                    for(const auto &ap : mv.atomPairs)
+                    {
+                        printf("From %d to %d\n", ap.first, ap.second);
+                        if (mapAtoms[ap.second] != NOTSET)
+                        {
+                            msg_handler->msg(ACTStatus::Error,
+                                             "Inconsistency in output from Smarts matching");
+                        }
+                        mapAtoms[ap.second] = ap.first;
+                    }
+                }
+                // Update atom types in the Experiment
+                auto ca = exper->calcAtom();
+                for(size_t j = 0; j < ca->size(); j++)
+                {
+                    if (mapAtoms[j] != NOTSET)
+                    {
+                        (*ca)[j].setObtype(abe[i].atomtypes[mapAtoms[j]]);
+                    }
+                }
+                // Now fix the bonds
+                for(auto &b : *bonds)
+                {
+                    auto ai = mapAtoms[b.aI()];
+                    auto aj = mapAtoms[b.aJ()];
+                    if (ai != NOTSET and aj != NOTSET)
+                    {
+                        for(const auto &ab : abe[i].bonds)
+                        {
+                            if ((ab.ai == ai && ab.aj == aj) ||
+                                (ab.ai == aj && ab.aj == ai))
+                            {
+                                b.setBondOrder(0, ab.order);
+                                break;
+                            }
+                        }
+                    }
+                }
+                // After we find our first match, and do everything that is needed,
+                // we return to the calling routine.
+                return;
+            }
+            else
+            {
+                msg_handler->msg(ACTStatus::Warning,
+                                 gmx::formatString("Will ignore match in the AtomBondtype DB but the content are not supported by the force field."));
+            }
+        }
+    }
+}
+                
+void importFile(MsgHandler             *msg_handler,
+                const ForceField       *pd,
+                const std::string      &filenm,
+                std::vector<MolProp>   *mps,
+                gmx_unused const char  *molnm,
+                gmx_unused const char  *iupac,
+                gmx_unused const char  *conf,
+                gmx_unused std::string *method,
+                gmx_unused std::string *basis,
+                gmx_unused int          maxpot,
+                gmx_unused int          nsymm,
+                gmx_unused const char  *jobtype,
+                bool                    userqtot,
+                double                 *qtot,
+                gmx_unused bool                    addHydrogen,
+                gmx_unused matrix       box,
+                bool                    oneH)
+{
+    if (msg_handler->debug())
+    {
+        msg_handler->writeDebug(gmx::formatString("Will import file %s using the RDKit library", filenm.c_str()));
+        if (molnm)
+        {
+            msg_handler->writeDebug(gmx::formatString("Will use molnm %s", molnm));
+        }
+        if (iupac)
+        {
+            msg_handler->writeDebug(gmx::formatString("Will use iupac %s", iupac));
+        }
+        if (conf)
+        {
+            msg_handler->writeDebug(gmx::formatString("Will use conf %s", conf));
+        }
+    }
+    // Try to read the file
+    try
+    {
+        RDKit::RWMol *mol2 = nullptr;
+        std::string ext = filenm.substr(filenm.size()-3, 3);
+        if (ext == "sdf")
+        {
+            mol2 = RDKit::MolFileToMol( filenm, true, false, true );
+        }
+        else if (ext == "pdb")
+        {
+            mol2 = RDKit::PDBFileToMol( filenm, true, false, true );
+        }
+#ifdef HAVE_DetermineBonds
+        else if (ext == "xyz")
+        {
+            mol2 = RDKit::v1::XYZFileToMol( filenm );
+            // Molecules from XYZ files need post-processing
+            mol2->updatePropertyCache();
+            int iqtot = 0;
+            if (userqtot || *qtot != 0)
+            {
+                iqtot = int(*qtot);
+            }
+            determineBonds(*mol2, false, iqtot);
+        }
+#endif
+        if (mol2)
+        {
+            MolProp      mp;
+            std::string  ref("Spoel2026a");
+            //! \todo Check whether this is correct
+            std::string  RDKit_Unit("Angstrom");
+            Experiment   exper(ref, conf);
+            exper.setJobtype(JobType::TOPOLOGY);
+            unsigned int atomid = 0;
+            auto         conformer = mol2->getConformer();
+            auto         bonds     = mol2->bonds();
+            for(const auto &atom : mol2->atoms())
+            {
+                auto atype = getAtomType(msg_handler, mol2, atom, oneH);
+                CalcAtom ca(atom->getSymbol(), atype, atomid);
+                auto atomPos = conformer.getAtomPos(atomid);
+                ca.setCoords(convertToGromacs(atomPos.x, RDKit_Unit),
+                             convertToGromacs(atomPos.y, RDKit_Unit),
+                             convertToGromacs(atomPos.z, RDKit_Unit));
+                exper.AddAtom(std::move(ca));
+                atomid += 1;
+            }
+            for(const auto &bond : bonds)
+            {
+                double order = bondTypeValue(msg_handler, bond->getBondType());
+                if (msg_handler->ok())
+                {
+                    Bond b(bond->getBeginAtomIdx(),
+                           bond->getEndAtomIdx(),
+                           order);
+                    mp.AddBond(std::move(b));
+                }
+            }
+            // Now we have done the "default" atom types and bonds.
+            // However, sometimes we need to look for special cases.
+            lookUpSpecial(msg_handler, pd, mol2, &exper, mp.bonds());
+            if (msg_handler->ok())
+            {
+                AlexandriaMols amols;
+                mp.AddExperiment(std::move(exper));
+                mp.generateFragments(msg_handler, pd);
+                addInchiToFragments(msg_handler, amols, mol2, mp.fragmentPtr());
+                mps->push_back(std::move(mp));
+            }
+            delete mol2;
+        }
+        else
+        {
+            msg_handler->msg(ACTStatus::Error,
+                             gmx::formatString("Could not read molecule(s) from %s", filenm.c_str()));
+        }
+    }
+    catch(ValueErrorException &ve)
+    {
+        msg_handler->msg(ACTStatus::Error,
+                         gmx::formatString("Exception raised by RDKit: %s", ve.what() ) );
+    }
+}
+
+bool SetMolpropAtomTypesAndBonds(alexandria::MolProp *mmm)
+{
+    printf("Will set AtomTypesAndBonds for %s\n", mmm->getMolname().c_str());
+    return false;
+}
+
+} // namespace alexandria
+
