@@ -37,14 +37,12 @@
 #include <set>
 #include <vector>
 
-#pragma GCC diagnostic ignored "-Werror=pragmas"
+//#pragma GCC diagnostic ignored "-Werror=pragmas"
 #pragma clang diagnostic ignored "-Wdeprecated-copy-with-user-provided-dtor"
 #pragma GCC diagnostic ignored "-Wdeprecated-copy-dtor"
-#pragma GCC diagnostic ignored "-Wdeprecated-literal-operator"
+//#pragma GCC diagnostic ignored "-Wdeprecated-literal-operator"
 #include <GraphMol/FilterCatalog/FilterMatchers.h>
-#ifdef HAVE_DetermineBonds
 #include <GraphMol/DetermineBonds/DetermineBonds.h>
-#endif
 #include <GraphMol/FileParsers/MolSupplier.h>
 #include <GraphMol/FileParsers/MolWriters.h>
 #include <GraphMol/GeneralizedSubstruct/XQMol.h>
@@ -416,7 +414,6 @@ void importFile(MsgHandler             *msg_handler,
         {
             mol2 = RDKit::PDBFileToMol( filenm, true, false, true );
         }
-#ifdef HAVE_DetermineBonds
         else if (ext == "xyz")
         {
             mol2 = RDKit::v1::XYZFileToMol( filenm );
@@ -429,7 +426,6 @@ void importFile(MsgHandler             *msg_handler,
             }
             determineBonds(*mol2, false, iqtot);
         }
-#endif
         if (mol2)
         {
             MolProp      mp;
