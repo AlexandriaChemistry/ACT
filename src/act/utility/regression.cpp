@@ -42,9 +42,9 @@
 #include <vector>
 
 #pragma GCC diagnostic ignored "-Wdeprecated-enum-enum-conversion"
-#pragma GCC diagnostic ignored "-Wdeprecated-redundant-constexpr-static-def"
+//#pragma GCC diagnostic ignored "-Wdeprecated-redundant-constexpr-static-def"
 #pragma clang diagnostic ignored "-Wdeprecated-redundant-constexpr-static-def"
-#pragma GCC diagnostic ignored "-Wdeprecated-copy-with-dtor"
+//#pragma GCC diagnostic ignored "-Wdeprecated-copy-with-dtor"
 #include <Eigen/Dense>
 #include <Eigen/SVD> 
 #pragma GCC diagnostic pop
