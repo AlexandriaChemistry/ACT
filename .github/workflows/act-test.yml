@@ -27,7 +27,7 @@ jobs:
         run: |
           sudo apt update
           sudo apt-get update
-          sudo apt-get -y install gcc  libopenmpi-dev openmpi-bin libeigen3-dev swig libxml2 doxygen graphviz librdkit-dev libboost-all-dev
+          sudo apt-get -y install gcc  libopenmpi-dev openmpi-bin libeigen3-dev swig libxml2 doxygen graphviz librdk1t64 librdkit-dev libboost-all-dev
       - name: Install ACT
         run: |
           cd ${{ github.workspace }}
