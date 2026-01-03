@@ -111,75 +111,6 @@ def run_command(command, flags):
             for line in error.decode('utf-8').splitlines():
                 outf.write("%s\n" % line)
 
-def check_for_openbabel(destination):
-    obabel = ("%s/bin/obabel" % destination)
-    if not os.path.exists(obabel):
-        sys.exit("Could not build %s, check cmake.log and make.log in %s" % ( obabel, os.getcwd() ) )
-    return True
-
-def install_openbabel(anonymous, clone, destination, prefix, build_type, CXX, CC, ncores, HOST, verbose):
-    # Get working directory
-    pwd = os.getcwd()
-    swdir = "openbabel"
-    if clone:
-        # Do we need to clone the repo?
-        if not os.path.isdir(swdir):
-            print("Will not clone or fetch openbabel again since directory %s exists." % swdir)
-        else:
-            if anonymous:
-                os.system("git clone https://github.com/dspoel/openbabel.git")
-            else:
-                os.system("git clone git@github.com:dspoel/openbabel.git")
-        # Make sure we have the latest code
-        os.chdir(swdir)
-        os.system("git pull")
-        os.chdir("..")
-    else:
-        oblatest = "openbabel-alexandria-0.93.2.tar.gz"
-        if verbose:
-            print("Will try to fetch %s" % oblatest)
-        url = "https://github.com/dspoel/openbabel/archive/refs/tags"
-        os.system("curl -L %s/%s -o %s" % ( url, oblatest, oblatest ) )
-        if not os.path.exists(oblatest):
-            sys.exit("Could not download %s" % oblatest)
-        os.system("tar xzf %s" % oblatest)
-        swdir = "openbabel-" + oblatest[:-7]
-    # See if we succeeded, if so let's go
-    if not os.path.isdir(swdir):
-        sys.exit("No directory %s. Failed to log in to github.com. You may want to use the '-anon' flag along with '-clone_OB'." % swdir)
-
-    else:
-        print("Will not clone or fetch openbabel again since directory %s exists." % swdir)
-    os.chdir(swdir)
-    
-    # To to start the build
-    bdir = "build"
-    os.makedirs(bdir, exist_ok=True)
-    if os.path.isdir(bdir):
-        os.chdir(bdir)
-        # Get the lib_suffix flag
-        LSFLAG = ""
-        if "64" == get_lib_suffix():
-            LSFLAG = "-DLIB_SUFFIX=64"
-        if clone:
-            # Get the correct branch
-            os.system("git checkout alexandria")
-        # else pray that it is the correct branch
-        FLAGS = ( "-DBUILD_SHARED=ON -DBUILD_GUI=OFF -DCMAKE_PREFIX_PATH=%s -DRUN_SWIG=ON -DPYTHON_BINDINGS=ON -DOPTIMIZE_NATIVE=OFF -DWITH_COORDGEN=OFF  -DWITH_MAEPARSER=OFF -DCMAKE_CXX_COMPILER=%s -DCMAKE_C_COMPILER=%s -DCMAKE_BUILD_TYPE=%s -DCMAKE_INSTALL_PREFIX=%s %s " % ( prefix, CXX, CC, build_type, destination, LSFLAG ))
-        if verbose:
-            print("install_openbabel cmake FLAGS: %s" % FLAGS)
-        # Get rid of history, if any and run cmake and make
-        if os.path.exists("CMakeCache.txt"):
-            os.unlink("CMakeCache.txt")
-        run_command("cmake", FLAGS + " ..")
-        run_command("make", (" -j %d install" % ncores))
-        
-        # Check the result
-        if check_for_openbabel(destination):
-            print("Succesfully installed OpenBabel in %s/bin. Please add to your PATH variable" % destination)
-    # Go back to where we came from
-    os.chdir(pwd)
-    
 def install_act(args, CXX, CC, HOST, prefix):
     # Get working directory
     pwd = os.getcwd()
@@ -252,19 +183,16 @@ def install_act(args, CXX, CC, HOST, prefix):
     
 def parseArguments():
     desc='''This script will download and install the 
-    Alexandria Chemistry Toolkit as well as the Alexandria branch of
-    the OpenBabel software.
+    Alexandria Chemistry Toolkit.
     '''
     parser = argparse.ArgumentParser(description=desc)
     parser.add_argument("-f", "--flags",  help="Additional compilation flags",type=str, default="")
-    parser.add_argument("-anon", "--anonymous",  help="If you do not have an account at gitlab.com (gromacs) or github.com (ACT, OpenBabel) select this option.", action="store_true")
-    parser.add_argument("-clone_OB", "--clone_OB", help="Clone openbabel git repository", action="store_true")
+    parser.add_argument("-anon", "--anonymous",  help="If you do not have an account at gitlab.com (gromacs) or github.com (ACT) select this option.", action="store_true")
     parser.add_argument("-clone_ACT", "--clone_ACT", help="Clone ACT git repository", action="store_true")
     parser.add_argument("-ncores","--ncores", help="Number of cores for compiling", type=int, default=8)
     parser.add_argument("-bt", "--build", help="Build type for cmake. Typically Release or Debug, but Profile and ASAN (Adress Sanitizer) are available as well.", type=str, default="Release")
     parser.add_argument("-single", "--single", help="Single precision build (will not work well)", action="store_true")
     parser.add_argument("-cln", "--cln", help="Use the Class Library for Numbers (optional)", action="store_true")
-    parser.add_argument("-ob", "--openbabel", help="Install the correct openbabel version", action="store_true")
     parser.add_argument("-debug", "--debug", help="Print debugging information for the script", action="store_true")
     home = "HOME"
     if home in os.environ:
@@ -295,9 +223,4 @@ if __name__ == '__main__':
     if debug:
         print("args.prefix = %s SW = '%s'" % ( args.prefix, SW ))
 
-    if args.openbabel or args.clone_OB:
-        install_openbabel(args.anonymous, args.clone_OB, args.destination, SW,
-                          args.build, CXX, CC, args.ncores, HOST, args.verbose)
-    # First check whether our OB is installed where it should be
-    if check_for_openbabel(args.destination):
-        install_act(args, CXX, CC, HOST, SW)
+    install_act(args, CXX, CC, HOST, SW)

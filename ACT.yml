@@ -12,6 +12,7 @@ dependencies:
   - cmake>=3.13
   - Eigen>=5.0
   - LibXml2>=2.9.14
+  - librdkit>=2025.09.1
   - SWIG>=4.0.2
   - Graphviz
   - openmpi>=5.0.5

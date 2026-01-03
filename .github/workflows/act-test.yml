@@ -27,19 +27,7 @@ jobs:
         run: |
           sudo apt update
           sudo apt-get update
-          sudo apt-get -y install gcc  libopenmpi-dev openmpi-bin libeigen3-dev swig libxml2 doxygen graphviz
-      - name: Install openbabel
-        id: build
-        run: |
-          wget https://github.com/dspoel/openbabel/archive/refs/tags/openbabel-alexandria-0.93.3.tar.gz
-          tar xzf openbabel-alexandria-0.93.3.tar.gz
-          cd openbabel-openbabel-alexandria-0.93.3
-          mkdir build
-          cd build
-          export CXX=/usr/bin/g++
-          export CC=/usr/bin/gcc
-          cmake -DBUILD_SHARED=ON -DBUILD_GUI=OFF -DCMAKE_PREFIX_PATH=${{ github.workspace }}/../tools -DRUN_SWIG=OFF -DPYTHON_BINDINGS=OFF -DOPTIMIZE_NATIVE=OFF -DWITH_COORDGEN=OFF  -DWITH_MAEPARSER=OFF -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/../tools -DCMAKE_CXX_COMPILER=${CXX} -DCMAKE_C_COMPILER=${CC} ..
-          make -j 4 install
+          sudo apt-get -y install gcc  libopenmpi-dev openmpi-bin libeigen3-dev swig libxml2 doxygen graphviz librdkit-dev
       - name: Install ACT
         run: |
           cd ${{ github.workspace }}
