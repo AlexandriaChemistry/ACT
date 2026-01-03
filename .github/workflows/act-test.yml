@@ -3,7 +3,7 @@ run-name: ${{ github.actor }} build and test ACT
 on: [push]
 jobs:
   Build:
-    runs-on: ubuntu-slim
+    runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -28,7 +28,21 @@ jobs:
           sudo add-apt-repository universe
           sudo apt update
           sudo apt-get update
-          sudo apt-get -y install gcc  libopenmpi-dev openmpi-bin libeigen3-dev swig libxml2 doxygen graphviz libboost-all-dev  librdkit-dev
+          sudo apt-get -y install gcc cmake libopenmpi-dev openmpi-bin libeigen3-dev swig libxml2 doxygen graphviz libboost-all-dev boost_python
+      - name: Install RDKit
+        run: |
+          cd ${{ github.workspace }}
+          mkdir RDKit
+          cd RDkit
+          wget https://github.com/rdkit/rdkit/archive/Release_2025_09_4.tar.gz
+          tar xzf Release_2025_09_4.tar.gz
+          cd rdkit-Release_2025_09_4
+          mkdir build; cd build
+          export MPICXX=/usr/bin/g++
+          export MPICC=/usr/bin/gcc
+          export CXXFLAGS='-std=c++20'
+          cmake -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/../tools
+          make -j 4 install
       - name: Install ACT
         run: |
           cd ${{ github.workspace }}
