@@ -11,6 +11,7 @@ dependencies:
   - NumPy
   - cmake>=3.13
   - Eigen>=5.0
+  - boost>=1.83
   - LibXml2>=2.9.14
   - librdkit>=2025.09.1
   - SWIG>=4.0.2
