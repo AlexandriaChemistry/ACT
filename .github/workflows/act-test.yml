@@ -27,7 +27,7 @@ jobs:
         run: |
           sudo apt update
           sudo apt-get update
-          sudo apt-get -y install gcc cmake libopenmpi-dev openmpi-bin libeigen3-dev swig libxml2 doxygen graphviz libboost-all-dev numpy
+          sudo apt-get -y install gcc cmake libopenmpi-dev openmpi-bin libeigen3-dev swig libxml2 doxygen graphviz libboost-all-dev python3-numpy 
       - name: Install RDKit
         run: |
           cd ${{ github.workspace }}
