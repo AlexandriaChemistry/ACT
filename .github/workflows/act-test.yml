@@ -31,8 +31,7 @@ jobs:
       - name: Install RDKit
         run: |
           cd ${{ github.workspace }}
-          mkdir RDKit
-          cd RDkit
+          mkdir RDKit; cd RDKit
           wget https://github.com/rdkit/rdkit/archive/Release_2025_09_4.tar.gz
           tar xzf Release_2025_09_4.tar.gz
           cd rdkit-Release_2025_09_4
