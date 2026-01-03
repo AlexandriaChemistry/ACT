@@ -6,9 +6,9 @@
     <Int Name="Length">6</Int>
     <String>c3-0 h-3: 1</String>
     <String>c3-0 h-1: 1</String>
-    <String>c3-0 n3-4: 1</String>
+    <String>c3-0 n2-4: 1</String>
     <String>c3-0 h-2: 1</String>
-    <String>n3-4 o2-5: 2</String>
-    <String>n3-4 o2-6: 2</String>
+    <String>n2-4 o2-5: 1.5</String>
+    <String>n2-4 o2-6: 1.5</String>
   </Sequence>
 </ReferenceData>

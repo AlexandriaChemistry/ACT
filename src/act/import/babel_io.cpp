@@ -44,22 +44,21 @@
 #include <iostream>
 #include <set>
 
-#include "gromacs/math/vec.h"
-#include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/fatalerror.h"
-#include "gromacs/utility/futil.h"
-#include "gromacs/utility/stringutil.h"
-
-#include "act/import/atype_mapping.h"
 #include "act/basics/allmols.h"
 #include "act/basics/msg_handler.h"
 #include "act/forcefield/forcefield.h"
+#include "act/import/atype_mapping.h"
+#include "act/import/import_utils.h"
 #include "act/molprop/molprop.h"
 #include "act/molprop/molprop_util.h"
 #include "act/molprop/multipole_names.h"
 #include "act/utility/stringutil.h"
 #include "act/utility/units.h"
-
+#include "gromacs/math/vec.h"
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/stringutil.h"
 
 #ifndef HAVE_RDKIT
 
@@ -103,7 +102,8 @@
 #undef KOKO
 #endif
 
-using namespace alexandria;
+namespace alexandria
+{
 
 enum einformat{
     einfGaussian    = 0,
@@ -329,19 +329,7 @@ static bool addInchiToFragments(const AlexandriaMols    &amols,
             }
         }
         auto inchi = conv->WriteString(&fmol, true);
-        auto amol  = amols.findInChi(inchi);
-        if (nullptr != amol)
-        {
-            fptr->setInchi(inchi);
-            fptr->setIupac(amol->iupac);
-            fptr->setCharge(amol->charge);
-            fptr->setMass(amol->mass);
-            fptr->setFormula(amol->formula);
-        }
-        else
-        {
-            fptr->setInchi(inchi);
-        }
+        updateFragmentFromInchi(amols, inchi, fptr);
     }
     return true;
 }
@@ -918,10 +906,10 @@ static void OBUnitCell2Box(OpenBabel::OBUnitCell *ob, matrix box)
     }
 }
 
-void importFile(alexandria::MsgHandler           *msg_handler,
-                const ForceField                 *pd,
+void importFile(MsgHandler           *msg_handler,
+                const ForceField     *pd,
                 const std::string                &filenm,
-                std::vector<alexandria::MolProp> *mpt,
+                std::vector<MolProp> *mpt,
                 const char                       *molnm,
                 const char                       *iupac,
                 const char                       *conformation,
@@ -1024,6 +1012,8 @@ bool SetMolpropAtomTypesAndBonds(alexandria::MolProp *mmm)
     getBondsFromOpenBabel(&mol, mmm, "psi4 input file", true);
 
     return true;
+}
+
 }
 
 #endif

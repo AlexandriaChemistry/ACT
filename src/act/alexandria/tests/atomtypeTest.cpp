@@ -74,7 +74,7 @@ public:
     }
     
 protected:
-    void testAtype(const char *molname, bool bondTest=false)
+    void testAtype(const std::string &molname, bool bondTest=false, double qtot = 0)
         {
             gmx::test::TestReferenceChecker checker_(this->rootChecker());
             int                             maxpot   = 100;
@@ -86,28 +86,34 @@ protected:
             std::string                     dataName;
             std::vector<alexandria::MolProp> molprops;
 
-            dataName        = gmx::test::TestFileManager::getInputFilePath(molname);
+            std::string dirmolname("mols/");
+            dirmolname     += molname;
+            dataName        = gmx::test::TestFileManager::getInputFilePath(dirmolname);
             bool   userqtot = false;
-            double qtot     = 0.0;
             matrix box;
             MsgHandler msghandler;
             msghandler.setPrintLevel(ACTStatus::Warning);
             importFile(&msghandler, pd, dataName.c_str(), &molprops,
-                       molname, molname,
+                       dirmolname.c_str(), molname.c_str(), 
                        conf, &method, &basis, maxpot, nsymm,
                        jobtype, userqtot, &qtot, false, box, true);
             EXPECT_TRUE(msghandler.ok());
             for(auto &molprop: molprops)
             {
-                std::vector<std::string> atypes;
+                EXPECT_TRUE(molprop.experimentConst().size() > 0);
+                if (molprop.experimentConst().size() == 0)
+                {
+                    continue;
+                }
                 auto                     exper = molprop.experimentConst().begin();
+                std::vector<std::string> atypes;
                 for (auto &ca : exper->calcAtomConst())
                 {
                     atypes.push_back(ca.getObtype());
                 }
                 if (!bondTest)
                 {
-                    checker_.checkInteger(static_cast<int>(atypes.size()), molname);
+                    checker_.checkInteger(static_cast<int>(atypes.size()), molname.c_str());
                     checker_.checkSequence(atypes.begin(), atypes.end(), "atomtypes");
                 }
                 else
@@ -122,7 +128,7 @@ protected:
                                                               atypes[aj].c_str(), aj,
                                                               bond.bondOrder()));
                     }
-                    checker_.checkInteger(static_cast<int>(bondorder.size()), molname);
+                    checker_.checkInteger(static_cast<int>(bondorder.size()), molname.c_str());
                     checker_.checkSequence(bondorder.begin(), bondorder.end(), "bondorder");
                 }
             }

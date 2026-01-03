@@ -172,9 +172,14 @@ public:
     //! Return the literature reference
     const std::string &getReference() const { return reference_; }
     
-    //! Return the type of calculation
+    //! \return the type of calculation
     const JobType &getJobtype() const { return jobtype_; }
-    
+
+    /*! Set the type of calculation
+     * \param[in] jt The new Jobtype
+     */
+    void setJobtype(JobType jt) { jobtype_ = jt; }
+  
     //! Add a CalcAtom object to the list of atoms
     void AddAtom(CalcAtom ca);
     

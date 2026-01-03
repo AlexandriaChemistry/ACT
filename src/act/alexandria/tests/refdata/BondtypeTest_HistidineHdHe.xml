@@ -10,9 +10,9 @@
     <String>c3-1 h-14: 1</String>
     <String>c3-1 c2-2: 1</String>
     <String>c3-1 c3-4: 1</String>
-    <String>c2-2 o3-3: 1</String>
+    <String>c2-2 o2-3: 1</String>
     <String>c2-2 o2-10: 2</String>
-    <String>o3-3 h-11: 1</String>
+    <String>o2-3 h-11: 1</String>
     <String>c3-4 c2-5: 1</String>
     <String>c3-4 h-15: 1</String>
     <String>c3-4 h-16: 1</String>

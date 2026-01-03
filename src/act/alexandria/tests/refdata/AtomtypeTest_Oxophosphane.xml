@@ -4,7 +4,7 @@
   <Int Name="oxophosphane.sdf">3</Int>
   <Sequence Name="atomtypes">
     <Int Name="Length">3</Int>
-    <String>o3</String>
+    <String>o2</String>
     <String>p2</String>
     <String>h</String>
   </Sequence>

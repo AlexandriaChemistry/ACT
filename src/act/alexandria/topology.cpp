@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2021-2025
+ * Copyright (C) 2021-2026
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -1719,12 +1719,16 @@ static void fillParams(MsgHandler                      *msghandler,
                        const Identifier                &btype,
                        int                              independent,
                        const std::vector<const char *> &param_names,
-                       std::vector<double>             *param)
+                       std::vector<double>             *param,
+                       missingParameters                missing)
 {
     std::string msg = potentialToString(fs.potential()) + " " + btype.id();
     if (!fs.parameterExists(btype))
     {
-        msghandler->msg(ACTStatus::Error, ACTMessage::MissingFFParameter, msg);
+        if (missingParameters::Ignore != missing)
+        {
+            msghandler->msg(ACTStatus::Error, ACTMessage::MissingFFParameter, msg);
+        }
         return;
     }
     auto ff = fs.findParameterMapConst(btype);
@@ -1776,7 +1780,8 @@ void Topology::fillParameters(MsgHandler        *msghandler,
             if (potprops.end() != pp)
             {
                 fillParams(msghandler, fs, topID,
-                           pp->second.param.size(), pp->second.param, &param);
+                           pp->second.param.size(), pp->second.param, &param,
+                           missing);
             }
             else
             {
@@ -1799,6 +1804,10 @@ void Topology::fillParameters(MsgHandler        *msghandler,
                     {
                         msghandler->msg(ACTStatus::Error, ACTMessage::MissingFFParameter, msg);
                         return;
+                    }
+                    else if (missing == missingParameters::Ignore)
+                    {
+                        msghandler->resetStatus();
                     }
                     else
                     {

@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2025
+ * Copyright (C) 2014-2026
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -104,7 +104,9 @@ protected:
         
         // The molecule
         std::vector<ACTMol> mps;
-        initACTMol(molname, pd, fcomp, &mps);
+        std::string moldir("mols/");
+        moldir += molname;
+        initACTMol(moldir.c_str(), pd, fcomp, &mps);
    
         for(auto &mp : mps)
         {
@@ -191,7 +193,9 @@ protected:
         
         // The molecule
         std::vector<ACTMol> mps;
-        initACTMol(molname, pd, fcomp, &mps);
+        std::string moldir("mols/");
+        moldir += molname;
+        initACTMol(moldir.c_str(), pd, fcomp, &mps);
    
         for(auto &mp : mps)
         {

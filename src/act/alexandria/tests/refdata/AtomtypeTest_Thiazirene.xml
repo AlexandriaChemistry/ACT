@@ -4,7 +4,7 @@
   <Int Name="thiazirene.sdf">4</Int>
   <Sequence Name="atomtypes">
     <Int Name="Length">4</Int>
-    <String>s2</String>
+    <String>s3</String>
     <String>n2</String>
     <String>c2</String>
     <String>h</String>
