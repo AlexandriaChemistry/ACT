@@ -38,7 +38,7 @@
 #pragma clang diagnostic ignored "-Wunknown-warning-option"
 #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
 #pragma clang diagnostic ignored "-Wdeprecated-redundant-constexpr-static-def"
-#pragma GCC diagnostic ignored "-Wdeprecated-copy-with-dtor"
+//#pragma GCC diagnostic ignored "-Wdeprecated-copy-with-dtor"
 #include "Eigen/Eigenvalues"
 #pragma GCC diagnostic pop
 #pragma clang diagnostic pop
