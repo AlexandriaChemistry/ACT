@@ -3,7 +3,7 @@ run-name: ${{ github.actor }} build and test ACT
 on: [push]
 jobs:
   Build:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
