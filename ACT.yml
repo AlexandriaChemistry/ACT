@@ -13,10 +13,5 @@ dependencies:
   - Eigen>=5.0
   - boost>=1.83
   - LibXml2>=2.9.14
-  - librdkit>=2025.09.1
-  - SWIG>=4.0.2
-  - Graphviz
+  - librdkit>=2025.09.4
   - openmpi>=5.0.5
-  - pillow>=11.3.0
-  - pip:
-    - PubChemPy
