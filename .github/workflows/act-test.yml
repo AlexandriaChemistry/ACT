@@ -36,6 +36,7 @@ jobs:
       - name: Conda info
         shell: bash -el {0}
         run: |
+          conda config --set conda-remove-defaults true
           conda info
           conda install conda-forge::librdkit-dev=2025.09.4 conda-forge::libboost-devel
       - name: Install ACT
