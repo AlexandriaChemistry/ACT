@@ -37,10 +37,10 @@
 #include <set>
 #include <vector>
 
-//#pragma GCC diagnostic ignored "-Werror=pragmas"
-#pragma clang diagnostic ignored "-Wdeprecated-copy-with-user-provided-dtor"
+#pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-copy-dtor"
-//#pragma GCC diagnostic ignored "-Wdeprecated-literal-operator"
+#pragma GCC diagnostic ignored "-Wdeprecated-copy-with-user-provided-dtor"
+#pragma GCC diagnostic ignored "-Wdeprecated-literal-operator"
 #include <GraphMol/FilterCatalog/FilterMatchers.h>
 #include <GraphMol/DetermineBonds/DetermineBonds.h>
 #include <GraphMol/FileParsers/MolSupplier.h>
@@ -49,7 +49,6 @@
 #include <GraphMol/GraphMol.h>
 #include <GraphMol/inchi.h>
 #pragma GCC diagnostic pop
-#pragma clang diagnostic pop
 
 #include "act/basics/allmols.h"
 #include "act/basics/msg_handler.h"

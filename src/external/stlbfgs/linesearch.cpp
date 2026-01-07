@@ -6,19 +6,19 @@
 
 #include "linesearch.h"
 
-#pragma clang diagnostic ignored "-Wmissing-prototypes"
+#pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wmissing-declarations"
 namespace STLBFGS {
-    bool sufficient_decrease(const Sample &phi0, const Sample &phia, double mu) {
+    static bool sufficient_decrease(const Sample &phi0, const Sample &phia, double mu) {
         return phia.f <= phi0.f + mu*phia.a*phi0.d;
     }
 
-    bool curvature_condition(const Sample &phi0, const Sample &phia, double eta) {
+    static bool curvature_condition(const Sample &phi0, const Sample &phia, double eta) {
         return std::abs(phia.d) <= eta*std::abs(phi0.d);
     }
 
     // minimizer of the cubic function that interpolates f(a), f'(a), f(b), f'(b) within the given interval
-    double find_cubic_minimizer(double a, double fa, double ga, double b, double fb, double gb) {
+    static double find_cubic_minimizer(double a, double fa, double ga, double b, double fb, double gb) {
         if (a>b) {
             std::swap( a,  b);
             std::swap(fa, fb);
@@ -32,13 +32,13 @@ namespace STLBFGS {
     }
 
     // minimizer of the quadratic function that interpolates f(a), f'(a), f(b) within the given interval
-    double find_quadratic_minimizer(double a, double fa, double ga, double b, double fb) {
+    static double find_quadratic_minimizer(double a, double fa, double ga, double b, double fb) {
         return a + (((b - a)*(b - a))*ga)/(2.*(fa - fb + (b - a)*ga));
     }
 
     // minimizer of the quadratic function that interpolates f'(a), f'(b) within the given interval
     // N.B. the function itself is undetermined since we miss information like f(a) or f(b); however the minimizer is well-defined
-    double find_quadratic_minimizer(double a, double ga, double b, double gb) {
+    static double find_quadratic_minimizer(double a, double ga, double b, double gb) {
         // The code below will crash when ga == gb
         //return b + ((b - a)*gb)/(ga - gb);
         if (ga == gb)
@@ -48,7 +48,7 @@ namespace STLBFGS {
         return b + ((b - a)*gb)/(ga - gb);
     }
 
-    std::tuple<double,int> trial_value(const Sample &l, const Sample &t, const Sample &u, const bool bracketed) {
+    static std::tuple<double,int> trial_value(const Sample &l, const Sample &t, const Sample &u, const bool bracketed) {
         double ac = find_cubic_minimizer(l.a, l.f, l.d, t.a, t.f, t.d);
         if (t.f > l.f) { // Case 1: a higher function value. The minimum is bracketed.
             double aq = find_quadratic_minimizer(l.a, l.f, l.d, t.a, t.f);
@@ -206,4 +206,3 @@ namespace STLBFGS {
 }
 
 #pragma GCC diagnostic pop
-#pragma clang diagnostic pop
