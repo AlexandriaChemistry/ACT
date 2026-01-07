@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria program.
  *
- * Copyright (C) 2014-2022
+ * Copyright (C) 2014-2026
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -41,7 +41,6 @@
 
 #include <gtest/gtest.h>
 
-#include "gromacs/topology/atomprop.h"
 #include "gromacs/utility/snprintf.h"
 #include "act/molprop/molprop.h"
 #include "act/molprop/molpropobservable.h"
@@ -63,13 +62,9 @@ class MolpropTest : public gmx::test::CommandLineTestBase
 protected:
     //! Vector of molecule properties
     std::vector<alexandria::MolProp>  mp_;
-    //! Structure containing atom properties
-    gmx_atomprop_t                    aps_;
     //! Constructor that does initialization and reads an input file
     MolpropTest()
     {
-        aps_  = gmx_atomprop_init();
-
         std::string mpFile = fileManager().getInputFilePath("molprop.xml");
         MolPropRead(nullptr, mpFile.c_str(), &mp_);
     }

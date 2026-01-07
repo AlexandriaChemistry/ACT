@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2025
+ * Copyright (C) 2014-2026
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -44,16 +44,11 @@
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/commandline/viewit.h"
 #include "gromacs/fileio/xvgr.h"
-#include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/statistics/statistics.h"
-#include "gromacs/topology/atomprop.h"
-#include "gromacs/utility/arraysize.h"
-#include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
-#include "gromacs/utility/pleasecite.h"
 
 #include "alex_modules.h"
 #include "act/basics/msg_handler.h"
@@ -345,7 +340,7 @@ static void alexandria_molprop_analyze(MsgHandler                        *msg_ha
  */
 int analyze(int argc, char *argv[])
 {
-    static const char               *desc[] = {
+    std::vector<const char *> desc = {
         "analyze reads a molecule database",
         "and produces tables and figures to describe the data.",
         "A selection of molecules into a training set and a test set (or ignore set)",
@@ -430,7 +425,7 @@ int analyze(int argc, char *argv[])
     if (!parse_common_args(&argc, argv, PCA_CAN_VIEW,
                            fnm.size(), fnm.data(),
                            pa.size(), pa.data(),
-                           asize(desc), desc, 0, nullptr, &oenv))
+                           desc.size(), desc.data(), 0, nullptr, &oenv))
     {
         return 0;
     }

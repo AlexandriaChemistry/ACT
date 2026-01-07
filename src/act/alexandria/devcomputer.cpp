@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2020-2025
+ * Copyright (C) 2020-2026
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -44,8 +44,6 @@
 #include "act/utility/communicationrecord.h"
 #include "act/utility/units.h"
 #include "gromacs/math/vecdump.h"
-#include "gromacs/topology/atoms.h"
-#include "gromacs/utility/real.h"
 #include "gromacs/utility/textwriter.h"
 
 // Precompute max argument for exp function at compile time.

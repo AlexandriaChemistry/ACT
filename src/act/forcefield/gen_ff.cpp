@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2023-2025
+ * Copyright (C) 2023-2026
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -52,7 +52,6 @@
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/gmxpreprocess/grompp-impl.h"
 #include "gromacs/mdtypes/md_enums.h"
-#include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/textreader.h"
 
 namespace alexandria

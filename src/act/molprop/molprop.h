@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2025
+ * Copyright (C) 2014-2026
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -51,7 +51,6 @@
 #include "act/forcefield/forcefield.h"
 #include "act/utility/communicationrecord.h"
 #include "gromacs/math/vectypes.h"
-#include "gromacs/topology/atomprop.h"
 #include "gromacs/utility/real.h"
 
 /*! \brief

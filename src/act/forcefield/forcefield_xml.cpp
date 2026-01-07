@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2025
+ * Copyright (C) 2014-2026
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -49,7 +49,6 @@
 #include "act/forcefield/forcefield_parameterlist.h"
 #include "act/forcefield/symcharges.h"
 #include "act/utility/xml_util.h"
-//#include "gromacs/topology/atoms.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/futil.h"
 
