@@ -54,8 +54,6 @@ function (gmx_add_libgromacs_sources)
 endfunction ()
 
 add_subdirectory(gmxlib)
-add_subdirectory(applied-forces)
-add_subdirectory(listed-forces)
 add_subdirectory(commandline)
 add_subdirectory(math)
 add_subdirectory(mdtypes)

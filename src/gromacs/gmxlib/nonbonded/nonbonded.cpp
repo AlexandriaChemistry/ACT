@@ -49,7 +49,6 @@
 #include "gromacs/gmxlib/nrnb.h"
 #include "gromacs/gmxlib/nonbonded/nb_generic.h"
 #include "gromacs/gmxlib/nonbonded/nb_kernel.h"
-#include "gromacs/listed-forces/bonded.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/mdtypes/enerdata.h"
