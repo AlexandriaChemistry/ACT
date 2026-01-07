@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2025
+ * Copyright (C) 2014-2026
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -50,17 +50,7 @@
 
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/commandline/pargs.h"
-#include "gromacs/gmxlib/network.h"
-#include "gromacs/mdlib/gmx_omp_nthreads.h"
-#include "gromacs/mdtypes/commrec.h"
-#include "gromacs/mdtypes/enerdata.h"
-#include "gromacs/mdtypes/inputrec.h"
-#include "gromacs/topology/atomprop.h"
-#include "gromacs/utility/arraysize.h"
-#include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/futil.h"
-#include "gromacs/utility/physicalnodecommunicator.h"
-#include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/stringutil.h"
 
 namespace alexandria

@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2025
+ * Copyright (C) 2014-2026
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -51,7 +51,6 @@
 #include "act/ga/npointcrossover.h"
 #include "act/utility/communicationrecord.h"
 #include "gromacs/commandline/pargs.h"
-#include "gromacs/mdlib/force.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/unique_cptr.h"

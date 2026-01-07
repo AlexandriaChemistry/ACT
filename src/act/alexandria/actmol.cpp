@@ -470,14 +470,13 @@ static bool isLinearMolecule(const std::vector<ActAtom>   &myatoms,
     {
         return true;
     }
-    t_pbc *pbc    = nullptr;
     real th_toler = 175; // Degrees
     bool linear   = true;
     for(size_t c = 2; c < core.size(); c++)
     {
         linear = linear && is_linear(coords[core[c-2]],
                                      coords[core[c-1]], 
-                                     coords[core[c]], pbc, th_toler);
+                                     coords[core[c]], th_toler);
         if (!linear)
         {
             break;

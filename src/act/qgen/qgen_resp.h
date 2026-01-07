@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2025
+ * Copyright (C) 2014-2026
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -42,7 +42,6 @@
 #include "act/alexandria/topology.h"
 #include "act/basics/chargemodel.h"
 #include "gromacs/math/vectypes.h"
-#include "gromacs/mdtypes/state.h"
 #include "gromacs/statistics/statistics.h"
 
 struct gmx_output_env_t;

@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2025
+ * Copyright (C) 2014-2026
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -34,52 +34,41 @@
 
 #include "actmol_low.h"
 
-#include <assert.h>
-
 #include <cstdio>
 #include <cstring>
 #include <cmath>
 
-#include "gromacs/listed-forces/bonded.h"
-#include "gromacs/gmxpreprocess/grompp-impl.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/mdlib/mdatoms.h"
-#include "gromacs/mdtypes/inputrec.h"
-#include "gromacs/mdtypes/state.h"
-#include "gromacs/utility/strconvert.h"
-
-#include "act/forces/combinationrules.h"
-#include "act/forcefield/forcefield_parameter.h"
+#include "act/alexandria/topology.h"
 #include "act/forcefield/forcefield.h"
+#include "act/forcefield/forcefield_parameter.h"
+#include "act/forces/combinationrules.h"
+#include "act/forces/forcecomputerutils.h"
 #include "act/qgen/qgen_acm.h"
-#include "topology.h"
 #include "act/utility/units.h"
+#include "gromacs/math/vec.h"
+#include "gromacs/utility/strconvert.h"
 
 namespace alexandria
 {
 
-bool is_planar(const rvec xi,  const rvec xj, const rvec xk,
-               const rvec xl, const t_pbc *pbc,
-               real phi_toler)
+bool is_planar(const rvec xi, const rvec xj, const rvec xk,
+               const rvec xl, real phi_toler)
 {
-    int  t1, t2, t3;
     rvec r_ij, r_kj, r_kl, m, n;
     real phi;
 
-    phi = RAD2DEG*dih_angle(xi, xj, xk, xl, pbc, r_ij, r_kj, r_kl, m, n, &t1, &t2, &t3);
+    phi = RAD2DEG*dih_angle(xi, xj, xk, xl, r_ij, r_kj, r_kl, m, n);
 
     return (fabs(phi) < phi_toler);
 }
 
 bool is_linear(const rvec xi, const rvec xj,
-               const rvec xk, const t_pbc *pbc,
-               real th_toler)
+               const rvec xk, real th_toler)
 {
-    int  t1, t2;
     rvec r_ij, r_kj;
     real costh, th;
 
-    th = fabs(RAD2DEG*bond_angle(xi, xj, xk, pbc, r_ij, r_kj, &costh, &t1, &t2));
+    th = fabs(RAD2DEG*bond_angle(xi, xj, xk, r_ij, r_kj, &costh));
     if ((th > th_toler) || (th < 180-th_toler))
     {
         if (nullptr != debug)

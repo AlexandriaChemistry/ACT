@@ -40,8 +40,6 @@
 #include <cstring>
 #include <vector>
 
-#include "gromacs/pbcutil/pbc.h"
-
 #include "act/basics/atomization_energy.h"
 #include "act/basics/chargemodel.h"
 #include "act/basics/identifier.h"
@@ -69,12 +67,11 @@ enum class missingParameters
 //! \return true if the four atoms are in a plane
 bool is_planar(const rvec   xi,  const rvec xj,
                const rvec   xk,  const rvec xl,
-               const t_pbc *pbc, real phi_toler);
+               real phi_toler);
 
 //! \return true if the three atoms are on a line
 bool is_linear(const rvec xi, const rvec xj,
-               const rvec xk, const t_pbc *pbc,
-               real th_toler);
+               const rvec xk, real th_toler);
 
 /*! \brief relative position of an atom on a bond
  * This needs at least three atoms and two bond orders or it will throw
