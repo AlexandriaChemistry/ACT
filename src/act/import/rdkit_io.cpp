@@ -300,7 +300,6 @@ static void lookUpSpecial(MsgHandler        *msg_handler,
             msg_handler->msg(ACTStatus::Warning,
                              gmx::formatString("Smarts pattern '%s' invalid",
                                                abe[i].smarts.c_str()));
-            printf("Smarts pattern '%s' invalid\n", abe[i].smarts.c_str());
         }
         else if (matcher.hasMatch(*mol2))
         {
@@ -315,10 +314,8 @@ static void lookUpSpecial(MsgHandler        *msg_handler,
                 std::vector<int> mapAtoms(exper->NAtom(), NOTSET);
                 for(const auto &mv : matchVect)
                 {
-                    printf("Smarts %s matches\n", abe[i].name.c_str());
                     for(const auto &ap : mv.atomPairs)
                     {
-                        printf("From %d to %d\n", ap.first, ap.second);
                         if (mapAtoms[ap.second] != NOTSET)
                         {
                             msg_handler->msg(ACTStatus::Error,
