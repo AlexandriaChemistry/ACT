@@ -2,7 +2,7 @@
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
   <String Name="molname">ethyl-sulfate-3-oep.log.pdb</String>
-  <Real Name="qtot">0</Real>
+  <Real Name="qtot">-1</Real>
   <Int Name="ethyl-sulfate-3-oep.log.pdb">11</Int>
   <Sequence Name="bondorder">
     <Int Name="Length">11</Int>

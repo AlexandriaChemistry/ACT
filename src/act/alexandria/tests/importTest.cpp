@@ -142,7 +142,7 @@ std::vector<std::tuple<std::string, double>> get_files()
 {
     return {
         { "1--ethoxyethylphosphoryl-oxyethane-3-oep.log.pdb", 0 },
-        { "1-1-dimethylguanidinium.sdf", 0 },
+        { "1-1-dimethylguanidinium.sdf", 1 },
         { "1-amino-1-hydroxyguanidine-3-oep.log.pdb", 0 },
         { "1-buten-3-yne.sdf", 0 },
         { "1-methylsulfinylethene.sdf", 0 },
@@ -174,7 +174,7 @@ std::vector<std::tuple<std::string, double>> get_files()
         { "dimethylether.sdf", 0 },
         { "disulfur-monoxide-3-oep.log.pdb", 0 },
         { "ethane-12-diamine.sdf", 0 },
-        { "ethyl-sulfate-3-oep.log.pdb", 0 },
+        { "ethyl-sulfate-3-oep.log.pdb", -1 },
         { "ethylsulfonylformaldehyde.sdf", 0 },
         { "fluorane.sdf", 0 },
         { "fluoranthene.sdf", 0 },
@@ -184,7 +184,7 @@ std::vector<std::tuple<std::string, double>> get_files()
         { "glutamate-3-oep.log.pdb", -1 },
         { "glutamic-acid-3-oep.log.pdb", 0 },
         { "guanidine.pdb", 0 },
-        { "histidine-hdhe-3-oep.log.pdb", 0 },
+        { "histidine-hdhe-3-oep.log.pdb", 1 },
         { "hydrogen-bromide#hydrogen-fluoride.pdb", 0 },
         { "hydrogen-chloride.sdf", 0 },
         { "hydrogen-sulfide.sdf", 0 },
