@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="molname">hydrogen-chloride.sdf</String>
+  <Real Name="qtot">0</Real>
+  <Int Name="hydrogen-chloride.sdf">1</Int>
+  <Sequence Name="bondorder">
+    <Int Name="Length">1</Int>
+    <String>h-1 cl-0: 1</String>
+  </Sequence>
+</ReferenceData>

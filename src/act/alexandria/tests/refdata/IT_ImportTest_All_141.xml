@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="molname">uracil.sdf</String>
+  <Real Name="qtot">0</Real>
+  <Int Name="uracil.sdf">12</Int>
+  <Sequence Name="bondorder">
+    <Int Name="Length">12</Int>
+    <String>n2-0 h-1: 1</String>
+    <String>n2-0 c2-2: 1.5</String>
+    <String>n2-0 c2-4: 1.5</String>
+    <String>c2-2 n2-8: 1.5</String>
+    <String>c2-2 o2-11: 2</String>
+    <String>o2-3 c2-4: 2</String>
+    <String>c2-4 c2-10: 1.5</String>
+    <String>h-5 n2-8: 1</String>
+    <String>c2-6 h-7: 1</String>
+    <String>c2-6 n2-8: 1.5</String>
+    <String>c2-6 c2-10: 1.5</String>
+    <String>h-9 c2-10: 1</String>
+  </Sequence>
+</ReferenceData>

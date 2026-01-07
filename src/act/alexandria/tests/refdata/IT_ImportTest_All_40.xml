@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="molname">aniline.sdf</String>
+  <Real Name="qtot">0</Real>
+  <Int Name="aniline.sdf">14</Int>
+  <Sequence Name="atomtypes">
+    <Int Name="Length">14</Int>
+    <String>c2</String>
+    <String>c2</String>
+    <String>c2</String>
+    <String>c2</String>
+    <String>c2</String>
+    <String>c2</String>
+    <String>n2</String>
+    <String>h</String>
+    <String>h</String>
+    <String>h</String>
+    <String>h</String>
+    <String>h</String>
+    <String>h</String>
+    <String>h</String>
+  </Sequence>
+</ReferenceData>

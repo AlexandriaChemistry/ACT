@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="molname">furan.sdf</String>
+  <Real Name="qtot">0</Real>
+  <Int Name="furan.sdf">9</Int>
+  <Sequence Name="bondorder">
+    <Int Name="Length">9</Int>
+    <String>c2-0 h-1: 1</String>
+    <String>c2-0 c2-2: 1.5</String>
+    <String>c2-0 o2-8: 1.5</String>
+    <String>c2-2 h-3: 1</String>
+    <String>c2-2 c2-4: 1.5</String>
+    <String>c2-4 h-5: 1</String>
+    <String>c2-4 c2-6: 1.5</String>
+    <String>c2-6 h-7: 1</String>
+    <String>c2-6 o2-8: 1.5</String>
+  </Sequence>
+</ReferenceData>

@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="molname">1-nitroethyne.pdb</String>
+  <Real Name="qtot">0</Real>
+  <Int Name="1-nitroethyne.pdb">5</Int>
+  <Sequence Name="bondorder">
+    <Int Name="Length">5</Int>
+    <String>o2-0 n2-2: 1.5</String>
+    <String>o2-1 n2-2: 1.5</String>
+    <String>n2-2 c1-3: 1</String>
+    <String>c1-3 c1-4: 3</String>
+    <String>c1-4 h-5: 1</String>
+  </Sequence>
+</ReferenceData>

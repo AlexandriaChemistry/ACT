@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="molname">nitromethane-3-oep.log.pdb</String>
+  <Real Name="qtot">0</Real>
+  <Int Name="nitromethane-3-oep.log.pdb">6</Int>
+  <Sequence Name="bondorder">
+    <Int Name="Length">6</Int>
+    <String>c3-0 h-3: 1</String>
+    <String>c3-0 h-1: 1</String>
+    <String>c3-0 n2-4: 1</String>
+    <String>c3-0 h-2: 1</String>
+    <String>n2-4 o2-5: 1.5</String>
+    <String>n2-4 o2-6: 1.5</String>
+  </Sequence>
+</ReferenceData>

@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="molname">thiazirene.sdf</String>
+  <Real Name="qtot">0</Real>
+  <Int Name="thiazirene.sdf">4</Int>
+  <Sequence Name="atomtypes">
+    <Int Name="Length">4</Int>
+    <String>s3</String>
+    <String>n2</String>
+    <String>c2</String>
+    <String>h</String>
+  </Sequence>
+</ReferenceData>

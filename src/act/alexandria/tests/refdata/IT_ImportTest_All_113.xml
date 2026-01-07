@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="molname">pentafluorophosphorane.sdf</String>
+  <Real Name="qtot">0</Real>
+  <Int Name="pentafluorophosphorane.sdf">5</Int>
+  <Sequence Name="bondorder">
+    <Int Name="Length">5</Int>
+    <String>p3-0 f-1: 1</String>
+    <String>p3-0 f-4: 1</String>
+    <String>p3-0 f-3: 1</String>
+    <String>p3-0 f-2: 1</String>
+    <String>p3-0 f-5: 1</String>
+  </Sequence>
+</ReferenceData>
