@@ -362,7 +362,7 @@ void Topology::makeAngles(MsgHandler                   *msghandler,
             if (angle.atomIndices().size() == 3)
             {
                 if (is_linear(x[angle.atomIndex(0)], x[angle.atomIndex(1)], x[angle.atomIndex(2)],
-                              nullptr, LinearAngleMin))
+                              LinearAngleMin))
                 {
                     if (nullptr == findTopologyEntry(linangles, angle.atomIndices(),
                                                      angle.bondOrders(), CanSwap::Yes))
@@ -443,7 +443,7 @@ void Topology::makeImpropers(MsgHandler                   *msghandler,
                          atoms_[i].ffType().find("c2") != std::string::npos));
             if (sp2 &&
                 is_planar(myx[i], myx[jkl[0]], myx[jkl[1]], myx[jkl[2]],
-                          nullptr, PlanarAngleMax))
+                          PlanarAngleMax))
             {
                 Bond bjkl[3];
                 for(int m = 0; m < 3; m++)

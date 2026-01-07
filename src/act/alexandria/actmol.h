@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2025
+ * Copyright (C) 2014-2026
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -49,6 +49,7 @@
 #include "act/utility/communicationrecord.h"
 #include "act/utility/regression.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/math/paddedvector.h"
 #include "gromacs/math/vectypes.h"
 
 namespace alexandria
