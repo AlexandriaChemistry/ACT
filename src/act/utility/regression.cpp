@@ -42,6 +42,7 @@
 #include <vector>
 
 #pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpragmas"
 #pragma GCC diagnostic ignored "-Wdeprecated-enum-enum-conversion"
 #pragma GCC diagnostic ignored "-Wdeprecated-redundant-constexpr-static-def"
 #pragma GCC diagnostic ignored "-Wdeprecated-copy-with-dtor"
