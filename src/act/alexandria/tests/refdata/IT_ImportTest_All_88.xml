@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="molname">hydrogen-bromide#hydrogen-fluoride.pdb</String>
+  <Real Name="qtot">0</Real>
+  <Int Name="hydrogen-bromide#hydrogen-fluoride.pdb">4</Int>
+  <Sequence Name="atomtypes">
+    <Int Name="Length">4</Int>
+    <String>br</String>
+    <String>h</String>
+    <String>f</String>
+    <String>h</String>
+  </Sequence>
+</ReferenceData>

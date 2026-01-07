@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="molname">acetic-acid-3-oep.log.pdb</String>
+  <Real Name="qtot">0</Real>
+  <Int Name="acetic-acid-3-oep.log.pdb">7</Int>
+  <Sequence Name="bondorder">
+    <Int Name="Length">7</Int>
+    <String>c3-0 h-5: 1</String>
+    <String>c3-0 h-3: 1</String>
+    <String>c3-0 c2-4: 1</String>
+    <String>c3-0 h-6: 1</String>
+    <String>o2-1 c2-4: 2</String>
+    <String>o2-2 c2-4: 1</String>
+    <String>o2-2 h-7: 1</String>
+  </Sequence>
+</ReferenceData>

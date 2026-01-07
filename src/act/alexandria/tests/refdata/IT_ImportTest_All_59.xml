@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="molname">dimethyl-sulfide.sdf</String>
+  <Real Name="qtot">0</Real>
+  <Int Name="dimethyl-sulfide.sdf">8</Int>
+  <Sequence Name="bondorder">
+    <Int Name="Length">8</Int>
+    <String>c3-0 h-1: 1</String>
+    <String>c3-0 h-2: 1</String>
+    <String>h-3 c3-0: 1</String>
+    <String>s3-4 c3-0: 1</String>
+    <String>s3-4 c3-5: 1</String>
+    <String>c3-5 h-8: 1</String>
+    <String>h-6 c3-5: 1</String>
+    <String>h-7 c3-5: 1</String>
+  </Sequence>
+</ReferenceData>

@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="molname">formamide.sdf</String>
+  <Real Name="qtot">0</Real>
+  <Int Name="formamide.sdf">5</Int>
+  <Sequence Name="bondorder">
+    <Int Name="Length">5</Int>
+    <String>o2-0 c2-1: 2</String>
+    <String>h-2 c2-1: 1</String>
+    <String>n2-3 c2-1: 1</String>
+    <String>n2-3 h-4: 1</String>
+    <String>n2-3 h-5: 1</String>
+  </Sequence>
+</ReferenceData>

@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="molname">phosphine.sdf</String>
+  <Real Name="qtot">0</Real>
+  <Int Name="phosphine.sdf">3</Int>
+  <Sequence Name="bondorder">
+    <Int Name="Length">3</Int>
+    <String>h-1 p3-0: 1</String>
+    <String>h-2 p3-0: 1</String>
+    <String>h-3 p3-0: 1</String>
+  </Sequence>
+</ReferenceData>

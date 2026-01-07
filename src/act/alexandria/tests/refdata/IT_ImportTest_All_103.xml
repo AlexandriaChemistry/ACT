@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="molname">methyl-acetate.sdf</String>
+  <Real Name="qtot">0</Real>
+  <Int Name="methyl-acetate.sdf">10</Int>
+  <Sequence Name="bondorder">
+    <Int Name="Length">10</Int>
+    <String>c3-0 h-1: 1</String>
+    <String>c3-0 c2-4: 1</String>
+    <String>c3-0 h-2: 1</String>
+    <String>h-3 c3-0: 1</String>
+    <String>c2-4 o2-5: 2</String>
+    <String>c2-4 o2-6: 1</String>
+    <String>o2-6 c3-7: 1</String>
+    <String>c3-7 h-8: 1</String>
+    <String>c3-7 h-9: 1</String>
+    <String>h-10 c3-7: 1</String>
+  </Sequence>
+</ReferenceData>
