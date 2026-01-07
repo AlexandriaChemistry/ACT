@@ -207,6 +207,54 @@
       <parameter type="mass" unit="Da" value="1.0079" uncertainty="0" minimum="1.0079" maximum="1.0079" ntrain="0" mutability="Fixed" nonnegative="yes"/>
       <parameter type="ref_enthalpy" unit="kJ/mol" value="222.232" uncertainty="0" minimum="222.232" maximum="222.232" ntrain="0" mutability="Fixed" nonnegative="yes"/>
     </particletype>
+    <particletype identifier="hf" type="Atom" description="hydrogen">
+      <option key="acmtype" value="h_z"/>
+      <option key="atomnumber" value="1"/>
+      <option key="bondtype" value="hf_b"/>
+      <option key="element" value="H"/>
+      <option key="row" value="1"/>
+      <option key="vdwtype" value="h"/>
+      <option key="zetatype" value="h_z"/>
+      <parameter type="charge" unit="e" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="ACM" nonnegative="no"/>
+      <parameter type="mass" unit="Da" value="1.0079" uncertainty="0" minimum="1.0079" maximum="1.0079" ntrain="0" mutability="Fixed" nonnegative="yes"/>
+      <parameter type="ref_enthalpy" unit="kJ/mol" value="222.232" uncertainty="0" minimum="222.232" maximum="222.232" ntrain="0" mutability="Fixed" nonnegative="yes"/>
+    </particletype>
+    <particletype identifier="hcl" type="Atom" description="hydrogen">
+      <option key="acmtype" value="h_z"/>
+      <option key="atomnumber" value="1"/>
+      <option key="bondtype" value="hcl_b"/>
+      <option key="element" value="H"/>
+      <option key="row" value="1"/>
+      <option key="vdwtype" value="h"/>
+      <option key="zetatype" value="h_z"/>
+      <parameter type="charge" unit="e" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="ACM" nonnegative="no"/>
+      <parameter type="mass" unit="Da" value="1.0079" uncertainty="0" minimum="1.0079" maximum="1.0079" ntrain="0" mutability="Fixed" nonnegative="yes"/>
+      <parameter type="ref_enthalpy" unit="kJ/mol" value="222.232" uncertainty="0" minimum="222.232" maximum="222.232" ntrain="0" mutability="Fixed" nonnegative="yes"/>
+    </particletype>
+    <particletype identifier="hi" type="Atom" description="hydrogen">
+      <option key="acmtype" value="h_z"/>
+      <option key="atomnumber" value="1"/>
+      <option key="bondtype" value="hi_b"/>
+      <option key="element" value="H"/>
+      <option key="row" value="1"/>
+      <option key="vdwtype" value="h"/>
+      <option key="zetatype" value="h_z"/>
+      <parameter type="charge" unit="e" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="ACM" nonnegative="no"/>
+      <parameter type="mass" unit="Da" value="1.0079" uncertainty="0" minimum="1.0079" maximum="1.0079" ntrain="0" mutability="Fixed" nonnegative="yes"/>
+      <parameter type="ref_enthalpy" unit="kJ/mol" value="222.232" uncertainty="0" minimum="222.232" maximum="222.232" ntrain="0" mutability="Fixed" nonnegative="yes"/>
+    </particletype>
+    <particletype identifier="hbr" type="Atom" description="hydrogen">
+      <option key="acmtype" value="h_z"/>
+      <option key="atomnumber" value="1"/>
+      <option key="bondtype" value="hbr_b"/>
+      <option key="element" value="H"/>
+      <option key="row" value="1"/>
+      <option key="vdwtype" value="h"/>
+      <option key="zetatype" value="h_z"/>
+      <parameter type="charge" unit="e" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="ACM" nonnegative="no"/>
+      <parameter type="mass" unit="Da" value="1.0079" uncertainty="0" minimum="1.0079" maximum="1.0079" ntrain="0" mutability="Fixed" nonnegative="yes"/>
+      <parameter type="ref_enthalpy" unit="kJ/mol" value="222.232" uncertainty="0" minimum="222.232" maximum="222.232" ntrain="0" mutability="Fixed" nonnegative="yes"/>
+    </particletype>
     <particletype identifier="i" type="Atom" description="iodine">
       <option key="acmtype" value="i_z"/>
       <option key="atomnumber" value="53"/>
@@ -420,6 +468,11 @@
       <parameter type="kb" unit="kJ/mol/nm2" value="300000" uncertainty="0" minimum="240000" maximum="375000" ntrain="1" mutability="Bounded" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="br_b~h_b">
+      <parameter type="bondenergy" unit="kJ/mol" value="0" uncertainty="0" minimum="-1000" maximum="0" ntrain="1" mutability="Bounded" nonnegative="no"/>
+      <parameter type="bondlength" unit="pm" value="142.4" uncertainty="0" minimum="113.92" maximum="178" ntrain="1" mutability="Bounded" nonnegative="yes"/>
+      <parameter type="kb" unit="kJ/mol/nm2" value="300000" uncertainty="0" minimum="240000" maximum="375000" ntrain="1" mutability="Bounded" nonnegative="yes"/>
+    </parameterlist>
+    <parameterlist identifier="br_b~hbr_b">
       <parameter type="bondenergy" unit="kJ/mol" value="0" uncertainty="0" minimum="-1000" maximum="0" ntrain="1" mutability="Bounded" nonnegative="no"/>
       <parameter type="bondlength" unit="pm" value="142.4" uncertainty="0" minimum="113.92" maximum="178" ntrain="1" mutability="Bounded" nonnegative="yes"/>
       <parameter type="kb" unit="kJ/mol/nm2" value="300000" uncertainty="0" minimum="240000" maximum="375000" ntrain="1" mutability="Bounded" nonnegative="yes"/>
@@ -734,6 +787,11 @@
       <parameter type="bondlength" unit="pm" value="128.3" uncertainty="0" minimum="102.64" maximum="160.375" ntrain="1" mutability="Bounded" nonnegative="yes"/>
       <parameter type="kb" unit="kJ/mol/nm2" value="289056" uncertainty="0" minimum="140000" maximum="375000" ntrain="1" mutability="Bounded" nonnegative="yes"/>
     </parameterlist>
+    <parameterlist identifier="cl_b~hcl_b">
+      <parameter type="bondenergy" unit="kJ/mol" value="0" uncertainty="0" minimum="-1000" maximum="0" ntrain="1" mutability="Bounded" nonnegative="no"/>
+      <parameter type="bondlength" unit="pm" value="128.3" uncertainty="0" minimum="102.64" maximum="160.375" ntrain="1" mutability="Bounded" nonnegative="yes"/>
+      <parameter type="kb" unit="kJ/mol/nm2" value="289056" uncertainty="0" minimum="140000" maximum="375000" ntrain="1" mutability="Bounded" nonnegative="yes"/>
+    </parameterlist>
     <parameterlist identifier="cl_b~n2_b">
       <parameter type="bondenergy" unit="kJ/mol" value="0" uncertainty="0" minimum="-1000" maximum="0" ntrain="1" mutability="Bounded" nonnegative="no"/>
       <parameter type="bondlength" unit="pm" value="186.8" uncertainty="4.4" minimum="149.44" maximum="233.5" ntrain="2" mutability="Bounded" nonnegative="yes"/>
@@ -765,6 +823,11 @@
       <parameter type="kb" unit="kJ/mol/nm2" value="300000" uncertainty="0" minimum="240000" maximum="375000" ntrain="1" mutability="Bounded" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="f_b~h_b">
+      <parameter type="bondenergy" unit="kJ/mol" value="0" uncertainty="0" minimum="-1000" maximum="0" ntrain="1" mutability="Bounded" nonnegative="no"/>
+      <parameter type="bondlength" unit="pm" value="92.4" uncertainty="0" minimum="73.92" maximum="115.5" ntrain="1" mutability="Bounded" nonnegative="yes"/>
+      <parameter type="kb" unit="kJ/mol/nm2" value="300000" uncertainty="0" minimum="240000" maximum="375000" ntrain="1" mutability="Bounded" nonnegative="yes"/>
+    </parameterlist>
+    <parameterlist identifier="f_b~hf_b">
       <parameter type="bondenergy" unit="kJ/mol" value="0" uncertainty="0" minimum="-1000" maximum="0" ntrain="1" mutability="Bounded" nonnegative="no"/>
       <parameter type="bondlength" unit="pm" value="92.4" uncertainty="0" minimum="73.92" maximum="115.5" ntrain="1" mutability="Bounded" nonnegative="yes"/>
       <parameter type="kb" unit="kJ/mol/nm2" value="300000" uncertainty="0" minimum="240000" maximum="375000" ntrain="1" mutability="Bounded" nonnegative="yes"/>
@@ -810,6 +873,11 @@
       <parameter type="kb" unit="kJ/mol/nm2" value="300000" uncertainty="0" minimum="240000" maximum="375000" ntrain="1" mutability="Bounded" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="h_b~i_b">
+      <parameter type="bondenergy" unit="kJ/mol" value="0" uncertainty="0" minimum="-1000" maximum="0" ntrain="1" mutability="Bounded" nonnegative="no"/>
+      <parameter type="bondlength" unit="pm" value="162.1" uncertainty="0" minimum="129.68" maximum="202.625" ntrain="1" mutability="Bounded" nonnegative="yes"/>
+      <parameter type="kb" unit="kJ/mol/nm2" value="300000" uncertainty="0" minimum="240000" maximum="375000" ntrain="1" mutability="Bounded" nonnegative="yes"/>
+    </parameterlist>
+    <parameterlist identifier="hi_b~i_b">
       <parameter type="bondenergy" unit="kJ/mol" value="0" uncertainty="0" minimum="-1000" maximum="0" ntrain="1" mutability="Bounded" nonnegative="no"/>
       <parameter type="bondlength" unit="pm" value="162.1" uncertainty="0" minimum="129.68" maximum="202.625" ntrain="1" mutability="Bounded" nonnegative="yes"/>
       <parameter type="kb" unit="kJ/mol/nm2" value="300000" uncertainty="0" minimum="240000" maximum="375000" ntrain="1" mutability="Bounded" nonnegative="yes"/>

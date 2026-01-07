@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="molname">acetate-3-oep.log.pdb</String>
+  <Real Name="qtot">-1</Real>
+  <Int Name="acetate-3-oep.log.pdb">6</Int>
+  <Sequence Name="bondorder">
+    <Int Name="Length">6</Int>
+    <String>c3-0 h-6: 1</String>
+    <String>c3-0 h-4: 1</String>
+    <String>c3-0 c2-1: 1</String>
+    <String>c3-0 h-5: 1</String>
+    <String>c2-1 o2-2: 2</String>
+    <String>c2-1 o2-3: 1</String>
+  </Sequence>
+</ReferenceData>

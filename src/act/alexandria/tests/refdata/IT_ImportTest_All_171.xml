@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="molname">acetaldehyde.sdf</String>
+  <Real Name="qtot">0</Real>
+  <Int Name="acetaldehyde.sdf">6</Int>
+  <Sequence Name="bondorder">
+    <Int Name="Length">6</Int>
+    <String>c2-0 c3-1: 1</String>
+    <String>c2-0 o2-2: 2</String>
+    <String>c2-0 h-3: 1</String>
+    <String>c3-1 h-4: 1</String>
+    <String>c3-1 h-5: 1</String>
+    <String>h-6 c3-1: 1</String>
+  </Sequence>
+</ReferenceData>

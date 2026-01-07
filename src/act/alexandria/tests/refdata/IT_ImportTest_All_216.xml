@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="molname">fluorane.sdf</String>
+  <Real Name="qtot">0</Real>
+  <Int Name="fluorane.sdf">4</Int>
+  <Sequence Name="atomtypes">
+    <Int Name="Length">4</Int>
+    <String>f</String>
+    <String>hf</String>
+    <String>f</String>
+    <String>hf</String>
+  </Sequence>
+</ReferenceData>

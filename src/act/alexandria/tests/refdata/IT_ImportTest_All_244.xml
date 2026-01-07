@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="molname">merged.pdb</String>
+  <Real Name="qtot">0</Real>
+  <Int Name="merged.pdb">8</Int>
+  <Sequence Name="atomtypes">
+    <Int Name="Length">8</Int>
+    <String>hf</String>
+    <String>f</String>
+    <String>hcl</String>
+    <String>cl</String>
+    <String>hbr</String>
+    <String>br</String>
+    <String>hi</String>
+    <String>i</String>
+  </Sequence>
+</ReferenceData>

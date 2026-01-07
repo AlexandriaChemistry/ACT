@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="molname">merged.pdb</String>
+  <Real Name="qtot">0</Real>
+  <Int Name="merged.pdb">4</Int>
+  <Sequence Name="bondorder">
+    <Int Name="Length">4</Int>
+    <String>hf-0 f-1: 1</String>
+    <String>hcl-2 cl-3: 1</String>
+    <String>hbr-4 br-5: 1</String>
+    <String>hi-6 i-7: 1</String>
+  </Sequence>
+</ReferenceData>
