@@ -2,7 +2,7 @@
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
   <String Name="molname">histidine-hdhe-3-oep.log.pdb</String>
-  <Real Name="qtot">0</Real>
+  <Real Name="qtot">1</Real>
   <Int Name="histidine-hdhe-3-oep.log.pdb">21</Int>
   <Sequence Name="atomtypes">
     <Int Name="Length">21</Int>
