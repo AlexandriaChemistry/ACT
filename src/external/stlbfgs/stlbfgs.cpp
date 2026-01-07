@@ -7,7 +7,8 @@
 #include <cassert>
 #include "stlbfgs.h"
 
-#pragma clang diagnostic ignored "-Wmissing-prototypes"
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmissing-prototypes"
 #pragma GCC diagnostic ignored "-Wmissing-declarations"
 namespace STLBFGS {
     // compute dot product <a,b>
@@ -181,4 +182,3 @@ namespace STLBFGS {
 }
 
 #pragma GCC diagnostic pop
-#pragma clang diagnostic pop

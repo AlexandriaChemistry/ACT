@@ -50,7 +50,7 @@
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/smalloc.h"
 
-#pragma clang diagnostic ignored "-Wunused-but-set-variable"
+#pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-but-set-variable"
 typedef struct {
     int atom, sid;
@@ -413,4 +413,3 @@ void gen_sblocks(FILE *fp, int at_start, int at_end,
     }
 }
 #pragma GCC diagnostic pop
-#pragma clang diagnostic pop

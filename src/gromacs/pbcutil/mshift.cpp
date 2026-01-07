@@ -52,7 +52,7 @@
 #include "gromacs/utility/strconvert.h"
 #include "gromacs/utility/stringutil.h"
 
-#pragma clang diagnostic ignored "-Wunused-but-set-variable"
+#pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-but-set-variable"
 /************************************************************
  *
@@ -1164,4 +1164,3 @@ void unshift_self(const t_graph *g, const matrix box, rvec x[])
 }
 #undef GCHECK
 #pragma GCC diagnostic pop
-#pragma clang diagnostic pop

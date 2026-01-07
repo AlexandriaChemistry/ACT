@@ -4,14 +4,10 @@ channels:
   - pytorch
   - defaults
 dependencies:
-  - Python>=3.9
-  - conda>=22.11.1
-  - Matplotlib
-  - pip>=21.0
-  - NumPy
-  - cmake>=3.13
-  - Eigen>=5.0
-  - boost>=1.83
-  - LibXml2>=2.9.14
+  - cmake
+  - Eigen
+  - boost
+  - libboost-devel
+  - LibXml2
   - librdkit>=2025.09.4
-  - openmpi>=5.0.5
+  - openmpi
