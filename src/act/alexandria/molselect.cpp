@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2020
+ * Copyright (C) 2014-2020,2026
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -41,23 +41,16 @@
 #include <vector>
 #include <strings.h>
 
-#include "gromacs/commandline/filenm.h"
-#include "gromacs/commandline/pargs.h"
-#include "gromacs/gmxlib/network.h"
-#include "gromacs/mdrunutility/mdmodules.h"
-#include "gromacs/utility/arraysize.h"
-#include "gromacs/utility/coolstuff.h"
-#include "gromacs/utility/cstringutil.h"
-#include "gromacs/utility/futil.h"
-#include "gromacs/utility/smalloc.h"
-#include "gromacs/utility/textreader.h"
-
 #include "act/alexandria/actmol.h"
 #include "act/alexandria/alex_modules.h"
 #include "act/alexandria/molgen.h"
 #include "act/molprop/molprop.h"
 #include "act/molprop/molprop_xml.h"
 #include "act/utility/stringutil.h"
+#include "gromacs/commandline/filenm.h"
+#include "gromacs/commandline/pargs.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/textreader.h"
 
 namespace alexandria
 {
