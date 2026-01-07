@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2025
+ * Copyright (C) 2014-2026
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -53,9 +53,7 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/statistics/statistics.h"
-#include "gromacs/topology/atomprop.h"
 #include "gromacs/utility/futil.h"
-#include "gromacs/utility/gmxomp.h"
 #include "gromacs/utility/strconvert.h"
 #include "gromacs/utility/textreader.h"
 

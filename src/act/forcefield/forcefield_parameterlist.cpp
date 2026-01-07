@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2020-2025
+ * Copyright (C) 2020-2026
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -37,7 +37,6 @@
 
 #include "act/basics/chargemodel.h"
 #include "act/forcefield/potential.h"
-#include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/stringutil.h"

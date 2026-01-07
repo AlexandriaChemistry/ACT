@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2025
+ * Copyright (C) 2014-2026
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -47,7 +47,6 @@
 
 #include "gromacs/fileio/md5.h"
 #include "gromacs/mdtypes/md_enums.h"
-#include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/textreader.h"
 
 #include "act/forcefield/act_checksum.h"

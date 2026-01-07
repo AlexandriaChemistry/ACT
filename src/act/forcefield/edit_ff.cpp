@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2025
+ * Copyright (C) 2014-2026
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -51,7 +51,6 @@
 #include "act/forcefield/forcefield_xml.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/oenv.h"
-#include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/arraysize.h"
 
 namespace alexandria
