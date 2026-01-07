@@ -492,7 +492,7 @@ set(rdkitlibs RDGeneral SmilesParse FileParsers GraphMol Inchi RDInchiLib Substr
 find_package(RDKit REQUIRED COMPONENTS ${rdkitlibs} )
 message("RDKit_FOUND : ${RDKit_FOUND}")
 if(RDKit_FOUND)
-  find_path(RDKit_INCLUDE_DIR GraphMol/FilterCatalog/FilterMatchers.h)
+  find_path(RDKit_INCLUDE_DIR rdkit/GraphMol/FilterCatalog/FilterMatchers.h)
   if(NOT RDKit_INCLUDE_DIR)
     message(FATAL_ERROR "Could not find RDKit_INCLUDE_DIR")
   endif()
