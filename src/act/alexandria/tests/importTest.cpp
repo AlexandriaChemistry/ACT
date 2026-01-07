@@ -37,19 +37,10 @@
 
 #include <gtest/gtest.h>
 
-#include "act/import/import.h"
-#include "act/alexandria/fill_inputrec.h"
 #include "act/alexandria/actmol.h"
 #include "act/forcefield/forcefield.h"
 #include "act/forcefield/forcefield_utils.h"
-#include "act/forcefield/forcefield_xml.h"
-//#include "act/qgen/qgen_acm.h"
-//#include "gromacs/gmxlib/network.h"
-//#include "gromacs/hardware/detecthardware.h"
-//#include "gromacs/mdrunutility/mdmodules.h"
-//#include "gromacs/topology/topology.h"
-//#include "gromacs/utility/logger.h"
-//#include "gromacs/utility/physicalnodecommunicator.h"
+#include "act/import/import.h"
 
 #include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"
@@ -62,7 +53,7 @@ namespace alexandria
 namespace
 {
 
-class ImportTest : public ::testing::TestWithParam<std::tuple<std::tuple<std::string, double>, bool> >
+class ImportTest : public ::testing::TestWithParam<std::tuple<bool, std::tuple<std::string, double>, bool > >
 //: public gmx::test::CommandLineTestBase
 {
 private:
@@ -70,6 +61,7 @@ private:
     std::string molname;
     double      qtot;
     bool        bondTest;
+    bool        oneH;
     gmx::test::TestReferenceData    refData_;
     gmx::test::TestReferenceChecker checker_;
 
@@ -77,9 +69,10 @@ public:
     ImportTest()
     {
         pd       = getForceField("ACS-g");
-        molname  = std::get<0>(std::get<0>(GetParam()));
-        qtot     = std::get<1>(std::get<0>(GetParam()));
-        bondTest = std::get<1>(GetParam());
+        oneH     = std::get<0>(GetParam());
+        bondTest = std::get<2>(GetParam());
+        molname  = std::get<0>(std::get<1>(GetParam()));
+        qtot     = std::get<1>(std::get<1>(GetParam()));
     }
     
  protected:
@@ -104,7 +97,7 @@ public:
         importFile(&msghandler, pd, dataName.c_str(), &molprops,
                    dirmolname.c_str(), molname.c_str(), 
                    conf, &method, &basis, maxpot, nsymm,
-                   jobtype, userqtot, &qtot, false, box, true);
+                   jobtype, userqtot, &qtot, false, box, oneH);
         EXPECT_TRUE(msghandler.ok());
         for(auto &molprop: molprops)
         {
@@ -224,9 +217,14 @@ std::vector<std::tuple<std::string, double>> get_files()
     };
 }
 
-std::vector<bool> get_ab()
+static std::vector<bool> get_ab()
 {
     return { false, true };
+}
+
+static std::vector<bool> get_ba()
+{
+    return { true, false };
 }
 
 TEST_P (ImportTest, All)
@@ -235,9 +233,10 @@ TEST_P (ImportTest, All)
 }
 
 auto my_files = get_files();
-auto my_bools = get_ab();
+auto my_btest = get_ab();
+auto my_oneH  = get_ba();
 
-INSTANTIATE_TEST_CASE_P(IT, ImportTest, ::testing::Combine(::testing::ValuesIn(my_files), ::testing::ValuesIn(my_bools)));
+INSTANTIATE_TEST_CASE_P(IT, ImportTest, ::testing::Combine(::testing::ValuesIn(my_oneH),  ::testing::ValuesIn(my_files), ::testing::ValuesIn(my_btest)));
 
 }
 
