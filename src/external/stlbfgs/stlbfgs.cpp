@@ -11,7 +11,7 @@
 #pragma GCC diagnostic ignored "-Wmissing-declarations"
 namespace STLBFGS {
     // compute dot product <a,b>
-    double dot(const vector &a, const vector &b) {
+    static double dot(const vector &a, const vector &b) {
         assert(a.size()==b.size());
         double dot = 0;
 #pragma omp parallel for reduction(+:dot)
@@ -20,7 +20,7 @@ namespace STLBFGS {
         return dot;
     }
 
-    double norm(const vector &v) {
+    static double norm(const vector &v) {
         return std::sqrt(dot(v, v));
     }
 
