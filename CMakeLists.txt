@@ -117,9 +117,6 @@ set(INSTALLED_HEADER_DEFINITIONS "")
 set(GMX_EXTRA_LIBRARIES "")
 #  - Libraries that are required for all code in the repository
 set(GMX_COMMON_LIBRARIES "")
-#  - Libraries that all code linked against libactgromacs needs
-#    (i.e., something that is exposed in installed headers).
-set(GMX_PUBLIC_LIBRARIES "")
 
 ########################################################################
 # Check and warn if cache generated on a different host is being reused
@@ -443,7 +440,7 @@ if(Eigen3_FOUND)
   if(NOT Eigen3_INCLUDE_DIR)
     message(FATAL_ERROR "Could not find Eigen3_INCLUDE_DIR")
   endif()
-  message("Eigen3_INCLUDE_DIR : ${Eigen3_INCLUDE_DIR}")
+  #message("Eigen3_INCLUDE_DIR : ${Eigen3_INCLUDE_DIR}")
   include_directories( ${Eigen3_INCLUDE_DIR}/eigen3 )
 
   add_definitions(-DHAVE_EIGEN -DHAVE_EIGEN3)
@@ -493,17 +490,16 @@ if(RDKit_FOUND)
     message(FATAL_ERROR "Could not find RDKit_INCLUDE_DIR")
   endif()
   include_directories(${RDKit_INCLUDE_DIR}/rdkit)
-  message("RDKit_INCLUDE_DIR : ${RDKit_INCLUDE_DIR}")
+  #message("RDKit_INCLUDE_DIR : ${RDKit_INCLUDE_DIR}")
   set(RDKit_LIB_DIR "")
   cmake_path(SET RDKit_LIB_DIR NORMALIZE  ${RDKit_INCLUDE_DIR}/../lib)
-  message("RDKit_LIB_DIR : ${RDKit_LIB_DIR}")
+  #message("RDKit_LIB_DIR : ${RDKit_LIB_DIR}")
 
   foreach(lib IN ITEMS ${rdkitlibs})
-     message("Looking for library ${lib}")
-#     list(APPEND GMX_EXTRA_LIBRARIES RDKit::${lib})
+     #message("Looking for library ${lib}")
      find_library(NEW${lib} NAMES RDKit${lib} PATHS ${RDKit_LIB_DIR} )
      if(NEW${lib})
-         message("Found ${lib} in ${NEW${lib}}")
+         #message("Found ${lib} in ${NEW${lib}}")
          list(APPEND GMX_EXTRA_LIBRARIES ${NEW${lib}})
          add_definitions(-DHAVE_${lib})
      else()
@@ -524,32 +520,6 @@ if(GMX_EXTERNAL_TINYXML2)
     endif()
 endif()
 
-option(GMX_EXTRAE "Add support for tracing using EXTRAE" OFF)
-mark_as_advanced(GMX_EXTRAE)
-
-if (GMX_EXTRAE)
-  find_package(EXTRAE)
-  if(EXTRAE_FOUND)
-    include_directories(SYSTEM ${EXTRAE_INCLUDE_DIR})
-    set(HAVE_EXTRAE 1)
-  else()
-    message(FATAL_ERROR "EXTRAE library was not found. Please add the correct path to CMAKE_PREFIX_PATH")
-  endif()
-endif()
-
-option(GMX_X11 "Use X window system" OFF)
-if (GMX_X11)
-    find_package(X11)
-    # X11 includes/libraries are only set in the ngmx subdirectory!
-    if(NOT X11_FOUND)
-        message(FATAL_ERROR
-                "X11 include files and/or libraries were not found. "
-                "Set GMX_X11=OFF to compile without X11 support. "
-                "gmx view will not be available.")
-    endif()
-    include_directories(SYSTEM ${X11_INCLUDE_DIR})
-endif()
-
 if(CYGWIN)
     set(GMX_CYGWIN 1)
 endif()
@@ -559,15 +529,6 @@ if(WIN32)
     # This makes windows.h not declare min/max as macros that would break
     # C++ code using std::min/std::max.
     add_definitions(-DNOMINMAX)
-endif()
-
-if(CMAKE_SYSTEM_NAME STREQUAL "Darwin") #Work-around for cmake bug #10837
-    if (CMAKE_COMPILER_IS_GNUCC OR CMAKE_C_COMPILER_ID MATCHES "Intel" OR CMAKE_C_COMPILER_ID MATCHES "Clang")
-        set(CMAKE_INCLUDE_SYSTEM_FLAG_C "-isystem ")
-    endif()
-    if (CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Intel" OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-        set(CMAKE_INCLUDE_SYSTEM_FLAG_CXX "-isystem ")
-    endif()
 endif()
 
 option(GMX_BUILD_UNITTESTS "Build unit tests with BUILD_TESTING" ON)
@@ -636,12 +597,6 @@ if (HAVE_RDTSCP_CHANGED)
         message(STATUS "Disabling RDTSCP support${RDTSCP_DETECTION_MESSAGE}")
     endif()
 endif()
-
-include(gmxTestLargeFiles)
-gmx_test_large_files(GMX_LARGEFILES)
-
-include(gmxTestSignal)
-gmx_test_sigusr1(HAVE_SIGUSR1)
 
 include(gmxTestPipes)
 gmx_test_pipes(HAVE_PIPES)
