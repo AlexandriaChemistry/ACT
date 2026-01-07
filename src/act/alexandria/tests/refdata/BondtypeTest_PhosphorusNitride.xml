@@ -1,9 +1,0 @@
-<?xml version="1.0"?>
-<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
-<ReferenceData>
-  <Int Name="phosphorus-nitride.sdf">1</Int>
-  <Sequence Name="bondorder">
-    <Int Name="Length">1</Int>
-    <String>n1-1 p1-0: 3</String>
-  </Sequence>
-</ReferenceData>
