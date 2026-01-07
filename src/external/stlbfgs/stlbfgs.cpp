@@ -8,7 +8,6 @@
 #include "stlbfgs.h"
 
 #pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wmissing-prototypes"
 #pragma GCC diagnostic ignored "-Wmissing-declarations"
 namespace STLBFGS {
     // compute dot product <a,b>
