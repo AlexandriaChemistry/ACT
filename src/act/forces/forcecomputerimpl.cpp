@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2025
+ * Copyright (C) 2014-2026
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -33,11 +33,8 @@
 #include "act/coulombintegrals/slater_integrals.h"
 #include "act/forcefield/forcefield_parametername.h"
 #include "act/forces/forcecomputerutils.h"
-
-#include "gromacs/gmxlib/nonbonded/nb_generic.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/units.h"
-#include "gromacs/topology/ifunc.h"
 
 namespace alexandria
 {
@@ -543,6 +540,43 @@ static double computeDoubleExponential(const TopologyEntryVector             &pa
     energies->insert({InteractionType::INDUCTIONCORRECTION, eexp});
 
     return eexp;
+}
+
+/*! \brief Compute one wang_buckingham interaction
+ * \param[in]  sigma       Parameter
+ * \param[in]  epsilon     Parameter
+ * \param[in]  gamma       Parameter
+ * \param[in]  rsq         Square distance
+ * \param[in]  rinv        Inverse distance
+ * \param[out] vrepulsion  Repulsion energy
+ * \param[out] vdispersion Dispersion energy
+ * \param[out] fvdw        Scalar force
+ */
+static inline void wang_buckingham(real sigma, real epsilon, real gamma,
+                                   real rsq, real rinv,
+                                   real *vrepulsion,
+                                   real *vdispersion,
+                                   real *fvdw)
+{
+    /* Modified Buckingham: JCTC  Volume: 9  Page: 452  Year: 2012 */
+    real r           = rsq*rinv;
+    real r5          = rsq*rsq*r;
+    real r6          = r5*r;
+    real sigma2      = sigma*sigma;
+    real sigma6      = sigma2*sigma2*sigma2;
+    real sigma6_r6   = sigma6 + r6;
+    real gamma_3     = 3.0/(gamma + 3.0);
+    real gamma3_inv  = 1.0/(1.0 - gamma_3);
+    real disp_pre    = 2 * epsilon * gamma3_inv;
+    real erep_exp    = gamma_3*std::exp(gamma*(1-(r/sigma)));
+    
+    real vvdw_disp   = -disp_pre * (sigma6 / sigma6_r6);
+    *vdispersion     = vvdw_disp;
+    *vrepulsion      = -vvdw_disp*erep_exp;
+    
+    real fvdw_disp   = - disp_pre * sigma6 * 6 * r5 / (sigma6_r6 * sigma6_r6);
+    real fvdw_rep    = - fvdw_disp*erep_exp - vvdw_disp*erep_exp*(gamma/sigma);
+    *fvdw            = fvdw_rep + fvdw_disp;
 }
 
 /*! \brief Compute Wang-Buckinghma energy and forces
