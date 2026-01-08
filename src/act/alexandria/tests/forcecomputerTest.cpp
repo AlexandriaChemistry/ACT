@@ -98,6 +98,9 @@ protected:
         double rmsToler = 1e-12;
         auto fcomp = new ForceComputer(rmsToler, 25);
         
+        MsgHandler msghandler;
+        msghandler.setPrintLevel(ACTStatus::Warning);
+
         // The molecule
         std::vector<ACTMol> mps;
         std::string moldir("mols/");
@@ -142,7 +145,7 @@ protected:
             else
             {
                 std::map<InteractionType, double> actEnergies;
-                fcomp->compute(nullptr, pd, mp.topology(), &coordinates, &forces, &actEnergies);
+                fcomp->compute(&msghandler, pd, mp.topology(), &coordinates, &forces, &actEnergies);
                 for(auto &ifm : actEnergies)
                 {
                     std::string label = interactionTypeToString(ifm.first);
@@ -187,6 +190,9 @@ protected:
         double rmsToler = 0.0000001;
         auto fcomp = new ForceComputer(rmsToler, 25);
         
+        MsgHandler msghandler;
+        msghandler.setPrintLevel(ACTStatus::Warning);
+
         // The molecule
         std::vector<ACTMol> mps;
         std::string moldir("mols/");
@@ -204,7 +210,7 @@ protected:
             }
             std::map<InteractionType, double> actEnergies;
             auto fsc = pd->forcesConst();
-            fcomp->compute(nullptr, pd, mp.topology(), &coordinates, &forces, &actEnergies);
+            fcomp->compute(&msghandler, pd, mp.topology(), &coordinates, &forces, &actEnergies);
             for(auto &ifm : actEnergies)
             {
                 auto actEner  = actEnergies[ifm.first];

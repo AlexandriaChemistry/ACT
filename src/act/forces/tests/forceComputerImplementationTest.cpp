@@ -94,7 +94,7 @@ protected:
         // The correct force computer
         auto bfc = getBondForceComputer(p);
 
-        auto epot = bfc(top, atoms_, coordinates, &forces, &energies);
+        auto epot = bfc(nullptr, top, atoms_, coordinates, &forces, &energies);
         checker_.checkReal(epot, "Epot");
         checker_.checkSequence(forces.begin(), forces.end(), "Forces");
         for (const auto &e : energies)
@@ -117,7 +117,7 @@ protected:
             // Modify the coordinates
             auto newx = *coordinates;
             newx[1][ZZ] += (2*k-1)*dx;
-            ener[k] = bfc(top, atoms_, &newx, &forces, &energies);
+            ener[k] = bfc(nullptr, top, atoms_, &newx, &forces, &energies);
         }
         // Compute numerical derivative
         double fz = -(ener[1]-ener[0])/(2*dx);

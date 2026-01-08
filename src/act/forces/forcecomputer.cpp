@@ -117,7 +117,7 @@ void ForceComputer::compute(MsgHandler                        *msg_handler,
         }
     }
     // Do first calculation every time.
-    computeOnce(pd, top, coordinates, forces, energies, field);
+    computeOnce(msg_handler, pd, top, coordinates, forces, energies, field);
     // Store total electrostatics energy in independent copy.
     std::map<InteractionType, double> eBefore = *energies;
 
@@ -195,7 +195,7 @@ void ForceComputer::compute(MsgHandler                        *msg_handler,
                 }
             }
             // Do next calculation
-            computeOnce(pd, top, coordinates, forces, energies, field);
+            computeOnce(msg_handler, pd, top, coordinates, forces, energies, field);
             msForce  = dotProdRvec(isShell, *forces)/nshell;
             iter    += 1;
         }
@@ -267,7 +267,8 @@ void ForceComputer::compute(MsgHandler                        *msg_handler,
     spreadVsiteForces(top, coordinates, forces);
 }
 
-void ForceComputer::computeOnce(const ForceField                  *pd,
+void ForceComputer::computeOnce(MsgHandler                        *msg_handler,
+                                const ForceField                  *pd,
                                 const Topology                    *top,
                                 std::vector<gmx::RVec>            *coordinates,
                                 std::vector<gmx::RVec>            *forces,
@@ -309,7 +310,7 @@ void ForceComputer::computeOnce(const ForceField                  *pd,
         {
             // Now do the calculations and store the energy
             std::map<InteractionType, double> my_energy;
-            auto ener = bfc(entry.second, atoms, coordinates, forces, &my_energy);
+            auto ener = bfc(msg_handler, entry.second, atoms, coordinates, forces, &my_energy);
             if (my_energy.size() > 1)
             {
                 for(const auto &me : my_energy)
@@ -483,7 +484,7 @@ void ForceComputer::plot(MsgHandler        *msghandler,
                         {
                             copy_rvec(rvnul, forces[k]);
                         }
-                        bfc(top.entry(itype), top.atoms(), &coordinates, &forces, &energies);
+                        bfc(msghandler, top.entry(itype), top.atoms(), &coordinates, &forces, &energies);
                         auto ener = energies[itype];
                         if (ener == 0 && InteractionType::VDW == itype)
                         {
@@ -536,7 +537,7 @@ void ForceComputer::plot(MsgHandler        *msghandler,
                         coordinates[2][0] = 1+std::cos(theta*DEG2RAD);
                         coordinates[2][1] = std::sin(theta*DEG2RAD);
                         energies.clear();
-                        bfc(top.entry(itype), top.atoms(), &coordinates, &forces, &energies);
+                        bfc(msghandler, top.entry(itype), top.atoms(), &coordinates, &forces, &energies);
                         fprintf(fp, "%10g  %10g\n", theta, energies[itype]);
                     }
                 }
@@ -555,7 +556,7 @@ void ForceComputer::plot(MsgHandler        *msghandler,
                         double xx = (r0+i*delta);
                         coordinates[1][1] = xx;
                         energies.clear();
-                        bfc(top.entry(itype), top.atoms(), &coordinates, &forces, &energies);
+                        bfc(msghandler, top.entry(itype), top.atoms(), &coordinates, &forces, &energies);
                         fprintf(fp, "%10g  %10g\n", xx, energies[itype]);
                     }
 
@@ -575,7 +576,7 @@ void ForceComputer::plot(MsgHandler        *msghandler,
                         coordinates[3][0] = 1+std::cos(theta*DEG2RAD);
                         coordinates[3][1] = 1+std::sin(theta*DEG2RAD);
                         energies.clear();
-                        bfc(top.entry(itype), top.atoms(), &coordinates, &forces, &energies);
+                        bfc(msghandler, top.entry(itype), top.atoms(), &coordinates, &forces, &energies);
                         fprintf(fp, "%10g  %10g\n", theta, energies[itype]);
                     }
                 }
@@ -593,7 +594,7 @@ void ForceComputer::plot(MsgHandler        *msghandler,
                         double theta = (th0+i*delta);
                         coordinates[3][2] = theta;
                         energies.clear();
-                        bfc(top.entry(itype), top.atoms(), &coordinates, &forces, &energies);
+                        bfc(msghandler, top.entry(itype), top.atoms(), &coordinates, &forces, &energies);
                         fprintf(fp, "%10g  %10g\n", theta, energies[itype]);
                     }
                 }

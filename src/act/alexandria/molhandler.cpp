@@ -577,6 +577,8 @@ class StlbfgsHandler
 private:
     //! Pointer to force field
     const ForceField                  *pd_;
+    //! Pointer to message handler
+    MsgHandler                        *mh_;
     //! Pointer to molecule
     const ACTMol                      *mol_;
     //! Pointer to force computer
@@ -592,10 +594,11 @@ private:
 public:
     //! Constructor
     StlbfgsHandler(const ForceField    *pd,
+                   MsgHandler          *mh,
                    const ACTMol        *mol,
                    const ForceComputer *forceComp,
                    const std::vector<int> &theAtoms) : 
-        pd_(pd), mol_(mol), forceComp_(forceComp), theAtoms_(theAtoms)
+        pd_(pd), mh_(mh), mol_(mol), forceComp_(forceComp), theAtoms_(theAtoms)
     {
         gmx::RVec vzero = { 0, 0, 0 };
         coords_ = mol_->xOriginal();
@@ -607,6 +610,9 @@ public:
 
     //! \return the force field
     const ForceField *pd() const { return pd_; }
+
+    //! \return the message handler
+    MsgHandler *mh() const { return mh_; }
 
     //! \return the force computer
     const ForceComputer *forceComp() const { return forceComp_; }
@@ -692,7 +698,8 @@ static void func(const std::vector<double> &x, double &f, std::vector<double> &g
     }
     gmx::RVec field = { 0, 0, 0 };
     lbfgs->forceComp()->constructVsiteCoordinates(lbfgs->mol()->topology(), coords);
-    lbfgs->forceComp()->computeOnce(lbfgs->pd(), lbfgs->mol()->topology(), coords,
+    lbfgs->forceComp()->computeOnce(lbfgs->mh(),
+                                    lbfgs->pd(), lbfgs->mol()->topology(), coords,
                                     forces, lbfgs->energies(), field);
     lbfgs->forceComp()->spreadVsiteForces(lbfgs->mol()->topology(), coords,
                                           forces);
@@ -804,7 +811,7 @@ eMinimizeStatus MolHandler::minimizeCoordinates(MsgHandler                      
 #define next (1-current)
     if (simConfig.minAlg() == eMinimizeAlgorithm::LBFGS)
     {
-        lbfgs = new StlbfgsHandler(pd, mol, forceComp, theAtoms);
+        lbfgs = new StlbfgsHandler(pd, msghandler, mol, forceComp, theAtoms);
 
         STLBFGS::Optimizer                      opt{func, 1000};
         opt.ftol    = simConfig.forceTolerance();

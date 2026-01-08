@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2021-2025
+ * Copyright (C) 2021-2026
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -100,6 +100,7 @@ private:
 
     /*! Do one actual computations.
      * Will do one force/energy computation.
+     * \param[in]  msg_handler For debugging, may be nullptr
      * \param[in]  pd          The force field structure
      * \param[in]  top         The molecular topology
      * \param[in]  coordinates The atomic coordinates. Coordinates of
@@ -108,7 +109,8 @@ private:
      * \param[out] energies    The energy components
      * \param[in]  field       Optional electric field to be applied
      */
-    void computeOnce(const ForceField                  *pd,
+    void computeOnce(MsgHandler                        *msg_handler,
+                     const ForceField                  *pd,
                      const Topology                    *top,
                      std::vector<gmx::RVec>            *coordinates,
                      std::vector<gmx::RVec>            *forces,
