@@ -36,31 +36,29 @@
 
 #include <cstdio>
 #include <cstdlib>
-#include <cstring>
 
 #include <string>
 
+#include "act/alexandria/alex_modules.h"
+#include "act/alexandria/molselect.h"
+#include "act/basics/msg_handler.h"
+#include "act/forcefield/forcefield.h"
+#include "act/forcefield/forcefield_xml.h"
+#include "act/molprop/categories.h"
+#include "act/molprop/molprop.h"
+#include "act/molprop/molprop_tables.h"
+#include "act/molprop/molprop_util.h"
+#include "act/molprop/molprop_xml.h"
+#include "act/molprop/molpropobservable.h"
+#include "act/statistics/statistics.h"
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/commandline/viewit.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/math/vec.h"
-#include "gromacs/statistics/statistics.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
-
-#include "alex_modules.h"
-#include "act/basics/msg_handler.h"
-#include "act/molprop/categories.h"
-#include "act/molprop/molprop.h"
-#include "act/molprop/molpropobservable.h"
-#include "act/molprop/molprop_tables.h"
-#include "act/molprop/molprop_util.h"
-#include "act/molprop/molprop_xml.h"
-#include "molselect.h"
-#include "act/forcefield/forcefield.h"
-#include "act/forcefield/forcefield_xml.h"
 
 namespace alexandria
 {

@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2025
+ * Copyright (C) 2014-2026
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -39,8 +39,8 @@
 #include <random>
 
 #include "act/basics/msg_handler.h"
+#include "act/statistics/statistics.h"
 #include "act/utility/regression.h"
-#include "gromacs/statistics/statistics.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/textwriter.h"
 

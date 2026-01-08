@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2021-2025
+ * Copyright (C) 2021-2026
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -43,6 +43,7 @@
 
 #include "act/alexandria/actmol.h"
 #include "act/forcefield/forcefield.h"
+#include "act/statistics/statistics.h"
 
 namespace gmx
 {

@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2025
+ * Copyright (C) 2014-2026
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -45,12 +45,10 @@
 #include "act/forcefield/forcefield.h"
 #include "act/forcefield/forcefield_tables.h"
 #include "act/forcefield/forcefield_xml.h"
+#include "act/statistics/statistics.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
-#include "gromacs/statistics/statistics.h"
-#include "gromacs/utility/arraysize.h"
-#include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
@@ -191,20 +189,18 @@ static void merge_parameter(const std::vector<alexandria::ForceField> &pds,
 
 int merge_ff(int argc, char *argv[])
 {
-    const char *desc[] =
+    std::vector<const char *> desc =
     {
         "merge_ff reads multiple Alexandria force field files and merges them",
         "into a single new force field file containing average values",
         "and standard deviation.",
     };    
-    t_filenm    fnm[] =
+    std::vector<t_filenm> fnm =
     {
         { efXML, "-ff",    "aff_in",  ffRDMULT},
         { efXML, "-o",     "aff_out", ffWRITE },
         { efTEX, "-latex", "aff_out", ffWRITE }
     };
-    int         NFILE       = asize(fnm);;
-    
     gmx_bool    bcompress   = false;
     gmx_bool    bAtypeMap   = false;
     //! String for command line to harvest the options to fit
@@ -212,7 +208,7 @@ int merge_ff(int argc, char *argv[])
     char       *info        = nullptr;
     int         ntrain      = 1;
     real        limits      = 0;
-    t_pargs     pa[]        =
+    std::vector<t_pargs> pa =
     {
         { "-compress", FALSE, etBOOL, {&bcompress},
           "Compress output XML files" },
@@ -234,12 +230,9 @@ int merge_ff(int argc, char *argv[])
     if (!parse_common_args(&argc, 
                            argv, 
                            PCA_NOEXIT_ON_ARGS, 
-                           NFILE, 
-                           fnm,
-                           asize(pa), 
-                           pa, 
-                           asize(desc), 
-                           desc, 
+                           fnm.size(), fnm.data(),
+                           pa.size(), pa.data(), 
+                           desc.size(), desc.data(), 
                            0, 
                            nullptr, 
                            &oenv))
@@ -252,7 +245,7 @@ int merge_ff(int argc, char *argv[])
         mergeString = strdup(allParams.c_str());
     }
     /* Read all the gentop files. */
-    auto filenames = opt2fns("-ff", NFILE, fnm);
+    auto filenames = opt2fns("-ff", fnm.size(), fnm.data());
     
     for (auto &i : filenames)
     {
@@ -301,10 +294,10 @@ int merge_ff(int argc, char *argv[])
     }
 
     bool printSigma = filenames.size() > 1;
-    writeForceField(opt2fn("-o", NFILE, fnm), &pdout, bcompress);
-    if (opt2bSet("-latex", NFILE, fnm))
+    writeForceField(opt2fn("-o", fnm.size(), fnm.data()), &pdout, bcompress);
+    if (opt2bSet("-latex", fnm.size(), fnm.data()))
     {
-        FILE *tp = gmx_ffopen(opt2fn("-latex", NFILE, fnm), "w");
+        FILE *tp = gmx_ffopen(opt2fn("-latex", fnm.size(), fnm.data()), "w");
         ForceFieldTable fft(tp, &pdout, ntrain, printSigma);
         std::string myinfo;
         if (info != nullptr)

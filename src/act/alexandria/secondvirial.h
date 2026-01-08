@@ -45,7 +45,6 @@
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/oenv.h"
 #include "gromacs/math/vectypes.h"
-#include "gromacs/statistics/statistics.h"
 
 namespace alexandria
 {
