@@ -46,12 +46,8 @@
 
 #include "act/import/atype_mapping.h"
 #include "act/import/import.h"
-#include "act/alexandria/fill_inputrec.h"
 #include "act/alexandria/actmol.h"
 #include "act/forcefield/forcefield_utils.h"
-#include "gromacs/gmxlib/network.h"
-#include "gromacs/gmxpreprocess/grompp-impl.h"
-#include "gromacs/mdtypes/enerdata.h"
 #include "gromacs/utility/fatalerror.h"
 
 #include "testutils/refdata.h"

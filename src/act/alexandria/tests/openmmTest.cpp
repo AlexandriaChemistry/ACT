@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2023-2025
+ * Copyright (C) 2023-2026
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -43,7 +43,6 @@
 #include "act/forcefield/forcefield.h"
 #include "act/forcefield/forcefield_utils.h"
 #include "act/forcefield/forcefield_xml.h"
-#include "gromacs/mdtypes/inputrec.h"
 
 #include "testutils/cmdlinetest.h"
 #include "testutils/filematchers.h"

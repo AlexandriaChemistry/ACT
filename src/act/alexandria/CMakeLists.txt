@@ -2,7 +2,7 @@
 #
 #  This source file is part of the Alexandria program.
 #
-#  Copyright (C) 2014-2023
+#  Copyright (C) 2014-2026
 #
 #  Developers:
 #             Mohammad Mehdi Ghahremanpour,
@@ -46,7 +46,6 @@ target_sources(actLib
            dimergenerator.cpp
            dissociation_energy.cpp
            fetch_charges.cpp
-           fill_inputrec.cpp
            fragmenthandler.cpp
            gentop.cpp
            geometry_ff.cpp
