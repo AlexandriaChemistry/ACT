@@ -436,7 +436,7 @@ if(LibXml2_FOUND)
     set(XML_LIBRARIES ${LIBXML2_LIBRARIES})
 endif(LibXml2_FOUND)
 
-find_package(Eigen3 5 REQUIRED)
+find_package(Eigen3 REQUIRED)
 if(Eigen3_FOUND)
   message("Eigen3_FOUND : ${Eigen3_FOUND}")
   add_definitions(-DHAVE_EIGEN -DHAVE_EIGEN3)
