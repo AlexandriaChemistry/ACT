@@ -1,25 +1,25 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
-  <Real Name="Morse before">-399.99840319626986</Real>
-  <Real Name="Dispersion before">-1.2471522353481168</Real>
-  <Real Name="Repulsion before">392.13316508533296</Real>
-  <Real Name="Coulomb (SR) before">-58.959008301747303</Real>
-  <Real Name="Polarization before">0</Real>
-  <Real Name="INDUCTION before">-0.81818189558980114</Real>
-  <Real Name="ALLELEC before">-59.777190197337106</Real>
-  <Real Name="EXCHIND before">391.31498318974315</Real>
-  <Real Name="Potential before">-68.889580543622102</Real>
+  <Real Name="BONDS before">-399.99840319626986</Real>
+  <Real Name="DISPERSION before">-1.2471522353481168</Real>
+  <Real Name="EXCHANGE before">392.13316508533296</Real>
+  <Real Name="COULOMB before">-58.959013840758757</Real>
+  <Real Name="POLARIZATION before">0</Real>
+  <Real Name="INDUCTION before">-0.81818197240116786</Real>
+  <Real Name="ALLELEC before">-59.777195813159928</Real>
+  <Real Name="EXCHIND before">391.31498311293177</Real>
+  <Real Name="EPOT before">-68.889586159444917</Real>
   <Real Name="Coordinate RMSD before minimizing">1.9635736478923075e-17</Real>
   <String Name="algorithm">LBFGS</String>
-  <Real Name="Coordinate RMSD after minimizing">0.020409992761357836</Real>
-  <Real Name="Morse after">-319.47177696092388</Real>
-  <Real Name="Dispersion after">-1.2027533320339849</Real>
-  <Real Name="Repulsion after">67.488406893379022</Real>
-  <Real Name="Coulomb (SR) after">-56.301732286870333</Real>
-  <Real Name="Polarization after">0</Real>
-  <Real Name="INDUCTION after">-1.0549960108455734</Real>
-  <Real Name="ALLELEC after">-57.356728297715904</Real>
-  <Real Name="EXCHIND after">66.433410882533451</Real>
-  <Real Name="Potential after">-310.54285169729474</Real>
+  <Real Name="Coordinate RMSD after minimizing">0.02040996353379609</Real>
+  <Real Name="BONDS after">-319.47194513858727</Real>
+  <Real Name="DISPERSION after">-1.2027534289261064</Real>
+  <Real Name="EXCHANGE after">67.488578887820125</Real>
+  <Real Name="COULOMB after">-56.301741594502573</Real>
+  <Real Name="POLARIZATION after">0</Real>
+  <Real Name="INDUCTION after">-1.0549958112988835</Real>
+  <Real Name="ALLELEC after">-57.356737405801454</Real>
+  <Real Name="EXCHIND after">66.433583076521245</Real>
+  <Real Name="EPOT after">-310.54285708549469</Real>
 </ReferenceData>
