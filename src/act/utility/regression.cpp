@@ -43,7 +43,7 @@
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wdeprecated-copy-dtor"
-#pragma GCC diagnostic ignored "-Wdeprecated-redundant-constexpr-static-def"
+#pragma clang diagnostic ignored "-Wdeprecated-redundant-constexpr-static-def"
 #include <Eigen/Dense>
 #include <Eigen/SVD> 
 #pragma GCC diagnostic pop
