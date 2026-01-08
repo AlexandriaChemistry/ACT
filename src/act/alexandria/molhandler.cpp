@@ -36,9 +36,7 @@
 // This include has to come first, to prevent the GROMACS definition of
 // "real" from messing up the library.
 #pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunknown-warning-option"
 #pragma GCC diagnostic ignored "-Wdeprecated-copy-dtor"
-#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
 #pragma clang diagnostic ignored "-Wdeprecated-redundant-constexpr-static-def"
 #include "Eigen/Eigenvalues"
 #pragma GCC diagnostic pop
