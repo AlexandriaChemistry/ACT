@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2023
+ * Copyright (C) 2014-2026
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -40,7 +40,6 @@
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
-#include "gromacs/statistics/statistics.h"
 #include "gromacs/utility/futil.h"
 
 #include "act/molprop/molprop.h"
@@ -48,6 +47,7 @@
 #include "act/molprop/molprop_util.h"
 #include "act/forcefield/forcefield.h"
 #include "act/forcefield/forcefield_xml.h"
+#include "act/statistics/statistics.h"
 
 namespace alexandria
 {

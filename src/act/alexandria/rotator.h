@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2022-2024
+ * Copyright (C) 2022-2024,2026
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -36,6 +36,8 @@
 
 #include <random>
 #include <vector>
+
+#include "act/statistics/statistics.h"
 
 namespace alexandria
 {

@@ -40,11 +40,11 @@
 #include <string.h>
 
 #include "act/alexandria/alex_modules.h"
+#include "act/statistics/statistics.h"
 #include "act/utility/latex_util.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
-#include "gromacs/statistics/statistics.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/strconvert.h"
 

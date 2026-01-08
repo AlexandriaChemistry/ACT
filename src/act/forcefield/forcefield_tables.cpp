@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2025
+ * Copyright (C) 2014-2026
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -41,11 +41,11 @@
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/math/utilities.h"
 #include "gromacs/math/vec.h"
-#include "gromacs/statistics/statistics.h"
 #include "gromacs/utility/cstringutil.h"
 
 #include "act/basics/chargemodel.h"
-#include "symcharges.h"
+#include "act/forcefield/symcharges.h"
+#include "act/statistics/statistics.h"
 #include "act/utility/latex_util.h"
 
 namespace alexandria

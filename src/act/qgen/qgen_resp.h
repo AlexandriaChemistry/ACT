@@ -41,8 +41,8 @@
 
 #include "act/alexandria/topology.h"
 #include "act/basics/chargemodel.h"
+//#include "act/statistics/statistics.h"
 #include "gromacs/math/vectypes.h"
-#include "gromacs/statistics/statistics.h"
 
 struct gmx_output_env_t;
 struct t_symtab;

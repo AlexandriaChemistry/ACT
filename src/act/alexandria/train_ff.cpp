@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2025
+ * Copyright (C) 2014-2026
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -64,7 +64,6 @@
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/xvgr.h"
-#include "gromacs/statistics/statistics.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 

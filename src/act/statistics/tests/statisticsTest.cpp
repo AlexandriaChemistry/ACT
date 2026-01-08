@@ -37,7 +37,7 @@
 
 #include <gtest/gtest.h>
 
-#include "gromacs/statistics/statistics.h"
+#include "act/statistics/statistics.h"
 
 #include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"

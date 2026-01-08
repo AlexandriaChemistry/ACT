@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2025
+ * Copyright (C) 2014-2026
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -43,9 +43,9 @@
 #include "act/alexandria/staticindividualinfo.h"
 #include "act/forces/forcecomputer.h"
 #include "act/forcefield/forcefield.h"
+#include "act/statistics/statistics.h"
 #include "act/utility/jsontree.h"
 #include "gromacs/commandline/pargs.h"
-#include "gromacs/statistics/statistics.h"
 
 /*! \brief Utility function to merge command line arguments
  * \param[inout] pargs The complete list of arguments

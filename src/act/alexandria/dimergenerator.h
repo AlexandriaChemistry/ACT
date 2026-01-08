@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2022-2024
+ * Copyright (C) 2022-2026
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -45,7 +45,6 @@
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/oenv.h"
 #include "gromacs/math/vectypes.h"
-#include "gromacs/statistics/statistics.h"
 
 namespace alexandria
 {

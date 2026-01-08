@@ -66,8 +66,6 @@ add_subdirectory(utility)
 add_subdirectory(fileio)
 add_subdirectory(compat)
 add_subdirectory(gmxpreprocess)
-add_subdirectory(statistics)
-#add_subdirectory(selection)
 
 get_property(PROPERTY_SOURCES GLOBAL PROPERTY GMX_LIBGROMACS_SOURCES)
 list(APPEND LIBGROMACS_SOURCES ${GMXLIB_SOURCES} ${MDLIB_SOURCES} ${PROPERTY_SOURCES})
