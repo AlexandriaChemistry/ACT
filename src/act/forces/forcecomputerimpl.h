@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2021-2024
+ * Copyright (C) 2021-2026
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -35,8 +35,11 @@
 namespace alexandria
 {
 
+class MsgHandler;
+
 //! \brief Function type to compute different interactions
-typedef double (*bondForceComputer)(const TopologyEntryVector          &bonds,
+typedef double (*bondForceComputer)(MsgHandler                         *msghandler,
+                                    const TopologyEntryVector          &bonds,
                                     const std::vector<ActAtom>         &atoms,
                                     const std::vector<gmx::RVec>       *coordinates,
                                     std::vector<gmx::RVec>             *forces,
