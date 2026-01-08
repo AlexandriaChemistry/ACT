@@ -50,7 +50,6 @@
 #include "act/forcefield/forcefield_xml.h"
 #include "act/qgen/qgen_acm.h"
 #include "act/utility/units.h"
-#include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/fatalerror.h"
 
 #include "testutils/cmdlinetest.h"
@@ -70,37 +69,10 @@ static void add_energies(const ForceField                        *pd,
                          const std::map<InteractionType, double> &energies,
                          const char                              *label)
 {
-    std::map<InteractionType, int> i2f = {
-        { InteractionType::EPOT,       F_EPOT },
-        { InteractionType::EXCHANGE,   F_REPULSION },
-        { InteractionType::DISPERSION, F_DISPERSION },
-        { InteractionType::ELECTROSTATICS,    F_COUL_SR }
-    };
     auto fsc = pd->forcesConst();
     for(auto &imf : energies)
     {
-        int ftype = -1;
-        if (i2f.find(imf.first) != i2f.end())
-        {
-            ftype = i2f.find(imf.first)->second;
-        }
-        else
-        {
-            auto i = fsc.find(imf.first);
-            if (fsc.end() != i)
-            {
-                ftype = potentialToGromacsType(i->second.potential());
-            }
-        }
-        std::string fname;
-        if (ftype >= 0)
-        {
-            fname = interaction_function[ftype].longname;
-        }
-        else
-        {
-            fname = interactionTypeToString(imf.first);
-        }
+        std::string fname   = interactionTypeToString(imf.first);
         std::string mylabel = gmx::formatString("%s %s", fname.c_str(), label);
 
         checker->checkReal(imf.second, mylabel.c_str());
