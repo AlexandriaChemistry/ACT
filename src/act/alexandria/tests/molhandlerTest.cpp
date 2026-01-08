@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria program.
  *
- * Copyright (C) 2022-2025
+ * Copyright (C) 2022-2026
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -41,7 +41,6 @@
 
 #include "act/import/atype_mapping.h"
 #include "act/import/import.h"
-#include "act/alexandria/fill_inputrec.h"
 #include "act/alexandria/molhandler.h"
 #include "act/alexandria/actmol.h"
 #include "act/basics/msg_handler.h"
@@ -51,7 +50,7 @@
 #include "act/forcefield/forcefield_xml.h"
 #include "act/qgen/qgen_acm.h"
 #include "act/utility/units.h"
-#include "gromacs/gmxpreprocess/grompp-impl.h"
+#include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/fatalerror.h"
 
 #include "testutils/cmdlinetest.h"

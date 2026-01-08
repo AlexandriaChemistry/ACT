@@ -40,7 +40,6 @@
 #include "act/alexandria/actmol.h"
 #include "act/alexandria/alex_modules.h"
 #include "act/alexandria/compound_reader.h"
-#include "act/alexandria/fill_inputrec.h"
 #include "act/alexandria/openmm_xml.h"
 #include "act/basics/msg_handler.h"
 #include "act/forcefield/forcefield_xml.h"

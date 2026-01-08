@@ -39,7 +39,6 @@
 #include <gtest/gtest.h>
 
 #include "act/alexandria/actmol.h"
-#include "act/alexandria/fill_inputrec.h"
 #include "act/basics/msg_handler.h"
 #include "act/forcefield/forcefield.h"
 #include "act/forcefield/forcefield_utils.h"

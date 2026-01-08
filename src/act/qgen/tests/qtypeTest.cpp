@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria program.
  *
- * Copyright (C) 2022-2025
+ * Copyright (C) 2022-2026
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -39,7 +39,6 @@
 
 #include "act/import/atype_mapping.h"
 #include "act/import/import.h"
-#include "act/alexandria/fill_inputrec.h"
 #include "act/alexandria/actmol.h"
 #include "act/basics/msg_handler.h"
 #include "act/molprop/multipole_names.h"

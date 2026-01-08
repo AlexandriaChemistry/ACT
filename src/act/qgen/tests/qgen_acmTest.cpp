@@ -40,7 +40,6 @@
 
 #include "act/import/atype_mapping.h"
 #include "act/import/import.h"
-#include "act/alexandria/fill_inputrec.h"
 #include "act/alexandria/actmol.h"
 #include "act/basics/msg_handler.h"
 #include "act/forcefield/forcefield.h"
