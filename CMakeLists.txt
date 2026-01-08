@@ -442,10 +442,10 @@ if(Eigen3_FOUND)
   add_definitions(-DHAVE_EIGEN -DHAVE_EIGEN3)
   find_path(EIGEN3_INCLUDE_DIR eigen3/Eigen/Dense
             PATHS
-            ${_obIncDir}
             ${GNUWIN32_DIR}/include
             $ENV{EIGEN3_INCLUDE_DIR})
   include_directories(${EIGEN3_INCLUDE_DIR})
+  include_directories(${EIGEN3_INCLUDE_DIR}/eigen3)
   message("EIGEN3_INCLUDE_DIR : ${EIGEN3_INCLUDE_DIR}")
 else()
   message(FATAL_ERROR "Cannot find Eigen3 version 5")
