@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2022-2025
+ * Copyright (C) 2022-2026
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -35,10 +35,12 @@
 
 // This include has to come first, to prevent the GROMACS definition of
 // "real" from messing up the library.
-#pragma clang diagnostic ignored "-Wdeprecated-copy-with-dtor"
-#pragma clang diagnostic ignored "-Wunknown-warning-option"
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-copy-with-dtor"
+#pragma GCC diagnostic ignored "-Wunknown-warning-option"
 #pragma GCC diagnostic ignored "-Wdeprecated-copy-dtor"
 #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+#pragma GCC diagnostic ignored "-Wdeprecated-redundant-constexpr-static-def"
 #include "Eigen/Eigenvalues"
 #pragma GCC diagnostic pop
 #pragma clang diagnostic pop

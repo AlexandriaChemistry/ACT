@@ -436,16 +436,19 @@ if(LibXml2_FOUND)
     set(XML_LIBRARIES ${LIBXML2_LIBRARIES})
 endif(LibXml2_FOUND)
 
-find_package(Eigen3)
-if(EIGEN3_FOUND)
+find_package(Eigen3 5 REQUIRED)
+if(Eigen3_FOUND)
+  message("Eigen3_FOUND : ${Eigen3_FOUND}")
   add_definitions(-DHAVE_EIGEN -DHAVE_EIGEN3)
-  include_directories(${EIGEN3_INCLUDE_DIR})
+  find_path(EIGEN3_INCLUDE_DIR eigen3/Eigen/Dense
+            PATHS
+            ${_obIncDir}
+            ${GNUWIN32_DIR}/include
+            $ENV{EIGEN3_INCLUDE_DIR})
+  include_directories(${EIGEN3_INCLUDE_DIR}/eigen3)
+  message("EIGEN3_INCLUDE_DIR : ${EIGEN3_INCLUDE_DIR}/eigen3")
 else()
-  find_package(Eigen2) # find and setup Eigen2
-  if(EIGEN2_FOUND)
-    add_definitions (-DHAVE_EIGEN)
-    include_directories(${EIGEN2_INCLUDE_DIR})
-  endif()
+  message(FATAL_ERROR "Cannot find Eigen3 version 5")
 endif()
 
 # When compiling alexandria three extra libraries become obligatory
@@ -478,7 +481,6 @@ if (GMX_ALEXANDRIA)
   endif(SQLITE3_FOUND)
 
   set(PKG_OPENBABEL3 "")
-#  find_package(OpenBabel3 REQUIRED)
   find_package(OpenBabel3 REQUIRED)
   include_directories(${OPENBABEL3_INCLUDE_DIR})
 
