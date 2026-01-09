@@ -1,19 +1,14 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
-  <String Name="molname">furan.sdf</String>
+  <String Name="molname">ammonia.sdf</String>
   <Real Name="qtot">0</Real>
-  <Int Name="furan.sdf">9</Int>
+  <Int Name="ammonia.sdf">4</Int>
   <Sequence Name="atomtypes">
-    <Int Name="Length">9</Int>
-    <String>c2</String>
+    <Int Name="Length">4</Int>
     <String>h</String>
-    <String>c2</String>
+    <String>n3</String>
     <String>h</String>
-    <String>c2</String>
     <String>h</String>
-    <String>c2</String>
-    <String>h</String>
-    <String>o2</String>
   </Sequence>
 </ReferenceData>

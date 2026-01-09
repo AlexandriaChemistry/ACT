@@ -1,16 +1,14 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
-  <String Name="molname">propa-1-2-dienylidenephosphane.sdf</String>
+  <String Name="molname">thiazirene.sdf</String>
   <Real Name="qtot">0</Real>
-  <Int Name="propa-1-2-dienylidenephosphane.sdf">6</Int>
+  <Int Name="thiazirene.sdf">4</Int>
   <Sequence Name="bondorder">
-    <Int Name="Length">6</Int>
-    <String>p2-0 c1-3: 2</String>
-    <String>p2-0 h-6: 1</String>
-    <String>c2-1 c1-2: 2</String>
-    <String>c2-1 h-4: 1</String>
-    <String>c2-1 h-5: 1</String>
-    <String>c1-2 c1-3: 2</String>
+    <Int Name="Length">4</Int>
+    <String>s3-0 n2-1: 1</String>
+    <String>s3-0 c2-2: 1</String>
+    <String>n2-1 c2-2: 2</String>
+    <String>c2-2 h-3: 1</String>
   </Sequence>
 </ReferenceData>

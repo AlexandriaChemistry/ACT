@@ -1,12 +1,24 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
-  <String Name="molname">carbon-dioxide.sdf</String>
+  <String Name="molname">N--ethenyl-N-hydroxyethanimidamide.sdf</String>
   <Real Name="qtot">0</Real>
-  <Int Name="carbon-dioxide.sdf">2</Int>
+  <Int Name="N--ethenyl-N-hydroxyethanimidamide.sdf">14</Int>
   <Sequence Name="bondorder">
-    <Int Name="Length">2</Int>
-    <String>c1-1 o2-0: 2</String>
-    <String>o2-2 c1-1: 2</String>
+    <Int Name="Length">14</Int>
+    <String>c3-0 h-7: 1</String>
+    <String>c3-0 h-8: 1</String>
+    <String>c2-1 n2-4: 2</String>
+    <String>c2-1 c3-0: 1</String>
+    <String>n2-2 c2-1: 1</String>
+    <String>o3-3 n2-2: 1</String>
+    <String>o3-3 h-11: 1</String>
+    <String>n2-4 c2-5: 1</String>
+    <String>c2-5 h-12: 1</String>
+    <String>c2-6 h-14: 1</String>
+    <String>c2-6 c2-5: 2</String>
+    <String>h-9 c3-0: 1</String>
+    <String>h-10 n2-2: 1</String>
+    <String>h-13 c2-6: 1</String>
   </Sequence>
 </ReferenceData>

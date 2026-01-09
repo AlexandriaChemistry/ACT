@@ -1,11 +1,11 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
-  <String Name="molname">phosphorus-nitride.sdf</String>
+  <String Name="molname">sulfur-monoxide.sdf</String>
   <Real Name="qtot">0</Real>
-  <Int Name="phosphorus-nitride.sdf">1</Int>
+  <Int Name="sulfur-monoxide.sdf">1</Int>
   <Sequence Name="bondorder">
     <Int Name="Length">1</Int>
-    <String>n1-1 p1-0: 3</String>
+    <String>o2-1 s2-0: 2</String>
   </Sequence>
 </ReferenceData>

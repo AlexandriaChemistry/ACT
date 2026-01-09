@@ -1,13 +1,18 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
-  <String Name="molname">ammonia.sdf</String>
+  <String Name="molname">3H-diphosphole.sdf</String>
   <Real Name="qtot">0</Real>
-  <Int Name="ammonia.sdf">4</Int>
+  <Int Name="3H-diphosphole.sdf">9</Int>
   <Sequence Name="atomtypes">
-    <Int Name="Length">4</Int>
+    <Int Name="Length">9</Int>
+    <String>p2</String>
+    <String>p2</String>
+    <String>c3</String>
+    <String>c2</String>
+    <String>c2</String>
     <String>h</String>
-    <String>n3</String>
+    <String>h</String>
     <String>h</String>
     <String>h</String>
   </Sequence>

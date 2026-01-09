@@ -1,14 +1,21 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
-  <String Name="molname">sulfate.xyz</String>
-  <Real Name="qtot">-2</Real>
-  <Int Name="sulfate.xyz">4</Int>
+  <String Name="molname">ethane-12-diamine.sdf</String>
+  <Real Name="qtot">0</Real>
+  <Int Name="ethane-12-diamine.sdf">11</Int>
   <Sequence Name="bondorder">
-    <Int Name="Length">4</Int>
-    <String>o2-1 s3-0: 1.5</String>
-    <String>o2-2 s3-0: 1.5</String>
-    <String>o2-3 s3-0: 1.5</String>
-    <String>o2-4 s3-0: 1.5</String>
+    <Int Name="Length">11</Int>
+    <String>c3-0 c3-1: 1</String>
+    <String>c3-1 h-7: 1</String>
+    <String>c3-1 h-6: 1</String>
+    <String>c3-1 n3-2: 1</String>
+    <String>n3-2 h-9: 1</String>
+    <String>n3-3 h-10: 1</String>
+    <String>n3-3 c3-0: 1</String>
+    <String>h-4 c3-0: 1</String>
+    <String>h-5 c3-0: 1</String>
+    <String>h-8 n3-2: 1</String>
+    <String>h-11 n3-3: 1</String>
   </Sequence>
 </ReferenceData>

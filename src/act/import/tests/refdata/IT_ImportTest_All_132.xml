@@ -1,12 +1,22 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
-  <String Name="molname">sulfur-monoxide.sdf</String>
-  <Real Name="qtot">0</Real>
-  <Int Name="sulfur-monoxide.sdf">2</Int>
+  <String Name="molname">ethyl-sulfate-3-oep.log.pdb</String>
+  <Real Name="qtot">-1</Real>
+  <Int Name="ethyl-sulfate-3-oep.log.pdb">12</Int>
   <Sequence Name="atomtypes">
-    <Int Name="Length">2</Int>
-    <String>s2</String>
-    <String>o2</String>
+    <Int Name="Length">12</Int>
+    <String>c3</String>
+    <String>c3</String>
+    <String>o3</String>
+    <String>s3</String>
+    <String>o3</String>
+    <String>o3</String>
+    <String>o3</String>
+    <String>h</String>
+    <String>h</String>
+    <String>h</String>
+    <String>h</String>
+    <String>h</String>
   </Sequence>
 </ReferenceData>

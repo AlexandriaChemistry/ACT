@@ -1,17 +1,18 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
-  <String Name="molname">dihydrogen-phosphate.sdf</String>
-  <Real Name="qtot">-1</Real>
-  <Int Name="dihydrogen-phosphate.sdf">7</Int>
+  <String Name="molname">merged.pdb</String>
+  <Real Name="qtot">0</Real>
+  <Int Name="merged.pdb">8</Int>
   <Sequence Name="atomtypes">
-    <Int Name="Length">7</Int>
-    <String>p3</String>
-    <String>o3</String>
-    <String>o3</String>
-    <String>o3</String>
-    <String>o3</String>
+    <Int Name="Length">8</Int>
     <String>h</String>
+    <String>f</String>
     <String>h</String>
+    <String>cl</String>
+    <String>h</String>
+    <String>br</String>
+    <String>h</String>
+    <String>i</String>
   </Sequence>
 </ReferenceData>

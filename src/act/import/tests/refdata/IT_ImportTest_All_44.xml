@@ -1,16 +1,14 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
-  <String Name="molname">cyclobutene.sdf</String>
+  <String Name="molname">N-methylmethanimine.sdf</String>
   <Real Name="qtot">0</Real>
-  <Int Name="cyclobutene.sdf">10</Int>
+  <Int Name="N-methylmethanimine.sdf">8</Int>
   <Sequence Name="atomtypes">
-    <Int Name="Length">10</Int>
-    <String>c2</String>
-    <String>c2</String>
+    <Int Name="Length">8</Int>
+    <String>n2</String>
     <String>c3</String>
-    <String>c3</String>
-    <String>h</String>
+    <String>c2</String>
     <String>h</String>
     <String>h</String>
     <String>h</String>

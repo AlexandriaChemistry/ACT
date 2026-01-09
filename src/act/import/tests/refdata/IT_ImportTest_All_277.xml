@@ -1,12 +1,19 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
-  <String Name="molname">sulfur-dioxide-3-oep.log.pdb</String>
+  <String Name="molname">thiophene.sdf</String>
   <Real Name="qtot">0</Real>
-  <Int Name="sulfur-dioxide-3-oep.log.pdb">2</Int>
+  <Int Name="thiophene.sdf">9</Int>
   <Sequence Name="bondorder">
-    <Int Name="Length">2</Int>
-    <String>o2-0 s2-1: 2</String>
-    <String>s2-1 o2-2: 2</String>
+    <Int Name="Length">9</Int>
+    <String>c2-0 h-1: 1</String>
+    <String>c2-0 c2-2: 1.5</String>
+    <String>c2-0 s2-8: 1.5</String>
+    <String>c2-2 h-3: 1</String>
+    <String>c2-2 c2-4: 1.5</String>
+    <String>c2-4 h-5: 1</String>
+    <String>c2-4 c2-6: 1.5</String>
+    <String>c2-6 h-7: 1</String>
+    <String>c2-6 s2-8: 1.5</String>
   </Sequence>
 </ReferenceData>

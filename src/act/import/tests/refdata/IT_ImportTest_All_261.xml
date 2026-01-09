@@ -1,13 +1,12 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
-  <String Name="molname">phosphine.sdf</String>
+  <String Name="molname">sulfur-dioxide-3-oep.log.pdb</String>
   <Real Name="qtot">0</Real>
-  <Int Name="phosphine.sdf">3</Int>
+  <Int Name="sulfur-dioxide-3-oep.log.pdb">2</Int>
   <Sequence Name="bondorder">
-    <Int Name="Length">3</Int>
-    <String>h-1 p3-0: 1</String>
-    <String>h-2 p3-0: 1</String>
-    <String>h-3 p3-0: 1</String>
+    <Int Name="Length">2</Int>
+    <String>o2-0 s2-1: 2</String>
+    <String>s2-1 o2-2: 2</String>
   </Sequence>
 </ReferenceData>

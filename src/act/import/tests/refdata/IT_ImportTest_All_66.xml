@@ -1,18 +1,16 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
-  <String Name="molname">ethyl-sulfate-3-oep.log.pdb</String>
-  <Real Name="qtot">-1</Real>
-  <Int Name="ethyl-sulfate-3-oep.log.pdb">12</Int>
+  <String Name="molname">acetone-nonplanar.pdb</String>
+  <Real Name="qtot">0</Real>
+  <Int Name="acetone-nonplanar.pdb">10</Int>
   <Sequence Name="atomtypes">
-    <Int Name="Length">12</Int>
+    <Int Name="Length">10</Int>
+    <String>o2</String>
+    <String>c2</String>
     <String>c3</String>
     <String>c3</String>
-    <String>o3</String>
-    <String>s3</String>
-    <String>o3</String>
-    <String>o3</String>
-    <String>o3</String>
+    <String>h</String>
     <String>h</String>
     <String>h</String>
     <String>h</String>

@@ -1,18 +1,19 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
-  <String Name="molname">dimethylether.sdf</String>
+  <String Name="molname">acetone-3-oep.log.pdb</String>
   <Real Name="qtot">0</Real>
-  <Int Name="dimethylether.sdf">8</Int>
+  <Int Name="acetone-3-oep.log.pdb">9</Int>
   <Sequence Name="bondorder">
-    <Int Name="Length">8</Int>
-    <String>c3-0 h-2: 1</String>
-    <String>h-1 c3-0: 1</String>
-    <String>h-3 c3-0: 1</String>
-    <String>o3-4 c3-0: 1</String>
-    <String>o3-4 c3-5: 1</String>
-    <String>c3-5 h-8: 1</String>
-    <String>h-6 c3-5: 1</String>
-    <String>h-7 c3-5: 1</String>
+    <Int Name="Length">9</Int>
+    <String>o2-0 c2-1: 2</String>
+    <String>c2-1 c3-3: 1</String>
+    <String>c2-1 c3-2: 1</String>
+    <String>c3-2 h-5: 1</String>
+    <String>c3-2 h-6: 1</String>
+    <String>c3-2 h-4: 1</String>
+    <String>c3-3 h-8: 1</String>
+    <String>c3-3 h-9: 1</String>
+    <String>c3-3 h-7: 1</String>
   </Sequence>
 </ReferenceData>

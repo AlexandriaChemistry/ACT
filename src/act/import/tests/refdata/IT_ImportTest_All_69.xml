@@ -1,22 +1,19 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
-  <String Name="molname">ethylsulfonylformaldehyde.sdf</String>
+  <String Name="molname">acetone.sdf</String>
   <Real Name="qtot">0</Real>
-  <Int Name="ethylsulfonylformaldehyde.sdf">12</Int>
+  <Int Name="acetone.sdf">9</Int>
   <Sequence Name="bondorder">
-    <Int Name="Length">12</Int>
-    <String>c3-0 h-9: 1</String>
-    <String>c3-1 c3-0: 1</String>
-    <String>c3-1 s3-2: 1</String>
-    <String>c3-1 h-11: 1</String>
-    <String>s3-2 o2-4: 2</String>
-    <String>o2-3 s3-2: 2</String>
-    <String>c2-5 h-12: 1</String>
-    <String>c2-5 s3-2: 1</String>
-    <String>o2-6 c2-5: 2</String>
-    <String>h-7 c3-0: 1</String>
-    <String>h-8 c3-0: 1</String>
-    <String>h-10 c3-1: 1</String>
+    <Int Name="Length">9</Int>
+    <String>c2-1 o2-0: 2</String>
+    <String>c3-2 h-4: 1</String>
+    <String>c3-2 c2-1: 1</String>
+    <String>c3-3 h-7: 1</String>
+    <String>c3-3 c2-1: 1</String>
+    <String>h-5 c3-2: 1</String>
+    <String>h-6 c3-2: 1</String>
+    <String>h-8 c3-3: 1</String>
+    <String>h-9 c3-3: 1</String>
   </Sequence>
 </ReferenceData>

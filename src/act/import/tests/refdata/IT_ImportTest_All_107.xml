@@ -1,16 +1,16 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
-  <String Name="molname">nitromethane.xyz</String>
-  <Real Name="qtot">0</Real>
-  <Int Name="nitromethane.xyz">6</Int>
+  <String Name="molname">dihydrogen-phosphate.xyz</String>
+  <Real Name="qtot">-1</Real>
+  <Int Name="dihydrogen-phosphate.xyz">6</Int>
   <Sequence Name="bondorder">
     <Int Name="Length">6</Int>
-    <String>h-1 c3-0: 1</String>
-    <String>h-2 c3-0: 1</String>
-    <String>h-3 c3-0: 1</String>
-    <String>n2-4 c3-0: 1</String>
-    <String>o2-5 n2-4: 1.5</String>
-    <String>o2-6 n2-4: 1.5</String>
+    <String>o3-1 p3-0: 1</String>
+    <String>o2-2 p3-0: 2</String>
+    <String>o3-3 p3-0: 1</String>
+    <String>o3-4 p3-0: 1</String>
+    <String>h-5 o3-1: 1</String>
+    <String>h-6 o3-3: 1</String>
   </Sequence>
 </ReferenceData>

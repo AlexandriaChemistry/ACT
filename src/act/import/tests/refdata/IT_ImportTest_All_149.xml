@@ -1,25 +1,15 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
-  <String Name="molname">1-1-dimethylguanidinium.sdf</String>
-  <Real Name="qtot">1</Real>
-  <Int Name="1-1-dimethylguanidinium.sdf">15</Int>
+  <String Name="molname">formamide.sdf</String>
+  <Real Name="qtot">0</Real>
+  <Int Name="formamide.sdf">5</Int>
   <Sequence Name="bondorder">
-    <Int Name="Length">15</Int>
-    <String>n3-0 c3-3: 1</String>
-    <String>n3-1 c3-5: 1</String>
-    <String>n3-1 h-13: 1</String>
-    <String>n3-2 h-15: 1</String>
-    <String>c3-3 h-6: 1</String>
-    <String>c3-3 h-7: 1</String>
-    <String>c3-4 n3-0: 1</String>
-    <String>c3-4 h-9: 1</String>
-    <String>c3-5 n3-0: 1</String>
-    <String>c3-5 n3-2: 1</String>
-    <String>h-8 c3-3: 1</String>
-    <String>h-10 c3-4: 1</String>
-    <String>h-11 c3-4: 1</String>
-    <String>h-12 n3-1: 1</String>
-    <String>h-14 n3-2: 1</String>
+    <Int Name="Length">5</Int>
+    <String>o2-0 c2-1: 2</String>
+    <String>h-2 c2-1: 1</String>
+    <String>n2-3 c2-1: 1</String>
+    <String>n2-3 h-4: 1</String>
+    <String>n2-3 h-5: 1</String>
   </Sequence>
 </ReferenceData>

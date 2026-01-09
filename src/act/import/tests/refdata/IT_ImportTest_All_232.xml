@@ -1,27 +1,17 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
-  <String Name="molname">histidine-hdhe-3-oep.log.pdb</String>
-  <Real Name="qtot">1</Real>
-  <Int Name="histidine-hdhe-3-oep.log.pdb">21</Int>
+  <String Name="molname">phosphinine.sdf</String>
+  <Real Name="qtot">0</Real>
+  <Int Name="phosphinine.sdf">11</Int>
   <Sequence Name="atomtypes">
-    <Int Name="Length">21</Int>
-    <String>n3</String>
-    <String>c3</String>
-    <String>c2</String>
-    <String>o2</String>
-    <String>c3</String>
+    <Int Name="Length">11</Int>
+    <String>p2</String>
     <String>c2</String>
     <String>c2</String>
     <String>c2</String>
-    <String>n2</String>
-    <String>n2</String>
-    <String>o2</String>
-    <String>h</String>
-    <String>h</String>
-    <String>h</String>
-    <String>h</String>
-    <String>h</String>
+    <String>c2</String>
+    <String>c2</String>
     <String>h</String>
     <String>h</String>
     <String>h</String>

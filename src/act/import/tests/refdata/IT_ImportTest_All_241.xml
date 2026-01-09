@@ -1,18 +1,11 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
-  <String Name="molname">isoxazole.sdf</String>
+  <String Name="molname">phosphorus-nitride.sdf</String>
   <Real Name="qtot">0</Real>
-  <Int Name="isoxazole.sdf">8</Int>
+  <Int Name="phosphorus-nitride.sdf">1</Int>
   <Sequence Name="bondorder">
-    <Int Name="Length">8</Int>
-    <String>o2-0 n2-1: 1.5</String>
-    <String>o2-0 c2-2: 1.5</String>
-    <String>n2-1 c2-4: 1.5</String>
-    <String>c2-2 c2-3: 1.5</String>
-    <String>c2-2 h-5: 1</String>
-    <String>c2-3 c2-4: 1.5</String>
-    <String>c2-3 h-6: 1</String>
-    <String>c2-4 h-7: 1</String>
+    <Int Name="Length">1</Int>
+    <String>n1-1 p1-0: 3</String>
   </Sequence>
 </ReferenceData>

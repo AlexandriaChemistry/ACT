@@ -1,20 +1,15 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
-  <String Name="molname">dimethyl-carbonate.pdb</String>
-  <Real Name="qtot">0</Real>
-  <Int Name="dimethyl-carbonate.pdb">12</Int>
+  <String Name="molname">acetate-3-oep.log.pdb</String>
+  <Real Name="qtot">-1</Real>
+  <Int Name="acetate-3-oep.log.pdb">7</Int>
   <Sequence Name="atomtypes">
-    <Int Name="Length">12</Int>
+    <Int Name="Length">7</Int>
     <String>c3</String>
-    <String>h</String>
-    <String>h</String>
-    <String>h</String>
-    <String>o2</String>
     <String>c2</String>
     <String>o2</String>
     <String>o2</String>
-    <String>c3</String>
     <String>h</String>
     <String>h</String>
     <String>h</String>

@@ -1,18 +1,22 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
-  <String Name="molname">N--ethenyl-N-hydroxyethanimidamide.sdf</String>
+  <String Name="molname">glutamic-acid-3-oep.log.pdb</String>
   <Real Name="qtot">0</Real>
-  <Int Name="N--ethenyl-N-hydroxyethanimidamide.sdf">15</Int>
+  <Int Name="glutamic-acid-3-oep.log.pdb">19</Int>
   <Sequence Name="atomtypes">
-    <Int Name="Length">15</Int>
+    <Int Name="Length">19</Int>
+    <String>n3</String>
     <String>c3</String>
     <String>c2</String>
-    <String>n2</String>
-    <String>o3</String>
-    <String>n2</String>
+    <String>o2</String>
+    <String>c3</String>
+    <String>c3</String>
     <String>c2</String>
-    <String>c2</String>
+    <String>o2</String>
+    <String>o2</String>
+    <String>o2</String>
+    <String>h</String>
     <String>h</String>
     <String>h</String>
     <String>h</String>

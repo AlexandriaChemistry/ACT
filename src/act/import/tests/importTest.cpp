@@ -53,8 +53,7 @@ namespace alexandria
 namespace
 {
 
-class ImportTest : public ::testing::TestWithParam<std::tuple<bool, std::tuple<std::string, double>, bool > >
-//: public gmx::test::CommandLineTestBase
+class ImportTest : public ::testing::TestWithParam<std::tuple<std::tuple<std::string, double>, bool, bool > >
 {
 private:
     ForceField *pd;
@@ -69,10 +68,10 @@ public:
     ImportTest()
     {
         pd       = getForceField("../../alexandria/tests/ACS-g");
-        oneH     = std::get<0>(GetParam());
+        molname  = std::get<0>(std::get<0>(GetParam()));
+        qtot     = std::get<1>(std::get<0>(GetParam()));
+        oneH     = std::get<1>(GetParam());
         bondTest = std::get<2>(GetParam());
-        molname  = std::get<0>(std::get<1>(GetParam()));
-        qtot     = std::get<1>(std::get<1>(GetParam()));
     }
     
  protected:
@@ -229,7 +228,7 @@ auto my_files = get_files();
 auto my_btest = get_ab();
 auto my_oneH  = get_ba();
 
-INSTANTIATE_TEST_CASE_P(IT, ImportTest, ::testing::Combine(::testing::ValuesIn(my_oneH),  ::testing::ValuesIn(my_files), ::testing::ValuesIn(my_btest)));
+INSTANTIATE_TEST_CASE_P(IT, ImportTest, ::testing::Combine(::testing::ValuesIn(my_files), ::testing::ValuesIn(my_oneH),  ::testing::ValuesIn(my_btest)));
 
 }
 
