@@ -57,31 +57,6 @@
 namespace alexandria 
 {
 
-static const char *xmltypes[] = {
-    nullptr,
-    "XML_ELEMENT_NODE",
-    "XML_ATTRIBUTE_NODE",
-    "XML_TEXT_NODE",
-    "XML_CDATA_SECTION_NODE",
-    "XML_ENTITY_REF_NODE",
-    "XML_ENTITY_NODE",
-    "XML_PI_NODE",
-    "XML_COMMENT_NODE",
-    "XML_DOCUMENT_NODE",
-    "XML_DOCUMENT_TYPE_NODE",
-    "XML_DOCUMENT_FRAG_NODE",
-    "XML_NOTATION_NODE",
-    "XML_HTML_DOCUMENT_NODE",
-    "XML_DTD_NODE",
-    "XML_ELEMENT_DECL",
-    "XML_ATTRIBUTE_DECL",
-    "XML_ENTITY_DECL",
-    "XML_NAMESPACE_DECL",
-    "XML_XINCLUDE_START",
-    "XML_XINCLUDE_END"
-};
-#define NXMLTYPES sizeof(xmltypes)/sizeof(xmltypes[0])
-
 //! \brief Enum for distinguishing content types in molprop files.
 enum class MolPropXml {
     MOLECULES,
@@ -183,7 +158,7 @@ const std::set<MolPropXml> allCharges = {
 };
 
 //! \brief Map string to MolPropXml
-std::map<const std::string, MolPropXml> xmlxxx =
+static std::map<const std::string, MolPropXml> xmlxxx =
 {
     { "molecules",        MolPropXml::MOLECULES      },
     { "molecule",         MolPropXml::MOLECULE       },
@@ -259,8 +234,8 @@ std::map<const std::string, MolPropXml> xmlxxx =
     { "fz",               MolPropXml::fZ             }
 };
 
-//! Map MolPropXml to strin
-std::map<MolPropXml, const std::string> rmap = {};
+//! Map MolPropXml to string
+static std::map<MolPropXml, const std::string> rmap = {};
 
 //! \brief Utility to fill utility structures
 static void fillMaps()
@@ -508,17 +483,18 @@ static void mp_process_tree(MsgHandler                        *msg_handler,
                             std::vector<MolProp>              *molprops,
                             std::map<MolPropXml, std::string> *xbuf)
 {
+    auto xmltype = xmltypes();
     std::string qm_type("electronic");
     std::string exp_type("experiment");
     while (tree != nullptr)
     {
         if (msg_handler)
         {
-            if ((tree->type > 0) && ((unsigned)tree->type < NXMLTYPES))
+            if ((tree->type > 0) && ((unsigned)tree->type < xmltype.size()))
             {
                 msg_handler->msg(ACTStatus::Debug,
                                  gmx::formatString("Node type %s encountered with name %s\n",
-                                                   xmltypes[tree->type], (char *)tree->name));
+                                                   xmltype[tree->type], (char *)tree->name));
             }
             else
             {

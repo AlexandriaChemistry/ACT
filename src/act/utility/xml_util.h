@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2020 
+ * Copyright (C) 2014-2020,2026
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -35,11 +35,15 @@
 #ifndef XML_UTIL_H
 #define XML_UTIL_H
 
-#include <stdio.h>
+#include <cstdio>
 #include <string>
+#include <vector>
 
 #include <libxml/parser.h>
 #include <libxml/tree.h>
+
+//! \return the known xmltypes
+const std::vector<const char *> &xmltypes();
 
 /*! Add integer to xmlNode
  * \param[in] ptr  The XML structure
