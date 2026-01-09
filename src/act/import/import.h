@@ -51,39 +51,21 @@ class MsgHandler;
  * \param[in]    pd          Alexandria force field
  * \param[in]    filenm      The file to read
  * \param[out]   mp          Pointer to a MolProp vector
- * \param[in]    molnm       Molecule name to override the one from the filename [ ignored if nullptr ]
- * \param[in]    iupac       IUPAC name to override the one from the filename [ ignored if nullptr ]
  * \param[in]    conf        Conformation the molecule is in [ ignored if nullptr ]
- * \param[inout] method      Theoretical chemistry method detected in the file.
- * \param[inout] basis       Basis set used for the calculation. If not empty, will override
- *                           what is detected in the file. If empty, will get the detected value.
- * \param[in]    maxpot      Maximum number of electrostatic potential data points to store
- * \param[in]    nsymm       Symmetry number for this molecule. If zero it will be detected from
- *                           the input.
  * \param[in]    jobtype     Calculation type for reading QM output
  * \param[in]    userqtot    Whether the user explicitly set the total charge. If set,
  *                           the qtot below will be used instead of what is read from the input file.
  * \param[out]   qtot        Total charge as deduced by OB from the input. 
- * \param[in]    addHydrogen If true, hydrogens will be added
- * \param[out]   box         Unit cell if present, in gromacs format.
  * \param[in]    oneH        Remap all hydrogen atom types to "h"
  */
 void importFile(MsgHandler           *msg_handler,
                 const ForceField     *pd,
                 const std::string    &filenm,
                 std::vector<MolProp> *mp,
-                const char           *molnm,
-                const char           *iupac,
                 const char           *conf,
-                std::string          *method,
-                std::string          *basis,
-                int                   maxpot,
-                int                   nsymm,
-                const char           *jobtype,
+                JobType               jobtype,
                 bool                  userqtot,
                 double               *qtot,
-                bool                  addHydrogen,
-                matrix                box,
                 bool                  oneH);
 
 /*! \brief Add atomtype to a Molprop object

@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2024,2025
+ * Copyright (C) 2024-2026
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -229,14 +229,9 @@ void CompoundReader::readFile(MsgHandler          *msghandler,
     }
     std::vector<MolProp> mps;
     double               qtot_babel = qtot_;
-    std::string          method, basis;
-    int                  maxpot = 100;
-    int                  nsymm  = 1;
-    bool                 addHydrogen = false;
-    importFile(msghandler, &pd, filename_, &mps, molnm_, molnm_, "",
-               &method,
-               &basis, maxpot, nsymm, "Opt", userQtot(), &qtot_babel,
-               addHydrogen, box, oneH_);
+    importFile(msghandler, &pd, filename_, &mps, "",
+               JobType::OPT, userQtot(), &qtot_babel,
+               oneH_);
     if (!msghandler->ok())
     {
         msghandler->msg(ACTStatus::Error,

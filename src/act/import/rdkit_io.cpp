@@ -434,18 +434,10 @@ void importFile(MsgHandler             *msg_handler,
                 const ForceField       *pd,
                 const std::string      &filenm,
                 std::vector<MolProp>   *mps,
-                gmx_unused const char  *molnm,
-                gmx_unused const char  *iupac,
-                gmx_unused const char  *conf,
-                gmx_unused std::string *method,
-                gmx_unused std::string *basis,
-                gmx_unused int          maxpot,
-                gmx_unused int          nsymm,
-                gmx_unused const char  *jobtype,
+                const char             *conf,
+                JobType                 jobtype,
                 bool                    userqtot,
                 double                 *qtot,
-                gmx_unused bool         addHydrogen,
-                gmx_unused matrix       box,
                 bool                    oneH)
 {
     auto abe = getAtomBondtypeDB();
@@ -454,18 +446,6 @@ void importFile(MsgHandler             *msg_handler,
     if (msg_handler->debug())
     {
         msg_handler->writeDebug(gmx::formatString("Will import file %s using the RDKit library", filenm.c_str()));
-        if (molnm)
-        {
-            msg_handler->writeDebug(gmx::formatString("Will use molnm %s", molnm));
-        }
-        if (iupac)
-        {
-            msg_handler->writeDebug(gmx::formatString("Will use iupac %s", iupac));
-        }
-        if (conf)
-        {
-            msg_handler->writeDebug(gmx::formatString("Will use conf %s", conf));
-        }
     }
     // Try to read the file
     try
@@ -499,7 +479,7 @@ void importFile(MsgHandler             *msg_handler,
             //! \todo Check whether this is correct
             std::string  RDKit_Unit("Angstrom");
             Experiment   exper(ref, conf);
-            exper.setJobtype(JobType::TOPOLOGY);
+            exper.setJobtype(jobtype);
             unsigned int atomid = 0;
             auto         conformer = mol2->getConformer();
             auto         bonds     = mol2->bonds();

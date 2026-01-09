@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2023-2025
+ * Copyright (C) 2023-2026
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -76,20 +76,13 @@ protected:
         bool   userqtot   = false;
         double qtot_babel = 0;
         const char           *conf      = (char *)"minimum";
-        const char           *jobtype   = (char *)"Opt";
-        int                   maxpot    = 100;
-        int                   nsymm     = 0;
-        std::string           method;
-        std::string           basis;
         std::string fileName = gmx::formatString("%s.sdf", molName.c_str());
         std::string dataName = gmx::test::TestFileManager::getInputFilePath(fileName);
         MsgHandler msghandler;
         msghandler.setPrintLevel(ACTStatus::Warning);
         importFile(&msghandler, pd, dataName.c_str(), &molprops,
-                   molName.c_str(), molName.c_str(),
-                   conf, &method, &basis, maxpot,
-                   nsymm, jobtype, userqtot ,&qtot_babel,
-                   false, box, true);
+                   conf, JobType::OPT, userqtot ,&qtot_babel,
+                   true);
         EXPECT_TRUE(msghandler.ok());
         EXPECT_TRUE(molprops.size() == 1);
         if (molprops.size() != 1)

@@ -43,7 +43,6 @@
 #include "act/forcefield/forcefield.h"
 #include "act/forcefield/forcefield_utils.h"
 #include "act/forcefield/forcefield_xml.h"
-#include "act/import/atype_mapping.h"
 #include "act/import/import.h"
 #include "act/qgen/qgen_resp.h"
 

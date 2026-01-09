@@ -79,25 +79,18 @@ public:
     void runTest()
     {
         gmx::test::TestReferenceChecker  checker_(refData_.rootChecker());
-        int                              maxpot   = 100;
-        int                              nsymm    = 0;
         const char                      *conf     = (char *)"minimum";
-        std::string                      basis, method;
-        const char                      *jobtype  = (char *)"Opt";
         std::string                      dataName;
         std::vector<alexandria::MolProp> molprops;
 
         std::string dirmolname("../../alexandria/tests/mols/");
         dirmolname     += molname;
         dataName        = gmx::test::TestFileManager::getInputFilePath(dirmolname);
-        bool   userqtot = false;
-        matrix box;
+        bool       userqtot = false;
         MsgHandler msghandler;
         msghandler.setPrintLevel(ACTStatus::Warning);
         importFile(&msghandler, pd, dataName.c_str(), &molprops,
-                   dirmolname.c_str(), molname.c_str(), 
-                   conf, &method, &basis, maxpot, nsymm,
-                   jobtype, userqtot, &qtot, false, box, oneH);
+                   conf, JobType::OPT, userqtot, &qtot, oneH);
         EXPECT_TRUE(msghandler.ok());
         for(auto &molprop: molprops)
         {

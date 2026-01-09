@@ -44,7 +44,6 @@
 
 #include "actmol_util.h"
 
-#include "act/import/atype_mapping.h"
 #include "act/import/import.h"
 #include "act/alexandria/actmol.h"
 #include "act/forcefield/forcefield_utils.h"

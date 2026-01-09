@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2024,2025
+ * Copyright (C) 2024-2026
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -62,8 +62,6 @@ namespace alexandria
         ChargeGenerationAlgorithm qAlgorithm_ = ChargeGenerationAlgorithm::SQE;
         //! File name for reading structures from
         char   *filename_  = (char *)"";
-        //! Molecule name to use if there is none in the input file
-        char   *molnm_      = (char *)"";
         //! List of compounds/dimers to extract from charges files
         char   *dbname_     = (char *)"";
         //! Map back hydrogen atoms to one type
