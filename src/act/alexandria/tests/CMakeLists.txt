@@ -44,7 +44,6 @@ gmx_add_unit_test(
     b2Test.cpp
     compound_readerTest.cpp
     forcecomputerTest.cpp
-    importTest.cpp
     molhandlerTest.cpp
     openmmTest.cpp
     sphereIntegratorTest.cpp

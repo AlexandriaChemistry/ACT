@@ -29,5 +29,5 @@ file(GLOB MOLPROP_SOURCES *.cpp *.h)
 target_sources(actLib PRIVATE ${MOLPROP_SOURCES})
 
 if (BUILD_TESTING)
-#   add_subdirectory(tests)
+   add_subdirectory(tests)
 endif()

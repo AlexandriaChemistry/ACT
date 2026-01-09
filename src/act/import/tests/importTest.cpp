@@ -37,7 +37,7 @@
 
 #include <gtest/gtest.h>
 
-#include "act/alexandria/actmol.h"
+//#include "act/alexandria/actmol.h"
 #include "act/forcefield/forcefield.h"
 #include "act/forcefield/forcefield_utils.h"
 #include "act/import/import.h"
@@ -68,7 +68,7 @@ private:
 public:   
     ImportTest()
     {
-        pd       = getForceField("ACS-g");
+        pd       = getForceField("../../alexandria/tests/ACS-g");
         oneH     = std::get<0>(GetParam());
         bondTest = std::get<2>(GetParam());
         molname  = std::get<0>(std::get<1>(GetParam()));
@@ -87,7 +87,7 @@ public:
         std::string                      dataName;
         std::vector<alexandria::MolProp> molprops;
 
-        std::string dirmolname("mols/");
+        std::string dirmolname("../../alexandria/tests/mols/");
         dirmolname     += molname;
         dataName        = gmx::test::TestFileManager::getInputFilePath(dirmolname);
         bool   userqtot = false;
