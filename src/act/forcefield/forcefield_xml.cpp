@@ -54,31 +54,6 @@
 
 namespace alexandria
 {
-//! \brief string for XML file
-const char *xmltypes[] = {
-    nullptr,
-    "XML_ELEMENT_NODE",
-    "XML_ATTRIBUTE_NODE",
-    "XML_TEXT_NODE",
-    "XML_CDATA_SECTION_NODE",
-    "XML_ENTITY_REF_NODE",
-    "XML_ENTITY_NODE",
-    "XML_PI_NODE",
-    "XML_COMMENT_NODE",
-    "XML_DOCUMENT_NODE",
-    "XML_DOCUMENT_TYPE_NODE",
-    "XML_DOCUMENT_FRAG_NODE",
-    "XML_NOTATION_NODE",
-    "XML_HTML_DOCUMENT_NODE",
-    "XML_DTD_NODE",
-    "XML_ELEMENT_DECL",
-    "XML_ATTRIBUTE_DECL",
-    "XML_ENTITY_DECL",
-    "XML_NAMESPACE_DECL",
-    "XML_XINCLUDE_START",
-    "XML_XINCLUDE_END"
-};
-#define NXMLTYPES sizeof(xmltypes)/sizeof(xmltypes[0])
 
 //! The different entries to excpect in force field file
 enum class xmlEntry {
@@ -527,16 +502,17 @@ static void processTree(FILE                 *fp,
                         int                   indent,
                         ForceField           *pd)
 {
-    char             buf[100];
+    char buf[100];
+    auto xmltype = xmltypes();
 
     while (tree != nullptr)
     {
         if (fp)
         {
-            if ((tree->type > 0) && (tree->type < NXMLTYPES))
+            if ((tree->type > 0) && (tree->type < xmltype.size()))
             {
                 fprintf(fp, "Node type %s encountered with name %s\n",
-                        xmltypes[tree->type], (char *)tree->name);
+                        xmltype[tree->type], (char *)tree->name);
             }
             else
             {

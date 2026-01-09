@@ -34,10 +34,38 @@
 
 #include "xml_util.h"
 
-#include <string.h>
+#include <cstring>
+#include <vector>
 
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/stringutil.h"
+
+//! \brief string for XML file
+const std::vector<const char *> xml_types = {
+    nullptr,
+    "XML_ELEMENT_NODE",
+    "XML_ATTRIBUTE_NODE",
+    "XML_TEXT_NODE",
+    "XML_CDATA_SECTION_NODE",
+    "XML_ENTITY_REF_NODE",
+    "XML_ENTITY_NODE",
+    "XML_PI_NODE",
+    "XML_COMMENT_NODE",
+    "XML_DOCUMENT_NODE",
+    "XML_DOCUMENT_TYPE_NODE",
+    "XML_DOCUMENT_FRAG_NODE",
+    "XML_NOTATION_NODE",
+    "XML_HTML_DOCUMENT_NODE",
+    "XML_DTD_NODE",
+    "XML_ELEMENT_DECL",
+    "XML_ATTRIBUTE_DECL",
+    "XML_ENTITY_DECL",
+    "XML_NAMESPACE_DECL",
+    "XML_XINCLUDE_START",
+    "XML_XINCLUDE_END"
+};
+
+const std::vector<const char *> &xmltypes() { return xml_types; }
 
 void add_xml_int(xmlNodePtr ptr, const std::string &name, int val)
 {
