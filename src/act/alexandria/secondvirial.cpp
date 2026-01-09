@@ -35,30 +35,30 @@
 #include <cctype>
 #include <cstdlib>
 
+#include "act/alexandria/actmol.h"
 #include "act/alexandria/alex_modules.h"
-#include "act/import/import.h"
 #include "act/alexandria/b2data.h"
-#include "act/alexandria/compound_reader.h"
 #include "act/alexandria/confighandler.h"
 #include "act/alexandria/molhandler.h"
-#include "act/alexandria/actmol.h"
 #include "act/alexandria/princ.h"
 #include "act/alexandria/train_utility.h"
 #include "act/basics/msg_handler.h"
+#include "act/forcefield/forcefield_xml.h"
+#include "act/import/compound_reader.h"
+#include "act/import/import.h"
 #include "act/molprop/molprop_util.h"
 #include "act/molprop/molprop_xml.h"
-#include "act/forcefield/forcefield_xml.h"
 #include "act/utility/jsontree.h"
 #include "act/utility/memory_check.h"
 #include "act/utility/stringutil.h"
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/commandline/pargs.h"
-#include "gromacs/gmxpreprocess/grompp-impl.h"
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/oenv.h"
 #include "gromacs/fileio/xvgr.h"
-#include "gromacs/utility/futil.h"
+#include "gromacs/gmxpreprocess/grompp-impl.h"
 #include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/utility/futil.h"
 
 namespace alexandria
 {

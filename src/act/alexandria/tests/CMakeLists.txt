@@ -42,7 +42,6 @@ gmx_add_unit_test(
     actmol_util.cpp
     allbondedsTest.cpp
     b2Test.cpp
-    compound_readerTest.cpp
     forcecomputerTest.cpp
     molhandlerTest.cpp
     openmmTest.cpp

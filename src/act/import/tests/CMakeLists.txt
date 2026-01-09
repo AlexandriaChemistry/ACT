@@ -39,6 +39,7 @@ gmx_add_unit_test(
     ${testname}
     ${exename}
     # files with code for tests
+    compound_readerTest.cpp
     importTest.cpp
     # pseudo-library for code for alexandria
     $<TARGET_OBJECTS:actLib>

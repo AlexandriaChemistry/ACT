@@ -38,8 +38,8 @@
 #include <map>
 
 #include "act/alexandria/actmol.h"
-#include "act/alexandria/compound_reader.h"
 #include "act/alexandria/molselect.h"
+#include "act/import/compound_reader.h"
 #include "act/utility/communicationrecord.h"
 #include "gromacs/commandline/pargs.h"
 

@@ -33,10 +33,10 @@
     
 #include "compound_reader.h"
 
-#include "act/import/import.h"
-#include "act/alexandria/fetch_charges.h"
 #include "act/alexandria/molselect.h"
 #include "act/basics/msg_handler.h"
+#include "act/import/fetch_charges.h"
+#include "act/import/import.h"
 #include "act/molprop/molprop_xml.h"
 #include "act/utility/stringutil.h"
 
