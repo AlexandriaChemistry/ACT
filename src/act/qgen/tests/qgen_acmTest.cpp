@@ -38,7 +38,6 @@
 
 #include <gtest/gtest.h>
 
-#include "act/import/atype_mapping.h"
 #include "act/import/import.h"
 #include "act/alexandria/actmol.h"
 #include "act/basics/msg_handler.h"
@@ -93,15 +92,9 @@ class AcmTest : public gmx::test::CommandLineTestBase
                      std::vector<double>              qtotal,
                      const std::vector<double>       &qcustom)
         {
-            int                   maxpot    = 100;
-            int                   nsymm     = 0;
             const char           *conf      = (char *)"minimum";
-            const char           *jobtype   = (char *)"Opt";
-            std::string           method;
-            std::string           basis;
             std::string           fileName(molname);
             std::vector<alexandria::MolProp> molprops;
-            bool                  trustObCharge = false;
             
             if (inputformat == inputFormat::PDB)
             {
@@ -123,22 +116,15 @@ class AcmTest : public gmx::test::CommandLineTestBase
             auto pd           = getForceField(model);
             bool   userqtot   = !qcustom.empty();
             double qtot_babel = myqtot;
-            matrix box;
             MsgHandler msghandler;
             msghandler.setPrintLevel(ACTStatus::Warning);
             importFile(&msghandler, pd, dataName.c_str(), &molprops,
-                       molname.c_str(), molname.c_str(),
-                       conf, &method, &basis, maxpot,
-                       nsymm, jobtype, userqtot ,&qtot_babel,
-                       false, box, true);
+                       conf, JobType::OPT, userqtot ,&qtot_babel,
+                       true);
             EXPECT_TRUE(msghandler.ok());
             if (!msghandler.ok())
             {
                 return;
-            }
-            if (trustObCharge)
-            {
-                EXPECT_TRUE(myqtot == qtot_babel);
             }
             auto &molprop = molprops[0];
             

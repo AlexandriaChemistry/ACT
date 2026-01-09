@@ -39,7 +39,6 @@
 
 #include <gtest/gtest.h>
 
-#include "act/import/atype_mapping.h"
 #include "act/import/import.h"
 #include "act/alexandria/molhandler.h"
 #include "act/alexandria/actmol.h"
@@ -87,12 +86,7 @@ protected:
         gmx::test::TestReferenceChecker checker_(this->rootChecker());
         auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, 5e-2);
         checker_.setDefaultTolerance(tolerance);
-        int                              maxpot   = 100;
-        int                              nsymm    = 0;
         const char                      *conf     = (char *)"minimum";
-        std::string                      method, basis;
-        const char                      *jobtype  = (char *)"Opt";
-        
         std::string                      dataName;
         std::vector<alexandria::MolProp> molprops;
         
@@ -105,11 +99,8 @@ protected:
         bool   userqtot = false;
         MsgHandler msghandler;
         msghandler.setPrintLevel(ACTStatus::Warning);
-        matrix box;
         importFile(&msghandler, pd, dataName.c_str(), &molprops,
-                   molname, molname,
-                   conf, &method, &basis,
-                   maxpot, nsymm, jobtype, userqtot, &qtot, false, box, true);
+                   conf, JobType::OPT, userqtot, &qtot, true);
         EXPECT_TRUE(msghandler.ok());
         std::vector<ACTMol> mps;
         // Needed for GenerateCharges

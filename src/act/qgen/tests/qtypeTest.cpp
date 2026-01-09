@@ -37,7 +37,6 @@
 
 #include <gtest/gtest.h>
 
-#include "act/import/atype_mapping.h"
 #include "act/import/import.h"
 #include "act/alexandria/actmol.h"
 #include "act/basics/msg_handler.h"
@@ -63,8 +62,7 @@ namespace
 enum class inputFormat {
     PDB,
     SDF,
-    XYZ,
-    ZIP
+    XYZ
 };
 
 //! Class to test the Alexandria Charge Model
@@ -92,25 +90,12 @@ class QtypeTest : public gmx::test::CommandLineTestBase
                        double qtotal,
                        const std::vector<double> &qcustom)
         {
-            int                   maxpot    = 100;
-            int                   nsymm     = 0;
             const char           *conf      = (char *)"minimum";
-            const char           *jobtype   = (char *)"Opt";
-            std::string           method;
-            std::string           basis;
             std::string           fileName(molname);
             std::vector<alexandria::MolProp> molprops;
-            bool                  trustObCharge = false;
             
             switch (inputformat)
             {
-            case inputFormat::ZIP:
-                {
-                    method.assign("B3LYP");
-                    basis.assign("GEN");
-                    trustObCharge = true;
-                }
-                break;
             case inputFormat::PDB:
                 {
                     fileName.append(".pdb");
@@ -133,19 +118,12 @@ class QtypeTest : public gmx::test::CommandLineTestBase
             auto dataName = gmx::test::TestFileManager::getInputFilePath(fileName);
             bool   userqtot   = !qcustom.empty();
             double qtot_babel = qtotal;
-            matrix box;
             MsgHandler msghandler;
             msghandler.setPrintLevel(ACTStatus::Warning);
             importFile(&msghandler, pd, dataName.c_str(), &molprops,
-                       molname.c_str(), molname.c_str(),
-                       conf, &method, &basis, maxpot,
-                       nsymm, jobtype, userqtot,
-                       &qtot_babel, false, box, true);
+                       conf, JobType::OPT, userqtot,
+                       &qtot_babel, true);
             EXPECT_TRUE(msghandler.ok());
-            if (trustObCharge)
-            {
-                EXPECT_TRUE(qtotal == qtot_babel);
-            }
             auto forceComp = new ForceComputer();
 
             // Now loop over molprops, there may be more than one

@@ -35,7 +35,6 @@
 #include "actpre.h"
 #include "actmol_util.h"
 #include "act/import/import.h"
-#include "act/import/atype_mapping.h"
 #include "act/alexandria/actmol.h"
 #include "act/basics/msg_handler.h"
 
@@ -50,12 +49,7 @@ void initACTMol(const char          *molname,
                 ForceComputer       *fcomp,
                 std::vector<ACTMol> *mps)
     {
-        int           maxpot   = 100;
-        int           nsymm    = 0;
         const char   *conf     = (char *)"minimum";
-        std::string   method, basis;
-        const char   *jobtype  = (char *)"Opt";
-        
         std::string   dataName = gmx::test::TestFileManager::getInputFilePath(molname);
         std::vector<alexandria::MolProp> molprops;
         double        qtot     = 0;
@@ -63,16 +57,13 @@ void initACTMol(const char          *molname,
         auto alg = pd->chargeGenerationAlgorithm();
         std::vector<double> qcustom;
         bool userqtot = false;
-        matrix box;
         MsgHandler msghandler;
         // Uncomment in case of issues
         // msghandler.setPrintLevel(ACTStatus::Debug);
         msghandler.setPrintLevel(ACTStatus::Warning);
         importFile(&msghandler, pd, dataName.c_str(), &molprops,
-                   molname, molname,
-                   conf, &method, &basis,
-                   maxpot, nsymm, jobtype, userqtot,
-                   &qtot, false, box, true);
+                   conf, JobType::OPT, userqtot,
+                   &qtot, true);
         EXPECT_TRUE(msghandler.ok());
 
         for(auto &molprop : molprops)
