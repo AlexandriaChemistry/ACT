@@ -1,20 +1,14 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
-  <String Name="molname">acetone-nonplanar.pdb</String>
+  <String Name="molname">hydrogen-bromide#hydrogen-fluoride.pdb</String>
   <Real Name="qtot">0</Real>
-  <Int Name="acetone-nonplanar.pdb">10</Int>
+  <Int Name="hydrogen-bromide#hydrogen-fluoride.pdb">4</Int>
   <Sequence Name="atomtypes">
-    <Int Name="Length">10</Int>
-    <String>o2</String>
-    <String>c2</String>
-    <String>c3</String>
-    <String>c3</String>
-    <String>h</String>
-    <String>h</String>
-    <String>h</String>
-    <String>h</String>
-    <String>h</String>
-    <String>h</String>
+    <Int Name="Length">4</Int>
+    <String>br</String>
+    <String>hbr</String>
+    <String>f</String>
+    <String>hf</String>
   </Sequence>
 </ReferenceData>

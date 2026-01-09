@@ -1,12 +1,19 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
-  <String Name="molname">fluorane.sdf</String>
+  <String Name="molname">acetone.sdf</String>
   <Real Name="qtot">0</Real>
-  <Int Name="fluorane.sdf">2</Int>
+  <Int Name="acetone.sdf">9</Int>
   <Sequence Name="bondorder">
-    <Int Name="Length">2</Int>
-    <String>f-0 h-1: 1</String>
-    <String>f-2 h-3: 1</String>
+    <Int Name="Length">9</Int>
+    <String>c2-1 o2-0: 2</String>
+    <String>c3-2 h-4: 1</String>
+    <String>c3-2 c2-1: 1</String>
+    <String>c3-3 h-7: 1</String>
+    <String>c3-3 c2-1: 1</String>
+    <String>h-5 c3-2: 1</String>
+    <String>h-6 c3-2: 1</String>
+    <String>h-8 c3-3: 1</String>
+    <String>h-9 c3-3: 1</String>
   </Sequence>
 </ReferenceData>

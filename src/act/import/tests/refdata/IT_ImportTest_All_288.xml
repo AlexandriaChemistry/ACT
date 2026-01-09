@@ -1,11 +1,14 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
-  <String Name="molname">water-3-oep.log.pdb</String>
+  <String Name="molname">water_dimer.pdb</String>
   <Real Name="qtot">0</Real>
-  <Int Name="water-3-oep.log.pdb">3</Int>
+  <Int Name="water_dimer.pdb">6</Int>
   <Sequence Name="atomtypes">
-    <Int Name="Length">3</Int>
+    <Int Name="Length">6</Int>
+    <String>ow</String>
+    <String>h</String>
+    <String>h</String>
     <String>ow</String>
     <String>h</String>
     <String>h</String>

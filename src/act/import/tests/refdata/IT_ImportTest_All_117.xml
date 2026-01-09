@@ -1,21 +1,18 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
-  <String Name="molname">phosphinine.sdf</String>
+  <String Name="molname">dimethyl-sulfide.sdf</String>
   <Real Name="qtot">0</Real>
-  <Int Name="phosphinine.sdf">11</Int>
+  <Int Name="dimethyl-sulfide.sdf">8</Int>
   <Sequence Name="bondorder">
-    <Int Name="Length">11</Int>
-    <String>p2-0 c2-4: 1.5</String>
-    <String>p2-0 c2-5: 1.5</String>
-    <String>c2-1 c2-2: 1.5</String>
-    <String>c2-1 c2-3: 1.5</String>
-    <String>c2-1 h-6: 1</String>
-    <String>c2-2 c2-4: 1.5</String>
-    <String>c2-2 h-7: 1</String>
-    <String>c2-3 c2-5: 1.5</String>
-    <String>c2-3 h-8: 1</String>
-    <String>c2-4 h-9: 1</String>
-    <String>c2-5 h-10: 1</String>
+    <Int Name="Length">8</Int>
+    <String>c3-0 h-1: 1</String>
+    <String>c3-0 h-2: 1</String>
+    <String>h-3 c3-0: 1</String>
+    <String>s3-4 c3-0: 1</String>
+    <String>s3-4 c3-5: 1</String>
+    <String>c3-5 h-8: 1</String>
+    <String>h-6 c3-5: 1</String>
+    <String>h-7 c3-5: 1</String>
   </Sequence>
 </ReferenceData>

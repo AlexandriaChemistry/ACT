@@ -1,13 +1,23 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
-  <String Name="molname">thiazyl-fluoride-3-oep.log.pdb</String>
+  <String Name="molname">ethylsulfonylformaldehyde.sdf</String>
   <Real Name="qtot">0</Real>
-  <Int Name="thiazyl-fluoride-3-oep.log.pdb">3</Int>
+  <Int Name="ethylsulfonylformaldehyde.sdf">13</Int>
   <Sequence Name="atomtypes">
-    <Int Name="Length">3</Int>
-    <String>f</String>
+    <Int Name="Length">13</Int>
+    <String>c3</String>
+    <String>c3</String>
     <String>s3</String>
-    <String>n2</String>
+    <String>o2</String>
+    <String>o2</String>
+    <String>c2</String>
+    <String>o2</String>
+    <String>h</String>
+    <String>h</String>
+    <String>h</String>
+    <String>h</String>
+    <String>h</String>
+    <String>h</String>
   </Sequence>
 </ReferenceData>

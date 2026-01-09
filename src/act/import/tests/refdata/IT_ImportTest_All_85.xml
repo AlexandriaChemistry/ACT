@@ -1,18 +1,12 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
-  <String Name="molname">guanidine.pdb</String>
+  <String Name="molname">carbon-dioxide.sdf</String>
   <Real Name="qtot">0</Real>
-  <Int Name="guanidine.pdb">8</Int>
+  <Int Name="carbon-dioxide.sdf">2</Int>
   <Sequence Name="bondorder">
-    <Int Name="Length">8</Int>
-    <String>c2-0 n2-1: 1</String>
-    <String>c2-0 n2-2: 1</String>
-    <String>c2-0 n2-3: 2</String>
-    <String>n2-1 h-6: 1</String>
-    <String>n2-1 h-7: 1</String>
-    <String>n2-2 h-4: 1</String>
-    <String>n2-2 h-5: 1</String>
-    <String>n2-3 h-8: 1</String>
+    <Int Name="Length">2</Int>
+    <String>c1-1 o2-0: 2</String>
+    <String>o2-2 c1-1: 2</String>
   </Sequence>
 </ReferenceData>

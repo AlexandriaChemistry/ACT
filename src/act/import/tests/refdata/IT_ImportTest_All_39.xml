@@ -1,13 +1,19 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
-  <String Name="molname">ammonia.sdf</String>
+  <String Name="molname">3H-diphosphole.sdf</String>
   <Real Name="qtot">0</Real>
-  <Int Name="ammonia.sdf">3</Int>
+  <Int Name="3H-diphosphole.sdf">9</Int>
   <Sequence Name="bondorder">
-    <Int Name="Length">3</Int>
-    <String>h-0 n3-1: 1</String>
-    <String>h-2 n3-1: 1</String>
-    <String>h-3 n3-1: 1</String>
+    <Int Name="Length">9</Int>
+    <String>p2-1 c2-4: 1</String>
+    <String>p2-1 p2-0: 2</String>
+    <String>c3-2 c2-3: 1</String>
+    <String>c3-2 p2-0: 1</String>
+    <String>c3-2 h-6: 1</String>
+    <String>c2-3 c2-4: 2</String>
+    <String>c2-3 h-7: 1</String>
+    <String>c2-4 h-8: 1</String>
+    <String>h-5 c3-2: 1</String>
   </Sequence>
 </ReferenceData>

@@ -1,19 +1,16 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
-  <String Name="molname">acetone.sdf</String>
+  <String Name="molname">125-thiadiazole.sdf</String>
   <Real Name="qtot">0</Real>
-  <Int Name="acetone.sdf">10</Int>
+  <Int Name="125-thiadiazole.sdf">7</Int>
   <Sequence Name="atomtypes">
-    <Int Name="Length">10</Int>
-    <String>o2</String>
+    <Int Name="Length">7</Int>
+    <String>s2</String>
+    <String>n2</String>
     <String>c2</String>
-    <String>c3</String>
-    <String>c3</String>
-    <String>h</String>
-    <String>h</String>
-    <String>h</String>
-    <String>h</String>
+    <String>c2</String>
+    <String>n2</String>
     <String>h</String>
     <String>h</String>
   </Sequence>

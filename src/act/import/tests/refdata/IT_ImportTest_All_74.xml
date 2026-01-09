@@ -1,16 +1,16 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
-  <String Name="molname">formamide.sdf</String>
+  <String Name="molname">acetonitrile.sdf</String>
   <Real Name="qtot">0</Real>
-  <Int Name="formamide.sdf">6</Int>
+  <Int Name="acetonitrile.sdf">6</Int>
   <Sequence Name="atomtypes">
     <Int Name="Length">6</Int>
-    <String>o2</String>
-    <String>c2</String>
-    <String>h</String>
-    <String>n2</String>
+    <String>c3</String>
     <String>h</String>
     <String>h</String>
+    <String>h</String>
+    <String>c1</String>
+    <String>n1</String>
   </Sequence>
 </ReferenceData>

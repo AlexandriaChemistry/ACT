@@ -1,15 +1,16 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
-  <String Name="molname">1-methylsulfinylethene.sdf</String>
+  <String Name="molname">1-amino-1-hydroxyguanidine-3-oep.log.pdb</String>
   <Real Name="qtot">0</Real>
-  <Int Name="1-methylsulfinylethene.sdf">11</Int>
+  <Int Name="1-amino-1-hydroxyguanidine-3-oep.log.pdb">12</Int>
   <Sequence Name="atomtypes">
-    <Int Name="Length">11</Int>
-    <String>s3</String>
-    <String>o2</String>
-    <String>c3</String>
-    <String>c2</String>
+    <Int Name="Length">12</Int>
+    <String>o3</String>
+    <String>n2</String>
+    <String>n3</String>
+    <String>n2</String>
+    <String>n2</String>
     <String>c2</String>
     <String>h</String>
     <String>h</String>

@@ -1,25 +1,19 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
-  <String Name="molname">12-dimethyl-imidazole.sdf</String>
+  <String Name="molname">furan.sdf</String>
   <Real Name="qtot">0</Real>
-  <Int Name="12-dimethyl-imidazole.sdf">15</Int>
+  <Int Name="furan.sdf">9</Int>
   <Sequence Name="atomtypes">
-    <Int Name="Length">15</Int>
+    <Int Name="Length">9</Int>
     <String>c2</String>
+    <String>h</String>
     <String>c2</String>
-    <String>n2</String>
+    <String>h</String>
     <String>c2</String>
-    <String>n2</String>
-    <String>c3</String>
     <String>h</String>
+    <String>c2</String>
     <String>h</String>
-    <String>h</String>
-    <String>h</String>
-    <String>h</String>
-    <String>c3</String>
-    <String>h</String>
-    <String>h</String>
-    <String>h</String>
+    <String>o2</String>
   </Sequence>
 </ReferenceData>

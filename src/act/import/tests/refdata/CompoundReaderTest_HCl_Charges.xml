@@ -4,7 +4,7 @@
   <String Name="Charge type to read"></String>
   <String Name="Algorithm">SQE</String>
   <Int64 Name="Number of molecules">1</Int64>
-  <Real Name="HCl-Cl-1">0.8782950242491333</Real>
-  <Real Name="HCl-H-2">0.48249476826186666</Real>
+  <Real Name="HCl-Cl-1">0.87933812690985547</Real>
+  <Real Name="HCl-H-2">0.4814516656011445</Real>
   <Real Name="HCl-v2cl1-3">-1.360789792511</Real>
 </ReferenceData>

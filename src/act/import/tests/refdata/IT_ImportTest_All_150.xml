@@ -1,21 +1,15 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
-  <String Name="molname">1-amino-1-hydroxyguanidine-3-oep.log.pdb</String>
+  <String Name="molname">formamide.sdf</String>
   <Real Name="qtot">0</Real>
-  <Int Name="1-amino-1-hydroxyguanidine-3-oep.log.pdb">12</Int>
+  <Int Name="formamide.sdf">6</Int>
   <Sequence Name="atomtypes">
-    <Int Name="Length">12</Int>
-    <String>o3</String>
-    <String>n2</String>
-    <String>n3</String>
-    <String>n2</String>
-    <String>n2</String>
+    <Int Name="Length">6</Int>
+    <String>o2</String>
     <String>c2</String>
     <String>h</String>
-    <String>h</String>
-    <String>h</String>
-    <String>h</String>
+    <String>n2</String>
     <String>h</String>
     <String>h</String>
   </Sequence>

@@ -1,18 +1,13 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
-  <String Name="molname">formylphosphonic-acid.sdf</String>
+  <String Name="molname">ammonia.sdf</String>
   <Real Name="qtot">0</Real>
-  <Int Name="formylphosphonic-acid.sdf">8</Int>
+  <Int Name="ammonia.sdf">3</Int>
   <Sequence Name="bondorder">
-    <Int Name="Length">8</Int>
-    <String>p3-0 o3-1: 1</String>
-    <String>p3-0 o3-2: 1</String>
-    <String>p3-0 o2-3: 2</String>
-    <String>p3-0 c2-5: 1</String>
-    <String>o3-1 h-7: 1</String>
-    <String>o3-2 h-8: 1</String>
-    <String>o2-4 c2-5: 2</String>
-    <String>c2-5 h-6: 1</String>
+    <Int Name="Length">3</Int>
+    <String>h-0 n3-1: 1</String>
+    <String>h-2 n3-1: 1</String>
+    <String>h-3 n3-1: 1</String>
   </Sequence>
 </ReferenceData>

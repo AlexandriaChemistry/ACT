@@ -1,17 +1,26 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
-  <String Name="molname">1-1-dimethylguanidinium.sdf</String>
-  <Real Name="qtot">1</Real>
-  <Int Name="1-1-dimethylguanidinium.sdf">16</Int>
+  <String Name="molname">1--ethoxyethylphosphoryl-oxyethane-3-oep.log.pdb</String>
+  <Real Name="qtot">0</Real>
+  <Int Name="1--ethoxyethylphosphoryl-oxyethane-3-oep.log.pdb">25</Int>
   <Sequence Name="atomtypes">
-    <Int Name="Length">16</Int>
-    <String>n3</String>
-    <String>n3</String>
-    <String>n3</String>
+    <Int Name="Length">25</Int>
+    <String>p3</String>
+    <String>o3</String>
+    <String>o3</String>
+    <String>o2</String>
     <String>c3</String>
     <String>c3</String>
     <String>c3</String>
+    <String>c3</String>
+    <String>c3</String>
+    <String>c3</String>
+    <String>h</String>
+    <String>h</String>
+    <String>h</String>
+    <String>h</String>
+    <String>h</String>
     <String>h</String>
     <String>h</String>
     <String>h</String>
