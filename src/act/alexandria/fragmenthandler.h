@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2022-2025
+ * Copyright (C) 2022-2026
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -30,7 +30,7 @@
 #include <vector>
 
 #include "act/alexandria/actmol_low.h"
-#include "act/alexandria/fetch_charges.h"
+#include "act/import/fetch_charges.h"
 #include "act/qgen/qgen_acm.h"
 #include "act/molprop/fragment.h"
 

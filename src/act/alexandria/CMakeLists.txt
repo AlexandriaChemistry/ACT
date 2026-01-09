@@ -40,12 +40,10 @@ target_sources(actLib
            analyze.cpp
            b2data.cpp
            bayes.cpp
-           compound_reader.cpp
            confighandler.cpp
            devcomputer.cpp
            dimergenerator.cpp
            dissociation_energy.cpp
-           fetch_charges.cpp
            fragmenthandler.cpp
            gentop.cpp
            geometry_ff.cpp

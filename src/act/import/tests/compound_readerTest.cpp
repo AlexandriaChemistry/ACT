@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria program.
  *
- * Copyright (C) 2025
+ * Copyright (C) 2025,2026
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -39,9 +39,9 @@
 
 #include <gtest/gtest.h>
 
-#include "act/alexandria/compound_reader.h"
 #include "act/basics/msg_handler.h"
 #include "act/forcefield/forcefield_utils.h"
+#include "act/import/compound_reader.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "testutils/cmdlinetest.h"
@@ -141,7 +141,7 @@ protected:
         std::vector<const char *> desc;
         CompoundReader            compR_;
 
-        std::string dirinput("mols/");
+        std::string dirinput("../../alexandria/tests/mols/");
         dirinput += input;
         std::string infile = gmx::test::TestFileManager::getInputFilePath(dirinput);
         compR_.addOptions(&pargs, &filenm, &desc);

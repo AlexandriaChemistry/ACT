@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2025
+ * Copyright (C) 2014-2026
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -41,12 +41,12 @@
 #include <vector>
 
 #include "act/alexandria/alex_modules.h"
-#include "act/alexandria/compound_reader.h"
 #include "act/alexandria/train_utility.h"
 #include "act/basics/msg_handler.h"
 #include "act/forcefield/forcefield.h"
 #include "act/forcefield/forcefield_xml.h"
 #include "act/forces/combinationrules.h"
+#include "act/import/compound_reader.h"
 #include "act/molprop/molprop_util.h"
 #include "act/molprop/molprop_xml.h"
 #include "act/utility/memory_check.h"
