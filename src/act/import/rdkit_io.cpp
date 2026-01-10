@@ -429,20 +429,18 @@ static void lookUpSpecial(MsgHandler                           *msg_handler,
         }
     }
 }
-                
-void importFile(MsgHandler             *msg_handler,
-                const ForceField       *pd,
-                const std::string      &filenm,
-                std::vector<MolProp>   *mps,
-                const char             *conf,
-                JobType                 jobtype,
-                bool                    userqtot,
-                double                 *qtot,
-                bool                    oneH)
-{
-    auto abe = getAtomBondtypeDB();
-    writeAtomBondtypeDB(msg_handler, "atom_bond.xml", abe);
 
+static void importFile(MsgHandler                           *msg_handler,
+                       const ForceField                     *pd,
+                       const std::string                    &filenm,
+                       std::vector<MolProp>                 *mps,
+                       const char                           *conf,
+                       JobType                               jobtype,
+                       bool                                  userqtot,
+                       double                               *qtot,
+                       bool                                  oneH,
+                       const std::vector<AtomBondtypeEntry> &abdb)
+{
     if (msg_handler->debug())
     {
         msg_handler->writeDebug(gmx::formatString("Will import file %s using the RDKit library", filenm.c_str()));
@@ -507,7 +505,7 @@ void importFile(MsgHandler             *msg_handler,
             }
             // Now we have done the "default" atom types and bonds.
             // However, sometimes we need to look for special cases.
-            lookUpSpecial(msg_handler, pd, abe, mol2, &exper, mp.bonds(), oneH);
+            lookUpSpecial(msg_handler, pd, abdb, mol2, &exper, mp.bonds(), oneH);
             if (msg_handler->ok())
             {
                 AlexandriaMols amols;
@@ -529,6 +527,30 @@ void importFile(MsgHandler             *msg_handler,
         msg_handler->msg(ACTStatus::Error,
                          gmx::formatString("Exception raised by RDKit: %s", ve.what() ) );
     }
+}
+
+void importFile(MsgHandler             *msg_handler,
+                const ForceField       *pd,
+                const std::string      &filenm,
+                std::vector<MolProp>   *mps,
+                const char             *conf,
+                JobType                 jobtype,
+                bool                    userqtot,
+                double                 *qtot,
+                bool                    oneH)
+{
+    static std::vector<AtomBondtypeEntry> abe;
+    if (abe.empty())
+    {
+        // Left empty on purpose.
+        std::string                    dbname;
+        readAtomBondtypeDB(msg_handler, dbname, &abe);
+        if (msg_handler->debug())
+        {
+            writeAtomBondtypeDB(msg_handler, "atom_bond.xml", abe);
+        }
+    }
+    importFile(msg_handler, pd, filenm, mps, conf, jobtype, userqtot, qtot, oneH, abe);
 }
 
 bool SetMolpropAtomTypesAndBonds(alexandria::MolProp *mmm)

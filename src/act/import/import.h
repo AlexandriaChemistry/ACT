@@ -45,7 +45,7 @@ namespace alexandria
 class MsgHandler;
 
 /*! \brief
- * Read a Gaussian log file or other file supported by OpenBabel
+ * Read an sdf, pdb or xyz file using RDKit.
  *
  * \param[in]    msg_handler For debugging and info
  * \param[in]    pd          Alexandria force field

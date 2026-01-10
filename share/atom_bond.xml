@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE atombondDB.dtd PUBLIC "atombondDB.dtd" "atombondDB.dtd">
+<atombondtypes>
+  <atombondtype name="sulfate" smarts="[#16](=[#8])(=[#8])(-[#8-])-[#8-]" charge="-2" multiplicity="1">
+    <atomtypes>
+      <atomtype index="0" name="s3"/>
+      <atomtype index="1" name="o2"/>
+      <atomtype index="2" name="o2"/>
+      <atomtype index="3" name="o2"/>
+      <atomtype index="4" name="o2"/>
+    </atomtypes>
+    <bondtypes>
+      <bondtype ai="0" aj="1" order="1.5"/>
+      <bondtype ai="0" aj="2" order="1.5"/>
+      <bondtype ai="0" aj="3" order="1.5"/>
+      <bondtype ai="0" aj="4" order="1.5"/>
+    </bondtypes>
+  </atombondtype>
+  <atombondtype name="water" smarts="[#8](-[#1])-[#1]" charge="0" multiplicity="1">
+    <atomtypes>
+      <atomtype index="0" name="ow"/>
+      <atomtype index="1" name="hw"/>
+      <atomtype index="2" name="hw"/>
+    </atomtypes>
+    <bondtypes>
+      <bondtype ai="0" aj="1" order="1"/>
+      <bondtype ai="0" aj="2" order="1"/>
+    </bondtypes>
+  </atombondtype>
+  <atombondtype name="phosphate" smarts="[#15D4]([#8D1])([#8D1])([#8-,#8D1])([#8-,#8D1])" charge="-3" multiplicity="1">
+    <atomtypes>
+      <atomtype index="0" name="p3"/>
+      <atomtype index="1" name="o3"/>
+      <atomtype index="2" name="o3"/>
+      <atomtype index="3" name="o3"/>
+      <atomtype index="4" name="o3"/>
+    </atomtypes>
+    <bondtypes>
+      <bondtype ai="0" aj="1" order="1.5"/>
+      <bondtype ai="0" aj="2" order="1.5"/>
+      <bondtype ai="0" aj="3" order="1.5"/>
+      <bondtype ai="0" aj="4" order="1.5"/>
+    </bondtypes>
+  </atombondtype>
+  <atombondtype name="phosphate2" smarts="[#8-]-[#15](-[#8-])(-[#8-])=[#8]" charge="-3" multiplicity="1">
+    <atomtypes>
+      <atomtype index="0" name="o3"/>
+      <atomtype index="1" name="p3"/>
+      <atomtype index="2" name="o3"/>
+      <atomtype index="3" name="o3"/>
+      <atomtype index="4" name="o3"/>
+    </atomtypes>
+    <bondtypes>
+      <bondtype ai="0" aj="1" order="1.5"/>
+      <bondtype ai="1" aj="2" order="1.5"/>
+      <bondtype ai="1" aj="3" order="1.5"/>
+      <bondtype ai="1" aj="4" order="1.5"/>
+    </bondtypes>
+  </atombondtype>
+  <atombondtype name="phosphate2" smarts="[#8-]-[#15](-[#8-])(-[#8-])" charge="-2" multiplicity="1">
+    <atomtypes>
+      <atomtype index="0" name="o3"/>
+      <atomtype index="1" name="p3"/>
+      <atomtype index="2" name="o3"/>
+      <atomtype index="3" name="o3"/>
+    </atomtypes>
+    <bondtypes>
+      <bondtype ai="0" aj="1" order="1.5"/>
+      <bondtype ai="1" aj="2" order="1.5"/>
+      <bondtype ai="1" aj="3" order="1.5"/>
+    </bondtypes>
+  </atombondtype>
+  <atombondtype name="phosphate3" smarts="[#8-]-[#15](-[#8-])" charge="-1" multiplicity="1">
+    <atomtypes>
+      <atomtype index="0" name="o3"/>
+      <atomtype index="1" name="p3"/>
+      <atomtype index="2" name="o3"/>
+    </atomtypes>
+    <bondtypes>
+      <bondtype ai="0" aj="1" order="1"/>
+      <bondtype ai="1" aj="2" order="1"/>
+    </bondtypes>
+  </atombondtype>
+  <atombondtype name="nitro1" smarts="[#7+](-[#8-])=[#8]" charge="0" multiplicity="1">
+    <atomtypes>
+      <atomtype index="0" name="n2"/>
+      <atomtype index="1" name="o2"/>
+      <atomtype index="2" name="o2"/>
+    </atomtypes>
+    <bondtypes>
+      <bondtype ai="0" aj="1" order="1.5"/>
+      <bondtype ai="0" aj="2" order="1.5"/>
+    </bondtypes>
+  </atombondtype>
+  <atombondtype name="nitro2" smarts="[#7+](-[#8])=[#8]" charge="0" multiplicity="1">
+    <atomtypes>
+      <atomtype index="0" name="n2"/>
+      <atomtype index="1" name="o2"/>
+      <atomtype index="2" name="o2"/>
+    </atomtypes>
+    <bondtypes>
+      <bondtype ai="0" aj="1" order="1.5"/>
+      <bondtype ai="0" aj="2" order="1.5"/>
+    </bondtypes>
+  </atombondtype>
+</atombondtypes>
