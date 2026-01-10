@@ -37,6 +37,7 @@
 #include <libxml/parser.h>
 #include <libxml/tree.h>
 
+#include "act/basics/libfile.h"
 #include "act/basics/msg_handler.h"
 #include "act/utility/xml_util.h"
 #include "gromacs/utility/futil.h"
@@ -318,9 +319,8 @@ void readAtomBondtypeDB(MsgHandler                     *msghandler,
         database.assign("atom_bond.xml");
     }
     bool bAddCWD = true;
-    bool bFatal  = false;
-    auto mydb    = gmx::findLibraryFile(database, bAddCWD, bFatal);
-
+    auto mydb    = findLibrary(database, bAddCWD);
+    printf("Found db %s\n", mydb.c_str());
     fillMaps();
     if (msghandler)
     {
