@@ -39,7 +39,7 @@ add_custom_target(tests)
 # This is necessary to be able to add separate targets that execute as part
 # of 'make check', but are ensured to be executed after the actual tests.
 add_custom_target(run-ctest
-                  COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure
+                  COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure --timeout=300 --timeout_per_test=60
                   COMMENT "Running all tests"
                   USES_TERMINAL VERBATIM
                   DEPENDS run-physval-sims)

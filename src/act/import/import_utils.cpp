@@ -39,6 +39,7 @@
 
 #include "act/basics/msg_handler.h"
 #include "act/utility/xml_util.h"
+#include "gromacs/utility/futil.h"
 #include "gromacs/utility/stringutil.h"
 
 namespace alexandria
@@ -46,6 +47,7 @@ namespace alexandria
 
 //! \brief Enum for distinguishing content types in molprop files.
 enum class AtomBondtypeXml {
+    ABTYPES,
     ABTYPE,
     NAME,
     SMARTS,
@@ -64,7 +66,8 @@ enum class AtomBondtypeXml {
 //! \brief Map string to AtomBondtypeXml
 static std::map<const std::string, AtomBondtypeXml> xmlxxx =
 {
-    { "abtype", AtomBondtypeXml::ABTYPE },
+    { "atombondtypes", AtomBondtypeXml::ABTYPES },
+    { "atombondtype", AtomBondtypeXml::ABTYPE },
     { "name", AtomBondtypeXml::NAME },
     { "smarts", AtomBondtypeXml::SMARTS },
     { "charge", AtomBondtypeXml::CHARGE },
@@ -79,7 +82,7 @@ static std::map<const std::string, AtomBondtypeXml> xmlxxx =
     { "order", AtomBondtypeXml::ORDER }
 };
 
-//! Map MolPropXml to string
+//! Map AtomBondtypeXml to string
 static std::map<AtomBondtypeXml, const std::string> rmap = {};
 
 //! \brief Utility to fill utility structures
@@ -92,11 +95,214 @@ static void fillMaps()
     }
 }
 
-static void mp_process_tree(gmx_unused MsgHandler                             *msghandler,
-                            gmx_unused xmlNodePtr                              parent,
-                            gmx_unused std::vector<AtomBondtypeEntry>         *abdb,
-                            gmx_unused std::map<AtomBondtypeXml, std::string> *xbuf)
+//! \brief Clean specific elements from XML buffer
+static void clean_xbuf(std::map<AtomBondtypeXml, std::string> *xbuf,
+                       const std::vector<AtomBondtypeXml>     &clean)
 {
+    for (auto &mpx : clean)
+    {
+        auto ff = xbuf->find(mpx);
+        if (xbuf->end() != ff)
+        {
+            xbuf->erase(ff);
+        }
+    }
+}
+
+//! \brief Extract double from xml buffer map or crash
+static double xbuf_atof(const std::map<AtomBondtypeXml, std::string> *xbuf, AtomBondtypeXml index, bool crash)
+{
+    auto ptr = xbuf->find(index);
+    if (ptr != xbuf->end())
+    {
+        return my_atof(ptr->second.c_str(), rmap[index].c_str());
+    }
+    if (crash)
+    {
+        GMX_THROW(gmx::InvalidInputError(gmx::formatString("Input for %s is missing", 
+                                                           rmap[index].c_str()).c_str()));
+    }
+    return 0.0;
+}
+
+//! \brief Extract int from xml buffer map or crash
+static int xbuf_atoi(const std::map<AtomBondtypeXml, std::string> *xbuf, AtomBondtypeXml index, bool crash)
+{
+    auto ptr = xbuf->find(index);
+    if (ptr != xbuf->end())
+    {
+        return my_atoi(ptr->second.c_str(), rmap[index].c_str());
+    }
+    if (crash)
+    {
+        GMX_THROW(gmx::InvalidInputError(gmx::formatString("Input for %s is missing", 
+                                                           rmap[index].c_str()).c_str()));
+    }
+    return 0;
+}
+
+//! \return true if all AtomBondtypeXml in the index have been read
+static bool xmlFound(const std::map<AtomBondtypeXml, std::string> *xbuf, 
+                     const std::vector<AtomBondtypeXml>           &index)
+{
+    bool found = true;
+    for(auto &ind : index)
+    {
+        auto ptr = xbuf->find(ind);
+        found = found && (xbuf->end() != ptr) && !ptr->second.empty();
+    }
+    return found;
+}
+
+//! \brief Get XML attributes for an entry
+static void get_attributes(MsgHandler                             *msg_handler,
+                           xmlAttrPtr                              attr,
+                           std::map<AtomBondtypeXml, std::string> *xbuf)
+{
+    while (attr != nullptr)
+    {
+        std::string attrname(reinterpret_cast<const char *>(attr->name));
+        std::string attrval(reinterpret_cast<const char *>(attr->children->content));
+
+        auto  iter = xmlxxx.find(attrname);
+        if (iter != xmlxxx.end() && !attrval.empty())
+        {
+            auto ptr = xbuf->find(iter->second);
+            if (xbuf->end() == ptr)
+            {
+                xbuf->insert({iter->second, attrval});
+            }
+            else
+            {
+                ptr->second.assign(attrval);
+            }
+        }
+        if (msg_handler)
+        {
+            msg_handler->writeDebug(gmx::formatString("Property: '%s' Value: '%s'\n",
+                                                      attrname.c_str(), attrval.c_str()));
+        }
+        attr = attr->next;
+    }
+}
+
+static void mp_process_tree(MsgHandler                             *msghandler,
+                            xmlNodePtr                              tree,
+                            std::vector<AtomBondtypeEntry>         *abdb,
+                            std::map<AtomBondtypeXml, std::string> *xbuf)
+{
+    auto xmltype = xmltypes();
+    while (tree != nullptr)
+    {
+        if (msghandler)
+        {
+            if ((tree->type > 0) && ((unsigned)tree->type < xmltype.size()))
+            {
+                msghandler->msg(ACTStatus::Debug,
+                                 gmx::formatString("Node type %s encountered with name %s\n",
+                                                   xmltype[tree->type], (char *)tree->name));
+            }
+            else
+            {
+                msghandler->msg(ACTStatus::Warning,
+                                 gmx::formatString("Unknown node type %d encountered\n", tree->type));
+            }
+        }
+        if (tree->type == XML_ELEMENT_NODE)
+        {
+            auto iter = xmlxxx.find((const char *)tree->name);
+            if (iter != xmlxxx.end())
+            {
+                AtomBondtypeXml elem = iter->second;
+                if (msghandler)
+                {
+                    msghandler->writeDebug(gmx::formatString("Element node name %s\n", (char *)tree->name));
+                }
+                if (tree->children && tree->children->content)
+                {
+                    xbuf->insert({ elem, (const char *)tree->children->content });
+                }
+                get_attributes(msghandler, tree->properties, xbuf);
+                
+                switch (elem)
+                {
+                case AtomBondtypeXml::ABTYPES:
+                    mp_process_tree(msghandler, tree->children, abdb, xbuf);
+                    clean_xbuf(xbuf, { elem });
+                    break;
+                case AtomBondtypeXml::ABTYPE:
+                    {
+                        std::vector<AtomBondtypeXml> clean = {
+                            AtomBondtypeXml::NAME, AtomBondtypeXml::SMARTS,
+                            AtomBondtypeXml::CHARGE, AtomBondtypeXml::MULTIPLICITY
+                        };
+                        if (xmlFound(xbuf, clean))
+                        {
+                            AtomBondtypeEntry abe;
+                            abe.name.assign(xbuf->find(AtomBondtypeXml::NAME)->second);
+                            abe.smarts.assign(xbuf->find(AtomBondtypeXml::SMARTS)->second);
+                            abe.charge = xbuf_atoi(xbuf, AtomBondtypeXml::CHARGE, true);
+                            abe.multiplicity = xbuf_atoi(xbuf, AtomBondtypeXml::MULTIPLICITY, true);
+                            abdb->push_back(std::move(abe));
+                            clean_xbuf(xbuf, clean);
+                        }
+                        else
+                        {
+                            GMX_THROW(gmx::InvalidInputError("Incomplete AtomBondtype definition"));
+                        }
+                    }
+                    mp_process_tree(msghandler, tree->children, abdb, xbuf);
+                    break;
+                case AtomBondtypeXml::ATOMTYPES:
+                case AtomBondtypeXml::BONDTYPES:
+                    mp_process_tree(msghandler, tree->children, abdb, xbuf);
+                    clean_xbuf(xbuf, { elem });
+                    break;
+                case AtomBondtypeXml::ATOMTYPE:
+                    {
+                        std::vector<AtomBondtypeXml> clean = {
+                            AtomBondtypeXml::NAME, AtomBondtypeXml::INDEX
+                        };
+                        if (xmlFound(xbuf, clean))
+                        {
+                            abdb->back().atomtypes.push_back(xbuf->find(AtomBondtypeXml::NAME)->second);
+                            clean_xbuf(xbuf, clean);
+                        }
+                        else
+                        {
+                            msghandler->msg(ACTStatus::Warning,
+                                            gmx::formatString("Not all data present for determining an atomtype for %s", abdb->back().name.c_str()));
+                        }
+                    }
+                    break;
+                case AtomBondtypeXml::BONDTYPE:
+                    {
+                        std::vector<AtomBondtypeXml> clean = {
+                            AtomBondtypeXml::AI, AtomBondtypeXml::AJ, AtomBondtypeXml::ORDER
+                        };
+                        if (xmlFound(xbuf, clean))
+                        {
+                            SimpleBond sb;
+                            sb.ai    = xbuf_atoi(xbuf, AtomBondtypeXml::AI, true);
+                            sb.aj    = xbuf_atoi(xbuf, AtomBondtypeXml::AJ, true);
+                            sb.order = xbuf_atof(xbuf, AtomBondtypeXml::ORDER, true);
+                            abdb->back().bonds.push_back(std::move(sb));
+                            clean_xbuf(xbuf, clean);
+                        }
+                        else
+                        {
+                            msghandler->msg(ACTStatus::Warning,
+                                            gmx::formatString("Not all data present for determining a bondtype for %s", abdb->back().name.c_str()));
+                        }
+                    }
+                    break;
+                default:
+                    break;
+                }
+            }
+        }
+        tree = tree->next;
+    }
 }
 
 void readAtomBondtypeDB(MsgHandler                     *msghandler,
@@ -105,6 +311,15 @@ void readAtomBondtypeDB(MsgHandler                     *msghandler,
 {
     xmlDocPtr   doc;
     std::string mpfile;
+    std::string database(dbname);
+
+    if (database.empty())
+    {
+        database.assign("atom_bond.xml");
+    }
+    bool bAddCWD = true;
+    bool bFatal  = false;
+    auto mydb    = gmx::findLibraryFile(database, bAddCWD, bFatal);
 
     fillMaps();
     if (msghandler)
@@ -112,18 +327,24 @@ void readAtomBondtypeDB(MsgHandler                     *msghandler,
         msghandler->msg(ACTStatus::Verbose, gmx::formatString("Opening %s\n", dbname.c_str()));
     }
 
-    if ((doc = xmlParseFile(dbname.c_str())) == nullptr)
+    if ((doc = xmlParseFile(mydb.c_str())) == nullptr)
     {
         if (msghandler)
         {
             msghandler->msg(ACTStatus::Error,
                             gmx::formatString("Failed reading XML file %s. Run a syntax checker such as nsgmls.",
-                                              dbname.c_str()));
+                                              mydb.c_str()));
         }
     }
 
     std::map<AtomBondtypeXml, std::string>  xbuf;
     mp_process_tree(msghandler, doc->children, abdb, &xbuf);
+    if (msghandler)
+    {
+        msghandler->msg(ACTStatus::Verbose,
+                        gmx::formatString("Read %zu special atom and bondtype entries from %s",
+                                          abdb->size(), mydb.c_str()));
+    }
     xmlFreeDoc(doc);
 }
 

@@ -1,7 +1,7 @@
 #
 # This file is part of the Alexandria Chemistry Toolkit
 #
-# Copyright (c) 2014-2025, by the Alexandria Chemistry team, led by
+# Copyright (c) 2014-2026, by the Alexandria Chemistry team, led by
 # David van der Spoel, Paul J. van Maaren and Mohamman M. Ghahremanpour. 
 #
 # See License file in top level directory for license info. 
@@ -13,6 +13,7 @@ install(FILES
          atomization-energies.csv
          atomprops.csv
          atomprops.csv
+         atom_bond.xml
          atomtype_mapping.csv
          atomtypes_gui.csv
          excluded_molecules.csv
