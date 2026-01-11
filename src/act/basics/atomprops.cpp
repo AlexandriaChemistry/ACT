@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2023,2024
+ * Copyright (C) 2023,2024,2026
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -32,6 +32,7 @@
  */
 #include "atomprops.h"
 
+#include "act/basics/libraryfile.h"
 #include "act/utility/stringutil.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/stringutil.h"
@@ -42,12 +43,12 @@ namespace alexandria
 
 std::map<std::string, AtomProp> readAtomProps()
 {
-    const char *actdata = getenv("ACTDATA");
-    if (nullptr == actdata)
+    bool useCWD = false;
+    auto props = findLibrary("atomprops.csv", useCWD);
+    if (props.empty())
     {
-        GMX_THROW(gmx::InvalidInputError("Environment variable ACTDATA is not set"));
+        return {};
     }
-    std::string     props = gmx::formatString("%s/atomprops.csv", actdata);
     gmx::TextReader tr(props);
     std::map<std::string, AtomProp> table;
     std::string              tmp;

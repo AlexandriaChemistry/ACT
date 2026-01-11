@@ -39,6 +39,7 @@
 #include "act/alexandria/alex_modules.h"
 #include "act/basics/atomprops.h"
 #include "act/basics/interactiontype.h"
+#include "act/basics/libraryfile.h"
 #include "act/basics/mutability.h"
 #include "act/forces/combinationrules.h"
 #include "act/forces/forcecomputer.h"
@@ -60,8 +61,12 @@ namespace alexandria
 //! \brief Add symmetric charges to force field
 static void add_symm_charges(ForceField *pd)
 {
-    auto            actdata  = getenv("ACTDATA");
-    auto            filename = gmx::formatString("%s/symmetric_charges.csv", actdata);
+    bool useCWD = false;
+    auto filename = findLibrary("symmetric_charges.csv", useCWD);
+    if (filename.empty())
+    {
+        return;
+    }
     gmx::TextReader tr(filename);
     std::string     tmp;
     while (tr.readLine(&tmp))
