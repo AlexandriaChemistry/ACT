@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2023-2025
+ * Copyright (C) 2023-2026
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -35,6 +35,7 @@
 #include <algorithm>
 #include <string>
 
+#include "act/basics/libraryfile.h"
 #include "act/utility/stringutil.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/textreader.h"
@@ -86,15 +87,11 @@ AlexandriaMol::AlexandriaMol(const std::vector<std::string> &line)
 
 AlexandriaMols::AlexandriaMols()
 {
-    std::string alexandria;
-    auto        actdata = getenv("ACTDATA");
-    if (nullptr == actdata)
+    bool useCWD = false;
+    auto alexandria = findLibrary("alexandria.csv", useCWD);
+    if (alexandria.empty())
     {
-        alexandria = "alexandria.csv";
-    }
-    else
-    {
-        alexandria = gmx::formatString("%s/alexandria.csv", actdata);
+        return;
     }
     gmx::TextReader tr(alexandria);
     std::string line;

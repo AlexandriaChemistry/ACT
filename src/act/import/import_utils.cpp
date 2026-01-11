@@ -37,7 +37,7 @@
 #include <libxml/parser.h>
 #include <libxml/tree.h>
 
-#include "act/basics/libfile.h"
+#include "act/basics/libraryfile.h"
 #include "act/basics/msg_handler.h"
 #include "act/utility/xml_util.h"
 #include "gromacs/utility/futil.h"
@@ -320,7 +320,16 @@ void readAtomBondtypeDB(MsgHandler                     *msghandler,
     }
     bool bAddCWD = true;
     auto mydb    = findLibrary(database, bAddCWD);
-    printf("Found db %s\n", mydb.c_str());
+    if (mydb.empty())
+    {
+        if (msghandler)
+        {
+            msghandler->msg(ACTStatus::Warning,
+                            gmx::formatString("Cannot find library file %s",
+                                              database.c_str()));
+        }
+        return;
+    }
     fillMaps();
     if (msghandler)
     {

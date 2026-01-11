@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2022
+ * Copyright (C) 2022,2026
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -37,6 +37,7 @@
 #include <cstdlib>
 #include <stdexcept>
 
+#include "act/basics/libraryfile.h"
 #include "act/utility/stringutil.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
@@ -103,22 +104,17 @@ class AtomizationEnergyTerm
 
 void AtomizationEnergy::read(MsgHandler *msg_handler)
 {
-    const char *acd     = "ACTDATA";
-    auto        actdata = std::getenv(acd);
-    if (nullptr == actdata || strlen(actdata) == 0)
-    {
-        if (msg_handler)
-        {
-            msg_handler->fatal(gmx::formatString("Please set the environment variable '%s' to point to the correct directory. Maybe you should source the ACTRC file first.", acd));
-        }
-        return;
-    }
     std::vector<const char *> ahof = {
         "atomization-energies.csv", "atomization-energies-dft.csv"
     };
+    bool useCWD = false;
     for (const auto &aa : ahof)
     {
-        std::string infile = gmx::formatString("%s/%s", actdata, aa);
+        std::string infile = findLibrary(aa, useCWD);
+        if (infile.empty())
+        {
+            continue;
+        }
         try
         {
             gmx::TextReader tr(infile);

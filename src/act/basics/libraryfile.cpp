@@ -7,7 +7,7 @@
  *             Mohammad Mehdi Ghahremanpour,
  *             Julian Marrades,
  *             Marie-Madeleine Walz,
- *             Paul J. van Maaren,
+ *             Paul J. van Maaren, 
  *             David van der Spoel (Project leader)
  *
  * This program is free software; you can redistribute it and/or
@@ -22,41 +22,49 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor,
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, 
  * Boston, MA  02110-1301, USA.
  */
-
+ 
 /*! \internal \brief
  * Implements part of the alexandria program.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
-#ifndef ACT_LIBFILE_H
-#define ACT_LIBFILE_H
+#include "libraryfile.h"
 
 #include <cstdlib>
 #include <string>
+
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/stringutil.h"
 
 namespace alexandria
 {
-    static std::string findLibrary(const std::string &filename,
-                                   bool               useCWD)
-    {
-        if (useCWD && gmx_fexist(filename))
-        {
-            return filename;
-        }
-        std::string libFile;
-        auto actdata = getenv("ACTDATA");
-        if (nullptr != actdata)
-        {
-            libFile = gmx::formatString("%s/%s", actdata, filename.c_str());
-        }
-        return libFile;
-    }
-                            
-} // namespace
 
-#endif
+std::string findLibrary(const std::string &filename,
+                        bool               useCWD)
+{
+    if (useCWD && gmx_fexist(filename))
+    {
+        return filename;
+    }
+    std::string libFile;
+    std::string actdir("ACTDATA");
+    auto actdata = std::getenv(actdir.c_str());
+    if (nullptr != actdata)
+    {
+        libFile = gmx::formatString("%s/%s", actdata, filename.c_str());
+        if (!gmx_fexist(libFile))
+        {
+            libFile.clear();
+        }
+    }
+    else
+    {
+        fprintf(stderr, "Please set the environment variable '%s' to point to the correct directory. Maybe you should source the ACTRC file first.", actdir.c_str());
+    }
+    return libFile;
+}
+
+} // namespace
