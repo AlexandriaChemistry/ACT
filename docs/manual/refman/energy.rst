@@ -457,7 +457,7 @@ Virtual Sites
 ==================
 A virtual site is an extra point, located at a defined position in a molecule. A variety of virtual site options is currently implemented within the ACT framework:
 
-  * a virtual site on top of an atom (VSITE1) :cite:p:`Spoel2025a_PG`
+  * a virtual site on top of an atom (VSITE1) :cite:p:`Spoel2025a`
   * a virtual sites along the bond (VSITE2) for the description of anisotropic charge distribution and exchange :cite:p:`Kriz2024b` such as encountered in :math:`\sigma` holes
   * a virtual site on the bisector of a angle, like in the TIP4P water model :cite:p:`Jorgensen1983a` (VSITE3S) or in alcohol (VSITE3)
   * off-plane virtual sites for modeling lone-pairs in sp:math:`^3` hybridized compounds, such as water (VSITE3SOUT, symmetric) or asymmetric for compounds like alcohols :cite:p:`Mahoney2000a,Kriz2024b`.

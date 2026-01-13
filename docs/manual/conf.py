@@ -26,5 +26,5 @@ html_theme = 'alabaster'
 html_static_path = ['_static']
 
 extensions = ['sphinxcontrib.bibtex']
-bibtex_bibfiles = ['library.bib']
+bibtex_bibfiles = ['manual-refs.bib']
 bibtex_default_style = 'unsrt'
