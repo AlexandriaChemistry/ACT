@@ -20,8 +20,8 @@ The following software packages are required for the ACT to work:
 
 The following libraries are optional only, but may be useful for developing the ACT:
 
-* The Class Library for Numbers is used in an optional part of the code (Slater-distributed charges~\cite{Ghahremanpour2018a}) and can be omitted.
-* The SQLite database engine is needed to process experimental data as well as quantum chemistry data from the Alexandria Library~\cite{Ghahremanpour2018a}, available from `Zenodo`_.
+* The Class Library for Numbers is used in an optional part of the code (Slater-distributed charges :cite:p:`Ghahremanpour2018a`) and can be omitted.
+* The SQLite database engine is needed to process experimental data as well as quantum chemistry data from the Alexandria Library :cite:p:`Ghahremanpour2018a`, available from `Zenodo`_.
 * The doxygen package can be used for generating documentation. In that case you need the Graphviz package as well.
 
 .. _Zenodo: https://doi.org/10.5281/zenodo.1004710
@@ -50,7 +50,7 @@ Once the prerequisites  are met, the easiest way to get going is to fetch the
 `install_act`_ script to your working directory of choice.
 To fetch the script, once you have clicked on the link, click on the download icon (Fig.~\ref{download}).
 
-:: _install_act: https://github.com/dspoel/ACT/blob/main/src/act/python/install_act
+.. _install_act: https://github.com/dspoel/ACT/blob/main/src/act/python/install_act
 
 .. image:: ../images/link.png
 
