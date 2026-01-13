@@ -24,7 +24,7 @@ where :math:`N` is the number of atoms, :math:`z_i` are the nuclear charges, :ma
 Accurate knowledge of the MEP contributes to, for example, the understanding of interactions and function of biological macromolecules in solution~ :cite:p:`Larsson2012b`. For a molecule in the gas phase, Eqn. :eq:`phi` can be evaluated using density functional theory and wave function quantum chemistry, albeit at a significant computational cost. 
 Databases of such calculations for small molecules are available to facilitate reuse :cite:p:`Kriz2023a`. For  large condensed-phase systems, however, it is common to apply classical force fields, where electrons are not taken into account explicitly. Instead, effective partial charges on atoms are used. The electronic degrees of freedom, charge polarization, is sometimes taken into account through induced point dipoles and higher electrostatic moments, or by using a core-shell model~ :cite:p:`Dick1958a,Jordan1995a,Maaren2001a`. For additional background we refer to some excellent reviews~ :cite:p:`Dauber-Osguthorpe2019a,Hagler2019a,Jing2019a`.
 
-The MEP can be used as a target in model development in the ACT, however we recommend against that for both fundamental and practical reasons~ :cite:p:`Hosseini2025a`.
+The MEP can be used as a target in model development in the ACT, however we recommend against that for both fundamental and practical reasons~ :cite:p:`Hosseini2026a`.
 
 =====================
 Electrostatic Moments
