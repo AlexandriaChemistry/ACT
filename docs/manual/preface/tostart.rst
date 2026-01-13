@@ -12,7 +12,8 @@ The authors welcome suggestions for additions and improvements as well as correc
 Please send your comments by e-mail to \\
 david.vanderspoel at icm.uu.se.
 
-We kindly request that you cite the paper about ACT ([Spoel2025b]_) and other relevant works if you use the software for a scientific publication of your own.
+We kindly request that you cite the paper about ACT (:cite:p:`Spoel2025b`) 
+and other relevant works if you use the software for a scientific publication of your own.
 
 The ACT can be downloaded as free and open source software from `Github`_.
 

@@ -72,43 +72,43 @@ contains a number of python scripts and utilities (Table :ref:`tab-scripts` ), s
 .. table:: Python utilities available in the ACT.
    :name: tab-scripts
 
-   +---------------------+-------------------------------------------------------+
-   | **Command**         | **Description**                                       |
-   +=====================+=======================================================+
-   | coords2molprop      | Read a bunch of structure files containing molecule   |
-   |                     | dimers A-B and write a molprop file.                  |
-   +---------------------+-------------------------------------------------------+
-   | dimer_scan          | Compute dimer potentials for along a user-defined     |
-   |                     | distance between two molecules.                       |
-   +---------------------+-------------------------------------------------------+
-   | donchev2molprop     | Convert dimer interactions from the Donchev paper     |
-   |                     | ~\cite{Donchev2021a}  to a molprop file.              |
-   +---------------------+-------------------------------------------------------+
-   | gauss2molprop       | Read a Gaussian output file from the Alexandria       |
-   |                     | library~\cite{Ghahremanpour2018a} to a molprop file.  |
-   +---------------------+-------------------------------------------------------+
-   | generate_mp         | Read and process many Gaussian output files from the  |
-   |                     | Alexandria library~\cite{Ghahremanpour2018a} and      |
-   |                     | generate a molprop file.                              |
-   +---------------------+-------------------------------------------------------+
-   | install_act         | Script to install the ACT                             |
-   +---------------------+-------------------------------------------------------+
-   | molselect           | Make a selection file based on compounds from  the    |
-   |                     | Alexandria Library.                                   |
-   +---------------------+-------------------------------------------------------+
-   | ncia2molprop        | Read an xyz file and write a molprop file.            |
-   +---------------------+-------------------------------------------------------+
-   | plot_convergence    | Read an ACT training log file and plot the converge   |
-   |                     | of the parameters as a function of generations in the |
-   |                     | evolution of the gene pool.                           |
-   +---------------------+-------------------------------------------------------+
-   | reshuffle_selection | Read a selection file and randomly assign Train       |
-   |                     | status to entries, then write a new selection file.   |
-   +---------------------+-------------------------------------------------------+
-   | view_fitness        | Visualizes the fitness per generation of a GA/HYBRID  |
-   |                     | by plotting the maximum, minimum, mean, and median,   |
-   |                     | for an example see Fig. :ref:`fig-ga-ftrain`          |
-   +---------------------+-------------------------------------------------------+
+   +---------------------+---------------------------------------------------------+
+   | **Command**         | **Description**                                         |
+   +=====================+=========================================================+
+   | coords2molprop      | Read a bunch of structure files containing molecule     |
+   |                     | dimers A-B and write a molprop file.                    |
+   +---------------------+---------------------------------------------------------+
+   | dimer_scan          | Compute dimer potentials for along a user-defined       |
+   |                     | distance between two molecules.                         |
+   +---------------------+---------------------------------------------------------+
+   | donchev2molprop     | Convert dimer interactions from the Donchev paper       |
+   |                     | :cite:p:`Donchev2021a`  to a molprop file.              |
+   +---------------------+---------------------------------------------------------+
+   | gauss2molprop       | Read a Gaussian output file from the Alexandria         |
+   |                     | library :cite:p:`Ghahremanpour2018a` to a molprop file. |
+   +---------------------+---------------------------------------------------------+
+   | generate_mp         | Read and process many Gaussian output files from the    |
+   |                     | Alexandria library :cite:p:`Ghahremanpour2018a` and     |
+   |                     | generate a molprop file.                                |
+   +---------------------+---------------------------------------------------------+
+   | install_act         | Script to install the ACT                               |
+   +---------------------+---------------------------------------------------------+
+   | molselect           | Make a selection file based on compounds from  the      |
+   |                     | Alexandria Library.                                     |
+   +---------------------+---------------------------------------------------------+
+   | ncia2molprop        | Read an xyz file and write a molprop file.              |
+   +---------------------+---------------------------------------------------------+
+   | plot_convergence    | Read an ACT training log file and plot the converge     |
+   |                     | of the parameters as a function of generations in the   |
+   |                     | evolution of the gene pool.                             |
+   +---------------------+---------------------------------------------------------+
+   | reshuffle_selection | Read a selection file and randomly assign Train         |
+   |                     | status to entries, then write a new selection file.     |
+   +---------------------+---------------------------------------------------------+
+   | view_fitness        | Visualizes the fitness per generation of a GA/HYBRID    |
+   |                     | by plotting the maximum, minimum, mean, and median,     |
+   |                     | for an example see Fig. :ref:`fig-ga-ftrain`            |
+   +---------------------+---------------------------------------------------------+
 
 .. figure:: ../images/ga_ftrain.pdf
    :name: fig-ga-ftrain
@@ -335,6 +335,6 @@ Running training using parallel processing
 :name: sec-parallel
 
 The training process is heavy in computer time. Therefore, it has been parallellized using the MPI library. Since this is a prerequisite for compiling the ACT, you likely have it installed if you got this far. In fact this is used in the example scripts, where N is the number of cores you have available. Please consult with your cluster manager if in doubt. Clusters using the `Slurm`_ queueing system may need to use {\tt srun} instead of {\tt mpirun}. 
-As far as we have tested~\cite{Spoel2025b_ACT}, the code is quite efficient down to 4-5 molecules per core. In the above example there are 10 compounds in the training set, such that it is not worthwhile to use more than 2-3 cores, but do experiment with the number of cores. 
+As far as we have tested :cite:p:`Spoel2025b`, the code is quite efficient down to 4-5 molecules per core. In the above example there are 10 compounds in the training set, such that it is not worthwhile to use more than 2-3 cores, but do experiment with the number of cores. 
 
-:: _Slurm: https://slurm.schedmd.com/overview.html
+.. _Slurm: https://slurm.schedmd.com/overview.html
