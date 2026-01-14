@@ -419,7 +419,6 @@ static void lookUpSpecial(MsgHandler                           *msg_handler,
                 // After we find our first match, and do everything that is needed,
                 // we return to the calling routine.
                 // TODO: do we really want this?
-                return;
             }
             else
             {
