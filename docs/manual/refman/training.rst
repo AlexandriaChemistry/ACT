@@ -59,7 +59,7 @@ There are two remarks to be made here:
 *  The temperature is kept constant during the `nParam` MCMC steps that take place for a given iteration.
 * Since division by `0` is not defined, we set `T = 1e-6` on the last iteration.
 
-Fig.~\ref{fig:annealing} shows a schematic example of the temperature over time when we use actflag{\-maxiter 10 -temp 5 -anneal 0.5}.
+Fig. :ref:`fig-annealing` shows a schematic example of the temperature over time when we use actflag{\-maxiter 10 -temp 5 -anneal 0.5}.
 
 .. figure:: ../images/annealing.png
    :name: fig-annealing
@@ -71,7 +71,7 @@ Fig.~\ref{fig:annealing} shows a schematic example of the temperature over time 
 ------------------
 Multiple MCMC runs
 ------------------
-We can optimize several candidate solutions in parallel using the \actflag{-pop_size} flag. If \actflag{-random_init} is used (default), each candidate solution will be initialized arbitrarily and respecting parameter ranges. If \actflag{-norandom_init} is employed, the candidate solution(s) will be initialized as specified by the force field file(s) provided by the user.
+We can optimize several candidate solutions in parallel using the  *-pop_size* flag. If the *-random_init* flag is set (default), each candidate solution will be initialized arbitrarily and respecting parameter ranges. If *-norandom_init* is employed, the candidate solution(s) will be initialized as specified by the force field file(s) provided by the user.
 
 =================
 Genetic Algorithm
@@ -266,7 +266,7 @@ HYBRID
 ======
 Even though this optimizer has a very fancy name, it is just a GA with MCMC as its mutator engine.
 When MCMC acts as a mutator, it will always alter the genomes independently of \actflag{-pr_mut}. Also, it is important to note that the simulated annealing by default is applied independently in each MCMC run.
-For instance, in case we would use \actflag{-max_generations 2 -maxiter 10 -temp 5 -anneal 0.5}, Fig.~\ref{fig:anneal-hybrid} shows the temperature during the MCMC part.
+For instance, in case we would use \actflag{-max_generations 2 -maxiter 10 -temp 5 -anneal 0.5}, Fig. :ref:`fig-anneal-hybrid` shows the temperature during the MCMC part.
 
 .. figure:: ../images/annealing_hybrid.png
    :name: fig-anneal-hybrid

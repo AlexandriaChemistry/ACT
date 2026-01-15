@@ -62,15 +62,15 @@ if (DEFINED PYTHON_EXECUTABLE)
     # Keep quiet on subsequent runs of cmake
     set(PythonInterp_FIND_QUIETLY ON)
 endif()
-find_package(Python3)
+find_package(Python)
 
 # Load Sphinx and determine the version
 find_package(Sphinx)
 set(EXPECTED_SPHINX_VERSION FIND_SPHINX_VERSION)
 
-#find_package(Pygments)
 include(FindPythonModule)
 find_python_module(pygments ${_find_deps_options})
+message("Pygments_FOUND ${PYTHONMODULE_PYGMENTS}")
 if (PYTHONMODULE_PYGMENTS)
     set(Sphinx_pygments_FOUND 1)
 endif()
@@ -93,8 +93,8 @@ add_subdirectory(doxygen)
 
 # TODO: Consider whether this could just be replaced by using
 # GMX_DEVELOPER_BUILD to control this as well.
-option(GMX_BUILD_MANUAL "Whether to try to configure to build the PDF manual" OFF)
-mark_as_advanced(GMX_BUILD_MANUAL)
+option(ACT_BUILD_MANUAL "Whether to try to configure to build the on-line and PDF manual" OFF)
+mark_as_advanced(ACT_BUILD_MANUAL)
 
 set(MANUAL_BUILD_IS_POSSIBLE OFF)
 
@@ -106,7 +106,7 @@ if (SPHINX_FOUND)
     set(SPHINX_EXTENSION_PATH ${CMAKE_CURRENT_SOURCE_DIR})
     # As the manual build now depends also on Sphinx, the inclusion path needs
     # to be set after we know the basic information for Sphinx.
-#    add_subdirectory(manual)
+    add_subdirectory(manual)
     if (SOURCE_MD5SUM STREQUAL "unknown")
         # But for testing the webpage build (e.g. from the repo) we
         # need a default value.
@@ -155,8 +155,8 @@ if (SPHINX_FOUND)
         EXTRA_VARS
             SPHINX_EXTENSION_PATH RELENG_PATH
             IMAGE_CONVERT_STRING
-            EXPECTED_DOXYGEN_VERSION
-            EXPECTED_SPHINX_VERSION
+#            EXPECTED_DOXYGEN_VERSION
+#            EXPECTED_SPHINX_VERSION
             CMAKE_MINIMUM_REQUIRED_VERSION REQUIRED_CUDA_VERSION
             REQUIRED_OPENCL_MIN_VERSION
             REQUIRED_CUDA_COMPUTE_CAPABILITY REGRESSIONTEST_VERSION
@@ -175,9 +175,10 @@ if (SPHINX_FOUND)
             FILES ${RELENG_SPHINX_FILES})
     else()
         gmx_add_sphinx_source_files(FILES
-            dev-manual/releng/index.rst
-            dev-manual/releng/jenkins-howto.rst
-            dev-manual/releng/jenkins-ui.rst
+            manual/index.rst
+#            dev-manual/releng/index.rst
+#            dev-manual/releng/jenkins-howto.rst
+#            dev-manual/releng/jenkins-ui.rst
             )
     endif()
     gmx_add_sphinx_source_files(
