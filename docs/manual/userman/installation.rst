@@ -48,11 +48,15 @@ Running the Installation
 ========================
 Once the prerequisites  are met, the easiest way to get going is to fetch the 
 `install_act`_ script to your working directory of choice.
-To fetch the script, once you have clicked on the link, click on the download icon (Fig.~\ref{download}).
+To fetch the script, once you have clicked on the link, click on the download icon (Fig. :ref:`fig-download`).
 
 .. _install_act: https://github.com/dspoel/ACT/blob/main/src/act/python/install_act
 
-.. image:: ../images/link.png
+.. figure:: ../images/link.png
+   :align: center
+   :name: fig-download
+   
+   Image showing where to click to download the installation script.
 
 Once you have downloaded the script, start by executing::
 

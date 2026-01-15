@@ -27,10 +27,11 @@ Alternatively, the Coulomb interaction can be described using Gaussian shielded 
 
 where :math:`\varepsilon_0` is the permittivity of vacuum, :math:`q_{i,j}` are the charges and :math:`\zeta_{i,j}` are the charge distribution widths (screening factors). Note that Eqn. :eq:`vcoulg` includes a relative dielectric constant :math:`\varepsilon_r` that can be used to parameterize a non-polarizable force field using charge-scaling :cite:p:`Kirby2019a`.
 
+.. _sec-slater:
+
 ----------------------------------------
 Coulomb Interaction using Slater charges
 ----------------------------------------
-\label{sec:slater}
 In addition, Slater distributed charges can be used as described in ref. :cite:p:`Ghahremanpour2018b`, from which the text below is an adapted version.
 
 The spherical Slater orbital wavefunction is given by
@@ -46,13 +47,13 @@ The Coulomb integral
 can then be written as :cite:p:`Rick1994a,Hentschke2004a`:
 
 .. math:: J_{ij}({\bf r}) \sim \int \int |\psi_n({\bf r_i})|^2\frac{q_i q_j}{|{\bf r_i}- {\bf r_j}|}|\psi_m({\bf r_j})|^2 d{\bf r_i} d{\bf r_j}
-   :label: eqn-SlaterIntegral
+   :label: SlaterIntegral
 
 where :math:`\psi_n` and :math:`\psi_m` are the Slater wave functions of atoms :math:`i` and
 :math:`j` with quantum numbers :math:`n` and :math:`m` and with partial charges :math:`q_i` and :math:`q_j`,  respectively.
-Both \eqnref{eqn:vcoulg} and \eqnref{eqn:SlaterIntegral} have a finite limit as :math:`r \rightarrow 0`.
+Both :eq:`vcoulg` and :eq:`SlaterIntegral` have a finite limit as :math:`r \rightarrow 0`.
 As a result,  these functions are well behaved at small  :math:`r`. 
-A number of methods :cite:p:`Ohrn2016a,Guseinov1970a` have been proposed to evaluate \eqnref{eqn:SlaterIntegral}. 
+A number of methods :cite:p:`Ohrn2016a,Guseinov1970a` have been proposed to evaluate :eq:`SlaterIntegral`. 
 Hentschke gives an  analytical solution :cite:p:`Hentschke2004a`:
 
 .. math:: J_{ij}({\bf r}) = \left\{ \begin{aligned}
@@ -293,17 +294,16 @@ The expression for :math:`\gamma`  proposed by Mason :cite:p:`Mason1955a` for th
 .. math:: \gamma_{12} = \sqrt{\sigma_1 \sigma_2} \left(\frac{\gamma_1}{2\sigma_1}+  \frac{\gamma_2}{2\sigma_2}\right)
    :label: f10
 
-Waldman and Hagler :cite:p:`Waldman1993a` introduced expressions \ref{f8} for :math:`\epsilon` and  \ref{f6} for :math:`\sigma`
+Waldman and Hagler :cite:p:`Waldman1993a` introduced expressions :eq:`cr_whepsilon` for :math:`\epsilon` and  :eq:`cr_whsigma` for :math:`\sigma`
  to reproduce experimental well-depths and interaction distances.
 
 .. math:: \epsilon_{12} = \sqrt{\epsilon_1  \epsilon_2}\frac{2\sigma_1^3\sigma_2^3}{\sigma_1^6+\sigma_2^6}\\
-   :label: f8
+   :label: cr_whepsilon
 
 .. math:: X_{12} = \left(\frac{X_1^6+X_2^6}{2}\right)^{1/6}
    :label: cr_whsigma
 
-Although Eqn. :ref:`f6` was devised for :math:`\sigma` we have evaluated it for other parameters here as well, hence the notation with :math:`X`. Qi and coworkers advocated the use of buffered 14-7 Lennard-Jones potential (Eqn. :eq:`14_7`) due to Halgren :cite:p:`Halgren1992a`, alongside  combination expressions \ref{f8} for :math:`\epsilon` and  \ref{f7} for :math:`\sigma`: :cite:p:`qi_general_2016` 
-%\red{In Alexandria, again, Eqn. :ref:`f2` is used :math:`\gamma`}
+Although Eqn. :eq:`cr_whsigma` was devised for :math:`\sigma` we have evaluated it for other parameters here as well, hence the notation with :math:`X`. Qi and coworkers advocated the use of buffered 14-7 Lennard-Jones potential (Eqn. :eq:`14_7`) due to Halgren :cite:p:`Halgren1992a`, alongside  combination expressions :eq:`cr_whepsilon` for :math:`\epsilon` and  :eq:`f7` for :math:`\sigma`: :cite:p:`qi_general_2016` 
 
 .. math:: X_{12} = \frac{x_1^3+x_2^3}{x_1^2+x_2^2}
    :label: f7
@@ -324,7 +324,7 @@ In addition, we applied the following rule for in particular :math:`\epsilon` si
 .. math:: X_{12} = \left(\frac{2}{x_1^{-2}+x_2^{-2}}\right)^{1/2}
    :label: cr_invsquare
 
-The combination relations described above were permuted with each other into new combination rules. In this way, relations that depend on only one parameter type were used for any parameter. Relations depending on multiple parameters  were used only for the specific parameter type combination they depend on (e.g. Eqn. :ref:`f8` was only used for :math:`\epsilon`, using homodimer :math:`\epsilon` and :math:`\sigma`). 
+The combination relations described above were permuted with each other into new combination rules. In this way, relations that depend on only one parameter type were used for any parameter. Relations depending on multiple parameters  were used only for the specific parameter type combination they depend on (e.g. Eqn. :eq:`cr_whepsilon` was only used for :math:`\epsilon`, using homodimer :math:`\epsilon` and :math:`\sigma`). 
 In our previous work on alkali halides :cite:p:`Walz2018a` we used combination rules according to eqn. :eq:`cr_sigma5` for :math:`\sigma`, eqn. :eq:`cr_hogervorst_epsilon` for :math:`\epsilon` and eqn. :eq:`cr_arithmetic` for :math:`\gamma` with the Wang-Buckingham potential (Eqn. :eq:`vwbh`).
 
 A number of these combination rules can be written using the generalized mean equation :cite:p:`Hohm2025a`

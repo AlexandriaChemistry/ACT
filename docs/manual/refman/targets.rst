@@ -21,7 +21,7 @@ To compute the electrostatics or induction energy of a dimer in the gas phase, t
 Then, the energies of the dimer :math:`AB` are computed in three steps: 
 
 #. electrostatics is computed with shells located in the relaxed monomer positions, yielding :math:`E_{elec}^{total}(AB)`,
-#. the shells of compound :math:`A` are allowed to relax (further) in the electric field from compound :math:`B`, while shells of compound :math:`B` remain at their monomer positions, and vice versa, yielding the second order relaxation :math:`E_{induc}^{inter(2)}` (see ref.~ :cite:p:`McDaniel2013a` for details),
+#. the shells of compound :math:`A` are allowed to relax (further) in the electric field from compound :math:`B`, while shells of compound :math:`B` remain at their monomer positions, and vice versa, yielding the second order relaxation :math:`E_{induc}^{inter(2)}` (see ref.  :cite:p:`McDaniel2013a` for details),
 #. the shells are allowed to relax completely, yielding the total :math:`E_{induc}` from which the higher order terms, named :math:`E_{induc}^{inter(3)}` here for convenience, can be derived by subtracting  :math:`E_{induc}^{inter(2)}`. According to ref. :cite:p:`McDaniel2013a`, parameters of models corresponding to the higher other terms, including, potentially, charge transfer, can be trained to the :math:`\delta_{HF}` contribution of the SAPT induction energy. Here, we have added the exponential term proposed by McDaniel and Schmidt for this purpose (section :ref:`sec-indcorr`).
  
 
@@ -37,8 +37,8 @@ The terms below can be compared directly to SAPT:
    :label: vind3
 
 where :math:`ei` is short for :math:`elec+induc` and the notation :math:`\|_X` indicates that the shells of compound :math:`X` are kept fixed in the relaxed monomer conformation. 
-If we sum Eqns.~\ref{eq:velec}-~\ref{eq:vind3} we recover Eqn.~\ref{eq:vinter} where :math:`x` equals :math:`ei`.
-Eqn.~\ref{eq:velec} corresponds to the electrostatics in SAPT.
+If we sum Eqns. :eq:`velec`- :eq:`vind3` we recover Eqn. :eq:`vinter` where :math:`x` equals :math:`ei`.
+Eqn. :eq:`velec` corresponds to the electrostatics in SAPT.
 
 To summarize, ACT computes the induction term in two parts: a second order term :math:`E_{induc}^{inter(2)}(AB)` (Eqn. :eq:`vind2`) and a third-and-higher-order term :math:`E_{induc}^{inter(3)}(AB)` (Eqn. :eq:`vind3`), the sum of which corresponds to the total induction from SAPT. 
 

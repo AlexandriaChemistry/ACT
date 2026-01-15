@@ -50,11 +50,11 @@ if (DOXYGEN_FOUND)
 endif()
 
 gmx_dependent_option(
-    GMX_COMPACT_DOXYGEN
+    ACT_COMPACT_DOXYGEN
     "Skip parts of Doxygen documentation (in particular, many graphs) to save disk space and time"
     OFF
     DOXYGEN_FOUND)
-mark_as_advanced(GMX_COMPACT_DOXYGEN)
+mark_as_advanced(ACT_COMPACT_DOXYGEN)
 
 set(USE_PYTHON_SCRIPTS OFF)
 if (PYTHONINTERP_FOUND AND NOT PYTHON_VERSION_STRING VERSION_LESS "2.6" AND NOT ${PYTHON_VERSION_MAJOR} EQUAL 3)
@@ -82,7 +82,7 @@ if (DOXYGEN_FOUND)
     set(DEPGRAPH_DIR ${CMAKE_CURRENT_BINARY_DIR}/depgraphs)
     set(DOXYGEN_SECTIONS "")
     set(DOXYGEN_EXTRA_SETTINGS "")
-    if (GMX_COMPACT_DOXYGEN)
+    if (ACT_COMPACT_DOXYGEN)
         set(DOXYGEN_EXTRA_SETTINGS "@INCLUDE   = ${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile-compact")
     endif()
     set(DOXYGENLIST "html-full;html-lib;html-user;xml")
@@ -115,7 +115,7 @@ if (DOXYGEN_FOUND)
         set(doxygen_deps
             ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile-common
             ${CMAKE_CURRENT_BINARY_DIR}/RunDoxygen.cmake)
-        if (GMX_COMPACT_DOXYGEN)
+        if (ACT_COMPACT_DOXYGEN)
             list(APPEND doxygen_deps ${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile-compact)
         endif()
         gmx_add_custom_output_target(doxygen-source-timestamp

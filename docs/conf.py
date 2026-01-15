@@ -79,7 +79,7 @@ extensions = [
     'sphinx.ext.ifconfig',
     'gmxsphinx'
 ]
-extlinks = {'issue': ('https://redmine.gromacs.org/issues/%s',
+extlinks = {'issue': ('https://github.com/AlexandriaChemistry/ACT/issues/%s',
                       'Issue ')}
 
 # Add any paths that contain templates here, relative to this directory.
@@ -95,17 +95,17 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'GROMACS'
-copyright = str(datetime.datetime.now().year) + u', GROMACS development team'
+project = u'ACT'
+copyright = str(datetime.datetime.now().year) + u', ACT development team'
 thisyear_string = str(datetime.datetime.now().year)
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
 # built documents.
 #
 # The short X.Y version.
-version = gmx_version_string
+version = act_version_string
 # The full version, including alpha/beta/rc tags.
-release = gmx_version_string_full
+release = act_version_string_full
 # default file extension for plots
 plotext = u'.eps'
 
