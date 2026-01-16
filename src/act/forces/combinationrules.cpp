@@ -187,7 +187,12 @@ double combineWaldmanEpsilon(double e1, double e2, double s1, double s2)
 double combineGeneralizedMean(double x1, double x2, double exponent)
 {
     // See https://en.wikipedia.org/wiki/Generalized_mean
-    if (exponent == 0)
+    // The paper by Hohm points out that for very small exponents,
+    // double precision is not good enough, however the analytical
+    // result converges to the geometric mean. Therefore we approximate
+    // the result for small exponents by that.
+    const double tolerance = 1e-6;
+    if (std::abs(exponent) < tolerance)
     {
         return std::sqrt(x1*x2);
     }
