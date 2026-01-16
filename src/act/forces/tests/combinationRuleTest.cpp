@@ -234,6 +234,16 @@ TEST_F (CombinationRuleTest, GeneralizedMean_1_4_0)
     testGM(1.0, 4.0, 0.0);
 }
 
+TEST_F (CombinationRuleTest, GeneralizedMean_1_4_small)
+{
+    testGM(1.0, 4.0, 1e-5);
+}
+
+TEST_F (CombinationRuleTest, GeneralizedMean_1_4_very_small)
+{
+    testGM(1.0, 4.0, -1e-7);
+}
+
 TEST_F (CombinationRuleTest, GeneralizedMean_1_4_2)
 {
     testGM(1.0, 4.0, 2.0);
