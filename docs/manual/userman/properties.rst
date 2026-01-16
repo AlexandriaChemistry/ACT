@@ -3,7 +3,7 @@
 *******************************
 Predicting Molecular Properties
 *******************************
-The ACT can be used to perform MD simulations of clusters in the gas-phase using the \actcmd{simulate} command. This module includes the possibility to perform energy minimizations with the \actflag{-minimize}.
+The ACT can be used to perform MD simulations of clusters in the gas-phase using the *alexandria simulate* command. This module includes the possibility to perform energy minimizations with the flag *-minimize*.
 For simulations employing periodic boundaries the OpenMM package~ :cite:p:`Eastman2023a` should be used instead. 
 For more details about MD simulations, see Section :ref:`sec-simulations`.
 
@@ -175,7 +175,7 @@ Normal Mode Analysis
 ====================
 Please note that the text below is largely taken (with permission) from a paper by Henschel {\em et al.}~ :cite:p:`Henschel2020a`.
 
-The ACT contains the \actcmd{nma} tool that performs a normal mode analysis to determine the vibrational frequencies of a compound.
+The ACT contains the *alexandria nma* tool that performs a normal mode analysis to determine the vibrational frequencies of a compound.
 Vibrational frequencies are required to compute the IR spectra and thermochemistry of molecules. The normal modes of molecular vibrations can be obtained by eigenvalue decomposition of the Hessian matrix, whose elements are the second derivatives of the energy with respect to the atomic coordinates :math:`q`.
 
 .. math:: H_{ij} = \frac{\partial^2E}{\partial q_i \partial q_j}
@@ -291,9 +291,9 @@ and similarly,
 
 .. math:: S^o = S_{tr} + S_{rot} + S_{vib}
 
-Thermochemical properties are computed automatically by the \actcmd{nma} command. For more details, please see Van der Spoel *et al.*  :cite:p:`Spoel2018a`.
+Thermochemical properties are computed automatically by the *alexandria nma* command. For more details, please see Van der Spoel *et al.*  :cite:p:`Spoel2018a`.
 
-The \actcmd{nma} used above to generate the infrared spectrum in Fig. :ref:`fig-ethanol`  computes the thermochemical variables as well (Table :ref:`tab-thermo`).
+The *alexandria nma* used above to generate the infrared spectrum in Fig. :ref:`fig-ethanol`  computes the thermochemical variables as well (Table :ref:`tab-thermo`).
 Information on calculation of the enthalpy of formation will be pubslished in the near future.
 
 .. table:: Thermochemical values for ethanol at 298.15 K based on the OPLS2020 force field~ :cite:p:`Jorgensen2023a`.
@@ -349,7 +349,7 @@ and where :math:`I` is the moment of inertia of the molecule and
 
 The change in :math:`B_2(T)` as a function of temperature can be used to scrutinize the repulsive and attractive components of the potential energy. :math:`B_2(T)` is negative at low temperatures due to attraction forces, while it becomes positive at higher temperatures as repulsion forces start to dominate, and passes through a maximum and eventually decreases at very high temperatures where repulsion force are fully dominant~ :cite:p:`Amdur1958a`.  
 
-Code to compute the second virial coefficient is available in the \actcmd{b2} command. Since the calculation is relatively expensive it has been implemented to use parallel processing using the message passing library. You can run it on a 16-core machine like::
+Code to compute the second virial coefficient is available in the *alexandria b2* command. Since the calculation is relatively expensive it has been implemented to use parallel processing using the message passing library. You can run it on a 16-core machine like::
 
   mpirun -n 16 alexandria b2 -v 3 -g TIP4P -b2 TIP4P -ff TIP4P
   -f water#water.pdb -T1 373.15 -T2 673.15 -dT 25.0

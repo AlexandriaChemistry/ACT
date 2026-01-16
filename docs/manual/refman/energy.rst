@@ -449,7 +449,7 @@ The ACT includes a flat-bottom position restraint potential according to
    \end{align}
 
 where :math:`k` is the force constant and :math:`r_0` the radius of the sphere (centered at the origin) in which the potential is zero.
-The flat-bottom potential is activated by flags to the \actcmd{simulate} command. It is useful
+The flat-bottom potential is activated by flags to the *alexandria simulate* command. It is useful
 mainly to keep molecules close to the origin and prevent them from flying into outer space.
 
 ==================

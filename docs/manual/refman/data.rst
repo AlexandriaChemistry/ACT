@@ -74,7 +74,7 @@ The steps needed to prepare data for training in ACT are as follows:
 
      ./run_calcs.py -dimers alchol.dat -ndist 6 -mindist 0.9 -maxdist 1.4 -norient 10
 
-  Note, that in the above command 6$\times$10 calculations are started for each dimer in {\tt alcohol.dat}, that is 360 calculations in total. You will obviously need a compute cluster to do these calculations, in particular if you select a more accurate SAPT level of theory~ :cite:p:`Parker2014a` than the default (sapt2+/aug-cc-pvdz). 
+  Note, that in the above command 6 x 10 calculations are started for each dimer in *alcohol.dat*, that is 360 calculations in total. You will obviously need a compute cluster to do these calculations, in particular if you select a more accurate SAPT level of theory~ :cite:p:`Parker2014a` than the default (sapt2+/aug-cc-pvdz). 
 
 .. _qmdata:
 
@@ -92,14 +92,14 @@ The ACT uses the \href{https://en.wikipedia.org/wiki/XML{eXtensible Markup Langu
 
 * Convert the Psi4 outputs to compact and human-readable \href{https://en.wikipedia.org/wiki/JSON}{json} files using another script in SaptACT::
 
-     ./generate_json
+     ./generate_json.py
     
-  which will traverse the output directories, find Psi4 outputs, and if there is not already a {\tt results.json} file, will generate it. Please familiarize yourself with the content of these files.
+  which will traverse the output directories, find Psi4 outputs, and if there is not already a *results.json* file, will generate it. Please familiarize yourself with the content of these files.
 * When the json files have been generated, you are ready to convert them to a molprop file::
 
     ./write_molprop.py -o molprop.xml
     
   please inspect the output file from this script to verify that your calculations are present.
 
-Both these scripts have more flags that can be useful, please investigate those using the {\tt -h} option.
+Both these scripts have more flags that can be useful, please investigate those using the *-h* option.
 

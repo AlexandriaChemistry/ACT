@@ -62,7 +62,7 @@ where both :math:`A^{ind}_{ij}` and :math:`A^{\delta_{HF}}_{ij}` are determined 
 meaning these terms are always attractive. These potentials use the :math:`b_{ij}` that is used in the exchange energy (using a Buckingham potential, Eqn. :eq:`vbh`).
 Whether this is the most appropriate way of splitting terms and reproducing SAPT energies remains to be determined.
 
-In the output the ACT training module \actcmd{train\_ff} there are two terms related to induction. The term INDUCTIONCORRECTION refers to Eqn. :eq:`vind3`. If that is present, the term INDUCTION refers to Eqn. :eq:`vind2`, if not it refers to the sum of the two.
+In the output the ACT training module *alexandria train_ff* there are two terms related to induction. The term INDUCTIONCORRECTION refers to Eqn. :eq:`vind3`. If that is present, the term INDUCTION refers to Eqn. :eq:`vind2`, if not it refers to the sum of the two.
 
 ===========================
 Monomer Energies and Forces
