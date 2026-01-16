@@ -27,7 +27,7 @@ To facilitate this, a special python code was implemented that makes it relative
     alexandria gentop -ff actff.xml -openmm openmmff.xml 
     -charges mp2.xml -db "water methanol"
 
-with two additional arguments. First, \actflag{-charges mp2.xml} indicates a molprop file (database) with monomeric (optimized) structures used for generating charges and, second, the \actflag{-db "water methanol"} instruct the code to produce an OpenMM topology for those compounds. If one or more of the compounds is not present in the database, a warning will be issued.
+with two additional arguments. First, flag *-charges mp2.xml* indicates a molprop file (database) with monomeric (optimized) structures used for generating charges and, second, the flag *-db "water methanol"* instruct the code to produce an OpenMM topology for those compounds. If one or more of the compounds is not present in the database, a warning will be issued.
 
 ---------------------------
 MD simulations using OpenMM
