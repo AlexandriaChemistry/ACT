@@ -6,19 +6,19 @@
   <Int Name="N--ethenyl-N-hydroxyethanimidamide.sdf">14</Int>
   <Sequence Name="bondorder">
     <Int Name="Length">14</Int>
-    <String>c3-0 h-7: 1</String>
-    <String>c3-0 h-8: 1</String>
+    <String>c3-0 hc-7: 1</String>
+    <String>c3-0 hc-8: 1</String>
     <String>c2-1 n2-4: 2</String>
     <String>c2-1 c3-0: 1</String>
     <String>n2-2 c2-1: 1</String>
     <String>o3-3 n2-2: 1</String>
-    <String>o3-3 h-11: 1</String>
+    <String>o3-3 ho-11: 1</String>
     <String>n2-4 c2-5: 1</String>
-    <String>c2-5 h-12: 1</String>
-    <String>c2-6 h-14: 1</String>
+    <String>c2-5 h1-12: 1</String>
+    <String>c2-6 ha-14: 1</String>
     <String>c2-6 c2-5: 2</String>
-    <String>h-9 c3-0: 1</String>
-    <String>h-10 n2-2: 1</String>
-    <String>h-13 c2-6: 1</String>
+    <String>hc-9 c3-0: 1</String>
+    <String>hn-10 n2-2: 1</String>
+    <String>ha-13 c2-6: 1</String>
   </Sequence>
 </ReferenceData>

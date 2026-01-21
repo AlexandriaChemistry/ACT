@@ -6,7 +6,7 @@
   <Int Name="hydrogen-bromide#hydrogen-fluoride.pdb">2</Int>
   <Sequence Name="bondorder">
     <Int Name="Length">2</Int>
-    <String>h-1 br-0: 1</String>
-    <String>h-3 f-2: 1</String>
+    <String>ha-1 br-0: 1</String>
+    <String>ha-3 f-2: 1</String>
   </Sequence>
 </ReferenceData>

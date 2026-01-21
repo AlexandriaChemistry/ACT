@@ -1,0 +1,26 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="molname">trimethylorthoformate.sdf</String>
+  <Real Name="qtot">0</Real>
+  <Int Name="trimethylorthoformate.sdf">16</Int>
+  <Sequence Name="bondorder">
+    <Int Name="Length">16</Int>
+    <String>c3-0 o3-1: 1</String>
+    <String>o3-1 c3-2: 1</String>
+    <String>c3-2 o3-3: 1</String>
+    <String>o3-3 c3-4: 1</String>
+    <String>c3-2 o3-5: 1</String>
+    <String>o3-5 c3-6: 1</String>
+    <String>c3-0 h1-7: 1</String>
+    <String>c3-0 h1-8: 1</String>
+    <String>c3-0 h1-9: 1</String>
+    <String>c3-2 h3-10: 1</String>
+    <String>c3-4 h1-11: 1</String>
+    <String>c3-4 h1-12: 1</String>
+    <String>c3-4 h1-13: 1</String>
+    <String>c3-6 h1-14: 1</String>
+    <String>c3-6 h1-15: 1</String>
+    <String>c3-6 h1-16: 1</String>
+  </Sequence>
+</ReferenceData>

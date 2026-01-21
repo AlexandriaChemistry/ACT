@@ -10,12 +10,12 @@
     <String>p2-0 c2-5: 1.5</String>
     <String>c2-1 c2-2: 1.5</String>
     <String>c2-1 c2-3: 1.5</String>
-    <String>c2-1 h-6: 1</String>
+    <String>c2-1 ha-6: 1</String>
     <String>c2-2 c2-4: 1.5</String>
-    <String>c2-2 h-7: 1</String>
+    <String>c2-2 ha-7: 1</String>
     <String>c2-3 c2-5: 1.5</String>
-    <String>c2-3 h-8: 1</String>
-    <String>c2-4 h-9: 1</String>
-    <String>c2-5 h-10: 1</String>
+    <String>c2-3 ha-8: 1</String>
+    <String>c2-4 ha-9: 1</String>
+    <String>c2-5 ha-10: 1</String>
   </Sequence>
 </ReferenceData>

@@ -6,7 +6,7 @@
   <Int Name="fluorane.sdf">2</Int>
   <Sequence Name="bondorder">
     <Int Name="Length">2</Int>
-    <String>f-0 hf-1: 1</String>
-    <String>f-2 hf-3: 1</String>
+    <String>f-0 ha-1: 1</String>
+    <String>f-2 ha-3: 1</String>
   </Sequence>
 </ReferenceData>

@@ -3,11 +3,5 @@
 <ReferenceData>
   <String Name="Charge type to read"></String>
   <String Name="Algorithm">SQE</String>
-  <Int64 Name="Number of molecules">1</Int64>
-  <Real Name="HF.HF-F-1">-0.029973250084745079</Real>
-  <Real Name="HF.HF-H-2">0.49273147820744512</Real>
-  <Real Name="HF.HF-v2f1-3">-0.46275822812270001</Real>
-  <Real Name="HF.HF-F-4">-0.028916886043339168</Real>
-  <Real Name="HF.HF-H-5">0.49167511416603915</Real>
-  <Real Name="HF.HF-v2f1-6">-0.46275822812270001</Real>
+  <Int64 Name="Number of molecules">0</Int64>
 </ReferenceData>

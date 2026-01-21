@@ -7,8 +7,8 @@
   <Sequence Name="atomtypes">
     <Int Name="Length">4</Int>
     <String>p3</String>
-    <String>h</String>
-    <String>h</String>
-    <String>h</String>
+    <String>hp</String>
+    <String>hp</String>
+    <String>hp</String>
   </Sequence>
 </ReferenceData>

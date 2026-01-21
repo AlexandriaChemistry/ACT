@@ -6,16 +6,16 @@
   <Int Name="dimethyl-carbonate.xyz">11</Int>
   <Sequence Name="bondorder">
     <Int Name="Length">11</Int>
-    <String>h-1 c3-0: 1</String>
-    <String>h-2 c3-0: 1</String>
-    <String>h-3 c3-0: 1</String>
+    <String>h1-1 c3-0: 1</String>
+    <String>h1-2 c3-0: 1</String>
+    <String>h1-3 c3-0: 1</String>
     <String>o2-4 c3-0: 1</String>
     <String>c2-5 o2-4: 1</String>
     <String>o2-6 c2-5: 2</String>
     <String>o2-7 c2-5: 1</String>
     <String>c3-8 o2-7: 1</String>
-    <String>h-9 c3-8: 1</String>
-    <String>h-10 c3-8: 1</String>
-    <String>h-11 c3-8: 1</String>
+    <String>h1-9 c3-8: 1</String>
+    <String>h1-10 c3-8: 1</String>
+    <String>h1-11 c3-8: 1</String>
   </Sequence>
 </ReferenceData>

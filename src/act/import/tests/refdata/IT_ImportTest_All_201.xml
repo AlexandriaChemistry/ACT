@@ -6,10 +6,10 @@
   <Int Name="methanethiol.sdf">5</Int>
   <Sequence Name="bondorder">
     <Int Name="Length">5</Int>
-    <String>s3-0 h-1: 1</String>
+    <String>s3-0 hs-1: 1</String>
     <String>s3-0 c3-2: 1</String>
-    <String>c3-2 h-4: 1</String>
-    <String>c3-2 h-3: 1</String>
-    <String>h-5 c3-2: 1</String>
+    <String>c3-2 h1-4: 1</String>
+    <String>c3-2 h1-3: 1</String>
+    <String>h1-5 c3-2: 1</String>
   </Sequence>
 </ReferenceData>

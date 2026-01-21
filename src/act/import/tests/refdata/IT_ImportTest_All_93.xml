@@ -8,10 +8,10 @@
     <Int Name="Length">7</Int>
     <String>c2-0 c2-1: 2</String>
     <String>c2-0 c3-2: 1</String>
-    <String>c2-0 h-5: 1</String>
+    <String>c2-0 ha-5: 1</String>
     <String>c2-1 c3-2: 1</String>
-    <String>c2-1 h-6: 1</String>
-    <String>c3-2 h-3: 1</String>
-    <String>h-4 c3-2: 1</String>
+    <String>c2-1 ha-6: 1</String>
+    <String>c3-2 hc-3: 1</String>
+    <String>hc-4 c3-2: 1</String>
   </Sequence>
 </ReferenceData>

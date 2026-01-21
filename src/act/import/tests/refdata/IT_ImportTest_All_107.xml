@@ -10,7 +10,7 @@
     <String>o2-2 p3-0: 2</String>
     <String>o3-3 p3-0: 1</String>
     <String>o3-4 p3-0: 1</String>
-    <String>h-5 o3-1: 1</String>
-    <String>h-6 o3-3: 1</String>
+    <String>ho-5 o3-1: 1</String>
+    <String>ho-6 o3-3: 1</String>
   </Sequence>
 </ReferenceData>
