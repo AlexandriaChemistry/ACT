@@ -10,12 +10,12 @@
     <String>p2-0 o2-2: 2</String>
     <String>p2-0 c3-4: 1</String>
     <String>n3-3 c3-5: 1</String>
-    <String>n3-3 h-10: 1</String>
-    <String>n3-3 h-11: 1</String>
+    <String>n3-3 hn-10: 1</String>
+    <String>n3-3 hn-11: 1</String>
     <String>c3-4 c3-5: 1</String>
-    <String>c3-4 h-6: 1</String>
-    <String>c3-4 h-7: 1</String>
-    <String>c3-5 h-8: 1</String>
-    <String>c3-5 h-9: 1</String>
+    <String>c3-4 hc-6: 1</String>
+    <String>c3-4 hc-7: 1</String>
+    <String>c3-5 h1-8: 1</String>
+    <String>c3-5 h1-9: 1</String>
   </Sequence>
 </ReferenceData>

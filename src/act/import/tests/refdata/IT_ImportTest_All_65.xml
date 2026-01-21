@@ -9,11 +9,11 @@
     <String>o2-0 c2-1: 2</String>
     <String>c2-1 c3-3: 1</String>
     <String>c2-1 c3-2: 1</String>
-    <String>c3-2 h-5: 1</String>
-    <String>c3-2 h-6: 1</String>
-    <String>c3-2 h-4: 1</String>
-    <String>c3-3 h-8: 1</String>
-    <String>c3-3 h-9: 1</String>
-    <String>c3-3 h-7: 1</String>
+    <String>c3-2 hc-5: 1</String>
+    <String>c3-2 hc-6: 1</String>
+    <String>c3-2 hc-4: 1</String>
+    <String>c3-3 hc-8: 1</String>
+    <String>c3-3 hc-9: 1</String>
+    <String>c3-3 hc-7: 1</String>
   </Sequence>
 </ReferenceData>

@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="molname">1,3,5-triazine.sdf</String>
+  <Real Name="qtot">0</Real>
+  <Int Name="1,3,5-triazine.sdf">9</Int>
+  <Sequence Name="atomtypes">
+    <Int Name="Length">9</Int>
+    <String>c2</String>
+    <String>n2</String>
+    <String>c2</String>
+    <String>n2</String>
+    <String>c2</String>
+    <String>n2</String>
+    <String>h5</String>
+    <String>h5</String>
+    <String>h5</String>
+  </Sequence>
+</ReferenceData>

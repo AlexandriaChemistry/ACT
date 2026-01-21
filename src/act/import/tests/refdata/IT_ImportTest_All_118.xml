@@ -7,13 +7,13 @@
   <Sequence Name="atomtypes">
     <Int Name="Length">9</Int>
     <String>c3</String>
-    <String>h</String>
-    <String>h</String>
-    <String>h</String>
+    <String>h1</String>
+    <String>h1</String>
+    <String>h1</String>
     <String>s3</String>
     <String>c3</String>
-    <String>h</String>
-    <String>h</String>
-    <String>h</String>
+    <String>h1</String>
+    <String>h1</String>
+    <String>h1</String>
   </Sequence>
 </ReferenceData>

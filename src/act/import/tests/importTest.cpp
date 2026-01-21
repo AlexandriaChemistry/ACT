@@ -68,7 +68,7 @@ private:
 public:   
     ImportTest()
     {
-        pd       = getForceField("../../alexandria/tests/ACS-g");
+        pd       = getForceField("../../alexandria/tests/gaff_hydrogen_types");
         molname  = std::get<0>(std::get<0>(GetParam()));
         qtot     = std::get<1>(std::get<0>(GetParam()));
         oneH     = std::get<1>(GetParam());
@@ -206,7 +206,15 @@ std::vector<std::tuple<std::string, double>> get_files()
         { "thiophene.sdf", 0 },
         { "uracil.sdf", 0 },
         { "water-3-oep.log.pdb", 0 },
-        { "water_dimer.pdb", 0 }
+        { "water_dimer.pdb", 0 },
+	{ "chloroform.sdf", 0 },
+	{ "dichloromethane.sdf", 0 },
+	{ "1,3,5-triazine.sdf", 0 },
+	{ "trimethylorthoformate.sdf", 0 },
+	{ "chloroform.xyz", 0 },
+        { "dichloromethane.xyz", 0 },
+        { "1,3,5-triazine.xyz", 0 },
+        { "trimethylorthoformate.xyz", 0 },
     };
 }
 

@@ -6,9 +6,9 @@
   <Int Name="sulfate.xyz">4</Int>
   <Sequence Name="bondorder">
     <Int Name="Length">4</Int>
-    <String>o2-1 s3-0: 1.5</String>
-    <String>o2-2 s3-0: 1.5</String>
-    <String>o2-3 s3-0: 1.5</String>
-    <String>o2-4 s3-0: 1.5</String>
+    <String>o2-1 s3-0: 2</String>
+    <String>o2-2 s3-0: 2</String>
+    <String>o3-3 s3-0: 1</String>
+    <String>o3-4 s3-0: 1</String>
   </Sequence>
 </ReferenceData>

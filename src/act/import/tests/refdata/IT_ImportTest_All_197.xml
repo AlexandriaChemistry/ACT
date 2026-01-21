@@ -6,9 +6,9 @@
   <Int Name="merged.pdb">4</Int>
   <Sequence Name="bondorder">
     <Int Name="Length">4</Int>
-    <String>h-0 f-1: 1</String>
-    <String>h-2 cl-3: 1</String>
-    <String>h-4 br-5: 1</String>
-    <String>h-6 i-7: 1</String>
+    <String>ha-0 f-1: 1</String>
+    <String>ha-2 cl-3: 1</String>
+    <String>ha-4 br-5: 1</String>
+    <String>ha-6 i-7: 1</String>
   </Sequence>
 </ReferenceData>

@@ -7,15 +7,15 @@
   <Sequence Name="atomtypes">
     <Int Name="Length">12</Int>
     <String>n2</String>
-    <String>h</String>
+    <String>hn</String>
     <String>c2</String>
     <String>o2</String>
     <String>c2</String>
-    <String>h</String>
+    <String>hn</String>
     <String>c2</String>
-    <String>h</String>
+    <String>h4</String>
     <String>n2</String>
-    <String>h</String>
+    <String>ha</String>
     <String>c2</String>
     <String>o2</String>
   </Sequence>

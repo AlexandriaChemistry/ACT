@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="molname">dichloromethane.sdf</String>
+  <Real Name="qtot">0</Real>
+  <Int Name="dichloromethane.sdf">4</Int>
+  <Sequence Name="bondorder">
+    <Int Name="Length">4</Int>
+    <String>cl-0 c3-1: 1</String>
+    <String>c3-1 cl-2: 1</String>
+    <String>c3-1 h2-3: 1</String>
+    <String>c3-1 h2-4: 1</String>
+  </Sequence>
+</ReferenceData>

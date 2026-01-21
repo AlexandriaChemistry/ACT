@@ -9,6 +9,6 @@
     <String>s3-0 n2-1: 1</String>
     <String>s3-0 c2-2: 1</String>
     <String>n2-1 c2-2: 2</String>
-    <String>c2-2 h-3: 1</String>
+    <String>c2-2 h2-3: 1</String>
   </Sequence>
 </ReferenceData>

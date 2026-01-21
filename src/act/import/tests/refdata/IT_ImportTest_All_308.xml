@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="molname">chloroform.xyz</String>
+  <Real Name="qtot">0</Real>
+  <Int Name="chloroform.xyz">5</Int>
+  <Sequence Name="atomtypes">
+    <Int Name="Length">5</Int>
+    <String>cl</String>
+    <String>c3</String>
+    <String>cl</String>
+    <String>cl</String>
+    <String>h3</String>
+  </Sequence>
+</ReferenceData>

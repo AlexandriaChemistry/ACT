@@ -8,9 +8,9 @@
     <Int Name="Length">6</Int>
     <String>c2-0 c3-1: 1</String>
     <String>c2-0 o2-2: 2</String>
-    <String>c2-0 h-3: 1</String>
-    <String>c3-1 h-4: 1</String>
-    <String>c3-1 h-5: 1</String>
-    <String>h-6 c3-1: 1</String>
+    <String>c2-0 h1-3: 1</String>
+    <String>c3-1 hc-4: 1</String>
+    <String>c3-1 hc-5: 1</String>
+    <String>hc-6 c3-1: 1</String>
   </Sequence>
 </ReferenceData>

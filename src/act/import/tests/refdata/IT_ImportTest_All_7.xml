@@ -8,18 +8,18 @@
     <Int Name="Length">15</Int>
     <String>n3-0 c3-3: 1</String>
     <String>n3-1 c3-5: 1</String>
-    <String>n3-1 h-13: 1</String>
-    <String>n3-2 h-15: 1</String>
-    <String>c3-3 h-6: 1</String>
-    <String>c3-3 h-7: 1</String>
+    <String>n3-1 hn-13: 1</String>
+    <String>n3-2 hn-15: 1</String>
+    <String>c3-3 h1-6: 1</String>
+    <String>c3-3 h1-7: 1</String>
     <String>c3-4 n3-0: 1</String>
-    <String>c3-4 h-9: 1</String>
+    <String>c3-4 h1-9: 1</String>
     <String>c3-5 n3-0: 1</String>
     <String>c3-5 n3-2: 1</String>
-    <String>h-8 c3-3: 1</String>
-    <String>h-10 c3-4: 1</String>
-    <String>h-11 c3-4: 1</String>
-    <String>h-12 n3-1: 1</String>
-    <String>h-14 n3-2: 1</String>
+    <String>h1-8 c3-3: 1</String>
+    <String>h1-10 c3-4: 1</String>
+    <String>h1-11 c3-4: 1</String>
+    <String>hn-12 n3-1: 1</String>
+    <String>hn-14 n3-2: 1</String>
   </Sequence>
 </ReferenceData>

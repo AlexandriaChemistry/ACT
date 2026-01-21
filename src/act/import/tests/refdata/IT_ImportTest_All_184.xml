@@ -6,8 +6,8 @@
   <Int Name="hydrogen-sulfide.sdf">3</Int>
   <Sequence Name="atomtypes">
     <Int Name="Length">3</Int>
-    <String>h</String>
+    <String>hs</String>
     <String>s3</String>
-    <String>h</String>
+    <String>hs</String>
   </Sequence>
 </ReferenceData>
