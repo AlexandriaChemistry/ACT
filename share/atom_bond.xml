@@ -103,4 +103,118 @@
       <bondtype ai="0" aj="2" order="1.5"/>
     </bondtypes>
   </atombondtype>
+  
+  <atombondtype name="gaff_hc_any" smarts="[#1]" charge="0" multiplicity="1">
+    <atomtypes>
+      <atomtype index="0" name="hc"/>
+    </atomtypes>
+  </atombondtype>
+ 
+  <atombondtype name="gaff_ha_generic" smarts="[#1X1]" charge="0" multiplicity="1">
+    <atomtypes>
+      <atomtype index="0" name="ha"/>
+    </atomtypes>
+  </atombondtype>
+
+  <atombondtype name="gaff_ho_oxygen" smarts="[#1X1;$(*-O)]" charge="0" multiplicity="1">
+    <atomtypes>
+      <atomtype index="0" name="ho"/>
+    </atomtypes>
+  </atombondtype>
+
+  <atombondtype name="gaff_ho_water" smarts="[#1X1;$(*-[O;H2])]" charge="0" multiplicity="1">
+    <atomtypes>
+      <atomtype index="0" name="ho"/>
+    </atomtypes>
+  </atombondtype>
+
+  <atombondtype name="gaff_hn_nitrogen" smarts="[#1X1;$(*-N)]" charge="0" multiplicity="1">
+    <atomtypes>
+      <atomtype index="0" name="hn"/>
+    </atomtypes>
+  </atombondtype>
+
+  <atombondtype name="gaff_hn_aromatic_n" smarts="[#1X1;$(*-n)]" charge="0" multiplicity="1">
+    <atomtypes>
+      <atomtype index="0" name="hn"/>
+    </atomtypes>
+  </atombondtype>
+
+  <atombondtype name="gaff_hs_sulfur" smarts="[#1X1;$(*-S)]" charge="0" multiplicity="1">
+    <atomtypes>
+      <atomtype index="0" name="hs"/>
+    </atomtypes>
+  </atombondtype>
+
+  <atombondtype name="gaff_hp_phosphorus" smarts="[#1X1;$(*-P)]" charge="0" multiplicity="1">
+    <atomtypes>
+      <atomtype index="0" name="hp"/>
+    </atomtypes>
+  </atombondtype>
+
+  <atombondtype name="gaff_hc_aliphatic_C" smarts="[#1X1;$(*-[#6X4])]" charge="0" multiplicity="1">
+    <atomtypes>
+      <atomtype index="0" name="hc"/>
+    </atomtypes>
+  </atombondtype>
+
+  <atombondtype name="gaff_hc_tertcarbon_like" smarts="[#1X1;$(*-[#6X4]([#6])([#6])[#1])]" charge="0" multiplicity="1">
+    <atomtypes>
+      <atomtype index="0" name="hc"/>
+    </atomtypes>
+  </atombondtype>
+
+  <atombondtype name="gaff_ha_conjugated_CX3_eq_C" smarts="[#1X1;$(*-[#6X3]=[#6])]" charge="0" multiplicity="1">
+    <atomtypes>
+      <atomtype index="0" name="ha"/>
+    </atomtypes>
+  </atombondtype>
+
+  <atombondtype name="gaff_ha_triplebond" smarts="[#1X1;$(*-[#6X2]#[#6])]" charge="0" multiplicity="1">
+    <atomtypes>
+      <atomtype index="0" name="ha"/>
+    </atomtypes>
+  </atombondtype>
+
+  <atombondtype name="gaff_h1_chain_1EWG" smarts="[#1X1;$(*-[C]-[#7,#8,#9,#16,#17,#35,#53])]" charge="0" multiplicity="1">
+    <atomtypes>
+      <atomtype index="0" name="h1"/>
+    </atomtypes>
+  </atombondtype>
+
+  <atombondtype name="gaff_h1_chain_1EWG_double" smarts="[#1X1;$(*-[C]=[#7,#8,#9,#16])]" charge="0" multiplicity="1">
+    <atomtypes>
+      <atomtype index="0" name="h1"/>
+    </atomtypes>
+  </atombondtype>
+
+  <atombondtype name="gaff_h2_chain_2EWG" smarts="[#1X1;$(*-[C]([#7,#8,#9,#16,#17,#35,#53])[#7,#8,#9,#16,#17,#35,#53])]" charge="0" multiplicity="1">
+    <atomtypes>
+      <atomtype index="0" name="h2"/>
+    </atomtypes>
+  </atombondtype>
+
+  <atombondtype name="gaff_h2_C_eq_EWG2" smarts="[#1X1;$(*-[C](=[#7,#8,#9,#16])([#7,#8,#9,#16]))]" charge="0" multiplicity="1">
+    <atomtypes>
+      <atomtype index="0" name="h2"/>
+    </atomtypes>
+  </atombondtype>
+
+  <atombondtype name="gaff_h3_chain_3EWG" smarts="[#1X1;$(*-[C]([#7,#8,#16,#17,#35,#53,F,Cl,Br,I])([#7,#8,#16,#17,#35,#53,F,Cl,Br,I])([#7,#8,#16,#17,#35,#53,F,Cl,Br,I]))]" charge="0" multiplicity="1">
+    <atomtypes>
+      <atomtype index="0" name="h3"/>
+    </atomtypes>
+  </atombondtype>
+
+  <atombondtype name="gaff_h4_ring_1EWG" smarts="[#1X1;$(*-[c]~[#7,#8,#16,#17,#35,#53])]" charge="0" multiplicity="1">
+    <atomtypes>
+      <atomtype index="0" name="h4"/>
+    </atomtypes>
+  </atombondtype>
+
+  <atombondtype name="gaff_h5_ring_2EWG" smarts="[#1X1;$(*-[c](~[#7,#8,#16,#17,#35,#53])~[#7,#8,#16,#17,#35,#53])]" charge="0" multiplicity="1">
+    <atomtypes>
+      <atomtype index="0" name="h5"/>
+    </atomtypes>
+  </atombondtype>
 </atombondtypes>
