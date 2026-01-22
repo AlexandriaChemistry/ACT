@@ -6,6 +6,6 @@
   <Int Name="hydrogen-chloride.sdf">1</Int>
   <Sequence Name="bondorder">
     <Int Name="Length">1</Int>
-    <String>ha-1 cl-0: 1</String>
+    <String>hcl-1 cl-0: 1</String>
   </Sequence>
 </ReferenceData>

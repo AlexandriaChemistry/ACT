@@ -20,12 +20,12 @@
   <Real Name="coords[Hs-5][Y]">-0.076339999999999991</Real>
   <Real Name="coords[Hs-5][Z]">-0.046809999999999997</Real>
   <Real Name="coords[v3out-6][X]">0.057173163519999994</Real>
-  <Real Name="coords[v3out-6][Y]">-1.001199123606966e-18</Real>
+  <Real Name="coords[v3out-6][Y]">0</Real>
   <Real Name="coords[v3out-6][Z]">0.052656999999999995</Real>
   <Real Name="coords[v3out-7][X]">-0.057173163519999994</Real>
-  <Real Name="coords[v3out-7][Y]">-1.001199123606966e-18</Real>
+  <Real Name="coords[v3out-7][Y]">0</Real>
   <Real Name="coords[v3out-7][Z]">0.052656999999999995</Real>
   <Real Name="coords[v3-8][X]">0</Real>
-  <Real Name="coords[v3-8][Y]">-5.0059956180348299e-19</Real>
-  <Real Name="coords[v3-8][Z]">-0.011703999999999999</Real>
+  <Real Name="coords[v3-8][Y]">0</Real>
+  <Real Name="coords[v3-8][Z]">0.035104000000000003</Real>
 </ReferenceData>
