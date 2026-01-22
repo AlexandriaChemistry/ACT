@@ -6,8 +6,8 @@
   <Int Name="phosphine.sdf">3</Int>
   <Sequence Name="bondorder">
     <Int Name="Length">3</Int>
-    <String>hp-1 p3-0: 1</String>
-    <String>hp-2 p3-0: 1</String>
-    <String>hp-3 p3-0: 1</String>
+    <String>ha-1 p3-0: 1</String>
+    <String>ha-2 p3-0: 1</String>
+    <String>ha-3 p3-0: 1</String>
   </Sequence>
 </ReferenceData>

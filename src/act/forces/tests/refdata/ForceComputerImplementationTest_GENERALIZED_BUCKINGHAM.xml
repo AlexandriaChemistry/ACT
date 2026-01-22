@@ -17,5 +17,5 @@
   </Sequence>
   <Real Name="DISPERSION">-1.0125</Real>
   <Real Name="EXCHANGE">0.76249999999999996</Real>
-  <Real Name="fz">5.5511151231257827e-11</Real>
+  <Real Name="fz">-5.5511151231257827e-11</Real>
 </ReferenceData>

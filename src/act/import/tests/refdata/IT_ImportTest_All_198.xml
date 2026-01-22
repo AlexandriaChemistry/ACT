@@ -6,13 +6,13 @@
   <Int Name="merged.pdb">8</Int>
   <Sequence Name="atomtypes">
     <Int Name="Length">8</Int>
-    <String>ha</String>
+    <String>hf</String>
     <String>f</String>
-    <String>ha</String>
+    <String>hcl</String>
     <String>cl</String>
-    <String>ha</String>
+    <String>hbr</String>
     <String>br</String>
-    <String>ha</String>
+    <String>hi</String>
     <String>i</String>
   </Sequence>
 </ReferenceData>
