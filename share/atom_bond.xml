@@ -158,19 +158,19 @@
     </atomtypes>
   </atombondtype>
 
-  <atombondtype name="hcl" smarts="[#1X1;$(*-Cl)]" charge="0" multiplicity="1">
+ <atombondtype name="hcl" smarts="[#1X1;$(*-Cl)]" charge="0" multiplicity="1">
     <atomtypes>
       <atomtype index="0" name="hcl"/>
     </atomtypes>
   </atombondtype>
 
-  <atombondtype name="hbr" smarts="[#1X1;$(*-Br)]" charge="0" multiplicity="1">
+ <atombondtype name="hbr" smarts="[#1X1;$(*-Br)]" charge="0" multiplicity="1">
     <atomtypes>
       <atomtype index="0" name="hbr"/>
     </atomtypes>
   </atombondtype>
 
-  <atombondtype name="hi" smarts="[#1X1;$(*-I)]" charge="0" multiplicity="1">
+ <atombondtype name="hi" smarts="[#1X1;$(*-I)]" charge="0" multiplicity="1">
     <atomtypes>
       <atomtype index="0" name="hi"/>
     </atomtypes>

@@ -7,6 +7,6 @@
   <Sequence Name="bondorder">
     <Int Name="Length">2</Int>
     <String>o2-0 p2-1: 2</String>
-    <String>p2-1 ha-2: 1</String>
+    <String>p2-1 hp-2: 1</String>
   </Sequence>
 </ReferenceData>
