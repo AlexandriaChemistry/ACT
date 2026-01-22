@@ -106,7 +106,6 @@ static std::string checkForSpecialAtomTypes(const RDKit::RWMol *mol,
     }
     else if (type == "h" && !oneH)
     {
-        std::set<std::string> halides = { "f", "cl", "br", "i" };
         for(const auto &b : mol->atomBonds(atom))
         {
             auto otherAtom = b->getOtherAtom(atom);
@@ -121,10 +120,6 @@ static std::string checkForSpecialAtomTypes(const RDKit::RWMol *mol,
                 if (other == "ow")
                 {
                     return "hw";
-                }
-                else if (halides.find(other) != halides.end())
-                {
-                    return type + *halides.find(other);
                 }
             }
         }
