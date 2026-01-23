@@ -180,7 +180,8 @@ In other works, the Tang-Toennies potential is extended with an additional param
 and the ACT supports both these functions.
 Van Vleet {\em et al.} described a more accurate formula for the Pauli repulsion :cite:p:`Vleet2016a` that was applied to derive a force field later :cite:p:`Vleet2018a`. In this model the exchange repulsion is given by the Slater-ISA formula
 
-.. math:: V_{exch} ~=~ A\left(\frac{1}{3}(br)^2 + br + 1\right){\rm exp}^{-br}\label{eqn:slater-isa}
+.. math:: V_{exch} ~=~ A\left(\frac{1}{3}(br)^2 + br + 1\right){\rm exp}^{-br}
+   :label: slater_isa
 
 where it can be noted, that no additional parameters are needed for equation~:eq:`slater-isa` compared to the repulsion part in the Tang-Toennies potential (Eqn. :eq:`TT`). In the ACT the Slater-ISA exchange can be combined with the damped dispersion part of the latter potential.
 
@@ -365,6 +366,7 @@ Harmonic potential
 Bond vibrations can be described using a harmonic term based on the bond length r:math:`_{ij}`
 
 .. math:: V_b(r_{ij}) ~=~ \frac{k_{ij}^{b}}{2}\left(r_{ij}-r_{ij}^0\right)^2,
+   :label: harmonic_bond
 
 where :math:`k_{ij}^{b}` is the force constant, and r:math:`_{ij}^0` is the equilibrium bond length. 
 
@@ -395,6 +397,7 @@ Angle potential
 Angle vibrations are described using a harmonic term based on the angle :math:`\theta_{ijk}`
 
 .. math:: V_a(\theta_{ijk}) ~=~ \frac{k_{ijk}^{\theta}}{2}\left(\theta_{ijk}-\theta_{ijk}^0\right)^2,
+   :label: harmonic_angle
 
 where :math:`k_{ijk}^{\theta}` is the force constant, and :math:`\theta_{ijk}^0` is the equilibrium angle. 
 
@@ -405,7 +408,7 @@ The reference position, corresponding to a minimum energy structure, :math:`\mat
 :math:`i,j,k` is given by
 
 .. math:: \mathbf{x}_j^0 ~=~ {\rm a}\, \mathbf{x}_i + (1-{\rm a})\, \mathbf{x}_k 
-   :label: xxx
+   :label: linang
 
 where :math:`a` is a constant defined by the bond-lengths :math:`i-j` and :math:`j-k`.  In a group with bonds :math:`i-j` and :math:`j-k` with lengths :math:`b_{ij}` and :math:`b_{jk}` respectively, the constant is
 
@@ -425,8 +428,9 @@ Out-of-plane vibrations
 Finally, out-of-plane vibrations are treated by another harmonic potential
 
 .. math:: V_i(\phi_{ijkl}) ~=~ \frac{k_{ijkl}^{\phi}}{2}\phi_{ijkl}^2,
+   :label: vimproper
 
-where :math:`k_{ijkl}^{\phi}` is the force constant and :math:`\phi_{ijkl}` is defined by the angle between the two planes :math:`i,j,k` and :math:`j,k,l`.
+where :math:`k_{ijkl}^{\phi}` is the force constant and :math:`\phi_{ijkl}` is defined by the angle between the two planes :math:`i,j,k` and :math:`j,k,l`. This potential was historically termed *improper dihedral*.
 
 ------------------
 Torsion potential
@@ -434,8 +438,19 @@ Torsion potential
 A torsion potential is implemented using a Fourier series:
 
 .. math:: V_{d}(\phi_{ijkl}) ~=~ \sum_{n=0}^5 c_n {\rm cos}^n(\pi+\phi_{ijkl})
+   :label: vfourier
 
 where :math:`c_n` are constants and the torsion angle is defined as above. The constant :math:`\pi` is added to be compatible with the Ryckaert-Bellemans potential :cite:p:`Ryckaert1975a` that is implemented in simulation codes like GROMACS :cite:p:`Spoel2005a` and OpenMM :cite:p:`Eastman2010a`.
+
+---------------
+Proper dihedral
+---------------
+A simpler torsion potential is implemented for backward compatibility as:
+
+.. math:: V_{d}(\phi_{ijkl}) ~=~ {\rm cos}(n \phi_{ijkl} + \phi_0)
+   :label: vproper
+
+where :math:`n` is the multiplicity (number of minima in 360 degrees) :math:`\phi_0` is an offset angle. 
 
 ==================
 Special potentials

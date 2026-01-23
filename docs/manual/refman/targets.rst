@@ -73,3 +73,112 @@ Typically, a series of single-point quantum calculations are done at a user-defi
 Other Properties
 ================
 In principle, all the molecular properties mentioned in Section :ref:`sec-properties` can be used for training, but it is highly recommended to leave some properties for validation. 
+
+***********************************
+Parameters for Force Field Training
+***********************************
+
+Each potential available in the ACT has its own set of parameters. Those are listed in Table :ref:`nb_parameters` for non-bonded parameters, Table :ref:`bf_parameters` for bonded parameters.
+Parameters for virtual sites are given in Table :ref:`vs_parameters` and for charge generation algorithms in Table :ref:`eem_parameters`.
+In total, well over 80 parameter categories can be trained using the ACT.
+
+.. table:: Force field parameters related to non-bonded  potentials that can be trained using ACT. Note that the parameter names are case-sensitive and, in some cases, they correspond to a Greek symbol in the equation.
+   :name: nb_parameters
+
+   +------------------------+-----------------+---------------------------------------+
+   | Potential              | Equation        | Parameters                            |
+   +========================+=================+=======================================+
+   | COULOMB_GAUSSIAN       |:eq:`vcoulg`     | zeta                                  |
+   +------------------------+-----------------+---------------------------------------+
+   | COULOMB_SLATER         |:eq:`hentschke`  | zeta                                  |
+   +------------------------+-----------------+---------------------------------------+
+   | POLARIZATION           |:eq:`vpol`       | alpha                                 |
+   +------------------------+-----------------+---------------------------------------+
+   | MACDANIEL_SCHMIDT      |:eq:`vic`        | a1dexp bdexp                          |
+   +------------------------+-----------------+---------------------------------------+
+   | LJ14_7                 |:eq:`14_7`       | sigma epsilon gamma delta             |
+   +------------------------+-----------------+---------------------------------------+
+   | GENERALIZED_BUCKINGHAM |:eq:`GBH`        | rmin epsilon gamma delta              |
+   +------------------------+-----------------+---------------------------------------+
+   | WANG_BUCKINGHAM        |:eq:`vwbh`       | sigma epsilon gamma                   |
+   +------------------------+-----------------+---------------------------------------+
+   | BUCKINGHAM             |:eq:`vbh`        | A b C                                 |
+   +------------------------+-----------------+---------------------------------------+
+   | TANG_TOENNIES          |:eq:`TT`         | Att btt c6tt c8tt c10tt               |
+   +------------------------+-----------------+---------------------------------------+
+   | TT2                    |:eq:`TT2`        | Att2b bExchtt2b c6tt2b c8tt2b c10tt2b |
+   +------------------------+-----------------+---------------------------------------+
+   | SLATER_ISA             |:eq:`slater_isa` | A b                                   |
+   +------------------------+-----------------+---------------------------------------+
+   | LJ12_6                 |:eq:`12_6`       | sigma epsilon                         |
+   +------------------------+-----------------+---------------------------------------+
+   | LJ12_6_4               |:eq:`12_6_4`     | sigma epsilon gamma                   |
+   +------------------------+-----------------+---------------------------------------+
+   | BORN_MAYER             |:eq:`exch_corr`  | A b                                   |
+   +------------------------+-----------------+---------------------------------------+
+   | Generalized mean       |:eq:`cr_genmean` | exponent                              |
+   +------------------------+-----------------+---------------------------------------+
+
+
+.. table:: Force field parameters related to bonded  potentials that can be trained using ACT. Note that the parameter names are case-sensitive and, in some cases, they correspond to a Greek symbol in the equation.
+   :name: bf_parameters
+
+   +------------------------+---------------------+---------------------------------------+
+   | Potential              | Equation            | Parameters                            |
+   +========================+=====================+=======================================+
+   | HARMONIC_BONDS         |:eq:`harmonic_bond`  | kb bondlength bondenergy              |
+   +------------------------+---------------------+---------------------------------------+
+   | MORSE_BONDS            |:eq:`morse`          | beta De bondlength D0                 |
+   +------------------------+---------------------+---------------------------------------+
+   | HUA_BONDS              |:eq:`hua`            | De bondlength b c                     |
+   +------------------------+---------------------+---------------------------------------+
+   | HARMONIC_ANGLES        |:eq:`harmonic_angle` | kt angle                              |
+   +------------------------+---------------------+---------------------------------------+
+   | LINEAR_ANGLES          |:eq:`linang`         | klin a                                |
+   +------------------------+---------------------+---------------------------------------+
+   | HARMONIC_DIHEDRALS     |:eq:`vimproper`      | kimp                                  |
+   +------------------------+---------------------+---------------------------------------+
+   | FOURIER_DIHEDRALS      |:eq:`vfourier`       | c0 c1 c2 c3 c4 c5                     |
+   +------------------------+---------------------+---------------------------------------+
+   | PROPER_DIHEDRALS       |:eq:`vproper`        | kp mult phi0                          |
+   +------------------------+---------------------+---------------------------------------+
+
+.. table:: Parameters related to virtual sites that can be trained using ACT. Note that the parameter names are case-sensitive. Equations will be added later.
+   :name: vs_parameters
+
+   +--------------+---------------------+---------------------------------------+
+   | Virtual Site | Equation            | Parameters                            |
+   +==============+=====================+=======================================+
+   | VSITE1       |                     | vs1a                                  |
+   +--------------+---------------------+---------------------------------------+
+   | VSITE2       |                     | vs2a                                  |
+   +--------------+---------------------+---------------------------------------+
+   | VSITE2FD     |                     | vs2fd_a                               |
+   +--------------+---------------------+---------------------------------------+
+   | VSITE3       |                     | vs3a vs3b                             |
+   +--------------+---------------------+---------------------------------------+
+   | VSITE3S      |                     | vs3a                                  |
+   +--------------+---------------------+---------------------------------------+
+   | VSITE3FD     |                     | vs3fd_a vs3fd_b                       |
+   +--------------+---------------------+---------------------------------------+
+   | VSITE3FAD    |                     | vs3fad_a vs3fad_b                     |
+   +--------------+---------------------+---------------------------------------+
+   | VSITE3OUT    |                     | vs3out_a vs3out_b vs3out_c            |
+   +--------------+---------------------+---------------------------------------+
+   | VSITE4       |                     | vs4a vs4b vs4c                        |
+   +--------------+---------------------+---------------------------------------+
+   | VSITE4S      |                     | vs4sa vs4sb                           |
+   +--------------+---------------------+---------------------------------------+
+   | VSITE4S3     |                     | vs4s3a                                |
+   +--------------+---------------------+---------------------------------------+
+   
+.. table:: Parameters related to charge algorithms that can be trained using ACT. Note that the parameter names are case-sensitive. Equations will be added later.
+   :name: eem_parameters
+
+   +--------------+---------------------+-----------------------------+
+   | Algorithm    | Equation            | Parameters                  |
+   +==============+=====================+=============================+
+   | EEM          |:eq:`eem`            | eta chi                     |
+   +--------------+---------------------+-----------------------------+
+   | SQE          |:eq:`sqe`            | eta chi delta_eta delta_chi |
+   +--------------+---------------------+-----------------------------+
