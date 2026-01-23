@@ -94,43 +94,9 @@ static void updateFragmentFromInchi(MsgHandler           *msg_handler,
     }
 }
 
-static std::string checkForSpecialAtomTypes(const RDKit::RWMol *mol,
-                                            const RDKit::Atom  *atom,
-                                            const std::string  &type,
-                                            bool                oneH)
-{
-    if (type == "o3" && atom->getTotalNumHs(true) == 2)
-    {
-        // Water
-        return "ow";
-    }
-    else if (type == "h" && !oneH)
-    {
-        for(const auto &b : mol->atomBonds(atom))
-        {
-            auto otherAtom = b->getOtherAtom(atom);
-            if (otherAtom)
-            {
-                auto other = otherAtom->getSymbol();
-                if (otherAtom->getFormalCharge() == 0)
-                {
-                    // Convert to lower case for force field
-                    std::transform(other.begin(), other.end(), other.begin(), ::tolower);
-                }
-                if (other == "ow")
-                {
-                    return "hw";
-                }
-            }
-        }
-    }
-    return type;
-}
 
 static std::string getAtomType(MsgHandler         *msg_handler,
-                               const RDKit::RWMol *mol,
-                               const RDKit::Atom  *atom,
-                               bool                oneH)
+                               const RDKit::Atom  *atom)
 {
     // Only add 1, 2, 3 suffix to some atoms
     std::set<std::string> atomsWithSP = { "c", "n", "o", "p", "s" };
@@ -189,7 +155,7 @@ static std::string getAtomType(MsgHandler         *msg_handler,
             msg_handler->msg(ACTStatus::Error, gmx::formatString("Don't know how to handle atom with formal charge %d", atom->getFormalCharge()));
         }
     }
-    return checkForSpecialAtomTypes(mol, atom, type, oneH);
+    return type;
 }
 
 static void addInchiToFragments(MsgHandler            *msg_handler,
@@ -477,7 +443,7 @@ static void importFile(MsgHandler                           *msg_handler,
             auto         bonds     = mol2->bonds();
             for(const auto &atom : mol2->atoms())
             {
-                auto atype = getAtomType(msg_handler, mol2, atom, oneH);
+                auto atype = getAtomType(msg_handler, atom);
                 CalcAtom ca(atom->getSymbol(), atype, atomid);
                 auto atomPos = conformer.getAtomPos(atomid);
                 ca.setCoords(convertToGromacs(atomPos.x, RDKit_Unit),
