@@ -183,7 +183,7 @@ Van Vleet {\em et al.} described a more accurate formula for the Pauli repulsion
 .. math:: V_{exch} ~=~ A\left(\frac{1}{3}(br)^2 + br + 1\right){\rm exp}^{-br}
    :label: slater_isa
 
-where it can be noted, that no additional parameters are needed for equation~:eq:`slater-isa` compared to the repulsion part in the Tang-Toennies potential (Eqn. :eq:`TT`). In the ACT the Slater-ISA exchange can be combined with the damped dispersion part of the latter potential.
+where it can be noted, that no additional parameters are needed for equation~:eq:`slater_isa` compared to the repulsion part in the Tang-Toennies potential (Eqn. :eq:`TT`). In the ACT the Slater-ISA exchange can be combined with the damped dispersion part of the latter potential.
 
 The Lennard-Jones 12-6 potential :cite:p:`Lennard-Jones1924b` is available as well:
 
