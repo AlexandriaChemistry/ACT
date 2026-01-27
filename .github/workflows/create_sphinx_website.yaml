@@ -56,9 +56,9 @@ jobs:
           make -j 4 doxygen-full
 
       # RJCB
-      - name: Copy Doxygen to the right location
-        run: |
-          cp -r docs/doxygen _build
+#      - name: Copy Doxygen to the right location
+#        run: |
+#          cp -r docs/doxygen _build
 
       - name: Install dependencies
         run: pip install -r requirements.txt
@@ -70,7 +70,7 @@ jobs:
         uses: peaceiris/actions-gh-pages@v3
         if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
         with:
-          publish_branch: gh-pages
+          publish_branch: website
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: _build/
           force_orphan: true
