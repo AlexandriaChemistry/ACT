@@ -4,3 +4,5 @@ doxygen-*.log
 html-full
 html-lib
 html-user
+html/
+latex/
