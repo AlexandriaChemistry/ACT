@@ -1,6 +1,7 @@
 sphinx>=7.2.6
 sphinx_rtd_theme>=2.0.0
 sphinx-design
+sphinxcontrib-bibtex
 readthedocs-sphinx-search>=0.3.2
 sphinx-lesson>=0.8.15
 sphinx-prompt
@@ -12,6 +13,7 @@ sphinxcontrib-mermaid
 sphinxcontrib-plantuml
 jupyter
 jupyter_sphinx
+
 numpy
 matplotlib
 pandas

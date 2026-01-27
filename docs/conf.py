@@ -75,6 +75,8 @@ extensions = ["sphinx_lesson",
     'sphinxcontrib.bibtex'
 ]
 
+bibtex_bibfiles = ['manual/manual-refs.bib']
+
 mermaid_output_format = 'raq'
 mermaid_output_format = "png"
 mermaid_params = [
