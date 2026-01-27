@@ -15,6 +15,63 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      - name: List files in the repository
+        run: |
+          ls ${{ github.workspace }}
+      - name: Install system dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt update
+          sudo apt-get update
+          sudo apt-get -y install gcc cmake libopenmpi-dev openmpi-bin  libxml2 doxygen graphviz 
+      - uses: conda-incubator/setup-miniconda@v3
+        with:
+          auto-update-conda: true
+          python-version: ${{ matrix.python-version }}
+      - name: Conda info
+        shell: bash -el {0}
+        run: |
+          conda info
+          conda install conda-forge::librdkit-dev=2025.09.4 conda-forge::libboost-devel eigen
+      - name: Install ACT
+        run: |
+          cd ${{ github.workspace }}
+          mkdir build; cd build
+          export MPICXX=/usr/bin/g++
+          export MPICC=/usr/bin/gcc
+          export CXXFLAGS='-std=c++20'
+          cmake -DGMX_DOUBLE=ON -DGMX_X11=OFF -DCMAKE_PREFIX_PATH=/usr/share/miniconda/envs/test -DBUILD_SHARED_LIBS=OFF -DGMX_OPENMP=OFF -DGMX_MPI=ON -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/../tools -DCMAKE_BUILD_TYPE=Release -DGMX_BUILD_MANUAL=OFF -DGMX_COMPACT_DOXYGEN=OFF -DREGRESSIONTEST_DOWNLOAD=OFF -DGMX_DEFAULT_SUFFIX=OFF -DCMAKE_CXX_COMPILER=${MPICXX} -DCMAKE_C_COMPILER=${MPICC} ..
+          make -j 4 install doxygen-full
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
       - name: Install dependencies
         run: pip install -r requirements.txt
 
