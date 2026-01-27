@@ -23,4 +23,7 @@ David van der Spoel, Paul J. van Maaren and Mohammad M. Ghahremanpour
    manual/refman/header
 
 
-.. footbibliography::
+All references
+--------------
+
+.. bibliography::
