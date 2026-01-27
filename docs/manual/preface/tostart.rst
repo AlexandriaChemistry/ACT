@@ -18,3 +18,7 @@ and other relevant works if you use the software for a scientific publication of
 The ACT can be downloaded as free and open source software from `Github`_.
 
 .. _Github: https://github.com/AlexandriaChemistry/ACT
+
+.. footbibliography::
+
+
