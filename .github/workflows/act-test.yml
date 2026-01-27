@@ -4,13 +4,13 @@ on: [push]
 jobs:
   Build:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    permissions:
-      contents: write
-      pages: write       # Added for GitHub Pages deployment
-      id-token: write    # Necessary for actions/deploy-pages
+#    environment:
+#      name: github-pages
+#      url: ${{ steps.deployment.outputs.page_url }}
+#    permissions:
+#      contents: write
+#      pages: write       # Added for GitHub Pages deployment
+#      id-token: write    # Necessary for actions/deploy-pages
     steps:
       - run: echo "🎉 The job was automatically triggered by a ${{ github.event_name }} event."
       - run: echo "🐧 This job is now running on a ${{ runner.os }} server hosted by GitHub!"

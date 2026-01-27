@@ -11,6 +11,13 @@ on:
 jobs:
   create_website:
     runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    permissions:
+      contents: write
+      pages: write       # Added for GitHub Pages deployment
+      id-token: write    # Necessary for actions/deploy-pages
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
