@@ -21,4 +21,7 @@ David van der Spoel, Paul J. van Maaren and Mohammad M. Ghahremanpour
    manual/preface/preface
    manual/userman/header
    manual/refman/header
-   manual/references
+
+
+```{bibliography}
+```
