@@ -14,6 +14,7 @@ The following software packages are required for the ACT to work:
 * The cmake tools (at least version 3.13.0) are needed for compiling the code.
 * For linear algebra operations we use the Eigen library, version 5 or better.
 * The RDKit library (at least version 2025.09.4)
+* The Boost developer library of version 1.86.0 (matching RDKit)
 * The LibXml2 is needed for processing the XML data files used by the ACT.
 * Python, version 3.8 or better, and a number of Python libraries, namely, NumPy, Matplotlib, and PubChemPy.
 
@@ -22,7 +23,14 @@ The following libraries are optional only, but may be useful for developing the 
 
 * The Class Library for Numbers is used in an optional part of the code (Slater-distributed charges :cite:p:`Ghahremanpour2018a`) and can be omitted.
 * The SQLite database engine is needed to process experimental data as well as quantum chemistry data from the Alexandria Library :cite:p:`Ghahremanpour2018a`, available from `Zenodo`_.
-* The doxygen package can be used for generating documentation. In that case you need the Graphviz package as well.
+
+For developers, the following additional packages are needed:
+
+* doxygen, it is used for generating software documentation,
+* graphviz can be optionally added for generating graphs and tree-structures in the doxygen documentation,
+* pygments, for source code listings,
+* sphinx, which is used for building the manual, and
+* sphinxcontrib-bibtex, for the references.
 
 .. _Zenodo: https://doi.org/10.5281/zenodo.1004710
 
