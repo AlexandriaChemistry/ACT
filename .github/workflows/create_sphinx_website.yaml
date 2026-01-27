@@ -59,7 +59,6 @@ jobs:
       - name: Copy Doxygen to the right location
         run: |
           cp -r docs/doxygen _build
-          mv _build/index.html doxygen.html
 
       - name: Install dependencies
         run: pip install -r requirements.txt
