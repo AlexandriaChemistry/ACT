@@ -47,14 +47,6 @@ jobs:
           make -j 4 doxygen-full
 
 
-
-
-
-
-
-
-
-
       - name: Install dependencies
         run: pip install -r requirements.txt
 
