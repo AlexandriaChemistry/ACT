@@ -60,7 +60,11 @@ if releng_path and os.path.isdir(releng_path):
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
-#sys.path.insert(0, os.path.abspath('.'))
+#
+# import os
+# import sys
+# import sphinx_rtd_theme
+# sys.path.insert(0, os.path.abspath('.'))
 
 # -- General configuration ------------------------------------------------
 
@@ -96,8 +100,6 @@ source_suffix = '.rst'
 # The master toctree document.
 master_doc = 'index'
 
-# General information about the project.
-project = u'ACT'
 copyright = str(datetime.datetime.now().year) + u', ACT development team'
 thisyear_string = str(datetime.datetime.now().year)
 # The version info for the project you're documenting, acts as replacement for
