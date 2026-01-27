@@ -71,9 +71,11 @@ master_doc = 'index'
 extensions = ["sphinx_lesson",
     "sphinx.ext.githubpages",
     "sphinx_rtd_theme_ext_color_contrast",
-    'sphinx_copybutton'
-
+    'sphinx_copybutton',
+    'sphinxcontrib.bibtex'
 ]
+
+bibtex_bibfiles = ['manual/manual-refs.bib']
 
 mermaid_output_format = 'raq'
 mermaid_output_format = "png"
