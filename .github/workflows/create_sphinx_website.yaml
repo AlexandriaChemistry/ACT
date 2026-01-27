@@ -55,17 +55,15 @@ jobs:
 
 
 
-
-
-
-
-
-
       - name: Install dependencies
         run: pip install -r requirements.txt
 
       - name: Sphinx build
         run: sphinx-build docs _build
+
+      # RJCB
+      - name: Copy Doxygen to the right location
+        run: cp -r docs/doxygen _build
 
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v3
