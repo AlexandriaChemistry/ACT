@@ -1,0 +1,18 @@
+/* The top bar */
+.md-header {
+
+  /* Use the color gradient used by the ACT logo */
+  background: linear-gradient(to right, #ffff88, #ffcc88);
+  /* The text must be readable on this light color gradient */
+  color: black
+}
+
+/* The tabs with the main content, below the top bar */
+.md-tabs {
+
+  /* Use the color gradient used by the ACT logo */
+  background: linear-gradient(to right, #ffff88, #ffcc88);
+  /* The text must be readable on this light color gradient */
+  color: black
+}
+
