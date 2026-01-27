@@ -1,8 +1,36 @@
-# Configuration file for the Sphinx documentation builder.
 #
-# This file only contains a selection of the most common options. For a full
-# list see the documentation:
-# https://www.sphinx-doc.org/en/master/usage/configuration.html
+# This file is part of the GROMACS molecular simulation package.
+#
+# Copyright (c) 2015,2016,2017,2018, by the GROMACS development team, led by
+# Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+# and including many others, as listed in the AUTHORS file in the
+# top-level source directory and at http://www.gromacs.org.
+#
+# GROMACS is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Lesser General Public License
+# as published by the Free Software Foundation; either version 2.1
+# of the License, or (at your option) any later version.
+#
+# GROMACS is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public
+# License along with GROMACS; if not, see
+# http://www.gnu.org/licenses, or write to the Free Software Foundation,
+# Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+#
+# If you want to redistribute modifications to GROMACS, please
+# consider that scientific software is very special. Version
+# control is crucial - bugs must be traceable. We will be happy to
+# consider code for inclusion in the official distribution, but
+# derived work must not be called official GROMACS. Details are found
+# in the README & COPYING files - if they are missing, get the
+# official version at http://www.gromacs.org.
+#
+# To help us fund GROMACS development, we humbly ask that you cite
+# the research papers on the package. Check out http://www.gromacs.org.
 
 # -- Path setup --------------------------------------------------------------
 
@@ -15,24 +43,27 @@
 # import sphinx_rtd_theme
 # sys.path.insert(0, os.path.abspath('.'))
 
+# -- General configuration ------------------------------------------------
 
-# -- Project information -----------------------------------------------------
-
-project = 'Using Python in an HPC environment'
-copyright = '2025, UPPMAX/HPC2N/LUNARC/InfraVis'
-author = 'UPPMAX/HPC2N/LUNARC/InfraVis'
-github_user = "UPPMAX"
-github_repo_name = "HPC-python"  # auto-detected from dirname if blank
+# General information about the project.
+project = u'ACT'
+copyright = 'the_copyright_grep_me'
+author = 'the_authors_grep_me'
+github_user = "AlexandriaChemistry"
+github_repo_name = "ACT"
 github_version = "main"
 conf_py_path = "/docs/"
 # The full version, including alpha/beta/rc tags
 release = '2.0'
 
-# The master toctree document.
-master_doc = 'manual/index'
+extlinks = {'issue': ('https://github.com/AlexandriaChemistry/ACT/issues/%s',
+                      'Issue ')}
 
 
 # -- General configuration ---------------------------------------------------
+
+# The master toctree document.
+master_doc = 'index'
 
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
@@ -95,10 +126,11 @@ exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-#
-html_theme = 'sphinx_rtd_theme'
-html_logo = "img/hpc2n-lunarc-uppmax-hpc-course.png"
-#html_logo = "img/logo-python-hpc-course.svg"
+html_theme = 'classic'
+
+# The name of an image file (relative to this directory) to place at the top
+# of the sidebar.
+#html_logo = None
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
