@@ -22,7 +22,6 @@ David van der Spoel, Paul J. van Maaren and Mohammad M. Ghahremanpour
    manual/userman/header
    manual/refman/header
 
-
 All references
 --------------
 
