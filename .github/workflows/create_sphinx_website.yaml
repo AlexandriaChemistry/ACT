@@ -4,13 +4,22 @@ on:
   push:
     branches:
       - main
+      - website
   pull_request:
     branches:
       - main
+      - website
 
 jobs:
   create_website:
     runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    permissions:
+      contents: write
+      pages: write       # Added for GitHub Pages deployment
+      id-token: write    # Necessary for actions/deploy-pages
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -46,6 +55,10 @@ jobs:
           cmake -DGMX_DOUBLE=ON -DGMX_X11=OFF -DCMAKE_PREFIX_PATH=/usr/share/miniconda/envs/test -DBUILD_SHARED_LIBS=OFF -DGMX_OPENMP=OFF -DGMX_MPI=ON -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/../tools -DCMAKE_BUILD_TYPE=Release -DGMX_BUILD_MANUAL=OFF -DGMX_COMPACT_DOXYGEN=OFF -DREGRESSIONTEST_DOWNLOAD=OFF -DGMX_DEFAULT_SUFFIX=OFF -DCMAKE_CXX_COMPILER=${MPICXX} -DCMAKE_C_COMPILER=${MPICC} ..
           make -j 4 doxygen-full
 
+      # RJCB
+#      - name: Copy Doxygen to the right location
+#        run: |
+#          cp -r docs/doxygen _build
 
       - name: Install dependencies
         run: pip install -r requirements.txt
@@ -53,13 +66,9 @@ jobs:
       - name: Sphinx build
         run: sphinx-build docs _build
 
-      # RJCB
-      - name: Copy Doxygen to the right location
-        run: cp -r docs/doxygen _build
-
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v3
-        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+        if: ${{ github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/website') }}
         with:
           publish_branch: gh-pages
           github_token: ${{ secrets.GITHUB_TOKEN }}
