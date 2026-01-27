@@ -1,0 +1,31 @@
+name: Create the MkDocs website
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/create_mkdocs_website.yaml
+      - 'docs/**'
+      - mkdocs.yml
+
+jobs:
+  create_mkdocs_website:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: 3.x
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Use the main README.md
+        run: cp README.md docs/index.md
+
+      - name: Deploy website
+        run: mkdocs gh-deploy --force
+
+
