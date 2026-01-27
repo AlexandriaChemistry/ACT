@@ -16,19 +16,8 @@ jobs:
       - uses: actions/setup-python@v5
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
+      # Build Doxygen documentation
+      # Copied from the act-test.yaml file
       - name: List files in the repository
         run: |
           ls ${{ github.workspace }}
@@ -55,7 +44,7 @@ jobs:
           export MPICC=/usr/bin/gcc
           export CXXFLAGS='-std=c++20'
           cmake -DGMX_DOUBLE=ON -DGMX_X11=OFF -DCMAKE_PREFIX_PATH=/usr/share/miniconda/envs/test -DBUILD_SHARED_LIBS=OFF -DGMX_OPENMP=OFF -DGMX_MPI=ON -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/../tools -DCMAKE_BUILD_TYPE=Release -DGMX_BUILD_MANUAL=OFF -DGMX_COMPACT_DOXYGEN=OFF -DREGRESSIONTEST_DOWNLOAD=OFF -DGMX_DEFAULT_SUFFIX=OFF -DCMAKE_CXX_COMPILER=${MPICXX} -DCMAKE_C_COMPILER=${MPICC} ..
-          make -j 4 install doxygen-full
+          make -j 4 doxygen-full
 
 
 
