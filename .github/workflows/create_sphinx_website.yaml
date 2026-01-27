@@ -53,16 +53,17 @@ jobs:
           cmake -DGMX_DOUBLE=ON -DGMX_X11=OFF -DCMAKE_PREFIX_PATH=/usr/share/miniconda/envs/test -DBUILD_SHARED_LIBS=OFF -DGMX_OPENMP=OFF -DGMX_MPI=ON -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/../tools -DCMAKE_BUILD_TYPE=Release -DGMX_BUILD_MANUAL=OFF -DGMX_COMPACT_DOXYGEN=OFF -DREGRESSIONTEST_DOWNLOAD=OFF -DGMX_DEFAULT_SUFFIX=OFF -DCMAKE_CXX_COMPILER=${MPICXX} -DCMAKE_C_COMPILER=${MPICC} ..
           make -j 4 doxygen-full
 
+      # RJCB
+      - name: Copy Doxygen to the right location
+        run: |
+          cp -r docs/doxygen _build
+          mv _build/index.html doxygen.html
 
       - name: Install dependencies
         run: pip install -r requirements.txt
 
       - name: Sphinx build
         run: sphinx-build docs _build
-
-      # RJCB
-      - name: Copy Doxygen to the right location
-        run: cp -r docs/doxygen _build
 
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v3
