@@ -25,7 +25,7 @@ jobs:
       - name: Use the main README.md
         run: cp README.md docs/index.md
 
-#      - name: Deploy website
-#        run: mkdocs gh-deploy --force
+      - name: Deploy website
+        run: mkdocs gh-deploy --force
 
 
