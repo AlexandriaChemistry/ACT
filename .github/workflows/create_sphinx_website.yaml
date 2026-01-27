@@ -68,7 +68,7 @@ jobs:
 
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v3
-        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+        if: ${{ github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/website') }}
         with:
           publish_branch: website
           github_token: ${{ secrets.GITHUB_TOKEN }}
