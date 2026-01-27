@@ -2,33 +2,41 @@
 # This file is part of the Alexandria Chemistry Toolkit
 # https://github.com/dspoel/ACT
 #
-import os, sys
-try:
-    import openbabel as ob
-#    from pybel import *
-except:
-    pp = "PYTHONPATH"
-    if pp in os.environ:
-        print("OpenBabel not found. Check your %s environment variable, right now it is '%s'." % ( pp, os.environ[pp] ))
-    else:
-        print("OpenBabel not found and your %s environment variable is empty." % ( pp ))
-    sys.exit("Cannot continue")
+import os, sys, tempfile
+from rdkit import Chem
+from rdkit.Chem import rdMolDescriptors
+
 from gaff_to_alexandria import *
 
 debug = False
 
+def get_order(order:str)->float:
+    orders = { "SINGLE": 1, "DOUBLE": 2, "TRIPLE": 3, "AROMATIC": 1.5 }
+    if order in orders:
+        return orders[order]
+    sys.exit("Unknown bond order '%s'" % order)
+
+def get_atype(hybridization:str)->str:
+    hybrid = { "SP": 1, "SP2": 2, "SP2D": 2, "SP3": 3, "SP3D": 3, "SP3D2": 3 }
+    if hybridization in hybrid:
+        return str(hybrid[hybridization])
+    sys.exit("Unknown hybridization '%s'" % hybridization)
+
 class MoleculeDict:
     '''Class to hold and extract molecule information'''
-    def __init__(self):
+    def __init__(self, verbose=False):
         self.molecule = {}
-        self.atoms    = {}
+        self.atoms    = []
         self.bonds    = {}
-        
+        self.verbose  = verbose
+        self.charge   = 0
+
     def check_bondorder(self):
+        # TODO: do we need to implement more stuff to use the atom_bond.xml info?
         my_pairs = { "no": "on", "cm": "om", "p5": "om", "s6": "om",
                      "py": "om", "s3": "om", "cz": "n", "s4": "om"  }
         for mp in my_pairs.keys():
-            for i in range(1, 1+len(self.atoms)):
+            for i in range(len(self.atoms)):
                 if mp == self.atoms[i]["obtype"]:
                     bondIndex = []
                     for (ai,aj) in self.bonds.keys():
@@ -39,87 +47,82 @@ class MoleculeDict:
                         for b in bondIndex:
                             self.bonds[b] = 1.5
 
-    def analyse_obmol(self, obconversion, obmol, forcefield=None):
-        self.title      = obmol.GetTitle()
-        self.mol_weight = obmol.GetMolWt()
-        self.numb_atoms = obmol.NumAtoms()
-        self.formula    = obmol.GetFormula()
-        if self.charge == 0:
-            self.charge     = obmol.GetTotalCharge()
-        obmol.AssignTotalChargeToAtoms(self.charge)
-        obmol.SetAromaticPerceived(False) 
-        obconversion.SetOutFormat("inchi")
-        self.inchi      = obconversion.WriteString(obmol).strip()
-
-        if None != forcefield:
-            ff = ob.OBForceField.FindForceField(forcefield)
-            if not ff:
-                print("No OpenBabel support for force field %s" % forcefield)
-                return False
-            if not ff.Setup(obmol):
-                print("Could not setup the force field %s for %s" % ( forcefield, self.formula))
-                return False
+    def analyse(self, mol, molname:str, charge=None)->bool:
+        self.title      = molname
+        self.mol_weight = 0
+        self.numb_atoms = len(mol.GetAtoms())
+        self.formula    = Chem.rdMolDescriptors.CalcMolFormula(mol)
+        if None != charge:
+            self.charge     = charge
+        if self.charge != Chem.GetFormalCharge(mol):
+            print(f"Warning: user passed charge {charge} for {molname} but RDKit says charge is {Chem.GetFormalCharge(mol)}")
+        self.inchi      = Chem.rdinchi.MolToInchi(mol)
+        self.mult       = 1
+        coords          = mol.GetConformer().GetPositions()
+        # First do the atoms
+        ii = 0
+        mw = 0
+        for atom in mol.GetAtoms():
+            if self.verbose:
+                print("Atom %d atomic number %d valence %s hybridization %s" %
+                      ( ii, atom.GetAtomicNum(),
+                        atom.GetValence(Chem.ValenceType.EXPLICIT),
+                        atom.GetHybridization() ) )
+            fftype = atom.GetSymbol()
+            if atom.GetFormalCharge() == 0:
+                fftype = fftype.lower()
+                if fftype in [ "c", "n", "o", "p", "s" ]:
+                    fftype += get_atype(str(atom.GetHybridization()))
             else:
-                if not ff.GetAtomTypes(obmol):
-                    print("Could not get atomtypes from force field %s for %s" % ( forcefield, filename))
-                    return False
-            del ff
+                fftype += str(atom.GetFormalCharge())
+            self.atoms.append( { "atomic_number": atom.GetAtomicNum(), "obtype": fftype,
+                                 "atomtype": fftype, "mass": atom.GetMass(), "element": atom.GetSymbol(),
+                                 "X": coords[ii][0], "Y": coords[ii][1], "Z": coords[ii][2] } )
+            mw += atom.GetMass()
+            ii += 1
+        if not self.numb_atoms == ii:
+            print(f"self.numb_atoms {self.numb_atoms} != len(self.atoms) {ii}")
+            return False
 
-        g2a = GaffToAlexandria()
-        # Add the atoms
-        for atom in ob.OBMolAtomIter(obmol):
-            index      = atom.GetIdx()
-            atomtype   = "Z"
-            ffatomtype = "FFAtomType"
-            obtype     = ""
-            if forcefield and atom.HasData(ffatomtype):
-                atp    = atom.GetData(ffatomtype)
-                obtype = atp
-                if atp:
-                    atomtype = g2a.rename(atp.GetValue())
-            if debug:
-                print("atomtype %s index %d" % ( atomtype, index))
-            X = atom.GetX()
-            Y = atom.GetY()
-            Z = atom.GetZ()
-            atomic_number = atom.GetAtomicNum()
-            mass = atom.GetExactMass()
-            self.atoms.update({index: {}})
-            self.atoms[index] = {"atomic_number": atomic_number, "obtype": obtype.GetValue(),
-                                 "atomtype": atomtype, "mass": mass, "element": atom.GetAtomicNum(),
-                                 "X": X, "Y": Y, "Z": Z}
-        g2a = None
-        # Add the bonds
-        if debug:
-            print("There are %d bonds" % obmol.NumBonds())
-        for bond in ob.OBMolBondIter(obmol):
-            bbb = (bond.GetBeginAtomIdx(), bond.GetEndAtomIdx())
-            self.bonds[bbb] = bond.GetBondOrder()
-            if bond.IsAromatic() and forcefield == "alexandria":
-                self.bonds[bbb] = 1.5
-            if debug:
-                print("bond %d-%d order %g" % ( bbb[0], bbb[1], self.bonds[bbb]))
-        if forcefield == "alexandria":
-            self.check_bondorder()
-        if debug:
-            print(self)
-            
+        self.mol_weight = mw
+
+        # Now do the bonds
+        for bb in mol.GetBonds():
+            ai    = bb.GetBeginAtomIdx()
+            aj    = bb.GetEndAtomIdx()
+            order = get_order(str(bb.GetBondType()))
+            if self.verbose:
+                print("Bond %d from %d to %d order %s" % ( ii, ai, aj, order ) )
+            self.bonds[(ai, aj)] = order
+        self.check_bondorder()
+
         return True
 
-    def read(self, filename, fileformat, forcefield="alexandria", charge:int=0):
-        obconversion = ob.OBConversion()
-        obconversion.SetInFormat(fileformat)
-        obmol    = ob.OBMol()
-        self.charge = charge
-        notatend = obconversion.ReadFile(obmol,filename)
-        success  = self.analyse_obmol(obconversion, obmol, forcefield)
-        # Help garbage collecting
-        del obconversion
-        obmol.Clear()
-        del obmol
+    def read(self, filename, fileformat=None, charge=None)->bool:
+        success = False
+        if self.verbose:
+            print("Analyzing %s" % filename)
+        m = None
+        if None == fileformat:
+            fileformat = filename[-3:]
+        if fileformat == "sdf":
+            m = Chem.MolFromMolFile(filename, sanitize=False, removeHs=False)
+        elif fileformat == "xyz":
+            raw_mol = Chem.MolFromXYZFile(filename)
+            m = Chem.Mol(raw_mol)
+            Chem.DetermineBonds(m)
+        elif fileformat == "pdb":
+            m = Chem.MolFromPDBFile(filename, removeHs=False)
+        else:
+            print("Don't know how to handle %s" % filename)
+        if m:
+            # TODO remove extension in the correct way
+            molname = os.path.basename(os.path.normpath(os.path.splitext(filename)[0]))
+            success = self.analyse(m, molname, charge)
+
         return success
         
-    def from_coords_elements_obc(self, elements, coords, obConversion, forcefield="alexandria", charge:int=0):
+    def from_coords_elements(self, elements, coords, charge=None):
         if len(coords) != len(elements):
             print("Inconsistent input: There are %d coordinates but %d elements." % ( len(coords), len(elements) ))
             return False
@@ -141,35 +144,24 @@ class MoleculeDict:
             except ValueError:
                 print("Coordinates messed up {}".format(coords[i]))
                 return False
-        obmol = ob.OBMol()
-        self.charge = charge
-        obConversion.ReadString(obmol, xyzstring)
-        success      = self.analyse_obmol(obConversion, obmol, forcefield)
-        # Help garbage collecting
-        del obmol
-        del xyzstring
+        success = False
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, 'something.xyz')
+            # use path
+            with open(path, "w") as outf:
+                outf.write(xyzstring)
+            success = self.read(path, "xyz", charge)
+            os.unlink(path)
+            os.rmdir(tmp)
+
         return success
         
-    def from_coords_elements(self, elements, coords, forcefield="alexandria", charge:int=0):
-        obConversion = ob.OBConversion()
-        obConversion.SetInFormat("xyz")
-        success = self.from_coords_elements_obc(elements, coords, obConversion, forcefield, charge)
-        # Help garbage collecting
-        del obConversion
-        return success
-        
-    def from_smiles(self, smiles:str, addH:bool, forcefield="alexandria", charge:int=0):
-        obConversion = ob.OBConversion()
-        obConversion.SetInFormat("smi")
-        obmol = ob.OBMol()
-        obmol.SetTotalCharge(charge)
-        obConversion.ReadString(obmol, smiles)
+    def from_smiles(self, smiles:str, addH:bool, charge=None):
+        if self.verbose:
+            print("Analyzing %s" % smiles)
+        m  = Chem.MolFromSmiles(smiles)
         if addH:
-            obmol.AddHydrogens()
-        gen3d = ob.OBOp.FindType("Gen3D")
-        gen3d.Do(obmol, "--best")
-        success = self.analyse_obmol(obConversion, obmol, forcefield)
-        # Help garbage collecting
-        del obmol
-        del obConversion
-        return success
+            m2 = Chem.AddHs(m)
+            return analyse(m2, smiles, charge)
+        else:
+            return analyse(m, smiles, charge)
