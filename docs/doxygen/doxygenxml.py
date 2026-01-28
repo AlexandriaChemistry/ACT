@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 #
 # This file is part of the GROMACS molecular simulation package.
 #
@@ -56,9 +56,9 @@ compound entities.
 The implementation is mostly independent of any GROMACS-specific rules, except
 for the following:
  - DocType.library is a GROMACS-specific construct that is deduced from the
-   contents of the detailed description (presence of a \libinternal command in
+   contents of the detailed description (presence of a \\libinternal command in
    the Doxygen comment triggers it).
- - DocType.internal is deduced from the presence of a \internal command that
+ - DocType.internal is deduced from the presence of a \\internal command that
    covers the whole detailed description.
  - List of extensions for determining whether a file is a source file only
    contains extensions actually used by GROMACS.
@@ -81,9 +81,9 @@ import reporter
 def _show_list(title, objlist):
     """Helper function for formatting a list of objects for debug output."""
     if objlist:
-        print '{0}:'.format(title)
+        print(f"'{0}{title}")
         for obj in objlist:
-            print '  ', obj
+            print(f"  {obj}")
 
 class DocType(object):
 
@@ -333,9 +333,9 @@ class Entity(object):
         This is called from subclass show() methods to show base information
         about the entity.
         """
-        print 'ID:         {0}'.format(self._id)
-        print 'Name:       {0}'.format(self._name)
-        print 'Location:   {0}'.format(self.get_reporter_location())
+        print ('ID:         {0}'.format(self._id))
+        print ('Name:       {0}'.format(self._name))
+        print ('Location:   {0}'.format(self.get_reporter_location()))
         doctype = []
         if self._has_brief_description:
             doctype.append('brief')
@@ -345,8 +345,8 @@ class Entity(object):
             doctype.append('in-body')
         if not doctype:
             doctype.append('none')
-        print 'Doc:        {0}'.format(', '.join(doctype))
-        print 'Visibility: {0}'.format(self._visibility)
+        print ('Doc:        {0}'.format(', '.join(doctype)))
+        print ('Visibility: {0}'.format(self._visibility))
 
 # Member entities
 
@@ -505,10 +505,10 @@ class Member(Entity):
         self.show_base()
         if self._alternates:
             idlist = [x.get_id() for x in self._alternates]
-            print 'Alt. IDs:   {0}'.format(', '.join(idlist))
-        print 'Parent vis: {0}'.format(self.get_inherited_visibility())
-        print 'Location:   {0}'.format(self.get_location().get_full_string())
-        print 'Body loc:   {0}'.format(self.get_body_location().get_full_string())
+            print ('Alt. IDs:   {0}'.format(', '.join(idlist)))
+        print ('Parent vis: {0}'.format(self.get_inherited_visibility()))
+        print ('Location:   {0}'.format(self.get_location().get_full_string()))
+        print ('Body loc:   {0}'.format(self.get_body_location().get_full_string()))
         _show_list('Parents', self._parents)
 
 class Define(Member):
@@ -756,7 +756,7 @@ class Compound(Entity):
         """
         Entity.show_base(self)
         if self._groups:
-            print 'Groups:   {0}'.format(', '.join(map(str, self._groups)))
+            print ('Groups:   {0}'.format(', '.join(map(str, self._groups))))
 
     def show_members(self):
         """Show list of members.
@@ -765,9 +765,9 @@ class Compound(Entity):
         to print the list of members.
         """
         for section in self._sections:
-            print 'Member section: {0}'.format(section)
+            print ('Member section: {0}'.format(section))
             for member in section._members:
-                print '  ', member
+                print ('  ', member)
 
 class File(Compound):
     def __init__(self, name, refid):
@@ -811,9 +811,9 @@ class File(Compound):
 
     def show(self):
         self.show_base()
-        print 'Path:      {0}'.format(self._path)
-        print 'Directory: {0}'.format(self._directory)
-        print 'Source:    {0}'.format(self._is_source_file)
+        print ('Path:      {0}'.format(self._path))
+        print ('Directory: {0}'.format(self._directory))
+        print ('Source:    {0}'.format(self._is_source_file))
         _show_list('Namespaces', self._namespaces)
         _show_list('Classes', self._classes)
         self.show_members()
@@ -854,9 +854,9 @@ class Directory(Compound):
 
     def show(self):
         self.show_base()
-        print 'Path:      {0}'.format(self._path)
+        print ('Path:      {0}'.format(self._path))
         if self._parent:
-            print 'Parent:    {0}'.format(self._parent)
+            print ('Parent:    {0}'.format(self._parent))
         _show_list('Subdirectories', self._subdirs)
         _show_list('Files', self._files)
 
@@ -896,10 +896,10 @@ class Group(Compound):
 
     def show(self):
         self.show_base()
-        print 'Title:     {0}'.format(self._title)
-        print 'Inner compounds:'
+        print ('Title:     {0}'.format(self._title))
+        print ('Inner compounds:')
         for compound in self._children:
-            print '  ', compound
+            print ('  ', compound)
         self.show_members()
 
 class Namespace(Compound):
@@ -936,7 +936,7 @@ class Namespace(Compound):
 
     def show(self):
         self.show_base()
-        print 'Doc. loc.: {0}'.format(self._doclocation.get_full_string())
+        print ('Doc. loc.: {0}'.format(self._doclocation.get_full_string()))
         _show_list('Inner namespaces', self._innernamespaces)
         _show_list('Classes', self._classes)
         self.show_members()
@@ -1001,12 +1001,12 @@ class Class(Compound):
 
     def show(self):
         self.show_base()
-        print 'Namespace:  {0}'.format(self._namespace)
+        print ('Namespace:  {0}'.format(self._namespace))
         if self._outerclass:
-            print 'Outer cls:  {0}'.format(self._outerclass)
+            print ('Outer cls:  {0}'.format(self._outerclass))
         location = self._location
-        print 'Location:   {0}'.format(location.get_location().get_full_string())
-        print 'Body loc:   {0}'.format(location.get_body_location().get_full_string())
+        print ('Location:   {0}'.format(location.get_location().get_full_string()))
+        print ('Body loc:   {0}'.format(location.get_body_location().get_full_string()))
         _show_list('Inner classes', self._innerclasses)
         self.show_members()
 
