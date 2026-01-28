@@ -69,14 +69,22 @@ jobs:
       - name: Sphinx build
         run: sphinx-build docs _build
 
-      - name: Deploy
-        uses: peaceiris/actions-gh-pages@v4
-        if: ${{ github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/website') }}
+      - name: Upload static files as artifact
+        id: deployment
+        uses: actions/upload-pages-artifact@v3 # or specific "vX.X.X" version tag for this action
         with:
-          publish_branch: gh-pages
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: _build/
-          force_orphan: true
+          path: ${{ github.workspace }}/_build
+#          mkdir ../_build
+#          mv docs/html/doxygen/html-full _build/doxygen
+
+#      - name: Deploy
+#        uses: peaceiris/actions-gh-pages@v4
+#        if: ${{ github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/website') }}
+#        with:
+          #publish_branch: gh-pages
+#          github_token: ${{ secrets.GITHUB_TOKEN }}
+#          publish_dir: _build/
+#          force_orphan: true
 
       - name: Install linter
         run: pip install sphinx-lint

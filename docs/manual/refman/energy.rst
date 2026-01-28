@@ -479,9 +479,9 @@ A virtual site is an extra point, located at a defined position in a molecule. A
   * Four-particle virtual sites (VSITE4) to model a lone-pair on an amine group.
 
 
-==================
+============
 Total energy
-==================
+============
 The total energy :math:`E` of a compound then follows from 
 
 .. math::

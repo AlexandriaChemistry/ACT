@@ -29,9 +29,9 @@ The MEP can be used as a target in model development in the ACT, however we reco
 =====================
 Electrostatic Moments
 =====================
-If point :math:`{\bf r}^\prime` in Eqn. :eq:`phi` is outside the distribution of electron
-density and :math:`{\bf r}^\prime >> {\bf r}`, the electrostatic potential can be evaluated through the  
-Taylor expansion of :math:`|{\bf r}-{\bf r}^\prime|^{-1}`  :cite:p:`Berendsen2007a`:
+If point :math:`{\mathbf r}^\prime` in Eqn. :eq:`phi` is outside the distribution of electron
+density and :math:`{\mathbf r}^\prime >> {\bf r}`, the electrostatic potential can be evaluated through the  
+Taylor expansion of :math:`|{\mathbf r}-{\bf r}^\prime|^{-1}`  :cite:p:`Berendsen2007a`:
 
 .. math:: \frac{1}{|{\bf r^\prime}-{\bf r}|} \approx \frac{1}{r} + \left({\bf \hat r} \cdot
    {\bf r} \right)\frac{1}{r^2} + \frac{1}{2} \left[3\left({\bf \hat r} \cdot
@@ -324,7 +324,7 @@ with :math:`P` the pressure, :math:`R` the gas constant, :math:`T` the temperatu
 
 .. math:: B_2^{cl}(T) = -\frac{1}{2}\int_0^{\infty} \left< e^{-\beta u_{12}({\mathbf r})} - 1\right> d{\mathbf r}
 
-where :math:`u_{12}({\mathbf r})` is the interaction energy between two compounds (Eqn. :eq:`Eint`), :math:`\beta = 1/k_BT` and
+where :math:`u_{12}({\mathbf r})` is the interaction energy between two compounds (Eqn. :eq:`vinter`), :math:`\beta = 1/k_BT` and
 the integral is over all space and relative orientations of the compounds. If we sample these adequately (including at close, repulsive, distance) we can simplify the integral to a one-dimensional one:
 
 .. math:: B_2^{cl}(T) = -2\pi\int_0^{\infty} r^2 \left< e^{-\beta u_{12}(r)} -1 \right> dr  
