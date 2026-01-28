@@ -8,7 +8,9 @@ User & Reference Manual 1.2 :math:`\beta`
 
 David van der Spoel, Paul J. van Maaren and Mohammad M. Ghahremanpour
 
-.. image:: images/AClogo.png
+`Developer manual <https://richelbilderbeek.github.io/ACT/doxygen/html/index.html>`_
+
+.. image:: manual/images/AClogo.png
    :align: center
 
 .. toctree::
@@ -16,8 +18,13 @@ David van der Spoel, Paul J. van Maaren and Mohammad M. Ghahremanpour
    :maxdepth: 4
    :caption: Contents:
 
-   preface/preface
-   userman/header
-   refman/header
-   devman/header
-   references
+   manual/preface/preface
+   manual/userman/header
+   manual/refman/header
+   manual/devman/header
+
+--------------
+All references
+--------------
+
+.. bibliography::
