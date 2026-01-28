@@ -19,4 +19,5 @@ David van der Spoel, Paul J. van Maaren and Mohammad M. Ghahremanpour
    preface/preface
    userman/header
    refman/header
+   devman/header
    references
