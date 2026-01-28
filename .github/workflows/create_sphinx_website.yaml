@@ -9,6 +9,8 @@ on:
     branches:
       - main
       - website
+  permissions: 
+    contents: write
 
 jobs:
   create_website:
