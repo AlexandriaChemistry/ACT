@@ -5,10 +5,10 @@ on:
     branches:
       - main
       - website
-#  pull_request:
-#    branches:
-#      - main
-#      - website
+  pull_request:
+    branches:
+      - main
+      - website
 
 jobs:
   create_website:
@@ -21,7 +21,7 @@ jobs:
       pages: write       # Added for GitHub Pages deployment
       id-token: write    # Necessary for actions/deploy-pages
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: actions/setup-python@v5
 
 
