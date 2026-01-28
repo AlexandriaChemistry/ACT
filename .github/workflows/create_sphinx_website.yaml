@@ -4,11 +4,11 @@ on:
   push:
     branches:
       - main
-      - website2
+      - website
   pull_request:
     branches:
       - main
-      - website2
+      - website
 
 jobs:
   create_website:
