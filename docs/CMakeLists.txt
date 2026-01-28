@@ -56,8 +56,6 @@ set(SOURCE_MD5SUM "unknown" CACHE STRING
 # REGRESSIONTEST_MD5SUM is set in cmake/gmxVersionInfo.cmake because it is used also in tests/CMakeLists.txt
 mark_as_advanced(SOURCE_MD5SUM)
 
-set(EXPECTED_DOXYGEN_VERSION 1.8.5)
-
 if (DEFINED PYTHON_EXECUTABLE)
     # Keep quiet on subsequent runs of cmake
     set(PythonInterp_FIND_QUIETLY ON)
@@ -155,8 +153,6 @@ if (SPHINX_FOUND)
         EXTRA_VARS
             SPHINX_EXTENSION_PATH RELENG_PATH
             IMAGE_CONVERT_STRING
-#            EXPECTED_DOXYGEN_VERSION
-#            EXPECTED_SPHINX_VERSION
             CMAKE_MINIMUM_REQUIRED_VERSION REQUIRED_CUDA_VERSION
             REQUIRED_OPENCL_MIN_VERSION
             REQUIRED_CUDA_COMPUTE_CAPABILITY REGRESSIONTEST_VERSION
@@ -362,7 +358,7 @@ if (HTML_BUILD_IS_POSSIBLE)
         # TODO Try to make the PDF arrive directly in ${HTML_OUTPUT_DIR}
         # TODO Make this depend on the output of the manual build, so that the
         # file actually gets copied multiple times.
-        set(_manual_target_location ${HTML_OUTPUT_DIR}/manual-${GMX_VERSION_STRING}.pdf)
+        set(_manual_target_location ${HTML_OUTPUT_DIR}/manual-${ACT_VERSION_STRING}.pdf)
         add_custom_command(
             OUTPUT ${_manual_target_location}
             COMMAND ${CMAKE_COMMAND}

@@ -47,6 +47,7 @@ if (DOXYGEN_FOUND)
         get_filename_component(DOXYGEN_MSCGEN_PATH "${DOXYGEN_MSCGEN_EXECUTABLE}" PATH)
     endif()
     mark_as_advanced(DOXYGEN_MSCGEN_EXECUTABLE)
+    set(EXPECTED_DOXYGEN_VERSION FIND_DOXYGEN_VERSION)
 endif()
 
 gmx_dependent_option(

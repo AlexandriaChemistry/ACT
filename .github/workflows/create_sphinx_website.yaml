@@ -8,6 +8,7 @@ on:
   pull_request:
     branches:
       - main
+      - website2
 
 jobs:
   create_website:
@@ -18,7 +19,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
-
 
       # Build Doxygen documentation
       # Copied from the act-test.yaml file
