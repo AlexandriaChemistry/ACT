@@ -56,7 +56,7 @@ set(SOURCE_MD5SUM "unknown" CACHE STRING
 # REGRESSIONTEST_MD5SUM is set in cmake/gmxVersionInfo.cmake because it is used also in tests/CMakeLists.txt
 mark_as_advanced(SOURCE_MD5SUM)
 
-set(EXPECTED_DOXYGEN_VERSION 1.8.5)
+#set(EXPECTED_DOXYGEN_VERSION 1.8.5)
 
 if (DEFINED PYTHON_EXECUTABLE)
     # Keep quiet on subsequent runs of cmake

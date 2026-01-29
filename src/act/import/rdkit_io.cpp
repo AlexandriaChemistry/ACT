@@ -94,7 +94,11 @@ static void updateFragmentFromInchi(MsgHandler           *msg_handler,
     }
 }
 
-
+/*! \brief Convert RDKit atom to ACT atom type
+ * \param[in] msg_handler For warnings and errors
+ * \param[in] atom        RDkit atom structure
+ * \return ACT atom type
+ */
 static std::string getAtomType(MsgHandler         *msg_handler,
                                const RDKit::Atom  *atom)
 {
@@ -158,6 +162,16 @@ static std::string getAtomType(MsgHandler         *msg_handler,
     return type;
 }
 
+/*! \brief Generate an InChi and add it to a fragment
+ * Use RDKit to generate InChis for molecule fragments (typically molecules)
+ * and store it in the fragptr.
+ *
+ * 
+ * \param[in]    msg_handler For warnings and errors
+ * \param[in]    amols       Database read from alexandria.csv
+ * \param[in]    mol         RDKit molecule structure
+ * \param[inout] fragptr     ACT fragment descriptors
+ */
 static void addInchiToFragments(MsgHandler            *msg_handler,
                                 const AlexandriaMols  &amols,
                                 RDKit::RWMol          *mol,
@@ -189,6 +203,11 @@ static void addInchiToFragments(MsgHandler            *msg_handler,
     }
 }
 
+/*! \brief Compute bond order
+ * \param[in] msg_handler For warnings and errors
+ * \param[in] bt          RDKit bond information
+ * \return ACT compatible bond order (double)
+ */
 static double bondTypeValue(MsgHandler            *msg_handler,
                             RDKit::Bond::BondType  bt)
 {

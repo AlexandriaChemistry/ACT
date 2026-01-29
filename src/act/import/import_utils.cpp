@@ -189,6 +189,12 @@ static void get_attributes(MsgHandler                             *msg_handler,
     }
 }
 
+/*! \brief Process an XML tree
+ * \param[in]    msghandler For warnings and errors
+ * \param[in]    tree       xml Pointer
+ * \param[inout] abdb       Vector containing the database being read
+ * \param[inout] xbuf       Temporary buffer for strings
+ */
 static void mp_process_tree(MsgHandler                             *msghandler,
                             xmlNodePtr                              tree,
                             std::vector<AtomBondtypeEntry>         *abdb,
@@ -419,6 +425,10 @@ std::vector<AtomBondtypeEntry> getAtomBondtypeDB()
     return abe;
 }
 
+/*! \brief Add an AtomBondtypeEntry to an XML document
+ * \param[in] parent xml Pointer
+ * \param[in] ab     The AtomBondtypeEntry
+ */
 static void add_xml_abentry(xmlNodePtr               parent,
                             const AtomBondtypeEntry &ab)
 {

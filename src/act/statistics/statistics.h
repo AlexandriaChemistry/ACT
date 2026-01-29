@@ -116,7 +116,6 @@ public:
     /*! \brief
      * Remove outliers from a straight line, where level in units of
      * sigma. Level needs to be larger than one obviously.
-     * \param[in] stats The data structure
      * \param[in] level The sigma level
      * \return error code
      */
@@ -124,7 +123,6 @@ public:
 
     /*! \brief
      * Add a point to the data set with just y values.
-     * \param[in] stats The data structure
      * \param[in] y   The y value
      * \param[in] dy  The error in the y value
      * \return error code
@@ -133,7 +131,6 @@ public:
 
     /*! \brief
      * Add a point to the data set
-     * \param[in] stats The data structure
      * \param[in] x   The x value
      * \param[in] y   The y value
      * \param[in] dx  The error in the x value
@@ -162,7 +159,6 @@ public:
      * Add a series of datapoints at once. The arrays dx and dy may
      * be NULL in that case zero uncertainties will be assumed.
      *
-     * \param[in] stats The data structure
      * \param[in] n   Number of points
      * \param[in] x   The array of x values
      * \param[in] y   The array of y values
@@ -186,7 +182,6 @@ public:
      * been returned.
      * If level > 0 then the outliers outside level*sigma are reported
      * only.
-     * \param[in] stats The data structure
      * \param[out] x    An x value
      * \param[out] y    An y value
      * \param[out] dx   The error in the x value
@@ -200,7 +195,6 @@ public:
     /*! \brief
      * Fit the data to y = ax + b, possibly weighted, if uncertainties
      * have been input. da and db may be NULL.
-     * \param[in] stats The data structure
      * \param[in] weight type of weighting
      * \param[out] a slope
      * \param[out] b intercept
@@ -217,7 +211,6 @@ public:
     /*! \brief
      * Fit the data to y = ax, possibly weighted, if uncertainties have
      * have been input. da and db may be NULL.
-     * \param[in] stats The data structure
      * \param[in] weight type of weighting
      * \param[out] a slope
      * \param[out] da sigma in a
@@ -230,7 +223,6 @@ public:
 
     /*! \brief
      * Get the correlation coefficient.
-     * \param[in]  stats The data structure
      * \param[out] R the correlation coefficient between the data (x and y) as input to the structure.
      * \return error code
      */
@@ -238,7 +230,6 @@ public:
 
     /*! \brief
      * Get the root mean square deviation.
-     * \param[in]  stats The data structure
      * \param[out] rmsd  the root mean square deviation between x and y values.
      * \return error code
      */
@@ -252,7 +243,6 @@ public:
     
     /*! \brief
      * Computes and returns the average value.
-     * \param[in]  stats The data structure
      * \param[out] aver  Average value
      * \return error code
      */
@@ -260,7 +250,6 @@ public:
     
     /*! \brief
      * Computes and returns the standard deviation.
-     * \param[in]  stats The data structure
      * \param[out] sigma  Standard deviation
      * \return error code
      */
@@ -268,7 +257,6 @@ public:
     
     /*! \brief
      * Computes and returns the standard error.
-     * \param[in]  stats The data structure
      * \param[out] error Standard error
      * \return error code
      */
@@ -276,7 +264,6 @@ public:
 
     /*! \brief
      * Pointers may be null, in which case no assignment will be done.
-     * \param[in]  stats The data structure
      * \param[out] aver  Average value
      * \param[out] sigma  Standard deviation
      * \param[out] error Standard error
@@ -286,7 +273,6 @@ public:
 
     /*! \brief
      * Return mean signed error and mean absolute error
-     * \param[in]  stats The data structure
      * \param[out] mse  mean signed error
      * \param[out] mae  mean absolute
      * \return error code
@@ -295,7 +281,6 @@ public:
 
     /*! \brief
      * Dump the x, y, dx, dy data to a text file
-     * \param[in]  stats The data structure
      * \param[in] fp  File pointer
      * \return error code
      */
@@ -329,7 +314,7 @@ public:
 
 /*! \brief
  * Return message belonging to error code
- * \param[in] eStats error code
+ * \param[in] estats error code
  */
 const char *gmx_stats_message(eStats estats);
 

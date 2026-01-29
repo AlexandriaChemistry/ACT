@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria program.
  *
- * Copyright (C) 2022,2023
+ * Copyright (C) 2022,2023,2026
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -89,7 +89,16 @@ class GeneticAlgorithmTest : public gmx::test::CommandLineTestBase
         {
         }
 
-        //! \brief Test the genetic algorihm code
+        /*! \brief Test the genetic algorithm code
+         * \param[in] alg         Algorithm to use
+         * \param[in] nElites     Number of elite individuals
+         * \param[in] popSize     Population size
+         * \param[in] verbose     Print more if verbose
+         * \param[in] ncrossovers Number of crossovers in the GA
+         * \param[in] fitstrings  Parameters to fit
+         * \param[in] seed        Random number seed
+         * \param[in] erms        RMS components to investigate
+         */
         void testIt(alexandria::OptimizerAlg alg,
                     int nElites, int popSize,
                     bool verbose, int ncrossovers, 

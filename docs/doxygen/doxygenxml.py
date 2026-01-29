@@ -873,9 +873,6 @@ class Group(Compound):
         compound.add_group(self)
         self._files.add(compound)
 
-    # Doxygen 1.8.5 doesn't seem to put the directories into the XML output,
-    # even though they are in the HTML output as group members...
-
     def _load_inner_group(self, compound):
         compound.add_group(self)
         self._nestedgroups.add(compound)
