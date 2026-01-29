@@ -57,6 +57,7 @@ enum class AtomBondtypeXml {
     INDEX,
     ATOMTYPES,
     ATOMTYPE,
+    ATOMNUMBER,
     BONDTYPE,
     BONDTYPES,
     AI,
@@ -76,6 +77,7 @@ static std::map<const std::string, AtomBondtypeXml> xmlxxx =
     { "index", AtomBondtypeXml::INDEX },
     { "atomtypes", AtomBondtypeXml::ATOMTYPES },
     { "atomtype", AtomBondtypeXml::ATOMTYPE },
+    { "atomnumber", AtomBondtypeXml::ATOMNUMBER },
     { "bondtype", AtomBondtypeXml::BONDTYPE },
     { "bondtypes", AtomBondtypeXml::BONDTYPES },
     { "ai", AtomBondtypeXml::AI },
@@ -262,11 +264,15 @@ static void mp_process_tree(MsgHandler                             *msghandler,
                 case AtomBondtypeXml::ATOMTYPE:
                     {
                         std::vector<AtomBondtypeXml> clean = {
-                            AtomBondtypeXml::NAME, AtomBondtypeXml::INDEX
+                            AtomBondtypeXml::NAME, AtomBondtypeXml::INDEX, AtomBondtypeXml::ATOMNUMBER,
                         };
                         if (xmlFound(xbuf, clean))
                         {
-                            abdb->back().atomtypes.push_back(xbuf->find(AtomBondtypeXml::NAME)->second);
+                            AtomTypeDef atp;
+                            atp.name       = xbuf->find(AtomBondtypeXml::NAME)->second;
+                            atp.index      = xbuf_atoi(xbuf, AtomBondtypeXml::INDEX, true);
+                            atp.atomnumber = xbuf_atoi(xbuf, AtomBondtypeXml::ATOMNUMBER, true);
+                            abdb->back().atomtypes.push_back(std::move(atp));
                             clean_xbuf(xbuf, clean);
                         }
                         else
@@ -364,49 +370,49 @@ std::vector<AtomBondtypeEntry> getAtomBondtypeDB()
         { "sulfate",
           "[#16](=[#8])(=[#8])(-[#8-])-[#8-]",
           -2, 1,
-          { "s3", "o2", "o2", "o2", "o2" },
+          { { "s3", 16, 0 }, { "o2", 8, 1 }, { "o2", 8, 2 }, { "o2", 8, 3 }, { "o2", 8, 4 } },
           { { 0, 1, 1.5 }, { 0, 2, 1.5 }, { 0, 3, 1.5 }, { 0, 4, 1.5 } }
         },
         { "water",
           "[#8](-[#1])-[#1]",
           0, 1,
-          { "ow", "hw", "hw" },
+          { { "ow", 8, 0 }, { "hw", 1, 1 }, { "hw", 1, 2 } },
           { { 0, 1, 1 }, { 0, 2, 1 } }
         },
         { "phosphate", // hypervalent form
           "[#15D4]([#8D1])([#8D1])([#8-,#8D1])([#8-,#8D1])",
           -3, 1,
-          { "p3", "o3", "o3", "o3", "o3" },
+          { { "p3", 15, 0 }, { "o3", 8, 1 }, { "o3", 8, 2 }, { "o3", 8, 3 }, { "o3", 8, 4 } },
           { { 0, 1, 1.5 }, { 0, 2, 1.5 }, { 0, 3, 1.5 }, { 0, 4, 1.5 } }
         },
         { "phosphate2", // ion form, PO4(3-)
           "[#8-]-[#15](-[#8-])(-[#8-])=[#8]",
           -3, 1,
-          { "o3", "p3", "o3", "o3", "o3" },
+          { { "o3", 8, 0 }, { "p3", 15, 1 }, { "o3", 8, 2 }, { "o3", 8, 3 }, { "o3", 8, 4 } },
           { { 0, 1, 1.5 }, { 1, 2, 1.5 }, { 1, 3, 1.5 }, { 1, 4, 1.5 } }
         },
         { "phosphate2", // ion form, XPO3(2-)
           "[#8-]-[#15](-[#8-])(-[#8-])",
           -2, 1,
-          { "o3", "p3", "o3", "o3" },
+          { { "o3", 8, 0 }, { "p3", 15, 1 }, { "o3", 8, 2 }, { "o3", 8, 3 } },
           { { 0, 1, 1.5 }, { 1, 2, 1.5 }, { 1, 3, 1.5 } }
         },
         { "phosphate3", // ion form, X2PO2(1-)
           "[#8-]-[#15](-[#8-])",
           -1, 1,
-          { "o3", "p3", "o3" },
+          { { "o3", 8, 0 }, { "p3", 15, 1 }, { "o3", 8, 2 } },
           { { 0, 1, 1 }, { 1, 2, 1 } }
         },
         { "nitro1",
           "[#7+](-[#8-])=[#8]",
           0, 1,
-          { "n2", "o2", "o2" },
+          { { "n2", 7, 0 }, { "o2", 8, 1 }, { "o2", 8, 2 } },
           { { 0, 1, 1.5 }, { 0, 2, 1.5 } }
         },
         { "nitro2",
           "[#7+](-[#8])=[#8]",
           0, 1,
-          { "n2", "o2", "o2" },
+          { { "n2", 7, 0 }, { "o2", 8, 1 }, { "o2", 8, 2 } },
           { { 0, 1, 1.5 }, { 0, 2, 1.5 } }
         }
     };
@@ -422,13 +428,12 @@ static void add_xml_abentry(xmlNodePtr               parent,
     add_xml_int(ptr, rmap[AtomBondtypeXml::CHARGE], ab.charge);
     add_xml_int(ptr, rmap[AtomBondtypeXml::MULTIPLICITY], ab.multiplicity);
     auto atypes = add_xml_child(ptr, rmap[AtomBondtypeXml::ATOMTYPES]);
-    int index = 0;
     for(const auto &atp : ab.atomtypes)
     {
         auto myatp = add_xml_child(atypes, rmap[AtomBondtypeXml::ATOMTYPE]);
-        add_xml_int(myatp, rmap[AtomBondtypeXml::INDEX], index);
-        add_xml_string(myatp, rmap[AtomBondtypeXml::NAME], atp.c_str());
-        index += 1;
+        add_xml_int(myatp, rmap[AtomBondtypeXml::INDEX], atp.index);
+        add_xml_string(myatp, rmap[AtomBondtypeXml::NAME], atp.name.c_str());
+        add_xml_int(myatp, rmap[AtomBondtypeXml::ATOMNUMBER], atp.atomnumber);
     }
     auto btypes = add_xml_child(ptr, rmap[AtomBondtypeXml::BONDTYPES]);
     for(const auto &btp : ab.bonds)
