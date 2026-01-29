@@ -6,9 +6,9 @@
   <Int Name="water_dimer.pdb">4</Int>
   <Sequence Name="bondorder">
     <Int Name="Length">4</Int>
-    <String>ow-0 ho-2: 1</String>
-    <String>ow-0 ho-1: 1</String>
-    <String>ow-3 ho-4: 1</String>
-    <String>ow-3 ho-5: 1</String>
+    <String>ow-0 hw-2: 1</String>
+    <String>ow-0 hw-1: 1</String>
+    <String>ow-3 hw-4: 1</String>
+    <String>ow-3 hw-5: 1</String>
   </Sequence>
 </ReferenceData>
