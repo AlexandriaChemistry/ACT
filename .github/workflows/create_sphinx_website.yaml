@@ -1,0 +1,79 @@
+name: Create Sphinx website
+
+on:
+  push:
+    branches:
+      - main
+      - website
+#  pull_request:
+#    branches:
+#      - main
+#      - website
+
+jobs:
+  create_website:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    permissions:
+      contents: write
+      pages: write       # Added for GitHub Pages deployment
+      id-token: write    # Necessary for actions/deploy-pages
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v5
+
+      # Build Doxygen documentation
+      # Copied from the act-test.yaml file
+      - name: List files in the repository
+        run: |
+          ls ${{ github.workspace }}
+      - name: Install system dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt update
+          sudo apt-get update
+          sudo apt-get -y install gcc cmake libopenmpi-dev openmpi-bin  libxml2 
+      - uses: conda-incubator/setup-miniconda@v3
+        with:
+          auto-update-conda: true
+          python-version: ${{ matrix.python-version }}
+      - name: Conda info
+        shell: bash -el {0}
+        run: |
+          conda info
+          conda install conda-forge::librdkit-dev=2025.09.4 conda-forge::libboost-devel eigen doxygen graphviz pygments
+      - name: Install ACT
+        run: |
+          cd ${{ github.workspace }}
+          mkdir build; cd build
+          export MPICXX=/usr/bin/g++
+          export MPICC=/usr/bin/gcc
+          export CXXFLAGS='-std=c++20'
+          cmake -DGMX_DOUBLE=ON -DCMAKE_PREFIX_PATH=/usr/share/miniconda/envs/test -DBUILD_SHARED_LIBS=OFF -DGMX_OPENMP=OFF -DGMX_MPI=ON -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/../tools -DCMAKE_BUILD_TYPE=Release -DACT_BUILD_MANUAL=OFF -DACT_COMPACT_DOXYGEN=OFF -DREGRESSIONTEST_DOWNLOAD=OFF -DGMX_DEFAULT_SUFFIX=OFF -DCMAKE_CXX_COMPILER=${MPICXX} -DCMAKE_C_COMPILER=${MPICC} ..
+#          make -j 4 doxygen-full
+#          mkdir ../_build
+#          mv docs/html/doxygen/html-full _build/doxygen
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Sphinx build
+        run: sphinx-build docs _build
+
+      - name: Deploy
+        uses: peaceiris/actions-gh-pages@v4
+        if: ${{ github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/website') }}
+        with:
+          publish_branch: gh-pages
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: _build/
+          force_orphan: true
+
+      - name: Install linter
+        run: pip install sphinx-lint
+
+      - name: Run linter, will never give an error
+        run: sphinx-lint docs || true
+
