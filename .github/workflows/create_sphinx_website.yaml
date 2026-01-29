@@ -5,10 +5,10 @@ on:
     branches:
       - main
       - website
-  pull_request:
-    branches:
-      - main
-      - website
+#  pull_request:
+#    branches:
+#      - main
+#      - website
 
 jobs:
   create_website:
@@ -21,9 +21,8 @@ jobs:
       pages: write       # Added for GitHub Pages deployment
       id-token: write    # Necessary for actions/deploy-pages
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: actions/setup-python@v5
-
 
       # Build Doxygen documentation
       # Copied from the act-test.yaml file
@@ -35,7 +34,7 @@ jobs:
         run: |
           sudo apt update
           sudo apt-get update
-          sudo apt-get -y install gcc cmake libopenmpi-dev openmpi-bin  libxml2 doxygen graphviz 
+          sudo apt-get -y install gcc cmake libopenmpi-dev openmpi-bin  libxml2 
       - uses: conda-incubator/setup-miniconda@v3
         with:
           auto-update-conda: true
@@ -44,7 +43,7 @@ jobs:
         shell: bash -el {0}
         run: |
           conda info
-          conda install conda-forge::librdkit-dev=2025.09.4 conda-forge::libboost-devel eigen
+          conda install conda-forge::librdkit-dev=2025.09.4 conda-forge::libboost-devel eigen doxygen graphviz pygments
       - name: Install ACT
         run: |
           cd ${{ github.workspace }}
@@ -52,13 +51,10 @@ jobs:
           export MPICXX=/usr/bin/g++
           export MPICC=/usr/bin/gcc
           export CXXFLAGS='-std=c++20'
-          cmake -DGMX_DOUBLE=ON -DGMX_X11=OFF -DCMAKE_PREFIX_PATH=/usr/share/miniconda/envs/test -DBUILD_SHARED_LIBS=OFF -DGMX_OPENMP=OFF -DGMX_MPI=ON -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/../tools -DCMAKE_BUILD_TYPE=Release -DGMX_BUILD_MANUAL=OFF -DGMX_COMPACT_DOXYGEN=OFF -DREGRESSIONTEST_DOWNLOAD=OFF -DGMX_DEFAULT_SUFFIX=OFF -DCMAKE_CXX_COMPILER=${MPICXX} -DCMAKE_C_COMPILER=${MPICC} ..
-          make -j 4 doxygen-full
-
-      # RJCB
-#      - name: Copy Doxygen to the right location
-#        run: |
-#          cp -r docs/doxygen _build
+          cmake -DGMX_DOUBLE=ON -DCMAKE_PREFIX_PATH=/usr/share/miniconda/envs/test -DBUILD_SHARED_LIBS=OFF -DGMX_OPENMP=OFF -DGMX_MPI=ON -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/../tools -DCMAKE_BUILD_TYPE=Release -DACT_BUILD_MANUAL=OFF -DACT_COMPACT_DOXYGEN=OFF -DREGRESSIONTEST_DOWNLOAD=OFF -DGMX_DEFAULT_SUFFIX=OFF -DCMAKE_CXX_COMPILER=${MPICXX} -DCMAKE_C_COMPILER=${MPICC} ..
+#          make -j 4 doxygen-full
+#          mkdir ../_build
+#          mv docs/html/doxygen/html-full _build/doxygen
 
       - name: Install dependencies
         run: pip install -r requirements.txt
@@ -67,7 +63,7 @@ jobs:
         run: sphinx-build docs _build
 
       - name: Deploy
-        uses: peaceiris/actions-gh-pages@v3
+        uses: peaceiris/actions-gh-pages@v4
         if: ${{ github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/website') }}
         with:
           publish_branch: gh-pages
