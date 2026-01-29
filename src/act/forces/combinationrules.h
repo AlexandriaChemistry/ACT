@@ -138,12 +138,12 @@ double combineWaldmanEpsilon(double e1, double e2, double s1, double s2);
 double combineHogervorstSigma(double e1, double e2, double g1, double g2, double s1, double s2);
 
 /*! \brief Generate combined force field parameter map
- * \param[in] ftype    The force function ACT style
- * \param[in] combrule Map of combination rules per parameter
- * \param[in] ivdw     Parameters for particle i
- * \param[in] jvdw     Parameters for particle j
- * \param[in] same     Should be true if i and j are the same particle
- * \param[out] pmap    Force Field Parameter Map with pair entries
+ * \param[in] ftype     The force function ACT style
+ * \param[in] combrules Map of combination rules per parameter
+ * \param[in] ivdw      Parameters for particle i
+ * \param[in] jvdw      Parameters for particle j
+ * \param[in] same      Should be true if i and j are the same particle
+ * \param[out] pmap     Force Field Parameter Map with pair entries
  */
 void evalCombinationRule(Potential                     ftype,
                          const CombRuleSet            &combrules,

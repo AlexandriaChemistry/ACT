@@ -207,22 +207,24 @@ std::vector<std::tuple<std::string, double>> get_files()
         { "uracil.sdf", 0 },
         { "water-3-oep.log.pdb", 0 },
         { "water_dimer.pdb", 0 },
-	{ "chloroform.sdf", 0 },
-	{ "dichloromethane.sdf", 0 },
-	{ "1,3,5-triazine.sdf", 0 },
-	{ "trimethylorthoformate.sdf", 0 },
-	{ "chloroform.xyz", 0 },
+        { "chloroform.sdf", 0 },
+        { "dichloromethane.sdf", 0 },
+        { "1,3,5-triazine.sdf", 0 },
+        { "trimethylorthoformate.sdf", 0 },
+        { "chloroform.xyz", 0 },
         { "dichloromethane.xyz", 0 },
         { "1,3,5-triazine.xyz", 0 },
         { "trimethylorthoformate.xyz", 0 },
     };
 }
 
+/*! \return booleans controlling tests */
 static std::vector<bool> get_ab()
 {
     return { false, true };
 }
 
+/*! \return booleans controlling tests */
 static std::vector<bool> get_ba()
 {
     return { true, false };
@@ -233,8 +235,11 @@ TEST_P (ImportTest, All)
     runTest();
 }
 
+//! Initiate file structure
 auto my_files = get_files();
+//! Initiate booleans for testing
 auto my_btest = get_ab();
+//! Initiate booleans for testing
 auto my_oneH  = get_ba();
 
 INSTANTIATE_TEST_CASE_P(IT, ImportTest, ::testing::Combine(::testing::ValuesIn(my_files), ::testing::ValuesIn(my_oneH),  ::testing::ValuesIn(my_btest)));

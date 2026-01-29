@@ -36,14 +36,6 @@ set(DOXYGEN_EXECUTABLE   "@DOXYGEN_EXECUTABLE@")
 set(DOXYGEN_VERSION      "@DOXYGEN_VERSION@")
 set(DOXYGEN_MSCGEN_FOUND @DOXYGEN_MSCGEN_FOUND@)
 
-set(EXPECTED_VERSION     "@EXPECTED_DOXYGEN_VERSION@")
-
-if (NOT DOXYGEN_VERSION VERSION_EQUAL EXPECTED_VERSION)
-    message("NOTE: You are using Doxygen version ${DOXYGEN_VERSION}. "
-            "The documentation is designed for ${EXPECTED_VERSION}. "
-            "Other versions may or may not work, but very likely produce extra warnings.")
-endif()
-
 message("Running Doxygen...")
 # The standard output shows a lot of progress information, but obscures errors
 # that may appear.  CMake-introduced buffering also makes it appear sluggish,
