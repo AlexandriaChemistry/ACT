@@ -217,17 +217,31 @@ static double bondTypeValue(MsgHandler            *msg_handler,
  */
 static bool abeSupported(MsgHandler              *msg_handler,
                          const ForceField        *pd,
-                         const AtomBondtypeEntry &abe)
+                         const AtomBondtypeEntry &abe,
+                         bool                    oneH)
 {
     // Check whether atom types occur in FF
     std::vector<const ParticleType *> ptypes;
     for(const auto &atp : abe.atomtypes)
     {
-        Identifier id(atp);
+        Identifier id(atp.name);
         if (!pd->hasParticleType(id))
         {
+            if (atp.atomnumber <= 0)
+            {
+                msg_handler->msg(ACTStatus::Warning,
+                                 gmx::formatString("No atomnumber defined for atomtype %s in special case '%s'",
+                                                   atp.name.c_str(), abe.name.c_str()));
+            }
+            bool isH = (atp.atomnumber == 1);
+
+            if (oneH && isH && pd->hasParticleType("h"))
+            {
+                ptypes.push_back(pd->findParticleType("h"));
+                continue;
+            }
             msg_handler->msg(ACTStatus::Warning,
-                             gmx::formatString("Atom type %s not found in force field", atp.c_str()));
+                             gmx::formatString("Atom type %s not found in force field", atp.name.c_str()));
             return false;
         }
         // Save particle type ptrs for bonds
@@ -303,7 +317,7 @@ static void lookUpSpecial(MsgHandler                           *msg_handler,
                                  gmx::formatString("qmol has %d atoms",
                                                    qmol->getNumAtoms())); 
             }
-            if (abeSupported(msg_handler, pd, abe[i]))
+            if (abeSupported(msg_handler, pd, abe[i], oneH))
             {
                 const int NOTSET = -666;
                 std::vector<RDKit::MatchVectType> matchVect = RDKit::SubstructMatch(*mol2, *qmol);
@@ -349,13 +363,17 @@ static void lookUpSpecial(MsgHandler                           *msg_handler,
                 {
                     if (mapAtoms[j] != NOTSET)
                     {
-                        if (!((*ca)[j].getName() == "h") || !oneH)
+                        const auto &atype = abe[i].atomtypes[mapAtoms[j]];
+                        bool isH = (atype.atomnumber == 1);
+                        bool targetExists = pd->hasParticleType(atype.name);
+
+                        if (!(oneH && isH && !targetExists))
                         {
                             msg_handler->msg(ACTStatus::Verbose,
                                              gmx::formatString("Resetting type of %s %zu to %s",
                                                                (*ca)[j].getObtype().c_str(), j,
-                                                               abe[i].atomtypes[mapAtoms[j]].c_str()));
-                            (*ca)[j].setObtype(abe[i].atomtypes[mapAtoms[j]]);
+                                                               atype.name.c_str()));
+                            (*ca)[j].setObtype(atype.name);
                         }
                     }
                 }
@@ -379,7 +397,6 @@ static void lookUpSpecial(MsgHandler                           *msg_handler,
                 }
                 // After we find our first match, and do everything that is needed,
                 // we return to the calling routine.
-                // TODO: do we really want this?
             }
             else
             {
@@ -520,4 +537,3 @@ bool SetMolpropAtomTypesAndBonds(alexandria::MolProp *mmm)
 }
 
 } // namespace alexandria
-

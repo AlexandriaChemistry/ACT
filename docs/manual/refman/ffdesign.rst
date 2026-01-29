@@ -57,7 +57,7 @@ ACT further allows refinement of atom types through environment specific pattern
   +-----------------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-----------------------+--------+---------------------+
   | gaff ho oxygen              | [#1X1;$(\*-O)]                                                                                                                                                                                                                                | ho                    | 0      | -                   |
   +-----------------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-----------------------+--------+---------------------+
-  | gaff ho water               | [#1X1;$(\*-[O;H2])]                                                                                                                                                                                                                           | ho                    | 0      | -                   |
+  | gaff ho water               | [#1X1;$(\*-[O;H2])]                                                                                                                                                                                                                           | hw                    | 0      | -                   |
   +-----------------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-----------------------+--------+---------------------+
   | gaff hn nitrogen            | [#1X1;$(\*-N)]                                                                                                                                                                                                                                | hn                    | 0      | -                   |
   +-----------------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+-----------------------+--------+---------------------+
@@ -144,19 +144,21 @@ where :math:`q_{\mathrm{tot}}` is the net charge on the compound and :math:`p_{i
 As outlined by Chen {\em et al.} :cite:p:`Chen2008b`, the problem can be solved by expressing the energy in terms of the charge transfer variables.
 By substituting :math:`J_{ii} = \eta_i` in Eq. :eq:`eem`, inserting Eq. :eq:`eem` into Eq. :eq:`sqe` and introducing :math:`M_x` as the number of bonds for species :math:`x`, we obtain:
 
-.. math:: \begin{align}
+.. math:: 
+   \begin{aligned}
    E_{\mathrm{SQE}} &= \sum_{n=1}^{N}\Bigg[\left(\frac{q_{\mathrm{tot}}}{N} + \sum_{m=1}^{M_n} p_{nm}\right)\Bigg(\chi_n + \frac{1}{2}\eta_n \left(\frac{q_{\mathrm{tot}}}{N} + \sum_{m=1}^{M_n} p_{nm}\right) \nonumber\\
    &\quad + \frac{1}{2}\sum_{\substack{l=1\\ l\neq n}}^{N}\left(\frac{q_{\mathrm{tot}}}{N} + \sum_{m=1}^{M_l} p_{lm}\right)J_{nl}\Bigg)\Bigg] \nonumber\\
    &\quad + \sum_{i,j}^{M}\left[\frac{1}{2}\zeta_{ij}p_{ij}^2+\Delta\chi_{ij}\left(\left(\frac{q_{\mathrm{tot}}}{N} + \sum_{m=1}^{M_i} p_{im}\right)-\left(\frac{q_{\mathrm{tot}}}{N} +\sum_{m=1}^{M_j} p_{jm}\right)\right)\right].
-   \end{align}
+   \end{aligned}
 
 The next step is to determine the :math:`p_{ij}` that minimize :math:`E_{\mathrm{SQE}}`. Since all summations run over atoms :math:`i,j,k,l`, we take the derivative with respect to :math:`p_{ij}` and equate it to zero:
 
-.. math:: \begin{align}
+.. math:: 
+   \begin{aligned}
    0 &= \frac{\partial E_{\mathrm{SQE}}}{\partial p_{ij}} \nonumber\\
    &= \left(\chi_i - \chi_j + \frac{q_{\mathrm{tot}}}{N}(\eta_i - \eta_j) + \sum_{k=1}^{M_i}\Delta\chi_{ik} - \sum_{k=1}^{M_j}\Delta\chi_{jk}\right) \nonumber\\
    &\quad + \frac{1}{2}\left(\sum_{l=1}^{N}J_{il}\left(\frac{q_{\mathrm{tot}}}{N}+\sum_{m=1}^{M_l} p_{lm}\right) - \sum_{l=1}^{N}J_{li}\left(\frac{q_{\mathrm{tot}}}{N}+\sum_{k=1}^{M_i} p_{ik}\right)\right) + p_{ij}\zeta_{ij},
-   \end{align}
+   \end{aligned}
    :label: deriv
 
 using the identity of the Coulomb-matrix elements (:math:`J_{ij} = J_{ji}`), the terms involving the atomic hardness :math:`\eta_x` are incorporated into the diagonals of the :math:`J_{xy}` matrix, excluding the contribution from the total charge :math:`q_{\mathrm{tot}}`. Note that the :math:`q_{\mathrm{tot}}` terms in the two sums cancel. The first term in Eq. :eq:`deriv` is the difference in electronegativity between atoms :math:`i` and :math:`j` sharing the bond plus the correction; the second term represents the difference in electrostatic potentials at the atoms, and the third term accounts for the interaction between :math:`i` and :math:`j` times the charge transfer.
