@@ -36,7 +36,7 @@ include(gmxCustomCommandUtilities)
 include(gmxOptionUtilities)
 
 find_package(doxygen QUIET)
-if (not DOXYGEN_FOUND)
+if (NOT DOXYGEN_FOUND)
   find_package(Doxygen QUIET)
 endif()
 
