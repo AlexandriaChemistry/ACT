@@ -1,0 +1,9 @@
+<map id="alexandria::ConfigHandler" name="alexandria::ConfigHandler">
+<area shape="rect" id="Node000001" title=" " alt="" coords="269,5,460,33"/>
+<area shape="rect" id="Node000002" href="$classalexandria_1_1BayesConfigHandler.xhtml" title=" " alt="" coords="5,81,236,109"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="309,38,165,83,163,78,304,37"/>
+<area shape="rect" id="Node000003" href="$classalexandria_1_1GAConfigHandler.xhtml" title=" " alt="" coords="260,81,469,109"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="366,47,367,82,362,79,363,51"/>
+<area shape="rect" id="Node000004" href="$classalexandria_1_1OptACM.xhtml" title="FIXME: The class that does all the optimization work. This class inherits the MolGen class that holds..." alt="" coords="493,81,644,109"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="416,36,535,80,529,80,415,41"/>
+</map>
