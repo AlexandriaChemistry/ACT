@@ -38,6 +38,7 @@ jobs:
       - uses: conda-incubator/setup-miniconda@v3
         with:
           auto-update-conda: true
+          auto-activate: true
           python-version: ${{ matrix.python-version }}
       - name: Conda info
         shell: bash -el {0}
@@ -52,9 +53,9 @@ jobs:
           export MPICC=/usr/bin/gcc
           export CXXFLAGS='-std=c++20'
           cmake -DGMX_DOUBLE=ON -DCMAKE_PREFIX_PATH=/usr/share/miniconda/envs/test -DBUILD_SHARED_LIBS=OFF -DGMX_OPENMP=OFF -DGMX_MPI=ON -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/../tools -DCMAKE_BUILD_TYPE=Release -DACT_BUILD_MANUAL=OFF -DACT_COMPACT_DOXYGEN=OFF -DREGRESSIONTEST_DOWNLOAD=OFF -DGMX_DEFAULT_SUFFIX=OFF -DCMAKE_CXX_COMPILER=${MPICXX} -DCMAKE_C_COMPILER=${MPICC} ..
-#          make -j 4 doxygen-full
-#          mkdir ../_build
-#          mv docs/html/doxygen/html-full _build/doxygen
+          make -j 4 doxygen-full
+          mkdir ../_build
+          mv docs/html/doxygen/html-full ../_build/doxygen
 
       - name: Install dependencies
         run: pip install -r requirements.txt
