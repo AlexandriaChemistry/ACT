@@ -45,7 +45,7 @@ jobs:
         run: |
           conda info
           conda config --add channels conda-forge
-          conda install librdkit-dev=2025.09.4 libboost-devel eigen doxygen graphviz pygments
+          conda install librdkit-dev=2025.09.4 libboost-devel eigen=5.0.1 doxygen graphviz pygments
       - name: Install ACT
         run: |
           cd ${{ github.workspace }}
