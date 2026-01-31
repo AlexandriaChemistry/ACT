@@ -56,6 +56,16 @@ typedef struct
 
 typedef struct
 {
+    //! Atom type name
+    std::string name;
+    //! Atomic number
+    int         atomnumber;
+    //! Index as specified in the XML
+    int         index;
+} AtomTypeDef;
+
+typedef struct
+{
     //! The name of this group
     std::string              name;
     //! The Smarts key for this entry
@@ -65,7 +75,7 @@ typedef struct
     //! Total multiplicity
     int                      multiplicity;
     //! Strings corresponding to atom types
-    std::vector<std::string> atomtypes;
+    std::vector<AtomTypeDef> atomtypes;
     //! SimpleBond structures, containing atom numbers and bondorders
     std::vector<SimpleBond>  bonds;
 } AtomBondtypeEntry;

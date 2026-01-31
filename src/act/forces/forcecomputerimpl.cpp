@@ -42,6 +42,7 @@ namespace alexandria
 
 /*! \brief Compute flat-bottom position restraint energy and forces
  * Note that this particular force operates on one atom at a time
+ * \param[in]    msghandler  For warnings and errors
  * \param[in]    aindex      The atom identifiers and parameters
  * \param[in]    atoms       The atoms
  * \param[in]    coordinates The coordinates of all particles
@@ -114,6 +115,7 @@ static inline void pairforces(double                  fscalar,
 }
 
 /*! \brief Compute Lennard-Jones 12-6 energy and forces
+ * \param[in]    msghandler  For warnings and errors
  * \param[in]    pairs       The atom identifiers and parameters
  * \param[in]    atoms       The atoms
  * \param[in]    coordinates The coordinates of all particles
@@ -173,6 +175,7 @@ static double computeLJ12_6(MsgHandler                            *msghandler,
 }
 
 /*! \brief Compute Lennard-Jones 12-6-4 energy and forces
+ * \param[in]    msghandler  For warnings and errors
  * \param[in]    pairs       The atom identifiers and parameters
  * \param[in]    atoms       The atoms
  * \param[in]    coordinates The coordinates of all particles
@@ -242,6 +245,7 @@ static double computeLJ12_6_4(MsgHandler                            *msghandler,
 }
 
 /*! \brief Compute Lennard-Jones 8-6 energy and forces
+ * \param[in]    msghandler  For warnings and errors
  * \param[in]    pairs       The atom identifiers and parameters
  * \param[in]    atoms       The atoms
  * \param[in]    coordinates The coordinates of all particles
@@ -301,6 +305,7 @@ static double computeLJ8_6(MsgHandler                            *msghandler,
 } 
 
 /*! \brief Compute 14-7 energy and forces
+ * \param[in]    msghandler  For warnings and errors
  * \param[in]    pairs       The atom identifiers and parameters
  * \param[in]    atoms       The atoms
  * \param[in]    coordinates The coordinates of all particles
@@ -366,6 +371,7 @@ static double computeLJ14_7(MsgHandler                            *msghandler,
 }
 
 /*! \brief Low-level utility to compute Born-Mayer energy and forces
+ * \param[in]    msghandler  For warnings and errors
  * \param[in]    indices The atom identifiers and parameters
  * \param[in]    x       The coordinates of all particles
  * \param[in]    aexp    The prefactor in the energy expression
@@ -401,6 +407,7 @@ static double lowBornMayer(MsgHandler                            *msghandler,
 }
 
 /*! \brief Compute Born-Mayer energy and forces
+ * \param[in]    msghandler  For warnings and errors
  * \param[in]    pairs       The atom identifiers and parameters
  * \param[in]    atoms       The atoms
  * \param[in]    coordinates The coordinates of all particles
@@ -432,6 +439,7 @@ static double computeBornMayer(MsgHandler                            *msghandler
 }
 
 /*! \brief Low-level utility to compute Slater-ISA energy and forces
+ * \param[in]    msghandler  For warnings and errors
  * \param[in]    indices The atom identifiers and parameters
  * \param[in]    x       The coordinates of all particles
  * \param[in]    aexp    The prefactor in the energy expression
@@ -475,6 +483,7 @@ static double lowSlaterISA(MsgHandler                   *msghandler,
 }
 
 /*! \brief Compute Slater-ISA energy and forces
+ * \param[in]    msghandler  For warnings and errors
  * \param[in]    pairs       The atom identifiers and parameters
  * \param[in]    atoms       The atoms
  * \param[in]    coordinates The coordinates of all particles
@@ -503,6 +512,7 @@ static double computeSlaterISA(MsgHandler                            *msghandler
 }
 
 /*! \brief Compute Double Exponential energy and forces
+ * \param[in]    msghandler  For warnings and errors
  * \param[in]    pairs       The atom identifiers and parameters
  * \param[in]    atoms       The atoms
  * \param[in]    coordinates The coordinates of all particles
@@ -592,6 +602,7 @@ static inline void wang_buckingham(real sigma, real epsilon, real gamma,
 }
 
 /*! \brief Compute Wang-Buckinghma energy and forces
+ * \param[in]    msghandler  For warnings and errors
  * \param[in]    pairs       The atom identifiers and parameters
  * \param[in]    atoms       The atoms
  * \param[in]    coordinates The coordinates of all particles
@@ -644,6 +655,7 @@ static double computeWBH(MsgHandler                            *msghandler,
 }
 
 /*! \brief Compute Buckingham energy and forces
+ * \param[in]    msghandler  For warnings and errors
  * \param[in]    pairs       The atom identifiers and parameters
  * \param[in]    atoms       The atoms
  * \param[in]    coordinates The coordinates of all particles
@@ -697,6 +709,7 @@ static double computeBuckingham(MsgHandler                            *msghandle
 }
 
 /*! \brief Low-level utility to compute Tang-Toennies dispersion energy and forces
+ * \param[in]    msghandler  For warnings and errors
  * \param[in]    indices The atom identifiers and parameters
  * \param[in]    x       The coordinates of all particles
  * \param[in]    bDisp   The exponent in the energy expression
@@ -759,6 +772,7 @@ static double TT_Dispersion(MsgHandler                   *msghandler,
 }
 
 /*! \brief Compute Tang-Toennies energy and forces
+ * \param[in]    msghandler  For warnings and errors
  * \param[in]    pairs       The atom identifiers and parameters
  * \param[in]    atoms       The atoms
  * \param[in]    coordinates The coordinates of all particles
@@ -791,6 +805,7 @@ static double computeTangToennies(MsgHandler                            *msghand
 }
 
 /*! \brief Compute Tang-Toennies energy and forces with separate b in exponent
+ * \param[in]    msghandler  For warnings and errors
  * \param[in]    pairs       The atom identifiers and parameters
  * \param[in]    atoms       The atoms
  * \param[in]    coordinates The coordinates of all particles
@@ -823,6 +838,7 @@ static double computeTT2b(MsgHandler                            *msghandler,
 }
 
 /*! \brief Compute Slater-ISA exchange and Tang-Toennies dispersion
+ * \param[in]    msghandler  For warnings and errors
  * \param[in]    pairs       The atom identifiers and parameters
  * \param[in]    atoms       The atoms
  * \param[in]    coordinates The coordinates of all particles
@@ -855,6 +871,7 @@ static double computeSlater_ISA_TT(MsgHandler                            *msghan
 }
 
 /*! \brief Compute Generalized Buckingham energy and forces
+ * \param[in]    msghandler  For warnings and errors
  * \param[in]    pairs       The atom identifiers and parameters
  * \param[in]    atoms       The atoms
  * \param[in]    coordinates The coordinates of all particles
@@ -920,6 +937,7 @@ static double computeNonBonded(MsgHandler                            *msghandler
 }
 
 /*! \brief Compute nothing right now
+ * \param[in]    msghandler  For warnings and errors
  * \param[in]    pairs       The atom identifiers and parameters
  * \param[in]    atoms       The atoms
  * \param[in]    coordinates The coordinates of all particles
@@ -982,6 +1000,7 @@ static double gmx_unused computeNonBondedTest(gmx_unused MsgHandler             
 }
 
 /*! \brief Compute Coulomb energy and forces for Gaussian distributed charges
+ * \param[in]    msghandler  For warnings and errors
  * \param[in]    pairs       The atom identifiers and parameters
  * \param[in]    atoms       The atoms
  * \param[in]    coordinates The coordinates of all particles
@@ -1042,6 +1061,7 @@ static double computeCoulombGaussian(MsgHandler                        *msghandl
 }
 
 /*! \brief Compute Coulomb energy and forces for Slater-distributed charges
+ * \param[in]    msghandler  For warnings and errors
  * \param[in]    pairs       The atom identifiers and parameters
  * \param[in]    atoms       The atoms
  * \param[in]    coordinates The coordinates of all particles
@@ -1184,6 +1204,7 @@ static void harmonic(real k, real x0, real x, real *V, real *F)
 }
 
 /*! \brief Compute nothing
+ * \param[in]    msghandler  For warnings and errors
  * \param[in]    bonds       The atom identifiers and parameters
  * \param[in]    atoms       The atoms
  * \param[in]    coordinates The coordinates of all particles
@@ -1202,6 +1223,7 @@ static double computeDummy(gmx_unused MsgHandler                        *msghand
 }
 
 /*! \brief Compute energy and forces for the harmonic bond potential
+ * \param[in]    msghandler  For warnings and errors
  * \param[in]    bonds       The atom identifiers and parameters
  * \param[in]    atoms       The atoms
  * \param[in]    coordinates The coordinates of all particles
@@ -1253,6 +1275,7 @@ static double computeBonds(gmx_unused MsgHandler                 *msghandler,
 }
 
 /*! \brief Compute energy and forces for the cubic bond potential
+ * \param[in]    msghandler  For warnings and errors
  * \param[in]    bonds       The atom identifiers and parameters
  * \param[in]    atoms       The atoms
  * \param[in]    coordinates The coordinates of all particles
@@ -1309,6 +1332,7 @@ static double computeCubic(gmx_unused MsgHandler                 *msghandler,
 }
 
 /*! \brief Compute energy and forces for the Morse bond potential
+ * \param[in]    msghandler  For warnings and errors
  * \param[in]    bonds       The atom identifiers and parameters
  * \param[in]    atoms       The atoms
  * \param[in]    coordinates The coordinates of all particles
@@ -1357,6 +1381,7 @@ static double computeMorse(MsgHandler                            *msghandler,
 }
 
 /*! \brief Compute energy and forces for the Hua bond potential
+ * \param[in]    msghandler  For warnings and errors
  * \param[in]    bonds       The atom identifiers and parameters
  * \param[in]    atoms       The atoms
  * \param[in]    coordinates The coordinates of all particles
@@ -1402,6 +1427,7 @@ static double computeHua(gmx_unused MsgHandler                 *msghandler,
 }
 
 /*! \brief Compute energy and forces for the linear angle potential
+ * \param[in]    msghandler  For warnings and errors
  * \param[in]    angles      The atom identifiers and parameters
  * \param[in]    atoms       The atoms
  * \param[in]    coordinates The coordinates of all particles
@@ -1455,6 +1481,7 @@ static double computeLinearAngles(gmx_unused MsgHandler                 *msghand
 }
 
 /*! \brief Compute energy and forces for the harmonic angle potential
+ * \param[in]    msghandler  For warnings and errors
  * \param[in]    angles      The atom identifiers and parameters
  * \param[in]    atoms       The atoms
  * \param[in]    coordinates The coordinates of all particles
@@ -1532,6 +1559,7 @@ static double computeAngles(MsgHandler                            *msghandler,
 }
 
 /*! \brief Compute energy and forces for the Urey-Bradley angle potential
+ * \param[in]    msghandler  For warnings and errors
  * \param[in]    angles      The atom identifiers and parameters
  * \param[in]    atoms       The atoms
  * \param[in]    coordinates The coordinates of all particles
@@ -1624,6 +1652,7 @@ static double computeUreyBradley(gmx_unused MsgHandler                 *msghandl
 }
 
 /*! \brief Compute energy and forces for the polarization potential
+ * \param[in]    msghandler  For warnings and errors
  * \param[in]    bonds       The atom identifiers and parameters
  * \param[in]    atoms       The atoms
  * \param[in]    coordinates The coordinates of all particles
@@ -1756,6 +1785,7 @@ static real dih_angle(const rvec xi, const rvec xj, const rvec xk, const rvec xl
 }
 
 /*! \brief Compute energy and forces for the Fourier dihedral potential
+ * \param[in]    msghandler  For warnings and errors
  * \param[in]    propers     The atom identifiers and parameters
  * \param[in]    atoms       The atoms
  * \param[in]    coordinates The coordinates of all particles
@@ -1818,6 +1848,7 @@ static double computeFourDihs(gmx_unused MsgHandler                 *msghandler,
 }
 
 /*! \brief Compute energy and forces for the harmonic improper dihedral potential
+ * \param[in]    msghandler  For warnings and errors
  * \param[in]    impropers   The atom identifiers and parameters
  * \param[in]    atoms       The atoms
  * \param[in]    coordinates The coordinates of all particles
@@ -1865,6 +1896,7 @@ static double computeImpropers(gmx_unused MsgHandler                 *msghandler
 }
 
 /*! \brief Compute energy and forces for the proper dihedral potential
+ * \param[in]    msghandler  For warnings and errors
  * \param[in]    propers     The atom identifiers and parameters
  * \param[in]    atoms       The atoms
  * \param[in]    coordinates The coordinates of all particles

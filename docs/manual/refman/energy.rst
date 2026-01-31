@@ -64,7 +64,7 @@ Hentschke gives an  analytical solution :cite:p:`Hentschke2004a`:
    :label: hentschke
 
 
-:eq:`hentschke` was implemented in a Mathematica :sup`TM` program from which C++ code was generated for the
+:eq:`hentschke` was implemented in a Mathematica :sup:`TM` program from which C++ code was generated for the
 analytical computation of :math:`J_{ij}`  and its analytical derivatives with respect to :math:`r`, which are necessary for computing forces.
 Due to the nature of :eq:`hentschke`, there are many terms with large powers, particularly for :math:`n>3`. Thus,  the equations have to be implemented using the arbitrary precision
 arithmetic library Class Library for Numbers ( `CLN`_ ).
@@ -113,7 +113,6 @@ where :math:`q_s` is the shell charge, :math:`\alpha_c` is the polarizability an
 --------------------
 Induction correction
 --------------------
-\label{indcorr}
 A term to add extra attraction between atoms was proposed in ref. :cite:p:`McDaniel2013a`
 
 .. math:: V_{ic}(r_{ij}) ~=~ -A_{ij} {\rm e}^{-b_{ij} r_{ij}}
@@ -265,7 +264,7 @@ The two simplest expressions that have historically been used as combination rul
 .. math:: X_{12} = \sqrt{x_{1} x_{2}}
    :label: cr_geometric
 
-%was used for all three parameters :math:`\epsilon`, :math:`\gamma`, :math:`\sigma` in "geometric" rules. It is also used for :math:`\epsilon` in "arithmetic" rules and for :math:`\sigma` in "Kong-Mason" rules \cite{}.
+%was used for all three parameters :math:`\epsilon`, :math:`\gamma`, :math:`\sigma` in "geometric" rules. It is also used for :math:`\epsilon` in "arithmetic" rules and for :math:`\sigma` in "Kong-Mason" rules :cite:p:`Kong1973a`.
 
 .. math:: X_{12} = \frac{x_{1}+ x_{2}}{2}
    :label: cr_arithmetic
@@ -363,12 +362,12 @@ Bonded interactions
 ------------------
 Harmonic potential
 ------------------
-Bond vibrations can be described using a harmonic term based on the bond length r:math:`_{ij}`
+Bond vibrations can be described using a harmonic term based on the bond length :math:`r_{ij}`
 
 .. math:: V_b(r_{ij}) ~=~ \frac{k_{ij}^{b}}{2}\left(r_{ij}-r_{ij}^0\right)^2,
    :label: harmonic_bond
 
-where :math:`k_{ij}^{b}` is the force constant, and r:math:`_{ij}^0` is the equilibrium bond length. 
+where :math:`k_{ij}^{b}` is the force constant, and :math:`r_{ij}^0` is the equilibrium bond length. 
 
 ------------------
 Morse potential
@@ -475,7 +474,7 @@ A virtual site is an extra point, located at a defined position in a molecule. A
   * a virtual site on top of an atom (VSITE1) :cite:p:`Spoel2025a`
   * a virtual sites along the bond (VSITE2) for the description of anisotropic charge distribution and exchange :cite:p:`Kriz2024b` such as encountered in :math:`\sigma` holes
   * a virtual site on the bisector of a angle, like in the TIP4P water model :cite:p:`Jorgensen1983a` (VSITE3S) or in alcohol (VSITE3)
-  * off-plane virtual sites for modeling lone-pairs in sp:math:`^3` hybridized compounds, such as water (VSITE3SOUT, symmetric) or asymmetric for compounds like alcohols :cite:p:`Mahoney2000a,Kriz2024b`.
+  * off-plane virtual sites for modeling lone-pairs in :math:`{\mathrm sp}^3` hybridized compounds, such as water (VSITE3SOUT, symmetric) or asymmetric for compounds like alcohols :cite:p:`Mahoney2000a,Kriz2024b`.
   * Four-particle virtual sites (VSITE4) to model a lone-pair on an amine group.
 
 

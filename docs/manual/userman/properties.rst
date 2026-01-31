@@ -324,7 +324,7 @@ with :math:`P` the pressure, :math:`R` the gas constant, :math:`T` the temperatu
 
 .. math:: B_2^{cl}(T) = -\frac{1}{2}\int_0^{\infty} \left< e^{-\beta u_{12}({\mathbf r})} - 1\right> d{\mathbf r}
 
-where u:math:`_{12}`(r) is the interaction energy between two compounds (Eqn. :eq:`Eint`), :math:`\beta = 1/k_BT` and
+where :math:`u_{12}({\mathbf r})` is the interaction energy between two compounds (Eqn. :eq:`Eint`), :math:`\beta = 1/k_BT` and
 the integral is over all space and relative orientations of the compounds. If we sample these adequately (including at close, repulsive, distance) we can simplify the integral to a one-dimensional one:
 
 .. math:: B_2^{cl}(T) = -2\pi\int_0^{\infty} r^2 \left< e^{-\beta u_{12}(r)} -1 \right> dr  
