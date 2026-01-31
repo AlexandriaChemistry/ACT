@@ -81,7 +81,6 @@ The steps needed to prepare data for training in ACT are as follows:
 ===============================
 Generating single molecule data
 ===============================
-\label{qmdata}
 Single molecules off-equilibrium energies and forces are needed to parameterize the intramolecular potential functions. Scripts are available that will take a structure of a monomer, perform a 50 ps MD simulation in the gas phase at elevated temperature using the GAFF force field~ :cite:p:`Wang2004a` and the GROMACS software~ :cite:p:`Pronk2013a`.  
 Then,  conformations are extracted from the simulation trajectory and these are subjected to quantum chemistry calculations using Psi4~ :cite:p:`psi4`.
 
