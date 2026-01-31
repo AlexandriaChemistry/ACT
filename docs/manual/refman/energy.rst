@@ -113,7 +113,6 @@ where :math:`q_s` is the shell charge, :math:`\alpha_c` is the polarizability an
 --------------------
 Induction correction
 --------------------
-\label{indcorr}
 A term to add extra attraction between atoms was proposed in ref. :cite:p:`McDaniel2013a`
 
 .. math:: V_{ic}(r_{ij}) ~=~ -A_{ij} {\rm e}^{-b_{ij} r_{ij}}
@@ -265,7 +264,7 @@ The two simplest expressions that have historically been used as combination rul
 .. math:: X_{12} = \sqrt{x_{1} x_{2}}
    :label: cr_geometric
 
-%was used for all three parameters :math:`\epsilon`, :math:`\gamma`, :math:`\sigma` in "geometric" rules. It is also used for :math:`\epsilon` in "arithmetic" rules and for :math:`\sigma` in "Kong-Mason" rules \cite{}.
+%was used for all three parameters :math:`\epsilon`, :math:`\gamma`, :math:`\sigma` in "geometric" rules. It is also used for :math:`\epsilon` in "arithmetic" rules and for :math:`\sigma` in "Kong-Mason" rules :cite:p:`Kong1973a`.
 
 .. math:: X_{12} = \frac{x_{1}+ x_{2}}{2}
    :label: cr_arithmetic

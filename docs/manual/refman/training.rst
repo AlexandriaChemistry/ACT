@@ -2,7 +2,7 @@
 Force Field Training Algorithms
 *******************************
 
-*This chapter was written by Juli{\'a}n Marrades and is based in part on his M.Sc. thesis~\cite{Marrades2022a}.*
+*This chapter was written by Juli{\'a}n Marrades and is based in part on his M.Sc. thesis :cite:p:`Marrades2022a`.*
 
 Within the *alexandria train_ff* module of the Alexandria Chemistry Toolkit you can choose among three algorithms to optimize force field parameters:
 
@@ -41,7 +41,7 @@ Now, let us add some more detail to the algorithm.
 --------------------
 Metropolis Criterion
 --------------------
-If Mathematics is your thing and you {\em really} want to know the nitty-gritty stuff, you have thorough explanations of this method on \href{https://en.wikipedia.org/wiki/Metropolis%E2%80%93Hastings_algorithm}{Wikipedia} and Shuyi Qin's Master thesis~\cite{Qin2021a}.
+If Mathematics is your thing and you {\em really} want to know the nitty-gritty stuff, you have thorough explanations of this method on \href{https://en.wikipedia.org/wiki/Metropolis%E2%80%93Hastings_algorithm}{Wikipedia} and Shuyi Qin's Master thesis :cite:p:`Qin2021a`.
 Here, we shall say that the Metropolis Criterion allows us to take steps that do not get us closer to a minimum, giving the opportunity to explore the parameter space and avoid local minima. How exactly?
 
 The probability of accepting a "bad" parameter change is controlled by the flag *-temp T* flag and follows the equation
@@ -85,7 +85,7 @@ Quoting `WikipediaGA`_
 
 .. _WikipediaGA: https://en.wikipedia.org/wiki/Genetic_algorithm
 
-In this section, we describe our implementation of a genetic algorithm for force field parameterization. If this is the first time you hear about genetic algorithms and want to acquaint yourself, we recommend you to read Chapter 2 of Steven F. van Dijk's PhD thesis~\cite{VanDijk2001a} and/or head over to `Youtube`_.
+In this section, we describe our implementation of a genetic algorithm for force field parameterization. If this is the first time you hear about genetic algorithms and want to acquaint yourself, we recommend you to read Chapter 2 of Steven F. van Dijk's PhD thesis :cite:p:`VanDijk2001a` and/or head over to `Youtube`_.
 
 .. _Youtube: https://www.youtube.com/
 

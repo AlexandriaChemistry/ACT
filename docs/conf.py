@@ -47,7 +47,7 @@
 
 # General information about the project.
 project = u'ACT'
-copyright = 'the_copyright_grep_me'
+copyright = '2026 The Alexandria Chemistry Initiative'
 author = 'the_authors_grep_me'
 github_user = "AlexandriaChemistry"
 github_repo_name = "ACT"
