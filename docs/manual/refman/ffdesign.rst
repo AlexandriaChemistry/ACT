@@ -24,7 +24,12 @@ Determining atom types
 
 When importing a structure file (SDF, PDB, or XYZ format), ACT automatically assigns initial atom types based on their chemical environment. For carbon, nitrogen, oxygen, phosphorus, and sulfur atoms, ACT uses RDKit :cite:p:`rdkit2025` to determine hybridization states and assigns atom types labeled with 1, 2, or 3, indicating sp, sp\ :math:`^2`, or sp\ :math:`^3` hybridization.
 For other atoms or when RDKit cannot determine a hybridization state, ACT assigns atom types based on formal charge: 2−, −, +, or 2+ appended to the element symbol.
-ACT further allows refinement of atom types through environment specific patterns defined using SMARTS notation. :cite:p:`daylight_smarts_theory` These patterns are stored in atom_bond.xml and enable assignment of specialized atom types based on the local chemical context. Table :ref:`atom-bond-table` lists all available SMARTS patterns and their corresponding atom types. Currently the last hit it used to assign atom types and bond orders, hence it is ordered from general to specific.
+ACT further allows refinement of atom types through environment specific patterns defined using SMARTS notation. :cite:p:`daylight_smarts_theory` These patterns are stored in a file called *atom_bond.xml* and they enable assignment of specialized atom types based on the local chemical context.
+Table :ref:`atom-bond-table` lists all available SMARTS patterns and their corresponding atom types. Currently the last hit it used to assign atom types and bond orders, hence it is ordered from general to specific.
+
+The code to determine atomtypes is implemented in both the C++ code and in a Python file *get_mol_dict.py* that is part of the ACT distribution. The latter can be used in conjunction with the generating quantion chemistry data in the `SaptACT`_ repository.
+
+.. _`SaptACT`: https://github.com/AlexandriaChemistry/SaptACT
 
 .. attention:: The default hybridization-based assignment may not adequately represent atoms in resonance stabilized structures. For example, sulfate (SO\ :math:`_4`:math:`^{2-}`) is assigned with one sulfur as s3 and four oxygens with mixed types (o− and o2), which does not reflect the resonance equivalence of the oxygens. To enforce equivalent atom type assignment for resonance structures, add appropriate SMARTS expressions to atom_bond.xml.
 
