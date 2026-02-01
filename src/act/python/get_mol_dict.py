@@ -2,13 +2,16 @@
 # This file is part of the Alexandria Chemistry Toolkit
 # https://github.com/dspoel/ACT
 #
-import os, sys, tempfile
+import os, sys, tempfile, xmltodict
 from rdkit import Chem
 from rdkit.Chem import rdMolDescriptors
+from rdkit.Chem import rdDetermineBonds
 
-from gaff_to_alexandria import *
-
-debug = False
+debug     = False
+atomtype  = "atomtype"
+atomtypes = "atomtypes"
+bondtype  = "bondtype"
+bondtypes = "bondtypes"
 
 def get_order(order:str)->float:
     orders = { "SINGLE": 1, "DOUBLE": 2, "TRIPLE": 3, "AROMATIC": 1.5 }
@@ -21,6 +24,55 @@ def get_atype(hybridization:str)->str:
     if hybridization in hybrid:
         return str(hybrid[hybridization])
     sys.exit("Unknown hybridization '%s'" % hybridization)
+
+def get_atom_bond_xml()->list:
+    actdata = "ACTDATA"
+    xmlname = "atom_bond.xml"
+    dbname  = None
+    if actdata in os.environ:
+        dbname = ("%s/%s" % ( os.environ[actdata], xmlname ))
+    if not dbname or not os.path.exists(dbname):
+        dbname = xmlname
+    if not os.path.exists(dbname):
+        sys.exit("Cannot not find %s" % xmlname)
+
+    with open(dbname) as fd:
+        doc = xmltodict.parse(fd.read())
+        abe = []
+        for abtype in doc["atombondtypes"]['atombondtype']:
+            ab = { "name": abtype["@name"],
+                   "smarts": abtype["@smarts"],
+                   "charge": abtype["@charge"],
+                   "multiplicity": abtype["@multiplicity"],
+                   atomtypes: [],
+                   bondtypes: [] }
+            atypes = abtype[atomtypes]
+            if isinstance(atypes[atomtype], list):
+                for atp in atypes[atomtype]:
+                    if verbose:
+                        print(f"{ab['name']} {atp}")
+                    ab[atomtypes].append({ "index": atp["@index"],
+                                           "name": atp["@name"],
+                                           "atomnumber": atp["@atomnumber"] })
+            else:
+                myatp = atypes[atomtype]
+                ab[atomtypes].append({ "index": myatp["@index"],
+                                       "name": myatp["@name"],
+                                       "atomnumber": myatp["@atomnumber"] })
+            if hasattr(abtype, bondtypes):
+                if isinstance(abtype[bondtypes], list):
+                    for bt in abtype[bondtypes]['bondtype']:
+                        ab[bondtypes].append({ "ai": bt["@ai"],
+                                               "aj": bt["@aj"],
+                                               "order": bt["@order"] })
+                else:
+                    mybtp = abtype[bondtypes][bondtype] 
+                    ab[bondtypes].append({ "ai": mybtp["@ai"],
+                                           "aj": mybtp["@aj"],
+                                           "order": mybtp["@order"] })
+                
+            abe.append(ab)
+    return abe
 
 class MoleculeDict:
     '''Class to hold and extract molecule information'''
@@ -47,6 +99,47 @@ class MoleculeDict:
                         for b in bondIndex:
                             self.bonds[b] = 1.5
 
+    def lookUpSpecial(self, mol2, oneH:bool):
+        abe = get_atom_bond_xml()
+    
+        NOTSET = -666
+        # Check whether we have any of those special cases.
+        for i in range(len(abe)):
+            # Make RDKit matcher for our pattern
+            pattern = Chem.MolFromSmarts(abe[i]["smarts"])
+            if mol2.HasSubstructMatch(pattern):
+                # Loop over all matches, there may be more than one, e.g.
+                # a compound with two carboxylic groups.
+                # https://www.rdkit.org/docs/GettingStartedInPython.html
+                for matchPat in mol2.GetSubstructMatches(pattern):
+                    mapAtoms = [NOTSET]*len(self.atoms)
+                    if len(abe[i][atomtypes]) == 1:
+                        mapAtoms[matchPat[0]] = 0
+                    else:
+                        print(f"{matchPat}")
+                        for k in range(len(matchPat[0])):
+                            mapAtoms[matchPat[k]] = k
+
+                    # Update atom types
+                    for j in range(len(self.atoms)):
+                        if not mapAtoms[j] == NOTSET:
+                            atype = abe[i][atomtypes][mapAtoms[j]]
+                            isH   = atype["atomnumber"] == 1
+
+                            if not (oneH and isH):
+                                self.atoms[j]["obtype"] = atype["name"]
+
+                    # Now fix the bonds
+                    for b in self.bonds:
+                        ai = mapAtoms[b[0]-1]
+                        aj = mapAtoms[b[1]-1]
+                        if not (ai == NOTSET and aj == NOTSET):
+                            for ab in abe[i][bondtypes]:
+                                if ((ab.ai == ai and ab.aj == aj) or
+                                    (ab.ai == aj and ab.aj == ai)):
+                                    self.bonds[b] = ab.order
+                                    break;
+
     def analyse(self, mol, molname:str, charge=None)->bool:
         self.title      = molname
         self.mol_weight = 0
@@ -56,7 +149,12 @@ class MoleculeDict:
             self.charge     = charge
         if self.charge != Chem.GetFormalCharge(mol):
             print(f"Warning: user passed charge {charge} for {molname} but RDKit says charge is {Chem.GetFormalCharge(mol)}")
-        self.inchi      = Chem.rdinchi.MolToInchi(mol)
+        # Returns a tuple and we need the first element
+        myinchi         = Chem.rdinchi.MolToInchi(mol)
+        if len(myinchi) > 0:
+            self.inchi = myinchi[0]
+        else:
+            self.inchi = "N/A"
         self.mult       = 1
         coords          = mol.GetConformer().GetPositions()
         # First do the atoms
@@ -93,8 +191,11 @@ class MoleculeDict:
             order = get_order(str(bb.GetBondType()))
             if self.verbose:
                 print("Bond %d from %d to %d order %s" % ( ii, ai, aj, order ) )
-            self.bonds[(ai, aj)] = order
+            self.bonds[(ai+1, aj+1)] = order
         self.check_bondorder()
+
+        # Finally, look for special cases
+        self.lookUpSpecial(mol, False)
 
         return True
 
@@ -110,7 +211,7 @@ class MoleculeDict:
         elif fileformat == "xyz":
             raw_mol = Chem.MolFromXYZFile(filename)
             m = Chem.Mol(raw_mol)
-            Chem.DetermineBonds(m)
+            rdDetermineBonds.DetermineBonds(m)
         elif fileformat == "pdb":
             m = Chem.MolFromPDBFile(filename, removeHs=False)
         else:
