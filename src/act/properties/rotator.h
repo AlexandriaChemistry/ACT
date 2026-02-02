@@ -38,6 +38,7 @@
 #include <vector>
 
 #include "act/statistics/statistics.h"
+#include "gromacs/math/vec.h"
 
 namespace alexandria
 {

@@ -36,8 +36,8 @@
 #include <cmath>
 #include <cstdlib>
 
-#include "act/alexandria/rotator.h"
 #include "act/molprop/molprop_xml.h"
+#include "act/properties/rotator.h"
 #include "act/utility/memory_check.h"
 #include "act/utility/stringutil.h"
 #include "external/quasirandom_sequences/sobol.h"

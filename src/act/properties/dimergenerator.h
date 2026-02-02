@@ -38,9 +38,9 @@
 #include <vector>
 
 #include "act/alexandria/actmol.h"
-#include "act/alexandria/rotator.h"
 #include "act/forces/forcecomputer.h"
 #include "act/forcefield/forcefield.h"
+#include "act/properties/rotator.h"
 #include "act/utility/jsontree.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/oenv.h"

@@ -36,8 +36,8 @@
 
 #include <gtest/gtest.h>
 
-#include "act/alexandria/b2data.h"
-#include "act/alexandria/secondvirial.h"
+#include "act/properties/b2data.h"
+#include "act/properties/secondvirial.h"
 #include "gromacs/math/units.h"
 #include "gromacs/utility/stringutil.h"
 
