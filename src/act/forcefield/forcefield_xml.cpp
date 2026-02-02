@@ -43,10 +43,10 @@
 #include <libxml/parser.h>
 #include <libxml/tree.h>
 
-#include "act/forcefield/ffutil.h"
 #include "act/forcefield/forcefield.h"
 #include "act/forcefield/forcefield_parameter.h"
 #include "act/forcefield/forcefield_parameterlist.h"
+#include "act/forcefield/generate_dependent.h"
 #include "act/forcefield/symcharges.h"
 #include "act/utility/xml_util.h"
 #include "gromacs/utility/cstringutil.h"
