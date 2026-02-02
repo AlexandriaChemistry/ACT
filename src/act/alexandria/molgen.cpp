@@ -45,7 +45,6 @@
 #include "act/basics/msg_handler.h"
 #include "act/forcefield/forcefield.h"
 #include "act/forcefield/forcefield_xml.h"
-#include "act/forces/combinationrules.h"
 #include "act/import/compound_reader.h"
 #include "act/molprop/molprop_util.h"
 #include "act/molprop/molprop_xml.h"

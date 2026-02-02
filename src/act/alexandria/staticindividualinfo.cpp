@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2025
+ * Copyright (C) 2014-2026
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -35,20 +35,18 @@
 
 #include "staticindividualinfo.h"
 
+#include <sys/types.h>
+#include <sys/stat.h>
+
 #include <algorithm>
 #include <filesystem>
 
-#include "act/forces/combinationrules.h"
 #include "act/ga/genome.h"
 #include "act/utility/memory_check.h"
 #include "act/forcefield/ffutil.h"
 #include "act/forcefield/forcefield_xml.h"
-
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/textwriter.h"
-
-#include <sys/types.h>
-#include <sys/stat.h>
 
 namespace alexandria
 {

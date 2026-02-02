@@ -40,6 +40,7 @@ gmx_add_unit_test(
     ${exename}
     # files with code for tests
     checksum_test.cpp
+    combinationRuleTest.cpp
     forcefield_parameter_test.cpp
     forcefield_parameterlist_test.cpp
     forcefield_test.cpp

@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2023-2025
+ * Copyright (C) 2023-2026
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -40,8 +40,8 @@
 #include <vector>
 
 #include "act/basics/interactiontype.h"
+#include "act/forcefield/combinationrules.h"
 #include "act/forcefield/forcefield_parametername.h"
-#include "act/forces/combinationrules.h"
 #include "act/utility/stringutil.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/utility/fatalerror.h"

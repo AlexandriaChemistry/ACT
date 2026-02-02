@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2025
+ * Copyright (C) 2014-2026
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -29,7 +29,6 @@
 
 #include "act/forcefield/forcefield.h"
 #include "act/forcefield/forcefield_parametername.h"
-#include "act/forces/combinationrules.h"
 
 namespace alexandria
 {
