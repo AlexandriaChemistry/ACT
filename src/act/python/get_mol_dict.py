@@ -83,22 +83,6 @@ class MoleculeDict:
         self.verbose  = verbose
         self.charge   = 0
 
-    def check_bondorder(self):
-        # TODO: do we need to implement more stuff to use the atom_bond.xml info?
-        my_pairs = { "no": "on", "cm": "om", "p5": "om", "s6": "om",
-                     "py": "om", "s3": "om", "cz": "n", "s4": "om"  }
-        for mp in my_pairs.keys():
-            for i in range(len(self.atoms)):
-                if mp == self.atoms[i]["obtype"]:
-                    bondIndex = []
-                    for (ai,aj) in self.bonds.keys():
-                        if ((i == ai and my_pairs[mp] == self.atoms[aj]["obtype"]) or
-                            (i == aj and my_pairs[mp] == self.atoms[ai]["obtype"])):
-                            bondIndex.append((ai, aj))
-                    if len(bondIndex) >= 2:
-                        for b in bondIndex:
-                            self.bonds[b] = 1.5
-
     def lookUpSpecial(self, mol2, oneH:bool):
         abe = get_atom_bond_xml()
 
@@ -192,7 +176,6 @@ class MoleculeDict:
             if self.verbose:
                 print("Bond %d from %d to %d order %s" % ( ii, ai, aj, order ) )
             self.bonds[(ai+1, aj+1)] = order
-        self.check_bondorder()
 
         # Finally, look for special cases
         self.lookUpSpecial(mol, False)
