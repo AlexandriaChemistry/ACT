@@ -35,7 +35,7 @@
 
 #include <gtest/gtest.h>
 
-#include "act/forces/combinationrules.h"
+#include "act/forcefield/combinationrules.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "testutils/cmdlinetest.h"

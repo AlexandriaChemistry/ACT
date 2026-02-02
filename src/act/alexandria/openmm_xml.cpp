@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2021-2025
+ * Copyright (C) 2021-2026
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -56,7 +56,6 @@
 #include "act/forcefield/forcefield_parameterlist.h"
 #include "act/forcefield/forcefield_parametername.h"
 #include "act/forcefield/potential.h"
-#include "act/forces/combinationrules.h"
 #include "act/molprop/molprop_util.h"
 #include "act/utility/stringutil.h"
 #include "act/utility/xml_util.h"

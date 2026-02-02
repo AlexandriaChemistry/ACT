@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2020-2025
+ * Copyright (C) 2020-2026
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -41,9 +41,9 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/stringutil.h"
 
+#include "act/forcefield/combinationrules.h"
 #include "act/forcefield/forcefield_parameter.h"
 #include "act/forcefield/potential.h"
-#include "act/forces/combinationrules.h"
 #include "act/basics/identifier.h"
 #include "act/basics/interactiontype.h"
 
