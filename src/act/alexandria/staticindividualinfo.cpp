@@ -35,16 +35,13 @@
 
 #include "staticindividualinfo.h"
 
-#include <sys/types.h>
-#include <sys/stat.h>
-
 #include <algorithm>
 #include <filesystem>
 
 #include "act/ga/genome.h"
 #include "act/utility/memory_check.h"
-#include "act/forcefield/ffutil.h"
 #include "act/forcefield/forcefield_xml.h"
+#include "act/forcefield/generate_dependent.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/textwriter.h"
 
