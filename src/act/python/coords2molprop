@@ -132,7 +132,7 @@ def xyz2energy(infile:str):
                 return None, None
     return epot, "kJ/mol"
     
-def read_xyz(args, infile:str, filetype:str, g2a:GaffToAlexandria, mp:Molprop, addBasics:bool, md:MoleculeDict):
+def read_xyz(args, infile:str, filetype:str, mp:Molprop, addBasics:bool, md:MoleculeDict):
     personnummer = ("%s#%s" % ( args.nameA, args.nameB ) )
     useForces    = False
     exper = Experiment("Theory", args.reference, args.program, args.method, args.basis,
@@ -161,8 +161,8 @@ def read_xyz(args, infile:str, filetype:str, g2a:GaffToAlexandria, mp:Molprop, a
     weightB = 0
     mass  = "mass"
     resnr = "resnr"
-    for atom in md.atoms:
-        alextype = g2a.rename(md.atoms[atom]["atomtype"])
+    for atom in md["atoms"]:
+        alextype = md["atoms"][atom]["obtype"]
         exper.add_atom(md.atoms[atom]["atomtype"],
                        alextype, i, "pm",
                        100*md.atoms[i]["X"],
@@ -211,7 +211,7 @@ def read_xyz(args, infile:str, filetype:str, g2a:GaffToAlexandria, mp:Molprop, a
         del Afrag
         del Bfrag
         
-def read_file(args, g2a, mp:Molprop, infile:str, addBasics:bool):
+def read_file(args, mp:Molprop, infile:str, addBasics:bool):
     # Create a molecule reader
     md = MoleculeDict()
     filetype = infile[-3:]
@@ -219,9 +219,9 @@ def read_file(args, g2a, mp:Molprop, infile:str, addBasics:bool):
         print("Could not read file %s" % infile)
         return
     #if filetype == "pdb":
-    #    read_pdb(args, infile, g2a, mp, addBasics, md)
+    #    read_pdb(args, infile, mp, addBasics, md)
     #elif filetype == "xyz":
-    read_xyz(args, infile, filetype, g2a, mp, addBasics, md)
+    read_xyz(args, infile, filetype, mp, addBasics, md)
     #else:
     #    sys.exit("Don't know how to read a %s file" % filetype)
 
@@ -233,13 +233,12 @@ if __name__ == "__main__":
 
     molprops = Molprops()
     molprops.open(args.outfile)
-    g2a      = GaffToAlexandria()
 
     molname   = ("%s#%s" % ( args.nameA, args.nameB ) )
     mp        = Molprop(molname)
     addBasics = True
     for pdb in args.infile:
-        read_file(args, g2a, mp, pdb, addBasics)
+        read_file(args, mp, pdb, addBasics)
         addBasics = False
     molprops.add_molecule(mp, True)
     molprops.close()

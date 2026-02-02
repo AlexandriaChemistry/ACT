@@ -49,7 +49,7 @@ def get_atom_bond_xml()->list:
             atypes = abtype[atomtypes]
             if isinstance(atypes[atomtype], list):
                 for atp in atypes[atomtype]:
-                    if verbose:
+                    if debug:
                         print(f"{ab['name']} {atp}")
                     ab[atomtypes].append({ "index": atp["@index"],
                                            "name": atp["@name"],
@@ -122,7 +122,7 @@ class MoleculeDict:
                                 if ((ab.ai == ai and ab.aj == aj) or
                                     (ab.ai == aj and ab.aj == ai)):
                                     self.bonds[b] = ab.order
-                                    break;
+                                    break
 
     def analyse(self, mol, molname:str, charge=None)->bool:
         self.title      = molname
