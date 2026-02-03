@@ -78,7 +78,9 @@ int simulate(int argc, char *argv[])
         "During minimization a user select group of atoms can be frozen.",
         "To do so, supply an index file with atom numbers (first atom is 1)",
         "and numbering should disregard shells and virtual sites if present",
-        "in the model."
+        "in the model.[PAR]",
+        "To obtain information on the used model, the final structure can be",
+        "store as a molprop file."
     };
 
     std::vector<t_filenm>     fnm = {
@@ -86,7 +88,8 @@ int simulate(int argc, char *argv[])
         { efPDB, "-o",       "trajectory", ffWRITE },
         { efSTO, "-c",       "confout",    ffOPTWR },
         { efXVG, "-e",       "energy",     ffWRITE },
-        { efNDX, "-freeze",  "freeze",     ffOPTRD }
+        { efNDX, "-freeze",  "freeze",     ffOPTRD },
+        { efXML, "-omp",     "molprop",    ffOPTWR }
     };
     gmx_output_env_t         *oenv;
     double                    shellToler = 1e-6;
@@ -318,6 +321,14 @@ int simulate(int argc, char *argv[])
             matrix box = { { 2, 0, 0 }, { 0, 2, 0 }, { 0, 0, 2 } };
             actmol.PrintConformation(confout, xmin, sch.writeShells(), box);
         }
+    }
+    auto omp = opt2fn_null("-omp", fnm.size(),fnm.data());
+    if (omp)
+    {
+        std::vector<MolProp> mpt;
+        // We cannot use the actmol after this move command.
+        mpt.push_back(std::move(*actmol.molProp()));
+        MolPropWrite(omp, mpt, false);
     }
 
     auto imm = ACTMessage::OK;
