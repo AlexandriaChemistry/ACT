@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2022-2024
+ * Copyright (C) 2022-2026
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -30,13 +30,13 @@
  * Implements part of the alexandria program.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
-#include "dimergenerator.h"
+#include "rotator.h"
 
 #include <cctype>
 #include <cmath>
 #include <cstdlib>
 
-#include "act/alexandria/rotator.h"
+#include "act/properties/dimergenerator.h"
 #include "act/utility/memory_check.h"
 #include "act/utility/stringutil.h"
 #include "external/quasirandom_sequences/sobol.h"

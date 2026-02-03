@@ -50,7 +50,7 @@
 #include <random>
 
 #include "act/alexandria/pdbwriter.h"
-#include "act/alexandria/velocityhandler.h"
+#include "act/properties/velocityhandler.h"
 #include "act/molprop/molpropobservable.h"
 #include "act/utility/units.h"
 #include "external/stlbfgs/stlbfgs.h"

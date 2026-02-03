@@ -37,7 +37,6 @@
 
 #include "act/alexandria/actmol.h"
 #include "act/alexandria/alex_modules.h"
-#include "act/alexandria/b2data.h"
 #include "act/alexandria/confighandler.h"
 #include "act/alexandria/molhandler.h"
 #include "act/alexandria/princ.h"
@@ -48,6 +47,7 @@
 #include "act/import/import.h"
 #include "act/molprop/molprop_util.h"
 #include "act/molprop/molprop_xml.h"
+#include "act/properties/b2data.h"
 #include "act/utility/jsontree.h"
 #include "act/utility/memory_check.h"
 #include "act/utility/stringutil.h"

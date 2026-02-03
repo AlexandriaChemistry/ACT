@@ -40,7 +40,7 @@
 
 #include <vector>
 
-#include "topology.h"
+#include "act/alexandria/topology.h"
 
 namespace gmx
 {

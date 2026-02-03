@@ -38,37 +38,29 @@ target_sources(actLib
            alex_modules.cpp
            allbondeds.cpp
            analyze.cpp
-           b2data.cpp
            bayes.cpp
            confighandler.cpp
            devcomputer.cpp
-           dimergenerator.cpp
            dissociation_energy.cpp
            fragmenthandler.cpp
            gentop.cpp
            geometry_ff.cpp
            gromacs_top.cpp
            mcmcmutator.cpp
-           min_complex.cpp
            molgen.cpp
            molhandler.cpp
            molselect.cpp
-           normalmodes.cpp
            openmm_xml.cpp
            optimizationindex.cpp
            pdbwriter.cpp
            percentmutator.cpp
            princ.cpp
-           rotator.cpp
-           secondvirial.cpp
-           simulate.cpp
            staticindividualinfo.cpp
            symmetrize_charges.cpp
            thermochemistry.cpp
            topology.cpp
            train_ff.cpp
            train_utility.cpp          
-           velocityhandler.cpp
 	)
 	
 add_executable(alexandria alexandria.cpp ${actLib})

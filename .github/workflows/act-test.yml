@@ -52,6 +52,7 @@ jobs:
           ./bin/forcefield-test
           ./bin/import-test
           ./bin/molprop-test
+          ./bin/properties-test
           ./bin/qgen-test
           ./bin/sobol-test
           ./bin/statistics-test

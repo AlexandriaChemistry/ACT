@@ -37,7 +37,7 @@
 
 #include <gtest/gtest.h>
 
-#include "act/alexandria/b2data.h"
+#include "act/properties/b2data.h"
 
 #include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"
