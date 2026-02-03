@@ -452,7 +452,36 @@ static void importFile(MsgHandler                           *msg_handler,
         }
         else if (ext == "pdb")
         {
-            mol2 = RDKit::PDBFileToMol( filenm, true, false, true );
+            // filename, sanitize, removeHs, flavor, proximityBonding
+            mol2 = RDKit::PDBFileToMol( filenm, true, false, true, false );
+            // PDB files may include CONECT records. If present, assign bond orders
+            // from the connectivity; otherwise infer connectivity and bond orders.
+            mol2->updatePropertyCache();
+            if (mol2->getNumBonds() == 0)
+            {
+                if (msg_handler && msg_handler->debug())
+                {
+                    msg_handler->writeDebug("PDB has no bonds; inferring connectivity and bond orders.");
+                }
+                int iqtot = 0;
+                if (userqtot || *qtot != 0)
+                {
+                    iqtot = int(*qtot);
+                }
+                determineBonds(*mol2, false, iqtot);
+            }
+            else
+            {
+                if (msg_handler && msg_handler->debug())
+                {
+                    msg_handler->writeDebug(gmx::formatString("PDB has %u bonds; determining bond orders.",
+                                                                mol2->getNumBonds()));
+                }
+                if (msg_handler && msg_handler->debug())
+                {
+                    msg_handler->writeDebug("PDB has explicit bonds; skipping determineBondOrders().");
+                }
+            }
         }
         else if (ext == "xyz")
         {
