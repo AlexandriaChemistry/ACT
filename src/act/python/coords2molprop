@@ -41,7 +41,7 @@ def parseArguments():
     parser.add_argument("-method", "--method", help="Computational chemistry method, default "+method, type=str, default=method)
     basisset  = "None"
     parser.add_argument("-basis", "--basis", help="Basis set used if relevant, default "+basisset, type=str, default=basisset)
-    program = "GROMACS"
+    program = "ACT"
     parser.add_argument("-program", "--program", help="Software used if relevant, default "+program, type=str, default=program)
 
     return parser.parse_args()
@@ -91,7 +91,7 @@ def generateFormulae(md:MoleculeDict, fragIndex:list)->list:
         elements = []
         coords = []
         j = 0
-        for aaa in md.atoms:
+        for aaa in range(len(md.atoms)):
             atom = md.atoms[aaa]
             if fragIndex[j] == i:
                 elements.append(atom["element"])
@@ -161,13 +161,13 @@ def read_xyz(args, infile:str, filetype:str, mp:Molprop, addBasics:bool, md:Mole
     weightB = 0
     mass  = "mass"
     resnr = "resnr"
-    for atom in md["atoms"]:
-        alextype = md["atoms"][atom]["obtype"]
+    for atom in range(len(md.atoms)):
+        alextype = md.atoms[atom]["obtype"]
         exper.add_atom(md.atoms[atom]["atomtype"],
-                       alextype, i, "pm",
-                       100*md.atoms[i]["X"],
-                       100*md.atoms[i]["Y"],
-                       100*md.atoms[i]["Z"],
+                       alextype, atom+1, "pm",
+                       100*md.atoms[atom]["X"],
+                       100*md.atoms[atom]["Y"],
+                       100*md.atoms[atom]["Z"],
                        "Hartree/Bohr", 0, 0, 0, None)
         if res0 == -1:
             res0 = fragIndex[i-1]

@@ -101,7 +101,7 @@ class MoleculeDict:
                         mapAtoms[matchPat[0]] = 0
                     else:
                         print(f"{matchPat}")
-                        for k in range(len(matchPat[0])):
+                        for k in range(len(matchPat)):
                             mapAtoms[matchPat[k]] = k
 
                     # Update atom types
@@ -117,7 +117,7 @@ class MoleculeDict:
                     for b in self.bonds:
                         ai = mapAtoms[b[0]-1]
                         aj = mapAtoms[b[1]-1]
-                        if not (ai == NOTSET and aj == NOTSET):
+                        if not ai == NOTSET and not aj == NOTSET:
                             for ab in abe[i][bondtypes]:
                                 if ((ab.ai == ai and ab.aj == aj) or
                                     (ab.ai == aj and ab.aj == ai)):
@@ -128,11 +128,15 @@ class MoleculeDict:
         self.title      = molname
         self.mol_weight = 0
         self.numb_atoms = len(mol.GetAtoms())
-        self.formula    = Chem.rdMolDescriptors.CalcMolFormula(mol)
+        try:
+            self.formula    = Chem.rdMolDescriptors.CalcMolFormula(mol)
+        except RuntimeError:
+            print(f"Weird molecule {molname}")
+            self.formula = "N/A"
         if None != charge:
-            self.charge     = charge
-        if self.charge != Chem.GetFormalCharge(mol):
-            print(f"Warning: user passed charge {charge} for {molname} but RDKit says charge is {Chem.GetFormalCharge(mol)}")
+            self.charge = charge
+            if self.charge != Chem.GetFormalCharge(mol):
+                print(f"Warning: user passed charge {charge} for {molname} ({self.formula}) but RDKit says charge is {Chem.GetFormalCharge(mol)}")
         # Returns a tuple and we need the first element
         myinchi         = Chem.rdinchi.MolToInchi(mol)
         if len(myinchi) > 0:
@@ -182,7 +186,7 @@ class MoleculeDict:
 
         return True
 
-    def read(self, filename, fileformat=None, charge=None)->bool:
+    def read(self, filename, fileformat=None, mycharge=None)->bool:
         success = False
         if self.verbose:
             print("Analyzing %s" % filename)
@@ -194,7 +198,16 @@ class MoleculeDict:
         elif fileformat == "xyz":
             raw_mol = Chem.MolFromXYZFile(filename)
             m = Chem.Mol(raw_mol)
-            rdDetermineBonds.DetermineBonds(m)
+            m.UpdatePropertyCache(strict=True)
+            if debug:
+                print("raw_mol #atoms %d mol #atoms %d" % ( len(raw_mol.GetAtoms()), len(m.GetAtoms())))
+            try:
+                rdDetermineBonds.DetermineBonds(m, charge=mycharge)
+            except ValueError:
+                print(f"Problem determining bonds from {filename}")
+                return False
+            if debug:
+                print("With bonds mol #atoms %d" % ( len(m.GetAtoms())))
         elif fileformat == "pdb":
             m = Chem.MolFromPDBFile(filename, removeHs=False)
         else:
@@ -202,10 +215,10 @@ class MoleculeDict:
         if m:
             # TODO remove extension in the correct way
             molname = os.path.basename(os.path.normpath(os.path.splitext(filename)[0]))
-            success = self.analyse(m, molname, charge)
+            success = self.analyse(m, molname, mycharge)
 
         return success
-        
+
     def from_coords_elements(self, elements, coords, charge=None):
         if len(coords) != len(elements):
             print("Inconsistent input: There are %d coordinates but %d elements." % ( len(coords), len(elements) ))

@@ -9,7 +9,7 @@ from get_csv_rows import *
 
 debug = False
 
-def compute_dhform(energyHF:float, atomtypes:list, g2a, ahof,
+def compute_dhform(energyHF:float, atomtypes:list, ahof,
                    leveloftheory:list, charges:list,
                    temperature:float) -> float:
     if len(atomtypes) != len(leveloftheory) or len(atomtypes) != len(charges):
@@ -18,7 +18,7 @@ def compute_dhform(energyHF:float, atomtypes:list, g2a, ahof,
         return 0
     eatom = 0
     for aaa in range(len(atomtypes)):
-        myelem = g2a.get_elem(atomtypes[aaa])
+        myelem = ElementName(atomtypes[aaa])
         ae     = ahof.get_atomization(myelem, leveloftheory[aaa].upper(),
                                       temperature, charges[aaa])
         if None == ae:
