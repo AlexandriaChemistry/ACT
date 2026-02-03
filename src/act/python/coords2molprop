@@ -35,7 +35,7 @@ def parseArguments():
     parser.add_argument("-qb", "--charge_b", help="charge of frag B", type=int, default=0)
 
     parser.add_argument("-v", "--verbose", help="write debug statements", action="store_true")
-    defref = "Maaren2025b"
+    defref = "Spoel2026a"
     parser.add_argument("-ref", "--reference", help="Reference, default "+defref, type=str, default=defref)
     method = "SPC/Fw"
     parser.add_argument("-method", "--method", help="Computational chemistry method, default "+method, type=str, default=method)
@@ -81,7 +81,7 @@ def generateFragments(md:MoleculeDict):
             maxBond     += 1
     return fragIndex
 
-def generateFormulae(md:MoleculeDict, fragIndex:list)->list:
+def generateFormulae(md:MoleculeDict, fragIndex:list, charge:list)->list:
     formula = []
     nfrag = 0
     for i in fragIndex:
@@ -98,7 +98,7 @@ def generateFormulae(md:MoleculeDict, fragIndex:list)->list:
                 coords.append((atom["X"], atom["Y"], atom["Z"]))
             j += 1
         mdX = MoleculeDict()
-        mdX.from_coords_elements(elements, coords)
+        mdX.from_coords_elements(elements, coords, charge[i])
         formula.append(mdX.formula)
 
     return formula
@@ -195,7 +195,7 @@ def read_xyz(args, infile:str, filetype:str, mp:Molprop, addBasics:bool, md:Mole
 
         if args.verbose:
             print("rangeA: %s rangeB: %s" % ( str(rangeA), str(rangeB) ))
-        fff = generateFormulae(md, fragIndex)
+        fff = generateFormulae(md, fragIndex, [args.charge_a, args.charge_b])
         # TODO: add proper formulae and inchi's
         Afrag = Fragment(args.nameA, args.charge_a, 1, 1, rangeA, weightA, fff[0])
         mp.add_fragment(Afrag)

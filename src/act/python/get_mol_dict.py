@@ -198,11 +198,18 @@ class MoleculeDict:
         elif fileformat == "xyz":
             raw_mol = Chem.MolFromXYZFile(filename)
             m = Chem.Mol(raw_mol)
+            # It is a hack to put the net charge on the first
+            # atom. It may break certain compounds
+            #if mycharge != None:
+            #    m.GetAtoms()[0].SetFormalCharge(mycharge)
             m.UpdatePropertyCache(strict=True)
             if debug:
                 print("raw_mol #atoms %d mol #atoms %d" % ( len(raw_mol.GetAtoms()), len(m.GetAtoms())))
             try:
-                rdDetermineBonds.DetermineBonds(m, charge=mycharge)
+                if None == mycharge:
+                    rdDetermineBonds.DetermineBonds(m)
+                else:
+                    rdDetermineBonds.DetermineBonds(m, charge=mycharge)
             except ValueError:
                 print(f"Problem determining bonds from {filename}")
                 return False
@@ -219,6 +226,14 @@ class MoleculeDict:
 
         return success
 
+    def write_pdb(self, filenm:str, elements, coords):
+        with open(filenm, "w") as outf:
+            outf.write("MODEL        1\n")
+            for i in range(len(elements)):
+                outf.write("ATOM      1 %2s   UNK     1    %8.3f%8.3f%8.3f  1.00  0.00          %2s\n" % ( elements[i], coords[i][0], coords[i][1], coords[i][2], elements[i] ) )
+            outf.write("ENDMDL\n")
+            outf.write("TER\n")
+
     def from_coords_elements(self, elements, coords, charge=None):
         if len(coords) != len(elements):
             print("Inconsistent input: There are %d coordinates but %d elements." % ( len(coords), len(elements) ))
@@ -227,27 +242,12 @@ class MoleculeDict:
             print("No coordinates")
             return False
         atomnumber = len(elements)
-        xyzstring = ("%d\nCoordinates\n" % atomnumber)
-        for i in range(len(elements)):
-            if len(coords[i]) != 3:
-                print("coords[%d] has $d elements" % ( i, len(coords[i])))
-                return False
-            for m in range(3):
-                if None == coords[i][m]:
-                    print("Invalid coords {}".format(coords[i]))
-                    return False
-            try:
-                xyzstring += ("%2s%22.3f%22.3f%22.3f\n" % ( elements[i], coords[i][0], coords[i][1], coords[i][2] ))
-            except ValueError:
-                print("Coordinates messed up {}".format(coords[i]))
-                return False
-        success = False
+        success    = False
         with tempfile.TemporaryDirectory() as tmp:
-            path = os.path.join(tmp, 'something.xyz')
+            path = os.path.join(tmp, 'something.pdb')
             # use path
-            with open(path, "w") as outf:
-                outf.write(xyzstring)
-            success = self.read(path, "xyz", charge)
+            self.write_pdb(path, elements, coords)
+            success = self.read(path, "pdb", charge)
             os.unlink(path)
             os.rmdir(tmp)
 
