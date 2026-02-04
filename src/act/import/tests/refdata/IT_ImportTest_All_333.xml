@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="molname">ammonium#formate.pdb</String>
+  <Real Name="qtot">0</Real>
+  <Int Name="ammonium#formate.pdb">7</Int>
+  <Sequence Name="bondorder">
+    <Int Name="Length">7</Int>
+    <String>hn-0 n3-1: 1</String>
+    <String>n3-1 hn-3: 1</String>
+    <String>n3-1 hn-2: 1</String>
+    <String>n3-1 hn-4: 1</String>
+    <String>o3-5 c3-7: 1</String>
+    <String>o3-6 c3-7: 1</String>
+    <String>c3-7 h2-8: 1</String>
+  </Sequence>
+</ReferenceData>

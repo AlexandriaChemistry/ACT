@@ -215,6 +215,15 @@ std::vector<std::tuple<std::string, double>> get_files()
         { "dichloromethane.xyz", 0 },
         { "1,3,5-triazine.xyz", 0 },
         { "trimethylorthoformate.xyz", 0 },
+        { "KBr.sdf", 0 },
+        { "NaCl.sdf", 0 },
+        { "ammonium#formate.pdb", 0 },
+        //{ "phosphor-hexafluoride.sdf", -1 },
+        //{ "boron-tetrafluoride.sdf", -1 },
+        //{ "phosphor-hexafluoride.xyz", -1 },
+        //{ "boron-tetrafluoride.xyz", -1 },
+        //{ "KBr.xyz", 0 },
+        //{ "NaCl.xyz", 0 }
     };
 }
 
