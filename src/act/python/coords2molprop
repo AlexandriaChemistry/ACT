@@ -98,7 +98,7 @@ def generateFormulae(md:MoleculeDict, fragIndex:list, charge:list)->list:
                 coords.append((atom["X"], atom["Y"], atom["Z"]))
             j += 1
         mdX = MoleculeDict()
-        mdX.from_coords_elements(elements, coords, charge[i])
+        mdX.from_coords_elements("fragment-"+str(i), elements, coords, charge[i])
         formula.append(mdX.formula)
 
     return formula

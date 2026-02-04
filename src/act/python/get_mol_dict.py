@@ -124,7 +124,7 @@ class MoleculeDict:
                                     self.bonds[b] = ab.order
                                     break
 
-    def analyse(self, mol, molname:str, charge=None)->bool:
+    def analyse(self, mol, molname:str, mycharge=None)->bool:
         self.title      = molname
         self.mol_weight = 0
         self.numb_atoms = len(mol.GetAtoms())
@@ -133,10 +133,11 @@ class MoleculeDict:
         except RuntimeError:
             print(f"Weird molecule {molname}")
             self.formula = "N/A"
-        if None != charge:
-            self.charge = charge
-            if self.charge != Chem.GetFormalCharge(mol):
-                print(f"Warning: user passed charge {charge} for {molname} ({self.formula}) but RDKit says charge is {Chem.GetFormalCharge(mol)}")
+        if None != mycharge:
+            self.charge  = mycharge
+            rdkit_charge = Chem.GetFormalCharge(mol)
+            if self.charge != rdkit_charge:
+                print(f"Warning: user passed charge {self.charge} for {molname} ({self.formula}) but RDKit says charge is {rdkit_charge}")
         # Returns a tuple and we need the first element
         myinchi         = Chem.rdinchi.MolToInchi(mol)
         if len(myinchi) > 0:
@@ -150,8 +151,8 @@ class MoleculeDict:
         mw = 0
         for atom in mol.GetAtoms():
             if self.verbose:
-                print("Atom %d atomic number %d valence %s hybridization %s" %
-                      ( ii, atom.GetAtomicNum(),
+                print("Mol %s Atom %d atomic number %d valence %s hybridization %s" %
+                      ( molname, ii, atom.GetAtomicNum(),
                         atom.GetValence(Chem.ValenceType.EXPLICIT),
                         atom.GetHybridization() ) )
             fftype = atom.GetSymbol()
@@ -167,7 +168,7 @@ class MoleculeDict:
             mw += atom.GetMass()
             ii += 1
         if not self.numb_atoms == ii:
-            print(f"self.numb_atoms {self.numb_atoms} != len(self.atoms) {ii}")
+            print(f"self.numb_atoms {self.numb_atoms} != len(self.atoms) {ii} for {molname}")
             return False
 
         self.mol_weight = mw
@@ -186,39 +187,52 @@ class MoleculeDict:
 
         return True
 
-    def read(self, filename, fileformat=None, mycharge=None)->bool:
+    def read(self, molname:str, filename:str,
+             fileformat:str, mycharge:int)->bool:
         success = False
         if self.verbose:
-            print("Analyzing %s" % filename)
+            print("Analyzing %s for %s" % ( filename, molname ))
         m = None
         if None == fileformat:
             fileformat = filename[-3:]
-        if fileformat == "sdf":
-            m = Chem.MolFromMolFile(filename, sanitize=False, removeHs=False)
-        elif fileformat == "xyz":
-            raw_mol = Chem.MolFromXYZFile(filename)
-            m = Chem.Mol(raw_mol)
-            # It is a hack to put the net charge on the first
-            # atom. It may break certain compounds
-            #if mycharge != None:
-            #    m.GetAtoms()[0].SetFormalCharge(mycharge)
-            m.UpdatePropertyCache(strict=True)
-            if debug:
-                print("raw_mol #atoms %d mol #atoms %d" % ( len(raw_mol.GetAtoms()), len(m.GetAtoms())))
+        # First try and read, but do not crash
+        try:
+            if fileformat == "sdf":
+                m = Chem.MolFromMolFile(filename, sanitize=False, removeHs=False)
+            elif fileformat == "xyz":
+                raw_mol = Chem.MolFromXYZFile(filename)
+                m = Chem.Mol(raw_mol)
+                if debug:
+                    print("raw_mol #atoms %d mol #atoms %d" % ( len(raw_mol.GetAtoms()), len(m.GetAtoms())))
+            elif fileformat == "pdb":
+                m = Chem.MolFromPDBFile(filename, removeHs=False)
+        except ValueError:
+            print(f"Problem reading {molname} from {filename}")
+            return False
+        if m == None:
+            print(f"RDKit returned an empty molecule {molname}")
+            return False
+        # We trust the sdf files
+        if fileformat != "sdf":
+            # The routine to DetermineBonds may crash for weird molecules
+            # therefore it is good to try and catch exceptions.
             try:
-                if None == mycharge:
-                    rdDetermineBonds.DetermineBonds(m)
+                # Single ions are a special case
+                matoms = m.GetAtoms()
+                if len(matoms) == 1:
+                    if mycharge != 0:
+                        matoms[0].SetFormalCharge(mycharge)
                 else:
-                    rdDetermineBonds.DetermineBonds(m, charge=mycharge)
+                    # Ion pairs are a special case as well
+                    if not (len(matoms) == 2 and
+                            matoms[0].GetFormalCharge() != 0 and
+                            matoms[1].GetFormalCharge() != 0):
+                        rdDetermineBonds.DetermineBonds(m, charge=mycharge)
+                m.UpdatePropertyCache(strict=True)
             except ValueError:
-                print(f"Problem determining bonds from {filename}")
+                print(f"Problem determining bonds from {molname}")
                 return False
-            if debug:
-                print("With bonds mol #atoms %d" % ( len(m.GetAtoms())))
-        elif fileformat == "pdb":
-            m = Chem.MolFromPDBFile(filename, removeHs=False)
-        else:
-            print("Don't know how to handle %s" % filename)
+
         if m:
             # TODO remove extension in the correct way
             molname = os.path.basename(os.path.normpath(os.path.splitext(filename)[0]))
@@ -226,7 +240,7 @@ class MoleculeDict:
 
         return success
 
-    def write_pdb(self, filenm:str, elements, coords):
+    def write_pdb(self, filenm:str, elements:list, coords:list):
         with open(filenm, "w") as outf:
             outf.write("MODEL        1\n")
             for i in range(len(elements)):
@@ -234,31 +248,33 @@ class MoleculeDict:
             outf.write("ENDMDL\n")
             outf.write("TER\n")
 
-    def from_coords_elements(self, elements, coords, charge=None):
+    def from_coords_elements(self, molname:str, elements:list,
+                             coords:list, mycharge:int):
         if len(coords) != len(elements):
-            print("Inconsistent input: There are %d coordinates but %d elements." % ( len(coords), len(elements) ))
+            print("Inconsistent input: There are %d coordinates but %d elements for %s." % ( len(coords), len(elements), molname ))
             return False
         elif len(coords) == 0:
-            print("No coordinates")
+            print("No coordinates for %s" % molname)
             return False
         atomnumber = len(elements)
         success    = False
+        self.atoms = []
         with tempfile.TemporaryDirectory() as tmp:
-            path = os.path.join(tmp, 'something.pdb')
+            path = os.path.join(tmp, f'mol-{molname}.pdb')
             # use path
             self.write_pdb(path, elements, coords)
-            success = self.read(path, "pdb", charge)
+            success = self.read(molname, path, "pdb", mycharge)
             os.unlink(path)
             os.rmdir(tmp)
 
         return success
         
-    def from_smiles(self, smiles:str, addH:bool, charge=None):
+    def from_smiles(self, smiles:str, addH:bool, mycharge:int):
         if self.verbose:
             print("Analyzing %s" % smiles)
         m  = Chem.MolFromSmiles(smiles)
         if addH:
             m2 = Chem.AddHs(m)
-            return analyse(m2, smiles, charge)
+            return analyse(m2, smiles, mycharge)
         else:
-            return analyse(m, smiles, charge)
+            return analyse(m, smiles, mycharge)
