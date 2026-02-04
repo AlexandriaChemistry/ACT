@@ -1,0 +1,25 @@
+OPT/boron-tetrafluoride/boron-tetrafluoride3-opt.log.gz
+ OpenBabel07261715143D
+Gaussian 03 #P B3LYP/gen Int(Grid=Ultrafine) maxdisk=40GB SCF(Save,MaxCycle=100)
+  5  4  0  0  0  0  0  0  0  0999 V2000
+   -0.4706    1.3310    0.0000 F   0  0  0  0  0  0  0  0  0  0  0  0
+   -0.0001    0.0001    0.0000 B   0  5  0  0  0  0  0  0  0  0  0  0
+    1.4118    0.0001    0.0000 F   0  0  0  0  0  0  0  0  0  0  0  0
+   -0.4706   -0.6656    1.1526 F   0  0  0  0  0  0  0  0  0  0  0  0
+   -0.4706   -0.6656   -1.1526 F   0  0  0  0  0  0  0  0  0  0  0  0
+  1  2  1  0  0  0  0
+  2  3  1  0  0  0  0
+  2  4  1  0  0  0  0
+  5  2  1  0  0  0  0
+M  CHG  1   2  -1
+M  END
+>  <program>
+Gaussian 03, Revision D.01
+
+>  <basis>
+gen
+
+>  <method>
+B3LYP
+
+$$$$
