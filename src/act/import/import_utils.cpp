@@ -462,12 +462,12 @@ void writeAtomBondtypeDB(MsgHandler                                      *msghan
     xmlDocPtr   doc;
     xmlDtdPtr   dtd;
     xmlNodePtr  myroot;
-    xmlChar    *libdtdname, *dtdname, *gmx;
+    xmlChar    *libdtdname, *dtdname, *toplevel;
 
-    gmx        = (xmlChar *) "AtomBondtype";
+    fillMaps();
+    toplevel   = (xmlChar *) rmap[AtomBondtypeXml::ABTYPES].c_str();
     dtdname    = (xmlChar *) "atombondDB.dtd";
     libdtdname = dtdname;
-    fillMaps();
     if ((doc = xmlNewDoc((xmlChar *)"1.0")) == nullptr)
     {
         msghandler->msg(ACTStatus::Error, gmx::formatString("Creating XML document %s", filenm.c_str()));
@@ -478,7 +478,7 @@ void writeAtomBondtypeDB(MsgHandler                                      *msghan
         msghandler->msg(ACTStatus::Error, gmx::formatString("Creating XML DTD %s", filenm.c_str()));
     }
 
-    if ((myroot = xmlNewDocNode(doc, nullptr, gmx, nullptr)) == nullptr)
+    if ((myroot = xmlNewDocNode(doc, nullptr, toplevel, nullptr)) == nullptr)
     {
         msghandler->msg(ACTStatus::Error, gmx::formatString("Creating root element for %s", filenm.c_str()));
     }
