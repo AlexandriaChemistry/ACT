@@ -12,19 +12,6 @@
       <bondtype ai="0" aj="2" order="1.5"/>
     </bondtypes>
   </atombondtype>
-  <atombondtype name="formate" smarts="[#8-]-[#6](=[#8])-[H]" charge="-1" multiplicity="1">
-    <atomtypes>
-      <atomtype index="0" name="o2" atomnumber="8"/>
-      <atomtype index="1" name="c2" atomnumber="6"/>
-      <atomtype index="2" name="o2" atomnumber="8"/>
-      <atomtype index="3" name="h2" atomnumber="1"/>
-    </atomtypes>
-    <bondtypes>
-      <bondtype ai="0" aj="1" order="1.5"/>
-      <bondtype ai="1" aj="2" order="1.5"/>
-      <bondtype ai="1" aj="3" order="1"/>
-    </bondtypes>
-  </atombondtype>
   <atombondtype name="sulfate" smarts="[#16](=[#8])(=[#8])(-[#8-])-[#8-]" charge="-2" multiplicity="1">
     <atomtypes>
       <atomtype index="0" name="s3" atomnumber="16"/>
