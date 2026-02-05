@@ -6,23 +6,23 @@
   <Int Name="diethyl-sulfate-3-oep.log.pdb">18</Int>
   <Sequence Name="bondorder">
     <Int Name="Length">18</Int>
-    <String>c3-0 hc-8: 1</String>
-    <String>c3-0 c3-1: 1</String>
-    <String>c3-0 hc-7: 1</String>
-    <String>c3-0 hc-9: 1</String>
-    <String>c3-1 h1-10: 1</String>
-    <String>c3-1 o3-2: 1</String>
-    <String>c3-1 h1-11: 1</String>
-    <String>o3-2 s3-3: 1</String>
-    <String>s3-3 o2-5: 2</String>
-    <String>s3-3 o3-4: 1</String>
-    <String>s3-3 o2-6: 2</String>
-    <String>o3-4 c3-12: 1</String>
-    <String>c3-12 h1-15: 1</String>
-    <String>c3-12 c3-13: 1</String>
-    <String>c3-12 h1-14: 1</String>
-    <String>c3-13 hc-17: 1</String>
-    <String>c3-13 hc-16: 1</String>
-    <String>c3-13 hc-18: 1</String>
+    <String>c3-1 c3-0: 1</String>
+    <String>o3-2 c3-1: 1</String>
+    <String>s3-3 o3-2: 1</String>
+    <String>o3-4 s3-3: 1</String>
+    <String>o2-5 s3-3: 2</String>
+    <String>o2-6 s3-3: 2</String>
+    <String>hc-7 c3-0: 1</String>
+    <String>hc-8 c3-0: 1</String>
+    <String>hc-9 c3-0: 1</String>
+    <String>h1-10 c3-1: 1</String>
+    <String>h1-11 c3-1: 1</String>
+    <String>c3-12 o3-4: 1</String>
+    <String>c3-13 c3-12: 1</String>
+    <String>h1-14 c3-12: 1</String>
+    <String>h1-15 c3-12: 1</String>
+    <String>hc-16 c3-13: 1</String>
+    <String>hc-17 c3-13: 1</String>
+    <String>hc-18 c3-13: 1</String>
   </Sequence>
 </ReferenceData>

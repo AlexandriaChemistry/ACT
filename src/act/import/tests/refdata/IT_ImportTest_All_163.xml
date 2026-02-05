@@ -6,22 +6,22 @@
   <Int Name="glutamate-3-oep.log.pdb">17</Int>
   <Sequence Name="bondorder">
     <Int Name="Length">17</Int>
-    <String>n3-0 hn-12: 1</String>
-    <String>n3-0 c3-1: 1</String>
-    <String>n3-0 hn-11: 1</String>
-    <String>c3-1 h1-13: 1</String>
-    <String>c3-1 c2-2: 1</String>
-    <String>c3-1 c3-4: 1</String>
-    <String>c2-2 o2-9: 2</String>
-    <String>c2-2 o2-3: 1</String>
-    <String>o2-3 ho-10: 1</String>
-    <String>c3-4 c3-5: 1</String>
-    <String>c3-4 hc-14: 1</String>
-    <String>c3-4 hc-15: 1</String>
-    <String>c3-5 hc-17: 1</String>
-    <String>c3-5 c2-6: 1</String>
-    <String>c3-5 hc-16: 1</String>
-    <String>c2-6 o2-8: 2</String>
-    <String>c2-6 o2-7: 1</String>
+    <String>c3-1 n3-0: 1</String>
+    <String>c2-2 c3-1: 1</String>
+    <String>o2-3 c2-2: 1</String>
+    <String>c3-4 c3-1: 1</String>
+    <String>c3-5 c3-4: 1</String>
+    <String>c2-6 c3-5: 1</String>
+    <String>o2-7 c2-6: 1.5</String>
+    <String>o2-8 c2-6: 1.5</String>
+    <String>o2-9 c2-2: 2</String>
+    <String>ho-10 o2-3: 1</String>
+    <String>hn-11 n3-0: 1</String>
+    <String>hn-12 n3-0: 1</String>
+    <String>h1-13 c3-1: 1</String>
+    <String>hc-14 c3-4: 1</String>
+    <String>hc-15 c3-4: 1</String>
+    <String>hc-16 c3-5: 1</String>
+    <String>hc-17 c3-5: 1</String>
   </Sequence>
 </ReferenceData>

@@ -81,11 +81,6 @@ typedef struct
 } AtomBondtypeEntry;
 
 /*! \brief Fetch database of special cases.
- * \return a vector of AtomBondtype structures.
- */
-std::vector<AtomBondtypeEntry> getAtomBondtypeDB();
-
-/*! \brief Fetch database of special cases.
  * \param[in]  msghandler For warnings and errors
  * \param[in]  dbname     Name of the database to read. If empty the default atom_bond.xml will be used.
  * \param[out] abdb       The atom and bond type database
