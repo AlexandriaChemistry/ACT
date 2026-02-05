@@ -126,7 +126,9 @@ void MsgHandler::print(ACTStatus   level,
     }
     if (level <= printLevel_)
     {
-        if (level == ACTStatus::Debug)
+        // If there is a debug textwriter, but not a normal one,
+        // we dump everything to the debug file.
+        if (level == ACTStatus::Debug || (twdebug_ && !tw_))
         {
             writeDebug(mymsg);
         }
