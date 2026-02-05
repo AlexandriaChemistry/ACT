@@ -40,16 +40,22 @@ Conda Environment
 There are multiple ways to fulfill the prerequisites.
 The simplest way that should suffice on a single computer (i.e. not a cluster), is to first install miniconda on your computer, download the ACT conda environment file `Yml`_ and create and activate a new conda environment.::
 
-  conda env create -f ACT.yml
+  conda env create -n ACT
   conda activate ACT
+  conda install librdkit-dev=2025.09.4 libboost-devel=1.86.0 cmake eigen libxml2 
 
-This should install the libraries mentioned above (note: it will take some time!). You still need a C++ compiler but most Linux installations come bundled with the GNU compiler suite (`GCC`_) and for macOS the Xcode package can be downloaded free of charge from `Xcode`_.
+This should install the libraries mentioned above (note: it will take some time!). If you are installing ACT on a high-performance computing cluster, there likely is support for compilers and a MPI library already. If not, then add the *openmpi* package to your conda install line.
+Most Linux installations come bundled with the GNU compiler suite (`GCC`_) and for macOS the Xcode package can be downloaded free of charge from `Xcode`_. If you do not have a compiler, add *gcc* to the conda install line.
+
+For developers, please additionally install these packages::
+
+  conda install doxygen graphviz pygments sphinx sphinxcontrib-bibtex
 
 .. _Yml: https://github.com/dspoel/ACT/blob/main/ACT.yml
 .. _GCC: https://gcc.gnu.org
 .. _Xcode: https://developer.apple.com/xcode/ 
 
-If you are installing ACT in a cluster we recommend to use the cluster-provided compilers and in particular the MPI library since it may be tuned to make optimal use of the communication hardware. High-performance computer centers typically provide compilers libraries using some kind of module system.
+.. attention:: If you are installing ACT in a cluster we recommend to use the cluster-provided compilers and in particular the MPI library since it may be tuned to make optimal use of the communication hardware. High-performance computer centers typically provide compilers libraries using some kind of module system.
 
 ========================
 Running the Installation
