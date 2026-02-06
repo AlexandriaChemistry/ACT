@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2022-2024
+ * Copyright (C) 2022-2024,2026
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -47,7 +47,9 @@ std::string Genome::print(const char *name) const
     out += "]; ";
     for (const auto &pair : fitness_)
     {
-        out += gmx::formatString("fitness_[%s]: %8g; ", iMolSelectName(pair.first), pair.second);
+        out += gmx::formatString("fitness_[%s]: %8g; ",
+                                 iMolSelectName(pair.first).c_str(),
+                                 pair.second);
     }
     out += gmx::formatString("probability_: %8g\n", probability_);
     return out;
@@ -58,7 +60,7 @@ double Genome::fitness(iMolSelect ims) const
     auto ff = fitness_.find(ims);
     if (ff == fitness_.end())
     {
-        GMX_THROW(gmx::InternalError(gmx::formatString("No fitness for data set %s", iMolSelectName(ims)).c_str()));
+        GMX_THROW(gmx::InternalError(gmx::formatString("No fitness for data set %s", iMolSelectName(ims).c_str()).c_str()));
     }
     return ff->second;
 }
