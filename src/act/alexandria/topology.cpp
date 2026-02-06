@@ -1332,7 +1332,7 @@ void Topology::GenerateAtoms(MsgHandler             *msghandler,
                                              mol->getMolname().c_str(),
                                              ci->getMethod().c_str(),
                                              ci->getBasisset().c_str(), atoms_.size(),
-                                             actMessage(imm)).c_str());
+                                             actMessage(imm).c_str()).c_str());
 }
 
 void Topology::build(MsgHandler             *msghandler,

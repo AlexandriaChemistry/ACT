@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria program.
  *
- * Copyright (C) 2025
+ * Copyright (C) 2025,2026
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -70,7 +70,7 @@ class MsgHandlerTest : public gmx::test::CommandLineTestBase
         for(const auto &actm : ACTMessages)
         {
             auto aaa = actMessage(actm.first);
-            if (aaa)
+            if (!aaa.empty())
             {
                 checker_.checkString(aaa, std::to_string(i).c_str());
             }
@@ -89,7 +89,7 @@ class MsgHandlerTest : public gmx::test::CommandLineTestBase
         }
         for(const auto &actm : ACTMessages)
         {
-            checker_.checkInt64(mh.warningCount(actm.first), actMessage(actm.first));
+            checker_.checkInt64(mh.warningCount(actm.first), actMessage(actm.first).c_str());
         }        
     }
 };

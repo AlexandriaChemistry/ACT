@@ -1193,7 +1193,7 @@ size_t MolGen::Read(MsgHandler                          *msghandler,
         for (const auto &imm : imm_count)
         {
             msghandler->write(gmx::formatString("%d molecules - %s.\n", imm.second,
-                                                alexandria::actMessage(imm.first)));
+                                                alexandria::actMessage(imm.first).c_str()));
         }
         if (imm_count.find(ACTMessage::OK) != imm_count.end())
         {
