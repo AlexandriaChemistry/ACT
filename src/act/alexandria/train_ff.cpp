@@ -470,7 +470,7 @@ void OptACM::printGenomeTable(const std::map<iMolSelect, ga::Genome> &genome,
     std::vector<std::string> headerNames{ "CLASS", "NAME" };
     for (const auto &pair : genome)
     {
-        headerNames.push_back(gmx::formatString("BEST (%s)      ", iMolSelectName(pair.first)));
+        headerNames.push_back(gmx::formatString("BEST (%s)      ", iMolSelectName(pair.first).c_str()));
     }
     const std::vector<std::string> tmpHeaderNames{"MIN", "MAX", "MEAN", "STDEV", "MEDIAN" };
     headerNames.insert(headerNames.end(), tmpHeaderNames.begin(), tmpHeaderNames.end());
@@ -614,11 +614,11 @@ bool OptACM::runMaster(bool optimize,
             for (auto it = bestGenome.begin(); it != bestGenome.end(); it++)
             {
                 tw->writeString(it->second.print("Final best genome"));
-                tw->writeStringFormatted("\nChi2 components of the best parameter vector found (for %s):\n", iMolSelectName(it->first));
+                tw->writeStringFormatted("\nChi2 components of the best parameter vector found (for %s):\n", iMolSelectName(it->first).c_str());
                 fitComp_->compute(&msghandler_, &(it->second), it->first);
                 double chi2 = it->second.fitness(it->first);
                 tw->writeStringFormatted("Minimum chi2 for %s %g\n",
-                        iMolSelectName(it->first), chi2);
+                                         iMolSelectName(it->first).c_str(), chi2);
             }
         }
         // Save force field of best individual(s)
@@ -629,7 +629,7 @@ bool OptACM::runMaster(bool optimize,
                 sii_->updateForceField(&msghandler_, changed, pair.second.bases());
                 auto myfilenm = outputFileName_[pair.first];
                 tw->writeStringFormatted("Will save best %s force field to %s\n",
-                                         iMolSelectName(pair.first),
+                                         iMolSelectName(pair.first).c_str(),
                                          myfilenm.c_str());
                 sii_->saveState(true, myfilenm);
             }

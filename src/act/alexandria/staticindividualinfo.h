@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2025
+ * Copyright (C) 2014-2026
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -240,7 +240,7 @@ public:
     const std::map<eRMS, FittingTarget> &fittingTargetsConst(iMolSelect ims) const
     {
         auto tt = targets_.find(ims);
-        GMX_RELEASE_ASSERT(targets_.end() != tt, gmx::formatString("Cannot find selection %s", iMolSelectName(ims)).c_str());
+        GMX_RELEASE_ASSERT(targets_.end() != tt, gmx::formatString("Cannot find selection %s", iMolSelectName(ims).c_str()).c_str());
         return tt->second;
     }
 

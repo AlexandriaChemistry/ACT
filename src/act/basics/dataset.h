@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2022
+ * Copyright (C) 2022,2026
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -50,10 +50,10 @@ enum class iMolSelect {
  * \param[in] ims The data set
  * \return a string
  */
-const char *iMolSelectName(iMolSelect ims);
+const std::string &iMolSelectName(iMolSelect ims);
 
 //! \return map of all names of data sets
-const std::map<iMolSelect, const char *> &iMolSelectNames();
+const std::map<iMolSelect, const std::string> &iMolSelectNames();
 
 /*! \brief Look up data set name
  * \param[in]  name The data set name

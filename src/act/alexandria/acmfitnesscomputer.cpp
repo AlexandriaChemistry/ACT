@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2021-2025
+ * Copyright (C) 2021-2026
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -83,7 +83,7 @@ void ACMFitnessComputer::compute(MsgHandler                *msghandler,
             auto fts = ttt->second;
             if (!fts.empty())
             {
-                msghandler->tw()->writeLineFormatted("Components of training function for %s set\n", iMolSelectName(trgtFit));
+                msghandler->tw()->writeLineFormatted("Components of training function for %s set\n", iMolSelectName(trgtFit).c_str());
                 for (const auto &ft : fts)
                 {
                     auto p = ft.second.info();
@@ -189,13 +189,13 @@ double ACMFitnessComputer::calcDeviation(MsgHandler                 *msghandler,
         }
     }
     msghandler->writeDebug(gmx::formatString("CalcDev Going to compute dataset %s\n",
-                                             iMolSelectName(ims)));
+                                             iMolSelectName(ims).c_str()));
 
     // Gather fitting targets
     std::map<eRMS, FittingTarget> *targets = sii_->fittingTargets(ims);
     if (nullptr == targets)
     {
-        msghandler->writeDebug(gmx::formatString("Cannot find targets for %s\n", iMolSelectName(ims)));
+        msghandler->writeDebug(gmx::formatString("Cannot find targets for %s\n", iMolSelectName(ims).c_str()));
         return 0;
     }
     // Reset the chi2 in FittingTargets for the given dataset in ims
@@ -210,7 +210,7 @@ double ACMFitnessComputer::calcDeviation(MsgHandler                 *msghandler,
     {
         msghandler->writeDebug(gmx::formatString("CalcDev: mol %s dataset %s\n",
                                                  actmol->getMolname().c_str(),
-                                                 iMolSelectName(actmol->datasetType())));
+                                                 iMolSelectName(actmol->datasetType()).c_str()));
         if (ims != actmol->datasetType())
         {
             continue;
@@ -281,7 +281,7 @@ double ACMFitnessComputer::calcDeviation(MsgHandler                 *msghandler,
     if (etot->second.chiSquared() == 0 && ntrain > 0)
     {
         std::string msg = gmx::formatString("Zero %s chi squared for %s - this cannot be correct.\n", 
-                                            iMolSelectName(ims), rmsName(erms));
+                                            iMolSelectName(ims).c_str(), rmsName(erms));
         msg += gmx::formatString("There are %d compounds. Task = %s. Nlocal = %d, ntrain = %d.\n",
                                  ntrain, calcDevName(task), nlocal, ntrain);
         msg += "devComputers: ";

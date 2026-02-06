@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2025
+ * Copyright (C) 2014-2026
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -366,7 +366,7 @@ static void print_corr(const char                    *outfile,
                 int N = i.second.get_npoints();
                 if (N > 0)
                 {
-                    eprnm.push_back(gmx::formatString("%s", ims.second));
+                    eprnm.push_back(gmx::formatString("%s", ims.second.c_str()));
                     lsq.push_back(i.second);
                     haveData = true;
                 }
@@ -404,7 +404,7 @@ static void print_corr(const char                      *outfile,
             int N = qs->second.get_npoints();
             if (N > 0)
             {
-                eprnm.push_back(gmx::formatString("%s", ims.second));
+                eprnm.push_back(gmx::formatString("%s", ims.second.c_str()));
                 lsq.push_back(qs->second);
                 haveData = true;
             }
@@ -1381,7 +1381,7 @@ void TrainForceFieldPrinter::printOutliers(gmx::TextWriter                      
 {
     double epotMax = 1.5*sigma;
     auto   label   = gmx::formatString("%s-%s",
-                                       interactionTypeToString(itype).c_str(), iMolSelectName(ims));
+                                       interactionTypeToString(itype).c_str(), iMolSelectName(ims).c_str());
     tw->writeStringFormatted("\nOverview of %s outliers for %s (Diff > %.3f)\n",
             label.c_str(), qPropertyTypeName(qPropertyType::ACM).c_str(), epotMax);
     tw->writeStringFormatted("----------------------------------\n");
@@ -1428,7 +1428,7 @@ void TrainForceFieldPrinter::printOutliers(gmx::TextWriter                      
     if (noutlier)
     {
         printf("There were %d %s outliers for %s. Check the bottom of the log file\n", noutlier,
-               label.c_str(), iMolSelectName(ims));
+               label.c_str(), iMolSelectName(ims).c_str());
     }
     else
     {
@@ -1541,12 +1541,12 @@ void TrainForceFieldPrinter::print(MsgHandler                  *msghandler,
         {
             auto ims = mol->datasetType();
             tw->writeStringFormatted("\nMolecule %d: Name: %s, Qtot: %d, Multiplicity: %d, MolWt: %g SymmetryNumber: %d Dataset: %s\n", n+1,
-                    mol->getMolname().c_str(),
-                    mol->totalCharge(),
-                    mol->totalMultiplicity(),
-                    mol->totalMass(),
-                    mol->symmetryNumber(),
-                    iMolSelectName(ims));
+                                     mol->getMolname().c_str(),
+                                     mol->totalCharge(),
+                                     mol->totalMultiplicity(),
+                                     mol->totalMass(),
+                                     mol->symmetryNumber(),
+                                     iMolSelectName(ims).c_str());
 
             gmx::RVec vzero = { 0, 0, 0 };
             std::vector<gmx::RVec> forces(mol->atomsConst().size(), vzero);
@@ -1649,7 +1649,7 @@ void TrainForceFieldPrinter::print(MsgHandler                  *msghandler,
     {
         bool header = true;
         
-        tw->writeStringFormatted("\n*** Results for %s data set ***\n", iMolSelectName(ims.first));
+        tw->writeStringFormatted("\n*** Results for %s data set ***\n", iMolSelectName(ims.first).c_str());
         for (auto &i : qPropertyTypes())
         {
             auto qt = i.first;
@@ -1657,7 +1657,7 @@ void TrainForceFieldPrinter::print(MsgHandler                  *msghandler,
             {
                 continue;
             }
-            std::string name = gmx::formatString("%s-%s", qPropertyTypeName(qt).c_str(), ims.second);
+            std::string name = gmx::formatString("%s-%s", qPropertyTypeName(qt).c_str(), ims.second.c_str());
             if (lsq_epot_[ims.first][qt].get_npoints() > 0)
             {
                 print_stats(tw, "Potential energy", "kJ/mol", 1.0, &lsq_epot_[ims.first][qt],
@@ -1772,7 +1772,7 @@ void TrainForceFieldPrinter::print(MsgHandler                  *msghandler,
                 if ((mol->support() != eSupport::No) && (rms > espMax))
                 {
                     tw->writeStringFormatted("%-40s  %12.3f", mol->getMolname().c_str(), rms);
-                    tw->writeStringFormatted("  %s\n", iMolSelectName(mol->datasetType()));
+                    tw->writeStringFormatted("  %s\n", iMolSelectName(mol->datasetType()).c_str());
                     nout++;
                 }
             }
