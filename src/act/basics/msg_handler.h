@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2025
+ * Copyright (C) 2025,2026
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -121,13 +121,13 @@ enum class ACTMessage
         MinimizationFailed
     };
 
-extern std::map<ACTMessage, const char *> ACTMessages;
+extern std::map<ACTMessage, const std::string> ACTMessages;
 
 /*! \brief Return error message corresponding to code
  * \param[in] actm The code
  * \return The corresponding message
  */
-const char *actMessage(ACTMessage actm);
+const std::string &actMessage(ACTMessage actm);
 
 /*! \brief enum to determine how verbose we are going to be
  * Each level includes the previous levels as well
@@ -179,9 +179,9 @@ class MsgHandler
          * \param[in] actm  The message type
          * \param[in] msg   Additional information to provide
          */
-        void print(ACTStatus   level,
-                   ACTMessage  actm,
-                   const char *msg) const;
+        void print(ACTStatus          level,
+                   ACTMessage         actm,
+                   const std::string &msg) const;
 
     public:
         //! Constructor
@@ -224,13 +224,16 @@ class MsgHandler
          * \param[in] actm The message type
          * \param[in] msg  Additional information to provide
          */
-        void fatal(ACTMessage  actm,
-                   const char *msg);
+        void fatal(ACTMessage         actm,
+                   const std::string &msg);
 
         /*! \brief Fatal error message, will throw a fatal error
          * \param[in] msg  Additional information to provide
          */
-        void fatal(const std::string &msg) { fatal(ACTMessage::Silent, msg.c_str()); }
+        void fatal(const std::string &msg)
+        {
+            fatal(ACTMessage::Silent, msg.c_str());
+        }
 
         /*! \brief Message, will only print if verbosity level
          * is at least what has been configure but type will be logged
