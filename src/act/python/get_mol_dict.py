@@ -100,7 +100,8 @@ class MoleculeDict:
                     if len(abe[i][atomtypes]) == 1:
                         mapAtoms[matchPat[0]] = 0
                     else:
-                        print(f"{matchPat}")
+                        if self.verbose:
+                            print(f"{matchPat}")
                         for k in range(len(matchPat)):
                             mapAtoms[matchPat[k]] = k
 
@@ -205,7 +206,10 @@ class MoleculeDict:
                 if debug:
                     print("raw_mol #atoms %d mol #atoms %d" % ( len(raw_mol.GetAtoms()), len(m.GetAtoms())))
             elif fileformat == "pdb":
-                m = Chem.MolFromPDBFile(filename, removeHs=False)
+                try:
+                    m = Chem.MolFromPDBFile(filename, sanitize=True, removeHs=False)
+                except Chem.AtomValenceException:
+                    m = Chem.MolFromPDBFile(filename, sanitize=False, removeHs=False)
         except ValueError:
             print(f"Problem reading {molname} from {filename}")
             return False
@@ -227,8 +231,11 @@ class MoleculeDict:
                     if not (len(matoms) == 2 and
                             matoms[0].GetFormalCharge() != 0 and
                             matoms[1].GetFormalCharge() != 0):
-                        rdDetermineBonds.DetermineBonds(m, charge=mycharge)
-                m.UpdatePropertyCache(strict=True)
+                        rdDetermineBonds.DetermineBonds(m, useHueckel=False, charge=mycharge)
+                try:
+                    m.UpdatePropertyCache(strict=True)
+                except Chem.AtomValenceException:
+                    m.UpdatePropertyCache(strict=False)
             except ValueError:
                 print(f"Problem determining bonds from {molname}")
                 return False
