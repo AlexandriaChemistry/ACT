@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>1.3. Motivation for the ACT &#8212; ACT 1.2b documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=fa44fd50" />
+    <link rel="stylesheet" type="text/css" href="../../_static/classic.css?v=2bf1fcf8" />
+    <link rel="stylesheet" type="text/css" href="../../_static/mystnb.8ecb98da25f57f5357bf6f572d296f466b2cfe2517ffebfabe82451661e28f02.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../_static/togglebutton.css?v=9c3e77be" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sphinx_lesson.css?v=e9df6548" />
+    <link rel="stylesheet" type="text/css" href="../../_static/term_role_formatting.css?v=4194e21c" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sphinx_rtd_theme_ext_color_contrast.css?v=8e8ea19f" />
+    <link rel="stylesheet" type="text/css" href="../../_static/custom_theme.css" />
+    
+    <script src="../../_static/documentation_options.js?v=00cc29cc"></script>
+    <script src="../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../_static/copybutton.js?v=6dbb43f8"></script>
+    <script src="../../_static/minipres.js?v=a0d29692"></script>
+    <script>let toggleHintShow = 'Click to show';</script>
+    <script>let toggleHintHide = 'Click to hide';</script>
+    <script>let toggleOpenOnPrint = 'true';</script>
+    <script src="../../_static/togglebutton.js?v=1ae7504c"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="2. User Manual" href="../userman/header.html" />
+    <link rel="prev" title="1.2. About the Alexandria Chemistry Toolkit" href="about.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../userman/header.html" title="2. User Manual"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="about.html" title="1.2. About the Alexandria Chemistry Toolkit"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">ACT 1.2b documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="preface.html" accesskey="U"><span class="section-number">1. </span>Preface</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href=""><span class="section-number">1.3. </span>Motivation for the ACT</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="motivation-for-the-act">
+<h1><span class="section-number">1.3. </span>Motivation for the ACT<a class="headerlink" href="#motivation-for-the-act" title="Link to this heading">¶</a></h1>
+<p>The fundamental motivation for the development of the ACT are given in these reviews <span id="id1">[<a class="reference internal" href="../references.html#id3" title="Zahedeh Bashardanesh and David van der Spoel. Impact of dispersion coefficient on simulations of proteins and organic liquids. J. Phys. Chem. B., 122:8018-8027, 2018. doi:10.1021/acs.jpcb.8b05770.">BvdS18</a>, <a class="reference internal" href="../references.html#id81" title="Kristian Kříž, Lisa Schmidt, Alfred T. Andersson, Marie-Madeleine Walz, and David van der Spoel. An imbalance in the force: the need for standardised benchmarks for molecular simulation. J. Chem. Inf. Model., 63:412–431, 2023. doi:10.1021/acs.jcim.2c01127.">KvrivzSA+23</a>, <a class="reference internal" href="../references.html#id90" title="Oliver F Lange, David van der Spoel, and Bert L de Groot. Scrutinizing Molecular Mechanics Force Fields on the Submicrosecond Timescale with NMR Data. Biophys. J., 99:647–655, 2010. doi:10.1016/j.bpj.2010.04.062.">LvdSdG10</a>, <a class="reference internal" href="../references.html#id141" title="David van der Spoel. Systematic design of biomolecular force fields. Curr. Opin. Struct. Biol., 67:18-24, 2021. doi:10.1016/j.sbi.2020.08.006.">vdS21</a>, <a class="reference internal" href="../references.html#id142" title="David van der Spoel, Jin Zhang, and Haiyang Zhang. Quantitative predictions from molecular simulations using explicit or implicit interactions. Wiley Interdiscip. Rev.-Comput. Mol. Sci., 12:e1560, 2022. doi:{10.1002/wcms.1560}.">vdSZZ22</a>, <a class="reference internal" href="../references.html#id52" title="Haiyang Zhang, Chunhua Yin, Yang Jiang, and David van der Spoel. Force field benchmark of amino acids: i. hydration and diffusion in different water models. J. Chem. Inf. Model., 58:1037-1052, 2018.">ZYJvdS18</a>, <a class="reference internal" href="../references.html#id126" title="David van der Spoel and Erik Lindahl. Brute-Force Molecular Dynamics Simulations of Villin Headpiece: Comparison with NMR Parameters. J. Phys. Chem. B, 107(40):11178–11187, 2003. doi:10.1021/jp034108n.">vandSpoelL03</a>]</span>.
+Milestones on the way to a new family of physics-based force fields are given below.:</p>
+<ul class="simple">
+<li><p>A long series of benchmarks of force fields <span id="id2">[<a class="reference internal" href="../references.html#id20" title="C Caleman, P J van Maaren, M Hong, J S Hub, L T Costa, and D van der Spoel. Force field benchmark of organic liquids: density, enthalpy of vaporization, heat capacities, surface tension, compressibility, expansion coefficient and dielectric constant. J. Chem. Theory Comput., 8:61–74, 2012. doi:10.1021/ct200731v.">CvMH+12</a>, <a class="reference internal" href="../references.html#id41" title="Nina M. Fischer, Paul J. van Maaren, Jonas C. Ditz, Ahmet Yildirim, and David van der Spoel. Properties of liquids in molecular dynamics simulations with explicit long-range Lennard-Jones interactions. J. Chem. Theory Comput., 11:2938-2944, 2015. doi:10.1021/acs.jctc.5b00190.">FvMD+15</a>, <a class="reference internal" href="../references.html#id62" title="A. Najla Hosseini and David van der Spoel. Simulations of amyloid-forming peptides in the crystal state. Prot. J., 42:192-204, 2023. doi:10.1007/s10930-023-10119-3.">HvdS23</a>, <a class="reference internal" href="../references.html#id85" title="Lisa Schmidt, David van der Spoel, and Marie-Madeleine Walz. Probing phase transitions in organic crystals using atomistic md simulations. ACS Phys Chem Au, 3:84-93, 2023. doi:10.1021/acsphyschemau.2c00045.">SvdSW23</a>, <a class="reference internal" href="../references.html#id138" title="David van der Spoel, Mohammad Mehdi Ghahremanpour, and Justin Lemkul. Small molecule thermochemistry: a tool for empirical force field development. J. Phys. Chem. A, 122:8982-8988, 2018. doi:10.1021/acs.jpca.8b09867.">vdSGL18</a>, <a class="reference internal" href="../references.html#id67" title="Jin Zhang, Badamkhatan Tuguldur, and David van der Spoel. Force field benchmark II: Gibbs energy of solvation of organic molecules in organic liquids. J. Chem. Inf. Model., 55:1192-1201, 2015. doi:10.1021/acs.jcim.5b00106.">ZTvdS15</a>, <a class="reference internal" href="../references.html#id68" title="Jin Zhang, Badamkhatan Tuguldur, and David van der Spoel. Correction to force field benchmark II: Gibbs energy of solvation of organic molecules in organic liquids. J. Chem. Inf. Model., 56:819-820, 2016. doi:10.1021/acs.jcim.6b00081.">ZTvdS16</a>]</span>.</p></li>
+<li><p>Databases of quantum-chemical data produced as part of the Alexandria project: enthalpies of formation and thermochemistry <span id="id3">[<a class="reference internal" href="../references.html#id46" title="Mohammad Mehdi Ghahremanpour, Paul J. van Maaren, Jonas Ditz, Roland Lindh, and David van der Spoel. Large-scale calculations of gas phase thermochemistry: enthalpy of formation, standard entropy and heat capacity. J. Chem. Phys., 145:114305, 2016. doi:10.1063/1.4962627.">GvMD+16</a>]</span> applied to force fields here <span id="id4">[<a class="reference internal" href="../references.html#id138" title="David van der Spoel, Mohammad Mehdi Ghahremanpour, and Justin Lemkul. Small molecule thermochemistry: a tool for empirical force field development. J. Phys. Chem. A, 122:8982-8988, 2018. doi:10.1021/acs.jpca.8b09867.">vdSGL18</a>]</span>.</p></li>
+<li><p>The Alexandria Library with more quantum-chemistry data <span id="id5">[<a class="reference internal" href="../references.html#id47" title="Mohammad Mehdi Ghahremanpour, Paul J. van Maaren, and David van der Spoel. Alexandria library [data set]. Zenodo. 2017. URL: https://dx.doi.org/10.5281/zenodo.1004711.">GvMvdS17</a>, <a class="reference internal" href="../references.html#id48" title="Mohammad Mehdi Ghahremanpour, Paul J. van Maaren, and David van der Spoel. The Alexandria library: a quantum chemical database of molecular properties for force field development. Sci. Data, 5:180062, 2018. doi:10.1038/sdata.2018.62.">GvMvdS18</a>]</span>.</p></li>
+<li><p>A phase-transferable force field for alkali halides <span id="id6">[<a class="reference internal" href="../references.html#id159" title="Marie Madeleine Walz, Mohammad M. Ghahremanpour, Paul J. van Maaren, and David van der Spoel. Phase-transferable force field for alkali halides. J. Chem. Theory Comput., 14:5933-5948, 2018. doi:10.1021/acs.jctc.8b00507.">WGvMvdS18</a>]</span> with applications towards prediction of melting points and conductivities for alkali halide liquids and mixtures <span id="id7">[<a class="reference internal" href="../references.html#id162" title="Marie-Madeleine Walz and David van der Spoel. Direct link between structure, dynamics and thermodynamics in molten salts. J. Phys. Chem. C., 123:25596-25602, 2019. doi:10.1021/acs.jpcc.9b07756.">WvdS19a</a>, <a class="reference internal" href="../references.html#id161" title="Marie-Madeleine Walz and David van der Spoel. Systematically improved melting point prediction: a detailed physical simulation model is required. Chem. Comm., 55:12044-12047, 2019. doi:10.1039/C9CC06177K.">WvdS19b</a>, <a class="reference internal" href="../references.html#id163" title="Marie-Madeleine Walz and David van der Spoel. Microscopic origin of conductivity in molten salts unraveled by computer simulations. Commun. Chem., 4(9):1-10, 2021. doi:10.1038/s42004-020-00446-2.">WvdS21</a>, <a class="reference internal" href="../references.html#id160" title="Marie-Madeleine Walz and David van der Spoel. Molten alkali halides - temperature dependence of structure, dynamics and thermodynamics. Phys. Chem. Chem. Phys., 21:8516-18524, 2019. doi:10.1039/C9CP03603B.">WvandSpoel19</a>]</span>.</p></li>
+<li><p>A new potential for treating the angle in linear molecules <span id="id8">[<a class="reference internal" href="../references.html#id140" title="David van der Spoel, Henning Henschel, Paul J. van Maaren, Mohammad M. Ghahremanpour, and Luciano T. Costa. A potential for molecular simulation of compounds with linear moieties. J. Chem. Phys., 153(8):084503, 2020. doi:10.1063/5.0015184.">vdSHvM+20</a>]</span>.</p></li>
+<li><p>New models for noble gases including accurate simulations of the melting point of solid noble gases <span id="id9">[<a class="reference internal" href="../references.html#id82" title="Kristian Kříž, Paul J. van Maaren, and David van der Spoel. Impact of combination rules, level of theory and potential function on the modelling of gas and condensed phase properties of noble gases. J. Chem. Theory Comput., 20:2362-2376, 2024. doi:10.1021/acs.jctc.3c01257.">KvrivzvMvdS24</a>]</span>.</p></li>
+<li><p>Use of symmetry-adapted perturbation theory for a study of exchange around a water molecule <span id="id10">[<a class="reference internal" href="../references.html#id83" title="Kristian Kříž and David van der Spoel. Quantification of anisotropy in exchange and dispersion interactions: a simple model for physics-based force fields. J. Phys. Chem. Lett., 15:9974-9978, 2024. doi:10.1021/acs.jpclett.4c02034.">KvrivzvdS24</a>]</span>.</p></li>
+<li><p>An evaluation of potentials for chemical bonds in molecules <span id="id11">[<a class="reference internal" href="../references.html#id97" title="Paul J. van Maaren and David van der Spoel. Quantitative evaluation of anharmonic bond potentials for molecular simulations. Digit. Discov., 4:824-830, 2025. doi:10.1039/D4DD00344F.">vMvdS25</a>]</span>.</p></li>
+</ul>
+<p>The remainder of this document contains first the User Manual, describing installation and practical usage of the ACT including the properties that can be predicted by the ACT software and Alexandria force fields.</p>
+<p>The second part is the Reference Manual which presents, somewhat rudimentary at the time of writing, the physical foundation of the ACT models and the algorithms for training force fields.</p>
+<p>Happy force field designing!</p>
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+  <div>
+    <h4>Previous topic</h4>
+    <p class="topless"><a href="about.html"
+                          title="previous chapter"><span class="section-number">1.2. </span>About the Alexandria Chemistry Toolkit</a></p>
+  </div>
+  <div>
+    <h4>Next topic</h4>
+    <p class="topless"><a href="../userman/header.html"
+                          title="next chapter"><span class="section-number">2. </span>User Manual</a></p>
+  </div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../../_sources/manual/preface/motivation.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../userman/header.html" title="2. User Manual"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="about.html" title="1.2. About the Alexandria Chemistry Toolkit"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">ACT 1.2b documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="preface.html" ><span class="section-number">1. </span>Preface</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href=""><span class="section-number">1.3. </span>Motivation for the ACT</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2026 The Alexandria Chemistry Initiative.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3.
+    </div>
+  </body>
+</html>

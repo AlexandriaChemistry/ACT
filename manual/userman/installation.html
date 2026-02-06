@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>2.1. Installation of the ACT &#8212; ACT 1.2b documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=fa44fd50" />
+    <link rel="stylesheet" type="text/css" href="../../_static/classic.css?v=2bf1fcf8" />
+    <link rel="stylesheet" type="text/css" href="../../_static/mystnb.8ecb98da25f57f5357bf6f572d296f466b2cfe2517ffebfabe82451661e28f02.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../_static/togglebutton.css?v=9c3e77be" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sphinx_lesson.css?v=e9df6548" />
+    <link rel="stylesheet" type="text/css" href="../../_static/term_role_formatting.css?v=4194e21c" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sphinx_rtd_theme_ext_color_contrast.css?v=8e8ea19f" />
+    <link rel="stylesheet" type="text/css" href="../../_static/custom_theme.css" />
+    
+    <script src="../../_static/documentation_options.js?v=00cc29cc"></script>
+    <script src="../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../_static/copybutton.js?v=6dbb43f8"></script>
+    <script src="../../_static/minipres.js?v=a0d29692"></script>
+    <script>let toggleHintShow = 'Click to show';</script>
+    <script>let toggleHintHide = 'Click to hide';</script>
+    <script>let toggleOpenOnPrint = 'true';</script>
+    <script src="../../_static/togglebutton.js?v=1ae7504c"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="2.2. Using the ACT" href="using.html" />
+    <link rel="prev" title="2. User Manual" href="header.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="using.html" title="2.2. Using the ACT"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="header.html" title="2. User Manual"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">ACT 1.2b documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="header.html" accesskey="U"><span class="section-number">2. </span>User Manual</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href=""><span class="section-number">2.1. </span>Installation of the ACT</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="installation-of-the-act">
+<h1><span class="section-number">2.1. </span>Installation of the ACT<a class="headerlink" href="#installation-of-the-act" title="Link to this heading">¶</a></h1>
+<p>The Alexandria Chemistry Toolkit (ACT) relies on a number of libraries. Even though we tried to keep it to a minimum, some more or less standard libraries are needed. ACT should compile fine on any UNIX (including MacOs) or Linux machine.
+%Most of the libraries can be installed using Anaconda or even Miniconda which has the advantage of running in user-space entirely, that is you do not super-user access to install it.</p>
+<section id="prerequisites">
+<h2><span class="section-number">2.1.1. </span>Prerequisites<a class="headerlink" href="#prerequisites" title="Link to this heading">¶</a></h2>
+<p>The following software packages are required for the ACT to work:</p>
+<ul class="simple">
+<li><p>C and C++ compilers supporting C++20 at least. On Linux a GNU c++ version newer than 13.0 is recommended.</p></li>
+<li><p>Some version of a library that supports the message passing interface (MPI) for parallel programming. A popular version is OpenMPI.</p></li>
+<li><p>The cmake tools (at least version 3.13.0) are needed for compiling the code.</p></li>
+<li><p>For linear algebra operations we use the Eigen library, version 5 or better.</p></li>
+<li><p>The RDKit library (at least version 2025.09.4)</p></li>
+<li><p>The Boost developer library of version 1.86.0 (matching RDKit)</p></li>
+<li><p>The LibXml2 is needed for processing the XML data files used by the ACT.</p></li>
+<li><p>Python, version 3.8 or better, and a number of Python libraries, namely, NumPy, Matplotlib, and PubChemPy.</p></li>
+</ul>
+<p>The following libraries are optional only, but may be useful for developing the ACT:</p>
+<ul class="simple">
+<li><p>The Class Library for Numbers is used in an optional part of the code (Slater-distributed charges <span id="id1">[<a class="reference internal" href="../references.html#id48" title="Mohammad Mehdi Ghahremanpour, Paul J. van Maaren, and David van der Spoel. The Alexandria library: a quantum chemical database of molecular properties for force field development. Sci. Data, 5:180062, 2018. doi:10.1038/sdata.2018.62.">GvMvdS18</a>]</span>) and can be omitted.</p></li>
+<li><p>The SQLite database engine is needed to process experimental data as well as quantum chemistry data from the Alexandria Library <span id="id2">[<a class="reference internal" href="../references.html#id48" title="Mohammad Mehdi Ghahremanpour, Paul J. van Maaren, and David van der Spoel. The Alexandria library: a quantum chemical database of molecular properties for force field development. Sci. Data, 5:180062, 2018. doi:10.1038/sdata.2018.62.">GvMvdS18</a>]</span>, available from <a class="reference external" href="https://doi.org/10.5281/zenodo.1004710">Zenodo</a>.</p></li>
+</ul>
+<p>For developers, the following additional packages are needed:</p>
+<ul class="simple">
+<li><p>doxygen, it is used for generating software documentation,</p></li>
+<li><p>graphviz can be optionally added for generating graphs and tree-structures in the doxygen documentation,</p></li>
+<li><p>pygments, for source code listings,</p></li>
+<li><p>sphinx, which is used for building the manual, and</p></li>
+<li><p>sphinxcontrib-bibtex, for the references.</p></li>
+</ul>
+</section>
+<section id="conda-environment">
+<h2><span class="section-number">2.1.2. </span>Conda Environment<a class="headerlink" href="#conda-environment" title="Link to this heading">¶</a></h2>
+<p>There are multiple ways to fulfill the prerequisites.
+The simplest way that should suffice on a single computer (i.e. not a cluster), is to first install miniconda on your computer, download the ACT conda environment file <a class="reference external" href="https://github.com/dspoel/ACT/blob/main/ACT.yml">Yml</a> and create and activate a new conda environment.:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">conda</span> <span class="n">create</span> <span class="o">-</span><span class="n">n</span> <span class="n">ACT</span>
+<span class="n">conda</span> <span class="n">activate</span> <span class="n">ACT</span>
+<span class="n">conda</span> <span class="n">config</span> <span class="o">--</span><span class="n">add</span> <span class="n">channels</span> <span class="n">anaconda</span>
+<span class="n">conda</span> <span class="n">config</span> <span class="o">--</span><span class="n">add</span> <span class="n">channels</span> <span class="n">conda</span><span class="o">-</span><span class="n">forge</span>
+<span class="n">conda</span> <span class="n">install</span> <span class="n">librdkit</span><span class="o">-</span><span class="n">dev</span><span class="o">=</span><span class="mf">2025.09.4</span> <span class="n">libboost</span><span class="o">-</span><span class="n">devel</span><span class="o">=</span><span class="mf">1.86.0</span> <span class="n">cmake</span> <span class="n">eigen</span><span class="o">=</span><span class="mf">5.0.1</span> <span class="n">libxml2</span> <span class="n">numpy</span> <span class="n">matplotlib</span> <span class="n">pubchempy</span> <span class="n">plotxvg</span> <span class="n">pillow</span>
+</pre></div>
+</div>
+<p>This should install the libraries mentioned above (note: it will take some time!). If you are installing ACT on a high-performance computing cluster, there likely is support for compilers and a MPI library already. If not, then add the <em>openmpi</em> package to your conda install line.
+Most Linux installations come bundled with the GNU compiler suite (<a class="reference external" href="https://gcc.gnu.org">GCC</a>) and for macOS the Xcode package can be downloaded free of charge from <a class="reference external" href="https://developer.apple.com/xcode/">Xcode</a>. If you do not have a compiler, add <em>gcc</em> to the conda install line.</p>
+<p>For developers, please additionally install these packages:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">conda</span> <span class="n">install</span> <span class="n">doxygen</span> <span class="n">graphviz</span> <span class="n">pygments</span> <span class="n">sphinx</span> <span class="n">sphinxcontrib</span><span class="o">-</span><span class="n">bibtex</span>
+</pre></div>
+</div>
+<div class="admonition attention">
+<p class="admonition-title">Attention</p>
+<p>If you are installing ACT in a cluster we recommend to use the cluster-provided compilers and in particular the MPI library since it may be tuned to make optimal use of the communication hardware.</p>
+</div>
+<p>High-performance computer centers typically provide compilers libraries using some kind of module system.</p>
+</section>
+<section id="running-the-installation">
+<h2><span class="section-number">2.1.3. </span>Running the Installation<a class="headerlink" href="#running-the-installation" title="Link to this heading">¶</a></h2>
+<p>Once the prerequisites  are met, the easiest way to get going is to fetch the
+<a class="reference external" href="https://github.com/dspoel/ACT/blob/main/src/act/python/install_act">install_act</a> script to your working directory of choice.
+To fetch the script, once you have clicked on the link, click on the download icon (Fig. <a class="reference internal" href="#fig-download"><span class="std std-ref">Image showing where to click to download the installation script.</span></a>).</p>
+<figure class="align-center" id="fig-download">
+<img alt="../../_images/link.png" src="../../_images/link.png" />
+<figcaption>
+<p><span class="caption-text">Image showing where to click to download the installation script.</span><a class="headerlink" href="#fig-download" title="Link to this image">¶</a></p>
+</figcaption>
+</figure>
+<p>Once you have downloaded the script, start by executing:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">./</span><span class="n">install_act</span> <span class="o">-</span><span class="n">h</span>
+</pre></div>
+</div>
+<p>and studying the options.
+Let’s say you have a four core machine and you want to install first time around, then this command should do the trick:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">./</span><span class="n">install_act</span> <span class="o">-</span><span class="n">ncores</span> <span class="mi">4</span>
+</pre></div>
+</div>
+<p>In the best of worlds, the script will have created a directory under your home catalog, with the name tools.</p>
+<p>In order to start using the software, run the following command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>source $HOME/tools/bin/ACTRC
+</pre></div>
+</div>
+<p>or add it to your .bash_profile (or equivalent, for remote machines) or .bashrc (or equivalent, for local machines), and restart the shell or log in again.
+Then you can run the alexandria executable using:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">alexandria</span> <span class="o">-</span><span class="n">h</span>
+</pre></div>
+</div>
+<p>To make sure you do have the correct commands in your path, please try the command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">which</span> <span class="n">alexandria</span>
+</pre></div>
+</div>
+<p>which should give you something like:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">%</span> <span class="n">which</span> <span class="n">alexandria</span>
+<span class="o">~/</span><span class="n">tools</span><span class="o">/</span><span class="nb">bin</span><span class="o">/</span><span class="n">alexandria</span>
+</pre></div>
+</div>
+</section>
+<section id="testing-the-act">
+<h2><span class="section-number">2.1.4. </span>Testing the ACT<a class="headerlink" href="#testing-the-act" title="Link to this heading">¶</a></h2>
+<p>To start testing, you first want to familiarize yourself with the test set. If the ACT is in your home directory, you can:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">cd</span> <span class="n">ACT</span><span class="o">/</span><span class="n">build_Release_DOUBLE</span>
+</pre></div>
+</div>
+<p>Then you can build the test set using:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">make</span> <span class="n">tests</span>
+</pre></div>
+</div>
+<p>and run it using:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">make</span> <span class="n">test</span>
+</pre></div>
+</div>
+<p>which should give the following output:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Running</span> <span class="n">tests</span><span class="o">...</span>
+<span class="n">Test</span> <span class="n">project</span> <span class="o">/</span><span class="n">Users</span><span class="o">/</span><span class="n">spoel</span><span class="o">/</span><span class="n">GG</span><span class="o">/</span><span class="n">ACT</span><span class="o">/</span><span class="n">build_Release_DOUBLE</span>
+      <span class="n">Start</span>  <span class="mi">1</span><span class="p">:</span> <span class="n">TestUtilsUnitTests</span>
+ <span class="mi">1</span><span class="o">/</span><span class="mi">17</span> <span class="n">Test</span>  <span class="c1">#1: TestUtilsUnitTests ...............   Passed    3.10 sec</span>
+      <span class="n">Start</span>  <span class="mi">2</span><span class="p">:</span> <span class="n">WangBuckinghamTests</span>
+ <span class="mi">2</span><span class="o">/</span><span class="mi">17</span> <span class="n">Test</span>  <span class="c1">#2: WangBuckinghamTests ..............   Passed    0.33 sec</span>
+      <span class="n">Start</span> <span class="mi">16</span><span class="p">:</span> <span class="n">AlexandriaTests</span>
+</pre></div>
+</div>
+<p>(more tests):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="mi">16</span><span class="o">/</span><span class="mi">17</span> <span class="n">Test</span> <span class="c1">#16: AlexandriaTests ..................   Passed    8.80 sec</span>
+      <span class="n">Start</span> <span class="mi">17</span><span class="p">:</span> <span class="n">SobolTests</span>
+<span class="mi">17</span><span class="o">/</span><span class="mi">17</span> <span class="n">Test</span> <span class="c1">#17: SobolTests .......................   Passed    0.16 sec</span>
+
+<span class="mi">100</span><span class="o">%</span> <span class="n">tests</span> <span class="n">passed</span><span class="p">,</span> <span class="mi">0</span> <span class="n">tests</span> <span class="n">failed</span> <span class="n">out</span> <span class="n">of</span> <span class="mi">17</span>
+</pre></div>
+</div>
+<p>You can also run an individual test, like this bin/sobol-test which should give this output:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">[</span><span class="o">==========</span><span class="p">]</span> <span class="n">Running</span> <span class="mi">2</span> <span class="n">tests</span> <span class="kn">from</span> <span class="mi">1</span> <span class="n">test</span> <span class="n">case</span><span class="o">.</span>
+<span class="p">[</span><span class="o">----------</span><span class="p">]</span> <span class="n">Global</span> <span class="n">test</span> <span class="n">environment</span> <span class="nb">set</span><span class="o">-</span><span class="n">up</span><span class="o">.</span>
+<span class="p">[</span><span class="o">----------</span><span class="p">]</span> <span class="mi">2</span> <span class="n">tests</span> <span class="kn">from</span> <span class="nn">SobolTest</span>
+<span class="p">[</span> <span class="n">RUN</span>      <span class="p">]</span> <span class="n">SobolTest</span><span class="o">.</span><span class="n">Test08</span>
+<span class="p">[</span>       <span class="n">OK</span> <span class="p">]</span> <span class="n">SobolTest</span><span class="o">.</span><span class="n">Test08</span> <span class="p">(</span><span class="mi">0</span> <span class="n">ms</span><span class="p">)</span>
+<span class="p">[</span> <span class="n">RUN</span>      <span class="p">]</span> <span class="n">SobolTest</span><span class="o">.</span><span class="n">Test09</span>
+<span class="p">[</span>       <span class="n">OK</span> <span class="p">]</span> <span class="n">SobolTest</span><span class="o">.</span><span class="n">Test09</span> <span class="p">(</span><span class="mi">0</span> <span class="n">ms</span><span class="p">)</span>
+<span class="p">[</span><span class="o">----------</span><span class="p">]</span> <span class="mi">2</span> <span class="n">tests</span> <span class="kn">from</span> <span class="nn">SobolTest</span> <span class="p">(</span><span class="mi">0</span> <span class="n">ms</span> <span class="n">total</span><span class="p">)</span>
+
+<span class="p">[</span><span class="o">----------</span><span class="p">]</span> <span class="n">Global</span> <span class="n">test</span> <span class="n">environment</span> <span class="n">tear</span><span class="o">-</span><span class="n">down</span>
+<span class="p">[</span><span class="o">==========</span><span class="p">]</span> <span class="mi">2</span> <span class="n">tests</span> <span class="kn">from</span> <span class="mi">1</span> <span class="n">test</span> <span class="n">case</span> <span class="n">ran</span><span class="o">.</span> <span class="p">(</span><span class="mi">0</span> <span class="n">ms</span> <span class="n">total</span><span class="p">)</span>
+<span class="p">[</span>  <span class="n">PASSED</span>  <span class="p">]</span> <span class="mi">2</span> <span class="n">tests</span><span class="o">.</span>
+</pre></div>
+</div>
+<p>Note that these tests are run every time a change in the ACT source code is uploaded to github, to prevent errors in the code from being introduced.</p>
+</section>
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+  <div>
+    <h3><a href="../../index.html">Table of Contents</a></h3>
+    <ul>
+<li><a class="reference internal" href="#">2.1. Installation of the ACT</a><ul>
+<li><a class="reference internal" href="#prerequisites">2.1.1. Prerequisites</a></li>
+<li><a class="reference internal" href="#conda-environment">2.1.2. Conda Environment</a></li>
+<li><a class="reference internal" href="#running-the-installation">2.1.3. Running the Installation</a></li>
+<li><a class="reference internal" href="#testing-the-act">2.1.4. Testing the ACT</a></li>
+</ul>
+</li>
+</ul>
+
+  </div>
+  <div>
+    <h4>Previous topic</h4>
+    <p class="topless"><a href="header.html"
+                          title="previous chapter"><span class="section-number">2. </span>User Manual</a></p>
+  </div>
+  <div>
+    <h4>Next topic</h4>
+    <p class="topless"><a href="using.html"
+                          title="next chapter"><span class="section-number">2.2. </span>Using the ACT</a></p>
+  </div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../../_sources/manual/userman/installation.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="using.html" title="2.2. Using the ACT"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="header.html" title="2. User Manual"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">ACT 1.2b documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="header.html" ><span class="section-number">2. </span>User Manual</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href=""><span class="section-number">2.1. </span>Installation of the ACT</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2026 The Alexandria Chemistry Initiative.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3.
+    </div>
+  </body>
+</html>

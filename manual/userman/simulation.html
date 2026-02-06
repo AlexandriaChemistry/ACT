@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>2.3. MD Simulations with Alexandria Force Fields &#8212; ACT 1.2b documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=fa44fd50" />
+    <link rel="stylesheet" type="text/css" href="../../_static/classic.css?v=2bf1fcf8" />
+    <link rel="stylesheet" type="text/css" href="../../_static/mystnb.8ecb98da25f57f5357bf6f572d296f466b2cfe2517ffebfabe82451661e28f02.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../_static/togglebutton.css?v=9c3e77be" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sphinx_lesson.css?v=e9df6548" />
+    <link rel="stylesheet" type="text/css" href="../../_static/term_role_formatting.css?v=4194e21c" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sphinx_rtd_theme_ext_color_contrast.css?v=8e8ea19f" />
+    <link rel="stylesheet" type="text/css" href="../../_static/custom_theme.css" />
+    
+    <script src="../../_static/documentation_options.js?v=00cc29cc"></script>
+    <script src="../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../_static/copybutton.js?v=6dbb43f8"></script>
+    <script src="../../_static/minipres.js?v=a0d29692"></script>
+    <script>let toggleHintShow = 'Click to show';</script>
+    <script>let toggleHintHide = 'Click to hide';</script>
+    <script>let toggleOpenOnPrint = 'true';</script>
+    <script src="../../_static/togglebutton.js?v=1ae7504c"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="2.4. Predicting Molecular Properties" href="properties.html" />
+    <link rel="prev" title="2.2. Using the ACT" href="using.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="properties.html" title="2.4. Predicting Molecular Properties"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="using.html" title="2.2. Using the ACT"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">ACT 1.2b documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="header.html" accesskey="U"><span class="section-number">2. </span>User Manual</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href=""><span class="section-number">2.3. </span>MD Simulations with Alexandria Force Fields</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="md-simulations-with-alexandria-force-fields">
+<span id="sec-simulations"></span><h1><span class="section-number">2.3. </span>MD Simulations with Alexandria Force Fields<a class="headerlink" href="#md-simulations-with-alexandria-force-fields" title="Link to this heading">¶</a></h1>
+<section id="using-act-simulate">
+<h2><span class="section-number">2.3.1. </span>Using ACT simulate<a class="headerlink" href="#using-act-simulate" title="Link to this heading">¶</a></h2>
+<p>The command <em>alexandria simulate</em> will perform a simulation in the gas phase, i.e. without periodic boundary conditions. This obviously limits the usefulness but the OpenMM software can be used for condensed-phase simulations using ACT force fields <span id="id1">[<a class="reference internal" href="../references.html#id82" title="Kristian Kříž, Paul J. van Maaren, and David van der Spoel. Impact of combination rules, level of theory and potential function on the modelling of gas and condensed phase properties of noble gases. J. Chem. Theory Comput., 20:2362-2376, 2024. doi:10.1021/acs.jctc.3c01257.">KvrivzvMvdS24</a>, <a class="reference internal" href="../references.html#id144" title="David van der Spoel, Julián Marrades, Kristian Kříž, A. Najla Hosseini, Alfred T. Nordman, João Paulo Ataide Martins, Marie-Madeleine Walz, Paul J. van Maaren, and Mohammad M. Ghahremanpour. Evolutionary machine learning of physics-based force fields in high-dimensional parameter-space. Digit. Discovery, 4:1925-1935, 2025. doi:10.1039/d5dd00178a.">vandSpoelMKvrivz+25</a>]</span>.
+The <em>alexandria simulate</em> utility is aimed for validation of the potentials, for instance by evaluating whether the total energy is conserved, it can be verified that the force is the derivative of the potential.</p>
+<p>The utility can also be used to minimize the energy of a molecule or small cluster</p>
+<blockquote>
+<div><p>alexandria simulate -minimize -ff actff.xml -f coords.pdb
+-charges mp2.xml -c afterem.pdb -g minimize.log</p>
+</div></blockquote>
+<p>where <em>actff.xml</em> is the force field file, <em>coords.pdb</em> is a structure file (<em>xyz</em> and <em>sdf</em>
+are supported as well). The <em>alexandira -charges mp2.xml</em> indicates a molprop file (database) with monomeric (optimized) structures used for generating charges. The files <em>afterem.pdb</em> and <em>minimize.log</em> are output files.</p>
+</section>
+<section id="the-act-openmm-interface">
+<h2><span class="section-number">2.3.2. </span>The ACT-OpenMM interface<a class="headerlink" href="#the-act-openmm-interface" title="Link to this heading">¶</a></h2>
+<p>The OpenMM <span id="id2">[<a class="reference internal" href="../references.html#id39" title="Peter Eastman, Raimondas Galvelis, Raúl P. Peláez, Charlles R. A. Abreu, Stephen E. Farr, Emilio Gallicchio, Anton Gorenko, Michael M. Henry, Frank Hu, Jing Huang, Andreas Krämer, Julien Michel, Joshua A. Mitchell, Vijay S. Pande, João PGLM Rodrigues, Jaime Rodriguez-Guerra, Andrew C. Simmonett, Sukrit Singh, Jason Swails, Philip Turner, Yuanqing Wang, Ivy Zhang, John D. Chodera, Gianni De Fabritiis, and Thomas E. Markland. Openmm 8: molecular dynamics simulation with machine learning potentials. J. Phys. Chem. B., 128:109-116, 2024. doi:10.1021/acs.jpcb.3c06662.">EGPelaez+24</a>]</span> software in its native form is controlled from Python scripts. This allows users great control over the simulations. OpenMM allows to specify user-defined energy functions, which we use to implement both Gaussian-distributed charges <span id="id3">[<a class="reference internal" href="../references.html#id49" title="Mohammad Mehdi Ghahremanpour, Paul J. van Maaren, Carl Caleman, Geoffrey R. Hutchison, and David van der Spoel. Polarizable drude model with s-type gaussian or slater charge density for general molecular mechanics force fields. J. Chem. Theory Comput., 14:5553-5566, 2018. doi:10.1021/acs.jctc.8b00430.">GvMC+18</a>, <a class="reference internal" href="../references.html#id159" title="Marie Madeleine Walz, Mohammad M. Ghahremanpour, Paul J. van Maaren, and David van der Spoel. Phase-transferable force field for alkali halides. J. Chem. Theory Comput., 14:5933-5948, 2018. doi:10.1021/acs.jctc.8b00507.">WGvMvdS18</a>]</span> and many Van der Waals potentials <span id="id4">[<a class="reference internal" href="../references.html#id82" title="Kristian Kříž, Paul J. van Maaren, and David van der Spoel. Impact of combination rules, level of theory and potential function on the modelling of gas and condensed phase properties of noble gases. J. Chem. Theory Comput., 20:2362-2376, 2024. doi:10.1021/acs.jctc.3c01257.">KvrivzvMvdS24</a>]</span> (see Section <a class="reference internal" href="../refman/energy.html#sec-energy"><span class="std std-ref">Energy Function</span></a>).
+To facilitate this, a special python code was implemented that makes it relatively easy for the user to run simulations and minimization. The first step is to convert an ACT force field file (<em>actff.xml}) to one compatible with OpenMM (*openmmff.xml</em>):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">alexandria</span> <span class="n">gentop</span> <span class="o">-</span><span class="n">ff</span> <span class="n">actff</span><span class="o">.</span><span class="n">xml</span> <span class="o">-</span><span class="n">openmm</span> <span class="n">openmmff</span><span class="o">.</span><span class="n">xml</span>
+<span class="o">-</span><span class="n">charges</span> <span class="n">mp2</span><span class="o">.</span><span class="n">xml</span> <span class="o">-</span><span class="n">db</span> <span class="s2">&quot;water methanol&quot;</span>
+</pre></div>
+</div>
+<p>with two additional arguments. First, flag <em>-charges mp2.xml</em> indicates a molprop file (database) with monomeric (optimized) structures used for generating charges and, second, the flag <em>-db “water methanol”</em> instruct the code to produce an OpenMM topology for those compounds. If one or more of the compounds is not present in the database, a warning will be issued.</p>
+<section id="md-simulations-using-openmm">
+<h3><span class="section-number">2.3.2.1. </span>MD simulations using OpenMM<a class="headerlink" href="#md-simulations-using-openmm" title="Link to this heading">¶</a></h3>
+<p>It is easy to perform simulations based on an Alexandria force field. For this, we rely on the <a class="reference external" href="https://openmm.org/">OpenMM</a> software that you need to install separately. Then you can use the ACT python interface to OpenMM, as in this simple script, that we will call run.py:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="ch">#!/usr/bin/env python3</span>
+
+<span class="kn">from</span> <span class="nn">act_openmm</span> <span class="kn">import</span> <span class="n">ActOpenMMSim</span>
+
+<span class="n">sim</span> <span class="o">=</span> <span class="n">ActOpenMMSim</span><span class="p">(</span><span class="n">pdbfile</span><span class="o">=</span><span class="s2">&quot;file.pdb&quot;</span><span class="p">,</span>
+                   <span class="n">datfile</span><span class="o">=</span><span class="s2">&quot;dimer.dat&quot;</span><span class="p">,</span>
+                   <span class="n">xmlfile</span><span class="o">=</span><span class="s2">&quot;ff.xml&quot;</span><span class="p">,</span>
+                   <span class="n">txtfile</span><span class="o">=</span><span class="s2">&quot;output2.txt&quot;</span><span class="p">,</span>
+                   <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">sim</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+<span class="n">sim</span><span class="o">.</span><span class="n">log_to_xvg</span><span class="p">(</span><span class="s2">&quot;energy.xvg&quot;</span><span class="p">,</span> <span class="p">[</span> <span class="s2">&quot;Potential Energy (kJ/mole)&quot;</span><span class="p">])</span>
+<span class="n">sim</span><span class="o">.</span><span class="n">log_to_xvg</span><span class="p">(</span><span class="s2">&quot;temperature.xvg&quot;</span><span class="p">,</span> <span class="p">[</span> <span class="s2">&quot;Temperature (K)&quot;</span> <span class="p">])</span>
+<span class="n">sim</span><span class="o">.</span><span class="n">log_to_xvg</span><span class="p">(</span><span class="s2">&quot;density.xvg&quot;</span><span class="p">,</span> <span class="p">[</span> <span class="s2">&quot;Density (g/mL)&quot;</span> <span class="p">])</span>
+</pre></div>
+</div>
+<p>Here, we first instantiate an ActOpenMMSim object, and pass it a structure file <em>file.pdb</em>, a simulation parameter file <em>dimer.dat</em> and a force field file <em>ff.xml</em>. We also instruct the code that output should be written to <em>output2.txt</em> and that we want a lot of information in that file.
+Then we can run it, that’s all! The last three lines are for convenience of plotting the results. We can run this script using:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="o">./</span><span class="n">run</span><span class="o">.</span><span class="n">py</span>
+</pre></div>
+</div>
+<p>or submitted to a cluster, preferably with GPUs available.</p>
+</section>
+<section id="energy-minimization-using-openmm">
+<h3><span class="section-number">2.3.2.2. </span>Energy Minimization using OpenMM<a class="headerlink" href="#energy-minimization-using-openmm" title="Link to this heading">¶</a></h3>
+<p>An energy minimization of the input structure can be done using this script:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="ch">#!/usr/bin/env python3</span>
+
+<span class="kn">from</span> <span class="nn">act_openmm</span> <span class="kn">import</span> <span class="n">ActOpenMMSim</span>
+
+<span class="n">sim</span> <span class="o">=</span> <span class="n">ActOpenMMSim</span><span class="p">(</span><span class="n">pdbfile</span><span class="o">=</span><span class="s2">&quot;file.pdb&quot;</span><span class="p">,</span>
+                   <span class="n">datfile</span><span class="o">=</span><span class="s2">&quot;dimer.dat&quot;</span><span class="p">,</span>
+                   <span class="n">xmlfile</span><span class="o">=</span><span class="s2">&quot;ff.xml&quot;</span><span class="p">,</span>
+                   <span class="n">txtfile</span><span class="o">=</span><span class="s2">&quot;output2.txt&quot;</span><span class="p">,</span>
+                   <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">sim</span><span class="o">.</span><span class="n">setup</span><span class="p">()</span>
+<span class="n">sim</span><span class="o">.</span><span class="n">minimize</span><span class="p">()</span>
+<span class="n">sim</span><span class="o">.</span><span class="n">write_coordinates</span><span class="p">(</span><span class="s2">&quot;final.pdb&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>which is run here using the same flags as the simulation. Note that details about simulations and minimization can be specified in the <em>dimer.dat</em> file.</p>
+</section>
+</section>
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+  <div>
+    <h3><a href="../../index.html">Table of Contents</a></h3>
+    <ul>
+<li><a class="reference internal" href="#">2.3. MD Simulations with Alexandria Force Fields</a><ul>
+<li><a class="reference internal" href="#using-act-simulate">2.3.1. Using ACT simulate</a></li>
+<li><a class="reference internal" href="#the-act-openmm-interface">2.3.2. The ACT-OpenMM interface</a><ul>
+<li><a class="reference internal" href="#md-simulations-using-openmm">2.3.2.1. MD simulations using OpenMM</a></li>
+<li><a class="reference internal" href="#energy-minimization-using-openmm">2.3.2.2. Energy Minimization using OpenMM</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  </div>
+  <div>
+    <h4>Previous topic</h4>
+    <p class="topless"><a href="using.html"
+                          title="previous chapter"><span class="section-number">2.2. </span>Using the ACT</a></p>
+  </div>
+  <div>
+    <h4>Next topic</h4>
+    <p class="topless"><a href="properties.html"
+                          title="next chapter"><span class="section-number">2.4. </span>Predicting Molecular Properties</a></p>
+  </div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../../_sources/manual/userman/simulation.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="properties.html" title="2.4. Predicting Molecular Properties"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="using.html" title="2.2. Using the ACT"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">ACT 1.2b documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="header.html" ><span class="section-number">2. </span>User Manual</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href=""><span class="section-number">2.3. </span>MD Simulations with Alexandria Force Fields</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2026 The Alexandria Chemistry Initiative.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3.
+    </div>
+  </body>
+</html>
