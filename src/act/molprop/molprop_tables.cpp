@@ -103,7 +103,7 @@ static void stats_header(LongTable         &lt,
             // Caption
             char caption[STRLEN];
             snprintf(caption, sizeof(caption), "Performance of the different methods for predicting the molecular %s for molecules containing different chemical groups, given as the RMSD from experimental values (%s), and in brackets the number of molecules in this particular subset. {\\bf Data set: %s.} At the bottom the correlation coefficient R, the regression coefficient a and the intercept b are given as well as the normalized quality of the fit $\\chi^2$, the mean signed error (MSE) and the mean absolute error (MSA).",
-                     mpo_name, mpo_unit, iMolSelectName(ims));
+                     mpo_name, mpo_unit, iMolSelectName(ims).c_str());
             lt.setCaption(caption);
             // Label
             char label[STRLEN];
@@ -738,13 +738,13 @@ static void prop_header(LongTable     &lt,
         if (0 == k)
         {
             snprintf(longbuf, STRLEN, "Comparison of experimental %s to calculated values. {\\bf Data set: %s}. Calculated numbers that are more than %.0f%s off the experimental values are printed in bold, more than %.0f%s off in bold red.",
-                     property, iMolSelectName(ims),
+                     property, iMolSelectName(ims).c_str(),
                      (abs_toler > 0) ? abs_toler   : 100*rel_toler,
                      (abs_toler > 0) ? unit : "\\%",
                      (abs_toler > 0) ? 2*abs_toler : 200*rel_toler,
                      (abs_toler > 0) ? unit : "\\%");
             lt.setCaption(longbuf);
-            snprintf(longbuf, STRLEN, "%s", iMolSelectName(ims));
+            snprintf(longbuf, STRLEN, "%s", iMolSelectName(ims).c_str());
             lt.setLabel(longbuf);
         }
         else

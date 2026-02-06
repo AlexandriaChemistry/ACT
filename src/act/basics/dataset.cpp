@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2022
+ * Copyright (C) 2022,2026
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -33,19 +33,18 @@
 
 #include "dataset.h"
 
-    
-std::map<iMolSelect, const char *> MolSelect_Names = {
+std::map<iMolSelect, const std::string> MolSelect_Names = {
     { iMolSelect::Train,   "Train"   },
     { iMolSelect::Test,    "Test"    },
     { iMolSelect::Ignore,  "Ignore"  }
 };
 
-const std::map<iMolSelect, const char *> &iMolSelectNames()
+const std::map<iMolSelect, const std::string> &iMolSelectNames()
 {
     return MolSelect_Names;
 }
 
-const char *iMolSelectName(iMolSelect ims)
+const std::string &iMolSelectName(iMolSelect ims)
 {
     return MolSelect_Names[ims];
 }
