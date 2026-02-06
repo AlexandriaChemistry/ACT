@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2025
+ * Copyright (C) 2014-2026
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -194,7 +194,7 @@ CommunicationStatus GenericProperty::Send(const CommunicationRecord *cr, int des
     else if (cr->mh())
     {
         cr->mh()->msg(ACTStatus::Error,
-                      gmx::formatString("Faile sending GenericProperty, status %s\n", cs_name(cs)));
+                      gmx::formatString("Faile sending GenericProperty, status %s\n", cs_name(cs).c_str()));
     }
     return cs;
 }
@@ -230,7 +230,7 @@ CommunicationStatus GenericProperty::BroadCast(const CommunicationRecord *cr,
     else if (cr->mh())
     {
         cr->mh()->msg(ACTStatus::Error,
-                      gmx::formatString("Failed receiving GenericProperty, status %s\n", cs_name(cs)));
+                      gmx::formatString("Failed receiving GenericProperty, status %s\n", cs_name(cs).c_str()));
     }
     return cs;
 }
@@ -258,7 +258,7 @@ CommunicationStatus GenericProperty::Receive(const CommunicationRecord *cr, int 
     else if (cr->mh())
     {
         cr->mh()->msg(ACTStatus::Error,
-                      gmx::formatString("Failed receiving GenericProperty, status %s\n", cs_name(cs)));
+                      gmx::formatString("Failed receiving GenericProperty, status %s\n", cs_name(cs).c_str()));
     }
     return cs;
 }
@@ -335,7 +335,7 @@ CommunicationStatus MolecularMultipole::Send(const CommunicationRecord *cr, int 
     else if (cr->mh())
     {
         cr->mh()->msg(ACTStatus::Error,
-                      gmx::formatString("Failed sending MolecularMultipole, status %s\n", cs_name(cs)));
+                      gmx::formatString("Failed sending MolecularMultipole, status %s\n", cs_name(cs).c_str()));
     }
     return cs;
 }
@@ -361,7 +361,7 @@ CommunicationStatus MolecularMultipole::BroadCast(const CommunicationRecord *cr,
     else if (cr->mh())
     {
         cr->mh()->msg(ACTStatus::Error,
-                      gmx::formatString("Failed receiving MolecularMultipole, status %s\n", cs_name(cs)));
+                      gmx::formatString("Failed receiving MolecularMultipole, status %s\n", cs_name(cs).c_str()));
     }
     return cs;
 }
@@ -381,7 +381,7 @@ CommunicationStatus MolecularMultipole::Receive(const CommunicationRecord *cr, i
     else if (cr->mh())
     {
         cr->mh()->msg(ACTStatus::Error,
-                      gmx::formatString("Failed to receive MolecularMultipole, status %s\n", cs_name(cs)));
+                      gmx::formatString("Failed to receive MolecularMultipole, status %s\n", cs_name(cs).c_str()));
     }
     return cs;
 }
@@ -428,7 +428,7 @@ CommunicationStatus Harmonics::Send(const CommunicationRecord *cr, int dest) con
     else if (cr->mh())
     {
         cr->mh()->msg(ACTStatus::Error,
-                      gmx::formatString("Failed to send Harmonics, status %s\n", cs_name(cs)));
+                      gmx::formatString("Failed to send Harmonics, status %s\n", cs_name(cs).c_str()));
     }
     return cs;
 }
@@ -452,7 +452,7 @@ CommunicationStatus Harmonics::BroadCast(const CommunicationRecord *cr,
     else if (cr->mh())
     {
         cr->mh()->msg(ACTStatus::Error,
-                      gmx::formatString("Failed to receive MolecularMultipole, status %s\n", cs_name(cs)));
+                      gmx::formatString("Failed to receive MolecularMultipole, status %s\n", cs_name(cs).c_str()));
     }
     return cs;
 }
@@ -470,7 +470,7 @@ CommunicationStatus Harmonics::Receive(const CommunicationRecord *cr, int src)
     else if (cr->mh())
     {
         cr->mh()->msg(ACTStatus::Error,
-                      gmx::formatString("Failed to receive MolecularMultipole, status %s\n", cs_name(cs)));
+                      gmx::formatString("Failed to receive MolecularMultipole, status %s\n", cs_name(cs).c_str()));
     }
     return cs;
 }
@@ -559,7 +559,7 @@ CommunicationStatus MolecularPolarizability::Send(const CommunicationRecord *cr,
     else if (cr->mh())
     {
         cr->mh()->msg(ACTStatus::Error,
-                      gmx::formatString("Failed to send Polarizability, status %s\n", cs_name(cs)));
+                      gmx::formatString("Failed to send Polarizability, status %s\n", cs_name(cs).c_str()));
     }
     return cs;
 }
@@ -585,7 +585,7 @@ CommunicationStatus MolecularPolarizability::BroadCast(const CommunicationRecord
     else if (cr->mh())
     {
         cr->mh()->msg(ACTStatus::Error,
-                      gmx::formatString("Failed to broadcast Polarizability, status %s\n", cs_name(cs)));
+                      gmx::formatString("Failed to broadcast Polarizability, status %s\n", cs_name(cs).c_str()));
     }
     return cs;
 }
@@ -615,7 +615,7 @@ CommunicationStatus MolecularPolarizability::Receive(const CommunicationRecord *
     else if (cr->mh())
     {
         cr->mh()->msg(ACTStatus::Error,
-                      gmx::formatString("Failed to broadcast Polarizability, status %s\n", cs_name(cs)));
+                      gmx::formatString("Failed to broadcast Polarizability, status %s\n", cs_name(cs).c_str()));
     }
     return cs;
 }
@@ -657,7 +657,7 @@ CommunicationStatus MolecularEnergy::BroadCast(const CommunicationRecord *cr,
     else if (cr->mh())
     {
         cr->mh()->msg(ACTStatus::Error,
-                      gmx::formatString("Failed to receive MolecularEnergy, status %s\n", cs_name(cs)));
+                      gmx::formatString("Failed to receive MolecularEnergy, status %s\n", cs_name(cs).c_str()));
     }
     return cs;
 }
@@ -676,7 +676,7 @@ CommunicationStatus MolecularEnergy::Receive(const CommunicationRecord *cr, int 
     else if (cr->mh())
     {
         cr->mh()->msg(ACTStatus::Error,
-                      gmx::formatString("Failed to receive MolecularEnergy, status %s\n", cs_name(cs)));
+                      gmx::formatString("Failed to receive MolecularEnergy, status %s\n", cs_name(cs).c_str()));
     }
     return cs;
 }
@@ -695,7 +695,7 @@ CommunicationStatus MolecularEnergy::Send(const CommunicationRecord *cr, int des
     else if (cr->mh())
     {
         cr->mh()->msg(ACTStatus::Error,
-                      gmx::formatString("Failed to send MolecularEnergy, status %s\n", cs_name(cs)));
+                      gmx::formatString("Failed to send MolecularEnergy, status %s\n", cs_name(cs).c_str()));
     }
     return cs;
 }
@@ -756,7 +756,7 @@ CommunicationStatus ElectrostaticPotential::Receive(const CommunicationRecord *c
     else if (cr->mh())
     {
         cr->mh()->msg(ACTStatus::Error,
-                      gmx::formatString("Failed to receive ElectrostaticPotential, status %s\n", cs_name(cs)));
+                      gmx::formatString("Failed to receive ElectrostaticPotential, status %s\n", cs_name(cs).c_str()));
     }
     return cs;
 }
@@ -794,7 +794,7 @@ CommunicationStatus ElectrostaticPotential::BroadCast(const CommunicationRecord 
     else if (cr->mh())
     {
         cr->mh()->msg(ACTStatus::Error,
-                      gmx::formatString("Failed to receive ElectrostaticPotential, status %s\n", cs_name(cs)));
+                      gmx::formatString("Failed to receive ElectrostaticPotential, status %s\n", cs_name(cs).c_str()));
     }
     return cs;
 }
@@ -816,7 +816,7 @@ CommunicationStatus ElectrostaticPotential::Send(const CommunicationRecord *cr, 
     else if (cr->mh())
     {
         cr->mh()->msg(ACTStatus::Error,
-                      gmx::formatString("Failed to send ElectrostaticPotential, status %s\n", cs_name(cs)));
+                      gmx::formatString("Failed to send ElectrostaticPotential, status %s\n", cs_name(cs).c_str()));
     }
     return cs;
 }

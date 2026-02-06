@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2022-2025
+ * Copyright (C) 2022-2026
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -73,7 +73,7 @@ enum class TrainFFMiddlemanMode {
 };
 
 //! \return A string corresponding to a CommunicationStatus
-const char *cs_name(CommunicationStatus cs);
+const std::string &cs_name(CommunicationStatus cs);
 
 class CommunicationRecord
 {
