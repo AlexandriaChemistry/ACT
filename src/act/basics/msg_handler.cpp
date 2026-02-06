@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2025
+ * Copyright (C) 2025,2026
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -48,8 +48,8 @@ namespace alexandria
 {
 
 //! \brief Map enum ACTMessage to string
-std::map<ACTMessage, const char *> ACTMessages = {
-    { ACTMessage::Silent,                   nullptr },
+std::map<ACTMessage, const std::string> ACTMessages = {
+    { ACTMessage::Silent,                   "" },
     { ACTMessage::Unknown,                  "Unknown status" },
     { ACTMessage::OK,                       "OK" },
     { ACTMessage::NoAtoms,                  "No Atoms" },
@@ -95,7 +95,7 @@ std::map<ACTStatus, const char *> statnm = {
     { ACTStatus::Debug, "Debug" }
 };
 
-const char *actMessage(ACTMessage actm)
+const std::string &actMessage(ACTMessage actm)
 {
     auto m = ACTMessages.find(actm);
     if (ACTMessages.end() == m)
@@ -108,22 +108,20 @@ const char *actMessage(ACTMessage actm)
     }
 }
     
-void MsgHandler::print(ACTStatus   level,
-                       ACTMessage  actm,
-                       const char *msg) const
+void MsgHandler::print(ACTStatus          level,
+                       ACTMessage         actm,
+                       const std::string &msg) const
 {
-    std::string mymsg;
+    std::string mymsg(statnm[level]);
 
-    if (actm == ACTMessage::Silent)
+    if (actm != ACTMessage::Silent)
     {
-        mymsg = gmx::formatString("%s: %s", statnm[level], msg);
+        mymsg += gmx::formatString(" - %s", 
+                                   ACTMessages[actm].c_str());
     }
-    else
-    {
-        mymsg = gmx::formatString("%s - %s: %s", 
-                                  statnm[level],
-                                  ACTMessages[actm], msg);
-    }
+    mymsg += ": ";
+    mymsg += msg;
+    
     if (level <= printLevel_)
     {
         // If there is a debug textwriter, but not a normal one,
@@ -145,7 +143,7 @@ void MsgHandler::print(ACTStatus   level,
 
 MsgHandler::MsgHandler()
 {
-    for(const auto actm: ACTMessages)
+    for(const auto &actm: ACTMessages)
     {
         wcount_.insert( { actm.first, 0 });
     }
@@ -252,8 +250,8 @@ void MsgHandler::optionsFinished(const std::vector<t_filenm> &filenm,
     }
 }
 
-void MsgHandler::fatal(ACTMessage  actm,
-                       const char *msg)
+void MsgHandler::fatal(ACTMessage         actm,
+                       const std::string &msg)
 {
     status_ = ACTStatus::Fatal;
     print(status_, actm, msg);
@@ -318,7 +316,8 @@ void MsgHandler::summary() const
     {
         if (tw_)
         {
-            tw_->writeStringFormatted("%s : %d\n", ACTMessages[wc.first], wc.second);
+            tw_->writeStringFormatted("%s : %d\n",
+                                      ACTMessages[wc.first].c_str(), wc.second);
         }
     }
 }
