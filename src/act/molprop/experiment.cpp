@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2025
+ * Copyright (C) 2014-2026
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -312,7 +312,7 @@ CommunicationStatus Experiment::Send(const CommunicationRecord *cr, int dest) co
 
     if (CommunicationStatus::OK != cs && cr->mh() && cr->mh()->debug())
     {
-        cr->mh()->writeDebug(gmx::formatString("Failed to send Experiment, status %s\n", cs_name(cs)));
+        cr->mh()->writeDebug(gmx::formatString("Failed to send Experiment, status %s\n", cs_name(cs).c_str()));
     }
     return cs;
 }
@@ -491,7 +491,7 @@ CommunicationStatus Experiment::BroadCast(const CommunicationRecord *cr,
 
     if ((CommunicationStatus::OK != cs) && cr->mh() && cr->mh()->debug())
     {
-        cr->mh()->writeDebug(gmx::formatString("Failed to receive Experiment, status %s\n", cs_name(cs)));
+        cr->mh()->writeDebug(gmx::formatString("Failed to receive Experiment, status %s\n", cs_name(cs).c_str()));
     }
     return cs;
 }
@@ -618,7 +618,7 @@ CommunicationStatus Experiment::Receive(const CommunicationRecord *cr, int src)
 
     if ((CommunicationStatus::OK != cs) && cr->mh() && cr->mh()->debug())
     {
-        cr->mh()->writeDebug(gmx::formatString("Failed to receive Experiment, status %s\n", cs_name(cs)));
+        cr->mh()->writeDebug(gmx::formatString("Failed to receive Experiment, status %s\n", cs_name(cs).c_str()));
     }
     return cs;
 }

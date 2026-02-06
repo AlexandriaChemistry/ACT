@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2020-2022
+ * Copyright (C) 2020-2026
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -166,7 +166,7 @@ CommunicationStatus ForceFieldParameter::Send(const CommunicationRecord *cr, int
         if (nullptr != debug)
         {
             fprintf(debug, "Sent ForceFieldParameter %g %g %s ntrain %d, status %s\n",
-                    value_, uncertainty_, unit_.c_str(), ntrain_, cs_name(cs));
+                    value_, uncertainty_, unit_.c_str(), ntrain_, cs_name(cs).c_str());
             fflush(debug);
         }
     }
@@ -213,7 +213,7 @@ CommunicationStatus ForceFieldParameter::BroadCast(const CommunicationRecord *cr
         if (nullptr != debug)
         {
             fprintf(debug, "Received ForceFieldParameter %g %g %s ntrain %d, status %s\n",
-                    value_, uncertainty_, unit_.c_str(), ntrain_, cs_name(cs));
+                    value_, uncertainty_, unit_.c_str(), ntrain_, cs_name(cs).c_str());
             fflush(debug);
         }
         calculateInternalValue();
@@ -259,7 +259,7 @@ CommunicationStatus ForceFieldParameter::Receive(const CommunicationRecord *cr, 
         if (nullptr != debug)
         {
             fprintf(debug, "Received ForceFieldParameter %g %g %s ntrain %d, status %s\n",
-                    value_, uncertainty_, unit_.c_str(), ntrain_, cs_name(cs));
+                    value_, uncertainty_, unit_.c_str(), ntrain_, cs_name(cs).c_str());
             fflush(debug);
         }
         calculateInternalValue();

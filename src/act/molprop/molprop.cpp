@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2025
+ * Copyright (C) 2014-2026
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -772,7 +772,7 @@ CommunicationStatus MolProp::Send(const CommunicationRecord *cr, int dest) const
         if (cr->mh() && cr->mh()->debug())
         {
             cr->mh()->writeDebug(gmx::formatString("Sent MolProp %s, status %s\n",
-                                                   getMolname().c_str(), cs_name(cs)));
+                                                   getMolname().c_str(), cs_name(cs).c_str()));
         }
     }
     return cs;
@@ -986,7 +986,7 @@ CommunicationStatus MolProp::Receive(const CommunicationRecord *cr, int src)
             cr->mh()->writeDebug(gmx::formatString("Received %zu experiments from %d for mol %s\n",
                                                    exper_.size(), src, getMolname().c_str()));
             cr->mh()->writeDebug(gmx::formatString("Received MolProp %s, status %s\n",
-                                                   getMolname().c_str(), cs_name(cs)));
+                                                   getMolname().c_str(), cs_name(cs).c_str()));
         }
     }
     return cs;
