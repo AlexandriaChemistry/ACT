@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2022-2025
+ * Copyright (C) 2022-2026
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -587,7 +587,7 @@ template <> void CommunicationRecord::send<iMolSelect>(int dest, const iMolSelec
     if (msg_handler_)
     {
         msg_handler_->writeDebug(gmx::formatString("Sending iMolSelect '%s' to %d\n",
-                                                   iMolSelectName(ims), dest));
+                                                   iMolSelectName(ims).c_str(), dest));
     }
     int d = imsInt[ims];
     send_low(dest, &d, sizeof(d));
@@ -607,7 +607,7 @@ template <> void CommunicationRecord::recv<iMolSelect>(int src, iMolSelect *t) c
             if (msg_handler_)
             {
                 msg_handler_->writeDebug(gmx::formatString("Received iMolSelect '%s' from %d\n",
-                                                           iMolSelectName(ims.first), src));
+                                                           iMolSelectName(ims.first).c_str(), src));
             }
             *t = ims.first;
             return;

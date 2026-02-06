@@ -99,7 +99,7 @@ std::string FittingTarget::info() const
         out = gmx::formatString("%-15s  %12.3f  TW: %10g  fc: %10g  weighted: %10g  %s\n",
                                 rmsName(erms_), chiSquared_, totalWeight_,
                                 weight_, chiSquaredWeighted(),
-                                iMolSelectName(ims_));
+                                iMolSelectName(ims_).c_str());
     }
     return out;
 }
@@ -654,7 +654,7 @@ void MolGen::checkDataSufficiency(MsgHandler *msghandler,
             msghandler->msg(ACTStatus::Verbose,
                             gmx::formatString("Removing %s from %s set because of lacking support\n",
                                               rmol.c_str(),
-                                              iMolSelectName(moliter->datasetType())));
+                                              iMolSelectName(moliter->datasetType()).c_str()));
             actmol_.erase(moliter);
         }
     }

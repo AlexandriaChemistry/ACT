@@ -229,7 +229,7 @@ void StaticIndividualInfo::sumChiSquared(bool             parallel,
         auto etot = myft->second.find(eRMS::TOT);
         GMX_RELEASE_ASSERT(etot != myft->second.end(),
                            gmx::formatString("Cannot find etot for %s",
-                                             iMolSelectName(ims)).c_str());
+                                             iMolSelectName(ims).c_str()).c_str());
         etot->second.reset();
         auto tc = targets_.find(ims);
         if (tc != targets_.end())
