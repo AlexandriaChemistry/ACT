@@ -14,7 +14,6 @@ install(FILES
          atomprops.csv
          atomprops.csv
          atom_bond.xml
-         atomtype_mapping.csv
          atomtypes_gui.csv
          excluded_molecules.csv
          residuetypes.dat 

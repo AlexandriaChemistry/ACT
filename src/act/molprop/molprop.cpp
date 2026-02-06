@@ -267,15 +267,41 @@ bool MolProp::renumberResidues()
         return false;
     }
     auto calcAtom = myexp->calcAtom();
-    for(size_t j = 0; j < fragment_.size(); j++)
+    if (nullptr == calcAtom)
     {
-        // TODO: This ignore the possibility that there could be
-        // more than one residue in a fragment, e.g. a protein.
-        auto atoms_j = fragment_[j].atoms();
-        auto res_j   = (*calcAtom)[atoms_j[0]].residueName();
-        for(int k : atoms_j)
+        fprintf(stderr, "No calcAtom in %s\n", getMolname().c_str());
+        return false;
+    }
+    else
+    {
+        for(size_t j = 0; j < fragment_.size(); j++)
         {
-            (*calcAtom)[k].setResidue(res_j, j);
+            // TODO: This ignore the possibility that there could be
+            // more than one residue in a fragment, e.g. a protein.
+            auto atoms_j = fragment_[j].atoms();
+            if (atoms_j.size() > 0)
+            {
+                size_t aj = atoms_j[0];
+                if (aj < calcAtom->size())
+                {
+                    auto res_j   = (*calcAtom)[aj].residueName();
+                    for(int k : atoms_j)
+                    {
+                        (*calcAtom)[k].setResidue(res_j, j);
+                    }
+                }
+                else
+                {
+                    fprintf(stderr, "calcAtom has only %zu atoms, looking for atom %zu. Fragment has %zu atoms.\n",
+                            calcAtom->size(), aj, atoms_j.size());
+                    return false;
+                }
+            }
+            else
+            {
+                fprintf(stderr, "Fragment %zu has %zu atoms\n", j, atoms_j.size());
+                return false;
+            }
         }
     }
     return true;
