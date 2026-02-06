@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2024
+ * Copyright (C) 2014-2024,2026
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -64,7 +64,7 @@ CommunicationStatus Symcharges::Send(const CommunicationRecord *cr, int dest)
         if (nullptr != debug)
         {
             fprintf(debug, "Sent Symcharges %s %s %d, status %s\n",
-                    central_.c_str(), attached_.c_str(), numattach_, cs_name(cs));
+                    central_.c_str(), attached_.c_str(), numattach_, cs_name(cs).c_str());
             fflush(debug);
         }
     }
@@ -84,7 +84,7 @@ CommunicationStatus Symcharges::BroadCast(const CommunicationRecord *cr,
         if (nullptr != debug)
         {
             fprintf(debug, "Received Symcharges %s %s %d, status %s\n",
-                    central_.c_str(), attached_.c_str(), numattach_, cs_name(cs));
+                    central_.c_str(), attached_.c_str(), numattach_, cs_name(cs).c_str());
             fflush(debug);
         }
     }
@@ -102,7 +102,7 @@ CommunicationStatus Symcharges::Receive(const CommunicationRecord *cr, int src)
         if (nullptr != debug)
         {
             fprintf(debug, "Received Symcharges %s %s %d, status %s\n",
-                    central_.c_str(), attached_.c_str(), numattach_, cs_name(cs));
+                    central_.c_str(), attached_.c_str(), numattach_, cs_name(cs).c_str());
             fflush(debug);
         }
     }

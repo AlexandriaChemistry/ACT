@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2021-2025
+ * Copyright (C) 2021-2026
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -132,7 +132,7 @@ CommunicationStatus TopologyEntry::Send(const CommunicationRecord *cr, int dest)
     else if (cr->mh())
     {
         cr->mh()->msg(ACTStatus::Error,
-                      gmx::formatString("Failed sending TopologyEntry, status %s\n", cs_name(cs)));
+                      gmx::formatString("Failed sending TopologyEntry, status %s\n", cs_name(cs).c_str()));
     }
     return cs;
 }
@@ -173,7 +173,7 @@ CommunicationStatus TopologyEntry::BroadCast(const CommunicationRecord *cr,
     else if (cr->mh())
     {
         cr->mh()->msg(ACTStatus::Error,
-                      gmx::formatString("Failed receiving TopologyEntry, status %s\n", cs_name(cs)));
+                      gmx::formatString("Failed receiving TopologyEntry, status %s\n", cs_name(cs).c_str()));
     }
     return cs;
 }
@@ -200,7 +200,7 @@ CommunicationStatus TopologyEntry::Receive(const CommunicationRecord *cr, int sr
     else if (cr->mh())
     {
         cr->mh()->msg(ACTStatus::Error,
-                      gmx::formatString("Failed receiving TopologyEntry, status %s\n", cs_name(cs)));
+                      gmx::formatString("Failed receiving TopologyEntry, status %s\n", cs_name(cs).c_str()));
     }
     return cs;
 }

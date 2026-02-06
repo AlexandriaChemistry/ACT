@@ -40,7 +40,7 @@ namespace alexandria
 {
 
 //! Map CommunicationStatus tp string
-std::map<CommunicationStatus, const char*> csToString = {
+std::map<CommunicationStatus, const std::string> csToString = {
     { CommunicationStatus::OK,        "Communication OK"        },
     { CommunicationStatus::DONE,      "Communication Done"      },
     { CommunicationStatus::ERROR,     "Communication Error"     },
@@ -50,35 +50,35 @@ std::map<CommunicationStatus, const char*> csToString = {
 };
 
 //! Map bool to string
-std::map<bool, const char *> boolName = {
+std::map<bool, const std::string> boolName = {
     { false, "false" },
     { true, "true" }
 };
 
-const char *cs_name(CommunicationStatus cs)
+const std::string &cs_name(CommunicationStatus cs)
 {
     return csToString[cs];
 };
 
 //! \brief Map NodeType to string
-std::map<NodeType, const char *> ntToString = {
+std::map<NodeType, const std::string> ntToString = {
     { NodeType::Master,    "Master"    },
     { NodeType::MiddleMan, "MiddleMan" },
     { NodeType::Helper,    "Helper"    }  
 };
 
 //! \brief Evaluate return value and crash if needed.
-static void check_return(const char *msg, int returnvalue)
+static void check_return(const std::string &msg, int returnvalue)
 {
     switch (returnvalue)
     {
     case MPI_SUCCESS:
         return;
     case MPI_ERR_COMM:
-        GMX_THROW(gmx::InternalError(gmx::formatString("Invalid communicator. %s.", msg).c_str()));
+        GMX_THROW(gmx::InternalError(gmx::formatString("Invalid communicator. %s.", msg.c_str()).c_str()));
         break;
     case MPI_ERR_ARG:
-        GMX_THROW(gmx::InternalError(gmx::formatString("Invalid argument. %s.", msg).c_str()));
+        GMX_THROW(gmx::InternalError(gmx::formatString("Invalid argument. %s.", msg.c_str()).c_str()));
         break;
     }
 }
@@ -115,7 +115,7 @@ void CommunicationRecord::print(FILE *fp)
         return;
     }
     std::string strToPrint = gmx::formatString("rank: %d/%d nodetype: %s superior: %d\n",
-                                               rank_, size_, ntToString[nt_], superior_);
+                                               rank_, size_, ntToString[nt_].c_str(), superior_);
     if (isMaster())
     {
         strToPrint.append(gmx::formatString("nmiddlemen: %d nhelper_per_middleman: %d\n", nmiddlemen_, 
@@ -504,7 +504,7 @@ template <> void CommunicationRecord::send<bool>(int dest, const bool &b) const
     check_init_done();
     if (msg_handler_)
     {
-        msg_handler_->writeDebug(gmx::formatString("Sending bool '%s' to %d\n", boolName[b], dest));
+        msg_handler_->writeDebug(gmx::formatString("Sending bool '%s' to %d\n", boolName[b].c_str(), dest));
     }
     int d = b ? 1 : 0;
     send_low(dest, &d, sizeof(d));
@@ -553,7 +553,7 @@ template <> void CommunicationRecord::recv<bool>(int src, bool *b) const
     *b = d;
     if (msg_handler_)
     {
-        msg_handler_->writeDebug(gmx::formatString("Received bool '%s' from %d\n", boolName[*b], src));
+        msg_handler_->writeDebug(gmx::formatString("Received bool '%s' from %d\n", boolName[*b].c_str(), src));
     }
 }
 
