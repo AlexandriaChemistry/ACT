@@ -105,15 +105,16 @@ DOT_MULTI_TARGETS      = YES
 HTML_FILE_EXTENSION    = .xhtml
 
 
-# Script is run from the '/build' folder
-HTML_OUTPUT_DIR        = ../_build
-# Original
-OUTPUT_DIRECTORY       = @HTML_OUTPUT_DIR@/doxygen
 
 # Overwriting OUTPUT_DIRECTORY does not work
 # Original
 # OUTPUT_DIRECTORY       = @HTML_OUTPUT_DIR@/doxygen
 # Script is run from the '/build' folder
+# Fails
 # OUTPUT_DIRECTORY       = ../_build/doxygen
+# Try root anyways
+OUTPUT_DIRECTORY       = _build/doxygen
 
 
+# Do not use HTML_OUTPUT_DIR: it is an unsupported tag in Doxygen
+## HTML_OUTPUT_DIR        = ../_build
