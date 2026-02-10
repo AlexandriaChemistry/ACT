@@ -104,4 +104,7 @@ DOT_MULTI_TARGETS      = YES
 # According to Doxygen docs, this is required for svg support on IE
 HTML_FILE_EXTENSION    = .xhtml
 
-OUTPUT_DIRECTORY       = @HTML_OUTPUT_DIR@/doxygen
+# Original
+# OUTPUT_DIRECTORY       = @HTML_OUTPUT_DIR@/doxygen
+# Script is run from the '/build' folder
+OUTPUT_DIRECTORY       = ../_build/doxygen
