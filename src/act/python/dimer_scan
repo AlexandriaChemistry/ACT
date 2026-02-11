@@ -375,8 +375,7 @@ def plot_curves(xmls: dict, columns:list):
         print(f"legends = {legends}")
         plotxvg.plot(filenms,
                      marker=["o", "x", "+"], save=f"{dimer}.pdf", noshow=True,
-                     legend_x=0.7, legend_y=0.5, axfs=14, lfs=14, tickfs=14,
-                     datasetlegends=legends, coly=columns, debug=True)
+                     legend_x=0.7, datasetlegends=legends, coly=columns, debug=True)
 
 def parse_args():
     parser = argparse.ArgumentParser(description="""
@@ -398,7 +397,8 @@ def parse_args():
     parser.add_argument("-mp",   "--molprop", help="Use this molprop file to generate charges from (optional)", type=str)
     parser.add_argument("-atom1", "--atom1", help="Atom1 in the first monomer is used for distance calculation (e.g. 1)", type=int, default=None)
     parser.add_argument("-atom2", "--atom2", help="Atom2 in the second monomer for distance calc (e.g. 11)", type=int, default=None)
-    parser.add_argument("-cols", "--columns", nargs="+", help="Will plot specific columns from the energy components, e.g. 4 = Interaction energy, 5 = Potential energy", type=int)
+    cols = 6
+    parser.add_argument("-cols", "--columns", nargs="+", help="Will plot specific columns from the energy components, e.g. 5 = Interaction energy, 6 = Potential energy, default "+str(cols), default=cols, type=int)
     parser.add_argument("-dbg", "--debug", help="Write more debugging output", action="store_true")
     args = parser.parse_args()
     if args.debug:
