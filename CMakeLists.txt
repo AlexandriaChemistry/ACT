@@ -179,9 +179,13 @@ gmx_test_cxx20(GMX_CXX20_FLAGS GMX_STDLIB_CXX_FLAGS GMX_STDLIB_LIBRARIES)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${GMX_CXX20_FLAGS} ${GMX_STDLIB_CXX_FLAGS}")
 
 # Check for a local version of the C++ standard library that may be needed for RDKit
-if ($CONDA_PREFIX)
-  find_library (LIBSTDCXX_LIBRARY NAMES libstdc++.so.6.0.34 HINTS ${CONDA_PREFIX} REQUIRED)
-endif()
+# Without specifying the exact version, it will go to /usr/lib64, it should be possible
+# to work around that.
+#if (DEFINED ENV{CONDA_PREFIX})
+#  find_library(LIBSTDCXX_LIBRARY NAMES libstdc++.so.6.0.34 PATH $ENV{CONDA_PREFIX}/lib REQUIRED)
+#  message("Found LIBSTDCXX_LIBRARY ${LIBSTDCXX_LIBRARY}")
+#  list(APPEND GMX_EXTRA_LIBRARIES ${LIBSTDCXX_LIBRARY})
+#endif()
 
 ########################################################################
 # User input options                                                   #
@@ -263,7 +267,7 @@ gmx_add_cache_dependency(GMX_COMPILER_WARNINGS BOOL "NOT GMX_DEVELOPER_BUILD" ON
 
 option(GMX_BUILD_SHARED_EXE
     "Build exectuables as shared binaries. If not set, this disables rpath and dynamic linker flags in an attempt to build a static binary, but this may require setting up the toolchain properly and making appropriate libraries available."
-    OFF)
+    ON)
 mark_as_advanced(GMX_BUILD_SHARED_EXE)
 
 option(GMX_PHYSICAL_VALIDATION
