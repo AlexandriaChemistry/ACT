@@ -99,7 +99,7 @@ There are some building options available that are mainly of use for developers 
   
 where *Value* can be *ON* or *OFF* or something more option specific. 
 
-.. table:: Cmake flags available to build the alexandria program.
+.. table:: cmake flags available to build the alexandria program.
    :name: tab-cmake
 
    +----------------------+------------------------------------------------------------+
@@ -109,7 +109,7 @@ where *Value* can be *ON* or *OFF* or something more option specific.
    +----------------------+------------------------------------------------------------+
    |                      | a debugger) or ASAN (Adress Sanitizer, for uncovering      |
    +----------------------+------------------------------------------------------------+
-   |                      | memory leaks and crashes)                                  |
+   |                      | memory leaks and debugging crashes).                       |
    +----------------------+------------------------------------------------------------+
    | CMAKE_INSTALL_PREFIX | Path where to install the ACT, see above                   |
    +----------------------+------------------------------------------------------------+
@@ -119,7 +119,25 @@ where *Value* can be *ON* or *OFF* or something more option specific.
    +----------------------+------------------------------------------------------------+
    |                      | Default OFF, activated when ON.                            |   
    +----------------------+------------------------------------------------------------+
+   | ACT_BUILD_MANUAL     | Whether or not to provision for building the manual.       |
+   +----------------------+------------------------------------------------------------+
+   |                      | Requires installing developer tools, default OFF.          |
+   +----------------------+------------------------------------------------------------+
    
+   
+============================
+Troubleshooting Installation
+============================
+Sometimes, the *cmake* process or building using *make* does not work as described above.
+For instance, there may be library mismatches like this::
+
+   undefined reference to `__cxa_call_terminate@CXXABI_1.3.15'
+   
+which is caused by the fact that conda libraries expect specific versions of system libraries, combined with the make process supplying a wrong version of that library.
+In that case you can instruct cmake to change the order of libraries by adding these flags to the cmake command line::
+
+  
+
 
 ===============
 Testing the ACT
@@ -127,7 +145,7 @@ Testing the ACT
 
 To start testing, you first want to familiarize yourself with the test set. If the ACT is in your home directory, you can::
 
-  cd ACT/build
+  cd ACT/build-Release
 
 Then you can build the test set using::
 
