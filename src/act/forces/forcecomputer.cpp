@@ -461,6 +461,7 @@ void ForceComputer::plot(MsgHandler        *msghandler,
             case InteractionType::ELECTROSTATICS:
                 {
                     std::vector<gmx::RVec> coordinates = { { 0, 0, 0 }, { 1, 0, 0 } };
+                    // top.build will resize coordinates array.
                     top.build(msghandler,
                               pd, &coordinates, 175.0, 5.0, missingParameters::Error);
                     forces.resize(top.nAtoms(), rvnul);
@@ -478,6 +479,16 @@ void ForceComputer::plot(MsgHandler        *msghandler,
                     {
                         double x = r0+i*delta;
                         coordinates[jatom][0] = x;
+                        // Move shell position
+                        for(int j : top.atoms()[jatom].shells())
+                        {
+                            coordinates[j][0] = x;
+                        }
+                        // Move vsite position
+                        for(int j : top.atoms()[jatom].vsites())
+                        {
+                            coordinates[j][0] = x;
+                        }
                         rr.push_back(x);
                         energies.clear();
                         for(size_t k = 0; k < top.nAtoms(); k++)
