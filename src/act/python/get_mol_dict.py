@@ -59,7 +59,7 @@ def get_atom_bond_xml()->list:
                 ab[atomtypes].append({ "index": myatp["@index"],
                                        "name": myatp["@name"],
                                        "atomnumber": myatp["@atomnumber"] })
-            if hasattr(abtype, bondtypes):
+            if bondtypes in abtype:
                 if isinstance(abtype[bondtypes], list):
                     for bt in abtype[bondtypes]['bondtype']:
                         ab[bondtypes].append({ "ai": bt["@ai"],
@@ -120,8 +120,8 @@ class MoleculeDict:
                         aj = mapAtoms[b[1]-1]
                         if not ai == NOTSET and not aj == NOTSET:
                             for ab in abe[i][bondtypes]:
-                                if ((ab.ai == ai and ab.aj == aj) or
-                                    (ab.ai == aj and ab.aj == ai)):
+                                if ((int(ab["ai"]) == ai and int(ab["aj"]) == aj) or
+                                    (int(ab["ai"]) == aj and int(ab["aj"]) == ai)):
                                     self.bonds[b] = ab.order
                                     break
 
