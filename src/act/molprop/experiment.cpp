@@ -436,8 +436,13 @@ CommunicationStatus Experiment::BroadCast(const CommunicationRecord *cr,
                     case MolPropObservable::STRANS:
                     case MolPropObservable::SROT:
                     case MolPropObservable::SVIB:
+                    case MolPropObservable::SELEC:
                     case MolPropObservable::CP:
                     case MolPropObservable::CV:
+                    case MolPropObservable::CVTRANS:
+                    case MolPropObservable::CVROT:
+                    case MolPropObservable::CVVIB:
+                    case MolPropObservable::CVELEC:
                     case MolPropObservable::ZPE:
                         {
                             auto gp = std::make_unique<MolecularEnergy>();
@@ -454,7 +459,7 @@ CommunicationStatus Experiment::BroadCast(const CommunicationRecord *cr,
                     case MolPropObservable::COORDINATES:
                     default:
                         {
-                            gmx_fatal(FARGS, "Don't know how to handle %s...", mpo_name[mpo]);
+                            gmx_fatal(FARGS, "Don't know how to handle %s...", mpo_name(mpo));
                         }
                     }
                     // Now get the contents
