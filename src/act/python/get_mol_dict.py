@@ -287,7 +287,7 @@ class MoleculeDict:
         if addH:
             m2 = Chem.AddHs(m)
             AllChem.EmbedMolecule(m2, params)
-            return analyse(m2, smiles, mycharge)
+            return self.analyse(m2, smiles, mycharge)
         else:
             AllChem.EmbedMolecule(m, params)
-            return analyse(m, smiles, mycharge)
+            return self.analyse(m, smiles, mycharge)
