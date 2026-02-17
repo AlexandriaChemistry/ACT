@@ -6,6 +6,7 @@ import os, sys, tempfile, xmltodict
 from rdkit import Chem
 from rdkit.Chem import rdMolDescriptors
 from rdkit.Chem import rdDetermineBonds
+from rdkit.Chem import AllChem
 
 debug     = False
 atomtype  = "atomtype"
@@ -280,8 +281,13 @@ class MoleculeDict:
         if self.verbose:
             print("Analyzing %s" % smiles)
         m  = Chem.MolFromSmiles(smiles)
+        # Code taken from https://www.rdkit.org/docs/GettingStartedInPython.html
+        params = AllChem.ETKDGv3()
+        params.randomSeed = 0xf00d # optional random seed for reproducibility
         if addH:
             m2 = Chem.AddHs(m)
+            AllChem.EmbedMolecule(m2, params)
             return analyse(m2, smiles, mycharge)
         else:
+            AllChem.EmbedMolecule(m, params)
             return analyse(m, smiles, mycharge)
