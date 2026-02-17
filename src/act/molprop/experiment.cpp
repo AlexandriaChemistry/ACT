@@ -454,7 +454,7 @@ CommunicationStatus Experiment::BroadCast(const CommunicationRecord *cr,
                     case MolPropObservable::COORDINATES:
                     default:
                         {
-                            gmx_fatal(FARGS, "Don't know what to do...");
+                            gmx_fatal(FARGS, "Don't know how to handle %s...", mpo_name[mpo]);
                         }
                     }
                     // Now get the contents
