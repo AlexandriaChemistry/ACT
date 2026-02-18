@@ -207,9 +207,9 @@ gmx_dependent_option(
     GMX_MPI)
 mark_as_advanced(GMX_MPI_IN_PLACE)
 
-option(GMX_COOL_QUOTES "Enable GROMACS cool quotes" ON)
-mark_as_advanced(GMX_COOL_QUOTES)
-gmx_add_cache_dependency(GMX_COOL_QUOTES BOOL "NOT GMX_FAHCORE" OFF)
+#option(GMX_COOL_QUOTES "Enable GROMACS cool quotes" ON)
+#mark_as_advanced(GMX_COOL_QUOTES)
+#gmx_add_cache_dependency(GMX_COOL_QUOTES BOOL "NOT GMX_FAHCORE" OFF)
 
 set(GMX_USE_OPENCL OFF)
 set(GMX_GPU_ACCELERATION_FRAMEWORK "GMX_GPU_NONE")
@@ -223,11 +223,11 @@ gmx_option_multichoice(
     None Reference)
 #    AUTO None SSE2 SSE4.1 AVX_128_FMA AVX_256 AVX2_256 AVX2_128 AVX_512 AVX_512_KNL  ARM_NEON ARM_NEON_ASIMD IBM_VMX IBM_VSX Sparc64_HPC_ACE Reference)
 
-gmx_option_multichoice(
-    GMX_QMMM_PROGRAM
-    "QM package for QM/MM"
-    None
-    none gaussian mopac gamess orca)
+#gmx_option_multichoice(
+#    GMX_QMMM_PROGRAM
+#    "QM package for QM/MM"
+#    None
+#    none gaussian mopac gamess orca)
 
 gmx_dependent_cache_variable(GMX_SIMD_REF_FLOAT_WIDTH  "Reference SIMD single precision width" STRING "4" "GMX_SIMD STREQUAL REFERENCE")
 gmx_dependent_cache_variable(GMX_SIMD_REF_DOUBLE_WIDTH "Reference SIMD double precision width" STRING "2" "GMX_SIMD STREQUAL REFERENCE")
@@ -239,23 +239,23 @@ mark_as_advanced(GMX_BROKEN_CALLOC)
 
 option(GMX_OPENMP "Enable OpenMP-based multithreading" OFF)
 
-option(GMX_BUILD_MDRUN_ONLY "Build and install only the mdrun binary" OFF)
+#option(GMX_BUILD_MDRUN_ONLY "Build and install only the mdrun binary" OFF)
 
-option(GMX_CYCLE_SUBCOUNTERS "Enable cycle subcounters to get a more detailed cycle timings" OFF)
-mark_as_advanced(GMX_CYCLE_SUBCOUNTERS)
+#option(GMX_CYCLE_SUBCOUNTERS "Enable cycle subcounters to get a more detailed cycle timings" OFF)
+#mark_as_advanced(GMX_CYCLE_SUBCOUNTERS)
 
 option(GMX_SKIP_DEFAULT_CFLAGS "Don't automatically add suggested/required Compiler flags." OFF)
 mark_as_advanced(GMX_SKIP_DEFAULT_CFLAGS)
 
-option(GMX_BUILD_FOR_COVERAGE
-       "Tune build for better code coverage metrics (e.g., disable asserts)"
-       OFF)
-mark_as_advanced(GMX_BUILD_FOR_COVERAGE)
+#option(GMX_BUILD_FOR_COVERAGE
+#       "Tune build for better code coverage metrics (e.g., disable asserts)"
+#       OFF)
+#mark_as_advanced(GMX_BUILD_FOR_COVERAGE)
 
-option(GMX_DEVELOPER_BUILD
-    "Enable Developer convenience features: always build unit-tests"
-    OFF)
-mark_as_advanced(GMX_DEVELOPER_BUILD)
+#option(GMX_DEVELOPER_BUILD
+#    "Enable Developer convenience features: always build unit-tests"
+#    OFF)
+#mark_as_advanced(GMX_DEVELOPER_BUILD)
 
 gmx_set_boolean(GMX_COMPILER_WARNINGS_DEFAULT "NOT SOURCE_IS_SOURCE_DISTRIBUTION")
 option(GMX_COMPILER_WARNINGS
@@ -270,11 +270,11 @@ option(GMX_BUILD_SHARED_EXE
     ON)
 mark_as_advanced(GMX_BUILD_SHARED_EXE)
 
-option(GMX_PHYSICAL_VALIDATION
-       "Include physical validation tests in ctest environment. These can then be called using 'make check-phys' or
-       'make check-all'. Warning: Running the physical validation tests takes significantly more time than other tests!"
-       OFF)
-mark_as_advanced(GMX_PHYSICAL_VALIDATION)
+#option(GMX_PHYSICAL_VALIDATION
+#       "Include physical validation tests in ctest environment. These can then be called using 'make check-phys' or
+#       'make check-all'. Warning: Running the physical validation tests takes significantly more time than other tests!"
+#       OFF)
+#mark_as_advanced(GMX_PHYSICAL_VALIDATION)
 
 ######################################################################
 # Detect OpenMP support
@@ -468,7 +468,7 @@ if(ACT_CLN)
       set(HAVE_LIBCLN 1)
       list(APPEND	GMX_EXTRA_LIBRARIES ${CLN_LIBRARIES})
     else(CLN_FOUND)
-      message(FATAL_ERROR "CLN library not found. Turn off ACT_CLN.")
+      message(FATAL_ERROR "CLN library not found. Please install the library or use -DACT_CLN=OFF.")
     endif(CLN_FOUND)
 else()
     set(HAVE_LIBCLN 0)
@@ -506,15 +506,15 @@ if(RDKit_FOUND)
 
   foreach(lib IN ITEMS ${rdkitlibs})
      #message("Looking for library ${lib}")
-     find_library(NEW${lib} NAMES RDKit${lib} PATHS ${RDKit_LIB_DIR} )
-     if(NEW${lib})
-         #message("Found ${lib} in ${NEW${lib}}")
-         list(APPEND GMX_EXTRA_LIBRARIES ${NEW${lib}})
+     find_library(RDKit${lib} NAMES RDKit${lib} PATHS ${RDKit_LIB_DIR} )
+     if(RDKit${lib})
+         #message("Found ${lib} in ${RDKit${lib}}")
+         list(APPEND GMX_EXTRA_LIBRARIES ${RDKit${lib}})
          add_definitions(-DHAVE_${lib})
      else()
         message(FATAL_ERROR "Didn't find ${lib} library in ${RDKit_LIB_DIR}.")
      endif()
-     unset(NEW${lib})
+     unset(RDKit${lib})
   endforeach(lib)
 endif()
 
@@ -642,19 +642,19 @@ include(gmxManageCycleCounters)
 gmx_manage_cycle_counters()
 
 # Process QM/MM Settings
-if(${GMX_QMMM_PROGRAM} STREQUAL "GAUSSIAN")
-    set(GMX_QMMM_GAUSSIAN 1)
-elseif(${GMX_QMMM_PROGRAM} STREQUAL "MOPAC")
-    set(GMX_QMMM_MOPAC 1)
-elseif(${GMX_QMMM_PROGRAM} STREQUAL "GAMESS")
-    set(GMX_QMMM_GAMESS 1)
-elseif(${GMX_QMMM_PROGRAM} STREQUAL "ORCA")
-    set(GMX_QMMM_ORCA 1)
-elseif(${GMX_QMMM_PROGRAM} STREQUAL "NONE")
-    # nothing to do
-else()
-    gmx_invalid_option_value(GMX_QMMM_PROGRAM)
-endif()
+#if(${GMX_QMMM_PROGRAM} STREQUAL "GAUSSIAN")
+#    set(GMX_QMMM_GAUSSIAN 1)
+#elseif(${GMX_QMMM_PROGRAM} STREQUAL "MOPAC")
+#    set(GMX_QMMM_MOPAC 1)
+#elseif(${GMX_QMMM_PROGRAM} STREQUAL "GAMESS")
+#    set(GMX_QMMM_GAMESS 1)
+#elseif(${GMX_QMMM_PROGRAM} STREQUAL "ORCA")
+#    set(GMX_QMMM_ORCA 1)
+#elseif(${GMX_QMMM_PROGRAM} STREQUAL "NONE")
+#    # nothing to do
+#else()
+#    gmx_invalid_option_value(GMX_QMMM_PROGRAM)
+#endif()
 
 # Link real-time library for POSIX timers. The check for clock_gettime
 # confirms the linkability of rt.
@@ -751,7 +751,7 @@ set(GMX_INSTALL_OCLDIR       ${ACT_INSTALL_ACTDATADIR}/opencl)
 list(APPEND INSTALLED_HEADER_INCLUDE_DIRS ${CMAKE_INSTALL_INCLUDEDIR})
 
 # Binary and library suffix options
-include(gmxManageSuffixes)
+#include(gmxManageSuffixes)
 
 ################################################################
 # Shared library load path settings

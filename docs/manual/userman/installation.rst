@@ -113,6 +113,12 @@ where *Value* can be *ON* or *OFF* or something more option specific.
    +----------------------+------------------------------------------------------------+
    | CMAKE_INSTALL_PREFIX | Path where to install the ACT, see above                   |
    +----------------------+------------------------------------------------------------+
+   | CMAKE_PREFIX_PATH    | Path where cmake can look for libraries. Multiple paths    |
+   +----------------------+------------------------------------------------------------+
+   |                      | can be specified, separated by semicolons, for instance    |
+   +----------------------+------------------------------------------------------------+
+   |                      | -DCMAKE_PREFIX_PATH=${CONDA_PREFIX}/lib                    |
+   +----------------------+------------------------------------------------------------+
    | ACT_CLN              | Install ACT using the Class Library for Numbers for high   |
    +----------------------+------------------------------------------------------------+
    |                      | precision calculations, used for Slater integrals.         |
