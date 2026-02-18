@@ -44,7 +44,7 @@ The simplest way that should suffice on a single computer (i.e. not a cluster), 
   conda activate ACT
   conda config --add channels anaconda
   conda config --add channels conda-forge
-  conda install librdkit-dev=2025.09.4 libboost-devel=1.86.0 cmake eigen=5 libxml2 numpy matplotlib pubchempy pillow
+  conda install librdkit-dev=2025.09.4 libboost-devel=1.86.0 cmake eigen=5 libxml2 numpy matplotlib pubchempy pillow xmltodict
 
 This should install the libraries mentioned above (note: it will take some time!). If you are installing ACT on a high-performance computing cluster, there likely is support for compilers and a MPI library already. If not, then add the *openmpi* package to your conda install line.
 Most Linux installations come bundled with the GNU compiler suite (`GCC`_) and for macOS the Xcode package can be downloaded free of charge from `Xcode`_. If you do not have a compiler, add *gcc* to the conda install line::
