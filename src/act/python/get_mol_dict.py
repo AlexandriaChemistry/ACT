@@ -200,7 +200,7 @@ class MoleculeDict:
         # First try and read, but do not crash
         try:
             if fileformat == "sdf":
-                m = Chem.MolFromMolFile(filename, sanitize=False, removeHs=False)
+                m = Chem.MolFromMolFile(filename, sanitize=True, removeHs=False)
             elif fileformat == "xyz":
                 raw_mol = Chem.MolFromXYZFile(filename)
                 m = Chem.Mol(raw_mol)
@@ -217,8 +217,13 @@ class MoleculeDict:
         if m == None:
             print(f"RDKit returned an empty molecule {molname}")
             return False
-        # We trust the sdf files
-        if fileformat != "sdf":
+        # We trust the sdf files ...
+        determine_bonds = fileformat != "sdf"
+        # ... and if the user specified bonds in the pdb, weuse those.
+        if fileformat == "pdb" and m.GetNumBonds() > 0:
+            determine_bonds = False
+
+        if determine_bonds:
             # The routine to DetermineBonds may crash for weird molecules
             # therefore it is good to try and catch exceptions.
             try:
