@@ -37,7 +37,7 @@ def ElementName(atomname:str) -> str:
         get_atomprops()
     for k in atomprops.keys():
         if atomname.upper() == k.upper():
-            return numberToName[nameToNumber[atomname]]
+            return AtomNumberToAtomName(AtomNameToAtomNumber(atomname))
     sys.exit("Invalid element %s" % atomname)
 
 def StringIsElement(atomname:str) -> bool:
