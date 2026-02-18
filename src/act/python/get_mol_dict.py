@@ -123,7 +123,7 @@ class MoleculeDict:
                             for ab in abe[i][bondtypes]:
                                 if ((int(ab["ai"]) == ai and int(ab["aj"]) == aj) or
                                     (int(ab["ai"]) == aj and int(ab["aj"]) == ai)):
-                                    self.bonds[b] = ab.order
+                                    self.bonds[b] = ab["order"]
                                     break
 
     def analyse(self, mol, molname:str, mycharge=None)->bool:
