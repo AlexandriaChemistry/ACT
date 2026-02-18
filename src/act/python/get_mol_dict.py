@@ -60,9 +60,9 @@ def get_atom_bond_xml()->list:
                 ab[atomtypes].append({ "index": myatp["@index"],
                                        "name": myatp["@name"],
                                        "atomnumber": myatp["@atomnumber"] })
-            if bondtypes in abtype:
-                if isinstance(abtype[bondtypes], list):
-                    for bt in abtype[bondtypes]['bondtype']:
+            if bondtypes in abtype and bondtype in abtype[bondtypes]:
+                if isinstance(abtype[bondtypes][bondtype], list):
+                    for bt in abtype[bondtypes][bondtype]:
                         ab[bondtypes].append({ "ai": bt["@ai"],
                                                "aj": bt["@aj"],
                                                "order": bt["@order"] })
