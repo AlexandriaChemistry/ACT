@@ -208,9 +208,9 @@ class MoleculeDict:
                     print("raw_mol #atoms %d mol #atoms %d" % ( len(raw_mol.GetAtoms()), len(m.GetAtoms())))
             elif fileformat == "pdb":
                 try:
-                    m = Chem.MolFromPDBFile(filename, sanitize=True, removeHs=False)
+                    m = Chem.MolFromPDBFile(filename, sanitize=True, removeHs=False, proximityBonding=False)
                 except Chem.AtomValenceException:
-                    m = Chem.MolFromPDBFile(filename, sanitize=False, removeHs=False)
+                    m = Chem.MolFromPDBFile(filename, sanitize=False, removeHs=False, proximityBonding=False)
         except ValueError:
             print(f"Problem reading {molname} from {filename}")
             return False
