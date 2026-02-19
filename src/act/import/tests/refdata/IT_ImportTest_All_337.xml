@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="molname">1-methyl-adenine-conect.pdb</String>
+  <Real Name="qtot">0</Real>
+  <Int Name="1-methyl-adenine-conect.pdb">19</Int>
+  <Sequence Name="bondorder">
+    <Int Name="Length">19</Int>
+    <String>n3-0 hn-12: 1</String>
+    <String>n3-0 c3-1: 1</String>
+    <String>n3-0 hn-11: 1</String>
+    <String>c3-1 n2-6: 1</String>
+    <String>c3-1 c2-2: 1</String>
+    <String>c2-2 c2-3: 1.5</String>
+    <String>c2-2 n2-10: 1.5</String>
+    <String>c2-3 n2-4: 1</String>
+    <String>c2-3 n2-8: 1.5</String>
+    <String>n2-4 c2-5: 2</String>
+    <String>c2-5 h2-13: 1</String>
+    <String>c2-5 n2-6: 1</String>
+    <String>n2-6 c3-7: 1</String>
+    <String>c3-7 h1-16: 1</String>
+    <String>c3-7 h1-14: 1</String>
+    <String>c3-7 h1-15: 1</String>
+    <String>n2-8 c2-9: 1.5</String>
+    <String>c2-9 h5-17: 1</String>
+    <String>c2-9 n2-10: 1.5</String>
+  </Sequence>
+</ReferenceData>
