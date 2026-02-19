@@ -218,6 +218,8 @@ std::vector<std::tuple<std::string, double>> get_files()
         { "KBr.sdf", 0 },
         { "NaCl.sdf", 0 },
         { "ammonium#formate.pdb", 0 },
+        { "1-methyl-adenine-conect.pdb", 0 },
+        { "1-methyl-adenine.pdb", 0 }
         //{ "phosphor-hexafluoride.sdf", -1 },
         //{ "boron-tetrafluoride.sdf", -1 },
         //{ "phosphor-hexafluoride.xyz", -1 },
