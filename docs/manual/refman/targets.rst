@@ -78,8 +78,8 @@ In principle, all the molecular properties mentioned in Section :ref:`sec-proper
 Parameters for Force Field Training
 ***********************************
 
-Each potential available in the ACT has its own set of parameters. Those are listed in Table :ref:`nb_parameters` for non-bonded parameters, Table :ref:`bf_parameters` for bonded parameters.
-Parameters for virtual sites are given in Table :ref:`vs_parameters` and for charge generation algorithms in Table :ref:`eem_parameters`.
+Each potential available in the ACT has its own set of parameters. Those are listed in Table :numref:`nb_parameters` for non-bonded parameters, Table :numref:`bf_parameters` for bonded parameters.
+Parameters for virtual sites are given in Table :numref:`vs_parameters` and for charge generation algorithms in Table :numref:`eem_parameters`.
 In total, well over 80 parameter categories can be trained using the ACT.
 
 .. table:: Force field parameters related to non-bonded  potentials that can be trained using ACT. Note that the parameter names are case-sensitive and, in some cases, they correspond to a Greek symbol in the equation.
