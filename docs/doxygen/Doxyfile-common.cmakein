@@ -104,4 +104,27 @@ DOT_MULTI_TARGETS      = YES
 # According to Doxygen docs, this is required for svg support on IE
 HTML_FILE_EXTENSION    = .xhtml
 
+
+
+# Script is run from the '/build' folder
+# Overwriting OUTPUT_DIRECTORY does not work
+# Using 'HTML_OUTPUT_DIR' fails: it is an unsupported tag
+# Original
 OUTPUT_DIRECTORY       = @HTML_OUTPUT_DIR@/doxygen
+
+# Fails with error:
+#
+#   CMake Error at RunDoxygen.cmake:46 (message):
+#   Doxygen failed.  Please run '/usr/share/miniconda/envs/test/bin/doxygen
+#   Doxyfile-xml' in the docs/doxygen/ subdirectory in the build tree to see
+#   the details.
+#
+# OUTPUT_DIRECTORY       = ../_build/doxygen
+
+# Fails
+#
+# OUTPUT_DIRECTORY       = _build/doxygen
+
+# Fails: it is an unsupported tag in Doxygen
+#
+# HTML_OUTPUT_DIR        = ../_build
