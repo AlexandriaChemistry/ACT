@@ -221,7 +221,7 @@ As an example, an infrared spectrum can be generated using a force field file an
 
     alexandria nma -ff OPLS2020 -charges OPLS2020-charges -db ethanol -ir ir-ethanol
 
-yielding the spectrum in Fig. :ref:`fig-ethanol`.
+yielding the spectrum in Fig. :numref:`fig-ethanol`.
 
 .. figure:: ../images/ethanol-irspectrum-opls2020.pdf
    :name: fig-ethanol
@@ -293,7 +293,7 @@ and similarly,
 
 Thermochemical properties are computed automatically by the *alexandria nma* command. For more details, please see Van der Spoel *et al.*  :cite:p:`Spoel2018a`.
 
-The *alexandria nma* used above to generate the infrared spectrum in Fig. :ref:`fig-ethanol`  computes the thermochemical variables as well (Table :ref:`tab-thermo`).
+The *alexandria nma* used above to generate the infrared spectrum in Fig. :numref:`fig-ethanol`  computes the thermochemical variables as well (Table :numref:`tab-thermo`).
 Information on calculation of the enthalpy of formation will be pubslished in the near future.
 
 .. table:: Thermochemical values for ethanol at 298.15 K based on the OPLS2020 force field~ :cite:p:`Jorgensen2023a`.
@@ -356,7 +356,7 @@ Code to compute the second virial coefficient is available in the *alexandria b2
   -maxdimer 32768
 
 where TIP4P corresponds to the well-known water model~ :cite:p:`Jorgensen1983a`, the :math:`T_1` and :math:`T_2` are the temperature limits (note gas-phase for water), :math:`dT` is the temperature interval and maxdimer determines how many relative orientations will be evaluated.
-Due to the underlying algorithm for `Quasi-Random`_ numbers, this should be a power of two. The result is plotted in Fig. :ref:`fig-b2`.
+Due to the underlying algorithm for `Quasi-Random`_ numbers, this should be a power of two. The result is plotted in Fig. :numref:`fig-b2`.
 
 .. _Quasi-Random: https://en.wikipedia.org/wiki/Sobol_sequence
 
