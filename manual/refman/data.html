@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>3.6. Training Data &#8212; ACT 1.2b documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=fa44fd50" />
+    <link rel="stylesheet" type="text/css" href="../../_static/classic.css?v=2bf1fcf8" />
+    <link rel="stylesheet" type="text/css" href="../../_static/mystnb.8ecb98da25f57f5357bf6f572d296f466b2cfe2517ffebfabe82451661e28f02.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../_static/togglebutton.css?v=9c3e77be" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sphinx_lesson.css?v=e9df6548" />
+    <link rel="stylesheet" type="text/css" href="../../_static/term_role_formatting.css?v=4194e21c" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sphinx_rtd_theme_ext_color_contrast.css?v=8e8ea19f" />
+    <link rel="stylesheet" type="text/css" href="../../_static/custom_theme.css" />
+    
+    <script src="../../_static/documentation_options.js?v=00cc29cc"></script>
+    <script src="../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../_static/copybutton.js?v=6dbb43f8"></script>
+    <script src="../../_static/minipres.js?v=a0d29692"></script>
+    <script>let toggleHintShow = 'Click to show';</script>
+    <script>let toggleHintHide = 'Click to hide';</script>
+    <script>let toggleOpenOnPrint = 'true';</script>
+    <script src="../../_static/togglebutton.js?v=1ae7504c"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="4. Developer Manual" href="../devman/header.html" />
+    <link rel="prev" title="3.4. Force Field Training Targets" href="targets.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../devman/header.html" title="4. Developer Manual"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="targets.html" title="3.4. Force Field Training Targets"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">ACT 1.2b documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="header.html" accesskey="U"><span class="section-number">3. </span>Reference Manual</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href=""><span class="section-number">3.6. </span>Training Data</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="training-data">
+<span id="sec-data"></span><h1><span class="section-number">3.6. </span>Training Data<a class="headerlink" href="#training-data" title="Link to this heading">¶</a></h1>
+<section id="using-existing-data">
+<h2><span class="section-number">3.6.1. </span>Using existing data<a class="headerlink" href="#using-existing-data" title="Link to this heading">¶</a></h2>
+<p>A recent review from the ACT developers~ <span id="id1">[<a class="reference internal" href="../references.html#id81" title="Kristian Kříž, Lisa Schmidt, Alfred T. Andersson, Marie-Madeleine Walz, and David van der Spoel. An imbalance in the force: the need for standardised benchmarks for molecular simulation. J. Chem. Inf. Model., 63:412–431, 2023. doi:10.1021/acs.jcim.2c01127.">KvrivzSA+23</a>]</span> discusses the different available quantum chemistry data sets. Some of these can be used in the ACT, for instance the coupled-cluster dimer data set due to Donchev {em et al}~ <span id="id2">[<a class="reference internal" href="../references.html#id36" title="Alexander G. Donchev, Andrew G. Taube, Elizabeth Decolvenaere, Cory Hargus, Robert T. McGibbon, Ka-Hei Law, Brent A. Gregersen, Je-Luen Li, Kim Palmo, Karthik Siva, Michael Bergdorf, John L. Klepeis, and David E. Shaw. Quantum chemical benchmark databases of gold-standard dimer interaction energies. Sci. Data, 8(1):55, 2021. doi:10.1038/s41597-021-00833-x.">DTD+21</a>]</span>, the Non-covalent interaction atlas from the Czech group led by u{R}ez{'a}u{c}~ <span id="id3">[<a class="reference internal" href="../references.html#id114" title="Jan Řezáč. Non-covalent interactions atlas benchmark data sets: hydrogen bonding. J. Chem. Theory Comput., 16:2355-2368, 2020. doi:10.1021/acs.jctc.9b01265.">vRezavc20</a>]</span> and some more.
+The SAPT dataset on protein side-chain analogs and backbone analogs by Burns~ <span id="id4">[<a class="reference internal" href="../references.html#id16" title="Lori A. Burns, John C. Faver, Zheng Zheng, Michael S. Marshall, Daniel G. A. Smith, Kenno Vanommeslaeghe, Alexander D. MacKerell, Kenneth M. Merz, and C. David Sherrill. The BioFragment Database (BFDb): An open-data platform for computational chemistry analysis of noncovalent interactions. J. Chem. Phys., 147:161727, 2017. doi:10.1063/1.5001028.">BFZ+17</a>]</span> can in principle be used in the ACT as well.</p>
+<p>In principle, the ANI-1 dataset~ <span id="id5">[<a class="reference internal" href="../references.html#id123" title="Justin S. Smith, Olexandr Isayev, and Adrian E. Roitberg. ANI-1, a data set of 20 million calculated off-equilibrium conformations for organic molecules. Sci. Data, 4:170193, 2017. doi:10.1038/sdata.2017.193.">SIR17</a>]</span> can be used to provide off-equilibrium energies of small compounds, but in the first version it was limited to compound containing the elements C, H, N, O only.</p>
+</section>
+<section id="alexandria-library">
+<h2><span class="section-number">3.6.2. </span>Alexandria Library<a class="headerlink" href="#alexandria-library" title="Link to this heading">¶</a></h2>
+<p>The Alexandria Library contains energies at optimized conformations of about 5000 compounds, thermochemistry, electric multipoles and electrostatic potential at grid points around molecules~ <span id="id6">[<a class="reference internal" href="../references.html#id47" title="Mohammad Mehdi Ghahremanpour, Paul J. van Maaren, and David van der Spoel. Alexandria library [data set]. Zenodo. 2017. URL: https://dx.doi.org/10.5281/zenodo.1004711.">GvMvdS17</a>, <a class="reference internal" href="../references.html#id48" title="Mohammad Mehdi Ghahremanpour, Paul J. van Maaren, and David van der Spoel. The Alexandria library: a quantum chemical database of molecular properties for force field development. Sci. Data, 5:180062, 2018. doi:10.1038/sdata.2018.62.">GvMvdS18</a>]</span>.
+It is possible to train electrostatic models using data from the library.</p>
+</section>
+<section id="donchev-data-set">
+<h2><span class="section-number">3.6.3. </span>Donchev data set<a class="headerlink" href="#donchev-data-set" title="Link to this heading">¶</a></h2>
+<p>To use the dataset due to Donchev {em et al} <span id="id7">[<a class="reference internal" href="../references.html#id36" title="Alexander G. Donchev, Andrew G. Taube, Elizabeth Decolvenaere, Cory Hargus, Robert T. McGibbon, Ka-Hei Law, Brent A. Gregersen, Je-Luen Li, Kim Palmo, Karthik Siva, Michael Bergdorf, John L. Klepeis, and David E. Shaw. Quantum chemical benchmark databases of gold-standard dimer interaction energies. Sci. Data, 8(1):55, 2021. doi:10.1038/s41597-021-00833-x.">DTD+21</a>]</span>, we provide a script that reads the comma-separated value file provided by those authors. Please refer to their article for download information.
+Then refer to the built-in help in the script for more guidance by executing:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">donchev2molprop</span> <span class="o">-</span><span class="n">h</span>
+</pre></div>
+</div>
+<p>and investigating the output.</p>
+</section>
+<section id="non-covalent-interaction-atlas">
+<h2><span class="section-number">3.6.4. </span>Non-covalent interaction atlas<a class="headerlink" href="#non-covalent-interaction-atlas" title="Link to this heading">¶</a></h2>
+<p>The Non-covalent interaction atlas~ <span id="id8">[<a class="reference internal" href="../references.html#id114" title="Jan Řezáč. Non-covalent interactions atlas benchmark data sets: hydrogen bonding. J. Chem. Theory Comput., 16:2355-2368, 2020. doi:10.1021/acs.jctc.9b01265.">vRezavc20</a>]</span> can be used in a similar manner. At the time of writing it can be href{<a class="reference external" href="http://www.nciatlas.org">http://www.nciatlas.org</a>}{found here}.
+To convert the data to ACT files, start by:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ncia2molprop</span> <span class="o">-</span><span class="n">h</span>
+</pre></div>
+</div>
+<p>and investigate your options.</p>
+</section>
+<section id="act-data">
+<h2><span class="section-number">3.6.5. </span>ACT data<a class="headerlink" href="#act-data" title="Link to this heading">¶</a></h2>
+<p>Quantum chemical data used in ACT-related publications will be uploaded to a sharing site.</p>
+</section>
+<section id="generating-sapt-data">
+<span id="sapt"></span><h2><span class="section-number">3.6.6. </span>Generating SAPT data<a class="headerlink" href="#generating-sapt-data" title="Link to this heading">¶</a></h2>
+<p>A recent review described the available data sets available for machine learning or force field training~ <span id="id9">[<a class="reference internal" href="../references.html#id81" title="Kristian Kříž, Lisa Schmidt, Alfred T. Andersson, Marie-Madeleine Walz, and David van der Spoel. An imbalance in the force: the need for standardised benchmarks for molecular simulation. J. Chem. Inf. Model., 63:412–431, 2023. doi:10.1021/acs.jcim.2c01127.">KvrivzSA+23</a>]</span>.
+There is however a lack of certain data, or data sets are incomplete. For this reason there is a git repository <a class="reference external" href="https://github.com/AlexandriaChemistry/SaptACT">SaptACT</a> that provides script to run SAPT calculations using the Psi4 software~ <span id="id10">[<a class="reference internal" href="../references.html#id179" title="Justin M. Turney, Andrew C. Simmonett, Robert M. Parrish, Edward G. Hohenstein, Francesco A. Evangelista, Justin T. Fermann, Benjamin J. Mintz, Lori A. Burns, Jeremiah J. Wilke, Micah L. Abrams, Nicholas J. Russ, Matthew L. Leininger, Curtis L. Janssen, Edward T. Seidl, Wesley D. Allen, Henry F. Schaefer, Rollin A. King, Edward F. Valeev, C. David Sherrill, and T. Daniel Crawford. Psi4: an open-source ab initio electronic structure program. Wiley Interdiscip. Rev. Comput. Mol. Sci., 2:556-565, 2011. doi:10.1002/wcms.93.">TSP+11</a>]</span> including tools to convert the output to ACT compatible inputs (see below).
+The steps needed to prepare data for training in ACT are as follows:</p>
+<ul>
+<li><p>Clone the <a class="reference external" href="https://github.com/AlexandriaChemistry/SaptACT">SaptACT</a> repository using <em>git</em></p></li>
+<li><p>Prepare selection of compounds, e.g. water, methanol, ethanol, and make sure that monomer structures for these compounds are present in the <em>xyz/monomers</em> catalog.</p></li>
+<li><p>Generate a dimer selection file using the <em>gen_dimers.py</em> script in the SaptACT repository:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">./</span><span class="n">gen_dimers</span><span class="o">.</span><span class="n">py</span> <span class="o">-</span><span class="n">sel</span> <span class="n">water</span> <span class="n">methanol</span> <span class="n">ethanol</span> <span class="o">-</span><span class="n">o</span> <span class="n">alcohol</span><span class="o">.</span><span class="n">dat</span>
+</pre></div>
+</div>
+<p>which will generate a file containing:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">water</span><span class="c1">#water</span>
+<span class="n">water</span><span class="c1">#methanol</span>
+<span class="n">water</span><span class="c1">#ethanol</span>
+<span class="n">methanol</span><span class="c1">#methanol</span>
+<span class="n">methanol</span><span class="c1">#ethanol</span>
+<span class="n">ethanol</span><span class="c1">#ethanol</span>
+</pre></div>
+</div>
+<p>where the # symbol separates the monomers. Note that the order on the command line determines the order in the selection file.</p>
+</li>
+<li><p>Perform SAPT calculations using Psi4 by generating randomly oriented dimers at a series of distances defined by scaling the shortest distance between any pair of atoms in the generated orientations. In this case, six distances varying from 0.9 to 1.4 times the sum of the van der Waals radii of the nearest atoms will be generated.:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">./</span><span class="n">run_calcs</span><span class="o">.</span><span class="n">py</span> <span class="o">-</span><span class="n">dimers</span> <span class="n">alchol</span><span class="o">.</span><span class="n">dat</span> <span class="o">-</span><span class="n">ndist</span> <span class="mi">6</span> <span class="o">-</span><span class="n">mindist</span> <span class="mf">0.9</span> <span class="o">-</span><span class="n">maxdist</span> <span class="mf">1.4</span> <span class="o">-</span><span class="n">norient</span> <span class="mi">10</span>
+</pre></div>
+</div>
+<p>Note, that in the above command 6 x 10 calculations are started for each dimer in <em>alcohol.dat</em>, that is 360 calculations in total. You will obviously need a compute cluster to do these calculations, in particular if you select a more accurate SAPT level of theory~ <span id="id11">[<a class="reference internal" href="../references.html#id110" title="Trent M. Parker, Lori A. Burns, Robert M. Parrish, Alden G. Ryno, and C. David Sherrill. Levels of symmetry adapted perturbation theory (sapt). I. efficiency and performance for interaction energies. J. Chem. Phys., 140(9):094106, 2014. doi:10.1063/1.4867135.">PBP+14</a>]</span> than the default (sapt2+/aug-cc-pvdz).</p>
+</li>
+</ul>
+</section>
+<section id="generating-single-molecule-data">
+<span id="qmdata"></span><h2><span class="section-number">3.6.7. </span>Generating single molecule data<a class="headerlink" href="#generating-single-molecule-data" title="Link to this heading">¶</a></h2>
+<p>Single molecules off-equilibrium energies and forces are needed to parameterize the intramolecular potential functions. Scripts are available that will take a structure of a monomer, perform a 50 ps MD simulation in the gas phase at elevated temperature using the GAFF force field~ <span id="id12">[<a class="reference internal" href="../references.html#id165" title="J Wang, R M Wolf, J W Caldwell, P A Kollman, and D A Case. Development and testing of a general AMBER force field. J. Comput. Chem., 25:1157–1174, 2004. doi:10.1002/jcc.20035.">WWC+04</a>]</span> and the GROMACS software~ <span id="id13">[<a class="reference internal" href="../references.html#id111" title="Sander Pronk, Szilárd Páll, Roland Schulz, Per Larsson, Pär Bjelkmar, Rossen Apostolov, Michael R Shirts, Jeremy C Smith, Peter M Kasson, David van der Spoel, Berk Hess, and Erik Lindahl. GROMACS 4.5: a high-throughput and highly parallel open source molecular simulation toolkit. Bioinformatics, 29:845–854, April 2013. doi:10.1093/bioinformatics/btt055.">PPallS+13</a>]</span>.
+Then,  conformations are extracted from the simulation trajectory and these are subjected to quantum chemistry calculations using Psi4~ <span id="id14">[<a class="reference internal" href="../references.html#id179" title="Justin M. Turney, Andrew C. Simmonett, Robert M. Parrish, Edward G. Hohenstein, Francesco A. Evangelista, Justin T. Fermann, Benjamin J. Mintz, Lori A. Burns, Jeremiah J. Wilke, Micah L. Abrams, Nicholas J. Russ, Matthew L. Leininger, Curtis L. Janssen, Edward T. Seidl, Wesley D. Allen, Henry F. Schaefer, Rollin A. King, Edward F. Valeev, C. David Sherrill, and T. Daniel Crawford. Psi4: an open-source ab initio electronic structure program. Wiley Interdiscip. Rev. Comput. Mol. Sci., 2:556-565, 2011. doi:10.1002/wcms.93.">TSP+11</a>]</span>.</p>
+</section>
+<section id="conversion-to-act-molprop-files">
+<h2><span class="section-number">3.6.8. </span>Conversion to ACT molprop files<a class="headerlink" href="#conversion-to-act-molprop-files" title="Link to this heading">¶</a></h2>
+<p>The ACT uses the href{<a class="reference external" href="https://en.wikipedia.org/wiki">https://en.wikipedia.org/wiki</a>/XML{eXtensible Markup Language} to store both data for training and force field files. Once your SAPT calculations are finished you need to perform the following steps to generate the ACT input:</p>
+<ul>
+<li><p>Convert the Psi4 outputs to compact and human-readable href{<a class="reference external" href="https://en.wikipedia.org/wiki/JSON">https://en.wikipedia.org/wiki/JSON</a>}{json} files using another script in SaptACT:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">./</span><span class="n">generate_json</span><span class="o">.</span><span class="n">py</span>
+</pre></div>
+</div>
+<p>which will traverse the output directories, find Psi4 outputs, and if there is not already a <em>results.json</em> file, will generate it. Please familiarize yourself with the content of these files.</p>
+</li>
+<li><p>When the json files have been generated, you are ready to convert them to a molprop file:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">./</span><span class="n">write_molprop</span><span class="o">.</span><span class="n">py</span> <span class="o">-</span><span class="n">o</span> <span class="n">molprop</span><span class="o">.</span><span class="n">xml</span>
+</pre></div>
+</div>
+<p>please inspect the output file from this script to verify that your calculations are present.</p>
+</li>
+</ul>
+<p>Both these scripts have more flags that can be useful, please investigate those using the <em>-h</em> option.</p>
+</section>
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+  <div>
+    <h3><a href="../../index.html">Table of Contents</a></h3>
+    <ul>
+<li><a class="reference internal" href="#">3.6. Training Data</a><ul>
+<li><a class="reference internal" href="#using-existing-data">3.6.1. Using existing data</a></li>
+<li><a class="reference internal" href="#alexandria-library">3.6.2. Alexandria Library</a></li>
+<li><a class="reference internal" href="#donchev-data-set">3.6.3. Donchev data set</a></li>
+<li><a class="reference internal" href="#non-covalent-interaction-atlas">3.6.4. Non-covalent interaction atlas</a></li>
+<li><a class="reference internal" href="#act-data">3.6.5. ACT data</a></li>
+<li><a class="reference internal" href="#generating-sapt-data">3.6.6. Generating SAPT data</a></li>
+<li><a class="reference internal" href="#generating-single-molecule-data">3.6.7. Generating single molecule data</a></li>
+<li><a class="reference internal" href="#conversion-to-act-molprop-files">3.6.8. Conversion to ACT molprop files</a></li>
+</ul>
+</li>
+</ul>
+
+  </div>
+  <div>
+    <h4>Previous topic</h4>
+    <p class="topless"><a href="targets.html"
+                          title="previous chapter"><span class="section-number">3.4. </span>Force Field Training Targets</a></p>
+  </div>
+  <div>
+    <h4>Next topic</h4>
+    <p class="topless"><a href="../devman/header.html"
+                          title="next chapter"><span class="section-number">4. </span>Developer Manual</a></p>
+  </div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../../_sources/manual/refman/data.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../devman/header.html" title="4. Developer Manual"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="targets.html" title="3.4. Force Field Training Targets"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">ACT 1.2b documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="header.html" ><span class="section-number">3. </span>Reference Manual</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href=""><span class="section-number">3.6. </span>Training Data</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2026 The Alexandria Chemistry Initiative.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3.
+    </div>
+  </body>
+</html>

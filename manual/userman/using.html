@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>2.2. Using the ACT &#8212; ACT 1.2b documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=fa44fd50" />
+    <link rel="stylesheet" type="text/css" href="../../_static/classic.css?v=2bf1fcf8" />
+    <link rel="stylesheet" type="text/css" href="../../_static/mystnb.8ecb98da25f57f5357bf6f572d296f466b2cfe2517ffebfabe82451661e28f02.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../_static/togglebutton.css?v=9c3e77be" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sphinx_lesson.css?v=e9df6548" />
+    <link rel="stylesheet" type="text/css" href="../../_static/term_role_formatting.css?v=4194e21c" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sphinx_rtd_theme_ext_color_contrast.css?v=8e8ea19f" />
+    <link rel="stylesheet" type="text/css" href="../../_static/custom_theme.css" />
+    
+    <script src="../../_static/documentation_options.js?v=00cc29cc"></script>
+    <script src="../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../_static/copybutton.js?v=6dbb43f8"></script>
+    <script src="../../_static/minipres.js?v=a0d29692"></script>
+    <script>let toggleHintShow = 'Click to show';</script>
+    <script>let toggleHintHide = 'Click to hide';</script>
+    <script>let toggleOpenOnPrint = 'true';</script>
+    <script src="../../_static/togglebutton.js?v=1ae7504c"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script>window.MathJax = {"options": {"processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="2.3. MD Simulations with Alexandria Force Fields" href="simulation.html" />
+    <link rel="prev" title="2.1. Installation of the ACT" href="installation.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="simulation.html" title="2.3. MD Simulations with Alexandria Force Fields"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="installation.html" title="2.1. Installation of the ACT"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">ACT 1.2b documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="header.html" accesskey="U"><span class="section-number">2. </span>User Manual</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href=""><span class="section-number">2.2. </span>Using the ACT</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="using-the-act">
+<h1><span class="section-number">2.2. </span>Using the ACT<a class="headerlink" href="#using-the-act" title="Link to this heading">¶</a></h1>
+<p>To use the ACT, you first need to install the ACT. Once you have finished that, please try the command:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">alexandria</span> <span class="o">-</span><span class="n">h</span>
+</pre></div>
+</div>
+<p>and:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">alexandria</span> <span class="n">help</span> <span class="n">commands</span>
+</pre></div>
+</div>
+<p>the output of which is given in Table <code class="xref std std-numref docutils literal notranslate"><span class="pre">tab-act-commands</span></code> .</p>
+<table class="docutils align-default" id="tab-act-commands">
+<caption><span class="caption-text">Commands available in the alexandria program.</span><a class="headerlink" href="#tab-act-commands" title="Link to this table">¶</a></caption>
+<thead>
+<tr class="row-odd"><th class="head"><p><strong>Command</strong></p></th>
+<th class="head"><p><strong>Description</strong></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>analyze</p></td>
+<td><p>Analyze molecular or force field properties from a
+database and generate publication quality tables in LaTeX.</p></td>
+</tr>
+<tr class="row-odd"><td><p>b2</p></td>
+<td><p>Compute second virial coefficient as a function of
+temperature.</p></td>
+</tr>
+<tr class="row-even"><td><p>edit_ff</p></td>
+<td><p>Manipulate and compare force field files in various ways
+and test whether reading and writing works.</p></td>
+</tr>
+<tr class="row-odd"><td><p>edit_mp</p></td>
+<td><p>Utility to merge a number of molecular property files and
+a SQLite database. Can also test reading and writing the
+molecular property file. It can also check the molecular
+property file for missing hydrogens and for whether it is
+possible to generate topologies for all compounds.
+Finally it can generate charges for all compounds.</p></td>
+</tr>
+<tr class="row-even"><td><p>gen_ff</p></td>
+<td><p>Generate a force field file from a user specification.</p></td>
+</tr>
+<tr class="row-odd"><td><p>gentop</p></td>
+<td><p>Generate a molecular topology and coordinates based on
+structure files. Only inputs for OpenMM can be generated
+at this point in time.</p></td>
+</tr>
+<tr class="row-even"><td><p>geometry_ff</p></td>
+<td><p>Deduce bond/angle/dihedral distributions from a set of
+structures and add those to a force field file.</p></td>
+</tr>
+<tr class="row-odd"><td><p>help</p></td>
+<td><p>Print help information.</p></td>
+</tr>
+<tr class="row-even"><td><p>merge_ff</p></td>
+<td><p>Utility to merge a number of force field files and write a
+new file with average parameters. Can also write a LaTeX
+table.</p></td>
+</tr>
+<tr class="row-odd"><td><p>min_complex</p></td>
+<td><p>Generate inputs for an energy scan.</p></td>
+</tr>
+<tr class="row-even"><td><p>nma</p></td>
+<td><p>Perform normal mode analysis and compute vibrational
+frequencies and thermochemistry properties.</p></td>
+</tr>
+<tr class="row-odd"><td><p>simulate</p></td>
+<td><p>Perform a MD simulation and generate a trajectory.</p></td>
+</tr>
+<tr class="row-even"><td><p>train_ff</p></td>
+<td><p>Train a force field to reproduce reference data.</p></td>
+</tr>
+</tbody>
+</table>
+<p>Note that one can get detailed help for the alexandria modules using the -h flag, e.g.:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">alexandria</span> <span class="n">train_ff</span> <span class="o">-</span><span class="n">h</span><span class="o">.</span>
+</pre></div>
+</div>
+<p>In addition to the <em>alexandria</em> program, the ACT
+contains a number of python scripts and utilities (Table <code class="xref std std-numref docutils literal notranslate"><span class="pre">tab-scripts</span></code> ), some of which are needed for the quantum chemistry calculations as well (see Sections <a class="reference internal" href="../refman/data.html#sapt"><span class="std std-ref">Generating SAPT data</span></a> and <a class="reference internal" href="../refman/data.html#qmdata"><span class="std std-ref">Generating single molecule data</span></a>).</p>
+<table class="docutils align-default" id="tab-scripts">
+<caption><span class="caption-text">Python utilities available in the ACT.</span><a class="headerlink" href="#tab-scripts" title="Link to this table">¶</a></caption>
+<thead>
+<tr class="row-odd"><th class="head"><p><strong>Command</strong></p></th>
+<th class="head"><p><strong>Description</strong></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>coords2molprop</p></td>
+<td><p>Read a bunch of structure files containing molecule
+dimers A-B and write a molprop file.</p></td>
+</tr>
+<tr class="row-odd"><td><p>dimer_scan</p></td>
+<td><p>Compute dimer potentials for along a user-defined
+distance between two molecules.</p></td>
+</tr>
+<tr class="row-even"><td><p>donchev2molprop</p></td>
+<td><p>Convert dimer interactions from the Donchev paper
+<span id="id1">[<a class="reference internal" href="../references.html#id36" title="Alexander G. Donchev, Andrew G. Taube, Elizabeth Decolvenaere, Cory Hargus, Robert T. McGibbon, Ka-Hei Law, Brent A. Gregersen, Je-Luen Li, Kim Palmo, Karthik Siva, Michael Bergdorf, John L. Klepeis, and David E. Shaw. Quantum chemical benchmark databases of gold-standard dimer interaction energies. Sci. Data, 8(1):55, 2021. doi:10.1038/s41597-021-00833-x.">DTD+21</a>]</span>  to a molprop file.</p></td>
+</tr>
+<tr class="row-odd"><td><p>gauss2molprop</p></td>
+<td><p>Read a Gaussian output file from the Alexandria
+library <span id="id2">[<a class="reference internal" href="../references.html#id48" title="Mohammad Mehdi Ghahremanpour, Paul J. van Maaren, and David van der Spoel. The Alexandria library: a quantum chemical database of molecular properties for force field development. Sci. Data, 5:180062, 2018. doi:10.1038/sdata.2018.62.">GvMvdS18</a>]</span> to a molprop file.</p></td>
+</tr>
+<tr class="row-even"><td><p>generate_mp</p></td>
+<td><p>Read and process many Gaussian output files from the
+Alexandria library <span id="id3">[<a class="reference internal" href="../references.html#id48" title="Mohammad Mehdi Ghahremanpour, Paul J. van Maaren, and David van der Spoel. The Alexandria library: a quantum chemical database of molecular properties for force field development. Sci. Data, 5:180062, 2018. doi:10.1038/sdata.2018.62.">GvMvdS18</a>]</span> and
+generate a molprop file.</p></td>
+</tr>
+<tr class="row-odd"><td><p>install_act</p></td>
+<td><p>Script to install the ACT</p></td>
+</tr>
+<tr class="row-even"><td><p>molselect</p></td>
+<td><p>Make a selection file based on compounds from  the
+Alexandria Library.</p></td>
+</tr>
+<tr class="row-odd"><td><p>ncia2molprop</p></td>
+<td><p>Read an xyz file and write a molprop file.</p></td>
+</tr>
+<tr class="row-even"><td><p>plot_convergence</p></td>
+<td><p>Read an ACT training log file and plot the converge
+of the parameters as a function of generations in the
+evolution of the gene pool.</p></td>
+</tr>
+<tr class="row-odd"><td><p>reshuffle_selection</p></td>
+<td><p>Read a selection file and randomly assign Train
+status to entries, then write a new selection file.</p></td>
+</tr>
+<tr class="row-even"><td><p>view_fitness</p></td>
+<td><p>Visualizes the fitness per generation of a GA/HYBRID
+by plotting the maximum, minimum, mean, and median,
+for an example see Fig. <code class="xref std std-numref docutils literal notranslate"><span class="pre">fig-ga-ftrain</span></code></p></td>
+</tr>
+</tbody>
+</table>
+<figure class="align-center" id="fig-ga-ftrain">
+<a class="reference internal image-reference" href="../../_images/ga_ftrain.pdf"><img alt="../../_images/ga_ftrain.pdf" src="../../_images/ga_ftrain.pdf" style="width: 90%;" />
+</a>
+<figcaption>
+<p><span class="caption-text">Sample convergence plot from a HYBRID training, generated by the view_fitness script.</span><a class="headerlink" href="#fig-ga-ftrain" title="Link to this image">¶</a></p>
+</figcaption>
+</figure>
+<section id="act-file-formats">
+<span id="sec-files"></span><h2><span class="section-number">2.2.1. </span>ACT File formats<a class="headerlink" href="#act-file-formats" title="Link to this heading">¶</a></h2>
+<p>The ACT contains a number of specific file formats, in principle all of them generated by the ACT itself through scripts (Table <code class="xref std std-numref docutils literal notranslate"><span class="pre">tab-scripts</span></code>) or <em>alexandria</em> (Table <code class="xref std std-numref docutils literal notranslate"><span class="pre">tab-act-commands</span></code>). The files are listed below:</p>
+<ul>
+<li><p>Selection file, with <em>.dat</em> extension.  List of monomers or dimers and designation on whether they are part of the train or test set. In case of dimers, the two compounds are separated by a hash (#) symbol.:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">water</span><span class="c1">#ethanol|Test</span>
+<span class="n">water</span><span class="c1">#water|Train</span>
+<span class="n">ethanol</span><span class="c1">#ethanol|Train</span>
+</pre></div>
+</div>
+</li>
+<li><p>Force field file, with <em>.xml</em> extension.</p></li>
+<li><p>Molprop file, with <em>.xml</em> extension.</p></li>
+</ul>
+</section>
+<section id="creating-a-new-force-field-file-from-scratch">
+<h2><span class="section-number">2.2.2. </span>Creating a new force field file from scratch<a class="headerlink" href="#creating-a-new-force-field-file-from-scratch" title="Link to this heading">¶</a></h2>
+<p>Start by copying the examples directory from the source catalog, and change directory to  <em>examples/NonPol</em>.</p>
+<p>Now, let’s see what <em>alexandria gen_ff</em> has to offer:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">alexandria</span> <span class="n">gen_ff</span> <span class="o">-</span><span class="n">h</span>
+</pre></div>
+</div>
+<p>(to see the output check the help text).</p>
+<p>As we see there are many options, but for Alexandria force fields most can remain default. Make a fresh directory and use the one-line script:</p>
+<blockquote>
+<div><p>./genff.sh</p>
+</div></blockquote>
+<p>which gives output similar to:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">There</span> <span class="n">are</span> <span class="mi">62</span> <span class="n">atom</span> <span class="n">types</span> <span class="ow">in</span> <span class="n">the</span> <span class="n">force</span> <span class="n">field</span> <span class="k">with</span> <span class="mi">42</span> <span class="n">properties</span><span class="o">.</span>
+<span class="n">There</span> <span class="n">are</span> <span class="mi">127</span> <span class="n">element</span> <span class="n">properties</span>
+
+<span class="n">Thanks</span> <span class="k">for</span> <span class="n">using</span> <span class="n">the</span> <span class="n">Alexandria</span> <span class="n">Chemistry</span> <span class="n">Toolkit</span><span class="o">.</span>
+</pre></div>
+</div>
+<p>The script prints that it has read and processes a number of files from the ACT installation. These data files can be copied and modified by the user. The files should be relatively simple to understand. Installed files are in the share/act directory. Please note that the force field files use the eXtensible Markup Language that provides a structured way of storing data. Do not edit manually if at all possible.</p>
+<p>This force field file gives us something to start with, but it is not complete yet. First, we have to add the possible bond lengths, bond angles etc., and those come from the Alexandria Library (see below). For now, we will use the provided file in XML/alcohol.xml. Thus, we need to run:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">./</span><span class="n">geomff</span><span class="o">.</span><span class="n">sh</span>
+</pre></div>
+</div>
+<p>which should produce the following output:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>   <span class="n">Welcome</span> <span class="n">to</span> <span class="n">the</span> <span class="n">Alexandria</span> <span class="n">Chemistry</span> <span class="n">Toolkit</span>
+
+<span class="n">There</span> <span class="n">are</span> <span class="mi">5</span> <span class="n">molecules</span> <span class="ow">in</span> <span class="n">the</span> <span class="n">selection</span> <span class="n">file</span> <span class="n">SELECTIONS</span><span class="o">/</span><span class="n">alcohol</span><span class="o">-</span><span class="n">monomer</span><span class="o">.</span><span class="n">dat</span><span class="o">.</span>
+<span class="n">There</span> <span class="n">are</span> <span class="mi">5</span> <span class="n">molprops</span><span class="o">.</span> <span class="n">Will</span> <span class="n">now</span> <span class="n">sort</span> <span class="n">them</span><span class="o">.</span>
+<span class="n">There</span> <span class="n">were</span> <span class="mi">0</span> <span class="n">double</span> <span class="n">entries</span><span class="p">,</span> <span class="n">leaving</span> <span class="mi">5</span> <span class="n">after</span> <span class="n">merging</span><span class="o">.</span>
+<span class="n">There</span> <span class="n">were</span> <span class="mi">5</span> <span class="n">total</span> <span class="n">molecules</span> <span class="n">before</span> <span class="n">merging</span><span class="p">,</span> <span class="mi">5</span> <span class="n">after</span><span class="o">.</span>
+<span class="n">Have</span> <span class="n">generated</span> <span class="mi">34</span> <span class="n">entries</span> <span class="k">for</span> <span class="n">bond</span> <span class="n">charge</span> <span class="n">correction</span> <span class="p">(</span><span class="n">SQE</span> <span class="n">algorithm</span><span class="p">)</span><span class="o">.</span>
+
+<span class="n">Please</span> <span class="n">check</span> <span class="n">output</span> <span class="ow">in</span> <span class="n">file</span> <span class="n">geometry_ff</span><span class="o">.</span><span class="n">log</span><span class="o">.</span>
+</pre></div>
+</div>
+<p>This generates a ready-to-optimize force field file, myff2.xml and a log file that is good to inspect.  It provides statistics over the geometry of compounds in the input xml file:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">bond</span><span class="o">-</span><span class="n">c3_b</span><span class="o">~</span><span class="n">h_b</span> <span class="nb">len</span> <span class="mf">108.8</span> <span class="n">sigma</span> <span class="mf">0.3</span> <span class="p">(</span><span class="n">pm</span><span class="p">)</span> <span class="n">N</span> <span class="o">=</span> <span class="mi">28</span>
+<span class="n">bond</span><span class="o">-</span><span class="n">c3_b</span><span class="o">~</span><span class="n">c3_b</span> <span class="nb">len</span> <span class="mf">150.9</span> <span class="n">sigma</span> <span class="mf">0.6</span> <span class="p">(</span><span class="n">pm</span><span class="p">)</span> <span class="n">N</span> <span class="o">=</span> <span class="mi">7</span>
+
+<span class="n">angle</span><span class="o">-</span><span class="n">c3_b</span><span class="o">~</span><span class="n">c3_b</span><span class="o">~</span><span class="n">c3_b</span> <span class="n">angle</span> <span class="mf">112.1</span> <span class="n">sigma</span> <span class="mf">0.6</span> <span class="p">(</span><span class="n">deg</span><span class="p">)</span> <span class="n">N</span> <span class="o">=</span> <span class="mi">3</span>
+<span class="n">angle</span><span class="o">-</span><span class="n">c3_b</span><span class="o">~</span><span class="n">c3_b</span><span class="o">~</span><span class="n">o3_b</span> <span class="n">angle</span> <span class="mf">108.6</span> <span class="n">sigma</span> <span class="mf">3.8</span> <span class="p">(</span><span class="n">deg</span><span class="p">)</span> <span class="n">N</span> <span class="o">=</span> <span class="mi">7</span>
+</pre></div>
+</div>
+<p>which informs us, for instance, that there are 28 aliphatic c3-h bonds in the input with an average length of 108.8 <span class="math notranslate nohighlight">\(\pm\)</span> 0.3 pm.</p>
+</section>
+<section id="train-your-first-force-field">
+<h2><span class="section-number">2.2.3. </span>Train your first force field<a class="headerlink" href="#train-your-first-force-field" title="Link to this heading">¶</a></h2>
+<p>Now you can run the first part of the example training, the intermolecular interactions, using:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">./</span><span class="n">run_inter</span><span class="o">.</span><span class="n">sh</span>
+</pre></div>
+</div>
+<p>and the adventure has begun! This part will train the van der Waals parameters <span class="math notranslate nohighlight">\(\sigma\)</span> and <span class="math notranslate nohighlight">\(\epsilon\)</span> (Eqn. <a class="reference internal" href="../refman/energy.html#equation-12-6">(18)</a>) as well as the charge distribution width <span class="math notranslate nohighlight">\(\zeta\)</span> (Eqn. <a class="reference internal" href="../refman/energy.html#equation-vcoulg">(2)</a>) and the electronegativity <span class="math notranslate nohighlight">\(\chi\)</span> and hardness <span class="math notranslate nohighlight">\(\eta\)</span>. The command will output some text to the terminal:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">There</span> <span class="n">are</span> <span class="mi">16</span> <span class="n">threads</span><span class="o">/</span><span class="n">processes</span> <span class="ow">and</span> <span class="mi">5</span> <span class="n">parameter</span> <span class="n">types</span> <span class="n">to</span> <span class="n">optimize</span><span class="o">.</span>
+<span class="n">rank</span><span class="p">:</span> <span class="mi">0</span><span class="o">/</span><span class="mi">16</span> <span class="n">nodetype</span><span class="p">:</span> <span class="n">Master</span> <span class="n">superior</span><span class="p">:</span> <span class="mi">0</span>
+<span class="n">nmiddlemen</span><span class="p">:</span> <span class="mi">16</span> <span class="n">nhelper_per_middleman</span><span class="p">:</span> <span class="mi">0</span>
+<span class="n">ordinal</span><span class="p">:</span> <span class="mi">0</span> <span class="n">nhelper</span><span class="p">:</span> <span class="mi">0</span>
+<span class="n">middlemen</span><span class="p">:</span>   <span class="mi">1</span>   <span class="mi">2</span>   <span class="mi">3</span>   <span class="mi">4</span>   <span class="mi">5</span>   <span class="mi">6</span>   <span class="mi">7</span>   <span class="mi">8</span>   <span class="mi">9</span>  <span class="mi">10</span>  <span class="mi">11</span>  <span class="mi">12</span>  <span class="mi">13</span>  <span class="mi">14</span>  <span class="mi">15</span>
+</pre></div>
+</div>
+<p>showing the genetic algorithm is using 16 individuals and the code is being run on 16 threads in parallel.
+Then, at the end you will see something like:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">There</span> <span class="n">were</span> <span class="mi">39</span> <span class="n">EPOT</span><span class="o">-</span><span class="n">Train</span> <span class="n">outliers</span> <span class="k">for</span> <span class="n">Train</span><span class="o">.</span>
+<span class="n">There</span> <span class="n">were</span> <span class="mi">29</span> <span class="n">EPOT</span><span class="o">-</span><span class="n">Test</span> <span class="n">outliers</span> <span class="k">for</span> <span class="n">Test</span><span class="o">.</span>
+
+<span class="n">Please</span> <span class="n">check</span> <span class="n">output</span> <span class="ow">in</span> <span class="n">file</span> <span class="n">train_inter</span><span class="o">.</span><span class="n">log</span><span class="o">.</span>
+</pre></div>
+</div>
+<p>encouraging you to inspect the log file. It can be very helpful to check outliers that can help you to find inconsistencies in both the data and the model you are trying to train.
+After this training instance, a correlation plot <em>EPOT.xvg</em> will be produced (Fig. <code class="xref std std-numref docutils literal notranslate"><span class="pre">fig-epot</span></code>); you can use the:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">./</span><span class="n">plot</span><span class="o">-</span><span class="n">epot</span><span class="o">.</span><span class="n">sh</span>
+</pre></div>
+</div>
+<p>script to make the plot yourself as well.</p>
+<figure class="align-center" id="fig-epot">
+<a class="reference internal image-reference" href="../../_images/example-EPOT.pdf"><img alt="../../_images/example-EPOT.pdf" src="../../_images/example-EPOT.pdf" style="width: 65%;" />
+</a>
+<figcaption>
+<p><span class="caption-text">Correlation between interaction energy from SAPT (x-axis) and training (y-axis).</span><a class="headerlink" href="#fig-epot" title="Link to this image">¶</a></p>
+</figcaption>
+</figure>
+<p>You can inspect the different .xvg output files in the generated subdirectory <em>inds</em>. Fig. <code class="xref std std-numref docutils literal notranslate"><span class="pre">fig-chi2</span></code> shows how the total deviation from SAPT data, you can recreate the figure using the:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">./</span><span class="n">plot</span><span class="o">-</span><span class="n">chi2</span><span class="o">.</span><span class="n">sh</span>
+</pre></div>
+</div>
+<p>script. Fig. <code class="xref std std-numref docutils literal notranslate"><span class="pre">fig-zeta</span></code> shows how well the Gaussian distribution widths converge.</p>
+<figure class="align-center" id="fig-chi2">
+<a class="reference internal image-reference" href="../../_images/chi_squared.pdf"><img alt="../../_images/chi_squared.pdf" src="../../_images/chi_squared.pdf" style="width: 80%;" />
+</a>
+<figcaption>
+<p><span class="caption-text">Convergence of the <span class="math notranslate nohighlight">\(\chi^2\)</span> fitness value for the first individual in the example training. Note the jump at iteration 100, due to the catastrophe penalizer kicking in.</span><a class="headerlink" href="#fig-chi2" title="Link to this image">¶</a></p>
+</figcaption>
+</figure>
+<figure class="align-center" id="fig-zeta">
+<a class="reference internal image-reference" href="../../_images/zeta_convergence.pdf"><img alt="../../_images/zeta_convergence.pdf" src="../../_images/zeta_convergence.pdf" style="width: 80%;" />
+</a>
+<figcaption>
+<p><span class="caption-text">Convergence of the Gaussian distribution widths <span class="math notranslate nohighlight">\(\zeta\)</span> for five atom types. The jumps in the graphs are due to genetic algorithm performing crossover between individuals.</span><a class="headerlink" href="#fig-zeta" title="Link to this image">¶</a></p>
+</figcaption>
+</figure>
+<p>Note that these graphs were made using the plotxvg script that is based on matplotlib.</p>
+<p>After training the parameters governing intermolecular interactions, it is time to train the bonded forces. For this, we need to modify the selection of compounds to be monomers, we use the force field file that was trained on SAPT interaction energies (Train-inter.xml) and reference energies come from MP2 calculations.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">./</span><span class="n">run_intra</span><span class="o">.</span><span class="n">sh</span>
+</pre></div>
+</div>
+<p>will do this training. As targets in this training we use both the intramolecular energies and the forces, however the deviations in the forces are weighted down by a factor of 0.1 because of the magnitude of the numbers.
+You will get similar output as for the intermolecular training:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">There</span> <span class="n">were</span> <span class="mi">60</span> <span class="n">EPOT</span><span class="o">-</span><span class="n">Train</span> <span class="n">outliers</span> <span class="k">for</span> <span class="n">Train</span><span class="o">.</span>
+
+<span class="n">Please</span> <span class="n">check</span> <span class="n">output</span> <span class="ow">in</span> <span class="n">file</span> <span class="n">train_intra</span><span class="o">.</span><span class="n">log</span><span class="o">.</span>
+</pre></div>
+</div>
+<p>Again, please inspect the contents of the log file carefully. A quick check of the intramolecular force field can be done by computing frequencies:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">./</span><span class="n">run_nma</span><span class="o">.</span><span class="n">sh</span>
+</pre></div>
+</div>
+<p>which will perform a normal mode analysis (Sec. <a class="reference internal" href="properties.html#sec-nma"><span class="std std-ref">Normal Mode Analysis</span></a>) and compute an infrared spectrum (Sec. <a class="reference internal" href="properties.html#sec-irspectrum"><span class="std std-ref">Infrared Spectra</span></a>) based on your new force field. This should yield a spectrum like the one in Fig. <code class="xref std std-numref docutils literal notranslate"><span class="pre">fig-iract</span></code>.</p>
+<figure class="align-center" id="fig-iract">
+<a class="reference internal image-reference" href="../../_images/ethanol-ir-act.pdf"><img alt="../../_images/ethanol-ir-act.pdf" src="../../_images/ethanol-ir-act.pdf" style="width: 80%;" />
+</a>
+<figcaption>
+<p><span class="caption-text">Simulated infrared vibrational spectrum for ethanol based on the force field derived in this tutorial (please compare to Fig. <code class="xref std std-numref docutils literal notranslate"><span class="pre">fig-ethanol</span></code>).</span><a class="headerlink" href="#fig-iract" title="Link to this image">¶</a></p>
+</figcaption>
+</figure>
+<p>As a final test of your new force field, we can use <em>alexandria simulate -minimize</em> to determine the optimized structure of a methanol dimer. For this, run:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">./</span><span class="n">minimize</span><span class="o">.</span><span class="n">sh</span>
+</pre></div>
+</div>
+<p>and check the output structure, <em>after_em.pdb</em>. It should look like Fig. <code class="xref std std-numref docutils literal notranslate"><span class="pre">fig-methdimer</span></code>.</p>
+<figure class="align-center" id="fig-methdimer">
+<a class="reference internal image-reference" href="../../_images/after_em.png"><img alt="../../_images/after_em.png" src="../../_images/after_em.png" style="width: 80%;" />
+</a>
+<figcaption>
+<p><span class="caption-text">Structure of a methanol dimer after minimization using the force field derived by the ACT in this tutorial. Visualization using <a class="reference external" href="https://avogadro.cc">Avogadro</a>.</span><a class="headerlink" href="#fig-methdimer" title="Link to this image">¶</a></p>
+</figcaption>
+</figure>
+<p>Please make sure to inspect all the scripts provided here to learn about the command line options to ACT modules, but be advised that there are many more options and possibilities.</p>
+<p>To design a force field for your own system of choice you will have to provide quantum chemistry data (Sec. <a class="reference internal" href="../refman/data.html#sec-data"><span class="std std-ref">Training Data</span></a>), and create selection files (Sec. <a class="reference internal" href="#sec-files"><span class="std std-ref">ACT File formats</span></a>). Most of the steps you have gone through in this tutorial can be adapted to your need. For large trainings it is useful to study the parallellization features of the ACT (Sec. <a class="reference internal" href="#sec-parallel"><span class="std std-ref">Running training using parallel processing</span></a>).</p>
+</section>
+<section id="is-my-training-hitting-a-wall">
+<h2><span class="section-number">2.2.4. </span>Is my training hitting a wall?<a class="headerlink" href="#is-my-training-hitting-a-wall" title="Link to this heading">¶</a></h2>
+<p>To make training efficient, it is good to limit the search space. In some cases we can use chemical intuition to estimate the search space. For instance, we know that polarizability should be a positive number and that it is highly element dependent. For hydrogen, a likely range is 0.1 &lt; <span class="math notranslate nohighlight">\(\alpha\)</span> &lt; 0.5 Å<sup>3</sup>. Such boundaries are implemented in the force field file like this:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">&lt;</span><span class="n">parameterlist</span> <span class="n">identifier</span><span class="o">=</span><span class="s2">&quot;h_s&quot;</span><span class="o">&gt;</span>
+  <span class="o">&lt;</span><span class="n">parameter</span> <span class="nb">type</span><span class="o">=</span><span class="s2">&quot;alpha&quot;</span> <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;Angstrom3&quot;</span> <span class="n">value</span><span class="o">=</span><span class="s2">&quot;0.46&quot;</span>
+  <span class="n">uncertainty</span><span class="o">=</span><span class="s2">&quot;0.008&quot;</span> <span class="n">minimum</span><span class="o">=</span><span class="s2">&quot;0.1&quot;</span> <span class="n">maximum</span><span class="o">=</span><span class="s2">&quot;0.5&quot;</span>
+  <span class="n">ntrain</span><span class="o">=</span><span class="s2">&quot;300&quot;</span> <span class="n">mutability</span><span class="o">=</span><span class="s2">&quot;Bounded&quot;</span> <span class="n">nonnegative</span><span class="o">=</span><span class="s2">&quot;yes&quot;</span><span class="o">/&gt;</span>
+<span class="o">&lt;/</span><span class="n">parameterlist</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<p>this example is after an optimization where the optimal value ended up being 0.46, based on a dataset comprising 300 hydrogen atoms. Note the nonnegative=”yes” which will prevent alexandria tools from making this parameter negative ever.</p>
+<p>For many cases, we do not have an {em a-priori} intuition of what the values should be and we make a guess. Then, after a series of optimizations, we can check whether the bounds are OK, using an alexandria tool (assuming you have generated and trained a polarizable force field <em>.xml</em> ):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">alexandria</span> <span class="n">edit_ff</span> <span class="o">-</span><span class="n">ff</span> <span class="n">ff</span><span class="o">.</span><span class="n">xml</span> <span class="o">-</span><span class="n">ana</span> <span class="n">EEM</span>
+<span class="o">&lt;</span><span class="n">snip</span><span class="o">&gt;</span>
+<span class="n">POLARIZATION</span> <span class="n">n2_s</span> <span class="n">alpha</span> <span class="n">at</span> <span class="n">maximum</span> <span class="mf">1.5</span>
+<span class="n">POLARIZATION</span> <span class="n">n4_s</span> <span class="n">alpha</span> <span class="n">at</span> <span class="n">minimum</span> <span class="mf">0.6</span>
+<span class="n">BONDCORRECTIONS</span> <span class="n">c2_</span><span class="o">~</span><span class="n">c3_z</span> <span class="n">hardness</span> <span class="n">at</span> <span class="n">minimum</span> <span class="o">-</span><span class="mf">0.4</span>
+<span class="n">BONDCORRECTIONS</span> <span class="n">c2_z</span><span class="p">:</span><span class="n">n2_z</span> <span class="n">hardness</span> <span class="n">at</span> <span class="n">minimum</span> <span class="mi">0</span>
+<span class="n">BONDCORRECTIONS</span> <span class="n">c3_z</span><span class="o">~</span><span class="n">c3_z</span> <span class="n">hardness</span> <span class="n">at</span> <span class="n">minimum</span> <span class="o">-</span><span class="mf">0.4</span>
+</pre></div>
+</div>
+<p>Some of the parameters are indeed hitting the wall. To adjust the parameters we use the same tool again:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">alexandria</span> <span class="n">edit_ff</span> <span class="o">-</span><span class="n">ff</span> <span class="n">ff</span><span class="o">.</span><span class="n">xml</span> <span class="o">-</span><span class="n">o</span> <span class="n">new</span><span class="o">.</span><span class="n">xml</span> <span class="o">-</span><span class="n">stretch</span> <span class="o">-</span><span class="n">p</span> <span class="n">alpha</span>
+<span class="o">&lt;</span><span class="n">snip</span><span class="o">&gt;</span>
+<span class="n">Thanks</span> <span class="k">for</span> <span class="n">using</span> <span class="n">the</span> <span class="n">Alexandria</span> <span class="n">Chemistry</span> <span class="n">Toolkit</span><span class="o">.</span>
+</pre></div>
+</div>
+<p>and then we check the resulting force field file in the same manner as before:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">alexandria</span> <span class="n">edit_ff</span> <span class="o">-</span><span class="n">ff</span> <span class="n">new</span><span class="o">.</span><span class="n">xml</span> <span class="o">-</span><span class="n">ana</span> <span class="n">EEM</span>
+<span class="o">&lt;</span><span class="n">snip</span><span class="o">&gt;</span>
+<span class="n">BONDCORRECTIONS</span> <span class="n">c2_z</span><span class="o">~</span><span class="n">c3_z</span> <span class="n">hardness</span> <span class="n">at</span> <span class="n">minimum</span> <span class="o">-</span><span class="mf">0.4</span>
+<span class="n">BONDCORRECTIONS</span> <span class="n">c2_z</span><span class="p">:</span><span class="n">n2_z</span> <span class="n">hardness</span> <span class="n">at</span> <span class="n">minimum</span> <span class="mi">0</span>
+<span class="n">BONDCORRECTIONS</span> <span class="n">c3_z</span><span class="o">~</span><span class="n">c3_z</span> <span class="n">hardness</span> <span class="n">at</span> <span class="n">minimum</span> <span class="o">-</span><span class="mf">0.4</span>
+</pre></div>
+</div>
+<p>Now the polarizability minimum (for n4_s) and maximum (for n2_s) have been stretched. The same can now be done for hardness.</p>
+<p>You can also do the reverse. When you are confident that the optimization is close to the final result, but want to randomize again without starting from scratch, you can set new minimum and maximum values for the parameters using, e.g.:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">alexandria</span> <span class="n">edit_ff</span> <span class="o">-</span><span class="n">ff</span> <span class="n">new</span><span class="o">.</span><span class="n">xml</span> <span class="o">-</span><span class="n">o</span> <span class="n">new</span><span class="o">.</span><span class="n">xml</span> <span class="o">-</span><span class="n">p</span> <span class="n">bondlength</span> <span class="o">-</span><span class="n">limits</span> <span class="mf">0.98</span>
+</pre></div>
+</div>
+<p>please check the on-line help ( <em>alexandria edit_ff -h</em> ) for more information.</p>
+</section>
+<section id="running-training-using-parallel-processing">
+<span id="sec-parallel"></span><h2><span class="section-number">2.2.5. </span>Running training using parallel processing<a class="headerlink" href="#running-training-using-parallel-processing" title="Link to this heading">¶</a></h2>
+<p>The training process is heavy in computer time. Therefore, it has been parallellized using the MPI library. Since this is a prerequisite for compiling the ACT, you likely have it installed if you got this far. In fact this is used in the example scripts, where N is the number of cores you have available. Please consult with your cluster manager if in doubt. Clusters using the <a class="reference external" href="https://slurm.schedmd.com/overview.html">Slurm</a> queueing system may need to use <em>srun</em> instead of <em>mpirun</em>.
+As far as we have tested <span id="id4">[<a class="reference internal" href="../references.html#id144" title="David van der Spoel, Julián Marrades, Kristian Kříž, A. Najla Hosseini, Alfred T. Nordman, João Paulo Ataide Martins, Marie-Madeleine Walz, Paul J. van Maaren, and Mohammad M. Ghahremanpour. Evolutionary machine learning of physics-based force fields in high-dimensional parameter-space. Digit. Discovery, 4:1925-1935, 2025. doi:10.1039/d5dd00178a.">vandSpoelMKvrivz+25</a>]</span>, the code is quite efficient down to 4-5 molecules per core. In the above example there are 10 compounds in the training set, such that it is not worthwhile to use more than 2-3 cores, but do experiment with the number of cores.</p>
+</section>
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+  <div>
+    <h3><a href="../../index.html">Table of Contents</a></h3>
+    <ul>
+<li><a class="reference internal" href="#">2.2. Using the ACT</a><ul>
+<li><a class="reference internal" href="#act-file-formats">2.2.1. ACT File formats</a></li>
+<li><a class="reference internal" href="#creating-a-new-force-field-file-from-scratch">2.2.2. Creating a new force field file from scratch</a></li>
+<li><a class="reference internal" href="#train-your-first-force-field">2.2.3. Train your first force field</a></li>
+<li><a class="reference internal" href="#is-my-training-hitting-a-wall">2.2.4. Is my training hitting a wall?</a></li>
+<li><a class="reference internal" href="#running-training-using-parallel-processing">2.2.5. Running training using parallel processing</a></li>
+</ul>
+</li>
+</ul>
+
+  </div>
+  <div>
+    <h4>Previous topic</h4>
+    <p class="topless"><a href="installation.html"
+                          title="previous chapter"><span class="section-number">2.1. </span>Installation of the ACT</a></p>
+  </div>
+  <div>
+    <h4>Next topic</h4>
+    <p class="topless"><a href="simulation.html"
+                          title="next chapter"><span class="section-number">2.3. </span>MD Simulations with Alexandria Force Fields</a></p>
+  </div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../../_sources/manual/userman/using.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="simulation.html" title="2.3. MD Simulations with Alexandria Force Fields"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="installation.html" title="2.1. Installation of the ACT"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">ACT 1.2b documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="header.html" ><span class="section-number">2. </span>User Manual</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href=""><span class="section-number">2.2. </span>Using the ACT</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2026 The Alexandria Chemistry Initiative.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3.
+    </div>
+  </body>
+</html>

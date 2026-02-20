@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>3.2. Force Field Training Algorithms &#8212; ACT 1.2b documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=fa44fd50" />
+    <link rel="stylesheet" type="text/css" href="../../_static/classic.css?v=2bf1fcf8" />
+    <link rel="stylesheet" type="text/css" href="../../_static/mystnb.8ecb98da25f57f5357bf6f572d296f466b2cfe2517ffebfabe82451661e28f02.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../_static/togglebutton.css?v=9c3e77be" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sphinx_lesson.css?v=e9df6548" />
+    <link rel="stylesheet" type="text/css" href="../../_static/term_role_formatting.css?v=4194e21c" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sphinx_rtd_theme_ext_color_contrast.css?v=8e8ea19f" />
+    <link rel="stylesheet" type="text/css" href="../../_static/custom_theme.css" />
+    
+    <script src="../../_static/documentation_options.js?v=00cc29cc"></script>
+    <script src="../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../_static/copybutton.js?v=6dbb43f8"></script>
+    <script src="../../_static/minipres.js?v=a0d29692"></script>
+    <script>let toggleHintShow = 'Click to show';</script>
+    <script>let toggleHintHide = 'Click to hide';</script>
+    <script>let toggleOpenOnPrint = 'true';</script>
+    <script src="../../_static/togglebutton.js?v=1ae7504c"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script>window.MathJax = {"options": {"processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="3.3. Force field design" href="ffdesign.html" />
+    <link rel="prev" title="3.1. Energy Function" href="energy.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="ffdesign.html" title="3.3. Force field design"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="energy.html" title="3.1. Energy Function"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">ACT 1.2b documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="header.html" accesskey="U"><span class="section-number">3. </span>Reference Manual</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href=""><span class="section-number">3.2. </span>Force Field Training Algorithms</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="force-field-training-algorithms">
+<h1><span class="section-number">3.2. </span>Force Field Training Algorithms<a class="headerlink" href="#force-field-training-algorithms" title="Link to this heading">¶</a></h1>
+<p><em>This chapter was written by Juli{'a}n Marrades and is based in part on his M.Sc. thesis :cite:p:`Marrades2022a`.</em></p>
+<p>Within the <em>alexandria train_ff</em> module of the Alexandria Chemistry Toolkit you can choose among three algorithms to optimize force field parameters:</p>
+<ul class="simple">
+<li><p>Markov Chain Monte Carlo (flag <em>-optimizer MCMC</em>)</p></li>
+<li><p>Genetic Algorithm (flag <em>-optimizer GA</em>)</p></li>
+<li><p>Hybrid GA/MCMC (flag <em>-optimizer HYBRID</em>)</p></li>
+</ul>
+<p>Let us see what they do behind the scenes and how to control them.</p>
+<section id="mcmc">
+<h2><span class="section-number">3.2.1. </span>MCMC<a class="headerlink" href="#mcmc" title="Link to this heading">¶</a></h2>
+<p>Assume we want to set the values for five parameters (nParam = 5) by performing ten MCMC iterations (flag <em>-maxiter 10</em>). Then, the code “reads”</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">10</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="o">++</span><span class="p">)</span>
+<span class="w">  </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">j</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">j</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">5</span><span class="p">;</span><span class="w"> </span><span class="n">j</span><span class="o">++</span><span class="p">)</span>
+<span class="w">    </span><span class="n">stepMCMC</span><span class="p">();</span>
+</pre></div>
+</div>
+<p>That is, we do 10 X 5 = 50 MCMC steps. What is a MCMC step though? In essence,</p>
+<ul class="simple">
+<li><p><em>prevDev</em>: previous deviation from data</p></li>
+<li><p>Choose a parameter and alter it</p></li>
+<li><p><em>newDev</em>: new deviation from data</p></li>
+<li><p>If <em>newDev</em> &lt; <em>prevDev</em>, we accept the parameter change and continue into the next step. Else, apply Metropolis Criterion. That is, with some probability we accept the change. Otherwise, we restore the parameter to its previous value and proceed into the next step.</p></li>
+</ul>
+<p>Now, let us add some more detail to the algorithm.</p>
+<ol class="arabic simple">
+<li><p>we already have the deviation from data of the previous step in <cite>prevDev</cite>.</p></li>
+<li><p>we arbitrarily choose a parameter out of the <cite>param</cite> vector, say <cite>param[i]</cite>, which is bounded by its maximum <cite>pmax[i]</cite> and its minimum <cite>pmin[i]</cite>, yielding the range <cite>prange[i] = pmax[i] - pmin[i]</cite>. Here is where the <cite>-step [0, 1]</cite> flag comes into play by specifying a fraction.\</p></li>
+<li><p>we draw a value of <cite>delta</cite>, which is uniformly distributed in <cite>[- step * prange[i], + step * prange[i]]</cite> and add it to the parameter value <cite>param[i] += delta</cite>. If the parameter has gone beyond its maximum, we set its value to the maximum. Same goes for the minimum.&lt;br&gt;</p></li>
+<li><p>we compute the deviation <cite>newDev</cite> from data of the modified parameter vector. If <cite>newDev &lt; prevDev</cite>, we accept the change and finish the MCMC step. Otherwise, we apply the Metropolis Criterion and finish the step. Then go back to 1.</p></li>
+</ol>
+<section id="metropolis-criterion">
+<h3><span class="section-number">3.2.1.1. </span>Metropolis Criterion<a class="headerlink" href="#metropolis-criterion" title="Link to this heading">¶</a></h3>
+<p>If Mathematics is your thing and you {em really} want to know the nitty-gritty stuff, you have thorough explanations of this method on href{<a class="reference external" href="https://en.wikipedia.org/wiki/Metropolis%E2%80%93Hastings_algorithm">https://en.wikipedia.org/wiki/Metropolis%E2%80%93Hastings_algorithm</a>}{Wikipedia} and Shuyi Qin’s Master thesis <span id="id1">[<a class="reference internal" href="../references.html#id112" title="Shuyi Qin. Sensitivity analysis in high-dimensional space. Master's thesis, Uppsala University, Dept. of Information Technology, 2021. URL: https://uu.diva-portal.org/smash/record.jsf?pid=diva2%3A1614100&amp;dswid=6669.">Qin21</a>]</span>.
+Here, we shall say that the Metropolis Criterion allows us to take steps that do not get us closer to a minimum, giving the opportunity to explore the parameter space and avoid local minima. How exactly?</p>
+<p>The probability of accepting a “bad” parameter change is controlled by the flag <em>-temp T</em> flag and follows the equation</p>
+<div class="math notranslate nohighlight">
+\[prob = exp(-deltaDev/T)\]</div>
+<p>where deltaDev = newDev - prevDev. Note that the unit of temperature is the same as that of the deviation.</p>
+<p>Given deltaDev, a higher temperature gives a higher probability  of acceptance, as <cite>-deltaDev/T</cite> tends to <cite>0</cite> and <cite>exp(0) = 1</cite>. On the other hand, a lower <cite>T</cite> gives less chances of acceptance, as <cite>-deltaDev/T</cite> tends to <span class="math notranslate nohighlight">\(-\infty\)</span> and <span class="math notranslate nohighlight">\(exp(-\infty)\)</span> = 0.</p>
+<p>ACT gives us the possibility to lower the temperature (simulated annealing) during the MCMC optimization with the flag <em>-anneal [0, 1]</em> flag. If we use flag <em>-anneal 0.5</em>, the temperature will be flag <em>-temp T</em> until 50% of the iterations have been completed. Then, it will be linearly decreased until it reaches <cite>0</cite> on the last iteration.</p>
+<p>There are two remarks to be made here:</p>
+<ul class="simple">
+<li><p>The temperature is kept constant during the <cite>nParam</cite> MCMC steps that take place for a given iteration.</p></li>
+<li><p>Since division by <cite>0</cite> is not defined, we set <cite>T = 1e-6</cite> on the last iteration.</p></li>
+</ul>
+<p>Fig. <a class="reference internal" href="#fig-annealing"><span class="std std-ref">Annealing during a MCMC run.</span></a> shows a schematic example of the temperature over time when we use actflag{-maxiter 10 -temp 5 -anneal 0.5}.</p>
+<figure class="align-center" id="fig-annealing">
+<a class="reference internal image-reference" href="../../_images/annealing.png"><img alt="../../_images/annealing.png" src="../../_images/annealing.png" style="width: 60%;" />
+</a>
+<figcaption>
+<p><span class="caption-text">Annealing during a MCMC run.</span><a class="headerlink" href="#fig-annealing" title="Link to this image">¶</a></p>
+</figcaption>
+</figure>
+</section>
+<section id="multiple-mcmc-runs">
+<h3><span class="section-number">3.2.1.2. </span>Multiple MCMC runs<a class="headerlink" href="#multiple-mcmc-runs" title="Link to this heading">¶</a></h3>
+<p>We can optimize several candidate solutions in parallel using the  <em>-pop_size</em> flag. If the <em>-random_init</em> flag is set (default), each candidate solution will be initialized arbitrarily and respecting parameter ranges. If <em>-norandom_init</em> is employed, the candidate solution(s) will be initialized as specified by the force field file(s) provided by the user.</p>
+</section>
+</section>
+<section id="genetic-algorithm">
+<h2><span class="section-number">3.2.2. </span>Genetic Algorithm<a class="headerlink" href="#genetic-algorithm" title="Link to this heading">¶</a></h2>
+<p>Quoting <a class="reference external" href="https://en.wikipedia.org/wiki/Genetic_algorithm">WikipediaGA</a></p>
+<blockquote>
+<div><div class="line-block">
+<div class="line">In computer science and operations research, a genetic algorithm is a metaheuristic</div>
+<div class="line">inspired by the process of natural selection that belongs to the larger class of</div>
+<div class="line">evolutionary algorithms. Genetic algorithms are commonly used to generate</div>
+<div class="line">high-quality solutions to optimization and search problems by relying on biologically inspired operators such as mutation, crossover and selection.</div>
+</div>
+</div></blockquote>
+<p>In this section, we describe our implementation of a genetic algorithm for force field parameterization. If this is the first time you hear about genetic algorithms and want to acquaint yourself, we recommend you to read Chapter 2 of Steven F. van Dijk’s PhD thesis <span id="id2">[<a class="reference internal" href="../references.html#id149" title="Steven F. van Dijk. Genetic Algorithms for Map Labeling. PhD thesis, Utrecht University, Dept. of Mathematics and Computer Science, 2001. URL: https://dspace.library.uu.nl/bitstream/handle/1874/864/full.pdf?sequence=1.">vanDijk01</a>]</span> and/or head over to <a class="reference external" href="https://www.youtube.com/">Youtube</a>.</p>
+<p>Our implementation is based upon a class definition and an external function for computing random numbers (Listing <a class="reference internal" href="#listing-genome"><span class="std std-ref">Class definition.</span></a> ).</p>
+<div class="literal-block-wrapper docutils container" id="listing-genome">
+<div class="code-block-caption"><span class="caption-text">Class definition.</span><a class="headerlink" href="#listing-genome" title="Link to this code">¶</a></div>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="linenos"> 1</span><span class="k">class</span><span class="w"> </span><span class="nc">Genome</span>
+<span class="linenos"> 2</span><span class="p">{</span>
+<span class="linenos"> 3</span><span class="w">    </span><span class="kt">double</span><span class="w"> </span><span class="n">params</span><span class="p">[];</span>
+<span class="linenos"> 4</span><span class="w">    </span><span class="kt">double</span><span class="w"> </span><span class="n">deviation</span><span class="p">;</span>
+<span class="linenos"> 5</span><span class="w">    </span><span class="kt">double</span><span class="w"> </span><span class="n">probability</span><span class="p">;</span>
+<span class="linenos"> 6</span><span class="p">};</span>
+<span class="linenos"> 7</span>
+<span class="linenos"> 8</span><span class="c1">// Returns a sample of a random variable that is</span>
+<span class="linenos"> 9</span><span class="c1">// uniformly distributed in [0, 1]</span>
+<span class="linenos">10</span><span class="kt">double</span><span class="w"> </span><span class="nf">random</span><span class="p">();</span><span class="w">  </span>
+</pre></div>
+</div>
+</div>
+<p>then the genome evolution
+boils down to the code in Listing <a class="reference internal" href="#listing-evolve"><span class="std std-ref">Schematic of the evolution algorithm</span></a></p>
+<div class="literal-block-wrapper docutils container" id="listing-evolve">
+<div class="code-block-caption"><span class="caption-text">Schematic of the evolution algorithm</span><a class="headerlink" href="#listing-evolve" title="Link to this code">¶</a></div>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="linenos"> 1</span><span class="kt">void</span><span class="w"> </span><span class="nf">evolve</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">popSize</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">nElites</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">prCross</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">prMut</span><span class="p">)</span>
+<span class="linenos"> 2</span><span class="p">{</span>
+<span class="linenos"> 3</span><span class="w">    </span><span class="n">Genome</span><span class="w"> </span><span class="n">oldPop</span><span class="p">[</span><span class="n">popSize</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">initialize</span><span class="p">(</span><span class="n">popSize</span><span class="p">);</span><span class="w"> </span><span class="c1">// Initialize</span>
+<span class="linenos"> 4</span><span class="w">    </span><span class="n">Genome</span><span class="w"> </span><span class="n">newPop</span><span class="p">[];</span>
+<span class="linenos"> 5</span><span class="w">    </span><span class="n">computeDeviation</span><span class="p">(</span><span class="n">oldPop</span><span class="p">);</span><span class="w"> </span><span class="c1">// Deviation from data</span>
+<span class="linenos"> 6</span><span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">generation</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="linenos"> 7</span><span class="w">    </span><span class="k">do</span>
+<span class="linenos"> 8</span><span class="w">    </span><span class="p">{</span>
+<span class="linenos"> 9</span><span class="w">        </span><span class="n">sort</span><span class="p">(</span><span class="n">oldPop</span><span class="p">);</span><span class="w"> </span><span class="c1">// Sorting</span>
+<span class="linenos">10</span><span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">penalize</span><span class="p">(</span><span class="n">oldPop</span><span class="p">,</span><span class="w"> </span><span class="n">generation</span><span class="p">))</span><span class="w"> </span><span class="c1">// Penalty?</span>
+<span class="linenos">11</span><span class="w">        </span><span class="p">{</span>
+<span class="linenos">12</span><span class="w">            </span><span class="c1">// Recompute deviation and sort again</span>
+<span class="linenos">13</span><span class="w">            </span><span class="n">computeDeviation</span><span class="p">(</span><span class="n">oldPop</span><span class="p">);</span>
+<span class="linenos">14</span><span class="w">            </span><span class="n">sort</span><span class="p">(</span><span class="n">oldPop</span><span class="p">);</span>
+<span class="linenos">15</span><span class="w">        </span><span class="p">}</span>
+<span class="linenos">16</span><span class="w">        </span><span class="n">generation</span><span class="o">++</span><span class="p">;</span>
+<span class="linenos">17</span><span class="w">        </span><span class="n">computeProbabilities</span><span class="p">(</span><span class="n">oldPop</span><span class="p">);</span><span class="w"> </span><span class="c1">// Selection probabilities</span>
+<span class="linenos">18</span><span class="w">        </span><span class="c1">// Elitism</span>
+<span class="linenos">19</span><span class="w">        </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">nElites</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="o">++</span><span class="p">)</span>
+<span class="linenos">20</span><span class="w">            </span><span class="n">newPop</span><span class="p">.</span><span class="n">add</span><span class="p">(</span><span class="n">oldPop</span><span class="p">[</span><span class="n">i</span><span class="p">]);</span>
+<span class="linenos">21</span><span class="w">        </span><span class="c1">// Rest of population</span>
+<span class="linenos">22</span><span class="w">        </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">nElites</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">popSize</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="mi">2</span><span class="p">)</span>
+<span class="linenos">23</span><span class="w">        </span><span class="p">{</span>
+<span class="linenos">24</span><span class="w">            </span><span class="n">Genome</span><span class="w"> </span><span class="n">parent1</span><span class="p">,</span><span class="w"> </span><span class="n">parent2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">select</span><span class="p">(</span><span class="n">oldPop</span><span class="p">);</span><span class="w"> </span><span class="c1">// Selection</span>
+<span class="linenos">25</span><span class="w">            </span><span class="n">Genome</span><span class="w"> </span><span class="n">child1</span><span class="p">,</span><span class="w"> </span><span class="n">child2</span><span class="p">;</span>
+<span class="linenos">26</span><span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">random</span><span class="p">()</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="n">prCross</span><span class="p">)</span><span class="w"> </span><span class="c1">// Crossover?</span>
+<span class="linenos">27</span><span class="w">                </span><span class="n">child1</span><span class="p">,</span><span class="w"> </span><span class="n">child2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">crossover</span><span class="p">(</span><span class="n">parent1</span><span class="p">,</span><span class="w"> </span><span class="n">parent2</span><span class="p">);</span>
+<span class="linenos">28</span><span class="w">            </span><span class="k">else</span>
+<span class="linenos">29</span><span class="w">                </span><span class="n">child1</span><span class="p">,</span><span class="w"> </span><span class="n">child2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">parent1</span><span class="p">,</span><span class="w"> </span><span class="n">parent2</span><span class="p">;</span>
+<span class="linenos">30</span><span class="w">            </span><span class="c1">// Mutation</span>
+<span class="linenos">31</span><span class="w">            </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="n">Genome</span><span class="w"> </span><span class="n">child</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="p">{</span><span class="n">child1</span><span class="p">,</span><span class="w"> </span><span class="n">child2</span><span class="p">})</span>
+<span class="linenos">32</span><span class="w">            </span><span class="p">{</span>
+<span class="linenos">33</span><span class="w">                </span><span class="n">mutate</span><span class="p">(</span><span class="n">child</span><span class="p">,</span><span class="w"> </span><span class="n">prMut</span><span class="p">);</span>
+<span class="linenos">34</span><span class="w">                </span><span class="n">newPop</span><span class="p">.</span><span class="n">add</span><span class="p">(</span><span class="n">child</span><span class="p">);</span><span class="w"> </span><span class="c1">// Add to new population</span>
+<span class="linenos">35</span><span class="w">            </span><span class="p">}</span>
+<span class="linenos">36</span><span class="w">        </span><span class="p">}</span>
+<span class="linenos">37</span><span class="w">        </span><span class="n">computeDeviation</span><span class="p">(</span><span class="n">newPop</span><span class="p">);</span><span class="w"> </span><span class="c1">// Deviation from data</span>
+<span class="linenos">38</span><span class="w">        </span><span class="n">oldPop</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">newPop</span><span class="p">;</span><span class="w"> </span><span class="c1">// Swap populations</span>
+<span class="linenos">39</span><span class="w">        </span><span class="n">newPop</span><span class="p">.</span><span class="n">clear</span><span class="p">();</span><span class="w">  </span><span class="c1">// Erase all genomes in the population</span>
+<span class="linenos">40</span><span class="w">    </span><span class="p">}</span>
+<span class="linenos">41</span><span class="w">    </span><span class="c1">// Termination</span>
+<span class="linenos">42</span><span class="w">    </span><span class="k">while</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">terminate</span><span class="p">(</span><span class="n">oldPop</span><span class="p">,</span><span class="w"> </span><span class="n">generation</span><span class="p">));</span>
+<span class="linenos">43</span><span class="p">}</span>
+</pre></div>
+</div>
+</div>
+<p>flag <em>popSize</em> and flag <em>nElites</em> are assumed to be even.
+Let us explore the different stages of the process.</p>
+<section id="initialization">
+<h3><span class="section-number">3.2.2.1. </span>Initialization<a class="headerlink" href="#initialization" title="Link to this heading">¶</a></h3>
+<p>This stage fills the <cite>params</cite> field in the <cite>Genome</cite> class, generating popSize (flag <em>-pop_size</em>) genomes.</p>
+<p>If we are using flag <em>-norandom_init</em>, the genomes will be initialized as specified by the force field file(s) provided. If we are employing flag <em>-random_init</em>, each genome will be initialized by setting a random value for each parameter, uniformly distributed over the allowed range.</p>
+</section>
+<section id="deviation-from-data">
+<h3><span class="section-number">3.2.2.2. </span>Deviation from data<a class="headerlink" href="#deviation-from-data" title="Link to this heading">¶</a></h3>
+<p>Here we fill the <cite>deviation</cite> field in for each <cite>Genome</cite> in the population by computing the deviation from the dataset.</p>
+</section>
+<section id="sorting">
+<h3><span class="section-number">3.2.2.3. </span>Sorting<a class="headerlink" href="#sorting" title="Link to this heading">¶</a></h3>
+<p>Sorting is not a mandatory step but may be required depending on the GA components selected by the user.
+We sort the population in ascending order of <cite>deviation</cite>. Whether we sort or not is controlled by the flag <em>-sort</em> flag.</p>
+</section>
+<section id="penalties">
+<h3><span class="section-number">3.2.2.4. </span>Penalties<a class="headerlink" href="#penalties" title="Link to this heading">¶</a></h3>
+<p>At this stage, we may alter the population if certain conditions are met, with the main goal of preventing premature convergence and enforcing solution diversity.</p>
+<blockquote>
+<div><div class="line-block">
+<div class="line">Covering such a small portion of the space you are. Broaden your search, you should. - Yoda</div>
+</div>
+</div></blockquote>
+<p>To that end, we have a function <cite>penalize()</cite> which returns <cite>true</cite> if the population was penalized and <cite>false</cite> otherwise.</p>
+<p>For now, there are two components in this function:</p>
+<ul>
+<li><p><strong>Volume.</strong> This option enables flag <em>-sort</em>. If the volume spanned by the population divided by the total volume of the parameter space is smaller than flag <em>-vfp_vol_frac_limit [0, 1]|</em>, the {em worst} fraction flag <em>-vfp_pop_frac [0, 1]</em> of genomes in the population will be randomly reinitialized. If flag <em>-log_volume</em> is used, volumes will be computed in logarithmic scale. * But wait, then the volume could be negative! Yes, we have to fix that!*</p>
+<div class="line-block">
+<div class="line">Death comes equally to us all, and makes us all equal when it comes. - John Donne</div>
+</div>
+</li>
+<li><p><strong>Catastrophe.</strong> Each flag <em>-cp_gen_interval</em> generations, a fraction flag <em>-cp_pop_frac [0, 1]</em> of the genomes in the population will be randomly reinitialized. Genomes to reinitialize are arbitrarily chosen.</p></li>
+</ul>
+</section>
+<section id="selection-probabilities">
+<h3><span class="section-number">3.2.2.5. </span>Selection probabilities<a class="headerlink" href="#selection-probabilities" title="Link to this heading">¶</a></h3>
+<p>We provide three options for computing selection probabilities:</p>
+<ol class="arabic simple">
+<li><p>Rank (flag <em>-prob_computer RANK</em>)</p></li>
+<li><p>Fitness (flag <em>-prob_computer FITNESS</em>)</p></li>
+<li><p>Boltzmann (flag <em>-prob_computer BOLTZMANN</em>)</p></li>
+</ol>
+<p>The sum of the selection probabilities of the genomes in the population, is 1.</p>
+</section>
+<section id="rank">
+<h3><span class="section-number">3.2.2.6. </span>Rank<a class="headerlink" href="#rank" title="Link to this heading">¶</a></h3>
+<p>This option enables flag <em>-sort</em>.
+The selection probability depends exclusively on the index (rank) of genome in the population (Listing <a class="reference internal" href="#listing-rank"><span class="std std-ref">Calculation of the probability from the order of probabilities.</span></a>).</p>
+<div class="literal-block-wrapper docutils container" id="listing-rank">
+<div class="code-block-caption"><span class="caption-text">Calculation of the probability from the order of probabilities.</span><a class="headerlink" href="#listing-rank" title="Link to this code">¶</a></div>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="linenos">1</span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">popSize</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="o">++</span><span class="p">)</span>
+<span class="linenos">2</span><span class="p">{</span>
+<span class="linenos">3</span><span class="w">  </span><span class="n">oldPop</span><span class="p">[</span><span class="n">i</span><span class="p">].</span><span class="n">probability</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">popSize</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="p">(</span><span class="n">popSize</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="p">(</span><span class="n">popSize</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mi">2</span><span class="p">);</span>
+<span class="linenos">4</span><span class="p">}</span>
+</pre></div>
+</div>
+</div>
+<p>That is, the lower the index, the higher the probability of being selected.
+The independence of the <cite>deviation</cite> avoids the possible phenomena of a genome with a very high selection probability dominating the population.</p>
+</section>
+<section id="fitness">
+<h3><span class="section-number">3.2.2.7. </span>Fitness<a class="headerlink" href="#fitness" title="Link to this heading">¶</a></h3>
+<p>The selection probability is inversely proportional to the <cite>deviation</cite> (Listing <a class="reference internal" href="#listing-fitness"><span class="std std-ref">Calculation of the probability from the deviations from data.</span></a>).</p>
+<div class="literal-block-wrapper docutils container" id="listing-fitness">
+<div class="code-block-caption"><span class="caption-text">Calculation of the probability from the deviations from data.</span><a class="headerlink" href="#listing-fitness" title="Link to this code">¶</a></div>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="linenos">1</span><span class="kt">double</span><span class="w"> </span><span class="n">total</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="linenos">2</span><span class="kt">double</span><span class="w"> </span><span class="n">inverses</span><span class="p">[</span><span class="n">popSize</span><span class="p">];</span>
+<span class="linenos">3</span><span class="kt">double</span><span class="w"> </span><span class="n">epsilon</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">1e-4</span><span class="p">;</span>
+<span class="linenos">4</span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">popSize</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="o">++</span><span class="p">)</span>
+<span class="linenos">5</span><span class="w">    </span><span class="n">inverses</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="p">(</span><span class="n">epsilon</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">oldPop</span><span class="p">[</span><span class="n">i</span><span class="p">].</span><span class="n">deviation</span><span class="p">);</span>
+<span class="linenos">6</span><span class="w">    </span><span class="n">total</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="n">inverses</span><span class="p">[</span><span class="n">i</span><span class="p">];</span>
+<span class="linenos">7</span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">popSize</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="o">++</span><span class="p">)</span>
+<span class="linenos">8</span><span class="w">    </span><span class="n">oldPop</span><span class="p">[</span><span class="n">i</span><span class="p">].</span><span class="n">probability</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">inverses</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">total</span><span class="p">;</span>
+</pre></div>
+</div>
+</div>
+</section>
+<section id="boltzmann">
+<h3><span class="section-number">3.2.2.8. </span>Boltzmann<a class="headerlink" href="#boltzmann" title="Link to this heading">¶</a></h3>
+<p>The <cite>temperature</cite> parameter is specified by the flag <em>-boltz_temp</em> flag and controls the smoothing of the selection probabilities (Listing <a class="reference internal" href="#listing-boltz"><span class="std std-ref">Use of Boltzmann-weighting when calculating the probability</span></a>). A higher value will avoid polarization in the probability values and vice versa. The flag <em>-boltz_anneal</em> flag allows us to decrease the temperature over time and has the same logic as flag <em>-anneal</em>, except that it targets the Boltzmann selection temperature and operates based on the maximum amount of generations.</p>
+<div class="literal-block-wrapper docutils container" id="listing-boltz">
+<div class="code-block-caption"><span class="caption-text">Use of Boltzmann-weighting when calculating the probability</span><a class="headerlink" href="#listing-boltz" title="Link to this code">¶</a></div>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="linenos">1</span><span class="kt">double</span><span class="w"> </span><span class="n">total</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="linenos">2</span><span class="kt">double</span><span class="w"> </span><span class="n">exponentials</span><span class="p">[</span><span class="n">popSize</span><span class="p">];</span>
+<span class="linenos">3</span><span class="kt">double</span><span class="w"> </span><span class="n">epsilon</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">1e-4</span><span class="p">;</span>
+<span class="linenos">4</span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">popSize</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="o">++</span><span class="p">)</span>
+<span class="linenos">5</span><span class="w">    </span><span class="n">exponentials</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">exp</span><span class="p">(</span><span class="mi">1</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="p">(</span><span class="n">epsilon</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">oldPop</span><span class="p">[</span><span class="n">i</span><span class="p">].</span><span class="n">deviation</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">temperature</span><span class="p">);</span>
+<span class="linenos">6</span><span class="w">    </span><span class="n">total</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="n">exponentials</span><span class="p">[</span><span class="n">i</span><span class="p">];</span>
+<span class="linenos">7</span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">popSize</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="o">++</span><span class="p">)</span>
+<span class="linenos">8</span><span class="w">    </span><span class="n">oldPop</span><span class="p">[</span><span class="n">i</span><span class="p">].</span><span class="n">probability</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">exponentials</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">total</span><span class="p">;</span>
+</pre></div>
+</div>
+</div>
+</section>
+<section id="elitism">
+<h3><span class="section-number">3.2.2.9. </span>Elitism<a class="headerlink" href="#elitism" title="Link to this heading">¶</a></h3>
+<p>In order to avoid losing the best candidate solutions found so far, the GA will move the top nElites flag <em>-n_elites</em> genomes, {em unchanged}, into the new population. That means, the genome will not undergo crossover nor mutation.</p>
+<p>When flag <em>-n_elites &gt; 0</em>, flag <em>-sort</em> will be enabled.</p>
+</section>
+<section id="selection">
+<h3><span class="section-number">3.2.2.10. </span>Selection<a class="headerlink" href="#selection" title="Link to this heading">¶</a></h3>
+<p>Once the selection probabilities are computed, the population becomes a href{<a class="reference external" href="https://en.wikipedia.org/wiki/Probability_density_function">https://en.wikipedia.org/wiki/Probability_density_function</a>}{probability density function} from which we can sample genomes based on their <cite>probability</cite>.</p>
+<p>As of now, only a vanilla selector is available. It only looks at the probability and can select the same genome to be <cite>parent1</cite> and <cite>parent2</cite>.</p>
+</section>
+<section id="crossover">
+<h3><span class="section-number">3.2.2.11. </span>Crossover<a class="headerlink" href="#crossover" title="Link to this heading">¶</a></h3>
+<p>With certain probability <cite>prCross</cite>, controlled by the flag <em>-pr_cross</em> flag, two parents will combine their parameters to form two children.
+Right now, only an N-point crossover is available, where N is defined by the flag <em>-n_crossovers</em> flag.</p>
+<p>If <cite>N = 1</cite>, we arbitrarily select on crossover point (<cite>v</cite>) and:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>    <span class="n">v</span>                        <span class="n">v</span>
+<span class="o">|</span><span class="n">X</span><span class="o">|</span><span class="n">X</span><span class="o">|</span><span class="n">X</span><span class="o">|</span><span class="n">X</span><span class="o">|</span><span class="n">X</span><span class="o">|</span><span class="n">X</span><span class="o">|</span><span class="n">X</span><span class="o">|</span><span class="n">X</span><span class="o">|</span><span class="n">X</span><span class="o">|</span>  <span class="o">--&gt;</span> <span class="o">|</span><span class="n">X</span><span class="o">|</span><span class="n">X</span><span class="o">|</span><span class="n">Y</span><span class="o">|</span><span class="n">Y</span><span class="o">|</span><span class="n">Y</span><span class="o">|</span><span class="n">Y</span><span class="o">|</span><span class="n">Y</span><span class="o">|</span><span class="n">Y</span><span class="o">|</span><span class="n">Y</span><span class="o">|</span>
+<span class="o">|</span><span class="n">Y</span><span class="o">|</span><span class="n">Y</span><span class="o">|</span><span class="n">Y</span><span class="o">|</span><span class="n">Y</span><span class="o">|</span><span class="n">Y</span><span class="o">|</span><span class="n">Y</span><span class="o">|</span><span class="n">Y</span><span class="o">|</span><span class="n">Y</span><span class="o">|</span><span class="n">Y</span><span class="o">|</span>  <span class="o">--&gt;</span> <span class="o">|</span><span class="n">Y</span><span class="o">|</span><span class="n">Y</span><span class="o">|</span><span class="n">X</span><span class="o">|</span><span class="n">X</span><span class="o">|</span><span class="n">X</span><span class="o">|</span><span class="n">X</span><span class="o">|</span><span class="n">X</span><span class="o">|</span><span class="n">X</span><span class="o">|</span><span class="n">X</span><span class="o">|</span>
+</pre></div>
+</div>
+<p>If <cite>N = 2</cite>, we arbitrarily select two crossover points (<cite>v</cite>) and:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>  <span class="n">v</span>     <span class="n">v</span>                  <span class="n">v</span>     <span class="n">v</span>
+<span class="o">|</span><span class="n">X</span><span class="o">|</span><span class="n">X</span><span class="o">|</span><span class="n">X</span><span class="o">|</span><span class="n">X</span><span class="o">|</span><span class="n">X</span><span class="o">|</span><span class="n">X</span><span class="o">|</span><span class="n">X</span><span class="o">|</span><span class="n">X</span><span class="o">|</span><span class="n">X</span><span class="o">|</span>  <span class="o">--&gt;</span> <span class="o">|</span><span class="n">X</span><span class="o">|</span><span class="n">Y</span><span class="o">|</span><span class="n">Y</span><span class="o">|</span><span class="n">Y</span><span class="o">|</span><span class="n">X</span><span class="o">|</span><span class="n">X</span><span class="o">|</span><span class="n">X</span><span class="o">|</span><span class="n">X</span><span class="o">|</span><span class="n">X</span><span class="o">|</span>
+<span class="o">|</span><span class="n">Y</span><span class="o">|</span><span class="n">Y</span><span class="o">|</span><span class="n">Y</span><span class="o">|</span><span class="n">Y</span><span class="o">|</span><span class="n">Y</span><span class="o">|</span><span class="n">Y</span><span class="o">|</span><span class="n">Y</span><span class="o">|</span><span class="n">Y</span><span class="o">|</span><span class="n">Y</span><span class="o">|</span>  <span class="o">--&gt;</span> <span class="o">|</span><span class="n">Y</span><span class="o">|</span><span class="n">X</span><span class="o">|</span><span class="n">X</span><span class="o">|</span><span class="n">X</span><span class="o">|</span><span class="n">Y</span><span class="o">|</span><span class="n">Y</span><span class="o">|</span><span class="n">Y</span><span class="o">|</span><span class="n">Y</span><span class="o">|</span><span class="n">Y</span><span class="o">|</span>
+</pre></div>
+</div>
+<p>If <cite>N = 3</cite>, we arbitrarily select three crossover points (<cite>v</cite>) and:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>       <span class="n">v</span>     <span class="n">v</span>     <span class="n">v</span>            <span class="n">v</span>     <span class="n">v</span>     <span class="n">v</span>
+<span class="o">|</span><span class="n">X</span><span class="o">|</span><span class="n">X</span><span class="o">|</span><span class="n">X</span><span class="o">|</span><span class="n">X</span><span class="o">|</span><span class="n">X</span><span class="o">|</span><span class="n">X</span><span class="o">|</span><span class="n">X</span><span class="o">|</span><span class="n">X</span><span class="o">|</span><span class="n">X</span><span class="o">|</span>  <span class="o">--&gt;</span> <span class="o">|</span><span class="n">X</span><span class="o">|</span><span class="n">X</span><span class="o">|</span><span class="n">Y</span><span class="o">|</span><span class="n">Y</span><span class="o">|</span><span class="n">Y</span><span class="o">|</span><span class="n">X</span><span class="o">|</span><span class="n">X</span><span class="o">|</span><span class="n">X</span><span class="o">|</span><span class="n">Y</span><span class="o">|</span>
+<span class="o">|</span><span class="n">Y</span><span class="o">|</span><span class="n">Y</span><span class="o">|</span><span class="n">Y</span><span class="o">|</span><span class="n">Y</span><span class="o">|</span><span class="n">Y</span><span class="o">|</span><span class="n">Y</span><span class="o">|</span><span class="n">Y</span><span class="o">|</span><span class="n">Y</span><span class="o">|</span><span class="n">Y</span><span class="o">|</span>  <span class="o">--&gt;</span> <span class="o">|</span><span class="n">Y</span><span class="o">|</span><span class="n">Y</span><span class="o">|</span><span class="n">X</span><span class="o">|</span><span class="n">X</span><span class="o">|</span><span class="n">X</span><span class="o">|</span><span class="n">Y</span><span class="o">|</span><span class="n">Y</span><span class="o">|</span><span class="n">Y</span><span class="o">|</span><span class="n">X</span><span class="o">|</span>
+</pre></div>
+</div>
+<p>If <cite>N = 4</cite>… you get the idea (hopefully).</p>
+</section>
+<section id="mutation">
+<h3><span class="section-number">3.2.2.12. </span>Mutation<a class="headerlink" href="#mutation" title="Link to this heading">¶</a></h3>
+<p>Given the mutation probability <cite>prMut</cite>, controlled by flag <em>-pr_mut</em>, we iterate through the parameters. If the probability is met, we alter the parameter, otherwise, we leave it unchanged.</p>
+<div class="highlight-c++ notranslate"><div class="highlight"><pre><span></span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">nParams</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="o">++</span><span class="p">)</span>
+<span class="p">{</span>
+<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">random</span><span class="p">()</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="n">prMut</span><span class="p">)</span>
+<span class="w">  </span><span class="p">{</span>
+<span class="w">    </span><span class="n">changeParam</span><span class="p">(</span><span class="n">params</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">);</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>The parameter is changed in the same way as in MCMC, by a fraction of its allowed range and not allowing values outside of it. The fraction in this case is controlled by the <cite>-percentage</cite> flag, which has the same meaning as <cite>-step</cite>, but applies to GA instead of MCMC.</p>
+</section>
+<section id="termination">
+<h3><span class="section-number">3.2.2.13. </span>Termination<a class="headerlink" href="#termination" title="Link to this heading">¶</a></h3>
+<p>This stage decides whether the GA evolution should continue or halt. We allow the user to tweak the termination criteria with several flags:</p>
+<ol class="arabic simple">
+<li><p>flag <em>-max_generations</em>: evolution will halt after so many generations.</p></li>
+<li><p>flag <em>-max_test_generations</em> (disabled by default): evolution will halt if in the last flag <em>-max_test_generations</em> the best <cite>deviation</cite> of the test set found so far has not improved.</p></li>
+</ol>
+</section>
+</section>
+<section id="hybrid">
+<h2><span class="section-number">3.2.3. </span>HYBRID<a class="headerlink" href="#hybrid" title="Link to this heading">¶</a></h2>
+<p>Even though this optimizer has a very fancy name, it is just a GA with MCMC as its mutator engine.
+When MCMC acts as a mutator, it will always alter the genomes independently of flag <em>-pr_mut</em>. Also, it is important to note that the simulated annealing by default is applied independently in each MCMC run.
+For instance, in case we would use flag <em>-max_generations 2 -maxiter 10 -temp 5 -anneal 0.5</em>, Fig. <a class="reference internal" href="#fig-anneal-hybrid"><span class="std std-ref">Annealing in the hybrid algorithm</span></a> shows the temperature during the MCMC part.</p>
+<figure class="align-center" id="fig-anneal-hybrid">
+<img alt="../../_images/annealing_hybrid.png" src="../../_images/annealing_hybrid.png" />
+<figcaption>
+<p><span class="caption-text">Annealing in the hybrid algorithm</span><a class="headerlink" href="#fig-anneal-hybrid" title="Link to this image">¶</a></p>
+</figcaption>
+</figure>
+<p>However, when using the flag flag <em>-anneal_globally</em>, the starting temperature of the annealing will be decreased in steps at the beginning of each generation.</p>
+</section>
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+  <div>
+    <h3><a href="../../index.html">Table of Contents</a></h3>
+    <ul>
+<li><a class="reference internal" href="#">3.2. Force Field Training Algorithms</a><ul>
+<li><a class="reference internal" href="#mcmc">3.2.1. MCMC</a><ul>
+<li><a class="reference internal" href="#metropolis-criterion">3.2.1.1. Metropolis Criterion</a></li>
+<li><a class="reference internal" href="#multiple-mcmc-runs">3.2.1.2. Multiple MCMC runs</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#genetic-algorithm">3.2.2. Genetic Algorithm</a><ul>
+<li><a class="reference internal" href="#initialization">3.2.2.1. Initialization</a></li>
+<li><a class="reference internal" href="#deviation-from-data">3.2.2.2. Deviation from data</a></li>
+<li><a class="reference internal" href="#sorting">3.2.2.3. Sorting</a></li>
+<li><a class="reference internal" href="#penalties">3.2.2.4. Penalties</a></li>
+<li><a class="reference internal" href="#selection-probabilities">3.2.2.5. Selection probabilities</a></li>
+<li><a class="reference internal" href="#rank">3.2.2.6. Rank</a></li>
+<li><a class="reference internal" href="#fitness">3.2.2.7. Fitness</a></li>
+<li><a class="reference internal" href="#boltzmann">3.2.2.8. Boltzmann</a></li>
+<li><a class="reference internal" href="#elitism">3.2.2.9. Elitism</a></li>
+<li><a class="reference internal" href="#selection">3.2.2.10. Selection</a></li>
+<li><a class="reference internal" href="#crossover">3.2.2.11. Crossover</a></li>
+<li><a class="reference internal" href="#mutation">3.2.2.12. Mutation</a></li>
+<li><a class="reference internal" href="#termination">3.2.2.13. Termination</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#hybrid">3.2.3. HYBRID</a></li>
+</ul>
+</li>
+</ul>
+
+  </div>
+  <div>
+    <h4>Previous topic</h4>
+    <p class="topless"><a href="energy.html"
+                          title="previous chapter"><span class="section-number">3.1. </span>Energy Function</a></p>
+  </div>
+  <div>
+    <h4>Next topic</h4>
+    <p class="topless"><a href="ffdesign.html"
+                          title="next chapter"><span class="section-number">3.3. </span>Force field design</a></p>
+  </div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../../_sources/manual/refman/training.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="ffdesign.html" title="3.3. Force field design"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="energy.html" title="3.1. Energy Function"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">ACT 1.2b documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="header.html" ><span class="section-number">3. </span>Reference Manual</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href=""><span class="section-number">3.2. </span>Force Field Training Algorithms</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2026 The Alexandria Chemistry Initiative.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3.
+    </div>
+  </body>
+</html>

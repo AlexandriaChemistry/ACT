@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>3.4. Force Field Training Targets &#8212; ACT 1.2b documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=fa44fd50" />
+    <link rel="stylesheet" type="text/css" href="../../_static/classic.css?v=2bf1fcf8" />
+    <link rel="stylesheet" type="text/css" href="../../_static/mystnb.8ecb98da25f57f5357bf6f572d296f466b2cfe2517ffebfabe82451661e28f02.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../_static/togglebutton.css?v=9c3e77be" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sphinx_lesson.css?v=e9df6548" />
+    <link rel="stylesheet" type="text/css" href="../../_static/term_role_formatting.css?v=4194e21c" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sphinx_rtd_theme_ext_color_contrast.css?v=8e8ea19f" />
+    <link rel="stylesheet" type="text/css" href="../../_static/custom_theme.css" />
+    
+    <script src="../../_static/documentation_options.js?v=00cc29cc"></script>
+    <script src="../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../_static/copybutton.js?v=6dbb43f8"></script>
+    <script src="../../_static/minipres.js?v=a0d29692"></script>
+    <script>let toggleHintShow = 'Click to show';</script>
+    <script>let toggleHintHide = 'Click to hide';</script>
+    <script>let toggleOpenOnPrint = 'true';</script>
+    <script src="../../_static/togglebutton.js?v=1ae7504c"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script>window.MathJax = {"options": {"processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="3.6. Training Data" href="data.html" />
+    <link rel="prev" title="3.3. Force field design" href="ffdesign.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="data.html" title="3.6. Training Data"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="ffdesign.html" title="3.3. Force field design"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">ACT 1.2b documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="header.html" accesskey="U"><span class="section-number">3. </span>Reference Manual</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href=""><span class="section-number">3.4. </span>Force Field Training Targets</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="force-field-training-targets">
+<h1><span class="section-number">3.4. </span>Force Field Training Targets<a class="headerlink" href="#force-field-training-targets" title="Link to this heading">¶</a></h1>
+<p>A number of different targets can be used for training force fields in the ACT.
+Below, we mention the most important ones including,  where needed, the technical details necessary to appreciate the methods.
+For information on obtaining or generating training data we refer to Section <a class="reference internal" href="data.html#sec-data"><span class="std std-ref">Training Data</span></a>.</p>
+<p>Computing interaction energies and components of interaction energies is a crucial part of force field development. In the ACT we have hitherto used data from symmetry-adapted perturbation theory (SAPT) calculations <span id="id1">[<a class="reference internal" href="../references.html#id72" title="Bogumil Jeziorski, Robert Moszynski, and Krzysztof Szalewicz. Perturbation theory approach to intermolecular potential energy surfaces of van der waals complexes. Chem. Rev., 94(7):1887-1930, 1994. doi:10.1021/cr00031a008.">JMS94</a>, <a class="reference internal" href="../references.html#id110" title="Trent M. Parker, Lori A. Burns, Robert M. Parrish, Alden G. Ryno, and C. David Sherrill. Levels of symmetry adapted perturbation theory (sapt). I. efficiency and performance for interaction energies. J. Chem. Phys., 140(9):094106, 2014. doi:10.1063/1.4867135.">PBP+14</a>]</span>.
+It is not entirely trivial to match the energy components from SAPT to force field terms, however.</p>
+<section id="algorithm-to-compute-energy-components-in-act">
+<h2><span class="section-number">3.4.1. </span>Algorithm to compute energy components in ACT<a class="headerlink" href="#algorithm-to-compute-energy-components-in-act" title="Link to this heading">¶</a></h2>
+<p>The component of the interaction energy of a dimer can be computed from the difference between dimer and monomers <span class="math notranslate nohighlight">\(A\)</span> and <span class="math notranslate nohighlight">\(B\)</span> <span id="id2">[<a class="reference internal" href="../references.html#id174" title="Grzegorz Chałasiński and Małgorzata M Szcześniak. State of the art and challenges of the ab initio theory of intermolecular interactions. Chem. Rev., 100(11):4227–4252, 2000. doi:10.1021/cr990048z.">ChalasinskiSzczesniak00</a>]</span>:</p>
+<div class="math notranslate nohighlight" id="equation-vinter">
+<span class="eqno">(1)<a class="headerlink" href="#equation-vinter" title="Link to this equation">¶</a></span>\[E_x^{inter}(AB) = E_x^{total}(AB) - \left(E_x(A) + E_x(B)\right)\]</div>
+<p>where <span class="math notranslate nohighlight">\(x\)</span> is exchange or dispersion and <span class="math notranslate nohighlight">\(total\)</span> indicates that the energy includes both the intra- and intermolecular interactions.
+To compute the electrostatics or induction energy of a dimer in the gas phase, the ACT first computes the relaxed energy of the two monomers <span class="math notranslate nohighlight">\(A\)</span> and <span class="math notranslate nohighlight">\(B\)</span>, that is, the energy of the shell particles is minimized with respect to their positions, yielding <span class="math notranslate nohighlight">\(E_x(A)\)</span> and <span class="math notranslate nohighlight">\(E_x(B)\)</span>. The rationale for this is that SAPT computes electrostatic energies between unperturbed monomers based on the response/relaxation of monomer Hartree-Fock (HF) orbitals in the electric field of the interacting partner.
+Then, the energies of the dimer <span class="math notranslate nohighlight">\(AB\)</span> are computed in three steps:</p>
+<ol class="arabic simple">
+<li><p>electrostatics is computed with shells located in the relaxed monomer positions, yielding <span class="math notranslate nohighlight">\(E_{elec}^{total}(AB)\)</span>,</p></li>
+<li><p>the shells of compound <span class="math notranslate nohighlight">\(A\)</span> are allowed to relax (further) in the electric field from compound <span class="math notranslate nohighlight">\(B\)</span>, while shells of compound <span class="math notranslate nohighlight">\(B\)</span> remain at their monomer positions, and vice versa, yielding the second order relaxation <span class="math notranslate nohighlight">\(E_{induc}^{inter(2)}\)</span> (see ref.  <span id="id3">[<a class="reference internal" href="../references.html#id103" title="Jesse G. McDaniel and J.R. Schmidt. Physically-motivated force fields from symmetry-adapted perturbation theory. J. Phys. Chem. A., 117(10):2053-2066, 2013. doi:10.1021/jp3108182.">MS13</a>]</span> for details),</p></li>
+<li><p>the shells are allowed to relax completely, yielding the total <span class="math notranslate nohighlight">\(E_{induc}\)</span> from which the higher order terms, named <span class="math notranslate nohighlight">\(E_{induc}^{inter(3)}\)</span> here for convenience, can be derived by subtracting  <span class="math notranslate nohighlight">\(E_{induc}^{inter(2)}\)</span>. According to ref. <span id="id4">[<a class="reference internal" href="../references.html#id103" title="Jesse G. McDaniel and J.R. Schmidt. Physically-motivated force fields from symmetry-adapted perturbation theory. J. Phys. Chem. A., 117(10):2053-2066, 2013. doi:10.1021/jp3108182.">MS13</a>]</span>, parameters of models corresponding to the higher other terms, including, potentially, charge transfer, can be trained to the <span class="math notranslate nohighlight">\(\delta_{HF}\)</span> contribution of the SAPT induction energy. Here, we have added the exponential term proposed by McDaniel and Schmidt for this purpose (section <a class="reference internal" href="energy.html#sec-indcorr"><span class="std std-ref">Induction correction</span></a>).</p></li>
+</ol>
+<p>The terms below can be compared directly to SAPT:</p>
+<div class="math notranslate nohighlight" id="equation-velec">
+<span class="eqno">(2)<a class="headerlink" href="#equation-velec" title="Link to this equation">¶</a></span>\[E_{elec} ^{inter}(AB) = E_{elec}^{total}(AB) - \left(E_{ei}(A) + E_{ei}(B)\right)\]</div>
+<div class="math notranslate nohighlight" id="equation-vind2">
+<span class="eqno">(3)<a class="headerlink" href="#equation-vind2" title="Link to this equation">¶</a></span>\[E_{induc}^{inter(2)}(AB) = \left(E^{total}_{ei}\|_A + E^{total}_{ei}\|_B\right)-2E_{elec} ^{total}(AB)\]</div>
+<div class="math notranslate nohighlight" id="equation-vind3">
+<span class="eqno">(4)<a class="headerlink" href="#equation-vind3" title="Link to this equation">¶</a></span>\[E_{induc}^{inter(3)}(AB) = E_{ei}^{total}(AB) - E_{induc}^{(2)}(AB) - E_{elec}^{total}(AB)\]</div>
+<p>where <span class="math notranslate nohighlight">\(ei\)</span> is short for <span class="math notranslate nohighlight">\(elec+induc\)</span> and the notation <span class="math notranslate nohighlight">\(\|_X\)</span> indicates that the shells of compound <span class="math notranslate nohighlight">\(X\)</span> are kept fixed in the relaxed monomer conformation.
+If we sum Eqns. <a class="reference internal" href="#equation-velec">(2)</a>- <a class="reference internal" href="#equation-vind3">(4)</a> we recover Eqn. <a class="reference internal" href="#equation-vinter">(1)</a> where <span class="math notranslate nohighlight">\(x\)</span> equals <span class="math notranslate nohighlight">\(ei\)</span>.
+Eqn. <a class="reference internal" href="#equation-velec">(2)</a> corresponds to the electrostatics in SAPT.</p>
+<p>To summarize, ACT computes the induction term in two parts: a second order term <span class="math notranslate nohighlight">\(E_{induc}^{inter(2)}(AB)\)</span> (Eqn. <a class="reference internal" href="#equation-vind2">(3)</a>) and a third-and-higher-order term <span class="math notranslate nohighlight">\(E_{induc}^{inter(3)}(AB)\)</span> (Eqn. <a class="reference internal" href="#equation-vind3">(4)</a>), the sum of which corresponds to the total induction from SAPT.</p>
+<p>McDaniel and Schmidt <span id="id5">[<a class="reference internal" href="../references.html#id103" title="Jesse G. McDaniel and J.R. Schmidt. Physically-motivated force fields from symmetry-adapted perturbation theory. J. Phys. Chem. A., 117(10):2053-2066, 2013. doi:10.1021/jp3108182.">MS13</a>]</span> proposed that  Eqn. <a class="reference internal" href="#equation-vind3">(4)</a> should be equal to the <span class="math notranslate nohighlight">\(\delta_{HF}\)</span> + <span class="math notranslate nohighlight">\(\delta_{MP2}\)</span> terms from SAPT while Eqn. <a class="reference internal" href="#equation-vind2">(3)</a> would correspond to the polarization energy.
+They then continue to suggest how this can be implemented in a force field:</p>
+<div class="math notranslate nohighlight">
+\[E_{induc} ~=~ E_{shell} + E_{pol} + E_{\delta HF}\]</div>
+<p>where <span class="math notranslate nohighlight">\(E_{shell}\)</span> is Eqn. <a class="reference internal" href="energy.html#equation-vpol">(8)</a> and</p>
+<div class="math notranslate nohighlight">
+\[E_{pol} ~=~ A^{ind}_{ij} {\rm exp}(-b_{ij} r_{ij})\]</div>
+<p>where <span class="math notranslate nohighlight">\(r_{ij}\)</span> is the interatomic distance and <span class="math notranslate nohighlight">\(b_{ij}\)</span> a constant, and</p>
+<div class="math notranslate nohighlight">
+\[E_{\delta HF} ~=~ A^{\delta HF}_{ij} {\rm exp}(-b_{ij} r_{ij})\]</div>
+<p>where both <span class="math notranslate nohighlight">\(A^{ind}_{ij}\)</span> and <span class="math notranslate nohighlight">\(A^{\delta_{HF}}_{ij}\)</span> are determined from a negative geometric combination rule</p>
+<div class="math notranslate nohighlight">
+\[A_{ij} ~=~ -\sqrt{A_i A_j}\]</div>
+<p>meaning these terms are always attractive. These potentials use the <span class="math notranslate nohighlight">\(b_{ij}\)</span> that is used in the exchange energy (using a Buckingham potential, Eqn. <a class="reference internal" href="energy.html#equation-vbh">(13)</a>).
+Whether this is the most appropriate way of splitting terms and reproducing SAPT energies remains to be determined.</p>
+<p>In the output the ACT training module <em>alexandria train_ff</em> there are two terms related to induction. The term INDUCTIONCORRECTION refers to Eqn. <a class="reference internal" href="#equation-vind3">(4)</a>. If that is present, the term INDUCTION refers to Eqn. <a class="reference internal" href="#equation-vind2">(3)</a>, if not it refers to the sum of the two.</p>
+</section>
+<section id="monomer-energies-and-forces">
+<h2><span class="section-number">3.4.2. </span>Monomer Energies and Forces<a class="headerlink" href="#monomer-energies-and-forces" title="Link to this heading">¶</a></h2>
+<p>Typically, a series of single-point quantum calculations are done at a user-defined level of theory. These calculations can then be converted to a molprop file. More information to come.</p>
+</section>
+<section id="other-properties">
+<h2><span class="section-number">3.4.3. </span>Other Properties<a class="headerlink" href="#other-properties" title="Link to this heading">¶</a></h2>
+<p>In principle, all the molecular properties mentioned in Section <a class="reference internal" href="../userman/properties.html#sec-properties"><span class="std std-ref">Predicting Molecular Properties</span></a> can be used for training, but it is highly recommended to leave some properties for validation.</p>
+</section>
+</section>
+<section id="parameters-for-force-field-training">
+<h1><span class="section-number">3.5. </span>Parameters for Force Field Training<a class="headerlink" href="#parameters-for-force-field-training" title="Link to this heading">¶</a></h1>
+<p>Each potential available in the ACT has its own set of parameters. Those are listed in Table <code class="xref std std-numref docutils literal notranslate"><span class="pre">nb_parameters</span></code> for non-bonded parameters, Table <code class="xref std std-numref docutils literal notranslate"><span class="pre">bf_parameters</span></code> for bonded parameters.
+Parameters for virtual sites are given in Table <code class="xref std std-numref docutils literal notranslate"><span class="pre">vs_parameters</span></code> and for charge generation algorithms in Table <code class="xref std std-numref docutils literal notranslate"><span class="pre">eem_parameters</span></code>.
+In total, well over 80 parameter categories can be trained using the ACT.</p>
+<table class="docutils align-default" id="nb-parameters">
+<caption><span class="caption-text">Force field parameters related to non-bonded  potentials that can be trained using ACT. Note that the parameter names are case-sensitive and, in some cases, they correspond to a Greek symbol in the equation.</span><a class="headerlink" href="#nb-parameters" title="Link to this table">¶</a></caption>
+<thead>
+<tr class="row-odd"><th class="head"><p>Potential</p></th>
+<th class="head"><p>Equation</p></th>
+<th class="head"><p>Parameters</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>COULOMB_GAUSSIAN</p></td>
+<td><p><a class="reference internal" href="energy.html#equation-vcoulg">(2)</a></p></td>
+<td><p>zeta</p></td>
+</tr>
+<tr class="row-odd"><td><p>COULOMB_SLATER</p></td>
+<td><p><a class="reference internal" href="energy.html#equation-hentschke">(5)</a></p></td>
+<td><p>zeta</p></td>
+</tr>
+<tr class="row-even"><td><p>POLARIZATION</p></td>
+<td><p><a class="reference internal" href="energy.html#equation-vpol">(8)</a></p></td>
+<td><p>alpha</p></td>
+</tr>
+<tr class="row-odd"><td><p>MACDANIEL_SCHMIDT</p></td>
+<td><p><a class="reference internal" href="energy.html#equation-vic">(9)</a></p></td>
+<td><p>a1dexp bdexp</p></td>
+</tr>
+<tr class="row-even"><td><p>LJ14_7</p></td>
+<td><p><a class="reference internal" href="energy.html#equation-14-7">(10)</a></p></td>
+<td><p>sigma epsilon gamma delta</p></td>
+</tr>
+<tr class="row-odd"><td><p>GENERALIZED_BUCKINGHAM</p></td>
+<td><p><a class="reference internal" href="energy.html#equation-gbh">(11)</a></p></td>
+<td><p>rmin epsilon gamma delta</p></td>
+</tr>
+<tr class="row-even"><td><p>WANG_BUCKINGHAM</p></td>
+<td><p><a class="reference internal" href="energy.html#equation-vwbh">(12)</a></p></td>
+<td><p>sigma epsilon gamma</p></td>
+</tr>
+<tr class="row-odd"><td><p>BUCKINGHAM</p></td>
+<td><p><a class="reference internal" href="energy.html#equation-vbh">(13)</a></p></td>
+<td><p>A b C</p></td>
+</tr>
+<tr class="row-even"><td><p>TANG_TOENNIES</p></td>
+<td><p><a class="reference internal" href="energy.html#equation-tt">(15)</a></p></td>
+<td><p>Att btt c6tt c8tt c10tt</p></td>
+</tr>
+<tr class="row-odd"><td><p>TT2</p></td>
+<td><p><a class="reference internal" href="energy.html#equation-tt2">(16)</a></p></td>
+<td><p>Att2b bExchtt2b c6tt2b c8tt2b c10tt2b</p></td>
+</tr>
+<tr class="row-even"><td><p>SLATER_ISA</p></td>
+<td><p><a class="reference internal" href="energy.html#equation-slater-isa">(17)</a></p></td>
+<td><p>A b</p></td>
+</tr>
+<tr class="row-odd"><td><p>LJ12_6</p></td>
+<td><p><a class="reference internal" href="energy.html#equation-12-6">(18)</a></p></td>
+<td><p>sigma epsilon</p></td>
+</tr>
+<tr class="row-even"><td><p>LJ12_6_4</p></td>
+<td><p><a class="reference internal" href="energy.html#equation-12-6-4">(19)</a></p></td>
+<td><p>sigma epsilon gamma</p></td>
+</tr>
+<tr class="row-odd"><td><p>BORN_MAYER</p></td>
+<td><p><a class="reference internal" href="energy.html#equation-exch-corr">(20)</a></p></td>
+<td><p>A b</p></td>
+</tr>
+<tr class="row-even"><td><p>Generalized mean</p></td>
+<td><p><a class="reference internal" href="energy.html#equation-cr-genmean">(36)</a></p></td>
+<td><p>exponent</p></td>
+</tr>
+</tbody>
+</table>
+<table class="docutils align-default" id="bf-parameters">
+<caption><span class="caption-text">Force field parameters related to bonded  potentials that can be trained using ACT. Note that the parameter names are case-sensitive and, in some cases, they correspond to a Greek symbol in the equation.</span><a class="headerlink" href="#bf-parameters" title="Link to this table">¶</a></caption>
+<thead>
+<tr class="row-odd"><th class="head"><p>Potential</p></th>
+<th class="head"><p>Equation</p></th>
+<th class="head"><p>Parameters</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>HARMONIC_BONDS</p></td>
+<td><p><a class="reference internal" href="energy.html#equation-harmonic-bond">(37)</a></p></td>
+<td><p>kb bondlength bondenergy</p></td>
+</tr>
+<tr class="row-odd"><td><p>MORSE_BONDS</p></td>
+<td><p><a class="reference internal" href="energy.html#equation-morse">(38)</a></p></td>
+<td><p>beta De bondlength D0</p></td>
+</tr>
+<tr class="row-even"><td><p>HUA_BONDS</p></td>
+<td><p><a class="reference internal" href="energy.html#equation-hua">(39)</a></p></td>
+<td><p>De bondlength b c</p></td>
+</tr>
+<tr class="row-odd"><td><p>HARMONIC_ANGLES</p></td>
+<td><p><a class="reference internal" href="energy.html#equation-harmonic-angle">(40)</a></p></td>
+<td><p>kt angle</p></td>
+</tr>
+<tr class="row-even"><td><p>LINEAR_ANGLES</p></td>
+<td><p><a class="reference internal" href="energy.html#equation-linang">(41)</a></p></td>
+<td><p>klin a</p></td>
+</tr>
+<tr class="row-odd"><td><p>HARMONIC_DIHEDRALS</p></td>
+<td><p><a class="reference internal" href="energy.html#equation-vimproper">(44)</a></p></td>
+<td><p>kimp</p></td>
+</tr>
+<tr class="row-even"><td><p>FOURIER_DIHEDRALS</p></td>
+<td><p><a class="reference internal" href="energy.html#equation-vfourier">(45)</a></p></td>
+<td><p>c0 c1 c2 c3 c4 c5</p></td>
+</tr>
+<tr class="row-odd"><td><p>PROPER_DIHEDRALS</p></td>
+<td><p><a class="reference internal" href="energy.html#equation-vproper">(46)</a></p></td>
+<td><p>kp mult phi0</p></td>
+</tr>
+</tbody>
+</table>
+<table class="docutils align-default" id="vs-parameters">
+<caption><span class="caption-text">Parameters related to virtual sites that can be trained using ACT. Note that the parameter names are case-sensitive. Equations will be added later.</span><a class="headerlink" href="#vs-parameters" title="Link to this table">¶</a></caption>
+<thead>
+<tr class="row-odd"><th class="head"><p>Virtual Site</p></th>
+<th class="head"><p>Equation</p></th>
+<th class="head"><p>Parameters</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>VSITE1</p></td>
+<td></td>
+<td><p>vs1a</p></td>
+</tr>
+<tr class="row-odd"><td><p>VSITE2</p></td>
+<td></td>
+<td><p>vs2a</p></td>
+</tr>
+<tr class="row-even"><td><p>VSITE2FD</p></td>
+<td></td>
+<td><p>vs2fd_a</p></td>
+</tr>
+<tr class="row-odd"><td><p>VSITE3</p></td>
+<td></td>
+<td><p>vs3a vs3b</p></td>
+</tr>
+<tr class="row-even"><td><p>VSITE3S</p></td>
+<td></td>
+<td><p>vs3a</p></td>
+</tr>
+<tr class="row-odd"><td><p>VSITE3FD</p></td>
+<td></td>
+<td><p>vs3fd_a vs3fd_b</p></td>
+</tr>
+<tr class="row-even"><td><p>VSITE3FAD</p></td>
+<td></td>
+<td><p>vs3fad_a vs3fad_b</p></td>
+</tr>
+<tr class="row-odd"><td><p>VSITE3OUT</p></td>
+<td></td>
+<td><p>vs3out_a vs3out_b vs3out_c</p></td>
+</tr>
+<tr class="row-even"><td><p>VSITE4</p></td>
+<td></td>
+<td><p>vs4a vs4b vs4c</p></td>
+</tr>
+<tr class="row-odd"><td><p>VSITE4S</p></td>
+<td></td>
+<td><p>vs4sa vs4sb</p></td>
+</tr>
+<tr class="row-even"><td><p>VSITE4S3</p></td>
+<td></td>
+<td><p>vs4s3a</p></td>
+</tr>
+</tbody>
+</table>
+<table class="docutils align-default" id="eem-parameters">
+<caption><span class="caption-text">Parameters related to charge algorithms that can be trained using ACT. Note that the parameter names are case-sensitive. Equations will be added later.</span><a class="headerlink" href="#eem-parameters" title="Link to this table">¶</a></caption>
+<thead>
+<tr class="row-odd"><th class="head"><p>Algorithm</p></th>
+<th class="head"><p>Equation</p></th>
+<th class="head"><p>Parameters</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>EEM</p></td>
+<td><p><a class="reference internal" href="ffdesign.html#equation-eem">(2)</a></p></td>
+<td><p>eta chi</p></td>
+</tr>
+<tr class="row-odd"><td><p>SQE</p></td>
+<td><p><a class="reference internal" href="ffdesign.html#equation-sqe">(3)</a></p></td>
+<td><p>eta chi delta_eta delta_chi</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+  <div>
+    <h3><a href="../../index.html">Table of Contents</a></h3>
+    <ul>
+<li><a class="reference internal" href="#">3.4. Force Field Training Targets</a><ul>
+<li><a class="reference internal" href="#algorithm-to-compute-energy-components-in-act">3.4.1. Algorithm to compute energy components in ACT</a></li>
+<li><a class="reference internal" href="#monomer-energies-and-forces">3.4.2. Monomer Energies and Forces</a></li>
+<li><a class="reference internal" href="#other-properties">3.4.3. Other Properties</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#parameters-for-force-field-training">3.5. Parameters for Force Field Training</a></li>
+</ul>
+
+  </div>
+  <div>
+    <h4>Previous topic</h4>
+    <p class="topless"><a href="ffdesign.html"
+                          title="previous chapter"><span class="section-number">3.3. </span>Force field design</a></p>
+  </div>
+  <div>
+    <h4>Next topic</h4>
+    <p class="topless"><a href="data.html"
+                          title="next chapter"><span class="section-number">3.6. </span>Training Data</a></p>
+  </div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../../_sources/manual/refman/targets.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="data.html" title="3.6. Training Data"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="ffdesign.html" title="3.3. Force field design"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">ACT 1.2b documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="header.html" ><span class="section-number">3. </span>Reference Manual</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href=""><span class="section-number">3.4. </span>Force Field Training Targets</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2026 The Alexandria Chemistry Initiative.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3.
+    </div>
+  </body>
+</html>

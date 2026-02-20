@@ -1,0 +1,25 @@
+<map id="src/act/coulombintegrals/tests/coulombintegralstest.cpp" name="src/act/coulombintegrals/tests/coulombintegralstest.cpp">
+<area shape="rect" id="Node000001" title="Implements test of Coulomb routines." alt="" coords="452,5,679,50"/>
+<area shape="rect" id="Node000002" title=" " alt="" coords="5,106,78,134"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="450,38,280,60,184,78,90,101,84,103,80,98,89,95,183,72,279,55,454,35"/>
+<area shape="rect" id="Node000003" title=" " alt="" coords="101,106,168,134"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="449,43,321,66,250,81,181,101,175,103,173,98,179,95,249,76,320,61,454,41"/>
+<area shape="rect" id="Node000004" title=" " alt="" coords="192,106,243,134"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="449,47,355,70,256,101,253,102,251,97,254,95,354,64,454,45"/>
+<area shape="rect" id="Node000005" title=" " alt="" coords="267,106,370,134"/>
+<area shape="poly" id="edge4_Node000001_Node000005" title=" " alt="" coords="509,50,370,103,368,98,504,51"/>
+<area shape="rect" id="Node000006" href="$gaussian__integrals_8h.xhtml" title="Provides routines for computing Coulomb integrals analytically. The Slater based code depends on the ..." alt="" coords="395,98,554,143"/>
+<area shape="poly" id="edge5_Node000001_Node000006" title=" " alt="" coords="546,49,508,89,506,85,542,52"/>
+<area shape="rect" id="Node000008" href="$slater__integrals_8h.xhtml" title="Provides routines for computing Coulomb integrals analytically. The Slater based code depends on the ..." alt="" coords="578,98,737,143"/>
+<area shape="poly" id="edge7_Node000001_Node000008" title=" " alt="" coords="588,48,628,88,622,87,586,53"/>
+<area shape="rect" id="Node000009" title=" " alt="" coords="760,106,928,134"/>
+<area shape="poly" id="edge8_Node000001_Node000009" title=" " alt="" coords="633,48,792,101,786,101,632,53"/>
+<area shape="rect" id="Node000010" title=" " alt="" coords="952,106,1089,134"/>
+<area shape="poly" id="edge9_Node000001_Node000010" title=" " alt="" coords="679,45,941,95,960,102,955,102,940,101,679,50"/>
+<area shape="rect" id="Node000011" title=" " alt="" coords="1112,106,1275,134"/>
+<area shape="poly" id="edge10_Node000001_Node000011" title=" " alt="" coords="679,38,877,61,1102,95,1128,103,1123,103,1101,101,876,67,679,43"/>
+<area shape="rect" id="Node000012" title=" " alt="" coords="1299,106,1491,134"/>
+<area shape="poly" id="edge11_Node000001_Node000012" title=" " alt="" coords="679,34,956,57,1122,74,1287,95,1320,103,1315,103,1286,101,1121,79,956,62,679,39"/>
+<area shape="rect" id="Node000007" title=" " alt="" coords="379,191,570,218"/>
+<area shape="poly" id="edge6_Node000006_Node000007" title=" " alt="" coords="477,141,477,177,473,173,473,145"/>
+</map>

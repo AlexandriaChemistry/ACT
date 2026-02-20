@@ -1,0 +1,83 @@
+\documentclass{article}
+\usepackage{iftex}
+\usepackage{ifthen}
+\usepackage{epsfig}
+\usepackage[utf8]{inputenc}
+\usepackage{xcolor}
+\ifPDFTeX
+\usepackage{newunicodechar}
+  \makeatletter
+    \def\doxynewunicodechar#1#2{%
+    \@tempswafalse
+    \edef\nuc@tempa{\detokenize{#1}}%
+    \if\relax\nuc@tempa\relax
+      \nuc@emptyargerr
+    \else
+      \edef\@tempb{\expandafter\@car\nuc@tempa\@nil}%
+      \nuc@check
+      \if@tempswa
+        \@namedef{u8:\nuc@tempa}{#2}%
+      \fi
+    \fi
+  }
+  \makeatother
+  \doxynewunicodechar{⁻}{${}^{-}$}% Superscript minus
+  \doxynewunicodechar{²}{${}^{2}$}% Superscript two
+  \doxynewunicodechar{³}{${}^{3}$}% Superscript three
+
+\fi
+\pagestyle{empty}
+\begin{document}
+$ \chi^2 $
+\pagebreak
+
+$ \chi_2 $
+\pagebreak
+
+$ [0, 1] $
+\pagebreak
+
+$ i $
+\pagebreak
+
+\[     p_i = \frac { 1 / \left( \varepsilon + f_i \right) } { \sum \limits_{ j=1 }^{ n } 1 / \left( \varepsilon + f_j \right) },
+\]
+\pagebreak
+
+$ f_i $
+\pagebreak
+
+$ n $
+\pagebreak
+
+\[     p_i = \frac{ e^{ f_i^* / T } }{ \sum \limits_{ j=1 }^{ n } e^{ f_j^* / T } },
+\]
+\pagebreak
+
+$ T \in \mathbb{R} $
+\pagebreak
+
+$ f_i^* $
+\pagebreak
+
+\[     f_i^* = 1 / \left( \varepsilon + f_i \right),
+\]
+\pagebreak
+
+$ R $
+\pagebreak
+
+\[     p_i = \frac{R - i + 1}{ R \left( R+1 \right) / 2 }
+\]
+\pagebreak
+
+$ e^{f_i^*} $
+\pagebreak
+
+$ 1 + 2  + 3 + \dots + 9 + 10 $
+\pagebreak
+
+$\geq$
+\pagebreak
+
+\end{document}

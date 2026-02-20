@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>3.1. Energy Function &#8212; ACT 1.2b documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=fa44fd50" />
+    <link rel="stylesheet" type="text/css" href="../../_static/classic.css?v=2bf1fcf8" />
+    <link rel="stylesheet" type="text/css" href="../../_static/mystnb.8ecb98da25f57f5357bf6f572d296f466b2cfe2517ffebfabe82451661e28f02.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../_static/togglebutton.css?v=9c3e77be" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sphinx_lesson.css?v=e9df6548" />
+    <link rel="stylesheet" type="text/css" href="../../_static/term_role_formatting.css?v=4194e21c" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sphinx_rtd_theme_ext_color_contrast.css?v=8e8ea19f" />
+    <link rel="stylesheet" type="text/css" href="../../_static/custom_theme.css" />
+    
+    <script src="../../_static/documentation_options.js?v=00cc29cc"></script>
+    <script src="../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../_static/copybutton.js?v=6dbb43f8"></script>
+    <script src="../../_static/minipres.js?v=a0d29692"></script>
+    <script>let toggleHintShow = 'Click to show';</script>
+    <script>let toggleHintHide = 'Click to hide';</script>
+    <script>let toggleOpenOnPrint = 'true';</script>
+    <script src="../../_static/togglebutton.js?v=1ae7504c"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script>window.MathJax = {"options": {"processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="3.2. Force Field Training Algorithms" href="training.html" />
+    <link rel="prev" title="3. Reference Manual" href="header.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="training.html" title="3.2. Force Field Training Algorithms"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="header.html" title="3. Reference Manual"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">ACT 1.2b documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="header.html" accesskey="U"><span class="section-number">3. </span>Reference Manual</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href=""><span class="section-number">3.1. </span>Energy Function</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="energy-function">
+<span id="sec-energy"></span><h1><span class="section-number">3.1. </span>Energy Function<a class="headerlink" href="#energy-function" title="Link to this heading">¶</a></h1>
+<p>The ACT supports a range of different potentials for classical force field simulations. These potentials are described briefly in what follows.</p>
+<section id="non-bonded-interactions">
+<h2><span class="section-number">3.1.1. </span>Non-bonded interactions<a class="headerlink" href="#non-bonded-interactions" title="Link to this heading">¶</a></h2>
+<section id="coulomb-interaction-using-point-charges">
+<h3><span class="section-number">3.1.1.1. </span>Coulomb Interaction using Point charges<a class="headerlink" href="#coulomb-interaction-using-point-charges" title="Link to this heading">¶</a></h3>
+<p>The Coulomb interaction can be computed with point charges:</p>
+<div class="math notranslate nohighlight" id="equation-vcoul">
+<span class="eqno">(1)<a class="headerlink" href="#equation-vcoul" title="Link to this equation">¶</a></span>\[V_{coul}(r_{ij}) ~=~ \frac{q_i q_j} {4\pi\varepsilon_0\varepsilon_r r_{ij}}.\]</div>
+</section>
+<section id="coulomb-interaction-using-gaussian-charges">
+<h3><span class="section-number">3.1.1.2. </span>Coulomb Interaction using Gaussian charges<a class="headerlink" href="#coulomb-interaction-using-gaussian-charges" title="Link to this heading">¶</a></h3>
+<p>Alternatively, the Coulomb interaction can be described using Gaussian shielded charges</p>
+<div class="math notranslate nohighlight" id="equation-vcoulg">
+<span class="eqno">(2)<a class="headerlink" href="#equation-vcoulg" title="Link to this equation">¶</a></span>\[V_{coul}(r_{ij}) ~=~ \frac{q_i q_j {\rm erf}\left(\zeta_{ij} r_{ij} \right)}{4\pi\varepsilon_0\varepsilon_r r_{ij}}, \quad \zeta_{ij} = \frac{\zeta_i \zeta_j}{\sqrt{\zeta_i^2 + \zeta_j^2}},\]</div>
+<p>where <span class="math notranslate nohighlight">\(\varepsilon_0\)</span> is the permittivity of vacuum, <span class="math notranslate nohighlight">\(q_{i,j}\)</span> are the charges and <span class="math notranslate nohighlight">\(\zeta_{i,j}\)</span> are the charge distribution widths (screening factors). Note that Eqn. <a class="reference internal" href="#equation-vcoulg">(2)</a> includes a relative dielectric constant <span class="math notranslate nohighlight">\(\varepsilon_r\)</span> that can be used to parameterize a non-polarizable force field using charge-scaling <span id="id1">[<a class="reference internal" href="../references.html#id79" title="Brian J. Kirby and Pavel Jungwirth. Charge scaling manifesto: a way of reconciling the inherently macroscopic and microscopic natures of molecular simulations. J. Phys. Chem. Lett., 10:7531-7536, 2019. doi:10.1021/acs.jpclett.9b02652.">KJ19</a>]</span>.</p>
+</section>
+<section id="coulomb-interaction-using-slater-charges">
+<span id="sec-slater"></span><h3><span class="section-number">3.1.1.3. </span>Coulomb Interaction using Slater charges<a class="headerlink" href="#coulomb-interaction-using-slater-charges" title="Link to this heading">¶</a></h3>
+<p>In addition, Slater distributed charges can be used as described in ref. <span id="id2">[<a class="reference internal" href="../references.html#id49" title="Mohammad Mehdi Ghahremanpour, Paul J. van Maaren, Carl Caleman, Geoffrey R. Hutchison, and David van der Spoel. Polarizable drude model with s-type gaussian or slater charge density for general molecular mechanics force fields. J. Chem. Theory Comput., 14:5553-5566, 2018. doi:10.1021/acs.jctc.8b00430.">GvMC+18</a>]</span>, from which the text below is an adapted version.</p>
+<p>The spherical Slater orbital wavefunction is given by</p>
+<div class="math notranslate nohighlight" id="equation-slaterwf">
+<span class="eqno">(3)<a class="headerlink" href="#equation-slaterwf" title="Link to this equation">¶</a></span>\[\psi_{n}({\bf r}) ~=~ \sqrt{\frac{(2\zeta)^{2n+1}}{4\pi(2n)!}} {\bf r}^{n-1}{\rm e}^{-\zeta {\bf r}}\]</div>
+<p>where <span class="math notranslate nohighlight">\(n\)</span> is the highest  quantum number of the element and <span class="math notranslate nohighlight">\(\zeta\)</span>
+is the  exponent giving the width of the charge density.
+The distribution of  charge  can  be described
+by the charge density, which is the square of the wave function ( <a class="reference internal" href="#equation-slaterwf">(3)</a> ).
+The Coulomb integral
+can then be written as <span id="id3">[<a class="reference internal" href="../references.html#id58" title="R Hentschke, E M Aydt, B Fodi, and E Schöckelmann. Molekulares Modellieren mit Kraftfeldern. Bergische Universität Wuppertal, Wuppertal, Germany, 2004. URL: http://constanze.materials.uni-wuppertal.de.">HAFSchockelmann04</a>, <a class="reference internal" href="../references.html#id115" title="S W Rick, S J Stuart, and B J Berne. Dynamical fluctuating charge force fields: Application to liquid water. J. Chem. Phys., 101:6141–6156, 1994. doi:10.1063/1.468398.">RSB94</a>]</span>:</p>
+<div class="math notranslate nohighlight" id="equation-slaterintegral">
+<span class="eqno">(4)<a class="headerlink" href="#equation-slaterintegral" title="Link to this equation">¶</a></span>\[J_{ij}({\bf r}) \sim \int \int |\psi_n({\bf r_i})|^2\frac{q_i q_j}{|{\bf r_i}- {\bf r_j}|}|\psi_m({\bf r_j})|^2 d{\bf r_i} d{\bf r_j}\]</div>
+<p>where <span class="math notranslate nohighlight">\(\psi_n\)</span> and <span class="math notranslate nohighlight">\(\psi_m\)</span> are the Slater wave functions of atoms <span class="math notranslate nohighlight">\(i\)</span> and
+<span class="math notranslate nohighlight">\(j\)</span> with quantum numbers <span class="math notranslate nohighlight">\(n\)</span> and <span class="math notranslate nohighlight">\(m\)</span> and with partial charges <span class="math notranslate nohighlight">\(q_i\)</span> and <span class="math notranslate nohighlight">\(q_j\)</span>,  respectively.
+Both <a class="reference internal" href="#equation-vcoulg">(2)</a> and <a class="reference internal" href="#equation-slaterintegral">(4)</a> have a finite limit as <span class="math notranslate nohighlight">\(r \rightarrow 0\)</span>.
+As a result,  these functions are well behaved at small  <span class="math notranslate nohighlight">\(r\)</span>.
+A number of methods <span id="id4">[<a class="reference internal" href="../references.html#id51" title="I I Guseinov. Analytical evaluation of two-centre coulomb, hybrid and one-electron integrals for slater-type orbitals. J. Phys. B: Atom. Molec. Phys., 3(11):1399, 1970. doi:10.1088/0022-3700/3/11/001.">Gus70</a>, <a class="reference internal" href="../references.html#id108" title="Anders Öhrn, Jose M. Hermida-Ramon, and Gunnar Karlström. Method for slater-type density fitting for intermolecular electrostatic interactions with charge overlap. i. the model. J. Chem. Theory Comput., 12(5):2298-2311, 2016.">OhrnHRKarlstrom16</a>]</span> have been proposed to evaluate <a class="reference internal" href="#equation-slaterintegral">(4)</a>.
+Hentschke gives an  analytical solution <span id="id5">[<a class="reference internal" href="../references.html#id58" title="R Hentschke, E M Aydt, B Fodi, and E Schöckelmann. Molekulares Modellieren mit Kraftfeldern. Bergische Universität Wuppertal, Wuppertal, Germany, 2004. URL: http://constanze.materials.uni-wuppertal.de.">HAFSchockelmann04</a>]</span>:</p>
+<div class="math notranslate nohighlight" id="equation-hentschke">
+<span class="eqno">(5)<a class="headerlink" href="#equation-hentschke" title="Link to this equation">¶</a></span>\[\begin{split}J_{ij}({\bf r}) = \left\{ \begin{aligned}
+&amp; \frac{1}{4 \pi \epsilon_0}\frac{q_iq_j}{\|{\bf r_i} - {\bf r_j}\|} \frac{4\zeta_i^{2n+1}\zeta_j^{2m+1}}{(2n)!(2m)!} \frac{\partial^{2n-2}\partial^{2m-2}}{\partial\zeta_i^{2n-2}\partial\zeta_j^{2m-2}} \left(\frac{1}{\zeta_i^3 \zeta_j^3}\right)\\
+&amp; \times\biggl[ 1 -\frac{(3\zeta_i^2 - \zeta_j^2)\zeta_j^4}{(\zeta_i - \zeta_j)^3(\zeta_i + \zeta_j)^3} e^{-2\zeta_ir_{ij}} -\frac{(\zeta_i^2 - 3\zeta_j^2)\zeta_i^4}{(\zeta_i - \zeta_j)^3(\zeta_i + \zeta_j)^3} e^{-2\zeta_jr_{ij}} \\
+&amp; - \frac{\zeta_i\zeta_j^4}{(\zeta_i-\zeta_j)^2(\zeta_i+\zeta_j)^2} r_{ij} e^{-2\zeta_ir_{ij}} - \frac{\zeta_i^4\zeta_j}{(\zeta_i-\zeta_j)^2(\zeta_i+\zeta_j)^2} r_{ij} e^{-2\zeta_jr_{ij}}
+\biggr] \end{aligned} \right.\end{split}\]</div>
+<p><a class="reference internal" href="#equation-hentschke">(5)</a> was implemented in a Mathematica <sup>TM</sup> program from which C++ code was generated for the
+analytical computation of <span class="math notranslate nohighlight">\(J_{ij}\)</span>  and its analytical derivatives with respect to <span class="math notranslate nohighlight">\(r\)</span>, which are necessary for computing forces.
+Due to the nature of <a class="reference internal" href="#equation-hentschke">(5)</a>, there are many terms with large powers, particularly for <span class="math notranslate nohighlight">\(n&gt;3\)</span>. Thus,  the equations have to be implemented using the arbitrary precision
+arithmetic library Class Library for Numbers ( <a class="reference external" href="https://www.ginac.de/CLN/">CLN</a> ).
+to avoid numerical instabilities.
+It should be noted that the  arbitrary  precision library significantly increases the  computational cost to analytically solve <a class="reference internal" href="#equation-hentschke">(5)</a></p>
+</section>
+<section id="long-range-coulomb-interactions">
+<h3><span class="section-number">3.1.1.4. </span>Long range Coulomb interactions<a class="headerlink" href="#long-range-coulomb-interactions" title="Link to this heading">¶</a></h3>
+<p>It is good practice <span id="id6">[<a class="reference internal" href="../references.html#id128" title="D van der Spoel and P J van Maaren. The origin of layer structure artifacts in simulations of liquid water. J. Chem. Theory Comput., 2:1–11, 2006. doi:10.1021/ct0502256.">vdSvM06</a>]</span> to use the particle-mesh Ewald <span id="id7">[<a class="reference internal" href="../references.html#id26" title="T Darden, D York, and L Pedersen. Particle mesh Ewald: An N-log(N) method for Ewald sums in large systems. J. Chem. Phys., 98:10089–10092, 1993. doi:10.1063/1.464397.">DYP93</a>, <a class="reference internal" href="../references.html#id40" title="U Essmann, L Perera, M L Berkowitz, T Darden, H Lee, and L G Pedersen. A smooth particle mesh Ewald method. J. Chem. Phys., 103:8577–8592, 1995. doi:10.1063/1.470117.">EPB+95</a>]</span> method to treat long-range electrostatics interactions in the condensed phase. In short, the method splits the Coulomb potential, either Eqn. <a class="reference internal" href="#equation-vcoul">(1)</a>, Eqn. <a class="reference internal" href="#equation-vcoulg">(2)</a> or something similar into a short and a long-range part as follows</p>
+<div class="math notranslate nohighlight" id="equation-vcoullr">
+<span class="eqno">(6)<a class="headerlink" href="#equation-vcoullr" title="Link to this equation">¶</a></span>\[V_{coul}(r_{ij}) ~=~ V_{coul} \,{\rm erfc}(\alpha r_{ij}) +  V_{coul}\, {\rm erf}(\alpha r_{ij})\]</div>
+<p>using the fact that the complementary error function {rm erfc} equal 1 - {rm erf}. The first term here is the short-range part, that is computed in real space, and the second term is the long-range part that is computed in Fourier (reciprocal) space by moving charges on a regular grid <span id="id8">[<a class="reference internal" href="../references.html#id40" title="U Essmann, L Perera, M L Berkowitz, T Darden, H Lee, and L G Pedersen. A smooth particle mesh Ewald method. J. Chem. Phys., 103:8577–8592, 1995. doi:10.1063/1.470117.">EPB+95</a>]</span>.
+The constant <span class="math notranslate nohighlight">\(\alpha\)</span> determines how quickly the short-range potential decays to zero, and it can be computed from a user-specified relative error tolerance related to moving charges on a grid. Given the cut-off distance <span class="math notranslate nohighlight">\(rc\)</span> and an error tolerance <span class="math notranslate nohighlight">\(\epsilon\)</span>, typically <span class="math notranslate nohighlight">\(10^{-4}\)</span>, we have</p>
+<div class="math notranslate nohighlight" id="equation-alphaewald">
+<span class="eqno">(7)<a class="headerlink" href="#equation-alphaewald" title="Link to this equation">¶</a></span>\[\alpha ~=~ \frac{\sqrt{-{\rm ln}\,2\epsilon}}{rc}\]</div>
+<p>where ln is the natural logarithm.
+This shows that <span class="math notranslate nohighlight">\(\alpha\)</span> has the dimension of 1 over distance in the units of rc. Fig. <code class="xref std std-numref docutils literal notranslate"><span class="pre">coulomb</span></code> shows how the division over short and long-range interactions works in practice, and how the long range contribution should be incorporated into simulations using a modified Coulomb function.</p>
+<figure class="align-center" id="coulomb">
+<a class="reference internal image-reference" href="../../_images/coulomb.pdf"><img alt="../../_images/coulomb.pdf" src="../../_images/coulomb.pdf" style="width: 90%;" />
+</a>
+<figcaption>
+<p><span class="caption-text">Total Coulomb energy V as a function of distance r for two like unit charges, Gaussian-shielded Coulomb and short and long-range parts of the energy function. Ewald-tolerance <span class="math notranslate nohighlight">\(\epsilon\)</span> 0.0001, rc 0.9 nm, <span class="math notranslate nohighlight">\(\alpha\)</span> 3.24269/nm and Gaussian screening <span class="math notranslate nohighlight">\(\zeta\)</span> 5/nm.</span><a class="headerlink" href="#coulomb" title="Link to this image">¶</a></p>
+</figcaption>
+</figure>
+</section>
+<section id="polarization">
+<h3><span class="section-number">3.1.1.5. </span>Polarization<a class="headerlink" href="#polarization" title="Link to this heading">¶</a></h3>
+<p>Polarization can be treated explicitly as well in the ACT using the  core-shell model <span id="id9">[<a class="reference internal" href="../references.html#id28" title="B G Dick and A W Overhauser. Theory of the dielectric constants of alkali halide crystals. Phys. Rev., 112:90–103, 1958. doi:10.1103/PhysRev.112.90.">DO58</a>, <a class="reference internal" href="../references.html#id74" title="P C Jordan, P J van Maaren, J Mavri, D van der Spoel, and H J C Berendsen. Towards Phase Transferable Potential Functions: Methodology and Application to Nitrogen. J. Chem. Phys., 103:2272–2285, 1995. doi:10.1063/1.469703.">JvMM+95</a>]</span></p>
+<div class="math notranslate nohighlight" id="equation-vpol">
+<span class="eqno">(8)<a class="headerlink" href="#equation-vpol" title="Link to this equation">¶</a></span>\[V_{pol}(r_{cs}) ~=~ \frac{1}{4\pi\varepsilon_0} \frac{q_s^2}{2\alpha_c}r_{cs}^2,\]</div>
+<p>where <span class="math notranslate nohighlight">\(q_s\)</span> is the shell charge, <span class="math notranslate nohighlight">\(\alpha_c\)</span> is the polarizability and <span class="math notranslate nohighlight">\(r_{cs}\)</span> the distance between core and shell particles.</p>
+</section>
+<section id="induction-correction">
+<span id="sec-indcorr"></span><h3><span class="section-number">3.1.1.6. </span>Induction correction<a class="headerlink" href="#induction-correction" title="Link to this heading">¶</a></h3>
+<p>A term to add extra attraction between atoms was proposed in ref. <span id="id10">[<a class="reference internal" href="../references.html#id103" title="Jesse G. McDaniel and J.R. Schmidt. Physically-motivated force fields from symmetry-adapted perturbation theory. J. Phys. Chem. A., 117(10):2053-2066, 2013. doi:10.1021/jp3108182.">MS13</a>]</span></p>
+<div class="math notranslate nohighlight" id="equation-vic">
+<span class="eqno">(9)<a class="headerlink" href="#equation-vic" title="Link to this equation">¶</a></span>\[V_{ic}(r_{ij}) ~=~ -A_{ij} {\rm e}^{-b_{ij} r_{ij}}\]</div>
+<p>with <span class="math notranslate nohighlight">\(A_{ij}\)</span> and <span class="math notranslate nohighlight">\(b_{ij}\)</span> constants to be trained.
+The geometric combination rule is used for
+<span class="math notranslate nohighlight">\(A_{ij}\)</span> and the arithmetic combination rule for <span class="math notranslate nohighlight">\(b_{ij}\)</span>.
+It is not certain whether the exponential functional form is optimal to describe this interaction and there is no theory behind this.</p>
+</section>
+<section id="pauli-repulsion-and-london-dispersion">
+<h3><span class="section-number">3.1.1.7. </span>Pauli Repulsion and London Dispersion<a class="headerlink" href="#pauli-repulsion-and-london-dispersion" title="Link to this heading">¶</a></h3>
+<p>The repulsion and dispersion interactions acting between atoms <span class="math notranslate nohighlight">\(i\)</span> and <span class="math notranslate nohighlight">\(j\)</span> can be described by a number of potentials. In a recent study on noble gases <span id="id11">[<a class="reference internal" href="../references.html#id82" title="Kristian Kříž, Paul J. van Maaren, and David van der Spoel. Impact of combination rules, level of theory and potential function on the modelling of gas and condensed phase properties of noble gases. J. Chem. Theory Comput., 20:2362-2376, 2024. doi:10.1021/acs.jctc.3c01257.">KvrivzvMvdS24</a>]</span> we found that the 14-7 potential due to Halgren <span id="id12">[<a class="reference internal" href="../references.html#id54" title="Thomas A Halgren. The representation of van der Waals (vdW) interactions in molecular mechanics force fields: potential form, combination rules, and vdW parameters. J. Amer. Chem. Soc., 114:7827–7843, 1992. doi:10.1021/ja00046a032.">Hal92</a>]</span> was one of the most accurate ones:</p>
+<div class="math notranslate nohighlight" id="equation-14-7">
+<span class="eqno">(10)<a class="headerlink" href="#equation-14-7" title="Link to this equation">¶</a></span>\[V_{14-7}(r_{ij}) ~=~ \epsilon_{ij} \left(\frac{1+\delta_{ij}}{\frac{r_{ij}}{\sigma_{ij}} + \delta_{ij}} \right)^7\left(  \frac{1+\gamma_{ij}}{(\frac{r_{ij}}{\sigma_{ij}})^7 +\gamma_{ij}}    -2      \right)\]</div>
+<p>where  <span class="math notranslate nohighlight">\(\epsilon_{ij}\)</span> is the well depth at minimum, <span class="math notranslate nohighlight">\(\gamma_{ij}\)</span> and <span class="math notranslate nohighlight">\(\delta_{ij}\)</span> are dimensionless numbers that were originally shared for all elements. However, in our previous work <span id="id13">[<a class="reference internal" href="../references.html#id82" title="Kristian Kříž, Paul J. van Maaren, and David van der Spoel. Impact of combination rules, level of theory and potential function on the modelling of gas and condensed phase properties of noble gases. J. Chem. Theory Comput., 20:2362-2376, 2024. doi:10.1021/acs.jctc.3c01257.">KvrivzvMvdS24</a>]</span>, we treated <span class="math notranslate nohighlight">\(\gamma\)</span> and <span class="math notranslate nohighlight">\(\delta\)</span> as free atom-specific parameters subject to optimization and combination rules.</p>
+<p>Furthermore, the generalized 4-parameter Buckingham potential with an adjustable long-range attraction is implemented as <span id="id14">[<a class="reference internal" href="../references.html#id169" title="Jasper C Werhahn, Evangelos Miliordos, and Sotiris S Xantheas. A new variation of the buckingham exponential-6 potential with a tunable, singularity-free short-range repulsion and an adjustable long-range attraction. Chem. Phys. Lett., 619:133–138, 2015. doi:10.1016/j.cplett.2014.11.051.">WMX15</a>]</span></p>
+<div class="math notranslate nohighlight" id="equation-gbh">
+<span class="eqno">(11)<a class="headerlink" href="#equation-gbh" title="Link to this equation">¶</a></span>\[V_{GBH}(r_{ij}) = \epsilon_{ij}\frac{\delta_{ij} + 2\gamma_{ij} + 6}{2\gamma_{ij}} \frac{1}{1+ (\frac{r}{\sigma_{ij}})^6 } \left[  \frac{6+\delta_{ij}}{\delta_{ij} +2\gamma_{ij}+6}  e^{\gamma_{ij} (1-\frac{r}{\sigma_{ij}})}  - 1  \right] -\frac{\epsilon_{ij}}{1+(\frac{r_{ij}}{\sigma})^{\delta}}\]</div>
+<p>where <span class="math notranslate nohighlight">\(\gamma\)</span> and <span class="math notranslate nohighlight">\(\delta\)</span> again are dimensionless constants.</p>
+<p>Another potential that is supported is the buffered (Wang) Buckingham potential <span id="id15">[<a class="reference internal" href="../references.html#id166" title="Lee-Ping Wang, Jiahao Chen, and Troy Van Voorhis. Systematic Parametrization of Polarizable Force Fields from Quantum Chemistry Data. J. Chem. Theory Comput., 9(1):452–460, 2013. doi:10.1021/ct300826t.">WCV13</a>]</span>:</p>
+<div class="math notranslate nohighlight" id="equation-vwbh">
+<span class="eqno">(12)<a class="headerlink" href="#equation-vwbh" title="Link to this equation">¶</a></span>\[V_{WBH}(r_{ij}) = \left(\frac{2\epsilon_{ij}}{1-\frac{3}{\gamma_{ij}+3}}\right) \left( \frac{\sigma_{ij}^6}{\sigma_{ij}^6+r_{ij}^6} \right) \left[\frac{3}{\gamma_{ij}+3}e^{\displaystyle{\gamma_{ij}\left(1-\frac{r_{ij}}{\sigma_{ij}}\right)}} - 1 \right]\]</div>
+<p>where <span class="math notranslate nohighlight">\(\epsilon_{ij}\)</span> is the well depth at minimum, <span class="math notranslate nohighlight">\(\sigma_{ij}\)</span> is the Van der Waals radius and <span class="math notranslate nohighlight">\(\gamma_{ij}\)</span> determines the steepness of the potential and <span class="math notranslate nohighlight">\(r_{ij}\)</span> is the distance between particles <span class="math notranslate nohighlight">\(i\)</span> and <span class="math notranslate nohighlight">\(j\)</span>.
+The buffered Buckingham potential mentioned above have been used to develop an accurate phase-transferable  model for alkali-halides <span id="id16">[<a class="reference internal" href="../references.html#id159" title="Marie Madeleine Walz, Mohammad M. Ghahremanpour, Paul J. van Maaren, and David van der Spoel. Phase-transferable force field for alkali halides. J. Chem. Theory Comput., 14:5933-5948, 2018. doi:10.1021/acs.jctc.8b00507.">WGvMvdS18</a>, <a class="reference internal" href="../references.html#id162" title="Marie-Madeleine Walz and David van der Spoel. Direct link between structure, dynamics and thermodynamics in molten salts. J. Phys. Chem. C., 123:25596-25602, 2019. doi:10.1021/acs.jpcc.9b07756.">WvdS19a</a>, <a class="reference internal" href="../references.html#id161" title="Marie-Madeleine Walz and David van der Spoel. Systematically improved melting point prediction: a detailed physical simulation model is required. Chem. Comm., 55:12044-12047, 2019. doi:10.1039/C9CC06177K.">WvdS19b</a>, <a class="reference internal" href="../references.html#id163" title="Marie-Madeleine Walz and David van der Spoel. Microscopic origin of conductivity in molten salts unraveled by computer simulations. Commun. Chem., 4(9):1-10, 2021. doi:10.1038/s42004-020-00446-2.">WvdS21</a>, <a class="reference internal" href="../references.html#id160" title="Marie-Madeleine Walz and David van der Spoel. Molten alkali halides - temperature dependence of structure, dynamics and thermodynamics. Phys. Chem. Chem. Phys., 21:8516-18524, 2019. doi:10.1039/C9CP03603B.">WvandSpoel19</a>]</span>
+and the original Buckingham potential <span id="id17">[<a class="reference internal" href="../references.html#id15" title="R A Buckingham. The Classical Equation of State of Gaseous Helium, Neon and Argon. Proc. R. Soc. London Ser. A, 168:264–283, 1938. doi:10.1098/rspa.1938.0173.">Buc38</a>]</span> is implemented as</p>
+<div class="math notranslate nohighlight" id="equation-vbh">
+<span class="eqno">(13)<a class="headerlink" href="#equation-vbh" title="Link to this equation">¶</a></span>\[V_{BH}(r_{ij}) ~=~ A_{ij}{\rm e}^{\displaystyle -b_{ij}r_{ij}} - \frac{C_{ij}}{r_{ij}^6}\]</div>
+<p>where <span class="math notranslate nohighlight">\(A_{ij}\)</span>, <span class="math notranslate nohighlight">\(b_{ij}\)</span> and <span class="math notranslate nohighlight">\(C_{ij}\)</span> are parameters to be trained.
+An alternative way of formulating the Buckingham potential <span id="id18">[<a class="reference internal" href="../references.html#id178" title="Edward A. Mason. Transport Properties of Gases Obeying a Modified Buckingham (Exp-Six) Potential. J. Chem. Phys., 22:169–186, 2004. doi:10.1063/1.1740026.">Mas04</a>]</span> is</p>
+<div class="math notranslate nohighlight" id="equation-mbh">
+<span class="eqno">(14)<a class="headerlink" href="#equation-mbh" title="Link to this equation">¶</a></span>\[E_{MBH} = \frac{\epsilon}{1-\frac{6}{\gamma}} \left[  \frac{6}{\gamma}  e^{\gamma (1-\frac{r}{\sigma})}  - \left(\frac{\sigma}{r}\right)^6  \right]\]</div>
+<p>where <span class="math notranslate nohighlight">\(\epsilon\)</span> is the well-depth <span class="math notranslate nohighlight">\(\sigma\)</span> reflects the position of the minimum and <span class="math notranslate nohighlight">\(\gamma\)</span> is again a dimensionless constant.
+Although mathematically identical to Eqn. <a class="reference internal" href="#equation-vbh">(13)</a> we have shown that the potentials behave differently when combination rules are applied <span id="id19">[<a class="reference internal" href="../references.html#id82" title="Kristian Kříž, Paul J. van Maaren, and David van der Spoel. Impact of combination rules, level of theory and potential function on the modelling of gas and condensed phase properties of noble gases. J. Chem. Theory Comput., 20:2362-2376, 2024. doi:10.1021/acs.jctc.3c01257.">KvrivzvMvdS24</a>]</span>.</p>
+<p>The well-known Tang-Toennies potential <span id="id20">[<a class="reference internal" href="../references.html#id146" title="K T Tang and J P Toennies. An improved simple-model for the vanderwaals potential based on universal damping functions for the dispersion coefficients. J. Chem. Phys., 80:3726–3741, 1984. doi:10.1063/1.447150.">TT84</a>, <a class="reference internal" href="../references.html#id148" title="K. T. Tang and J. P. Toennies. The van der Waals potentials between all the rare gas atoms from He to Rn. J. Chem. Phys., 118(11):4976-4983, 03 2003. URL: https://doi.org/10.1063/1.1543944, arXiv:https://pubs.aip.org/aip/jcp/article-pdf/118/11/4976/19209973/4976\_1\_online.pdf, doi:10.1063/1.1543944.">TT03</a>]</span> containing five parameters is implemented according to:</p>
+<div class="math notranslate nohighlight" id="equation-tt">
+<span class="eqno">(15)<a class="headerlink" href="#equation-tt" title="Link to this equation">¶</a></span>\[V_{TT}(x) = Ae^{-b x} - \sum_{n=3}^5\left[1-e^{-b x}\sum_{k=0}^{2n}\frac{(b x)^k}{k!}\right]\frac{C_{2n}}{x^{2n}}\]</div>
+<p>where repulsion and dispersion terms shared the parameter <span class="math notranslate nohighlight">\(b\)</span>. Here, all five parameters can be trained by the ACT.
+This potential was used in our recent work on noble gases published where we investigated combination rules <span id="id21">[<a class="reference internal" href="../references.html#id82" title="Kristian Kříž, Paul J. van Maaren, and David van der Spoel. Impact of combination rules, level of theory and potential function on the modelling of gas and condensed phase properties of noble gases. J. Chem. Theory Comput., 20:2362-2376, 2024. doi:10.1021/acs.jctc.3c01257.">KvrivzvMvdS24</a>]</span>.</p>
+<p>In other works, the Tang-Toennies potential is extended with an additional parameter <span id="id22">[<a class="reference internal" href="../references.html#id121" title="Xiaowei Sheng, J. Peter Toennies, and K. T. Tang. Conformal analytical potential for all the rare gas dimers over the full range of internuclear distances. Phys. Rev. Lett., 125:253402, 2020. doi:10.1103/PhysRevLett.125.253402.">STT20</a>]</span> giving the exponential functions a different decay length <span class="math notranslate nohighlight">\(b\)</span>:</p>
+<div class="math notranslate nohighlight" id="equation-tt2">
+<span class="eqno">(16)<a class="headerlink" href="#equation-tt2" title="Link to this equation">¶</a></span>\[V_{TT2}(x) = Ae^{-b_{exp} x} - \sum_{n=3}^5\left[1-e^{-b_{disp} x}\sum_{k=0}^{2n}\frac{(b_{disp} x)^k}{k!}\right]\frac{C_{2n}}{x^{2n}}\]</div>
+<p>and the ACT supports both these functions.
+Van Vleet {em et al.} described a more accurate formula for the Pauli repulsion <span id="id23">[<a class="reference internal" href="../references.html#id156" title="Mary J. Van Vleet, Alston J. Misquitta, Anthony J. Stone, and J. R. Schmidt. Beyond born-mayer: improved models for short-range repulsion in ab initio force fields. J. Chem. Theory Comput., 12(8):3851-3870, 2016. doi:10.1021/acs.jctc.6b00209.">VVMSS16</a>]</span> that was applied to derive a force field later <span id="id24">[<a class="reference internal" href="../references.html#id157" title="Mary J. Van Vleet, Alston J. Misquitta, and J. R. Schmidt. New angles on standard force fields: toward a general approach for treating atomic-level anisotropy. J. Chem. Theory Comput., 14(2):739-758, 2018. PMID: 29266931. doi:10.1021/acs.jctc.7b00851.">VVMS18</a>]</span>. In this model the exchange repulsion is given by the Slater-ISA formula</p>
+<div class="math notranslate nohighlight" id="equation-slater-isa">
+<span class="eqno">(17)<a class="headerlink" href="#equation-slater-isa" title="Link to this equation">¶</a></span>\[V_{exch} ~=~ A\left(\frac{1}{3}(br)^2 + br + 1\right){\rm exp}^{-br}\]</div>
+<p>where it can be noted, that no additional parameters are needed for equation~:eq:<cite>slater_isa</cite> compared to the repulsion part in the Tang-Toennies potential (Eqn. <a class="reference internal" href="#equation-tt">(15)</a>). In the ACT the Slater-ISA exchange can be combined with the damped dispersion part of the latter potential.</p>
+<p>The Lennard-Jones 12-6 potential <span id="id25">[<a class="reference internal" href="../references.html#id93" title="J E Jones. On the determination of molecular fields. -II. From the equation of state of a gas. Proc. Royal Soc. Lond. Ser. A, 106:463–477, 1924. doi:10.1098/rspa.1924.0082.">Jon24</a>]</span> is available as well:</p>
+<div class="math notranslate nohighlight" id="equation-12-6">
+<span class="eqno">(18)<a class="headerlink" href="#equation-12-6" title="Link to this equation">¶</a></span>\[V_{LJ}(r_{ij}) ~=~ 4\varepsilon_{ij}\left(\frac{\sigma_{ij}^{12}}{r_{ij}^{12}}-\frac{\sigma_{ij}^{6}}{r_{ij}^6}\right)\]</div>
+<p>and, in addition, the 12-6-4 potential</p>
+<div class="math notranslate nohighlight" id="equation-12-6-4">
+<span class="eqno">(19)<a class="headerlink" href="#equation-12-6-4" title="Link to this equation">¶</a></span>\[V_{LJ}(r_{ij}) ~=~ 4\varepsilon_{ij}\left(\frac{\sigma_{ij}^{12}}{r_{ij}^{12}}-\frac{\sigma_{ij}^{6}}{r_{ij}^6}\right) - \frac{\gamma}{r^4}\]</div>
+<p>which is meant to model ion-dipole interactions is supported too.</p>
+<p>It is worth noting that in all these potentials (except Buckingham, Eqn. <a class="reference internal" href="#equation-vbh">(13)</a>) parameters describe both the exchange and dispersion interactions at the same time, which necessitates simultaneous training of these interaction.
+To account for anisotropy in exchange, a correction can be implemented using a virtual site particle on the atom that has a <span class="math notranslate nohighlight">\(\sigma\)</span>-hole interacting with other particles <span id="id26">[<a class="reference internal" href="../references.html#id83" title="Kristian Kříž and David van der Spoel. Quantification of anisotropy in exchange and dispersion interactions: a simple model for physics-based force fields. J. Phys. Chem. Lett., 15:9974-9978, 2024. doi:10.1021/acs.jpclett.4c02034.">KvrivzvdS24</a>]</span>:</p>
+<div class="math notranslate nohighlight" id="equation-exch-corr">
+<span class="eqno">(20)<a class="headerlink" href="#equation-exch-corr" title="Link to this equation">¶</a></span>\[V_{EXCH,Corr}(r_{ij}) = -A_{ij}{\rm e}^{\displaystyle -b_{ij}r_{ij}}\]</div>
+<p>where <span class="math notranslate nohighlight">\(A_{ij}\)</span> and <span class="math notranslate nohighlight">\(b_{ij}\)</span> are parameters to be optimized. This correction term (Eqn. <a class="reference internal" href="#equation-exch-corr">(20)</a>) does not need to be applied to all possible atom pairs, therefore a new combination rule, dubbed “Kronecker” is introduced</p>
+<div class="math notranslate nohighlight">
+\[A_{ij} ~=~ (1-\delta_{ij})\frac{A_i + A_j}{2}\]</div>
+<p>where <span class="math notranslate nohighlight">\(\delta_{ij}\)</span> is the Kronecker delta operating on particle types <span class="math notranslate nohighlight">\(i\)</span> and <span class="math notranslate nohighlight">\(j\)</span>. This means that only interactions between <span class="math notranslate nohighlight">\(\sigma\)</span>-holes (represented by a virtual site) and atoms are non-zero. To avoid parameter explosion, the atomic <span class="math notranslate nohighlight">\(A_i\)</span> are set to zero and only the virtual site <span class="math notranslate nohighlight">\(A_j\)</span> is non-zero. This is reasonable since the virtual site represents a property of the <span class="math notranslate nohighlight">\(\sigma\)</span>-hole of the atom it is connected to.
+The arithmetic combination rule is used for <span class="math notranslate nohighlight">\(b_{ij}\)</span>.</p>
+<p>Multiple different combination rules can be used for parameters involved in van der Waals interactions, both within ACT and through the interface to OpenMM. For details, see the paper by Kv{r}{'i}v{z} {em et al.} <span id="id27">[<a class="reference internal" href="../references.html#id82" title="Kristian Kříž, Paul J. van Maaren, and David van der Spoel. Impact of combination rules, level of theory and potential function on the modelling of gas and condensed phase properties of noble gases. J. Chem. Theory Comput., 20:2362-2376, 2024. doi:10.1021/acs.jctc.3c01257.">KvrivzvMvdS24</a>]</span>.</p>
+</section>
+<section id="treatment-of-long-range-dispersion">
+<h3><span class="section-number">3.1.1.8. </span>Treatment of long range dispersion<a class="headerlink" href="#treatment-of-long-range-dispersion" title="Link to this heading">¶</a></h3>
+<p>The different Van der Waals potentials described above can be used with Lennard-Jones PME <span id="id28">[<a class="reference internal" href="../references.html#id26" title="T Darden, D York, and L Pedersen. Particle mesh Ewald: An N-log(N) method for Ewald sums in large systems. J. Chem. Phys., 98:10089–10092, 1993. doi:10.1063/1.464397.">DYP93</a>, <a class="reference internal" href="../references.html#id168" title="Christian L. Wennberg, Teemu Murtola, Berk Hess, and Erik Lindahl. Lennard-Jones lattice summation in bilayer simulations has critical effects on surface tension and lipid properties. J. Chem. Theory Comput., 9:3527-3537, 2013. doi:10.1021/ct400140n.">WMHL13</a>]</span> if treated carefully. LJ-PME assumes a simple dispersion interaction given by</p>
+<div class="math notranslate nohighlight" id="equation-ljpme">
+<span class="eqno">(21)<a class="headerlink" href="#equation-ljpme" title="Link to this equation">¶</a></span>\[V_{LJPME}(r_{ij}) ~=~ -\frac{C_{ij}}{r_{ij}^6}\]</div>
+<p>for atoms <span class="math notranslate nohighlight">\(i\)</span> and <span class="math notranslate nohighlight">\(j\)</span>, which differs from the potentials mentioned above. For LJ-PME, it is beneficial to use the geometric combination rule, hence</p>
+<div class="math notranslate nohighlight">
+\[V_{LJPME}(r_{ij}) ~=~ -\frac{C_iC_j}{r_{ij}^6}\]</div>
+<p>where <span class="math notranslate nohighlight">\(C_i\)</span> and <span class="math notranslate nohighlight">\(C_j\)</span>, in contrast to Eqn. <a class="reference internal" href="#equation-ljpme">(21)</a>, have units of distance to the third power.</p>
+<p>To minimize the difference between the potential used and the LJ dispersion over the whole volume outside the cut-off, and to specify correct inputs to OpenMM, starting from e.g. Eqn. <a class="reference internal" href="#equation-vwbh">(12)</a> we have to solve the following equation:</p>
+<div class="math notranslate nohighlight" id="equation-dispint">
+<span class="eqno">(22)<a class="headerlink" href="#equation-dispint" title="Link to this equation">¶</a></span>\[0 ~=~ \int_{rc}^{\infty} 4\pi r_{ij}^2\left[\left(-\frac{2\epsilon_{ij}}{1-\frac{3}{\gamma_{ij}+3}}\right) \left( \frac{\sigma_{ij}^6}{\sigma_{ij}^6+r_{ij}^6} \right) + \frac{C_iC_j}{r_{ij}^6} \right] {\rm d}r_{ij}\]</div>
+<p>where we integrate from the cut-off <span class="math notranslate nohighlight">\(rc\)</span> to infinity.
+In this notation, we have to insert the combination rules for <span class="math notranslate nohighlight">\(\epsilon\)</span>, <span class="math notranslate nohighlight">\(\sigma\)</span> and <span class="math notranslate nohighlight">\(\gamma\)</span>. For the special case that <span class="math notranslate nohighlight">\(i\)</span> = <span class="math notranslate nohighlight">\(j\)</span>,
+the constant <span class="math notranslate nohighlight">\(C_{ii}\)</span> can be derived using Mathematica <sup>TM</sup> as</p>
+<div class="math notranslate nohighlight">
+\[C_{ii} ~=~ \epsilon_{i}\frac{3+\gamma_{i}}{\gamma_{i}}rc^3\sigma_{i}^3\left(\pi-2 {\rm arctan}\left[\left(\frac{rc}{\sigma_{i}}\right)^3\right]\right)\]</div>
+<p>which we can then convert back to a <span class="math notranslate nohighlight">\(\sigma'\)</span> compatible with standard Lennard-Jones by</p>
+<div class="math notranslate nohighlight">
+\[\sigma'_{i} = \left(\frac{C_{ii}}{4\epsilon_{i}}\right)^{1/6}.\]</div>
+<p>Note however, that we need to get effective <span class="math notranslate nohighlight">\(\sigma'\)</span> for all atoms, which means the problem turns into a minimization problem where</p>
+<div class="math notranslate nohighlight" id="equation-dispintsum">
+<span class="eqno">(23)<a class="headerlink" href="#equation-dispintsum" title="Link to this equation">¶</a></span>\[\varepsilon^2 ~=~ \sum_{i,j}\left[ \int_{rc}^{\infty} 4\pi r_{ij}^2\left[\left(-\frac{2\epsilon_{ij}}{1-\frac{3}{\gamma_{ij}+3}}\right) \left( \frac{\sigma_{ij}^6}{\sigma_{ij}^6+r_{ij}^6} \right) + \frac{C_iC_j}{r_{ij}^6} \right] {\rm d}r_{ij}\right]^2\]</div>
+<p>has to be minimized with respect to <span class="math notranslate nohighlight">\(C_i\)</span> independently for each set of combination rules. In the Alexandria alkali-halide model we used the Wang-Buckingham potential (Eqn. <a class="reference internal" href="#equation-vwbh">(12)</a>) in conjunction with the combination rules due to Kong <span id="id29">[<a class="reference internal" href="../references.html#id80" title="Chang Lyoul Kong and Manoj R Chakrabarty. Combining rules for intermolecular potential parameters. iii. application to the exp 6 potential. J. Phys. Chem., 77(22):2668–2670, 1973. doi:10.1021/j100640a019.">KC73</a>]</span> in which <span class="math notranslate nohighlight">\(\sigma_{ij}\)</span> depends on all the <span class="math notranslate nohighlight">\(\sigma\)</span>, <span class="math notranslate nohighlight">\(\epsilon\)</span> and <span class="math notranslate nohighlight">\(\gamma\)</span>. This makes it cumbersome to analytically derive integrals like Eqn. <a class="reference internal" href="#equation-dispintsum">(23)</a> for many combinations of potentials and combination rules.</p>
+<p>Another problem is, that the parameters <span class="math notranslate nohighlight">\(C_i\)</span> that we need to compute the long-range dispersion interaction now depend on the cut-off, which means they should preferably not be computed beforehand. In summary, the <span class="math notranslate nohighlight">\(C_i\)</span> should be derived numerically given the potential and combination rules at the start of a simulation.</p>
+</section>
+<section id="combination-rules-for-van-der-waals-potentials">
+<h3><span class="section-number">3.1.1.9. </span>Combination Rules for Van der Waals Potentials<a class="headerlink" href="#combination-rules-for-van-der-waals-potentials" title="Link to this heading">¶</a></h3>
+<p>In a recent paper <span id="id30">[<a class="reference internal" href="../references.html#id82" title="Kristian Kříž, Paul J. van Maaren, and David van der Spoel. Impact of combination rules, level of theory and potential function on the modelling of gas and condensed phase properties of noble gases. J. Chem. Theory Comput., 20:2362-2376, 2024. doi:10.1021/acs.jctc.3c01257.">KvrivzvMvdS24</a>]</span> we studied the effect of combination rules on potentials for noble gases and introduced two new combination rules (Eqn. <a class="reference internal" href="#equation-cr-volumetric">(34)</a> and Eqn. <a class="reference internal" href="#equation-cr-invsquare">(35)</a> ). Here is a brief summary, copied (with permission) from that paper.</p>
+<p>Combination rules reduce the number of parameters required for the pair-wise potentials introduced  above because
+the parameters describing the interaction between dissimilar  X–Y atoms are reconstructed from parameters of homodimers X–X and Y–Y. In this way, it is necessary only to fit atomic parameters on data for homodimers.
+Different sets of mathematical expression were considered, as detailed below.</p>
+<p>The two simplest expressions that have historically been used as combination rules are the geometric <span id="id31">[<a class="reference internal" href="../references.html#id11" title="D Berthelot. Sur le mélange des gaz. C. R. Hebd. Seances Acad. Sci., 126:1703-1855, 1898.">Ber98</a>]</span> and arithmetic <span id="id32">[<a class="reference internal" href="../references.html#id95" title="H. A. Lorentz. Ueber die anwendung des satzes vom virial in der kinetischen theorie der gase. Annalen der Physik, 248(1):127-136, 1881. doi:10.1002/andp.18812480110.">Lor81</a>]</span> averages, respectively:</p>
+<div class="math notranslate nohighlight" id="equation-cr-geometric">
+<span class="eqno">(24)<a class="headerlink" href="#equation-cr-geometric" title="Link to this equation">¶</a></span>\[X_{12} = \sqrt{x_{1} x_{2}}\]</div>
+<p>%was used for all three parameters <span class="math notranslate nohighlight">\(\epsilon\)</span>, <span class="math notranslate nohighlight">\(\gamma\)</span>, <span class="math notranslate nohighlight">\(\sigma\)</span> in “geometric” rules. It is also used for <span class="math notranslate nohighlight">\(\epsilon\)</span> in “arithmetic” rules and for <span class="math notranslate nohighlight">\(\sigma\)</span> in “Kong-Mason” rules <span id="id33">[<a class="reference internal" href="../references.html#id80" title="Chang Lyoul Kong and Manoj R Chakrabarty. Combining rules for intermolecular potential parameters. iii. application to the exp 6 potential. J. Phys. Chem., 77(22):2668–2670, 1973. doi:10.1021/j100640a019.">KC73</a>]</span>.</p>
+<div class="math notranslate nohighlight" id="equation-cr-arithmetic">
+<span class="eqno">(25)<a class="headerlink" href="#equation-cr-arithmetic" title="Link to this equation">¶</a></span>\[X_{12} = \frac{x_{1}+ x_{2}}{2}\]</div>
+<p>where <span class="math notranslate nohighlight">\(x_1\)</span> and <span class="math notranslate nohighlight">\(x_2\)</span> are the atomic parameters. Both these rules can in principle be applied to all parameters in the Van der Waals potentials described above and the rules are well-behaved mathematically.</p>
+<p>Hogervorst introduced a set of combination rules for 12-6 Lennard-Jones and exp-6, modified Buckingham, potential (Eqn. <a class="reference internal" href="#equation-mbh">(14)</a>) <span id="id34">[<a class="reference internal" href="../references.html#id59" title="W Hogervorst. Transport and equilibrium properties of simple gases and forces between like and unlike atoms. Physica, 51(1):77–89, 1971. doi:10.1016/0031-8914(71)90138-8.">Hog71</a>]</span>. He proposed using Eqn. <a class="reference internal" href="#equation-cr-hogervorst-epsilon">(26)</a> for <span class="math notranslate nohighlight">\(\epsilon\)</span> for both potential forms. For the <span class="math notranslate nohighlight">\(\sigma\)</span> of 12-6 potential (Eqn. <a class="reference internal" href="#equation-12-6">(18)</a>), the
+arithmetic mean (Eqn. <a class="reference internal" href="#equation-cr-arithmetic">(25)</a>) was used. In the case of the modified Buckingham potential (eqn. <a class="reference internal" href="#equation-mbh">(14)</a>), expression~:eq:<cite>cr_sigma5</cite>, which depends on the combined parameters <span class="math notranslate nohighlight">\(\epsilon_{1,2}\)</span> and <span class="math notranslate nohighlight">\(\gamma_{1,2}\)</span> was advocated for the <span class="math notranslate nohighlight">\(\sigma\)</span>, along with arithmetic mean for <span class="math notranslate nohighlight">\(\gamma\)</span>.</p>
+<div class="math notranslate nohighlight" id="equation-cr-hogervorst-epsilon">
+<span class="eqno">(26)<a class="headerlink" href="#equation-cr-hogervorst-epsilon" title="Link to this equation">¶</a></span>\[X_{12} = \frac{2 x_{1} x_{2}}{x_{1} + x_{2}}\]</div>
+<div class="math notranslate nohighlight" id="equation-cr-sigma5">
+<span class="eqno">(27)<a class="headerlink" href="#equation-cr-sigma5" title="Link to this equation">¶</a></span>\[\sigma_{12}^6 = \sqrt{\frac{\epsilon_1\gamma_1\sigma_1^6}{\gamma_1 - 6}  \frac{\epsilon_2\gamma_2\sigma_2^6}{\gamma_2 - 6}} \frac{(\gamma_{1,2}-6)}{\gamma_{1,2}\epsilon_{1,2}}\]</div>
+<p>Where the <span class="math notranslate nohighlight">\(\gamma\)</span><sup>1,2</sup> used Eqn. <a class="reference internal" href="#equation-cr-arithmetic">(25)</a> and <span class="math notranslate nohighlight">\(\epsilon\)</span><sup>1,2</sup> Eqn. <a class="reference internal" href="#equation-cr-hogervorst-epsilon">(26)</a>.
+It should be noted that equation <a class="reference internal" href="#equation-cr-hogervorst-epsilon">(26)</a> is ill-behaved if both <span class="math notranslate nohighlight">\(x_1\)</span> and <span class="math notranslate nohighlight">\(x_2\)</span> are zero, while Eqn. <a class="reference internal" href="#equation-cr-sigma5">(27)</a>
+is ill-behaved if either <span class="math notranslate nohighlight">\(\gamma_{1,2}\)</span> or <span class="math notranslate nohighlight">\(\epsilon_{1,2}\)</span> is zero.
+Yang {em et al.} <span id="id35">[<a class="reference internal" href="../references.html#id173" title="Li Yang, Lei Sun, and Wei-Qiao Deng. Combination Rules for Morse-Based van der Waals Force Fields. J. Phys. Chem. A, 122:1672–1677, 2018. doi:10.1021/acs.jpca.7b11252.">YSD18</a>]</span> introduced an expression  for the Morse potential <span id="id36">[<a class="reference internal" href="../references.html#id105" title="P M Morse. Diatomic molecules according to the wave mechanics. II. Vibrational levels. Phys. Rev., 34:57–64, 1929. doi:10.1103/PhysRev.34.57.">Mor29</a>]</span>, using Eqn. <a class="reference internal" href="#equation-cr-hogervorst-epsilon">(26)</a> for <span class="math notranslate nohighlight">\(\epsilon\)</span>, while eqn. <a class="reference internal" href="#equation-cr-yang">(28)</a> is used for <span class="math notranslate nohighlight">\(\sigma\)</span> and  <span class="math notranslate nohighlight">\(\gamma\)</span>.</p>
+<div class="math notranslate nohighlight" id="equation-cr-yang">
+<span class="eqno">(28)<a class="headerlink" href="#equation-cr-yang" title="Link to this equation">¶</a></span>\[X_{12} = \frac{x_{1} x_{2}(x_1 + x_2)}{x_{1}^2 + x_{2}^2}\]</div>
+<p>The expression for <span class="math notranslate nohighlight">\(\gamma\)</span>  proposed by Mason <span id="id37">[<a class="reference internal" href="../references.html#id101" title="Edward A. Mason. Forces between Unlike Molecules and the Properties of Gaseous Mixtures. J. Chem. Phys., 23:49-56, 1955. doi:10.1063/1.1740561.">Mas55</a>]</span> for the exp-6 potential has the form
+%red{while used other rels for epsilon, sigma in alexandria}</p>
+<div class="math notranslate nohighlight" id="equation-f10">
+<span class="eqno">(29)<a class="headerlink" href="#equation-f10" title="Link to this equation">¶</a></span>\[\gamma_{12} = \sqrt{\sigma_1 \sigma_2} \left(\frac{\gamma_1}{2\sigma_1}+  \frac{\gamma_2}{2\sigma_2}\right)\]</div>
+<dl class="simple">
+<dt>Waldman and Hagler <span id="id38">[<a class="reference internal" href="../references.html#id158" title="M Waldman and A T Hagler. New combining rules for rare gas van der waals parameters. J. Comput. Chem., 14:1077–1084, 1993. doi:10.1002/jcc.540140909.">WH93</a>]</span> introduced expressions <a class="reference internal" href="#equation-cr-whepsilon">(30)</a> for <span class="math notranslate nohighlight">\(\epsilon\)</span> and  <a class="reference internal" href="#equation-cr-whsigma">(31)</a> for <span class="math notranslate nohighlight">\(\sigma\)</span></dt><dd><p>to reproduce experimental well-depths and interaction distances.</p>
+</dd>
+</dl>
+<div class="math notranslate nohighlight" id="equation-cr-whepsilon">
+<span class="eqno">(30)<a class="headerlink" href="#equation-cr-whepsilon" title="Link to this equation">¶</a></span>\[\begin{split}\epsilon_{12} = \sqrt{\epsilon_1  \epsilon_2}\frac{2\sigma_1^3\sigma_2^3}{\sigma_1^6+\sigma_2^6}\\\end{split}\]</div>
+<div class="math notranslate nohighlight" id="equation-cr-whsigma">
+<span class="eqno">(31)<a class="headerlink" href="#equation-cr-whsigma" title="Link to this equation">¶</a></span>\[X_{12} = \left(\frac{X_1^6+X_2^6}{2}\right)^{1/6}\]</div>
+<p>Although Eqn. <a class="reference internal" href="#equation-cr-whsigma">(31)</a> was devised for <span class="math notranslate nohighlight">\(\sigma\)</span> we have evaluated it for other parameters here as well, hence the notation with <span class="math notranslate nohighlight">\(X\)</span>. Qi and coworkers advocated the use of buffered 14-7 Lennard-Jones potential (Eqn. <a class="reference internal" href="#equation-14-7">(10)</a>) due to Halgren <span id="id39">[<a class="reference internal" href="../references.html#id54" title="Thomas A Halgren. The representation of van der Waals (vdW) interactions in molecular mechanics force fields: potential form, combination rules, and vdW parameters. J. Amer. Chem. Soc., 114:7827–7843, 1992. doi:10.1021/ja00046a032.">Hal92</a>]</span>, alongside  combination expressions <a class="reference internal" href="#equation-cr-whepsilon">(30)</a> for <span class="math notranslate nohighlight">\(\epsilon\)</span> and  <a class="reference internal" href="#equation-f7">(32)</a> for <span class="math notranslate nohighlight">\(\sigma\)</span>: <span id="id40">[<a class="reference internal" href="../references.html#id180" title="Rui Qi, Qiantao Wang, and Pengyu Ren. General van der Waals potential for common organic molecules. Bioorg. Med. Chem., 24:4911–4919, 2016. doi:10.1016/j.bmc.2016.07.062.">QWR16</a>]</span></p>
+<div class="math notranslate nohighlight" id="equation-f7">
+<span class="eqno">(32)<a class="headerlink" href="#equation-f7" title="Link to this equation">¶</a></span>\[X_{12} = \frac{x_1^3+x_2^3}{x_1^2+x_2^2}\]</div>
+<p>A further relation, the harmonic mean rule, was proposed by Halgren <span id="id41">[<a class="reference internal" href="../references.html#id54" title="Thomas A Halgren. The representation of van der Waals (vdW) interactions in molecular mechanics force fields: potential form, combination rules, and vdW parameters. J. Amer. Chem. Soc., 114:7827–7843, 1992. doi:10.1021/ja00046a032.">Hal92</a>]</span>:</p>
+<div class="math notranslate nohighlight" id="equation-cr-harmonic-mean">
+<span class="eqno">(33)<a class="headerlink" href="#equation-cr-harmonic-mean" title="Link to this equation">¶</a></span>\[X_{12} =  \frac{4 x_1 x_2}{(x_1^{1/2}+x_2^{1/2})^2}\]</div>
+<p>Finally, we introduce two new combination rules that we have not seen published previously. Since the <span class="math notranslate nohighlight">\(\sigma\)</span> in most potentials can be interpreted as a Van der Waals radius, we introduced a relation averaging  third powers, corresponding to an atomic volume <span id="id42">[<a class="reference internal" href="../references.html#id82" title="Kristian Kříž, Paul J. van Maaren, and David van der Spoel. Impact of combination rules, level of theory and potential function on the modelling of gas and condensed phase properties of noble gases. J. Chem. Theory Comput., 20:2362-2376, 2024. doi:10.1021/acs.jctc.3c01257.">KvrivzvMvdS24</a>]</span>:</p>
+<div class="math notranslate nohighlight" id="equation-cr-volumetric">
+<span class="eqno">(34)<a class="headerlink" href="#equation-cr-volumetric" title="Link to this equation">¶</a></span>\[\sigma_{12} = \left(\frac{\sigma_1^3+\sigma_2^3}{2}\right)^{1/3}.\]</div>
+<p>In addition, we applied the following rule for in particular <span class="math notranslate nohighlight">\(\epsilon\)</span> since it yield an <span class="math notranslate nohighlight">\(X_{12}\)</span> that is smaller than the geometric one (Eqn. <a class="reference internal" href="#equation-cr-geometric">(24)</a>):</p>
+<div class="math notranslate nohighlight" id="equation-cr-invsquare">
+<span class="eqno">(35)<a class="headerlink" href="#equation-cr-invsquare" title="Link to this equation">¶</a></span>\[X_{12} = \left(\frac{2}{x_1^{-2}+x_2^{-2}}\right)^{1/2}\]</div>
+<p>The combination relations described above were permuted with each other into new combination rules. In this way, relations that depend on only one parameter type were used for any parameter. Relations depending on multiple parameters  were used only for the specific parameter type combination they depend on (e.g. Eqn. <a class="reference internal" href="#equation-cr-whepsilon">(30)</a> was only used for <span class="math notranslate nohighlight">\(\epsilon\)</span>, using homodimer <span class="math notranslate nohighlight">\(\epsilon\)</span> and <span class="math notranslate nohighlight">\(\sigma\)</span>).
+In our previous work on alkali halides <span id="id43">[<a class="reference internal" href="../references.html#id159" title="Marie Madeleine Walz, Mohammad M. Ghahremanpour, Paul J. van Maaren, and David van der Spoel. Phase-transferable force field for alkali halides. J. Chem. Theory Comput., 14:5933-5948, 2018. doi:10.1021/acs.jctc.8b00507.">WGvMvdS18</a>]</span> we used combination rules according to eqn. <a class="reference internal" href="#equation-cr-sigma5">(27)</a> for <span class="math notranslate nohighlight">\(\sigma\)</span>, eqn. <a class="reference internal" href="#equation-cr-hogervorst-epsilon">(26)</a> for <span class="math notranslate nohighlight">\(\epsilon\)</span> and eqn. <a class="reference internal" href="#equation-cr-arithmetic">(25)</a> for <span class="math notranslate nohighlight">\(\gamma\)</span> with the Wang-Buckingham potential (Eqn. <a class="reference internal" href="#equation-vwbh">(12)</a>).</p>
+<p>A number of these combination rules can be written using the generalized mean equation <span id="id44">[<a class="reference internal" href="../references.html#id60" title="U. Hohm. A continuous description of different means with application to mixing rules. ChemRXiv, 2025. doi:10.26434/chemrxiv-2025-zhrwr.">Hoh25</a>]</span></p>
+<div class="math notranslate nohighlight" id="equation-cr-genmean">
+<span class="eqno">(36)<a class="headerlink" href="#equation-cr-genmean" title="Link to this equation">¶</a></span>\[M_p(x_1,x_2,...,x_N) = \left(\frac{1}{N}\sum_{i=1}^N x_i^p\right)^{1/p}\]</div>
+<p>for <span class="math notranslate nohighlight">\(p \ne 0\)</span>. For <span class="math notranslate nohighlight">\(p = 0\)</span>, Eqn. <a class="reference internal" href="#equation-cr-genmean">(36)</a> turns into the geometric rule. Table <code class="xref std std-numref docutils literal notranslate"><span class="pre">tab-genmean</span></code> lists other well-known combination rules and their respective exponent <span class="math notranslate nohighlight">\(p\)</span>. Hohm also describes combinations of the generalized mean and other similar expressions, but the most important observation he made was that the exponent <span class="math notranslate nohighlight">\(p\)</span> can be varied at will <span id="id45">[<a class="reference internal" href="../references.html#id60" title="U. Hohm. A continuous description of different means with application to mixing rules. ChemRXiv, 2025. doi:10.26434/chemrxiv-2025-zhrwr.">Hoh25</a>]</span>. In the ACT it is possible to train this parameter along with the Van der Waals parameters.</p>
+<table class="docutils align-default" id="tab-genmean">
+<caption><span class="caption-text">Correspondence between well-known combination rules and the generalized mean equation <a class="reference internal" href="#equation-cr-genmean">(36)</a>.</span><a class="headerlink" href="#tab-genmean" title="Link to this table">¶</a></caption>
+<thead>
+<tr class="row-odd"><th class="head"><p>p</p></th>
+<th class="head"><p>Name</p></th>
+<th class="head"><p>Equation</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>-2</p></td>
+<td><p>Inverse Square</p></td>
+<td><p><a class="reference internal" href="#equation-cr-invsquare">(35)</a></p></td>
+</tr>
+<tr class="row-odd"><td><p>-1</p></td>
+<td><p>Hogervorst <span class="math notranslate nohighlight">\(\epsilon\)</span></p></td>
+<td><p><a class="reference internal" href="#equation-cr-hogervorst-epsilon">(26)</a></p></td>
+</tr>
+<tr class="row-even"><td><p>-1/2</p></td>
+<td><p>Harmonic Mean</p></td>
+<td><p><a class="reference internal" href="#equation-cr-harmonic-mean">(33)</a></p></td>
+</tr>
+<tr class="row-odd"><td><p>0</p></td>
+<td><p>Geometric</p></td>
+<td><p><a class="reference internal" href="#equation-cr-geometric">(24)</a></p></td>
+</tr>
+<tr class="row-even"><td><p>1</p></td>
+<td><p>Arithmetic</p></td>
+<td><p><a class="reference internal" href="#equation-cr-arithmetic">(25)</a></p></td>
+</tr>
+<tr class="row-odd"><td><p>3</p></td>
+<td><p>Volumetric</p></td>
+<td><p><a class="reference internal" href="#equation-cr-volumetric">(34)</a></p></td>
+</tr>
+<tr class="row-even"><td><p>6</p></td>
+<td><p>Waldman-Hagler <span class="math notranslate nohighlight">\(\sigma\)</span></p></td>
+<td><p><a class="reference internal" href="#equation-cr-whsigma">(31)</a></p></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="bonded-interactions">
+<h2><span class="section-number">3.1.2. </span>Bonded interactions<a class="headerlink" href="#bonded-interactions" title="Link to this heading">¶</a></h2>
+<section id="harmonic-potential">
+<h3><span class="section-number">3.1.2.1. </span>Harmonic potential<a class="headerlink" href="#harmonic-potential" title="Link to this heading">¶</a></h3>
+<p>Bond vibrations can be described using a harmonic term based on the bond length <span class="math notranslate nohighlight">\(r_{ij}\)</span></p>
+<div class="math notranslate nohighlight" id="equation-harmonic-bond">
+<span class="eqno">(37)<a class="headerlink" href="#equation-harmonic-bond" title="Link to this equation">¶</a></span>\[V_b(r_{ij}) ~=~ \frac{k_{ij}^{b}}{2}\left(r_{ij}-r_{ij}^0\right)^2,\]</div>
+<p>where <span class="math notranslate nohighlight">\(k_{ij}^{b}\)</span> is the force constant, and <span class="math notranslate nohighlight">\(r_{ij}^0\)</span> is the equilibrium bond length.</p>
+</section>
+<section id="morse-potential">
+<h3><span class="section-number">3.1.2.2. </span>Morse potential<a class="headerlink" href="#morse-potential" title="Link to this heading">¶</a></h3>
+<p>A Morse potential <span id="id46">[<a class="reference internal" href="../references.html#id105" title="P M Morse. Diatomic molecules according to the wave mechanics. II. Vibrational levels. Phys. Rev., 34:57–64, 1929. doi:10.1103/PhysRev.34.57.">Mor29</a>]</span> can be used, with one addition:</p>
+<div class="math notranslate nohighlight" id="equation-morse">
+<span class="eqno">(38)<a class="headerlink" href="#equation-morse" title="Link to this equation">¶</a></span>\[V_M(r_{ij}) ~=~ D_{ij}^e\left[{\rm e}^{\displaystyle{-2\beta_{ij}(r_{ij}-r_{ij}^0)}}-2{\rm e}^{\displaystyle{-\beta_{ij}(r_{ij}-r_{ij}^0)}}\right] + D_{ij}^0\]</div>
+<p>The term <span class="math notranslate nohighlight">\(D_{ij}^e\)</span> roughly corresponds to a dissociation energy, however since there are Coulomb and/or Buckingham interactions between the atoms as well, the total “bond” potential is given by the sum of three terms and a correction term <span class="math notranslate nohighlight">\(D_{ij}^0\)</span> is needed to get the correct energy minimum.</p>
+</section>
+<section id="wei-hua-potential">
+<h3><span class="section-number">3.1.2.3. </span>Wei-Hua potential<a class="headerlink" href="#wei-hua-potential" title="Link to this heading">¶</a></h3>
+<p>In a very recent study we found the potential due to Hua <span id="id47">[<a class="reference internal" href="../references.html#id65" title="W Hua. 4-parameter exactly solvable potential for diatomic-molecules. Phys. Rev. A, 42(5):2524-2529, SEP 1 1990. doi:10.1103/PhysRevA.42.2524.">Hua90a</a>, <a class="reference internal" href="../references.html#id66" title="Wei Hua. Four-parameter potential and its bound-state matrix elements. J. Phys. B: Atom., Molec. Opt. Phys., 23:2521, aug 1990. doi:10.1088/0953-4075/23/15/019.">Hua90b</a>]</span> to be the best compromise between accuracy of the vibrational frequencies and computational cost <span id="id48">[<a class="reference internal" href="../references.html#id97" title="Paul J. van Maaren and David van der Spoel. Quantitative evaluation of anharmonic bond potentials for molecular simulations. Digit. Discov., 4:824-830, 2025. doi:10.1039/D4DD00344F.">vMvdS25</a>]</span>.
+It is given by:</p>
+<div class="math notranslate nohighlight" id="equation-hua">
+<span class="eqno">(39)<a class="headerlink" href="#equation-hua" title="Link to this equation">¶</a></span>\[U(r) ~=~ D_e\left(\left[ \frac{1-e^{-b(r-r_e)}}{1-ce^{-b(r-r_e)}} \right]^2 - 1 \right)\]</div>
+<p>where <span class="math notranslate nohighlight">\(D_e\)</span> is the well-depth, <span class="math notranslate nohighlight">\(r_e\)</span> the equilibrium bond length, and <span class="math notranslate nohighlight">\(b\)</span> and <span class="math notranslate nohighlight">\(c\)</span> are constants with <span class="math notranslate nohighlight">\(\|c\| &lt; 1\)</span>.</p>
+</section>
+<section id="angle-potential">
+<h3><span class="section-number">3.1.2.4. </span>Angle potential<a class="headerlink" href="#angle-potential" title="Link to this heading">¶</a></h3>
+<p>Angle vibrations are described using a harmonic term based on the angle <span class="math notranslate nohighlight">\(\theta_{ijk}\)</span></p>
+<div class="math notranslate nohighlight" id="equation-harmonic-angle">
+<span class="eqno">(40)<a class="headerlink" href="#equation-harmonic-angle" title="Link to this equation">¶</a></span>\[V_a(\theta_{ijk}) ~=~ \frac{k_{ijk}^{\theta}}{2}\left(\theta_{ijk}-\theta_{ijk}^0\right)^2,\]</div>
+<p>where <span class="math notranslate nohighlight">\(k_{ijk}^{\theta}\)</span> is the force constant, and <span class="math notranslate nohighlight">\(\theta_{ijk}^0\)</span> is the equilibrium angle.</p>
+</section>
+<section id="angle-potential-for-linear-compounds">
+<h3><span class="section-number">3.1.2.5. </span>Angle potential for linear compounds<a class="headerlink" href="#angle-potential-for-linear-compounds" title="Link to this heading">¶</a></h3>
+<p>The reference position, corresponding to a minimum energy structure, <span class="math notranslate nohighlight">\(\mathbf{x}_j^0\)</span> for a central atom <span class="math notranslate nohighlight">\(j\)</span> in a linear triplet of atoms
+<span class="math notranslate nohighlight">\(i,j,k\)</span> is given by</p>
+<div class="math notranslate nohighlight" id="equation-linang">
+<span class="eqno">(41)<a class="headerlink" href="#equation-linang" title="Link to this equation">¶</a></span>\[\mathbf{x}_j^0 ~=~ {\rm a}\, \mathbf{x}_i + (1-{\rm a})\, \mathbf{x}_k\]</div>
+<p>where <span class="math notranslate nohighlight">\(a\)</span> is a constant defined by the bond-lengths <span class="math notranslate nohighlight">\(i-j\)</span> and <span class="math notranslate nohighlight">\(j-k\)</span>.  In a group with bonds <span class="math notranslate nohighlight">\(i-j\)</span> and <span class="math notranslate nohighlight">\(j-k\)</span> with lengths <span class="math notranslate nohighlight">\(b_{ij}\)</span> and <span class="math notranslate nohighlight">\(b_{jk}\)</span> respectively, the constant is</p>
+<div class="math notranslate nohighlight" id="equation-eqna">
+<span class="eqno">(42)<a class="headerlink" href="#equation-eqna" title="Link to this equation">¶</a></span>\[a ~=~ \frac{b_{jk}}{b_{ij}+b_{jk}}.\]</div>
+<p>If the order of atoms is flipped  <span class="math notranslate nohighlight">\(a\)</span> will change to <span class="math notranslate nohighlight">\(1-a\)</span>. The potential <span class="math notranslate nohighlight">\(V_{lin}\)</span> is then given by</p>
+<div class="math notranslate nohighlight" id="equation-vlin">
+<span class="eqno">(43)<a class="headerlink" href="#equation-vlin" title="Link to this equation">¶</a></span>\[V_{lin} ~=~ \frac{{\rm k}_{lin}}{2} \left(\mathbf{x}_j - \mathbf{x}_j^0\right)^2\]</div>
+<p>with k <sub>lin</sub> the force constant <span id="id49">[<a class="reference internal" href="../references.html#id140" title="David van der Spoel, Henning Henschel, Paul J. van Maaren, Mohammad M. Ghahremanpour, and Luciano T. Costa. A potential for molecular simulation of compounds with linear moieties. J. Chem. Phys., 153(8):084503, 2020. doi:10.1063/5.0015184.">vdSHvM+20</a>]</span>.</p>
+</section>
+<section id="out-of-plane-vibrations">
+<h3><span class="section-number">3.1.2.6. </span>Out-of-plane vibrations<a class="headerlink" href="#out-of-plane-vibrations" title="Link to this heading">¶</a></h3>
+<p>Finally, out-of-plane vibrations are treated by another harmonic potential</p>
+<div class="math notranslate nohighlight" id="equation-vimproper">
+<span class="eqno">(44)<a class="headerlink" href="#equation-vimproper" title="Link to this equation">¶</a></span>\[V_i(\phi_{ijkl}) ~=~ \frac{k_{ijkl}^{\phi}}{2}\phi_{ijkl}^2,\]</div>
+<p>where <span class="math notranslate nohighlight">\(k_{ijkl}^{\phi}\)</span> is the force constant and <span class="math notranslate nohighlight">\(\phi_{ijkl}\)</span> is defined by the angle between the two planes <span class="math notranslate nohighlight">\(i,j,k\)</span> and <span class="math notranslate nohighlight">\(j,k,l\)</span>. This potential was historically termed <em>improper dihedral</em>.</p>
+</section>
+<section id="torsion-potential">
+<h3><span class="section-number">3.1.2.7. </span>Torsion potential<a class="headerlink" href="#torsion-potential" title="Link to this heading">¶</a></h3>
+<p>A torsion potential is implemented using a Fourier series:</p>
+<div class="math notranslate nohighlight" id="equation-vfourier">
+<span class="eqno">(45)<a class="headerlink" href="#equation-vfourier" title="Link to this equation">¶</a></span>\[V_{d}(\phi_{ijkl}) ~=~ \sum_{n=0}^5 c_n {\rm cos}^n(\pi+\phi_{ijkl})\]</div>
+<p>where <span class="math notranslate nohighlight">\(c_n\)</span> are constants and the torsion angle is defined as above. The constant <span class="math notranslate nohighlight">\(\pi\)</span> is added to be compatible with the Ryckaert-Bellemans potential <span id="id50">[<a class="reference internal" href="../references.html#id116" title="J P Ryckaert and A Bellemans. Molecular Dynamics of Liquid n-Butane near its Boiling Point. Chem. Phys. Lett., 30:123–125, 1975. doi:10.1016/0009-2614(75)85513-8.">RB75</a>]</span> that is implemented in simulation codes like GROMACS <span id="id51">[<a class="reference internal" href="../references.html#id127" title="David van der Spoel, Erik Lindahl, Berk Hess, Gerrit Groenhof, Alan E Mark, and Herman J C Berendsen. GROMACS: Fast, Flexible and Free. J. Comput. Chem., 26:1701–1718, 2005. doi:10.1002/jcc.20291.">vdSLH+05</a>]</span> and OpenMM <span id="id52">[<a class="reference internal" href="../references.html#id37" title="Peter Eastman and Vijay S Pande. Efficient Nonbonded Interactions for Molecular Dynamics on a Graphics Processing Unit. J. Comput. Chem., 31:1268–1272, 2010. doi:10.1002/jcc.21413.">EP10</a>]</span>.</p>
+</section>
+<section id="proper-dihedral">
+<h3><span class="section-number">3.1.2.8. </span>Proper dihedral<a class="headerlink" href="#proper-dihedral" title="Link to this heading">¶</a></h3>
+<p>A simpler torsion potential is implemented for backward compatibility as:</p>
+<div class="math notranslate nohighlight" id="equation-vproper">
+<span class="eqno">(46)<a class="headerlink" href="#equation-vproper" title="Link to this equation">¶</a></span>\[V_{d}(\phi_{ijkl}) ~=~ {\rm cos}(n \phi_{ijkl} + \phi_0)\]</div>
+<p>where <span class="math notranslate nohighlight">\(n\)</span> is the multiplicity (number of minima in 360 degrees) <span class="math notranslate nohighlight">\(\phi_0\)</span> is an offset angle.</p>
+</section>
+</section>
+<section id="special-potentials">
+<h2><span class="section-number">3.1.3. </span>Special potentials<a class="headerlink" href="#special-potentials" title="Link to this heading">¶</a></h2>
+<p>The ACT includes a flat-bottom position restraint potential according to</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}\begin{align}
+ V_{fbpr}(r) &amp;=&amp; 0 &amp;\hspace{2cm} r &lt;= r_0\\
+             &amp;  &amp; \frac{k}{2}(r-r_0)^2 &amp;\hspace{2cm} r &gt; r_0
+\end{align}\end{split}\]</div>
+<p>where <span class="math notranslate nohighlight">\(k\)</span> is the force constant and <span class="math notranslate nohighlight">\(r_0\)</span> the radius of the sphere (centered at the origin) in which the potential is zero.
+The flat-bottom potential is activated by flags to the <em>alexandria simulate</em> command. It is useful
+mainly to keep molecules close to the origin and prevent them from flying into outer space.</p>
+</section>
+<section id="virtual-sites">
+<h2><span class="section-number">3.1.4. </span>Virtual Sites<a class="headerlink" href="#virtual-sites" title="Link to this heading">¶</a></h2>
+<p>A virtual site is an extra point, located at a defined position in a molecule. A variety of virtual site options is currently implemented within the ACT framework:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>a virtual site on top of an atom (VSITE1) <span id="id53">[<a class="reference internal" href="../references.html#id143" title="David van der Spoel and A. Najla Hosseini. Point + Gaussian charge model for electrostatic interactions derived by machine learning. Phys. Chem. Chem. Phys., 27:13817-13820, 2025. doi:10.1039/D5CP01254F.">vdSH25</a>]</span></p></li>
+<li><p>a virtual sites along the bond (VSITE2) for the description of anisotropic charge distribution and exchange <span id="id54">[<a class="reference internal" href="../references.html#id83" title="Kristian Kříž and David van der Spoel. Quantification of anisotropy in exchange and dispersion interactions: a simple model for physics-based force fields. J. Phys. Chem. Lett., 15:9974-9978, 2024. doi:10.1021/acs.jpclett.4c02034.">KvrivzvdS24</a>]</span> such as encountered in <span class="math notranslate nohighlight">\(\sigma\)</span> holes</p></li>
+<li><p>a virtual site on the bisector of a angle, like in the TIP4P water model <span id="id55">[<a class="reference internal" href="../references.html#id75" title="W L Jorgensen, J Chandrasekhar, J D Madura, R W Impey, and M L Klein. Comparison of simple potential functions for simulating liquid water. J. Chem. Phys., 79:926–935, 1983. doi:10.1063/1.445869.">JCM+83</a>]</span> (VSITE3S) or in alcohol (VSITE3)</p></li>
+<li><p>off-plane virtual sites for modeling lone-pairs in <span class="math notranslate nohighlight">\({\mathrm sp}^3\)</span> hybridized compounds, such as water (VSITE3SOUT, symmetric) or asymmetric for compounds like alcohols <span id="id56">[<a class="reference internal" href="../references.html#id83" title="Kristian Kříž and David van der Spoel. Quantification of anisotropy in exchange and dispersion interactions: a simple model for physics-based force fields. J. Phys. Chem. Lett., 15:9974-9978, 2024. doi:10.1021/acs.jpclett.4c02034.">KvrivzvdS24</a>, <a class="reference internal" href="../references.html#id98" title="M W Mahoney and W L Jorgensen. A five-site model for liquid water and the reproduction of the density anomaly by rigid, nonpolarizable potential functions. J. Chem. Phys., 112:8910–8922, 2000. doi:10.1063/1.481505.">MJ00</a>]</span>.</p></li>
+<li><p>Four-particle virtual sites (VSITE4) to model a lone-pair on an amine group.</p></li>
+</ul>
+</div></blockquote>
+</section>
+<section id="total-energy">
+<h2><span class="section-number">3.1.5. </span>Total energy<a class="headerlink" href="#total-energy" title="Link to this heading">¶</a></h2>
+<p>The total energy <span class="math notranslate nohighlight">\(E\)</span> of a compound then follows from</p>
+<div class="math notranslate nohighlight" id="equation-energy">
+<span class="eqno">(47)<a class="headerlink" href="#equation-energy" title="Link to this equation">¶</a></span>\[E ~=~ V_{vdw}(r_{ij})+V_{coul}(r_{ij})+V_{pol}(r_{cs})+V_b(r_{ij})+V_a(\theta_{ijk})+V_i(\phi_{ijkl}) + V_{d}(\phi_{ijkl}).\]</div>
+<p>Finally, it should be noted that the number of excluded neighbors is user-configurable. That means that atoms that are covalently bonded can interact both through the Buckingham (or Lennard-Jones) and Coulomb potentials, and through the bonded potentials. The main reason for this is that the
+short-range Coulomb interactions yield polarization anisotropy that is difficult to reproduce by a non-interacting model.
+To make sure that the forces on the atoms in a molecule are zero in the reference  minimum-energy structure from quantum chemistry, both bond lengths <span class="math notranslate nohighlight">\(r_{ij}^0\)</span> and angles <span class="math notranslate nohighlight">\(\theta_{ijk}^0\)</span> can be treated as free parameters, that may differ substantially from the reference geometry.
+The number of exclusions can be selected separately for Coulomb and Van der Waals forces.</p>
+<p>In total there are up to seven “atom” parameter types (<span class="math notranslate nohighlight">\(\epsilon\)</span>, <span class="math notranslate nohighlight">\(\sigma\)</span>, <span class="math notranslate nohighlight">\(\gamma\)</span>, <span class="math notranslate nohighlight">\(\delta\)</span>, <span class="math notranslate nohighlight">\(\zeta\)</span>, <span class="math notranslate nohighlight">\(q_s\)</span>,  and <span class="math notranslate nohighlight">\(\alpha\)</span>) and 7-14 “bond” parameter types (<span class="math notranslate nohighlight">\(k^b\)</span>, <span class="math notranslate nohighlight">\(D^e\)</span>, <span class="math notranslate nohighlight">\(r^0\)</span>, <span class="math notranslate nohighlight">\(r^{max}\)</span>, <span class="math notranslate nohighlight">\(k^{\theta}\)</span>, <span class="math notranslate nohighlight">\(\theta^0\)</span>, <span class="math notranslate nohighlight">\(k^{lin}\)</span> and <span class="math notranslate nohighlight">\(c_{n}\)</span>) where <span class="math notranslate nohighlight">\(n\)</span> is the dihedral term index running from 0 to 6 to determine.
+All the atomic parameters are taken to be hybridization state dependent (corresponding to, for instance, sp <sup>1</sup>, sp <sup>2</sup> and sp <sup>3</sup> carbon atoms).
+%It is straightforward to add support for other potentials, such as proper dihedrals.</p>
+</section>
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+  <div>
+    <h3><a href="../../index.html">Table of Contents</a></h3>
+    <ul>
+<li><a class="reference internal" href="#">3.1. Energy Function</a><ul>
+<li><a class="reference internal" href="#non-bonded-interactions">3.1.1. Non-bonded interactions</a><ul>
+<li><a class="reference internal" href="#coulomb-interaction-using-point-charges">3.1.1.1. Coulomb Interaction using Point charges</a></li>
+<li><a class="reference internal" href="#coulomb-interaction-using-gaussian-charges">3.1.1.2. Coulomb Interaction using Gaussian charges</a></li>
+<li><a class="reference internal" href="#coulomb-interaction-using-slater-charges">3.1.1.3. Coulomb Interaction using Slater charges</a></li>
+<li><a class="reference internal" href="#long-range-coulomb-interactions">3.1.1.4. Long range Coulomb interactions</a></li>
+<li><a class="reference internal" href="#polarization">3.1.1.5. Polarization</a></li>
+<li><a class="reference internal" href="#induction-correction">3.1.1.6. Induction correction</a></li>
+<li><a class="reference internal" href="#pauli-repulsion-and-london-dispersion">3.1.1.7. Pauli Repulsion and London Dispersion</a></li>
+<li><a class="reference internal" href="#treatment-of-long-range-dispersion">3.1.1.8. Treatment of long range dispersion</a></li>
+<li><a class="reference internal" href="#combination-rules-for-van-der-waals-potentials">3.1.1.9. Combination Rules for Van der Waals Potentials</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#bonded-interactions">3.1.2. Bonded interactions</a><ul>
+<li><a class="reference internal" href="#harmonic-potential">3.1.2.1. Harmonic potential</a></li>
+<li><a class="reference internal" href="#morse-potential">3.1.2.2. Morse potential</a></li>
+<li><a class="reference internal" href="#wei-hua-potential">3.1.2.3. Wei-Hua potential</a></li>
+<li><a class="reference internal" href="#angle-potential">3.1.2.4. Angle potential</a></li>
+<li><a class="reference internal" href="#angle-potential-for-linear-compounds">3.1.2.5. Angle potential for linear compounds</a></li>
+<li><a class="reference internal" href="#out-of-plane-vibrations">3.1.2.6. Out-of-plane vibrations</a></li>
+<li><a class="reference internal" href="#torsion-potential">3.1.2.7. Torsion potential</a></li>
+<li><a class="reference internal" href="#proper-dihedral">3.1.2.8. Proper dihedral</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#special-potentials">3.1.3. Special potentials</a></li>
+<li><a class="reference internal" href="#virtual-sites">3.1.4. Virtual Sites</a></li>
+<li><a class="reference internal" href="#total-energy">3.1.5. Total energy</a></li>
+</ul>
+</li>
+</ul>
+
+  </div>
+  <div>
+    <h4>Previous topic</h4>
+    <p class="topless"><a href="header.html"
+                          title="previous chapter"><span class="section-number">3. </span>Reference Manual</a></p>
+  </div>
+  <div>
+    <h4>Next topic</h4>
+    <p class="topless"><a href="training.html"
+                          title="next chapter"><span class="section-number">3.2. </span>Force Field Training Algorithms</a></p>
+  </div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../../_sources/manual/refman/energy.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="training.html" title="3.2. Force Field Training Algorithms"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="header.html" title="3. Reference Manual"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">ACT 1.2b documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="header.html" ><span class="section-number">3. </span>Reference Manual</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href=""><span class="section-number">3.1. </span>Energy Function</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2026 The Alexandria Chemistry Initiative.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>3.3. Force field design &#8212; ACT 1.2b documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=fa44fd50" />
+    <link rel="stylesheet" type="text/css" href="../../_static/classic.css?v=2bf1fcf8" />
+    <link rel="stylesheet" type="text/css" href="../../_static/mystnb.8ecb98da25f57f5357bf6f572d296f466b2cfe2517ffebfabe82451661e28f02.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../_static/togglebutton.css?v=9c3e77be" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sphinx_lesson.css?v=e9df6548" />
+    <link rel="stylesheet" type="text/css" href="../../_static/term_role_formatting.css?v=4194e21c" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sphinx_rtd_theme_ext_color_contrast.css?v=8e8ea19f" />
+    <link rel="stylesheet" type="text/css" href="../../_static/custom_theme.css" />
+    
+    <script src="../../_static/documentation_options.js?v=00cc29cc"></script>
+    <script src="../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../_static/copybutton.js?v=6dbb43f8"></script>
+    <script src="../../_static/minipres.js?v=a0d29692"></script>
+    <script>let toggleHintShow = 'Click to show';</script>
+    <script>let toggleHintHide = 'Click to hide';</script>
+    <script>let toggleOpenOnPrint = 'true';</script>
+    <script src="../../_static/togglebutton.js?v=1ae7504c"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script>window.MathJax = {"options": {"processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="3.4. Force Field Training Targets" href="targets.html" />
+    <link rel="prev" title="3.2. Force Field Training Algorithms" href="training.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="targets.html" title="3.4. Force Field Training Targets"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="training.html" title="3.2. Force Field Training Algorithms"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">ACT 1.2b documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="header.html" accesskey="U"><span class="section-number">3. </span>Reference Manual</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href=""><span class="section-number">3.3. </span>Force field design</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="force-field-design">
+<h1><span class="section-number">3.3. </span>Force field design<a class="headerlink" href="#force-field-design" title="Link to this heading">¶</a></h1>
+<section id="physical-background">
+<h2><span class="section-number">3.3.1. </span>Physical Background<a class="headerlink" href="#physical-background" title="Link to this heading">¶</a></h2>
+<p>The Alexandria force-fields have a functional form consisting of van der Waals (<em>vdw</em>), electrostatics (<em>coul</em>), polarization (<em>pol</em>)  and bonded terms including a radial (<em>b</em>), angular (<em>a</em>), out-of-plane dihedral (<em>i</em>) and torsion (<em>d</em>) terms.</p>
+<div class="math notranslate nohighlight" id="equation-act-terms">
+<span class="eqno">(1)<a class="headerlink" href="#equation-act-terms" title="Link to this equation">¶</a></span>\[E ~=~ V_{vdw}(r_{ij})+V_{coul}(r_{ij})+V_{pol}(r_{cs})+V_b(r_{ij})+V_a(\theta_{ijk})+V_i(\phi_{ijkl}) + V_{d}(\phi_{ijkl})\]</div>
+<p>where <span class="math notranslate nohighlight">\(r_{ij}\)</span> refers to the distance between atoms <span class="math notranslate nohighlight">\(i\)</span> and <span class="math notranslate nohighlight">\(j\)</span>, <span class="math notranslate nohighlight">\(r_{cs}\)</span> to the distance between a core and a shell (Drude) particle, <span class="math notranslate nohighlight">\(\theta_{ijk}\)</span> to the angle given by three atoms <span class="math notranslate nohighlight">\(i\)</span>, <span class="math notranslate nohighlight">\(j\)</span> and <span class="math notranslate nohighlight">\(k\)</span>, and <span class="math notranslate nohighlight">\(\phi_{ijkl}\)</span> to a torsional angle between the planes given by atoms <span class="math notranslate nohighlight">\(i,j,k\)</span> and atoms <span class="math notranslate nohighlight">\(j,k,l\)</span>.
+For each of the terms, multiple functional forms are available, so that within the Alexandria framework, different force-fields, including previously published ones, can be reconstructed and compared to one another in a systematic manner <span id="id1">[<a class="reference internal" href="../references.html#id141" title="David van der Spoel. Systematic design of biomolecular force fields. Curr. Opin. Struct. Biol., 67:18-24, 2021. doi:10.1016/j.sbi.2020.08.006.">vdS21</a>]</span>. For details on these potentials we refer to Chapter <a class="reference internal" href="energy.html#sec-energy"><span class="std std-ref">Energy Function</span></a>.</p>
+<p>In total there are seven <em>atom</em> parameter types and 7-14 <em>bond</em> parameter types.
+A variety of virtual sites can be used, like those used in water models <span id="id2">[<a class="reference internal" href="../references.html#id87" title="G Lamoureux, A D MacKerell, and B Roux. A simple polarizable model of water based on classical Drude oscillators. J. Chem. Phys., 119:5185–5197, 2003. doi:10.1063/1.1598191.">LMR03</a>, <a class="reference internal" href="../references.html#id96" title="P J van Maaren and D van der Spoel. Molecular dynamics simulations of water with a novel shell-model potential. J. Phys. Chem. B., 105:2618–2626, 2001. doi:10.1021/jp003843l.">vMvdS01</a>]</span> or to model anisotropy due to <span class="math notranslate nohighlight">\(\sigma\)</span>-holes on halogen atoms or water <span id="id3">[<a class="reference internal" href="../references.html#id83" title="Kristian Kříž and David van der Spoel. Quantification of anisotropy in exchange and dispersion interactions: a simple model for physics-based force fields. J. Phys. Chem. Lett., 15:9974-9978, 2024. doi:10.1021/acs.jpclett.4c02034.">KvrivzvdS24</a>]</span>.</p>
+</section>
+<section id="determining-atom-types">
+<h2><span class="section-number">3.3.2. </span>Determining atom types<a class="headerlink" href="#determining-atom-types" title="Link to this heading">¶</a></h2>
+<p>When importing a structure file (SDF, PDB, or XYZ format), ACT automatically assigns initial atom types based on their chemical environment. For carbon, nitrogen, oxygen, phosphorus, and sulfur atoms, ACT uses RDKit <span id="id4">[<a class="reference internal" href="../references.html#id183" title="Greg Landrum and RDKit contributors. Rdkit/rdkit: 2025_09_4 (q3 2025) release. 2025. doi:10.5281/zenodo.18098214.">Lc25</a>]</span> to determine hybridization states and assigns atom types labeled with 1, 2, or 3, indicating sp, sp<span class="math notranslate nohighlight">\(^2\)</span>, or sp<span class="math notranslate nohighlight">\(^3\)</span> hybridization.
+For other atoms or when RDKit cannot determine a hybridization state, ACT assigns atom types based on formal charge: 2−, −, +, or 2+ appended to the element symbol.</p>
+<div class="admonition attention">
+<p class="admonition-title">Attention</p>
+<p>If bond information is present in the PDB or SDF file, it will be used by ACT. That means the user is responsible for providing correct information, unless the compound is a special case, see below. If there is no bond information in the PDB (or a XYZ) file, it will be generated using RDKit. Either way, RDKit is used to determine aromaticity. There is no guarantee that the output from RDKit is correct in all cases, however. Please check your output.</p>
+</div>
+<p>ACT further allows refinement of atom types through environment specific patterns defined using SMARTS notation. <span id="id5">[<a class="reference internal" href="../references.html#id182" title="Daylight Chemical Information Systems, Inc. Smarts — a language for describing molecular patterns. Accessed: 2026-01-26. URL: https://www.daylight.com/dayhtml/doc/theory/theory.smarts.html.">DaylightCISystemsInc</a>]</span> These patterns are stored in a file called <em>atom_bond.xml</em> and they enable assignment of specialized atom types based on the local chemical context.
+Table <code class="xref std std-numref docutils literal notranslate"><span class="pre">atom-bond-table</span></code> lists all available SMARTS patterns and their corresponding atom types. Currently the last hit it used to assign atom types and bond orders, hence it is ordered from general to specific.</p>
+<p>The code to determine atomtypes is implemented in both the C++ code and in a Python file <em>get_mol_dict.py</em> that is part of the ACT distribution. The latter can be used in conjunction with the generating quantion chemistry data in the <a class="reference external" href="https://github.com/AlexandriaChemistry/SaptACT">SaptACT</a> repository.</p>
+<div class="admonition attention">
+<p class="admonition-title">Attention</p>
+<p>The default hybridization-based assignment may not adequately represent atoms in resonance stabilized structures. For example, sulfate (SO<span class="math notranslate nohighlight">\(_4\)</span><span class="math notranslate nohighlight">\(^{2-}\)</span>) is assigned with one sulfur as s3 and four oxygens with mixed types (o− and o2), which does not reflect the resonance equivalence of the oxygens. To enforce equivalent atom type assignment for resonance structures, add appropriate SMARTS expressions to atom_bond.xml.</p>
+</div>
+<table class="docutils align-default" id="atom-bond-table">
+<caption><span class="caption-text">SMARTS patterns used by ACT</span><a class="headerlink" href="#atom-bond-table" title="Link to this table">¶</a></caption>
+<thead>
+<tr class="row-odd"><th class="head"><p>Molecule/Rule</p></th>
+<th class="head"><p>SMARTS / recursive SMARTS</p></th>
+<th class="head"><p>atom_type(s)</p></th>
+<th class="head"><p>q</p></th>
+<th class="head"><p>bo</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>sulfate</p></td>
+<td><p>[#16](=[#8])(=[#8])(-[#8-])-[#8-]</p></td>
+<td><p>s3, o2, o2, o2, o2</p></td>
+<td><p>-2</p></td>
+<td><p>1.5</p></td>
+</tr>
+<tr class="row-odd"><td><p>water</p></td>
+<td><p>[#8](-[#1])-[#1]</p></td>
+<td><p>ow, hw, hw</p></td>
+<td><p>0</p></td>
+<td><p>1</p></td>
+</tr>
+<tr class="row-even"><td><p>phosphate</p></td>
+<td><p>[#15D4]([#8D1])([#8D1])([#8-,#8D1])([#8-,#8D1])</p></td>
+<td><p>p3, o3, o3, o3, o3</p></td>
+<td><p>-3</p></td>
+<td><p>1.5</p></td>
+</tr>
+<tr class="row-odd"><td><p>phosphate2</p></td>
+<td><p>[#8-]-[#15](-[#8-])(-[#8-])=[#8]</p></td>
+<td><p>o3, p3, o3, o3, o3</p></td>
+<td><p>-3</p></td>
+<td><p>1.5</p></td>
+</tr>
+<tr class="row-even"><td><p>phosphate2 (variant 2)</p></td>
+<td><p>[#8-]-[#15](-[#8-])(-[#8-])</p></td>
+<td><p>o3, p3, o3, o3</p></td>
+<td><p>-2</p></td>
+<td><p>1.5</p></td>
+</tr>
+<tr class="row-odd"><td><p>phosphate3</p></td>
+<td><p>[#8-]-[#15](-[#8-])</p></td>
+<td><p>o3, p3, o3</p></td>
+<td><p>-1</p></td>
+<td><p>1</p></td>
+</tr>
+<tr class="row-even"><td><p>nitro1</p></td>
+<td><p>[#7+](-[#8-])=[#8]</p></td>
+<td><p>n2, o2, o2</p></td>
+<td><p>0</p></td>
+<td><p>1.5</p></td>
+</tr>
+<tr class="row-odd"><td><p>nitro2</p></td>
+<td><p>[#7+](-[#8])=[#8]</p></td>
+<td><p>n2, o2, o2</p></td>
+<td><p>0</p></td>
+<td><p>1.5</p></td>
+</tr>
+<tr class="row-even"><td><p>gaff hc any</p></td>
+<td><p>[#1]</p></td>
+<td><p>hc</p></td>
+<td><p>0</p></td>
+<td><ul class="simple">
+<li></li>
+</ul>
+</td>
+</tr>
+<tr class="row-odd"><td><p>gaff ha generic</p></td>
+<td><p>[#1X1]</p></td>
+<td><p>ha</p></td>
+<td><p>0</p></td>
+<td><ul class="simple">
+<li></li>
+</ul>
+</td>
+</tr>
+<tr class="row-even"><td><p>gaff ho oxygen</p></td>
+<td><p>[#1X1;$(*-O)]</p></td>
+<td><p>ho</p></td>
+<td><p>0</p></td>
+<td><ul class="simple">
+<li></li>
+</ul>
+</td>
+</tr>
+<tr class="row-odd"><td><p>gaff ho water</p></td>
+<td><p>[#1X1;$(*-[O;H2])]</p></td>
+<td><p>hw</p></td>
+<td><p>0</p></td>
+<td><ul class="simple">
+<li></li>
+</ul>
+</td>
+</tr>
+<tr class="row-even"><td><p>gaff hn nitrogen</p></td>
+<td><p>[#1X1;$(*-N)]</p></td>
+<td><p>hn</p></td>
+<td><p>0</p></td>
+<td><ul class="simple">
+<li></li>
+</ul>
+</td>
+</tr>
+<tr class="row-odd"><td><p>gaff hn aromatic n</p></td>
+<td><p>[#1X1;$(*-n)]</p></td>
+<td><p>hn</p></td>
+<td><p>0</p></td>
+<td><ul class="simple">
+<li></li>
+</ul>
+</td>
+</tr>
+<tr class="row-even"><td><p>gaff hs sulfur</p></td>
+<td><p>[#1X1;$(*-S)]</p></td>
+<td><p>hs</p></td>
+<td><p>0</p></td>
+<td><ul class="simple">
+<li></li>
+</ul>
+</td>
+</tr>
+<tr class="row-odd"><td><p>gaff hp phosphorus</p></td>
+<td><p>[#1X1;$(*-P)]</p></td>
+<td><p>hp</p></td>
+<td><p>0</p></td>
+<td><ul class="simple">
+<li></li>
+</ul>
+</td>
+</tr>
+<tr class="row-even"><td><p>hf</p></td>
+<td><p>[#1X1;$(*-F)]</p></td>
+<td><p>hf</p></td>
+<td><p>0</p></td>
+<td><ul class="simple">
+<li></li>
+</ul>
+</td>
+</tr>
+<tr class="row-odd"><td><p>hcl</p></td>
+<td><p>[#1X1;$(*-Cl)]</p></td>
+<td><p>hcl</p></td>
+<td><p>0</p></td>
+<td><ul class="simple">
+<li></li>
+</ul>
+</td>
+</tr>
+<tr class="row-even"><td><p>hbr</p></td>
+<td><p>[#1X1;$(*-Br)]</p></td>
+<td><p>hbr</p></td>
+<td><p>0</p></td>
+<td><ul class="simple">
+<li></li>
+</ul>
+</td>
+</tr>
+<tr class="row-odd"><td><p>hi</p></td>
+<td><p>[#1X1;$(*-I)]</p></td>
+<td><p>hi</p></td>
+<td><p>0</p></td>
+<td><ul class="simple">
+<li></li>
+</ul>
+</td>
+</tr>
+<tr class="row-even"><td><p>gaff hc aliphatic C</p></td>
+<td><p>[#1X1;$(*-[#6X4])]</p></td>
+<td><p>hc</p></td>
+<td><p>0</p></td>
+<td><ul class="simple">
+<li></li>
+</ul>
+</td>
+</tr>
+<tr class="row-odd"><td><p>gaff hc tertcarbon like</p></td>
+<td><p>[#1X1;$(*-[#6X4]([#6])([#6])[#1])]</p></td>
+<td><p>hc</p></td>
+<td><p>0</p></td>
+<td><ul class="simple">
+<li></li>
+</ul>
+</td>
+</tr>
+<tr class="row-even"><td><p>gaff ha conjugated CX3 eq C</p></td>
+<td><p>[#1X1;$(*-[#6X3]=[#6])]</p></td>
+<td><p>ha</p></td>
+<td><p>0</p></td>
+<td><ul class="simple">
+<li></li>
+</ul>
+</td>
+</tr>
+<tr class="row-odd"><td><p>gaff ha triplebond</p></td>
+<td><p>[#1X1;$(*-[#6X2]#[#6])]</p></td>
+<td><p>ha</p></td>
+<td><p>0</p></td>
+<td><ul class="simple">
+<li></li>
+</ul>
+</td>
+</tr>
+<tr class="row-even"><td><p>gaff h1 chain 1EWG</p></td>
+<td><p>[#1X1;$(*-[C]-[#7,#8,#9,#16,#17,#35,#53])]</p></td>
+<td><p>h1</p></td>
+<td><p>0</p></td>
+<td><ul class="simple">
+<li></li>
+</ul>
+</td>
+</tr>
+<tr class="row-odd"><td><p>gaff h1 chain 1EWG double</p></td>
+<td><p>[#1X1;$(*-[C]=[#7,#8,#9,#16])]</p></td>
+<td><p>h1</p></td>
+<td><p>0</p></td>
+<td><ul class="simple">
+<li></li>
+</ul>
+</td>
+</tr>
+<tr class="row-even"><td><p>gaff h2 chain 2EWG</p></td>
+<td><p>[#1X1;$(*-[C]([#7,#8,#9,#16,#17,#35,#53]) [#7,#8,#9,#16,#17,#35,#53])]</p></td>
+<td><p>h2</p></td>
+<td><p>0</p></td>
+<td><ul class="simple">
+<li></li>
+</ul>
+</td>
+</tr>
+<tr class="row-odd"><td><p>gaff h2 chain 2 EWG eq one</p></td>
+<td><p>[#1X1;$(*-[C](=[#7,#8,#9,#16])([#7,#8,#9,#16]))]</p></td>
+<td><p>h2</p></td>
+<td><p>0</p></td>
+<td><ul class="simple">
+<li></li>
+</ul>
+</td>
+</tr>
+<tr class="row-even"><td><p>gaff h3 chain 3EWG</p></td>
+<td><p>[#1X1;$(*-[C]([#7,#8,#16,#17,#35,#53,F,Cl,Br,I]) ([#7,#8,#16,#17,#35,#53,F,Cl,Br,I])([#7,#8,#16,#17,#35,#53,F,Cl,Br,I]))]</p></td>
+<td><p>h3</p></td>
+<td><p>0</p></td>
+<td><ul class="simple">
+<li></li>
+</ul>
+</td>
+</tr>
+<tr class="row-odd"><td><p>gaff h4 ring 1EWG</p></td>
+<td><p>[#1X1;$(*-[c]~[#7,#8,#16,#17,#35,#53])]</p></td>
+<td><p>h4</p></td>
+<td><p>0</p></td>
+<td><ul class="simple">
+<li></li>
+</ul>
+</td>
+</tr>
+<tr class="row-even"><td><p>gaff h5 ring 2EWG</p></td>
+<td><p>[#1X1;$(*-[c](~[#7,#8,#16,#17,#35,#53]) ~[#7,#8,#16,#17,#35,#53])]</p></td>
+<td><p>h5</p></td>
+<td><p>0</p></td>
+<td><ul class="simple">
+<li></li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="determining-partial-charges">
+<span id="sec-partialq"></span><h2><span class="section-number">3.3.3. </span>Determining partial charges<a class="headerlink" href="#determining-partial-charges" title="Link to this heading">¶</a></h2>
+<p>The electrostatic potential (ESP, Section <a class="reference internal" href="../userman/properties.html#sec-esp"><span class="std std-ref">Electrostatic Potential</span></a>) has historically been used
+to determine partial charges <span id="id6">[<a class="reference internal" href="../references.html#id12" title="Brent H Besler, Kenneth M Merz Jr., and Peter A Kollman. Atomic charges derived from semiempirical methods. J. Comput. Chem., 11:431–439, 1990. doi:10.1002/jcc.540110404.">BMerzJrK90</a>]</span> and the ACT supports training models to reproduce the ESP.
+However, in a very recent paper we have shown that fitting charges to reproduce the ESP in a limited volume around a compound is fundamentally flawed due to lack of information <span id="id7">[<a class="reference internal" href="../references.html#id64" title="A. Najla Hosseini, Kristian Kříž, and David van der Spoel. Beyond partitioning: using force field science to evaluate electrostatics models. Submitted for publication, 2026.">HKvrivzvdS26</a>]</span>.
+If the purpose is to build models that reproduce electrostatic interactions, this can be done directly by training models to reproduce SAPT energy components. Here, the split-charge equilibration (SQE) algorithm <span id="id8">[<a class="reference internal" href="../references.html#id153" title="Toon Verstraelen, Veronique Van Speybroeck, and Michel Waroquier. The electronegativity equalization method and the split charge equilibration applied to organic systems: Parametrization, validation, and comparison. J. Chem. Phys., 131:044127, 2009. doi:10.1063/1.3187034.">VVanSpeybroeckW09</a>]</span> is used to generate the effective partial charge on each atom in a molecule. SQE, in turn, is based on the electronegativity equalization method (EEM), as developed by Rapp{'e} and Goddard <span id="id9">[<a class="reference internal" href="../references.html#id113" title="A K Rappé and W A Goddard III. Charge Equillibration for Molecular Dynamics Simulations. J. Phys. Chem., 95:3358–3363, 1991. doi:10.1021/j100161a070.">RappeGoddardIII91</a>]</span>. In brief, EEM uses the atomic hardness <span class="math notranslate nohighlight">\(\eta\)</span> and electronegativity <span class="math notranslate nohighlight">\(\chi\)</span> to determine the atomic charges in a molecule from a Taylor expansion of the molecular energy in terms of charges.
+The SQE algorithm introduces a correction to the atomic electronegativities for bonded atoms <span class="math notranslate nohighlight">\(\Delta\chi\)</span> as well as a bond hardness <span class="math notranslate nohighlight">\(\Delta\eta\)</span>. With this addition, charge can <em>flow</em> through bonds only, which overcomes issues with over-polarization in the EEM <span id="id10">[<a class="reference internal" href="../references.html#id107" title="Razvan A. Nistor, Jeliazko G. Polihronov, Martin H. Müser, and Nicholas J. Mosey. A generalization of the charge equilibration method for nonmetallic materials. J. Chem. Phys., 125(9):094108, 2006. doi:10.1063/1.2346671.">NPMuserM06</a>]</span>.</p>
+<p>The ACT code implements the possibility to generate charges for compounds in dimers or clusters where  charge transfer between compounds is disallowed which is a reasonable approximation since charge transfer has been shown to have limited impact on the binding energy of non-covalent complexes <span id="id11">[<a class="reference internal" href="../references.html#id18" title="Chunhua Yin, Ziheng Cui, Yang Jiang, David van der Spoel, and Haiyang Zhang. Role of host-guest charge transfer in cyclodextrin complexation: a computational study. J. Phys. Chem. C., 123:17745-17756, 2019. doi:10.1021/acs.jpcc.9b05399.">YCJ+19</a>]</span>. For the SQE algorithm two atomic parameters  (<span class="math notranslate nohighlight">\(\chi\)</span> and <span class="math notranslate nohighlight">\(\eta\)</span>) as well as two bond parameter types (<span class="math notranslate nohighlight">\(\Delta\chi\)</span> and <span class="math notranslate nohighlight">\(\Delta\eta\)</span>) need to be determined and the ACT can train SQE parameters to reproduce electrostatic and induction energies <span id="id12">[<a class="reference internal" href="../references.html#id64" title="A. Najla Hosseini, Kristian Kříž, and David van der Spoel. Beyond partitioning: using force field science to evaluate electrostatics models. Submitted for publication, 2026.">HKvrivzvdS26</a>]</span>.
+For background information we refer the reader to an excellent review by Jensen <span id="id13">[<a class="reference internal" href="../references.html#id71" title="Frank Jensen. Unifying charge-flow polarization models. J. Chem. Theory Comput., 19:4047–4073, 2023. doi:10.1021/acs.jctc.3c00341.">Jen23</a>]</span>, but below follows a break-down of using SQE with shells or virtual sites.</p>
+</section>
+<section id="charge-equilibration-with-shells-or-virtual-sites">
+<h2><span class="section-number">3.3.4. </span>Charge Equilibration with Shells or Virtual Sites<a class="headerlink" href="#charge-equilibration-with-shells-or-virtual-sites" title="Link to this heading">¶</a></h2>
+<p>Among the approaches to modeling the charge-dependent component of a force field, those rooted in the chemical potential equalization principle are especially notable, as the principle stems directly from density functional theory <span id="id14">[<a class="reference internal" href="../references.html#id177" title="Peter Itskowitz and Max L Berkowitz. Chemical potential equalization principle: direct approach from density functional theory. J. Phys. Chem. A, 101(31):5687–5691, 1997. doi:10.1021/jp963962u.">IB97</a>]</span>. The first computational implementation of the chemical potential equalization principle was the electronegativity equalization method (EEM) <span id="id15">[<a class="reference internal" href="../references.html#id106" title="W J Mortier, S K Ghosh, and S Shankar. Electronegativity-equalization method for the calculation of atomic charges in molecules. J. Amer. Chem. Soc., 108:4315–4320, 1986. doi:10.1021/ja00275a013.">MGS86</a>, <a class="reference internal" href="../references.html#id113" title="A K Rappé and W A Goddard III. Charge Equillibration for Molecular Dynamics Simulations. J. Phys. Chem., 95:3358–3363, 1991. doi:10.1021/j100161a070.">RappeGoddardIII91</a>]</span>. However, due to limitations of this model, Chelli {em et al.} proposed the atom-atom charge transfer (AACT) model <span id="id16">[<a class="reference internal" href="../references.html#id175" title="Riccardo Chelli, Piero Procacci, Roberto Righini, and Salvatore Califano. Electrical response in chemical potential equalization schemes. J. Chem. Phys., 111(18):8569–8575, 1999. doi:10.1063/1.480198.">CPRC99</a>]</span>. Later, Nistor and co-workers combined the EEM and AACT approaches into a single framework, the split-charge equilibration (SQE) model, which fulfills the essential criteria for a successful charge-transfer potential <span id="id17">[<a class="reference internal" href="../references.html#id107" title="Razvan A. Nistor, Jeliazko G. Polihronov, Martin H. Müser, and Nicholas J. Mosey. A generalization of the charge equilibration method for nonmetallic materials. J. Chem. Phys., 125(9):094108, 2006. doi:10.1063/1.2346671.">NPMuserM06</a>, <a class="reference internal" href="../references.html#id153" title="Toon Verstraelen, Veronique Van Speybroeck, and Michel Waroquier. The electronegativity equalization method and the split charge equilibration applied to organic systems: Parametrization, validation, and comparison. J. Chem. Phys., 131:044127, 2009. doi:10.1063/1.3187034.">VVanSpeybroeckW09</a>]</span>.
+The ACT implements both the EEM and the SQE as algorithms for determining partial charges.</p>
+<p>In brief, EEM minimizes an empirical model of the intramolecular electrostatic energy (computed from the  atomic electronegativity <span class="math notranslate nohighlight">\(\chi_i\)</span> and atomic hardness <span class="math notranslate nohighlight">\(\eta_i\)</span>) with respect to the atomic partial charges <span class="math notranslate nohighlight">\(q_i\)</span>, where <span class="math notranslate nohighlight">\(i\)</span> are the atoms. This method comprises a second order expansion of the molecular energy <span class="math notranslate nohighlight">\(E_{\mathrm{EEM}}\)</span> in terms of the partial charges <span class="math notranslate nohighlight">\(q_i\)</span>:</p>
+<div class="math notranslate nohighlight" id="equation-eem">
+<span class="eqno">(2)<a class="headerlink" href="#equation-eem" title="Link to this equation">¶</a></span>\[\begin{split}E_{\mathrm{EEM}}(q_1, q_2, \dots, q_N) =
+\sum_{i=1}^{N} \Bigg[ \chi_i q_i + \frac{1}{2} \eta_i q_i^2 + \frac{1}{2} \sum_{\substack{l=1\\ l \ne i}}^{N} q_i q_l J_{il} \Bigg],\end{split}\]</div>
+<p>where <span class="math notranslate nohighlight">\(N\)</span> is the number of atoms, <span class="math notranslate nohighlight">\(\chi_i\)</span> are the atomic electronegativities, <span class="math notranslate nohighlight">\(\eta_i\)</span> the atomic hardness, and <span class="math notranslate nohighlight">\(J_{il}\)</span> the Coulomb interaction between atoms. The factor <span class="math notranslate nohighlight">\(\frac{1}{2}\)</span> before the Coulomb matrix is to avoid double counting.</p>
+<p>In this work, the SQE method is used, which addresses a shortcoming of the EEM, namely that molecules tend to get over-polarized <span id="id18">[<a class="reference internal" href="../references.html#id107" title="Razvan A. Nistor, Jeliazko G. Polihronov, Martin H. Müser, and Nicholas J. Mosey. A generalization of the charge equilibration method for nonmetallic materials. J. Chem. Phys., 125(9):094108, 2006. doi:10.1063/1.2346671.">NPMuserM06</a>]</span>. For more background, we refer to the recent review on charge flow models by Jensen <span id="id19">[<a class="reference internal" href="../references.html#id71" title="Frank Jensen. Unifying charge-flow polarization models. J. Chem. Theory Comput., 19:4047–4073, 2023. doi:10.1021/acs.jctc.3c00341.">Jen23</a>]</span>.</p>
+<p>Verstraelen and co-workers proposed the following variant of the molecular energy:</p>
+<div class="math notranslate nohighlight" id="equation-sqe">
+<span class="eqno">(3)<a class="headerlink" href="#equation-sqe" title="Link to this equation">¶</a></span>\[E_{\mathrm{SQE}} = E_{\mathrm{EEM}} +\sum_{i,j}^{M}\left(\frac{1}{2}\Delta\eta_{ij} p_{ij}^2 + \Delta\chi_{ij}(q_i - q_j)\right)\]</div>
+<p>where <span class="math notranslate nohighlight">\(p_{ij}\)</span> corresponds to the (intramolecular) charge transfer  over bonds, <span class="math notranslate nohighlight">\(\Delta\eta_{ij}\)</span> is the bond hardness and <span class="math notranslate nohighlight">\(\Delta\chi_{ij}\)</span> is the bond electronegativity correction.
+Therefore, the charge variables <span class="math notranslate nohighlight">\(q_i\)</span> are replaced by charge-transfer variables <span class="math notranslate nohighlight">\(p_{ij}\)</span> which are related by</p>
+<div class="math notranslate nohighlight" id="equation-qi">
+<span class="eqno">(4)<a class="headerlink" href="#equation-qi" title="Link to this equation">¶</a></span>\[\begin{split}q_i = \frac{q_{\mathrm{tot}}}{N} + \sum_{\substack{i,j\\ \text{bonds}}} p_{ij},\end{split}\]</div>
+<p>where <span class="math notranslate nohighlight">\(q_{\mathrm{tot}}\)</span> is the net charge on the compound and <span class="math notranslate nohighlight">\(p_{ij} = -p_{ji}\)</span>. Although it is trivial to determine the partial charges <span class="math notranslate nohighlight">\(q_i\)</span> from the charge transfer <span class="math notranslate nohighlight">\(p_{ij}\)</span>, the reverse is not necessarily true.
+As outlined by Chen {em et al.} <span id="id20">[<a class="reference internal" href="../references.html#id23" title="Jiahao Chen, Dirk Hundertmark, and Todd J. Martínez. A unified theoretical framework for fluctuating-charge models in atom-space and in bond-space. J. Chem. Phys., 129(21):214113, 2008. doi:10.1063/1.3021400.">CHMartinez08</a>]</span>, the problem can be solved by expressing the energy in terms of the charge transfer variables.
+By substituting <span class="math notranslate nohighlight">\(J_{ii} = \eta_i\)</span> in Eq. <a class="reference internal" href="#equation-eem">(2)</a>, inserting Eq. <a class="reference internal" href="#equation-eem">(2)</a> into Eq. <a class="reference internal" href="#equation-sqe">(3)</a> and introducing <span class="math notranslate nohighlight">\(M_x\)</span> as the number of bonds for species <span class="math notranslate nohighlight">\(x\)</span>, we obtain:</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}\begin{aligned}
+E_{\mathrm{SQE}} &amp;= \sum_{n=1}^{N}\Bigg[\left(\frac{q_{\mathrm{tot}}}{N} + \sum_{m=1}^{M_n} p_{nm}\right)\Bigg(\chi_n + \frac{1}{2}\eta_n \left(\frac{q_{\mathrm{tot}}}{N} + \sum_{m=1}^{M_n} p_{nm}\right) \nonumber\\
+&amp;\quad + \frac{1}{2}\sum_{\substack{l=1\\ l\neq n}}^{N}\left(\frac{q_{\mathrm{tot}}}{N} + \sum_{m=1}^{M_l} p_{lm}\right)J_{nl}\Bigg)\Bigg] \nonumber\\
+&amp;\quad + \sum_{i,j}^{M}\left[\frac{1}{2}\zeta_{ij}p_{ij}^2+\Delta\chi_{ij}\left(\left(\frac{q_{\mathrm{tot}}}{N} + \sum_{m=1}^{M_i} p_{im}\right)-\left(\frac{q_{\mathrm{tot}}}{N} +\sum_{m=1}^{M_j} p_{jm}\right)\right)\right].
+\end{aligned}\end{split}\]</div>
+<p>The next step is to determine the <span class="math notranslate nohighlight">\(p_{ij}\)</span> that minimize <span class="math notranslate nohighlight">\(E_{\mathrm{SQE}}\)</span>. Since all summations run over atoms <span class="math notranslate nohighlight">\(i,j,k,l\)</span>, we take the derivative with respect to <span class="math notranslate nohighlight">\(p_{ij}\)</span> and equate it to zero:</p>
+<div class="math notranslate nohighlight" id="equation-deriv">
+<span class="eqno">(5)<a class="headerlink" href="#equation-deriv" title="Link to this equation">¶</a></span>\[\begin{split}\begin{aligned}
+0 &amp;= \frac{\partial E_{\mathrm{SQE}}}{\partial p_{ij}} \nonumber\\
+&amp;= \left(\chi_i - \chi_j + \frac{q_{\mathrm{tot}}}{N}(\eta_i - \eta_j) + \sum_{k=1}^{M_i}\Delta\chi_{ik} - \sum_{k=1}^{M_j}\Delta\chi_{jk}\right) \nonumber\\
+&amp;\quad + \frac{1}{2}\left(\sum_{l=1}^{N}J_{il}\left(\frac{q_{\mathrm{tot}}}{N}+\sum_{m=1}^{M_l} p_{lm}\right) - \sum_{l=1}^{N}J_{li}\left(\frac{q_{\mathrm{tot}}}{N}+\sum_{k=1}^{M_i} p_{ik}\right)\right) + p_{ij}\zeta_{ij},
+\end{aligned}\end{split}\]</div>
+<p>using the identity of the Coulomb-matrix elements (<span class="math notranslate nohighlight">\(J_{ij} = J_{ji}\)</span>), the terms involving the atomic hardness <span class="math notranslate nohighlight">\(\eta_x\)</span> are incorporated into the diagonals of the <span class="math notranslate nohighlight">\(J_{xy}\)</span> matrix, excluding the contribution from the total charge <span class="math notranslate nohighlight">\(q_{\mathrm{tot}}\)</span>. Note that the <span class="math notranslate nohighlight">\(q_{\mathrm{tot}}\)</span> terms in the two sums cancel. The first term in Eq. <a class="reference internal" href="#equation-deriv">(5)</a> is the difference in electronegativity between atoms <span class="math notranslate nohighlight">\(i\)</span> and <span class="math notranslate nohighlight">\(j\)</span> sharing the bond plus the correction; the second term represents the difference in electrostatic potentials at the atoms, and the third term accounts for the interaction between <span class="math notranslate nohighlight">\(i\)</span> and <span class="math notranslate nohighlight">\(j\)</span> times the charge transfer.
+This results in a coupled set of equations, written in matrix form as</p>
+<div class="math notranslate nohighlight">
+\[\mathbf{M}\, \mathbf{P} = \mathbf{R},\]</div>
+<p>where <span class="math notranslate nohighlight">\(\mathbf{M}\)</span> is a square matrix of dimension equal to the number of bonds, <span class="math notranslate nohighlight">\(\mathbf{P}\)</span> is the vector of the charge transfers for all bonds, and <span class="math notranslate nohighlight">\(\mathbf{R}\)</span> is the right-hand side of the equations. The  matrix elements are given by</p>
+<div class="math notranslate nohighlight">
+\[M_{ij,kl} = J_{ik} - J_{il} - J_{jk} + J_{jl} + \delta_{ij,kl}\Delta\eta_{ij}\]</div>
+<p>where <span class="math notranslate nohighlight">\(\delta_{ij,kl}\)</span> is one if bond <span class="math notranslate nohighlight">\(ij\)</span> is identical to <span class="math notranslate nohighlight">\(kl\)</span> and zero otherwise.
+The right-hand side is defined by the electronegativity terms according to</p>
+<div class="math notranslate nohighlight">
+\[R_{ij} = \chi_j - \chi_i + \sum_{k=1}^{M_j}\Delta\chi_{jk} - \sum_{k=1}^{M_i}\Delta\chi_{ik} + \frac{q_{\mathrm{tot}}}{N}\left(\sum_{l=1}^{N} J_{jl}-\sum_{l=1}^{N} J_{il}\right).\]</div>
+<p>The charges of the shells (and virtual sites) are treated as constant in this algorithm, meaning that <span class="math notranslate nohighlight">\(q_{tot}\)</span> becomes the sum of the charges of the shells and virtual sites and the total charge of the compound.
+During force field training, all of these charges can be modified alongside the SQE parameters.
+As noted in the paper describing the ACT software <span id="id21">[<a class="reference internal" href="../references.html#id144" title="David van der Spoel, Julián Marrades, Kristian Kříž, A. Najla Hosseini, Alfred T. Nordman, João Paulo Ataide Martins, Marie-Madeleine Walz, Paul J. van Maaren, and Mohammad M. Ghahremanpour. Evolutionary machine learning of physics-based force fields in high-dimensional parameter-space. Digit. Discovery, 4:1925-1935, 2025. doi:10.1039/d5dd00178a.">vandSpoelMKvrivz+25</a>]</span>, the SQE algorithm may not be flexible enough to reproduce optimal charge distributions, and other algorithms <span id="id22">[<a class="reference internal" href="../references.html#id71" title="Frank Jensen. Unifying charge-flow polarization models. J. Chem. Theory Comput., 19:4047–4073, 2023. doi:10.1021/acs.jctc.3c00341.">Jen23</a>, <a class="reference internal" href="../references.html#id154" title="T. Verstraelen, P. W. Ayers, V. Van Speybroeck, and M. Waroquier. Acks2: atom-condensed kohn-sham dft approximated to second order. J. Chem. Phys., 138:074108, 2013. doi:10.1063/1.4791569.">VAVSW13</a>]</span> may need to be implemented in future versions of the software.</p>
+</section>
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+  <div>
+    <h3><a href="../../index.html">Table of Contents</a></h3>
+    <ul>
+<li><a class="reference internal" href="#">3.3. Force field design</a><ul>
+<li><a class="reference internal" href="#physical-background">3.3.1. Physical Background</a></li>
+<li><a class="reference internal" href="#determining-atom-types">3.3.2. Determining atom types</a></li>
+<li><a class="reference internal" href="#determining-partial-charges">3.3.3. Determining partial charges</a></li>
+<li><a class="reference internal" href="#charge-equilibration-with-shells-or-virtual-sites">3.3.4. Charge Equilibration with Shells or Virtual Sites</a></li>
+</ul>
+</li>
+</ul>
+
+  </div>
+  <div>
+    <h4>Previous topic</h4>
+    <p class="topless"><a href="training.html"
+                          title="previous chapter"><span class="section-number">3.2. </span>Force Field Training Algorithms</a></p>
+  </div>
+  <div>
+    <h4>Next topic</h4>
+    <p class="topless"><a href="targets.html"
+                          title="next chapter"><span class="section-number">3.4. </span>Force Field Training Targets</a></p>
+  </div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../../_sources/manual/refman/ffdesign.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="targets.html" title="3.4. Force Field Training Targets"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="training.html" title="3.2. Force Field Training Algorithms"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">ACT 1.2b documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="header.html" ><span class="section-number">3. </span>Reference Manual</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href=""><span class="section-number">3.3. </span>Force field design</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2026 The Alexandria Chemistry Initiative.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3.
+    </div>
+  </body>
+</html>

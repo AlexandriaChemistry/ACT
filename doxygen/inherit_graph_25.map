@@ -1,0 +1,13 @@
+<map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
+<area shape="rect" id="Node000000" href="$classalexandria_1_1GenericProperty.xhtml" title="Generic molecular property base clase." alt="" coords="5,126,209,154"/>
+<area shape="rect" id="Node000001" href="$classalexandria_1_1ElectrostaticPotential.xhtml" title="Contains the electrostatic potential in a coordinate close to a molecule." alt="" coords="291,5,470,50"/>
+<area shape="poly" id="edge10_Node000000_Node000001" title=" " alt="" coords="144,116,196,87,256,60,292,49,288,52,258,65,198,92,147,120"/>
+<area shape="rect" id="Node000002" href="$classalexandria_1_1Harmonics.xhtml" title="Harmonic frequencies or intensities. Distinction between the two is through the MolPropObservable." alt="" coords="296,74,464,102"/>
+<area shape="poly" id="edge11_Node000000_Node000002" title=" " alt="" coords="198,120,306,101,301,104,199,125"/>
+<area shape="rect" id="Node000003" href="$classalexandria_1_1MolecularEnergy.xhtml" title="Contains a molecular energy." alt="" coords="277,126,484,154"/>
+<area shape="poly" id="edge12_Node000000_Node000003" title=" " alt="" coords="224,137,279,139,274,140,225,142"/>
+<area shape="rect" id="Node000004" href="$classalexandria_1_1MolecularMultipole.xhtml" title="Elements of the electrostatic multipole." alt="" coords="269,178,492,206"/>
+<area shape="poly" id="edge13_Node000000_Node000004" title=" " alt="" coords="199,154,306,176,301,178,198,160"/>
+<area shape="rect" id="Node000005" href="$classalexandria_1_1MolecularPolarizability.xhtml" title="Contains the elements of the molecular polarizability tensor." alt="" coords="257,230,504,258"/>
+<area shape="poly" id="edge14_Node000000_Node000005" title=" " alt="" coords="144,159,197,188,258,214,301,229,296,229,256,220,195,193,143,164"/>
+</map>

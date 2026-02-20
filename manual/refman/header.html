@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>3. Reference Manual &#8212; ACT 1.2b documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=fa44fd50" />
+    <link rel="stylesheet" type="text/css" href="../../_static/classic.css?v=2bf1fcf8" />
+    <link rel="stylesheet" type="text/css" href="../../_static/mystnb.8ecb98da25f57f5357bf6f572d296f466b2cfe2517ffebfabe82451661e28f02.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../_static/togglebutton.css?v=9c3e77be" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sphinx_lesson.css?v=e9df6548" />
+    <link rel="stylesheet" type="text/css" href="../../_static/term_role_formatting.css?v=4194e21c" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sphinx_rtd_theme_ext_color_contrast.css?v=8e8ea19f" />
+    <link rel="stylesheet" type="text/css" href="../../_static/custom_theme.css" />
+    
+    <script src="../../_static/documentation_options.js?v=00cc29cc"></script>
+    <script src="../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../_static/copybutton.js?v=6dbb43f8"></script>
+    <script src="../../_static/minipres.js?v=a0d29692"></script>
+    <script>let toggleHintShow = 'Click to show';</script>
+    <script>let toggleHintHide = 'Click to hide';</script>
+    <script>let toggleOpenOnPrint = 'true';</script>
+    <script src="../../_static/togglebutton.js?v=1ae7504c"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="3.1. Energy Function" href="energy.html" />
+    <link rel="prev" title="2.4. Predicting Molecular Properties" href="../userman/properties.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="energy.html" title="3.1. Energy Function"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../userman/properties.html" title="2.4. Predicting Molecular Properties"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">ACT 1.2b documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href=""><span class="section-number">3. </span>Reference Manual</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="reference-manual">
+<h1><span class="section-number">3. </span>Reference Manual<a class="headerlink" href="#reference-manual" title="Link to this heading">¶</a></h1>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="energy.html">3.1. Energy Function</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="energy.html#non-bonded-interactions">3.1.1. Non-bonded interactions</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="energy.html#coulomb-interaction-using-point-charges">3.1.1.1. Coulomb Interaction using Point charges</a></li>
+<li class="toctree-l3"><a class="reference internal" href="energy.html#coulomb-interaction-using-gaussian-charges">3.1.1.2. Coulomb Interaction using Gaussian charges</a></li>
+<li class="toctree-l3"><a class="reference internal" href="energy.html#coulomb-interaction-using-slater-charges">3.1.1.3. Coulomb Interaction using Slater charges</a></li>
+<li class="toctree-l3"><a class="reference internal" href="energy.html#long-range-coulomb-interactions">3.1.1.4. Long range Coulomb interactions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="energy.html#polarization">3.1.1.5. Polarization</a></li>
+<li class="toctree-l3"><a class="reference internal" href="energy.html#induction-correction">3.1.1.6. Induction correction</a></li>
+<li class="toctree-l3"><a class="reference internal" href="energy.html#pauli-repulsion-and-london-dispersion">3.1.1.7. Pauli Repulsion and London Dispersion</a></li>
+<li class="toctree-l3"><a class="reference internal" href="energy.html#treatment-of-long-range-dispersion">3.1.1.8. Treatment of long range dispersion</a></li>
+<li class="toctree-l3"><a class="reference internal" href="energy.html#combination-rules-for-van-der-waals-potentials">3.1.1.9. Combination Rules for Van der Waals Potentials</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="energy.html#bonded-interactions">3.1.2. Bonded interactions</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="energy.html#harmonic-potential">3.1.2.1. Harmonic potential</a></li>
+<li class="toctree-l3"><a class="reference internal" href="energy.html#morse-potential">3.1.2.2. Morse potential</a></li>
+<li class="toctree-l3"><a class="reference internal" href="energy.html#wei-hua-potential">3.1.2.3. Wei-Hua potential</a></li>
+<li class="toctree-l3"><a class="reference internal" href="energy.html#angle-potential">3.1.2.4. Angle potential</a></li>
+<li class="toctree-l3"><a class="reference internal" href="energy.html#angle-potential-for-linear-compounds">3.1.2.5. Angle potential for linear compounds</a></li>
+<li class="toctree-l3"><a class="reference internal" href="energy.html#out-of-plane-vibrations">3.1.2.6. Out-of-plane vibrations</a></li>
+<li class="toctree-l3"><a class="reference internal" href="energy.html#torsion-potential">3.1.2.7. Torsion potential</a></li>
+<li class="toctree-l3"><a class="reference internal" href="energy.html#proper-dihedral">3.1.2.8. Proper dihedral</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="energy.html#special-potentials">3.1.3. Special potentials</a></li>
+<li class="toctree-l2"><a class="reference internal" href="energy.html#virtual-sites">3.1.4. Virtual Sites</a></li>
+<li class="toctree-l2"><a class="reference internal" href="energy.html#total-energy">3.1.5. Total energy</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="training.html">3.2. Force Field Training Algorithms</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="training.html#mcmc">3.2.1. MCMC</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="training.html#metropolis-criterion">3.2.1.1. Metropolis Criterion</a></li>
+<li class="toctree-l3"><a class="reference internal" href="training.html#multiple-mcmc-runs">3.2.1.2. Multiple MCMC runs</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="training.html#genetic-algorithm">3.2.2. Genetic Algorithm</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="training.html#initialization">3.2.2.1. Initialization</a></li>
+<li class="toctree-l3"><a class="reference internal" href="training.html#deviation-from-data">3.2.2.2. Deviation from data</a></li>
+<li class="toctree-l3"><a class="reference internal" href="training.html#sorting">3.2.2.3. Sorting</a></li>
+<li class="toctree-l3"><a class="reference internal" href="training.html#penalties">3.2.2.4. Penalties</a></li>
+<li class="toctree-l3"><a class="reference internal" href="training.html#selection-probabilities">3.2.2.5. Selection probabilities</a></li>
+<li class="toctree-l3"><a class="reference internal" href="training.html#rank">3.2.2.6. Rank</a></li>
+<li class="toctree-l3"><a class="reference internal" href="training.html#fitness">3.2.2.7. Fitness</a></li>
+<li class="toctree-l3"><a class="reference internal" href="training.html#boltzmann">3.2.2.8. Boltzmann</a></li>
+<li class="toctree-l3"><a class="reference internal" href="training.html#elitism">3.2.2.9. Elitism</a></li>
+<li class="toctree-l3"><a class="reference internal" href="training.html#selection">3.2.2.10. Selection</a></li>
+<li class="toctree-l3"><a class="reference internal" href="training.html#crossover">3.2.2.11. Crossover</a></li>
+<li class="toctree-l3"><a class="reference internal" href="training.html#mutation">3.2.2.12. Mutation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="training.html#termination">3.2.2.13. Termination</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="training.html#hybrid">3.2.3. HYBRID</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="ffdesign.html">3.3. Force field design</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="ffdesign.html#physical-background">3.3.1. Physical Background</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ffdesign.html#determining-atom-types">3.3.2. Determining atom types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ffdesign.html#determining-partial-charges">3.3.3. Determining partial charges</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ffdesign.html#charge-equilibration-with-shells-or-virtual-sites">3.3.4. Charge Equilibration with Shells or Virtual Sites</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="targets.html">3.4. Force Field Training Targets</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="targets.html#algorithm-to-compute-energy-components-in-act">3.4.1. Algorithm to compute energy components in ACT</a></li>
+<li class="toctree-l2"><a class="reference internal" href="targets.html#monomer-energies-and-forces">3.4.2. Monomer Energies and Forces</a></li>
+<li class="toctree-l2"><a class="reference internal" href="targets.html#other-properties">3.4.3. Other Properties</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="targets.html#parameters-for-force-field-training">3.5. Parameters for Force Field Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="data.html">3.6. Training Data</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="data.html#using-existing-data">3.6.1. Using existing data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="data.html#alexandria-library">3.6.2. Alexandria Library</a></li>
+<li class="toctree-l2"><a class="reference internal" href="data.html#donchev-data-set">3.6.3. Donchev data set</a></li>
+<li class="toctree-l2"><a class="reference internal" href="data.html#non-covalent-interaction-atlas">3.6.4. Non-covalent interaction atlas</a></li>
+<li class="toctree-l2"><a class="reference internal" href="data.html#act-data">3.6.5. ACT data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="data.html#generating-sapt-data">3.6.6. Generating SAPT data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="data.html#generating-single-molecule-data">3.6.7. Generating single molecule data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="data.html#conversion-to-act-molprop-files">3.6.8. Conversion to ACT molprop files</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+  <div>
+    <h4>Previous topic</h4>
+    <p class="topless"><a href="../userman/properties.html"
+                          title="previous chapter"><span class="section-number">2.4. </span>Predicting Molecular Properties</a></p>
+  </div>
+  <div>
+    <h4>Next topic</h4>
+    <p class="topless"><a href="energy.html"
+                          title="next chapter"><span class="section-number">3.1. </span>Energy Function</a></p>
+  </div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../../_sources/manual/refman/header.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="energy.html" title="3.1. Energy Function"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../userman/properties.html" title="2.4. Predicting Molecular Properties"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">ACT 1.2b documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href=""><span class="section-number">3. </span>Reference Manual</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2026 The Alexandria Chemistry Initiative.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3.
+    </div>
+  </body>
+</html>

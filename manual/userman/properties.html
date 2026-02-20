@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>2.4. Predicting Molecular Properties &#8212; ACT 1.2b documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=fa44fd50" />
+    <link rel="stylesheet" type="text/css" href="../../_static/classic.css?v=2bf1fcf8" />
+    <link rel="stylesheet" type="text/css" href="../../_static/mystnb.8ecb98da25f57f5357bf6f572d296f466b2cfe2517ffebfabe82451661e28f02.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../_static/togglebutton.css?v=9c3e77be" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sphinx_lesson.css?v=e9df6548" />
+    <link rel="stylesheet" type="text/css" href="../../_static/term_role_formatting.css?v=4194e21c" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sphinx_rtd_theme_ext_color_contrast.css?v=8e8ea19f" />
+    <link rel="stylesheet" type="text/css" href="../../_static/custom_theme.css" />
+    
+    <script src="../../_static/documentation_options.js?v=00cc29cc"></script>
+    <script src="../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../_static/copybutton.js?v=6dbb43f8"></script>
+    <script src="../../_static/minipres.js?v=a0d29692"></script>
+    <script>let toggleHintShow = 'Click to show';</script>
+    <script>let toggleHintHide = 'Click to hide';</script>
+    <script>let toggleOpenOnPrint = 'true';</script>
+    <script src="../../_static/togglebutton.js?v=1ae7504c"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script>window.MathJax = {"options": {"processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="3. Reference Manual" href="../refman/header.html" />
+    <link rel="prev" title="2.3. MD Simulations with Alexandria Force Fields" href="simulation.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../refman/header.html" title="3. Reference Manual"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="simulation.html" title="2.3. MD Simulations with Alexandria Force Fields"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">ACT 1.2b documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="header.html" accesskey="U"><span class="section-number">2. </span>User Manual</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href=""><span class="section-number">2.4. </span>Predicting Molecular Properties</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="predicting-molecular-properties">
+<span id="sec-properties"></span><h1><span class="section-number">2.4. </span>Predicting Molecular Properties<a class="headerlink" href="#predicting-molecular-properties" title="Link to this heading">¶</a></h1>
+<p>The ACT can be used to perform MD simulations of clusters in the gas-phase using the <em>alexandria simulate</em> command. This module includes the possibility to perform energy minimizations with the flag <em>-minimize</em>.
+For simulations employing periodic boundaries the OpenMM package~ <span id="id1">[<a class="reference internal" href="../references.html#id39" title="Peter Eastman, Raimondas Galvelis, Raúl P. Peláez, Charlles R. A. Abreu, Stephen E. Farr, Emilio Gallicchio, Anton Gorenko, Michael M. Henry, Frank Hu, Jing Huang, Andreas Krämer, Julien Michel, Joshua A. Mitchell, Vijay S. Pande, João PGLM Rodrigues, Jaime Rodriguez-Guerra, Andrew C. Simmonett, Sukrit Singh, Jason Swails, Philip Turner, Yuanqing Wang, Ivy Zhang, John D. Chodera, Gianni De Fabritiis, and Thomas E. Markland. Openmm 8: molecular dynamics simulation with machine learning potentials. J. Phys. Chem. B., 128:109-116, 2024. doi:10.1021/acs.jpcb.3c06662.">EGPelaez+24</a>]</span> should be used instead.
+For more details about MD simulations, see Section <a class="reference internal" href="simulation.html#sec-simulations"><span class="std std-ref">MD Simulations with Alexandria Force Fields</span></a>.</p>
+<p>Below we describe some of the properties that can be computed using the ACT.</p>
+<section id="electrostatic-potential">
+<span id="sec-esp"></span><h2><span class="section-number">2.4.1. </span>Electrostatic Potential<a class="headerlink" href="#electrostatic-potential" title="Link to this heading">¶</a></h2>
+<p>The charge distribution <span class="math notranslate nohighlight">\(\rho\)</span> of a molecule is determined by the nuclear position of the <span class="math notranslate nohighlight">\(N\)</span> atoms at positions <span class="math notranslate nohighlight">\(\mathbf{x}\)</span> and the electron density <span class="math notranslate nohighlight">\(n(\mathbf{r})\)</span>. The molecular electrostatic potential (MEP) at a point in space <span class="math notranslate nohighlight">\(r^\prime\)</span> is thus given by</p>
+<div class="math notranslate nohighlight" id="equation-phi">
+<span class="eqno">(1)<a class="headerlink" href="#equation-phi" title="Link to this equation">¶</a></span>\[\Phi(\mathbf{r}^\prime) = \frac{1}{4\pi\varepsilon_0}\left[\sum_{i=1}^N \frac{z_i}{ \|\mathbf{x}_i-\mathbf{r}^\prime\|} - \int \frac{n(\mathbf{r})}{\|\mathbf{r}-\mathbf{r}^\prime\|}{\rm d}r \right]\]</div>
+<p>where <span class="math notranslate nohighlight">\(N\)</span> is the number of atoms, <span class="math notranslate nohighlight">\(z_i\)</span> are the nuclear charges, <span class="math notranslate nohighlight">\(\varepsilon_0\)</span> is the permittivity of vacuum and integration is over the entire space. The minus sign before the integral is due to the negative charge of electrons.</p>
+<p>Accurate knowledge of the MEP contributes to, for example, the understanding of interactions and function of biological macromolecules in solution~ <span id="id2">[<a class="reference internal" href="../references.html#id92" title="Daniel S D Larsson and David van der Spoel. Screening for the location of RNA using the chloride ion distribution in simulations of virus capsids. J. Chem. Theory Comput., 8:2474–2483, 2012. doi:10.1021/ct3002128.">LvdS12</a>]</span>. For a molecule in the gas phase, Eqn. <a class="reference internal" href="#equation-phi">(1)</a> can be evaluated using density functional theory and wave function quantum chemistry, albeit at a significant computational cost.
+Databases of such calculations for small molecules are available to facilitate reuse <span id="id3">[<a class="reference internal" href="../references.html#id81" title="Kristian Kříž, Lisa Schmidt, Alfred T. Andersson, Marie-Madeleine Walz, and David van der Spoel. An imbalance in the force: the need for standardised benchmarks for molecular simulation. J. Chem. Inf. Model., 63:412–431, 2023. doi:10.1021/acs.jcim.2c01127.">KvrivzSA+23</a>]</span>. For  large condensed-phase systems, however, it is common to apply classical force fields, where electrons are not taken into account explicitly. Instead, effective partial charges on atoms are used. The electronic degrees of freedom, charge polarization, is sometimes taken into account through induced point dipoles and higher electrostatic moments, or by using a core-shell model~ <span id="id4">[<a class="reference internal" href="../references.html#id28" title="B G Dick and A W Overhauser. Theory of the dielectric constants of alkali halide crystals. Phys. Rev., 112:90–103, 1958. doi:10.1103/PhysRev.112.90.">DO58</a>, <a class="reference internal" href="../references.html#id74" title="P C Jordan, P J van Maaren, J Mavri, D van der Spoel, and H J C Berendsen. Towards Phase Transferable Potential Functions: Methodology and Application to Nitrogen. J. Chem. Phys., 103:2272–2285, 1995. doi:10.1063/1.469703.">JvMM+95</a>, <a class="reference internal" href="../references.html#id96" title="P J van Maaren and D van der Spoel. Molecular dynamics simulations of water with a novel shell-model potential. J. Phys. Chem. B., 105:2618–2626, 2001. doi:10.1021/jp003843l.">vMvdS01</a>]</span>. For additional background we refer to some excellent reviews~ <span id="id5">[<a class="reference internal" href="../references.html#id27" title="P. Dauber-Osguthorpe and A.T. Hagler. Biomolecular force fields: where have we been, where are we now, where do we need to go and how do we get there? J. Comput. Aid. Mol. Des., 33:133-203, 2019. doi:10.1007/s10822-018-0111-4.">DOH19</a>, <a class="reference internal" href="../references.html#id53" title="A.T. Hagler. Force field development phase II: relaxation of physics-based criteria... or inclusion of more rigorous physics into the representation of molecular energetics. J. Comput. Aided Mol. Des., 33:205-264, 2019. doi:10.1007/s10822-018-0134-x.">Hag19</a>, <a class="reference internal" href="../references.html#id73" title="Zhifeng Jing, Chengwen Liu, Sara Y. Cheng, Rui Qi, Brandon D. Walker, Jean-Philip Piquemal, and Pengyu Ren. Polarizable force fields for biomolecular simulations: recent advances and applications. Ann. Rev. Biophys., 48(1):371-394, 2019. doi:10.1146/annurev-biophys-070317-033349.">JLC+19</a>]</span>.</p>
+<p>The MEP can be used as a target in model development in the ACT, however we recommend against that for both fundamental and practical reasons~ <span id="id6">[<a class="reference internal" href="../references.html#id64" title="A. Najla Hosseini, Kristian Kříž, and David van der Spoel. Beyond partitioning: using force field science to evaluate electrostatics models. Submitted for publication, 2026.">HKvrivzvdS26</a>]</span>.</p>
+</section>
+<section id="electrostatic-moments">
+<h2><span class="section-number">2.4.2. </span>Electrostatic Moments<a class="headerlink" href="#electrostatic-moments" title="Link to this heading">¶</a></h2>
+<p>If point <span class="math notranslate nohighlight">\({\bf r}^\prime\)</span> in Eqn. <a class="reference internal" href="#equation-phi">(1)</a> is outside the distribution of electron
+density and <span class="math notranslate nohighlight">\({\bf r}^\prime &gt;&gt; {\bf r}\)</span>, the electrostatic potential can be evaluated through the
+Taylor expansion of <span class="math notranslate nohighlight">\(|{\bf r}-{\bf r}^\prime|^{-1}\)</span>  <span id="id7">[<a class="reference internal" href="../references.html#id10" title="Herman J. C. Berendsen. Simulating the physical world. Cambridge University Press, Cambridge, 2007.">Ber07</a>]</span>:</p>
+<div class="math notranslate nohighlight" id="equation-rexpansion">
+<span class="eqno">(2)<a class="headerlink" href="#equation-rexpansion" title="Link to this equation">¶</a></span>\[\frac{1}{|{\bf r^\prime}-{\bf r}|} \approx \frac{1}{r} + \left({\bf \hat r} \cdot
+{\bf r} \right)\frac{1}{r^2} + \frac{1}{2} \left[3\left({\bf \hat r} \cdot
+{\bf r} \right)^2 - r^{2}{\rm \bf I}\right]\frac{1}{ r^3} + \cdots\]</div>
+<p>where <span class="math notranslate nohighlight">\({\bf \hat r} = {\bf r}^\prime/r\)</span> and <span class="math notranslate nohighlight">\({\rm \bf I}\)</span> is the
+identity matrix. By inserting Eqn. <a class="reference internal" href="#equation-rexpansion">(2)</a> into Eqn. <a class="reference internal" href="#equation-phi">(1)</a>, we get</p>
+<div class="math notranslate nohighlight">
+\[\Phi({\bf r}^\prime) \approx \frac{1}{4 \pi \epsilon_0} { \frac{Q}{r}
++ \frac{{\bf \mu_0}}{r^2} + \frac{\boldsymbol{\Theta_0} }{r^3} + \cdots}\]</div>
+<p><span class="math notranslate nohighlight">\(Q\)</span> is the monopole moment, sometimes called the zeroth
+moment of the molecular electron density.  In principle this is the total charge of the molecule. In what follows we combine both the atomic cores and the electron density into <span class="math notranslate nohighlight">\(n(r)\)</span>. Then, <span class="math notranslate nohighlight">\(Q\)</span> is given by</p>
+<div class="math notranslate nohighlight">
+\[Q = \int n(\mathbf{r}) d {\bf r}\]</div>
+<p><span class="math notranslate nohighlight">\({\bf \mu_0}\)</span> is the vector of the permanent dipole moment, which measures
+the polarity of the molecular electron density. <span class="math notranslate nohighlight">\({\bf \mu_0}\)</span> is given by</p>
+<div class="math notranslate nohighlight">
+\[{\bf \mu_0} = \int n(\mathbf{r}) \left({\bf \hat r} \cdot {\bf r}\right) d {\bf r}\]</div>
+<p><span class="math notranslate nohighlight">\(\boldsymbol{\Theta_0}\)</span> is the tensor of the permanent quadrupole moment,  which exhibits
+the deviation of the distribution of the molecular electron density
+from spherical symmetry. <span class="math notranslate nohighlight">\(\boldsymbol{\Theta_0}\)</span> is given by</p>
+<div class="math notranslate nohighlight">
+\[\boldsymbol{\Theta_0} = \frac{1}{2}\int n(\mathbf{r}) \left[3\left({\bf \hat r}
+\cdot {\bf r}\right)^2 - r^2 {\rm \bf I} \right] d {\bf r}\]</div>
+<p>The quadrupole tensor can be written as a traceless <span class="math notranslate nohighlight">\(3 \times 3\)</span> matrix
+in the Cartesian coordinate if one writes <span class="math notranslate nohighlight">\(\left({\bf \hat r} \cdot
+{\bf r} \right)^2\)</span> as:</p>
+<div class="math notranslate nohighlight">
+\[\left({\bf \hat r} \cdot {\bf r} \right)^2 = {\bf \hat r} \cdot \left({\bf r} {\bf r} \right) \cdot {\bf \hat r}\]</div>
+<p>where <span class="math notranslate nohighlight">\({\bf rr}\)</span> is the outer product of vector <span class="math notranslate nohighlight">\({\bf r}\)</span> with itself. This
+results in a matrix that can be written in terms of the Cartesian
+components of the vector <span class="math notranslate nohighlight">\({\bf r}\)</span> as follows:</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}{\bf rr} =
+\left[\begin{array}{cccc}
+x^2 &amp; xy   &amp; zx \\
+yx  &amp;  y^2 &amp; yz \\
+zx  &amp;  zy   &amp; z^2 \\
+\end{array}\right]\end{split}\]</div>
+<p>Finally, we get</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}\begin{align}
+\frac{1}{2} \left[3\left({\bf \hat r} \cdot
+{\bf r} \right)^2 - r^{2} {\rm \bf I}\right] = {\bf \hat r} \cdot
+\frac{1}{2}\left[\begin{array}{cccc}
+3x^2- r^2 &amp; 3xy   &amp; 3zx \\
+3yx  &amp;  3y^2- r^2 &amp; 3yz \\
+3zx  &amp;  3zy   &amp; 3z^2- r^2 \\
+\end{array}\right]
+\cdot
+{\bf \hat r}
+\end{align}\end{split}\]</div>
+</section>
+<section id="polarizability">
+<h2><span class="section-number">2.4.3. </span>Polarizability<a class="headerlink" href="#polarizability" title="Link to this heading">¶</a></h2>
+<p>The shape of the molecular electron density changes when it interacts with an external electric
+field; hence, the total energy of the molecule
+changes. The static response of a molecule to a homogeneous external
+electric field, (<span class="math notranslate nohighlight">\(\bf F\)</span>), can be studied by expanding its energy in a
+Taylor series  <span id="id8">[<a class="reference internal" href="../references.html#id19" title="P Calaminici, K Jug, and M Köster. Density funtional calculations of molecular polarizabilities anf hyperpolarizabilities. J. Chem. Phys., 109(18):7756, 1998. doi:10.1063/1.477421.">CJKoster98</a>, <a class="reference internal" href="../references.html#id70" title="Frank Jensen. Introduction to computational chemistry. John Wiley &amp; Sons Ltd, West Sussex, UK, 2007.">Jen07</a>]</span>:</p>
+<div class="math notranslate nohighlight">
+\[E \left( {\bf F} \right) = E\left({\bf 0}\right) + \frac{\partial E}{\partial {\bf F}}\biggm\lvert_{{\bf F}=0}
+{\bf F} + \frac{1}{2}
+\frac{\partial^2E}{\partial {\bf F}^2 }\biggm\lvert_{{\bf F}=0}
+{\bf F}^2 + \frac{1}{6}
+\frac{\partial^3E}{\partial {\bf F}^3 }\biggm\lvert_{{\bf F}=0}
+{\bf F}^3 + \cdots\]</div>
+<p>where</p>
+<div class="math notranslate nohighlight">
+\[-\frac{\partial E}{\partial {\bf F}}\biggm\lvert_{{\bf F}=0}  = {\bf \mu_0}\]</div>
+<div class="math notranslate nohighlight">
+\[- \frac{\partial^2E}{\partial {\bf F}^2}\biggm\lvert_{{\bf F}=0} = {\bf \alpha}\]</div>
+<div class="math notranslate nohighlight">
+\[- \frac{\partial^3E}{\partial {\bf F}^3}\biggm\lvert_{{\bf F}=0} = {\bf \beta}\]</div>
+<p>where <span class="math notranslate nohighlight">\({\bf \mu_0}\)</span> is the vector of permanent dipole moment, <span class="math notranslate nohighlight">\({\bf \alpha}\)</span>
+is the tensor of polarizability, which is the
+linear part of the response of the molecular electron density
+with respect to the external electric field, and <span class="math notranslate nohighlight">\(\boldsymbol{\beta}\)</span> is the
+first hyperpolarizability  <span id="id9">[<a class="reference internal" href="../references.html#id70" title="Frank Jensen. Introduction to computational chemistry. John Wiley &amp; Sons Ltd, West Sussex, UK, 2007.">Jen07</a>]</span>.</p>
+<p>Instead of expanding the energy, we can expand the dipole moment of a molecule in an
+external electric field  <span id="id10">[<a class="reference internal" href="../references.html#id19" title="P Calaminici, K Jug, and M Köster. Density funtional calculations of molecular polarizabilities anf hyperpolarizabilities. J. Chem. Phys., 109(18):7756, 1998. doi:10.1063/1.477421.">CJKoster98</a>]</span>, written as</p>
+<div class="math notranslate nohighlight">
+\[\mu = \mu_0 + {\bf \alpha} {\bf F} +
+\frac{1}{2} {\bf \beta} {\bf F}^2 + \cdots\]</div>
+<p>where <span class="math notranslate nohighlight">\({\bf \alpha} {\bf F}\)</span> gives the vector of induced dipole
+moment, <span class="math notranslate nohighlight">\({\bf \mu_1}\)</span>  <span id="id11">[<a class="reference internal" href="../references.html#id70" title="Frank Jensen. Introduction to computational chemistry. John Wiley &amp; Sons Ltd, West Sussex, UK, 2007.">Jen07</a>]</span>:</p>
+<div class="math notranslate nohighlight">
+\[{\bf \mu_1} = {\bf \alpha}{\bf F}\]</div>
+<p>that can be written in matrix form as</p>
+<div class="math notranslate nohighlight" id="equation-matrix2">
+<span class="eqno">(3)<a class="headerlink" href="#equation-matrix2" title="Link to this equation">¶</a></span>\[\begin{split}\left[\begin{array}{c}
+\mu_x \\
+\mu_y \\
+\mu_z \\
+\end{array}
+\right] =
+\left[\begin{array}{cccc}
+\alpha_{xx} &amp; \alpha_{xy} &amp; \alpha_{xz} \\
+\alpha_{yx} &amp; \alpha_{yy} &amp; \alpha_{yz} \\
+\alpha_{zx} &amp;\alpha_{zy}  &amp; \alpha_{zz} \\
+\end{array}
+\right]
+\left[\begin{array}{c}
+F_x\\
+F_y\\
+F_z\\
+\end{array}
+\right]\end{split}\]</div>
+<p>From the polarizability tensor the polarizability isotropy
+<span id="id12">[<a class="reference internal" href="../references.html#id19" title="P Calaminici, K Jug, and M Köster. Density funtional calculations of molecular polarizabilities anf hyperpolarizabilities. J. Chem. Phys., 109(18):7756, 1998. doi:10.1063/1.477421.">CJKoster98</a>, <a class="reference internal" href="../references.html#id145" title="A. J Stone. The Theory of Intermolecular Forces. Oxford University Press, Great Clarendon Street, Oxford, ox2 6dp, UK, 2013.">Sto13</a>]</span>,</p>
+<div class="math notranslate nohighlight">
+\[\bar \alpha = \frac{\left(\alpha_{xx} + \alpha_{yy} + \alpha_{zz} \right)}{3}\]</div>
+<p>and the polarizability anisotropy  <span id="id13">[<a class="reference internal" href="../references.html#id145" title="A. J Stone. The Theory of Intermolecular Forces. Oxford University Press, Great Clarendon Street, Oxford, ox2 6dp, UK, 2013.">Sto13</a>]</span>,</p>
+<div class="math notranslate nohighlight">
+\[\Delta \alpha = \sqrt{[(\alpha_{xx} - \alpha_{yy})^2 + (\alpha_{xx} -
+\alpha_{zz})^2 + (\alpha_{yy} - \alpha_{zz})^2 + 6 (\alpha_{xy}^2 +
+\alpha_{xz}^2 + \alpha_{yz}^2)]/2}\]</div>
+<p>can be calculated.</p>
+</section>
+<section id="normal-mode-analysis">
+<span id="sec-nma"></span><h2><span class="section-number">2.4.4. </span>Normal Mode Analysis<a class="headerlink" href="#normal-mode-analysis" title="Link to this heading">¶</a></h2>
+<p>Please note that the text below is largely taken (with permission) from a paper by Henschel {em et al.}~ <span id="id14">[<a class="reference internal" href="../references.html#id56" title="Henning Henschel, Alfred T. Andersson, Willem Jespers, Mohammad Mehdi Ghahremanpour, and David van der Spoel. Theoretical infrared spectra: quantitative similarity measures and force fields. J. Chem. Theory Comput., 16(5):3307–3315, 2020. doi:10.1021/acs.jctc.0c00126.">HAJ+20</a>]</span>.</p>
+<p>The ACT contains the <em>alexandria nma</em> tool that performs a normal mode analysis to determine the vibrational frequencies of a compound.
+Vibrational frequencies are required to compute the IR spectra and thermochemistry of molecules. The normal modes of molecular vibrations can be obtained by eigenvalue decomposition of the Hessian matrix, whose elements are the second derivatives of the energy with respect to the atomic coordinates <span class="math notranslate nohighlight">\(q\)</span>.</p>
+<div class="math notranslate nohighlight">
+\[H_{ij} = \frac{\partial^2E}{\partial q_i \partial q_j}\]</div>
+<p>where <span class="math notranslate nohighlight">\(i\)</span> and <span class="math notranslate nohighlight">\(j\)</span> run from <span class="math notranslate nohighlight">\(0\)</span> to <span class="math notranslate nohighlight">\(N-1\)</span>, where <span class="math notranslate nohighlight">\(N\)</span> is the number of atoms in the molecule. If virtual sites <span class="math notranslate nohighlight">\(v\)</span> are used, for example, to model the <span class="math notranslate nohighlight">\(\sigma\)</span>-hole for halogen atoms, the energy,
+E, depends on the positions of both atoms and virtual sites;
+that is, <span class="math notranslate nohighlight">\(E= E(q_0,...,q_{N-1},v_0,...,v_{M-1})\)</span>, where the positions of the <span class="math notranslate nohighlight">\(M\)</span>
+virtual sites, <span class="math notranslate nohighlight">\(v\)</span>, in the compound are a function of the atomic
+coordinates q.</p>
+<p>The Hessian is computed numerically—the
+N atoms are moved independently in all three spatial dimensions,
+and the forces are computed. From these forces, the second
+derivative of the energy is then evaluated numerically. Note that the positions of the virtual sites are
+updated before each force calculation, which means that their influence on the Hessian is taken into account explicitly when computing <span class="math notranslate nohighlight">\(H\)</span>.</p>
+<section id="infrared-spectra">
+<span id="sec-irspectrum"></span><h3><span class="section-number">2.4.4.1. </span>Infrared Spectra<a class="headerlink" href="#infrared-spectra" title="Link to this heading">¶</a></h3>
+<p>For the calculation of a full IR spectrum, in addition to the vibrational frequencies, the intensities and the line shapes are required.</p>
+<p>In case of the quantum chemical calculations both the eigenfrequencies and the corresponding IR intensities are produced by default when a frequency calculation is requested in, for instance, the Gaussian software~ <span id="id15">[<a class="reference internal" href="../references.html#id176" title="M. J. Frisch, G. W. Trucks, H. B. Schlegel, G. E. Scuseria, M. A. Robb, J. R. Cheeseman, G. Scalmani, V. Barone, G. A. Petersson, H. Nakatsuji, X. Li, M. Caricato, A. V. Marenich, J. Bloino, B. G. Janesko, R. Gomperts, B. Mennucci, H. P. Hratchian, J. V. Ortiz, A. F. Izmaylov, J. L. Sonnenberg, D. Williams-Young, F. Ding, F. Lipparini, F. Egidi, J. Goings, B. Peng, A. Petrone, T. Henderson, D. Ranasinghe, V. G. Zakrzewski, J. Gao, N. Rega, G. Zheng, W. Liang, M. Hada, M. Ehara, K. Toyota, R. Fukuda, J. Hasegawa, M. Ishida, T. Nakajima, Y. Honda, O. Kitao, H. Nakai, T. Vreven, K. Throssell, J. A. Montgomery, Jr., J. E. Peralta, F. Ogliaro, M. J. Bearpark, J. J. Heyd, E. N. Brothers, K. N. Kudin, V. N. Staroverov, T. A. Keith, R. Kobayashi, J. Normand, K. Raghavachari, A. P. Rendell, J. C. Burant, S. S. Iyengar, J. Tomasi, M. Cossi, J. M. Millam, M. Klene, C. Adamo, R. Cammi, J. W. Ochterski, R. L. Martin, K. Morokuma, O. Farkas, J. B. Foresman, and D. J. Fox. Gaussian 16 Revision A.03. 2016. Gaussian Inc. Wallingford CT.">FTS+16</a>]</span>. The frequencies for about 5000 compounds  are available from the Alexandria library~ <span id="id16">[<a class="reference internal" href="../references.html#id48" title="Mohammad Mehdi Ghahremanpour, Paul J. van Maaren, and David van der Spoel. The Alexandria library: a quantum chemical database of molecular properties for force field development. Sci. Data, 5:180062, 2018. doi:10.1038/sdata.2018.62.">GvMvdS18</a>]</span> at the B3LYP/aug-cc-pvtz level of theory~ <span id="id17">[<a class="reference internal" href="../references.html#id5" title="A D Becke. Density-functional exchange-energy approximation with correct asymptotic-behavior. Phys. Rev. A, 38:3098–3100, 1988. doi:10.1103/PhysRevA.38.3098.">Bec88</a>, <a class="reference internal" href="../references.html#id78" title="R A Kendall, T H Dunning, Jr., and R J Harrison. Electron affinities of the first-row atoms revisited. Systematic basis sets and wave functions. J. Chem. Phys., 96:6796–6806, 1992. URL: http://dx.doi.org/10.1063/1.462569.">KDunningJrH92</a>, <a class="reference internal" href="../references.html#id170" title="D E Woon and T H Dunning, Jr. Benchmark calculations with correlated molecular wave functions. I. Multireference configuration interaction calculations for the second row diatomic hydrides. J. Chem. Phys., 99:1914–1929, 1993. doi:10.1063/1.464303.">WDunningJr93a</a>, <a class="reference internal" href="../references.html#id171" title="D E Woon and T H Dunning, Jr. Gaussian basis sets for use in correlated molecular calculations. III. The atoms aluminum through argon. J. Chem. Phys., 98:1358–1371, 1993.">WDunningJr93b</a>]</span>.Details of the quantum chemical calculations from which the frequencies were obtained have been presented previously <span id="id18">[<a class="reference internal" href="../references.html#id46" title="Mohammad Mehdi Ghahremanpour, Paul J. van Maaren, Jonas Ditz, Roland Lindh, and David van der Spoel. Large-scale calculations of gas phase thermochemistry: enthalpy of formation, standard entropy and heat capacity. J. Chem. Phys., 145:114305, 2016. doi:10.1063/1.4962627.">GvMD+16</a>, <a class="reference internal" href="../references.html#id48" title="Mohammad Mehdi Ghahremanpour, Paul J. van Maaren, and David van der Spoel. The Alexandria library: a quantum chemical database of molecular properties for force field development. Sci. Data, 5:180062, 2018. doi:10.1038/sdata.2018.62.">GvMvdS18</a>]</span>.</p>
+<p>For the force field calculations, the intensities <span class="math notranslate nohighlight">\(I_{n}\)</span> were derived from the transition dipole derivatives:</p>
+<div class="math notranslate nohighlight" id="equation-in">
+<span class="eqno">(4)<a class="headerlink" href="#equation-in" title="Link to this equation">¶</a></span>\[I_{n}=\sum_{k=1}^{3}\left(\frac{\partial p_{k}}{\partial Q_{n}}\right)^2\]</div>
+<p>where <span class="math notranslate nohighlight">\(k\)</span> iterates over cartesian dimensions, <span class="math notranslate nohighlight">\(p\)</span> is the dipole moment of the molecule, and <span class="math notranslate nohighlight">\(Q_n\)</span> the normal coordinate <span class="math notranslate nohighlight">\(n\)</span>. In order to take into account virtual sites <span class="math notranslate nohighlight">\(v\)</span> we note that</p>
+<div class="math notranslate nohighlight">
+\[p_{k} = p_{k}(q_0,...,q_{N-1},v_0,...,v_{M-1})\]</div>
+<p>and rewrite equation <a class="reference internal" href="#equation-in">(4)</a> as:</p>
+<div class="math notranslate nohighlight">
+\[I_{n}=\sum_{k=1}^{3}\left(\frac{\partial p_{k}}{\partial q_s}\frac{\partial q_{s}}{\partial Q_{n}}\right)^2\]</div>
+<p>where <span class="math notranslate nohighlight">\(s\)</span> iterates over the <span class="math notranslate nohighlight">\(N\)</span> atomic coordinates.
+To make the calculation of intensities practical, the numerical derivative of the dipole moment with respect to the atomic coordinates <span class="math notranslate nohighlight">\(\displaystyle{\frac{\partial p_{k}}{\partial{q_s}}}\)</span> is stored in a text file during the normal mode analysis and finally we note that the term <span class="math notranslate nohighlight">\(\displaystyle{\frac{\partial q_{s}}{\partial Q_{n}}}\)</span> corresponds to one over component <span class="math notranslate nohighlight">\(s\)</span> of eigenvector <span class="math notranslate nohighlight">\(n\)</span>.</p>
+<p>As an example, an infrared spectrum can be generated using a force field file and a molprop file using:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">alexandria</span> <span class="n">nma</span> <span class="o">-</span><span class="n">ff</span> <span class="n">OPLS2020</span> <span class="o">-</span><span class="n">charges</span> <span class="n">OPLS2020</span><span class="o">-</span><span class="n">charges</span> <span class="o">-</span><span class="n">db</span> <span class="n">ethanol</span> <span class="o">-</span><span class="n">ir</span> <span class="n">ir</span><span class="o">-</span><span class="n">ethanol</span>
+</pre></div>
+</div>
+<p>yielding the spectrum in Fig. <code class="xref std std-numref docutils literal notranslate"><span class="pre">fig-ethanol</span></code>.</p>
+<figure class="align-default" id="fig-ethanol">
+<a class="reference internal image-reference" href="../../_images/ethanol-irspectrum-opls2020.pdf"><img alt="../../_images/ethanol-irspectrum-opls2020.pdf" src="../../_images/ethanol-irspectrum-opls2020.pdf" style="width: 90%;" />
+</a>
+<figcaption>
+<p><span class="caption-text">Simulated infrared vibrational spectrum for ethanol, based on the OPLS2020 force field~ <span id="id19">[<a class="reference internal" href="../references.html#id76" title="William L. Jorgensen, Mohammad M. Ghahremanpour, Anastasia Saar, and Julian Tirado-Rives. OPLS/2020 force field for unsaturated hydrocarbons, alcohols, and ethers. J. Phys. Chem. B., 128:250-262, 2023. doi:10.1021/acs.jpcb.3c06602.">JGSTR23</a>]</span>.</span><a class="headerlink" href="#fig-ethanol" title="Link to this image">¶</a></p>
+</figcaption>
+</figure>
+</section>
+<section id="thermochemistry">
+<h3><span class="section-number">2.4.4.2. </span>Thermochemistry<a class="headerlink" href="#thermochemistry" title="Link to this heading">¶</a></h3>
+<p>The <a class="reference external" href="https://en.wikipedia.org/wiki/Canonical_ensemble">Canonical</a> ensemble <span class="math notranslate nohighlight">\(Q(N,V,T)\)</span> can be used to compute the molecular <a class="reference external" href="https://en.wikipedia.org/wiki/Internal_energy">Internal</a> energy <span class="math notranslate nohighlight">\(E\)</span> (<a class="reference internal" href="#equation-inte">(5)</a>),
+the standard <a class="reference external" href="https://en.wikipedia.org/wiki/Standard_molar_entropy">Entropy</a> <span class="math notranslate nohighlight">\(S^o\)</span> (<a class="reference internal" href="#equation-s0">(6)</a>), and the <a class="reference external" href="https://en.wikipedia.org/wiki/Heat_capacity">Heat-Capacity</a> <span class="math notranslate nohighlight">\(C_v\)</span> (<a class="reference internal" href="#equation-cv">(7)</a>) at constant volume, using</p>
+<div class="math notranslate nohighlight" id="equation-inte">
+<span class="eqno">(5)<a class="headerlink" href="#equation-inte" title="Link to this equation">¶</a></span>\[E = RT^2\left(\frac{\partial {\rm ln} Q}{\partial T} \right)_{N,V}\]</div>
+<div class="math notranslate nohighlight" id="equation-s0">
+<span class="eqno">(6)<a class="headerlink" href="#equation-s0" title="Link to this equation">¶</a></span>\[S^o = R {\rm ln} Q + RT\left(\frac{\partial {\rm ln} Q}{\partial T} \right)_{N,V}\]</div>
+<div class="math notranslate nohighlight" id="equation-cv">
+<span class="eqno">(7)<a class="headerlink" href="#equation-cv" title="Link to this equation">¶</a></span>\[C_v = 2RT\left(\frac{\partial {\rm ln} Q}{\partial T} \right)_{N,V} + RT^2 \left(\frac{\partial^2 {\rm ln} Q}{\partial T^2} \right)_{N,V}\]</div>
+<p>where <span class="math notranslate nohighlight">\(R\)</span> is the ideal gas constant and <span class="math notranslate nohighlight">\(T\)</span> the absolute temperature. For an ideal
+gas, <span class="math notranslate nohighlight">\(Q(N,V,T)\)</span> can be decomposed into <a class="reference external" href="https://en.wikipedia.org/wiki/Partition_function_(statistical_mechanics)">Partition-Function</a> of different degrees of freedom: electronic (el), translational (tr), rotational (rot) and vibrational (vib) motions. Therefore, for a molecular ideal gas, <span class="math notranslate nohighlight">\(Q(N,V,T)\)</span>  can be expressed as:</p>
+<div class="math notranslate nohighlight" id="equation-partition">
+<span class="eqno">(8)<a class="headerlink" href="#equation-partition" title="Link to this equation">¶</a></span>\[Q(N,V,T) = \frac{\left(q_{\rm el} q_{\rm tr} q_{\rm rot} q_{\rm vib}\right)^N}{N!}\]</div>
+<p>The <a class="reference external" href="https://en.wikipedia.org/wiki/Rigid_rotor">Rigid-Rotor</a> and the <a class="reference external" href="https://en.wikipedia.org/wiki/Quantum_harmonic_oscillator">Quantum-Harmonic-Oscillator</a> can be used to approximate the contribution of the rotational and vibrational motions. The partition function of a rigid rotator is defined as</p>
+<div class="math notranslate nohighlight">
+\[q_{\rm rot} = \frac{T}{\sigma \Theta_{\rm rot}}\]</div>
+<p>where <span class="math notranslate nohighlight">\(\sigma\)</span> is the symmetry number, <span class="math notranslate nohighlight">\(\Theta_{\rm rot}\)</span> the rotational temperature defined as</p>
+<div class="math notranslate nohighlight">
+\[\Theta_{\rm rot} = \frac{h^2}{8\pi^2 {\rm I} k_{\beta}}\]</div>
+<p>where <span class="math notranslate nohighlight">\({\rm I}\)</span> is the moment of inertia, <span class="math notranslate nohighlight">\(k_{\beta}\)</span> the Boltzmann constant, and <span class="math notranslate nohighlight">\(h\)</span> the Planck constant. The partition function of a quantum harmonic oscillator is defined as</p>
+<div class="math notranslate nohighlight">
+\[q_{\rm vib} = \frac{e^{\frac{-\beta h \nu}{2}}}{1-e^{-\beta h \nu}}\]</div>
+<p>where <span class="math notranslate nohighlight">\(\nu\)</span> is the vibrational frequency of the oscillator. If we define the vibrational temperature as <span class="math notranslate nohighlight">\(\Theta_{\rm vib} = \frac{h \nu}{k_{\beta}}\)</span>, then we will have</p>
+<div class="math notranslate nohighlight">
+\[q_{\rm vib} = \frac{e^{\frac{\Theta_{\rm vib}}{2T}}}{1- e^{\frac{\Theta_{\rm vib}}{T}}}\]</div>
+<p>Applying Eqn. <a class="reference internal" href="#equation-partition">(8)</a> to Eqn. <a class="reference internal" href="#equation-inte">(5)</a> followed by the multiplication rule in logarithm yields:</p>
+<div class="math notranslate nohighlight">
+\[E = E_{tr} + E_{rot} + E_{vib}\]</div>
+<p>and similarly,</p>
+<div class="math notranslate nohighlight">
+\[C_v = C_{tr} + C_{rot} + C_{vib}\]</div>
+<div class="math notranslate nohighlight">
+\[S^o = S_{tr} + S_{rot} + S_{vib}\]</div>
+<p>Thermochemical properties are computed automatically by the <em>alexandria nma</em> command. For more details, please see Van der Spoel <em>et al.</em>  <span id="id20">[<a class="reference internal" href="../references.html#id138" title="David van der Spoel, Mohammad Mehdi Ghahremanpour, and Justin Lemkul. Small molecule thermochemistry: a tool for empirical force field development. J. Phys. Chem. A, 122:8982-8988, 2018. doi:10.1021/acs.jpca.8b09867.">vdSGL18</a>]</span>.</p>
+<p>The <em>alexandria nma</em> used above to generate the infrared spectrum in Fig. <code class="xref std std-numref docutils literal notranslate"><span class="pre">fig-ethanol</span></code>  computes the thermochemical variables as well (Table <code class="xref std std-numref docutils literal notranslate"><span class="pre">tab-thermo</span></code>).
+Information on calculation of the enthalpy of formation will be pubslished in the near future.</p>
+<table class="docutils align-default" id="tab-thermo">
+<caption><span class="caption-text">Thermochemical values for ethanol at 298.15 K based on the OPLS2020 force field~ <span id="id21">[<a class="reference internal" href="../references.html#id76" title="William L. Jorgensen, Mohammad M. Ghahremanpour, Anastasia Saar, and Julian Tirado-Rives. OPLS/2020 force field for unsaturated hydrocarbons, alcohols, and ethers. J. Phys. Chem. B., 128:250-262, 2023. doi:10.1021/acs.jpcb.3c06602.">JGSTR23</a>]</span>.</span><a class="headerlink" href="#tab-thermo" title="Link to this table">¶</a></caption>
+<thead>
+<tr class="row-odd"><th class="head"><p>Property</p></th>
+<th class="head"><p>Experiment</p></th>
+<th class="head"><p>OPLS2020</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><span class="math notranslate nohighlight">\(S^o\)</span> (J/mol K)</p></td>
+<td><p>281 <span id="id22">[<a class="reference internal" href="../references.html#id55" title="John Rumble. CRC Handbook of Chemistry and Physics 103rd edition. CRC Press, Gaitherburg, MD, 2022. URL: http://hbcp.chemnetbase.com/.">Rum22</a>]</span></p></td>
+<td><p>273.0</p></td>
+</tr>
+<tr class="row-odd"><td><p><span class="math notranslate nohighlight">\(C_v\)</span> (J/mol K)</p></td>
+<td><p>57 <span id="id23">[<a class="reference internal" href="../references.html#id46" title="Mohammad Mehdi Ghahremanpour, Paul J. van Maaren, Jonas Ditz, Roland Lindh, and David van der Spoel. Large-scale calculations of gas phase thermochemistry: enthalpy of formation, standard entropy and heat capacity. J. Chem. Phys., 145:114305, 2016. doi:10.1063/1.4962627.">GvMD+16</a>]</span></p></td>
+<td><p>62.2</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="second-virial-coefficient">
+<h2><span class="section-number">2.4.5. </span>Second Virial Coefficient<a class="headerlink" href="#second-virial-coefficient" title="Link to this heading">¶</a></h2>
+<p>The second <a class="reference external" href="https://en.wikipedia.org/wiki/Virial_coefficient">Virial-Coefficient</a> is the second term in the <a class="reference external" href="https://en.wikipedia.org/wiki/Virial_expansion">Virial-Expansion</a> that describes the deviation from the ideal gas law for real gases:</p>
+<div class="math notranslate nohighlight">
+\[\displaystyle{\frac{P}{RT\rho}} = A + B_2(T)\rho + C_3(T)\rho^2 + ...\]</div>
+<p>with <span class="math notranslate nohighlight">\(P\)</span> the pressure, <span class="math notranslate nohighlight">\(R\)</span> the gas constant, <span class="math notranslate nohighlight">\(T\)</span> the temperature and <span class="math notranslate nohighlight">\(\rho\)</span> the density.</p>
+<p><span class="math notranslate nohighlight">\(B_2(T)\)</span> is a useful property gauging interactions in the gas phase because experimental values are available for close to 2000 compounds as a function of temperature. It is computed from an integral weighting the interaction between two molecules over three-dimensional space.</p>
+<div class="math notranslate nohighlight">
+\[B_2^{cl}(T) = -\frac{1}{2}\int_0^{\infty} \left&lt; e^{-\beta u_{12}({\mathbf r})} - 1\right&gt; d{\mathbf r}\]</div>
+<p>where <span class="math notranslate nohighlight">\(u_{12}({\mathbf r})\)</span> is the interaction energy between two compounds (Eqn. <a class="reference internal" href="../refman/targets.html#equation-vinter">(1)</a>), <span class="math notranslate nohighlight">\(\beta = 1/k_BT\)</span> and
+the integral is over all space and relative orientations of the compounds. If we sample these adequately (including at close, repulsive, distance) we can simplify the integral to a one-dimensional one:</p>
+<div class="math notranslate nohighlight">
+\[B_2^{cl}(T) = -2\pi\int_0^{\infty} r^2 \left&lt; e^{-\beta u_{12}(r)} -1 \right&gt; dr\]</div>
+<p>The above equation is entirely classical and quantum corrections have to be added according to:</p>
+<div class="math notranslate nohighlight">
+\[B_2^F(T) = \frac{\hbar^2}{24(k_BT)^3} \sum_{j=1}^{2} \left[\frac{\left&lt; {\mathbf F}_j^2 \right&gt;}{m_j}\right]\]</div>
+<p>for the force on the compounds and</p>
+<div class="math notranslate nohighlight">
+\[B_2^{\tau}(T) = \frac{\hbar^2}{24(k_BT)^3} \sum_{j=1}^2\left[\sum_{\alpha=x,y,z} \frac{\left&lt; \tau^2_{j,\alpha}\right&gt;}{I_{j,\alpha}} \right]\]</div>
+<p>for the torque on the compounds,
+where <span class="math notranslate nohighlight">\(m_j\)</span> is the mass of the molecules <span class="math notranslate nohighlight">\(j\)</span> and <span class="math notranslate nohighlight">\(\mathbf{F}^2\)</span> is the averaged square force on one molecule given by</p>
+<div class="math notranslate nohighlight">
+\[\left&lt;\mathbf{F}^2\right&gt; = k_B T \int_0^{\infty} \left&lt; e^{\displaystyle{- \beta u_{12}(\mathbf{r})}}\left[\nabla u_{12}(\mathbf{r})\right]^2\right&gt; d \mathbf{r}\]</div>
+<p>and where <span class="math notranslate nohighlight">\(I\)</span> is the moment of inertia of the molecule and
+<span class="math notranslate nohighlight">\(\tau^2\)</span> is the average square torque on one molecule defined by</p>
+<div class="math notranslate nohighlight">
+\[\left&lt;\tau^2_{j,\alpha}\right&gt; = k_B T \int_0^{\infty}  \left&lt; e^{{- \beta u_{12}(\mathbf{r})}} \left[\nabla_{\omega} u_{12}(\mathbf{r})\right]_{j,\alpha}^2\right&gt; d \mathbf{r} .\]</div>
+<p>The change in <span class="math notranslate nohighlight">\(B_2(T)\)</span> as a function of temperature can be used to scrutinize the repulsive and attractive components of the potential energy. <span class="math notranslate nohighlight">\(B_2(T)\)</span> is negative at low temperatures due to attraction forces, while it becomes positive at higher temperatures as repulsion forces start to dominate, and passes through a maximum and eventually decreases at very high temperatures where repulsion force are fully dominant~ <span id="id24">[<a class="reference internal" href="../references.html#id2" title="I. Amdur and E. A. Mason. Properties of gases at very high temperatures. Phys. Fluids, 1:370-383, 09 1958. doi:10.1063/1.1724353.">AM58</a>]</span>.</p>
+<p>Code to compute the second virial coefficient is available in the <em>alexandria b2</em> command. Since the calculation is relatively expensive it has been implemented to use parallel processing using the message passing library. You can run it on a 16-core machine like:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">mpirun</span> <span class="o">-</span><span class="n">n</span> <span class="mi">16</span> <span class="n">alexandria</span> <span class="n">b2</span> <span class="o">-</span><span class="n">v</span> <span class="mi">3</span> <span class="o">-</span><span class="n">g</span> <span class="n">TIP4P</span> <span class="o">-</span><span class="n">b2</span> <span class="n">TIP4P</span> <span class="o">-</span><span class="n">ff</span> <span class="n">TIP4P</span>
+<span class="o">-</span><span class="n">f</span> <span class="n">water</span><span class="c1">#water.pdb -T1 373.15 -T2 673.15 -dT 25.0</span>
+<span class="o">-</span><span class="n">maxdimer</span> <span class="mi">32768</span>
+</pre></div>
+</div>
+<p>where TIP4P corresponds to the well-known water model~ <span id="id25">[<a class="reference internal" href="../references.html#id75" title="W L Jorgensen, J Chandrasekhar, J D Madura, R W Impey, and M L Klein. Comparison of simple potential functions for simulating liquid water. J. Chem. Phys., 79:926–935, 1983. doi:10.1063/1.445869.">JCM+83</a>]</span>, the <span class="math notranslate nohighlight">\(T_1\)</span> and <span class="math notranslate nohighlight">\(T_2\)</span> are the temperature limits (note gas-phase for water), <span class="math notranslate nohighlight">\(dT\)</span> is the temperature interval and maxdimer determines how many relative orientations will be evaluated.
+Due to the underlying algorithm for <a class="reference external" href="https://en.wikipedia.org/wiki/Sobol_sequence">Quasi-Random</a> numbers, this should be a power of two. The result is plotted in Fig. <code class="xref std std-numref docutils literal notranslate"><span class="pre">fig-b2</span></code>.</p>
+<figure class="align-center" id="fig-b2">
+<a class="reference internal image-reference" href="../../_images/TIP4P-b2.pdf"><img alt="../../_images/TIP4P-b2.pdf" src="../../_images/TIP4P-b2.pdf" style="width: 90%;" />
+</a>
+<figcaption>
+<p><span class="caption-text">Sample second virial coefficient and components for water using the TIP4P model~ <span id="id26">[<a class="reference internal" href="../references.html#id75" title="W L Jorgensen, J Chandrasekhar, J D Madura, R W Impey, and M L Klein. Comparison of simple potential functions for simulating liquid water. J. Chem. Phys., 79:926–935, 1983. doi:10.1063/1.445869.">JCM+83</a>]</span>.</span><a class="headerlink" href="#fig-b2" title="Link to this image">¶</a></p>
+</figcaption>
+</figure>
+</section>
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+  <div>
+    <h3><a href="../../index.html">Table of Contents</a></h3>
+    <ul>
+<li><a class="reference internal" href="#">2.4. Predicting Molecular Properties</a><ul>
+<li><a class="reference internal" href="#electrostatic-potential">2.4.1. Electrostatic Potential</a></li>
+<li><a class="reference internal" href="#electrostatic-moments">2.4.2. Electrostatic Moments</a></li>
+<li><a class="reference internal" href="#polarizability">2.4.3. Polarizability</a></li>
+<li><a class="reference internal" href="#normal-mode-analysis">2.4.4. Normal Mode Analysis</a><ul>
+<li><a class="reference internal" href="#infrared-spectra">2.4.4.1. Infrared Spectra</a></li>
+<li><a class="reference internal" href="#thermochemistry">2.4.4.2. Thermochemistry</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#second-virial-coefficient">2.4.5. Second Virial Coefficient</a></li>
+</ul>
+</li>
+</ul>
+
+  </div>
+  <div>
+    <h4>Previous topic</h4>
+    <p class="topless"><a href="simulation.html"
+                          title="previous chapter"><span class="section-number">2.3. </span>MD Simulations with Alexandria Force Fields</a></p>
+  </div>
+  <div>
+    <h4>Next topic</h4>
+    <p class="topless"><a href="../refman/header.html"
+                          title="next chapter"><span class="section-number">3. </span>Reference Manual</a></p>
+  </div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../../_sources/manual/userman/properties.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../refman/header.html" title="3. Reference Manual"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="simulation.html" title="2.3. MD Simulations with Alexandria Force Fields"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">ACT 1.2b documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="header.html" ><span class="section-number">2. </span>User Manual</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href=""><span class="section-number">2.4. </span>Predicting Molecular Properties</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2026 The Alexandria Chemistry Initiative.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3.
+    </div>
+  </body>
+</html>

@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Using reference data in C++ tests {#page_refdata} &#8212; ACT 1.2b documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=fa44fd50" />
+    <link rel="stylesheet" type="text/css" href="../../_static/classic.css?v=2bf1fcf8" />
+    <link rel="stylesheet" type="text/css" href="../../_static/mystnb.8ecb98da25f57f5357bf6f572d296f466b2cfe2517ffebfabe82451661e28f02.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../_static/togglebutton.css?v=9c3e77be" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sphinx_lesson.css?v=e9df6548" />
+    <link rel="stylesheet" type="text/css" href="../../_static/term_role_formatting.css?v=4194e21c" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sphinx_rtd_theme_ext_color_contrast.css?v=8e8ea19f" />
+    <link rel="stylesheet" type="text/css" href="../../_static/custom_theme.css" />
+    
+    <script src="../../_static/documentation_options.js?v=00cc29cc"></script>
+    <script src="../../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../_static/copybutton.js?v=6dbb43f8"></script>
+    <script src="../../_static/minipres.js?v=a0d29692"></script>
+    <script>let toggleHintShow = 'Click to show';</script>
+    <script>let toggleHintHide = 'Click to hide';</script>
+    <script>let toggleOpenOnPrint = 'true';</script>
+    <script src="../../_static/togglebutton.js?v=1ae7504c"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">ACT 1.2b documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Using reference data in C++ tests {#page_refdata}</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section class="tex2jax_ignore mathjax_ignore" id="using-reference-data-in-c-tests-page-refdata">
+<h1>Using reference data in C++ tests {#page_refdata}<a class="headerlink" href="#using-reference-data-in-c-tests-page-refdata" title="Link to this heading">¶</a></h1>
+<p>The \ref module_testutils module provides (among other things) utilities to
+write Google Test tests that compare their results against stored reference
+data.  This can either be used for</p>
+<ul class="simple">
+<li><p>regression-style tests, just ensuring that the output does not change, or</p></li>
+<li><p>combined with manual checking of the reference data, as a different kind of
+assertion, where the expected results would be tedious to express directly
+as C++ code (e.g., when checking complicated data structures for
+correctness).</p></li>
+</ul>
+<p>The current reference data functionality is quite basic, but it can be extended
+if/when more control over, e.g., comparison tolerances is needed.</p>
+</section>
+<section class="tex2jax_ignore mathjax_ignore" id="reference-data-organization">
+<h1>Reference data organization<a class="headerlink" href="#reference-data-organization" title="Link to this heading">¶</a></h1>
+<p>Conceptually, the reference data consists of a tree-like structure of nodes.
+Each leaf node checks a single primitive value (an integer, a floating-point
+value, a string etc.), and each inner node acts as a <em>compound</em> value that
+helps organizing the data.  Within each compound node (including the root of
+the tree), child nodes are identified by an <code class="docutils literal notranslate"><span class="pre">id</span></code> string.  Each node within a
+single compound must have a unique <code class="docutils literal notranslate"><span class="pre">id</span></code>, and it is possible to compare
+multiple values produced by the test against this single node (naturally, the
+test only passes if the test produces the same value in all such cases).</p>
+<p>Each node also has a type (a string).  For leaf nodes, the type is from a
+predetermined set of strings, and identifies the type of the value stored in
+the node.  For compound nodes, the type is just a string provided by the test.
+In all cases, the type in the reference data must match the type provided by
+the test.  This provides additional safety when changing the test to detect
+mismatches between the test and the reference data.  The intention is that
+compound nodes whose contents have the same structure would have the same type;
+this will simplify using XSLT for viewing the reference data (see below).</p>
+<p>Some compound types are predefined, e.g., for simple sequences, but more
+complicated compounds can be defined ad-hoc in tests that need them.  See below
+for how to use them in the code.</p>
+<p>As a special case, the <code class="docutils literal notranslate"><span class="pre">id</span></code> can be empty (<code class="docutils literal notranslate"><span class="pre">NULL</span></code>).  This is intended for
+cases where one is checking for a sequence of items, and the only thing
+distinguishing the items is their position in this sequence.  Using an empty
+<code class="docutils literal notranslate"><span class="pre">id</span></code> removes the need to generate unique identifiers for the items, and makes
+textual diffs of the reference data files easier to read.
+Only a single sequence of nodes with an empty <code class="docutils literal notranslate"><span class="pre">id</span></code> is supported within one
+parent node: if you first check some nodes with an empty <code class="docutils literal notranslate"><span class="pre">id</span></code>, followed by a
+non-empty <code class="docutils literal notranslate"><span class="pre">id</span></code>, the next check for an empty <code class="docutils literal notranslate"><span class="pre">id</span></code> will again match the first
+node in the sequence.
+For clarity, all the nodes that have an empty <code class="docutils literal notranslate"><span class="pre">id</span></code> should be of the same
+type, but this is not enforced.</p>
+</section>
+<section class="tex2jax_ignore mathjax_ignore" id="using-reference-data-in-code">
+<h1>Using reference data in code<a class="headerlink" href="#using-reference-data-in-code" title="Link to this heading">¶</a></h1>
+<p>To use reference data in a test, the test should first create exactly one
+instance of gmx::test::TestReferenceData.  It can do so as a local variable in
+the test, as a member variable in its test fixture, or by subclassing a test
+fixture that already contains such a variable (e.g., gmx::test::StringTestBase
+or gmx::test::CommandLineTestBase).
+Only use the default constructor!  The other constructor is intended for
+self-testing utility code used in other tests (including self-testing the
+reference data implementation itself), and behaves differently from what is
+described here.</p>
+<p>To access the root node of the data,
+gmx::test::TestReferenceData::rootChecker() needs to be called.
+This returns a gmx::test::TestReferenceChecker that provides various
+<code class="docutils literal notranslate"><span class="pre">check*()</span></code> methods that can be used to check values against top-level nodes.
+gmx::test::TestReferenceChecker::checkCompound() can be called to create custom
+compound types: it returns another gmx::test::TestReferenceChecker that can be
+used to check values against child nodes of the created compound.</p>
+<p>Whenever a gmx::test::TestReferenceChecker method detects a mismatch against
+reference data, it will generate a non-fatal Google Test failure in the current
+test.  The test can naturally also use its own test assertions for additional
+checks, but any mismatch will automatically also fail the test.</p>
+<p>It is also possible to read values of the reference data items using
+gmx::test::TestReferenceChecker, so that they can be used programmatically.
+For this to work, those items should first be written in the same test.
+This supports tests that want to both check data against a reference, and use
+that reference as a persistence layer for storing information.  This is useful
+at least for serialization tests.
+This is currently not supported for all use cases, but with some caveats, it is
+possible to use this for testing.</p>
+<p>When using floating-point values in reference data, the tolerance for the
+comparison can be influenced with
+gmx::test::TestReferenceChecker::setDefaultTolerance().
+Per-comparison tolerances would be possible to implement if necessary, but
+currently you can either change the default tolerance whenever you need to, or
+create copies of the gmx::test::TestReferenceChecker object and set different
+tolerances in the different instances.  Note that there is an implicit
+assumption that a mixed- and a double-precision build will produce the same
+results (within the given tolerance).  This means that some things cannot be
+tested with the reference data (e.g., multiple steps of MD integration), and
+that reference data for such tests needs to be always generated in double
+precision (unless the results are nice, exact binary floating-point numbers).</p>
+<p>Just creating a gmx::test::TestReferenceData instance does not enforce using
+reference data in the test; the data is loaded/used only when
+gmx::test::TestReferenceData::rootChecker() is first called.  If the test never
+calls this method, the gmx::test::TestReferenceData object does nothing.  This
+allows using the same test fixture (e.g., CommandLineTestBase) also in tests
+that do not need the reference data, but benefit from other features of the
+fixture.</p>
+</section>
+<section class="tex2jax_ignore mathjax_ignore" id="running-tests-that-use-reference-data">
+<h1>Running tests that use reference data<a class="headerlink" href="#running-tests-that-use-reference-data" title="Link to this heading">¶</a></h1>
+<p>To run a test that uses the reference data, you just execute the test binary as
+you would otherwise.  However, when you first add a test, the reference data
+does not exist, and the test will fail with an assertion message saying that
+the reference data could not be found.  To generate the reference data, you
+need to run the test binary with a <code class="docutils literal notranslate"><span class="pre">-ref-data</span> <span class="pre">create</span></code> command-line option
+(it is also possible to use any of the <code class="docutils literal notranslate"><span class="pre">update</span></code> options below to generate the
+reference data).</p>
+<p>If you change a test (or the tested code) such that the reference data needs to
+be changed, you need to run the test binary with <code class="docutils literal notranslate"><span class="pre">-ref-data</span> <span class="pre">update-all</span></code> or
+<code class="docutils literal notranslate"><span class="pre">-ref-data</span> <span class="pre">update-changed</span></code>.  The first will recreate the reference data from
+scratch.  The latter will retain old reference values if they are still valid.
+In other words, floating-point reference values that are within the test
+tolerance will be kept at their old values.  Only values that are outside the
+tolerance (or otherwise do not match or do not exist) are updated.
+This is useful (at least) for tests that contain floating-point data, where it
+is not expected that those floating-point values would actually need to change.
+This allows you to update other parts of the reference data without doing a
+double-precision build, and also makes it easier to avoid spurious changes in
+the last bits of other reference data values when just a single output value is
+expected to change.</p>
+<p>To create or update reference data, the test needs to pass when run with the
+corresponding flag.  All comparisons against reference data will pass in these
+modes, but you need to ensure that other assertions in the test also pass, and
+that the test does not throw exceptions.
+Note that if your test does multiple comparisons against the same <code class="docutils literal notranslate"><span class="pre">id</span></code> node,
+reference data comparison can still fail during create/update if the test does
+not produce the same results for each comparison.</p>
+<p>With all the operations that create or update the reference data, you can use
+the <code class="docutils literal notranslate"><span class="pre">--gtest_filter=&lt;...&gt;</span></code> command-line option provided by Google Test to
+select the tests whose reference data you want to influence.</p>
+</section>
+<section class="tex2jax_ignore mathjax_ignore" id="persistence">
+<h1>Persistence<a class="headerlink" href="#persistence" title="Link to this heading">¶</a></h1>
+<p>The reference data is stored in XML files under
+<code class="docutils literal notranslate"><span class="pre">src/gromacs/</span></code><em>module</em><code class="docutils literal notranslate"><span class="pre">/tests/refdata/</span></code> in the source tree.
+This part of the framework depends on <code class="docutils literal notranslate"><span class="pre">tinyxml2</span></code>, which is bundled in <code class="docutils literal notranslate"><span class="pre">src/external</span></code>.
+One file is produced per test that uses reference data.  If you rename tests or
+otherwise change the reference data, you currently need to manually manage the
+files with <code class="docutils literal notranslate"><span class="pre">git</span></code>.</p>
+<p>For inspecting the reference data in a browser, there are XSLT stylesheets that
+transform the XML files into HTML.  Such custom transformations need to be
+written for each type of test if the output is not easy to check otherwise.
+Because of security features in browsers, the transformations may not work for
+all browsers.  For the same reason, the XSLT files must be in the same folder
+as the XML files.  For cases where the XSLT files are shared between multiple
+modules, <code class="docutils literal notranslate"><span class="pre">src/testutils/copy_xsl.sh</span></code> takes care to synchronize the files after
+a master copy is edited.</p>
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+  <div>
+    <h3><a href="../../index.html">Table of Contents</a></h3>
+    <ul>
+<li><a class="reference internal" href="#">Using reference data in C++ tests {#page_refdata}</a></li>
+<li><a class="reference internal" href="#reference-data-organization">Reference data organization</a></li>
+<li><a class="reference internal" href="#using-reference-data-in-code">Using reference data in code</a></li>
+<li><a class="reference internal" href="#running-tests-that-use-reference-data">Running tests that use reference data</a></li>
+<li><a class="reference internal" href="#persistence">Persistence</a></li>
+</ul>
+
+  </div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../../_sources/doxygen/lib/refdata.md.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">ACT 1.2b documentation</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href="">Using reference data in C++ tests {#page_refdata}</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2026 The Alexandria Chemistry Initiative.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3.
+    </div>
+  </body>
+</html>
