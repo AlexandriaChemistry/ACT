@@ -9,7 +9,7 @@ Prerequisites
 =============
 The following software packages are required for the ACT to work:
 
-* C and C++ compilers supporting C++20 at least. On Linux a GNU c++ version newer than 13.0 is recommended.
+* C and C++ compilers supporting C++20 at least. On Linux a GNU c++ version newer than 12.0 is recommended.
 * Some version of a library that supports the message passing interface (MPI) for parallel programming. A popular version is OpenMPI.
 * The cmake tools (at least version 3.13.0) are needed for compiling the code.
 * For linear algebra operations we use the Eigen library, version 5 or better.
@@ -44,10 +44,12 @@ The simplest way that should suffice on a single computer (i.e. not a cluster), 
   conda activate ACT
   conda config --add channels anaconda
   conda config --add channels conda-forge
-  conda install librdkit-dev=2025.09.4 libboost-devel=1.86.0 cmake eigen=5.0.1 libxml2 numpy matplotlib pubchempy plotxvg pillow
+  conda install librdkit-dev=2025.09.4 libboost-devel=1.86.0 cmake eigen=5 libxml2 numpy matplotlib pubchempy pillow xmltodict
 
 This should install the libraries mentioned above (note: it will take some time!). If you are installing ACT on a high-performance computing cluster, there likely is support for compilers and a MPI library already. If not, then add the *openmpi* package to your conda install line.
-Most Linux installations come bundled with the GNU compiler suite (`GCC`_) and for macOS the Xcode package can be downloaded free of charge from `Xcode`_. If you do not have a compiler, add *gcc* to the conda install line.
+Most Linux installations come bundled with the GNU compiler suite (`GCC`_) and for macOS the Xcode package can be downloaded free of charge from `Xcode`_. If you do not have a compiler, add *gcc* to the conda install line::
+
+  conda install gcc=14 gxx=14 openmpi=5
 
 For developers, please additionally install these packages::
 
@@ -63,28 +65,15 @@ High-performance computer centers typically provide compilers libraries using so
 ========================
 Running the Installation
 ========================
-Once the prerequisites  are met, the easiest way to get going is to fetch the 
-`install_act`_ script to your working directory of choice.
-To fetch the script, once you have clicked on the link, click on the download icon (Fig. :ref:`fig-download`).
+Once you have download ACT either as a release version or by cloning the git repository, enter the directory where the ACT source code is installed, and issue the following commands::
 
-.. _install_act: https://github.com/dspoel/ACT/blob/main/src/act/python/install_act
+  mkdir build-Release
+  cd build-Release
+  cmake -DCMAKE_INSTALL_PREFIX=$HOME/tools ..
+  make -j 8 install
 
-.. figure:: ../images/link.png
-   :align: center
-   :name: fig-download
-   
-   Image showing where to click to download the installation script.
+where the *CMAKE_INSTALL_PREFIX* flag points to the location where ACT will be installed and the *-j 8* flag instructs the make command to utilize 8 cores to speed up compilation.
 
-Once you have downloaded the script, start by executing::
-
-  ./install_act -h
-
-and studying the options.
-Let's say you have a four core machine and you want to install first time around, then this command should do the trick::
-
-  ./install_act -ncores 4
-
-In the best of worlds, the script will have created a directory under your home catalog, with the name tools. 
 
 In order to start using the software, run the following command::
 
@@ -104,13 +93,65 @@ which should give you something like::
   % which alexandria
   ~/tools/bin/alexandria
 
+There are some building options available that are mainly of use for developers (see :ref:`tab-cmake`). These options have to be specified using::
+
+  -DOPTION=Value
+  
+where *Value* can be *ON* or *OFF* or something more option specific. 
+
+.. table:: cmake flags available to build the alexandria program.
+   :name: tab-cmake
+
+   +----------------------+------------------------------------------------------------+
+   | **Flag**             | **Description**                                            |
+   +======================+============================================================+
+   | CMAKE_BUILD_TYPE     | Build Type: either Release (default) Debug (for use with   |
+   +----------------------+------------------------------------------------------------+
+   |                      | a debugger) or ASAN (Adress Sanitizer, for uncovering      |
+   +----------------------+------------------------------------------------------------+
+   |                      | memory leaks and debugging crashes).                       |
+   +----------------------+------------------------------------------------------------+
+   | CMAKE_INSTALL_PREFIX | Path where to install the ACT, see above                   |
+   +----------------------+------------------------------------------------------------+
+   | CMAKE_PREFIX_PATH    | Path where cmake can look for libraries. Multiple paths    |
+   +----------------------+------------------------------------------------------------+
+   |                      | can be specified, separated by semicolons, for instance    |
+   +----------------------+------------------------------------------------------------+
+   |                      | -DCMAKE_PREFIX_PATH=${CONDA_PREFIX}/lib                    |
+   +----------------------+------------------------------------------------------------+
+   | ACT_CLN              | Install ACT using the Class Library for Numbers for high   |
+   +----------------------+------------------------------------------------------------+
+   |                      | precision calculations, used for Slater integrals.         |
+   +----------------------+------------------------------------------------------------+
+   |                      | Default OFF, activated when ON.                            |   
+   +----------------------+------------------------------------------------------------+
+   | ACT_BUILD_MANUAL     | Whether or not to provision for building the manual.       |
+   +----------------------+------------------------------------------------------------+
+   |                      | Requires installing developer tools, default OFF.          |
+   +----------------------+------------------------------------------------------------+
+   
+   
+============================
+Troubleshooting Installation
+============================
+Sometimes, the *cmake* process or building using *make* does not work as described above.
+For instance, there may be library mismatches like this::
+
+   undefined reference to `__cxa_call_terminate@CXXABI_1.3.15'
+   
+which is caused by the fact that conda libraries expect specific versions of system libraries, combined with the make process supplying a wrong version of that library.
+In that case you can instruct cmake to change the order of libraries by adding these flags to the cmake command line::
+
+  
+
+
 ===============
 Testing the ACT
 ===============
 
 To start testing, you first want to familiarize yourself with the test set. If the ACT is in your home directory, you can::
 
-  cd ACT/build_Release_DOUBLE
+  cd ACT/build-Release
 
 Then you can build the test set using::
 
