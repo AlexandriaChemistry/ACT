@@ -107,7 +107,7 @@ contains a number of python scripts and utilities (:numref:`tab-scripts` ), some
    +---------------------+---------------------------------------------------------+
    | view_fitness        | Visualizes the fitness per generation of a GA/HYBRID    |
    |                     | by plotting the maximum, minimum, mean, and median,     |
-   |                     | for an example see :numref:`fig-ga-ftrain`         |
+   |                     | for an example see :numref:`fig-ga-ftrain`              |
    +---------------------+---------------------------------------------------------+
 
 .. figure:: ../images/ga_ftrain.pdf
