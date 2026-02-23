@@ -28,7 +28,7 @@ For other atoms or when RDKit cannot determine a hybridization state, ACT assign
 .. attention:: If bond information is present in the PDB or SDF file, it will be used by ACT. That means the user is responsible for providing correct information, unless the compound is a special case, see below. If there is no bond information in the PDB (or a XYZ) file, it will be generated using RDKit. Either way, RDKit is used to determine aromaticity. There is no guarantee that the output from RDKit is correct in all cases, however. Please check your output.
 
 ACT further allows refinement of atom types through environment specific patterns defined using SMARTS notation. :cite:p:`daylight_smarts_theory` These patterns are stored in a file called *atom_bond.xml* and they enable assignment of specialized atom types based on the local chemical context.
-Table :numref:`atom-bond-table` lists all available SMARTS patterns and their corresponding atom types. Currently the last hit it used to assign atom types and bond orders, hence it is ordered from general to specific.
+:numref:`atom-bond-table` lists all available SMARTS patterns and their corresponding atom types. Currently the last hit it used to assign atom types and bond orders, hence it is ordered from general to specific.
 
 The code to determine atomtypes is implemented in both the C++ code and in a Python file *get_mol_dict.py* that is part of the ACT distribution. The latter can be used in conjunction with the generating quantion chemistry data in the `SaptACT`_ repository.
 

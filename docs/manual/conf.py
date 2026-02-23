@@ -67,7 +67,7 @@ mermaid_params = [
     "transparent",
     '-p' 'docs/puppeteer-config.json'
 ]
-
+numfig = True
 #jupyter_execute_notebooks = "cache"
 
 myst_enable_extensions = [
