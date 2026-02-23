@@ -56,20 +56,20 @@ As a result,  these functions are well behaved at small  :math:`r`.
 A number of methods :cite:p:`Ohrn2016a,Guseinov1970a` have been proposed to evaluate :eq:`SlaterIntegral`. 
 Hentschke gives an  analytical solution :cite:p:`Hentschke2004a`:
 
-.. math:: J_{ij}({\bf r}) = \left\{ \begin{aligned}
-   & \frac{1}{4 \pi \epsilon_0}\frac{q_iq_j}{\|{\bf r_i} - {\bf r_j}\|} \frac{4\zeta_i^{2n+1}\zeta_j^{2m+1}}{(2n)!(2m)!} \frac{\partial^{2n-2}\partial^{2m-2}}{\partial\zeta_i^{2n-2}\partial\zeta_j^{2m-2}} \left(\frac{1}{\zeta_i^3 \zeta_j^3}\right)\\
+.. math:: J_{ij}({\bf r}) = \begin{split}
+   & \frac{1}{4 \pi \epsilon_0}\frac{q_iq_j}{\|{\bf r_i} - {\bf r_j}\|} \frac{4\zeta_i^{2n+1}\zeta_j^{2m+1}}{(2n)!(2m)!} \frac{\partial^{2n-2}\partial^{2m-2}}{\partial\zeta_i^{2n-2}\partial\zeta_j^{2m-2}} \left(\frac{1}{\zeta_i^3 \zeta_j^3}\right) \\
    & \times\biggl[ 1 -\frac{(3\zeta_i^2 - \zeta_j^2)\zeta_j^4}{(\zeta_i - \zeta_j)^3(\zeta_i + \zeta_j)^3} e^{-2\zeta_ir_{ij}} -\frac{(\zeta_i^2 - 3\zeta_j^2)\zeta_i^4}{(\zeta_i - \zeta_j)^3(\zeta_i + \zeta_j)^3} e^{-2\zeta_jr_{ij}} \\
    & - \frac{\zeta_i\zeta_j^4}{(\zeta_i-\zeta_j)^2(\zeta_i+\zeta_j)^2} r_{ij} e^{-2\zeta_ir_{ij}} - \frac{\zeta_i^4\zeta_j}{(\zeta_i-\zeta_j)^2(\zeta_i+\zeta_j)^2} r_{ij} e^{-2\zeta_jr_{ij}}
-   \biggr] \end{aligned} \right.
+   \biggr]. \end{split}
    :label: hentschke
 
 
-:eq:`hentschke` was implemented in a Mathematica :sup:`TM` program from which C++ code was generated for the
+Eqn. :eq:`hentschke` was implemented in a Mathematica :sup:`TM` program from which C++ code was generated for the
 analytical computation of :math:`J_{ij}`  and its analytical derivatives with respect to :math:`r`, which are necessary for computing forces.
-Due to the nature of :eq:`hentschke`, there are many terms with large powers, particularly for :math:`n>3`. Thus,  the equations have to be implemented using the arbitrary precision
+Due to the nature of Eqn. :eq:`hentschke`, there are many terms with large powers, particularly for :math:`n>3`. Thus,  the equations have to be implemented using the arbitrary precision
 arithmetic library Class Library for Numbers ( `CLN`_ ).
 to avoid numerical instabilities.  
-It should be noted that the  arbitrary  precision library significantly increases the  computational cost to analytically solve :eq:`hentschke`
+It should be noted that the  arbitrary  precision library significantly increases the  computational cost to analytically solve Eqn. :eq:`hentschke`
 
 .. _CLN: https://www.ginac.de/CLN/
 
@@ -456,11 +456,12 @@ Special potentials
 ==================
 The ACT includes a flat-bottom position restraint potential according to
 
-.. math::
-   \begin{align}
-    V_{fbpr}(r) &=& 0 &\hspace{2cm} r <= r_0\\
-                &  & \frac{k}{2}(r-r_0)^2 &\hspace{2cm} r > r_0
-   \end{align}
+.. math:: 
+   V_{fbpr}(r) = \begin{cases}
+   0 & \hspace{2cm} r \leq r_0 \\
+   \frac{k}{2}(r-r_0)^2 & \hspace{2cm} r > r_0
+   \end{cases}
+   :label: vfbpr
 
 where :math:`k` is the force constant and :math:`r_0` the radius of the sphere (centered at the origin) in which the potential is zero.
 The flat-bottom potential is activated by flags to the *alexandria simulate* command. It is useful

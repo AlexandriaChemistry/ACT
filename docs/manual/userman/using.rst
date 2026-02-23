@@ -285,12 +285,10 @@ Please make sure to inspect all the scripts provided here to learn about the com
 
 To design a force field for your own system of choice you will have to provide quantum chemistry data (Sec. :ref:`sec-data`), and create selection files (Sec. :ref:`sec-files`). Most of the steps you have gone through in this tutorial can be adapted to your need. For large trainings it is useful to study the parallellization features of the ACT (Sec. :ref:`sec-parallel`).
 
-.. include:: <isotech.txt>
-
 ------------------------------
 Is my training hitting a wall?
 ------------------------------
-To make training efficient, it is good to limit the search space. In some cases we can use chemical intuition to estimate the search space. For instance, we know that polarizability should be a positive number and that it is highly element dependent. For hydrogen, a likely range is 0.1 < :math:`\alpha` < 0.5 |Angst|\ :sup:`3`. Such boundaries are implemented in the force field file like this::
+To make training efficient, it is good to limit the search space. In some cases we can use chemical intuition to estimate the search space. For instance, we know that polarizability should be a positive number and that it is highly element dependent. For hydrogen, a likely range is 0.1 < :math:`\alpha <` 0.5 :math:`\text{\AA}^3`. Such boundaries are implemented in the force field file like this::
 
   <parameterlist identifier="h_s">
     <parameter type="alpha" unit="Angstrom3" value="0.46"
