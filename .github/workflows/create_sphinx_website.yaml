@@ -23,7 +23,6 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-python@v5
-      - uses: hspaans/latexmk-action@v2.1.0
 
       # Build Doxygen documentation
       # Copied from the act-test.yaml file
@@ -35,7 +34,7 @@ jobs:
         run: |
           sudo apt update
           sudo apt-get update
-          sudo apt-get -y install gcc cmake libopenmpi-dev openmpi-bin  texlive-latex-recommended texlive-latex-extra libxml2
+          sudo apt-get -y install gcc cmake libopenmpi-dev openmpi-bin  texlive-latex-recommended texlive-latex-extra libxml2 latexmk
       - uses: conda-incubator/setup-miniconda@v3
         with:
           auto-update-conda: true
