@@ -89,7 +89,7 @@ The constant :math:`\alpha` determines how quickly the short-range potential dec
    :label: alphaEwald
 
 where ln is the natural logarithm.
-This shows that :math:`\alpha` has the dimension of 1 over distance in the units of rc. Fig. :ref:`coulomb` shows how the division over short and long-range interactions works in practice, and how the long range contribution should be incorporated into simulations using a modified Coulomb function.
+This shows that :math:`\alpha` has the dimension of 1 over distance in the units of rc. Fig. :numref:`coulomb` shows how the division over short and long-range interactions works in practice, and how the long range contribution should be incorporated into simulations using a modified Coulomb function.
 
 .. figure:: ../images/coulomb.pdf
    :name: coulomb
@@ -332,7 +332,7 @@ A number of these combination rules can be written using the generalized mean eq
 .. math:: M_p(x_1,x_2,...,x_N) = \left(\frac{1}{N}\sum_{i=1}^N x_i^p\right)^{1/p}
    :label: cr_genmean
 
-for :math:`p \ne 0`. For :math:`p = 0`, Eqn. :eq:`cr_genmean` turns into the geometric rule. Table :ref:`tab-genmean` lists other well-known combination rules and their respective exponent :math:`p`. Hohm also describes combinations of the generalized mean and other similar expressions, but the most important observation he made was that the exponent :math:`p` can be varied at will :cite:p:`Hohm2025a`. In the ACT it is possible to train this parameter along with the Van der Waals parameters.
+for :math:`p \ne 0`. For :math:`p = 0`, Eqn. :eq:`cr_genmean` turns into the geometric rule. Table :numref:`tab-genmean` lists other well-known combination rules and their respective exponent :math:`p`. Hohm also describes combinations of the generalized mean and other similar expressions, but the most important observation he made was that the exponent :math:`p` can be varied at will :cite:p:`Hohm2025a`. In the ACT it is possible to train this parameter along with the Van der Waals parameters.
 
 .. table:: Correspondence between well-known combination rules and the generalized mean equation :eq:`cr_genmean`.
    :name: tab-genmean
