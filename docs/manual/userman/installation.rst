@@ -57,8 +57,7 @@ For developers, please additionally install these packages::
 .. _GCC: https://gcc.gnu.org
 .. _Xcode: https://developer.apple.com/xcode/ 
 
-.. attention:: If you are installing ACT in a cluster we recommend to use the cluster-provided compilers and in particular the MPI library since it may be tuned to make optimal use of the communication hardware. 
-High-performance computer centers typically provide compilers libraries using some kind of module system.
+.. attention:: If you are installing ACT in a cluster we recommend to use the cluster-provided compilers and in particular the MPI library since it may be tuned to make optimal use of the communication hardware. High-performance computer centers typically provide compilers libraries using some kind of module system.
 
 ========================
 Running the Installation

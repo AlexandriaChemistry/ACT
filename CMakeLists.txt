@@ -475,15 +475,19 @@ if(SQLITE3_FOUND)
 endif(SQLITE3_FOUND)
 
 # We need Boost since RDKit needs it
-find_package(Boost REQUIRED)
+find_package(Boost CONFIG REQUIRED)
 message("Boost_FOUND : ${Boost_FOUND}")
 include_directories(${Boost_INCLUDE_DIRS})
 
 # These are the necessary RDKit libraries
 set(rdkitlibs RDGeneral SmilesParse FileParsers GraphMol Inchi RDInchiLib SubstructMatch SubstructLibrary GeneralizedSubstruct  FilterCatalog DetermineBonds )
 
+# Because RDKit did not yet updated their cmake config for this
+cmake_policy(SET CMP0167 NEW)
 find_package(RDKit REQUIRED COMPONENTS ${rdkitlibs} )
 message("RDKit_FOUND : ${RDKit_FOUND}")
+# Reset the policy
+cmake_policy(SET CMP0167 OLD)
 if(RDKit_FOUND)
   find_path(RDKit_INCLUDE_DIR rdkit/GraphMol/FilterCatalog/FilterMatchers.h)
   if(NOT RDKit_INCLUDE_DIR)
@@ -672,21 +676,6 @@ if(GMX_FAHCORE)
   set(COREWRAP_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/../corewrap" CACHE STRING
       "Path to swindirect.h")
   include_directories(${COREWRAP_INCLUDE_DIR})
-endif()
-
-# Value of GMX_BUILD_HELP=AUTO tries to generate things, but will only
-# produce warnings if that fails.
-set(build_help_default AUTO)
-if (SOURCE_IS_SOURCE_DISTRIBUTION OR CMAKE_CROSSCOMPILING)
-    set(build_help_default OFF)
-endif()
-gmx_option_trivalue(GMX_BUILD_HELP "Build completions automatically (requires that compiled binaries can be executed on the build host) and install man pages if built (requires building the 'man' target manually)" ${build_help_default})
-mark_as_advanced(GMX_BUILD_HELP)
-if (GMX_BUILD_HELP AND SOURCE_IS_SOURCE_DISTRIBUTION AND BUILD_IS_INSOURCE)
-    message(FATAL_ERROR
-        "Rebuilding shell completions or man pages is not supported for "
-        "in-source builds from a source distribution. "
-        "Set GMX_BUILD_HELP=OFF or do an out-of-source build to proceed.")
 endif()
 
 # # # # # # # # # # NO MORE TESTS AFTER THIS LINE! # # # # # # # # # # #

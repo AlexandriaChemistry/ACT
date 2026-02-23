@@ -16,7 +16,7 @@ Electrostatic Potential
 =======================
 The charge distribution :math:`\rho` of a molecule is determined by the nuclear position of the :math:`N` atoms at positions :math:`\mathbf{x}` and the electron density :math:`n(\mathbf{r})`. The molecular electrostatic potential (MEP) at a point in space :math:`r^\prime` is thus given by
 
-.. math:: \Phi(\mathbf{r}^\prime) = \frac{1}{4\pi\varepsilon_0}\left[\sum_{i=1}^N \frac{z_i}{ \|\mathbf{x}_i-\mathbf{r}^\prime\|} - \int \frac{n(\mathbf{r})}{\|\mathbf{r}-\mathbf{r}^\prime\|}{\rm d}r \right]
+.. math:: \Phi(\mathbf{r}^\prime) = \frac{1}{4\pi\varepsilon_0}\left[\sum_{i=1}^N \frac{z_i}{ \|\mathbf{x}_i-\mathbf{r}^\prime\|} - \int \frac{n(\mathbf{r})}{\|\mathbf{r}-\mathbf{r}^\prime\|}{\mathrm d}r \right]
    :label: phi
 
 where :math:`N` is the number of atoms, :math:`z_i` are the nuclear charges, :math:`\varepsilon_0` is the permittivity of vacuum and integration is over the entire space. The minus sign before the integral is due to the negative charge of electrons. 
@@ -35,10 +35,10 @@ Taylor expansion of :math:`|{\bf r}-{\bf r}^\prime|^{-1}`  :cite:p:`Berendsen200
 
 .. math:: \frac{1}{|{\bf r^\prime}-{\bf r}|} \approx \frac{1}{r} + \left({\bf \hat r} \cdot
    {\bf r} \right)\frac{1}{r^2} + \frac{1}{2} \left[3\left({\bf \hat r} \cdot
-   {\bf r} \right)^2 - r^{2}{\rm \bf I}\right]\frac{1}{ r^3} + \cdots
+   {\bf r} \right)^2 - r^{2}{\mathrm \bf I}\right]\frac{1}{ r^3} + \cdots
    :label: Rexpansion
 
-where :math:`{\bf \hat r} = {\bf r}^\prime/r` and :math:`{\rm \bf I}` is the
+where :math:`{\bf \hat r} = {\bf r}^\prime/r` and :math:`{\mathrm \bf I}` is the
 identity matrix. By inserting Eqn. :eq:`Rexpansion` into Eqn. :eq:`phi`, we get
 
 .. math:: \Phi({\bf r}^\prime) \approx \frac{1}{4 \pi \epsilon_0} { \frac{Q}{r}
@@ -59,7 +59,7 @@ the deviation of the distribution of the molecular electron density
 from spherical symmetry. :math:`\boldsymbol{\Theta_0}` is given by
 
 .. math:: \boldsymbol{\Theta_0} = \frac{1}{2}\int n(\mathbf{r}) \left[3\left({\bf \hat r}
-   \cdot {\bf r}\right)^2 - r^2 {\rm \bf I} \right] d {\bf r} 
+   \cdot {\bf r}\right)^2 - r^2 {\mathrm \bf I} \right] d {\bf r} 
 
 The quadrupole tensor can be written as a traceless :math:`3 \times 3` matrix 
 in the Cartesian coordinate if one writes :math:`\left({\bf \hat r} \cdot
@@ -82,7 +82,7 @@ Finally, we get
 
 .. math:: \begin{align}
    \frac{1}{2} \left[3\left({\bf \hat r} \cdot
-   {\bf r} \right)^2 - r^{2} {\rm \bf I}\right] = {\bf \hat r} \cdot
+   {\bf r} \right)^2 - r^{2} {\mathrm \bf I}\right] = {\bf \hat r} \cdot
    \frac{1}{2}\left[\begin{array}{cccc}
    3x^2- r^2 & 3xy   & 3zx \\
    3yx  &  3y^2- r^2 & 3yz \\
@@ -217,7 +217,7 @@ and rewrite equation :eq:`In` as:
 where :math:`s` iterates over the :math:`N` atomic coordinates. 
 To make the calculation of intensities practical, the numerical derivative of the dipole moment with respect to the atomic coordinates :math:`\displaystyle{\frac{\partial p_{k}}{\partial{q_s}}}` is stored in a text file during the normal mode analysis and finally we note that the term :math:`\displaystyle{\frac{\partial q_{s}}{\partial Q_{n}}}` corresponds to one over component :math:`s` of eigenvector :math:`n`.
 
-As an example, an infrared spectrum can be generated using a force field file and a molprop file using::
+As an example, an infrared spectrum can be generated using the OPLS2020 force field :cite:p:`Jorgensen2023a` and a molprop file using::
 
     alexandria nma -ff OPLS2020 -charges OPLS2020-charges -db ethanol -ir ir-ethanol
 
@@ -227,7 +227,7 @@ yielding the spectrum in Fig. :numref:`fig-ethanol`.
    :name: fig-ethanol
    :width: 90%
    
-   Simulated infrared vibrational spectrum for ethanol, based on the OPLS2020 force field~ :cite:p:`Jorgensen2023a`.
+   Simulated infrared vibrational spectrum for ethanol, based on the OPLS2020 force field.
 
 ---------------
 Thermochemistry
@@ -243,13 +243,13 @@ the standard `Entropy`_ :math:`S^o` (:eq:`S0`), and the `Heat-Capacity`_ :math:`
 
 .. _Heat-Capacity: https://en.wikipedia.org/wiki/Heat_capacity
 
-.. math:: E = RT^2\left(\frac{\partial {\rm ln} Q}{\partial T} \right)_{N,V}
+.. math:: E = RT^2\left(\frac{\partial {\mathrm ln} Q}{\partial T} \right)_{N,V}
    :label: intE
 
-.. math:: S^o = R {\rm ln} Q + RT\left(\frac{\partial {\rm ln} Q}{\partial T} \right)_{N,V}
+.. math:: S^o = R {\mathrm ln} Q + RT\left(\frac{\partial {\mathrm ln} Q}{\partial T} \right)_{N,V}
    :label: S0
 
-.. math:: C_v = 2RT\left(\frac{\partial {\rm ln} Q}{\partial T} \right)_{N,V} + RT^2 \left(\frac{\partial^2 {\rm ln} Q}{\partial T^2} \right)_{N,V}
+.. math:: C_v = 2RT\left(\frac{\partial {\mathrm ln} Q}{\partial T} \right)_{N,V} + RT^2 \left(\frac{\partial^2 {\mathrm ln} Q}{\partial T^2} \right)_{N,V}
    :label: Cv
 
 where :math:`R` is the ideal gas constant and :math:`T` the absolute temperature. For an ideal 
@@ -257,7 +257,7 @@ gas, :math:`Q(N,V,T)` can be decomposed into `Partition-Function`_ of different 
 
 .. _Partition-Function: https://en.wikipedia.org/wiki/Partition_function_(statistical_mechanics)
 
-.. math:: Q(N,V,T) = \frac{\left(q_{\rm el} q_{\rm tr} q_{\rm rot} q_{\rm vib}\right)^N}{N!}
+.. math:: Q(N,V,T) = \frac{\left(q_{\mathrm el} q_{\mathrm tr} q_{\mathrm rot} q_{\mathrm vib}\right)^N}{N!}
    :label: Partition
 
 
@@ -267,19 +267,19 @@ The `Rigid-Rotor`_ and the `Quantum-Harmonic-Oscillator`_ can be used to approxi
 
 .. _Quantum-Harmonic-Oscillator: https://en.wikipedia.org/wiki/Quantum_harmonic_oscillator
 
-.. math:: q_{\rm rot} = \frac{T}{\sigma \Theta_{\rm rot}}
+.. math:: q_{\mathrm rot} = \frac{T}{\sigma \Theta_{\mathrm rot}}
 
-where :math:`\sigma` is the symmetry number, :math:`\Theta_{\rm rot}` the rotational temperature defined as 
+where :math:`\sigma` is the symmetry number, :math:`\Theta_{\mathrm rot}` the rotational temperature defined as 
 
-.. math:: \Theta_{\rm rot} = \frac{h^2}{8\pi^2 {\rm I} k_{\beta}}
+.. math:: \Theta_{\mathrm rot} = \frac{h^2}{8\pi^2 {\mathrm I} k_{\beta}}
 
-where :math:`{\rm I}` is the moment of inertia, :math:`k_{\beta}` the Boltzmann constant, and :math:`h` the Planck constant. The partition function of a quantum harmonic oscillator is defined as 
+where :math:`{\mathrm I}` is the moment of inertia, :math:`k_{\beta}` the Boltzmann constant, and :math:`h` the Planck constant. The partition function of a quantum harmonic oscillator is defined as 
 
-.. math:: q_{\rm vib} = \frac{e^{\frac{-\beta h \nu}{2}}}{1-e^{-\beta h \nu}}
+.. math:: q_{\mathrm vib} = \frac{e^{\frac{-\beta h \nu}{2}}}{1-e^{-\beta h \nu}}
 
-where :math:`\nu` is the vibrational frequency of the oscillator. If we define the vibrational temperature as :math:`\Theta_{\rm vib} = \frac{h \nu}{k_{\beta}}`, then we will have 
+where :math:`\nu` is the vibrational frequency of the oscillator. If we define the vibrational temperature as :math:`\Theta_{\mathrm vib} = \frac{h \nu}{k_{\beta}}`, then we will have 
 
-.. math:: q_{\rm vib} = \frac{e^{\frac{\Theta_{\rm vib}}{2T}}}{1- e^{\frac{\Theta_{\rm vib}}{T}}}
+.. math:: q_{\mathrm vib} = \frac{e^{\frac{\Theta_{\mathrm vib}}{2T}}}{1- e^{\frac{\Theta_{\mathrm vib}}{T}}}
 
 Applying Eqn. :eq:`Partition` to Eqn. :eq:`intE` followed by the multiplication rule in logarithm yields:
 
@@ -296,7 +296,7 @@ Thermochemical properties are computed automatically by the *alexandria nma* com
 The *alexandria nma* used above to generate the infrared spectrum in Fig. :numref:`fig-ethanol`  computes the thermochemical variables as well (Table :numref:`tab-thermo`).
 Information on calculation of the enthalpy of formation will be pubslished in the near future.
 
-.. table:: Thermochemical values for ethanol at 298.15 K based on the OPLS2020 force field~ :cite:p:`Jorgensen2023a`.
+.. table:: Thermochemical values for ethanol at 298.15 K based on the OPLS2020 force field.
    :name: tab-thermo
    
    +-----------------------+---------------------------------+-----------+
@@ -365,5 +365,5 @@ Due to the underlying algorithm for `Quasi-Random`_ numbers, this should be a po
    :width: 90%
    :name: fig-b2
 
-   Sample second virial coefficient and components for water using the TIP4P model~ :cite:p:`Jorgensen1983a`.
+   Sample second virial coefficient and components for water using the TIP4P model.
 

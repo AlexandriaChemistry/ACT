@@ -3,6 +3,10 @@ Before you begin...
 -------------------
 This manual is a work in progress, covering the physical background of the force field development in ACT, from potential energy functions to the molecular properties supported by ACT version 1.0, algorithms used for training, how to generate training data, installation and usage.
 
+A pdf version of this manual is `available`_.
+
+.. _available: https://alexandriachemistry.github.io/ACT/act.pdf
+
 Throughout this document we highlight *alexandria commands* like this.
 There are also hyperlinks in the document, both for the references and in the running text, often linking to `Wikipedia`_.
 

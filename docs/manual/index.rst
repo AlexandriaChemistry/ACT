@@ -8,7 +8,7 @@ User & Reference Manual 1.2 :math:`\beta`
 
 David van der Spoel, Paul J. van Maaren and Mohammad M. Ghahremanpour
 
-.. image:: manual/images/AClogo.png
+.. image:: images/AClogo.png
    :align: center
 
 .. toctree::
@@ -16,12 +16,8 @@ David van der Spoel, Paul J. van Maaren and Mohammad M. Ghahremanpour
    :maxdepth: 4
    :caption: Contents:
 
-   manual/preface/preface
-   manual/userman/header
-   manual/refman/header
-   manual/devman/header
-
-All references
---------------
-
-.. bibliography::
+   preface/preface
+   userman/header
+   refman/header
+   devman/header
+   references
