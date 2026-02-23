@@ -46,6 +46,9 @@ jobs:
           conda info
           conda config --add channels conda-forge
           conda install librdkit-dev=2025.09.4 libboost-devel eigen=5.0.1 doxygen graphviz pygments
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
       - name: Install ACT
         run: |
           cd ${{ github.workspace }}
@@ -59,12 +62,6 @@ jobs:
           mv docs/html/doxygen/html-full ../_build/doxygen
           mv docs/manual/html ../_build/manual
           mv docs/manual/latex/act.pdf ../_build/manual
-
-      - name: Install dependencies
-        run: pip install -r requirements.txt
-
-      - name: Sphinx build
-        run: sphinx-build docs _build
 
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v4
