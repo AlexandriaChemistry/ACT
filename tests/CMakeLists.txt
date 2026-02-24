@@ -34,8 +34,8 @@
 
 set(REGRESSIONTEST_PATH "" CACHE PATH "Directory containing regressiontests")
 mark_as_advanced(REGRESSIONTEST_PATH)
-option(REGRESSIONTEST_DOWNLOAD
-    "Automatically download regressiontests. Tests can be run with ctest." OFF)
+#option(REGRESSIONTEST_DOWNLOAD
+#    "Automatically download regressiontests. Tests can be run with ctest." OFF)
 
 if(REGRESSIONTEST_DOWNLOAD)
     if (NOT SOURCE_IS_SOURCE_DISTRIBUTION)

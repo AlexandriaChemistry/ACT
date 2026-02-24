@@ -66,7 +66,7 @@ target_sources(actLib
 add_executable(alexandria alexandria.cpp ${actLib})
 
 target_link_libraries(alexandria actLib libactgromacs 
-                      ${GMX_EXTRA_LIBRARIES} 
+                      ${GMX_EXTRA_LIBRARIES}
                       ${GMX_EXE_LINKER_FLAGS})
 set(BINARY_NAME "alexandria${GMX_BINARY_SUFFIX}")
 set_target_properties(alexandria PROPERTIES 
