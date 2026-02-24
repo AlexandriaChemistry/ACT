@@ -60,7 +60,7 @@ jobs:
           make -j 4 doxygen-full website docs
           mkdir ../_build
           mv docs/html/doxygen/html-full ../_build/doxygen
-          mv docs/manual/html ../_build/
+          mv docs/manual/html/* ../_build/
           mv docs/manual/latex/act.pdf ../_build/
 
       - name: Deploy
