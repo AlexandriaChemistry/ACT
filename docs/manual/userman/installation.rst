@@ -44,7 +44,7 @@ The simplest way that should suffice on a single computer (i.e. not a cluster), 
   conda activate ACT
   conda config --add channels anaconda
   conda config --add channels conda-forge
-  conda install librdkit-dev=2025.09.4 libboost-devel=1.86.0 cmake eigen=5.0.1 libxml2 numpy matplotlib pubchempy plotxvg pillow
+  conda install librdkit-dev=2025.09.4 libboost-devel=1.86.0 cmake eigen=5.0.1 libxml2 numpy matplotlib pubchempy pillow
 
 This should install the libraries mentioned above (note: it will take some time!). If you are installing ACT on a high-performance computing cluster, there likely is support for compilers and a MPI library already. If not, then add the *openmpi* package to your conda install line.
 Most Linux installations come bundled with the GNU compiler suite (`GCC`_) and for macOS the Xcode package can be downloaded free of charge from `Xcode`_. If you do not have a compiler, add *gcc* to the conda install line.
@@ -64,7 +64,7 @@ Running the Installation
 ========================
 Once the prerequisites  are met, the easiest way to get going is to fetch the 
 `install_act`_ script to your working directory of choice.
-To fetch the script, once you have clicked on the link, click on the download icon (Fig. :ref:`fig-download`).
+To fetch the script, once you have clicked on the link, click on the download icon (:numref:`fig-download`).
 
 .. _install_act: https://github.com/dspoel/ACT/blob/main/src/act/python/install_act
 

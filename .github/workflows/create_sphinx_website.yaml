@@ -5,10 +5,10 @@ on:
     branches:
       - main
       - website
-#  pull_request:
-#    branches:
-#      - main
-#      - website
+  pull_request:
+    branches:
+      - main
+      - website
 
 jobs:
   create_website:
@@ -34,7 +34,7 @@ jobs:
         run: |
           sudo apt update
           sudo apt-get update
-          sudo apt-get -y install gcc cmake libopenmpi-dev openmpi-bin  libxml2 
+          sudo apt-get -y install gcc cmake libopenmpi-dev openmpi-bin  texlive-latex-recommended texlive-latex-extra libxml2 latexmk
       - uses: conda-incubator/setup-miniconda@v3
         with:
           auto-update-conda: true
@@ -46,6 +46,9 @@ jobs:
           conda info
           conda config --add channels conda-forge
           conda install librdkit-dev=2025.09.4 libboost-devel eigen=5.0.1 doxygen graphviz pygments
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
       - name: Install ACT
         run: |
           cd ${{ github.workspace }}
@@ -53,18 +56,12 @@ jobs:
           export MPICXX=/usr/bin/g++
           export MPICC=/usr/bin/gcc
           export CXXFLAGS='-std=c++20'
-          cmake -DGMX_DOUBLE=ON -DCMAKE_PREFIX_PATH=/usr/share/miniconda/envs/test -DBUILD_SHARED_LIBS=OFF -DGMX_OPENMP=OFF -DGMX_MPI=ON -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/../tools -DCMAKE_BUILD_TYPE=Release -DACT_BUILD_MANUAL=OFF -DACT_COMPACT_DOXYGEN=OFF -DREGRESSIONTEST_DOWNLOAD=OFF -DGMX_DEFAULT_SUFFIX=OFF -DCMAKE_CXX_COMPILER=${MPICXX} -DCMAKE_C_COMPILER=${MPICC} ..
+          cmake -DGMX_DOUBLE=ON -DCMAKE_PREFIX_PATH=/usr/share/miniconda/envs/test -DBUILD_SHARED_LIBS=OFF -DGMX_OPENMP=OFF -DGMX_MPI=ON -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/../tools -DCMAKE_BUILD_TYPE=Release -DACT_BUILD_MANUAL=ON  -DGMX_DEFAULT_SUFFIX=OFF -DCMAKE_CXX_COMPILER=${MPICXX} -DCMAKE_C_COMPILER=${MPICC} ..
           make -j 4 doxygen-full website docs
           mkdir ../_build
           mv docs/html/doxygen/html-full ../_build/doxygen
-          mv docs/manual/html ../_build/manual
-          mv docs/manual/latex/act.pdf ../_build/manual
-
-      - name: Install dependencies
-        run: pip install -r requirements.txt
-
-      - name: Sphinx build
-        run: sphinx-build docs _build
+          mv docs/manual/html/* ../_build/
+          mv docs/manual/latex/act.pdf ../_build/
 
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v4
