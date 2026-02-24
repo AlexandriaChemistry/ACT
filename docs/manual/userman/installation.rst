@@ -128,6 +128,14 @@ where *Value* can be *ON* or *OFF* or something more option specific.
    +----------------------+------------------------------------------------------------+
    |                      | Requires installing developer tools, default OFF.          |
    +----------------------+------------------------------------------------------------+
+   | CMAKE_C_FLAGS        | By default nothing is needed, but sometimes this linker    |
+   +----------------------+------------------------------------------------------------+
+   |                      | flag helps to overcome problems:                           |
+   +----------------------+------------------------------------------------------------+
+   |                      | "-L${CONDA_PREFIX}/lib -Wl,-rpath,${CONDA_PREFIX}/lib"     |
+   +----------------------+------------------------------------------------------------+
+   | CMAKE_CXX_FLAGS      | See previous entry, you likely need to add both.           |
+   +----------------------+------------------------------------------------------------+
    
    
 ============================
@@ -139,9 +147,7 @@ For instance, there may be library mismatches like this::
    undefined reference to `__cxa_call_terminate@CXXABI_1.3.15'
    
 which is caused by the fact that conda libraries expect specific versions of system libraries, combined with the make process supplying a wrong version of that library.
-In that case you can instruct cmake to change the order of libraries by adding these flags to the cmake command line::
-
-  
+In that case you can instruct cmake to change the order of libraries by adding the flags to the cmake command line according to :numref:`tab-cmake`.
 
 
 ===============
