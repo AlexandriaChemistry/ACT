@@ -162,11 +162,13 @@ class MoleculeDict:
                         atom.GetValence(Chem.ValenceType.EXPLICIT),
                         atom.GetHybridization() ) )
             fftype = atom.GetSymbol()
-            fftype = fftype.lower()
-            if fftype in [ "c", "n", "o", "p", "s" ]:
-                fftype += get_atype(atom)
+            if fftype in [ "C", "N", "O", "P", "S" ]:
+                fftype = fftype.lower() + get_atype(atom)
             else:
-                fftype += str(atom.GetFormalCharge())
+                if atom.GetFormalCharge() != 0:
+                    fftype += str(atom.GetFormalCharge())
+                else:
+                    fftype = fftype.lower()
             self.atoms.append( { "atomic_number": atom.GetAtomicNum(), "obtype": fftype,
                                  "atomtype": fftype, "mass": atom.GetMass(), "element": atom.GetSymbol(),
                                  "X": coords[ii][0], "Y": coords[ii][1], "Z": coords[ii][2] } )
