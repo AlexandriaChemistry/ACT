@@ -198,6 +198,7 @@ class MoleculeDict:
         if None == fileformat:
             fileformat = filename[-3:]
         # First try and read, but do not crash
+        readOK = True
         try:
             if fileformat == "sdf":
                 m = Chem.MolFromMolFile(filename, sanitize=True, removeHs=False)
@@ -210,12 +211,15 @@ class MoleculeDict:
                 try:
                     m = Chem.MolFromPDBFile(filename, sanitize=True, removeHs=False, proximityBonding=False)
                 except Chem.AtomValenceException:
+                    print("Valence Exception encountered, please check input file %s for molecule %s" %
+                          ( filename, molname ) )
                     m = Chem.MolFromPDBFile(filename, sanitize=False, removeHs=False, proximityBonding=False)
+                except:
+                    readOK = False
         except ValueError:
-            print(f"Problem reading {molname} from {filename}")
-            return False
-        if m == None:
-            print(f"RDKit returned an empty molecule {molname}")
+            readOK = False
+        if not readOK or m == None:
+            print(f"Problem reading {molname} from {filename} using RDKit")
             return False
         # We trust the sdf files ...
         determine_bonds = fileformat != "sdf"
