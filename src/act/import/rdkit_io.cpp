@@ -123,7 +123,15 @@ static std::string getAtomType(MsgHandler         *msg_handler,
         case RDKit::Atom::HybridizationType::SP3:
         case RDKit::Atom::HybridizationType::SP3D:
         case RDKit::Atom::HybridizationType::SP3D2:
-            ltype += "3";
+            if (ltype == "n" && atom->getFormalCharge() == 1)
+            {
+                //! TODO: Consider whether we want to keep n4 or use n3.
+                ltype += "4";
+            }
+            else
+            {
+                ltype += "3";
+            }
             break;
         case RDKit::Atom::HybridizationType::S:
         case RDKit::Atom::HybridizationType::OTHER:

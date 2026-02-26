@@ -20,10 +20,14 @@ def get_order(order:str)->float:
         return orders[order]
     sys.exit("Unknown bond order '%s'" % order)
 
-def get_atype(hybridization:str)->str:
+def get_atype(atom)->str:
     hybrid = { "SP": 1, "SP2": 2, "SP2D": 2, "SP3": 3, "SP3D": 3, "SP3D2": 3 }
+    hybridization = str(atom.GetHybridization())
     if hybridization in hybrid:
-        return str(hybrid[hybridization])
+        if atom.GetFormalCharge() == 1 and atom.GetSymbol() == "N" and hybrid[hybridization] == 3:
+            return "4"
+        else:
+            return str(hybrid[hybridization])
     sys.exit("Unknown hybridization '%s'" % hybridization)
 
 def get_atom_bond_xml()->list:
@@ -158,12 +162,13 @@ class MoleculeDict:
                         atom.GetValence(Chem.ValenceType.EXPLICIT),
                         atom.GetHybridization() ) )
             fftype = atom.GetSymbol()
-            if atom.GetFormalCharge() == 0:
-                fftype = fftype.lower()
-                if fftype in [ "c", "n", "o", "p", "s" ]:
-                    fftype += get_atype(str(atom.GetHybridization()))
+            if fftype in [ "C", "N", "O", "P", "S" ]:
+                fftype = fftype.lower() + get_atype(atom)
             else:
-                fftype += str(atom.GetFormalCharge())
+                if atom.GetFormalCharge() != 0:
+                    fftype += str(atom.GetFormalCharge())
+                else:
+                    fftype = fftype.lower()
             self.atoms.append( { "atomic_number": atom.GetAtomicNum(), "obtype": fftype,
                                  "atomtype": fftype, "mass": atom.GetMass(), "element": atom.GetSymbol(),
                                  "X": coords[ii][0], "Y": coords[ii][1], "Z": coords[ii][2] } )
