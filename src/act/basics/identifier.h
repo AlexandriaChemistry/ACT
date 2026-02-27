@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2020-2024
+ * Copyright (C) 2020-2024,2026
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -62,7 +62,7 @@ namespace alexandria
  * \param[in] str The string
  * \return  the enum value
  * \throws a gmx::InvalidInputError in case of an unknown string
- * TODO: return a boolean instead of crashing
+ * \todo return a boolean instead of crashing
  */
 CanSwap stringToCanSwap(const std::string &str);
 
@@ -135,7 +135,7 @@ class Identifier
      */
     friend bool operator<(const Identifier &a, const Identifier &b)
     {
-        // TODO check implementation
+        //! \todo check implementation
         if (a.canSwap() < b.canSwap())
         {
             return true;

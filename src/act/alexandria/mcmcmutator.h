@@ -51,7 +51,7 @@ namespace alexandria
 /*!
  * \brief Mutator which applies MCMC optimization to an ACMIndividual.
  * It can also conduct sensitivity analysis if requested.
- * TODO: shouldn't we move sensitivity analysis somewhere else?
+ * \todo shouldn't we move sensitivity analysis somewhere else?
  */
 class MCMCMutator : public ga::Mutator
 {

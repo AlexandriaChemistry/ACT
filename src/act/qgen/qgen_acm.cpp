@@ -608,7 +608,7 @@ void QgenAcm::solveSQE(MsgHandler              *msg_handler,
             {
                 chi_corr[i] += Jcc_[i][l]*qcorr;
             }
-            // TODO Check this! Only to be done when there are shells!
+            //! \todo Check this! Only to be done when there are shells!
             //if (false && nonFixed_.size() < static_cast<size_t>(natom_))
             //{
             //   chi_corr[i] += eta_[nfi] * q_[myShell_.find(nfi)->second];

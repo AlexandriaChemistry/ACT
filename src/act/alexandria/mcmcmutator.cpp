@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2025
+ * Copyright (C) 2014-2026
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -147,7 +147,7 @@ void MCMCMutator::mutate(MsgHandler                *msghandler,
             // For the second half of the optimization, collect data 
             // to find the mean and standard deviation of each
             // parameter
-            // TODO: make optional
+            //! \todo make optional
             if (iter >= bch_->maxIter()/2)
             {
                 size_t k = 0;
@@ -163,7 +163,7 @@ void MCMCMutator::mutate(MsgHandler                *msghandler,
     }
     myGeneration_ += 1;
     // OPTIMIZATION IS COMPLETE
-    // TODO Make optional
+    //! \todo Make optional
     computeMeanSigma(sum, nsum, &sum_of_sq);
 
     // Assume no better minimum was found

@@ -289,7 +289,7 @@ void MultiPoleDevComputer::calcDeviation(MsgHandler                    *msghandl
         if (qqm.hasMultipole(mpo_) && qact.hasMultipole(mpo_))
         {
             auto qelec = qqm.getMultipole(mpo_);
-            // TODO: Compute this only once if both dipole and quadrupole are used in fitting
+            //! \todo Compute this only once if both dipole and quadrupole are used in fitting
             qact.setQ(*actmol->atoms());
             if (doForce)
             {

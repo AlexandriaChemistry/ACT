@@ -178,7 +178,7 @@ int nma(int argc, char *argv[])
             {
                 matrix box;
                 clear_mat(box);
-                // TODO This will crash
+                //! \todo This will crash
                 write_sto_conf(confout, actmol.getMolname().c_str(),
                                nullptr,
                                as_rvec_array(xmin.data()), nullptr,

@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2025
+ * Copyright (C) 2014-2026
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -389,7 +389,7 @@ void ACTMol::forceEnergyMaps(MsgHandler                                         
                         foundQM    += 1;
                     }
                 }
-                // TODO Store the interaction forces
+                //! \todo Store the interaction forces
                 ACTEnergy my_all(exper.id());
                 my_all.setACT(ener.second);
                 if (foundQM == mpos.size() ||
@@ -450,7 +450,7 @@ void ACTMol::forceEnergyMaps(MsgHandler                                         
 
 /*! \brief Determine whether a molecule has linear coordinates
  * This routine will only work for subsequent atoms. 
- * TODO: It should use bond information
+ * \todo It should use bond information
  * \param[in] myatoms The atom class
  * \param[in] coords  The coordinates
  * \return Whether there are three subsequent atoms in the molecule on a line
@@ -718,7 +718,7 @@ void ACTMol::calculateInteractionEnergy(MsgHandler                        *msgha
         }
         checkEnergies(msghandler, "Monomer", e_monomer[ff]);
     }
-    // TODO forces are overwritten, not trustable!
+    //! \todo forces are overwritten, not trustable!
     std::vector<gmx::RVec> forces(topology_.atoms().size(), fzero);
     std::map<InteractionType, double> e_total;
     auto myatoms = topology_.atoms();
@@ -893,7 +893,7 @@ void ACTMol::calculateInteractionEnergy(MsgHandler                        *msgha
     }
     checkEnergies(msghandler, "Inter 3", *einter);
     // Add dimer forces to the interaction forces
-    // TODO this is not correct anymore, see above.
+    //! \todo this is not correct anymore, see above.
     for(size_t i = 0; i < topology_.atoms().size(); i++)
     {
         for(int m = 0; m< DIM; m++)
@@ -979,7 +979,7 @@ ACTMessage ACTMol::GenerateAcmCharges(MsgHandler             *msg_handler,
         for(auto qp = qProps_.begin(); qp < qProps_.end(); ++qp)
         {
             qp->qPact()->setQ(atomsConst());
-            // TODO Is this correct? Should not each qp have it's own coordinates?
+            //! \todo Is this correct? Should not each qp have it's own coordinates?
             //qp->qPact()->setX(*coords);
         }
     }
@@ -998,7 +998,7 @@ void ACTMol::updateQprops(const ForceField          *pd,
         qcalc->setQ(*myatoms);
         auto myx = qcalc->x();
         forceComp->compute(nullptr, pd, &topology_, &myx, forces, &energies);
-        // TODO, likely we should not change the coordinates here, just the charges
+        //! \todo, likely we should not change the coordinates here, just the charges
         qcalc->setX(myx);
     }
 }
@@ -1066,7 +1066,7 @@ void ACTMol::setCharges(MsgHandler        *msghandler,
             auto piter = pd->findParticleType(pId);
             auto q = piter->charge();
             (*myatoms)[i].setCharge(q);
-            // TODO Do not use -1 here, but particle.core()
+            //! \todo Do not use -1 here, but particle.core()
             (*myatoms)[i-1].setCharge(qnew[j-1]-q);
         }
     }
@@ -1126,7 +1126,7 @@ void ACTMol::generateCharges(MsgHandler                *msghandler,
     }
     bool converged   = false;
 
-    // TODO check whether this needed
+    //! \todo check whether this needed
     std::map<InteractionType, double> energies;
     auto myatoms = atoms();
     fraghandler_.setChargeGenerationAlgorithm(algorithm);
@@ -1168,7 +1168,7 @@ void ACTMol::generateCharges(MsgHandler                *msghandler,
                     double dq2 = 0;
                     for (size_t i = 0; i < myatoms->size(); i++)
                     {
-                        // TODO what about shells?
+                        //! \todo what about shells?
                         double qrq = qresp->getCharge(i);
                         dq2 += gmx::square((*myatoms)[i].charge() - qrq);
                         (*myatoms)[i].setCharge(qrq);
@@ -1192,7 +1192,7 @@ void ACTMol::generateCharges(MsgHandler                *msghandler,
                     {
                         (*myatoms)[i].setCharge(qresp->getCharge(i));
                     }
-                    // TODO not sure whether this is needed but why not.
+                    //! \todo not sure whether this is needed but why not.
                     *coords = myx;
                     // Copy charges to fragments
                     fraghandler_.setCharges(*myatoms);
@@ -1419,7 +1419,7 @@ void ACTMol::PrintTopology(MsgHandler                   *msg_handler,
     printmol.nr = 1;
     auto commercials = generateCommercials(pd, forceComp, coords);
 
-    // TODO write a replacement for this function
+    //! \todo write a replacement for this function
     print_top_header(fp, pd, bHaveShells_, commercials, bITP);
     write_top(msg_handler, fp, printmol.name, &topology_, pd);
     if (!bITP)
@@ -1488,7 +1488,7 @@ void ACTMol::GenerateCube(MsgHandler                   *msghandler,
                 auto qcalc = qc->qPact();
                 // This code will overwrite files if there are more than one ESP data set
                 qcalc->setQ(atomsConst());
-                // TODO Check but we should likely not update coords
+                //! \todo Check but we should likely not update coords
                 // qcalc->setX(coords);
                 // Relax shells, position vsites etc. etc.
                 auto myx = qresp->coords();
@@ -1761,7 +1761,7 @@ void ACTMol::getExpProps(MsgHandler                                 *msghandler,
         }
         if (qprop)
         {
-            // TODO Check whether this is needed. Likely it is here, since it is the first time.
+            //! \todo Check whether this is needed. Likely it is here, since it is the first time.
             qcalc->setQandX(atomsConst(), xatom);
             qcalc->initializeMoments();
             qcalc->calcMoments(msghandler);

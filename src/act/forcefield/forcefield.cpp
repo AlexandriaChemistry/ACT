@@ -232,7 +232,7 @@ void ForceField::guessChargeGenerationAlgorithm()
 {
     if (interactionPresent(InteractionType::ELECTRONEGATIVITYEQUALIZATION))
     {
-        // TODO: Add check for number of interactions?
+        //! \todo Add check for number of interactions?
         if (interactionPresent(InteractionType::BONDCORRECTIONS))
         {
             ChargeGenerationAlgorithm_ = ChargeGenerationAlgorithm::SQE;
@@ -665,7 +665,7 @@ void ForceField::sendEemprops(const CommunicationRecord *cr, int dest)
             if (fs != forces_.end())
             {
                 cr->send(dest, 1);
-                // TODO do not ignore return value
+                //! \todo do not ignore return value
                 (void) fs->second.Send(cr, dest);
             }
             else

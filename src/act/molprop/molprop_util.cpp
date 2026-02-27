@@ -55,7 +55,7 @@ void generate_index(std::vector<MolProp> *mp)
     {
         // We have to set some kind of index here to distinguish
         // the compounds.
-        // TODO: implement alexandria ID here.
+        //! \todo: implement alexandria ID here.
         mpi->setIndex(index++);
     }
 }

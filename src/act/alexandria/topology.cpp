@@ -150,7 +150,7 @@ void Topology::addShells(MsgHandler       *msghandler,
             std::string atomtype(iter->atom().ffType());
             if (pd->hasParticleType(atomtype))
             {
-                // TODO: Allow adding multiple shells
+                //! \todo Allow adding multiple shells
                 auto fa = pd->findParticleType(atomtype);
                 if (fa->hasInteractionType(InteractionType::POLARIZATION))
                 {
@@ -163,7 +163,7 @@ void Topology::addShells(MsgHandler       *msghandler,
                     {
                         continue;
                     }
-                    // TODO Multiple shell support
+                    //! \todo Multiple shell support
                     TopologyEntry pp;
                     auto core  = iter->index();
                     auto shell = atomList->size();
