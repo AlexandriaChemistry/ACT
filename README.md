@@ -3,9 +3,7 @@ Alexandria Chemistry Toolkit
 
 The paper describing this software is available at [Digital Discovery 4 (2025) 1925](https://doi.org/10.1039/D5DD00178A).
 
-The ACT manual, containing user and reference documentation as well as developer information is [on-line here](https://alexandriachemistry.github.io/ACT/).
-
-To install the ACT, please download the [install_act](https://github.com/dspoel/ACT/blob/main/src/act/python/install_act) script and run it according to instructions in the manual.
+The ACT manual, containing installation instructions, user and reference documentation as well as developer information is [on-line here](https://alexandriachemistry.github.io/ACT/).
 
 ACT is begin developed by
 
@@ -17,6 +15,7 @@ with contributions from
 
 + [Julian Marrades](https://github.com/jCodingStuff),
 + [Marie-Madeleine Walz](https://github.com/MMW1),
++ [Julian K&ouml;ngeter](https://github.com/JulianKoengeter),
 + [A. Najla Hosseini](https://github.com/najla23),
 + [Kristian Kriz](https://github.com/kkriz26),
 + [Alfred T. Nordman](https://github.com/pastaalfredo)
