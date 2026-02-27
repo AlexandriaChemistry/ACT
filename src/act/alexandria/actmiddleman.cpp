@@ -65,7 +65,7 @@ ACTMiddleMan::ACTMiddleMan(MsgHandler                *msghandler,
     // Create force computer
     forceComp_.init(bch->shellToler(), bch->shellMaxIter());
 
-    //! TODO Fitness computer. What about those false flags?
+    //! \todo Fitness computer. What about those false flags?
     fitComp_.init(msghandler, sii, mg, false, &forceComp_, algorithm);
     
     if (gach->optimizer() == OptimizerAlg::GA)
@@ -74,7 +74,7 @@ ACTMiddleMan::ACTMiddleMan(MsgHandler                *msghandler,
     }
     else
     {
-        //! TODO we need to make some logfiles for the middlemen, because they apparently cannot write to the global logfile
+        //! \todo we need to make some logfiles for the middlemen, because they apparently cannot write to the global logfile
         auto mut = new alexandria::MCMCMutator(dis(gen),
                                                bch, &fitComp_, sii,
                                                bch->evaluateTestset(),
@@ -121,7 +121,7 @@ void ACTMiddleMan::run(MsgHandler *msghandler)
     while (CommunicationStatus::RECV_DATA == cont)
     {
         // Get the dataset
-        //! TODO: is this really necessary?
+        //! \todo: is this really necessary?
         iMolSelect ims;
         cr->recv(master, &ims);
         

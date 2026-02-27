@@ -326,7 +326,7 @@ static void processAttr(FILE                 *fp,
             {
                 GMX_THROW(gmx::InvalidInputError(gmx::formatString("Invalid InteractionType '%s'", inter.c_str()).c_str()));
             }
-            // TODO This is a hack to be able to read "old" force field files.
+            //! \todo This is a hack to be able to read "old" force field files.
             std::map<InteractionType, CanSwap> csUpdate = {
                 { InteractionType::ELECTRONEGATIVITYEQUALIZATION, CanSwap::Yes },
                 { InteractionType::POLARIZATION, CanSwap::Yes },

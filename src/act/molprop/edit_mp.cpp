@@ -81,7 +81,7 @@ static bool dump_molecule(MsgHandler        *msghandler,
     if (msghandler->ok())
     {
         std::vector<gmx::RVec> coords = actmol.xOriginal();
-        // TODO check whether this is needed.
+        //! \todo check whether this is needed.
         //actmol.symmetrizeCharges(pd, qsymm, nullptr);
         std::map<MolPropObservable, iqmType> iqm = {
             { MolPropObservable::CHARGE, iqmType::QM }

@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2025
+ * Copyright (C) 2014-2026
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -544,7 +544,7 @@ void AllBondeds::updateForceField(gmx::TextWriter *tw,
             case InteractionType::IMPROPER_DIHEDRALS:
                 {
                     round_numbers(&av, &sig, 10);
-                    // TODO make this a parameter
+                    //! \todo make this a parameter
                     if (fabs(av) > 4)
                     {
                         fprintf(stderr, "Warning: large improper dihedral %g for %s\n",
@@ -610,7 +610,7 @@ void AllBondeds::extractGeometries(MsgHandler           *msghandler,
                         break;
                     }
                 }
-                // TODO: Check whether this occurs
+                //! \todo Check whether this occurs
                 if (i < myatoms.size())
                 {
                     msghandler->msg(ACTStatus::Warning,

@@ -276,7 +276,7 @@ bool MolProp::renumberResidues()
     {
         for(size_t j = 0; j < fragment_.size(); j++)
         {
-            // TODO: This ignore the possibility that there could be
+            //! \todo: This ignore the possibility that there could be
             // more than one residue in a fragment, e.g. a protein.
             auto atoms_j = fragment_[j].atoms();
             if (atoms_j.size() > 0)

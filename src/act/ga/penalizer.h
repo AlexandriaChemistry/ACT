@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2021-2025
+ * Copyright (C) 2021-2026
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -146,7 +146,7 @@ public:
  * randomized
  * 
  * Each X generations a fraction Y (at random) of the population is randomized
- * TODO: if needed, make this penalizer print the indices of the individuals it is
+ * \todo if needed, make this penalizer print the indices of the individuals it is
  * randomizing to a file
  */
 class CatastrophePenalizer : public Penalizer

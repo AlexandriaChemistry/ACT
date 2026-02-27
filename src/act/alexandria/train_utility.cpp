@@ -86,7 +86,7 @@ static void print_stats(gmx::TextWriter *tw,
     real mse  = 0, mae = 0, chi2 = 0, rmsd = 0;
     real Rfit = 0;
     int  n    = lsq->get_npoints();
-    // TODO add error checking for lsq
+    //! \todo add error checking for lsq
     if (n == 0)
     {
         return;
@@ -987,7 +987,7 @@ void TrainForceFieldPrinter::writeMolpropsEnergies(MsgHandler          *msghandl
         mol->forceEnergyMaps(msghandler, pd, forceComp, &forceMap,
                              &energyMap, &interactionEnergyMap, &energyComponentMap,
                              mol->hasMolPropObservable(MolPropObservable::INDUCTIONCORRECTION));
-        // TODO: This is copied from actmol.cpp, store in one place instead?
+        //! \todo This is copied from actmol.cpp, store in one place instead?
         std::map<MolPropObservable, InteractionType> interE = {
             { MolPropObservable::INTERACTIONENERGY,   InteractionType::EPOT                 },
             { MolPropObservable::ELECTROSTATICS,      InteractionType::ELECTROSTATICS       },
@@ -1474,7 +1474,7 @@ void TrainForceFieldPrinter::print(MsgHandler                  *msghandler,
         qtStats qesp, qepot;
         for (auto &i : qPropertyTypes())
         {
-            //TODO Add checks for existence
+            //! \todo Add checks for existence
             gmx_stats gesp;
             qesp.insert({ i.first, std::move(gesp) });
             gmx_stats gepot;

@@ -103,7 +103,7 @@ const std::string &probabilityComputerAlgToString(ProbabilityComputerAlg opt);
 
 /*!
  * Handles optimization parameters for Genetic Algorithm
- *! TODO: Should this be under the ga directory???
+ *! \todo: Should this be under the ga directory???
  */
 class GAConfigHandler : public ConfigHandler
 {
@@ -282,7 +282,7 @@ private:
     //! Maximum number of iterations
     int   maxiter_           = 100;
     //! Random number seed for initializer, crossover, mutator, and selector
-    //! TODO: This should be general
+    //! \todo: This should be general
     int   seed_              = 0;
     //! Relative step when optimizing
     real  step_              = 0.02;

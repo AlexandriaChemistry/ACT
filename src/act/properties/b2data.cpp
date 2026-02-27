@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2024
+ * Copyright (C) 2024-2026
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -238,7 +238,7 @@ void B2Data::integrate(int iTemp, double binWidth, double beta,
             double Unew = exp_U12_[iTemp][ii]/n_U12_[iTemp][ii];
             mayer_[iTemp].push_back(Unew);
             auto dB       = sphereIntegrator(r1, r2, Uprev, Unew);
-            // TODO: There is factor 0.5 here
+            //! \todo: There is factor 0.5 here
             *Bclass       -= 0.5*dB;
             Uprev         = Unew;
             for(int kk = 0; kk < 2; kk++)

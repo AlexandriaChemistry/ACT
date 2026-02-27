@@ -195,7 +195,7 @@ void OptACM::optionsFinished(const std::vector<t_filenm> &filenames)
     }
 }
 
-// TODO rename function and make a coupling between targets from the command line
+//! \todo rename function and make a coupling between targets from the command line
 // and properties to fetch from the training dataset.
 void OptACM::initChargeGeneration(iMolSelect ims)
 {
@@ -287,7 +287,7 @@ int OptACM::initMaster(const std::vector<t_filenm> &fnm,
     {
         auto mut = new alexandria::MCMCMutator(dis(gen), &bch_, fitComp_, sii_, bch_.evaluateTestset(),
                                                algorithm, gach_.maxGenerations());
-        // TODO Only open these files when we are optimizing in verbose mode.
+        //! \todo Only open these files when we are optimizing in verbose mode.
         if (msghandler_.verbose())
         {
             msghandler_.msg(ACTStatus::Verbose,
@@ -633,7 +633,7 @@ bool OptACM::runMaster(bool optimize,
                                          myfilenm.c_str());
                 sii_->saveState(true, myfilenm);
             }
-            //! TODO: resetting the train parameters for the TrainFFPrinter. We may have to work on that if we want to show the best test parameters too
+            //! \todo resetting the train parameters for the TrainFFPrinter. We may have to work on that if we want to show the best test parameters too
             sii_->updateForceField(&msghandler_, changed, bestGenome.find(iMolSelect::Train)->second.bases());
         }
     }
@@ -651,7 +651,7 @@ bool OptACM::runMaster(bool optimize,
     sii_->commRecPtr()->done();
 
     // Final energy calculation for all molecules
-    //! TODO: parallellize this. There is no need to do this I believe, it's done above, and parallel!
+    //! \todo parallellize this. There is no need to do this I believe, it's done above, and parallel!
     if (!bestGenome.empty())
     {
         std::set<int> changed;
@@ -727,7 +727,7 @@ int train_ff(int argc, char *argv[])
 
     gmx_output_env_t           *oenv;
     MolSelect                   gms;
-    TrainForceFieldPrinter      printer;  // TODO: pargs is a ConfigHandler, maybe we could inherit the superclass?
+    TrainForceFieldPrinter      printer;  //! \todo pargs is a ConfigHandler, maybe we could inherit the superclass?
 
     std::vector<t_pargs>        pargs;
     {
@@ -877,7 +877,7 @@ int train_ff(int argc, char *argv[])
     {
         // By now, we have initialized all the charges.
         // This means we can fix those, but also that no charge related parameters can be trained.
-        // TODO: The latter needs to be implemented to prevent errors.
+        //! \todo The latter needs to be implemented to prevent errors.
         compR.setAlgorithm(ChargeGenerationAlgorithm::Read);
     }
 

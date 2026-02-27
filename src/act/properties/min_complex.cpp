@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2023-2025
+ * Copyright (C) 2023-2026
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -141,7 +141,7 @@ int min_complex(int argc, char *argv[])
         if (msghandler.ok())
         {
             std::vector<gmx::RVec> forces(actmol.atomsConst().size());
-            // TODO Not the correct algorithm!
+            //! \todo Not the correct algorithm!
             auto alg   = pd.chargeGenerationAlgorithm();
             actmol.generateCharges(&msghandler, &pd, &forceComp, alg, &coords, &forces);
         }

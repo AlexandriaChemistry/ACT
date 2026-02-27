@@ -157,11 +157,11 @@ void StaticIndividualInfo::updateForceField(MsgHandler                *msghandle
             }
             p->setValue(bases[n]);
             p->setUpdated(true);
-            // TODO fix the uncertainty
+            //! \todo fix the uncertainty
             // p->setUncertainty(psigma_[n]);
         }
     }
-    // TODO: This will generate the whole matrix of parameters from scratch.
+    //! \todo This will generate the whole matrix of parameters from scratch.
     // It would be more efficient to only generate the atom type pair parameters for
     // which one of the atomic Van der Waals or Coulomb parameters changed.
     generateDependentParameter(&pd_);

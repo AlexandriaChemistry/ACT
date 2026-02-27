@@ -53,7 +53,7 @@ bool MCMC::evolve(alexandria::MsgHandler       *msghandler,
     auto cr = sii_->commRec();
 
     // Tell the middleman no genepool was read.
-    // TODO: Implement genepool reading in MCMC
+    //! \todo: Implement genepool reading in MCMC
     int read = 0;
     for(auto &ii : cr->middlemen())
     {
@@ -178,7 +178,7 @@ bool HybridGAMC::evolve(alexandria::MsgHandler       *msghandler,
                         std::map<iMolSelect, Genome> *bestGenome)
 {
     auto cr = sii_->commRec();
-    //! TODO have we already checked that the number of processors is the correct one?
+    //! \todo have we already checked that the number of processors is the correct one?
     if (cr->nmiddlemen() < 2)
     {
         fprintf(stderr, "Need at least two cores/processes to run the genetic algorithm.\n");
@@ -330,7 +330,7 @@ bool HybridGAMC::evolve(alexandria::MsgHandler       *msghandler,
                 // II.
                 // Signify the middlemen to continue
                 cr->send_data(dest);
-                //! TODO Send the data set. But is this necessary? It will always be train?
+                //! \todo Send the data set. But is this necessary? It will always be train?
                 cr->send(dest, imstr);
                 // Now send the new bases
                 cr->send(dest, pool[pold]->genomePtr(i)->bases());
@@ -478,7 +478,7 @@ bool HybridGAMC::evolve(alexandria::MsgHandler       *msghandler,
             // II.
             // Signify the middlemen to continue
             cr->send_data(dest);
-            //! TODO Send the data set. But is this necessary? It will always be train?
+            //! \todo Send the data set. But is this necessary? It will always be train?
             cr->send(dest, imstr);
             // Now send the new bases
             cr->send(dest, pool[pnew]->genomePtr(i)->bases());
@@ -516,7 +516,7 @@ bool HybridGAMC::evolve(alexandria::MsgHandler       *msghandler,
         }
         // Receive the new children (parameters + fitness) from the middle men for the
         // non elitist.
-        //! TODO if we end up sending more stuff, it might be worth it to just send the entire genome
+        //! \todo if we end up sending more stuff, it might be worth it to just send the entire genome
         for (size_t i = std::max(1, gach_->nElites()); i < pool[pnew]->popSize(); i++)
         {
             int src      = cr->middlemen()[i-1];

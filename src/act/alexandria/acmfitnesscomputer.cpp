@@ -131,7 +131,7 @@ void ACMFitnessComputer::distributeParameters(MsgHandler                *msghand
     // Send / receive parameters
     if (cr->isHelper())
     {
-        // TODO: Implement broadcast
+        //! \todo Implement broadcast
         // Find out who to talk to
         int src = cr->superior();
         std::vector<double> myparams;
