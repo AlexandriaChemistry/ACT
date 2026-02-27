@@ -633,7 +633,7 @@ bool OptACM::runMaster(bool optimize,
                                          myfilenm.c_str());
                 sii_->saveState(true, myfilenm);
             }
-            // FIXME: resetting the train parameters for the TrainFFPrinter. We may have to work on that if we want to show the best test parameters too
+            //! TODO: resetting the train parameters for the TrainFFPrinter. We may have to work on that if we want to show the best test parameters too
             sii_->updateForceField(&msghandler_, changed, bestGenome.find(iMolSelect::Train)->second.bases());
         }
     }
@@ -651,7 +651,7 @@ bool OptACM::runMaster(bool optimize,
     sii_->commRecPtr()->done();
 
     // Final energy calculation for all molecules
-    // TODO: parallellize this. FIXME: there is no need to do this I believe, it's done above, and parallel!
+    //! TODO: parallellize this. There is no need to do this I believe, it's done above, and parallel!
     if (!bestGenome.empty())
     {
         std::set<int> changed;
