@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2025
+ * Copyright (C) 2014-2026
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -51,7 +51,7 @@ namespace alexandria
 /*!
  * \brief Mutator which applies MCMC optimization to an ACMIndividual.
  * It can also conduct sensitivity analysis if requested.
- * FIXME: shouldn't we move sensitivity analysis somewhere else?
+ * TODO: shouldn't we move sensitivity analysis somewhere else?
  */
 class MCMCMutator : public ga::Mutator
 {

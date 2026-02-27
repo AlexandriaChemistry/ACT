@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2025
+ * Copyright (C) 2021-2026
  *
  * this program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -65,7 +65,7 @@ ACTMiddleMan::ACTMiddleMan(MsgHandler                *msghandler,
     // Create force computer
     forceComp_.init(bch->shellToler(), bch->shellMaxIter());
 
-    // Fitness computer FIXME: what about those false flags?
+    //! TODO Fitness computer. What about those false flags?
     fitComp_.init(msghandler, sii, mg, false, &forceComp_, algorithm);
     
     if (gach->optimizer() == OptimizerAlg::GA)
@@ -74,7 +74,7 @@ ACTMiddleMan::ACTMiddleMan(MsgHandler                *msghandler,
     }
     else
     {
-        // FIXME: we need to make some logfiles for the middlemen, because they apparently cannot write to the global logfile
+        //! TODO we need to make some logfiles for the middlemen, because they apparently cannot write to the global logfile
         auto mut = new alexandria::MCMCMutator(dis(gen),
                                                bch, &fitComp_, sii,
                                                bch->evaluateTestset(),
@@ -121,7 +121,7 @@ void ACTMiddleMan::run(MsgHandler *msghandler)
     while (CommunicationStatus::RECV_DATA == cont)
     {
         // Get the dataset
-        // FIXME: is this really necessary?
+        //! TODO: is this really necessary?
         iMolSelect ims;
         cr->recv(master, &ims);
         
