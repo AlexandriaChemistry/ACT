@@ -34,7 +34,6 @@
 
 #include "import.h"
 
-#include <set>
 #include <vector>
 
 #pragma GCC diagnostic push
@@ -92,82 +91,6 @@ static void updateFragmentFromInchi(MsgHandler           *msg_handler,
                          gmx::formatString("Could not find '%s' in database", inchi.c_str()));
         fptr->setInchi(inchi);
     }
-}
-
-/*! \brief Convert RDKit atom to ACT atom type
- * \param[in] msg_handler For warnings and errors
- * \param[in] atom        RDkit atom structure
- * \return ACT atom type
- */
-static std::string getAtomType(MsgHandler         *msg_handler,
-                               const RDKit::Atom  *atom)
-{
-    // Only add 1, 2, 3 suffix to some atoms
-    std::set<std::string> atomsWithSP = { "c", "n", "o", "p", "s" };
-    // Fetch element
-    std::string type  = atom->getSymbol();
-    std::string ltype = type;
-    // Convert to lower case for force field
-    std::transform(type.begin(), type.end(), ltype.begin(), ::tolower);
-    if (atomsWithSP.find(ltype) != atomsWithSP.end())
-    {
-        switch (atom->getHybridization())
-        {
-        case RDKit::Atom::HybridizationType::SP:
-            ltype += "1";
-            break;
-        case RDKit::Atom::HybridizationType::SP2:
-        case RDKit::Atom::HybridizationType::SP2D:
-            ltype += "2";
-            break;
-        case RDKit::Atom::HybridizationType::SP3:
-        case RDKit::Atom::HybridizationType::SP3D:
-        case RDKit::Atom::HybridizationType::SP3D2:
-            if (ltype == "n" && atom->getFormalCharge() == 1)
-            {
-                //! TODO: Consider whether we want to keep n4 or use n3.
-                ltype += "4";
-            }
-            else
-            {
-                ltype += "3";
-            }
-            break;
-        case RDKit::Atom::HybridizationType::S:
-        case RDKit::Atom::HybridizationType::OTHER:
-        case RDKit::Atom::HybridizationType::UNSPECIFIED:
-            msg_handler->msg(ACTStatus::Warning, 
-                             gmx::formatString("Unknown hybridization state for atom %s",
-                                               type.c_str()));
-            break;
-        }
-        type = ltype;
-    }
-    else
-    {
-        switch (atom->getFormalCharge())
-        {
-        case -2:
-            type += "2-";
-            break;
-        case -1:
-            type += "-";
-            break;
-        case 0:
-            // These are likely not ions, use lower case atom types
-            type = ltype;
-            break;
-        case 1:
-            type += "+";
-            break;
-        case 2:
-            type += "2+";
-            break;
-        default:
-            msg_handler->msg(ACTStatus::Error, gmx::formatString("Don't know how to handle atom with formal charge %d", atom->getFormalCharge()));
-        }
-    }
-    return type;
 }
 
 /*! \brief Generate an InChi and add it to a fragment
@@ -320,6 +243,10 @@ static void lookUpSpecial(MsgHandler                           *msg_handler,
                           std::vector<Bond>                    *bonds,
                           bool                                  oneH)
 {
+    // Boolean vectors to check if atom in molecule already assigned, necessary since
+    // switch in atom_bond.xml from special to general
+    std::vector<bool> atomAssigned(exper->NAtom(), false);
+    std::vector<bool> bondAssigned(bonds->size(), false);
     // Check whether we have any of those special cases.
     for(size_t i = 0; i < abe.size(); i++)
     {
@@ -394,19 +321,25 @@ static void lookUpSpecial(MsgHandler                           *msg_handler,
                         bool isH = (atype.atomnumber == 1);
                         bool targetExists = pd->hasParticleType(atype.name);
 
-                        if (!(oneH && isH && !targetExists))
+                        if (!(oneH && isH && !targetExists) && !atomAssigned[j])
                         {
                             msg_handler->msg(ACTStatus::Verbose,
                                              gmx::formatString("Resetting type of %s %zu to %s",
                                                                (*ca)[j].getObtype().c_str(), j,
                                                                atype.name.c_str()));
                             (*ca)[j].setObtype(atype.name);
+                            atomAssigned[j] = true;
                         }
                     }
                 }
                 // Now fix the bonds
-                for(auto &b : *bonds)
+                for(size_t bi = 0; bi < bonds->size(); bi++)
                 {
+                    auto &b = (*bonds)[bi];
+                    if (bondAssigned[bi])
+                    {
+                        continue;
+                    }
                     auto ai = mapAtoms[b.aI()];
                     auto aj = mapAtoms[b.aJ()];
                     if (ai != NOTSET and aj != NOTSET)
@@ -417,6 +350,7 @@ static void lookUpSpecial(MsgHandler                           *msg_handler,
                                 (ab.ai == aj && ab.aj == ai))
                             {
                                 b.setBondOrder(0, ab.order);
+                                bondAssigned[bi] = true;
                                 break;
                             }
                         }
@@ -512,7 +446,9 @@ static void importFile(MsgHandler                           *msg_handler,
             auto         bonds     = mol2->bonds();
             for(const auto &atom : mol2->atoms())
             {
-                auto atype = getAtomType(msg_handler, atom);
+                //standard assignment is now the lower case element
+                std::string atype = atom->getSymbol();
+                std::transform(atype.begin(), atype.end(), atype.begin(), ::tolower);
                 CalcAtom ca(atom->getSymbol(), atype, atomid);
                 auto atomPos = conformer.getAtomPos(atomid);
                 ca.setCoords(convertToGromacs(atomPos.x, RDKit_Unit),
@@ -533,7 +469,7 @@ static void importFile(MsgHandler                           *msg_handler,
                 }
             }
             // Now we have done the "default" atom types and bonds.
-            // However, sometimes we need to look for special cases.
+            // The actual atomtypes are assigned in the atom_bond.xml file, as well as special cases.
             lookUpSpecial(msg_handler, pd, abdb, mol2, &exper, mp.bonds(), oneH);
             if (msg_handler->ok())
             {

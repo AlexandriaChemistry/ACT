@@ -1,17 +1,7 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <!DOCTYPE atombondDB.dtd PUBLIC "atombondDB.dtd" "atombondDB.dtd">
 <atombondtypes>
-  <atombondtype name="carboxylate" smarts="[#6X3](-[#8-])=[#8]" charge="-1" multiplicity="1">
-    <atomtypes>
-      <atomtype index="0" name="c2" atomnumber="6"/>
-      <atomtype index="1" name="o2" atomnumber="8"/>
-      <atomtype index="2" name="o2" atomnumber="8"/>
-    </atomtypes>
-    <bondtypes>
-      <bondtype ai="0" aj="1" order="1.5"/>
-      <bondtype ai="0" aj="2" order="1.5"/>
-    </bondtypes>
-  </atombondtype>
+ <!-- Special cases with bond order overrides -->
   <atombondtype name="sulfate" smarts="[#16](=[#8])(=[#8])(-[#8-])-[#8-]" charge="-2" multiplicity="1">
     <atomtypes>
       <atomtype index="0" name="s3" atomnumber="16"/>
@@ -27,32 +17,7 @@
       <bondtype ai="0" aj="4" order="1.5"/>
     </bondtypes>
   </atombondtype>
-  <atombondtype name="water" smarts="[#8](-[#1])-[#1]" charge="0" multiplicity="1">
-    <atomtypes>
-      <atomtype index="0" name="ow" atomnumber="8"/>
-      <atomtype index="1" name="hw" atomnumber="1"/>
-      <atomtype index="2" name="hw" atomnumber="1"/>
-    </atomtypes>
-    <bondtypes>
-      <bondtype ai="0" aj="1" order="1"/>
-      <bondtype ai="0" aj="2" order="1"/>
-    </bondtypes>
-  </atombondtype>
-  <atombondtype name="phosphate" smarts="[#15D4]([#8D1])([#8D1])([#8-,#8D1])([#8-,#8D1])" charge="-3" multiplicity="1">
-    <atomtypes>
-      <atomtype index="0" name="p3" atomnumber="15"/>
-      <atomtype index="1" name="o3" atomnumber="8"/>
-      <atomtype index="2" name="o3" atomnumber="8"/>
-      <atomtype index="3" name="o3" atomnumber="8"/>
-      <atomtype index="4" name="o3" atomnumber="8"/>
-    </atomtypes>
-    <bondtypes>
-      <bondtype ai="0" aj="1" order="1.5"/>
-      <bondtype ai="0" aj="2" order="1.5"/>
-      <bondtype ai="0" aj="3" order="1.5"/>
-      <bondtype ai="0" aj="4" order="1.5"/>
-    </bondtypes>
-  </atombondtype>
+
   <atombondtype name="phosphate2" smarts="[#8-]-[#15](-[#8-])(-[#8-])=[#8]" charge="-3" multiplicity="1">
     <atomtypes>
       <atomtype index="0" name="o3" atomnumber="8"/>
@@ -68,6 +33,23 @@
       <bondtype ai="1" aj="4" order="1.5"/>
     </bondtypes>
   </atombondtype>
+
+  <atombondtype name="phosphate" smarts="[#15D4]([#8D1])([#8D1])([#8-,#8D1])([#8-,#8D1])" charge="-3" multiplicity="1">
+    <atomtypes>
+      <atomtype index="0" name="p3" atomnumber="15"/>
+      <atomtype index="1" name="o3" atomnumber="8"/>
+      <atomtype index="2" name="o3" atomnumber="8"/>
+      <atomtype index="3" name="o3" atomnumber="8"/>
+      <atomtype index="4" name="o3" atomnumber="8"/>
+    </atomtypes>
+    <bondtypes>
+      <bondtype ai="0" aj="1" order="1.5"/>
+      <bondtype ai="0" aj="2" order="1.5"/>
+      <bondtype ai="0" aj="3" order="1.5"/>
+      <bondtype ai="0" aj="4" order="1.5"/>
+    </bondtypes>
+  </atombondtype>
+
   <atombondtype name="phosphate2" smarts="[#8-]-[#15](-[#8-])(-[#8-])" charge="-2" multiplicity="1">
     <atomtypes>
       <atomtype index="0" name="o3" atomnumber="8"/>
@@ -81,6 +63,19 @@
       <bondtype ai="1" aj="3" order="1.5"/>
     </bondtypes>
   </atombondtype>
+
+  <atombondtype name="carboxylate" smarts="[#6X3](-[#8-])=[#8]" charge="-1" multiplicity="1">
+    <atomtypes>
+      <atomtype index="0" name="c2" atomnumber="6"/>
+      <atomtype index="1" name="o2" atomnumber="8"/>
+      <atomtype index="2" name="o2" atomnumber="8"/>
+    </atomtypes>
+    <bondtypes>
+      <bondtype ai="0" aj="1" order="1.5"/>
+      <bondtype ai="0" aj="2" order="1.5"/>
+    </bondtypes>
+  </atombondtype>
+
   <atombondtype name="phosphate3" smarts="[#8-]-[#15](-[#8-])" charge="-1" multiplicity="1">
     <atomtypes>
       <atomtype index="0" name="o3" atomnumber="8"/>
@@ -92,6 +87,7 @@
       <bondtype ai="1" aj="2" order="1"/>
     </bondtypes>
   </atombondtype>
+
   <atombondtype name="nitro1" smarts="[#7+](-[#8-])=[#8]" charge="0" multiplicity="1">
     <atomtypes>
       <atomtype index="0" name="n2" atomnumber="7"/>
@@ -103,6 +99,7 @@
       <bondtype ai="0" aj="2" order="1.5"/>
     </bondtypes>
   </atombondtype>
+
   <atombondtype name="nitro2" smarts="[#7+](-[#8])=[#8]" charge="0" multiplicity="1">
     <atomtypes>
       <atomtype index="0" name="n2" atomnumber="7"/>
@@ -114,28 +111,101 @@
       <bondtype ai="0" aj="2" order="1.5"/>
     </bondtypes>
   </atombondtype>
-  
-  <atombondtype name="gaff_hc_any" smarts="[#1]" charge="0" multiplicity="1">
+
+  <atombondtype name="water" smarts="[#8](-[#1])-[#1]" charge="0" multiplicity="1">
+    <atomtypes>
+      <atomtype index="0" name="ow" atomnumber="8"/>
+      <atomtype index="1" name="hw" atomnumber="1"/>
+      <atomtype index="2" name="hw" atomnumber="1"/>
+    </atomtypes>
+    <bondtypes>
+      <bondtype ai="0" aj="1" order="1"/>
+      <bondtype ai="0" aj="2" order="1"/>
+    </bondtypes>
+  </atombondtype>
+
+  <!-- Base atom types: most specific to least specific -->
+   <atombondtype name="gaff_h5_ring_2EWG" smarts="[#1X1;$(*-[c](~[#7,#8,#16,#17,#35,#53])~[#7,#8,#16,#17,#35,#53])]" charge="0" multiplicity="1">
+    <atomtypes>
+      <atomtype index="0" name="h5" atomnumber="1"/>
+    </atomtypes>
+  </atombondtype>
+
+  <atombondtype name="gaff_h4_ring_1EWG" smarts="[#1X1;$(*-[c]~[#7,#8,#16,#17,#35,#53])]" charge="0" multiplicity="1">
+    <atomtypes>
+      <atomtype index="0" name="h4" atomnumber="1"/>
+    </atomtypes>
+  </atombondtype>
+
+  <atombondtype name="gaff_h3_chain_3EWG" smarts="[#1X1;$(*-[C]([#7,#8,#16,#17,#35,#53,F,Cl,Br,I])([#7,#8,#16,#17,#35,#53,F,Cl,Br,I])([#7,#8,#16,#17,#35,#53,F,Cl,Br,I]))]" charge="0" multiplicity="1">
+    <atomtypes>
+      <atomtype index="0" name="h3" atomnumber="1"/>
+    </atomtypes>
+  </atombondtype>
+
+  <atombondtype name="gaff_hc_tertcarbon_like" smarts="[#1X1;$(*-[#6X4]([#6])([#6])[#1])]" charge="0" multiplicity="1">
     <atomtypes>
       <atomtype index="0" name="hc" atomnumber="1"/>
     </atomtypes>
   </atombondtype>
- 
-  <atombondtype name="gaff_ha_generic" smarts="[#1X1]" charge="0" multiplicity="1">
+
+  <atombondtype name="gaff_h2_C_eq_2EWG" smarts="[#1X1;$(*-[C](=[#7,#8,#9,#16])([#7,#8,#9,#16]))]" charge="0" multiplicity="1">
+    <atomtypes>
+      <atomtype index="0" name="h2" atomnumber="1"/>
+    </atomtypes>
+  </atombondtype>
+
+  <atombondtype name="gaff_h2_chain_2EWG" smarts="[#1X1;$(*-[C]([#7,#8,#9,#16,#17,#35,#53])[#7,#8,#9,#16,#17,#35,#53])]" charge="0" multiplicity="1">
+    <atomtypes>
+      <atomtype index="0" name="h2" atomnumber="1"/>
+    </atomtypes>
+  </atombondtype>
+
+  <atombondtype name="gaff_h1_chain_1EWG" smarts="[#1X1;$(*-[C]-[#7,#8,#9,#16,#17,#35,#53])]" charge="0" multiplicity="1">
+    <atomtypes>
+      <atomtype index="0" name="h1" atomnumber="1"/>
+    </atomtypes>
+  </atombondtype>
+
+  <atombondtype name="gaff_h1_chain_1EWG_double" smarts="[#1X1;$(*-[C]=[#7,#8,#9,#16])]" charge="0" multiplicity="1">
+    <atomtypes>
+      <atomtype index="0" name="h1" atomnumber="1"/>
+    </atomtypes>
+  </atombondtype>
+
+  <atombondtype name="gaff_ha_conjugated_CX3_eq_C" smarts="[#1X1;$(*-[#6X3]=[#6])]" charge="0" multiplicity="1">
     <atomtypes>
       <atomtype index="0" name="ha" atomnumber="1"/>
+    </atomtypes>
+  </atombondtype>
+
+  <atombondtype name="gaff_ha_triplebond" smarts="[#1X1;$(*-[#6X2]#[#6])]" charge="0" multiplicity="1">
+    <atomtypes>
+      <atomtype index="0" name="ha" atomnumber="1"/>
+    </atomtypes>
+  </atombondtype>
+
+  <atombondtype name="gaff_hc_aliphatic_C" smarts="[#1X1;$(*-[#6X4])]" charge="0" multiplicity="1">
+    <atomtypes>
+      <atomtype index="0" name="hc" atomnumber="1"/>
+    </atomtypes>
+  </atombondtype>
+
+  <atombondtype name="hcl" smarts="[#1X1;$(*-Cl)]" charge="0" multiplicity="1">
+    <atomtypes>
+      <atomtype index="0" name="hcl" atomnumber="1"/>
+    </atomtypes>
+  </atombondtype>
+
+  <atombondtype name="hbr" smarts="[#1X1;$(*-Br)]" charge="0" multiplicity="1">
+    <atomtypes>
+      <atomtype index="0" name="hbr" atomnumber="1"/>
     </atomtypes>
   </atombondtype>
 
   <atombondtype name="gaff_ho_oxygen" smarts="[#1X1;$(*-O)]" charge="0" multiplicity="1">
     <atomtypes>
       <atomtype index="0" name="ho" atomnumber="1"/>
-    </atomtypes>
-  </atombondtype>
-
-  <atombondtype name="gaff_ho_water" smarts="[#1X1;$(*-[O;H2])]" charge="0" multiplicity="1">
-    <atomtypes>
-      <atomtype index="0" name="hw" atomnumber="1"/>
     </atomtypes>
   </atombondtype>
 
@@ -169,87 +239,463 @@
     </atomtypes>
   </atombondtype>
 
- <atombondtype name="hcl" smarts="[#1X1;$(*-Cl)]" charge="0" multiplicity="1">
-    <atomtypes>
-      <atomtype index="0" name="hcl" atomnumber="1"/>
-    </atomtypes>
-  </atombondtype>
-
- <atombondtype name="hbr" smarts="[#1X1;$(*-Br)]" charge="0" multiplicity="1">
-    <atomtypes>
-      <atomtype index="0" name="hbr" atomnumber="1"/>
-    </atomtypes>
-  </atombondtype>
-
- <atombondtype name="hi" smarts="[#1X1;$(*-I)]" charge="0" multiplicity="1">
+  <atombondtype name="hi" smarts="[#1X1;$(*-I)]" charge="0" multiplicity="1">
     <atomtypes>
       <atomtype index="0" name="hi" atomnumber="1"/>
     </atomtypes>
   </atombondtype>
 
-  <atombondtype name="gaff_hc_aliphatic_C" smarts="[#1X1;$(*-[#6X4])]" charge="0" multiplicity="1">
-    <atomtypes>
-      <atomtype index="0" name="hc" atomnumber="1"/>
-    </atomtypes>
-  </atombondtype>
-
-  <atombondtype name="gaff_hc_tertcarbon_like" smarts="[#1X1;$(*-[#6X4]([#6])([#6])[#1])]" charge="0" multiplicity="1">
-    <atomtypes>
-      <atomtype index="0" name="hc" atomnumber="1"/>
-    </atomtypes>
-  </atombondtype>
-
-  <atombondtype name="gaff_ha_conjugated_CX3_eq_C" smarts="[#1X1;$(*-[#6X3]=[#6])]" charge="0" multiplicity="1">
+  <atombondtype name="gaff_ha_generic" smarts="[#1X1]" charge="0" multiplicity="1">
     <atomtypes>
       <atomtype index="0" name="ha" atomnumber="1"/>
     </atomtypes>
   </atombondtype>
 
-  <atombondtype name="gaff_ha_triplebond" smarts="[#1X1;$(*-[#6X2]#[#6])]" charge="0" multiplicity="1">
+  <atombondtype name="gaff_hc_any" smarts="[#1]" charge="0" multiplicity="1">
     <atomtypes>
-      <atomtype index="0" name="ha" atomnumber="1"/>
+      <atomtype index="0" name="hc" atomnumber="1"/>
     </atomtypes>
   </atombondtype>
 
-  <atombondtype name="gaff_h1_chain_1EWG" smarts="[#1X1;$(*-[C]-[#7,#8,#9,#16,#17,#35,#53])]" charge="0" multiplicity="1">
+
+<!-- CONSP elements -->
+  <atombondtype name="p_sp" smarts="[#15;^1]" charge="0" multiplicity="1">
     <atomtypes>
-      <atomtype index="0" name="h1" atomnumber="1"/>
+      <atomtype index="0" name="p1" atomnumber="15"/>
+    </atomtypes>
+  </atombondtype>
+  <atombondtype name="p_sp2" smarts="[#15;^2]" charge="0" multiplicity="1">
+    <atomtypes>
+      <atomtype index="0" name="p2" atomnumber="15"/>
+    </atomtypes>
+  </atombondtype>
+  <atombondtype name="p_sp3" smarts="[#15;^3]" charge="0" multiplicity="1">
+    <atomtypes>
+      <atomtype index="0" name="p3" atomnumber="15"/>
+    </atomtypes>
+  </atombondtype>
+  <atombondtype name="p_sp3_sp3d" smarts="[#15;^4]" charge="0" multiplicity="1">
+    <atomtypes>
+      <atomtype index="0" name="p3" atomnumber="15"/>
+    </atomtypes>
+  </atombondtype>
+  <atombondtype name="p_sp3_sp3d2" smarts="[#15;^5]" charge="0" multiplicity="1">
+    <atomtypes>
+      <atomtype index="0" name="p3" atomnumber="15"/>
     </atomtypes>
   </atombondtype>
 
-  <atombondtype name="gaff_h1_chain_1EWG_double" smarts="[#1X1;$(*-[C]=[#7,#8,#9,#16])]" charge="0" multiplicity="1">
+  <atombondtype name="s_sp" smarts="[#16;^1]" charge="0" multiplicity="1">
     <atomtypes>
-      <atomtype index="0" name="h1" atomnumber="1"/>
+      <atomtype index="0" name="s1" atomnumber="16"/>
+    </atomtypes>
+  </atombondtype>
+  <atombondtype name="s_sp2" smarts="[#16;^2]" charge="0" multiplicity="1">
+    <atomtypes>
+      <atomtype index="0" name="s2" atomnumber="16"/>
+    </atomtypes>
+  </atombondtype>
+  <atombondtype name="s_sp3" smarts="[#16;^3]" charge="0" multiplicity="1">
+    <atomtypes>
+      <atomtype index="0" name="s3" atomnumber="16"/>
+    </atomtypes>
+  </atombondtype>
+  <atombondtype name="s_sp3_sp3d" smarts="[#16;^4]" charge="0" multiplicity="1">
+    <atomtypes>
+      <atomtype index="0" name="s3" atomnumber="16"/>
+    </atomtypes>
+  </atombondtype>
+  <atombondtype name="s_sp3_sp3d2" smarts="[#16;^5]" charge="0" multiplicity="1">
+    <atomtypes>
+      <atomtype index="0" name="s3" atomnumber="16"/>
     </atomtypes>
   </atombondtype>
 
-  <atombondtype name="gaff_h2_chain_2EWG" smarts="[#1X1;$(*-[C]([#7,#8,#9,#16,#17,#35,#53])[#7,#8,#9,#16,#17,#35,#53])]" charge="0" multiplicity="1">
+
+  <atombondtype name="c_sp" smarts="[#6;^1]" charge="0" multiplicity="1">
     <atomtypes>
-      <atomtype index="0" name="h2" atomnumber="1"/>
+      <atomtype index="0" name="c1" atomnumber="6"/>
+    </atomtypes>
+  </atombondtype>
+  <atombondtype name="c_sp2" smarts="[#6;^2]" charge="0" multiplicity="1">
+    <atomtypes>
+      <atomtype index="0" name="c2" atomnumber="6"/>
+    </atomtypes>
+  </atombondtype>
+  <atombondtype name="c_sp3" smarts="[#6;^3]" charge="0" multiplicity="1">
+    <atomtypes>
+      <atomtype index="0" name="c3" atomnumber="6"/>
+    </atomtypes>
+  </atombondtype>
+  <atombondtype name="c_sp3_sp3d" smarts="[#6;^4]" charge="0" multiplicity="1">
+    <atomtypes>
+      <atomtype index="0" name="c3" atomnumber="6"/>
+    </atomtypes>
+  </atombondtype>
+  <atombondtype name="c_sp3_sp3d2" smarts="[#6;^5]" charge="0" multiplicity="1">
+    <atomtypes>
+      <atomtype index="0" name="c3" atomnumber="6"/>
     </atomtypes>
   </atombondtype>
 
-  <atombondtype name="gaff_h2_C_eq_EWG2" smarts="[#1X1;$(*-[C](=[#7,#8,#9,#16])([#7,#8,#9,#16]))]" charge="0" multiplicity="1">
+
+  <atombondtype name="n_sp3_+1" smarts="[#7+;^3]" charge="1" multiplicity="1">
     <atomtypes>
-      <atomtype index="0" name="h2" atomnumber="1"/>
+      <atomtype index="0" name="n4" atomnumber="7"/>
+    </atomtypes>
+  </atombondtype>
+  <atombondtype name="n_sp" smarts="[#7;^1]" charge="0" multiplicity="1">
+    <atomtypes>
+      <atomtype index="0" name="n1" atomnumber="7"/>
+    </atomtypes>
+  </atombondtype>
+  <atombondtype name="n_sp2" smarts="[#7;^2]" charge="0" multiplicity="1">
+    <atomtypes>
+      <atomtype index="0" name="n2" atomnumber="7"/>
+    </atomtypes>
+  </atombondtype>
+  <atombondtype name="n_sp3" smarts="[#7;^3]" charge="0" multiplicity="1">
+    <atomtypes>
+      <atomtype index="0" name="n3" atomnumber="7"/>
+    </atomtypes>
+  </atombondtype>
+  <atombondtype name="n_sp3_sp3d" smarts="[#7;^4]" charge="0" multiplicity="1">
+    <atomtypes>
+      <atomtype index="0" name="n3" atomnumber="7"/>
+    </atomtypes>
+  </atombondtype>
+  <atombondtype name="n_sp3_sp3d2" smarts="[#7;^5]" charge="0" multiplicity="1">
+    <atomtypes>
+      <atomtype index="0" name="n3" atomnumber="7"/>
     </atomtypes>
   </atombondtype>
 
-  <atombondtype name="gaff_h3_chain_3EWG" smarts="[#1X1;$(*-[C]([#7,#8,#16,#17,#35,#53,F,Cl,Br,I])([#7,#8,#16,#17,#35,#53,F,Cl,Br,I])([#7,#8,#16,#17,#35,#53,F,Cl,Br,I]))]" charge="0" multiplicity="1">
+
+  <atombondtype name="o_sp" smarts="[#8;^1]" charge="0" multiplicity="1">
     <atomtypes>
-      <atomtype index="0" name="h3" atomnumber="1"/>
+      <atomtype index="0" name="o1" atomnumber="8"/>
+    </atomtypes>
+  </atombondtype>
+  <atombondtype name="o_sp2" smarts="[#8;^2]" charge="0" multiplicity="1">
+    <atomtypes>
+      <atomtype index="0" name="o2" atomnumber="8"/>
+    </atomtypes>
+  </atombondtype>
+  <atombondtype name="o_sp3" smarts="[#8;^3]" charge="0" multiplicity="1">
+    <atomtypes>
+      <atomtype index="0" name="o3" atomnumber="8"/>
+    </atomtypes>
+  </atombondtype>
+  <atombondtype name="o_sp3_sp3d" smarts="[#8;^4]" charge="0" multiplicity="1">
+    <atomtypes>
+      <atomtype index="0" name="o3" atomnumber="8"/>
+    </atomtypes>
+  </atombondtype>
+  <atombondtype name="o_sp3_sp3d2" smarts="[#8;^5]" charge="0" multiplicity="1">
+    <atomtypes>
+      <atomtype index="0" name="o3" atomnumber="8"/>
     </atomtypes>
   </atombondtype>
 
-  <atombondtype name="gaff_h4_ring_1EWG" smarts="[#1X1;$(*-[c]~[#7,#8,#16,#17,#35,#53])]" charge="0" multiplicity="1">
+<!-- Group 1: Alkali Metals -->
+
+  <atombondtype name="li_+1" smarts="[Li+]" charge="1" multiplicity="1">
     <atomtypes>
-      <atomtype index="0" name="h4" atomnumber="1"/>
+      <atomtype index="0" name="Li+" atomnumber="3"/>
     </atomtypes>
   </atombondtype>
 
-  <atombondtype name="gaff_h5_ring_2EWG" smarts="[#1X1;$(*-[c](~[#7,#8,#16,#17,#35,#53])~[#7,#8,#16,#17,#35,#53])]" charge="0" multiplicity="1">
+  <atombondtype name="li_0" smarts="[Li]" charge="0" multiplicity="1">
     <atomtypes>
-      <atomtype index="0" name="h5" atomnumber="1"/>
+      <atomtype index="0" name="li" atomnumber="3"/>
+    </atomtypes>
+  </atombondtype>
+
+  <atombondtype name="na_+1" smarts="[Na+]" charge="1" multiplicity="1">
+    <atomtypes>
+      <atomtype index="0" name="Na+" atomnumber="11"/>
+    </atomtypes>
+  </atombondtype>
+
+  <atombondtype name="na_0" smarts="[Na]" charge="0" multiplicity="1">
+    <atomtypes>
+      <atomtype index="0" name="na" atomnumber="11"/>
+    </atomtypes>
+  </atombondtype>
+
+  <atombondtype name="k_+1" smarts="[K+]" charge="1" multiplicity="1">
+    <atomtypes>
+      <atomtype index="0" name="K+" atomnumber="19"/>
+    </atomtypes>
+  </atombondtype>
+
+  <atombondtype name="k_0" smarts="[K]" charge="0" multiplicity="1">
+    <atomtypes>
+      <atomtype index="0" name="k" atomnumber="19"/>
+    </atomtypes>
+  </atombondtype>
+
+  <!-- Group 2: Alkaline Earth Metals -->
+  <atombondtype name="be_+2" smarts="[Be+2]" charge="2" multiplicity="1">
+    <atomtypes>
+      <atomtype index="0" name="Be2+" atomnumber="4"/>
+    </atomtypes>
+  </atombondtype>
+
+  <atombondtype name="be_0" smarts="[Be]" charge="0" multiplicity="1">
+    <atomtypes>
+      <atomtype index="0" name="be" atomnumber="4"/>
+    </atomtypes>
+  </atombondtype>
+
+  <atombondtype name="mg_+2" smarts="[Mg+2]" charge="2" multiplicity="1">
+    <atomtypes>
+      <atomtype index="0" name="Mg2+" atomnumber="12"/>
+    </atomtypes>
+  </atombondtype>
+
+  <atombondtype name="mg_0" smarts="[Mg]" charge="0" multiplicity="1">
+    <atomtypes>
+      <atomtype index="0" name="mg" atomnumber="12"/>
+    </atomtypes>
+  </atombondtype>
+
+  <atombondtype name="ca_+2" smarts="[Ca+2]" charge="2" multiplicity="1">
+    <atomtypes>
+      <atomtype index="0" name="Ca2+" atomnumber="20"/>
+    </atomtypes>
+  </atombondtype>
+
+  <atombondtype name="ca_0" smarts="[Mg]" charge="0" multiplicity="1">
+    <atomtypes>
+      <atomtype index="0" name="mg" atomnumber="20"/>
+    </atomtypes>
+  </atombondtype>
+
+  <!-- Group 13 -->
+  <atombondtype name="al_+3" smarts="[Al+3]" charge="3" multiplicity="1">
+    <atomtypes>
+      <atomtype index="0" name="Al3+" atomnumber="13"/>
+    </atomtypes>
+  </atombondtype>
+
+  <atombondtype name="al_0" smarts="[Al]" charge="0" multiplicity="1">
+    <atomtypes>
+      <atomtype index="0" name="al" atomnumber="13"/>
+    </atomtypes>
+  </atombondtype>
+
+  <!-- Group 14 -->
+  <atombondtype name="si_-4" smarts="[Si-4]" charge="-4" multiplicity="1">
+    <atomtypes>
+      <atomtype index="0" name="Si4-" atomnumber="14"/>
+    </atomtypes>
+  </atombondtype>
+
+  <atombondtype name="si_+4" smarts="[Si+4]" charge="4" multiplicity="1">
+    <atomtypes>
+      <atomtype index="0" name="Si4+" atomnumber="14"/>
+    </atomtypes>
+  </atombondtype>
+
+  <atombondtype name="si_0" smarts="[Si]" charge="0" multiplicity="1">
+    <atomtypes>
+      <atomtype index="0" name="si" atomnumber="14"/>
+    </atomtypes>
+  </atombondtype>
+
+  <!-- Group 15  -->
+  <atombondtype name="p_-3" smarts="[P-3]" charge="-3" multiplicity="1">
+    <atomtypes>
+      <atomtype index="0" name="P3-" atomnumber="15"/>
+    </atomtypes>
+  </atombondtype>
+
+  <atombondtype name="p_+3" smarts="[P+3]" charge="3" multiplicity="1">
+    <atomtypes>
+      <atomtype index="0" name="P3+" atomnumber="15"/>
+    </atomtypes>
+  </atombondtype>
+
+  <atombondtype name="p_+5" smarts="[P+5]" charge="5" multiplicity="1">
+    <atomtypes>
+      <atomtype index="0" name="P5+" atomnumber="15"/>
+    </atomtypes>
+  </atombondtype>
+
+  <!-- Group 17: Halogens (F, Cl, Br, I) -->
+  <atombondtype name="f_-1" smarts="[F-]" charge="-1" multiplicity="1">
+    <atomtypes>
+      <atomtype index="0" name="F-" atomnumber="9"/>
+    </atomtypes>
+  </atombondtype>
+
+  <atombondtype name="cl_-1" smarts="[Cl-]" charge="-1" multiplicity="1">
+    <atomtypes>
+      <atomtype index="0" name="Cl-" atomnumber="17"/>
+    </atomtypes>
+  </atombondtype>
+
+  <atombondtype name="cl_+1" smarts="[Cl+]" charge="1" multiplicity="1">
+    <atomtypes>
+      <atomtype index="0" name="Cl+" atomnumber="17"/>
+    </atomtypes>
+  </atombondtype>
+
+  <atombondtype name="cl_+3" smarts="[Cl+3]" charge="3" multiplicity="1">
+    <atomtypes>
+      <atomtype index="0" name="Cl3+" atomnumber="17"/>
+    </atomtypes>
+  </atombondtype>
+
+  <atombondtype name="cl_+5" smarts="[Cl+5]" charge="5" multiplicity="1">
+    <atomtypes>
+      <atomtype index="0" name="Cl5+" atomnumber="17"/>
+    </atomtypes>
+  </atombondtype>
+
+  <atombondtype name="cl_+7" smarts="[Cl+7]" charge="7" multiplicity="1">
+    <atomtypes>
+      <atomtype index="0" name="Cl7+" atomnumber="17"/>
+    </atomtypes>
+  </atombondtype>
+
+    <atombondtype name="cl_0" smarts="[Cl]" charge="0" multiplicity="1">
+    <atomtypes>
+      <atomtype index="0" name="cl" atomnumber="17"/>
+    </atomtypes>
+  </atombondtype>
+
+  <atombondtype name="br_-1" smarts="[Br-]" charge="-1" multiplicity="1">
+    <atomtypes>
+      <atomtype index="0" name="Br-" atomnumber="35"/>
+    </atomtypes>
+  </atombondtype>
+
+  <atombondtype name="br_+1" smarts="[Br+]" charge="1" multiplicity="1">
+    <atomtypes>
+      <atomtype index="0" name="Br+" atomnumber="35"/>
+    </atomtypes>
+  </atombondtype>
+
+  <atombondtype name="br_+3" smarts="[Br+3]" charge="3" multiplicity="1">
+    <atomtypes>
+      <atomtype index="0" name="Br3+" atomnumber="35"/>
+    </atomtypes>
+  </atombondtype>
+
+  <atombondtype name="br_+5" smarts="[Br+5]" charge="5" multiplicity="1">
+    <atomtypes>
+      <atomtype index="0" name="Br5+" atomnumber="35"/>
+    </atomtypes>
+  </atombondtype>
+
+  <atombondtype name="br_+7" smarts="[Br+7]" charge="7" multiplicity="1">
+    <atomtypes>
+      <atomtype index="0" name="Br7+" atomnumber="35"/>
+    </atomtypes>
+  </atombondtype>
+
+  <atombondtype name="i_-1" smarts="[I-]" charge="-1" multiplicity="1">
+    <atomtypes>
+      <atomtype index="0" name="I-" atomnumber="53"/>
+    </atomtypes>
+  </atombondtype>
+
+  <atombondtype name="i_+1" smarts="[I+]" charge="1" multiplicity="1">
+    <atomtypes>
+      <atomtype index="0" name="I+" atomnumber="53"/>
+    </atomtypes>
+  </atombondtype>
+
+  <atombondtype name="i_+3" smarts="[I+3]" charge="3" multiplicity="1">
+    <atomtypes>
+      <atomtype index="0" name="I3+" atomnumber="53"/>
+    </atomtypes>
+  </atombondtype>
+
+  <atombondtype name="i_+5" smarts="[I+5]" charge="5" multiplicity="1">
+    <atomtypes>
+      <atomtype index="0" name="I5+" atomnumber="53"/>
+    </atomtypes>
+  </atombondtype>
+
+  <atombondtype name="i_+7" smarts="[I+7]" charge="7" multiplicity="1">
+    <atomtypes>
+      <atomtype index="0" name="I7+" atomnumber="53"/>
+    </atomtypes>
+  </atombondtype>
+
+  <atombondtype name="br_0" smarts="[Br]" charge="0" multiplicity="1">
+    <atomtypes>
+      <atomtype index="0" name="br" atomnumber="35"/>
+    </atomtypes>
+  </atombondtype>
+
+  <!-- Group 18: Noble Gases (He, Ne, Ar, Kr, Xe, Rn) -->
+  <atombondtype name="he_0" smarts="[He]" charge="0" multiplicity="1">
+    <atomtypes>
+      <atomtype index="0" name="he" atomnumber="2"/>
+    </atomtypes>
+  </atombondtype>
+
+  <atombondtype name="ne_0" smarts="[Ne]" charge="0" multiplicity="1">
+    <atomtypes>
+      <atomtype index="0" name="ne" atomnumber="10"/>
+    </atomtypes>
+  </atombondtype>
+
+  <atombondtype name="ar_0" smarts="[Ar]" charge="0" multiplicity="1">
+    <atomtypes>
+      <atomtype index="0" name="ar" atomnumber="18"/>
+    </atomtypes>
+  </atombondtype>
+
+  <atombondtype name="kr_+2" smarts="[Kr+2]" charge="2" multiplicity="1">
+    <atomtypes>
+      <atomtype index="0" name="Kr2+" atomnumber="36"/>
+    </atomtypes>
+  </atombondtype>
+
+  <atombondtype name="kr_0" smarts="[Kr]" charge="0" multiplicity="1">
+    <atomtypes>
+      <atomtype index="0" name="kr" atomnumber="36"/>
+    </atomtypes>
+  </atombondtype>
+
+  <atombondtype name="xe_0" smarts="[Xe]" charge="0" multiplicity="1">
+    <atomtypes>
+      <atomtype index="0" name="xe" atomnumber="54"/>
+    </atomtypes>
+  </atombondtype>
+
+  <atombondtype name="xe_+2" smarts="[Xe+2]" charge="2" multiplicity="1">
+    <atomtypes>
+      <atomtype index="0" name="Xe2+" atomnumber="54"/>
+    </atomtypes>
+  </atombondtype>
+
+  <atombondtype name="xe_+4" smarts="[Xe+4]" charge="4" multiplicity="1">
+    <atomtypes>
+      <atomtype index="0" name="Xe4+" atomnumber="54"/>
+    </atomtypes>
+  </atombondtype>
+
+  <atombondtype name="xe_+6" smarts="[Xe+6]" charge="6" multiplicity="1">
+    <atomtypes>
+      <atomtype index="0" name="Xe6+" atomnumber="54"/>
+    </atomtypes>
+  </atombondtype>
+
+  <atombondtype name="rn_0" smarts="[Rn]" charge="0" multiplicity="1">
+    <atomtypes>
+      <atomtype index="0" name="rn" atomnumber="86"/>
+    </atomtypes>
+  </atombondtype>
+
+  <atombondtype name="rn_+2" smarts="[Rn+2]" charge="2" multiplicity="1">
+    <atomtypes>
+      <atomtype index="0" name="Rn2+" atomnumber="86"/>
     </atomtypes>
   </atombondtype>
 </atombondtypes>
