@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2025
+ * Copyright (C) 2014-2026
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -166,7 +166,7 @@ private:
 
     /*! \brief Dump charges to a file
      * Debugging routine
-     * TODO move to cpp file
+     * \todo move to cpp file
      * \param[in] tw   The textwriter
      * \param[in] mol  The molecule to read from
      * \param[in] info Additional debugging information

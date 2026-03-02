@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2020-2025
+ * Copyright (C) 2020-2026
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -103,7 +103,7 @@ const std::string &probabilityComputerAlgToString(ProbabilityComputerAlg opt);
 
 /*!
  * Handles optimization parameters for Genetic Algorithm
- * FIXME: Should this be under the ga directory???
+ *! \todo: Should this be under the ga directory???
  */
 class GAConfigHandler : public ConfigHandler
 {
@@ -281,7 +281,8 @@ class BayesConfigHandler : public ConfigHandler
 private:
     //! Maximum number of iterations
     int   maxiter_           = 100;
-    //! Random number seed for initializer, crossover, mutator, and selector FIXME: This should be general
+    //! Random number seed for initializer, crossover, mutator, and selector
+    //! \todo: This should be general
     int   seed_              = 0;
     //! Relative step when optimizing
     real  step_              = 0.02;

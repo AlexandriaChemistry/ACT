@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2024
+ * Copyright (C) 2014-2026
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -276,7 +276,7 @@ static void gen_alexandria_tables(ForceField                 &pd,
     double       vr = 0;
     double       fr = 0;
     
-    // TODO Fix this
+    //! \todo Fix this
     const char  *ns[2]  = {"", "_s"};
     
     FILE        *fp1 = nullptr;

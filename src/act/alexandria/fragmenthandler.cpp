@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2022-2025
+ * Copyright (C) 2022-2026
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -174,7 +174,7 @@ void FragmentHandler::fetchCharges(std::vector<double> *qq)
         auto myatoms = topologies_[ff].atoms();
         for (size_t a = 0; a < myatoms.size(); a++)
         {
-            // TODO: Check whether this works for polarizable models
+            //! \todo: Check whether this works for polarizable models
             size_t index = atomStart_[ff] + a;
             GMX_RELEASE_ASSERT(index < natoms_, 
                                gmx::formatString("Index %ld out of range %ld", index, natoms_).c_str());
@@ -203,7 +203,7 @@ eQgen FragmentHandler::generateCharges(MsgHandler                   *msg_handler
         {
             for(size_t ff = 0; ff < topologies_.size(); ++ff)
             {
-                // TODO only copy the coordinates if there is more than one fragment.
+                //! \todo only copy the coordinates if there is more than one fragment.
                 std::vector<gmx::RVec> xx;
                 xx.resize(topologies_[ff].atoms().size());
                 for(size_t a = 0; a < topologies_[ff].atoms().size(); a++)

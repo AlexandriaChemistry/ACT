@@ -64,7 +64,7 @@ namespace alexandria
  */
 void my_fclose(FILE *fp);
 
-/*! \brief FIXME: The class that does all the optimization work.
+/*! \brief The class that does all the optimization work.
  * This class inherits the MolGen class that holds molecule data and
  * properties, and the Bayes class, that does the Monte Carlo steps.
  *

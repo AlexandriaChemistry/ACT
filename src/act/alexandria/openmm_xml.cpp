@@ -69,7 +69,7 @@ namespace alexandria
 //! Obsolete
 static int minTrain(const ForceFieldParameterMap &ffpm)
 {
-    // TODO: Remove or implement something that works.
+    //! \todo Remove or implement something that works.
     return 1;
     unsigned int mintrain = 0;
     for(const auto &p : ffpm)
@@ -92,7 +92,7 @@ static int minTrain(const ForceFieldParameterMap &ffpm)
 }
 
 /*! \brief The different entry types that can be found
- * TODO: Comment each element
+ *! \todo: Comment each element
  * xmlEntryOpenMM defines the keys that are in the xmlyyyOpenMM map
  * xmlyyyOpenMM is the map listing value and key used for the OpenMM xml file
  * exml_names returns string value upon calling function and submitting the key 
@@ -778,7 +778,7 @@ void OpenMMWriter::addXmlNonbonded(MsgHandler                      *msghandler,
             switch (fs.potential())
             {
             case Potential::WANG_BUCKINGHAM:
-                // TODO: optimize values
+                //! \todo: optimize values
                 sigma   = param[pnames[wbhSIGMA]].internalValue();
                 epsilon = param[pnames[wbhEPSILON]].internalValue();
                 for(size_t j = 0; j < param.size(); j++)
@@ -790,7 +790,7 @@ void OpenMMWriter::addXmlNonbonded(MsgHandler                      *msghandler,
                 }
                 break;
             case Potential::GENERALIZED_BUCKINGHAM:
-                // TODO: optimize values
+                //! \todo: optimize values
                 sigma   = param[pnames[gbhRMIN]].internalValue()/std::pow(2,1.0/6.0);
                 epsilon = param[pnames[gbhEPSILON]].internalValue();
                 for(size_t j = 0; j < param.size(); j++)
@@ -802,7 +802,7 @@ void OpenMMWriter::addXmlNonbonded(MsgHandler                      *msghandler,
                 }
                 break;
             case Potential::LJ14_7:
-                // TODO: optimize values
+                //! \todo: optimize values
                 sigma   = param[pnames[lj14_7SIGMA]].internalValue();
                 epsilon = param[pnames[lj14_7EPSILON]].internalValue();
                 for(size_t j = 0; j < param.size(); j++)
@@ -839,7 +839,7 @@ void OpenMMWriter::addXmlNonbonded(MsgHandler                      *msghandler,
                 break;
             case Potential::TT2b:
             case Potential::SLATER_ISA_TT:
-                // TODO Get better values
+                //! \todo Get better values
                 sigma   = 0.3;
                 epsilon = 0.1;
                 scaleSigma = 1.0;
@@ -1369,7 +1369,7 @@ void OpenMMWriter::addXmlForceField(MsgHandler                *msghandler,
                                     add_xml_char(baby, exml_names(xmlEntryOpenMM::TYPE_RES), itp.second);
                                     add_xml_char(baby, exml_names(xmlEntryOpenMM::SITENAME), iname.c_str());
                                     
-                                    // TODO get data from topology instead of making stuff up.
+                                    //! \todo get data from topology instead of making stuff up.
                                     
                                     std::vector<int> cores = myatoms[i].cores();
                                     if (itp.first ==  InteractionType::VSITE3OUTS ||

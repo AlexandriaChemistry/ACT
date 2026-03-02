@@ -462,7 +462,7 @@ double getDissociationEnergy(MsgHandler          *msghandler,
             }
         }
     }
-    // TODO free the gmx_stats_t
+    //! \todo free the gmx_stats_t
     return rmsd;
 }
 

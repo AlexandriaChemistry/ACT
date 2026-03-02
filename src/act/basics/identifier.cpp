@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2020-2024
+ * Copyright (C) 2020-2026
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -186,7 +186,7 @@ void Identifier::orderAtoms()
             {
                 smallest = s;
             }
-            // TODO Only insert ones we do not already have
+            //! \todo Only insert ones we do not already have
             if (s > 0)
             {
                 ids_.push_back(swapped);
