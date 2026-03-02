@@ -20,26 +20,18 @@ def get_order(order:str)->float:
         return orders[order]
     sys.exit("Unknown bond order '%s'" % order)
 
-def get_atype(atom)->str:
-    hybrid = { "SP": 1, "SP2": 2, "SP2D": 2, "SP3": 3, "SP3D": 3, "SP3D2": 3 }
-    hybridization = str(atom.GetHybridization())
-    if hybridization in hybrid:
-        if atom.GetFormalCharge() == 1 and atom.GetSymbol() == "N" and hybrid[hybridization] == 3:
-            return "4"
-        else:
-            return str(hybrid[hybridization])
-    sys.exit("Unknown hybridization '%s'" % hybridization)
-
 def get_atom_bond_xml()->list:
-    actdata = "ACTDATA"
     xmlname = "atom_bond.xml"
-    dbname  = None
-    if actdata in os.environ:
-        dbname = ("%s/%s" % ( os.environ[actdata], xmlname ))
-    if not dbname or not os.path.exists(dbname):
+    # Match C++ lookup order: CWD first, then ACTDATA
+    if os.path.exists(xmlname):
         dbname = xmlname
-    if not os.path.exists(dbname):
-        sys.exit("Cannot not find %s" % xmlname)
+    else:
+        actdata = "ACTDATA"
+        dbname  = None
+        if actdata in os.environ:
+            dbname = ("%s/%s" % ( os.environ[actdata], xmlname ))
+        if not dbname or not os.path.exists(dbname):
+            sys.exit("Cannot not find %s" % xmlname)
 
     with open(dbname) as fd:
         doc = xmltodict.parse(fd.read())
@@ -87,11 +79,16 @@ class MoleculeDict:
         self.bonds    = {}
         self.verbose  = verbose
         self.charge   = 0
+        self.mol      = None
 
     def lookUpSpecial(self, mol2, oneH:bool):
         abe = get_atom_bond_xml()
 
         NOTSET = -666
+        # Boolean vectors to check if atom in molecule already assigned, necessary since
+        # switch in atom_bond.xml from special to general
+        atomAssigned = [False]*len(self.atoms)
+        bondAssigned = { b: False for b in self.bonds }
         # Check whether we have any of those special cases.
         for i in range(len(abe)):
             # Make RDKit matcher for our pattern
@@ -116,21 +113,24 @@ class MoleculeDict:
                             atype = abe[i][atomtypes][mapAtoms[j]]
                             isH   = atype["atomnumber"] == 1
 
-                            if not (oneH and isH):
+                            if not (oneH and isH) and not atomAssigned[j]:
                                 self.atoms[j]["obtype"] = atype["name"]
+                                atomAssigned[j] = True
 
                     # Now fix the bonds
                     for b in self.bonds:
                         ai = mapAtoms[b[0]-1]
                         aj = mapAtoms[b[1]-1]
-                        if not ai == NOTSET and not aj == NOTSET:
+                        if not ai == NOTSET and not aj == NOTSET and not bondAssigned[b]:
                             for ab in abe[i][bondtypes]:
                                 if ((int(ab["ai"]) == ai and int(ab["aj"]) == aj) or
                                     (int(ab["ai"]) == aj and int(ab["aj"]) == ai)):
                                     self.bonds[b] = ab["order"]
+                                    bondAssigned[b] = True
                                     break
 
     def analyse(self, mol, molname:str, mycharge=None)->bool:
+        self.mol        = None
         self.title      = molname
         self.mol_weight = 0
         self.numb_atoms = len(mol.GetAtoms())
@@ -161,14 +161,7 @@ class MoleculeDict:
                       ( molname, ii, atom.GetAtomicNum(),
                         atom.GetValence(Chem.ValenceType.EXPLICIT),
                         atom.GetHybridization() ) )
-            fftype = atom.GetSymbol()
-            if fftype in [ "C", "N", "O", "P", "S" ]:
-                fftype = fftype.lower() + get_atype(atom)
-            else:
-                if atom.GetFormalCharge() != 0:
-                    fftype += str(atom.GetFormalCharge())
-                else:
-                    fftype = fftype.lower()
+            fftype = atom.GetSymbol().lower()
             self.atoms.append( { "atomic_number": atom.GetAtomicNum(), "obtype": fftype,
                                  "atomtype": fftype, "mass": atom.GetMass(), "element": atom.GetSymbol(),
                                  "X": coords[ii][0], "Y": coords[ii][1], "Z": coords[ii][2] } )
@@ -192,6 +185,7 @@ class MoleculeDict:
         # Finally, look for special cases
         self.lookUpSpecial(mol, False)
 
+        self.mol = mol
         return True
 
     def read(self, molname:str, filename:str,
