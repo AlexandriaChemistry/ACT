@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2025
+ * Copyright (C) 2014-2026
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -70,7 +70,7 @@ public:
      * \param[inout] coords   Atomic coordinates to operate on
      * \param[in]  atomIndex  Vector containing the indices of the real 
      *                        atoms, not shells or vsites.
-     *                        FIXME: Create another method without this argument, then
+     *                        \todo Create another method without this argument, then
      *                        get it and call this one
      * \param[out] hessian    MatrixWrapper object that must be pre-
      *                        allocated to NxN where N = 3*atomIndex.size()

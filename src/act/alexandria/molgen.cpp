@@ -453,7 +453,7 @@ void MolGen::checkDataSufficiency(MsgHandler *msghandler,
                     {
                         if (optimize(btype))
                         {
-                            // TODO check the loop over multiple ids
+                            //! \todo check the loop over multiple ids
                             for(auto &ff : *(bonds->findParameters(topentry->id())))
                             {
                                 if (ff.second.isMutable())
@@ -516,7 +516,7 @@ void MolGen::checkDataSufficiency(MsgHandler *msghandler,
                     {
                         for (const auto &topentry : top->entry(atype))
                         {
-                            // TODO check multiple ids
+                            //! \todo check multiple ids
                             if (!angles->parameterExists(topentry->id()))
                             {
                                 std::string swapped;
@@ -841,7 +841,7 @@ size_t MolGen::Read(MsgHandler                          *msghandler,
                                           gms.nMol(), mp.size()));
 
         enum selStat { ssNotFound, ssOK, ssNoTopology };
-        // TODO: A double loop is not nice, alternative would be to make a map first
+        //! \todo: A double loop is not nice, alternative would be to make a map first
         // or to sort the molprop vector and then use a search algorithm,
         for (auto &sel : gms.imolSelect())
         {
@@ -927,7 +927,7 @@ size_t MolGen::Read(MsgHandler                          *msghandler,
         print_memory_usage(debug);
         countTargetSize();
         // Now distribute the molecules over processors.
-        // TODO: Make sure the master has a bit less work to do
+        //! \todo: Make sure the master has a bit less work to do
         // than the helpers and that in particular train
         // compounds are distributed equally otherwise.
         std::map<int, MPI_Comm> mycomms;
@@ -1022,7 +1022,7 @@ size_t MolGen::Read(MsgHandler                          *msghandler,
         {
             cr_->bcast(&bcint, mycomms[cc]);
         }
-        // TODO: Free mycomms
+        //! \todo: Free mycomms
         print_memory_usage(debug);
         // Print cost per helper
         if (msghandler->info())
@@ -1111,7 +1111,7 @@ size_t MolGen::Read(MsgHandler                          *msghandler,
             incrementImmCount(&imm_count, imm);
             if (ACTMessage::OK == imm)
             {
-                // TODO Checks for energy should be done only when energy is a target for fitting.
+                //! \todo Checks for energy should be done only when energy is a target for fitting.
                 if (false)
                 {
                     double deltaE0;
@@ -1158,7 +1158,7 @@ size_t MolGen::Read(MsgHandler                          *msghandler,
     }
     // After all molecules have been sent around let's check whether we have
     // support for them, at least on the middlemen but may be needed everywhere.
-    // TODO Check that this is correct.
+    //! \todo Check that this is correct.
     checkDataSufficiency(msghandler, pd);
     
     // Some extra debug printing.

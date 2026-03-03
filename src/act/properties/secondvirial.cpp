@@ -540,7 +540,7 @@ void ReRunner::runB2(CommunicationRecord         *cr,
                 // Before doing the rotations, the sum of the torque vectors is zero.
                 // Since the rotations are different for both molecules, this does not
                 // hold after the rotations are done.
-                // TODO: write out the math.
+                //! \todo: write out the math.
                 for(size_t i = atomStart[kk]; i < atomStart[kk]+natom; i++)
                 {
                     gmx::RVec ri, fi, ti;
@@ -652,7 +652,7 @@ void ReRunner::runB2(CommunicationRecord         *cr,
 
             // Conversion to regular units cm^3/mol.
             double fac  = AVOGADRO*1e-21;
-            // TODO: Fix the torque contribution
+            //! \todo: Fix the torque contribution
             double bqt  = (BqmTorque1+BqmTorque2)*0.5;
             double Btot = (Bclass + BqmForce + bqt)*fac;
             // Add to bootstrapping statistics

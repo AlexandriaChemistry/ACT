@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2021-2023
+ * Copyright (C) 2021-2026
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -255,7 +255,7 @@ class AtomPair : public TopologyEntry
     {
         addAtom(ai);
         addAtom(aj);
-        // TODO: This is a fake bond order.
+        //! \todo: This is a fake bond order.
         addBondOrder(1);
     }
 

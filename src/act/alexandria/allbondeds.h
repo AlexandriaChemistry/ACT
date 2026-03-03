@@ -87,7 +87,7 @@ namespace alexandria
                             const gmx_output_env_t *oenv,
                             double                  binwidth);
         /*! \brief Extract statistics from this parameter
-         * TODO Implement support for extracting the median value
+         *! \todo Implement support for extracting the median value
          * \param[out] average The average value    
          * \param[out] sigma   The standard deviation
          * \param[out] N       The number of data points

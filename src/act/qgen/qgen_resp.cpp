@@ -469,7 +469,7 @@ void QgenResp::optimizeCharges(MsgHandler *msg_handler,
             auto pot = scale_factor*calcJ(ChargeDistributionType_, espx, x_[ii],
                                           zeta_[ii], row_[ii]);
             // If this is a mutable atom
-            // TODO check with symmetric charges and virtual sites
+            //! \todo check with symmetric charges and virtual sites
             if (mutable_[ii])
             {
                 GMX_RELEASE_ASSERT(i < fitQ_, "trying to change wrong atom");

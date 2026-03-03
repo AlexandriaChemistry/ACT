@@ -495,7 +495,7 @@ void MolHandler::nma(const ForceField         *pd,
                frequencies, intensities, output, debugNMA);
     // Check whether there are very similar frequencies, then change the sorting 
     // according to intensities.
-    // TODO: make ftoler a parameter.
+    //! \todo make ftoler a parameter.
     double ftoler = 0.001; // Frequency unit is internal unit.
     resortFreqIntens(frequencies, intensities, ftoler);
 
@@ -974,7 +974,7 @@ eMinimizeStatus MolHandler::minimizeCoordinates(MsgHandler                      
                         for(int m = 0; m < DIM; m++)
                         {
                             double df  = (forces[current][atomI][m]-forces[next][atomI][m]);
-                            // TODO check which one it should be
+                            //! \todo check which one it should be
                             teller    += (newCoords[current][atomI][m]-newCoords[next][atomI][m])*df;
                             //teller    += (deltaX[current][i]-deltaX[next][i])*df;
                             noemer    += df*df;
@@ -1125,7 +1125,7 @@ eMinimizeStatus MolHandler::minimizeCoordinates(MsgHandler                      
             *energies = newEnergies[current];
         }
         // Re-compute the energy one last time.
-        // TODO: is this really needed?
+        //! \todo: is this really needed?
         // (void) forceComp->compute(pd, mol->topology(), coords, &forces[current], energies);
         return eMinimizeStatus::OK;
     }
@@ -1362,7 +1362,7 @@ void MolHandler::simulate(MsgHandler                    *msghandler,
         // Write output if needed
         if (simConfig.nstxout() > 0 && step % simConfig.nstxout() == 0)
         {
-            // TODO: rewrite without gromacs fluff.
+            //! \todo rewrite without gromacs fluff.
             pdbWriter(traj, title, mol->atomsConst(),
                       coordinates, mol->topology()->residueNames(),
                       epbcNONE,

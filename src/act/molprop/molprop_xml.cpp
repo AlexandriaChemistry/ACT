@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2025
+ * Copyright (C) 2014-2026
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -659,7 +659,7 @@ static void mp_process_tree(MsgHandler                        *msg_handler,
                                                                                        (*xbuf)[MolPropXml::V_UNIT]);
                                     last->addProperty(mpo, std::move(ep));
                                 }
-                                // TODO make this more rigorous and less ugly.
+                                //! \todo make this more rigorous and less ugly.
                                 ElectrostaticPotential *myesp = static_cast<ElectrostaticPotential *>(last->property(mpo)->begin()->get());
                                 myesp->addPoint(atoi((*xbuf)[MolPropXml::ESPID].c_str()),
                                                 xbuf_atof(xbuf, MolPropXml::dX, true),
