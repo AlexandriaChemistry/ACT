@@ -198,6 +198,19 @@
       <parameter type="charge" unit="e" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="ACM" nonnegative="no"/>
       <parameter type="mass" unit="Da" value="79.904" uncertainty="0" minimum="79.904" maximum="79.904" ntrain="1" mutability="Fixed" nonnegative="yes"/>
     </particletype>
+    <particletype identifier="b" type="Atom" description="">
+      <option key="acmtype" value="b_z"/>
+      <option key="atomnumber" value="6"/>
+      <option key="bondtype" value="b_b"/>
+      <option key="element" value="B"/>
+      <option key="induccorrtype" value="b"/>
+      <option key="row" value="2"/>
+      <option key="vdwcorrtype" value="b"/>
+      <option key="vdwtype" value="b"/>
+      <option key="zetatype" value="b_z"/>
+      <parameter type="charge" unit="e" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="ACM" nonnegative="no"/>
+      <parameter type="mass" unit="Da" value="12.0107" uncertainty="0" minimum="12.0107" maximum="12.0107" ntrain="1" mutability="Fixed" nonnegative="yes"/>
+    </particletype>
     <particletype identifier="c1" type="Atom" description="">
       <option key="acmtype" value="c1_z"/>
       <option key="atomnumber" value="6"/>
@@ -691,6 +704,12 @@
       <parameter type="De" unit="kJ/mol" value="400" uncertainty="0" minimum="200" maximum="800" ntrain="1" mutability="Bounded" nonnegative="yes"/>
       <parameter type="beta" unit="1/nm" value="20" uncertainty="0" minimum="10" maximum="40" ntrain="1" mutability="Bounded" nonnegative="yes"/>
       <parameter type="bondlength" unit="pm" value="199.6" uncertainty="2.5" minimum="189.62" maximum="210.1052631579" ntrain="1023" mutability="Bounded" nonnegative="yes"/>
+    </parameterlist>
+    <parameterlist identifier="b_b~f_b">
+      <parameter type="D0" unit="kJ/mol" value="0" uncertainty="0" minimum="-800" maximum="0" ntrain="1" mutability="Bounded" nonnegative="no"/>
+      <parameter type="De" unit="kJ/mol" value="400" uncertainty="0" minimum="200" maximum="800" ntrain="1" mutability="Bounded" nonnegative="yes"/>
+      <parameter type="beta" unit="1/nm" value="20" uncertainty="0" minimum="10" maximum="40" ntrain="1" mutability="Bounded" nonnegative="yes"/>
+      <parameter type="bondlength" unit="pm" value="111.4" uncertainty="0.1" minimum="108.53" maximum="116.7368421053" ntrain="16" mutability="Bounded" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="br_b~f_b">
       <parameter type="D0" unit="kJ/mol" value="0" uncertainty="0" minimum="-800" maximum="0" ntrain="1" mutability="Bounded" nonnegative="no"/>
@@ -3192,6 +3211,9 @@
       <parameter type="zeta" unit="1/nm" value="4" uncertainty="0" minimum="4" maximum="20" ntrain="0" mutability="Bounded" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="br_z">
+      <parameter type="zeta" unit="1/nm" value="4" uncertainty="0" minimum="4" maximum="20" ntrain="0" mutability="Bounded" nonnegative="yes"/>
+    </parameterlist>
+    <parameterlist identifier="b_z">
       <parameter type="zeta" unit="1/nm" value="4" uncertainty="0" minimum="4" maximum="20" ntrain="0" mutability="Bounded" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="c1_z">

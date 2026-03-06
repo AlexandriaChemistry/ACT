@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="molname">boron-tetrafluoride.sdf</String>
+  <Real Name="qtot">-1</Real>
+  <Int Name="boron-tetrafluoride.sdf">5</Int>
+  <Sequence Name="atomtypes">
+    <Int Name="Length">5</Int>
+    <String>f</String>
+    <String>b</String>
+    <String>f</String>
+    <String>f</String>
+    <String>f</String>
+  </Sequence>
+</ReferenceData>
