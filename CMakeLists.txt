@@ -492,11 +492,11 @@ include_directories(${Boost_INCLUDE_DIRS})
 set(rdkitlibs RDGeneral SmilesParse FileParsers GraphMol Inchi RDInchiLib SubstructMatch SubstructLibrary GeneralizedSubstruct  FilterCatalog DetermineBonds )
 
 # Because RDKit did not yet updated their cmake config for this
-cmake_policy(SET CMP0167 NEW)
+#cmake_policy(SET CMP0167 NEW)
 find_package(RDKit REQUIRED COMPONENTS ${rdkitlibs} )
 message("RDKit_FOUND : ${RDKit_FOUND}")
 # Reset the policy
-cmake_policy(SET CMP0167 OLD)
+#cmake_policy(SET CMP0167 OLD)
 if(RDKit_FOUND)
   find_path(RDKit_INCLUDE_DIR rdkit/GraphMol/FilterCatalog/FilterMatchers.h)
   if(NOT RDKit_INCLUDE_DIR)
