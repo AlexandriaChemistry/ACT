@@ -1,0 +1,17 @@
+OPT/argon-krypton/argon-krypton3-opt.log.gz
+ OpenBabel07261715143D
+Gaussian 09 #P B3LYP/gen Int(Grid=Ultrafine) maxdisk=40GB SCF(Tight,Save,MaxCycl
+  2  0  0  0  0  0  0  0  0  0999 V2000
+    0.0000    0.0000   -4.2222 Ar  0  0  0  0  0  0  0  0  0  0  0  0
+    0.0000    0.0000    2.1111 Kr  0  0  0  0  0  0  0  0  0  0  0  0
+M  END
+>  <program>
+Gaussian 09, Revision C.01
+
+>  <basis>
+gen
+
+>  <method>
+B3LYP
+
+$$$$
