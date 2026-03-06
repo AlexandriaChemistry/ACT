@@ -215,6 +215,10 @@ class MoleculeDict:
                     m = Chem.MolFromPDBFile(filename, sanitize=False, removeHs=False, proximityBonding=False)
                 except:
                     readOK = False
+        except Chem.AtomValenceException:
+            print("Valence Exception encountered, please check input file %s for molecule %s" %
+                  ( filename, molname ) )
+            readOK = False
         except ValueError:
             readOK = False
         if not readOK or m == None:
@@ -256,16 +260,21 @@ class MoleculeDict:
 
         return success
 
-    def write_pdb(self, filenm:str, elements:list, coords:list):
+    def write_pdb(self, filenm:str, elements:list, coords:list, bonds):
         with open(filenm, "w") as outf:
             outf.write("MODEL        1\n")
             for i in range(len(elements)):
                 outf.write("ATOM      1 %2s   UNK     1    %8.3f%8.3f%8.3f  1.00  0.00          %2s\n" % ( elements[i], coords[i][0], coords[i][1], coords[i][2], elements[i] ) )
             outf.write("ENDMDL\n")
+            # Assume bonds are ordered as a list of dicts { "ai": int, "aj": int, "order": int }
+            if not bonds == None:
+                for b in bonds:
+                    for k in range(b["order"]):
+                        outf.write("CONECT%4d%4d\n" % ( b["ai"], b["aj"] ) )
             outf.write("TER\n")
 
     def from_coords_elements(self, molname:str, elements:list,
-                             coords:list, mycharge:int):
+                             coords:list, mycharge:int, bonds=None):
         if len(coords) != len(elements):
             print("Inconsistent input: There are %d coordinates but %d elements for %s." % ( len(coords), len(elements), molname ))
             return False
@@ -278,12 +287,37 @@ class MoleculeDict:
         with tempfile.TemporaryDirectory() as tmp:
             path = os.path.join(tmp, f'mol-{molname}.pdb')
             # use path
-            self.write_pdb(path, elements, coords)
+            self.write_pdb(path, elements, coords, bonds)
             success = self.read(molname, path, "pdb", mycharge)
             os.unlink(path)
             os.rmdir(tmp)
 
         return success
+    
+    def update_coordinates(self, elements:list, coordinates:list, charge:int)->bool:
+        # Check input
+        if len(elements) != len(coordinates):
+            print("Inconsistent input. %d elements and %d coordinates" % ( len(elements), len(coordinates) ) )
+            return False
+        # Check that input matches existing data
+        if len(elements) != len(self.atoms):
+            print("Inconsistent input. %d elements does not match %d atoms" % ( len(elements), len(self.atoms) ) )
+            return False
+        # Check charge
+        if charge != self.charge:
+            print("Inconsistent charge. Input %d, stored was %d" % ( charge, self.charge ) )
+            return False
+        for i in range(len(self.atoms)):
+            # Check whether elements match
+            if elements[i] != self.atoms[i]["element"]:
+                print("Element mismatch. Input %s, but stored was %s" % ( elements[i], self.atoms[i]["element"] ) )
+                return False
+        # All fine as far as we can tell
+        for i in range(len(self.atoms)):
+            self.atoms[i]["X"] = coordinates[i][0]
+            self.atoms[i]["Y"] = coordinates[i][1]
+            self.atoms[i]["Z"] = coordinates[i][2]
+        return True
         
     def from_smiles(self, smiles:str, addH:bool, mycharge:int):
         if self.verbose:
