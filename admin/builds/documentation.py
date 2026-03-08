@@ -44,7 +44,7 @@ extra_options = {
 def do_build(context):
     cmake_opts = {
             'GMX_BUILD_HELP': 'ON',
-            'GMX_BUILD_MANUAL': 'ON',
+            'ACT_BUILD_MANUAL': 'ON',
             'SOURCE_MD5SUM': context.opts.source_md5,
             'CMAKE_BUILD_TYPE': 'Debug',
             'GMX_GPU': 'OFF',
@@ -55,10 +55,6 @@ def do_build(context):
     release = (context.job_type == JobType.RELEASE)
     if release:
         cmake_opts['GMX_BUILD_TARBALL'] = 'ON'
-    elif context.job_type == JobType.GERRIT:
-        cmake_opts['GMX_COMPACT_DOXYGEN'] = 'ON'
-    cmake_opts.update(context.get_doc_cmake_options(
-        doxygen_version='1.8.5', sphinx_version='1.6.1'))
     context.run_cmake(cmake_opts);
 
     # we keep the individual build targets here to ensure some
@@ -155,6 +151,6 @@ def do_build(context):
 
     if release:
         version_info = context.read_cmake_variable_file('VersionInfo.cmake')
-        version = version_info['GMX_VERSION_STRING']
+        version = version_info['ACT_VERSION_STRING']
         package_name = 'website-' + version
         context.make_archive(package_name, root_dir='docs/html', prefix=package_name)
