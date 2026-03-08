@@ -11,6 +11,8 @@ sphinxemoji
 sphinx-copybutton
 sphinxcontrib-mermaid
 sphinxcontrib-plantuml
+nbsphinx
+sphinx_lesson
 #jupyter
 #jupyter_sphinx
 #numpy

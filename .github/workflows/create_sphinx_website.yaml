@@ -45,7 +45,7 @@ jobs:
         run: |
           conda info
           conda config --add channels conda-forge
-          conda install librdkit-dev=2025.09.4 libboost-devel eigen=5.0.1 doxygen graphviz pygments nbsphinx
+          conda install librdkit-dev=2025.09.4 libboost-devel eigen=5.0.1 doxygen graphviz pygments
       - name: Install dependencies
         run: pip install -r requirements.txt
 
