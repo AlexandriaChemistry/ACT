@@ -60,7 +60,7 @@ jobs:
           make -j 4 doxygen-full website
       - name: Upload notebook error log
         if: failure() # Only runs if the job fails
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: EEM-without-shells-error-log
           path: build/docs/manual/html/reports/jupyter/EEM-without-shells.err.log
