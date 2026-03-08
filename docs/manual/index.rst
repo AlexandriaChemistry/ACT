@@ -10,5 +10,6 @@ Alexandria Chemistry Toolkit
    preface/preface
    userman/header
    refman/header
+   jupyter/header
    devman/header
    references

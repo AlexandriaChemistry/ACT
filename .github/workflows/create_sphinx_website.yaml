@@ -34,7 +34,7 @@ jobs:
         run: |
           sudo apt update
           sudo apt-get update
-          sudo apt-get -y install gcc cmake libopenmpi-dev openmpi-bin  texlive-latex-recommended texlive-latex-extra libxml2 latexmk
+          sudo apt-get -y install gcc cmake libopenmpi-dev openmpi-bin  texlive-latex-recommended texlive-latex-extra libxml2 latexmk texlive-fonts-recommended
       - uses: conda-incubator/setup-miniconda@v3
         with:
           auto-update-conda: true
@@ -57,11 +57,17 @@ jobs:
           export MPICC=/usr/bin/gcc
           export CXXFLAGS='-std=c++20'
           cmake -DGMX_DOUBLE=ON -DCMAKE_PREFIX_PATH=/usr/share/miniconda/envs/test -DBUILD_SHARED_LIBS=OFF -DGMX_OPENMP=OFF -DGMX_MPI=ON -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/../tools -DCMAKE_BUILD_TYPE=Release -DACT_BUILD_MANUAL=ON  -DGMX_DEFAULT_SUFFIX=OFF -DCMAKE_CXX_COMPILER=${MPICXX} -DCMAKE_C_COMPILER=${MPICC} ..
-          make -j 4 doxygen-full website docs
+          make -j 4 doxygen-full website manual
           mkdir ../_build
           mv docs/html/doxygen/html-full ../_build/doxygen
           mv docs/manual/html/* ../_build/
           mv docs/manual/latex/act.pdf ../_build/
+      - name: Upload notebook error log
+        if: failure() # Only runs if the job fails
+        uses: actions/upload-artifact@v4
+        with:
+          name: EEM-without-shells-error-log
+          path: build/docs/manual/html/reports/jupyter/EEM-without-shells.err.log
 
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v4
