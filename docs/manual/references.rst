@@ -1,4 +1,7 @@
-References
-==========
+.. only:: html
+   
+   ##########
+   References
+   ##########
 
 .. bibliography::

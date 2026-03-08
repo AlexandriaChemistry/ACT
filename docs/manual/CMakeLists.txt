@@ -24,6 +24,8 @@ else()
     set(SPHINX_BUILD_POSSIBLE TRUE)
 endif()
 
+configure_file(conf-vars.py.cmakein ${SPHINX_CACHE_DIR}/conf-vars.py @ONLY)
+
 if(SPHINX_BUILD_POSSIBLE)
     include(FindPythonModule)
     find_python_module(pygments ${_find_deps_options})
