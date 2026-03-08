@@ -13,13 +13,13 @@ sphinxcontrib-mermaid
 sphinxcontrib-plantuml
 nbsphinx
 sphinx_lesson
-#jupyter
-#jupyter_sphinx
-#numpy
+jupyter
+jupyter_sphinx
+numpy
 #matplotlib
 #pandas
 #seaborn
-#scipy
+scipy
 #numba
 
 # If using MkDocs:
