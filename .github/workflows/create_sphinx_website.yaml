@@ -34,7 +34,7 @@ jobs:
         run: |
           sudo apt update
           sudo apt-get update
-          sudo apt-get -y install gcc cmake libopenmpi-dev openmpi-bin  texlive-latex-recommended texlive-latex-extra libxml2 latexmk
+          sudo apt-get -y install gcc cmake libopenmpi-dev openmpi-bin  texlive-latex-recommended texlive-latex-extra libxml2 latexmk texlive-fonts-recommended
       - uses: conda-incubator/setup-miniconda@v3
         with:
           auto-update-conda: true
