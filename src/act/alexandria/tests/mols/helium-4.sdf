@@ -1,0 +1,13 @@
+helium-4-w1u.log.gz
+ OpenBabel05311714033D
+Gaussian lap/gaussian/09.d.01/g09/g09 #P W1U Int=UltraFine SCF(MaxCycle=1000) ma
+  1  0  0  0  0  0  0  0  0  0999 V2000
+    0.0000    0.0000    0.0000 He  0  0  0  0  0  0  0  0  0  0  0  0
+M  END
+>  <program>
+Gaussian 09, Revision D.01
+
+>  <basis>
+MTSmall (5D, 7F)
+
+$$$$

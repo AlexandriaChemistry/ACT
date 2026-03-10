@@ -327,12 +327,12 @@ In addition, we applied the following rule for in particular :math:`\epsilon` si
 The combination relations described above were permuted with each other into new combination rules. In this way, relations that depend on only one parameter type were used for any parameter. Relations depending on multiple parameters  were used only for the specific parameter type combination they depend on (e.g. Eqn. :eq:`cr_whepsilon` was only used for :math:`\epsilon`, using homodimer :math:`\epsilon` and :math:`\sigma`). 
 In our previous work on alkali halides :cite:p:`Walz2018a` we used combination rules according to eqn. :eq:`cr_sigma5` for :math:`\sigma`, eqn. :eq:`cr_hogervorst_epsilon` for :math:`\epsilon` and eqn. :eq:`cr_arithmetic` for :math:`\gamma` with the Wang-Buckingham potential (Eqn. :eq:`vwbh`).
 
-A number of these combination rules can be written using the generalized mean equation :cite:p:`Hohm2025a`
+A number of these combination rules can be written using the generalized mean equation :cite:p:`Hohm2026a`
 
 .. math:: M_p(x_1,x_2,...,x_N) = \left(\frac{1}{N}\sum_{i=1}^N x_i^p\right)^{1/p}
    :label: cr_genmean
 
-for :math:`p \ne 0`. For :math:`p = 0`, Eqn. :eq:`cr_genmean` turns into the geometric rule. :numref:`tab-genmean` lists other well-known combination rules and their respective exponent :math:`p`. Hohm also describes combinations of the generalized mean and other similar expressions, but the most important observation he made was that the exponent :math:`p` can be varied at will :cite:p:`Hohm2025a`. In the ACT it is possible to train this parameter along with the Van der Waals parameters.
+for :math:`p \ne 0`. For :math:`p = 0`, Eqn. :eq:`cr_genmean` turns into the geometric rule. :numref:`tab-genmean` lists other well-known combination rules and their respective exponent :math:`p`. Hohm also describes combinations of the generalized mean and other similar expressions, but the most important observation he made was that the exponent :math:`p` can be varied at will :cite:p:`Hohm2026a`. In the ACT it is possible to train this parameter along with the Van der Waals parameters.
 
 .. table:: Correspondence between well-known combination rules and the generalized mean equation :eq:`cr_genmean`.
    :name: tab-genmean

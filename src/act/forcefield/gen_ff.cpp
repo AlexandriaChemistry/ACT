@@ -651,7 +651,11 @@ int gen_ff(int argc, char*argv[])
                  icfn[0])
         {
             fp.second.setFunction(icfn[0]);
-        } 
+        }
+        else if (fp.first == InteractionType::ELECTRONEGATIVITYEQUALIZATION)
+        {
+            fp.second.setCanSwap(CanSwap::Yes);
+        }
         pd.addForces(fp.first, fp.second);
     }
     // Polarization function

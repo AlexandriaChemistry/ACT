@@ -12,7 +12,7 @@ import sys
 
 project = u'ACT'
 
-#execfile('conf-vars.py')
+#exec('conf-vars.py')
 
 # The master toctree document.
 master_doc = 'index'
@@ -22,24 +22,19 @@ thisyear_string = str(datetime.datetime.now().year)
 github_user = "AlexandriaChemistry"
 github_repo_name = "ACT"
 github_version = "main"
-conf_py_path = "/docs/"
+conf_py_path = "/docs/manual"
 # The full version, including alpha/beta/rc tags
-release = '1.2b'
+release = '1.2b'#act_version_string
 
 extlinks = {'issue': ('https://github.com/AlexandriaChemistry/ACT/issues/%s',
                       'Issue ')}
+title = 'Alexandria Chemistry Toolkit'
 author = 'David van der Spoel, Paul J. van Maaren and Mohammad M. Ghahremanpour'
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
 templates_path = ['_templates']
-
-# -- Options for HTML output -------------------------------------------------
-# https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
-
-html_theme = 'alabaster'
-#html_static_path = ['_static']
 
 extensions = ['sphinxcontrib.bibtex']
 bibtex_bibfiles = ['manual-refs.bib']
@@ -95,19 +90,22 @@ exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 
 
 # -- Options for HTML output -------------------------------------------------
+# https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 html_theme = 'classic'
+#html_static_path = ['_static']
 
 # The name of an image file (relative to this directory) to place at the top
 # of the sidebar.
-#html_logo = None
+html_logo = "images/AClogo.png"
+html_sidebars = { '**': ['globaltoc.html', 'sourcelink.html', 'searchbox.html'],
+                  'using/windows': ['windows-sidebar.html', 'searchbox.html'] }
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-#html_static_path = ['_static']
 #def setup(app):
 #    app.add_css_file('custom_theme.css')
 
@@ -124,3 +122,19 @@ html_context = {
     "github_version": github_version,
     "conf_py_path": conf_py_path,
 }
+
+
+# Options for pdf
+latex_elements = {
+    # The paper size ('letterpaper' or 'a4paper').
+    "papersize": "a4paper",
+    'pointsize': '11pt',
+    # Format output to avoid empty pages
+    "classoptions": ",openany,oneside"
+}
+
+latex_logo = "images/AClogo.png"
+latex_documents = [ ( master_doc, "act.tex", "Alexandria Chemistry Toolkit", 
+'David van der Spoel \\and Paul J. van Maaren \\and Mohammad M. Ghahremanpour',
+"manual", True ) ]
+

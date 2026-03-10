@@ -672,19 +672,19 @@
   <!-- Group 18: Noble Gases (He, Ne, Ar, Kr, Xe, Rn) -->
   <atombondtype name="he_0" smarts="[He]" charge="0" multiplicity="1">
     <atomtypes>
-      <atomtype index="0" name="he" atomnumber="2"/>
+      <atomtype index="0" name="He" atomnumber="2"/>
     </atomtypes>
   </atombondtype>
 
   <atombondtype name="ne_0" smarts="[Ne]" charge="0" multiplicity="1">
     <atomtypes>
-      <atomtype index="0" name="ne" atomnumber="10"/>
+      <atomtype index="0" name="Ne" atomnumber="10"/>
     </atomtypes>
   </atombondtype>
 
   <atombondtype name="ar_0" smarts="[Ar]" charge="0" multiplicity="1">
     <atomtypes>
-      <atomtype index="0" name="ar" atomnumber="18"/>
+      <atomtype index="0" name="Ar" atomnumber="18"/>
     </atomtypes>
   </atombondtype>
 
@@ -696,13 +696,13 @@
 
   <atombondtype name="kr_0" smarts="[Kr]" charge="0" multiplicity="1">
     <atomtypes>
-      <atomtype index="0" name="kr" atomnumber="36"/>
+      <atomtype index="0" name="Kr" atomnumber="36"/>
     </atomtypes>
   </atombondtype>
 
   <atombondtype name="xe_0" smarts="[Xe]" charge="0" multiplicity="1">
     <atomtypes>
-      <atomtype index="0" name="xe" atomnumber="54"/>
+      <atomtype index="0" name="Xe" atomnumber="54"/>
     </atomtypes>
   </atombondtype>
 
@@ -726,7 +726,7 @@
 
   <atombondtype name="rn_0" smarts="[Rn]" charge="0" multiplicity="1">
     <atomtypes>
-      <atomtype index="0" name="rn" atomnumber="86"/>
+      <atomtype index="0" name="Rn" atomnumber="86"/>
     </atomtypes>
   </atombondtype>
 
