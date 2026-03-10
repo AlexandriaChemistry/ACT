@@ -2,7 +2,7 @@
 <!DOCTYPE atombondDB.dtd PUBLIC "atombondDB.dtd" "atombondDB.dtd">
 <atombondtypes>
  <!-- Special cases with bond order overrides -->
-  <atombondtype name="diaminomethylidene-ethyl-azanium" smarts="[#7](-[#6]-[#6])(-[#6](=[#7+])-[#7])" charge="1" multiplicity="1">
+  <atombondtype name="diaminomethylidene-ethyl-azanium" smarts="[#7](-[#6](-[#6](-[H])(-[H])-[H])(-[H])-[H])(-[#6](-[#7](-[H])-[H])=[#7+](-[H])-[H])-[H]" charge="1" multiplicity="1">
       <atomtypes>
       <atomtype index="0" name="n2" atomnumber="7"/>
       <atomtype index="1" name="c3" atomnumber="6"/>
