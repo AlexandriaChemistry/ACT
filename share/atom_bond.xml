@@ -2,6 +2,23 @@
 <!DOCTYPE atombondDB.dtd PUBLIC "atombondDB.dtd" "atombondDB.dtd">
 <atombondtypes>
  <!-- Special cases with bond order overrides -->
+  <atombondtype name="diaminomethylidene-ethyl-azanium" smarts="[#7](-[#6]-[#6])(-[#6](=[#7+])-[#7])" charge="1" multiplicity="1">
+    <atomtypes>
+      <atomtype index="0" name="n2" atomnumber="7"/>
+      <atomtype index="1" name="c3" atomnumber="6"/>
+      <atomtype index="2" name="c3" atomnumber="6"/>
+      <atomtype index="3" name="c2" atomnumber="6"/>
+      <atomtype index="4" name="n2" atomnumber="7"/>
+      <atomtype index="5" name="n2" atomnumber="7"/>
+    </atomtypes>
+    <bondtypes>
+      <bondtype ai="0" aj="1" order="1"/>
+      <bondtype ai="1" aj="2" order="1"/>
+      <bondtype ai="0" aj="3" order="1.5"/>
+      <bondtype ai="3" aj="4" order="1.5"/>
+      <bondtype ai="3" aj="5" order="1.5"/>
+    </bondtypes>
+  </atombondtype>	
   <atombondtype name="sulfate" smarts="[#16](=[#8])(=[#8])(-[#8-])-[#8-]" charge="-2" multiplicity="1">
     <atomtypes>
       <atomtype index="0" name="s3" atomnumber="16"/>
