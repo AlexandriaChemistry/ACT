@@ -36,7 +36,7 @@ author = 'David van der Spoel, Paul J. van Maaren and Mohammad M. Ghahremanpour'
 
 templates_path = ['_templates']
 
-extensions = ['sphinxcontrib.bibtex']
+extensions = ['sphinxcontrib.bibtex', 'nbsphinx']
 bibtex_bibfiles = ['manual-refs.bib']
 bibtex_default_style = 'unsrt'
 

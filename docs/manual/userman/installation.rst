@@ -29,10 +29,12 @@ For developers, the following additional packages are needed:
 * doxygen, it is used for generating software documentation,
 * graphviz can be optionally added for generating graphs and tree-structures in the doxygen documentation,
 * pygments, for source code listings,
-* sphinx, which is used for building the manual, and
-* sphinxcontrib-bibtex, for the references.
+* sphinx, which is used for building the manual, with
+* sphinxcontrib-bibtex, for the references and
+* nbsphinx for including `Jupyter`_ Notebooks.
 
 .. _Zenodo: https://doi.org/10.5281/zenodo.1004710
+.. _Jupyter: https://jupyter.org/
 
 =================
 Conda Environment
@@ -53,7 +55,7 @@ Most Linux installations come bundled with the GNU compiler suite (`GCC`_) and f
 
 For developers, please additionally install these packages::
 
-  conda install doxygen graphviz pygments sphinx sphinxcontrib-bibtex
+  conda install doxygen graphviz pygments sphinx sphinxcontrib-bibtex nbsphinx
 
 .. _Yml: https://github.com/dspoel/ACT/blob/main/ACT.yml
 .. _GCC: https://gcc.gnu.org

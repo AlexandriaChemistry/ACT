@@ -11,13 +11,15 @@ sphinxemoji
 sphinx-copybutton
 sphinxcontrib-mermaid
 sphinxcontrib-plantuml
-#jupyter
-#jupyter_sphinx
-#numpy
+nbsphinx
+sphinx_lesson
+jupyter
+jupyter_sphinx
+numpy
 #matplotlib
 #pandas
 #seaborn
-#scipy
+scipy
 #numba
 
 # If using MkDocs:
