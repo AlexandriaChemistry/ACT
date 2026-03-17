@@ -16,6 +16,8 @@ from PIL import ImageTk, Image
 
 # Some global variables
 Atom     = "Atom"
+HAtom    = "Hydrogen"
+NHAtom   = "Non-Hydrogen"
 VSite    = "VSite"
 Shell    = "Shell"
 Point    = "POINT"
@@ -187,7 +189,7 @@ class VdwSel:
         labParticle = tk.Label(frame, text=f"Use VdW on", anchor="w", font=labelFont()).grid(row=myrow, column=mycol, sticky=tk.N+tk.S+tk.W)
         myrow += 1
         self.vdwPart = {}
-        ptypes = { Atom: 1, VSite: 0, Shell: 0 }
+        ptypes = { NHAtom: 1, HAtom: 1, VSite: 0, Shell: 0 }
         for ptype in ptypes.keys():
             self.vdwPart[ptype] = tk.IntVar()
             self.vdwPart[ptype].set(ptypes[ptype])
@@ -1063,10 +1065,14 @@ class FFGenerator:
             allData[atp][prefix+"nonneg"] = str(nonNegative)
 
         # And another one
-        def setVDW(atype_name:str, vdwtp:str):
+        def setVDW(atype_name:str, element:str, vdwtp:str):
             bounds = self.vdwSel.bounds()
             vdw_mut = Fixed
-            if vdwPart[vdwtp]:
+            if vdwtp == Atom:
+                if ((element == "H" and vdwPart[HAtom]) or
+                    (element != "H" and vdwPart[NHAtom])):
+                    vdw_mut = Bounded
+            elif vdwPart[vdwtp]:
                 vdw_mut = Bounded
             for b in bounds:
                 if not b == comment:
@@ -1106,7 +1112,7 @@ class FFGenerator:
                 else:
                     setParam(atp, coul, "zeta", 4, 20, Bounded, "1/nm")
                 # Determine whether to use VDW
-                setVDW(atp, VSite)
+                setVDW(atp, allData[atp]["element"], VSite)
                 # Some of the vsites may get the van der waals correction
                 setVDWcorr(atp, self.opt_atomtypes[atp]["exchcorr"])
             
@@ -1184,7 +1190,7 @@ class FFGenerator:
                     setParam(atype_name, "POLARIZATION", "fchyper", 0, 5e8, Fixed, "kJ/mol nm4")
 
                 # Determine whether to use VDW
-                setVDW(atype_name, vdwtp)
+                setVDW(atype_name, allData[atp]["element"], vdwtp)
                 # And van der waals corrections if needed.
                 setVDWcorr(atype_name, False)
 
