@@ -427,7 +427,7 @@ static void write_q_histo(gmx::TextWriter                  *tw,
                           const char                       *qhisto,
                           std::map<std::string, gmx_stats> *lsqt,
                           const gmx_output_env_t           *oenv,
-                          bool                              useOffset)
+                          gmx_unused bool                   useOffset)
 {
     std::vector<std::string> types;
     for (const auto &i: *lsqt)
@@ -444,8 +444,11 @@ static void write_q_histo(gmx::TextWriter                  *tw,
         hh = xvgropen(qhisto, "Histogram for charges", "q (e)", "a.u.", oenv);
         xvgrLegend(hh, types, oenv);
     }
-    auto model = qPropertyTypeName(qPropertyType::ACM);
-
+    auto model  = qPropertyTypeName(qPropertyType::ACM);
+    tw->writeLine();
+    tw->writeLine("*** Charge statistics per atomtype ***");
+    tw->writeLine("Atomtype       N     Min Average     Max  StdDev");
+    tw->writeLine("------------------------------------------------");
     for (auto &q : *lsqt)
     {
         if (q.second.get_npoints() > 0)
@@ -463,8 +466,14 @@ static void write_q_histo(gmx::TextWriter                  *tw,
                     }
                     fprintf(hh, "&\n");
                 }
-                print_stats(tw, q.first.c_str(), "e", 1.0, &q.second, false, 
-                            "CM5", model.c_str(), useOffset);
+                real aver, stddev, error;
+                auto yyy = q.second.getY();
+                auto qmin = *std::min_element(yyy.begin(), yyy.end());
+                auto qmax = *std::max_element(yyy.begin(), yyy.end());
+                q.second.get_ase(&aver, &stddev, &error);
+                auto qdata = gmx::formatString("%8s  %6zu  %6.3f  %6.3f  %6.3f  %6.3f", q.first.c_str(),
+                                               q.second.get_npoints(), qmin, aver, qmax, stddev);
+                tw->writeLine(qdata);
             }
         }
     }
