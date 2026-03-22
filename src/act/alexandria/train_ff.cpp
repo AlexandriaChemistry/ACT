@@ -59,6 +59,7 @@
 #include "act/forcefield/forcefield_xml.h"
 #include "act/ga/penalizer.h"
 #include "act/molprop/molprop_util.h"
+#include "act/utility/jsontree.h"
 #include "act/utility/memory_check.h"
 #include "act/utility/units.h"
 #include "gromacs/commandline/pargs.h"
@@ -727,8 +728,7 @@ int train_ff(int argc, char *argv[])
 
     gmx_output_env_t           *oenv;
     MolSelect                   gms;
-    TrainForceFieldPrinter      printer;  //! \todo pargs is a ConfigHandler, maybe we could inherit the superclass?
-
+    TrainForceFieldPrinter      printer;
     std::vector<t_pargs>        pargs;
     {
         t_pargs                     pa[]         = {
@@ -747,10 +747,11 @@ int train_ff(int argc, char *argv[])
     }
     std::vector<t_filenm>       filenms =
     {
-        { efXML, "-ff",   "aff",           ffRDMULT },
-        { efXVG, "-conv", "param_conv" ,   ffWRITE  },
-        { efXVG, "-chi2", "chi_squared",   ffWRITE  },
-        { efDAT, "-fitness", "ga_fitness", ffWRITE }
+        { efXML,  "-ff",      "aff",         ffRDMULT },
+        { efXVG,  "-conv",    "param_conv" , ffWRITE  },
+        { efXVG,  "-chi2",    "chi_squared", ffWRITE  },
+        { efDAT,  "-fitness", "ga_fitness",  ffWRITE  },
+        { efJSON, "-json",    "train_ff",    ffOPTWR  }
     };
 
     alexandria::OptACM opt;
@@ -953,7 +954,13 @@ int train_ff(int argc, char *argv[])
                 opt.sii()->saveState(true);
             }
             MolGen *tmpMg = opt.mg();
-            printer.print(opt.msgHandler(), opt.sii(), tmpMg->actmolsPtr(), oenv, filenms, !bOptimize);
+            JsonTree jtree("train_ff");
+            printer.print(opt.msgHandler(), &jtree, opt.sii(), tmpMg->actmolsPtr(), oenv, filenms, !bOptimize);
+            auto json_file = opt2fn_null("-json", filenms.size(), filenms.data());
+            if (json_file)
+            {
+                jtree.write(json_file, true);
+            }
             print_memory_usage(debug);
         }
         else if (!bMinimum)

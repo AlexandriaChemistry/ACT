@@ -49,6 +49,7 @@
 #include "act/molprop/molprop_xml.h"
 #include "act/molprop/multipole_names.h"
 #include "act/qgen/qtype.h"
+#include "act/utility/jsontree.h"
 #include "act/utility/stringutil.h"
 #include "act/utility/units.h"
 #include "gromacs/fileio/gmxfio.h"
@@ -580,25 +581,39 @@ void TrainForceFieldPrinter::analysePolarisability(gmx::TextWriter     *tw,
 }
 
 void TrainForceFieldPrinter::printAtoms(gmx::TextWriter              *tw,
+                                        JsonTree                     *jtree,
                                         alexandria::ACTMol           *mol,
                                         const std::vector<gmx::RVec> &coords,
                                         const std::vector<gmx::RVec> &forces)
 {
     std::map<qPropertyType, const std::vector<double> > qQM;
+    JsonTree jtatoms("atoms");
     tw->writeStringFormatted("Atom   Type            ACM        x        y   z(pm)          fx         fy fz(kJ/mol nm)     qtot\n");
     int      i       = 0;
     double   qtot    = 0;
     auto    &myatoms = mol->atomsConst();
     for (size_t j = i = 0; j < myatoms.size(); j++)
     {
+        JsonTree atom(std::to_string(j));
+        atom.addObject(JsonTree("particletype", actParticleToString(myatoms[j].pType())));
+        atom.addObject(JsonTree("atomicnumber", std::to_string(myatoms[j].atomicNumber())));
+        atom.addObject(JsonTree("fftype", myatoms[j].ffType()));
+        atom.addObject(JsonTree("charge", std::to_string(myatoms[j].charge())));
+        atom.addObject(JsonTree("x", std::to_string(coords[j][XX])));
+        atom.addObject(JsonTree("y", std::to_string(coords[j][YY])));
+        atom.addObject(JsonTree("z", std::to_string(coords[j][ZZ])));
+        atom.addObject(JsonTree("fx", std::to_string(forces[j][XX])));
+        atom.addObject(JsonTree("fy", std::to_string(forces[j][YY])));
+        atom.addObject(JsonTree("fz", std::to_string(forces[j][ZZ])));
+        jtatoms.addObject(atom);
         if (myatoms[j].pType() == ActParticle::Atom)
         {
             real qCalc = myatoms[j].charge();
             tw->writeStringFormatted("%-2d%3lu  %-5s  %12g",
-                    myatoms[j].atomicNumber(),
-                    j+1,
-                    myatoms[j].ffType().c_str(),
-                    qCalc);
+                                     myatoms[j].atomicNumber(),
+                                     j+1,
+                                     myatoms[j].ffType().c_str(),
+                                     qCalc);
             qtot += qCalc;
             tw->writeStringFormatted(" %8.3f %8.3f %8.3f %10.3f %10.3f %10.3f  %10g\n", 
                                      convertFromGromacs(coords[j][XX], "pm"),
@@ -632,6 +647,7 @@ void TrainForceFieldPrinter::printAtoms(gmx::TextWriter              *tw,
                                      qtot);
         }
     }
+    jtree->addObject(jtatoms);
 }
 
 /*! Store coordinates to a file, first original, then minimized.
@@ -1054,6 +1070,7 @@ void TrainForceFieldPrinter::writeMolpropsEnergies(MsgHandler          *msghandl
 }
 
 void TrainForceFieldPrinter::printEnergyForces(MsgHandler                          *msghandler,
+                                               JsonTree                            *jtree,
                                                const ForceField                    *pd,
                                                const ForceComputer                 *forceComp,
                                                const std::map<eRMS, FittingTarget> &targets,
@@ -1176,16 +1193,22 @@ void TrainForceFieldPrinter::printEnergyForces(MsgHandler                       
             }
         });
         auto &expers = mol->experimentConst();
+        JsonTree jt_iener("interaction_energies");
         for(const auto &iem : interactionEnergyMap)
         {
             std::string myline;
+            JsonTree jexper("calculation");
             for(const auto &t : terms_)
             {
                 auto ttt = iem.find(t);
-                
+
+                JsonTree jterm(interactionTypeToString(t));
+                bool     found = false;
                 if (iem.end() != ttt && ttt->second.haveQM())
                 {
                     myline += gmx::formatString(" %9.2f", ttt->second.eqm());
+                    jterm.addObject("QM", ttt->second.eqm());
+                    found = true;
                 }
                 else
                 {
@@ -1194,10 +1217,16 @@ void TrainForceFieldPrinter::printEnergyForces(MsgHandler                       
                 if (iem.end() != ttt && ttt->second.haveACT())
                 {
                     myline += gmx::formatString(" %9.2f", ttt->second.eact());
+                    jterm.addObject("ACT", ttt->second.eact());
+                    found = true;
                 }
                 else
                 {
                     myline += ("         x");
+                }
+                if (found)
+                {
+                    jexper.addObject(jterm);
                 }
             }
             auto ttt   = iem.find(InteractionType::EPOT);
@@ -1207,9 +1236,15 @@ void TrainForceFieldPrinter::printEnergyForces(MsgHandler                       
             if (expers.end() != exper)
             {
                 myline += " " + exper->getDatafile();
+                jexper.addObject("datafile", exper->getDatafile());
+                jexper.addObject("program", exper->getProgram());
+                jexper.addObject("method", exper->getMethod());
+                jexper.addObject("basisset", exper->getBasisset());
             }
+            jt_iener.addObject(jexper);
             msghandler->write(myline);
         }
+        jtree->addObject(jt_iener);
         std::sort(forceMap.begin(), forceMap.end());
         for(auto ff = forceMap.begin(); ff < forceMap.end(); ++ff)
         {
@@ -1297,12 +1332,11 @@ void TrainForceFieldPrinter::printEnergyForces(MsgHandler                       
             msghandler->write(gmx::formatString("Coordinate RMSD after minimization %10g pm", 1000*rmsd));
 
             // Do normal-mode analysis etc.
-            JsonTree jtree("FrequencyAnalysis");
+            JsonTree jfreq("FrequencyAnalysis");
             doFrequencyAnalysis(pd, mol, molHandler_, forceComp, &coords,
-                                atomenergy, &lsq_freq_, &jtree,
+                                atomenergy, &lsq_freq_, &jfreq,
                                 nullptr, 24, nullptr, false);
-            int indent = 0;
-            msghandler->write(jtree.writeString(false, &indent));
+            jtree->addObject(jfreq);
         }
         else
         {
@@ -1446,6 +1480,7 @@ void TrainForceFieldPrinter::printOutliers(gmx::TextWriter                      
 }
 
 void TrainForceFieldPrinter::print(MsgHandler                  *msghandler,
+                                   JsonTree                    *jtree, 
                                    StaticIndividualInfo        *sii,
                                    std::vector<ACTMol>         *actmol,
                                    const gmx_output_env_t      *oenv,
@@ -1545,10 +1580,19 @@ void TrainForceFieldPrinter::print(MsgHandler                  *msghandler,
     auto tw = msghandler->tw();
     for (auto mol = actmol->begin(); mol < actmol->end(); ++mol)
     {
+        auto ims   = mol->datasetType();
+        auto jtmol = JsonTree("molecule");
+        {
+            jtmol.addObject(JsonTree("name", mol->getMolname()));
+            jtmol.addObject(JsonTree("charge", std::to_string(mol->totalCharge())));
+            jtmol.addObject(JsonTree("multiplicity", std::to_string(mol->totalMultiplicity())));
+            jtmol.addObject(JsonTree("mass", std::to_string(mol->totalMass())));
+            jtmol.addObject(JsonTree("symmetrynumber", std::to_string(mol->symmetryNumber())));
+            jtmol.addObject(JsonTree("dataset", iMolSelectName(ims)));
+        }
         auto topology = mol->topology();
         if (tw && mol->support() != eSupport::No)
         {
-            auto ims = mol->datasetType();
             tw->writeStringFormatted("\nMolecule %d: Name: %s, Qtot: %d, Multiplicity: %d, MolWt: %g SymmetryNumber: %d Dataset: %s\n", n+1,
                                      mol->getMolname().c_str(),
                                      mol->totalCharge(),
@@ -1636,12 +1680,12 @@ void TrainForceFieldPrinter::print(MsgHandler                  *msghandler,
                 forceComp.compute(msghandler, pd, topology, &coords,
                                   &forces, &energies);
             }
-            printAtoms(tw, &(*mol), coords, forces);
+            printAtoms(tw, &jtmol, &(*mol), coords, forces);
             // Energies
             if (sii->haveFittingTargetSelection(ims))
             {
                 std::vector<std::string> tcout;
-                printEnergyForces(msghandler, pd, &forceComp, sii->fittingTargetsConst(ims),
+                printEnergyForces(msghandler, &jtmol, pd, &forceComp, sii->fittingTargetsConst(ims),
                                   atomenergy, &(*mol), ims, oenv, printAll);
 
                 for(const auto &tout : tcout)
@@ -1652,6 +1696,9 @@ void TrainForceFieldPrinter::print(MsgHandler                  *msghandler,
             }
             n++;
         }
+        int indent = 2;
+        tw->writeString(jtmol.writeString(true, &indent));
+        jtree->addObject(jtmol);
     }
 
     for(auto &ims : iMolSelectNames())

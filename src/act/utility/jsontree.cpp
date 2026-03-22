@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2022,2025
+ * Copyright (C) 2022,2025,2026
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -59,6 +59,10 @@ const std::string JsonTree::writeString(bool json, int *indent) const
         if (!value_.empty())
         {
             str += gmx::formatString("\"%s\"", value_.c_str());
+            if (!objects_.empty())
+            {
+                fprintf(stderr, "JsonTree object %s has both a value %s and %zu branches. Please fix code.\n", key_.c_str(), value_.c_str(), objects_.size());
+            }
         }
         else
         {
