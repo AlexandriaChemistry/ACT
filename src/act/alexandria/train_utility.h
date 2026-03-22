@@ -134,6 +134,7 @@ private:
                             const ForceComputer                             *forceComputer);
     //! \brief And the atoms.
     void printAtoms(gmx::TextWriter              *tw,
+                    JsonTree                     *jtree,
                     alexandria::ACTMol           *mol,
                     const std::vector<gmx::RVec> &coords,
                     const std::vector<gmx::RVec> &forces);
@@ -151,8 +152,13 @@ private:
                                const ForceComputer *forceComp,
                                std::vector<ACTMol> *mols);
     /*! \brief do part of the printing, add to statistics
+     * \param[in] msghandler For warnings etc.
+     * \param[in] jtree      JSon structure
+     * \param[in]    pd         A force field
+     * \param[in]    forceComp  The force computer
      */
     void printEnergyForces(MsgHandler                          *msghandler,
+                           JsonTree                            *jtree,
                            const ForceField                    *pd,
                            const ForceComputer                 *forceComp,
                            const std::map<eRMS, FittingTarget> &targets,
@@ -186,6 +192,7 @@ public:
      * By default only the interactions/energies/observables that are
      * used in optimization will be printed.
      * \param[in] msghandler For printing and status
+     * \param[in] jtree      JSon structure
      * \param[in] sii        Information on the training
      * \param[in] actmol     The compounds/dimers
      * \param[in] oenv       For printing xvg files
@@ -193,6 +200,7 @@ public:
      * \param[in] printAll   Tell the printer to print all observables.
      */
     void print(MsgHandler                  *msghandler,
+               JsonTree                    *jtree, 
                StaticIndividualInfo        *sii,
                std::vector<ACTMol>         *actmol,
                const gmx_output_env_t      *oenv,

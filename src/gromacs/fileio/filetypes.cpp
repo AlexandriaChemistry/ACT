@@ -127,7 +127,8 @@ static const t_deffile deffile[efNR] =
     { eftASC, "", "rundir", nullptr, "Run directory" },
     { eftASC, ".xml", "data", nullptr, "Generic XML data file" },
     { eftASC, ".csv", "data", nullptr, "Comma-separated-values file" },
-    { eftASC, ".sdf", "mol", nullptr, "Mol2 file with extension sdf" }
+    { eftASC, ".sdf", "mol", nullptr, "Mol2 file with extension sdf" },
+    { eftASC, ".json", "output", nullptr, "JavaScript Object Notation" }
 };
 
 const char *ftp2ext(int ftp)
@@ -273,6 +274,10 @@ int fn2ftp(const char *fn)
     if ((len >= 4) && (fn[len - 4] == '.'))
     {
         feptr = &(fn[len - 4]);
+    }
+    else if ((len >= 5) && (fn[len - 5] == '.'))
+    {
+        feptr = &(fn[len - 5]);
     }
     else
     {

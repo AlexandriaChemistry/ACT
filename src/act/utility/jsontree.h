@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2022,2025
+ * Copyright (C) 2022,2025,2026
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -44,6 +44,8 @@ namespace alexandria
 /*! \brief Simple class to produce JSON or text outputs
  * The input is a tree structure that is filled in a program.
  * Only strings allowed for now.
+ * Each JsonTree can have either a value or objects but not both.
+ * If both are added a warning is printed.
  */
 class JsonTree
 {
@@ -74,7 +76,15 @@ public:
         key_ = key;
         value_ = value;
     }
-    
+
+    //! \return key
+    const std::string &key() const { return key_; }
+
+    //! \return value
+    const std::string &value() const { return value_; }
+
+    //! \return objects
+    const std::vector<JsonTree> &objects() const { return objects_; }
     //! \return if there is nothing here
     bool empty() const { return objects_.empty() && value_.empty(); }
     
@@ -93,7 +103,12 @@ public:
      */
     void addObject(const JsonTree object)
     {
-        objects_.push_back(object);
+        JsonTree newObj(object.key(), object.value());
+        for(const auto &obj : object.objects())
+        {
+            newObj.addObject(obj);
+        }
+        objects_.push_back(std::move(newObj));
     }
     
     /*! \brief Add a tree element
@@ -103,6 +118,15 @@ public:
     void addObject(const std::string &key, const std::string &value)
     {
         objects_.push_back(JsonTree(key, value));
+    }
+    
+    /*! \brief Add a tree element
+     * \param[in] key   The key
+     * \param[in] value The value
+     */
+    void addObject(const std::string &key, double value)
+    {
+        objects_.push_back(JsonTree(key, std::to_string(value)));
     }
     
     /*! \brief Add a tree element with a subelement
@@ -115,7 +139,7 @@ public:
         JsonTree jt(key);
         jt.addObject("value", value);
         jt.addObject("unit", unit);
-        objects_.push_back(jt);
+        objects_.push_back(std::move(jt));
     }
     
     /*! \brief Add a tree element
@@ -126,7 +150,7 @@ public:
     {
         JsonTree jnew(key);
         jnew.addObject(object);
-        objects_.push_back(jnew);
+        objects_.push_back(std::move(jnew));
     }
     
     /*! \brief Write the tree to a file
