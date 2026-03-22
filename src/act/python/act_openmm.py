@@ -193,6 +193,7 @@ class SimParams:
                 value = float(words[0])
             except ValueError:
                 sys.exit("Incorrect float value '%s' for key '%s' in %s" % ( words[0], key, self.filename ))
+            self.txt.write(f"Using value {value} for {key}\n")
             return value
         else:
             self.txt.write("Unknown or empty key '%s' in %s, using default value = %g\n" % ( key, self.filename, default ))
@@ -205,6 +206,7 @@ class SimParams:
                 value = int(words[0])
             except ValueError:
                 sys.exit("Incorrect integer value '%s' for key '%s' in %s" % ( words[0], key, self.filename ))
+            self.txt.write(f"Using value {value} for {key}\n")
             return value
         else:
             self.txt.write("Unknown or empty key '%s' in %s, using default value = %d\n" % ( key, self.filename, default ))
@@ -212,6 +214,7 @@ class SimParams:
 
     def getStr(self, key:str, default:str="") -> str:
         if key in self.params and len(self.params[key]) > 0:
+            self.txt.write(f"Using value {self.params[key]} for {key}\n")
             return self.params[key]
         else:
             self.txt.write("Unknown or empty key '%s' in %s, using default value = '%s'\n" % ( key, self.filename, default ))
@@ -219,7 +222,9 @@ class SimParams:
 
     def getBool(self, key:str, default:bool=False) -> bool:
         if key in self.params and len(self.params[key]) > 0:
-            return self.params[key] in [ "True", "true" ]
+            value = self.params[key] in [ "True", "true" ]
+            self.txt.write(f"Using value {value} for {key}\n")
+            return value
         else:
             self.txt.write("Unknown or empty key '%s' in %s, using default value = '%s'\n" % ( key, self.filename, str(default) ))
             return default
@@ -637,7 +642,7 @@ class ActOpenMMSim:
         self.steps              = self.sim_params.getInt('steps')
         self.nonbondedMethod           = nbmethod[self.sim_params.getStr('nonbondedMethod')]
         self.nonbondedCutoff           = self.sim_params.getFloat('nonbondedCutoff')
-        self.col_freq                  = self.sim_params.getFloat('collisionFrequency', 0.1)
+        self.AndersenCollFreq          = self.sim_params.getFloat('AndersenCollisionFrequency', 0.1)
         self.maxDrudeDist              = self.sim_params.getFloat('maxDrudeDistance', 0.02)
         self.useAndersenThermostat     = self.sim_params.getBool('useAndersenThermostat')
         self.temperature_c             = self.sim_params.getFloat('temperature_c')
@@ -747,7 +752,7 @@ class ActOpenMMSim:
         rmcom           = True
         if self.nonbondedMethod == NoCutoff:
             rmcom = False
-        if self.verbose:
+        if self.verbose and not self.rigidWater:
             self.txt.write("Using flexible water (if present).\n")
         if self.polarizable:
             self.system = self.forcefield.createSystem(self.topology,
@@ -1009,7 +1014,7 @@ class ActOpenMMSim:
 
     def add_custom_forces(self):
         if self.useOpenMMForce:
-            self.txt.write("Using native OpenMM forces")
+            self.txt.write("Using native OpenMM forces\n")
             self.set_nb_method(self.nonbondedforce)
             self.do_force_settings(self.nonbondedforce)
         else:
@@ -1430,7 +1435,7 @@ class ActOpenMMSim:
                   0 == force.getNumTorsions()):
                 self.del_force(force)
             elif force.getName() == "CMMotionRemover":
-                force.setFrequency(self.sim_params.getInt('commremoval_frequency', 10))
+                force.setFrequency(self.sim_params.getInt('commremovalFrequency', 10))
                 if force.getFrequency() <= 0:
                     self.del_force(force)
 
@@ -1525,18 +1530,23 @@ class ActOpenMMSim:
                 if self.verbose:
                     self.txt.write(f"Monte Carlo ANISOTROPIC Barostat will be used. The dimensions that can change are: X = {self.scaleX} Y = {self.scaleY} Z = {self.scaleZ}\n")
         if self.useAndersenThermostat:
-            self.system.addForce(AndersenThermostat(self.temperature_c, self.col_freq))
+            self.system.addForce(AndersenThermostat(self.temperature_c, self.AndersenCollFreq))
             if self.verbose:
-                self.txt.write(f"Andersen Thermostat will be used with temperature {self.temperature_c}\n")
+                self.txt.write(f"Andersen thermostat will be used with temperature {self.temperature_c} and collision freq {self.AndersenCollFreq}.\n")
 
         #### Integrator ####
-        friction_c    = self.sim_params.getFloat('friction_c')
-        temperature_s = self.sim_params.getFloat('temperature_s')
+        temperature_s = self.sim_params.getFloat('temperature_s')*kelvin
         integrator    = self.sim_params.getStr('integrator')
         if self.polarizable:
             if "DrudeNoseHooverIntegrator" == integrator:
-                self.integrator = DrudeNoseHooverIntegrator(self.temperature_c, friction_c, temperature_s,
-                                                            self.sim_params.getFloat('friction_s'), self.dt)
+                self.integrator = DrudeNoseHooverIntegrator(self.temperature_c*kelvin, 
+                                                            self.sim_params.getFloat('friction_c')/picosecond,
+                                                            temperature_s*kelvin,
+                                                            self.sim_params.getFloat('friction_s')/picosecond,
+                                                            self.dt*picosecond,
+                                                            self.sim_params.getInt("chainLength", 1),
+                                                            self.sim_params.getInt("numMTS", 1),
+                                                            self.sim_params.getInt("numYoshidaSuzuki", 1))
                 self.integrator.setMaxDrudeDistance(self.maxDrudeDist)
             elif "DrudeSCFIntegrator" == integrator:
                 self.integrator = DrudeSCFIntegrator(self.dt)
@@ -1564,13 +1574,16 @@ class ActOpenMMSim:
             if nhi != integrator:
                 self.txt.write("Unsupported integrator %s for non-polarizable system, will use %s instead\n"
                                % ( integrator, nhi ))
-            self.integrator = NoseHooverIntegrator(self.temperature_c, friction_c, self.dt)
+            self.integrator = NoseHooverIntegrator(self.temperature_c, friction_c, self.dt,
+                                                   self.sim_params.getInt("chainLength", 1),
+                                                   self.sim_params.getInt("numMTS", 1),
+                                                   self.sim_params.getInt("numYoshidaSuzuki", 1))
 
         # Print some stuff yey.
         if self.verbose:
             self.txt.write("Core Temperature %g\n" % self.temperature_c)
             if self.polarizable:
-                self.txt.write("Drude Temperature %g\n" % self.get_value(self.integrator.getDrudeTemperature()))
+                self.txt.write("Drude Temperature %g\n" % self.get_value(self.integrator.getTemperature()))
             self.txt.write("Integration time step %g\n" % self.get_value(self.integrator.getStepSize()))
 
     def compute_dipole(self)->list:
