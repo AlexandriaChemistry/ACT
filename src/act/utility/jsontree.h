@@ -103,12 +103,13 @@ public:
      */
     void addObject(const JsonTree object)
     {
-        JsonTree newObj(object.key(), object.value());
-        for(const auto &obj : object.objects())
-        {
-            newObj.addObject(obj);
-        }
-        objects_.push_back(std::move(newObj));
+        objects_.push_back(object);
+        //        JsonTree newObj(object.key(), object.value());
+        //for(const auto &obj : object.objects())
+        //{
+        //  newObj.addObject(obj);
+        //}
+        //objects_.push_back(std::move(newObj));
     }
     
     /*! \brief Add a tree element
@@ -119,7 +120,7 @@ public:
     {
         objects_.push_back(JsonTree(key, value));
     }
-    
+
     /*! \brief Add a tree element
      * \param[in] key   The key
      * \param[in] value The value
@@ -139,7 +140,7 @@ public:
         JsonTree jt(key);
         jt.addObject("value", value);
         jt.addObject("unit", unit);
-        objects_.push_back(std::move(jt));
+        objects_.push_back(jt);
     }
     
     /*! \brief Add a tree element
@@ -150,7 +151,7 @@ public:
     {
         JsonTree jnew(key);
         jnew.addObject(object);
-        objects_.push_back(std::move(jnew));
+        objects_.push_back(jnew);
     }
     
     /*! \brief Write the tree to a file
