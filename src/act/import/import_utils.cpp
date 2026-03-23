@@ -438,7 +438,6 @@ void writeAtomBondtypeDB(MsgHandler                                      *msghan
     }
     // No compression
     xmlSetDocCompressMode(doc, 0);
-    xmlIndentTreeOutput = 1;
     if (xmlSaveFormatFileEnc(filenm.c_str(), doc, "ISO-8859-1", 1) == 0)
     {
         msghandler->msg(ACTStatus::Error, gmx::formatString("Faild to save file %s", filenm.c_str()));

@@ -1528,7 +1528,6 @@ void OpenMMWriter::writeXml(MsgHandler                *msghandler,
     if (msghandler->ok())
     {
         xmlSetDocCompressMode(doc, 0);
-        xmlIndentTreeOutput = 1;
         if (xmlSaveFormatFileEnc(fileName.c_str(), doc, "ISO-8859-1", 2) == 0)
         {
             msghandler->msg(ACTStatus::Error,
