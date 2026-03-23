@@ -1187,7 +1187,6 @@ void MolPropWrite(const char                 *fn,
         add_xml_molprop(myroot, mp);
     }
     xmlSetDocCompressMode(doc, (int)bCompress);
-    xmlIndentTreeOutput = 1;
     if (xmlSaveFormatFileEnc(fn, doc, "ISO-8859-1", 1) == 0)
     {
         gmx_fatal(FARGS, "Saving file %s", fn);

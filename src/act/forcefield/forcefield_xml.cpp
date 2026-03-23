@@ -765,7 +765,6 @@ void writeForceField(const std::string &fileName,
     addXmlForceField(myroot, pd);
 
     xmlSetDocCompressMode(doc, compress ? 1 : 0);
-    xmlIndentTreeOutput = 1;
     if (xmlSaveFormatFileEnc(fileName.c_str(), doc, "ISO-8859-1", 2) == 0)
     {
         gmx_fatal(FARGS, "Saving file %s", fileName.c_str());
