@@ -67,15 +67,15 @@ namespace
 struct ForceComputerTestParams
 {
     //! Name used for test identification (maps to refdata file)
-    std::string                          name;
+    std::string                                     name;
     //! The potential to test
-    Potential                            potential;
-    //! Atomic coordinates
-    std::vector<gmx::RVec>               coords;
+    Potential                                       potential;
+    //! Factory function that builds the atomic coordinates for this test
+    std::function<std::vector<gmx::RVec>()>         coordsBuilder;
     //! Factory function that builds the topology for this test
-    std::function<TopologyEntryVector()> topBuilder;
+    std::function<TopologyEntryVector()>            topBuilder;
     //! Charge for atoms_[1] (default 1.0 matches base fixture)
-    double                               charge1 = 1.0;
+    double                                          charge1 = 1.0;
 };
 
 class ForceComputerImplementationTest : public ::testing::TestWithParam<ForceComputerTestParams>
@@ -154,8 +154,9 @@ TEST_P(ForceComputerImplementationTest, RunTest)
 {
     const auto &p = GetParam();
     atoms_[1].setCharge(p.charge1);
+    auto x   = p.coordsBuilder();
     auto top = p.topBuilder();
-    testPot(p.potential, top, &p.coords);
+    testPot(p.potential, top, &x);
 }
 
 //! Build all parameterised test cases, one per original TEST_F
@@ -168,7 +169,7 @@ static std::vector<ForceComputerTestParams> makeAllTestParams()
         ForceComputerTestParams p;
         p.name      = "LJ8_6";
         p.potential = Potential::LJ8_6;
-        p.coords    = { { 0, 0, 0 }, { 0, 0, 0.5 } };
+        p.coordsBuilder = []() { return std::vector<gmx::RVec>{ { 0, 0, 0 }, { 0, 0, 0.5 } }; };
         p.topBuilder = []() {
             TopologyEntryVector top;
             top.push_back(AtomPair(0, 1));
@@ -185,7 +186,7 @@ static std::vector<ForceComputerTestParams> makeAllTestParams()
         ForceComputerTestParams p;
         p.name      = "LJ12_6";
         p.potential = Potential::LJ12_6;
-        p.coords    = { { 0, 0, 0 }, { 0, 0, 0.5 } };
+        p.coordsBuilder = []() { return std::vector<gmx::RVec>{ { 0, 0, 0 }, { 0, 0, 0.5 } }; };
         p.topBuilder = []() {
             TopologyEntryVector top;
             top.push_back(AtomPair(0, 1));
@@ -202,7 +203,7 @@ static std::vector<ForceComputerTestParams> makeAllTestParams()
         ForceComputerTestParams p;
         p.name      = "LJ12_6_4";
         p.potential = Potential::LJ12_6_4;
-        p.coords    = { { 0, 0, 0 }, { 0, 0, 0.5 } };
+        p.coordsBuilder = []() { return std::vector<gmx::RVec>{ { 0, 0, 0 }, { 0, 0, 0.5 } }; };
         p.topBuilder = []() {
             TopologyEntryVector top;
             top.push_back(AtomPair(0, 1));
@@ -220,7 +221,7 @@ static std::vector<ForceComputerTestParams> makeAllTestParams()
         ForceComputerTestParams p;
         p.name      = "LJ14_7";
         p.potential = Potential::LJ14_7;
-        p.coords    = { { 0, 0, 0 }, { 0, 0, 0.5 } };
+        p.coordsBuilder = []() { return std::vector<gmx::RVec>{ { 0, 0, 0 }, { 0, 0, 0.5 } }; };
         p.topBuilder = []() {
             TopologyEntryVector top;
             top.push_back(AtomPair(0, 1));
@@ -239,7 +240,7 @@ static std::vector<ForceComputerTestParams> makeAllTestParams()
         ForceComputerTestParams p;
         p.name      = "BUCKINGHAM";
         p.potential = Potential::BUCKINGHAM;
-        p.coords    = { { 0, 0, 0 }, { 0, 0, 0.5 } };
+        p.coordsBuilder = []() { return std::vector<gmx::RVec>{ { 0, 0, 0 }, { 0, 0, 0.5 } }; };
         p.topBuilder = []() {
             TopologyEntryVector top;
             top.push_back(AtomPair(0, 1));
@@ -257,7 +258,7 @@ static std::vector<ForceComputerTestParams> makeAllTestParams()
         ForceComputerTestParams p;
         p.name      = "WANG_BUCKINGHAM";
         p.potential = Potential::WANG_BUCKINGHAM;
-        p.coords    = { { 0, 0, 0 }, { 0, 0, 0.5 } };
+        p.coordsBuilder = []() { return std::vector<gmx::RVec>{ { 0, 0, 0 }, { 0, 0, 0.5 } }; };
         p.topBuilder = []() {
             TopologyEntryVector top;
             top.push_back(AtomPair(0, 1));
@@ -275,7 +276,7 @@ static std::vector<ForceComputerTestParams> makeAllTestParams()
         ForceComputerTestParams p;
         p.name      = "GENERALIZED_BUCKINGHAM";
         p.potential = Potential::GENERALIZED_BUCKINGHAM;
-        p.coords    = { { 0, 0, 0 }, { 0, 0, 0.5 } };
+        p.coordsBuilder = []() { return std::vector<gmx::RVec>{ { 0, 0, 0 }, { 0, 0, 0.5 } }; };
         p.topBuilder = []() {
             TopologyEntryVector top;
             top.push_back(AtomPair(0, 1));
@@ -294,7 +295,7 @@ static std::vector<ForceComputerTestParams> makeAllTestParams()
         ForceComputerTestParams p;
         p.name      = "COULOMB_POINT";
         p.potential = Potential::COULOMB_POINT;
-        p.coords    = { { 0, 0, 0 }, { 0, 0, 0.5 } };
+        p.coordsBuilder = []() { return std::vector<gmx::RVec>{ { 0, 0, 0 }, { 0, 0, 0.5 } }; };
         p.topBuilder = []() {
             TopologyEntryVector top;
             top.push_back(AtomPair(0, 1));
@@ -311,7 +312,7 @@ static std::vector<ForceComputerTestParams> makeAllTestParams()
         ForceComputerTestParams p;
         p.name      = "COULOMB_GAUSSIAN";
         p.potential = Potential::COULOMB_GAUSSIAN;
-        p.coords    = { { 0, 0, 0 }, { 0, 0, 0.5 } };
+        p.coordsBuilder = []() { return std::vector<gmx::RVec>{ { 0, 0, 0 }, { 0, 0, 0.5 } }; };
         p.topBuilder = []() {
             TopologyEntryVector top;
             top.push_back(AtomPair(0, 1));
@@ -328,7 +329,7 @@ static std::vector<ForceComputerTestParams> makeAllTestParams()
         ForceComputerTestParams p;
         p.name      = "COULOMB_GAUSSIAN_NEG";
         p.potential = Potential::COULOMB_GAUSSIAN;
-        p.coords    = { { 0, 0, 0 }, { 0, 0, 0.5 } };
+        p.coordsBuilder = []() { return std::vector<gmx::RVec>{ { 0, 0, 0 }, { 0, 0, 0.5 } }; };
         p.charge1   = -1;
         p.topBuilder = []() {
             TopologyEntryVector top;
@@ -346,7 +347,7 @@ static std::vector<ForceComputerTestParams> makeAllTestParams()
         ForceComputerTestParams p;
         p.name      = "COULOMB_GAUSSIAN_ZERO";
         p.potential = Potential::COULOMB_GAUSSIAN;
-        p.coords    = { { 0, 0, 0 }, { 0, 0, 0.0 } };
+        p.coordsBuilder = []() { return std::vector<gmx::RVec>{ { 0, 0, 0 }, { 0, 0, 0.0 } }; };
         p.topBuilder = []() {
             TopologyEntryVector top;
             top.push_back(AtomPair(0, 1));
@@ -363,7 +364,7 @@ static std::vector<ForceComputerTestParams> makeAllTestParams()
         ForceComputerTestParams p;
         p.name      = "COULOMB_SLATER";
         p.potential = Potential::COULOMB_SLATER;
-        p.coords    = { { 0, 0, 0 }, { 0, 0, 0.5 } };
+        p.coordsBuilder = []() { return std::vector<gmx::RVec>{ { 0, 0, 0 }, { 0, 0, 0.5 } }; };
         p.topBuilder = []() {
             TopologyEntryVector top;
             top.push_back(AtomPair(0, 1));
@@ -380,7 +381,7 @@ static std::vector<ForceComputerTestParams> makeAllTestParams()
         ForceComputerTestParams p;
         p.name      = "COULOMB_SLATER_ZETA0";
         p.potential = Potential::COULOMB_SLATER;
-        p.coords    = { { 0, 0, 0 }, { 0, 0, 0.5 } };
+        p.coordsBuilder = []() { return std::vector<gmx::RVec>{ { 0, 0, 0 }, { 0, 0, 0.5 } }; };
         p.topBuilder = []() {
             TopologyEntryVector top;
             top.push_back(AtomPair(0, 1));
@@ -397,7 +398,7 @@ static std::vector<ForceComputerTestParams> makeAllTestParams()
         ForceComputerTestParams p;
         p.name      = "COULOMB_SLATER_ZETA0_NEG";
         p.potential = Potential::COULOMB_SLATER;
-        p.coords    = { { 0, 0, 0 }, { 0, 0, 0.5 } };
+        p.coordsBuilder = []() { return std::vector<gmx::RVec>{ { 0, 0, 0 }, { 0, 0, 0.5 } }; };
         p.charge1   = -1;
         p.topBuilder = []() {
             TopologyEntryVector top;
@@ -415,7 +416,7 @@ static std::vector<ForceComputerTestParams> makeAllTestParams()
         ForceComputerTestParams p;
         p.name      = "COULOMB_SLATER_CLOSE";
         p.potential = Potential::COULOMB_SLATER;
-        p.coords    = { { 0, 0, 0 }, { 0, 0, 0.2 } };
+        p.coordsBuilder = []() { return std::vector<gmx::RVec>{ { 0, 0, 0 }, { 0, 0, 0.2 } }; };
         p.topBuilder = []() {
             TopologyEntryVector top;
             top.push_back(AtomPair(0, 1));
@@ -432,7 +433,7 @@ static std::vector<ForceComputerTestParams> makeAllTestParams()
         ForceComputerTestParams p;
         p.name      = "COULOMB_SLATER_CLOSE_NEG";
         p.potential = Potential::COULOMB_SLATER;
-        p.coords    = { { 0, 0, 0 }, { 0, 0, 0.2 } };
+        p.coordsBuilder = []() { return std::vector<gmx::RVec>{ { 0, 0, 0 }, { 0, 0, 0.2 } }; };
         p.charge1   = -1;
         p.topBuilder = []() {
             TopologyEntryVector top;
@@ -450,7 +451,7 @@ static std::vector<ForceComputerTestParams> makeAllTestParams()
         ForceComputerTestParams p;
         p.name      = "COULOMB_SLATER_ZERO";
         p.potential = Potential::COULOMB_SLATER;
-        p.coords    = { { 0, 0, 0 }, { 0, 0, 0 } };
+        p.coordsBuilder = []() { return std::vector<gmx::RVec>{ { 0, 0, 0 }, { 0, 0, 0 } }; };
         p.topBuilder = []() {
             TopologyEntryVector top;
             top.push_back(AtomPair(0, 1));
@@ -467,7 +468,7 @@ static std::vector<ForceComputerTestParams> makeAllTestParams()
         ForceComputerTestParams p;
         p.name      = "COULOMB_SLATER_ZERO_NEG";
         p.potential = Potential::COULOMB_SLATER;
-        p.coords    = { { 0, 0, 0 }, { 0, 0, 0 } };
+        p.coordsBuilder = []() { return std::vector<gmx::RVec>{ { 0, 0, 0 }, { 0, 0, 0 } }; };
         p.charge1   = -1;
         p.topBuilder = []() {
             TopologyEntryVector top;
@@ -485,7 +486,7 @@ static std::vector<ForceComputerTestParams> makeAllTestParams()
         ForceComputerTestParams p;
         p.name      = "COULOMB_SLATER_NEG";
         p.potential = Potential::COULOMB_SLATER;
-        p.coords    = { { 0, 0, 0 }, { 0, 0, 0.5 } };
+        p.coordsBuilder = []() { return std::vector<gmx::RVec>{ { 0, 0, 0 }, { 0, 0, 0.5 } }; };
         p.charge1   = -1;
         p.topBuilder = []() {
             TopologyEntryVector top;
@@ -503,7 +504,7 @@ static std::vector<ForceComputerTestParams> makeAllTestParams()
         ForceComputerTestParams p;
         p.name      = "COULOMB_SLATER_NEG2";
         p.potential = Potential::COULOMB_SLATER;
-        p.coords    = { { 0, 0, 0 }, { 0, 0, 0.5 } };
+        p.coordsBuilder = []() { return std::vector<gmx::RVec>{ { 0, 0, 0 }, { 0, 0, 0.5 } }; };
         p.charge1   = -2;
         p.topBuilder = []() {
             TopologyEntryVector top;
@@ -521,7 +522,7 @@ static std::vector<ForceComputerTestParams> makeAllTestParams()
         ForceComputerTestParams p;
         p.name      = "TT2bExch";
         p.potential = Potential::TT2b;
-        p.coords    = { { 0, 0, 0 }, { 0, 0, 0.5 } };
+        p.coordsBuilder = []() { return std::vector<gmx::RVec>{ { 0, 0, 0 }, { 0, 0, 0.5 } }; };
         p.topBuilder = []() {
             TopologyEntryVector top;
             top.push_back(AtomPair(0, 1));
@@ -539,7 +540,7 @@ static std::vector<ForceComputerTestParams> makeAllTestParams()
         ForceComputerTestParams p;
         p.name      = "TT2bDispC6";
         p.potential = Potential::TT2b;
-        p.coords    = { { 0, 0, 0 }, { 0, 0, 0.5 } };
+        p.coordsBuilder = []() { return std::vector<gmx::RVec>{ { 0, 0, 0 }, { 0, 0, 0.5 } }; };
         p.topBuilder = []() {
             TopologyEntryVector top;
             top.push_back(AtomPair(0, 1));
@@ -558,7 +559,7 @@ static std::vector<ForceComputerTestParams> makeAllTestParams()
         ForceComputerTestParams p;
         p.name      = "TT2bDispC8";
         p.potential = Potential::TT2b;
-        p.coords    = { { 0, 0, 0 }, { 0, 0, 0.5 } };
+        p.coordsBuilder = []() { return std::vector<gmx::RVec>{ { 0, 0, 0 }, { 0, 0, 0.5 } }; };
         p.topBuilder = []() {
             TopologyEntryVector top;
             top.push_back(AtomPair(0, 1));
@@ -577,7 +578,7 @@ static std::vector<ForceComputerTestParams> makeAllTestParams()
         ForceComputerTestParams p;
         p.name      = "TT2bDispC10";
         p.potential = Potential::TT2b;
-        p.coords    = { { 0, 0, 0 }, { 0, 0, 0.5 } };
+        p.coordsBuilder = []() { return std::vector<gmx::RVec>{ { 0, 0, 0 }, { 0, 0, 0.5 } }; };
         p.topBuilder = []() {
             TopologyEntryVector top;
             top.push_back(AtomPair(0, 1));
@@ -596,7 +597,7 @@ static std::vector<ForceComputerTestParams> makeAllTestParams()
         ForceComputerTestParams p;
         p.name      = "TT2bAll";
         p.potential = Potential::TT2b;
-        p.coords    = { { 0, 0, 0 }, { 0, 0, 0.5 } };
+        p.coordsBuilder = []() { return std::vector<gmx::RVec>{ { 0, 0, 0 }, { 0, 0, 0.5 } }; };
         p.topBuilder = []() {
             TopologyEntryVector top;
             top.push_back(AtomPair(0, 1));
@@ -617,7 +618,7 @@ static std::vector<ForceComputerTestParams> makeAllTestParams()
         ForceComputerTestParams p;
         p.name      = "SLATER_ISA_TT";
         p.potential = Potential::SLATER_ISA_TT;
-        p.coords    = { { 0, 0, 0 }, { 0, 0, 0.5 } };
+        p.coordsBuilder = []() { return std::vector<gmx::RVec>{ { 0, 0, 0 }, { 0, 0, 0.5 } }; };
         p.topBuilder = []() {
             TopologyEntryVector top;
             top.push_back(AtomPair(0, 1));
@@ -638,7 +639,7 @@ static std::vector<ForceComputerTestParams> makeAllTestParams()
         ForceComputerTestParams p;
         p.name      = "TANG_TOENNIES";
         p.potential = Potential::TANG_TOENNIES;
-        p.coords    = { { 0, 0, 0 }, { 0, 0, 0.5 } };
+        p.coordsBuilder = []() { return std::vector<gmx::RVec>{ { 0, 0, 0 }, { 0, 0, 0.5 } }; };
         p.topBuilder = []() {
             TopologyEntryVector top;
             top.push_back(AtomPair(0, 1));
@@ -658,7 +659,7 @@ static std::vector<ForceComputerTestParams> makeAllTestParams()
         ForceComputerTestParams p;
         p.name      = "BORN_MAYER";
         p.potential = Potential::BORN_MAYER;
-        p.coords    = { { 0, 0, 0 }, { 0, 0, 0.5 } };
+        p.coordsBuilder = []() { return std::vector<gmx::RVec>{ { 0, 0, 0 }, { 0, 0, 0.5 } }; };
         p.topBuilder = []() {
             TopologyEntryVector top;
             top.push_back(AtomPair(0, 1));
@@ -675,7 +676,7 @@ static std::vector<ForceComputerTestParams> makeAllTestParams()
         ForceComputerTestParams p;
         p.name      = "SLATER_ISA";
         p.potential = Potential::SLATER_ISA;
-        p.coords    = { { 0, 0, 0 }, { 0, 0, 0.5 } };
+        p.coordsBuilder = []() { return std::vector<gmx::RVec>{ { 0, 0, 0 }, { 0, 0, 0.5 } }; };
         p.topBuilder = []() {
             TopologyEntryVector top;
             top.push_back(AtomPair(0, 1));
@@ -692,7 +693,7 @@ static std::vector<ForceComputerTestParams> makeAllTestParams()
         ForceComputerTestParams p;
         p.name      = "MACDANIEL_SCHMIDT";
         p.potential = Potential::MACDANIEL_SCHMIDT;
-        p.coords    = { { 0, 0, 0 }, { 0, 0, 0.5 } };
+        p.coordsBuilder = []() { return std::vector<gmx::RVec>{ { 0, 0, 0 }, { 0, 0, 0.5 } }; };
         p.topBuilder = []() {
             TopologyEntryVector top;
             top.push_back(AtomPair(0, 1));
@@ -710,7 +711,7 @@ static std::vector<ForceComputerTestParams> makeAllTestParams()
         ForceComputerTestParams p;
         p.name      = "POLARIZATION";
         p.potential = Potential::POLARIZATION;
-        p.coords    = { { 0, 0, 0 }, { 0, 0, 0.5 } };
+        p.coordsBuilder = []() { return std::vector<gmx::RVec>{ { 0, 0, 0 }, { 0, 0, 0.5 } }; };
         p.topBuilder = []() {
             TopologyEntryVector top;
             top.push_back(AtomPair(0, 1));
@@ -728,7 +729,7 @@ static std::vector<ForceComputerTestParams> makeAllTestParams()
         ForceComputerTestParams p;
         p.name      = "HARMONIC_BONDS";
         p.potential = Potential::HARMONIC_BONDS;
-        p.coords    = { { 0, 0, 0 }, { 0, 0, 0.5 } };
+        p.coordsBuilder = []() { return std::vector<gmx::RVec>{ { 0, 0, 0 }, { 0, 0, 0.5 } }; };
         p.topBuilder = []() {
             TopologyEntryVector top;
             top.push_back(AtomPair(0, 1));
@@ -746,7 +747,7 @@ static std::vector<ForceComputerTestParams> makeAllTestParams()
         ForceComputerTestParams p;
         p.name      = "CUBIC_BONDS";
         p.potential = Potential::CUBIC_BONDS;
-        p.coords    = { { 0, 0, 0 }, { 0, 0, 0.5 } };
+        p.coordsBuilder = []() { return std::vector<gmx::RVec>{ { 0, 0, 0 }, { 0, 0, 0.5 } }; };
         p.topBuilder = []() {
             TopologyEntryVector top;
             top.push_back(AtomPair(0, 1));
@@ -765,7 +766,7 @@ static std::vector<ForceComputerTestParams> makeAllTestParams()
         ForceComputerTestParams p;
         p.name      = "HUA_BONDS";
         p.potential = Potential::HUA_BONDS;
-        p.coords    = { { 0, 0, 0 }, { 0, 0, 0.5 } };
+        p.coordsBuilder = []() { return std::vector<gmx::RVec>{ { 0, 0, 0 }, { 0, 0, 0.5 } }; };
         p.topBuilder = []() {
             TopologyEntryVector top;
             top.push_back(AtomPair(0, 1));
@@ -784,7 +785,7 @@ static std::vector<ForceComputerTestParams> makeAllTestParams()
         ForceComputerTestParams p;
         p.name      = "MORSE_BONDS";
         p.potential = Potential::MORSE_BONDS;
-        p.coords    = { { 0, 0, 0 }, { 0, 0, 0.5 } };
+        p.coordsBuilder = []() { return std::vector<gmx::RVec>{ { 0, 0, 0 }, { 0, 0, 0.5 } }; };
         p.topBuilder = []() {
             TopologyEntryVector top;
             top.push_back(AtomPair(0, 1));
@@ -803,7 +804,7 @@ static std::vector<ForceComputerTestParams> makeAllTestParams()
         ForceComputerTestParams p;
         p.name      = "HARMONIC_ANGLES";
         p.potential = Potential::HARMONIC_ANGLES;
-        p.coords    = { { 0, 0, 0 }, { 0, 0, 0.2 }, { 0, 0.1, 0.3 } };
+        p.coordsBuilder = []() { return std::vector<gmx::RVec>{ { 0, 0, 0 }, { 0, 0, 0.2 }, { 0, 0.1, 0.3 } }; };
         p.topBuilder = []() {
             TopologyEntryVector top;
             Bond b1(0, 1, 1);
@@ -822,7 +823,7 @@ static std::vector<ForceComputerTestParams> makeAllTestParams()
         ForceComputerTestParams p;
         p.name      = "LINEAR_ANGLES";
         p.potential = Potential::LINEAR_ANGLES;
-        p.coords    = { { 0, 0, 0 }, { 0, 0.01, 0.15 }, { 0, 0, 0.29 } };
+        p.coordsBuilder = []() { return std::vector<gmx::RVec>{ { 0, 0, 0 }, { 0, 0.01, 0.15 }, { 0, 0, 0.29 } }; };
         p.topBuilder = []() {
             TopologyEntryVector top;
             Bond b1(0, 1, 1);
@@ -841,7 +842,7 @@ static std::vector<ForceComputerTestParams> makeAllTestParams()
         ForceComputerTestParams p;
         p.name      = "UREY_BRADLEY_ANGLES";
         p.potential = Potential::UREY_BRADLEY_ANGLES;
-        p.coords    = { { 0, 0, 0 }, { 0, 0, 0.2 }, { 0, 0.1, 0.3 } };
+        p.coordsBuilder = []() { return std::vector<gmx::RVec>{ { 0, 0, 0 }, { 0, 0, 0.2 }, { 0, 0.1, 0.3 } }; };
         p.topBuilder = []() {
             TopologyEntryVector top;
             Bond b1(0, 1, 1);
@@ -862,7 +863,7 @@ static std::vector<ForceComputerTestParams> makeAllTestParams()
         ForceComputerTestParams p;
         p.name      = "HARMONIC_DIHEDRALS";
         p.potential = Potential::HARMONIC_DIHEDRALS;
-        p.coords    = { { 0, 0, 0 }, { 0, 0, 0.2 }, { 0, 0.1, 0.3 }, { 0.1, 0.15, 0.36 } };
+        p.coordsBuilder = []() { return std::vector<gmx::RVec>{ { 0, 0, 0 }, { 0, 0, 0.2 }, { 0, 0.1, 0.3 }, { 0.1, 0.15, 0.36 } }; };
         p.topBuilder = []() {
             TopologyEntryVector top;
             Bond b1(0, 1, 1);
@@ -881,7 +882,7 @@ static std::vector<ForceComputerTestParams> makeAllTestParams()
         ForceComputerTestParams p;
         p.name      = "PROPER_DIHEDRALS";
         p.potential = Potential::PROPER_DIHEDRALS;
-        p.coords    = { { 0, 0, 0 }, { 0, 0, 0.2 }, { 0, 0.1, 0.3 }, { 0.1, 0.15, 0.36 } };
+        p.coordsBuilder = []() { return std::vector<gmx::RVec>{ { 0, 0, 0 }, { 0, 0, 0.2 }, { 0, 0.1, 0.3 }, { 0.1, 0.15, 0.36 } }; };
         p.topBuilder = []() {
             TopologyEntryVector top;
             Bond b1(0, 1, 1);
@@ -902,7 +903,7 @@ static std::vector<ForceComputerTestParams> makeAllTestParams()
         ForceComputerTestParams p;
         p.name      = "FOURIER_DIHEDRALS";
         p.potential = Potential::FOURIER_DIHEDRALS;
-        p.coords    = { { 0, 0, 0 }, { 0, 0, 0.2 }, { 0, 0.1, 0.3 }, { 0.1, 0.15, 0.36 } };
+        p.coordsBuilder = []() { return std::vector<gmx::RVec>{ { 0, 0, 0 }, { 0, 0, 0.2 }, { 0, 0.1, 0.3 }, { 0.1, 0.15, 0.36 } }; };
         p.topBuilder = []() {
             TopologyEntryVector top;
             Bond b1(0, 1, 1);
@@ -920,7 +921,7 @@ static std::vector<ForceComputerTestParams> makeAllTestParams()
         ForceComputerTestParams p;
         p.name      = "FBPOSRES0";
         p.potential = Potential::POSITION_RESTRAINT;
-        p.coords    = { { 0, 0, 0.5 } };
+        p.coordsBuilder = []() { return std::vector<gmx::RVec>{ { 0, 0, 0.5 } }; };
         p.topBuilder = []() {
             TopologyEntryVector top;
             top.push_back(SingleAtom(0));
@@ -937,7 +938,7 @@ static std::vector<ForceComputerTestParams> makeAllTestParams()
         ForceComputerTestParams p;
         p.name      = "FBPOSRES1";
         p.potential = Potential::POSITION_RESTRAINT;
-        p.coords    = { { 0, 0, 2 } };
+        p.coordsBuilder = []() { return std::vector<gmx::RVec>{ { 0, 0, 2 } }; };
         p.topBuilder = []() {
             TopologyEntryVector top;
             top.push_back(SingleAtom(0));
@@ -954,7 +955,7 @@ static std::vector<ForceComputerTestParams> makeAllTestParams()
         ForceComputerTestParams p;
         p.name      = "FBPOSRES_1";
         p.potential = Potential::POSITION_RESTRAINT;
-        p.coords    = { { 0, 0, -2 } };
+        p.coordsBuilder = []() { return std::vector<gmx::RVec>{ { 0, 0, -2 } }; };
         p.topBuilder = []() {
             TopologyEntryVector top;
             top.push_back(SingleAtom(0));
