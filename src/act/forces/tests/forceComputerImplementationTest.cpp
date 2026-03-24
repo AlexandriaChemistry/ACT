@@ -38,7 +38,9 @@
 
 #include <cmath>
 
+#include <functional>
 #include <memory>
+#include <string>
 #include <vector>
 
 #include <gtest/gtest.h>
@@ -61,7 +63,22 @@ namespace
 //! Number of atoms used in these tests.
 #define NATOMS 4
 
-class ForceComputerImplementationTest : public ::testing::Test
+/*! \brief Parameters for a single force computer test case */
+struct ForceComputerTestParams
+{
+    //! Name used for test identification (maps to refdata file)
+    std::string                          name;
+    //! The potential to test
+    Potential                            potential;
+    //! Atomic coordinates
+    std::vector<gmx::RVec>               coords;
+    //! Factory function that builds the topology for this test
+    std::function<TopologyEntryVector()> topBuilder;
+    //! Charge for atoms_[1] (default 1.0 matches base fixture)
+    double                               charge1 = 1.0;
+};
+
+class ForceComputerImplementationTest : public ::testing::TestWithParam<ForceComputerTestParams>
 {
 protected:
     gmx::test::TestReferenceData    refData_;
@@ -130,818 +147,837 @@ protected:
             fprintf(stderr, "Numeric force %g, analytical force %g, diff %g\n", fz, forces[1][ZZ], diff);
         }
         EXPECT_TRUE(diff < toler);
-    }    
+    }
 };
 
-TEST_F (ForceComputerImplementationTest, LJ8_6)
+TEST_P(ForceComputerImplementationTest, RunTest)
 {
-    std::vector<gmx::RVec> x = {
-        { 0, 0, 0   },
-        { 0, 0, 0.5 }
-    };
-    // Generate topology info
-    TopologyEntryVector top{};
-    top.push_back(AtomPair(0, 1));
-    std::vector<double> params(2);
-    params[lj8_6SIGMA]   = 0.5;
-    params[lj8_6EPSILON] = 0.25;
-    top[0]->setParams(params);
-
-    testPot(Potential::LJ8_6, top, &x);
+    const auto &p = GetParam();
+    atoms_[1].setCharge(p.charge1);
+    auto top = p.topBuilder();
+    testPot(p.potential, top, &p.coords);
 }
 
-TEST_F (ForceComputerImplementationTest, LJ12_6)
+//! Build all parameterised test cases, one per original TEST_F
+static std::vector<ForceComputerTestParams> makeAllTestParams()
 {
-    std::vector<gmx::RVec> x = {
-        { 0, 0, 0   },
-        { 0, 0, 0.5 }
-    };
-    // Generate topology info
-    TopologyEntryVector top{};
-    top.push_back(AtomPair(0, 1));
-    std::vector<double> params(2);
-    params[lj12_6SIGMA]   = 0.5;
-    params[lj12_6EPSILON] = 0.25;
-    top[0]->setParams(params);
+    std::vector<ForceComputerTestParams> all;
 
-    testPot(Potential::LJ12_6, top, &x);
+    // LJ8_6
+    {
+        ForceComputerTestParams p;
+        p.name      = "LJ8_6";
+        p.potential = Potential::LJ8_6;
+        p.coords    = { { 0, 0, 0 }, { 0, 0, 0.5 } };
+        p.topBuilder = []() {
+            TopologyEntryVector top;
+            top.push_back(AtomPair(0, 1));
+            std::vector<double> params(2);
+            params[lj8_6SIGMA]   = 0.5;
+            params[lj8_6EPSILON] = 0.25;
+            top[0]->setParams(params);
+            return top;
+        };
+        all.push_back(std::move(p));
+    }
+    // LJ12_6
+    {
+        ForceComputerTestParams p;
+        p.name      = "LJ12_6";
+        p.potential = Potential::LJ12_6;
+        p.coords    = { { 0, 0, 0 }, { 0, 0, 0.5 } };
+        p.topBuilder = []() {
+            TopologyEntryVector top;
+            top.push_back(AtomPair(0, 1));
+            std::vector<double> params(2);
+            params[lj12_6SIGMA]   = 0.5;
+            params[lj12_6EPSILON] = 0.25;
+            top[0]->setParams(params);
+            return top;
+        };
+        all.push_back(std::move(p));
+    }
+    // LJ12_6_4
+    {
+        ForceComputerTestParams p;
+        p.name      = "LJ12_6_4";
+        p.potential = Potential::LJ12_6_4;
+        p.coords    = { { 0, 0, 0 }, { 0, 0, 0.5 } };
+        p.topBuilder = []() {
+            TopologyEntryVector top;
+            top.push_back(AtomPair(0, 1));
+            std::vector<double> params(3);
+            params[lj12_6_4SIGMA]   = 0.5;
+            params[lj12_6_4EPSILON] = 0.25;
+            params[lj12_6_4GAMMA]   = 0.5;
+            top[0]->setParams(params);
+            return top;
+        };
+        all.push_back(std::move(p));
+    }
+    // LJ14_7
+    {
+        ForceComputerTestParams p;
+        p.name      = "LJ14_7";
+        p.potential = Potential::LJ14_7;
+        p.coords    = { { 0, 0, 0 }, { 0, 0, 0.5 } };
+        p.topBuilder = []() {
+            TopologyEntryVector top;
+            top.push_back(AtomPair(0, 1));
+            std::vector<double> params(4);
+            params[lj14_7SIGMA]   = 0.5;
+            params[lj14_7EPSILON] = 1;
+            params[lj14_7GAMMA]   = 0.5;
+            params[lj14_7DELTA]   = 0.1;
+            top[0]->setParams(params);
+            return top;
+        };
+        all.push_back(std::move(p));
+    }
+    // BUCKINGHAM
+    {
+        ForceComputerTestParams p;
+        p.name      = "BUCKINGHAM";
+        p.potential = Potential::BUCKINGHAM;
+        p.coords    = { { 0, 0, 0 }, { 0, 0, 0.5 } };
+        p.topBuilder = []() {
+            TopologyEntryVector top;
+            top.push_back(AtomPair(0, 1));
+            std::vector<double> params(3);
+            params[bhA]  = 5000;
+            params[bhB]  = 20;
+            params[bhC6] = 0.001;
+            top[0]->setParams(params);
+            return top;
+        };
+        all.push_back(std::move(p));
+    }
+    // WANG_BUCKINGHAM
+    {
+        ForceComputerTestParams p;
+        p.name      = "WANG_BUCKINGHAM";
+        p.potential = Potential::WANG_BUCKINGHAM;
+        p.coords    = { { 0, 0, 0 }, { 0, 0, 0.5 } };
+        p.topBuilder = []() {
+            TopologyEntryVector top;
+            top.push_back(AtomPair(0, 1));
+            std::vector<double> params(3);
+            params[wbhSIGMA]   = 0.5;
+            params[wbhEPSILON] = 0.25;
+            params[wbhGAMMA]   = 10.0;
+            top[0]->setParams(params);
+            return top;
+        };
+        all.push_back(std::move(p));
+    }
+    // GENERALIZED_BUCKINGHAM
+    {
+        ForceComputerTestParams p;
+        p.name      = "GENERALIZED_BUCKINGHAM";
+        p.potential = Potential::GENERALIZED_BUCKINGHAM;
+        p.coords    = { { 0, 0, 0 }, { 0, 0, 0.5 } };
+        p.topBuilder = []() {
+            TopologyEntryVector top;
+            top.push_back(AtomPair(0, 1));
+            std::vector<double> params(4);
+            params[gbhRMIN]    = 0.5;
+            params[gbhEPSILON] = 0.25;
+            params[gbhGAMMA]   = 0.5;
+            params[gbhDELTA]   = 0.1;
+            top[0]->setParams(params);
+            return top;
+        };
+        all.push_back(std::move(p));
+    }
+    // COULOMB_POINT
+    {
+        ForceComputerTestParams p;
+        p.name      = "COULOMB_POINT";
+        p.potential = Potential::COULOMB_POINT;
+        p.coords    = { { 0, 0, 0 }, { 0, 0, 0.5 } };
+        p.topBuilder = []() {
+            TopologyEntryVector top;
+            top.push_back(AtomPair(0, 1));
+            std::vector<double> params(2);
+            params[coulZETA]  = 10;
+            params[coulZETA2] = 6;
+            top[0]->setParams(params);
+            return top;
+        };
+        all.push_back(std::move(p));
+    }
+    // COULOMB_GAUSSIAN
+    {
+        ForceComputerTestParams p;
+        p.name      = "COULOMB_GAUSSIAN";
+        p.potential = Potential::COULOMB_GAUSSIAN;
+        p.coords    = { { 0, 0, 0 }, { 0, 0, 0.5 } };
+        p.topBuilder = []() {
+            TopologyEntryVector top;
+            top.push_back(AtomPair(0, 1));
+            std::vector<double> params(2);
+            params[coulZETA]  = 10;
+            params[coulZETA2] = 6;
+            top[0]->setParams(params);
+            return top;
+        };
+        all.push_back(std::move(p));
+    }
+    // COULOMB_GAUSSIAN_NEG
+    {
+        ForceComputerTestParams p;
+        p.name      = "COULOMB_GAUSSIAN_NEG";
+        p.potential = Potential::COULOMB_GAUSSIAN;
+        p.coords    = { { 0, 0, 0 }, { 0, 0, 0.5 } };
+        p.charge1   = -1;
+        p.topBuilder = []() {
+            TopologyEntryVector top;
+            top.push_back(AtomPair(0, 1));
+            std::vector<double> params(2);
+            params[coulZETA]  = 10;
+            params[coulZETA2] = 6;
+            top[0]->setParams(params);
+            return top;
+        };
+        all.push_back(std::move(p));
+    }
+    // COULOMB_GAUSSIAN_ZERO
+    {
+        ForceComputerTestParams p;
+        p.name      = "COULOMB_GAUSSIAN_ZERO";
+        p.potential = Potential::COULOMB_GAUSSIAN;
+        p.coords    = { { 0, 0, 0 }, { 0, 0, 0.0 } };
+        p.topBuilder = []() {
+            TopologyEntryVector top;
+            top.push_back(AtomPair(0, 1));
+            std::vector<double> params(2);
+            params[coulZETA]  = 10;
+            params[coulZETA2] = 6;
+            top[0]->setParams(params);
+            return top;
+        };
+        all.push_back(std::move(p));
+    }
+    // COULOMB_SLATER
+    {
+        ForceComputerTestParams p;
+        p.name      = "COULOMB_SLATER";
+        p.potential = Potential::COULOMB_SLATER;
+        p.coords    = { { 0, 0, 0 }, { 0, 0, 0.5 } };
+        p.topBuilder = []() {
+            TopologyEntryVector top;
+            top.push_back(AtomPair(0, 1));
+            std::vector<double> params(2);
+            params[coulZETA]  = 10;
+            params[coulZETA2] = 6;
+            top[0]->setParams(params);
+            return top;
+        };
+        all.push_back(std::move(p));
+    }
+    // COULOMB_SLATER_ZETA0
+    {
+        ForceComputerTestParams p;
+        p.name      = "COULOMB_SLATER_ZETA0";
+        p.potential = Potential::COULOMB_SLATER;
+        p.coords    = { { 0, 0, 0 }, { 0, 0, 0.5 } };
+        p.topBuilder = []() {
+            TopologyEntryVector top;
+            top.push_back(AtomPair(0, 1));
+            std::vector<double> params(2);
+            params[coulZETA]  = 0;
+            params[coulZETA2] = 6;
+            top[0]->setParams(params);
+            return top;
+        };
+        all.push_back(std::move(p));
+    }
+    // COULOMB_SLATER_ZETA0_NEG
+    {
+        ForceComputerTestParams p;
+        p.name      = "COULOMB_SLATER_ZETA0_NEG";
+        p.potential = Potential::COULOMB_SLATER;
+        p.coords    = { { 0, 0, 0 }, { 0, 0, 0.5 } };
+        p.charge1   = -1;
+        p.topBuilder = []() {
+            TopologyEntryVector top;
+            top.push_back(AtomPair(0, 1));
+            std::vector<double> params(2);
+            params[coulZETA]  = 0;
+            params[coulZETA2] = 6;
+            top[0]->setParams(params);
+            return top;
+        };
+        all.push_back(std::move(p));
+    }
+    // COULOMB_SLATER_CLOSE
+    {
+        ForceComputerTestParams p;
+        p.name      = "COULOMB_SLATER_CLOSE";
+        p.potential = Potential::COULOMB_SLATER;
+        p.coords    = { { 0, 0, 0 }, { 0, 0, 0.2 } };
+        p.topBuilder = []() {
+            TopologyEntryVector top;
+            top.push_back(AtomPair(0, 1));
+            std::vector<double> params(2);
+            params[coulZETA]  = 10;
+            params[coulZETA2] = 6;
+            top[0]->setParams(params);
+            return top;
+        };
+        all.push_back(std::move(p));
+    }
+    // COULOMB_SLATER_CLOSE_NEG
+    {
+        ForceComputerTestParams p;
+        p.name      = "COULOMB_SLATER_CLOSE_NEG";
+        p.potential = Potential::COULOMB_SLATER;
+        p.coords    = { { 0, 0, 0 }, { 0, 0, 0.2 } };
+        p.charge1   = -1;
+        p.topBuilder = []() {
+            TopologyEntryVector top;
+            top.push_back(AtomPair(0, 1));
+            std::vector<double> params(2);
+            params[coulZETA]  = 10;
+            params[coulZETA2] = 6;
+            top[0]->setParams(params);
+            return top;
+        };
+        all.push_back(std::move(p));
+    }
+    // COULOMB_SLATER_ZERO
+    {
+        ForceComputerTestParams p;
+        p.name      = "COULOMB_SLATER_ZERO";
+        p.potential = Potential::COULOMB_SLATER;
+        p.coords    = { { 0, 0, 0 }, { 0, 0, 0 } };
+        p.topBuilder = []() {
+            TopologyEntryVector top;
+            top.push_back(AtomPair(0, 1));
+            std::vector<double> params(2);
+            params[coulZETA]  = 10;
+            params[coulZETA2] = 6;
+            top[0]->setParams(params);
+            return top;
+        };
+        all.push_back(std::move(p));
+    }
+    // COULOMB_SLATER_ZERO_NEG
+    {
+        ForceComputerTestParams p;
+        p.name      = "COULOMB_SLATER_ZERO_NEG";
+        p.potential = Potential::COULOMB_SLATER;
+        p.coords    = { { 0, 0, 0 }, { 0, 0, 0 } };
+        p.charge1   = -1;
+        p.topBuilder = []() {
+            TopologyEntryVector top;
+            top.push_back(AtomPair(0, 1));
+            std::vector<double> params(2);
+            params[coulZETA]  = 10;
+            params[coulZETA2] = 6;
+            top[0]->setParams(params);
+            return top;
+        };
+        all.push_back(std::move(p));
+    }
+    // COULOMB_SLATER_NEG
+    {
+        ForceComputerTestParams p;
+        p.name      = "COULOMB_SLATER_NEG";
+        p.potential = Potential::COULOMB_SLATER;
+        p.coords    = { { 0, 0, 0 }, { 0, 0, 0.5 } };
+        p.charge1   = -1;
+        p.topBuilder = []() {
+            TopologyEntryVector top;
+            top.push_back(AtomPair(0, 1));
+            std::vector<double> params(2);
+            params[coulZETA]  = 10;
+            params[coulZETA2] = 6;
+            top[0]->setParams(params);
+            return top;
+        };
+        all.push_back(std::move(p));
+    }
+    // COULOMB_SLATER_NEG2
+    {
+        ForceComputerTestParams p;
+        p.name      = "COULOMB_SLATER_NEG2";
+        p.potential = Potential::COULOMB_SLATER;
+        p.coords    = { { 0, 0, 0 }, { 0, 0, 0.5 } };
+        p.charge1   = -2;
+        p.topBuilder = []() {
+            TopologyEntryVector top;
+            top.push_back(AtomPair(0, 1));
+            std::vector<double> params(2);
+            params[coulZETA]  = 10;
+            params[coulZETA2] = 6;
+            top[0]->setParams(params);
+            return top;
+        };
+        all.push_back(std::move(p));
+    }
+    // TT2bExch
+    {
+        ForceComputerTestParams p;
+        p.name      = "TT2bExch";
+        p.potential = Potential::TT2b;
+        p.coords    = { { 0, 0, 0 }, { 0, 0, 0.5 } };
+        p.topBuilder = []() {
+            TopologyEntryVector top;
+            top.push_back(AtomPair(0, 1));
+            std::vector<double> params(6, 0.0);
+            params[tt2bA]     = 1000;
+            params[tt2bBexch] = 10;
+            params[tt2bBdisp] = 10;
+            top[0]->setParams(params);
+            return top;
+        };
+        all.push_back(std::move(p));
+    }
+    // TT2bDispC6
+    {
+        ForceComputerTestParams p;
+        p.name      = "TT2bDispC6";
+        p.potential = Potential::TT2b;
+        p.coords    = { { 0, 0, 0 }, { 0, 0, 0.5 } };
+        p.topBuilder = []() {
+            TopologyEntryVector top;
+            top.push_back(AtomPair(0, 1));
+            std::vector<double> params(6, 0.0);
+            params[tt2bA]     = 0;
+            params[tt2bBexch] = 10;
+            params[tt2bBdisp] = 10;
+            params[tt2bC6]    = 0.001;
+            top[0]->setParams(params);
+            return top;
+        };
+        all.push_back(std::move(p));
+    }
+    // TT2bDispC8
+    {
+        ForceComputerTestParams p;
+        p.name      = "TT2bDispC8";
+        p.potential = Potential::TT2b;
+        p.coords    = { { 0, 0, 0 }, { 0, 0, 0.5 } };
+        p.topBuilder = []() {
+            TopologyEntryVector top;
+            top.push_back(AtomPair(0, 1));
+            std::vector<double> params(6, 0.0);
+            params[tt2bA]     = 0;
+            params[tt2bBexch] = 10;
+            params[tt2bBdisp] = 10;
+            params[tt2bC8]    = 0.0001;
+            top[0]->setParams(params);
+            return top;
+        };
+        all.push_back(std::move(p));
+    }
+    // TT2bDispC10
+    {
+        ForceComputerTestParams p;
+        p.name      = "TT2bDispC10";
+        p.potential = Potential::TT2b;
+        p.coords    = { { 0, 0, 0 }, { 0, 0, 0.5 } };
+        p.topBuilder = []() {
+            TopologyEntryVector top;
+            top.push_back(AtomPair(0, 1));
+            std::vector<double> params(6, 0.0);
+            params[tt2bA]     = 0;
+            params[tt2bBexch] = 10;
+            params[tt2bBdisp] = 10;
+            params[tt2bC10]   = 0.001;
+            top[0]->setParams(params);
+            return top;
+        };
+        all.push_back(std::move(p));
+    }
+    // TT2bAll
+    {
+        ForceComputerTestParams p;
+        p.name      = "TT2bAll";
+        p.potential = Potential::TT2b;
+        p.coords    = { { 0, 0, 0 }, { 0, 0, 0.5 } };
+        p.topBuilder = []() {
+            TopologyEntryVector top;
+            top.push_back(AtomPair(0, 1));
+            std::vector<double> params(6, 0.0);
+            params[tt2bA]     = 1000;
+            params[tt2bBexch] = 10;
+            params[tt2bBdisp] = 20;
+            params[tt2bC6]    = 0.001;
+            params[tt2bC8]    = 0.001;
+            params[tt2bC10]   = 0.001;
+            top[0]->setParams(params);
+            return top;
+        };
+        all.push_back(std::move(p));
+    }
+    // SLATER_ISA_TT
+    {
+        ForceComputerTestParams p;
+        p.name      = "SLATER_ISA_TT";
+        p.potential = Potential::SLATER_ISA_TT;
+        p.coords    = { { 0, 0, 0 }, { 0, 0, 0.5 } };
+        p.topBuilder = []() {
+            TopologyEntryVector top;
+            top.push_back(AtomPair(0, 1));
+            std::vector<double> params(6, 0.0);
+            params[tt2bA]     = 1000;
+            params[tt2bBexch] = 10;
+            params[tt2bBdisp] = 20;
+            params[tt2bC6]    = 0.001;
+            params[tt2bC8]    = 0.001;
+            params[tt2bC10]   = 0.001;
+            top[0]->setParams(params);
+            return top;
+        };
+        all.push_back(std::move(p));
+    }
+    // TANG_TOENNIES
+    {
+        ForceComputerTestParams p;
+        p.name      = "TANG_TOENNIES";
+        p.potential = Potential::TANG_TOENNIES;
+        p.coords    = { { 0, 0, 0 }, { 0, 0, 0.5 } };
+        p.topBuilder = []() {
+            TopologyEntryVector top;
+            top.push_back(AtomPair(0, 1));
+            std::vector<double> params(5, 0.0);
+            params[ttA]   = 1000;
+            params[ttB]   = 10;
+            params[ttC6]  = 0.001;
+            params[ttC8]  = 0.001;
+            params[ttC10] = 0.001;
+            top[0]->setParams(params);
+            return top;
+        };
+        all.push_back(std::move(p));
+    }
+    // BORN_MAYER
+    {
+        ForceComputerTestParams p;
+        p.name      = "BORN_MAYER";
+        p.potential = Potential::BORN_MAYER;
+        p.coords    = { { 0, 0, 0 }, { 0, 0, 0.5 } };
+        p.topBuilder = []() {
+            TopologyEntryVector top;
+            top.push_back(AtomPair(0, 1));
+            std::vector<double> params(2);
+            params[expA] = 10000;
+            params[expB] = 8;
+            top[0]->setParams(params);
+            return top;
+        };
+        all.push_back(std::move(p));
+    }
+    // SLATER_ISA
+    {
+        ForceComputerTestParams p;
+        p.name      = "SLATER_ISA";
+        p.potential = Potential::SLATER_ISA;
+        p.coords    = { { 0, 0, 0 }, { 0, 0, 0.5 } };
+        p.topBuilder = []() {
+            TopologyEntryVector top;
+            top.push_back(AtomPair(0, 1));
+            std::vector<double> params(2);
+            params[expA] = 10000;
+            params[expB] = 8;
+            top[0]->setParams(params);
+            return top;
+        };
+        all.push_back(std::move(p));
+    }
+    // MACDANIEL_SCHMIDT
+    {
+        ForceComputerTestParams p;
+        p.name      = "MACDANIEL_SCHMIDT";
+        p.potential = Potential::MACDANIEL_SCHMIDT;
+        p.coords    = { { 0, 0, 0 }, { 0, 0, 0.5 } };
+        p.topBuilder = []() {
+            TopologyEntryVector top;
+            top.push_back(AtomPair(0, 1));
+            std::vector<double> params(3);
+            params[dexpA1] = 10000;
+            params[dexpA1] = -3000;
+            params[dexpB]  = 8;
+            top[0]->setParams(params);
+            return top;
+        };
+        all.push_back(std::move(p));
+    }
+    // POLARIZATION
+    {
+        ForceComputerTestParams p;
+        p.name      = "POLARIZATION";
+        p.potential = Potential::POLARIZATION;
+        p.coords    = { { 0, 0, 0 }, { 0, 0, 0.5 } };
+        p.topBuilder = []() {
+            TopologyEntryVector top;
+            top.push_back(AtomPair(0, 1));
+            std::vector<double> params(3);
+            params[polALPHA]   = 0.1;
+            params[polRHYPER]  = 0.2;
+            params[polFCHYPER] = 1e4;
+            top[0]->setParams(params);
+            return top;
+        };
+        all.push_back(std::move(p));
+    }
+    // HARMONIC_BONDS
+    {
+        ForceComputerTestParams p;
+        p.name      = "HARMONIC_BONDS";
+        p.potential = Potential::HARMONIC_BONDS;
+        p.coords    = { { 0, 0, 0 }, { 0, 0, 0.5 } };
+        p.topBuilder = []() {
+            TopologyEntryVector top;
+            top.push_back(AtomPair(0, 1));
+            std::vector<double> params(3);
+            params[bondKB]     = 100000;
+            params[bondLENGTH] = 0.4;
+            params[bondENERGY] = 10;
+            top[0]->setParams(params);
+            return top;
+        };
+        all.push_back(std::move(p));
+    }
+    // CUBIC_BONDS
+    {
+        ForceComputerTestParams p;
+        p.name      = "CUBIC_BONDS";
+        p.potential = Potential::CUBIC_BONDS;
+        p.coords    = { { 0, 0, 0 }, { 0, 0, 0.5 } };
+        p.topBuilder = []() {
+            TopologyEntryVector top;
+            top.push_back(AtomPair(0, 1));
+            std::vector<double> params(4);
+            params[cubicDE]     = 100;
+            params[cubicLENGTH] = 0.4;
+            params[cubicRMAX]   = 0.6;
+            params[cubicKB]     = 60000;
+            top[0]->setParams(params);
+            return top;
+        };
+        all.push_back(std::move(p));
+    }
+    // HUA_BONDS
+    {
+        ForceComputerTestParams p;
+        p.name      = "HUA_BONDS";
+        p.potential = Potential::HUA_BONDS;
+        p.coords    = { { 0, 0, 0 }, { 0, 0, 0.5 } };
+        p.topBuilder = []() {
+            TopologyEntryVector top;
+            top.push_back(AtomPair(0, 1));
+            std::vector<double> params(4);
+            params[huaDE]     = 100;
+            params[huaLENGTH] = 0.4;
+            params[huaB]      = 20;
+            params[huaC]      = 0.1;
+            top[0]->setParams(params);
+            return top;
+        };
+        all.push_back(std::move(p));
+    }
+    // MORSE_BONDS
+    {
+        ForceComputerTestParams p;
+        p.name      = "MORSE_BONDS";
+        p.potential = Potential::MORSE_BONDS;
+        p.coords    = { { 0, 0, 0 }, { 0, 0, 0.5 } };
+        p.topBuilder = []() {
+            TopologyEntryVector top;
+            top.push_back(AtomPair(0, 1));
+            std::vector<double> params(4);
+            params[morseBETA]   = 12;
+            params[morseDE]     = 100;
+            params[morseD0]     = 40;
+            params[morseLENGTH] = 0.6;
+            top[0]->setParams(params);
+            return top;
+        };
+        all.push_back(std::move(p));
+    }
+    // HARMONIC_ANGLES
+    {
+        ForceComputerTestParams p;
+        p.name      = "HARMONIC_ANGLES";
+        p.potential = Potential::HARMONIC_ANGLES;
+        p.coords    = { { 0, 0, 0 }, { 0, 0, 0.2 }, { 0, 0.1, 0.3 } };
+        p.topBuilder = []() {
+            TopologyEntryVector top;
+            Bond b1(0, 1, 1);
+            Bond b2(1, 2, 1);
+            top.push_back(Angle(b1, b2));
+            std::vector<double> params(2);
+            params[angleKT]    = 100;
+            params[angleANGLE] = 100;
+            top[0]->setParams(params);
+            return top;
+        };
+        all.push_back(std::move(p));
+    }
+    // LINEAR_ANGLES
+    {
+        ForceComputerTestParams p;
+        p.name      = "LINEAR_ANGLES";
+        p.potential = Potential::LINEAR_ANGLES;
+        p.coords    = { { 0, 0, 0 }, { 0, 0.01, 0.15 }, { 0, 0, 0.29 } };
+        p.topBuilder = []() {
+            TopologyEntryVector top;
+            Bond b1(0, 1, 1);
+            Bond b2(1, 2, 1);
+            top.push_back(Angle(b1, b2));
+            std::vector<double> params(2);
+            params[linangA]    = 0.5;
+            params[linangKLIN] = 10000;
+            top[0]->setParams(params);
+            return top;
+        };
+        all.push_back(std::move(p));
+    }
+    // UREY_BRADLEY_ANGLES
+    {
+        ForceComputerTestParams p;
+        p.name      = "UREY_BRADLEY_ANGLES";
+        p.potential = Potential::UREY_BRADLEY_ANGLES;
+        p.coords    = { { 0, 0, 0 }, { 0, 0, 0.2 }, { 0, 0.1, 0.3 } };
+        p.topBuilder = []() {
+            TopologyEntryVector top;
+            Bond b1(0, 1, 1);
+            Bond b2(1, 2, 1);
+            top.push_back(Angle(b1, b2));
+            std::vector<double> params(4);
+            params[ubKT]    = 100;
+            params[ubANGLE] = 100;
+            params[ubR13]   = 0.33;
+            params[ubKUB]   = 20;
+            top[0]->setParams(params);
+            return top;
+        };
+        all.push_back(std::move(p));
+    }
+    // HARMONIC_DIHEDRALS
+    {
+        ForceComputerTestParams p;
+        p.name      = "HARMONIC_DIHEDRALS";
+        p.potential = Potential::HARMONIC_DIHEDRALS;
+        p.coords    = { { 0, 0, 0 }, { 0, 0, 0.2 }, { 0, 0.1, 0.3 }, { 0.1, 0.15, 0.36 } };
+        p.topBuilder = []() {
+            TopologyEntryVector top;
+            Bond b1(0, 1, 1);
+            Bond b2(0, 2, 1);
+            Bond b3(0, 3, 1);
+            top.push_back(Improper(b1, b2, b3));
+            std::vector<double> params(1);
+            params[idihKPHI] = 10;
+            top[0]->setParams(params);
+            return top;
+        };
+        all.push_back(std::move(p));
+    }
+    // PROPER_DIHEDRALS
+    {
+        ForceComputerTestParams p;
+        p.name      = "PROPER_DIHEDRALS";
+        p.potential = Potential::PROPER_DIHEDRALS;
+        p.coords    = { { 0, 0, 0 }, { 0, 0, 0.2 }, { 0, 0.1, 0.3 }, { 0.1, 0.15, 0.36 } };
+        p.topBuilder = []() {
+            TopologyEntryVector top;
+            Bond b1(0, 1, 1);
+            Bond b2(1, 2, 1);
+            Bond b3(2, 3, 1);
+            top.push_back(Proper(b1, b2, b3));
+            std::vector<double> params(3);
+            params[pdihANGLE] = 30;
+            params[pdihKP]    = 10;
+            params[pdihMULT]  = 4;
+            top[0]->setParams(params);
+            return top;
+        };
+        all.push_back(std::move(p));
+    }
+    // FOURIER_DIHEDRALS
+    {
+        ForceComputerTestParams p;
+        p.name      = "FOURIER_DIHEDRALS";
+        p.potential = Potential::FOURIER_DIHEDRALS;
+        p.coords    = { { 0, 0, 0 }, { 0, 0, 0.2 }, { 0, 0.1, 0.3 }, { 0.1, 0.15, 0.36 } };
+        p.topBuilder = []() {
+            TopologyEntryVector top;
+            Bond b1(0, 1, 1);
+            Bond b2(1, 2, 1);
+            Bond b3(2, 3, 1);
+            top.push_back(Proper(b1, b2, b3));
+            std::vector<double> params = { 1, 2, -3, 4, -5, 6 };
+            top[0]->setParams(params);
+            return top;
+        };
+        all.push_back(std::move(p));
+    }
+    // FBPOSRES0
+    {
+        ForceComputerTestParams p;
+        p.name      = "FBPOSRES0";
+        p.potential = Potential::POSITION_RESTRAINT;
+        p.coords    = { { 0, 0, 0.5 } };
+        p.topBuilder = []() {
+            TopologyEntryVector top;
+            top.push_back(SingleAtom(0));
+            std::vector<double> params(2);
+            params[fbprK]  = 100;
+            params[fbprR0] = 1;
+            top[0]->setParams(params);
+            return top;
+        };
+        all.push_back(std::move(p));
+    }
+    // FBPOSRES1
+    {
+        ForceComputerTestParams p;
+        p.name      = "FBPOSRES1";
+        p.potential = Potential::POSITION_RESTRAINT;
+        p.coords    = { { 0, 0, 2 } };
+        p.topBuilder = []() {
+            TopologyEntryVector top;
+            top.push_back(SingleAtom(0));
+            std::vector<double> params(2);
+            params[fbprK]  = 100;
+            params[fbprR0] = 1;
+            top[0]->setParams(params);
+            return top;
+        };
+        all.push_back(std::move(p));
+    }
+    // FBPOSRES_1
+    {
+        ForceComputerTestParams p;
+        p.name      = "FBPOSRES_1";
+        p.potential = Potential::POSITION_RESTRAINT;
+        p.coords    = { { 0, 0, -2 } };
+        p.topBuilder = []() {
+            TopologyEntryVector top;
+            top.push_back(SingleAtom(0));
+            std::vector<double> params(2);
+            params[fbprK]  = 100;
+            params[fbprR0] = 1;
+            top[0]->setParams(params);
+            return top;
+        };
+        all.push_back(std::move(p));
+    }
+
+    return all;
 }
 
-TEST_F (ForceComputerImplementationTest, LJ12_6_4)
-{
-    std::vector<gmx::RVec> x = {
-        { 0, 0, 0   },
-        { 0, 0, 0.5 }
-    };
-    // Generate topology info
-    TopologyEntryVector top{};
-    top.push_back(AtomPair(0, 1));
-    std::vector<double> params(3);
-    params[lj12_6_4SIGMA]   = 0.5;
-    params[lj12_6_4EPSILON] = 0.25;
-    params[lj12_6_4GAMMA]   = 0.5;
-    top[0]->setParams(params);
-
-    testPot(Potential::LJ12_6_4, top, &x);
-}
-
-TEST_F (ForceComputerImplementationTest, LJ14_7)
-{
-    std::vector<gmx::RVec> x = {
-        { 0, 0, 0   },
-        { 0, 0, 0.5 }
-    };
-    // Generate topology info
-    TopologyEntryVector top{};
-    top.push_back(AtomPair(0, 1));
-    std::vector<double> params(4);
-    params[lj14_7SIGMA]   = 0.5;
-    params[lj14_7EPSILON] = 1;
-    params[lj14_7GAMMA]   = 0.5;
-    params[lj14_7DELTA]   = 0.1;
-    top[0]->setParams(params);
-
-    testPot(Potential::LJ14_7, top, &x);
-}
-
-TEST_F (ForceComputerImplementationTest, BUCKINGHAM)
-{
-    std::vector<gmx::RVec> x = {
-        { 0, 0, 0   },
-        { 0, 0, 0.5 }
-    };
-    // Generate topology info
-    TopologyEntryVector top{};
-    top.push_back(AtomPair(0, 1));
-    std::vector<double> params(3);
-    params[bhA]  = 5000;
-    params[bhB]  = 20;
-    params[bhC6] = 0.001;
-    top[0]->setParams(params);
-
-    testPot(Potential::BUCKINGHAM, top, &x);
-}
-
-TEST_F (ForceComputerImplementationTest, WANG_BUCKINGHAM)
-{
-    std::vector<gmx::RVec> x = {
-        { 0, 0, 0   },
-        { 0, 0, 0.5 }
-    };
-    // Generate topology info
-    TopologyEntryVector top{};
-    top.push_back(AtomPair(0, 1));
-    std::vector<double> params(3);
-    params[wbhSIGMA]   = 0.5;
-    params[wbhEPSILON] = 0.25;
-    params[wbhGAMMA]   = 10.0;
-    top[0]->setParams(params);
-
-    testPot(Potential::WANG_BUCKINGHAM, top, &x);
-}
-
-TEST_F (ForceComputerImplementationTest, GENERALIZED_BUCKINGHAM)
-{
-    std::vector<gmx::RVec> x = {
-        { 0, 0, 0   },
-        { 0, 0, 0.5 }
-    };
-    // Generate topology info
-    TopologyEntryVector top{};
-    top.push_back(AtomPair(0, 1));
-    std::vector<double> params(4);
-    params[gbhRMIN]    = 0.5;
-    params[gbhEPSILON] = 0.25;
-    params[gbhGAMMA]   = 0.5;
-    params[gbhDELTA]   = 0.1;
-    top[0]->setParams(params);
-
-    testPot(Potential::GENERALIZED_BUCKINGHAM, top, &x);
-}
-
-TEST_F (ForceComputerImplementationTest, COULOMB_POINT)
-{
-    std::vector<gmx::RVec> x = {
-        { 0, 0, 0   },
-        { 0, 0, 0.5 }
-    };
-    // Generate topology info
-    TopologyEntryVector top{};
-    top.push_back(AtomPair(0, 1));
-    std::vector<double> params(2);
-    params[coulZETA]  = 10;
-    params[coulZETA2] = 6;
-    top[0]->setParams(params);
-
-    testPot(Potential::COULOMB_POINT, top, &x);
-}
-
-TEST_F (ForceComputerImplementationTest, COULOMB_GAUSSIAN)
-{
-    std::vector<gmx::RVec> x = {
-        { 0, 0, 0   },
-        { 0, 0, 0.5 }
-    };
-    // Generate topology info
-    TopologyEntryVector top{};
-    top.push_back(AtomPair(0, 1));
-    std::vector<double> params(2);
-    params[coulZETA]  = 10;
-    params[coulZETA2] = 6;
-    top[0]->setParams(params);
-
-    testPot(Potential::COULOMB_GAUSSIAN, top, &x);
-}
-
-TEST_F (ForceComputerImplementationTest, COULOMB_GAUSSIAN_NEG)
-{
-    std::vector<gmx::RVec> x = {
-        { 0, 0, 0   },
-        { 0, 0, 0.5 }
-    };
-    // Generate topology info
-    TopologyEntryVector top{};
-    top.push_back(AtomPair(0, 1));
-    atoms_[1].setCharge(-1);
-    std::vector<double> params(2);
-    params[coulZETA]  = 10;
-    params[coulZETA2] = 6;
-    top[0]->setParams(params);
-
-    testPot(Potential::COULOMB_GAUSSIAN, top, &x);
-}
-
-TEST_F (ForceComputerImplementationTest, COULOMB_GAUSSIAN_ZERO)
-{
-    std::vector<gmx::RVec> x = {
-        { 0, 0, 0   },
-        { 0, 0, 0.0 }
-    };
-    // Generate topology info
-    TopologyEntryVector top{};
-    top.push_back(AtomPair(0, 1));
-    std::vector<double> params(2);
-    params[coulZETA]  = 10;
-    params[coulZETA2] = 6;
-    top[0]->setParams(params);
-
-    testPot(Potential::COULOMB_GAUSSIAN, top, &x);
-}
-
-TEST_F (ForceComputerImplementationTest, COULOMB_SLATER)
-{
-    std::vector<gmx::RVec> x = {
-        { 0, 0, 0   },
-        { 0, 0, 0.5 }
-    };
-    // Generate topology info
-    TopologyEntryVector top{};
-    top.push_back(AtomPair(0, 1));
-    std::vector<double> params(2);
-    params[coulZETA]  = 10;
-    params[coulZETA2] = 6;
-    top[0]->setParams(params);
-
-    testPot(Potential::COULOMB_SLATER, top, &x);
-}
-
-TEST_F (ForceComputerImplementationTest, COULOMB_SLATER_ZETA0)
-{
-    std::vector<gmx::RVec> x = {
-        { 0, 0, 0   },
-        { 0, 0, 0.5 }
-    };
-    // Generate topology info
-    TopologyEntryVector top{};
-    top.push_back(AtomPair(0, 1));
-    std::vector<double> params(2);
-    params[coulZETA]  = 0;
-    params[coulZETA2] = 6;
-    top[0]->setParams(params);
-
-    testPot(Potential::COULOMB_SLATER, top, &x);
-}
-
-TEST_F (ForceComputerImplementationTest, COULOMB_SLATER_ZETA0_NEG)
-{
-    std::vector<gmx::RVec> x = {
-        { 0, 0, 0   },
-        { 0, 0, 0.5 }
-    };
-    // Generate topology info
-    TopologyEntryVector top{};
-    top.push_back(AtomPair(0, 1));
-    atoms_[1].setCharge(-1);
-    std::vector<double> params(2);
-    params[coulZETA]  = 0;
-    params[coulZETA2] = 6;
-    top[0]->setParams(params);
-
-    testPot(Potential::COULOMB_SLATER, top, &x);
-}
-
-TEST_F (ForceComputerImplementationTest, COULOMB_SLATER_CLOSE)
-{
-    std::vector<gmx::RVec> x = {
-        { 0, 0, 0   },
-        { 0, 0, 0.2 }
-    };
-    // Generate topology info
-    TopologyEntryVector top{};
-    top.push_back(AtomPair(0, 1));
-    std::vector<double> params(2);
-    params[coulZETA]  = 10;
-    params[coulZETA2] = 6;
-    top[0]->setParams(params);
-
-    testPot(Potential::COULOMB_SLATER, top, &x);
-}
-
-TEST_F (ForceComputerImplementationTest, COULOMB_SLATER_CLOSE_NEG)
-{
-    std::vector<gmx::RVec> x = {
-        { 0, 0, 0   },
-        { 0, 0, 0.2 }
-    };
-    // Generate topology info
-    TopologyEntryVector top{};
-    top.push_back(AtomPair(0, 1));
-    atoms_[1].setCharge(-1);
-    std::vector<double> params(2);
-    params[coulZETA]  = 10;
-    params[coulZETA2] = 6;
-    top[0]->setParams(params);
-
-    testPot(Potential::COULOMB_SLATER, top, &x);
-}
-
-TEST_F (ForceComputerImplementationTest, COULOMB_SLATER_ZERO)
-{
-    std::vector<gmx::RVec> x = {
-        { 0, 0, 0 },
-        { 0, 0, 0 }
-    };
-    // Generate topology info
-    TopologyEntryVector top{};
-    top.push_back(AtomPair(0, 1));
-    std::vector<double> params(2);
-    params[coulZETA]  = 10;
-    params[coulZETA2] = 6;
-    top[0]->setParams(params);
-
-    testPot(Potential::COULOMB_SLATER, top, &x);
-}
-
-TEST_F (ForceComputerImplementationTest, COULOMB_SLATER_ZERO_NEG)
-{
-    std::vector<gmx::RVec> x = {
-        { 0, 0, 0 },
-        { 0, 0, 0 }
-    };
-    // Generate topology info
-    TopologyEntryVector top{};
-    top.push_back(AtomPair(0, 1));
-    atoms_[1].setCharge(-1);
-    std::vector<double> params(2);
-    params[coulZETA]  = 10;
-    params[coulZETA2] = 6;
-    top[0]->setParams(params);
-
-    testPot(Potential::COULOMB_SLATER, top, &x);
-}
-
-TEST_F (ForceComputerImplementationTest, COULOMB_SLATER_NEG)
-{
-    std::vector<gmx::RVec> x = {
-        { 0, 0, 0    },
-        { 0, 0, 0.5  }
-    };
-    // Generate topology info
-    TopologyEntryVector top{};
-    top.push_back(AtomPair(0, 1));
-    atoms_[1].setCharge(-1);
-    std::vector<double> params(2);
-    params[coulZETA]  = 10;
-    params[coulZETA2] = 6;
-    top[0]->setParams(params);
-
-    testPot(Potential::COULOMB_SLATER, top, &x);
-}
-
-TEST_F (ForceComputerImplementationTest, COULOMB_SLATER_NEG2)
-{
-    std::vector<gmx::RVec> x = {
-        { 0, 0, 0    },
-        { 0, 0, 0.5  }
-    };
-    // Generate topology info
-    TopologyEntryVector top{};
-    top.push_back(AtomPair(0, 1));
-    atoms_[1].setCharge(-2);
-    std::vector<double> params(2);
-    params[coulZETA]  = 10;
-    params[coulZETA2] = 6;
-    top[0]->setParams(params);
-
-    testPot(Potential::COULOMB_SLATER, top, &x);
-}
-
-TEST_F (ForceComputerImplementationTest, TT2bExch)
-{
-    std::vector<gmx::RVec> x = {
-        { 0, 0, 0   },
-        { 0, 0, 0.5 }
-    };
-    // Generate topology info
-    TopologyEntryVector top{};
-    top.push_back(AtomPair(0, 1));
-    std::vector<double> params(6, 0.0);
-    params[tt2bA]     = 1000;
-    params[tt2bBexch] = 10;
-    params[tt2bBdisp] = 10;
-    top[0]->setParams(params);
-
-    testPot(Potential::TT2b, top, &x);
-}
-
-TEST_F (ForceComputerImplementationTest, TT2bDispC6)
-{
-    std::vector<gmx::RVec> x = {
-        { 0, 0, 0   },
-        { 0, 0, 0.5 }
-    };
-    // Generate topology info
-    TopologyEntryVector top{};
-    top.push_back(AtomPair(0, 1));
-    std::vector<double> params(6, 0.0);
-    params[tt2bA]     = 0;
-    params[tt2bBexch] = 10;
-    params[tt2bBdisp] = 10;
-    params[tt2bC6]    = 0.001;
-    top[0]->setParams(params);
-
-    testPot(Potential::TT2b, top, &x);
-}
-
-TEST_F (ForceComputerImplementationTest, TT2bDispC8)
-{
-    std::vector<gmx::RVec> x = {
-        { 0, 0, 0   },
-        { 0, 0, 0.5 }
-    };
-    // Generate topology info
-    TopologyEntryVector top{};
-    top.push_back(AtomPair(0, 1));
-    std::vector<double> params(6, 0.0);
-    params[tt2bA]     = 0;
-    params[tt2bBexch] = 10;
-    params[tt2bBdisp] = 10;
-    params[tt2bC8]    = 0.0001;
-    top[0]->setParams(params);
-
-    testPot(Potential::TT2b, top, &x);
-}
-
-TEST_F (ForceComputerImplementationTest, TT2bDispC10)
-{
-    std::vector<gmx::RVec> x = {
-        { 0, 0, 0   },
-        { 0, 0, 0.5 }
-    };
-    // Generate topology info
-    TopologyEntryVector top{};
-    top.push_back(AtomPair(0, 1));
-    std::vector<double> params(6, 0.0);
-    params[tt2bA]     = 0;
-    params[tt2bBexch] = 10;
-    params[tt2bBdisp] = 10;
-    params[tt2bC10]   = 0.001;
-    top[0]->setParams(params);
-
-    testPot(Potential::TT2b, top, &x);
-}
-
-TEST_F (ForceComputerImplementationTest, TT2bAll)
-{
-    std::vector<gmx::RVec> x = {
-        { 0, 0, 0   },
-        { 0, 0, 0.5 }
-    };
-    // Generate topology info
-    TopologyEntryVector top{};
-    top.push_back(AtomPair(0, 1));
-    std::vector<double> params(6, 0.0);
-    params[tt2bA]     = 1000;
-    params[tt2bBexch] = 10;
-    params[tt2bBdisp] = 20;
-    params[tt2bC6]    = 0.001;
-    params[tt2bC8]    = 0.001;
-    params[tt2bC10]   = 0.001;
-    top[0]->setParams(params);
-
-    testPot(Potential::TT2b, top, &x);
-}
-
-TEST_F (ForceComputerImplementationTest, SLATER_ISA_TT)
-{
-    std::vector<gmx::RVec> x = {
-        { 0, 0, 0   },
-        { 0, 0, 0.5 }
-    };
-    // Generate topology info
-    TopologyEntryVector top{};
-    top.push_back(AtomPair(0, 1));
-    std::vector<double> params(6, 0.0);
-    params[tt2bA]     = 1000;
-    params[tt2bBexch] = 10;
-    params[tt2bBdisp] = 20;
-    params[tt2bC6]    = 0.001;
-    params[tt2bC8]    = 0.001;
-    params[tt2bC10]   = 0.001;
-    top[0]->setParams(params);
-
-    testPot(Potential::SLATER_ISA_TT, top, &x);
-}
-
-TEST_F (ForceComputerImplementationTest, TANG_TOENNIES)
-{
-    std::vector<gmx::RVec> x = {
-        { 0, 0, 0   },
-        { 0, 0, 0.5 }
-    };
-    // Generate topology info
-    TopologyEntryVector top{};
-    top.push_back(AtomPair(0, 1));
-    std::vector<double> params(5, 0.0);
-    params[ttA]   = 1000;
-    params[ttB]   = 10;
-    params[ttC6]  = 0.001;
-    params[ttC8]  = 0.001;
-    params[ttC10] = 0.001;
-    top[0]->setParams(params);
-
-    testPot(Potential::TANG_TOENNIES, top, &x);
-}
-
-TEST_F (ForceComputerImplementationTest, BORN_MAYER)
-{
-    std::vector<gmx::RVec> x = {
-        { 0, 0, 0   },
-        { 0, 0, 0.5 }
-    };
-    // Generate topology info
-    TopologyEntryVector top{};
-    top.push_back(AtomPair(0, 1));
-    std::vector<double> params(2);
-    params[expA] = 10000;
-    params[expB] = 8;
-    top[0]->setParams(params);
-
-    testPot(Potential::BORN_MAYER, top, &x);
-}
-
-TEST_F (ForceComputerImplementationTest, SLATER_ISA)
-{
-    std::vector<gmx::RVec> x = {
-        { 0, 0, 0   },
-        { 0, 0, 0.5 }
-    };
-    // Generate topology info
-    TopologyEntryVector top{};
-    top.push_back(AtomPair(0, 1));
-    std::vector<double> params(2);
-    params[expA] = 10000;
-    params[expB] = 8;
-    top[0]->setParams(params);
-
-    testPot(Potential::SLATER_ISA, top, &x);
-}
-
-TEST_F (ForceComputerImplementationTest, MACDANIEL_SCHMIDT)
-{
-    std::vector<gmx::RVec> x = {
-        { 0, 0, 0   },
-        { 0, 0, 0.5 }
-    };
-    // Generate topology info
-    TopologyEntryVector top{};
-    top.push_back(AtomPair(0, 1));
-    std::vector<double> params(3);
-    params[dexpA1] = 10000;
-    params[dexpA1] = -3000;
-    params[dexpB]  = 8;
-    top[0]->setParams(params);
-
-    testPot(Potential::MACDANIEL_SCHMIDT, top, &x);
-}
-
-TEST_F (ForceComputerImplementationTest, POLARIZATION)
-{
-    std::vector<gmx::RVec> x = {
-        { 0, 0, 0   },
-        { 0, 0, 0.5 }
-    };
-    // Generate topology info
-    TopologyEntryVector top{};
-    top.push_back(AtomPair(0, 1));
-    std::vector<double> params(3);
-    params[polALPHA]   = 0.1;
-    params[polRHYPER]  = 0.2;
-    params[polFCHYPER] = 1e4;
-    top[0]->setParams(params);
-
-    testPot(Potential::POLARIZATION, top, &x);
-}
-
-TEST_F (ForceComputerImplementationTest, HARMONIC_BONDS)
-{
-    std::vector<gmx::RVec> x = {
-        { 0, 0, 0   },
-        { 0, 0, 0.5 }
-    };
-    // Generate topology info
-    TopologyEntryVector top{};
-    top.push_back(AtomPair(0, 1));
-    std::vector<double> params(3);
-    params[bondKB]     = 100000;
-    params[bondLENGTH] = 0.4;
-    params[bondENERGY] = 10;
-    top[0]->setParams(params);
-
-    testPot(Potential::HARMONIC_BONDS, top, &x);
-}
-
-TEST_F (ForceComputerImplementationTest, CUBIC_BONDS)
-{
-    std::vector<gmx::RVec> x = {
-        { 0, 0, 0   },
-        { 0, 0, 0.5 }
-    };
-    // Generate topology info
-    TopologyEntryVector top{};
-    top.push_back(AtomPair(0, 1));
-    std::vector<double> params(4);
-    params[cubicDE]     = 100;
-    params[cubicLENGTH] = 0.4;
-    params[cubicRMAX]   = 0.6;
-    params[cubicKB]     = 60000;
-    top[0]->setParams(params);
-
-    testPot(Potential::CUBIC_BONDS, top, &x);
-}
-
-TEST_F (ForceComputerImplementationTest, HUA_BONDS)
-{
-    std::vector<gmx::RVec> x = {
-        { 0, 0, 0   },
-        { 0, 0, 0.5 }
-    };
-    // Generate topology info
-    TopologyEntryVector top{};
-    top.push_back(AtomPair(0, 1));
-    std::vector<double> params(4);
-    params[huaDE]     = 100;
-    params[huaLENGTH] = 0.4;
-    params[huaB]      = 20;
-    params[huaC]      = 0.1;
-    top[0]->setParams(params);
-
-    testPot(Potential::HUA_BONDS, top, &x);
-}
-
-TEST_F (ForceComputerImplementationTest, MORSE_BONDS)
-{
-    std::vector<gmx::RVec> x = {
-        { 0, 0, 0   },
-        { 0, 0, 0.5 }
-    };
-    // Generate topology info
-    TopologyEntryVector top{};
-    top.push_back(AtomPair(0, 1));
-    std::vector<double> params(4);
-    params[morseBETA]   = 12;
-    params[morseDE]     = 100;
-    params[morseD0]     = 40;
-    params[morseLENGTH] = 0.6;
-    top[0]->setParams(params);
-
-    testPot(Potential::MORSE_BONDS, top, &x);
-}
-
-TEST_F (ForceComputerImplementationTest, HARMONIC_ANGLES)
-{
-    std::vector<gmx::RVec> x = {
-        { 0, 0, 0   },
-        { 0, 0, 0.2 },
-        { 0, 0.1, 0.3 },
-    };
-    // Generate topology info
-    TopologyEntryVector top{};
-    Bond b1(0, 1, 1);
-    Bond b2(1, 2, 1);
-    top.push_back(Angle(b1, b2));
-    std::vector<double> params(2);
-    params[angleKT]    = 100;
-    params[angleANGLE] = 100;
-    top[0]->setParams(params);
-
-    testPot(Potential::HARMONIC_ANGLES, top, &x);
-}
-
-TEST_F (ForceComputerImplementationTest, LINEAR_ANGLES)
-{
-    std::vector<gmx::RVec> x = {
-        { 0, 0,    0    },
-        { 0, 0.01, 0.15 },
-        { 0, 0,    0.29  },
-    };
-    // Generate topology info
-    TopologyEntryVector top{};
-    Bond b1(0, 1, 1);
-    Bond b2(1, 2, 1);
-    top.push_back(Angle(b1, b2));
-    std::vector<double> params(2);
-    params[linangA]    = 0.5;
-    params[linangKLIN] = 10000;
-    top[0]->setParams(params);
-
-    testPot(Potential::LINEAR_ANGLES, top, &x);
-}
-
-TEST_F (ForceComputerImplementationTest, UREY_BRADLEY_ANGLES)
-{
-    std::vector<gmx::RVec> x = {
-        { 0, 0, 0   },
-        { 0, 0, 0.2 },
-        { 0, 0.1, 0.3 },
-    };
-    // Generate topology info
-    TopologyEntryVector top{};
-    Bond b1(0, 1, 1);
-    Bond b2(1, 2, 1);
-    top.push_back(Angle(b1, b2));
-    std::vector<double> params(4);
-    params[ubKT]    = 100;
-    params[ubANGLE] = 100;
-    params[ubR13]   = 0.33;
-    params[ubKUB]   = 20;
-    top[0]->setParams(params);
-
-    testPot(Potential::UREY_BRADLEY_ANGLES, top, &x);
-}
-
-TEST_F (ForceComputerImplementationTest, HARMONIC_DIHEDRALS)
-{
-    std::vector<gmx::RVec> x = {
-        { 0, 0, 0   },
-        { 0, 0, 0.2 },
-        { 0, 0.1, 0.3 },
-        { 0.1, 0.15, 0.36 }
-    };
-    // Generate topology info
-    TopologyEntryVector top{};
-    Bond b1(0, 1, 1);
-    Bond b2(0, 2, 1);
-    Bond b3(0, 3, 1);
-    top.push_back(Improper(b1, b2, b3));
-    std::vector<double> params(1);
-    params[idihKPHI] = 10;
-    top[0]->setParams(params);
-
-    testPot(Potential::HARMONIC_DIHEDRALS, top, &x);
-}
-
-TEST_F (ForceComputerImplementationTest, PROPER_DIHEDRALS)
-{
-    std::vector<gmx::RVec> x = {
-        { 0, 0, 0   },
-        { 0, 0, 0.2 },
-        { 0, 0.1, 0.3 },
-        { 0.1, 0.15, 0.36 }
-    };
-    // Generate topology info
-    TopologyEntryVector top{};
-    Bond b1(0, 1, 1);
-    Bond b2(1, 2, 1);
-    Bond b3(2, 3, 1);
-    top.push_back(Proper(b1, b2, b3));
-    std::vector<double> params(3);
-    params[pdihANGLE] = 30;
-    params[pdihKP]    = 10;
-    params[pdihMULT]  = 4;
-    top[0]->setParams(params);
-
-    testPot(Potential::PROPER_DIHEDRALS, top, &x);
-}
-
-TEST_F (ForceComputerImplementationTest, FOURIER_DIHEDRALS)
-{
-    std::vector<gmx::RVec> x = {
-        { 0, 0, 0   },
-        { 0, 0, 0.2 },
-        { 0, 0.1, 0.3 },
-        { 0.1, 0.15, 0.36 }
-    };
-    // Generate topology info
-    TopologyEntryVector top{};
-    Bond b1(0, 1, 1);
-    Bond b2(1, 2, 1);
-    Bond b3(2, 3, 1);
-    top.push_back(Proper(b1, b2, b3));
-    std::vector<double> params = { 1, 2, -3, 4, -5, 6 };
-    top[0]->setParams(params);
-
-    testPot(Potential::FOURIER_DIHEDRALS, top, &x);
-}
-
-TEST_F (ForceComputerImplementationTest, FBPOSRES0)
-{
-    std::vector<gmx::RVec> x = {
-        { 0, 0, 0.5 }
-    };
-    // Generate topology info
-    TopologyEntryVector top{};
-    top.push_back(SingleAtom(0));
-    std::vector<double> params(2);
-    params[fbprK]  = 100;
-    params[fbprR0] = 1;
-    top[0]->setParams(params);
-
-    testPot(Potential::POSITION_RESTRAINT, top, &x);
-}
-
-TEST_F (ForceComputerImplementationTest, FBPOSRES1)
-{
-    std::vector<gmx::RVec> x = {
-        { 0, 0, 2 }
-    };
-    // Generate topology info
-    TopologyEntryVector top{};
-    top.push_back(SingleAtom(0));
-    std::vector<double> params(2);
-    params[fbprK]  = 100;
-    params[fbprR0] = 1;
-    top[0]->setParams(params);
-
-    testPot(Potential::POSITION_RESTRAINT, top, &x);
-}
-
-TEST_F (ForceComputerImplementationTest, FBPOSRES_1)
-{
-    // Test sign of the force as well
-    std::vector<gmx::RVec> x = {
-        { 0, 0, -2 }
-    };
-    // Generate topology info
-    TopologyEntryVector top{};
-    top.push_back(SingleAtom(0));
-    std::vector<double> params(2);
-    params[fbprK]  = 100;
-    params[fbprR0] = 1;
-    top[0]->setParams(params);
-
-    testPot(Potential::POSITION_RESTRAINT, top, &x);
-}
+//! Static storage for all test parameters
+static const std::vector<ForceComputerTestParams> c_allTestParams = makeAllTestParams();
+
+INSTANTIATE_TEST_CASE_P(All, ForceComputerImplementationTest,
+                         ::testing::ValuesIn(c_allTestParams),
+                         [](const ::testing::TestParamInfo<ForceComputerTestParams> &info) {
+                             return info.param.name;
+                         });
 
 }  // namespace
 
