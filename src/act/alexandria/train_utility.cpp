@@ -81,7 +81,8 @@ static void print_stats(gmx::TextWriter *tw,
                         bool             bHeader,
                         const char      *xaxis,
                         const char      *yaxis,
-                        bool             useOffset)
+                        bool             useOffset,
+                        JsonTree        *jstats)
 {
     real a    = 0, da  = 0, b    = 0, db   = 0;
     real mse  = 0, mae = 0, chi2 = 0, rmsd = 0;
@@ -114,10 +115,10 @@ static void print_stats(gmx::TextWriter *tw,
         if (eStats::OK == ok)
         {
             tw->writeStringFormatted("%-32s %6d %6.3f(%5.3f) %6.3f(%5.3f) %7.2f %8.4f %8.4f %8.4f %10s\n",
-                    newprop.c_str(), n, a, da, 
-                    b, db, Rfit*100, 
-                    conversion*rmsd, conversion*mse, 
-                    conversion*mae, yaxis);
+                                     newprop.c_str(), n, a, da,
+                                     b, db, Rfit*100,
+                                     conversion*rmsd, conversion*mse,
+                                     conversion*mae, yaxis);
         }
         else
         {
@@ -153,6 +154,22 @@ static void print_stats(gmx::TextWriter *tw,
             tw->writeStringFormatted("Statistics problem for %s: %s\n", prop, gmx_stats_message(ok));
         }
     }
+    JsonTree jprop(prop);
+    jprop.addObject(JsonTree("unit", unit));
+    jprop.addObject(JsonTree("N", std::to_string(n)));
+    jprop.addObject(JsonTree("slope", a));
+    jprop.addObject(JsonTree("uncertainty in slope", da));
+    if (useOffset)
+    {
+        jprop.addObject(JsonTree("offset", b));
+        jprop.addObject(JsonTree("uncertainty in offset", db));
+    }
+    jprop.addObject(JsonTree("Rfit", Rfit));
+    jprop.addObject(JsonTree("RMSD", conversion*rmsd));
+    jprop.addObject(JsonTree("MSE", conversion*mse));
+    jprop.addObject(JsonTree("MAE", conversion*mae));
+    jprop.addObject(JsonTree("Model", yaxis));
+    jstats->addObject(jprop);
 }
 
 //! \brief Print xvg file for correlation plot
@@ -1298,7 +1315,10 @@ void TrainForceFieldPrinter::printEnergyForces(MsgHandler                       
         std::vector<gmx::RVec> coords = mol->xOriginal();
         std::vector<gmx::RVec> forces(coords.size());
         forceComp->compute(msghandler, pd, mol->topology(), &coords, &forces, &eBefore);
-
+        JsonTree jepot("Energy terms");
+        jepot.addObject(JsonTree("unit", "kJ/mol"));
+        jepot.addObject(JsonTree("QM", deltaE0));
+        jepot.addObject(JsonTree("ACM", eBefore[InteractionType::EPOT]));
         msghandler->write(gmx::formatString("   %-20s  %10.3f  Difference: %10.3f",
                                             "Reference EPOT", deltaE0, 
                                             eBefore[InteractionType::EPOT]-deltaE0));
@@ -1345,8 +1365,10 @@ void TrainForceFieldPrinter::printEnergyForces(MsgHandler                       
                 msghandler->write(gmx::formatString("   %-20s  %10.3f",
                                                     interactionTypeToString(ep.first).c_str(),
                                                     ep.second));
+                jepot.addObject(JsonTree(interactionTypeToString(ep.first), ep.second));
             }
         }
+        jtree->addObject(jepot);
     }
 }
 
@@ -1696,15 +1718,14 @@ void TrainForceFieldPrinter::print(MsgHandler                  *msghandler,
             }
             n++;
         }
-        int indent = 2;
-        tw->writeString(jtmol.writeString(true, &indent));
         jtree->addObject(jtmol);
     }
 
+    JsonTree jallstats("statistics");
     for(auto &ims : iMolSelectNames())
     {
         bool header = true;
-        
+        JsonTree jstats(iMolSelectName(ims.first));
         tw->writeStringFormatted("\n*** Results for %s data set ***\n", iMolSelectName(ims.first).c_str());
         for (auto &i : qPropertyTypes())
         {
@@ -1717,7 +1738,7 @@ void TrainForceFieldPrinter::print(MsgHandler                  *msghandler,
             if (lsq_epot_[ims.first][qt].get_npoints() > 0)
             {
                 print_stats(tw, "Potential energy", "kJ/mol", 1.0, &lsq_epot_[ims.first][qt],
-                            header, "QM/DFT", name.c_str(), useOffset_);
+                            header, "QM/DFT", name.c_str(), useOffset_, &jstats);
                 header = false;
             }
             for(const auto &tt : terms_)
@@ -1726,43 +1747,45 @@ void TrainForceFieldPrinter::print(MsgHandler                  *msghandler,
                 {
                     print_stats(tw, interactionTypeToString(tt).c_str(),
                                 "kJ/mol", 1.0, &lsq_einter_[tt][ims.first][qt],
-                                header, "SAPT", name.c_str(), useOffset_);
+                                header, "SAPT", name.c_str(), useOffset_, &jstats);
                     header = false;
                 }
             }
             if (lsq_rmsf_[ims.first].get_npoints() > 0 && qt == qPropertyType::ACM)
             {
                 print_stats(tw, "RMS Force", "kJ/mol nm", 1.0, &lsq_rmsf_[ims.first],
-                            header, "QM/DFT", name.c_str(), useOffset_);
+                            header, "QM/DFT", name.c_str(), useOffset_, &jstats);
                 header = false;
             }
             if (lsq_freq_.get_npoints() > 0 && qt == qPropertyType::ACM)
             {
                 print_stats(tw, "Frequencies", mpo_unit2(MolPropObservable::FREQUENCY),
-                            1.0, &lsq_freq_, header, "QM/DFT", name.c_str(), useOffset_);
+                            1.0, &lsq_freq_, header, "QM/DFT", name.c_str(), useOffset_, &jstats);
                 header = false;
             }
             print_stats(tw, "ESP", "kJ/mol e", 1.0, &lsq_esp[ims.first][qt],
-                        header, "Electronic", name.c_str(), useOffset_);
+                        header, "Electronic", name.c_str(), useOffset_, &jstats);
             header = false;
             for(auto &mpo : mpoMultiPoles)
             {
                 print_stats(tw, mpo_name(mpo), mpo_unit2(mpo), 1.0,
-                            &lsq_multi_[mpo][ims.first][qt],   header, "Electronic", name.c_str(), useOffset_);
+                            &lsq_multi_[mpo][ims.first][qt],   header, "Electronic", name.c_str(), useOffset_, &jstats);
             }
             if (bPolar && qt == qPropertyType::ACM)
             {
                 std::string polunit("Angstrom3");
                 auto polfactor = convertFromGromacs(1.0, polunit);
                 print_stats(tw, "Polariz. components", polunit.c_str(), polfactor,
-                            &lsq_alpha_[ims.first][qPropertyType::ACM],    header, "Electronic", name.c_str(), useOffset_);
+                            &lsq_alpha_[ims.first][qPropertyType::ACM],    header, "Electronic", name.c_str(), useOffset_, &jstats);
                 print_stats(tw, "Isotropic Polariz.", polunit.c_str(), polfactor,
-                            &lsq_isoPol_[ims.first][qPropertyType::ACM],   header, "Electronic", name.c_str(), useOffset_);
+                            &lsq_isoPol_[ims.first][qPropertyType::ACM],   header, "Electronic", name.c_str(), useOffset_, &jstats);
                 print_stats(tw, "Anisotropic Polariz.", polunit.c_str(), polfactor,
-                            &lsq_anisoPol_[ims.first][qPropertyType::ACM], header, "Electronic", name.c_str(), useOffset_);
+                            &lsq_anisoPol_[ims.first][qPropertyType::ACM], header, "Electronic", name.c_str(), useOffset_, &jstats);
             }
         }
+        jallstats.addObject(jstats);
     }
+    jtree->addObject(jallstats);
     write_q_histo(tw, opt2fn_null("-qhisto", filenm.size(), filenm.data()),
                   &lsqt[iMolSelect::Train], oenv, useOffset_);
 

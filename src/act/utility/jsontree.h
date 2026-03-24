@@ -77,6 +77,18 @@ public:
         value_ = value;
     }
 
+    JsonTree(const std::string &key, double value)
+    {
+        key_ = key;
+        value_ = std::to_string(value);
+    }
+
+    JsonTree(const std::string &key, int value)
+    {
+        key_ = key;
+        value_ = std::to_string(value);
+    }
+
     //! \return key
     const std::string &key() const { return key_; }
 
