@@ -75,19 +75,31 @@ struct ForceComputerCoordParams
     double                                  charge1 = 1.0;
 };
 
-/*! \brief Potential type and topology parameters for a force computer test case */
+/*! \brief Force field parameter values for a force computer test case.
+ *  Kept separate from ForceComputerPotParams so that a single potential can be
+ *  tested with multiple parameter sets via ::testing::Combine. */
+struct ForceComputerParamParams
+{
+    //! Name suffix appended to the potential name in the test identifier (empty for default)
+    std::string         nameSuffix;
+    //! Force field parameter values passed to TopologyEntry::setParams()
+    std::vector<double> params;
+};
+
+/*! \brief Potential type and topology structure for a force computer test case.
+ *  Does NOT set force field parameters; those come from ForceComputerParamParams. */
 struct ForceComputerPotParams
 {
     //! Base name used in test identification (maps to refdata file)
     std::string                          name;
     //! The potential to test
     Potential                            potential;
-    //! Factory function that builds the topology/parameters for this test
+    //! Factory function that builds the topology entries (without setting params)
     std::function<TopologyEntryVector()> topBuilder;
 };
 
-//! Combined test parameter: (potential params, coordinate config)
-using FCTestParam = std::tuple<ForceComputerPotParams, ForceComputerCoordParams>;
+//! Combined test parameter: (potential topology, force field params, coordinate config)
+using FCTestParam = std::tuple<ForceComputerPotParams, ForceComputerParamParams, ForceComputerCoordParams>;
 
 class ForceComputerImplementationTest : public ::testing::TestWithParam<FCTestParam>
 {
@@ -164,10 +176,15 @@ protected:
 TEST_P(ForceComputerImplementationTest, RunTest)
 {
     const auto &pot   = std::get<0>(GetParam());
-    const auto &coord = std::get<1>(GetParam());
+    const auto &par   = std::get<1>(GetParam());
+    const auto &coord = std::get<2>(GetParam());
     atoms_[1].setCharge(coord.charge1);
     auto x   = coord.coordsBuilder();
     auto top = pot.topBuilder();
+    if (!top.empty())
+    {
+        top[0]->setParams(par.params);
+    }
     testPot(pot.potential, top, &x);
 }
 
@@ -180,28 +197,7 @@ static const ForceComputerCoordParams c_stdPairCoord {
     "", []() { return std::vector<gmx::RVec>{ { 0, 0, 0 }, { 0, 0, 0.5 } }; }, 1.0
 };
 
-//! Coulomb Gaussian non-standard coord variants (NEG charge, ZERO distance)
-static const std::vector<ForceComputerCoordParams> c_coulGaussCoords = {
-    { "NEG",  []() { return std::vector<gmx::RVec>{ { 0, 0, 0 }, { 0, 0, 0.5 } }; }, -1.0 },
-    { "ZERO", []() { return std::vector<gmx::RVec>{ { 0, 0, 0 }, { 0, 0, 0.0 } }; },  1.0 },
-};
-
-//! Coulomb Slater (zeta=10) non-standard coord variants
-static const std::vector<ForceComputerCoordParams> c_coulSlaterCoords = {
-    { "NEG",       []() { return std::vector<gmx::RVec>{ { 0, 0, 0 }, { 0, 0, 0.5 } }; }, -1.0 },
-    { "NEG2",      []() { return std::vector<gmx::RVec>{ { 0, 0, 0 }, { 0, 0, 0.5 } }; }, -2.0 },
-    { "CLOSE",     []() { return std::vector<gmx::RVec>{ { 0, 0, 0 }, { 0, 0, 0.2 } }; },  1.0 },
-    { "CLOSE_NEG", []() { return std::vector<gmx::RVec>{ { 0, 0, 0 }, { 0, 0, 0.2 } }; }, -1.0 },
-    { "ZERO",      []() { return std::vector<gmx::RVec>{ { 0, 0, 0 }, { 0, 0, 0   } }; },  1.0 },
-    { "ZERO_NEG",  []() { return std::vector<gmx::RVec>{ { 0, 0, 0 }, { 0, 0, 0   } }; }, -1.0 },
-};
-
-//! Coulomb Slater (zeta=0) non-standard coord variants
-static const std::vector<ForceComputerCoordParams> c_coulSlaterZ0Coords = {
-    { "NEG", []() { return std::vector<gmx::RVec>{ { 0, 0, 0 }, { 0, 0, 0.5 } }; }, -1.0 },
-};
-
-//! Standard 3-atom angle coord (used by HARMONIC_ANGLES and UREY_BRADLEY_ANGLES)
+//! Standard 3-atom angle coord
 static const ForceComputerCoordParams c_angleCoord {
     "", []() { return std::vector<gmx::RVec>{ { 0, 0, 0 }, { 0, 0, 0.2 }, { 0, 0.1, 0.3 } }; }, 1.0
 };
@@ -211,9 +207,39 @@ static const ForceComputerCoordParams c_linAngleCoord {
     "", []() { return std::vector<gmx::RVec>{ { 0, 0, 0 }, { 0, 0.01, 0.15 }, { 0, 0, 0.29 } }; }, 1.0
 };
 
-//! Standard 4-atom dihedral coord (used by all dihedral potentials)
+//! Standard 4-atom dihedral coord
 static const ForceComputerCoordParams c_dihedralCoord {
     "", []() { return std::vector<gmx::RVec>{ { 0, 0, 0 }, { 0, 0, 0.2 }, { 0, 0.1, 0.3 }, { 0.1, 0.15, 0.36 } }; }, 1.0
+};
+
+//! Coulomb non-standard coord variants: negative charge on atom 1, distance 0.5 nm
+static const ForceComputerCoordParams c_coulNegCoord {
+    "NEG", []() { return std::vector<gmx::RVec>{ { 0, 0, 0 }, { 0, 0, 0.5 } }; }, -1.0
+};
+
+//! Coulomb SLATER non-standard charge: charge = -2
+static const ForceComputerCoordParams c_coulNeg2Coord {
+    "NEG2", []() { return std::vector<gmx::RVec>{ { 0, 0, 0 }, { 0, 0, 0.5 } }; }, -2.0
+};
+
+//! Coulomb non-standard coord: zero interatomic distance
+static const ForceComputerCoordParams c_coulZeroCoord {
+    "ZERO", []() { return std::vector<gmx::RVec>{ { 0, 0, 0 }, { 0, 0, 0.0 } }; }, 1.0
+};
+
+//! Coulomb SLATER close-distance coord: 0.2 nm
+static const ForceComputerCoordParams c_coulCloseCoord {
+    "CLOSE", []() { return std::vector<gmx::RVec>{ { 0, 0, 0 }, { 0, 0, 0.2 } }; }, 1.0
+};
+
+//! Coulomb SLATER close-distance + negative charge
+static const ForceComputerCoordParams c_coulCloseNegCoord {
+    "CLOSE_NEG", []() { return std::vector<gmx::RVec>{ { 0, 0, 0 }, { 0, 0, 0.2 } }; }, -1.0
+};
+
+//! Coulomb SLATER zero-distance + negative charge
+static const ForceComputerCoordParams c_coulZeroNegCoord {
+    "ZERO_NEG", []() { return std::vector<gmx::RVec>{ { 0, 0, 0 }, { 0, 0, 0 } }; }, -1.0
 };
 
 //! Position restraint coord variants (z = 0.5, 2, -2 nm)
@@ -224,504 +250,366 @@ static const std::vector<ForceComputerCoordParams> c_posResCoords = {
 };
 
 // ============================================================
-// Potential parameter sets
+// Topology builders (structure only; params applied separately)
 // ============================================================
 
-//! Standard pair potentials: all use c_stdPairCoord (2 atoms, 0.5 nm, charge=+1)
-static const std::vector<ForceComputerPotParams> c_stdPotentials = {
-    // LJ8_6
-    { "LJ8_6", Potential::LJ8_6, []() {
-        TopologyEntryVector top;
-        top.push_back(AtomPair(0, 1));
-        std::vector<double> params(2);
-        params[lj8_6SIGMA]   = 0.5;
-        params[lj8_6EPSILON] = 0.25;
-        top[0]->setParams(params);
-        return top;
-    } },
-    // LJ12_6
-    { "LJ12_6", Potential::LJ12_6, []() {
-        TopologyEntryVector top;
-        top.push_back(AtomPair(0, 1));
-        std::vector<double> params(2);
-        params[lj12_6SIGMA]   = 0.5;
-        params[lj12_6EPSILON] = 0.25;
-        top[0]->setParams(params);
-        return top;
-    } },
-    // LJ12_6_4
-    { "LJ12_6_4", Potential::LJ12_6_4, []() {
-        TopologyEntryVector top;
-        top.push_back(AtomPair(0, 1));
-        std::vector<double> params(3);
-        params[lj12_6_4SIGMA]   = 0.5;
-        params[lj12_6_4EPSILON] = 0.25;
-        params[lj12_6_4GAMMA]   = 0.5;
-        top[0]->setParams(params);
-        return top;
-    } },
-    // LJ14_7
-    { "LJ14_7", Potential::LJ14_7, []() {
-        TopologyEntryVector top;
-        top.push_back(AtomPair(0, 1));
-        std::vector<double> params(4);
-        params[lj14_7SIGMA]   = 0.5;
-        params[lj14_7EPSILON] = 1;
-        params[lj14_7GAMMA]   = 0.5;
-        params[lj14_7DELTA]   = 0.1;
-        top[0]->setParams(params);
-        return top;
-    } },
-    // BUCKINGHAM
-    { "BUCKINGHAM", Potential::BUCKINGHAM, []() {
-        TopologyEntryVector top;
-        top.push_back(AtomPair(0, 1));
-        std::vector<double> params(3);
-        params[bhA]  = 5000;
-        params[bhB]  = 20;
-        params[bhC6] = 0.001;
-        top[0]->setParams(params);
-        return top;
-    } },
-    // WANG_BUCKINGHAM
-    { "WANG_BUCKINGHAM", Potential::WANG_BUCKINGHAM, []() {
-        TopologyEntryVector top;
-        top.push_back(AtomPair(0, 1));
-        std::vector<double> params(3);
-        params[wbhSIGMA]   = 0.5;
-        params[wbhEPSILON] = 0.25;
-        params[wbhGAMMA]   = 10.0;
-        top[0]->setParams(params);
-        return top;
-    } },
-    // GENERALIZED_BUCKINGHAM
-    { "GENERALIZED_BUCKINGHAM", Potential::GENERALIZED_BUCKINGHAM, []() {
-        TopologyEntryVector top;
-        top.push_back(AtomPair(0, 1));
-        std::vector<double> params(4);
-        params[gbhRMIN]    = 0.5;
-        params[gbhEPSILON] = 0.25;
-        params[gbhGAMMA]   = 0.5;
-        params[gbhDELTA]   = 0.1;
-        top[0]->setParams(params);
-        return top;
-    } },
-    // COULOMB_POINT
-    { "COULOMB_POINT", Potential::COULOMB_POINT, []() {
-        TopologyEntryVector top;
-        top.push_back(AtomPair(0, 1));
-        std::vector<double> params(2);
-        params[coulZETA]  = 10;
-        params[coulZETA2] = 6;
-        top[0]->setParams(params);
-        return top;
-    } },
-    // COULOMB_GAUSSIAN (default: distance 0.5, charge +1)
-    { "COULOMB_GAUSSIAN", Potential::COULOMB_GAUSSIAN, []() {
-        TopologyEntryVector top;
-        top.push_back(AtomPair(0, 1));
-        std::vector<double> params(2);
-        params[coulZETA]  = 10;
-        params[coulZETA2] = 6;
-        top[0]->setParams(params);
-        return top;
-    } },
-    // COULOMB_SLATER zeta=10 (default: distance 0.5, charge +1)
-    { "COULOMB_SLATER", Potential::COULOMB_SLATER, []() {
-        TopologyEntryVector top;
-        top.push_back(AtomPair(0, 1));
-        std::vector<double> params(2);
-        params[coulZETA]  = 10;
-        params[coulZETA2] = 6;
-        top[0]->setParams(params);
-        return top;
-    } },
-    // COULOMB_SLATER zeta=0 (default: distance 0.5, charge +1)
-    { "COULOMB_SLATER_ZETA0", Potential::COULOMB_SLATER, []() {
-        TopologyEntryVector top;
-        top.push_back(AtomPair(0, 1));
-        std::vector<double> params(2);
-        params[coulZETA]  = 0;
-        params[coulZETA2] = 6;
-        top[0]->setParams(params);
-        return top;
-    } },
-    // TT2bExch
-    { "TT2bExch", Potential::TT2b, []() {
-        TopologyEntryVector top;
-        top.push_back(AtomPair(0, 1));
-        std::vector<double> params(6, 0.0);
-        params[tt2bA]     = 1000;
-        params[tt2bBexch] = 10;
-        params[tt2bBdisp] = 10;
-        top[0]->setParams(params);
-        return top;
-    } },
-    // TT2bDispC6
-    { "TT2bDispC6", Potential::TT2b, []() {
-        TopologyEntryVector top;
-        top.push_back(AtomPair(0, 1));
-        std::vector<double> params(6, 0.0);
-        params[tt2bA]     = 0;
-        params[tt2bBexch] = 10;
-        params[tt2bBdisp] = 10;
-        params[tt2bC6]    = 0.001;
-        top[0]->setParams(params);
-        return top;
-    } },
-    // TT2bDispC8
-    { "TT2bDispC8", Potential::TT2b, []() {
-        TopologyEntryVector top;
-        top.push_back(AtomPair(0, 1));
-        std::vector<double> params(6, 0.0);
-        params[tt2bA]     = 0;
-        params[tt2bBexch] = 10;
-        params[tt2bBdisp] = 10;
-        params[tt2bC8]    = 0.0001;
-        top[0]->setParams(params);
-        return top;
-    } },
-    // TT2bDispC10
-    { "TT2bDispC10", Potential::TT2b, []() {
-        TopologyEntryVector top;
-        top.push_back(AtomPair(0, 1));
-        std::vector<double> params(6, 0.0);
-        params[tt2bA]     = 0;
-        params[tt2bBexch] = 10;
-        params[tt2bBdisp] = 10;
-        params[tt2bC10]   = 0.001;
-        top[0]->setParams(params);
-        return top;
-    } },
-    // TT2bAll
-    { "TT2bAll", Potential::TT2b, []() {
-        TopologyEntryVector top;
-        top.push_back(AtomPair(0, 1));
-        std::vector<double> params(6, 0.0);
-        params[tt2bA]     = 1000;
-        params[tt2bBexch] = 10;
-        params[tt2bBdisp] = 20;
-        params[tt2bC6]    = 0.001;
-        params[tt2bC8]    = 0.001;
-        params[tt2bC10]   = 0.001;
-        top[0]->setParams(params);
-        return top;
-    } },
-    // SLATER_ISA_TT
-    { "SLATER_ISA_TT", Potential::SLATER_ISA_TT, []() {
-        TopologyEntryVector top;
-        top.push_back(AtomPair(0, 1));
-        std::vector<double> params(6, 0.0);
-        params[tt2bA]     = 1000;
-        params[tt2bBexch] = 10;
-        params[tt2bBdisp] = 20;
-        params[tt2bC6]    = 0.001;
-        params[tt2bC8]    = 0.001;
-        params[tt2bC10]   = 0.001;
-        top[0]->setParams(params);
-        return top;
-    } },
-    // TANG_TOENNIES
-    { "TANG_TOENNIES", Potential::TANG_TOENNIES, []() {
-        TopologyEntryVector top;
-        top.push_back(AtomPair(0, 1));
-        std::vector<double> params(5, 0.0);
-        params[ttA]   = 1000;
-        params[ttB]   = 10;
-        params[ttC6]  = 0.001;
-        params[ttC8]  = 0.001;
-        params[ttC10] = 0.001;
-        top[0]->setParams(params);
-        return top;
-    } },
-    // BORN_MAYER
-    { "BORN_MAYER", Potential::BORN_MAYER, []() {
-        TopologyEntryVector top;
-        top.push_back(AtomPair(0, 1));
-        std::vector<double> params(2);
-        params[expA] = 10000;
-        params[expB] = 8;
-        top[0]->setParams(params);
-        return top;
-    } },
-    // SLATER_ISA
-    { "SLATER_ISA", Potential::SLATER_ISA, []() {
-        TopologyEntryVector top;
-        top.push_back(AtomPair(0, 1));
-        std::vector<double> params(2);
-        params[expA] = 10000;
-        params[expB] = 8;
-        top[0]->setParams(params);
-        return top;
-    } },
-    // MACDANIEL_SCHMIDT
-    { "MACDANIEL_SCHMIDT", Potential::MACDANIEL_SCHMIDT, []() {
-        TopologyEntryVector top;
-        top.push_back(AtomPair(0, 1));
-        std::vector<double> params(3);
-        params[dexpA1] = 10000;
-        params[dexpA1] = -3000; // intentional overwrite, preserved from original test to keep refdata unchanged
-        params[dexpB]  = 8;
-        top[0]->setParams(params);
-        return top;
-    } },
-    // POLARIZATION
-    { "POLARIZATION", Potential::POLARIZATION, []() {
-        TopologyEntryVector top;
-        top.push_back(AtomPair(0, 1));
-        std::vector<double> params(3);
-        params[polALPHA]   = 0.1;
-        params[polRHYPER]  = 0.2;
-        params[polFCHYPER] = 1e4;
-        top[0]->setParams(params);
-        return top;
-    } },
-    // HARMONIC_BONDS
-    { "HARMONIC_BONDS", Potential::HARMONIC_BONDS, []() {
-        TopologyEntryVector top;
-        top.push_back(AtomPair(0, 1));
-        std::vector<double> params(3);
-        params[bondKB]     = 100000;
-        params[bondLENGTH] = 0.4;
-        params[bondENERGY] = 10;
-        top[0]->setParams(params);
-        return top;
-    } },
-    // CUBIC_BONDS
-    { "CUBIC_BONDS", Potential::CUBIC_BONDS, []() {
-        TopologyEntryVector top;
-        top.push_back(AtomPair(0, 1));
-        std::vector<double> params(4);
-        params[cubicDE]     = 100;
-        params[cubicLENGTH] = 0.4;
-        params[cubicRMAX]   = 0.6;
-        params[cubicKB]     = 60000;
-        top[0]->setParams(params);
-        return top;
-    } },
-    // HUA_BONDS
-    { "HUA_BONDS", Potential::HUA_BONDS, []() {
-        TopologyEntryVector top;
-        top.push_back(AtomPair(0, 1));
-        std::vector<double> params(4);
-        params[huaDE]     = 100;
-        params[huaLENGTH] = 0.4;
-        params[huaB]      = 20;
-        params[huaC]      = 0.1;
-        top[0]->setParams(params);
-        return top;
-    } },
-    // MORSE_BONDS
-    { "MORSE_BONDS", Potential::MORSE_BONDS, []() {
-        TopologyEntryVector top;
-        top.push_back(AtomPair(0, 1));
-        std::vector<double> params(4);
-        params[morseBETA]   = 12;
-        params[morseDE]     = 100;
-        params[morseD0]     = 40;
-        params[morseLENGTH] = 0.6;
-        top[0]->setParams(params);
-        return top;
-    } },
-};
+//! Atom-pair topology for standard 2-body potentials
+static TopologyEntryVector makePairTop()
+{
+    TopologyEntryVector top;
+    top.push_back(AtomPair(0, 1));
+    return top;
+}
 
-//! Coulomb Gaussian potential (shared topology for default + non-standard coord variants)
-static const ForceComputerPotParams c_coulGaussPot {
-    "COULOMB_GAUSSIAN", Potential::COULOMB_GAUSSIAN, []() {
-        TopologyEntryVector top;
-        top.push_back(AtomPair(0, 1));
-        std::vector<double> params(2);
-        params[coulZETA]  = 10;
-        params[coulZETA2] = 6;
-        top[0]->setParams(params);
-        return top;
-    }
-};
+//! Angle topology (bond 0-1, bond 1-2)
+static TopologyEntryVector makeAngleTop()
+{
+    Bond b1(0, 1, 1);
+    Bond b2(1, 2, 1);
+    TopologyEntryVector top;
+    top.push_back(Angle(b1, b2));
+    return top;
+}
 
-//! Coulomb Slater potential with zeta=10 (shared topology for non-standard coord variants)
-static const ForceComputerPotParams c_coulSlaterPot {
-    "COULOMB_SLATER", Potential::COULOMB_SLATER, []() {
-        TopologyEntryVector top;
-        top.push_back(AtomPair(0, 1));
-        std::vector<double> params(2);
-        params[coulZETA]  = 10;
-        params[coulZETA2] = 6;
-        top[0]->setParams(params);
-        return top;
-    }
-};
+//! Improper dihedral topology (bonds 0-1, 0-2, 0-3)
+static TopologyEntryVector makeImproperTop()
+{
+    Bond b1(0, 1, 1);
+    Bond b2(0, 2, 1);
+    Bond b3(0, 3, 1);
+    TopologyEntryVector top;
+    top.push_back(Improper(b1, b2, b3));
+    return top;
+}
 
-//! Coulomb Slater potential with zeta=0 (shared topology for non-standard coord variants)
-static const ForceComputerPotParams c_coulSlaterZ0Pot {
-    "COULOMB_SLATER_ZETA0", Potential::COULOMB_SLATER, []() {
-        TopologyEntryVector top;
-        top.push_back(AtomPair(0, 1));
-        std::vector<double> params(2);
-        params[coulZETA]  = 0;
-        params[coulZETA2] = 6;
-        top[0]->setParams(params);
-        return top;
-    }
-};
+//! Proper dihedral topology (bonds 0-1, 1-2, 2-3)
+static TopologyEntryVector makeProperTop()
+{
+    Bond b1(0, 1, 1);
+    Bond b2(1, 2, 1);
+    Bond b3(2, 3, 1);
+    TopologyEntryVector top;
+    top.push_back(Proper(b1, b2, b3));
+    return top;
+}
 
-//! Angle potentials sharing the same 3-atom coordinate set
-static const std::vector<ForceComputerPotParams> c_anglePotentials = {
-    // HARMONIC_ANGLES
-    { "HARMONIC_ANGLES", Potential::HARMONIC_ANGLES, []() {
-        TopologyEntryVector top;
-        Bond b1(0, 1, 1);
-        Bond b2(1, 2, 1);
-        top.push_back(Angle(b1, b2));
-        std::vector<double> params(2);
-        params[angleKT]    = 100;
-        params[angleANGLE] = 100;
-        top[0]->setParams(params);
-        return top;
-    } },
-    // UREY_BRADLEY_ANGLES
-    { "UREY_BRADLEY_ANGLES", Potential::UREY_BRADLEY_ANGLES, []() {
-        TopologyEntryVector top;
-        Bond b1(0, 1, 1);
-        Bond b2(1, 2, 1);
-        top.push_back(Angle(b1, b2));
-        std::vector<double> params(4);
-        params[ubKT]    = 100;
-        params[ubANGLE] = 100;
-        params[ubR13]   = 0.33;
-        params[ubKUB]   = 20;
-        top[0]->setParams(params);
-        return top;
-    } },
-};
-
-//! Linear angle potential (uses a near-linear 3-atom coordinate set)
-static const ForceComputerPotParams c_linAnglePot {
-    "LINEAR_ANGLES", Potential::LINEAR_ANGLES, []() {
-        TopologyEntryVector top;
-        Bond b1(0, 1, 1);
-        Bond b2(1, 2, 1);
-        top.push_back(Angle(b1, b2));
-        std::vector<double> params(2);
-        params[linangA]    = 0.5;
-        params[linangKLIN] = 10000;
-        top[0]->setParams(params);
-        return top;
-    }
-};
-
-//! Dihedral potentials sharing the same 4-atom coordinate set
-static const std::vector<ForceComputerPotParams> c_dihedralPotentials = {
-    // HARMONIC_DIHEDRALS
-    { "HARMONIC_DIHEDRALS", Potential::HARMONIC_DIHEDRALS, []() {
-        TopologyEntryVector top;
-        Bond b1(0, 1, 1);
-        Bond b2(0, 2, 1);
-        Bond b3(0, 3, 1);
-        top.push_back(Improper(b1, b2, b3));
-        std::vector<double> params(1);
-        params[idihKPHI] = 10;
-        top[0]->setParams(params);
-        return top;
-    } },
-    // PROPER_DIHEDRALS
-    { "PROPER_DIHEDRALS", Potential::PROPER_DIHEDRALS, []() {
-        TopologyEntryVector top;
-        Bond b1(0, 1, 1);
-        Bond b2(1, 2, 1);
-        Bond b3(2, 3, 1);
-        top.push_back(Proper(b1, b2, b3));
-        std::vector<double> params(3);
-        params[pdihANGLE] = 30;
-        params[pdihKP]    = 10;
-        params[pdihMULT]  = 4;
-        top[0]->setParams(params);
-        return top;
-    } },
-    // FOURIER_DIHEDRALS
-    { "FOURIER_DIHEDRALS", Potential::FOURIER_DIHEDRALS, []() {
-        TopologyEntryVector top;
-        Bond b1(0, 1, 1);
-        Bond b2(1, 2, 1);
-        Bond b3(2, 3, 1);
-        top.push_back(Proper(b1, b2, b3));
-        std::vector<double> params = { 1, 2, -3, 4, -5, 6 };
-        top[0]->setParams(params);
-        return top;
-    } },
-};
-
-//! Position restraint potential (flat-bottomed, K=100, R0=1)
-static const ForceComputerPotParams c_posResPot {
-    "FBPOSRES", Potential::POSITION_RESTRAINT, []() {
-        TopologyEntryVector top;
-        top.push_back(SingleAtom(0));
-        std::vector<double> params(2);
-        params[fbprK]  = 100;
-        params[fbprR0] = 1;
-        top[0]->setParams(params);
-        return top;
-    }
-};
+//! Single-atom topology (for position restraints)
+static TopologyEntryVector makeSingleAtomTop()
+{
+    TopologyEntryVector top;
+    top.push_back(SingleAtom(0));
+    return top;
+}
 
 // ============================================================
-// Name printer: combines pot name and coord name suffix
+// Potential descriptors (topology structure only, no params)
+// ============================================================
+
+static const ForceComputerPotParams c_lj8_6Pot       { "LJ8_6",                Potential::LJ8_6,                makePairTop };
+static const ForceComputerPotParams c_lj12_6Pot       { "LJ12_6",               Potential::LJ12_6,               makePairTop };
+static const ForceComputerPotParams c_lj12_6_4Pot     { "LJ12_6_4",             Potential::LJ12_6_4,             makePairTop };
+static const ForceComputerPotParams c_lj14_7Pot       { "LJ14_7",               Potential::LJ14_7,               makePairTop };
+static const ForceComputerPotParams c_buckinghamPot   { "BUCKINGHAM",           Potential::BUCKINGHAM,           makePairTop };
+static const ForceComputerPotParams c_wangBuckPot     { "WANG_BUCKINGHAM",      Potential::WANG_BUCKINGHAM,      makePairTop };
+static const ForceComputerPotParams c_genBuckPot      { "GENERALIZED_BUCKINGHAM", Potential::GENERALIZED_BUCKINGHAM, makePairTop };
+static const ForceComputerPotParams c_coulPointPot    { "COULOMB_POINT",        Potential::COULOMB_POINT,        makePairTop };
+static const ForceComputerPotParams c_coulGaussPot    { "COULOMB_GAUSSIAN",     Potential::COULOMB_GAUSSIAN,     makePairTop };
+static const ForceComputerPotParams c_coulSlaterPot   { "COULOMB_SLATER",       Potential::COULOMB_SLATER,       makePairTop };
+//! COULOMB_SLATER with zeta=0 — distinct name to keep separate refdata from the zeta=10 variant
+static const ForceComputerPotParams c_coulSlaterZ0Pot { "COULOMB_SLATER_ZETA0", Potential::COULOMB_SLATER,       makePairTop };
+static const ForceComputerPotParams c_tt2bPot         { "TT2b",                 Potential::TT2b,                 makePairTop };
+static const ForceComputerPotParams c_slaterIsaTtPot  { "SLATER_ISA_TT",        Potential::SLATER_ISA_TT,        makePairTop };
+static const ForceComputerPotParams c_tangToennPot    { "TANG_TOENNIES",        Potential::TANG_TOENNIES,        makePairTop };
+static const ForceComputerPotParams c_bornMayerPot    { "BORN_MAYER",           Potential::BORN_MAYER,           makePairTop };
+static const ForceComputerPotParams c_slaterIsaPot    { "SLATER_ISA",           Potential::SLATER_ISA,           makePairTop };
+static const ForceComputerPotParams c_macdanielPot    { "MACDANIEL_SCHMIDT",    Potential::MACDANIEL_SCHMIDT,    makePairTop };
+static const ForceComputerPotParams c_polPot          { "POLARIZATION",         Potential::POLARIZATION,         makePairTop };
+static const ForceComputerPotParams c_harmBondsPot    { "HARMONIC_BONDS",       Potential::HARMONIC_BONDS,       makePairTop };
+static const ForceComputerPotParams c_cubicBondsPot   { "CUBIC_BONDS",          Potential::CUBIC_BONDS,          makePairTop };
+static const ForceComputerPotParams c_huaBondsPot     { "HUA_BONDS",            Potential::HUA_BONDS,            makePairTop };
+static const ForceComputerPotParams c_morseBondsPot   { "MORSE_BONDS",          Potential::MORSE_BONDS,          makePairTop };
+static const ForceComputerPotParams c_harmAnglePot    { "HARMONIC_ANGLES",      Potential::HARMONIC_ANGLES,      makeAngleTop };
+static const ForceComputerPotParams c_ubAnglePot      { "UREY_BRADLEY_ANGLES",  Potential::UREY_BRADLEY_ANGLES,  makeAngleTop };
+static const ForceComputerPotParams c_linAnglePot     { "LINEAR_ANGLES",        Potential::LINEAR_ANGLES,        makeAngleTop };
+static const ForceComputerPotParams c_harmDihPot      { "HARMONIC_DIHEDRALS",   Potential::HARMONIC_DIHEDRALS,   makeImproperTop };
+static const ForceComputerPotParams c_properDihPot    { "PROPER_DIHEDRALS",     Potential::PROPER_DIHEDRALS,     makeProperTop };
+static const ForceComputerPotParams c_fourierDihPot   { "FOURIER_DIHEDRALS",    Potential::FOURIER_DIHEDRALS,    makeProperTop };
+static const ForceComputerPotParams c_posResPot       { "FBPOSRES",             Potential::POSITION_RESTRAINT,   makeSingleAtomTop };
+
+// ============================================================
+// Force field parameter sets
+// ============================================================
+
+static const ForceComputerParamParams c_lj8_6Params     { "", { 0.5, 0.25 } };   // sigma, epsilon
+static const ForceComputerParamParams c_lj12_6Params    { "", { 0.5, 0.25 } };   // sigma, epsilon
+static const ForceComputerParamParams c_lj12_6_4Params  { "", { 0.5, 0.25, 0.5 } };  // sigma, epsilon, gamma
+static const ForceComputerParamParams c_lj14_7Params    { "", { 0.5, 1, 0.5, 0.1 } };  // sigma, epsilon, gamma, delta
+static const ForceComputerParamParams c_buckinghamParams { "", { 5000, 20, 0.001 } };   // A, B, C6
+static const ForceComputerParamParams c_wangBuckParams  { "", { 0.5, 0.25, 10.0 } };   // sigma, epsilon, gamma
+static const ForceComputerParamParams c_genBuckParams   { "", { 0.5, 0.25, 0.5, 0.1 } };  // Rmin, epsilon, gamma, delta
+//! Coulomb parameters: zeta=10, zeta2=6 (shared by COULOMB_POINT, COULOMB_GAUSSIAN, COULOMB_SLATER with zeta=10)
+static const ForceComputerParamParams c_coulZeta10Params { "", { 10, 6 } };
+//! Coulomb parameters: zeta=0, zeta2=6 (for COULOMB_SLATER with zeta=0)
+static const ForceComputerParamParams c_coulZeta0Params  { "", { 0, 6 } };
+//! TT2b: exchange repulsion only
+static const ForceComputerParamParams c_tt2bExchParams   { "Exch",    { 1000, 10, 10, 0, 0, 0 } };
+//! TT2b: dispersion C6 only
+static const ForceComputerParamParams c_tt2bDispC6Params { "DispC6",  { 0, 10, 10, 0.001, 0, 0 } };
+//! TT2b: dispersion C8 only
+static const ForceComputerParamParams c_tt2bDispC8Params { "DispC8",  { 0, 10, 10, 0, 0.0001, 0 } };
+//! TT2b: dispersion C10 only
+static const ForceComputerParamParams c_tt2bDispC10Params{ "DispC10", { 0, 10, 10, 0, 0, 0.001 } };
+//! TT2b: all terms
+static const ForceComputerParamParams c_tt2bAllParams    { "All",     { 1000, 10, 20, 0.001, 0.001, 0.001 } };
+// Note: TT2b param order is: tt2bA, tt2bBexch, tt2bBdisp, tt2bC6, tt2bC8, tt2bC10
+static const std::vector<ForceComputerParamParams> c_tt2bParamSets = {
+    c_tt2bExchParams, c_tt2bDispC6Params, c_tt2bDispC8Params, c_tt2bDispC10Params, c_tt2bAllParams
+};
+//! SLATER_ISA_TT uses the same TT2b parameter structure with all terms active
+static const ForceComputerParamParams c_slaterIsaTtParams { "", { 1000, 10, 20, 0.001, 0.001, 0.001 } };
+//! TANG_TOENNIES: A, B, C6, C8, C10
+static const ForceComputerParamParams c_tangToennParams { "", { 1000, 10, 0.001, 0.001, 0.001 } };
+//! Born-Mayer / SLATER_ISA exponential repulsion: A, B
+static const ForceComputerParamParams c_expParams       { "", { 10000, 8 } };
+//! MACDANIEL_SCHMIDT: dexpA1 (overwritten twice, preserved from original test), dexpB
+static const ForceComputerParamParams c_macdanielParams { "",
+    // intentional overwrite of index [dexpA1]: preserved from original test to keep refdata unchanged
+    []() {
+        std::vector<double> p(3);
+        p[dexpA1] = 10000;
+        p[dexpA1] = -3000;
+        p[dexpB]  = 8;
+        return p;
+    }()
+};
+static const ForceComputerParamParams c_polParams       { "", { 0.1, 0.2, 1e4 } };   // alpha, rHyper, fcHyper
+static const ForceComputerParamParams c_harmBondsParams { "", { 100000, 0.4, 10 } };  // kB, length, energy
+static const ForceComputerParamParams c_cubicBondsParams{ "", { 0.4, 0.6, 60000, 100 } };  // length, Rmax, kB, DE (cubicLENGTH, cubicRMAX, cubicKB, cubicDE)
+static const ForceComputerParamParams c_huaBondsParams  { "", { 0.4, 100, 20, 0.1 } };    // length, DE, b, c (huaLENGTH, huaDE, huaB, huaC)
+static const ForceComputerParamParams c_morseBondsParams{ "", { 12, 100, 40, 0.6 } };     // beta, DE, D0, length
+static const ForceComputerParamParams c_harmAngleParams { "", { 100, 100 } };     // kT, angle
+static const ForceComputerParamParams c_ubAngleParams   { "", { 100, 100, 0.33, 20 } };   // kT, angle, r13, kUB
+static const ForceComputerParamParams c_linAngleParams  { "", { 0.5, 10000 } };   // a, kLin
+static const ForceComputerParamParams c_harmDihParams   { "", { 10 } };           // kPhi
+static const ForceComputerParamParams c_properDihParams { "", { 30, 10, 4 } };    // angle, kP, mult
+static const ForceComputerParamParams c_fourierDihParams{ "", { 1, 2, -3, 4, -5, 6 } };
+static const ForceComputerParamParams c_posResParams    { "", { 100, 1 } };        // k, R0
+
+// ============================================================
+// Name printer: pot.name + par.nameSuffix [+ "_" + coord.name]
 // ============================================================
 static std::string fcTestName(const ::testing::TestParamInfo<FCTestParam> &info)
 {
     const auto &pot   = std::get<0>(info.param);
-    const auto &coord = std::get<1>(info.param);
-    return coord.name.empty() ? pot.name : pot.name + "_" + coord.name;
+    const auto &par   = std::get<1>(info.param);
+    const auto &coord = std::get<2>(info.param);
+    std::string name  = pot.name + par.nameSuffix;
+    if (!coord.name.empty())
+    {
+        name += "_" + coord.name;
+    }
+    return name;
 }
 
 // ============================================================
-// Instantiations
+// Instantiations — one per potential family, using ::testing::Combine
 // ============================================================
 
-//! Standard 2-atom pair potentials (2 atoms, 0.5 nm separation, charge +1)
-INSTANTIATE_TEST_CASE_P(All, ForceComputerImplementationTest,
-                         ::testing::Combine(::testing::ValuesIn(c_stdPotentials),
+// --- LJ potentials ---
+INSTANTIATE_TEST_CASE_P(LJ8_6, ForceComputerImplementationTest,
+                         ::testing::Combine(::testing::Values(c_lj8_6Pot),
+                                            ::testing::Values(c_lj8_6Params),
                                             ::testing::Values(c_stdPairCoord)),
                          fcTestName);
 
-//! Coulomb Gaussian with non-standard charge or zero-distance coord
+INSTANTIATE_TEST_CASE_P(LJ12_6, ForceComputerImplementationTest,
+                         ::testing::Combine(::testing::Values(c_lj12_6Pot),
+                                            ::testing::Values(c_lj12_6Params),
+                                            ::testing::Values(c_stdPairCoord)),
+                         fcTestName);
+
+INSTANTIATE_TEST_CASE_P(LJ12_6_4, ForceComputerImplementationTest,
+                         ::testing::Combine(::testing::Values(c_lj12_6_4Pot),
+                                            ::testing::Values(c_lj12_6_4Params),
+                                            ::testing::Values(c_stdPairCoord)),
+                         fcTestName);
+
+INSTANTIATE_TEST_CASE_P(LJ14_7, ForceComputerImplementationTest,
+                         ::testing::Combine(::testing::Values(c_lj14_7Pot),
+                                            ::testing::Values(c_lj14_7Params),
+                                            ::testing::Values(c_stdPairCoord)),
+                         fcTestName);
+
+// --- Buckingham potentials ---
+INSTANTIATE_TEST_CASE_P(BUCKINGHAM, ForceComputerImplementationTest,
+                         ::testing::Combine(::testing::Values(c_buckinghamPot),
+                                            ::testing::Values(c_buckinghamParams),
+                                            ::testing::Values(c_stdPairCoord)),
+                         fcTestName);
+
+INSTANTIATE_TEST_CASE_P(WANG_BUCKINGHAM, ForceComputerImplementationTest,
+                         ::testing::Combine(::testing::Values(c_wangBuckPot),
+                                            ::testing::Values(c_wangBuckParams),
+                                            ::testing::Values(c_stdPairCoord)),
+                         fcTestName);
+
+INSTANTIATE_TEST_CASE_P(GENERALIZED_BUCKINGHAM, ForceComputerImplementationTest,
+                         ::testing::Combine(::testing::Values(c_genBuckPot),
+                                            ::testing::Values(c_genBuckParams),
+                                            ::testing::Values(c_stdPairCoord)),
+                         fcTestName);
+
+// --- Coulomb potentials (each also tested with multiple coord/charge variants) ---
+
+//! COULOMB_POINT: only standard coord
+INSTANTIATE_TEST_CASE_P(COULOMB_POINT, ForceComputerImplementationTest,
+                         ::testing::Combine(::testing::Values(c_coulPointPot),
+                                            ::testing::Values(c_coulZeta10Params),
+                                            ::testing::Values(c_stdPairCoord)),
+                         fcTestName);
+
+//! COULOMB_GAUSSIAN: standard coord + negative-charge + zero-distance variants
 INSTANTIATE_TEST_CASE_P(CoulGauss, ForceComputerImplementationTest,
                          ::testing::Combine(::testing::Values(c_coulGaussPot),
-                                            ::testing::ValuesIn(c_coulGaussCoords)),
+                                            ::testing::Values(c_coulZeta10Params),
+                                            ::testing::Values(c_stdPairCoord,
+                                                              c_coulNegCoord,
+                                                              c_coulZeroCoord)),
                          fcTestName);
 
-//! Coulomb Slater (zeta=10) with non-standard charge/distance coord variants
+//! COULOMB_SLATER zeta=10: standard coord + charge/distance variants
 INSTANTIATE_TEST_CASE_P(CoulSlater, ForceComputerImplementationTest,
                          ::testing::Combine(::testing::Values(c_coulSlaterPot),
-                                            ::testing::ValuesIn(c_coulSlaterCoords)),
+                                            ::testing::Values(c_coulZeta10Params),
+                                            ::testing::Values(c_stdPairCoord,
+                                                              c_coulNegCoord,
+                                                              c_coulNeg2Coord,
+                                                              c_coulCloseCoord,
+                                                              c_coulCloseNegCoord,
+                                                              c_coulZeroCoord,
+                                                              c_coulZeroNegCoord)),
                          fcTestName);
 
-//! Coulomb Slater (zeta=0) with negative charge
+//! COULOMB_SLATER zeta=0: standard coord + negative-charge variant
 INSTANTIATE_TEST_CASE_P(CoulSlaterZ0, ForceComputerImplementationTest,
                          ::testing::Combine(::testing::Values(c_coulSlaterZ0Pot),
-                                            ::testing::ValuesIn(c_coulSlaterZ0Coords)),
+                                            ::testing::Values(c_coulZeta0Params),
+                                            ::testing::Values(c_stdPairCoord,
+                                                              c_coulNegCoord)),
                          fcTestName);
 
-//! Angle potentials (HARMONIC and UREY-BRADLEY share the same 3-atom coord set)
-INSTANTIATE_TEST_CASE_P(Angle, ForceComputerImplementationTest,
-                         ::testing::Combine(::testing::ValuesIn(c_anglePotentials),
+// --- TT2b family: ONE potential tested with FIVE different parameter sets ---
+//! Demonstrates the Combine benefit: adding a new param set here tests TT2b under new conditions
+INSTANTIATE_TEST_CASE_P(TT2b, ForceComputerImplementationTest,
+                         ::testing::Combine(::testing::Values(c_tt2bPot),
+                                            ::testing::ValuesIn(c_tt2bParamSets),
+                                            ::testing::Values(c_stdPairCoord)),
+                         fcTestName);
+
+// --- Other pair potentials ---
+INSTANTIATE_TEST_CASE_P(SLATER_ISA_TT, ForceComputerImplementationTest,
+                         ::testing::Combine(::testing::Values(c_slaterIsaTtPot),
+                                            ::testing::Values(c_slaterIsaTtParams),
+                                            ::testing::Values(c_stdPairCoord)),
+                         fcTestName);
+
+INSTANTIATE_TEST_CASE_P(TANG_TOENNIES, ForceComputerImplementationTest,
+                         ::testing::Combine(::testing::Values(c_tangToennPot),
+                                            ::testing::Values(c_tangToennParams),
+                                            ::testing::Values(c_stdPairCoord)),
+                         fcTestName);
+
+INSTANTIATE_TEST_CASE_P(BORN_MAYER, ForceComputerImplementationTest,
+                         ::testing::Combine(::testing::Values(c_bornMayerPot),
+                                            ::testing::Values(c_expParams),
+                                            ::testing::Values(c_stdPairCoord)),
+                         fcTestName);
+
+INSTANTIATE_TEST_CASE_P(SLATER_ISA, ForceComputerImplementationTest,
+                         ::testing::Combine(::testing::Values(c_slaterIsaPot),
+                                            ::testing::Values(c_expParams),
+                                            ::testing::Values(c_stdPairCoord)),
+                         fcTestName);
+
+INSTANTIATE_TEST_CASE_P(MACDANIEL_SCHMIDT, ForceComputerImplementationTest,
+                         ::testing::Combine(::testing::Values(c_macdanielPot),
+                                            ::testing::Values(c_macdanielParams),
+                                            ::testing::Values(c_stdPairCoord)),
+                         fcTestName);
+
+INSTANTIATE_TEST_CASE_P(POLARIZATION, ForceComputerImplementationTest,
+                         ::testing::Combine(::testing::Values(c_polPot),
+                                            ::testing::Values(c_polParams),
+                                            ::testing::Values(c_stdPairCoord)),
+                         fcTestName);
+
+// --- Bond potentials ---
+INSTANTIATE_TEST_CASE_P(HARMONIC_BONDS, ForceComputerImplementationTest,
+                         ::testing::Combine(::testing::Values(c_harmBondsPot),
+                                            ::testing::Values(c_harmBondsParams),
+                                            ::testing::Values(c_stdPairCoord)),
+                         fcTestName);
+
+INSTANTIATE_TEST_CASE_P(CUBIC_BONDS, ForceComputerImplementationTest,
+                         ::testing::Combine(::testing::Values(c_cubicBondsPot),
+                                            ::testing::Values(c_cubicBondsParams),
+                                            ::testing::Values(c_stdPairCoord)),
+                         fcTestName);
+
+INSTANTIATE_TEST_CASE_P(HUA_BONDS, ForceComputerImplementationTest,
+                         ::testing::Combine(::testing::Values(c_huaBondsPot),
+                                            ::testing::Values(c_huaBondsParams),
+                                            ::testing::Values(c_stdPairCoord)),
+                         fcTestName);
+
+INSTANTIATE_TEST_CASE_P(MORSE_BONDS, ForceComputerImplementationTest,
+                         ::testing::Combine(::testing::Values(c_morseBondsPot),
+                                            ::testing::Values(c_morseBondsParams),
+                                            ::testing::Values(c_stdPairCoord)),
+                         fcTestName);
+
+// --- Angle potentials ---
+INSTANTIATE_TEST_CASE_P(HARMONIC_ANGLES, ForceComputerImplementationTest,
+                         ::testing::Combine(::testing::Values(c_harmAnglePot),
+                                            ::testing::Values(c_harmAngleParams),
                                             ::testing::Values(c_angleCoord)),
                          fcTestName);
 
-//! Linear angle potential with near-linear 3-atom coord set
-INSTANTIATE_TEST_CASE_P(LinearAngle, ForceComputerImplementationTest,
+INSTANTIATE_TEST_CASE_P(UREY_BRADLEY_ANGLES, ForceComputerImplementationTest,
+                         ::testing::Combine(::testing::Values(c_ubAnglePot),
+                                            ::testing::Values(c_ubAngleParams),
+                                            ::testing::Values(c_angleCoord)),
+                         fcTestName);
+
+INSTANTIATE_TEST_CASE_P(LINEAR_ANGLES, ForceComputerImplementationTest,
                          ::testing::Combine(::testing::Values(c_linAnglePot),
+                                            ::testing::Values(c_linAngleParams),
                                             ::testing::Values(c_linAngleCoord)),
                          fcTestName);
 
-//! Dihedral potentials (3 types sharing the same 4-atom coord set)
-INSTANTIATE_TEST_CASE_P(Dihedral, ForceComputerImplementationTest,
-                         ::testing::Combine(::testing::ValuesIn(c_dihedralPotentials),
+// --- Dihedral potentials ---
+INSTANTIATE_TEST_CASE_P(HARMONIC_DIHEDRALS, ForceComputerImplementationTest,
+                         ::testing::Combine(::testing::Values(c_harmDihPot),
+                                            ::testing::Values(c_harmDihParams),
                                             ::testing::Values(c_dihedralCoord)),
                          fcTestName);
 
-//! Flat-bottomed position restraint with 3 different single-atom positions
+INSTANTIATE_TEST_CASE_P(PROPER_DIHEDRALS, ForceComputerImplementationTest,
+                         ::testing::Combine(::testing::Values(c_properDihPot),
+                                            ::testing::Values(c_properDihParams),
+                                            ::testing::Values(c_dihedralCoord)),
+                         fcTestName);
+
+INSTANTIATE_TEST_CASE_P(FOURIER_DIHEDRALS, ForceComputerImplementationTest,
+                         ::testing::Combine(::testing::Values(c_fourierDihPot),
+                                            ::testing::Values(c_fourierDihParams),
+                                            ::testing::Values(c_dihedralCoord)),
+                         fcTestName);
+
+// --- Position restraint ---
 INSTANTIATE_TEST_CASE_P(PosRes, ForceComputerImplementationTest,
                          ::testing::Combine(::testing::Values(c_posResPot),
+                                            ::testing::Values(c_posResParams),
                                             ::testing::ValuesIn(c_posResCoords)),
                          fcTestName);
 
