@@ -104,12 +104,6 @@ public:
     void addObject(const JsonTree object)
     {
         objects_.push_back(object);
-        //        JsonTree newObj(object.key(), object.value());
-        //for(const auto &obj : object.objects())
-        //{
-        //  newObj.addObject(obj);
-        //}
-        //objects_.push_back(std::move(newObj));
     }
     
     /*! \brief Add a tree element
