@@ -38,6 +38,7 @@
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpragmas"
+#pragma GCC diagnostic ignored "-Wdeprecated-copy"
 #pragma GCC diagnostic ignored "-Wdeprecated-copy-dtor"
 #pragma GCC diagnostic ignored "-Wdeprecated-copy-with-user-provided-dtor"
 #pragma GCC diagnostic ignored "-Wdeprecated-literal-operator"
