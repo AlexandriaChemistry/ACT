@@ -184,9 +184,21 @@ protected:
         std::map<InteractionType, double> energies2;
         (void) bfc(nullptr, top, atoms_, &coords2, &forces2, &energies2);
         double ediff = 1e-8;
-        for (auto &ee2 : energies2)
+        // First, check that both maps have the same number of entries
+        ASSERT_EQ(energies.size(), energies2.size());
+        // For each entry in energies2, check that the key exists in energies and compare values
+        for (const auto &ee2 : energies2)
         {
-            EXPECT_TRUE(std::abs(ee2.second-energies[ee2.first]) < ediff);
+            auto it = energies.find(ee2.first);
+            ASSERT_NE(it, energies.end());
+            EXPECT_TRUE(std::abs(ee2.second - it->second) < ediff);
+        }
+        // Also check the other direction: no extra entries in energies
+        for (const auto &ee : energies)
+        {
+            auto it2 = energies2.find(ee.first);
+            ASSERT_NE(it2, energies2.end());
+            EXPECT_TRUE(std::abs(ee.second - it2->second) < ediff);
         }
         double fdiff = 1e-4;
         for (size_t i = 0; i < forces2.size(); i++)
