@@ -42,6 +42,7 @@
 #pragma GCC diagnostic ignored "-Wdeprecated-copy-dtor"
 #pragma GCC diagnostic ignored "-Wdeprecated-copy-with-user-provided-dtor"
 #pragma GCC diagnostic ignored "-Wdeprecated-literal-operator"
+#pragma GCC diagnostic ignored "-Wdeprecated-redundant-constexpr-static-def"
 #include <GraphMol/FilterCatalog/FilterMatchers.h>
 #include <GraphMol/DetermineBonds/DetermineBonds.h>
 #include <GraphMol/FileParsers/MolSupplier.h>
