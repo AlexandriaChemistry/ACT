@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2025
+ * Copyright (C) 2025,2026
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -170,6 +170,32 @@ protected:
         {
             return;
         }
+        // Add check that energy is the same if we change the sign of coordinates 
+        std::vector<gmx::RVec> forces2(coordinates->size(), fzero);
+        std::vector<gmx::RVec> coords2(coordinates->size());
+        for (size_t i = 0; i < coordinates->size(); i++)
+        {
+            for(int m = 0; m < DIM; m++)
+            {
+                coords2[i][m] = -(*coordinates)[i][m];
+            }
+        }
+        // Energy map
+        std::map<InteractionType, double> energies2;
+        (void) bfc(nullptr, top, atoms_, &coords2, &forces2, &energies2);
+        double ediff = 1e-8;
+        for(auto &ee2 : energies2)
+        { 
+            EXPECT_TRUE(std::abs(ee2.second-energies[ee2.first]) < ediff);
+        }
+        double fdiff = 1e-4;
+        for(size_t i = 0; i < forces2.size(); i++)
+        {
+            for(int m = 0; m < DIM; m++)
+            {
+                EXPECT_TRUE(std::abs(forces2[i][m] + forces[i][m]) < fdiff);
+            }
+        }
         double dx = 1e-6;
         double ener[2];
         for (int k = 0; k < 2; k++)
@@ -328,7 +354,7 @@ static TopologyEntryVector makeSingleAtomTop()
 // Potential descriptors (topology structure only, no params)
 // ============================================================
 
-static const ForceComputerPotParams c_lj8_6Pot       { "LJ8_6",                Potential::LJ8_6,                makePairTop };
+static const ForceComputerPotParams c_lj8_6Pot        { "LJ8_6",                Potential::LJ8_6,                makePairTop };
 static const ForceComputerPotParams c_lj12_6Pot       { "LJ12_6",               Potential::LJ12_6,               makePairTop };
 static const ForceComputerPotParams c_lj12_6_4Pot     { "LJ12_6_4",             Potential::LJ12_6_4,             makePairTop };
 static const ForceComputerPotParams c_lj14_7Pot       { "LJ14_7",               Potential::LJ14_7,               makePairTop };
@@ -394,13 +420,12 @@ static const ForceComputerParamParams c_slaterIsaTtParams { "", { 1000, 10, 20, 
 static const ForceComputerParamParams c_tangToennParams { "", { 1000, 10, 0.001, 0.001, 0.001 } };
 //! Born-Mayer / SLATER_ISA exponential repulsion: A, B
 static const ForceComputerParamParams c_expParams       { "", { 10000, 8 } };
-//! MACDANIEL_SCHMIDT: dexpA1 (overwritten twice, preserved from original test), dexpB
+//! MACDANIEL_SCHMIDT: dexpA1, dexpA2, dexpB
 static const ForceComputerParamParams c_macdanielParams { "",
-    // intentional overwrite of index [dexpA1]: preserved from original test to keep refdata unchanged
     []() {
         std::vector<double> p(3);
         p[dexpA1] = 10000;
-        p[dexpA1] = -3000;
+        p[dexpA2] = 13000;
         p[dexpB]  = 8;
         return p;
     }()
