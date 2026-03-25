@@ -173,7 +173,7 @@ protected:
     }
 };
 
-TEST_P(ForceComputerImplementationTest, RunTest)
+TEST_P(ForceComputerImplementationTest, All)
 {
     const auto &pot   = std::get<0>(GetParam());
     const auto &par   = std::get<1>(GetParam());
