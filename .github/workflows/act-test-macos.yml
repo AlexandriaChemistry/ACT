@@ -1,0 +1,58 @@
+name: Alexandria Chemistry Toolkit code submission test (macOS)
+run-name: ${{ github.actor }} build and test ACT on macOS
+on: [push]
+jobs:
+  Build:
+    runs-on: macos-latest
+    steps:
+      - run: echo "🎉 The job was automatically triggered by a ${{ github.event_name }} event."
+      - run: echo "🍎 This job is now running on a ${{ runner.os }} server hosted by GitHub!"
+      - run: echo "🔎 The name of your branch is ${{ github.ref }} and your repository is ${{ github.repository }}."
+      - name: Check out repository code
+        uses: actions/checkout@v4
+      - run: echo "💡 The ${{ github.repository }} repository has been cloned to the runner."
+      - run: echo "🖥️ The workflow is now ready to test your code on the runner."
+      - name: List files in the repository
+        run: |
+          ls ${{ github.workspace }}
+      - name: Install system dependencies
+        if: runner.os == 'macOS'
+        run: |
+          brew install gcc cmake open-mpi libxml2
+      - uses: conda-incubator/setup-miniconda@v3
+        with:
+          auto-update-conda: true
+          python-version: ${{ matrix.python-version }}
+      - name: Conda info
+        shell: bash -el {0}
+        run: |
+          conda info
+          conda install conda-forge::librdkit-dev=2025.09.4 conda-forge::libboost-devel eigen
+      - name: Install ACT
+        shell: bash -el {0}
+        run: |
+          cd ${{ github.workspace }}
+          mkdir build; cd build
+          export MPICXX=$(which mpicxx)
+          export MPICC=$(which mpicc)
+          export CXXFLAGS='-std=c++20'
+          cmake -DGMX_DOUBLE=ON -DGMX_X11=OFF -DCMAKE_PREFIX_PATH=${CONDA_PREFIX} -DBUILD_SHARED_LIBS=OFF -DGMX_OPENMP=OFF -DGMX_MPI=ON -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/../tools -DCMAKE_BUILD_TYPE=Release -DGMX_BUILD_MANUAL=OFF -DGMX_DEFAULT_SUFFIX=OFF -DCMAKE_CXX_COMPILER=${MPICXX} -DCMAKE_C_COMPILER=${MPICC} ..
+          make -j 4 install tests
+      - name: Test the ACT
+        shell: bash -el {0}
+        run: |
+          source ${{ github.workspace }}/../tools/bin/ACTRC
+          cd ${{ github.workspace }}/build
+          ./bin/basics-test
+          ./bin/act-forces-test
+          ./bin/alexandria-test
+          ./bin/act-utility-test
+          ./bin/coulombIntegrals-test
+          ./bin/fileio-test
+          ./bin/forcefield-test
+          ./bin/import-test
+          ./bin/molprop-test
+          ./bin/properties-test
+          ./bin/qgen-test
+          ./bin/sobol-test
+          ./bin/statistics-test
