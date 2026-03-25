@@ -35,7 +35,7 @@ jobs:
           mkdir build; cd build
           export MPICXX=$(which mpicxx)
           export MPICC=$(which mpicc)
-          export CXXFLAGS='-std=c++20'
+          export CXXFLAGS='-std=c++20 -Wno-deprecated-copy'
           cmake -DGMX_DOUBLE=ON -DGMX_X11=OFF -DCMAKE_PREFIX_PATH=${CONDA_PREFIX} -DBUILD_SHARED_LIBS=OFF -DGMX_OPENMP=OFF -DGMX_MPI=ON -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/../tools -DCMAKE_BUILD_TYPE=Release -DGMX_BUILD_MANUAL=OFF -DGMX_DEFAULT_SUFFIX=OFF -DCMAKE_CXX_COMPILER=${MPICXX} -DCMAKE_C_COMPILER=${MPICC} ..
           make -j 4 install tests
       - name: Test the ACT
