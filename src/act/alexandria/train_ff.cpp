@@ -590,7 +590,7 @@ bool OptACM::runMaster(bool optimize,
         }
         printGenomeTable(bestGenome, ga_->getLastPop());
     }
-    if (gach_.optimizer() != OptimizerAlg::GA && sensitivity)
+    if (gach_.optimizer() != OptimizerAlg::GA && sensitivity && msghandler_.ok())
     {
         // Do sensitivity analysis only on the training set
         mutator_->sensitivityAnalysis(&msghandler_, &bestGenome[iMolSelect::Train], iMolSelect::Train);
@@ -604,7 +604,7 @@ bool OptACM::runMaster(bool optimize,
         }
     }
 
-    if (bMinimum)
+    if (bMinimum && msghandler_.ok())
     {
         if (bestGenome.empty())
         {
@@ -653,7 +653,7 @@ bool OptACM::runMaster(bool optimize,
 
     // Final energy calculation for all molecules
     //! \todo parallellize this. There is no need to do this I believe, it's done above, and parallel!
-    if (!bestGenome.empty())
+    if (!bestGenome.empty() && msghandler_.ok())
     {
         std::set<int> changed;
         auto ims = iMolSelect::Train;
