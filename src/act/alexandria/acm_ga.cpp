@@ -164,7 +164,8 @@ bool MCMC::evolve(alexandria::MsgHandler       *msghandler,
     else
     {
         msghandler->msg(alexandria::ACTStatus::Error,
-                        "No best genome in pool. WTF?\n");
+                        "No best genome found. Please check your input and output.\n");
+        bMinimum = false;
     }
 
     // Save last population
