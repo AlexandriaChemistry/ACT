@@ -91,9 +91,17 @@ class TestReferenceDataImpl
     public:
         //! Initializes a checker in the given mode.
         TestReferenceDataImpl(ReferenceDataMode mode, bool bSelfTestMode);
+        //! Initializes a checker with a custom filename root and the given mode.
+        TestReferenceDataImpl(const std::string &filenameRoot, ReferenceDataMode mode);
 
         //! Performs final reference data processing when test ends.
         void onTestEnd(bool testPassed);
+
+    private:
+        //! Loads or creates reference data entries based on \p mode and \p fullFilename_.
+        void loadEntries(ReferenceDataMode mode);
+
+    public:
 
         //! Full path of the reference data file.
         std::string             fullFilename_;
@@ -168,6 +176,15 @@ TestReferenceDataImplPointer initReferenceDataInstance()
     GMX_RELEASE_ASSERT(!g_referenceData,
                        "Test cannot create multiple TestReferenceData instances");
     g_referenceData.reset(new internal::TestReferenceDataImpl(getReferenceDataMode(), false));
+    return g_referenceData;
+}
+
+//! Creates a global reference data object with a custom filename stem.
+TestReferenceDataImplPointer initReferenceDataInstanceForFile(const std::string &filenameRoot)
+{
+    GMX_RELEASE_ASSERT(!g_referenceData,
+                       "Test cannot create multiple TestReferenceData instances");
+    g_referenceData.reset(new internal::TestReferenceDataImpl(filenameRoot, getReferenceDataMode()));
     return g_referenceData;
 }
 
@@ -298,7 +315,20 @@ TestReferenceDataImpl::TestReferenceDataImpl(
         : TestFileManager::getInputDataDirectory();
     const std::string filename = TestFileManager::getTestSpecificFileName(".xml");
     fullFilename_ = Path::join(dirname, "refdata", filename);
+    loadEntries(mode);
+}
 
+TestReferenceDataImpl::TestReferenceDataImpl(
+        const std::string &filenameRoot, ReferenceDataMode mode)
+    : updateMismatchingEntries_(false), bSelfTestMode_(false), bInUse_(false)
+{
+    fullFilename_ = Path::join(TestFileManager::getInputDataDirectory(),
+                               "refdata", filenameRoot + ".xml");
+    loadEntries(mode);
+}
+
+void TestReferenceDataImpl::loadEntries(ReferenceDataMode mode)
+{
     switch (mode)
     {
         case erefdataCompare:
@@ -677,6 +707,12 @@ TestReferenceData::TestReferenceData()
 
 TestReferenceData::TestReferenceData(ReferenceDataMode mode)
     : impl_(initReferenceDataInstanceForSelfTest(mode))
+{
+}
+
+
+TestReferenceData::TestReferenceData(const std::string &filenameRoot)
+    : impl_(initReferenceDataInstanceForFile(filenameRoot))
 {
 }
 
