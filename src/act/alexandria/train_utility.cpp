@@ -156,7 +156,7 @@ static void print_stats(gmx::TextWriter *tw,
     }
     JsonTree jprop(prop);
     jprop.addObject(JsonTree("unit", unit));
-    jprop.addObject(JsonTree("N", std::to_string(n)));
+    jprop.addObject(JsonTree("N", n));
     jprop.addObject(JsonTree("slope", a));
     jprop.addObject(JsonTree("uncertainty in slope", da));
     if (useOffset)
