@@ -170,12 +170,12 @@ protected:
         {
             return;
         }
-        // Add check that energy is the same if we change the sign of coordinates 
+        // Add check that energy is the same if we change the sign of coordinates
         std::vector<gmx::RVec> forces2(coordinates->size(), fzero);
         std::vector<gmx::RVec> coords2(coordinates->size());
         for (size_t i = 0; i < coordinates->size(); i++)
         {
-            for(int m = 0; m < DIM; m++)
+            for (int m = 0; m < DIM; m++)
             {
                 coords2[i][m] = -(*coordinates)[i][m];
             }
@@ -184,14 +184,14 @@ protected:
         std::map<InteractionType, double> energies2;
         (void) bfc(nullptr, top, atoms_, &coords2, &forces2, &energies2);
         double ediff = 1e-8;
-        for(auto &ee2 : energies2)
-        { 
+        for (auto &ee2 : energies2)
+        {
             EXPECT_TRUE(std::abs(ee2.second-energies[ee2.first]) < ediff);
         }
         double fdiff = 1e-4;
-        for(size_t i = 0; i < forces2.size(); i++)
+        for (size_t i = 0; i < forces2.size(); i++)
         {
-            for(int m = 0; m < DIM; m++)
+            for (int m = 0; m < DIM; m++)
             {
                 EXPECT_TRUE(std::abs(forces2[i][m] + forces[i][m]) < fdiff);
             }
