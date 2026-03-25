@@ -194,6 +194,19 @@ class TestReferenceData
          */
         explicit TestReferenceData(ReferenceDataMode mode);
         /*! \brief
+         * Initializes the reference data with a custom filename root.
+         *
+         * Use this constructor when you need to decouple the reference data
+         * filename from the auto-generated test name (e.g. to strip a
+         * parameterised-test instantiation prefix that would otherwise be
+         * prepended by Google Test).  The file is resolved relative to the
+         * standard \c refdata/ directory next to the test source.
+         *
+         * \param[in] filenameRoot  File name stem (without the \c .xml
+         *                          extension) for the reference data file.
+         */
+        explicit TestReferenceData(const std::string &filenameRoot);
+        /*! \brief
          * Frees reference data structures.
          *
          * The reference data is written out if necessary automatically when

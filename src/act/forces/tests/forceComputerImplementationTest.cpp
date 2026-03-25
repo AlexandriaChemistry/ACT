@@ -101,6 +101,28 @@ struct ForceComputerPotParams
 //! Combined test parameter: (potential topology, force field params, coordinate config)
 using FCTestParam = std::tuple<ForceComputerPotParams, ForceComputerParamParams, ForceComputerCoordParams>;
 
+/*! \brief Returns a refdata filename stem without the INSTANTIATE prefix.
+ *
+ * For a parameterised test `INST/FixtureName` + `Method/Param`, Google Test
+ * would normally produce `INST_FixtureName_Method_Param`.  This helper strips
+ * the instantiation prefix, yielding `FixtureName_Method_Param`, so that the
+ * XML files are named `ForceComputerImplementationTest_All_<pot>.xml`.
+ */
+static std::string fcStrippedRefDataFilename()
+{
+    const ::testing::TestInfo *info =
+        ::testing::UnitTest::GetInstance()->current_test_info();
+    std::string caseName = info->test_case_name();
+    auto        slash    = caseName.find('/');
+    if (slash != std::string::npos)
+    {
+        caseName = caseName.substr(slash + 1);
+    }
+    std::string stem = caseName + "_" + info->name();
+    std::replace(stem.begin(), stem.end(), '/', '_');
+    return stem;
+}
+
 class ForceComputerImplementationTest : public ::testing::TestWithParam<FCTestParam>
 {
 protected:
@@ -109,6 +131,7 @@ protected:
     std::vector<ActAtom>            atoms_;
 
     ForceComputerImplementationTest( ) :
+        refData_(fcStrippedRefDataFilename()),
         checker_(refData_.rootChecker())
     {
         gmx::test::FloatingPointTolerance tolerance(gmx::test::relativeToleranceAsFloatingPoint(1.0, 1e-6));
