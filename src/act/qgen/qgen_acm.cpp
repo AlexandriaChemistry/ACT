@@ -148,14 +148,15 @@ QgenAcm::QgenAcm(ForceField                 *pd,
     // instance a particular water model.
     if (pd->interactionPresent(bctype) && !nonFixed_.empty())
     {
-        // Reject compounds where non-shell atoms have fixed charges mixed with
-        // ACM charges, since the bond indices assume all non-shell atoms are
+        // Reject compounds where real atoms have fixed charges mixed with
+        // ACM charges, since the bond indices assume all real atoms are
         // in the nonFixed_ set (positions 0..nonFixed_.size()-1).
+        // Fixed shells and fixed vsites are allowed.
         for (size_t i : fixed_)
         {
-            if (atoms[i].pType() != ActParticle::Shell)
+            if (atoms[i].pType() == ActParticle::Atom)
             {
-                GMX_THROW(gmx::InvalidInputError("Compounds where non-shell atoms have fixed charges mixed with ACM charges are not supported."));
+                GMX_THROW(gmx::InvalidInputError("Compounds with part of the atoms having fixed charges are not supported."));
             }
         }
         auto fs = pd->findForces(bctype);
