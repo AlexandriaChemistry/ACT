@@ -96,12 +96,11 @@ QgenAcm::QgenAcm(ForceField                 *pd,
         }
         // For EEM we need only the Mutability::ACM particles, but if we use SQE
         // we need all atoms connected by bonds. As a result when using SQE the
-        // non-ACM particles will be used in the SQE algorithm as well.
-        //        if (atype->hasInteractionType(entype) && 
-        //    ((qparm.mutability() == Mutability::ACM) ||
-        //     (haveBCC && atoms[i].pType() == ActParticle::Atom)))
-        if (atype->hasInteractionType(entype) && 
-            (qparm.mutability() == Mutability::ACM))
+        // non-ACM particles would need to be used in the SQE algorithm as well.
+        // This needs an updated algorithm, for instance with holonomic constraints
+        // on the charges.
+        // For now, we will crash with a fatal error.
+        if (atype->hasInteractionType(entype) && qparm.mutability() == Mutability::ACM)
         {
             eta_.push_back(eem->findParameterTypeConst(acmtypes.back(), "eta").value());
             auto myrow = std::min(atype->row(), SLATER_MAX);
@@ -144,6 +143,9 @@ QgenAcm::QgenAcm(ForceField                 *pd,
             acm_id_.push_back(nullptr);
         }
     }
+    // By only working on compounds that have nonFixed particles,
+    // we can allow completely fixed compounds to be used, for
+    // instance a particular water model.
     if (pd->interactionPresent(bctype) && !nonFixed_.empty())
     {
         auto fs = pd->findForces(bctype);
@@ -151,11 +153,11 @@ QgenAcm::QgenAcm(ForceField                 *pd,
         {
             if (!acmtypes.empty())
             {
-                if (nonFixed_.empty() ||
-                    static_cast<size_t>(b.aI()) >= nonFixed_.size() ||
+                // Check if both atom numbers are non-fixed, else crash.
+                if (static_cast<size_t>(b.aI()) >= nonFixed_.size() ||
                     static_cast<size_t>(b.aJ()) >= nonFixed_.size())
                 {
-                    GMX_THROW(gmx::InvalidInputError("Inconsistent EEM parameters in force field"));
+                    GMX_THROW(gmx::InvalidInputError("Compounds with part of the atoms having fixed charges are not supported."));
                 }
                 auto ai = acmtypes[nonFixed_[b.aI()]];
                 auto aj = acmtypes[nonFixed_[b.aJ()]];
