@@ -253,9 +253,17 @@ TEST_P(ForceComputerImplementationTest, All)
 // Coordinate parameter sets
 // ============================================================
 
-//! Standard 2-atom pair coord: atoms at distance 0.5 nm, charge1 = +1
-static const ForceComputerCoordParams c_stdPairCoord {
-    "", []() { return std::vector<gmx::RVec>{ { 0, 0, 0 }, { 0, 0, 0.5 } }; }, 1.0
+/*! \brief Three standard 2-atom pair coordinate sets with slightly different separations
+ *         and off-axis displacements, all with charge1 = +1.
+ *
+ *  - "r0p5":  atoms along Z, separation 0.5 nm  (original geometry)
+ *  - "r0p4":  atoms along Z, separation 0.4 nm  (shorter bond)
+ *  - "r0p6d": atoms at separation ~0.6 nm with a small X offset (off-axis)
+ */
+static const std::vector<ForceComputerCoordParams> c_stdPairCoords = {
+    { "r0p5",  []() { return std::vector<gmx::RVec>{ { 0, 0, 0 }, { 0,    0,    0.5  } }; }, 1.0 },
+    { "r0p4",  []() { return std::vector<gmx::RVec>{ { 0, 0, 0 }, { 0,    0,    0.4  } }; }, 1.0 },
+    { "r0p6d", []() { return std::vector<gmx::RVec>{ { 0, 0, 0 }, { 0.05, 0.05, 0.59 } }; }, 1.0 },
 };
 
 //! Standard 3-atom angle coord
@@ -479,44 +487,44 @@ static std::string fcTestName(const ::testing::TestParamInfo<FCTestParam> &info)
 INSTANTIATE_TEST_CASE_P(LJ8_6, ForceComputerImplementationTest,
                          ::testing::Combine(::testing::Values(c_lj8_6Pot),
                                             ::testing::Values(c_lj8_6Params),
-                                            ::testing::Values(c_stdPairCoord)),
+                                            ::testing::ValuesIn(c_stdPairCoords)),
                          fcTestName);
 
 INSTANTIATE_TEST_CASE_P(LJ12_6, ForceComputerImplementationTest,
                          ::testing::Combine(::testing::Values(c_lj12_6Pot),
                                             ::testing::Values(c_lj12_6Params),
-                                            ::testing::Values(c_stdPairCoord)),
+                                            ::testing::ValuesIn(c_stdPairCoords)),
                          fcTestName);
 
 INSTANTIATE_TEST_CASE_P(LJ12_6_4, ForceComputerImplementationTest,
                          ::testing::Combine(::testing::Values(c_lj12_6_4Pot),
                                             ::testing::Values(c_lj12_6_4Params),
-                                            ::testing::Values(c_stdPairCoord)),
+                                            ::testing::ValuesIn(c_stdPairCoords)),
                          fcTestName);
 
 INSTANTIATE_TEST_CASE_P(LJ14_7, ForceComputerImplementationTest,
                          ::testing::Combine(::testing::Values(c_lj14_7Pot),
                                             ::testing::Values(c_lj14_7Params),
-                                            ::testing::Values(c_stdPairCoord)),
+                                            ::testing::ValuesIn(c_stdPairCoords)),
                          fcTestName);
 
 // --- Buckingham potentials ---
 INSTANTIATE_TEST_CASE_P(BUCKINGHAM, ForceComputerImplementationTest,
                          ::testing::Combine(::testing::Values(c_buckinghamPot),
                                             ::testing::Values(c_buckinghamParams),
-                                            ::testing::Values(c_stdPairCoord)),
+                                            ::testing::ValuesIn(c_stdPairCoords)),
                          fcTestName);
 
 INSTANTIATE_TEST_CASE_P(WANG_BUCKINGHAM, ForceComputerImplementationTest,
                          ::testing::Combine(::testing::Values(c_wangBuckPot),
                                             ::testing::Values(c_wangBuckParams),
-                                            ::testing::Values(c_stdPairCoord)),
+                                            ::testing::ValuesIn(c_stdPairCoords)),
                          fcTestName);
 
 INSTANTIATE_TEST_CASE_P(GENERALIZED_BUCKINGHAM, ForceComputerImplementationTest,
                          ::testing::Combine(::testing::Values(c_genBuckPot),
                                             ::testing::Values(c_genBuckParams),
-                                            ::testing::Values(c_stdPairCoord)),
+                                            ::testing::ValuesIn(c_stdPairCoords)),
                          fcTestName);
 
 // --- Coulomb potentials (each also tested with multiple coord/charge variants) ---
@@ -525,14 +533,16 @@ INSTANTIATE_TEST_CASE_P(GENERALIZED_BUCKINGHAM, ForceComputerImplementationTest,
 INSTANTIATE_TEST_CASE_P(COULOMB_POINT, ForceComputerImplementationTest,
                          ::testing::Combine(::testing::Values(c_coulPointPot),
                                             ::testing::Values(c_coulZeta10Params),
-                                            ::testing::Values(c_stdPairCoord)),
+                                            ::testing::ValuesIn(c_stdPairCoords)),
                          fcTestName);
 
 //! COULOMB_GAUSSIAN: standard coord + negative-charge + zero-distance variants
 INSTANTIATE_TEST_CASE_P(CoulGauss, ForceComputerImplementationTest,
                          ::testing::Combine(::testing::Values(c_coulGaussPot),
                                             ::testing::Values(c_coulZeta10Params),
-                                            ::testing::Values(c_stdPairCoord,
+                                            ::testing::Values(c_stdPairCoords[0],
+                                                              c_stdPairCoords[1],
+                                                              c_stdPairCoords[2],
                                                               c_coulNegCoord,
                                                               c_coulZeroCoord)),
                          fcTestName);
@@ -541,7 +551,9 @@ INSTANTIATE_TEST_CASE_P(CoulGauss, ForceComputerImplementationTest,
 INSTANTIATE_TEST_CASE_P(CoulSlater, ForceComputerImplementationTest,
                          ::testing::Combine(::testing::Values(c_coulSlaterPot),
                                             ::testing::Values(c_coulZeta10Params),
-                                            ::testing::Values(c_stdPairCoord,
+                                            ::testing::Values(c_stdPairCoords[0],
+                                                              c_stdPairCoords[1],
+                                                              c_stdPairCoords[2],
                                                               c_coulNegCoord,
                                                               c_coulNeg2Coord,
                                                               c_coulCloseCoord,
@@ -554,7 +566,9 @@ INSTANTIATE_TEST_CASE_P(CoulSlater, ForceComputerImplementationTest,
 INSTANTIATE_TEST_CASE_P(CoulSlaterZ0, ForceComputerImplementationTest,
                          ::testing::Combine(::testing::Values(c_coulSlaterZ0Pot),
                                             ::testing::Values(c_coulZeta0Params),
-                                            ::testing::Values(c_stdPairCoord,
+                                            ::testing::Values(c_stdPairCoords[0],
+                                                              c_stdPairCoords[1],
+                                                              c_stdPairCoords[2],
                                                               c_coulNegCoord)),
                          fcTestName);
 
@@ -563,69 +577,69 @@ INSTANTIATE_TEST_CASE_P(CoulSlaterZ0, ForceComputerImplementationTest,
 INSTANTIATE_TEST_CASE_P(TT2b, ForceComputerImplementationTest,
                          ::testing::Combine(::testing::Values(c_tt2bPot),
                                             ::testing::ValuesIn(c_tt2bParamSets),
-                                            ::testing::Values(c_stdPairCoord)),
+                                            ::testing::ValuesIn(c_stdPairCoords)),
                          fcTestName);
 
 // --- Other pair potentials ---
 INSTANTIATE_TEST_CASE_P(SLATER_ISA_TT, ForceComputerImplementationTest,
                          ::testing::Combine(::testing::Values(c_slaterIsaTtPot),
                                             ::testing::Values(c_slaterIsaTtParams),
-                                            ::testing::Values(c_stdPairCoord)),
+                                            ::testing::ValuesIn(c_stdPairCoords)),
                          fcTestName);
 
 INSTANTIATE_TEST_CASE_P(TANG_TOENNIES, ForceComputerImplementationTest,
                          ::testing::Combine(::testing::Values(c_tangToennPot),
                                             ::testing::Values(c_tangToennParams),
-                                            ::testing::Values(c_stdPairCoord)),
+                                            ::testing::ValuesIn(c_stdPairCoords)),
                          fcTestName);
 
 INSTANTIATE_TEST_CASE_P(BORN_MAYER, ForceComputerImplementationTest,
                          ::testing::Combine(::testing::Values(c_bornMayerPot),
                                             ::testing::Values(c_expParams),
-                                            ::testing::Values(c_stdPairCoord)),
+                                            ::testing::ValuesIn(c_stdPairCoords)),
                          fcTestName);
 
 INSTANTIATE_TEST_CASE_P(SLATER_ISA, ForceComputerImplementationTest,
                          ::testing::Combine(::testing::Values(c_slaterIsaPot),
                                             ::testing::Values(c_expParams),
-                                            ::testing::Values(c_stdPairCoord)),
+                                            ::testing::ValuesIn(c_stdPairCoords)),
                          fcTestName);
 
 INSTANTIATE_TEST_CASE_P(MACDANIEL_SCHMIDT, ForceComputerImplementationTest,
                          ::testing::Combine(::testing::Values(c_macdanielPot),
                                             ::testing::Values(c_macdanielParams),
-                                            ::testing::Values(c_stdPairCoord)),
+                                            ::testing::ValuesIn(c_stdPairCoords)),
                          fcTestName);
 
 INSTANTIATE_TEST_CASE_P(POLARIZATION, ForceComputerImplementationTest,
                          ::testing::Combine(::testing::Values(c_polPot),
                                             ::testing::Values(c_polParams),
-                                            ::testing::Values(c_stdPairCoord)),
+                                            ::testing::ValuesIn(c_stdPairCoords)),
                          fcTestName);
 
 // --- Bond potentials ---
 INSTANTIATE_TEST_CASE_P(HARMONIC_BONDS, ForceComputerImplementationTest,
                          ::testing::Combine(::testing::Values(c_harmBondsPot),
                                             ::testing::Values(c_harmBondsParams),
-                                            ::testing::Values(c_stdPairCoord)),
+                                            ::testing::ValuesIn(c_stdPairCoords)),
                          fcTestName);
 
 INSTANTIATE_TEST_CASE_P(CUBIC_BONDS, ForceComputerImplementationTest,
                          ::testing::Combine(::testing::Values(c_cubicBondsPot),
                                             ::testing::Values(c_cubicBondsParams),
-                                            ::testing::Values(c_stdPairCoord)),
+                                            ::testing::ValuesIn(c_stdPairCoords)),
                          fcTestName);
 
 INSTANTIATE_TEST_CASE_P(HUA_BONDS, ForceComputerImplementationTest,
                          ::testing::Combine(::testing::Values(c_huaBondsPot),
                                             ::testing::Values(c_huaBondsParams),
-                                            ::testing::Values(c_stdPairCoord)),
+                                            ::testing::ValuesIn(c_stdPairCoords)),
                          fcTestName);
 
 INSTANTIATE_TEST_CASE_P(MORSE_BONDS, ForceComputerImplementationTest,
                          ::testing::Combine(::testing::Values(c_morseBondsPot),
                                             ::testing::Values(c_morseBondsParams),
-                                            ::testing::Values(c_stdPairCoord)),
+                                            ::testing::ValuesIn(c_stdPairCoords)),
                          fcTestName);
 
 // --- Angle potentials ---
