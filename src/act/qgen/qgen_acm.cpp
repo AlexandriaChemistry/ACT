@@ -73,7 +73,7 @@ QgenAcm::QgenAcm(ForceField                 *pd,
     }
     auto eem = pd->findForces(entype);
     auto bctype = InteractionType::BONDCORRECTIONS;
-    bool haveBCC = pd->interactionPresent(bctype);
+    //bool haveBCC = pd->interactionPresent(bctype);
     std::vector<std::string> acmtypes;
     for (size_t i = 0; i < atoms.size(); i++)
     {
@@ -97,9 +97,11 @@ QgenAcm::QgenAcm(ForceField                 *pd,
         // For EEM we need only the Mutability::ACM particles, but if we use SQE
         // we need all atoms connected by bonds. As a result when using SQE the
         // non-ACM particles will be used in the SQE algorithm as well.
+        //        if (atype->hasInteractionType(entype) && 
+        //    ((qparm.mutability() == Mutability::ACM) ||
+        //     (haveBCC && atoms[i].pType() == ActParticle::Atom)))
         if (atype->hasInteractionType(entype) && 
-            ((qparm.mutability() == Mutability::ACM) ||
-             (haveBCC && atoms[i].pType() == ActParticle::Atom)))
+            (qparm.mutability() == Mutability::ACM))
         {
             eta_.push_back(eem->findParameterTypeConst(acmtypes.back(), "eta").value());
             auto myrow = std::min(atype->row(), SLATER_MAX);
@@ -142,7 +144,7 @@ QgenAcm::QgenAcm(ForceField                 *pd,
             acm_id_.push_back(nullptr);
         }
     }
-    if (pd->interactionPresent(bctype))
+    if (pd->interactionPresent(bctype) && !nonFixed_.empty())
     {
         auto fs = pd->findForces(bctype);
         for(auto &b : bonds)
