@@ -293,7 +293,7 @@ void MultiPoleDevComputer::calcDeviation(MsgHandler                    *msghandl
             qact.setQ(*actmol->atoms());
             if (doForce)
             {
-                std::vector<gmx::RVec>            forces;
+                std::vector<gmx::RVec>            forces(actmol->atomsConst().size());
                 std::map<InteractionType, double> energies;
                 auto                              myx = qact.x();
                 forceComputer->compute(msghandler, forcefield, topology, &myx, &forces, &energies);
