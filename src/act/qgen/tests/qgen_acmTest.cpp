@@ -242,7 +242,7 @@ TEST_F (AcmTest, AXgPositive)
 TEST_F (AcmTest, AXgPositive_FixedQ)
 {
     std::vector<double> qcustom;
-    // This is supposed to crash!
+    // This call is expected to throw gmx::InvalidInputError due to invalid input.
     EXPECT_THROW(testAcm("ACM-g-fixed", inputFormat::SDF, "guanidinium", {1}, qcustom), gmx::InvalidInputError);
 }
 
