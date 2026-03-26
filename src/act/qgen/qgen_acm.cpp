@@ -148,19 +148,25 @@ QgenAcm::QgenAcm(ForceField                 *pd,
     // instance a particular water model.
     if (pd->interactionPresent(bctype) && !nonFixed_.empty())
     {
+        // Build inverse mapping: atomIndex -> position in nonFixed_
+        std::map<int, size_t> atomToNonFixedPos;
+        for (size_t k = 0; k < nonFixed_.size(); k++)
+        {
+            atomToNonFixedPos[nonFixed_[k]] = k;
+        }
         auto fs = pd->findForces(bctype);
         for(auto &b : bonds)
         {
             if (!acmtypes.empty())
             {
-                // Check if both atom numbers are non-fixed, else crash.
-                if (static_cast<size_t>(b.aI()) >= nonFixed_.size() ||
-                    static_cast<size_t>(b.aJ()) >= nonFixed_.size())
+                // Validate that both bond endpoints are non-fixed atoms.
+                if (atomToNonFixedPos.find(b.aI()) == atomToNonFixedPos.end() ||
+                    atomToNonFixedPos.find(b.aJ()) == atomToNonFixedPos.end())
                 {
                     GMX_THROW(gmx::InvalidInputError("Compounds with part of the atoms having fixed charges are not supported."));
                 }
-                auto ai = acmtypes[nonFixed_[b.aI()]];
-                auto aj = acmtypes[nonFixed_[b.aJ()]];
+                auto ai = acmtypes[b.aI()];
+                auto aj = acmtypes[b.aJ()];
                 Identifier bccId( { ai, aj }, { b.bondOrder() }, fs->canSwap());
                 double dcf = 1;
                 if (!fs->parameterExists(bccId))
