@@ -73,7 +73,7 @@ QgenAcm::QgenAcm(ForceField                 *pd,
     }
     auto eem = pd->findForces(entype);
     auto bctype = InteractionType::BONDCORRECTIONS;
-    //bool haveBCC = pd->interactionPresent(bctype);
+    // Note: BONDCORRECTIONS (bctype) are currently not used in this ACM setup.
     std::vector<std::string> acmtypes;
     for (size_t i = 0; i < atoms.size(); i++)
     {
