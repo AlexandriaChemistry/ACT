@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>4.1.2. Split charge equilibration &#8212; ACT 1.2b documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=fa44fd50" />
+    <link rel="stylesheet" type="text/css" href="../_static/classic.css?v=2bf1fcf8" />
+    <link rel="stylesheet" type="text/css" href="../_static/mystnb.11b39860a7a0cbfd473a3ad8a317855267ff0bd372690045ca344a6b62be495e.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../_static/togglebutton.css?v=9c3e77be" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx_lesson.css?v=e9df6548" />
+    <link rel="stylesheet" type="text/css" href="../_static/term_role_formatting.css?v=4194e21c" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx_rtd_theme_ext_color_contrast.css?v=8e8ea19f" />
+    
+    <script src="../_static/documentation_options.js?v=00cc29cc"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../_static/copybutton.js?v=6dbb43f8"></script>
+    <script src="../_static/minipres.js?v=a0d29692"></script>
+    <script>let toggleHintShow = 'Click to show';</script>
+    <script>let toggleHintHide = 'Click to hide';</script>
+    <script>let toggleOpenOnPrint = 'true';</script>
+    <script src="../_static/togglebutton.js?v=1ae7504c"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script>window.MathJax = {"options": {"processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="5. Developer Manual" href="../devman/header.html" />
+    <link rel="prev" title="4.1.1. Electronegativity equalization method" href="EEM-without-shells.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../devman/header.html" title="5. Developer Manual"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="EEM-without-shells.html" title="4.1.1. Electronegativity equalization method"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">ACT 1.2b documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="header.html" accesskey="U"><span class="section-number">4. </span>Interactive Notebooks</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href=""><span class="section-number">4.1.2. </span>Split charge equilibration</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section class="tex2jax_ignore mathjax_ignore" id="split-charge-equilibration">
+<h1><span class="section-number">4.1.2. </span>Split charge equilibration<a class="headerlink" href="#split-charge-equilibration" title="Link to this heading">¶</a></h1>
+<p>The split charge equilibration (SQE) method postulates that partial charges <span class="math notranslate nohighlight">\(q_i\)</span> on atoms
+can only arise from transfer of charge <span class="math notranslate nohighlight">\(p_{ij}\)</span> between bonded atoms <span class="math notranslate nohighlight">\(i\)</span> and <span class="math notranslate nohighlight">\(j\)</span> only, according to:</p>
+<p><span class="math notranslate nohighlight">\(q_i = \displaystyle{\frac{q_{tot}}{N}} + \sum\limits_{i,j}^{bonds} p_{ij}\)</span></p>
+<p>where <span class="math notranslate nohighlight">\(q_{tot}\)</span> is the net charge on the compound and <span class="math notranslate nohighlight">\(p_{ij} = -p_{ji}\)</span>. Although it is trivial to determine the partial charges <span class="math notranslate nohighlight">\(q_i\)</span> from the charge transfer <span class="math notranslate nohighlight">\(p_{ij}\)</span>, the reverse is not necessarily true. To exemplify this we write the equations for methanol:</p>
+<p><span class="math notranslate nohighlight">\(\begin{bmatrix}0 &amp; p_{12} &amp; p_{13} &amp; p_{14} &amp; p_{15} &amp; 0 \\ 
+-p_{12} &amp; 0 &amp; 0 &amp; 0 &amp; 0 &amp; 0\\
+-p_{13} &amp; 0 &amp; 0 &amp; 0 &amp; 0 &amp; 0\\
+-p_{14} &amp; 0 &amp; 0 &amp; 0 &amp; 0 &amp; 0\\
+-p_{15} &amp; 0 &amp; 0 &amp; 0 &amp; 0 &amp; p_{56}\\
+0  &amp; 0 &amp; 0 &amp; 0 &amp; 0 -p_{56} &amp; 0\\
+\end{bmatrix} \begin{bmatrix}1\\ 1\\ 1 \\ 1 \\ 1 \\ 1 \end{bmatrix} = \begin{bmatrix}q_1\\ q_2\\ q_3 \\ q_4 \\ q_5 \\ q_6 \end{bmatrix}\)</span></p>
+<p>With these equations we can express the <span class="math notranslate nohighlight">\(p_{ij}\)</span> in terms of the charges after manual <a class="reference external" href="https://en.wikipedia.org/wiki/Gaussian_elimination">Gaussian elimination</a> as follows:</p>
+<p><span class="math notranslate nohighlight">\(\begin{bmatrix}p_{12}\\ p_{13}\\ p_{14} \\ p_{15} \\ p_{56} \end{bmatrix}  =
+\begin{bmatrix}-q_2\\ -q_3\\ -q_4\\  -q_5-q_6\\ -q_6\end{bmatrix}\)</span></p>
+<p>with <span class="math notranslate nohighlight">\(q_1\)</span> by definition <span class="math notranslate nohighlight">\(q_{tot}-q_2-q_3-q_4-q_5-q_6\)</span> (with <span class="math notranslate nohighlight">\(q_{tot}\)</span> = 0). However, expressing the <span class="math notranslate nohighlight">\(p_{ij}\)</span> in <span class="math notranslate nohighlight">\(q_i\)</span> does not guarantee that the charge transfer through space is zero. Therefore it is necessary to do the reverse. As outlined by <a class="reference external" href="https://doi.org/10.1063/1.3021400">Chen et al.</a> the problem can be solved by expressing the energy in terms of the charge transfer variables.</p>
+<p><a class="reference external" href="http://dx.doi.org/10.1063/1.3187034">Verstraelen and co-workers</a> used the following variant of the molecular energy:</p>
+<p><span class="math notranslate nohighlight">\(E_{SQE} = E_{EEM} + \sum\limits_{i,j}^{M} \left(\frac{1}{2}\zeta_{ij}p_{ij}^2+\Delta\chi_{ij}(q_i-q_j)\right)\)</span></p>
+<p>In this formulation, the energy is not just a function of the charges, but also of the charge transfer over <span class="math notranslate nohighlight">\(M\)</span> bonds. <span class="math notranslate nohighlight">\(\zeta_{ij}\)</span> is the bond hardness and <span class="math notranslate nohighlight">\(\Delta\chi_{ij}\)</span> is the electronegativity correction, both of these are bond-specific. We therefore replace the charge variable by charge transfer variables and substitute <span class="math notranslate nohighlight">\(J_{ii} = \eta_i\)</span>, and for clarity we replace the summation over bonds by a summation over atom pairs, which is the same thing noting that only <span class="math notranslate nohighlight">\(p_{ij}\)</span> for chemical bonds are non-zero (note that we have  to introduce a factor 1/2 to avoid double counting). If we introduce <span class="math notranslate nohighlight">\(M_x\)</span> as the number of bonds for species <span class="math notranslate nohighlight">\(x\)</span> we obtain</p>
+<p><span class="math notranslate nohighlight">\(E_{SQE} = \sum\limits_{n=1}^{N} \left[\left(\frac{q_{tot}}{N} + \sum\limits_{m=1}^{M_n} p_{nm}\right)\left(\chi_n + \frac{1}{2} \eta_n \left(\frac{q_{tot}}{N} + \sum\limits_{m=1}^{M_n} p_{nm}\right) + \frac{1}{2}\sum\limits_{l\ne n}^{N}\left[\frac{q_{tot}}{N} + \sum\limits_{m=1}^{M_l} p_{lm}\right]J_{nl}\right)\right]+\sum\limits_{i,j}^{M}\left[\frac{1}{2}\zeta_{ij}p_{ij}^2+\Delta\chi_{ij}\left(\left[\frac{q_{tot}}{N} + \sum\limits_{m=1}^{M_i} p_{im}\right]-\left[\frac{q_{tot}}{N} + \sum\limits_{m=1}^{M_j} p_{jm}\right]\right)\right] \)</span></p>
+<p>Our task now is to find the <span class="math notranslate nohighlight">\(p_{ij}\)</span> that minimize <span class="math notranslate nohighlight">\(E_{SQE}\)</span>. Please note that the all summations are over atoms <span class="math notranslate nohighlight">\(i,j,k,l\)</span>. Therefore, we take the derivative and equate it to zero:</p>
+<p><span class="math notranslate nohighlight">\(0 = \displaystyle{\frac{\partial E_{SQE}}{\partial p_{ij}}} = \left(\chi_i - \chi_j+\frac{q_{tot}}{N}\left(\eta_i-\eta_j\right)+\sum\limits_{k=1}^{M_i}\Delta\chi_{ik}-\sum\limits_{k=1}^{M_j}\Delta\chi_{jk}\right) + \frac{1}{2}\left(\sum\limits_{l=1}^{N}J_{il}\left(\frac{q_{tot}}{N}+\sum\limits_{m=1}^{M_l} p_{lm}\right) - \sum\limits_{i=1}^{N}J_{li}\left(\frac{q_{tot}}{N}+\sum\limits_{k=1}^{M_i} p_{ik}\right)\right) + p_{ij}\zeta_{ij}\)</span></p>
+<p>using the identity of the Coulomb-matrix elements (<span class="math notranslate nohighlight">\(J_{ij} = J_{ji}\)</span>) and where the terms involving the atomic hardness <span class="math notranslate nohighlight">\(\eta_x\)</span> are included on the diagonals of the <span class="math notranslate nohighlight">\(J_{xy}\)</span> matrix, except for the contribution of the total charge <span class="math notranslate nohighlight">\(q_{tot}\)</span>. Note that the <span class="math notranslate nohighlight">\(q_{tot}\)</span> terms in the two sums cancel. The first term is the difference in electronegativity between atoms <span class="math notranslate nohighlight">\(i\)</span>  and <span class="math notranslate nohighlight">\(j\)</span> sharing the bond plus  the correction, the second term represents the difference in electrostatic potentials at the atoms, the third  term is the interaction between <span class="math notranslate nohighlight">\(i\)</span> and <span class="math notranslate nohighlight">\(j\)</span> times the charge transfer.
+This leads to a coupled set of equations, written in matrix form as:</p>
+<p><span class="math notranslate nohighlight">\(\mathbf{M}P = R\)</span></p>
+<p>where <span class="math notranslate nohighlight">\(\mathbf{M}\)</span> is a square matrix of dimension number of bonds, <span class="math notranslate nohighlight">\(P\)</span> is a vector containing the charge transfers for all bonds and <span class="math notranslate nohighlight">\(R\)</span> the right hand side of the  equations. If the summations are all written out we obtain the
+result published  by <a class="reference external" href="https://aip.scitation.org/doi/10.1063/1.3021400">Chen et al.</a> for QTPIE and similar algorithms:</p>
+<p><span class="math notranslate nohighlight">\(M_{ij,kl} = J_{ik}-J_{il}-J_{jk}+J_{jl}\)</span></p>
+<p>for off-diagonal elements of the matrix. For the diagonal elements, the bond hardness <span class="math notranslate nohighlight">\(\zeta_{ij}\)</span> needs to be added. The right hand side is given by the electronegativity terms according to:</p>
+<p><span class="math notranslate nohighlight">\(R_{ij} = \chi_j - \chi_i + \sum\limits_{k=1}^{M_j}\Delta\chi_{jk} - \sum\limits_{k=1}^{M_i}\Delta\chi_{ik}+\frac{q_{tot}}{N}\left(\sum\limits_{l=1}^N J_{jl}-\sum\limits_{l=1}^N J_{il}\right).\)</span></p>
+<p>The equations are implemented in Python below.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">scipy.linalg</span> <span class="kn">import</span> <span class="n">lstsq</span>
+<span class="kn">import</span> <span class="nn">math</span>
+<span class="kn">from</span> <span class="nn">charge_utils</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">test_systems</span> <span class="kn">import</span> <span class="o">*</span>
+
+<span class="k">def</span> <span class="nf">calcRHS</span><span class="p">(</span><span class="n">names</span><span class="p">,</span> <span class="n">bonds</span><span class="p">,</span> <span class="n">JEEM</span><span class="p">,</span> <span class="n">qtotal</span><span class="p">,</span> <span class="n">model</span><span class="p">):</span>
+    <span class="n">Natoms</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">names</span><span class="p">)</span>
+    <span class="n">Nbond</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">bonds</span><span class="p">)</span>
+    <span class="n">RHS</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">Nbond</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+    <span class="c1">##### calc corrected chi ####</span>
+    <span class="n">chi_corr</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">chi</span> <span class="o">=</span> <span class="n">get_chi</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">Natoms</span><span class="p">):</span>
+        <span class="n">chi_corr</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">chi</span><span class="p">[</span><span class="n">names</span><span class="p">[</span><span class="n">i</span><span class="p">]])</span>
+        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">Nbond</span><span class="p">):</span>
+            <span class="n">ai</span>  <span class="o">=</span> <span class="n">names</span><span class="p">[</span><span class="n">bonds</span><span class="p">[</span><span class="n">k</span><span class="p">][</span><span class="mi">0</span><span class="p">]]</span>
+            <span class="n">aj</span>  <span class="o">=</span> <span class="n">names</span><span class="p">[</span><span class="n">bonds</span><span class="p">[</span><span class="n">k</span><span class="p">][</span><span class="mi">1</span><span class="p">]]</span>
+            <span class="k">if</span> <span class="n">bonds</span><span class="p">[</span><span class="n">k</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">i</span><span class="p">:</span>
+                <span class="n">chi_corr</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+=</span> <span class="n">getDeltaChi</span><span class="p">(</span><span class="n">ai</span><span class="p">,</span> <span class="n">aj</span><span class="p">,</span> <span class="n">model</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">bonds</span><span class="p">[</span><span class="n">k</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="n">i</span><span class="p">:</span>
+                <span class="n">chi_corr</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-=</span> <span class="n">getDeltaChi</span><span class="p">(</span><span class="n">ai</span><span class="p">,</span> <span class="n">aj</span><span class="p">,</span> <span class="n">model</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">Natoms</span><span class="p">):</span>
+            <span class="n">chi_corr</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+=</span> <span class="n">JEEM</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">l</span><span class="p">]</span><span class="o">*</span><span class="p">(</span><span class="n">qtotal</span><span class="o">/</span><span class="n">Natoms</span><span class="p">)</span>
+    <span class="c1">#### calc EN diff for the bonds ####</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">Nbond</span><span class="p">):</span>
+        <span class="n">RHS</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">chi_corr</span><span class="p">[</span><span class="n">bonds</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">1</span><span class="p">]]</span> <span class="o">-</span> <span class="n">chi_corr</span><span class="p">[</span><span class="n">bonds</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="mi">0</span><span class="p">]]</span>
+    <span class="k">return</span> <span class="n">RHS</span>
+
+<span class="k">def</span> <span class="nf">solveSQE</span><span class="p">(</span><span class="n">names</span><span class="p">,</span> <span class="n">coords</span><span class="p">,</span> <span class="n">bonds</span><span class="p">,</span> <span class="n">verbose</span><span class="p">,</span> <span class="n">qtotal</span><span class="p">,</span> <span class="n">model</span><span class="p">):</span>
+    <span class="n">JEEM</span><span class="p">,</span> <span class="n">JSQE</span> <span class="o">=</span> <span class="n">calcJSQE</span><span class="p">(</span><span class="n">names</span><span class="p">,</span> <span class="n">coords</span><span class="p">,</span> <span class="n">bonds</span><span class="p">,</span> <span class="n">verbose</span><span class="p">,</span> <span class="n">model</span><span class="p">)</span>
+    <span class="n">rhs</span>  <span class="o">=</span> <span class="n">calcRHS</span><span class="p">(</span><span class="n">names</span><span class="p">,</span> <span class="n">bonds</span><span class="p">,</span> <span class="n">JEEM</span><span class="p">,</span> <span class="n">qtotal</span><span class="p">,</span> <span class="n">model</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;RHS: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">rhs</span><span class="p">))</span>
+    <span class="n">pij</span>  <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">JSQE</span><span class="p">,</span> <span class="n">rhs</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;pij: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">pij</span><span class="p">))</span>
+    <span class="n">q</span> <span class="o">=</span>  <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">coords</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">bonds</span><span class="p">)):</span>
+        <span class="n">bi</span> <span class="o">=</span> <span class="n">bonds</span><span class="p">[</span><span class="n">n</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">bj</span> <span class="o">=</span> <span class="n">bonds</span><span class="p">[</span><span class="n">n</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">q</span><span class="p">[</span><span class="n">bi</span><span class="p">]</span> <span class="o">+=</span> <span class="n">pij</span><span class="p">[</span><span class="n">n</span><span class="p">]</span>
+        <span class="n">q</span><span class="p">[</span><span class="n">bj</span><span class="p">]</span> <span class="o">-=</span> <span class="n">pij</span><span class="p">[</span><span class="n">n</span><span class="p">]</span>
+    <span class="n">Natoms</span> <span class="o">=</span> <span class="n">names</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">Natoms</span><span class="p">):</span>
+        <span class="n">q</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+=</span> <span class="n">qtotal</span><span class="o">/</span><span class="n">Natoms</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;qSQE: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">q</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">q</span>
+
+<span class="k">def</span> <span class="nf">run_compound</span><span class="p">(</span><span class="n">molname</span><span class="p">,</span> <span class="n">verbose</span><span class="p">,</span> <span class="n">shells</span><span class="p">):</span>
+    <span class="n">mol</span> <span class="o">=</span> <span class="n">get_system</span><span class="p">(</span><span class="n">molname</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">molname</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">bonds</span> <span class="ow">in</span> <span class="n">mol</span><span class="p">[</span><span class="s2">&quot;bonds&quot;</span><span class="p">]:</span>
+        <span class="n">q</span> <span class="o">=</span> <span class="n">solveSQE</span><span class="p">(</span><span class="n">mol</span><span class="p">[</span><span class="s2">&quot;names&quot;</span><span class="p">],</span> <span class="n">mol</span><span class="p">[</span><span class="s2">&quot;coords&quot;</span><span class="p">],</span> <span class="n">bonds</span><span class="p">,</span> <span class="n">verbose</span><span class="p">,</span> <span class="n">mol</span><span class="p">[</span><span class="s2">&quot;qtotal&quot;</span><span class="p">],</span> <span class="s2">&quot;ACS-g&quot;</span><span class="p">)</span>
+    <span class="n">printDipole</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="n">mol</span><span class="p">[</span><span class="s2">&quot;coords&quot;</span><span class="p">],</span> <span class="n">mol</span><span class="p">[</span><span class="s2">&quot;atomnr&quot;</span><span class="p">],</span> <span class="kc">False</span><span class="p">)</span>
+
+<span class="n">verbose</span> <span class="o">=</span> <span class="kc">False</span>
+<span class="n">shells</span> <span class="o">=</span> <span class="kc">False</span>
+
+<span class="k">for</span> <span class="n">compound</span> <span class="ow">in</span> <span class="p">[</span> <span class="s2">&quot;methanol&quot;</span><span class="p">,</span> <span class="s2">&quot;water&quot;</span><span class="p">,</span> <span class="s2">&quot;acetate&quot;</span><span class="p">,</span> <span class="s2">&quot;carbon-monoxide&quot;</span> <span class="p">]:</span>
+    <span class="n">run_compound</span><span class="p">(</span><span class="n">compound</span><span class="p">,</span> <span class="n">verbose</span><span class="p">,</span> <span class="n">shells</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>methanol
+qSQE: [-0.50802387  0.33691938 -0.33742533  0.16436908  0.16438559  0.17977516]
+qSQE: [-0.50802387  0.33691938 -0.33742533  0.16436908  0.16438559  0.17977516]
+qSQE: [-0.50802387  0.33691938 -0.33742533  0.16436908  0.16438559  0.17977516]
+qSQE: [-0.50802387  0.33691938 -0.33742533  0.16436908  0.16438559  0.17977516]
+qSQE: [-0.50802387  0.33691938 -0.33742533  0.16436908  0.16438559  0.17977516]
+Dipole = 2.07033 Debye
+water
+qSQE: [ 0.11909703 -0.23819405  0.11909703]
+qSQE: [ 0.11909703 -0.23819405  0.11909703]
+qSQE: [ 0.11909703 -0.23819405  0.11909703]
+Dipole = 0.669411 Debye
+acetate
+qSQE: [-0.48654202 -0.0231567  -0.24282282 -0.24282009 -0.00136991 -0.00196462
+ -0.00132384]
+qSQE: [-0.48654202 -0.0231567  -0.24282282 -0.24282009 -0.00136991 -0.00196462
+ -0.00132384]
+Dipole = 1.41698 Debye
+carbon-monoxide
+No hardness information for bond c2-o
+No deltaChi information for bond c2-o
+No deltaChi information for bond c2-o
+qSQE: [ 0.77205802 -0.77205802]
+No hardness information for bond o-c2
+No deltaChi information for bond o-c2
+No deltaChi information for bond o-c2
+qSQE: [ 0.77205802 -0.77205802]
+Dipole = 0.445003 Debye
+</pre></div>
+</div>
+</div>
+</div>
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/AClogo.png" alt="Logo of ACT"/>
+            </a></p>
+<h3><a href="../index.html">Table of Contents</a></h3>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../preface/preface.html">1. Preface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../userman/header.html">2. User Manual</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../refman/header.html">3. Reference Manual</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="header.html">4. Interactive Notebooks</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="header.html#charge-methods">4.1. Charge Methods</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="EEM-without-shells.html">4.1.1. Electronegativity equalization method</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">4.1.2. Split charge equilibration</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="header.html#atom-typing-using-rdkit">4.2. Atom Typing using RDKit</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../devman/header.html">5. Developer Manual</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../references.html">6. References</a></li>
+</ul>
+
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/jupyter/SQE-without-shells.ipynb.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../devman/header.html" title="5. Developer Manual"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="EEM-without-shells.html" title="4.1.1. Electronegativity equalization method"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">ACT 1.2b documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="header.html" ><span class="section-number">4. </span>Interactive Notebooks</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href=""><span class="section-number">4.1.2. </span>Split charge equilibration</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2026, ACT development team.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3.
+    </div>
+  </body>
+</html>
