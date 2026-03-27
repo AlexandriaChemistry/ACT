@@ -1,22 +1,22 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
-  <Real Name="Epot">-7.7437012022647354</Real>
+  <Real Name="Epot">-7.9987000900139975</Real>
   <Sequence Name="Forces">
     <Int Name="Length">2</Int>
     <Vector>
-      <Real Name="X">-5.0501330236595123</Real>
-      <Real Name="Y">5.0501330236595088</Real>
-      <Real Name="Z">50.501330236595081</Real>
+      <Real Name="X">-5.1992798321135707</Real>
+      <Real Name="Y">5.1992798321135663</Real>
+      <Real Name="Z">51.472870337924299</Real>
     </Vector>
     <Vector>
-      <Real Name="X">5.0501330236595123</Real>
-      <Real Name="Y">-5.0501330236595088</Real>
-      <Real Name="Z">-50.501330236595081</Real>
+      <Real Name="X">5.1992798321135707</Real>
+      <Real Name="Y">-5.1992798321135663</Real>
+      <Real Name="Z">-51.472870337924299</Real>
     </Vector>
   </Sequence>
-  <Real Name="DISPERSION">-0.94232233454704439</Real>
-  <Real Name="EXCHANGE">0.88797138218619187</Real>
-  <Real Name="INDUCTION">-7.6893502499038826</Real>
-  <Real Name="fz">-50.501330235430686</Real>
+  <Real Name="DISPERSION">-0.99970005999000244</Real>
+  <Real Name="EXCHANGE">0.99940020994401446</Real>
+  <Real Name="INDUCTION">-7.9984002399680092</Real>
+  <Real Name="fz">-51.472870334068837</Real>
 </ReferenceData>
