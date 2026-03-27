@@ -210,6 +210,7 @@ protected:
         }
         double dx = 1e-6;
         double ener[2];
+        rvec   dxvector;
         for (int k = 0; k < 2; k++)
         {
             // Additional force and energy structures
@@ -218,14 +219,21 @@ protected:
             // Modify the coordinates
             auto newx = *coordinates;
             newx[1][ZZ] += (2*k-1)*dx;
+            rvec_sub((*coordinates)[1], newx[1], dxvector);
             ener[k] = bfc(nullptr, top, atoms_, &newx, &forces, &energies);
         }
         // Compute numerical derivative
-        double fz = -(ener[1]-ener[0])/(2*dx);
+        double fz = -(ener[1]-ener[0])/(2*norm(dxvector));
         double toler = 3e-5;
         // It should be identical to the forces computed at the central point
         checker_.checkReal(fz, "fz");
         double diff = abs(fz - forces[1][ZZ]);
+        double f2   = std::abs(fz + forces[1][ZZ]);
+        if ((f2 > 0) && (diff >= toler))
+        {
+            // Make it relative
+            diff = diff/f2;
+        }
         if (diff >= toler)
         {
             fprintf(stderr, "Numeric force %g, analytical force %g, diff %g\n", fz, forces[1][ZZ], diff);
@@ -259,11 +267,15 @@ TEST_P(ForceComputerImplementationTest, All)
  *  - "r0p5":  atoms along Z, separation 0.5 nm  (original geometry)
  *  - "r0p4":  atoms along Z, separation 0.4 nm  (shorter bond)
  *  - "r0p6d": atoms at separation ~0.6 nm with a small X offset (off-axis)
+ *  - "r0p3":  atoms along Z, separation 0.3 nm  (even shorter distance)
+ *  - "r0pxd": atoms offset in X, separation ~0.5 nm
  */
 static const std::vector<ForceComputerCoordParams> c_stdPairCoords = {
     { "r0p5",  []() { return std::vector<gmx::RVec>{ { 0, 0, 0 }, { 0,    0,    0.5  } }; }, 1.0 },
     { "r0p4",  []() { return std::vector<gmx::RVec>{ { 0, 0, 0 }, { 0,    0,    0.4  } }; }, 1.0 },
     { "r0p6d", []() { return std::vector<gmx::RVec>{ { 0, 0, 0 }, { 0.05, 0.05, 0.59 } }; }, 1.0 },
+    { "r0p3",  []() { return std::vector<gmx::RVec>{ { 0, 0, 0 }, { 0.0,  0.0,  0.3  } }; }, 1.0 },
+    { "r0pxd", []() { return std::vector<gmx::RVec>{ { 1, 0, 0 }, { 0.95, 0.05, 0.5  } }; }, 1.0 }
 };
 
 //! Standard 3-atom angle coord
