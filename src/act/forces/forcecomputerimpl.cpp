@@ -140,7 +140,6 @@ static double computeLJ12_6(MsgHandler                            *msghandler,
     double erep  = 0;
     double edisp = 0;
     auto   &x    = *coordinates;
-    auto   &f    = *forces;
 
     const size_t npairs = pairs.size();
 
@@ -149,6 +148,7 @@ static double computeLJ12_6(MsgHandler                            *msghandler,
     // AVX-512 unrolled kernel: process 8 pairs per iteration
     // AVX-512 ZMM registers hold 8 doubles (512 bits).
     // ---------------------------------------------------------------
+    auto   &f    = *forces;
     constexpr int W = 8;
 
     // Aligned staging arrays for gather / scatter
