@@ -150,6 +150,7 @@ static double computeLJ12_6(MsgHandler                            *msghandler,
     // ---------------------------------------------------------------
     auto   &f    = *forces;
     constexpr int W = 8;
+    printf("Will use AVX512 code\n");
     // Aligned staging arrays for gather / scatter
     alignas(64) double c6_arr[W], c12_arr[W];
     alignas(64) double dxX[W], dxY[W], dxZ[W];
@@ -470,7 +471,7 @@ static double computeLJ12_6_4(MsgHandler                            *msghandler,
         auto flj       = (12*vvdw_rep + 6*vvdw_disp + 4*vvdw_mid)*rinv2;
         if (msghandler && msghandler->debug())
         {
-            msghandler->writeDebug(gmx::formatString("ACT ai %d aj %d vvdw_rep: %10g vvdw_disp: %10g vvdw_mid: 10%g c6: %10g c12: %10g gamma: %10g",
+            msghandler->writeDebug(gmx::formatString("ACT ai %d aj %d vvdw_rep: %10g vvdw_disp: %10g vvdw_mid: %10g c6: %10g c12: %10g gamma: %10g",
                                                      ai, aj, vvdw_rep, vvdw_disp, vvdw_mid, c6, c12, gamma));
         }
         pairforces(flj, dx, indices, forces);
@@ -506,7 +507,7 @@ static double computeLJ12_6_4(MsgHandler                            *msghandler,
         auto flj       = (12*vvdw_rep + 6*vvdw_disp + 4*vvdw_mid)*rinv2;
         if (msghandler && msghandler->debug())
         {
-            msghandler->writeDebug(gmx::formatString("ACT ai %d aj %d vvdw_rep: %10g vvdw_disp: %10g vvdw_mid: 10%g c6: %10g c12: %10g gamma: %10g",
+            msghandler->writeDebug(gmx::formatString("ACT ai %d aj %d vvdw_rep: %10g vvdw_disp: %10g vvdw_mid: %10g c6: %10g c12: %10g gamma: %10g",
                                                      ai, aj, vvdw_rep, vvdw_disp, vvdw_mid, c6, c12, gamma));
         }
         pairforces(flj, dx, indices, forces);
@@ -1735,6 +1736,10 @@ static double computeBuckingham(MsgHandler                            *msghandle
  * \param[inout] forces  The forces on all particles
  * \return total energy
  */
+
+//! Factorial look-up table used by Tang-Toennies dispersion kernels
+static constexpr int tt_fac[11] = { 1, 1, 2, 6, 24, 120, 720, 5040, 40320, 362880, 3628800 };
+
 static double TT_Dispersion(MsgHandler                   *msghandler,
                             const std::vector<int>       &indices,
                             const std::vector<gmx::RVec> &x,
@@ -1742,7 +1747,6 @@ static double TT_Dispersion(MsgHandler                   *msghandler,
                             const std::vector<double>    &ctt,
                             std::vector<gmx::RVec>       *forces)
 {
-    static const int fac[11] = { 1, 1, 2, 6, 24, 120, 720, 5040, 40320, 362880, 3628800 };
     std::vector<double> br(11);
     rvec dx;
     rvec_sub(x[indices[0]], x[indices[1]], dx);
@@ -1766,10 +1770,10 @@ static double TT_Dispersion(MsgHandler                   *msghandler,
         int  nn  = 2*m;
         for (int k = 0; k <= nn; k++)
         {
-            fk  += br[k]/fac[k];
+            fk  += br[k]/tt_fac[k];
             if (k > 0)
             {
-                dfk += k*bDisp*br[k-1]/fac[k];
+                dfk += k*bDisp*br[k-1]/tt_fac[k];
             }
         }
         real ed = -(1-ebrDisp*fk)*ctt[m-3]*rinvn;
@@ -1820,7 +1824,6 @@ static double computeTangToennies(MsgHandler                            *msghand
 
     const __m512d vhalf      = _mm512_set1_pd(0.5);
     const __m512d vthreehalf = _mm512_set1_pd(1.5);
-    constexpr int fac[11] = { 1, 1, 2, 6, 24, 120, 720, 5040, 40320, 362880, 3628800 };
 
     size_t i = 0;
     for (; i + W <= npairs; i += W)
@@ -1882,10 +1885,10 @@ static double computeTangToennies(MsgHandler                            *msghand
                 int    nn    = 2*m;
                 for (int j = 0; j <= nn; j++)
                 {
-                    fk_tt += br_pow[j] / fac[j];
+                    fk_tt += br_pow[j] / tt_fac[j];
                     if (j > 0)
                     {
-                        dfk_tt += j * bDisp * br_pow[j-1] / fac[j];
+                        dfk_tt += j * bDisp * br_pow[j-1] / tt_fac[j];
                     }
                 }
                 double ed = -(1.0 - ebrDisp*fk_tt) * ctt[m-3] * rinvn;
@@ -1969,7 +1972,6 @@ static double computeTT2b(MsgHandler                            *msghandler,
 
     const __m512d vhalf      = _mm512_set1_pd(0.5);
     const __m512d vthreehalf = _mm512_set1_pd(1.5);
-    constexpr int fac[11] = { 1, 1, 2, 6, 24, 120, 720, 5040, 40320, 362880, 3628800 };
 
     size_t i = 0;
     for (; i + W <= npairs; i += W)
@@ -2031,10 +2033,10 @@ static double computeTT2b(MsgHandler                            *msghandler,
                 int    nn    = 2*m;
                 for (int j = 0; j <= nn; j++)
                 {
-                    fk_tt += br_pow[j] / fac[j];
+                    fk_tt += br_pow[j] / tt_fac[j];
                     if (j > 0)
                     {
-                        dfk_tt += j * bDisp * br_pow[j-1] / fac[j];
+                        dfk_tt += j * bDisp * br_pow[j-1] / tt_fac[j];
                     }
                 }
                 double ed = -(1.0 - ebrDisp*fk_tt) * ctt[m-3] * rinvn;
@@ -2118,7 +2120,6 @@ static double computeSlater_ISA_TT(MsgHandler                            *msghan
 
     const __m512d vhalf      = _mm512_set1_pd(0.5);
     const __m512d vthreehalf = _mm512_set1_pd(1.5);
-    constexpr int fac[11] = { 1, 1, 2, 6, 24, 120, 720, 5040, 40320, 362880, 3628800 };
     constexpr double third = 1.0/3.0;
 
     size_t i = 0;
@@ -2186,10 +2187,10 @@ static double computeSlater_ISA_TT(MsgHandler                            *msghan
                 int    nn    = 2*m;
                 for (int j = 0; j <= nn; j++)
                 {
-                    fk_tt += br_pow[j] / fac[j];
+                    fk_tt += br_pow[j] / tt_fac[j];
                     if (j > 0)
                     {
-                        dfk_tt += j * bDisp * br_pow[j-1] / fac[j];
+                        dfk_tt += j * bDisp * br_pow[j-1] / tt_fac[j];
                     }
                 }
                 double ed = -(1.0 - ebrDisp*fk_tt) * ctt[m-3] * rinvn;
@@ -2821,10 +2822,9 @@ static double computeCoulombSlater(MsgHandler                        *msghandler
         real felec    = -qq*DCoulomb_SS(r1, irow, jrow, izeta, jzeta);
         if (msghandler && msghandler->debug())
         {
-            auto r_debug = std::sqrt(dr2);
             msghandler->writeDebug(gmx::formatString("vcoul ai %d aj %d %g fcoul %g izeta %g jzeta %g qi %g qj %g vcoul_pc %g fcoul_pc %g dist %g",
                                                      ai, aj, velec, felec, izeta, jzeta, atoms[ai].charge(),
-                                                     atoms[aj].charge(), qq/r_debug, qq/dr2, r_debug));
+                                                     atoms[aj].charge(), qq/r1, qq/dr2, r1));
         }
         ebond += velec;
         if (dr2 > 0)
