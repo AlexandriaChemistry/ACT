@@ -2682,7 +2682,7 @@ static double computeCoulombGaussian(MsgHandler                        *msghandl
  * \param[inout] energies    The energy per type
  * \return total energy
  */
-static double computeCoulombSlater(MsgHandler                        *msghandler,
+static double computeCoulombSlater(gmx_unused MsgHandler             *msghandler,
                                    const TopologyEntryVector         &pairs,
                                    const std::vector<ActAtom>        &atoms,
                                    const std::vector<gmx::RVec>      *coordinates,
