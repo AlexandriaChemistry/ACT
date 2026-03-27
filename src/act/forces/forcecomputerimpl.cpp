@@ -37,7 +37,7 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/math/units.h"
 
-#ifdef __AVX512F__
+#if defined(__AVX512F__) && defined(GMX_SIMD_X86_AVX_512)
 #include <immintrin.h>
 #endif
 
@@ -143,14 +143,14 @@ static double computeLJ12_6(MsgHandler                            *msghandler,
 
     const size_t npairs = pairs.size();
 
-#ifdef __AVX512F__
+#if defined(__AVX512F__) && defined(GMX_SIMD_X86_AVX_512)
     // ---------------------------------------------------------------
     // AVX-512 unrolled kernel: process 8 pairs per iteration
     // AVX-512 ZMM registers hold 8 doubles (512 bits).
     // ---------------------------------------------------------------
     auto   &f    = *forces;
     constexpr int W = 8;
-
+    printf("Will use AVX512 code\n");
     // Aligned staging arrays for gather / scatter
     alignas(64) double c6_arr[W], c12_arr[W];
     alignas(64) double dxX[W], dxY[W], dxZ[W];
