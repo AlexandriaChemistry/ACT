@@ -529,47 +529,56 @@ INSTANTIATE_TEST_CASE_P(GENERALIZED_BUCKINGHAM, ForceComputerImplementationTest,
 
 // --- Coulomb potentials (each also tested with multiple coord/charge variants) ---
 
-//! COULOMB_POINT: only standard coord
+//! COULOMB_POINT: standard coords only
 INSTANTIATE_TEST_CASE_P(COULOMB_POINT, ForceComputerImplementationTest,
                          ::testing::Combine(::testing::Values(c_coulPointPot),
                                             ::testing::Values(c_coulZeta10Params),
                                             ::testing::ValuesIn(c_stdPairCoords)),
                          fcTestName);
 
-//! COULOMB_GAUSSIAN: standard coord + negative-charge + zero-distance variants
+//! COULOMB_GAUSSIAN: standard coords + negative-charge + zero-distance variants
+static const std::vector<ForceComputerCoordParams> c_coulGaussCoords = []() {
+    std::vector<ForceComputerCoordParams> v(c_stdPairCoords.begin(), c_stdPairCoords.end());
+    v.push_back(c_coulNegCoord);
+    v.push_back(c_coulZeroCoord);
+    return v;
+}();
+
 INSTANTIATE_TEST_CASE_P(CoulGauss, ForceComputerImplementationTest,
                          ::testing::Combine(::testing::Values(c_coulGaussPot),
                                             ::testing::Values(c_coulZeta10Params),
-                                            ::testing::Values(c_stdPairCoords[0],
-                                                              c_stdPairCoords[1],
-                                                              c_stdPairCoords[2],
-                                                              c_coulNegCoord,
-                                                              c_coulZeroCoord)),
+                                            ::testing::ValuesIn(c_coulGaussCoords)),
                          fcTestName);
 
-//! COULOMB_SLATER zeta=10: standard coord + charge/distance variants
+//! COULOMB_SLATER zeta=10: standard coords + charge/distance variants
+static const std::vector<ForceComputerCoordParams> c_coulSlaterCoords = []() {
+    std::vector<ForceComputerCoordParams> v(c_stdPairCoords.begin(), c_stdPairCoords.end());
+    v.push_back(c_coulNegCoord);
+    v.push_back(c_coulNeg2Coord);
+    v.push_back(c_coulCloseCoord);
+    v.push_back(c_coulCloseNegCoord);
+    v.push_back(c_coulZeroCoord);
+    v.push_back(c_coulZeroNegCoord);
+    return v;
+}();
+
 INSTANTIATE_TEST_CASE_P(CoulSlater, ForceComputerImplementationTest,
                          ::testing::Combine(::testing::Values(c_coulSlaterPot),
                                             ::testing::Values(c_coulZeta10Params),
-                                            ::testing::Values(c_stdPairCoords[0],
-                                                              c_stdPairCoords[1],
-                                                              c_stdPairCoords[2],
-                                                              c_coulNegCoord,
-                                                              c_coulNeg2Coord,
-                                                              c_coulCloseCoord,
-                                                              c_coulCloseNegCoord,
-                                                              c_coulZeroCoord,
-                                                              c_coulZeroNegCoord)),
+                                            ::testing::ValuesIn(c_coulSlaterCoords)),
                          fcTestName);
 
-//! COULOMB_SLATER zeta=0: standard coord + negative-charge variant
+//! COULOMB_SLATER zeta=0: standard coords + negative-charge variant
+static const std::vector<ForceComputerCoordParams> c_coulSlaterZ0Coords = []() {
+    std::vector<ForceComputerCoordParams> v(c_stdPairCoords.begin(), c_stdPairCoords.end());
+    v.push_back(c_coulNegCoord);
+    return v;
+}();
+
 INSTANTIATE_TEST_CASE_P(CoulSlaterZ0, ForceComputerImplementationTest,
                          ::testing::Combine(::testing::Values(c_coulSlaterZ0Pot),
                                             ::testing::Values(c_coulZeta0Params),
-                                            ::testing::Values(c_stdPairCoords[0],
-                                                              c_stdPairCoords[1],
-                                                              c_stdPairCoords[2],
-                                                              c_coulNegCoord)),
+                                            ::testing::ValuesIn(c_coulSlaterZ0Coords)),
                          fcTestName);
 
 // --- TT2b family: ONE potential tested with FIVE different parameter sets ---
