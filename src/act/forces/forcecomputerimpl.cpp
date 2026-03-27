@@ -37,6 +37,10 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/math/units.h"
 
+#ifdef __AVX512F__
+#include <immintrin.h>
+#endif
+
 namespace alexandria
 {
 
@@ -115,6 +119,9 @@ static inline void pairforces(double                  fscalar,
 }
 
 /*! \brief Compute Lennard-Jones 12-6 energy and forces
+ * Uses AVX-512 double-precision SIMD unrolling (8 pairs/iteration) when
+ * compiled with AVX-512 support (__AVX512F__), otherwise falls back to
+ * the scalar implementation.
  * \param[in]    msghandler  For warnings and errors
  * \param[in]    pairs       The atom identifiers and parameters
  * \param[in]    atoms       The atoms
@@ -124,51 +131,203 @@ static inline void pairforces(double                  fscalar,
  * \return total energy
  */
 static double computeLJ12_6(MsgHandler                            *msghandler,
-                            const TopologyEntryVector             &pairs,
-                            gmx_unused const std::vector<ActAtom> &atoms,
-                            const std::vector<gmx::RVec>          *coordinates,
-                            std::vector<gmx::RVec>                *forces,
-                            std::map<InteractionType, double>     *energies)
+                             const TopologyEntryVector             &pairs,
+                             gmx_unused const std::vector<ActAtom> &atoms,
+                             const std::vector<gmx::RVec>          *coordinates,
+                             std::vector<gmx::RVec>                *forces,
+                             std::map<InteractionType, double>     *energies)
 {
     double erep  = 0;
     double edisp = 0;
     auto   &x    = *coordinates;
-    for (const auto &b : pairs)
+    auto   &f    = *forces;
+
+    const size_t npairs = pairs.size();
+
+#ifdef __AVX512F__
+    // ---------------------------------------------------------------
+    // AVX-512 unrolled kernel: process 8 pairs per iteration
+    // AVX-512 ZMM registers hold 8 doubles (512 bits).
+    // ---------------------------------------------------------------
+    constexpr int W = 8;
+
+    // Aligned staging arrays for gather / scatter
+    alignas(64) double c6_arr[W], c12_arr[W];
+    alignas(64) double dxX[W], dxY[W], dxZ[W];
+    alignas(64) double flj_arr[W];
+    alignas(64) double vrep_arr[W], vdisp_arr[W];
+    int ai_arr[W], aj_arr[W];
+
+    const __m512d v12 = _mm512_set1_pd(12.0);
+    const __m512d v6  = _mm512_set1_pd(6.0);
+    const __m512d vhalf      = _mm512_set1_pd(0.5);
+    const __m512d vthreehalf = _mm512_set1_pd(1.5);
+    const __m512d vneg1      = _mm512_set1_pd(-1.0);
+
+    size_t i = 0;
+    for (; i + W <= npairs; i += W)
     {
-        // Get the parameters. We have to know their names to do this.
-        auto &params    = b->params();
+        // ---- gather scalar data for W pairs -------------------------
+        for (int k = 0; k < W; k++)
+        {
+            auto &b          = *pairs[i + k];
+            auto &params     = b.params();
+            double sig_ij    = params[lj12_6SIGMA];
+            double eps_ij    = params[lj12_6EPSILON];
+            double sig3      = sig_ij * sig_ij * sig_ij;
+            double sig6      = sig3 * sig3;
+            c6_arr[k]        = 4.0 * eps_ij * sig6;
+            c12_arr[k]       = c6_arr[k] * sig6;
+            auto &indices    = b.atomIndices();
+            ai_arr[k]        = indices[0];
+            aj_arr[k]        = indices[1];
+            dxX[k] = x[ai_arr[k]][XX] - x[aj_arr[k]][XX];
+            dxY[k] = x[ai_arr[k]][YY] - x[aj_arr[k]][YY];
+            dxZ[k] = x[ai_arr[k]][ZZ] - x[aj_arr[k]][ZZ];
+        }
+
+        // ---- load into AVX-512 registers ----------------------------
+        __m512d vc6   = _mm512_load_pd(c6_arr);
+        __m512d vc12  = _mm512_load_pd(c12_arr);
+        __m512d vdxX  = _mm512_load_pd(dxX);
+        __m512d vdxY  = _mm512_load_pd(dxY);
+        __m512d vdxZ  = _mm512_load_pd(dxZ);
+
+        // ---- dr2 = dx^2 + dy^2 + dz^2 ------------------------------
+        __m512d vdr2 = _mm512_fmadd_pd(vdxX, vdxX,
+                       _mm512_fmadd_pd(vdxY, vdxY,
+                       _mm512_mul_pd  (vdxZ, vdxZ)));
+
+        // ---- rinv = 1/sqrt(dr2): rsqrt14 + one Newton-Raphson step --
+        // rsqrt14 gives ~14-bit precision; one NR step gives full
+        // double precision (~52 bits):
+        //   rinv_new = rinv * (1.5 - 0.5 * dr2 * rinv^2)
+        __m512d vrinv = _mm512_rsqrt14_pd(vdr2);
+        {
+            __m512d vtmp = _mm512_mul_pd(_mm512_mul_pd(vdr2, vrinv), vrinv);
+            vrinv = _mm512_mul_pd(vrinv,
+                    _mm512_fnmadd_pd(vhalf, vtmp, vthreehalf));
+        }
+
+        // ---- powers of rinv -----------------------------------------
+        __m512d vrinv2  = _mm512_mul_pd(vrinv,  vrinv);
+        __m512d vrinv4  = _mm512_mul_pd(vrinv2, vrinv2);
+        __m512d vrinv6  = _mm512_mul_pd(vrinv4, vrinv2);
+        __m512d vrinv12 = _mm512_mul_pd(vrinv6, vrinv6);
+
+        // ---- energy terms -------------------------------------------
+        // vvdw_disp = -c6 * rinv6
+        __m512d vvdisp = _mm512_mul_pd(vneg1, _mm512_mul_pd(vc6, vrinv6));
+        // vvdw_rep  =  c12 * rinv12
+        __m512d vvrep  = _mm512_mul_pd(vc12, vrinv12);
+
+        // ---- scalar force: flj = (12*vrep + 6*vdisp) * rinv2 -------
+        __m512d vflj = _mm512_mul_pd(
+                           _mm512_fmadd_pd(v12, vvrep,
+                           _mm512_mul_pd(v6, vvdisp)),
+                           vrinv2);
+
+        // ---- store results to staging arrays ------------------------
+        _mm512_store_pd(vrep_arr,  vvrep);
+        _mm512_store_pd(vdisp_arr, vvdisp);
+        _mm512_store_pd(flj_arr,   vflj);
+
+        // ---- accumulate energies; scatter forces back ---------------
+        for (int k = 0; k < W; k++)
+        {
+            erep  += vrep_arr[k];
+            edisp += vdisp_arr[k];
+            double fk   = flj_arr[k];
+            int    ai   = ai_arr[k];
+            int    aj   = aj_arr[k];
+            double fijX = fk * dxX[k];
+            double fijY = fk * dxY[k];
+            double fijZ = fk * dxZ[k];
+            f[ai][XX] += fijX;   f[aj][XX] -= fijX;
+            f[ai][YY] += fijY;   f[aj][YY] -= fijY;
+            f[ai][ZZ] += fijZ;   f[aj][ZZ] -= fijZ;
+            if (msghandler && msghandler->debug())
+            {
+                msghandler->writeDebug(
+                    gmx::formatString("ACT AVX512 ai %d aj %d vvdw_rep: %10g vvdw_disp: %10g",
+                                      ai, aj, vrep_arr[k], vdisp_arr[k]));
+            }
+        }
+    }
+
+    // ---- scalar tail loop for remaining pairs (npairs % 8) ---------
+    for (; i < npairs; i++)
+    {
+        auto &b         = *pairs[i];
+        auto &params    = b.params();
         auto sig_ij     = params[lj12_6SIGMA];
         auto eps_ij     = params[lj12_6EPSILON];
-        auto sig6       = gmx::square(sig_ij*sig_ij*sig_ij);
-        auto c6         = 4*eps_ij*sig6;
-        auto c12        = c6*sig6;
-        // Get the atom indices
-        auto &indices   = b->atomIndices();
+        auto sig6       = gmx::square(sig_ij * sig_ij * sig_ij);
+        auto c6         = 4 * eps_ij * sig6;
+        auto c12        = c6 * sig6;
+        auto &indices   = b.atomIndices();
         auto ai         = indices[0];
         auto aj         = indices[1];
         rvec dx;
         rvec_sub(x[ai], x[aj], dx);
         auto dr2        = iprod(dx, dx);
         auto rinv       = gmx::invsqrt(dr2);
-        auto rinv2      = rinv*rinv;
-        auto rinv6      = rinv2*rinv2*rinv2;
-        auto vvdw_disp  = -c6*rinv6;
-        auto vvdw_rep   = c12*rinv6*rinv6;
-        auto flj        = (12*vvdw_rep + 6*vvdw_disp)*rinv2;
+        auto rinv2      = rinv * rinv;
+        auto rinv6      = rinv2 * rinv2 * rinv2;
+        auto vvdw_disp  = -c6 * rinv6;
+        auto vvdw_rep   = c12 * rinv6 * rinv6;
+        auto flj        = (12 * vvdw_rep + 6 * vvdw_disp) * rinv2;
         if (msghandler && msghandler->debug())
         {
-            msghandler->writeDebug(gmx::formatString("ACT ai %d aj %d vvdw_rep: %10g vvdw_disp: %10g c6: %10g c12: %10g",
-                                                     ai, aj, vvdw_rep, vvdw_disp, c6, c12));
+            msghandler->writeDebug(
+                gmx::formatString("ACT ai %d aj %d vvdw_rep: %10g vvdw_disp: %10g c6: %10g c12: %10g",
+                                  ai, aj, vvdw_rep, vvdw_disp, c6, c12));
         }
         pairforces(flj, dx, indices, forces);
-        erep      += vvdw_rep;
-        edisp     += vvdw_disp;
+        erep  += vvdw_rep;
+        edisp += vvdw_disp;
     }
+
+#else  // !__AVX512F__
+    // ---- Scalar fallback (non-AVX-512 builds) ----------------------
+    for (size_t i = 0; i < npairs; i++)
+    {
+        auto &b         = *pairs[i];
+        auto &params    = b.params();
+        auto sig_ij     = params[lj12_6SIGMA];
+        auto eps_ij     = params[lj12_6EPSILON];
+        auto sig6       = gmx::square(sig_ij * sig_ij * sig_ij);
+        auto c6         = 4 * eps_ij * sig6;
+        auto c12        = c6 * sig6;
+        auto &indices   = b.atomIndices();
+        auto ai         = indices[0];
+        auto aj         = indices[1];
+        rvec dx;
+        rvec_sub(x[ai], x[aj], dx);
+        auto dr2        = iprod(dx, dx);
+        auto rinv       = gmx::invsqrt(dr2);
+        auto rinv2      = rinv * rinv;
+        auto rinv6      = rinv2 * rinv2 * rinv2;
+        auto vvdw_disp  = -c6 * rinv6;
+        auto vvdw_rep   = c12 * rinv6 * rinv6;
+        auto flj        = (12 * vvdw_rep + 6 * vvdw_disp) * rinv2;
+        if (msghandler && msghandler->debug())
+        {
+            msghandler->writeDebug(
+                gmx::formatString("ACT ai %d aj %d vvdw_rep: %10g vvdw_disp: %10g c6: %10g c12: %10g",
+                                  ai, aj, vvdw_rep, vvdw_disp, c6, c12));
+        }
+        pairforces(flj, dx, indices, forces);
+        erep  += vvdw_rep;
+        edisp += vvdw_disp;
+    }
+#endif // __AVX512F__
+
     if (msghandler && msghandler->debug())
     {
         msghandler->writeDebug(gmx::formatString("ACT erep: %10g edisp %10g", erep, edisp));
     }
-    energies->insert({InteractionType::EXCHANGE, erep});
+    energies->insert({InteractionType::EXCHANGE,   erep});
     energies->insert({InteractionType::DISPERSION, edisp});
 
     return erep + edisp;
