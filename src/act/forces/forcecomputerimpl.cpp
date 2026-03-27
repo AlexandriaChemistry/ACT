@@ -150,7 +150,6 @@ static double computeLJ12_6(MsgHandler                            *msghandler,
     // ---------------------------------------------------------------
     auto   &f    = *forces;
     constexpr int W = 8;
-    printf("Will use AVX512 code\n");
     // Aligned staging arrays for gather / scatter
     alignas(64) double c6_arr[W], c12_arr[W];
     alignas(64) double dxX[W], dxY[W], dxZ[W];
