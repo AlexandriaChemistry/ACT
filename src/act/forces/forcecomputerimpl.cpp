@@ -342,13 +342,18 @@ static double computeLJ12_6(MsgHandler                            *msghandler,
                        _mm256_fmadd_pd(vdxY, vdxY,
                        _mm256_mul_pd  (vdxZ, vdxZ)));
 
-        // ---- rinv = 1/sqrt(dr2): rsqrt14 + one Newton-Raphson step --
-        // rsqrt14 gives ~14-bit precision; one NR step gives full
+        // ---- rinv = 1/sqrt(dr2): float rsqrt + two Newton-Raphson steps --
+        // _mm_rsqrt_ps gives ~12-bit precision; two NR steps give full
         // double precision (~52 bits):
         //   rinv_new = rinv * (1.5 - 0.5 * dr2 * rinv^2)
         __m128  vdr2_f  = _mm256_cvtpd_ps(vdr2);
         __m128  vrinv_f = _mm_rsqrt_ps(vdr2_f);
         __m256d vrinv   = _mm256_cvtps_pd(vrinv_f);
+        {
+            __m256d vtmp = _mm256_mul_pd(_mm256_mul_pd(vdr2, vrinv), vrinv);
+            vrinv = _mm256_mul_pd(vrinv,
+                    _mm256_fnmadd_pd(vhalf, vtmp, vthreehalf));
+        }
         {
             __m256d vtmp = _mm256_mul_pd(_mm256_mul_pd(vdr2, vrinv), vrinv);
             vrinv = _mm256_mul_pd(vrinv,
@@ -681,6 +686,10 @@ static double computeLJ12_6_4(MsgHandler                            *msghandler,
             __m256d vtmp = _mm256_mul_pd(_mm256_mul_pd(vdr2, vrinv), vrinv);
             vrinv = _mm256_mul_pd(vrinv, _mm256_fnmadd_pd(vhalf, vtmp, vthreehalf));
         }
+        {
+            __m256d vtmp = _mm256_mul_pd(_mm256_mul_pd(vdr2, vrinv), vrinv);
+            vrinv = _mm256_mul_pd(vrinv, _mm256_fnmadd_pd(vhalf, vtmp, vthreehalf));
+        }
         __m256d vrinv2  = _mm256_mul_pd(vrinv,  vrinv);
         __m256d vrinv4  = _mm256_mul_pd(vrinv2, vrinv2);
         __m256d vrinv6  = _mm256_mul_pd(vrinv4, vrinv2);
@@ -985,6 +994,10 @@ static double computeLJ8_6(MsgHandler                            *msghandler,
             __m256d vtmp = _mm256_mul_pd(_mm256_mul_pd(vdr2, vrinv), vrinv);
             vrinv = _mm256_mul_pd(vrinv, _mm256_fnmadd_pd(vhalf, vtmp, vthreehalf));
         }
+        {
+            __m256d vtmp = _mm256_mul_pd(_mm256_mul_pd(vdr2, vrinv), vrinv);
+            vrinv = _mm256_mul_pd(vrinv, _mm256_fnmadd_pd(vhalf, vtmp, vthreehalf));
+        }
         __m256d vrinv2 = _mm256_mul_pd(vrinv,  vrinv);
         __m256d vrinv4 = _mm256_mul_pd(vrinv2, vrinv2);
         __m256d vrinv6 = _mm256_mul_pd(vrinv4, vrinv2);
@@ -1262,6 +1275,10 @@ static double computeLJ14_7(MsgHandler                            *msghandler,
         __m128  vdr2_f  = _mm256_cvtpd_ps(vdr2);
         __m128  vrinv_f = _mm_rsqrt_ps(vdr2_f);
         __m256d vrinv   = _mm256_cvtps_pd(vrinv_f);
+        {
+            __m256d vtmp = _mm256_mul_pd(_mm256_mul_pd(vdr2, vrinv), vrinv);
+            vrinv = _mm256_mul_pd(vrinv, _mm256_fnmadd_pd(vhalf, vtmp, vthreehalf));
+        }
         {
             __m256d vtmp = _mm256_mul_pd(_mm256_mul_pd(vdr2, vrinv), vrinv);
             vrinv = _mm256_mul_pd(vrinv, _mm256_fnmadd_pd(vhalf, vtmp, vthreehalf));
@@ -1567,6 +1584,10 @@ static double computeBornMayer(MsgHandler                            *msghandler
             __m256d vtmp = _mm256_mul_pd(_mm256_mul_pd(vdr2, vrinv), vrinv);
             vrinv = _mm256_mul_pd(vrinv, _mm256_fnmadd_pd(vhalf, vtmp, vthreehalf));
         }
+        {
+            __m256d vtmp = _mm256_mul_pd(_mm256_mul_pd(vdr2, vrinv), vrinv);
+            vrinv = _mm256_mul_pd(vrinv, _mm256_fnmadd_pd(vhalf, vtmp, vthreehalf));
+        }
         _mm256_store_pd(dr2_arr,  vdr2);
         _mm256_store_pd(rinv_arr, vrinv);
 
@@ -1799,6 +1820,10 @@ static double computeSlaterISA(MsgHandler                            *msghandler
             __m256d vtmp = _mm256_mul_pd(_mm256_mul_pd(vdr2, vrinv), vrinv);
             vrinv = _mm256_mul_pd(vrinv, _mm256_fnmadd_pd(vhalf, vtmp, vthreehalf));
         }
+        {
+            __m256d vtmp = _mm256_mul_pd(_mm256_mul_pd(vdr2, vrinv), vrinv);
+            vrinv = _mm256_mul_pd(vrinv, _mm256_fnmadd_pd(vhalf, vtmp, vthreehalf));
+        }
         _mm256_store_pd(dr2_arr,  vdr2);
         _mm256_store_pd(rinv_arr, vrinv);
 
@@ -2001,6 +2026,10 @@ static double computeDoubleExponential(MsgHandler                            *ms
         __m128  vdr2_f  = _mm256_cvtpd_ps(vdr2);
         __m128  vrinv_f = _mm_rsqrt_ps(vdr2_f);
         __m256d vrinv   = _mm256_cvtps_pd(vrinv_f);
+        {
+            __m256d vtmp = _mm256_mul_pd(_mm256_mul_pd(vdr2, vrinv), vrinv);
+            vrinv = _mm256_mul_pd(vrinv, _mm256_fnmadd_pd(vhalf, vtmp, vthreehalf));
+        }
         {
             __m256d vtmp = _mm256_mul_pd(_mm256_mul_pd(vdr2, vrinv), vrinv);
             vrinv = _mm256_mul_pd(vrinv, _mm256_fnmadd_pd(vhalf, vtmp, vthreehalf));
@@ -2324,6 +2353,10 @@ static double computeWBH(MsgHandler                            *msghandler,
             __m256d vtmp = _mm256_mul_pd(_mm256_mul_pd(vdr2, vrinv), vrinv);
             vrinv = _mm256_mul_pd(vrinv, _mm256_fnmadd_pd(vhalf, vtmp, vthreehalf));
         }
+        {
+            __m256d vtmp = _mm256_mul_pd(_mm256_mul_pd(vdr2, vrinv), vrinv);
+            vrinv = _mm256_mul_pd(vrinv, _mm256_fnmadd_pd(vhalf, vtmp, vthreehalf));
+        }
         _mm256_store_pd(dr2_arr,  vdr2);
         _mm256_store_pd(rinv_arr, vrinv);
 
@@ -2613,6 +2646,10 @@ static double computeBuckingham(MsgHandler                            *msghandle
         __m128  vdr2_f  = _mm256_cvtpd_ps(vdr2);
         __m128  vrinv_f = _mm_rsqrt_ps(vdr2_f);
         __m256d vrinv   = _mm256_cvtps_pd(vrinv_f);
+        {
+            __m256d vtmp = _mm256_mul_pd(_mm256_mul_pd(vdr2, vrinv), vrinv);
+            vrinv = _mm256_mul_pd(vrinv, _mm256_fnmadd_pd(vhalf, vtmp, vthreehalf));
+        }
         {
             __m256d vtmp = _mm256_mul_pd(_mm256_mul_pd(vdr2, vrinv), vrinv);
             vrinv = _mm256_mul_pd(vrinv, _mm256_fnmadd_pd(vhalf, vtmp, vthreehalf));
@@ -2955,6 +2992,10 @@ static double computeTangToennies(MsgHandler                            *msghand
             __m256d vtmp = _mm256_mul_pd(_mm256_mul_pd(vdr2, vrinv), vrinv);
             vrinv = _mm256_mul_pd(vrinv, _mm256_fnmadd_pd(vhalf, vtmp, vthreehalf));
         }
+        {
+            __m256d vtmp = _mm256_mul_pd(_mm256_mul_pd(vdr2, vrinv), vrinv);
+            vrinv = _mm256_mul_pd(vrinv, _mm256_fnmadd_pd(vhalf, vtmp, vthreehalf));
+        }
         _mm256_store_pd(dr2_arr,  vdr2);
         _mm256_store_pd(rinv_arr, vrinv);
 
@@ -3211,6 +3252,10 @@ static double computeTT2b(MsgHandler                            *msghandler,
         __m128  vdr2_f  = _mm256_cvtpd_ps(vdr2);
         __m128  vrinv_f = _mm_rsqrt_ps(vdr2_f);
         __m256d vrinv   = _mm256_cvtps_pd(vrinv_f);
+        {
+            __m256d vtmp = _mm256_mul_pd(_mm256_mul_pd(vdr2, vrinv), vrinv);
+            vrinv = _mm256_mul_pd(vrinv, _mm256_fnmadd_pd(vhalf, vtmp, vthreehalf));
+        }
         {
             __m256d vtmp = _mm256_mul_pd(_mm256_mul_pd(vdr2, vrinv), vrinv);
             vrinv = _mm256_mul_pd(vrinv, _mm256_fnmadd_pd(vhalf, vtmp, vthreehalf));
@@ -3478,6 +3523,10 @@ static double computeSlater_ISA_TT(MsgHandler                            *msghan
         __m128  vdr2_f  = _mm256_cvtpd_ps(vdr2);
         __m128  vrinv_f = _mm_rsqrt_ps(vdr2_f);
         __m256d vrinv   = _mm256_cvtps_pd(vrinv_f);
+        {
+            __m256d vtmp = _mm256_mul_pd(_mm256_mul_pd(vdr2, vrinv), vrinv);
+            vrinv = _mm256_mul_pd(vrinv, _mm256_fnmadd_pd(vhalf, vtmp, vthreehalf));
+        }
         {
             __m256d vtmp = _mm256_mul_pd(_mm256_mul_pd(vdr2, vrinv), vrinv);
             vrinv = _mm256_mul_pd(vrinv, _mm256_fnmadd_pd(vhalf, vtmp, vthreehalf));
@@ -3775,6 +3824,10 @@ static double computeNonBonded(MsgHandler                            *msghandler
         __m128  vdr2_f  = _mm256_cvtpd_ps(vdr2);
         __m128  vrinv_f = _mm_rsqrt_ps(vdr2_f);
         __m256d vrinv   = _mm256_cvtps_pd(vrinv_f);
+        {
+            __m256d vtmp = _mm256_mul_pd(_mm256_mul_pd(vdr2, vrinv), vrinv);
+            vrinv = _mm256_mul_pd(vrinv, _mm256_fnmadd_pd(vhalf, vtmp, vthreehalf));
+        }
         {
             __m256d vtmp = _mm256_mul_pd(_mm256_mul_pd(vdr2, vrinv), vrinv);
             vrinv = _mm256_mul_pd(vrinv, _mm256_fnmadd_pd(vhalf, vtmp, vthreehalf));
@@ -4134,6 +4187,10 @@ static double computeCoulombGaussian(MsgHandler                        *msghandl
             __m256d vtmp = _mm256_mul_pd(_mm256_mul_pd(vdr2, vrinv), vrinv);
             vrinv = _mm256_mul_pd(vrinv, _mm256_fnmadd_pd(vhalf, vtmp, vthreehalf));
         }
+        {
+            __m256d vtmp = _mm256_mul_pd(_mm256_mul_pd(vdr2, vrinv), vrinv);
+            vrinv = _mm256_mul_pd(vrinv, _mm256_fnmadd_pd(vhalf, vtmp, vthreehalf));
+        }
         _mm256_store_pd(dr2_arr,  vdr2);
         _mm256_store_pd(rinv_arr, vrinv);
 
@@ -4402,6 +4459,10 @@ static double computeCoulombSlater(gmx_unused MsgHandler             *msghandler
         __m128  vdr2_f  = _mm256_cvtpd_ps(vdr2);
         __m128  vrinv_f = _mm_rsqrt_ps(vdr2_f);
         __m256d vrinv   = _mm256_cvtps_pd(vrinv_f);
+        {
+            __m256d vtmp = _mm256_mul_pd(_mm256_mul_pd(vdr2, vrinv), vrinv);
+            vrinv = _mm256_mul_pd(vrinv, _mm256_fnmadd_pd(vhalf, vtmp, vthreehalf));
+        }
         {
             __m256d vtmp = _mm256_mul_pd(_mm256_mul_pd(vdr2, vrinv), vrinv);
             vrinv = _mm256_mul_pd(vrinv, _mm256_fnmadd_pd(vhalf, vtmp, vthreehalf));
