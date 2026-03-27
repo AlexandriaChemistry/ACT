@@ -1110,7 +1110,7 @@ static double computeSlaterISA(MsgHandler                            *msghandler
 
     const __m512d vhalf      = _mm512_set1_pd(0.5);
     const __m512d vthreehalf = _mm512_set1_pd(1.5);
-    static const double third = 1.0/3.0;
+    constexpr double third = 1.0/3.0;
 
     size_t i = 0;
     for (; i + W <= npairs; i += W)
@@ -1820,7 +1820,7 @@ static double computeTangToennies(MsgHandler                            *msghand
 
     const __m512d vhalf      = _mm512_set1_pd(0.5);
     const __m512d vthreehalf = _mm512_set1_pd(1.5);
-    static const int fac[11] = { 1, 1, 2, 6, 24, 120, 720, 5040, 40320, 362880, 3628800 };
+    constexpr int fac[11] = { 1, 1, 2, 6, 24, 120, 720, 5040, 40320, 362880, 3628800 };
 
     size_t i = 0;
     for (; i + W <= npairs; i += W)
@@ -1969,7 +1969,7 @@ static double computeTT2b(MsgHandler                            *msghandler,
 
     const __m512d vhalf      = _mm512_set1_pd(0.5);
     const __m512d vthreehalf = _mm512_set1_pd(1.5);
-    static const int fac[11] = { 1, 1, 2, 6, 24, 120, 720, 5040, 40320, 362880, 3628800 };
+    constexpr int fac[11] = { 1, 1, 2, 6, 24, 120, 720, 5040, 40320, 362880, 3628800 };
 
     size_t i = 0;
     for (; i + W <= npairs; i += W)
@@ -2118,8 +2118,8 @@ static double computeSlater_ISA_TT(MsgHandler                            *msghan
 
     const __m512d vhalf      = _mm512_set1_pd(0.5);
     const __m512d vthreehalf = _mm512_set1_pd(1.5);
-    static const int fac[11] = { 1, 1, 2, 6, 24, 120, 720, 5040, 40320, 362880, 3628800 };
-    static const double third = 1.0/3.0;
+    constexpr int fac[11] = { 1, 1, 2, 6, 24, 120, 720, 5040, 40320, 362880, 3628800 };
+    constexpr double third = 1.0/3.0;
 
     size_t i = 0;
     for (; i + W <= npairs; i += W)
@@ -2821,10 +2821,10 @@ static double computeCoulombSlater(MsgHandler                        *msghandler
         real felec    = -qq*DCoulomb_SS(r1, irow, jrow, izeta, jzeta);
         if (msghandler && msghandler->debug())
         {
-            auto r1d = std::sqrt(dr2);
+            auto r_debug = std::sqrt(dr2);
             msghandler->writeDebug(gmx::formatString("vcoul ai %d aj %d %g fcoul %g izeta %g jzeta %g qi %g qj %g vcoul_pc %g fcoul_pc %g dist %g",
                                                      ai, aj, velec, felec, izeta, jzeta, atoms[ai].charge(),
-                                                     atoms[aj].charge(), qq/r1d, qq/dr2, r1d));
+                                                     atoms[aj].charge(), qq/r_debug, qq/dr2, r_debug));
         }
         ebond += velec;
         if (dr2 > 0)
