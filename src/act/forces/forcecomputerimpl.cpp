@@ -170,15 +170,15 @@ static double computeLJ12_6(MsgHandler                            *msghandler,
         // ---- gather scalar data for W pairs -------------------------
         for (int k = 0; k < W; k++)
         {
-            auto &b          = *pairs[i + k];
-            auto &params     = b.params();
+            auto &b          = pairs[i + k];
+            auto &params     = b->params();
             double sig_ij    = params[lj12_6SIGMA];
             double eps_ij    = params[lj12_6EPSILON];
             double sig3      = sig_ij * sig_ij * sig_ij;
             double sig6      = sig3 * sig3;
             c6_arr[k]        = 4.0 * eps_ij * sig6;
             c12_arr[k]       = c6_arr[k] * sig6;
-            auto &indices    = b.atomIndices();
+            auto &indices    = b->atomIndices();
             ai_arr[k]        = indices[0];
             aj_arr[k]        = indices[1];
             dxX[k] = x[ai_arr[k]][XX] - x[aj_arr[k]][XX];
@@ -258,14 +258,14 @@ static double computeLJ12_6(MsgHandler                            *msghandler,
     // ---- scalar tail loop for remaining pairs (npairs % 8) ---------
     for (; i < npairs; i++)
     {
-        auto &b         = *pairs[i];
-        auto &params    = b.params();
+        auto &b         = pairs[i];
+        auto &params    = b->params();
         auto sig_ij     = params[lj12_6SIGMA];
         auto eps_ij     = params[lj12_6EPSILON];
         auto sig6       = gmx::square(sig_ij * sig_ij * sig_ij);
         auto c6         = 4 * eps_ij * sig6;
         auto c12        = c6 * sig6;
-        auto &indices   = b.atomIndices();
+        auto &indices   = b->atomIndices();
         auto ai         = indices[0];
         auto aj         = indices[1];
         rvec dx;
@@ -292,14 +292,14 @@ static double computeLJ12_6(MsgHandler                            *msghandler,
     // ---- Scalar fallback (non-AVX-512 builds) ----------------------
     for (size_t i = 0; i < npairs; i++)
     {
-        auto &b         = *pairs[i];
-        auto &params    = b.params();
+        auto &b         = pairs[i];
+        auto &params    = b->params();
         auto sig_ij     = params[lj12_6SIGMA];
         auto eps_ij     = params[lj12_6EPSILON];
         auto sig6       = gmx::square(sig_ij * sig_ij * sig_ij);
         auto c6         = 4 * eps_ij * sig6;
         auto c12        = c6 * sig6;
-        auto &indices   = b.atomIndices();
+        auto &indices   = b->atomIndices();
         auto ai         = indices[0];
         auto aj         = indices[1];
         rvec dx;
