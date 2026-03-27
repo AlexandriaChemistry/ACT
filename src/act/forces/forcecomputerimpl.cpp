@@ -331,6 +331,7 @@ static double computeLJ12_6(MsgHandler                            *msghandler,
         }
 
         // ---- load into AVX2_256 registers --------------------------
+        __m256d vc6   = _mm256_load_pd(c6_arr);
         __m256d vc12  = _mm256_load_pd(c12_arr);
         __m256d vdxX  = _mm256_load_pd(dxX);
         __m256d vdxY  = _mm256_load_pd(dxY);
