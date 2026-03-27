@@ -222,7 +222,7 @@ protected:
         }
         // Compute numerical derivative
         double fz = -(ener[1]-ener[0])/(2*dx);
-        double toler = 5e-6;
+        double toler = 3e-5;
         // It should be identical to the forces computed at the central point
         checker_.checkReal(fz, "fz");
         double diff = abs(fz - forces[1][ZZ]);

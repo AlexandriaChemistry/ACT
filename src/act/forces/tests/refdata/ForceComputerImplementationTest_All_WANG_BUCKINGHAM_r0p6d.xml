@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Real Name="Epot">-0.16429683246020116</Real>
+  <Sequence Name="Forces">
+    <Int Name="Length">2</Int>
+    <Vector>
+      <Real Name="X">0.092979308722839674</Real>
+      <Real Name="Y">0.092979308722839674</Real>
+      <Real Name="Z">1.0971558429295081</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-0.092979308722839674</Real>
+      <Real Name="Y">-0.092979308722839674</Real>
+      <Real Name="Z">-1.0971558429295081</Real>
+    </Vector>
+  </Sequence>
+  <Real Name="DISPERSION">-0.17026583768533754</Real>
+  <Real Name="EXCHANGE">0.0059690052251363829</Real>
+  <Real Name="fz">-1.0971558428995998</Real>
+</ReferenceData>
