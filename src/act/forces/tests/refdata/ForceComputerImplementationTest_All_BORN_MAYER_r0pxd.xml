@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Real Name="Epot">-176.00957494084679</Real>
+  <Sequence Name="Forces">
+    <Int Name="Length">2</Int>
+    <Vector>
+      <Real Name="X">-139.42035853443872</Real>
+      <Real Name="Y">139.42035853443861</Real>
+      <Real Name="Z">1394.2035853443861</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">139.42035853443872</Real>
+      <Real Name="Y">-139.42035853443861</Real>
+      <Real Name="Z">-1394.2035853443861</Real>
+    </Vector>
+  </Sequence>
+  <Real Name="VDWCORRECTION">-176.00957494084679</Real>
+  <Real Name="fz">-1394.2035854057622</Real>
+</ReferenceData>
