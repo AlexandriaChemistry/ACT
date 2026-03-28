@@ -145,6 +145,8 @@ static double computeLJ12_6(MsgHandler                            *msghandler,
     const size_t npairs = pairs.size();
 
 #if defined(__AVX512F__) && defined(GMX_SIMD_X86_AVX_512)
+    if (npairs > 12)
+    {
     // ---------------------------------------------------------------
     // AVX-512 unrolled kernel: process 8 pairs per iteration
     // AVX-512 ZMM registers hold 8 doubles (512 bits).
@@ -293,7 +295,12 @@ static double computeLJ12_6(MsgHandler                            *msghandler,
         edisp += vvdw_disp;
     }
 
-#elif defined(__AVX2__) && defined(GMX_SIMD_X86_AVX2_256)
+    }
+    else
+#endif
+#if defined(__AVX2__) && defined(GMX_SIMD_X86_AVX2_256)
+    if (npairs > 6)
+    {
     // ---------------------------------------------------------------
     // AVX2_256 unrolled kernel: process 4 pairs per iteration
     // AVX2_256 YMM registers hold 4 doubles (256 bits).
@@ -444,7 +451,10 @@ static double computeLJ12_6(MsgHandler                            *msghandler,
         edisp += vvdw_disp;
     }
 
-#else  // !__AVX512F__
+    }
+    else
+#endif
+    {
     // ---- Scalar fallback (non-AVX-512 builds) ----------------------
     for (size_t i = 0; i < npairs; i++)
     {
@@ -477,7 +487,7 @@ static double computeLJ12_6(MsgHandler                            *msghandler,
         erep  += vvdw_rep;
         edisp += vvdw_disp;
     }
-#endif // __AVX512F__
+    }
 
     if (msghandler && msghandler->debug())
     {
@@ -513,6 +523,8 @@ static double computeLJ12_6_4(MsgHandler                            *msghandler,
     const size_t npairs = pairs.size();
 
 #if defined(__AVX512F__) && defined(GMX_SIMD_X86_AVX_512)
+    if (npairs > 12)
+    {
     auto   &f    = *forces;
     constexpr int W = 8;
     alignas(64) double c6_arr[W], c12_arr[W], gamma_arr[W];
@@ -640,7 +652,12 @@ static double computeLJ12_6_4(MsgHandler                            *msghandler,
         emid  += vvdw_mid;
     }
 
-#elif defined(__AVX2__) && defined(GMX_SIMD_X86_AVX2_256)
+    }
+    else
+#endif
+#if defined(__AVX2__) && defined(GMX_SIMD_X86_AVX2_256)
+    if (npairs > 6)
+    {
     auto   &f    = *forces;
     constexpr int W = 4;
     alignas(32) double c6_arr[W], c12_arr[W], gamma_arr[W];
@@ -770,7 +787,10 @@ static double computeLJ12_6_4(MsgHandler                            *msghandler,
         emid  += vvdw_mid;
     }
 
-#else
+    }
+    else
+#endif
+    {
     for (size_t i = 0; i < npairs; i++)
     {
         auto &b      = pairs[i];
@@ -805,7 +825,7 @@ static double computeLJ12_6_4(MsgHandler                            *msghandler,
         edisp += vvdw_disp;
         emid  += vvdw_mid;
     }
-#endif
+    }
 
     if (msghandler && msghandler->debug())
     {
@@ -840,6 +860,8 @@ static double computeLJ8_6(MsgHandler                            *msghandler,
     const size_t npairs = pairs.size();
 
 #if defined(__AVX512F__) && defined(GMX_SIMD_X86_AVX_512)
+    if (npairs > 12)
+    {
     auto   &f    = *forces;
     constexpr int W = 8;
     alignas(64) double c6_arr[W], c8_arr[W];
@@ -955,7 +977,12 @@ static double computeLJ8_6(MsgHandler                            *msghandler,
         pairforces(flj, dx, indices, forces);
     }
 
-#elif defined(__AVX2__) && defined(GMX_SIMD_X86_AVX2_256)
+    }
+    else
+#endif
+#if defined(__AVX2__) && defined(GMX_SIMD_X86_AVX2_256)
+    if (npairs > 6)
+    {
     auto   &f    = *forces;
     constexpr int W = 4;
     alignas(32) double c6_arr[W], c8_arr[W];
@@ -1073,7 +1100,10 @@ static double computeLJ8_6(MsgHandler                            *msghandler,
         pairforces(flj, dx, indices, forces);
     }
 
-#else
+    }
+    else
+#endif
+    {
     for (size_t i = 0; i < npairs; i++)
     {
         auto &b      = pairs[i];
@@ -1103,7 +1133,7 @@ static double computeLJ8_6(MsgHandler                            *msghandler,
         edisp += vvdw_disp;
         pairforces(flj, dx, indices, forces);
     }
-#endif
+    }
 
     if (msghandler && msghandler->debug())
     {
@@ -1137,6 +1167,8 @@ static double computeLJ14_7(MsgHandler                            *msghandler,
     const size_t npairs = pairs.size();
 
 #if defined(__AVX512F__) && defined(GMX_SIMD_X86_AVX_512)
+    if (npairs > 12)
+    {
     auto   &f    = *forces;
     constexpr int W = 8;
     alignas(64) double dxX[W], dxY[W], dxZ[W];
@@ -1259,7 +1291,12 @@ static double computeLJ14_7(MsgHandler                            *msghandler,
         pairforces(fbond, dx, indices, forces);
     }
 
-#elif defined(__AVX2__) && defined(GMX_SIMD_X86_AVX2_256)
+    }
+    else
+#endif
+#if defined(__AVX2__) && defined(GMX_SIMD_X86_AVX2_256)
+    if (npairs > 6)
+    {
     auto   &f    = *forces;
     constexpr int W = 4;
     alignas(32) double dxX[W], dxY[W], dxZ[W];
@@ -1384,7 +1421,10 @@ static double computeLJ14_7(MsgHandler                            *msghandler,
         pairforces(fbond, dx, indices, forces);
     }
 
-#else
+    }
+    else
+#endif
+    {
     for (size_t i = 0; i < npairs; i++)
     {
         auto &b      = pairs[i];
@@ -1424,7 +1464,7 @@ static double computeLJ14_7(MsgHandler                            *msghandler,
         real fbond = f147*rinv;
         pairforces(fbond, dx, indices, forces);
     }
-#endif
+    }
 
     energies->insert({InteractionType::EXCHANGE, erep});
     energies->insert({InteractionType::DISPERSION, edisp});
@@ -1489,6 +1529,8 @@ static double computeBornMayer(MsgHandler                            *msghandler
     const size_t npairs = pairs.size();
 
 #if defined(__AVX512F__) && defined(GMX_SIMD_X86_AVX_512)
+    if (npairs > 12)
+    {
     auto   &f    = *forces;
     constexpr int W = 8;
     alignas(64) double dxX[W], dxY[W], dxZ[W];
@@ -1564,7 +1606,12 @@ static double computeBornMayer(MsgHandler                            *msghandler
                              params[expB], forces);
     }
 
-#elif defined(__AVX2__) && defined(GMX_SIMD_X86_AVX2_256)
+    }
+    else
+#endif
+#if defined(__AVX2__) && defined(GMX_SIMD_X86_AVX2_256)
+    if (npairs > 6)
+    {
     auto   &f    = *forces;
     constexpr int W = 4;
     alignas(32) double dxX[W], dxY[W], dxZ[W];
@@ -1642,7 +1689,10 @@ static double computeBornMayer(MsgHandler                            *msghandler
                              params[expB], forces);
     }
 
-#else
+    }
+    else
+#endif
+    {
     for (size_t i = 0; i < npairs; i++)
     {
         auto &b      = pairs[i];
@@ -1652,7 +1702,7 @@ static double computeBornMayer(MsgHandler                            *msghandler
         eexp += lowBornMayer(msghandler, b->atomIndices(), *coordinates, -params[expA],
                              params[expB], forces);
     }
-#endif
+    }
 
     energies->insert({InteractionType::VDWCORRECTION, eexp});
 
@@ -1724,6 +1774,8 @@ static double computeSlaterISA(MsgHandler                            *msghandler
     const size_t npairs = pairs.size();
 
 #if defined(__AVX512F__) && defined(GMX_SIMD_X86_AVX_512)
+    if (npairs > 12)
+    {
     auto   &f    = *forces;
     constexpr int W = 8;
     alignas(64) double dxX[W], dxY[W], dxZ[W];
@@ -1803,7 +1855,12 @@ static double computeSlaterISA(MsgHandler                            *msghandler
         eexp += lowSlaterISA(msghandler, b->atomIndices(), *coordinates, params[expA], params[expB], forces);
     }
 
-#elif defined(__AVX2__) && defined(GMX_SIMD_X86_AVX2_256)
+    }
+    else
+#endif
+#if defined(__AVX2__) && defined(GMX_SIMD_X86_AVX2_256)
+    if (npairs > 6)
+    {
     auto   &f    = *forces;
     constexpr int W = 4;
     alignas(32) double dxX[W], dxY[W], dxZ[W];
@@ -1885,14 +1942,17 @@ static double computeSlaterISA(MsgHandler                            *msghandler
         eexp += lowSlaterISA(msghandler, b->atomIndices(), *coordinates, params[expA], params[expB], forces);
     }
 
-#else
+    }
+    else
+#endif
+    {
     for (size_t i = 0; i < npairs; i++)
     {
         auto &b      = pairs[i];
         auto &params = b->params();
         eexp += lowSlaterISA(msghandler, b->atomIndices(), *coordinates, params[expA], params[expB], forces);
     }
-#endif
+    }
 
     energies->insert({InteractionType::EXCHANGE, eexp});
 
@@ -1920,6 +1980,8 @@ static double computeDoubleExponential(MsgHandler                            *ms
     const size_t npairs = pairs.size();
 
 #if defined(__AVX512F__) && defined(GMX_SIMD_X86_AVX_512)
+    if (npairs > 12)
+    {
     auto   &f    = *forces;
     constexpr int W = 8;
     alignas(64) double dxX[W], dxY[W], dxZ[W];
@@ -2018,7 +2080,12 @@ static double computeDoubleExponential(MsgHandler                            *ms
         pairforces(fbond, dx, indices, forces);
     }
 
-#elif defined(__AVX2__) && defined(GMX_SIMD_X86_AVX2_256)
+    }
+    else
+#endif
+#if defined(__AVX2__) && defined(GMX_SIMD_X86_AVX2_256)
+    if (npairs > 6)
+    {
     auto   &f    = *forces;
     constexpr int W = 4;
     alignas(32) double dxX[W], dxY[W], dxZ[W];
@@ -2119,7 +2186,10 @@ static double computeDoubleExponential(MsgHandler                            *ms
         pairforces(fbond, dx, indices, forces);
     }
 
-#else
+    }
+    else
+#endif
+    {
     for (size_t i = 0; i < npairs; i++)
     {
         auto &b      = pairs[i];
@@ -2148,7 +2218,7 @@ static double computeDoubleExponential(MsgHandler                            *ms
         real fbond  = fexp*rinv;
         pairforces(fbond, dx, indices, forces);
     }
-#endif
+    }
 
     energies->insert({InteractionType::INDUCTIONCORRECTION, eexp});
 
@@ -2214,6 +2284,8 @@ static double computeWBH(MsgHandler                            *msghandler,
     const size_t npairs = pairs.size();
 
 #if defined(__AVX512F__) && defined(GMX_SIMD_X86_AVX_512)
+    if (npairs > 12)
+    {
     auto   &f    = *forces;
     constexpr int W = 8;
     alignas(64) double dxX[W], dxY[W], dxZ[W];
@@ -2341,7 +2413,12 @@ static double computeWBH(MsgHandler                            *msghandler,
         }
     }
 
-#elif defined(__AVX2__) && defined(GMX_SIMD_X86_AVX2_256)
+    }
+    else
+#endif
+#if defined(__AVX2__) && defined(GMX_SIMD_X86_AVX2_256)
+    if (npairs > 6)
+    {
     auto   &f    = *forces;
     constexpr int W = 4;
     alignas(32) double dxX[W], dxY[W], dxZ[W];
@@ -2471,7 +2548,10 @@ static double computeWBH(MsgHandler                            *msghandler,
         }
     }
 
-#else
+    }
+    else
+#endif
+    {
     for (size_t i = 0; i < npairs; i++)
     {
         auto &b      = pairs[i];
@@ -2499,7 +2579,7 @@ static double computeWBH(MsgHandler                            *msghandler,
             pairforces(fbond, dx, indices, forces);
         }
     }
-#endif
+    }
 
     energies->insert({InteractionType::EXCHANGE, erep});
     energies->insert({InteractionType::DISPERSION, edisp});
@@ -2529,6 +2609,8 @@ static double computeBuckingham(MsgHandler                            *msghandle
     const size_t npairs = pairs.size();
 
 #if defined(__AVX512F__) && defined(GMX_SIMD_X86_AVX_512)
+    if (npairs > 12)
+    {
     auto   &f    = *forces;
     constexpr int W = 8;
     alignas(64) double dxX[W], dxY[W], dxZ[W];
@@ -2642,7 +2724,12 @@ static double computeBuckingham(MsgHandler                            *msghandle
         }
     }
 
-#elif defined(__AVX2__) && defined(GMX_SIMD_X86_AVX2_256)
+    }
+    else
+#endif
+#if defined(__AVX2__) && defined(GMX_SIMD_X86_AVX2_256)
+    if (npairs > 6)
+    {
     auto   &f    = *forces;
     constexpr int W = 4;
     alignas(32) double dxX[W], dxY[W], dxZ[W];
@@ -2758,7 +2845,10 @@ static double computeBuckingham(MsgHandler                            *msghandle
         }
     }
 
-#else
+    }
+    else
+#endif
+    {
     for (size_t i = 0; i < npairs; i++)
     {
         auto &b      = pairs[i];
@@ -2787,7 +2877,7 @@ static double computeBuckingham(MsgHandler                            *msghandle
             pairforces(fbond, dx, indices, forces);
         }
     }
-#endif
+    }
 
     energies->insert({InteractionType::EXCHANGE, erep});
     energies->insert({InteractionType::DISPERSION, edisp});
@@ -2882,6 +2972,8 @@ static double computeTangToennies(MsgHandler                            *msghand
     const size_t npairs = pairs.size();
 
 #if defined(__AVX512F__) && defined(GMX_SIMD_X86_AVX_512)
+    if (npairs > 12)
+    {
     auto   &x    = *coordinates;
     auto   &f    = *forces;
     constexpr int W = 8;
@@ -2995,7 +3087,12 @@ static double computeTangToennies(MsgHandler                            *msghand
                                { params[ttC6], params[ttC8], params[ttC10] }, forces);
     }
 
-#elif defined(__AVX2__) && defined(GMX_SIMD_X86_AVX2_256)
+    }
+    else
+#endif
+#if defined(__AVX2__) && defined(GMX_SIMD_X86_AVX2_256)
+    if (npairs > 6)
+    {
     auto   &x    = *coordinates;
     auto   &f    = *forces;
     constexpr int W = 4;
@@ -3111,7 +3208,10 @@ static double computeTangToennies(MsgHandler                            *msghand
                                { params[ttC6], params[ttC8], params[ttC10] }, forces);
     }
 
-#else
+    }
+    else
+#endif
+    {
     for (size_t i = 0; i < npairs; i++)
     {
         auto &b      = pairs[i];
@@ -3121,7 +3221,7 @@ static double computeTangToennies(MsgHandler                            *msghand
         edisp += TT_Dispersion(msghandler, b->atomIndices(), *coordinates, params[ttB],
                                { params[ttC6], params[ttC8], params[ttC10] }, forces);
     }
-#endif
+    }
 
     energies->insert({InteractionType::EXCHANGE, erep});
     energies->insert({InteractionType::DISPERSION, edisp});
@@ -3150,6 +3250,8 @@ static double computeTT2b(MsgHandler                            *msghandler,
     const size_t npairs = pairs.size();
 
 #if defined(__AVX512F__) && defined(GMX_SIMD_X86_AVX_512)
+    if (npairs > 12)
+    {
     auto   &x    = *coordinates;
     auto   &f    = *forces;
     constexpr int W = 8;
@@ -3263,7 +3365,12 @@ static double computeTT2b(MsgHandler                            *msghandler,
                                { params[tt2bC6], params[tt2bC8], params[tt2bC10] }, forces);
     }
 
-#elif defined(__AVX2__) && defined(GMX_SIMD_X86_AVX2_256)
+    }
+    else
+#endif
+#if defined(__AVX2__) && defined(GMX_SIMD_X86_AVX2_256)
+    if (npairs > 6)
+    {
     auto   &x    = *coordinates;
     auto   &f    = *forces;
     constexpr int W = 4;
@@ -3379,7 +3486,10 @@ static double computeTT2b(MsgHandler                            *msghandler,
                                { params[tt2bC6], params[tt2bC8], params[tt2bC10] }, forces);
     }
 
-#else
+    }
+    else
+#endif
+    {
     for (size_t i = 0; i < npairs; i++)
     {
         auto &b      = pairs[i];
@@ -3389,7 +3499,7 @@ static double computeTT2b(MsgHandler                            *msghandler,
         edisp += TT_Dispersion(msghandler, b->atomIndices(), *coordinates, params[tt2bBdisp],
                                { params[tt2bC6], params[tt2bC8], params[tt2bC10] }, forces);
     }
-#endif
+    }
 
     energies->insert({InteractionType::EXCHANGE, erep});
     energies->insert({InteractionType::DISPERSION, edisp});
@@ -3418,6 +3528,8 @@ static double computeSlater_ISA_TT(MsgHandler                            *msghan
     const size_t npairs = pairs.size();
 
 #if defined(__AVX512F__) && defined(GMX_SIMD_X86_AVX_512)
+    if (npairs > 12)
+    {
     auto   &x    = *coordinates;
     auto   &f    = *forces;
     constexpr int W = 8;
@@ -3537,7 +3649,12 @@ static double computeSlater_ISA_TT(MsgHandler                            *msghan
                                { params[SIttC6], params[SIttC8], params[SIttC10] }, forces);
     }
 
-#elif defined(__AVX2__) && defined(GMX_SIMD_X86_AVX2_256)
+    }
+    else
+#endif
+#if defined(__AVX2__) && defined(GMX_SIMD_X86_AVX2_256)
+    if (npairs > 6)
+    {
     auto   &x    = *coordinates;
     auto   &f    = *forces;
     constexpr int W = 4;
@@ -3659,7 +3776,10 @@ static double computeSlater_ISA_TT(MsgHandler                            *msghan
                                { params[SIttC6], params[SIttC8], params[SIttC10] }, forces);
     }
 
-#else
+    }
+    else
+#endif
+    {
     for (size_t i = 0; i < npairs; i++)
     {
         auto &b      = pairs[i];
@@ -3669,7 +3789,7 @@ static double computeSlater_ISA_TT(MsgHandler                            *msghan
         edisp += TT_Dispersion(msghandler, b->atomIndices(), *coordinates, params[SIttBdisp],
                                { params[SIttC6], params[SIttC8], params[SIttC10] }, forces);
     }
-#endif
+    }
 
     energies->insert({InteractionType::EXCHANGE, erep});
     energies->insert({InteractionType::DISPERSION, edisp});
@@ -3700,6 +3820,8 @@ static double computeNonBonded(MsgHandler                            *msghandler
     const size_t npairs = pairs.size();
 
 #if defined(__AVX512F__) && defined(GMX_SIMD_X86_AVX_512)
+    if (npairs > 12)
+    {
     auto   &f    = *forces;
     constexpr int W = 8;
     alignas(64) double dxX[W], dxY[W], dxZ[W];
@@ -3835,7 +3957,12 @@ static double computeNonBonded(MsgHandler                            *msghandler
         }
     }
 
-#elif defined(__AVX2__) && defined(GMX_SIMD_X86_AVX2_256)
+    }
+    else
+#endif
+#if defined(__AVX2__) && defined(GMX_SIMD_X86_AVX2_256)
+    if (npairs > 6)
+    {
     auto   &f    = *forces;
     constexpr int W = 4;
     alignas(32) double dxX[W], dxY[W], dxZ[W];
@@ -3973,7 +4100,10 @@ static double computeNonBonded(MsgHandler                            *msghandler
         }
     }
 
-#else
+    }
+    else
+#endif
+    {
     for (size_t i = 0; i < npairs; i++)
     {
         auto &b      = pairs[i];
@@ -4011,7 +4141,7 @@ static double computeNonBonded(MsgHandler                            *msghandler
             pairforces(fbond, dx, indices, forces);
         }
     }
-#endif
+    }
 
     energies->insert({InteractionType::EXCHANGE, erep});
     energies->insert({InteractionType::DISPERSION, edisp});
@@ -4104,6 +4234,8 @@ static double computeCoulombGaussian(MsgHandler                        *msghandl
     const size_t npairs = pairs.size();
 
 #if defined(__AVX512F__) && defined(GMX_SIMD_X86_AVX_512)
+    if (npairs > 12)
+    {
     auto   &f    = *forces;
     constexpr int W = 8;
     alignas(64) double dxX[W], dxY[W], dxZ[W];
@@ -4207,7 +4339,12 @@ static double computeCoulombGaussian(MsgHandler                        *msghandl
         }
     }
 
-#elif defined(__AVX2__) && defined(GMX_SIMD_X86_AVX2_256)
+    }
+    else
+#endif
+#if defined(__AVX2__) && defined(GMX_SIMD_X86_AVX2_256)
+    if (npairs > 6)
+    {
     auto   &f    = *forces;
     constexpr int W = 4;
     alignas(32) double dxX[W], dxY[W], dxZ[W];
@@ -4313,7 +4450,10 @@ static double computeCoulombGaussian(MsgHandler                        *msghandl
         }
     }
 
-#else
+    }
+    else
+#endif
+    {
     for (size_t i = 0; i < npairs; i++)
     {
         // Get the parameters.
@@ -4348,7 +4488,7 @@ static double computeCoulombGaussian(MsgHandler                        *msghandl
             pairforces(felec, dx, indices, forces);
         }
     }
-#endif
+    }
 
     if (msghandler && msghandler->debug())
     {
@@ -4380,6 +4520,8 @@ static double computeCoulombSlater(gmx_unused MsgHandler             *msghandler
     const size_t npairs = pairs.size();
 
 #if defined(__AVX512F__) && defined(GMX_SIMD_X86_AVX_512)
+    if (npairs > 12)
+    {
     auto   &f    = *forces;
     constexpr int W = 8;
     alignas(64) double dxX[W], dxY[W], dxZ[W];
@@ -4487,7 +4629,12 @@ static double computeCoulombSlater(gmx_unused MsgHandler             *msghandler
         }
     }
 
-#elif defined(__AVX2__) && defined(GMX_SIMD_X86_AVX2_256)
+    }
+    else
+#endif
+#if defined(__AVX2__) && defined(GMX_SIMD_X86_AVX2_256)
+    if (npairs > 6)
+    {
     auto   &f    = *forces;
     constexpr int W = 4;
     alignas(32) double dxX[W], dxY[W], dxZ[W];
@@ -4597,7 +4744,10 @@ static double computeCoulombSlater(gmx_unused MsgHandler             *msghandler
         }
     }
 
-#else
+    }
+    else
+#endif
+    {
     for (size_t i = 0; i < npairs; i++)
     {
         auto &b       = pairs[i];
@@ -4633,7 +4783,7 @@ static double computeCoulombSlater(gmx_unused MsgHandler             *msghandler
             pairforces(felec, dx, indices, forces);
         }
     }
-#endif
+    }
 
     energies->insert({InteractionType::ELECTROSTATICS, ebond});
 
