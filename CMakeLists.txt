@@ -207,10 +207,6 @@ gmx_dependent_option(
     GMX_MPI)
 mark_as_advanced(GMX_MPI_IN_PLACE)
 
-#option(GMX_COOL_QUOTES "Enable GROMACS cool quotes" ON)
-#mark_as_advanced(GMX_COOL_QUOTES)
-#gmx_add_cache_dependency(GMX_COOL_QUOTES BOOL "NOT GMX_FAHCORE" OFF)
-
 set(GMX_USE_OPENCL OFF)
 set(GMX_GPU_ACCELERATION_FRAMEWORK "GMX_GPU_NONE")
 set(GMX_GPU "GMX_GPU_NONE")
@@ -220,14 +216,8 @@ gmx_option_multichoice(
     GMX_SIMD
     "SIMD instruction set for CPU kernels and compiler optimization"
     "None"
-    None Reference)
+    None AVX2_256 AVX_512 Reference)
 #    AUTO None SSE2 SSE4.1 AVX_128_FMA AVX_256 AVX2_256 AVX2_128 AVX_512 AVX_512_KNL  ARM_NEON ARM_NEON_ASIMD IBM_VMX IBM_VSX Sparc64_HPC_ACE Reference)
-
-#gmx_option_multichoice(
-#    GMX_QMMM_PROGRAM
-#    "QM package for QM/MM"
-#    None
-#    none gaussian mopac gamess orca)
 
 gmx_dependent_cache_variable(GMX_SIMD_REF_FLOAT_WIDTH  "Reference SIMD single precision width" STRING "4" "GMX_SIMD STREQUAL REFERENCE")
 gmx_dependent_cache_variable(GMX_SIMD_REF_DOUBLE_WIDTH "Reference SIMD double precision width" STRING "2" "GMX_SIMD STREQUAL REFERENCE")
@@ -239,23 +229,8 @@ mark_as_advanced(GMX_BROKEN_CALLOC)
 
 option(GMX_OPENMP "Enable OpenMP-based multithreading" OFF)
 
-#option(GMX_BUILD_MDRUN_ONLY "Build and install only the mdrun binary" OFF)
-
-#option(GMX_CYCLE_SUBCOUNTERS "Enable cycle subcounters to get a more detailed cycle timings" OFF)
-#mark_as_advanced(GMX_CYCLE_SUBCOUNTERS)
-
 option(GMX_SKIP_DEFAULT_CFLAGS "Don't automatically add suggested/required Compiler flags." OFF)
 mark_as_advanced(GMX_SKIP_DEFAULT_CFLAGS)
-
-#option(GMX_BUILD_FOR_COVERAGE
-#       "Tune build for better code coverage metrics (e.g., disable asserts)"
-#       OFF)
-#mark_as_advanced(GMX_BUILD_FOR_COVERAGE)
-
-#option(GMX_DEVELOPER_BUILD
-#    "Enable Developer convenience features: always build unit-tests"
-#    OFF)
-#mark_as_advanced(GMX_DEVELOPER_BUILD)
 
 gmx_set_boolean(GMX_COMPILER_WARNINGS_DEFAULT "NOT SOURCE_IS_SOURCE_DISTRIBUTION")
 option(GMX_COMPILER_WARNINGS
