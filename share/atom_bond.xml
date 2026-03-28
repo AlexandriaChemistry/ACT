@@ -474,13 +474,13 @@
 
   <atombondtype name="rb_+1" smarts="[Rb+]" charge="1" multiplicity="1">
     <atomtypes>
-      <atomtype index="0" name="Rb+" atomnumber="19"/>
+      <atomtype index="0" name="Rb+" atomnumber="37"/>
     </atomtypes>
   </atombondtype>
 
   <atombondtype name="rb_0" smarts="[Rb]" charge="0" multiplicity="1">
     <atomtypes>
-      <atomtype index="0" name="rb" atomnumber="19"/>
+      <atomtype index="0" name="rb" atomnumber="37"/>
     </atomtypes>
   </atombondtype>
 
