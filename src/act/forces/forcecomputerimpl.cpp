@@ -198,11 +198,16 @@ static double computeLJ12_6(MsgHandler                            *msghandler,
                        _mm512_fmadd_pd(vdxY, vdxY,
                        _mm512_mul_pd  (vdxZ, vdxZ)));
 
-        // ---- rinv = 1/sqrt(dr2): rsqrt14 + one Newton-Raphson step --
-        // rsqrt14 gives ~14-bit precision; one NR step gives full
+        // ---- rinv = 1/sqrt(dr2): rsqrt14 + two Newton-Raphson steps --
+        // rsqrt14 gives ~14-bit precision; two NR steps give full
         // double precision (~52 bits):
         //   rinv_new = rinv * (1.5 - 0.5 * dr2 * rinv^2)
         __m512d vrinv = _mm512_rsqrt14_pd(vdr2);
+        {
+            __m512d vtmp = _mm512_mul_pd(_mm512_mul_pd(vdr2, vrinv), vrinv);
+            vrinv = _mm512_mul_pd(vrinv,
+                    _mm512_fnmadd_pd(vhalf, vtmp, vthreehalf));
+        }
         {
             __m512d vtmp = _mm512_mul_pd(_mm512_mul_pd(vdr2, vrinv), vrinv);
             vrinv = _mm512_mul_pd(vrinv,
@@ -560,6 +565,10 @@ static double computeLJ12_6_4(MsgHandler                            *msghandler,
             __m512d vtmp = _mm512_mul_pd(_mm512_mul_pd(vdr2, vrinv), vrinv);
             vrinv = _mm512_mul_pd(vrinv, _mm512_fnmadd_pd(vhalf, vtmp, vthreehalf));
         }
+        {
+            __m512d vtmp = _mm512_mul_pd(_mm512_mul_pd(vdr2, vrinv), vrinv);
+            vrinv = _mm512_mul_pd(vrinv, _mm512_fnmadd_pd(vhalf, vtmp, vthreehalf));
+        }
         __m512d vrinv2  = _mm512_mul_pd(vrinv,  vrinv);
         __m512d vrinv4  = _mm512_mul_pd(vrinv2, vrinv2);
         __m512d vrinv6  = _mm512_mul_pd(vrinv4, vrinv2);
@@ -880,6 +889,10 @@ static double computeLJ8_6(MsgHandler                            *msghandler,
             __m512d vtmp = _mm512_mul_pd(_mm512_mul_pd(vdr2, vrinv), vrinv);
             vrinv = _mm512_mul_pd(vrinv, _mm512_fnmadd_pd(vhalf, vtmp, vthreehalf));
         }
+        {
+            __m512d vtmp = _mm512_mul_pd(_mm512_mul_pd(vdr2, vrinv), vrinv);
+            vrinv = _mm512_mul_pd(vrinv, _mm512_fnmadd_pd(vhalf, vtmp, vthreehalf));
+        }
         __m512d vrinv2 = _mm512_mul_pd(vrinv,  vrinv);
         __m512d vrinv4 = _mm512_mul_pd(vrinv2, vrinv2);
         __m512d vrinv6 = _mm512_mul_pd(vrinv4, vrinv2);
@@ -1154,6 +1167,10 @@ static double computeLJ14_7(MsgHandler                            *msghandler,
                        _mm512_fmadd_pd(vdxY, vdxY,
                        _mm512_mul_pd  (vdxZ, vdxZ)));
         __m512d vrinv = _mm512_rsqrt14_pd(vdr2);
+        {
+            __m512d vtmp = _mm512_mul_pd(_mm512_mul_pd(vdr2, vrinv), vrinv);
+            vrinv = _mm512_mul_pd(vrinv, _mm512_fnmadd_pd(vhalf, vtmp, vthreehalf));
+        }
         {
             __m512d vtmp = _mm512_mul_pd(_mm512_mul_pd(vdr2, vrinv), vrinv);
             vrinv = _mm512_mul_pd(vrinv, _mm512_fnmadd_pd(vhalf, vtmp, vthreehalf));
@@ -1510,6 +1527,10 @@ static double computeBornMayer(MsgHandler                            *msghandler
             __m512d vtmp = _mm512_mul_pd(_mm512_mul_pd(vdr2, vrinv), vrinv);
             vrinv = _mm512_mul_pd(vrinv, _mm512_fnmadd_pd(vhalf, vtmp, vthreehalf));
         }
+        {
+            __m512d vtmp = _mm512_mul_pd(_mm512_mul_pd(vdr2, vrinv), vrinv);
+            vrinv = _mm512_mul_pd(vrinv, _mm512_fnmadd_pd(vhalf, vtmp, vthreehalf));
+        }
         _mm512_store_pd(dr2_arr,  vdr2);
         _mm512_store_pd(rinv_arr, vrinv);
 
@@ -1742,6 +1763,10 @@ static double computeSlaterISA(MsgHandler                            *msghandler
             __m512d vtmp = _mm512_mul_pd(_mm512_mul_pd(vdr2, vrinv), vrinv);
             vrinv = _mm512_mul_pd(vrinv, _mm512_fnmadd_pd(vhalf, vtmp, vthreehalf));
         }
+        {
+            __m512d vtmp = _mm512_mul_pd(_mm512_mul_pd(vdr2, vrinv), vrinv);
+            vrinv = _mm512_mul_pd(vrinv, _mm512_fnmadd_pd(vhalf, vtmp, vthreehalf));
+        }
         _mm512_store_pd(dr2_arr,  vdr2);
         _mm512_store_pd(rinv_arr, vrinv);
 
@@ -1929,6 +1954,10 @@ static double computeDoubleExponential(MsgHandler                            *ms
                        _mm512_fmadd_pd(vdxY, vdxY,
                        _mm512_mul_pd  (vdxZ, vdxZ)));
         __m512d vrinv = _mm512_rsqrt14_pd(vdr2);
+        {
+            __m512d vtmp = _mm512_mul_pd(_mm512_mul_pd(vdr2, vrinv), vrinv);
+            vrinv = _mm512_mul_pd(vrinv, _mm512_fnmadd_pd(vhalf, vtmp, vthreehalf));
+        }
         {
             __m512d vtmp = _mm512_mul_pd(_mm512_mul_pd(vdr2, vrinv), vrinv);
             vrinv = _mm512_mul_pd(vrinv, _mm512_fnmadd_pd(vhalf, vtmp, vthreehalf));
@@ -2223,6 +2252,10 @@ static double computeWBH(MsgHandler                            *msghandler,
                        _mm512_fmadd_pd(vdxY, vdxY,
                        _mm512_mul_pd  (vdxZ, vdxZ)));
         __m512d vrinv = _mm512_rsqrt14_pd(vdr2);
+        {
+            __m512d vtmp = _mm512_mul_pd(_mm512_mul_pd(vdr2, vrinv), vrinv);
+            vrinv = _mm512_mul_pd(vrinv, _mm512_fnmadd_pd(vhalf, vtmp, vthreehalf));
+        }
         {
             __m512d vtmp = _mm512_mul_pd(_mm512_mul_pd(vdr2, vrinv), vrinv);
             vrinv = _mm512_mul_pd(vrinv, _mm512_fnmadd_pd(vhalf, vtmp, vthreehalf));
@@ -2534,6 +2567,10 @@ static double computeBuckingham(MsgHandler                            *msghandle
                        _mm512_fmadd_pd(vdxY, vdxY,
                        _mm512_mul_pd  (vdxZ, vdxZ)));
         __m512d vrinv = _mm512_rsqrt14_pd(vdr2);
+        {
+            __m512d vtmp = _mm512_mul_pd(_mm512_mul_pd(vdr2, vrinv), vrinv);
+            vrinv = _mm512_mul_pd(vrinv, _mm512_fnmadd_pd(vhalf, vtmp, vthreehalf));
+        }
         {
             __m512d vtmp = _mm512_mul_pd(_mm512_mul_pd(vdr2, vrinv), vrinv);
             vrinv = _mm512_mul_pd(vrinv, _mm512_fnmadd_pd(vhalf, vtmp, vthreehalf));
@@ -2880,6 +2917,10 @@ static double computeTangToennies(MsgHandler                            *msghand
             __m512d vtmp = _mm512_mul_pd(_mm512_mul_pd(vdr2, vrinv), vrinv);
             vrinv = _mm512_mul_pd(vrinv, _mm512_fnmadd_pd(vhalf, vtmp, vthreehalf));
         }
+        {
+            __m512d vtmp = _mm512_mul_pd(_mm512_mul_pd(vdr2, vrinv), vrinv);
+            vrinv = _mm512_mul_pd(vrinv, _mm512_fnmadd_pd(vhalf, vtmp, vthreehalf));
+        }
         _mm512_store_pd(dr2_arr,  vdr2);
         _mm512_store_pd(rinv_arr, vrinv);
 
@@ -3140,6 +3181,10 @@ static double computeTT2b(MsgHandler                            *msghandler,
                        _mm512_fmadd_pd(vdxY, vdxY,
                        _mm512_mul_pd  (vdxZ, vdxZ)));
         __m512d vrinv = _mm512_rsqrt14_pd(vdr2);
+        {
+            __m512d vtmp = _mm512_mul_pd(_mm512_mul_pd(vdr2, vrinv), vrinv);
+            vrinv = _mm512_mul_pd(vrinv, _mm512_fnmadd_pd(vhalf, vtmp, vthreehalf));
+        }
         {
             __m512d vtmp = _mm512_mul_pd(_mm512_mul_pd(vdr2, vrinv), vrinv);
             vrinv = _mm512_mul_pd(vrinv, _mm512_fnmadd_pd(vhalf, vtmp, vthreehalf));
@@ -3405,6 +3450,10 @@ static double computeSlater_ISA_TT(MsgHandler                            *msghan
                        _mm512_fmadd_pd(vdxY, vdxY,
                        _mm512_mul_pd  (vdxZ, vdxZ)));
         __m512d vrinv = _mm512_rsqrt14_pd(vdr2);
+        {
+            __m512d vtmp = _mm512_mul_pd(_mm512_mul_pd(vdr2, vrinv), vrinv);
+            vrinv = _mm512_mul_pd(vrinv, _mm512_fnmadd_pd(vhalf, vtmp, vthreehalf));
+        }
         {
             __m512d vtmp = _mm512_mul_pd(_mm512_mul_pd(vdr2, vrinv), vrinv);
             vrinv = _mm512_mul_pd(vrinv, _mm512_fnmadd_pd(vhalf, vtmp, vthreehalf));
@@ -3690,6 +3739,10 @@ static double computeNonBonded(MsgHandler                            *msghandler
                        _mm512_fmadd_pd(vdxY, vdxY,
                        _mm512_mul_pd  (vdxZ, vdxZ)));
         __m512d vrinv = _mm512_rsqrt14_pd(vdr2);
+        {
+            __m512d vtmp = _mm512_mul_pd(_mm512_mul_pd(vdr2, vrinv), vrinv);
+            vrinv = _mm512_mul_pd(vrinv, _mm512_fnmadd_pd(vhalf, vtmp, vthreehalf));
+        }
         {
             __m512d vtmp = _mm512_mul_pd(_mm512_mul_pd(vdr2, vrinv), vrinv);
             vrinv = _mm512_mul_pd(vrinv, _mm512_fnmadd_pd(vhalf, vtmp, vthreehalf));
@@ -4085,6 +4138,10 @@ static double computeCoulombGaussian(MsgHandler                        *msghandl
             __m512d vtmp = _mm512_mul_pd(_mm512_mul_pd(vdr2, vrinv), vrinv);
             vrinv = _mm512_mul_pd(vrinv, _mm512_fnmadd_pd(vhalf, vtmp, vthreehalf));
         }
+        {
+            __m512d vtmp = _mm512_mul_pd(_mm512_mul_pd(vdr2, vrinv), vrinv);
+            vrinv = _mm512_mul_pd(vrinv, _mm512_fnmadd_pd(vhalf, vtmp, vthreehalf));
+        }
         _mm512_store_pd(dr2_arr,  vdr2);
         _mm512_store_pd(rinv_arr, vrinv);
 
@@ -4353,6 +4410,10 @@ static double computeCoulombSlater(gmx_unused MsgHandler             *msghandler
                        _mm512_fmadd_pd(vdxY, vdxY,
                        _mm512_mul_pd  (vdxZ, vdxZ)));
         __m512d vrinv = _mm512_rsqrt14_pd(vdr2);
+        {
+            __m512d vtmp = _mm512_mul_pd(_mm512_mul_pd(vdr2, vrinv), vrinv);
+            vrinv = _mm512_mul_pd(vrinv, _mm512_fnmadd_pd(vhalf, vtmp, vthreehalf));
+        }
         {
             __m512d vtmp = _mm512_mul_pd(_mm512_mul_pd(vdr2, vrinv), vrinv);
             vrinv = _mm512_mul_pd(vrinv, _mm512_fnmadd_pd(vhalf, vtmp, vthreehalf));
