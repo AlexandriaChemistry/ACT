@@ -145,7 +145,7 @@ static double computeLJ12_6(MsgHandler                            *msghandler,
     const size_t npairs = pairs.size();
 
 #if defined(__AVX512F__) && defined(GMX_SIMD_X86_AVX_512)
-    if (npairs > 12)
+    if (npairs >= 12)
     {
     // ---------------------------------------------------------------
     // AVX-512 unrolled kernel: process 8 pairs per iteration
@@ -299,7 +299,7 @@ static double computeLJ12_6(MsgHandler                            *msghandler,
     else
 #endif
 #if defined(__AVX2__) && defined(GMX_SIMD_X86_AVX2_256)
-    if (npairs > 6)
+    if (npairs >= 6)
     {
     // ---------------------------------------------------------------
     // AVX2_256 unrolled kernel: process 4 pairs per iteration
@@ -523,7 +523,7 @@ static double computeLJ12_6_4(MsgHandler                            *msghandler,
     const size_t npairs = pairs.size();
 
 #if defined(__AVX512F__) && defined(GMX_SIMD_X86_AVX_512)
-    if (npairs > 12)
+    if (npairs >= 12)
     {
     auto   &f    = *forces;
     constexpr int W = 8;
@@ -656,7 +656,7 @@ static double computeLJ12_6_4(MsgHandler                            *msghandler,
     else
 #endif
 #if defined(__AVX2__) && defined(GMX_SIMD_X86_AVX2_256)
-    if (npairs > 6)
+    if (npairs >= 6)
     {
     auto   &f    = *forces;
     constexpr int W = 4;
@@ -860,7 +860,7 @@ static double computeLJ8_6(MsgHandler                            *msghandler,
     const size_t npairs = pairs.size();
 
 #if defined(__AVX512F__) && defined(GMX_SIMD_X86_AVX_512)
-    if (npairs > 12)
+    if (npairs >= 12)
     {
     auto   &f    = *forces;
     constexpr int W = 8;
@@ -981,7 +981,7 @@ static double computeLJ8_6(MsgHandler                            *msghandler,
     else
 #endif
 #if defined(__AVX2__) && defined(GMX_SIMD_X86_AVX2_256)
-    if (npairs > 6)
+    if (npairs >= 6)
     {
     auto   &f    = *forces;
     constexpr int W = 4;
@@ -1167,7 +1167,7 @@ static double computeLJ14_7(MsgHandler                            *msghandler,
     const size_t npairs = pairs.size();
 
 #if defined(__AVX512F__) && defined(GMX_SIMD_X86_AVX_512)
-    if (npairs > 12)
+    if (npairs >= 12)
     {
     auto   &f    = *forces;
     constexpr int W = 8;
@@ -1295,7 +1295,7 @@ static double computeLJ14_7(MsgHandler                            *msghandler,
     else
 #endif
 #if defined(__AVX2__) && defined(GMX_SIMD_X86_AVX2_256)
-    if (npairs > 6)
+    if (npairs >= 6)
     {
     auto   &f    = *forces;
     constexpr int W = 4;
@@ -1529,7 +1529,7 @@ static double computeBornMayer(MsgHandler                            *msghandler
     const size_t npairs = pairs.size();
 
 #if defined(__AVX512F__) && defined(GMX_SIMD_X86_AVX_512)
-    if (npairs > 12)
+    if (npairs >= 12)
     {
     auto   &f    = *forces;
     constexpr int W = 8;
@@ -1610,7 +1610,7 @@ static double computeBornMayer(MsgHandler                            *msghandler
     else
 #endif
 #if defined(__AVX2__) && defined(GMX_SIMD_X86_AVX2_256)
-    if (npairs > 6)
+    if (npairs >= 6)
     {
     auto   &f    = *forces;
     constexpr int W = 4;
@@ -1774,7 +1774,7 @@ static double computeSlaterISA(MsgHandler                            *msghandler
     const size_t npairs = pairs.size();
 
 #if defined(__AVX512F__) && defined(GMX_SIMD_X86_AVX_512)
-    if (npairs > 12)
+    if (npairs >= 12)
     {
     auto   &f    = *forces;
     constexpr int W = 8;
@@ -1859,7 +1859,7 @@ static double computeSlaterISA(MsgHandler                            *msghandler
     else
 #endif
 #if defined(__AVX2__) && defined(GMX_SIMD_X86_AVX2_256)
-    if (npairs > 6)
+    if (npairs >= 6)
     {
     auto   &f    = *forces;
     constexpr int W = 4;
@@ -1980,7 +1980,7 @@ static double computeDoubleExponential(MsgHandler                            *ms
     const size_t npairs = pairs.size();
 
 #if defined(__AVX512F__) && defined(GMX_SIMD_X86_AVX_512)
-    if (npairs > 12)
+    if (npairs >= 12)
     {
     auto   &f    = *forces;
     constexpr int W = 8;
@@ -2084,7 +2084,7 @@ static double computeDoubleExponential(MsgHandler                            *ms
     else
 #endif
 #if defined(__AVX2__) && defined(GMX_SIMD_X86_AVX2_256)
-    if (npairs > 6)
+    if (npairs >= 6)
     {
     auto   &f    = *forces;
     constexpr int W = 4;
@@ -2284,7 +2284,7 @@ static double computeWBH(MsgHandler                            *msghandler,
     const size_t npairs = pairs.size();
 
 #if defined(__AVX512F__) && defined(GMX_SIMD_X86_AVX_512)
-    if (npairs > 12)
+    if (npairs >= 12)
     {
     auto   &f    = *forces;
     constexpr int W = 8;
@@ -2417,7 +2417,7 @@ static double computeWBH(MsgHandler                            *msghandler,
     else
 #endif
 #if defined(__AVX2__) && defined(GMX_SIMD_X86_AVX2_256)
-    if (npairs > 6)
+    if (npairs >= 6)
     {
     auto   &f    = *forces;
     constexpr int W = 4;
@@ -2609,7 +2609,7 @@ static double computeBuckingham(MsgHandler                            *msghandle
     const size_t npairs = pairs.size();
 
 #if defined(__AVX512F__) && defined(GMX_SIMD_X86_AVX_512)
-    if (npairs > 12)
+    if (npairs >= 12)
     {
     auto   &f    = *forces;
     constexpr int W = 8;
@@ -2728,7 +2728,7 @@ static double computeBuckingham(MsgHandler                            *msghandle
     else
 #endif
 #if defined(__AVX2__) && defined(GMX_SIMD_X86_AVX2_256)
-    if (npairs > 6)
+    if (npairs >= 6)
     {
     auto   &f    = *forces;
     constexpr int W = 4;
@@ -2972,7 +2972,7 @@ static double computeTangToennies(MsgHandler                            *msghand
     const size_t npairs = pairs.size();
 
 #if defined(__AVX512F__) && defined(GMX_SIMD_X86_AVX_512)
-    if (npairs > 12)
+    if (npairs >= 12)
     {
     auto   &x    = *coordinates;
     auto   &f    = *forces;
@@ -3091,7 +3091,7 @@ static double computeTangToennies(MsgHandler                            *msghand
     else
 #endif
 #if defined(__AVX2__) && defined(GMX_SIMD_X86_AVX2_256)
-    if (npairs > 6)
+    if (npairs >= 6)
     {
     auto   &x    = *coordinates;
     auto   &f    = *forces;
@@ -3250,7 +3250,7 @@ static double computeTT2b(MsgHandler                            *msghandler,
     const size_t npairs = pairs.size();
 
 #if defined(__AVX512F__) && defined(GMX_SIMD_X86_AVX_512)
-    if (npairs > 12)
+    if (npairs >= 12)
     {
     auto   &x    = *coordinates;
     auto   &f    = *forces;
@@ -3369,7 +3369,7 @@ static double computeTT2b(MsgHandler                            *msghandler,
     else
 #endif
 #if defined(__AVX2__) && defined(GMX_SIMD_X86_AVX2_256)
-    if (npairs > 6)
+    if (npairs >= 6)
     {
     auto   &x    = *coordinates;
     auto   &f    = *forces;
@@ -3528,7 +3528,7 @@ static double computeSlater_ISA_TT(MsgHandler                            *msghan
     const size_t npairs = pairs.size();
 
 #if defined(__AVX512F__) && defined(GMX_SIMD_X86_AVX_512)
-    if (npairs > 12)
+    if (npairs >= 12)
     {
     auto   &x    = *coordinates;
     auto   &f    = *forces;
@@ -3653,7 +3653,7 @@ static double computeSlater_ISA_TT(MsgHandler                            *msghan
     else
 #endif
 #if defined(__AVX2__) && defined(GMX_SIMD_X86_AVX2_256)
-    if (npairs > 6)
+    if (npairs >= 6)
     {
     auto   &x    = *coordinates;
     auto   &f    = *forces;
@@ -3820,7 +3820,7 @@ static double computeNonBonded(MsgHandler                            *msghandler
     const size_t npairs = pairs.size();
 
 #if defined(__AVX512F__) && defined(GMX_SIMD_X86_AVX_512)
-    if (npairs > 12)
+    if (npairs >= 12)
     {
     auto   &f    = *forces;
     constexpr int W = 8;
@@ -3961,7 +3961,7 @@ static double computeNonBonded(MsgHandler                            *msghandler
     else
 #endif
 #if defined(__AVX2__) && defined(GMX_SIMD_X86_AVX2_256)
-    if (npairs > 6)
+    if (npairs >= 6)
     {
     auto   &f    = *forces;
     constexpr int W = 4;
@@ -4234,7 +4234,7 @@ static double computeCoulombGaussian(MsgHandler                        *msghandl
     const size_t npairs = pairs.size();
 
 #if defined(__AVX512F__) && defined(GMX_SIMD_X86_AVX_512)
-    if (npairs > 12)
+    if (npairs >= 12)
     {
     auto   &f    = *forces;
     constexpr int W = 8;
@@ -4343,7 +4343,7 @@ static double computeCoulombGaussian(MsgHandler                        *msghandl
     else
 #endif
 #if defined(__AVX2__) && defined(GMX_SIMD_X86_AVX2_256)
-    if (npairs > 6)
+    if (npairs >= 6)
     {
     auto   &f    = *forces;
     constexpr int W = 4;
@@ -4520,7 +4520,7 @@ static double computeCoulombSlater(gmx_unused MsgHandler             *msghandler
     const size_t npairs = pairs.size();
 
 #if defined(__AVX512F__) && defined(GMX_SIMD_X86_AVX_512)
-    if (npairs > 12)
+    if (npairs >= 12)
     {
     auto   &f    = *forces;
     constexpr int W = 8;
@@ -4633,7 +4633,7 @@ static double computeCoulombSlater(gmx_unused MsgHandler             *msghandler
     else
 #endif
 #if defined(__AVX2__) && defined(GMX_SIMD_X86_AVX2_256)
-    if (npairs > 6)
+    if (npairs >= 6)
     {
     auto   &f    = *forces;
     constexpr int W = 4;
