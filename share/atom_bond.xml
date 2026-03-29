@@ -486,13 +486,13 @@
 
   <atombondtype name="cs_+1" smarts="[Cs+]" charge="1" multiplicity="1">
     <atomtypes>
-      <atomtype index="0" name="Cs+" atomnumber="19"/>
+      <atomtype index="0" name="Cs+" atomnumber="55"/>
     </atomtypes>
   </atombondtype>
 
   <atombondtype name="cs_0" smarts="[Cs]" charge="0" multiplicity="1">
     <atomtypes>
-      <atomtype index="0" name="cs" atomnumber="19"/>
+      <atomtype index="0" name="cs" atomnumber="55"/>
     </atomtypes>
   </atombondtype>
 
