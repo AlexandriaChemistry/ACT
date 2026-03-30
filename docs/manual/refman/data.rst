@@ -7,7 +7,7 @@ Training Data
 ===================
 Using existing data
 ===================
-A recent review from the ACT developers~ :cite:p:`Kriz2023a` discusses the different available quantum chemistry data sets. Some of these can be used in the ACT, for instance the coupled-cluster dimer data set due to Donchev {\em et al}~ :cite:p:`Donchev2021a`, the Non-covalent interaction atlas from the Czech group led by \u{R}ez{\'a}\u{c}~ :cite:p:`Rezac2020a_NCIA` and some more.
+A recent review from the ACT developers~ :cite:p:`Kriz2023a` discusses the different available quantum chemistry data sets. Some of these can be used in the ACT, for instance the coupled-cluster dimer data set due to Donchev *et al.* :cite:p:`Donchev2021a`, the Non-covalent interaction atlas from the Czech group led by \u{R}ez{\'a}\u{c}~ :cite:p:`Rezac2020a_NCIA` and some more.
 The SAPT dataset on protein side-chain analogs and backbone analogs by Burns~ :cite:p:`Burns2017_biofragment` can in principle be used in the ACT as well.
 
 In principle, the ANI-1 dataset~ :cite:p:`Smith2017a` can be used to provide off-equilibrium energies of small compounds, but in the first version it was limited to compound containing the elements C, H, N, O only.
@@ -21,7 +21,7 @@ It is possible to train electrostatic models using data from the library.
 ================
 Donchev data set
 ================
-To use the dataset due to Donchev {\em et al} :cite:p:`Donchev2021a`, we provide a script that reads the comma-separated value file provided by those authors. Please refer to their article for download information. 
+To use the dataset due to Donchev *et al.* :cite:p:`Donchev2021a`, we provide a script that reads the comma-separated value file provided by those authors. Please refer to their article for download information. 
 Then refer to the built-in help in the script for more guidance by executing::
 
   donchev2molprop -h
