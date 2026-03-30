@@ -177,7 +177,7 @@ In other works, the Tang-Toennies potential is extended with an additional param
    :label: TT2
 
 and the ACT supports both these functions.
-Van Vleet {\em et al.} described a more accurate formula for the Pauli repulsion :cite:p:`Vleet2016a` that was applied to derive a force field later :cite:p:`Vleet2018a`. In this model the exchange repulsion is given by the Slater-ISA formula
+Van Vleet *et al.* described a more accurate formula for the Pauli repulsion :cite:p:`Vleet2016a` that was applied to derive a force field later :cite:p:`Vleet2018a`. In this model the exchange repulsion is given by the Slater-ISA formula
 
 .. math:: V_{exch} ~=~ A\left(\frac{1}{3}(br)^2 + br + 1\right){\rm exp}^{-br}
    :label: slater_isa
@@ -209,7 +209,7 @@ where :math:`A_{ij}` and :math:`b_{ij}` are parameters to be optimized. This cor
 where :math:`\delta_{ij}` is the Kronecker delta operating on particle types :math:`i` and :math:`j`. This means that only interactions between :math:`\sigma`-holes (represented by a virtual site) and atoms are non-zero. To avoid parameter explosion, the atomic :math:`A_i` are set to zero and only the virtual site :math:`A_j` is non-zero. This is reasonable since the virtual site represents a property of the :math:`\sigma`-hole of the atom it is connected to.
 The arithmetic combination rule is used for :math:`b_{ij}`.
 
-Multiple different combination rules can be used for parameters involved in van der Waals interactions, both within ACT and through the interface to OpenMM. For details, see the paper by K\v{r}{\'i}\v{z} {\em et al.} :cite:p:`Kriz2024a`.
+Multiple different combination rules can be used for parameters involved in van der Waals interactions, both within ACT and through the interface to OpenMM. For details, see the paper by K\v{r}{\'i}\v{z} *et al.* :cite:p:`Kriz2024a`.
 
 ----------------------------------
 Treatment of long range dispersion
@@ -283,7 +283,7 @@ arithmetic mean (Eqn. :eq:`cr_arithmetic`) was used. In the case of the modified
 Where the :math:`\gamma`:sup:`1,2` used Eqn. :eq:`cr_arithmetic` and :math:`\epsilon`:sup:`1,2` Eqn. :eq:`cr_hogervorst_epsilon`. 
 It should be noted that equation :eq:`cr_hogervorst_epsilon` is ill-behaved if both :math:`x_1` and :math:`x_2` are zero, while Eqn. :eq:`cr_sigma5`
 is ill-behaved if either :math:`\gamma_{1,2}` or :math:`\epsilon_{1,2}` is zero.
-Yang {\em et al.} :cite:p:`Yang2018_combination` introduced an expression  for the Morse potential :cite:p:`Morse1929a`, using Eqn. :eq:`cr_hogervorst_epsilon` for :math:`\epsilon`, while eqn. :eq:`cr_yang` is used for :math:`\sigma` and  :math:`\gamma`. 
+Yang *et al.* :cite:p:`Yang2018_combination` introduced an expression  for the Morse potential :cite:p:`Morse1929a`, using Eqn. :eq:`cr_hogervorst_epsilon` for :math:`\epsilon`, while eqn. :eq:`cr_yang` is used for :math:`\sigma` and  :math:`\gamma`. 
 
 .. math:: X_{12} = \frac{x_{1} x_{2}(x_1 + x_2)}{x_{1}^2 + x_{2}^2}
    :label: cr_yang

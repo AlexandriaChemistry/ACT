@@ -300,7 +300,7 @@ For background information we refer the reader to an excellent review by Jensen 
 =================================================
 Charge Equilibration with Shells or Virtual Sites
 =================================================
-Among the approaches to modeling the charge-dependent component of a force field, those rooted in the chemical potential equalization principle are especially notable, as the principle stems directly from density functional theory :cite:p:`itskowitz1997chemical`. The first computational implementation of the chemical potential equalization principle was the electronegativity equalization method (EEM) :cite:p:`Mortier1986a,Rappe1991a`. However, due to limitations of this model, Chelli {\em et al.} proposed the atom-atom charge transfer (AACT) model :cite:p:`chelli1999electrical`. Later, Nistor and co-workers combined the EEM and AACT approaches into a single framework, the split-charge equilibration (SQE) model, which fulfills the essential criteria for a successful charge-transfer potential :cite:p:`Nistor2006a,Verstraelen2009a`.
+Among the approaches to modeling the charge-dependent component of a force field, those rooted in the chemical potential equalization principle are especially notable, as the principle stems directly from density functional theory :cite:p:`itskowitz1997chemical`. The first computational implementation of the chemical potential equalization principle was the electronegativity equalization method (EEM) :cite:p:`Mortier1986a,Rappe1991a`. However, due to limitations of this model, Chelli *et al.* proposed the atom-atom charge transfer (AACT) model :cite:p:`chelli1999electrical`. Later, Nistor and co-workers combined the EEM and AACT approaches into a single framework, the split-charge equilibration (SQE) model, which fulfills the essential criteria for a successful charge-transfer potential :cite:p:`Nistor2006a,Verstraelen2009a`.
 The ACT implements both the EEM and the SQE as algorithms for determining partial charges. 
 
 In brief, EEM minimizes an empirical model of the intramolecular electrostatic energy (computed from the  atomic electronegativity :math:`\chi_i` and atomic hardness :math:`\eta_i`) with respect to the atomic partial charges :math:`q_i`, where :math:`i` are the atoms. This method comprises a second order expansion of the molecular energy :math:`E_{\mathrm{EEM}}` in terms of the partial charges :math:`q_i`:
@@ -325,7 +325,7 @@ Therefore, the charge variables :math:`q_i` are replaced by charge-transfer vari
    :label: qi
 
 where :math:`q_{\mathrm{tot}}` is the net charge on the compound and :math:`p_{ij} = -p_{ji}`. Although it is trivial to determine the partial charges :math:`q_i` from the charge transfer :math:`p_{ij}`, the reverse is not necessarily true.
-As outlined by Chen {\em et al.} :cite:p:`Chen2008b`, the problem can be solved by expressing the energy in terms of the charge transfer variables.
+As outlined by Chen *et al.* :cite:p:`Chen2008b`, the problem can be solved by expressing the energy in terms of the charge transfer variables.
 By substituting :math:`J_{ii} = \eta_i` in Eq. :eq:`eem`, inserting Eq. :eq:`eem` into Eq. :eq:`sqe` and introducing :math:`M_x` as the number of bonds for species :math:`x`, we obtain:
 
 .. math:: 

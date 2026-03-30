@@ -173,7 +173,7 @@ can be calculated.
 ====================
 Normal Mode Analysis
 ====================
-Please note that the text below is largely taken (with permission) from a paper by Henschel {\em et al.}~ :cite:p:`Henschel2020a`.
+Please note that the text below is largely taken (with permission) from a paper by Henschel *et al.* :cite:p:`Henschel2020a`.
 
 The ACT contains the *alexandria nma* tool that performs a normal mode analysis to determine the vibrational frequencies of a compound.
 Vibrational frequencies are required to compute the IR spectra and thermochemistry of molecules. The normal modes of molecular vibrations can be obtained by eigenvalue decomposition of the Hessian matrix, whose elements are the second derivatives of the energy with respect to the atomic coordinates :math:`q`.
