@@ -209,7 +209,7 @@ where :math:`A_{ij}` and :math:`b_{ij}` are parameters to be optimized. This cor
 where :math:`\delta_{ij}` is the Kronecker delta operating on particle types :math:`i` and :math:`j`. This means that only interactions between :math:`\sigma`-holes (represented by a virtual site) and atoms are non-zero. To avoid parameter explosion, the atomic :math:`A_i` are set to zero and only the virtual site :math:`A_j` is non-zero. This is reasonable since the virtual site represents a property of the :math:`\sigma`-hole of the atom it is connected to.
 The arithmetic combination rule is used for :math:`b_{ij}`.
 
-Multiple different combination rules can be used for parameters involved in van der Waals interactions, both within ACT and through the interface to OpenMM. For details, see the paper by K\v{r}{\'i}\v{z} *et al.* :cite:p:`Kriz2024a`.
+Multiple different combination rules can be used for parameters involved in van der Waals interactions, both within ACT and through the interface to OpenMM. For details, see the paper by Kříž *et al.* :cite:p:`Kriz2024a`.
 
 ----------------------------------
 Treatment of long range dispersion
