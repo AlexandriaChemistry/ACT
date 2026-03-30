@@ -536,7 +536,7 @@ void ForceEnergyDevComputer::calcDeviation(MsgHandler                    *msghan
                             {
                                 weight = exp(-beta*(eqm-eqmMin));
                             }
-                            te->second.increase(weight, mydev2);
+                            te->second.increase(weight, weight * mydev2);
                         }
                     }
                 }
@@ -617,14 +617,14 @@ void ForceEnergyDevComputer::calcDeviation(MsgHandler                    *msghan
                             auto eact = ff.eact();
                             if (std::isfinite(eact))
                             {
-                                ti->second.increase(weight, gmx::square(eqm-eact));
+                                ti->second.increase(weight, weight* gmx::square(eqm-eact));
                             }
                             else
                             {
                                 // We do not want to deal with infinite numbers but it should
                                 // be clear that this is a very bad parameter set.
                                 eact = 1e16;
-                                ti->second.increase(weight, gmx::square(eqm-eact));
+                                ti->second.increase(weight, weight*gmx::square(eqm-eact));
                             }
                         }
                     }
