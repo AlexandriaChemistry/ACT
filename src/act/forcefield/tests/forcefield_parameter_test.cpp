@@ -218,6 +218,13 @@ TEST(ForceFieldParameterSimpleTest, ForceSetValueOnFixed) {
     EXPECT_DOUBLE_EQ(18.0, fp.value());
 }
 
+TEST(ForceFieldParameterSimpleTest, ForceSetValueOutsideRange) {
+    // forceSetValue should update the value even when it is outside [min, max].
+    ForceFieldParameter fp("kJ/mol", 11.0, 0.25, 45, 8.0, 15.0, Mutability::Fixed, true, false);
+    fp.forceSetValue(25.0);
+    EXPECT_DOUBLE_EQ(25.0, fp.value());
+}
+
 }
 
 }
