@@ -26,7 +26,6 @@
 #
 
 file(GLOB MOLPROP_SOURCES *.cpp *.h)
-list(REMOVE_ITEM MOLPROP_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/rdkit_io.cpp)
 target_sources(actLib PRIVATE ${MOLPROP_SOURCES})
 
 if (BUILD_TESTING)
