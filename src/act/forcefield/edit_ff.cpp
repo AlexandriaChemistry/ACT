@@ -64,7 +64,8 @@ static void setMinMaxMut(FILE *fp,
                          bool bSetMax, double pmax,
                          bool bSetMut, const std::string &mutability,
                          bool bScale,  double scale,
-                         bool stretch, const std::string &particleId,
+                         bool force,   bool stretch,
+                         const std::string &particleId,
                          bool bLimits, double factor)
 {
     if (bSetVal && bSetMin)
@@ -118,7 +119,14 @@ static void setMinMaxMut(FILE *fp,
         {
             pp->setMaximum(pval);
         }
-        pp->setValue(pval);
+        if (force)
+        {
+            pp->forceSetValue(pval);
+        }
+        else
+        {
+            pp->setValue(pval);
+        }
         if (fp)
         {
             fprintf(fp, "Value set to %g %s\n", pval, particleId.c_str());
@@ -202,7 +210,7 @@ static void modifyParticle(const std::string &paramType,
                          bSetVal, pval, bSetMax, pmax,
                          bSetMut, mutability, 
                          bScale,  scale,
-                         stretch, particleId,
+                         force,   stretch, particleId,
                          bLimit,  factor);
         }
     }
@@ -246,7 +254,7 @@ static void modifyInteraction(ForceField *pd,
                                      bSetVal, pval, bSetMax, pmax,
                                      bSetMut, mutability, 
                                      bScale,  scale,
-                                     stretch, myId,
+                                     force,   stretch, myId,
                                      bLimit,  factor);
                     }
                 }
