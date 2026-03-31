@@ -208,6 +208,16 @@ TEST(ForceFieldParameterSimpleTest, BoundedMutableZeroRange) {
     EXPECT_FALSE(fp.isMutable());
 }
 
+TEST(ForceFieldParameterSimpleTest, ForceSetValueOnFixed) {
+    // When min == max == value, mutability is converted to Fixed.
+    // forceSetValue should still update the value, used by edit_ff with -force flag.
+    ForceFieldParameter fp("kJ/mol", 15.0, 0.25, 45, 15.0, 15.0, Mutability::Bounded, true, true);
+    EXPECT_TRUE(fp.mutability() == Mutability::Fixed);
+    fp.setMaximum(20.0);
+    fp.forceSetValue(18.0);
+    EXPECT_DOUBLE_EQ(18.0, fp.value());
+}
+
 }
 
 }
