@@ -199,7 +199,12 @@ static void modifyParticle(const std::string &paramType,
     if (particle->hasParameter(paramType))
     {
         auto ff = particle->parameter(paramType);
-        if (force || ff->isMutable())
+        // Allow min/max/stretch/limits changes even for Fixed parameters when
+        // no value or scale change is requested, since setMinimum/setMaximum
+        // are independent of mutability.
+        bool hasValueOrScaleChange = bSetVal || bScale;
+        bool hasLimitChange        = bSetMin || bSetMax || stretch || bLimit;
+        if (force || ff->isMutable() || (hasLimitChange && !hasValueOrScaleChange))
         {
             std::string particleId = 
                 gmx::formatString("%s - %s",
