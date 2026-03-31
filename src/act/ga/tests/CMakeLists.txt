@@ -35,14 +35,13 @@
 set(testname "GeneticAlgorithmTests")
 set(exename "ga-test")
 
-# Commented out for now due to MPI issues
-# gmx_add_mpi_unit_test(
-#     ${testname}
-#     ${exename} 2
-#     # files with code for tests
-# #    genetic_algorithmtest.cpp
-#     genepoolTest.cpp
-#     # pseudo-library for code for alexandria
-#     )
-# target_link_libraries(ga-test actLib libactgromacs  ${GMX_EXTRA_LIBRARIES} ${XML_LIBRARIES}
-#          ${GMX_EXE_LINKER_FLAGS})
+gmx_add_mpi_unit_test(
+    ${testname}
+    ${exename} 2
+    # files with code for tests
+#    genetic_algorithmtest.cpp
+    genepoolTest.cpp
+    # pseudo-library for code for alexandria
+    )
+target_link_libraries(ga-test actLib libactgromacs  ${GMX_EXTRA_LIBRARIES} ${XML_LIBRARIES}
+         ${GMX_EXE_LINKER_FLAGS})
