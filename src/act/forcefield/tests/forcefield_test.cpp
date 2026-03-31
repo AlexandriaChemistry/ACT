@@ -224,6 +224,35 @@ TEST_F (ForceFieldTest, zeta)
     checker_.checkSequence(zetas.begin(), zetas.end(), "zeta");
 }
 
+TEST(ForceFieldSimpleTest, changeChargeMinMaxForFixedParticle)
+{
+    // Load a fresh copy to avoid mutating the shared singleton
+    std::string dataName = gmx::test::TestFileManager::getInputFilePath("ACM-g.xml");
+    ForceField pd;
+    readForceField(dataName, &pd);
+
+    auto particle = pd.findParticleType("Be2+");
+    ASSERT_NE(nullptr, particle);
+
+    auto charge = particle->parameter("charge");
+    ASSERT_NE(nullptr, charge);
+
+    // The charge parameter in particletypes is Fixed
+    EXPECT_FALSE(charge->isMutable());
+
+    double origValue = charge->value();
+
+    // Changing min/max must work regardless of mutability (Fixed),
+    // since setMinimum/setMaximum are independent of mutability.
+    EXPECT_TRUE(charge->setMinimum(2.0));
+    charge->setMaximum(4.0);
+
+    EXPECT_DOUBLE_EQ(2.0, charge->minimum());
+    EXPECT_DOUBLE_EQ(4.0, charge->maximum());
+    // Value must remain unchanged (Fixed)
+    EXPECT_DOUBLE_EQ(origValue, charge->value());
+}
+
 }
 
 } // namespace
