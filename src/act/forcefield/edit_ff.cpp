@@ -84,7 +84,10 @@ static void setMinMaxMut(FILE *fp,
     {
         pp->setMinimum(pmin);
         pp->setMaximum(std::max(pmin, pp->maximum()));
-        pp->setValue(std::max(pmin, pp->value()));
+        if (force || pp->isMutable())
+        {
+            pp->setValue(std::max(pmin, pp->value()));
+        }
         if (fp)
         {
             fprintf(fp, "Minimum set to %g for %s\n", pmin, particleId.c_str());
@@ -93,7 +96,10 @@ static void setMinMaxMut(FILE *fp,
     if (bSetMax)
     {
         pp->setMaximum(pmax);
-        pp->setValue(std::min(pmax, pp->value()));
+        if (force || pp->isMutable())
+        {
+            pp->setValue(std::min(pmax, pp->value()));
+        }
         pp->setMinimum(std::min(pmax, pp->minimum()));
         if (fp)
         {

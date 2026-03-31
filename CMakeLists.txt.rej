@@ -1,0 +1,11 @@
+--- CMakeLists.txt
++++ CMakeLists.txt
+@@ -441,7 +441,7 @@ if(LibXml2_FOUND)
+     include_directories(${LIBXML2_INCLUDE_DIRS})
+     set(PKG_LIBXML2 libxml-2.0)
+     list(APPEND GMX_EXTRA_LIBRARIES ${LIBXML2_LIBRARIES})
+ endif(LibXml2_FOUND)
+ 
+-find_package(Eigen3 5 REQUIRED NO_MODULE)
++find_package(Eigen3 REQUIRED NO_MODULE)
+ message("Eigen3_FOUND : ${Eigen3_FOUND}")
