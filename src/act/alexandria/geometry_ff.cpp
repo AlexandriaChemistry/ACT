@@ -80,57 +80,65 @@ static void generate_bcc(ForceField *pd,
     auto delta_etaParam = ForceFieldParameter("eV/e", delta_eta, 0, 0, -8, 20, Mutability::Bounded, true, false);
     auto enpBounded     = ForceFieldParameter("eV", 0, 0, 0, -8, 8, Mutability::Bounded, true, false);
     auto enpFixed       = ForceFieldParameter("eV", 0, 0, 0, 0, 0, Mutability::Fixed, true, true);
-    auto ptypes = pd->particleTypesConst();
+
+    // Build a reverse map from bond-type ID to particle type for EEN lookup
+    const auto &ptypes  = pd->particleTypesConst();
     auto itpbond = InteractionType::BONDS;
+    auto entype  = InteractionType::ELECTRONEGATIVITYEQUALIZATION;
+    std::map<std::string, const ParticleType *> bondTypeToParticle;
     for (auto &ai : ptypes)
     {
-        if (!ai.second.hasInteractionType(itpbond))
+        if (ai.second.hasInteractionType(itpbond))
+        {
+            auto bi = ai.second.interactionTypeToIdentifier(itpbond).id();
+            bondTypeToParticle[bi] = &ai.second;
+        }
+    }
+
+    // Loop over actual bonds instead of all pairs of particle types
+    for (auto &bondEntry : bonds.parametersConst())
+    {
+        const auto &bondId    = bondEntry.first;
+        const auto &bondAtoms = bondId.atoms();
+        if (bondAtoms.size() != 2)
         {
             continue;
         }
-        auto bi = ai.second.interactionTypeToIdentifier(itpbond).id();
-        for (auto &aj : ptypes)
+        const auto &bi        = bondAtoms[0];
+        const auto &bj        = bondAtoms[1];
+        // Bond order is encoded in the Identifier; fall back to single bond (1.0) if missing
+        double      bondorder = bondId.bondOrders().empty() ? 1.0 : bondId.bondOrders()[0];
+
+        auto it_i = bondTypeToParticle.find(bi);
+        auto it_j = bondTypeToParticle.find(bj);
+        if (it_i == bondTypeToParticle.end() || it_j == bondTypeToParticle.end())
         {
-            if (!aj.second.hasInteractionType(itpbond))
+            continue;
+        }
+        // Only make bcc entries if needed.
+        if (!it_i->second->hasInteractionType(entype) ||
+            !it_j->second->hasInteractionType(entype))
+        {
+            continue;
+        }
+        auto zi = it_i->second->interactionTypeToIdentifier(entype).id();
+        auto zj = it_j->second->interactionTypeToIdentifier(entype).id();
+        if (!zi.empty() && !zj.empty())
+        {
+            Identifier bccId1({ zi, zj }, { bondorder }, bcc->canSwap());
+            Identifier bccId2({ zj, zi }, { bondorder }, bcc->canSwap());
+            if (!bcc->parameterExists(bccId1) &&
+                !bcc->parameterExists(bccId2))
             {
-                continue;
-            }
-            auto bj = aj.second.interactionTypeToIdentifier(itpbond).id();
-            const double bondorders[] = { 1, 1.5, 2, 3 };
-            const size_t nBondorder   = std::extent<decltype(bondorders)>::value;
-            for(size_t bb = 0; bb < nBondorder; bb++)
-            {
-                Identifier bondId({ bi, bj }, { bondorders[bb] }, bonds.canSwap());
-                if (bonds.parameterExists(bondId))
+                if (zi == zj)
                 {
-                    auto entype = InteractionType::ELECTRONEGATIVITYEQUALIZATION;
-                    // Only mkae bcc entries if needed.
-                    if (!ai.second.hasInteractionType(entype) ||
-                        !aj.second.hasInteractionType(entype))
-                    {
-                        continue;
-                    }
-                    auto zi = ai.second.interactionTypeToIdentifier(entype).id();
-                    auto zj = aj.second.interactionTypeToIdentifier(entype).id();
-                    if (!zi.empty() && !zj.empty())
-                    {
-                        Identifier bccId1({ zi, zj }, { bondorders[bb] }, bcc->canSwap());
-                        Identifier bccId2({ zj, zi }, { bondorders[bb] }, bcc->canSwap());
-                        if (!bcc->parameterExists(bccId1) && 
-                            !bcc->parameterExists(bccId2))
-                        {
-                            if (zi == zj)
-                            {
-                                bcc->addParameter(bccId1, "delta_chi", enpFixed);
-                            }
-                            else
-                            {
-                                bcc->addParameter(bccId1, "delta_chi", enpBounded);
-                            }
-                            bcc->addParameter(bccId1, "delta_eta", delta_etaParam);
-                        }
-                    }
+                    bcc->addParameter(bccId1, "delta_chi", enpFixed);
                 }
+                else
+                {
+                    bcc->addParameter(bccId1, "delta_chi", enpBounded);
+                }
+                bcc->addParameter(bccId1, "delta_eta", delta_etaParam);
             }
         }
     }
