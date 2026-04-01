@@ -115,7 +115,10 @@ void MCMCMutator::mutate(MsgHandler                *msghandler,
     auto initEval = prevEval;
     *bestGenome = *genome;
 
-    msghandler->writeDebug(memory_usage());
+    if (msghandler)
+    {
+        msghandler->writeDebug(memory_usage());
+    }
 
     double beta0      = bch_->computeBeta(0, maxGenerations_, 0);
     if (bch_->globalAnnealing() && myGeneration_ == 0)
