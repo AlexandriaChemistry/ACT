@@ -1683,6 +1683,27 @@ void Topology::dump(FILE *fp) const
     }
 }
 
+void Topology::dump(MsgHandler *msghandler) const
+{
+    if (nullptr == msghandler)
+    {
+        return;
+    }
+    for(auto &myEntry: entries_)
+    {
+        msghandler->writeDebug(interactionTypeToString(myEntry.first));
+        for (auto &tt : myEntry.second)
+        {
+            std::string line;
+            for(auto &aa : tt->atomIndices())
+            {
+                line += gmx::formatString(" %d", aa+1);
+            }
+            msghandler->writeDebug(line);
+        }
+    }
+}
+
 void Topology::addFBPR(MsgHandler *msghandler,
                        double      kFBPR,
                        double      r0FBPR)

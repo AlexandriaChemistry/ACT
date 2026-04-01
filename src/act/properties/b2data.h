@@ -33,10 +33,9 @@
 #ifndef ACT_ALEXANDRIA_B2DATA_H
 #define ACT_ALEXANDRIA_B2DATA_H
 
-#include <cstdio>
-    
 #include <vector>
 
+#include "act/basics/msg_handler.h"
 #include "act/utility/communicationrecord.h"
 #include "gromacs/fileio/oenv.h"
 #include "gromacs/math/vectypes.h"
@@ -83,10 +82,10 @@ public:
            double                     binwidth,
            const std::vector<double> &temperatures);
 
-    /*! \brief Dump some info to a file
-     * \param[in] fp The file pointer
+    /*! \brief Dump some info using a MsgHandler
+     * \param[in] msghandler The message handler
      */
-    void dump(FILE *fp) const;
+    void dump(MsgHandler *msghandler) const;
 
     /*! \brief Aggregate information from helpers to tha main node
      * \param[in] cr Communication information 

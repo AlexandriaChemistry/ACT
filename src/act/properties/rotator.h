@@ -37,6 +37,7 @@
 #include <random>
 #include <vector>
 
+#include "act/basics/msg_handler.h"
 #include "act/statistics/statistics.h"
 #include "gromacs/math/vec.h"
 
@@ -128,9 +129,9 @@ public:
                                   double                        r3,
                                   const std::vector<gmx::RVec> &coords);
 
-    void checkMatrix(FILE *fp);
+    void checkMatrix(MsgHandler *msghandler);
 
-    void printAverageMatrix(FILE *fp);
+    void printAverageMatrix(MsgHandler *msghandler);
 
     void printAngleHisto();
 };

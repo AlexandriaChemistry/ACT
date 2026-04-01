@@ -770,9 +770,9 @@ int b2(int argc, char *argv[])
 
     if (msghandler.ok() && status == 0)
     {
-        if (debug)
+        if (msghandler.debug())
         {
-            actmol.topology()->dump(debug);
+            actmol.topology()->dump(&msghandler);
         }
         rerun.setFunctions(&forceComp, &gendimers, oenv);
         rerun.runB2(&cr, &msghandler, &pd, &actmol, maxdimers, fnm);

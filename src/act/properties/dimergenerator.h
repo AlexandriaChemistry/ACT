@@ -81,6 +81,8 @@ private:
     std::vector<std::vector<double>>       allRandom_;
     //! Random number index
     size_t                                 randIndex_ = 0;
+    //! MsgHandler pointer for use in destructor (not owned)
+    MsgHandler                            *msghandler_ = nullptr;
 public:
     //! Constructor
     DimerGenerator() : gen_(rd_()), dis_(std::uniform_real_distribution<double>(0.0, 1.0)) {}

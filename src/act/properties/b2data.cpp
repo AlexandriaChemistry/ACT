@@ -31,7 +31,9 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 #include "b2data.h"
- 
+
+#include <sstream>
+
 #include "gromacs/fileio/oenv.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/math/units.h"
@@ -84,13 +86,17 @@ B2Data::B2Data(int                        nbins,
     }
 }
 
-void B2Data::dump(FILE *fp) const
+void B2Data::dump(MsgHandler *msghandler) const
 {
-    for(size_t i = 0; i < n_U12_[0].size(); i++)
+    if (msghandler)
     {
-        fprintf(fp, " %d", n_U12_[0][i]);
+        std::ostringstream oss;
+        for(size_t i = 0; i < n_U12_[0].size(); i++)
+        {
+            oss << " " << n_U12_[0][i];
+        }
+        msghandler->writeDebug(oss.str());
     }
-    fprintf(fp, "\n");
 }
 
 void B2Data::aggregate(CommunicationRecord *cr)
