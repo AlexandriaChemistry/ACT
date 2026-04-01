@@ -80,7 +80,7 @@ void StaticIndividualInfo::setFinalOutputFile(const std::string &outputFile)
 * BEGIN: ForceField stuff                     *
 * * * * * * * * * * * * * * * * * * * * * */
 
-void StaticIndividualInfo::fillForceField(gmx::TextWriter *tw,
+void StaticIndividualInfo::fillForceField(MsgHandler     *msghandler,
                                           const char      *pd_fn)
 {
     int root = 0;
@@ -96,7 +96,10 @@ void StaticIndividualInfo::fillForceField(gmx::TextWriter *tw,
             alexandria::readForceField(pd_fn, &pd_);
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-        print_memory_usage(debug);
+        if (msghandler)
+        {
+            msghandler->writeDebug(memory_usage());
+        }
         root = cr_->rank();
     }
     else
@@ -108,10 +111,10 @@ void StaticIndividualInfo::fillForceField(gmx::TextWriter *tw,
     {
         pd_.sendToHelpers(cr_, root);
     }
-    if (tw)
+    if (msghandler)
     {
-        tw->writeStringFormatted("There are %d atom types in the input file %s.\n\n",
-                                 static_cast<int>(pd_.getNatypes()), pd_fn);
+        msghandler->write(gmx::formatString("There are %d atom types in the input file %s.\n\n",
+                                            static_cast<int>(pd_.getNatypes()), pd_fn));
     }
 }
 

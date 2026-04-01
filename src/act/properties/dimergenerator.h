@@ -38,6 +38,7 @@
 #include <vector>
 
 #include "act/alexandria/actmol.h"
+#include "act/basics/msg_handler.h"
 #include "act/forces/forcecomputer.h"
 #include "act/forcefield/forcefield.h"
 #include "act/properties/rotator.h"
@@ -146,23 +147,23 @@ public:
 
     /*! \brief Do the actual generation for one pair. Two molecules
      * will be oriented and a distance series will be generated.
-     * \param[in]  logFile   For debugging info, may be a nullptr
+     * \param[in]  msghandler MsgHandler for output and debugging, may be nullptr
      * \param[in]  actmol  The description of the two fragments
      * \return The coordinate sets
      */
-    std::vector<std::vector<gmx::RVec>> generateDimers(FILE         *logFile,
+    std::vector<std::vector<gmx::RVec>> generateDimers(MsgHandler   *msghandler,
                                                        const ACTMol *actmol);
     /*! \brief Do the actual generation for many dimers.
      * Note that the memory usage can be significant (many Gb).
      * 
-     * \param[in]  logFile   For debugging info, may be a nullptr
+     * \param[in]  msghandler MsgHandler for output and debugging, may be nullptr
      * \param[in]  actmol    The description of the two fragments
      * \param[in]  maxdimer  The number of different dimers to generate
      * \param[out] coords    The coordinate sets
      * \param[in]  outcoords Output file name for the generated coordinates.
      *                       If nullptr, they will not be written.
      */
-    void generate(FILE                                *logFile,
+    void generate(MsgHandler                          *msghandler,
                   const ACTMol                        *actmol,
                   int                                  maxdimer,
                   std::vector<std::vector<gmx::RVec>> *coords,

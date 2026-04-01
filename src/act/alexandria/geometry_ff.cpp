@@ -222,7 +222,7 @@ int geometry_ff(int argc, char *argv[])
     msghandler.optionsFinished(fnm, &cr);
 
     auto tw = msghandler.tw();
-    print_memory_usage(debug);
+    msghandler.writeDebug(memory_usage());
     time(&my_t);
     tw->writeStringFormatted("# This file was created %s", ctime(&my_t));
     tw->writeStringFormatted("# The Alexandria Chemistry Toolkit.\n#\n");
@@ -231,7 +231,7 @@ int geometry_ff(int argc, char *argv[])
     if (selfile)
     {
         gms.read(selfile);
-        print_memory_usage(debug);
+        msghandler.writeDebug(memory_usage());
         if (gms.nMol() == gms.countDimers())
         {
             msghandler.fatal("Selection file contains dimers instead of monomers.");
@@ -245,7 +245,7 @@ int geometry_ff(int argc, char *argv[])
         printf("Will use all molecules in the molprop file(s) as the selection.\n");
     }
     /* Read standard atom properties */
-    print_memory_usage(debug);
+    msghandler.writeDebug(memory_usage());
 
     /* Read ForceField file */
     auto myff = opt2fn_null("-ff", fnm.size(), fnm.data());
@@ -258,7 +258,7 @@ int geometry_ff(int argc, char *argv[])
         readForceField(myff, &pd, &msghandler);
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-    print_memory_usage(debug);
+    msghandler.writeDebug(memory_usage());
 
     // This a hack to prevent that no bonds will be found to shells.
     bool polar = pd.polarizable();
@@ -266,7 +266,7 @@ int geometry_ff(int argc, char *argv[])
 
     /* Read Molprops */
     merge_xml(&msghandler, opt2fns("-mp", fnm.size(), fnm.data()), &mp);
-    print_memory_usage(debug);
+    msghandler.writeDebug(memory_usage());
     if (!selfile)
     {
         // Extract molecule names from the molprops
@@ -284,7 +284,7 @@ int geometry_ff(int argc, char *argv[])
     std::vector<ACTMol> actmols;
     bonds.extractGeometries(&msghandler, &mp, &actmols, &pd, gms);
     
-    print_memory_usage(debug);
+    msghandler.writeDebug(memory_usage());
     if (bHisto)
     {
         bonds.writeHistogram(oenv);
@@ -295,7 +295,7 @@ int geometry_ff(int argc, char *argv[])
     {
         generate_bcc(&pd, delta_eta);
     }
-    print_memory_usage(debug);
+    msghandler.writeDebug(memory_usage());
     if (bDissoc)
     {
         iqmType iqm = iqmType::Exp;
@@ -312,7 +312,7 @@ int geometry_ff(int argc, char *argv[])
     pd.updateCheckSum();
     writeForceField(opt2fn("-o", fnm.size(), fnm.data()), &pd, compress);
     bonds.writeSummary(tw);
-    print_memory_usage(debug);
+    msghandler.writeDebug(memory_usage());
     return 0;
 }
 
