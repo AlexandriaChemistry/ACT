@@ -84,9 +84,14 @@ static void setMinMaxMut(FILE *fp,
     {
         pp->setMinimum(pmin);
         pp->setMaximum(std::max(pmin, pp->maximum()));
-        if (force || pp->isMutable())
+        double clampedVal = std::max(pmin, pp->value());
+        if (force)
         {
-            pp->setValue(std::max(pmin, pp->value()));
+            pp->forceSetValue(clampedVal);
+        }
+        else if (pp->isMutable())
+        {
+            pp->setValue(clampedVal);
         }
         if (fp)
         {
@@ -96,9 +101,14 @@ static void setMinMaxMut(FILE *fp,
     if (bSetMax)
     {
         pp->setMaximum(pmax);
-        if (force || pp->isMutable())
+        double clampedVal = std::min(pmax, pp->value());
+        if (force)
         {
-            pp->setValue(std::min(pmax, pp->value()));
+            pp->forceSetValue(clampedVal);
+        }
+        else if (pp->isMutable())
+        {
+            pp->setValue(clampedVal);
         }
         pp->setMinimum(std::min(pmax, pp->minimum()));
         if (fp)
