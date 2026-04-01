@@ -35,6 +35,7 @@
 #include <cctype>
 #include <cmath>
 #include <cstdlib>
+#include <sstream>
 
 #include "act/basics/msg_handler.h"
 #include "act/molprop/molprop_xml.h"
@@ -314,22 +315,24 @@ std::vector<std::vector<gmx::RVec>> DimerGenerator::generateDimers(MsgHandler   
     }
     if (msghandler)
     {
-        std::string dbgLine = gmx::formatString("randIndex_ %zu q", randIndex_);
+        std::ostringstream oss;
+        oss << "randIndex_ " << randIndex_ << " q";
         for(int m = 0; m < 2*DIM; m++)
         {
-            dbgLine += gmx::formatString(" %g", allRandom_[randIndex_][m]);
+            oss << " " << allRandom_[randIndex_][m];
         }
         for(int m = 0; m < 2; m++)
         {
-            dbgLine += gmx::formatString(" x[%d]", m);
+            oss << " x[" << m << "]";
             auto   atoms   = tops[m].atoms();
             for(size_t j = 0; j < atoms.size(); j++)
             {
-                dbgLine += gmx::formatString(" %g %g %g", xrand[m][j][XX],
-                                             xrand[m][j][YY], xrand[m][j][ZZ]);
+                oss << " " << xrand[m][j][XX]
+                    << " " << xrand[m][j][YY]
+                    << " " << xrand[m][j][ZZ];
             }
         }
-        msghandler->writeDebug(dbgLine);
+        msghandler->writeDebug(oss.str());
     }
     randIndex_ += 1;
     // Loop over distances from mindist to maxdist

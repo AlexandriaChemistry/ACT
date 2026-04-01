@@ -873,13 +873,19 @@ void MolPropRead(MsgHandler           *msg_handler,
     {
         msg_handler->msg(ACTStatus::Verbose, gmx::formatString("Opening %s\n", mpfile.c_str()));
     }
-    if (msg_handler) { msg_handler->writeDebug(memory_usage()); }
+    if (msg_handler)
+    {
+        msg_handler->writeDebug(memory_usage());
+    }
     if ((doc = xmlParseFile(mpfile.c_str())) == nullptr)
     {
         gmx_fatal(FARGS, "Failed reading XML file %s. Run a syntax checker such as nsgmls.",
                   mpfile.c_str());
     }
-    if (msg_handler) { msg_handler->writeDebug(memory_usage()); }
+    if (msg_handler)
+    {
+        msg_handler->writeDebug(memory_usage());
+    }
     if (msg_handler)
     {
         msg_handler->writeDebug(gmx::formatString("Reading library file %s\n", fn));
@@ -900,7 +906,10 @@ void MolPropRead(MsgHandler           *msg_handler,
         }
     }
     xmlFreeDoc(doc);
-    if (msg_handler) { msg_handler->writeDebug(memory_usage()); }
+    if (msg_handler)
+    {
+        msg_handler->writeDebug(memory_usage());
+    }
 }
 
 //! \brief Add experiment properties to xml tree

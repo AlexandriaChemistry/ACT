@@ -99,7 +99,7 @@ void print_memory_usage_low(FILE *fp, const char *file, int line)
    }
 }
 
-string memory_usage_low(const char *file, int line)
+std::string memory_usage_low(const char *file, int line)
 {
     double vm, rss;
     mem_usage(&vm, &rss);
