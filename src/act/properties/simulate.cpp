@@ -191,9 +191,9 @@ int simulate(int argc, char *argv[])
         }
     }
 
-    if (debug)
+    if (msghandler.debug())
     {
-        actmol.topology()->dump(debug);
+        actmol.topology()->dump(&msghandler);
     }
     auto eMin = eMinimizeStatus::OK;
     /* Generate output file for debugging if requested */

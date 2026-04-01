@@ -44,6 +44,7 @@
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/futil.h"
+#include "gromacs/utility/stringutil.h"
 
 namespace alexandria
 {
@@ -254,28 +255,31 @@ std::vector<gmx::RVec> Rotator::random(double                        r1,
     return rx;
 }
     
-void Rotator::checkMatrix(FILE *fp)
+void Rotator::checkMatrix(MsgHandler *msghandler)
 {
-    fprintf(fp, "Norms of rows: %g %g %g\n",
-            norm(A_[XX]), norm(A_[YY]), norm(A_[ZZ]));
-    matrix B;
-    transpose(A_, B);
-    fprintf(fp, "Norms of columns: %g %g %g\n",
-            norm(B[XX]), norm(B[YY]), norm(B[ZZ]));
+    if (msghandler)
+    {
+        msghandler->writeDebug(gmx::formatString("Norms of rows: %g %g %g",
+                                                  norm(A_[XX]), norm(A_[YY]), norm(A_[ZZ])));
+        matrix B;
+        transpose(A_, B);
+        msghandler->writeDebug(gmx::formatString("Norms of columns: %g %g %g",
+                                                  norm(B[XX]), norm(B[YY]), norm(B[ZZ])));
+    }
 }
         
-void Rotator::printAverageMatrix(FILE *fp)
+void Rotator::printAverageMatrix(MsgHandler *msghandler)
 {
-    if (fp && naver_ > 0)
+    if (msghandler && naver_ > 0)
     {
-        fprintf(fp, "Average Matrix (n=%zu)\n", naver_);
+        msghandler->writeDebug(gmx::formatString("Average Matrix (n=%zu)", naver_));
+        double inv = 1.0 / naver_;
         for(int m = 0; m < DIM; m++)
         {
-            for(int n = 0; n < DIM; n++)
-            {
-                fprintf(fp, "  %10g", Average_[m][n]/naver_);
-            }
-            fprintf(fp, "\n");
+            msghandler->writeDebug(gmx::formatString("  %10g  %10g  %10g",
+                                                      Average_[m][0]*inv,
+                                                      Average_[m][1]*inv,
+                                                      Average_[m][2]*inv));
         }
     }
 }

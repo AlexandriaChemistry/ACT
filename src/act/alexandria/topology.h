@@ -484,6 +484,11 @@ private:
      */
     void dump(FILE *fp) const;
 
+    /*! \brief Print structure using a MsgHandler
+     * \param[in] msghandler The message handler
+     */
+    void dump(MsgHandler *msghandler) const;
+
 };
 
 } // namespace alexandria

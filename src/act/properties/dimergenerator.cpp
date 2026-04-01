@@ -101,7 +101,7 @@ DimerGenerator::~DimerGenerator()
         rot_->printAngleHisto();
         if (debugGD_)
         {
-            rot_->printAverageMatrix(stdout);
+            rot_->printAverageMatrix(msghandler_);
         }
         delete rot_;
     }
@@ -159,6 +159,7 @@ void DimerGenerator::generate(MsgHandler                          *msghandler,
                               std::vector<std::vector<gmx::RVec>> *coords,
                               const char                          *outcoords)
 {
+    msghandler_ = msghandler;
     size_t nmp  = ndist_*maxdimer;
     size_t mem  = (nmp*actmol->xOriginal().size()*sizeof(double)*DIM)/(1024*1024);
     auto   info = gmx::formatString("Will generate %d dimer configurations at %d distances using %s algorithm. Memory usage: %zu Mb",
@@ -244,6 +245,7 @@ void DimerGenerator::generateRandomNumbers(int ndimers)
 std::vector<std::vector<gmx::RVec>> DimerGenerator::generateDimers(MsgHandler   *msghandler,
                                                                    const ACTMol *actmol)
 {
+    msghandler_ = msghandler;
     const auto fragptr = actmol->fragmentHandler();
     if (fragptr->topologies().size() != 2)
     {
