@@ -796,7 +796,10 @@ int train_ff(int argc, char *argv[])
     auto tw = opt.msgHandler()->tw();
     if (opt.commRec()->isMaster())
     {
-        opt.msgHandler()->writeDebug(memory_usage());
+        if (opt.msgHandler())
+        {
+            opt.msgHandler()->writeDebug(memory_usage());
+        }
         gms = compR.molselect();
         if (tw)
         {
@@ -805,7 +808,10 @@ int train_ff(int argc, char *argv[])
                                      gms.count(iMolSelect::Train), gms.count(iMolSelect::Test),
                                      opt2fn("-sel", filenms.size(), filenms.data()));
         }
-        opt.msgHandler()->writeDebug(memory_usage());
+        if (opt.msgHandler())
+        {
+            opt.msgHandler()->writeDebug(memory_usage());
+        }
     }
     gms.bcast(opt.commRec());
     if (gms.count(iMolSelect::Test) > 0)
@@ -961,7 +967,10 @@ int train_ff(int argc, char *argv[])
             {
                 jtree.write(json_file, true);
             }
-            opt.msgHandler()->writeDebug(memory_usage());
+            if (opt.msgHandler())
+            {
+                opt.msgHandler()->writeDebug(memory_usage());
+            }
         }
         else if (!bMinimum)
         {

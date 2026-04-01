@@ -238,7 +238,7 @@ void ReRunner::rerun(MsgHandler       *msghandler,
     msghandler->write(gmx::formatString("Doing energy calculation for %zu structures from %s\n",
                                         dimers.size(), gendimers_->trajname()));
 
-    if (verbose)
+    if (verbose && msghandler)
     {
         msghandler->writeDebug(memory_usage());
     }
@@ -329,7 +329,7 @@ void ReRunner::rerun(MsgHandler       *msghandler,
         }
         mp_index++;
     }
-    if (verbose)
+    if (verbose && msghandler)
     {
         msghandler->writeDebug(memory_usage());
     }

@@ -773,7 +773,10 @@ size_t MolGen::Read(MsgHandler                          *msghandler,
     ACTMessage                        imm      = ACTMessage::OK;
     std::vector<alexandria::MolProp> mp;
     ForceComputer forceComp;
-    msghandler->writeDebug(memory_usage());
+    if (msghandler)
+    {
+        msghandler->writeDebug(memory_usage());
+    }
 
     //  Now  we have read the forcefield and spread it to processors
     fillIopt(pd, msghandler);
@@ -786,7 +789,10 @@ size_t MolGen::Read(MsgHandler                          *msghandler,
         // about it.
         broadcastChargeMap(cr_, compR->chargeMap());
 
+        if (msghandler)
+    {
         msghandler->writeDebug(memory_usage());
+    }
         for (auto mpi = mp.begin(); mpi < mp.end(); )
         {
             mpi->generateComposition();
@@ -806,7 +812,10 @@ size_t MolGen::Read(MsgHandler                          *msghandler,
         }
         generate_index(&mp);
 
+        if (msghandler)
+    {
         msghandler->writeDebug(memory_usage());
+    }
     }
     else
     {
@@ -924,7 +933,10 @@ size_t MolGen::Read(MsgHandler                          *msghandler,
                                                   sel.iupac().c_str(), molfn));
             }
         }
+        if (msghandler)
+    {
         msghandler->writeDebug(memory_usage());
+    }
         countTargetSize();
         // Now distribute the molecules over processors.
         //! \todo: Make sure the master has a bit less work to do
@@ -1023,7 +1035,10 @@ size_t MolGen::Read(MsgHandler                          *msghandler,
             cr_->bcast(&bcint, mycomms[cc]);
         }
         //! \todo: Free mycomms
+        if (msghandler)
+    {
         msghandler->writeDebug(memory_usage());
+    }
         // Print cost per helper
         if (msghandler->info())
         {
