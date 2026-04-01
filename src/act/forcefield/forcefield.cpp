@@ -52,20 +52,21 @@
 #include "act/forcefield/act_checksum.h"
 #include "act/forcefield/forcefield_xml.h"
 #include "act/forcefield/potential.h"
+#include "act/basics/msg_handler.h"
 #include "act/utility/stringutil.h"
 
 namespace alexandria
 {
 
-bool ForceField::verifyCheckSum(FILE              *fp,
+bool ForceField::verifyCheckSum(MsgHandler        *msgHandler,
                                 const std::string &checkSum)
 {
     bool match = checkSum == checkSum_;
-    if (!match && fp)
+    if (!match && msgHandler)
     {
-        fprintf(fp, "Checksum mismatch in %s. Expected %s Found %s\n",
+        msgHandler->write(gmx::formatString("Checksum mismatch in %s. Expected %s Found %s\n",
                 filename_.c_str(),
-                checkSum_.c_str(), checkSum.c_str());
+                checkSum_.c_str(), checkSum.c_str()));
     }
     return match;
 }
@@ -101,10 +102,10 @@ std::vector<std::string> ForceField::info() const
     return out;
 }
 
-bool ForceField::verifyCheckSum(FILE *fp)
+bool ForceField::verifyCheckSum(MsgHandler *msgHandler)
 {
     std::string checkSum = forcefieldCheckSum(this);
-    return verifyCheckSum(fp, checkSum);
+    return verifyCheckSum(msgHandler, checkSum);
 }
 
 void ForceField::updateCheckSum()
@@ -403,7 +404,8 @@ CommunicationStatus ForceField::Send(const CommunicationRecord *cr, int dest)
 
 CommunicationStatus ForceField::BroadCast(const CommunicationRecord *cr,
                                        int                        root,
-                                       MPI_Comm                   comm)
+                                       MPI_Comm                   comm,
+                                       MsgHandler                *msgHandler)
 {
     CommunicationStatus cs = cr->bcast_data(comm);
     if (CommunicationStatus::OK == cs)
@@ -473,10 +475,9 @@ CommunicationStatus ForceField::BroadCast(const CommunicationRecord *cr,
                     {
                         forces_.insert({iType, fs});
                     }
-                    if (debug)
+                    if (msgHandler)
                     {
-                        fprintf(debug, "Done Listed force %s\n", key.c_str());
-                        fflush(debug);
+                        msgHandler->writeDebug(gmx::formatString("Done Listed force %s\n", key.c_str()));
                     }
                 }
             }
@@ -504,7 +505,8 @@ CommunicationStatus ForceField::BroadCast(const CommunicationRecord *cr,
     return cs;
 }
 
-CommunicationStatus ForceField::Receive(const CommunicationRecord *cr, int src)
+CommunicationStatus ForceField::Receive(const CommunicationRecord *cr, int src,
+                                        MsgHandler *msgHandler)
 {
     CommunicationStatus cs = CommunicationStatus::OK;
     if (CommunicationStatus::RECV_DATA == cr->recv_data(src))
@@ -529,10 +531,9 @@ CommunicationStatus ForceField::Receive(const CommunicationRecord *cr, int src)
                 alexandria_.insert({alexandria.id(), alexandria});
             }
         }
-        if (debug)
+        if (msgHandler)
         {
-            fprintf(debug, "Done receiving atomtypes\n");
-            fflush(debug);
+            msgHandler->writeDebug("Done receiving atomtypes\n");
         }
 
         /* Receive Listed Forces */
@@ -554,16 +555,14 @@ CommunicationStatus ForceField::Receive(const CommunicationRecord *cr, int src)
             {
                 forces_.insert({iType, fs});
             }
-            if (debug)
+            if (msgHandler)
             {
-                fprintf(debug, "Done Listed force %s\n", key.c_str());
-                fflush(debug);
+                msgHandler->writeDebug(gmx::formatString("Done Listed force %s\n", key.c_str()));
             }
         }
-        if (debug)
+        if (msgHandler)
         {
-            fprintf(debug, "Done Listed forces\n");
-            fflush(debug);
+            msgHandler->writeDebug("Done Listed forces\n");
         }
         /* Receive Symcharges */
         if (CommunicationStatus::OK == cs)
@@ -585,13 +584,14 @@ CommunicationStatus ForceField::Receive(const CommunicationRecord *cr, int src)
     return cs;
 }
 
-void ForceField::sendParticles(const CommunicationRecord *cr, int dest)
+void ForceField::sendParticles(const CommunicationRecord *cr, int dest,
+                               MsgHandler *msgHandler)
 {
     if (CommunicationStatus::SEND_DATA == cr->send_data(dest))
     {
-        if (nullptr != debug)
+        if (msgHandler)
         {
-            fprintf(debug, "Going to update ForceField::particles on node %d\n", dest);
+            msgHandler->writeDebug(gmx::formatString("Going to update ForceField::particles on node %d\n", dest));
         }
         for(auto &ax : alexandria_)
         {
@@ -614,7 +614,8 @@ void ForceField::sendParticles(const CommunicationRecord *cr, int dest)
 }
 
 
-void ForceField::receiveParticles(const CommunicationRecord *cr, int src)
+void ForceField::receiveParticles(const CommunicationRecord *cr, int src,
+                                  MsgHandler *msgHandler)
 {
     if (CommunicationStatus::RECV_DATA == cr->recv_data(src))
     {
@@ -634,9 +635,9 @@ void ForceField::receiveParticles(const CommunicationRecord *cr, int src)
     }
     else
     {
-        if (nullptr != debug)
+        if (msgHandler)
         {
-            fprintf(debug, "Could not update eem properties on node %d\n", cr->rank());
+            msgHandler->writeDebug(gmx::formatString("Could not update eem properties on node %d\n", cr->rank()));
         }
     }
     GMX_RELEASE_ASSERT(CommunicationStatus::DONE == cr->recv_data(src),
@@ -651,13 +652,14 @@ static std::vector<InteractionType> eemlist =
       InteractionType::ELECTRONEGATIVITYEQUALIZATION
     };
 
-void ForceField::sendEemprops(const CommunicationRecord *cr, int dest)
+void ForceField::sendEemprops(const CommunicationRecord *cr, int dest,
+                              MsgHandler *msgHandler)
 {
     if (CommunicationStatus::SEND_DATA == cr->send_data(dest))
     {
-        if (nullptr != debug)
+        if (msgHandler)
         {
-            fprintf(debug, "Going to update ForceField::eemprop on node %d\n", dest);
+            msgHandler->writeDebug(gmx::formatString("Going to update ForceField::eemprop on node %d\n", dest));
         }
         for(auto myeem : eemlist)
         {
@@ -677,7 +679,8 @@ void ForceField::sendEemprops(const CommunicationRecord *cr, int dest)
     cr->send_done(dest);
 }
 
-void ForceField::receiveEemprops(const CommunicationRecord *cr, int src)
+void ForceField::receiveEemprops(const CommunicationRecord *cr, int src,
+                                 MsgHandler *msgHandler)
 {
     if (CommunicationStatus::RECV_DATA == cr->recv_data(src))
     {
@@ -701,32 +704,33 @@ void ForceField::receiveEemprops(const CommunicationRecord *cr, int src)
     }
     else
     {
-        if (nullptr != debug)
+        if (msgHandler)
         {
-            fprintf(debug, "Could not update eem properties on node %d\n", cr->rank());
+            msgHandler->writeDebug(gmx::formatString("Could not update eem properties on node %d\n", cr->rank()));
         }
     }
     GMX_RELEASE_ASSERT(CommunicationStatus::DONE == cr->recv_data(src),
                        "Communication did not end correctly");
 }
 
-void ForceField::sendToHelpers(const CommunicationRecord *cr, int root, bool bcast)
+void ForceField::sendToHelpers(const CommunicationRecord *cr, int root, bool bcast,
+                               MsgHandler *msgHandler)
 {
-    if (bcast && debug)
+    if (bcast && msgHandler)
     {
-        fprintf(debug, "Will send force field from node %d to helper", cr->rank());
+        std::string msg = gmx::formatString("Will send force field from node %d to helper", cr->rank());
         for(const auto &i: cr->helpers())
         {
-            fprintf(debug, " %d", i);
+            msg += gmx::formatString(" %d", i);
         }
-        fprintf(debug, "\n");
-        fflush(debug);
+        msg += "\n";
+        msgHandler->writeDebug(msg);
     }
     if (cr->rank() == root)
     {
         if (bcast)
         {
-            BroadCast(cr, root, cr->send_helpers());
+            BroadCast(cr, root, cr->send_helpers(), msgHandler);
         }
         else
         {
@@ -734,9 +738,9 @@ void ForceField::sendToHelpers(const CommunicationRecord *cr, int root, bool bca
             {
                 if (CommunicationStatus::SEND_DATA == cr->send_data(dest))
                 {
-                    if (nullptr != debug)
+                    if (msgHandler)
                     {
-                        fprintf(debug, "Going to update ForceField on node %d\n", dest);
+                        msgHandler->writeDebug(gmx::formatString("Going to update ForceField on node %d\n", dest));
                     }
                     Send(cr, dest);
                 }
@@ -748,26 +752,26 @@ void ForceField::sendToHelpers(const CommunicationRecord *cr, int root, bool bca
     {
         if (bcast)
         {
-            BroadCast(cr, root, cr->send_helpers());
+            BroadCast(cr, root, cr->send_helpers(), msgHandler);
         }
         else
         {
             int src = cr->superior();
             if (CommunicationStatus::RECV_DATA == cr->recv_data(src))
             {
-                auto cs = Receive(cr, src);
+                auto cs = Receive(cr, src, msgHandler);
                 if (CommunicationStatus::OK == cs)
                 {
-                    if (nullptr != debug)
+                    if (msgHandler)
                     {
-                        fprintf(debug, "ForceField is updated on node %d\n", cr->rank());
+                        msgHandler->writeDebug(gmx::formatString("ForceField is updated on node %d\n", cr->rank()));
                     }
                 }
                 else
                 {
-                    if (nullptr != debug)
+                    if (msgHandler)
                     {
-                        fprintf(debug, "Could not update ForceField on node %d\n", cr->rank());
+                        msgHandler->writeDebug(gmx::formatString("Could not update ForceField on node %d\n", cr->rank()));
                     }
                 }
             }
@@ -777,7 +781,7 @@ void ForceField::sendToHelpers(const CommunicationRecord *cr, int root, bool bca
     }
 }
 
-void ForceField::checkConsistency(FILE *fp) const
+void ForceField::checkConsistency(MsgHandler *msgHandler) const
 {
     int  nerror = 0;
     auto cga    = chargeGenerationAlgorithm();
@@ -788,7 +792,10 @@ void ForceField::checkConsistency(FILE *fp) const
     if (interactionPresent(InteractionType::BONDCORRECTIONS) &&
         chargeGenerationAlgorithm() != ChargeGenerationAlgorithm::SQE)
     {
-        fprintf(stderr, "Can only have bond corrections when ChargeGenerationAlgorithm = SQE\n");
+        if (msgHandler)
+        {
+            msgHandler->msg(ACTStatus::Warning, "Can only have bond corrections when ChargeGenerationAlgorithm = SQE\n");
+        }
         nerror += 1;
     }
     auto itype = InteractionType::ELECTRONEGATIVITYEQUALIZATION;
@@ -800,9 +807,13 @@ void ForceField::checkConsistency(FILE *fp) const
             auto &qparam = atp.second.parameterConst("charge");
             if (qparam.mutability() == Mutability::ACM)
             {
-                fprintf(stderr, "No %s type for particletype %s\n",
-                        interactionTypeToParticleSubtype(itype).c_str(),
-                        atp.second.id().id().c_str());
+                if (msgHandler)
+                {
+                    msgHandler->msg(ACTStatus::Warning,
+                                    gmx::formatString("No %s type for particletype %s\n",
+                                                      interactionTypeToParticleSubtype(itype).c_str(),
+                                                      atp.second.id().id().c_str()));
+                }
                 nerror += 1;
             }
             else
@@ -816,7 +827,12 @@ void ForceField::checkConsistency(FILE *fp) const
             // Check whether zeta types are present
             if (!eem.parameterExists(acmtype))
             {
-                fprintf(stderr, "ERROR: No eemprops for %s in ForceField::checkConsistency\n", acmtype.id().c_str());
+                if (msgHandler)
+                {
+                    msgHandler->msg(ACTStatus::Warning,
+                                    gmx::formatString("ERROR: No eemprops for %s in ForceField::checkConsistency\n",
+                                                      acmtype.id().c_str()));
+                }
                 nerror += 1;
             }
             else
@@ -824,22 +840,15 @@ void ForceField::checkConsistency(FILE *fp) const
                 auto eep = eem.findParameterMapConst(acmtype);
                 double chi0 = eep["chi"].value();
                 double J00  = eep["eta"].value();
-                if (nullptr != fp)
-                {
-                    fprintf(fp, "chi0 %g eta %g", chi0, J00);
-                }
                 double zeta = 0;
                 int    row  = eep["row"].value();
                 double q    = eep["charge"].value();
-                if (nullptr != fp)
+                if (msgHandler)
                 {
-                    fprintf(fp, " row %d zeta %g q %g", row, zeta, q);
+                    msgHandler->write(gmx::formatString("chi0 %g eta %g row %d zeta %g q %g\n",
+                                                        chi0, J00, row, zeta, q));
                 }
             }
-        }
-        if (nullptr != fp)
-        {
-            fprintf(fp, "\n");
         }
     }
     const auto itq = InteractionType::ELECTROSTATICS;
@@ -857,7 +866,12 @@ void ForceField::checkConsistency(FILE *fp) const
                     auto myval = param.second.internalValue();
                     if (param.first == zeta && myval != 0)
                     {
-                        fprintf(stderr, "Force field specifies Point charges but %s = %g for %s", zeta.c_str(), myval, myparam.first.id().c_str());
+                        if (msgHandler)
+                        {
+                            msgHandler->msg(ACTStatus::Warning,
+                                            gmx::formatString("Force field specifies Point charges but %s = %g for %s",
+                                                              zeta.c_str(), myval, myparam.first.id().c_str()));
+                        }
                         nerror += 1;
                     }
                 }

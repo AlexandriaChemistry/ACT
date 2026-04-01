@@ -220,7 +220,7 @@ static void check_mp(MsgHandler           *msghandler,
     alexandria::ForceField pd;
     try
     {
-        alexandria::readForceField(ffname, &pd);
+        alexandria::readForceField(ffname, &pd, msghandler);
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 

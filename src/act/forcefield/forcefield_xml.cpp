@@ -48,6 +48,7 @@
 #include "act/forcefield/forcefield_parameterlist.h"
 #include "act/forcefield/generate_dependent.h"
 #include "act/forcefield/symcharges.h"
+#include "act/basics/msg_handler.h"
 #include "act/utility/xml_util.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/utility/futil.h"
@@ -247,7 +248,7 @@ static double xbuf_atof(xmlBuffer *xbuf, xmlEntry  xbuf_index)
 }
 
 //! \brief Process attributes from xml file
-static void processAttr(FILE                 *fp, 
+static void processAttr(MsgHandler           *msgHandler, 
                         std::stack<xmlEntry> *entries,
                         xmlAttrPtr            attr,
                         xmlBuffer            *xbuf,
@@ -270,11 +271,11 @@ static void processAttr(FILE                 *fp,
         {
             xbuf->insert({iter->second, attrval});
 
-            if (nullptr != fp)
-            {
-                sp(indent, buf, 99);
-                fprintf(fp, "%sProperty: '%s' Value: '%s'\n", buf, attrname.c_str(), attrval.c_str());
-            }
+        if (nullptr != msgHandler)
+        {
+            sp(indent, buf, 99);
+            msgHandler->writeDebug(gmx::formatString("%sProperty: '%s' Value: '%s'\n", buf, attrname.c_str(), attrval.c_str()));
+        }
         }
         else
         {
@@ -337,11 +338,11 @@ static void processAttr(FILE                 *fp,
             if (doUpdate != csUpdate.end())
             {
                 canSwap = doUpdate->second;
-                if (debug)
+                if (msgHandler)
                 {
-                    fprintf(debug, "WARNING: Changing CanSwap to %s for %s\n",
+                    msgHandler->writeDebug(gmx::formatString("WARNING: Changing CanSwap to %s for %s\n",
                             canSwapToString(doUpdate->second).c_str(),
-                            interactionTypeToString(currentItype).c_str());
+                            interactionTypeToString(currentItype).c_str()));
                 }
             }
 
@@ -477,25 +478,26 @@ static void processAttr(FILE                 *fp,
         }
         break;
     default:
-        if (nullptr != debug)
+        if (msgHandler)
         {
-            fprintf(debug, "Unknown combination of attributes:\n");
+            std::string dbgMsg = "Unknown combination of attributes:\n";
             for (const auto &i : xml_pd)
             {
                 xmlEntry ix = i.second;
                 if (xbuf->find(ix) != xbuf->end() &&
                     xbuf->find(ix)->second.size() != 0)
                 {
-                    fprintf(debug, "%s = %s\n", exml_names(ix), xbuf->find(ix)->second.c_str());
+                    dbgMsg += gmx::formatString("%s = %s\n", exml_names(ix), xbuf->find(ix)->second.c_str());
                 }
             }
+            msgHandler->writeDebug(dbgMsg);
         }
     }
 #undef xbufString
 }
 
 //! \brief Process the whole xml tree
-static void processTree(FILE                 *fp, 
+static void processTree(MsgHandler           *msgHandler, 
                         std::stack<xmlEntry> *entries,
                         xmlBuffer            *xbuf,
                         xmlNodePtr            tree,
@@ -507,25 +509,25 @@ static void processTree(FILE                 *fp,
 
     while (tree != nullptr)
     {
-        if (fp)
+        if (msgHandler)
         {
             if ((tree->type > 0) && (tree->type < xmltype.size()))
             {
-                fprintf(fp, "Node type %s encountered with name %s\n",
-                        xmltype[tree->type], (char *)tree->name);
+                msgHandler->writeDebug(gmx::formatString("Node type %s encountered with name %s\n",
+                        xmltype[tree->type], (char *)tree->name));
             }
             else
             {
-                fprintf(fp, "Node type %d encountered\n", tree->type);
+                msgHandler->writeDebug(gmx::formatString("Node type %d encountered\n", tree->type));
             }
         }
 
         if (tree->type == XML_ELEMENT_NODE)
         {
-            if (fp)
+            if (msgHandler)
             {
                 sp(indent, buf, 99);
-                fprintf(fp, "%sElement node name %s\n", buf, (char *)tree->name);
+                msgHandler->writeDebug(gmx::formatString("%sElement node name %s\n", buf, (char *)tree->name));
             }
             auto iter = xml_pd.find((const char *)tree->name);
             if (iter != xml_pd.end())
@@ -534,12 +536,12 @@ static void processTree(FILE                 *fp,
                 entries->push(elem);
                 if (elem != xmlEntry::GENTOP)
                 {
-                    processAttr(fp, entries, tree->properties, xbuf, elem, indent+2, pd);
+                    processAttr(msgHandler, entries, tree->properties, xbuf, elem, indent+2, pd);
                 }
 
                 if (tree->children)
                 {
-                    processTree(fp, entries, xbuf, tree->children, indent+2, pd);
+                    processTree(msgHandler, entries, xbuf, tree->children, indent+2, pd);
                 }
             }
             if (entries->empty())
@@ -553,7 +555,8 @@ static void processTree(FILE                 *fp,
 }
 
 void readForceField(const std::string &fileName,
-                    ForceField        *pd)
+                    ForceField        *pd,
+                    MsgHandler        *msgHandler)
 {
     xmlDocPtr   doc;
     std::string fn, fn2;
@@ -575,9 +578,9 @@ void readForceField(const std::string &fileName,
     {
         gmx_fatal(FARGS, "Could not find %s\n", fn.c_str());
     }
-    if (nullptr != debug)
+    if (msgHandler)
     {
-        fprintf(debug, "Opening library file %s\n", fn2.c_str());
+        msgHandler->writeDebug(gmx::formatString("Opening library file %s\n", fn2.c_str()));
     }
     //xmlDoValidityCheckingDefaultValue = 0;
     doc = xmlParseFile(fn2.c_str());
@@ -593,16 +596,16 @@ void readForceField(const std::string &fileName,
     pd->setFilename(fn2);
     xmlBuffer xbuf;
     std::stack<xmlEntry> entries;
-    processTree(debug, &entries, &xbuf, doc->children, 0, pd);
+    processTree(msgHandler, &entries, &xbuf, doc->children, 0, pd);
 
     xmlFreeDoc(doc);
 
     // Generate maps
     pd->checkForPolarizability();
-    pd->checkConsistency(debug);
+    pd->checkConsistency(msgHandler);
     pd->guessChargeGenerationAlgorithm();
     generateDependentParameter(pd, true);
-    if (nullptr != debug)
+    if (msgHandler && msgHandler->debug())
     {
         writeForceField("pdout.dat", pd, false);
     }
