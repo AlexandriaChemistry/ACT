@@ -175,10 +175,10 @@ int gentop(int argc, char *argv[])
     }
     try
     {
-        readForceField(gentop_fnm, &pd);
+        readForceField(gentop_fnm, &pd, &msghandler);
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-    (void) pd.verifyCheckSum(stderr);
+    (void) pd.verifyCheckSum(&msghandler);
 
     auto &fs = pd.findForcesConst(InteractionType::ELECTROSTATICS);
     std::string my_pol;

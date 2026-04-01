@@ -54,6 +54,8 @@
 namespace alexandria
 {
 
+class MsgHandler;
+
 class ForceField
 {
     public:
@@ -85,18 +87,18 @@ class ForceField
         }
         
         /*! \brief Verify the checksum and print message if required
-         * \param[in] fp       A file to write messages to, may be nullptr
+         * \param[in] msgHandler A MsgHandler to write messages to, may be nullptr
          * \param[in] checkSum The checksum computed for the ForceField
          * \return true if checkSum matches.
          */
-        bool verifyCheckSum(FILE              *fp,
+        bool verifyCheckSum(MsgHandler        *msgHandler,
                             const std::string &checkSum);
     
         /*! \brief Verify the checksum and print message if required
-         * \param[in] fp       A file to write messages to, may be nullptr
+         * \param[in] msgHandler A MsgHandler to write messages to, may be nullptr
          * \return true if checkSum is correct.
          */
-        bool verifyCheckSum(FILE *fp);
+        bool verifyCheckSum(MsgHandler *msgHandler);
     
         /*! \brief Update the checkSum
          * Compute a new checkSum and store it in the appropriate data field.
@@ -355,49 +357,62 @@ class ForceField
      * \param[in] cr    Communication record
      * \param[in] root  The root of this communication
      * \param[in] bcast Whether or not to use boradcast functionality
+     * \param[in] msgHandler MsgHandler for debug output
      */
-    void sendToHelpers(const CommunicationRecord *cr, int root, bool bcast=true);
+    void sendToHelpers(const CommunicationRecord *cr, int root, bool bcast=true,
+                       MsgHandler *msgHandler=nullptr);
     
     /*! Spread eemprop to a helper node
      * \param[in] cr   Communication record
      * \param[in] dest Destination node
+     * \param[in] msgHandler MsgHandler for debug output
      */
-    void sendEemprops(const CommunicationRecord *cr, int dest);
+    void sendEemprops(const CommunicationRecord *cr, int dest,
+                      MsgHandler *msgHandler=nullptr);
     
     /*! Receive eemprop from someone
      * \param[in] cr  Communication record
      * \param[in] src Source node
+     * \param[in] msgHandler MsgHandler for debug output
      */
-    void receiveEemprops(const CommunicationRecord *cr, int src);
+    void receiveEemprops(const CommunicationRecord *cr, int src,
+                         MsgHandler *msgHandler=nullptr);
     
     /*! Spread mutable particle properties to a helper node
      * \param[in] cr   Communication record
      * \param[in] dest Destination node
+     * \param[in] msgHandler MsgHandler for debug output
      */
-    void sendParticles(const CommunicationRecord *cr, int dest);
+    void sendParticles(const CommunicationRecord *cr, int dest,
+                       MsgHandler *msgHandler=nullptr);
     
     /*! Receive particles from someone
      * \param[in] cr  Communication record
      * \param[in] src Source node
+     * \param[in] msgHandler MsgHandler for debug output
      */
-    void receiveParticles(const CommunicationRecord *cr, int src);
+    void receiveParticles(const CommunicationRecord *cr, int src,
+                          MsgHandler *msgHandler=nullptr);
     
     /*! \brief BroadCast a whole force field
      * \param[in] cr  Communication data structure
      * \param[in] root The root of this communication
      * \param[in] comm MPI communication structure
+     * \param[in] msgHandler MsgHandler for debug output
      * \return The status of the whole thing
      */
     CommunicationStatus BroadCast(const CommunicationRecord *cr,
                                   int                        root,
-                                  MPI_Comm                   comm);
+                                  MPI_Comm                   comm,
+                                  MsgHandler                *msgHandler=nullptr);
         
     CommunicationStatus Send(const CommunicationRecord *cr, int dest);
     
-    CommunicationStatus Receive(const CommunicationRecord *cr, int src);
+    CommunicationStatus Receive(const CommunicationRecord *cr, int src,
+                                MsgHandler *msgHandler=nullptr);
     
     //! \brief Check internal consistency of data structures
-    void checkConsistency(FILE *fplog) const;
+    void checkConsistency(MsgHandler *msgHandler) const;
     
     //! \return a constant \p type2Itype_ reference
     const std::map<InteractionType, std::set<std::string>> &type2Itype() const { return type2Itype_; }

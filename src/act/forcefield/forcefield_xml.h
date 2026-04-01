@@ -40,6 +40,7 @@
 namespace alexandria
 {
     class ForceField;
+    class MsgHandler;
 
     /*! \brief Store the ForceField class to an XML file
      *
@@ -53,11 +54,13 @@ namespace alexandria
 
     /*! \brief Read a ForceField class from an XML file
      *
-     * \param[in]  fileName The filename to read from
-     * \param[out] pd       The ForceField class instance
+     * \param[in]  fileName   The filename to read from
+     * \param[out] pd         The ForceField class instance
+     * \param[in]  msgHandler MsgHandler for debug output, may be nullptr
      */
     void readForceField(const std::string &fileName,
-                     ForceField           *pd);
+                     ForceField           *pd,
+                     MsgHandler           *msgHandler = nullptr);
 
 } // namespace alexandria
 

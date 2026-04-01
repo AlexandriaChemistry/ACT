@@ -107,11 +107,11 @@ int min_complex(int argc, char *argv[])
     ForceField        pd;
     try
     {
-        readForceField(opt2fn("-ff", fnm.size(), fnm.data()), &pd);
+        readForceField(opt2fn("-ff", fnm.size(), fnm.data()), &pd, &msghandler);
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     
-    (void) pd.verifyCheckSum(stderr);
+    (void) pd.verifyCheckSum(&msghandler);
     if (shellToler >= sch.forceTolerance())
     {
         shellToler = sch.forceTolerance()/10;

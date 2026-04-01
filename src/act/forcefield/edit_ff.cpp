@@ -881,19 +881,19 @@ int edit_ff(int argc, char*argv[])
     {
         try 
         {
-            alexandria::readForceField(opt2fn("-ff", fnm.size(), fnm.data()), &pd);
+            alexandria::readForceField(opt2fn("-ff", fnm.size(), fnm.data()), &pd, &msghandler);
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-        (void) pd.verifyCheckSum(stderr, forcefieldCheckSum(&pd));
+        (void) pd.verifyCheckSum(&msghandler, forcefieldCheckSum(&pd));
         if (opt2bSet("-ff2", fnm.size(), fnm.data()))
         {
             alexandria::ForceField pd2;
             try
             {
-                alexandria::readForceField(opt2fn("-ff2", fnm.size(), fnm.data()), &pd2);
+                alexandria::readForceField(opt2fn("-ff2", fnm.size(), fnm.data()), &pd2, &msghandler);
             }
             GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-            (void) pd2.verifyCheckSum(stderr, forcefieldCheckSum(&pd2));
+            (void) pd2.verifyCheckSum(&msghandler, forcefieldCheckSum(&pd2));
             
             if (strlen(missing) > 0)
             {

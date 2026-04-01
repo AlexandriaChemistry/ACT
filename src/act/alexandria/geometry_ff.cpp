@@ -255,7 +255,7 @@ int geometry_ff(int argc, char *argv[])
     }
     try
     {
-        readForceField(myff, &pd);
+        readForceField(myff, &pd, &msghandler);
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     print_memory_usage(debug);

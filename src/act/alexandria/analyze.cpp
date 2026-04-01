@@ -456,7 +456,7 @@ int analyze(int argc, char *argv[])
 
     try
     {
-        alexandria::readForceField(opt2fn("-ff", fnm.size(), fnm.data()), &pd);
+        alexandria::readForceField(opt2fn("-ff", fnm.size(), fnm.data()), &pd, &msghandler);
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 
