@@ -238,9 +238,9 @@ void ReRunner::rerun(MsgHandler       *msghandler,
     msghandler->write(gmx::formatString("Doing energy calculation for %zu structures from %s\n",
                                         dimers.size(), gendimers_->trajname()));
 
-    if (verbose && debug)
+    if (verbose)
     {
-        print_memory_usage(debug);
+        msghandler->writeDebug(memory_usage());
     }
     std::map<InteractionType, double> energies;
     int mp_index = 0;
@@ -329,9 +329,9 @@ void ReRunner::rerun(MsgHandler       *msghandler,
         }
         mp_index++;
     }
-    if (verbose && debug)
+    if (verbose)
     {
-        print_memory_usage(debug);
+        msghandler->writeDebug(memory_usage());
     }
 }
 
@@ -433,7 +433,7 @@ void ReRunner::runB2(CommunicationRecord         *cr,
         // Generate a new set of dimers for all distances
         if (!gendimers_->hasTrajectory())
         {
-            dimers = gendimers_->generateDimers(debug, actmol);
+            dimers = gendimers_->generateDimers(msghandler, actmol);
         }
         // Structures to store energies, forces and torques
         gmx_stats                           edist;

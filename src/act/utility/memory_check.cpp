@@ -98,3 +98,16 @@ void print_memory_usage_low(FILE *fp, const char *file, int line)
        }
    }
 }
+
+string memory_usage_low(const char *file, int line)
+{
+    double vm, rss;
+    mem_usage(&vm, &rss);
+    if (rss > 0)
+    {
+        char buf[512];
+        snprintf(buf, sizeof(buf), "%s %d VMEM %g Resident %g", file, line, vm, rss);
+        return buf;
+    }
+    return {};
+}

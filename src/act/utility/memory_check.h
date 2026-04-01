@@ -35,10 +35,15 @@
 #define _memory_check_h
 
 #include <cstdio>
+#include <string>
 
 extern void print_memory_usage_low(FILE *fp, const char *file, int line);
 
 #define print_memory_usage(fp) print_memory_usage_low(fp, __FILE__, __LINE__)
+
+extern std::string memory_usage_low(const char *file, int line);
+
+#define memory_usage() memory_usage_low(__FILE__, __LINE__)
 
 #endif
 

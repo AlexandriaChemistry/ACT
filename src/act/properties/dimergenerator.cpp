@@ -36,6 +36,7 @@
 #include <cmath>
 #include <cstdlib>
 
+#include "act/basics/msg_handler.h"
 #include "act/molprop/molprop_xml.h"
 #include "act/properties/rotator.h"
 #include "act/utility/memory_check.h"
@@ -151,7 +152,7 @@ static void dump_coords(const char                                *outcoords,
     gmx_ffclose(fp);
 }
 
-void DimerGenerator::generate(FILE                                *logFile,
+void DimerGenerator::generate(MsgHandler                          *msghandler,
                               const ACTMol                        *actmol,
                               int                                  maxdimer,
                               std::vector<std::vector<gmx::RVec>> *coords,
@@ -161,9 +162,9 @@ void DimerGenerator::generate(FILE                                *logFile,
     size_t mem  = (nmp*actmol->xOriginal().size()*sizeof(double)*DIM)/(1024*1024);
     auto   info = gmx::formatString("Will generate %d dimer configurations at %d distances using %s algorithm. Memory usage: %zu Mb",
                                     maxdimer, ndist_, rotalgToString(rot_->rotalg()).c_str(), mem);
-    if (logFile)
+    if (msghandler)
     {
-        fprintf(logFile, "%s\n", info.c_str());
+        msghandler->writeDebug(info);
     }
     printf("%s\n", info.c_str());
     if (!rot_)
@@ -173,7 +174,7 @@ void DimerGenerator::generate(FILE                                *logFile,
     // Loop over the dimers
     for(int ndim = 0; ndim < maxdimer; ndim++)
     {
-        for(auto &newx : generateDimers(logFile, actmol))
+        for(auto &newx : generateDimers(msghandler, actmol))
         {
             coords->push_back(newx);
         }
@@ -239,7 +240,7 @@ void DimerGenerator::generateRandomNumbers(int ndimers)
     }
 }
 
-std::vector<std::vector<gmx::RVec>> DimerGenerator::generateDimers(FILE         *logFile,
+std::vector<std::vector<gmx::RVec>> DimerGenerator::generateDimers(MsgHandler   *msghandler,
                                                                    const ACTMol *actmol)
 {
     const auto fragptr = actmol->fragmentHandler();
@@ -292,9 +293,9 @@ std::vector<std::vector<gmx::RVec>> DimerGenerator::generateDimers(FILE         
     // Loop over orientations
     // Then initiate the big array
     std::vector<std::vector<gmx::RVec>> coords(ndist_);
-    if (debugGD_ && debug)
+    if (debugGD_ && msghandler)
     {
-        print_memory_usage(debug);
+        msghandler->writeDebug(memory_usage());
     }
     // Copy the original coordinates
     std::vector<gmx::RVec> xrand[2];
@@ -311,24 +312,24 @@ std::vector<std::vector<gmx::RVec>> DimerGenerator::generateDimers(FILE         
                                 allRandom_[randIndex_][j0+1],
                                 allRandom_[randIndex_][j0+2], xrand[m]);
     }
-    if (logFile)
+    if (msghandler)
     {
-        fprintf(logFile, "randIndex_ %zu q", randIndex_);
+        std::string dbgLine = gmx::formatString("randIndex_ %zu q", randIndex_);
         for(int m = 0; m < 2*DIM; m++)
         {
-            fprintf(logFile, " %g", allRandom_[randIndex_][m]);
+            dbgLine += gmx::formatString(" %g", allRandom_[randIndex_][m]);
         }
         for(int m = 0; m < 2; m++)
         {
-            fprintf(logFile, " x[%d]", m);
+            dbgLine += gmx::formatString(" x[%d]", m);
             auto   atoms   = tops[m].atoms();
             for(size_t j = 0; j < atoms.size(); j++)
             {
-                fprintf(logFile, " %g %g %g", xrand[m][j][XX],
-                        xrand[m][j][YY], xrand[m][j][ZZ]);
+                dbgLine += gmx::formatString(" %g %g %g", xrand[m][j][XX],
+                                             xrand[m][j][YY], xrand[m][j][ZZ]);
             }
         }
-        fprintf(logFile, "\n");
+        msghandler->writeDebug(dbgLine);
     }
     randIndex_ += 1;
     // Loop over distances from mindist to maxdist
@@ -361,9 +362,9 @@ std::vector<std::vector<gmx::RVec>> DimerGenerator::generateDimers(FILE         
             rvec_dec(xrand[1][j], trans);
         }
     }
-    if (debugGD_ && debug)
+    if (debugGD_ && msghandler)
     {
-        print_memory_usage(debug);
+        msghandler->writeDebug(memory_usage());
     }
     return coords;
 }

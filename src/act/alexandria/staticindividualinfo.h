@@ -153,11 +153,11 @@ public:
 
     /*!
      * \brief Fill the ForceField attribute by reading from a file
-     * \param[in] tw        TextWriter
+     * \param[in] msghandler MsgHandler for output and debugging
      * \param[in] pd_fn     name of the gentop (Force Field) file
      */
-    void fillForceField(gmx::TextWriter *tw,
-                        const char      *pd_fn);
+    void fillForceField(MsgHandler     *msghandler,
+                        const char     *pd_fn);
 
     /*! \brief Copy the Force Field parameters to the ForceField structure
      * \param[in] msghandler Write (debugging) info and handle errors

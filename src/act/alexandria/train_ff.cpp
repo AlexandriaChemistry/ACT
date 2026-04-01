@@ -571,7 +571,7 @@ bool OptACM::runMaster(bool optimize,
     GMX_RELEASE_ASSERT(commRec_.nodeType() == NodeType::Master,
                        "I thought I was the master...");
 
-    print_memory_usage(debug);
+    msghandler_.writeDebug(memory_usage());
     auto tw = msghandler_.tw();
     bool bMinimum = false;
     std::map<iMolSelect, ga::Genome> bestGenome;
@@ -796,7 +796,7 @@ int train_ff(int argc, char *argv[])
     auto tw = opt.msgHandler()->tw();
     if (opt.commRec()->isMaster())
     {
-        print_memory_usage(debug);
+        opt.msgHandler()->writeDebug(memory_usage());
         gms = compR.molselect();
         if (tw)
         {
@@ -805,7 +805,7 @@ int train_ff(int argc, char *argv[])
                                      gms.count(iMolSelect::Train), gms.count(iMolSelect::Test),
                                      opt2fn("-sel", filenms.size(), filenms.data()));
         }
-        print_memory_usage(debug);
+        opt.msgHandler()->writeDebug(memory_usage());
     }
     gms.bcast(opt.commRec());
     if (gms.count(iMolSelect::Test) > 0)
@@ -835,7 +835,7 @@ int train_ff(int argc, char *argv[])
         {
             fnIndex = opt.commRec()->middleManOrdinal();
         }
-        opt.sii()->fillForceField(tw, fns[fnIndex].c_str());
+        opt.sii()->fillForceField(opt.msgHandler(), fns[fnIndex].c_str());
         if (tw)
         {
             tw->writeStringFormatted("On proc %d, found %d particle types\n",
@@ -961,7 +961,7 @@ int train_ff(int argc, char *argv[])
             {
                 jtree.write(json_file, true);
             }
-            print_memory_usage(debug);
+            opt.msgHandler()->writeDebug(memory_usage());
         }
         else if (!bMinimum)
         {
