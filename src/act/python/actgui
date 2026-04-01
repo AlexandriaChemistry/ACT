@@ -171,7 +171,7 @@ class VdwSel:
             "GENERALIZED_BUCKINGHAM":
             { "rmin": ( 0, 1, "nm"),
               "epsilon": ( 0, 5, "kJ/mol" ),
-              "gamma": ( 1, 25, ""),
+              "gamma": ( 7, 25, ""),
               "delta": ( 3, 12, "" ),
               comment: "Generalized Buckingham\nWerhahn et al. Chem. Phys. Lett. 619 (2015) 133" },
         }
