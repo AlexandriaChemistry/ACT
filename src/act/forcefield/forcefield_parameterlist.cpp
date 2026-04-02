@@ -107,6 +107,10 @@ void ForceFieldParameterList::addParameter(const Identifier          &identifier
 size_t ForceFieldParameterList::parameterId(const Identifier &identifier) const
 {
     const auto p = parameters_.find(identifier);
+
+    if (p == parameters_.end())
+    {
+        GMX_THROW(gmx::InternalError(gmx::formatString("Cannot find parameter %s for %s",
                                                        identifier.id().c_str(), 
                                                        potentialToString(pot_).c_str()).c_str()));
     }
