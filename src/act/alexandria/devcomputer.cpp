@@ -176,11 +176,11 @@ void EspDevComputer::calcDeviation(MsgHandler                    *msghandler,
         double myRms = convertToGromacs(rms, "Hartree/e");
         size_t nEsp  = qgr->nEsp();
         (*targets).find(eRMS::ESP)->second.increase(nEsp, gmx::square(myRms)*nEsp);
-        if (debug)
+        if (msghandler->debug())
         {
-            fprintf(debug, "%s ESPrms = %g cosangle = %g\n",
-                    actmol->getMolname().c_str(),
-                    myRms, cosangle);
+            msghandler->writeDebug(gmx::formatString("%s ESPrms = %g cosangle = %g\n",
+                                                     actmol->getMolname().c_str(),
+                                                     myRms, cosangle));
         }
     }
 }

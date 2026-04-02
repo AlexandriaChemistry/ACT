@@ -87,9 +87,9 @@ void StaticIndividualInfo::fillForceField(MsgHandler     *msghandler,
     if (!cr_->isHelper())
     {
         GMX_RELEASE_ASSERT(nullptr != pd_fn, "Give me a forcefield file name");
-        if (debug)
+        if (msghandler->debug())
         {
-            fprintf(debug, "On node %d, will try to read %s\n", cr_->rank(), pd_fn);
+            msghandler->writeDebug(gmx::formatString("On node %d, will try to read %s\n", cr_->rank(), pd_fn));
         }
         try
         {
@@ -200,7 +200,8 @@ void StaticIndividualInfo::saveState(bool updateCheckSum, const std::string &fna
 * BEGIN: FittingTarget stuff               *
 * * * * * * * * * * * * * * * * * * * * * */
 
-void StaticIndividualInfo::sumChiSquared(bool             parallel,
+void StaticIndividualInfo::sumChiSquared(MsgHandler       *msghandler,
+                                         bool             parallel,
                                          iMolSelect       ims)
 {
     // Now sum over processors, except the master/middleman!
@@ -210,19 +211,19 @@ void StaticIndividualInfo::sumChiSquared(bool             parallel,
         {
             auto chi2 = ft.second.chiSquared();
             auto tw = ft.second.totalWeight();
-            if (tw > 0 && debug)
+            if (tw > 0 && msghandler->debug())
             {
-                fprintf(debug, "node %d %s before sum chi2 %g tw %g weighted %g\n",
-                        cr_->rank(), rmsName(ft.first), chi2, tw, ft.second.chiSquaredWeighted());
+                msghandler->writeDebug(gmx::formatString("node %d %s before sum chi2 %g tw %g weighted %g\n",
+                                                         cr_->rank(), rmsName(ft.first), chi2, tw, ft.second.chiSquaredWeighted()));
             }
             cr_->sumd_helpers(1, &chi2);
             ft.second.setChiSquared(chi2);
             cr_->sumd_helpers(1, &tw);
             ft.second.setTotalWeight(tw);
-            if (tw > 0 && debug)
+            if (tw > 0 && msghandler->debug())
             {
-                fprintf(debug, "node %d %s after sum chi2 %g tw %g weighted %g\n",
-                        cr_->rank(), rmsName(ft.first), chi2, tw, ft.second.chiSquaredWeighted());
+                msghandler->writeDebug(gmx::formatString("node %d %s after sum chi2 %g tw %g weighted %g\n",
+                                                         cr_->rank(), rmsName(ft.first), chi2, tw, ft.second.chiSquaredWeighted()));
             }
         }
     }
@@ -247,10 +248,10 @@ void StaticIndividualInfo::sumChiSquared(bool             parallel,
         }
         // Weighting is already included.
         etot->second.setTotalWeight(1);
-        if (debug)
+        if (msghandler->debug())
         {
-            fprintf(debug, "node %d %s after sum chi2 %g tw %g\n", cr_->rank(), rmsName(eRMS::TOT),
-                    etot->second.chiSquared(), etot->second.totalWeight());
+            msghandler->writeDebug(gmx::formatString("node %d %s after sum chi2 %g tw %g\n", cr_->rank(), rmsName(eRMS::TOT),
+                                                     etot->second.chiSquared(), etot->second.totalWeight()));
         }
     }
 }
@@ -328,7 +329,7 @@ void StaticIndividualInfo::computeWeightedTemperature(const bool tempWeight)
 * END: Weighted temperature stuff        *
 * * * * * * * * * * * * * * * * * * * * * */
 
-void StaticIndividualInfo::generateOptimizationIndex(gmx::TextWriter           *tw,
+void StaticIndividualInfo::generateOptimizationIndex(MsgHandler                *msghandler,
                                                      const MolGen              *mg,
                                                      const CommunicationRecord *cr)
 {
@@ -350,12 +351,12 @@ void StaticIndividualInfo::generateOptimizationIndex(gmx::TextWriter           *
                             {
                                 optIndex_.push_back(OptimizationIndex(fs.first, fpl.first, param.first));
                             }
-                            else if (debug)
+                            else if (msghandler->debug())
                             {
-                                fprintf(debug, "WARNING: Not enough data (%d/%d) to train %s-%s (mut %s)\n",
-                                        param.second.ntrain(), mg->mindata(),
-                                        fpl.first.id().c_str(), param.first.c_str(),
-                                        mutabilityName(param.second.mutability()).c_str());
+                                msghandler->writeDebug(gmx::formatString("WARNING: Not enough data (%d/%d) to train %s-%s (mut %s)\n",
+                                                                         param.second.ntrain(), mg->mindata(),
+                                                                         fpl.first.id().c_str(), param.first.c_str(),
+                                                                         mutabilityName(param.second.mutability()).c_str()));
                             }
                         }
                     }
@@ -388,6 +389,7 @@ void StaticIndividualInfo::generateOptimizationIndex(gmx::TextWriter           *
                 }
             }
         }
+        auto tw = msghandler->tw();
         if (tw)
         {
             tw->writeStringFormatted("There are %zu parameters to train.\n", optIndex_.size());

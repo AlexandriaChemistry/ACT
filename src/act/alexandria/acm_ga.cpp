@@ -374,9 +374,9 @@ bool HybridGAMC::evolve(alexandria::MsgHandler       *msghandler,
         generation++;
 
         // Normalize the fitness into a probability
-        if (debug)
+        if (msghandler->debug())
         {
-            fprintf(debug, "Computing probabilities...\n");
+            msghandler->writeDebug(gmx::formatString("Computing probabilities...\n"));
         }
         probabilityComputer()->compute(gp, generation);
         
@@ -425,9 +425,9 @@ bool HybridGAMC::evolve(alexandria::MsgHandler       *msghandler,
             }
             auto child1  = i;
             auto child2  = i+1;
-            if (debug)
+            if (msghandler->debug())
             {
-                fprintf(debug, "parent1: %d parent2: %d child1: %zu child2: %zu\n", parent1, parent2, child1, child2);
+                msghandler->writeDebug(gmx::formatString("parent1: %d parent2: %d child1: %zu child2: %zu\n", parent1, parent2, child1, child2));
             }
             
             // If crossover is to be performed
@@ -490,9 +490,9 @@ bool HybridGAMC::evolve(alexandria::MsgHandler       *msghandler,
         // Mutate the MASTER's genome if no elitism
         if (gach_->nElites() == 0)
         {
-            if (debug)
+            if (msghandler->debug())
             {
-                fprintf(debug, "Mutating the MASTER's genome...\n");
+                msghandler->writeDebug("Mutating the MASTER's genome...\n");
             }
             auto g0ptr = pool[pnew]->genomePtr(0);
             mutator()->mutate(msghandler, g0ptr, ind->bestGenomePtr(), gach_->prMut());

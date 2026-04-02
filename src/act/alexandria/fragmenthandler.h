@@ -83,9 +83,10 @@ namespace alexandria
                   missingParameters             missing);
 
         /*! \brief Fetch charges for all atoms
+         * \param[in]  msg_handler MsgHandler for output and debugging
          * \param[out] qq Vector that will be reinitialized at correct length
          */
-        void fetchCharges(std::vector<double> *qq);
+        void fetchCharges(MsgHandler *msg_handler, std::vector<double> *qq);
         
         //! Return the fragment ids
         const std::vector<std::string> &ids() const { return ids_; }

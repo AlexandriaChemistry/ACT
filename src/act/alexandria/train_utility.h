@@ -220,6 +220,7 @@ void print_header(gmx::TextWriter             *tw,
                   const std::vector<t_filenm> &filenms);
                   
 /*! \brief Do an analysis of frequencies compared to reference if present.
+ * \param[in]    msghandler   MsgHandler for output and debugging
  * \param[in]    pd           The force field
  * \param[in]    mol          Molecule data
  * \param[in]    molhandler   The molecule handler
@@ -233,7 +234,8 @@ void print_header(gmx::TextWriter             *tw,
  * \param[in]    oenv         Structure to print xvg files
  * \param[in]    debugNMA     Will provide excessive printing statements
  */
-void doFrequencyAnalysis(const ForceField         *pd,
+void doFrequencyAnalysis(MsgHandler               *msghandler,
+                         const ForceField         *pd,
                          alexandria::ACTMol       *mol,
                          const MolHandler         &molhandler,
                          const ForceComputer      *forceComp,

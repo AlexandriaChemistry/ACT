@@ -86,7 +86,8 @@ double ThermoChemistry::zeroPointEnergy(const std::vector<double> &frequencies,
     return zpe;
 }
 
-void ThermoChemistry::calcVibrationalProperties(const std::vector<double> &frequencies,
+void ThermoChemistry::calcVibrationalProperties(MsgHandler                *msghandler,
+                                                const std::vector<double> &frequencies,
                                                 double                     temperature,
                                                 double                     scale_factor)
 {
@@ -105,11 +106,11 @@ void ThermoChemistry::calcVibrationalProperties(const std::vector<double> &frequ
             // Vibrational temperature
             // https://en.wikipedia.org/wiki/Vibrational_temperature
             double theta = PLANCK*sf/BOLTZ;
-            if (debug)
+            if (msghandler && msghandler->debug())
             {
-                fprintf(debug, "scaled freq %10g (1/ps) %10g (1/cm) theta %10g\n", sf, 
-                        convertFromGromacs(sf, mpo_unit2(MolPropObservable::FREQUENCY)),
-                        theta);
+                msghandler->writeDebug(gmx::formatString("scaled freq %10g (1/ps) %10g (1/cm) theta %10g\n", sf, 
+                                                         convertFromGromacs(sf, mpo_unit2(MolPropObservable::FREQUENCY)),
+                                                         theta));
             }
             // Prevent overflow by checking for unreasonably large numbers.
             real tt = theta * T_1;
@@ -179,7 +180,8 @@ double ThermoChemistry::rotationalEntropy(double      temperature,
 }
 
 //! \brief Compute rotational constants
-static void calcTheta(const ACTMol                 *actmol,
+static void calcTheta(MsgHandler                   *msghandler,
+                      const ACTMol                 *actmol,
                       const std::vector<gmx::RVec> &coords,
                       rvec                          theta)
 {
@@ -234,13 +236,14 @@ static void calcTheta(const ACTMol                 *actmol,
             theta[m] = rot_const / inertia[m];
         }
     }
-    if (debug)
+    if (msghandler && msghandler->debug())
     {
-        fprintf(debug, "Rotational temperatures (Kelvin)%12.5f%12.5f%12.5f\n", theta[XX], theta[YY], theta[ZZ]);
+        msghandler->writeDebug(gmx::formatString("Rotational temperatures (Kelvin)%12.5f%12.5f%12.5f\n", theta[XX], theta[YY], theta[ZZ]));
     }
 }
 
-ThermoChemistry::ThermoChemistry(const ACTMol                 *actmol,
+ThermoChemistry::ThermoChemistry(MsgHandler                   *msghandler,
+                                 const ACTMol                 *actmol,
                                  const std::vector<gmx::RVec> &coords,
                                  const AtomizationEnergy      &atomenergy,
                                  const std::vector<double>    &frequencies,
@@ -250,7 +253,7 @@ ThermoChemistry::ThermoChemistry(const ACTMol                 *actmol,
                                  double                        scale_factor)
 {
     rvec   theta;
-    calcTheta(actmol, coords, theta);
+    calcTheta(msghandler, actmol, coords, theta);
     double sigma_r = 1;
     if (actmol->fragments().size() == 1)
     {
@@ -265,7 +268,7 @@ ThermoChemistry::ThermoChemistry(const ACTMol                 *actmol,
     S0_[TCComponent::Rotation]     = rotationalEntropy(temperature, actmol->NAtom(), actmol->linearMolecule(),
                                                        theta, sigma_r);
     // Compute componenents of thermochemistry
-    calcVibrationalProperties(frequencies, temperature, scale_factor);
+    calcVibrationalProperties(msghandler, frequencies, temperature, scale_factor);
     // and sum them
     for(const auto &tc: tccmap())
     {
@@ -279,7 +282,7 @@ ThermoChemistry::ThermoChemistry(const ACTMol                 *actmol,
     // Using the equations from Ochterski2000a
     double sumAtomicEps0 = 0;
     double D0M           = sumAtomicEps0 - epot - zpe_;
-    double sumAtomicH0   = computeAtomizationEnergy(actmol->atomsConst(), atomenergy, 0);
+    double sumAtomicH0   = computeAtomizationEnergy(msghandler, actmol->atomsConst(), atomenergy, 0);
     double dhF0          = sumAtomicH0 - D0M;
     if (temperature == 0)
     {
@@ -287,7 +290,7 @@ ThermoChemistry::ThermoChemistry(const ACTMol                 *actmol,
     }
     else
     {
-        dhForm_ = dhF0 + E_[TCComponent::Total] - (computeAtomizationEnergy(actmol->atomsConst(), atomenergy, temperature) - sumAtomicH0);
+        dhForm_ = dhF0 + E_[TCComponent::Total] - (computeAtomizationEnergy(msghandler, actmol->atomsConst(), atomenergy, temperature) - sumAtomicH0);
     }
 }
 

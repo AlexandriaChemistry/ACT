@@ -166,7 +166,7 @@ void FragmentHandler::init(MsgHandler                   *msghandler,
     }
 }
 
-void FragmentHandler::fetchCharges(std::vector<double> *qq)
+void FragmentHandler::fetchCharges(MsgHandler *msg_handler, std::vector<double> *qq)
 {
     qq->resize(natoms_, 0);
     for(size_t ff = 0; ff < topologies_.size(); ++ff)
@@ -179,10 +179,10 @@ void FragmentHandler::fetchCharges(std::vector<double> *qq)
             GMX_RELEASE_ASSERT(index < natoms_, 
                                gmx::formatString("Index %ld out of range %ld", index, natoms_).c_str());
             (*qq)[index] = myatoms[a].charge();
-            if (debug)
+            if (msg_handler->debug())
             {
-                fprintf(debug, "Charge %ld = %g\n", index,
-                        (*qq)[index]);
+                msg_handler->writeDebug(gmx::formatString("Charge %ld = %g\n", index,
+                                                          (*qq)[index]));
             }
         }
     }
@@ -223,7 +223,7 @@ eQgen FragmentHandler::generateCharges(MsgHandler                   *msg_handler
                 }
                 // Fetch charges to one vector, then symmetrize them
                 std::vector<double> qnew;
-                fetchCharges(&qnew);
+                fetchCharges(msg_handler, &qnew);
                 apply_symmetrized_charges(&qnew, symmetric_charges);
                 setCharges(qnew);
                 // Copy back charges for this fragment to combined topology atoms

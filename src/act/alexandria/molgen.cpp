@@ -221,7 +221,7 @@ void MolGen::checkOptions(MsgHandler                *msghandler,
     }
 }
 
-void MolGen::optionsFinished()
+void MolGen::optionsFinished(MsgHandler *msghandler)
 {
     if (nullptr != fitString_)
     {
@@ -234,9 +234,9 @@ void MolGen::optionsFinished()
     {
         printf("There are %d threads/processes and %zu parameter types to optimize.\n", cr_->size(), fit_.size());
     }
-    if (debug)
+    if (msghandler->debug())
     {
-        fprintf(debug, "optionsFinished: mindata = %d \n", mindata_);
+        msghandler->writeDebug(gmx::formatString("optionsFinished: mindata = %d \n", mindata_));
     }
 }
 
@@ -1063,9 +1063,9 @@ size_t MolGen::Read(MsgHandler                          *msghandler,
         while (1 == bcint)
         {
             alexandria::ACTMol actmol;
-            if (nullptr != debug)
+            if (msghandler->debug())
             {
-                fprintf(debug, "Going to retrieve new compound\n");
+                msghandler->writeDebug("Going to retrieve new compound\n");
             }
             int comm_index = 0;
             cr_->bcast(&comm_index, mycomm);
@@ -1074,10 +1074,9 @@ size_t MolGen::Read(MsgHandler                          *msghandler,
             {
                 imm = ACTMessage::CommProblem;
             }
-            else if (nullptr != debug)
+            else if (msghandler->debug())
             {
-                fprintf(debug, "Succesfully retrieved %s\n", actmol.getMolname().c_str());
-                fflush(debug);
+                msghandler->writeDebug(gmx::formatString("Succesfully retrieved %s\n", actmol.getMolname().c_str()));
             }
             actmol.GenerateTopology(msghandler, pd, missingParameters::Error);
 
@@ -1132,10 +1131,10 @@ size_t MolGen::Read(MsgHandler                          *msghandler,
                     double deltaE0;
                     if (!actmol.energy(MolPropObservable::DELTAE0, &deltaE0))
                     {
-                        if (nullptr != debug)
+                        if (msghandler->debug())
                         {
-                            fprintf(debug, "No DeltaE0 for %s",
-                                    actmol.getMolname().c_str());
+                            msghandler->writeDebug(gmx::formatString("No DeltaE0 for %s",
+                                                                     actmol.getMolname().c_str()));
                         }
                         imm = ACTMessage::NoData;
                     }
@@ -1144,26 +1143,26 @@ size_t MolGen::Read(MsgHandler                          *msghandler,
                         double hform;
                         if (!actmol.energy(MolPropObservable::DHFORM, &hform))
                         {
-                            if (nullptr != debug)
+                            if (msghandler->debug())
                             {
-                                fprintf(debug, "No DeltaHform for %s",
-                                        actmol.getMolname().c_str());
+                                msghandler->writeDebug(gmx::formatString("No DeltaHform for %s",
+                                                                         actmol.getMolname().c_str()));
                             }
                             imm = ACTMessage::NoData;
                         }
-                        else if (nullptr != debug)
+                        else if (msghandler->debug())
                         {
-                            fprintf(debug, "Added molecule %s. Hform = %g DeltaE0 = %g\n",
-                                    actmol.getMolname().c_str(), hform, deltaE0);
+                            msghandler->writeDebug(gmx::formatString("Added molecule %s. Hform = %g DeltaE0 = %g\n",
+                                                                     actmol.getMolname().c_str(), hform, deltaE0));
                         }
                     }
                 }
                 actmol_.push_back(std::move(actmol));
-                if (cr_->isMiddleMan() && debug)
+                if (cr_->isMiddleMan() && msghandler->debug())
                 {
                     int nexp = actmol_.back().experimentConst().size();
-                    fprintf(debug, "Computing %s on %s nexperiment %d\n", actmol_.back().getMolname().c_str(),
-                            eSupport::Local == actmol.support() ? "middleman" : "helper", nexp);
+                    msghandler->writeDebug(gmx::formatString("Computing %s on %s nexperiment %d\n", actmol_.back().getMolname().c_str(),
+                                                             eSupport::Local == actmol.support() ? "middleman" : "helper", nexp));
                 }
             }
             // See whether there is more data coming.
@@ -1177,7 +1176,7 @@ size_t MolGen::Read(MsgHandler                          *msghandler,
     checkDataSufficiency(msghandler, pd);
     
     // Some extra debug printing.
-    if (debug)
+    if (msghandler->debug())
     {
         std::map<iMolSelect, int> nCount;
         nCount.insert({iMolSelect::Train, 0});
@@ -1190,8 +1189,8 @@ size_t MolGen::Read(MsgHandler                          *msghandler,
                 nCount[ims] += 1;
             }
         }
-        fprintf(debug, "Node %d Train: %d Test: %d #mols: %zu\n", cr_->rank(), nCount[iMolSelect::Train],
-                nCount[iMolSelect::Test], actmol_.size());
+        msghandler->writeDebug(gmx::formatString("Node %d Train: %d Test: %d #mols: %zu\n", cr_->rank(), nCount[iMolSelect::Train],
+                                                 nCount[iMolSelect::Test], actmol_.size()));
     }
     if (nwarn > 0)
     {

@@ -92,11 +92,13 @@ private:
     /*! \brief Compute properties due to vibrational motion
      *
      * Results for cv, S0 and E are stored in internal variables.
+     * \param[in] msghandler   MsgHandler for output and debugging, may be nullptr
      * \param[in] frequencies  The vibrational frequencies in 1/ps
      * \param[in] temperature  Temperature (K)
      * \param[in] scale_factor Factor to scale frequencies by before computing properties
      */
-    void calcVibrationalProperties(const std::vector<double> &frequencies,
+    void calcVibrationalProperties(MsgHandler                *msghandler,
+                                   const std::vector<double> &frequencies,
                                    double                     temperature,
                                    double                     scale_factor);
                                        
@@ -136,6 +138,7 @@ private:
     
 public:
     /*! \brief Constructor that computes everything at once
+     * \param[in] msghandler   MsgHandler for output and debugging, may be nullptr
      * \param[in] actmol       Molecule info
      * \param[in] coords       The coordinates
      * \param[in] atomenergy   Atomization energies
@@ -145,7 +148,8 @@ public:
      * \param[in] pressure     Pressure (bar) at which to compute
      * \param[in] scale_factor Factor to scale frequencies by before computing properties
      */
-    ThermoChemistry(const ACTMol                  *actmol,
+    ThermoChemistry(MsgHandler                   *msghandler,
+                    const ACTMol                  *actmol,
                     const std::vector<gmx::RVec> &coords,
                     const AtomizationEnergy      &atomenergy,
                     const std::vector<double>    &frequencies,

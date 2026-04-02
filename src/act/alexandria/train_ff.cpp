@@ -180,7 +180,7 @@ void OptACM::check_pargs(MsgHandler *)
 void OptACM::optionsFinished(const std::vector<t_filenm> &filenames)
 {
     msghandler_.optionsFinished(filenames, &commRec_);
-    mg_.optionsFinished();
+    mg_.optionsFinished(&msghandler_);
     const int nmiddlemen = gach_.popSize();  // MASTER now makes the work of a middleman too
     msghandler_.writeDebug(gmx::formatString("nmiddlemen = %d", nmiddlemen));
     // Update the communication record and do necessary checks.
@@ -890,7 +890,7 @@ int train_ff(int argc, char *argv[])
 
     // StaticIndividualInfo things
     {
-        opt.sii()->generateOptimizationIndex(tw, opt.mg(), opt.commRec());
+        opt.sii()->generateOptimizationIndex(opt.msgHandler(), opt.mg(), opt.commRec());
         opt.sii()->fillVectors(opt.mg()->mindata());
         opt.sii()->computeWeightedTemperature(opt.bch()->temperatureWeighting());
     }

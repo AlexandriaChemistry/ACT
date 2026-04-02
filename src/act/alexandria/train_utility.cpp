@@ -789,7 +789,8 @@ static void plot_spectrum(const char                *filenm,
 }
 
 //! \brief Add thermochemistry info to JSON
-static void addThermo(JsonTree                  *jtree, 
+static void addThermo(MsgHandler                *msghandler,
+                      JsonTree                  *jtree, 
                       alexandria::ACTMol        *mol,
                       std::vector<gmx::RVec>    *coords,
                       double                     epot,
@@ -803,8 +804,8 @@ static void addThermo(JsonTree                  *jtree,
     jtree->addValueUnit("Epot", gmx_ftoa(epot), eunit);
     JsonTree jtc0("T=0");
     JsonTree jtcRT(gmx::formatString("T=%g", roomTemp));
-    ThermoChemistry tc0(mol, *coords, atomenergy, freq, epot, 0.0, 1, scale_factor);
-    ThermoChemistry tcRT(mol, *coords, atomenergy, freq, epot, roomTemp, 1, scale_factor);
+    ThermoChemistry tc0(msghandler, mol, *coords, atomenergy, freq, epot, 0.0, 1, scale_factor);
+    ThermoChemistry tcRT(msghandler, mol, *coords, atomenergy, freq, epot, roomTemp, 1, scale_factor);
     {
         jtc0.addValueUnit("Zero point energy", gmx_ftoa(tc0.ZPE()), eunit);
         jtcRT.addValueUnit("Zero point energy", gmx_ftoa(tcRT.ZPE()), eunit);
@@ -850,7 +851,8 @@ static void addThermo(JsonTree                  *jtree,
     jtree->addObject(jtcRT);
 }
 
-void doFrequencyAnalysis(const ForceField         *pd,
+void doFrequencyAnalysis(MsgHandler               *msghandler,
+                         const ForceField         *pd,
                          alexandria::ACTMol       *mol,
                          const MolHandler         &molhandler,
                          const ForceComputer      *forceComp,
@@ -948,12 +950,12 @@ void doFrequencyAnalysis(const ForceField         *pd,
     JsonTree tctree("Thermochemistry");
     JsonTree ajtc("Alexandria");
     auto     epot = energies[InteractionType::EPOT];
-    addThermo(&ajtc, mol, coords, epot, atomenergy, alex_freq);
+    addThermo(msghandler, &ajtc, mol, coords, epot, atomenergy, alex_freq);
     tctree.addObject(ajtc);
     if (!ref_freq.empty())
     {
         JsonTree rjtc("Reference");
-        addThermo(&rjtc, mol, coords, epot, atomenergy, ref_freq);
+        addThermo(msghandler, &rjtc, mol, coords, epot, atomenergy, ref_freq);
         tctree.addObject(rjtc);
     }
     jtree->addObject(tctree);
@@ -1353,7 +1355,7 @@ void TrainForceFieldPrinter::printEnergyForces(MsgHandler                       
 
             // Do normal-mode analysis etc.
             JsonTree jfreq("FrequencyAnalysis");
-            doFrequencyAnalysis(pd, mol, molHandler_, forceComp, &coords,
+            doFrequencyAnalysis(msghandler, pd, mol, molHandler_, forceComp, &coords,
                                 atomenergy, &lsq_freq_, &jfreq,
                                 nullptr, 24, nullptr, false);
             jtree->addObject(jfreq);

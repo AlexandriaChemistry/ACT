@@ -601,11 +601,11 @@ void AllBondeds::extractGeometries(MsgHandler           *msghandler,
                     std::string btpi;
                     if (!pd->atypeToBtype(myatoms[i].ffType(), &btpi))
                     {
-                        if (nullptr != debug)
+                        if (msghandler->debug())
                         {
-                            fprintf(debug, "No bond-type support for atom %s in %s\n",
-                                    myatoms[i].ffType().c_str(),
-                                    mmi.getMolname().c_str());
+                            msghandler->writeDebug(gmx::formatString("No bond-type support for atom %s in %s\n",
+                                                                     myatoms[i].ffType().c_str(),
+                                                                     mmi.getMolname().c_str()));
                         }
                         break;
                     }

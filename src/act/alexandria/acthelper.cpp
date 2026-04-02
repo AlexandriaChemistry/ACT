@@ -53,9 +53,9 @@ void ACTHelper::run(MsgHandler *msghandler)
     cd = fitComp_.distributeTasks(cd);
     while (CalcDev::Stop != cd)
     {
-        if (debug)
+        if (msghandler->debug())
         {
-            fprintf(debug, "Received CalcDev %s\n", calcDevName(cd));
+            msghandler->writeDebug(gmx::formatString("Received CalcDev %s\n", calcDevName(cd)));
         }
         switch (cd)
         {
