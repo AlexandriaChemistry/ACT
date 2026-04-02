@@ -61,8 +61,8 @@ namespace alexandria
 //! \brief Add symmetric charges to force field
 static void add_symm_charges(ForceField *pd)
 {
-    bool useCWD = false;
-    auto filename = findLibrary("symmetric_charges.csv", useCWD);
+    const bool useCWD = false;
+    const auto filename = findLibrary("symmetric_charges.csv", useCWD);
     if (filename.empty())
     {
         return;
@@ -71,7 +71,7 @@ static void add_symm_charges(ForceField *pd)
     std::string     tmp;
     while (tr.readLine(&tmp))
     {
-        auto ptr = split(tmp, ',');
+        const auto ptr = split(tmp, ',');
         if (3 == ptr.size())
         {
             pd->addSymcharges(ptr[0], ptr[1],
@@ -91,8 +91,7 @@ static std::map<std::string, std::map<std::string, std::string>> read_atomtypes(
     int                      lineno = 1;
     while (tr.readLine(&tmp))
     {
-        auto ptr = split(tmp, '|');
-        // There should be at least 30 columns, but could be more.
+        const auto ptr = split(tmp, '|');
         if (30 <= ptr.size())
         {
             if (value.empty())
@@ -165,8 +164,8 @@ static void add_vsites(const char *vsfile,
     };
     while (tr.readLine(&tmp))
     {
-        auto ptr = split(tmp, '|');
-        Identifier vsid(ptr[0]);
+        const auto ptr = split(tmp, '|');
+        const Identifier vsid(ptr[0]);
         if (!pd->hasParticleType(vsid))
         {
             GMX_THROW(gmx::InvalidInputError(gmx::formatString("Unknown vsite type %s on line %d in file %s",
@@ -183,31 +182,31 @@ static void add_vsites(const char *vsfile,
         {
         case InteractionType::VSITE1:
             {
-                std::string myId = ptr[2] + "!" + ptr[0];
-                Identifier vs(itype, myId, CanSwap::Yes);
+                const std::string myId = ptr[2] + "!" + ptr[0];
+                const Identifier vs(itype, myId, CanSwap::Yes);
                 // Not a lot of information here, but we need something for downstream processing.
                 ForceFieldParameter vs1param("", 1, 0, 0, 1, 1, Mutability::Fixed, false, false);
-                auto vsite1_name = potentialToParameterName(Potential::VSITE1);
+                const auto vsite1_name = potentialToParameterName(Potential::VSITE1);
                 i2f[itype].addParameter(vs, vsite1_name[vsite1A], vs1param);
             }
             break;
         case InteractionType::VSITE2:
         case InteractionType::VSITE2FD:
             {
-                std::string myId = ptr[2] + "!" + ptr[0];
-                Identifier vs(itype, myId, CanSwap::Vsite2);
-                double amin = my_atof(ptr[3], "vsite_parameter_min");
-                double amax = my_atof(ptr[4], "vsite_parameter_max");
+                const std::string myId = ptr[2] + "!" + ptr[0];
+                const Identifier vs(itype, myId, CanSwap::Vsite2);
+                const double amin = my_atof(ptr[3], "vsite_parameter_min");
+                const double amax = my_atof(ptr[4], "vsite_parameter_max");
                 ForceFieldParameter vs2param("", (amin+amax)/2, 0, 0, amin, amax,
                                              Mutability::Bounded, false, false);
                 if (InteractionType::VSITE2 == itype)
                 {
-                    auto vsite2_name = potentialToParameterName(Potential::VSITE2);
+                    const auto vsite2_name = potentialToParameterName(Potential::VSITE2);
                     i2f[itype].addParameter(vs, vsite2_name[vsite2A], vs2param);
                 }
                 else
                 {
-                    auto vsite2fd_name = potentialToParameterName(Potential::VSITE2FD);
+                    const auto vsite2fd_name = potentialToParameterName(Potential::VSITE2FD);
                     i2f[itype].addParameter(vs, vsite2fd_name[vsite2fdA], vs2param);
                 }
             }
@@ -216,31 +215,31 @@ static void add_vsites(const char *vsfile,
         case InteractionType::VSITE3S:
         case InteractionType::VSITE3FD:
             {
-                std::string myId = ptr[2] + "!" + ptr[0];
+                const std::string myId = ptr[2] + "!" + ptr[0];
                 
-                Identifier vs(itype, myId, CanSwap::Vsite3);
-                double amin = my_atof(ptr[3], "vsite_parameter_min");
-                double amax = my_atof(ptr[4], "vsite_parameter_max");
-                double bmin = my_atof(ptr[5], "vsite_parameter_min");
-                double bmax = my_atof(ptr[6], "vsite_parameter_max");
+                const Identifier vs(itype, myId, CanSwap::Vsite3);
+                const double amin = my_atof(ptr[3], "vsite_parameter_min");
+                const double amax = my_atof(ptr[4], "vsite_parameter_max");
+                const double bmin = my_atof(ptr[5], "vsite_parameter_min");
+                const double bmax = my_atof(ptr[6], "vsite_parameter_max");
                 ForceFieldParameter vs3param_a("", (amin+amax)/2, 0, 0, amin, amax,
                                                Mutability::Bounded, false, false);
                 ForceFieldParameter vs3param_b("", (bmin+bmax)/2, 0, 0, bmin, bmax,
                                                Mutability::Bounded, false, false);
                 if (itype == InteractionType::VSITE3)
                 {
-                    auto vsite3_name = potentialToParameterName(Potential::VSITE3);
+                    const auto vsite3_name = potentialToParameterName(Potential::VSITE3);
                     i2f[itype].addParameter(vs, vsite3_name[vsite3A], vs3param_a);
                     i2f[itype].addParameter(vs, vsite3_name[vsite3B], vs3param_b);
                 }
                 else if (itype == InteractionType::VSITE3S)
                 {
-                    auto vsite3s_name = potentialToParameterName(Potential::VSITE3S);
+                    const auto vsite3s_name = potentialToParameterName(Potential::VSITE3S);
                     i2f[itype].addParameter(vs, vsite3s_name[vsite3sA], vs3param_a);
                 }
                 else
                 {
-                    auto vsite3fd_name = potentialToParameterName(Potential::VSITE3FD);
+                    const auto vsite3fd_name = potentialToParameterName(Potential::VSITE3FD);
                     i2f[itype].addParameter(vs, vsite3fd_name[vsite3fdA], vs3param_a);
                     i2f[itype].addParameter(vs, vsite3fd_name[vsite3fdB], vs3param_b);
                 }
@@ -249,35 +248,35 @@ static void add_vsites(const char *vsfile,
         case InteractionType::VSITE3OUT:
         case InteractionType::VSITE3OUTS:
             {
-                std::string myId = ptr[2] + "!" + ptr[0];
-                Identifier vs(itype, myId, CanSwap::No);
+                const std::string myId = ptr[2] + "!" + ptr[0];
+                const Identifier vs(itype, myId, CanSwap::No);
 
-                double amin = my_atof(ptr[3], "vsite_parameter_min");
-                double amax = my_atof(ptr[4], "vsite_parameter_max");
-                double bmin = my_atof(ptr[5], "vsite_parameter_min");
-                double bmax = my_atof(ptr[6], "vsite_parameter_max");
+                const double amin = my_atof(ptr[3], "vsite_parameter_min");
+                const double amax = my_atof(ptr[4], "vsite_parameter_max");
+                const double bmin = my_atof(ptr[5], "vsite_parameter_min");
+                const double bmax = my_atof(ptr[6], "vsite_parameter_max");
                 ForceFieldParameter vs3outparam_a("", (amin+amax)/2, 0, 0, amin, amax,
                                                   Mutability::Bounded, false, false);
                 if (InteractionType::VSITE3OUT == itype)
                 {
-                    double cmin = my_atof(ptr[7], "vsite_parameter_min");
-                    double cmax = my_atof(ptr[8], "vsite_parameter_max");
+                    const double cmin = my_atof(ptr[7], "vsite_parameter_min");
+                    const double cmax = my_atof(ptr[8], "vsite_parameter_max");
                     ForceFieldParameter vs3outparam_b("", (bmin+bmax)/2, 0, 0, bmin, bmax,
                                                       Mutability::Bounded, false, false);
                     ForceFieldParameter vs3outparam_c("", (cmin+cmax)/2, 0, 0, cmin, cmax,
                                                       Mutability::Bounded, false, false);
-                    auto vsite3out_name = potentialToParameterName(Potential::VSITE3OUT);
+                    const auto vsite3out_name = potentialToParameterName(Potential::VSITE3OUT);
                     i2f[itype].addParameter(vs, vsite3out_name[vsite3outA], vs3outparam_a);
                     i2f[itype].addParameter(vs, vsite3out_name[vsite3outB], vs3outparam_b);
                     i2f[itype].addParameter(vs, vsite3out_name[vsite3outC], vs3outparam_c);
                 }
                 else
                 {
-                    double cmin = my_atof(ptr[5], "vsite_parameter_min");
-                    double cmax = my_atof(ptr[6], "vsite_parameter_max");
+                    const double cmin = my_atof(ptr[5], "vsite_parameter_min");
+                    const double cmax = my_atof(ptr[6], "vsite_parameter_max");
                     ForceFieldParameter vs3outparam_c("", (cmin+cmax)/2, 0, 0, cmin, cmax,
                                                       Mutability::Bounded, false, false);
-                    auto vsite3outs_name = potentialToParameterName(Potential::VSITE3OUTS);
+                    const auto vsite3outs_name = potentialToParameterName(Potential::VSITE3OUTS);
                     i2f[itype].addParameter(vs, vsite3outs_name[vsite3outsA], vs3outparam_a);
                     i2f[itype].addParameter(vs, vsite3outs_name[vsite3outsC], vs3outparam_c);
                 }
@@ -287,37 +286,37 @@ static void add_vsites(const char *vsfile,
         case InteractionType::VSITE4S:
         case InteractionType::VSITE4S3:
             {
-                std::string myId = ptr[2] + "!" + ptr[0];
+                const std::string myId = ptr[2] + "!" + ptr[0];
                 
-                Identifier vs(itype, myId, CanSwap::No);
-                double amin = my_atof(ptr[3], "vsite_parameter_min");
-                double amax = my_atof(ptr[4], "vsite_parameter_max");
+                const Identifier vs(itype, myId, CanSwap::No);
+                const double amin = my_atof(ptr[3], "vsite_parameter_min");
+                const double amax = my_atof(ptr[4], "vsite_parameter_max");
                 ForceFieldParameter vs4param_a("", (amin+amax)/2, 0, 0, amin, amax,
                                                Mutability::Bounded, false, false);
                 if (itype == InteractionType::VSITE4S3)
                 {
-                    auto vsite4s_name = potentialToParameterName(Potential::VSITE4S3);
+                    const auto vsite4s_name = potentialToParameterName(Potential::VSITE4S3);
                     i2f[itype].addParameter(vs, vsite4s_name[vsite4s3A], vs4param_a);
                 }
                 else
                 {
-                    double bmin = my_atof(ptr[5], "vsite_parameter_min");
-                    double bmax = my_atof(ptr[6], "vsite_parameter_max");
+                    const double bmin = my_atof(ptr[5], "vsite_parameter_min");
+                    const double bmax = my_atof(ptr[6], "vsite_parameter_max");
                     ForceFieldParameter vs4param_b("", (bmin+bmax)/2, 0, 0, bmin, bmax,
                                                    Mutability::Bounded, false, false);
                     if (itype == InteractionType::VSITE4S)
                     {
-                        auto vsite4s_name = potentialToParameterName(Potential::VSITE4S);
+                        const auto vsite4s_name = potentialToParameterName(Potential::VSITE4S);
                         i2f[itype].addParameter(vs, vsite4s_name[vsite4sA], vs4param_a);
                         i2f[itype].addParameter(vs, vsite4s_name[vsite4sB], vs4param_b);
                     }
                     else
                     {
-                        double cmin = my_atof(ptr[7], "vsite_parameter_min");
-                        double cmax = my_atof(ptr[8], "vsite_parameter_max");
+                        const double cmin = my_atof(ptr[7], "vsite_parameter_min");
+                        const double cmax = my_atof(ptr[8], "vsite_parameter_max");
                         ForceFieldParameter vs4param_c("", (cmin+cmax)/2, 0, 0, cmin, cmax,
                                                        Mutability::Bounded, false, false);
-                        auto vsite4_name = potentialToParameterName(Potential::VSITE4);
+                        const auto vsite4_name = potentialToParameterName(Potential::VSITE4);
                         i2f[itype].addParameter(vs, vsite4_name[vsite4A], vs4param_a);
                         i2f[itype].addParameter(vs, vsite4_name[vsite4B], vs4param_b);
                         i2f[itype].addParameter(vs, vsite4_name[vsite4C], vs4param_c);
@@ -453,7 +452,7 @@ int gen_ff(int argc, char*argv[])
     printf("There are %zu atom types in the force field with %zu properties.\n",
            table.size(), table.begin()->second.size());
 
-    auto aprops = readAtomProps();
+    const auto aprops = readAtomProps();
     printf("There are %zu element properties\n", aprops.size());
 
     alexandria::ForceField pd;
@@ -463,8 +462,8 @@ int gen_ff(int argc, char*argv[])
     };
 
     // Check for Point charges
-    std::string ppp("POINT");
-    bool bPoint = ppp.compare(qdn2[0]) == 0;
+    const std::string ppp("POINT");
+    const bool bPoint = ppp.compare(qdn2[0]) == 0;
     if (bPoint)
     {
         printf("You selected point charges. Oh dear...\n");
@@ -475,7 +474,7 @@ int gen_ff(int argc, char*argv[])
     {
         // Generate particle type
         auto apType = ActParticle::Atom;
-        std::string elem = table[entry.first]["element"];
+        const std::string elem = table[entry.first]["element"];
         if (elem == "X")
         {
             apType = ActParticle::Shell;
@@ -496,7 +495,7 @@ int gen_ff(int argc, char*argv[])
             }
         }
         int atomnumber = 0;
-        auto apropsptr = aprops.find(elem);
+        const auto apropsptr = aprops.find(elem);
         if (aprops.end() != apropsptr)
         {
             atomnumber = apropsptr->second.atomnumber();
@@ -506,16 +505,16 @@ int gen_ff(int argc, char*argv[])
         ptp.setOption("vdwcorrtype", entry.first);
         ptp.setOption("induccorrtype", entry.first);
         // Now "parameters"
-        auto mass       = apropsptr->second.mass();
+        const auto mass       = apropsptr->second.mass();
         ptp.addForceFieldParameter("mass",
                                    ForceFieldParameter("Da", mass, 0, 1, mass,
                                                        mass, Mutability::Fixed,
                                                        true, true));
-        double vmin = my_atof(table[entry.first][":q:min"].c_str(), ":q:min");
-        double vmax = my_atof(table[entry.first][":q:max"].c_str(), ":q:max");
-        std::string vunit = table[entry.first][":q:unit"];
+        const double vmin = my_atof(table[entry.first][":q:min"].c_str(), ":q:min");
+        const double vmax = my_atof(table[entry.first][":q:max"].c_str(), ":q:max");
+        const std::string vunit = table[entry.first][":q:unit"];
         Mutability  vmut;
-        std::string qmut(":q:mut");
+        const std::string qmut(":q:mut");
         if (!nameToMutability(table[entry.first][qmut], &vmut))
         {
             GMX_THROW(gmx::InvalidInputError(gmx::formatString("Invalid Mutability '%s' for charge in atomtype %s", table[entry.first][qmut].c_str(), entry.first.c_str()).c_str()));
@@ -533,7 +532,7 @@ int gen_ff(int argc, char*argv[])
         std::map<InteractionType, std::map<std::string, bool>>                nonNegative;
         for (const auto &key : myatype)
         {
-            auto content = split(key.first, ':');
+            const auto content = split(key.first, ':');
             if (content.size() != 3)
             {
                 continue;
@@ -548,7 +547,7 @@ int gen_ff(int argc, char*argv[])
                 }
                 continue;
             }
-            auto value = myatype[key.first];
+            const auto value = myatype[key.first];
             if (atomparams.find(iType) == atomparams.end())
             {
                 atomparams[iType] = {};
@@ -557,7 +556,7 @@ int gen_ff(int argc, char*argv[])
             {
                 nonNegative[iType] = {};
             }
-            auto pName = content[1];
+            const auto pName = content[1];
             if (atomparams[iType].find(pName) == atomparams[iType].end())
             {
                 atomparams[iType][pName] = {};
@@ -659,7 +658,7 @@ int gen_ff(int argc, char*argv[])
         pd.addForces(fp.first, fp.second);
     }
     // Polarization function
-    auto itPol = InteractionType::POLARIZATION;
+    const auto itPol = InteractionType::POLARIZATION;
     if (pd.interactionPresent(itPol))
     {
         auto fsp = pd.findForces(itPol);

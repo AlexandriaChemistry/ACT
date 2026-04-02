@@ -72,7 +72,7 @@ class ForceFieldParameterList
      * \throw if function is not recognized.
      */
     ForceFieldParameterList(const std::string &function,
-                            CanSwap            canSwap);
+                            const CanSwap      canSwap);
    
     //! \brief Return the function name
     Potential potential() const { return pot_; }
@@ -84,7 +84,7 @@ class ForceFieldParameterList
     CanSwap canSwap() const { return canSwap_; }
 
     //! \brief Set whether or not identifiers can be swapped
-    void setCanSwap(CanSwap cs) { canSwap_ = cs; }
+    void setCanSwap(const CanSwap cs) { canSwap_ = cs; }
 
     /*! \brief Add function specific options
      *
@@ -311,7 +311,7 @@ class ForceFieldParameterList
      * \param[in] cr   Communication data structure
      * \param[in] dest Processor id to send the data to
      */
-    CommunicationStatus Send(const CommunicationRecord *cr, int dest) const;
+    CommunicationStatus Send(const CommunicationRecord *cr, const int dest) const;
 
     /*! \brief Broadcast contents from another processor
      * \param[in] cr   Communication data structure
@@ -320,14 +320,14 @@ class ForceFieldParameterList
      * \return The status of the whole thing
      */
     CommunicationStatus BroadCast(const CommunicationRecord *cr,
-                                  int                        root,
+                                  const int                  root,
                                   MPI_Comm                   comm);
 
     /*! \brief Receive contents from another processor
      * \param[in] cr  Communication data structure
      * \param[in] src Processor id to receive the data from
      */
-    CommunicationStatus Receive(const CommunicationRecord *cr, int src);
+    CommunicationStatus Receive(const CommunicationRecord *cr, const int src);
 
     //! \return The counter \p counter_ for index
     int counter() const { return counter_; };

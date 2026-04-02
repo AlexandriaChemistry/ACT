@@ -186,7 +186,7 @@ static const char *exml_names(xmlEntry xml)
 }
 
 //! \return whether the string is nullptr
-static bool NNlow(xmlBuffer *xbuf, xmlEntry xml, bool obligatory)
+static bool NNlow(xmlBuffer *xbuf, const xmlEntry xml, const bool obligatory)
 {
     if (xbuf->find(xml) == xbuf->end())
     {
@@ -206,13 +206,13 @@ static bool NNlow(xmlBuffer *xbuf, xmlEntry xml, bool obligatory)
 }
 
 //! \return true if this is an obligatory parameter
-static bool NNobligatory(xmlBuffer *xbuf, xmlEntry xml)
+static bool NNobligatory(xmlBuffer *xbuf, const xmlEntry xml)
 {
     return NNlow(xbuf, xml, true);
 }
 
 //! \return true if entry is not a nullptr
-static bool NN(xmlBuffer *xbuf, xmlEntry xml)
+static bool NN(xmlBuffer *xbuf, const xmlEntry xml)
 {
     return NNlow(xbuf, xml, false);
 }
@@ -235,15 +235,15 @@ static void sp(int n, char buf[], int maxindent)
 }
 
 //! \brief From xml entry to double precision number
-static double xbuf_atof(xmlBuffer *xbuf, xmlEntry  xbuf_index)
+static double xbuf_atof(xmlBuffer *xbuf, const xmlEntry xbuf_index)
 {
-    auto xb = xbuf->find(xbuf_index);
+    const auto xb = xbuf->find(xbuf_index);
     if (xb == xbuf->end())
     {
         GMX_THROW(gmx::InternalError(gmx::formatString("No such entry '%d' in xbuf",
                                                        static_cast<int>(xbuf_index)).c_str()));
     }
-    auto rm = exml_names(xbuf_index);
+    const auto rm = exml_names(xbuf_index);
     return my_atof(xb->second.c_str(), rm);
 }
 
@@ -266,7 +266,7 @@ static void processAttr(MsgHandler           *msgHandler,
         attrname.assign((char *)attr->name);
         attrval.assign((char *)attr->children->content);
 
-        auto iter = xml_pd.find(attrname);
+        const auto iter = xml_pd.find(attrname);
         if (iter != xml_pd.end())
         {
             xbuf->insert({iter->second, attrval});
@@ -293,7 +293,7 @@ static void processAttr(MsgHandler           *msgHandler,
     static Identifier      myIdentifier;
     
     xmlEntry parentEntry  = xmlEntry::GENTOP;
-    xmlEntry top = entries->top();
+    const xmlEntry top = entries->top();
     entries->pop();
     if (!entries->empty())
     {
@@ -321,20 +321,20 @@ static void processAttr(MsgHandler           *msgHandler,
             NNobligatory(xbuf, xmlEntry::CANSWAP))
         {
             CanSwap canSwap      = stringToCanSwap(xbufString(xmlEntry::CANSWAP));
-            std::string function = xbufString(xmlEntry::FUNCTION);
-            std::string inter    = xbufString(xmlEntry::TYPE);
+            const std::string function = xbufString(xmlEntry::FUNCTION);
+            const std::string inter    = xbufString(xmlEntry::TYPE);
             if (!stringToInteractionType(inter, &currentItype))
             {
                 GMX_THROW(gmx::InvalidInputError(gmx::formatString("Invalid InteractionType '%s'", inter.c_str()).c_str()));
             }
             //! \todo This is a hack to be able to read "old" force field files.
-            std::map<InteractionType, CanSwap> csUpdate = {
+            const std::map<InteractionType, CanSwap> csUpdate = {
                 { InteractionType::ELECTRONEGATIVITYEQUALIZATION, CanSwap::Yes },
                 { InteractionType::POLARIZATION, CanSwap::Yes },
                 { InteractionType::ELECTROSTATICS, CanSwap::Yes },
                 { InteractionType::VSITE2, CanSwap::Vsite2 }
             };
-            auto doUpdate = csUpdate.find(currentItype);
+            const auto doUpdate = csUpdate.find(currentItype);
             if (doUpdate != csUpdate.end())
             {
                 canSwap = doUpdate->second;
@@ -505,7 +505,7 @@ static void processTree(MsgHandler           *msgHandler,
                         ForceField           *pd)
 {
     char buf[100];
-    auto xmltype = xmltypes();
+    const auto xmltype = xmltypes();
 
     while (tree != nullptr)
     {
@@ -529,10 +529,10 @@ static void processTree(MsgHandler           *msgHandler,
                 sp(indent, buf, 99);
                 msgHandler->writeDebug(gmx::formatString("%sElement node name %s\n", buf, (char *)tree->name));
             }
-            auto iter = xml_pd.find((const char *)tree->name);
+            const auto iter = xml_pd.find((const char *)tree->name);
             if (iter != xml_pd.end())
             {
-                auto elem = iter->second;
+                const auto elem = iter->second;
                 entries->push(elem);
                 if (elem != xmlEntry::GENTOP)
                 {
@@ -616,7 +616,7 @@ static void addOption(xmlNodePtr         parent,
                       const std::string &key,
                       const std::string &value)
 {
-    auto baby = add_xml_child(parent, exml_names(xmlEntry::OPTION));
+    const auto baby = add_xml_child(parent, exml_names(xmlEntry::OPTION));
     add_xml_char(baby, exml_names(xmlEntry::KEY), key.c_str());
     add_xml_char(baby, exml_names(xmlEntry::VALUE), value.c_str());
 }
@@ -625,7 +625,7 @@ static void addOption(xmlNodePtr         parent,
 static void addParameter(xmlNodePtr parent, const std::string &type,
                          const ForceFieldParameter &param)
 {
-    auto baby = add_xml_child(parent, exml_names(xmlEntry::PARAMETER));
+    const auto baby = add_xml_child(parent, exml_names(xmlEntry::PARAMETER));
     add_xml_char(baby, exml_names(xmlEntry::TYPE), type.c_str());
     add_xml_char(baby, exml_names(xmlEntry::UNIT), param.unit().c_str());
     add_xml_double(baby, exml_names(xmlEntry::VALUE), param.value());
@@ -643,7 +643,7 @@ static void addCombRule(xmlNodePtr                 parent,
                         const std::string         &parameter,
                         const ParamCombRule       &pcr)
 {
-    auto baby = add_xml_child(parent, exml_names(xmlEntry::COMBINATIONRULE));
+    const auto baby = add_xml_child(parent, exml_names(xmlEntry::COMBINATIONRULE));
     add_xml_char(baby, exml_names(xmlEntry::PARAMETER), parameter.c_str());
     add_xml_char(baby, exml_names(xmlEntry::RULE), combinationRuleName(pcr.rule()).c_str());
     addParameter(baby, "exponent", pcr.ffplConst());
@@ -672,7 +672,7 @@ static void addXmlForceField(xmlNodePtr parent, const ForceField *pd)
                  
     for (const auto &aType : pd->particleTypesConst())
     {
-        auto grandchild = add_xml_child(child, exml_names(xmlEntry::PARTICLETYPE));
+        const auto grandchild = add_xml_child(child, exml_names(xmlEntry::PARTICLETYPE));
         add_xml_char(grandchild, exml_names(xmlEntry::IDENTIFIER), aType.second.id().id().c_str());
         add_xml_char(grandchild, exml_names(xmlEntry::TYPE), actParticleToString(aType.second.apType()).c_str());
         add_xml_char(grandchild, exml_names(xmlEntry::DESC), aType.second.description().c_str());
@@ -712,7 +712,7 @@ static void addXmlForceField(xmlNodePtr parent, const ForceField *pd)
             }
             if (!dependent)
             {
-                auto grandchild = add_xml_child(child, exml_names(xmlEntry::PARAMETERLIST));
+                const auto grandchild = add_xml_child(child, exml_names(xmlEntry::PARAMETERLIST));
                 add_xml_char(grandchild, exml_names(xmlEntry::IDENTIFIER), params.first.id().c_str());
                 for (const auto &param : params.second)
                 {
@@ -726,7 +726,7 @@ static void addXmlForceField(xmlNodePtr parent, const ForceField *pd)
     for (auto symcharges = pd->getSymchargesBegin();
          symcharges != pd->getSymchargesEnd(); symcharges++)
     {
-        auto grandchild = add_xml_child(child, exml_names(xmlEntry::SYM_CHARGE));
+        const auto grandchild = add_xml_child(child, exml_names(xmlEntry::SYM_CHARGE));
         add_xml_char(grandchild, exml_names(xmlEntry::CENTRAL), symcharges->getCentral().c_str());
         add_xml_char(grandchild, exml_names(xmlEntry::ATTACHED), symcharges->getAttached().c_str());
         add_xml_int(grandchild, exml_names(xmlEntry::NUMATTACH), symcharges->getNumattach());
@@ -735,7 +735,7 @@ static void addXmlForceField(xmlNodePtr parent, const ForceField *pd)
 
 void writeForceField(const std::string &fileName,
                   const ForceField     *pd,
-                  bool               compress)
+                  const bool           compress)
 {
     xmlDocPtr   doc;
     xmlDtdPtr   dtd;

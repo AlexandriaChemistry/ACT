@@ -53,14 +53,14 @@ void CombRuleUtil::addInfo(std::vector<const char *> *crinfo)
 {
     crinfo->push_back("[PAR]Combination rules can be specified for all parameters, depending");
     crinfo->push_back("on the potential chosen. You can choose from:[BR]");
-    for (auto cr : combRuleName)
+    for (const auto &cr : combRuleName)
     {
-        std::string newstr = gmx::formatString("%s ", cr.second.c_str());
+        const std::string newstr = gmx::formatString("%s ", cr.second.c_str());
         crinfo->push_back(strdup(newstr.c_str()));
     }
     crinfo->push_back("[PAR]Make sure to use the exact strings above including capitalization.");
     crinfo->push_back("Some of the rules that include parameter names should only be used for that parameter.");
-    std::string last = gmx::formatString("If not specified, the %s rule will be selected.", combinationRuleName(CombRule::Geometric).c_str());
+    const std::string last = gmx::formatString("If not specified, the %s rule will be selected.", combinationRuleName(CombRule::Geometric).c_str());
     crinfo->push_back("[PAR]Combination rules should all be passed in one long string containing first the interaction type, then the parameter name and finally the combination rule. For instance:");
     crinfo->push_back("[PAR]  -cr 'VANDERWAALS:epsilon:Geometric VANDERWAALS:sigma:Volumetric INDUCTIONCORRECTION:beta:Arithmetic VDWCORRECTION:A:Geometric'");
     crinfo->push_back(strdup(last.c_str()));
@@ -83,7 +83,7 @@ int CombRuleUtil::extract(ForceField *pd)
     printf("There are %zu combination rules\n", rules.size());
     for (const auto &r : rules)
     {
-        auto elements = split(r, ':');
+        const auto elements = split(r, ':');
         if (elements.size() == 3)
         {
             InteractionType itype;
@@ -105,7 +105,7 @@ int CombRuleUtil::extract(ForceField *pd)
                         {
                             changed += 1;
                         }
-                        std::string unit;
+                        const std::string unit;
                         ForceFieldParameter ffp(unit, 0, 0, 0, -10, 10, Mutability::Bounded, true, false);
                         fs->addCombinationRule(elements[1], elements[2], ffp);
                     }
@@ -133,10 +133,10 @@ int CombRuleUtil::convert(ForceFieldParameterList *vdw)
     int changed = 0;
     if (vdw)
     {
-        std::string crule("combination_rule");
+        const std::string crule("combination_rule");
         if (vdw->optionExists(crule))
         {
-            for(auto &crule : getCombinationRule(*vdw))
+            for(const auto &crule : getCombinationRule(*vdw))
             {
                 vdw->addCombinationRule(crule.first,
                                         combinationRuleName(crule.second.rule()),

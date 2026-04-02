@@ -87,7 +87,7 @@ void ForceFieldTable::subtype_table(const std::string &info)
     lt.printFooter();
 }
 
-void ForceFieldTable::itype_table(InteractionType    itype,
+void ForceFieldTable::itype_table(const InteractionType itype,
                                   const std::string &info)
 {
     if (!pd_->interactionPresent(itype))

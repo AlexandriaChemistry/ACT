@@ -40,8 +40,8 @@ namespace alexandria
  *                  at least one of the two constituting parameters changed will be reset.
  */
 static void generateParameterPairs(ForceField      *pd,
-                                   InteractionType  itype,
-                                   bool             force)
+                                   const InteractionType  itype,
+                                   const bool             force)
 {
     // Do not crash if e.g. there is no VDWCORRECTION.
     if (!pd->interactionPresent(itype))
@@ -49,7 +49,7 @@ static void generateParameterPairs(ForceField      *pd,
         return;
     }
     auto forcesVdw = pd->findForces(itype);
-    auto comb_rule = getCombinationRule(*forcesVdw);
+    const auto comb_rule = getCombinationRule(*forcesVdw);
 
     // We temporarily store the new parameters here
     ForceFieldParameterListMap *parm = forcesVdw->parameters();;
@@ -58,13 +58,13 @@ static void generateParameterPairs(ForceField      *pd,
     int nid = 0;
     for (auto &ivdw : *forcesVdw->parameters())
     {
-        auto &iid    = ivdw.first;
+        const auto &iid    = ivdw.first;
         // Check whether this is a single atom parameter
         if (iid.atoms().size() > 1)
         {
             continue;
         }
-        auto &iparam = ivdw.second;
+        const auto &iparam = ivdw.second;
         bool iupdated = false;
         for(const auto &ip : iparam)
         {
@@ -72,7 +72,7 @@ static void generateParameterPairs(ForceField      *pd,
         }
         for (auto &jvdw : *forcesVdw->parameters())
         {
-            auto &jid    = jvdw.first;
+            const auto &jid    = jvdw.first;
             // Check whether this is a single atom parameter and
             // whether this is is larger or equal to iid.
             if (jid.atoms().size() > 1 || jid.id() < iid.id())
@@ -85,19 +85,19 @@ static void generateParameterPairs(ForceField      *pd,
             if (Potential::BORN_MAYER == forcesVdw->potential() || 
                 Potential::MORSE_BONDS == forcesVdw->potential())
             {
-                auto ai = iid.atoms()[0];
-                auto aj = jid.atoms()[0];
+                const auto ai = iid.atoms()[0];
+                const auto aj = jid.atoms()[0];
                 if (pd->hasParticleType(ai) && pd->hasParticleType(aj))
                 {
-                    auto pti = pd->findParticleType(ai)->apType();
-                    auto ptj = pd->findParticleType(aj)->apType();
+                    const auto pti = pd->findParticleType(ai)->apType();
+                    const auto ptj = pd->findParticleType(aj)->apType();
                     // The pair will be included only if one particle is a vsite
                     // and the other an atom.
                     includePair = ((ActParticle::Vsite == pti && ActParticle::Atom == ptj) ||
                                    (ActParticle::Vsite == ptj && ActParticle::Atom == pti));
                 }
             }
-            auto &jparam = jvdw.second;
+            const auto &jparam = jvdw.second;
             bool jupdated = false;
             for(const auto &jp : jparam)
             {
@@ -131,33 +131,33 @@ static void generateParameterPairs(ForceField      *pd,
  * \param[in] force If set, all interaction parameters will be recomputed, if not only the ones for which 
  *                  at least one of the two constituting parameters changed will be reset.
  */
-static void generateCoulombParameterPairs(ForceField *pd, bool force)
+static void generateCoulombParameterPairs(ForceField *pd, const bool force)
 {
     auto forcesCoul = pd->findForces(InteractionType::ELECTROSTATICS);
     
     // Fudge unit
-    std::string unit("kJ/mol");
+    const std::string unit("kJ/mol");
     
     // We use dependent mutability to show these are not independent params
-    auto mutd = Mutability::Dependent;
-    auto cname = potentialToParameterName(Potential::COULOMB_GAUSSIAN);
-    auto zeta = cname[coulZETA];
+    const auto mutd = Mutability::Dependent;
+    const auto cname = potentialToParameterName(Potential::COULOMB_GAUSSIAN);
+    const auto zeta = cname[coulZETA];
     // Finally add the new parameters to the exisiting list
     auto fold = forcesCoul->parameters();
     // Now do the double loop
     int nid = 0;
     for (auto &icoul : *forcesCoul->parameters())
     {
-        auto &iid    = icoul.first;
+        const auto &iid    = icoul.first;
         // Check whether this is a single atom parameter
         if (iid.atoms().size() > 1)
         {
             continue;
         }
-        double izeta = icoul.second[zeta].internalValue();
+        const double izeta = icoul.second[zeta].internalValue();
         for (auto &jcoul : *forcesCoul->parameters())
         {
-            auto &jid    = jcoul.first;
+            const auto &jid    = jcoul.first;
             // Check whether this is a single atom parameter and
             // whether this is is larger or equal to iid.
             if (jid.atoms().size() > 1 || jid.id() < iid.id() ||
@@ -165,10 +165,10 @@ static void generateCoulombParameterPairs(ForceField *pd, bool force)
             {
                 continue;
             }
-            double     jzeta  = jcoul.second[zeta].internalValue();
-            Identifier pairID({ iid.id(), jid.id() }, { 1 }, CanSwap::Yes);
+            const double     jzeta  = jcoul.second[zeta].internalValue();
+            const Identifier pairID({ iid.id(), jid.id() }, { 1 }, CanSwap::Yes);
             nid += 1;
-            auto       oldfp  = fold->find(pairID);
+            const auto       oldfp  = fold->find(pairID);
             if (oldfp == fold->end())
             {
                 ForceFieldParameterMap ffpm = {
@@ -196,7 +196,7 @@ static void generateCoulombParameterPairs(ForceField *pd, bool force)
     // Phew, we're done!
 }
     
-void generateDependentParameter(ForceField *pd, bool force)
+void generateDependentParameter(ForceField *pd, const bool force)
 {
     generateParameterPairs(pd, InteractionType::VDW, force);
     generateParameterPairs(pd, InteractionType::VDWCORRECTION, force);

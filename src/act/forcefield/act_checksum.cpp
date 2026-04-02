@@ -69,7 +69,7 @@ std::string computeCheckSum(const std::string &filename)
     while (bytes_read > 0);
     fclose(filp);
     
-    auto mysum = gmx_md5_finish(&pms);
+    const auto mysum = gmx_md5_finish(&pms);
     // Now convert the checksum into a hex string
     std::string newVersion;
     for(const auto &m : mysum)
@@ -82,25 +82,25 @@ std::string computeCheckSum(const std::string &filename)
 std::string forcefieldCheckSum(ForceField *pd)
 {
     // Save the old checkSum
-    std::string oldCheckSum = pd->checkSum();
+    const std::string oldCheckSum = pd->checkSum();
     pd->setCheckSum("");
     // Save the old timeStamp
-    std::string timeStamp = pd->timeStamp();
+    const std::string timeStamp = pd->timeStamp();
     pd->setTimeStamp("");
     // Write the document to a tmp file
     char tmpForceField[] = "forcefieldTmpXXXXXX";
-    int fileDescriptor = mkstemp(tmpForceField);
+    const int fileDescriptor = mkstemp(tmpForceField);
     if (fileDescriptor >= 0)
     {
         close(fileDescriptor);
         writeForceField(tmpForceField, pd, false);
         // Now compute the md5 checksum
-        std::string checksum = computeCheckSum(tmpForceField);
+        const std::string checksum = computeCheckSum(tmpForceField);
         // Restore old chekcsum and time stamp
         pd->setCheckSum(oldCheckSum);
         pd->setTimeStamp(timeStamp);
         // Delete the tmp file
-        int errcode = std::remove(tmpForceField);
+        const int errcode = std::remove(tmpForceField);
         if (errcode != 0)
         {
             std::perror("Could not delete temporary file");

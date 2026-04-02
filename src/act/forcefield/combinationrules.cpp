@@ -62,9 +62,9 @@ const std::map<CombRule, const std::string> combRuleName =
         { CombRule::GeneralizedMean, "GeneralizedMean" }
     };
 
-const std::string &combinationRuleName(CombRule c)
+const std::string &combinationRuleName(const CombRule c)
 {
-    auto crfind = combRuleName.find(c);
+    const auto crfind = combRuleName.find(c);
     if (crfind == combRuleName.end())
     {
         GMX_THROW(gmx::InternalError(gmx::formatString("Unsupported combination rule %d",
@@ -96,7 +96,7 @@ ParamCombRule::ParamCombRule(const std::string &rule)
     rule_ = c;
 }
 
-double combineTwo(CombRule comb, double x1, double x2)
+double combineTwo(const CombRule comb, const double x1, const double x2)
 {
     switch (comb)
     {
@@ -128,7 +128,7 @@ double combineTwo(CombRule comb, double x1, double x2)
         }
         else
         {
-            double denom = 1/sqr(x1) + 1/sqr(x2);
+            const double denom = 1/sqr(x1) + 1/sqr(x2);
             return std::sqrt(2/denom);
         }
     case CombRule::QiSigma:
@@ -148,16 +148,16 @@ double combineTwo(CombRule comb, double x1, double x2)
     return 0;
 }
 
-double combineHogervorstSigma(double e1, double e2, double g1, double g2, double s1, double s2)
+double combineHogervorstSigma(const double e1, const double e2, const double g1, const double g2, const double s1, const double s2)
 {
     if (g1 <= 6 || g2 <= 6)
     {
         GMX_THROW(gmx::InvalidInputError("Combination rule HogervorstSigma not defined if gamma1 or gamma2 <= 6"));
     }
-    double tempi = std::abs(e1 * g1 * (std::pow(s1, 6)) /(g1 - 6 ));
-    double tempj = std::abs(e2 * g2 * (std::pow(s2, 6)) /(g2 - 6  ));
-    double gam12 = combineTwo(CombRule::Arithmetic, g1, g2);
-    double eps12 = combineTwo(CombRule::HogervorstEpsilon, e1, e2);
+    const double tempi = std::abs(e1 * g1 * (std::pow(s1, 6)) /(g1 - 6 ));
+    const double tempj = std::abs(e2 * g2 * (std::pow(s2, 6)) /(g2 - 6  ));
+    const double gam12 = combineTwo(CombRule::Arithmetic, g1, g2);
+    const double eps12 = combineTwo(CombRule::HogervorstEpsilon, e1, e2);
     if (0 == eps12)
     {
         return 0;
@@ -165,11 +165,11 @@ double combineHogervorstSigma(double e1, double e2, double g1, double g2, double
     return std::pow((std::sqrt( tempi * tempj ) )* std::abs(gam12 - 6) / (gam12 * eps12), 1.0/6.0);
 }
 
-double combineWaldmanEpsilon(double e1, double e2, double s1, double s2)
+double combineWaldmanEpsilon(const double e1, const double e2, const double s1, const double s2)
 {
     // Qi2106 Eqn 3.
-    double s13 = s1*s1*s1;
-    double s23 = s2*s2*s2;
+    const double s13 = s1*s1*s1;
+    const double s23 = s2*s2*s2;
     if (s13 == 0 && s23 == 0)
     {
         return 0;
@@ -184,7 +184,7 @@ double combineWaldmanEpsilon(double e1, double e2, double s1, double s2)
  * \param[in] exponent Power to use
  * \return the combined value
  */
-double combineGeneralizedMean(double x1, double x2, double exponent)
+double combineGeneralizedMean(const double x1, const double x2, const double exponent)
 {
     // See https://en.wikipedia.org/wiki/Generalized_mean
     // The paper by Hohm points out that for very small exponents,
@@ -196,7 +196,7 @@ double combineGeneralizedMean(double x1, double x2, double exponent)
     {
         return std::sqrt(x1*x2);
     }
-    double sum = std::pow(x1, exponent) + std::pow(x2, exponent);
+    const double sum = std::pow(x1, exponent) + std::pow(x2, exponent);
     return std::pow(0.5*sum, 1/exponent);
 }
 
@@ -207,24 +207,24 @@ double combineGeneralizedMean(double x1, double x2, double exponent)
  * \param[in] s2 Second sigma
  * \return The combined value
  */
-static double combineMasonGamma(double g1, double g2, double s1, double s2)
+static double combineMasonGamma(const double g1, const double g2, const double s1, const double s2)
 {
-    double sigmaIJ = combineTwo(CombRule::Geometric, s1, s2);
+    const double sigmaIJ = combineTwo(CombRule::Geometric, s1, s2);
     return sigmaIJ * (0.5*((g1/s1)+(g2/s2)));
 }
 
-void evalCombinationRule(Potential                     ftype,
+void evalCombinationRule(const Potential               ftype,
                          const CombRuleSet            &combrule,
                          const ForceFieldParameterMap &ivdw,
                          const ForceFieldParameterMap &jvdw,
-                         bool                          includePair,
+                         const bool                    includePair,
                          ForceFieldParameterMap       *pmap)
 {
     // Fudge unit
-    std::string unit("kJ/mol");
+    const std::string unit("kJ/mol");
 
     // We use dependent mutability to show these are not independent params
-    auto mutd = Mutability::Dependent;
+    const auto mutd = Mutability::Dependent;
 
     for(const auto &param : ivdw)
     {
@@ -241,7 +241,7 @@ void evalCombinationRule(Potential                     ftype,
             }
             GMX_THROW(gmx::InvalidInputError(gmx::formatString("Parameter %s not found. There are combination rules for: %s.", param.first.c_str(), allrules.c_str()).c_str()));
         }
-        auto   crule = combrule.find(param.first)->second;
+        const auto   crule = combrule.find(param.first)->second;
         double value = 0;
         if (Potential::BORN_MAYER == ftype ||
             Potential::MACDANIEL_SCHMIDT == ftype ||
@@ -280,7 +280,7 @@ void evalCombinationRule(Potential                     ftype,
         else
         {
             // Defining some strings that we may or may not need
-            auto vdwname = potentialToParameterName(ftype);
+            const auto vdwname = potentialToParameterName(ftype);
             std::string cdist, cepsilon, cgamma;
             switch (ftype)
             {
@@ -317,8 +317,8 @@ void evalCombinationRule(Potential                     ftype,
                           potentialToString(ftype).c_str(),
                           static_cast<int>(ftype));   
             }
-            auto ieps = ivdw.find(cepsilon)->second.value();
-            auto jeps = jvdw.find(cepsilon)->second.value();
+            const auto ieps = ivdw.find(cepsilon)->second.value();
+            const auto jeps = jvdw.find(cepsilon)->second.value();
             double igam = 0;
             double jgam = 0;
             if (ivdw.end() != ivdw.find(cgamma))

@@ -52,7 +52,7 @@ Symcharges::Symcharges(const std::string &central,
       numattach_(numattach)
 {}
 
-CommunicationStatus Symcharges::Send(const CommunicationRecord *cr, int dest)
+CommunicationStatus Symcharges::Send(const CommunicationRecord *cr, const int dest)
 {
     CommunicationStatus cs = CommunicationStatus::OK;
     if (CommunicationStatus::SEND_DATA == cr->send_data(dest))
@@ -72,7 +72,7 @@ CommunicationStatus Symcharges::Send(const CommunicationRecord *cr, int dest)
 }
 
 CommunicationStatus Symcharges::BroadCast(const CommunicationRecord *cr,
-                                          gmx_unused int             root,
+                                          gmx_unused const int       root,
                                           MPI_Comm                   comm)
 {
     CommunicationStatus cs = cr->bcast_data(comm);
@@ -91,7 +91,7 @@ CommunicationStatus Symcharges::BroadCast(const CommunicationRecord *cr,
     return cs;
 }
 
-CommunicationStatus Symcharges::Receive(const CommunicationRecord *cr, int src)
+CommunicationStatus Symcharges::Receive(const CommunicationRecord *cr, const int src)
 {
     CommunicationStatus cs = CommunicationStatus::OK;
     if (CommunicationStatus::RECV_DATA == cr->recv_data(src))

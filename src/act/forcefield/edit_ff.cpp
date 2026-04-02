@@ -59,14 +59,14 @@ namespace alexandria
 //! \brief Set parameter limits
 static void setMinMaxMut(FILE *fp,
                          ForceFieldParameter *pp,
-                         bool bSetMin, double pmin,
-                         bool bSetVal, double pval,
-                         bool bSetMax, double pmax,
-                         bool bSetMut, const std::string &mutability,
-                         bool bScale,  double scale,
-                         bool force,   bool stretch,
+                         const bool bSetMin, const double pmin,
+                         const bool bSetVal, double pval,
+                         const bool bSetMax, const double pmax,
+                         const bool bSetMut, const std::string &mutability,
+                         const bool bScale,  const double scale,
+                         const bool force,   const bool stretch,
                          const std::string &particleId,
-                         bool bLimits, double factor)
+                         const bool bLimits, const double factor)
 {
     if (bSetVal && bSetMin)
     {
@@ -84,7 +84,7 @@ static void setMinMaxMut(FILE *fp,
     {
         pp->setMinimum(pmin);
         pp->setMaximum(std::max(pmin, pp->maximum()));
-        double clampedVal = std::max(pmin, pp->value());
+        const double clampedVal = std::max(pmin, pp->value());
         if (force)
         {
             pp->forceSetValue(clampedVal);
@@ -101,7 +101,7 @@ static void setMinMaxMut(FILE *fp,
     if (bSetMax)
     {
         pp->setMaximum(pmax);
-        double clampedVal = std::min(pmax, pp->value());
+        const double clampedVal = std::min(pmax, pp->value());
         if (force)
         {
             pp->forceSetValue(clampedVal);
@@ -158,7 +158,7 @@ static void setMinMaxMut(FILE *fp,
     }
     if (stretch)
     {
-        double range = std::fabs(pp->maximum()-pp->minimum());
+        const double range = std::fabs(pp->maximum()-pp->minimum());
         fprintf(stderr, "Trying to stretch parameter with unit %s range %g\n", pp->unit().c_str(), range);
         if (std::fabs(pp->value() - pp->minimum()) < 0.01*range && range > 0)
         {
@@ -182,7 +182,7 @@ static void setMinMaxMut(FILE *fp,
         }
         if (std::fabs(pp->value() - pp->maximum()) < 0.01*range && range > 0)
         {
-            double newmax = pp->maximum()+0.2*range;
+            const double newmax = pp->maximum()+0.2*range;
             pp->setMaximum(newmax);
             if (fp)
             {
@@ -193,8 +193,8 @@ static void setMinMaxMut(FILE *fp,
     }
     if (bLimits)
     {
-        double mm = pp->value()*factor;
-        double mx = pp->value()/factor;
+        const double mm = pp->value()*factor;
+        const double mx = pp->value()/factor;
         pp->setMinimum(std::min(mx, mm));
         pp->setMaximum(std::max(mx, mm));
     }
@@ -203,13 +203,13 @@ static void setMinMaxMut(FILE *fp,
 //! \brief Change parameters for one particle
 static void modifyParticle(const std::string &paramType,
                            ParticleType      *particle,
-                           bool bSetMin, double pmin,
-                           bool bSetVal, double pval,
-                           bool bSetMax, double pmax,
-                           bool bSetMut, const std::string &mutability,
-                           bool bScale,  double scale,
-                           bool force,   bool stretch,
-                           bool bLimit,  double factor)
+                           const bool bSetMin, const double pmin,
+                           const bool bSetVal, const double pval,
+                           const bool bSetMax, const double pmax,
+                           const bool bSetMut, const std::string &mutability,
+                           const bool bScale,  const double scale,
+                           const bool force,   const bool stretch,
+                           const bool bLimit,  const double factor)
 {
     // Check particletypes instead
     if (particle->hasParameter(paramType))
@@ -218,11 +218,11 @@ static void modifyParticle(const std::string &paramType,
         // Allow min/max/stretch/limits changes even for Fixed parameters when
         // no value or scale change is requested, since setMinimum/setMaximum
         // are independent of mutability.
-        bool hasValueOrScaleChange = bSetVal || bScale;
-        bool hasLimitChange        = bSetMin || bSetMax || stretch || bLimit;
+        const bool hasValueOrScaleChange = bSetVal || bScale;
+        const bool hasLimitChange        = bSetMin || bSetMax || stretch || bLimit;
         if (force || ff->isMutable() || (hasLimitChange && !hasValueOrScaleChange))
         {
-            std::string particleId = 
+            const std::string particleId = 
                 gmx::formatString("%s - %s",
                                   particle->id().id().c_str(),
                                   paramType.c_str());
@@ -243,16 +243,16 @@ static void modifyParticle(const std::string &paramType,
 
 //! \brief Modify parameters for one interaction
 static void modifyInteraction(ForceField *pd,
-                              InteractionType itype,
+                              const InteractionType itype,
                               const std::string &paramType,
                               const Identifier &pId,
-                              bool bSetMin, double pmin,
-                              bool bSetVal, double pval,
-                              bool bSetMax, double pmax,
-                              bool bSetMut, const std::string &mutability,
-                              bool bScale,  double scale,
-                              bool force,   bool stretch,
-                              bool bLimit,  double factor)
+                              const bool bSetMin, const double pmin,
+                              const bool bSetVal, const double pval,
+                              const bool bSetMax, const double pmax,
+                              const bool bSetMut, const std::string &mutability,
+                              const bool bScale,  const double scale,
+                              const bool force,   const bool stretch,
+                              const bool bLimit,  const double factor)
 {
     auto fs = pd->findForces(itype)->parameters();
     for(auto &ffs : *fs)
@@ -265,7 +265,7 @@ static void modifyInteraction(ForceField *pd,
                 {
                     if (force || pp.second.isMutable())
                     {
-                        std::string myId = 
+                        const std::string myId = 
                             gmx::formatString("%s - %s - %s",
                                               pId.id().c_str(),
                                               paramType.c_str(),
@@ -333,13 +333,13 @@ static void removeParticles(ForceField *pd,
 static void modifyForceField(ForceField *pd,
                              const std::string &paramType,
                              const std::string &particle,
-                             bool bSetMin, double pmin,
-                             bool bSetVal, double pval,
-                             bool bSetMax, double pmax,
-                             bool bSetMut, const std::string &mutability,
-                             bool bScale,  double scale,
-                             bool force,   bool stretch,
-                             bool bLimit,  double factor)
+                             const bool bSetMin, const double pmin,
+                             const bool bSetVal, const double pval,
+                             const bool bSetMax, const double pmax,
+                             const bool bSetMut, const std::string &mutability,
+                             const bool bScale,  const double scale,
+                             const bool force,   const bool stretch,
+                             const bool bLimit,  const double factor)
 {
     if (!(bSetVal || bSetMin || bSetMax || bSetMut || stretch || bScale || bLimit))
     {
@@ -457,18 +457,18 @@ static const std::set<InteractionType> &findInteractionMap(const std::string &an
 //! \brief Investigate FF and print interesting observations
 static void analyzeForceField(ForceField *pd)
 {
-    unsigned int mindata   = 1;
-    double tolerance = 0.001;
+    const unsigned int mindata   = 1;
+    const double tolerance = 0.001;
     for(auto &fc : pd->forcesConst())
     {
-        auto itype = fc.first;
+        const auto itype = fc.first;
         for(auto &fm : fc.second.parametersConst())
         {
-            auto myid = fm.first;
+            const auto myid = fm.first;
             for(auto &param : fm.second)
             {
-                auto ptype = param.first;
-                auto ppp   = param.second;
+                const auto ptype = param.first;
+                const auto ppp   = param.second;
                 if (ppp.ntrain() >= mindata && ppp.isMutable())
                 {
                     if (fabs(ppp.value() - ppp.minimum()) < tolerance)
@@ -499,30 +499,30 @@ static void dumpForceField(ForceField        *pd,
 {
     bool found;
     
-    auto myset = findInteractionMap(analyze, &found);
+    const auto &myset = findInteractionMap(analyze, &found);
     if (!found)
     {
         return;
     }
-    auto particles = gmx::splitString(particle);
+    const auto particles = gmx::splitString(particle);
     FILE *fp = fopen(filenm.c_str(), "w");
     int nparm = 0;
     for(auto &fc : pd->forcesConst())
     {
-        auto itype = fc.first;
+        const auto itype = fc.first;
         if (myset.find(itype) == myset.end())
         {
             continue;
         }
         for(auto &fm : fc.second.parametersConst())
         {
-            auto myid = fm.first;
+            const auto myid = fm.first;
             if (std::find(particles.begin(), particles.end(), myid.id()) != particles.end())
             {
                 for(auto &param : fm.second)
                 {
-                    auto ptype = param.first;
-                    auto ppp   = param.second;
+                    const auto ptype = param.first;
+                    const auto ppp   = param.second;
                     fprintf(fp, "%s|%s|%g\n",
                             ptype.c_str(), myid.id().c_str(), ppp.value());
                     nparm++;
@@ -540,7 +540,7 @@ static void plotInteractions(MsgHandler        *msghandler,
                              const std::string &analyze)
 {
     bool found;
-    auto myset = findInteractionMap(analyze, &found);
+    const auto &myset = findInteractionMap(analyze, &found);
     if (!found)
     {
         return;
@@ -556,10 +556,10 @@ static void plotInteractions(MsgHandler        *msghandler,
 static void copy_missing(const ForceField  *pdref,
                          ForceField        *pdout,
                          const std::string &analyze,
-                         bool               replace)
+                         const bool         replace)
 {
     bool found;
-    auto myset = findInteractionMap(analyze, &found);
+    const auto &myset = findInteractionMap(analyze, &found);
     if (!found)
     {
         return;
@@ -578,7 +578,7 @@ static void copy_missing(const ForceField  *pdref,
     }
     for(auto &fc : pdref->forcesConst())
     {
-        auto itype = fc.first;
+        const auto itype = fc.first;
         if (myset.find(itype) == myset.end())
         {
             continue;
@@ -596,7 +596,7 @@ static void copy_missing(const ForceField  *pdref,
         }
         for(auto &fm : fc.second.parametersConst())
         {
-            auto myid = fm.first;
+            const auto myid = fm.first;
             if (!fcout->parameterExists(myid))
             {
                 printf("Parameter %s missing from %s for %s\n",
@@ -604,8 +604,8 @@ static void copy_missing(const ForceField  *pdref,
                        interactionTypeToDescription(itype).c_str());
                 for(auto &param : fm.second)
                 {
-                    auto ptype = param.first;
-                    auto ppp   = param.second;
+                    const auto ptype = param.first;
+                    const auto ppp   = param.second;
                     fcout->addParameter(myid, ptype, ppp);
                 }
             }
@@ -619,10 +619,10 @@ static void implant_values(const ForceField  *pdref,
                            const std::string &analyze,
                            const std::string &particle,
                            const std::string &parameter,
-                           bool               verbose)
+                           const bool         verbose)
 {
     bool found;
-    auto myset = findInteractionMap(analyze, &found);
+    const auto &myset = findInteractionMap(analyze, &found);
     if (!found)
     {
         return;
@@ -630,7 +630,7 @@ static void implant_values(const ForceField  *pdref,
     
     for(auto &fc : pdref->forcesConst())
     {
-        auto itype = fc.first;
+        const auto itype = fc.first;
         if (myset.find(itype) == myset.end())
         {
             continue;
@@ -653,8 +653,8 @@ static void implant_values(const ForceField  *pdref,
         auto fcout = pdout->findForces(itype);
         for(auto &fm : fc.second.parametersConst())
         {
-            auto myid    = fm.first;
-            auto myatoms = myid.atoms();
+            const auto myid    = fm.first;
+            const auto myatoms = myid.atoms();
             // If we have a specified atom, it should be in the identifier, if not skip this one
             if (!particle.empty() && std::find(myatoms.begin(), myatoms.end(), particle) == myatoms.end())
             {
@@ -703,8 +703,8 @@ static void compare_pd(ForceField *pd1,
     {
         return;
     }
-    auto f1     = pd1->findForcesConst(itype1);
-    auto f2     = pd2->findForcesConst(itype2);
+    const auto f1     = pd1->findForcesConst(itype1);
+    const auto f2     = pd2->findForcesConst(itype2);
     printf("%-17s %11s %9s %9s %9s %4s | %9s %9s %9s %4s | %9s\n",
            "Param", "Ptype", 
            "Minimum_1", "Value_1", "Maximum_1", "N_1",
@@ -717,12 +717,12 @@ static void compare_pd(ForceField *pd1,
         {
             auto fp1 = f1.findParameterMapConst(id1.first);
             auto fp2 = f2.findParameterMapConst(id1.first);
-            auto p1  = fp1[ptype];
-            auto p2  = fp2[ptype];
+            const auto p1  = fp1[ptype];
+            const auto p2  = fp2[ptype];
             if (p1.ntrain() > 0 && p2.ntrain() > 0 &&
                 p1.value() != p2.value())
             {
-                double d = p1.value()-p2.value();
+                const double d = p1.value()-p2.value();
                 psum2   += d*d;
                 np2     += 1;
                 printf("%-17s %11s %9.4f %9.4f %9.4f %4d | %9.4f %9.4f %9g %4d | %9.4f\n",
@@ -750,7 +750,7 @@ static void addBondEnergy(ForceField *pd)
         return;
     }
     auto ppp = fs->parameters();
-    auto bond_name = potentialToParameterName(Potential::HARMONIC_BONDS);
+    const auto bond_name = potentialToParameterName(Potential::HARMONIC_BONDS);
     for (auto &p : (*ppp))
     {
         auto &param = p.second;
@@ -992,12 +992,12 @@ int edit_ff(int argc, char*argv[])
     {
         if (cr.isParallel())
         {
-            int root = 0;
+            const int root = 0;
             CommunicationStatus cs;
             if (cr.isMaster())
             {
             
-                std::string outfile(opt2fn("-o", fnm.size(), fnm.data()));
+                const std::string outfile(opt2fn("-o", fnm.size(), fnm.data()));
                 printf("Will send force field to my helpers to write %s\n", outfile.c_str());
                 if (bcast)
                 {
@@ -1034,7 +1034,7 @@ int edit_ff(int argc, char*argv[])
         }
         else
         {
-            std::string checkSum = forcefieldCheckSum(&pd);
+            const std::string checkSum = forcefieldCheckSum(&pd);
             if (checkSum == pd.checkSum() && !forceWrite && nRuleChanged == 0)
             {
                 printf("No changes to forcefield structure, not writing a new file.");

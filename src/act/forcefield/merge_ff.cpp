@@ -59,10 +59,10 @@ namespace alexandria
 
 //! \brief Merge parameters from multiple force fields into one
 static void merge_parameter(const std::vector<alexandria::ForceField> &pds,
-                            alexandria::InteractionType                iType,
+                            const alexandria::InteractionType          iType,
                             const std::string                         &parameter,
                             alexandria::ForceField                    *pdout,
-                            double                                     limits)
+                            const double                               limits)
 {
     std::vector<gmx_stats> lsq;
     std::vector<int>       ntrain;
@@ -239,15 +239,15 @@ int merge_ff(int argc, char *argv[])
     {
         return 0;
     }
-    std::string allParams("alpha chi eta zeta delta_eta delta_chi charge vs2a");
+    const std::string allParams("alpha chi eta zeta delta_eta delta_chi charge vs2a");
     if (nullptr == mergeString)
     {
         mergeString = strdup(allParams.c_str());
     }
     /* Read all the gentop files. */
-    auto filenames = opt2fns("-ff", fnm.size(), fnm.data());
+    const auto filenames = opt2fns("-ff", fnm.size(), fnm.data());
     
-    for (auto &i : filenames)
+    for (const auto &i : filenames)
     {
         alexandria::ForceField pd;
         readForceField(i.c_str(), &pd);
@@ -259,7 +259,7 @@ int merge_ff(int argc, char *argv[])
     
     // We now update different parts of pdout
     std::set <alexandria::InteractionType> itypes;
-    auto allparams = gmx::splitString(mergeString);
+    const auto allparams = gmx::splitString(mergeString);
     if (allparams.empty())
     {
         for(const auto &fs : pds[0].forcesConst())
@@ -293,7 +293,7 @@ int merge_ff(int argc, char *argv[])
         }
     }
 
-    bool printSigma = filenames.size() > 1;
+    const bool printSigma = filenames.size() > 1;
     writeForceField(opt2fn("-o", fnm.size(), fnm.data()), &pdout, bcompress);
     if (opt2bSet("-latex", fnm.size(), fnm.data()))
     {
@@ -308,7 +308,7 @@ int merge_ff(int argc, char *argv[])
         {
             fft.subtype_table(myinfo);
         }
-        for(auto itype : itypes)
+        for(const auto itype : itypes)
         {
             fft.itype_table(itype, myinfo);
         }

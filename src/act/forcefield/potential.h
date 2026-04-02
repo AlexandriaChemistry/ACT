@@ -81,31 +81,31 @@ extern std::map<Potential, PotentialProperties> potprops;
  * \return Potential
  * \throws if not found
  */
-Potential defaultPotential(InteractionType itype);
+Potential defaultPotential(const InteractionType itype);
 
 /*! \brief Convert potential into string
  * \param[in] p The potential type
  * \return A string
  */
-const std::string &potentialToString(Potential p);
+const std::string &potentialToString(const Potential p);
 
 /*! \brief Convert potential into energy expression
  * \param[in] p The potential type
  * \return A string
  */
-const std::string &potentialToEnergy(Potential p);
+const std::string &potentialToEnergy(const Potential p);
 
 /*! \brief Convert potential into prefactors for the energy expression
  * \param[in] p The potential type
  * \return A string
  */
-const std::string &potentialToPreFactor(Potential p);
+const std::string &potentialToPreFactor(const Potential p);
 
 /*! \brief Get parameter names for potential
  * \param[in] p The potential type
  * \return A vector of strings
  */
-const std::vector<const char *> potentialToParameterName(Potential p);
+const std::vector<const char *> potentialToParameterName(const Potential p);
 
 /*!\brief Convert a string to a Potential type
  * \param[in]  pname The string
@@ -118,24 +118,24 @@ bool stringToPotential(const std::string &pname, Potential *p);
  * \param[in] p  The potential
  * \return The gromacs type or -1 if not found
  */
-int potentialToGromacsType(Potential p);
+int potentialToGromacsType(const Potential p);
 /*! \brief Convenience function
  * \param[in] p  The potential
  * \return The gromacs name or nulltpr if not found
  */
-const char *potentialToGromacsString(Potential p);
+const char *potentialToGromacsString(const Potential p);
 
 /*! \brief Convenience function
  * \param[in] c The charge type
  * \return Corresponding Coulomb potential
  */
-Potential chargeDistributionTypeToPotential(ChargeDistributionType c);
+Potential chargeDistributionTypeToPotential(const ChargeDistributionType c);
 
 /*! \brief Convenience function
  * \param[in] p The potential
  * \return Corresponding charge type
  */
-ChargeDistributionType potentialToChargeDistributionType(Potential p);
+ChargeDistributionType potentialToChargeDistributionType(const Potential p);
 
 } // namespace alexandria
 

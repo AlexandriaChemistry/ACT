@@ -61,7 +61,7 @@ namespace alexandria
 bool ForceField::verifyCheckSum(MsgHandler        *msgHandler,
                                 const std::string &checkSum)
 {
-    bool match = checkSum == checkSum_;
+    const bool match = checkSum == checkSum_;
     if (!match && msgHandler)
     {
         msgHandler->write(gmx::formatString("Checksum mismatch in %s. Expected %s Found %s\n",
@@ -143,10 +143,9 @@ void ForceField::setFilename(const std::string &fn2)
  *-+-+-+-+-+-+-+-+-+-+-+
  */
 
-gmx_bool ForceField::strcasestrStart(std::string needle, std::string haystack)
+gmx_bool ForceField::strcasestrStart(const std::string needle, const std::string haystack)
 {
-    std::string ptr;
-    ptr = strcasestr(haystack.c_str(), needle.c_str());
+    const std::string ptr = strcasestr(haystack.c_str(), needle.c_str());
     return (ptr == haystack);
 }
 
@@ -154,7 +153,7 @@ const std::string ForceField::ztype2elem(const std::string &ztype) const
 {
     if (ztype.size() != 0)
     {
-        for (auto i : alexandria_)
+        for (const auto &i : alexandria_)
         {
             if (i.second.interactionTypeToIdentifier(InteractionType::ELECTROSTATICS).id() == ztype)
             {
@@ -189,19 +188,19 @@ bool ForceField::typeToInteractionType(const std::string &type,
             type2Itype_.insert({iType, params});
         }
     }
-    size_t colon = type.find(":");
+    const size_t colon = type.find(":");
     if (colon != std::string::npos)
     {
-        auto ittt = type.substr(0, colon);
+        const auto ittt = type.substr(0, colon);
         InteractionType itp;
         if (stringToInteractionType(ittt, &itp))
         {
-            auto iii  = type2Itype_.find(itp);
+            const auto iii  = type2Itype_.find(itp);
             if (iii == type2Itype_.end())
             {
                 GMX_THROW(gmx::InvalidInputError(gmx::formatString("No such interaction type '%s' in force field", ittt.c_str()).c_str()));
             }
-            auto ptype = type.substr(colon+1, type.size());
+            const auto ptype = type.substr(colon+1, type.size());
             if (iii->second.find(ptype) == iii->second.end())
             {
                 GMX_THROW(gmx::InvalidInputError(gmx::formatString("No such parameter '%s' for interaction type '%s' in force field",
@@ -217,7 +216,7 @@ bool ForceField::typeToInteractionType(const std::string &type,
     }
     else
     {
-        for (auto tt : type2Itype_)
+        for (const auto &tt : type2Itype_)
         {
             if (tt.second.find(type) != tt.second.end())
             {
@@ -297,8 +296,8 @@ void ForceField::addForces(InteractionType                iType,
 bool ForceField::atypeToBtype(const std::string &atype,
                            std::string       *btype) const
 {
-    auto ai    = findParticleType(atype);
-    auto itype = InteractionType::BONDS;
+    const auto ai    = findParticleType(atype);
+    const auto itype = InteractionType::BONDS;
     if (ai && ai->hasInteractionType(itype))
     {
         btype->assign(ai->interactionTypeToIdentifier(itype).id());
@@ -310,7 +309,7 @@ bool ForceField::atypeToBtype(const std::string &atype,
 bool ForceField::atypeToZtype(const std::string &atype,
                            std::string       *ztype) const
 {
-    auto ai = findParticleType(atype);
+    const auto ai = findParticleType(atype);
     if (ai)
     {
         ztype->assign(ai->interactionTypeToIdentifier(InteractionType::ELECTRONEGATIVITYEQUALIZATION).id());
@@ -348,7 +347,7 @@ void ForceField::addSymcharges(const std::string &central,
     }
 }
 
-CommunicationStatus ForceField::Send(const CommunicationRecord *cr, int dest)
+CommunicationStatus ForceField::Send(const CommunicationRecord *cr, const int dest)
 {
     CommunicationStatus cs = CommunicationStatus::OK;
     if (CommunicationStatus::SEND_DATA == cr->send_data(dest))
@@ -375,7 +374,7 @@ CommunicationStatus ForceField::Send(const CommunicationRecord *cr, int dest)
             cr->send(dest, forces_.size());
             for (auto &force : forces_)
             {
-                std::string key(interactionTypeToString(force.first));
+                const std::string key(interactionTypeToString(force.first));
                 cr->send(dest, key);
                 cs = force.second.Send(cr, dest);
                 if (CommunicationStatus::OK != cs)
@@ -403,7 +402,7 @@ CommunicationStatus ForceField::Send(const CommunicationRecord *cr, int dest)
 }
 
 CommunicationStatus ForceField::BroadCast(const CommunicationRecord *cr,
-                                       int                        root,
+                                       const int                  root,
                                        MPI_Comm                   comm,
                                        MsgHandler                *msgHandler)
 {
@@ -505,7 +504,7 @@ CommunicationStatus ForceField::BroadCast(const CommunicationRecord *cr,
     return cs;
 }
 
-CommunicationStatus ForceField::Receive(const CommunicationRecord *cr, int src,
+CommunicationStatus ForceField::Receive(const CommunicationRecord *cr, const int src,
                                         MsgHandler *msgHandler)
 {
     CommunicationStatus cs = CommunicationStatus::OK;
@@ -584,7 +583,7 @@ CommunicationStatus ForceField::Receive(const CommunicationRecord *cr, int src,
     return cs;
 }
 
-void ForceField::sendParticles(const CommunicationRecord *cr, int dest,
+void ForceField::sendParticles(const CommunicationRecord *cr, const int dest,
                                MsgHandler *msgHandler)
 {
     if (CommunicationStatus::SEND_DATA == cr->send_data(dest))
@@ -593,11 +592,11 @@ void ForceField::sendParticles(const CommunicationRecord *cr, int dest,
         {
             msgHandler->writeDebug(gmx::formatString("Going to update ForceField::particles on node %d\n", dest));
         }
-        for(auto &ax : alexandria_)
+        for(const auto &ax : alexandria_)
         {
-            for(auto &p : ax.second.parametersConst())
+            for(const auto &p : ax.second.parametersConst())
             {
-                auto mut = p.second.mutability();
+                const auto mut = p.second.mutability();
                 if (Mutability::Free    == mut ||
                     Mutability::Bounded == mut)
                 {
@@ -614,7 +613,7 @@ void ForceField::sendParticles(const CommunicationRecord *cr, int dest,
 }
 
 
-void ForceField::receiveParticles(const CommunicationRecord *cr, int src,
+void ForceField::receiveParticles(const CommunicationRecord *cr, const int src,
                                   MsgHandler *msgHandler)
 {
     if (CommunicationStatus::RECV_DATA == cr->recv_data(src))
@@ -652,7 +651,7 @@ static std::vector<InteractionType> eemlist =
       InteractionType::ELECTRONEGATIVITYEQUALIZATION
     };
 
-void ForceField::sendEemprops(const CommunicationRecord *cr, int dest,
+void ForceField::sendEemprops(const CommunicationRecord *cr, const int dest,
                               MsgHandler *msgHandler)
 {
     if (CommunicationStatus::SEND_DATA == cr->send_data(dest))
@@ -661,9 +660,9 @@ void ForceField::sendEemprops(const CommunicationRecord *cr, int dest,
         {
             msgHandler->writeDebug(gmx::formatString("Going to update ForceField::eemprop on node %d\n", dest));
         }
-        for(auto myeem : eemlist)
+        for(const auto myeem : eemlist)
         {
-            auto fs = forces_.find(myeem);
+            const auto fs = forces_.find(myeem);
             if (fs != forces_.end())
             {
                 cr->send(dest, 1);
@@ -679,13 +678,13 @@ void ForceField::sendEemprops(const CommunicationRecord *cr, int dest,
     cr->send_done(dest);
 }
 
-void ForceField::receiveEemprops(const CommunicationRecord *cr, int src,
+void ForceField::receiveEemprops(const CommunicationRecord *cr, const int src,
                                  MsgHandler *msgHandler)
 {
     if (CommunicationStatus::RECV_DATA == cr->recv_data(src))
     {
         /* Receive EEMprops and Bond Corrections */
-        for(auto myeem : eemlist)
+        for(const auto myeem : eemlist)
         {
             int nbc;
             cr->recv(src, &nbc);
@@ -713,7 +712,7 @@ void ForceField::receiveEemprops(const CommunicationRecord *cr, int src,
                        "Communication did not end correctly");
 }
 
-void ForceField::sendToHelpers(const CommunicationRecord *cr, int root, bool bcast,
+void ForceField::sendToHelpers(const CommunicationRecord *cr, const int root, const bool bcast,
                                MsgHandler *msgHandler)
 {
     if (bcast && msgHandler)
@@ -784,7 +783,7 @@ void ForceField::sendToHelpers(const CommunicationRecord *cr, int root, bool bca
 void ForceField::checkConsistency(MsgHandler *msgHandler) const
 {
     int  nerror = 0;
-    auto cga    = chargeGenerationAlgorithm();
+    const auto cga    = chargeGenerationAlgorithm();
     if (cga == ChargeGenerationAlgorithm::NONE || cga == ChargeGenerationAlgorithm::ESP)
     {
         return;
@@ -798,8 +797,8 @@ void ForceField::checkConsistency(MsgHandler *msgHandler) const
         }
         nerror += 1;
     }
-    auto itype = InteractionType::ELECTRONEGATIVITYEQUALIZATION;
-    auto eem = findForcesConst(itype);
+    const auto itype = InteractionType::ELECTRONEGATIVITYEQUALIZATION;
+    const auto eem = findForcesConst(itype);
     for (const auto &atp : alexandria_)
     {
         if (!atp.second.hasInteractionType(itype))
@@ -823,7 +822,7 @@ void ForceField::checkConsistency(MsgHandler *msgHandler) const
         }
         else
         {
-            auto acmtype = atp.second.interactionTypeToIdentifier(InteractionType::ELECTRONEGATIVITYEQUALIZATION);
+            const auto acmtype = atp.second.interactionTypeToIdentifier(InteractionType::ELECTRONEGATIVITYEQUALIZATION);
             // Check whether zeta types are present
             if (!eem.parameterExists(acmtype))
             {
@@ -837,12 +836,12 @@ void ForceField::checkConsistency(MsgHandler *msgHandler) const
             }
             else
             {
-                auto eep = eem.findParameterMapConst(acmtype);
-                double chi0 = eep["chi"].value();
-                double J00  = eep["eta"].value();
-                double zeta = 0;
-                int    row  = eep["row"].value();
-                double q    = eep["charge"].value();
+                const auto eep = eem.findParameterMapConst(acmtype);
+                const double chi0 = eep["chi"].value();
+                const double J00  = eep["eta"].value();
+                const double zeta = 0;
+                const int    row  = eep["row"].value();
+                const double q    = eep["charge"].value();
                 if (msgHandler)
                 {
                     msgHandler->write(gmx::formatString("chi0 %g eta %g row %d zeta %g q %g\n",
@@ -854,16 +853,16 @@ void ForceField::checkConsistency(MsgHandler *msgHandler) const
     const auto itq = InteractionType::ELECTROSTATICS;
     if (interactionPresent(itq))
     {
-        auto fs  = findForcesConst(itq);
+        const auto fs  = findForcesConst(itq);
         if (fs.potential() == Potential::COULOMB_POINT)
         {
             // Check for non-zero zeta
-            std::string zeta("zeta");
+            const std::string zeta("zeta");
             for(const auto &myparam : fs.parametersConst())
             {
                 for(const auto &param : myparam.second)
                 {
-                    auto myval = param.second.internalValue();
+                    const auto myval = param.second.internalValue();
                     if (param.first == zeta && myval != 0)
                     {
                         if (msgHandler)
@@ -886,11 +885,11 @@ void ForceField::checkConsistency(MsgHandler *msgHandler) const
 
 void ForceField::calcDependent()
 {
-    auto btype = InteractionType::BONDS;
-    std::vector<InteractionType> atypes = { InteractionType::LINEAR_ANGLES,
+    const auto btype = InteractionType::BONDS;
+    const std::vector<InteractionType> atypes = { InteractionType::LINEAR_ANGLES,
         InteractionType::ANGLES };
     GMX_RELEASE_ASSERT(interactionPresent(btype), "No bond information present");
-    auto ffpbonds = findForcesConst(btype);
+    const auto ffpbonds = findForcesConst(btype);
     for(auto &atype : atypes)
     {
         if (!interactionPresent(atype))

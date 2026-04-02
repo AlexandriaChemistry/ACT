@@ -57,11 +57,11 @@ class Symcharges
 
         int getNumattach() const { return numattach_; }
 
-        CommunicationStatus Send(const CommunicationRecord *cr, int dest);
+        CommunicationStatus Send(const CommunicationRecord *cr, const int dest);
 
-        CommunicationStatus BroadCast(const CommunicationRecord *cr, int root, MPI_Comm comm);
+        CommunicationStatus BroadCast(const CommunicationRecord *cr, const int root, MPI_Comm comm);
 
-        CommunicationStatus Receive(const CommunicationRecord *cr, int src);
+        CommunicationStatus Receive(const CommunicationRecord *cr, const int src);
 
     private:
         std::string central_;

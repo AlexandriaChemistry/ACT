@@ -50,14 +50,14 @@ bool stringToBoolean(const std::string &str)
 namespace alexandria
 {
 
-void ForceFieldParameter::forceSetValue(double value)
+void ForceFieldParameter::forceSetValue(const double value)
 {
     value_ = value;
     // Need to update the intervalue since this is what the code will extract
     calculateInternalValue();
 }
 
-void ForceFieldParameter::setValue(double value)
+void ForceFieldParameter::setValue(const double value)
 {
     switch (mutability_)
     {
@@ -75,7 +75,7 @@ void ForceFieldParameter::setValue(double value)
         }
         else
         {
-            double newval = std::min(maximum_, std::max(minimum_, value));
+            const double newval = std::min(maximum_, std::max(minimum_, value));
             if (strict_)
             {
                 auto buf = gmx::formatString("Can not modify value to %g as it would be outside its bounds of %g-%g. Setting it to %g %s",
@@ -98,7 +98,7 @@ void ForceFieldParameter::setValue(double value)
     calculateInternalValue();
 }
 
-void ForceFieldParameter::setUncertainty(double uncertainty)
+void ForceFieldParameter::setUncertainty(const double uncertainty)
 { 
     if (mutability_ == Mutability::Free || mutability_ == Mutability::Bounded)
     {
@@ -111,7 +111,7 @@ void ForceFieldParameter::setUncertainty(double uncertainty)
     }
 }
 
-void ForceFieldParameter::setNtrain(unsigned int ntrain)
+void ForceFieldParameter::setNtrain(const unsigned int ntrain)
 { 
     if (mutability_ != Mutability::Fixed)
     {
@@ -139,7 +139,7 @@ void ForceFieldParameter::copy(const ForceFieldParameter &src)
     strict_              = src.strict();
 }
 
-CommunicationStatus ForceFieldParameter::Send(const CommunicationRecord *cr, int dest) const
+CommunicationStatus ForceFieldParameter::Send(const CommunicationRecord *cr, const int dest) const
 {
     CommunicationStatus cs = CommunicationStatus::OK;
     if (CommunicationStatus::SEND_DATA == cr->send_data(dest))
@@ -174,7 +174,7 @@ CommunicationStatus ForceFieldParameter::Send(const CommunicationRecord *cr, int
 }
 
 CommunicationStatus ForceFieldParameter::BroadCast(const CommunicationRecord *cr,
-                                                   int                        root,
+                                                   const int                  root,
                                                    MPI_Comm                   comm)
 {
     CommunicationStatus cs = cr->bcast_data(comm);
@@ -221,7 +221,7 @@ CommunicationStatus ForceFieldParameter::BroadCast(const CommunicationRecord *cr
     return cs;
 }
 
-CommunicationStatus ForceFieldParameter::Receive(const CommunicationRecord *cr, int src)
+CommunicationStatus ForceFieldParameter::Receive(const CommunicationRecord *cr, const int src)
 {
     CommunicationStatus cs = CommunicationStatus::OK;
     if (CommunicationStatus::RECV_DATA == cr->recv_data(src))

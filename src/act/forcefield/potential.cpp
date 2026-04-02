@@ -125,9 +125,9 @@ std::map<Potential, PotentialProperties> potprops = {
     { Potential::VSITE3OUTS, { "VSITE3OUTS", F_VSITE3OUTS, { "vs3outs_a", "vs3outs_c" }, "0", "" } }
 };
 
-const std::string &potentialToString(Potential p)
+const std::string &potentialToString(const Potential p)
 {
-    auto pp = potprops.find(p);
+    const auto pp = potprops.find(p);
     if (potprops.end() == pp)
     {
         GMX_THROW(gmx::InternalError(gmx::formatString("No support for potential %d", static_cast<int>(p))));
@@ -135,9 +135,9 @@ const std::string &potentialToString(Potential p)
     return pp->second.name;
 }
 
-const std::vector<const char *> potentialToParameterName(Potential p)
+const std::vector<const char *> potentialToParameterName(const Potential p)
 {
-    auto pp = potprops.find(p);
+    const auto pp = potprops.find(p);
     if (potprops.end() == pp)
     {
         GMX_THROW(gmx::InternalError(gmx::formatString("No support for potential %d", static_cast<int>(p))));
@@ -145,9 +145,9 @@ const std::vector<const char *> potentialToParameterName(Potential p)
     return pp->second.param;
 }
 
-const std::string &potentialToEnergy(Potential p)
+const std::string &potentialToEnergy(const Potential p)
 {
-    auto pp = potprops.find(p);
+    const auto pp = potprops.find(p);
     if (potprops.end() == pp)
     {
         GMX_THROW(gmx::InternalError(gmx::formatString("No support for potential %d", static_cast<int>(p))));
@@ -155,9 +155,9 @@ const std::string &potentialToEnergy(Potential p)
     return pp->second.energy;
 }
 
-const std::string &potentialToPreFactor(Potential p)
+const std::string &potentialToPreFactor(const Potential p)
 {
-    auto pp = potprops.find(p);
+    const auto pp = potprops.find(p);
     if (potprops.end() == pp)
     {
         GMX_THROW(gmx::InternalError(gmx::formatString("No support for potential %d", static_cast<int>(p))));
@@ -192,21 +192,21 @@ bool stringToPotential(const std::string &pname, Potential *p)
     return false;
 }
 
-Potential defaultPotential(InteractionType itype)
+Potential defaultPotential(const InteractionType itype)
 {
-    std::map<InteractionType, Potential> special = {
+    const std::map<InteractionType, Potential> special = {
         { InteractionType::POSITION_RESTRAINT, Potential::POSITION_RESTRAINT }
     };
     if (special.find(itype) == special.end())
     {
         GMX_THROW(gmx::InternalError(gmx::formatString("Can not find suitable potential for interaction type %s", interactionTypeToString(itype).c_str())));
     }
-    return special[itype];
+    return special.at(itype);
 }
 
-int potentialToGromacsType(Potential p)
+int potentialToGromacsType(const Potential p)
 {
-    auto ppp = potprops.find(p);
+    const auto ppp = potprops.find(p);
     if (potprops.end() != ppp)
     {
         return ppp->second.ftype;
@@ -214,9 +214,9 @@ int potentialToGromacsType(Potential p)
     return -1;
 }
 
-const char *potentialToGromacsString(Potential p)
+const char *potentialToGromacsString(const Potential p)
 {
-    int ftype = potentialToGromacsType(p);
+    const int ftype = potentialToGromacsType(p);
     if (-1 == ftype)
     {
         return nullptr;
@@ -234,12 +234,12 @@ static const std::map<ChargeDistributionType, Potential> cp = {
     { ChargeDistributionType::Slater, Potential::COULOMB_SLATER }
 };
 
-Potential chargeDistributionTypeToPotential(ChargeDistributionType c)
+Potential chargeDistributionTypeToPotential(const ChargeDistributionType c)
 {
     return cp.find(c)->second;
 }
 
-ChargeDistributionType potentialToChargeDistributionType(Potential p)
+ChargeDistributionType potentialToChargeDistributionType(const Potential p)
 {
     ChargeDistributionType ct = ChargeDistributionType::Point;
     for (const auto &cccp : cp)
