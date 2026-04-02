@@ -997,7 +997,7 @@ int edit_ff(int argc, char*argv[])
             if (cr.isMaster())
             {
             
-                const std::string outfile(opt2fn("-o", fnm.size(), fnm.data()));
+                std::string outfile(opt2fn("-o", fnm.size(), fnm.data()));
                 printf("Will send force field to my helpers to write %s\n", outfile.c_str());
                 if (bcast)
                 {
