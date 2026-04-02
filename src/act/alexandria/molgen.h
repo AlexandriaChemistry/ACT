@@ -325,8 +325,9 @@ public:
                       ChargeGenerationAlgorithm  alg);
 
     /*! \brief Process options after parsing
+     * \param[in] msghandler MsgHandler for output and debugging
      */
-    void optionsFinished();
+    void optionsFinished(MsgHandler *msghandler);
 
     /*! \brief Manually add fitting option
      * \param[in] opt The string, e.g. sigma or alpha

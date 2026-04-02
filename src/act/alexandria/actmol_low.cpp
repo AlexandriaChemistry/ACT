@@ -61,7 +61,8 @@ bool is_planar(const rvec xi, const rvec xj, const rvec xk,
     return (fabs(phi) < phi_toler);
 }
 
-bool is_linear(const rvec xi, const rvec xj,
+bool is_linear(MsgHandler *msghandler,
+               const rvec xi, const rvec xj,
                const rvec xk, real th_toler)
 {
     rvec r_ij, r_kj;
@@ -70,9 +71,9 @@ bool is_linear(const rvec xi, const rvec xj,
     th = fabs(RAD2DEG*bond_angle(xi, xj, xk, r_ij, r_kj, &costh));
     if ((th > th_toler) || (th < 180-th_toler))
     {
-        if (nullptr != debug)
+        if (msghandler && msghandler->debug())
         {
-            fprintf(debug, "Angle is %g, th_toler is %g\n", th, th_toler);
+            msghandler->writeDebug(gmx::formatString("Angle is %g, th_toler is %g\n", th, th_toler));
         }
         return true;
     }
@@ -169,7 +170,8 @@ void calc_rotmatrix(rvec target_vec, rvec ref_vec, matrix rotmatrix)
     rotmatrix[2][2] = bu[2]*au[2];
 }
 
-double computeAtomizationEnergy(const std::vector<ActAtom> &atoms,
+double computeAtomizationEnergy(MsgHandler                 *msghandler,
+                                const std::vector<ActAtom> &atoms,
                                 const AtomizationEnergy    &atomenergy,
                                 double                      temperature)
 {
@@ -186,19 +188,19 @@ double computeAtomizationEnergy(const std::vector<ActAtom> &atoms,
             std::string dhFunit;
             double dhF   = atomenergy.term(a.element(), 0, "exp",
                                            DHf, temperature, &dhFunit, nullptr);
-            if (debug)
+            if (msghandler && msghandler->debug())
             {
-                fprintf(debug, "Found atomization energy terms for %2s at T = %g K. %s: %g (%s) %s: %g (%s)\n",
-                        a.element().c_str(), temperature,
-                        H0.c_str(), h0_hT, h0unit.c_str(),
-                        DHf.c_str(), dhF, dhFunit.c_str());
+                msghandler->writeDebug(gmx::formatString("Found atomization energy terms for %2s at T = %g K. %s: %g (%s) %s: %g (%s)\n",
+                                                         a.element().c_str(), temperature,
+                                                         H0.c_str(), h0_hT, h0unit.c_str(),
+                                                         DHf.c_str(), dhF, dhFunit.c_str()));
             }
             atomizationEnergy += convertToGromacs(h0_hT, h0unit) + convertToGromacs(dhF, dhFunit);
         }
     }
-    if (debug)
+    if (msghandler && msghandler->debug())
     {
-        fprintf(debug, "Total atomization energy %g\n", atomizationEnergy);
+        msghandler->writeDebug(gmx::formatString("Total atomization energy %g\n", atomizationEnergy));
     }
     return atomizationEnergy;
 }

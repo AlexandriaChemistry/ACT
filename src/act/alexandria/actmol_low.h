@@ -43,6 +43,7 @@
 #include "act/basics/atomization_energy.h"
 #include "act/basics/chargemodel.h"
 #include "act/basics/identifier.h"
+#include "act/basics/msg_handler.h"
 
 namespace alexandria
 {
@@ -70,7 +71,8 @@ bool is_planar(const rvec   xi,  const rvec xj,
                real phi_toler);
 
 //! \return true if the three atoms are on a line
-bool is_linear(const rvec xi, const rvec xj,
+bool is_linear(MsgHandler *msghandler,
+               const rvec xi, const rvec xj,
                const rvec xk, real th_toler);
 
 /*! \brief relative position of an atom on a bond
@@ -98,12 +100,14 @@ void put_in_box(int natom, matrix box, rvec x[], real dbox);
 void calc_rotmatrix(rvec target_vec, rvec ref_vec, matrix rotmatrix);
 
 /*! \brief Compute atomization energy for a molecule
+ * \param[in] msghandler For debug output, may be nullptr
  * \param[in] atoms The atom elements etc.
  * \param[in] atomenergy Table of components of the atomization energy
  * \param[in] temperature The temperature at which to compute the energy
  * \return The total atomization energy
  */
-double computeAtomizationEnergy(const std::vector<ActAtom> &atoms,
+double computeAtomizationEnergy(MsgHandler                 *msghandler,
+                                const std::vector<ActAtom> &atoms,
                                 const AtomizationEnergy    &atomenergy,
                                 double                      temperature);
 

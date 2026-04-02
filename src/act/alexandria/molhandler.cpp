@@ -169,10 +169,6 @@ void MolHandler::computeHessian(const ForceField                  *pd,
                 {
                     int    row   = aj*DIM+d;
                     double value = -(forces[1][atomJ][d]-forces[0][atomJ][d])/(xxx[1]-xxx[0]);
-                    if (false && debug)
-                    {
-                        fprintf(debug, "Setting H[%2d][%2d] = %10g\n", row, column, value); 
-                    }
                     hessian->set(column, row, value);
                 }
             }
@@ -720,17 +716,17 @@ static void func(const std::vector<double> &x, double &f, std::vector<double> &g
                 imax = i;
             }
         }
-        if (debug)
+        if (lbfgs->mh()->debug())
         {
-            fprintf(debug, "Force %03d  %12.3f  %12.3f  %12.3f\n", i,
-                    (*forces)[i][XX], (*forces)[i][YY], (*forces)[i][ZZ]);
+            lbfgs->mh()->writeDebug(gmx::formatString("Force %03d  %12.3f  %12.3f  %12.3f\n", i,
+                                                      (*forces)[i][XX], (*forces)[i][YY], (*forces)[i][ZZ]));
         }
         rvec_inc(fsum, (*forces)[i]);
     }
-    if (debug)
+    if (lbfgs->mh()->debug())
     {
-        fprintf(debug, "Energy %.3f sum of forces is %g %g %g fmax %g on atom %d out of %zu\n",
-                f, fsum[XX], fsum[YY], fsum[ZZ], fmax, imax, theAtoms.size());
+        lbfgs->mh()->writeDebug(gmx::formatString("Energy %.3f sum of forces is %g %g %g fmax %g on atom %d out of %zu\n",
+                                                  f, fsum[XX], fsum[YY], fsum[ZZ], fmax, imax, theAtoms.size()));
     }
 }
 
@@ -931,12 +927,12 @@ eMinimizeStatus MolHandler::minimizeCoordinates(MsgHandler                      
                             forces[current][ii][m] = f0[jj++];
                         }
                     }
-                    if (debug && firstStep)
+                    if (msghandler->debug() && firstStep)
                     {
-                        fprintf(debug, "Sum of forces: %g sum of displacement: %g\n",
-                                std::accumulate(f0.begin(), f0.end(), 0.0),
-                                std::accumulate(deltaX[current].begin(), deltaX[current].end(), 0.0));
-                        fprintf(debug, "H deltaX\n");
+                        msghandler->writeDebug(gmx::formatString("Sum of forces: %g sum of displacement: %g\n",
+                                                                 std::accumulate(f0.begin(), f0.end(), 0.0),
+                                                                 std::accumulate(deltaX[current].begin(), deltaX[current].end(), 0.0)));
+                        msghandler->writeDebug("H deltaX\n");
                         for(size_t ii = 0; ii < DIM*theAtoms.size(); ii++)
                         {
                             double f1 = 0;
@@ -944,8 +940,8 @@ eMinimizeStatus MolHandler::minimizeCoordinates(MsgHandler                      
                             {
                                 f1 += H2.get(ii, jj) * deltaX[current][jj];
                             }
-                            fprintf(debug, "f0[%2zu] = %12g  deltaX = %12g, f0-H.deltaX = %12g\n",
-                                    ii, f0[ii], deltaX[current][ii], f0[ii]-f1);
+                            msghandler->writeDebug(gmx::formatString("f0[%2zu] = %12g  deltaX = %12g, f0-H.deltaX = %12g\n",
+                                                                     ii, f0[ii], deltaX[current][ii], f0[ii]-f1));
                         }
                     }
                 }
@@ -1099,19 +1095,19 @@ eMinimizeStatus MolHandler::minimizeCoordinates(MsgHandler                      
         }
         printEnergies(msghandler->tw(), myIter, msAtomForce, msShellForce,
                       fcurprev, newEnergies[current], gamma);
-        if (debug)
+        if (msghandler->debug())
         {
             for(size_t kk = 0; kk < mol->topology()->nAtoms(); kk++)
             {
-                fprintf(debug, "f[%2zu] =  %10g  %10g  %10g x[%2zu] = %10g  %10g  %10g\n", kk,
-                        forces[current][kk][XX], forces[current][kk][YY], forces[current][kk][ZZ], kk,
-                        (*coords)[kk][XX], (*coords)[kk][YY], (*coords)[kk][ZZ]);
+                msghandler->writeDebug(gmx::formatString("f[%2zu] =  %10g  %10g  %10g x[%2zu] = %10g  %10g  %10g\n", kk,
+                                                         forces[current][kk][XX], forces[current][kk][YY], forces[current][kk][ZZ], kk,
+                                                         (*coords)[kk][XX], (*coords)[kk][YY], (*coords)[kk][ZZ]));
             }
             for(const auto &ee : newEnergies[current])
             {
-                fprintf(debug, "%-20s  %10g\n",
-                        interactionTypeToString(ee.first).c_str(), 
-                        ee.second);
+                msghandler->writeDebug(gmx::formatString("%-20s  %10g\n",
+                                                         interactionTypeToString(ee.first).c_str(), 
+                                                         ee.second));
             }
         }
     }

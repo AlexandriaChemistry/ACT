@@ -123,9 +123,9 @@ void ACMFitnessComputer::distributeParameters(MsgHandler                *msghand
                                               const std::vector<double> *params,
                                               const std::set<int>       &changed)
 {
-    if (debug)
+    if (msghandler->debug())
     {
-        fprintf(debug, "Starting to distribute parameters\n");
+        msghandler->writeDebug("Starting to distribute parameters\n");
     }
     auto cr = sii_->commRec();
     // Send / receive parameters
@@ -161,9 +161,9 @@ void ACMFitnessComputer::distributeParameters(MsgHandler                *msghand
         }
         sii_->updateForceField(msghandler, changed, *params);
     }
-    if (debug)
+    if (msghandler->debug())
     {
-        fprintf(debug, "Finished distributing parameters\n");
+        msghandler->writeDebug("Finished distributing parameters\n");
     }
 }
 
@@ -268,7 +268,7 @@ double ACMFitnessComputer::calcDeviation(MsgHandler                 *msghandler,
     }
     // Sum the terms of the chi-squared once we have done calculations
     // for all the molecules.
-    sii_->sumChiSquared(task == CalcDev::Compute, ims);
+    sii_->sumChiSquared(msghandler, task == CalcDev::Compute, ims);
     auto erms = eRMS::TOT;
     auto etot = targets->find(erms);
     if (targets->end() == etot)

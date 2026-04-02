@@ -361,7 +361,7 @@ void Topology::makeAngles(MsgHandler                   *msghandler,
             }
             if (angle.atomIndices().size() == 3)
             {
-                if (is_linear(x[angle.atomIndex(0)], x[angle.atomIndex(1)], x[angle.atomIndex(2)],
+                if (is_linear(msghandler, x[angle.atomIndex(0)], x[angle.atomIndex(1)], x[angle.atomIndex(2)],
                               LinearAngleMin))
                 {
                     if (nullptr == findTopologyEntry(linangles, angle.atomIndices(),

@@ -455,7 +455,8 @@ void ACTMol::forceEnergyMaps(MsgHandler                                         
  * \param[in] coords  The coordinates
  * \return Whether there are three subsequent atoms in the molecule on a line
  */
-static bool isLinearMolecule(const std::vector<ActAtom>   &myatoms,
+static bool isLinearMolecule(MsgHandler                   *msghandler,
+                             const std::vector<ActAtom>   &myatoms,
                              const std::vector<gmx::RVec> &coords)
 {
     std::vector<int> core;
@@ -474,7 +475,7 @@ static bool isLinearMolecule(const std::vector<ActAtom>   &myatoms,
     bool linear   = true;
     for(size_t c = 2; c < core.size(); c++)
     {
-        linear = linear && is_linear(coords[core[c-2]],
+        linear = linear && is_linear(msghandler, coords[core[c-2]],
                                      coords[core[c-1]], 
                                      coords[core[c]], th_toler);
         if (!linear)
@@ -580,7 +581,7 @@ void ACTMol::GenerateTopology(MsgHandler        *msghandler,
     }
     if (msghandler->ok())
     {
-        isLinear_ = isLinearMolecule(topology_.atoms(), coords);
+        isLinear_ = isLinearMolecule(msghandler, topology_.atoms(), coords);
         // Symmetrize the atoms
         get_symmetrized_charges(&topology_, pd, nullptr, &symmetric_charges_);
     }
@@ -912,7 +913,7 @@ ACTMessage ACTMol::GenerateAcmCharges(MsgHandler             *msg_handler,
                                       std::vector<gmx::RVec> *forces)
 {
     std::vector<double> qold;
-    fraghandler_.fetchCharges(&qold);
+    fraghandler_.fetchCharges(msg_handler, &qold);
     if (qold.size() != atomsConst().size())
     {
         GMX_THROW(gmx::InternalError(gmx::formatString("Cannot fetch old charges for %s. #atom %lu #qold %zu",
@@ -942,7 +943,7 @@ ACTMessage ACTMol::GenerateAcmCharges(MsgHandler             *msg_handler,
             forceComp->compute(msg_handler, pd, &topology_,
                                coords, forces, &energies);
             std::vector<double> qnew;
-            fraghandler_.fetchCharges(&qnew);
+            fraghandler_.fetchCharges(msg_handler, &qnew);
             GMX_RELEASE_ASSERT(qold.size()==qnew.size(), "Cannot fetch new charges");
             for (size_t i = 0; i < qnew.size(); i++)
             {

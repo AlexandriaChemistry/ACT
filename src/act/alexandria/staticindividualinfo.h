@@ -141,10 +141,12 @@ public:
     /*! \brief Add up the \f$ \chi^2 \f$ components
      * Sum over the energies of the cores if desired.
      * Also multiplies the terms by the weighting factors.
+     * \param[in] msghandler MsgHandler for output and debugging
      * \param[in] parallel  Whether or not to sum in parallel
      * \param[in] ims       The selection dataset to sum
      */
-    void sumChiSquared(bool             parallel,
+    void sumChiSquared(MsgHandler       *msghandler,
+                       bool             parallel,
                        iMolSelect       ims);
 
     /* * * * * * * * * * * * * * * * * * * * * *
@@ -291,11 +293,11 @@ public:
     /*!
      * \brief Generate the vector of OptimizationIndex instances
      * This is done on middlemen, who then distribute it to their helpers.
-     * \param[in] tw TextWriter
+     * \param[in] msghandler MsgHandler for output and debugging
      * \param[in] mg MolGen pointer
      * \param[in] cr Communication Information
      */
-    void generateOptimizationIndex(gmx::TextWriter           *tw,
+    void generateOptimizationIndex(MsgHandler                *msghandler,
                                    const MolGen              *mg,
                                    const CommunicationRecord *cr);
 
