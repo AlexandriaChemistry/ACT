@@ -146,7 +146,7 @@ int nma(int argc, char *argv[])
 
     if (msghandler.debug())
     {
-        actmol.topology()->dump(&msghandler);
+        actmol.topology()->dump(msghandler.twDebug());
     }
     auto eMin = eMinimizeStatus::OK;
     /* Generate output file for debugging if requested */
