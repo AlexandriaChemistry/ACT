@@ -213,7 +213,7 @@ void QgenResp::writeHisto(const std::string      &fn,
     xvgrclose(fp);
 }
 
-void QgenResp::copyGrid(QgenResp &src)
+void QgenResp::copyGrid(const QgenResp &src)
 {
     int m;
 
@@ -360,8 +360,8 @@ real QgenResp::getStatistics(MsgHandler *msg_handler,
  * \param[in] row        Row in the periodic table (Slaters only)
  */
 static double calcJ(ChargeDistributionType chargeType,
-                    rvec                   espx,
-                    rvec                   rax,
+                    const rvec             espx,
+                    const rvec             rax,
                     double                 zeta,
                     int                    row)
 {

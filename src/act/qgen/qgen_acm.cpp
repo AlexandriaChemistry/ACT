@@ -333,13 +333,13 @@ const char *QgenAcm::status() const
     return stat[eQGEN_];
 }
 
-double QgenAcm::calcJ(rvec    xI,
-                      rvec    xJ,
-                      double  zetaI,
-                      double  zetaJ,
-                      int     rowI,
-                      int     rowJ,
-                      double  epsilonr)
+double QgenAcm::calcJ(const rvec xI,
+                      const rvec xJ,
+                      double     zetaI,
+                      double     zetaJ,
+                      int        rowI,
+                      int        rowJ,
+                      double     epsilonr)
 {
     rvec   dx;
     double r    = 0;
