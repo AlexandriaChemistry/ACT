@@ -836,12 +836,12 @@ void ForceField::checkConsistency(MsgHandler *msgHandler) const
             }
             else
             {
-                const auto eep = eem.findParameterMapConst(acmtype);
-                const double chi0 = eep["chi"].value();
-                const double J00  = eep["eta"].value();
+                const auto *eep = eem.findParametersPtrConst(acmtype);
+                const double chi0 = eep->find("chi")->second.value();
+                const double J00  = eep->find("eta")->second.value();
                 const double zeta = 0;
-                const int    row  = eep["row"].value();
-                const double q    = eep["charge"].value();
+                const int    row  = eep->find("row")->second.value();
+                const double q    = eep->find("charge")->second.value();
                 if (msgHandler)
                 {
                     msgHandler->write(gmx::formatString("chi0 %g eta %g row %d zeta %g q %g\n",
