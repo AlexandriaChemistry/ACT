@@ -194,7 +194,7 @@ int nma(int argc, char *argv[])
     {
         AtomizationEnergy atomenergy;
         atomenergy.read(&msghandler);
-        doFrequencyAnalysis(&pd, &actmol, molhandler, &forceComp, &xmin,
+        doFrequencyAnalysis(&msghandler, &pd, &actmol, molhandler, &forceComp, &xmin,
                             atomenergy, nullptr, &jtree,
                             opt2fn_null("-ir", fnm.size(), fnm.data()),
                             linewidth, oenv, msghandler.verbose());

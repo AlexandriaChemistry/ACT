@@ -351,7 +351,7 @@ void StaticIndividualInfo::generateOptimizationIndex(MsgHandler                *
                             {
                                 optIndex_.push_back(OptimizationIndex(fs.first, fpl.first, param.first));
                             }
-                            else if (msghandler->debug())
+                            else if (msghandler && msghandler->debug())
                             {
                                 msghandler->writeDebug(gmx::formatString("WARNING: Not enough data (%d/%d) to train %s-%s (mut %s)\n",
                                                                          param.second.ntrain(), mg->mindata(),
@@ -389,7 +389,7 @@ void StaticIndividualInfo::generateOptimizationIndex(MsgHandler                *
                 }
             }
         }
-        auto tw = msghandler->tw();
+        auto tw = msghandler ? msghandler->tw() : nullptr;
         if (tw)
         {
             tw->writeStringFormatted("There are %zu parameters to train.\n", optIndex_.size());
