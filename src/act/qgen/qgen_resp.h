@@ -179,7 +179,7 @@ class QgenResp
                       real                          border,
                       const std::vector<gmx::RVec> &x);
 
-        void copyGrid(QgenResp &src);
+        void copyGrid(const QgenResp &src);
 
         void calcStatistics(MsgHandler *msg_handler);
 
@@ -224,7 +224,7 @@ class QgenResp
                       const std::string      &title,
                       const gmx_output_env_t *oenv);
 
-        void writeDiffCube(QgenResp                   *src,
+        void writeDiffCube(const QgenResp             *src,
                            const std::string          &cubeFn,
                            const std::string          &histFn,
                            const std::string          &title,

@@ -129,7 +129,7 @@ void QgenResp::writePdbComparison(const std::vector<ActAtom>   &atoms,
     }
 }
 
-void QgenResp::writeDiffCube(QgenResp               *src,
+void QgenResp::writeDiffCube(const QgenResp         *src,
                              const std::string      &cubeFn,
                              const std::string      &histFn,
                              const std::string      &title,

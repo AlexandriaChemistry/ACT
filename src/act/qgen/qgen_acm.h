@@ -212,13 +212,13 @@ private:
      * \param[in] epsilonr Relative dielectric constant
      * \return the coulomb interaction
      */
-    double calcJ(rvec   xI, 
-                 rvec   xJ,
-                 double zetaI,
-                 double zetaJ,
-                 int    rowI,
-                 int    rowJ,
-                 double epsilonr);
+    double calcJ(const rvec xI, 
+                 const rvec xJ,
+                 double     zetaI,
+                 double     zetaJ,
+                 int        rowI,
+                 int        rowJ,
+                 double     epsilonr);
     
     /*! \brief Store the atoms in their destination structure
      * \param[inout] atoms The array with atom properties
