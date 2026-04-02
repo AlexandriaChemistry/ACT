@@ -1683,15 +1683,15 @@ void Topology::dump(FILE *fp) const
     }
 }
 
-void Topology::dump(MsgHandler *msghandler) const
+void Topology::dump(gmx::TextWriter *tw) const
 {
-    if (nullptr == msghandler)
+    if (nullptr == tw)
     {
         return;
     }
     for(auto &myEntry: entries_)
     {
-        msghandler->writeDebug(interactionTypeToString(myEntry.first));
+        tw->writeLine(interactionTypeToString(myEntry.first));
         for (auto &tt : myEntry.second)
         {
             std::string line;
@@ -1699,7 +1699,7 @@ void Topology::dump(MsgHandler *msghandler) const
             {
                 line += gmx::formatString(" %d", aa+1);
             }
-            msghandler->writeDebug(line);
+            tw->writeLine(line);
         }
     }
 }
