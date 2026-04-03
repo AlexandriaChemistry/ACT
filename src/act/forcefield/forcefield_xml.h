@@ -50,7 +50,7 @@ namespace alexandria
      */
     void writeForceField(const std::string &fileName,
                       const ForceField     *pd,
-                      const bool compress = true);
+                      bool compress = true);
 
     /*! \brief Read a ForceField class from an XML file
      *

@@ -238,7 +238,7 @@ std::string ParticleType::element() const
     return empty;
 }
 
-CommunicationStatus ParticleType::Send(const CommunicationRecord *cr, const int dest)
+CommunicationStatus ParticleType::Send(const CommunicationRecord *cr, int dest)
 {
     CommunicationStatus cs = CommunicationStatus::OK;
     id_.Send(cr, dest);
@@ -260,7 +260,7 @@ CommunicationStatus ParticleType::Send(const CommunicationRecord *cr, const int 
 }
     
 CommunicationStatus ParticleType::BroadCast(const CommunicationRecord *cr,
-                                            const int                  root,
+                                            int                  root,
                                             MPI_Comm                   comm)
 {
     CommunicationStatus cs = cr->bcast_data(comm);
@@ -327,7 +327,7 @@ CommunicationStatus ParticleType::BroadCast(const CommunicationRecord *cr,
     return cs;
 }
 
-CommunicationStatus ParticleType::Receive(const CommunicationRecord *cr, const int src)
+CommunicationStatus ParticleType::Receive(const CommunicationRecord *cr, int src)
 {
     CommunicationStatus cs = CommunicationStatus::OK;
     cs = id_.Receive(cr, src);

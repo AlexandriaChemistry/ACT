@@ -206,7 +206,7 @@ class ParticleType
      * \param[in] cr   communication record
      * \param[in] dest Destination processor
      */
-    CommunicationStatus Send(const CommunicationRecord *cr, const int dest);
+    CommunicationStatus Send(const CommunicationRecord *cr, int dest);
     
     /*! \brief Broadcast my data
      * \param[in] cr   communication record
@@ -214,14 +214,14 @@ class ParticleType
      * \param[in] comm MPI communicator
      */
     CommunicationStatus BroadCast(const CommunicationRecord *cr,
-                                  const int                  root,
+                                  int                  root,
                                   MPI_Comm                   comm);
 
     /*! \brief Receive my data
      * \param[in] cr  communication record
      * \param[in] src Source processor
      */
-    CommunicationStatus Receive(const CommunicationRecord *cr, const int src);
+    CommunicationStatus Receive(const CommunicationRecord *cr, int src);
 
  private:
     //! My identifier

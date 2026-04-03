@@ -62,7 +62,7 @@ const std::map<CombRule, const std::string> combRuleName =
         { CombRule::GeneralizedMean, "GeneralizedMean" }
     };
 
-const std::string &combinationRuleName(const CombRule c)
+const std::string &combinationRuleName(CombRule c)
 {
     const auto crfind = combRuleName.find(c);
     if (crfind == combRuleName.end())
@@ -96,7 +96,7 @@ ParamCombRule::ParamCombRule(const std::string &rule)
     rule_ = c;
 }
 
-double combineTwo(const CombRule comb, const double x1, const double x2)
+double combineTwo(CombRule comb, double x1, double x2)
 {
     switch (comb)
     {
@@ -148,7 +148,7 @@ double combineTwo(const CombRule comb, const double x1, const double x2)
     return 0;
 }
 
-double combineHogervorstSigma(const double e1, const double e2, const double g1, const double g2, const double s1, const double s2)
+double combineHogervorstSigma(double e1, double e2, double g1, double g2, double s1, double s2)
 {
     if (g1 <= 6 || g2 <= 6)
     {
@@ -165,7 +165,7 @@ double combineHogervorstSigma(const double e1, const double e2, const double g1,
     return std::pow((std::sqrt( tempi * tempj ) )* std::abs(gam12 - 6) / (gam12 * eps12), 1.0/6.0);
 }
 
-double combineWaldmanEpsilon(const double e1, const double e2, const double s1, const double s2)
+double combineWaldmanEpsilon(double e1, double e2, double s1, double s2)
 {
     // Qi2106 Eqn 3.
     const double s13 = s1*s1*s1;
@@ -184,7 +184,7 @@ double combineWaldmanEpsilon(const double e1, const double e2, const double s1, 
  * \param[in] exponent Power to use
  * \return the combined value
  */
-double combineGeneralizedMean(const double x1, const double x2, const double exponent)
+double combineGeneralizedMean(double x1, double x2, double exponent)
 {
     // See https://en.wikipedia.org/wiki/Generalized_mean
     // The paper by Hohm points out that for very small exponents,
@@ -207,17 +207,17 @@ double combineGeneralizedMean(const double x1, const double x2, const double exp
  * \param[in] s2 Second sigma
  * \return The combined value
  */
-static double combineMasonGamma(const double g1, const double g2, const double s1, const double s2)
+static double combineMasonGamma(double g1, double g2, double s1, double s2)
 {
     const double sigmaIJ = combineTwo(CombRule::Geometric, s1, s2);
     return sigmaIJ * (0.5*((g1/s1)+(g2/s2)));
 }
 
-void evalCombinationRule(const Potential               ftype,
+void evalCombinationRule(Potential               ftype,
                          const CombRuleSet            &combrule,
                          const ForceFieldParameterMap &ivdw,
                          const ForceFieldParameterMap &jvdw,
-                         const bool                    includePair,
+                         bool                    includePair,
                          ForceFieldParameterMap       *pmap)
 {
     // Fudge unit

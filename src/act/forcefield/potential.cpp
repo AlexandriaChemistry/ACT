@@ -125,7 +125,7 @@ std::map<Potential, PotentialProperties> potprops = {
     { Potential::VSITE3OUTS, { "VSITE3OUTS", F_VSITE3OUTS, { "vs3outs_a", "vs3outs_c" }, "0", "" } }
 };
 
-const std::string &potentialToString(const Potential p)
+const std::string &potentialToString(Potential p)
 {
     const auto pp = potprops.find(p);
     if (potprops.end() == pp)
@@ -135,7 +135,7 @@ const std::string &potentialToString(const Potential p)
     return pp->second.name;
 }
 
-const std::vector<const char *> potentialToParameterName(const Potential p)
+const std::vector<const char *> potentialToParameterName(Potential p)
 {
     const auto pp = potprops.find(p);
     if (potprops.end() == pp)
@@ -145,7 +145,7 @@ const std::vector<const char *> potentialToParameterName(const Potential p)
     return pp->second.param;
 }
 
-const std::string &potentialToEnergy(const Potential p)
+const std::string &potentialToEnergy(Potential p)
 {
     const auto pp = potprops.find(p);
     if (potprops.end() == pp)
@@ -155,7 +155,7 @@ const std::string &potentialToEnergy(const Potential p)
     return pp->second.energy;
 }
 
-const std::string &potentialToPreFactor(const Potential p)
+const std::string &potentialToPreFactor(Potential p)
 {
     const auto pp = potprops.find(p);
     if (potprops.end() == pp)
@@ -192,7 +192,7 @@ bool stringToPotential(const std::string &pname, Potential *p)
     return false;
 }
 
-Potential defaultPotential(const InteractionType itype)
+Potential defaultPotential(InteractionType itype)
 {
     const std::map<InteractionType, Potential> special = {
         { InteractionType::POSITION_RESTRAINT, Potential::POSITION_RESTRAINT }
@@ -204,7 +204,7 @@ Potential defaultPotential(const InteractionType itype)
     return special.at(itype);
 }
 
-int potentialToGromacsType(const Potential p)
+int potentialToGromacsType(Potential p)
 {
     const auto ppp = potprops.find(p);
     if (potprops.end() != ppp)
@@ -214,7 +214,7 @@ int potentialToGromacsType(const Potential p)
     return -1;
 }
 
-const char *potentialToGromacsString(const Potential p)
+const char *potentialToGromacsString(Potential p)
 {
     const int ftype = potentialToGromacsType(p);
     if (-1 == ftype)
@@ -239,7 +239,7 @@ Potential chargeDistributionTypeToPotential(const ChargeDistributionType c)
     return cp.find(c)->second;
 }
 
-ChargeDistributionType potentialToChargeDistributionType(const Potential p)
+ChargeDistributionType potentialToChargeDistributionType(Potential p)
 {
     ChargeDistributionType ct = ChargeDistributionType::Point;
     for (const auto &cccp : cp)

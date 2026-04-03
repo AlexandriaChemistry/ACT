@@ -67,8 +67,8 @@ class ForceFieldTable
      */
     ForceFieldTable(FILE              *fp, 
                     const ForceField  *pd,
-                    const int          ntrain,
-                    const bool         printSigma = true) : fp_(fp), pd_(pd), ntrain_(ntrain), printSigma_(printSigma) {}
+                    int          ntrain,
+                    bool         printSigma = true) : fp_(fp), pd_(pd), ntrain_(ntrain), printSigma_(printSigma) {}
 
     /*! \brief
      * Generates a LaTeX table containing the subtypes
@@ -84,7 +84,7 @@ class ForceFieldTable
      * \param[in] itype The interaction type
      * \param[in] info  Text to add to the caption of the table
      */
-    void itype_table(const InteractionType itype,
+    void itype_table(InteractionType itype,
                      const std::string &info);
 
 };

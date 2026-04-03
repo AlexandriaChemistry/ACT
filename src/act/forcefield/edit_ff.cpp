@@ -59,14 +59,14 @@ namespace alexandria
 //! \brief Set parameter limits
 static void setMinMaxMut(FILE *fp,
                          ForceFieldParameter *pp,
-                         const bool bSetMin, const double pmin,
-                         const bool bSetVal, double pval,
-                         const bool bSetMax, const double pmax,
-                         const bool bSetMut, const std::string &mutability,
-                         const bool bScale,  const double scale,
-                         const bool force,   const bool stretch,
+                         bool bSetMin, double pmin,
+                         bool bSetVal, double pval,
+                         bool bSetMax, double pmax,
+                         bool bSetMut, const std::string &mutability,
+                         bool bScale,  double scale,
+                         bool force,   bool stretch,
                          const std::string &particleId,
-                         const bool bLimits, const double factor)
+                         bool bLimits, double factor)
 {
     if (bSetVal && bSetMin)
     {
@@ -203,13 +203,13 @@ static void setMinMaxMut(FILE *fp,
 //! \brief Change parameters for one particle
 static void modifyParticle(const std::string &paramType,
                            ParticleType      *particle,
-                           const bool bSetMin, const double pmin,
-                           const bool bSetVal, const double pval,
-                           const bool bSetMax, const double pmax,
-                           const bool bSetMut, const std::string &mutability,
-                           const bool bScale,  const double scale,
-                           const bool force,   const bool stretch,
-                           const bool bLimit,  const double factor)
+                           bool bSetMin, double pmin,
+                           bool bSetVal, double pval,
+                           bool bSetMax, double pmax,
+                           bool bSetMut, const std::string &mutability,
+                           bool bScale,  double scale,
+                           bool force,   bool stretch,
+                           bool bLimit,  double factor)
 {
     // Check particletypes instead
     if (particle->hasParameter(paramType))
@@ -243,16 +243,16 @@ static void modifyParticle(const std::string &paramType,
 
 //! \brief Modify parameters for one interaction
 static void modifyInteraction(ForceField *pd,
-                              const InteractionType itype,
+                              InteractionType itype,
                               const std::string &paramType,
                               const Identifier &pId,
-                              const bool bSetMin, const double pmin,
-                              const bool bSetVal, const double pval,
-                              const bool bSetMax, const double pmax,
-                              const bool bSetMut, const std::string &mutability,
-                              const bool bScale,  const double scale,
-                              const bool force,   const bool stretch,
-                              const bool bLimit,  const double factor)
+                              bool bSetMin, double pmin,
+                              bool bSetVal, double pval,
+                              bool bSetMax, double pmax,
+                              bool bSetMut, const std::string &mutability,
+                              bool bScale,  double scale,
+                              bool force,   bool stretch,
+                              bool bLimit,  double factor)
 {
     auto fs = pd->findForces(itype)->parameters();
     for(auto &ffs : *fs)
@@ -333,13 +333,13 @@ static void removeParticles(ForceField *pd,
 static void modifyForceField(ForceField *pd,
                              const std::string &paramType,
                              const std::string &particle,
-                             const bool bSetMin, const double pmin,
-                             const bool bSetVal, const double pval,
-                             const bool bSetMax, const double pmax,
-                             const bool bSetMut, const std::string &mutability,
-                             const bool bScale,  const double scale,
-                             const bool force,   const bool stretch,
-                             const bool bLimit,  const double factor)
+                             bool bSetMin, double pmin,
+                             bool bSetVal, double pval,
+                             bool bSetMax, double pmax,
+                             bool bSetMut, const std::string &mutability,
+                             bool bScale,  double scale,
+                             bool force,   bool stretch,
+                             bool bLimit,  double factor)
 {
     if (!(bSetVal || bSetMin || bSetMax || bSetMut || stretch || bScale || bLimit))
     {
@@ -556,7 +556,7 @@ static void plotInteractions(MsgHandler        *msghandler,
 static void copy_missing(const ForceField  *pdref,
                          ForceField        *pdout,
                          const std::string &analyze,
-                         const bool         replace)
+                         bool         replace)
 {
     bool found;
     const auto &myset = findInteractionMap(analyze, &found);
@@ -619,7 +619,7 @@ static void implant_values(const ForceField  *pdref,
                            const std::string &analyze,
                            const std::string &particle,
                            const std::string &parameter,
-                           const bool         verbose)
+                           bool         verbose)
 {
     bool found;
     const auto &myset = findInteractionMap(analyze, &found);

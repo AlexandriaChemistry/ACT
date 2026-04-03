@@ -359,7 +359,7 @@ class ForceField
      * \param[in] bcast Whether or not to use boradcast functionality
      * \param[in] msgHandler MsgHandler for debug output
      */
-    void sendToHelpers(const CommunicationRecord *cr, const int root, const bool bcast=true,
+    void sendToHelpers(const CommunicationRecord *cr, int root, bool bcast=true,
                        MsgHandler *msgHandler=nullptr);
     
     /*! Spread eemprop to a helper node
@@ -367,7 +367,7 @@ class ForceField
      * \param[in] dest Destination node
      * \param[in] msgHandler MsgHandler for debug output
      */
-    void sendEemprops(const CommunicationRecord *cr, const int dest,
+    void sendEemprops(const CommunicationRecord *cr, int dest,
                       MsgHandler *msgHandler=nullptr);
     
     /*! Receive eemprop from someone
@@ -375,7 +375,7 @@ class ForceField
      * \param[in] src Source node
      * \param[in] msgHandler MsgHandler for debug output
      */
-    void receiveEemprops(const CommunicationRecord *cr, const int src,
+    void receiveEemprops(const CommunicationRecord *cr, int src,
                          MsgHandler *msgHandler=nullptr);
     
     /*! Spread mutable particle properties to a helper node
@@ -383,7 +383,7 @@ class ForceField
      * \param[in] dest Destination node
      * \param[in] msgHandler MsgHandler for debug output
      */
-    void sendParticles(const CommunicationRecord *cr, const int dest,
+    void sendParticles(const CommunicationRecord *cr, int dest,
                        MsgHandler *msgHandler=nullptr);
     
     /*! Receive particles from someone
@@ -391,7 +391,7 @@ class ForceField
      * \param[in] src Source node
      * \param[in] msgHandler MsgHandler for debug output
      */
-    void receiveParticles(const CommunicationRecord *cr, const int src,
+    void receiveParticles(const CommunicationRecord *cr, int src,
                           MsgHandler *msgHandler=nullptr);
     
     /*! \brief BroadCast a whole force field
@@ -402,13 +402,13 @@ class ForceField
      * \return The status of the whole thing
      */
     CommunicationStatus BroadCast(const CommunicationRecord *cr,
-                                  const int                  root,
+                                  int                  root,
                                   MPI_Comm                   comm,
                                   MsgHandler                *msgHandler=nullptr);
         
-    CommunicationStatus Send(const CommunicationRecord *cr, const int dest);
+    CommunicationStatus Send(const CommunicationRecord *cr, int dest);
     
-    CommunicationStatus Receive(const CommunicationRecord *cr, const int src,
+    CommunicationStatus Receive(const CommunicationRecord *cr, int src,
                                 MsgHandler *msgHandler=nullptr);
     
     //! \brief Check internal consistency of data structures

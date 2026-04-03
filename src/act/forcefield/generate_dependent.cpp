@@ -40,8 +40,8 @@ namespace alexandria
  *                  at least one of the two constituting parameters changed will be reset.
  */
 static void generateParameterPairs(ForceField      *pd,
-                                   const InteractionType  itype,
-                                   const bool             force)
+                                   InteractionType  itype,
+                                   bool             force)
 {
     // Do not crash if e.g. there is no VDWCORRECTION.
     if (!pd->interactionPresent(itype))
@@ -131,7 +131,7 @@ static void generateParameterPairs(ForceField      *pd,
  * \param[in] force If set, all interaction parameters will be recomputed, if not only the ones for which 
  *                  at least one of the two constituting parameters changed will be reset.
  */
-static void generateCoulombParameterPairs(ForceField *pd, const bool force)
+static void generateCoulombParameterPairs(ForceField *pd, bool force)
 {
     auto forcesCoul = pd->findForces(InteractionType::ELECTROSTATICS);
     
@@ -196,7 +196,7 @@ static void generateCoulombParameterPairs(ForceField *pd, const bool force)
     // Phew, we're done!
 }
     
-void generateDependentParameter(ForceField *pd, const bool force)
+void generateDependentParameter(ForceField *pd, bool force)
 {
     generateParameterPairs(pd, InteractionType::VDW, force);
     generateParameterPairs(pd, InteractionType::VDWCORRECTION, force);

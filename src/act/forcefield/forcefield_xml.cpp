@@ -186,7 +186,7 @@ static const char *exml_names(xmlEntry xml)
 }
 
 //! \return whether the string is nullptr
-static bool NNlow(xmlBuffer *xbuf, const xmlEntry xml, const bool obligatory)
+static bool NNlow(xmlBuffer *xbuf, const xmlEntry xml, bool obligatory)
 {
     if (xbuf->find(xml) == xbuf->end())
     {
@@ -735,7 +735,7 @@ static void addXmlForceField(xmlNodePtr parent, const ForceField *pd)
 
 void writeForceField(const std::string &fileName,
                   const ForceField     *pd,
-                  const bool           compress)
+                  bool           compress)
 {
     xmlDocPtr   doc;
     xmlDtdPtr   dtd;

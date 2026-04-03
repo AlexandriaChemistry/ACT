@@ -82,15 +82,15 @@ class ForceFieldParameter
      *                        the value is outside the bounds
      */
     ForceFieldParameter(const std::string &unit,
-                        const double       value,
-                        const double       uncertainty,
-                        const unsigned int ntrain,
-                        const double       minimum,
-                        const double       maximum,
+                        double       value,
+                        double       uncertainty,
+                        unsigned int ntrain,
+                        double       minimum,
+                        double       maximum,
                         const Mutability   mutability,
-                        const bool         strict,
-                        const bool         nonNegative,
-                        const bool         resetValue=false)
+                        bool         strict,
+                        bool         nonNegative,
+                        bool         resetValue=false)
                          : 
     unit_(unit), value_(value), originalValue_ (value),
     uncertainty_(uncertainty), originalUncertainty_(uncertainty),
@@ -145,7 +145,7 @@ class ForceFieldParameter
     /*! \brief Set the index
      * \param[in] index The index
      */
-    void setIndex(const size_t index) { index_ = index; }
+    void setIndex(size_t index) { index_ = index; }
     
     //! \brief Return current parameter value
     double value() const { return value_; }
@@ -162,11 +162,11 @@ class ForceFieldParameter
      * Will throw an exception if the strict flag is true and the value
      * is out of range, or the variable is alltogher fixed,
      */
-    void setValue(const double value);
+    void setValue(double value);
     /*! \brief Set the value ignoring mutability and bounds
      * \param[in] value The new value
      */    
-    void forceSetValue(const double value);
+    void forceSetValue(double value);
     //! \brief Return the current uncertainty in this value
     double uncertainty() const { return uncertainty_; }
     
@@ -184,7 +184,7 @@ class ForceFieldParameter
      * \throws an exception if the strict flag is true and the
      * variable is not mutable.
      */ 
-    void setNtrain(const unsigned int ntrain);
+    void setNtrain(unsigned int ntrain);
     
     /*! \brief Add one to the number of training points
      * \throws when the parameter is not mutable and strict flag is true
@@ -201,7 +201,7 @@ class ForceFieldParameter
      * \throws an exception if the strict flag is true and the
      * variable is not mutable.
      */
-    void setUncertainty(const double uncertainty);
+    void setUncertainty(double uncertainty);
 
     //! \brief Return minimum allowed value
     double minimum() const { return minimum_; }
@@ -210,7 +210,7 @@ class ForceFieldParameter
      * \param[in] minimum the new value
      * \return true if successful, false otherwise
      */
-    bool setMinimum(const double minimum)
+    bool setMinimum(double minimum)
     { 
         if (!nonNegative_ || minimum >= 0)
         {
@@ -238,7 +238,7 @@ class ForceFieldParameter
     double maximum() const { return maximum_; }
     
     //! \brief Set maximum allowed value irrespective of mutability
-    void setMaximum(const double maximum) { maximum_ = maximum; }
+    void setMaximum(double maximum) { maximum_ = maximum; }
 
     //! \return whether the parameter was recently updated
     bool updated() const { return updated_; }
@@ -246,7 +246,7 @@ class ForceFieldParameter
     /*! \brief Change the updated state
      * \param[in] updated The new value
      */
-    void setUpdated(const bool updated) { updated_ = updated; }
+    void setUpdated(bool updated) { updated_ = updated; }
 
     //! \brief Return how this parameter may be changed
     Mutability mutability() const { return mutability_; }
@@ -274,7 +274,7 @@ class ForceFieldParameter
      * \param[in] cr   Communication data structure
      * \param[in] dest Processor id to send the data to
      */
-    CommunicationStatus Send(const CommunicationRecord *cr, const int dest)  const;
+    CommunicationStatus Send(const CommunicationRecord *cr, int dest)  const;
 
     /*! \brief Bcast contents to and from other processors
      * \param[in] cr   Communication data structure
@@ -282,14 +282,14 @@ class ForceFieldParameter
      * \param[in] comm Communication structure
      */
     CommunicationStatus BroadCast(const CommunicationRecord *cr,
-                                  const int                  root,
+                                  int                  root,
                                   MPI_Comm                   comm);
 
     /*! \brief Receive contents from another processor
      * \param[in] cr  Communication data structure
      * \param[in] src Processor id to receive the data from
      */
-    CommunicationStatus Receive(const CommunicationRecord *cr, const int src);
+    CommunicationStatus Receive(const CommunicationRecord *cr, int src);
 
  private:
     //! Update the internal value by converting units

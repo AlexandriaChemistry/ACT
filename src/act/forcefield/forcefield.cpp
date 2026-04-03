@@ -347,7 +347,7 @@ void ForceField::addSymcharges(const std::string &central,
     }
 }
 
-CommunicationStatus ForceField::Send(const CommunicationRecord *cr, const int dest)
+CommunicationStatus ForceField::Send(const CommunicationRecord *cr, int dest)
 {
     CommunicationStatus cs = CommunicationStatus::OK;
     if (CommunicationStatus::SEND_DATA == cr->send_data(dest))
@@ -402,7 +402,7 @@ CommunicationStatus ForceField::Send(const CommunicationRecord *cr, const int de
 }
 
 CommunicationStatus ForceField::BroadCast(const CommunicationRecord *cr,
-                                       const int                  root,
+                                       int                  root,
                                        MPI_Comm                   comm,
                                        MsgHandler                *msgHandler)
 {
@@ -504,7 +504,7 @@ CommunicationStatus ForceField::BroadCast(const CommunicationRecord *cr,
     return cs;
 }
 
-CommunicationStatus ForceField::Receive(const CommunicationRecord *cr, const int src,
+CommunicationStatus ForceField::Receive(const CommunicationRecord *cr, int src,
                                         MsgHandler *msgHandler)
 {
     CommunicationStatus cs = CommunicationStatus::OK;
@@ -583,7 +583,7 @@ CommunicationStatus ForceField::Receive(const CommunicationRecord *cr, const int
     return cs;
 }
 
-void ForceField::sendParticles(const CommunicationRecord *cr, const int dest,
+void ForceField::sendParticles(const CommunicationRecord *cr, int dest,
                                MsgHandler *msgHandler)
 {
     if (CommunicationStatus::SEND_DATA == cr->send_data(dest))
@@ -613,7 +613,7 @@ void ForceField::sendParticles(const CommunicationRecord *cr, const int dest,
 }
 
 
-void ForceField::receiveParticles(const CommunicationRecord *cr, const int src,
+void ForceField::receiveParticles(const CommunicationRecord *cr, int src,
                                   MsgHandler *msgHandler)
 {
     if (CommunicationStatus::RECV_DATA == cr->recv_data(src))
@@ -651,7 +651,7 @@ static std::vector<InteractionType> eemlist =
       InteractionType::ELECTRONEGATIVITYEQUALIZATION
     };
 
-void ForceField::sendEemprops(const CommunicationRecord *cr, const int dest,
+void ForceField::sendEemprops(const CommunicationRecord *cr, int dest,
                               MsgHandler *msgHandler)
 {
     if (CommunicationStatus::SEND_DATA == cr->send_data(dest))
@@ -678,7 +678,7 @@ void ForceField::sendEemprops(const CommunicationRecord *cr, const int dest,
     cr->send_done(dest);
 }
 
-void ForceField::receiveEemprops(const CommunicationRecord *cr, const int src,
+void ForceField::receiveEemprops(const CommunicationRecord *cr, int src,
                                  MsgHandler *msgHandler)
 {
     if (CommunicationStatus::RECV_DATA == cr->recv_data(src))
@@ -712,7 +712,7 @@ void ForceField::receiveEemprops(const CommunicationRecord *cr, const int src,
                        "Communication did not end correctly");
 }
 
-void ForceField::sendToHelpers(const CommunicationRecord *cr, const int root, const bool bcast,
+void ForceField::sendToHelpers(const CommunicationRecord *cr, int root, bool bcast,
                                MsgHandler *msgHandler)
 {
     if (bcast && msgHandler)

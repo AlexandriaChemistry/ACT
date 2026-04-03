@@ -91,7 +91,7 @@ public:
 typedef std::map<std::string, ParamCombRule> CombRuleSet;
     
 //! \return string corresponding to CombRule c
-const std::string &combinationRuleName(const CombRule c);
+const std::string &combinationRuleName(CombRule c);
 
 /*! \brief Determine CombRule from name
  * \param[in]  name The combination rule name
@@ -107,7 +107,7 @@ bool combinationRuleRule(const std::string &name, CombRule *cr);
  * \param[in] exponent Power to use
  * \return the combined value
  */
-double combineGeneralizedMean(const double x1, const double x2, const double exponent);
+double combineGeneralizedMean(double x1, double x2, double exponent);
 
 /*! \brief Execute a simple combination rule
  * \param[in] comb The combination rule to apply
@@ -115,7 +115,7 @@ double combineGeneralizedMean(const double x1, const double x2, const double exp
  * \param[in] x2   Second value
  * \return The combined value
  */
-double combineTwo(const CombRule comb, const double x1, const double x2);
+double combineTwo(CombRule comb, double x1, double x2);
 
 /*! \brief Execute a combination rule according to Waldman & Hagler https://doi.org/10.1002/jcc.540140909
  * \param[in] e1 First epsilon
@@ -124,7 +124,7 @@ double combineTwo(const CombRule comb, const double x1, const double x2);
  * \param[in] s2 Second sigma
  * \return The combined value
  */
-double combineWaldmanEpsilon(const double e1, const double e2, const double s1, const double s2);
+double combineWaldmanEpsilon(double e1, double e2, double s1, double s2);
 
 /*! \brief Execute a combination rule according to Hogervorst1971a https://doi.org/10.1016/0031-8914(71)90138-8
  * \param[in] e1 First epsilon
@@ -135,7 +135,7 @@ double combineWaldmanEpsilon(const double e1, const double e2, const double s1, 
  * \param[in] s2 Second sigma
  * \return The combined value
  */
-double combineHogervorstSigma(const double e1, const double e2, const double g1, const double g2, const double s1, const double s2);
+double combineHogervorstSigma(double e1, double e2, double g1, double g2, double s1, double s2);
 
 /*! \brief Generate combined force field parameter map
  * \param[in] ftype     The force function ACT style
@@ -145,11 +145,11 @@ double combineHogervorstSigma(const double e1, const double e2, const double g1,
  * \param[in] same      Should be true if i and j are the same particle
  * \param[out] pmap     Force Field Parameter Map with pair entries
  */
-void evalCombinationRule(const Potential               ftype,
+void evalCombinationRule(Potential               ftype,
                          const CombRuleSet            &combrules,
                          const ForceFieldParameterMap &ivdw,
                          const ForceFieldParameterMap &jvdw,
-                         const bool                    same,
+                         bool                    same,
                          ForceFieldParameterMap       *pmap);
 
 } // namespace alexandria

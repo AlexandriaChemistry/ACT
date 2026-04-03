@@ -44,7 +44,7 @@ namespace alexandria
      * \param[inout] pd The force field structure
      * \param[in]    force Update all parameters in the matrices
      */
-    void generateDependentParameter(ForceField *pd, const bool force = false);
+    void generateDependentParameter(ForceField *pd, bool force = false);
 
 }
 #endif

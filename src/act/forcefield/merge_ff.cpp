@@ -62,7 +62,7 @@ static void merge_parameter(const std::vector<alexandria::ForceField> &pds,
                             const alexandria::InteractionType          iType,
                             const std::string                         &parameter,
                             alexandria::ForceField                    *pdout,
-                            const double                               limits)
+                            double                               limits)
 {
     std::vector<gmx_stats> lsq;
     std::vector<int>       ntrain;

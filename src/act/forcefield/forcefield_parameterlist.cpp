@@ -228,7 +228,7 @@ void ForceFieldParameterList::dump(FILE *fp) const
     }
 }
 
-CommunicationStatus ForceFieldParameterList::Send(const CommunicationRecord *cr, const int dest) const
+CommunicationStatus ForceFieldParameterList::Send(const CommunicationRecord *cr, int dest) const
 {
     CommunicationStatus cs = CommunicationStatus::OK;
     if (CommunicationStatus::SEND_DATA == cr->send_data(dest))
@@ -282,7 +282,7 @@ CommunicationStatus ForceFieldParameterList::Send(const CommunicationRecord *cr,
 }
 
 CommunicationStatus ForceFieldParameterList::BroadCast(const CommunicationRecord *cr,
-                                                       const int                  root,
+                                                       int                  root,
                                                        MPI_Comm                   comm)
 {
     CommunicationStatus cs = cr->bcast_data(comm);
@@ -424,7 +424,7 @@ CommunicationStatus ForceFieldParameterList::BroadCast(const CommunicationRecord
     return cs;
 }
 
-CommunicationStatus ForceFieldParameterList::Receive(const CommunicationRecord *cr, const int src)
+CommunicationStatus ForceFieldParameterList::Receive(const CommunicationRecord *cr, int src)
 {
     CommunicationStatus cs = CommunicationStatus::OK;
     if (CommunicationStatus::RECV_DATA == cr->recv_data(src))
