@@ -1562,8 +1562,11 @@ class ActOpenMMSim:
                 if dli != integrator:
                     self.txt.write("Unsupported integrator %s for polarizable system, will use %s instead\n"
                                    % ( integrator, dli ))
-                self.integrator = DrudeLangevinIntegrator(self.temperature_c, friction_c, temperature_s,
-                                                          self.sim_params.getFloat('friction_s'), self.dt)
+                self.integrator = DrudeLangevinIntegrator(self.temperature_c*kelvin,
+                                                          self.sim_params.getFloat('friction_c')/picosecond,
+                                                          temperature_s*kelvin,
+                                                          self.sim_params.getFloat('friction_s')/picosecond,
+                                                          self.dt*picosecond)
                 self.integrator.setMaxDrudeDistance(self.maxDrudeDist)
             if self.useAndersenThermostat and not "DrudeSCFIntegrator" == integrator:
                 self.txt.write("Andersen thermostat will be turned off since %s contains a built-in thermostat.\n"
