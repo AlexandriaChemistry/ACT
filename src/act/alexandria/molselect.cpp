@@ -125,7 +125,7 @@ const IMolSelect *MolSelect::findIupac(const std::string &iupac) const
     }
 }
 
-bool MolSelect::status(const std::string iupac, iMolSelect *ims) const
+bool MolSelect::status(const std::string &iupac, iMolSelect *ims) const
 {
     auto imi = findIupac(iupac);
 

@@ -266,7 +266,7 @@ real sub_xcm(std::vector<gmx::RVec>       *x,
 
 void add_xcm(std::vector<gmx::RVec>       *x,
              const std::vector<int>       &index,
-             gmx::RVec                    &xcm)
+             const gmx::RVec              &xcm)
 {
     size_t n  = x->size();
     if (!index.empty())

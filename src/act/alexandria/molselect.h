@@ -101,7 +101,7 @@ public:
      * \param[out] ims   The data set
      * \return true if found, false otherwise
      */    
-    bool status(const std::string iupac, iMolSelect *ims) const;
+    bool status(const std::string &iupac, iMolSelect *ims) const;
 
     //! \return the vector of selected compounds
     const std::vector<IMolSelect> &imolSelect() const { return ims_; }

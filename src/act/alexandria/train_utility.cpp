@@ -187,7 +187,7 @@ static void print_lsq_set(FILE *fp, const gmx_stats &lsq)
 
 //! \brief Add symbol information to xvg file
 static void xvgr_symbolize(FILE                           *xvgf,
-                           const std::vector<std::string>  leg,
+                           const std::vector<std::string> &leg,
                            const gmx_output_env_t         *oenv)
 {
     xvgrLegend(xvgf, leg, oenv);
@@ -283,7 +283,7 @@ TrainForceFieldPrinter::TrainForceFieldPrinter()
 
 void TrainForceFieldPrinter::analyse_multipoles(MsgHandler                                      *msg_handler,
                                                 const std::vector<alexandria::ACTMol>::iterator &mol,
-                                                std::map<MolPropObservable, double>              toler,
+                                                const std::map<MolPropObservable, double>       &toler,
                                                 const ForceField                                *pd,
                                                 const ForceComputer                             *forceComputer)
 {
@@ -347,7 +347,7 @@ void TrainForceFieldPrinter::analyse_multipoles(MsgHandler                      
                 }
                 double rms = std::sqrt(delta/Tcalc.size());
                 std::string flag("");
-                if (rms > toler[mpo])
+                if (rms > toler.at(mpo))
                 {
                     flag = " MULTI";
                 }
@@ -368,7 +368,7 @@ static void print_corr(const char                    *outfile,
                        const char                    *title,
                        const char                    *xaxis,
                        const char                    *yaxis, 
-                       std::map<iMolSelect, qtStats> &stats,
+                       const std::map<iMolSelect, qtStats> &stats,
                        const gmx_output_env_t        *oenv)
 {
     std::vector<std::string> eprnm;
@@ -408,7 +408,7 @@ static void print_corr(const char                      *outfile,
                        const char                      *title,
                        const char                      *xaxis,
                        const char                      *yaxis, 
-                       std::map<iMolSelect, gmx_stats> &stats,
+                       const std::map<iMolSelect, gmx_stats> &stats,
                        const gmx_output_env_t          *oenv)
 {
     std::vector<std::string> eprnm;
@@ -599,7 +599,7 @@ void TrainForceFieldPrinter::analysePolarisability(gmx::TextWriter     *tw,
 
 void TrainForceFieldPrinter::printAtoms(gmx::TextWriter              *tw,
                                         JsonTree                     *jtree,
-                                        alexandria::ACTMol           *mol,
+                                        const alexandria::ACTMol     *mol,
                                         const std::vector<gmx::RVec> &coords,
                                         const std::vector<gmx::RVec> &forces)
 {

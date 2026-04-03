@@ -129,13 +129,13 @@ private:
     //! \brief Analyses dipoles, quadrupoles, etc.
     void analyse_multipoles(MsgHandler                                      *msg_handler,
                             const std::vector<alexandria::ACTMol>::iterator &mol,
-                            std::map<MolPropObservable, double>              toler,
+                            const std::map<MolPropObservable, double>       &toler,
                             const ForceField                                *pd,
                             const ForceComputer                             *forceComputer);
     //! \brief And the atoms.
     void printAtoms(gmx::TextWriter              *tw,
                     JsonTree                     *jtree,
-                    alexandria::ACTMol           *mol,
+                    const alexandria::ACTMol     *mol,
                     const std::vector<gmx::RVec> &coords,
                     const std::vector<gmx::RVec> &forces);
     

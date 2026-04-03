@@ -52,7 +52,7 @@ namespace alexandria
  * \param[in]  symm_string Optional (may be nullptr) user provided list
  * \param[out] sym_charges The final list
  */
-void get_symmetrized_charges(Topology         *topology,
+void get_symmetrized_charges(const Topology   *topology,
                              const ForceField *pd,
                              const char       *symm_string,
                              std::vector<int> *sym_charges);
