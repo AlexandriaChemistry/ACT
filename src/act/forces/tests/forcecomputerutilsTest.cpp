@@ -125,6 +125,41 @@ TEST_F (ForceComputerUtilsTest, ZeroAngle)
     testBondAngle(x);
 }
 
+TEST_F (ForceComputerUtilsTest, FortyFiveDegreesAngle)
+{
+    // r_ij = xi - xj = (1,0,0), r_kj = xk - xj = (1,1,0)
+    // cos_angle = 1/sqrt(2), angle = 45 degrees
+    std::vector<gmx::RVec> x = {
+        { 1, 0, 0 },
+        { 0, 0, 0 },
+        { 1, 1, 0 }
+    };
+    testBondAngle(x);
+}
+
+TEST_F (ForceComputerUtilsTest, OneThirtyFiveDegreesAngle)
+{
+    // r_ij = xi - xj = (1,0,0), r_kj = xk - xj = (-1,1,0)
+    // cos_angle = -1/sqrt(2), angle = 135 degrees
+    std::vector<gmx::RVec> x = {
+        { 1, 0, 0 },
+        { 0, 0, 0 },
+        { -1, 1, 0 }
+    };
+    testBondAngle(x);
+}
+
+TEST_F (ForceComputerUtilsTest, ArbitraryAngle)
+{
+    // r_ij = (1,0,0), r_kj = (1,1,1), cos = 1/sqrt(3), angle ~ 54.7 degrees
+    std::vector<gmx::RVec> x = {
+        { 1, 0, 0 },
+        { 0, 0, 0 },
+        { 1, 1, 1 }
+    };
+    testBondAngle(x);
+}
+
 TEST_F (ForceComputerUtilsTest, DihedralAnglePbcNone)
 {
     std::vector<gmx::RVec> x = {
@@ -134,6 +169,43 @@ TEST_F (ForceComputerUtilsTest, DihedralAnglePbcNone)
         { 1, 1, 1 }
     };
     testDihedralAngle(x);
+}
+
+TEST_F (ForceComputerUtilsTest, DihedralAngleZeroDegrees)
+{
+    // All four atoms in the same plane (XZ plane), cis configuration → 0 degree dihedral
+    std::vector<gmx::RVec> x = {
+        { 0, 0, 0 },
+        { 0, 0, 1 },
+        { 1, 0, 1 },
+        { 1, 0, 0 }
+    };
+    testDihedralAngle(x);
+}
+
+TEST_F (ForceComputerUtilsTest, DihedralAngle180Degrees)
+{
+    // Atoms in two planes meeting at 180 degrees (trans planar)
+    std::vector<gmx::RVec> x = {
+        {  1, 0, 0 },
+        {  0, 0, 0 },
+        {  0, 0, 1 },
+        { -1, 0, 1 }
+    };
+    testDihedralAngle(x);
+}
+
+TEST_F (ForceComputerUtilsTest, DihedralAngleAlternativeOrdering)
+{
+    // Reversed atom ordering relative to DihedralAnglePbcNone; gives +pi/2
+    std::vector<gmx::RVec> x = {
+        { 0,  0, 0 },
+        { 0,  0, 1 },
+        { 0,  1, 1 },
+        { 1,  1, 1 }
+    };
+    std::vector<gmx::RVec> xrev = { x[3], x[1], x[2], x[0] };
+    testDihedralAngle(xrev);
 }
 
 }  // namespace

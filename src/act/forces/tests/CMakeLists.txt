@@ -41,6 +41,7 @@ gmx_add_unit_test(
     # files with code for tests
     forcecomputerutilsTest.cpp
     forceComputerImplementationTest.cpp
+    forceComputerTest.cpp
     vsiteTest.cpp
     # pseudo-library for code for alexandria
     )
