@@ -50,7 +50,7 @@
 namespace alexandria
 {
 
-QgenAcm::QgenAcm(ForceField                 *pd,
+QgenAcm::QgenAcm(const ForceField           *pd,
                  const std::vector<ActAtom> &atoms,
                  const std::vector<Bond>    &bonds,
                  int                         qtotal)
@@ -60,8 +60,8 @@ QgenAcm::QgenAcm(ForceField                 *pd,
     {
         return;
     }
-    auto qt     = pd->findForces(InteractionType::ELECTROSTATICS);
-    ChargeDistributionType_ = potentialToChargeDistributionType(qt->potential());
+    const auto &qt = pd->findForcesConst(InteractionType::ELECTROSTATICS);
+    ChargeDistributionType_ = potentialToChargeDistributionType(qt.potential());
     bHaveShell_ = pd->polarizable();
     eQGEN_      = eQgen::OK;
     natom_      = atoms.size();
@@ -71,7 +71,7 @@ QgenAcm::QgenAcm(ForceField                 *pd,
     {
         epsilonr_ = 1;
     }
-    auto eem = pd->findForces(entype);
+    const auto &eem = pd->findForcesConst(entype);
     auto bctype = InteractionType::BONDCORRECTIONS;
     // Note: BONDCORRECTIONS (bctype) are currently not used in this ACM setup.
     std::vector<std::string> acmtypes;
@@ -102,10 +102,10 @@ QgenAcm::QgenAcm(ForceField                 *pd,
         // For now, we will crash with a fatal error.
         if (atype->hasInteractionType(entype) && qparm.mutability() == Mutability::ACM)
         {
-            eta_.push_back(eem->findParameterTypeConst(acmtypes.back(), "eta").value());
+            eta_.push_back(eem.findParameterTypeConst(acmtypes.back(), "eta").value());
             auto myrow = std::min(atype->row(), SLATER_MAX);
             row_.push_back(myrow);
-            chi0_.push_back(eem->findParameterTypeConst(acmtypes.back(), "chi").value());
+            chi0_.push_back(eem.findParameterTypeConst(acmtypes.back(), "chi").value());
             nonFixed_.push_back(i);
             q_.push_back(0.0);
         }
@@ -113,15 +113,15 @@ QgenAcm::QgenAcm(ForceField                 *pd,
         {
             fixed_.push_back(i);
             q_.push_back(atoms[i].charge());
-            charge_.push_back(atype->parameter("charge"));
+            charge_.push_back(&atype->parameterConst("charge"));
             eta_.push_back(0.0);
             chi0_.push_back(0.0);
             row_.push_back(0);
         }
-        if (qt->potential() != Potential::COULOMB_POINT)
+        if (qt.potential() != Potential::COULOMB_POINT)
         {
             auto qtype = atype->interactionTypeToIdentifier(InteractionType::ELECTROSTATICS);
-            auto qdist = &(qt->findParameters(qtype)->find("zeta")->second);
+            const auto *qdist = &(qt.findParametersPtrConst(qtype)->find("zeta")->second);
             zeta_.push_back(qdist->value());
             qdist_id_.push_back(qdist);
         }
@@ -134,7 +134,7 @@ QgenAcm::QgenAcm(ForceField                 *pd,
             //! \todo this code does not make sense, if there is no BCC, the EEM
             // values will not be stored and updated.
             auto acmtype = atype->interactionTypeToIdentifier(entype);
-            auto acm     = eem->findParameters(acmtype);
+            const auto *acm = eem.findParametersPtrConst(acmtype);
             acm_id_.push_back(acm);
         }
         else
@@ -159,8 +159,8 @@ QgenAcm::QgenAcm(ForceField                 *pd,
                 GMX_THROW(gmx::InvalidInputError("Compounds with part of the atoms having fixed charges are not supported."));
             }
         }
-        auto fs = pd->findForces(bctype);
-        for(auto &b : bonds)
+        const auto &fs = pd->findForcesConst(bctype);
+        for (const auto &b : bonds)
         {
             if (!acmtypes.empty())
             {
@@ -171,24 +171,24 @@ QgenAcm::QgenAcm(ForceField                 *pd,
                 }
                 auto ai = acmtypes[nonFixed_[b.aI()]];
                 auto aj = acmtypes[nonFixed_[b.aJ()]];
-                Identifier bccId( { ai, aj }, { b.bondOrder() }, fs->canSwap());
+                Identifier bccId( { ai, aj }, { b.bondOrder() }, fs.canSwap());
                 double dcf = 1;
-                if (!fs->parameterExists(bccId))
+                if (!fs.parameterExists(bccId))
                 {
-                    if (CanSwap::Yes == fs->canSwap())
+                    if (CanSwap::Yes == fs.canSwap())
                     {
                         eQGEN_ = eQgen::NOSUPPORT;
                         return;
                     }
                     else
                     {
-                        bccId = Identifier( { aj, ai }, { b.bondOrder() }, fs->canSwap());
+                        bccId = Identifier( { aj, ai }, { b.bondOrder() }, fs.canSwap());
                         dcf = -1;
                     }
                 }
-                if (fs->parameterExists(bccId))
+                if (fs.parameterExists(bccId))
                 {
-                    bcc_.push_back(fs->findParameters(bccId));
+                    bcc_.push_back(fs.findParametersPtrConst(bccId));
                     dchi_factor_.push_back(dcf);
                 }
             }

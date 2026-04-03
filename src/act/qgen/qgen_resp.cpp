@@ -88,7 +88,7 @@ void QgenResp::updateAtomCharges(const std::vector<ActAtom> &atoms)
 
 void QgenResp::setAtomInfo(MsgHandler                   *msg_handler,
                            const std::vector<ActAtom>   &atoms,
-                           alexandria::ForceField       *pd,
+                           const alexandria::ForceField *pd,
                            const int                     qtotal)
 {
     if (nAtom_ != 0)
@@ -110,9 +110,9 @@ void QgenResp::setAtomInfo(MsgHandler                   *msg_handler,
     {
         auto atype = pd->findParticleType(atoms[i].ffType());
         auto ztype = atype->interactionTypeToIdentifier(InteractionType::ELECTROSTATICS);
-        auto qparm = atype->parameter("charge");
-        q_.push_back(qparm->value());
-        charge_.push_back(qparm);
+        const auto &qparm = atype->parameterConst("charge");
+        q_.push_back(qparm.value());
+        charge_.push_back(&qparm);
         row_.push_back(atype->row());
         if (haveZeta)
         {
@@ -123,8 +123,8 @@ void QgenResp::setAtomInfo(MsgHandler                   *msg_handler,
             zeta_.push_back(0.0);
         }
         
-        mutable_.push_back(qparm->mutability() == Mutability::ACM);
-        if (qparm->mutability() != Mutability::ACM)
+        mutable_.push_back(qparm.mutability() == Mutability::ACM);
+        if (qparm.mutability() != Mutability::ACM)
         {
             nFixed_++;
             qshell_ += q_[i];

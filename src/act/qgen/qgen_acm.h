@@ -91,7 +91,7 @@ public:
      * \param[in] bonds  Bond data
      * \param[in] qtotal The total charge in this compound
      */
-    QgenAcm(ForceField                 *pd,
+    QgenAcm(const ForceField           *pd,
             const std::vector<ActAtom> &atoms,
             const std::vector<Bond>    &bonds,
             int                         qtotal);
@@ -171,13 +171,13 @@ private:
     //! Atomic coordinates
     std::vector<gmx::RVec>           x_;
     //! Store ids locally, first for charge distristribution
-    std::vector<ForceFieldParameter *> qdist_id_;
+    std::vector<const ForceFieldParameter *> qdist_id_;
     //! Store parameters locally, first for charges
-    std::vector<ForceFieldParameter *> charge_;
+    std::vector<const ForceFieldParameter *> charge_;
     //! Store ids locally, second for EEM and bond charge corrections
-    std::vector<ForceFieldParameterMap *> acm_id_;
+    std::vector<const ForceFieldParameterMap *> acm_id_;
     //! Store bcc paramas
-    std::vector<ForceFieldParameterMap *> bcc_;
+    std::vector<const ForceFieldParameterMap *> bcc_;
     //! Factor to multiply delta chi by ( 1 or -1 )
     std::vector<double>                   dchi_factor_;
     //! The atoms/shells to optimize charges for
