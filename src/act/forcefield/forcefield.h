@@ -428,10 +428,10 @@ private:
     bool                                  polarizable_ = false;
     ChargeGenerationAlgorithm             ChargeGenerationAlgorithm_ = ChargeGenerationAlgorithm::NONE;
     
-    gmx_bool strcasestrStart(std::string needle, std::string haystack);
+    gmx_bool strcasestrStart(const std::string &needle, const std::string &haystack);
 
     template<class Type>
-    int indexOfPointInVector(Type * pointer, std::vector<Type> vector)
+    int indexOfPointInVector(const Type *pointer, const std::vector<Type> &vector)
     {
         return (pointer - &(vector[0]));
     }

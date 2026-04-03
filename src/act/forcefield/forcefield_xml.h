@@ -49,8 +49,8 @@ namespace alexandria
      * \param[in] compress Whether or not to write a compressed file
      */
     void writeForceField(const std::string &fileName,
-                      const ForceField     *pd,
-                      bool compress = true);
+                         const ForceField  *pd,
+                         bool               compress = true);
 
     /*! \brief Read a ForceField class from an XML file
      *
@@ -59,8 +59,8 @@ namespace alexandria
      * \param[in]  msgHandler MsgHandler for debug output, may be nullptr
      */
     void readForceField(const std::string &fileName,
-                     ForceField           *pd,
-                     MsgHandler           *msgHandler = nullptr);
+                        ForceField        *pd,
+                        MsgHandler        *msgHandler = nullptr);
 
 } // namespace alexandria
 
