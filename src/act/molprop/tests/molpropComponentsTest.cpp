@@ -546,7 +546,7 @@ TEST(FragmentTest, SettersAndGetters)
 TEST(FragmentTest, AtomString)
 {
     Fragment f("", 1.0, 0, 1, 1, "H", {0, 1, 2});
-    // makeAtomString adds 1 to each atom index and prepends a space
+    // atomString() adds 1 to each atom index and prepends a space
     EXPECT_EQ(" 1 2 3", f.atomString());
 }
 
