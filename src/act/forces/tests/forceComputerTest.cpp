@@ -337,10 +337,10 @@ TEST_F(ForceComputerIntegrationTest, ComputeOnceAndComputeGiveSameEpotWithoutShe
     // same EPOT as a single computeOnce() call (after constructing vsites).
     auto pd = getForceField("ACS-pg-vs2");
     ASSERT_NE(nullptr, pd);
-    // Skip if force field is polarizable (shells present)
+    // Only test non-polarizable force fields (no shell minimization)
     if (pd->polarizable())
     {
-        GTEST_SKIP() << "Skipping: force field is polarizable";
+        return;
     }
     ACTMol mol;
     ASSERT_TRUE(setupMolecule("ACS-pg-vs2", "hydrogen-fluoride", &mol));
