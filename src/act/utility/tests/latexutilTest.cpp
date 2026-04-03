@@ -33,13 +33,14 @@
 
 #include "../latex_util.h"
 
-#include <cstdio>
+#include <fstream>
 #include <string>
 #include <vector>
 
 #include <gtest/gtest.h>
 
 #include "gromacs/utility/exceptions.h"
+#include "testutils/testfilemanager.h"
 
 namespace alexandria
 {
@@ -47,15 +48,15 @@ namespace alexandria
 namespace
 {
 
-//! Read all content from a rewound FILE* into a string.
-static std::string readFile(FILE *fp)
+//! Read all content from a named file into a string.
+static std::string readFile(const std::string &path)
 {
-    rewind(fp);
-    std::string content;
-    char buf[256];
-    while (fgets(buf, sizeof(buf), fp) != nullptr)
+    std::ifstream ifs(path);
+    std::string   content;
+    std::string   line;
+    while (std::getline(ifs, line))
     {
-        content += buf;
+        content += line + "\n";
     }
     return content;
 }
@@ -64,7 +65,9 @@ static std::string readFile(FILE *fp)
 
 TEST(LongTableTest, SetColumnsIntOneColumn)
 {
-    FILE *fp = tmpfile();
+    gmx::test::TestFileManager files;
+    std::string path = files.getTemporaryFilePath(".tex");
+    FILE *fp = fopen(path.c_str(), "w");
     ASSERT_NE(nullptr, fp);
     LongTable table(fp, false, nullptr);
     table.setColumns(1);
@@ -72,14 +75,16 @@ TEST(LongTableTest, SetColumnsIntOneColumn)
     table.setLabel("lbl");
     table.printHeader();
     fflush(fp);
-    std::string content = readFile(fp);
     fclose(fp);
+    std::string content = readFile(path);
     EXPECT_NE(std::string::npos, content.find("{l}"));
 }
 
 TEST(LongTableTest, SetColumnsIntThreeColumns)
 {
-    FILE *fp = tmpfile();
+    gmx::test::TestFileManager files;
+    std::string path = files.getTemporaryFilePath(".tex");
+    FILE *fp = fopen(path.c_str(), "w");
     ASSERT_NE(nullptr, fp);
     LongTable table(fp, false, nullptr);
     table.setColumns(3);
@@ -87,14 +92,16 @@ TEST(LongTableTest, SetColumnsIntThreeColumns)
     table.setLabel("lbl");
     table.printHeader();
     fflush(fp);
-    std::string content = readFile(fp);
     fclose(fp);
+    std::string content = readFile(path);
     EXPECT_NE(std::string::npos, content.find("{lcc}"));
 }
 
 TEST(LongTableTest, SetColumnsString)
 {
-    FILE *fp = tmpfile();
+    gmx::test::TestFileManager files;
+    std::string path = files.getTemporaryFilePath(".tex");
+    FILE *fp = fopen(path.c_str(), "w");
     ASSERT_NE(nullptr, fp);
     LongTable table(fp, false, nullptr);
     table.setColumns("lcrc");
@@ -102,8 +109,8 @@ TEST(LongTableTest, SetColumnsString)
     table.setLabel("lbl");
     table.printHeader();
     fflush(fp);
-    std::string content = readFile(fp);
     fclose(fp);
+    std::string content = readFile(path);
     EXPECT_NE(std::string::npos, content.find("{lcrc}"));
 }
 
@@ -111,13 +118,15 @@ TEST(LongTableTest, SetColumnsString)
 
 TEST(LongTableTest, PrintLineNoSpecialChars)
 {
-    FILE *fp = tmpfile();
+    gmx::test::TestFileManager files;
+    std::string path = files.getTemporaryFilePath(".tex");
+    FILE *fp = fopen(path.c_str(), "w");
     ASSERT_NE(nullptr, fp);
     LongTable table(fp, false, nullptr);
     table.printLine("hello world");
     fflush(fp);
-    std::string content = readFile(fp);
     fclose(fp);
+    std::string content = readFile(path);
     // No escaping: output contains the literal text + \\
     EXPECT_NE(std::string::npos, content.find("hello world"));
     EXPECT_NE(std::string::npos, content.find("\\\\"));
@@ -125,13 +134,15 @@ TEST(LongTableTest, PrintLineNoSpecialChars)
 
 TEST(LongTableTest, PrintLineEscapesUnderscore)
 {
-    FILE *fp = tmpfile();
+    gmx::test::TestFileManager files;
+    std::string path = files.getTemporaryFilePath(".tex");
+    FILE *fp = fopen(path.c_str(), "w");
     ASSERT_NE(nullptr, fp);
     LongTable table(fp, false, nullptr);
     table.printLine("a_b");
     fflush(fp);
-    std::string content = readFile(fp);
     fclose(fp);
+    std::string content = readFile(path);
     // Underscore should be replaced by \_{...}
     EXPECT_NE(std::string::npos, content.find("\\_{"));
     // Literal underscore must not appear
@@ -140,13 +151,15 @@ TEST(LongTableTest, PrintLineEscapesUnderscore)
 
 TEST(LongTableTest, PrintLineEscapesHash)
 {
-    FILE *fp = tmpfile();
+    gmx::test::TestFileManager files;
+    std::string path = files.getTemporaryFilePath(".tex");
+    FILE *fp = fopen(path.c_str(), "w");
     ASSERT_NE(nullptr, fp);
     LongTable table(fp, false, nullptr);
     table.printLine("a#b");
     fflush(fp);
-    std::string content = readFile(fp);
     fclose(fp);
+    std::string content = readFile(path);
     // Hash is treated the same as underscore: \_{...}
     EXPECT_NE(std::string::npos, content.find("\\_{"));
     EXPECT_EQ(std::string::npos, content.find("a#b"));
@@ -154,13 +167,15 @@ TEST(LongTableTest, PrintLineEscapesHash)
 
 TEST(LongTableTest, PrintLineUnderscoreAtEnd)
 {
-    FILE *fp = tmpfile();
+    gmx::test::TestFileManager files;
+    std::string path = files.getTemporaryFilePath(".tex");
+    FILE *fp = fopen(path.c_str(), "w");
     ASSERT_NE(nullptr, fp);
     LongTable table(fp, false, nullptr);
     table.printLine("abc_");
     fflush(fp);
-    std::string content = readFile(fp);
     fclose(fp);
+    std::string content = readFile(path);
     EXPECT_NE(std::string::npos, content.find("\\_{"));
     // The group must be closed
     EXPECT_NE(std::string::npos, content.find("}"));
@@ -168,13 +183,15 @@ TEST(LongTableTest, PrintLineUnderscoreAtEnd)
 
 TEST(LongTableTest, PrintLineMultipleUnderscores)
 {
-    FILE *fp = tmpfile();
+    gmx::test::TestFileManager files;
+    std::string path = files.getTemporaryFilePath(".tex");
+    FILE *fp = fopen(path.c_str(), "w");
     ASSERT_NE(nullptr, fp);
     LongTable table(fp, false, nullptr);
     table.printLine("a_b_c");
     fflush(fp);
-    std::string content = readFile(fp);
     fclose(fp);
+    std::string content = readFile(path);
     EXPECT_NE(std::string::npos, content.find("\\_{"));
     EXPECT_EQ(std::string::npos, content.find("a_b_c"));
 }
@@ -183,40 +200,46 @@ TEST(LongTableTest, PrintLineMultipleUnderscores)
 
 TEST(LongTableTest, PrintColumnsTwoColumns)
 {
-    FILE *fp = tmpfile();
+    gmx::test::TestFileManager files;
+    std::string path = files.getTemporaryFilePath(".tex");
+    FILE *fp = fopen(path.c_str(), "w");
     ASSERT_NE(nullptr, fp);
     LongTable table(fp, false, nullptr);
     std::vector<std::string> cols = {"Col1", "Col2"};
     table.printColumns(cols);
     fflush(fp);
-    std::string content = readFile(fp);
     fclose(fp);
+    std::string content = readFile(path);
     EXPECT_NE(std::string::npos, content.find("Col1 & Col2"));
 }
 
 TEST(LongTableTest, PrintColumnsThreeColumns)
 {
-    FILE *fp = tmpfile();
+    gmx::test::TestFileManager files;
+    std::string path = files.getTemporaryFilePath(".tex");
+    FILE *fp = fopen(path.c_str(), "w");
     ASSERT_NE(nullptr, fp);
     LongTable table(fp, false, nullptr);
     std::vector<std::string> cols = {"Name", "Value", "Unit"};
     table.printColumns(cols);
     fflush(fp);
-    std::string content = readFile(fp);
     fclose(fp);
+    std::string content = readFile(path);
     EXPECT_NE(std::string::npos, content.find("Name & Value & Unit"));
 }
 
 TEST(LongTableTest, PrintColumnsSingleColumn)
 {
-    FILE *fp = tmpfile();
+    gmx::test::TestFileManager files;
+    std::string path = files.getTemporaryFilePath(".tex");
+    FILE *fp = fopen(path.c_str(), "w");
     ASSERT_NE(nullptr, fp);
     LongTable table(fp, false, nullptr);
     std::vector<std::string> cols = {"OnlyColumn"};
     table.printColumns(cols);
     fflush(fp);
-    std::string content = readFile(fp);
     fclose(fp);
+    std::string content = readFile(path);
     EXPECT_NE(std::string::npos, content.find("OnlyColumn"));
     // No & separator for a single column
     EXPECT_EQ(std::string::npos, content.find("&"));
@@ -226,7 +249,9 @@ TEST(LongTableTest, PrintColumnsSingleColumn)
 
 TEST(LongTableTest, PrintHeaderContainsLongtable)
 {
-    FILE *fp = tmpfile();
+    gmx::test::TestFileManager files;
+    std::string path = files.getTemporaryFilePath(".tex");
+    FILE *fp = fopen(path.c_str(), "w");
     ASSERT_NE(nullptr, fp);
     LongTable table(fp, false, nullptr);
     table.setCaption("My caption");
@@ -234,8 +259,8 @@ TEST(LongTableTest, PrintHeaderContainsLongtable)
     table.setColumns(2);
     table.printHeader();
     fflush(fp);
-    std::string content = readFile(fp);
     fclose(fp);
+    std::string content = readFile(path);
     EXPECT_NE(std::string::npos, content.find("\\begin{longtable}"));
     EXPECT_NE(std::string::npos, content.find("My caption"));
     EXPECT_NE(std::string::npos, content.find("tab:my"));
@@ -245,7 +270,9 @@ TEST(LongTableTest, PrintHeaderContainsLongtable)
 
 TEST(LongTableTest, PrintHeaderLandscape)
 {
-    FILE *fp = tmpfile();
+    gmx::test::TestFileManager files;
+    std::string path = files.getTemporaryFilePath(".tex");
+    FILE *fp = fopen(path.c_str(), "w");
     ASSERT_NE(nullptr, fp);
     LongTable table(fp, true, nullptr);
     table.setCaption("cap");
@@ -253,14 +280,16 @@ TEST(LongTableTest, PrintHeaderLandscape)
     table.setColumns(1);
     table.printHeader();
     fflush(fp);
-    std::string content = readFile(fp);
     fclose(fp);
+    std::string content = readFile(path);
     EXPECT_NE(std::string::npos, content.find("\\begin{landscape}"));
 }
 
 TEST(LongTableTest, PrintHeaderNoLandscape)
 {
-    FILE *fp = tmpfile();
+    gmx::test::TestFileManager files;
+    std::string path = files.getTemporaryFilePath(".tex");
+    FILE *fp = fopen(path.c_str(), "w");
     ASSERT_NE(nullptr, fp);
     LongTable table(fp, false, nullptr);
     table.setCaption("cap");
@@ -268,14 +297,16 @@ TEST(LongTableTest, PrintHeaderNoLandscape)
     table.setColumns(1);
     table.printHeader();
     fflush(fp);
-    std::string content = readFile(fp);
     fclose(fp);
+    std::string content = readFile(path);
     EXPECT_EQ(std::string::npos, content.find("\\begin{landscape}"));
 }
 
 TEST(LongTableTest, PrintHeaderWithFont)
 {
-    FILE *fp = tmpfile();
+    gmx::test::TestFileManager files;
+    std::string path = files.getTemporaryFilePath(".tex");
+    FILE *fp = fopen(path.c_str(), "w");
     ASSERT_NE(nullptr, fp);
     LongTable table(fp, false, "footnotesize");
     table.setCaption("cap");
@@ -283,14 +314,16 @@ TEST(LongTableTest, PrintHeaderWithFont)
     table.setColumns(2);
     table.printHeader();
     fflush(fp);
-    std::string content = readFile(fp);
     fclose(fp);
+    std::string content = readFile(path);
     EXPECT_NE(std::string::npos, content.find("\\begin{footnotesize}"));
 }
 
 TEST(LongTableTest, PrintHeaderWithSpacing)
 {
-    FILE *fp = tmpfile();
+    gmx::test::TestFileManager files;
+    std::string path = files.getTemporaryFilePath(".tex");
+    FILE *fp = fopen(path.c_str(), "w");
     ASSERT_NE(nullptr, fp);
     LongTable table(fp, false, nullptr, true);
     table.setCaption("cap");
@@ -298,14 +331,16 @@ TEST(LongTableTest, PrintHeaderWithSpacing)
     table.setColumns(1);
     table.printHeader();
     fflush(fp);
-    std::string content = readFile(fp);
     fclose(fp);
+    std::string content = readFile(path);
     EXPECT_NE(std::string::npos, content.find("\\begin{spacing}"));
 }
 
 TEST(LongTableTest, PrintFooterContainsEndLongtable)
 {
-    FILE *fp = tmpfile();
+    gmx::test::TestFileManager files;
+    std::string path = files.getTemporaryFilePath(".tex");
+    FILE *fp = fopen(path.c_str(), "w");
     ASSERT_NE(nullptr, fp);
     LongTable table(fp, false, nullptr);
     table.setCaption("cap");
@@ -314,14 +349,16 @@ TEST(LongTableTest, PrintFooterContainsEndLongtable)
     table.printHeader();
     table.printFooter();
     fflush(fp);
-    std::string content = readFile(fp);
     fclose(fp);
+    std::string content = readFile(path);
     EXPECT_NE(std::string::npos, content.find("\\end{longtable}"));
 }
 
 TEST(LongTableTest, PrintFooterLandscape)
 {
-    FILE *fp = tmpfile();
+    gmx::test::TestFileManager files;
+    std::string path = files.getTemporaryFilePath(".tex");
+    FILE *fp = fopen(path.c_str(), "w");
     ASSERT_NE(nullptr, fp);
     LongTable table(fp, true, nullptr);
     table.setCaption("cap");
@@ -330,14 +367,16 @@ TEST(LongTableTest, PrintFooterLandscape)
     table.printHeader();
     table.printFooter();
     fflush(fp);
-    std::string content = readFile(fp);
     fclose(fp);
+    std::string content = readFile(path);
     EXPECT_NE(std::string::npos, content.find("\\end{landscape}"));
 }
 
 TEST(LongTableTest, PrintFooterWithFont)
 {
-    FILE *fp = tmpfile();
+    gmx::test::TestFileManager files;
+    std::string path = files.getTemporaryFilePath(".tex");
+    FILE *fp = fopen(path.c_str(), "w");
     ASSERT_NE(nullptr, fp);
     LongTable table(fp, false, "footnotesize");
     table.setCaption("cap");
@@ -346,20 +385,22 @@ TEST(LongTableTest, PrintFooterWithFont)
     table.printHeader();
     table.printFooter();
     fflush(fp);
-    std::string content = readFile(fp);
     fclose(fp);
+    std::string content = readFile(path);
     EXPECT_NE(std::string::npos, content.find("\\end{footnotesize}"));
 }
 
 TEST(LongTableTest, PrintHLine)
 {
-    FILE *fp = tmpfile();
+    gmx::test::TestFileManager files;
+    std::string path = files.getTemporaryFilePath(".tex");
+    FILE *fp = fopen(path.c_str(), "w");
     ASSERT_NE(nullptr, fp);
     LongTable table(fp, false, nullptr);
     table.printHLine();
     fflush(fp);
-    std::string content = readFile(fp);
     fclose(fp);
+    std::string content = readFile(path);
     EXPECT_NE(std::string::npos, content.find("\\hline"));
 }
 
@@ -367,7 +408,9 @@ TEST(LongTableTest, PrintHLine)
 
 TEST(LongTableTest, AddHeadLineAppearsInHeader)
 {
-    FILE *fp = tmpfile();
+    gmx::test::TestFileManager files;
+    std::string path = files.getTemporaryFilePath(".tex");
+    FILE *fp = fopen(path.c_str(), "w");
     ASSERT_NE(nullptr, fp);
     LongTable table(fp, false, nullptr);
     table.setCaption("cap");
@@ -376,8 +419,8 @@ TEST(LongTableTest, AddHeadLineAppearsInHeader)
     table.addHeadLine("Compound & Energy");
     table.printHeader();
     fflush(fp);
-    std::string content = readFile(fp);
     fclose(fp);
+    std::string content = readFile(path);
     EXPECT_NE(std::string::npos, content.find("Compound & Energy"));
 }
 
