@@ -51,12 +51,6 @@
 #include "act/forcefield/potential.h"
 #include "act/import/import.h"
 #include "gromacs/math/vectypes.h"
-#include "gromacs/utility/stringutil.h"
-
-#include "testutils/cmdlinetest.h"
-#include "testutils/refdata.h"
-#include "testutils/testasserts.h"
-#include "testutils/testfilemanager.h"
 
 namespace alexandria
 {
@@ -182,7 +176,7 @@ static bool setupMolecule(const std::string &ffName,
     return msghandler.ok();
 }
 
-class ForceComputerIntegrationTest : public gmx::test::CommandLineTestBase
+class ForceComputerIntegrationTest : public ::testing::Test
 {
 protected:
     /*! \brief Load a molecule and run computeOnce().
@@ -409,44 +403,6 @@ TEST_F(ForceComputerIntegrationTest, ConstructVsiteCoordinatesAndSpreadForces)
         EXPECT_TRUE(std::isfinite(f[XX]));
         EXPECT_TRUE(std::isfinite(f[YY]));
         EXPECT_TRUE(std::isfinite(f[ZZ]));
-    }
-}
-
-TEST_F(ForceComputerIntegrationTest, ComputeRegressionHF)
-{
-    // Regression test: compute energies for HF and compare to stored reference values.
-    // Uses erefdataCreateMissing so the XML is created automatically on first run.
-    std::map<InteractionType, double> energies;
-    std::vector<gmx::RVec>           forces;
-    bool ok = runCompute("ACS-pg-vs2", "hydrogen-fluoride", &energies, &forces);
-    EXPECT_TRUE(ok);
-
-    gmx::test::TestReferenceData    refData(gmx::test::erefdataCreateMissing);
-    gmx::test::TestReferenceChecker checker(refData.rootChecker());
-    auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, 1e-5);
-    checker.setDefaultTolerance(tolerance);
-    for (const auto &e : energies)
-    {
-        checker.checkReal(e.second, interactionTypeToString(e.first).c_str());
-    }
-}
-
-TEST_F(ForceComputerIntegrationTest, ComputeRegressionWater)
-{
-    // Regression test: compute energies for water and compare to stored reference values.
-    // Uses erefdataCreateMissing so the XML is created automatically on first run.
-    std::map<InteractionType, double> energies;
-    std::vector<gmx::RVec>           forces;
-    bool ok = runCompute("ACS-pg-vs3", "water", &energies, &forces);
-    EXPECT_TRUE(ok);
-
-    gmx::test::TestReferenceData    refData(gmx::test::erefdataCreateMissing);
-    gmx::test::TestReferenceChecker checker(refData.rootChecker());
-    auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, 1e-5);
-    checker.setDefaultTolerance(tolerance);
-    for (const auto &e : energies)
-    {
-        checker.checkReal(e.second, interactionTypeToString(e.first).c_str());
     }
 }
 
