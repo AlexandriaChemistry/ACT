@@ -181,7 +181,7 @@ public:
     void setJobtype(JobType jt) { jobtype_ = jt; }
   
     //! Add a CalcAtom object to the list of atoms
-    void AddAtom(CalcAtom ca);
+    void AddAtom(const CalcAtom &ca);
     
     //! Return the number of atoms
     int NAtom() const { return catom_.size(); }
@@ -193,7 +193,7 @@ public:
     std::vector<CalcAtom> *calcAtom() { return &catom_; }
     
     //! Return iterator pointing to this particular atom or EndAtom() if not found
-    CalcAtomIterator searchAtom(CalcAtom ca);
+    CalcAtomIterator searchAtom(const CalcAtom &ca);
     
     //! Return a complete coordinate array
     const std::vector<gmx::RVec> &getCoordinates() const { return coordinates_; }

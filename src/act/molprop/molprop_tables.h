@@ -65,15 +65,15 @@ namespace alexandria
  * \todo Transform iQM to enum
  * \ingroup group_molprop
  */
-void alexandria_molprop_stats_table(MsgHandler           *msg_handler,
-                                    FILE                 *fp,
-                                    MolPropObservable     eprop,
-                                    std::vector<MolProp> &mp,
-                                    const QmCount        &qmc,
-                                    double                outlier,
-                                    CategoryList          cList,
-                                    const MolSelect      &gms,
-                                    iMolSelect            ims);
+void alexandria_molprop_stats_table(MsgHandler                  *msg_handler,
+                                    FILE                        *fp,
+                                    MolPropObservable            eprop,
+                                    const std::vector<MolProp>  &mp,
+                                    const QmCount               &qmc,
+                                    double                       outlier,
+                                    const CategoryList          &cList,
+                                    const MolSelect             &gms,
+                                    iMolSelect                   ims);
 
 /*! \brief
  * Generates a LaTeX table containing the composition in atoms of each molecule
@@ -85,10 +85,10 @@ void alexandria_molprop_stats_table(MsgHandler           *msg_handler,
  * \todo Transform ims to enum
  * \ingroup group_molprop
  */
-void alexandria_molprop_composition_table(FILE                 *fp,
-                                          std::vector<MolProp>  mp,
-                                          const MolSelect      &gms,
-                                          iMolSelect            ims);
+void alexandria_molprop_composition_table(FILE                        *fp,
+                                          const std::vector<MolProp>  &mp,
+                                          const MolSelect             &gms,
+                                          iMolSelect                   ims);
 
 /*! \brief
  * Generates a LaTeX table containing the molecules in each molecule category
@@ -98,9 +98,9 @@ void alexandria_molprop_composition_table(FILE                 *fp,
  * \param[in] cList  Structure containing all categories and the number of molecules per category
  * \ingroup group_molprop
  */
-void alexandria_molprop_category_table(FILE                    *fp,
-                                       int                      catmin,
-                                       alexandria::CategoryList cList);
+void alexandria_molprop_category_table(FILE                            *fp,
+                                       int                              catmin,
+                                       const alexandria::CategoryList  &cList);
 
 /*! \brief
  * Generates a LaTeX table containing properties for molecules from different sources
@@ -120,17 +120,17 @@ void alexandria_molprop_category_table(FILE                    *fp,
  * \todo Introduce enum to switch between absolute and relative tolerance
  * \ingroup group_molprop
  */
-void alexandria_molprop_prop_table(FILE                             *fp,
-                                   MolPropObservable                 eprop,
-                                   real                              rel_toler,
-                                   real                              abs_toler,
-                                   std::vector<alexandria::MolProp> &mp,
-                                   const QmCount                    &qmc,
-                                   bool                              bPrintAll,
-                                   bool                              bPrintBasis,
-                                   bool                              bPrintMultQ,
-                                   const MolSelect                  &gms,
-                                   iMolSelect                        ims);
+void alexandria_molprop_prop_table(FILE                                   *fp,
+                                   MolPropObservable                       eprop,
+                                   real                                    rel_toler,
+                                   real                                    abs_toler,
+                                   const std::vector<alexandria::MolProp> &mp,
+                                   const QmCount                          &qmc,
+                                   bool                                    bPrintAll,
+                                   bool                                    bPrintBasis,
+                                   bool                                    bPrintMultQ,
+                                   const MolSelect                        &gms,
+                                   iMolSelect                              ims);
 
 /*! \brief
  * Generates a LaTeX table containing the atomtypes in Alexandria

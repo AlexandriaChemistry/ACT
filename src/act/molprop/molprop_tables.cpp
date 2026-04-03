@@ -141,17 +141,17 @@ static void stats_header(LongTable         &lt,
     lt.printHeader();
 }
 
-void alexandria_molprop_stats_table(MsgHandler           *msg_handler,
-                                    FILE                 *fp,
-                                    MolPropObservable     mpo,
-                                    std::vector<MolProp> &mp,
-                                    const QmCount        &qmc,
-                                    double                outlier,
-                                    CategoryList          cList,
-                                    const MolSelect      &gms,
-                                    iMolSelect            ims)
+void alexandria_molprop_stats_table(MsgHandler                  *msg_handler,
+                                    FILE                        *fp,
+                                    MolPropObservable            mpo,
+                                    const std::vector<MolProp>  &mp,
+                                    const QmCount               &qmc,
+                                    double                       outlier,
+                                    const CategoryList          &cList,
+                                    const MolSelect             &gms,
+                                    iMolSelect                   ims)
 {
-    std::vector<MolProp>::iterator     mpi;
+    std::vector<MolProp>::const_iterator mpi;
     real                               rms, R, a, da, b, db, chi2;
     char                               buf[256];
     gmx_stats                          lsq;
@@ -481,9 +481,9 @@ static void category_header(LongTable &lt)
     lt.printHeader();
 }
 
-void alexandria_molprop_category_table(FILE            *fp,
-                                       int              catmin,
-                                       CategoryList     cList)
+void alexandria_molprop_category_table(FILE                            *fp,
+                                       int                              catmin,
+                                       const alexandria::CategoryList  &cList)
 {
     if (cList.nCategories() > 0)
     {
@@ -820,17 +820,17 @@ static int outside(real vexp, real vcalc, real rel_toler, real abs_toler)
     }
 }
 #endif
-void alexandria_molprop_prop_table(FILE                 *fp,
-                                   MolPropObservable     mpo,
-                                   real                  rel_toler,
-                                   real                  abs_toler,
-                                   std::vector<MolProp> &mp,
-                                   const QmCount        &qmc,
-                                   gmx_unused bool       bPrintAll,
-                                   bool                  bPrintBasis,
-                                   bool                  bPrintMultQ,
-                                   const MolSelect      &gms,
-                                   iMolSelect            ims)
+void alexandria_molprop_prop_table(FILE                        *fp,
+                                   MolPropObservable            mpo,
+                                   real                         rel_toler,
+                                   real                         abs_toler,
+                                   const std::vector<MolProp>  &mp,
+                                   const QmCount               &qmc,
+                                   gmx_unused bool              bPrintAll,
+                                   bool                         bPrintBasis,
+                                   bool                         bPrintMultQ,
+                                   const MolSelect             &gms,
+                                   iMolSelect                   ims)
 {
 #define BLEN 1024
     std::vector<double>         vec;

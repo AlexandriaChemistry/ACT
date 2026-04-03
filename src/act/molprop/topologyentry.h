@@ -416,7 +416,7 @@ class Improper : public TopologyEntry
      * \param[in] bik  Second bond
      * \param[in] bil  Third bond
      */
-    Improper(Bond bij, Bond bik, Bond bil);
+    Improper(const Bond &bij, const Bond &bik, const Bond &bil);
 
     //! Return the first bond
     const Bond &bij() const { return b_[0]; }
@@ -452,7 +452,7 @@ class Proper : public TopologyEntry
      * \param[in] bjk  Second bond
      * \param[in] bkl  Third bond
      */
-    Proper(Bond bij, Bond bjk, Bond bkl);
+    Proper(const Bond &bij, const Bond &bjk, const Bond &bkl);
 
     //! Return the first bond
     const Bond &bij() const { return b_[0]; }
