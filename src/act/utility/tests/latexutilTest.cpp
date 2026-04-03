@@ -127,7 +127,7 @@ TEST(LongTableTest, PrintLineNoSpecialChars)
     fflush(fp);
     fclose(fp);
     std::string content = readFile(path);
-    // No escaping: output contains the literal text + \\
+    // No escaping: output contains the literal text + double backslash
     EXPECT_NE(std::string::npos, content.find("hello world"));
     EXPECT_NE(std::string::npos, content.find("\\\\"));
 }
