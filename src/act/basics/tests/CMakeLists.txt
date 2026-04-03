@@ -44,11 +44,14 @@ gmx_add_unit_test(
     atomizationenergyTest.cpp
     atompropTest.cpp
     basecontainerTest.cpp
+    chargeModelTest.cpp
     datasetTest.cpp
     identifierTest.cpp
     identifierMapTest.cpp
-    msgHandlerTest.cpp
     interactiontypeTest.cpp
+    msgHandlerTest.cpp
+    mutabilityTest.cpp
+    versionTest.cpp
     # pseudo-library for code for alexandria
     )
 target_link_libraries(${exename} actLib libactgromacs ${GMX_EXTRA_LIBRARIES} ${XML_LIBRARIES}
