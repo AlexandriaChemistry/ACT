@@ -113,7 +113,7 @@ class CategoryList
         void sortCategories();
 
         //! The number of categories
-        int nCategories() { return catli_.size(); }
+        int nCategories() const { return catli_.size(); }
 
         //! Non-mutable array of items
         const std::vector<CategoryListElement> &elementsConst() const { return catli_; }

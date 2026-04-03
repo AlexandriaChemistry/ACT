@@ -66,7 +66,7 @@ void CalcAtom::setForceUnit(const std::string &unit)
     force_unit_ = unit;
 }
 
-bool CalcAtom::Equal(CalcAtom ca)
+bool CalcAtom::Equal(const CalcAtom &ca)
 {
     return !((name_.compare(ca.getName()) != 0) ||
              (obType_.compare(ca.getObtype()) != 0) ||
@@ -234,7 +234,7 @@ CommunicationStatus AtomNum::Receive(const CommunicationRecord *cr, int src)
     return cs;
 }
 
-void MolecularComposition::AddAtom(AtomNum an)
+void MolecularComposition::AddAtom(const AtomNum &an)
 {
     AtomNumIterator mci = searchAtom(an.getAtom());
     if (mci == atomnum_.end())

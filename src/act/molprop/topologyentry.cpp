@@ -298,7 +298,7 @@ void Angle::renumberAtoms(const std::vector<int> &renumber)
     b_[1].renumberAtoms(renumber);
 }
 
-Improper::Improper(Bond bij, Bond bik, Bond bil)
+Improper::Improper(const Bond &bij, const Bond &bik, const Bond &bil)
 {
     b_[0] = bij;
     b_[1] = bik;
@@ -328,7 +328,7 @@ void Improper::renumberAtoms(const std::vector<int> &renumber)
     b_[2].renumberAtoms(renumber);
 }
 
-Proper::Proper(Bond bij, Bond bjk, Bond bkl)
+Proper::Proper(const Bond &bij, const Bond &bjk, const Bond &bkl)
 {
     b_[0] = bij;
     b_[1] = bjk;

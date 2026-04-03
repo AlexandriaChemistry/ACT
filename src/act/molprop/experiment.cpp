@@ -74,7 +74,7 @@ JobType string2jobType(const std::string &str)
     return JobType::UNKNOWN;
 }
 
-CalcAtomIterator Experiment::searchAtom(CalcAtom ca)
+CalcAtomIterator Experiment::searchAtom(const CalcAtom &ca)
 {
     for (auto cai = catom_.begin(); (cai < catom_.end()); ++cai)
     {
@@ -185,7 +185,7 @@ void Experiment::setCoordinates()
     }
 }
 
-void Experiment::AddAtom(CalcAtom ca)
+void Experiment::AddAtom(const CalcAtom &ca)
 {
     CalcAtomIterator cai = searchAtom(ca);
 

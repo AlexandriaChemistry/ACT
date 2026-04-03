@@ -200,7 +200,7 @@ class MolecularComposition
          *
          * \param[in] an  Atom number
          */
-        void AddAtom(AtomNum an);
+        void AddAtom(const AtomNum &an);
 
         /*! \brief
          * Remove the atom with name catom from the composition
@@ -295,12 +295,6 @@ public:
     CalcAtom() {}
     
     //! Constructor initiating the name, type and atomid
-    CalcAtom(std::string &name, std::string &obtype, int atomid)
-    {
-        name_.assign(name); obType_.assign(obtype); atomID_ = atomid;
-    };
-    
-    //! Constructor initiating the name, type and atomid
     CalcAtom(const std::string &name,
              const std::string &obtype,
              int                atomid)
@@ -308,9 +302,8 @@ public:
         name_ = name; obType_ = obtype; atomID_ = atomid;
     };
     
-    
     //! Function returning true if the two atoms are equal
-    bool Equal(CalcAtom ca);
+    bool Equal(const CalcAtom &ca);
     
     /*! \brief Add an AtomicCharge element to the atom
      * If a charge of the type is present already, it will be
