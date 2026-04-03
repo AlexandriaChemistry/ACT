@@ -39,27 +39,27 @@
 namespace alexandria
 {
 
-void get_symmetrized_charges(Topology         *topology,
+void get_symmetrized_charges(const Topology   *topology,
                              const ForceField *pd,
                              const char       *symm_string,
                              std::vector<int> *sym_charges)
 {
     std::string  central, attached;
 
-    auto atoms = topology->atomsPtr();
+    const auto &atoms = topology->atoms();
     
     sym_charges->clear();
-    for (size_t i = 0; i < atoms->size(); i++)
+    for (size_t i = 0; i < atoms.size(); i++)
     {
         sym_charges->push_back(i);
     }
     if ((nullptr != symm_string) && (strlen(symm_string) > 0))
     {
         std::vector<std::string> ss = gmx::splitString(symm_string);
-        if (ss.size() != atoms->size())
+        if (ss.size() != atoms.size())
         {
             gmx_fatal(FARGS, "Wrong number (%lu) of atom-numbers in symm_string: expected %lu",
-                      ss.size(), atoms->size());
+                      ss.size(), atoms.size());
         }
         int ii = 0;
         for (auto is = ss.begin();
@@ -78,9 +78,9 @@ void get_symmetrized_charges(Topology         *topology,
             for (auto symcharges = pd->getSymchargesBegin();
                  symcharges != pd->getSymchargesEnd(); symcharges++)
             {
-                for (size_t i = 0; i < atoms->size(); i++)
+                for (size_t i = 0; i < atoms.size(); i++)
                 {
-                    if (symcharges->getCentral().compare((*atoms)[i].element()) == 0)
+                    if (symcharges->getCentral().compare(atoms[i].element()) == 0)
                     {
                         int              hsmin = -1;
                         std::vector<int> hs;
@@ -90,12 +90,12 @@ void get_symmetrized_charges(Topology         *topology,
                             size_t aj = jj->atomIndex(1);
                             
                             if (ai == i && 
-                                symcharges->getAttached().compare((*atoms)[aj].element()) == 0)
+                                symcharges->getAttached().compare(atoms[aj].element()) == 0)
                             {
                                 hs.push_back(aj);
                             }
                             else if (aj == i &&
-                                     symcharges->getAttached().compare((*atoms)[ai].element()) == 0)
+                                     symcharges->getAttached().compare(atoms[ai].element()) == 0)
                             {
                                 hs.push_back(ai);
                             }

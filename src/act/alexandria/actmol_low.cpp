@@ -121,7 +121,7 @@ std::vector<double> getDoubles(const std::string &s)
     return d;
 }
 
-void put_in_box(int natom, matrix box, rvec x[], real dbox)
+void put_in_box(int natom, matrix box, const rvec x[], real dbox)
 {
     int  i, m;
     rvec xmin, xmax, xcom;
@@ -151,7 +151,7 @@ void put_in_box(int natom, matrix box, rvec x[], real dbox)
     }
 }
 
-void calc_rotmatrix(rvec target_vec, rvec ref_vec, matrix rotmatrix)
+void calc_rotmatrix(const rvec target_vec, const rvec ref_vec, matrix rotmatrix)
 {
     rvec au = {0, 0, 0};
     rvec bu = {0, 0, 0};

@@ -90,14 +90,14 @@ real calc_relposition(const ForceField               *pd,
 std::vector<double> getDoubles(const std::string &s);
 
 //! \brief Make sure atoms are within a box
-void put_in_box(int natom, matrix box, rvec x[], real dbox);
+void put_in_box(int natom, matrix box, const rvec x[], real dbox);
 
 /*! \brief Compute a rotation matrix
  * \param[in]  target_vec The vector to rotate to
  * \param[in]  ref_vec    The vector to rotate from
  * \param[out] rotmatrix  The matrix that accomplishes the rotation
  */
-void calc_rotmatrix(rvec target_vec, rvec ref_vec, matrix rotmatrix);
+void calc_rotmatrix(const rvec target_vec, const rvec ref_vec, matrix rotmatrix);
 
 /*! \brief Compute atomization energy for a molecule
  * \param[in] msghandler For debug output, may be nullptr

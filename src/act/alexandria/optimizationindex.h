@@ -82,7 +82,7 @@ public:
      * \param[in] pType         The particle type
      * \param[in] parameterType The type
      */
-    OptimizationIndex(const std::string  pType,
+    OptimizationIndex(const std::string &pType,
                       const std::string &parameterType) :
         particleType_(pType), parameterType_(parameterType) {}
 

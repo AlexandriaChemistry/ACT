@@ -94,7 +94,7 @@ real sub_xcm(std::vector<gmx::RVec>       *x,
 //! \brief Increment all atoms in index with xcm
 void add_xcm(std::vector<gmx::RVec>       *x,
              const std::vector<int>       &index,
-             gmx::RVec                    &xcm);
+             const gmx::RVec              &xcm);
 
 } // namespace
 
