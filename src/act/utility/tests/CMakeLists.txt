@@ -39,7 +39,11 @@ gmx_add_unit_test(
     ${testname}
     ${exename}
     # files with code for tests
+    jsontreeTest.cpp
+    latexutilTest.cpp
+    memorycheckTest.cpp
     regressionTest.cpp
+    stringutilTest.cpp
     unitsTest.cpp
     # pseudo-library for code for alexandria
     )
