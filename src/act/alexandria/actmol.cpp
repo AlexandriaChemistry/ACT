@@ -1451,7 +1451,7 @@ void ACTMol::PrintTopology(MsgHandler                   *msg_handler,
 }
 
 void ACTMol::GenerateCube(MsgHandler                   *msghandler,
-                          ForceField                   *pd,
+                          const ForceField             *pd,
                           const std::vector<gmx::RVec> &coords,
                           const ForceComputer          *forceComp,
                           real                          spacing,
@@ -1586,7 +1586,7 @@ void ACTMol::getHarmonics()
 }
 
 void ACTMol::getExpProps(MsgHandler                                 *msghandler,
-                         ForceField                                 *pd,
+                         const ForceField                           *pd,
                          const std::map<MolPropObservable, iqmType> &iqm,
                          real                                        watoms,
                          int                                         maxESP)
