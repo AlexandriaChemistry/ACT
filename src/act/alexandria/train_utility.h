@@ -236,7 +236,7 @@ void print_header(gmx::TextWriter             *tw,
  */
 void doFrequencyAnalysis(MsgHandler               *msghandler,
                          const ForceField         *pd,
-                         alexandria::ACTMol       *mol,
+                         const alexandria::ACTMol *mol,
                          const MolHandler         &molhandler,
                          const ForceComputer      *forceComp,
                          std::vector<gmx::RVec>   *coords,
