@@ -40,6 +40,7 @@ gmx_add_unit_test(
     ${exename}
     # files with code for tests
     molpropTest.cpp
+    molpropComponentsTest.cpp
     # pseudo-library for code for alexandria
     $<TARGET_OBJECTS:actLib>
     )
