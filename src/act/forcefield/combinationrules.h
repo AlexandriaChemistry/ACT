@@ -75,7 +75,7 @@ public:
     /*! \brief Add a force field parameter
      * \param[in] ffpl The new parameter
      */
-    void addForceFieldParameter(ForceFieldParameter ffpl)
+    void addForceFieldParameter(const ForceFieldParameter &ffpl)
     {
         ffpl_ = ffpl;
     }

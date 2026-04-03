@@ -143,7 +143,7 @@ void ForceField::setFilename(const std::string &fn2)
  *-+-+-+-+-+-+-+-+-+-+-+
  */
 
-gmx_bool ForceField::strcasestrStart(std::string needle, std::string haystack)
+gmx_bool ForceField::strcasestrStart(const std::string &needle, const std::string &haystack)
 {
     std::string ptr;
     ptr = strcasestr(haystack.c_str(), needle.c_str());
