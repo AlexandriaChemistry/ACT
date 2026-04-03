@@ -104,13 +104,13 @@ class BoundsDevComputer : public DevComputer
 private:
 
     //! Information about each force field parameter
-    std::vector<OptimizationIndex> *optIndex_;
+    const std::vector<OptimizationIndex> *optIndex_;
 public:
 
     /*! \brief Create a new BoundsDevComputer
      * @param optIndex  pointer to vector containing information about each force field parameter
      */
-    BoundsDevComputer(std::vector<OptimizationIndex> *optIndex)
+    BoundsDevComputer(const std::vector<OptimizationIndex> *optIndex)
         : DevComputer("Bounds")
     {
         optIndex_ = optIndex;

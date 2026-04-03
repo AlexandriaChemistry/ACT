@@ -166,7 +166,7 @@ const std::string ForceField::ztype2elem(const std::string &ztype) const
 }
 
 bool ForceField::typeToInteractionType(const std::string &type, 
-                                       InteractionType   *itype)
+                                       InteractionType   *itype) const
 {
     if (type2Itype_.empty())
     {
@@ -217,7 +217,7 @@ bool ForceField::typeToInteractionType(const std::string &type,
     }
     else
     {
-        for (auto tt : type2Itype_)
+        for (const auto &tt : type2Itype_)
         {
             if (tt.second.find(type) != tt.second.end())
             {

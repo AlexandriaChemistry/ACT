@@ -186,7 +186,7 @@ bool MolGen::hasMolPropObservable(MolPropObservable mpo) const
 }
 
 void MolGen::checkOptions(MsgHandler                *msghandler,
-                          ForceField                *pd,
+                          const ForceField          *pd,
                           ChargeGenerationAlgorithm  alg)
 {
     for(auto toFit = fit_.begin(); toFit != fit_.end(); )
@@ -240,8 +240,8 @@ void MolGen::optionsFinished(MsgHandler *msghandler)
     }
 }
 
-void MolGen::fillIopt(ForceField *pd,
-                      MsgHandler *msghandler)
+void MolGen::fillIopt(const ForceField *pd,
+                      MsgHandler       *msghandler)
 // This is called in the read method, the filled structure is used for the optimize() method
 {
     for(const auto &fit : fit_)

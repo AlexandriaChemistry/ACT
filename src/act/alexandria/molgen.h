@@ -321,7 +321,7 @@ public:
      * \param[in] alg        Allow checking flags for compatibility with algorithm
      */
     void checkOptions(MsgHandler                *msghandler,
-                      ForceField                *pd,
+                      const ForceField          *pd,
                       ChargeGenerationAlgorithm  alg);
 
     /*! \brief Process options after parsing
@@ -344,8 +344,8 @@ public:
      * \param[in] pd         Pointer to forcefield
      * \param[in] msghandler For information
      */
-    void fillIopt(ForceField *pd,
-                  MsgHandler *msghandler);
+    void fillIopt(const ForceField *pd,
+                  MsgHandler       *msghandler);
     
     //! \brief Return the const vector of molecules
     const std::vector<ACTMol> &actmols() const { return actmol_; }

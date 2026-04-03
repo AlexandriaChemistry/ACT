@@ -313,7 +313,7 @@ class ForceField
      * \param[out] itype The itype
      * \return whether or not the type was found.
      */
-    bool typeToInteractionType(const std::string &type, InteractionType *itype);
+    bool typeToInteractionType(const std::string &type, InteractionType *itype) const;
     
     void addSymcharges(const std::string &central,
                        const std::string &attached,
@@ -420,7 +420,7 @@ class ForceField
 private:
     std::string                           checkSum_;
     std::string                           timeStamp_;
-    std::map<InteractionType, std::set<std::string>> type2Itype_;
+    mutable std::map<InteractionType, std::set<std::string>> type2Itype_;
     std::string                           filename_;
     std::map<Identifier, ParticleType>    alexandria_;
     std::map<InteractionType, ForceFieldParameterList> forces_;
