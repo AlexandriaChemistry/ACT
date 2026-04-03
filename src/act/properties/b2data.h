@@ -104,7 +104,7 @@ public:
      */
     void addData(size_t iTemp, size_t index,
                  double exp_U12, double exp_F0, double exp_F1,
-                 gmx::RVec exp_tau0, gmx::RVec exp_tau1);
+                 const gmx::RVec exp_tau0, const gmx::RVec exp_tau1);
 
     /*! \brief  Fill the Mayer function with -1 values
      * \param[in] iTemp    Temperature index

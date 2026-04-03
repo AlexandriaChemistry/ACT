@@ -192,7 +192,7 @@ void B2Data::aggregate(CommunicationRecord *cr)
     
 void B2Data::addData(size_t iTemp, size_t index,
                      double exp_U12, double exp_F0, double exp_F1,
-                     gmx::RVec exp_tau0, gmx::RVec exp_tau1)
+                     const gmx::RVec exp_tau0, const gmx::RVec exp_tau1)
 {
     if (iTemp >= exp_U12_.size())
     {
