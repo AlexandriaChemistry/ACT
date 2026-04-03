@@ -52,7 +52,7 @@ class MsgHandler;
 
 //! \brief Print the gromacs t_mols
 void print_top_mols(FILE *out, const char *title,
-                    int nmol, t_mols *mols);
+                    int nmol, const t_mols *mols);
 
 //! \brief Print the topology header including commercials
 void print_top_header(FILE                           *fp,
@@ -70,7 +70,7 @@ void print_top_header(FILE                           *fp,
  */
 void write_top(MsgHandler          *msg_handler,
                FILE                *out,
-               char                *molname,
+               const char          *molname,
                const Topology      *topology,
                const ForceField    *pd);
 

@@ -166,7 +166,7 @@ static void print_top_system(FILE *out, const char *title)
 }
 
 void print_top_mols(FILE *out, const char *title,
-                    int nmol, t_mols *mols)
+                    int nmol, const t_mols *mols)
 {
     print_top_system(out, title);
 
@@ -229,7 +229,7 @@ static void print_atoms(FILE                           *out,
 
 void write_top(MsgHandler       *msg_handler,
                FILE             *out,
-               char             *molname,
+               const char       *molname,
                const Topology   *topology,
                const ForceField *pd)
 {

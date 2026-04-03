@@ -66,7 +66,7 @@ namespace alexandria
         /*! Constructor
          * \param[in] id The identifier
          */
-        OneBonded(const Identifier id) : id_(id) {}
+        OneBonded(const Identifier &id) : id_(id) {}
     
         //! Return my id
         const Identifier &id() const { return id_; }
