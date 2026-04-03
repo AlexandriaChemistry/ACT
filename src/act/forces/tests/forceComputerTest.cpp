@@ -51,6 +51,7 @@
 #include "act/forcefield/potential.h"
 #include "act/import/import.h"
 #include "gromacs/math/vectypes.h"
+#include "testutils/testfilemanager.h"
 
 namespace alexandria
 {
