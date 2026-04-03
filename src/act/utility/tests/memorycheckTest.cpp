@@ -34,9 +34,12 @@
 #include "../memory_check.h"
 
 #include <cstdio>
+#include <fstream>
 #include <string>
 
 #include <gtest/gtest.h>
+
+#include "testutils/testfilemanager.h"
 
 // ---- memory_usage_low() tests ----
 
@@ -73,15 +76,20 @@ TEST(MemoryCheckTest, PrintMemoryUsageLowNullFpDoesNotCrash)
 
 TEST(MemoryCheckTest, PrintMemoryUsageLowWritesToFile)
 {
-    FILE *fp = tmpfile();
+    gmx::test::TestFileManager files;
+    std::string path = files.getTemporaryFilePath(".txt");
+    FILE *fp = fopen(path.c_str(), "w");
     ASSERT_NE(nullptr, fp);
     print_memory_usage_low(fp, "source.cpp", 42);
     fflush(fp);
-    rewind(fp);
-    char buf[512] = {};
-    fgets(buf, sizeof(buf), fp);
     fclose(fp);
-    std::string content(buf);
+    std::ifstream ifs(path);
+    std::string   content;
+    std::string   line;
+    while (std::getline(ifs, line))
+    {
+        content += line + "\n";
+    }
     // Either nothing was written (RSS unavailable) or the line contains VMEM
     EXPECT_TRUE(content.empty() || content.find("VMEM") != std::string::npos);
     if (!content.empty())
@@ -93,7 +101,9 @@ TEST(MemoryCheckTest, PrintMemoryUsageLowWritesToFile)
 
 TEST(MemoryCheckTest, PrintMemoryUsageMacroWorks)
 {
-    FILE *fp = tmpfile();
+    gmx::test::TestFileManager files;
+    std::string path = files.getTemporaryFilePath(".txt");
+    FILE *fp = fopen(path.c_str(), "w");
     ASSERT_NE(nullptr, fp);
     // print_memory_usage expands to print_memory_usage_low(fp, __FILE__, __LINE__)
     print_memory_usage(fp);
