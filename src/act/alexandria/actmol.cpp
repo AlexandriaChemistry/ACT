@@ -68,10 +68,8 @@ namespace alexandria
 ACTQprop::ACTQprop(const std::vector<ActAtom>   &atoms,
                    const std::vector<gmx::RVec> &x)
 {
-    if (atoms.empty())
-    {
-        GMX_THROW(gmx::InternalError("No atoms when initializing ACTQprop"));
-    }
+    GMX_RELEASE_ASSERT(!atoms.empty(), "No atoms when initializing ACTQprop");
+
     qPqm_.setQandX(atoms, x);
     qPact_.setQandX(atoms, x);
     qPact_.initializeMoments();
@@ -84,10 +82,8 @@ ACTQprop::ACTQprop(const std::vector<ActAtom>   &atoms,
 
 void ACTQprop::copyRespQ()
 {
-    if (isAtom_.empty())
-    {
-        GMX_THROW(gmx::InternalError("No atoms when initializing ACTQprop"));
-    }
+    GMX_RELEASE_ASSERT(!isAtom_.empty(), "No atoms when initializing ACTQprop");
+
     if (QgenResp_.nEsp() > 0)
     {
         std::vector<double> q = qPqm_.charge();
@@ -212,16 +208,12 @@ std::vector<gmx::RVec> ACTMol::experCoords(const std::vector<gmx::RVec> &xxx) co
 {
     auto topol   = topology();
     auto myatoms = topol->atoms();
-    if (myatoms.empty())
-    {
-        // Called this function too early?
-        GMX_THROW(gmx::InternalError("No topology to generate coordinates."));
-    }
-    else if (xxx.empty())
-    {
-        // Called this function too early?
-        GMX_THROW(gmx::InternalError("No coordinates."));
-    }
+    // Called this function too early?
+    GMX_RELEASE_ASSERT(!myatoms.empty(), "No topology to generate coordinates.");
+
+    // Called this function too early?
+    GMX_RELEASE_ASSERT(!xxx.empty(), "No coordinates.");
+
     gmx::RVec fzero = { 0, 0, 0 };
     std::vector<gmx::RVec> coords(myatoms.size(), fzero);
     int j = 0;
@@ -241,6 +233,7 @@ std::vector<gmx::RVec> ACTMol::experCoords(const std::vector<gmx::RVec> &xxx) co
         switch (myatoms[i].pType())
         {
         case ActParticle::Atom:
+        case ActParticle::SigmaHole:
             // Do nothing
             break;
         case ActParticle::Shell:
@@ -251,10 +244,6 @@ std::vector<gmx::RVec> ACTMol::experCoords(const std::vector<gmx::RVec> &xxx) co
                 copy_rvec(coords[cores[0]], coords[i]);
             }
             break;
-        default: // throws
-            {
-                GMX_THROW(gmx::InternalError(gmx::formatString("Don't know how to handle %s particle type", actParticleToString(myatoms[i].pType()).c_str()).c_str()));
-            }
         }
     }
     ForceComputer fcomp;
@@ -316,7 +305,10 @@ void ACTMol::forceEnergyMaps(MsgHandler                                         
         { MolPropObservable::INDUCTION,         InteractionType::INDUCTION      },
         { MolPropObservable::CHARGETRANSFER,    InteractionType::CHARGETRANSFER }
     };
-    GMX_RELEASE_ASSERT(forceComp, "No force computer supplied");
+    if (!forceComp)
+    {
+        msghandler->fatal("No force computer supplied to ACTMol::forceEnergyMaps");
+    }
     for (const auto &exper : experimentConst())
     {
         // We compute either interaction energies or normal energies for one experiment
@@ -916,8 +908,8 @@ ACTMessage ACTMol::GenerateAcmCharges(MsgHandler             *msg_handler,
     fraghandler_.fetchCharges(msg_handler, &qold);
     if (qold.size() != atomsConst().size())
     {
-        GMX_THROW(gmx::InternalError(gmx::formatString("Cannot fetch old charges for %s. #atom %lu #qold %zu",
-                                                       getMolname().c_str(), atomsConst().size(), qold.size()).c_str()));
+        msg_handler->fatal(gmx::formatString("Cannot fetch old charges for %s. #atom %lu #qold %zu",
+                                             getMolname().c_str(), atomsConst().size(), qold.size()));
     }
     ACTMessage imm       = ACTMessage::OK;
     if (fraghandler_.fixedCharges())
