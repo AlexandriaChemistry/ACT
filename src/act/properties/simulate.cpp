@@ -177,7 +177,7 @@ int simulate(int argc, char *argv[])
         {
             auto qCalc = qp->qPact();
             qCalc->initializeMoments();
-            qCalc->calcPolarizability(&pd, actmol.topology(), &forceComp);
+            qCalc->calcPolarizability(&msghandler, &pd, actmol.topology(), &forceComp);
             auto alpha = qCalc->polarizabilityTensor();
             std::string unit("A^3");
             double fac = convertFromGromacs(1, unit);

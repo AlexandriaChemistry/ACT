@@ -233,7 +233,7 @@ int gentop(int argc, char *argv[])
             actmol->PrintTopology(&msghandler, tfn.c_str(), &pd, forceComp,
                                   coords, bITP);
         }
-        for(const auto &c : actmol->generateCommercials(&pd, forceComp, coords))
+        for(const auto &c : actmol->generateCommercials(&msghandler, &pd, forceComp, coords))
         {
             msghandler.write(c);
         }

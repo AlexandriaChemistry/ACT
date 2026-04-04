@@ -1295,7 +1295,8 @@ std::string ACTMol::levelOfTheory()
     return s;
 }
 
-std::vector<std::string> ACTMol::generateCommercials(const ForceField             *pd,
+std::vector<std::string> ACTMol::generateCommercials(MsgHandler                   *msghandler,
+                                                     const ForceField             *pd,
                                                      const ForceComputer          *forceComp,
                                                      const std::vector<gmx::RVec> &coords)
 {
@@ -1337,7 +1338,7 @@ std::vector<std::string> ACTMol::generateCommercials(const ForceField           
             {
                 if (qelec.hasMultipole(mpo))
                 {
-                    auto mymu = qelec.getMultipole(mpo);
+                    auto mymu = qelec.getMultipole(msghandler, mpo);
                     commercials.push_back("");
                     commercials.push_back(gmx::formatString("%s %s (%s)\n",
                                                             mylot.c_str(), mpo_name(mpo), gp->getUnit()));
@@ -1348,7 +1349,7 @@ std::vector<std::string> ACTMol::generateCommercials(const ForceField           
                 }
                 if (qcalc->hasMultipole(mpo))
                 {
-                    auto mymu = qcalc->getMultipole(mpo);
+                    auto mymu = qcalc->getMultipole(msghandler, mpo);
                     commercials.push_back("");
                     commercials.push_back(gmx::formatString("Alexandria %s (%s)\n", mpo_name(mpo), gp->getUnit()));
                     for(auto &fmp : formatMultipole(mpo, mymu))
@@ -1361,7 +1362,7 @@ std::vector<std::string> ACTMol::generateCommercials(const ForceField           
     
         if (pd->polarizable())
         {
-            qcalc->calcPolarizability(pd, topology(), forceComp);
+            qcalc->calcPolarizability(msghandler, pd, topology(), forceComp);
             auto acalc = qcalc->polarizabilityTensor();
             std::vector<double> ac = { acalc[XX][XX], acalc[XX][YY], acalc[XX][ZZ],
                                        acalc[YY][YY], acalc[YY][ZZ], acalc[ZZ][ZZ] };
@@ -1418,7 +1419,7 @@ void ACTMol::PrintTopology(MsgHandler                   *msg_handler,
     }
 
     printmol.nr = 1;
-    auto commercials = generateCommercials(pd, forceComp, coords);
+    auto commercials = generateCommercials(msg_handler, pd, forceComp, coords);
 
     //! \todo write a replacement for this function
     print_top_header(fp, pd, bHaveShells_, commercials, bITP);
@@ -1498,7 +1499,7 @@ void ACTMol::GenerateCube(MsgHandler                   *msghandler,
                 forceComp->compute(msghandler, pd, topology(),
                                    &myx, &forces, &energies);
                 qresp->updateAtomCoords(myx);
-                qresp->updateAtomCharges(atomsConst());
+                qresp->updateAtomCharges(msghandler, atomsConst());
                 qresp->calcPot(msghandler, epsilonr);
                 qresp->potcomp(pcfn, oenv);
                 if (pdbdifffn)
@@ -1693,7 +1694,7 @@ void ACTMol::getExpProps(MsgHandler                                 *msghandler,
                     for(auto mygp = gp.begin(); mygp < gp.end(); ++mygp)
                     {
                         auto *multprop = static_cast<const MolecularMultipole *>(mygp->get());
-                        qelec->setMultipole(prop.first, multprop->getVector());
+                        qelec->setMultipole(msghandler, prop.first, multprop->getVector());
                         qprop = true;
                     }
                 }

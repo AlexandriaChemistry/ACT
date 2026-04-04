@@ -41,6 +41,7 @@
 #include "gromacs/math/vec.h"
 
 #include "act/alexandria/topology.h"
+#include "act/basics/msg_handler.h"
 #include "act/coulombintegrals/gaussian_integrals.h"
 #include "act/coulombintegrals/slater_integrals.h"
 #include "act/molprop/molprop.h"
@@ -50,7 +51,8 @@
 namespace alexandria
 {
 
-QgenAcm::QgenAcm(const ForceField           *pd,
+QgenAcm::QgenAcm(MsgHandler                 *msghandler,
+                 const ForceField           *pd,
                  const std::vector<ActAtom> &atoms,
                  const std::vector<Bond>    &bonds,
                  int                         qtotal)
@@ -85,8 +87,8 @@ QgenAcm::QgenAcm(const ForceField           *pd,
             const auto &acmtype = atype->interactionTypeToIdentifier(entype);
             if (acmtype.id().empty())
             {
-                GMX_THROW(gmx::InternalError(gmx::formatString("No ACM information for %s",
-                                                               atype->id().id().c_str()).c_str()));
+                msghandler->fatal(gmx::formatString("No ACM information for %s",
+                                              atype->id().id().c_str()));
             }
             acmtypes.push_back(acmtype.id());
         }
@@ -156,7 +158,7 @@ QgenAcm::QgenAcm(const ForceField           *pd,
         {
             if (atoms[i].pType() == ActParticle::Atom)
             {
-                GMX_THROW(gmx::InvalidInputError("Compounds with part of the atoms having fixed charges are not supported."));
+                msghandler->fatal("Compounds with part of the atoms having fixed charges are not supported.");
             }
         }
         const auto &fs = pd->findForcesConst(bctype);
@@ -167,7 +169,7 @@ QgenAcm::QgenAcm(const ForceField           *pd,
                 if (static_cast<size_t>(b.aI()) >= nonFixed_.size() ||
                     static_cast<size_t>(b.aJ()) >= nonFixed_.size())
                 {
-                    GMX_THROW(gmx::InvalidInputError("Compounds with part of the atoms having fixed charges are not supported."));
+                    msghandler->fatal("Compounds with part of the atoms having fixed charges are not supported.");
                 }
                 auto ai = acmtypes[nonFixed_[b.aI()]];
                 auto aj = acmtypes[nonFixed_[b.aJ()]];
@@ -479,11 +481,12 @@ void QgenAcm::copyChargesToAtoms(std::vector<ActAtom> *atoms)
     }
 }
 
-void QgenAcm::updatePositions(const std::vector<gmx::RVec> &x)
+void QgenAcm::updatePositions(MsgHandler                   *msg_handler,
+                              const std::vector<gmx::RVec> &x)
 {
     if (x.size() - x_.size() != 0)
     {
-        GMX_THROW(gmx::InternalError(gmx::formatString("Arrays not equally long. New %zu Old %zu. Help!", x.size(), x_.size()).c_str()));
+        msg_handler->fatal(gmx::formatString("Arrays not equally long. New %zu Old %zu. Help!", x.size(), x_.size()));
     }
     for (size_t i = 0; i < x.size(); i++)
     {
@@ -729,7 +732,7 @@ eQgen QgenAcm::generateCharges(MsgHandler                   *msg_handler,
     if (eQgen::OK == eQGEN_)
     {
         updateParameters();
-        updatePositions(x);
+        updatePositions(msg_handler, x);
         calcJcc(epsilonr_);
         if (pd->interactionPresent(InteractionType::BONDCORRECTIONS) &&
             pd->chargeGenerationAlgorithm() == ChargeGenerationAlgorithm::SQE)

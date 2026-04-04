@@ -319,14 +319,14 @@ void TrainForceFieldPrinter::analyse_multipoles(MsgHandler                      
             if (qelec.hasMultipole(mpo))
             {
                 tw->writeStringFormatted("Electronic %s (%s):\n", name, unit);
-                Telec = qelec.getMultipole(mpo);
+                Telec = qelec.getMultipole(msg_handler, mpo);
                 for(const auto &pm : formatMultipole(mpo, Telec))
                 {
                     tw->writeLine(pm);
                 }
             }
             real delta = 0;
-            auto Tcalc = qcalc->getMultipole(mpo);
+            auto Tcalc = qcalc->getMultipole(msg_handler, mpo);
             tw->writeStringFormatted("Calc %s (%s):\n", name, unit);
             for(const auto &pm : formatMultipole(mpo, Tcalc))
             {
@@ -565,7 +565,8 @@ void TrainForceFieldPrinter::addFileOptions(std::vector<t_filenm> *filenm)
     }
 }
 
-void TrainForceFieldPrinter::analysePolarisability(gmx::TextWriter     *tw,
+void TrainForceFieldPrinter::analysePolarisability(MsgHandler          *msghandler,
+                                                   gmx::TextWriter     *tw,
                                                    const ForceField    *pd,
                                                    alexandria::ACTMol  *mol,
                                                    iMolSelect           ims,
@@ -576,7 +577,7 @@ void TrainForceFieldPrinter::analysePolarisability(gmx::TextWriter     *tw,
     {
         auto qcalc = qp->qPact();
         auto qelec = qp->qPqmConst();
-        qcalc->calcPolarizability(pd, mol->topology(), forceComp);
+        qcalc->calcPolarizability(msghandler, pd, mol->topology(), forceComp);
         auto acalc = qcalc->polarizabilityTensor();
     
         print_polarizability(tw, mol->getMolname(), &qelec, qcalc, alpha_toler_, isopol_toler_);
@@ -1646,7 +1647,7 @@ void TrainForceFieldPrinter::print(MsgHandler                  *msghandler,
                         forceComp.compute(msghandler, pd, topology, &myx,
                                           &forces, &energies);
                         qresp->updateAtomCoords(myx);
-                        qresp->updateAtomCharges(mol->atomsConst());
+                        qresp->updateAtomCharges(msghandler, mol->atomsConst());
                         qresp->calcPot(msghandler, 1.0);
                         rms = qresp->getStatistics(msghandler, &rrms, &cosesp, &mae, &mse);
                         rms = convertToGromacs(rms, "Hartree/e");
@@ -1694,7 +1695,7 @@ void TrainForceFieldPrinter::print(MsgHandler                  *msghandler,
             // Polarizability
             if (bPolar)
             {
-                analysePolarisability(tw, pd, &(*mol), ims, &forceComp);
+                analysePolarisability(msghandler, tw, pd, &(*mol), ims, &forceComp);
             }
 
             // Atomic charges

@@ -132,7 +132,7 @@ void FragmentHandler::init(MsgHandler                   *msghandler,
             // ID copied from Fragment ID.
             ids_.push_back(f->inchi());
             // Structure for charge generation
-            QgenAcm_.push_back(QgenAcm(pd, top.atoms(), bonds_[ff], f->charge()));
+            QgenAcm_.push_back(QgenAcm(msghandler, pd, top.atoms(), bonds_[ff], f->charge()));
             // Total number of atoms
             natoms_ += top.atoms().size();
             // Extend topologies_ array

@@ -86,12 +86,14 @@ public:
      * Note that the force field cannot be const because we copy pointer
      * to data inside it. If the force field is const, these pointers
      * disappear after closing the constructor.
+     * \param[in] msghandler For error messages
      * \param[in] pd     Force field information
      * \param[in] atoms  Atoms data
      * \param[in] bonds  Bond data
      * \param[in] qtotal The total charge in this compound
      */
-    QgenAcm(const ForceField           *pd,
+    QgenAcm(MsgHandler                 *msghandler,
+            const ForceField           *pd,
             const std::vector<ActAtom> &atoms,
             const std::vector<Bond>    &bonds,
             int                         qtotal);
@@ -267,9 +269,11 @@ private:
                   const std::vector<Bond> &bonds);
     
     /*! \brief update the positions
+     * \param[in] msg_handler For error messages
      * \param[in] x The new coordinates
      */        
-    void updatePositions(const std::vector<gmx::RVec> &x);
+    void updatePositions(MsgHandler                   *msg_handler,
+                         const std::vector<gmx::RVec> &x);
     
     /*! \brief Compute the right/hand side of the matrix equation
      * \param[in] msg_handler For debug output

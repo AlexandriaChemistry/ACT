@@ -170,11 +170,11 @@ class QtypeTest : public gmx::test::CommandLineTestBase
                 checker_.checkSequence(q.begin(), q.end(), qlabel.c_str());
                 QtypeProps qp(qPropertyType::ACM, myatoms, coords);
                 qp.initializeMoments();
-                qp.setQandX(q, coords);
+                qp.setQandX(&msghandler, q, coords);
                 qp.calcMoments();
                 for(auto &mpo : mpoMultiPoles)
                 {
-                    auto v = qp.getMultipole(mpo);
+                    auto v = qp.getMultipole(&msghandler, mpo);
                     for(auto vv = v.begin(); vv < v.end(); ++vv)
                     {
                         *vv = convertFromGromacs(*vv, mpo_unit2(mpo));

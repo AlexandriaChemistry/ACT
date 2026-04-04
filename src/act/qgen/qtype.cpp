@@ -42,7 +42,6 @@
 #include "act/forces/forcecomputer.h"
 #include "act/molprop/multipole_names.h"
 #include "act/utility/units.h"
-#include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "qgen_resp.h"
@@ -67,7 +66,7 @@ const std::map<qPropertyType, std::string> &qPropertyTypes()
     return qPropertyTypeNames;
 }
 
-qPropertyType stringToQtype(const std::string &type)
+qPropertyType stringToQtype(MsgHandler *msghandler, const std::string &type)
 {
     for (const auto &qn : qPropertyTypeNames)
     {
@@ -76,7 +75,7 @@ qPropertyType stringToQtype(const std::string &type)
             return qn.first;
         }
     }
-    GMX_THROW(gmx::InvalidInputError(gmx::formatString("Unknown charge type %s", type.c_str()).c_str()));
+    msghandler->fatal(gmx::formatString("Unknown charge type %s", type.c_str()));
     // To make the compiler happy
     return qPropertyType::ACM;
 }
@@ -92,16 +91,25 @@ QtypeProps::QtypeProps(qPropertyType                 qtype,
         atomNumber_.push_back(atoms[i].atomicNumber());
         q_.push_back(atoms[i].charge());
     }
-    // Compute CoC
-    computeCoC();
+    // Compute CoC (atomNumber_ and x_ are always consistent here)
+    computeCoC(nullptr);
 }
 
-void QtypeProps::computeCoC()
+void QtypeProps::computeCoC(MsgHandler *msghandler)
 {
     if (atomNumber_.size() != x_.size())
     {
-        GMX_THROW(gmx::InternalError(gmx::formatString("Mismatch in array sizes, atomNumber %zu coords %zu elements.",
-                                                       atomNumber_.size(), x_.size()).c_str()));
+        if (msghandler)
+        {
+            msghandler->fatal(gmx::formatString("Mismatch in array sizes, atomNumber %zu coords %zu elements.",
+                                                atomNumber_.size(), x_.size()));
+        }
+        else
+        {
+            GMX_RELEASE_ASSERT(false,
+                               gmx::formatString("Mismatch in array sizes, atomNumber %zu coords %zu elements.",
+                                                 atomNumber_.size(), x_.size()).c_str());
+        }
     }
     int atntot = 0;
     clear_rvec(coc_);
@@ -164,16 +172,18 @@ void QtypeProps::setQ(const std::vector<ActAtom> &atoms)
         atomNumber_[i] = atoms[i].atomicNumber();
         q_[i] = atoms[i].charge();
     }
-    computeCoC();
+    // atomNumber_ and x_ are always consistent here
+    computeCoC(nullptr);
 }
 
-void QtypeProps::setQandX(const std::vector<double>    &q,
+void QtypeProps::setQandX(MsgHandler                   *msghandler,
+                          const std::vector<double>    &q,
                           const std::vector<gmx::RVec> &x)
 {
     q_.resize(q.size());
     setX(x);
     setQ(q);
-    computeCoC();
+    computeCoC(msghandler);
 }
 
 void QtypeProps::setQandX(const std::vector<ActAtom>   &atoms,
@@ -197,12 +207,12 @@ void QtypeProps::setPolarizabilityTensor(const tensor &alpha)
     hasAlpha_   = true;
 }
 
-double QtypeProps::dipole() const
+double QtypeProps::dipole(MsgHandler *msghandler) const
 {
     auto mm = multipoles_.find(MolPropObservable::DIPOLE);
     if (multipoles_.end() == mm)
     {
-        GMX_THROW(gmx::InternalError("No dipole!"));
+        msghandler->fatal("No dipole!");
     }
     double d2 = 0;
     for (int m = 0; m < DIM; m++)
@@ -217,18 +227,18 @@ bool QtypeProps::hasMultipole(MolPropObservable mpo) const
     return (multipoles_.find(mpo) != multipoles_.end());
 }
 
-const std::vector<double> QtypeProps::getMultipole(MolPropObservable mpo) const
+const std::vector<double> QtypeProps::getMultipole(MsgHandler *msghandler, MolPropObservable mpo) const
 {
     auto mf = multipoles_.find(mpo);
     if (mf == multipoles_.end())
     {
-        GMX_THROW(gmx::InternalError(gmx::formatString("No such observable %s in multipoles",
-                                                       mpo_name(mpo)).c_str()));
+        msghandler->fatal(gmx::formatString("No such observable %s in multipoles",
+                                            mpo_name(mpo)));
     }
     return mf->second;
 }
 
-void QtypeProps::setMultipole(MolPropObservable mpo, const std::vector<double> &mult)
+void QtypeProps::setMultipole(MsgHandler *msghandler, MolPropObservable mpo, const std::vector<double> &mult)
 {
     if (multipoles_.find(mpo) == multipoles_.end())
     {
@@ -236,12 +246,13 @@ void QtypeProps::setMultipole(MolPropObservable mpo, const std::vector<double> &
     }
     else
     {
-        GMX_THROW(gmx::InternalError(gmx::formatString("Multipole %s already set before", mpo_name(mpo)).c_str()));
+        msghandler->fatal(gmx::formatString("Multipole %s already set before", mpo_name(mpo)));
         multipoles_[mpo] = mult;
     }
 }
 
-void QtypeProps::calcPolarizability(const ForceField    *pd,
+void QtypeProps::calcPolarizability(MsgHandler          *msghandler,
+                                    const ForceField    *pd,
                                     const Topology      *top,
                                     const ForceComputer *forceComp)
 {
@@ -260,9 +271,9 @@ void QtypeProps::calcPolarizability(const ForceField    *pd,
     auto mpo = MolPropObservable::DIPOLE;
     if (!hasMultipole(mpo))
     {
-        GMX_THROW(gmx::InternalError("No dipole present to compute polarizablity."));
+        msghandler->fatal("No dipole present to compute polarizablity.");
     }
-    auto mu_ref = getMultipole(mpo);
+    auto mu_ref = getMultipole(msghandler, mpo);
     // Convert from e nm2/V to cubic nm
     double enm2_V = E_CHARGE*1e6*1e-18/(4*M_PI*EPSILON0_SI)*1e21;
 
@@ -278,7 +289,7 @@ void QtypeProps::calcPolarizability(const ForceField    *pd,
         setX(coords);
         field[m] = 0;
         calcMoments();
-        auto qmu = getMultipole(mpo);
+        auto qmu = getMultipole(msghandler, mpo);
         for (int n = 0; n < DIM; n++)
         {
             alpha[n][m] = enm2_V*((qmu[n]-mu_ref[n])/efield);
@@ -303,7 +314,7 @@ void QtypeProps::calcMoments(MsgHandler *msg_handler)
     // distance of atoms to center of charge
     rvec   r;
     resetMoments();
-    computeCoC();
+    computeCoC(msg_handler);
     auto dip  = MolPropObservable::DIPOLE;
     auto quad = MolPropObservable::QUADRUPOLE;
     auto oct  = MolPropObservable::OCTUPOLE;
