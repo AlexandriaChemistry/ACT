@@ -42,7 +42,6 @@
 #include "act/forces/forcecomputer.h"
 #include "act/forcefield/forcefield.h"
 #include "act/properties/rotator.h"
-#include "act/utility/jsontree.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/oenv.h"
 #include "gromacs/math/vectypes.h"

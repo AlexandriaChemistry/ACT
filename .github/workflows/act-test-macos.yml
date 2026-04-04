@@ -20,7 +20,7 @@ jobs:
       - name: Install system dependencies
         if: runner.os == 'macOS'
         run: |
-          brew install gcc cmake open-mpi libxml2
+          brew install gcc cmake open-mpi libxml2 rapidjson
       - uses: conda-incubator/setup-miniconda@v3
         with:
           auto-update-conda: true
