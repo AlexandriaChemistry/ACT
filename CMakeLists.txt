@@ -483,10 +483,10 @@ if(SQLITE3_FOUND)
     list(APPEND	GMX_EXTRA_LIBRARIES ${SQLITE3_LIBRARIES})
 endif(SQLITE3_FOUND)
 
-# RapidJSON for JSON reading/writing (header-only library)
-find_package(RapidJSON REQUIRED)
-message("RapidJSON_FOUND : ${RapidJSON_FOUND}")
-include_directories(${RAPIDJSON_INCLUDE_DIRS})
+# nlohmann/json for JSON reading/writing (header-only library)
+find_package(nlohmann_json REQUIRED)
+message("nlohmann_json_FOUND : ${nlohmann_json_FOUND}")
+list(APPEND GMX_EXTRA_LIBRARIES nlohmann_json::nlohmann_json)
 
 # We need Boost since RDKit needs it
 find_package(Boost CONFIG REQUIRED)

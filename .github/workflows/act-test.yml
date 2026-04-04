@@ -22,7 +22,7 @@ jobs:
         run: |
           sudo apt update
           sudo apt-get update
-          sudo apt-get -y install gcc cmake libopenmpi-dev openmpi-bin  libxml2 rapidjson-dev
+          sudo apt-get -y install gcc cmake libopenmpi-dev openmpi-bin  libxml2 nlohmann-json3-dev
       - uses: conda-incubator/setup-miniconda@v3
         with:
           auto-update-conda: true

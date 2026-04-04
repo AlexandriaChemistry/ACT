@@ -27,7 +27,7 @@
  */
  
 /*! \internal \brief
- * Implements JSON utility using RapidJSON for serialization
+ * Implements JSON utility using nlohmann/json for serialization
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
@@ -46,7 +46,7 @@ namespace alexandria
  * Only strings allowed for now.
  * Each JsonTree can have either a value or objects but not both.
  * If both are added a warning is printed.
- * JSON serialization is performed using the RapidJSON library.
+ * JSON serialization is performed using the nlohmann/json library.
  */
 class JsonTree
 {

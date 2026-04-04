@@ -28,15 +28,13 @@
  
 /*! \internal \brief
  * Implements part of the alexandria program.
- * JSON serialization uses the RapidJSON library.
+ * JSON serialization uses the nlohmann/json library.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
 #include "jsontree.h"
 
-#include <rapidjson/document.h>
-#include <rapidjson/stringbuffer.h>
-#include <rapidjson/writer.h>
+#include <nlohmann/json.hpp>
 
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/stringutil.h"
@@ -44,16 +42,15 @@
 namespace alexandria
 {
 
-/*! \brief Convert a JsonTree node's content to a rapidjson::Value.
+/*! \brief Convert a JsonTree node's content to an nlohmann::ordered_json value.
  * If the node has a value, it becomes a JSON string.
- * If the node has children, they become members of a JSON object.
+ * If the node has children, they become members of a JSON object
+ * preserving insertion order.
  * If both value and children are present, a warning is printed.
  * \param[in]  tree  The JsonTree node to convert
- * \param[in]  alloc The RapidJSON allocator
- * \return A rapidjson::Value representing this node's content
+ * \return An nlohmann::ordered_json value representing this node's content
  */
-static rapidjson::Value toRapidJsonValue(const JsonTree                       &tree,
-                                         rapidjson::Document::AllocatorType   &alloc)
+static nlohmann::ordered_json toNlohmannValue(const JsonTree &tree)
 {
     if (!tree.value().empty())
     {
@@ -62,29 +59,20 @@ static rapidjson::Value toRapidJsonValue(const JsonTree                       &t
             fprintf(stderr, "JsonTree object %s has both a value %s and %zu branches. Please fix code.\n",
                     tree.key().c_str(), tree.value().c_str(), tree.objects().size());
         }
-        rapidjson::Value v;
-        v.SetString(tree.value().c_str(),
-                    static_cast<rapidjson::SizeType>(tree.value().size()),
-                    alloc);
-        return v;
+        return tree.value();
     }
     else if (!tree.objects().empty())
     {
-        rapidjson::Value obj(rapidjson::kObjectType);
+        nlohmann::ordered_json obj = nlohmann::ordered_json::object();
         for (const auto &child : tree.objects())
         {
-            rapidjson::Value key;
-            key.SetString(child.key().c_str(),
-                          static_cast<rapidjson::SizeType>(child.key().size()),
-                          alloc);
-            rapidjson::Value val = toRapidJsonValue(child, alloc);
-            obj.AddMember(key, val, alloc);
+            obj[child.key()] = toNlohmannValue(child);
         }
         return obj;
     }
     else
     {
-        return rapidjson::Value(rapidjson::kNullType);
+        return nullptr;
     }
 }
 
@@ -101,21 +89,9 @@ const std::string JsonTree::writeString(bool json, int *indent) const
 {
     if (json)
     {
-        rapidjson::Document doc;
-        doc.SetObject();
-        auto &alloc = doc.GetAllocator();
-
-        rapidjson::Value key;
-        key.SetString(key_.c_str(),
-                      static_cast<rapidjson::SizeType>(key_.size()),
-                      alloc);
-        rapidjson::Value val = toRapidJsonValue(*this, alloc);
-        doc.AddMember(key, val, alloc);
-
-        rapidjson::StringBuffer                          buffer;
-        rapidjson::Writer<rapidjson::StringBuffer>       writer(buffer);
-        doc.Accept(writer);
-        return buffer.GetString();
+        nlohmann::ordered_json doc = nlohmann::ordered_json::object();
+        doc[key_] = toNlohmannValue(*this);
+        return doc.dump();
     }
     else
     {
