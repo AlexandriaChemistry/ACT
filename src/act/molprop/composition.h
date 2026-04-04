@@ -191,11 +191,6 @@ class MolecularComposition
         }
 
         /*! \brief
-         * Set the composition name
-         */
-        void SetCompName(char *compname) { compname_.assign(compname); }
-
-        /*! \brief
          * Add an AtomNum object to the composition
          *
          * \param[in] an  Atom number
