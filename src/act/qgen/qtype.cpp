@@ -247,7 +247,6 @@ void QtypeProps::setMultipole(MsgHandler *msghandler, MolPropObservable mpo, con
     else
     {
         msghandler->fatal(gmx::formatString("Multipole %s already set before", mpo_name(mpo)));
-        multipoles_[mpo] = mult;
     }
 }
 

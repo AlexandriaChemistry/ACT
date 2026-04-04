@@ -452,7 +452,7 @@ void QgenResp::optimizeCharges(MsgHandler *msg_handler,
 
     if (nEsp() < fitQ_)
     {
-        msg_handler->fatal(gmx::formatString("WARNING: Only %zu ESP points for %zu atoms. Cannot generate charges.", nEsp(), nAtom_));
+        msg_handler->fatal(gmx::formatString("Only %zu ESP points for %zu atoms. Cannot generate charges.", nEsp(), nAtom_));
     }
     
     // Algorithm as described in Ghahremanpour et al., JCTC 14 (2018)
