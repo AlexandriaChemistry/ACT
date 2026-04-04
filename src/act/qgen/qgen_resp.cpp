@@ -468,7 +468,7 @@ void QgenResp::optimizeCharges(MsgHandler *msg_handler,
         {
             // Compute potential due to this partice at grid
             // position j
-            auto pot = scale_factor*calcJ(ChargeDistributionType_, espx, x_[ii],
+            auto pot = scale_factor*calcJ(msg_handler, ChargeDistributionType_, espx, x_[ii],
                                           zeta_[ii], row_[ii]);
             // If this is a mutable atom
             //! \todo check with symmetric charges and virtual sites
