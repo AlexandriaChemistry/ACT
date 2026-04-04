@@ -198,6 +198,7 @@ TEST(JsonTreeTest, WriteStringJsonNestedLeaves)
     std::string expected =
         "{\"molecule\":{\"name\":\"water\",\"formula\":\"H2O\"}}";
     EXPECT_EQ(expected, result);
+    EXPECT_EQ(0, indent);
 }
 
 TEST(JsonTreeTest, WriteStringJsonValueUnitStructure)

@@ -47,6 +47,7 @@ namespace alexandria
 /*! \brief Convert a JsonTree node's content to a rapidjson::Value.
  * If the node has a value, it becomes a JSON string.
  * If the node has children, they become members of a JSON object.
+ * If both value and children are present, a warning is printed.
  * \param[in]  tree  The JsonTree node to convert
  * \param[in]  alloc The RapidJSON allocator
  * \return A rapidjson::Value representing this node's content
@@ -56,6 +57,11 @@ static rapidjson::Value toRapidJsonValue(const JsonTree                       &t
 {
     if (!tree.value().empty())
     {
+        if (!tree.objects().empty())
+        {
+            fprintf(stderr, "JsonTree object %s has both a value %s and %zu branches. Please fix code.\n",
+                    tree.key().c_str(), tree.value().c_str(), tree.objects().size());
+        }
         rapidjson::Value v;
         v.SetString(tree.value().c_str(),
                     static_cast<rapidjson::SizeType>(tree.value().size()),
