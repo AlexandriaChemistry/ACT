@@ -47,3 +47,5 @@ examples/TUNE_EEM/run_alcohol_v2.py
 *.bak
 *.orig
 *.rej
+install/
+build/

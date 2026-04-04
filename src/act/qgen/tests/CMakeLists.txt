@@ -39,9 +39,11 @@ gmx_add_unit_test(
     ${testname}
     ${exename}
     # files with code for tests
+    espPointTest.cpp
     interactionEnergyTest.cpp
     qgen_acmTest.cpp
 #    qgen_respTest.cpp
+    qtypeFunctionTest.cpp
     qtypeTest.cpp
     # pseudo-library for code for alexandria
     $<TARGET_OBJECTS:actLib>
