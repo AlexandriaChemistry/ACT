@@ -20,7 +20,7 @@ jobs:
       - name: Install system dependencies
         if: runner.os == 'macOS'
         run: |
-          brew install gcc cmake open-mpi libxml2 nlohmann-json
+          brew install gcc cmake open-mpi libxml2
       - uses: conda-incubator/setup-miniconda@v3
         with:
           auto-update-conda: true
@@ -29,7 +29,7 @@ jobs:
         shell: bash -el {0}
         run: |
           conda info
-          conda install conda-forge::librdkit-dev=2025.09.4 conda-forge::libboost-devel eigen
+          conda install conda-forge::librdkit-dev=2025.09.4 conda-forge::libboost-devel eigen conda-forge::nlohmann_json
       - name: Install ACT
         shell: bash -el {0}
         run: |
