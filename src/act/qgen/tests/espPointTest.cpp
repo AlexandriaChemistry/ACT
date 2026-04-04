@@ -27,7 +27,8 @@
  */
 
 /*! \internal \brief
- * Unit tests for the EspPoint class.
+ * Tests electrostatic potential point representation and RESP charge
+ * generation initialization.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 

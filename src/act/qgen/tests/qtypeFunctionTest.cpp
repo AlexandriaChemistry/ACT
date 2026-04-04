@@ -27,7 +27,8 @@
  */
 
 /*! \internal \brief
- * Unit tests for qPropertyType free functions and QtypeProps class methods.
+ * Tests charge property type enumeration conversions, polarizability
+ * tensor computations, and multipole error handling in QtypeProps.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
