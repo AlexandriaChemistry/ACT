@@ -1,0 +1,122 @@
+# sh/bash/zsh configuration file for ACT
+# First we remove old ACT stuff from the paths
+# by selecting everything else.
+# This is not 100% necessary, but very useful when we
+# repeatedly switch between ACT versions in a shell.
+
+#we make use of IFS, which needs shwordsplit in zsh
+test -n "${ZSH_VERSION+set}" && setopt shwordsplit
+old_IFS="$IFS"
+IFS=":"
+
+# First remove ACT part of ld_library_path
+#tmppath=""
+#for i in $LD_LIBRARY_PATH; do
+#  if test "$i" != "$ACTLDLIB"; then
+#    tmppath="${tmppath}${tmppath:+:}${i}"
+#  fi
+#done
+#LD_LIBRARY_PATH=$tmppath
+#if [[ ! -z "${CONDA_PREFIX}" ]]; then
+#  LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${CONDA_PREFIX}/lib
+#fi
+
+# remove ACT part of PKG_CONFIG_PATH
+tmppath=""
+for i in $PKG_CONFIG_PATH; do
+  if test "$i" != "$ACTLDLIB/pkgconfig"; then
+    tmppath="${tmppath}${tmppath:+:}${i}"
+  fi
+done
+PKG_CONFIG_PATH=$tmppath
+
+# remove ACT part of path
+tmppath=""
+for i in $PATH; do
+  if test "$i" != "$ACTBIN"; then
+    tmppath="${tmppath}${tmppath:+:}${i}"
+  fi
+done
+PATH=$tmppath
+
+# and remove the ACT part of manpath
+tmppath=""
+for i in $MANPATH; do
+  if test "$i" != "$ACTMAN"; then
+    tmppath="${tmppath}${tmppath:+:}${i}"
+  fi
+done
+MANPATH=$tmppath
+
+##########################################################
+# This is the real configuration part. We save the ACT
+# things in separate vars, so we can remove them later.
+# If you move ACT, change the first line.
+##########################################################
+ACTPREFIX=/home/runner/work/ACT/ACT/install
+ACTBIN=${ACTPREFIX}/bin
+ACTLDLIB=${ACTPREFIX}/lib
+ACTMAN=${ACTPREFIX}/share/man
+ACTDATA=${ACTPREFIX}/share/act
+ACTLIB=${ACTPREFIX}/lib
+ALLDIR=${ACTPREFIX}/lib/openbabel
+if [[ -d "${ALLDIR}" ]]; then
+    BABEL_LIBDIR=`/bin/ls -dt ${ALLDIR}/* | tail -n 1`
+fi
+if [[ -z "${BABEL_LIBDIR}" ]]; then
+    ALLDIR=${ACTPREFIX}/lib64/openbabel
+    if [[ -d "${ALLDIR}" ]]; then
+        BABEL_LIBDIR=`/bin/ls -dt ${ALLDIR}/* | tail -n 1`
+    fi
+fi
+ALLDIR=
+
+#LD_LIBRARY_PATH=${ACTLDLIB}:${LD_LIBRARY_PATH:+:}${LD_LIBRARY_PATH}
+PKG_CONFIG_PATH=${ACTLDLIB}/pkgconfig${PKG_CONFIG_PATH:+:}${PKG_CONFIG_PATH}
+PATH=${ACTBIN}${PATH:+:}${PATH}
+
+PYTHONADD=${ACTPREFIX}/lib/python3.12/site-packages/act
+OBLIB=${ACTPREFIX}/lib/python3.12/site-packages/openbabel
+
+if [[ ! -z "${OBLIB}" ]]; then
+  PYTHONADD=${PYTHONADD}:${OBLIB}
+fi
+if [[ -z "${PYTHONPATH}" ]]; then
+  PYTHONPATH=${PYTHONADD}
+else
+  PYTHONPATH=${PYTHONPATH}:${PYTHONADD}
+fi
+#debian/ubuntu needs a : at the end
+MANPATH=${ACTMAN}:${MANPATH}
+
+# export should be separate, so /bin/sh understands it
+export ACTBIN ACTLDLIB ACTMAN ACTDATA #LD_LIBRARY_PATH PATH MANPATH
+export PKG_CONFIG_PATH BABEL_LIBDIR PYTHONPATH
+
+IFS="$old_IFS"
+unset old_IFS
+
+# read bash completions if understand how to use them
+# and this shell supports extended globbing
+if test -n "${BASH_VERSION+set}" && (complete) > /dev/null 2>&1; then
+  if (shopt -s extglob) > /dev/null 2>&1; then
+    shopt -s extglob
+    if [ -f $ACTBIN/gmx-completion.bash ]; then
+      source $ACTBIN/gmx-completion.bash
+      for cfile in $ACTBIN/gmx-completion-*.bash ; do
+        source $cfile
+      done
+    fi
+  fi
+elif test -n "${ZSH_VERSION+set}" > /dev/null 2>&1 ; then
+  autoload bashcompinit
+  if (bashcompinit) > /dev/null 2>&1; then
+    bashcompinit
+    if [ -f $ACTBIN/gmx-completion.bash ]; then
+      source $ACTBIN/gmx-completion.bash
+      for cfile in $ACTBIN/gmx-completion-*.bash ; do
+        source $cfile
+      done
+    fi
+  fi
+fi

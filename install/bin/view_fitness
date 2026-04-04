@@ -1,0 +1,156 @@
+#!/usr/bin/env python3
+
+"""
+Visualizes the fitness per generation of GA/HYBRID.
+"""
+
+import argparse
+from types import SimpleNamespace
+import sys
+import os
+import matplotlib
+import matplotlib.pyplot as plt
+import numpy as np
+
+
+def check_for_file(fp: str) -> bool:
+    """
+    Check if a certain path corresponds to an existing file.
+    ---------------------------------------------------------
+    Parameters:
+        fp (str): path
+    Returns:
+        True if 'fp' is a file, False otherwise
+    """
+    if not os.path.exists(fp):
+        print(f'{fp} does not exist...')
+        return False
+    elif not os.path.isfile(fp):
+        print(f'{fp} is not a file...')
+        return False
+    else:
+        return True
+
+
+def plot_fitness(data: np.ndarray, dataset: str, args: SimpleNamespace) -> None:
+    """
+    Plot the fitness summary statatistics.
+    ---------------------------------------------------------
+    Parameters:
+        data (np.ndarray[nGenerations, popSize]): the fitness
+            matrix where each row contains the fitness of each
+            individual for that generation
+        dataset (str): name of the dataset. E.g. train, test...
+        args (SimpleNamespace): command-line arguments
+    """
+    gen_vector = np.arange(0, data.shape[0])
+    min, max = np.amin(data, axis=1), np.amax(data, axis=1)
+    mean, median = np.mean(data, axis=1), np.median(data, axis=1)
+
+    fig, ax = plt.subplots()
+
+    ax.set_title(f"{dataset.capitalize()} fitness", fontsize=args.fontsize)
+    ax.set_xlabel("Generation", fontsize=args.fontsize)
+    if args.log:
+        ax.set_yscale('log')
+        ax.set_ylabel("Fitness", fontsize=args.fontsize)
+    else:
+        if not args.ymin:  # Weird matplotlib things
+            args.ymin = 0
+        ax.set_ylabel("Fitness", fontsize=args.fontsize)
+
+    mycol = 0
+    for graph in [ 'min', 'max', 'mean', 'median' ]:
+        if graph not in args.hide:
+            ax.plot(gen_vector, eval(graph), color='C'+str(mycol), label=graph)
+        mycol += 1
+
+    ax.set_ylim(args.ymin, args.ymax)
+    for aa in [ 'x', 'y' ]:
+        ax.tick_params(axis=aa, labelsize=args.fontsize)
+    
+    ax.legend(loc='upper right', fontsize=args.fontsize)
+
+    fig.tight_layout()
+
+
+def parse_cmdline() -> SimpleNamespace:
+    """
+    Parse command line arguments.
+    ---------------------------------------------------------
+    Returns:
+        the arguments as a SimpleNamespace objects
+    """
+    parser = argparse.ArgumentParser(
+        description='Visualizes the fitness per generation of a GA/HYBRID by plotting the maximum, minimum, mean, and median.'
+    )
+    parser.add_argument('-ftrain', type=str, help='Filename for train fitness of GA')
+    parser.add_argument('-ftest', type=str, help='Filename for test fitness of GA')
+    parser.add_argument('-log',  help='Plot the log10 of the fitness value', action="store_true")
+    parser.add_argument('-ymax', help="Maximum value for y-axis in plot(s).", type=float, default=None)
+    parser.add_argument('-ymin', help="Minimum value for y-axis in plot(s). For regular y-axis scale, if not specified by the user, it defaults to 0.", type=float, default=None)
+    fontsize=18
+    parser.add_argument("-fs", "--fontsize", help="Font size, default "+str(fontsize), type=int, default=fontsize)
+    parser.add_argument('-hide', help="Statistics to hide. E.g. 'max median' (without quotes)", nargs='*', default=[])
+    return parser.parse_args()
+
+
+def check_args(args: SimpleNamespace) -> None:
+    """
+    Check the command-line arguments for invalid input.
+    If an invalid parameter is detected, the execution will
+    be halted.
+    ---------------------------------------------------------
+    Parameters:
+        args (SimpleNamespace): command-line argumnents
+    """
+    halt: bool = False
+    if not (args.ftrain or args.ftest):
+        print("No file to read, okay...")
+        halt = True
+    if args.ymax and args.ymin and args.ymax <= args.ymin:
+        print(f'-ymax ({args.ymax}) should be larger than -ymin ({args.ymin})...')
+        halt = True
+    args.hide = [stat.lower() for stat in args.hide]
+    if sorted(['min', 'max', 'median', 'mean']) == sorted(args.hide):
+        print(f'You are hiding all statistics...')
+        halt = True
+    if args.log and args.ymin is not None and args.ymin <= 0:
+        print(f'When using log scale, -ymin ({args.ymin}) should be positive...')
+        halt = True
+    if args.log and args.ymax is not None and args.ymax <= 0:
+        print(f'When using log scale, -ymax ({args.ymax}) should be positive...')
+        halt = True
+    if args.ftrain and not check_for_file(args.ftrain):
+        halt = True
+    if args.ftest and not check_for_file(args.ftest):
+        halt = True
+    if halt:
+        sys.exit(1)
+
+
+def main() -> None:
+    """
+    Drive the script:
+        1) Parse command line arguments
+        2) Plot
+    """
+    args: SimpleNamespace = parse_cmdline()
+    check_args(args)
+
+    # For TRAIN
+    if args.ftrain:
+        ftrain_data = np.loadtxt(args.ftrain)
+        plot_fitness(ftrain_data, 'train', args)
+
+    # For TEST
+    if args.ftest:
+        ftest_data = np.loadtxt(args.ftest)
+        plot_fitness(ftest_data, 'test', args)
+
+    # Render matplotlib
+    plt.show()
+
+
+if __name__ == '__main__':
+    main()
