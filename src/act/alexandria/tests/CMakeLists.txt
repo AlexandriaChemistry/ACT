@@ -40,10 +40,16 @@ gmx_add_unit_test(
     ${exename}
     # files with code for tests
     actmol_util.cpp
+    actmolLowTest.cpp
     allbondedsTest.cpp
+    confighandlerTest.cpp
     forcecomputerTest.cpp
     molhandlerTest.cpp
+    molselectTest.cpp
     openmmTest.cpp
+    optimizationindexTest.cpp
+    princTest.cpp
+    symmetrizeChargesTest.cpp
     topologyTest.cpp
     # pseudo-library for code for alexandria
     $<TARGET_OBJECTS:actLib>
