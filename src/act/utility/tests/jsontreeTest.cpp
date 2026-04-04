@@ -194,12 +194,9 @@ TEST(JsonTreeTest, WriteStringJsonNestedLeaves)
     jt.addObject("formula", std::string("H2O"));
     int indent = 0;
     std::string result = jt.writeString(true, &indent);
-    // Verify expected JSON structure
+    // Proper JSON: children become members of an object
     std::string expected =
-        "{\"molecule\":[\n"
-        "  {\"name\":\"water\"},\n"
-        "  {\"formula\":\"H2O\"}\n"
-        "  ]}";
+        "{\"molecule\":{\"name\":\"water\",\"formula\":\"H2O\"}}";
     EXPECT_EQ(expected, result);
     EXPECT_EQ(0, indent);
 }

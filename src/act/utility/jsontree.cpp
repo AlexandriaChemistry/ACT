@@ -28,16 +28,53 @@
  
 /*! \internal \brief
  * Implements part of the alexandria program.
+ * JSON serialization uses the nlohmann/json library.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
 #include "jsontree.h"
+
+#include <nlohmann/json.hpp>
 
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/stringutil.h"
 
 namespace alexandria
 {
+
+/*! \brief Convert a JsonTree node's content to an nlohmann::ordered_json value.
+ * If the node has a value, it becomes a JSON string.
+ * If the node has children, they become members of a JSON object
+ * preserving insertion order.
+ * If both value and children are present, a warning is printed.
+ * \param[in]  tree  The JsonTree node to convert
+ * \return An nlohmann::ordered_json value representing this node's content
+ */
+static nlohmann::ordered_json toNlohmannValue(const JsonTree &tree)
+{
+    if (!tree.value().empty())
+    {
+        if (!tree.objects().empty())
+        {
+            fprintf(stderr, "JsonTree object %s has both a value %s and %zu branches. Please fix code.\n",
+                    tree.key().c_str(), tree.value().c_str(), tree.objects().size());
+        }
+        return tree.value();
+    }
+    else if (!tree.objects().empty())
+    {
+        nlohmann::ordered_json obj = nlohmann::ordered_json::object();
+        for (const auto &child : tree.objects())
+        {
+            obj[child.key()] = toNlohmannValue(child);
+        }
+        return obj;
+    }
+    else
+    {
+        return nullptr;
+    }
+}
 
 //! Add n spaces to a string.
 static void add_space(std::string *str, int n)
@@ -50,42 +87,16 @@ static void add_space(std::string *str, int n)
 
 const std::string JsonTree::writeString(bool json, int *indent) const
 {
-    std::string str;
-    add_space(&str, *indent);
     if (json)
     {
-        str += gmx::formatString("{\"%s\":", key_.c_str());
-        *indent += 2;
-        if (!value_.empty())
-        {
-            str += gmx::formatString("\"%s\"", value_.c_str());
-            if (!objects_.empty())
-            {
-                fprintf(stderr, "JsonTree object %s has both a value %s and %zu branches. Please fix code.\n", key_.c_str(), value_.c_str(), objects_.size());
-            }
-        }
-        else
-        {
-            str += "[\n";
-            size_t count = 0;
-            for (const auto &obj : objects_)
-            {
-                str += obj.writeString(json, indent);
-                if (count < objects_.size()-1)
-                {
-                    str += ",";
-                }
-                str += "\n";
-                count++;
-            }
-            add_space(&str, *indent);
-            str += "]";
-        }
-        *indent -= 2;
-        str += "}";
+        nlohmann::ordered_json doc = nlohmann::ordered_json::object();
+        doc[key_] = toNlohmannValue(*this);
+        return doc.dump();
     }
     else
     {
+        std::string str;
+        add_space(&str, *indent);
         str += gmx::formatString("%s:", key_.c_str());
         *indent += 2;
         if (!value_.empty())
@@ -130,8 +141,8 @@ const std::string JsonTree::writeString(bool json, int *indent) const
             }
         }
         *indent -= 2;
+        return str;
     }
-    return str;
 }
         
 void JsonTree::write(const std::string &fileName,
