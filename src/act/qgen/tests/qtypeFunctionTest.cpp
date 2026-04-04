@@ -36,6 +36,7 @@
 
 #include <gtest/gtest.h>
 
+#include "act/basics/msg_handler.h"
 #include "act/qgen/qtype.h"
 #include "act/molprop/multipole_names.h"
 
@@ -71,27 +72,32 @@ TEST(QPropertyTypeTest, NameForElec)
 
 TEST(QPropertyTypeTest, StringToQtypeACM)
 {
-    EXPECT_EQ(qPropertyType::ACM, stringToQtype("ACM"));
+    MsgHandler msghandler;
+    EXPECT_EQ(qPropertyType::ACM, stringToQtype(&msghandler, "ACM"));
 }
 
 TEST(QPropertyTypeTest, StringToQtypeESP)
 {
-    EXPECT_EQ(qPropertyType::ESP, stringToQtype("ESP"));
+    MsgHandler msghandler;
+    EXPECT_EQ(qPropertyType::ESP, stringToQtype(&msghandler, "ESP"));
 }
 
 TEST(QPropertyTypeTest, StringToQtypeElectronic)
 {
-    EXPECT_EQ(qPropertyType::Elec, stringToQtype("Electronic"));
+    MsgHandler msghandler;
+    EXPECT_EQ(qPropertyType::Elec, stringToQtype(&msghandler, "Electronic"));
 }
 
 TEST(QPropertyTypeTest, StringToQtypeInvalidThrows)
 {
-    EXPECT_THROW(stringToQtype("InvalidType"), gmx::InvalidInputError);
+    MsgHandler msghandler;
+    EXPECT_THROW(stringToQtype(&msghandler, "InvalidType"), gmx::InvalidInputError);
 }
 
 TEST(QPropertyTypeTest, StringToQtypeEmptyThrows)
 {
-    EXPECT_THROW(stringToQtype(""), gmx::InvalidInputError);
+    MsgHandler msghandler;
+    EXPECT_THROW(stringToQtype(&msghandler, ""), gmx::InvalidInputError);
 }
 
 TEST(QPropertyTypeTest, QPropertyTypesMapComplete)
@@ -105,9 +111,10 @@ TEST(QPropertyTypeTest, QPropertyTypesMapComplete)
 
 TEST(QPropertyTypeTest, RoundTripConversion)
 {
+    MsgHandler msghandler;
     for (const auto &entry : qPropertyTypes())
     {
-        EXPECT_EQ(entry.first, stringToQtype(entry.second));
+        EXPECT_EQ(entry.first, stringToQtype(&msghandler, entry.second));
         EXPECT_EQ(entry.second, qPropertyTypeName(entry.first));
     }
 }
@@ -157,23 +164,26 @@ TEST(QtypePropsTest, HasMultipoleReturnsTrueAfterInit)
 
 TEST(QtypePropsTest, GetMultipoleThrowsWhenNotPresent)
 {
+    MsgHandler msghandler;
     QtypeProps qp;
-    EXPECT_THROW(qp.getMultipole(MolPropObservable::DIPOLE), gmx::InternalError);
+    EXPECT_THROW(qp.getMultipole(&msghandler, MolPropObservable::DIPOLE), gmx::InvalidInputError);
 }
 
 TEST(QtypePropsTest, DipoleThrowsWhenNotPresent)
 {
+    MsgHandler msghandler;
     QtypeProps qp;
-    EXPECT_THROW(qp.dipole(), gmx::InternalError);
+    EXPECT_THROW(qp.dipole(&msghandler), gmx::InvalidInputError);
 }
 
 TEST(QtypePropsTest, SetMultipole)
 {
+    MsgHandler msghandler;
     QtypeProps qp;
     std::vector<double> dipValues = { 1.0, 2.0, 3.0 };
-    qp.setMultipole(MolPropObservable::DIPOLE, dipValues);
+    qp.setMultipole(&msghandler, MolPropObservable::DIPOLE, dipValues);
     EXPECT_TRUE(qp.hasMultipole(MolPropObservable::DIPOLE));
-    auto retrieved = qp.getMultipole(MolPropObservable::DIPOLE);
+    auto retrieved = qp.getMultipole(&msghandler, MolPropObservable::DIPOLE);
     EXPECT_EQ(3u, retrieved.size());
     EXPECT_DOUBLE_EQ(1.0, retrieved[0]);
     EXPECT_DOUBLE_EQ(2.0, retrieved[1]);
@@ -182,18 +192,20 @@ TEST(QtypePropsTest, SetMultipole)
 
 TEST(QtypePropsTest, SetMultipoleTwiceThrows)
 {
+    MsgHandler msghandler;
     QtypeProps qp;
     std::vector<double> dipValues = { 1.0, 2.0, 3.0 };
-    qp.setMultipole(MolPropObservable::DIPOLE, dipValues);
-    EXPECT_THROW(qp.setMultipole(MolPropObservable::DIPOLE, dipValues), gmx::InternalError);
+    qp.setMultipole(&msghandler, MolPropObservable::DIPOLE, dipValues);
+    EXPECT_THROW(qp.setMultipole(&msghandler, MolPropObservable::DIPOLE, dipValues), gmx::InvalidInputError);
 }
 
 TEST(QtypePropsTest, DipoleComputation)
 {
+    MsgHandler msghandler;
     QtypeProps qp;
     std::vector<double> dipValues = { 3.0, 4.0, 0.0 };
-    qp.setMultipole(MolPropObservable::DIPOLE, dipValues);
-    EXPECT_DOUBLE_EQ(5.0, qp.dipole());
+    qp.setMultipole(&msghandler, MolPropObservable::DIPOLE, dipValues);
+    EXPECT_DOUBLE_EQ(5.0, qp.dipole(&msghandler));
 }
 
 // ============================================================
@@ -331,9 +343,10 @@ TEST(QtypePropsTest, SetQVector)
 
 TEST(QtypePropsTest, SetQandXVectorRequiresAtomNumbers)
 {
-    // setQandX(q, x) calls computeCoC() which requires atomNumber_
+    // setQandX(msghandler, q, x) calls computeCoC() which requires atomNumber_
     // to be set. Calling it on a fresh QtypeProps without atomNumber_
     // raises an error because atomNumber_.size() != x_.size().
+    MsgHandler msghandler;
     QtypeProps qp;
     std::vector<double> q = { 1.0, -0.5, -0.5 };
     std::vector<gmx::RVec> x = {
@@ -341,7 +354,7 @@ TEST(QtypePropsTest, SetQandXVectorRequiresAtomNumbers)
         { 1.0, 0.0, 0.0 },
         { 0.0, 1.0, 0.0 }
     };
-    EXPECT_THROW(qp.setQandX(q, x), gmx::InternalError);
+    EXPECT_THROW(qp.setQandX(&msghandler, q, x), gmx::InvalidInputError);
 }
 
 // ============================================================
@@ -350,13 +363,14 @@ TEST(QtypePropsTest, SetQandXVectorRequiresAtomNumbers)
 
 TEST(QtypePropsTest, InitializeMomentsCreatesAll)
 {
+    MsgHandler msghandler;
     QtypeProps qp;
     qp.initializeMoments();
     // Check that all 4 multipole types are initialized
     for (const auto &mpo : mpoMultiPoles)
     {
         EXPECT_TRUE(qp.hasMultipole(mpo));
-        auto values = qp.getMultipole(mpo);
+        auto values = qp.getMultipole(&msghandler, mpo);
         // All values should be zero after initialization
         for (const auto &v : values)
         {

@@ -120,7 +120,8 @@ private:
     std::vector<InteractionType> terms_;
 
     //! \brief Analyse polarizability, add to statistics and print
-    void analysePolarisability(gmx::TextWriter     *tw,
+    void analysePolarisability(MsgHandler          *msghandler,
+                               gmx::TextWriter     *tw,
                                const ForceField    *pd,
                                alexandria::ACTMol  *mol,
                                iMolSelect           ims,

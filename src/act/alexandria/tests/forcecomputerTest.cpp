@@ -126,7 +126,7 @@ protected:
                 {
                     auto qCalc = qp->qPact();
                     qCalc->initializeMoments();
-                    qCalc->calcPolarizability(pd, mp.topology(), fcomp);
+                    qCalc->calcPolarizability(&msghandler, pd, mp.topology(), fcomp);
                     auto alpha = qCalc->polarizabilityTensor();
                     const char *xyz[DIM] = { "X", "Y", "Z" };
                 

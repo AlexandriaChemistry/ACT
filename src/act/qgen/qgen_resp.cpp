@@ -68,11 +68,12 @@ void QgenResp::updateAtomCoords(const std::vector<gmx::RVec> &x)
     }
 }
 
-void QgenResp::updateAtomCharges(const std::vector<ActAtom> &atoms)
+void QgenResp::updateAtomCharges(MsgHandler                 *msghandler,
+                                 const std::vector<ActAtom> &atoms)
 {
     if (nAtom_ != atoms.size())
     {
-        GMX_THROW(gmx::InternalError(gmx::formatString("Inconsistency between number of resp atoms %zu and topology atoms %lu", nAtom_, atoms.size()).c_str()));
+        msghandler->fatal(gmx::formatString("Inconsistency between number of resp atoms %zu and topology atoms %lu", nAtom_, atoms.size()));
     }
     qshell_  = 0;
     for (size_t i = 0; i < nAtom_; i++)
@@ -359,7 +360,8 @@ real QgenResp::getStatistics(MsgHandler *msg_handler,
  * \param[in] zeta       The distribution width of the charge
  * \param[in] row        Row in the periodic table (Slaters only)
  */
-static double calcJ(ChargeDistributionType chargeType,
+static double calcJ(MsgHandler            *msg_handler,
+                    ChargeDistributionType chargeType,
                     const rvec             espx,
                     const rvec             rax,
                     double                 zeta,
@@ -391,7 +393,7 @@ static double calcJ(ChargeDistributionType chargeType,
     {
         if (r == 0)
         {
-            GMX_THROW(gmx::InternalError(gmx::formatString("r = 0 when computing Coulomb potential in %s, %d.", __FILE__, __LINE__)));
+            msg_handler->fatal(gmx::formatString("r = 0 when computing Coulomb potential in %s, %d.", __FILE__, __LINE__));
         }
         eTot = (1.0/r);
     }
@@ -413,7 +415,7 @@ void QgenResp::calcPot(MsgHandler *msg_handler,
         // Loop over RESP atoms
         for (size_t j = 0; j < nAtom_; j++)
         {
-            auto epot = calcJ(ChargeDistributionType_, espx, x_[j], zeta_[j],
+            auto epot = calcJ(msg_handler, ChargeDistributionType_, espx, x_[j], zeta_[j],
                               row_[j]);
             qtot += q_[j];
             vv += (scale_factor*q_[j]*epot);
@@ -450,7 +452,7 @@ void QgenResp::optimizeCharges(MsgHandler *msg_handler,
 
     if (nEsp() < fitQ_)
     {
-        GMX_THROW(gmx::InternalError(gmx::formatString("WARNING: Only %zu ESP points for %zu atoms. Cannot generate charges.", nEsp(), nAtom_).c_str()));
+        msg_handler->fatal(gmx::formatString("Only %zu ESP points for %zu atoms. Cannot generate charges.", nEsp(), nAtom_));
     }
     
     // Algorithm as described in Ghahremanpour et al., JCTC 14 (2018)
@@ -466,7 +468,7 @@ void QgenResp::optimizeCharges(MsgHandler *msg_handler,
         {
             // Compute potential due to this partice at grid
             // position j
-            auto pot = scale_factor*calcJ(ChargeDistributionType_, espx, x_[ii],
+            auto pot = scale_factor*calcJ(msg_handler, ChargeDistributionType_, espx, x_[ii],
                                           zeta_[ii], row_[ii]);
             // If this is a mutable atom
             //! \todo check with symmetric charges and virtual sites

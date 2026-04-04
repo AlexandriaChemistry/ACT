@@ -586,12 +586,14 @@ public:
 
     /*!\brief Generate molecule info
      *
+     * \param[in] msghandler  For error messages
      * \param[in] pd          The force field
      * \param[in] forceComp   The force computer utility
      * \param[in] coords      The coordinates
      * \return a text about the compound including properties and citation infor
      */
-    std::vector<std::string> generateCommercials(const ForceField             *pd,
+    std::vector<std::string> generateCommercials(MsgHandler                   *msghandler,
+                                                 const ForceField             *pd,
                                                  const ForceComputer          *forceComp,
                                                  const std::vector<gmx::RVec> &coords);
 

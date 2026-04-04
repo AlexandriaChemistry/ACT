@@ -68,11 +68,11 @@ enum class qPropertyType {
 const std::string &qPropertyTypeName(qPropertyType qt);
 
 /*! \brief convert string to qtype
+ * \param[in] msghandler For error messages
  * \param[in] type The string
  * \return a qPropertyType.
- * \throws if not found
  */
-qPropertyType stringToQtype(const std::string &type);
+qPropertyType stringToQtype(MsgHandler *msghandler, const std::string &type);
 
 /*! \brief Return a complete map of qPropertyTypes and their names
  */
@@ -108,7 +108,10 @@ class QtypeProps
     //! Reset all the calc moments to zero
     void resetMoments();
     //! Recompute the center of charge
-    void computeCoC();
+    /*! \param[in] msghandler For error messages (may be nullptr for callers that
+     *                        guarantee atomNumber_ and x_ sizes are consistent)
+     */
+    void computeCoC(MsgHandler *msghandler);
     
     
  public:
@@ -136,10 +139,12 @@ class QtypeProps
 
     /*! \brief Set charges and coordinates.
      *
+     * \param[in] msghandler For error messages
      * \param[in] q The charges
      * \param[in] x The coordinates
      */
-    void setQandX(const std::vector<double>    &q,
+    void setQandX(MsgHandler                   *msghandler,
+                  const std::vector<double>    &q,
                   const std::vector<gmx::RVec> &x);
     
     /*! \brief Set charges and coordinates.
@@ -180,8 +185,9 @@ class QtypeProps
     void calcMoments(MsgHandler *msg_handler=nullptr);
     
     /*! \brief Return dipole for charge type qt.
+     * \param[in] msghandler For error messages
      */
-    double dipole() const;
+    double dipole(MsgHandler *msghandler) const;
     
     //! Check whether a polarizability is present
     bool hasPolarizability() const { return hasAlpha_; }
@@ -197,11 +203,13 @@ class QtypeProps
 
     /*! \brief Compute the polarizability tensor for the system.
      * The result is stored internally
+     * \param[in] msghandler For error messages
      * \param[in] pd        The force field
      * \param[in] top       The molecular topology
      * \param[in] forceComp The force computer    
      */
-    void calcPolarizability(const ForceField    *pd,
+    void calcPolarizability(MsgHandler          *msghandler,
+                            const ForceField    *pd,
                             const Topology      *top,
                             const ForceComputer *forceComp);
     
@@ -220,17 +228,18 @@ class QtypeProps
     bool hasMultipole(MolPropObservable mpo) const;
     
     /*! \brief Return multipole
+     * \param[in] msghandler For error messages
      * \param[in] mpo The type of multipole
      * \return The multipole values
-     * \throws with invalid input
      */
-    const std::vector<double> getMultipole(MolPropObservable mpo) const;
+    const std::vector<double> getMultipole(MsgHandler *msghandler, MolPropObservable mpo) const;
 
     /*! \brief Set multipole values
+     * \param[in] msghandler For error messages
      * \param[in] mpo  The type of multipole
      * \param[in] mult The multipoles
      */
-    void setMultipole(MolPropObservable mpo, const std::vector<double> &mult);
+    void setMultipole(MsgHandler *msghandler, MolPropObservable mpo, const std::vector<double> &mult);
 
     /*! \brief Return charges
      * \return The atomic charges

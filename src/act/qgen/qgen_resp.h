@@ -154,9 +154,11 @@ class QgenResp
         const std::vector<gmx::RVec> &coords() const { return x_; }
 
         /*! \brief Update the charges
+         * \param[in] msghandler For error messages
          * \param[in] atoms Vector containing atoms with new charges
          */
-        void updateAtomCharges(const std::vector<ActAtom> &atoms);
+        void updateAtomCharges(MsgHandler                 *msghandler,
+                               const std::vector<ActAtom> &atoms);
 
         const std::string &getStoichiometry() const { return stoichiometry_; }
 

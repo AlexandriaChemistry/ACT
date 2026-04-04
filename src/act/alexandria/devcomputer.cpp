@@ -153,7 +153,7 @@ void EspDevComputer::calcDeviation(MsgHandler                    *msghandler,
             qgr->updateZeta(actmol->atomsConst(), forcefield);
         }
         auto coords = qgr->coords();
-        qgr->updateAtomCharges(actmol->atomsConst());
+        qgr->updateAtomCharges(msghandler, actmol->atomsConst());
         // Need to call the force routine to update shells and/or vsites
         if (doForce)
         {
@@ -227,7 +227,7 @@ PolarDevComputer::PolarDevComputer()
     convert_ = convertFromGromacs(1.0, mpo_unit2(MolPropObservable::POLARIZABILITY));
 }
 
-void PolarDevComputer::calcDeviation(MsgHandler                    *,
+void PolarDevComputer::calcDeviation(MsgHandler                    *msghandler,
                                      const ForceComputer           *forceComputer,
                                      ACTMol                        *actmol,
                                      std::vector<gmx::RVec>        *,
@@ -246,7 +246,7 @@ void PolarDevComputer::calcDeviation(MsgHandler                    *,
             tensor aelec;
             copy_mat(qref.polarizabilityTensor(), aelec);
             qact->setQ(actmol->topology()->atoms());
-            qact->calcPolarizability(forcefield, actmol->topology(), forceComputer);
+            qact->calcPolarizability(msghandler, forcefield, actmol->topology(), forceComputer);
             auto acalc = qact->polarizabilityTensor();
             for(int i = 0; i < DIM; i++)
             {
@@ -288,7 +288,7 @@ void MultiPoleDevComputer::calcDeviation(MsgHandler                    *msghandl
         auto qact = qp->qPactConst();
         if (qqm.hasMultipole(mpo_) && qact.hasMultipole(mpo_))
         {
-            auto qelec = qqm.getMultipole(mpo_);
+            auto qelec = qqm.getMultipole(msghandler, mpo_);
             //! \todo Compute this only once if both dipole and quadrupole are used in fitting
             qact.setQ(*actmol->atoms());
             if (doForce)
@@ -300,7 +300,7 @@ void MultiPoleDevComputer::calcDeviation(MsgHandler                    *msghandl
                 qact.setX(myx);
             }
             qact.calcMoments();
-            auto qcalc = qact.getMultipole(mpo_);
+            auto qcalc = qact.getMultipole(msghandler, mpo_);
             for (size_t mm = 0; mm < qelec.size(); mm++)
             {
                 delta += gmx::square(qcalc[mm] - qelec[mm]);
