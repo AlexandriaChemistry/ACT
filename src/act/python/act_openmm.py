@@ -261,7 +261,7 @@ class CombinationRules:
     def arithmetic(self, vara:float, varb:float)->float:
         return eval(self.arithmeticString(str(vara), str(varb)))
 
-    def combTwoString(self, rule:str, vara:str, varb:str)->str:
+    def combTwoString(self, rule:str, vara:str, varb:str, param:str=None)->str:
         myrule = rule.lower()
         if "geometric" == myrule:
             return self.geometricString(vara, varb)
@@ -281,6 +281,12 @@ class CombinationRules:
             return ("select(%s^2+%s^2,(4*%s*%s/(sqrt(%s)+sqrt(%s))^2),0)" % ( vara, varb, vara, varb, vara, varb ))
         elif "hogervorstepsilon" == myrule:
             return ("select(%s*%s,((2.0 * %s * %s)/( %s + %s )),0)" %  ( vara, varb, vara, varb, vara, varb ))
+        elif "generalizedmean" == myrule:
+            p = self.exponents.get(param, 0.0) if hasattr(self, 'exponents') and param else 0.0
+            if abs(p) < 1e-6:
+                return self.geometricString(vara, varb)
+            else:
+                return ("(0.5*(%s^(%g) + %s^(%g)))^(1.0/(%g))" % (vara, p, varb, p, p))
         else:
             print("Ignoring unknown combination rule '%s'" % rule)
             return ""
@@ -288,7 +294,7 @@ class CombinationRules:
     def combTwoFloats(self, param:str, vara:float, varb:float)->float:
         myrule = self.comb[param].lower()
         try:
-            mystring = self.combTwoString(myrule, vara, varb).replace("^", "**").replace("sqrt", "math.sqrt")
+            mystring = self.combTwoString(myrule, vara, varb, param).replace("^", "**").replace("sqrt", "math.sqrt")
             return eval(mystring)
         except Exception as e:
             if (vara + varb) == 0 and myrule in ["qisigma", "halgrenepsilon", "hogervorstepsilon", "yang"]:
@@ -360,7 +366,7 @@ class CombinationRules:
         geom    = "geometric"
         for param in self.comb.keys():
             if hvs == self.comb[param].lower():
-                e12 = self.combTwoString("hogervorstepsilon", "epsilon1", "epsilon2")
+                e12 = self.combTwoString("hogervorstepsilon", "epsilon1", "epsilon2", "epsilon")
                 if VdWDict[self.vdw]["func"] == VdW.WBHAM and param == sigma:
                     mydict[sigma]  = ("select(epsilon,((((sqrt(((epsilon1*gamma1*(sigma1^6))/(gamma1-6)) * ((epsilon2*gamma2*(sigma2^6))/(gamma2-6)))*(gamma-6))/(epsilon*gamma))^(1.0/6.0))),0);")
                 elif VdWDict[self.vdw]["func"] == VdW.GBHAM and param == 'rmin':
@@ -379,12 +385,12 @@ class CombinationRules:
                     sys.exit("Combination rule %s not supported for param %s" % ( wme, param ))
             elif mng == self.comb[param].lower():
                 if "gamma" == param:
-                    sigmaIJ = self.combTwoString(geom, "sigma1", "sigma2")
+                    sigmaIJ = self.combTwoString(geom, "sigma1", "sigma2", "sigma")
                     mydict["gamma"] = ("select(sigma1*sigma2,%s*(0.5*(gamma1/sigma1+gamma2/sigma2)),0)" % sigmaIJ)
                 else:
                     sys.exit("Combination rule %s not supported for param %s" % ( mng, param ))
             else:
-                mydict[param] = self.combTwoString(self.comb[param], param+"1", param+"2")
+                mydict[param] = self.combTwoString(self.comb[param], param+"1", param+"2", param)
         return mydict
 
     def gaussianString(self)->str:
@@ -832,11 +838,17 @@ class ActOpenMMSim:
                 if not correct:
                     sys.exit("Invalid potential name '%s'" % potname)
             elif param.startswith("cr-"):
-                try:
-                    cparm, crule = param[3:].split("_")
-                    self.comb.add_rule(cparm, crule)
-                except:
-                    sys.exit("Invalid combination rule '%s'" % ( param[3:] ) )
+                if param.endswith("Exp"):
+                    cparm, crule = param[3:-3].split("_")
+                    if not hasattr(self.comb, "exponents"):
+                        self.comb.exponents = {}
+                    self.comb.exponents[cparm] = value
+                else:
+                    try:
+                        cparm, crule = param[3:].split("_")
+                        self.comb.add_rule(cparm, crule)
+                    except:
+                        sys.exit("Invalid combination rule '%s'" % ( param[3:] ) )
             elif param.startswith("prefactor-"):
                 VdWDict[self.vdw]["prefactor"] = param[10:]
             elif param.startswith("nexcl"):
