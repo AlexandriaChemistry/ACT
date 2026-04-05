@@ -592,10 +592,11 @@ bool OptACM::runMaster(bool optimize,
     }
     else
     {
-        // This is to allow a sensitivitu analysis with nooptize.
+        // This is to allow a sensitivity analysis with nooptimize.
         auto ind = static_cast<alexandria::ACMIndividual *>(initializer_->initialize());
 
         bestGenome[iMolSelect::Train] = ind->genome();
+        delete ind;
     }
     if (gach_.optimizer() != OptimizerAlg::GA && sensitivity && msghandler_.ok())
     {
