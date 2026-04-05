@@ -1,18 +1,82 @@
-# This is a convenience script to determine which
-# type of shell you have, and then run ACTRC.[csh|bash|zsh]
-# from the Gromacs binary directory.
-#
-# If you only use one shell you can copy that ACTRC.* instead.
+# sh/bash/zsh configuration file for ACT
+# First we remove old ACT stuff from the paths
+# by selecting everything else.
+# This is not 100% necessary, but very useful when we
+# repeatedly switch between ACT versions in a shell.
 
-# only csh/tcsh set the variable $shell (note: lower case!)
-# but check for the contents to be sure, since some environments may
-# set it also for other shells
-echo $shell | grep -q csh && goto CSH
+#we make use of IFS, which needs shwordsplit in zsh
+test -n "${ZSH_VERSION+set}" && setopt shwordsplit
+old_IFS="$IFS"
+IFS=":"
 
-# if we got here, shell is bsh/bash/zsh/ksh
-. @CMAKE_INSTALL_PREFIX@/@CMAKE_INSTALL_BINDIR@/ACTRC.bash
-return
+# First remove ACT part of ld_library_path
+#tmppath=""
+#for i in $LD_LIBRARY_PATH; do
+#  if test "$i" != "$ACTLDLIB"; then
+#    tmppath="${tmppath}${tmppath:+:}${i}"
+#  fi
+#done
+#LD_LIBRARY_PATH=$tmppath
+#if [[ ! -z "${CONDA_PREFIX}" ]]; then
+#  LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${CONDA_PREFIX}/lib
+#fi
 
-# csh/tcsh jump here
-CSH:
-source @CMAKE_INSTALL_PREFIX@/@CMAKE_INSTALL_BINDIR@/ACTRC.csh
+# remove ACT part of PKG_CONFIG_PATH
+tmppath=""
+for i in $PKG_CONFIG_PATH; do
+  if test "$i" != "$ACTLDLIB/pkgconfig"; then
+    tmppath="${tmppath}${tmppath:+:}${i}"
+  fi
+done
+PKG_CONFIG_PATH=$tmppath
+
+# remove ACT part of path
+tmppath=""
+for i in $PATH; do
+  if test "$i" != "$ACTBIN"; then
+    tmppath="${tmppath}${tmppath:+:}${i}"
+  fi
+done
+PATH=$tmppath
+
+# and remove the ACT part of manpath
+tmppath=""
+for i in $MANPATH; do
+  if test "$i" != "$ACTMAN"; then
+    tmppath="${tmppath}${tmppath:+:}${i}"
+  fi
+done
+MANPATH=$tmppath
+
+##########################################################
+# This is the real configuration part. We save the ACT
+# things in separate vars, so we can remove them later.
+# If you move ACT, change the first line.
+##########################################################
+ACTPREFIX=@CMAKE_INSTALL_PREFIX@
+ACTBIN=${ACTPREFIX}/@CMAKE_INSTALL_BINDIR@
+ACTLDLIB=${ACTPREFIX}/@CMAKE_INSTALL_LIBDIR@
+ACTMAN=${ACTPREFIX}/@CMAKE_INSTALL_MANDIR@
+ACTDATA=${ACTPREFIX}/@ACT_INSTALL_ACTDATADIR@
+ACTLIB=${ACTPREFIX}/lib
+
+PKG_CONFIG_PATH=${ACTLDLIB}/pkgconfig${PKG_CONFIG_PATH:+:}${PKG_CONFIG_PATH}
+PATH=${ACTBIN}${PATH:+:}${PATH}
+
+PYTHONADD=${ACTPREFIX}/@CMAKE_INSTALL_PYTHON_LIBDIR@/act
+
+if [[ -z "${PYTHONPATH}" ]]; then
+  PYTHONPATH=${PYTHONADD}
+else
+  PYTHONPATH=${PYTHONPATH}:${PYTHONADD}
+fi
+#debian/ubuntu needs a : at the end
+MANPATH=${ACTMAN}:${MANPATH}
+
+# export should be separate, so /bin/sh understands it
+export ACTBIN ACTLDLIB ACTMAN ACTDATA #LD_LIBRARY_PATH PATH MANPATH
+export PKG_CONFIG_PATH BABEL_LIBDIR PYTHONPATH
+
+IFS="$old_IFS"
+unset old_IFS
+
