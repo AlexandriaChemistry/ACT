@@ -1536,13 +1536,15 @@ class ActOpenMMSim:
 
         #### Integrator ####
         temperature_s = self.sim_params.getFloat('temperature_s')*kelvin
+        friction_c    = self.sim_params.getFloat('friction_c')
+        friction_s    = self.sim_params.getFloat('friction_s')
         integrator    = self.sim_params.getStr('integrator')
         if self.polarizable:
             if "DrudeNoseHooverIntegrator" == integrator:
                 self.integrator = DrudeNoseHooverIntegrator(self.temperature_c*kelvin, 
-                                                            self.sim_params.getFloat('friction_c')/picosecond,
+                                                            friction_c/picosecond,
                                                             temperature_s*kelvin,
-                                                            self.sim_params.getFloat('friction_s')/picosecond,
+                                                            friction_s/picosecond,
                                                             self.dt*picosecond,
                                                             self.sim_params.getInt("chainLength", 1),
                                                             self.sim_params.getInt("numMTS", 1),
@@ -1562,11 +1564,8 @@ class ActOpenMMSim:
                 if dli != integrator:
                     self.txt.write("Unsupported integrator %s for polarizable system, will use %s instead\n"
                                    % ( integrator, dli ))
-                self.integrator = DrudeLangevinIntegrator(self.temperature_c*kelvin,
-                                                          self.sim_params.getFloat('friction_c')/picosecond,
-                                                          temperature_s*kelvin,
-                                                          self.sim_params.getFloat('friction_s')/picosecond,
-                                                          self.dt*picosecond)
+                self.integrator = DrudeLangevinIntegrator(self.temperature_c, friction_c, temperature_s,
+                                                          friction_s, self.dt)
                 self.integrator.setMaxDrudeDistance(self.maxDrudeDist)
             if self.useAndersenThermostat and not "DrudeSCFIntegrator" == integrator:
                 self.txt.write("Andersen thermostat will be turned off since %s contains a built-in thermostat.\n"
