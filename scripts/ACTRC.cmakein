@@ -9,18 +9,6 @@ test -n "${ZSH_VERSION+set}" && setopt shwordsplit
 old_IFS="$IFS"
 IFS=":"
 
-# First remove ACT part of ld_library_path
-#tmppath=""
-#for i in $LD_LIBRARY_PATH; do
-#  if test "$i" != "$ACTLDLIB"; then
-#    tmppath="${tmppath}${tmppath:+:}${i}"
-#  fi
-#done
-#LD_LIBRARY_PATH=$tmppath
-#if [[ ! -z "${CONDA_PREFIX}" ]]; then
-#  LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${CONDA_PREFIX}/lib
-#fi
-
 # remove ACT part of PKG_CONFIG_PATH
 tmppath=""
 for i in $PKG_CONFIG_PATH; do
