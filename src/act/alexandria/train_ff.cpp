@@ -732,8 +732,9 @@ int train_ff(int argc, char *argv[])
         "to do a sensitivity analysis on an existing force field. In that case",
         "please select either [TT]-fc_inter[tt] (Intermolecular energy) or [TT]-fc_epot[tt]",
         "(Intramolecular energy), set the parameters to be investigated with",
-        "[TT]-fit 'a b c'[tt], and, finally, turn off random parameter initialization with",
-        "the [TT]-norandom_init[tt] flag.[PAR]"
+        "[TT]-fit 'a b c'[tt], and, finally, turn off optimization and random",
+        "parameter initialization with the [TT]-nooptimize[tt] and",
+        "[TT]-norandom_init[tt] flags.[PAR]"
     };
 
     bool                bcompress           = false;
