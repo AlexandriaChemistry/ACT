@@ -590,6 +590,14 @@ bool OptACM::runMaster(bool optimize,
         }
         printGenomeTable(bestGenome, ga_->getLastPop());
     }
+    else
+    {
+        // This is to allow a sensitivity analysis with nooptimize.
+        auto ind = static_cast<alexandria::ACMIndividual *>(initializer_->initialize());
+
+        bestGenome[iMolSelect::Train] = ind->genome();
+        delete ind;
+    }
     if (gach_.optimizer() != OptimizerAlg::GA && sensitivity && msghandler_.ok())
     {
         // Do sensitivity analysis only on the training set
@@ -719,6 +727,14 @@ int train_ff(int argc, char *argv[])
         "added if atoms from row VI or VII in the periodic table have a positive",
         "charge. The penalty is equal to the force constant given on the command line",
         "time the square of the charge.[PAR]",
+        "Following training a sensitivity analysis can be done on the trained",
+        "parameters using the [TT]-sensitivity[tt] flag. It is also possible",
+        "to do a sensitivity analysis on an existing force field. In that case",
+        "please select either [TT]-fc_inter[tt] (Intermolecular energy) or [TT]-fc_epot[tt]",
+        "(Intramolecular energy), set the parameters to be investigated with",
+        "[TT]-fit 'a b c'[tt], and, finally, turn off optimization and random",
+        "parameter initialization with the [TT]-nooptimize[tt] and",
+        "[TT]-norandom_init[tt] flags.[PAR]"
     };
 
     bool                bcompress           = false;
@@ -737,7 +753,7 @@ int train_ff(int argc, char *argv[])
             { "-optimize",     FALSE, etBOOL, {&bOptimize},
               "Do parameter optimization when true, or a single calculation otherwise." },
             { "-sensitivity",  FALSE, etBOOL, {&bSensitivity},
-              "Do a sensitivity analysis." }
+              "Do a sensitivity analysis. See help text." }
         };
 
         for (int i = 0; i < asize(pa); i++)
