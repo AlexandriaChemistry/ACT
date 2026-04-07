@@ -35,4 +35,6 @@
   <Int64 Name="NotSupportedDihedral">1</Int64>
   <Int64 Name="Missing parameter in force field">1</Int64>
   <Int64 Name="Minimization failed">1</Int64>
+  <Int64 Name="Inconsistent atom order across experiments">1</Int64>
+  <Int64 Name="Bond between atoms in different fragments">1</Int64>
 </ReferenceData>

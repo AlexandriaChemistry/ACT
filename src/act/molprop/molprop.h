@@ -92,11 +92,17 @@ public:
     MolProp() {}
     
     /*! \brief
-     * Check the internal consistency of this object
+     * Check the internal consistency of this object.
      *
-     * \todo Implement this
+     * Reports the number of experiments via msghandler at Info level.
+     * Reports errors if experiments with atoms have inconsistent atom order
+     * (name, obtype or atomid differ between experiments).
+     * For dimers (molecules with exactly two fragments) reports errors if
+     * any bond connects atoms belonging to different fragments.
+     *
+     * \param[in] msghandler Handler for logging and error reporting
      */
-    void checkConsistency() {};
+    void validate(MsgHandler *msghandler);
 
     //! \return myself
     MolProp *self() { return this; }

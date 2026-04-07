@@ -118,7 +118,11 @@ enum class ACTMessage
         //! Missing FF parameter
         MissingFFParameter,
         //! Minimization failed
-        MinimizationFailed
+        MinimizationFailed,
+        //! Inconsistent atom order across experiments in a MolProp
+        InconsistentAtomOrder,
+        //! Bond found between two different fragments in a dimer
+        InterFragmentBond
     };
 
 extern std::map<ACTMessage, const std::string> ACTMessages;

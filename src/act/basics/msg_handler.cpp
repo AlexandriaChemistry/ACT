@@ -82,7 +82,9 @@ std::map<ACTMessage, const std::string> ACTMessages = {
     { ACTMessage::NotSupportedLinearAngle,  "NotSupportedLinearAngle" },
     { ACTMessage::NotSupportedDihedral,     "NotSupportedDihedral" },
     { ACTMessage::MissingFFParameter,       "Missing parameter in force field" },
-    { ACTMessage::MinimizationFailed,       "Minimization failed" }
+    { ACTMessage::MinimizationFailed,       "Minimization failed" },
+    { ACTMessage::InconsistentAtomOrder,    "Inconsistent atom order across experiments" },
+    { ACTMessage::InterFragmentBond,        "Bond between atoms in different fragments" }
 };
 
 //! \brief Map enum ACTStatus to string

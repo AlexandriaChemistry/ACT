@@ -107,6 +107,103 @@ void MolProp::generateComposition()
     }
 }
 
+
+void MolProp::validate(MsgHandler *msghandler)
+{
+    if (!msghandler)
+    {
+        return;
+    }
+
+    // Count and report experiments
+    msghandler->msg(ACTStatus::Info,
+                    gmx::formatString("Molecule %s has %zu experiment(s).",
+                                      getMolname().c_str(), exper_.size()));
+
+    // Collect experiments that contain atoms
+    std::vector<const Experiment *> expWithAtoms;
+    for (const auto &ex : exper_)
+    {
+        if (ex.NAtom() > 0)
+        {
+            expWithAtoms.push_back(&ex);
+        }
+    }
+
+    // Check that all experiments with atoms have the same atom order
+    if (expWithAtoms.size() > 1)
+    {
+        const auto &refAtoms = expWithAtoms[0]->calcAtomConst();
+        for (size_t ei = 1; ei < expWithAtoms.size(); ++ei)
+        {
+            const auto &atoms = expWithAtoms[ei]->calcAtomConst();
+            if (atoms.size() != refAtoms.size())
+            {
+                msghandler->msg(ACTStatus::Error,
+                                ACTMessage::InconsistentAtomOrder,
+                                gmx::formatString("Molecule %s: experiment %zu has %zu atoms but "
+                                                  "experiment 0 has %zu atoms.",
+                                                  getMolname().c_str(), ei,
+                                                  atoms.size(), refAtoms.size()));
+                continue;
+            }
+            for (size_t ai = 0; ai < refAtoms.size(); ++ai)
+            {
+                bool nameOk   = (atoms[ai].getName()    == refAtoms[ai].getName());
+                bool obtypeOk = (atoms[ai].getObtype()  == refAtoms[ai].getObtype());
+                bool idOk     = (atoms[ai].getAtomid()  == refAtoms[ai].getAtomid());
+                if (!nameOk || !obtypeOk || !idOk)
+                {
+                    msghandler->msg(ACTStatus::Error,
+                                    ACTMessage::InconsistentAtomOrder,
+                                    gmx::formatString("Molecule %s: atom %zu differs between "
+                                                      "experiment 0 and experiment %zu "
+                                                      "(name '%s'/'%s', obtype '%s'/'%s', "
+                                                      "atomid %d/%d).",
+                                                      getMolname().c_str(), ai,
+                                                      ei,
+                                                      refAtoms[ai].getName().c_str(),
+                                                      atoms[ai].getName().c_str(),
+                                                      refAtoms[ai].getObtype().c_str(),
+                                                      atoms[ai].getObtype().c_str(),
+                                                      refAtoms[ai].getAtomid(),
+                                                      atoms[ai].getAtomid()));
+                }
+            }
+        }
+    }
+
+    // For dimers (exactly two fragments), check for inter-fragment bonds
+    if (fragment_.size() == 2)
+    {
+        // Build a lookup from atom index to fragment index (0 or 1)
+        std::map<int, int> atomToFrag;
+        for (int fi = 0; fi < 2; ++fi)
+        {
+            for (int atomIdx : fragment_[fi].atoms())
+            {
+                atomToFrag[atomIdx] = fi;
+            }
+        }
+        for (const auto &b : bond_)
+        {
+            auto itI = atomToFrag.find(b.aI());
+            auto itJ = atomToFrag.find(b.aJ());
+            if (itI != atomToFrag.end() && itJ != atomToFrag.end() &&
+                itI->second != itJ->second)
+            {
+                msghandler->msg(ACTStatus::Error,
+                                ACTMessage::InterFragmentBond,
+                                gmx::formatString("Molecule %s (dimer): bond between atom %d "
+                                                  "(fragment %d) and atom %d (fragment %d).",
+                                                  getMolname().c_str(),
+                                                  b.aI(), itI->second,
+                                                  b.aJ(), itJ->second));
+            }
+        }
+    }
+}
+
 bool MolProp::SearchCategory(const std::string &catname) const
 {
     for (auto &i : category_)

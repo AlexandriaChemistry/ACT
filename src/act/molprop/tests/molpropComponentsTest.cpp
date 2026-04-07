@@ -43,6 +43,7 @@
 
 #include "gromacs/utility/exceptions.h"
 
+#include "act/basics/msg_handler.h"
 #include "act/molprop/categories.h"
 #include "act/molprop/composition.h"
 #include "act/molprop/experiment.h"
@@ -1211,6 +1212,173 @@ TEST(HarmonicsTest, ConstructionFrequency)
 TEST(HarmonicsTest, ConstructionWrongMpoThrows)
 {
     EXPECT_THROW(Harmonics h("kJ/mol", 0.0, MolPropObservable::HF), gmx::InternalError);
+}
+
+// ============================================================
+// MolProp::validate tests
+// ============================================================
+
+/*! \brief Helper to build a simple Experiment with N atoms.
+ * Atoms are named "C1", "C2", ... with obtype "C.3" and atomid 1, 2, ...
+ */
+static Experiment makeExperimentWithAtoms(int nAtoms)
+{
+    Experiment exp("ref", "min");
+    for (int i = 0; i < nAtoms; ++i)
+    {
+        CalcAtom ca(gmx::formatString("C%d", i + 1), "C.3", i + 1);
+        exp.AddAtom(ca);
+    }
+    return exp;
+}
+
+TEST(MolPropValidateTest, NoExperimentsIsOk)
+{
+    MolProp mp;
+    mp.SetMolname("empty");
+    MsgHandler msghandler;
+    msghandler.setPrintLevel(ACTStatus::Warning);
+    mp.validate(&msghandler);
+    EXPECT_TRUE(msghandler.ok());
+    EXPECT_EQ(0u, msghandler.warningCount(ACTMessage::InconsistentAtomOrder));
+    EXPECT_EQ(0u, msghandler.warningCount(ACTMessage::InterFragmentBond));
+}
+
+TEST(MolPropValidateTest, ConsistentAtomsIsOk)
+{
+    MolProp mp;
+    mp.SetMolname("water");
+    mp.AddExperiment(makeExperimentWithAtoms(3));
+    mp.AddExperiment(makeExperimentWithAtoms(3));
+    MsgHandler msghandler;
+    msghandler.setPrintLevel(ACTStatus::Warning);
+    mp.validate(&msghandler);
+    EXPECT_TRUE(msghandler.ok());
+    EXPECT_EQ(0u, msghandler.warningCount(ACTMessage::InconsistentAtomOrder));
+}
+
+TEST(MolPropValidateTest, DifferentAtomCountIsError)
+{
+    MolProp mp;
+    mp.SetMolname("water");
+    mp.AddExperiment(makeExperimentWithAtoms(3));
+    // second experiment has a different number of atoms
+    mp.AddExperiment(makeExperimentWithAtoms(2));
+    MsgHandler msghandler;
+    msghandler.setPrintLevel(ACTStatus::Warning);
+    mp.validate(&msghandler);
+    EXPECT_FALSE(msghandler.ok());
+    EXPECT_GT(msghandler.warningCount(ACTMessage::InconsistentAtomOrder), 0u);
+}
+
+TEST(MolPropValidateTest, DifferentAtomNameIsError)
+{
+    MolProp mp;
+    mp.SetMolname("mol");
+    // First experiment
+    {
+        Experiment exp("ref1", "min");
+        exp.AddAtom(CalcAtom("C1", "C.3", 1));
+        exp.AddAtom(CalcAtom("N2", "N.3", 2));
+        mp.AddExperiment(std::move(exp));
+    }
+    // Second experiment: same size but different atom name at index 0
+    {
+        Experiment exp("ref2", "min");
+        exp.AddAtom(CalcAtom("O1", "O.3", 1));
+        exp.AddAtom(CalcAtom("N2", "N.3", 2));
+        mp.AddExperiment(std::move(exp));
+    }
+    MsgHandler msghandler;
+    msghandler.setPrintLevel(ACTStatus::Warning);
+    mp.validate(&msghandler);
+    EXPECT_FALSE(msghandler.ok());
+    EXPECT_GT(msghandler.warningCount(ACTMessage::InconsistentAtomOrder), 0u);
+}
+
+TEST(MolPropValidateTest, DifferentObTypeIsError)
+{
+    MolProp mp;
+    mp.SetMolname("mol");
+    {
+        Experiment exp("ref1", "min");
+        exp.AddAtom(CalcAtom("C1", "C.3", 1));
+        mp.AddExperiment(std::move(exp));
+    }
+    {
+        Experiment exp("ref2", "min");
+        exp.AddAtom(CalcAtom("C1", "C.ar", 1));  // different obtype
+        mp.AddExperiment(std::move(exp));
+    }
+    MsgHandler msghandler;
+    msghandler.setPrintLevel(ACTStatus::Warning);
+    mp.validate(&msghandler);
+    EXPECT_FALSE(msghandler.ok());
+    EXPECT_GT(msghandler.warningCount(ACTMessage::InconsistentAtomOrder), 0u);
+}
+
+TEST(MolPropValidateTest, DifferentAtomIdIsError)
+{
+    MolProp mp;
+    mp.SetMolname("mol");
+    {
+        Experiment exp("ref1", "min");
+        exp.AddAtom(CalcAtom("C1", "C.3", 1));
+        mp.AddExperiment(std::move(exp));
+    }
+    {
+        Experiment exp("ref2", "min");
+        exp.AddAtom(CalcAtom("C1", "C.3", 99));  // different atomid
+        mp.AddExperiment(std::move(exp));
+    }
+    MsgHandler msghandler;
+    msghandler.setPrintLevel(ACTStatus::Warning);
+    mp.validate(&msghandler);
+    EXPECT_FALSE(msghandler.ok());
+    EXPECT_GT(msghandler.warningCount(ACTMessage::InconsistentAtomOrder), 0u);
+}
+
+TEST(MolPropValidateTest, DimerNoInterFragmentBondIsOk)
+{
+    MolProp mp;
+    mp.SetMolname("dimer");
+    // Two fragments: atoms 0-1 and atoms 2-3
+    mp.addFragment(Fragment("frag0", 12.0, 0, 1, 1, "C2", {0, 1}));
+    mp.addFragment(Fragment("frag1", 12.0, 0, 1, 1, "C2", {2, 3}));
+    // Bond only within fragment 0 and fragment 1
+    mp.AddBond(Bond(0, 1, 1.0));
+    mp.AddBond(Bond(2, 3, 1.0));
+    MsgHandler msghandler;
+    msghandler.setPrintLevel(ACTStatus::Warning);
+    mp.validate(&msghandler);
+    EXPECT_TRUE(msghandler.ok());
+    EXPECT_EQ(0u, msghandler.warningCount(ACTMessage::InterFragmentBond));
+}
+
+TEST(MolPropValidateTest, DimerWithInterFragmentBondIsError)
+{
+    MolProp mp;
+    mp.SetMolname("dimer");
+    // Two fragments: atoms 0-1 and atoms 2-3
+    mp.addFragment(Fragment("frag0", 12.0, 0, 1, 1, "C2", {0, 1}));
+    mp.addFragment(Fragment("frag1", 12.0, 0, 1, 1, "C2", {2, 3}));
+    // One bond within frag0, one crossing fragments
+    mp.AddBond(Bond(0, 1, 1.0));
+    mp.AddBond(Bond(1, 2, 1.0));  // crosses fragment boundary
+    MsgHandler msghandler;
+    msghandler.setPrintLevel(ACTStatus::Warning);
+    mp.validate(&msghandler);
+    EXPECT_FALSE(msghandler.ok());
+    EXPECT_GT(msghandler.warningCount(ACTMessage::InterFragmentBond), 0u);
+}
+
+TEST(MolPropValidateTest, NullMsgHandlerIsNoop)
+{
+    MolProp mp;
+    mp.SetMolname("mol");
+    mp.AddExperiment(makeExperimentWithAtoms(2));
+    // Should not crash
+    mp.validate(nullptr);
 }
 
 } // namespace
