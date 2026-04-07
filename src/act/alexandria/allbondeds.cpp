@@ -153,6 +153,17 @@ void AllBondeds::addBondeds(MsgHandler             *msghandler,
                             const Identifier       &bondId,
                             const std::vector<int> &atomid)
 {
+    // Virtual sites have no geometric observable that can be measured from
+    // QM coordinates; their positions are determined by the vsite parameters
+    // which may not be assigned yet when this function is called (e.g. when
+    // the topology is built with missingParameters::Generate).  Calling
+    // experCoords() for a vsite entry would trigger constructPositions()
+    // before the parameters are available, so skip early here, consistent
+    // with what addBonded() does for these types.
+    if (isVsite(iType))
+    {
+        return;
+    }
     // Loop over experiments
     for (const auto &exper : mmi.experimentConst())
     {
