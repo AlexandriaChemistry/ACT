@@ -127,7 +127,8 @@ void DimerGenerator::finishOptions(const std::vector<t_filenm> &fnm)
     {
         binWidth_ = (maxdist_-mindist_)/(ndist_);
     }
-    trajname_ = opt2fn_null("-traj", fnm.size(), fnm.data());
+    trajname_  = opt2fn_null("-traj", fnm.size(), fnm.data());
+    outcoords_ = opt2fn_null("-ox",   fnm.size(), fnm.data());
 }
 
 //! \brief Print coordinates to xyz file
@@ -151,6 +152,15 @@ static void dump_coords(const char                                *outcoords,
         }
     }
     gmx_ffclose(fp);
+}
+
+void DimerGenerator::writeCoords(const ACTMol                              *actmol,
+                                  const std::vector<std::vector<gmx::RVec>> &coords) const
+{
+    if (outcoords_)
+    {
+        dump_coords(outcoords_, actmol, coords);
+    }
 }
 
 void DimerGenerator::generate(MsgHandler                          *msghandler,

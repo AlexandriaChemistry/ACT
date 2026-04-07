@@ -427,6 +427,8 @@ void ReRunner::runB2(CommunicationRecord         *cr,
     
     double xmin = 0;
     std::vector<gmx::RVec> inertia = { { 0, 0, 0 }, { 0, 0, 0 } };
+    // Collect all generated dimer coordinates for -ox output (only when requested)
+    std::vector<std::vector<gmx::RVec>> allCoords;
     //! Loop over my dimers, completely independently
     for(int idimer = 0; idimer < ndimer; idimer++)
     {
@@ -434,6 +436,13 @@ void ReRunner::runB2(CommunicationRecord         *cr,
         if (!gendimers_->hasTrajectory())
         {
             dimers = gendimers_->generateDimers(msghandler, actmol);
+            if (gendimers_->outCoords())
+            {
+                for (auto &d : dimers)
+                {
+                    allCoords.push_back(d);
+                }
+            }
         }
         // Structures to store energies, forces and torques
         gmx_stats                           edist;
@@ -630,6 +639,36 @@ void ReRunner::runB2(CommunicationRecord         *cr,
     }
     // Sum b2data over processors
     b2data.aggregate(cr);
+
+    // Gather generated dimer coordinates from all nodes and write to -ox file
+    if (gendimers_->outCoords() && !gendimers_->hasTrajectory())
+    {
+        if (!cr->isMaster())
+        {
+            int dest = cr->superior();
+            int n    = static_cast<int>(allCoords.size());
+            cr->send(dest, n);
+            for (auto &d : allCoords)
+            {
+                cr->send(dest, d);
+            }
+        }
+        else
+        {
+            for (int src = 1; src < cr->size(); src++)
+            {
+                int n = 0;
+                cr->recv(src, &n);
+                for (int i = 0; i < n; i++)
+                {
+                    std::vector<gmx::RVec> d;
+                    cr->recv(src, &d);
+                    allCoords.push_back(std::move(d));
+                }
+            }
+            gendimers_->writeCoords(actmol, allCoords);
+        }
+    }
 
     if (cr->isMaster())
     {
