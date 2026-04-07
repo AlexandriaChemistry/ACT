@@ -82,6 +82,8 @@ private:
     size_t                                 randIndex_ = 0;
     //! MsgHandler pointer for use in destructor (not owned)
     MsgHandler                            *msghandler_ = nullptr;
+    //! Output coordinate file name (from -ox option)
+    const char                            *outcoords_  = nullptr;
 public:
     //! Constructor
     DimerGenerator() : gen_(rd_()), dis_(std::uniform_real_distribution<double>(0.0, 1.0)) {}
@@ -142,6 +144,16 @@ public:
 
     //! Return bin width
     double binwidth() const { return binWidth_; }
+
+    //! Return output coordinates filename (nullptr if not set)
+    const char *outCoords() const { return outcoords_; }
+
+    /*! \brief Write all generated coordinates to file
+     * \param[in] actmol  The molecule description (for atom names)
+     * \param[in] coords  All the generated coordinate sets to write
+     */
+    void writeCoords(const ACTMol                              *actmol,
+                     const std::vector<std::vector<gmx::RVec>> &coords) const;
 
     //! Return whether or not there is a trajectory to read
     bool hasTrajectory() const { return trajname_ && strlen(trajname_) > 0; }
