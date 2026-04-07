@@ -796,7 +796,7 @@ size_t MolGen::Read(MsgHandler                          *msghandler,
         for (auto mpi = mp.begin(); mpi < mp.end(); )
         {
             mpi->generateComposition();
-            mpi->checkConsistency();
+            mpi->validate(msghandler);
             if (!mpi->hasAllAtomTypes())
             {
                 /*
