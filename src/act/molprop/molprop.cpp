@@ -116,10 +116,9 @@ void MolProp::validate(MsgHandler *msghandler)
     }
 
     // Count and report experiments
-    int nexper = static_cast<int>(exper_.size());
     msghandler->msg(ACTStatus::Info,
-                    gmx::formatString("Molecule %s has %d experiment(s).",
-                                      getMolname().c_str(), nexper));
+                    gmx::formatString("Molecule %s has %zu experiment(s).",
+                                      getMolname().c_str(), exper_.size()));
 
     // Collect experiments that contain atoms
     std::vector<const Experiment *> expWithAtoms;
