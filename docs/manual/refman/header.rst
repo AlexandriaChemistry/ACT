@@ -7,6 +7,7 @@ Reference Manual
 
    energy
    training
+   sensitivity
    ffdesign
    targets
    data
