@@ -42,6 +42,7 @@
 #include <gtest/gtest.h>
 
 #include "gromacs/utility/snprintf.h"
+#include "act/basics/msg_handler.h"
 #include "act/molprop/molprop.h"
 #include "act/molprop/molpropobservable.h"
 #include "act/molprop/molprop_xml.h"
@@ -204,6 +205,20 @@ protected:
     static void TearDownTestCase()
     {
     }
+
+    //! Test that all molecules in the XML file pass validation without errors
+    void testValidate()
+    {
+        MsgHandler msghandler;
+        msghandler.setPrintLevel(ACTStatus::Warning);
+        for (auto &mpi : mp_)
+        {
+            mpi.validate(&msghandler);
+        }
+        EXPECT_TRUE(msghandler.ok());
+        EXPECT_EQ(0u, msghandler.warningCount(ACTMessage::InconsistentAtomOrder));
+        EXPECT_EQ(0u, msghandler.warningCount(ACTMessage::InterFragmentBond));
+    }
     
 };
 
@@ -213,6 +228,10 @@ TEST_F (MolpropTest, NameFormulaBonds){
 
 TEST_F (MolpropTest, Calculations){
     testCalculations();
+}
+
+TEST_F (MolpropTest, Validate){
+    testValidate();
 }
 
 }
