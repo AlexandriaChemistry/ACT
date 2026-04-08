@@ -37,6 +37,11 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/math/units.h"
 
+#if (defined(__AVX512F__) && defined(GMX_SIMD_X86_AVX_512)) || \
+    (defined(__AVX2__)    && defined(GMX_SIMD_X86_AVX2_256))
+#include <immintrin.h>
+#endif
+
 namespace alexandria
 {
 
@@ -115,6 +120,9 @@ static inline void pairforces(double                  fscalar,
 }
 
 /*! \brief Compute Lennard-Jones 12-6 energy and forces
+ * Uses AVX-512 double-precision SIMD unrolling (8 pairs/iteration) when
+ * compiled with AVX-512 support (__AVX512F__), otherwise falls back to
+ * the scalar implementation.
  * \param[in]    msghandler  For warnings and errors
  * \param[in]    pairs       The atom identifiers and parameters
  * \param[in]    atoms       The atoms
@@ -124,25 +132,146 @@ static inline void pairforces(double                  fscalar,
  * \return total energy
  */
 static double computeLJ12_6(MsgHandler                            *msghandler,
-                            const TopologyEntryVector             &pairs,
-                            gmx_unused const std::vector<ActAtom> &atoms,
-                            const std::vector<gmx::RVec>          *coordinates,
-                            std::vector<gmx::RVec>                *forces,
-                            std::map<InteractionType, double>     *energies)
+                             const TopologyEntryVector             &pairs,
+                             gmx_unused const std::vector<ActAtom> &atoms,
+                             const std::vector<gmx::RVec>          *coordinates,
+                             std::vector<gmx::RVec>                *forces,
+                             std::map<InteractionType, double>     *energies)
 {
     double erep  = 0;
     double edisp = 0;
     auto   &x    = *coordinates;
-    for (const auto &b : pairs)
+
+    const size_t npairs = pairs.size();
+
+#if defined(__AVX512F__) && defined(GMX_SIMD_X86_AVX_512)
+    if (npairs >= 12)
     {
-        // Get the parameters. We have to know their names to do this.
+    // ---------------------------------------------------------------
+    // AVX-512 unrolled kernel: process 8 pairs per iteration
+    // AVX-512 ZMM registers hold 8 doubles (512 bits).
+    // ---------------------------------------------------------------
+    auto   &f    = *forces;
+    constexpr int W = 8;
+    // Aligned staging arrays for gather / scatter
+    alignas(64) double c6_arr[W], c12_arr[W];
+    alignas(64) double dxX[W], dxY[W], dxZ[W];
+    alignas(64) double flj_arr[W];
+    alignas(64) double vrep_arr[W], vdisp_arr[W];
+    int ai_arr[W], aj_arr[W];
+
+    const __m512d v12 = _mm512_set1_pd(12.0);
+    const __m512d v6  = _mm512_set1_pd(6.0);
+    const __m512d vhalf      = _mm512_set1_pd(0.5);
+    const __m512d vthreehalf = _mm512_set1_pd(1.5);
+    const __m512d vneg1      = _mm512_set1_pd(-1.0);
+
+    size_t i = 0;
+    for (; i + W <= npairs; i += W)
+    {
+        // ---- gather scalar data for W pairs -------------------------
+        for (int k = 0; k < W; k++)
+        {
+            auto &b          = pairs[i + k];
+            auto &params     = b->params();
+            double sig_ij    = params[lj12_6SIGMA];
+            double eps_ij    = params[lj12_6EPSILON];
+            double sig3      = sig_ij * sig_ij * sig_ij;
+            double sig6      = sig3 * sig3;
+            c6_arr[k]        = 4.0 * eps_ij * sig6;
+            c12_arr[k]       = c6_arr[k] * sig6;
+            auto &indices    = b->atomIndices();
+            ai_arr[k]        = indices[0];
+            aj_arr[k]        = indices[1];
+            dxX[k] = x[ai_arr[k]][XX] - x[aj_arr[k]][XX];
+            dxY[k] = x[ai_arr[k]][YY] - x[aj_arr[k]][YY];
+            dxZ[k] = x[ai_arr[k]][ZZ] - x[aj_arr[k]][ZZ];
+        }
+
+        // ---- load into AVX-512 registers ----------------------------
+        __m512d vc6   = _mm512_load_pd(c6_arr);
+        __m512d vc12  = _mm512_load_pd(c12_arr);
+        __m512d vdxX  = _mm512_load_pd(dxX);
+        __m512d vdxY  = _mm512_load_pd(dxY);
+        __m512d vdxZ  = _mm512_load_pd(dxZ);
+
+        // ---- dr2 = dx^2 + dy^2 + dz^2 ------------------------------
+        __m512d vdr2 = _mm512_fmadd_pd(vdxX, vdxX,
+                       _mm512_fmadd_pd(vdxY, vdxY,
+                       _mm512_mul_pd  (vdxZ, vdxZ)));
+
+        // ---- rinv = 1/sqrt(dr2): rsqrt14 + two Newton-Raphson steps --
+        // rsqrt14 gives ~14-bit precision; two NR steps give full
+        // double precision (~52 bits):
+        //   rinv_new = rinv * (1.5 - 0.5 * dr2 * rinv^2)
+        __m512d vrinv = _mm512_rsqrt14_pd(vdr2);
+        {
+            __m512d vtmp = _mm512_mul_pd(_mm512_mul_pd(vdr2, vrinv), vrinv);
+            vrinv = _mm512_mul_pd(vrinv,
+                    _mm512_fnmadd_pd(vhalf, vtmp, vthreehalf));
+        }
+        {
+            __m512d vtmp = _mm512_mul_pd(_mm512_mul_pd(vdr2, vrinv), vrinv);
+            vrinv = _mm512_mul_pd(vrinv,
+                    _mm512_fnmadd_pd(vhalf, vtmp, vthreehalf));
+        }
+
+        // ---- powers of rinv -----------------------------------------
+        __m512d vrinv2  = _mm512_mul_pd(vrinv,  vrinv);
+        __m512d vrinv4  = _mm512_mul_pd(vrinv2, vrinv2);
+        __m512d vrinv6  = _mm512_mul_pd(vrinv4, vrinv2);
+        __m512d vrinv12 = _mm512_mul_pd(vrinv6, vrinv6);
+
+        // ---- energy terms -------------------------------------------
+        // vvdw_disp = -c6 * rinv6
+        __m512d vvdisp = _mm512_mul_pd(vneg1, _mm512_mul_pd(vc6, vrinv6));
+        // vvdw_rep  =  c12 * rinv12
+        __m512d vvrep  = _mm512_mul_pd(vc12, vrinv12);
+
+        // ---- scalar force: flj = (12*vrep + 6*vdisp) * rinv2 -------
+        __m512d vflj = _mm512_mul_pd(
+                           _mm512_fmadd_pd(v12, vvrep,
+                           _mm512_mul_pd(v6, vvdisp)),
+                           vrinv2);
+
+        // ---- store results to staging arrays ------------------------
+        _mm512_store_pd(vrep_arr,  vvrep);
+        _mm512_store_pd(vdisp_arr, vvdisp);
+        _mm512_store_pd(flj_arr,   vflj);
+
+        // ---- accumulate energies; scatter forces back ---------------
+        for (int k = 0; k < W; k++)
+        {
+            erep  += vrep_arr[k];
+            edisp += vdisp_arr[k];
+            double fk   = flj_arr[k];
+            int    ai   = ai_arr[k];
+            int    aj   = aj_arr[k];
+            double fijX = fk * dxX[k];
+            double fijY = fk * dxY[k];
+            double fijZ = fk * dxZ[k];
+            f[ai][XX] += fijX;   f[aj][XX] -= fijX;
+            f[ai][YY] += fijY;   f[aj][YY] -= fijY;
+            f[ai][ZZ] += fijZ;   f[aj][ZZ] -= fijZ;
+            if (msghandler && msghandler->debug())
+            {
+                msghandler->writeDebug(
+                    gmx::formatString("ACT AVX512 ai %d aj %d vvdw_rep: %10g vvdw_disp: %10g",
+                                      ai, aj, vrep_arr[k], vdisp_arr[k]));
+            }
+        }
+    }
+
+    // ---- scalar tail loop for remaining pairs (npairs % 8) ---------
+    for (; i < npairs; i++)
+    {
+        auto &b         = pairs[i];
         auto &params    = b->params();
         auto sig_ij     = params[lj12_6SIGMA];
         auto eps_ij     = params[lj12_6EPSILON];
-        auto sig6       = gmx::square(sig_ij*sig_ij*sig_ij);
-        auto c6         = 4*eps_ij*sig6;
-        auto c12        = c6*sig6;
-        // Get the atom indices
+        auto sig6       = gmx::square(sig_ij * sig_ij * sig_ij);
+        auto c6         = 4 * eps_ij * sig6;
+        auto c12        = c6 * sig6;
         auto &indices   = b->atomIndices();
         auto ai         = indices[0];
         auto aj         = indices[1];
@@ -150,25 +279,221 @@ static double computeLJ12_6(MsgHandler                            *msghandler,
         rvec_sub(x[ai], x[aj], dx);
         auto dr2        = iprod(dx, dx);
         auto rinv       = gmx::invsqrt(dr2);
-        auto rinv2      = rinv*rinv;
-        auto rinv6      = rinv2*rinv2*rinv2;
-        auto vvdw_disp  = -c6*rinv6;
-        auto vvdw_rep   = c12*rinv6*rinv6;
-        auto flj        = (12*vvdw_rep + 6*vvdw_disp)*rinv2;
+        auto rinv2      = rinv * rinv;
+        auto rinv6      = rinv2 * rinv2 * rinv2;
+        auto vvdw_disp  = -c6 * rinv6;
+        auto vvdw_rep   = c12 * rinv6 * rinv6;
+        auto flj        = (12 * vvdw_rep + 6 * vvdw_disp) * rinv2;
         if (msghandler && msghandler->debug())
         {
-            msghandler->writeDebug(gmx::formatString("ACT ai %d aj %d vvdw_rep: %10g vvdw_disp: %10g c6: %10g c12: %10g",
-                                                     ai, aj, vvdw_rep, vvdw_disp, c6, c12));
+            msghandler->writeDebug(
+                gmx::formatString("ACT ai %d aj %d vvdw_rep: %10g vvdw_disp: %10g c6: %10g c12: %10g",
+                                  ai, aj, vvdw_rep, vvdw_disp, c6, c12));
         }
         pairforces(flj, dx, indices, forces);
-        erep      += vvdw_rep;
-        edisp     += vvdw_disp;
+        erep  += vvdw_rep;
+        edisp += vvdw_disp;
     }
+
+    }
+    else
+#endif
+#if defined(__AVX2__) && defined(GMX_SIMD_X86_AVX2_256)
+    if (npairs >= 6)
+    {
+    // ---------------------------------------------------------------
+    // AVX2_256 unrolled kernel: process 4 pairs per iteration
+    // AVX2_256 YMM registers hold 4 doubles (256 bits).
+    // ---------------------------------------------------------------
+    auto   &f    = *forces;
+    constexpr int W = 4;
+    // Aligned staging arrays for gather / scatter
+    alignas(32) double c6_arr[W], c12_arr[W];
+    alignas(32) double dxX[W], dxY[W], dxZ[W];
+    alignas(32) double flj_arr[W];
+    alignas(32) double vrep_arr[W], vdisp_arr[W];
+    int ai_arr[W], aj_arr[W];
+
+    const __m256d v12 = _mm256_set1_pd(12.0);
+    const __m256d v6  = _mm256_set1_pd(6.0);
+    const __m256d vhalf      = _mm256_set1_pd(0.5);
+    const __m256d vthreehalf = _mm256_set1_pd(1.5);
+    const __m256d vneg1      = _mm256_set1_pd(-1.0);
+
+    size_t i = 0;
+    for (; i + W <= npairs; i += W)
+    {
+        // ---- gather scalar data for W pairs -------------------------
+        for (int k = 0; k < W; k++)
+        {
+            auto &b          = pairs[i + k];
+            auto &params     = b->params();
+            double sig_ij    = params[lj12_6SIGMA];
+            double eps_ij    = params[lj12_6EPSILON];
+            double sig3      = sig_ij * sig_ij * sig_ij;
+            double sig6      = sig3 * sig3;
+            c6_arr[k]        = 4.0 * eps_ij * sig6;
+            c12_arr[k]       = c6_arr[k] * sig6;
+            auto &indices    = b->atomIndices();
+            ai_arr[k]        = indices[0];
+            aj_arr[k]        = indices[1];
+            dxX[k] = x[ai_arr[k]][XX] - x[aj_arr[k]][XX];
+            dxY[k] = x[ai_arr[k]][YY] - x[aj_arr[k]][YY];
+            dxZ[k] = x[ai_arr[k]][ZZ] - x[aj_arr[k]][ZZ];
+        }
+
+        // ---- load into AVX2_256 registers --------------------------
+        __m256d vc6   = _mm256_load_pd(c6_arr);
+        __m256d vc12  = _mm256_load_pd(c12_arr);
+        __m256d vdxX  = _mm256_load_pd(dxX);
+        __m256d vdxY  = _mm256_load_pd(dxY);
+        __m256d vdxZ  = _mm256_load_pd(dxZ);
+
+        // ---- dr2 = dx^2 + dy^2 + dz^2 ------------------------------
+        __m256d vdr2 = _mm256_fmadd_pd(vdxX, vdxX,
+                       _mm256_fmadd_pd(vdxY, vdxY,
+                       _mm256_mul_pd  (vdxZ, vdxZ)));
+
+        // ---- rinv = 1/sqrt(dr2): float rsqrt + two Newton-Raphson steps --
+        // _mm_rsqrt_ps gives ~12-bit precision; two NR steps give full
+        // double precision (~52 bits):
+        //   rinv_new = rinv * (1.5 - 0.5 * dr2 * rinv^2)
+        __m128  vdr2_f  = _mm256_cvtpd_ps(vdr2);
+        __m128  vrinv_f = _mm_rsqrt_ps(vdr2_f);
+        __m256d vrinv   = _mm256_cvtps_pd(vrinv_f);
+        {
+            __m256d vtmp = _mm256_mul_pd(_mm256_mul_pd(vdr2, vrinv), vrinv);
+            vrinv = _mm256_mul_pd(vrinv,
+                    _mm256_fnmadd_pd(vhalf, vtmp, vthreehalf));
+        }
+        {
+            __m256d vtmp = _mm256_mul_pd(_mm256_mul_pd(vdr2, vrinv), vrinv);
+            vrinv = _mm256_mul_pd(vrinv,
+                    _mm256_fnmadd_pd(vhalf, vtmp, vthreehalf));
+        }
+
+        // ---- powers of rinv -----------------------------------------
+        __m256d vrinv2  = _mm256_mul_pd(vrinv,  vrinv);
+        __m256d vrinv4  = _mm256_mul_pd(vrinv2, vrinv2);
+        __m256d vrinv6  = _mm256_mul_pd(vrinv4, vrinv2);
+        __m256d vrinv12 = _mm256_mul_pd(vrinv6, vrinv6);
+
+        // ---- energy terms -------------------------------------------
+        // vvdw_disp = -c6 * rinv6
+        __m256d vvdisp = _mm256_mul_pd(vneg1, _mm256_mul_pd(vc6, vrinv6));
+        // vvdw_rep  =  c12 * rinv12
+        __m256d vvrep  = _mm256_mul_pd(vc12, vrinv12);
+
+        // ---- scalar force: flj = (12*vrep + 6*vdisp) * rinv2 -------
+        __m256d vflj = _mm256_mul_pd(
+                           _mm256_fmadd_pd(v12, vvrep,
+                           _mm256_mul_pd(v6, vvdisp)),
+                           vrinv2);
+
+        // ---- store results to staging arrays ------------------------
+        _mm256_store_pd(vrep_arr,  vvrep);
+        _mm256_store_pd(vdisp_arr, vvdisp);
+        _mm256_store_pd(flj_arr,   vflj);
+
+        // ---- accumulate energies; scatter forces back ---------------
+        for (int k = 0; k < W; k++)
+        {
+            erep  += vrep_arr[k];
+            edisp += vdisp_arr[k];
+            double fk   = flj_arr[k];
+            int    ai   = ai_arr[k];
+            int    aj   = aj_arr[k];
+            double fijX = fk * dxX[k];
+            double fijY = fk * dxY[k];
+            double fijZ = fk * dxZ[k];
+            f[ai][XX] += fijX;   f[aj][XX] -= fijX;
+            f[ai][YY] += fijY;   f[aj][YY] -= fijY;
+            f[ai][ZZ] += fijZ;   f[aj][ZZ] -= fijZ;
+            if (msghandler && msghandler->debug())
+            {
+                msghandler->writeDebug(
+                    gmx::formatString("ACT AVX2_256 ai %d aj %d vvdw_rep: %10g vvdw_disp: %10g",
+                                      ai, aj, vrep_arr[k], vdisp_arr[k]));
+            }
+        }
+    }
+
+    // ---- scalar tail loop for remaining pairs (npairs % 4) ---------
+    for (; i < npairs; i++)
+    {
+        auto &b         = pairs[i];
+        auto &params    = b->params();
+        auto sig_ij     = params[lj12_6SIGMA];
+        auto eps_ij     = params[lj12_6EPSILON];
+        auto sig6       = gmx::square(sig_ij * sig_ij * sig_ij);
+        auto c6         = 4 * eps_ij * sig6;
+        auto c12        = c6 * sig6;
+        auto &indices   = b->atomIndices();
+        auto ai         = indices[0];
+        auto aj         = indices[1];
+        rvec dx;
+        rvec_sub(x[ai], x[aj], dx);
+        auto dr2        = iprod(dx, dx);
+        auto rinv       = gmx::invsqrt(dr2);
+        auto rinv2      = rinv * rinv;
+        auto rinv6      = rinv2 * rinv2 * rinv2;
+        auto vvdw_disp  = -c6 * rinv6;
+        auto vvdw_rep   = c12 * rinv6 * rinv6;
+        auto flj        = (12 * vvdw_rep + 6 * vvdw_disp) * rinv2;
+        if (msghandler && msghandler->debug())
+        {
+            msghandler->writeDebug(
+                gmx::formatString("ACT ai %d aj %d vvdw_rep: %10g vvdw_disp: %10g c6: %10g c12: %10g",
+                                  ai, aj, vvdw_rep, vvdw_disp, c6, c12));
+        }
+        pairforces(flj, dx, indices, forces);
+        erep  += vvdw_rep;
+        edisp += vvdw_disp;
+    }
+
+    }
+    else
+#endif
+    {
+    // ---- Scalar fallback (non-AVX-512 builds) ----------------------
+    for (size_t i = 0; i < npairs; i++)
+    {
+        auto &b         = pairs[i];
+        auto &params    = b->params();
+        auto sig_ij     = params[lj12_6SIGMA];
+        auto eps_ij     = params[lj12_6EPSILON];
+        auto sig6       = gmx::square(sig_ij * sig_ij * sig_ij);
+        auto c6         = 4 * eps_ij * sig6;
+        auto c12        = c6 * sig6;
+        auto &indices   = b->atomIndices();
+        auto ai         = indices[0];
+        auto aj         = indices[1];
+        rvec dx;
+        rvec_sub(x[ai], x[aj], dx);
+        auto dr2        = iprod(dx, dx);
+        auto rinv       = gmx::invsqrt(dr2);
+        auto rinv2      = rinv * rinv;
+        auto rinv6      = rinv2 * rinv2 * rinv2;
+        auto vvdw_disp  = -c6 * rinv6;
+        auto vvdw_rep   = c12 * rinv6 * rinv6;
+        auto flj        = (12 * vvdw_rep + 6 * vvdw_disp) * rinv2;
+        if (msghandler && msghandler->debug())
+        {
+            msghandler->writeDebug(
+                gmx::formatString("ACT ai %d aj %d vvdw_rep: %10g vvdw_disp: %10g c6: %10g c12: %10g",
+                                  ai, aj, vvdw_rep, vvdw_disp, c6, c12));
+        }
+        pairforces(flj, dx, indices, forces);
+        erep  += vvdw_rep;
+        edisp += vvdw_disp;
+    }
+    }
+
     if (msghandler && msghandler->debug())
     {
         msghandler->writeDebug(gmx::formatString("ACT erep: %10g edisp %10g", erep, edisp));
     }
-    energies->insert({InteractionType::EXCHANGE, erep});
+    energies->insert({InteractionType::EXCHANGE,   erep});
     energies->insert({InteractionType::DISPERSION, edisp});
 
     return erep + edisp;
@@ -192,47 +517,316 @@ static double computeLJ12_6_4(MsgHandler                            *msghandler,
 {
     double erep  = 0; // Pauli repulsion (1/r^12)
     double edisp = 0; // dipole-dipole (1/r^6)
-    double emid  = 0; // monopole-induced dipole (mid) (1/r^4) 
+    double emid  = 0; // monopole-induced dipole (mid) (1/r^4)
 
     auto   &x    = *coordinates;
-    for (const auto &b : pairs)
+    const size_t npairs = pairs.size();
+
+#if defined(__AVX512F__) && defined(GMX_SIMD_X86_AVX_512)
+    if (npairs >= 12)
     {
-        // Get the parameters. We have to know their names to do this.
-        auto &params    = b->params();
-        auto sig_ij     = params[lj12_6_4SIGMA];
-        auto eps_ij     = params[lj12_6_4EPSILON];
-        auto gamma      = params[lj12_6_4GAMMA];
-        auto sig6       = gmx::square(sig_ij*sig_ij*sig_ij);
-        auto c6         = 4*eps_ij*sig6;
-        auto c12        = c6*sig6;
-        // Get the atom indices
-        auto &indices   = b->atomIndices();
-        auto ai         = indices[0];
-        auto aj         = indices[1];
+    auto   &f    = *forces;
+    constexpr int W = 8;
+    alignas(64) double c6_arr[W], c12_arr[W], gamma_arr[W];
+    alignas(64) double dxX[W], dxY[W], dxZ[W];
+    alignas(64) double flj_arr[W];
+    alignas(64) double vrep_arr[W], vdisp_arr[W], vmid_arr[W];
+    int ai_arr[W], aj_arr[W];
+
+    const __m512d v12        = _mm512_set1_pd(12.0);
+    const __m512d v6         = _mm512_set1_pd(6.0);
+    const __m512d v4         = _mm512_set1_pd(4.0);
+    const __m512d vneg1      = _mm512_set1_pd(-1.0);
+    const __m512d vhalf      = _mm512_set1_pd(0.5);
+    const __m512d vthreehalf = _mm512_set1_pd(1.5);
+
+    size_t i = 0;
+    for (; i + W <= npairs; i += W)
+    {
+        for (int k = 0; k < W; k++)
+        {
+            auto &b       = pairs[i + k];
+            auto &params  = b->params();
+            double sig_ij = params[lj12_6_4SIGMA];
+            double eps_ij = params[lj12_6_4EPSILON];
+            double sig3   = sig_ij * sig_ij * sig_ij;
+            double sig6   = sig3 * sig3;
+            c6_arr[k]     = 4.0 * eps_ij * sig6;
+            c12_arr[k]    = c6_arr[k] * sig6;
+            gamma_arr[k]  = params[lj12_6_4GAMMA];
+            auto &indices = b->atomIndices();
+            ai_arr[k]     = indices[0];
+            aj_arr[k]     = indices[1];
+            dxX[k] = x[ai_arr[k]][XX] - x[aj_arr[k]][XX];
+            dxY[k] = x[ai_arr[k]][YY] - x[aj_arr[k]][YY];
+            dxZ[k] = x[ai_arr[k]][ZZ] - x[aj_arr[k]][ZZ];
+        }
+
+        __m512d vc6    = _mm512_load_pd(c6_arr);
+        __m512d vc12   = _mm512_load_pd(c12_arr);
+        __m512d vgamma = _mm512_load_pd(gamma_arr);
+        __m512d vdxX   = _mm512_load_pd(dxX);
+        __m512d vdxY   = _mm512_load_pd(dxY);
+        __m512d vdxZ   = _mm512_load_pd(dxZ);
+
+        __m512d vdr2 = _mm512_fmadd_pd(vdxX, vdxX,
+                       _mm512_fmadd_pd(vdxY, vdxY,
+                       _mm512_mul_pd  (vdxZ, vdxZ)));
+        __m512d vrinv = _mm512_rsqrt14_pd(vdr2);
+        {
+            __m512d vtmp = _mm512_mul_pd(_mm512_mul_pd(vdr2, vrinv), vrinv);
+            vrinv = _mm512_mul_pd(vrinv, _mm512_fnmadd_pd(vhalf, vtmp, vthreehalf));
+        }
+        {
+            __m512d vtmp = _mm512_mul_pd(_mm512_mul_pd(vdr2, vrinv), vrinv);
+            vrinv = _mm512_mul_pd(vrinv, _mm512_fnmadd_pd(vhalf, vtmp, vthreehalf));
+        }
+        __m512d vrinv2  = _mm512_mul_pd(vrinv,  vrinv);
+        __m512d vrinv4  = _mm512_mul_pd(vrinv2, vrinv2);
+        __m512d vrinv6  = _mm512_mul_pd(vrinv4, vrinv2);
+        __m512d vrinv12 = _mm512_mul_pd(vrinv6, vrinv6);
+
+        __m512d vvdw_mid  = _mm512_mul_pd(vneg1, _mm512_mul_pd(vgamma, vrinv4));
+        __m512d vvdw_disp = _mm512_mul_pd(vneg1, _mm512_mul_pd(vc6,    vrinv6));
+        __m512d vvdw_rep  = _mm512_mul_pd(vc12, vrinv12);
+        __m512d vflj = _mm512_mul_pd(
+                           _mm512_fmadd_pd(v12, vvdw_rep,
+                           _mm512_fmadd_pd(v6,  vvdw_disp,
+                           _mm512_mul_pd  (v4,  vvdw_mid))),
+                           vrinv2);
+
+        _mm512_store_pd(vrep_arr,  vvdw_rep);
+        _mm512_store_pd(vdisp_arr, vvdw_disp);
+        _mm512_store_pd(vmid_arr,  vvdw_mid);
+        _mm512_store_pd(flj_arr,   vflj);
+
+        for (int k = 0; k < W; k++)
+        {
+            erep  += vrep_arr[k];
+            edisp += vdisp_arr[k];
+            emid  += vmid_arr[k];
+            double fk   = flj_arr[k];
+            int    ai   = ai_arr[k];
+            int    aj   = aj_arr[k];
+            double fijX = fk * dxX[k];
+            double fijY = fk * dxY[k];
+            double fijZ = fk * dxZ[k];
+            f[ai][XX] += fijX;   f[aj][XX] -= fijX;
+            f[ai][YY] += fijY;   f[aj][YY] -= fijY;
+            f[ai][ZZ] += fijZ;   f[aj][ZZ] -= fijZ;
+        }
+    }
+
+    for (; i < npairs; i++)
+    {
+        auto &b      = pairs[i];
+        auto &params = b->params();
+        auto sig_ij  = params[lj12_6_4SIGMA];
+        auto eps_ij  = params[lj12_6_4EPSILON];
+        auto gamma   = params[lj12_6_4GAMMA];
+        auto sig6    = gmx::square(sig_ij*sig_ij*sig_ij);
+        auto c6      = 4*eps_ij*sig6;
+        auto c12     = c6*sig6;
+        auto &indices = b->atomIndices();
+        auto ai      = indices[0];
+        auto aj      = indices[1];
         rvec dx;
         rvec_sub(x[ai], x[aj], dx);
-        auto dr2        = iprod(dx, dx);
-        auto rinv       = gmx::invsqrt(dr2);
-        auto rinv2      = rinv*rinv;
-        auto rinv4      = rinv2*rinv2;
-        auto rinv6      = rinv2*rinv2*rinv2;
-        // Calculate energy terms
-        auto vvdw_mid   = -gamma*rinv4; 
-        auto vvdw_disp  = -c6*rinv6; 
-        auto vvdw_rep   = c12*rinv6*rinv6;
-        // Calculate force
-        auto flj        = (12*vvdw_rep + 6*vvdw_disp + 4*vvdw_mid)*rinv2;
-
+        auto dr2       = iprod(dx, dx);
+        auto rinv      = gmx::invsqrt(dr2);
+        auto rinv2     = rinv*rinv;
+        auto rinv4     = rinv2*rinv2;
+        auto rinv6     = rinv2*rinv2*rinv2;
+        auto vvdw_mid  = -gamma*rinv4;
+        auto vvdw_disp = -c6*rinv6;
+        auto vvdw_rep  = c12*rinv6*rinv6;
+        auto flj       = (12*vvdw_rep + 6*vvdw_disp + 4*vvdw_mid)*rinv2;
         if (msghandler && msghandler->debug())
         {
-            msghandler->writeDebug(gmx::formatString("ACT ai %d aj %d vvdw_rep: %10g vvdw_disp: %10g vvdw_mid: 10%g c6: %10g c12: %10g gamma: %10g",
+            msghandler->writeDebug(gmx::formatString("ACT ai %d aj %d vvdw_rep: %10g vvdw_disp: %10g vvdw_mid: %10g c6: %10g c12: %10g gamma: %10g",
                                                      ai, aj, vvdw_rep, vvdw_disp, vvdw_mid, c6, c12, gamma));
         }
         pairforces(flj, dx, indices, forces);
-        erep      += vvdw_rep;
-        edisp     += vvdw_disp;
-        emid      += vvdw_mid;
+        erep  += vvdw_rep;
+        edisp += vvdw_disp;
+        emid  += vvdw_mid;
     }
+
+    }
+    else
+#endif
+#if defined(__AVX2__) && defined(GMX_SIMD_X86_AVX2_256)
+    if (npairs >= 6)
+    {
+    auto   &f    = *forces;
+    constexpr int W = 4;
+    alignas(32) double c6_arr[W], c12_arr[W], gamma_arr[W];
+    alignas(32) double dxX[W], dxY[W], dxZ[W];
+    alignas(32) double flj_arr[W];
+    alignas(32) double vrep_arr[W], vdisp_arr[W], vmid_arr[W];
+    int ai_arr[W], aj_arr[W];
+
+    const __m256d v12        = _mm256_set1_pd(12.0);
+    const __m256d v6         = _mm256_set1_pd(6.0);
+    const __m256d v4         = _mm256_set1_pd(4.0);
+    const __m256d vneg1      = _mm256_set1_pd(-1.0);
+    const __m256d vhalf      = _mm256_set1_pd(0.5);
+    const __m256d vthreehalf = _mm256_set1_pd(1.5);
+
+    size_t i = 0;
+    for (; i + W <= npairs; i += W)
+    {
+        for (int k = 0; k < W; k++)
+        {
+            auto &b       = pairs[i + k];
+            auto &params  = b->params();
+            double sig_ij = params[lj12_6_4SIGMA];
+            double eps_ij = params[lj12_6_4EPSILON];
+            double sig3   = sig_ij * sig_ij * sig_ij;
+            double sig6   = sig3 * sig3;
+            c6_arr[k]     = 4.0 * eps_ij * sig6;
+            c12_arr[k]    = c6_arr[k] * sig6;
+            gamma_arr[k]  = params[lj12_6_4GAMMA];
+            auto &indices = b->atomIndices();
+            ai_arr[k]     = indices[0];
+            aj_arr[k]     = indices[1];
+            dxX[k] = x[ai_arr[k]][XX] - x[aj_arr[k]][XX];
+            dxY[k] = x[ai_arr[k]][YY] - x[aj_arr[k]][YY];
+            dxZ[k] = x[ai_arr[k]][ZZ] - x[aj_arr[k]][ZZ];
+        }
+
+        __m256d vc6    = _mm256_load_pd(c6_arr);
+        __m256d vc12   = _mm256_load_pd(c12_arr);
+        __m256d vgamma = _mm256_load_pd(gamma_arr);
+        __m256d vdxX   = _mm256_load_pd(dxX);
+        __m256d vdxY   = _mm256_load_pd(dxY);
+        __m256d vdxZ   = _mm256_load_pd(dxZ);
+
+        __m256d vdr2 = _mm256_fmadd_pd(vdxX, vdxX,
+                       _mm256_fmadd_pd(vdxY, vdxY,
+                       _mm256_mul_pd  (vdxZ, vdxZ)));
+        __m128  vdr2_f  = _mm256_cvtpd_ps(vdr2);
+        __m128  vrinv_f = _mm_rsqrt_ps(vdr2_f);
+        __m256d vrinv   = _mm256_cvtps_pd(vrinv_f);
+        {
+            __m256d vtmp = _mm256_mul_pd(_mm256_mul_pd(vdr2, vrinv), vrinv);
+            vrinv = _mm256_mul_pd(vrinv, _mm256_fnmadd_pd(vhalf, vtmp, vthreehalf));
+        }
+        {
+            __m256d vtmp = _mm256_mul_pd(_mm256_mul_pd(vdr2, vrinv), vrinv);
+            vrinv = _mm256_mul_pd(vrinv, _mm256_fnmadd_pd(vhalf, vtmp, vthreehalf));
+        }
+        __m256d vrinv2  = _mm256_mul_pd(vrinv,  vrinv);
+        __m256d vrinv4  = _mm256_mul_pd(vrinv2, vrinv2);
+        __m256d vrinv6  = _mm256_mul_pd(vrinv4, vrinv2);
+        __m256d vrinv12 = _mm256_mul_pd(vrinv6, vrinv6);
+
+        __m256d vvdw_mid  = _mm256_mul_pd(vneg1, _mm256_mul_pd(vgamma, vrinv4));
+        __m256d vvdw_disp = _mm256_mul_pd(vneg1, _mm256_mul_pd(vc6,    vrinv6));
+        __m256d vvdw_rep  = _mm256_mul_pd(vc12, vrinv12);
+        __m256d vflj = _mm256_mul_pd(
+                           _mm256_fmadd_pd(v12, vvdw_rep,
+                           _mm256_fmadd_pd(v6,  vvdw_disp,
+                           _mm256_mul_pd  (v4,  vvdw_mid))),
+                           vrinv2);
+
+        _mm256_store_pd(vrep_arr,  vvdw_rep);
+        _mm256_store_pd(vdisp_arr, vvdw_disp);
+        _mm256_store_pd(vmid_arr,  vvdw_mid);
+        _mm256_store_pd(flj_arr,   vflj);
+
+        for (int k = 0; k < W; k++)
+        {
+            erep  += vrep_arr[k];
+            edisp += vdisp_arr[k];
+            emid  += vmid_arr[k];
+            double fk   = flj_arr[k];
+            int    ai   = ai_arr[k];
+            int    aj   = aj_arr[k];
+            double fijX = fk * dxX[k];
+            double fijY = fk * dxY[k];
+            double fijZ = fk * dxZ[k];
+            f[ai][XX] += fijX;   f[aj][XX] -= fijX;
+            f[ai][YY] += fijY;   f[aj][YY] -= fijY;
+            f[ai][ZZ] += fijZ;   f[aj][ZZ] -= fijZ;
+        }
+    }
+
+    for (; i < npairs; i++)
+    {
+        auto &b      = pairs[i];
+        auto &params = b->params();
+        auto sig_ij  = params[lj12_6_4SIGMA];
+        auto eps_ij  = params[lj12_6_4EPSILON];
+        auto gamma   = params[lj12_6_4GAMMA];
+        auto sig6    = gmx::square(sig_ij*sig_ij*sig_ij);
+        auto c6      = 4*eps_ij*sig6;
+        auto c12     = c6*sig6;
+        auto &indices = b->atomIndices();
+        auto ai      = indices[0];
+        auto aj      = indices[1];
+        rvec dx;
+        rvec_sub(x[ai], x[aj], dx);
+        auto dr2       = iprod(dx, dx);
+        auto rinv      = gmx::invsqrt(dr2);
+        auto rinv2     = rinv*rinv;
+        auto rinv4     = rinv2*rinv2;
+        auto rinv6     = rinv2*rinv2*rinv2;
+        auto vvdw_mid  = -gamma*rinv4;
+        auto vvdw_disp = -c6*rinv6;
+        auto vvdw_rep  = c12*rinv6*rinv6;
+        auto flj       = (12*vvdw_rep + 6*vvdw_disp + 4*vvdw_mid)*rinv2;
+        if (msghandler && msghandler->debug())
+        {
+            msghandler->writeDebug(gmx::formatString("ACT ai %d aj %d vvdw_rep: %10g vvdw_disp: %10g vvdw_mid: %10g c6: %10g c12: %10g gamma: %10g",
+                                                     ai, aj, vvdw_rep, vvdw_disp, vvdw_mid, c6, c12, gamma));
+        }
+        pairforces(flj, dx, indices, forces);
+        erep  += vvdw_rep;
+        edisp += vvdw_disp;
+        emid  += vvdw_mid;
+    }
+
+    }
+    else
+#endif
+    {
+    for (size_t i = 0; i < npairs; i++)
+    {
+        auto &b      = pairs[i];
+        auto &params = b->params();
+        auto sig_ij  = params[lj12_6_4SIGMA];
+        auto eps_ij  = params[lj12_6_4EPSILON];
+        auto gamma   = params[lj12_6_4GAMMA];
+        auto sig6    = gmx::square(sig_ij*sig_ij*sig_ij);
+        auto c6      = 4*eps_ij*sig6;
+        auto c12     = c6*sig6;
+        auto &indices = b->atomIndices();
+        auto ai      = indices[0];
+        auto aj      = indices[1];
+        rvec dx;
+        rvec_sub(x[ai], x[aj], dx);
+        auto dr2       = iprod(dx, dx);
+        auto rinv      = gmx::invsqrt(dr2);
+        auto rinv2     = rinv*rinv;
+        auto rinv4     = rinv2*rinv2;
+        auto rinv6     = rinv2*rinv2*rinv2;
+        auto vvdw_mid  = -gamma*rinv4;
+        auto vvdw_disp = -c6*rinv6;
+        auto vvdw_rep  = c12*rinv6*rinv6;
+        auto flj       = (12*vvdw_rep + 6*vvdw_disp + 4*vvdw_mid)*rinv2;
+        if (msghandler && msghandler->debug())
+        {
+            msghandler->writeDebug(gmx::formatString("ACT ai %d aj %d vvdw_rep: %10g vvdw_disp: %10g vvdw_mid: %10g c6: %10g c12: %10g gamma: %10g",
+                                                     ai, aj, vvdw_rep, vvdw_disp, vvdw_mid, c6, c12, gamma));
+        }
+        pairforces(flj, dx, indices, forces);
+        erep  += vvdw_rep;
+        edisp += vvdw_disp;
+        emid  += vvdw_mid;
+    }
+    }
+
     if (msghandler && msghandler->debug())
     {
         msghandler->writeDebug(gmx::formatString("ACT erep: %10g edisp %10g emid %10g", erep, edisp, emid));
@@ -259,44 +853,291 @@ static double computeLJ8_6(MsgHandler                            *msghandler,
                            const std::vector<gmx::RVec>          *coordinates,
                            std::vector<gmx::RVec>                *forces,
                            std::map<InteractionType, double>     *energies)
-{   
+{
     double erep  = 0;
     double edisp = 0;
     auto   x     = *coordinates;
-    for (const auto &b : pairs)
-    {   
-        // Get the parameters. We have to know their names to do this.
-        auto &params    = b->params();
-        auto sig_ij     = params[lj8_6SIGMA];
-        auto eps_ij     = params[lj8_6EPSILON];
-        auto sig6       = gmx::square(sig_ij*sig_ij*sig_ij);
-        auto c6         = 4*eps_ij*sig6;
-        auto c8         = 0.75*c6*sig_ij*sig_ij;
-        // Get the atom indices
-        auto &indices   = b->atomIndices();
-        auto ai         = indices[0];
-        auto aj         = indices[1];
-        rvec dx;
-        rvec_sub(x[ai], x[aj], dx);
-        auto dr2        = iprod(dx, dx);
-        auto rinv       = gmx::invsqrt(dr2); 
-        auto rinv2      = rinv*rinv;
-        auto rinv6      = rinv2*rinv2*rinv2;
-        auto vvdw_disp  = -c6*rinv6;     
-        auto vvdw_rep   = c8*rinv6*rinv2;
-        auto flj        = (8*vvdw_rep + 6*vvdw_disp)*rinv2;
-        if (msghandler && msghandler->debug())
-        {       
-            msghandler->writeDebug(gmx::formatString("ACT ai %d aj %d vrep: %10g vdisp: %10g c6: %10g c8: %10g", ai, aj, vvdw_rep, vvdw_disp, c6, c8));
+    const size_t npairs = pairs.size();
+
+#if defined(__AVX512F__) && defined(GMX_SIMD_X86_AVX_512)
+    if (npairs >= 12)
+    {
+    auto   &f    = *forces;
+    constexpr int W = 8;
+    alignas(64) double c6_arr[W], c8_arr[W];
+    alignas(64) double dxX[W], dxY[W], dxZ[W];
+    alignas(64) double flj_arr[W];
+    alignas(64) double vrep_arr[W], vdisp_arr[W];
+    int ai_arr[W], aj_arr[W];
+
+    const __m512d v8         = _mm512_set1_pd(8.0);
+    const __m512d v6         = _mm512_set1_pd(6.0);
+    const __m512d vneg1      = _mm512_set1_pd(-1.0);
+    const __m512d vhalf      = _mm512_set1_pd(0.5);
+    const __m512d vthreehalf = _mm512_set1_pd(1.5);
+
+    size_t i = 0;
+    for (; i + W <= npairs; i += W)
+    {
+        for (int k = 0; k < W; k++)
+        {
+            auto &b       = pairs[i + k];
+            auto &params  = b->params();
+            double sig_ij = params[lj8_6SIGMA];
+            double eps_ij = params[lj8_6EPSILON];
+            double sig3   = sig_ij * sig_ij * sig_ij;
+            double sig6   = sig3 * sig3;
+            c6_arr[k]     = 4.0 * eps_ij * sig6;
+            c8_arr[k]     = 0.75 * c6_arr[k] * sig_ij * sig_ij;
+            auto &indices = b->atomIndices();
+            ai_arr[k]     = indices[0];
+            aj_arr[k]     = indices[1];
+            dxX[k] = x[ai_arr[k]][XX] - x[aj_arr[k]][XX];
+            dxY[k] = x[ai_arr[k]][YY] - x[aj_arr[k]][YY];
+            dxZ[k] = x[ai_arr[k]][ZZ] - x[aj_arr[k]][ZZ];
         }
 
+        __m512d vc6  = _mm512_load_pd(c6_arr);
+        __m512d vc8  = _mm512_load_pd(c8_arr);
+        __m512d vdxX = _mm512_load_pd(dxX);
+        __m512d vdxY = _mm512_load_pd(dxY);
+        __m512d vdxZ = _mm512_load_pd(dxZ);
+
+        __m512d vdr2 = _mm512_fmadd_pd(vdxX, vdxX,
+                       _mm512_fmadd_pd(vdxY, vdxY,
+                       _mm512_mul_pd  (vdxZ, vdxZ)));
+        __m512d vrinv = _mm512_rsqrt14_pd(vdr2);
+        {
+            __m512d vtmp = _mm512_mul_pd(_mm512_mul_pd(vdr2, vrinv), vrinv);
+            vrinv = _mm512_mul_pd(vrinv, _mm512_fnmadd_pd(vhalf, vtmp, vthreehalf));
+        }
+        {
+            __m512d vtmp = _mm512_mul_pd(_mm512_mul_pd(vdr2, vrinv), vrinv);
+            vrinv = _mm512_mul_pd(vrinv, _mm512_fnmadd_pd(vhalf, vtmp, vthreehalf));
+        }
+        __m512d vrinv2 = _mm512_mul_pd(vrinv,  vrinv);
+        __m512d vrinv4 = _mm512_mul_pd(vrinv2, vrinv2);
+        __m512d vrinv6 = _mm512_mul_pd(vrinv4, vrinv2);
+        __m512d vrinv8 = _mm512_mul_pd(vrinv6, vrinv2);
+
+        __m512d vvdw_disp = _mm512_mul_pd(vneg1, _mm512_mul_pd(vc6, vrinv6));
+        __m512d vvdw_rep  = _mm512_mul_pd(vc8,   vrinv8);
+        __m512d vflj = _mm512_mul_pd(
+                           _mm512_fmadd_pd(v8, vvdw_rep,
+                           _mm512_mul_pd(v6, vvdw_disp)),
+                           vrinv2);
+
+        _mm512_store_pd(vrep_arr,  vvdw_rep);
+        _mm512_store_pd(vdisp_arr, vvdw_disp);
+        _mm512_store_pd(flj_arr,   vflj);
+
+        for (int k = 0; k < W; k++)
+        {
+            erep  += vrep_arr[k];
+            edisp += vdisp_arr[k];
+            double fk   = flj_arr[k];
+            int    ai   = ai_arr[k];
+            int    aj   = aj_arr[k];
+            double fijX = fk * dxX[k];
+            double fijY = fk * dxY[k];
+            double fijZ = fk * dxZ[k];
+            f[ai][XX] += fijX;   f[aj][XX] -= fijX;
+            f[ai][YY] += fijY;   f[aj][YY] -= fijY;
+            f[ai][ZZ] += fijZ;   f[aj][ZZ] -= fijZ;
+        }
+    }
+
+    for (; i < npairs; i++)
+    {
+        auto &b      = pairs[i];
+        auto &params = b->params();
+        auto sig_ij  = params[lj8_6SIGMA];
+        auto eps_ij  = params[lj8_6EPSILON];
+        auto sig6    = gmx::square(sig_ij*sig_ij*sig_ij);
+        auto c6      = 4*eps_ij*sig6;
+        auto c8      = 0.75*c6*sig_ij*sig_ij;
+        auto &indices = b->atomIndices();
+        auto ai      = indices[0];
+        auto aj      = indices[1];
+        rvec dx;
+        rvec_sub(x[ai], x[aj], dx);
+        auto dr2       = iprod(dx, dx);
+        auto rinv      = gmx::invsqrt(dr2);
+        auto rinv2     = rinv*rinv;
+        auto rinv6     = rinv2*rinv2*rinv2;
+        auto vvdw_disp = -c6*rinv6;
+        auto vvdw_rep  = c8*rinv6*rinv2;
+        auto flj       = (8*vvdw_rep + 6*vvdw_disp)*rinv2;
+        if (msghandler && msghandler->debug())
+        {
+            msghandler->writeDebug(gmx::formatString("ACT ai %d aj %d vrep: %10g vdisp: %10g c6: %10g c8: %10g", ai, aj, vvdw_rep, vvdw_disp, c6, c8));
+        }
         erep  += vvdw_rep;
         edisp += vvdw_disp;
         pairforces(flj, dx, indices, forces);
     }
-    if (msghandler && msghandler->debug())               
-    {                        
-        msghandler->writeDebug(gmx::formatString("ACT vvdw_rep: %10g vvdw_disp: %10g", erep, edisp)); 
+
+    }
+    else
+#endif
+#if defined(__AVX2__) && defined(GMX_SIMD_X86_AVX2_256)
+    if (npairs >= 6)
+    {
+    auto   &f    = *forces;
+    constexpr int W = 4;
+    alignas(32) double c6_arr[W], c8_arr[W];
+    alignas(32) double dxX[W], dxY[W], dxZ[W];
+    alignas(32) double flj_arr[W];
+    alignas(32) double vrep_arr[W], vdisp_arr[W];
+    int ai_arr[W], aj_arr[W];
+
+    const __m256d v8         = _mm256_set1_pd(8.0);
+    const __m256d v6         = _mm256_set1_pd(6.0);
+    const __m256d vneg1      = _mm256_set1_pd(-1.0);
+    const __m256d vhalf      = _mm256_set1_pd(0.5);
+    const __m256d vthreehalf = _mm256_set1_pd(1.5);
+
+    size_t i = 0;
+    for (; i + W <= npairs; i += W)
+    {
+        for (int k = 0; k < W; k++)
+        {
+            auto &b       = pairs[i + k];
+            auto &params  = b->params();
+            double sig_ij = params[lj8_6SIGMA];
+            double eps_ij = params[lj8_6EPSILON];
+            double sig3   = sig_ij * sig_ij * sig_ij;
+            double sig6   = sig3 * sig3;
+            c6_arr[k]     = 4.0 * eps_ij * sig6;
+            c8_arr[k]     = 0.75 * c6_arr[k] * sig_ij * sig_ij;
+            auto &indices = b->atomIndices();
+            ai_arr[k]     = indices[0];
+            aj_arr[k]     = indices[1];
+            dxX[k] = x[ai_arr[k]][XX] - x[aj_arr[k]][XX];
+            dxY[k] = x[ai_arr[k]][YY] - x[aj_arr[k]][YY];
+            dxZ[k] = x[ai_arr[k]][ZZ] - x[aj_arr[k]][ZZ];
+        }
+
+        __m256d vc6  = _mm256_load_pd(c6_arr);
+        __m256d vc8  = _mm256_load_pd(c8_arr);
+        __m256d vdxX = _mm256_load_pd(dxX);
+        __m256d vdxY = _mm256_load_pd(dxY);
+        __m256d vdxZ = _mm256_load_pd(dxZ);
+
+        __m256d vdr2 = _mm256_fmadd_pd(vdxX, vdxX,
+                       _mm256_fmadd_pd(vdxY, vdxY,
+                       _mm256_mul_pd  (vdxZ, vdxZ)));
+        __m128  vdr2_f  = _mm256_cvtpd_ps(vdr2);
+        __m128  vrinv_f = _mm_rsqrt_ps(vdr2_f);
+        __m256d vrinv   = _mm256_cvtps_pd(vrinv_f);
+        {
+            __m256d vtmp = _mm256_mul_pd(_mm256_mul_pd(vdr2, vrinv), vrinv);
+            vrinv = _mm256_mul_pd(vrinv, _mm256_fnmadd_pd(vhalf, vtmp, vthreehalf));
+        }
+        {
+            __m256d vtmp = _mm256_mul_pd(_mm256_mul_pd(vdr2, vrinv), vrinv);
+            vrinv = _mm256_mul_pd(vrinv, _mm256_fnmadd_pd(vhalf, vtmp, vthreehalf));
+        }
+        __m256d vrinv2 = _mm256_mul_pd(vrinv,  vrinv);
+        __m256d vrinv4 = _mm256_mul_pd(vrinv2, vrinv2);
+        __m256d vrinv6 = _mm256_mul_pd(vrinv4, vrinv2);
+        __m256d vrinv8 = _mm256_mul_pd(vrinv6, vrinv2);
+
+        __m256d vvdw_disp = _mm256_mul_pd(vneg1, _mm256_mul_pd(vc6, vrinv6));
+        __m256d vvdw_rep  = _mm256_mul_pd(vc8,   vrinv8);
+        __m256d vflj = _mm256_mul_pd(
+                           _mm256_fmadd_pd(v8, vvdw_rep,
+                           _mm256_mul_pd(v6, vvdw_disp)),
+                           vrinv2);
+
+        _mm256_store_pd(vrep_arr,  vvdw_rep);
+        _mm256_store_pd(vdisp_arr, vvdw_disp);
+        _mm256_store_pd(flj_arr,   vflj);
+
+        for (int k = 0; k < W; k++)
+        {
+            erep  += vrep_arr[k];
+            edisp += vdisp_arr[k];
+            double fk   = flj_arr[k];
+            int    ai   = ai_arr[k];
+            int    aj   = aj_arr[k];
+            double fijX = fk * dxX[k];
+            double fijY = fk * dxY[k];
+            double fijZ = fk * dxZ[k];
+            f[ai][XX] += fijX;   f[aj][XX] -= fijX;
+            f[ai][YY] += fijY;   f[aj][YY] -= fijY;
+            f[ai][ZZ] += fijZ;   f[aj][ZZ] -= fijZ;
+        }
+    }
+
+    for (; i < npairs; i++)
+    {
+        auto &b      = pairs[i];
+        auto &params = b->params();
+        auto sig_ij  = params[lj8_6SIGMA];
+        auto eps_ij  = params[lj8_6EPSILON];
+        auto sig6    = gmx::square(sig_ij*sig_ij*sig_ij);
+        auto c6      = 4*eps_ij*sig6;
+        auto c8      = 0.75*c6*sig_ij*sig_ij;
+        auto &indices = b->atomIndices();
+        auto ai      = indices[0];
+        auto aj      = indices[1];
+        rvec dx;
+        rvec_sub(x[ai], x[aj], dx);
+        auto dr2       = iprod(dx, dx);
+        auto rinv      = gmx::invsqrt(dr2);
+        auto rinv2     = rinv*rinv;
+        auto rinv6     = rinv2*rinv2*rinv2;
+        auto vvdw_disp = -c6*rinv6;
+        auto vvdw_rep  = c8*rinv6*rinv2;
+        auto flj       = (8*vvdw_rep + 6*vvdw_disp)*rinv2;
+        if (msghandler && msghandler->debug())
+        {
+            msghandler->writeDebug(gmx::formatString("ACT ai %d aj %d vrep: %10g vdisp: %10g c6: %10g c8: %10g", ai, aj, vvdw_rep, vvdw_disp, c6, c8));
+        }
+        erep  += vvdw_rep;
+        edisp += vvdw_disp;
+        pairforces(flj, dx, indices, forces);
+    }
+
+    }
+    else
+#endif
+    {
+    for (size_t i = 0; i < npairs; i++)
+    {
+        auto &b      = pairs[i];
+        auto &params = b->params();
+        auto sig_ij  = params[lj8_6SIGMA];
+        auto eps_ij  = params[lj8_6EPSILON];
+        auto sig6    = gmx::square(sig_ij*sig_ij*sig_ij);
+        auto c6      = 4*eps_ij*sig6;
+        auto c8      = 0.75*c6*sig_ij*sig_ij;
+        auto &indices = b->atomIndices();
+        auto ai      = indices[0];
+        auto aj      = indices[1];
+        rvec dx;
+        rvec_sub(x[ai], x[aj], dx);
+        auto dr2       = iprod(dx, dx);
+        auto rinv      = gmx::invsqrt(dr2);
+        auto rinv2     = rinv*rinv;
+        auto rinv6     = rinv2*rinv2*rinv2;
+        auto vvdw_disp = -c6*rinv6;
+        auto vvdw_rep  = c8*rinv6*rinv2;
+        auto flj       = (8*vvdw_rep + 6*vvdw_disp)*rinv2;
+        if (msghandler && msghandler->debug())
+        {
+            msghandler->writeDebug(gmx::formatString("ACT ai %d aj %d vrep: %10g vdisp: %10g c6: %10g c8: %10g", ai, aj, vvdw_rep, vvdw_disp, c6, c8));
+        }
+        erep  += vvdw_rep;
+        edisp += vvdw_disp;
+        pairforces(flj, dx, indices, forces);
+    }
+    }
+
+    if (msghandler && msghandler->debug())
+    {
+        msghandler->writeDebug(gmx::formatString("ACT vvdw_rep: %10g vvdw_disp: %10g", erep, edisp));
     }
     energies->insert({InteractionType::EXCHANGE, erep});
     energies->insert({InteractionType::DISPERSION, edisp});
@@ -323,47 +1164,308 @@ static double computeLJ14_7(MsgHandler                            *msghandler,
     double erep  = 0;
     double edisp = 0;
     auto   x     = *coordinates;
-    for (const auto &b : pairs)
+    const size_t npairs = pairs.size();
+
+#if defined(__AVX512F__) && defined(GMX_SIMD_X86_AVX_512)
+    if (npairs >= 12)
     {
-        // Get the parameters. We have to know their names to do this.
-        auto &params    = b->params();
-        auto sigma      = params[lj14_7SIGMA];
-        auto epsilon    = params[lj14_7EPSILON];
-        real f147       = 0;
-        // Get the atom indices
-        auto &indices   = b->atomIndices();
-        auto ai         = indices[0];
-        auto aj         = indices[1];
-        rvec dx; 
+    auto   &f    = *forces;
+    constexpr int W = 8;
+    alignas(64) double dxX[W], dxY[W], dxZ[W];
+    alignas(64) double dr2_arr[W], rinv_arr[W];
+    alignas(64) double fbond_arr[W];
+    int ai_arr[W], aj_arr[W];
+
+    const __m512d vhalf      = _mm512_set1_pd(0.5);
+    const __m512d vthreehalf = _mm512_set1_pd(1.5);
+
+    size_t i = 0;
+    for (; i + W <= npairs; i += W)
+    {
+        for (int k = 0; k < W; k++)
+        {
+            auto &b       = pairs[i + k];
+            auto &indices = b->atomIndices();
+            ai_arr[k]     = indices[0];
+            aj_arr[k]     = indices[1];
+            dxX[k] = x[ai_arr[k]][XX] - x[aj_arr[k]][XX];
+            dxY[k] = x[ai_arr[k]][YY] - x[aj_arr[k]][YY];
+            dxZ[k] = x[ai_arr[k]][ZZ] - x[aj_arr[k]][ZZ];
+        }
+        __m512d vdxX = _mm512_load_pd(dxX);
+        __m512d vdxY = _mm512_load_pd(dxY);
+        __m512d vdxZ = _mm512_load_pd(dxZ);
+        __m512d vdr2 = _mm512_fmadd_pd(vdxX, vdxX,
+                       _mm512_fmadd_pd(vdxY, vdxY,
+                       _mm512_mul_pd  (vdxZ, vdxZ)));
+        __m512d vrinv = _mm512_rsqrt14_pd(vdr2);
+        {
+            __m512d vtmp = _mm512_mul_pd(_mm512_mul_pd(vdr2, vrinv), vrinv);
+            vrinv = _mm512_mul_pd(vrinv, _mm512_fnmadd_pd(vhalf, vtmp, vthreehalf));
+        }
+        {
+            __m512d vtmp = _mm512_mul_pd(_mm512_mul_pd(vdr2, vrinv), vrinv);
+            vrinv = _mm512_mul_pd(vrinv, _mm512_fnmadd_pd(vhalf, vtmp, vthreehalf));
+        }
+        _mm512_store_pd(dr2_arr,  vdr2);
+        _mm512_store_pd(rinv_arr, vrinv);
+
+        for (int k = 0; k < W; k++)
+        {
+            auto &b       = pairs[i + k];
+            auto &params  = b->params();
+            auto sigma    = params[lj14_7SIGMA];
+            auto epsilon  = params[lj14_7EPSILON];
+            real f147     = 0;
+            real eerep = 0, eedisp = 0;
+            if (epsilon > 0)
+            {
+                auto gamma     = params[lj14_7GAMMA];
+                auto delta     = params[lj14_7DELTA];
+                real rstar     = dr2_arr[k] * rinv_arr[k] / sigma;
+                real delta1    = delta + 1;
+                real gamma1    = gamma + 1;
+                real deltars   = delta + rstar;
+                real repfac    = epsilon * std::pow((delta1/deltars), 7);
+                eerep          = repfac * (gamma1/(std::pow(rstar, 7) + gamma));
+                eedisp         = -2 * repfac;
+                real gamrstar7 = gamma + std::pow(rstar, 7);
+                f147           = 7*epsilon*std::pow(delta1, 7)*(gamma1*std::pow(rstar, 6)*(delta+rstar)/gmx::square(gamrstar7) + gamma1/(gamrstar7) - 2)/(sigma*std::pow(delta+rstar, 8));
+                erep  += eerep;
+                edisp += eedisp;
+            }
+            fbond_arr[k] = f147 * rinv_arr[k];
+        }
+
+        for (int k = 0; k < W; k++)
+        {
+            double fk   = fbond_arr[k];
+            int    ai   = ai_arr[k];
+            int    aj   = aj_arr[k];
+            double fijX = fk * dxX[k];
+            double fijY = fk * dxY[k];
+            double fijZ = fk * dxZ[k];
+            f[ai][XX] += fijX;   f[aj][XX] -= fijX;
+            f[ai][YY] += fijY;   f[aj][YY] -= fijY;
+            f[ai][ZZ] += fijZ;   f[aj][ZZ] -= fijZ;
+        }
+    }
+
+    for (; i < npairs; i++)
+    {
+        auto &b      = pairs[i];
+        auto &params = b->params();
+        auto sigma   = params[lj14_7SIGMA];
+        auto epsilon = params[lj14_7EPSILON];
+        real f147    = 0;
+        auto &indices = b->atomIndices();
+        auto ai      = indices[0];
+        auto aj      = indices[1];
+        rvec dx;
         rvec_sub(x[ai], x[aj], dx);
-        auto dr2        = iprod(dx, dx);
-        auto rinv       = gmx::invsqrt(dr2);
+        auto dr2  = iprod(dx, dx);
+        auto rinv = gmx::invsqrt(dr2);
         real eerep = 0, eedisp = 0;
         if (epsilon > 0)
         {
-            auto gamma      = params[lj14_7GAMMA];
-            auto delta      = params[lj14_7DELTA];
-            real rstar      = dr2*rinv/sigma;
-            real delta1     = delta + 1;
-            real gamma1     = gamma + 1;
-            real deltars    = delta + rstar;
-            real repfac     = epsilon * std::pow( (delta1/deltars), 7);
-            eerep           = repfac * (gamma1/(std::pow((rstar), 7) + gamma ));
-            eedisp          = -2 * repfac;
-            real gamrstar7  = gamma + std::pow(rstar, 7);
-            f147            = 7*epsilon*std::pow(delta1, 7)*(gamma1*std::pow(rstar, 6)*(delta+rstar)/gmx::square(gamrstar7) + gamma1/(gamrstar7) - 2)/(sigma*std::pow(delta+rstar, 8));
-
+            auto gamma     = params[lj14_7GAMMA];
+            auto delta     = params[lj14_7DELTA];
+            real rstar     = dr2*rinv/sigma;
+            real delta1    = delta + 1;
+            real gamma1    = gamma + 1;
+            real deltars   = delta + rstar;
+            real repfac    = epsilon * std::pow((delta1/deltars), 7);
+            eerep          = repfac * (gamma1/(std::pow((rstar), 7) + gamma));
+            eedisp         = -2 * repfac;
+            real gamrstar7 = gamma + std::pow(rstar, 7);
+            f147           = 7*epsilon*std::pow(delta1, 7)*(gamma1*std::pow(rstar, 6)*(delta+rstar)/gmx::square(gamrstar7) + gamma1/(gamrstar7) - 2)/(sigma*std::pow(delta+rstar, 8));
             if (msghandler && msghandler->debug())
             {
                 msghandler->writeDebug(gmx::formatString("ACT ai %d aj %d vvdw: %10g epsilon: %10g gamma: %10g sigma: %10g delta: %10g",
                                                          ai, aj, eerep + eedisp, epsilon, gamma, sigma, delta));
             }
-            erep     += eerep;
-            edisp    += eedisp;
+            erep  += eerep;
+            edisp += eedisp;
         }
-        real fbond  = f147*rinv;
+        real fbond = f147*rinv;
         pairforces(fbond, dx, indices, forces);
     }
+
+    }
+    else
+#endif
+#if defined(__AVX2__) && defined(GMX_SIMD_X86_AVX2_256)
+    if (npairs >= 6)
+    {
+    auto   &f    = *forces;
+    constexpr int W = 4;
+    alignas(32) double dxX[W], dxY[W], dxZ[W];
+    alignas(32) double dr2_arr[W], rinv_arr[W];
+    alignas(32) double fbond_arr[W];
+    int ai_arr[W], aj_arr[W];
+
+    const __m256d vhalf      = _mm256_set1_pd(0.5);
+    const __m256d vthreehalf = _mm256_set1_pd(1.5);
+
+    size_t i = 0;
+    for (; i + W <= npairs; i += W)
+    {
+        for (int k = 0; k < W; k++)
+        {
+            auto &b       = pairs[i + k];
+            auto &indices = b->atomIndices();
+            ai_arr[k]     = indices[0];
+            aj_arr[k]     = indices[1];
+            dxX[k] = x[ai_arr[k]][XX] - x[aj_arr[k]][XX];
+            dxY[k] = x[ai_arr[k]][YY] - x[aj_arr[k]][YY];
+            dxZ[k] = x[ai_arr[k]][ZZ] - x[aj_arr[k]][ZZ];
+        }
+        __m256d vdxX = _mm256_load_pd(dxX);
+        __m256d vdxY = _mm256_load_pd(dxY);
+        __m256d vdxZ = _mm256_load_pd(dxZ);
+        __m256d vdr2 = _mm256_fmadd_pd(vdxX, vdxX,
+                       _mm256_fmadd_pd(vdxY, vdxY,
+                       _mm256_mul_pd  (vdxZ, vdxZ)));
+        __m128  vdr2_f  = _mm256_cvtpd_ps(vdr2);
+        __m128  vrinv_f = _mm_rsqrt_ps(vdr2_f);
+        __m256d vrinv   = _mm256_cvtps_pd(vrinv_f);
+        {
+            __m256d vtmp = _mm256_mul_pd(_mm256_mul_pd(vdr2, vrinv), vrinv);
+            vrinv = _mm256_mul_pd(vrinv, _mm256_fnmadd_pd(vhalf, vtmp, vthreehalf));
+        }
+        {
+            __m256d vtmp = _mm256_mul_pd(_mm256_mul_pd(vdr2, vrinv), vrinv);
+            vrinv = _mm256_mul_pd(vrinv, _mm256_fnmadd_pd(vhalf, vtmp, vthreehalf));
+        }
+        _mm256_store_pd(dr2_arr,  vdr2);
+        _mm256_store_pd(rinv_arr, vrinv);
+
+        for (int k = 0; k < W; k++)
+        {
+            auto &b       = pairs[i + k];
+            auto &params  = b->params();
+            auto sigma    = params[lj14_7SIGMA];
+            auto epsilon  = params[lj14_7EPSILON];
+            real f147     = 0;
+            real eerep = 0, eedisp = 0;
+            if (epsilon > 0)
+            {
+                auto gamma     = params[lj14_7GAMMA];
+                auto delta     = params[lj14_7DELTA];
+                real rstar     = dr2_arr[k] * rinv_arr[k] / sigma;
+                real delta1    = delta + 1;
+                real gamma1    = gamma + 1;
+                real deltars   = delta + rstar;
+                real repfac    = epsilon * std::pow((delta1/deltars), 7);
+                eerep          = repfac * (gamma1/(std::pow(rstar, 7) + gamma));
+                eedisp         = -2 * repfac;
+                real gamrstar7 = gamma + std::pow(rstar, 7);
+                f147           = 7*epsilon*std::pow(delta1, 7)*(gamma1*std::pow(rstar, 6)*(delta+rstar)/gmx::square(gamrstar7) + gamma1/(gamrstar7) - 2)/(sigma*std::pow(delta+rstar, 8));
+                erep  += eerep;
+                edisp += eedisp;
+            }
+            fbond_arr[k] = f147 * rinv_arr[k];
+        }
+
+        for (int k = 0; k < W; k++)
+        {
+            double fk   = fbond_arr[k];
+            int    ai   = ai_arr[k];
+            int    aj   = aj_arr[k];
+            double fijX = fk * dxX[k];
+            double fijY = fk * dxY[k];
+            double fijZ = fk * dxZ[k];
+            f[ai][XX] += fijX;   f[aj][XX] -= fijX;
+            f[ai][YY] += fijY;   f[aj][YY] -= fijY;
+            f[ai][ZZ] += fijZ;   f[aj][ZZ] -= fijZ;
+        }
+    }
+
+    for (; i < npairs; i++)
+    {
+        auto &b      = pairs[i];
+        auto &params = b->params();
+        auto sigma   = params[lj14_7SIGMA];
+        auto epsilon = params[lj14_7EPSILON];
+        real f147    = 0;
+        auto &indices = b->atomIndices();
+        auto ai      = indices[0];
+        auto aj      = indices[1];
+        rvec dx;
+        rvec_sub(x[ai], x[aj], dx);
+        auto dr2  = iprod(dx, dx);
+        auto rinv = gmx::invsqrt(dr2);
+        real eerep = 0, eedisp = 0;
+        if (epsilon > 0)
+        {
+            auto gamma     = params[lj14_7GAMMA];
+            auto delta     = params[lj14_7DELTA];
+            real rstar     = dr2*rinv/sigma;
+            real delta1    = delta + 1;
+            real gamma1    = gamma + 1;
+            real deltars   = delta + rstar;
+            real repfac    = epsilon * std::pow((delta1/deltars), 7);
+            eerep          = repfac * (gamma1/(std::pow((rstar), 7) + gamma));
+            eedisp         = -2 * repfac;
+            real gamrstar7 = gamma + std::pow(rstar, 7);
+            f147           = 7*epsilon*std::pow(delta1, 7)*(gamma1*std::pow(rstar, 6)*(delta+rstar)/gmx::square(gamrstar7) + gamma1/(gamrstar7) - 2)/(sigma*std::pow(delta+rstar, 8));
+            if (msghandler && msghandler->debug())
+            {
+                msghandler->writeDebug(gmx::formatString("ACT ai %d aj %d vvdw: %10g epsilon: %10g gamma: %10g sigma: %10g delta: %10g",
+                                                         ai, aj, eerep + eedisp, epsilon, gamma, sigma, delta));
+            }
+            erep  += eerep;
+            edisp += eedisp;
+        }
+        real fbond = f147*rinv;
+        pairforces(fbond, dx, indices, forces);
+    }
+
+    }
+    else
+#endif
+    {
+    for (size_t i = 0; i < npairs; i++)
+    {
+        auto &b      = pairs[i];
+        auto &params = b->params();
+        auto sigma   = params[lj14_7SIGMA];
+        auto epsilon = params[lj14_7EPSILON];
+        real f147    = 0;
+        auto &indices = b->atomIndices();
+        auto ai      = indices[0];
+        auto aj      = indices[1];
+        rvec dx;
+        rvec_sub(x[ai], x[aj], dx);
+        auto dr2  = iprod(dx, dx);
+        auto rinv = gmx::invsqrt(dr2);
+        real eerep = 0, eedisp = 0;
+        if (epsilon > 0)
+        {
+            auto gamma     = params[lj14_7GAMMA];
+            auto delta     = params[lj14_7DELTA];
+            real rstar     = dr2*rinv/sigma;
+            real delta1    = delta + 1;
+            real gamma1    = gamma + 1;
+            real deltars   = delta + rstar;
+            real repfac    = epsilon * std::pow((delta1/deltars), 7);
+            eerep          = repfac * (gamma1/(std::pow((rstar), 7) + gamma));
+            eedisp         = -2 * repfac;
+            real gamrstar7 = gamma + std::pow(rstar, 7);
+            f147           = 7*epsilon*std::pow(delta1, 7)*(gamma1*std::pow(rstar, 6)*(delta+rstar)/gmx::square(gamrstar7) + gamma1/(gamrstar7) - 2)/(sigma*std::pow(delta+rstar, 8));
+            if (msghandler && msghandler->debug())
+            {
+                msghandler->writeDebug(gmx::formatString("ACT ai %d aj %d vvdw: %10g epsilon: %10g gamma: %10g sigma: %10g delta: %10g",
+                                                         ai, aj, eerep + eedisp, epsilon, gamma, sigma, delta));
+            }
+            erep  += eerep;
+            edisp += eedisp;
+        }
+        real fbond = f147*rinv;
+        pairforces(fbond, dx, indices, forces);
+    }
+    }
+
     energies->insert({InteractionType::EXCHANGE, erep});
     energies->insert({InteractionType::DISPERSION, edisp});
 
@@ -424,15 +1526,184 @@ static double computeBornMayer(MsgHandler                            *msghandler
 {
     double eexp  = 0;
     auto   x     = *coordinates;
-    for (const auto &b : pairs)
+    const size_t npairs = pairs.size();
+
+#if defined(__AVX512F__) && defined(GMX_SIMD_X86_AVX_512)
+    if (npairs >= 12)
     {
-        // Get the parameters. We have to know their names to do this.
-        auto &params    = b->params();
+    auto   &f    = *forces;
+    constexpr int W = 8;
+    alignas(64) double dxX[W], dxY[W], dxZ[W];
+    alignas(64) double dr2_arr[W], rinv_arr[W];
+    alignas(64) double fbond_arr[W];
+    double aexp_arr[W], bexp_arr[W];
+    int ai_arr[W], aj_arr[W];
+
+    const __m512d vhalf      = _mm512_set1_pd(0.5);
+    const __m512d vthreehalf = _mm512_set1_pd(1.5);
+
+    size_t i = 0;
+    for (; i + W <= npairs; i += W)
+    {
+        for (int k = 0; k < W; k++)
+        {
+            auto &b       = pairs[i + k];
+            auto &params  = b->params();
+            aexp_arr[k]   = -params[expA];
+            bexp_arr[k]   =  params[expB];
+            auto &indices = b->atomIndices();
+            ai_arr[k]     = indices[0];
+            aj_arr[k]     = indices[1];
+            dxX[k] = x[ai_arr[k]][XX] - x[aj_arr[k]][XX];
+            dxY[k] = x[ai_arr[k]][YY] - x[aj_arr[k]][YY];
+            dxZ[k] = x[ai_arr[k]][ZZ] - x[aj_arr[k]][ZZ];
+        }
+        __m512d vdxX = _mm512_load_pd(dxX);
+        __m512d vdxY = _mm512_load_pd(dxY);
+        __m512d vdxZ = _mm512_load_pd(dxZ);
+        __m512d vdr2 = _mm512_fmadd_pd(vdxX, vdxX,
+                       _mm512_fmadd_pd(vdxY, vdxY,
+                       _mm512_mul_pd  (vdxZ, vdxZ)));
+        __m512d vrinv = _mm512_rsqrt14_pd(vdr2);
+        {
+            __m512d vtmp = _mm512_mul_pd(_mm512_mul_pd(vdr2, vrinv), vrinv);
+            vrinv = _mm512_mul_pd(vrinv, _mm512_fnmadd_pd(vhalf, vtmp, vthreehalf));
+        }
+        {
+            __m512d vtmp = _mm512_mul_pd(_mm512_mul_pd(vdr2, vrinv), vrinv);
+            vrinv = _mm512_mul_pd(vrinv, _mm512_fnmadd_pd(vhalf, vtmp, vthreehalf));
+        }
+        _mm512_store_pd(dr2_arr,  vdr2);
+        _mm512_store_pd(rinv_arr, vrinv);
+
+        for (int k = 0; k < W; k++)
+        {
+            double r_k     = dr2_arr[k] * rinv_arr[k];
+            double eeexp_k = aexp_arr[k] * std::exp(-bexp_arr[k] * r_k);
+            eexp          += eeexp_k;
+            fbond_arr[k]   = bexp_arr[k] * eeexp_k * rinv_arr[k];
+        }
+
+        for (int k = 0; k < W; k++)
+        {
+            double fk   = fbond_arr[k];
+            int    ai   = ai_arr[k];
+            int    aj   = aj_arr[k];
+            double fijX = fk * dxX[k];
+            double fijY = fk * dxY[k];
+            double fijZ = fk * dxZ[k];
+            f[ai][XX] += fijX;   f[aj][XX] -= fijX;
+            f[ai][YY] += fijY;   f[aj][YY] -= fijY;
+            f[ai][ZZ] += fijZ;   f[aj][ZZ] -= fijZ;
+        }
+    }
+
+    for (; i < npairs; i++)
+    {
+        auto &b      = pairs[i];
+        auto &params = b->params();
+        eexp += lowBornMayer(msghandler, b->atomIndices(), *coordinates, -params[expA],
+                             params[expB], forces);
+    }
+
+    }
+    else
+#endif
+#if defined(__AVX2__) && defined(GMX_SIMD_X86_AVX2_256)
+    if (npairs >= 6)
+    {
+    auto   &f    = *forces;
+    constexpr int W = 4;
+    alignas(32) double dxX[W], dxY[W], dxZ[W];
+    alignas(32) double dr2_arr[W], rinv_arr[W];
+    alignas(32) double fbond_arr[W];
+    double aexp_arr[W], bexp_arr[W];
+    int ai_arr[W], aj_arr[W];
+
+    const __m256d vhalf      = _mm256_set1_pd(0.5);
+    const __m256d vthreehalf = _mm256_set1_pd(1.5);
+
+    size_t i = 0;
+    for (; i + W <= npairs; i += W)
+    {
+        for (int k = 0; k < W; k++)
+        {
+            auto &b       = pairs[i + k];
+            auto &params  = b->params();
+            aexp_arr[k]   = -params[expA];
+            bexp_arr[k]   =  params[expB];
+            auto &indices = b->atomIndices();
+            ai_arr[k]     = indices[0];
+            aj_arr[k]     = indices[1];
+            dxX[k] = x[ai_arr[k]][XX] - x[aj_arr[k]][XX];
+            dxY[k] = x[ai_arr[k]][YY] - x[aj_arr[k]][YY];
+            dxZ[k] = x[ai_arr[k]][ZZ] - x[aj_arr[k]][ZZ];
+        }
+        __m256d vdxX = _mm256_load_pd(dxX);
+        __m256d vdxY = _mm256_load_pd(dxY);
+        __m256d vdxZ = _mm256_load_pd(dxZ);
+        __m256d vdr2 = _mm256_fmadd_pd(vdxX, vdxX,
+                       _mm256_fmadd_pd(vdxY, vdxY,
+                       _mm256_mul_pd  (vdxZ, vdxZ)));
+        __m128  vdr2_f  = _mm256_cvtpd_ps(vdr2);
+        __m128  vrinv_f = _mm_rsqrt_ps(vdr2_f);
+        __m256d vrinv   = _mm256_cvtps_pd(vrinv_f);
+        {
+            __m256d vtmp = _mm256_mul_pd(_mm256_mul_pd(vdr2, vrinv), vrinv);
+            vrinv = _mm256_mul_pd(vrinv, _mm256_fnmadd_pd(vhalf, vtmp, vthreehalf));
+        }
+        {
+            __m256d vtmp = _mm256_mul_pd(_mm256_mul_pd(vdr2, vrinv), vrinv);
+            vrinv = _mm256_mul_pd(vrinv, _mm256_fnmadd_pd(vhalf, vtmp, vthreehalf));
+        }
+        _mm256_store_pd(dr2_arr,  vdr2);
+        _mm256_store_pd(rinv_arr, vrinv);
+
+        for (int k = 0; k < W; k++)
+        {
+            double r_k     = dr2_arr[k] * rinv_arr[k];
+            double eeexp_k = aexp_arr[k] * std::exp(-bexp_arr[k] * r_k);
+            eexp          += eeexp_k;
+            fbond_arr[k]   = bexp_arr[k] * eeexp_k * rinv_arr[k];
+        }
+
+        for (int k = 0; k < W; k++)
+        {
+            double fk   = fbond_arr[k];
+            int    ai   = ai_arr[k];
+            int    aj   = aj_arr[k];
+            double fijX = fk * dxX[k];
+            double fijY = fk * dxY[k];
+            double fijZ = fk * dxZ[k];
+            f[ai][XX] += fijX;   f[aj][XX] -= fijX;
+            f[ai][YY] += fijY;   f[aj][YY] -= fijY;
+            f[ai][ZZ] += fijZ;   f[aj][ZZ] -= fijZ;
+        }
+    }
+
+    for (; i < npairs; i++)
+    {
+        auto &b      = pairs[i];
+        auto &params = b->params();
+        eexp += lowBornMayer(msghandler, b->atomIndices(), *coordinates, -params[expA],
+                             params[expB], forces);
+    }
+
+    }
+    else
+#endif
+    {
+    for (size_t i = 0; i < npairs; i++)
+    {
+        auto &b      = pairs[i];
+        auto &params = b->params();
         // Charge transfer correction, according to Eqn. 20, Walker et al.
         // https://doi.org/10.1002/jcc.26954
         eexp += lowBornMayer(msghandler, b->atomIndices(), *coordinates, -params[expA],
                              params[expB], forces);
     }
+    }
+
     energies->insert({InteractionType::VDWCORRECTION, eexp});
 
     return eexp;
@@ -500,12 +1771,189 @@ static double computeSlaterISA(MsgHandler                            *msghandler
 {
     double eexp  = 0;
     auto   x     = *coordinates;
-    for (const auto &b : pairs)
+    const size_t npairs = pairs.size();
+
+#if defined(__AVX512F__) && defined(GMX_SIMD_X86_AVX_512)
+    if (npairs >= 12)
     {
-        // Get the parameters. We have to know their names to do this.
-        auto &params    = b->params();
+    auto   &f    = *forces;
+    constexpr int W = 8;
+    alignas(64) double dxX[W], dxY[W], dxZ[W];
+    alignas(64) double dr2_arr[W], rinv_arr[W];
+    alignas(64) double fbond_arr[W];
+    double aexp_arr[W], bexp_arr[W];
+    int ai_arr[W], aj_arr[W];
+
+    const __m512d vhalf      = _mm512_set1_pd(0.5);
+    const __m512d vthreehalf = _mm512_set1_pd(1.5);
+    constexpr double third = 1.0/3.0;
+
+    size_t i = 0;
+    for (; i + W <= npairs; i += W)
+    {
+        for (int k = 0; k < W; k++)
+        {
+            auto &b       = pairs[i + k];
+            auto &params  = b->params();
+            aexp_arr[k]   = params[expA];
+            bexp_arr[k]   = params[expB];
+            auto &indices = b->atomIndices();
+            ai_arr[k]     = indices[0];
+            aj_arr[k]     = indices[1];
+            dxX[k] = x[ai_arr[k]][XX] - x[aj_arr[k]][XX];
+            dxY[k] = x[ai_arr[k]][YY] - x[aj_arr[k]][YY];
+            dxZ[k] = x[ai_arr[k]][ZZ] - x[aj_arr[k]][ZZ];
+        }
+        __m512d vdxX = _mm512_load_pd(dxX);
+        __m512d vdxY = _mm512_load_pd(dxY);
+        __m512d vdxZ = _mm512_load_pd(dxZ);
+        __m512d vdr2 = _mm512_fmadd_pd(vdxX, vdxX,
+                       _mm512_fmadd_pd(vdxY, vdxY,
+                       _mm512_mul_pd  (vdxZ, vdxZ)));
+        __m512d vrinv = _mm512_rsqrt14_pd(vdr2);
+        {
+            __m512d vtmp = _mm512_mul_pd(_mm512_mul_pd(vdr2, vrinv), vrinv);
+            vrinv = _mm512_mul_pd(vrinv, _mm512_fnmadd_pd(vhalf, vtmp, vthreehalf));
+        }
+        {
+            __m512d vtmp = _mm512_mul_pd(_mm512_mul_pd(vdr2, vrinv), vrinv);
+            vrinv = _mm512_mul_pd(vrinv, _mm512_fnmadd_pd(vhalf, vtmp, vthreehalf));
+        }
+        _mm512_store_pd(dr2_arr,  vdr2);
+        _mm512_store_pd(rinv_arr, vrinv);
+
+        for (int k = 0; k < W; k++)
+        {
+            double dr_k    = dr2_arr[k] * rinv_arr[k];
+            double br_k    = bexp_arr[k] * dr_k;
+            double Pbr_k   = br_k*br_k*third + br_k + 1.0;
+            double aterm_k = aexp_arr[k] * std::exp(-br_k);
+            double eeexp_k = aterm_k * Pbr_k;
+            eexp          += eeexp_k;
+            double fexp_k  = bexp_arr[k]*eeexp_k - bexp_arr[k]*aterm_k*(2.0*br_k*third + 1.0);
+            fbond_arr[k]   = fexp_k * rinv_arr[k];
+        }
+
+        for (int k = 0; k < W; k++)
+        {
+            double fk   = fbond_arr[k];
+            int    ai   = ai_arr[k];
+            int    aj   = aj_arr[k];
+            double fijX = fk * dxX[k];
+            double fijY = fk * dxY[k];
+            double fijZ = fk * dxZ[k];
+            f[ai][XX] += fijX;   f[aj][XX] -= fijX;
+            f[ai][YY] += fijY;   f[aj][YY] -= fijY;
+            f[ai][ZZ] += fijZ;   f[aj][ZZ] -= fijZ;
+        }
+    }
+
+    for (; i < npairs; i++)
+    {
+        auto &b      = pairs[i];
+        auto &params = b->params();
         eexp += lowSlaterISA(msghandler, b->atomIndices(), *coordinates, params[expA], params[expB], forces);
     }
+
+    }
+    else
+#endif
+#if defined(__AVX2__) && defined(GMX_SIMD_X86_AVX2_256)
+    if (npairs >= 6)
+    {
+    auto   &f    = *forces;
+    constexpr int W = 4;
+    alignas(32) double dxX[W], dxY[W], dxZ[W];
+    alignas(32) double dr2_arr[W], rinv_arr[W];
+    alignas(32) double fbond_arr[W];
+    double aexp_arr[W], bexp_arr[W];
+    int ai_arr[W], aj_arr[W];
+
+    const __m256d vhalf      = _mm256_set1_pd(0.5);
+    const __m256d vthreehalf = _mm256_set1_pd(1.5);
+    constexpr double third = 1.0/3.0;
+
+    size_t i = 0;
+    for (; i + W <= npairs; i += W)
+    {
+        for (int k = 0; k < W; k++)
+        {
+            auto &b       = pairs[i + k];
+            auto &params  = b->params();
+            aexp_arr[k]   = params[expA];
+            bexp_arr[k]   = params[expB];
+            auto &indices = b->atomIndices();
+            ai_arr[k]     = indices[0];
+            aj_arr[k]     = indices[1];
+            dxX[k] = x[ai_arr[k]][XX] - x[aj_arr[k]][XX];
+            dxY[k] = x[ai_arr[k]][YY] - x[aj_arr[k]][YY];
+            dxZ[k] = x[ai_arr[k]][ZZ] - x[aj_arr[k]][ZZ];
+        }
+        __m256d vdxX = _mm256_load_pd(dxX);
+        __m256d vdxY = _mm256_load_pd(dxY);
+        __m256d vdxZ = _mm256_load_pd(dxZ);
+        __m256d vdr2 = _mm256_fmadd_pd(vdxX, vdxX,
+                       _mm256_fmadd_pd(vdxY, vdxY,
+                       _mm256_mul_pd  (vdxZ, vdxZ)));
+        __m128  vdr2_f  = _mm256_cvtpd_ps(vdr2);
+        __m128  vrinv_f = _mm_rsqrt_ps(vdr2_f);
+        __m256d vrinv   = _mm256_cvtps_pd(vrinv_f);
+        {
+            __m256d vtmp = _mm256_mul_pd(_mm256_mul_pd(vdr2, vrinv), vrinv);
+            vrinv = _mm256_mul_pd(vrinv, _mm256_fnmadd_pd(vhalf, vtmp, vthreehalf));
+        }
+        {
+            __m256d vtmp = _mm256_mul_pd(_mm256_mul_pd(vdr2, vrinv), vrinv);
+            vrinv = _mm256_mul_pd(vrinv, _mm256_fnmadd_pd(vhalf, vtmp, vthreehalf));
+        }
+        _mm256_store_pd(dr2_arr,  vdr2);
+        _mm256_store_pd(rinv_arr, vrinv);
+
+        for (int k = 0; k < W; k++)
+        {
+            double dr_k    = dr2_arr[k] * rinv_arr[k];
+            double br_k    = bexp_arr[k] * dr_k;
+            double Pbr_k   = br_k*br_k*third + br_k + 1.0;
+            double aterm_k = aexp_arr[k] * std::exp(-br_k);
+            double eeexp_k = aterm_k * Pbr_k;
+            eexp          += eeexp_k;
+            double fexp_k  = bexp_arr[k]*eeexp_k - bexp_arr[k]*aterm_k*(2.0*br_k*third + 1.0);
+            fbond_arr[k]   = fexp_k * rinv_arr[k];
+        }
+
+        for (int k = 0; k < W; k++)
+        {
+            double fk   = fbond_arr[k];
+            int    ai   = ai_arr[k];
+            int    aj   = aj_arr[k];
+            double fijX = fk * dxX[k];
+            double fijY = fk * dxY[k];
+            double fijZ = fk * dxZ[k];
+            f[ai][XX] += fijX;   f[aj][XX] -= fijX;
+            f[ai][YY] += fijY;   f[aj][YY] -= fijY;
+            f[ai][ZZ] += fijZ;   f[aj][ZZ] -= fijZ;
+        }
+    }
+
+    for (; i < npairs; i++)
+    {
+        auto &b      = pairs[i];
+        auto &params = b->params();
+        eexp += lowSlaterISA(msghandler, b->atomIndices(), *coordinates, params[expA], params[expB], forces);
+    }
+
+    }
+    else
+#endif
+    {
+    for (size_t i = 0; i < npairs; i++)
+    {
+        auto &b      = pairs[i];
+        auto &params = b->params();
+        eexp += lowSlaterISA(msghandler, b->atomIndices(), *coordinates, params[expA], params[expB], forces);
+    }
+    }
+
     energies->insert({InteractionType::EXCHANGE, eexp});
 
     return eexp;
@@ -529,36 +1977,249 @@ static double computeDoubleExponential(MsgHandler                            *ms
 {
     double eexp  = 0;
     auto   x     = *coordinates;
-    for (const auto &b : pairs)
+    const size_t npairs = pairs.size();
+
+#if defined(__AVX512F__) && defined(GMX_SIMD_X86_AVX_512)
+    if (npairs >= 12)
     {
-        // Get the parameters. We have to know their names to do this.
-        auto &params    = b->params();
-        real aexp       = params[dexpA1] - params[dexpA2];
+    auto   &f    = *forces;
+    constexpr int W = 8;
+    alignas(64) double dxX[W], dxY[W], dxZ[W];
+    alignas(64) double dr2_arr[W], rinv_arr[W];
+    alignas(64) double fbond_arr[W];
+    double aexp_arr[W], bexp_arr[W];
+    int ai_arr[W], aj_arr[W];
+
+    const __m512d vhalf      = _mm512_set1_pd(0.5);
+    const __m512d vthreehalf = _mm512_set1_pd(1.5);
+
+    size_t i = 0;
+    for (; i + W <= npairs; i += W)
+    {
+        for (int k = 0; k < W; k++)
+        {
+            auto &b       = pairs[i + k];
+            auto &params  = b->params();
+            aexp_arr[k]   = params[dexpA1] - params[dexpA2];
+            bexp_arr[k]   = params[dexpB];
+            auto &indices = b->atomIndices();
+            ai_arr[k]     = indices[0];
+            aj_arr[k]     = indices[1];
+            dxX[k] = x[ai_arr[k]][XX] - x[aj_arr[k]][XX];
+            dxY[k] = x[ai_arr[k]][YY] - x[aj_arr[k]][YY];
+            dxZ[k] = x[ai_arr[k]][ZZ] - x[aj_arr[k]][ZZ];
+        }
+        __m512d vdxX = _mm512_load_pd(dxX);
+        __m512d vdxY = _mm512_load_pd(dxY);
+        __m512d vdxZ = _mm512_load_pd(dxZ);
+        __m512d vdr2 = _mm512_fmadd_pd(vdxX, vdxX,
+                       _mm512_fmadd_pd(vdxY, vdxY,
+                       _mm512_mul_pd  (vdxZ, vdxZ)));
+        __m512d vrinv = _mm512_rsqrt14_pd(vdr2);
+        {
+            __m512d vtmp = _mm512_mul_pd(_mm512_mul_pd(vdr2, vrinv), vrinv);
+            vrinv = _mm512_mul_pd(vrinv, _mm512_fnmadd_pd(vhalf, vtmp, vthreehalf));
+        }
+        {
+            __m512d vtmp = _mm512_mul_pd(_mm512_mul_pd(vdr2, vrinv), vrinv);
+            vrinv = _mm512_mul_pd(vrinv, _mm512_fnmadd_pd(vhalf, vtmp, vthreehalf));
+        }
+        _mm512_store_pd(dr2_arr,  vdr2);
+        _mm512_store_pd(rinv_arr, vrinv);
+
+        for (int k = 0; k < W; k++)
+        {
+            double aexp_k  = aexp_arr[k];
+            double bexp_k  = bexp_arr[k];
+            double r_k     = dr2_arr[k] * rinv_arr[k];
+            double eeexp_k = -aexp_k * std::exp(-bexp_k * r_k);
+            eexp          += eeexp_k;
+            fbond_arr[k]   = bexp_k * eeexp_k * rinv_arr[k];
+        }
+
+        for (int k = 0; k < W; k++)
+        {
+            double fk   = fbond_arr[k];
+            int    ai   = ai_arr[k];
+            int    aj   = aj_arr[k];
+            double fijX = fk * dxX[k];
+            double fijY = fk * dxY[k];
+            double fijZ = fk * dxZ[k];
+            f[ai][XX] += fijX;   f[aj][XX] -= fijX;
+            f[ai][YY] += fijY;   f[aj][YY] -= fijY;
+            f[ai][ZZ] += fijZ;   f[aj][ZZ] -= fijZ;
+        }
+    }
+
+    for (; i < npairs; i++)
+    {
+        auto &b      = pairs[i];
+        auto &params = b->params();
+        real aexp    = params[dexpA1] - params[dexpA2];
         if (aexp == 0)
         {
             continue;
         }
-        real bexp       = params[dexpB];
-        // Get the atom indices
-        auto &indices   = b->atomIndices();
-        auto ai         = indices[0];
-        auto aj         = indices[1];
+        real bexp    = params[dexpB];
+        auto &indices = b->atomIndices();
+        auto ai      = indices[0];
+        auto aj      = indices[1];
         rvec dx;
         rvec_sub(x[ai], x[aj], dx);
-        auto dr2        = iprod(dx, dx);
-        auto rinv       = gmx::invsqrt(dr2);
-        auto eeexp      = -aexp*std::exp(-bexp*dr2*rinv);
+        auto dr2    = iprod(dx, dx);
+        auto rinv   = gmx::invsqrt(dr2);
+        auto eeexp  = -aexp*std::exp(-bexp*dr2*rinv);
         if (msghandler && msghandler->debug())
         {
             msghandler->writeDebug(gmx::formatString("r  %g  dexp %g aexp %g bexp %g",
                                                      dr2*rinv, eeexp, aexp, bexp));
         }
-        real fexp  = bexp*eeexp;
-        eexp      += eeexp;
-        
+        real fexp   = bexp*eeexp;
+        eexp       += eeexp;
         real fbond  = fexp*rinv;
         pairforces(fbond, dx, indices, forces);
     }
+
+    }
+    else
+#endif
+#if defined(__AVX2__) && defined(GMX_SIMD_X86_AVX2_256)
+    if (npairs >= 6)
+    {
+    auto   &f    = *forces;
+    constexpr int W = 4;
+    alignas(32) double dxX[W], dxY[W], dxZ[W];
+    alignas(32) double dr2_arr[W], rinv_arr[W];
+    alignas(32) double fbond_arr[W];
+    double aexp_arr[W], bexp_arr[W];
+    int ai_arr[W], aj_arr[W];
+
+    const __m256d vhalf      = _mm256_set1_pd(0.5);
+    const __m256d vthreehalf = _mm256_set1_pd(1.5);
+
+    size_t i = 0;
+    for (; i + W <= npairs; i += W)
+    {
+        for (int k = 0; k < W; k++)
+        {
+            auto &b       = pairs[i + k];
+            auto &params  = b->params();
+            aexp_arr[k]   = params[dexpA1] - params[dexpA2];
+            bexp_arr[k]   = params[dexpB];
+            auto &indices = b->atomIndices();
+            ai_arr[k]     = indices[0];
+            aj_arr[k]     = indices[1];
+            dxX[k] = x[ai_arr[k]][XX] - x[aj_arr[k]][XX];
+            dxY[k] = x[ai_arr[k]][YY] - x[aj_arr[k]][YY];
+            dxZ[k] = x[ai_arr[k]][ZZ] - x[aj_arr[k]][ZZ];
+        }
+        __m256d vdxX = _mm256_load_pd(dxX);
+        __m256d vdxY = _mm256_load_pd(dxY);
+        __m256d vdxZ = _mm256_load_pd(dxZ);
+        __m256d vdr2 = _mm256_fmadd_pd(vdxX, vdxX,
+                       _mm256_fmadd_pd(vdxY, vdxY,
+                       _mm256_mul_pd  (vdxZ, vdxZ)));
+        __m128  vdr2_f  = _mm256_cvtpd_ps(vdr2);
+        __m128  vrinv_f = _mm_rsqrt_ps(vdr2_f);
+        __m256d vrinv   = _mm256_cvtps_pd(vrinv_f);
+        {
+            __m256d vtmp = _mm256_mul_pd(_mm256_mul_pd(vdr2, vrinv), vrinv);
+            vrinv = _mm256_mul_pd(vrinv, _mm256_fnmadd_pd(vhalf, vtmp, vthreehalf));
+        }
+        {
+            __m256d vtmp = _mm256_mul_pd(_mm256_mul_pd(vdr2, vrinv), vrinv);
+            vrinv = _mm256_mul_pd(vrinv, _mm256_fnmadd_pd(vhalf, vtmp, vthreehalf));
+        }
+        _mm256_store_pd(dr2_arr,  vdr2);
+        _mm256_store_pd(rinv_arr, vrinv);
+
+        for (int k = 0; k < W; k++)
+        {
+            double aexp_k  = aexp_arr[k];
+            double bexp_k  = bexp_arr[k];
+            double r_k     = dr2_arr[k] * rinv_arr[k];
+            double eeexp_k = -aexp_k * std::exp(-bexp_k * r_k);
+            eexp          += eeexp_k;
+            fbond_arr[k]   = bexp_k * eeexp_k * rinv_arr[k];
+        }
+
+        for (int k = 0; k < W; k++)
+        {
+            double fk   = fbond_arr[k];
+            int    ai   = ai_arr[k];
+            int    aj   = aj_arr[k];
+            double fijX = fk * dxX[k];
+            double fijY = fk * dxY[k];
+            double fijZ = fk * dxZ[k];
+            f[ai][XX] += fijX;   f[aj][XX] -= fijX;
+            f[ai][YY] += fijY;   f[aj][YY] -= fijY;
+            f[ai][ZZ] += fijZ;   f[aj][ZZ] -= fijZ;
+        }
+    }
+
+    for (; i < npairs; i++)
+    {
+        auto &b      = pairs[i];
+        auto &params = b->params();
+        real aexp    = params[dexpA1] - params[dexpA2];
+        if (aexp == 0)
+        {
+            continue;
+        }
+        real bexp    = params[dexpB];
+        auto &indices = b->atomIndices();
+        auto ai      = indices[0];
+        auto aj      = indices[1];
+        rvec dx;
+        rvec_sub(x[ai], x[aj], dx);
+        auto dr2    = iprod(dx, dx);
+        auto rinv   = gmx::invsqrt(dr2);
+        auto eeexp  = -aexp*std::exp(-bexp*dr2*rinv);
+        if (msghandler && msghandler->debug())
+        {
+            msghandler->writeDebug(gmx::formatString("r  %g  dexp %g aexp %g bexp %g",
+                                                     dr2*rinv, eeexp, aexp, bexp));
+        }
+        real fexp   = bexp*eeexp;
+        eexp       += eeexp;
+        real fbond  = fexp*rinv;
+        pairforces(fbond, dx, indices, forces);
+    }
+
+    }
+    else
+#endif
+    {
+    for (size_t i = 0; i < npairs; i++)
+    {
+        auto &b      = pairs[i];
+        auto &params = b->params();
+        real aexp    = params[dexpA1] - params[dexpA2];
+        if (aexp == 0)
+        {
+            continue;
+        }
+        real bexp    = params[dexpB];
+        auto &indices = b->atomIndices();
+        auto ai      = indices[0];
+        auto aj      = indices[1];
+        rvec dx;
+        rvec_sub(x[ai], x[aj], dx);
+        auto dr2    = iprod(dx, dx);
+        auto rinv   = gmx::invsqrt(dr2);
+        auto eeexp  = -aexp*std::exp(-bexp*dr2*rinv);
+        if (msghandler && msghandler->debug())
+        {
+            msghandler->writeDebug(gmx::formatString("r  %g  dexp %g aexp %g bexp %g",
+                                                     dr2*rinv, eeexp, aexp, bexp));
+        }
+        real fexp   = bexp*eeexp;
+        eexp       += eeexp;
+        real fbond  = fexp*rinv;
+        pairforces(fbond, dx, indices, forces);
+    }
+    }
+
     energies->insert({InteractionType::INDUCTIONCORRECTION, eexp});
 
     return eexp;
@@ -620,34 +2281,306 @@ static double computeWBH(MsgHandler                            *msghandler,
     double erep  = 0;
     double edisp = 0;
     auto   x     = *coordinates;
-    for (const auto &b : pairs)
+    const size_t npairs = pairs.size();
+
+#if defined(__AVX512F__) && defined(GMX_SIMD_X86_AVX_512)
+    if (npairs >= 12)
     {
-        // Get the parameters. We have to know their names to do this.
-        auto &params    = b->params();
-        auto sigma      = params[wbhSIGMA];
-        auto epsilon    = params[wbhEPSILON];
-        auto gamma      = params[wbhGAMMA];
+    auto   &f    = *forces;
+    constexpr int W = 8;
+    alignas(64) double dxX[W], dxY[W], dxZ[W];
+    alignas(64) double dr2_arr[W], rinv_arr[W];
+    alignas(64) double fbond_arr[W];
+    alignas(64) double erep_arr[W], edisp_arr[W];
+    double sigma_arr[W], epsilon_arr[W], gamma_arr[W];
+    int active_arr[W];
+    int ai_arr[W], aj_arr[W];
+
+    const __m512d vhalf      = _mm512_set1_pd(0.5);
+    const __m512d vthreehalf = _mm512_set1_pd(1.5);
+
+    size_t i = 0;
+    for (; i + W <= npairs; i += W)
+    {
+        for (int k = 0; k < W; k++)
+        {
+            auto &b       = pairs[i + k];
+            auto &params  = b->params();
+            sigma_arr[k]   = params[wbhSIGMA];
+            epsilon_arr[k] = params[wbhEPSILON];
+            gamma_arr[k]   = params[wbhGAMMA];
+            active_arr[k]  = (epsilon_arr[k] > 0 && gamma_arr[k] > 0 && sigma_arr[k] > 0) ? 1 : 0;
+            auto &indices  = b->atomIndices();
+            ai_arr[k]      = indices[0];
+            aj_arr[k]      = indices[1];
+            dxX[k] = x[ai_arr[k]][XX] - x[aj_arr[k]][XX];
+            dxY[k] = x[ai_arr[k]][YY] - x[aj_arr[k]][YY];
+            dxZ[k] = x[ai_arr[k]][ZZ] - x[aj_arr[k]][ZZ];
+        }
+        __m512d vdxX = _mm512_load_pd(dxX);
+        __m512d vdxY = _mm512_load_pd(dxY);
+        __m512d vdxZ = _mm512_load_pd(dxZ);
+        __m512d vdr2 = _mm512_fmadd_pd(vdxX, vdxX,
+                       _mm512_fmadd_pd(vdxY, vdxY,
+                       _mm512_mul_pd  (vdxZ, vdxZ)));
+        __m512d vrinv = _mm512_rsqrt14_pd(vdr2);
+        {
+            __m512d vtmp = _mm512_mul_pd(_mm512_mul_pd(vdr2, vrinv), vrinv);
+            vrinv = _mm512_mul_pd(vrinv, _mm512_fnmadd_pd(vhalf, vtmp, vthreehalf));
+        }
+        {
+            __m512d vtmp = _mm512_mul_pd(_mm512_mul_pd(vdr2, vrinv), vrinv);
+            vrinv = _mm512_mul_pd(vrinv, _mm512_fnmadd_pd(vhalf, vtmp, vthreehalf));
+        }
+        _mm512_store_pd(dr2_arr,  vdr2);
+        _mm512_store_pd(rinv_arr, vrinv);
+
+        for (int k = 0; k < W; k++)
+        {
+            if (!active_arr[k])
+            {
+                fbond_arr[k] = 0.0;
+                erep_arr[k]  = 0.0;
+                edisp_arr[k] = 0.0;
+                continue;
+            }
+            double sigma   = sigma_arr[k];
+            double epsilon = epsilon_arr[k];
+            double gamma_k = gamma_arr[k];
+            double rinv_k  = rinv_arr[k];
+            double dr2_k   = dr2_arr[k];
+            double r       = dr2_k * rinv_k;
+            double r5      = dr2_k * dr2_k * r;
+            double r6      = r5 * r;
+            double sigma2  = sigma * sigma;
+            double sigma6  = sigma2 * sigma2 * sigma2;
+            double sigma6_r6  = sigma6 + r6;
+            double gamma_3    = 3.0 / (gamma_k + 3.0);
+            double gamma3_inv = 1.0 / (1.0 - gamma_3);
+            double disp_pre   = 2.0 * epsilon * gamma3_inv;
+            double erep_exp   = gamma_3 * std::exp(gamma_k * (1.0 - r/sigma));
+            double vvdw_disp  = -disp_pre * (sigma6 / sigma6_r6);
+            double vrepulsion = -vvdw_disp * erep_exp;
+            double fvdw_disp  = -disp_pre * sigma6 * 6.0 * r5 / (sigma6_r6 * sigma6_r6);
+            double fvdw_rep   = -fvdw_disp * erep_exp - vvdw_disp * erep_exp * (gamma_k / sigma);
+            double fvdw       = fvdw_rep + fvdw_disp;
+            erep_arr[k]   = vrepulsion;
+            edisp_arr[k]  = vvdw_disp;
+            fbond_arr[k]  = fvdw * rinv_k;
+        }
+
+        for (int k = 0; k < W; k++)
+        {
+            erep  += erep_arr[k];
+            edisp += edisp_arr[k];
+            double fk   = fbond_arr[k];
+            int    ai   = ai_arr[k];
+            int    aj   = aj_arr[k];
+            double fijX = fk * dxX[k];
+            double fijY = fk * dxY[k];
+            double fijZ = fk * dxZ[k];
+            f[ai][XX] += fijX;   f[aj][XX] -= fijX;
+            f[ai][YY] += fijY;   f[aj][YY] -= fijY;
+            f[ai][ZZ] += fijZ;   f[aj][ZZ] -= fijZ;
+        }
+    }
+
+    for (; i < npairs; i++)
+    {
+        auto &b      = pairs[i];
+        auto &params = b->params();
+        auto sigma   = params[wbhSIGMA];
+        auto epsilon = params[wbhEPSILON];
+        auto gamma   = params[wbhGAMMA];
         if (epsilon > 0 && gamma > 0 && sigma > 0)
         {
-            // Get the atom indices
-            auto &indices   = b->atomIndices();
+            auto &indices = b->atomIndices();
             rvec dx;
             rvec_sub(x[indices[0]], x[indices[1]], dx);
-            auto dr2        = iprod(dx, dx);
-            auto rinv       = gmx::invsqrt(dr2);
+            auto dr2  = iprod(dx, dx);
+            auto rinv = gmx::invsqrt(dr2);
             real eerep = 0, eedisp = 0, fwbh = 0;
             wang_buckingham(sigma, epsilon, gamma, dr2, rinv, &eerep, &eedisp, &fwbh);
-            erep     += eerep;
-            edisp    += eedisp;
+            erep  += eerep;
+            edisp += eedisp;
             if (msghandler && msghandler->debug())
             {
                 msghandler->writeDebug(gmx::formatString("WBHAM ai %d aj %d sigma %g epsilon %g gamma %g erep: %g edisp: %g",
                                                          indices[0], indices[1], sigma, epsilon, gamma, eerep, eedisp));
             }
-            real fbond  = fwbh*rinv;
+            real fbond = fwbh*rinv;
             pairforces(fbond, dx, indices, forces);
         }
     }
+
+    }
+    else
+#endif
+#if defined(__AVX2__) && defined(GMX_SIMD_X86_AVX2_256)
+    if (npairs >= 6)
+    {
+    auto   &f    = *forces;
+    constexpr int W = 4;
+    alignas(32) double dxX[W], dxY[W], dxZ[W];
+    alignas(32) double dr2_arr[W], rinv_arr[W];
+    alignas(32) double fbond_arr[W];
+    alignas(32) double erep_arr[W], edisp_arr[W];
+    double sigma_arr[W], epsilon_arr[W], gamma_arr[W];
+    int active_arr[W];
+    int ai_arr[W], aj_arr[W];
+
+    const __m256d vhalf      = _mm256_set1_pd(0.5);
+    const __m256d vthreehalf = _mm256_set1_pd(1.5);
+
+    size_t i = 0;
+    for (; i + W <= npairs; i += W)
+    {
+        for (int k = 0; k < W; k++)
+        {
+            auto &b       = pairs[i + k];
+            auto &params  = b->params();
+            sigma_arr[k]   = params[wbhSIGMA];
+            epsilon_arr[k] = params[wbhEPSILON];
+            gamma_arr[k]   = params[wbhGAMMA];
+            active_arr[k]  = (epsilon_arr[k] > 0 && gamma_arr[k] > 0 && sigma_arr[k] > 0) ? 1 : 0;
+            auto &indices  = b->atomIndices();
+            ai_arr[k]      = indices[0];
+            aj_arr[k]      = indices[1];
+            dxX[k] = x[ai_arr[k]][XX] - x[aj_arr[k]][XX];
+            dxY[k] = x[ai_arr[k]][YY] - x[aj_arr[k]][YY];
+            dxZ[k] = x[ai_arr[k]][ZZ] - x[aj_arr[k]][ZZ];
+        }
+        __m256d vdxX = _mm256_load_pd(dxX);
+        __m256d vdxY = _mm256_load_pd(dxY);
+        __m256d vdxZ = _mm256_load_pd(dxZ);
+        __m256d vdr2 = _mm256_fmadd_pd(vdxX, vdxX,
+                       _mm256_fmadd_pd(vdxY, vdxY,
+                       _mm256_mul_pd  (vdxZ, vdxZ)));
+        __m128  vdr2_f  = _mm256_cvtpd_ps(vdr2);
+        __m128  vrinv_f = _mm_rsqrt_ps(vdr2_f);
+        __m256d vrinv   = _mm256_cvtps_pd(vrinv_f);
+        {
+            __m256d vtmp = _mm256_mul_pd(_mm256_mul_pd(vdr2, vrinv), vrinv);
+            vrinv = _mm256_mul_pd(vrinv, _mm256_fnmadd_pd(vhalf, vtmp, vthreehalf));
+        }
+        {
+            __m256d vtmp = _mm256_mul_pd(_mm256_mul_pd(vdr2, vrinv), vrinv);
+            vrinv = _mm256_mul_pd(vrinv, _mm256_fnmadd_pd(vhalf, vtmp, vthreehalf));
+        }
+        _mm256_store_pd(dr2_arr,  vdr2);
+        _mm256_store_pd(rinv_arr, vrinv);
+
+        for (int k = 0; k < W; k++)
+        {
+            if (!active_arr[k])
+            {
+                fbond_arr[k] = 0.0;
+                erep_arr[k]  = 0.0;
+                edisp_arr[k] = 0.0;
+                continue;
+            }
+            double sigma   = sigma_arr[k];
+            double epsilon = epsilon_arr[k];
+            double gamma_k = gamma_arr[k];
+            double rinv_k  = rinv_arr[k];
+            double dr2_k   = dr2_arr[k];
+            double r       = dr2_k * rinv_k;
+            double r5      = dr2_k * dr2_k * r;
+            double r6      = r5 * r;
+            double sigma2  = sigma * sigma;
+            double sigma6  = sigma2 * sigma2 * sigma2;
+            double sigma6_r6  = sigma6 + r6;
+            double gamma_3    = 3.0 / (gamma_k + 3.0);
+            double gamma3_inv = 1.0 / (1.0 - gamma_3);
+            double disp_pre   = 2.0 * epsilon * gamma3_inv;
+            double erep_exp   = gamma_3 * std::exp(gamma_k * (1.0 - r/sigma));
+            double vvdw_disp  = -disp_pre * (sigma6 / sigma6_r6);
+            double vrepulsion = -vvdw_disp * erep_exp;
+            double fvdw_disp  = -disp_pre * sigma6 * 6.0 * r5 / (sigma6_r6 * sigma6_r6);
+            double fvdw_rep   = -fvdw_disp * erep_exp - vvdw_disp * erep_exp * (gamma_k / sigma);
+            double fvdw       = fvdw_rep + fvdw_disp;
+            erep_arr[k]   = vrepulsion;
+            edisp_arr[k]  = vvdw_disp;
+            fbond_arr[k]  = fvdw * rinv_k;
+        }
+
+        for (int k = 0; k < W; k++)
+        {
+            erep  += erep_arr[k];
+            edisp += edisp_arr[k];
+            double fk   = fbond_arr[k];
+            int    ai   = ai_arr[k];
+            int    aj   = aj_arr[k];
+            double fijX = fk * dxX[k];
+            double fijY = fk * dxY[k];
+            double fijZ = fk * dxZ[k];
+            f[ai][XX] += fijX;   f[aj][XX] -= fijX;
+            f[ai][YY] += fijY;   f[aj][YY] -= fijY;
+            f[ai][ZZ] += fijZ;   f[aj][ZZ] -= fijZ;
+        }
+    }
+
+    for (; i < npairs; i++)
+    {
+        auto &b      = pairs[i];
+        auto &params = b->params();
+        auto sigma   = params[wbhSIGMA];
+        auto epsilon = params[wbhEPSILON];
+        auto gamma   = params[wbhGAMMA];
+        if (epsilon > 0 && gamma > 0 && sigma > 0)
+        {
+            auto &indices = b->atomIndices();
+            rvec dx;
+            rvec_sub(x[indices[0]], x[indices[1]], dx);
+            auto dr2  = iprod(dx, dx);
+            auto rinv = gmx::invsqrt(dr2);
+            real eerep = 0, eedisp = 0, fwbh = 0;
+            wang_buckingham(sigma, epsilon, gamma, dr2, rinv, &eerep, &eedisp, &fwbh);
+            erep  += eerep;
+            edisp += eedisp;
+            if (msghandler && msghandler->debug())
+            {
+                msghandler->writeDebug(gmx::formatString("WBHAM ai %d aj %d sigma %g epsilon %g gamma %g erep: %g edisp: %g",
+                                                         indices[0], indices[1], sigma, epsilon, gamma, eerep, eedisp));
+            }
+            real fbond = fwbh*rinv;
+            pairforces(fbond, dx, indices, forces);
+        }
+    }
+
+    }
+    else
+#endif
+    {
+    for (size_t i = 0; i < npairs; i++)
+    {
+        auto &b      = pairs[i];
+        auto &params = b->params();
+        auto sigma   = params[wbhSIGMA];
+        auto epsilon = params[wbhEPSILON];
+        auto gamma   = params[wbhGAMMA];
+        if (epsilon > 0 && gamma > 0 && sigma > 0)
+        {
+            auto &indices = b->atomIndices();
+            rvec dx;
+            rvec_sub(x[indices[0]], x[indices[1]], dx);
+            auto dr2  = iprod(dx, dx);
+            auto rinv = gmx::invsqrt(dr2);
+            real eerep = 0, eedisp = 0, fwbh = 0;
+            wang_buckingham(sigma, epsilon, gamma, dr2, rinv, &eerep, &eedisp, &fwbh);
+            erep  += eerep;
+            edisp += eedisp;
+            if (msghandler && msghandler->debug())
+            {
+                msghandler->writeDebug(gmx::formatString("WBHAM ai %d aj %d sigma %g epsilon %g gamma %g erep: %g edisp: %g",
+                                                         indices[0], indices[1], sigma, epsilon, gamma, eerep, eedisp));
+            }
+            real fbond = fwbh*rinv;
+            pairforces(fbond, dx, indices, forces);
+        }
+    }
+    }
+
     energies->insert({InteractionType::EXCHANGE, erep});
     energies->insert({InteractionType::DISPERSION, edisp});
 
@@ -673,17 +2606,259 @@ static double computeBuckingham(MsgHandler                            *msghandle
     double erep  = 0;
     double edisp = 0;
     auto   x     = *coordinates;
-    for (const auto &b : pairs)
+    const size_t npairs = pairs.size();
+
+#if defined(__AVX512F__) && defined(GMX_SIMD_X86_AVX_512)
+    if (npairs >= 12)
     {
-        // Get the parameters. We have to know their names to do this.
-        auto &params    = b->params();
-        auto Abh  = params[bhA];
-        auto bbh  = params[bhB];
-        auto c6bh = params[bhC6];
+    auto   &f    = *forces;
+    constexpr int W = 8;
+    alignas(64) double dxX[W], dxY[W], dxZ[W];
+    alignas(64) double dr2_arr[W], rinv_arr[W];
+    alignas(64) double fbond_arr[W];
+    alignas(64) double erep_arr[W], edisp_arr[W];
+    double Abh_arr[W], bbh_arr[W], c6bh_arr[W];
+    int active_arr[W];
+    int ai_arr[W], aj_arr[W];
+
+    const __m512d vhalf      = _mm512_set1_pd(0.5);
+    const __m512d vthreehalf = _mm512_set1_pd(1.5);
+
+    size_t i = 0;
+    for (; i + W <= npairs; i += W)
+    {
+        for (int k = 0; k < W; k++)
+        {
+            auto &b       = pairs[i + k];
+            auto &params  = b->params();
+            Abh_arr[k]    = params[bhA];
+            bbh_arr[k]    = params[bhB];
+            c6bh_arr[k]   = params[bhC6];
+            active_arr[k] = (Abh_arr[k] > 0 && bbh_arr[k] > 0 && c6bh_arr[k] > 0) ? 1 : 0;
+            auto &indices = b->atomIndices();
+            ai_arr[k]     = indices[0];
+            aj_arr[k]     = indices[1];
+            dxX[k] = x[ai_arr[k]][XX] - x[aj_arr[k]][XX];
+            dxY[k] = x[ai_arr[k]][YY] - x[aj_arr[k]][YY];
+            dxZ[k] = x[ai_arr[k]][ZZ] - x[aj_arr[k]][ZZ];
+        }
+        __m512d vdxX = _mm512_load_pd(dxX);
+        __m512d vdxY = _mm512_load_pd(dxY);
+        __m512d vdxZ = _mm512_load_pd(dxZ);
+        __m512d vdr2 = _mm512_fmadd_pd(vdxX, vdxX,
+                       _mm512_fmadd_pd(vdxY, vdxY,
+                       _mm512_mul_pd  (vdxZ, vdxZ)));
+        __m512d vrinv = _mm512_rsqrt14_pd(vdr2);
+        {
+            __m512d vtmp = _mm512_mul_pd(_mm512_mul_pd(vdr2, vrinv), vrinv);
+            vrinv = _mm512_mul_pd(vrinv, _mm512_fnmadd_pd(vhalf, vtmp, vthreehalf));
+        }
+        {
+            __m512d vtmp = _mm512_mul_pd(_mm512_mul_pd(vdr2, vrinv), vrinv);
+            vrinv = _mm512_mul_pd(vrinv, _mm512_fnmadd_pd(vhalf, vtmp, vthreehalf));
+        }
+        _mm512_store_pd(dr2_arr,  vdr2);
+        _mm512_store_pd(rinv_arr, vrinv);
+
+        for (int k = 0; k < W; k++)
+        {
+            if (!active_arr[k])
+            {
+                fbond_arr[k] = 0.0;
+                erep_arr[k]  = 0.0;
+                edisp_arr[k] = 0.0;
+                continue;
+            }
+            double rinv_k  = rinv_arr[k];
+            double rinv2_k = rinv_k * rinv_k;
+            double rinv6_k = rinv2_k * rinv2_k * rinv2_k;
+            double eerep_k = Abh_arr[k] * std::exp(-bbh_arr[k] * dr2_arr[k] * rinv_k);
+            double eedisp_k = -c6bh_arr[k] * rinv6_k;
+            erep_arr[k]   = eerep_k;
+            edisp_arr[k]  = eedisp_k;
+            fbond_arr[k]  = (bbh_arr[k] * eerep_k + 6.0 * eedisp_k * rinv_k) * rinv_k;
+        }
+
+        for (int k = 0; k < W; k++)
+        {
+            erep  += erep_arr[k];
+            edisp += edisp_arr[k];
+            double fk   = fbond_arr[k];
+            int    ai   = ai_arr[k];
+            int    aj   = aj_arr[k];
+            double fijX = fk * dxX[k];
+            double fijY = fk * dxY[k];
+            double fijZ = fk * dxZ[k];
+            f[ai][XX] += fijX;   f[aj][XX] -= fijX;
+            f[ai][YY] += fijY;   f[aj][YY] -= fijY;
+            f[ai][ZZ] += fijZ;   f[aj][ZZ] -= fijZ;
+        }
+    }
+
+    for (; i < npairs; i++)
+    {
+        auto &b      = pairs[i];
+        auto &params = b->params();
+        auto Abh     = params[bhA];
+        auto bbh     = params[bhB];
+        auto c6bh    = params[bhC6];
         if (Abh > 0 && bbh > 0 && c6bh > 0)
         {
-            // Get the atom indices
-            auto &indices   = b->atomIndices();
+            auto &indices = b->atomIndices();
+            rvec dx;
+            rvec_sub(x[indices[0]], x[indices[1]], dx);
+            auto dr2    = iprod(dx, dx);
+            auto rinv   = gmx::invsqrt(dr2);
+            auto rinv2  = rinv*rinv;
+            real eerep  = Abh*std::exp(-bbh*dr2*rinv);
+            real eedisp = -c6bh*rinv2*rinv2*rinv2;
+            erep  += eerep;
+            edisp += eedisp;
+            if (msghandler && msghandler->debug())
+            {
+                msghandler->writeDebug(gmx::formatString("BHAM ai %d aj %d A %g b %g c6 %g erep: %g edisp: %g",
+                                                         indices[0], indices[1], Abh, bbh, c6bh, eerep, eedisp));
+            }
+            real fbond = (bbh*eerep + 6*eedisp*rinv)*rinv;
+            pairforces(fbond, dx, indices, forces);
+        }
+    }
+
+    }
+    else
+#endif
+#if defined(__AVX2__) && defined(GMX_SIMD_X86_AVX2_256)
+    if (npairs >= 6)
+    {
+    auto   &f    = *forces;
+    constexpr int W = 4;
+    alignas(32) double dxX[W], dxY[W], dxZ[W];
+    alignas(32) double dr2_arr[W], rinv_arr[W];
+    alignas(32) double fbond_arr[W];
+    alignas(32) double erep_arr[W], edisp_arr[W];
+    double Abh_arr[W], bbh_arr[W], c6bh_arr[W];
+    int active_arr[W];
+    int ai_arr[W], aj_arr[W];
+
+    const __m256d vhalf      = _mm256_set1_pd(0.5);
+    const __m256d vthreehalf = _mm256_set1_pd(1.5);
+
+    size_t i = 0;
+    for (; i + W <= npairs; i += W)
+    {
+        for (int k = 0; k < W; k++)
+        {
+            auto &b       = pairs[i + k];
+            auto &params  = b->params();
+            Abh_arr[k]    = params[bhA];
+            bbh_arr[k]    = params[bhB];
+            c6bh_arr[k]   = params[bhC6];
+            active_arr[k] = (Abh_arr[k] > 0 && bbh_arr[k] > 0 && c6bh_arr[k] > 0) ? 1 : 0;
+            auto &indices = b->atomIndices();
+            ai_arr[k]     = indices[0];
+            aj_arr[k]     = indices[1];
+            dxX[k] = x[ai_arr[k]][XX] - x[aj_arr[k]][XX];
+            dxY[k] = x[ai_arr[k]][YY] - x[aj_arr[k]][YY];
+            dxZ[k] = x[ai_arr[k]][ZZ] - x[aj_arr[k]][ZZ];
+        }
+        __m256d vdxX = _mm256_load_pd(dxX);
+        __m256d vdxY = _mm256_load_pd(dxY);
+        __m256d vdxZ = _mm256_load_pd(dxZ);
+        __m256d vdr2 = _mm256_fmadd_pd(vdxX, vdxX,
+                       _mm256_fmadd_pd(vdxY, vdxY,
+                       _mm256_mul_pd  (vdxZ, vdxZ)));
+        __m128  vdr2_f  = _mm256_cvtpd_ps(vdr2);
+        __m128  vrinv_f = _mm_rsqrt_ps(vdr2_f);
+        __m256d vrinv   = _mm256_cvtps_pd(vrinv_f);
+        {
+            __m256d vtmp = _mm256_mul_pd(_mm256_mul_pd(vdr2, vrinv), vrinv);
+            vrinv = _mm256_mul_pd(vrinv, _mm256_fnmadd_pd(vhalf, vtmp, vthreehalf));
+        }
+        {
+            __m256d vtmp = _mm256_mul_pd(_mm256_mul_pd(vdr2, vrinv), vrinv);
+            vrinv = _mm256_mul_pd(vrinv, _mm256_fnmadd_pd(vhalf, vtmp, vthreehalf));
+        }
+        _mm256_store_pd(dr2_arr,  vdr2);
+        _mm256_store_pd(rinv_arr, vrinv);
+
+        for (int k = 0; k < W; k++)
+        {
+            if (!active_arr[k])
+            {
+                fbond_arr[k] = 0.0;
+                erep_arr[k]  = 0.0;
+                edisp_arr[k] = 0.0;
+                continue;
+            }
+            double rinv_k  = rinv_arr[k];
+            double rinv2_k = rinv_k * rinv_k;
+            double rinv6_k = rinv2_k * rinv2_k * rinv2_k;
+            double eerep_k = Abh_arr[k] * std::exp(-bbh_arr[k] * dr2_arr[k] * rinv_k);
+            double eedisp_k = -c6bh_arr[k] * rinv6_k;
+            erep_arr[k]   = eerep_k;
+            edisp_arr[k]  = eedisp_k;
+            fbond_arr[k]  = (bbh_arr[k] * eerep_k + 6.0 * eedisp_k * rinv_k) * rinv_k;
+        }
+
+        for (int k = 0; k < W; k++)
+        {
+            erep  += erep_arr[k];
+            edisp += edisp_arr[k];
+            double fk   = fbond_arr[k];
+            int    ai   = ai_arr[k];
+            int    aj   = aj_arr[k];
+            double fijX = fk * dxX[k];
+            double fijY = fk * dxY[k];
+            double fijZ = fk * dxZ[k];
+            f[ai][XX] += fijX;   f[aj][XX] -= fijX;
+            f[ai][YY] += fijY;   f[aj][YY] -= fijY;
+            f[ai][ZZ] += fijZ;   f[aj][ZZ] -= fijZ;
+        }
+    }
+
+    for (; i < npairs; i++)
+    {
+        auto &b      = pairs[i];
+        auto &params = b->params();
+        auto Abh     = params[bhA];
+        auto bbh     = params[bhB];
+        auto c6bh    = params[bhC6];
+        if (Abh > 0 && bbh > 0 && c6bh > 0)
+        {
+            auto &indices = b->atomIndices();
+            rvec dx;
+            rvec_sub(x[indices[0]], x[indices[1]], dx);
+            auto dr2    = iprod(dx, dx);
+            auto rinv   = gmx::invsqrt(dr2);
+            auto rinv2  = rinv*rinv;
+            real eerep  = Abh*std::exp(-bbh*dr2*rinv);
+            real eedisp = -c6bh*rinv2*rinv2*rinv2;
+            erep  += eerep;
+            edisp += eedisp;
+            if (msghandler && msghandler->debug())
+            {
+                msghandler->writeDebug(gmx::formatString("BHAM ai %d aj %d A %g b %g c6 %g erep: %g edisp: %g",
+                                                         indices[0], indices[1], Abh, bbh, c6bh, eerep, eedisp));
+            }
+            real fbond = (bbh*eerep + 6*eedisp*rinv)*rinv;
+            pairforces(fbond, dx, indices, forces);
+        }
+    }
+
+    }
+    else
+#endif
+    {
+    for (size_t i = 0; i < npairs; i++)
+    {
+        auto &b      = pairs[i];
+        auto &params = b->params();
+        auto Abh     = params[bhA];
+        auto bbh     = params[bhB];
+        auto c6bh    = params[bhC6];
+        if (Abh > 0 && bbh > 0 && c6bh > 0)
+        {
+            auto &indices = b->atomIndices();
             rvec dx;
             rvec_sub(x[indices[0]], x[indices[1]], dx);
             auto dr2    = iprod(dx, dx);
@@ -702,6 +2877,8 @@ static double computeBuckingham(MsgHandler                            *msghandle
             pairforces(fbond, dx, indices, forces);
         }
     }
+    }
+
     energies->insert({InteractionType::EXCHANGE, erep});
     energies->insert({InteractionType::DISPERSION, edisp});
 
@@ -717,6 +2894,10 @@ static double computeBuckingham(MsgHandler                            *msghandle
  * \param[inout] forces  The forces on all particles
  * \return total energy
  */
+
+//! Factorial look-up table used by Tang-Toennies dispersion kernels
+static constexpr int tt_fac[11] = { 1, 1, 2, 6, 24, 120, 720, 5040, 40320, 362880, 3628800 };
+
 static double TT_Dispersion(MsgHandler                   *msghandler,
                             const std::vector<int>       &indices,
                             const std::vector<gmx::RVec> &x,
@@ -724,7 +2905,6 @@ static double TT_Dispersion(MsgHandler                   *msghandler,
                             const std::vector<double>    &ctt,
                             std::vector<gmx::RVec>       *forces)
 {
-    static const int fac[11] = { 1, 1, 2, 6, 24, 120, 720, 5040, 40320, 362880, 3628800 };
     std::vector<double> br(11);
     rvec dx;
     rvec_sub(x[indices[0]], x[indices[1]], dx);
@@ -748,10 +2928,10 @@ static double TT_Dispersion(MsgHandler                   *msghandler,
         int  nn  = 2*m;
         for (int k = 0; k <= nn; k++)
         {
-            fk  += br[k]/fac[k];
+            fk  += br[k]/tt_fac[k];
             if (k > 0)
             {
-                dfk += k*bDisp*br[k-1]/fac[k];
+                dfk += k*bDisp*br[k-1]/tt_fac[k];
             }
         }
         real ed = -(1-ebrDisp*fk)*ctt[m-3]*rinvn;
@@ -789,15 +2969,260 @@ static double computeTangToennies(MsgHandler                            *msghand
 {
     double erep  = 0;
     double edisp = 0;
-    for (const auto &b : pairs)
+    const size_t npairs = pairs.size();
+
+#if defined(__AVX512F__) && defined(GMX_SIMD_X86_AVX_512)
+    if (npairs >= 12)
     {
-        // Get the parameters. We have to know their names to do this.
-        auto &params    = b->params();
+    auto   &x    = *coordinates;
+    auto   &f    = *forces;
+    constexpr int W = 8;
+    alignas(64) double dxX[W], dxY[W], dxZ[W];
+    alignas(64) double dr2_arr[W], rinv_arr[W];
+    alignas(64) double fbond_arr[W];
+    int ai_arr[W], aj_arr[W];
+
+    const __m512d vhalf      = _mm512_set1_pd(0.5);
+    const __m512d vthreehalf = _mm512_set1_pd(1.5);
+
+    size_t i = 0;
+    for (; i + W <= npairs; i += W)
+    {
+        for (int k = 0; k < W; k++)
+        {
+            auto &b       = pairs[i + k];
+            auto &indices = b->atomIndices();
+            ai_arr[k]     = indices[0];
+            aj_arr[k]     = indices[1];
+            dxX[k] = x[ai_arr[k]][XX] - x[aj_arr[k]][XX];
+            dxY[k] = x[ai_arr[k]][YY] - x[aj_arr[k]][YY];
+            dxZ[k] = x[ai_arr[k]][ZZ] - x[aj_arr[k]][ZZ];
+        }
+        __m512d vdxX = _mm512_load_pd(dxX);
+        __m512d vdxY = _mm512_load_pd(dxY);
+        __m512d vdxZ = _mm512_load_pd(dxZ);
+        __m512d vdr2 = _mm512_fmadd_pd(vdxX, vdxX,
+                       _mm512_fmadd_pd(vdxY, vdxY,
+                       _mm512_mul_pd  (vdxZ, vdxZ)));
+        __m512d vrinv = _mm512_rsqrt14_pd(vdr2);
+        {
+            __m512d vtmp = _mm512_mul_pd(_mm512_mul_pd(vdr2, vrinv), vrinv);
+            vrinv = _mm512_mul_pd(vrinv, _mm512_fnmadd_pd(vhalf, vtmp, vthreehalf));
+        }
+        {
+            __m512d vtmp = _mm512_mul_pd(_mm512_mul_pd(vdr2, vrinv), vrinv);
+            vrinv = _mm512_mul_pd(vrinv, _mm512_fnmadd_pd(vhalf, vtmp, vthreehalf));
+        }
+        _mm512_store_pd(dr2_arr,  vdr2);
+        _mm512_store_pd(rinv_arr, vrinv);
+
+        for (int k = 0; k < W; k++)
+        {
+            auto &b       = pairs[i + k];
+            auto &params  = b->params();
+            double rinv_k = rinv_arr[k];
+            double dr2_k  = dr2_arr[k];
+            double r_k    = dr2_k * rinv_k;
+
+            // lowBornMayer inline: scalar force = bexp * eeexp * rinv
+            double eeexp_k = params[ttA] * std::exp(-params[ttB] * r_k);
+            erep          += eeexp_k;
+            fbond_arr[k]   = params[ttB] * eeexp_k * rinv_k;
+
+            // TT_Dispersion inline: accumulate fdisp, then scalar force = fdisp * rinv
+            double bDisp   = params[ttB];
+            double bDispr  = bDisp * r_k;
+            double ebrDisp = std::exp(-bDispr);
+            double rinv2_k = rinv_k * rinv_k;
+            double rinvn   = rinv2_k * rinv2_k * rinv2_k;
+            double br_pow[11];
+            br_pow[0] = 1.0;
+            for (int j = 1; j < 11; j++)
+            {
+                br_pow[j] = br_pow[j-1] * bDispr;
+            }
+            double ctt[3] = { params[ttC6], params[ttC8], params[ttC10] };
+            double fdisp_k = 0;
+            for (int m = 3; m <= 5; m++)
+            {
+                double fk_tt = 0, dfk_tt = 0;
+                int    nn    = 2*m;
+                for (int j = 0; j <= nn; j++)
+                {
+                    fk_tt += br_pow[j] / tt_fac[j];
+                    if (j > 0)
+                    {
+                        dfk_tt += j * bDisp * br_pow[j-1] / tt_fac[j];
+                    }
+                }
+                double ed = -(1.0 - ebrDisp*fk_tt) * ctt[m-3] * rinvn;
+                edisp     += ed;
+                fdisp_k   += ed * nn * rinv_k;
+                fdisp_k   += ctt[m-3] * rinvn * (bDisp*ebrDisp*fk_tt - ebrDisp*dfk_tt);
+                rinvn *= rinv2_k;
+            }
+            fbond_arr[k] += fdisp_k * rinv_k;
+        }
+
+        for (int k = 0; k < W; k++)
+        {
+            double fk   = fbond_arr[k];
+            int    ai   = ai_arr[k];
+            int    aj   = aj_arr[k];
+            double fijX = fk * dxX[k];
+            double fijY = fk * dxY[k];
+            double fijZ = fk * dxZ[k];
+            f[ai][XX] += fijX;   f[aj][XX] -= fijX;
+            f[ai][YY] += fijY;   f[aj][YY] -= fijY;
+            f[ai][ZZ] += fijZ;   f[aj][ZZ] -= fijZ;
+        }
+    }
+
+    for (; i < npairs; i++)
+    {
+        auto &b      = pairs[i];
+        auto &params = b->params();
+        erep  += lowBornMayer(msghandler, b->atomIndices(), *coordinates, params[ttA], params[ttB], forces);
+        edisp += TT_Dispersion(msghandler, b->atomIndices(), *coordinates, params[ttB],
+                               { params[ttC6], params[ttC8], params[ttC10] }, forces);
+    }
+
+    }
+    else
+#endif
+#if defined(__AVX2__) && defined(GMX_SIMD_X86_AVX2_256)
+    if (npairs >= 6)
+    {
+    auto   &x    = *coordinates;
+    auto   &f    = *forces;
+    constexpr int W = 4;
+    alignas(32) double dxX[W], dxY[W], dxZ[W];
+    alignas(32) double dr2_arr[W], rinv_arr[W];
+    alignas(32) double fbond_arr[W];
+    int ai_arr[W], aj_arr[W];
+
+    const __m256d vhalf      = _mm256_set1_pd(0.5);
+    const __m256d vthreehalf = _mm256_set1_pd(1.5);
+
+    size_t i = 0;
+    for (; i + W <= npairs; i += W)
+    {
+        for (int k = 0; k < W; k++)
+        {
+            auto &b       = pairs[i + k];
+            auto &indices = b->atomIndices();
+            ai_arr[k]     = indices[0];
+            aj_arr[k]     = indices[1];
+            dxX[k] = x[ai_arr[k]][XX] - x[aj_arr[k]][XX];
+            dxY[k] = x[ai_arr[k]][YY] - x[aj_arr[k]][YY];
+            dxZ[k] = x[ai_arr[k]][ZZ] - x[aj_arr[k]][ZZ];
+        }
+        __m256d vdxX = _mm256_load_pd(dxX);
+        __m256d vdxY = _mm256_load_pd(dxY);
+        __m256d vdxZ = _mm256_load_pd(dxZ);
+        __m256d vdr2 = _mm256_fmadd_pd(vdxX, vdxX,
+                       _mm256_fmadd_pd(vdxY, vdxY,
+                       _mm256_mul_pd  (vdxZ, vdxZ)));
+        __m128  vdr2_f  = _mm256_cvtpd_ps(vdr2);
+        __m128  vrinv_f = _mm_rsqrt_ps(vdr2_f);
+        __m256d vrinv   = _mm256_cvtps_pd(vrinv_f);
+        {
+            __m256d vtmp = _mm256_mul_pd(_mm256_mul_pd(vdr2, vrinv), vrinv);
+            vrinv = _mm256_mul_pd(vrinv, _mm256_fnmadd_pd(vhalf, vtmp, vthreehalf));
+        }
+        {
+            __m256d vtmp = _mm256_mul_pd(_mm256_mul_pd(vdr2, vrinv), vrinv);
+            vrinv = _mm256_mul_pd(vrinv, _mm256_fnmadd_pd(vhalf, vtmp, vthreehalf));
+        }
+        _mm256_store_pd(dr2_arr,  vdr2);
+        _mm256_store_pd(rinv_arr, vrinv);
+
+        for (int k = 0; k < W; k++)
+        {
+            auto &b       = pairs[i + k];
+            auto &params  = b->params();
+            double rinv_k = rinv_arr[k];
+            double dr2_k  = dr2_arr[k];
+            double r_k    = dr2_k * rinv_k;
+
+            // lowBornMayer inline: scalar force = bexp * eeexp * rinv
+            double eeexp_k = params[ttA] * std::exp(-params[ttB] * r_k);
+            erep          += eeexp_k;
+            fbond_arr[k]   = params[ttB] * eeexp_k * rinv_k;
+
+            // TT_Dispersion inline: accumulate fdisp, then scalar force = fdisp * rinv
+            double bDisp   = params[ttB];
+            double bDispr  = bDisp * r_k;
+            double ebrDisp = std::exp(-bDispr);
+            double rinv2_k = rinv_k * rinv_k;
+            double rinvn   = rinv2_k * rinv2_k * rinv2_k;
+            double br_pow[11];
+            br_pow[0] = 1.0;
+            for (int j = 1; j < 11; j++)
+            {
+                br_pow[j] = br_pow[j-1] * bDispr;
+            }
+            double ctt[3] = { params[ttC6], params[ttC8], params[ttC10] };
+            double fdisp_k = 0;
+            for (int m = 3; m <= 5; m++)
+            {
+                double fk_tt = 0, dfk_tt = 0;
+                int    nn    = 2*m;
+                for (int j = 0; j <= nn; j++)
+                {
+                    fk_tt += br_pow[j] / tt_fac[j];
+                    if (j > 0)
+                    {
+                        dfk_tt += j * bDisp * br_pow[j-1] / tt_fac[j];
+                    }
+                }
+                double ed = -(1.0 - ebrDisp*fk_tt) * ctt[m-3] * rinvn;
+                edisp     += ed;
+                fdisp_k   += ed * nn * rinv_k;
+                fdisp_k   += ctt[m-3] * rinvn * (bDisp*ebrDisp*fk_tt - ebrDisp*dfk_tt);
+                rinvn *= rinv2_k;
+            }
+            fbond_arr[k] += fdisp_k * rinv_k;
+        }
+
+        for (int k = 0; k < W; k++)
+        {
+            double fk   = fbond_arr[k];
+            int    ai   = ai_arr[k];
+            int    aj   = aj_arr[k];
+            double fijX = fk * dxX[k];
+            double fijY = fk * dxY[k];
+            double fijZ = fk * dxZ[k];
+            f[ai][XX] += fijX;   f[aj][XX] -= fijX;
+            f[ai][YY] += fijY;   f[aj][YY] -= fijY;
+            f[ai][ZZ] += fijZ;   f[aj][ZZ] -= fijZ;
+        }
+    }
+
+    for (; i < npairs; i++)
+    {
+        auto &b      = pairs[i];
+        auto &params = b->params();
+        erep  += lowBornMayer(msghandler, b->atomIndices(), *coordinates, params[ttA], params[ttB], forces);
+        edisp += TT_Dispersion(msghandler, b->atomIndices(), *coordinates, params[ttB],
+                               { params[ttC6], params[ttC8], params[ttC10] }, forces);
+    }
+
+    }
+    else
+#endif
+    {
+    for (size_t i = 0; i < npairs; i++)
+    {
+        auto &b      = pairs[i];
+        auto &params = b->params();
         // Call low level routines
         erep  += lowBornMayer(msghandler, b->atomIndices(), *coordinates, params[ttA], params[ttB], forces);
         edisp += TT_Dispersion(msghandler, b->atomIndices(), *coordinates, params[ttB],
                                { params[ttC6], params[ttC8], params[ttC10] }, forces);
     }
+    }
+
     energies->insert({InteractionType::EXCHANGE, erep});
     energies->insert({InteractionType::DISPERSION, edisp});
 
@@ -822,15 +3247,260 @@ static double computeTT2b(MsgHandler                            *msghandler,
 {
     double erep  = 0;
     double edisp = 0;
-    for (const auto &b : pairs)
+    const size_t npairs = pairs.size();
+
+#if defined(__AVX512F__) && defined(GMX_SIMD_X86_AVX_512)
+    if (npairs >= 12)
     {
-        // Get the parameters. We have to know their names to do this.
-        auto &params    = b->params();
+    auto   &x    = *coordinates;
+    auto   &f    = *forces;
+    constexpr int W = 8;
+    alignas(64) double dxX[W], dxY[W], dxZ[W];
+    alignas(64) double dr2_arr[W], rinv_arr[W];
+    alignas(64) double fbond_arr[W];
+    int ai_arr[W], aj_arr[W];
+
+    const __m512d vhalf      = _mm512_set1_pd(0.5);
+    const __m512d vthreehalf = _mm512_set1_pd(1.5);
+
+    size_t i = 0;
+    for (; i + W <= npairs; i += W)
+    {
+        for (int k = 0; k < W; k++)
+        {
+            auto &b       = pairs[i + k];
+            auto &indices = b->atomIndices();
+            ai_arr[k]     = indices[0];
+            aj_arr[k]     = indices[1];
+            dxX[k] = x[ai_arr[k]][XX] - x[aj_arr[k]][XX];
+            dxY[k] = x[ai_arr[k]][YY] - x[aj_arr[k]][YY];
+            dxZ[k] = x[ai_arr[k]][ZZ] - x[aj_arr[k]][ZZ];
+        }
+        __m512d vdxX = _mm512_load_pd(dxX);
+        __m512d vdxY = _mm512_load_pd(dxY);
+        __m512d vdxZ = _mm512_load_pd(dxZ);
+        __m512d vdr2 = _mm512_fmadd_pd(vdxX, vdxX,
+                       _mm512_fmadd_pd(vdxY, vdxY,
+                       _mm512_mul_pd  (vdxZ, vdxZ)));
+        __m512d vrinv = _mm512_rsqrt14_pd(vdr2);
+        {
+            __m512d vtmp = _mm512_mul_pd(_mm512_mul_pd(vdr2, vrinv), vrinv);
+            vrinv = _mm512_mul_pd(vrinv, _mm512_fnmadd_pd(vhalf, vtmp, vthreehalf));
+        }
+        {
+            __m512d vtmp = _mm512_mul_pd(_mm512_mul_pd(vdr2, vrinv), vrinv);
+            vrinv = _mm512_mul_pd(vrinv, _mm512_fnmadd_pd(vhalf, vtmp, vthreehalf));
+        }
+        _mm512_store_pd(dr2_arr,  vdr2);
+        _mm512_store_pd(rinv_arr, vrinv);
+
+        for (int k = 0; k < W; k++)
+        {
+            auto &b       = pairs[i + k];
+            auto &params  = b->params();
+            double rinv_k = rinv_arr[k];
+            double dr2_k  = dr2_arr[k];
+            double r_k    = dr2_k * rinv_k;
+
+            // lowBornMayer inline (exchange): scalar force = bexp * eeexp * rinv
+            double eeexp_k = params[tt2bA] * std::exp(-params[tt2bBexch] * r_k);
+            erep          += eeexp_k;
+            fbond_arr[k]   = params[tt2bBexch] * eeexp_k * rinv_k;
+
+            // TT_Dispersion inline: accumulate fdisp, then scalar force = fdisp * rinv
+            double bDisp   = params[tt2bBdisp];
+            double bDispr  = bDisp * r_k;
+            double ebrDisp = std::exp(-bDispr);
+            double rinv2_k = rinv_k * rinv_k;
+            double rinvn   = rinv2_k * rinv2_k * rinv2_k;
+            double br_pow[11];
+            br_pow[0] = 1.0;
+            for (int j = 1; j < 11; j++)
+            {
+                br_pow[j] = br_pow[j-1] * bDispr;
+            }
+            double ctt[3] = { params[tt2bC6], params[tt2bC8], params[tt2bC10] };
+            double fdisp_k = 0;
+            for (int m = 3; m <= 5; m++)
+            {
+                double fk_tt = 0, dfk_tt = 0;
+                int    nn    = 2*m;
+                for (int j = 0; j <= nn; j++)
+                {
+                    fk_tt += br_pow[j] / tt_fac[j];
+                    if (j > 0)
+                    {
+                        dfk_tt += j * bDisp * br_pow[j-1] / tt_fac[j];
+                    }
+                }
+                double ed = -(1.0 - ebrDisp*fk_tt) * ctt[m-3] * rinvn;
+                edisp     += ed;
+                fdisp_k   += ed * nn * rinv_k;
+                fdisp_k   += ctt[m-3] * rinvn * (bDisp*ebrDisp*fk_tt - ebrDisp*dfk_tt);
+                rinvn *= rinv2_k;
+            }
+            fbond_arr[k] += fdisp_k * rinv_k;
+        }
+
+        for (int k = 0; k < W; k++)
+        {
+            double fk   = fbond_arr[k];
+            int    ai   = ai_arr[k];
+            int    aj   = aj_arr[k];
+            double fijX = fk * dxX[k];
+            double fijY = fk * dxY[k];
+            double fijZ = fk * dxZ[k];
+            f[ai][XX] += fijX;   f[aj][XX] -= fijX;
+            f[ai][YY] += fijY;   f[aj][YY] -= fijY;
+            f[ai][ZZ] += fijZ;   f[aj][ZZ] -= fijZ;
+        }
+    }
+
+    for (; i < npairs; i++)
+    {
+        auto &b      = pairs[i];
+        auto &params = b->params();
+        erep  += lowBornMayer(msghandler, b->atomIndices(), *coordinates, params[tt2bA], params[tt2bBexch], forces);
+        edisp += TT_Dispersion(msghandler, b->atomIndices(), *coordinates, params[tt2bBdisp],
+                               { params[tt2bC6], params[tt2bC8], params[tt2bC10] }, forces);
+    }
+
+    }
+    else
+#endif
+#if defined(__AVX2__) && defined(GMX_SIMD_X86_AVX2_256)
+    if (npairs >= 6)
+    {
+    auto   &x    = *coordinates;
+    auto   &f    = *forces;
+    constexpr int W = 4;
+    alignas(32) double dxX[W], dxY[W], dxZ[W];
+    alignas(32) double dr2_arr[W], rinv_arr[W];
+    alignas(32) double fbond_arr[W];
+    int ai_arr[W], aj_arr[W];
+
+    const __m256d vhalf      = _mm256_set1_pd(0.5);
+    const __m256d vthreehalf = _mm256_set1_pd(1.5);
+
+    size_t i = 0;
+    for (; i + W <= npairs; i += W)
+    {
+        for (int k = 0; k < W; k++)
+        {
+            auto &b       = pairs[i + k];
+            auto &indices = b->atomIndices();
+            ai_arr[k]     = indices[0];
+            aj_arr[k]     = indices[1];
+            dxX[k] = x[ai_arr[k]][XX] - x[aj_arr[k]][XX];
+            dxY[k] = x[ai_arr[k]][YY] - x[aj_arr[k]][YY];
+            dxZ[k] = x[ai_arr[k]][ZZ] - x[aj_arr[k]][ZZ];
+        }
+        __m256d vdxX = _mm256_load_pd(dxX);
+        __m256d vdxY = _mm256_load_pd(dxY);
+        __m256d vdxZ = _mm256_load_pd(dxZ);
+        __m256d vdr2 = _mm256_fmadd_pd(vdxX, vdxX,
+                       _mm256_fmadd_pd(vdxY, vdxY,
+                       _mm256_mul_pd  (vdxZ, vdxZ)));
+        __m128  vdr2_f  = _mm256_cvtpd_ps(vdr2);
+        __m128  vrinv_f = _mm_rsqrt_ps(vdr2_f);
+        __m256d vrinv   = _mm256_cvtps_pd(vrinv_f);
+        {
+            __m256d vtmp = _mm256_mul_pd(_mm256_mul_pd(vdr2, vrinv), vrinv);
+            vrinv = _mm256_mul_pd(vrinv, _mm256_fnmadd_pd(vhalf, vtmp, vthreehalf));
+        }
+        {
+            __m256d vtmp = _mm256_mul_pd(_mm256_mul_pd(vdr2, vrinv), vrinv);
+            vrinv = _mm256_mul_pd(vrinv, _mm256_fnmadd_pd(vhalf, vtmp, vthreehalf));
+        }
+        _mm256_store_pd(dr2_arr,  vdr2);
+        _mm256_store_pd(rinv_arr, vrinv);
+
+        for (int k = 0; k < W; k++)
+        {
+            auto &b       = pairs[i + k];
+            auto &params  = b->params();
+            double rinv_k = rinv_arr[k];
+            double dr2_k  = dr2_arr[k];
+            double r_k    = dr2_k * rinv_k;
+
+            // lowBornMayer inline (exchange): scalar force = bexp * eeexp * rinv
+            double eeexp_k = params[tt2bA] * std::exp(-params[tt2bBexch] * r_k);
+            erep          += eeexp_k;
+            fbond_arr[k]   = params[tt2bBexch] * eeexp_k * rinv_k;
+
+            // TT_Dispersion inline: accumulate fdisp, then scalar force = fdisp * rinv
+            double bDisp   = params[tt2bBdisp];
+            double bDispr  = bDisp * r_k;
+            double ebrDisp = std::exp(-bDispr);
+            double rinv2_k = rinv_k * rinv_k;
+            double rinvn   = rinv2_k * rinv2_k * rinv2_k;
+            double br_pow[11];
+            br_pow[0] = 1.0;
+            for (int j = 1; j < 11; j++)
+            {
+                br_pow[j] = br_pow[j-1] * bDispr;
+            }
+            double ctt[3] = { params[tt2bC6], params[tt2bC8], params[tt2bC10] };
+            double fdisp_k = 0;
+            for (int m = 3; m <= 5; m++)
+            {
+                double fk_tt = 0, dfk_tt = 0;
+                int    nn    = 2*m;
+                for (int j = 0; j <= nn; j++)
+                {
+                    fk_tt += br_pow[j] / tt_fac[j];
+                    if (j > 0)
+                    {
+                        dfk_tt += j * bDisp * br_pow[j-1] / tt_fac[j];
+                    }
+                }
+                double ed = -(1.0 - ebrDisp*fk_tt) * ctt[m-3] * rinvn;
+                edisp     += ed;
+                fdisp_k   += ed * nn * rinv_k;
+                fdisp_k   += ctt[m-3] * rinvn * (bDisp*ebrDisp*fk_tt - ebrDisp*dfk_tt);
+                rinvn *= rinv2_k;
+            }
+            fbond_arr[k] += fdisp_k * rinv_k;
+        }
+
+        for (int k = 0; k < W; k++)
+        {
+            double fk   = fbond_arr[k];
+            int    ai   = ai_arr[k];
+            int    aj   = aj_arr[k];
+            double fijX = fk * dxX[k];
+            double fijY = fk * dxY[k];
+            double fijZ = fk * dxZ[k];
+            f[ai][XX] += fijX;   f[aj][XX] -= fijX;
+            f[ai][YY] += fijY;   f[aj][YY] -= fijY;
+            f[ai][ZZ] += fijZ;   f[aj][ZZ] -= fijZ;
+        }
+    }
+
+    for (; i < npairs; i++)
+    {
+        auto &b      = pairs[i];
+        auto &params = b->params();
+        erep  += lowBornMayer(msghandler, b->atomIndices(), *coordinates, params[tt2bA], params[tt2bBexch], forces);
+        edisp += TT_Dispersion(msghandler, b->atomIndices(), *coordinates, params[tt2bBdisp],
+                               { params[tt2bC6], params[tt2bC8], params[tt2bC10] }, forces);
+    }
+
+    }
+    else
+#endif
+    {
+    for (size_t i = 0; i < npairs; i++)
+    {
+        auto &b      = pairs[i];
+        auto &params = b->params();
         // Call low level routines
         erep  += lowBornMayer(msghandler, b->atomIndices(), *coordinates, params[tt2bA], params[tt2bBexch], forces);
         edisp += TT_Dispersion(msghandler, b->atomIndices(), *coordinates, params[tt2bBdisp],
                                { params[tt2bC6], params[tt2bC8], params[tt2bC10] }, forces);
     }
+    }
+
     energies->insert({InteractionType::EXCHANGE, erep});
     energies->insert({InteractionType::DISPERSION, edisp});
 
@@ -855,15 +3525,272 @@ static double computeSlater_ISA_TT(MsgHandler                            *msghan
 {
     double erep  = 0;
     double edisp = 0;
-    for (const auto &b : pairs)
+    const size_t npairs = pairs.size();
+
+#if defined(__AVX512F__) && defined(GMX_SIMD_X86_AVX_512)
+    if (npairs >= 12)
     {
-        // Get the parameters. We have to know their names to do this.
-        auto &params    = b->params();
+    auto   &x    = *coordinates;
+    auto   &f    = *forces;
+    constexpr int W = 8;
+    alignas(64) double dxX[W], dxY[W], dxZ[W];
+    alignas(64) double dr2_arr[W], rinv_arr[W];
+    alignas(64) double fbond_arr[W];
+    int ai_arr[W], aj_arr[W];
+
+    const __m512d vhalf      = _mm512_set1_pd(0.5);
+    const __m512d vthreehalf = _mm512_set1_pd(1.5);
+    constexpr double third = 1.0/3.0;
+
+    size_t i = 0;
+    for (; i + W <= npairs; i += W)
+    {
+        for (int k = 0; k < W; k++)
+        {
+            auto &b       = pairs[i + k];
+            auto &indices = b->atomIndices();
+            ai_arr[k]     = indices[0];
+            aj_arr[k]     = indices[1];
+            dxX[k] = x[ai_arr[k]][XX] - x[aj_arr[k]][XX];
+            dxY[k] = x[ai_arr[k]][YY] - x[aj_arr[k]][YY];
+            dxZ[k] = x[ai_arr[k]][ZZ] - x[aj_arr[k]][ZZ];
+        }
+        __m512d vdxX = _mm512_load_pd(dxX);
+        __m512d vdxY = _mm512_load_pd(dxY);
+        __m512d vdxZ = _mm512_load_pd(dxZ);
+        __m512d vdr2 = _mm512_fmadd_pd(vdxX, vdxX,
+                       _mm512_fmadd_pd(vdxY, vdxY,
+                       _mm512_mul_pd  (vdxZ, vdxZ)));
+        __m512d vrinv = _mm512_rsqrt14_pd(vdr2);
+        {
+            __m512d vtmp = _mm512_mul_pd(_mm512_mul_pd(vdr2, vrinv), vrinv);
+            vrinv = _mm512_mul_pd(vrinv, _mm512_fnmadd_pd(vhalf, vtmp, vthreehalf));
+        }
+        {
+            __m512d vtmp = _mm512_mul_pd(_mm512_mul_pd(vdr2, vrinv), vrinv);
+            vrinv = _mm512_mul_pd(vrinv, _mm512_fnmadd_pd(vhalf, vtmp, vthreehalf));
+        }
+        _mm512_store_pd(dr2_arr,  vdr2);
+        _mm512_store_pd(rinv_arr, vrinv);
+
+        for (int k = 0; k < W; k++)
+        {
+            auto &b       = pairs[i + k];
+            auto &params  = b->params();
+            double rinv_k = rinv_arr[k];
+            double dr2_k  = dr2_arr[k];
+            double r_k    = dr2_k * rinv_k;
+
+            // lowSlaterISA inline (exchange): scalar force = fexp * rinv
+            double bexch_k = params[SIttBexch];
+            double br_k    = bexch_k * r_k;
+            double Pbr_k   = br_k*br_k*third + br_k + 1.0;
+            double aterm_k = params[SIttA] * std::exp(-br_k);
+            double eeexp_k = aterm_k * Pbr_k;
+            erep          += eeexp_k;
+            double fexp_k  = bexch_k*eeexp_k - bexch_k*aterm_k*(2.0*br_k*third + 1.0);
+            fbond_arr[k]   = fexp_k * rinv_k;
+
+            // TT_Dispersion inline: accumulate fdisp, then scalar force = fdisp * rinv
+            double bDisp   = params[SIttBdisp];
+            double bDispr  = bDisp * r_k;
+            double ebrDisp = std::exp(-bDispr);
+            double rinv2_k = rinv_k * rinv_k;
+            double rinvn   = rinv2_k * rinv2_k * rinv2_k;
+            double br_pow[11];
+            br_pow[0] = 1.0;
+            for (int j = 1; j < 11; j++)
+            {
+                br_pow[j] = br_pow[j-1] * bDispr;
+            }
+            double ctt[3] = { params[SIttC6], params[SIttC8], params[SIttC10] };
+            double fdisp_k = 0;
+            for (int m = 3; m <= 5; m++)
+            {
+                double fk_tt = 0, dfk_tt = 0;
+                int    nn    = 2*m;
+                for (int j = 0; j <= nn; j++)
+                {
+                    fk_tt += br_pow[j] / tt_fac[j];
+                    if (j > 0)
+                    {
+                        dfk_tt += j * bDisp * br_pow[j-1] / tt_fac[j];
+                    }
+                }
+                double ed = -(1.0 - ebrDisp*fk_tt) * ctt[m-3] * rinvn;
+                edisp     += ed;
+                fdisp_k   += ed * nn * rinv_k;
+                fdisp_k   += ctt[m-3] * rinvn * (bDisp*ebrDisp*fk_tt - ebrDisp*dfk_tt);
+                rinvn *= rinv2_k;
+            }
+            fbond_arr[k] += fdisp_k * rinv_k;
+        }
+
+        for (int k = 0; k < W; k++)
+        {
+            double fk   = fbond_arr[k];
+            int    ai   = ai_arr[k];
+            int    aj   = aj_arr[k];
+            double fijX = fk * dxX[k];
+            double fijY = fk * dxY[k];
+            double fijZ = fk * dxZ[k];
+            f[ai][XX] += fijX;   f[aj][XX] -= fijX;
+            f[ai][YY] += fijY;   f[aj][YY] -= fijY;
+            f[ai][ZZ] += fijZ;   f[aj][ZZ] -= fijZ;
+        }
+    }
+
+    for (; i < npairs; i++)
+    {
+        auto &b      = pairs[i];
+        auto &params = b->params();
+        erep  += lowSlaterISA(msghandler, b->atomIndices(), *coordinates, params[SIttA], params[SIttBexch], forces);
+        edisp += TT_Dispersion(msghandler, b->atomIndices(), *coordinates, params[SIttBdisp],
+                               { params[SIttC6], params[SIttC8], params[SIttC10] }, forces);
+    }
+
+    }
+    else
+#endif
+#if defined(__AVX2__) && defined(GMX_SIMD_X86_AVX2_256)
+    if (npairs >= 6)
+    {
+    auto   &x    = *coordinates;
+    auto   &f    = *forces;
+    constexpr int W = 4;
+    alignas(32) double dxX[W], dxY[W], dxZ[W];
+    alignas(32) double dr2_arr[W], rinv_arr[W];
+    alignas(32) double fbond_arr[W];
+    int ai_arr[W], aj_arr[W];
+
+    const __m256d vhalf      = _mm256_set1_pd(0.5);
+    const __m256d vthreehalf = _mm256_set1_pd(1.5);
+    constexpr double third = 1.0/3.0;
+
+    size_t i = 0;
+    for (; i + W <= npairs; i += W)
+    {
+        for (int k = 0; k < W; k++)
+        {
+            auto &b       = pairs[i + k];
+            auto &indices = b->atomIndices();
+            ai_arr[k]     = indices[0];
+            aj_arr[k]     = indices[1];
+            dxX[k] = x[ai_arr[k]][XX] - x[aj_arr[k]][XX];
+            dxY[k] = x[ai_arr[k]][YY] - x[aj_arr[k]][YY];
+            dxZ[k] = x[ai_arr[k]][ZZ] - x[aj_arr[k]][ZZ];
+        }
+        __m256d vdxX = _mm256_load_pd(dxX);
+        __m256d vdxY = _mm256_load_pd(dxY);
+        __m256d vdxZ = _mm256_load_pd(dxZ);
+        __m256d vdr2 = _mm256_fmadd_pd(vdxX, vdxX,
+                       _mm256_fmadd_pd(vdxY, vdxY,
+                       _mm256_mul_pd  (vdxZ, vdxZ)));
+        __m128  vdr2_f  = _mm256_cvtpd_ps(vdr2);
+        __m128  vrinv_f = _mm_rsqrt_ps(vdr2_f);
+        __m256d vrinv   = _mm256_cvtps_pd(vrinv_f);
+        {
+            __m256d vtmp = _mm256_mul_pd(_mm256_mul_pd(vdr2, vrinv), vrinv);
+            vrinv = _mm256_mul_pd(vrinv, _mm256_fnmadd_pd(vhalf, vtmp, vthreehalf));
+        }
+        {
+            __m256d vtmp = _mm256_mul_pd(_mm256_mul_pd(vdr2, vrinv), vrinv);
+            vrinv = _mm256_mul_pd(vrinv, _mm256_fnmadd_pd(vhalf, vtmp, vthreehalf));
+        }
+        _mm256_store_pd(dr2_arr,  vdr2);
+        _mm256_store_pd(rinv_arr, vrinv);
+
+        for (int k = 0; k < W; k++)
+        {
+            auto &b       = pairs[i + k];
+            auto &params  = b->params();
+            double rinv_k = rinv_arr[k];
+            double dr2_k  = dr2_arr[k];
+            double r_k    = dr2_k * rinv_k;
+
+            // lowSlaterISA inline (exchange): scalar force = fexp * rinv
+            double bexch_k = params[SIttBexch];
+            double br_k    = bexch_k * r_k;
+            double Pbr_k   = br_k*br_k*third + br_k + 1.0;
+            double aterm_k = params[SIttA] * std::exp(-br_k);
+            double eeexp_k = aterm_k * Pbr_k;
+            erep          += eeexp_k;
+            double fexp_k  = bexch_k*eeexp_k - bexch_k*aterm_k*(2.0*br_k*third + 1.0);
+            fbond_arr[k]   = fexp_k * rinv_k;
+
+            // TT_Dispersion inline: accumulate fdisp, then scalar force = fdisp * rinv
+            double bDisp   = params[SIttBdisp];
+            double bDispr  = bDisp * r_k;
+            double ebrDisp = std::exp(-bDispr);
+            double rinv2_k = rinv_k * rinv_k;
+            double rinvn   = rinv2_k * rinv2_k * rinv2_k;
+            double br_pow[11];
+            br_pow[0] = 1.0;
+            for (int j = 1; j < 11; j++)
+            {
+                br_pow[j] = br_pow[j-1] * bDispr;
+            }
+            double ctt[3] = { params[SIttC6], params[SIttC8], params[SIttC10] };
+            double fdisp_k = 0;
+            for (int m = 3; m <= 5; m++)
+            {
+                double fk_tt = 0, dfk_tt = 0;
+                int    nn    = 2*m;
+                for (int j = 0; j <= nn; j++)
+                {
+                    fk_tt += br_pow[j] / tt_fac[j];
+                    if (j > 0)
+                    {
+                        dfk_tt += j * bDisp * br_pow[j-1] / tt_fac[j];
+                    }
+                }
+                double ed = -(1.0 - ebrDisp*fk_tt) * ctt[m-3] * rinvn;
+                edisp     += ed;
+                fdisp_k   += ed * nn * rinv_k;
+                fdisp_k   += ctt[m-3] * rinvn * (bDisp*ebrDisp*fk_tt - ebrDisp*dfk_tt);
+                rinvn *= rinv2_k;
+            }
+            fbond_arr[k] += fdisp_k * rinv_k;
+        }
+
+        for (int k = 0; k < W; k++)
+        {
+            double fk   = fbond_arr[k];
+            int    ai   = ai_arr[k];
+            int    aj   = aj_arr[k];
+            double fijX = fk * dxX[k];
+            double fijY = fk * dxY[k];
+            double fijZ = fk * dxZ[k];
+            f[ai][XX] += fijX;   f[aj][XX] -= fijX;
+            f[ai][YY] += fijY;   f[aj][YY] -= fijY;
+            f[ai][ZZ] += fijZ;   f[aj][ZZ] -= fijZ;
+        }
+    }
+
+    for (; i < npairs; i++)
+    {
+        auto &b      = pairs[i];
+        auto &params = b->params();
+        erep  += lowSlaterISA(msghandler, b->atomIndices(), *coordinates, params[SIttA], params[SIttBexch], forces);
+        edisp += TT_Dispersion(msghandler, b->atomIndices(), *coordinates, params[SIttBdisp],
+                               { params[SIttC6], params[SIttC8], params[SIttC10] }, forces);
+    }
+
+    }
+    else
+#endif
+    {
+    for (size_t i = 0; i < npairs; i++)
+    {
+        auto &b      = pairs[i];
+        auto &params = b->params();
         // Call low level routines
         erep  += lowSlaterISA(msghandler, b->atomIndices(), *coordinates, params[SIttA], params[SIttBexch], forces);
         edisp += TT_Dispersion(msghandler, b->atomIndices(), *coordinates, params[SIttBdisp],
                                { params[SIttC6], params[SIttC8], params[SIttC10] }, forces);
     }
+    }
+
     energies->insert({InteractionType::EXCHANGE, erep});
     energies->insert({InteractionType::DISPERSION, edisp});
 
@@ -890,23 +3817,123 @@ static double computeNonBonded(MsgHandler                            *msghandler
     double erep  = 0;
     double edisp = 0;
     auto   x     = *coordinates;
-    for (const auto &b : pairs)
+    const size_t npairs = pairs.size();
+
+#if defined(__AVX512F__) && defined(GMX_SIMD_X86_AVX_512)
+    if (npairs >= 12)
     {
-        // Get the parameters. We have to know their names to do this.
-        auto &params    = b->params();
-        auto rmin       = params[gbhRMIN];
-        auto epsilon    = params[gbhEPSILON];
-        auto gamma      = params[gbhGAMMA];
-        auto delta      = params[gbhDELTA];
+    auto   &f    = *forces;
+    constexpr int W = 8;
+    alignas(64) double dxX[W], dxY[W], dxZ[W];
+    alignas(64) double dr2_arr[W], rinv_arr[W];
+    alignas(64) double fbond_arr[W];
+    alignas(64) double erep_arr[W], edisp_arr[W];
+    double rmin_arr[W], epsilon_arr[W], gamma_arr[W], delta_arr[W];
+    int active_arr[W];
+    int ai_arr[W], aj_arr[W];
+
+    const __m512d vhalf      = _mm512_set1_pd(0.5);
+    const __m512d vthreehalf = _mm512_set1_pd(1.5);
+
+    size_t i = 0;
+    for (; i + W <= npairs; i += W)
+    {
+        for (int k = 0; k < W; k++)
+        {
+            auto &b        = pairs[i + k];
+            auto &params   = b->params();
+            rmin_arr[k]    = params[gbhRMIN];
+            epsilon_arr[k] = params[gbhEPSILON];
+            gamma_arr[k]   = params[gbhGAMMA];
+            delta_arr[k]   = params[gbhDELTA];
+            active_arr[k]  = (epsilon_arr[k] > 0 && gamma_arr[k] > 0 && rmin_arr[k] > 0 && delta_arr[k] > 0) ? 1 : 0;
+            auto &indices  = b->atomIndices();
+            ai_arr[k]      = indices[0];
+            aj_arr[k]      = indices[1];
+            dxX[k] = x[ai_arr[k]][XX] - x[aj_arr[k]][XX];
+            dxY[k] = x[ai_arr[k]][YY] - x[aj_arr[k]][YY];
+            dxZ[k] = x[ai_arr[k]][ZZ] - x[aj_arr[k]][ZZ];
+        }
+        __m512d vdxX = _mm512_load_pd(dxX);
+        __m512d vdxY = _mm512_load_pd(dxY);
+        __m512d vdxZ = _mm512_load_pd(dxZ);
+        __m512d vdr2 = _mm512_fmadd_pd(vdxX, vdxX,
+                       _mm512_fmadd_pd(vdxY, vdxY,
+                       _mm512_mul_pd  (vdxZ, vdxZ)));
+        __m512d vrinv = _mm512_rsqrt14_pd(vdr2);
+        {
+            __m512d vtmp = _mm512_mul_pd(_mm512_mul_pd(vdr2, vrinv), vrinv);
+            vrinv = _mm512_mul_pd(vrinv, _mm512_fnmadd_pd(vhalf, vtmp, vthreehalf));
+        }
+        {
+            __m512d vtmp = _mm512_mul_pd(_mm512_mul_pd(vdr2, vrinv), vrinv);
+            vrinv = _mm512_mul_pd(vrinv, _mm512_fnmadd_pd(vhalf, vtmp, vthreehalf));
+        }
+        _mm512_store_pd(dr2_arr,  vdr2);
+        _mm512_store_pd(rinv_arr, vrinv);
+
+        for (int k = 0; k < W; k++)
+        {
+            if (!active_arr[k])
+            {
+                fbond_arr[k] = 0.0;
+                erep_arr[k]  = 0.0;
+                edisp_arr[k] = 0.0;
+                continue;
+            }
+            double rmin_k    = rmin_arr[k];
+            double epsilon_k = epsilon_arr[k];
+            double gamma_k   = gamma_arr[k];
+            double delta_k   = delta_arr[k];
+            double rinv_k    = rinv_arr[k];
+            double dr2_k     = dr2_arr[k];
+            double delta6    = 6 + delta_k;
+            double delta6gam2 = delta6 + 2*gamma_k;
+            double rstar     = dr2_k * rinv_k / rmin_k;
+            double sixterm   = 1 + std::pow(rstar, 6);
+            double delterm   = 1 + std::pow(rstar, delta_k);
+            double expterm   = std::exp(gamma_k * (1 - rstar));
+            double sixdenom  = 1.0 / (2*gamma_k*sixterm);
+            double eerep     = epsilon_k * delta6 * expterm * sixdenom;
+            double eedisp    = -epsilon_k * (delta6gam2*sixdenom + 1.0/delterm);
+            double fgbham    = (epsilon_k*((-6*(6 + delta_k - (6 + delta_k)*std::exp(gamma_k - gamma_k*rstar) + 2*gamma_k)*std::pow(rstar,5))/(gamma_k*std::pow(1 + std::pow(rstar,6),2)) +
+                                           ((6 + delta_k)*std::exp(gamma_k - gamma_k*rstar))/(1 + std::pow(rstar,6)) - (2*delta_k*std::pow(rstar,-1 + delta_k))/std::pow(1 + std::pow(rstar,delta_k),2)))/(2.*rmin_k);
+            erep_arr[k]  = eerep;
+            edisp_arr[k] = eedisp;
+            fbond_arr[k] = fgbham * rinv_k;
+        }
+
+        for (int k = 0; k < W; k++)
+        {
+            erep  += erep_arr[k];
+            edisp += edisp_arr[k];
+            double fk   = fbond_arr[k];
+            int    ai   = ai_arr[k];
+            int    aj   = aj_arr[k];
+            double fijX = fk * dxX[k];
+            double fijY = fk * dxY[k];
+            double fijZ = fk * dxZ[k];
+            f[ai][XX] += fijX;   f[aj][XX] -= fijX;
+            f[ai][YY] += fijY;   f[aj][YY] -= fijY;
+            f[ai][ZZ] += fijZ;   f[aj][ZZ] -= fijZ;
+        }
+    }
+
+    for (; i < npairs; i++)
+    {
+        auto &b      = pairs[i];
+        auto &params = b->params();
+        auto rmin    = params[gbhRMIN];
+        auto epsilon = params[gbhEPSILON];
+        auto gamma   = params[gbhGAMMA];
+        auto delta   = params[gbhDELTA];
         if (epsilon > 0 && gamma > 0 && rmin > 0 && delta > 0)
         {
-            // Get the atom indices
-            auto &indices   = b->atomIndices();
+            auto &indices = b->atomIndices();
             rvec dx;
             rvec_sub(x[indices[0]], x[indices[1]], dx);
-            auto dr2        = iprod(dx, dx);
-            auto rinv       = gmx::invsqrt(dr2);
-
+            auto dr2    = iprod(dx, dx);
+            auto rinv   = gmx::invsqrt(dr2);
             real delta6     = 6+delta;
             real delta6gam2 = delta6 + 2*gamma;
             real rstar      = dr2*rinv/rmin;
@@ -916,20 +3943,206 @@ static double computeNonBonded(MsgHandler                            *msghandler
             real sixdenom   = 1/(2*gamma*sixterm);
             real eerep      = epsilon*delta6*expterm*sixdenom;
             real eedisp     = -epsilon*(delta6gam2*sixdenom + 1/delterm);
-            real fgbham     = (epsilon*((-6*(6 + delta - (6 + delta)*std::exp(gamma - gamma*rstar) + 2*gamma)*std::pow(rstar,5))/(gamma*std::pow(1 + std::pow(rstar,6),2)) + 
+            real fgbham     = (epsilon*((-6*(6 + delta - (6 + delta)*std::exp(gamma - gamma*rstar) + 2*gamma)*std::pow(rstar,5))/(gamma*std::pow(1 + std::pow(rstar,6),2)) +
+                                        ((6 + delta)*std::exp(gamma - gamma*rstar))/(1 + std::pow(rstar,6)) - (2*delta*std::pow(rstar,-1 + delta))/std::pow(1 + std::pow(rstar,delta),2)))/(2.*rmin);
+            if (msghandler && msghandler->debug())
+            {
+                msghandler->writeDebug(gmx::formatString("vrep: ai %d aj %d %g vdisp: %g epsilon: %10g gamma: %10g sigma: %10g delta: %10g",
+                                                         indices[0], indices[1], eerep, eedisp, epsilon, gamma, rmin, delta));
+            }
+            erep  += eerep;
+            edisp += eedisp;
+            real fbond = fgbham*rinv;
+            pairforces(fbond, dx, indices, forces);
+        }
+    }
+
+    }
+    else
+#endif
+#if defined(__AVX2__) && defined(GMX_SIMD_X86_AVX2_256)
+    if (npairs >= 6)
+    {
+    auto   &f    = *forces;
+    constexpr int W = 4;
+    alignas(32) double dxX[W], dxY[W], dxZ[W];
+    alignas(32) double dr2_arr[W], rinv_arr[W];
+    alignas(32) double fbond_arr[W];
+    alignas(32) double erep_arr[W], edisp_arr[W];
+    double rmin_arr[W], epsilon_arr[W], gamma_arr[W], delta_arr[W];
+    int active_arr[W];
+    int ai_arr[W], aj_arr[W];
+
+    const __m256d vhalf      = _mm256_set1_pd(0.5);
+    const __m256d vthreehalf = _mm256_set1_pd(1.5);
+
+    size_t i = 0;
+    for (; i + W <= npairs; i += W)
+    {
+        for (int k = 0; k < W; k++)
+        {
+            auto &b        = pairs[i + k];
+            auto &params   = b->params();
+            rmin_arr[k]    = params[gbhRMIN];
+            epsilon_arr[k] = params[gbhEPSILON];
+            gamma_arr[k]   = params[gbhGAMMA];
+            delta_arr[k]   = params[gbhDELTA];
+            active_arr[k]  = (epsilon_arr[k] > 0 && gamma_arr[k] > 0 && rmin_arr[k] > 0 && delta_arr[k] > 0) ? 1 : 0;
+            auto &indices  = b->atomIndices();
+            ai_arr[k]      = indices[0];
+            aj_arr[k]      = indices[1];
+            dxX[k] = x[ai_arr[k]][XX] - x[aj_arr[k]][XX];
+            dxY[k] = x[ai_arr[k]][YY] - x[aj_arr[k]][YY];
+            dxZ[k] = x[ai_arr[k]][ZZ] - x[aj_arr[k]][ZZ];
+        }
+        __m256d vdxX = _mm256_load_pd(dxX);
+        __m256d vdxY = _mm256_load_pd(dxY);
+        __m256d vdxZ = _mm256_load_pd(dxZ);
+        __m256d vdr2 = _mm256_fmadd_pd(vdxX, vdxX,
+                       _mm256_fmadd_pd(vdxY, vdxY,
+                       _mm256_mul_pd  (vdxZ, vdxZ)));
+        __m128  vdr2_f  = _mm256_cvtpd_ps(vdr2);
+        __m128  vrinv_f = _mm_rsqrt_ps(vdr2_f);
+        __m256d vrinv   = _mm256_cvtps_pd(vrinv_f);
+        {
+            __m256d vtmp = _mm256_mul_pd(_mm256_mul_pd(vdr2, vrinv), vrinv);
+            vrinv = _mm256_mul_pd(vrinv, _mm256_fnmadd_pd(vhalf, vtmp, vthreehalf));
+        }
+        {
+            __m256d vtmp = _mm256_mul_pd(_mm256_mul_pd(vdr2, vrinv), vrinv);
+            vrinv = _mm256_mul_pd(vrinv, _mm256_fnmadd_pd(vhalf, vtmp, vthreehalf));
+        }
+        _mm256_store_pd(dr2_arr,  vdr2);
+        _mm256_store_pd(rinv_arr, vrinv);
+
+        for (int k = 0; k < W; k++)
+        {
+            if (!active_arr[k])
+            {
+                fbond_arr[k] = 0.0;
+                erep_arr[k]  = 0.0;
+                edisp_arr[k] = 0.0;
+                continue;
+            }
+            double rmin_k    = rmin_arr[k];
+            double epsilon_k = epsilon_arr[k];
+            double gamma_k   = gamma_arr[k];
+            double delta_k   = delta_arr[k];
+            double rinv_k    = rinv_arr[k];
+            double dr2_k     = dr2_arr[k];
+            double delta6    = 6 + delta_k;
+            double delta6gam2 = delta6 + 2*gamma_k;
+            double rstar     = dr2_k * rinv_k / rmin_k;
+            double sixterm   = 1 + std::pow(rstar, 6);
+            double delterm   = 1 + std::pow(rstar, delta_k);
+            double expterm   = std::exp(gamma_k * (1 - rstar));
+            double sixdenom  = 1.0 / (2*gamma_k*sixterm);
+            double eerep     = epsilon_k * delta6 * expterm * sixdenom;
+            double eedisp    = -epsilon_k * (delta6gam2*sixdenom + 1.0/delterm);
+            double fgbham    = (epsilon_k*((-6*(6 + delta_k - (6 + delta_k)*std::exp(gamma_k - gamma_k*rstar) + 2*gamma_k)*std::pow(rstar,5))/(gamma_k*std::pow(1 + std::pow(rstar,6),2)) +
+                                           ((6 + delta_k)*std::exp(gamma_k - gamma_k*rstar))/(1 + std::pow(rstar,6)) - (2*delta_k*std::pow(rstar,-1 + delta_k))/std::pow(1 + std::pow(rstar,delta_k),2)))/(2.*rmin_k);
+            erep_arr[k]  = eerep;
+            edisp_arr[k] = eedisp;
+            fbond_arr[k] = fgbham * rinv_k;
+        }
+
+        for (int k = 0; k < W; k++)
+        {
+            erep  += erep_arr[k];
+            edisp += edisp_arr[k];
+            double fk   = fbond_arr[k];
+            int    ai   = ai_arr[k];
+            int    aj   = aj_arr[k];
+            double fijX = fk * dxX[k];
+            double fijY = fk * dxY[k];
+            double fijZ = fk * dxZ[k];
+            f[ai][XX] += fijX;   f[aj][XX] -= fijX;
+            f[ai][YY] += fijY;   f[aj][YY] -= fijY;
+            f[ai][ZZ] += fijZ;   f[aj][ZZ] -= fijZ;
+        }
+    }
+
+    for (; i < npairs; i++)
+    {
+        auto &b      = pairs[i];
+        auto &params = b->params();
+        auto rmin    = params[gbhRMIN];
+        auto epsilon = params[gbhEPSILON];
+        auto gamma   = params[gbhGAMMA];
+        auto delta   = params[gbhDELTA];
+        if (epsilon > 0 && gamma > 0 && rmin > 0 && delta > 0)
+        {
+            auto &indices = b->atomIndices();
+            rvec dx;
+            rvec_sub(x[indices[0]], x[indices[1]], dx);
+            auto dr2    = iprod(dx, dx);
+            auto rinv   = gmx::invsqrt(dr2);
+            real delta6     = 6+delta;
+            real delta6gam2 = delta6 + 2*gamma;
+            real rstar      = dr2*rinv/rmin;
+            real sixterm    = 1 + std::pow(rstar,6);
+            real delterm    = 1 + std::pow(rstar,delta);
+            real expterm    = std::exp(gamma*(1 - rstar));
+            real sixdenom   = 1/(2*gamma*sixterm);
+            real eerep      = epsilon*delta6*expterm*sixdenom;
+            real eedisp     = -epsilon*(delta6gam2*sixdenom + 1/delterm);
+            real fgbham     = (epsilon*((-6*(6 + delta - (6 + delta)*std::exp(gamma - gamma*rstar) + 2*gamma)*std::pow(rstar,5))/(gamma*std::pow(1 + std::pow(rstar,6),2)) +
+                                        ((6 + delta)*std::exp(gamma - gamma*rstar))/(1 + std::pow(rstar,6)) - (2*delta*std::pow(rstar,-1 + delta))/std::pow(1 + std::pow(rstar,delta),2)))/(2.*rmin);
+            if (msghandler && msghandler->debug())
+            {
+                msghandler->writeDebug(gmx::formatString("vrep: ai %d aj %d %g vdisp: %g epsilon: %10g gamma: %10g sigma: %10g delta: %10g",
+                                                         indices[0], indices[1], eerep, eedisp, epsilon, gamma, rmin, delta));
+            }
+            erep  += eerep;
+            edisp += eedisp;
+            real fbond = fgbham*rinv;
+            pairforces(fbond, dx, indices, forces);
+        }
+    }
+
+    }
+    else
+#endif
+    {
+    for (size_t i = 0; i < npairs; i++)
+    {
+        auto &b      = pairs[i];
+        auto &params = b->params();
+        auto rmin    = params[gbhRMIN];
+        auto epsilon = params[gbhEPSILON];
+        auto gamma   = params[gbhGAMMA];
+        auto delta   = params[gbhDELTA];
+        if (epsilon > 0 && gamma > 0 && rmin > 0 && delta > 0)
+        {
+            auto &indices = b->atomIndices();
+            rvec dx;
+            rvec_sub(x[indices[0]], x[indices[1]], dx);
+            auto dr2        = iprod(dx, dx);
+            auto rinv       = gmx::invsqrt(dr2);
+            real delta6     = 6+delta;
+            real delta6gam2 = delta6 + 2*gamma;
+            real rstar      = dr2*rinv/rmin;
+            real sixterm    = 1 + std::pow(rstar,6);
+            real delterm    = 1 + std::pow(rstar,delta);
+            real expterm    = std::exp(gamma*(1 - rstar));
+            real sixdenom   = 1/(2*gamma*sixterm);
+            real eerep      = epsilon*delta6*expterm*sixdenom;
+            real eedisp     = -epsilon*(delta6gam2*sixdenom + 1/delterm);
+            real fgbham     = (epsilon*((-6*(6 + delta - (6 + delta)*std::exp(gamma - gamma*rstar) + 2*gamma)*std::pow(rstar,5))/(gamma*std::pow(1 + std::pow(rstar,6),2)) +
                                         ((6 + delta)*std::exp(gamma - gamma*rstar))/(1 + std::pow(rstar,6)) - (2*delta*std::pow(rstar,-1 + delta))/std::pow(1 + std::pow(rstar,delta),2)))/(2.*rmin);
             if (msghandler && msghandler->debug())
              {
                  msghandler->writeDebug(gmx::formatString("vrep: ai %d aj %d %g vdisp: %g epsilon: %10g gamma: %10g sigma: %10g delta: %10g",
                                                           indices[0], indices[1], eerep, eedisp, epsilon, gamma, rmin, delta));
              }
-
-            erep     += eerep;
-            edisp    += eedisp;
+            erep  += eerep;
+            edisp += eedisp;
             real fbond  = fgbham*rinv;
             pairforces(fbond, dx, indices, forces);
         }
     }
+    }
+
     energies->insert({InteractionType::EXCHANGE, erep});
     energies->insert({InteractionType::DISPERSION, edisp});
 
@@ -1018,15 +4231,239 @@ static double computeCoulombGaussian(MsgHandler                        *msghandl
     double ebond = 0;
     auto   x     = *coordinates;
     double vc_pt = 0;
-    for (const auto &b : pairs)
+    const size_t npairs = pairs.size();
+
+#if defined(__AVX512F__) && defined(GMX_SIMD_X86_AVX_512)
+    if (npairs >= 12)
     {
-        // Get the parameters.
+    auto   &f    = *forces;
+    constexpr int W = 8;
+    alignas(64) double dxX[W], dxY[W], dxZ[W];
+    alignas(64) double dr2_arr[W], rinv_arr[W];
+    alignas(64) double fbond_arr[W], e_arr[W];
+    int ai_arr[W], aj_arr[W];
+
+    const __m512d vhalf      = _mm512_set1_pd(0.5);
+    const __m512d vthreehalf = _mm512_set1_pd(1.5);
+
+    size_t i = 0;
+    for (; i + W <= npairs; i += W)
+    {
+        for (int k = 0; k < W; k++)
+        {
+            auto &b       = pairs[i + k];
+            auto &indices = b->atomIndices();
+            ai_arr[k]     = indices[0];
+            aj_arr[k]     = indices[1];
+            dxX[k] = x[ai_arr[k]][XX] - x[aj_arr[k]][XX];
+            dxY[k] = x[ai_arr[k]][YY] - x[aj_arr[k]][YY];
+            dxZ[k] = x[ai_arr[k]][ZZ] - x[aj_arr[k]][ZZ];
+        }
+        __m512d vdxX = _mm512_load_pd(dxX);
+        __m512d vdxY = _mm512_load_pd(dxY);
+        __m512d vdxZ = _mm512_load_pd(dxZ);
+        __m512d vdr2 = _mm512_fmadd_pd(vdxX, vdxX,
+                       _mm512_fmadd_pd(vdxY, vdxY,
+                       _mm512_mul_pd  (vdxZ, vdxZ)));
+        __m512d vrinv = _mm512_rsqrt14_pd(vdr2);
+        {
+            __m512d vtmp = _mm512_mul_pd(_mm512_mul_pd(vdr2, vrinv), vrinv);
+            vrinv = _mm512_mul_pd(vrinv, _mm512_fnmadd_pd(vhalf, vtmp, vthreehalf));
+        }
+        {
+            __m512d vtmp = _mm512_mul_pd(_mm512_mul_pd(vdr2, vrinv), vrinv);
+            vrinv = _mm512_mul_pd(vrinv, _mm512_fnmadd_pd(vhalf, vtmp, vthreehalf));
+        }
+        _mm512_store_pd(dr2_arr,  vdr2);
+        _mm512_store_pd(rinv_arr, vrinv);
+
+        for (int k = 0; k < W; k++)
+        {
+            auto &b      = pairs[i + k];
+            auto &params = b->params();
+            int   ai_k   = ai_arr[k];
+            int   aj_k   = aj_arr[k];
+            double izeta = params[coulZETA];
+            double jzeta = params[coulZETA2];
+            double qq    = ONE_4PI_EPS0 * atoms[ai_k].charge() * atoms[aj_k].charge();
+            double r_k   = dr2_arr[k] * rinv_arr[k];
+            double velec = qq * Coulomb_GG(r_k, izeta, jzeta);
+            double felec = -qq * DCoulomb_GG(r_k, izeta, jzeta);
+            e_arr[k]     = velec;
+            if (dr2_arr[k] > 0)
+            {
+                fbond_arr[k] = felec * rinv_arr[k];
+            }
+            else
+            {
+                fbond_arr[k] = 0.0;
+            }
+        }
+
+        for (int k = 0; k < W; k++)
+        {
+            ebond += e_arr[k];
+            double fk   = fbond_arr[k];
+            int    ai   = ai_arr[k];
+            int    aj   = aj_arr[k];
+            double fijX = fk * dxX[k];
+            double fijY = fk * dxY[k];
+            double fijZ = fk * dxZ[k];
+            f[ai][XX] += fijX;   f[aj][XX] -= fijX;
+            f[ai][YY] += fijY;   f[aj][YY] -= fijY;
+            f[ai][ZZ] += fijZ;   f[aj][ZZ] -= fijZ;
+        }
+    }
+
+    for (; i < npairs; i++)
+    {
+        auto &b       = pairs[i];
         auto &indices = b->atomIndices();
         auto ai       = indices[0];
         auto aj       = indices[1];
-        auto &params= b->params();
-        auto izeta  = params[coulZETA];
-        auto jzeta  = params[coulZETA2];
+        auto &params  = b->params();
+        auto izeta    = params[coulZETA];
+        auto jzeta    = params[coulZETA2];
+        real qq       = ONE_4PI_EPS0 * atoms[ai].charge() * atoms[aj].charge();
+        rvec dx;
+        rvec_sub(x[ai], x[aj], dx);
+        auto dr2      = iprod(dx, dx);
+        auto r        = std::sqrt(dr2);
+        real velec    =  qq * Coulomb_GG(r, izeta, jzeta);
+        real felec    = -qq * DCoulomb_GG(r, izeta, jzeta);
+        ebond += velec;
+        if (dr2 > 0)
+        {
+            felec *= gmx::invsqrt(dr2);
+            pairforces(felec, dx, indices, forces);
+        }
+    }
+
+    }
+    else
+#endif
+#if defined(__AVX2__) && defined(GMX_SIMD_X86_AVX2_256)
+    if (npairs >= 6)
+    {
+    auto   &f    = *forces;
+    constexpr int W = 4;
+    alignas(32) double dxX[W], dxY[W], dxZ[W];
+    alignas(32) double dr2_arr[W], rinv_arr[W];
+    alignas(32) double fbond_arr[W], e_arr[W];
+    int ai_arr[W], aj_arr[W];
+
+    const __m256d vhalf      = _mm256_set1_pd(0.5);
+    const __m256d vthreehalf = _mm256_set1_pd(1.5);
+
+    size_t i = 0;
+    for (; i + W <= npairs; i += W)
+    {
+        for (int k = 0; k < W; k++)
+        {
+            auto &b       = pairs[i + k];
+            auto &indices = b->atomIndices();
+            ai_arr[k]     = indices[0];
+            aj_arr[k]     = indices[1];
+            dxX[k] = x[ai_arr[k]][XX] - x[aj_arr[k]][XX];
+            dxY[k] = x[ai_arr[k]][YY] - x[aj_arr[k]][YY];
+            dxZ[k] = x[ai_arr[k]][ZZ] - x[aj_arr[k]][ZZ];
+        }
+        __m256d vdxX = _mm256_load_pd(dxX);
+        __m256d vdxY = _mm256_load_pd(dxY);
+        __m256d vdxZ = _mm256_load_pd(dxZ);
+        __m256d vdr2 = _mm256_fmadd_pd(vdxX, vdxX,
+                       _mm256_fmadd_pd(vdxY, vdxY,
+                       _mm256_mul_pd  (vdxZ, vdxZ)));
+        __m128  vdr2_f  = _mm256_cvtpd_ps(vdr2);
+        __m128  vrinv_f = _mm_rsqrt_ps(vdr2_f);
+        __m256d vrinv   = _mm256_cvtps_pd(vrinv_f);
+        {
+            __m256d vtmp = _mm256_mul_pd(_mm256_mul_pd(vdr2, vrinv), vrinv);
+            vrinv = _mm256_mul_pd(vrinv, _mm256_fnmadd_pd(vhalf, vtmp, vthreehalf));
+        }
+        {
+            __m256d vtmp = _mm256_mul_pd(_mm256_mul_pd(vdr2, vrinv), vrinv);
+            vrinv = _mm256_mul_pd(vrinv, _mm256_fnmadd_pd(vhalf, vtmp, vthreehalf));
+        }
+        _mm256_store_pd(dr2_arr,  vdr2);
+        _mm256_store_pd(rinv_arr, vrinv);
+
+        for (int k = 0; k < W; k++)
+        {
+            auto &b      = pairs[i + k];
+            auto &params = b->params();
+            int   ai_k   = ai_arr[k];
+            int   aj_k   = aj_arr[k];
+            double izeta = params[coulZETA];
+            double jzeta = params[coulZETA2];
+            double qq    = ONE_4PI_EPS0 * atoms[ai_k].charge() * atoms[aj_k].charge();
+            double r_k   = dr2_arr[k] * rinv_arr[k];
+            double velec = qq * Coulomb_GG(r_k, izeta, jzeta);
+            double felec = -qq * DCoulomb_GG(r_k, izeta, jzeta);
+            e_arr[k]     = velec;
+            if (dr2_arr[k] > 0)
+            {
+                fbond_arr[k] = felec * rinv_arr[k];
+            }
+            else
+            {
+                fbond_arr[k] = 0.0;
+            }
+        }
+
+        for (int k = 0; k < W; k++)
+        {
+            ebond += e_arr[k];
+            double fk   = fbond_arr[k];
+            int    ai   = ai_arr[k];
+            int    aj   = aj_arr[k];
+            double fijX = fk * dxX[k];
+            double fijY = fk * dxY[k];
+            double fijZ = fk * dxZ[k];
+            f[ai][XX] += fijX;   f[aj][XX] -= fijX;
+            f[ai][YY] += fijY;   f[aj][YY] -= fijY;
+            f[ai][ZZ] += fijZ;   f[aj][ZZ] -= fijZ;
+        }
+    }
+
+    for (; i < npairs; i++)
+    {
+        auto &b       = pairs[i];
+        auto &indices = b->atomIndices();
+        auto ai       = indices[0];
+        auto aj       = indices[1];
+        auto &params  = b->params();
+        auto izeta    = params[coulZETA];
+        auto jzeta    = params[coulZETA2];
+        real qq       = ONE_4PI_EPS0 * atoms[ai].charge() * atoms[aj].charge();
+        rvec dx;
+        rvec_sub(x[ai], x[aj], dx);
+        auto dr2      = iprod(dx, dx);
+        auto r        = std::sqrt(dr2);
+        real velec    =  qq * Coulomb_GG(r, izeta, jzeta);
+        real felec    = -qq * DCoulomb_GG(r, izeta, jzeta);
+        ebond += velec;
+        if (dr2 > 0)
+        {
+            felec *= gmx::invsqrt(dr2);
+            pairforces(felec, dx, indices, forces);
+        }
+    }
+
+    }
+    else
+#endif
+    {
+    for (size_t i = 0; i < npairs; i++)
+    {
+        // Get the parameters.
+        auto &b       = pairs[i];
+        auto &indices = b->atomIndices();
+        auto ai       = indices[0];
+        auto aj       = indices[1];
+        auto &params  = b->params();
+        auto izeta    = params[coulZETA];
+        auto jzeta    = params[coulZETA2];
         // Get the atom indices
         real qq         = ONE_4PI_EPS0*atoms[ai].charge()*atoms[aj].charge();
         rvec dx;
@@ -1040,7 +4477,7 @@ static double computeCoulombGaussian(MsgHandler                        *msghandl
         {
             auto r1 = std::sqrt(dr2);
             msghandler->writeDebug(gmx::formatString("vcoul ai %d aj %d %g izeta %g jzeta %g qi %g qj %g vcoul_pc %g dist %g felec %g",
-                                                     ai, aj, velec, izeta, jzeta, 
+                                                     ai, aj, velec, izeta, jzeta,
                                                      atoms[ai].charge(), atoms[aj].charge(), qq/r1, r1, felec/r1));
             vc_pt += qq/r1;
         }
@@ -1051,6 +4488,8 @@ static double computeCoulombGaussian(MsgHandler                        *msghandl
             pairforces(felec, dx, indices, forces);
         }
     }
+    }
+
     if (msghandler && msghandler->debug())
     {
         msghandler->writeDebug(gmx::formatString("vcoul %g vcoul_pc %g", ebond, vc_pt));
@@ -1069,7 +4508,7 @@ static double computeCoulombGaussian(MsgHandler                        *msghandl
  * \param[inout] energies    The energy per type
  * \return total energy
  */
-static double computeCoulombSlater(MsgHandler                        *msghandler,
+static double computeCoulombSlater(gmx_unused MsgHandler             *msghandler,
                                    const TopologyEntryVector         &pairs,
                                    const std::vector<ActAtom>        &atoms,
                                    const std::vector<gmx::RVec>      *coordinates,
@@ -1078,31 +4517,261 @@ static double computeCoulombSlater(MsgHandler                        *msghandler
 {
     double ebond = 0;
     auto   x     = *coordinates;
-    for (const auto &b : pairs)
+    const size_t npairs = pairs.size();
+
+#if defined(__AVX512F__) && defined(GMX_SIMD_X86_AVX_512)
+    if (npairs >= 12)
     {
-        // Get the parameters.
+    auto   &f    = *forces;
+    constexpr int W = 8;
+    alignas(64) double dxX[W], dxY[W], dxZ[W];
+    alignas(64) double dr2_arr[W], rinv_arr[W];
+    alignas(64) double fbond_arr[W], e_arr[W];
+    int ai_arr[W], aj_arr[W];
+
+    const __m512d vhalf      = _mm512_set1_pd(0.5);
+    const __m512d vthreehalf = _mm512_set1_pd(1.5);
+
+    size_t i = 0;
+    for (; i + W <= npairs; i += W)
+    {
+        for (int k = 0; k < W; k++)
+        {
+            auto &b       = pairs[i + k];
+            auto &indices = b->atomIndices();
+            ai_arr[k]     = indices[0];
+            aj_arr[k]     = indices[1];
+            dxX[k] = x[ai_arr[k]][XX] - x[aj_arr[k]][XX];
+            dxY[k] = x[ai_arr[k]][YY] - x[aj_arr[k]][YY];
+            dxZ[k] = x[ai_arr[k]][ZZ] - x[aj_arr[k]][ZZ];
+        }
+        __m512d vdxX = _mm512_load_pd(dxX);
+        __m512d vdxY = _mm512_load_pd(dxY);
+        __m512d vdxZ = _mm512_load_pd(dxZ);
+        __m512d vdr2 = _mm512_fmadd_pd(vdxX, vdxX,
+                       _mm512_fmadd_pd(vdxY, vdxY,
+                       _mm512_mul_pd  (vdxZ, vdxZ)));
+        __m512d vrinv = _mm512_rsqrt14_pd(vdr2);
+        {
+            __m512d vtmp = _mm512_mul_pd(_mm512_mul_pd(vdr2, vrinv), vrinv);
+            vrinv = _mm512_mul_pd(vrinv, _mm512_fnmadd_pd(vhalf, vtmp, vthreehalf));
+        }
+        {
+            __m512d vtmp = _mm512_mul_pd(_mm512_mul_pd(vdr2, vrinv), vrinv);
+            vrinv = _mm512_mul_pd(vrinv, _mm512_fnmadd_pd(vhalf, vtmp, vthreehalf));
+        }
+        _mm512_store_pd(dr2_arr,  vdr2);
+        _mm512_store_pd(rinv_arr, vrinv);
+
+        for (int k = 0; k < W; k++)
+        {
+            auto &b      = pairs[i + k];
+            auto &params = b->params();
+            int   ai_k   = ai_arr[k];
+            int   aj_k   = aj_arr[k];
+            double izeta = params[coulZETA];
+            double jzeta = params[coulZETA2];
+            int   irow   = atoms[ai_k].row();
+            int   jrow   = atoms[aj_k].row();
+            double qq    = ONE_4PI_EPS0 * atoms[ai_k].charge() * atoms[aj_k].charge();
+            double r_k   = dr2_arr[k] * rinv_arr[k];
+            double velec = qq * Coulomb_SS(r_k, irow, jrow, izeta, jzeta);
+            double felec = -qq * DCoulomb_SS(r_k, irow, jrow, izeta, jzeta);
+            e_arr[k]     = velec;
+            if (dr2_arr[k] > 0)
+            {
+                fbond_arr[k] = felec * rinv_arr[k];
+            }
+            else
+            {
+                fbond_arr[k] = 0.0;
+            }
+        }
+
+        for (int k = 0; k < W; k++)
+        {
+            ebond += e_arr[k];
+            double fk   = fbond_arr[k];
+            int    ai   = ai_arr[k];
+            int    aj   = aj_arr[k];
+            double fijX = fk * dxX[k];
+            double fijY = fk * dxY[k];
+            double fijZ = fk * dxZ[k];
+            f[ai][XX] += fijX;   f[aj][XX] -= fijX;
+            f[ai][YY] += fijY;   f[aj][YY] -= fijY;
+            f[ai][ZZ] += fijZ;   f[aj][ZZ] -= fijZ;
+        }
+    }
+
+    for (; i < npairs; i++)
+    {
+        auto &b       = pairs[i];
+        auto &indices = b->atomIndices();
+        auto ai       = indices[0];
+        auto aj       = indices[1];
+        auto &params  = b->params();
+        auto izeta    = params[coulZETA];
+        auto jzeta    = params[coulZETA2];
+        auto irow     = atoms[ai].row();
+        auto jrow     = atoms[aj].row();
+        real qq       = ONE_4PI_EPS0 * atoms[ai].charge() * atoms[aj].charge();
+        rvec dx;
+        rvec_sub(x[ai], x[aj], dx);
+        auto dr2      = iprod(dx, dx);
+        real r1       = std::sqrt(dr2);
+        real velec    =  qq * Coulomb_SS(r1, irow, jrow, izeta, jzeta);
+        real felec    = -qq * DCoulomb_SS(r1, irow, jrow, izeta, jzeta);
+        ebond += velec;
+        if (dr2 > 0)
+        {
+            felec *= gmx::invsqrt(dr2);
+            pairforces(felec, dx, indices, forces);
+        }
+    }
+
+    }
+    else
+#endif
+#if defined(__AVX2__) && defined(GMX_SIMD_X86_AVX2_256)
+    if (npairs >= 6)
+    {
+    auto   &f    = *forces;
+    constexpr int W = 4;
+    alignas(32) double dxX[W], dxY[W], dxZ[W];
+    alignas(32) double dr2_arr[W], rinv_arr[W];
+    alignas(32) double fbond_arr[W], e_arr[W];
+    int ai_arr[W], aj_arr[W];
+
+    const __m256d vhalf      = _mm256_set1_pd(0.5);
+    const __m256d vthreehalf = _mm256_set1_pd(1.5);
+
+    size_t i = 0;
+    for (; i + W <= npairs; i += W)
+    {
+        for (int k = 0; k < W; k++)
+        {
+            auto &b       = pairs[i + k];
+            auto &indices = b->atomIndices();
+            ai_arr[k]     = indices[0];
+            aj_arr[k]     = indices[1];
+            dxX[k] = x[ai_arr[k]][XX] - x[aj_arr[k]][XX];
+            dxY[k] = x[ai_arr[k]][YY] - x[aj_arr[k]][YY];
+            dxZ[k] = x[ai_arr[k]][ZZ] - x[aj_arr[k]][ZZ];
+        }
+        __m256d vdxX = _mm256_load_pd(dxX);
+        __m256d vdxY = _mm256_load_pd(dxY);
+        __m256d vdxZ = _mm256_load_pd(dxZ);
+        __m256d vdr2 = _mm256_fmadd_pd(vdxX, vdxX,
+                       _mm256_fmadd_pd(vdxY, vdxY,
+                       _mm256_mul_pd  (vdxZ, vdxZ)));
+        __m128  vdr2_f  = _mm256_cvtpd_ps(vdr2);
+        __m128  vrinv_f = _mm_rsqrt_ps(vdr2_f);
+        __m256d vrinv   = _mm256_cvtps_pd(vrinv_f);
+        {
+            __m256d vtmp = _mm256_mul_pd(_mm256_mul_pd(vdr2, vrinv), vrinv);
+            vrinv = _mm256_mul_pd(vrinv, _mm256_fnmadd_pd(vhalf, vtmp, vthreehalf));
+        }
+        {
+            __m256d vtmp = _mm256_mul_pd(_mm256_mul_pd(vdr2, vrinv), vrinv);
+            vrinv = _mm256_mul_pd(vrinv, _mm256_fnmadd_pd(vhalf, vtmp, vthreehalf));
+        }
+        _mm256_store_pd(dr2_arr,  vdr2);
+        _mm256_store_pd(rinv_arr, vrinv);
+
+        for (int k = 0; k < W; k++)
+        {
+            auto &b      = pairs[i + k];
+            auto &params = b->params();
+            int   ai_k   = ai_arr[k];
+            int   aj_k   = aj_arr[k];
+            double izeta = params[coulZETA];
+            double jzeta = params[coulZETA2];
+            int   irow   = atoms[ai_k].row();
+            int   jrow   = atoms[aj_k].row();
+            double qq    = ONE_4PI_EPS0 * atoms[ai_k].charge() * atoms[aj_k].charge();
+            double r_k   = dr2_arr[k] * rinv_arr[k];
+            double velec = qq * Coulomb_SS(r_k, irow, jrow, izeta, jzeta);
+            double felec = -qq * DCoulomb_SS(r_k, irow, jrow, izeta, jzeta);
+            e_arr[k]     = velec;
+            if (dr2_arr[k] > 0)
+            {
+                fbond_arr[k] = felec * rinv_arr[k];
+            }
+            else
+            {
+                fbond_arr[k] = 0.0;
+            }
+        }
+
+        for (int k = 0; k < W; k++)
+        {
+            ebond += e_arr[k];
+            double fk   = fbond_arr[k];
+            int    ai   = ai_arr[k];
+            int    aj   = aj_arr[k];
+            double fijX = fk * dxX[k];
+            double fijY = fk * dxY[k];
+            double fijZ = fk * dxZ[k];
+            f[ai][XX] += fijX;   f[aj][XX] -= fijX;
+            f[ai][YY] += fijY;   f[aj][YY] -= fijY;
+            f[ai][ZZ] += fijZ;   f[aj][ZZ] -= fijZ;
+        }
+    }
+
+    for (; i < npairs; i++)
+    {
+        auto &b       = pairs[i];
+        auto &indices = b->atomIndices();
+        auto ai       = indices[0];
+        auto aj       = indices[1];
+        auto &params  = b->params();
+        auto izeta    = params[coulZETA];
+        auto jzeta    = params[coulZETA2];
+        auto irow     = atoms[ai].row();
+        auto jrow     = atoms[aj].row();
+        real qq       = ONE_4PI_EPS0 * atoms[ai].charge() * atoms[aj].charge();
+        rvec dx;
+        rvec_sub(x[ai], x[aj], dx);
+        auto dr2      = iprod(dx, dx);
+        real r1       = std::sqrt(dr2);
+        real velec    =  qq * Coulomb_SS(r1, irow, jrow, izeta, jzeta);
+        real felec    = -qq * DCoulomb_SS(r1, irow, jrow, izeta, jzeta);
+        ebond += velec;
+        if (dr2 > 0)
+        {
+            felec *= gmx::invsqrt(dr2);
+            pairforces(felec, dx, indices, forces);
+        }
+    }
+
+    }
+    else
+#endif
+    {
+    for (size_t i = 0; i < npairs; i++)
+    {
+        auto &b       = pairs[i];
         auto &indices = b->atomIndices();
         auto ai       = indices[0];
         auto aj       = indices[1];
         // Get the parameters. We have to know their names to do this.
-        auto &params= b->params();
-        auto izeta  = params[coulZETA];
-        auto jzeta  = params[coulZETA2];
-        auto irow   = atoms[ai].row();
-        auto jrow   = atoms[aj].row();
-        real qq     = ONE_4PI_EPS0*atoms[ai].charge()*atoms[aj].charge();
+        auto &params  = b->params();
+        auto izeta    = params[coulZETA];
+        auto jzeta    = params[coulZETA2];
+        auto irow     = atoms[ai].row();
+        auto jrow     = atoms[aj].row();
+        real qq       = ONE_4PI_EPS0*atoms[ai].charge()*atoms[aj].charge();
         rvec dx;
         rvec_sub(x[ai], x[aj], dx);
-        auto dr2   = iprod(dx, dx);
-        real r1    = std::sqrt(dr2);
-        real velec =  qq*Coulomb_SS(r1, irow, jrow, izeta, jzeta);
+        auto dr2      = iprod(dx, dx);
+        real r1       = std::sqrt(dr2);
+        real velec    =  qq*Coulomb_SS(r1, irow, jrow, izeta, jzeta);
         // The DCoulomb_SS code returns the derivative of the energy
         // so we still need a minus sign.
         // https://github.com/dspoel/ACT/issues/369
-        real felec = -qq*DCoulomb_SS(r1, irow, jrow, izeta, jzeta);
+        real felec    = -qq*DCoulomb_SS(r1, irow, jrow, izeta, jzeta);
         if (msghandler && msghandler->debug())
         {
-            auto r1 = std::sqrt(dr2);
             msghandler->writeDebug(gmx::formatString("vcoul ai %d aj %d %g fcoul %g izeta %g jzeta %g qi %g qj %g vcoul_pc %g fcoul_pc %g dist %g",
                                                      ai, aj, velec, felec, izeta, jzeta, atoms[ai].charge(),
                                                      atoms[aj].charge(), qq/r1, qq/dr2, r1));
@@ -1114,6 +4783,8 @@ static double computeCoulombSlater(MsgHandler                        *msghandler
             pairforces(felec, dx, indices, forces);
         }
     }
+    }
+
     energies->insert({InteractionType::ELECTROSTATICS, ebond});
 
     return ebond;
