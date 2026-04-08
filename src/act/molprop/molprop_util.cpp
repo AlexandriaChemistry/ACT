@@ -148,13 +148,12 @@ void merge_xml(MsgHandler                             *msg_handler,
                const gmx::ArrayRef<const std::string> &filens,
                std::vector<alexandria::MolProp>       *mpout)
 {
-    int tmp;
-
     for (auto &fn : filens)
     {
         std::vector<alexandria::MolProp> mp;
         if (!gmx_fexist(fn.c_str()))
         {
+            msg_handler->msg(ACTStatus::Warning, gmx::formatString("Molprop file named '%s' does not exist, but continuing anyway.", fn.c_str()));
             continue;
         }
         MolPropRead(msg_handler, fn.c_str(), &mp);
@@ -163,7 +162,7 @@ void merge_xml(MsgHandler                             *msg_handler,
             mpout->push_back(std::move(mpi));
         }
     }
-    tmp = mpout->size();
+    auto mpBefore = mpout->size();
     gmx::TextWriter *tw = nullptr;
     if (msg_handler && msg_handler->debug())
     {
@@ -179,8 +178,8 @@ void merge_xml(MsgHandler                             *msg_handler,
     MolSelect gms;
     MolPropSort(msg_handler, mpout, MPSA_MOLNAME, nullptr, gms);
     MergeDoubleMolprops(msg_handler, mpout);
-    printf("There were %d total molecules before merging, %d after.\n",
-           tmp, (int)mpout->size());
+    printf("There were %zu molecule entries before merging, %zu after.\n",
+           mpBefore, mpout->size());
 }
 
 //! \brief Compare MolProp by molname for sorting
