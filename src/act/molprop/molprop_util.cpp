@@ -96,7 +96,7 @@ static void MergeDoubleMolprops(MsgHandler                       *msg_handler,
             if (molname[prev] == molname[cur])
             {
                 auto warn = mmm[prev]->sameCompound(&(*mmm[cur]));
-                if (!warn.empty())
+                if (msg_handler && !warn.empty())
                 {
                     for(const auto &w : warn)
                     {
@@ -106,7 +106,7 @@ static void MergeDoubleMolprops(MsgHandler                       *msg_handler,
                 else
                 {
                     auto warn = mmm[prev]->Merge(&(*mmm[cur]));
-                    if (!warn.empty())
+                    if (msg_handler && !warn.empty())
                     {
                         for(const auto &w : warn)
                         {
@@ -153,7 +153,10 @@ void merge_xml(MsgHandler                             *msg_handler,
         std::vector<alexandria::MolProp> mp;
         if (!gmx_fexist(fn.c_str()))
         {
-            msg_handler->msg(ACTStatus::Warning, gmx::formatString("Molprop file named '%s' does not exist, but continuing anyway.", fn.c_str()));
+            if (msg_handler)
+            {
+                msg_handler->msg(ACTStatus::Warning, gmx::formatString("Molprop file named '%s' does not exist, but continuing anyway.", fn.c_str()));
+            }
             continue;
         }
         MolPropRead(msg_handler, fn.c_str(), &mp);
