@@ -74,8 +74,9 @@ bool ForceField::verifyCheckSum(MsgHandler        *msgHandler,
 std::vector<std::string> ForceField::info() const
 {
     std::vector<std::string> out;
+    out.push_back("");
     out.push_back("Force field information");
-    out.push_back("-----------------------------------------------");
+    out.push_back("=======================");
     out.push_back(gmx::formatString("Filename:    %s", filename_.c_str()));
     out.push_back(gmx::formatString("CheckSum:    %s", checkSum_.c_str()));
     out.push_back(gmx::formatString("TimeStamp:   %s", timeStamp_.c_str()));
@@ -98,7 +99,7 @@ std::vector<std::string> ForceField::info() const
                                             cr.second.ffplConst().value()));
         }
     }
-    out.push_back("-----------------------------------------------");
+    out.push_back("");
     return out;
 }
 

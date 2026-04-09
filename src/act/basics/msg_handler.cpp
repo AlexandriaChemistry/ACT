@@ -40,8 +40,10 @@
 #include "act/basics/version.h"
 #include "act/utility/communicationrecord.h"
 #include "gromacs/commandline/filenm.h"
+#include "gromacs/utility/binaryinformation.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/futil.h"
+#include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/stringutil.h"
 
 namespace alexandria
@@ -209,6 +211,12 @@ void MsgHandler::addOptions(std::vector<t_pargs>      *pargs,
     filenm->push_back( { efLOG, "-g", defaultLogName_.c_str(), ffWRITE }); 
 }
 
+static void printBinInfo(gmx::TextWriter *tw)
+{
+    gmx::BinaryInformationSettings settings;
+    printBinaryInformation(tw, gmx::getProgramContext(), settings.extendedInfo(true));
+}
+
 void MsgHandler::optionsFinished(const std::vector<t_filenm> &filenm,
                                  const CommunicationRecord   *cr)
 {
@@ -240,6 +248,10 @@ void MsgHandler::optionsFinished(const std::vector<t_filenm> &filenm,
         tw_->writeLine(act_welcome());
         tw_->writeLineFormatted("Verbosity level %d (%s or more serious messages are printed).",
                                 ilevel_, statnm[printLevel_]);
+        if (printLevel_ >= ACTStatus::Warning)
+        {
+            printBinInfo(tw_);
+        }
         time_t my_t;
         time(&my_t);
         tw_->writeStringFormatted("# This file was created %s", ctime(&my_t));
