@@ -96,19 +96,22 @@ static void MergeDoubleMolprops(MsgHandler                       *msg_handler,
             if (molname[prev] == molname[cur])
             {
                 auto warn = mmm[prev]->sameCompound(&(*mmm[cur]));
-                if (msg_handler && !warn.empty())
+                if (!warn.empty())
                 {
-                    for(const auto &w : warn)
+                    if (msg_handler)
                     {
-                        msg_handler->msg(ACTStatus::Warning, w);
+                        for (const auto &w : warn)
+                        {
+                            msg_handler->msg(ACTStatus::Warning, w);
+                        }
                     }
                 }
                 else
                 {
-                    auto warn = mmm[prev]->Merge(&(*mmm[cur]));
-                    if (msg_handler && !warn.empty())
+                    auto mergeWarn = mmm[prev]->Merge(&(*mmm[cur]));
+                    if (msg_handler && !mergeWarn.empty())
                     {
-                        for(const auto &w : warn)
+                        for (const auto &w : mergeWarn)
                         {
                             msg_handler->msg(ACTStatus::Warning, w);
                         }

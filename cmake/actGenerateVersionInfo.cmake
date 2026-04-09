@@ -128,20 +128,17 @@ string(REGEX REPLACE "-" "" HEAD_DATE "${HEAD_DATE}")
 # compile the version string suffix
 set(VERSION_STR_SUFFIX "${HEAD_DATE}-${HEAD_HASH_SHORT}${DIRTY_STR}")
 
-# find the names of remotes that are located on the official gromacs
-# git/gerrit servers
-#execute_process(COMMAND ${GIT_EXECUTABLE} config --get-regexp
-#                "remote\\..*\\.url" "\\.gromacs\\.org[:/].*gromacs(\\.git)?$"
+# find the names of remotes that are located on the official ACT
+# GitHub repository (matches both SSH and HTTPS remote URL formats)
 execute_process(COMMAND ${GIT_EXECUTABLE} config --get-regexp
-                "remote\\..*\\.url" "git@github\\.com[:/]AlexandriaChemistry/ACT(\\.git)?$"
+                "remote\\..*\\.url" "(git@github\\.com[:/]|https://github\\.com/)AlexandriaChemistry/ACT(\\.git)?$"
     WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
     OUTPUT_VARIABLE ACT_REMOTES
     ERROR_VARIABLE EXEC_ERR
     OUTPUT_STRIP_TRAILING_WHITESPACE
 )
-message("ACT_REMOTES = ${ACT_REMOTES}")
 
-# if there are remotes from the gromacs git servers, try to find ancestor
+# if there are remotes from the ACT GitHub repository, try to find ancestor
 # commits of the current HEAD from this remote;
 # otherwise, label the build "unknown"
 if("${ACT_REMOTES}" STREQUAL "")
