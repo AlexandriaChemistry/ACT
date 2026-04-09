@@ -22,7 +22,7 @@ jobs:
       id-token: write    # Necessary for actions/deploy-pages
     steps:
       - uses: actions/checkout@v6
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
 
       # Build Doxygen documentation
       # Copied from the act-test.yaml file
@@ -64,7 +64,7 @@ jobs:
           mv docs/manual/latex/act.pdf ../_build/
       - name: Upload notebook error log
         if: failure() # Only runs if the job fails
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: EEM-without-shells-error-log
           path: build/docs/manual/html/reports/jupyter/EEM-without-shells.err.log
