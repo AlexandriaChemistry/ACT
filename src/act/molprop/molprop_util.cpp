@@ -96,7 +96,7 @@ static void MergeDoubleMolprops(MsgHandler                       *msg_handler,
             if (molname[prev] == molname[cur])
             {
                 auto warn = mmm[prev]->sameCompound(&(*mmm[cur]));
-                if (!warn.empty())
+                if (msg_handler && !warn.empty())
                 {
                     if (msg_handler)
                     {
