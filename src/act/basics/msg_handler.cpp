@@ -246,16 +246,16 @@ void MsgHandler::optionsFinished(const std::vector<t_filenm> &filenm,
         // Then pass the filepointer to the text writer
         tw_ = new gmx::TextWriter(fp_);
         tw_->writeLine(act_welcome());
+        time_t my_t;
+        time(&my_t);
+        tw_->writeStringFormatted("# This file was created %s", ctime(&my_t));
+        tw_->writeLine();
         tw_->writeLineFormatted("Verbosity level %d (%s or more serious messages are printed).",
                                 ilevel_, statnm[printLevel_]);
         if (printLevel_ >= ACTStatus::Warning)
         {
             printBinInfo(tw_);
         }
-        time_t my_t;
-        time(&my_t);
-        tw_->writeStringFormatted("# This file was created %s", ctime(&my_t));
-        tw_->writeLine();
     }
     if (printLevel_ == ACTStatus::Debug)
     {

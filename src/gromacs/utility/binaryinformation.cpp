@@ -319,8 +319,8 @@ void printBinaryInformation(TextWriter                      *writer,
         writer->writeLine(formatString("%sACT:      %s, version %s%s%s", prefix, name,
                                        act_version(), precisionString, suffix));
     }
-    writer->writeLine(formatString("%sProgram and command-line information%s", prefix, suffix));
-    writer->writeLine(formatString("%s====================================%s", prefix, suffix));
+    writer->writeLine("Program and command-line information");
+    writer->writeLine("====================================");
     const char *const binaryPath = programContext.fullBinaryPath();
     if (!gmx::isNullOrEmpty(binaryPath))
     {
@@ -348,8 +348,8 @@ void printBinaryInformation(TextWriter                      *writer,
         GMX_RELEASE_ASSERT(prefix[0] == '\0' && suffix[0] == '\0',
                            "Prefix/suffix not supported with extended info");
         writer->ensureEmptyLine();
-        writer->writeLine(formatString("%sSoftware and compilation information%s", prefix, suffix));
-        writer->writeLine(formatString("%s====================================%s", prefix, suffix));
+        writer->writeLine("Software and compilation information");
+        writer->writeLine("====================================");
         gmx_print_version_info(writer);
         writer->ensureEmptyLine();
     }
