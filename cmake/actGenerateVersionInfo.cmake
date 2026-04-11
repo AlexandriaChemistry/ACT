@@ -128,31 +128,31 @@ string(REGEX REPLACE "-" "" HEAD_DATE "${HEAD_DATE}")
 # compile the version string suffix
 set(VERSION_STR_SUFFIX "${HEAD_DATE}-${HEAD_HASH_SHORT}${DIRTY_STR}")
 
-# find the names of remotes that are located on the official gromacs
-# git/gerrit servers
+# find the names of remotes that are located on the official ACT
+# GitHub repository (matches both SSH and HTTPS remote URL formats)
 execute_process(COMMAND ${GIT_EXECUTABLE} config --get-regexp
-                "remote\\..*\\.url" "\\.gromacs\\.org[:/].*gromacs(\\.git)?$"
+                "remote\\..*\\.url" "(git@github\\.com[:/]|https://github\\.com/)AlexandriaChemistry/ACT(\\.git)?$"
     WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
-    OUTPUT_VARIABLE GMX_REMOTES
+    OUTPUT_VARIABLE ACT_REMOTES
     ERROR_VARIABLE EXEC_ERR
     OUTPUT_STRIP_TRAILING_WHITESPACE
 )
 
-# if there are remotes from the gromacs git servers, try to find ancestor
+# if there are remotes from the ACT GitHub repository, try to find ancestor
 # commits of the current HEAD from this remote;
 # otherwise, label the build "unknown"
-if("${GMX_REMOTES}" STREQUAL "")
+if("${ACT_REMOTES}" STREQUAL "")
     if (NOT DEFINED VERSION_NO_REMOTE_HASH)
         set(VERSION_STR_SUFFIX "${VERSION_STR_SUFFIX}-unknown")
     endif()
     set(ACT_VERSION_CENTRAL_BASE_HASH "unknown")
 else()
-    string(REPLACE "\n" ";" GMX_REMOTES ${GMX_REMOTES})
+    string(REPLACE "\n" ";" ACT_REMOTES ${ACT_REMOTES})
     # construct a command pipeline that produces a reverse-time-ordered
-    # list of commits and their annotated names in GMX_REMOTES
+    # list of commits and their annotated names in ACT_REMOTES
     # the max-count limit is there to put an upper bound on the execution time
     set(BASEREVCOMMAND "COMMAND ${GIT_EXECUTABLE} rev-list --max-count=1000 HEAD")
-    foreach(REMOTE ${GMX_REMOTES})
+    foreach(REMOTE ${ACT_REMOTES})
         string(REGEX REPLACE "remote\\.(.*)\\.url.*" "\\1" REMOTE ${REMOTE})
         set(BASEREVCOMMAND "${BASEREVCOMMAND} COMMAND ${GIT_EXECUTABLE} name-rev --stdin --refs=refs/remotes/${REMOTE}/*")
     endforeach(REMOTE)
@@ -160,7 +160,7 @@ else()
     # parameters for execute_process().
     string(REPLACE " " ";" BASEREVCOMMAND ${BASEREVCOMMAND})
     # find the first ancestor in the list provided by rev-list (not
-    # necessarily the last though) which is in GMX_REMOTE, extract the
+    # necessarily the last though) which is in ACT_REMOTES, extract the
     # hash and the number of commits HEAD is ahead with
     execute_process(${BASEREVCOMMAND}
         WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}

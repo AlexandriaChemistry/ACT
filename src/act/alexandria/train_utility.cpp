@@ -1912,6 +1912,8 @@ void print_header(gmx::TextWriter             *tw,
     {
         return;
     }
+    tw->writeLine("Command line options");
+    tw->writeLine("====================");
     for (auto &p: pargs)
     {
         std::string value, type;
@@ -1972,7 +1974,9 @@ void print_header(gmx::TextWriter             *tw,
     }
     if (filenms.size() > 0)
     {
-        tw->writeStringFormatted("\nFiles used:\n");
+        tw->ensureEmptyLine();
+        tw->writeLine("Files used");
+        tw->writeLine("==========");
     }
     std::map<unsigned int, const char *> fmap = {
         { ffREAD,  "R"   }, 

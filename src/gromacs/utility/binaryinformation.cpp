@@ -198,15 +198,9 @@ void printCopyright(gmx::TextWriter *writer)
     }
 }
 
-// Construct a string that describes the library that provides FFT support to this build
-const char *getFftDescriptionString()
-{
-    return "None";
-};
-
 void gmx_print_version_info(gmx::TextWriter *writer)
 {
-    writer->writeLine(formatString("GROMACS version:    %s", act_version()));
+    writer->writeLine(formatString("ACT version:        %s", act_version()));
     const char *const git_hash = act_version_git_full_hash();
     if (git_hash[0] != '\0')
     {
@@ -232,28 +226,8 @@ void gmx_print_version_info(gmx::TextWriter *writer)
 #else
     writer->writeLine("MPI library:        none");
 #endif
-#if GMX_OPENMP
-    writer->writeLine(formatString("OpenMP support:     enabled (GMX_OPENMP_MAX_THREADS = %d)", GMX_OPENMP_MAX_THREADS));
-#else
-    writer->writeLine("OpenMP support:     disabled");
-#endif
     writer->writeLine(formatString("GPU support:        %s", getGpuImplementationString()));
     writer->writeLine(formatString("SIMD instructions:  %s", GMX_SIMD_STRING));
-    writer->writeLine(formatString("FFT library:        %s", getFftDescriptionString()));
-    writer->writeLine(formatString("RDTSCP usage:       %s", HAVE_RDTSCP ? "enabled" : "disabled"));
-    writer->writeLine("TNG support:        disabled");
-#if GMX_USE_HWLOC
-    writer->writeLine(formatString("Hwloc support:      hwloc-%s", HWLOC_VERSION));
-#else
-    writer->writeLine("Hwloc support:      disabled");
-#endif
-#if HAVE_EXTRAE
-    unsigned major, minor, revision;
-    Extrae_get_version(&major, &minor, &revision);
-    writer->writeLine(formatString("Tracing support:    enabled. Using Extrae-%d.%d.%d", major, minor, revision));
-#else
-    writer->writeLine("Tracing support:    disabled");
-#endif
 
 
     /* TODO: The below strings can be quite long, so it would be nice to wrap
@@ -330,11 +304,6 @@ void printBinaryInformation(TextWriter                      *writer,
     {
         writer->writeLine(formatString("%sCreated by:%s", prefix, suffix));
     }
-    std::string title
-        = formatString(":-) ACT - %s, %s%s (-:", name, act_version(), precisionString);
-    const int   indent
-        = centeringOffset(78 - std::strlen(prefix) - std::strlen(suffix), title.length()) + 1;
-    writer->writeLine(formatString("%s%*c%s%s", prefix, indent, ' ', title.c_str(), suffix));
     writer->writeLine(formatString("%s%s", prefix, suffix));
     if (settings.bCopyright_)
     {
@@ -350,6 +319,8 @@ void printBinaryInformation(TextWriter                      *writer,
         writer->writeLine(formatString("%sACT:      %s, version %s%s%s", prefix, name,
                                        act_version(), precisionString, suffix));
     }
+    writer->writeLine("Program and command-line information");
+    writer->writeLine("====================================");
     const char *const binaryPath = programContext.fullBinaryPath();
     if (!gmx::isNullOrEmpty(binaryPath))
     {
@@ -377,7 +348,10 @@ void printBinaryInformation(TextWriter                      *writer,
         GMX_RELEASE_ASSERT(prefix[0] == '\0' && suffix[0] == '\0',
                            "Prefix/suffix not supported with extended info");
         writer->ensureEmptyLine();
+        writer->writeLine("Software and compilation information");
+        writer->writeLine("====================================");
         gmx_print_version_info(writer);
+        writer->ensureEmptyLine();
     }
 }
 
