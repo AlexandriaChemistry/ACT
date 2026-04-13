@@ -871,6 +871,8 @@ static double computeSlater_ISA_TT(MsgHandler                            *msghan
 }
 
 /*! \brief Compute Generalized Buckingham energy and forces
+ * Source: Werhahn et al. Chem. Phys. Lett. 619 (2015) 133-138, Eqn. 6.
+ * Code was double checked here https://github.com/AlexandriaChemistry/ACT/issues/1299
  * \param[in]    msghandler  For warnings and errors
  * \param[in]    pairs       The atom identifiers and parameters
  * \param[in]    atoms       The atoms
@@ -898,6 +900,7 @@ static double computeNonBonded(MsgHandler                            *msghandler
         auto epsilon    = params[gbhEPSILON];
         auto gamma      = params[gbhGAMMA];
         auto delta      = params[gbhDELTA];
+        // \todo Move this check to creation of pairlist? Will that work during training?
         if (epsilon > 0 && gamma > 0 && rmin > 0 && delta > 0)
         {
             // Get the atom indices
