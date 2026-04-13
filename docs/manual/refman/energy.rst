@@ -135,10 +135,10 @@ where  :math:`\epsilon_{ij}` is the well depth at minimum, :math:`\gamma_{ij}` a
 
 Furthermore, the generalized 4-parameter Buckingham potential with an adjustable long-range attraction is implemented as :cite:p:`Werhahn2015a` 
 
-.. math:: V_{GBH}(r_{ij}) = \epsilon_{ij}\frac{\delta_{ij} + 2\gamma_{ij} + 6}{2\gamma_{ij}} \frac{1}{1+ (\frac{r}{\sigma_{ij}})^6 } \left[  \frac{6+\delta_{ij}}{\delta_{ij} +2\gamma_{ij}+6}  e^{\gamma_{ij} (1-\frac{r}{\sigma_{ij}})}  - 1  \right] -\frac{\epsilon_{ij}}{1+(\frac{r_{ij}}{\sigma})^{\delta}}
+.. math:: V_{GBH}(r_{ij}) = \epsilon_{ij}\frac{\delta_{ij} + 2\gamma_{ij} + 6}{2\gamma_{ij}} \frac{1}{1+ (\frac{r}{\r_{min}_{ij}})^6 } \left[  \frac{6+\delta_{ij}}{\delta_{ij} +2\gamma_{ij}+6}  e^{\gamma_{ij} (1-\frac{r}{\r_{min}_{ij}})}  - 1  \right] -\frac{\epsilon_{ij}}{1+(\frac{r_{ij}}{\r_{min}})^{\delta}}
    :label: GBH
 
-where :math:`\gamma` and :math:`\delta` again are dimensionless constants.
+where :math:`\gamma` and :math:`\delta` again are dimensionless constants and :math:`r_{min}` is the position of the minimum in the potential. :math:`\delta` should be larger than zero for this potential to converge to 0 at long distance, and with :math:`\delta` = 6, the Wang-Buckingham potential (:eq:`vwbh`) is recovered.
 
 
 Another potential that is supported is the buffered (Wang) Buckingham potential :cite:p:`Wang2013a`:
