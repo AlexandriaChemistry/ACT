@@ -352,12 +352,6 @@ class ForceFieldParameterList
     int counter_ = 0;
 };
 
-/*! \brief Extract a map of combination rules for each parameter
- * \param[in] vdw Van der Waals list of ff params
- * \return the map
- */
-CombRuleSet getCombinationRule(const ForceFieldParameterList &vdw);
-    
 } // namespace
 
 #endif

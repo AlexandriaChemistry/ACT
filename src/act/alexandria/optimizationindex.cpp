@@ -50,14 +50,11 @@ void OptimizationIndex::findForceFieldParameter(ForceField *pd)
         {
             ffp_ = fs->findParameterType(parameterId_, parameterType_);
         }
-        else
+        else if (fs->combinationRuleExists(parameterId_.id()))
         {
             // Look in combination rules
-            if (fs->combinationRuleExists(parameterId_.id()))
-            {
-                auto pcr = fs->combinationRule(parameterId_.id());
-                ffp_ = pcr->ffpl();
-            }
+            auto pcr = fs->combinationRule(parameterId_.id());
+            ffp_ = pcr->ffpl();
         }
     }
     else if (pd->hasParticleType(particleType_))

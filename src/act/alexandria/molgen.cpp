@@ -350,7 +350,7 @@ void MolGen::checkDataSufficiency(MsgHandler *msghandler,
                 continue;
             }
             auto forces    = pd->findForces(itype);
-            auto comb_rule = getCombinationRule(*forces);
+            auto comb_rule = forces->combinationRules();
             if (!comb_rule.empty())
             {
                 atomicItypes.push_back(itype);
@@ -414,7 +414,7 @@ void MolGen::checkDataSufficiency(MsgHandler *msghandler,
                         continue;
                     }
                     auto forces    = pd->findForces(itype);
-                    auto comb_rule = getCombinationRule(*forces);
+                    auto comb_rule = forces->combinationRules();
                     if (!comb_rule.empty() && optimize(itype))
                     {
                         // This is a hack to allow fitting of a whole matrix of Van der Waals parameters.

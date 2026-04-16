@@ -49,8 +49,7 @@ static void generateParameterPairs(ForceField      *pd,
         return;
     }
     auto forcesVdw = pd->findForces(itype);
-    auto comb_rule = getCombinationRule(*forcesVdw);
-
+    auto comb_rule = forcesVdw->combinationRules();
     // We temporarily store the new parameters here
     ForceFieldParameterListMap *parm = forcesVdw->parameters();;
     
@@ -64,6 +63,7 @@ static void generateParameterPairs(ForceField      *pd,
         {
             continue;
         }
+        // Check whether the parameter for atom i has been updated
         auto &iparam = ivdw.second;
         bool iupdated = false;
         for(const auto &ip : iparam)
@@ -97,13 +97,20 @@ static void generateParameterPairs(ForceField      *pd,
                                    (ActParticle::Vsite == ptj && ActParticle::Atom == pti));
                 }
             }
+            // Check whether the parameter for atom j has been updated
             auto &jparam = jvdw.second;
             bool jupdated = false;
             for(const auto &jp : jparam)
             {
                 jupdated = jupdated || jp.second.updated();
             }
-            if (!(iupdated || jupdated || force))
+            // Check whether the combination rule was updated
+            bool crupdated = false;
+            for(const auto &cr : comb_rule)
+            {
+                crupdated = crupdated || cr.second.ffplConst().updated();
+            }
+            if (!(iupdated || jupdated || crupdated || force))
             {
                 continue;
             }
