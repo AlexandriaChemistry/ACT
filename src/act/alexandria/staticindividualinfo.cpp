@@ -154,9 +154,12 @@ void StaticIndividualInfo::updateForceField(MsgHandler                *msghandle
             auto iType = optIndex_[n].iType();
             if (msghandler->debug())
             {
-                msghandler->writeDebug(gmx::formatString("Updating %s parameter %d (set size %lu) to %g\n",
+                msghandler->writeDebug(gmx::formatString("Updating %s parameter %d %s %s (set size %lu) to %g, was %g\n",
                                                          interactionTypeToString(iType).c_str(), n,
-                                                         mychanged.size(), bases[n]));
+                                                         optIndex_[n].parameterType().c_str(),
+                                                         optIndex_[n].parameterName().c_str(),
+                                                         mychanged.size(), bases[n],
+                                                         p->value()));
             }
             p->setValue(bases[n]);
             p->setUpdated(true);

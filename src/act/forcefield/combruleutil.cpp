@@ -136,7 +136,7 @@ int CombRuleUtil::convert(ForceFieldParameterList *vdw)
         std::string crule("combination_rule");
         if (vdw->optionExists(crule))
         {
-            for(auto &crule : getCombinationRule(*vdw))
+            for(auto &crule : vdw->combinationRules())
             {
                 vdw->addCombinationRule(crule.first,
                                         combinationRuleName(crule.second.rule()),
