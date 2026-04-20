@@ -1112,7 +1112,7 @@ std::map<InteractionType, size_t> Topology::makeVsite4s(MsgHandler       *msghan
                     }
                     else if (static_cast<size_t>(b->atomIndex(1)) == aaa->index())
                     {
-                        aj = b->atomIndex(1);
+                        aj = b->atomIndex(0);
                     }
                     if (aj == -1)
                     {
@@ -1124,13 +1124,22 @@ std::map<InteractionType, size_t> Topology::makeVsite4s(MsgHandler       *msghan
                         // Complicated way of comparing size_t and int
                         if (a2->index() - aj == 0)
                         {
+                            auto ptype = pd->findParticleType(a2->atom().ffType());
+                            if (!ptype->hasOption(btype))
+                            {
+                                continue;
+                            }
+                            auto a2_b = ptype->optionValue(btype);
                             for (size_t i = 1; i < vsatoms.size(); i++)
                             {
-                                if (a2->atom().id().id() == vsatoms[i])
+                                if (a2_b == vsatoms[i])
                                 {
                                     if (vsbond[i] == -1)
                                     {
                                         vsbond[i] = aj;
+                                        // There may be multiple atoms with the same name, but we can only
+                                        // fill in one in the bond array. Therefore jump out of this loop.
+                                        break;
                                     }
                                 }
                             }
@@ -1138,9 +1147,11 @@ std::map<InteractionType, size_t> Topology::makeVsite4s(MsgHandler       *msghan
                     }
                 }
                 bool foundAllBonds = true;
-                for(const auto nb : vsbond)
+                // The last particle is the vsite but we have not set that yet,
+                // so it still is -1. Do not check for it.
+                for(size_t nb = 0; nb < vsbond.size()-1; nb++)
                 {
-                    foundAllBonds = foundAllBonds && (nb >= 0);
+                    foundAllBonds = foundAllBonds && (vsbond[nb] >= 0);
                 }
                 if (foundAllBonds)
                 {
@@ -1191,9 +1202,6 @@ std::map<InteractionType, size_t> Topology::makeVsite4s(MsgHandler       *msghan
                             {
                                 vsnew.addBondOrder(b);
                             }
-                            
-                            // Special bond order for vsites
-                            vsnew.addBondOrder(9);
                             v4top.push_back(std::any_cast<Vsite4>(std::move(vsnew)));
                         }
                     }
@@ -1396,7 +1404,7 @@ void Topology::build(MsgHandler             *msghandler,
     if (msghandler->debug())
     {
         auto nshell = atomList.size()-nRealAtoms;
-        for(const auto &mm : { nv1, nv2, nv3 })
+        for(const auto &mm : { nv1, nv2, nv3, nv4 })
         {
             for(const auto &nn : mm)
             {
@@ -1447,6 +1455,10 @@ void Topology::build(MsgHandler             *msghandler,
         setEntryIdentifiers(msghandler, pd, nn.first);
     }
     for(const auto nn : nv3)
+    {
+        setEntryIdentifiers(msghandler, pd, nn.first);
+    }
+    for(const auto nn : nv4)
     {
         setEntryIdentifiers(msghandler, pd, nn.first);
     }
