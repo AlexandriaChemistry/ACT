@@ -532,9 +532,15 @@ static void add_combrules(xmlNodePtr                     parent,
     const auto crules = fs.combinationRules();
     for(const auto &cr : crules)
     {
-        //! \todo Implement GeneralizedMean here and in act_openmm.py
+        // \todo Check GeneralizedMean implementation here and in act_openmm.py
         std::string name = "cr-" + cr.first + "_" + combinationRuleName(cr.second.rule());
         add_global(parent, name, 1);
+        if (CombRule::GeneralizedMean == cr.second.rule())
+        {
+            auto gp = add_xml_child(parent, exml_names(xmlEntryOpenMM::GLOBALPARAMETER));
+            add_xml_char(gp, exml_names(xmlEntryOpenMM::NAME), (name + "Exp").c_str());
+            add_xml_double(gp, exml_names(xmlEntryOpenMM::DEFAULTVALUE), cr.second.ffplConst().value());
+        }
     }
 }
 
