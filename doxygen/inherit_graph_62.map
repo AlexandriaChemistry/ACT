@@ -1,0 +1,5 @@
+<map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
+<area shape="rect" id="Node000000" href="$classga_1_1Selector.xhtml" title="Abstract class to select an Individual from the population based on its selection probability." alt="" coords="5,5,104,33"/>
+<area shape="rect" id="Node000001" href="$classga_1_1RouletteSelector.xhtml" title="Class for roulette&#45;based selection. Uses cumulative probability to perform selection." alt="" coords="152,5,305,33"/>
+<area shape="poly" id="edge37_Node000000_Node000001" title=" " alt="" coords="119,17,154,19,148,19,119,22"/>
+</map>

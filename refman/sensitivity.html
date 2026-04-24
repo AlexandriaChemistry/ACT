@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>3.3. Sensitivity Analysis &#8212; ACT 1.2b documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=fa44fd50" />
+    <link rel="stylesheet" type="text/css" href="../_static/classic.css?v=2bf1fcf8" />
+    <link rel="stylesheet" type="text/css" href="../_static/mystnb.11b39860a7a0cbfd473a3ad8a317855267ff0bd372690045ca344a6b62be495e.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../_static/togglebutton.css?v=9c3e77be" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx_lesson.css?v=e9df6548" />
+    <link rel="stylesheet" type="text/css" href="../_static/term_role_formatting.css?v=4194e21c" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx_rtd_theme_ext_color_contrast.css?v=8e8ea19f" />
+    
+    <script src="../_static/documentation_options.js?v=00cc29cc"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../_static/copybutton.js?v=6dbb43f8"></script>
+    <script src="../_static/minipres.js?v=a0d29692"></script>
+    <script>let toggleHintShow = 'Click to show';</script>
+    <script>let toggleHintHide = 'Click to hide';</script>
+    <script>let toggleOpenOnPrint = 'true';</script>
+    <script src="../_static/togglebutton.js?v=b8b12719"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script>window.MathJax = {"options": {"processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="3.4. Force field design" href="ffdesign.html" />
+    <link rel="prev" title="3.2. Force Field Training Algorithms" href="training.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="ffdesign.html" title="3.4. Force field design"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="training.html" title="3.2. Force Field Training Algorithms"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">ACT 1.2b documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="header.html" accesskey="U"><span class="section-number">3. </span>Reference Manual</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href=""><span class="section-number">3.3. </span>Sensitivity Analysis</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="sensitivity-analysis">
+<h1><span class="section-number">3.3. </span>Sensitivity Analysis<a class="headerlink" href="#sensitivity-analysis" title="Link to this heading">¶</a></h1>
+<p>The sensitivity analysis is a post-optimization tool that evaluates how sensitive
+the total chi-squared (<span class="math notranslate nohighlight">\(\chi^2\)</span>) deviation is to small changes in each
+individual force field parameter. It helps identify which parameters have the most
+influence on the fitting quality and whether the optimization has converged to a
+well-defined minimum.</p>
+<p>The sensitivity analysis runs automatically after parameter optimization because the
+<em>-sensitivity</em> flag defaults to true. It can be disabled with <em>-nosensitivity</em>. The
+analysis can also be run on an existing force field without re-training by combining
+it with the <em>-nooptimize</em> and <em>-norandom_init</em> flags.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The sensitivity analysis is only available with the MCMC and HYBRID optimizers.
+It is not supported with the Genetic Algorithm (<em>-optimizer GA</em>).</p>
+</div>
+<section id="running-sensitivity-analysis">
+<h2><span class="section-number">3.3.1. </span>Running Sensitivity Analysis<a class="headerlink" href="#running-sensitivity-analysis" title="Link to this heading">¶</a></h2>
+<p>The sensitivity analysis runs automatically after training with MCMC or HYBRID. To
+disable it, pass the <em>-nosensitivity</em> flag:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">alexandria</span> <span class="n">train_ff</span> <span class="o">-</span><span class="n">nosensitivity</span> <span class="o">-</span><span class="n">optimizer</span> <span class="n">MCMC</span> <span class="p">[</span><span class="n">other</span> <span class="n">flags</span><span class="o">...</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>To analyze an existing force field without re-training, use:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">alexandria</span> <span class="n">train_ff</span> <span class="o">-</span><span class="n">nooptimize</span> <span class="o">-</span><span class="n">norandom_init</span> \
+    <span class="o">-</span><span class="n">fc_inter</span> <span class="o">-</span><span class="n">fit</span> <span class="s1">&#39;param1 param2 param3&#39;</span> <span class="p">[</span><span class="n">other</span> <span class="n">flags</span><span class="o">...</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>Here, <em>-fc_inter</em> selects intermolecular energy as the fitting target (alternatively
+<em>-fc_epot</em> for intramolecular energy), and <em>-fit</em> specifies the space-separated
+names of the parameters to analyze.</p>
+</section>
+<section id="algorithm">
+<h2><span class="section-number">3.3.2. </span>Algorithm<a class="headerlink" href="#algorithm" title="Link to this heading">¶</a></h2>
+<p>For each trainable force field parameter <span class="math notranslate nohighlight">\(p_i\)</span>, the algorithm evaluates
+<span class="math notranslate nohighlight">\(\chi^2\)</span> at three nearby points:</p>
+<ul class="simple">
+<li><p><span class="math notranslate nohighlight">\(p_\mathrm{low} = \max\!\left(p_i - \delta p,\; p_\mathrm{lower}\right)\)</span> — below the current value</p></li>
+<li><p><span class="math notranslate nohighlight">\(p_0 = \tfrac{1}{2}\!\left(p_\mathrm{low} + p_\mathrm{high}\right)\)</span> — midpoint</p></li>
+<li><p><span class="math notranslate nohighlight">\(p_\mathrm{high} = \min\!\left(p_i + \delta p,\; p_\mathrm{upper}\right)\)</span> — above the current value</p></li>
+</ul>
+<p>where <span class="math notranslate nohighlight">\(\delta p = (p_\mathrm{upper} - p_\mathrm{lower}) / 200\)</span> (approximately
+0.5% of the allowed range on each side of the current value) and
+<span class="math notranslate nohighlight">\(p_\mathrm{lower}\)</span>, <span class="math notranslate nohighlight">\(p_\mathrm{upper}\)</span> are the allowed bounds for
+the parameter.</p>
+<p>The three <span class="math notranslate nohighlight">\((p,\,\chi^2)\)</span> pairs are then fit to a parabola</p>
+<div class="math notranslate nohighlight">
+\[\chi^2(p) = a \cdot p^2 + b \cdot p + c\]</div>
+<p>using least-squares regression. The minimum of this parabola is located at</p>
+<div class="math notranslate nohighlight">
+\[p_\mathrm{opt} = -\frac{b}{2a}, \qquad
+\chi^2_\mathrm{min} = a\, p_\mathrm{opt}^2 + b\, p_\mathrm{opt} + c.\]</div>
+<p>All other parameters are kept at their trained values while each parameter is
+perturbed in turn, so the analysis captures the <em>local</em> sensitivity around the
+training solution. The analysis is performed on the training set only.</p>
+</section>
+<section id="output-format">
+<h2><span class="section-number">3.3.3. </span>Output Format<a class="headerlink" href="#output-format" title="Link to this heading">¶</a></h2>
+<p>The sensitivity analysis writes its results to the log file. The output has the
+following structure:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>Starting sensitivity analysis. chi2_0 = 0.482  nParam = 42
+
+Sensitivity epsilon_OW Fit to parabola: a  1.35e+00 b -1.36e+01 c  3.44e+01
+    p[0] 4.900   chi2[0] 0.496
+    p[1] 5.000   chi2[1] 0.482
+    p[2] 5.100   chi2[2] 0.495
+    pmin 5.002  chi2min 0.482 (estimate based on parabola)
+
+Sensitivity C12_VDW Fit to parabola: a  4.00e-12 b -4.01e-07 c  4.82e-01
+    p[0] 4.95e+04  chi2[0] 0.4820
+    p[1] 5.00e+04  chi2[1] 0.4820
+    p[2] 5.05e+04  chi2[2] 0.4820
+    pmin 5.01e+04  chi2min 0.4820 (estimate based on parabola)
+
+Sensitivity analysis done.
+</pre></div>
+</div>
+<p>The output fields are:</p>
+<ul class="simple">
+<li><p><strong>chi2_0</strong> — the <span class="math notranslate nohighlight">\(\chi^2\)</span> of the current (trained) parameter set before
+any perturbation.</p></li>
+<li><p><strong>nParam</strong> — the number of trainable parameters being analyzed.</p></li>
+<li><p><strong>Parameter name</strong> — the name of the force field parameter (interaction type and
+atom-type label).</p></li>
+<li><p><strong>a, b, c</strong> — coefficients of the fitted parabola
+<span class="math notranslate nohighlight">\(\chi^2(p) = a p^2 + b p + c\)</span>.</p></li>
+<li><p><strong>p[0], p[1], p[2]</strong> — the three parameter values at which <span class="math notranslate nohighlight">\(\chi^2\)</span> was
+evaluated.</p></li>
+<li><p><strong>chi2[0], chi2[1], chi2[2]</strong> — the corresponding <span class="math notranslate nohighlight">\(\chi^2\)</span> values.</p></li>
+<li><p><strong>pmin</strong> — the parameter value at the estimated parabolic minimum.</p></li>
+<li><p><strong>chi2min</strong> — the estimated minimum <span class="math notranslate nohighlight">\(\chi^2\)</span> from the parabola fit.</p></li>
+</ul>
+</section>
+<section id="interpretation">
+<h2><span class="section-number">3.3.4. </span>Interpretation<a class="headerlink" href="#interpretation" title="Link to this heading">¶</a></h2>
+<p>The coefficient <em>a</em> of the fitted parabola quantifies how sharply <span class="math notranslate nohighlight">\(\chi^2\)</span>
+responds to changes in the parameter:</p>
+<ul class="simple">
+<li><p><strong>Large</strong> <span class="math notranslate nohighlight">\(|a|\)</span> — the <span class="math notranslate nohighlight">\(\chi^2\)</span> surface is steeply curved near the
+current value; the parameter is <em>sensitive</em> and must be determined accurately.
+A large <em>a</em> also indicates a well-defined minimum.</p></li>
+<li><p><strong>Small</strong> <span class="math notranslate nohighlight">\(|a| \approx 0\)</span> — the <span class="math notranslate nohighlight">\(\chi^2\)</span> surface is nearly flat; the
+parameter has little influence on the training targets in the explored range. Such
+parameters may be poorly constrained by the data and are candidates for fixing at
+a reasonable value or removing from the fit.</p></li>
+</ul>
+<p>The estimated minimum (<strong>pmin</strong>, <strong>chi2min</strong>) gives a first-order estimate of the
+optimal parameter value and the achievable <span class="math notranslate nohighlight">\(\chi^2\)</span> from the local curvature.
+If <em>pmin</em> is far from the trained value, the optimization may not have fully
+converged for that parameter, or the training data does not strongly constrain it.
+When <em>a</em> is very small (insensitive parameter), the estimated <em>pmin</em> extrapolates
+far outside the sampled range and should be treated with caution.</p>
+<p>If the fitted parabola has <em>negative</em> curvature (<span class="math notranslate nohighlight">\(a &lt; 0\)</span>), the current
+parameter value sits at a local <em>maximum</em> of the chi-squared surface, which suggests
+an ill-conditioned or degenerate optimization landscape for that parameter.</p>
+<p>The sensitivity analysis is particularly useful for:</p>
+<ul class="simple">
+<li><p>Identifying insensitive (poorly constrained) parameters that can be fixed or
+removed from the fitting.</p></li>
+<li><p>Checking whether the optimization has converged near a well-defined minimum.</p></li>
+<li><p>Guiding subsequent optimization runs by revealing parameters that may benefit from
+a broader or finer search range.</p></li>
+</ul>
+</section>
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/AClogo.png" alt="Logo of ACT"/>
+            </a></p>
+<h3><a href="../index.html">Table of Contents</a></h3>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../preface/preface.html">1. Preface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../userman/header.html">2. User Manual</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="header.html">3. Reference Manual</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="energy.html">3.1. Energy Function</a></li>
+<li class="toctree-l2"><a class="reference internal" href="training.html">3.2. Force Field Training Algorithms</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">3.3. Sensitivity Analysis</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#running-sensitivity-analysis">3.3.1. Running Sensitivity Analysis</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#algorithm">3.3.2. Algorithm</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#output-format">3.3.3. Output Format</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#interpretation">3.3.4. Interpretation</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="ffdesign.html">3.4. Force field design</a></li>
+<li class="toctree-l2"><a class="reference internal" href="targets.html">3.5. Force Field Training Targets</a></li>
+<li class="toctree-l2"><a class="reference internal" href="targets.html#parameters-for-force-field-training">3.6. Parameters for Force Field Training</a></li>
+<li class="toctree-l2"><a class="reference internal" href="data.html">3.7. Training Data</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../jupyter/header.html">4. Interactive Notebooks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../devman/header.html">5. Developer Manual</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../references.html">6. References</a></li>
+</ul>
+
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/refman/sensitivity.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="ffdesign.html" title="3.4. Force field design"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="training.html" title="3.2. Force Field Training Algorithms"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">ACT 1.2b documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="header.html" ><span class="section-number">3. </span>Reference Manual</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href=""><span class="section-number">3.3. </span>Sensitivity Analysis</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2026, ACT development team.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3.
+    </div>
+  </body>
+</html>

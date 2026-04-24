@@ -1,0 +1,25 @@
+var classalexandria_1_1Fragment =
+[
+    [ "Fragment", "classalexandria_1_1Fragment.xhtml#a322e74a2f65d3b2d849087a8788408be", null ],
+    [ "Fragment", "classalexandria_1_1Fragment.xhtml#a8fbadb4ba80f7fa3eef02b1af610f577", null ],
+    [ "atoms", "classalexandria_1_1Fragment.xhtml#ac75d50e270e45e16c1a1b469192a3b08", null ],
+    [ "atomString", "classalexandria_1_1Fragment.xhtml#a6b9c3eed0a1e6033bf774d961ac42512", null ],
+    [ "BroadCast", "classalexandria_1_1Fragment.xhtml#a8890a9ac36e629d922551931be6d85d2", null ],
+    [ "charge", "classalexandria_1_1Fragment.xhtml#a0e1d02d9db1fc8c3b8aa72aa012448cc", null ],
+    [ "dump", "classalexandria_1_1Fragment.xhtml#afa3b56b666b6b5f6d902e5a9b84de765", null ],
+    [ "formula", "classalexandria_1_1Fragment.xhtml#a8931a62f0fd02089367dd8278ece596d", null ],
+    [ "inchi", "classalexandria_1_1Fragment.xhtml#a06bd4baa4eaa33f2908bbc1618422e89", null ],
+    [ "iupac", "classalexandria_1_1Fragment.xhtml#a72facaaef826a3cd161e959313df08c4", null ],
+    [ "mass", "classalexandria_1_1Fragment.xhtml#af2e96e26a53ee4d490a9edf73d495232", null ],
+    [ "multiplicity", "classalexandria_1_1Fragment.xhtml#a5df150bf935039b47ec5651ac5b15bbc", null ],
+    [ "Receive", "classalexandria_1_1Fragment.xhtml#ae15e34b553cb1b0628f3148ceb7b90a7", null ],
+    [ "Send", "classalexandria_1_1Fragment.xhtml#a897150ead11c71ca53295ba40b251e35", null ],
+    [ "setAtoms", "classalexandria_1_1Fragment.xhtml#a1a5bdd950011756be57c6525f823fff7", null ],
+    [ "setCharge", "classalexandria_1_1Fragment.xhtml#abac54cb937727f68d3522af1f5bd0006", null ],
+    [ "setFormula", "classalexandria_1_1Fragment.xhtml#a30d9f3c8c7bcc4cbe9ff7612c6adf371", null ],
+    [ "setInchi", "classalexandria_1_1Fragment.xhtml#ac1672e79f9bee4734c624e759b7b8f6d", null ],
+    [ "setIupac", "classalexandria_1_1Fragment.xhtml#a2a4e2d7cb53d453a7b50e3f88f5ef45e", null ],
+    [ "setMass", "classalexandria_1_1Fragment.xhtml#a505db056078b1ae9b926228cbace26cf", null ],
+    [ "symmetryNumber", "classalexandria_1_1Fragment.xhtml#aa800ea9a2a89c02b25ca44d226200a0f", null ],
+    [ "texFormula", "classalexandria_1_1Fragment.xhtml#ae2a06b1bae73d04dc4609eb9686a4b78", null ]
+];
