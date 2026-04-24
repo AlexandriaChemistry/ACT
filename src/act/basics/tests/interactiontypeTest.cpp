@@ -234,6 +234,9 @@ TEST(InteractionTypeTest, isVsiteReturnsTrueForVsiteTypes)
     EXPECT_TRUE(isVsite(InteractionType::VSITE3FAD));
     EXPECT_TRUE(isVsite(InteractionType::VSITE3OUT));
     EXPECT_TRUE(isVsite(InteractionType::VSITE3OUTS));
+    EXPECT_TRUE(isVsite(InteractionType::VSITE4));
+    EXPECT_TRUE(isVsite(InteractionType::VSITE4S));
+    EXPECT_TRUE(isVsite(InteractionType::VSITE4S3));
 }
 
 TEST(InteractionTypeTest, isVsiteReturnsFalseForNonVsiteTypes)
