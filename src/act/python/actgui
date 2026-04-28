@@ -257,6 +257,17 @@ class QSel:
         item = tk.Entry(root, textvariable=self.epsr).grid(row=myrow, column=mycol, sticky=tk.N+tk.S+tk.W)
         myrow += 1
 
+        # Highest allowed row (corresponding to periodic table) for Slater potentials
+        labPot = tk.Label(root, text=f"Maximum Slater row number",
+                          anchor="w", font=labelFont()).grid(row=myrow, column=mycol, sticky=tk.N+tk.S+tk.W)
+        myrow += 1
+
+        self.rowsel = [ 1, 2, 3, 4, 5, 6 ]
+        self.row    = tk.IntVar(root)
+        self.row.set(1)
+        self.maxrow = tk.OptionMenu(root, self.row, *self.rowsel).grid(row=myrow, column=mycol, sticky=tk.N+tk.S+tk.W)
+        myrow += 1
+
         labParticle = tk.Label(root, text=f"Options", anchor="w", font=labelFont()).grid(row=myrow, column=mycol, sticky=tk.N+tk.S+tk.W)
         myrow += 1
         # Charge symmetrization for CH3 groups etc. 
@@ -1133,6 +1144,7 @@ class FFGenerator:
                 if vdwtp == Atom and atype_props[atp]["Bonds"] > 0:
                     btype = atype_name + "_b"
 
+                row     = min(atype_props[atp]['Row'], self.qSel.row.get())
                 if vdwtp == Shell:
                     atype_name = atp + "_s"
                     element    = "X"
@@ -1143,15 +1155,16 @@ class FFGenerator:
                     btype    = atype_name
                     vs1btype = atp
                     self.vs1f.write(f"{atype_name}|VSITE1|{vs1btype}|0|1||||\n")
+                elif vdwtp == Atom and haveVS1:
+                    # Use P+S or P+G (in which case the row does not matter)
+                    row = 0
                 radius  = ""
-                row     = 0
                 ztype   = atype_name + "_z"
                 acmtype = ""
                 stype   = ""
                 if vdwtp == Atom:
                     acmtype = ztype
                     radius  = str(atype_props[atp]['Radius'])
-                    row     = atype_props[atp]['Row']
                     if polarizable:
                         stype = atp + "_s"
                 atomNR = atype_props[atp]["AtomNR"]
