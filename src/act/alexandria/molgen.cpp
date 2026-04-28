@@ -505,7 +505,10 @@ void MolGen::checkDataSufficiency(MsgHandler *msghandler,
                 InteractionType::VSITE3FD,
                 InteractionType::VSITE3FAD,
                 InteractionType::VSITE3OUT,
-                InteractionType::VSITE3OUTS
+                InteractionType::VSITE3OUTS,
+                InteractionType::VSITE4,
+                InteractionType::VSITE4S,
+                InteractionType::VSITE4S3
             };
             for (const auto &atype : atypes)
             {

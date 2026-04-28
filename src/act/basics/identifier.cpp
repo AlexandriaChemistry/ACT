@@ -55,7 +55,8 @@ std::map<CanSwap, std::string> cs2string =
         { CanSwap::Idih,     "idih"     },
         { CanSwap::Linear,   "linear"   },
         { CanSwap::Vsite2,   "vsite2"   },
-        { CanSwap::Vsite3,   "vsite3"   }
+        { CanSwap::Vsite3,   "vsite3"   },
+        { CanSwap::Vsite4,   "vsite4"   }
     };
 
 CanSwap stringToCanSwap(const std::string &str)
