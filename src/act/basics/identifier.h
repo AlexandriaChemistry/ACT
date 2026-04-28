@@ -56,6 +56,8 @@ namespace alexandria
         Vsite2,
         //! Special case for vsite3
         Vsite3,
+        //! Special case for vsite4
+        Vsite4
     };
 
 /*! \brief Convert string to CanSwap
