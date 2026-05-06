@@ -412,6 +412,10 @@ static void importFile(MsgHandler                           *msg_handler,
                 {
                     iqtot = int(*qtot);
                 }
+                else
+                {
+                    iqtot = RDKit::MolOps::getFormalCharge(*mol2);
+                }
                 determineBonds(*mol2, false, iqtot);
             }
             else
