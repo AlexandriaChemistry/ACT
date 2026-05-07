@@ -16,4 +16,6 @@
     <String>c2</String>
     <String>h2</String>
   </Sequence>
+  <Int Name="fragment_charge_0">1</Int>
+  <Int Name="fragment_charge_1">-1</Int>
 </ReferenceData>
