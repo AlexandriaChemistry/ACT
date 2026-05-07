@@ -28,19 +28,83 @@
 
 #include <gtest/gtest.h>
 #include <map>
+#include <vector>
 
+#include "act/alexandria/actmol.h"
 #include "act/alexandria/devcomputer.h"
+#include "act/alexandria/molgen.h"
+#include "act/forcefield/forcefield_utils.h"
+#include "act/molprop/molprop_xml.h"
+
+#include "testutils/cmdlinetest.h"
+#include "testutils/refdata.h"
+#include "testutils/testasserts.h"
+#include "testutils/testfilemanager.h"
 
 namespace alexandria
 {
-namespace
-{
 
 // Test fixture for ForceEnergyDevComputer
-class ForceEnergyDevComputerTest : public ::testing::Test
+class ForceEnergyDevComputerTest : public gmx::test::CommandLineTestBase
 {
 protected:
     ForceEnergyDevComputerTest() = default;
+
+    void testCalcDev(const std::string      &mpFile,
+                     std::map<eRMS, double>  boltzmann)
+    {
+        gmx::test::TestReferenceChecker checker_(this->rootChecker());
+        ForceComputer           forceComputer;
+        MsgHandler              msghandler;
+        // Use next statement for debugging only
+        // msghandler.setPrintLevel(ACTStatus::Debug);
+        //! FF
+        auto pd = getForceField("ACS-g2");
+
+        //! Vector of molecule properties
+        std::vector<alexandria::MolProp>  mps;
+        MolPropRead(&msghandler, mpFile.c_str(), &mps);
+
+        ForceEnergyDevComputer  computer(boltzmann);
+        std::map<eRMS, FittingTarget> targets;
+        for(const auto &erms : boltzmann)
+        {
+            targets.insert({erms.first,
+                    FittingTarget(erms.first, iMolSelect::Train)});
+            targets.find(erms.first)->second.setWeight(1);
+        };
+
+        for(auto &mp : mps)
+        {
+            ACTMol actmol;
+            actmol.Merge(&mp);
+            actmol.GenerateTopology(&msghandler, pd, missingParameters::Ignore);
+            EXPECT_TRUE(msghandler.ok());
+            if (!msghandler.ok())
+            {
+                continue;
+            }
+            std::vector<gmx::RVec> forces(actmol.atomsConst().size());
+            std::vector<gmx::RVec> coords = actmol.xOriginal();
+            actmol.generateCharges(&msghandler, pd, &forceComputer,
+                                   pd->chargeGenerationAlgorithm(), &coords, &forces);
+            computer.calcDeviation(&msghandler,
+                                   &forceComputer,
+                                   &actmol,
+                                   &coords,
+                                   &targets,
+                                   pd);
+            for(const auto &t : targets)
+            {
+                std::string weight = gmx::formatString("%s-%s-weight",
+                                                     actmol.getMolname().c_str(), rmsName(t.first));
+                checker_.checkDouble(t.second.totalWeight(), weight.c_str());
+                std::string chi2 = gmx::formatString("%s-%s-chi2",
+                                                     actmol.getMolname().c_str(), rmsName(t.first));
+                checker_.checkDouble(t.second.chiSquared(), chi2.c_str());
+            }
+        }
+    }
 };
 
 // Test: Constructor initializes with correct name
@@ -56,7 +120,7 @@ TEST_F(ForceEnergyDevComputerTest, ConstructorWithEmptyBoltzmannMap)
 {
     std::map<eRMS, double> boltzmann;
     ForceEnergyDevComputer computer(boltzmann);
-    EXPECT_FALSE(computer.separateInductionCorrection());
+    EXPECT_TRUE(computer.separateInductionCorrection());
 }
 
 // Test: Constructor with non-empty Boltzmann map
@@ -68,7 +132,7 @@ TEST_F(ForceEnergyDevComputerTest, ConstructorWithNonEmptyBoltzmannMap)
     
     ForceEnergyDevComputer computer(boltzmann);
     EXPECT_EQ("ForceEnergy", computer.name());
-    EXPECT_FALSE(computer.separateInductionCorrection());
+    EXPECT_TRUE(computer.separateInductionCorrection());
 }
 
 // Test: setSeparateInductionCorrection and separateInductionCorrection methods
@@ -180,5 +244,60 @@ TEST_F(ForceEnergyDevComputerTest, NegativeBoltzmannTemperature)
     EXPECT_EQ("ForceEnergy", computer.name());
 }
 
-} // namespace
+// Test: CalcDeviation for monomer without Boltzmann weighting
+TEST_F(ForceEnergyDevComputerTest, CalcDevMonomerNoBoltz)
+{
+    std::map<eRMS, double> boltzmann;
+    for(const auto erms : { eRMS::EPOT,
+                            eRMS::Force2 })
+    {
+        boltzmann.insert({erms, 0.0});
+    }
+    std::string mpFile = fileManager().getInputFilePath("../../molprop/tests/molprop.xml");
+    testCalcDev(mpFile, boltzmann);
+}
+
+// Test: CalcDeviation for dimer without Boltzmann weighting
+TEST_F(ForceEnergyDevComputerTest, CalcDevDimerNoBoltz)
+{
+    std::map<eRMS, double> boltzmann;
+    for(const auto erms : { eRMS::Interaction,
+                            eRMS::Electrostatics,
+                            eRMS::Dispersion,
+                            eRMS::Exchange })
+    {
+        boltzmann.insert({erms, 0.0});
+    }
+    std::string mpFile = fileManager().getInputFilePath("mpdimer.xml");
+    testCalcDev(mpFile, boltzmann);
+}
+
+// Test: CalcDeviation for monomer with Boltzmann weighting
+TEST_F(ForceEnergyDevComputerTest, CalcDevMonomerBoltz)
+{
+    std::map<eRMS, double> boltzmann;
+    for(const auto erms : { eRMS::EPOT,
+                            eRMS::Force2 })
+    {
+        boltzmann.insert({erms, 500.0});
+    }
+    std::string mpFile = fileManager().getInputFilePath("../../molprop/tests/molprop.xml");
+    testCalcDev(mpFile, boltzmann);
+}
+
+// Test: CalcDeviation for dimer with Boltzmann weighting
+TEST_F(ForceEnergyDevComputerTest, CalcDevDimerBoltz)
+{
+    std::map<eRMS, double> boltzmann;
+    for(const auto erms : { eRMS::Interaction,
+                            eRMS::Electrostatics, 
+                            eRMS::Dispersion,
+                            eRMS::Exchange })
+    {
+        boltzmann.insert({erms, 500.0});
+    }
+    std::string mpFile = fileManager().getInputFilePath("mpdimer.xml");
+    testCalcDev(mpFile, boltzmann);
+}
+
 } // namespace alexandria

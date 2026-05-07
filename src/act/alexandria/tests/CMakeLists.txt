@@ -43,6 +43,7 @@ gmx_add_unit_test(
     actmolLowTest.cpp
     allbondedsTest.cpp
     confighandlerTest.cpp
+    devcomputerTest.cpp
     forcecomputerTest.cpp
     molhandlerTest.cpp
     molselectTest.cpp
