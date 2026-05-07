@@ -54,6 +54,8 @@ protected:
                      std::map<eRMS, double>  boltzmann)
     {
         gmx::test::TestReferenceChecker checker_(this->rootChecker());
+        auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, 1e-12);
+        checker_.setDefaultTolerance(tolerance);
         ForceComputer           forceComputer;
         MsgHandler              msghandler;
         // Use next statement for debugging only
