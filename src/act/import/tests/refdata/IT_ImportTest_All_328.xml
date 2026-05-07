@@ -9,4 +9,6 @@
     <String>Na+</String>
     <String>Cl-</String>
   </Sequence>
+  <Int Name="fragment_charge_0">1</Int>
+  <Int Name="fragment_charge_1">-1</Int>
 </ReferenceData>

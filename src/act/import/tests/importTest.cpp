@@ -111,6 +111,16 @@ public:
             {
                 checker_.checkInteger(static_cast<int>(atypes.size()), molname.c_str());
                 checker_.checkSequence(atypes.begin(), atypes.end(), "atomtypes");
+                // Check for fragment charges in case of dimers
+                auto fragments = molprop.fragments();
+                if (fragments.size() == 2)
+                {
+                    for(int i = 0; i < 2; ++i)
+                    {
+                        std::string qi = gmx::formatString("fragment_charge_%d", i);
+                        checker_.checkInteger(fragments[i].charge(), qi.c_str());
+                    }
+                }
             }
             else
             {
