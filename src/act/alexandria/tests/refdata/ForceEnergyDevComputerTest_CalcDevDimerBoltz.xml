@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Real Name="1-propanol#ethane-Interaction-weight">26.155032288093683</Real>
+  <Real Name="1-propanol#ethane-Interaction-chi2">432.61400108521372</Real>
+  <Real Name="1-propanol#ethane-Electrostatics-weight">26.155032288093683</Real>
+  <Real Name="1-propanol#ethane-Electrostatics-chi2">107.50083911113248</Real>
+  <Real Name="1-propanol#ethane-Exchange-weight">26.155032288093683</Real>
+  <Real Name="1-propanol#ethane-Exchange-chi2">1407.0553074279792</Real>
+  <Real Name="1-propanol#ethane-Dispersion-weight">26.155032288093683</Real>
+  <Real Name="1-propanol#ethane-Dispersion-chi2">2015.6342723170442</Real>
+  <Real Name="guanidinium#water-Interaction-weight">31.914250754192224</Real>
+  <Real Name="guanidinium#water-Interaction-chi2">3908.1683093757729</Real>
+  <Real Name="guanidinium#water-Electrostatics-weight">31.914250754192224</Real>
+  <Real Name="guanidinium#water-Electrostatics-chi2">2463.4785235881182</Real>
+  <Real Name="guanidinium#water-Exchange-weight">31.914250754192224</Real>
+  <Real Name="guanidinium#water-Exchange-chi2">1549.7162398487021</Real>
+  <Real Name="guanidinium#water-Dispersion-weight">31.914250754192224</Real>
+  <Real Name="guanidinium#water-Dispersion-chi2">2090.039351223028</Real>
+  <Real Name="water#1-butanol-Interaction-weight">40.316442431110964</Real>
+  <Real Name="water#1-butanol-Interaction-chi2">4244.2823096026241</Real>
+  <Real Name="water#1-butanol-Electrostatics-weight">40.316442431110964</Real>
+  <Real Name="water#1-butanol-Electrostatics-chi2">2757.2191533689775</Real>
+  <Real Name="water#1-butanol-Exchange-weight">40.316442431110964</Real>
+  <Real Name="water#1-butanol-Exchange-chi2">1834.559552915123</Real>
+  <Real Name="water#1-butanol-Dispersion-weight">40.316442431110964</Real>
+  <Real Name="water#1-butanol-Dispersion-chi2">2298.0735892872044</Real>
+</ReferenceData>

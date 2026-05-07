@@ -77,6 +77,10 @@
         <average>-613752</average>
         <error>0.000</error>
       </energy>
+      <energy type="DeltaE0" unit="kJ/mol" temperature="0" phase="gas">
+        <average>-20</average>
+        <error>0.000</error>
+      </energy>
       <potential coord_unit="pm" potential_unit="Hartree/e" espid="1">
         <x>-251.549</x>
         <y>-29.4747</y>
@@ -27947,6 +27951,10 @@
         <xz>0.000</xz>
         <yz>0.000</yz>
       </polarizability>
+      <energy type="DeltaE0" unit="kJ/mol" temperature="0" phase="gas">
+        <average>-9</average>
+        <error>0.000</error>
+      </energy>
       <energy type="HF" unit="kJ/mol" temperature="0" phase="gas">
         <average>-609793</average>
         <error>0.000</error>
@@ -28150,6 +28158,10 @@
         <xz>-0.000</xz>
         <yz>-0.000</yz>
       </polarizability>
+      <energy type="DeltaE0" unit="kJ/mol" temperature="0" phase="gas">
+        <average>-12</average>
+        <error>0.000</error>
+      </energy>
       <energy type="HF" unit="kJ/mol" temperature="0" phase="gas">
         <average>-507342</average>
         <error>0.000</error>
@@ -50542,6 +50554,10 @@
         <xz>-0.000</xz>
         <yz>-0.000</yz>
       </polarizability>
+      <energy type="DeltaE0" unit="kJ/mol" temperature="0" phase="gas">
+        <average>-20</average>
+        <error>0.000</error>
+      </energy>
       <energy type="HF" unit="kJ/mol" temperature="0" phase="gas">
         <average>-200762</average>
         <error>0.000</error>
@@ -61880,6 +61896,10 @@
         <xz>-0.000</xz>
         <yz>0.000</yz>
       </polarizability>
+      <energy type="DeltaE0" unit="kJ/mol" temperature="0" phase="gas">
+        <average>-19</average>
+        <error>0.000</error>
+      </energy>
       <energy type="HF" unit="kJ/mol" temperature="0" phase="gas">
         <average>-199713</average>
         <error>0.000</error>

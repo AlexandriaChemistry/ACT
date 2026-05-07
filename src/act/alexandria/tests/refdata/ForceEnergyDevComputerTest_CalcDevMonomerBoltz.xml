@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Real Name="1-butanol-EPOT-weight">1.070934964765049</Real>
+  <Real Name="1-butanol-EPOT-chi2">1614.0655435685412</Real>
+  <Real Name="1-butanol-Force2-weight">0</Real>
+  <Real Name="1-butanol-Force2-chi2">0</Real>
+  <Real Name="acetone-EPOT-weight">2.070934964765049</Real>
+  <Real Name="acetone-EPOT-chi2">1641.7974407723041</Real>
+  <Real Name="acetone-Force2-weight">0</Real>
+  <Real Name="acetone-Force2-chi2">0</Real>
+  <Real Name="water-EPOT-weight">3.8571344583808091</Real>
+  <Real Name="water-EPOT-chi2">2382.1009107264945</Real>
+  <Real Name="water-Force2-weight">0</Real>
+  <Real Name="water-Force2-chi2">0</Real>
+</ReferenceData>
