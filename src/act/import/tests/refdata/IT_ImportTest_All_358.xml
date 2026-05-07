@@ -9,4 +9,6 @@
     <String>Ar</String>
     <String>Kr</String>
   </Sequence>
+  <Int Name="fragment_charge_0">0</Int>
+  <Int Name="fragment_charge_1">0</Int>
 </ReferenceData>
