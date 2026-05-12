@@ -235,7 +235,9 @@ std::vector<std::tuple<std::string, double>> get_files()
         { "helium-4.sdf", 0 },
         { "argon-krypton.sdf", 0 },
         { "phosphor-hexafluoride.pdb", -1 },
-        { "boron-tetrafluoride.pdb", -1 }
+        { "boron-tetrafluoride.pdb", -1 },
+        { "3-bromophenol.sdf", 0 },
+        { "3-bromophenol-sodium.sdf", 1 }
     };
 }
 

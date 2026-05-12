@@ -494,7 +494,7 @@ message("Boost_FOUND : ${Boost_FOUND}")
 include_directories(${Boost_INCLUDE_DIRS})
 
 # These are the necessary RDKit libraries
-set(rdkitlibs RDGeneral SmilesParse FileParsers GraphMol Inchi RDInchiLib SubstructMatch SubstructLibrary GeneralizedSubstruct  FilterCatalog DetermineBonds )
+set(rdkitlibs RDGeneral SmilesParse FileParsers GraphMol Inchi RDInchiLib SubstructMatch SubstructLibrary GeneralizedSubstruct  FilterCatalog DetermineBonds Descriptors )
 
 # Because RDKit did not yet updated their cmake config for this
 cmake_policy(SET CMP0167 NEW)
