@@ -43,7 +43,6 @@
 #include "act/alexandria/actmol.h"
 #include "act/alexandria/alex_modules.h"
 #include "act/alexandria/allbondeds.h"
-#include "act/alexandria/dissociation_energy.h"
 #include "act/alexandria/train_utility.h"
 #include "act/basics/identifier.h"
 #include "act/forcefield/forcefield_xml.h"
@@ -155,17 +154,14 @@ int geometry_ff(int argc, char *argv[])
     std::vector<const char *> desc = {
         "geometry_ff read a series of molecules and extracts average geometries from",
         "those. First atomtypes are determined and then bond-lengths, bond-angles",
-        "and dihedral angles are extracted. The results are stored in the updated force field file (aff_out.xml).[PAR]",
-        "The program can also generate (quite) realistic dissociation energies from",
-        "experimental or QM data when the [TT]-dissoc[tt] option is given." 
+        "and dihedral angles are extracted. The results are stored in the updated force field file (aff_out.xml).[PAR]"
     };
 
     std::vector<t_filenm> fnm = {
         { efXML, "-mp",  "allmols",      ffRDMULT },
         { efXML, "-ff",  "aff",          ffOPTRD },
         { efXML, "-o",   "aff_out",      ffWRITE },
-        { efDAT, "-sel", "molselect",    ffOPTRD },
-        { efCSV, "-de",  "dissociation", ffOPTWR }
+        { efDAT, "-sel", "molselect",    ffOPTRD }
     };
 
     static real                      delta_eta    = 5;
@@ -175,18 +171,12 @@ int geometry_ff(int argc, char *argv[])
     static gmx_bool                  bHisto      = false;
     static gmx_bool                  bBondOrder  = true;
     static gmx_bool                  genBCC      = true;
-    static gmx_bool                  bDissoc     = false;
     static gmx_bool                  strict      = true;
-    static gmx_bool                  bQM         = true;
     std::vector<t_pargs> pa = {
         { "-strict", FALSE, etBOOL, {&strict},
           "Whether or not to be pedantic about the level of theory" },
         { "-maxwarn", FALSE, etINT, {&maxwarn},
           "Will only write output if number of warnings is at most this." },
-        { "-dissoc",  FALSE, etBOOL, {&bDissoc},
-          "Derive dissociation energy from the enthalpy of formation. If not chosen, the dissociation energy will be read from the aff.xml file." },
-        { "-qm", FALSE, etBOOL, {&bQM},
-          "Usa data from quantum chemistry to determine the dissociation energies." },
         { "-bootstrap", FALSE, etINT, {&nBootStrap},
           "Use bootstrap analysis for determining the uncertainty in the dissocation energy. If the value is less than 2 no bootstrapping will be done." },
         { "-histo", FALSE, etBOOL, {&bHisto},
@@ -296,18 +286,6 @@ int geometry_ff(int argc, char *argv[])
         generate_bcc(&pd, delta_eta);
     }
     msghandler.writeDebug(memory_usage());
-    if (bDissoc)
-    {
-        iqmType iqm = iqmType::Exp;
-        if (bQM)
-        {
-            iqm = iqmType::QM;
-        }
-        double rmsd = getDissociationEnergy(&msghandler, &pd, &actmols, iqm,
-                                            opt2fn_null("-de",  fnm.size(), fnm.data()), 
-                                            nBootStrap);
-        tw->writeStringFormatted("Root mean square deviation %.1f kJ/mol\n", rmsd);
-    }
     pd.updateTimeStamp();
     pd.updateCheckSum();
     writeForceField(opt2fn("-o", fnm.size(), fnm.data()), &pd, compress);
