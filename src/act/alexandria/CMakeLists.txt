@@ -41,7 +41,6 @@ target_sources(actLib
            bayes.cpp
            confighandler.cpp
            devcomputer.cpp
-           dissociation_energy.cpp
            fragmenthandler.cpp
            gentop.cpp
            geometry_ff.cpp
