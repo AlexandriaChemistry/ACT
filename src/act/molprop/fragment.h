@@ -139,10 +139,16 @@ class Fragment
     
     //! Return the multiplicity
     int multiplicity() const { return multiplicity_; }
-    
+
+    //! Set the multiplicity
+    void setMultiplicity(int mult) { multiplicity_ = mult; }
+
     //! Return the symmetry number
     int symmetryNumber() const { return symmetryNumber_; } 
-    
+
+    //! Set the symmetry number
+    void setSymmetryNumber(int number) { symmetryNumber_ = number; }
+
     //! Return the formula
     const std::string &formula() const { return formula_; }
 
