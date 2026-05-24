@@ -71,21 +71,33 @@ bool VolumeFractionPenalizer::penalize(gmx::TextWriter *tw,
                                        GenePool        *pool,
                                        const int        generation)
 {
-    // Get the volume of the population
-    const double poolVolume = getPoolVolume(*pool);
-    const double volFrac_ = poolVolume/totalVolume_;
+    bool   tooSmall;
+    double poolVol = getPoolVolume(*pool);
+    double volFrac;
+    if (logVolume_)
+    {
+        // Get the volume of the population
+        volFrac  = std::exp(poolVol - totalVolume_);
+        tooSmall = (poolVol - totalVolume_) < std::log(volFracLimit_);
+    }
+    else
+    {
+        volFrac  = (poolVol / totalVolume_);
+        tooSmall = volFrac < volFracLimit_;
+    }
+
     // Print to output file
-    fprintf(outfile_, "%d %lf %lf\n", generation, poolVolume, volFrac_);
-    if (volFrac_ < volFracLimit_)
+    fprintf(outfile_, "%d %lf %lf\n", generation, poolVol, volFrac);
+    if (tooSmall)
     {
         if (tw)
         {
-            tw->writeStringFormatted("Generation %d -> VolumeFractionPenalizer %s: population volume is %g, total volume is %g, fraction %g is below the limit %g, thus randomizing the worst %g%% of genomes...\n",
+            tw->writeStringFormatted("Generation %d -> VolumeFractionPenalizer %s: population volume is %g, total volume is %g. Fraction %g is below the limit %g, thus randomizing the worst %g%% of genomes...\n",
                                      generation,
                                      logVolume_ ? "(log scale)" : "",
-                                     poolVolume,
+                                     poolVol,
                                      totalVolume_,
-                                     volFrac_,
+                                     volFrac,
                                      volFracLimit_,
                                      popFrac_ * 100
                                      );
@@ -110,7 +122,7 @@ bool VolumeFractionPenalizer::penalize(gmx::TextWriter *tw,
 
 double VolumeFractionPenalizer::getPoolVolume(const GenePool &pool) const
 {
-    double volume = 1;
+    double volume = 0;
     for (size_t i = 0; i < pool.genomeSize(); i++)  // For each parameter
     {
         double maximum = std::numeric_limits<double>::min();
@@ -126,13 +138,9 @@ double VolumeFractionPenalizer::getPoolVolume(const GenePool &pool) const
                 minimum = genome.base(i);
             }
         }
-        volume *= maximum - minimum;
+        volume += std::log(maximum - minimum);
     }
-    GMX_RELEASE_ASSERT(
-        volume >= 0,
-        "VolumeFractionPenalizer: the volume of the population is negative. Something went really wrong"
-    );
-    return logVolume_ ? log(volume) : volume;
+    return logVolume_ ? volume : std::exp(volume);
 }
 
 VolumeFractionPenalizer::~VolumeFractionPenalizer()

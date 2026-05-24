@@ -670,12 +670,12 @@ void StaticIndividualInfo::makeIndividualDir()
 
 double StaticIndividualInfo::getParamSpaceVolume(const bool logScale) const
 {
-    double aggregate = 1;
+    double aggregate = 0;
     for (size_t i = 0; i < nParam(); i++)
     {
-        aggregate *= upperBound_[i] - lowerBound_[i];
+        aggregate += std::log(upperBound_[i] - lowerBound_[i]);
     }
-    return logScale ? log(aggregate) : aggregate;
+    return logScale ? aggregate : std::exp(aggregate);
 }
 
 /* * * * * * * * * * * * * * * * * * * * * *
