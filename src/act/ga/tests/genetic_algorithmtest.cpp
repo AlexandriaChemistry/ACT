@@ -47,6 +47,7 @@
 #include "act/alexandria/molgen.h"
 #include "act/alexandria/molselect.h"
 #include "act/alexandria/percentmutator.h"
+#include "act/basics/msg_handler.h"
 #include "act/forces/forcecomputer.h"
 #include "act/ga/fitness_computer.h"
 #include "act/ga/genetic_algorithm.h"
@@ -115,7 +116,11 @@ class GeneticAlgorithmTest : public gmx::test::CommandLineTestBase
             cr.init(nmiddlemen);
             gmx_output_env_t    *oenv;
             output_env_init_default(&oenv);
-            
+
+            // Message Handler
+            alexandria::MsgHandler msghandler;
+            msghandler.setPrintLevel(alexandria::ACTStatus::Warning);
+
             // Create static individual
             alexandria::StaticIndividualInfo sii(&cr);
             std::string ffName("ACS-g.xml");
@@ -135,7 +140,7 @@ class GeneticAlgorithmTest : public gmx::test::CommandLineTestBase
                 molgen.addFitOption(fs);
             }
             //! \todo  check return value
-            (void) molgen.Read(nullptr, mpDataName.c_str(), sii.forcefield(),
+            (void) molgen.Read(&msghandler, mpDataName.c_str(), sii.forcefield(),
                                gms, sii.fittingTargetsConst(iMolSelect::Train),
                                false);
             // Continue filling the shared individual
@@ -273,7 +278,7 @@ class GeneticAlgorithmTest : public gmx::test::CommandLineTestBase
                 checker_.checkReal(gach.prMut(), "Probability for Mutation");
                 const auto imstr = iMolSelect::Train;
                 std::map<iMolSelect, Genome> bestGenome;
-                ga->evolve(&bestGenome);
+                ga->evolve(&msghandler, &bestGenome);
                 Genome best = bestGenome.find(imstr)->second;
                 checker_.checkReal(best.fitness(imstr), "Training fitness");
                 if (cr.nmiddlemen() > 1)  // If we have more middlemen than the master, stop them
@@ -306,16 +311,20 @@ class GeneticAlgorithmTest : public gmx::test::CommandLineTestBase
             else if (cr.isMiddleMan())
             {
                 // Run middleman-like code.
-                alexandria::ACTMiddleMan middleman(&molgen, 
+                alexandria::ACTMiddleMan middleman(&msghandler, &molgen, 
                                                    &sii, &gach, &bch,
                                                    false, oenv, false);
-                middleman.run();
+                middleman.run(&msghandler);
             }
             else if (cr.isHelper())
             {
                 // Run helper-like code
-                alexandria::ACTHelper helper(&sii, &molgen);
-                helper.run();
+                alexandria::ACTHelper helper(&msghandler, &sii, &molgen,
+                                             shellToler, shellMaxIter,
+                                             sii.forcefield()->chargeGenerationAlgorithm());
+                double shellToler = 1e-6;
+                int    shellMaxIter = 25;
+                helper.run(&msghandler);
             }
         }
     
