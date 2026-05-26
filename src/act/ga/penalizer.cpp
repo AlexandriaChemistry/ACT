@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2021-2025
+ * Copyright (C) 2021-2026
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -74,15 +74,20 @@ bool VolumeFractionPenalizer::penalize(gmx::TextWriter *tw,
     bool   tooSmall;
     double poolVol = getPoolVolume(*pool);
     double volFrac;
+    size_t nParam  = pool->genePool()[0].bases().size();
+    if (nParam == 0)
+    {
+        return false;
+    }
     if (logVolume_)
     {
         // Get the volume of the population
         volFrac  = std::exp(poolVol - totalVolume_);
-        tooSmall = (poolVol - totalVolume_) < std::log(volFracLimit_);
+        tooSmall = (poolVol - totalVolume_) < nParam * std::log(volFracLimit_);
     }
     else
     {
-        volFrac  = (poolVol / totalVolume_);
+        volFrac  = std::pow(poolVol / totalVolume_, 1.0/nParam);
         tooSmall = volFrac < volFracLimit_;
     }
 

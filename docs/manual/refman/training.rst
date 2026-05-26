@@ -41,7 +41,7 @@ Now, let us add some more detail to the algorithm.
 --------------------
 Metropolis Criterion
 --------------------
-If Mathematics is your thing and you {\em really} want to know the nitty-gritty stuff, you have thorough explanations of this method on \href{https://en.wikipedia.org/wiki/Metropolis%E2%80%93Hastings_algorithm}{Wikipedia} and Shuyi Qin's Master thesis :cite:p:`Qin2021a`.
+If Mathematics is your thing and you *really* want to know the nitty-gritty stuff, you have thorough explanations of this method on \href{https://en.wikipedia.org/wiki/Metropolis%E2%80%93Hastings_algorithm}{Wikipedia} and Shuyi Qin's Master thesis :cite:p:`Qin2021a`.
 Here, we shall say that the Metropolis Criterion allows us to take steps that do not get us closer to a minimum, giving the opportunity to explore the parameter space and avoid local minima. How exactly?
 
 The probability of accepting a "bad" parameter change is controlled by the flag *-temp T* flag and follows the equation
@@ -139,11 +139,31 @@ To that end, we have a function `penalize()` which returns `true` if the populat
 
 For now, there are two components in this function:
 
-* **Volume.** This option enables flag *-sort*. If the volume spanned by the population divided by the total volume of the parameter space is smaller than flag *-vfp_vol_frac_limit [0, 1]|*, the {\em worst} fraction flag *-vfp_pop_frac [0, 1]* of genomes in the population will be randomly reinitialized. If flag *-log_volume* is used, volumes will be computed in logarithmic scale. * But wait, then the volume could be negative! Yes, we have to fix that!*
-    
-  | Death comes equally to us all, and makes us all equal when it comes. - John Donne
-  
 * **Catastrophe.** Each flag *-cp_gen_interval* generations, a fraction flag *-cp_pop_frac [0, 1]* of the genomes in the population will be randomly reinitialized. Genomes to reinitialize are arbitrarily chosen.
+
+* **Volume.** This option enables flag *-sort*.
+
+If there are N parameters p\ :sub:`i`\, the population volume is computed as
+
+.. math:: V_{pop} = \prod_{i=1}^N [MAX(p_i) - MIN(p_i)]
+
+where *MAX* and *MIN* retrieve the maximum and minimum values for each parameter in the population.
+If flag *-log_volume* is used, the volume will be computed in logarithmic scale
+
+.. math:: log V_{pop} = \sum_{i=1}^N log[MAX(p_i) - MIN(p_i)]
+
+The total volume V\ :sub:`tot`\  is computed in a similar manner, based on the bounds in the force field.
+Then, if the volume spanned by the population divided by the total volume of the parameter space, or
+
+.. math:: \left[\frac{V_{pop}}{V_{tot}}\right]^{1/N} < x
+
+where x is given by flag *-vfp_vol_frac_limit (0, 1]*, the *worst* fraction flag *-vfp_pop_frac [0, 1)* of genomes in the population will be randomly reinitialized. In log notation
+
+.. math:: \frac{1}{N}\left[log V_{pop} - log V_{tot}\right] < log x
+
+or, to summarize it...
+
+  | Death comes equally to us all, and makes us all equal when it comes. - John Donne
 
 
 -----------------------
@@ -197,7 +217,7 @@ The `temperature` parameter is specified by the flag *-boltz_temp* flag and cont
 -------
 Elitism
 -------
-In order to avoid losing the best candidate solutions found so far, the GA will move the top nElites flag *-n_elites* genomes, {\em unchanged}, into the new population. That means, the genome will not undergo crossover nor mutation.
+In order to avoid losing the best candidate solutions found so far, the GA will move the top nElites flag *-n_elites* genomes, *unchanged*, into the new population. That means, the genome will not undergo crossover nor mutation.
 
 When flag *-n_elites > 0*, flag *-sort* will be enabled.
 
