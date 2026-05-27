@@ -2,6 +2,8 @@
 Interactive Notebooks
 #####################
 
+.. _sec-charges:
+
 **************
 Charge Methods
 **************

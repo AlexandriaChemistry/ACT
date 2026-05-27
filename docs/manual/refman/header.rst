@@ -7,6 +7,7 @@ Reference Manual
 
    energy
    training
+   fitness
    sensitivity
    ffdesign
    targets
