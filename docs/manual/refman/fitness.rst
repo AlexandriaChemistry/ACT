@@ -115,9 +115,9 @@ Bounds Penalty
 A bounds penalty can be applied to charges when the mutability is ACM (Table :ref:`tab-mutability`). In that case the penalty V(q) is
 
 .. math:: V(q) = \begin{split}
-   & (q - q_{min})^2 & \hskip2em\mathrm{if}\hskip1em q < q_{min}\\
-   & (q - q_{max})^2 & \hskip2em\mathrm{if}\hskip1em q > q_{max}\\
-   & 0               & \hskip2em\mathrm{else}
+   & (q - q_{min})^2 & \,\,\mathrm{if}   &\,q < q_{min}\\
+   & (q - q_{max})^2 & \,\,\mathrm{if}   &\,q > q_{max}\\
+   & 0               & \,\,\mathrm{else} & \\
    \end{split}
 
 Importantly, if a point+distributed model is used :cite:p:`Spoel2025a`, then the sum of these charges is used as the target q. So if your force field specifies::
