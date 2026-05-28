@@ -53,18 +53,21 @@ VolumeFractionPenalizer::VolumeFractionPenalizer(      gmx_output_env_t  *oenv,
 : logVolume_(logVolume), totalVolume_(totalVolume),
   volFracLimit_(volFracLimit), popFrac_(popFrac), initializer_(initializer)
 {
-    outfile_ = xvgropen(
-       logVolume ? "vfp_log_volume.xvg" : "vfp_volume.xvg",
-       "",
-       "generation",
-       logVolume ? "log_volume" : "volume",
-       oenv
-    );
-    std::vector<const char*> tmpParamNames = {
-        logVolume ? "pop_log_volume" : "pop_volume",
-        "volume_fraction"
-    };
-    xvgr_legend(outfile_, tmpParamNames.size(), tmpParamNames.data(), oenv);
+    if (oenv)
+    {
+        outfile_ = xvgropen(
+                            logVolume ? "vfp_log_volume.xvg" : "vfp_volume.xvg",
+                            "",
+                            "generation",
+                            logVolume ? "log_volume" : "volume",
+                            oenv
+                            );
+        std::vector<const char*> tmpParamNames = {
+            logVolume ? "pop_log_volume" : "pop_volume",
+            "volume_fraction"
+        };
+        xvgr_legend(outfile_, tmpParamNames.size(), tmpParamNames.data(), oenv);
+    }
 }
 
 bool VolumeFractionPenalizer::penalize(gmx::TextWriter *tw,
@@ -92,7 +95,10 @@ bool VolumeFractionPenalizer::penalize(gmx::TextWriter *tw,
     }
 
     // Print to output file
-    fprintf(outfile_, "%d %lf %lf\n", generation, poolVol, volFrac);
+    if (outfile_)
+    {
+        fprintf(outfile_, "%d %lf %lf\n", generation, poolVol, volFrac);
+    }
     if (tooSmall)
     {
         if (tw)
@@ -150,7 +156,10 @@ double VolumeFractionPenalizer::getPoolVolume(const GenePool &pool) const
 
 VolumeFractionPenalizer::~VolumeFractionPenalizer()
 {
-    xvgrclose(outfile_);
+    if (outfile_)
+    {
+        xvgrclose(outfile_);
+    }
 }
 
 /* * * * * * * * * * * * * * * * * * * * * *

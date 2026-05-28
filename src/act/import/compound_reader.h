@@ -96,6 +96,9 @@ namespace alexandria
         //! \return whether there is one H only
         bool oneH() const { return oneH_; }
 
+        //! Set the oneH variable
+        void setOneH(bool oneH) { oneH_ = oneH; }
+
         //! \return the charge to read
         const char *qread() const { return qqm_; }
 
