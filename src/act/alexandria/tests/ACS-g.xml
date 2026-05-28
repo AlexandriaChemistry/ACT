@@ -3288,6 +3288,41 @@
       <parameter type="mult" unit="" value="3" uncertainty="0" minimum="3" maximum="3" ntrain="1" mutability="Fixed" nonnegative="yes"/>
       <parameter type="phi0" unit="degree" value="0" uncertainty="0" minimum="0" maximum="360" ntrain="2" mutability="Bounded" nonnegative="yes"/>
     </parameterlist>
+    <parameterlist identifier="h_b~o3_b~c3_b~h_b">
+      <parameter type="kp" unit="kJ/mol" value="5" uncertainty="0" minimum="2.5" maximum="10" ntrain="1" mutability="Bounded" nonnegative="yes"/>
+      <parameter type="mult" unit="" value="3" uncertainty="0" minimum="3" maximum="3" ntrain="1" mutability="Fixed" nonnegative="yes"/>
+      <parameter type="phi0" unit="degree" value="0" uncertainty="0" minimum="0" maximum="360" ntrain="2" mutability="Bounded" nonnegative="yes"/>
+    </parameterlist>
+    <parameterlist identifier="h_b~o3_b~c3_b~c3_b">
+      <parameter type="kp" unit="kJ/mol" value="5" uncertainty="0" minimum="2.5" maximum="10" ntrain="1" mutability="Bounded" nonnegative="yes"/>
+      <parameter type="mult" unit="" value="3" uncertainty="0" minimum="3" maximum="3" ntrain="1" mutability="Fixed" nonnegative="yes"/>
+      <parameter type="phi0" unit="degree" value="0" uncertainty="0" minimum="0" maximum="360" ntrain="2" mutability="Bounded" nonnegative="yes"/>
+    </parameterlist>
+    <parameterlist identifier="h_b~c3_b~c3_b~h_b">
+      <parameter type="kp" unit="kJ/mol" value="5" uncertainty="0" minimum="2.5" maximum="10" ntrain="1" mutability="Bounded" nonnegative="yes"/>
+      <parameter type="mult" unit="" value="3" uncertainty="0" minimum="3" maximum="3" ntrain="1" mutability="Fixed" nonnegative="yes"/>
+      <parameter type="phi0" unit="degree" value="0" uncertainty="0" minimum="0" maximum="360" ntrain="2" mutability="Bounded" nonnegative="yes"/>
+    </parameterlist>
+    <parameterlist identifier="h_b~c3_b~c3_b~c3_b">
+      <parameter type="kp" unit="kJ/mol" value="5" uncertainty="0" minimum="2.5" maximum="10" ntrain="1" mutability="Bounded" nonnegative="yes"/>
+      <parameter type="mult" unit="" value="3" uncertainty="0" minimum="3" maximum="3" ntrain="1" mutability="Fixed" nonnegative="yes"/>
+      <parameter type="phi0" unit="degree" value="0" uncertainty="0" minimum="0" maximum="360" ntrain="2" mutability="Bounded" nonnegative="yes"/>
+    </parameterlist>
+    <parameterlist identifier="o3_b~c3_b~c3_b~c3_b">
+      <parameter type="kp" unit="kJ/mol" value="5" uncertainty="0" minimum="2.5" maximum="10" ntrain="1" mutability="Bounded" nonnegative="yes"/>
+      <parameter type="mult" unit="" value="3" uncertainty="0" minimum="3" maximum="3" ntrain="1" mutability="Fixed" nonnegative="yes"/>
+      <parameter type="phi0" unit="degree" value="0" uncertainty="0" minimum="0" maximum="360" ntrain="2" mutability="Bounded" nonnegative="yes"/>
+    </parameterlist>
+    <parameterlist identifier="c3_b~c3_b~c3_b~c3_b">
+      <parameter type="kp" unit="kJ/mol" value="5" uncertainty="0" minimum="2.5" maximum="10" ntrain="1" mutability="Bounded" nonnegative="yes"/>
+      <parameter type="mult" unit="" value="3" uncertainty="0" minimum="3" maximum="3" ntrain="1" mutability="Fixed" nonnegative="yes"/>
+      <parameter type="phi0" unit="degree" value="0" uncertainty="0" minimum="0" maximum="360" ntrain="2" mutability="Bounded" nonnegative="yes"/>
+    </parameterlist>
+    <parameterlist identifier="h_b~c3_b~c3_b~o3_b">
+      <parameter type="kp" unit="kJ/mol" value="5" uncertainty="0" minimum="2.5" maximum="10" ntrain="1" mutability="Bounded" nonnegative="yes"/>
+      <parameter type="mult" unit="" value="3" uncertainty="0" minimum="3" maximum="3" ntrain="1" mutability="Fixed" nonnegative="yes"/>
+      <parameter type="phi0" unit="degree" value="0" uncertainty="0" minimum="0" maximum="360" ntrain="2" mutability="Bounded" nonnegative="yes"/>
+    </parameterlist>
     <parameterlist identifier="h_b~c2_b:c2_b:o2_b">
       <parameter type="kp" unit="kJ/mol" value="5" uncertainty="0" minimum="2.5" maximum="10" ntrain="1" mutability="Bounded" nonnegative="yes"/>
       <parameter type="mult" unit="" value="3" uncertainty="0" minimum="3" maximum="3" ntrain="1" mutability="Fixed" nonnegative="yes"/>

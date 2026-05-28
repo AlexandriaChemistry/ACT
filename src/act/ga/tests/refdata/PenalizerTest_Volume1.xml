@@ -1,0 +1,80 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <GenePool Name="Before">
+    <Gene Name="0">
+      <Sequence Name="Before">
+        <Int Name="Length">3</Int>
+        <Real>3</Real>
+        <Real>3.8999999999999999</Real>
+        <Real>6.7999999999999998</Real>
+      </Sequence>
+      <Real Name="Fitness_0">0</Real>
+    </Gene>
+    <Gene Name="1">
+      <Sequence Name="Before">
+        <Int Name="Length">3</Int>
+        <Real>4.5999999999999996</Real>
+        <Real>0.29999999999999999</Real>
+        <Real>12.699999999999999</Real>
+      </Sequence>
+      <Real Name="Fitness_1">1</Real>
+    </Gene>
+    <Gene Name="2">
+      <Sequence Name="Before">
+        <Int Name="Length">3</Int>
+        <Real>5.7999999999999998</Real>
+        <Real>14</Real>
+        <Real>-3</Real>
+      </Sequence>
+      <Real Name="Fitness_2">2</Real>
+    </Gene>
+    <Gene Name="3">
+      <Sequence Name="Before">
+        <Int Name="Length">3</Int>
+        <Real>5</Real>
+        <Real>-14</Real>
+        <Real>0</Real>
+      </Sequence>
+      <Real Name="Fitness_3">3</Real>
+    </Gene>
+  </GenePool>
+  <GenePool Name="After">
+    <Gene Name="0">
+      <Sequence Name="After">
+        <Int Name="Length">3</Int>
+        <Real>3</Real>
+        <Real>3.8999999999999999</Real>
+        <Real>6.7999999999999998</Real>
+      </Sequence>
+      <Real Name="Fitness_0">0</Real>
+    </Gene>
+    <Gene Name="1">
+      <Sequence Name="After">
+        <Int Name="Length">3</Int>
+        <Real>4.5999999999999996</Real>
+        <Real>0.29999999999999999</Real>
+        <Real>12.699999999999999</Real>
+      </Sequence>
+      <Real Name="Fitness_1">1</Real>
+    </Gene>
+    <Gene Name="2">
+      <Sequence Name="After">
+        <Int Name="Length">3</Int>
+        <Real>5.7999999999999998</Real>
+        <Real>14</Real>
+        <Real>-3</Real>
+      </Sequence>
+      <Real Name="Fitness_2">2</Real>
+    </Gene>
+    <Gene Name="3">
+      <Sequence Name="After">
+        <Int Name="Length">3</Int>
+        <Real>5</Real>
+        <Real>-14</Real>
+        <Real>0</Real>
+      </Sequence>
+      <Real Name="Fitness_3">3</Real>
+    </Gene>
+  </GenePool>
+</ReferenceData>

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <!DOCTYPE gentop.dtd PUBLIC "gentop.dtd" "gentop.dtd">
 <gentop>
-  <particletypes version="2020" nexclusions="0" epsilonr="1">
+  <particletypes version="2026">
     <particletype identifier="h" type="Atom" description="hydrogen on aliphatic C with 1 electron-withdrawal group">
       <option key="acmtype" value="h_z"/>
       <option key="atomnumber" value="1"/>
@@ -14203,8 +14203,10 @@
       <parameter type="phi" unit="degree" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="3" mutability="Fixed" nonnegative="no"/>
     </parameterlist>
   </interaction>
-  <interaction type="VANDERWAALS" function="BHAM" canswap="true">
-    <option key="combination_rule" value="Geometric"/>
+  <interaction type="VANDERWAALS" function="WANG_BUCKINGHAM" canswap="true">
+    <combinationrule parameter="epsilon" rule="Geometric"/>
+    <combinationrule parameter="sigma" rule="Geometric"/>
+    <combinationrule parameter="gamma" rule="Geometric"/>
     <parameterlist identifier="Be2+">
       <parameter type="epsilon" unit="kJ/mol" value="0.2" uncertainty="0" minimum="0.16" maximum="0.25" ntrain="0" mutability="Bounded" nonnegative="yes"/>
       <parameter type="gamma" unit="" value="10" uncertainty="0" minimum="8" maximum="12.5" ntrain="0" mutability="Bounded" nonnegative="yes"/>
@@ -14547,7 +14549,6 @@
     </parameterlist>
   </interaction>
   <interaction type="POLARIZATION" function="Polarization" canswap="false"/>
-  <interaction type="VSITE2" function="vsite2" canswap="false"/>
   <interaction type="COULOMB" function="COUL_SR" canswap="false">
     <option key="chargetype" value="Gaussian"/>
     <option key="reference" value="Ghahremanpour2022a"/>

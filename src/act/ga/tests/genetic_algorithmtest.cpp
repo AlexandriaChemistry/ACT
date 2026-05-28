@@ -139,10 +139,15 @@ class GeneticAlgorithmTest : public gmx::test::CommandLineTestBase
             {
                 molgen.addFitOption(fs);
             }
+            std::vector<const char *>  desc;
+            std::vector<t_pargs>       pa;
+            std::vector<t_filenm>      fnms;
+            alexandria::CompoundReader compR;
+            compR.addOptions(&pa, &fnms, &desc);
             //! \todo  check return value
-            (void) molgen.Read(&msghandler, mpDataName.c_str(), sii.forcefield(),
+            (void) molgen.Read(&msghandler, fnms, sii.forcefield(),
                                gms, sii.fittingTargetsConst(iMolSelect::Train),
-                               false);
+                               &compR);
             // Continue filling the shared individual
             sii.generateOptimizationIndex(nullptr, &molgen, sii.commRec());
             sii.fillVectors(molgen.mindata());
@@ -221,8 +226,10 @@ class GeneticAlgorithmTest : public gmx::test::CommandLineTestBase
                 // Initializer
                 auto initializer  = new alexandria::ACMInitializer(&sii, gach.randomInit(), seed);
                 auto forceComp    = new alexandria::ForceComputer();
-                auto fitComp      = new alexandria::ACMFitnessComputer(nullptr, false, &sii, &molgen,
-                                                                       false, forceComp);
+                auto fitComp      = new alexandria::ACMFitnessComputer();
+                fitComp->init(&msghandler, &sii, &molgen,
+                              false, forceComp,
+                              sii.forcefield()->chargeGenerationAlgorithm());
 
                 auto probComputer = new RankProbabilityComputer(gach.popSize());
                 // Selector
@@ -235,17 +242,20 @@ class GeneticAlgorithmTest : public gmx::test::CommandLineTestBase
                 Mutator *mut;
                 if (alg == alexandria::OptimizerAlg::GA)
                 {
-                    mut = new alexandria::PercentMutator(&sii, seed, gach.percent());
+                    mut = new alexandria::PercentMutator(&sii, seed, 
+                                                         sii.forcefield()->chargeGenerationAlgorithm(), gach.percent());
                 }
                 else
                 {
                     // mut = new alexandria::MCMCMutator(stdout, false, seed, &bch, fitComp, &sii, bch.evaluateTestset());
-                    mut = new alexandria::MCMCMutator(nullptr, false, false, seed, &bch, fitComp, &sii, bch.evaluateTestset());
+                    mut = new alexandria::MCMCMutator(seed, &bch, fitComp, &sii, bch.evaluateTestset(),
+                                                      sii.forcefield()->chargeGenerationAlgorithm(),
+                                                      gach.maxGenerations());
                 }
 
                 // Terminator
                 std::vector<Terminator *> terminators;
-                terminators.push_back(new ga::GenerationTerminator(gach.maxGenerations(), nullptr));
+                terminators.push_back(new ga::GenerationTerminator(gach.maxGenerations()));
                 GeneticAlgorithm *ga;
                 if (alexandria::OptimizerAlg::MCMC == alg)
                 {
@@ -253,7 +263,7 @@ class GeneticAlgorithmTest : public gmx::test::CommandLineTestBase
                     checker_.checkInt64(bch.seed(), "bch.seed");
                     checker_.checkReal(bch.temperature(), "bch.temperature");
 
-                    ga = new ga::MCMC(stdout, initializer, fitComp, mut, &sii, &gach);
+                    ga = new ga::MCMC(initializer, fitComp, mut, &sii, &gach);
                 }
                 else
                 {
@@ -267,10 +277,11 @@ class GeneticAlgorithmTest : public gmx::test::CommandLineTestBase
                     }
                     std::vector<ga::Penalizer*> *penalizers = new std::vector<ga::Penalizer*>();
 
-                    ga = new ga::HybridGAMC(stdout, initializer, fitComp,
+                    ga = new ga::HybridGAMC(initializer, fitComp,
                                             probComputer, selector, crossover,
                                             mut, &terminators, penalizers,
                                             &sii, &gach, "test.dat",
+                                            nullptr, nullptr,
                                             bch.seed());
                 }
                 checker_.checkInt64(gach.maxGenerations(), "Maximum Number of Generations");
@@ -295,7 +306,7 @@ class GeneticAlgorithmTest : public gmx::test::CommandLineTestBase
                 checker_.checkReal(best.fitness(imstr), "Training fitness after evolve");
                 
                 auto bestDuplicate = best;
-                fitComp->compute(&bestDuplicate, imstr);
+                fitComp->compute(&msghandler, &bestDuplicate, imstr);
                 EXPECT_EQ(best.fitness(imstr), bestDuplicate.fitness(imstr));
                 if (best.nBase() > 0)
                 {
@@ -313,17 +324,15 @@ class GeneticAlgorithmTest : public gmx::test::CommandLineTestBase
                 // Run middleman-like code.
                 alexandria::ACTMiddleMan middleman(&msghandler, &molgen, 
                                                    &sii, &gach, &bch,
-                                                   false, oenv, false);
+                                                   oenv, sii.forcefield()->chargeGenerationAlgorithm(), false);
                 middleman.run(&msghandler);
             }
             else if (cr.isHelper())
             {
                 // Run helper-like code
                 alexandria::ACTHelper helper(&msghandler, &sii, &molgen,
-                                             shellToler, shellMaxIter,
+                                             bch.shellToler(), bch.shellMaxIter(),
                                              sii.forcefield()->chargeGenerationAlgorithm());
-                double shellToler = 1e-6;
-                int    shellMaxIter = 25;
                 helper.run(&msghandler);
             }
         }

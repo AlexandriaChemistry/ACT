@@ -87,7 +87,7 @@ void StaticIndividualInfo::fillForceField(MsgHandler     *msghandler,
     if (!cr_->isHelper())
     {
         GMX_RELEASE_ASSERT(nullptr != pd_fn, "Give me a forcefield file name");
-        if (msghandler->debug())
+        if (msghandler && msghandler->debug())
         {
             msghandler->writeDebug(gmx::formatString("On node %d, will try to read %s\n", cr_->rank(), pd_fn));
         }
