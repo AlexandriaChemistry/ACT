@@ -114,16 +114,22 @@ bool VolumeFractionPenalizer::penalize(gmx::TextWriter *tw,
                                      );
         }
         // Randomize
-        size_t i = static_cast<size_t>(
-            lround(
-                (1-popFrac_) * static_cast<double>(pool->popSize())
-            )
-        );
-        for (; i < pool->popSize(); i++)
+        size_t i0 = static_cast<size_t>(lround((1-popFrac_) * static_cast<double>(pool->popSize())));
+        double newVol  = poolVol;
+        // We try maxiter times only.
+        int    maxiter = 100;
+        int    iter    = 0;
+        do
         {
-            initializer_->randomizeGenome(pool->genomePtr(i));
-        }
-        return true;
+            for (size_t i = i0; i < pool->popSize(); i++)
+            {
+                initializer_->randomizeGenome(pool->genomePtr(i));
+            }
+            newVol = getPoolVolume(*pool);
+            iter += 1;
+        } 
+        while (newVol < poolVol && iter < maxiter);
+        return iter < maxiter;
     }
     else
     {
@@ -136,15 +142,15 @@ double VolumeFractionPenalizer::getPoolVolume(const GenePool &pool) const
     double volume = 0;
     for (size_t i = 0; i < pool.genomeSize(); i++)  // For each parameter
     {
-        double maximum = std::numeric_limits<double>::min();
-        double minimum = std::numeric_limits<double>::max();
+        double maximum = -1e20;
+        double minimum =  1e20;
         for (auto genome : pool.genePool())  // For each genome
         {
             if (genome.base(i) > maximum)
             {
                 maximum = genome.base(i);
             }
-            else if (genome.base(i) < minimum)
+            if (genome.base(i) < minimum)
             {
                 minimum = genome.base(i);
             }

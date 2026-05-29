@@ -1,80 +1,83 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
+  <Real Name="totalVolume">0.048</Real>
   <GenePool Name="Before">
     <Gene Name="0">
       <Sequence Name="Before">
         <Int Name="Length">3</Int>
-        <Real>3</Real>
-        <Real>3.8999999999999999</Real>
-        <Real>6.7999999999999998</Real>
+        <Real>0.11333333333333334</Real>
+        <Real>0.12000000000000001</Real>
+        <Real>0.14000000000000001</Real>
       </Sequence>
       <Real Name="Fitness_0">0</Real>
     </Gene>
     <Gene Name="1">
       <Sequence Name="Before">
         <Int Name="Length">3</Int>
-        <Real>4.5999999999999996</Real>
-        <Real>0.29999999999999999</Real>
-        <Real>12.699999999999999</Real>
+        <Real>0.12666666666666668</Real>
+        <Real>0.13</Real>
+        <Real>0.15333333333333335</Real>
       </Sequence>
       <Real Name="Fitness_1">1</Real>
     </Gene>
     <Gene Name="2">
       <Sequence Name="Before">
         <Int Name="Length">3</Int>
-        <Real>5.7999999999999998</Real>
-        <Real>14</Real>
-        <Real>-3</Real>
+        <Real>0.14000000000000001</Real>
+        <Real>0.14000000000000001</Real>
+        <Real>0.16666666666666669</Real>
       </Sequence>
       <Real Name="Fitness_2">2</Real>
     </Gene>
     <Gene Name="3">
       <Sequence Name="Before">
         <Int Name="Length">3</Int>
-        <Real>5</Real>
-        <Real>-14</Real>
-        <Real>0</Real>
+        <Real>0.15333333333333335</Real>
+        <Real>0.15000000000000002</Real>
+        <Real>0.18000000000000002</Real>
       </Sequence>
       <Real Name="Fitness_3">3</Real>
     </Gene>
+    <Real Name="Volume">4.8000002e-05</Real>
   </GenePool>
   <GenePool Name="After">
     <Gene Name="0">
       <Sequence Name="After">
         <Int Name="Length">3</Int>
-        <Real>3</Real>
-        <Real>3.8999999999999999</Real>
-        <Real>6.7999999999999998</Real>
+        <Real>0.11333333333333334</Real>
+        <Real>0.12000000000000001</Real>
+        <Real>0.14000000000000001</Real>
       </Sequence>
       <Real Name="Fitness_0">0</Real>
     </Gene>
     <Gene Name="1">
       <Sequence Name="After">
         <Int Name="Length">3</Int>
-        <Real>4.5999999999999996</Real>
-        <Real>0.29999999999999999</Real>
-        <Real>12.699999999999999</Real>
+        <Real>0.12666666666666668</Real>
+        <Real>0.13</Real>
+        <Real>0.15333333333333335</Real>
       </Sequence>
       <Real Name="Fitness_1">1</Real>
     </Gene>
     <Gene Name="2">
       <Sequence Name="After">
         <Int Name="Length">3</Int>
-        <Real>5.7999999999999998</Real>
-        <Real>14</Real>
-        <Real>-3</Real>
+        <Real>0.33169406451524791</Real>
+        <Real>0.1672599043349344</Real>
+        <Real>0.25688293338029289</Real>
       </Sequence>
       <Real Name="Fitness_2">2</Real>
     </Gene>
     <Gene Name="3">
       <Sequence Name="After">
         <Int Name="Length">3</Int>
-        <Real>5</Real>
-        <Real>-14</Real>
-        <Real>0</Real>
+        <Real>0.42831761922193257</Real>
+        <Real>0.15694382701217774</Real>
+        <Real>0.45457674502461443</Real>
       </Sequence>
       <Real Name="Fitness_3">3</Real>
     </Gene>
+    <Real Name="Volume">0.0046828296</Real>
   </GenePool>
 </ReferenceData>

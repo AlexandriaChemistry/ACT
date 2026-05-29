@@ -59,7 +59,7 @@ GaTestHelper::GaTestHelper(int                                  nmiddlemen,
     msghandler->setPrintLevel(alexandria::ACTStatus::Warning);
 
     sii = new StaticIndividualInfo(&cr);
-    std::string ffName("../../alexandria/tests/ACS-g.xml");
+    std::string ffName("ACS-g.xml");
     std::string ffDataName = gmx::test::TestFileManager::getInputFilePath(ffName);
     sii->fillForceField(msghandler, ffDataName.c_str());
     molgen = new MolGen(&cr);
