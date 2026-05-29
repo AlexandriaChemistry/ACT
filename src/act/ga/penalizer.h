@@ -103,9 +103,6 @@ private:
     //! Output file
     FILE *outfile_ = nullptr;
 
-    //! \return the volume of a population
-    double getPoolVolume(const GenePool &pool) const;
-
 public:
 
     //! \brief Destructor: closes output file
@@ -137,7 +134,10 @@ public:
      */
     bool penalize(gmx::TextWriter *tw,
                   GenePool        *pool,
-                  const int       generation) override;
+                  const int        generation) override;
+
+    //! \return the volume of a population
+    double getPoolVolume(const GenePool &pool) const;
 
 }; // class VolumeFactorPenalizer
 
