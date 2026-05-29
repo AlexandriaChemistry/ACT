@@ -74,7 +74,8 @@ protected:
 
     void checkGenePool(gmx::test::TestReferenceChecker *checker_,
                        const GenePool                  *pool,
-                       const std::string                label)
+                       const std::string                label,
+                       double                           volume)
     {
         auto checker = checker_->checkCompound("GenePool", label);
         int i = 0;
@@ -89,6 +90,7 @@ protected:
             gcheck.checkFloat(gene.fitness(iMolSelect::Train), flabel.c_str());
             i += 1;
         }
+        checker.checkFloat(volume, "Volume");
     }
 
     void vfpTest(bool logVolume, double volFracLimit, double popFrac)
@@ -97,27 +99,45 @@ protected:
         gmx::test::TestReferenceChecker checker(this->rootChecker());
         auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, 1e-4);
         checker.setDefaultTolerance(tolerance);
-        // Make some genes
-        std::vector<std::vector<double>> genes = {
-            { 3.0, 3.9, 6.8 },
-            { 4.6, 0.3, 12.7 },
-            { 5.8, 14, -3 },
-            { 5.0, -14, 0.0 }
+        // Helper structure
+        alexandria::GaTestHelper gth(1, {"sigma"}, {alexandria::eRMS::Interaction});
+        // Make some genes. The values have to be between 0.1 and 0.5 to match the FF.
+        std::vector<std::vector<double>> genes(4);
+        double totalVolume = 1;
+        for(size_t i = 0; i < gth.sii->nParam(); i++)
+        {
+            double lb = gth.sii->lowerBoundAtIndex(i);
+            double ub = gth.sii->upperBoundAtIndex(i);
+            totalVolume *= (ub-lb);
+            for(size_t j = 0; j < genes.size(); j++)
+            {
+                genes[j].push_back(lb + 0.1*(i+j+1)*(ub-lb)/gth.sii->nParam());
+            }
         };
+        checker.checkFloat(totalVolume, "totalVolume");
         GenePool gp(genes.size());
-        double totalVolume = 8.0 * 15.0 * 25.0 * 30.0;
         for(size_t i = 0; i < genes.size(); i++)
         {
             gp.addGenome(genes[i], i);
         }
-        checkGenePool(&checker, &gp, "Before");
-        alexandria::GaTestHelper gth(1, {}, {});
         VolumeFractionPenalizer vfp(nullptr, logVolume, totalVolume,
                                     volFracLimit, popFrac,
                                     static_cast<Initializer *>(gth.initializer));
+        double oldVolume = vfp.getPoolVolume(gp);
+        if (logVolume)
+        {
+            oldVolume = std::exp(oldVolume);
+        }
+        checkGenePool(&checker, &gp, "Before", oldVolume);
         bool penalized = vfp.penalize(nullptr, &gp, 1);
         EXPECT_TRUE(penalized);
-        checkGenePool(&checker, &gp, "After");
+        double newVolume =  vfp.getPoolVolume(gp);
+        if (logVolume)
+        {
+            newVolume = std::exp(newVolume);
+        }
+        checkGenePool(&checker, &gp, "After", newVolume);
+        EXPECT_TRUE(newVolume > oldVolume);
     }
 };
 
