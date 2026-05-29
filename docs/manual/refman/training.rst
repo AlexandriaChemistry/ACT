@@ -157,11 +157,11 @@ Then, if the volume spanned by the population divided by the total volume of the
 
 .. math:: \left[\frac{V_{pop}}{V_{tot}}\right]^{1/N} < x
 
-where x is given by flag *-vfp_vol_frac_limit (0, 1]*, the *worst* fraction flag *-vfp_pop_frac [0, 1)* of genomes in the population will be randomly reinitialized. In log notation
+or, in log notation, if
 
-.. math:: \frac{1}{N}\left[log V_{pop} - log V_{tot}\right] < log x
+.. math:: log V_{pop}  < N log x + log V_{tot}
 
-or, to summarize it...
+where x is given by flag *-vfp_vol_frac_limit (0, 1]*, the *worst* fraction flag *-vfp_pop_frac [0, 1)* of genomes in the population will be randomly reinitialized. This is done repeatedly, but at most 100 times, until :math:`V_{pop}` increases. To summarize it...
 
   | Death comes equally to us all, and makes us all equal when it comes. - John Donne
 
