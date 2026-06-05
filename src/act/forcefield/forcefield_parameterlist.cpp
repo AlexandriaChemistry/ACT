@@ -192,7 +192,7 @@ const ForceFieldParameterMap *ForceFieldParameterList::findParametersPtrConst(co
     
     if (params == parameters_.end())
     {
-        GMX_THROW(gmx::InvalidInputError(gmx::formatString("4. No such identifier %s in mutable parameter list for %s", identifier.id().c_str(), potentialToString(pot_).c_str()).c_str()));
+        GMX_THROW(gmx::InvalidInputError(gmx::formatString("5. No such identifier %s in const parameter list for %s", identifier.id().c_str(), potentialToString(pot_).c_str()).c_str()));
     }
     
     return &params->second;

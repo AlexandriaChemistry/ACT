@@ -89,7 +89,7 @@ static double computeFBPOSRE(MsgHandler                            *msghandler,
     return epr;
 }
 /*! \brief Spread scalar force over two atoms
- * \param[in]    fscalar The scalar force
+ * \param[in]    fscalar The scalar force divided by the norm of the distance
  * \param[in]    dx      The distance vector
  * \param[in]    indices The atom indices
  * \param[inout] forces  The forces to be updated
@@ -1012,6 +1012,107 @@ static double gmx_unused computeNonBondedTest(gmx_unused MsgHandler             
     energies->insert({InteractionType::DISPERSION, edisp});
 
     return erep + edisp;
+}
+
+/*! \brief Compute Tang-Toennies damping factor for c6 only
+ * \param[in]  beta The inverse damping distance
+ * \param[in]  r    The distance
+ * \param[out] fr   The damping factor
+ * \param[out] dfdr The derivative of fr with respect to r
+ */
+static inline void fTT(double beta, double r, double *fr, double *dfdr)
+{
+    static const double inv_facs[7] = { 1.0, 1.0, 1.0/2.0, 1.0/6.0, 1.0/24.0, 1.0/120.0, 1.0/720.0 };
+    double br     = beta*r;
+    double ebr    = std::exp(-br);
+    // Treat k == 0 at once, such that the loop can start from one for the derivative
+    // brk = (beta r)^k
+    double brk    = 1;
+    double sum    = brk*inv_facs[0];
+    // Terms in the sum are
+    // (beta r)^k / k!
+    // Derivative is
+    // k*(beta r)^(k-1) * beta/k! ==>
+    // beta^k r^(k-1)/(k-1)!
+    for(int k = 1; k <= 6; k++)
+    {
+        brk    *= br;
+        sum    += brk*inv_facs[k];
+    }
+    
+    *fr   = 1 - ebr*sum;
+    // Mathematica tells us that only the last term remains.
+    *dfdr = ebr*beta*brk*inv_facs[6];
+}
+
+/*! \brief Compute Quadrupole polarization energy and force
+ * \param[in]    msghandler  For warnings and errors
+ * \param[in]    pairs       The atom identifiers and parameters
+ * \param[in]    atoms       The atoms
+ * \param[in]    coordinates The coordinates of all particles
+ * \param[inout] forces      The forces on all particles
+ * \param[inout] energies    The energy per type
+ * \return total energy
+ */
+static double computeQuadrupolePolarization(MsgHandler                        *msghandler,
+                                            const TopologyEntryVector         &pairs,
+                                            const std::vector<ActAtom>        &atoms,
+                                            const std::vector<gmx::RVec>      *coordinates,
+                                            std::vector<gmx::RVec>            *forces,
+                                            std::map<InteractionType, double> *energies)
+{
+    double ebond = 0;
+    auto   x     = *coordinates;
+    for (const auto &b : pairs)
+    {
+        // Get the parameters.
+        auto &indices = b->atomIndices();
+        auto ai       = indices[0];
+        auto aj       = indices[1];
+        auto &params  = b->params();
+        auto c6i      = params[qpolC6i];
+        auto c6j      = params[qpolC6j];
+        auto bi       = params[qpolBi];
+        auto bj       = params[qpolBj];
+        auto qi       = atoms[ai].charge();
+        auto qj       = atoms[aj].charge();
+        // Get the atom indices
+        rvec dx;
+        rvec_sub(x[ai], x[aj], dx);
+        auto dr2        = iprod(dx, dx);
+        auto r1         = std::sqrt(dr2);
+        auto dr_1       = 1.0/std::sqrt(dr2);
+        auto dr_2       = dr_1*dr_1;
+        auto dr_6       = dr_2*dr_2*dr_2;
+        double fri, frj, dfdri, dfdrj;
+        fTT(bi, r1, &fri, &dfdri);
+        fTT(bj, r1, &frj, &dfdrj);
+        auto vqpoli     = -fri*c6i*std::abs(qj)*dr_6;
+        auto vqpolj     = -frj*c6j*std::abs(qi)*dr_6;
+        // Force is -dV/dr = +dfdr*c6*|q|/r^6 + 6 V / r
+        auto fqpoli     = -6*vqpoli*dr_1 - dfdri*c6i*std::abs(qj)*dr_6;
+        auto fqpolj     = -6*vqpolj*dr_1 - dfdrj*c6j*std::abs(qi)*dr_6;
+        if (msghandler && msghandler->debug())
+        {
+            msghandler->writeDebug(gmx::formatString("ai %d aj %d vqpoli %g vqpolj %g bi %g bj %g c6i %g c6j %g qi %g qj %g dist %g",
+                                                     ai, aj, vqpoli, vqpolj,
+                                                     bi, bj, c6i, c6j,
+                                                     qi, qj, r1));
+        }
+        ebond += vqpoli + vqpolj;
+        if (dr2 > 0)
+        {
+            auto fqpol = -(fqpoli + fqpolj)*dr_1;
+            pairforces(fqpol, dx, indices, forces);
+        }
+    }
+    if (msghandler && msghandler->debug())
+    {
+        msghandler->writeDebug(gmx::formatString("vqpol %g", ebond));
+    }
+    energies->insert({InteractionType::QUADRUPOLE_POLARIZATION, ebond});
+
+    return ebond;
 }
 
 /*! \brief Compute Coulomb energy and forces for Gaussian distributed charges
@@ -2041,6 +2142,8 @@ bondForceComputer getBondForceComputer(Potential pot)
         return computeUreyBradley;
     case Potential::POSITION_RESTRAINT:
         return computeFBPOSRE;
+    case Potential::QUADRUPOLE_POLARIZATION:
+        return computeQuadrupolePolarization;
     default:
         return nullptr;
     }

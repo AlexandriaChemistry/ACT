@@ -480,8 +480,18 @@ void Topology::makePairs(MsgHandler                          *msghandler,
     TopologyEntryVector pairs{};
     for(size_t i = 0; i < atoms_.size(); i++)
     {
+        auto pti = pd->findParticleType(atoms_[i].ffType());
+        if (!pti->hasInteractionType(itype))
+        {
+            continue;
+        }
         for(size_t j = i+1; j < atoms_.size(); j++)
         {
+            auto ptj = pd->findParticleType(atoms_[j].ffType());
+            if (!ptj->hasInteractionType(itype))
+            {
+                continue;
+            }
             if (exclusions[i].find(j) == exclusions[i].end())
             {
                 pairs.push_back(AtomPair(i, j));
@@ -1487,6 +1497,11 @@ void Topology::build(MsgHandler             *msghandler,
     auto exclusions = generateExclusions(msghandler, nexcl);
     makePairs(msghandler, pd, InteractionType::VDW, exclusions);
     makePairs(msghandler, pd, InteractionType::ELECTROSTATICS, exclusions);
+    auto itqpol = InteractionType::QUADRUPOLE_POLARIZATION;
+    if (pd->interactionPresent(itqpol) && !pd->findForcesConst(itqpol).empty())
+    {
+        makePairs(msghandler, pd, itqpol, exclusions);
+    }
     auto itqt = InteractionType::VDWCORRECTION;
     // If the interaction has no parameters even though it is present, ignore
     if (pd->interactionPresent(itqt) && !pd->findForcesConst(itqt).empty())
@@ -1898,9 +1913,10 @@ void Topology::setEntryIdentifiers(MsgHandler       *msghandler,
             case InteractionType::INDUCTIONCORRECTION:
             case InteractionType::VDWCORRECTION:
             case InteractionType::POLARIZATION:
+            case InteractionType::QUADRUPOLE_POLARIZATION:
             case InteractionType::ELECTROSTATICS:
                 {
-                    // For COULOMB there are two particles,
+                    // For COULOMB and QUADRUPOLE_POLARIZATION there are two particles,
                     // but for POLARIZATION or VDWCORRECTION just one.
                     if (atype->hasInteractionType(itype))
                     {
