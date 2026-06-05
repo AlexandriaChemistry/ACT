@@ -667,11 +667,12 @@ void ACTMol::calculateInteractionEnergy(MsgHandler                        *msgha
 
     // First compute the relaxed monomer energies
     std::map<InteractionType, double> e_monomer[2];
-    auto &astart = fraghandler_.atomStart();
-    auto itInduc = InteractionType::INDUCTION;
-    auto itICorr = InteractionType::INDUCTIONCORRECTION;
-    auto itElec  = InteractionType::ELECTROSTATICS;
-    auto itPolar = InteractionType::POLARIZATION;
+    auto &astart  = fraghandler_.atomStart();
+    auto itInduc  = InteractionType::INDUCTION;
+    auto itICorr  = InteractionType::INDUCTIONCORRECTION;
+    auto itElec   = InteractionType::ELECTROSTATICS;
+    auto itPolar  = InteractionType::POLARIZATION;
+    auto itQPolar = InteractionType::QUADRUPOLE_POLARIZATION;
     for(size_t ff = 0; ff < tops.size(); ff++)
     {
         int natom = tops[ff].atoms().size();
@@ -725,15 +726,17 @@ void ACTMol::calculateInteractionEnergy(MsgHandler                        *msgha
                                &mycoords, &forces, &e_total, fzero, false);
         // Move remaining polarisation energy to the electrostatics.
         // Since we started with the shells in the relaxed monomer position,
-        // not the entire polarization will have been moved to induction.
-        auto eip = e_total.find(itPolar);
+        // not the entire Polaration will have been moved to induction.
         auto eie = e_total.find(itElec);
-        if (e_total.end() != eip &&
-            e_total.end() != eie)
+        for(const auto itr : { itPolar, itQPolar })
         {
-            eie->second += eip->second;
-            // Erase polarization term!
-            e_total.erase(eip);
+            auto eip = e_total.find(itr);
+            if (e_total.end() != eip && e_total.end() != eie)
+            {
+                eie->second += eip->second;
+                // Erase polarization term!
+                e_total.erase(eip);
+            }
         }
         checkEnergies(msghandler, "Total", e_total);
     }

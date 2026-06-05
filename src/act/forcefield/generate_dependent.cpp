@@ -149,7 +149,7 @@ static void generateCoulombParameterPairs(ForceField *pd, bool force)
     auto mutd = Mutability::Dependent;
     auto cname = potentialToParameterName(Potential::COULOMB_GAUSSIAN);
     auto zeta = cname[coulZETA];
-    // Finally add the new parameters to the exisiting list
+    // Finally add the new parameters to the existing list
     auto fold = forcesCoul->parameters();
     // Now do the double loop
     int nid = 0;
@@ -202,13 +202,101 @@ static void generateCoulombParameterPairs(ForceField *pd, bool force)
     }
     // Phew, we're done!
 }
+
+/*! \brief Generate quadrupole polarization parameters
+ * \param[in] pd    The force field
+ * \param[in] force If set, all interaction parameters will be recomputed, if not only the ones for which 
+ *                  at least one of the two constituting parameters changed will be reset.
+ */
+static void generateQpolParameterPairs(ForceField *pd, bool force)
+{
+    auto itQPol = InteractionType::QUADRUPOLE_POLARIZATION;
+    if (!pd->interactionPresent(itQPol))
+    {
+        return;
+    }
+    auto forcesQpol = pd->findForces(itQPol);
     
+    // Fudge unit
+    std::string unit("kJ/(mol e) nm6");
+    
+    // We use dependent mutability to show these are not independent params
+    auto mutd = Mutability::Dependent;
+    auto cname = potentialToParameterName(Potential::QUADRUPOLE_POLARIZATION);
+    auto c6    = cname[qpolC6];
+    auto b     = cname[qpolB];
+    // Finally add the new parameters to the existing list
+    auto fold = forcesQpol->parameters();
+    // Now do the double loop
+    int nid = 0;
+    for (auto &iqpol : *forcesQpol->parameters())
+    {
+        auto &iid    = iqpol.first;
+        // Check whether this is a single atom parameter
+        if (iid.atoms().size() > 1)
+        {
+            continue;
+        }
+        double c6i = iqpol.second[c6].internalValue();
+        double bi  = iqpol.second[b].internalValue();
+        for (auto &jqpol : *forcesQpol->parameters())
+        {
+            auto &jid    = jqpol.first;
+            // Check whether this is a single atom parameter and
+            // whether this is is larger or equal to iid.
+            if (jid.atoms().size() > 1 || jid.id() < iid.id() ||
+                (!iqpol.second[c6].updated() && !jqpol.second[c6].updated() &&
+                 !iqpol.second[b].updated() && !jqpol.second[b].updated() && !force))
+            {
+                continue;
+            }
+            double     c6j = jqpol.second[c6].internalValue();
+            double     bj  = jqpol.second[b].internalValue();
+            Identifier pairID({ iid.id(), jid.id() }, { 1 }, CanSwap::Yes);
+            nid += 1;
+            auto       oldfp  = fold->find(pairID);
+            if (oldfp == fold->end())
+            {
+                ForceFieldParameterMap ffpm = {
+                    { cname[qpolC6i], 
+                      ForceFieldParameter(unit, c6i, 0, 0, c6i, c6i, mutd, false, true) },
+                    { cname[qpolC6j], 
+                      ForceFieldParameter(unit, c6j, 0, 0, c6j, c6j, mutd, false, true) },
+                    { cname[qpolBi],
+                      ForceFieldParameter(unit, bi, 0, 0, bi, bi, mutd, false, true) },
+                    { cname[qpolBj],
+                      ForceFieldParameter(unit, bj, 0, 0, bj, bj, mutd, false, true) }
+                };
+                fold->insert({pairID, ffpm});
+            }
+            else
+            {
+                auto &pc6i = oldfp->second.find(cname[qpolC6i])->second;
+                pc6i.forceSetValue(c6i);
+                auto &pc6j = oldfp->second.find(cname[qpolC6j])->second;
+                pc6j.forceSetValue(c6j);
+                auto &pbi = oldfp->second.find(cname[qpolBi])->second;
+                pbi.forceSetValue(bi);
+                auto &pbj = oldfp->second.find(cname[qpolBj])->second;
+                pbj.forceSetValue(bj);
+            }
+        }
+    }
+    if (debug)
+    {
+        int np = forcesQpol->parameters()->size();
+        fprintf(debug, "Made %d/%d identifiers in generateQpolParameterPairs\n", nid, np);
+    }
+    // Phew, we're done!
+}
+
 void generateDependentParameter(ForceField *pd, bool force)
 {
     generateParameterPairs(pd, InteractionType::VDW, force);
     generateParameterPairs(pd, InteractionType::VDWCORRECTION, force);
     generateParameterPairs(pd, InteractionType::INDUCTIONCORRECTION, force);
     generateCoulombParameterPairs(pd, force);
+    generateQpolParameterPairs(pd, force);
 }
 
 } // namespace

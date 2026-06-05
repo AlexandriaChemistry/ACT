@@ -435,6 +435,7 @@ static const std::set<InteractionType> &findInteractionMap(const std::string &an
         InteractionType::VSITE3OUTS };
     static std::set<InteractionType> eem = {
         InteractionType::POLARIZATION,
+        InteractionType::QUADRUPOLE_POLARIZATION,
         InteractionType::ELECTROSTATICS,
         InteractionType::BONDCORRECTIONS,
         InteractionType::ELECTRONEGATIVITYEQUALIZATION };

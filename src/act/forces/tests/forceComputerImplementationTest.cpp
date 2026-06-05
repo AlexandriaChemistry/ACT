@@ -236,7 +236,8 @@ protected:
         }
         if (diff >= toler)
         {
-            fprintf(stderr, "Numeric force %g, analytical force %g, diff %g\n", fz, forces[1][ZZ], diff);
+            fprintf(stderr, "Numeric force %g, analytical force %g, diff %g ener[0] %g ener[1] %g\n",
+                    fz, forces[1][ZZ], diff, ener[0], ener[1]);
         }
         EXPECT_TRUE(diff < toler);
     }
@@ -253,8 +254,8 @@ TEST_P(ForceComputerImplementationTest, All)
     if (!top.empty())
     {
         top[0]->setParams(par.params);
+        testPot(pot.potential, top, &x);
     }
-    testPot(pot.potential, top, &x);
 }
 
 // ============================================================
@@ -405,6 +406,7 @@ static const ForceComputerPotParams c_bornMayerPot    { "BORN_MAYER",           
 static const ForceComputerPotParams c_slaterIsaPot    { "SLATER_ISA",           Potential::SLATER_ISA,           makePairTop };
 static const ForceComputerPotParams c_macdanielPot    { "MACDANIEL_SCHMIDT",    Potential::MACDANIEL_SCHMIDT,    makePairTop };
 static const ForceComputerPotParams c_polPot          { "POLARIZATION",         Potential::POLARIZATION,         makePairTop };
+static const ForceComputerPotParams c_qpolPot         { "QUADRUPOLE_POLARIZATION", Potential::QUADRUPOLE_POLARIZATION, makePairTop };
 static const ForceComputerPotParams c_harmBondsPot    { "HARMONIC_BONDS",       Potential::HARMONIC_BONDS,       makePairTop };
 static const ForceComputerPotParams c_cubicBondsPot   { "CUBIC_BONDS",          Potential::CUBIC_BONDS,          makePairTop };
 static const ForceComputerPotParams c_huaBondsPot     { "HUA_BONDS",            Potential::HUA_BONDS,            makePairTop };
@@ -463,6 +465,7 @@ static const ForceComputerParamParams c_macdanielParams { "",
     }()
 };
 static const ForceComputerParamParams c_polParams       { "", { 0.1, 0.2, 1e4 } };   // alpha, rHyper, fcHyper
+static const ForceComputerParamParams c_qpolParams      { "", { 20, 0.001, 20, 0.002, 25, 0.001     } };   // c6, bi
 static const ForceComputerParamParams c_harmBondsParams { "", { 100000, 0.4, 10 } };  // kB, length, energy
 static const ForceComputerParamParams c_cubicBondsParams{ "", { 0.4, 0.6, 60000, 100 } };  // length, Rmax, kB, DE (cubicLENGTH, cubicRMAX, cubicKB, cubicDE)
 static const ForceComputerParamParams c_huaBondsParams  { "", { 0.4, 100, 20, 0.1 } };    // length, DE, b, c (huaLENGTH, huaDE, huaB, huaC)
@@ -635,6 +638,12 @@ INSTANTIATE_TEST_CASE_P(MACDANIEL_SCHMIDT, ForceComputerImplementationTest,
 INSTANTIATE_TEST_CASE_P(POLARIZATION, ForceComputerImplementationTest,
                          ::testing::Combine(::testing::Values(c_polPot),
                                             ::testing::Values(c_polParams),
+                                            ::testing::ValuesIn(c_stdPairCoords)),
+                         fcTestName);
+
+INSTANTIATE_TEST_CASE_P(QUADRUPOLE_POLARIZATION, ForceComputerImplementationTest,
+                         ::testing::Combine(::testing::Values(c_qpolPot),
+                                            ::testing::Values(c_qpolParams),
                                             ::testing::ValuesIn(c_stdPairCoords)),
                          fcTestName);
 

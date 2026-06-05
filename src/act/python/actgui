@@ -1171,7 +1171,9 @@ class FFGenerator:
                 # New atomtype, set element and atomic number and subtypes
                 allData[atype_name] = { "element": element, "atomicnumber": atomNR,
                                         "bondtype": btype, "zetatype": ztype, "acmtype": acmtype,
-                                        "poltype": stype, "radius": radius, "row": row }
+                                        "poltype": stype, "radius": radius, "row": row,
+                                        "qpoltype": element
+                                  }
                 # Highest charge for vsite1 and shells
                 qmin = -atomNR
                 qmut = Bounded
@@ -1201,7 +1203,9 @@ class FFGenerator:
                     setParam(atype_name, "POLARIZATION", "alpha", 1e-6, 12, Bounded, "Angstrom3")
                     setParam(atype_name, "POLARIZATION", "rhyper", 0.02, 0.02, Fixed, "nm")
                     setParam(atype_name, "POLARIZATION", "fchyper", 0, 5e8, Fixed, "kJ/mol nm4")
-
+                if polarizable and vdwtp == Atom:
+                    setParam(atype_name, "QUADRUPOLE_POLARIZATION", "c6", 0, 1e-2, Bounded, "kJ/(mol e) nm6")
+                    setParam(atype_name, "QUADRUPOLE_POLARIZATION", "b",  0, 50, Bounded, "1/nm")
                 # Determine whether to use VDW
                 setVDW(atype_name, allData[atp]["element"], vdwtp)
                 # And van der waals corrections if needed.

@@ -257,7 +257,7 @@ void ForceField::guessChargeGenerationAlgorithm()
  */
 
 bool ForceField::atypeToPtype(const std::string &atype,
-                           std::string       *ptype) const
+                              std::string       *ptype) const
 {
     auto ai = findParticleType(atype);
     if (ai)
