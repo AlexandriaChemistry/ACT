@@ -73,6 +73,7 @@ TEST(InteractionTypeTest, stringToInteractionTypeAllValid)
         InteractionType::VDWCORRECTION,
         InteractionType::ELECTROSTATICS,
         InteractionType::POLARIZATION,
+        InteractionType::QUADRUPOLE_POLARIZATION,
         InteractionType::POSITION_RESTRAINT,
         InteractionType::INDUCTION,
         InteractionType::INDUCTIONCORRECTION,
@@ -135,6 +136,7 @@ TEST(InteractionTypeTest, interactionTypeToDescriptionNotEmpty)
         InteractionType::VDWCORRECTION,
         InteractionType::ELECTROSTATICS,
         InteractionType::POLARIZATION,
+        InteractionType::QUADRUPOLE_POLARIZATION,
         InteractionType::POSITION_RESTRAINT,
         InteractionType::INDUCTION,
         InteractionType::INDUCTIONCORRECTION,
@@ -215,6 +217,7 @@ TEST(InteractionTypeTest, interactionTypeToNatomsReturnsOne)
     EXPECT_EQ(1, interactionTypeToNatoms(InteractionType::ALLELEC));
     EXPECT_EQ(1, interactionTypeToNatoms(InteractionType::EXCHIND));
     EXPECT_EQ(1, interactionTypeToNatoms(InteractionType::ELECTRONEGATIVITYEQUALIZATION));
+    EXPECT_EQ(1, interactionTypeToNatoms(InteractionType::QUADRUPOLE_POLARIZATION));
 }
 
 TEST(InteractionTypeTest, interactionTypeToNatomsReturnsZero)

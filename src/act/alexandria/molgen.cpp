@@ -202,6 +202,7 @@ void MolGen::checkOptions(MsgHandler                *msghandler,
         else
         {
             std::set<InteractionType> elec = { InteractionType::ELECTROSTATICS, InteractionType::POLARIZATION,
+                                               InteractionType::QUADRUPOLE_POLARIZATION,
                                                InteractionType::ELECTRONEGATIVITYEQUALIZATION, InteractionType::BONDCORRECTIONS };
             if (alg == ChargeGenerationAlgorithm::ESP && (elec.find(itype) != elec.end() || isVsite(itype)))
             {
@@ -335,6 +336,7 @@ void MolGen::checkDataSufficiency(MsgHandler *msghandler,
         
         std::vector<InteractionType> atomicItypes = {
             InteractionType::POLARIZATION,
+            InteractionType::QUADRUPOLE_POLARIZATION,
             InteractionType::ELECTROSTATICS,
             InteractionType::ELECTRONEGATIVITYEQUALIZATION,
             InteractionType::CHARGE

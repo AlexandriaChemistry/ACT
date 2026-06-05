@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2024
+ * Copyright (C) 2014-2026
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -64,6 +64,7 @@ std::map<InteractionType, NameDescr> eitNames = {
     { InteractionType::ALLELEC,            { "ALLELEC", "Sum over COULOMB, POLARIZATION and CHARGE TRANSFER" } },
     { InteractionType::EPOT,               { "EPOT", "Potential energy" } },
     { InteractionType::POLARIZATION,       { "POLARIZATION", "polarization" } },
+    { InteractionType::QUADRUPOLE_POLARIZATION, { "QUADRUPOLE_POLARIZATION", "Quadrupole polarization" } },
     { InteractionType::POSITION_RESTRAINT, { "POSITION_RESTRAINT", "Position restraint" } },
     { InteractionType::INDUCTION,          { "INDUCTION", "induction" } },
     { InteractionType::INDUCTIONCORRECTION,{ "INDUCTIONCORRECTION", "induction correction" } },
@@ -155,6 +156,7 @@ int interactionTypeToNatoms(InteractionType iType)
     case InteractionType::ALLELEC:
     case InteractionType::EXCHIND:
     case InteractionType::ELECTRONEGATIVITYEQUALIZATION:
+    case InteractionType::QUADRUPOLE_POLARIZATION:
         return 1;
     case InteractionType::VSITE1:
     case InteractionType::BONDS:
