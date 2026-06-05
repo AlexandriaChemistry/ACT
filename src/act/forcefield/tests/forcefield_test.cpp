@@ -115,6 +115,11 @@ TEST_F (ForceFieldTest, getAtype){
     {
         checker_.checkString(aType->interactionTypeToIdentifier(itp).id().c_str(), "poltype");
     }
+    itp = InteractionType::QUADRUPOLE_POLARIZATION;
+    if (aType->hasInteractionType(itp))
+    {
+        checker_.checkString(aType->interactionTypeToIdentifier(itp).id().c_str(), "qpoltype");
+    }
     checker_.checkString(aType->interactionTypeToIdentifier(InteractionType::BONDS).id().c_str(), "bondtype");
     checker_.checkString(aType->interactionTypeToIdentifier(InteractionType::ELECTRONEGATIVITYEQUALIZATION).id().c_str(), "zetatype");
 }

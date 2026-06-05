@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2024-2025
+ * Copyright (C) 2024-2026
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -111,6 +111,7 @@ std::map<Potential, PotentialProperties> potprops = {
     { Potential::PROPER_DIHEDRALS, { "PROPER_DIHEDRALS", F_PDIHS, { "phi0", "kp", "mult" }, "0", "" } },
     { Potential::POLARIZATION, { "POLARIZATION", F_POLARIZATION, { "alpha", "rhyper", "fchyper" }, "0", "" } },
     { Potential::POSITION_RESTRAINT, { "POSITION_RESTRAINT", -1, { "k", "r0" }, "0", "" } },
+    { Potential::QUADRUPOLE_POLARIZATION, { "QUADRUPOLE_POLARIZATION", -1, { "b", "c6", "bi", "c6i", "bj", "c6j",  }, "0", "" } }, 
     { Potential::VSITE1, { "VSITE1", F_VSITEN, { "vs1a" }, "0", "" } },
     { Potential::VSITE2, { "VSITE2", F_VSITE2, { "vs2a" }, "0", "" } },
     { Potential::VSITE2FD, { "VSITE2FD", F_VSITE2FD, { "vs2fd_a" }, "0", "" } },
