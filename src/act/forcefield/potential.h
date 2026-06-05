@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2024,2025
+ * Copyright (C) 2024-2026
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -52,7 +52,7 @@ enum class Potential
         HARMONIC_BONDS, MORSE_BONDS, CUBIC_BONDS, HUA_BONDS,
         HARMONIC_ANGLES, LINEAR_ANGLES, UREY_BRADLEY_ANGLES,
         HARMONIC_DIHEDRALS, FOURIER_DIHEDRALS, PROPER_DIHEDRALS,
-        POLARIZATION, POSITION_RESTRAINT,
+        POLARIZATION, POSITION_RESTRAINT, QUADRUPOLE_POLARIZATION,
         VSITE1, VSITE2, VSITE2FD, VSITE3, VSITE3S, VSITE3FD, VSITE3FAD, VSITE3OUT, VSITE3OUTS, VSITE4, VSITE4S, VSITE4S3
     };
 

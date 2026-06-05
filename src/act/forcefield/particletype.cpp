@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2024
+ * Copyright (C) 2014-2024,2026
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -52,6 +52,7 @@ static std::map<std::string, InteractionType> stringToItype =
         { "acmtype",       InteractionType::ELECTRONEGATIVITYEQUALIZATION },
         { "zetatype",      InteractionType::ELECTROSTATICS },
         { "poltype",       InteractionType::POLARIZATION },
+        { "qpoltype",      InteractionType::QUADRUPOLE_POLARIZATION },
         { "bondtype",      InteractionType::BONDS },
         { "vdwtype",       InteractionType::VDW },
         { "vdwcorrtype",   InteractionType::VDWCORRECTION },

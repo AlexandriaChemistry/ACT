@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2025
+ * Copyright (C) 2014-2026
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -63,6 +63,8 @@ enum class InteractionType
     ELECTROSTATICS,
     //! Polarization interaction between an atom (core) or a virtual site and its directly connected shell.
     POLARIZATION,
+    //! Quadrupole polarization interaction between atoms.
+    QUADRUPOLE_POLARIZATION,
     //! Restraint energy
     POSITION_RESTRAINT,
     //! Induction energy
