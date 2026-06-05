@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Real Name="Epot">-0.5476342832140435</Real>
+  <Sequence Name="Forces">
+    <Int Name="Length">2</Int>
+    <Vector>
+      <Real Name="X">0</Real>
+      <Real Name="Y">0</Real>
+      <Real Name="Z">6.6368982647250139</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0</Real>
+      <Real Name="Y">0</Real>
+      <Real Name="Z">-6.6368982647250139</Real>
+    </Vector>
+  </Sequence>
+  <Real Name="QUADRUPOLE_POLARIZATION">-0.5476342832140435</Real>
+  <Real Name="fz">-6.636898264811224</Real>
+</ReferenceData>
