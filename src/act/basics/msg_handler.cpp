@@ -65,7 +65,7 @@ std::map<ACTMessage, const std::string> ACTMessages = {
     { ACTMessage::BondOrder,                "Determining bond order" },
     { ACTMessage::RespInit,                 "RESP Initialization" },
     { ACTMessage::ChargeGeneration,         "Charge generation" },
-    { ACTMessage::MissingChargeGenerationParameters, "Parameters for charge generation missing" },
+    { ACTMessage::MissingChargeGenerationParameters, "Parameters for charge generation missing - check CanSwap" },
     { ACTMessage::ShellMinimization,        "Shell minimization" },
     { ACTMessage::Topology,                 "No input to generate a topology" },
     { ACTMessage::FragmentHandler,          "Fragment Handler could not make topologies" },
