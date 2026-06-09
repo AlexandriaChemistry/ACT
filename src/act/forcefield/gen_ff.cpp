@@ -670,6 +670,7 @@ int gen_ff(int argc, char*argv[])
     {
         auto fsp = pd.findForces(itQPol);
         fsp->setFunction(potentialToString(Potential::QUADRUPOLE_POLARIZATION));
+        fsp->setCanSwap(CanSwap::Yes);
     }
     // Bonded functions need to be added
     ForceFieldParameterList bonds(bondfn[0], CanSwap::Yes);
