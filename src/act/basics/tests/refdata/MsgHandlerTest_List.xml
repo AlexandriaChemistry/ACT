@@ -15,7 +15,7 @@
   <String Name="12">RESP Initialization</String>
   <String Name="13">No charges in the molprop file</String>
   <String Name="14">Charge generation</String>
-  <String Name="15">Parameters for charge generation missing</String>
+  <String Name="15">Parameters for charge generation missing - check CanSwap</String>
   <String Name="16">Shell minimization</String>
   <String Name="17">QM Inconsistency (ESP dipole does not match Electronic)</String>
   <String Name="18">No input to generate a topology</String>
