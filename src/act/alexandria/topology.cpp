@@ -1799,8 +1799,8 @@ static void fillParams(MsgHandler                      *msghandler,
     }
     if (found != independent)
     {
-        msg += gmx::formatString(" found %d, expected %d independent parameters", found, independent);
-        msghandler->msg(ACTStatus::Warning, ACTMessage::MissingFFParameter, msg);
+        msg += gmx::formatString(" found %d, expected %d  parameters", found, independent);
+        msghandler->msg(ACTStatus::Verbose, ACTMessage::MissingFFParameter, msg);
     }
 }
 
