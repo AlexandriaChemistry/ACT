@@ -16,7 +16,7 @@
   <Int64 Name="RESP Initialization">1</Int64>
   <Int64 Name="No charges in the molprop file">1</Int64>
   <Int64 Name="Charge generation">1</Int64>
-  <Int64 Name="Parameters for charge generation missing">1</Int64>
+  <Int64 Name="Parameters for charge generation missing - check CanSwap">1</Int64>
   <Int64 Name="Shell minimization">1</Int64>
   <Int64 Name="QM Inconsistency (ESP dipole does not match Electronic)">1</Int64>
   <Int64 Name="No input to generate a topology">1</Int64>
