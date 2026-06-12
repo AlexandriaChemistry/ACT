@@ -1603,11 +1603,14 @@ void TrainForceFieldPrinter::print(MsgHandler                  *msghandler,
     AtomizationEnergy atomenergy;
 
     atomenergy.read(msghandler);
-    auto tw = msghandler->tw();
+    auto tw     = msghandler->tw();
+    auto jtmols = JsonTree("molecules");
+    int molid = 0;
     for (auto mol = actmol->begin(); mol < actmol->end(); ++mol)
     {
+        auto jtmol = JsonTree(std::to_string(molid));
+        molid++;
         auto ims   = mol->datasetType();
-        auto jtmol = JsonTree("molecule");
         {
             jtmol.addObject(JsonTree("name", mol->getMolname()));
             jtmol.addObject(JsonTree("charge", std::to_string(mol->totalCharge())));
@@ -1722,8 +1725,9 @@ void TrainForceFieldPrinter::print(MsgHandler                  *msghandler,
             }
             n++;
         }
-        jtree->addObject(jtmol);
+        jtmols.addObject(jtmol);
     }
+    jtree->addObject(jtmols);
 
     JsonTree jallstats("statistics");
     for(auto &ims : iMolSelectNames())
