@@ -1216,53 +1216,54 @@ void TrainForceFieldPrinter::printEnergyForces(MsgHandler                       
         JsonTree jt_iener("interaction_energies");
         for(const auto &iem : interactionEnergyMap)
         {
-            std::string myline;
-            JsonTree jexper("calculation");
-            for(const auto &t : terms_)
-            {
-                auto ttt = iem.find(t);
-
-                JsonTree jterm(interactionTypeToString(t));
-                bool     found = false;
-                if (iem.end() != ttt && ttt->second.haveQM())
-                {
-                    myline += gmx::formatString(" %9.2f", ttt->second.eqm());
-                    jterm.addObject("QM", ttt->second.eqm());
-                    found = true;
-                }
-                else
-                {
-                    myline += ("         x");
-                }
-                if (iem.end() != ttt && ttt->second.haveACT())
-                {
-                    myline += gmx::formatString(" %9.2f", ttt->second.eact());
-                    jterm.addObject("ACT", ttt->second.eact());
-                    found = true;
-                }
-                else
-                {
-                    myline += ("         x");
-                }
-                if (found)
-                {
-                    jexper.addObject(jterm);
-                }
-            }
             auto ttt   = iem.find(InteractionType::EPOT);
             auto exper = std::find_if(expers.begin(), expers.end(), 
                                       [&ttt](const Experiment& x)
                                       { return x.id() == ttt->second.id(); });
             if (expers.end() != exper)
             {
+                std::string myline;
+                std::string cexper("calculation-");
+                cexper += exper->getDatafile();
+                JsonTree jexper(cexper);
+                for(const auto &t : terms_)
+                {
+                    auto ttt = iem.find(t);
+                    
+                    JsonTree jterm(interactionTypeToString(t));
+                    bool     found = false;
+                    if (iem.end() != ttt && ttt->second.haveQM())
+                    {
+                        myline += gmx::formatString(" %9.2f", ttt->second.eqm());
+                        jterm.addObject("QM", ttt->second.eqm());
+                        found = true;
+                    }
+                    else
+                    {
+                        myline += ("         x");
+                    }
+                    if (iem.end() != ttt && ttt->second.haveACT())
+                    {
+                        myline += gmx::formatString(" %9.2f", ttt->second.eact());
+                        jterm.addObject("ACT", ttt->second.eact());
+                        found = true;
+                    }
+                    else
+                    {
+                        myline += ("         x");
+                    }
+                    if (found)
+                    {
+                        jexper.addObject(jterm);
+                    }
+                }
                 myline += " " + exper->getDatafile();
-                jexper.addObject("datafile", exper->getDatafile());
                 jexper.addObject("program", exper->getProgram());
                 jexper.addObject("method", exper->getMethod());
                 jexper.addObject("basisset", exper->getBasisset());
+                jt_iener.addObject(jexper);
+                msghandler->write(myline);
             }
-            jt_iener.addObject(jexper);
-            msghandler->write(myline);
         }
         jtree->addObject(jt_iener);
         std::sort(forceMap.begin(), forceMap.end());
