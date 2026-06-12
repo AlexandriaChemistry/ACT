@@ -767,7 +767,7 @@ int train_ff(int argc, char *argv[])
         { efXVG,  "-conv",    "param_conv" , ffWRITE  },
         { efXVG,  "-chi2",    "chi_squared", ffWRITE  },
         { efDAT,  "-fitness", "ga_fitness",  ffWRITE  },
-        { efJSON, "-json",    "train_ff",    ffOPTWR  }
+        { efJSON, "-json",    "train_ff",    ffWRITE  }
     };
 
     alexandria::OptACM opt;
