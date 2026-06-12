@@ -91,7 +91,7 @@ const std::string JsonTree::writeString(bool json, int *indent) const
     {
         nlohmann::ordered_json doc = nlohmann::ordered_json::object();
         doc[key_] = toNlohmannValue(*this);
-        return doc.dump(2);
+        return doc.dump(*indent);
     }
     else
     {

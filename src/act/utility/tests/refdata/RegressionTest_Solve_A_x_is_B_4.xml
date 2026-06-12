@@ -3,6 +3,6 @@
 <ReferenceData>
   <Sequence Name="solution">
     <Int Name="Length">1</Int>
-    <Real>1.9999999999999993</Real>
+    <Real>2.0000000000000004</Real>
   </Sequence>
 </ReferenceData>

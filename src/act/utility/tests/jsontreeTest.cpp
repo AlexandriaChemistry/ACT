@@ -172,19 +172,19 @@ TEST(JsonTreeTest, AddValueUnitCreatesSubstructure)
 TEST(JsonTreeTest, WriteStringJsonSimpleValue)
 {
     JsonTree jt("name", std::string("water"));
-    int indent = 0;
+    int indent = -1;
     std::string result = jt.writeString(true, &indent);
     EXPECT_EQ(R"({"name":"water"})", result);
-    EXPECT_EQ(0, indent);
+    EXPECT_EQ(-1, indent);
 }
 
 TEST(JsonTreeTest, WriteStringJsonIntValue)
 {
     JsonTree jt("count", 7);
-    int indent = 0;
+    int indent = -1;
     std::string result = jt.writeString(true, &indent);
     EXPECT_EQ(R"({"count":"7"})", result);
-    EXPECT_EQ(0, indent);
+    EXPECT_EQ(-1, indent);
 }
 
 TEST(JsonTreeTest, WriteStringJsonNestedLeaves)
@@ -192,13 +192,13 @@ TEST(JsonTreeTest, WriteStringJsonNestedLeaves)
     JsonTree jt("molecule");
     jt.addObject("name", std::string("water"));
     jt.addObject("formula", std::string("H2O"));
-    int indent = 0;
+    int indent = -1;
     std::string result = jt.writeString(true, &indent);
     // Proper JSON: children become members of an object
     std::string expected =
         "{\"molecule\":{\"name\":\"water\",\"formula\":\"H2O\"}}";
     EXPECT_EQ(expected, result);
-    EXPECT_EQ(0, indent);
+    EXPECT_EQ(-1, indent);
 }
 
 TEST(JsonTreeTest, WriteStringJsonValueUnitStructure)
