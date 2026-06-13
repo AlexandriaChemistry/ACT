@@ -166,7 +166,8 @@ public:
      * \param[in] json     Whether or not to use JSON format
      */
     void write(const std::string &fileName,
-               bool               json);
+               bool               json,
+               int                indent=2);
     
 };
 

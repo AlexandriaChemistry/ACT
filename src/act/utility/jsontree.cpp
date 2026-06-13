@@ -146,10 +146,10 @@ const std::string JsonTree::writeString(bool json, int *indent) const
 }
         
 void JsonTree::write(const std::string &fileName,
-                     bool               json)
+                     bool               json,
+                     int                indent)
 {
     FILE *fp   = gmx_ffopen(fileName.c_str(), "w");
-    int indent = 0;
     fprintf(fp, "%s", writeString(json, &indent).c_str());
     gmx_ffclose(fp);
 }
