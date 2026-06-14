@@ -753,4 +753,5 @@ TEST_F(ForceComputerImplementationTest, GaussianEpsilonR)
 }
 
 }  // namespace
+
 }  // namespace alexandria
