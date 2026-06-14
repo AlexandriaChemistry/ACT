@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2021-2025
+ * Copyright (C) 2021-2026
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -91,7 +91,31 @@ void ForceComputer::spreadVsiteForces(const Topology               *top,
     // Spread virtual site forces
     vsiteHandler_.distributeForces(top, *coordinates, forces, box_);
 }
-                              
+
+real calc_fscale(real k1, real k2, real F0)
+{
+    if (F0 == 0)
+    {
+        return 0;
+    }
+    if (k2 == 0)
+    {
+        // F0 = -k1 Delta x => Delta x = -F0/k1
+        return -1/k1;
+    }
+    else
+    {
+        static const real third = 1.0/3.0;
+        static const real three = std::pow(3.0, third);
+        static const real sqrt3 = std::sqrt(3.0);
+        real F0k22  = F0*k2*k2;
+        real throot = std::pow(-9*F0k22 +
+                               sqrt3*std::sqrt(std::pow(k1*k2, 3.0) + 27*F0k22*F0k22), third);
+        auto k = (-three*three*k1*k2+three*throot*throot)/(6*k2*throot);
+        return k/F0;
+    }
+}
+
 void ForceComputer::compute(MsgHandler                        *msg_handler,
                             const ForceField                  *pd,
                             const Topology                    *top,
@@ -123,14 +147,16 @@ void ForceComputer::compute(MsgHandler                        *msg_handler,
 
     // Now let's have a look whether we are polarizable
     auto itype = InteractionType::POLARIZATION;
-    // mean square shell force
-    double msForce = 0;
     if (pd->polarizable() && top->hasEntry(itype))
     {
+        // mean square shell force
+        double msForce = 0;
+        int    iter    = 1;
         // Is this particle a shell?
         std::vector<bool>   isShell;
         // One over force constant for this particle
         std::vector<double> fcShell_1;
+        std::vector<double> fcHyper;
         auto &ffpl  = pd->findForcesConst(itype);
         auto pol_name = potentialToParameterName(ffpl.potential());
         int  nshell = 0;
@@ -138,25 +164,30 @@ void ForceComputer::compute(MsgHandler                        *msg_handler,
         {
             bool bIS = aa.pType() == ActParticle::Shell;
             isShell.push_back(bIS);
-            double fc_1 = 0;
+            double fc_1    = 0;
+            double fchyper = 0;
             if (bIS)
             {
                 Identifier atID(aa.ffType());
-                auto alpha = ffpl.findParameterTypeConst(atID, pol_name[polALPHA]).internalValue();
+                auto params = ffpl.findParameterMapConst(atID);
+                auto alpha  = params.find(pol_name[polALPHA])->second.internalValue();
+                auto ffp = params.find(pol_name[polFCHYPER]);
+                if (ffp != params.end())
+                {
+                    fchyper = ffp->second.internalValue();
+                }
                 auto q     = aa.charge();
                 if (alpha > 0 && q != 0)
                 {
-                    fc_1 = alpha/(q*q*ONE_4PI_EPS0);
+                    fc_1 = (q*q*ONE_4PI_EPS0)/alpha;
                 }
                 nshell += 1;
             }
+            fcHyper.push_back(fchyper);
             fcShell_1.push_back(fc_1);
         }
         msForce    = dotProdRvec(isShell, *forces)/nshell;
         auto &pols = top->entry(itype);
-        int   iter = 1;
-        // Golden ratio, may be used for overrelaxation
-        // double gold     = 0.5*(1+std::sqrt(5.0));
         // Prevent shells from flying off.
         real maxShellDistance2 = gmx::square(maxShellDistance_);
         while (msForce > msForceToler_ && iter < maxiter_)
@@ -167,13 +198,18 @@ void ForceComputer::compute(MsgHandler                        *msg_handler,
                 // Displace the shells according to the force
                 // Since the potential is harmonic we use Hooke's law
                 // F = k dx -> dx = F / k
-                //! \todo Optimize this protocol using overrelaxation
+                // Note that this only works for purely harmonic potentials,
+                // see function calc_fscale for quartic potentials.
                 int shell = p->atomIndex(1);
                 if (relax.empty() || relax.end() != relax.find(shell))
                 {
+                    auto Fnorm  = norm((*forces)[shell]);
+                    auto fscale = calc_fscale(fcShell_1[shell],
+                                              fcHyper[shell],
+                                              Fnorm);
                     for(int m = 0; m < DIM; m++)
                     {
-                        (*coordinates)[shell][m] += (*forces)[shell][m] * fcShell_1[shell];
+                        (*coordinates)[shell][m] -= (*forces)[shell][m] * fscale;
                     }
                     // Check distance from core, if there is only one
                     if (atoms[shell].cores().size() == 1)
@@ -204,7 +240,7 @@ void ForceComputer::compute(MsgHandler                        *msg_handler,
             if (msForce > msForceToler_)
             {
                 msg_handler->msg(ACTStatus::Warning,
-                                 gmx::formatString("Shell optimization did not converge. RMS force is %g", std::sqrt(msForce/pols.size())));
+                                 gmx::formatString("Shell optimization did not converge. RMS force is %g, iter %d/%d", std::sqrt(msForce), iter, maxiter_));
             }
             else
             {
@@ -240,7 +276,10 @@ void ForceComputer::compute(MsgHandler                        *msg_handler,
     {
         // Sum of all electrostatic terms
         double allelec = 0;
-        for(const auto &itype : { InteractionType::ELECTROSTATICS, InteractionType::POLARIZATION, InteractionType::INDUCTION, InteractionType::INDUCTIONCORRECTION })
+        for(const auto &itype : { InteractionType::ELECTROSTATICS,
+                                  InteractionType::POLARIZATION,
+                                  InteractionType::INDUCTION,
+                                  InteractionType::INDUCTIONCORRECTION })
         {
             auto ee = energies->find(itype);
             if (energies->end() != ee)

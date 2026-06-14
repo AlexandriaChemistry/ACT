@@ -1199,8 +1199,8 @@ class FFGenerator:
 
                 if polarizable and vdwtp == Shell:
                     setParam(atype_name, "POLARIZATION", "alpha", 1e-6, 12, Bounded, "Angstrom3")
-                    setParam(atype_name, "POLARIZATION", "rhyper", 0.02, 0.02, Fixed, "nm")
-                    setParam(atype_name, "POLARIZATION", "fchyper", 0, 5e8, Fixed, "kJ/mol nm4")
+                    setParam(atype_name, "POLARIZATION", "rhyper", 0.0, 0.04, Fixed, "nm")
+                    setParam(atype_name, "POLARIZATION", "fchyper", 0, 5e8, Bounded, "kJ/mol nm4")
 
                 # Determine whether to use VDW
                 setVDW(atype_name, allData[atp]["element"], vdwtp)

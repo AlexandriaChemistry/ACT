@@ -181,6 +181,21 @@ private:
     }
 };
 
+/*! \brief Return the force scaling when hyper polarizability is used. 
+ * 
+ * The code in this function was derived using Mathematica:
+ * V[x_] := (1/2) k1 x^2 + k2 x^4
+ * F[x_] := -D[V[x], x]
+ * MyX = Assuming[{k1 > 0, k2 > 0, F0 >= 0}, Solve[F0 == F[x], x]]
+ * Simplify[First[MyX]]
+ *
+ * \param[in] k1 The harmonic force constant
+ * \param[in] k2 The quartic force constant
+ * \param[in] F  The norm of the force
+ * \return Force scaling constant when hyper polarizability is used
+ */
+real calc_fscale(real k1, real k2, real F);
+
 } // namespace alexandria
 
 #endif
