@@ -407,6 +407,48 @@ TEST_F(ForceComputerIntegrationTest, ConstructVsiteCoordinatesAndSpreadForces)
     }
 }
 
+TEST (Fscale, Ones)
+{
+    real x = calc_fscale(1, 1, 1);
+    EXPECT_TRUE(std::abs(x + 0.5) < 1e-4);
+}
+
+TEST (Fscale, OneZeroOne)
+{
+    EXPECT_EQ(calc_fscale(1, 0, 1), -1.0);
+}
+
+TEST (Fscale, OneTwoOne)
+{
+    real x = calc_fscale(1, 2, 1);
+    EXPECT_TRUE(std::abs(x + 0.417561) < 1e-4);
+}
+
+TEST (Fscale, OneOneSeven)
+{
+    real F0 = 7;
+    real x = calc_fscale(1, 1, F0);
+    EXPECT_TRUE(std::abs(x + 1.136/F0) < 1e-4);
+}
+
+TEST (Fscale, TwoOneOne)
+{
+    real x = calc_fscale(2, 1, 1);
+    EXPECT_TRUE(std::abs(x + 0.385458) < 1e-4);
+}
+
+TEST (Fscale, LargeNumbers)
+{
+    real F0 = 2;
+    real x = calc_fscale(23, 77, F0);
+    EXPECT_TRUE(std::abs(x + 0.0800797/F0) < 1e-4);
+}
+
+TEST (Fscale, ZeroForce)
+{
+    EXPECT_EQ(calc_fscale(1, 1, 0), 0);
+}
+
 }  // namespace
 
 }  // namespace alexandria
