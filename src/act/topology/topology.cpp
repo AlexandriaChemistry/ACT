@@ -1524,6 +1524,7 @@ void Topology::build(MsgHandler             *msghandler,
         dumpPairlist(msghandler->twDebug(), InteractionType::VDW);
         dumpPairlist(msghandler->twDebug(), InteractionType::VDWCORRECTION);
         dumpPairlist(msghandler->twDebug(), InteractionType::INDUCTIONCORRECTION);
+        dumpPairlist(msghandler->twDebug(), InteractionType::QUADRUPOLE_POLARIZATION);
     }
 }
 

@@ -326,7 +326,7 @@ void ForceComputer::compute(MsgHandler                        *msg_handler,
         std::set<InteractionType> eTerms = {
             InteractionType::ELECTROSTATICS,
             InteractionType::POLARIZATION,
-            InteractionType::QUADRUPOLE_POLARIZATION,
+            //InteractionType::QUADRUPOLE_POLARIZATION,
             InteractionType::CHARGETRANSFER
         };
         for(const auto et : eTerms)
@@ -365,7 +365,10 @@ void ForceComputer::compute(MsgHandler                        *msg_handler,
     {
         // Sum of exchange and induction terms
         double exchind = 0;
-        for(const auto &itype : { InteractionType::EXCHANGE, InteractionType::INDUCTION, InteractionType::INDUCTIONCORRECTION })
+        for(const auto &itype : { InteractionType::EXCHANGE,
+                                  InteractionType::INDUCTION,
+                                  InteractionType::QUADRUPOLE_POLARIZATION,
+                                  InteractionType::INDUCTIONCORRECTION })
         {
             auto ee = energies->find(itype);
             if (energies->end() != ee)
