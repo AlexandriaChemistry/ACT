@@ -737,7 +737,7 @@ double ACTMol::calculateInteractionEnergy(MsgHandler                        *msg
         // Since we started with the shells in the relaxed monomer position,
         // not the entire Polaration will have been moved to induction.
         auto eie = e_total.find(itElec);
-        for(const auto itr : { itPolar, itQPolar })
+        for(const auto itr : { itPolar })
         {
             auto eip = e_total.find(itr);
             if (e_total.end() != eip && e_total.end() != eie)
@@ -867,6 +867,15 @@ double ACTMol::calculateInteractionEnergy(MsgHandler                        *msg
         }
     }
     checkEnergies(msghandler, "Inter 1", *einter);
+    // Move quadrupole correction to the total induction if needed
+    auto eitqp = einter->find(itQPolar);
+    if (eitqp != einter->end())
+    {
+        auto eit = einter->find(itInduc);
+        eit->second += eitqp->second;
+        eitqp->second = 0;
+    }
+    checkEnergies(msghandler, "Inter 2a", *einter);
     {
         // Gather the terms for ALLELEC output.
         auto eall = einter->find(InteractionType::ALLELEC);
@@ -883,7 +892,7 @@ double ACTMol::calculateInteractionEnergy(MsgHandler                        *msg
             }
         }
     }
-    checkEnergies(msghandler, "Inter 2", *einter);
+    checkEnergies(msghandler, "Inter 2b", *einter);
     {
         // Gather the terms for EXCHIND output.
         auto eall = einter->find(InteractionType::EXCHIND);
