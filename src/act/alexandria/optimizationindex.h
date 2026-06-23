@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2025
+ * Copyright (C) 2014-2026
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -84,7 +84,7 @@ public:
      */
     OptimizationIndex(const std::string &pType,
                       const std::string &parameterType) :
-        particleType_(pType), parameterType_(parameterType) {}
+        particleType_(pType), parameterId_(pType), parameterType_(parameterType) {}
 
     /*! Lookup the force field parameter
      * \param[in] pd The force field
