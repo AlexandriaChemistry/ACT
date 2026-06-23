@@ -869,7 +869,7 @@ double ACTMol::calculateInteractionEnergy(MsgHandler                        *msg
     checkEnergies(msghandler, "Inter 1", *einter);
     // Move quadrupole correction to the total induction if needed
     auto eitqp = einter->find(itQPolar);
-    if (eitqp != einter->end())
+    if (false && eitqp != einter->end())
     {
         auto eit = einter->find(itInduc);
         eit->second += eitqp->second;
