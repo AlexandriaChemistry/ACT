@@ -69,6 +69,11 @@ void ACMFitnessComputer::compute(MsgHandler                *msghandler,
     // Then do the computation
     auto cd = distributeTasks(CalcDev::Compute);
     double fitness = calcDeviation(msghandler, cd, trgtFit);
+    if (msghandler->debug())
+    {
+        msghandler->writeDebug(genome->print(gmx::formatString("ACMFitnessComputer::compute new fitness %g ims %s",
+                                                               fitness, iMolSelectName(trgtFit).c_str()).c_str()));
+    }
     genome->setFitness(trgtFit, fitness);
     if (msghandler->tw())
     {
@@ -125,7 +130,8 @@ void ACMFitnessComputer::distributeParameters(MsgHandler                *msghand
 {
     if (msghandler && msghandler->debug())
     {
-        msghandler->writeDebug("Starting to distribute parameters\n");
+        msghandler->writeDebug(gmx::formatString("Starting to distribute %zu parameters. Size of changed vector %zu.\n",
+                                                 params->size(), changed.size()));
     }
     auto cr = sii_->commRec();
     // Send / receive parameters
@@ -269,8 +275,10 @@ double ACMFitnessComputer::calcDeviation(MsgHandler                 *msghandler,
                     auto tw = t.second.totalWeight();
                     if (tw > 0)
                     {
-                        msghandler->writeDebug(gmx::formatString("CalcDev: %s tw: %g chi2: %g\n",
-                                                                 rmsName(t.second.erms()), tw, t.second.chiSquared()));
+                        msghandler->writeDebug(gmx::formatString("CalcDev: %s tw: %g chi2: %g RMS: %g\n",
+                                                                 rmsName(t.second.erms()), tw,
+                                                                 t.second.chiSquared(),
+                                                                 std::sqrt( t.second.chiSquared()/tw)));
                     }
                 }
             }
