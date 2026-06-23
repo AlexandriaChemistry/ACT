@@ -218,8 +218,8 @@ void ForceComputer::compute(MsgHandler                        *msg_handler,
     std::map<InteractionType, double> eBefore = *energies;
 
     // Now let's have a look whether we are polarizable
-    auto itype = InteractionType::POLARIZATION;
-    if (pd->polarizable() && top->hasEntry(itype))
+    auto itPolar = InteractionType::POLARIZATION;
+    if (pd->polarizable() && top->hasEntry(itPolar))
     {
         // mean square shell force
         double msForce = 0;
@@ -229,7 +229,7 @@ void ForceComputer::compute(MsgHandler                        *msg_handler,
         // One over force constant for this particle
         std::vector<double> fcShell_1;
         std::vector<double> fcHyper;
-        auto &ffpl  = pd->findForcesConst(itype);
+        auto &ffpl  = pd->findForcesConst(itPolar);
         auto pol_name = potentialToParameterName(ffpl.potential());
         int  nshell = 0;
         for(auto &aa : atoms)
@@ -259,7 +259,7 @@ void ForceComputer::compute(MsgHandler                        *msg_handler,
             fcShell_1.push_back(fc_1);
         }
         msForce    = dotProdRvec(isShell, *forces)/nshell;
-        auto &pols = top->entry(itype);
+        auto &pols = top->entry(itPolar);
         // Prevent shells from flying off.
         real maxShellDistance2 = gmx::square(maxShellDistance_);
         while (msForce > msForceToler_ && iter < maxiter_)
@@ -316,17 +316,24 @@ void ForceComputer::compute(MsgHandler                        *msg_handler,
     {
         // Induction energy
         double eInduction = 0;
-        // Extract electrostatics once more
+        // First move QUADRUPOLE_POLARIZATION to Induction, if present.
+        auto itQpolar = InteractionType::QUADRUPOLE_POLARIZATION;
+        auto tt       = energies->find(itQpolar);
+        if (energies->end() != tt)
+        {
+            eInduction = tt->second;
+            tt->second = 0;
+        }
+        // Now extract other electrostatics terms once more
         // Note that the INDUCTIONCORRECTION is treated in the calling routine
         std::set<InteractionType> eTerms = {
             InteractionType::ELECTROSTATICS,
             InteractionType::POLARIZATION,
-            InteractionType::QUADRUPOLE_POLARIZATION,
             InteractionType::CHARGETRANSFER
         };
         for(const auto et : eTerms)
         {
-            auto tt = energies->find(et);
+            tt = energies->find(et);
             if (energies->end() != tt &&
                 eBefore.end() != eBefore.find(et))
             {
@@ -344,7 +351,6 @@ void ForceComputer::compute(MsgHandler                        *msg_handler,
         double allelec = 0;
         for(const auto &itype : { InteractionType::ELECTROSTATICS,
                                   InteractionType::POLARIZATION,
-                                  InteractionType::QUADRUPOLE_POLARIZATION,
                                   InteractionType::INDUCTION,
                                   InteractionType::INDUCTIONCORRECTION })
         {
@@ -361,7 +367,6 @@ void ForceComputer::compute(MsgHandler                        *msg_handler,
         double exchind = 0;
         for(const auto &itype : { InteractionType::EXCHANGE,
                                   InteractionType::INDUCTION,
-                                  InteractionType::QUADRUPOLE_POLARIZATION,
                                   InteractionType::INDUCTIONCORRECTION })
         {
             auto ee = energies->find(itype);
