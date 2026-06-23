@@ -328,8 +328,8 @@ void ACTMol::forceEnergyMaps(MsgHandler                                         
         }
         if (doInter)
         {
-            // Complicated way of combined multiple terms into one observable
-            std::map<InteractionType,  std::set<MolPropObservable>> combined = {
+            // Complicated way of combining multiple terms into one observable
+            std::map<InteractionType,  std::set<MolPropObservable>> interactionToMpos = {
                 { InteractionType::ALLELEC, { MolPropObservable::ELECTROSTATICS,
                                               MolPropObservable::INDUCTION,
                                               MolPropObservable::INDUCTIONCORRECTION } },
@@ -349,11 +349,11 @@ void ACTMol::forceEnergyMaps(MsgHandler                                         
             {
                 std::set<MolPropObservable> mpos;
                 // Check whether one is enough or we have to look up multiple
-                auto combine = combined.find(ener.first);
-                if (combine != combined.end())
+                auto i2Ms = interactionToMpos.find(ener.first);
+                if (i2Ms != interactionToMpos.end())
                 {
                     // Combine multiple QM observable
-                    for(const auto &mpo : combine->second)
+                    for(const auto &mpo : i2Ms->second)
                     {
                         mpos.insert(mpo);
                     }
@@ -672,12 +672,12 @@ void ACTMol::calculateInteractionEnergy(MsgHandler                        *msgha
 
     // First compute the relaxed monomer energies
     std::map<InteractionType, double> e_monomer[2];
-    auto &astart  = fraghandler_.atomStart();
-    auto itInduc  = InteractionType::INDUCTION;
-    auto itICorr  = InteractionType::INDUCTIONCORRECTION;
-    auto itElec   = InteractionType::ELECTROSTATICS;
-    auto itPolar  = InteractionType::POLARIZATION;
-    auto itQPolar = InteractionType::QUADRUPOLE_POLARIZATION;
+    auto &astart = fraghandler_.atomStart();
+    auto itInduc = InteractionType::INDUCTION;
+    auto itICorr = InteractionType::INDUCTIONCORRECTION;
+    auto itElec  = InteractionType::ELECTROSTATICS;
+    auto itPolar = InteractionType::POLARIZATION;
+    auto itQPolar= InteractionType::QUADRUPOLE_POLARIZATION;
     for(size_t ff = 0; ff < tops.size(); ff++)
     {
         int natom = tops[ff].atoms().size();
@@ -731,7 +731,7 @@ void ACTMol::calculateInteractionEnergy(MsgHandler                        *msgha
                                &mycoords, &forces, &e_total, fzero, false);
         // Move remaining polarisation energy to the electrostatics.
         // Since we started with the shells in the relaxed monomer position,
-        // not the entire Polaration will have been moved to induction.
+        // not the entire Polarization will have been moved to induction.
         auto eie = e_total.find(itElec);
         for(const auto itr : { itPolar })
         {
@@ -943,8 +943,8 @@ ACTMessage ACTMol::GenerateAcmCharges(MsgHandler             *msg_handler,
     {
         EemRms = 0;
         auto eqgen = fraghandler_.generateCharges(msg_handler, getMolname(),
-                                                   *coords, pd, atoms(),
-                                                   symmetric_charges_);
+                                                  *coords, pd, atoms(),
+                                                  symmetric_charges_);
         if (eQgen::OK == eqgen)
         {
             // The purpose of this force calculation is to minimize shell

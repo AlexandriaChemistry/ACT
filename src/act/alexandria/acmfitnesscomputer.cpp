@@ -260,9 +260,20 @@ double ACMFitnessComputer::calcDeviation(MsgHandler                 *msghandler,
             {
                 mydev->calcDeviation(msghandler, forceComp_, &(*actmol), &coords, targets, sii_->forcefield());
             }
-            msghandler->writeDebug(gmx::formatString("CalcDev: rank %d mol %s #energies %zu tw %g\n",
-                                                     cr->rank(), actmol->getMolname().c_str(), actmol->experimentConst().size(),
-                                                     targets->find(eRMS::EPOT)->second.totalWeight()));
+            if (msghandler->debug())
+            {
+                msghandler->writeDebug(gmx::formatString("CalcDev: rank %d mol %s #energies %zu\n",
+                                                         cr->rank(), actmol->getMolname().c_str(), actmol->experimentConst().size()));
+                for(const auto &t: *targets)
+                {
+                    auto tw = t.second.totalWeight();
+                    if (tw > 0)
+                    {
+                        msghandler->writeDebug(gmx::formatString("CalcDev: %s tw: %g chi2: %g\n",
+                                                                 rmsName(t.second.erms()), tw, t.second.chiSquared()));
+                    }
+                }
+            }
             nlocal++;
         }
     }
