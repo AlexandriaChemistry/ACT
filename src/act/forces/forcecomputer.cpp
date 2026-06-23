@@ -323,7 +323,7 @@ void ForceComputer::compute(MsgHandler                        *msg_handler,
         std::set<InteractionType> eTerms = {
             InteractionType::ELECTROSTATICS,
             InteractionType::POLARIZATION,
-            //InteractionType::QUADRUPOLE_POLARIZATION,
+            InteractionType::QUADRUPOLE_POLARIZATION,
             InteractionType::CHARGETRANSFER
         };
         for(const auto et : eTerms)
