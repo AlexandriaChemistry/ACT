@@ -624,8 +624,16 @@ bool OptACM::runMaster(bool optimize,
             {
                 tw->writeString(it->second.print("Final best genome"));
                 tw->writeStringFormatted("\nChi2 components of the best parameter vector found (for %s):\n", iMolSelectName(it->first).c_str());
+                auto chi2before = it->second.fitness(it->first);
+                // Print components
                 fitComp_->compute(&msghandler_, &(it->second), it->first);
+                // Check for consistency (read: bugs)
                 double chi2 = it->second.fitness(it->first);
+                if (std::abs(chi2before - chi2) > 1e-3)
+                {
+                    msghandler_.msg(ACTStatus::Fatal,
+                                    gmx::formatString("Chi2 after training was %g, after recomputing it is %g.", chi2before, chi2));
+                }
                 tw->writeStringFormatted("Minimum chi2 for %s %g\n",
                                          iMolSelectName(it->first).c_str(), chi2);
             }
