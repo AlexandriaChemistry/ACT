@@ -254,7 +254,7 @@ void MCMCMutator::stepMCMC(MsgHandler                   *msghandler,
     const double xiter = iterOffset + iter + (1.0*pp)/genome->nBase();
     if (accept)
     {  // If the parameter change is accepted
-        if (!bestGenome->hasFitness(imstr) || 
+        if (!bestGenome->hasFitness(imstr) &&
             currEval[imstr] < bestGenome->fitness(imstr))  // If a new minimim was found
         {
             // If pointer to log file exists, write information about new minimum
