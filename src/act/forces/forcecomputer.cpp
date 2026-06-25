@@ -239,7 +239,7 @@ void ForceComputer::compute(MsgHandler                        *msg_handler,
         {
             if (msForce > msForceToler_)
             {
-                msg_handler->msg(ACTStatus::Warning,
+                msg_handler->msg(ACTStatus::Debug,
                                  gmx::formatString("Shell optimization did not converge. RMS force is %g, iter %d/%d", std::sqrt(msForce), iter, maxiter_));
             }
             else

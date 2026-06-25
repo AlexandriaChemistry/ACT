@@ -63,7 +63,7 @@ ACTMiddleMan::ACTMiddleMan(MsgHandler                *msghandler,
     ind_.reset(std::move(initializer.initialize()));
 
     // Create force computer
-    forceComp_.init(bch->shellToler(), bch->shellMaxIter());
+    forceComp_.init(bch->shellToler(), bch->shellMaxIter(), bch->shellMaxDistance());
 
     //! \todo Fitness computer. What about those false flags?
     fitComp_.init(msghandler, sii, mg, false, &forceComp_, algorithm);
@@ -107,6 +107,8 @@ void ACTMiddleMan::run(MsgHandler *msghandler)
     {
         fitComp_.compute(msghandler, ind_->genomePtr(), iMolSelect::Test);
     }
+    // Copy current genome to bestgenome
+    ind_->setBestGenome(ind_->genome());
     // I.
     // Send my initial genome and fitness to the master if needed
     if (read == 0)
@@ -140,33 +142,27 @@ void ACTMiddleMan::run(MsgHandler *msghandler)
             if (gach_->optimizer() == OptimizerAlg::GA)
             {
                 fitComp_.compute(msghandler, ind_->genomePtr(), ims);
-                // IV.
-                // Send the mutated vector
-                cr->send(master, *ind_->genomePtr()->basesPtr());
-
-                // V.
-                // Send the new train fitness
-                cr->send(master, ind_->genome().fitness(ims));
                 if (gach_->evaluateTestset())
                 {
                     fitComp_.compute(msghandler, ind_->genomePtr(), iMolSelect::Test);
-                    cr->send(master, ind_->genome().fitness(iMolSelect::Test));
                 }
+                // IV.
+                // Send the mutated genome
+                ind_->genomePtr()->Send(cr, master);
             }
             else
             {
-                // IV.
-                // If we are working with Hybrid or MCMC, send 
-                // the best genome found to the MASTER.
-                cr->send(master, *ind_->bestGenomePtr()->basesPtr());
-                //ind_->bestGenome().Send(cr, master);
-                // V.
-                // Send the new train fitness
-                cr->send(master, ind_->bestGenome().fitness(ims));
                 if (gach_->evaluateTestset())
                 {
                     fitComp_.compute(msghandler, ind_->bestGenomePtr(), iMolSelect::Test);
-                    cr->send(master, ind_->bestGenome().fitness(iMolSelect::Test));
+                }
+                // IV.
+                // If we are working with Hybrid or MCMC, send 
+                // the best genome found to the MASTER.
+                ind_->bestGenomePtr()->Send(cr, master);
+                if (msghandler->debug())
+                {
+                    msghandler->writeDebug(ind_->bestGenomePtr()->print("After mutation"));
                 }
             }
         }

@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2024
+ * Copyright (C) 2014-2026
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -138,6 +138,20 @@ void GenePool::addGenome(const Genome &genome)
         GMX_THROW(gmx::InternalError(gmx::formatString("All genes must be the same length. Expected %zu, got %zu.", genomeSize_, genome.nBase()).c_str()));
     }
     genomes_.push_back(genome);
+}
+
+void GenePool::dump(gmx::TextWriter *tw,
+                    const std::string &message) const
+{
+    if (!tw)
+    {
+        return;
+    }
+    tw->writeLine(message);
+    for(const auto &p : genomes_)
+    {
+        tw->writeLine(p.print(""));
+    }
 }
 
 std::vector<double> GenePool::min() const

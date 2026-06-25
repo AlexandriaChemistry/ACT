@@ -1508,6 +1508,7 @@ void TrainForceFieldPrinter::printOutliers(gmx::TextWriter                      
 void TrainForceFieldPrinter::print(MsgHandler                  *msghandler,
                                    JsonTree                    *jtree, 
                                    StaticIndividualInfo        *sii,
+                                   const ForceComputer         *forceComp,
                                    std::vector<ACTMol>         *actmol,
                                    const gmx_output_env_t      *oenv,
                                    const std::vector<t_filenm> &filenm,
@@ -1599,7 +1600,6 @@ void TrainForceFieldPrinter::print(MsgHandler                  *msghandler,
         { MolPropObservable::HEXADECAPOLE, hex_toler_  },
     };
     
-    ForceComputer forceComp;
     AtomizationEnergy atomenergy;
 
     atomenergy.read(msghandler);
@@ -1648,8 +1648,8 @@ void TrainForceFieldPrinter::print(MsgHandler                  *msghandler,
                         // Fetch coordinates and optimize shells if polarizable
                         auto myx = qresp->coords();
                         std::map<InteractionType, double> energies;
-                        forceComp.compute(msghandler, pd, topology, &myx,
-                                          &forces, &energies);
+                        forceComp->compute(msghandler, pd, topology, &myx,
+                                           &forces, &energies);
                         qresp->updateAtomCoords(myx);
                         qresp->updateAtomCharges(msghandler, mol->atomsConst());
                         qresp->calcPot(msghandler, 1.0);
@@ -1694,27 +1694,27 @@ void TrainForceFieldPrinter::print(MsgHandler                  *msghandler,
                 }
             }
             // Multipoles
-            analyse_multipoles(msghandler, mol, multi_toler, pd, &forceComp);
+            analyse_multipoles(msghandler, mol, multi_toler, pd, forceComp);
             
             // Polarizability
             if (bPolar)
             {
-                analysePolarisability(msghandler, tw, pd, &(*mol), ims, &forceComp);
+                analysePolarisability(msghandler, tw, pd, &(*mol), ims, forceComp);
             }
 
             // Atomic charges
             std::vector<gmx::RVec> coords = mol->xOriginal();
             {
                 std::map<InteractionType, double> energies;
-                forceComp.compute(msghandler, pd, topology, &coords,
-                                  &forces, &energies);
+                forceComp->compute(msghandler, pd, topology, &coords,
+                                   &forces, &energies);
             }
             printAtoms(tw, &jtmol, &(*mol), coords, forces);
             // Energies
             if (sii->haveFittingTargetSelection(ims))
             {
                 std::vector<std::string> tcout;
-                printEnergyForces(msghandler, &jtmol, pd, &forceComp, sii->fittingTargetsConst(ims),
+                printEnergyForces(msghandler, &jtmol, pd, forceComp, sii->fittingTargetsConst(ims),
                                   atomenergy, &(*mol), ims, oenv, printAll);
 
                 for(const auto &tout : tcout)
@@ -1905,7 +1905,7 @@ void TrainForceFieldPrinter::print(MsgHandler                  *msghandler,
     const char *mpout = opt2fn_null("-mpout", filenm.size(), filenm.data());
     if (mpout)
     {
-        writeMolpropsEnergies(msghandler, mpout, pd, &forceComp, actmol);
+        writeMolpropsEnergies(msghandler, mpout, pd, forceComp, actmol);
     }
 }
 
