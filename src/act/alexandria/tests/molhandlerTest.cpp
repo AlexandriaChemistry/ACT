@@ -107,7 +107,8 @@ protected:
         auto alg = pd->chargeGenerationAlgorithm();
         double shellTolerance = ftoler;
         int    shellMaxIter   = 100;
-        auto forceComp = new ForceComputer(shellTolerance, shellMaxIter);
+        double shellMaxDist   = 0.04;
+        auto forceComp = new ForceComputer(shellTolerance, shellMaxIter, shellMaxDist);
         std::vector<double>    qcustom;
         for(auto &molprop: molprops)
         {
