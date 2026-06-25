@@ -142,7 +142,10 @@ protected:
             }
             
             // Needed for GenerateCharges
-            auto forceComp = new ForceComputer();
+            double shellTolerance = 1e-6;
+            int    shellMaxIter   = 100;
+            double shellMaxDist   = 0.04;
+            auto forceComp = new ForceComputer(shellTolerance, shellMaxIter, shellMaxDist);
             std::vector<gmx::RVec> forces(mp_.atomsConst().size());
             std::vector<gmx::RVec> coords = mp_.xOriginal();
             auto alg = pd->chargeGenerationAlgorithm();
@@ -190,7 +193,7 @@ protected:
             }
             // Now the energies
             double rmsToler = 0.00001;
-            ForceComputer fcomp(rmsToler, 25);
+            ForceComputer fcomp(rmsToler, 25, 0.04);
             if (mp_.fragmentHandler()->topologies().size() > 1)
             {
                 std::vector<gmx::RVec> forces;
