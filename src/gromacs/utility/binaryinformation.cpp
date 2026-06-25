@@ -319,8 +319,8 @@ void printBinaryInformation(TextWriter                      *writer,
         writer->writeLine(formatString("%sACT:      %s, version %s%s%s", prefix, name,
                                        act_version(), precisionString, suffix));
     }
-    writer->writeLine("Program and command-line information");
-    writer->writeLine("====================================");
+    writer->writeLine(formatString("%sProgram and command-line information", prefix));
+    writer->writeLine(formatString("%s====================================", prefix));
     const char *const binaryPath = programContext.fullBinaryPath();
     if (!gmx::isNullOrEmpty(binaryPath))
     {
