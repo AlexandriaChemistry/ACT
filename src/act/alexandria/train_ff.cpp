@@ -985,7 +985,8 @@ int train_ff(int argc, char *argv[])
             }
             MolGen *tmpMg = opt.mg();
             JsonTree jtree("train_ff");
-            printer.print(opt.msgHandler(), &jtree, opt.sii(), tmpMg->actmolsPtr(), oenv, filenms, !bOptimize);
+            printer.print(opt.msgHandler(), &jtree, opt.sii(), opt.forceComp(),
+                          tmpMg->actmolsPtr(), oenv, filenms, !bOptimize);
             auto json_file = opt2fn_null("-json", filenms.size(), filenms.data());
             if (json_file)
             {

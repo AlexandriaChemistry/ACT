@@ -219,6 +219,9 @@ public:
     //! \brief Get the StaticIndividualInfo \p sii_ pointer
     StaticIndividualInfo *sii() { return sii_; }
 
+    //! \brief return the force computer
+    const ForceComputer *forceComp() const { return forceComp_; }
+
     //! \brief Get the GeneticAlgorithm \p ga_ pointer
     ga::GeneticAlgorithm *ga() { return ga_; }
 

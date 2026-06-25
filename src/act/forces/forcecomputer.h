@@ -44,7 +44,10 @@ namespace alexandria
 class QtypeProps;
 class MsgHandler;
 
-/*! \brief Class to compute all the forces in a molecule or complex
+/*! \brief Class to compute all the forces in a molecule or complex.
+ * It is imperative that there is only one force computer in each program,
+ * since results may depend on the flags given when initiating. This goes
+ * in particule for the maxShellDistance.
  */
 class ForceComputer
 {
@@ -69,8 +72,8 @@ private:
      * \param[in] maxShellDistance Maximum allowed distance (nm) for shells to be away from their core
      */
     ForceComputer(double   msForce,
-                  int      maxiter = 25,
-                  double   maxShellDistance = 0.04)
+                  int      maxiter,
+                  double   maxShellDistance)
     {
         init(msForce, maxiter, maxShellDistance);
     }

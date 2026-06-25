@@ -1,7 +1,7 @@
 ﻿/*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2022-2025
+ * Copyright (C) 2022-2026
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -34,7 +34,8 @@
 #include <algorithm>
 #include <vector>
 
-#include "gromacs/utility/gmxassert.h"
+//#include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/textwriter.h"
 
 #include "genome.h"
 
@@ -101,6 +102,13 @@ public:
      * \param[in] fileName The name of the file to write to
      */
     void write(const std::string &fileName) const;
+
+    /*! \brief Dump the genepool to a TextWriter with a message
+     * \param[in] tw      Text writer to write to
+     * \param[in] message Header text to print before the genes
+     */
+    void dump(gmx::TextWriter *tw,
+              const std::string &message) const;
 
     //! Return the population size
     size_t popSize() const { return genomes_.size(); }

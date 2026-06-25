@@ -195,6 +195,7 @@ public:
      * \param[in] msghandler For printing and status
      * \param[in] jtree      JSon structure
      * \param[in] sii        Information on the training
+     * \param[in] forceComp  Same ForceComputer used in training
      * \param[in] actmol     The compounds/dimers
      * \param[in] oenv       For printing xvg files
      * \param[in] filenm     Filenames for additional output files
@@ -203,6 +204,7 @@ public:
     void print(MsgHandler                  *msghandler,
                JsonTree                    *jtree, 
                StaticIndividualInfo        *sii,
+               const ForceComputer         *forceComp,
                std::vector<ACTMol>         *actmol,
                const gmx_output_env_t      *oenv,
                const std::vector<t_filenm> &filenm,

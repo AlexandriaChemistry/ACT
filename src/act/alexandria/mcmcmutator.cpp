@@ -113,7 +113,7 @@ void MCMCMutator::mutate(MsgHandler                *msghandler,
     }
     // Save initial evaluation and initialize a structure for the minimum evaluation
     auto initEval = prevEval;
-    *bestGenome = *genome;
+    //*bestGenome = *genome;
 
     if (msghandler)
     {
@@ -253,24 +253,8 @@ void MCMCMutator::stepMCMC(MsgHandler                   *msghandler,
     // Fractional iteration taking into account the inner loop with <pp> over <nParam>
     const double xiter = iterOffset + iter + (1.0*pp)/genome->nBase();
     if (accept)
-    {  // If the parameter change is accepted
-        if (!bestGenome->hasFitness(imstr) &&
-            currEval[imstr] < bestGenome->fitness(imstr))  // If a new minimim was found
-        {
-            // If pointer to log file exists, write information about new minimum
-            printNewMinimum(msghandler, currEval, xiter);
-
-            *bestGenome = *genome;
-            bestGenome->setFitness(imstr, currEval[imstr]);  // Pass the fitness for training set to the best genome
-            if (evaluateTestSet_)
-            {
-                bestGenome->setFitness(imste, currEval[imste]);  // Pass the fitness for the test set to the best genome
-            }
-            if (checkPoint)
-            {
-                sii_->saveState(false);
-            }
-        }
+    {
+        // If the parameter change is accepted
         prevEval->find(imstr)->second = currEval[imstr];
         genome->setFitness(imstr, currEval[imstr]);
         if (evaluateTestSet_)
@@ -279,6 +263,28 @@ void MCMCMutator::stepMCMC(MsgHandler                   *msghandler,
             genome->setFitness(imste, currEval[imste]);
         }
         acceptedMoves_[paramIndex] += 1;
+        // and if a new minimum was found
+        if (currEval[imstr] < bestGenome->fitness(imstr))
+        {
+            // If pointer to log file exists, write information about new minimum
+            printNewMinimum(msghandler, currEval, xiter);
+
+            *bestGenome = *genome;
+            //bestGenome->setFitness(imstr, currEval[imstr]);  // Pass the fitness for training set to the best genome
+            //if (evaluateTestSet_)
+            //{
+            //  bestGenome->setFitness(imste, currEval[imste]);  // Pass the fitness for the test set to the best genome
+            //}
+            if (checkPoint)
+            {
+                if (msghandler)
+                {
+                    msghandler->write(gmx::formatString("Will write FF to checkpoint file %s",
+                                                        sii_->outputFile().c_str()));
+                }
+                sii_->saveState(false);
+            }
+        }
     }
     else
     {  
@@ -374,8 +380,16 @@ void MCMCMutator::printNewMinimum(MsgHandler                         *msghandler
                                   const std::map<iMolSelect, double> &chi2,
                                   double                              xiter)
 {
+    if (!msghandler->verbose())
+    {
+        return;
+    }
     auto tw = msghandler->tw();
-    if (tw && msghandler->verbose())
+    if (!tw)
+    {
+        tw = msghandler->twDebug();
+    }
+    if (tw)
     {
         tw->writeStringFormatted("Middleman %i ", sii_->id());
         if (evaluateTestSet_)
