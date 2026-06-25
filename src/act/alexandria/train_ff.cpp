@@ -194,6 +194,10 @@ void OptACM::optionsFinished(const std::vector<t_filenm> &filenames)
         outputFileName_.insert({iMolSelect::Test, opt2fn("-otest", filenames.size(), filenames.data())});
         sii_->setOutputFile(outputFileName_[iMolSelect::Train]);
     }
+    // Force computer may be needed even with nooptimize
+    forceComp_ = new ForceComputer();
+    forceComp_->init(gmx::square(bch_.shellToler()),
+                     bch_.shellMaxIter(), bch_.shellMaxDistance());
 }
 
 //! \todo rename function and make a coupling between targets from the command line
@@ -242,10 +246,6 @@ int OptACM::initMaster(const std::vector<t_filenm> &fnm,
     {
         sii_->makeIndividualDir();  // We need to call this before opening working files!
     }
-    // Force computer
-    forceComp_ = new ForceComputer();
-    forceComp_->init(gmx::square(bch_.shellToler()),
-                     bch_.shellMaxIter(), bch_.shellMaxDistance());
     // Fitness computer
     fitComp_ = new ACMFitnessComputer();
     fitComp_->init(&msghandler_, sii_, &mg_, bRemoveMol_, forceComp_, algorithm);
