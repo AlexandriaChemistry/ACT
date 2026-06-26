@@ -68,11 +68,7 @@ QgenAcm::QgenAcm(MsgHandler                 *msghandler,
     eQGEN_      = eQgen::OK;
     natom_      = atoms.size();
     qtotal_     = qtotal;
-    if (!ffOption(*pd, InteractionType::ELECTROSTATICS, 
-                  "epsilonr", &epsilonr_))
-    {
-        epsilonr_ = 1;
-    }
+
     const auto &eem = pd->findForcesConst(entype);
     auto bctype = InteractionType::BONDCORRECTIONS;
     // Note: BONDCORRECTIONS (bctype) are currently not used in this ACM setup.
@@ -340,8 +336,7 @@ double QgenAcm::calcJ(const rvec xI,
                       double     zetaI,
                       double     zetaJ,
                       int        rowI,
-                      int        rowJ,
-                      double     epsilonr)
+                      int        rowJ)
 {
     rvec   dx;
     double r    = 0;
@@ -371,10 +366,10 @@ double QgenAcm::calcJ(const rvec xI,
             break;
         }
     }
-    return (ONE_4PI_EPS0*eTot)/(epsilonr*ELECTRONVOLT);
+    return (ONE_4PI_EPS0*eTot)/(ELECTRONVOLT);
 }
 
-void QgenAcm::calcJcc(double epsilonr)
+void QgenAcm::calcJcc()
 {
     auto Jcc = 0.0;
     for (size_t n = 0; n < nonFixed_.size(); n++)
@@ -390,8 +385,7 @@ void QgenAcm::calcJcc(double epsilonr)
                             zeta_[i],
                             zeta_[j],
                             row_[i],
-                            row_[j],
-                            epsilonr);
+                            row_[j]);
                 Jcc_[n][m] = Jcc_[m][n] = (0.5 * Jcc);
             }
             else
@@ -405,8 +399,7 @@ void QgenAcm::calcJcc(double epsilonr)
 
 double QgenAcm::calcJcs(MsgHandler                 *msg_handler,
                         int                         core_ndx,
-                        const std::vector<ActAtom> &atoms,
-                        double                      epsilonr)
+                        const std::vector<ActAtom> &atoms)
 {
     double Jcs     = 0;
     for (size_t i = 0; i < fixed_.size(); i++)
@@ -422,8 +415,7 @@ double QgenAcm::calcJcs(MsgHandler                 *msg_handler,
                                         zeta_[core_ndx],
                                         zeta_[fixed_ndx],
                                         row_[core_ndx],
-                                        row_[fixed_ndx],
-                                        epsilonr));  
+                                        row_[fixed_ndx]));  
             if (msg_handler && msg_handler->debug())
             {
                 msg_handler->writeDebug(gmx::formatString("calcJcs: core_ndx: %d fixed_ndx: %d shell_charge: %0.1f", 
@@ -439,8 +431,7 @@ double QgenAcm::calcJcs(MsgHandler                 *msg_handler,
 }
 
 void QgenAcm::calcRhs(MsgHandler                 *msg_handler,
-                      const std::vector<ActAtom> &atoms,
-                      double                      epsilonr)
+                      const std::vector<ActAtom> &atoms)
 {
     // Compute total fixed charge
     double qfixed = 0.0;
@@ -458,7 +449,7 @@ void QgenAcm::calcRhs(MsgHandler                 *msg_handler,
         if (bHaveShell_)
         {
             // Core-Shell interaction
-            rhs_[i] -= 0.5*calcJcs(msg_handler, nfi, atoms, epsilonr);
+            rhs_[i] -= 0.5*calcJcs(msg_handler, nfi, atoms);
             // Hardness of atom multiplied by charge of shell(s)
             for(auto shellId : atoms[nfi].shells())
             {
@@ -629,7 +620,7 @@ void QgenAcm::solveSQE(MsgHandler              *msg_handler,
             //if (false && nonFixed_.size() < static_cast<size_t>(natom_))
             //{
             //   chi_corr[i] += eta_[nfi] * q_[myShell_.find(nfi)->second];
-            //   chi_corr[i] += 0.5*calcJcs(nfi, epsilonr_);
+            //   chi_corr[i] += 0.5*calcJcs(nfi);
             //}
         }
         for (size_t bij = 0; bij < nbonds; bij++)
@@ -733,7 +724,7 @@ eQgen QgenAcm::generateCharges(MsgHandler                   *msg_handler,
     {
         updateParameters();
         updatePositions(msg_handler, x);
-        calcJcc(epsilonr_);
+        calcJcc();
         if (pd->interactionPresent(InteractionType::BONDCORRECTIONS) &&
             pd->chargeGenerationAlgorithm() == ChargeGenerationAlgorithm::SQE)
         {
@@ -741,7 +732,7 @@ eQgen QgenAcm::generateCharges(MsgHandler                   *msg_handler,
         }
         else
         {
-            calcRhs(msg_handler, *atoms, epsilonr_);
+            calcRhs(msg_handler, *atoms);
             solveEEM(msg_handler);
         }
         if (eQgen::OK == eQGEN_)

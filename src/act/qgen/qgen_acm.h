@@ -160,8 +160,6 @@ private:
     ChargeDistributionType           ChargeDistributionType_  = ChargeDistributionType::Point;
     //! Number of particles in the compound
     size_t                           natom_       = 0;
-    //! Epsilon R
-    double                           epsilonr_    = 1;
     //! Atomic number for each of the atoms
     std::vector<int>                 atomicNumber_;
     //! Parameters for EEM algorithm, chi is electronegativity
@@ -211,7 +209,6 @@ private:
      * \param[in] zetaJ    zeta for atom J
      * \param[in] rowI     row for atom I
      * \param[in] rowJ     row for atom J
-     * \param[in] epsilonr Relative dielectric constant
      * \return the coulomb interaction
      */
     double calcJ(const rvec xI, 
@@ -219,8 +216,7 @@ private:
                  double     zetaI,
                  double     zetaJ,
                  int        rowI,
-                 int        rowJ,
-                 double     epsilonr);
+                 int        rowJ);
     
     /*! \brief Store the atoms in their destination structure
      * \param[inout] atoms The array with atom properties
@@ -236,22 +232,19 @@ private:
      * the off-diagonal numbers are multiplied by 0.5 such that
      * the total electrostatic potetential is correct nevertheless.
      * The diagonal is filled with the atomic hardness values.
-     * \param[in] epsilonr Relative  dielectric constant
      */
-    void calcJcc(double epsilonr);
+    void calcJcc();
     
     /*! \brief Compute shell potential at atom position
      * This takes into account all the shells in the molecule.
      * \param[in] msg_handler For debug output
      * \param[in] top_ndx     Atom number
      * \param[in] atoms       Atom information
-     * \param[in] epsilonr    Relative  dielectric constant
      * \return The potential
      */
     double calcJcs(MsgHandler                 *msg_handler,
                    int                         top_ndx,
-                   const std::vector<ActAtom> &atoms,
-                   double                      epsilonr);
+                   const std::vector<ActAtom> &atoms);
     
     /*! \brief Solve the matrix equation to determine charges
      * \param[in] msg_handler For debug output and info
@@ -278,11 +271,9 @@ private:
     /*! \brief Compute the right/hand side of the matrix equation
      * \param[in] msg_handler For debug output
      * \param[in] atoms       Atom information
-     * \param[in] epsilonr    The relative dielectric constant
      */
     void calcRhs(MsgHandler                 *msg_handler,
-                 const std::vector<ActAtom> &atoms,
-                 double                      epsilonr);
+                 const std::vector<ActAtom> &atoms);
 };
 }
 #endif
