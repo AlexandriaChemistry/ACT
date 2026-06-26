@@ -27,9 +27,10 @@
  */
 #include <vector>
 
+#include "act/alexandria/topology.h"
 #include "act/basics/chargemodel.h"
 #include "act/basics/interactiontype.h"
-#include "act/alexandria/topology.h"
+#include "act/forcefield/forcefield.h"
 #include "gromacs/math/vectypes.h"
 
 namespace alexandria
@@ -43,7 +44,8 @@ typedef double (*bondForceComputer)(MsgHandler                         *msghandl
                                     const std::vector<ActAtom>         &atoms,
                                     const std::vector<gmx::RVec>       *coordinates,
                                     std::vector<gmx::RVec>             *forces,
-                                    std::map<InteractionType, double>  *energies);
+                                    std::map<InteractionType, double>  *energies,
+                                    const ForceField                   *pd);
 
 /*! \brief Return a bonded force computer according to typedef.
  * \param[in] pot    The ACT potential type
