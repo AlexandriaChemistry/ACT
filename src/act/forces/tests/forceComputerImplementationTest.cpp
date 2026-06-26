@@ -47,6 +47,7 @@
 #include <gtest/gtest.h>
 
 #include "act/forcefield/forcefield_parametername.h"
+#include "act/forcefield/forcefield_utils.h"
 #include "act/molprop/topologyentry.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
@@ -146,7 +147,8 @@ protected:
 
     void testPot(Potential                     p,
                  const TopologyEntryVector    &top,
-                 const std::vector<gmx::RVec> *coordinates)
+                 const std::vector<gmx::RVec> *coordinates,
+                 const ForceField             *pd)
     {
         // Generate force array with zeroes
         gmx::RVec                         fzero = { 0, 0, 0 };
@@ -157,7 +159,7 @@ protected:
         // The correct force computer
         auto bfc = getBondForceComputer(p);
 
-        auto epot = bfc(nullptr, top, atoms_, coordinates, &forces, &energies);
+        auto epot = bfc(nullptr, top, atoms_, coordinates, &forces, &energies, pd);
         checker_.checkReal(epot, "Epot");
         checker_.checkSequence(forces.begin(), forces.end(), "Forces");
         for (const auto &e : energies)
@@ -182,7 +184,7 @@ protected:
         }
         // Energy map
         std::map<InteractionType, double> energies2;
-        (void) bfc(nullptr, top, atoms_, &coords2, &forces2, &energies2);
+        (void) bfc(nullptr, top, atoms_, &coords2, &forces2, &energies2, pd);
         double ediff = 1e-8;
         // First, check that both maps have the same number of entries
         ASSERT_EQ(energies.size(), energies2.size());
@@ -220,7 +222,7 @@ protected:
             auto newx = *coordinates;
             newx[1][ZZ] += (2*k-1)*dx;
             rvec_sub((*coordinates)[1], newx[1], dxvector[k]);
-            ener[k] = bfc(nullptr, top, atoms_, &newx, &forces, &energies);
+            ener[k] = bfc(nullptr, top, atoms_, &newx, &forces, &energies, pd);
         }
         // Compute numerical derivative
         double fz = -(ener[1]-ener[0])/(norm(dxvector[0])+norm(dxvector[1]));
@@ -254,7 +256,7 @@ TEST_P(ForceComputerImplementationTest, All)
     {
         top[0]->setParams(par.params);
     }
-    testPot(pot.potential, top, &x);
+    testPot(pot.potential, top, &x, nullptr);
 }
 
 // ============================================================
@@ -707,6 +709,32 @@ INSTANTIATE_TEST_CASE_P(PosRes, ForceComputerImplementationTest,
                                             ::testing::Values(c_posResParams),
                                             ::testing::ValuesIn(c_posResCoords)),
                          fcTestName);
+
+TEST_F(ForceComputerImplementationTest, GaussianEpsilonR)
+{
+    // Get forcefield
+    auto pd  = getForceField("ACS-pg-vs2");
+    ForceField mypd = *pd;
+    auto ielec = InteractionType::ELECTROSTATICS;
+    auto ffpl  = mypd.findForces(ielec);
+    std::string epsopt("epsilonr");
+    if (ffpl->optionExists(epsopt))
+    {
+        ffpl->removeOption(epsopt);
+    }
+    ffpl->addOption(epsopt, "2.0");
+    const auto &pot   = c_coulGaussPot;
+    const auto &par   = c_coulZeta10Params;
+    const auto &coord = c_stdPairCoords[0];
+    atoms_[1].setCharge(coord.charge1);
+    auto x   = coord.coordsBuilder();
+    auto top = pot.topBuilder();
+    if (!top.empty())
+    {
+        top[0]->setParams(par.params);
+    }
+    testPot(pot.potential, top, &x, &mypd);
+}
 
 }  // namespace
 }  // namespace alexandria
