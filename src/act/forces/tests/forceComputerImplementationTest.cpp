@@ -262,9 +262,8 @@ TEST_P(ForceComputerImplementationTest, All)
     if (!top.empty())
     {
         top[0]->setParams(par.params);
-        testPot(pot.potential, top, &x);
+        testPot(pot.potential, top, &x, nullptr);
     }
-    testPot(pot.potential, top, &x, nullptr);
 }
 
 // ============================================================
