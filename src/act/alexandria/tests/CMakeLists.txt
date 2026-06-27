@@ -52,6 +52,7 @@ gmx_add_unit_test(
     princTest.cpp
     symmetrizeChargesTest.cpp
     topologyTest.cpp
+    mcmcmutatorTest.cpp
     # pseudo-library for code for alexandria
     $<TARGET_OBJECTS:actLib>
     )
