@@ -1111,7 +1111,7 @@ static double computeCoulombSlater(MsgHandler                        *msghandler
         {
             epsilonr = 1;
         }
-    }
+     }
     double ebond = 0;
     auto   x     = *coordinates;
     for (const auto &b : pairs)

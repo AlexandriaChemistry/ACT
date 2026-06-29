@@ -307,6 +307,7 @@ bool HybridGAMC::evolve(alexandria::MsgHandler       *msghandler,
     // Iterate and create new generation
     do
     {
+        bool haveToSendGenomes = false;
         // Sort individuals in increasing order of fitness
         auto gp = pool[pold]->genePoolPtr();
         if (gach_->sort())
@@ -316,10 +317,15 @@ bool HybridGAMC::evolve(alexandria::MsgHandler       *msghandler,
             {
                 pool[pold]->dump(msghandler->twDebug(), "After sorting old population...");
             }
+            haveToSendGenomes = true;
         }
 
         // Penalize
         if (penalize(msghandler->tw(), pool[pold], generation))
+        {
+            haveToSendGenomes = true;
+        }
+        if (haveToSendGenomes)
         {
             // Send to middlemen for fitness recomputation
             for (size_t i = 1; i < pool[pold]->popSize(); i++)
@@ -459,7 +465,7 @@ bool HybridGAMC::evolve(alexandria::MsgHandler       *msghandler,
             msghandler->msg(alexandria::ACTStatus::Debug, "Sending for mutation...");
         }
 
-        for (size_t i = std::max(1, gach_->nElites()); i < pool[pnew]->popSize(); i++)
+        for (size_t i = 1; i < pool[pnew]->popSize(); i++)
         {
             int dest = cr->middlemen()[i-1];
             // II.
@@ -470,8 +476,15 @@ bool HybridGAMC::evolve(alexandria::MsgHandler       *msghandler,
             // Now send the new bases
             cr->send(dest, pool[pnew]->genomePtr(i)->bases());
             // III.
-            // Tell the middleman to carry the MUTATION mode
-            cr->send(dest, alexandria::TrainFFMiddlemanMode::MUTATION);
+            // Tell the middleman to carry the MUTATION mode, except for elitists
+            if (static_cast<int>(i) < gach_->nElites())
+            {
+                cr->send(dest, alexandria::TrainFFMiddlemanMode::FITNESS);
+            }
+            else
+            {
+                cr->send(dest, alexandria::TrainFFMiddlemanMode::MUTATION);
+            }
         }
         // Mutate the MASTER's genome if no elitism
         if (gach_->nElites() == 0)
@@ -507,6 +520,16 @@ bool HybridGAMC::evolve(alexandria::MsgHandler       *msghandler,
         if (msghandler->debug())
         {
             msghandler->write("Fetching mutated children and fitness from new generation...\n");
+        }
+        // Receive fitness from elite middlemen
+        for (int i = 1; i < gach_->nElites(); i++)
+        {
+            int src      = cr->middlemen()[i-1];
+            // IV.
+            // Receive the fitness
+            double fitness;
+            cr->recv(src, &fitness);  // Receiving the new training fitness
+            pool[pnew]->genomePtr(i)->setFitness(imstr, fitness);
         }
         // Receive the new children (parameters + fitness) from the middle men for the
         // non elitist.
