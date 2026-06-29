@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2020-2025
+ * Copyright (C) 2020-2026
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -296,7 +296,9 @@ void GAConfigHandler::check_pargs(MsgHandler *msghandler)
     }
     
     GMX_RELEASE_ASSERT(nElites_ >= 0 && nElites_ % 2 == 0, "-n_elites must be nonnegative and even.");
-    
+
+    GMX_RELEASE_ASSERT(nElites_ < popSize_, "-n_elites must be less than -pop_size.");
+
     GMX_RELEASE_ASSERT(nCrossovers_ > 0, "-n_crossovers must be nonnegative.");
     
     GMX_RELEASE_ASSERT(boltzTemp_ >= 0, "-boltz_temp must be nonnegative.");
