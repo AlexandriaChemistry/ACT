@@ -119,8 +119,11 @@ public:
         molgen_    = molgen;
         removeMol_ = removeMol;
         algorithm_ = algorithm;
-        fillDevComputers(msghandler,
-                         molgen->hasMolPropObservable(MolPropObservable::INDUCTIONCORRECTION));
+        if (molgen)
+        {
+            fillDevComputers(msghandler,
+                             molgen->hasMolPropObservable(MolPropObservable::INDUCTIONCORRECTION));
+        }
     }
 
     /*! \brief Do the actual computation

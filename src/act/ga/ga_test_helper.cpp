@@ -63,7 +63,7 @@ GaTestHelper::GaTestHelper(int                                  nmiddlemen,
     std::string ffDataName = gmx::test::TestFileManager::getInputFilePath(ffName);
     sii->fillForceField(msghandler, ffDataName.c_str());
     molgen = new MolGen(&cr);
-    std::string mpName("testAlcohol.xml");
+    std::string mpName("../../ga/tests/testAlcohol.xml");
     std::string mpDataName = gmx::test::TestFileManager::getInputFilePath(mpName);
     for(const auto &fs : fitstrings)
     {
@@ -81,7 +81,7 @@ GaTestHelper::GaTestHelper(int                                  nmiddlemen,
     // Hack structure to add a file name
     fnms.back().filenames.push_back(mpDataName);
     // Selection file
-    std::string selName("testAlcohol.dat");
+    std::string selName("../../ga/tests/testAlcohol.dat");
     std::string selDataName = gmx::test::TestFileManager::getInputFilePath(selName);
     alexandria::MolSelect gms;
     // ForceComputer
