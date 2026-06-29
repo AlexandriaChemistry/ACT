@@ -95,7 +95,7 @@ protected:
         }
         
         double rmsToler = 1e-12;
-        auto fcomp = new ForceComputer(rmsToler, 25, 0.04);
+        auto fcomp = new ForceComputer(rmsToler, 25, 0.04, 1.0);
         
         MsgHandler msghandler;
         msghandler.setPrintLevel(ACTStatus::Warning);
@@ -187,7 +187,7 @@ protected:
         auto pd  = getForceField(forcefield);
         
         double rmsToler = 0.0000001;
-        auto fcomp = new ForceComputer(rmsToler, 25, 0.04);
+        auto fcomp = new ForceComputer(rmsToler, 25, 0.04, 1.0);
         
         MsgHandler msghandler;
         msghandler.setPrintLevel(ACTStatus::Warning);

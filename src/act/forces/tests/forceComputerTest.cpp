@@ -73,7 +73,7 @@ TEST(ForceComputerInit, DefaultConstructorHasExpectedTolerance)
 TEST(ForceComputerInit, ParameterizedConstructorStoresTolerance)
 {
     const double toler = 1e-8;
-    ForceComputer fc(toler, 50, 0.02);
+    ForceComputer fc(toler, 50, 0.02, 1);
     EXPECT_DOUBLE_EQ(toler, fc.forceTolerance());
 }
 
@@ -95,7 +95,7 @@ TEST(ForceComputerInit, SetForceToleranceToSmallValue)
 TEST(ForceComputerInit, InitOverridesDefaultTolerance)
 {
     ForceComputer fc;
-    fc.init(1e-4, 10, 0.1);
+    fc.init(1e-4, 10, 0.1, 1.0);
     EXPECT_DOUBLE_EQ(1e-4, fc.forceTolerance());
 }
 

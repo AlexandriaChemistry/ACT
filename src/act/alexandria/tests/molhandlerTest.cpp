@@ -108,7 +108,13 @@ protected:
         double shellTolerance = ftoler;
         int    shellMaxIter   = 100;
         double shellMaxDist   = 0.04;
-        auto forceComp = new ForceComputer(shellTolerance, shellMaxIter, shellMaxDist);
+        double epsilonr = 1;
+        if (!ffOption(*pd, InteractionType::ELECTROSTATICS, 
+                      "epsilonr", &epsilonr))
+        {
+            epsilonr = 1;
+        }
+        auto forceComp = new ForceComputer(shellTolerance, shellMaxIter, shellMaxDist, epsilonr);
         std::vector<double>    qcustom;
         for(auto &molprop: molprops)
         {
