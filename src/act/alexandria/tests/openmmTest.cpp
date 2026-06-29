@@ -72,7 +72,7 @@ class OpenMMXmlTest : public gmx::test::CommandLineTestBase
         msghandler.setPrintLevel(ACTStatus::Warning);
         auto ff         = getForceField(forceField);
         double rmsToler = 0.0000001;
-        ForceComputer fcomp(rmsToler, 25, 0.04);
+        ForceComputer fcomp(rmsToler, 25, 0.04, 1.0);
         std::vector<ACTMol> mps;
         std::string molfn("mols/");
         molfn += fileName;

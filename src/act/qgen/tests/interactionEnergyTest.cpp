@@ -114,6 +114,12 @@ protected:
         }
         // Get forcefield
         auto pd = getForceField(model);
+        double epsilonr = 1;
+        if (!ffOption(*pd, InteractionType::ELECTROSTATICS, 
+                      "epsilonr", &epsilonr))
+        {
+            epsilonr = 1;
+        }
         bool   userqtot   = !qcustom.empty();
         double qtot_babel = myqtot;
         MsgHandler msghandler;
@@ -145,7 +151,7 @@ protected:
             double shellTolerance = 1e-6;
             int    shellMaxIter   = 100;
             double shellMaxDist   = 0.04;
-            auto forceComp = new ForceComputer(shellTolerance, shellMaxIter, shellMaxDist);
+            auto forceComp = new ForceComputer(shellTolerance, shellMaxIter, shellMaxDist, epsilonr);
             std::vector<gmx::RVec> forces(mp_.atomsConst().size());
             std::vector<gmx::RVec> coords = mp_.xOriginal();
             auto alg = pd->chargeGenerationAlgorithm();
@@ -193,7 +199,7 @@ protected:
             }
             // Now the energies
             double rmsToler = 0.00001;
-            ForceComputer fcomp(rmsToler, 25, 0.04);
+            ForceComputer fcomp(rmsToler, 25, 0.04, epsilonr);
             if (mp_.fragmentHandler()->topologies().size() > 1)
             {
                 std::vector<gmx::RVec> forces;

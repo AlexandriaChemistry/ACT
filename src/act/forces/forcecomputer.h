@@ -58,6 +58,8 @@ private:
     int            maxiter_          = 25;
     //! Maximum allowed distance for shells to be away from their core
     double         maxShellDistance_ = 0.04;
+    //! Relative dielectric constant
+    double         epsilonr_         = 1.0;
     //! Box for periodic boundaries
     matrix         box_   = { { 0 } };
     //! Virtual site handler
@@ -70,12 +72,14 @@ private:
      * \param[in] msForce          The tolerance for the mean square force on shells
      * \param[in] maxiter          The maximum number of iterations for shell minimization
      * \param[in] maxShellDistance Maximum allowed distance (nm) for shells to be away from their core
+     * \param[in] epsilonr         Relative dielectric constant
      */
     ForceComputer(double   msForce,
                   int      maxiter,
-                  double   maxShellDistance)
+                  double   maxShellDistance,
+                  double   epsilonr)
     {
-        init(msForce, maxiter, maxShellDistance);
+        init(msForce, maxiter, maxShellDistance, epsilonr);
     }
     /*! \brief Initialization of variables
      * \param[in] msForce          The tolerance for the mean square force on shells
@@ -84,7 +88,8 @@ private:
      */
     void init(double   msForce = 1e-6,
               int      maxiter = 25,
-              double   maxShellDistance = 0.04);
+              double   maxShellDistance = 0.04,
+              double   epsilonr = 1.0);
 
     /*! \brief Generate coordinates for virtual sites
      * \param[in]    top         Molecular topology containing vsite information

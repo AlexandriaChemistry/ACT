@@ -159,7 +159,13 @@ protected:
         // The correct force computer
         auto bfc = getBondForceComputer(p);
 
-        auto epot = bfc(nullptr, top, atoms_, coordinates, &forces, &energies, pd);
+        double epsilonr = 1;
+        if (pd && !ffOption(*pd, InteractionType::ELECTROSTATICS, 
+                      "epsilonr", &epsilonr))
+        {
+            epsilonr = 1;
+        }
+        auto epot = bfc(nullptr, top, atoms_, coordinates, &forces, &energies, epsilonr);
         checker_.checkReal(epot, "Epot");
         checker_.checkSequence(forces.begin(), forces.end(), "Forces");
         for (const auto &e : energies)
@@ -184,7 +190,7 @@ protected:
         }
         // Energy map
         std::map<InteractionType, double> energies2;
-        (void) bfc(nullptr, top, atoms_, &coords2, &forces2, &energies2, pd);
+        (void) bfc(nullptr, top, atoms_, &coords2, &forces2, &energies2, epsilonr);
         double ediff = 1e-8;
         // First, check that both maps have the same number of entries
         ASSERT_EQ(energies.size(), energies2.size());
@@ -222,7 +228,7 @@ protected:
             auto newx = *coordinates;
             newx[1][ZZ] += (2*k-1)*dx;
             rvec_sub((*coordinates)[1], newx[1], dxvector[k]);
-            ener[k] = bfc(nullptr, top, atoms_, &newx, &forces, &energies, pd);
+            ener[k] = bfc(nullptr, top, atoms_, &newx, &forces, &energies, epsilonr);
         }
         // Compute numerical derivative
         double fz = -(ener[1]-ener[0])/(norm(dxvector[0])+norm(dxvector[1]));

@@ -45,7 +45,7 @@ typedef double (*bondForceComputer)(MsgHandler                         *msghandl
                                     const std::vector<gmx::RVec>       *coordinates,
                                     std::vector<gmx::RVec>             *forces,
                                     std::map<InteractionType, double>  *energies,
-                                    const ForceField                   *pd);
+                                    double                              value);
 
 /*! \brief Return a bonded force computer according to typedef.
  * \param[in] pot    The ACT potential type
