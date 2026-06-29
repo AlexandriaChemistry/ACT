@@ -799,8 +799,14 @@ int b2(int argc, char *argv[])
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     
     (void) pd.verifyCheckSum(&msghandler);
+    double epsilonr = 1;
+    if (!ffOption(pd, InteractionType::ELECTROSTATICS, 
+                  "epsilonr", &epsilonr))
+    {
+        epsilonr = 1;
+    }
 
-    ForceComputer forceComp(shellToler, shellMaxIter, shellMaxDistance);
+    ForceComputer forceComp(shellToler, shellMaxIter, shellMaxDistance, epsilonr);
     
     JsonTree jtree("SecondVirialCoefficient");
     if (msghandler.info())

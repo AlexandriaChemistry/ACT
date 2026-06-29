@@ -54,7 +54,7 @@ static double computeFBPOSRE(MsgHandler                            *msghandler,
                              const std::vector<gmx::RVec>          *coordinates,
                              std::vector<gmx::RVec>                *forces,
                              std::map<InteractionType, double>     *energies,
-                             gmx_unused const ForceField           *pd)
+                             gmx_unused double                      value)
 {
     double epr  = 0;
     auto   &x    = *coordinates;
@@ -127,7 +127,7 @@ static double computeLJ12_6(MsgHandler                            *msghandler,
                             const std::vector<gmx::RVec>          *coordinates,
                             std::vector<gmx::RVec>                *forces,
                             std::map<InteractionType, double>     *energies,
-                            gmx_unused const ForceField           *pd)
+                            gmx_unused double                      value)
 {
     double erep  = 0;
     double edisp = 0;
@@ -188,7 +188,7 @@ static double computeLJ12_6_4(MsgHandler                            *msghandler,
                               const std::vector<gmx::RVec>          *coordinates,
                               std::vector<gmx::RVec>                *forces,
                               std::map<InteractionType, double>     *energies,
-                              gmx_unused const ForceField           *pd)
+                              gmx_unused double                      value)
 {
     double erep  = 0; // Pauli repulsion (1/r^12)
     double edisp = 0; // dipole-dipole (1/r^6)
@@ -259,7 +259,7 @@ static double computeLJ8_6(MsgHandler                            *msghandler,
                            const std::vector<gmx::RVec>          *coordinates,
                            std::vector<gmx::RVec>                *forces,
                            std::map<InteractionType, double>     *energies,
-                           gmx_unused const ForceField           *pd)
+                           gmx_unused double                      value)
 {   
     double erep  = 0;
     double edisp = 0;
@@ -320,7 +320,7 @@ static double computeLJ14_7(MsgHandler                            *msghandler,
                             const std::vector<gmx::RVec>          *coordinates,
                             std::vector<gmx::RVec>                *forces,
                             std::map<InteractionType, double>     *energies,
-                            gmx_unused const ForceField           *pd)
+                            gmx_unused double                      value)
 {
     double erep  = 0;
     double edisp = 0;
@@ -423,7 +423,7 @@ static double computeBornMayer(MsgHandler                            *msghandler
                                const std::vector<gmx::RVec>          *coordinates,
                                std::vector<gmx::RVec>                *forces,
                                std::map<InteractionType, double>     *energies,
-                               gmx_unused const ForceField           *pd)
+                               gmx_unused double                      value)
 {
     double eexp  = 0;
     auto   x     = *coordinates;
@@ -500,7 +500,7 @@ static double computeSlaterISA(MsgHandler                            *msghandler
                                const std::vector<gmx::RVec>          *coordinates,
                                std::vector<gmx::RVec>                *forces,
                                std::map<InteractionType, double>     *energies,
-                               gmx_unused const ForceField           *pd)
+                               gmx_unused double                      value)
 {
     double eexp  = 0;
     auto   x     = *coordinates;
@@ -530,7 +530,7 @@ static double computeDoubleExponential(MsgHandler                            *ms
                                        const std::vector<gmx::RVec>          *coordinates,
                                        std::vector<gmx::RVec>                *forces,
                                        std::map<InteractionType, double>     *energies,
-                                       gmx_unused const ForceField           *pd)
+                                       gmx_unused double                      value)
 {
     double eexp  = 0;
     auto   x     = *coordinates;
@@ -621,7 +621,7 @@ static double computeWBH(MsgHandler                            *msghandler,
                          const std::vector<gmx::RVec>          *coordinates,
                          std::vector<gmx::RVec>                *forces,
                          std::map<InteractionType, double>     *energies,
-                         gmx_unused const ForceField           *pd)
+                         gmx_unused double                      value)
 {
     double erep  = 0;
     double edisp = 0;
@@ -675,7 +675,7 @@ static double computeBuckingham(MsgHandler                            *msghandle
                                 const std::vector<gmx::RVec>          *coordinates,
                                 std::vector<gmx::RVec>                *forces,
                                 std::map<InteractionType, double>     *energies,
-                                gmx_unused const ForceField           *pd)
+                                gmx_unused double                      value)
 {
     double erep  = 0;
     double edisp = 0;
@@ -793,7 +793,7 @@ static double computeTangToennies(MsgHandler                            *msghand
                                   const std::vector<gmx::RVec>          *coordinates,
                                   std::vector<gmx::RVec>                *forces,
                                   std::map<InteractionType, double>     *energies,
-                                  gmx_unused const ForceField           *pd)
+                                  gmx_unused double                      value)
 {
     double erep  = 0;
     double edisp = 0;
@@ -827,7 +827,7 @@ static double computeTT2b(MsgHandler                            *msghandler,
                           const std::vector<gmx::RVec>          *coordinates,
                           std::vector<gmx::RVec>                *forces,
                           std::map<InteractionType, double>     *energies,
-                          gmx_unused const ForceField           *pd)
+                          gmx_unused double                      value)
 {
     double erep  = 0;
     double edisp = 0;
@@ -861,7 +861,7 @@ static double computeSlater_ISA_TT(MsgHandler                            *msghan
                                    const std::vector<gmx::RVec>          *coordinates,
                                    std::vector<gmx::RVec>                *forces,
                                    std::map<InteractionType, double>     *energies,
-                                   gmx_unused const ForceField           *pd)
+                                   gmx_unused double                      value)
 {
     double erep  = 0;
     double edisp = 0;
@@ -898,7 +898,7 @@ static double computeNonBonded(MsgHandler                            *msghandler
                                const std::vector<gmx::RVec>          *coordinates,
                                std::vector<gmx::RVec>                *forces,
                                std::map<InteractionType, double>     *energies,
-                               gmx_unused const ForceField           *pd)
+                               gmx_unused double                      value)
 {
     double erep  = 0;
     double edisp = 0;
@@ -965,7 +965,7 @@ static double gmx_unused computeNonBondedTest(gmx_unused MsgHandler             
                                               const std::vector<gmx::RVec>          *coordinates,
                                               std::vector<gmx::RVec>                *forces,
                                               std::map<InteractionType, double>     *energies,
-                                              gmx_unused const ForceField           *pd)
+                                              gmx_unused double                      value)
 {
     double erep  = 0;
     double edisp = 0;
@@ -1029,18 +1029,8 @@ static double computeCoulombGaussian(MsgHandler                        *msghandl
                                      const std::vector<gmx::RVec>      *coordinates,
                                      std::vector<gmx::RVec>            *forces,
                                      std::map<InteractionType, double> *energies,
-                                     const ForceField                  *pd)
+                                     double                             epsilonr)
 {
-    double epsilonr = 1;
-    if (pd)
-    {
-        if (!ffOption(*pd, InteractionType::ELECTROSTATICS, 
-                      "epsilonr", &epsilonr))
-        {
-            epsilonr = 1;
-        }
-    }
-
     double ebond = 0;
     auto   x     = *coordinates;
     double vc_pt = 0;
@@ -1101,17 +1091,8 @@ static double computeCoulombSlater(MsgHandler                        *msghandler
                                    const std::vector<gmx::RVec>      *coordinates,
                                    std::vector<gmx::RVec>            *forces,
                                    std::map<InteractionType, double> *energies,
-                                   const ForceField                  *pd)
+                                   double                             epsilonr)
 {
-    double epsilonr = 1;
-    if (pd)
-    {
-        if (!ffOption(*pd, InteractionType::ELECTROSTATICS, 
-                      "epsilonr", &epsilonr))
-        {
-            epsilonr = 1;
-        }
-     }
     double ebond = 0;
     auto   x     = *coordinates;
     for (const auto &b : pairs)
@@ -1162,7 +1143,7 @@ static double computePartridge(MsgHandler                            *msghandler
                                const std::vector<gmx::RVec>          *coordinates,
                                std::vector<gmx::RVec>                *forces,
                                std::map<InteractionType, double>     *energies,
-                               gmx_unused const ForceField           *pd)
+                               gmx_unused double                      value)
 {
     // Energy function according to 
     // The determination of an accurate isotope dependent potential energy 
@@ -1255,7 +1236,7 @@ static double computeDummy(gmx_unused MsgHandler                        *msghand
                            gmx_unused const std::vector<gmx::RVec>      *coordinates,
                            gmx_unused std::vector<gmx::RVec>            *forces,
                            gmx_unused std::map<InteractionType, double> *energies,
-                           gmx_unused const ForceField                  *pd)
+                           gmx_unused double                             value)
 {
     return 0;
 }
@@ -1275,7 +1256,7 @@ static double computeBonds(gmx_unused MsgHandler                 *msghandler,
                            const std::vector<gmx::RVec>          *coordinates,
                            std::vector<gmx::RVec>                *forces,
                            std::map<InteractionType, double>     *energies,
-                           gmx_unused const ForceField           *pd)
+                           gmx_unused double                      value)
 {
     if (nullptr == coordinates || nullptr == forces)
     {
@@ -1328,7 +1309,7 @@ static double computeCubic(gmx_unused MsgHandler                 *msghandler,
                            const std::vector<gmx::RVec>          *coordinates,
                            std::vector<gmx::RVec>                *forces,
                            std::map<InteractionType, double>     *energies,
-                           gmx_unused const ForceField           *pd)
+                           gmx_unused double                      value)
 {
     if (nullptr == coordinates || nullptr == forces)
     {
@@ -1386,7 +1367,7 @@ static double computeMorse(MsgHandler                            *msghandler,
                            const std::vector<gmx::RVec>          *coordinates,
                            std::vector<gmx::RVec>                *forces,
                            std::map<InteractionType, double>     *energies,
-                           gmx_unused const ForceField           *pd)
+                           gmx_unused double                      value)
 {
     double  ebond = 0;
     auto    x     = *coordinates;
@@ -1436,7 +1417,7 @@ static double computeHua(gmx_unused MsgHandler                 *msghandler,
                          const std::vector<gmx::RVec>          *coordinates,
                          std::vector<gmx::RVec>                *forces,
                          std::map<InteractionType, double>     *energies,
-                         gmx_unused const ForceField           *pd)
+                         gmx_unused double                      value)
 {
     double  ebond = 0;
     auto    x     = *coordinates;
@@ -1483,7 +1464,7 @@ static double computeLinearAngles(gmx_unused MsgHandler                 *msghand
                                   const std::vector<gmx::RVec>          *coordinates,
                                   std::vector<gmx::RVec>                *forces,
                                   std::map<InteractionType, double>     *energies,
-                                  gmx_unused const ForceField           *pd)
+                                  gmx_unused double                      value)
 {
     double  ebond = 0;
     auto    x     = *coordinates;
@@ -1538,7 +1519,7 @@ static double computeAngles(MsgHandler                            *msghandler,
                             const std::vector<gmx::RVec>          *coordinates,
                             std::vector<gmx::RVec>                *forces,
                             std::map<InteractionType, double>     *energies,
-                            gmx_unused const ForceField           *pd)
+                            gmx_unused double                      value)
 {
     double  energy = 0, costh = 0;
     auto    x     = *coordinates;
@@ -1617,7 +1598,7 @@ static double computeUreyBradley(gmx_unused MsgHandler                 *msghandl
                                  const std::vector<gmx::RVec>          *coordinates,
                                  std::vector<gmx::RVec>                *forces,
                                  std::map<InteractionType, double>     *energies,
-                                 gmx_unused const ForceField           *pd)
+                                 gmx_unused double                      value)
 {
     double  energy = 0, costh = 0;
     auto    x     = *coordinates;
@@ -1711,7 +1692,7 @@ static double computePolarization(MsgHandler                            *msghand
                                   const std::vector<gmx::RVec>          *coordinates,
                                   std::vector<gmx::RVec>                *forces,
                                   std::map<InteractionType, double>     *energies,
-                                  gmx_unused const ForceField           *pd)
+                                  gmx_unused double                      value)
 {
     const real half = 0.5;
     double ebond    = 0;
@@ -1845,7 +1826,7 @@ static double computeFourDihs(gmx_unused MsgHandler                 *msghandler,
                               const std::vector<gmx::RVec>          *coordinates,
                               std::vector<gmx::RVec>                *forces,
                               std::map<InteractionType, double>     *energies,
-                              gmx_unused const ForceField           *pd)
+                              gmx_unused double                      value)
 {
     double energy = 0;
     auto   x      = *coordinates;
@@ -1909,7 +1890,7 @@ static double computeImpropers(gmx_unused MsgHandler                 *msghandler
                                const std::vector<gmx::RVec>          *coordinates,
                                std::vector<gmx::RVec>                *forces,
                                std::map<InteractionType, double>     *energies,
-                               gmx_unused const ForceField           *pd)
+                               gmx_unused double                      value)
 {
     double  energy = 0;
     auto    x     = *coordinates;
@@ -1958,7 +1939,7 @@ static double computePropers(MsgHandler                            *msghandler,
                              const std::vector<gmx::RVec>          *coordinates,
                              std::vector<gmx::RVec>                *forces,
                              std::map<InteractionType, double>     *energies,
-                             gmx_unused const ForceField           *pd)
+                             gmx_unused double                      value)
 {
     double energy = 0;
     auto   x      = *coordinates;
@@ -2002,63 +1983,63 @@ bondForceComputer getBondForceComputer(Potential pot)
 {
     switch (pot)
     {
-    case Potential::NONE:                   
+    case Potential::NONE:
         return computeDummy;
-    case Potential::HARMONIC_BONDS:         
+    case Potential::HARMONIC_BONDS:
         return computeBonds;
-    case Potential::MORSE_BONDS:            
+    case Potential::MORSE_BONDS:
         return computeMorse;
-    case Potential::HUA_BONDS:              
+    case Potential::HUA_BONDS:
         return computeHua;
-    case Potential::CUBIC_BONDS:            
+    case Potential::CUBIC_BONDS:
         return computeCubic;
-    case Potential::HARMONIC_ANGLES:        
+    case Potential::HARMONIC_ANGLES:
         return computeAngles;
-    case Potential::LINEAR_ANGLES:          
+    case Potential::LINEAR_ANGLES:
         return computeLinearAngles;
-    case Potential::LJ12_6:                 
+    case Potential::LJ12_6:
         return computeLJ12_6;
-    case Potential::LJ12_6_4:               
+    case Potential::LJ12_6_4:
         return computeLJ12_6_4;
-    case Potential::LJ8_6:                  
+    case Potential::LJ8_6:
         return computeLJ8_6;
-    case Potential::LJ14_7:                 
+    case Potential::LJ14_7:
         return computeLJ14_7;
-    case Potential::BUCKINGHAM:             
+    case Potential::BUCKINGHAM:
         return computeBuckingham;
-    case Potential::WANG_BUCKINGHAM:        
+    case Potential::WANG_BUCKINGHAM:
         return computeWBH;
-    case Potential::TANG_TOENNIES:          
+    case Potential::TANG_TOENNIES:
         return computeTangToennies;
-    case Potential::TT2b:                   
+    case Potential::TT2b:
         return computeTT2b;
-    case Potential::SLATER_ISA_TT:          
+    case Potential::SLATER_ISA_TT:
         return computeSlater_ISA_TT;
-    case Potential::GENERALIZED_BUCKINGHAM: 
+    case Potential::GENERALIZED_BUCKINGHAM:
         return computeNonBonded;
-    case Potential::BORN_MAYER:             
+    case Potential::BORN_MAYER:
         return computeBornMayer;
-    case Potential::SLATER_ISA:             
+    case Potential::SLATER_ISA:
         return computeSlaterISA;
-    case Potential::MACDANIEL_SCHMIDT:      
+    case Potential::MACDANIEL_SCHMIDT:
         return computeDoubleExponential;
-    case Potential::COULOMB_POINT:          
+    case Potential::COULOMB_POINT:
         return computeCoulombGaussian;
-    case Potential::COULOMB_GAUSSIAN:       
+    case Potential::COULOMB_GAUSSIAN:
         return computeCoulombGaussian;
-    case Potential::COULOMB_SLATER:         
+    case Potential::COULOMB_SLATER:
         return computeCoulombSlater;
-    case Potential::POLARIZATION:           
+    case Potential::POLARIZATION:
         return computePolarization;
-    case Potential::HARMONIC_DIHEDRALS:     
+    case Potential::HARMONIC_DIHEDRALS:
         return computeImpropers;
-    case Potential::PROPER_DIHEDRALS:       
+    case Potential::PROPER_DIHEDRALS:
         return computePropers;
-    case Potential::FOURIER_DIHEDRALS:      
+    case Potential::FOURIER_DIHEDRALS:
         return computeFourDihs;
-    case Potential::UREY_BRADLEY_ANGLES:    
+    case Potential::UREY_BRADLEY_ANGLES:
         return computeUreyBradley;
-    case Potential::POSITION_RESTRAINT:     
+    case Potential::POSITION_RESTRAINT:
         return computeFBPOSRE;
     default:
         return nullptr;
