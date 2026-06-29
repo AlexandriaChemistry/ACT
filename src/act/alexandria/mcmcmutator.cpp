@@ -82,7 +82,12 @@ void MCMCMutator::mutate(MsgHandler                *msghandler,
 
     if (sii_->xvgConv().empty() || sii_->xvgEpot().empty())
     {
-        gmx_fatal(FARGS, "You forgot to call setOutputFiles. Back to the drawing board.");
+        if (msghandler)
+        {
+            msghandler->msg(ACTStatus::Warning,
+                            "You forgot to call setOutputFiles. Back to the drawing board.");
+        }
+        return;
     }
     if (genome->nBase() == 0)
     {

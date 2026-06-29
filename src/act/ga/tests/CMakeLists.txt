@@ -39,7 +39,6 @@ gmx_add_mpi_unit_test(
     ${testname}
     ${exename} 2
     # files with code for tests
-    ga_test_helper.cpp
 #    genetic_algorithmtest.cpp
     genepoolTest.cpp
     penalizerTest.cpp

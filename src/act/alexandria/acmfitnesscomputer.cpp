@@ -123,7 +123,7 @@ void ACMFitnessComputer::distributeParameters(MsgHandler                *msghand
                                               const std::vector<double> *params,
                                               const std::set<int>       &changed)
 {
-    if (msghandler->debug())
+    if (msghandler && msghandler->debug())
     {
         msghandler->writeDebug("Starting to distribute parameters\n");
     }
@@ -161,7 +161,7 @@ void ACMFitnessComputer::distributeParameters(MsgHandler                *msghand
         }
         sii_->updateForceField(msghandler, changed, *params);
     }
-    if (msghandler->debug())
+    if (msghandler && msghandler->debug())
     {
         msghandler->writeDebug("Finished distributing parameters\n");
     }
