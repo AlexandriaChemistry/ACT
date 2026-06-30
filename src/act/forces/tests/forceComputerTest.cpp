@@ -449,6 +449,48 @@ TEST (Fscale, ZeroForce)
     EXPECT_EQ(calc_fscale(1, 1, 0), 0);
 }
 
+TEST_F(ForceComputerIntegrationTest, ComputeStatisticsAreTracked)
+{
+    auto pd = getForceField("ACS-pg-vs2");
+    ASSERT_NE(nullptr, pd);
+    ACTMol mol;
+    ASSERT_TRUE(setupMolecule("ACS-pg-vs2", "hydrogen-fluoride", &mol));
+    auto coords = mol.xOriginal();
+    const auto *top = mol.topology();
+
+    ForceComputer fc;
+    fc.init();
+
+    EXPECT_EQ(0u, fc.numEvaluations());
+    EXPECT_EQ(0u, fc.numShellIterations());
+
+    std::vector<gmx::RVec> forces(coords.size(), { 0, 0, 0 });
+    std::map<InteractionType, double> energies;
+    MsgHandler msghandler;
+    msghandler.setPrintLevel(ACTStatus::Warning);
+
+    // Call computeOnce directly
+    fc.computeOnce(&msghandler, pd, top, &coords, &forces, &energies, { 0, 0, 0 });
+    EXPECT_TRUE(msghandler.ok());
+    EXPECT_EQ(1u, fc.numEvaluations());
+    EXPECT_EQ(0u, fc.numShellIterations());
+
+    // Reset statistics
+    fc.resetStatistics();
+    EXPECT_EQ(0u, fc.numEvaluations());
+    EXPECT_EQ(0u, fc.numShellIterations());
+
+    // Call compute
+    fc.compute(&msghandler, pd, top, &coords, &forces, &energies);
+    EXPECT_TRUE(msghandler.ok());
+    EXPECT_GE(fc.numEvaluations(), 1u);
+
+    // Reset statistics again
+    fc.resetStatistics();
+    EXPECT_EQ(0u, fc.numEvaluations());
+    EXPECT_EQ(0u, fc.numShellIterations());
+}
+
 }  // namespace
 
 }  // namespace alexandria

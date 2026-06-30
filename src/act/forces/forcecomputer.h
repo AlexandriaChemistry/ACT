@@ -62,6 +62,10 @@ private:
     matrix         box_   = { { 0 } };
     //! Virtual site handler
     VsiteHandler   vsiteHandler_;
+    //! Total number of energy/force evaluations performed (calls to computeOnce)
+    mutable size_t nEval_      = 0;
+    //! Total number of shell-minimization iterations performed across all compute() calls
+    mutable size_t nShellIter_ = 0;
 
  public:
     //! \brief Default constructor
@@ -161,6 +165,13 @@ private:
      * \param[in] toler The new tolerance
      */
     void setForceTolerance(double toler) { msForceToler_ = toler; }
+
+    //! \return total number of force/energy evaluations performed so far
+    size_t numEvaluations() const { return nEval_; }
+    //! \return total number of shell minimization iterations performed so far
+    size_t numShellIterations() const { return nShellIter_; }
+    //! \brief Reset both statistics counters to zero
+    void resetStatistics() { nEval_ = 0; nShellIter_ = 0; }
     
     /*! \brief Plot the potential functions
      * This plots the potential functions corresponding to
