@@ -234,13 +234,14 @@ void ForceComputer::compute(MsgHandler                        *msg_handler,
             computeOnce(msg_handler, pd, top, coordinates, forces, energies, field);
             msForce  = dotProdRvec(isShell, *forces)/nshell;
             iter    += 1;
+            nShellIter_ += 1;
         }
         if (msg_handler && msg_handler->debug())
         {
             if (msForce > msForceToler_)
             {
                 msg_handler->msg(ACTStatus::Debug,
-                                 gmx::formatString("Shell optimization did not converge. RMS force is %g, iter %d/%d", std::sqrt(msForce), iter, maxiter_));
+                                 gmx::formatString("Shell optimization did not converge. RMS force is %g, iter %d/%d, total evals %zu, total shell iters %zu", std::sqrt(msForce), iter, maxiter_, nEval_, nShellIter_));
             }
             else
             {
@@ -314,6 +315,7 @@ void ForceComputer::computeOnce(MsgHandler                        *msg_handler,
                                 std::map<InteractionType, double> *energies,
                                 const gmx::RVec                   &field) const
 {
+    nEval_ += 1;
     // Clear energies
     energies->clear();
     // Clear forces
