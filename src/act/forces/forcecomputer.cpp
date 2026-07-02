@@ -128,6 +128,7 @@ void ForceComputer::compute(MsgHandler                        *msg_handler,
                             bool                               resetShells,
                             std::set<int>                      relax) const
 {
+    nEval_ += 1;
     constructVsiteCoordinates(top, coordinates);
     // Short-cut
     auto &atoms = top->atoms();
@@ -244,6 +245,7 @@ void ForceComputer::compute(MsgHandler                        *msg_handler,
             {
                 msg_handler->msg(ACTStatus::Debug,
                                  gmx::formatString("Shell optimization did not converge. RMS force is %g, iter %d/%d, total evals %zu, total shell iters %zu", std::sqrt(msForce), iter, maxiter_, nEval_, nShellIter_));
+                nShellConvergeFailed_ += 1;
             }
             else
             {
@@ -317,7 +319,6 @@ void ForceComputer::computeOnce(MsgHandler                        *msg_handler,
                                 std::map<InteractionType, double> *energies,
                                 const gmx::RVec                   &field) const
 {
-    nEval_ += 1;
     // Clear energies
     energies->clear();
     // Clear forces
@@ -398,6 +399,20 @@ Potential ForceComputer::ftype(const ForceField *pd,
         ftype = pd->findForcesConst(itype).potential();
     }
     return ftype;
+}
+
+std::string ForceComputer::statistics() const
+{
+    double ratio = 0;
+    if (numEvaluations() > 0)
+    {
+        ratio = (numShellIterations()*1.0)/numEvaluations();
+    }
+    return gmx::formatString("ForceComputer #eval %zu #shell iter %zu ratio %.2f #failed shell convergence %zu",
+                             numEvaluations(),
+                             numShellIterations(),
+                             ratio,
+                             numShellConvergenceFailed());
 }
 
 void ForceComputer::plot(MsgHandler        *msghandler,

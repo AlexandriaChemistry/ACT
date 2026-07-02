@@ -457,6 +457,7 @@ TEST_F(ForceComputerIntegrationTest, ComputeStatisticsAreTracked)
 
     EXPECT_EQ(0u, fc.numEvaluations());
     EXPECT_EQ(0u, fc.numShellIterations());
+    EXPECT_EQ(0u, fc.numShellConvergenceFailed());
 
     std::vector<gmx::RVec> forces(coords.size(), { 0, 0, 0 });
     std::map<InteractionType, double> energies;
@@ -468,11 +469,13 @@ TEST_F(ForceComputerIntegrationTest, ComputeStatisticsAreTracked)
     EXPECT_TRUE(msghandler.ok());
     EXPECT_EQ(1u, fc.numEvaluations());
     EXPECT_EQ(0u, fc.numShellIterations());
+    EXPECT_EQ(0u, fc.numShellConvergenceFailed());
 
     // Reset statistics
     fc.resetStatistics();
     EXPECT_EQ(0u, fc.numEvaluations());
     EXPECT_EQ(0u, fc.numShellIterations());
+    EXPECT_EQ(0u, fc.numShellConvergenceFailed());
 
     // Call compute
     fc.compute(&msghandler, pd, top, &coords, &forces, &energies);
@@ -483,6 +486,7 @@ TEST_F(ForceComputerIntegrationTest, ComputeStatisticsAreTracked)
     fc.resetStatistics();
     EXPECT_EQ(0u, fc.numEvaluations());
     EXPECT_EQ(0u, fc.numShellIterations());
+    EXPECT_EQ(0u, fc.numShellConvergenceFailed());
 }
 
 }  // namespace

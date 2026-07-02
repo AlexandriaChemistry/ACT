@@ -603,6 +603,8 @@ bool HybridGAMC::evolve(alexandria::MsgHandler       *msghandler,
         {
             msghandler->write(mess_start);
         }
+        msghandler->msg(alexandria::ACTStatus::Info,
+                        static_cast<const alexandria::ACMFitnessComputer *>(fitnessComputer())->forceComputer()->statistics());
         if (gach_->evaluateTestset())
         {
             const auto oldBestTest = (*bestGenome)[imste];
