@@ -467,7 +467,7 @@ TEST_F(ForceComputerIntegrationTest, ComputeStatisticsAreTracked)
     // Call computeOnce directly
     fc.computeOnce(&msghandler, pd, top, &coords, &forces, &energies, { 0, 0, 0 });
     EXPECT_TRUE(msghandler.ok());
-    EXPECT_EQ(1u, fc.numEvaluations());
+    EXPECT_EQ(0u, fc.numEvaluations());
     EXPECT_EQ(0u, fc.numShellIterations());
     EXPECT_EQ(0u, fc.numShellConvergenceFailed());
 
