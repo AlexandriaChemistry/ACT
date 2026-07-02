@@ -161,6 +161,9 @@ public:
     
     //! \return the number of devComputers
     size_t numDevComputers() const { return devComputers_.size(); }
+
+    //! \return forceComputer
+    const ForceComputer *forceComputer() const { return forceComp_; }
 };
 
 

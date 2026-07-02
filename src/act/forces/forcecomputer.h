@@ -68,6 +68,8 @@ private:
     mutable size_t nEval_      = 0;
     //! Total number of shell-minimization iterations performed across all compute() calls
     mutable size_t nShellIter_ = 0;
+    //! Total number of failed shell-minimizations across all compute() calls
+    mutable size_t nShellConvergeFailed_ = 0;
 
  public:
     //! \brief Default constructor
@@ -177,8 +179,11 @@ private:
     //! \return total number of shell minimization iterations performed so far
     size_t numShellIterations() const { return nShellIter_; }
 
+    //! \return Number of failed shell convergence trials
+    size_t numShellConvergenceFailed() const { return nShellConvergeFailed_; }
+
     //! \brief Reset both statistics counters to zero
-    void resetStatistics() { nEval_ = 0; nShellIter_ = 0; }
+    void resetStatistics() { nEval_ = 0; nShellIter_ = 0; nShellConvergeFailed_ = 0; }
     
     //! \return the max number of shell iterations
     int maxIter() const { return maxiter_; }
@@ -211,6 +216,10 @@ private:
     {
         vsiteHandler_.constructPositions(top, coordinates, box_);
     }
+    /* \brief Print ForceComputer statistics
+     * \return string containing the statistics
+     */
+    std::string statistics() const;
 };
 
 /*! \brief Return the force scaling when hyper polarizability is used. 
@@ -227,6 +236,7 @@ private:
  * \return Force scaling constant when hyper polarizability is used
  */
 real calc_fscale(real k1, real k2, real F);
+
 
 } // namespace alexandria
 
