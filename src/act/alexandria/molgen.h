@@ -402,11 +402,12 @@ public:
   
     /*! \brief Read the molecular property data file to generate molecules.
      * \param[in] msghandler Message handler
-     * \param[in] filenms  Information about filenames
-     * \param[in] pd       Pointer to ForceField object
-     * \param[in] gms      The molecule selection
-     * \param[in] targets  The Fitting Targets
-     * \param[in] compR    Compound reader with charge information
+     * \param[in] filenms   Information about filenames
+     * \param[in] pd        Pointer to ForceField object
+     * \param[in] gms       The molecule selection
+     * \param[in] targets   The Fitting Targets
+     * \param[in] compR     Compound reader with charge information
+     * \param[in] forceComp Force Computer
      * \return number of molecules read and processed correctly
      */
     size_t Read(MsgHandler                          *msghandler,
@@ -414,7 +415,8 @@ public:
                 ForceField                          *pd,
                 const MolSelect                     &gms,
                 const std::map<eRMS, FittingTarget> &targets,
-                CompoundReader                      *compR);
+                CompoundReader                      *compR,
+                const ForceComputer                 *forceComp);
 
 };
 

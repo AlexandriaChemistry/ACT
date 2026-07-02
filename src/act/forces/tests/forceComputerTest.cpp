@@ -206,7 +206,6 @@ protected:
         const auto *top = mol.topology();
 
         ForceComputer fc;
-        fc.init();
         fc.constructVsiteCoordinates(top, &coords);
 
         forces->assign(coords.size(), { 0, 0, 0 });
@@ -242,7 +241,6 @@ protected:
         const auto *top = mol.topology();
 
         ForceComputer fc;
-        fc.init();
         forces->assign(coords.size(), { 0, 0, 0 });
         MsgHandler msghandler;
         msghandler.setPrintLevel(ACTStatus::Warning);
@@ -317,7 +315,6 @@ TEST_F(ForceComputerIntegrationTest, ComputeForcesHaveCorrectSize)
     auto coords = mol.xOriginal();
     const auto *top = mol.topology();
     ForceComputer fc;
-    fc.init();
     forces.assign(coords.size(), { 0, 0, 0 });
     MsgHandler msghandler;
     msghandler.setPrintLevel(ACTStatus::Warning);
@@ -341,7 +338,6 @@ TEST_F(ForceComputerIntegrationTest, ComputeOnceAndComputeGiveSameEpotWithoutShe
     ASSERT_TRUE(setupMolecule("ACS-pg-vs2", "hydrogen-fluoride", &mol));
     const auto *top = mol.topology();
     ForceComputer fc;
-    fc.init();
 
     // computeOnce
     auto coords1 = mol.xOriginal();
@@ -376,7 +372,6 @@ TEST_F(ForceComputerIntegrationTest, ConstructVsiteCoordinatesAndSpreadForces)
     ASSERT_TRUE(setupMolecule("ACS-pg-vs2", "hydrogen-fluoride", &mol));
     const auto *top = mol.topology();
     ForceComputer fc;
-    fc.init();
 
     auto coords = mol.xOriginal();
     fc.constructVsiteCoordinates(top, &coords);

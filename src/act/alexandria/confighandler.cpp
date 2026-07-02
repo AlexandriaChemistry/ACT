@@ -132,9 +132,9 @@ void BayesConfigHandler::add_options(std::vector<t_pargs>             *pargs,
           "Evaluate the parameters on the test set during MCMC." },
         { "-shellTolerance", FALSE, etREAL, {&shellToler_},
           "Tolerance (RMS force) for minimizing shell positions" },
-        { "-shellMaxIter", FALSE, etINT, {&shellMaxIter_},
+        { "-shell_max_iter", FALSE, etINT, {&shellMaxIter_},
           "Max number of iterations for minimizing shell positions" },
-        { "-shellMaxDistance", FALSE, etREAL, {&shellMaxDistance_},
+        { "-shell_max_distance", FALSE, etREAL, {&shellMaxDistance_},
           "Max distance between shell and core (nm)" }
     };
     for (size_t i = 0; i < pa.size(); i++)

@@ -159,6 +159,12 @@ public:
 
     //! \return the message handler
     MsgHandler *msgHandler() { return &msghandler_; }
+
+    /*! \brief Initialize the force computer.
+     * This must be done only after reading the force field file
+     */
+    void initForceComputer();
+
     /*! \brief Initialize charge generation
      * \param[in] ims The data set to do the work for
      */

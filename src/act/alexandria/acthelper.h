@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2021-2025
+ * Copyright (C) 2021-2026
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -54,18 +54,20 @@ namespace alexandria
         ForceComputer      forceComp_;
     public:
         /*! \brief Constructor
-         * \param[in] msghandler   Message and status handler
-         * \param[in] sii          Static information
-         * \param[in] mg           Information about this helpers molecules
-         * \param[in] shellToler   Tolerance for minimizing shell positions
-         * \param[in] shellMaxIter Max # iterations for the same
-         * \param[in] algorithm    The charge generation algorithm
+         * \param[in] msghandler       Message and status handler
+         * \param[in] sii              Static information
+         * \param[in] mg               Information about this helpers molecules
+         * \param[in] shellToler       Tolerance for minimizing shell positions
+         * \param[in] shellMaxIter     Max # iterations for the same
+         * \param[in] shellMaxDistance Max allowed distance between core and shell
+         * \param[in] algorithm        The charge generation algorithm
          */
         ACTHelper(MsgHandler                *msghandler,
                   StaticIndividualInfo      *sii,
                   MolGen                    *mg,
                   double                     shellToler,
                   int                        shellMaxIter,
+                  double                     shellMaxDistance,
                   ChargeGenerationAlgorithm  algorithm);
         
         /*! \brief Run the helper process

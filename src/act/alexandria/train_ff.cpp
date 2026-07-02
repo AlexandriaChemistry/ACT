@@ -194,10 +194,20 @@ void OptACM::optionsFinished(const std::vector<t_filenm> &filenames)
         outputFileName_.insert({iMolSelect::Test, opt2fn("-otest", filenames.size(), filenames.data())});
         sii_->setOutputFile(outputFileName_[iMolSelect::Train]);
     }
+}
+
+void OptACM::initForceComputer()
+{
     // Force computer may be needed even with nooptimize
     forceComp_ = new ForceComputer();
-    forceComp_->init(gmx::square(bch_.shellToler()),
-                     bch_.shellMaxIter(), bch_.shellMaxDistance());
+    double epsilonr;
+    if (!ffOption(*sii_->forcefield(), InteractionType::ELECTROSTATICS,
+                  "epsilonr", &epsilonr))
+    {
+        epsilonr = 1;
+    }
+    forceComp_->init(bch_.shellToler(),
+                     bch_.shellMaxIter(), bch_.shellMaxDistance(), epsilonr);
 }
 
 //! \todo rename function and make a coupling between targets from the command line
@@ -619,7 +629,7 @@ bool OptACM::runMaster(bool optimize,
             GMX_THROW(gmx::InternalError("Minimum found but the <Dataset, Genome> map is empty"));
         }
         if (tw)
-        {   
+        {
             for (auto it = bestGenome.begin(); it != bestGenome.end(); it++)
             {
                 tw->writeString(it->second.print("Final best genome"));
@@ -880,6 +890,8 @@ int train_ff(int argc, char *argv[])
             tw->writeLine(ss);
         }
     }
+    // Now initiate the force computer
+    opt.initForceComputer();
     // Check inputs
     bool optionsOk = true;
     if (opt.commRec()->isMaster())
@@ -893,14 +905,14 @@ int train_ff(int argc, char *argv[])
     }
     // Read charges file if needed. No need to store the ACTmols being returned
     {
-        ForceComputer forceComp;
         std::vector<ACTMol> actmols;
-        compR.read(opt.msgHandler(), *opt.sii()->forcefield(), &forceComp, &actmols);
+        compR.read(opt.msgHandler(), *opt.sii()->forcefield(), opt.forceComp(), &actmols);
     }
 
     // MolGen read being called here!
     if (0 == opt.mg()->Read(opt.msgHandler(), filenms, opt.sii()->forcefield(), gms,
-                            opt.sii()->fittingTargetsConst(iMolSelect::Train), &compR))
+                            opt.sii()->fittingTargetsConst(iMolSelect::Train), &compR,
+                            opt.forceComp()))
     {
         opt.msgHandler()->fatal("Training set is empty on one or more of the nodes, check your input and your command line flags. Rerun with -v 5 flag");
     }
@@ -1026,7 +1038,9 @@ int train_ff(int argc, char *argv[])
                 {
                     ACTHelper helper(opt.msgHandler(), opt.sii(), opt.mg(),
                                      opt.bch()->shellToler(),
-                                     opt.bch()->shellMaxIter(), compR.algorithm());
+                                     opt.bch()->shellMaxIter(),
+                                     opt.bch()->shellMaxDistance(),
+                                     compR.algorithm());
                     helper.run(opt.msgHandler());
                 }
             }

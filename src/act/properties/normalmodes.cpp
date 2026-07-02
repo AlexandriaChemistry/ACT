@@ -127,7 +127,12 @@ int nma(int argc, char *argv[])
                                          shellToler));
     }
     ForceComputer forceComp;
-    forceComp.init(shellToler, 100);
+    double epsilonr;
+    if (!ffOption(pd, InteractionType::ELECTROSTATICS, "epsilonr", &epsilonr))
+    {
+        epsilonr = 1;
+    }
+    forceComp.init(shellToler, sch.maxIter(), forceComp.maxShellDistance(), epsilonr);
     print_header(msghandler.tw(), pa, fnm);
     
     JsonTree jtree("simulate");

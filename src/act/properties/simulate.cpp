@@ -148,7 +148,13 @@ int simulate(int argc, char *argv[])
     (void) pd.verifyCheckSum(&msghandler);
 
     ForceComputer forceComp;
-    forceComp.init(shellToler, sch.maxIter());
+    double epsilonr;
+    if (!ffOption(pd, InteractionType::ELECTROSTATICS, "epsilonr", &epsilonr))
+    {
+        epsilonr = 1;
+    }
+    forceComp.init(shellToler, sch.maxIter(), forceComp.maxShellDistance(), epsilonr);
+
     std::vector<ACTMol> actmols;
     compR.read(&msghandler, pd, &forceComp, &actmols);
     if (actmols.empty())

@@ -63,7 +63,13 @@ ACTMiddleMan::ACTMiddleMan(MsgHandler                *msghandler,
     ind_.reset(std::move(initializer.initialize()));
 
     // Create force computer
-    forceComp_.init(bch->shellToler(), bch->shellMaxIter(), bch->shellMaxDistance());
+    double epsilonr;
+    if (!ffOption(*sii->forcefield(), InteractionType::ELECTROSTATICS,
+                  "epsilonr", &epsilonr))
+    {
+        epsilonr = 1;
+    }
+    forceComp_.init(bch->shellToler(), bch->shellMaxIter(), bch->shellMaxDistance(), epsilonr);
 
     //! \todo Fitness computer. What about those false flags?
     fitComp_.init(msghandler, sii, mg, false, &forceComp_, algorithm);
@@ -107,13 +113,17 @@ void ACTMiddleMan::run(MsgHandler *msghandler)
     {
         fitComp_.compute(msghandler, ind_->genomePtr(), iMolSelect::Test);
     }
-    // Copy current genome to bestgenome
+    // Copy initial genome to bestgenome
     ind_->setBestGenome(ind_->genome());
     // I.
     // Send my initial genome and fitness to the master if needed
     if (read == 0)
     {
         ind_->genome().Send(cr, master);
+    }
+    if (msghandler->debug())
+    {
+        msghandler->writeDebug(ind_->bestGenomePtr()->print("Initial genome"));
     }
     auto cont = CommunicationStatus::OK;
 
@@ -127,15 +137,21 @@ void ACTMiddleMan::run(MsgHandler *msghandler)
         iMolSelect ims;
         cr->recv(master, &ims);
         
-        // Now get the new bases.
-        cr->recv(master, ind_->genomePtr()->basesPtr());
+        // Now get the new genome
+        ind_->genomePtr()->Receive(cr, master);
         
+        // Copy current genome to bestgenome for new round of mutations
+        ind_->setBestGenome(ind_->genome());
         // III.
         // Receive assignment from master.  
         TrainFFMiddlemanMode mode;
         cr->recv(master, &mode);
         if (mode == TrainFFMiddlemanMode::MUTATION)
         {
+            if (msghandler->debug())
+            {
+                msghandler->writeDebug(ind_->bestGenomePtr()->print("Before mutation"));
+            }
             mutator_->mutate(msghandler, ind_->genomePtr(), ind_->bestGenomePtr(), 
                              gach_->prMut());
             
