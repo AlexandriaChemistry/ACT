@@ -90,10 +90,10 @@ private:
      * \param[in] maxiter          The maximum number of iterations for shell minimization
      * \param[in] maxShellDistance Maximum allowed distance (nm) for shells to be away from their core
      */
-    void init(double   msForce = 1e-6,
-              int      maxiter = 25,
-              double   maxShellDistance = 0.04,
-              double   epsilonr = 1.0);
+    void init(double   msForce,
+              int      maxiter,
+              double   maxShellDistance,
+              double   epsilonr);
 
     /*! \brief Generate coordinates for virtual sites
      * \param[in]    top         Molecular topology containing vsite information
@@ -173,11 +173,24 @@ private:
 
     //! \return total number of force/energy evaluations performed so far
     size_t numEvaluations() const { return nEval_; }
+
     //! \return total number of shell minimization iterations performed so far
     size_t numShellIterations() const { return nShellIter_; }
+
     //! \brief Reset both statistics counters to zero
     void resetStatistics() { nEval_ = 0; nShellIter_ = 0; }
     
+    //! \return the max number of shell iterations
+    int maxIter() const { return maxiter_; }
+
+    /*! \brief Set the max number of shell iterations
+     * \param[in] maxiter The number!
+     */
+    void setMaxIter(int maxiter) { maxiter_ = maxiter; }
+
+    //! \return the maximum allowed distance for a shell to be displaced from its core
+    double maxShellDistance() const { return maxShellDistance_; }
+
     /*! \brief Plot the potential functions
      * This plots the potential functions corresponding to
      * InteractionType.

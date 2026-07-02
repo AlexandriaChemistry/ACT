@@ -118,7 +118,12 @@ int min_complex(int argc, char *argv[])
         tw->writeStringFormatted("Shell tolerance larger than atom tolerance, changing it to %g\n", shellToler);
     }
     ForceComputer forceComp;
-    forceComp.init(shellToler, 100);
+    double epsilonr;
+    if (!ffOption(pd, InteractionType::ELECTROSTATICS, "epsilonr", &epsilonr))
+    {
+        epsilonr = 1;
+    }
+    forceComp.init(shellToler, sch.maxIter(), forceComp.maxShellDistance(), epsilonr);
     print_header(tw, pa, fnm);
     
     std::vector<MolProp> mps;

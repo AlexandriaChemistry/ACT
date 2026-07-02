@@ -313,9 +313,9 @@ bool HybridGAMC::evolve(alexandria::MsgHandler       *msghandler,
         if (gach_->sort())
         {
             pool[pold]->sort(imstr);
-            if (msghandler->debug())
+            if (msghandler->info())
             {
-                pool[pold]->dump(msghandler->twDebug(), "After sorting old population...");
+                pool[pold]->dump(msghandler->tw(), "After sorting old population...");
             }
             haveToSendGenomes = true;
         }
@@ -337,13 +337,20 @@ bool HybridGAMC::evolve(alexandria::MsgHandler       *msghandler,
                 //! \todo Send the data set. But is this necessary? It will always be train?
                 cr->send(dest, imstr);
                 // Now send the new bases
-                cr->send(dest, pool[pold]->genomePtr(i)->bases());
+                pool[pold]->genomePtr(i)->Send(cr, dest);
                 // III.
                 // Tell the middleman to perform a FITNESS calculation
                 cr->send(dest, alexandria::TrainFFMiddlemanMode::FITNESS);
             }
             // Recompute my own (Master) fitness
+            double oldfitness = pool[pold]->genomePtr(0)->fitness(imstr);
             fitnessComputer()->compute(msghandler, pool[pold]->genomePtr(0), imstr);
+            if (msghandler->info())
+            {
+                // Double check
+                msghandler->write(gmx::formatString("Middleman 0 computed %g, master %g",
+                                                    oldfitness, pool[pold]->genomePtr(0)->fitness(imstr)));
+            }
 
             // Receive fitness from middlemen
             for (size_t i = 1; i < pool[pold]->popSize(); i++)
@@ -352,6 +359,13 @@ bool HybridGAMC::evolve(alexandria::MsgHandler       *msghandler,
                 double fitness;
                 cr->recv(src, &fitness);  // Receiving the new training fitness
                 pool[pold]->genomePtr(i)->setFitness(imstr, fitness);
+                if (msghandler->info())
+                {
+                    // Double check
+                    fitnessComputer()->compute(msghandler, pool[pold]->genomePtr(i), imstr);
+                    msghandler->write(gmx::formatString("Middleman %zu computed %g, master %g", i,
+                                                        fitness, pool[pold]->genomePtr(i)->fitness(imstr)));
+                }
             }
             // Sort again if needed
             if (gach_->sort())
@@ -359,9 +373,9 @@ bool HybridGAMC::evolve(alexandria::MsgHandler       *msghandler,
                 pool[pold]->sort(imstr);
             }
             // Print population to debug if we have penalized the population
-            if (msghandler->debug())
+            if (msghandler->info())
             {
-                pool[pold]->dump(msghandler->twDebug(), "Population has been penalized, re-evaluated and sorted!\n");
+                pool[pold]->dump(msghandler->tw(), "Population has been penalized, re-evaluated and sorted!\n");
             }
         }
 
@@ -375,9 +389,9 @@ bool HybridGAMC::evolve(alexandria::MsgHandler       *msghandler,
         }
         probabilityComputer()->compute(gp, generation);
         
-        if (msghandler->debug())
+        if (msghandler->info())
         {
-            pool[pold]->dump(msghandler->twDebug(), "Old population after probability calculation.");
+            pool[pold]->dump(msghandler->tw(), "Old population after probability calculation.");
         }
         if (gach_->nElites() > 0)
         {
@@ -473,8 +487,8 @@ bool HybridGAMC::evolve(alexandria::MsgHandler       *msghandler,
             cr->send_data(dest);
             //! \todo Send the data set. But is this necessary? It will always be train?
             cr->send(dest, imstr);
-            // Now send the new bases
-            cr->send(dest, pool[pnew]->genomePtr(i)->bases());
+            // Now send the new genome
+            pool[pnew]->genomePtr(i)->Send(cr, dest);
             // III.
             // Tell the middleman to carry the MUTATION mode, except for elitists
             if (static_cast<int>(i) < gach_->nElites())
@@ -550,9 +564,9 @@ bool HybridGAMC::evolve(alexandria::MsgHandler       *msghandler,
         pold = pnew;
 
         // Print population again!
-        if (msghandler->debug())
+        if (msghandler->info())
         {
-            pool[pold]->dump(msghandler->twDebug(), "After mutating.");
+            pool[pold]->dump(msghandler->tw(), "Population after mutating.");
         }
 
         // Print fitness to surveillance files

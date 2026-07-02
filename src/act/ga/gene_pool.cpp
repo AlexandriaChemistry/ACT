@@ -76,35 +76,30 @@ void GenePool::sort(iMolSelect ims)
 
 size_t GenePool::findBestIndex(const iMolSelect ims) const
 {
-    return std::min_element(genomes_.begin(), genomes_.end(),
-                            [ims](const Genome &a, const Genome &b) 
-                            {
-                                if (a.hasFitness(ims))
-                                {
-                                    if (b.hasFitness(ims))
-                                    {
-                                        return a.fitness(ims) < b.fitness(ims); 
-                                    }
-                                    else
-                                    {
-                                        return false;
-                                    } 
-                                }
-                                else
-                                {
-                                    return b.hasFitness(ims);
-                                }
-                            }
-                            ) - genomes_.begin();
+    size_t minIndex   = genomes_.size();
+    double minFitness = 1e20;
+    for(size_t i = 0; i < genomes_.size(); i++)
+    {
+        if (genomes_[i].hasFitness(ims))
+        {
+            minFitness = std::min(minFitness, genomes_[i].fitness(ims));
+            minIndex   = i;
+        }
+    }
+    return minIndex;
 }
 
 const Genome &GenePool::getBest(const iMolSelect ims) const
 {
     const size_t index = findBestIndex(ims);
-    GMX_RELEASE_ASSERT(
-        index < popSize() && genomes_[index].hasFitness(ims),
-        "Oh no! The returned index is beyond the vector limits or the genome does not have a fitness entry for the dataset..."
-    );
+    if (index >= popSize())
+    {
+        GMX_THROW(gmx::InternalError("The returned index is beyond the vector limits"));
+    }
+    else if (!genomes_[index].hasFitness(ims))
+    {
+        GMX_THROW(gmx::InternalError("Oh no!  or the genome does not have a fitness entry for the dataset..."));
+    }
     return genomes_[index];
 }
 

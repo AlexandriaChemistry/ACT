@@ -113,7 +113,7 @@ void MCMCMutator::mutate(MsgHandler                *msghandler,
     }
     // Save initial evaluation and initialize a structure for the minimum evaluation
     auto initEval = prevEval;
-    //*bestGenome = *genome;
+    *bestGenome = *genome;
 
     if (msghandler)
     {
@@ -194,15 +194,12 @@ void MCMCMutator::stepMCMC(MsgHandler                   *msghandler,
     // Pick a random parameter index
     const size_t paramIndex = randIndex();
 
-    // Shorthand for the parameters here
-    auto param = genome->basesPtr();
-    
     // Store the original value of the parameter
-    const double storeParam = (*param)[paramIndex];
+    const double storeParam = genome->bases()[paramIndex];
 
     // Datasets
-    const auto imstr = iMolSelect::Train;
-    const auto imste = iMolSelect::Test;
+    const auto imsTrain = iMolSelect::Train;
+    const auto imsTest  = iMolSelect::Test;
 
     // Change the parameter
     changeParam(genome, paramIndex);
@@ -212,24 +209,27 @@ void MCMCMutator::stepMCMC(MsgHandler                   *msghandler,
 
     // Update FF parameter data structure with
     // the new value of parameter j
-    auto cd = CalcDev::Parameters;
-    (void) fitComp_->distributeTasks(cd);
+    (void) fitComp_->distributeTasks(CalcDev::Parameters);
     fitComp_->distributeParameters(msghandler, genome->basesPtr(), changed);
 
     std::map<iMolSelect, double> currEval;
     // Evaluate the energy on training set
-    cd = CalcDev::Compute;
-    (void) fitComp_->distributeTasks(cd);
-    auto chi2 = fitComp_->calcDeviation(msghandler, cd, imstr);
-    currEval[imstr] = chi2;
-    double deltaEval = chi2 - prevEval->find(imstr)->second;
+    (void) fitComp_->distributeTasks(CalcDev::Compute);
+    auto chi2 = fitComp_->calcDeviation(msghandler, CalcDev::Compute, imsTrain);
+    currEval[imsTrain] = chi2;
+    double deltaEval   = chi2 - prevEval->find(imsTrain)->second;
     // Evaluate the energy on the test set only on whole steps!
     if (evaluateTestSet_)
     {
-        currEval[imste] = prevEval->find(imste)->second;
-        if (pp == 0)  // Recompute for test set
+        if (pp == 0)
         {
-            currEval[imste] = fitComp_->calcDeviation(msghandler, cd, imste);
+            // Recompute for test set
+            currEval[imsTest] = fitComp_->calcDeviation(msghandler, CalcDev::Compute, imsTest);
+        }
+        else
+        {
+            // Keep previous value
+            currEval[imsTest] = prevEval->find(imsTest)->second;
         }
     }
 
@@ -246,7 +246,7 @@ void MCMCMutator::stepMCMC(MsgHandler                   *msghandler,
             *beta0 = bch_->computeBeta(myGeneration_, maxGenerations_, iter);
         }
         const double randProbability = randNum();
-        const double mcProbability   = exp( - ( (*beta0) / (sii_->weightedTemperature())[paramIndex] ) * deltaEval );
+        const double mcProbability   = std::exp( - ( (*beta0) / (sii_->weightedTemperature())[paramIndex] ) * deltaEval );
         accept = (mcProbability > randProbability);
     }
 
@@ -255,25 +255,26 @@ void MCMCMutator::stepMCMC(MsgHandler                   *msghandler,
     if (accept)
     {
         // If the parameter change is accepted
-        prevEval->find(imstr)->second = currEval[imstr];
-        genome->setFitness(imstr, currEval[imstr]);
+        prevEval->find(imsTrain)->second = currEval[imsTrain];
+        genome->setFitness(imsTrain, currEval[imsTrain]);
         if (evaluateTestSet_)
         {
-            prevEval->find(imste)->second = currEval[imste];
-            genome->setFitness(imste, currEval[imste]);
+            prevEval->find(imsTest)->second = currEval[imsTest];
+            genome->setFitness(imsTest, currEval[imsTest]);
         }
         acceptedMoves_[paramIndex] += 1;
         // and if a new minimum was found
-        if (currEval[imstr] < bestGenome->fitness(imstr))
+        if (!bestGenome->hasFitness(imsTrain) ||
+            currEval[imsTrain] < bestGenome->fitness(imsTrain))
         {
             // If pointer to log file exists, write information about new minimum
             printNewMinimum(msghandler, currEval, xiter);
 
             *bestGenome = *genome;
-            //bestGenome->setFitness(imstr, currEval[imstr]);  // Pass the fitness for training set to the best genome
+            //bestGenome->setFitness(imsTrain, currEval[imsTrain]);  // Pass the fitness for training set to the best genome
             //if (evaluateTestSet_)
             //{
-            //  bestGenome->setFitness(imste, currEval[imste]);  // Pass the fitness for the test set to the best genome
+            //  bestGenome->setFitness(imsTest, currEval[imsTest]);  // Pass the fitness for the test set to the best genome
             //}
             if (checkPoint)
             {
