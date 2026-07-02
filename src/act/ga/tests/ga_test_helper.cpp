@@ -84,11 +84,13 @@ GaTestHelper::GaTestHelper(int                                  nmiddlemen,
     std::string selName("testAlcohol.dat");
     std::string selDataName = gmx::test::TestFileManager::getInputFilePath(selName);
     alexandria::MolSelect gms;
+    // ForceComputer
+    forceComputer   = new ForceComputer();
     gms.read(selDataName.c_str());
     //! \todo  check return value
     (void) molgen->Read(msghandler, fnms, sii->forcefield(),
                         gms, sii->fittingTargetsConst(iMolSelect::Train),
-                        &compR);
+                        &compR, forceComputer);
     // Continue filling the shared individual
     sii->generateOptimizationIndex(msghandler, molgen, sii->commRec());
     sii->fillVectors(molgen->mindata());
@@ -118,7 +120,6 @@ GaTestHelper::GaTestHelper(int                                  nmiddlemen,
     
     // Initializer
     initializer     = new ACMInitializer(sii, false, seed);
-    forceComputer   = new ForceComputer();
     fitnessComputer = new ACMFitnessComputer();
     fitnessComputer->init(msghandler, sii, molgen, false, forceComputer,
                           sii->forcefield()->chargeGenerationAlgorithm());

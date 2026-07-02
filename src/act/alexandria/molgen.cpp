@@ -769,13 +769,13 @@ size_t MolGen::Read(MsgHandler                          *msghandler,
                     ForceField                          *pd,
                     const MolSelect                     &gms,
                     const std::map<eRMS, FittingTarget> &targets,
-                    CompoundReader                      *compR)
+                    CompoundReader                      *compR,
+                    const ForceComputer                 *forceComp)
 {
     int                              nwarn    = 0;
     std::map<ACTMessage, int>         imm_count;
     ACTMessage                        imm      = ACTMessage::OK;
     std::vector<alexandria::MolProp> mp;
-    ForceComputer forceComp;
     if (msghandler)
     {
         msghandler->writeDebug(memory_usage());
@@ -906,12 +906,12 @@ size_t MolGen::Read(MsgHandler                          *msghandler,
                         msghandler->msg(ACTStatus::Warning, ACTMessage::NoMolpropCharges, actmol.getMolname());
                     }
                     std::vector<gmx::RVec> forces(actmol.atomsConst().size());
-                    actmol.updateQprops(pd, &forceComp, &forces);
+                    actmol.updateQprops(pd, forceComp, &forces);
                 }
                 else
                 {
                     std::vector<gmx::RVec> forces(actmol.atomsConst().size());
-                    actmol.generateCharges(msghandler, pd, &forceComp, alg,
+                    actmol.generateCharges(msghandler, pd, forceComp, alg,
                                            &coords, &forces, true);
                 }
                 if (!msghandler->ok())
@@ -1108,7 +1108,7 @@ size_t MolGen::Read(MsgHandler                          *msghandler,
                 else
                 {
                     std::vector<gmx::RVec> forces(actmol.atomsConst().size());
-                    actmol.generateCharges(msghandler, pd, &forceComp, alg,
+                    actmol.generateCharges(msghandler, pd, forceComp, alg,
                                            &coords, &forces, true);
                 }
             }
