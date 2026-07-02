@@ -1060,7 +1060,7 @@ static double computeQuadrupolePolarization(MsgHandler                        *m
                                             const std::vector<gmx::RVec>      *coordinates,
                                             std::vector<gmx::RVec>            *forces,
                                             std::map<InteractionType, double> *energies,
-                                            gmx_unused const ForceField       *pd)
+                                            gmx_unused double                  value)
 {
     double ebond = 0;
     auto   x     = *coordinates;
