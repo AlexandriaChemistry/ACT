@@ -454,7 +454,6 @@ TEST_F(ForceComputerIntegrationTest, ComputeStatisticsAreTracked)
     const auto *top = mol.topology();
 
     ForceComputer fc;
-    fc.init();
 
     EXPECT_EQ(0u, fc.numEvaluations());
     EXPECT_EQ(0u, fc.numShellIterations());
