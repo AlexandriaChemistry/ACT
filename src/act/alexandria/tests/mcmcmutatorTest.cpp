@@ -112,6 +112,8 @@ protected:
         checker_->checkInt64(gth->forceComputer->numShellConvergenceFailed(), "numShellConvergenceFailed ForceComputer");
         auto allRand = mymut->allRand();
         checker_->checkSequence(allRand.begin(), allRand.end(), "Random numbers");
+        auto randInd = mymut->randIndices();
+        checker_->checkSequence(randInd.begin(), randInd.end(), "Random parameter indices");
         delete mymut;
         delete gth;
    }

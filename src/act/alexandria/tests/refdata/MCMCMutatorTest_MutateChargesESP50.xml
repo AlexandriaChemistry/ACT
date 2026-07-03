@@ -87,4 +87,37 @@
     <Real>0.98950630032810361</Real>
     <Real>0.61054154994386911</Real>
   </Sequence>
+  <Sequence Name="Random parameter indices">
+    <Int Name="Length">30</Int>
+    <Int>1</Int>
+    <Int>1</Int>
+    <Int>1</Int>
+    <Int>1</Int>
+    <Int>5</Int>
+    <Int>3</Int>
+    <Int>0</Int>
+    <Int>5</Int>
+    <Int>1</Int>
+    <Int>0</Int>
+    <Int>4</Int>
+    <Int>2</Int>
+    <Int>3</Int>
+    <Int>4</Int>
+    <Int>2</Int>
+    <Int>1</Int>
+    <Int>0</Int>
+    <Int>5</Int>
+    <Int>3</Int>
+    <Int>3</Int>
+    <Int>4</Int>
+    <Int>5</Int>
+    <Int>4</Int>
+    <Int>2</Int>
+    <Int>5</Int>
+    <Int>3</Int>
+    <Int>3</Int>
+    <Int>3</Int>
+    <Int>1</Int>
+    <Int>4</Int>
+  </Sequence>
 </ReferenceData>
