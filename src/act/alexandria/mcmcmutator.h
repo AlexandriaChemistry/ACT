@@ -82,12 +82,9 @@ private:
     //! Convergence file for Chi2
     gmx::FilePtr               fpe_;
     //! Evaluate the test set at each iteration?
-    bool                  evaluateTestSet_ = false;
-    // Random number generation
-    std::mt19937                             gen_;
-    std::uniform_int_distribution<long long> dis_;
+    bool                       evaluateTestSet_ = false;
     //! All used randIndices
-    std::vector<int>                        randIndices_;
+    std::vector<int>           randIndices_;
     /*!
      * \brief Change force field parameter at a given index for an individual
      * \param[in] genome   pointer to the genome
@@ -125,8 +122,7 @@ private:
     //! \return a random index of the force field parameter vector
     int randIndex()
     {
-        //        int ri = dis_(gen_);
-        int ri = std::min(static_cast<double>(dis_.max()), std::floor(randNum()*(1+dis_.max())+0.5));
+        int ri = std::min(static_cast<double>(sii_->nParam()-1), std::floor(randNum()*(sii_->nParam()+0.5)));
         randIndices_.push_back(ri);
         return ri;
     }
