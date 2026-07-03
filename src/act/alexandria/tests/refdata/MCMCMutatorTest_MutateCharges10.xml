@@ -21,13 +21,13 @@
     <String>o3_z chi</String>
     <String>o3_z eta</String>
   </Sequence>
-  <Real Name="Fitness-after">0.00047991749538980812</Real>
+  <Real Name="Fitness-after">0.00048253052980369105</Real>
   <Sequence Name="Genome-after">
     <Int Name="Length">6</Int>
-    <Real>4.6030691252425786</Real>
+    <Real>4.7025298322596605</Real>
     <Real>12</Real>
     <Real>3.249325186772253</Real>
-    <Real>9.8044156991811118</Real>
+    <Real>10</Real>
     <Real>5.033479654408934</Real>
     <Real>12.718998449713851</Real>
   </Sequence>
@@ -70,14 +70,14 @@
   </Sequence>
   <Sequence Name="Random parameter indices">
     <Int Name="Length">12</Int>
-    <Int>2</Int>
+    <Int>1</Int>
     <Int>0</Int>
     <Int>5</Int>
     <Int>4</Int>
     <Int>4</Int>
     <Int>4</Int>
-    <Int>1</Int>
-    <Int>3</Int>
+    <Int>0</Int>
+    <Int>5</Int>
     <Int>2</Int>
     <Int>5</Int>
     <Int>5</Int>
