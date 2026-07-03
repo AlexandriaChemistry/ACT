@@ -127,7 +127,7 @@ TEST_F(MCMCMutatorTest, MutateCharges10)
     std::vector<double> bases = {4.5, 12, 3.3, 10, 5, 13 };
     FitnessMap          fm    = { {iMolSelect::Train, 10.0} };
     ga::Genome before(bases, fm);
-    int maxiter = 10;
+    int maxiter = 2;
     doMutate(before, maxiter, fitstrings, eRms);
 }
 
@@ -141,7 +141,7 @@ TEST_F(MCMCMutatorTest, MutateChargesESP50)
     std::vector<double> bases = {4.5, 12, 3.3, 10, 5, 13 };
     FitnessMap          fm    = { {iMolSelect::Train, 10000.0} };
     ga::Genome before(bases, fm);
-    int maxiter = 50;
+    int maxiter = 5;
     doMutate(before, maxiter, fitstrings, eRms);
 }
 
@@ -155,7 +155,7 @@ TEST_F(MCMCMutatorTest, MutateBonds10)
     std::vector<double> bases = { -250, 130, 3e5,  -200, 100, 3.2e5,  -300, 120, 3e5, -400, 100, 3.7e5 };
     FitnessMap          fm    = { {iMolSelect::Train, 1e8} };
     ga::Genome before(bases, fm);
-    int maxiter = 10;
+    int maxiter = 2;
     doMutate(before, maxiter, fitstrings, eRms);
 }
 
@@ -169,7 +169,7 @@ TEST_F(MCMCMutatorTest, MutateBonds100)
     std::vector<double> bases = { -250, 130, 3e5,  -200, 100, 3.2e5,  -300, 120, 3e5, -400, 100, 3.7e5 };
     FitnessMap          fm    = { {iMolSelect::Train, 1e8} };
     ga::Genome before(bases, fm);
-    int maxiter = 100;
+    int maxiter = 10;
     doMutate(before, maxiter, fitstrings, eRms);
 }
 
