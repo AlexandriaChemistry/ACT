@@ -85,7 +85,7 @@ private:
     bool                  evaluateTestSet_ = false;
     // Random number generation
     std::mt19937                            gen_;
-    std::uniform_int_distribution<size_t>   dis_;
+    std::uniform_int_distribution<int>      dis_;
     //! All used randIndices
     std::vector<int>                        randIndices_;
     /*!
