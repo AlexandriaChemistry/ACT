@@ -44,6 +44,10 @@
         <xz>0.098</xz>
         <yz>-0.000</yz>
       </polarizability>
+      <energy type="DeltaE0" unit="kJ/mol" temperature="0" phase="gas">
+        <average>-5921.14</average>
+        <error>0</error>
+      </energy>
       <energy type="HF" unit="kJ/mol" temperature="0" phase="gas">-613752<average>-613752</average><error>0.000</error></energy>
       <potential coord_unit="pm" potential_unit="Hartree/e" espid="1">
         <x>-251.549</x>

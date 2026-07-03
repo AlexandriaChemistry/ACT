@@ -4,10 +4,10 @@
  * Copyright (C) 2014-2026
  *
  * Developers:
- *             Mohammad Mehdi Ghahremanpour, 
+ *             Mohammad Mehdi Ghahremanpour,
  *             Julian Marrades,
  *             Marie-Madeleine Walz,
- *             Paul J. van Maaren, 
+ *             Paul J. van Maaren,
  *             David van der Spoel (Project leader)
  *
  * This program is free software; you can redistribute it and/or
@@ -22,7 +22,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, 
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor,
  * Boston, MA  02110-1301, USA.
  */
 
@@ -65,77 +65,108 @@ namespace alexandria
 class MCMCMutatorTest :  public gmx::test::CommandLineTestBase
 {
 protected:
-    // Class variables
-    GaTestHelper         *gth_;
-    BayesConfigHandler    bch_;
-    int                   seed_ = 1993;
-    int                   maxgenerations_ = 10;
-    ChargeGenerationAlgorithm alg_ = ChargeGenerationAlgorithm::EEM;
-    MCMCMutator          *mymut_;
     gmx::test::TestReferenceChecker *checker_;
     gmx_output_env_t     *oenv_;
     // Methods
     void SetUp() override
     {
         // Setup code for tests if needed
-        int nmiddlemen = 1;
-        const std::vector<std::string> fitstrings = { "sigma", "epsilon", "gamma" };
-        std::vector<alexandria::eRMS> eRms = { eRMS::Dispersion, eRMS::Exchange };
-        gth_ = new GaTestHelper(nmiddlemen, fitstrings, eRms);
-        mymut_ = new MCMCMutator(seed_, &bch_, gth_->fitnessComputer,
-                                 gth_->sii, false, alg_, maxgenerations_);
         checker_ = new gmx::test::TestReferenceChecker(this->rootChecker());
         auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, 5e-2);
         checker_->setDefaultTolerance(tolerance);
-        //output_env_init_default(&oenv_); 
-        //mymut_->openParamConvFiles(oenv_);
-        //mymut_->openChi2ConvFile(oenv_);
     }
-    
+
     void TearDown() override
     {
         // Cleanup code for tests if needed
     }
-    
-    void doMutate(ga::Genome before, int maxiter)
+
+    void doMutate(ga::Genome                     &before,
+                  int                             maxiter,
+                  const std::vector<std::string> &fitstrings,
+                  std::vector<alexandria::eRMS>  &eRms)
     {
-        bch_.setMaxIter(maxiter);
-        checker_->checkInt64(bch_.maxIter(), "MaxIter");
-        checker_->checkReal(before.fitness(iMolSelect::Train), "Fitness-Before");
+        BayesConfigHandler        bch;
+        int                       seed           = 1993;
+        int                       maxgenerations = 10;
+        ChargeGenerationAlgorithm alg            = ChargeGenerationAlgorithm::EEM;
+        int nmiddlemen = 1;
+        auto gth   = new GaTestHelper(nmiddlemen, fitstrings, eRms);
+        auto mymut = new MCMCMutator(seed, &bch, gth->fitnessComputer,
+                                     gth->sii, false, alg, maxgenerations);
+        bch.setMaxIter(maxiter);
+        checker_->checkInt64(bch.maxIter(), "MaxIter");
+        checker_->checkReal(before.fitness(iMolSelect::Train), "Fitness-before");
+        checker_->checkSequence(before.bases().begin(),
+                                before.bases().end(), "Genome-before");
         ga::Genome after = before;
-        mymut_->mutate(gth_->msghandler, &before, &after, 0.0);
-        checker_->checkReal(after.fitness(iMolSelect::Train), "Fitness-After");
+        mymut->mutate(gth->msghandler, &before, &after, 0.0);
+        checker_->checkReal(after.fitness(iMolSelect::Train), "Fitness-after");
+        checker_->checkSequence(after.bases().begin(),
+                                after.bases().end(), "Genome-after");
+        checker_->checkInt64(mymut->numberObjectiveFunctionCalls(), "numberObjectiveFunctionCalls");
+        checker_->checkInt64(gth->forceComputer->numEvaluations(), "numEvaluations ForceComputer");
+        checker_->checkInt64(gth->forceComputer->numShellIterations(), "numShellIterations ForceComputer");
+        checker_->checkInt64(gth->forceComputer->numShellConvergenceFailed(), "numShellConvergenceFailed ForceComputer");
+        delete mymut;
+        delete gth;
    }
 };
 
-// Test to demonstrate MCMCMutator constructor usage
-TEST_F(MCMCMutatorTest, ConstructorUsageTest)
+TEST_F(MCMCMutatorTest, MutateCharges10)
 {
-    // This test demonstrates that we can reference the MCMCMutator constructor
-    // The constructor signature is:
-    
-    // While we cannot create a full instance due to complex dependencies,
-    // we can verify the constructor signature exists and is accessible
-    
-    SUCCEED();
-}
-
-// Test to demonstrate MCMCMutator randIndex functionality
-TEST_F(MCMCMutatorTest, NumberObjectiveFunctionCalls)
-{
-    // Test that randIndex produces values within expected range
     // This is the core functionality of the MCMCMutator
-    checker_->checkInt64(mymut_->numberObjectiveFunctionCalls(), "numberObjectiveFunctionCalls");  
-}
-
-TEST_F(MCMCMutatorTest, Mutate10)
-{
-    // Test that randIndex produces values within expected range
-    // This is the core functionality of the MCMCMutator
-    std::vector<double> bases = {0.5, 0.4, 0.08, 0.09, 0.8, 0.4};
+    const std::vector<std::string> fitstrings = { "eta", "chi" };
+    // Train on the dipole
+    std::vector<alexandria::eRMS> eRms = { eRMS::MU };
+    // Bases correspond to chi eta chi eta chi eta
+    std::vector<double> bases = {4.5, 12, 3.3, 10, 5, 13 };
     FitnessMap          fm    = { {iMolSelect::Train, 10.0} };
     ga::Genome before(bases, fm);
-    doMutate(before, 10);
+    int maxiter = 10;
+    doMutate(before, maxiter, fitstrings, eRms);
+}
+
+TEST_F(MCMCMutatorTest, MutateChargesESP50)
+{
+    // This is the core functionality of the MCMCMutator
+    const std::vector<std::string> fitstrings = { "eta", "chi" };
+    // Train on the electrostatic potential
+    std::vector<alexandria::eRMS> eRms = { eRMS::ESP };
+    // Bases correspond to chi eta chi eta chi eta
+    std::vector<double> bases = {4.5, 12, 3.3, 10, 5, 13 };
+    FitnessMap          fm    = { {iMolSelect::Train, 10000.0} };
+    ga::Genome before(bases, fm);
+    int maxiter = 50;
+    doMutate(before, maxiter, fitstrings, eRms);
+}
+
+TEST_F(MCMCMutatorTest, MutateBonds10)
+{
+    // This is the core functionality of the MCMCMutator
+    const std::vector<std::string> fitstrings = { "kb", "bondlength", "bondenergy" };
+    // Train on internal energy
+    std::vector<alexandria::eRMS> eRms = { eRMS::EPOT };
+    // Bases correspond to bondenergy bondlength kb for each bond
+    std::vector<double> bases = { -250, 130, 3e5,  -200, 100, 3.2e5,  -300, 120, 3e5, -400, 100, 3.7e5 };
+    FitnessMap          fm    = { {iMolSelect::Train, 1e8} };
+    ga::Genome before(bases, fm);
+    int maxiter = 10;
+    doMutate(before, maxiter, fitstrings, eRms);
+}
+
+TEST_F(MCMCMutatorTest, MutateBonds100)
+{
+    // This is the core functionality of the MCMCMutator
+    const std::vector<std::string> fitstrings = { "kb", "bondlength", "bondenergy" };
+    // Train on internal energy
+    std::vector<alexandria::eRMS> eRms = { eRMS::EPOT };
+    // Bases correspond to bondenergy bondlength kb for each bond
+    std::vector<double> bases = { -250, 130, 3e5,  -200, 100, 3.2e5,  -300, 120, 3e5, -400, 100, 3.7e5 };
+    FitnessMap          fm    = { {iMolSelect::Train, 1e8} };
+    ga::Genome before(bases, fm);
+    int maxiter = 100;
+    doMutate(before, maxiter, fitstrings, eRms);
 }
 
 } // namespace alexandria

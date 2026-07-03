@@ -311,6 +311,11 @@ void ACTMol::forceEnergyMaps(MsgHandler                                         
     }
     for (const auto &exper : experimentConst())
     {
+        // Not all data has corresponding coordinates, e.g. if it is from wet lab experiments.
+        if (exper.getCoordinates().empty())
+        {
+            continue;
+        }
         // We compute either interaction energies or normal energies for one experiment
         auto coords  = experCoords(exper.getCoordinates());
         bool doInter = false;

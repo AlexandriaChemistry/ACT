@@ -1,0 +1,41 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Int64 Name="MaxIter">100</Int64>
+  <Real Name="Fitness-before">100000000</Real>
+  <Sequence Name="Genome-before">
+    <Int Name="Length">12</Int>
+    <Real>-250</Real>
+    <Real>130</Real>
+    <Real>300000</Real>
+    <Real>-200</Real>
+    <Real>100</Real>
+    <Real>320000</Real>
+    <Real>-300</Real>
+    <Real>120</Real>
+    <Real>300000</Real>
+    <Real>-400</Real>
+    <Real>100</Real>
+    <Real>370000</Real>
+  </Sequence>
+  <Real Name="Fitness-after">7.7438748163930053e-12</Real>
+  <Sequence Name="Genome-after">
+    <Int Name="Length">12</Int>
+    <Real>-492.13749353953352</Real>
+    <Real>144.21724782479501</Real>
+    <Real>251414.02353317518</Real>
+    <Real>-373.42961191040956</Real>
+    <Real>108.51726291319731</Real>
+    <Real>257959.23401535291</Real>
+    <Real>-524.76417277871394</Real>
+    <Real>133.58442151717026</Real>
+    <Real>281378.35178449959</Real>
+    <Real>-617.67162184594861</Real>
+    <Real>95.707931868340722</Real>
+    <Real>329815.53217462194</Real>
+  </Sequence>
+  <Int64 Name="numberObjectiveFunctionCalls">1201</Int64>
+  <Int64 Name="numEvaluations ForceComputer">10817</Int64>
+  <Int64 Name="numShellIterations ForceComputer">0</Int64>
+  <Int64 Name="numShellConvergenceFailed ForceComputer">0</Int64>
+</ReferenceData>
