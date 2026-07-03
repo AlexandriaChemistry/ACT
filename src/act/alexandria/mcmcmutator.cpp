@@ -54,7 +54,7 @@ MCMCMutator::MCMCMutator(int                        seed,
                          bool                       evaluateTestSet,
                          ChargeGenerationAlgorithm  algorithm,
                          int                        maxGenerations)
-    : Mutator(seed, algorithm), evaluateTestSet_(evaluateTestSet), gen_(seed), dis_(std::uniform_int_distribution<int>(0, sii->nParam()-1))
+    : Mutator(seed, algorithm), evaluateTestSet_(evaluateTestSet), gen_(seed), dis_(std::uniform_int_distribution<>(0, sii->nParam()-1))
 {
     bch_     = bch;
     fitComp_ = fitComp;
