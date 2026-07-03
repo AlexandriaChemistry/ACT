@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Int64 Name="MaxIter">10</Int64>
+  <Real Name="Fitness-before">10</Real>
+  <Sequence Name="Genome-before">
+    <Int Name="Length">6</Int>
+    <Real>4.5</Real>
+    <Real>12</Real>
+    <Real>3.2999999999999998</Real>
+    <Real>10</Real>
+    <Real>5</Real>
+    <Real>13</Real>
+  </Sequence>
+  <Real Name="Fitness-after">0.00039504712880488705</Real>
+  <Sequence Name="Genome-after">
+    <Int Name="Length">6</Int>
+    <Real>4.8271555354190845</Real>
+    <Real>10.826676982538089</Real>
+    <Real>3.0995562842452102</Real>
+    <Real>8.8123346311264346</Real>
+    <Real>5.0696540690779264</Real>
+    <Real>12.433094569034308</Real>
+  </Sequence>
+  <Int64 Name="numberObjectiveFunctionCalls">61</Int64>
+  <Int64 Name="numEvaluations ForceComputer">496</Int64>
+  <Int64 Name="numShellIterations ForceComputer">0</Int64>
+  <Int64 Name="numShellConvergenceFailed ForceComputer">0</Int64>
+</ReferenceData>
