@@ -33,28 +33,28 @@
     <String>h_b~o3_b bondlength</String>
     <String>h_b~o3_b kb</String>
   </Sequence>
-  <Real Name="Fitness-after">7.7438748163930053e-12</Real>
+  <Real Name="Fitness-after">2.416613257879836e-10</Real>
   <Sequence Name="Genome-after">
     <Int Name="Length">12</Int>
-    <Real>-492.13749353953352</Real>
-    <Real>144.21724782479501</Real>
-    <Real>251414.02353317518</Real>
-    <Real>-373.42961191040956</Real>
-    <Real>108.51726291319731</Real>
-    <Real>257959.23401535291</Real>
-    <Real>-524.76417277871394</Real>
-    <Real>133.58442151717026</Real>
-    <Real>281378.35178449959</Real>
-    <Real>-617.67162184594861</Real>
-    <Real>95.707931868340722</Real>
-    <Real>329815.53217462194</Real>
+    <Real>-406.39344739642553</Real>
+    <Real>142.44669884902683</Real>
+    <Real>263400.47721783386</Real>
+    <Real>-400.19872012040747</Real>
+    <Real>109.34369680796571</Real>
+    <Real>258777.76171727304</Real>
+    <Real>-523.6867393329378</Real>
+    <Real>133.7094228157458</Real>
+    <Real>249884.69612566891</Real>
+    <Real>-646.62627004357148</Real>
+    <Real>96.731500007839784</Real>
+    <Real>303486.32544249226</Real>
   </Sequence>
   <Int64 Name="numberObjectiveFunctionCalls">1201</Int64>
   <Int64 Name="numEvaluations ForceComputer">10817</Int64>
   <Int64 Name="numShellIterations ForceComputer">0</Int64>
   <Int64 Name="numShellConvergenceFailed ForceComputer">0</Int64>
   <Sequence Name="Random numbers">
-    <Int Name="Length">2138</Int>
+    <Int Name="Length">2127</Int>
     <Real>0.27836172122052455</Real>
     <Real>0.91132550714989458</Real>
     <Real>0.15872918160889912</Real>
@@ -2182,16 +2182,5 @@
     <Real>0.16534129879254722</Real>
     <Real>0.47002080068567664</Real>
     <Real>0.2168756733936027</Real>
-    <Real>0.25687569104561581</Real>
-    <Real>0.2548022540123176</Real>
-    <Real>0.73131691463267623</Real>
-    <Real>0.0073422441813580739</Real>
-    <Real>0.75153467015986974</Real>
-    <Real>0.19312007191776015</Real>
-    <Real>0.49375685601663655</Real>
-    <Real>0.038825871072820199</Real>
-    <Real>0.68570190887588378</Real>
-    <Real>0.021305416835061507</Real>
-    <Real>0.26645187546871596</Real>
   </Sequence>
 </ReferenceData>

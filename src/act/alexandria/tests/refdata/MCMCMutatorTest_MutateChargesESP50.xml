@@ -21,22 +21,22 @@
     <String>o3_z chi</String>
     <String>o3_z eta</String>
   </Sequence>
-  <Real Name="Fitness-after">60.489704599203662</Real>
+  <Real Name="Fitness-after">57.145478344491018</Real>
   <Sequence Name="Genome-after">
     <Int Name="Length">6</Int>
-    <Real>4</Real>
-    <Real>12.696670171690103</Real>
-    <Real>2.7271263796019363</Real>
-    <Real>6.5566822976306662</Real>
-    <Real>5.7852200943984524</Real>
-    <Real>8.3305923630763079</Real>
+    <Real>4.0016671668789439</Real>
+    <Real>14.314306871416735</Real>
+    <Real>2.7399502684605377</Real>
+    <Real>6.0278715349840732</Real>
+    <Real>6.0388833975945078</Real>
+    <Real>9.1386143861707847</Real>
   </Sequence>
   <Int64 Name="numberObjectiveFunctionCalls">301</Int64>
   <Int64 Name="numEvaluations ForceComputer">2416</Int64>
   <Int64 Name="numShellIterations ForceComputer">0</Int64>
   <Int64 Name="numShellConvergenceFailed ForceComputer">0</Int64>
   <Sequence Name="Random numbers">
-    <Int Name="Length">455</Int>
+    <Int Name="Length">454</Int>
     <Real>0.27836172122052455</Real>
     <Real>0.91132550714989458</Real>
     <Real>0.15872918160889912</Real>
@@ -491,6 +491,5 @@
     <Real>0.83545912147339429</Real>
     <Real>0.66339308820661025</Real>
     <Real>0.90333818197864268</Real>
-    <Real>0.57284939502759424</Real>
   </Sequence>
 </ReferenceData>
