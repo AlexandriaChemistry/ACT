@@ -12,6 +12,15 @@
     <Real>5</Real>
     <Real>13</Real>
   </Sequence>
+  <Sequence Name="Parameters">
+    <Int Name="Length">6</Int>
+    <String>c3_z chi</String>
+    <String>c3_z eta</String>
+    <String>h_z chi</String>
+    <String>h_z eta</String>
+    <String>o3_z chi</String>
+    <String>o3_z eta</String>
+  </Sequence>
   <Real Name="Fitness-after">0.00039504712880488705</Real>
   <Sequence Name="Genome-after">
     <Int Name="Length">6</Int>
@@ -26,4 +35,101 @@
   <Int64 Name="numEvaluations ForceComputer">496</Int64>
   <Int64 Name="numShellIterations ForceComputer">0</Int64>
   <Int64 Name="numShellConvergenceFailed ForceComputer">0</Int64>
+  <Sequence Name="Random numbers">
+    <Int Name="Length">94</Int>
+    <Real>0.27836172122052455</Real>
+    <Real>0.91132550714989458</Real>
+    <Real>0.15872918160889912</Real>
+    <Real>0.043921731256730712</Real>
+    <Real>0.8705311634588403</Real>
+    <Real>0.97558958459840772</Real>
+    <Real>0.54712027183434708</Real>
+    <Real>0.48470637312292481</Real>
+    <Real>0.73597785308278374</Real>
+    <Real>0.47592422486856611</Real>
+    <Real>0.59046604949028236</Real>
+    <Real>0.70299486805665934</Real>
+    <Real>0.66739827204466828</Real>
+    <Real>0.68636325853306013</Real>
+    <Real>0.40254651139343878</Real>
+    <Real>0.69963605285337305</Real>
+    <Real>0.10644142779205787</Real>
+    <Real>0.99730353508540825</Real>
+    <Real>0.8645135734036693</Real>
+    <Real>0.57523580801304985</Real>
+    <Real>0.22835513775154309</Real>
+    <Real>0.32258758869757814</Real>
+    <Real>0.077709889768777879</Real>
+    <Real>0.79968905302098692</Real>
+    <Real>0.89682131630922313</Real>
+    <Real>0.73623595137056319</Real>
+    <Real>0.87242902116979604</Real>
+    <Real>0.10972006904701655</Real>
+    <Real>0.036881407430525287</Real>
+    <Real>0.6448144627540553</Real>
+    <Real>0.95963768729259524</Real>
+    <Real>0.83558049848828109</Real>
+    <Real>0.39172807986416025</Real>
+    <Real>0.13290706782022221</Real>
+    <Real>0.025827390830801909</Real>
+    <Real>0.39546818797507954</Real>
+    <Real>0.90783851092055223</Real>
+    <Real>0.81789130452387926</Real>
+    <Real>0.35244884762541878</Real>
+    <Real>0.89499085706820503</Real>
+    <Real>0.11155420041173632</Real>
+    <Real>0.15262211332083139</Real>
+    <Real>0.39998374863953606</Real>
+    <Real>0.86340943453037489</Real>
+    <Real>0.16210068165303343</Real>
+    <Real>0.27931416999417252</Real>
+    <Real>0.92661339569318057</Real>
+    <Real>0.98950630032810361</Real>
+    <Real>0.61054154994386911</Real>
+    <Real>0.47883983473966168</Real>
+    <Real>0.32075926668282873</Real>
+    <Real>0.48106485501110718</Real>
+    <Real>0.39416364210743476</Real>
+    <Real>0.6552924707096488</Real>
+    <Real>0.0019174870774293612</Real>
+    <Real>0.072570052848772965</Real>
+    <Real>0.11932880426308352</Real>
+    <Real>0.90691105939539329</Real>
+    <Real>0.011545385335020784</Real>
+    <Real>0.98868930776291986</Real>
+    <Real>0.59837417430948781</Real>
+    <Real>0.40584003409854136</Real>
+    <Real>0.65878292844048958</Real>
+    <Real>0.63020554179417898</Real>
+    <Real>0.59930410241463394</Real>
+    <Real>0.91700237606806489</Real>
+    <Real>0.32633940105503101</Real>
+    <Real>0.089550534073241095</Real>
+    <Real>0.93465032300693318</Real>
+    <Real>0.73772879544576242</Real>
+    <Real>0.81142921324713047</Real>
+    <Real>0.72625897833775677</Real>
+    <Real>0.90400828444703807</Real>
+    <Real>0.1811372930795952</Real>
+    <Real>0.54671049998704346</Real>
+    <Real>0.27135157043618652</Real>
+    <Real>0.95007520759345554</Real>
+    <Real>0.53667087106990896</Real>
+    <Real>0.12894911284994195</Real>
+    <Real>0.036555860157294041</Real>
+    <Real>0.11341549388459847</Real>
+    <Real>0.29245694323939547</Real>
+    <Real>0.19057583698482064</Real>
+    <Real>0.26755228932075598</Real>
+    <Real>0.93936000568323641</Real>
+    <Real>0.0083157703636005716</Real>
+    <Real>0.95224914534997451</Real>
+    <Real>0.75234498057724908</Real>
+    <Real>0.51049939828982183</Real>
+    <Real>0.13309310034408889</Real>
+    <Real>0.43113362533902333</Real>
+    <Real>0.2746229285042584</Real>
+    <Real>0.1188346493101564</Real>
+    <Real>0.16242168015927247</Real>
+  </Sequence>
 </ReferenceData>
