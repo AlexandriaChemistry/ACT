@@ -33,21 +33,21 @@
     <String>h_b~o3_b bondlength</String>
     <String>h_b~o3_b kb</String>
   </Sequence>
-  <Real Name="Fitness-after">5957696.4835388502</Real>
+  <Real Name="Fitness-after">3757409.9815836949</Real>
   <Sequence Name="Genome-after">
     <Int Name="Length">12</Int>
-    <Real>-276.11983788052129</Real>
-    <Real>132.51007756921251</Real>
-    <Real>284555.48913794954</Real>
-    <Real>-239.09740060284099</Real>
-    <Real>103.20408267487491</Real>
-    <Real>297358.3680487969</Real>
-    <Real>-360.30639965543844</Real>
-    <Real>122.60036063814213</Real>
-    <Real>294775.30991711572</Real>
-    <Real>-441.36926250373034</Real>
-    <Real>96.95550370313299</Real>
-    <Real>361815.33980919817</Real>
+    <Real>-270.55533799923688</Real>
+    <Real>134.13933652495686</Real>
+    <Real>293126.99611308402</Real>
+    <Real>-299.36165382233264</Real>
+    <Real>102.21640874081741</Real>
+    <Real>311016.61047799303</Real>
+    <Real>-343.50635528167857</Real>
+    <Real>122.6146431997374</Real>
+    <Real>285653.1632527929</Real>
+    <Real>-431.51706922317749</Real>
+    <Real>97.403525464605949</Real>
+    <Real>354430.38941733446</Real>
   </Sequence>
   <Int64 Name="numberObjectiveFunctionCalls">121</Int64>
   <Int64 Name="numEvaluations ForceComputer">1097</Int64>
