@@ -84,8 +84,8 @@ private:
     //! Evaluate the test set at each iteration?
     bool                  evaluateTestSet_ = false;
     // Random number generation
-    std::mt19937                            gen_;
-    std::uniform_int_distribution<>         dis_;
+    std::mt19937                             gen_;
+    std::uniform_int_distribution<long long> dis_;
     //! All used randIndices
     std::vector<int>                        randIndices_;
     /*!
