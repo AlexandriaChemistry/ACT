@@ -275,7 +275,7 @@ bool HybridGAMC::evolve(alexandria::MsgHandler       *msghandler,
     // No more need for the individual since we have a genepool now.
     delete individual;
     // Now we have filled the gene pool and initial fitness values
-    if (msghandler->info())
+    if (msghandler->verbose())
     {
         pool[pold]->dump(msghandler->tw(), "Initial genome.");
     }
@@ -309,7 +309,7 @@ bool HybridGAMC::evolve(alexandria::MsgHandler       *msghandler,
         if (gach_->sort())
         {
             pool[pold]->sort(imstr);
-            if (msghandler->info())
+            if (msghandler->verbose())
             {
                 pool[pold]->dump(msghandler->tw(), "After sorting old population...");
             }
@@ -341,7 +341,7 @@ bool HybridGAMC::evolve(alexandria::MsgHandler       *msghandler,
             // Recompute my own (Master) fitness
             double oldfitness = pool[pold]->genomePtr(0)->fitness(imstr);
             fitnessComputer()->compute(msghandler, pool[pold]->genomePtr(0), imstr);
-            if (msghandler->info())
+            if (msghandler->verbose())
             {
                 // Double check
                 msghandler->write(gmx::formatString("Middleman 0 computed %g, master %g",
@@ -355,7 +355,7 @@ bool HybridGAMC::evolve(alexandria::MsgHandler       *msghandler,
                 double fitness;
                 cr->recv(src, &fitness);  // Receiving the new training fitness
                 pool[pold]->genomePtr(i)->setFitness(imstr, fitness);
-                if (msghandler->info())
+                if (msghandler->verbose())
                 {
                     // Double check
                     fitnessComputer()->compute(msghandler, pool[pold]->genomePtr(i), imstr);
@@ -369,7 +369,7 @@ bool HybridGAMC::evolve(alexandria::MsgHandler       *msghandler,
                 pool[pold]->sort(imstr);
             }
             // Print population to debug if we have penalized the population
-            if (msghandler->info())
+            if (msghandler->verbose())
             {
                 pool[pold]->dump(msghandler->tw(), "Population has been penalized, re-evaluated and sorted!\n");
             }
@@ -385,7 +385,7 @@ bool HybridGAMC::evolve(alexandria::MsgHandler       *msghandler,
         }
         probabilityComputer()->compute(gp, generation);
         
-        if (msghandler->info())
+        if (msghandler->verbose())
         {
             pool[pold]->dump(msghandler->tw(), "Old population after probability calculation.");
         }
@@ -560,7 +560,7 @@ bool HybridGAMC::evolve(alexandria::MsgHandler       *msghandler,
         pold = pnew;
 
         // Print population again!
-        if (msghandler->info())
+        if (msghandler->verbose())
         {
             pool[pold]->dump(msghandler->tw(), "Population after mutating.");
         }
