@@ -33,7 +33,8 @@
 #define GA_MUTATOR_H
 
 #include <random>
-#include <time.h>
+#include <vector>
+//#include <time.h>
 
 #include "act/basics/chargemodel.h"
 #include "act/basics/msg_handler.h"
@@ -53,6 +54,8 @@ private:
     std::uniform_real_distribution<double>  dis_base;
     //! Charge generation
     alexandria::ChargeGenerationAlgorithm   algorithm_;
+    //! All random numbers
+    std::vector<double>                     all_rand_;
 protected:
 
     /*! \brief Constructor
@@ -68,7 +71,12 @@ protected:
     }
 
     //! \return a random number in \f$ [0, 1] \f$
-    double randNum() { return dis_base(gen_base); }
+    double randNum()
+    {
+        double r = dis_base(gen_base);
+        all_rand_.emplace_back(r);
+        return r;
+    }
 
 public:
 
@@ -102,6 +110,9 @@ public:
 
     //! \return the ChargeGenerationAlgorithm
     alexandria::ChargeGenerationAlgorithm algorithm() const { return algorithm_; }
+
+    //! \return all random numbers generated
+    const std::vector<double> &allRand() const { return all_rand_; }
 };
 
 

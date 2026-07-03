@@ -99,6 +99,8 @@ protected:
         checker_->checkReal(before.fitness(iMolSelect::Train), "Fitness-before");
         checker_->checkSequence(before.bases().begin(),
                                 before.bases().end(), "Genome-before");
+        checker_->checkSequence(gth->sii->paramNames().begin(),
+                                gth->sii->paramNames().end(), "Parameters");
         ga::Genome after = before;
         mymut->mutate(gth->msghandler, &before, &after, 0.0);
         checker_->checkReal(after.fitness(iMolSelect::Train), "Fitness-after");
@@ -108,6 +110,8 @@ protected:
         checker_->checkInt64(gth->forceComputer->numEvaluations(), "numEvaluations ForceComputer");
         checker_->checkInt64(gth->forceComputer->numShellIterations(), "numShellIterations ForceComputer");
         checker_->checkInt64(gth->forceComputer->numShellConvergenceFailed(), "numShellConvergenceFailed ForceComputer");
+        auto allRand = mymut->allRand();
+        checker_->checkSequence(allRand.begin(), allRand.end(), "Random numbers");
         delete mymut;
         delete gth;
    }
