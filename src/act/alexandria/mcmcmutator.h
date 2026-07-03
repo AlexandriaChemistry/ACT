@@ -86,7 +86,8 @@ private:
     // Random number generation
     std::mt19937                            gen_;
     std::uniform_int_distribution<size_t>   dis_;
-
+    //! All used randIndices
+    std::vector<int>                        randIndices_;
     /*!
      * \brief Change force field parameter at a given index for an individual
      * \param[in] genome   pointer to the genome
@@ -122,7 +123,12 @@ private:
                        double                              xiter);
 
     //! \return a random index of the force field parameter vector
-    size_t randIndex() { return dis_(gen_); }
+    size_t randIndex()
+    {
+        size_t ri = dis_(gen_);
+        randIndices_.push_back(ri);
+        return ri;
+    }
 
     /*!
      * \brief Compute mean and standard deviation for each force field parameter
@@ -231,6 +237,8 @@ public:
      * \param[in] oenv              the GROMACS output environment
      */
     void openChi2ConvFile(const gmx_output_env_t *oenv);
+    //! \return all random indices produced
+    const std::vector<int> &randIndices() const { return randIndices_; }
 };
 
 
