@@ -115,8 +115,8 @@ bool MCMC::evolve(alexandria::MsgHandler       *msghandler,
             cr->send_data(dest);
             // Send the data set
             cr->send(dest, imstr);
-            // Now resend the bases
-            cr->send(dest, pool.genomePtr(i)->bases());
+            // Now resend the genome
+            pool.genomePtr(i)->Send(cr, dest);
             // Tell the middleman to carry the MUTATION mode
             cr->send(dest, alexandria::TrainFFMiddlemanMode::MUTATION);
             i += 1;
@@ -132,12 +132,8 @@ bool MCMC::evolve(alexandria::MsgHandler       *msghandler,
     for (size_t i = 1; i < pool.popSize(); i++)
     {
         int src      = cr->middlemen()[i-1];
-        // Receiving the mutated parameters
-        cr->recv(src, pool.genomePtr(i)->basesPtr());
-        // Receiving the new training fitness
-        double fitness;
-        cr->recv(src, &fitness);
-        pool.genomePtr(i)->setFitness(imstr, fitness);
+        // Receiving the mutated genome
+        pool.genomePtr(i)->Receive(cr, src);
     }
     // Print the genomes to the logfile
     if (msghandler->verbose())
