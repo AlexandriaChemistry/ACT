@@ -123,9 +123,9 @@ private:
                        double                              xiter);
 
     //! \return a random index of the force field parameter vector
-    size_t randIndex()
+    int randIndex()
     {
-        size_t ri = dis_(gen_);
+        int ri = dis_(gen_);
         randIndices_.push_back(ri);
         return ri;
     }
