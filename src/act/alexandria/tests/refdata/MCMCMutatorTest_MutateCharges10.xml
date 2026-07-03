@@ -21,22 +21,22 @@
     <String>o3_z chi</String>
     <String>o3_z eta</String>
   </Sequence>
-  <Real Name="Fitness-after">0.00051325652963031163</Real>
+  <Real Name="Fitness-after">0.00047991749538980812</Real>
   <Sequence Name="Genome-after">
     <Int Name="Length">6</Int>
-    <Real>4.5580204204687309</Real>
-    <Real>11.512044085783623</Real>
-    <Real>3.2999999999999998</Real>
-    <Real>10</Real>
-    <Real>5</Real>
-    <Real>13</Real>
+    <Real>4.6030691252425786</Real>
+    <Real>12</Real>
+    <Real>3.249325186772253</Real>
+    <Real>9.8044156991811118</Real>
+    <Real>5.033479654408934</Real>
+    <Real>12.718998449713851</Real>
   </Sequence>
   <Int64 Name="numberObjectiveFunctionCalls">13</Int64>
   <Int64 Name="numEvaluations ForceComputer">112</Int64>
   <Int64 Name="numShellIterations ForceComputer">0</Int64>
   <Int64 Name="numShellConvergenceFailed ForceComputer">0</Int64>
   <Sequence Name="Random numbers">
-    <Int Name="Length">20</Int>
+    <Int Name="Length">30</Int>
     <Real>0.27836172122052455</Real>
     <Real>0.91132550714989458</Real>
     <Real>0.15872918160889912</Real>
@@ -57,20 +57,30 @@
     <Real>0.99730353508540825</Real>
     <Real>0.8645135734036693</Real>
     <Real>0.57523580801304985</Real>
+    <Real>0.22835513775154309</Real>
+    <Real>0.32258758869757814</Real>
+    <Real>0.077709889768777879</Real>
+    <Real>0.79968905302098692</Real>
+    <Real>0.89682131630922313</Real>
+    <Real>0.73623595137056319</Real>
+    <Real>0.87242902116979604</Real>
+    <Real>0.10972006904701655</Real>
+    <Real>0.036881407430525287</Real>
+    <Real>0.6448144627540553</Real>
   </Sequence>
   <Sequence Name="Random parameter indices">
     <Int Name="Length">12</Int>
-    <Int>1</Int>
-    <Int>1</Int>
-    <Int>1</Int>
-    <Int>1</Int>
-    <Int>5</Int>
-    <Int>3</Int>
-    <Int>0</Int>
-    <Int>5</Int>
-    <Int>1</Int>
-    <Int>0</Int>
-    <Int>4</Int>
     <Int>2</Int>
+    <Int>0</Int>
+    <Int>5</Int>
+    <Int>4</Int>
+    <Int>4</Int>
+    <Int>4</Int>
+    <Int>1</Int>
+    <Int>3</Int>
+    <Int>2</Int>
+    <Int>5</Int>
+    <Int>5</Int>
+    <Int>0</Int>
   </Sequence>
 </ReferenceData>

@@ -125,7 +125,8 @@ private:
     //! \return a random index of the force field parameter vector
     int randIndex()
     {
-        int ri = dis_(gen_);
+        //        int ri = dis_(gen_);
+        int ri = std::min(static_cast<double>(dis_.max()), std::floor(randNum()*(1+dis_.max())+0.5));
         randIndices_.push_back(ri);
         return ri;
     }

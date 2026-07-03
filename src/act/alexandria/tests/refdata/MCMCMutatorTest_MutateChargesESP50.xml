@@ -21,22 +21,22 @@
     <String>o3_z chi</String>
     <String>o3_z eta</String>
   </Sequence>
-  <Real Name="Fitness-after">533.48474775585112</Real>
+  <Real Name="Fitness-after">475.68073920612767</Real>
   <Sequence Name="Genome-after">
     <Int Name="Length">6</Int>
-    <Real>4.5580204204687309</Real>
-    <Real>11.512044085783623</Real>
-    <Real>3.2533865040494083</Real>
-    <Real>9.3092032894279431</Real>
-    <Real>5.0221083099887736</Real>
-    <Real>12.749887921590998</Real>
+    <Real>4.6030691252425786</Real>
+    <Real>11.586584020418643</Real>
+    <Real>3.200071250861042</Real>
+    <Real>9.7282135214984642</Real>
+    <Real>5.2237228948707903</Real>
+    <Real>12.475710940504035</Real>
   </Sequence>
   <Int64 Name="numberObjectiveFunctionCalls">31</Int64>
   <Int64 Name="numEvaluations ForceComputer">256</Int64>
   <Int64 Name="numShellIterations ForceComputer">0</Int64>
   <Int64 Name="numShellConvergenceFailed ForceComputer">0</Int64>
   <Sequence Name="Random numbers">
-    <Int Name="Length">49</Int>
+    <Int Name="Length">76</Int>
     <Real>0.27836172122052455</Real>
     <Real>0.91132550714989458</Real>
     <Real>0.15872918160889912</Real>
@@ -86,38 +86,65 @@
     <Real>0.92661339569318057</Real>
     <Real>0.98950630032810361</Real>
     <Real>0.61054154994386911</Real>
+    <Real>0.47883983473966168</Real>
+    <Real>0.32075926668282873</Real>
+    <Real>0.48106485501110718</Real>
+    <Real>0.39416364210743476</Real>
+    <Real>0.6552924707096488</Real>
+    <Real>0.0019174870774293612</Real>
+    <Real>0.072570052848772965</Real>
+    <Real>0.11932880426308352</Real>
+    <Real>0.90691105939539329</Real>
+    <Real>0.011545385335020784</Real>
+    <Real>0.98868930776291986</Real>
+    <Real>0.59837417430948781</Real>
+    <Real>0.40584003409854136</Real>
+    <Real>0.65878292844048958</Real>
+    <Real>0.63020554179417898</Real>
+    <Real>0.59930410241463394</Real>
+    <Real>0.91700237606806489</Real>
+    <Real>0.32633940105503101</Real>
+    <Real>0.089550534073241095</Real>
+    <Real>0.93465032300693318</Real>
+    <Real>0.73772879544576242</Real>
+    <Real>0.81142921324713047</Real>
+    <Real>0.72625897833775677</Real>
+    <Real>0.90400828444703807</Real>
+    <Real>0.1811372930795952</Real>
+    <Real>0.54671049998704346</Real>
+    <Real>0.27135157043618652</Real>
   </Sequence>
   <Sequence Name="Random parameter indices">
     <Int Name="Length">30</Int>
-    <Int>1</Int>
-    <Int>1</Int>
-    <Int>1</Int>
-    <Int>1</Int>
+    <Int>2</Int>
+    <Int>0</Int>
     <Int>5</Int>
+    <Int>4</Int>
+    <Int>4</Int>
+    <Int>4</Int>
+    <Int>1</Int>
     <Int>3</Int>
+    <Int>2</Int>
+    <Int>5</Int>
+    <Int>5</Int>
     <Int>0</Int>
     <Int>5</Int>
     <Int>1</Int>
-    <Int>0</Int>
-    <Int>4</Int>
     <Int>2</Int>
-    <Int>3</Int>
-    <Int>4</Int>
     <Int>2</Int>
     <Int>1</Int>
-    <Int>0</Int>
     <Int>5</Int>
-    <Int>3</Int>
+    <Int>2</Int>
+    <Int>4</Int>
     <Int>3</Int>
     <Int>4</Int>
+    <Int>1</Int>
     <Int>5</Int>
+    <Int>4</Int>
     <Int>4</Int>
     <Int>2</Int>
     <Int>5</Int>
-    <Int>3</Int>
-    <Int>3</Int>
-    <Int>3</Int>
-    <Int>1</Int>
     <Int>4</Int>
+    <Int>1</Int>
   </Sequence>
 </ReferenceData>
