@@ -239,6 +239,7 @@ void AllBondeds::addBonded(MsgHandler                   *msghandler,
             }
         }
         break;
+    case InteractionType::QUADRUPOLE_POLARIZATION:
     case InteractionType::ELECTROSTATICS:
     case InteractionType::VDW:
     case InteractionType::VDWCORRECTION:
