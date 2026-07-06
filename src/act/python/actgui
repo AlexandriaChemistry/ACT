@@ -1116,9 +1116,9 @@ class FFGenerator:
                                  "bondtype": atp, "poltype": "",
                                  "acmtype": "", "vdwtype": atp,
                                  "atomicnumber": 0, "zetatype": atp+"_z",
-                                 "radius": 0, "row": 0 }
-                setParam(atp, "", "q", -2, 2, Bounded, "e", False)
-                if qdist:
+                                 "radius": 0, "row": 1 }
+                setParam(atp, "", "q", -2, 0, Bounded, "e", False)
+                if not qdist:
                     setParam(atp, coul, "zeta", 0, 0, Fixed, "1/nm")
                 else:
                     setParam(atp, coul, "zeta", 4, 20, Bounded, "1/nm")
