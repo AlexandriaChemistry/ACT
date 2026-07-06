@@ -127,6 +127,7 @@ void ForceFieldTable::itype_table(InteractionType    itype,
     lt.setLabel(interactionTypeToString(itype).c_str());
     bool        first    = true;
     std::string header;
+    std::string units;
     int         ncolumns = 1;
     for (const auto &ep : eep.parametersConst())
     {
@@ -134,6 +135,7 @@ void ForceFieldTable::itype_table(InteractionType    itype,
         if (first)
         {
             header = "Type";
+            units  = "(unit)";
         }
         unsigned int ntrain = 0;
         for (const auto &ffp : ep.second)
@@ -145,16 +147,35 @@ void ForceFieldTable::itype_table(InteractionType    itype,
             // Round upwards the sigma values.
             if (ffp.second.ntrain() >= ntrain_)
             {
+                std::string ffmt = "%.3f";
+                if (ffp.second.value() < 0.01)
+                {
+                    ffmt.assign("%.2e");
+                }
+                else if (ffp.second.value() > 100)
+                {
+                    ffmt.assign("%.2e");
+                }
+                else if (ffp.second.value() > 10)
+                {
+                    ffmt.assign("%.1f");
+                }
+                else if (ffp.second.value() > 2)
+                {
+                    ffmt.assign("%.2f");
+                }
                 if (printSigma_)
                 {
-                    line += gmx::formatString(" & %.3f(%d, %.3f)",
+                    std::string fmt = gmx::formatString(" & %s(%%d, %s)", ffmt.c_str(), ffmt.c_str());
+                    line += gmx::formatString(fmt.c_str(),
                                               ffp.second.value(),
                                               ffp.second.ntrain(),
                                               ffp.second.uncertainty()+0.005);
                 }
                 else
                 {
-                    line += gmx::formatString(" & %.3f", ffp.second.value());
+                    std::string fmt = gmx::formatString(" & %s", ffmt.c_str());
+                    line += gmx::formatString(fmt.c_str(), ffp.second.value());
                 }
             }
             else
@@ -172,6 +193,7 @@ void ForceFieldTable::itype_table(InteractionType    itype,
                 {
                     header   += gmx::formatString(" & %s ", ffp.first.c_str());
                 }
+                units += gmx::formatString("& (%s)", ffp.second.unit().c_str());
                 ncolumns += 1;
             }
         }
@@ -179,6 +201,7 @@ void ForceFieldTable::itype_table(InteractionType    itype,
         {
             lt.setColumns(ncolumns);
             lt.addHeadLine(header.c_str());
+            lt.addHeadLine(units.c_str());
             lt.printHeader();
             first = false;
         }

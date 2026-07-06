@@ -325,33 +325,40 @@ static void processAttr(MsgHandler           *msgHandler,
             std::string inter    = xbufString(xmlEntry::TYPE);
             if (!stringToInteractionType(inter, &currentItype))
             {
-                GMX_THROW(gmx::InvalidInputError(gmx::formatString("Invalid InteractionType '%s'", inter.c_str()).c_str()));
-            }
-            //! \todo This is a hack to be able to read "old" force field files.
-            std::map<InteractionType, CanSwap> csUpdate = {
-                { InteractionType::ELECTRONEGATIVITYEQUALIZATION, CanSwap::Yes },
-                { InteractionType::POLARIZATION, CanSwap::Yes },
-                { InteractionType::ELECTROSTATICS, CanSwap::Yes },
-                { InteractionType::VSITE2, CanSwap::Vsite2 }
-            };
-            auto doUpdate = csUpdate.find(currentItype);
-            if (doUpdate != csUpdate.end())
-            {
-                canSwap = doUpdate->second;
                 if (msgHandler)
                 {
-                    msgHandler->writeDebug(gmx::formatString("WARNING: Changing CanSwap to %s for %s\n",
-                            canSwapToString(doUpdate->second).c_str(),
-                            interactionTypeToString(currentItype).c_str()));
+                    msgHandler->msg(ACTStatus::Warning,
+                                    gmx::formatString("Invalid InteractionType '%s'", inter.c_str()));
                 }
             }
-
-            if (function.empty() && currentItype == InteractionType::ELECTROSTATICS)
+            else
             {
-                GMX_THROW(gmx::InvalidInputError(gmx::formatString("Please specify the correct function type for InteractionType %s", inter.c_str()).c_str()));
+                //! \todo This is a hack to be able to read "old" force field files.
+                std::map<InteractionType, CanSwap> csUpdate = {
+                    { InteractionType::ELECTRONEGATIVITYEQUALIZATION, CanSwap::Yes },
+                    { InteractionType::POLARIZATION, CanSwap::Yes },
+                    { InteractionType::ELECTROSTATICS, CanSwap::Yes },
+                    { InteractionType::VSITE2, CanSwap::Vsite2 }
+                };
+                auto doUpdate = csUpdate.find(currentItype);
+                if (doUpdate != csUpdate.end())
+                {
+                    canSwap = doUpdate->second;
+                    if (msgHandler)
+                    {
+                        msgHandler->writeDebug(gmx::formatString("WARNING: Changing CanSwap to %s for %s\n",
+                                                                 canSwapToString(doUpdate->second).c_str(),
+                                                                 interactionTypeToString(currentItype).c_str()));
+                    }
+                }
+
+                if (function.empty() && currentItype == InteractionType::ELECTROSTATICS)
+                {
+                    GMX_THROW(gmx::InvalidInputError(gmx::formatString("Please specify the correct function type for InteractionType %s", inter.c_str()).c_str()));
+                }
+                ForceFieldParameterList newparam(function, canSwap);
+                pd->addForces(currentItype, newparam);
             }
-            ForceFieldParameterList newparam(function, canSwap);
-            pd->addForces(currentItype, newparam);
         }
         break;
     case xmlEntry::OPTION:

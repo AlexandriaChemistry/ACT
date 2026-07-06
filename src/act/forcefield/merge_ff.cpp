@@ -239,11 +239,6 @@ int merge_ff(int argc, char *argv[])
     {
         return 0;
     }
-    std::string allParams("alpha chi eta zeta delta_eta delta_chi charge vs2a");
-    if (nullptr == mergeString)
-    {
-        mergeString = strdup(allParams.c_str());
-    }
     /* Read all the gentop files. */
     auto filenames = opt2fns("-ff", fnm.size(), fnm.data());
     
@@ -256,10 +251,15 @@ int merge_ff(int argc, char *argv[])
 
     // Copy the first gentop file into pdout
     readForceField(filenames[0].c_str(), &pdout);
-    
+
+    // Let's see what parameters to handle
+    std::vector<std::string> allparams;
+    if (nullptr != mergeString)
+    {
+        allparams = gmx::splitString(mergeString);
+    }
     // We now update different parts of pdout
     std::set <alexandria::InteractionType> itypes;
-    auto allparams = gmx::splitString(mergeString);
     if (allparams.empty())
     {
         for(const auto &fs : pds[0].forcesConst())
