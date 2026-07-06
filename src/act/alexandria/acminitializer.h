@@ -62,8 +62,6 @@ private:
     StaticIndividualInfo                    *sii_;
     //! Whether we do random initialization or not.
     bool                                     randInit_;
-    //! Seeds for random number generation
-    // std::vector<int>                         seeds_;
 
 public: 
 

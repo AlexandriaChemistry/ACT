@@ -72,12 +72,12 @@
     <Gene Name="3">
       <Sequence Name="After">
         <Int Name="Length">3</Int>
-        <Real>0.33169406451524791</Real>
-        <Real>0.1672599043349344</Real>
-        <Real>0.25688293338029289</Real>
+        <Real>0.21134468848820984</Real>
+        <Real>0.37339765214496839</Real>
+        <Real>0.16349167264355965</Real>
       </Sequence>
       <Real Name="Fitness_3">3</Real>
     </Gene>
-    <Real Name="Volume">0.0012061977</Real>
+    <Real Name="Volume">0.00066228927</Real>
   </GenePool>
 </ReferenceData>

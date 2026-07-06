@@ -115,8 +115,6 @@ GaTestHelper::GaTestHelper(int                                  nmiddlemen,
     std::mt19937 gen(rd()); // Standard mersenne_twister_engine seeded with rd()
     std::uniform_int_distribution<int> dis(0); // Default constructor to cover all available (positive) range
     int seed = 1993;
-    gen.seed(seed);
-    seed = dis(gen);
     
     // Initializer
     initializer     = new ACMInitializer(sii, false, seed);
