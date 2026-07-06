@@ -24,6 +24,7 @@
 #include "act/alexandria/mcmcmutator.h"
 #include "act/alexandria/percentmutator.h"
 #include "act/alexandria/staticindividualinfo.h"
+#include "act/forces/forcecomputerstatistics.h"
 #include "act/utility/communicationrecord.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/textwriter.h"
@@ -107,6 +108,9 @@ void ACTMiddleMan::run(MsgHandler *msghandler)
     {
         cr->recv(master, ind_->genomePtr()->basesPtr());
     }
+    // ForceComputer Statistics
+    alexandria::ForceComputerStatistics fcStats;
+    
     // Start by computing my own fitness
     fitComp_.compute(msghandler, ind_->genomePtr(), iMolSelect::Train);
     if (gach_->evaluateTestset())
@@ -180,6 +184,10 @@ void ACTMiddleMan::run(MsgHandler *msghandler)
                 {
                     msghandler->writeDebug(ind_->bestGenomePtr()->print("After mutation"));
                 }
+            }
+            if (msghandler->info())
+            {
+                (void) fcStats.statistics(cr, fitComp_.forceComputer(), false);
             }
         }
         else if (mode == TrainFFMiddlemanMode::FITNESS)
