@@ -401,20 +401,6 @@ Potential ForceComputer::ftype(const ForceField *pd,
     return ftype;
 }
 
-std::string ForceComputer::statistics() const
-{
-    double ratio = 0;
-    if (numEvaluations() > 0)
-    {
-        ratio = (numShellIterations()*1.0)/numEvaluations();
-    }
-    return gmx::formatString("ForceComputer #eval %zu #shell iter %zu ratio %.2f #failed shell convergence %zu",
-                             numEvaluations(),
-                             numShellIterations(),
-                             ratio,
-                             numShellConvergenceFailed());
-}
-
 void ForceComputer::plot(MsgHandler        *msghandler,
                          const ForceField  *pd,
                          InteractionType    itype) const

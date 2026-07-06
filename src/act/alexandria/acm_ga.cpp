@@ -32,6 +32,7 @@
 #include <regex>
 
 #include "act/basics/msg_handler.h"
+#include "act/forces/forcecomputerstatistics.h"
 #include "act/ga/gene_pool.h"
 #include "act/utility/communicationrecord.h"
 #include "mcmcmutator.h"
@@ -163,6 +164,15 @@ bool MCMC::evolve(alexandria::MsgHandler       *msghandler,
                         "No better genome found. Please check your input and output.\n");
         bMinimum = false;
     }
+    // ForceComputer Statistics
+    alexandria::ForceComputerStatistics fcStats;
+    if (msghandler->info())
+    {
+        std::string stats = fcStats.statistics(cr,
+                                               static_cast<const alexandria::ACMFitnessComputer *>(fitnessComputer())->forceComputer(),
+                                               true);
+        msghandler->msg(alexandria::ACTStatus::Info, stats);
+    }
 
     // Save last population
     lastPop_ = pool;
@@ -202,7 +212,10 @@ bool HybridGAMC::evolve(alexandria::MsgHandler       *msghandler,
     int       pold = 0;
 #define pnew (1-pold)
     pool[pold] = new GenePool(sii_->nParam());
-    pool[pnew] = new GenePool(sii_->nParam()); 
+    pool[pnew] = new GenePool(sii_->nParam());
+
+    // ForceComputer Statistics
+    alexandria::ForceComputerStatistics fcStats;
     
     // Create and add our own individual (Will be the first one in the pool)
     auto individual = static_cast<alexandria::ACMIndividual *>(initializer()->initialize());
@@ -299,7 +312,8 @@ bool HybridGAMC::evolve(alexandria::MsgHandler       *msghandler,
                                         gach_->maxGenerations()));
 
     // Store starting time
-    time_t start_time = std::time(nullptr);
+    time_t start_time   = std::time(nullptr);
+    bool   stopTraining = false;
     // Iterate and create new generation
     do
     {
@@ -599,8 +613,6 @@ bool HybridGAMC::evolve(alexandria::MsgHandler       *msghandler,
         {
             msghandler->write(mess_start);
         }
-        msghandler->msg(alexandria::ACTStatus::Info,
-                        static_cast<const alexandria::ACMFitnessComputer *>(fitnessComputer())->forceComputer()->statistics());
         if (gach_->evaluateTestset())
         {
             const auto oldBestTest = (*bestGenome)[imste];
@@ -611,9 +623,17 @@ bool HybridGAMC::evolve(alexandria::MsgHandler       *msghandler,
                 msghandler->write(tmpGenome.print(mess.c_str()));
             }
         }
+        stopTraining = terminate(msghandler->tw(), pool[pold], generation);
+        if (msghandler->info())
+        {
+            std::string stats = fcStats.statistics(cr,
+                                                   static_cast<const alexandria::ACMFitnessComputer *>(fitnessComputer())->forceComputer(),
+                                                   stopTraining);
+            msghandler->msg(alexandria::ACTStatus::Info, stats);
+        }
         msghandler->flush();
     }
-    while (!terminate(msghandler->tw(), pool[pold], generation));
+    while (!stopTraining);
 
     // Close surveillance files for fitness
     closeFitnessFiles();

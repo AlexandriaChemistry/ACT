@@ -183,7 +183,7 @@ private:
     size_t numShellConvergenceFailed() const { return nShellConvergeFailed_; }
 
     //! \brief Reset both statistics counters to zero
-    void resetStatistics() { nEval_ = 0; nShellIter_ = 0; nShellConvergeFailed_ = 0; }
+    void resetStatistics() const { nEval_ = 0; nShellIter_ = 0; nShellConvergeFailed_ = 0; }
     
     //! \return the max number of shell iterations
     int maxIter() const { return maxiter_; }
@@ -216,10 +216,6 @@ private:
     {
         vsiteHandler_.constructPositions(top, coordinates, box_);
     }
-    /* \brief Print ForceComputer statistics
-     * \return string containing the statistics
-     */
-    std::string statistics() const;
 };
 
 /*! \brief Return the force scaling when hyper polarizability is used. 
