@@ -94,9 +94,9 @@ void ParticleType::setOption(const std::string &key,
     {
         option_.insert({key, value});
     }
-    else
+    else if (debug)
     {
-        GMX_THROW(gmx::InternalError(gmx::formatString("Will not add unknown option %s to particle type %s", key.c_str(), id_.id().c_str()).c_str()));
+        fprintf(debug, "Ignoring unknown option %s for particle type %s\n", key.c_str(), id_.id().c_str());
     }
 }
 
