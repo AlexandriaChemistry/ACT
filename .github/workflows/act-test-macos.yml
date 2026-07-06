@@ -52,6 +52,7 @@ jobs:
           ./bin/coulombIntegrals-test
           ./bin/fileio-test
           ./bin/forcefield-test
+          ./bin/ga-test
           ./bin/import-test
           ./bin/molprop-test
           ./bin/properties-test
