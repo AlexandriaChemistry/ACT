@@ -502,6 +502,7 @@ int gen_ff(int argc, char*argv[])
             atomnumber = apropsptr->second.atomnumber();
         }
         ptp.setOption("atomnumber", gmx::formatString("%d", atomnumber));
+        ptp.setOption("qpoltype", entry.first);
         ptp.setOption("vdwtype", entry.first);
         ptp.setOption("vdwcorrtype", entry.first);
         ptp.setOption("induccorrtype", entry.first);
