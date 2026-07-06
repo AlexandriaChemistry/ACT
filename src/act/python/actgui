@@ -1208,8 +1208,15 @@ class FFGenerator:
                 setVDWcorr(atype_name, False)
 
                 if vdwtp == Atom:
-                    setParam(atype_name, "ELECTRONEGATIVITYEQUALIZATION", "eta", 4, 20, Bounded, "eV")
-                    setParam(atype_name, "ELECTRONEGATIVITYEQUALIZATION", "chi", 4, 12, Bounded, "eV/e")
+                    muteta = Bounded
+                    mutchi = Bounded
+                    # Check whether we can reduce the number of parameters
+                    if atype_props[atype_name]["Bonds"] == 0:
+                        muteta = Fixed
+                        mutchi = Fixed
+
+                    setParam(atype_name, "ELECTRONEGATIVITYEQUALIZATION", "eta", 4, 20, muteta, "eV")
+                    setParam(atype_name, "ELECTRONEGATIVITYEQUALIZATION", "chi", 4, 12, mutchi, "eV/e")
 
                 if self.icSel.potential() != "NONE":
                     bounds = self.icSel.bounds()
