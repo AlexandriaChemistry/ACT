@@ -932,9 +932,9 @@ CommunicationStatus MolProp::BroadCast(const CommunicationRecord *cr,
                         cr->mh()->writeDebug(gmx::formatString("Received a category %s\n", str.c_str()));
                     }
                 }
-                else
+                else if (debug)
                 {
-                    gmx_fatal(FARGS, "A category was promised but I got a nullptr pointer");
+                    fprintf(debug, "When bcasting a molprop,  but I got an empty category\n");
                 }
             }
         }
