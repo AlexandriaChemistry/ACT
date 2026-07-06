@@ -3,7 +3,7 @@
 # This script is part of the Alexandria Chemistry Toolkit
 # https://github.com/AlexandriaChemistry/ACT
 # Author: David van der Spoel
-# Copyright 2025
+# Copyright 2025,2026
 # License is GPL v. 2
 
 import copy, os, sys, tempfile, webbrowser, time
@@ -1114,6 +1114,7 @@ class FFGenerator:
             for atp in self.opt_atomtypes.keys():
                 allData[atp] = { "element": "VS", "mass": 0,
                                  "bondtype": atp, "poltype": "",
+                                 "qpoltype": "",
                                  "acmtype": "", "vdwtype": atp,
                                  "atomicnumber": 0, "zetatype": atp+"_z",
                                  "radius": 0, "row": 1 }
