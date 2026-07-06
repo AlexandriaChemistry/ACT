@@ -1,20 +1,20 @@
 #atomtype|element|atomnr|default|bonds|radius|row|charge|vsite|shell|qmin|qmax|comment
-hc|H|1|1|1|0.031|1|0|0|0|0|0.5|Hydrogen on carbon
-h1|H|1|1|1|0.031|1|0|0|0|0|0.5|Hydrogen on carbon with 1 electron-withdrawing group
-h2|H|1|1|1|0.031|1|0|0|0|0|0.5|Hydrogen on carbon with 2 electron-withdrawing groups
-h3|H|1|1|1|0.031|1|0|0|0|0|0.5|Hydrogen on carbon with 3 electron-withdrawing groups
-h4|H|1|1|1|0.031|1|0|0|0|0|0.5|Hydrogen on aromatic carbon with 1 electron-withdrawing group
-h5|H|1|1|1|0.031|1|0|0|0|0|0.5|Hydrogen on aromatic carbon with 1 electron-withdrawing group
-ha|H|1|1|1|0.031|1|0|0|0|0|0.5|Hydrogen on aromatic carbon
-hn|H|1|1|1|0.031|1|0|0|0|0|0.5|Hydrogen on nitrogen
-ho|H|1|1|1|0.031|1|0|0|0|0|0.5|Hydrogen on oxygen
-hf|H|1|1|1|0.031|1|0|0|0|0|0.5|Hydrogen on fluorine
-hp|H|1|1|1|0.031|1|0|0|0|0|0.5|Hydrogen on phosphor
-hs|H|1|1|1|0.031|1|0|0|0|0|0.5|Hydrogen on sulfur
-hcl|H|1|1|1|0.031|1|0|0|0|0|0.5|Hydrogen on chlorine
-hbr|H|1|1|1|0.031|1|0|0|0|0|0.5|Hydrogen on bromine
-hi|H|1|1|1|0.031|1|0|0|0|0|0.5|Hydrogen on iodine
-hw|H|1|1|1|0.031|2|0|0|0|0|0.5|Water hydrogen
+hc|H|1|1|1|0.031|1|0|0|0|0|0.75|Hydrogen on carbon
+h1|H|1|1|1|0.031|1|0|0|0|0|0.75|Hydrogen on carbon with 1 electron-withdrawing group
+h2|H|1|1|1|0.031|1|0|0|0|0|0.75|Hydrogen on carbon with 2 electron-withdrawing groups
+h3|H|1|1|1|0.031|1|0|0|0|0|0.75|Hydrogen on carbon with 3 electron-withdrawing groups
+h4|H|1|1|1|0.031|1|0|0|0|0|0.75|Hydrogen on aromatic carbon with 1 electron-withdrawing group
+h5|H|1|1|1|0.031|1|0|0|0|0|0.75|Hydrogen on aromatic carbon with 1 electron-withdrawing group
+ha|H|1|1|1|0.031|1|0|0|0|0|0.75|Hydrogen on aromatic carbon
+hn|H|1|1|1|0.031|1|0|0|0|0|0.75|Hydrogen on nitrogen
+ho|H|1|1|1|0.031|1|0|0|0|0|0.75|Hydrogen on oxygen
+hf|H|1|1|1|0.031|1|0|0|0|0|0.75|Hydrogen on fluorine
+hp|H|1|1|1|0.031|1|0|0|0|0|0.75|Hydrogen on phosphor
+hs|H|1|1|1|0.031|1|0|0|0|0|0.75|Hydrogen on sulfur
+hcl|H|1|1|1|0.031|1|0|0|0|0|0.75|Hydrogen on chlorine
+hbr|H|1|1|1|0.031|1|0|0|0|0|0.75|Hydrogen on bromine
+hi|H|1|1|1|0.031|1|0|0|0|0|0.75|Hydrogen on iodine
+hw|H|1|1|1|0.031|2|0|0|0|0|0.75|Water hydrogen
 b|B|5|0|1|0.098|2|0|0|0|0|0|boron
 c1|C|6|1|1|0.069|2|0|0|0|0|0|sp carbon
 c2|C|6|1|1|0.073|2|0|0|0|0|0|sp2 carbon
