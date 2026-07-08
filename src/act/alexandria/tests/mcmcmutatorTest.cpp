@@ -175,4 +175,44 @@ TEST_F(MCMCMutatorTest, MutateBonds100)
     doMutate(before, maxiter, fitstrings, eRms);
 }
 
+TEST_F(MCMCMutatorTest, MutateAngles)
+{
+    const std::vector<std::string> fitstrings = { "kt", "angle" };
+    // Train on internal energy
+    std::vector<alexandria::eRMS> eRms = { eRMS::EPOT };
+    // Bases correspond to angle kt for each angle
+    std::vector<double> bases = { 105, 320, 111, 290, 103, 300, 120, 280, 107, 300, 108, 340 };
+    FitnessMap          fm    = { {iMolSelect::Train, 1e8} };
+    ga::Genome before(bases, fm);
+    int maxiter = 10;
+    doMutate(before, maxiter, fitstrings, eRms);
+}
+
+TEST_F(MCMCMutatorTest, MutateDihedrals)
+{
+    const std::vector<std::string> fitstrings = { "kp", "phi0" };
+    // Train on internal energy
+    std::vector<alexandria::eRMS> eRms = { eRMS::EPOT };
+    // Bases correspond to kp phi0 for each dihedral
+    std::vector<double> bases = { 6.5, 180, 5, 320, 6, 290, 7, 300, 10, 280, 8, 300, 4, 340 };
+    FitnessMap          fm    = { {iMolSelect::Train, 1e8} };
+    ga::Genome before(bases, fm);
+    int maxiter = 10;
+    doMutate(before, maxiter, fitstrings, eRms);
+}
+
+TEST_F(MCMCMutatorTest, MutateLennardJones)
+{
+    // This is the core functionality of the MCMCMutator
+    const std::vector<std::string> fitstrings = { "sigma", "epsilon" };
+    // Train on internal energy
+    std::vector<alexandria::eRMS> eRms = { eRMS::EPOT };
+    // Bases correspond to epsilon sigma for each atom type
+    std::vector<double> bases = { 0.5, 0.45, 0.09, 0.4, 0.52, 0.3 };
+    FitnessMap          fm    = { {iMolSelect::Train, 1e8} };
+    ga::Genome before(bases, fm);
+    int maxiter = 10;
+    doMutate(before, maxiter, fitstrings, eRms);
+}
+
 } // namespace alexandria
