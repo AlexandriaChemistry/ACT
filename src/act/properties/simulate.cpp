@@ -236,8 +236,9 @@ int simulate(int argc, char *argv[])
                 auto newxmin = xmin;
                 std::map<InteractionType, double> einter;
                 std::vector<gmx::RVec>            interactionForces;
+                bool                              separateInductionCorrection = false;
                 actmol.calculateInteractionEnergy(&msghandler, &pd, &forceComp, &einter,
-                                                  &interactionForces, &newxmin, true);
+                                                  &interactionForces, &newxmin, separateInductionCorrection);
                 for(const auto &ei : einter)
                 {
                     msghandler.msg(ACTStatus::Info,
