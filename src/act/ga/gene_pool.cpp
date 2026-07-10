@@ -80,9 +80,9 @@ size_t GenePool::findBestIndex(const iMolSelect ims) const
     double minFitness = 1e20;
     for(size_t i = 0; i < genomes_.size(); i++)
     {
-        if (genomes_[i].hasFitness(ims))
+        if (genomes_[i].hasFitness(ims) && genomes_[i].fitness(ims) < minFitness)
         {
-            minFitness = std::min(minFitness, genomes_[i].fitness(ims));
+            minFitness = genomes_[i].fitness(ims);
             minIndex   = i;
         }
     }
