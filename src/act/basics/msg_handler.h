@@ -147,8 +147,10 @@ enum class ACTStatus {
     Info = 3,
     //! Give even more output
     Verbose = 4,
+    //! Give even more more output
+    VeryVerbose = 5,
     //! Print debugging messages as well
-    Debug = 5
+    Debug = 6
 };
 
 /*! \brief Simple class to print message to a file or stdout
@@ -287,6 +289,9 @@ class MsgHandler
 
         //! \return whether we are in a verbose mode
         bool verbose() const { return printLevel_ >= ACTStatus::Verbose; }
+
+        //! \return whether we are in a very verbose mode
+        bool veryVerbose() const { return printLevel_ >= ACTStatus::VeryVerbose; }
 
         //! \return whether we are in debug mode
         bool debug() const { return printLevel_ == ACTStatus::Debug; }
