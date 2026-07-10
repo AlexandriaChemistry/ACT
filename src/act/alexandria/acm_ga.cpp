@@ -125,6 +125,7 @@ bool MCMC::evolve(alexandria::MsgHandler       *msghandler,
     }
 
     // Mutate my own genome
+    ind->setBestGenome(ind->genome());
     mutator()->mutate(msghandler, ind->genomePtr(), ind->bestGenomePtr(), gach_->prMut());
     // Bring it into the population
     pool.replaceGenome(0, ind->bestGenome());
@@ -265,7 +266,7 @@ bool HybridGAMC::evolve(alexandria::MsgHandler       *msghandler,
     // Maybe not really needed but just to print the components
     fitnessComputer()->compute(msghandler, individual->genomePtr(), imste);
     // Copy current genome to bestgenome
-    //individual->setBestGenome(individual->genome());
+    individual->setBestGenome(individual->genome());
 
     if (read == 0)
     {
@@ -285,8 +286,6 @@ bool HybridGAMC::evolve(alexandria::MsgHandler       *msghandler,
             pool[pnew]->addGenome(genome);
         }
     }
-    // No more need for the individual since we have a genepool now.
-    delete individual;
     // Now we have filled the gene pool and initial fitness values
     if (msghandler->verbose())
     {
@@ -331,9 +330,11 @@ bool HybridGAMC::evolve(alexandria::MsgHandler       *msghandler,
         }
 
         // Penalize
+        bool penalized = false;
         if (penalize(msghandler->tw(), pool[pold], generation))
         {
             haveToSendGenomes = true;
+            penalized = true;
         }
         if (haveToSendGenomes)
         {
@@ -385,7 +386,8 @@ bool HybridGAMC::evolve(alexandria::MsgHandler       *msghandler,
             // Print population to debug if we have penalized the population
             if (msghandler->verbose())
             {
-                pool[pold]->dump(msghandler->tw(), "Population has been penalized, re-evaluated and sorted!\n");
+                pool[pold]->dump(msghandler->tw(),
+                                 gmx::formatString("Population has %sbeen penalized. It has been re-evaluated and sorted!\n", penalized ? "" : "not "));
             }
         }
 
@@ -518,18 +520,16 @@ bool HybridGAMC::evolve(alexandria::MsgHandler       *msghandler,
                 msghandler->writeDebug("Mutating the MASTER's genome...\n");
             }
             auto g0ptr = pool[pnew]->genomePtr(0);
-            //mutator()->mutate(msghandler, g0ptr, individual->bestGenomePtr(), gach_->prMut());
-            mutator()->mutate(msghandler, g0ptr, &((*bestGenome)[imstr]), gach_->prMut());
+            individual->setBestGenome(*g0ptr);
+            mutator()->mutate(msghandler, g0ptr, individual->bestGenomePtr(), gach_->prMut());
             if (mutator()->foundMinimum())
             {
                 if (gach_->evaluateTestset())
                 {
-                    fitnessComputer()->compute(msghandler, &((*bestGenome)[imstr]), imste);
-                    //fitnessComputer()->compute(msghandler, individual->bestGenomePtr(), imste);
+                    fitnessComputer()->compute(msghandler, individual->bestGenomePtr(), imste);
                 }
                 // Store master's best genome in the pool at position 0
-                //pool[pnew]->replaceGenome(0, individual->bestGenome());
-                pool[pnew]->replaceGenome(0, (*bestGenome)[imstr]);
+                pool[pnew]->replaceGenome(0, individual->bestGenome());
             }
             if (gach_->optimizer() == alexandria::OptimizerAlg::GA)
             {
@@ -611,7 +611,10 @@ bool HybridGAMC::evolve(alexandria::MsgHandler       *msghandler,
         }
         else
         {
-            msghandler->write(mess_start);
+            auto mess = gmx::formatString("\n%s. Previous best: %g, current best %g",
+                                          mess_start.c_str(), oldBest.fitness(imstr),
+                                          tmpGenome.fitness(imstr));
+            msghandler->write(mess);
         }
         if (gach_->evaluateTestset())
         {
@@ -634,6 +637,8 @@ bool HybridGAMC::evolve(alexandria::MsgHandler       *msghandler,
         msghandler->flush();
     }
     while (!stopTraining);
+    // No more need for the individual
+    delete individual;
 
     // Close surveillance files for fitness
     closeFitnessFiles();

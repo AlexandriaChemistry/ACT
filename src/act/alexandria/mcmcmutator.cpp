@@ -118,7 +118,6 @@ void MCMCMutator::mutate(MsgHandler                *msghandler,
     }
     // Save initial evaluation and initialize a structure for the minimum evaluation
     auto initEval = prevEval;
-    *bestGenome = *genome;
 
     if (msghandler)
     {
