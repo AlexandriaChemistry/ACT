@@ -64,7 +64,7 @@ void DimerGenerator::addOptions(std::vector<t_pargs>      *pa,
 {
     std::vector<t_pargs> mypa = {
         { "-ndist", FALSE, etINT, {&ndist_},
-          "Number of equidistant distances to use for computing interaction energies and forces. Total number of dimers is the product of maxdimer and ndist. If left to zero, the first 0.5 nm will use 2.5 pm, and beyond that 7.5 pm." },
+          "Number of equidistant distances to use for computing interaction energies and forces. Total number of dimers is the product of maxdimer and ndist. If left to zero, the range from mindist to maxdist will be divided into bins of 2.5 pm." },
         { "-mindist", FALSE, etREAL, {&mindist_},
           "Minimum com-com distance to generate dimers for." },
         { "-maxdist", FALSE, etREAL, {&maxdist_},
@@ -119,13 +119,13 @@ void DimerGenerator::finishOptions(const std::vector<t_filenm> &fnm)
         gen_.seed(dimerseed_);
     }
     rot_ = new Rotator(rotalg_, debugGD_);
-    if (0 == ndist_)
+    if (ndist_ <= 1)
     {
         ndist_ = 1+std::round((maxdist_-mindist_)/binWidth_);
     }
     else
     {
-        binWidth_ = (maxdist_-mindist_)/(ndist_);
+        binWidth_ = (maxdist_-mindist_)/(ndist_ - 1);
     }
     trajname_  = opt2fn_null("-traj", fnm.size(), fnm.data());
     outcoords_ = opt2fn_null("-ox",   fnm.size(), fnm.data());
