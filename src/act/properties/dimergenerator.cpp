@@ -64,7 +64,7 @@ void DimerGenerator::addOptions(std::vector<t_pargs>      *pa,
 {
     std::vector<t_pargs> mypa = {
         { "-ndist", FALSE, etINT, {&ndist_},
-          "Number of equidistant distances to use for computing interaction energies and forces. Total number of dimers is the product of maxdimer and ndist. If left to zero, the range from mindist to maxdist will be divided into bins of 2.5 pm." },
+          "Number of equidistant distances to use for computing interaction energies and forces. Total number of dimers is the product of maxdimer and ndist. If less than two, the range from mindist to maxdist will be divided into bins of 2.5 pm." },
         { "-mindist", FALSE, etREAL, {&mindist_},
           "Minimum com-com distance to generate dimers for." },
         { "-maxdist", FALSE, etREAL, {&maxdist_},
