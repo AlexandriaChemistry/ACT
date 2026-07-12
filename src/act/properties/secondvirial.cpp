@@ -412,9 +412,6 @@ void ReRunner::runB2(CommunicationRecord         *cr,
     std::mt19937                       bsGen(bsRand());
     std::uniform_int_distribution<int> bsDistr(0, gendimers_->ndist());
 
-    // Bins start from zero for proper integration
-    size_t nbins    = 1+std::round(gendimers_->maxdist()/gendimers_->binwidth());
-
     // Temperature array.
     auto   Temperature = temperatures();
     for(const auto &b2b : b2Type2str)
@@ -423,7 +420,7 @@ void ReRunner::runB2(CommunicationRecord         *cr,
         b2t_[b2b.first].resize(Temperature.size());
     }
     // Temporary arrays for weighted properties.
-    B2Data b2data(nbins, gendimers_->binwidth(), Temperature);
+    B2Data b2data(gendimers_->ndist(), gendimers_->binwidth(), Temperature);
     
     double xmin = 0;
     std::vector<gmx::RVec> inertia = { { 0, 0, 0 }, { 0, 0, 0 } };
