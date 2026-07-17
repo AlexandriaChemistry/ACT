@@ -129,6 +129,11 @@ TEST_F(OpenMMXmlTest, Merged)
     testOpenMM("ACS-g", "merged.pdb", true);
 }
 
+TEST_F(OpenMMXmlTest, WaterHyperPol)
+{
+    testOpenMM("water_hyperpol", "water_dimer.pdb", true);
+}
+
 
 
 }

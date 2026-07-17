@@ -57,6 +57,7 @@
     </Residue>
   </Residues>
   <CustomBondForce energy="(De*((1 - exp(-beta*(r-bondlength)))^2-1)+D0)">
+    <GlobalParameter name="pot-MORSE-BONDS" defaultValue="1"/>
     <PerBondParameter name="beta"/>
     <PerBondParameter name="De"/>
     <PerBondParameter name="D0"/>

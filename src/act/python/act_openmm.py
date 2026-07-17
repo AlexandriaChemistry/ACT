@@ -1387,7 +1387,15 @@ class ActOpenMMSim:
                 if self.verbose:
                     self.txt.write("Found %s\n" % bond_force.getName())
                 if cbfname == bond_force.getName():
-                    bond_force.setName("AlexandriaBonds")
+                    mybond_name = "AlexandriaBonds"
+                    for i in range(bond_force.getNumGlobalParameters()):
+                        param = bond_force.getGlobalParameterName(i)
+                        # Analyze the parameter
+                        if param.startswith("pot-"):
+                            mybond_name = param[4:]
+                            self.txt.write("Found CustomBondForce %s\n" % mybond_name)
+                    bond_force.setName(mybond_name)
+
                 self.count_forces("Add Bondeds")
                 self.add_force_group(bond_force, False)
                 for bond_index in range(bond_force.getNumBonds()):

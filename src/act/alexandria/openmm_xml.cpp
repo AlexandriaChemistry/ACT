@@ -166,7 +166,8 @@ enum class xmlEntryOpenMM {
     CUSTOMMANYPARTICLEFORCE,
     USEATTRIBUTEFROMRESIDUE,
     DRUDEFORCE,
-    PARTICLE
+    PARTICLE,
+    SCRIPT
 };
 
 //! Map from string to xml element
@@ -233,7 +234,8 @@ std::map<const std::string, xmlEntryOpenMM> xmlyyyOpenMM =
     { "CustomManyParticleForce",   xmlEntryOpenMM::CUSTOMMANYPARTICLEFORCE },
     { "UseAttributeFromResidue",   xmlEntryOpenMM::USEATTRIBUTEFROMRESIDUE },
     { "DrudeForce",                xmlEntryOpenMM::DRUDEFORCE              },
-    { "Particle",                  xmlEntryOpenMM::PARTICLE                } 
+    { "Particle",                  xmlEntryOpenMM::PARTICLE                },
+    { "Script",                    xmlEntryOpenMM::SCRIPT                  }
 };
 
 //! Map xml element to string
@@ -286,6 +288,13 @@ static int tellme_RealAtom(int                         index,
 	return result;
 }
 
+typedef struct {
+    std::string drude;
+    std::string atom;
+    double      fchyper;
+    double      rhyper;
+} t_hyper_stuff;
+
 /*! Put code in class for easier structuring
  */
 class OpenMMWriter
@@ -309,9 +318,12 @@ private:
     void addXmlResidueBonds(xmlNodePtr           residuePtr,
                             const ForceField    *pd,
                             const Topology      *topol);
-    //! Add multiple bonds
+    //! Add bond atoms
     void addBondAtoms(xmlNodePtr                      parent,
                       const std::vector<std::string> &atoms);
+    //! Add hyperpol script and data
+    void addHyperScript(xmlNodePtr parent,
+                        const std::vector<std::string> &atoms);
     //! Add nonbonded potential
     void addXmlNonbonded(MsgHandler                      *msghandler,
                          xmlNodePtr                       parent,
@@ -327,6 +339,8 @@ private:
                     const std::vector<std::string>  &atoms,
                     const std::vector<const char *> &param_names,
                     const std::vector<double>       &params);
+    void addXmlHyper(xmlNodePtr                        parent,
+                     const std::vector<t_hyper_stuff> &stuff);
     //! Add the Drude particle interaction energy parameters
     void addXmlPolarization(xmlNodePtr                        parent,
                             const ForceField                 *pd,
@@ -505,6 +519,44 @@ void OpenMMWriter::addXmlBond(xmlNodePtr                       parent,
             add_xml_double(grandchild3, param_names[i], params[i]);
         }
     }
+}
+
+void OpenMMWriter::addXmlHyper(xmlNodePtr                        parent,
+                               const std::vector<t_hyper_stuff> &stuff)
+{
+    std::string script;
+    script += "import openmm\n";
+    script += "hyper_table = {\n";
+    script += "    # Drude     Atom       [ fchyper, rhyper ]\n";
+    for(const auto &s : stuff)
+    {
+        script += gmx::formatString("    ( \"%s\", \"%s\" ) : [ %g, %g ]\n",
+                                    s.drude.c_str(), s.atom.c_str(), s.fchyper, s.rhyper);
+    }
+    script += "}\n";
+    // Now collect information from the system setup
+    script += "atom_types = [data.atomType[atom] for atom in data.atoms]\n";
+    script += "drude      = next(f for f in sys.getForces() if isinstance(f, openmm.DrudeForce))\n";
+    // Create our special hyperpolarisation
+    script += "hyper      = openmm.CustomBondForce(\"step(r-rhyper)*fchyper*(r-rhyper)^4\")\n";
+    script += "hyper.addPerBondParameter(\"fchyper\")\n";
+    script += "hyper.addPerBondParameter(\"rhyper\")\n";
+    script += "hyper.setName(\"HyperPolarisation\")\n";
+
+    script += "nhyper = 0\n";
+    script += "for i in range(drude.getNumParticles()):\n";
+    script += "    # p = (drude, parent, p2, p3, p4, q, alpha, a12, a34)\n";
+    script += "    p = drude.getParticleParameters(i)\n";
+    script += "    drude_parent = ( atom_types[p[0]], atom_types[p[1]] )\n";
+    script += "    if drude_parent in hyper_table:\n";
+    script += "        hyper.addBond(p[0], p[1], hyper_table[drude_parent])\n";
+    script += "        nhyper += 1\n";
+    script += "# Uncomment next two lines for debugging\n";
+    script += "#    else:\n";
+    script += "#        print(f\"drude_parent {drude_parent} not found in ForceField\")\n";
+    script += "if nhyper > 0:\n";
+    script += "    sys.addForce(hyper)\n";
+    add_xml_child_val(parent, exml_names(xmlEntryOpenMM::SCRIPT), script.c_str());
 }
 
 //! \brief Add global parameter
@@ -902,43 +954,52 @@ void OpenMMWriter::addXmlPolarization(xmlNodePtr                        parent,
         return;
     }
     // !!! Shell particle has to be type1, core particle has to be type2 !!!
-    auto fs         = pd->findForcesConst(InteractionType::POLARIZATION);
-    auto pol_name   = potentialToParameterName(fs.potential());
-    auto polPtr     = add_xml_child(parent, exml_names(xmlEntryOpenMM::DRUDEFORCE));
+    auto fs             = pd->findForcesConst(InteractionType::POLARIZATION);
+    auto pol_name       = potentialToParameterName(fs.potential());
+    auto polPtr         = add_xml_child(parent, exml_names(xmlEntryOpenMM::DRUDEFORCE));
+    std::vector<t_hyper_stuff> stuff;
     for(const auto &fft: ffTypeMap)
     {
         auto aType = pd->findParticleType(fft.first);
         for(int i = 1; i <= fft.second; i++)
         {
-            if (ActParticle::Shell != aType->apType())
+            if (ActParticle::Shell != aType->apType() && aType->hasOption("poltype"))
             {
-                if (aType->hasOption("poltype"))
+                std::string type1 = aType->optionValue("poltype");
+                auto param        = fs.findParameterMapConst(Identifier(type1));
+                if (minTrain(param) >= ntrain_)
                 {
+                    auto idType1 = Identifier({type1});
+                    auto alpha   = fs.findParameterTypeConst(idType1, pol_name[polALPHA]);
+                    // Now check for hyper polarizability, before changing type1 and type2
+                    auto fchyper = fs.findParameterTypeConst(idType1, pol_name[polFCHYPER]);
+                    auto rhyper  = fs.findParameterTypeConst(idType1, pol_name[polRHYPER]);
+                    auto shelltp = pd->findParticleType(type1);
 
-                    std::string type1 = aType->optionValue("poltype");
-                    auto param        = fs.findParameterMapConst(Identifier(type1));
-                    if (minTrain(param) >= ntrain_)
+                    std::string type2 = fft.first;
+                    if (addNumbersToAtomTypes_)
                     {
-                        auto alpha        = fs.findParameterTypeConst(Identifier({type1}),
-                                                                      pol_name[polALPHA]);
-                        auto stp          = pd->findParticleType(type1);
-
-                        std::string type2 = fft.first;                    
-                        if (addNumbersToAtomTypes_)
-                        {
-                            type1 = nameIndex(type1, i);
-                            type2 = nameIndex(type2, i);
-                        }
-                        auto grandchild2 = add_xml_child(polPtr, exml_names(xmlEntryOpenMM::PARTICLE));
-                        add_xml_char(grandchild2, exml_names(xmlEntryOpenMM::TYPE1), type1.c_str());
-                        add_xml_char(grandchild2, exml_names(xmlEntryOpenMM::TYPE2), type2.c_str());
-                        add_xml_double(grandchild2, "polarizability", alpha.internalValue());
-                        add_xml_double(grandchild2, exml_names(xmlEntryOpenMM::CHARGE_RES), stp->charge()*epsr_fac);
-                        add_xml_double(grandchild2, "thole", 0);
+                        type1 = nameIndex(type1, i);
+                        type2 = nameIndex(type2, i);
+                    }
+                    auto grandchild2 = add_xml_child(polPtr, exml_names(xmlEntryOpenMM::PARTICLE));
+                    add_xml_char(grandchild2, exml_names(xmlEntryOpenMM::TYPE1), type1.c_str());
+                    add_xml_char(grandchild2, exml_names(xmlEntryOpenMM::TYPE2), type2.c_str());
+                    add_xml_double(grandchild2, "polarizability", alpha.internalValue());
+                    add_xml_double(grandchild2, exml_names(xmlEntryOpenMM::CHARGE_RES), shelltp->charge()*epsr_fac);
+                    add_xml_double(grandchild2, "thole", 0);
+                    if (fchyper.value() > 0)
+                    {
+                        // Now add a pair
+                        stuff.push_back( { type1, type2, fchyper.value(), rhyper.value() } );
                     }
                 }
             }
         }
+    }
+    if (!stuff.empty())
+    {
+        addXmlHyper(parent, stuff);
     }
 }
 
@@ -977,6 +1038,7 @@ void OpenMMWriter::makeXmlMap(xmlNodePtr        parent,
             {
                 fsPtr = add_xml_child(parent, exml_names(xmlEntryOpenMM::CUSTOMBONDFORCE));
                 add_xml_char(fsPtr, "energy", energy.c_str());
+                add_global(fsPtr, "pot-MORSE-BONDS", 1);
                 // Specify the per bond parameters
                 for(int i = 0; i < morseNR; i++)
                 {
@@ -989,6 +1051,7 @@ void OpenMMWriter::makeXmlMap(xmlNodePtr        parent,
             {
                 fsPtr = add_xml_child(parent, exml_names(xmlEntryOpenMM::CUSTOMBONDFORCE));
                 add_xml_char(fsPtr, "energy", energy.c_str());
+                add_global(fsPtr, "pot-HUA-BONDS", 1);
                 // Specify the per bond parameters
                 for(int i = 0; i < huaNR; i++)
                 {
@@ -1001,6 +1064,7 @@ void OpenMMWriter::makeXmlMap(xmlNodePtr        parent,
             {
                 fsPtr = add_xml_child(parent, exml_names(xmlEntryOpenMM::CUSTOMBONDFORCE));
                 add_xml_char(fsPtr, "energy", energy.c_str());
+                add_global(fsPtr, "pot-CUBIC-BONDS", 1);
                 // Specify the per bond parameters
                 for(int i = 0; i < cubicNR; i++)
                 {
