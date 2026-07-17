@@ -1,0 +1,97 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="Contents"><![CDATA[
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE ForceField.dtd PUBLIC "ForceField.dtd" "ForceField.dtd">
+<ForceField>
+  <AtomTypes>
+    <Type name="ow_1" class="ow_b" element="O" mass="15.8994"/>
+    <Type name="ow_s_1" class="ow" mass="0.1"/>
+    <Type name="hw_1" class="hw_b" element="H" mass="1.0079"/>
+    <Type name="hw_2" class="hw_b" element="H" mass="1.0079"/>
+    <Type name="v3bw_1" class="v3bw" mass="0"/>
+  </AtomTypes>
+  <Residues>
+    <Residue name="oxidane">
+      <Atom name="O_1" type="ow_1" charge="4.746470148925"/>
+      <Atom name="ow_s_1" type="ow_s_1" charge="-4.930678614693"/>
+      <Atom name="H_2" type="hw_1" charge="0.7119105092183"/>
+      <Atom name="H_3" type="hw_2" charge="0.7119105092183"/>
+      <Atom name="v3bw_4" type="v3bw_1" charge="-1.239612552669"/>
+      <VirtualSite type="average3" siteName="v3bw_4" atomName1="H_3" atomName2="O_1" atomName3="H_2" weight1="0.32485007" weight2="0.35029986" weight3="0.32485007"/>
+      <Bond atomName1="v3bw_4" atomName2="H_3"/>
+      <Bond atomName1="v3bw_4" atomName2="O_1"/>
+      <Bond atomName1="v3bw_4" atomName2="H_2"/>
+      <Bond atomName1="O_1" atomName2="H_3"/>
+      <Bond atomName1="O_1" atomName2="H_2"/>
+    </Residue>
+  </Residues>
+  <HarmonicBondForce>
+    <Bond class1="hw_b" class2="ow_b" k="479400.5112057" length="0.09618614386767"/>
+  </HarmonicBondForce>
+  <HarmonicAngleForce energy="0">
+    <Angle class1="hw_b" class2="ow_b" class3="hw_b" k="417.3907929471" angle="1.820270265578"/>
+  </HarmonicAngleForce>
+  <CustomAngleForce energy="0"/>
+  <RBTorsionForce energy="0"/>
+  <PeriodicTorsionForce energy="0"/>
+  <CustomNonbondedForce energy="select(epsilon*sigma,(((2*epsilon)/(1-(3/(gamma+3)))) * (1.0/(1.0+(r/sigma)^6)) * ((3/(gamma+3))*exp(gamma*(1-(r/sigma)))-1)),0)" bondCutoff="0">
+    <GlobalParameter name="pot-WANG_BUCKINGHAM" defaultValue="1"/>
+    <GlobalParameter name="pot-COULOMB_GAUSSIAN" defaultValue="1"/>
+    <GlobalParameter name="cr-epsilon_HogervorstEpsilon" defaultValue="1"/>
+    <GlobalParameter name="cr-gamma_MasonGamma" defaultValue="1"/>
+    <GlobalParameter name="cr-sigma_InverseSquare" defaultValue="1"/>
+    <GlobalParameter name="nexcl" defaultValue="2"/>
+    <GlobalParameter name="prefactor-" defaultValue="1"/>
+    <UseAttributeFromResidue name="charge"/>
+    <PerParticleParameter name="sigma"/>
+    <PerParticleParameter name="epsilon"/>
+    <PerParticleParameter name="gamma"/>
+    <PerParticleParameter name="charge"/>
+    <PerParticleParameter name="zeta"/>
+    <Atom type="hw_1" sigma="0" epsilon="0" gamma="1" zeta="0"/>
+    <Atom type="hw_2" sigma="0" epsilon="0" gamma="1" zeta="0"/>
+    <Atom type="ow_1" sigma="0.4071718471473" epsilon="2.041541722001" gamma="11.67586091974" zeta="0"/>
+    <Atom type="ow_s_1" sigma="0" epsilon="0" gamma="1" zeta="16.30324079743"/>
+    <Atom type="v3bw_1" sigma="0" epsilon="0" gamma="1" zeta="9.868603958008"/>
+  </CustomNonbondedForce>
+  <NonbondedForce coulomb14scale="1" lj14scale="1">
+    <UseAttributeFromResidue name="charge"/>
+    <Atom type="hw_1" sigma="0" epsilon="0"/>
+    <Atom type="hw_2" sigma="0" epsilon="0"/>
+    <Atom type="ow_1" sigma="0.3627488766864" epsilon="2.041541722001"/>
+    <Atom type="ow_s_1" sigma="0" epsilon="0"/>
+    <Atom type="v3bw_1" sigma="0" epsilon="0"/>
+  </NonbondedForce>
+  <DrudeForce>
+    <Particle type1="ow_s_1" type2="ow_1" polarizability="0.002726862139713" charge="-4.930678614693" thole="0"/>
+  </DrudeForce>
+  <Script>import openmm
+hyper_table = {
+    # Drude     Atom       [ fchyper, rhyper ]
+    ( "ow_s_1", "ow_1" ) : [ 4.26005e+09, 0 ]
+}
+atom_types = [data.atomType[atom] for atom in data.atoms]
+drude      = next(f for f in sys.getForces() if isinstance(f, openmm.DrudeForce))
+hyper      = openmm.CustomBondForce("step(r-rhyper)*fchyper*(r-rhyper)^4")
+hyper.addPerBondParameter("fchyper")
+hyper.addPerBondParameter("rhyper")
+hyper.addGlobalParameter("pot-HyperPolarisation", 1)
+nhyper = 0
+for i in range(drude.getNumParticles()):
+    # p = (drude, parent, p2, p3, p4, q, alpha, a12, a34)
+    p = drude.getParticleParameters(i)
+    drude_parent = ( atom_types[p[0]], atom_types[p[1]] )
+    if drude_parent in hyper_table:
+        hyper.addBond(p[0], p[1], hyper_table[drude_parent])
+        nhyper += 1
+# Uncomment next two lines for debugging
+#    else:
+#        print(f"drude_parent {drude_parent} not found in ForceField")
+if nhyper &gt; 0:
+    sys.addForce(hyper)
+</Script>
+</ForceField>
+]]></String>
+</ReferenceData>
