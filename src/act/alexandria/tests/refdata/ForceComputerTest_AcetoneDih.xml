@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
-  <Real Name="BONDS_act">0.089160339832855831</Real>
+  <Real Name="BONDS_act">0.089160339832616842</Real>
   <Real Name="ANGLES_act">0.73159700420903484</Real>
   <Real Name="PROPER_DIHEDRALS_act">18.150714054876715</Real>
   <Real Name="IMPROPER_DIHEDRALS_act">0</Real>

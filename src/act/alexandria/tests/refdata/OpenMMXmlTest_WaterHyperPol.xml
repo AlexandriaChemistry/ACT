@@ -77,7 +77,7 @@ drude      = next(f for f in sys.getForces() if isinstance(f, openmm.DrudeForce)
 hyper      = openmm.CustomBondForce("step(r-rhyper)*fchyper*(r-rhyper)^4")
 hyper.addPerBondParameter("fchyper")
 hyper.addPerBondParameter("rhyper")
-hyper.addGlobalParameter("pot-HyperPolarisation", 1)
+hyper.setName("HyperPolarisation")
 nhyper = 0
 for i in range(drude.getNumParticles()):
     # p = (drude, parent, p2, p3, p4, q, alpha, a12, a34)
