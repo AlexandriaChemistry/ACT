@@ -519,6 +519,15 @@ void ForceComputer::plot(MsgHandler        *msghandler,
                     {
                         GMX_THROW(gmx::InternalError(gmx::formatString("Could not find a second atom to make a plot, there are %zu atoms, interactionType %s, id %s", top.nAtoms(), interactionTypeToString(itype).c_str(), f.first.id().c_str()).c_str()));
                     }
+                    // Now remove everything except what we want to compute.
+                    std::map<InteractionType, TopologyEntryVector> *entries = top.entries();
+                    for (const auto &ik : i2s)
+                    {
+                        if (itype != ik.first)
+                        {
+                            entries->erase(ik.first);
+                        }
+                    }
                     std::vector<double> rr, vv, ff;
                     // Now do the calculations and store the energy
                     double r0 = 0.05, r1 = 1.0, delta = 0.001;
@@ -543,8 +552,11 @@ void ForceComputer::plot(MsgHandler        *msghandler,
                         {
                             copy_rvec(rvnul, forces[k]);
                         }
-                        bfc(msghandler, top.entry(itype), top.atoms(), &coordinates, &forces, &energies, epsilonr_);
-                        auto ener = energies[itype];
+                        // We need to compute the sum of all relevant forces and run shell minimization.
+                        compute(msghandler, pd, &top, &coordinates, &forces, &energies);
+
+                        auto ener = energies[InteractionType::EPOT];
+
                         if (ener == 0 && InteractionType::VDW == itype)
                         {
                             auto irep = InteractionType::EXCHANGE;
