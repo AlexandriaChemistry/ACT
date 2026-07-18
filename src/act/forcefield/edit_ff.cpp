@@ -49,6 +49,7 @@
 #include "act/forcefield/forcefield_parametername.h"
 #include "act/forcefield/forcefield.h"
 #include "act/forcefield/forcefield_xml.h"
+#include "act/forcefield/generate_dependent.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/oenv.h"
 #include "gromacs/utility/arraysize.h"
@@ -925,6 +926,7 @@ int edit_ff(int argc, char*argv[])
             }
             else if (plot)
             {
+                generateDependentParameter(&pd);
                 plotInteractions(&msghandler, &pd, analyze);
             }
         }
