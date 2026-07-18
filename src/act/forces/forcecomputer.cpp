@@ -584,17 +584,35 @@ void ForceComputer::plot(MsgHandler        *msghandler,
                 break;
             case InteractionType::ANGLES:
                 {
-                    std::vector<gmx::RVec> coordinates = { { 0, 0, 0 }, { 1, 0, 0 }, { 1, 1, 0 } };
+                    std::vector<gmx::RVec> acoords     = { { 0, 0, 0 }, { 1, 0, 0 }, { 1, 1, 0 } };
+                    std::vector<gmx::RVec> coordinates = acoords;
+                    // top.build will resize coordinates array.
                     top.build(msghandler,
                               pd, &coordinates, 175.0, 5.0, missingParameters::Error);
                     forces.resize(top.nAtoms(), rvnul);
-                    double th0 = 0, th1 = 180, delta = 1;
+                    if (!top.hasEntry(itype))
+                    {
+                        break;
+                    }
+                    size_t ak = 0;
+                    for(const auto &entry : top.entry(itype))
+                    {
+                        const auto &ind = entry->atomIndices();
+                        GMX_RELEASE_ASSERT(ind.size() == acoords.size(), "Number of atoms in angle");
+                        for(size_t m = 0; m < ind.size(); m++)
+                        {
+                            coordinates[ind[m]] = acoords[m];
+                            ak = ind[m];
+                        }
+                        break;
+                    }
+                    double th0 = 45, th1 = 145, delta = 1;
                     int    nsteps = (th1-th0)/delta+1;
                     for(int i = 0; i < nsteps; i++)
                     {
                         double theta = (th0+i*delta);
-                        coordinates[2][0] = 1+std::cos(theta*DEG2RAD);
-                        coordinates[2][1] = std::sin(theta*DEG2RAD);
+                        coordinates[ak][0] = 1+std::cos(theta*DEG2RAD);
+                        coordinates[ak][1] = std::sin(theta*DEG2RAD);
                         energies.clear();
                         bfc(msghandler, top.entry(itype), top.atoms(), &coordinates, &forces, &energies, epsilonr_);
                         fprintf(fp, "%10g  %10g\n", theta, energies[itype]);
