@@ -180,9 +180,9 @@ static void generateCoulombParameterPairs(ForceField *pd, bool force)
             {
                 ForceFieldParameterMap ffpm = {
                     { cname[coulZETA], 
-                      ForceFieldParameter(unit, izeta, 0, 0, izeta, izeta, mutd, false, true) },
+                      ForceFieldParameter(unit, izeta, 0, 1, izeta, izeta, mutd, false, true) },
                     { cname[coulZETA2],
-                      ForceFieldParameter(unit, jzeta, 0, 0, jzeta, jzeta, mutd, false, true) }
+                      ForceFieldParameter(unit, jzeta, 0, 1, jzeta, jzeta, mutd, false, true) }
                 };
                 fold->insert({pairID, ffpm});
             }

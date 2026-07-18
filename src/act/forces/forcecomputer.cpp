@@ -457,7 +457,8 @@ void ForceComputer::plot(MsgHandler        *msghandler,
                 {
                     bbb.push_back(Bond(idih_bonds[i].first, idih_bonds[i].second, bos[i]));
                 }
-                else if (InteractionType::VDW == itype)
+                else if (InteractionType::VDW == itype ||
+                         InteractionType::ELECTROSTATICS == itype)
                 {
                     ;
                 }
@@ -472,16 +473,19 @@ void ForceComputer::plot(MsgHandler        *msghandler,
             auto subtype = i2s.find(itype);
             if (i2s.end() != subtype)
             {
-                for(const auto &atomname : f.first.atoms())
+                auto ptypes = pd->particleTypesConst();
+                // Loop over subtypes (depending on the InteractionType)
+                for(const auto &atomsub : f.first.atoms())
                 {
-                    if (pd->hasParticleType(atomname))
+                    for (const auto &pt : ptypes)
                     {
-                        auto p = pd->findParticleType(atomname);
-                        if (p->hasOption(subtype->second))
+                        if (pt.second.hasOption(subtype->second) &&
+                            pt.second.optionValue(subtype->second) == atomsub)
                         {
-                            ActAtom a(*p);
+                            ActAtom a(pt.second);
                             a.setCharge(1);
                             top.addAtom(a);
+                            break;
                         }
                     }
                 }
