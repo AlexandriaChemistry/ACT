@@ -625,7 +625,7 @@
       <option key="row" value="2"/>
       <option key="vdwtype" value="o3"/>
       <option key="zetatype" value="o3_z"/>
-      <parameter type="charge" unit="e" value="0" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="ACM" nonnegative="no"/>
+      <parameter type="charge" unit="e" value="2.9" uncertainty="0" minimum="0" maximum="0" ntrain="0" mutability="Fixed" nonnegative="no"/>
       <parameter type="mass" unit="Da" value="15.9994" uncertainty="0" minimum="15.9994" maximum="15.9994" ntrain="1" mutability="Fixed" nonnegative="yes"/>
     </particletype>
     <particletype identifier="o3_s" type="Shell" description="sp3 oxygen shell">
@@ -22328,6 +22328,8 @@
     </parameterlist>
     <parameterlist identifier="br_s">
       <parameter type="alpha" unit="Angstrom3" value="4.5" uncertainty="0" minimum="2" maximum="7" ntrain="0" mutability="Bounded" nonnegative="yes"/>
+      <parameter type="fchyper" unit="kJ/mol nm4" value="4260052790" uncertainty="0" minimum="0" maximum="5000000000" ntrain="2" mutability="Bounded" nonnegative="no"/>
+      <parameter type="rhyper" unit="nm" value="0" uncertainty="0" minimum="0" maximum="0.02" ntrain="0" mutability="Fixed" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="c1_s">
       <parameter type="alpha" unit="Angstrom3" value="1.45" uncertainty="0" minimum="0.4" maximum="2.5" ntrain="0" mutability="Bounded" nonnegative="yes"/>
@@ -22343,6 +22345,8 @@
     </parameterlist>
     <parameterlist identifier="f_s">
       <parameter type="alpha" unit="Angstrom3" value="1.35" uncertainty="0" minimum="0.2" maximum="2.5" ntrain="0" mutability="Bounded" nonnegative="yes"/>
+      <parameter type="fchyper" unit="kJ/mol nm4" value="4260052790" uncertainty="0" minimum="0" maximum="5000000000" ntrain="2" mutability="Bounded" nonnegative="no"/>
+      <parameter type="rhyper" unit="nm" value="0" uncertainty="0" minimum="0" maximum="0.02" ntrain="0" mutability="Fixed" nonnegative="yes"/>
     </parameterlist>
     <parameterlist identifier="h_s">
       <parameter type="alpha" unit="Angstrom3" value="0.55" uncertainty="0" minimum="0.1" maximum="1" ntrain="0" mutability="Bounded" nonnegative="yes"/>
@@ -22431,20 +22435,6 @@
     </parameterlist>
     <parameterlist identifier="i_b~h_b!v2">
       <parameter type="vs2a" unit="" value="-1.05" uncertainty="0" minimum="-1.5" maximum="1.5" ntrain="0" mutability="Bounded" nonnegative="no"/>
-    </parameterlist>
-  </interaction>
-  <interaction type="VSITE2FD" function="VSITE2FD" canswap="false">
-    <parameterlist identifier="br_b~h_b!v2">
-      <parameter type="vs2fd_a" unit="" value="0.2" uncertainty="0" minimum="-1.5" maximum="1.5" ntrain="0" mutability="Bounded" nonnegative="no"/>
-    </parameterlist>
-    <parameterlist identifier="cl_b~h_b!v2">
-      <parameter type="vs2fd_a" unit="" value="-1.15" uncertainty="0" minimum="-1.5" maximum="1.5" ntrain="0" mutability="Bounded" nonnegative="no"/>
-    </parameterlist>
-    <parameterlist identifier="f_b~h_b!v2f1">
-      <parameter type="vs2fd_a" unit="" value="-1.15" uncertainty="0" minimum="-1.5" maximum="1.5" ntrain="0" mutability="Bounded" nonnegative="no"/>
-    </parameterlist>
-    <parameterlist identifier="i_b~h_b!v2">
-      <parameter type="vs2fd_a" unit="" value="-1.15" uncertainty="0" minimum="-1.5" maximum="1.5" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
   </interaction>
   <interaction type="ELECTRONEGATIVITYEQUALIZATION" function="" canswap="true">
