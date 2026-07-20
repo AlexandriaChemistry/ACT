@@ -239,17 +239,13 @@ void ForceComputer::compute(MsgHandler                        *msg_handler,
             iter    += 1;
             nShellIter_ += 1;
         }
-        if (msg_handler && msg_handler->debug())
+        if (msForce > msForceToler_)
         {
-            if (msForce > msForceToler_)
+            nShellConvergeFailed_ += 1;
+            if (msg_handler && msg_handler->debug())
             {
                 msg_handler->msg(ACTStatus::Debug,
                                  gmx::formatString("Shell optimization did not converge. RMS force is %g, iter %d/%d, total evals %zu, total shell iters %zu", std::sqrt(msForce), iter, maxiter_, nEval_, nShellIter_));
-                nShellConvergeFailed_ += 1;
-            }
-            else
-            {
-                msg_handler->msg(ACTStatus::Debug, "Shell optimization converged");
             }
         }
     }

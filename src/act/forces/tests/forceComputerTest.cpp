@@ -149,7 +149,8 @@ TEST(ForceComputerFtype, Vsite3PresentInVs3ForceField)
 // ============================================================
 
 //! Helper: load a molecule from an SDF test file and generate its topology.
-static bool setupMolecule(const std::string &ffName,
+static bool setupMolecule(MsgHandler        *msghandler,
+                          const std::string &ffName,
                           const std::string &molName,
                           ACTMol            *mol)
 {
@@ -164,33 +165,36 @@ static bool setupMolecule(const std::string &ffName,
     const char  *conf     = "minimum";
     std::string  fileName = gmx::formatString("%s.sdf", molName.c_str());
     std::string  dataName = gmx::test::TestFileManager::getInputFilePath(fileName);
-    MsgHandler   msghandler;
-    msghandler.setPrintLevel(ACTStatus::Warning);
-    importFile(&msghandler, pd, dataName.c_str(), &molprops,
+    importFile(msghandler, pd, dataName.c_str(), &molprops,
                conf, JobType::OPT, userqtot, &qtot_babel, true);
-    if (!msghandler.ok() || molprops.size() != 1)
+    if (!msghandler->ok() || molprops.size() != 1)
     {
         return false;
     }
     mol->Merge(&molprops[0]);
-    mol->GenerateTopology(&msghandler, pd, missingParameters::Ignore);
-    return msghandler.ok();
+    mol->GenerateTopology(msghandler, pd, missingParameters::Ignore);
+    return msghandler->ok();
 }
 
 class ForceComputerIntegrationTest : public ::testing::Test
 {
+public:
+    MsgHandler msghandler_;
 protected:
+    // Constructor
+    ForceComputerIntegrationTest()
+    {
+        msghandler_.setPrintLevel(ACTStatus::Warning);
+    }
     /*! \brief Load a molecule and run computeOnce().
      * \param[in]  ffName  Force field name (e.g. "ACS-pg-vs2")
      * \param[in]  molName Molecule file stem (e.g. "hydrogen-fluoride")
      * \param[out] energies Populated by computeOnce
-     * \param[out] forces   Populated by computeOnce
      * \return true on success
      */
     bool runComputeOnce(const std::string                 &ffName,
                         const std::string                 &molName,
-                        std::map<InteractionType, double> *energies,
-                        std::vector<gmx::RVec>            *forces)
+                        std::map<InteractionType, double> *energies)
     {
         auto pd = getForceField(ffName);
         if (!pd)
@@ -198,7 +202,7 @@ protected:
             return false;
         }
         ACTMol mol;
-        if (!setupMolecule(ffName, molName, &mol))
+        if (!setupMolecule(&msghandler_, ffName, molName, &mol))
         {
             return false;
         }
@@ -207,25 +211,21 @@ protected:
 
         ForceComputer fc;
         fc.constructVsiteCoordinates(top, &coords);
+        std::vector<gmx::RVec> forces(coords.size());
 
-        forces->assign(coords.size(), { 0, 0, 0 });
-        MsgHandler msghandler;
-        msghandler.setPrintLevel(ACTStatus::Warning);
-        fc.computeOnce(&msghandler, pd, top, &coords, forces, energies, { 0, 0, 0 });
-        return msghandler.ok();
+        fc.computeOnce(&msghandler_, pd, top, &coords, &forces, energies, { 0, 0, 0 });
+        return msghandler_.ok();
     }
 
     /*! \brief Load a molecule and run compute().
      * \param[in]  ffName  Force field name
      * \param[in]  molName Molecule file stem
      * \param[out] energies Populated by compute
-     * \param[out] forces   Populated by compute
      * \return true on success
      */
     bool runCompute(const std::string                 &ffName,
                     const std::string                 &molName,
-                    std::map<InteractionType, double> *energies,
-                    std::vector<gmx::RVec>            *forces)
+                    std::map<InteractionType, double> *energies)
     {
         auto pd = getForceField(ffName);
         if (!pd)
@@ -233,29 +233,41 @@ protected:
             return false;
         }
         ACTMol mol;
-        if (!setupMolecule(ffName, molName, &mol))
+        if (!setupMolecule(&msghandler_, ffName, molName, &mol))
         {
             return false;
         }
         auto coords = mol.xOriginal();
         const auto *top = mol.topology();
-
+        std::vector<gmx::RVec> forces(coords.size());
+    
         ForceComputer fc;
-        forces->assign(coords.size(), { 0, 0, 0 });
-        MsgHandler msghandler;
-        msghandler.setPrintLevel(ACTStatus::Warning);
-        fc.compute(&msghandler, pd, top, &coords, forces, energies);
-        return msghandler.ok();
+        EXPECT_EQ(0u, fc.numEvaluations());
+        EXPECT_EQ(0u, fc.numShellIterations());
+        EXPECT_EQ(0u, fc.numShellConvergenceFailed());
+
+        mol.generateCharges(&msghandler_, pd, &fc, pd->chargeGenerationAlgorithm(),
+                            &coords, &forces);
+        EXPECT_FALSE(forces.empty());
+
+        fc.compute(&msghandler_, pd, top, &coords, &forces, energies);
+        EXPECT_TRUE(msghandler_.ok());
+        EXPECT_GE(fc.numEvaluations(), 1u);
+        if (pd->polarizable())
+        {
+            // Verify that shell minimization was completed
+            EXPECT_GE(fc.numShellIterations(), 5u);
+            EXPECT_EQ(0u, fc.numShellConvergenceFailed());
+        }
+        return msghandler_.ok();
     }
 };
 
 TEST_F(ForceComputerIntegrationTest, ComputeOnceHFPopulatesEpot)
 {
     std::map<InteractionType, double> energies;
-    std::vector<gmx::RVec>           forces;
-    bool ok = runComputeOnce("ACS-pg-vs2", "hydrogen-fluoride", &energies, &forces);
+    bool ok = runComputeOnce("ACS-pg-vs2", "hydrogen-fluoride", &energies);
     EXPECT_TRUE(ok);
-    EXPECT_FALSE(forces.empty());
     EXPECT_GT(energies.count(InteractionType::EPOT), 0u);
     EXPECT_TRUE(std::isfinite(energies.at(InteractionType::EPOT)));
 }
@@ -263,8 +275,7 @@ TEST_F(ForceComputerIntegrationTest, ComputeOnceHFPopulatesEpot)
 TEST_F(ForceComputerIntegrationTest, ComputeOnceHFHasElectrostatics)
 {
     std::map<InteractionType, double> energies;
-    std::vector<gmx::RVec>           forces;
-    bool ok = runComputeOnce("ACS-pg-vs2", "hydrogen-fluoride", &energies, &forces);
+    bool ok = runComputeOnce("ACS-pg-vs2", "hydrogen-fluoride", &energies);
     EXPECT_TRUE(ok);
     EXPECT_GT(energies.count(InteractionType::ELECTROSTATICS), 0u);
     EXPECT_TRUE(std::isfinite(energies.at(InteractionType::ELECTROSTATICS)));
@@ -273,8 +284,7 @@ TEST_F(ForceComputerIntegrationTest, ComputeOnceHFHasElectrostatics)
 TEST_F(ForceComputerIntegrationTest, ComputeOnceWaterPopulatesEpot)
 {
     std::map<InteractionType, double> energies;
-    std::vector<gmx::RVec>           forces;
-    bool ok = runComputeOnce("ACS-pg-vs3", "water", &energies, &forces);
+    bool ok = runComputeOnce("ACS-pg-vs3", "water", &energies);
     EXPECT_TRUE(ok);
     EXPECT_GT(energies.count(InteractionType::EPOT), 0u);
     EXPECT_TRUE(std::isfinite(energies.at(InteractionType::EPOT)));
@@ -283,8 +293,7 @@ TEST_F(ForceComputerIntegrationTest, ComputeOnceWaterPopulatesEpot)
 TEST_F(ForceComputerIntegrationTest, ComputeHFPopulatesEpotAndAllelec)
 {
     std::map<InteractionType, double> energies;
-    std::vector<gmx::RVec>           forces;
-    bool ok = runCompute("ACS-pg-vs2", "hydrogen-fluoride", &energies, &forces);
+    bool ok = runCompute("ACS-pg-vs2", "hydrogen-fluoride", &energies);
     EXPECT_TRUE(ok);
     EXPECT_GT(energies.count(InteractionType::EPOT), 0u);
     EXPECT_TRUE(std::isfinite(energies.at(InteractionType::EPOT)));
@@ -295,8 +304,7 @@ TEST_F(ForceComputerIntegrationTest, ComputeHFPopulatesEpotAndAllelec)
 TEST_F(ForceComputerIntegrationTest, ComputeWaterPopulatesEpotAndAllelec)
 {
     std::map<InteractionType, double> energies;
-    std::vector<gmx::RVec>           forces;
-    bool ok = runCompute("ACS-pg-vs3", "water", &energies, &forces);
+    bool ok = runCompute("ACS-pg-vs3", "water", &energies);
     EXPECT_TRUE(ok);
     EXPECT_GT(energies.count(InteractionType::EPOT), 0u);
     EXPECT_TRUE(std::isfinite(energies.at(InteractionType::EPOT)));
@@ -311,15 +319,13 @@ TEST_F(ForceComputerIntegrationTest, ComputeForcesHaveCorrectSize)
     auto pd = getForceField("ACS-pg-vs2");
     ASSERT_NE(nullptr, pd);
     ACTMol mol;
-    ASSERT_TRUE(setupMolecule("ACS-pg-vs2", "hydrogen-fluoride", &mol));
+    ASSERT_TRUE(setupMolecule(&msghandler_, "ACS-pg-vs2", "hydrogen-fluoride", &mol));
     auto coords = mol.xOriginal();
     const auto *top = mol.topology();
     ForceComputer fc;
     forces.assign(coords.size(), { 0, 0, 0 });
-    MsgHandler msghandler;
-    msghandler.setPrintLevel(ACTStatus::Warning);
-    fc.compute(&msghandler, pd, top, &coords, &forces, &energies);
-    EXPECT_TRUE(msghandler.ok());
+    fc.compute(&msghandler_, pd, top, &coords, &forces, &energies);
+    EXPECT_TRUE(msghandler_.ok());
     EXPECT_EQ(coords.size(), forces.size());
 }
 
@@ -335,7 +341,7 @@ TEST_F(ForceComputerIntegrationTest, ComputeOnceAndComputeGiveSameEpotWithoutShe
         return;
     }
     ACTMol mol;
-    ASSERT_TRUE(setupMolecule("ACS-pg-vs2", "hydrogen-fluoride", &mol));
+    ASSERT_TRUE(setupMolecule(&msghandler_, "ACS-pg-vs2", "hydrogen-fluoride", &mol));
     const auto *top = mol.topology();
     ForceComputer fc;
 
@@ -369,7 +375,7 @@ TEST_F(ForceComputerIntegrationTest, ConstructVsiteCoordinatesAndSpreadForces)
     auto pd = getForceField("ACS-pg-vs2");
     ASSERT_NE(nullptr, pd);
     ACTMol mol;
-    ASSERT_TRUE(setupMolecule("ACS-pg-vs2", "hydrogen-fluoride", &mol));
+    ASSERT_TRUE(setupMolecule(&msghandler_, "ACS-pg-vs2", "hydrogen-fluoride", &mol));
     const auto *top = mol.topology();
     ForceComputer fc;
 
@@ -449,7 +455,7 @@ TEST_F(ForceComputerIntegrationTest, ComputeStatisticsAreTracked)
     auto pd = getForceField("ACS-pg-vs2");
     ASSERT_NE(nullptr, pd);
     ACTMol mol;
-    ASSERT_TRUE(setupMolecule("ACS-pg-vs2", "hydrogen-fluoride", &mol));
+    ASSERT_TRUE(setupMolecule(&msghandler_, "ACS-pg-vs2", "hydrogen-fluoride", &mol));
     auto coords = mol.xOriginal();
     const auto *top = mol.topology();
 
@@ -481,6 +487,81 @@ TEST_F(ForceComputerIntegrationTest, ComputeStatisticsAreTracked)
     fc.compute(&msghandler, pd, top, &coords, &forces, &energies);
     EXPECT_TRUE(msghandler.ok());
     EXPECT_GE(fc.numEvaluations(), 1u);
+
+    // Reset statistics again
+    fc.resetStatistics();
+    EXPECT_EQ(0u, fc.numEvaluations());
+    EXPECT_EQ(0u, fc.numShellIterations());
+    EXPECT_EQ(0u, fc.numShellConvergenceFailed());
+}
+
+TEST_F(ForceComputerIntegrationTest, WaterDimerHyper)
+{
+    std::map<InteractionType, double> energies;
+
+    auto result = runCompute("water_hyperpol", "water_dimer",
+                             &energies);
+    EXPECT_GT(0u, energies[InteractionType::INDUCTION]);
+    EXPECT_TRUE(result);
+}
+
+TEST_F(ForceComputerIntegrationTest, HBrHFDimerHyper)
+{
+    std::map<InteractionType, double> energies;
+
+    auto result = runCompute("ACS-pg-vs2", "hbr-hf",
+                             &energies);
+    EXPECT_GT(0u, energies[InteractionType::INDUCTION]);
+    EXPECT_TRUE(result);
+}
+
+TEST_F(ForceComputerIntegrationTest, ComputeStatisticsAreTrackedDimerHyper)
+{
+    auto pd = getForceField("water_hyperpol");
+    ASSERT_NE(nullptr, pd);
+    ACTMol mol;
+    ASSERT_TRUE(setupMolecule(&msghandler_, "water_hyperpol", "water_dimer", &mol));
+    auto coords = mol.xOriginal();
+    std::vector<gmx::RVec> forces(coords.size(), { 0, 0, 0 });
+    const auto *top = mol.topology();
+
+    MsgHandler msghandler;
+    msghandler.setPrintLevel(ACTStatus::Warning);
+    ForceComputer fc;
+    
+    EXPECT_EQ(0u, fc.numEvaluations());
+    EXPECT_EQ(0u, fc.numShellIterations());
+    EXPECT_EQ(0u, fc.numShellConvergenceFailed());
+
+    mol.generateCharges(&msghandler, pd, &fc, pd->chargeGenerationAlgorithm(),
+                        &coords, &forces);
+    EXPECT_EQ(fc.numEvaluations(), 1u);
+    EXPECT_GE(fc.numShellIterations(), 5u);
+    EXPECT_EQ(0u, fc.numShellConvergenceFailed());
+    std::map<InteractionType, double> energies;
+
+    // Reset statistics
+    fc.resetStatistics();
+    // Call computeOnce directly
+    fc.computeOnce(&msghandler, pd, top, &coords, &forces, &energies, { 0, 0, 0 });
+    EXPECT_TRUE(msghandler.ok());
+    EXPECT_EQ(0u, fc.numEvaluations());
+    EXPECT_EQ(0u, fc.numShellIterations());
+    EXPECT_EQ(0u, fc.numShellConvergenceFailed());
+
+    // Reset statistics
+    fc.resetStatistics();
+    EXPECT_EQ(0u, fc.numEvaluations());
+    EXPECT_EQ(0u, fc.numShellIterations());
+    EXPECT_EQ(0u, fc.numShellConvergenceFailed());
+
+    // Call compute
+    fc.compute(&msghandler, pd, top, &coords, &forces, &energies);
+    EXPECT_TRUE(msghandler.ok());
+    EXPECT_GE(fc.numEvaluations(), 1u);
+    // Verify that shell minimization was completed
+    EXPECT_GE(fc.numShellIterations(), 5u);
+    EXPECT_EQ(0u, fc.numShellConvergenceFailed());
 
     // Reset statistics again
     fc.resetStatistics();
