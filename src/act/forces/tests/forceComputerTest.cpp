@@ -241,7 +241,7 @@ protected:
         const auto *top = mol.topology();
         std::vector<gmx::RVec> forces(coords.size());
     
-        ForceComputer fc;
+        ForceComputer fc(1e-3, 100, 0.0, 1.0);
         EXPECT_EQ(0u, fc.numEvaluations());
         EXPECT_EQ(0u, fc.numShellIterations());
         EXPECT_EQ(0u, fc.numShellConvergenceFailed());
@@ -510,6 +510,16 @@ TEST_F(ForceComputerIntegrationTest, HBrHFDimerHyper)
     std::map<InteractionType, double> energies;
 
     auto result = runCompute("ACS-pg-vs2", "hbr-hf",
+                             &energies);
+    EXPECT_GT(0u, energies[InteractionType::INDUCTION]);
+    EXPECT_TRUE(result);
+}
+
+TEST_F(ForceComputerIntegrationTest, NaClDimerHyper)
+{
+    std::map<InteractionType, double> energies;
+
+    auto result = runCompute("ACS-pg-vs2", "../../alexandria/tests/mols/NaCl",
                              &energies);
     EXPECT_GT(0u, energies[InteractionType::INDUCTION]);
     EXPECT_TRUE(result);

@@ -546,11 +546,14 @@ static void plotInteractions(MsgHandler        *msghandler,
     {
         return;
     }
-    ForceComputer fc;
+    ForceComputer fc(1e-3, 100, 0.0, 1.0);
     for(auto &m : myset)
     {
         fc.plot(msghandler, pd, m);
     }
+    msghandler->msg(ACTStatus::Info,
+                    gmx::formatString("ForceComputer: %zu evaluations, %zu shell iterations and %zu shell convergence failures",
+                                      fc.numEvaluations(), fc.numShellIterations(), fc.numShellConvergenceFailed()));
 }
 
 //! \brief Copy missing information from a reference FF to an output FF
