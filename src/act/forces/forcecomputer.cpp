@@ -103,18 +103,87 @@ real calc_fscale(real k1, real k2, real F0)
     if (k2 == 0)
     {
         // F0 = -k1 Delta x => Delta x = -F0/k1
+        // However, F0 is taken out because we multiply by the
+        // force vector down below.
         return -1/k1;
     }
     else
     {
+        // Solution from Mathematica:
+        // V[x_] := (1/2) k1 x^2 + k2 x^4
+        // F[x_] := -D[V[x], x]
+        // MyX = Assuming[{k1 > 0, k2 > 0}, Solve[F0 == F[x], x]]
+        // three solutions are obtained, but only the first one is real.
+        // Note that this solution assumes the force is independent of shell
+        // position, which will never be the case.
+        // Also, this assumes a 1D problem where the force on the shell is
+        // parallel to the core-shell distance vector.
         static const real third = 1.0/3.0;
         static const real three = std::pow(3.0, third);
         static const real sqrt3 = std::sqrt(3.0);
+        real k12    = k1*k2;
         real F0k22  = F0*k2*k2;
         real throot = std::pow(-9*F0k22 +
-                               sqrt3*std::sqrt(std::pow(k1*k2, 3.0) + 27*F0k22*F0k22), third);
-        auto k = (-three*three*k1*k2+three*throot*throot)/(6*k2*throot);
+                               sqrt3*std::sqrt(k12*k12*k12 + 27*F0k22*F0k22), third);
+        auto k = (-three*three*k12 + three*throot*throot)/(6*k2*throot);
         return k/F0;
+    }
+}
+
+static void update_shell_pos(int                           shell,
+                             std::vector<gmx::RVec>       *coordinates,
+                             const std::vector<gmx::RVec> &forces,
+                             double                        fcShell,
+                             double                        fcHyper)
+{
+    auto Fnorm  = norm(forces[shell]);
+    auto fscale = calc_fscale(fcShell, fcHyper, Fnorm);
+    //! \todo Please check reducing fscale to speed up convergence
+    fscale *= 0.5;
+    for(int m = 0; m < DIM; m++)
+    {
+        (*coordinates)[shell][m] -= forces[shell][m] * fscale;
+    }
+}
+
+static void update_shell_positions(int                           core,
+                                   int                           shell,
+                                   std::vector<gmx::RVec>       *coordinates,
+                                   const std::vector<gmx::RVec> &forces,
+                                   double                        fcShell,
+                                   double                        fcHyper)
+{
+    // Core shell vector
+    gmx::RVec r_core_shell;
+    rvec_sub((*coordinates)[shell], (*coordinates)[core], r_core_shell);
+    double rcs    = norm(r_core_shell);
+    //double toler  = 1e-2;
+    // Check for co-linearity of shell displacement and the force
+    //double cosang = cos_angle(r_core_shell, forces[shell]);
+    if (rcs == 0)
+    {
+        update_shell_pos(shell, coordinates, forces, fcShell, fcHyper);
+    }
+    else
+    {
+        // Now we have the following geometry:
+        //
+        //                 Ftotal
+        //                   \
+        //                    \
+        //          Fspring    \
+        //  Core    <-------- Shell ---> r_core_shell
+        //
+        // We want to determine what distance x along the F_total vector the shell
+        // has to be displaced. To do so, we assume that
+        // r_core_shell / Fspring = x / Ftotal
+        double fpol = - 4*fcHyper*rcs*rcs*rcs - fcShell*rcs;
+        // Ratio between polarization force and distance
+        double fac  = 0.5*std::abs(rcs/fpol);
+        for(int m = 0; m < DIM; m++)
+        {
+            (*coordinates)[shell][m] += fac*forces[shell][m];
+        }
     }
 }
 
@@ -206,16 +275,11 @@ void ForceComputer::compute(MsgHandler                        *msg_handler,
                 int shell = p->atomIndex(1);
                 if (relax.empty() || relax.end() != relax.find(shell))
                 {
-                    auto Fnorm  = norm((*forces)[shell]);
-                    auto fscale = calc_fscale(fcShell_1[shell],
-                                              fcHyper[shell],
-                                              Fnorm);
-                    for(int m = 0; m < DIM; m++)
-                    {
-                        (*coordinates)[shell][m] -= (*forces)[shell][m] * fscale;
-                    }
+                    update_shell_positions(p->atomIndex(0), p->atomIndex(1),
+                                           coordinates, *forces,
+                                           fcShell_1[shell], fcHyper[shell]);
                     // Check distance from core, if there is only one
-                    if (atoms[shell].cores().size() == 1)
+                    if (maxShellDistance2 > 0 && atoms[shell].cores().size() == 1)
                     {
                         int core = atoms[shell].cores()[0];
                         rvec dx;
