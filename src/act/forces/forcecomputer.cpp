@@ -169,9 +169,9 @@ static void update_shell_positions(int                           core,
         // Now we have the following geometry:
         //
         //                 Ftotal
-        //                   \
-        //                    \
-        //          Fspring    \
+        //                   ^
+        //                    ^
+        //          Fspring    ^
         //  Core    <-------- Shell ---> r_core_shell
         //
         // We want to determine what distance x along the F_total vector the shell
