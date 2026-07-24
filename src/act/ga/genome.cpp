@@ -108,7 +108,8 @@ void Genome::setBase(size_t index, double value)
 void Genome::Send(const alexandria::CommunicationRecord *cr, int dest) const
 {
     cr->send(dest, genome_);
-    cr->send(dest, fitness_.size());
+    size_t nfmap = fitness_.size();
+    cr->send(dest, nfmap);
     for(auto &f : fitness_)
     {
         std::string imsName(iMolSelectName(f.first));

@@ -131,43 +131,36 @@ void ACTMiddleMan::run(MsgHandler *msghandler)
     }
     auto cont = CommunicationStatus::OK;
 
-    // II.
-    // Do we need to continue?
+    // II. Do we need to continue?
     cont = cr->recv_data(master);
+    // Two iterations in this loop corresponds to one in the master.
     while (CommunicationStatus::RECV_DATA == cont)
     {
-        // Get the dataset
-        //! \todo: is this really necessary?
-        iMolSelect ims;
-        cr->recv(master, &ims);
-        
         // Now get the new genome
         ind_->genomePtr()->Receive(cr, master);
-        
         // Copy current genome to bestgenome for new round of mutations
         ind_->setBestGenome(ind_->genome());
-        // III.
-        // Receive assignment from master.  
+        // III. Receive assignment from master.  
         TrainFFMiddlemanMode mode;
         cr->recv(master, &mode);
-        if (mode == TrainFFMiddlemanMode::MUTATION)
+        switch (mode)
         {
-            if (msghandler->debug())
-            {
-                msghandler->writeDebug(ind_->bestGenomePtr()->print("Before mutation"));
-            }
+        case TrainFFMiddlemanMode::FITNESS:
+            fitComp_.compute(msghandler, ind_->genomePtr(), iMolSelect::Train);
+            cr->send(master, ind_->genome().fitness(iMolSelect::Train));
+            break;
+        case TrainFFMiddlemanMode::MUTATION:
             mutator_->mutate(msghandler, ind_->genomePtr(), ind_->bestGenomePtr(), 
                              gach_->prMut());
-            
+
             if (gach_->optimizer() == OptimizerAlg::GA)
             {
-                fitComp_.compute(msghandler, ind_->genomePtr(), ims);
+                fitComp_.compute(msghandler, ind_->genomePtr(), iMolSelect::Train);
                 if (gach_->evaluateTestset())
                 {
                     fitComp_.compute(msghandler, ind_->genomePtr(), iMolSelect::Test);
                 }
-                // IV.
-                // Send the mutated genome
+                // IV. Send the mutated genome
                 ind_->genomePtr()->Send(cr, master);
             }
             else
@@ -176,28 +169,20 @@ void ACTMiddleMan::run(MsgHandler *msghandler)
                 {
                     fitComp_.compute(msghandler, ind_->bestGenomePtr(), iMolSelect::Test);
                 }
-                // IV.
-                // If we are working with Hybrid or MCMC, send 
+                // IV. If we are working with Hybrid or MCMC, send 
                 // the best genome found to the MASTER.
                 ind_->bestGenomePtr()->Send(cr, master);
-                if (msghandler->debug())
-                {
-                    msghandler->writeDebug(ind_->bestGenomePtr()->print("After mutation"));
-                }
             }
             if (msghandler->info())
             {
-                (void) fcStats.statistics(cr, fitComp_.forceComputer(), false);
+                (void) fcStats.statistics(cr, fitComp_.forceComputer(), 0, false);
             }
+            break;
         }
-        else if (mode == TrainFFMiddlemanMode::FITNESS)
-        {
-            fitComp_.compute(msghandler, ind_->genomePtr(), ims);
-            cr->send(master, ind_->genome().fitness(ims));
-        }
+        // II.
+        // Do we need to continue?
         cont = cr->recv_data(master);
     }
-    
     // Stop my helpers too.
     stopHelpers();
 }

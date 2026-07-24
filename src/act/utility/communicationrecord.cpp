@@ -620,7 +620,7 @@ template <> void CommunicationRecord::recv<iMolSelect>(int src, iMolSelect *t) c
 template <> void CommunicationRecord::send<std::vector<double>>(int dest,
                                                                 const std::vector<double> &d) const
 {
-    send(dest, static_cast<int>(d.size()));
+    send(dest, d.size());
     if (!d.empty())
     {
         send_low(dest, static_cast<const void *>(d.data()),
@@ -632,12 +632,12 @@ template <> void CommunicationRecord::send<std::vector<double>>(int dest,
 template <> void CommunicationRecord::recv<std::vector<double>>(int src,
                                                                 std::vector<double> *d) const
 {
-    int len;
+    size_t len;
     recv(src, &len);
     d->resize(len);
     if (len > 0)
     {
-        recv_low(src, static_cast<void *>(d->data()), len*sizeof(double));
+        recv_low(src, static_cast<void *>(d->data()), len*sizeof((*d)[0]));
     }
 }
 
@@ -645,7 +645,7 @@ template <> void CommunicationRecord::recv<std::vector<double>>(int src,
 template <> void CommunicationRecord::send<std::vector<gmx::RVec>>(int dest,
                                                                    const std::vector<gmx::RVec> &d) const
 {
-    send(dest, static_cast<int>(d.size()));
+    send(dest, d.size());
     if (!d.empty())
     {
         send_low(dest, static_cast<const void *>(d.data()),
@@ -657,12 +657,12 @@ template <> void CommunicationRecord::send<std::vector<gmx::RVec>>(int dest,
 template <> void CommunicationRecord::recv<std::vector<gmx::RVec>>(int src,
                                                                    std::vector<gmx::RVec> *d) const
 {
-    int len;
+    size_t len;
     recv(src, &len);
     d->resize(len);
     if (len > 0)
     {
-        recv_low(src, static_cast<void *>(d->data()), len*sizeof(gmx::RVec));
+        recv_low(src, static_cast<void *>(d->data()), len*sizeof((*d)[0]));
     }
 }
 

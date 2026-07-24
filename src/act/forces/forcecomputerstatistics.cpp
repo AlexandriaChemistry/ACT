@@ -52,6 +52,7 @@ static std::string makeTheString(size_t totalEval,
 
 std::string ForceComputerStatistics::statistics(const CommunicationRecord *cr,
                                                 const ForceComputer       *forceComp,
+                                                int                        nElites,
                                                 bool                       aggregate)
 {
     size_t totalEval        = forceComp->numEvaluations();
@@ -62,8 +63,9 @@ std::string ForceComputerStatistics::statistics(const CommunicationRecord *cr,
     // Now communicate
     if (cr->isMaster())
     {
-        for(auto src: cr->middlemen())
+        for(size_t i = std::max(1, nElites); i < cr->middlemen().size(); i++)
         {
+            auto src = cr->middlemen()[i-1];
             size_t nEval, nShellIter, nShellFailed;
             cr->recv(src, &nEval);
             cr->recv(src, &nShellIter);
