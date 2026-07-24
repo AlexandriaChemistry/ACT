@@ -497,13 +497,11 @@ bool HybridGAMC::evolve(alexandria::MsgHandler       *msghandler,
         for (size_t i = 1; i < pool[pnew]->popSize(); i++)
         {
             int dest = cr->middlemen()[i-1];
-            // II.
-            // Signify the middlemen to continue
+            // II. Signify the middlemen to continue
             cr->send_data(dest);
             // Now send the new genome
             pool[pnew]->genomePtr(i)->Send(cr, dest);
-            // III.
-            // Tell the middleman to carry the MUTATION mode, except for elitists
+            // III. Tell the middleman to carry the MUTATION mode, except for elitists
             if (static_cast<int>(i) < gach_->nElites())
             {
                 cr->send(dest, alexandria::TrainFFMiddlemanMode::FITNESS);
@@ -516,10 +514,6 @@ bool HybridGAMC::evolve(alexandria::MsgHandler       *msghandler,
         // Mutate the MASTER's genome if no elitism
         if (gach_->nElites() == 0)
         {
-            if (msghandler->debug())
-            {
-                msghandler->writeDebug("Mutating the MASTER's genome...\n");
-            }
             auto g0ptr = pool[pnew]->genomePtr(0);
             individual->setBestGenome(*g0ptr);
             mutator()->mutate(msghandler, g0ptr, individual->bestGenomePtr(), gach_->prMut());
@@ -553,9 +547,9 @@ bool HybridGAMC::evolve(alexandria::MsgHandler       *msghandler,
         for (int i = 1; i < gach_->nElites(); i++)
         {
             int src      = cr->middlemen()[i-1];
-            // IV. Receive the fitness
+            // IV. Receive the new training fitness
             double fitness;
-            cr->recv(src, &fitness);  // Receiving the new training fitness
+            cr->recv(src, &fitness);
             pool[pnew]->genomePtr(i)->setFitness(iMolSelect::Train, fitness);
         }
         // Receive the new children (parameters + fitness) from the middlemen for the
@@ -584,24 +578,27 @@ bool HybridGAMC::evolve(alexandria::MsgHandler       *msghandler,
         // Print fitness to surveillance files
         fprintFitness(*(pool[pold]));
 
+        std::string msg_start;
+        {
+            time_t my_time     = std::time(nullptr);
+            time_t diff_time   = my_time - start_time;
+            time_t finish_time = my_time + ((diff_time / generation) *
+                                            (gach_->maxGenerations() - generation));
+            std::string t_now(std::ctime(&my_time));
+            std::string t_finish(std::ctime(&finish_time));
+            // regex code from https://www.systutorials.com/how-to-remove-newline-characters-from-a-string-in-c/
+            std::regex newlines_re("\n+");
+            msg_start = gmx::formatString("Generation %d/%d. Time: %s, expect to finish at %s",
+                                          generation, gach_->maxGenerations(),
+                                          std::regex_replace(t_now, newlines_re, "").c_str(),
+                                          std::regex_replace(t_finish, newlines_re, "").c_str());
+        }
         // Check if a better genome (for train) was found, and update if so
         const auto tmpGenome   = pool[pold]->getBest(iMolSelect::Train);
         const auto oldBest     = (*bestGenome)[iMolSelect::Train];
-        time_t my_time     = std::time(nullptr);
-        time_t diff_time   = my_time - start_time;
-        time_t finish_time = my_time + (diff_time / generation) * (gach_->maxGenerations() - generation);
-        std::string t_now(std::ctime(&my_time));
-        std::string t_finish(std::ctime(&finish_time));
-        // regex code from https://www.systutorials.com/how-to-remove-newline-characters-from-a-string-in-c/
-        std::regex newlines_re("\n+");
-        auto mess_start = gmx::formatString("Generation %d/%d. Time: %s, expect to finish at %s",
-                                            generation, gach_->maxGenerations(),
-                                            std::regex_replace(t_now, newlines_re, "").c_str(),
-                                            std::regex_replace(t_finish, newlines_re, "").c_str());
-
-        if (tmpGenome.fitness(iMolSelect::Train) < oldBest.fitness(iMolSelect::Train))  // If we have a new best
+        if (tmpGenome.fitness(iMolSelect::Train) < oldBest.fitness(iMolSelect::Train))
         {
-            auto mess = gmx::formatString("\n%s. New best individual for train", mess_start.c_str());
+            auto mess = gmx::formatString("\n%s. New best individual for train", msg_start.c_str());
             msghandler->write(tmpGenome.print(mess.c_str()));
             (*bestGenome)[iMolSelect::Train] = tmpGenome;
             bMinimum = true;
@@ -613,17 +610,16 @@ bool HybridGAMC::evolve(alexandria::MsgHandler       *msghandler,
         }
         else
         {
-            auto mess = gmx::formatString("\n%s. Previous best: %g, current best %g",
-                                          mess_start.c_str(), oldBest.fitness(iMolSelect::Train),
-                                          tmpGenome.fitness(iMolSelect::Train));
-            msghandler->write(mess);
+            msghandler->write(gmx::formatString("\n%s. Previous best: %g, current best %g",
+                                                msg_start.c_str(), oldBest.fitness(iMolSelect::Train),
+                                                tmpGenome.fitness(iMolSelect::Train)));
         }
         if (gach_->evaluateTestset())
         {
             const auto oldBestTest = (*bestGenome)[iMolSelect::Test];
             if (tmpGenome.fitness(iMolSelect::Test) < oldBestTest.fitness(iMolSelect::Test))
             {
-                auto mess = gmx::formatString("%s. New best individual for test", mess_start.c_str());
+                auto mess = gmx::formatString("%s. New best individual for test", msg_start.c_str());
                 (*bestGenome)[iMolSelect::Test] = tmpGenome;
                 msghandler->write(tmpGenome.print(mess.c_str()));
             }
@@ -631,10 +627,9 @@ bool HybridGAMC::evolve(alexandria::MsgHandler       *msghandler,
         stopTraining = terminate(msghandler->tw(), pool[pold], generation);
         if (msghandler->info())
         {
-            std::string stats = fcStats.statistics(cr,
-                                                   static_cast<const alexandria::ACMFitnessComputer *>(fitnessComputer())->forceComputer(),
-                                                   gach_->nElites(),
-                                                   stopTraining);
+            auto stats = fcStats.statistics(cr,
+                                            static_cast<const alexandria::ACMFitnessComputer *>(fitnessComputer())->forceComputer(),
+                                            gach_->nElites(), stopTraining);
             msghandler->msg(alexandria::ACTStatus::Info, stats);
         }
         msghandler->flush();
