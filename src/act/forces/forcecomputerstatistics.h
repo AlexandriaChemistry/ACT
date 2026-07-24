@@ -56,11 +56,13 @@ public:
      * and returns a string summarizing it.
      * \param[in] cr        Communication Infrastructure
      * \param[in] forceComp The local force computer. Values will be reset.
+     * \param[in] nElites   The number of elite middlemen to ignore
      * \param[in] aggregate Sum over all generations / iterations
      * \return Summarizing string on master node, empty string on others
      */
     std::string statistics(const CommunicationRecord *cr,
                            const ForceComputer       *forceComp,
+                           int                        nElites,
                            bool                       aggregate);
 };
 

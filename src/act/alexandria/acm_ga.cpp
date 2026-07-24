@@ -171,6 +171,7 @@ bool MCMC::evolve(alexandria::MsgHandler       *msghandler,
     {
         std::string stats = fcStats.statistics(cr,
                                                static_cast<const alexandria::ACMFitnessComputer *>(fitnessComputer())->forceComputer(),
+                                               0,
                                                true);
         msghandler->msg(alexandria::ACTStatus::Info, stats);
     }
@@ -180,6 +181,80 @@ bool MCMC::evolve(alexandria::MsgHandler       *msghandler,
     // Clean
     delete ind;
     return bMinimum;
+}
+
+void HybridGAMC::doCrossOver(alexandria::MsgHandler                 *msghandler,
+                             const GenePool                         *pold,
+                             GenePool                               *pnew,
+                             std::uniform_real_distribution<double> &dis,
+                             std::mt19937                           &gen)
+{
+    // Generate new population after the elitism
+    msghandler->msg(alexandria::ACTStatus::Debug,
+                    "Generating the rest of the new population...\n");
+    for (size_t i = gach_->nElites(); i < pold->popSize(); i += 2)
+    {
+        // Select parents
+        auto parent1 = selector()->select(&(pold->genePool()));
+        // We do not want the same two parents for a child.
+        // https://github.com/dspoel/ACT/issues/549
+        auto parent2 = parent1;
+        int  mytry   = 0;
+        int  maxtry  = 5000;
+        while (parent1 == parent2 && mytry < maxtry)
+        {
+            parent2 = selector()->select(&(pold->genePool()));
+            mytry++;
+        }
+        if (mytry == maxtry)
+        {
+            parent2 = (parent1 + 1) % pold->popSize();
+        }
+        auto child1  = i;
+        auto child2  = i+1;
+        if (msghandler->debug())
+        {
+            msghandler->writeDebug(gmx::formatString("parent1: %d parent2: %d child1: %zu child2: %zu\n", parent1, parent2, child1, child2));
+        }
+
+        // If crossover is to be performed
+        if (dis(gen) <= gach_->prCross())  
+        {
+            // Do crossover
+            if (msghandler->debug())
+            {
+                msghandler->write("Before crossover\n");
+                msghandler->write(pold->genome(parent1).print("Parent 1:"));
+                msghandler->write(pold->genome(parent2).print("Parent 2:"));
+                msghandler->write("Doing crossover...\n");
+            }
+            crossover()->offspring(&(pold->genome(parent1)),
+                                   &(pold->genome(parent2)),
+                                   pnew->genomePtr(child1),
+                                   pnew->genomePtr(child2));
+        }
+        else
+        {
+            if (msghandler->debug())
+            {
+                msghandler->write("Omitting crossover...\n");
+            }
+            pnew->replaceGenome(child1, pold->genome(parent1));
+            pnew->replaceGenome(child2, pold->genome(parent2));
+        }
+        pnew->genomePtr(child1)->unsetFitness(iMolSelect::Train);
+        pnew->genomePtr(child2)->unsetFitness(iMolSelect::Train);
+        if (gach_->evaluateTestset())
+        {
+            pnew->genomePtr(child1)->unsetFitness(iMolSelect::Test);
+            pnew->genomePtr(child2)->unsetFitness(iMolSelect::Test);
+        }
+        if (msghandler->debug())
+        {
+            msghandler->write(pnew->genome(child1).print("Child 1:"));
+            msghandler->write(pnew->genome(child2).print("Child 2:"));
+        }
+    }
 }
 
 bool HybridGAMC::evolve(alexandria::MsgHandler       *msghandler,
@@ -199,10 +274,6 @@ bool HybridGAMC::evolve(alexandria::MsgHandler       *msghandler,
     std::uniform_real_distribution<double> dis(0.0, 1.0);
     gen.seed(seed_);
     
-    // Datasets
-    const auto imstr = iMolSelect::Train;
-    const auto imste = iMolSelect::Test;
-
     // Generations
     int generation = 0;
     // Initialize the population and compute fitness
@@ -262,9 +333,9 @@ bool HybridGAMC::evolve(alexandria::MsgHandler       *msghandler,
     // Compute its fitness
     msghandler->write("MASTER's initial parameter vector chi2 components:");
 
-    fitnessComputer()->compute(msghandler, individual->genomePtr(), imstr);
+    fitnessComputer()->compute(msghandler, individual->genomePtr(), iMolSelect::Train);
     // Maybe not really needed but just to print the components
-    fitnessComputer()->compute(msghandler, individual->genomePtr(), imste);
+    fitnessComputer()->compute(msghandler, individual->genomePtr(), iMolSelect::Test);
     // Copy current genome to bestgenome
     individual->setBestGenome(individual->genome());
 
@@ -292,10 +363,10 @@ bool HybridGAMC::evolve(alexandria::MsgHandler       *msghandler,
         pool[pold]->dump(msghandler->tw(), "Initial genome.");
     }
     // Initialize bestGenome, used for output, as well
-    (*bestGenome)[imstr] = pool[pold]->getBest(imstr);
+    (*bestGenome)[iMolSelect::Train] = pool[pold]->getBest(iMolSelect::Train);
     if (gach_->evaluateTestset())
     {
-        (*bestGenome)[imste] = pool[pold]->getBest(imstr);
+        (*bestGenome)[iMolSelect::Test] = pool[pold]->getBest(iMolSelect::Train);
     }
     // Open surveillance files for fitness, after initialization of bestGenome
     for(const auto &bg : *bestGenome)
@@ -314,14 +385,14 @@ bool HybridGAMC::evolve(alexandria::MsgHandler       *msghandler,
     time_t start_time   = std::time(nullptr);
     bool   stopTraining = false;
     // Iterate and create new generation
+    // Two iterations in the middlemen loops corresponds to one in the master.
     do
     {
         bool haveToSendGenomes = false;
         // Sort individuals in increasing order of fitness
-        auto gp = pool[pold]->genePoolPtr();
         if (gach_->sort())
         {
-            pool[pold]->sort(imstr);
+            pool[pold]->sort(iMolSelect::Train);
             if (msghandler->verbose())
             {
                 pool[pold]->dump(msghandler->tw(), "After sorting old population...");
@@ -342,46 +413,41 @@ bool HybridGAMC::evolve(alexandria::MsgHandler       *msghandler,
             for (size_t i = 1; i < pool[pold]->popSize(); i++)
             {
                 int dest = cr->middlemen()[i-1];
-                // II.
-                // Signify the middlemen to continue
+                // II. Signify the middlemen to continue
                 cr->send_data(dest);
-                //! \todo Send the data set. But is this necessary? It will always be train?
-                cr->send(dest, imstr);
                 // Now send the new bases
                 pool[pold]->genomePtr(i)->Send(cr, dest);
-                // III.
-                // Tell the middleman to perform a FITNESS calculation
+                // III. Tell the middleman to perform a FITNESS calculation
                 cr->send(dest, alexandria::TrainFFMiddlemanMode::FITNESS);
             }
             // Recompute my own (Master) fitness
-            double oldfitness = pool[pold]->genomePtr(0)->fitness(imstr);
-            fitnessComputer()->compute(msghandler, pool[pold]->genomePtr(0), imstr);
+            double oldfitness = pool[pold]->genomePtr(0)->fitness(iMolSelect::Train);
+            fitnessComputer()->compute(msghandler, pool[pold]->genomePtr(0), iMolSelect::Train);
             if (msghandler->verbose())
             {
                 // Double check
                 msghandler->write(gmx::formatString("Middleman 0 computed %g, master %g",
-                                                    oldfitness, pool[pold]->genomePtr(0)->fitness(imstr)));
+                                                    oldfitness, pool[pold]->genomePtr(0)->fitness(iMolSelect::Train)));
             }
-
             // Receive fitness from middlemen
             for (size_t i = 1; i < pool[pold]->popSize(); i++)
             {
-                int src = cr->middlemen()[i-1];
+                int    src = cr->middlemen()[i-1];
                 double fitness;
                 cr->recv(src, &fitness);  // Receiving the new training fitness
-                pool[pold]->genomePtr(i)->setFitness(imstr, fitness);
+                pool[pold]->genomePtr(i)->setFitness(iMolSelect::Train, fitness);
                 if (msghandler->verbose())
                 {
                     // Double check
-                    fitnessComputer()->compute(msghandler, pool[pold]->genomePtr(i), imstr);
+                    fitnessComputer()->compute(msghandler, pool[pold]->genomePtr(i), iMolSelect::Train);
                     msghandler->write(gmx::formatString("Middleman %zu computed %g, master %g", i,
-                                                        fitness, pool[pold]->genomePtr(i)->fitness(imstr)));
+                                                        fitness, pool[pold]->genomePtr(i)->fitness(iMolSelect::Train)));
                 }
             }
             // Sort again if needed
             if (gach_->sort())
             {
-                pool[pold]->sort(imstr);
+                pool[pold]->sort(iMolSelect::Train);
             }
             // Print population to debug if we have penalized the population
             if (msghandler->verbose())
@@ -390,17 +456,15 @@ bool HybridGAMC::evolve(alexandria::MsgHandler       *msghandler,
                                  gmx::formatString("Population has %sbeen penalized. It has been re-evaluated and sorted!\n", penalized ? "" : "not "));
             }
         }
-
         // Increase generation counter
         generation++;
-
         // Normalize the fitness into a probability
         if (msghandler->debug())
         {
             msghandler->writeDebug(gmx::formatString("Computing probabilities...\n"));
         }
-        probabilityComputer()->compute(gp, generation);
-        
+        probabilityComputer()->compute(pool[pold]->genePoolPtr(), generation);
+
         if (msghandler->verbose())
         {
             pool[pold]->dump(msghandler->tw(), "Old population after probability calculation.");
@@ -418,73 +482,12 @@ bool HybridGAMC::evolve(alexandria::MsgHandler       *msghandler,
             {
                 pool[pnew]->replaceGenome(i, pool[pold]->genome(i));
             }
-            
-            // Generate new population after the elitism
-            msghandler->msg(alexandria::ACTStatus::Debug,
-                            "Generating the rest of the new population...\n");
         }
-        for (size_t i = gach_->nElites(); i < pool[pold]->popSize(); i += 2)
+        // Cross-over between individuals, except for the elites.
+        doCrossOver(msghandler, pool[pold], pool[pnew], dis, gen);
+        if (pool[pold]->popSize() != pool[pnew]->popSize())
         {
-            // Select parents
-            auto parent1 = selector()->select(gp);
-            // We do not want the same two parents for a child.
-            // https://github.com/dspoel/ACT/issues/549
-            auto parent2 = parent1;
-            int  mytry   = 0;
-            int  maxtry  = 5000;
-            while (parent1 == parent2 && mytry < maxtry)
-            {
-                parent2 = selector()->select(gp);
-                mytry++;
-            }
-            if (mytry == maxtry)
-            {
-                parent2 = (parent1 + 1) % pool[pold]->popSize();
-            }
-            auto child1  = i;
-            auto child2  = i+1;
-            if (msghandler->debug())
-            {
-                msghandler->writeDebug(gmx::formatString("parent1: %d parent2: %d child1: %zu child2: %zu\n", parent1, parent2, child1, child2));
-            }
-            
-            // If crossover is to be performed
-            if (dis(gen) <= gach_->prCross())  
-            {
-                // Do crossover
-                if (msghandler->debug())
-                {
-                    msghandler->write("Before crossover\n");
-                    msghandler->write(pool[pold]->genome(parent1).print("Parent 1:"));
-                    msghandler->write(pool[pold]->genome(parent2).print("Parent 2:"));
-                    msghandler->write("Doing crossover...\n");
-                }
-                crossover()->offspring(pool[pold]->genomePtr(parent1),
-                                       pool[pold]->genomePtr(parent2),
-                                       pool[pnew]->genomePtr(child1),
-                                       pool[pnew]->genomePtr(child2));
-            }
-            else
-            {
-                if (msghandler->debug())
-                {
-                    msghandler->write("Omitting crossover...\n");
-                }
-                pool[pnew]->replaceGenome(child1, pool[pold]->genome(parent1));
-                pool[pnew]->replaceGenome(child2, pool[pold]->genome(parent2));
-            }
-            pool[pnew]->genomePtr(child1)->unsetFitness(imstr);
-            pool[pnew]->genomePtr(child2)->unsetFitness(imstr);
-            if (gach_->evaluateTestset())
-            {
-                pool[pnew]->genomePtr(child1)->unsetFitness(imste);
-                pool[pnew]->genomePtr(child2)->unsetFitness(imste);
-            }
-            if (msghandler->debug())
-            {
-                msghandler->write(pool[pnew]->genome(child1).print("Child 1:"));
-                msghandler->write(pool[pnew]->genome(child2).print("Child 2:"));
-            }
+            msghandler->msg(alexandria::ACTStatus::Fatal, "Population size mismatch");
         }
         if (msghandler->debug())
         {
@@ -497,8 +500,6 @@ bool HybridGAMC::evolve(alexandria::MsgHandler       *msghandler,
             // II.
             // Signify the middlemen to continue
             cr->send_data(dest);
-            //! \todo Send the data set. But is this necessary? It will always be train?
-            cr->send(dest, imstr);
             // Now send the new genome
             pool[pnew]->genomePtr(i)->Send(cr, dest);
             // III.
@@ -522,22 +523,25 @@ bool HybridGAMC::evolve(alexandria::MsgHandler       *msghandler,
             auto g0ptr = pool[pnew]->genomePtr(0);
             individual->setBestGenome(*g0ptr);
             mutator()->mutate(msghandler, g0ptr, individual->bestGenomePtr(), gach_->prMut());
-            if (mutator()->foundMinimum())
-            {
-                if (gach_->evaluateTestset())
-                {
-                    fitnessComputer()->compute(msghandler, individual->bestGenomePtr(), imste);
-                }
-                // Store master's best genome in the pool at position 0
-                pool[pnew]->replaceGenome(0, individual->bestGenome());
-            }
             if (gach_->optimizer() == alexandria::OptimizerAlg::GA)
             {
                 // For HYBRID the fitness is already computed by the mutator
-                fitnessComputer()->compute(msghandler, g0ptr, imstr);
+                fitnessComputer()->compute(msghandler, g0ptr, iMolSelect::Train);
                 if (gach_->evaluateTestset())
                 {
-                    fitnessComputer()->compute(msghandler, g0ptr, imste);
+                    fitnessComputer()->compute(msghandler, g0ptr, iMolSelect::Test);
+                }
+            }
+            else
+            {
+                if (gach_->evaluateTestset())
+                {
+                    fitnessComputer()->compute(msghandler, individual->bestGenomePtr(), iMolSelect::Test);
+                }
+                if (mutator()->foundMinimum())
+                {
+                    // Store master's best genome in the pool at position 0
+                    pool[pnew]->replaceGenome(0, individual->bestGenome());
                 }
             }
         }
@@ -549,19 +553,17 @@ bool HybridGAMC::evolve(alexandria::MsgHandler       *msghandler,
         for (int i = 1; i < gach_->nElites(); i++)
         {
             int src      = cr->middlemen()[i-1];
-            // IV.
-            // Receive the fitness
+            // IV. Receive the fitness
             double fitness;
             cr->recv(src, &fitness);  // Receiving the new training fitness
-            pool[pnew]->genomePtr(i)->setFitness(imstr, fitness);
+            pool[pnew]->genomePtr(i)->setFitness(iMolSelect::Train, fitness);
         }
-        // Receive the new children (parameters + fitness) from the middle men for the
+        // Receive the new children (parameters + fitness) from the middlemen for the
         // non elitist.
         for (size_t i = std::max(1, gach_->nElites()); i < pool[pnew]->popSize(); i++)
         {
             int src      = cr->middlemen()[i-1];
-            // IV.
-            // Receive the mutated genome
+            // IV. Receive the mutated genome
             pool[pnew]->genomePtr(i)->Receive(cr, src);
         }
         // Now we have received the complete new genepool.
@@ -583,8 +585,8 @@ bool HybridGAMC::evolve(alexandria::MsgHandler       *msghandler,
         fprintFitness(*(pool[pold]));
 
         // Check if a better genome (for train) was found, and update if so
-        const auto tmpGenome   = pool[pold]->getBest(imstr);
-        const auto oldBest     = (*bestGenome)[imstr];
+        const auto tmpGenome   = pool[pold]->getBest(iMolSelect::Train);
+        const auto oldBest     = (*bestGenome)[iMolSelect::Train];
         time_t my_time     = std::time(nullptr);
         time_t diff_time   = my_time - start_time;
         time_t finish_time = my_time + (diff_time / generation) * (gach_->maxGenerations() - generation);
@@ -597,11 +599,11 @@ bool HybridGAMC::evolve(alexandria::MsgHandler       *msghandler,
                                             std::regex_replace(t_now, newlines_re, "").c_str(),
                                             std::regex_replace(t_finish, newlines_re, "").c_str());
 
-        if (tmpGenome.fitness(imstr) < oldBest.fitness(imstr))  // If we have a new best
+        if (tmpGenome.fitness(iMolSelect::Train) < oldBest.fitness(iMolSelect::Train))  // If we have a new best
         {
             auto mess = gmx::formatString("\n%s. New best individual for train", mess_start.c_str());
             msghandler->write(tmpGenome.print(mess.c_str()));
-            (*bestGenome)[imstr] = tmpGenome;
+            (*bestGenome)[iMolSelect::Train] = tmpGenome;
             bMinimum = true;
 
             if (gpout_)
@@ -612,17 +614,17 @@ bool HybridGAMC::evolve(alexandria::MsgHandler       *msghandler,
         else
         {
             auto mess = gmx::formatString("\n%s. Previous best: %g, current best %g",
-                                          mess_start.c_str(), oldBest.fitness(imstr),
-                                          tmpGenome.fitness(imstr));
+                                          mess_start.c_str(), oldBest.fitness(iMolSelect::Train),
+                                          tmpGenome.fitness(iMolSelect::Train));
             msghandler->write(mess);
         }
         if (gach_->evaluateTestset())
         {
-            const auto oldBestTest = (*bestGenome)[imste];
-            if (tmpGenome.fitness(imste) < oldBestTest.fitness(imste))
+            const auto oldBestTest = (*bestGenome)[iMolSelect::Test];
+            if (tmpGenome.fitness(iMolSelect::Test) < oldBestTest.fitness(iMolSelect::Test))
             {
                 auto mess = gmx::formatString("%s. New best individual for test", mess_start.c_str());
-                (*bestGenome)[imste] = tmpGenome;
+                (*bestGenome)[iMolSelect::Test] = tmpGenome;
                 msghandler->write(tmpGenome.print(mess.c_str()));
             }
         }
@@ -631,6 +633,7 @@ bool HybridGAMC::evolve(alexandria::MsgHandler       *msghandler,
         {
             std::string stats = fcStats.statistics(cr,
                                                    static_cast<const alexandria::ACMFitnessComputer *>(fitnessComputer())->forceComputer(),
+                                                   gach_->nElites(),
                                                    stopTraining);
             msghandler->msg(alexandria::ACTStatus::Info, stats);
         }
@@ -645,10 +648,10 @@ bool HybridGAMC::evolve(alexandria::MsgHandler       *msghandler,
 
     msghandler->write("GA/HYBRID Evolution is done!");
 
-    msghandler->write((*bestGenome)[imstr].print("Best (Train): "));
+    msghandler->write((*bestGenome)[iMolSelect::Train].print("Best (Train): "));
     if (gach_->evaluateTestset())
     {
-        msghandler->write((*bestGenome)[imste].print("Best (Test): "));
+        msghandler->write((*bestGenome)[iMolSelect::Test].print("Best (Test): "));
     }
 
     // Save last population

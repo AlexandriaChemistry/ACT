@@ -95,6 +95,19 @@ public:
       gpin_(genePoolIn), gpout_(genePoolOut), seed_(seed)
     {}
 
+    /*! \brief Routine to manage crossovers
+     * \param[in]  msghandler For debugging
+     * \param[in]  pold       The old population
+     * \param[out] pnew       The new population
+     * \param[in]  dis        Random number distributor
+     * \param[in]  gen        Random number generator
+     */
+    void doCrossOver(alexandria::MsgHandler                 *msghandler,
+                     const GenePool                         *pold,
+                     GenePool                               *pnew,
+                     std::uniform_real_distribution<double> &dis,
+                     std::mt19937                           &gen);
+
     //! \copydoc ga::GeneticAlgorithm::evolve
     virtual bool evolve(alexandria::MsgHandler       *msghandler,
                         std::map<iMolSelect, Genome> *bestGenome);
