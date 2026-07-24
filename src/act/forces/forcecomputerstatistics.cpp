@@ -35,19 +35,20 @@
 namespace alexandria
 {
 
-static std::string makeTheString(size_t totalEval,
-                                 size_t totalShellIter,
-                                 size_t totalShellFailed,
-                                 bool   aggregate)
+static void makeTheString(size_t       totalEval,
+                          size_t       totalShellIter,
+                          size_t       totalShellFailed,
+                          bool         aggregate,
+                          std::string *stats)
 {
     double ratio = 0;
     if (totalEval > 0)
     {
         ratio = (totalShellIter*1.0)/totalEval;
     }
-    return gmx::formatString("ForceComputer %s#eval %zu #shell iter %zu ratio %.2f #failed shell convergence %zu",
-                             aggregate ? "total " : "",
-                             totalEval, totalShellIter, ratio, totalShellFailed);
+    stats->assign(gmx::formatString("ForceComputer %s#eval %zu #shell iter %zu ratio %.2f #failed shell convergence %zu",
+                                    aggregate ? "total " : "",
+                                    totalEval, totalShellIter, ratio, totalShellFailed));
 }
 
 std::string ForceComputerStatistics::statistics(const CommunicationRecord *cr,
@@ -63,10 +64,11 @@ std::string ForceComputerStatistics::statistics(const CommunicationRecord *cr,
     // Now communicate
     if (cr->isMaster())
     {
-        for(size_t i = std::max(1, nElites); i < cr->middlemen().size(); i++)
+        // Middlemen does not include the master, hence <=
+        for(size_t i = std::max(1, nElites); i <= cr->middlemen().size(); i++)
         {
             auto src = cr->middlemen()[i-1];
-            size_t nEval, nShellIter, nShellFailed;
+            size_t nEval = 0, nShellIter = 0, nShellFailed = 0;
             cr->recv(src, &nEval);
             cr->recv(src, &nShellIter);
             cr->recv(src, &nShellFailed);
@@ -80,16 +82,16 @@ std::string ForceComputerStatistics::statistics(const CommunicationRecord *cr,
         totalShellConvergeFailed_ += totalShellFailed;
         if (aggregate)
         {
-            return makeTheString(totalEval_, totalShellIter_, totalShellConvergeFailed_, aggregate);
+            makeTheString(totalEval_, totalShellIter_, totalShellConvergeFailed_, aggregate, &stats);
         }
         else
         {
-            return makeTheString(totalEval, totalShellIter, totalShellFailed, aggregate);
+            makeTheString(totalEval, totalShellIter, totalShellFailed, aggregate, &stats);
         }
     }
     else
     {
-        cr->send(cr->superior(), totalEval);
+        cr->send(0, totalEval);
         cr->send(cr->superior(), totalShellIter);
         cr->send(cr->superior(), totalShellFailed);
     }
