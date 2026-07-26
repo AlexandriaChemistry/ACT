@@ -110,18 +110,13 @@ bool MCMC::evolve(alexandria::MsgHandler       *msghandler,
     int i = 1;
     for (auto &dest : cr->middlemen())
     {
-        if (dest != cr->rank())
-        {
-            // Tell the middle man to continue
-            cr->send_data(dest);
-            // Send the data set
-            cr->send(dest, imstr);
-            // Now resend the genome
-            pool.genomePtr(i)->Send(cr, dest);
-            // Tell the middleman to carry the MUTATION mode
-            cr->send(dest, alexandria::TrainFFMiddlemanMode::MUTATION);
-            i += 1;
-        }
+        // Tell the middle man to continue
+        cr->send_data(dest);
+        // Now resend the genome
+        pool.genomePtr(i)->Send(cr, dest);
+        // Tell the middleman to carry the MUTATION mode
+        cr->send(dest, alexandria::TrainFFMiddlemanMode::MUTATION);
+        i += 1;
     }
 
     // Mutate my own genome
