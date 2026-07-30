@@ -171,7 +171,14 @@ void ACTMiddleMan::run(MsgHandler *msghandler)
                 }
                 // IV. If we are working with Hybrid or MCMC, send 
                 // the best genome found to the MASTER.
-                ind_->bestGenomePtr()->Send(cr, master);
+                if (mutator_->foundMinimum())
+                {
+                    ind_->bestGenomePtr()->Send(cr, master);
+                }
+                else
+                {
+                    ind_->genomePtr()->Send(cr, master);
+                }
             }
             if (msghandler->info())
             {
