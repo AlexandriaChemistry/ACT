@@ -470,10 +470,11 @@ void OptACM::printNumCalcDevEstimate()
 }
 
 void OptACM::printGenomeTable(const std::map<iMolSelect, ga::Genome> &genome,
-                              const ga::GenePool                     &pop)
+                              const ga::GenePool                     &pop,
+                              JsonTree                               *jtree)
 {
     auto tw = msghandler_.tw();
-    if (!tw)
+    if (!tw && !jtree)
     {
         return;
     }
@@ -516,12 +517,15 @@ void OptACM::printGenomeTable(const std::map<iMolSelect, ga::Genome> &genome,
     const size_t TOTAL_WIDTH = static_cast<size_t>(std::accumulate(sizes.begin(), sizes.end(), 0)) + 3*(sizes.size()-1) + 4 + 4;
     const std::string HLINE(TOTAL_WIDTH, '-');
     // Print header
-    tw->writeStringFormatted("%s\n|", HLINE.c_str());
-    for (size_t i = 0; i < headerNames.size(); i++)
+    if (tw)
     {
-        tw->writeStringFormatted(" %-*s |", sizes[i], headerNames[i].c_str());
+        tw->writeStringFormatted("%s\n|", HLINE.c_str());
+        for (size_t i = 0; i < headerNames.size(); i++)
+        {
+            tw->writeStringFormatted(" %-*s |", sizes[i], headerNames[i].c_str());
+        }
+        tw->writeStringFormatted("\n%s\n", HLINE.c_str());
     }
-    tw->writeStringFormatted("\n%s\n", HLINE.c_str());
     // Gather statistics from the population
     const std::vector<double> min    = pop.min();
     const std::vector<double> max    = pop.max();
@@ -530,6 +534,8 @@ void OptACM::printGenomeTable(const std::map<iMolSelect, ga::Genome> &genome,
     const std::vector<double> median = pop.median();
     auto optIndex = *sii_->optIndexPtr();
 
+    // JsonTree with same information as log file
+    JsonTree params("parameters");
     // Print the parameter information
     bool hitWall = false;
     for (size_t i = 0; i < paramClass.size(); i++)
@@ -540,9 +546,15 @@ void OptACM::printGenomeTable(const std::map<iMolSelect, ga::Genome> &genome,
             {
                 continue;
             }
-            tw->writeStringFormatted("| %-*s | %-*s |",
-                                     sizes[0], paramClass[i].c_str(),
-                                     sizes[1], paramNames[j].c_str());
+            if (tw)
+            {
+                tw->writeStringFormatted("| %-*s | %-*s |",
+                                         sizes[0], paramClass[i].c_str(),
+                                         sizes[1], paramNames[j].c_str());
+            }
+            JsonTree param(std::to_string(j));
+            param.addObject(JsonTree("class", paramClass[i]));
+            param.addObject(JsonTree("name", paramNames[j]));
             size_t k = 2;
             double value = 0;
             auto ffp = optIndex[j].forceFieldParameter();
@@ -551,32 +563,57 @@ void OptACM::printGenomeTable(const std::map<iMolSelect, ga::Genome> &genome,
                 value = pair.second.base(j);
                 if (ffp->minimum() == value || ffp->maximum() == value)
                 {
-                    tw->writeStringFormatted(" %-*g (W) |", sizes[k], value);
+                    param.addObject("wall_hit", ffp->minimum() == value ? "lower" : "upper");
+                    if (tw)
+                    {
+                        tw->writeStringFormatted(" %-*g (W) |", sizes[k], value);
+                    }
                     hitWall = true;
                 }
                 else
                 {
-                    tw->writeStringFormatted(" %-*g     |", sizes[k], value);
+                    if (tw)
+                    {
+                        tw->writeStringFormatted(" %-*g     |", sizes[k], value);
+                    }
                 }
+                param.addObject("best", std::to_string(value));
                 k++;
             }
-            tw->writeStringFormatted(" %-*g | %-*g | %-*g | %-*g | %-*g |\n%s\n",
-                                     sizes[k], min[j],
-                                     sizes[k+1], max[j],
-                                     sizes[k+2], mean[j],
-                                     sizes[k+3], stdev[j],
-                                     sizes[k+4], median[j],
-                                     HLINE.c_str());
+            if (tw)
+            {
+                param.addObject("min", std::to_string(min[j]));
+                param.addObject("max", std::to_string(max[j]));
+                param.addObject("mean", std::to_string(mean[j]));
+                param.addObject("stdev", std::to_string(stdev[j]));
+                param.addObject("median", std::to_string(median[j]));
+                tw->writeStringFormatted(" %-*g | %-*g | %-*g | %-*g | %-*g |\n%s\n",
+                                         sizes[k], min[j],
+                                         sizes[k+1], max[j],
+                                         sizes[k+2], mean[j],
+                                         sizes[k+3], stdev[j],
+                                         sizes[k+4], median[j],
+                                         HLINE.c_str());
+            }
+            params.addObject(param);
         }
+    }
+    if (jtree)
+    {
+        jtree->addObject(params);
     }
     if (hitWall)
     {
-        tw->writeStringFormatted("(W) indicates this parameter hit the wall.\n\n");
+        if (tw)
+        {
+            tw->writeStringFormatted("(W) indicates this parameter hit the wall.\n\n");
+        }
     }
 }
 
-bool OptACM::runMaster(bool optimize,
-                       bool sensitivity)
+bool OptACM::runMaster(bool      optimize,
+                       bool      sensitivity,
+                       JsonTree *jtree)
 {
     GMX_RELEASE_ASSERT(commRec_.nodeType() == NodeType::Master,
                        "I thought I was the master...");
@@ -598,7 +635,7 @@ bool OptACM::runMaster(bool optimize,
         {
             tw->writeStringFormatted("\nHere are the best parameters found, together with some summary statistics of the last population:\n");
         }
-        printGenomeTable(bestGenome, ga_->getLastPop());
+        printGenomeTable(bestGenome, ga_->getLastPop(), jtree);
     }
     else
     {
@@ -977,10 +1014,11 @@ int train_ff(int argc, char *argv[])
         {
             opt.commRec()->bcast(&initOK, opt.commRec()->comm_world());
         }
+        JsonTree jtree("train_ff");
         bool bMinimum = false;
         if (initOK)
         {
-            bMinimum = opt.runMaster(bOptimize, bSensitivity);
+            bMinimum = opt.runMaster(bOptimize, bSensitivity, &jtree);
             if (bOptimize)
             {
                 auto msg = gmx::formatString("Training finished %s.", bMinimum ? "succesfully" : "without finding a better force field");
@@ -996,14 +1034,8 @@ int train_ff(int argc, char *argv[])
                 opt.sii()->saveState(true);
             }
             MolGen *tmpMg = opt.mg();
-            JsonTree jtree("train_ff");
             printer.print(opt.msgHandler(), &jtree, opt.sii(), opt.forceComp(),
                           tmpMg->actmolsPtr(), oenv, filenms, !bOptimize);
-            auto json_file = opt2fn_null("-json", filenms.size(), filenms.data());
-            if (json_file)
-            {
-                jtree.write(json_file, true);
-            }
             if (opt.msgHandler())
             {
                 opt.msgHandler()->writeDebug(memory_usage());
@@ -1012,6 +1044,11 @@ int train_ff(int argc, char *argv[])
         else if (!bMinimum)
         {
             printf("No improved parameters found. Please try again with more iterations.\n");
+        }
+        auto json_file = opt2fn_null("-json", filenms.size(), filenms.data());
+        if (json_file)
+        {
+            jtree.write(json_file, true);
         }
     }
     else

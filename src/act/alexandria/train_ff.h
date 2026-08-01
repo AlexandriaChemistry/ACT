@@ -58,6 +58,8 @@
 namespace alexandria
 {
 
+class JsonTree;
+
 /*! \brief Wrapper for closing a file
  * Will print a warning if something is wrong when closing.
  * \param[in] fp The file pointer
@@ -126,9 +128,11 @@ private:
      *        to the logfile, if it exists
      * \param[in] genome the best Genome object (for different datasets)
      * \param[in] pop    the population to define summary statistics
+     * \param[in] jtree  for machine readable output
      */
     void printGenomeTable(const std::map<iMolSelect, ga::Genome> &genome,
-                          const ga::GenePool                     &pop);
+                          const ga::GenePool                     &pop,
+                          JsonTree                               *jtree);
 
 public:
 
@@ -173,10 +177,12 @@ public:
     /*! \brief Do the actual optimization.
      * \param[in] optimize    If true an optimization will be done
      * \param[in] sensitivity If true, a sensitivity analysis will be done
+     * \param[in] jtree       for machine readable output
      * \return true if better parameters were found.
      */
-    bool runMaster(bool optimize,
-                   bool sensitivity);
+    bool runMaster(bool      optimize,
+                   bool      sensitivity,
+                   JsonTree *jtree);
 
     /* * * * * * * * * * * * * * * * * * * * * *
     * BEGIN: Initializing stuff                *
