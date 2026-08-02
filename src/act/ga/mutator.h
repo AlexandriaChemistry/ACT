@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2021-2025
+ * Copyright (C) 2021-2026
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -34,11 +34,15 @@
 
 #include <random>
 #include <vector>
-//#include <time.h>
 
 #include "act/basics/chargemodel.h"
 #include "act/basics/msg_handler.h"
 #include "act/ga/genome.h"
+
+namespace alexandria
+{
+    class JsonTree;
+}
 
 namespace ga
 {
@@ -100,10 +104,12 @@ public:
      * \param[in] msghandler The message and status handler
      * \param[in] bestGenome Pointer to genome
      * \param[in] ims        Dataset to perform sensitivity analysis on
+     * \param[in] jtree      For machine readable output
      */
     virtual void sensitivityAnalysis(alexandria::MsgHandler *msghandler,
                                      Genome                 *bestGenome,
-                                     iMolSelect              ims) = 0;
+                                     iMolSelect              ims,
+                                     alexandria::JsonTree   *jtree) = 0;
 
     //! \return whether a minimum was found
     virtual bool foundMinimum() = 0;

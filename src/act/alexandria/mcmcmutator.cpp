@@ -41,6 +41,7 @@
 
 #include "bayes.h"
 #include "act/utility/memory_check.h"
+#include "act/utility/jsontree.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/utility/textwriter.h"
 
@@ -470,7 +471,8 @@ void MCMCMutator::printChi2Step(const std::map<iMolSelect, double> &chi2,
 
 void MCMCMutator::sensitivityAnalysis(MsgHandler                *msghandler,
                                       ga::Genome                *genome,
-                                      iMolSelect                 ims)
+                                      iMolSelect                 ims,
+                                      JsonTree                  *jtree)
 {
     
     std::vector<double> *param = genome->basesPtr();
@@ -493,6 +495,7 @@ void MCMCMutator::sensitivityAnalysis(MsgHandler                *msghandler,
         tw->writeStringFormatted("\nStarting sensitivity analysis. chi2_0 = %g nParam = %zu\n",
                                  chi2_0, param->size());
     }
+    JsonTree sens("sensitivity");
     for (size_t i = 0; i < param->size(); ++i)
     {
         Sensitivity s;
@@ -518,13 +521,16 @@ void MCMCMutator::sensitivityAnalysis(MsgHandler                *msghandler,
         (*param)[i]     = pstore;
         sii_->updateForceField(msghandler, changed, *param);
         s.computeForceConstants(tw);
-        s.print(tw, paramNames[i]);
+        s.print(tw, &sens, std::to_string(i), paramNames[i]);
     }
     if (tw)
     {
         tw->writeString("Sensitivity analysis done.");
     }
-
+    if (jtree)
+    {
+        jtree->addObject(sens);
+    }
 }                                      
 
 void MCMCMutator::openParamConvFiles(const gmx_output_env_t *oenv)

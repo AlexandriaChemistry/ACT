@@ -648,7 +648,8 @@ bool OptACM::runMaster(bool      optimize,
     if (gach_.optimizer() != OptimizerAlg::GA && sensitivity && msghandler_.ok())
     {
         // Do sensitivity analysis only on the training set
-        mutator_->sensitivityAnalysis(&msghandler_, &bestGenome[iMolSelect::Train], iMolSelect::Train);
+        mutator_->sensitivityAnalysis(&msghandler_, &bestGenome[iMolSelect::Train], iMolSelect::Train,
+                                      jtree);
     }
     // Stop the middlemen ...
     if (commRec_.nmiddlemen() > 1)
