@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2025
+ * Copyright (C) 2021-2026
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -41,6 +41,7 @@
 namespace alexandria
 {
 
+class JsonTree;
 
 /*!
  * Changes values of the genes by a maximum of \p percent * their allowed range
@@ -77,7 +78,8 @@ public:
     //! \copydoc ga::Mutator::sensitivityAnalysis
     virtual void sensitivityAnalysis(gmx_unused MsgHandler *msghandler,
                                      gmx_unused ga::Genome *bestGenome,
-                                     gmx_unused iMolSelect  ims) {}
+                                     gmx_unused iMolSelect  ims,
+                                     gmx_unused JsonTree   *jtree) {}
     
     //! \return whether a minimum was found
     bool foundMinimum() { return false; }

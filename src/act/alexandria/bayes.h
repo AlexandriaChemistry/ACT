@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2025
+ * Copyright (C) 2014-2026
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -45,6 +45,8 @@ class TextWriter;
 
 namespace alexandria
 {
+
+class JsonTree;
 
 //! How to perform the calculation of deviations (chi-squared)
 enum class CalcDev {
@@ -95,10 +97,15 @@ public:
     double c() const { return c_; }
 
     /*! \brief Print output
-     * \param[in] tw A text writer
+     * \param[in] tw    A text writer
+     * \param[in] jtree For machine readable output
+     * \param[in] index Parameter index, must be unique
      * \param[in] label Label for identifying the parameter
      */
-    void print(gmx::TextWriter *tw, const std::string &label);
+    void print(gmx::TextWriter      *tw,
+               alexandria::JsonTree *jtree,
+               const std::string    &index,
+               const std::string    &label);
 };
 
 }  //namespace alexandria

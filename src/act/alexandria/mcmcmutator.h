@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2026
+ * Copyright (C) 2021-2026
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -47,6 +47,7 @@
 namespace alexandria
 {
 
+class JsonTree;
 
 /*!
  * \brief Mutator which applies MCMC optimization to an ACMIndividual.
@@ -218,10 +219,12 @@ public:
      * \param[in] msghandler The message and status handler
      * \param[in] genome     Pointer to genome
      * \param[in] ims        Dataset to perform sensitivity analysis on
+     * \param[in] jtree      For machine readable output
      */
     void sensitivityAnalysis(MsgHandler *msghandler,
                              ga::Genome *genome,
-                             iMolSelect  ims);
+                             iMolSelect  ims,
+                             JsonTree   *jtree);
 
     /*!
      * \brief Open parameter convergence files
