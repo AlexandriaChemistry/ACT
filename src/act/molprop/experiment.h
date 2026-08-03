@@ -124,8 +124,11 @@ public:
     //! Set the experiment id
     void setId(int id) { id_ = id; }
     
-    //! Get the id
+    //! \return the id
     int id() const { return id_; }
+
+    //! \return the datafile
+    const std::string &datafile() const { return datafile_; }
 
     /*! \brief Add a property to this experiment
      * \param[in] mpo The molpropobservable

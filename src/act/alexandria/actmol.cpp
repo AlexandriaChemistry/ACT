@@ -387,7 +387,7 @@ void ACTMol::forceEnergyMaps(MsgHandler                                         
                     }
                 }
                 //! \todo Store the interaction forces
-                ACTEnergy my_all(exper.id());
+                ACTEnergy my_all(exper.id(), exper.datafile());
                 my_all.setACT(ener.second);
                 if (foundQM == mpos.size() ||
                     (foundQM == mpos.size()-1 && !separateInductionCorrection))
@@ -414,7 +414,8 @@ void ACTMol::forceEnergyMaps(MsgHandler                                         
             }
             else if (eprops.size() == 1)
             {
-                energyMap->push_back(ACTEnergy(exper.id(), eprops[0]->getValue(),
+                energyMap->push_back(ACTEnergy(exper.id(), exper.datafile(),
+                                               eprops[0]->getValue(),
                                                energies[InteractionType::EPOT]));
                 energyComponentMap->push_back({ eprops[0]->getValue(), std::move(energies) });
             }

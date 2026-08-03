@@ -1413,6 +1413,7 @@ static void dump_xyz(const std::string &label,
 
 //! \brief Low-level printing of energies
 static int printLow(gmx::TextWriter   *tw,
+                    JsonTree          *jtree,
                     const ACTMol      *mol,
                     const ACTEnergy   &ener,
                     const std::string &label,
@@ -1428,13 +1429,18 @@ static int printLow(gmx::TextWriter   *tw,
         {
             tw->writeStringFormatted("%-40s  %12g  %12g  %12g\n", mol->getMolname().c_str(),
                     ener.eqm(), ener.eact(), ener.eact()-ener.eqm());
+            JsonTree jout(ener.datafile());
+            jout.addObject("QM", ener.eqm());
+            jout.addObject("ACT", ener.eact());
+            jtree->addObject(jout);
             noutlier++;
         }
         if (dumpOutliers >= 0 && deltaE >= dumpOutliers*sigma)
         {
-            std::string myfnm = gmx::formatString("%s-%s.xyz", 
+            std::string myfnm = gmx::formatString("%s-%s-%s.xyz", 
                                                   mol->getMolname().c_str(),
-                                                  label.c_str());
+                                                  label.c_str(),
+                                                  ener.datafile().c_str());
             dump_xyz(myfnm, mol, ener);
         }
     }
@@ -1442,6 +1448,7 @@ static int printLow(gmx::TextWriter   *tw,
 }
 
 void TrainForceFieldPrinter::printOutliers(gmx::TextWriter                       *tw,
+                                           JsonTree                              *jtree,
                                            iMolSelect                             ims,
                                            double                                 sigma,
                                            bool                                   bIntermolecular,
@@ -1449,14 +1456,15 @@ void TrainForceFieldPrinter::printOutliers(gmx::TextWriter                      
                                            const std::vector<alexandria::ACTMol> *actmol)
 {
     double epotMax = 1.5*sigma;
-    auto   label   = gmx::formatString("%s-%s",
-                                       interactionTypeToString(itype).c_str(), iMolSelectName(ims).c_str());
+    auto   intName = interactionTypeToString(itype);
+    auto   label   = gmx::formatString("%s-%s", intName.c_str(), iMolSelectName(ims).c_str());
     tw->writeStringFormatted("\nOverview of %s outliers for %s (Diff > %.3f)\n",
             label.c_str(), qPropertyTypeName(qPropertyType::ACM).c_str(), epotMax);
     tw->writeStringFormatted("----------------------------------\n");
     tw->writeStringFormatted("%-40s  %12s  %12s  %12s\n", "Name",
             "Reference", qPropertyTypeName(qPropertyType::ACM).c_str(), "ACT-Ref.");
     int noutlier = 0;
+    JsonTree jout(intName);
     if (bIntermolecular)
     {
         for (const auto &miem : molInteractionEnergyMap_)
@@ -1473,7 +1481,8 @@ void TrainForceFieldPrinter::printOutliers(gmx::TextWriter                      
                     {
                         continue;
                     }
-                    noutlier += printLow(tw, &(*actmolptr), emmptr->second, label, sigma, dumpOutliers_);
+                    noutlier += printLow(tw, &jout, &(*actmolptr),
+                                         emmptr->second, label, sigma, dumpOutliers_);
                 }
             }
         }
@@ -1489,13 +1498,16 @@ void TrainForceFieldPrinter::printOutliers(gmx::TextWriter                      
             {
                 for(const auto &emm : miem.second)
                 {
-                    noutlier += printLow(tw, &(*actmolptr), emm, label, sigma, dumpOutliers_);
+                    noutlier += printLow(tw, &jout, &(*actmolptr), emm,
+                                         label, sigma, dumpOutliers_);
                 }
             }
         }
     }
+    
     if (noutlier)
     {
+        jtree->addObject(jout);
         printf("There were %d %s outliers for %s. Check the bottom of the log file\n", noutlier,
                label.c_str(), iMolSelectName(ims).c_str());
     }
@@ -1874,6 +1886,7 @@ void TrainForceFieldPrinter::print(MsgHandler                  *msghandler,
         }
     }
     real epotRmsd = 0;
+    JsonTree jout("outliers");
     if (
         eStats::OK == lsq_epot_[iMolSelect::Train][qPropertyType::ACM].get_rmsd(&epotRmsd))
     {
@@ -1882,7 +1895,7 @@ void TrainForceFieldPrinter::print(MsgHandler                  *msghandler,
             if (lsq_epot_[ims][qPropertyType::ACM].get_npoints() > 0)
             {
                 // List outliers based on the deviation in the Potential energy ...
-                printOutliers(tw, ims, epotRmsd, false, InteractionType::EPOT, actmol);
+                printOutliers(tw, &jout, ims, epotRmsd, false, InteractionType::EPOT, actmol);
             }
         }
     }
@@ -1896,12 +1909,15 @@ void TrainForceFieldPrinter::print(MsgHandler                  *msghandler,
                 if (lsq_einter_[tt][ims][qPropertyType::ACM].get_npoints() > 0)
                 {
                     // ... and the interaction energies.
-                    printOutliers(tw, ims, einterRmsd, true, tt, actmol);
+                    printOutliers(tw, &jout, ims, einterRmsd, true, tt, actmol);
                 }
             }
         }
     }
-
+    if (jtree)
+    {
+        jtree->addObject(jout);
+    }
     const char *mpout = opt2fn_null("-mpout", filenm.size(), filenm.data());
     if (mpout)
     {

@@ -72,6 +72,8 @@ class ACTEnergy
 private:
     //! Id of the experiment
     int    experiment_ = 0;
+    //! Copy of the datafile name
+    std::string datafile_;
     //! QM energy
     double eqm_        = 0;
     //! ACT energy
@@ -86,7 +88,7 @@ public:
      * \param[in] eqm        The QM energy
      * \param[in] eact       The ACT energy
      */
-    ACTEnergy(int experiment, double eqm, double eact) : experiment_(experiment)
+    ACTEnergy(int experiment, const std::string &datafile, double eqm, double eact) : experiment_(experiment), datafile_(datafile)
     {
         setQM(eqm);
         setACT(eact);
@@ -94,10 +96,13 @@ public:
     /*! \brief Constructor
      * \param[in] experiment The id
      */
-    ACTEnergy(int experiment) : experiment_(experiment) {}
+    ACTEnergy(int experiment, const std::string &datafile) : experiment_(experiment), datafile_(datafile) {}
 
     //! \return The experiment ID
     int id() const { return experiment_; }
+
+    //! \return The data file name
+    const std::string &datafile() const { return datafile_; }
 
     //! Is there a QM energy
     bool haveQM() const { return haveQM_; }
