@@ -171,6 +171,7 @@ private:
     /*! \brief Print data on outliers.
      */
     void printOutliers(gmx::TextWriter                       *tw,
+                       JsonTree                              *jtree,
                        iMolSelect                             ims,
                        double                                 sigma,
                        bool                                   bIntermolecular,
