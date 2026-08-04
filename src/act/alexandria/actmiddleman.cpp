@@ -165,18 +165,22 @@ void ACTMiddleMan::run(MsgHandler *msghandler)
             }
             else
             {
-                if (gach_->evaluateTestset())
-                {
-                    fitComp_.compute(msghandler, ind_->bestGenomePtr(), iMolSelect::Test);
-                }
                 // IV. If we are working with Hybrid or MCMC, send 
                 // the best genome found to the MASTER.
                 if (mutator_->foundMinimum())
                 {
+                    if (gach_->evaluateTestset())
+                    {
+                        fitComp_.compute(msghandler, ind_->bestGenomePtr(), iMolSelect::Test);
+                    }
                     ind_->bestGenomePtr()->Send(cr, master);
                 }
                 else
                 {
+                    if (gach_->evaluateTestset())
+                    {
+                        fitComp_.compute(msghandler, ind_->genomePtr(), iMolSelect::Test);
+                    }
                     ind_->genomePtr()->Send(cr, master);
                 }
             }

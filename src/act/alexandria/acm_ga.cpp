@@ -362,6 +362,7 @@ bool HybridGAMC::evolve(alexandria::MsgHandler       *msghandler,
     if (gach_->evaluateTestset())
     {
         (*bestGenome)[iMolSelect::Test] = pool[pold]->getBest(iMolSelect::Train);
+        (*bestGenome)[iMolSelect::Test].setFitness(iMolSelect::Test, (*bestGenome)[iMolSelect::Test].fitness(iMolSelect::Train));
     }
     // Open surveillance files for fitness, after initialization of bestGenome
     for(const auto &bg : *bestGenome)
@@ -431,7 +432,7 @@ bool HybridGAMC::evolve(alexandria::MsgHandler       *msghandler,
                 double fitness;
                 cr->recv(src, &fitness);  // Receiving the new training fitness
                 pool[pold]->genomePtr(i)->setFitness(iMolSelect::Train, fitness);
-                if (msghandler->verbose())
+                if (msghandler->debug())
                 {
                     // Double check
                     fitnessComputer()->compute(msghandler, pool[pold]->genomePtr(i), iMolSelect::Train);
