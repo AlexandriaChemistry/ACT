@@ -612,7 +612,7 @@ void ReRunner::runB2(CommunicationRecord         *cr,
             for(size_t jj = 0; jj < x.size(); jj++)
             {
                 size_t ii = jj;
-                size_t index = x[ii]/gendimers_->binwidth();
+                size_t index = std::min(x.size()-1, static_cast<size_t>(x[ii]/gendimers_->binwidth()));
                 // Gray and Gubbins Eqn. 3.261
                 double g0_12 = std::exp(-y[ii]*beta);
                 gmx::RVec tau[2];
