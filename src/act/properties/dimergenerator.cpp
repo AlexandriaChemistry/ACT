@@ -73,6 +73,8 @@ void DimerGenerator::addOptions(std::vector<t_pargs>      *pa,
           "Random number seed to generate monomer orientations for Cartesian and Polar rotation algorithms. If dimerseed is 0, a seed will be generated." },
         { "-rotalg", FALSE, etSTR, {&rotalg_},
           "Rotation algorithm should be either Cartesian, Polar or Sobol. Default is Cartesian and the other two algorithms are experimental. Please verify your output when using those." },
+        { "-flex", FALSE, etBOOL, {&flexible_},
+          "Use flexible monomers in dimer sampling. Not implemented completely yet, activating this flag will use the potential energy rather than the interaction energy leading to incorrect results." },
         { "-dbgGD", FALSE, etBOOL, {&debugGD_},
           "Low-level debugging of routines. Gives complete information only when run on a single processor." }
     };

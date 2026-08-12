@@ -652,14 +652,15 @@ public:
      * \param[out] interactionForces          The forces on the atoms due to the interacting components
      * \param[inout] coords                   Atomic coordinates (shell positions can be updated)
      * \param[in] separateInductionCorrection Whether to store InductionCorrection separately or add it to Induction
+     * \return The dimer potential energy
      */
-    void calculateInteractionEnergy(MsgHandler                        *msghandler,
-                                    const ForceField                  *pd,
-                                    const ForceComputer               *forceComputer,
-                                    std::map<InteractionType, double> *einter,
-                                    std::vector<gmx::RVec>            *interactionForces,
-                                    std::vector<gmx::RVec>            *coords,
-                                    bool                               separateInductionCorrection) const;
+    double calculateInteractionEnergy(MsgHandler                        *msghandler,
+                                      const ForceField                  *pd,
+                                      const ForceComputer               *forceComputer,
+                                      std::map<InteractionType, double> *einter,
+                                      std::vector<gmx::RVec>            *interactionForces,
+                                      std::vector<gmx::RVec>            *coords,
+                                      bool                               separateInductionCorrection) const;
     
     /*! \brief
      * Update internal structures for bondtype due to changes in pd
