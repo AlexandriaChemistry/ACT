@@ -205,11 +205,12 @@ void DimerGenerator::read(std::vector<std::vector<gmx::RVec>> *coords)
         fprintf(stderr, "No trajectory file name passed\n");
         return;
     }
-    gmx_output_env_t *oenv   = nullptr;
+    gmx_output_env_t *oenv;
     t_trxstatus      *status = nullptr;
     real              t;
     rvec             *x;
     matrix            box;
+    output_env_init_default(&oenv);
     int               natoms = read_first_x(oenv, &status, trajname_, &t, &x, box);
     if (natoms == 0)
     {
