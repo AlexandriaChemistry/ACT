@@ -62,6 +62,8 @@ private:
     double maxdist_     =  4.0;
     //! Random number seed, not applied to the Sobol algorithm
     int    dimerseed_   =  1993;
+    //! Whether to use flexible monomers
+    bool   flexible_    = false;
     //! Low-level debugging
     bool   debugGD_     = false;
     //! Rotation algorithm
@@ -107,6 +109,9 @@ public:
 
     //! Get the original seed
     int seed() const { return dimerseed_; }
+
+    //! \return whether flexibility is used
+    bool flexible() const { return flexible_; }
 
     //! Set a new seed
     void setSeed(int seed);

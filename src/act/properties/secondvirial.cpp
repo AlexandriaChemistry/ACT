@@ -485,8 +485,8 @@ void ReRunner::runB2(CommunicationRecord         *cr,
             }
             std::vector<gmx::RVec> forces(coords.size());
             std::map<InteractionType, double> einter;
-            actmol->calculateInteractionEnergy(msghandler, pd, forceComp_,
-                                               &einter, &forces, &coords, true);
+            auto epot = actmol->calculateInteractionEnergy(msghandler, pd, forceComp_,
+                                                           &einter, &forces, &coords, true);
 
             auto atomStart  = actmol->fragmentHandler()->atomStart();
             std::vector<gmx::RVec> f          = { { 0, 0, 0 }, { 0, 0, 0 } };
@@ -569,7 +569,7 @@ void ReRunner::runB2(CommunicationRecord         *cr,
             double rcom = norm(dcom);
             if (msghandler->verbose())
             {
-                std::string out = gmx::formatString(" r %g", rcom);
+                std::string out = gmx::formatString(" r %g epot %g", rcom, epot);
                 for (auto &EE: einter)
                 {
                     out += gmx::formatString(" %s %g", interactionTypeToString(EE.first).c_str(), EE.second);
@@ -582,7 +582,18 @@ void ReRunner::runB2(CommunicationRecord         *cr,
                                          torqueRot[1][XX], torqueRot[1][YY], torqueRot[1][ZZ]);
                 msghandler->write(out);
             }
-            edist.add_point(rcom, einter[InteractionType::EPOT], 0, 0);
+            if (gendimers_->flexible())
+            {
+                edist.add_point(rcom, epot, 0, 0);
+            }
+            else
+            {
+                edist.add_point(rcom, einter[InteractionType::EPOT], 0, 0);
+            }
+            if (msghandler->verbose())
+            {
+                msghandler->write(gmx::formatString("epot %g einter[InteractionType::EPOT] %g diff %g", epot, einter[InteractionType::EPOT], epot-einter[InteractionType::EPOT]));
+            }
         }
         if (msghandler->verbose())
         {

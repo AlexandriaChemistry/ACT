@@ -652,19 +652,19 @@ static void checkEnergies(MsgHandler                              *msghandler,
     }
 }
 
-void ACTMol::calculateInteractionEnergy(MsgHandler                        *msghandler,
-                                        const ForceField                  *pd,
-                                        const ForceComputer               *forceComputer,
-                                        std::map<InteractionType, double> *einter,
-                                        std::vector<gmx::RVec>            *interactionForces,
-                                        std::vector<gmx::RVec>            *coords,
-                                        bool                               separateInductionCorrection) const
+double ACTMol::calculateInteractionEnergy(MsgHandler                        *msghandler,
+                                          const ForceField                  *pd,
+                                          const ForceComputer               *forceComputer,
+                                          std::map<InteractionType, double> *einter,
+                                          std::vector<gmx::RVec>            *interactionForces,
+                                          std::vector<gmx::RVec>            *coords,
+                                          bool                               separateInductionCorrection) const
 {
     auto &tops = fraghandler_.topologies();
     einter->clear();
     if (tops.size() != 2)
     {
-        return;
+        return 0;
     }
     // First, compute the total energy
     gmx::RVec fzero = { 0, 0, 0 };
@@ -741,8 +741,12 @@ void ACTMol::calculateInteractionEnergy(MsgHandler                        *msgha
             // Erase polarization term!
             e_total.erase(eip);
         }
+        msghandler->writeDebug(gmx::formatString("%s total:", getMolname().c_str()));
+        printEmap(msghandler, &e_total);
         checkEnergies(msghandler, "Total", e_total);
     }
+    // Store this for the return value
+    double epot = e_total[InteractionType::EPOT];
     // Now time to compute mutual induction for the dimer.
     // This means, that the shells of one molecule are allowed
     // to relax, but not the other.
@@ -902,6 +906,8 @@ void ACTMol::calculateInteractionEnergy(MsgHandler                        *msgha
     }
     msghandler->writeDebug(gmx::formatString("%s result:", getMolname().c_str()));
     printEmap(msghandler, einter);
+
+    return epot;
 }
 
 ACTMessage ACTMol::GenerateAcmCharges(MsgHandler             *msg_handler,
