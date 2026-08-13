@@ -629,23 +629,31 @@ void ReRunner::runB2(CommunicationRecord         *cr,
                 size_t ii = jj;
                 size_t index = std::min(x.size()-1, static_cast<size_t>(x[ii]/gendimers_.binwidth()));
                 // Gray and Gubbins Eqn. 3.261
-                double g0_12 = std::exp(-y[ii]*beta);
+                double yb = y[ii]*beta;
+                double g0_12 = yb < 700 ? std::exp(-yb) : 0;
                 gmx::RVec tau[2];
                 for(int kk = 0; kk < 2; kk++)
                 {
                     clear_rvec(tau[kk]);
-                    for(int m = 0; m < DIM; m++)
+                    if (g0_12 > 0)
                     {
-                        // Gray and Gubbins Eqn. 3.282
-                        tau[kk][m] = g0_12*torqueMol[kk][ii][m]*torqueMol[kk][ii][m];
+                        for(int m = 0; m < DIM; m++)
+                        {
+                            // Gray and Gubbins Eqn. 3.282
+                            tau[kk][m] = g0_12*torqueMol[kk][ii][m]*torqueMol[kk][ii][m];
+                        }
                     }
                 }
                 // Gray and Gubbins Eqn. 3.272
+                double ipf0 = 0, ipf1 = 0;
+                if (g0_12 > 0)
+                {
+                    ipf0 = g0_12*iprod(forceMol[0][ii], forceMol[0][ii]);
+                    ipf1 = g0_12*iprod(forceMol[1][ii], forceMol[1][ii]);
+                }
                 b2data.addData(iTemp, index, g0_12-1,
                                // Gray and Gubbins Eqn. 3.281
-                               g0_12*iprod(forceMol[0][ii], forceMol[0][ii]),
-                               g0_12*iprod(forceMol[1][ii], forceMol[1][ii]),
-                               tau[0], tau[1]);
+                               ipf0, ipf1, tau[0], tau[1]);
             }
         }
     }
