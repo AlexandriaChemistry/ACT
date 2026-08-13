@@ -161,7 +161,7 @@ int nma(int argc, char *argv[])
     if (sch.minimize())
     {
         std::map<InteractionType, double> energies;
-        eMin = molhandler.minimizeCoordinates(&msghandler, &pd, &actmol, &forceComp, sch,
+        eMin = molhandler.minimizeCoordinates(&msghandler, &pd, actmol.topology(), &forceComp, sch,
                                               &xmin, &energies, {});
         if (eMinimizeStatus::OK == eMin)
         {

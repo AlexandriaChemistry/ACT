@@ -74,7 +74,7 @@ private:
     //! The force computer
     ForceComputer      *forceComp_   = nullptr;
     //! The dimer generator
-    DimerGenerator     *gendimers_   = nullptr;
+    DimerGenerator      gendimers_;
     //! GROMACS output stuff
     gmx_output_env_t   *oenv_        = nullptr;
                
@@ -112,20 +112,23 @@ public:
      * \param[in] oenv      GROMACS plotting stuff
      */
     void setFunctions(ForceComputer    *forceComp,
-                      DimerGenerator   *gendimers,
                       gmx_output_env_t *oenv)
     {
         forceComp_ = forceComp;
-        gendimers_ = gendimers;
         oenv_      = oenv;
     }
-    
+
+    //! \return the dimer generator
+    DimerGenerator *gendimers() { return &gendimers_; }
+
     /*! \brief Add command line options
      * \param[inout] pargs  Regular flags
      * \param[inout] filenm File options
+     * \param[inout] desc   Descriptive text lines
      */
-    void addOptions(std::vector<t_pargs>  *pargs,
-                    std::vector<t_filenm> *filenm);
+    void addOptions(std::vector<t_pargs>      *pargs,
+                    std::vector<t_filenm>     *filenm,
+                    std::vector<const char *> *desc);
     
     //! \return whether or not we will compute interaction energies                
     bool eInteraction() const { return eInter_; }

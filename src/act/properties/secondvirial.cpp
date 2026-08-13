@@ -134,8 +134,9 @@ void forceFieldSummary(JsonTree      *jtree,
     }
 }
 
-void ReRunner::addOptions(std::vector<t_pargs>  *pargs,
-                          std::vector<t_filenm> *filenm)
+void ReRunner::addOptions(std::vector<t_pargs>      *pargs,
+                          std::vector<t_filenm>     *filenm,
+                          std::vector<const char *> *desc)
 {
     std::vector<t_pargs> pa = {
         { "-T1",     FALSE, etREAL, {&T1_},
@@ -164,6 +165,7 @@ void ReRunner::addOptions(std::vector<t_pargs>  *pargs,
             filenm->push_back(fn);
         }
     }
+    gendimers_.addOptions(pargs, filenm, desc);
 }
 
 const std::vector<double> &ReRunner::temperatures()
@@ -234,9 +236,9 @@ void ReRunner::rerun(MsgHandler       *msghandler,
                      bool              verbose)
 {
     std::vector<std::vector<gmx::RVec>> dimers;
-    gendimers_->read(&dimers);
+    gendimers_.read(&dimers);
     msghandler->write(gmx::formatString("Doing energy calculation for %zu structures from %s\n",
-                                        dimers.size(), gendimers_->trajname()));
+                                        dimers.size(), gendimers_.trajname()));
 
     if (verbose && msghandler)
     {
@@ -350,11 +352,11 @@ void ReRunner::runB2(CommunicationRecord         *cr,
     int ndimer = 0;
     int nrest  = 0;
     std::vector<std::vector<gmx::RVec>> dimers;
-    if (gendimers_->hasTrajectory())
+    if (gendimers_.hasTrajectory())
     {
         if (cr->isMaster())
         {
-            gendimers_->read(&dimers);
+            gendimers_.read(&dimers);
         }
         maxdimer = dimers.size();
         ndimer   = 1;
@@ -371,8 +373,8 @@ void ReRunner::runB2(CommunicationRecord         *cr,
         // number. 
         if (cr->isMaster())
         {
-            gendimers_->generateRandomNumbers(maxdimer);
-            auto allRand = gendimers_->allRandom();
+            gendimers_.generateRandomNumbers(maxdimer);
+            auto allRand = gendimers_.allRandom();
             int ioffset = 0;
             if (nrest > 0)
             {
@@ -391,7 +393,7 @@ void ReRunner::runB2(CommunicationRecord         *cr,
             {
                 ndimer = nrest;
             }
-            gendimers_->resetAllRandom(ndimer);
+            gendimers_.resetAllRandom(ndimer);
             msghandler->write(gmx::formatString("Will generate or read %d dimers on helpers and %d on master.", ndimer, nrest));
         }
         else
@@ -402,7 +404,7 @@ void ReRunner::runB2(CommunicationRecord         *cr,
             {
                 std::vector<double> q;
                 cr->recv(src, &q);
-                gendimers_->addRandomNumbers(q);
+                gendimers_.addRandomNumbers(q);
             }
         }
     }
@@ -410,7 +412,7 @@ void ReRunner::runB2(CommunicationRecord         *cr,
     std::random_device                 bsRand;
     // Standard mersenne_twister_engine seeded with rd()
     std::mt19937                       bsGen(bsRand());
-    std::uniform_int_distribution<int> bsDistr(0, gendimers_->ndist());
+    std::uniform_int_distribution<int> bsDistr(0, gendimers_.ndist());
 
     // Temperature array.
     auto   Temperature = temperatures();
@@ -420,20 +422,22 @@ void ReRunner::runB2(CommunicationRecord         *cr,
         b2t_[b2b.first].resize(Temperature.size());
     }
     // Temporary arrays for weighted properties.
-    B2Data b2data(gendimers_->ndist(), gendimers_->binwidth(), Temperature);
+    B2Data b2data(gendimers_.ndist(), gendimers_.binwidth(), Temperature);
     
     double xmin = 0;
     std::vector<gmx::RVec> inertia = { { 0, 0, 0 }, { 0, 0, 0 } };
+    // First time around before generating
+    gendimers_.prepare(msghandler, pd, actmol);
     // Collect all generated dimer coordinates for -ox output (only when requested)
     std::vector<std::vector<gmx::RVec>> allCoords;
     //! Loop over my dimers, completely independently
     for(int idimer = 0; idimer < ndimer; idimer++)
     {
         // Generate a new set of dimers for all distances
-        if (!gendimers_->hasTrajectory())
+        if (!gendimers_.hasTrajectory())
         {
-            dimers = gendimers_->generateDimers(msghandler, actmol);
-            if (gendimers_->outCoords())
+            dimers = gendimers_.generateDimers(msghandler);
+            if (gendimers_.outCoords())
             {
                 for (auto &d : dimers)
                 {
@@ -582,7 +586,7 @@ void ReRunner::runB2(CommunicationRecord         *cr,
                                          torqueRot[1][XX], torqueRot[1][YY], torqueRot[1][ZZ]);
                 msghandler->write(out);
             }
-            if (gendimers_->flexible())
+            if (gendimers_.flexible())
             {
                 edist.add_point(rcom, epot, 0, 0);
             }
@@ -623,7 +627,7 @@ void ReRunner::runB2(CommunicationRecord         *cr,
             for(size_t jj = 0; jj < x.size(); jj++)
             {
                 size_t ii = jj;
-                size_t index = std::min(x.size()-1, static_cast<size_t>(x[ii]/gendimers_->binwidth()));
+                size_t index = std::min(x.size()-1, static_cast<size_t>(x[ii]/gendimers_.binwidth()));
                 // Gray and Gubbins Eqn. 3.261
                 double g0_12 = std::exp(-y[ii]*beta);
                 gmx::RVec tau[2];
@@ -649,7 +653,7 @@ void ReRunner::runB2(CommunicationRecord         *cr,
     b2data.aggregate(cr);
 
     // Gather generated dimer coordinates from all nodes and write to -ox file
-    if (gendimers_->outCoords() && !gendimers_->hasTrajectory())
+    if (gendimers_.outCoords() && !gendimers_.hasTrajectory())
     {
         if (!cr->isMaster())
         {
@@ -674,7 +678,7 @@ void ReRunner::runB2(CommunicationRecord         *cr,
                     allCoords.push_back(std::move(d));
                 }
             }
-            gendimers_->writeCoords(actmol, allCoords);
+            gendimers_.writeCoords(actmol, allCoords);
         }
     }
 
@@ -691,10 +695,10 @@ void ReRunner::runB2(CommunicationRecord         *cr,
         {
             auto T      = Temperature[iTemp];
             double beta = 1.0/(BOLTZ*T);
-            b2data.fillToXmin(iTemp, xmin, gendimers_->binwidth());
+            b2data.fillToXmin(iTemp, xmin, gendimers_.binwidth());
             // Now compute the components
             double Bclass, BqmForce, BqmTorque1, BqmTorque2; 
-            b2data.integrate(iTemp, gendimers_->binwidth(), beta, masses, inertia,
+            b2data.integrate(iTemp, gendimers_.binwidth(), beta, masses, inertia,
                              &Bclass, &BqmForce, &BqmTorque1, &BqmTorque2);
 
             // Conversion to regular units cm^3/mol.
@@ -772,10 +776,8 @@ int b2(int argc, char *argv[])
     };
     CommunicationRecord cr;
     cr.init(cr.size());
-    DimerGenerator      gendimers;
-    gendimers.addOptions(&pa, &fnm, &desc);
     ReRunner            rerun(true);
-    rerun.addOptions(&pa, &fnm);
+    rerun.addOptions(&pa, &fnm, &desc);
     CompoundReader      compR;
     compR.addOptions(&pa, &fnm, &desc);
     MsgHandler          msghandler;
@@ -793,7 +795,7 @@ int b2(int argc, char *argv[])
     {
         print_header(msghandler.tw(), pa, fnm);
     }
-    gendimers.finishOptions(fnm);
+    rerun.gendimers()->finishOptions(fnm);
     compR.optionsFinished(&msghandler, fnm);
     if (!msghandler.ok())
     {
@@ -833,7 +835,7 @@ int b2(int argc, char *argv[])
         {
             actmol.topology()->dump(msghandler.twDebug());
         }
-        rerun.setFunctions(&forceComp, &gendimers, oenv);
+        rerun.setFunctions(&forceComp, oenv);
         rerun.runB2(&cr, &msghandler, &pd, &actmol, maxdimers, fnm);
     }
     if (json && cr.isMaster())

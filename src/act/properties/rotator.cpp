@@ -36,12 +36,12 @@
 #include <cmath>
 #include <cstdlib>
 
-#include "act/properties/dimergenerator.h"
 #include "act/utility/memory_check.h"
 #include "act/utility/stringutil.h"
 #include "external/quasirandom_sequences/sobol.h"
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/commandline/pargs.h"
+#include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/stringutil.h"
@@ -80,12 +80,10 @@ void Rotator::resetMatrix()
     
 std::vector<gmx::RVec> Rotator::rotate(const std::vector<gmx::RVec> &coords)
 {
-    std::vector<gmx::RVec> newcoords;
+    std::vector<gmx::RVec> newcoords(coords.size());
     for(size_t i = 0; i < coords.size(); i++)
     {
-        gmx::RVec newx;
-        mvmul(A_, coords[i], newx);
-        newcoords.push_back(newx);
+        mvmul(A_, coords[i], newcoords[i]);
     }
     m_add(A_, Average_, Average_);
     naver_ += 1;

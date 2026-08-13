@@ -103,11 +103,8 @@ int simulate(int argc, char *argv[])
     SimulationConfigHandler  sch;
     sch.add_options(&pa, &fnm);
     sch.add_MD_options(&pa);
-    DimerGenerator           gendimers;
-
-    gendimers.addOptions(&pa, &fnm, &desc);
     ReRunner                 rerun(false);
-    rerun.addOptions(&pa, &fnm);
+    rerun.addOptions(&pa, &fnm, &desc);
     CompoundReader compR;
     compR.addOptions(&pa, &fnm, &desc);
     MsgHandler msghandler;
@@ -129,7 +126,7 @@ int simulate(int argc, char *argv[])
     {
         return 1;
     }
-    gendimers.finishOptions(fnm);
+    rerun.gendimers()->finishOptions(fnm);
 
     print_header(msghandler.tw(), pa, fnm);
 
@@ -203,9 +200,9 @@ int simulate(int argc, char *argv[])
     }
     auto eMin = eMinimizeStatus::OK;
     /* Generate output file for debugging if requested */
-    if (gendimers.hasTrajectory())
+    if (rerun.gendimers()->hasTrajectory())
     {
-        rerun.setFunctions(&forceComp, &gendimers, oenv);
+        rerun.setFunctions(&forceComp, oenv);
         rerun.setEInteraction(actmol.fragmentHandler()->topologies().size() > 1);
         rerun.rerun(&msghandler, &pd, &actmol, msghandler.verbose());
     }
@@ -281,7 +278,12 @@ int simulate(int argc, char *argv[])
                 }
                 jtree.addObject(jtener);
             }
-            eMin = molhandler.minimizeCoordinates(&msghandler, &pd, &actmol, &forceComp, sch,
+            // Now do the minimization.
+            msghandler.write(gmx::formatString("Starting minimization of '%s' using %s algorithm.\n",
+                                               actmol.getMolname().c_str(),
+                                               eMinimizeAlgorithmToString(sch.minAlg()).c_str()));
+
+            eMin = molhandler.minimizeCoordinates(&msghandler, &pd, actmol.topology(), &forceComp, sch,
                                                   &xmin, &energies, freeze);
             if (eMinimizeStatus::OK == eMin)
             {

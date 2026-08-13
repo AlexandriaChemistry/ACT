@@ -356,7 +356,7 @@ void HarmonicsDevComputer::calcDeviation(MsgHandler                    *msghandl
     {
         return;
     }
-    auto eMin = handler_.minimizeCoordinates(msghandler, forcefield, actmol, forceComputer,
+    auto eMin = handler_.minimizeCoordinates(msghandler, forcefield, actmol->topology(), forceComputer,
                                              simConfig_, coords, nullptr, {});
     if (eMinimizeStatus::OK != eMin)
     {
