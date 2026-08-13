@@ -1333,7 +1333,7 @@ void TrainForceFieldPrinter::printEnergyForces(MsgHandler                       
             SimulationConfigHandler simConfig;
             std::vector<gmx::RVec>  xmin   = coords;
             std::map<InteractionType, double> eAfter;
-            molHandler_.minimizeCoordinates(msghandler, pd, mol, forceComp, simConfig, 
+            molHandler_.minimizeCoordinates(msghandler, pd, mol->topology(), forceComp, simConfig,
                                             &xmin, &eAfter, {});
             double rmsd = molHandler_.coordinateRmsd(mol, coords, &xmin);
 

@@ -263,21 +263,24 @@ bool ACTMol::hasMolPropObservable(MolPropObservable mpo) const
 
 std::vector<gmx::RVec> ACTMol::xOriginal() const
 {
-    const Experiment *exper = findExperimentConst(JobType::OPT);
-    if (nullptr == exper)
+    if (xOriginal_.empty())
     {
-        exper = findExperimentConst(JobType::TOPOLOGY);
-    }
-    if (nullptr == exper)
-    {
-        exper = findExperimentConst(JobType::SP);
+        const Experiment *exper = findExperimentConst(JobType::OPT);
         if (nullptr == exper)
         {
-            GMX_THROW(gmx::InvalidInputError(gmx::formatString("No structure at all for '%s'", getMolname().c_str()).c_str()));
+            exper = findExperimentConst(JobType::TOPOLOGY);
         }
+        if (nullptr == exper)
+        {
+            exper = findExperimentConst(JobType::SP);
+            if (nullptr == exper)
+            {
+                GMX_THROW(gmx::InvalidInputError(gmx::formatString("No structure at all for '%s'", getMolname().c_str()).c_str()));
+            }
+        }
+        xOriginal_ = experCoords(exper->getCoordinates());
     }
-
-    return experCoords(exper->getCoordinates());
+    return xOriginal_;
 }
 
 void ACTMol::forceEnergyMaps(MsgHandler                                                        *msghandler,

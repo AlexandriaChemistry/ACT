@@ -84,7 +84,7 @@ public:
      *                        J. Chem. Theory Comput. 16 (2020) 3307-3315.
      */
     void computeHessian(const ForceField                  *pd,
-                        const ACTMol                      *mol,
+                        const Topology                    *topology,
                         const ForceComputer               *forceComp,
                         std::vector<gmx::RVec>            *coords,
                         const std::vector<int>            &atomIndex,
@@ -127,7 +127,7 @@ public:
      *
      * \param[in] msghandler   For output and debugging
      * \param[in] pd           Pointer to force field structure
-     * \param[in] mol          The molecule object (will be modified)
+     * \param[in] topology     The topology
      * \param[in] forceComp    Force Computer utility
      * \param[in] simConfig    Configuration options
      * \param[inout] coords    The coordinates to be minimized
@@ -138,7 +138,7 @@ public:
      */
     eMinimizeStatus minimizeCoordinates(MsgHandler                        *msghandler,
                                         const ForceField                  *pd,
-                                        const ACTMol                      *mol,
+                                        const Topology                    *topology,
                                         const ForceComputer               *forceComp,
                                         const SimulationConfigHandler     &simConfig,
                                         std::vector<gmx::RVec>            *coords,

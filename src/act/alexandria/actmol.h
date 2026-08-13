@@ -298,7 +298,7 @@ private:
     FragmentHandler                fraghandler_;
     iMolSelect                     dataset_type_  = iMolSelect::Ignore;
     //! Internal storage for original coords
-    std::vector<gmx::RVec>         xOriginal_;
+    mutable std::vector<gmx::RVec> xOriginal_;
 public:
 
     //! \return a GROMACS style array with energy terms
@@ -310,6 +310,12 @@ public:
      * \throws if not suitable experiment is present.
      */
     std::vector<gmx::RVec> xOriginal() const;
+
+    /* \brief Hack the original coordinates
+     * This is useful when subsequent calls to xOriginal should return e.g. minimized coords
+     * \param[in] x The new coords, that should include shells, vsites etc.
+     */
+    void setXOriginal(const std::vector<gmx::RVec> &x) { xOriginal_ = x; }
 
     /*! \brief
      * Return a modified coordinate vector of the molecule based on the input.

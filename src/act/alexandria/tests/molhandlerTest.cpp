@@ -155,7 +155,8 @@ protected:
             SimulationConfigHandler simConfig;
             simConfig.setForceTolerance(ftoler);
             // Change nullptr to stdout for debugging.
-            auto eMin = mh.minimizeCoordinates(&msghandler, pd, &mp, forceComp,
+            auto eMin = mh.minimizeCoordinates(&msghandler, pd, mp.topology(),
+                                               forceComp,
                                                simConfig, &xmin, &eAfter, {});
             EXPECT_TRUE(eMinimizeStatus::OK == eMin);
             if (eMinimizeStatus::OK != eMin)
@@ -188,7 +189,7 @@ protected:
                 const int     matrixSide = DIM*atomIndex.size();
                 {
                     MatrixWrapper hessian(matrixSide, matrixSide);
-                    mh.computeHessian(pd, &mp, forceComp, &xmin, atomIndex,
+                    mh.computeHessian(pd, mp.topology(), forceComp, &xmin, atomIndex,
                                       &hessian, &forceZero, &energyZero);
                     double msf2 = 0;
                     for(const auto f : forceZero)

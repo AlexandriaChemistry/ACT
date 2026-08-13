@@ -35,9 +35,10 @@
 #include <cctype>
 #include <cmath>
 #include <cstdlib>
-#include <sstream>
 
+#include "act/alexandria/molhandler.h"
 #include "act/basics/msg_handler.h"
+#include "act/forces/forcecomputer.h"
 #include "act/molprop/molprop_xml.h"
 #include "act/properties/rotator.h"
 #include "act/utility/memory_check.h"
@@ -75,6 +76,8 @@ void DimerGenerator::addOptions(std::vector<t_pargs>      *pa,
           "Rotation algorithm should be either Cartesian, Polar or Sobol. Default is Cartesian and the other two algorithms are experimental. Please verify your output when using those." },
         { "-flex", FALSE, etBOOL, {&flexible_},
           "Use flexible monomers in dimer sampling. Not implemented completely yet, activating this flag will use the potential energy rather than the interaction energy leading to incorrect results." },
+        { "-minimize", FALSE, etBOOL, {&minimize_},
+          "Perform energy minimization of the monomers before generating dimers" },
         { "-dbgGD", FALSE, etBOOL, {&debugGD_},
           "Low-level debugging of routines. Gives complete information only when run on a single processor." }
     };
@@ -165,41 +168,6 @@ void DimerGenerator::writeCoords(const ACTMol                              *actm
     }
 }
 
-void DimerGenerator::generate(MsgHandler                          *msghandler,
-                              const ACTMol                        *actmol,
-                              int                                  maxdimer,
-                              std::vector<std::vector<gmx::RVec>> *coords,
-                              const char                          *outcoords)
-{
-    msghandler_ = msghandler;
-    size_t nmp  = ndist_*maxdimer;
-    size_t mem  = (nmp*actmol->xOriginal().size()*sizeof(double)*DIM)/(1024*1024);
-    auto   info = gmx::formatString("Will generate %d dimer configurations at %d distances using %s algorithm. Memory usage: %zu Mb",
-                                    maxdimer, ndist_, rotalgToString(rot_->rotalg()).c_str(), mem);
-    if (msghandler)
-    {
-        msghandler->writeDebug(info);
-    }
-    printf("%s\n", info.c_str());
-    if (!rot_)
-    {
-        GMX_THROW(gmx::InternalError("Forgot to call DimerGenerator::finishOptions"));
-    }
-    // Loop over the dimers
-    for(int ndim = 0; ndim < maxdimer; ndim++)
-    {
-        for(auto &newx : generateDimers(msghandler, actmol))
-        {
-            coords->push_back(newx);
-        }
-    }
-    if (nullptr != outcoords && strlen(outcoords) > 0)
-    {
-        dump_coords(outcoords, actmol, *coords);
-    }
-
-}
-
 void DimerGenerator::read(std::vector<std::vector<gmx::RVec>> *coords)
 {
     if (!trajname_)
@@ -254,55 +222,83 @@ void DimerGenerator::generateRandomNumbers(int ndimers)
     }
 }
 
-std::vector<std::vector<gmx::RVec>> DimerGenerator::generateDimers(MsgHandler   *msghandler,
-                                                                   const ACTMol *actmol)
+void DimerGenerator::prepare(MsgHandler       *msghandler,
+                             const ForceField *pd,
+                             const ACTMol     *actmol)
 {
-    msghandler_ = msghandler;
     const auto fragptr = actmol->fragmentHandler();
     if (fragptr->topologies().size() != 2)
     {
         gmx_fatal(FARGS, "Cannot generate dimers, numer of compounds is %lu",
                   fragptr->topologies().size());
     }
-
     // Copy original coordinates
-    auto xorig     = actmol->xOriginal();
-    // Split the coordinates into two fragments
-    auto atomStart = fragptr->atomStart();
+    auto xorig = actmol->xOriginal();
     // Topologies
     const auto &tops = fragptr->topologies();
-    std::vector<gmx::RVec> xmOrig[2];
-    for(int m = 0; m < 2; m++)
+    // Copy original coordinates
     {
-        auto   atoms   = tops[m].atoms();
-        for(size_t j = atomStart[m]; j < atomStart[m]+atoms.size(); j++)
+        size_t i = 0;
+        for(size_t j = 0; j < tops.size(); j++)
         {
-            xmOrig[m].push_back(xorig[j]);
-        } 
+            atoms_[j] = tops[j].atoms();
+            for(size_t k = 0; k < atoms_[j].size(); k++, i++)
+            {
+                xmOrig_[j].push_back(xorig[i]);
+            } 
+        }
     }
+    if (minimize_)
+    {
+        ForceComputer           forceComp;
+        MolHandler              molhandler;
+        SimulationConfigHandler sch;
+        // Dummy array.
+        std::vector<int> freeze;
+        for(size_t j = 0; j < tops.size(); j++)
+        {
+            std::map<InteractionType, double> energies;
+            auto xBefore = xmOrig_[j];
+            auto eMin = molhandler.minimizeCoordinates(msghandler, pd, &tops[j],
+                                                       &forceComp, sch,
+                                                       &xmOrig_[j], &energies, freeze);
+            if (msghandler && eMinimizeStatus::OK == eMin)
+            {
+                double rmsd = 0.0; //molhandler.coordinateRmsd(actmol, xBefore, &xmOrig_[j]);
+                msghandler->msg(ACTStatus::Info,
+                                gmx::formatString("Final energy: %g RMSD wrt original structure %g nm.",
+                                                  energies[InteractionType::EPOT], rmsd));
+            }
+        }
+    }
+}
+
+std::vector<std::vector<gmx::RVec>> DimerGenerator::generateDimers(MsgHandler *msghandler)
+{
+    msghandler_ = msghandler;
+
     // Move molecules to their respective COM
     gmx::RVec com[2];
     for(int m = 0; m < 2; m++)
     {
         // Compute center of mass
         clear_rvec(com[m]);
-        auto   atoms   = tops[m].atoms();
         double totmass = 0;
-        for(size_t j = 0; j < atoms.size(); j++)
+        for(size_t j = 0; j < atoms_[m].size(); j++)
         {
             gmx::RVec mx;
-            svmul(atoms[j].mass(), xmOrig[m][j], mx);
+            svmul(atoms_[m][j].mass(), xmOrig_[m][j], mx);
             rvec_inc(com[m], mx);
-            totmass += atoms[j].mass();
+            totmass += atoms_[m][j].mass();
         }
         for(int n = 0; n < DIM; n++)
         {
             com[m][n] /= totmass;
         }
         // Subtract center of mass
-        for(size_t j = 0; j < atoms.size(); j++)
+        for(size_t j = 0; j < atoms_[m].size(); j++)
         {
-            rvec_sub(xmOrig[m][j], com[m], xmOrig[m][j]);
+            rvec_sub(xmOrig_[m][j], com[m], xmOrig_[m][j]);
         }
     }
     // Loop over orientations
@@ -316,7 +312,7 @@ std::vector<std::vector<gmx::RVec>> DimerGenerator::generateDimers(MsgHandler   
     std::vector<gmx::RVec> xrand[2];
     for(int m = 0; m < 2; m++)
     {
-        xrand[m] = xmOrig[m];
+        xrand[m] = xmOrig_[m];
     }
     // Rotate the coordinates
     for(int m = 0; m < 2; m++)
@@ -327,29 +323,29 @@ std::vector<std::vector<gmx::RVec>> DimerGenerator::generateDimers(MsgHandler   
                                 allRandom_[randIndex_][j0+1],
                                 allRandom_[randIndex_][j0+2], xrand[m]);
     }
-    if (msghandler)
+    if (msghandler && msghandler->debug())
     {
-        std::ostringstream oss;
-        oss << "randIndex_ " << randIndex_ << " q";
+        std::string oss = gmx::formatString("randIndex_ %zu q", randIndex_);
         for(int m = 0; m < 2*DIM; m++)
         {
-            oss << " " << allRandom_[randIndex_][m];
+            oss += " " + std::to_string(allRandom_[randIndex_][m]);
         }
         for(int m = 0; m < 2; m++)
         {
-            oss << " x[" << m << "]";
-            auto   atoms   = tops[m].atoms();
-            for(size_t j = 0; j < atoms.size(); j++)
+            oss += gmx::formatString(" x[%d]", m);
+            for(size_t j = 0; j < atoms_[m].size(); j++)
             {
-                oss << " " << xrand[m][j][XX]
-                    << " " << xrand[m][j][YY]
-                    << " " << xrand[m][j][ZZ];
+                for(int k = 0; k < DIM; k++)
+                {
+                    oss += " " + std::to_string(xrand[m][j][k]);
+                }
             }
         }
-        msghandler->writeDebug(oss.str());
+        msghandler->writeDebug(oss);
     }
     randIndex_ += 1;
     // Loop over distances from mindist to maxdist
+    size_t nAtoms = atoms_[0].size() + atoms_[1].size();
     for(int idist = 0; idist < ndist_; idist++)
     {
         double    dist  = mindist_;
@@ -357,24 +353,23 @@ std::vector<std::vector<gmx::RVec>> DimerGenerator::generateDimers(MsgHandler   
         {
             dist += idist*binWidth_;
         }
+        // Translate molecule 1, leave 0 at the origin
         gmx::RVec trans = { 0, 0, dist };
-        auto      atoms = tops[1].atoms();
-        for(size_t j = 0; j < atoms.size(); j++)
+        for(size_t j = 0; j < atoms_[1].size(); j++)
         {
             rvec_inc(xrand[1][j], trans);
         }
-        coords[idist].resize(xorig.size());
-        for(int m = 0; m < 2; m++)
+        coords[idist].resize(nAtoms);
+        size_t i = 0;
+        for(int j = 0; j < 2; j++)
         {
-            auto   atoms   = tops[m].atoms();
-            for(size_t j = atomStart[m]; j < atomStart[m]+atoms.size(); j++)
+            for(size_t k = 0; k < atoms_[j].size(); k++, i++)
             {
-                auto jindex = j - atomStart[m];
-                copy_rvec(xrand[m][jindex], coords[idist][j]);
+                copy_rvec(xrand[j][k], coords[idist][i]);
             }
         }
-            // Put the coordinates back!
-        for(size_t j = 0; j < atoms.size(); j++)
+        // Put the coordinates of molecule 1 back!
+        for(size_t j = 0; j < atoms_[1].size(); j++)
         {
             rvec_dec(xrand[1][j], trans);
         }

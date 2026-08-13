@@ -64,6 +64,8 @@ private:
     int    dimerseed_   =  1993;
     //! Whether to use flexible monomers
     bool   flexible_    = false;
+    //! Whether to use minimize the monomers before generating dimers
+    bool   minimize_    = true;
     //! Low-level debugging
     bool   debugGD_     = false;
     //! Rotation algorithm
@@ -82,6 +84,10 @@ private:
     std::vector<std::vector<double>>       allRandom_;
     //! Random number index
     size_t                                 randIndex_ = 0;
+    //! Coordinates for the two monomers
+    std::vector<gmx::RVec>                 xmOrig_[2];
+    //! Atom info for both monomers
+    std::vector<ActAtom>                   atoms_[2];
     //! MsgHandler pointer for use in destructor (not owned)
     MsgHandler                            *msghandler_ = nullptr;
     //! Output coordinate file name (from -ox option)
@@ -163,29 +169,22 @@ public:
     //! Return whether or not there is a trajectory to read
     bool hasTrajectory() const { return trajname_ && strlen(trajname_) > 0; }
 
+    /*! \brief Prepare for generating, this must be called once
+     * This will perform monomer minimization if requested.
+     * \param[in] msghandler MsgHandler for output and debugging, may be nullptr
+     * \param[in] pd         Force field for minimizing input coordinates
+     * \param[in] actmol Information about the dimer
+     */
+    void prepare(MsgHandler       *msghandler,
+                 const ForceField *pd,
+                 const ACTMol     *actmol);
+
     /*! \brief Do the actual generation for one pair. Two molecules
      * will be oriented and a distance series will be generated.
-     * \param[in]  msghandler MsgHandler for output and debugging, may be nullptr
-     * \param[in]  actmol  The description of the two fragments
+     * \param[in] msghandler MsgHandler for output and debugging, may be nullptr
      * \return The coordinate sets
      */
-    std::vector<std::vector<gmx::RVec>> generateDimers(MsgHandler   *msghandler,
-                                                       const ACTMol *actmol);
-    /*! \brief Do the actual generation for many dimers.
-     * Note that the memory usage can be significant (many Gb).
-     * 
-     * \param[in]  msghandler MsgHandler for output and debugging, may be nullptr
-     * \param[in]  actmol    The description of the two fragments
-     * \param[in]  maxdimer  The number of different dimers to generate
-     * \param[out] coords    The coordinate sets
-     * \param[in]  outcoords Output file name for the generated coordinates.
-     *                       If nullptr, they will not be written.
-     */
-    void generate(MsgHandler                          *msghandler,
-                  const ACTMol                        *actmol,
-                  int                                  maxdimer,
-                  std::vector<std::vector<gmx::RVec>> *coords,
-                  const char                          *outcoords);
+    std::vector<std::vector<gmx::RVec>> generateDimers(MsgHandler *msghandler);
 
     /*! \brief Read all the dimers at once from a file. 
      * \param[out]   coords   The coordinates. If empty reading failed or the variable was empty
