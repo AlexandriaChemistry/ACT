@@ -29,6 +29,7 @@
 
 #include <algorithm>
 #include <ctime>
+#pragma GCC diagnostic ignored "-Wpragmas"
 #pragma GCC diagnostic ignored "-Wunknown-warning-option"
 #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
 #include <regex>
