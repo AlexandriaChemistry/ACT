@@ -33,6 +33,7 @@
 #include "secondvirial.h"
 
 #include <cctype>
+#include <cmath>
 #include <cstdlib>
 
 #include "act/alexandria/actmol.h"
