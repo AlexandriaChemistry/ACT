@@ -29,7 +29,10 @@
 
 #include <algorithm>
 #include <ctime>
+#pragma GCC diagnostic ignored "-Wunknown-warning-option"
+#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
 #include <regex>
+#pragma GCC diagnostic pop
 
 #include "act/basics/msg_handler.h"
 #include "act/forces/forcecomputerstatistics.h"

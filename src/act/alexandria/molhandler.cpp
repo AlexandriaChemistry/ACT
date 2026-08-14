@@ -41,6 +41,7 @@
 #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
 #pragma GCC diagnostic ignored "-Wdeprecated-redundant-constexpr-static-def"
 #pragma GCC diagnostic ignored "-Wdeprecated-copy-with-dtor"
+#pragma GCC diagnostic ignored "-Wdeprecated-enum-enum-conversion"
 #include "Eigen/Eigenvalues"
 #pragma GCC diagnostic pop
 
