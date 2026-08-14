@@ -485,6 +485,7 @@ static void spread_vsite3FD(const std::vector<int> &ia, real a, real b,
     aj = ia[1];
     ak = ia[3];
     copy_rvec(f[av], fv);
+    clear_rvec(f[av]);
 
     sji = pbc_rvec_sub(pbc, x[aj], x[ai], xij);
     skj = pbc_rvec_sub(pbc, x[ak], x[aj], xjk);
@@ -598,6 +599,7 @@ static void spread_vsite3FAD(const std::vector<int> &ia, real a, real b,
     aj = ia[2];
     ak = ia[3];
     copy_rvec(f[ia[1]], fv);
+    clear_rvec(f[ia[1]]);
 
     sji = pbc_rvec_sub(pbc, x[aj], x[ai], xij);
     skj = pbc_rvec_sub(pbc, x[ak], x[aj], xjk);
@@ -826,6 +828,7 @@ static void gmx_unused spread_vsite4FD(const std::vector<int> &ia, real a, real 
     /* 4 + ?10? flops */
 
     copy_rvec(f[av], fv);
+    clear_rvec(f[av]);
 
     fproj = iprod(xix, fv)*invl*invl; /* = (xix . f)/(xix . xix) */
 
@@ -922,6 +925,7 @@ static gmx_unused void spread_vsite4FDN(const std::vector<int> &ia, real a, real
     al = ia[5];
 
     copy_rvec(f[av], fv);
+    clear_rvec(f[av]);
 
     sij = pbc_rvec_sub(pbc, x[aj], x[ai], xij);
     sik = pbc_rvec_sub(pbc, x[ak], x[ai], xik);
@@ -1094,6 +1098,7 @@ static gmx_unused int spread_vsiten(const std::vector<int> &ia,
         }
         /* 6 Flops */
     }
+    clear_rvec(f[av]);
 
     return n3;
 }
