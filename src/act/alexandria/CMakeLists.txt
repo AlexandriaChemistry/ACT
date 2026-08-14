@@ -53,10 +53,8 @@ target_sources(actLib
            optimizationindex.cpp
            pdbwriter.cpp
            percentmutator.cpp
-           princ.cpp
            staticindividualinfo.cpp
            symmetrize_charges.cpp
-           thermochemistry.cpp
            topology.cpp
            train_ff.cpp
            train_utility.cpp          
