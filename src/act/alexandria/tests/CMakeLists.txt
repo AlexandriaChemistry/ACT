@@ -49,7 +49,6 @@ gmx_add_unit_test(
     molselectTest.cpp
     openmmTest.cpp
     optimizationindexTest.cpp
-    princTest.cpp
     symmetrizeChargesTest.cpp
     topologyTest.cpp
     mcmcmutatorTest.cpp

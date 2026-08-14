@@ -42,7 +42,7 @@
 #include <cstdio>
 
 #include "act/alexandria/actmol_low.h"
-#include "act/alexandria/princ.h"
+#include "act/properties/princ.h"
 #include "act/utility/units.h"
 #include "gromacs/gmxpreprocess/grompp-impl.h"
 #include "gromacs/math/units.h"
