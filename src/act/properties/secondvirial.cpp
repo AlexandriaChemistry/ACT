@@ -425,7 +425,8 @@ void ReRunner::runB2(CommunicationRecord         *cr,
     B2Data b2data(gendimers_.ndist(), gendimers_.binwidth(), Temperature);
     
     double xmin = 0;
-    std::vector<gmx::RVec> inertia = { { 0, 0, 0 }, { 0, 0, 0 } };
+    gmx::RVec rvnul = { 0, 0, 0 };
+    std::vector<gmx::RVec> inertia = { rvnul, rvnul };
     // First time around before generating
     gendimers_.prepare(msghandler, pd, actmol);
     // Collect all generated dimer coordinates for -ox output (only when requested)
@@ -454,8 +455,8 @@ void ReRunner::runB2(CommunicationRecord         *cr,
         torqueMol.resize(2);
         for(int kk = 0; kk < 2; kk++)
         {
-            torqueMol[kk].resize(dimers.size());
-            forceMol[kk].resize(dimers.size());
+            torqueMol[kk].resize(dimers.size(), rvnul);
+            forceMol[kk].resize(dimers.size(), rvnul);
         }
 
         // Loop over molecules
@@ -493,11 +494,11 @@ void ReRunner::runB2(CommunicationRecord         *cr,
                                                            &einter, &forces, &coords, true);
 
             auto atomStart  = actmol->fragmentHandler()->atomStart();
-            std::vector<gmx::RVec> f          = { { 0, 0, 0 }, { 0, 0, 0 } };
-            std::vector<gmx::RVec> com        = { { 0, 0, 0 }, { 0, 0, 0 } };
+            std::vector<gmx::RVec> f          = { rvnul, rvnul };
+            std::vector<gmx::RVec> com        = { rvnul, rvnul };
             std::vector<double>    mtot       = { 0, 0 };
-            std::vector<gmx::RVec> torque     = { { 0, 0, 0 }, { 0, 0, 0 } };
-            std::vector<gmx::RVec> torqueRot  = { { 0, 0, 0 }, { 0, 0, 0 } };
+            std::vector<gmx::RVec> torque     = { rvnul, rvnul };
+            std::vector<gmx::RVec> torqueRot  = { rvnul, rvnul };
             const auto &tops  = actmol->fragmentHandler()->topologies();
             for(int kk = 0; kk < 2; kk++)
             {
