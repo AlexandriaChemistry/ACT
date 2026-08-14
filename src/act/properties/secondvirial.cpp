@@ -489,7 +489,7 @@ void ReRunner::runB2(CommunicationRecord         *cr,
                     }
                 }
             }
-            std::vector<gmx::RVec> forces(coords.size());
+            std::vector<gmx::RVec> forces(coords.size(), rvnul);
             std::map<InteractionType, double> einter;
             auto epot = actmol->calculateInteractionEnergy(msghandler, pd, forceComp_,
                                                            &einter, &forces, &coords, true);
@@ -542,6 +542,7 @@ void ReRunner::runB2(CommunicationRecord         *cr,
                 gmx::RVec inertia1;
                 clear_rvec(inertia1);
                 matrix trans;
+                clear_mat(trans);
                 principal_comp(index, mass, x_com, &trans, &inertia1);
 
                 // Move to inertial frame (only well-defined for

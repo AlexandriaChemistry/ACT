@@ -47,7 +47,7 @@
 #include "gromacs/math/nrjac.h"
 #include "gromacs/math/vec.h"
 
-#define NDIM 4
+#define NDIM 3
 
 namespace alexandria
 {
