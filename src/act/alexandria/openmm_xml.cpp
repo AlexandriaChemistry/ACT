@@ -530,7 +530,7 @@ void OpenMMWriter::addXmlHyper(xmlNodePtr                        parent,
     script += "    # Drude     Atom       [ fchyper, rhyper ]\n";
     for(const auto &s : stuff)
     {
-        script += gmx::formatString("    ( \"%s\", \"%s\" ) : [ %g, %g ]\n",
+        script += gmx::formatString("    ( \"%s\", \"%s\" ) : [ %g, %g ],\n",
                                     s.drude.c_str(), s.atom.c_str(), s.fchyper, s.rhyper);
     }
     script += "}\n";

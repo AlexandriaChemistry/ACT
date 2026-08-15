@@ -70,7 +70,7 @@
   <Script>import openmm
 hyper_table = {
     # Drude     Atom       [ fchyper, rhyper ]
-    ( "ow_s_1", "ow_1" ) : [ 4.26005e+09, 0 ]
+    ( "ow_s_1", "ow_1" ) : [ 4.26005e+09, 0 ],
 }
 atom_types = [data.atomType[atom] for atom in data.atoms]
 drude      = next(f for f in sys.getForces() if isinstance(f, openmm.DrudeForce))
