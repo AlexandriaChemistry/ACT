@@ -76,7 +76,7 @@ void DimerGenerator::addOptions(std::vector<t_pargs>      *pa,
           "Rotation algorithm should be either Cartesian, Polar or Sobol. Default is Cartesian and the other two algorithms are experimental. Please verify your output when using those." },
         { "-flex", FALSE, etBOOL, {&flexible_},
           "Use flexible monomers in dimer sampling. Not implemented completely yet, activating this flag will use the potential energy rather than the interaction energy leading to incorrect results." },
-        { "-minimize", FALSE, etBOOL, {&minimize_},
+        { "-minimize_dimers", FALSE, etBOOL, {&minimize_},
           "Perform energy minimization of the monomers before generating dimers" },
         { "-dbgGD", FALSE, etBOOL, {&debugGD_},
           "Low-level debugging of routines. Gives complete information only when run on a single processor." }
