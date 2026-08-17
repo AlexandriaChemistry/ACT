@@ -43,7 +43,7 @@
 
 #include <cmath>
 
-#include "act/topology/topology.h"
+#include "act/topology/actatom.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/nrjac.h"
 #include "gromacs/math/vec.h"
