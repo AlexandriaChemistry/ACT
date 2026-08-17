@@ -36,10 +36,10 @@
 
 #include <map>
 
-#include "act/alexandria/topology.h"
 #include "act/basics/msg_handler.h"
 #include "act/forcefield/forcefield.h"
 #include "act/forcefield/forcefield_parametername.h"
+#include "act/topology/topology.h"
 #include "gromacs/gmxpreprocess/topdirs.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/fatalerror.h"

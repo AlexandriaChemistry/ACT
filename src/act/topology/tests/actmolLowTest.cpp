@@ -39,7 +39,7 @@
 
 #include <gtest/gtest.h>
 
-#include "act/alexandria/actmol_low.h"
+#include "act/topology/actmol_low.h"
 #include "act/basics/msg_handler.h"
 #include "gromacs/math/vec.h"
 

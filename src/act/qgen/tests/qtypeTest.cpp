@@ -38,13 +38,13 @@
 #include <gtest/gtest.h>
 
 #include "act/import/import.h"
-#include "act/alexandria/actmol.h"
 #include "act/basics/msg_handler.h"
 #include "act/molprop/multipole_names.h"
 #include "act/forcefield/forcefield.h"
 #include "act/forcefield/forcefield_utils.h"
 #include "act/forcefield/forcefield_xml.h"
 #include "act/qgen/qtype.h"
+#include "act/topology/actmol.h"
 #include "act/utility/units.h"
 
 #include "testutils/cmdlinetest.h"

@@ -44,12 +44,12 @@
 
 #include <gtest/gtest.h>
 
-#include "act/alexandria/actmol.h"
 #include "act/basics/interactiontype.h"
 #include "act/basics/msg_handler.h"
 #include "act/forcefield/forcefield_utils.h"
 #include "act/forcefield/potential.h"
 #include "act/import/import.h"
+#include "act/topology/actmol.h"
 #include "gromacs/math/vectypes.h"
 #include "testutils/testfilemanager.h"
 

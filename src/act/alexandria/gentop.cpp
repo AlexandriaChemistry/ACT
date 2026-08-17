@@ -37,7 +37,6 @@
 
 #include <algorithm>
 
-#include "act/alexandria/actmol.h"
 #include "act/alexandria/alex_modules.h"
 #include "act/alexandria/openmm_xml.h"
 #include "act/basics/msg_handler.h"
@@ -45,6 +44,7 @@
 #include "act/import/compound_reader.h"
 #include "act/molprop/molprop_util.h"
 #include "act/molprop/molprop_xml.h"
+#include "act/topology/actmol.h"
 #include "act/utility/stringutil.h"
 
 #include "gromacs/commandline/filenm.h"

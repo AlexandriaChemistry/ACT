@@ -40,11 +40,12 @@
 
 #include "act/forces/forcecomputer.h"
 #include "act/utility/regression.h"
-#include "actmol.h"
 #include "confighandler.h"
 
 namespace alexandria
 {
+
+class ACTMol;
 
 //! \brief enum to distinguish result of minimizer
 enum class eMinimizeStatus {

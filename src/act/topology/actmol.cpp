@@ -42,7 +42,6 @@
 #include <set>
 #include <string>
 
-#include "act/alexandria/actmol_low.h"
 #include "act/alexandria/gromacs_top.h"
 #include "act/alexandria/pdbwriter.h"
 #include "act/alexandria/symmetrize_charges.h"
@@ -53,6 +52,7 @@
 #include "act/molprop/experiment.h"
 #include "act/molprop/molprop_util.h"
 #include "act/molprop/multipole_names.h"
+#include "act/topology/actmol_low.h"
 #include "act/utility/regression.h"
 #include "act/utility/units.h"
 #include "gromacs/gmxpreprocess/grompp-impl.h"

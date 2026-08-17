@@ -43,7 +43,6 @@
 
 #include "act/utility/communicationrecord.h"
 #include "confighandler.h"
-#include "actmol.h"
 #include "staticindividualinfo.h"
 #include "molhandler.h"
 
@@ -55,6 +54,7 @@ class TextWriter;
 namespace alexandria
 {
 
+class ActMol;
 /*!
  * Abstract class for chi-squared deviation computation
  * Each DevComputer handles a particular component of chi-squared

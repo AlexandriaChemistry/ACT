@@ -49,6 +49,7 @@
 #include "act/forcefield/forcefield_parametername.h"
 #include "act/forcefield/forcefield_utils.h"
 #include "act/molprop/topologyentry.h"
+#include "act/topology/topology.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 

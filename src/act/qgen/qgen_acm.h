@@ -39,9 +39,8 @@
 
 #include <vector>
 
-#include "act/alexandria/topology.h"
-#include "act/molprop/molprop.h"
-#include "act/forcefield/forcefield.h"
+#include "act/basics/chargemodel.h"
+#include "act/forcefield/forcefield_parameter.h"
 #include "gromacs/math/vectypes.h"
 
 /*! \brief Charge generation status
@@ -64,6 +63,9 @@ enum class eQgen {
 namespace alexandria
 {
 
+class ActAtom;
+class Bond;
+class ForceField;
 class ForceFieldParameter;
 class MsgHandler;
 

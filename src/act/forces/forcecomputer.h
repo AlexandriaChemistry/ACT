@@ -31,11 +31,11 @@
 #include <set>
 #include <vector>
 
-#include "act/alexandria/topology.h"
 #include "act/basics/msg_handler.h"
 #include "act/forces/vsitehandler.h"
 #include "act/forcefield/forcefield.h"
 #include "act/forcefield/potential.h"
+#include "act/topology/topology.h"
 #include "gromacs/math/vectypes.h"
 
 namespace alexandria

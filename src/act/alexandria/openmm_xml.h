@@ -35,8 +35,8 @@
 #ifndef OPENMM_XML_H
 #define OPENMM_XML_H
 
-#include "act/alexandria/actmol.h"
 #include "act/forcefield/forcefield.h"
+#include "act/topology/actmol.h"
 
 namespace alexandria
 {

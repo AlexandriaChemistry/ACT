@@ -40,7 +40,6 @@
 #include <map>
 #include <vector>
 
-#include "act/alexandria/actmol_low.h"
 #include "act/basics/act_particle.h"
 #include "act/basics/identifier.h"
 #include "act/basics/msg_handler.h"
@@ -50,6 +49,7 @@
 #include "act/molprop/fragment.h"
 #include "act/molprop/molprop.h"
 #include "act/molprop/topologyentry.h"
+#include "act/topology/actmol_low.h"
 #include "act/utility/communicationrecord.h"
 
 namespace alexandria

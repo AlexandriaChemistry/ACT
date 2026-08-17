@@ -41,11 +41,11 @@
 #include <vector>
 #include <strings.h>
 
-#include "act/alexandria/actmol.h"
 #include "act/alexandria/alex_modules.h"
 #include "act/alexandria/molgen.h"
 #include "act/molprop/molprop.h"
 #include "act/molprop/molprop_xml.h"
+#include "act/topology/actmol.h"
 #include "act/utility/stringutil.h"
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/commandline/pargs.h"

@@ -41,8 +41,10 @@
 #include <cmath>
 #include <cstdio>
 
-#include "act/alexandria/actmol_low.h"
+#include "act/molprop/molpropobservable.h"
 #include "act/properties/princ.h"
+#include "act/topology/actmol.h"
+#include "act/topology/topology.h"
 #include "act/utility/units.h"
 #include "gromacs/gmxpreprocess/grompp-impl.h"
 #include "gromacs/math/units.h"

@@ -37,7 +37,6 @@
 
 #include <gtest/gtest.h>
 
-//#include "act/alexandria/actmol.h"
 #include "act/forcefield/forcefield.h"
 #include "act/forcefield/forcefield_utils.h"
 #include "act/import/import.h"

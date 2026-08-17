@@ -39,9 +39,7 @@
 
 #include <vector>
 
-#include "act/alexandria/topology.h"
 #include "act/basics/chargemodel.h"
-//#include "act/statistics/statistics.h"
 #include "gromacs/math/vectypes.h"
 
 struct gmx_output_env_t;
@@ -50,7 +48,9 @@ struct t_symtab;
 namespace alexandria
 {
 
+class ActAtom;
 class ForceField;
+class ForceFieldParameter;
 class MsgHandler;
 
 /*! \brief Class to store one grid point and it's potential.

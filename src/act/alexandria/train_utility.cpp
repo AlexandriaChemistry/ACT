@@ -40,7 +40,6 @@
 #include <cstdio>
 #include <cstdlib>
 
-#include "act/alexandria/actmol.h"
 #include "act/alexandria/pdbwriter.h"
 #include "act/basics/interactiontype.h"
 #include "act/forces/forcecomputer.h"
@@ -49,6 +48,7 @@
 #include "act/molprop/multipole_names.h"
 #include "act/properties/thermochemistry.h"
 #include "act/qgen/qtype.h"
+#include "act/topology/actmol.h"
 #include "act/utility/jsontree.h"
 #include "act/utility/stringutil.h"
 #include "act/utility/units.h"

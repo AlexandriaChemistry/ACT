@@ -39,7 +39,7 @@
 
 #include <gtest/gtest.h>
 
-#include "act/alexandria/topology.h"
+#include "act/topology/topology.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "testutils/cmdlinetest.h"

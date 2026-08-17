@@ -25,17 +25,17 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor,
  * Boston, MA  02110-1301, USA.
  */
+#include <map>
 #include <vector>
 
-#include "act/alexandria/topology.h"
-#include "act/basics/chargemodel.h"
 #include "act/basics/interactiontype.h"
-#include "act/forcefield/forcefield.h"
+#include "act/molprop/topologyentry.h"
 #include "gromacs/math/vectypes.h"
 
 namespace alexandria
 {
 
+class ActAtom;
 class MsgHandler;
 
 //! \brief Function type to compute different interactions

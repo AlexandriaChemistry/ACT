@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2021-2025
+ * Copyright (C) 2021-2026
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -37,10 +37,10 @@
 #include <map>
 #include <random>
 
-#include "act/alexandria/topology.h"
 #include "act/basics/msg_handler.h"
 #include "act/forces/forcecomputer.h"
 #include "act/molprop/multipole_names.h"
+#include "act/topology/topology.h"
 #include "act/utility/units.h"
 #include "gromacs/utility/stringutil.h"
 

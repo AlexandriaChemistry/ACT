@@ -33,11 +33,12 @@
  * \ingroup group_act_tests
  */
 #include "actpre.h"
+
 #include "actmol_util.h"
 #include "act/import/import.h"
-#include "act/alexandria/actmol.h"
 #include "act/basics/msg_handler.h"
 #include "act/forcefield/forcefield_utils.h"
+#include "act/topology/actmol.h"
 
 #include "testutils/testasserts.h"
 #include "testutils/testfilemanager.h"

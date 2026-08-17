@@ -37,8 +37,8 @@
     
 #include <vector>
     
-#include "act/alexandria/actmol.h"
 #include "act/alexandria/molselect.h"
+#include "act/topology/actmol.h"
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/commandline/pargs.h"
 

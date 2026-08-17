@@ -32,6 +32,7 @@
 #include "act/coulombintegrals/slater_integrals.h"
 #include "act/forcefield/forcefield_parametername.h"
 #include "act/forces/forcecomputerutils.h"
+#include "act/topology/topology.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/units.h"
 

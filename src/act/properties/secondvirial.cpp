@@ -36,7 +36,6 @@
 #include <cmath>
 #include <cstdlib>
 
-#include "act/alexandria/actmol.h"
 #include "act/alexandria/alex_modules.h"
 #include "act/alexandria/confighandler.h"
 #include "act/alexandria/molhandler.h"
@@ -49,6 +48,7 @@
 #include "act/molprop/molprop_xml.h"
 #include "act/properties/b2data.h"
 #include "act/properties/princ.h"
+#include "act/topology/actmol.h"
 #include "act/utility/jsontree.h"
 #include "act/utility/memory_check.h"
 #include "act/utility/stringutil.h"

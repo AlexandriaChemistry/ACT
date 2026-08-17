@@ -29,10 +29,10 @@
 #define ACT_ALEXANDRIA_FRAGMENTHANDLER_H
 #include <vector>
 
-#include "act/alexandria/actmol_low.h"
 #include "act/import/fetch_charges.h"
-#include "act/qgen/qgen_acm.h"
 #include "act/molprop/fragment.h"
+#include "act/qgen/qgen_acm.h"
+#include "act/topology/actmol_low.h"
 
 namespace alexandria
 {

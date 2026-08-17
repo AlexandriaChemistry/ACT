@@ -39,13 +39,11 @@
 #include <string>
 #include <vector>
 
-#include "msg_handler.h"
-
 namespace alexandria
 {
 
     class AtomizationEnergyTerm;
-    
+    class MsgHandler;
     class AtomizationEnergy
     {
     public:

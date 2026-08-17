@@ -42,11 +42,11 @@
 
 #include <gtest/gtest.h>
 
-#include "act/alexandria/actmol.h"
 #include "act/import/import.h"
 #include "act/forcefield/forcefield_parametername.h"
 #include "act/forcefield/forcefield_utils.h"
 #include "act/forces/forcecomputer.h"
+#include "act/topology/actmol.h"
 
 #include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"

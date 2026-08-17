@@ -29,10 +29,10 @@
 
 #include <vector>
 
-#include "act/alexandria/topology.h"
 #include "act/alexandria/symmetrize_charges.h"
-#include "act/qgen/qgen_acm.h"
 #include "act/molprop/fragment.h"
+#include "act/qgen/qgen_acm.h"
+#include "act/topology/topology.h"
 #include "act/utility/stringutil.h"
 #include "gromacs/math/vec.h"
 

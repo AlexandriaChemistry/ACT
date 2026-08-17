@@ -49,6 +49,7 @@
 #include <vector>
 
 #include "act/forcefield/forcefield_parametername.h"
+#include "act/topology/topology.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/pbcutil/ishift.h"

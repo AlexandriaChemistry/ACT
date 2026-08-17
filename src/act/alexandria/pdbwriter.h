@@ -1,11 +1,13 @@
 #include <cstdio>
 #include <string>
 #include <vector>
-#include "act/alexandria/topology.h"
+
 #include "gromacs/fileio/pdbio.h"
 
 namespace alexandria
 {
+
+class ActAtom;
 
 //! Function to write a pdb file.
 void pdbWriter(FILE                           *out, 

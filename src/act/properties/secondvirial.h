@@ -37,10 +37,10 @@
 #include <random>
 #include <vector>
 
-#include "act/alexandria/actmol.h"
 #include "act/forcefield/forcefield.h"
 #include "act/forces/forcecomputer.h"
 #include "act/properties/dimergenerator.h"
+#include "act/topology/actmol.h"
 #include "act/utility/jsontree.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/oenv.h"
