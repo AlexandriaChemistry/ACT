@@ -44,7 +44,6 @@
 
 #include "act/alexandria/gromacs_top.h"
 #include "act/alexandria/pdbwriter.h"
-#include "act/alexandria/symmetrize_charges.h"
 #include "act/basics/msg_handler.h"
 #include "act/forcefield/forcefield_parameter.h"
 #include "act/forcefield/forcefield_parametername.h"
@@ -53,6 +52,7 @@
 #include "act/molprop/molprop_util.h"
 #include "act/molprop/multipole_names.h"
 #include "act/topology/actmol_low.h"
+#include "act/topology/symmetrize_charges.h"
 #include "act/utility/regression.h"
 #include "act/utility/units.h"
 #include "gromacs/gmxpreprocess/grompp-impl.h"

@@ -39,7 +39,6 @@ target_sources(actLib
            bayes.cpp
            confighandler.cpp
            devcomputer.cpp
-           fragmenthandler.cpp
            gentop.cpp
            geometry_ff.cpp
            gromacs_top.cpp
@@ -52,7 +51,6 @@ target_sources(actLib
            pdbwriter.cpp
            percentmutator.cpp
            staticindividualinfo.cpp
-           symmetrize_charges.cpp
            train_ff.cpp
            train_utility.cpp          
 	)

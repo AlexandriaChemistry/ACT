@@ -37,7 +37,6 @@
 
 #include <map>
 
-#include "act/alexandria/fragmenthandler.h"
 #include "act/alexandria/molselect.h"
 #include "act/basics/msg_handler.h"
 #include "act/forces/forcecomputer.h"
@@ -46,6 +45,7 @@
 #include "act/qgen/qgen_acm.h"
 #include "act/qgen/qgen_resp.h"
 #include "act/qgen/qtype.h"
+#include "act/topology/fragmenthandler.h"
 #include "act/utility/communicationrecord.h"
 #include "act/utility/regression.h"
 #include "gromacs/math/vec.h"
