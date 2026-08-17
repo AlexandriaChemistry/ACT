@@ -40,12 +40,13 @@
 #include "gromacs/fileio/confio.h"
 #include "gromacs/math/vec.h"
 
-#include "act/alexandria/topology.h"
 #include "act/basics/msg_handler.h"
 #include "act/coulombintegrals/gaussian_integrals.h"
 #include "act/coulombintegrals/slater_integrals.h"
 #include "act/molprop/molprop.h"
 #include "act/forcefield/forcefield.h"
+#include "act/forcefield/forcefield_parameter.h"
+#include "act/topology/topology.h"
 #include "act/utility/regression.h"
 
 namespace alexandria

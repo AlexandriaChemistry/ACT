@@ -33,10 +33,10 @@
     
 #include "fetch_charges.h"    
 
-#include "act/alexandria/actmol.h"
 #include "act/basics/allmols.h"
 #include "act/basics/msg_handler.h"
 #include "act/molprop/molprop_xml.h"
+#include "act/topology/actmol.h"
 
 namespace alexandria
 {

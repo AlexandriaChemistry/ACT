@@ -40,7 +40,6 @@
 
 #include <algorithm>
 
-#include "act/alexandria/actmol.h"
 #include "act/alexandria/alex_modules.h"
 #include "act/alexandria/allbondeds.h"
 #include "act/alexandria/train_utility.h"
@@ -48,6 +47,7 @@
 #include "act/forcefield/forcefield_xml.h"
 #include "act/molprop/molprop_util.h"
 #include "act/statistics/statistics.h"
+#include "act/topology/actmol.h"
 #include "act/utility/communicationrecord.h"
 #include "act/utility/memory_check.h"
 #include "act/utility/stringutil.h"

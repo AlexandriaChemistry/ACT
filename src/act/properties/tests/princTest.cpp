@@ -37,8 +37,8 @@
 
 #include <gtest/gtest.h>
 
-#include "act/alexandria/topology.h"
 #include "act/properties/princ.h"
+#include "act/topology/topology.h"
 #include "gromacs/math/vec.h"
 
 #include "testutils/testasserts.h"

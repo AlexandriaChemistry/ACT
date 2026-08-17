@@ -30,11 +30,11 @@
 #include <map>
 #include <vector>
 
-#include "act/alexandria/actmol.h"
 #include "act/alexandria/devcomputer.h"
 #include "act/alexandria/molgen.h"
 #include "act/forcefield/forcefield_utils.h"
 #include "act/molprop/molprop_xml.h"
+#include "act/topology/actmol.h"
 
 #include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"

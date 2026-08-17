@@ -41,9 +41,9 @@
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/utility/real.h"
 
-#include "act/alexandria/actmol.h"
 #include "act/forcefield/forcefield.h"
 #include "act/statistics/statistics.h"
+#include "act/topology/actmol.h"
 
 namespace gmx
 {

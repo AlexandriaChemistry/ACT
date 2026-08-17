@@ -38,8 +38,8 @@
 #include <cstdlib>
 #include <cstring>
 
-#include "act/alexandria/actmol.h"
 #include "act/molprop/molprop_xml.h"
+#include "act/topology/actmol.h"
 #include "gromacs/topology/atomprop.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/futil.h"

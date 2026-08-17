@@ -38,6 +38,7 @@
 #include <stdexcept>
 
 #include "act/basics/libraryfile.h"
+#include "act/basics/msg_handler.h"
 #include "act/utility/stringutil.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"

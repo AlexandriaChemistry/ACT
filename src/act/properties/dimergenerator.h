@@ -37,11 +37,11 @@
 #include <random>
 #include <vector>
 
-#include "act/alexandria/actmol.h"
 #include "act/basics/msg_handler.h"
 #include "act/forces/forcecomputer.h"
 #include "act/forcefield/forcefield.h"
 #include "act/properties/rotator.h"
+#include "act/topology/actmol.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/oenv.h"
 #include "gromacs/math/vectypes.h"

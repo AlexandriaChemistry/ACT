@@ -44,7 +44,6 @@
 #include <map>
 #include <vector>
 
-#include "act/alexandria/actmol.h"
 #include "act/basics/atomization_energy.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
@@ -52,6 +51,9 @@
 
 namespace alexandria
 {
+
+class ACTMol;
+class MsgHandler;
 
 //! Components of thermochemistry propertis
 enum class TCComponent {
@@ -149,7 +151,7 @@ public:
      * \param[in] scale_factor Factor to scale frequencies by before computing properties
      */
     ThermoChemistry(MsgHandler                   *msghandler,
-                    const ACTMol                  *actmol,
+                    const alexandria::ACTMol     *actmol,
                     const std::vector<gmx::RVec> &coords,
                     const AtomizationEnergy      &atomenergy,
                     const std::vector<double>    &frequencies,

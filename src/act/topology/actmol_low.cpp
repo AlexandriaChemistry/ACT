@@ -38,11 +38,11 @@
 #include <cstring>
 #include <cmath>
 
-#include "act/alexandria/topology.h"
 #include "act/forcefield/forcefield.h"
 #include "act/forcefield/forcefield_parameter.h"
 #include "act/forces/forcecomputerutils.h"
 #include "act/qgen/qgen_acm.h"
+#include "act/topology/topology.h"
 #include "act/utility/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/strconvert.h"

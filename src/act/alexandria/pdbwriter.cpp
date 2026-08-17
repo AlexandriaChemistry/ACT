@@ -47,6 +47,7 @@
 #include <map>
 #include <string>
 
+#include "act/topology/topology.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"

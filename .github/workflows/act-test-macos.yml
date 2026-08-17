@@ -55,6 +55,7 @@ jobs:
           ./bin/ga-test
           ./bin/import-test
           ./bin/molprop-test
+          ./bin/topology-test
           ./bin/properties-test
           ./bin/qgen-test
           ./bin/sobol-test

@@ -33,8 +33,6 @@ target_sources(actLib
            acminitializer.cpp
            acthelper.cpp
            actmiddleman.cpp
-           actmol.cpp
-           actmol_low.cpp
            alex_modules.cpp
            allbondeds.cpp
            analyze.cpp
@@ -55,7 +53,6 @@ target_sources(actLib
            percentmutator.cpp
            staticindividualinfo.cpp
            symmetrize_charges.cpp
-           topology.cpp
            train_ff.cpp
            train_utility.cpp          
 	)

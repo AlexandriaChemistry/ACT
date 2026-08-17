@@ -40,7 +40,7 @@
 
 #include <vector>
 
-#include "act/alexandria/topology.h"
+#include "gromacs/math/vec.h"
 
 namespace gmx
 {
@@ -50,6 +50,7 @@ class TextWriter;
 namespace alexandria
 {
 
+class ActAtom;
 /*! \brief
  * Generate Maxwellian velocities.
  *

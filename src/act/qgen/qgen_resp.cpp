@@ -42,12 +42,12 @@
 #include <map>
 #include <vector>
 
-#include "act/alexandria/topology.h"
 #include "act/basics/msg_handler.h"
 #include "act/coulombintegrals/gaussian_integrals.h"
 #include "act/coulombintegrals/slater_integrals.h"
 #include "act/forcefield/forcefield.h"
 #include "act/statistics/statistics.h"
+#include "act/topology/topology.h"
 #include "act/utility/regression.h"
 #include "act/utility/units.h"
 #include "gromacs/fileio/xvgr.h"

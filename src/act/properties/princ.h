@@ -40,12 +40,13 @@
 
 #include <vector>
 
-#include "act/alexandria/topology.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/basedefinitions.h"
 
 namespace alexandria
 {
+
+class ActAtom;
 
 /*! \brief Rotate all atoms in index using matrix trans 
  * \param[in]    index  List of atom numbers

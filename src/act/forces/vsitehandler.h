@@ -28,12 +28,13 @@
 #ifndef ACT_VSITEHANDLER_H
 #define ACT_VSITEHANDLER_H
     
-#include "act/alexandria/topology.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/pbcutil/pbc.h"
 
 namespace alexandria
 {
+
+class Topology;
 
 /*! \brief Class to construct vsite positions and distribute vsite forces
  */

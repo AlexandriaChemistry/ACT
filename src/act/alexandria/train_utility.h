@@ -38,12 +38,12 @@
 #include <cstdio>
 #include <vector>
 
-#include "act/alexandria/actmol.h"
 #include "act/alexandria/molhandler.h"
 #include "act/alexandria/staticindividualinfo.h"
 #include "act/forces/forcecomputer.h"
 #include "act/forcefield/forcefield.h"
 #include "act/statistics/statistics.h"
+#include "act/topology/actmol.h"
 #include "act/utility/jsontree.h"
 #include "gromacs/commandline/pargs.h"
 

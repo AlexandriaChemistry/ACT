@@ -38,13 +38,13 @@
 
 #include <vector>
 
-#include "act/forcefield/forcefield.h"
-#include "topology.h"
-
 struct gmx_atomprop;
 
 namespace alexandria
 {
+
+class ForceField;
+class Topology;
 
 /*! Generate a list of symmetry-related charges.
  * \param[in]  topology    The molecular topology

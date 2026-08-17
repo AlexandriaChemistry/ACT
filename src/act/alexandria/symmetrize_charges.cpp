@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2014-2025
+ * Copyright (C) 2014-2026
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour, 
@@ -35,6 +35,8 @@
 #include "symmetrize_charges.h"
 
 #include <string>
+
+#include "act/topology/topology.h"
 
 namespace alexandria
 {
