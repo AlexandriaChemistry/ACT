@@ -37,7 +37,7 @@
 
 #include <gtest/gtest.h>
 
-#include "act/alexandria/symmetrize_charges.h"
+#include "act/topology/symmetrize_charges.h"
 #include "gromacs/utility/exceptions.h"
 
 #include "testutils/testasserts.h"

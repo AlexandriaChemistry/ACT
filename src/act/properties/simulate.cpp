@@ -35,7 +35,6 @@
 
 #include "act/alexandria/alex_modules.h"
 #include "act/alexandria/confighandler.h"
-#include "act/alexandria/fragmenthandler.h"
 #include "act/alexandria/molhandler.h"
 #include "act/alexandria/train_utility.h"
 #include "act/basics/msg_handler.h"
@@ -45,6 +44,7 @@
 #include "act/molprop/molprop_xml.h"
 #include "act/properties/secondvirial.h"
 #include "act/topology/actmol.h"
+#include "act/topology/fragmenthandler.h"
 #include "act/utility/jsontree.h"
 #include "act/utility/stringutil.h"
 #include "gromacs/commandline/filenm.h"
