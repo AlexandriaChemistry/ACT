@@ -36,12 +36,13 @@
 
 #include <gtest/gtest.h>
 
+#include "actmol_util.h"
+
 #include "act/alexandria/openmm_xml.h"
 #include "act/basics/msg_handler.h"
 #include "act/forcefield/forcefield.h"
 #include "act/forcefield/forcefield_utils.h"
 #include "act/forcefield/forcefield_xml.h"
-#include "act/topology/actmol_util.h"
 
 #include "testutils/cmdlinetest.h"
 #include "testutils/filematchers.h"
