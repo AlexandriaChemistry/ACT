@@ -28,6 +28,7 @@
 #include "forcecomputer.h"
 
 #include <set>
+#include <vector>
 
 #include <cstdlib>
 
@@ -36,6 +37,7 @@
 #include "act/forcefield/forcefield_parametername.h"
 #include "act/forces/forcecomputerimpl.h"
 #include "act/qgen/qtype.h"
+#include "act/topology/topology.h"
 #include "gromacs/gmxpreprocess/grompp-impl.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/futil.h"
