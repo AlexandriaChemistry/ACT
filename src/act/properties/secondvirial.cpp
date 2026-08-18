@@ -838,7 +838,6 @@ int b2(int argc, char *argv[])
     std::vector<ACTMol> actmols;
     compR.read(&msghandler, pd, &forceComp, &actmols);
     auto &actmol = actmols[0];
-    std::vector<gmx::RVec> coords = actmol.xOriginal();
 
     if (msghandler.ok() && status == 0)
     {

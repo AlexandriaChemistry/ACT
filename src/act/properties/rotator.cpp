@@ -213,9 +213,15 @@ void Rotator::printOneAngleHisto(gmx_stats angle, const char *file)
 Rotator::Rotator(const std::string &rotalg, bool debugAngles)
 {
     resetMatrix();
-    if (stringToRotationAlgorithm.end() != stringToRotationAlgorithm.find(rotalg))
+    auto s2r = stringToRotationAlgorithm.find(rotalg);
+    if (stringToRotationAlgorithm.end() != s2r)
     {
         rotalg_ = stringToRotationAlgorithm[rotalg];
+    }
+    else
+    {
+        fprintf(stderr, "Ignoring unknown rotation algorithm '%s', will use %s\n",
+                rotalg.c_str(), rotalgToString(rotalg_).c_str());
     }
     debugAngles_ = debugAngles;
 }
