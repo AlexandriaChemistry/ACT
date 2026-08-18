@@ -63,7 +63,7 @@ private:
     //! The number of matrices added
     size_t            naver_  = 0;
     //! Rotation algorithm to use
-    RotationAlgorithm rotalg_ = RotationAlgorithm::Cartesian;
+    RotationAlgorithm rotalg_ = RotationAlgorithm::Sobol;
     //! Debug angles?
     bool              debugAngles_ = false;
     //! Statistics of angles used
