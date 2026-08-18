@@ -150,6 +150,8 @@ protected:
             std::vector<gmx::RVec> xmin = coords;
             double rmsd = mh.coordinateRmsd(mp.atomsConst(), coords, &xmin);
             checker_.checkReal(rmsd, "Coordinate RMSD before minimizing");
+            // Reset coordinates, this should not be necessary though.
+            xmin = coords;
             // Infinite number of shell iterations, i.e. until convergence.
             std::map<InteractionType, double> eAfter;
             SimulationConfigHandler simConfig;

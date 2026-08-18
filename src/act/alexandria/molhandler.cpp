@@ -1132,25 +1132,27 @@ double MolHandler::coordinateRmsd(const std::vector<ActAtom>   &myatoms,
                                   const std::vector<gmx::RVec> &xref,
                                   std::vector<gmx::RVec>       *xfit) const
 {
+    GMX_RELEASE_ASSERT(myatoms.size() == xref.size(), "Size mismatch in arrays");
+    GMX_RELEASE_ASSERT(myatoms.size() == xfit->size(), "Size mismatch in arrays");
     // Compute RMSD
-    double tmass      = 0;
-    int    nRealAtoms = 0;
-    for(size_t i = 0; i < myatoms.size(); i++)
+    std::vector<real> myMass;
+    double            tmass      = 0;
+    int               nRealAtoms = 0;
+    for(const auto &ma: myatoms)
     {
-        auto mass = myatoms[i].mass();
+        auto mass = ma.mass();
+        myMass.push_back(mass);
         if (mass > 0)
         {
-            tmass += mass;
+            tmass      += mass;
             nRealAtoms += 1;
         }
     }
-    std::vector<real> myMass;
     rvec ref_com = { 0, 0, 0 };
     rvec fit_com = { 0, 0, 0 };
     for (size_t i = 0; i < xref.size(); ++i)
     {
-        myMass.push_back(myatoms[i].mass());
-        double relativeMass = myatoms[i].mass()/tmass;
+        double relativeMass = myMass[i]/tmass;
         for(int m = 0; m < DIM; m++)
         {
             ref_com[m] += relativeMass*xref[i][m];
