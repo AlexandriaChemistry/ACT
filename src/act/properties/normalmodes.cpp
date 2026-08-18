@@ -165,7 +165,7 @@ int nma(int argc, char *argv[])
                                               &xmin, &energies, {});
         if (eMinimizeStatus::OK == eMin)
         {
-            auto rmsd = molhandler.coordinateRmsd(&actmol, coords, &xmin);
+            auto rmsd = molhandler.coordinateRmsd(actmol.atomsConst(), coords, &xmin);
             msghandler.msg(ACTStatus::Info,
                            gmx::formatString("Final energy: %g. RMSD wrt original structure %g nm.",
                                              energies[InteractionType::EPOT], rmsd));

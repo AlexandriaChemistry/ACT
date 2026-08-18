@@ -265,10 +265,11 @@ void DimerGenerator::prepare(MsgHandler       *msghandler,
                                                        &xmOrig_[j], &energies, freeze);
             if (msghandler && eMinimizeStatus::OK == eMin)
             {
-                double rmsd = 0.0; //molhandler.coordinateRmsd(actmol, xBefore, &xmOrig_[j]);
+                double rmsd = molhandler.coordinateRmsd(fragptr->topologies()[j].atoms(),
+                                                        xBefore, &xmOrig_[j]);
                 msghandler->msg(ACTStatus::Info,
-                                gmx::formatString("Final energy: %g RMSD wrt original structure %g nm.",
-                                                  energies[InteractionType::EPOT], rmsd));
+                                gmx::formatString("Monomer %zu. Final energy: %g RMSD wrt original structure %g nm.",
+                                                  j, energies[InteractionType::EPOT], rmsd));
             }
         }
     }

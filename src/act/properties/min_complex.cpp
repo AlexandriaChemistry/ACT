@@ -169,7 +169,7 @@ int min_complex(int argc, char *argv[])
                                                   &einter, &interactionForces,
                                                   &xmin, true);
 
-                auto rmsd = molhandler.coordinateRmsd(&actmol, coords, &xmin);
+                auto rmsd = molhandler.coordinateRmsd(actmol.atomsConst(), coords, &xmin);
                 tw->writeStringFormatted("%s final energy: %g. Interaction energy: %g. RMSD wrt original structure %g nm.\n",
                         actmol.getMolname().c_str(),
                         energies[InteractionType::EPOT], 
