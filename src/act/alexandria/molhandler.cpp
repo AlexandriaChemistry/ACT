@@ -1128,13 +1128,22 @@ eMinimizeStatus MolHandler::minimizeCoordinates(MsgHandler                      
     }
 }
 
-double MolHandler::coordinateRmsd(const ACTMol                 *mol,
+double MolHandler::coordinateRmsd(const std::vector<ActAtom>   &myatoms,
                                   const std::vector<gmx::RVec> &xref,
                                   std::vector<gmx::RVec>       *xfit) const
 {
     // Compute RMSD
-    auto   &myatoms = mol->atomsConst();
-    double  tmass   = mol->totalMass();
+    double tmass      = 0;
+    int    nRealAtoms = 0;
+    for(size_t i = 0; i < myatoms.size(); i++)
+    {
+        auto mass = myatoms[i].mass();
+        if (mass > 0)
+        {
+            tmass += mass;
+            nRealAtoms += 1;
+        }
+    }
     std::vector<real> myMass;
     rvec ref_com = { 0, 0, 0 };
     rvec fit_com = { 0, 0, 0 };
@@ -1169,7 +1178,7 @@ double MolHandler::coordinateRmsd(const ACTMol                 *mol,
         }
         rvec_inc((*xfit)[i], fit_com);
     }
-    return std::sqrt(msd/mol->nRealAtoms());
+    return std::sqrt(msd/nRealAtoms);
 }
 
 //! \brief Write energy legend to xvg file

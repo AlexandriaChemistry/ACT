@@ -148,7 +148,7 @@ protected:
             MolHandler mh;
             
             std::vector<gmx::RVec> xmin = coords;
-            double rmsd = mh.coordinateRmsd(&mp, coords, &xmin);
+            double rmsd = mh.coordinateRmsd(mp.atomsConst(), coords, &xmin);
             checker_.checkReal(rmsd, "Coordinate RMSD before minimizing");
             // Infinite number of shell iterations, i.e. until convergence.
             std::map<InteractionType, double> eAfter;
@@ -165,7 +165,7 @@ protected:
             }
             // Let's see which algorithm we ended up using.
             checker_.checkString(eMinimizeAlgorithmToString(simConfig.minAlg()), "algorithm");
-            rmsd = mh.coordinateRmsd(&mp, coords, &xmin);
+            rmsd = mh.coordinateRmsd(mp.atomsConst(), coords, &xmin);
             checker_.checkReal(rmsd, "Coordinate RMSD after minimizing");
             add_energies(pd, &checker_, eAfter, "after");
             

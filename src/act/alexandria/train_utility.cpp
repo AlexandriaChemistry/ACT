@@ -1335,7 +1335,7 @@ void TrainForceFieldPrinter::printEnergyForces(MsgHandler                       
             std::map<InteractionType, double> eAfter;
             molHandler_.minimizeCoordinates(msghandler, pd, mol->topology(), forceComp, simConfig,
                                             &xmin, &eAfter, {});
-            double rmsd = molHandler_.coordinateRmsd(mol, coords, &xmin);
+            double rmsd = molHandler_.coordinateRmsd(mol->atomsConst(), coords, &xmin);
 
             if (rmsd > 0.1) // nm
             {

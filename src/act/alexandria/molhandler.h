@@ -169,16 +169,16 @@ public:
 
     /*! \brief
      * The routine will compute the RMSD between two sets of coordinates
-     * for a given actmol object.
+     * for a set of ActAtoms.
      *
-     * \param[in]    mol  The molecule object
-     * \param[in]    xref The reference coordinate set.
-     * \param[inout] xfit The (minimized) coordinate set before alignment (input) 
-     *                    respectively after (outptu)
+     * \param[in]    atoms The atoms
+     * \param[in]    xref  The reference coordinate set.
+     * \param[inout] xfit  The coordinate set before alignment (input)
+     *                     respectively after (output)
      * \return Root mean square atomic deviation of atomic
      *         coordinates after superposition.
      */
-    double coordinateRmsd(const ACTMol                  *mol,
+    double coordinateRmsd(const std::vector<ActAtom>   &atoms,
                           const std::vector<gmx::RVec> &xref,
                           std::vector<gmx::RVec>       *xfit) const;
 
