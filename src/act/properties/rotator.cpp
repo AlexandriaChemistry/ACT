@@ -218,10 +218,10 @@ Rotator::Rotator(const std::string &rotalg, bool debugAngles)
     {
         rotalg_ = stringToRotationAlgorithm[rotalg];
     }
-    else
+    else if (!rotalg.empty())
     {
-        fprintf(stderr, "Ignoring unknown rotation algorithm '%s', will use %s\n",
-                rotalg.c_str(), rotalgToString(rotalg_).c_str());
+        printf("Ignoring unknown rotation algorithm '%s', will use %s\n",
+               rotalg.c_str(), rotalgToString(rotalg_).c_str());
     }
     debugAngles_ = debugAngles;
 }
