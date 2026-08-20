@@ -34,12 +34,16 @@ namespace alexandria
 {
 
 /*! \brief Generation parameters using combination rules
- * \param[in] pd    The force field
- * \param[in] itype The interaction type
- * \param[in] force If set, all interaction parameters will be recomputed, if not only the ones for which 
- *                  at least one of the two constituting parameters changed will be reset.
+ * \param[in]    msghandler For debugging info
+ * \param[inout] pd         The force field
+ * \param[in]    itype      The interaction type
+ * \param[in]    force      If set, all interaction parameters will be
+ *                          recomputed, if not only the ones for which
+ *                          at least one of the two constituting parameters
+ *                          changed will be reset.
  */
-static void generateParameterPairs(ForceField      *pd,
+static void generateParameterPairs(MsgHandler      *msghandler,
+                                   ForceField      *pd,
                                    InteractionType  itype,
                                    bool             force)
 {
@@ -118,17 +122,30 @@ static void generateParameterPairs(ForceField      *pd,
             ForceFieldParameterMap pmap;
             evalCombinationRule(forcesVdw->potential(),
                                 comb_rule, ivdw.second, jvdw.second, includePair, &pmap);
-
-            parm->insert_or_assign(Identifier({ iid.id(), jid.id() }, { 1 }, CanSwap::Yes),
-                                   std::move(pmap));
-            nid += 1;
+            if (!pmap.empty())
+            {
+                auto myId = Identifier({ iid.id(), jid.id() }, { 1 }, CanSwap::Yes);
+                if (msghandler && msghandler->debug())
+                {
+                    auto mystr = gmx::formatString("Generated pair parameters for %s / %s",
+                                                   potentialToString(forcesVdw->potential()).c_str(),
+                                                   myId.id().c_str());
+                    for(const auto &p : pmap)
+                    {
+                        mystr += gmx::formatString(" %s: %g", p.first.c_str(), p.second.value());
+                    }
+                    msghandler->writeDebug(mystr);
+                }
+                parm->insert_or_assign(std::move(myId), std::move(pmap));
+                nid += 1;
+            }
         }
     }
-    if (debug)
+    if (msghandler && msghandler->debug())
     {
         int np = forcesVdw->parameters()->size();
-        fprintf(debug, "Made %d/%d identifiers for %s in generateParameterPairs\n", nid, np,
-                interactionTypeToString(itype).c_str());
+        msghandler->writeDebug(gmx::formatString("Made %d/%d identifiers for %s in generateParameterPairs\n",
+                                                 nid, np, interactionTypeToString(itype).c_str()));
     }
     // Phew, we're done!
 }
@@ -203,11 +220,13 @@ static void generateCoulombParameterPairs(ForceField *pd, bool force)
     // Phew, we're done!
 }
     
-void generateDependentParameter(ForceField *pd, bool force)
+void generateDependentParameter(MsgHandler *msghandler,
+                                ForceField *pd,
+                                bool        force)
 {
-    generateParameterPairs(pd, InteractionType::VDW, force);
-    generateParameterPairs(pd, InteractionType::VDWCORRECTION, force);
-    generateParameterPairs(pd, InteractionType::INDUCTIONCORRECTION, force);
+    generateParameterPairs(msghandler, pd, InteractionType::VDW, force);
+    generateParameterPairs(msghandler, pd, InteractionType::VDWCORRECTION, force);
+    generateParameterPairs(msghandler, pd, InteractionType::INDUCTIONCORRECTION, force);
     generateCoulombParameterPairs(pd, force);
 }
 

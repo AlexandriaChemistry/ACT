@@ -170,7 +170,7 @@ void StaticIndividualInfo::updateForceField(MsgHandler                *msghandle
     //! \todo This will generate the whole matrix of parameters from scratch.
     // It would be more efficient to only generate the atom type pair parameters for
     // which one of the atomic Van der Waals or Coulomb parameters changed.
-    generateDependentParameter(&pd_);
+    generateDependentParameter(msghandler, &pd_);
     for(int n : mychanged)
     {
         optIndex_[n].forceFieldParameter()->setUpdated(false);

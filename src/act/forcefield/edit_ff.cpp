@@ -929,7 +929,7 @@ int edit_ff(int argc, char*argv[])
             }
             else if (plot)
             {
-                generateDependentParameter(&pd);
+                generateDependentParameter(&msghandler, &pd);
                 plotInteractions(&msghandler, &pd, analyze);
             }
         }

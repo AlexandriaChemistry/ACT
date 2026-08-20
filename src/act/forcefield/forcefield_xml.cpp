@@ -611,7 +611,7 @@ void readForceField(const std::string &fileName,
     pd->checkForPolarizability();
     pd->checkConsistency(msgHandler);
     pd->guessChargeGenerationAlgorithm();
-    generateDependentParameter(pd, true);
+    generateDependentParameter(msgHandler, pd, true);
     if (msgHandler && msgHandler->debug())
     {
         writeForceField("pdout.dat", pd, false);
