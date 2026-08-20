@@ -143,6 +143,10 @@ int simulate(int argc, char *argv[])
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     (void) pd.verifyCheckSum(&msghandler);
+    for(const auto &ss : pd.info())
+    {
+        msghandler.write(ss);
+    }
 
     ForceComputer forceComp;
     double epsilonr;
@@ -277,6 +281,9 @@ int simulate(int argc, char *argv[])
                                         val.c_str(), unit);
                 }
                 jtree.addObject(jtener);
+                // Multipoles
+                msghandler.write("Multipole before minimization");
+                analyse_multipoles(&msghandler, &actmol, {}, &pd, &forceComp, nullptr);
             }
             // Now do the minimization.
             msghandler.write(gmx::formatString("Starting minimization of '%s' using %s algorithm.\n",
@@ -306,6 +313,14 @@ int simulate(int argc, char *argv[])
                                                          interactionTypeToString(ei.first).c_str(), ei.second));
                     }
                 }
+                // Multipoles
+                msghandler.write("Multipole after minimization");
+                // This is a hack for printing.
+                for(auto &qp : (*actmol.qProps()))
+                {
+                    qp.qPact()->setX(xmin);
+                }
+                analyse_multipoles(&msghandler, &actmol, {}, &pd, &forceComp, nullptr);
                 JsonTree jtener("Energies after");
                 std::string unit("kJ/mol");
                 for (const auto &ener : energies)

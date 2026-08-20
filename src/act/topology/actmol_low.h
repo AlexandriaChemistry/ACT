@@ -44,11 +44,16 @@
 #include "act/basics/chargemodel.h"
 #include "act/basics/identifier.h"
 #include "act/basics/msg_handler.h"
+#include "act/molprop/molpropobservable.h"
+#include "act/qgen/qtype.h"
+#include "act/statistics/statistics.h"
 
 namespace alexandria
 {
 
 class ActAtom;
+class ACTMol;
+class ForceComputer;
 class ForceField;
 class QgenAcm;
 
@@ -110,6 +115,25 @@ double computeAtomizationEnergy(MsgHandler                 *msghandler,
                                 const std::vector<ActAtom> &atoms,
                                 const AtomizationEnergy    &atomenergy,
                                 double                      temperature);
+
+//! \brief Short-cut for property-dependent statistics
+using qtStats = std::map<qPropertyType, gmx_stats>;
+
+/*! \brief Analyses dipoles, quadrupoles, etc.
+ * \param[in]    msg_handler For output
+ * \param[in]    mol         The ACT molecule
+ * \param[in]    toler       Marks when an outlier should be highlighted in the output.
+ *                           If empty, it will be ignored.
+ * \param[in]    pd          The force field
+ * \param[in]    forceComputer The name says it all
+ * \param[inout] lsq         Structure to keep track of multipole deviations from QM. May be nullptr.
+ */
+void analyse_multipoles(MsgHandler                                                  *msg_handler,
+                        const ACTMol                                                *mol,
+                        const std::map<MolPropObservable, double>                   &toler,
+                        const ForceField                                            *pd,
+                        const ForceComputer                                         *forceComputer,
+                        std::map<MolPropObservable, std::map<iMolSelect, qtStats> > *lsq);
 
 } // namespace alexandria
 #endif

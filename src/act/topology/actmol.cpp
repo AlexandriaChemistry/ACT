@@ -239,8 +239,8 @@ std::vector<gmx::RVec> ACTMol::experCoords(const std::vector<gmx::RVec> &xxx) co
         case ActParticle::Shell:
         case ActParticle::Vsite:
             {
-                auto cores = myatoms[i].cores();
-                GMX_RELEASE_ASSERT(!cores.empty(), "Shell or vsite without core");
+                auto cores = myatoms[i].parents();
+                GMX_RELEASE_ASSERT(!cores.empty(), "Shell or vsite without parents");
                 copy_rvec(coords[cores[0]], coords[i]);
             }
             break;

@@ -40,8 +40,11 @@
 
 #include "act/forcefield/forcefield.h"
 #include "act/forcefield/forcefield_parameter.h"
+#include "act/forces/forcecomputer.h"
 #include "act/forces/forcecomputerutils.h"
+#include "act/molprop/multipole_names.h"
 #include "act/qgen/qgen_acm.h"
+#include "act/topology/actmol.h"
 #include "act/topology/topology.h"
 #include "act/utility/units.h"
 #include "gromacs/math/vec.h"
@@ -205,4 +208,89 @@ double computeAtomizationEnergy(MsgHandler                 *msghandler,
     return atomizationEnergy;
 }
 
+void analyse_multipoles(MsgHandler                                *msg_handler,
+                        const ACTMol                              *mol,
+                        const std::map<MolPropObservable, double> &toler,
+                        const ForceField                          *pd,
+                        const ForceComputer                                         *forceComputer,
+                        std::map<MolPropObservable, std::map<iMolSelect, qtStats> > *lsq)
+{
+    gmx::TextWriter *tw = nullptr;
+    if (msg_handler)
+    {
+        tw = msg_handler->tw();
+    }
+    auto topology = mol->topology();
+    bool doForce  = pd->polarizable() || topology->hasVsites();
+    auto qprops = mol->qPropsConst();
+    for(auto qp = qprops.begin(); qp < qprops.end(); ++qp)
+    {
+        auto qelec = qp->qPqmConst();
+        auto qcalc = qp->qPact();
+        qcalc->initializeMoments();
+        if (doForce)
+        {
+            std::vector<gmx::RVec>            forces(topology->nAtoms());
+            std::map<InteractionType, double> energies;
+            auto                              myx = qcalc->x();
+            forceComputer->compute(msg_handler, pd, topology, &myx, &forces, &energies);
+            qcalc->setX(myx);
+        }
+        qcalc->calcMoments(msg_handler);
+
+        for(auto &mpo : mpoMultiPoles)
+        {
+            const char *name   = mpo_name(mpo);
+            const char *unit   = mpo_unit2(mpo);
+            double      factor = convertFromGromacs(1, unit);
+            std::vector<double> Telec;
+            if (qelec.hasMultipole(mpo))
+            {
+                tw->writeStringFormatted("Electronic %s (%s):\n", name, unit);
+                Telec = qelec.getMultipole(msg_handler, mpo);
+                for(const auto &pm : formatMultipole(mpo, Telec))
+                {
+                    tw->writeLine(pm);
+                }
+            }
+            real delta = 0;
+            auto Tcalc = qcalc->getMultipole(msg_handler, mpo);
+            tw->writeStringFormatted("Calc %s (%s):\n", name, unit);
+            for(const auto &pm : formatMultipole(mpo, Tcalc))
+            {
+                tw->writeLine(pm);
+            }
+
+            std::vector<double> diff;
+            auto qt = qcalc->qtype();
+            if (Telec.size() == Tcalc.size())
+            {
+                for(size_t i = 0; i < Tcalc.size(); i++)
+                {
+                    auto tc = Tcalc[i];
+                    auto te = Telec[i];
+                    diff.push_back(tc-te);
+                    delta += gmx::square(tc-te);
+                    if (lsq)
+                    {
+                        (*lsq)[mpo][mol->datasetType()][qt].add_point(factor*te, factor*tc, 0, 0);
+                    }
+                }
+                double rms = std::sqrt(delta/Tcalc.size());
+                std::string flag("");
+                if (!toler.empty() && rms > toler.at(mpo))
+                {
+                    flag = " MULTI";
+                }
+                tw->writeStringFormatted("%s-Electronic Norm %g RMS = %g (%s)%s:\n",
+                                         qPropertyTypeName(qt).c_str(),
+                                         factor*std::sqrt(delta), factor*rms, unit, flag.c_str());
+                for(const auto &pm : formatMultipole(mpo, diff))
+                {
+                    tw->writeLine(pm);
+                }
+            }
+        }
+    }
+}
 } // namespace alexandria

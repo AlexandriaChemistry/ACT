@@ -203,14 +203,16 @@ void ForceComputer::compute(MsgHandler                        *msg_handler,
     constructVsiteCoordinates(top, coordinates);
     // Short-cut
     auto &atoms = top->atoms();
-    // Reset shells if needed
+    // Reset shells if needed and if possible
     if (resetShells)
     {
         for(size_t i = 0; i < top->nAtoms(); i++)
         {
-            for(int sh : atoms[i].shells())
+            if (atoms[i].pType() == ActParticle::Shell &&
+                atoms[i].parents().size() == 1)
             {
-                copy_rvec((*coordinates)[i], (*coordinates)[sh]);
+                auto parent = atoms[i].parents()[0];
+                copy_rvec((*coordinates)[parent], (*coordinates)[i]);
             }
         }
     }
@@ -280,10 +282,10 @@ void ForceComputer::compute(MsgHandler                        *msg_handler,
                     update_shell_positions(p->atomIndex(0), p->atomIndex(1),
                                            coordinates, *forces,
                                            fcShell_1[shell], fcHyper[shell]);
-                    // Check distance from core, if there is only one
-                    if (maxShellDistance2 > 0 && atoms[shell].cores().size() == 1)
+                    // Check distance from parent, if there is only one
+                    if (maxShellDistance2 > 0 && atoms[shell].parents().size() == 1)
                     {
-                        int core = atoms[shell].cores()[0];
+                        int core = atoms[shell].parents()[0];
                         rvec dx;
                         rvec_sub((*coordinates)[shell], (*coordinates)[core], dx);
                         real dx2 = iprod(dx, dx);

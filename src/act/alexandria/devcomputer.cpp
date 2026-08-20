@@ -107,7 +107,7 @@ void BoundsDevComputer::calcDeviation(MsgHandler                        *,
             // Add vsite 1 charge
             for(auto vv : atom.vsites())
             {
-                if (atoms[vv].cores().size() == 1)
+                if (atoms[vv].parents().size() == 1)
                 {
                     q += atoms[vv].charge();
                 }
