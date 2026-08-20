@@ -1440,8 +1440,7 @@ void OpenMMWriter::addXmlForceField(MsgHandler                *msghandler,
                                     add_xml_char(baby, exml_names(xmlEntryOpenMM::SITENAME), iname.c_str());
                                     
                                     //! \todo get data from topology instead of making stuff up.
-                                    
-                                    std::vector<int> cores = myatoms[i].cores();
+                                    std::vector<int> cores = myatoms[i].parents();
                                     if (itp.first ==  InteractionType::VSITE3OUTS ||
                                         itp.first ==  InteractionType::VSITE3OUT)
                                     {

@@ -64,9 +64,6 @@ namespace alexandria
 
 class MsgHandler;
 
-//! \brief Short-cut for property-dependent statistics
-using qtStats = std::map<qPropertyType, gmx_stats>;
-
 
 /*! \brief Class to manage output from force field training
  */
@@ -127,12 +124,6 @@ private:
                                iMolSelect           ims,
                                const ForceComputer *forceComp);
     
-    //! \brief Analyses dipoles, quadrupoles, etc.
-    void analyse_multipoles(MsgHandler                                      *msg_handler,
-                            const std::vector<alexandria::ACTMol>::iterator &mol,
-                            const std::map<MolPropObservable, double>       &toler,
-                            const ForceField                                *pd,
-                            const ForceComputer                             *forceComputer);
     //! \brief And the atoms.
     void printAtoms(gmx::TextWriter              *tw,
                     JsonTree                     *jtree,

@@ -1224,7 +1224,7 @@ void Topology::addVsitesToCores()
     {
         if (ActParticle::Vsite == atoms_[i].pType())
         {
-            for(const auto cj : atoms_[i].cores())
+            for(const auto cj : atoms_[i].parents())
             {
                 atoms_[cj].addVsite(i);
             }
@@ -1432,7 +1432,7 @@ void Topology::build(MsgHandler             *msghandler,
     // Now renumber the atoms' internal links to cores and shells
     for (auto &atom: atoms_)
     {
-        auto ccc = atom.coresPtr();
+        auto ccc = atom.parentsPtr();
         for(auto c = ccc->begin(); c < ccc->end(); ++c)
         {
             *c = renumber[*c];
@@ -1635,7 +1635,7 @@ std::vector<std::set<size_t>> Topology::generateExclusions(MsgHandler *msghandle
         {
             continue;
         }
-        for (const auto cc : atoms_[i].cores())
+        for (const auto cc : atoms_[i].parents())
         {
             for (const auto c : exclusions[cc])
             {

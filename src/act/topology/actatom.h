@@ -64,8 +64,12 @@ private:
     std::vector<int> shells_;
     //! My vsite particles, if any
     std::vector<int> vsites_;
-    //! My atom particles, if any. Both VSite and Shell particles have "cores"
-    std::vector<int> cores_;
+    /*! My "parent" particles, if any. 
+     * Both VSite and Shell particles have "parents"
+     * If shells are connected to vsites, the parent maybe a vsite,
+     * but typically these will be atoms.
+     */
+    std::vector<int> parents_;
     //! The atomic number
     int              atomicNumber_;
     //! The mass
@@ -131,17 +135,17 @@ public:
     /*! \brief Set the core particle index
      * \param[in] index The index
      */
-    void addCore(int index) { cores_.push_back(index); }
+    void addCore(int index) { parents_.push_back(index); }
 
     /*! \brief Return the core particle connected to this shell
      * \return the core particle or -1 if there is none
      */
-    const std::vector<int> &cores() const { return cores_; }
+    const std::vector<int> &parents() const { return parents_; }
 
     /*! \brief Return the core particle connected to this shell
      * \return the core particle or -1 if there is none
      */
-    std::vector<int> *coresPtr() { return &cores_; }
+    std::vector<int> *parentsPtr() { return &parents_; }
 
     //! \return the atomic number
     int atomicNumber() const { return atomicNumber_; }
