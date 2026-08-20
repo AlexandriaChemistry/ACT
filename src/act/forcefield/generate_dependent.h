@@ -37,14 +37,19 @@
 namespace alexandria
 {
 
-    class ForceField;
-
-    /*! \brief Generate nonbonded parameters for pairs of atoms
-     * as well as force constants force shells.
-     * \param[inout] pd The force field structure
-     * \param[in]    force Update all parameters in the matrices
-     */
-    void generateDependentParameter(ForceField *pd, bool force = false);
+class ForceField;
+class MsgHandler;
+/*! \brief Generate nonbonded parameters for pairs of atoms
+ * as well as force constants force shells. Only pair parameters
+ * for which one of the atomic parameters were updated will be
+ * generated, unless force is true.
+ * \param[in]    msghandler For debugging info
+ * \param[inout] pd         The force field structure
+ * \param[in]    force      Update all parameters in the matrices
+ */
+void generateDependentParameter(MsgHandler *msghandler,
+                                ForceField *pd,
+                                bool        force = false);
 
 }
 #endif
