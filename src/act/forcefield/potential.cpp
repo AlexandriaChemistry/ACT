@@ -102,7 +102,7 @@ std::map<Potential, PotentialProperties> potprops = {
       { "MORSE_BONDS", F_MORSE, { "beta", "De", "D0", "bondlength" },
         "(De*((1 - exp(-beta*(r-bondlength)))^2-1)+D0)", "" } },
     { Potential::HUA_BONDS,
-      { "HUA_BONDS", F_HUA, { "bondlength", "De", "b", "c" },
+      { "HUA_BONDS", F_HUA, { "De", "b", "bondlength", "c" },
         "(De*(((1-myexp)/(1-c*myexp))^2 -1));myexp=exp(-b*(r-bondlength))", "" } },
     { Potential::LINEAR_ANGLES, { "LINEAR_ANGLES", F_LINEAR_ANGLES, { "a", "klin" }, "0", "" } },
     { Potential::UREY_BRADLEY_ANGLES, { "UREY_BRADLEY_ANGLES", F_UREY_BRADLEY, { "kt", "ub_angle", "r13", "kub" }, "0", "" } },
