@@ -42,11 +42,10 @@
 
 #include <gtest/gtest.h>
 
-#include "actmol_util.h"
-
 #include "act/import/import.h"
 #include "act/forcefield/forcefield_utils.h"
 #include "act/topology/actmol.h"
+#include "act/topology/actmol_util.h"
 #include "gromacs/utility/fatalerror.h"
 
 #include "testutils/refdata.h"

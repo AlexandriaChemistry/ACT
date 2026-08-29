@@ -32,23 +32,15 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-set(testname "AlexandriaTests")
-set(exename "alexandria-test")
+set(testname "ConstraintsTests")
+set(exename "constraints-test")
 
 gmx_add_unit_test(
     ${testname}
     ${exename}
     # files with code for tests
-    allbondedsTest.cpp
-    confighandlerTest.cpp
-    devcomputerTest.cpp
-    forcecomputerTest.cpp
-    molhandlerTest.cpp
-    molselectTest.cpp
-    openmmTest.cpp
-    optimizationindexTest.cpp
-    mcmcmutatorTest.cpp
-    # pseudo-library for code for alexandria
+    constraintsTest.cpp
+    # pseudo-library for code for properties
     $<TARGET_OBJECTS:actLib>
     )
 target_link_libraries(${exename} libactgromacs ${GMX_EXTRA_LIBRARIES} ${GMX_EXE_LINKER_FLAGS})

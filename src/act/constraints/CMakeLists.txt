@@ -2,7 +2,7 @@
 #
 #  This source file is part of the Alexandria program.
 #
-#  Copyright (C) 2021-2026
+#  Copyright (C) 2026
 #
 #  Developers:
 #             Mohammad Mehdi Ghahremanpour,
@@ -25,19 +25,9 @@
 #  Boston, MA  02110-1301, USA.
 #
 
-add_subdirectory(basics)
-add_subdirectory(coulombintegrals)
-add_subdirectory(forces)
-add_subdirectory(ga)
-add_subdirectory(molprop)
-add_subdirectory(topology)
-add_subdirectory(import)
-add_subdirectory(forcefield)
-add_subdirectory(qgen)
-add_subdirectory(utility)
-add_subdirectory(statistics)
-add_subdirectory(properties)
-add_subdirectory(alexandria)
-add_subdirectory(constraints)
-# Couple of ACT python scripts, independent of C++ code.
-add_subdirectory(python)
+file(GLOB CONSTRAINT_SOURCES *.cpp *.h)
+target_sources(actLib PRIVATE ${CONSTRAINT_SOURCES})
+
+if (BUILD_TESTING)
+   add_subdirectory(tests)
+endif()

@@ -1,0 +1,151 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="molname"></String>
+  <Sequence Name="coordinates">
+    <Int Name="Length">14</Int>
+    <Vector>
+      <Real Name="X">-0.13497999999999999</Real>
+      <Real Name="Y">-0.0048099999999999992</Real>
+      <Real Name="Z">-9.9999999999999991e-06</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-0.13497999999999999</Real>
+      <Real Name="Y">-0.0048099999999999992</Real>
+      <Real Name="Z">-9.9999999999999991e-06</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0.020959999999999999</Real>
+      <Real Name="Y">0.00012999999999999999</Real>
+      <Real Name="Z">-0.00016999999999999999</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0.020959999999999999</Real>
+      <Real Name="Y">0.00012999999999999999</Real>
+      <Real Name="Z">-0.00016999999999999999</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0.080049999999999996</Real>
+      <Real Name="Y">-0.11053999999999999</Real>
+      <Real Name="Z">3.9999999999999996e-05</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0.080049999999999996</Real>
+      <Real Name="Y">-0.11053999999999999</Real>
+      <Real Name="Z">3.9999999999999996e-05</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0.070279999999999995</Real>
+      <Real Name="Y">0.11552999999999999</Real>
+      <Real Name="Z">3.9999999999999996e-05</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0.070279999999999995</Real>
+      <Real Name="Y">0.11552999999999999</Real>
+      <Real Name="Z">3.9999999999999996e-05</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-0.1721</Real>
+      <Real Name="Y">-0.10738</Real>
+      <Real Name="Z">-0.0015699999999999998</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-0.1721</Real>
+      <Real Name="Y">-0.10738</Real>
+      <Real Name="Z">-0.0015699999999999998</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-0.17295999999999997</Real>
+      <Real Name="Y">0.046289999999999991</Real>
+      <Real Name="Z">0.088889999999999997</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-0.17295999999999997</Real>
+      <Real Name="Y">0.046289999999999991</Real>
+      <Real Name="Z">0.088889999999999997</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-0.17341999999999999</Real>
+      <Real Name="Y">0.049309999999999993</Real>
+      <Real Name="Z">-0.086879999999999999</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-0.17341999999999999</Real>
+      <Real Name="Y">0.049309999999999993</Real>
+      <Real Name="Z">-0.086879999999999999</Real>
+    </Vector>
+  </Sequence>
+  <Sequence Name="forces">
+    <Int Name="Length">14</Int>
+    <Vector>
+      <Real Name="X">0</Real>
+      <Real Name="Y">0</Real>
+      <Real Name="Z">0</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0</Real>
+      <Real Name="Y">0</Real>
+      <Real Name="Z">0</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0</Real>
+      <Real Name="Y">0</Real>
+      <Real Name="Z">0</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0</Real>
+      <Real Name="Y">0</Real>
+      <Real Name="Z">0</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0</Real>
+      <Real Name="Y">0</Real>
+      <Real Name="Z">0</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0</Real>
+      <Real Name="Y">0</Real>
+      <Real Name="Z">0</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0</Real>
+      <Real Name="Y">0</Real>
+      <Real Name="Z">0</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0</Real>
+      <Real Name="Y">0</Real>
+      <Real Name="Z">0</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0</Real>
+      <Real Name="Y">0</Real>
+      <Real Name="Z">0</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0</Real>
+      <Real Name="Y">0</Real>
+      <Real Name="Z">0</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0</Real>
+      <Real Name="Y">0</Real>
+      <Real Name="Z">0</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0</Real>
+      <Real Name="Y">0</Real>
+      <Real Name="Z">0</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0</Real>
+      <Real Name="Y">0</Real>
+      <Real Name="Z">0</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0</Real>
+      <Real Name="Y">0</Real>
+      <Real Name="Z">0</Real>
+    </Vector>
+  </Sequence>
+</ReferenceData>
