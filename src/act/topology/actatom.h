@@ -74,6 +74,8 @@ private:
     int              atomicNumber_;
     //! The mass
     double           mass_;
+    //! The inverse mass
+    double           invmass_ = 0;
     //! The charge
     double           charge_;
     //! Residue number. If at -1 it means it has not been set.
@@ -88,12 +90,22 @@ public:
             double             newcharge,
             int                row) :
         id_({ name }), name_(name), elem_(elem), row_(row), ffType_(ffType), apType_(apType), atomicNumber_(atomicNumber), mass_(newmass), charge_(newcharge)
-    {}
+    {
+        if (mass_ > 0)
+        {
+            invmass_ = 1.0/mass_;
+        }
+    }
 
     ActAtom(const ParticleType &pt) :
         id_({ pt.id() }), name_(pt.id().id() ), elem_(pt.element()), ffType_( pt.id().id() ),
         apType_( pt.apType()), atomicNumber_(pt.atomnumber()), mass_(pt.mass()), charge_(pt.charge())
-    {}
+    {
+        if (pt.mass() > 0)
+        {
+            invmass_ = 1.0/pt.mass();
+        }
+    }
 
     //! \return Identifier
     const Identifier &id() const { return id_; }
@@ -152,6 +164,9 @@ public:
 
     //! \return the mass
     double mass() const { return mass_; }
+
+    //! \return the mass
+    double invmass() const { return invmass_; }
 
     //! \return the charge
     double charge() const { return charge_; }
