@@ -51,6 +51,7 @@
 #include <random>
 
 #include "act/alexandria/pdbwriter.h"
+#include "act/constraints/shake.h"
 #include "act/properties/velocityhandler.h"
 #include "act/molprop/molpropobservable.h"
 #include "act/topology/actmol.h"
@@ -1318,8 +1319,11 @@ void MolHandler::simulate(MsgHandler                    *msghandler,
             }
         }
     }
-
-    int nDOF = DIM*mol->nRealAtoms();
+    Constrainer constrainer(simConfig.constraintMaxIter(),
+                            simConfig.constraintTolerance(),
+                            1.0/deltat);
+    auto bondPotential = pd->findForcesConst(InteractionType::BONDS).potential();
+    int nDOF           = DIM*mol->nRealAtoms();
     msghandler->write("\nWill start simulation.\n");
     for (int step = 0; step < simConfig.nsteps(); step++)
     {
@@ -1343,6 +1347,12 @@ void MolHandler::simulate(MsgHandler                    *msghandler,
                 }
             }
         }
+        if (simConfig.constrain())
+        {
+            constrainer.shake(msghandler, bondPotential,
+                              mol->topology()->entry(InteractionType::BONDS),
+                              mol->topology()->atoms(), &coordinates);
+        }
         // Compute forces and energies
         forceComp->compute(msghandler, pd, mol->topology(), &coordinates,
                            &forces[cur], &energies);
@@ -1362,6 +1372,13 @@ void MolHandler::simulate(MsgHandler                    *msghandler,
                                                             forces[prev][i][m]);
                 }
             }
+        }
+        if (simConfig.constrain())
+        {
+            constrainer.rattle(msghandler, bondPotential,
+                               mol->topology()->entry(InteractionType::BONDS),
+                               mol->topology()->atoms(), 
+                               coordinates, &velocities);
         }
         // Write output if needed
         if (simConfig.nstxout() > 0 && step % simConfig.nstxout() == 0)

@@ -49,6 +49,7 @@ jobs:
           ./bin/act-forces-test
           ./bin/alexandria-test
           ./bin/act-utility-test
+          ./bin/constraint-test
           ./bin/coulombIntegrals-test
           ./bin/fileio-test
           ./bin/forcefield-test
