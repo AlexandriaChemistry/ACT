@@ -76,10 +76,11 @@ protected:
     
     void testConstrainer(const std::string &molname,
                          int                maxiter,
-                         double             toler)
+                         double             toler,
+                         double             invdt)
     {
         auto               *pd = getForceField("PC+GV-elec");
-        Constrainer         ccc(maxiter, toler);
+        Constrainer         ccc(maxiter, toler, invdt);
         ForceComputer       forceComp;
         std::vector<ACTMol> mps;
         MsgHandler msghandler;
@@ -87,24 +88,49 @@ protected:
         std::string dirmolname("../../alexandria/tests/mols/");
         dirmolname     += molname;
         initACTMol(dirmolname.c_str(), pd, &forceComp, &mps);
-        gmx::RVec           fZero = { 0, 0, 0 };
+        gmx::RVec           vZero = { 0, 0, 0 };
+        int isign                 = 0;
+        std::vector<double> signs = { 0.3, 0.7, -0.6, -0.9, 0.5 };
         for(auto &mol: mps)
         {
             checker_.checkString(mol.getMolname(), "molname");
             std::vector<gmx::RVec> coords = mol.xOriginal();
-            std::vector<gmx::RVec> forces(coords.size(), fZero);
+            std::vector<gmx::RVec> velocities(coords.size(), vZero);
+            auto atoms = mol.topology()->atoms();
+            for(size_t i = 0; i < atoms.size(); i++)
+            {
+                if (atoms[i].pType() == ActParticle::Atom)
+                {
+                    for(int m = 0; m < DIM; m++)
+                    {
+                        coords[i][m]    += 0.002*signs[isign];
+                        velocities[i][m] = 0.1*signs[isign];
+                        isign            = (isign+1) % signs.size();
+                    }
+                }
+            }
+            checker_.checkSequence(coords.begin(), coords.end(), "coordinates before");
+            auto pot = pd->findForcesConst(InteractionType::BONDS).potential();
             int error = ccc.shake(&msghandler,
+                                  pot,
                                   mol.topology()->entry(InteractionType::BONDS),
-                                  mol.topology()->atoms(),
-                                  &coords,
-                                  &forces);
+                                  atoms,
+                                  &coords);
             EXPECT_TRUE(error == 0);
             if (error == 0)
             {
-                checker_.checkSequence(coords.begin(), coords.end(),
-                                       "coordinates");
-                checker_.checkSequence(forces.begin(), forces.end(),
-                                       "forces");
+                checker_.checkSequence(coords.begin(), coords.end(), "coordinates after");
+            }
+            checker_.checkSequence(velocities.begin(), velocities.end(), "velocities before");
+            error = ccc.rattle(&msghandler,
+                               pot,
+                               mol.topology()->entry(InteractionType::BONDS),
+                               mol.topology()->atoms(),
+                               coords, &velocities);
+            EXPECT_TRUE(error == 0);
+            if (error == 0)
+            {
+                checker_.checkSequence(velocities.begin(), velocities.end(), "velocities after");
             }
         }
     }
@@ -116,12 +142,12 @@ protected:
 
 TEST_F (ConstraintsTest, Water) 
 {
-    testConstrainer("water-3-oep.log.pdb",100, 1e-4);
+    testConstrainer("water-3-oep.log.pdb",100, 1e-4, 1000);
 }
 
 TEST_F (ConstraintsTest, Acetate) 
 {
-    testConstrainer("acetate.sdf", 100, 1e-4);
+    testConstrainer("acetate.sdf", 1000, 1e-4, 1000);
 }
 
 }

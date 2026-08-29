@@ -40,45 +40,92 @@
 namespace alexandria
 {
 
-int Constrainer::shake(gmx_unused MsgHandler      *msghandler,
-                       const TopologyEntryVector  &bonds,
-                       const std::vector<ActAtom> &atoms,
-                       std::vector<gmx::RVec>     *positions,
-                       gmx_unused std::vector<gmx::RVec>*forces)
+void Constrainer::prepareConstants(MsgHandler                 *msghandler,
+                                   Potential                   pot,
+                                   const TopologyEntryVector  &bonds,
+                                   const std::vector<ActAtom> &atoms)
 {
-    bool converged = false;
-    int  error     = 0;
+    // Empty arrays
+    half_reduced_mass_.clear();
+    constraint_distance_squared_.clear();
+    distance_squared_tolerance_.clear();
+    scaled_lagrange_multiplier_.clear();
+    invmass_.clear();
+    m2_.clear();
     // Precompute some stuff
-    std::vector<double>    constraint_distance_squared;
-    std::vector<double>    half_reduced_mass;
-    std::vector<double>    distance_squared_tolerance;
-    std::vector<gmx::RVec> initial_displacements;
-    std::vector<double>    scaled_lagrange_multiplier(bonds.size(), 0);
+    for (const auto &a : atoms)
+    {
+        invmass_.push_back(a.invmass());
+    }
+    std::map<Potential, int> p2i = {
+        { Potential::HUA_BONDS, huaLENGTH },
+        { Potential::MORSE_BONDS, morseLENGTH },
+        { Potential::HARMONIC_BONDS, bondLENGTH },
+        { Potential::CUBIC_BONDS, cubicLENGTH }
+    };
+    auto pi = p2i.find(pot);
+    if (p2i.end() == pi)
+    {
+        std::string msg = gmx::formatString("Unsupported bond potential %s in Constrainer",
+                                            potentialToString(pot).c_str());
+        if (msghandler)
+        {
+            msghandler->fatal(msg);
+        }
+        else
+        {
+            GMX_THROW(gmx::InvalidInputError(msg));
+        }
+    }
+    int blIndex = pi->second;
+
+    // And some more...
     for (const auto &b : bonds)
     {
         auto &indices    = b->atomIndices();
         double hrm       = 0.5*(atoms[indices[0]].invmass() +
                                 atoms[indices[1]].invmass());
-        half_reduced_mass.push_back(hrm);
+        half_reduced_mass_.push_back(hrm);
+        m2_.push_back(2.0/hrm);
         auto &params     = b->params();
-        rvec dx;
-        rvec_sub((*positions)[b->atomIndices()[0]],
-                 (*positions)[b->atomIndices()[1]], dx);
-        initial_displacements.push_back(dx);
-        auto bondlength2 = params[bondLENGTH]*params[bondLENGTH];
-        constraint_distance_squared.push_back(bondlength2);
-        distance_squared_tolerance.push_back(toler_*toler_/bondlength2);
+        auto bondlength2 = params[blIndex]*params[blIndex];
+        constraint_distance_squared_.push_back(bondlength2);
+        distance_squared_tolerance_.push_back(0.5/(toler_*bondlength2));
+        scaled_lagrange_multiplier_.push_back(0.0);
     }
-    // And some more...
-    std::vector<double> invmass;
-    for (const auto &a : atoms)
+}
+
+void Constrainer::computeInitialDisplacements(gmx_unused MsgHandler        *msghandler,
+                                              const TopologyEntryVector    &bonds,
+                                              const std::vector<gmx::RVec> &positions)
+{
+    // Empty arrays
+    initial_displacements_.clear();
+
+    // Precompute some stuff
+    for (const auto &b : bonds)
     {
-        invmass.push_back(a.invmass());
+        auto &indices    = b->atomIndices();
+        rvec dx;
+        rvec_sub(positions[indices[0]], positions[indices[1]], dx);
+        initial_displacements_.push_back(dx);
     }
+}                      
+
+int Constrainer::shake(gmx_unused MsgHandler      *msghandler,
+                       Potential                   pot,
+                       const TopologyEntryVector  &bonds,
+                       const std::vector<ActAtom> &atoms,
+                       std::vector<gmx::RVec>     *positions)
+{
+    prepareConstants(msghandler, pot, bonds, atoms);
+    computeInitialDisplacements(msghandler, bonds, *positions);
+    bool converged = false;
+    int  error     = 0;
     for(int iter = 0; iter < maxiter_ && !converged; iter++)
     {
         // Reset at the start of each iteration
-        converged = false;
+        converged = true;
         for (size_t ll = 0; ll < bonds.size() && error == 0; ll++)
         {
             // Get the parameters. We have to know their names to do this.
@@ -89,18 +136,16 @@ int Constrainer::shake(gmx_unused MsgHandler      *msghandler,
             // Compute distance before updating
             rvec dx;
             rvec_sub((*positions)[ai], (*positions)[aj], dx);
-            const real r_prime_squared                = norm2(dx);
-            const real constraint_distance_squared_ll = constraint_distance_squared[ll];
-            const real diff = constraint_distance_squared_ll - r_prime_squared;
+            const real r_prime_squared = norm2(dx);
+            const real diff            = constraint_distance_squared_[ll] - r_prime_squared;
             /* iconvf is less than 1 when the error is smaller than a bound */
-            const real iconvf = std::abs(diff) * distance_squared_tolerance[ll];
-
+            const real iconvf = std::abs(diff) * distance_squared_tolerance_[ll];
+            converged = converged && (iconvf <= 1.0);
             if (iconvf > 1.0_real)
             {
-                converged = static_cast<bool>(iconvf);
-                const real r_dot_r_prime = iprod(dx, initial_displacements[ll]);
+                const real r_dot_r_prime = iprod(dx, initial_displacements_[ll]);
                 
-                if (r_dot_r_prime < constraint_distance_squared_ll * toler_)
+                if (r_dot_r_prime < constraint_distance_squared_[ll] * toler_)
                 {
                     error = ll + 1;
                 }
@@ -109,24 +154,82 @@ int Constrainer::shake(gmx_unused MsgHandler      *msghandler,
                     /* The next line solves equation 5.6 (neglecting
                        the term in g^2), for g */
                     real scaled_lagrange_multiplier_ll =
-                        omega_ * diff * half_reduced_mass[ll] / r_dot_r_prime;
-                    scaled_lagrange_multiplier[ll] += scaled_lagrange_multiplier_ll;
-                    const real xh = dx[XX] * scaled_lagrange_multiplier_ll;
-                    const real yh = dx[YY] * scaled_lagrange_multiplier_ll;
-                    const real zh = dx[ZZ] * scaled_lagrange_multiplier_ll;
-                    const real im = invmass[ai];
-                    const real jm = invmass[aj];
-                    (*positions)[ai][XX] += xh * im;
-                    (*positions)[ai][YY] += yh * im;
-                    (*positions)[ai][ZZ] += zh * im;
-                    (*positions)[aj][XX] -= xh * jm;
-                    (*positions)[aj][YY] -= yh * jm;
-                    (*positions)[aj][ZZ] -= zh * jm;
+                        omega_ * diff * half_reduced_mass_[ll] / r_dot_r_prime;
+                    scaled_lagrange_multiplier_[ll] += scaled_lagrange_multiplier_ll;
+                    rvec xyzh;
+                    svmul(scaled_lagrange_multiplier_ll, initial_displacements_[ll], xyzh);
+                    for(int m = 0; m < DIM; m++)
+                    {
+                        (*positions)[ai][m] += xyzh[m] * invmass_[ai];
+                        (*positions)[aj][m] -= xyzh[m] * invmass_[aj];
+                    }
                 }
             }
         }
     }
-    return error; 
+    if (error == 0 && !converged)
+    {
+        error = -1;
+    }
+    return error;
+}
+
+int Constrainer::rattle(MsgHandler                   *msghandler,
+                        Potential                     pot,
+                        const TopologyEntryVector    &bonds,
+                        const std::vector<ActAtom>   &atoms,
+                        const std::vector<gmx::RVec> &positions,
+                        std::vector<gmx::RVec>       *velocities)
+{
+    prepareConstants(msghandler, pot, bonds, atoms);
+    computeInitialDisplacements(msghandler, bonds, positions);
+
+    int  iter      = 0;
+    int  error     = 0;
+    bool converged = false;
+    for (iter = 0; (iter < maxiter_) && !converged && (error == 0); iter++)
+    {
+        converged = true;
+        for (size_t ll = 0; (ll < bonds.size()) && (error == 0); ll++)
+        {
+            auto &indices   = bonds[ll]->atomIndices();
+            auto ai = indices[0];
+            auto aj = indices[1];
+            rvec dv;
+            rvec_sub((*velocities)[ai], (*velocities)[aj], dv);
+
+            const real vpijd  = iprod(dv, initial_displacements_[ll]);
+
+            /* iconv is zero when the error is smaller than a bound */
+            const real iconvf = std::abs(vpijd) * (distance_squared_tolerance_[ll] / invdt_);
+            converged         = converged && (iconvf <= 1.0);
+
+            if (iconvf > 1.0_real)
+            {
+                const real fac  = omega_ * 2.0_real * half_reduced_mass_[ll] / constraint_distance_squared_[ll];
+                const real acor = -fac * vpijd;
+                scaled_lagrange_multiplier_[ll] += acor;
+                rvec xyzh;
+                svmul(acor, initial_displacements_[ll], xyzh);
+
+                for(int m = 0; m < DIM; m++)
+                {
+                    (*velocities)[ai][m] += xyzh[m] * invmass_[ai];
+                    (*velocities)[aj][m] -= xyzh[m] * invmass_[aj];
+                }
+            }
+        }
+    }
+    if (msghandler && msghandler->debug())
+    {
+        msghandler->writeDebug(gmx::formatString("Rattled for %d iterations, error code %d",
+                                                 iter, error));
+    }
+    if (error == 0 && !converged)
+    {
+        error = -1;
+    }
+    return error;
 }
 
 }

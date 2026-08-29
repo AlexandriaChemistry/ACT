@@ -80,7 +80,7 @@ namespace alexandria
 
     enum { morseBETA, morseDE, morseD0, morseLENGTH, morseNR };
 
-    enum { huaLENGTH, huaDE, huaB, huaC, huaNR };
+    enum { huaDE, huaB, huaLENGTH, huaC, huaNR };
 
     enum { linangA, linangKLIN, linangNR };
 
