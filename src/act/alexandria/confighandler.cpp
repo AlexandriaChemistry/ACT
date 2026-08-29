@@ -417,7 +417,13 @@ void SimulationConfigHandler::add_options(std::vector<t_pargs>             *parg
         { "-kfbpr", FALSE, etREAL, {&kFBPR_},
           "Force constant (kJ/mol nm) for flat-bottom position restraints, zero means no restraints" },
         { "-r0fbpr", FALSE, etREAL, {&r0FBPR_},
-          "Radius (nm) for flat-bottom position restraints (from origin)" }
+          "Radius (nm) for flat-bottom position restraints (from origin)" },
+        { "-constrain", FALSE, etBOOL, {&constrain_},
+          "Constrain bond lengths and velocities along bonds in simulations and minimizations" },
+        { "-constr_maxiter", FALSE, etINT, {&constraintMaxIter_},
+          "Max number of iterations for SHAKE and RATTLE" },
+        { "-constr_toler", FALSE, etREAL, {&constraintTolerance_},
+          "Relative tolerance for constraining bond lengths" }
     };
     for(auto &i : extra)
     {

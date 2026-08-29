@@ -473,6 +473,12 @@ private:
     double             kFBPR_                = 0;
     //! Radius for flat-bottom position restraints (from origin)
     double             r0FBPR_               = 0;
+    //! Constrain bond lengths in simulation and minimization
+    bool               constrain_            = false;
+    //! Maxiter for SHAKE and RATTLE
+    int                constraintMaxIter_    = 1000;
+    //! Relative tolerance for constraining bond lengths
+    double             constraintTolerance_  = 1e-6;
 public:
     /*!
      * \brief Add command-line arguments to a vector
@@ -527,6 +533,15 @@ public:
     
     //! \return whether or not to do a single point energy calculation
     bool singlePoint() const { return singlePoint_; }
+
+    //! \return whether to constrain bonds
+    bool constrain() const { return constrain_; }
+
+    //! \return Max number of SHAKE/RATTLE iterations
+    int constraintMaxIter() const { return constraintMaxIter_; }
+
+    //! \return The relative tolerance for SHAKE/RATTLE
+    double constraintTolerance() const { return constraintTolerance_; }
 
     //! Set the minimize option
     void setMinimize(bool minimize) { minimize_ = minimize; }
