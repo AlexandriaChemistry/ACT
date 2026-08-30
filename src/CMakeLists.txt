@@ -96,14 +96,15 @@ if (GMX_CLANG_TIDY)
 endif()
 #####
 
-# We need this for normal code now as well.
-add_subdirectory(external/googletest)
-include(testutils/TestMacros.cmake)
-add_subdirectory(testutils)
 if (BUILD_TESTING)
     if(NOT GMX_DEVELOPER_BUILD)
         set(UNITTEST_TARGET_OPTIONS EXCLUDE_FROM_ALL)
     endif()
+    if (GMX_BUILD_UNITTESTS)
+        add_subdirectory(external/googletest)
+    endif()
+    include(testutils/TestMacros.cmake)
+    add_subdirectory(testutils)
 endif()
 add_subdirectory(gromacs)
 

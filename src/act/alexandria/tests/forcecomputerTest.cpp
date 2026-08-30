@@ -103,7 +103,8 @@ protected:
         std::vector<ACTMol> mps;
         std::string moldir("mols/");
         moldir += molname;
-        initACTMol(moldir.c_str(), pd, fcomp, &mps);
+        auto dataName = gmx::test::TestFileManager::getInputFilePath(moldir);
+        initACTMol(&msghandler, dataName, pd, fcomp, &mps);
    
         for(auto &mp : mps)
         {
@@ -195,7 +196,8 @@ protected:
         std::vector<ACTMol> mps;
         std::string moldir("mols/");
         moldir += molname;
-        initACTMol(moldir.c_str(), pd, fcomp, &mps);
+        auto dataName = gmx::test::TestFileManager::getInputFilePath(moldir);
+        initACTMol(&msghandler, dataName, pd, fcomp, &mps);
    
         for(auto &mp : mps)
         {

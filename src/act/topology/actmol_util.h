@@ -33,25 +33,30 @@
  
 #ifndef ACTMOL_UTIL_H
 #define ACTMOL_UTIL_H
-    
+
+#include <string>
 #include <vector>
 
 namespace alexandria
 {
-    class  ForceField;
-    class  ForceComputer;
-    class  ACTMol;
-    
-    /*! \brief Read a file from the test directories and produce a vector of actmols.
-     * \param[in]  molname  The name of the compound
-     * \param[in]  pd       The force field
-     * \param[in]  fcomp    The force computer
-     * \param[out] mps      The ACTMol structures
-     */
-    void initACTMol(const char          *molname, 
-                    ForceField          *pd,
-                    ForceComputer       *fcomp,
-                    std::vector<ACTMol> *mps);
+
+class ACTMol;
+class ForceField;
+class ForceComputer;
+class MsgHandler;
+
+/*! \brief Read a file from the test directories and produce a vector of actmols.
+ * \param[in]  msghandler For warnings and debugging
+ * \param[in]  dataName   The full path to the molecule file
+ * \param[in]  pd         The force field
+ * \param[in]  fcomp      The force computer
+ * \param[out] mps        The ACTMol structures
+ */
+void initACTMol(MsgHandler          *msghandler,
+                const std::string   &dataName,
+                ForceField          *pd,
+                ForceComputer       *fcomp,
+                std::vector<ACTMol> *mps);
 
 }
 
