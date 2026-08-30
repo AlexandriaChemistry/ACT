@@ -40,9 +40,6 @@
 #include "act/forcefield/forcefield_utils.h"
 #include "act/topology/actmol.h"
 
-#include "testutils/testasserts.h"
-#include "testutils/testfilemanager.h"
-
 namespace alexandria
 {
 
