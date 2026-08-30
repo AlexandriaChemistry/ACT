@@ -75,7 +75,8 @@ class OpenMMXmlTest : public gmx::test::CommandLineTestBase
         std::vector<ACTMol> mps;
         std::string molfn("mols/");
         molfn += fileName;
-        initACTMol(molfn.c_str(), ff, &fcomp, &mps);
+        auto dataName = gmx::test::TestFileManager::getInputFilePath(molfn);
+        initACTMol(&msghandler, dataName, ff, &fcomp, &mps);
 
         auto tmpFile  = tfm.getTemporaryFilePath("xml");
         writeOpenMM(&msghandler, tmpFile, ff, mps, mDrude, numberAtypes);

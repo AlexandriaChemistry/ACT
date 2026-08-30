@@ -54,7 +54,6 @@
 namespace alexandria
 {
 
-
 namespace
 {
 
@@ -86,8 +85,9 @@ protected:
         MsgHandler msghandler;
         msghandler.setPrintLevel(ACTStatus::Warning);
         std::string dirmolname("../../alexandria/tests/mols/");
-        dirmolname     += molname;
-        initACTMol(dirmolname.c_str(), pd, &forceComp, &mps);
+        dirmolname += molname;
+        auto dataName = gmx::test::TestFileManager::getInputFilePath(dirmolname);
+        initACTMol(&msghandler, dataName, pd, &forceComp, &mps);
         gmx::RVec           vZero = { 0, 0, 0 };
         int isign                 = 0;
         std::vector<double> signs = { 0.3, 0.7, -0.6, -0.9, 0.5 };

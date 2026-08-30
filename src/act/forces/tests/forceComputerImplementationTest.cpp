@@ -474,7 +474,7 @@ static const ForceComputerParamParams c_macdanielParams { "",
 static const ForceComputerParamParams c_polParams       { "", { 0.1, 0.2, 1e4 } };   // alpha, rHyper, fcHyper
 static const ForceComputerParamParams c_harmBondsParams { "", { 100000, 0.4, 10 } };  // kB, length, energy
 static const ForceComputerParamParams c_cubicBondsParams{ "", { 0.4, 0.6, 60000, 100 } };  // length, Rmax, kB, DE (cubicLENGTH, cubicRMAX, cubicKB, cubicDE)
-static const ForceComputerParamParams c_huaBondsParams  { "", { 0.4, 100, 20, 0.1 } };    // length, DE, b, c (huaLENGTH, huaDE, huaB, huaC)
+static const ForceComputerParamParams c_huaBondsParams  { "", { 100, 20, 0.4, 0.1 } };    // DE, b, bondlength, c (huaDE, huaB, huaLENGTH, huaC)
 static const ForceComputerParamParams c_morseBondsParams{ "", { 12, 100, 40, 0.6 } };     // beta, DE, D0, length
 static const ForceComputerParamParams c_harmAngleParams { "", { 100, 100 } };     // kT, angle
 static const ForceComputerParamParams c_ubAngleParams   { "", { 100, 100, 0.33, 20 } };   // kT, angle, r13, kUB

@@ -46,58 +46,67 @@
 namespace alexandria
 {
 
-void initACTMol(const char          *molname, 
+void initACTMol(MsgHandler          *msghandler,
+                const std::string   &dataName,
                 ForceField          *pd,
                 ForceComputer       *fcomp,
                 std::vector<ACTMol> *mps)
+{
+    if (!msghandler)
     {
-        const char   *conf     = (char *)"minimum";
-        std::string   dataName = gmx::test::TestFileManager::getInputFilePath(molname);
-        std::vector<alexandria::MolProp> molprops;
-        double        qtot     = 0;
-        // Charge gen params
-        auto alg = pd->chargeGenerationAlgorithm();
-        std::vector<double> qcustom;
-        bool userqtot = false;
-        MsgHandler msghandler;
-        // Uncomment in case of issues
-        // msghandler.setPrintLevel(ACTStatus::Debug);
-        msghandler.setPrintLevel(ACTStatus::Warning);
-        importFile(&msghandler, pd, dataName.c_str(), &molprops,
-                   conf, JobType::OPT, userqtot,
-                   &qtot, true);
-        EXPECT_TRUE(msghandler.ok());
+        fprintf(stderr, "Cannot initACTMol without MsgHandler\n");
+        return;
+    }
+    const char   *conf     = (char *)"minimum";
+    //    std::string   dataName = gmx::test::TestFileManager::getInputFilePath(molname);
+    std::vector<alexandria::MolProp> molprops;
+    double        qtot     = 0;
+    // Charge gen params
+    auto alg = pd->chargeGenerationAlgorithm();
+    std::vector<double> qcustom;
+    bool userqtot = false;
+    importFile(msghandler, pd, dataName.c_str(), &molprops,
+               conf, JobType::OPT, userqtot,
+               &qtot, true);
+    if (!msghandler->ok())
+    {
+        msghandler->fatal("Could not import file");
+    }
 
-        for(auto &molprop : molprops)
+    for(auto &molprop : molprops)
+    {
+        ACTMol mm;
+        mm.Merge(&molprop);
+        mm.GenerateTopology(msghandler, pd,
+                            missingParameters::Ignore);
+        if (!msghandler->ok())
         {
-            ACTMol mm;
-            mm.Merge(&molprop);
-            mm.GenerateTopology(&msghandler, pd,
-                                missingParameters::Ignore);
-            EXPECT_TRUE(msghandler.ok());
-            std::map<MolPropObservable, iqmType> iqmMap = 
-                {
-                    { MolPropObservable::DELTAE0,           iqmType::QM },
-                    { MolPropObservable::POTENTIAL,         iqmType::QM },
-                    { MolPropObservable::INTERACTIONENERGY, iqmType::QM },
-                    { MolPropObservable::DIPOLE,            iqmType::QM },
-                    { MolPropObservable::QUADRUPOLE,        iqmType::QM },
-                    { MolPropObservable::OCTUPOLE,          iqmType::QM },
-                    { MolPropObservable::HEXADECAPOLE,      iqmType::QM },
-                    { MolPropObservable::POLARIZABILITY,    iqmType::QM },
-                    { MolPropObservable::CHARGE,            iqmType::QM }
-                };
-            mm.getExpProps(&msghandler, pd, iqmMap, 0);
-            if (msghandler.ok())
-            {
-                std::vector<gmx::RVec> forces(mm.atomsConst().size());
-                std::vector<gmx::RVec> coords = mm.xOriginal();
-                mm.generateCharges(&msghandler, pd, fcomp, alg, &coords, &forces, true);
-            }
-            if (msghandler.ok())
-            {
-                mps->push_back(std::move(mm));
-            }
+            msghandler->fatal("Could not generate topology");
         }
-    }    
+        std::map<MolPropObservable, iqmType> iqmMap = 
+            {
+                { MolPropObservable::DELTAE0,           iqmType::QM },
+                { MolPropObservable::POTENTIAL,         iqmType::QM },
+                { MolPropObservable::INTERACTIONENERGY, iqmType::QM },
+                { MolPropObservable::DIPOLE,            iqmType::QM },
+                { MolPropObservable::QUADRUPOLE,        iqmType::QM },
+                { MolPropObservable::OCTUPOLE,          iqmType::QM },
+                { MolPropObservable::HEXADECAPOLE,      iqmType::QM },
+                { MolPropObservable::POLARIZABILITY,    iqmType::QM },
+                { MolPropObservable::CHARGE,            iqmType::QM }
+            };
+        mm.getExpProps(msghandler, pd, iqmMap, 0);
+        if (msghandler->ok())
+        {
+            std::vector<gmx::RVec> forces(mm.atomsConst().size());
+            std::vector<gmx::RVec> coords = mm.xOriginal();
+            mm.generateCharges(msghandler, pd, fcomp, alg, &coords, &forces, true);
+        }
+        if (msghandler->ok())
+        {
+            mps->push_back(std::move(mm));
+        }
+    }
+}
+
 }
