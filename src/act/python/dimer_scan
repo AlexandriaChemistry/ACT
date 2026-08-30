@@ -213,7 +213,8 @@ def get_dists(rmin: float, rmax: float, nstep: float) -> list:
 
 def run_dimer(system: str, root: str, c1: str, c2: str, xml: str,
               force: bool, pol: bool, nvsite1: int, rmin: float, atom1_s,
-              atom2_s, end_dist: float, pdb_path: str, nstep: float, molprop:str):
+              atom2_s, end_dist: float, pdb_path: str, nstep: float,
+              molprop:str, constrain:bool):
     label = f"{c1}#{c2}"
     dists = get_dists(rmin, end_dist, nstep)
     if not atom1_s or not atom2_s:
@@ -235,7 +236,9 @@ def run_dimer(system: str, root: str, c1: str, c2: str, xml: str,
             mylog = "simulation.log"
             outpdb = "final.pdb"
             command = f"alexandria simulate -v 3 -toler 0.000000001 -freeze {fndx} -ff {xml} -forcereminimize -maxretries 1 -minimize -minalg LBFGS -f {pdb} -c {outpdb} -g {mylog}"
-            if molprop and len(molprop) > 0:
+            if constrain:
+                command += " -constrain "
+            if molprop and os.path.exists(molprop):
                 command += f" -charges {molprop} "
             command += " > sim.txt 2>&1 "
             os.system(command)
@@ -289,7 +292,7 @@ def analyze_ff(ff: str) -> (bool, bool):
 
 def run_one(vdw: str, xml: str, system: str, rmin: float,
             atom1_s, atom2_s, end_dist: float,
-            pdb_path: str, nstep: float, molprop:str):
+            pdb_path: str, nstep: float, molprop:str, constrain:bool):
     global final_distance
     if not os.path.exists(xml):
         print(f"No such force field file '{xml}'")
@@ -315,7 +318,7 @@ def run_one(vdw: str, xml: str, system: str, rmin: float,
     os.makedirs(mydir, exist_ok=True)
     os.chdir(mydir)
 
-    run_dimer(system, root, c1, c2, xml, force, pol, vs, rmin, atom1_s, atom2_s, end_dist, pdb_path, nstep, molprop)
+    run_dimer(system, root, c1, c2, xml, force, pol, vs, rmin, atom1_s, atom2_s, end_dist, pdb_path, nstep, molprop, constrain)
 
     print(final_distance)
     fetch_energy(c1, c2, pol, vs, rmin, final_distance)
@@ -397,6 +400,7 @@ def parse_args():
     parser.add_argument("-mp",   "--molprop", help="Use this molprop file to generate charges from (optional)", type=str)
     parser.add_argument("-atom1", "--atom1", help="Atom1 in the first monomer in your input is used for distance calculation (e.g. 1).", type=int, default=None)
     parser.add_argument("-atom2", "--atom2", help="Atom2 in the second monomer in your input for distance calc (e.g. 11)", type=int, default=None)
+    parser.add_argument("-constrain", "--constrain", help="Constrain bond lengths when minimizing", action="store_true")
     cols = [6]
     parser.add_argument("-cols", "--columns", nargs="+", help="Will plot specific columns from the energy components, e.g. 5 = Interaction energy, 6 = Potential energy, default "+str(cols), default=cols, type=int)
     parser.add_argument("-dbg", "--debug", help="Write more debugging output", action="store_true")
@@ -442,7 +446,7 @@ if __name__ == "__main__":
             run_one(vdw, fullxml[vdw], system,  args.rmin,
                     args.atom1, args.atom2,
                     args.rmax, pdb_path, args.nstep,
-                    molprop)
+                    molprop, args.constrain)
     plot_curves(fullxml, args.columns)
     print(f"Checkout output files in {results}")
     os.chdir("..")
