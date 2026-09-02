@@ -75,7 +75,7 @@ std::map<Potential, PotentialProperties> potprops = {
         "select(epsilon*sigma,(((2*epsilon)/(1-(3/(gamma+3)))) * (1.0/(1.0+(r/sigma)^6)) * ((3/(gamma+3))*exp(gamma*(1-(r/sigma)))-1)),0)", "" } },
     { Potential::BUCKINGHAM,
       { "BUCKINGHAM", -1, { "Abh", "bbh", "c6bh" },
-        "0", "" } },
+        "Abh*exp(-bbh*r) - c6bh/(r^6)", "" } },
     { Potential::TANG_TOENNIES,
       { "TANG_TOENNIES", -1, { "Att", "btt", "c6tt", "c8tt", "c10tt" },
         "0", "" } },

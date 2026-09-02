@@ -859,6 +859,18 @@ void OpenMMWriter::addXmlNonbonded(MsgHandler                      *msghandler,
                     }
                 }
                 break;
+            case Potential::BUCKINGHAM:
+                //! \todo: optimize values
+                sigma   = 0.3;
+                epsilon = 0.5;
+                for(size_t j = 0; j < param.size(); j++)
+                {
+                    if (Mutability::Dependent != param[pnames[j]].mutability())
+                    {
+                        add_xml_double(nbParamPtr, pnames[j], param[pnames[j]].internalValue());
+                    }
+                }
+                break;
             case Potential::LJ14_7:
                 //! \todo: optimize values
                 sigma   = param[pnames[lj14_7SIGMA]].internalValue();
