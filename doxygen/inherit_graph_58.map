@@ -1,0 +1,5 @@
+<map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
+<area shape="rect" id="Node000000" href="$classga_1_1Individual.xhtml" title="Abstract individual for genetic algorithms." alt="" coords="5,5,115,33"/>
+<area shape="rect" id="Node000001" href="$classalexandria_1_1ACMIndividual.xhtml" title="An individual for the Alexandria Charge Model (ACM) It has its own force field parameters and handles..." alt="" coords="163,5,355,33"/>
+<area shape="poly" id="edge28_Node000000_Node000001" title=" " alt="" coords="130,17,165,19,159,19,130,22"/>
+</map>
