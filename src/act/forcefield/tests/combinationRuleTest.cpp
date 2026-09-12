@@ -259,6 +259,31 @@ TEST_F (CombinationRuleTest, GeneralizedMean_3_4__2)
     testGM(3.0, 4.0, -2.0);
 }
 
+TEST_F (CombinationRuleTest, GeneralizedMean_0_4_2)
+{
+    testGM(0.0, 4.0, 2.0);
+}
+
+TEST_F (CombinationRuleTest, GeneralizedMean_0_4_Small)
+{
+    testGM(0.0, 4.0, 0.01);
+}
+
+TEST_F (CombinationRuleTest, GeneralizedMean_0_4_QuiteSmall)
+{
+    testGM(0.0, 4.0, 0.11);
+}
+
+TEST_F (CombinationRuleTest, GeneralizedMean_1_4_VerySmall)
+{
+    testGM(1.0, 4.0, 0.01);
+}
+
+TEST_F (CombinationRuleTest, GeneralizedMean_1_4_QuiteSmall)
+{
+    testGM(1.0, 4.0, 0.11);
+}
+
 } // namespace
 
 } // namespace alexandria

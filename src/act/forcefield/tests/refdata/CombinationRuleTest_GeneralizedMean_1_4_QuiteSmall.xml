@@ -3,6 +3,6 @@
 <ReferenceData>
   <Real Name="x1">1</Real>
   <Real Name="x2">4</Real>
-  <Real Name="exponent">1.0000000000000001e-05</Real>
-  <Real Name="GeneralizedMean">2</Real>
+  <Real Name="exponent">0.11</Real>
+  <Real Name="GeneralizedMean">2.0535018031245866</Real>
 </ReferenceData>
