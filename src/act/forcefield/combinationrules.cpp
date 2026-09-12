@@ -205,7 +205,14 @@ double combineGeneralizedMean(double x1, double x2, double exponent)
     {
         sum += std::pow(x2, exponent);
     }
-    return std::pow(0.5*sum, 1/exponent);
+    if (sum > 0)
+    {
+        return std::pow(0.5*sum, 1/exponent);
+    }
+    else
+    {
+        return 0;
+    }
 }
 
 /*! \brief Execute a combination rule according to Mason1955a https://doi.org/10.1063/1.1740561
