@@ -196,7 +196,15 @@ double combineGeneralizedMean(double x1, double x2, double exponent)
     {
         return std::sqrt(x1*x2);
     }
-    double sum = std::pow(x1, exponent) + std::pow(x2, exponent);
+    double sum = 0;
+    if (x1 > 0)
+    {
+        sum += std::pow(x1, exponent);
+    }
+    if (x2 > 0)
+    {
+        sum += std::pow(x2, exponent);
+    }
     return std::pow(0.5*sum, 1/exponent);
 }
 
