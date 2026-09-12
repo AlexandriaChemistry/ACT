@@ -342,7 +342,7 @@ static double computeLJ14_7(MsgHandler                            *msghandler,
         auto dr2        = iprod(dx, dx);
         auto rinv       = gmx::invsqrt(dr2);
         real eerep = 0, eedisp = 0;
-        if (epsilon > 0)
+        if (epsilon > 0 && sigma > 0)
         {
             auto gamma      = params[lj14_7GAMMA];
             auto delta      = params[lj14_7DELTA];
