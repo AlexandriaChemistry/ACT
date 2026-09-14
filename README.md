@@ -1,6 +1,8 @@
 Alexandria Chemistry Toolkit
 ============================
 
+The Alexandria Chemistry Toolkit is a software package that will derive a complete force field for molecular simulation from datasets of quantum chemistry calculations. 
+
 The paper describing this software is available at [Digital Discovery 4 (2025) 1925](https://doi.org/10.1039/D5DD00178A).
 
 The ACT manual, containing installation instructions, user and reference documentation as well as developer information is [on-line here](https://alexandriachemistry.github.io/ACT/).
