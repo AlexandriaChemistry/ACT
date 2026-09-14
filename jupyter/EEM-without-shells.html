@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>4.1.1. Electronegativity equalization method &#8212; ACT 1.2b documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=fa44fd50" />
+    <link rel="stylesheet" type="text/css" href="../_static/classic.css?v=2bf1fcf8" />
+    <link rel="stylesheet" type="text/css" href="../_static/mystnb.11b39860a7a0cbfd473a3ad8a317855267ff0bd372690045ca344a6b62be495e.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../_static/togglebutton.css?v=9c3e77be" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx_lesson.css?v=e9df6548" />
+    <link rel="stylesheet" type="text/css" href="../_static/term_role_formatting.css?v=4194e21c" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx_rtd_theme_ext_color_contrast.css?v=8e8ea19f" />
+    
+    <script src="../_static/documentation_options.js?v=00cc29cc"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../_static/copybutton.js?v=6dbb43f8"></script>
+    <script src="../_static/minipres.js?v=a0d29692"></script>
+    <script>let toggleHintShow = 'Click to show';</script>
+    <script>let toggleHintHide = 'Click to hide';</script>
+    <script>let toggleOpenOnPrint = 'true';</script>
+    <script src="../_static/togglebutton.js?v=b8b12719"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script>window.MathJax = {"options": {"processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="4.1.2. Split charge equilibration" href="SQE-without-shells.html" />
+    <link rel="prev" title="4. Interactive Notebooks" href="header.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="SQE-without-shells.html" title="4.1.2. Split charge equilibration"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="header.html" title="4. Interactive Notebooks"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">ACT 1.2b documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="header.html" accesskey="U"><span class="section-number">4. </span>Interactive Notebooks</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href=""><span class="section-number">4.1.1. </span>Electronegativity equalization method</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section class="tex2jax_ignore mathjax_ignore" id="electronegativity-equalization-method">
+<h1><span class="section-number">4.1.1. </span>Electronegativity equalization method<a class="headerlink" href="#electronegativity-equalization-method" title="Link to this heading">¶</a></h1>
+<p>The electronegativity equalization method (EEM) is a second order expansion of the molecular energy <span class="math notranslate nohighlight">\(E_{EEM}\)</span> in terms of the partial charges <span class="math notranslate nohighlight">\(q_i\)</span>:</p>
+<p><span class="math notranslate nohighlight">\(E_{EEM}(q_1,q_2,...,q_N) = \sum\limits_{i=1}^{N} \left[ \chi_i q_i + \frac{1}{2}\eta_i q_i^2 + \frac{1}{2}\sum\limits_{l\ne i}^{N}q_iq_lJ_{il}\right]\)</span></p>
+<p>where <span class="math notranslate nohighlight">\(N\)</span> is the number of atoms, <span class="math notranslate nohighlight">\(\chi_i\)</span> are the atomic electronegativities, <span class="math notranslate nohighlight">\(\eta_i\)</span> the atomic hardness and <span class="math notranslate nohighlight">\(J_{il}\)</span> the Coulomb interaction between atoms. The factor 1/2 before the Coulomb matrix is to avoid double counting. In equilibrium, the chemical potential is the same for each atom, <span class="math notranslate nohighlight">\(\chi_{eq}\)</span>. The EEM can be implemented by taking the derivative of <span class="math notranslate nohighlight">\(E_{EEM}\)</span> with respect to <span class="math notranslate nohighlight">\(q_i\)</span> and  equating it to zero:</p>
+<p><span class="math notranslate nohighlight">\(0 = \displaystyle{\frac{\partial E_{EEM}}{\partial q_i}} = \chi_{eq} = \chi_i + q_i\eta_i + \frac{1}{2}\sum\limits_{l\ne i}^{N} q_l J_{il}\)</span></p>
+<p>which leads to a set of <span class="math notranslate nohighlight">\(N+1\)</span> equations that is linear in the <span class="math notranslate nohighlight">\(q_i\)</span> and that can be solved using linear algebra tools.  After  taking the derivative with respect to <span class="math notranslate nohighlight">\(q_i\)</span> a matrix equation is obtained:</p>
+<p><span class="math notranslate nohighlight">\(\begin{bmatrix}\eta_1 &amp; J_{12} &amp; J_{13} &amp; ... &amp; J_{1N} &amp; -1 \\ J_{21} &amp; \eta_2 &amp; J_{23} &amp; ... &amp; J_{2N} &amp;  -1 \\
+... &amp; ... &amp; ...  &amp;... &amp; ... &amp; ... \\
+J_{N1} &amp; J_{N2} &amp; J_{N3} &amp; ... &amp; \eta_N &amp; -1 \\ 1 &amp; 1 &amp; 1 &amp; ... &amp; 1 &amp; 0\end{bmatrix} \begin{bmatrix}q_1\\ q_2\\ ... \\ q_N \\ \chi_{eq} \end{bmatrix} = \begin{bmatrix}-\chi_1\\-\chi_2\\...\\ -\chi_N\\ q_{tot}\end{bmatrix}\)</span></p>
+<p>Note the last column in the matrix is there to make sure that the electronegativity for all atoms is the same (<span class="math notranslate nohighlight">\(\chi_{eq}\)</span>), while the last row is there to make sure the total charge <span class="math notranslate nohighlight">\(q_{tot}\)</span> is maintained. A good reference for the method is the classic paper by <a class="reference external" href="https://doi.org/10.1021/j100161a070">Rappe and Goddard</a>.</p>
+<p>In the code below we test the method on a methanol molecule, using parameters from <a class="reference external" href="http://dx.doi.org/10.1063/1.3187034">Verstraelen et al.</a> as well as experimental data from <a class="reference external" href="https://doi.org/10.1039/B801115J">Cordero et al.</a>.</p>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">scipy.linalg</span> <span class="kn">import</span> <span class="n">lstsq</span>
+<span class="kn">import</span> <span class="nn">math</span>
+<span class="kn">from</span> <span class="nn">charge_utils</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span> <span class="nn">test_systems</span> <span class="kn">import</span> <span class="o">*</span>
+
+<span class="k">def</span> <span class="nf">solveEEM</span><span class="p">(</span><span class="n">names</span><span class="p">,</span> <span class="n">coords</span><span class="p">,</span> <span class="n">qtotal</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="c1"># Compute Coulomb</span>
+    <span class="n">J</span> <span class="o">=</span> <span class="n">calcJEEM</span><span class="p">(</span><span class="n">names</span><span class="p">,</span> <span class="n">coords</span><span class="p">,</span> <span class="n">model</span><span class="p">)</span>
+    <span class="n">N</span> <span class="o">=</span> <span class="n">coords</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="c1"># Right hand side of the equation</span>
+    <span class="n">rhs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">N</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span><span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+    <span class="n">chi</span> <span class="o">=</span> <span class="n">get_chi</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">N</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">names</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="ow">in</span> <span class="n">chi</span><span class="p">:</span>
+            <span class="n">rhs</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="n">chi</span><span class="p">[</span><span class="n">names</span><span class="p">[</span><span class="n">i</span><span class="p">]]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;No chi for </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">names</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+            <span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">rhs</span><span class="p">[</span><span class="n">N</span><span class="p">]</span> <span class="o">=</span> <span class="n">qtotal</span>
+    <span class="n">q</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">J</span><span class="p">,</span> <span class="n">rhs</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;J = </span><span class="se">\n</span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">J</span><span class="p">))</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;rhs = </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">rhs</span><span class="p">))</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;q = </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">q</span><span class="p">))</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">J</span><span class="p">,</span><span class="n">q</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;y = </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">y</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">q</span>
+
+<span class="k">def</span> <span class="nf">run_compound</span><span class="p">(</span><span class="n">molname</span><span class="p">,</span> <span class="n">verbose</span><span class="p">,</span> <span class="n">alexandria</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="n">mol</span> <span class="o">=</span> <span class="n">get_system</span><span class="p">(</span><span class="n">molname</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">mol</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;No test system </span><span class="si">%s</span><span class="s2"> defined&quot;</span> <span class="o">%</span> <span class="n">molname</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">molname</span><span class="p">)</span>
+        <span class="n">q</span> <span class="o">=</span> <span class="n">solveEEM</span><span class="p">(</span><span class="n">mol</span><span class="p">[</span><span class="s2">&quot;names&quot;</span><span class="p">],</span> <span class="n">mol</span><span class="p">[</span><span class="s2">&quot;coords&quot;</span><span class="p">],</span> <span class="n">mol</span><span class="p">[</span><span class="s2">&quot;qtotal&quot;</span><span class="p">],</span> <span class="n">verbose</span><span class="p">,</span> <span class="n">alexandria</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">mol</span><span class="p">[</span><span class="s2">&quot;coords&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;q[</span><span class="si">%s</span><span class="s2">] = </span><span class="si">%g</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">mol</span><span class="p">[</span><span class="s2">&quot;names&quot;</span><span class="p">][</span><span class="n">i</span><span class="p">],</span> <span class="n">q</span><span class="p">[</span><span class="n">i</span><span class="p">]))</span>
+        <span class="n">printDipole</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="n">mol</span><span class="p">[</span><span class="s2">&quot;coords&quot;</span><span class="p">],</span> <span class="n">mol</span><span class="p">[</span><span class="s2">&quot;atomnr&quot;</span><span class="p">],</span> <span class="kc">False</span><span class="p">)</span>
+
+<span class="n">verbose</span> <span class="o">=</span> <span class="kc">False</span>
+
+<span class="k">for</span> <span class="n">compound</span> <span class="ow">in</span> <span class="p">[</span> <span class="s2">&quot;carbon-monoxide&quot;</span><span class="p">,</span> <span class="s2">&quot;water&quot;</span><span class="p">,</span> <span class="s2">&quot;methanol&quot;</span><span class="p">,</span> <span class="s2">&quot;acetate&quot;</span> <span class="p">]:</span>
+    <span class="n">run_compound</span><span class="p">(</span><span class="n">compound</span><span class="p">,</span> <span class="s2">&quot;ACM-g&quot;</span><span class="p">,</span> <span class="n">verbose</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>carbon-monoxide
+q[c2] = 0.100795
+q[o] = -0.100795
+Dipole = 0.0580969 Debye
+
+water
+q[hw] = 0.130157
+q[ow] = -0.260313
+q[hw] = 0.130157
+Dipole = 0.731574 Debye
+
+methanol
+q[oh] = -0.252355
+q[hp] = 0.13162
+q[c3] = -0.151608
+q[h1] = 0.0878756
+q[h1] = 0.087886
+q[h1] = 0.0965812
+Dipole = 1.22594 Debye
+
+acetate
+q[c3] = -0.254055
+q[cm] = -0.108471
+q[om] = -0.322013
+q[om] = -0.322018
+q[hc] = 0.00241518
+q[hc] = 0.00166854
+q[hc] = 0.00247338
+Dipole = 0.841977 Debye
+</pre></div>
+</div>
+</div>
+</div>
+<p>Note the positive charge on O and negative charge on one of the H with the EEM chi and eta values from Verstraelen.
+These charges are too small since  the experimental dipole for methanol is about 1.69 Debye.</p>
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/AClogo.png" alt="Logo of ACT"/>
+            </a></p>
+<h3><a href="../index.html">Table of Contents</a></h3>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../preface/preface.html">1. Preface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../userman/header.html">2. User Manual</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../refman/header.html">3. Reference Manual</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="header.html">4. Interactive Notebooks</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="header.html#charge-methods">4.1. Charge Methods</a><ul class="current">
+<li class="toctree-l3 current"><a class="current reference internal" href="#">4.1.1. Electronegativity equalization method</a></li>
+<li class="toctree-l3"><a class="reference internal" href="SQE-without-shells.html">4.1.2. Split charge equilibration</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="header.html#atom-typing-using-rdkit">4.2. Atom Typing using RDKit</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../devman/header.html">5. Developer Manual</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../references.html">6. References</a></li>
+</ul>
+
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/jupyter/EEM-without-shells.ipynb.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="SQE-without-shells.html" title="4.1.2. Split charge equilibration"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="header.html" title="4. Interactive Notebooks"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">ACT 1.2b documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="header.html" ><span class="section-number">4. </span>Interactive Notebooks</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href=""><span class="section-number">4.1.1. </span>Electronegativity equalization method</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2026, ACT development team.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3.
+    </div>
+  </body>
+</html>

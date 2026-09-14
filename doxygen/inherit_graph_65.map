@@ -1,0 +1,7 @@
+<map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
+<area shape="rect" id="Node000000" href="$classga_1_1Terminator.xhtml" title="Abstract class to check for evolution termination conditions." alt="" coords="5,32,121,60"/>
+<area shape="rect" id="Node000001" href="$classga_1_1GenerationTerminator.xhtml" title="Terminator which stops evolution after a given amount of generations." alt="" coords="169,5,356,33"/>
+<area shape="poly" id="edge40_Node000000_Node000001" title=" " alt="" coords="136,33,171,31,166,32,137,39"/>
+<area shape="rect" id="Node000002" href="$classga_1_1TestGenTerminator.xhtml" title="Terminator which stops evolution after the best test fitness has not improved in a given number of ge..." alt="" coords="179,57,346,85"/>
+<area shape="poly" id="edge41_Node000000_Node000002" title=" " alt="" coords="136,52,181,60,176,61,136,58"/>
+</map>

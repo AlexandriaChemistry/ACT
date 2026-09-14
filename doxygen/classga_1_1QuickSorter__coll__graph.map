@@ -1,0 +1,5 @@
+<map id="ga::QuickSorter" name="ga::QuickSorter">
+<area shape="rect" id="Node000001" title="Class for Quick&#45;sort." alt="" coords="5,81,127,109"/>
+<area shape="rect" id="Node000002" href="$classga_1_1Sorter.xhtml" title="Abstract class for sorting the population based on the fitness of each Individual." alt="" coords="24,5,108,33"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="68,47,69,81,63,80,64,51"/>
+</map>

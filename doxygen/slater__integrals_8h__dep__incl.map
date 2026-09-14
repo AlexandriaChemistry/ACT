@@ -1,0 +1,5 @@
+<map id="src/act/coulombintegrals/slater_integrals.h" name="src/act/coulombintegrals/slater_integrals.h">
+<area shape="rect" id="Node000001" title="Provides routines for computing Coulomb integrals analytically. The Slater based code depends on the ..." alt="" coords="28,5,209,50"/>
+<area shape="rect" id="Node000002" href="$coulombintegralstest_8cpp.xhtml" title="Implements test of Coulomb routines." alt="" coords="5,98,232,143"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="120,64,121,99,116,97,117,68"/>
+</map>
