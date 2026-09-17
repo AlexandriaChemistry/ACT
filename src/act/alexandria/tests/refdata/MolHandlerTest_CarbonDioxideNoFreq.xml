@@ -8,10 +8,10 @@
   <Real Name="EPOT before">0.0020244934155974736</Real>
   <Real Name="Coordinate RMSD before minimizing">2.2662332636692098e-17</Real>
   <String Name="algorithm">LBFGS</String>
-  <Real Name="Coordinate RMSD after minimizing">4.1230403428604904e-05</Real>
-  <Real Name="BONDS after">1.0543356297313872e-09</Real>
-  <Real Name="LINEAR_ANGLES after">1.4151735304875502e-06</Real>
+  <Real Name="Coordinate RMSD after minimizing">4.1230403428599653e-05</Real>
+  <Real Name="BONDS after">1.0543356286474223e-09</Real>
+  <Real Name="LINEAR_ANGLES after">1.4151735304866754e-06</Real>
   <Real Name="ALLELEC after">0</Real>
   <Real Name="EXCHIND after">0</Real>
-  <Real Name="EPOT after">1.4162278661172816e-06</Real>
+  <Real Name="EPOT after">1.4162278661153229e-06</Real>
 </ReferenceData>

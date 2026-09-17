@@ -8,6 +8,7 @@
   <Real Name="DISPERSION_act">-2.4730634134027909</Real>
   <Real Name="EXCHANGE_act">0.73657185582109719</Real>
   <Real Name="COULOMB_act">-8.3337399954597444</Real>
+  <Real Name="INDUCTION_act">0</Real>
   <Real Name="ALLELEC_act">-8.3337399954597444</Real>
   <Real Name="EXCHIND_act">0.73657185582109719</Real>
   <Real Name="EPOT_act">39.407421759654561</Real>
