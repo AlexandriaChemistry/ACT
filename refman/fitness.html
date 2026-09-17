@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>3.3. Fitness function &#8212; ACT 1.2b documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=fa44fd50" />
+    <link rel="stylesheet" type="text/css" href="../_static/classic.css?v=2bf1fcf8" />
+    <link rel="stylesheet" type="text/css" href="../_static/mystnb.11b39860a7a0cbfd473a3ad8a317855267ff0bd372690045ca344a6b62be495e.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../_static/togglebutton.css?v=9c3e77be" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx_lesson.css?v=e9df6548" />
+    <link rel="stylesheet" type="text/css" href="../_static/term_role_formatting.css?v=4194e21c" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx_rtd_theme_ext_color_contrast.css?v=8e8ea19f" />
+    
+    <script src="../_static/documentation_options.js?v=00cc29cc"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../_static/copybutton.js?v=6dbb43f8"></script>
+    <script src="../_static/minipres.js?v=a0d29692"></script>
+    <script>let toggleHintShow = 'Click to show';</script>
+    <script>let toggleHintHide = 'Click to hide';</script>
+    <script>let toggleOpenOnPrint = 'true';</script>
+    <script src="../_static/togglebutton.js?v=b8b12719"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script>window.MathJax = {"options": {"processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="3.4. Sensitivity Analysis" href="sensitivity.html" />
+    <link rel="prev" title="3.2. Force Field Training Algorithms" href="training.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="sensitivity.html" title="3.4. Sensitivity Analysis"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="training.html" title="3.2. Force Field Training Algorithms"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">ACT 1.2b documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="header.html" accesskey="U"><span class="section-number">3. </span>Reference Manual</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href=""><span class="section-number">3.3. </span>Fitness function</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="fitness-function">
+<h1><span class="section-number">3.3. </span>Fitness function<a class="headerlink" href="#fitness-function" title="Link to this heading">¶</a></h1>
+<p>In genetic algorithm terminology, the idea is to maximize the fitness of the population. However, in practice the ACT minimizes a loss function <span class="math notranslate nohighlight">\(\chi^2\)</span> where zero indicates perfect correspondence to reference data and algorithmic bounds.
+The loss function consists of multiple components that can be combined at will by the user. According to the ACT paper, we have</p>
+<div class="math notranslate nohighlight">
+\[F(\Theta) = \Omega \mathbf{X}^p(\Theta) + \Lambda(\Theta)\]</div>
+<p>where <span class="math notranslate nohighlight">\(\Theta\)</span> is the force field genome, containing all the parameters and <span class="math notranslate nohighlight">\(\mathbf{X}^n\)</span> is a vector representation of residuals. In case that p equals 2, the loss function corresponds to a least squares form, if p equals 1 the loss function is the the mean absolute error.
+Finally, <span class="math notranslate nohighlight">\(\Lambda\)</span> adds a penalty to keep (some of the) parameters within bounds.
+The <span class="math notranslate nohighlight">\(\chi^2\)</span> that is printed in the ACT log file corresponds to <span class="math notranslate nohighlight">\(F(\Theta)\)</span>.
+The first term can be expanded into a sum, since multiple observable can be trained at the same time.</p>
+<div class="math notranslate nohighlight">
+\[F(\Theta) = \sum_{i=1}^{N_{obs}} \Omega_i \sum_{j=1}^{N_i}\left|x_{i,j}^{calc}(\Theta)-x_{i,j}^{ref}\right|^p + \Lambda(\Theta)\]</div>
+<p>where <span class="math notranslate nohighlight">\(N_{obs}\)</span> is the number of observables, the <span class="math notranslate nohighlight">\(\Omega_i\)</span> are the corresponding user-supplied weights for each of these and <span class="math notranslate nohighlight">\(N_{i}\)</span> is the number of individual data points <span class="math notranslate nohighlight">\(x\)</span> for observable i.</p>
+<section id="supported-training-targets">
+<h2><span class="section-number">3.3.1. </span>Supported training targets<a class="headerlink" href="#supported-training-targets" title="Link to this heading">¶</a></h2>
+<p>Table <a class="reference internal" href="#tab-fitness"><span class="std std-ref">Overview of command-line flags and corresponding observables that can be used in training a force field in the ACT.</span></a> lists the supported observables and the corresponding command line flags.</p>
+<table class="docutils align-default" id="tab-fitness">
+<caption><span class="caption-number">Table 3.2 </span><span class="caption-text">Overview of command-line flags and corresponding observables that can be used in training a force field in the ACT.</span><a class="headerlink" href="#tab-fitness" title="Link to this table">¶</a></caption>
+<thead>
+<tr class="row-odd"><th class="head"><p><strong>Flag</strong></p></th>
+<th class="head"><p><strong>Observable</strong></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>-fc_epot</p></td>
+<td><p>Potential energy of a compound.</p></td>
+</tr>
+<tr class="row-odd"><td><p>-fc_force</p></td>
+<td><p>Force components on each atom in a compound.</p></td>
+</tr>
+<tr class="row-even"><td><p>-fc_freq</p></td>
+<td><p>Vibrational frequencies from a normal mode analysis (NMA).</p></td>
+</tr>
+<tr class="row-odd"><td><p>-fc_inten</p></td>
+<td><p>Intensities corresponding to the frequencies from NMA.</p></td>
+</tr>
+<tr class="row-even"><td><p>-fc_mu</p></td>
+<td><p>Dipole components of a compound.</p></td>
+</tr>
+<tr class="row-odd"><td><p>-fc_quad</p></td>
+<td><p>Quadrupole components of a compound.</p></td>
+</tr>
+<tr class="row-even"><td><p>-fc_oct</p></td>
+<td><p>Octopule components.</p></td>
+</tr>
+<tr class="row-odd"><td><p>-fc_hexadec</p></td>
+<td><p>Hexadecapole components.</p></td>
+</tr>
+<tr class="row-even"><td><p>-fc_esp</p></td>
+<td><p>Electrostatic potential (ESP) on all of the grid points.
+This can be modulated by the -watoms flag which introduces
+a weight for the ESP on the atoms.</p></td>
+</tr>
+<tr class="row-odd"><td><p>-fc_polar</p></td>
+<td><p>Six independent components of the molecular polarizability
+tensor.</p></td>
+</tr>
+<tr class="row-even"><td><p>-fc_inter</p></td>
+<td><p>The total interaction energy from SAPT calculations.</p></td>
+</tr>
+<tr class="row-odd"><td><p>-fc_elec</p></td>
+<td><p>Electrostatic component of the interaction energy.</p></td>
+</tr>
+<tr class="row-even"><td><p>-fc_induc</p></td>
+<td><p>Induction  component of the interaction energy.</p></td>
+</tr>
+<tr class="row-odd"><td><p>-fc_allelec</p></td>
+<td><p>Sum of the electrostatic and induction components.</p></td>
+</tr>
+<tr class="row-even"><td><p>-fc_disp</p></td>
+<td><p>Dispersion component of the interaction energy.</p></td>
+</tr>
+<tr class="row-odd"><td><p>-fc_exch</p></td>
+<td><p>Exchange component of the interaction energy.</p></td>
+</tr>
+<tr class="row-even"><td><p>-fc_exchind</p></td>
+<td><p>Sum of exchange and induction components.</p></td>
+</tr>
+<tr class="row-odd"><td><p>-fc_deltahf</p></td>
+<td><p>The <span class="math notranslate nohighlight">\(\Delta\)</span> HF part of the induction can be trained
+independently of the induction component. If this is used,
+this part should be subtracted from the induction to
+prevent double counting.</p></td>
+</tr>
+<tr class="row-even"><td><p>-fc_bound</p></td>
+<td><p>Penalty for going outside bounds (see below).</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="parameter-mutability">
+<h2><span class="section-number">3.3.2. </span>Parameter mutability<a class="headerlink" href="#parameter-mutability" title="Link to this heading">¶</a></h2>
+<p>A force field consists many parameters and typically only a subset is trained at any one time. Therefore, parameters are qualified by a mutability value as indicated in Table <a class="reference internal" href="#tab-mutability"><span class="std std-ref">Parameter mutabilities and their interpretation in ACT.</span></a>.</p>
+<table class="docutils align-default" id="tab-mutability">
+<caption><span class="caption-number">Table 3.3 </span><span class="caption-text">Parameter mutabilities and their interpretation in ACT.</span><a class="headerlink" href="#tab-mutability" title="Link to this table">¶</a></caption>
+<thead>
+<tr class="row-odd"><th class="head"><p><strong>Mutability</strong></p></th>
+<th class="head"><p><strong>Meaning</strong></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Fixed</p></td>
+<td><p>This parameter will not be modified in training.</p></td>
+</tr>
+<tr class="row-odd"><td><p>Bounded</p></td>
+<td><p>Parameter values will be strictly between the minimum
+and maximum value specified in the force field. If the
+initial value is outside the bounds, it will be reset to
+the nearest bound (either minimum or maximum). If the
+minimum is equal to the maximum the mutability will be set
+to Fixed.</p></td>
+</tr>
+<tr class="row-even"><td><p>Dependent</p></td>
+<td><p>Parameter value is not trained directly, but may change
+due to changes in other parameters. An example would be
+a pair parameter such as <span class="math notranslate nohighlight">\(\sigma_{ij}\)</span> that is
+derived from <span class="math notranslate nohighlight">\(\sigma_{j}\)</span> and <span class="math notranslate nohighlight">\(\sigma_{j}\)</span>
+using combination rules.</p></td>
+</tr>
+<tr class="row-odd"><td><p>ACM</p></td>
+<td><p>Alexandria Charge Model is used for charges that are
+generated using the EEM or SQE algorithms
+(section <a class="reference internal" href="../jupyter/header.html#sec-charges"><span class="std std-ref">Charge Methods</span></a>). If different minimum and
+maximum values are given in the force field and the
+<em>-fc_bound</em> flag is used, a bounds penalty will be applied.</p></td>
+</tr>
+<tr class="row-even"><td><p>Free</p></td>
+<td><p>Parameter can adopt any value.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="bounds-penalty">
+<h2><span class="section-number">3.3.3. </span>Bounds Penalty<a class="headerlink" href="#bounds-penalty" title="Link to this heading">¶</a></h2>
+<p>A bounds penalty can be applied to charges when the mutability is ACM (Table <a class="reference internal" href="#tab-mutability"><span class="std std-ref">Parameter mutabilities and their interpretation in ACT.</span></a>). In that case the penalty V(q) is</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}V(q) = \begin{split}
+&amp; (q - q_{min})^2  \,\,\mathrm{if}   \,q &lt; q_{min}\\
+&amp; (q - q_{max})^2  \,\,\mathrm{if}   \,q &gt; q_{max}\\
+&amp; 0                \,\,\mathrm{else} \, \\
+\end{split}\end{split}\]</div>
+<p>Importantly, if a point+distributed model is used <span class="bibtex-citation" id="id1">[<a class="reference internal" href="../references.html#id143" title="David van der Spoel and A. Najla Hosseini. Point + Gaussian charge model for electrostatic interactions derived by machine learning. Phys. Chem. Chem. Phys., 27:13817-13820, 2025. doi:10.1039/D5CP01254F.">89</a>]</span>, then the sum of these charges is used as the target q. So if your force field specifies:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">&lt;</span><span class="n">particletype</span> <span class="n">identifier</span><span class="o">=</span><span class="s2">&quot;hw&quot;</span> <span class="nb">type</span><span class="o">=</span><span class="s2">&quot;Atom&quot;</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;hydrogen&quot;</span><span class="o">&gt;</span>
+  <span class="o">&lt;</span><span class="n">parameter</span> <span class="nb">type</span><span class="o">=</span><span class="s2">&quot;charge&quot;</span> <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;e&quot;</span> <span class="n">value</span><span class="o">=</span><span class="s2">&quot;0.5&quot;</span> <span class="n">uncertainty</span><span class="o">=</span><span class="s2">&quot;0&quot;</span> <span class="n">minimum</span><span class="o">=</span><span class="s2">&quot;0.3&quot;</span> <span class="n">maximum</span><span class="o">=</span><span class="s2">&quot;0.7&quot;</span> <span class="n">ntrain</span><span class="o">=</span><span class="s2">&quot;0&quot;</span> <span class="n">mutability</span><span class="o">=</span><span class="s2">&quot;ACM&quot;</span> <span class="n">nonnegative</span><span class="o">=</span><span class="s2">&quot;no&quot;</span><span class="o">/&gt;</span>
+<span class="o">&lt;/</span><span class="n">particletype</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<p>and the hw atom type is equiped with a distributed charge v1hw at the same position, it is the sum of these charges that will be penalized if it is outside the interval 0.3 - 0.7.</p>
+</section>
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/AClogo.png" alt="Logo of ACT"/>
+            </a></p>
+<h3><a href="../index.html">Table of Contents</a></h3>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../preface/preface.html">1. Preface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../userman/header.html">2. User Manual</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="header.html">3. Reference Manual</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="energy.html">3.1. Energy Function</a></li>
+<li class="toctree-l2"><a class="reference internal" href="training.html">3.2. Force Field Training Algorithms</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">3.3. Fitness function</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#supported-training-targets">3.3.1. Supported training targets</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#parameter-mutability">3.3.2. Parameter mutability</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#bounds-penalty">3.3.3. Bounds Penalty</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="sensitivity.html">3.4. Sensitivity Analysis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ffdesign.html">3.5. Force field design</a></li>
+<li class="toctree-l2"><a class="reference internal" href="targets.html">3.6. Force Field Training Targets</a></li>
+<li class="toctree-l2"><a class="reference internal" href="targets.html#parameters-for-force-field-training">3.7. Parameters for Force Field Training</a></li>
+<li class="toctree-l2"><a class="reference internal" href="data.html">3.8. Training Data</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../jupyter/header.html">4. Interactive Notebooks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../devman/header.html">5. Developer Manual</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../references.html">6. References</a></li>
+</ul>
+
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/refman/fitness.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="sensitivity.html" title="3.4. Sensitivity Analysis"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="training.html" title="3.2. Force Field Training Algorithms"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">ACT 1.2b documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="header.html" ><span class="section-number">3. </span>Reference Manual</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href=""><span class="section-number">3.3. </span>Fitness function</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2026, ACT development team.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3.
+    </div>
+  </body>
+</html>

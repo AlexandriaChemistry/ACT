@@ -1,0 +1,7 @@
+<map id="ga::Terminator" name="ga::Terminator">
+<area shape="rect" id="Node000001" title="Abstract class to check for evolution termination conditions." alt="" coords="141,5,257,33"/>
+<area shape="rect" id="Node000002" href="$classga_1_1GenerationTerminator.xhtml" title="Terminator which stops evolution after a given amount of generations." alt="" coords="5,81,193,109"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="172,42,118,83,115,78,166,43"/>
+<area shape="rect" id="Node000003" href="$classga_1_1TestGenTerminator.xhtml" title="Terminator which stops evolution after the best test fitness has not improved in a given number of ge..." alt="" coords="217,81,384,109"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="230,40,285,81,280,80,229,45"/>
+</map>
