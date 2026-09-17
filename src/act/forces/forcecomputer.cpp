@@ -319,7 +319,8 @@ void ForceComputer::compute(MsgHandler                        *msg_handler,
     }
     {
         // Induction energy
-        double eInduction = 0;
+        bool   haveInduction = false;
+        double eInduction    = 0;
         // Extract electrostatics once more
         // Note that the INDUCTIONCORRECTION is treated in the calling routine
         std::set<InteractionType> eTerms = {
@@ -333,11 +334,12 @@ void ForceComputer::compute(MsgHandler                        *msg_handler,
             if (energies->end() != tt &&
                 eBefore.end() != eBefore.find(et))
             {
-                eInduction += tt->second - eBefore[et];
-                tt->second = eBefore[et];
+                eInduction   += tt->second - eBefore[et];
+                tt->second    = eBefore[et];
+                haveInduction = true;
             }
         }
-        if (eInduction != 0)
+        if (haveInduction)
         {
             energies->insert_or_assign(InteractionType::INDUCTION, eInduction);
         }
