@@ -327,8 +327,9 @@ void ForceComputer::compute(MsgHandler                        *msg_handler,
         auto tt       = energies->find(itQpolar);
         if (energies->end() != tt)
         {
-            eInduction = tt->second;
-            tt->second = 0;
+            eInduction    = tt->second;
+            tt->second    = 0;
+            haveInduction = true;
         }
         // Note that the INDUCTIONCORRECTION is treated in the calling routine
         std::set<InteractionType> eTerms = {
