@@ -143,6 +143,8 @@ private:
     int maxGenerations_ = 10;
     //! Generation limit for the test fitness to improve
     int maxTestGenerations_ = -1;
+    //! Generation limit for the best genome to stay in a local minimum
+    int maxLocalMinimumGenerations_ = -1;
     //! Whether to compute the volume in logarithmic scale
     bool logVolume_ = false;
     //! For VolumeFractionPenalizer, the limit of the volume fraction
@@ -242,6 +244,9 @@ public:
 
     //! \return the generation limit for the test fitness to improve
     int maxTestGenerations() const { return maxTestGenerations_; }
+
+    //! \return the generation limit for the best genome to be in locla minimum
+    int maxLocalMinimumGenerations() const { return maxLocalMinimumGenerations_; }
 
     //! \return true if we must evaluate fitness on test set, false otherwise
     bool evaluateTestset() const { return evaluateTestset_; }

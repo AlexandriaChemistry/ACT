@@ -219,11 +219,13 @@ public:
      * \param[in] tw               Text writer
      * \param[in] pool             the GenePool    
      * \param[in] generationNumber the current generation number
+     * \param[in] minimum          Whether we are in a local minimum
      * \return true if we stop the evolution, false otherwise
      */
     bool terminate(gmx::TextWriter *tw,
                    const GenePool  *pool,
-                   const int        generationNumber);
+                   const int        generationNumber,
+                   bool             minimum);
 
     /*!
      * \brief Penalize the population.

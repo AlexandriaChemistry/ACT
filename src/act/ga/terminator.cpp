@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2021-2025
+ * Copyright (C) 2021-2026
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -48,7 +48,8 @@ namespace ga
 
 bool GenerationTerminator::terminate(gmx::TextWriter *tw,
                                      const GenePool  *,
-                                     const int        generationNumber)
+                                     const int        generationNumber,
+                                     bool             )
 {
     if (generationNumber >= maxGenerations_)
     {
@@ -75,7 +76,8 @@ bool GenerationTerminator::terminate(gmx::TextWriter *tw,
 
 bool TestGenTerminator::terminate(gmx::TextWriter *tw,
                                   const GenePool  *pool,
-                                  const int        )
+                                  const int        ,
+                                  bool              )
 {
     remaining_ -= 1;
     
@@ -107,6 +109,38 @@ bool TestGenTerminator::terminate(gmx::TextWriter *tw,
 
 /* * * * * * * * * * * * * * * * * * * * * *
 * END: TestGenTerminator                   *
+* * * * * * * * * * * * * * * * * * * * * */
+
+/* * * * * * * * * * * * * * * * * * * * * *
+* BEGIN: CurvatureTerminator               *
+* * * * * * * * * * * * * * * * * * * * * */
+
+/*!
+ * \brief Check whether the evolution should be terminated
+ * \param[in] tw                Text Writer
+ * \param[in] pool              The GenePool
+ * \param[in] generationNumber  The generation number
+ * \param[in] minimum Whether the genome is a local minimum
+ * \return true if we should terminate, false otherwise
+ */
+bool CurvatureTerminator::terminate(gmx::TextWriter *,
+                                    const GenePool  *,
+                                    const int        ,
+                                    bool             minimum)
+{
+    if (minimum)
+    {
+        inMinimum_ += 1;
+    }
+    else
+    {
+        inMinimum_ = 0;
+    }
+    return inMinimum_ >= generations_;
+}
+
+/* * * * * * * * * * * * * * * * * * * * * *
+* END: CurvatureTerminator                 *
 * * * * * * * * * * * * * * * * * * * * * */
 
 
