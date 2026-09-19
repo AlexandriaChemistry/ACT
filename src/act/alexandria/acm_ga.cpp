@@ -624,7 +624,10 @@ bool HybridGAMC::evolve(alexandria::MsgHandler       *msghandler,
                 msghandler->write(tmpGenome.print(mess.c_str()));
             }
         }
-        stopTraining = terminate(msghandler->tw(), pool[pold], generation);
+        //! \todo Implement checking of curvature
+        bool minimum = false;
+        stopTraining = terminate(msghandler->tw(), pool[pold],
+                                 generation, minimum);
         if (msghandler->info())
         {
             auto stats = fcStats.statistics(cr,

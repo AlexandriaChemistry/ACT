@@ -366,6 +366,16 @@ int OptACM::initMaster(const std::vector<t_filenm> &fnm,
         terminators_.push_back(new ga::TestGenTerminator(gach_.maxTestGenerations()));
     }
 
+    // If maxLocalMinimumGenerations is enabled add a terminator
+    if (gach_.maxLocalMinimumGenerations() > 0)
+    {
+        if (tw)
+        {
+            tw->writeString("Appending a CurvatureTerminator to the list of terminators...\n");
+        }
+        terminators_.push_back(new ga::CurvatureTerminator(gach_.maxLocalMinimumGenerations()));
+    }
+
     // Initialize the optimizer
     if (gach_.optimizer() == OptimizerAlg::MCMC)
     {

@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2021-2025
+ * Copyright (C) 2021-2026
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -67,11 +67,13 @@ public:
      * \param[in] tw                Text Writer
      * \param[in] pool              The GenePool
      * \param[in] generationNumber  The generation number
+     * \param[in] minimum           Are we in a parameter minimum?
      * \return true if we should terminate, false otherwise
      */
     virtual bool terminate(gmx::TextWriter *tw,
                            const GenePool  *pool,
-                           const int        generationNumber) = 0;
+                           const int        generationNumber,
+                           bool             minimum) = 0;
 
     //! Default destructor
     virtual ~Terminator() = default;
@@ -102,11 +104,13 @@ public:
      * \param[in] tw                Text Writer
      * \param[in] pool             The gene pool
      * \param[in] generationNumber The generation number
+     * \param[in] minimum           Are we in a parameter minimum?
      * \return true if we should terminate, false otherwise
      */
     virtual bool terminate(gmx::TextWriter *tw,
                            const GenePool  *pool,
-                           const int        generationNumber);
+                           const int        generationNumber,
+                           bool             minimum);
 
 };
 
@@ -143,13 +147,57 @@ public:
      * \param[in] tw                Text Writer
      * \param[in] pool             The gene pool
      * \param[in] generationNumber The generation number
+     * \param[in] minimum           Are we in a parameter minimum?
      * \return true if we should terminate, false otherwise
      */
     virtual bool terminate(gmx::TextWriter *tw,
                            const GenePool  *pool,
-                           const int        generationNumber);
+                           const int        generationNumber,
+                           bool             minimum);
 
 };
+
+/*!
+ * \brief Terminator which stops when evolution is stuck in a local minimum
+ * Evaluates whether the best genome stays in the same minimum for a 
+ * given amount of generations. This is done by performing a sensitivity
+ * analysis, and test whether all parameters are in a minimum
+ * (external to this code), and reporting whether the current genome is in a
+ * minimum in parameter space.
+ */
+class CurvatureTerminator : public Terminator
+{
+ private:
+
+    //! Amount of generations we allow the genome in the same minimum
+    int generations_ = 0;
+    //! Number of successive generations in a minimum
+    int inMinimum_ = 0;
+
+ public:
+    /*!
+     * \brief Constructor
+     * \param[in] generations max amount of generations to stay in minimum
+     */
+    CurvatureTerminator(int generations)
+        : generations_(generations) {}
+    /*!
+     * \brief Check whether the evolution should be terminated
+     * \param[in] tw                Text Writer
+     * \param[in] pool              The GenePool
+     * \param[in] generationNumber  The generation number
+     * \param[in] minimum Whether the genome is a local minimum
+     * \return true if we should terminate, false otherwise
+     */
+    virtual bool terminate(gmx::TextWriter *tw,
+                           const GenePool  *pool,
+                           const int        generationNumber,
+                           bool             minimum);
+
+    //! Default destructor
+    virtual ~CurvatureTerminator() = default;
+};
+
 
 
 } //namespace ga

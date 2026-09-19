@@ -77,7 +77,8 @@ void GeneticAlgorithm::updateGenePool(const GenePool &gpin)
 
 bool GeneticAlgorithm::terminate(gmx::TextWriter *tw,
                                  const GenePool  *pool,
-                                 const int        generationNumber)
+                                 const int        generationNumber,
+                                 bool             minimum)
 {
     GMX_RELEASE_ASSERT(
         terminators_ != nullptr,
@@ -88,7 +89,7 @@ bool GeneticAlgorithm::terminate(gmx::TextWriter *tw,
     bool halt = false;
     for (auto *term : *terminators_)
     {
-        if (term->terminate(tw, pool, generationNumber))
+        if (term->terminate(tw, pool, generationNumber, minimum))
         {
             halt = true;
         }
