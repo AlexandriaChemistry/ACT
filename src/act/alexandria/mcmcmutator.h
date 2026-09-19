@@ -51,8 +51,6 @@ class JsonTree;
 
 /*!
  * \brief Mutator which applies MCMC optimization to an ACMIndividual.
- * It can also conduct sensitivity analysis if requested.
- * \todo shouldn't we move sensitivity analysis somewhere else?
  */
 class MCMCMutator : public ga::Mutator
 {
@@ -212,19 +210,6 @@ public:
     void printMonteCarloStatistics(gmx::TextWriter  *tw,
                                    const ga::Genome &initialGenome,
                                    const ga::Genome &bestGenome);
-
-    /*!
-     * \brief Perform a sensitivity analysis by systematically changing all parameters and
-     * re-evaluating the \f$ \chi^2 \f$.
-     * \param[in] msghandler The message and status handler
-     * \param[in] genome     Pointer to genome
-     * \param[in] ims        Dataset to perform sensitivity analysis on
-     * \param[in] jtree      For machine readable output
-     */
-    void sensitivityAnalysis(MsgHandler *msghandler,
-                             ga::Genome *genome,
-                             iMolSelect  ims,
-                             JsonTree   *jtree);
 
     /*!
      * \brief Open parameter convergence files

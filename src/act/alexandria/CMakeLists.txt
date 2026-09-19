@@ -50,6 +50,7 @@ target_sources(actLib
            optimizationindex.cpp
            pdbwriter.cpp
            percentmutator.cpp
+           sensitivity.cpp
            staticindividualinfo.cpp
            train_ff.cpp
            train_utility.cpp          

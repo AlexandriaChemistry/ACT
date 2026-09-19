@@ -52,6 +52,7 @@
 #include "act/alexandria/mcmcmutator.h"
 #include "act/alexandria/molgen.h"
 #include "act/alexandria/percentmutator.h"
+#include "act/alexandria/sensitivity.h"
 #include "act/alexandria/train_utility.h"
 #include "act/forcefield/forcefield.h"
 #include "act/forcefield/forcefield_tables.h"
@@ -658,8 +659,9 @@ bool OptACM::runMaster(bool      optimize,
     if (gach_.optimizer() != OptimizerAlg::GA && sensitivity && msghandler_.ok())
     {
         // Do sensitivity analysis only on the training set
-        mutator_->sensitivityAnalysis(&msghandler_, &bestGenome[iMolSelect::Train], iMolSelect::Train,
-                                      jtree);
+        (void) SensitivityAnalysis(&msghandler_, sii_, fitComp_,
+                                   &bestGenome[iMolSelect::Train], iMolSelect::Train, jtree);
+                                                
     }
     // Stop the middlemen ...
     if (commRec_.nmiddlemen() > 1)
