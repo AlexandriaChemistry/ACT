@@ -291,6 +291,8 @@ private:
     int   seed_              = 0;
     //! Relative step when optimizing
     real  step_              = 0.02;
+    //! Whether to use adaptive steps
+    bool adaptiveStep_       = false;
     //! Temperature in chi2 units
     real  temperature_       = 5;
     //! Weight temperature after number of training points
@@ -380,6 +382,9 @@ public:
 
     //! \brief Set the step
     void setStep(real step) { step_ = step; }
+
+    //! \return whether adaptive steps should be used
+    bool adaptiveStep() const { return adaptiveStep_; }
 
     //! \brief Return whether or not temperature weighting should be considered
     bool temperatureWeighting() const { return tempWeight_; }

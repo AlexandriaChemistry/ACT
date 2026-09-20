@@ -333,8 +333,7 @@ void MCMCMutator::changeParam(ga::Genome *genome,
         // Make sure the parameter changes!
         rnd = randNum();
     }
-    real delta = (2*rnd-1) * bch_->step() * (sii_->upperBound()[j] - sii_->lowerBound()[j]);
-    (*param)[j] += delta;
+    (*param)[j] += (2*rnd-1) * sii_->stepSize()[j];
     if (sii_->mutability()[j] == Mutability::Bounded)
     {
         if ((*param)[j] < sii_->lowerBound()[j])
@@ -347,7 +346,6 @@ void MCMCMutator::changeParam(ga::Genome *genome,
         }
     }
 }
-
 
 void MCMCMutator::printMonteCarloStatistics(gmx::TextWriter  *tw,
                                             const ga::Genome &initialGenome,
