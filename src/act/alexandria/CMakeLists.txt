@@ -27,7 +27,6 @@
 
 target_sources(actLib
     PRIVATE
-           acm_ga.cpp
            acmfitnesscomputer.cpp
            acmindividual.cpp
            acminitializer.cpp
@@ -42,6 +41,8 @@ target_sources(actLib
            gentop.cpp
            geometry_ff.cpp
            gromacs_top.cpp
+           hybrid.cpp
+           mcmc.cpp
            mcmcmutator.cpp
            molgen.cpp
            molhandler.cpp

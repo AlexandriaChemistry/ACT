@@ -44,11 +44,12 @@
 
 #include <random>
 
-#include "act/alexandria/acm_ga.h"
 #include "act/alexandria/acthelper.h"
 #include "act/alexandria/actmiddleman.h"
 #include "act/alexandria/alex_modules.h"
 #include "act/alexandria/bayes.h"
+#include "act/alexandria/hybrid.h"
+#include "act/alexandria/mcmc.h"
 #include "act/alexandria/mcmcmutator.h"
 #include "act/alexandria/molgen.h"
 #include "act/alexandria/percentmutator.h"
