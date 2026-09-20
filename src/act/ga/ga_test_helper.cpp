@@ -92,7 +92,7 @@ GaTestHelper::GaTestHelper(int                                  nmiddlemen,
                         &compR, forceComputer);
     // Continue filling the shared individual
     sii->generateOptimizationIndex(msghandler, molgen, sii->commRec());
-    sii->fillVectors(molgen->mindata());
+    sii->fillVectors(molgen->mindata(), 0.02);
     std::string xvgconv("param_conv.xvg"), xvgepot("param_epot.xvg");
     std::vector<std::string> paramClass;
     for(const auto &fm : molgen->typesToFit())

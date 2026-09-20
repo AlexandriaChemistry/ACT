@@ -75,7 +75,7 @@ TEST(SensitivityAnalysisTest, RunOne)
     molgen.addFitOption("sigma");
     molgen.fillIopt(sii.forcefield(), &msghandler);
     sii.generateOptimizationIndex(&msghandler, &molgen, &cr);
-    sii.fillVectors(1);
+    sii.fillVectors(1, 0.02);
     ForceComputer forceComp;
     ACMFitnessComputer fitComp;
     fitComp.init(&msghandler, &sii, &molgen, false,

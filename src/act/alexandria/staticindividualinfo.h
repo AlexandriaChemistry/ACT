@@ -79,7 +79,9 @@ private:
     //! Upper bound per parameter
     std::vector<double>                                  upperBound_;
     //! Mutability per parameter
-    std::vector<Mutability>                              mutability_; 
+    std::vector<Mutability>                              mutability_;
+    //! Step size per parameter
+    std::vector<double>                                  stepSize_;
     //! Weighted temperature
     std::vector<double>                                  weightedTemperature_;
     //! Optimization index for each parameter
@@ -312,10 +314,12 @@ public:
     /*!
      * \brief Fills some vector structures for parameter information.
      * Per parameter, we have: its default value, required amount of training steps, lower bound, upper bound, Mutability, and name<br>
-     * Dev: Fills \p defaultParam_ \p ntrain_ \p lowerBound_ \p upperBound_ \p mutability_ and \p paramNames_
+     * Dev: Fills \p defaultParam_ \p ntrain_ \p lowerBound_ \p upperBound_ \p mutability_ \p stepSize_ and \p paramNames_
      * \param[in] mindata mininum number of existing datapoints to consider a parameter for optimization
+     * \param[in] step    Fraction of the range (upper-lower) to use as maximum step size in MC moves.
      */
-    void fillVectors(unsigned int mindata);
+    void fillVectors(unsigned int mindata,
+                     double   step);
 
     /* * * * * * * * * * * * * * * * * * * * * *
     * END: Vector stuff                      *
@@ -412,6 +416,9 @@ public:
      * \return the upper bound of the parameter at index \p i
      */
     double upperBoundAtIndex(const size_t i) const { return upperBound_[i]; }
+
+    //! \return the vector of step size as a const reference
+    const std::vector<double> &stepSize() const { return stepSize_; }
 
     //! \return the vector of training datapoints as a const reference
     const std::vector<int> &nTrain() const { return ntrain_; }

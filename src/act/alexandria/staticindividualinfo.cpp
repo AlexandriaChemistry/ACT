@@ -491,7 +491,8 @@ void StaticIndividualInfo::generateOptimizationIndex(MsgHandler                *
 * BEGIN: Vector stuff                      *
 * * * * * * * * * * * * * * * * * * * * * */
 
-void StaticIndividualInfo::fillVectors(unsigned int mindata)
+void StaticIndividualInfo::fillVectors(unsigned int mindata,
+                                       double       step)
 {
     if (cr_->isMasterOrMiddleMan())
     {
@@ -534,6 +535,7 @@ void StaticIndividualInfo::fillVectors(unsigned int mindata)
                 mutability_.push_back(p.mutability());
                 lowerBound_.push_back(p.minimum());
                 upperBound_.push_back(p.maximum());
+                stepSize_.push_back(step*(p.maximum()-p.minimum()));
                 ntrain_.push_back(p.ntrain());
             }
         }
