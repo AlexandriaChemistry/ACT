@@ -33,7 +33,6 @@
 
 #include "ga_test_helper.h"
 
-#include "act/alexandria/acm_ga.h"
 #include "act/alexandria/acmfitnesscomputer.h"
 #include "act/alexandria/acminitializer.h"
 #include "act/alexandria/mcmcmutator.h"
