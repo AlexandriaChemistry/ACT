@@ -1,13 +1,13 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2021-2026
+ * Copyright (C) 2014-2026
  *
  * Developers:
- *             Mohammad Mehdi Ghahremanpour, 
+ *             Mohammad Mehdi Ghahremanpour,
  *             Julian Marrades,
  *             Marie-Madeleine Walz,
- *             Paul J. van Maaren, 
+ *             Paul J. van Maaren,
  *             David van der Spoel (Project leader)
  *
  * This program is free software; you can redistribute it and/or
@@ -22,66 +22,92 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, 
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor,
  * Boston, MA  02110-1301, USA.
  */
+
 /*! \internal \brief
  * Implements part of the alexandria program.
  * \author Mohammad Mehdi Ghahremanpour <mohammad.ghahremanpour@icm.uu.se>
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
- * \author Julian Ramon Marrades Furquet <julian@marrad.es>
  */
 
-#ifndef ALEXANDRIA_SENSITIVITY_H
-#define ALEXANDRIA_SENSITIVITY_H
+#ifndef ALEXANDRIA_BAYES_H
+#define ALEXANDRIA_BAYES_H
 
+#include <string>
 #include <vector>
 
-#include "act/basics/dataset.h"
-
-namespace ga
+namespace gmx
 {
-class Genome;
+class TextWriter;
 }
 
 namespace alexandria
 {
 
-class MsgHandler;
-class StaticIndividualInfo;
-class ACMFitnessComputer;
 class JsonTree;
-    
-class SensitivityAnalysis
-{
-private:
-    //! Dimensionless force constants
-    std::vector<double> forceConstant_;
-public:
-    //! Constructor
-    SensitivityAnalysis() {}
-    /*!
-     * \brief Perform a sensitivity analysis by systematically changing all parameters and
-     * re-evaluating the \f$ \chi^2 \f$.
-     * \param[in] msghandler The message and status handler
-     * \param[in] genome     Pointer to genome
-     * \param[in] ims        Dataset to perform sensitivity analysis on
-     * \param[in] jtree      For machine readable output, may be nullptr
-     * \param[in] quiet      Do not print to log file
-     * \return true if the current genome represents a local minimum in parameter space
-     */
-    bool run(MsgHandler           *msghandler,
-             StaticIndividualInfo *sii,
-             ACMFitnessComputer   *fitComp,
-             ga::Genome           *genome,
-             iMolSelect            ims,
-             JsonTree             *jtree,
-             bool                  quiet = false);
 
-    //! \return The force constants
-    const std::vector<double> forceConstants() const { return forceConstant_; }
+//! How to perform the calculation of deviations (chi-squared)
+enum class CalcDev {
+    //! Do a calculation local
+    Compute = 7,
+    //! Compute all the deviations
+    ComputeAll = 13,
+    //! Distribute parameters
+    Parameters = 17,
+    //! Ready to stop
+    Stop = 23,
 };
 
-} // namespace
+const char *calcDevName(CalcDev cd);
 
-#endif
+class Sensitivity
+{
+private:
+    //! \brief parameter values used
+    std::vector<double> p_;
+    //! \brief chi2 values obtains
+    std::vector<double> chi2_;
+    //! \brief Constants for the parabola fitting
+    double a_ = 0, b_ = 0, c_ = 0;
+public:
+    //! \brief Constructor
+    Sensitivity() {}
+
+    /*! \brief
+     * Add a point
+     * \param[in] p    The parameter value
+     * \param[in] chi2 The chi-squared value
+     */
+    void add(double p, double chi2)
+    {
+        p_.push_back(p);
+        chi2_.push_back(chi2);
+    }
+    /*! \brief
+     * Compute the fit to the curve
+     * \param[in] tw A text writer
+     */
+    void computeForceConstants(gmx::TextWriter *tw);
+
+    //! Return the constants after computation
+    double a() const { return a_; }
+    double b() const { return b_; }
+    double c() const { return c_; }
+
+    /*! \brief Print output
+     * \param[in] tw    A text writer
+     * \param[in] jtree For machine readable output
+     * \param[in] index Parameter index, must be unique
+     * \param[in] label Label for identifying the parameter
+     */
+    void print(gmx::TextWriter      *tw,
+               alexandria::JsonTree *jtree,
+               const std::string    &index,
+               const std::string    &label);
+};
+
+}  //namespace alexandria
+
+#endif //ALEXANDRIA_BAYES_H

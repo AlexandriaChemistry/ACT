@@ -37,8 +37,8 @@
 
 #include <gtest/gtest.h>
 
+#include "act/alexandria/sensitivity.h"
 #include "act/alexandria/acmfitnesscomputer.h"
-#include "act/alexandria/sensitivity_analysis.h"
 #include "act/alexandria/staticindividualinfo.h"
 #include "act/forcefield/forcefield_utils.h"
 #include "act/ga/genome.h"
@@ -55,43 +55,52 @@ namespace
 {
 
 // ============================================================================
-// SensitivityAnalysis() -- the public entry point
+// Sensitivity -- the parabola fit that decides "is it a minimum?"
 // ============================================================================
 
-/*! \brief With an empty genome there is nothing to analyse: the routine must
- * short-circuit, report a local minimum and leave the output JsonTree empty.
+/*! \brief chi2 = p^2 - 2p + 1 must fit to a >= 0 (upward parabola => minimum).
  */
-TEST(SensitivityAnalysisTest, RunOne)
+TEST(SensitivityTest, FitsUpwardParabola)
 {
-    MsgHandler msghandler;
-    msghandler.setPrintLevel(ACTStatus::Warning);
-    CommunicationRecord cr(&msghandler);
-    StaticIndividualInfo sii(&cr);
-    std::string baseName("ACS-g.xml");
-    std::string dataName = gmx::test::TestFileManager::getInputFilePath(baseName);
-    sii.fillForceField(&msghandler, dataName.c_str());
-    MolGen molgen(&cr);
-    molgen.addFitOption("sigma");
-    molgen.fillIopt(sii.forcefield(), &msghandler);
-    sii.generateOptimizationIndex(&msghandler, &molgen, &cr);
-    sii.fillVectors(1, 0.02);
-    ForceComputer forceComp;
-    ACMFitnessComputer fitComp;
-    fitComp.init(&msghandler, &sii, &molgen, false,
-                 &forceComp, ChargeGenerationAlgorithm::SQE);
-    ga::Genome genome;
-    genome.addBase(2.0);
-    genome.addBase(3.0);
-    genome.addBase(-1.0);
-    
-    JsonTree   jtree("SensitivityAnalysisTest");
-    // TODO: MsgHandler, StaticIndividualInfo, ga::Genome (empty), JsonTree
-    // TODO: EXPECT_TRUE(SensitivityAnalysis(...));
-    // TODO: EXPECT_TRUE(jtree.objects().empty());
-    bool result = true;
-    //SensitivityAnalysis(&msghandler, &sii, &fitComp,
-    //                  &genome, iMolSelect::Train, &jtree);
-    EXPECT_TRUE(result);
+    Sensitivity s;
+    //add 3 points; 
+    s.add(0, 1);
+    s.add(1, 0);
+    s.add(2, 1);
+    s.computeForceConstants(nullptr);
+    // Expected result is 1.0
+    EXPECT_TRUE(std::abs(s.a() - 1.0) < 1e-7);
+}
+
+/*! \brief chi2 = -p^2 + 2p - 1 must fit to a < 0 (downward parabola => not min).
+ */
+TEST(SensitivityTest, FitsDownwardParabola)
+{
+    Sensitivity s;
+    //add 3 points; 
+    s.add(0, 1);
+    s.add(1, 2);
+    s.add(2, 1);
+    s.computeForceConstants(nullptr);
+    // Expected results is -1.0
+    EXPECT_TRUE(std::abs(s.a() + 1.0) < 1e-7);
+}
+
+/*! \brief With fewer than 3 points the coefficients stay at their zero initial
+ * values.
+ */
+TEST(SensitivityTest, InsufficientPointsLeavesConstantsZero)
+{
+    Sensitivity s;
+    //add 2 points; 
+    s.add(0, 1);
+    s.add(1, 2);
+    // TODO: Sensitivity s; add 2 points; 
+    s.computeForceConstants(nullptr);
+    // TODO: 
+    EXPECT_TRUE(s.a()==0);
+    EXPECT_TRUE(s.b()==0);
+    EXPECT_TRUE(s.c()==0);
 }
 
 } // namespace

@@ -41,8 +41,8 @@
 
 #include "act/alexandria/acmfitnesscomputer.h"
 #include "act/alexandria/acminitializer.h"
-#include "act/alexandria/bayes.h"
 #include "act/alexandria/molgen.h"
+#include "act/alexandria/sensitivity.h"
 #include "act/alexandria/staticindividualinfo.h"
 #include "act/basics/msg_handler.h"
 #include "act/forces/forcecomputer.h"

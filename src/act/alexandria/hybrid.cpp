@@ -36,7 +36,7 @@
 #pragma GCC diagnostic pop
 
 #include "act/alexandria/mcmcmutator.h"
-#include "act/alexandria/sensitivity.h"
+#include "act/alexandria/sensitivity_analysis.h"
 #include "act/alexandria/train_ff.h"
 #include "act/basics/msg_handler.h"
 #include "act/forces/forcecomputerstatistics.h"

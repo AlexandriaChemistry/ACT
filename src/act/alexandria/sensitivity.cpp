@@ -4,10 +4,10 @@
  * Copyright (C) 2014-2026
  *
  * Developers:
- *             Mohammad Mehdi Ghahremanpour, 
+ *             Mohammad Mehdi Ghahremanpour,
  *             Julian Marrades,
  *             Marie-Madeleine Walz,
- *             Paul J. van Maaren, 
+ *             Paul J. van Maaren,
  *             David van der Spoel (Project leader)
  *
  * This program is free software; you can redistribute it and/or
@@ -22,104 +22,117 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, 
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor,
  * Boston, MA  02110-1301, USA.
  */
+
 /*! \internal \brief
  * Implements part of the alexandria program.
  * \author Mohammad Mehdi Ghahremanpour <mohammad.ghahremanpour@icm.uu.se>
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
- * \author Julian Ramon Marrades Furquet <julian@marrad.es>
  */
+
 #include "sensitivity.h"
 
-#include "act/basics/msg_handler.h"
+#include <cstdlib>
+#include <map>
+#include <string>
+#include <vector>
+
 #include "act/utility/jsontree.h"
-#include "act/alexandria/acmfitnesscomputer.h"
+#include "act/utility/regression.h"
+#include "act/utility/stringutil.h"
+#include "gromacs/utility/textwriter.h"
 
 namespace alexandria
 {
 
-bool SensitivityAnalysis::run(MsgHandler           *msghandler,
-                              StaticIndividualInfo *sii,
-                              ACMFitnessComputer   *fitComp,
-                              ga::Genome           *genome,
-                              iMolSelect            ims,
-                              JsonTree             *jtree,
-                              bool                  quiet)
-{
-    std::vector<double> *param = genome->basesPtr();
-    const auto upperBound      = sii->upperBound();
-    const auto lowerBound      = sii->lowerBound();
-    const auto paramNames      = sii->paramNames();
+//! \brief Map from enum to string
+std::map<CalcDev, const char *> cdMap =
+    {
+        { CalcDev::Compute, "Compute" },
+        { CalcDev::ComputeAll, "ComputeAll" },
+        { CalcDev::Parameters, "Parameter" },
+        { CalcDev::Stop, "Stop" }
+    };
 
-    if (param->size() == 0)
+//! \return a string corresponding to a CalcDev.
+const char *calcDevName(CalcDev cd)
+{
+    return cdMap[cd];
+}
+
+void Sensitivity::computeForceConstants(gmx::TextWriter *tw)
+{
+    if (p_.size() >= 3)
     {
-        return true;
-    }
-    std::set<int> changed;
-    sii->updateForceField(msghandler, changed, genome->bases());
-    auto cdc    = CalcDev::Compute;
-    fitComp->distributeTasks(cdc);
-    auto chi2_0 = fitComp->calcDeviation(msghandler, cdc, ims);
-    auto tw = msghandler->tw();
-    if (quiet)
-    {
-        tw = nullptr;
-    }
-    if (tw)
-    {
-        tw->writeStringFormatted("\nStarting sensitivity analysis. chi2_0 = %g nParam = %zu\n",
-                                 chi2_0, param->size());
-    }
-    JsonTree sens("sensitivity");
-    bool minimum = true;
-    // Reset force constants every run
-    forceConstant_.clear();
-    for (size_t i = 0; i < param->size(); ++i)
-    {
-        Sensitivity s;
-        double pstore = (*param)[i];
-        double deltap = (upperBound[i]-lowerBound[i])/200;
-        double pmin   = std::max((*param)[i]-deltap, lowerBound[i]);
-        double pmax   = std::min((*param)[i]+deltap, upperBound[i]);
-        double p_0    = 0.5*(pmin+pmax);
-        std::set<int> changed;
-        changed.insert(i);
-        (*param)[i]     = pmin;
-        sii->updateForceField(msghandler, changed, *param);
-        fitComp->distributeTasks(cdc);
-        s.add((*param)[i], fitComp->calcDeviation(msghandler, cdc, ims));
-        (*param)[i]     = p_0;
-        sii->updateForceField(msghandler, changed, *param);
-        fitComp->distributeTasks(cdc);
-        s.add((*param)[i], fitComp->calcDeviation(msghandler, cdc, ims));
-        (*param)[i]     = pmax;
-        sii->updateForceField(msghandler, changed, *param);
-        fitComp->distributeTasks(cdc);
-        s.add((*param)[i],  fitComp->calcDeviation(msghandler, cdc, ims));
-        (*param)[i]     = pstore;
-        sii->updateForceField(msghandler, changed, *param);
-        s.computeForceConstants(tw);
-        minimum = minimum && s.a() >= 0;
-        // Compute dimensionless force constant, or zero if undefined
-        double fc = 0;
-        if (pstore != 0)
+        MatrixWrapper M(3, p_.size());
+        std::vector<double> solution;
+        solution.resize(3, 0.0);
+        for (size_t i = 0; i < p_.size(); ++i)
         {
-            fc = s.a() / (pstore*pstore);
+            M.set(0, i, p_[i]*p_[i]);
+            M.set(1, i, p_[i]);
+            M.set(2, i, 1.0);
         }
-        forceConstant_.push_back(fc);
-        s.print(tw, &sens, std::to_string(i), paramNames[i]);
+        auto result = M.solve(chi2_, &solution);
+        if (result == 0)
+        {
+            a_ = solution[0];
+            b_ = solution[1];
+            c_ = solution[2];
+        }
     }
+    else if (tw)
+    {
+        tw->writeStringFormatted("Not enough parameters %zu to do sensitivty analysis\n",
+                                 p_.size());
+    }
+}
+
+void Sensitivity::print(gmx::TextWriter      *tw,
+                        alexandria::JsonTree *jtree,
+                        const std::string    &index,
+                        const std::string    &label)
+{
+    double p_min    = 0;
+    double chi2_min = 0;
     if (tw)
     {
-        tw->writeString("Sensitivity analysis done.");
+        tw->writeStringFormatted("Sensitivity %s Fit to parabola: a %10g b %10g c %10g\n",
+                                 label.c_str(), a_, b_, c_);
+        for(size_t i = 0; i < p_.size(); ++i)
+        {
+            tw->writeStringFormatted("    p[%zu] %g chi2[%zu] %g\n", i, p_[i], i, chi2_[i]);
+        }
+        if (a_ != 0.0)
+        {
+            p_min = -b_/(2.0*a_);
+            chi2_min = a_*p_min*p_min + b_*p_min + c_;
+            tw->writeStringFormatted("    pmin %g chi2min %g (estimate based on parabola)\n",
+                                     p_min, chi2_min);
+        }
     }
     if (jtree)
     {
-        jtree->addObject(sens);
+        JsonTree abc(index);
+        // A bit of a hack since the input label contains two pieces of information
+        auto pn = split(label, ' ');
+        abc.addObject("particle", pn[0]);
+        abc.addObject("parameter", pn[1]);
+        abc.addObject("a", a_);
+        abc.addObject("b", b_);
+        abc.addObject("c", c_);
+        abc.addObject("p_orig", p_[1]);
+        abc.addObject("chi2_orig", chi2_[1]);
+        if (a_ != 0)
+        {
+            abc.addObject("p_min", p_min);
+            abc.addObject("chi2_min", chi2_min);
+        }
+        jtree->addObject(abc);
     }
-    return minimum;
-}                                      
+}
+
 
 }
