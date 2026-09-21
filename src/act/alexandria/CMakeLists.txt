@@ -35,7 +35,6 @@ target_sources(actLib
            alex_modules.cpp
            allbondeds.cpp
            analyze.cpp
-           bayes.cpp
            confighandler.cpp
            devcomputer.cpp
            gentop.cpp
@@ -52,6 +51,7 @@ target_sources(actLib
            pdbwriter.cpp
            percentmutator.cpp
            sensitivity.cpp
+           sensitivity_analysis.cpp
            staticindividualinfo.cpp
            train_ff.cpp
            train_utility.cpp          

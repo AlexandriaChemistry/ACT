@@ -48,6 +48,7 @@ gmx_add_unit_test(
     openmmTest.cpp
     optimizationindexTest.cpp
     mcmcmutatorTest.cpp
+    sensitivityTest.cpp
     sensitivityAnalysisTest.cpp
     # pseudo-library for code for alexandria
     $<TARGET_OBJECTS:actLib>

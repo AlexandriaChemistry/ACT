@@ -39,7 +39,7 @@
 
 #include "gromacs/utility/basedefinitions.h"
 
-#include "bayes.h"
+#include "act/alexandria/sensitivity.h"
 #include "act/utility/memory_check.h"
 #include "act/utility/jsontree.h"
 #include "gromacs/fileio/xvgr.h"
