@@ -35,12 +35,13 @@
 #include <regex>
 #pragma GCC diagnostic pop
 
+#include "act/alexandria/mcmcmutator.h"
+#include "act/alexandria/sensitivity.h"
+#include "act/alexandria/train_ff.h"
 #include "act/basics/msg_handler.h"
 #include "act/forces/forcecomputerstatistics.h"
 #include "act/ga/gene_pool.h"
 #include "act/utility/communicationrecord.h"
-#include "mcmcmutator.h"
-#include "train_ff.h"
 
 namespace ga
 {
@@ -487,8 +488,41 @@ bool HybridGAMC::evolve(alexandria::MsgHandler       *msghandler,
                 msghandler->write(tmpGenome.print(mess.c_str()));
             }
         }
-        //! \todo Implement checking of curvature
         bool minimum = false;
+        // We only do the sensitivity analysis if needed.
+        if ((gach_->maxLocalMinimumGenerations() > 0) || adaptiveSteps_)
+        {
+            alexandria::SensitivityAnalysis sens;
+            // Temporarily update the output level...
+            auto level = msghandler->printLevel();
+            msghandler->setPrintLevel(alexandria::ACTStatus::Warning);
+            minimum = sens.run(msghandler, sii_,
+                               static_cast<alexandria::ACMFitnessComputer *>(fitnessComputer()),
+                               &((*bestGenome)[iMolSelect::Train]),
+                               iMolSelect::Train, nullptr, true);
+            // ...and put it back.
+            msghandler->setPrintLevel(level);
+            // Do we need to updata step sizes as well?
+            if (adaptiveSteps_)
+            {
+                auto &fcs =  sens.forceConstants();
+                for (size_t ff = 0; ff < fcs.size(); ff++)
+                {
+                    // Only update if the force constant is positive.
+                    if (fcs[ff] > 0)
+                    {
+                        sii_->updateStepSize(ff, fcs[ff]);
+                    }
+                }
+            }
+            if (msghandler->info())
+            {
+                auto msg = gmx::formatString("Generation %d/%d. Curvature analysis demonstrated parameters are %sin a local minimimum", generation, gach_->maxGenerations(), minimum ? "" : "not ");
+                msghandler->write(msg);
+            }
+        }
+        // Depending on whether or not the user has selected the curvature terminator, the value
+        // of minimum will matter or not.
         stopTraining = terminate(msghandler->tw(), pool[pold],
                                  generation, minimum);
         if (msghandler->info())
