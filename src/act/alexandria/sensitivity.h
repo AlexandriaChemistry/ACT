@@ -35,6 +35,8 @@
 #ifndef ALEXANDRIA_SENSITIVITY_H
 #define ALEXANDRIA_SENSITIVITY_H
 
+#include <vector>
+
 #include "act/basics/dataset.h"
 
 namespace ga
