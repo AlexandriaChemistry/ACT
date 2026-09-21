@@ -420,6 +420,13 @@ public:
     //! \return the vector of step size as a const reference
     const std::vector<double> &stepSize() const { return stepSize_; }
 
+    /*! \brief Update step size
+     * \param[in] index The parameter number
+     * \param[in] fc    The force constant corresponding to the parameter number
+     */
+    void updateStepSize(size_t index,
+                        double fc);
+
     //! \return the vector of training datapoints as a const reference
     const std::vector<int> &nTrain() const { return ntrain_; }
 

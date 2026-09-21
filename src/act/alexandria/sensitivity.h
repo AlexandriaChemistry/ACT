@@ -39,33 +39,47 @@
 
 namespace ga
 {
-    class Genome;
+class Genome;
 }
 
 namespace alexandria
 {
 
-    class MsgHandler;
-    class StaticIndividualInfo;
-    class ACMFitnessComputer;
-    class JsonTree;
+class MsgHandler;
+class StaticIndividualInfo;
+class ACMFitnessComputer;
+class JsonTree;
     
+class SensitivityAnalysis
+{
+private:
+    //! Dimensionless force constants
+    std::vector<double> forceConstant_;
+public:
+    //! Constructor
+    SensitivityAnalysis() {}
     /*!
      * \brief Perform a sensitivity analysis by systematically changing all parameters and
      * re-evaluating the \f$ \chi^2 \f$.
      * \param[in] msghandler The message and status handler
      * \param[in] genome     Pointer to genome
      * \param[in] ims        Dataset to perform sensitivity analysis on
-     * \param[in] jtree      For machine readable output
+     * \param[in] jtree      For machine readable output, may be nullptr
+     * \param[in] quiet      Do not print to log file
      * \return true if the current genome represents a local minimum in parameter space
      */
-    bool SensitivityAnalysis(MsgHandler           *msghandler,
-                             StaticIndividualInfo *sii,
-                             ACMFitnessComputer   *fitComp,
-                             ga::Genome           *genome,
-                             iMolSelect            ims,
-                             JsonTree             *jtree);
-    
+    bool run(MsgHandler           *msghandler,
+             StaticIndividualInfo *sii,
+             ACMFitnessComputer   *fitComp,
+             ga::Genome           *genome,
+             iMolSelect            ims,
+             JsonTree             *jtree,
+             bool                  quiet = false);
+
+    //! \return The force constants
+    const std::vector<double> forceConstants() const { return forceConstant_; }
+};
+
 } // namespace
 
 #endif

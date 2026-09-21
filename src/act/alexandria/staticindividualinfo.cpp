@@ -491,6 +491,14 @@ void StaticIndividualInfo::generateOptimizationIndex(MsgHandler                *
 * BEGIN: Vector stuff                      *
 * * * * * * * * * * * * * * * * * * * * * */
 
+void StaticIndividualInfo::updateStepSize(size_t index,
+                                          double fc)
+{
+    // TODO: Implement
+    GMX_RELEASE_ASSERT(index < stepSize_.size(), "Index out of range");
+    GMX_RELEASE_ASSERT(fc > 0.0, "Force constant not positive");
+}
+
 void StaticIndividualInfo::fillVectors(unsigned int mindata,
                                        double       step)
 {

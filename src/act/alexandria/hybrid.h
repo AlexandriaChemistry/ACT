@@ -63,6 +63,8 @@ private:
     alexandria::StaticIndividualInfo *sii_;
     //! GAConfigHandler pointer
     alexandria::GAConfigHandler      *gach_;
+    //! Whether to do adaptive steps
+    bool                              adaptiveSteps_;
     //! Output filename for fitness files
     const char                       *fitnessFile_;
     //! Gene pool input (may be null pointer)
@@ -88,10 +90,11 @@ public:
                const char                          *fitnessFileName,
                const char                          *genePoolIn,
                const char                          *genePoolOut,
-               int                                  seed)
+               int                                  seed,
+               bool                                 adaptiveSteps)
     : GeneticAlgorithm(initializer, fitnessComputer, probComputer, selector, crossover,
                        mutator, terminators, penalizers, gach->popSize()),
-      sii_(sii), gach_(gach), fitnessFile_(fitnessFileName),
+      sii_(sii), gach_(gach), adaptiveSteps_(adaptiveSteps), fitnessFile_(fitnessFileName),
       gpin_(genePoolIn), gpout_(genePoolOut), seed_(seed)
     {}
 

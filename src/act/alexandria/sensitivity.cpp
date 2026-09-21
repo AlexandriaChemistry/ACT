@@ -40,12 +40,13 @@
 namespace alexandria
 {
 
-bool SensitivityAnalysis(MsgHandler           *msghandler,
-                         StaticIndividualInfo *sii,
-                         ACMFitnessComputer   *fitComp,
-                         ga::Genome           *genome,
-                         iMolSelect            ims,
-                         JsonTree             *jtree)
+bool SensitivityAnalysis::run(MsgHandler           *msghandler,
+                              StaticIndividualInfo *sii,
+                              ACMFitnessComputer   *fitComp,
+                              ga::Genome           *genome,
+                              iMolSelect            ims,
+                              JsonTree             *jtree,
+                              bool                  quiet)
 {
     std::vector<double> *param = genome->basesPtr();
     const auto upperBound      = sii->upperBound();
@@ -62,6 +63,10 @@ bool SensitivityAnalysis(MsgHandler           *msghandler,
     fitComp->distributeTasks(cdc);
     auto chi2_0 = fitComp->calcDeviation(msghandler, cdc, ims);
     auto tw = msghandler->tw();
+    if (quiet)
+    {
+        tw = nullptr;
+    }
     if (tw)
     {
         tw->writeStringFormatted("\nStarting sensitivity analysis. chi2_0 = %g nParam = %zu\n",
@@ -69,6 +74,8 @@ bool SensitivityAnalysis(MsgHandler           *msghandler,
     }
     JsonTree sens("sensitivity");
     bool minimum = true;
+    // Reset force constants every run
+    forceConstant_.clear();
     for (size_t i = 0; i < param->size(); ++i)
     {
         Sensitivity s;
@@ -95,6 +102,13 @@ bool SensitivityAnalysis(MsgHandler           *msghandler,
         sii->updateForceField(msghandler, changed, *param);
         s.computeForceConstants(tw);
         minimum = minimum && s.a() >= 0;
+        // Compute dimensionless force constant, or zero if undefined
+        double fc = 0;
+        if (pstore != 0)
+        {
+            fc = s.a() / (pstore*pstore);
+        }
+        forceConstant_.push_back(fc);
         s.print(tw, &sens, std::to_string(i), paramNames[i]);
     }
     if (tw)

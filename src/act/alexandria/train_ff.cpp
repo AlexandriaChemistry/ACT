@@ -405,7 +405,7 @@ int OptACM::initMaster(const std::vector<t_filenm> &fnm,
                                  opt2fn("-fitness", fnm.size(), fnm.data()),
                                  opt2fn_null("-gpin", fnm.size(), fnm.data()),
                                  opt2fn("-gpout", fnm.size(), fnm.data()),
-                                 dis(gen));
+                                 dis(gen), bch_.adaptiveStep());
     }
     if (tw)
     {
@@ -660,9 +660,9 @@ bool OptACM::runMaster(bool      optimize,
     if (gach_.optimizer() != OptimizerAlg::GA && sensitivity && msghandler_.ok())
     {
         // Do sensitivity analysis only on the training set
-        (void) SensitivityAnalysis(&msghandler_, sii_, fitComp_,
-                                   &bestGenome[iMolSelect::Train], iMolSelect::Train, jtree);
-                                                
+        SensitivityAnalysis sens;
+        (void) sens.run(&msghandler_, sii_, fitComp_,
+                        &bestGenome[iMolSelect::Train], iMolSelect::Train, jtree);
     }
     // Stop the middlemen ...
     if (commRec_.nmiddlemen() > 1)
