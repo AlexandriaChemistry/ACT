@@ -43,6 +43,7 @@ gmx_add_unit_test(
     confighandlerTest.cpp
     devcomputerTest.cpp
     forcecomputerTest.cpp
+    lossFunctionTest.cpp
     molhandlerTest.cpp
     molselectTest.cpp
     openmmTest.cpp
