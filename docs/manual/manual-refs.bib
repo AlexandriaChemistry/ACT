@@ -3701,3 +3701,29 @@ abstract  ="Molecular mechanics (MM) potentials have long been a workhorse of co
   publisher    = {Zenodo},
   doi          = {10.5281/zenodo.18098214},
 }
+
+@article{DelloStritto2025a,
+    author = {DelloStritto, Mark and Klein, Michael L.},
+    title = {Improved loss functions for machine-learned atomic potentials},
+    journal = {J. Chem. Phys.},
+    volume = {163},
+    number = {13},
+    pages = {134108},
+    year = {2025},
+    month = {10},
+    abstract = {Machine learning (ML) has become an invaluable tool across a wide array of domains in science as researchers find new ways to leverage its predictive power. This is especially true in chemistry, where ML is used to fit chemical properties or desirable attributes to the local structure of molecules and materials. In the pursuit of greater accuracy, it is relatively simple to increase the size or complexity of such models, although this often requires simultaneously seeking larger datasets in order to both fit and interpret the larger number of parameters. However, it is equally important to assess the quality and relative importance of the data and how these factors impact the training process. We, therefore, investigate the impact of using different loss functions for training neural network potentials (NNPs), as the loss function defines the error and parameter gradients used to train the NNP. In particular, we test the mean-squared error and Huber loss functions and, using insight from these functions, derive a new loss function based on the Asinh function, which yields significant improvement in the accuracy and generality of NNPs. We show that by discounting/minimizing errors and anomalies in the optimization process, both the Huber and Asinh loss functions improve the training of NNPs, leading to a final potential with a greater effective dimensionality.},
+    issn = {0021-9606},
+    doi = {10.1063/5.0280032},
+    url = {https://doi.org/10.1063/5.0280032},
+    eprint = {https://pubs.aip.org/aip/jcp/article-pdf/doi/10.1063/5.0280032/20721431/134108_1_5.0280032.pdf},
+}
+
+
+@Article{Huber1964a,
+  author =       {Peter J. Huber},
+  title =        {Robust Estimation of a Location Parameter},
+  journal =      {Ann. Math. Statist.},
+  year =         1964,
+  volume =    35,
+  pages =     {73-101}}
+
