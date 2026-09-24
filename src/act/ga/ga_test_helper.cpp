@@ -35,6 +35,7 @@
 
 #include "act/alexandria/acmfitnesscomputer.h"
 #include "act/alexandria/acminitializer.h"
+#include "act/alexandria/loss_function.h"
 #include "act/alexandria/mcmcmutator.h"
 #include "act/alexandria/molselect.h"
 #include "act/alexandria/percentmutator.h"
@@ -119,7 +120,8 @@ GaTestHelper::GaTestHelper(int                                  nmiddlemen,
     initializer     = new ACMInitializer(sii, false, seed);
     fitnessComputer = new ACMFitnessComputer();
     fitnessComputer->init(msghandler, sii, molgen, false, forceComputer,
-                          sii->forcefield()->chargeGenerationAlgorithm());
+                          sii->forcefield()->chargeGenerationAlgorithm(),
+                          LossFunction::MSE);
 }
 
 } // namespace

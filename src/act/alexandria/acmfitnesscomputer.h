@@ -61,20 +61,22 @@ class ACMFitnessComputer : public ga::FitnessComputer
 {
 
 private: 
-    //! \brief A vector of devComputers.
+    //! A vector of devComputers.
     std::vector<DevComputer*>  devComputers_;
-    //! \brief StaticIndividualInfo pointer
+    //! StaticIndividualInfo pointer
     StaticIndividualInfo      *sii_ = nullptr;
     //! The force computer
     ForceComputer             *forceComp_;
-    //! \brief MolGen pointer
+    //! MolGen pointer
     MolGen *molgen_;
-    //! \brief Whether or not to remove molecules that fail to converge in the shell minimization
+    //! Whether or not to remove molecules that fail to converge in the shell minimization
     bool removeMol_;
     //! Charge generation algorithm
     ChargeGenerationAlgorithm  algorithm_;
-    //! \brief Amount of times calcDeviation() has been called
+    //! Amount of times calcDeviation() has been called
     int numberCalcDevCalled_ = 0;
+    //! The loss function
+    LossFunction lossFunction_;
 
     /*! \brief Compute multipole moments (if needed), for a given molecule
      * @param targets   pointer to a map between the components of chi-squared and the fitting targets
@@ -100,25 +102,28 @@ public:
     virtual ~ACMFitnessComputer();
 
     /*! Initalize stuff
-     * \param[in] msghandler Message Handler
-     * \param[in] sii        pointer to StaticIndividualInfo
-     * \param[in] molgen     pointer to molgen
-     * \param[in] removeMol  Whether or not to remove molecules that fail to converge in the shell minimization
-     * \param[in] forceComp  Pointer to ForceComputer
-     * \param[in] algorithm  Charge generation algorithm
+     * \param[in] msghandler   Message Handler
+     * \param[in] sii          pointer to StaticIndividualInfo
+     * \param[in] molgen       pointer to molgen
+     * \param[in] removeMol    Whether or not to remove molecules that fail to converge in the shell minimization
+     * \param[in] forceComp    Pointer to ForceComputer
+     * \param[in] algorithm    Charge generation algorithm
+     * \param[in] lossFunction The loss function to use
      */
     void init(MsgHandler                *msghandler,
               StaticIndividualInfo      *sii,
               MolGen                    *molgen,
               const bool                 removeMol,
               ForceComputer             *forceComp,
-              ChargeGenerationAlgorithm  algorithm)
+              ChargeGenerationAlgorithm  algorithm,
+              LossFunction               lossFunction)
     {
-        sii_       = sii;
-        forceComp_ = forceComp;
-        molgen_    = molgen;
-        removeMol_ = removeMol;
-        algorithm_ = algorithm;
+        sii_          = sii;
+        forceComp_    = forceComp;
+        molgen_       = molgen;
+        removeMol_    = removeMol;
+        algorithm_    = algorithm;
+        lossFunction_ = lossFunction;
         if (molgen)
         {
             fillDevComputers(msghandler,
@@ -153,14 +158,14 @@ public:
     CalcDev distributeTasks(CalcDev task);
     
     /*! \brief Computes deviation from target
-     * \param[in] msghandler Message Handler
-     * \param[in] task       The task at hand
-     * \param[in] ims        The dataset to do computations on
-     * \return the square deviation
+     * \param[in] msghandler   Message Handler
+     * \param[in] task         The task at hand
+     * \param[in] ims          The dataset to do computations on
+     * \return the deviation
      */
-    double calcDeviation(MsgHandler                *msghandler,
-                         CalcDev                    task,
-                         iMolSelect                 ims);
+    double calcDeviation(MsgHandler   *msghandler,
+                         CalcDev       task,
+                         iMolSelect    ims);
     
     //! \return the number of devComputers
     size_t numDevComputers() const { return devComputers_.size(); }

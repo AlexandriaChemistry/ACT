@@ -37,6 +37,7 @@
 
 #include <vector>
 
+#include "act/alexandria/loss_function.h"
 #include "gromacs/commandline/pargs.h"
 
 namespace alexandria
@@ -129,6 +130,8 @@ private:
     bool sort_ = true;
     //! Probability computing algorithm
     ProbabilityComputerAlg pcAlg_ = ProbabilityComputerAlg::pcRANK;
+    //! Loss function to use
+    LossFunction lossFunction_ = LossFunction::MSE;
     //! Boltzmann probability temperature.
     real boltzTemp_ = 1;
     //! Anneal start (as fraction of maxGenerations) for Boltzmann temperature
@@ -184,7 +187,10 @@ public:
      * \param[in] optAlg The new algorithm
      */
     void setOptimizerAlg(OptimizerAlg optAlg) { optAlg_ = optAlg; }
-    
+
+    //! \return the LossFunction selection
+    LossFunction lossFunction() const { return lossFunction_; }
+
     //! \return the size of the population
     int popSize() const { return popSize_; }
 

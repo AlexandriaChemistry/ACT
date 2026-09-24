@@ -47,16 +47,16 @@ namespace
 {
 
 // ============================================================================
-// LossFunction -- the parabola fit that decides "is it a minimum?"
+// LossFunction -- test all variants.
 // ============================================================================
 
 TEST(LossFunctionTest, MSE)
 {
     auto lf = alexandria::LossFunction::MSE;
-    EXPECT_TRUE(loss(lf, 1,  2) == 2.0);
-    EXPECT_TRUE(loss(lf, 1, -2) == 2.0);
-    EXPECT_TRUE(loss(lf, 2,  4) == 8.0);
-    EXPECT_TRUE(loss(lf, 0, -4) == 8.0);
+    EXPECT_TRUE(loss(lf, 1,  2) == 4.0);
+    EXPECT_TRUE(loss(lf, 1, -2) == 4.0);
+    EXPECT_TRUE(loss(lf, 2,  4) == 16.0);
+    EXPECT_TRUE(loss(lf, 0, -4) == 16.0);
 }
 
 TEST(LossFunctionTest, MAE)

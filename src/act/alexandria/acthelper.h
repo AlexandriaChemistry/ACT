@@ -34,6 +34,7 @@
 #define ACT_ACTHELPER_H
 
 #include "act/alexandria/acmfitnesscomputer.h"
+#include "act/alexandria/loss_function.h"
 #include "act/basics/msg_handler.h"
 #include "act/forces/forcecomputer.h"
 
@@ -61,6 +62,7 @@ namespace alexandria
          * \param[in] shellMaxIter     Max # iterations for the same
          * \param[in] shellMaxDistance Max allowed distance between core and shell
          * \param[in] algorithm        The charge generation algorithm
+         * \param[in] lossFunction     The loss function to use
          */
         ACTHelper(MsgHandler                *msghandler,
                   StaticIndividualInfo      *sii,
@@ -68,7 +70,8 @@ namespace alexandria
                   double                     shellToler,
                   int                        shellMaxIter,
                   double                     shellMaxDistance,
-                  ChargeGenerationAlgorithm  algorithm);
+                  ChargeGenerationAlgorithm  algorithm,
+                  LossFunction               lossFunction);
         
         /*! \brief Run the helper process
          * \param[in] msghandler Message and status handler

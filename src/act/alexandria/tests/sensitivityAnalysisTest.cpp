@@ -78,7 +78,8 @@ TEST(SensitivityAnalysisTest, RunOne)
     ForceComputer forceComp;
     ACMFitnessComputer fitComp;
     fitComp.init(&msghandler, &sii, &molgen, false,
-                 &forceComp, ChargeGenerationAlgorithm::SQE);
+                 &forceComp, ChargeGenerationAlgorithm::SQE,
+                 LossFunction::MSE);
     ga::Genome genome;
     genome.addBase(2.0);
     genome.addBase(3.0);

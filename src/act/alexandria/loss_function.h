@@ -53,8 +53,11 @@ enum class LossFunction {
 //! \return a string corresponding to the loss function
 const char *lossFunctionName(LossFunction lf);
 
-//! \return a LossFunction corresponding to a string
-LossFunction lossFunction(const std::string &lf);
+/*! \brief Return loss function
+ * \param[in] lf a string 
+ * \return a LossFunction corresponding to a string or throw if invalid
+ */
+LossFunction stringToLossFunction(const std::string &lf);
 
 /*! \brief Compute the loss according to the chose loss function
  * \param[in] lf     The loss function
@@ -69,7 +72,7 @@ static inline double loss(LossFunction lf,
     switch (lf)
     {
     case LossFunction::MSE:
-        return 0.5*deltaE*deltaE;
+        return deltaE*deltaE;
     case LossFunction::MAE:
         return std::abs(deltaE);
     case LossFunction::Huber:

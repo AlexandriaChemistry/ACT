@@ -226,6 +226,7 @@ bool BayesConfigHandler::anneal(int generation,
 static const char *optimizerStr[5] = {nullptr, "MCMC", "GA", "HYBRID", nullptr};
 //! \brief Couple of string to use in cmdline option for the probabilityComputer
 static const char *probStr[5] = {nullptr, "RANK", "FITNESS", "BOLTZMANN", nullptr};
+static const char *lossFunctionStr[6] = { nullptr, "MSE", "MAE", "Huber", "Asinh", nullptr };
 
 void GAConfigHandler::add_options(std::vector<t_pargs>             *pargs,
                                   gmx_unused std::vector<t_filenm> *fnms)
@@ -236,6 +237,8 @@ void GAConfigHandler::add_options(std::vector<t_pargs>             *pargs,
           "Evaluate the paramters on the test set during GA." },
         { "-optimizer", FALSE, etENUM, {optimizerStr},
           "Optimization method (see above)." },
+        { "-loss_function", FALSE, etENUM, {lossFunctionStr},
+          "Loss function to use" },
         { "-pop_size", FALSE, etINT, {&popSize_},
           "Population size for the GA and HYBRID algorithms (must be even) alternatively number of parallel MCMC calculations that will be performed (can be any integer number > 0 in this case)." },
         { "-n_elites", FALSE, etINT, {&nElites_},
@@ -284,9 +287,10 @@ void GAConfigHandler::add_options(std::vector<t_pargs>             *pargs,
 
 void GAConfigHandler::check_pargs(MsgHandler *msghandler)
 {
-    optAlg_ = stringToOptimizerAlg(optimizerStr[0]);
-    pcAlg_  = stringToProbabilityComputerAlg(probStr[0]);
-    
+    optAlg_       = stringToOptimizerAlg(optimizerStr[0]);
+    pcAlg_        = stringToProbabilityComputerAlg(probStr[0]);
+    lossFunction_ = stringToLossFunction(lossFunctionStr[0]);
+
     GMX_RELEASE_ASSERT(popSize_ > 0, "-pop_size must be positive.");
     if (popSize_ % 2 != 0)  // If popSize is odd
     {

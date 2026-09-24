@@ -41,7 +41,8 @@
 #include "act/utility/jsontree.h"
 #include "act/utility/regression.h"
 #include "act/utility/stringutil.h"
-#include "gromacs/utility/textwriter.h"
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/stringutil.h"
 
 namespace alexandria
 {
@@ -54,11 +55,21 @@ std::map<LossFunction, const char *> lfMap = {
     { LossFunction::Asinh, "Asinh" }
 };
 
-//! \return a string corresponding to a LossFunction.
 const char *lossFunctionName(LossFunction lf)
 {
     return lfMap[lf];
 }
 
+LossFunction stringToLossFunction(const std::string &lf)
+{
+    for(const auto &lfm: lfMap)
+    {
+        if (lf.compare(lfm.second) == 0)
+        {
+            return lfm.first;
+        }
+    }
+    GMX_THROW(gmx::InvalidInputError(gmx::formatString("Invalid loss function %s, check case and spelling", lf.c_str())));
+}
 
 }
