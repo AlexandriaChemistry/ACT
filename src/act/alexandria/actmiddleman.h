@@ -35,6 +35,7 @@
 
 #include "act/alexandria/acmfitnesscomputer.h"
 #include "act/alexandria/confighandler.h"
+#include "act/alexandria/loss_function.h"
 #include "act/alexandria/staticindividualinfo.h"
 #include "act/ga/mutator.h"
 #include "gromacs/fileio/oenv.h"

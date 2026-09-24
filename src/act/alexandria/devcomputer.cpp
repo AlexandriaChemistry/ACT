@@ -52,37 +52,17 @@ static const double DOUBLE_MAX_LOG = std::log(GMX_DOUBLE_MAX);
 namespace alexandria
 {
 
-/*! \brief Compute penalty for variables that are out of bounds
- * \param[in] x       The actual value
- * \param[in] min     The minimum allowed value
- * \param[in] max     The maximum allowed value
- * \return 0 when in bounds, square deviation from bounds otherwise.
- */
-static double l2_regularizer(double x, double min, double max)
-{
-    double p = 0;
-    if (x < min)
-    {
-        p = (0.5 * gmx::square(x-min));
-    }
-    else if (x > max)
-    {
-        p = (0.5 * gmx::square(x-max));
-    }
-    return p;
-}
-
-
 /* * * * * * * * * * * * * * * * * * * * * *
 * BEGIN: BoundsDevComputer                 *
 * * * * * * * * * * * * * * * * * * * * * */
 
-void BoundsDevComputer::calcDeviation(MsgHandler                        *,
-                                      const ForceComputer               *,
-                                      ACTMol                            *mol,
-                                      std::vector<gmx::RVec>            *,
-                                      std::map<eRMS, FittingTarget>     *targets,
-                                      const ForceField                  *forcefield)
+void BoundsDevComputer::calcDeviation(MsgHandler                    *,
+                                      const ForceComputer           *,
+                                      ACTMol                        *mol,
+                                      std::vector<gmx::RVec>        *,
+                                      std::map<eRMS, FittingTarget> *targets,
+                                      const ForceField              *forcefield,
+                                      LossFunction                   lossFunction)
 {
     auto   mytarget = targets->find(eRMS::BOUNDS);
     if (targets->end() == mytarget)
@@ -112,7 +92,14 @@ void BoundsDevComputer::calcDeviation(MsgHandler                        *,
                     q += atoms[vv].charge();
                 }
             }
-            bound += l2_regularizer(q, p.minimum(), p.maximum());
+            if (q < p.minimum())
+            {
+                bound += loss(lossFunction, 1, p.minimum() - q);
+            }
+            else if (q > p.maximum())
+            {
+                bound += loss(lossFunction, 1, q - p.maximum());
+            }
         }
     }
     mytarget->second.increase(1, bound);
@@ -131,7 +118,8 @@ void EspDevComputer::calcDeviation(MsgHandler                    *msghandler,
                                    ACTMol                        *actmol,
                                    std::vector<gmx::RVec>        *,
                                    std::map<eRMS, FittingTarget> *targets,
-                                   const ForceField              *forcefield)
+                                   const ForceField              *forcefield,
+                                   gmx_unused LossFunction        lossFunction)
 {
     real rrms     = 0;
     real cosangle = 0;
@@ -232,7 +220,8 @@ void PolarDevComputer::calcDeviation(MsgHandler                    *msghandler,
                                      ACTMol                        *actmol,
                                      std::vector<gmx::RVec>        *,
                                      std::map<eRMS, FittingTarget> *targets,
-                                     const ForceField              *forcefield)
+                                     const ForceField              *forcefield,
+                                     LossFunction                   lossFunction)
 {
     auto qProps = actmol->qProps();
     int    ndiff = 0;
@@ -252,7 +241,7 @@ void PolarDevComputer::calcDeviation(MsgHandler                    *msghandler,
             {
                 for(int j = 0; j < DIM; j++)
                 {
-                    diff2 += gmx::square(convert_*(aelec[i][j]-acalc[i][j]));
+                    diff2 += loss(lossFunction, convert_, (aelec[i][j]-acalc[i][j]));
                 }
             }
             ndiff += 1;
@@ -275,7 +264,8 @@ void MultiPoleDevComputer::calcDeviation(MsgHandler                    *msghandl
                                          ACTMol                        *actmol,
                                          std::vector<gmx::RVec>        *,
                                          std::map<eRMS, FittingTarget> *targets,
-                                         const ForceField              *forcefield)
+                                         const ForceField              *forcefield,
+                                         LossFunction                   lossFunction)
 {
     auto   qProps   = actmol->qProps();
     int    ndiff    = 0;
@@ -303,7 +293,7 @@ void MultiPoleDevComputer::calcDeviation(MsgHandler                    *msghandl
             auto qcalc = qact.getMultipole(msghandler, mpo_);
             for (size_t mm = 0; mm < qelec.size(); mm++)
             {
-                delta += gmx::square(qcalc[mm] - qelec[mm]);
+                delta += loss(lossFunction, 1, qcalc[mm] - qelec[mm]);
             }
             ndiff += 1;
         }
@@ -349,7 +339,8 @@ void HarmonicsDevComputer::calcDeviation(MsgHandler                    *msghandl
                                          ACTMol                        *actmol,
                                          std::vector<gmx::RVec>        *coords,
                                          std::map<eRMS, FittingTarget> *targets,
-                                         const ForceField              *forcefield)
+                                         const ForceField              *forcefield,
+                                         LossFunction                   lossFunction)
 {
     // Only compute frequencies for structures that have an optimize reference
     if (JobType::OPT != actmol->jobType())
@@ -383,7 +374,7 @@ void HarmonicsDevComputer::calcDeviation(MsgHandler                    *msghandl
                 double delta = 0;
                 for(size_t k = 0; k < frequencies.size(); k++)
                 {
-                    delta += gmx::square(frequencies[k]-ref_freqs[k]);
+                    delta += loss(lossFunction, 1, frequencies[k]-ref_freqs[k]);
                 }
                 (*targets).find(eRMS::FREQUENCY)->second.increase(1, delta);
             }
@@ -402,7 +393,7 @@ void HarmonicsDevComputer::calcDeviation(MsgHandler                    *msghandl
                 double delta = 0;
                 for(size_t k = 0; k < intensities.size(); k++)
                 {
-                    delta += gmx::square(intensities[k]-ref_intens[k]);
+                    delta += loss(lossFunction, 1, intensities[k]-ref_intens[k]);
                 }
                 (*targets).find(eRMS::INTENSITY)->second.increase(1, delta);
             }
@@ -447,7 +438,8 @@ void ForceEnergyDevComputer::calcDeviation(MsgHandler                    *msghan
                                            ACTMol                        *actmol,
                                            std::vector<gmx::RVec>        *,
                                            std::map<eRMS, FittingTarget> *targets,
-                                           const ForceField              *forcefield)
+                                           const ForceField              *forcefield,
+                                           LossFunction                   lossFunction)
 {
     std::vector<ACTEnergy>                                              energyMap;
     std::vector<std::vector<std::pair<double, double> > >               forceMap;
@@ -496,7 +488,7 @@ void ForceEnergyDevComputer::calcDeviation(MsgHandler                    *msghan
                     }
                     else
                     {
-                        tf->second.increase(1, gmx::square(ff.first-ff.second));
+                        tf->second.increase(1, loss(lossFunction, 1, ff.first-ff.second));
                     }
                 }
             }
@@ -530,7 +522,7 @@ void ForceEnergyDevComputer::calcDeviation(MsgHandler                    *msghan
                         if (ff.haveQM())
                         {
                             double eqm    = ff.eqm();
-                            double mydev2 = gmx::square(eqm-ff.eact());
+                            double mydev2 = loss(lossFunction, 1, eqm-ff.eact());
                             double weight = 1;
                             if (beta > 0)
                             {
@@ -617,14 +609,14 @@ void ForceEnergyDevComputer::calcDeviation(MsgHandler                    *msghan
                             auto eact = ff.eact();
                             if (std::isfinite(eact))
                             {
-                                ti->second.increase(weight, weight* gmx::square(eqm-eact));
+                                ti->second.increase(weight, weight* loss(lossFunction, 1, eqm-eact));
                             }
                             else
                             {
                                 // We do not want to deal with infinite numbers but it should
                                 // be clear that this is a very bad parameter set.
                                 eact = 1e16;
-                                ti->second.increase(weight, weight*gmx::square(eqm-eact));
+                                ti->second.increase(weight, weight*loss(lossFunction, 1, eqm-eact));
                             }
                         }
                     }

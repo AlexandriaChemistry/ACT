@@ -41,6 +41,7 @@ target_sources(actLib
            geometry_ff.cpp
            gromacs_top.cpp
            hybrid.cpp
+           loss_function.cpp
            mcmc.cpp
            mcmcmutator.cpp
            molgen.cpp

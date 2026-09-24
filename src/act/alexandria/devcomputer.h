@@ -41,10 +41,11 @@
 #include <map>
 #include <vector>
 
+#include "act/alexandria/confighandler.h"
+#include "act/alexandria/loss_function.h"
+#include "act/alexandria/molhandler.h"
+#include "act/alexandria/staticindividualinfo.h"
 #include "act/utility/communicationrecord.h"
-#include "confighandler.h"
-#include "staticindividualinfo.h"
-#include "molhandler.h"
 
 namespace gmx
 {
@@ -83,13 +84,15 @@ public:
      * @param coords        The coordinates
      * @param targets       Map between different components of chi-squared and their fitting targets
      * @param forcefield    Pointer to ForceField structure, that should contain the newest parameters
+     * @param lossFunction  What functional form to use for the loss function
      */
     virtual void calcDeviation(MsgHandler                    *msghandler,
                                const ForceComputer           *forceComputer,
                                ACTMol                        *actmol,
                                std::vector<gmx::RVec>        *coords,
                                std::map<eRMS, FittingTarget> *targets,
-                               const ForceField              *forcefield) = 0;
+                               const ForceField              *forcefield,
+                               LossFunction                   lossFunction) = 0;
     //! \brief Return my name
     const std::string name() const { return name_; }
 };
@@ -121,7 +124,8 @@ public:
                                ACTMol                        *actmol,
                                std::vector<gmx::RVec>        *coords,
                                std::map<eRMS, FittingTarget> *targets,
-                               const ForceField              *forcefield);
+                               const ForceField              *forcefield,
+                               LossFunction                   lossFunction);
 
 };
 
@@ -150,7 +154,8 @@ public:
                                ACTMol                        *actmol,
                                std::vector<gmx::RVec>        *coords,
                                std::map<eRMS, FittingTarget> *targets,
-                               const ForceField              *forcefield);
+                               const ForceField              *forcefield,
+                               LossFunction                   lossFunction);
 };
 
 /*!
@@ -191,7 +196,8 @@ public:
                                ACTMol                        *actmol,
                                std::vector<gmx::RVec>        *coords,
                                std::map<eRMS, FittingTarget> *targets,
-                               const ForceField              *forcefield);
+                               const ForceField              *forcefield,
+                               LossFunction                   lossFunction);
 
 };
 
@@ -215,7 +221,8 @@ public:
                                ACTMol                        *actmol,
                                std::vector<gmx::RVec>        *coords,
                                std::map<eRMS, FittingTarget> *targets,
-                               const ForceField              *forcefield);
+                               const ForceField              *forcefield,
+                               LossFunction                   lossFunction);
 
 };
 
@@ -243,7 +250,8 @@ public:
                                ACTMol                        *actmol,
                                std::vector<gmx::RVec>        *coords,
                                std::map<eRMS, FittingTarget> *targets,
-                               const ForceField              *forcefield);
+                               const ForceField              *forcefield,
+                               LossFunction                   lossFunction);
 
 };
 
@@ -287,7 +295,8 @@ public:
                                ACTMol                        *actmol,
                                std::vector<gmx::RVec>        *coords,
                                std::map<eRMS, FittingTarget> *targets,
-                               const ForceField              *forcefield);
+                               const ForceField              *forcefield,
+                               LossFunction                   lossFunction);
 
 };
 

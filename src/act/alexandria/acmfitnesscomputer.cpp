@@ -167,9 +167,9 @@ void ACMFitnessComputer::distributeParameters(MsgHandler                *msghand
     }
 }
 
-double ACMFitnessComputer::calcDeviation(MsgHandler                 *msghandler,
-                                         CalcDev                     task,
-                                         iMolSelect                  ims)
+double ACMFitnessComputer::calcDeviation(MsgHandler   *msghandler,
+                                         CalcDev       task,
+                                         iMolSelect    ims)
 {
     msghandler->writeDebug("CalcDev starting");
 
@@ -258,7 +258,8 @@ double ACMFitnessComputer::calcDeviation(MsgHandler                 *msghandler,
             }
             for (DevComputer *mydev : devComputers_)
             {
-                mydev->calcDeviation(msghandler, forceComp_, &(*actmol), &coords, targets, sii_->forcefield());
+                mydev->calcDeviation(msghandler, forceComp_, &(*actmol), &coords, targets,
+                                     sii_->forcefield(), lossFunction_);
             }
             msghandler->writeDebug(gmx::formatString("CalcDev: rank %d mol %s #energies %zu tw %g\n",
                                                      cr->rank(), actmol->getMolname().c_str(), actmol->experimentConst().size(),

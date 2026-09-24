@@ -260,7 +260,7 @@ int OptACM::initMaster(const std::vector<t_filenm> &fnm,
     }
     // Fitness computer
     fitComp_ = new ACMFitnessComputer();
-    fitComp_->init(&msghandler_, sii_, &mg_, bRemoveMol_, forceComp_, algorithm);
+    fitComp_->init(&msghandler_, sii_, &mg_, bRemoveMol_, forceComp_, algorithm, gach_.lossFunction());
     // Check whether we have to do anything
     if (fitComp_->numDevComputers() == 0)
     {
@@ -1091,7 +1091,8 @@ int train_ff(int argc, char *argv[])
                                      opt.bch()->shellToler(),
                                      opt.bch()->shellMaxIter(),
                                      opt.bch()->shellMaxDistance(),
-                                     compR.algorithm());
+                                     compR.algorithm(),
+                                     opt.gach()->lossFunction());
                     helper.run(opt.msgHandler());
                 }
             }

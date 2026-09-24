@@ -41,7 +41,8 @@ ACTHelper::ACTHelper(MsgHandler                *msghandler,
                      double                     shellToler,
                      int                        shellMaxIter,
                      double                     shellMaxDistance,
-                     ChargeGenerationAlgorithm  algorithm)
+                     ChargeGenerationAlgorithm  algorithm,
+                     LossFunction               lossFunction)
 {
     double epsilonr;
     if (!ffOption(*sii->forcefield(), InteractionType::ELECTROSTATICS,
@@ -50,7 +51,7 @@ ACTHelper::ACTHelper(MsgHandler                *msghandler,
         epsilonr = 1;
     }
     forceComp_.init(shellToler, shellMaxIter, shellMaxDistance, epsilonr);
-    fitComp_.init(msghandler, sii, mg, false, &forceComp_, algorithm);
+    fitComp_.init(msghandler, sii, mg, false, &forceComp_, algorithm, lossFunction);
 }
 
 void ACTHelper::run(MsgHandler *msghandler)

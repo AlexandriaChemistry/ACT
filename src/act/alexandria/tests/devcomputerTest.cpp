@@ -95,7 +95,8 @@ protected:
                                    &actmol,
                                    &coords,
                                    &targets,
-                                   pd);
+                                   pd,
+                                   LossFunction::MSE);
             for(const auto &t : targets)
             {
                 std::string weight = gmx::formatString("%s-%s-weight",
