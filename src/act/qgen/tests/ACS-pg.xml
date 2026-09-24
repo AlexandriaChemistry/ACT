@@ -3827,7 +3827,7 @@
     </parameterlist>
   </interaction>
   <interaction type="VANDERWAALS" function="WANG_BUCKINGHAM" canswap="true">
-    <option key="nexcl" value="2"/>
+    <option key="nexcl" value="0"/>
     <combinationrule parameter="epsilon" rule="Geometric"/>
     <combinationrule parameter="gamma" rule="Geometric"/>
     <combinationrule parameter="sigma" rule="Geometric"/>

@@ -1485,6 +1485,16 @@ void Topology::build(MsgHandler             *msghandler,
         msghandler->fatal(gmx::formatString("The number of exclusions is not specified for %s in %s", interactionTypeToString(myItype).c_str(), pd->filename().c_str()));
     }
     auto exclusions = generateExclusions(msghandler, nexcl);
+    // Check for consistency
+    auto myItype2 = InteractionType::VDW;
+    int nexcl_vdw;
+    if (ffOption(*pd, myItype2, "nexcl", &nexcl_vdw) && nexcl != nexcl_vdw)
+    {
+        msghandler->fatal(gmx::formatString("The number of %s exclusions (%d) is not the same as for %s (%d) in %s",
+                                            interactionTypeToString(myItype2).c_str(), nexcl_vdw,
+                                            interactionTypeToString(myItype).c_str(), nexcl, 
+        pd->filename().c_str()));
+    }
     makePairs(msghandler, pd, InteractionType::VDW, exclusions);
     makePairs(msghandler, pd, InteractionType::ELECTROSTATICS, exclusions);
     auto itqt = InteractionType::VDWCORRECTION;
