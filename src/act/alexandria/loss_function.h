@@ -33,6 +33,7 @@
 #ifndef ALEXANDRIA_LOSS_FUNCTION_H
 #define ALEXANDRIA_LOSS_FUNCTION_H
 
+#include <cmath>
 #include <string>
 
 namespace alexandria
