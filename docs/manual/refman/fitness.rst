@@ -1,19 +1,44 @@
 ****************
 Fitness function
 ****************
-In genetic algorithm terminology, the idea is to maximize the fitness of the population. However, in practice the ACT minimizes a loss function :math:`\chi^2` where zero indicates perfect correspondence to reference data and algorithmic bounds.
-The loss function consists of multiple components that can be combined at will by the user. According to the ACT paper, we have
+In genetic algorithm terminology, the idea is to maximize the fitness of the population. However, in practice the ACT minimizes a function :math:`F(\Theta)` where :math:`\Theta` is the force field genome, containing all the parameters. Zero indicates perfect correspondence to reference data and algorithmic bounds.
+The function consists of multiple components corresponding to observables that can be combined at will by the user:
 
-.. math:: F(\Theta) = \Omega \mathbf{X}^p(\Theta) + \Lambda(\Theta)
+.. math::  F(\Theta) = \sum_{i=1}^{N_{obs}} \Omega_i \sum_{j=1}^{N_i}\mathcal{L}\left(x_{i,j}^{calc}(\Theta)-x_{i,j}^{ref}\right) + \Lambda(\Theta)
 
-where :math:`\Theta` is the force field genome, containing all the parameters and :math:`\mathbf{X}^n` is a vector representation of residuals. In case that p equals 2, the loss function corresponds to a least squares form, if p equals 1 the loss function is the the mean absolute error. 
+where :math:`N_{obs}` is the number of observables, the :math:`\Omega_i` are the corresponding user-supplied weights for each of these and :math:`N_{i}` is the number of individual data points :math:`x` for observable i and :math:`\mathcal{L}` is the loss function selected. 
 Finally, :math:`\Lambda` adds a penalty to keep (some of the) parameters within bounds. 
-The :math:`\chi^2` that is printed in the ACT log file corresponds to :math:`F(\Theta)`.
-The first term can be expanded into a sum, since multiple observable can be trained at the same time.
 
-.. math::  F(\Theta) = \sum_{i=1}^{N_{obs}} \Omega_i \sum_{j=1}^{N_i}\left|x_{i,j}^{calc}(\Theta)-x_{i,j}^{ref}\right|^p + \Lambda(\Theta)
+The supported loss functions can be described by first defining the deviation 
+(for property i and data point j)  where it should be noted that :math:`E` does not have to indicate an energy
 
-where :math:`N_{obs}` is the number of observables, the :math:`\Omega_i` are the corresponding user-supplied weights for each of these and :math:`N_{i}` is the number of individual data points :math:`x` for observable i.
+.. math:: \delta E = x_{i,j}^{calc}(\Theta)-x_{i,j}^{ref}.
+
+Loss functions that are implemented are the mean squared error (MSE):
+
+.. math:: \mathcal{L}_{MSE} = \delta E^2
+
+the mean absolute error (MAE):
+
+.. math:: \mathcal{L}_{MAE} = \left|\delta E\right|
+
+the Huber function :cite:p:`Huber1964a`:
+
+.. math:: \mathcal{L}_{Huber} = a^2\left(\sqrt{(\delta E/a)^2+1} - 1\right)
+
+where :math:`a` is a scaling factor in the same units as :math:`\delta E`.
+
+and the Asinh function :cite:p:`DelloStritto2025a` which, following the authors, is defined using
+
+.. math:: \delta U = \delta E/a
+
+and
+
+.. math:: s(x) = \sqrt{1+x^2}
+
+as:
+
+.. math:: \mathcal{L}_{Asinh} = a^2\left(1-s(\delta U) + \delta U \mathrm{ln}\left[\delta U + s(\delta U)\right]\right).
 
 --------------------------
 Supported training targets
