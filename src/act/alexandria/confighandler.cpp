@@ -118,10 +118,14 @@ void BayesConfigHandler::add_options(std::vector<t_pargs>             *pargs,
           "'Temperature' for the Monte Carlo simulation." },
         { "-tweight", FALSE, etBOOL, {&tempWeight_},
           "Weight the temperature in the MC/MC algorithm according to the square root of the number of data points. This is in order to get a lower probability of accepting a step in the wrong direction for parameters of which there are few copies." },
-        { "-anneal", FALSE, etREAL, {&anneal_},
+        { "-anneal_begin", FALSE, etREAL, {&anneal_begin_},
           "Use annealing in Monte Carlo simulation, starting from this fraction of the simulation. Value should be between 0 and 1." },
-        { "-anneal_globally", FALSE, etBOOL, {&annealGlobally_},
-          "Whether annealing restart during each mutation round or is global over GA generations" },
+        { "-anneal_end", FALSE, etREAL, {&anneal_end_},
+          "End annealing in Monte Carlo simulation at this fraction of the simulation after which the temperature will be zero. Value should be between the numer given for the [TT]-anneal[tt] flag and 1." },
+        { "-anneal_global_begin", FALSE, etREAL, {&anneal_global_begin_},
+          "Control annealing in HYBRID optimizationa. Value < 1 means annealing will start at this fraction of the generations." },
+        { "-anneal_global_end", FALSE, etREAL, {&anneal_global_end_},
+          "Where to stop annealing as a fraction of the number of generations, see manual for more details." },
         { "-seed",   FALSE, etINT,  {&seed_},
           "Random number seed. If zero, a seed will be generated." },
         { "-step",  FALSE, etREAL, {&step_},
@@ -160,58 +164,54 @@ void BayesConfigHandler::check_pargs(MsgHandler *)
     // temperature_
     GMX_RELEASE_ASSERT(temperature_ >= 0, "-temp must be nonnegative.");
     // anneal_
-    GMX_RELEASE_ASSERT(anneal_ >= 0 && anneal_ <= 1, "-anneal must be in range [0, 1].");
+    GMX_RELEASE_ASSERT(anneal_begin_ >= 0 && anneal_begin_ <= 1, "-anneal_begin_ must be in range [0, 1].");
+    GMX_RELEASE_ASSERT(anneal_global_begin_ >= 0, "-anneal_global_begin_ must be >= 0.");
 }
 
-real BayesConfigHandler::temperature(int generation,
-                                     int max_generations) const
+static double TTT(double begin,
+                  double end,
+                  int    iter,
+                  int    maxiter, 
+                  double T0)
 {
-    double temp0 = temperature_;
-    if (annealGlobally_ && generation > 0)
-    {
-        temp0 *= (max_generations - generation)/(1.0 * max_generations);
-    }
-    return temp0;
+    return std::min(T0, std::max(1e-6, T0*(1-(iter-begin*maxiter)/((end-begin)*maxiter))));
 }
 
 double BayesConfigHandler::computeBeta(int generation,
-                                       int max_generations,
+                                       int max_generation,
                                        int iter)
 {
-    double temp0 = temperature(generation, max_generations);
-    double temp  = temp0;
-    if (iter >= maxiter_)
+    double temp = temperature_;
+    if (anneal_global_begin_ >= 1)
     {
-        temp = 1e-6;
-    }
-    else if (maxiter_ > 0)
-    {
-        // temp = temperature_*(1.0 - iter/(1.0*maxiter_));
-        // Line: temp = m * iter + b
-        temp = ( temp0 / ( anneal_ * maxiter_ - maxiter_ ) ) * iter + ( ( temp0 / ( maxiter_ - anneal_ * maxiter_ ) ) * maxiter_ );
-    }
-    return 1/temp;
-}
-
-bool BayesConfigHandler::anneal(int generation,
-                                int iter) const
-{
-    if (annealGlobally_ && generation > 0)
-    {
-        return true;
-    }
-    if (anneal_ >= 1)
-    {
-        return false;
-    }
-    else if (anneal_ <= 0)
-    {
-        return true;
+        // Local temperature coupling
+        temp = TTT(anneal_begin_, anneal_end_, iter, maxiter_, temperature_);
     }
     else
     {
-        return iter >= anneal_ * maxiter_;
+        // Mixed global/local annealing
+        double myT0 = temp;
+        if (generation > anneal_global_begin_*max_generation)
+        {
+            myT0 = TTT(anneal_global_begin_, anneal_global_end_,
+                       generation, max_generation, temp);
+        }
+        int myiter  = generation*maxiter_ + iter;
+        int totiter = max_generation*maxiter_;
+        if (myiter < anneal_global_begin_ * totiter)
+        {
+            temp = myT0;
+        }
+        else if (myiter >= anneal_global_end_ * totiter)
+        {
+            temp = 1e-6;
+        }
+        else
+        {
+            temp = TTT(anneal_begin_, anneal_end_, iter, maxiter_, myT0);
+        }
     }
+    return 1/temp;
 }
 
 /* * * * * * * * * * * * * * * * * * * * * *
