@@ -1,0 +1,5 @@
+<map id="ga::CurvatureTerminator" name="ga::CurvatureTerminator">
+<area shape="rect" id="Node000001" title="Terminator which stops when evolution is stuck in a local minimum Evaluates whether the best genome s..." alt="" coords="5,81,185,109"/>
+<area shape="rect" id="Node000002" href="$classga_1_1Terminator.xhtml" title="Abstract class to check for evolution termination conditions." alt="" coords="37,5,153,33"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="97,47,97,82,93,80,93,51"/>
+</map>
