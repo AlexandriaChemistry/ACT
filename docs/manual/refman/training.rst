@@ -52,21 +52,21 @@ where deltaDev = newDev - prevDev. Note that the unit of temperature is the same
 
 Given deltaDev, a higher temperature gives a higher probability  of acceptance, as `-deltaDev/T` tends to `0` and `exp(0) = 1`. On the other hand, a lower `T` gives less chances of acceptance, as `-deltaDev/T` tends to :math:`-\infty` and :math:`exp(-\infty)` = 0.
 
-ACT gives us the possibility to lower the temperature (simulated annealing) during the MCMC optimization with the flag *-anneal [0, 1]* flag. If we use flag *-anneal 0.5*, the temperature will be flag *-temp T* until 50% of the iterations have been completed. Then, it will be linearly decreased until it reaches `0` on the last iteration.
+ACT gives us the possibility to lower the temperature (simulated annealing) during the MCMC optimization with the flag *-anneal_begin [0, 1] -anneal_end [0,1]* flag. If we use flag *-anneal_begin 0.5*, the temperature will be flag *-temp T* until 50% of the iterations have been completed. Then, it will be linearly decreased until it reaches `0` on the last iteration.
 
 There are two remarks to be made here:
 
 *  The temperature is kept constant during the `nParam` MCMC steps that take place for a given iteration.
 * Since division by `0` is not defined, we set `T = 1e-6` on the last iteration.
 
-:numref:`fig-annealing` shows a schematic example of the temperature over time when we use actflag{\-maxiter 10 -temp 5 -anneal 0.5}.
+:numref:`fig-annealing` A shows a schematic example of the temperature over time when we use actflag{\-maxiter 10 -temp 5 -anneal_begin 0.3 -anneal_end 0.8}.
 
-.. figure:: ../images/annealing.png
+.. figure:: ../images/local-global-annealing.pdf
    :name: fig-annealing
    :width: 60%
    :align: center
 
-   Annealing during a MCMC run.
+   A: Annealing during a HYBRID run with global annealing turned off. B: With global annealing turned on.
 
 ------------------
 Multiple MCMC runs
@@ -286,13 +286,7 @@ HYBRID
 ======
 Even though this optimizer has a very fancy name, it is just a GA with MCMC as its mutator engine.
 When MCMC acts as a mutator, it will always alter the genomes independently of flag *-pr_mut*. Also, it is important to note that the simulated annealing by default is applied independently in each MCMC run.
-For instance, in case we would use flag *-max_generations 2 -maxiter 10 -temp 5 -anneal 0.5*, :numref:`fig-anneal-hybrid` shows the temperature during the MCMC part.
+For instance, in case we would use flag *-max_generations 2 -maxiter 10 -temp 5 -anneal 0.5*, :numref:`fig-annealing` A shows the temperature during the MCMC part.
 
-.. figure:: ../images/annealing_hybrid.png
-   :name: fig-anneal-hybrid
-   :align: center
-
-   Annealing in the hybrid algorithm
-
-However, when using the flag flag *-anneal_globally*, the starting temperature of the annealing will be decreased in steps at the beginning of each generation.
+However, when using the flag flag *-anneal_global_begin [0,1]*, the starting temperature of the annealing will be decreased in steps at the beginning of each generation (:numref:`fig-annealing` B).
 
