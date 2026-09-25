@@ -193,11 +193,12 @@ TEST(ConfigHandlerTest, BayesConfigHandlerSetters)
 TEST(ConfigHandlerTest, BayesTemperatureWithGlobalAnnealing)
 {
     BayesConfigHandler bayesCfg;
-    bayesCfg.setTemperature(10.0);
+    double T0 = 10.0;
+    bayesCfg.setTemperature(T0);
 
     // Without global annealing, temperature at generation 0 should be base temp
-    real t0 = bayesCfg.temperature(0, 100);
-    EXPECT_NEAR(t0, 10.0, 1e-10);
+    real t0 = bayesCfg.temperature();
+    EXPECT_NEAR(t0, T0, 1e-10);
 }
 
 TEST(ConfigHandlerTest, BayesAnnealBehavior)
@@ -205,27 +206,64 @@ TEST(ConfigHandlerTest, BayesAnnealBehavior)
     BayesConfigHandler bayesCfg;
     // Default anneal is 1, so annealing should be off
     EXPECT_FALSE(bayesCfg.annealing());
-    EXPECT_FALSE(bayesCfg.anneal(0, 0));
 
-    bayesCfg.setAnneal(0.5);
+    bayesCfg.setAnneal(0.5, 1.0);
     EXPECT_TRUE(bayesCfg.annealing());
-    EXPECT_NEAR(bayesCfg.annealStart(), 0.5, 1e-10);
 }
 
 TEST(ConfigHandlerTest, BayesComputeBeta)
 {
     BayesConfigHandler bayesCfg;
-    bayesCfg.setTemperature(10.0);
-    bayesCfg.setMaxIter(100);
-    bayesCfg.setAnneal(0.5);
+    double T0 = 10;
+    bayesCfg.setTemperature(T0);
+    int maxiter = 100;
+    int maxgeneration = 10;
+    bayesCfg.setMaxIter(maxiter);
+    bayesCfg.setAnneal(0.5, 1.0);
 
     // beta at iter 0 with no global annealing: should be 1/temp with annealing formula
-    double beta = bayesCfg.computeBeta(0, 10, 0);
+    double beta = bayesCfg.computeBeta(0, maxgeneration, 0);
     EXPECT_GT(beta, 0.0);
 
     // When iter >= maxiter, temperature should be very small → beta very large
-    double betaEnd = bayesCfg.computeBeta(0, 10, 100);
+    double betaEnd = bayesCfg.computeBeta(0, maxgeneration, 100);
     EXPECT_GT(betaEnd, beta);
+
+    // Max value that beta can adopt
+    double betaMax = 1e6;
+    // Test anneal ending
+    bayesCfg.setAnneal(0.5, 0.8);
+    beta = bayesCfg.computeBeta(0, maxgeneration, 90);
+    EXPECT_NEAR(beta, betaMax, 1e-8);
+    beta = bayesCfg.computeBeta(0, maxgeneration, 65);
+    EXPECT_NEAR(beta, 0.2, 1e-8);
+
+    // Test global annealing
+    bayesCfg.setGlobalAnneal(0.0, 1.0);
+    beta = bayesCfg.computeBeta(0, maxgeneration, 65);
+    // At generation 0 annealing should be off, so starting T.
+    EXPECT_NEAR(beta, 2/T0, 1e-8);
+
+    // Test global annealing more
+    bayesCfg.setGlobalAnneal(0.2, 0.8);
+    beta = bayesCfg.computeBeta(0, maxgeneration, 65);
+    // At generation 0 annealing should be off, so starting T.
+    EXPECT_NEAR(beta, 1/T0, 1e-8);
+    beta = bayesCfg.computeBeta(9, maxgeneration, 65);
+    // At generation 9 annealing should be off, so final T
+    EXPECT_NEAR(beta, betaMax, 1e-8);
+
+    // Now in between, before local annealing
+    beta = bayesCfg.computeBeta(5, maxgeneration, 25);
+    EXPECT_NEAR(beta, 0.2, 1e-8);
+
+    // Now in between, after local annealing
+    beta = bayesCfg.computeBeta(5, maxgeneration, 85);
+    EXPECT_NEAR(beta, betaMax, 1e-8);
+
+    // Now in between, during local annealing
+    beta = bayesCfg.computeBeta(5, maxgeneration, 65);
+    EXPECT_NEAR(beta, 0.4, 1e-8);
 }
 
 // ---- SimulationConfigHandler tests ----

@@ -303,10 +303,14 @@ private:
     real  temperature_       = 5;
     //! Weight temperature after number of training points
     bool  tempWeight_        = false;
-    //! Use annealing in the optimization. Value < 1 means annealing will happen
-    real  anneal_            = 1;
-    //! Whether annealing restart during each mutation round or is global over GA generations
-    bool  annealGlobally_    = false;
+    //! Use annealing in the MCMC optimization. Value < 1 means annealing will start at this fraction of the iterations, either per generation or in total
+    real anneal_begin_       = 1;
+    //! Where to stop annealing as a fraction of the number of iterations, see above
+    real anneal_end_         = 1;
+    //! Control annealing in HYBRID optimizationa. Value < 1 means annealing will start at this fraction of the generations.
+    real anneal_global_begin_ = 1;
+    //! Where to stop annealing as a fraction of the number of generations, see manual for more details.
+    real anneal_global_end_   = 1;
     //! Evaluate on test set during the MCMC run
     bool  evaluate_testset_  = false;
     //! Checkpointing on or not?
@@ -317,6 +321,7 @@ private:
     int shellMaxIter_        = 25;
     //! Max distance between shell and core
     double shellMaxDistance_ = 0.02;
+
 public:
     /*!
      * \brief Add command-line arguments to a vector
@@ -343,13 +348,6 @@ public:
 
     //! \brief Return temperature
     real temperature() const { return temperature_; }
-
-    /*! \brief Return temperature dependent on generation if global annealing is used
-     * \param[in] generation      Current generation
-     * \param[in] max_generations Total number of generations
-     */
-    real temperature(int generation,
-                     int max_generations) const;
 
     /*! \brief set a new value for temperature
      * \param[in] temperature the new temperature
@@ -395,26 +393,33 @@ public:
     //! \brief Return whether or not temperature weighting should be considered
     bool temperatureWeighting() const { return tempWeight_; }
 
-    /*! \brief Return whether or not to do simulated annealing
-     * \param[in] generation The generation number for HYBRID
-     * \param[in] iteration  The iteration number
+    //! \return true if any annealing was requested
+    bool annealing() const { return anneal_begin_ < 1; }
+
+    //! \true return fraction of generations where global annealing will start
+    double globalAnnealBegin() const { return anneal_global_begin_; }
+
+    /*! Set global annealing
+     * \param[in] anneal_begin Whether to start global annealing
+     * \param[in] anneal_end   the new ending point for simulated annealing
      */
-    bool anneal (int generation,
-                 int iteration) const;
-
-    //! \return start of annealing in fraction of iterations
-    double annealStart() const { return anneal_; }
-
-    //! \return true if annealing was requested
-    bool annealing() const { return anneal_ < 1; }
-
-    //! \return true if global annealing was requested
-    bool globalAnnealing() const { return annealing() && annealGlobally_; }
+    void setGlobalAnneal(real anneal_begin,
+                         real anneal_end)
+    {
+        anneal_global_begin_ = anneal_begin;
+        anneal_global_end_   = anneal_end;
+    }
 
     /*! \brief Set a new value for annealing start
-     * \param[in] anneal the new starting point for simulated annealing
+     * \param[in] anneal_begin the new starting point for simulated annealing
+     * \param[in] anneal_end   the new ending point for simulated annealing
      */
-    void setAnneal(const real anneal) { anneal_ = anneal; };
+    void setAnneal(real anneal_begin,
+                   real anneal_end)
+    { 
+        anneal_begin_ = anneal_begin;
+        anneal_end_   = anneal_end;
+    };
 
     //! \return whether test set should be evaluated during the MCMC run
     bool evaluateTestset() const { return evaluate_testset_; }

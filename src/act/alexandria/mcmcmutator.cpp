@@ -126,21 +126,16 @@ void MCMCMutator::mutate(MsgHandler                *msghandler,
     }
 
     double beta0      = bch_->computeBeta(0, maxGenerations_, 0);
-    if (bch_->globalAnnealing() && myGeneration_ == 0)
-    {
-        if (bch_->globalAnnealing())
-        {
-            msghandler->msg(ACTStatus::Info,
-                            gmx::formatString("Global annealing starting from T = %g, cooling step-wise over %d generations",
-                                              bch_->temperature(), maxGenerations_));
-        }
-    }
-    if (bch_->annealing())
+    if (bch_->globalAnnealBegin() < 1 && myGeneration_ == 0)
     {
         msghandler->msg(ACTStatus::Info,
-                        gmx::formatString("Local annealing starting from T = %g commencing from iteration %d out of %d during the mutation cycle",
-                                          bch_->temperature(myGeneration_, maxGenerations_),
-                                          int(bch_->annealStart() * bch_->maxIter()), bch_->maxIter()));
+                        gmx::formatString("Global annealing starting from T = %g, cooling over %d generations",
+                                          bch_->temperature(), maxGenerations_));
+    }
+    if (bch_->annealing() && std::abs(beta0*bch_->temperature()-1) > 1e-6)
+    {
+        msghandler->msg(ACTStatus::Info,
+                        gmx::formatString("Local annealing starting from T = %g", 1.0/beta0));
     }
     // Optimization loop
     int    iterOffset = myGeneration_*bch_->maxIter();
@@ -245,11 +240,8 @@ void MCMCMutator::stepMCMC(MsgHandler                   *msghandler,
     // to decide whether to accept or reject the new parameter
     if (!accept)
     {
-        // Only anneal if the simulation reached a certain number of steps
-        if (bch_->anneal(myGeneration_, iter))
-        {
-            *beta0 = bch_->computeBeta(myGeneration_, maxGenerations_, iter);
-        }
+        // Get beta for the MCMC algorithm.
+        *beta0 = bch_->computeBeta(myGeneration_, maxGenerations_, iter);
         const double randProbability = randNum();
         const double mcProbability   = std::exp( - ( (*beta0) / (sii_->weightedTemperature())[paramIndex] ) * deltaEval );
         accept = (mcProbability > randProbability);
