@@ -43,6 +43,7 @@ gmx_add_unit_test(
     latexutilTest.cpp
     memorycheckTest.cpp
     regressionTest.cpp
+    simpsonTest.cpp
     stringutilTest.cpp
     unitsTest.cpp
     # pseudo-library for code for alexandria
