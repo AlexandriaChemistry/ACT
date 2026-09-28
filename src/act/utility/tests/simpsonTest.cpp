@@ -51,9 +51,29 @@ TEST(SimpsonTest, OddVectorExp)
         y.push_back(std::exp(-x[i]));
     }
     alexandria::MsgHandler mh;
-    auto integral = simpsonIntegrate(&mh, x, y);
+    auto integral = simpsonIntegrate(&mh, false, x, y);
     EXPECT_TRUE(mh.ok());
     EXPECT_NEAR(integral, 1+std::exp(-6.0), 1e-4);
+}
+
+TEST(SimpsonTest, OddVectorExpSpherical)
+{
+    std::vector<double> x;
+    std::vector<double> y;
+    for(size_t i = 0; i < 101; i++)
+    {
+        double xx = 0.1*i;
+        x.push_back(xx);
+        y.push_back(std::exp(-xx));
+    }
+    alexandria::MsgHandler mh;
+    auto integral = simpsonIntegrate(&mh, true, x, y);
+    EXPECT_TRUE(mh.ok());
+    // Analytical solution from Mathematica
+    // yy[x_] := 4 Pi x^2 Exp[-x]
+    // Integrate[yy[x], {x, 0, 10}]
+    double result = 4*M_PI*(2-122*std::exp(-10.0));
+    EXPECT_NEAR(integral, result, 1e-4);
 }
 
 TEST(SimpsonTest, OddVectorExpOffset)
@@ -66,14 +86,14 @@ TEST(SimpsonTest, OddVectorExpOffset)
         y.push_back(std::exp(-x[i])-offset);
     }
     alexandria::MsgHandler mh;
-    auto integral = simpsonIntegrate(&mh, x, y);
+    auto integral = simpsonIntegrate(&mh, false, x, y);
     EXPECT_TRUE(mh.ok());
     double x0     = x[x.size()-1];
     double result = 1 - std::exp(-x0) - x0*std::exp(-x0);
     EXPECT_NEAR(integral, result, 1e-4);
 }
 
-TEST(SimpsonTest, OddVectorInvSquare)
+TEST(SimpsonTest, OddVectorHyperbole)
 {
     std::vector<double> x;
     for(size_t i = 0; i < 81; i++)
@@ -86,9 +106,27 @@ TEST(SimpsonTest, OddVectorInvSquare)
         y.push_back(1.0/(x[i]));
     }
     alexandria::MsgHandler mh;
-    auto integral = simpsonIntegrate(&mh, x, y);
+    auto integral = simpsonIntegrate(&mh, false, x, y);
     EXPECT_TRUE(mh.ok());
     EXPECT_NEAR(integral, std::log(9.0), 1e-4);
+}
+
+TEST(SimpsonTest, OddVectorInvSquareSpherical)
+{
+    std::vector<double> x;
+    for(size_t i = 0; i < 81; i++)
+    {
+        x.push_back(2+0.0125*i);
+    }
+    std::vector<double> y;
+    for(size_t i = 0; i < x.size(); i++)
+    {
+        y.push_back(1.0/(x[i]*x[i]*x[i]));
+    }
+    alexandria::MsgHandler mh;
+    auto integral = simpsonIntegrate(&mh, true, x, y, false);
+    EXPECT_TRUE(mh.ok());
+    EXPECT_NEAR(integral, 4*M_PI*std::log(1.5), 0.0002);
 }
 
 
@@ -102,7 +140,7 @@ TEST(SimpsonTest, OddVectorCosine)
         y.push_back(1.0+std::cos(M_PI*xx));
     }
     alexandria::MsgHandler mh;
-    auto integral = simpsonIntegrate(&mh, x, y);
+    auto integral = simpsonIntegrate(&mh, false, x, y);
     EXPECT_TRUE(mh.ok());
     EXPECT_NEAR(integral, 1, 1e-4);
 }
@@ -117,10 +155,10 @@ TEST(SimpsonTest, EvenVectorCosine)
         y.push_back(1.0+std::cos(M_PI*xx));
     }
     alexandria::MsgHandler mh;
-    auto integral = simpsonIntegrate(&mh, x, y, false);
+    auto integral = simpsonIntegrate(&mh, false, x, y, false);
     EXPECT_FALSE(mh.ok());
     mh.resetStatus();
-    integral = simpsonIntegrate(&mh, x, y, true);
+    integral = simpsonIntegrate(&mh, false, x, y, true);
     EXPECT_TRUE(mh.ok());
     EXPECT_NEAR(integral, 1, 1e-4);
 }

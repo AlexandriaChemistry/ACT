@@ -44,14 +44,16 @@
  * 1) the spacing in the x-coordinates must be uniform
  * 2) the size of the x and y array should be odd, or zeroPadding should be true
  * \param[in] msghandler  For error handling
+ * \param[in] spherical   If true, multiply y values by 4 Pi x^2
  * \param[in] x           X coordinate
  * \param[in] y           Y coordinate
  * \param[in] zeroPadding allow to add a zero value at the end of the vector if the number of point is even
  * \return the integral
  */
 double simpsonIntegrate(alexandria::MsgHandler    *msghandler,
+                        bool                       spherical,
                         const std::vector<double> &x,
                         const std::vector<double> &y,
                         bool                       zeroPadding = true);
-                        
+
 #endif
