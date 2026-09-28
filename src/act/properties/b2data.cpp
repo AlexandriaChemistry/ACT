@@ -34,6 +34,7 @@
 
 #include <sstream>
 
+#include "act/utility/simpson.h"
 #include "gromacs/fileio/oenv.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/math/units.h"
@@ -236,6 +237,8 @@ void B2Data::integrate(int iTemp, double binWidth, double beta,
     double    Uprev    = -1;
     *Bclass = *BqmForce = *BqmTorque1 = *BqmTorque2 = 0;
     mayer_[iTemp].push_back(Uprev);
+    std::vector<double> rr = { r1 };
+    std::vector<double> myBclass = { -1 };
     for(size_t ii = 1; ii < n_U12_[iTemp].size(); ii++)
     {
         double r2 = ii*binWidth;
@@ -243,6 +246,8 @@ void B2Data::integrate(int iTemp, double binWidth, double beta,
         {
             double Unew = exp_U12_[iTemp][ii]/n_U12_[iTemp][ii];
             mayer_[iTemp].push_back(Unew);
+            rr.push_back(r2);
+            myBclass.push_back(Unew);
             auto dB       = sphereIntegrator(r1, r2, Uprev, Unew);
             //! \todo: There is factor 0.5 here
             *Bclass       -= 0.5*dB;
@@ -271,6 +276,10 @@ void B2Data::integrate(int iTemp, double binWidth, double beta,
         }
         r1 = r2;
     }
+    MsgHandler msghandler;
+    double bclSimpson = -0.5*simpsonIntegrate(&msghandler, true, rr, myBclass);
+    printf("bclSimpson = %g, Bclass = %g\n", bclSimpson, *Bclass);
+    *Bclass = bclSimpson;
 }
 
 void B2Data::plotMayer(const char                *fmayer,

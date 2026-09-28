@@ -33,10 +33,13 @@
 
 #include "simpson.h"
 
+#include <cmath>
+
 #include "act/basics/msg_handler.h"
 #include "gromacs/utility/stringutil.h"
 
 double simpsonIntegrate(alexandria::MsgHandler    *msghandler,
+                        bool                       spherical,
                         const std::vector<double> &x,
                         const std::vector<double> &y,
                         bool                       zeroPadding)
@@ -61,6 +64,10 @@ double simpsonIntegrate(alexandria::MsgHandler    *msghandler,
     double dx       = x[1] - x[0];
     double dx_3     = dx/3.0;
     double integral = y[0]*dx_3;
+    if (spherical)
+    {
+        integral *= 4*M_PI*x[0]*x[0];
+    }
     for(size_t i = 1; i < x.size()-1; i++)
     {
         double dx2 = x[i+1]-x[i];
@@ -69,18 +76,30 @@ double simpsonIntegrate(alexandria::MsgHandler    *msghandler,
             msghandler->msg(alexandria::ACTStatus::Error,
                             gmx::formatString("x vectors is not uniformly space. Got %g first, and now %g", dx, dx2));
         }
+        double yy = y[i];
+        if (spherical)
+        {
+            yy *= 4*M_PI*x[i]*x[i];
+        }
         if (i % 2 == 1)
         {
-            integral += 4*y[i]*dx_3;
+            integral += 4*yy*dx_3;
         }
         else
         {
-            integral += 2*y[i]*dx_3;
+            integral += 2*yy*dx_3;
         }
     }
     if (x.size() % 2 == 1)
     {
-        integral += y[x.size()-1]*dx_3;
+        // Last point!
+        double yy = y[x.size()-1];
+        double xx = x[x.size()-1]+dx;
+        if (spherical)
+        {
+            yy *= 4*M_PI*xx*xx;
+        }
+        integral += yy*dx_3;
     }
     // If we use zeroPadding we assume that the last entry in y is zero,
     // so we do not have to add anything.
