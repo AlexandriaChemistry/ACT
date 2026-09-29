@@ -248,6 +248,30 @@ void DimerGenerator::prepare(MsgHandler       *msghandler,
                 xmOrig_[j].push_back(xorig[i]);
             } 
         }
+        // Move molecules to their respective COM
+        gmx::RVec com[2];
+        for(int m = 0; m < 2; m++)
+        {
+            // Compute center of mass
+            clear_rvec(com[m]);
+            double totmass = 0;
+            for(size_t j = 0; j < atoms_[m].size(); j++)
+            {
+                gmx::RVec mx;
+                svmul(atoms_[m][j].mass(), xmOrig_[m][j], mx);
+                rvec_inc(com[m], mx);
+                totmass += atoms_[m][j].mass();
+            }
+            for(int n = 0; n < DIM; n++)
+            {
+                com[m][n] /= totmass;
+            }
+            // Subtract center of mass
+            for(size_t j = 0; j < atoms_[m].size(); j++)
+            {
+                rvec_sub(xmOrig_[m][j], com[m], xmOrig_[m][j]);
+            }
+        }
     }
     if (minimize_)
     {
@@ -275,55 +299,23 @@ void DimerGenerator::prepare(MsgHandler       *msghandler,
     }
 }
 
-std::vector<std::vector<gmx::RVec>> DimerGenerator::generateDimers(MsgHandler *msghandler)
+std::vector<dimer_coords> DimerGenerator::generateDimers(MsgHandler *msghandler)
 {
     msghandler_ = msghandler;
 
-    // Move molecules to their respective COM
-    gmx::RVec com[2];
-    for(int m = 0; m < 2; m++)
-    {
-        // Compute center of mass
-        clear_rvec(com[m]);
-        double totmass = 0;
-        for(size_t j = 0; j < atoms_[m].size(); j++)
-        {
-            gmx::RVec mx;
-            svmul(atoms_[m][j].mass(), xmOrig_[m][j], mx);
-            rvec_inc(com[m], mx);
-            totmass += atoms_[m][j].mass();
-        }
-        for(int n = 0; n < DIM; n++)
-        {
-            com[m][n] /= totmass;
-        }
-        // Subtract center of mass
-        for(size_t j = 0; j < atoms_[m].size(); j++)
-        {
-            rvec_sub(xmOrig_[m][j], com[m], xmOrig_[m][j]);
-        }
-    }
-    // Loop over orientations
-    // Then initiate the big array
-    std::vector<std::vector<gmx::RVec>> coords(ndist_);
     if (debugGD_ && msghandler)
     {
         msghandler->writeDebug(memory_usage());
     }
-    // Copy the original coordinates
+    // Rotate the original coordinates
     std::vector<gmx::RVec> xrand[2];
-    for(int m = 0; m < 2; m++)
-    {
-        xrand[m] = xmOrig_[m];
-    }
-    // Rotate the coordinates
     for(int m = 0; m < 2; m++)
     {
         // Random rotation, using the pre-calculated random numbers
         size_t j0 = m*DIM;
         xrand[m] = rot_->random(allRandom_[randIndex_][j0],
                                 allRandom_[randIndex_][j0+1],
-                                allRandom_[randIndex_][j0+2], xrand[m]);
+                                allRandom_[randIndex_][j0+2], xmOrig_[m]);
     }
     if (msghandler && msghandler->debug())
     {
@@ -346,6 +338,8 @@ std::vector<std::vector<gmx::RVec>> DimerGenerator::generateDimers(MsgHandler *m
         msghandler->writeDebug(oss);
     }
     randIndex_ += 1;
+    // Initiate the big array
+    std::vector<dimer_coords> coords(ndist_);
     // Loop over distances from mindist to maxdist
     size_t nAtoms = atoms_[0].size() + atoms_[1].size();
     for(int idist = 0; idist < ndist_; idist++)
@@ -361,13 +355,18 @@ std::vector<std::vector<gmx::RVec>> DimerGenerator::generateDimers(MsgHandler *m
         {
             rvec_inc(xrand[1][j], trans);
         }
-        coords[idist].resize(nAtoms);
+        coords[idist].dist = dist;
+        for(int kk = 0; kk < 2; kk++)
+        {
+            coords[idist].natom[kk] = atoms_[kk].size();
+        }
+        coords[idist].coords.resize(nAtoms);
         size_t i = 0;
         for(int j = 0; j < 2; j++)
         {
             for(size_t k = 0; k < atoms_[j].size(); k++, i++)
             {
-                copy_rvec(xrand[j][k], coords[idist][i]);
+                copy_rvec(xrand[j][k], coords[idist].coords[i]);
             }
         }
         // Put the coordinates of molecule 1 back!
