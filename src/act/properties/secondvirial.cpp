@@ -352,12 +352,12 @@ void ReRunner::runB2(CommunicationRecord         *cr,
     };
     int ndimer = 0;
     int nrest  = 0;
-    std::vector<std::vector<gmx::RVec>> dimers;
-    if (gendimers_.hasTrajectory())
+    std::vector<dimer_coords> dimers;
+    if (gendimers_.hasTrajectory() && false)
     {
         if (cr->isMaster())
         {
-            gendimers_.read(&dimers);
+            //            gendimers_.read(&dimers);
         }
         maxdimer = dimers.size();
         ndimer   = 1;
@@ -433,7 +433,7 @@ void ReRunner::runB2(CommunicationRecord         *cr,
     // Collect all generated dimer coordinates for -ox output (only when requested)
     std::vector<std::vector<gmx::RVec>> allCoords;
     //! Loop over my dimers, completely independently
-    for(int idimer = 0; idimer < ndimer; idimer++)
+    for(int iRotation = 0; iRotation < ndimer; iRotation++)
     {
         // Generate a new set of dimers for all distances
         if (!gendimers_.hasTrajectory())
@@ -443,7 +443,7 @@ void ReRunner::runB2(CommunicationRecord         *cr,
             {
                 for (auto &d : dimers)
                 {
-                    allCoords.push_back(d);
+                    allCoords.push_back(d.coords);
                 }
             }
         }
@@ -465,23 +465,23 @@ void ReRunner::runB2(CommunicationRecord         *cr,
         for (size_t idim = 0; idim < dimers.size(); idim++)
         {
             std::vector<gmx::RVec> coords;
-            if (dimers[idim].size() == atoms.size())
+            if (dimers[idim].coords.size() == atoms.size())
             {
-                // Assume there are shells in the input
-                coords = dimers[idim];
+                // Assume there are NO shells in the input
+                coords = dimers[idim].coords;
             }
             else
             {
                 size_t index = 0;
                 for(size_t i = 0; i < atoms.size(); i++)
                 {
-                    if (index < dimers[idim].size())
+                    if (index < dimers[idim].coords.size())
                     {
-                        coords.push_back(dimers[idim][index]);
+                        coords.push_back(dimers[idim].coords[index]);
                     }
                     else
                     {
-                        GMX_THROW(gmx::InvalidInputError(gmx::formatString("Number of (generated) coordinates in trajectory (%zu) does not match molecule file (%zu)", dimers[idim].size(), atoms.size()).c_str()));
+                        GMX_THROW(gmx::InvalidInputError(gmx::formatString("Number of (generated) coordinates in trajectory (%zu) does not match molecule file (%zu)", dimers[idim].coords.size(), atoms.size()).c_str()));
                     }
                     if (atoms[i].pType() == ActParticle::Atom)
                     {
@@ -573,7 +573,8 @@ void ReRunner::runB2(CommunicationRecord         *cr,
             }
             gmx::RVec dcom;
             rvec_sub(com[0], com[1], dcom);
-            double rcom = norm(dcom);
+            // double rcom = norm(dcom);
+            double rcom = dimers[idim].dist;
             if (msghandler->verbose())
             {
                 std::string out = gmx::formatString(" r %g epot %g", rcom, epot);

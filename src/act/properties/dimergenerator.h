@@ -49,6 +49,16 @@
 namespace alexandria
 {
 
+typedef struct
+{
+    //! Dstance between center of mass of compounds
+    double                 dist;
+    //! Number of particles in compounds
+    size_t                 natom[2];
+    //! The actual coordinates as a single array for the whole dimer
+    std::vector<gmx::RVec> coords;
+} dimer_coords;
+
 class DimerGenerator
 {
 private:
@@ -184,7 +194,7 @@ public:
      * \param[in] msghandler MsgHandler for output and debugging, may be nullptr
      * \return The coordinate sets
      */
-    std::vector<std::vector<gmx::RVec>> generateDimers(MsgHandler *msghandler);
+    std::vector<dimer_coords> generateDimers(MsgHandler *msghandler);
 
     /*! \brief Read all the dimers at once from a file. 
      * \param[out]   coords   The coordinates. If empty reading failed or the variable was empty
