@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2024,2025
+ * Copyright (C) 2024-2026
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -75,11 +75,9 @@ private:
 public:
     /*! \brief Constructor
      * \param[in] nbins        Number of bins
-     * \param[in] binwidth     The bin width
      * \param[in] temperatures Ts at which to compute the second virial
      */
     B2Data(int                        nbins,
-           double                     binwidth,
            const std::vector<double> &temperatures);
 
     /*! \brief Dump some info using a MsgHandler
@@ -96,13 +94,14 @@ public:
      * Adds all values and increments internal counter.
      * \param[in] iTemp    Temperature index
      * \param[in] index    Distance index
+     * \param[in] dist     The distance between molecules
      * \param[in] exp_U12  Exp of the energy
      * \param[in] exp_F0   Exp weighted Force on molecule 0
      * \param[in] exp_F1   Exp weighted Force on molecule 1
      * \param[in] exp_tau0 Exp weighted Torque on molecule 0
      * \param[in] exp_tau1 Exp weighted Torque on molecule 1
      */
-    void addData(size_t iTemp, size_t index,
+    void addData(size_t iTemp, size_t index, double dist,
                  double exp_U12, double exp_F0, double exp_F1,
                  const gmx::RVec exp_tau0, const gmx::RVec exp_tau1);
 
@@ -115,8 +114,8 @@ public:
 
     /*! \brief Do the integration of the exponent weight functions
      * Compute classical B2 and quantum correction.
+     * \param[in]  msghandler For debugging
      * \param[in]  iTemp      Temperature index
-     * \param[in]  binWidth   The bin width in the arrays
      * \param[in]  beta       Boltzmann factor
      * \param[in]  mass       The atomic masses
      * \param[in]  inertia    Moments of inertia of the two compounds
@@ -125,8 +124,8 @@ public:
      * \param[out] BqmTorque1 Contribution due to torque on compound 1
      * \param[out] BqmTorque2 Contribution due to torque on compound 2
      */
-    void integrate(int                           iTemp,
-                   double                        binWidth,
+    void integrate(MsgHandler                   *msghandler,
+                   int                           iTemp,
                    double                        beta,
                    const std::vector<double>    &mass,
                    const std::vector<gmx::RVec> &inertia,

@@ -53,6 +53,8 @@ typedef struct
 {
     //! Dstance between center of mass of compounds
     double                 dist;
+    //! Index in order
+    size_t                 index;
     //! Number of particles in compounds
     size_t                 natom[2];
     //! The actual coordinates as a single array for the whole dimer

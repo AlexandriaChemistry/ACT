@@ -59,7 +59,6 @@ double sphereIntegrator(double r1, double r2, double val1, double val2)
 }
 
 B2Data::B2Data(int                        nbins,
-               double                     binwidth,
                const std::vector<double> &temperatures)
 {
     temperatures_ = temperatures;
@@ -81,10 +80,7 @@ B2Data::B2Data(int                        nbins,
         }
         n_U12_[i].resize(nbins, 0);
     }
-    for(int i = 0; i < nbins; i++)
-    {
-        dist_.push_back(i*binwidth);
-    }
+    dist_.resize(nbins, -1);
 }
 
 void B2Data::dump(MsgHandler *msghandler) const
@@ -191,7 +187,7 @@ void B2Data::aggregate(CommunicationRecord *cr)
     }
 }
     
-void B2Data::addData(size_t iTemp, size_t index,
+void B2Data::addData(size_t iTemp, size_t index, double dist,
                      double exp_U12, double exp_F0, double exp_F1,
                      const gmx::RVec exp_tau0, const gmx::RVec exp_tau1)
 {
@@ -203,6 +199,7 @@ void B2Data::addData(size_t iTemp, size_t index,
     {
         GMX_THROW(gmx::InternalError(gmx::formatString("index = %zu, should be less than %zu", index, exp_U12_[iTemp].size()).c_str()));
     }
+    dist_[index]               = dist;
     exp_U12_[iTemp][index]    += exp_U12;
     exp_F2_[0][iTemp][index]  += exp_F0;
     exp_F2_[1][iTemp][index]  += exp_F1;
@@ -216,29 +213,24 @@ void B2Data::fillToXmin(int iTemp, double xmin, double binWidth)
     size_t jj = 0;
     while(jj*binWidth < xmin && jj < exp_U12_[iTemp].size())
     {
+        dist_[jj] = jj*binWidth;
         exp_U12_[iTemp][jj] = -1;
         n_U12_[iTemp][jj]   = 1;
         jj += 1;
     }
 }
 
-void B2Data::integrate(int iTemp, double binWidth, double beta,
+void B2Data::integrate(MsgHandler *msghandler,
+                       int iTemp, double beta,
                        const std::vector<double>    &mass,
                        const std::vector<gmx::RVec> &inertia,
                        double *Bclass, double *BqmForce,
                        double *BqmTorque1, double *BqmTorque2)
 {
-    // Starting force
-    //double    Fprev[2] =  { 0, 0 };
-    // Starting torque
-    gmx::RVec Tprev[2] = { { 0, 0, 0 }, { 0, 0, 0 } };
+    // Constant for quantum corrections
     double    hbarfac  = beta*gmx::square(beta*PLANCK/(2*M_PI))/24;
-    double    r1       = 0;
-    double    Uprev    = -1;
-    *Bclass = *BqmForce = *BqmTorque1 = *BqmTorque2 = 0;
-    mayer_[iTemp].resize(n_U12_[iTemp].size(), 0);
-    mayer_[iTemp][0] = Uprev;
-    std::vector<double> rr(n_U12_[iTemp].size(), 0);
+    // Initiate arrays
+    mayer_[iTemp].resize(n_U12_[iTemp].size(), -1);
     std::vector<double> myBforce(n_U12_[iTemp].size(), 0);
     std::vector<double> myBtorq[2];
     for(int kk = 0; kk < 2; kk++)
@@ -248,49 +240,38 @@ void B2Data::integrate(int iTemp, double binWidth, double beta,
     std::vector<double> myBtorq2(n_U12_[iTemp].size(), 0);
     for(size_t ii = 1; ii < n_U12_[iTemp].size(); ii++)
     {
-        double r2 = ii*binWidth;
-        rr[ii]    = r2;
         if (n_U12_[iTemp][ii] > 0)
         {
             double Unew = exp_U12_[iTemp][ii]/n_U12_[iTemp][ii];
             mayer_[iTemp][ii] = Unew;
-            //auto dB       = sphereIntegrator(r1, r2, Uprev, Unew);
-            //! \todo: There is factor 0.5 here
-            //*Bclass      -= 0.5*dB;
-            Uprev         = Unew;
             for(int kk = 0; kk < 2; kk++)
             {
                 // Weighted square force
                 // We follow Eqn. 9 in Schenter, JCP 117 (2002) 6573
-                double Fnew  = exp_F2_[kk][iTemp][ii]/(mass[kk]*n_U12_[iTemp][ii]);
-                //*BqmForce    += 0.5*hbarfac*sphereIntegrator(r1, r2, Fprev[kk], Fnew);
-                myBforce[ii] += Fnew;
-                //Fprev[kk]    = Fnew;
+                myBforce[ii] += exp_F2_[kk][iTemp][ii]/(mass[kk]*n_U12_[iTemp][ii]);
                 // Contributions from torque
-                double bt[2] = { 0, 0 };
                 for(int m = 0; m < DIM; m++)
                 {
                     if (inertia[kk][m] > 0)
                     {
-                        double Tnew   = exp_tau_[kk][iTemp][ii][m]/(n_U12_[iTemp][ii]*inertia[kk][m]);
-                        bt[kk]       += hbarfac*sphereIntegrator(r1, r2, Tprev[kk][m], Tnew);
-                        Tprev[kk][m]  = Tnew;
-                        myBtorq[kk][ii] += Tnew;
+                        myBtorq[kk][ii] += exp_tau_[kk][iTemp][ii][m]/(n_U12_[iTemp][ii]*inertia[kk][m]);
                     }
                 }
-                //*BqmTorque1  += bt[0];
-                //*BqmTorque2  += bt[1];
             }
         }
-        r1 = r2;
+        else
+        {
+            if (msghandler)
+            {
+                msghandler->msg(ACTStatus::Error,
+                                gmx::formatString("No data for point %zu (dist %g) to integrate Mayer function", ii, dist_[ii]));
+            }
+        }
     }
-    MsgHandler msghandler;
-    double bclSimpson = -0.5*simpsonIntegrate(&msghandler, true, rr, mayer_[iTemp]);
-    printf("bclSimpson = %g, Bclass = %g\n", bclSimpson, *Bclass);
-    *Bclass     = bclSimpson;
-    *BqmForce   = 0.5*hbarfac*simpsonIntegrate(&msghandler, true, rr, myBforce);
-    *BqmTorque1 = hbarfac*simpsonIntegrate(&msghandler, true, rr, myBtorq[0]);
-    *BqmTorque2 = hbarfac*simpsonIntegrate(&msghandler, true, rr, myBtorq[1]);
+    *Bclass     = -0.5*simpsonIntegrate(msghandler, true, dist_, mayer_[iTemp]);
+    *BqmForce   =  0.5*hbarfac*simpsonIntegrate(msghandler, true, dist_, myBforce);
+    *BqmTorque1 = hbarfac*simpsonIntegrate(msghandler, true, dist_, myBtorq[0]);
+    *BqmTorque2 = hbarfac*simpsonIntegrate(msghandler, true, dist_, myBtorq[1]);
 }
 
 void B2Data::plotMayer(const char                *fmayer,

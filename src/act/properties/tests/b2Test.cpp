@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria program.
  *
- * Copyright (C) 2022,2023
+ * Copyright (C) 2022-2026
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -85,7 +85,7 @@ protected:
         double rmax  = 10;
         // We will add data points until rmax+x0
         int    irmax = (x0+rmax)/bw;
-        B2Data b2data(irmax, bw, Temperature);
+        B2Data b2data(irmax, Temperature);
         // We start computing from x0, however we need the points from zero
         // for integration later. The integer index times the binwidth is
         // used as the distance in the integration algorithm.
@@ -101,11 +101,12 @@ protected:
                 {
                     double beta  = 1.0/(BOLTZ*Temperature[iTemp]);
                     double g0_12 = std::exp(-beta*y);
-                    b2data.addData(iTemp, i, g0_12-1,
+                    b2data.addData(iTemp, i, x, g0_12-1,
                                    g0_12*f*f, g0_12*f*f, ttt, ttt);
                 }
             }
         }
+        MsgHandler msghandler;
         if (LJ)
         {
             std::vector<double> m2 = { mass, mass };
@@ -123,7 +124,8 @@ protected:
                 double Bclass, BqmForce, BqmTorque1, BqmTorque2;
                 double beta = 1.0/(BOLTZ*Temperature[iTemp]);
                 b2data.fillToXmin(iTemp, x0, bw);
-                b2data.integrate(iTemp, bw, beta, m2, inertia,
+                b2data.integrate(&msghandler,
+                                 iTemp, beta, m2, inertia,
                                  &Bclass, &BqmForce,
                                  &BqmTorque1, &BqmTorque2);
                 b2t[b2Type::Classical].push_back(Bclass*fac);

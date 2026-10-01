@@ -233,25 +233,25 @@ std::vector<gmx::RVec> Rotator::random(double                        r1,
 {
     // Distribution is 0-1, multiply by two to get to 2*M_PI
     double alpha = r1 * 2 * M_PI;
-    double gamma = r2 * 2 * M_PI;
+    double gamma = r3 * 2 * M_PI;
     std::vector<gmx::RVec> rx;
     switch(rotalg_)
     {
     case RotationAlgorithm::Cartesian:
         {
-            double beta  = r3 * 2 * M_PI;
+            double beta  = r2 * 2 * M_PI;
             rx = cartesian(alpha, beta, gamma, coords);
         }
         break;
     case RotationAlgorithm::Polar:
         {
-            double beta  = std::acos(2*r3-1);
+            double beta  = std::acos(2*r2-1);
             rx = polar(alpha, beta, gamma, coords);
         }
         break;
     case RotationAlgorithm::Sobol:
         {
-            double beta  = std::acos(2*r3-1);
+            double beta  = std::acos(2*r2-1);
             rx = sobol(alpha, beta, gamma, coords);
         }
         break;
