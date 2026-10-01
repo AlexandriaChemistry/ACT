@@ -41,6 +41,7 @@
 #include "act/forces/forcecomputer.h"
 #include "act/molprop/molprop_xml.h"
 #include "act/properties/rotator.h"
+#include "act/properties/sobol.h"
 #include "act/utility/memory_check.h"
 #include "act/utility/stringutil.h"
 #include "external/quasirandom_sequences/sobol.h"
@@ -202,14 +203,19 @@ void DimerGenerator::read(std::vector<std::vector<gmx::RVec>> *coords)
 void DimerGenerator::generateRandomNumbers(int ndimers)
 {
     long long int sobolSeed = 0;
+    // Initialize first and ignore the data.
+    std::vector<double> q(2*DIM, 0.0);
+    i8_sobol(2*DIM, &sobolSeed, q.data());
+    SobolSequence ss;
     allRandom_.clear();
     for(int i = 0; i < ndimers; i++)
     {
-        std::vector<double> q(2*DIM, 0.0);
+        std::vector<double> q2(2*DIM, 0.0);
         if (RotationAlgorithm::Sobol == rot_->rotalg())
         {
             // Quasi random numbers
-            i8_sobol(2*DIM, &sobolSeed, q.data());
+            //i8_sobol(2*DIM, &sobolSeed, q.data());
+            ss.seq(2*DIM, &q);
         }
         else
         {
@@ -248,30 +254,6 @@ void DimerGenerator::prepare(MsgHandler       *msghandler,
                 xmOrig_[j].push_back(xorig[i]);
             } 
         }
-        // Move molecules to their respective COM
-        gmx::RVec com[2];
-        for(int m = 0; m < 2; m++)
-        {
-            // Compute center of mass
-            clear_rvec(com[m]);
-            double totmass = 0;
-            for(size_t j = 0; j < atoms_[m].size(); j++)
-            {
-                gmx::RVec mx;
-                svmul(atoms_[m][j].mass(), xmOrig_[m][j], mx);
-                rvec_inc(com[m], mx);
-                totmass += atoms_[m][j].mass();
-            }
-            for(int n = 0; n < DIM; n++)
-            {
-                com[m][n] /= totmass;
-            }
-            // Subtract center of mass
-            for(size_t j = 0; j < atoms_[m].size(); j++)
-            {
-                rvec_sub(xmOrig_[m][j], com[m], xmOrig_[m][j]);
-            }
-        }
     }
     if (minimize_)
     {
@@ -294,6 +276,32 @@ void DimerGenerator::prepare(MsgHandler       *msghandler,
                 msghandler->msg(ACTStatus::Info,
                                 gmx::formatString("Monomer %zu. Final energy: %g RMSD wrt original structure %g nm.",
                                                   j, energies[InteractionType::EPOT], rmsd));
+            }
+        }
+    }
+    {
+        // Move molecules to their respective COM
+        gmx::RVec com[2];
+        for(int m = 0; m < 2; m++)
+        {
+            // Compute center of mass
+            clear_rvec(com[m]);
+            double totmass = 0;
+            for(size_t j = 0; j < atoms_[m].size(); j++)
+            {
+                gmx::RVec mx;
+                svmul(atoms_[m][j].mass(), xmOrig_[m][j], mx);
+                rvec_inc(com[m], mx);
+                totmass += atoms_[m][j].mass();
+            }
+            for(int n = 0; n < DIM; n++)
+            {
+                com[m][n] /= totmass;
+            }
+            // Subtract center of mass
+            for(size_t j = 0; j < atoms_[m].size(); j++)
+            {
+                rvec_sub(xmOrig_[m][j], com[m], xmOrig_[m][j]);
             }
         }
     }
@@ -349,13 +357,8 @@ std::vector<dimer_coords> DimerGenerator::generateDimers(MsgHandler *msghandler)
         {
             dist += idist*binWidth_;
         }
-        // Translate molecule 1, leave 0 at the origin
-        gmx::RVec trans = { 0, 0, dist };
-        for(size_t j = 0; j < atoms_[1].size(); j++)
-        {
-            rvec_inc(xrand[1][j], trans);
-        }
-        coords[idist].dist = dist;
+        coords[idist].dist  = dist;
+        coords[idist].index = idist;
         for(int kk = 0; kk < 2; kk++)
         {
             coords[idist].natom[kk] = atoms_[kk].size();
@@ -367,17 +370,13 @@ std::vector<dimer_coords> DimerGenerator::generateDimers(MsgHandler *msghandler)
             for(size_t k = 0; k < atoms_[j].size(); k++, i++)
             {
                 copy_rvec(xrand[j][k], coords[idist].coords[i]);
+                // Translate molecule 1, leave 0 at the origin
+                if (j == 1)
+                {
+                    coords[idist].coords[i][ZZ] += dist;
+                }
             }
         }
-        // Put the coordinates of molecule 1 back!
-        for(size_t j = 0; j < atoms_[1].size(); j++)
-        {
-            rvec_dec(xrand[1][j], trans);
-        }
-    }
-    if (debugGD_ && msghandler)
-    {
-        msghandler->writeDebug(memory_usage());
     }
     return coords;
 }

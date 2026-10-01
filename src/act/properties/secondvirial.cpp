@@ -423,7 +423,7 @@ void ReRunner::runB2(CommunicationRecord         *cr,
         b2t_[b2b.first].resize(Temperature.size());
     }
     // Temporary arrays for weighted properties.
-    B2Data b2data(gendimers_.ndist(), gendimers_.binwidth(), Temperature);
+    B2Data b2data(gendimers_.ndist(), Temperature);
     
     double xmin = 0;
     gmx::RVec rvnul = { 0, 0, 0 };
@@ -460,7 +460,7 @@ void ReRunner::runB2(CommunicationRecord         *cr,
             forceMol[kk].resize(dimers.size(), rvnul);
         }
 
-        // Loop over molecules
+        // Loop over dimers
         const auto &atoms = actmol->atomsConst();
         for (size_t idim = 0; idim < dimers.size(); idim++)
         {
@@ -571,9 +571,6 @@ void ReRunner::runB2(CommunicationRecord         *cr,
                 rvec_inc(inertia[kk], inertia1);
                 torqueMol[kk][idim] = torqueRot[kk];
             }
-            gmx::RVec dcom;
-            rvec_sub(com[0], com[1], dcom);
-            // double rcom = norm(dcom);
             double rcom = dimers[idim].dist;
             if (msghandler->verbose())
             {
@@ -628,10 +625,8 @@ void ReRunner::runB2(CommunicationRecord         *cr,
                 continue;
             }
             double beta = 1.0/(BOLTZ*T);
-            for(size_t jj = 0; jj < x.size(); jj++)
+            for(size_t ii = 0; ii < x.size(); ii++)
             {
-                size_t ii = jj;
-                size_t index = std::min(x.size()-1, static_cast<size_t>(x[ii]/gendimers_.binwidth()));
                 // Gray and Gubbins Eqn. 3.261
                 double yb = y[ii]*beta;
                 double g0_12 = yb < 700 ? std::exp(-yb) : 0;
@@ -655,7 +650,8 @@ void ReRunner::runB2(CommunicationRecord         *cr,
                     ipf0 = g0_12*iprod(forceMol[0][ii], forceMol[0][ii]);
                     ipf1 = g0_12*iprod(forceMol[1][ii], forceMol[1][ii]);
                 }
-                b2data.addData(iTemp, index, g0_12-1,
+                b2data.addData(iTemp, dimers[ii].index, 
+                               dimers[ii].dist, g0_12-1,
                                // Gray and Gubbins Eqn. 3.281
                                ipf0, ipf1, tau[0], tau[1]);
             }
@@ -710,27 +706,29 @@ void ReRunner::runB2(CommunicationRecord         *cr,
             b2data.fillToXmin(iTemp, xmin, gendimers_.binwidth());
             // Now compute the components
             double Bclass, BqmForce, BqmTorque1, BqmTorque2; 
-            b2data.integrate(iTemp, gendimers_.binwidth(), beta, masses, inertia,
+            b2data.integrate(msghandler, iTemp, beta, masses, inertia,
                              &Bclass, &BqmForce, &BqmTorque1, &BqmTorque2);
-
-            // Conversion to regular units cm^3/mol.
-            double fac  = AVOGADRO*1e-21;
-            //! \todo: Fix the torque contribution
-            double bqt  = (BqmTorque1+BqmTorque2)*0.5;
-            double Btot = (Bclass + BqmForce + bqt)*fac;
-            // Add to bootstrapping statistics
-            b2t_[b2Type::Classical][iTemp] = Bclass*fac;
-            b2t_[b2Type::Force][iTemp]     = BqmForce*fac;
-            b2t_[b2Type::Torque1][iTemp]   = BqmTorque1*fac;
-            b2t_[b2Type::Torque2][iTemp]   = BqmTorque2*fac;
-            b2t_[b2Type::Total][iTemp]     = Btot;
-            
-            std::string out = gmx::formatString("%11.2f", T);
-            for(const auto &b2b : b2Type2str)
+            if (msghandler->ok())
             {
-                out += gmx::formatString("  %16.2f", b2t_[b2b.first][iTemp]);
+                // Conversion to regular units cm^3/mol.
+                double fac  = AVOGADRO*1e-21;
+                //! \todo: Fix the torque contribution
+                double bqt  = (BqmTorque1+BqmTorque2)*0.5;
+                double Btot = (Bclass + BqmForce + bqt)*fac;
+                // Add to bootstrapping statistics
+                b2t_[b2Type::Classical][iTemp] = Bclass*fac;
+                b2t_[b2Type::Force][iTemp]     = BqmForce*fac;
+                b2t_[b2Type::Torque1][iTemp]   = BqmTorque1*fac;
+                b2t_[b2Type::Torque2][iTemp]   = BqmTorque2*fac;
+                b2t_[b2Type::Total][iTemp]     = Btot;
+                
+                std::string out = gmx::formatString("%11.2f", T);
+                for(const auto &b2b : b2Type2str)
+                {
+                    out += gmx::formatString("  %16.2f", b2t_[b2b.first][iTemp]);
+                }
+                msghandler->write(out);
             }
-            msghandler->write(out);
         }
         if (!fnm.empty())
         {
