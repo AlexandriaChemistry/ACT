@@ -54,11 +54,32 @@
 namespace alexandria
 {
 
+std::map<const char *,RandAlg> string2RA = {
+    { "Sobol", RandAlg::Sobol },
+    { "Pseudo", RandAlg::Pseudo }
+};
+
+RandAlg stringToRandAlg(const char *str)
+{
+    for(const auto &s2RA : string2RA)
+    {
+        if (s2RA.first == str)
+        {
+            return s2RA.second;
+        }
+    }
+    fprintf(stderr, "Incorrect string '%s' to denote a RandAlg\n", str);
+    return RandAlg::Sobol;
+}
+
 //! \brief Description for command line
 static std::vector<const char *> dg_desc = {
     "If a trajectory or a series of structures of the same compound is passed (in GROMACS format), ",
     "the energies will be computed for those structures and no simulation will be performed.[PAR]"
 };
+
+//! \brief Couple of string to use in cmdline option for the algorithm
+static const char *randAlgStr[5] = {nullptr, "Sobol", "Pseudo", nullptr};
 
 void DimerGenerator::addOptions(std::vector<t_pargs>      *pa,
                                 std::vector<t_filenm>     *fnm,
@@ -72,9 +93,9 @@ void DimerGenerator::addOptions(std::vector<t_pargs>      *pa,
         { "-maxdist", FALSE, etREAL, {&maxdist_},
           "Maximum com-com distance to generate dimers for." },
         { "-dimerseed", FALSE, etINT, {&dimerseed_},
-          "Random number seed to generate monomer orientations for Cartesian and Polar rotation algorithms. If dimerseed is 0, a seed will be generated." },
-        { "-rotalg", FALSE, etSTR, {&rotalg_},
-          "Rotation algorithm should be either Cartesian, Polar or Sobol. Default is Sobol and the other two algorithms are experimental. Please verify your output when using those." },
+          "Random number seed to generate monomer orientations, only when using pseudorandom numbers. If dimerseed is 0, a seed will be generated." },
+        { "-randalg", FALSE, etENUM, {randAlgStr},
+          "Random number generation algorithm. Default is Sobol since it converges faster" },
         { "-flex", FALSE, etBOOL, {&flexible_},
           "Use flexible monomers in dimer sampling. Not implemented completely yet, activating this flag will use the potential energy rather than the interaction energy leading to incorrect results." },
         { "-minimize_dimers", FALSE, etBOOL, {&minimize_},
@@ -124,7 +145,8 @@ void DimerGenerator::finishOptions(const std::vector<t_filenm> &fnm)
     {
         gen_.seed(dimerseed_);
     }
-    rot_ = new Rotator(rotalg_, debugGD_);
+    randAlg_ = stringToRandAlg(randAlgStr[0]);
+    rot_ = new Rotator(debugGD_);
     if (ndist_ <= 1)
     {
         ndist_ = 1+std::round((maxdist_-mindist_)/binWidth_);
@@ -210,8 +232,7 @@ void DimerGenerator::generateRandomNumbers(int ndimers)
     allRandom_.clear();
     for(int i = 0; i < ndimers; i++)
     {
-        std::vector<double> q2(2*DIM, 0.0);
-        if (RotationAlgorithm::Sobol == rot_->rotalg())
+        if (RandAlg::Sobol == randAlg_)
         {
             // Quasi random numbers
             //i8_sobol(2*DIM, &sobolSeed, q.data());
@@ -321,9 +342,9 @@ std::vector<dimer_coords> DimerGenerator::generateDimers(MsgHandler *msghandler)
     {
         // Random rotation, using the pre-calculated random numbers
         size_t j0 = m*DIM;
-        xrand[m] = rot_->random(allRandom_[randIndex_][j0],
-                                allRandom_[randIndex_][j0+1],
-                                allRandom_[randIndex_][j0+2], xmOrig_[m]);
+        xrand[m] = rot_->randomRotate(allRandom_[randIndex_][j0],
+                                      allRandom_[randIndex_][j0+1],
+                                      allRandom_[randIndex_][j0+2], xmOrig_[m]);
     }
     if (msghandler && msghandler->debug())
     {

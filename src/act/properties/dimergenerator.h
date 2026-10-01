@@ -49,6 +49,15 @@
 namespace alexandria
 {
 
+//! To distinguish algorithms for spherical sampling
+enum class RandAlg { Sobol, Pseudo };
+
+/*! Convert string to corresponding algorithm
+ * \param[in] str The string from the commandline
+ * \return a RandAlg, or RandAlg::Sobol in case of incorrect string. Will print a message in that case.
+ */
+RandAlg stringToRandAlg(const char *str);
+
 typedef struct
 {
     //! Dstance between center of mass of compounds
@@ -80,8 +89,8 @@ private:
     bool   minimize_    = true;
     //! Low-level debugging
     bool   debugGD_     = false;
-    //! Rotation algorithm
-    const char *rotalg_ = "";
+    //! The random algorithm
+    RandAlg                                randAlg_ = RandAlg::Sobol;
     //! Random device
     std::random_device                     rd_;
     //! Generator
