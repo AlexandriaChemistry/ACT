@@ -571,7 +571,16 @@ void ReRunner::runB2(CommunicationRecord         *cr,
                 rvec_inc(inertia[kk], inertia1);
                 torqueMol[kk][idim] = torqueRot[kk];
             }
-            double rcom = dimers[idim].dist;
+            // Check consistency from the rotation algorithm.
+            rvec dx;
+            rvec_sub(com[0], com[1], dx);
+            double rcom = norm(dx);
+            if (std::abs(rcom - dimers[idim].dist) > 1e-4)
+            {
+                msghandler->fatal(gmx::formatString(" rcom calculated %g from input %g",
+                                                    rcom, dimers[idim].dist));
+            }
+            rcom = dimers[idim].dist;
             if (msghandler->verbose())
             {
                 std::string out = gmx::formatString(" r %g epot %g", rcom, epot);

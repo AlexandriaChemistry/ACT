@@ -105,6 +105,8 @@ std::vector<gmx::RVec> Rotator::cartesian(double                        alpha,
                                           double                        gamma,
                                           const std::vector<gmx::RVec> &coords)
 {
+    // This algorithm represents a "General 3D rotation" around 3 Euler angles
+    // https://en.wikipedia.org/wiki/Rotation_matrix#General_3D_rotations
     storeAngles(alpha, beta, gamma);
     double cosa  = std::cos(alpha);
     double sina  = std::sin(alpha);
