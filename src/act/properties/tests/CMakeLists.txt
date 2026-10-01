@@ -42,7 +42,6 @@ gmx_add_unit_test(
     b2Test.cpp
     princTest.cpp
     sobolTest.cpp
-    sphereIntegratorTest.cpp
     # pseudo-library for code for properties
     $<TARGET_OBJECTS:actLib>
     )

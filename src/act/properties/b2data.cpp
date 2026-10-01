@@ -45,19 +45,6 @@
 namespace alexandria
 {
 
-double sphereIntegrator(double r1, double r2, double val1, double val2)
-{
-    // Approximate trapezium by y = ax + b (a == slope)
-    // then integrate that multiplied by x^2 to get
-    // a/4 x^4 + b/3 x^3
-    // insert old and new point
-    double a        = (val2-val1)/(r2-r1);
-    double b        = val1 - a*r1;
-    double integral = ((a/4)*(r2*r2*r2*r2 - r1*r1*r1*r1) + 
-                       (b/3)*(r2*r2*r2 - r1*r1*r1));
-    return 4*M_PI*integral;
-}
-
 B2Data::B2Data(int                        nbins,
                const std::vector<double> &temperatures)
 {
