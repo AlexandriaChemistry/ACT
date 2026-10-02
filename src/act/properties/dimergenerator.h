@@ -87,6 +87,8 @@ private:
     bool   flexible_    = false;
     //! Whether to use minimize the monomers before generating dimers
     bool   minimize_    = true;
+    //! Whether to use the old Sobol algorithm
+    bool   oldSobol_    = false;
     //! Low-level debugging
     bool   debugGD_     = false;
     //! The random algorithm

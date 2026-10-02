@@ -37,6 +37,7 @@
 #include <gtest/gtest.h>
 
 #include "act/properties/sobol.h"
+#include "external/quasirandom_sequences/sobol.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "testutils/cmdlinetest.h"
@@ -61,15 +62,23 @@ protected:
         checker_.setDefaultTolerance(tolerance);
     }
 
-    void test()
+    void test(bool oldSobol)
     {
+        long long int sobolSeed = 0;
         SobolSequence ss;
         int n = 6;
         std::vector<double> allSobol;
         for(int j = 0; j < 5; j++)
         {
             std::vector<double> q(n, 0);
-            ss.seq(n, &q);
+            if  (oldSobol)
+            {
+                i8_sobol(n, &sobolSeed, q.data());
+            }
+            else
+            {
+                ss.seq(n, &q);
+            }
             for(int i = 0; i < n; i++)
             {
                 allSobol.push_back(q[i]);
@@ -81,9 +90,14 @@ protected:
     }
 };
 
-TEST_F(SobolTest, JustThirty)
+TEST_F(SobolTest, JustThirtyNew)
 {
-    test();
+    test(false);
+}
+
+TEST_F(SobolTest, JustThirtyOld)
+{
+    test(true);
 }
 
 }
