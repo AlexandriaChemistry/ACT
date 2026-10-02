@@ -96,6 +96,8 @@ void DimerGenerator::addOptions(std::vector<t_pargs>      *pa,
           "Random number seed to generate monomer orientations, only when using pseudorandom numbers. If dimerseed is 0, a seed will be generated." },
         { "-randalg", FALSE, etENUM, {randAlgStr},
           "Random number generation algorithm. Default is Sobol since it converges faster" },
+        { "-oldsobol", FALSE, etBOOL, {&oldSobol_},
+          "Use the old Sobol algorithm" },
         { "-flex", FALSE, etBOOL, {&flexible_},
           "Use flexible monomers in dimer sampling. Not implemented completely yet, activating this flag will use the potential energy rather than the interaction energy leading to incorrect results." },
         { "-minimize_dimers", FALSE, etBOOL, {&minimize_},
@@ -235,8 +237,14 @@ void DimerGenerator::generateRandomNumbers(int ndimers)
         if (RandAlg::Sobol == randAlg_)
         {
             // Quasi random numbers
-            //i8_sobol(2*DIM, &sobolSeed, q.data());
-            ss.seq(2*DIM, &q);
+            if (oldSobol_)
+            {
+                i8_sobol(2*DIM, &sobolSeed, q.data());
+            }
+            else
+            {
+                ss.seq(2*DIM, &q);
+            }
         }
         else
         {

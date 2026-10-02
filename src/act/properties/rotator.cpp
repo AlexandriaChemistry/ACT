@@ -38,7 +38,6 @@
 
 #include "act/utility/memory_check.h"
 #include "act/utility/stringutil.h"
-#include "external/quasirandom_sequences/sobol.h"
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/math/units.h"
