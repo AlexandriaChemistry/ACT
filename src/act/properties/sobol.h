@@ -45,17 +45,17 @@ private:
     //! Index in the Sobol sequence
     unsigned int              index = 0;
     //! Integer vector
-    std::vector<unsigned int> ix;
+    std::vector<unsigned int> sobol_dim;
     //! Integer vector
     std::vector<unsigned int> int_vec;
 public:
     //! Constructor
     SobolSequence();
     /*! \brief Extract a sequence of quasirandom numbers
-     * \param[in]  n The number of dimensions requested, should be <= 6
-     * \param[out] x Pointer to a vector of doubles of length n (or larger)
+     * \param[in]  ndim The number of dimensions requested, should be <= 6
+     * \param[out] q    Pointer to a vector of doubles of length ndim (or larger)
      */
-    void seq(int n, std::vector<double> *x);
+    void seq(int ndim, std::vector<double> *q);
 };
 
 #endif
