@@ -4,7 +4,7 @@
 Predicting Molecular Properties
 *******************************
 The ACT can be used to perform MD simulations of clusters in the gas-phase using the *alexandria simulate* command. This module includes the possibility to perform energy minimizations with the flag *-minimize*.
-For simulations employing periodic boundaries the OpenMM package~ :cite:p:`Eastman2023a` should be used instead. 
+For simulations employing periodic boundaries the OpenMM package :cite:p:`Eastman2023a` should be used instead. 
 For more details about MD simulations, see Section :ref:`sec-simulations`.
 
 Below we describe some of the properties that can be computed using the ACT.
@@ -21,10 +21,10 @@ The charge distribution :math:`\rho` of a molecule is determined by the nuclear 
 
 where :math:`N` is the number of atoms, :math:`z_i` are the nuclear charges, :math:`\varepsilon_0` is the permittivity of vacuum and integration is over the entire space. The minus sign before the integral is due to the negative charge of electrons. 
 
-Accurate knowledge of the MEP contributes to, for example, the understanding of interactions and function of biological macromolecules in solution~ :cite:p:`Larsson2012b`. For a molecule in the gas phase, Eqn. :eq:`phi` can be evaluated using density functional theory and wave function quantum chemistry, albeit at a significant computational cost. 
-Databases of such calculations for small molecules are available to facilitate reuse :cite:p:`Kriz2023a`. For  large condensed-phase systems, however, it is common to apply classical force fields, where electrons are not taken into account explicitly. Instead, effective partial charges on atoms are used. The electronic degrees of freedom, charge polarization, is sometimes taken into account through induced point dipoles and higher electrostatic moments, or by using a core-shell model~ :cite:p:`Dick1958a,Jordan1995a,Maaren2001a`. For additional background we refer to some excellent reviews~ :cite:p:`Dauber-Osguthorpe2019a,Hagler2019a,Jing2019a`.
+Accurate knowledge of the MEP contributes to, for example, the understanding of interactions and function of biological macromolecules in solution :cite:p:`Larsson2012b`. For a molecule in the gas phase, Eqn. :eq:`phi` can be evaluated using density functional theory and wave function quantum chemistry, albeit at a significant computational cost. 
+Databases of such calculations for small molecules are available to facilitate reuse :cite:p:`Kriz2023a`. For  large condensed-phase systems, however, it is common to apply classical force fields, where electrons are not taken into account explicitly. Instead, effective partial charges on atoms are used. The electronic degrees of freedom, charge polarization, is sometimes taken into account through induced point dipoles and higher electrostatic moments, or by using a core-shell model :cite:p:`Dick1958a,Jordan1995a,Maaren2001a`. For additional background we refer to some excellent reviews :cite:p:`Dauber-Osguthorpe2019a,Hagler2019a,Jing2019a`.
 
-The MEP can be used as a target in model development in the ACT, however we recommend against that for both fundamental and practical reasons~ :cite:p:`Hosseini2026a`.
+The MEP can be used as a target in model development in the ACT, however we recommend against that for both fundamental and practical reasons :cite:p:`Hosseini2026a`.
 
 =====================
 Electrostatic Moments
@@ -199,7 +199,7 @@ Infrared Spectra
 ----------------
 For the calculation of a full IR spectrum, in addition to the vibrational frequencies, the intensities and the line shapes are required.
 
-In case of the quantum chemical calculations both the eigenfrequencies and the corresponding IR intensities are produced by default when a frequency calculation is requested in, for instance, the Gaussian software~ :cite:p:`g16`. The frequencies for about 5000 compounds  are available from the Alexandria library~ :cite:p:`Ghahremanpour2018a` at the B3LYP/aug-cc-pvtz level of theory~ :cite:p:`Becke1988a,Kendall1992a,Woon1993a,Woon1993b`.Details of the quantum chemical calculations from which the frequencies were obtained have been presented previously :cite:p:`Ghahremanpour2016a,Ghahremanpour2018a`.
+In case of the quantum chemical calculations both the eigenfrequencies and the corresponding IR intensities are produced by default when a frequency calculation is requested in, for instance, the Gaussian software :cite:p:`g16`. The frequencies for about 5000 compounds  are available from the Alexandria library :cite:p:`Ghahremanpour2018a` at the B3LYP/aug-cc-pvtz level of theory :cite:p:`Becke1988a,Kendall1992a,Woon1993a,Woon1993b`.Details of the quantum chemical calculations from which the frequencies were obtained have been presented previously :cite:p:`Ghahremanpour2016a,Ghahremanpour2018a`.
 
 For the force field calculations, the intensities :math:`I_{n}` were derived from the transition dipole derivatives:
 
@@ -321,10 +321,11 @@ The second `Virial-Coefficient`_ is the second term in the `Virial-Expansion`_ t
 with :math:`P` the pressure, :math:`R` the gas constant, :math:`T` the temperature and :math:`\rho` the density.
 
 :math:`B_2(T)` is a useful property gauging interactions in the gas phase because experimental values are available for close to 2000 compounds as a function of temperature. It is computed from an integral weighting the interaction between two molecules over three-dimensional space.
+The theory behind this is described in textbooks :cite:p:`Gray1984a,McQuarrie1976a` but here we follow the notation due to Schenter *et al.* :cite:p:`Schenter2002a`
 
 .. math:: B_2^{cl}(T) = -\frac{1}{2}\int_0^{\infty} \left< e^{-\beta u_{12}({\mathbf r})} - 1\right> d{\mathbf r}
 
-where :math:`u_{12}({\mathbf r})` is the potential energy of two compounds (Eqn. :eq:`energy`), :math:`\beta = 1/k_BT` and
+where :math:`u_{12}({\mathbf r})` is the potential energy of two compounds, Eqn. :eq:`energy`, :math:`\beta = 1/k_BT` and
 the integral is over all space and relative orientations of the compounds. If we sample these adequately (including at close, repulsive, distance) we can simplify the integral to a one-dimensional one:
 
 .. math:: B_2^{cl}(T) = -2\pi\int_0^{\infty} r^2 \left< e^{-\beta u_{12}(r)} -1 \right> dr  
@@ -347,7 +348,7 @@ and where :math:`I` is the moment of inertia of the molecule and
 
 .. math:: \left<\tau^2_{j,\alpha}\right> = k_B T \int_0^{\infty}  \left< e^{{- \beta u_{12}(\mathbf{r})}} \left[\nabla_{\omega} u_{12}(\mathbf{r})\right]_{j,\alpha}^2\right> d \mathbf{r} .
 
-The change in :math:`B_2(T)` as a function of temperature can be used to scrutinize the repulsive and attractive components of the potential energy. :math:`B_2(T)` is negative at low temperatures due to attraction forces, while it becomes positive at higher temperatures as repulsion forces start to dominate, and passes through a maximum and eventually decreases at very high temperatures where repulsion force are fully dominant~ :cite:p:`Amdur1958a`.  
+The change in :math:`B_2(T)` as a function of temperature can be used to scrutinize the repulsive and attractive components of the potential energy. :math:`B_2(T)` is negative at low temperatures due to attraction forces, while it becomes positive at higher temperatures as repulsion forces start to dominate, and passes through a maximum and eventually decreases at very high temperatures where repulsion force are fully dominant :cite:p:`Amdur1958a`.
 
 Code to compute the second virial coefficient is available in the *alexandria b2* command. Since the calculation is relatively expensive it has been implemented to use parallel processing using the message passing library. You can run it on a 16-core machine like::
 
@@ -355,8 +356,10 @@ Code to compute the second virial coefficient is available in the *alexandria b2
   -f water#water.pdb -T1 373.15 -T2 673.15 -dT 25.0
   -maxdimer 32768
 
-where TIP4P corresponds to the well-known water model~ :cite:p:`Jorgensen1983a`, the :math:`T_1` and :math:`T_2` are the temperature limits (note gas-phase for water), :math:`dT` is the temperature interval and maxdimer determines how many relative orientations will be evaluated.
-Due to the underlying algorithm for `Quasi-Random`_ numbers, this should be a power of two. The result is plotted in :numref:`fig-b2`.
+where TIP4P corresponds to the well-known water model :cite:p:`Jorgensen1983a`, the :math:`T_1` and :math:`T_2` are the temperature limits (note gas-phase for water), :math:`dT` is the temperature interval and maxdimer determines how many relative orientations will be evaluated.
+Two algorithms can be used to sample orientations. 
+If the Sobol algorithm for `Quasi-Random`_ numbers is used :cite:p:`Millot1998a`, the number of dimers should be a power of two. If, on the other hand, Pseudo-random numbers are used, there is no such requirement.
+The result is plotted in :numref:`fig-b2`.
 
 .. _Quasi-Random: https://en.wikipedia.org/wiki/Sobol_sequence
 
