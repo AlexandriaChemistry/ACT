@@ -653,6 +653,11 @@ std::map<InteractionType, size_t> Topology::makeVsite1s(MsgHandler       *msghan
             {
                 // The vsite however, should have the same bond as atom type.
                 const auto ptype = pd->findParticleType(faa[1]);
+                // Check whether the particle is vsite
+                if (ptype->apType() != ActParticle::Vsite)
+                {
+                    msghandler->fatal(gmx::formatString("Force field inconsistency. Particle %s should have type VSite", ptype->id().id().c_str()));
+                }
                 std::string vstype;
                 ActAtom newatom(ptype->id().id(), vstype, ptype->id().id(),
                                 ptype->apType(),
@@ -759,15 +764,15 @@ std::map<InteractionType, size_t> Topology::makeVsite2s(MsgHandler       *msghan
                 auto ptj    = pd->findParticleType(atoms_[aj].ffType());
                 if (!pti->hasOption(bondtype))
                 {
-                    GMX_THROW(gmx::InternalError(gmx::formatString("Particle type %s has no bondtype option but is bonded to %s",
-                                                                   atoms_[ai].ffType().c_str(),
-                                                                   atoms_[aj].ffType().c_str()).c_str()));
+                    msghandler->fatal(gmx::formatString("Particle type %s has no bondtype option but is bonded to %s",
+                                                        atoms_[ai].ffType().c_str(),
+                                                        atoms_[aj].ffType().c_str()).c_str());
                 }
                 else if (!ptj->hasOption(bondtype))
                 {
-                    GMX_THROW(gmx::InternalError(gmx::formatString("Particle type %s has no bondtype option but is bonded to %s",
-                                                                   atoms_[aj].ffType().c_str(),
-                                                                   atoms_[ai].ffType().c_str()).c_str()));
+                    msghandler->fatal(gmx::formatString("Particle type %s has no bondtype option but is bonded to %s",
+                                                        atoms_[aj].ffType().c_str(),
+                                                        atoms_[ai].ffType().c_str()).c_str());
                 }
                 auto bai    = pti->optionValue("bondtype");
                 auto baj    = ptj->optionValue("bondtype");
@@ -793,16 +798,22 @@ std::map<InteractionType, size_t> Topology::makeVsite2s(MsgHandler       *msghan
                     auto vsname = vsatoms[vsatoms.size()-1];
                     if (!pd->hasParticleType(vsname))
                     {
-                        printf("No such particle type %s as found in vsite %s\n",
-                               vsname.c_str(), fvs.first.id().c_str());
+                        msghandler->msg(ACTStatus::Warning,
+                                        gmx::formatString("No such particle type %s as found in vsite %s\n",
+                                                          vsname.c_str(), fvs.first.id().c_str()));
                     }
                     else
                     {
                         auto ptype = pd->findParticleType(vsname);
                         if (!ptype->hasOption(bondtype))
                         {
-                            GMX_THROW(gmx::InternalError(gmx::formatString("particle type %s has no bondtype option", vsname.c_str()).c_str()));
+                            msghandler->fatal(gmx::formatString("particle type %s has no bondtype option", vsname.c_str()).c_str());
                             
+                        }
+                        // Check whether the particle is vsite
+                        if (ptype->apType() != ActParticle::Vsite)
+                        {
+                            msghandler->fatal(gmx::formatString("Force field inconsistency. Particle %s should have type VSite", ptype->id().id().c_str()));
                         }
                         std::string vstype = ptype->optionValue(bondtype);
                         ActAtom newatom(ptype->id().id(), vstype, ptype->id().id(),
@@ -813,6 +824,9 @@ std::map<InteractionType, size_t> Topology::makeVsite2s(MsgHandler       *msghan
                         int vs2 = atomList->size();
                         newatom.addCore(ai);
                         newatom.addCore(aj);
+                        // Add vsite to atoms
+                        atoms_[ai].addVsite(vs2);
+                        atoms_[aj].addVsite(vs2);
                         // Residue number
                         newatom.setResidueNumber(atoms_[ai].residueNumber());
                         gmx::RVec vzero = { 0, 0, 0 };
@@ -821,9 +835,10 @@ std::map<InteractionType, size_t> Topology::makeVsite2s(MsgHandler       *msghan
                         atomList->insert(std::next(iter), ActAtomListItem(newatom, vs2, vzero));
                         // Create new topology entry
                         Vsite2 vsnew(ai, aj, vs2);
-                        msghandler->writeDebug(gmx::formatString("Adding vs2 %s-%d %s-%d %d",
+                        msghandler->writeDebug(gmx::formatString("Adding vs2 %s-%d %s-%d %s-%d",
                                                                  atoms_[ai].element().c_str(), ai,
-                                                                 atoms_[aj].element().c_str(), aj, vs2));
+                                                                 atoms_[aj].element().c_str(), aj,
+                                                                 vstype.c_str(), vs2));
 
                         // Add bond orders, copied from the bond.
                         for (auto b : border)
@@ -940,14 +955,20 @@ std::map<InteractionType, size_t> Topology::makeVsite3s(MsgHandler       *msghan
                 auto vsname = vsatoms[vsatoms.size() - 1];
                 if (!pd->hasParticleType(vsname))
                 {
-                    printf("No such particle type %s as found in vsite %s\n",
-                           vsname.c_str(), fvs.first.id().c_str());
+                    msghandler->msg(ACTStatus::Warning,
+                                    gmx::formatString("No such particle type %s as found in vsite %s\n",
+                                                      vsname.c_str(), fvs.first.id().c_str()));
                 }
                 else
                 {
                     auto ptype = pd->findParticleType(vsname);
                     std::string vstype = ptype->optionValue("bondtype");
-                    // Determine how many particles to add
+                    // Check whether the particle is vsite
+                    if (ptype->apType() != ActParticle::Vsite)
+                    {
+                        msghandler->fatal(gmx::formatString("Force field inconsistency. Particle %s should have type VSite", ptype->id().id().c_str()));
+                    }
+                   // Determine how many particles to add
                     int maxpid = 1;
                     if (InteractionType::VSITE3OUT == myffvs.first ||
                         InteractionType::VSITE3OUTS == myffvs.first)
@@ -1162,12 +1183,18 @@ std::map<InteractionType, size_t> Topology::makeVsite4s(MsgHandler       *msghan
                     auto vsname = vsatoms[vsatoms.size() - 1];
                     if (!pd->hasParticleType(vsname))
                     {
-                        printf("No such particle type %s as found in vsite %s\n",
-                               vsname.c_str(), fvs.first.id().c_str());
+                        msghandler->msg(ACTStatus::Warning,
+                                        gmx::formatString("No such particle type %s as found in vsite %s\n",
+                                                          vsname.c_str(), fvs.first.id().c_str()));
                     }
                     else
                     {
                         auto ptype = pd->findParticleType(vsname);
+                        // Check whether the particle is vsite
+                        if (ptype->apType() != ActParticle::Vsite)
+                        {
+                            msghandler->fatal(gmx::formatString("Force field inconsistency. Particle %s should have type VSite", ptype->id().id().c_str()));
+                        }
                         std::string vstype = ptype->optionValue("bondtype");
                         // Add one particle
                         ActAtom newatom(ptype->id().id(), vstype, ptype->id().id(),
@@ -1586,8 +1613,23 @@ std::vector<std::set<size_t>> Topology::generateExclusions(MsgHandler *msghandle
                 // Shells typically have one core but vsites can have more than one
                 exclusions[i].insert(v);
                 exclusions[v].insert(i);
+                for (const auto s : atoms_[v].shells())
+                {
+                    // Shells typically have one core but vsites can have more than one
+                    exclusions[i].insert(s);
+                    exclusions[s].insert(i);
+                }
             }
-        }    
+        }
+        else if (atoms_[i].pType() == ActParticle::Vsite)
+        {
+            for (const auto s : atoms_[i].shells())
+            {
+                // Shells typically have one core but vsites can have more than one
+                exclusions[i].insert(s);
+                exclusions[s].insert(i);
+            }
+        }
     }
     auto bonds = entries_.find(InteractionType::BONDS);
     if (bonds != entries_.end())
@@ -1891,10 +1933,9 @@ void Topology::setEntryIdentifiers(MsgHandler       *msghandler,
         {
             if (jj >= atoms_.size())
             {
-                GMX_THROW(gmx::InternalError(gmx::formatString("Atom index %zu should be less than %zu for %s",
-                                                               jj, atoms_.size(),
-                                                               interactionTypeToString(itype).c_str()).c_str()
-                                             ));
+                msghandler->fatal(gmx::formatString("Atom index %zu should be less than %zu for %s",
+                                                    jj, atoms_.size(),
+                                                    interactionTypeToString(itype).c_str()).c_str());
             }
             auto atype = pd->findParticleType(atoms_[jj].ffType());
             if (!atypes.empty())
