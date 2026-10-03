@@ -1,0 +1,5 @@
+<map id="ga::GenerationTerminator" name="ga::GenerationTerminator">
+<area shape="rect" id="Node000001" title="Terminator which stops evolution after a given amount of generations." alt="" coords="5,81,193,109"/>
+<area shape="rect" id="Node000002" href="$classga_1_1Terminator.xhtml" title="Abstract class to check for evolution termination conditions." alt="" coords="41,5,157,33"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="101,47,101,82,97,80,97,51"/>
+</map>

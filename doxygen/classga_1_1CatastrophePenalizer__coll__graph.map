@@ -1,0 +1,5 @@
+<map id="ga::CatastrophePenalizer" name="ga::CatastrophePenalizer">
+<area shape="rect" id="Node000001" title="A catastrophe happens and a fraction of the population (at random) is randomized." alt="" coords="5,81,190,109"/>
+<area shape="rect" id="Node000002" href="$classga_1_1Penalizer.xhtml" title="Penalizes a population." alt="" coords="45,5,150,33"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="99,47,100,82,95,80,96,51"/>
+</map>
