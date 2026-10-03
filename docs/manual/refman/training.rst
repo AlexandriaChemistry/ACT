@@ -59,14 +59,14 @@ There are two remarks to be made here:
 *  The temperature is kept constant during the `nParam` MCMC steps that take place for a given iteration.
 * Since division by `0` is not defined, we set `T = 1e-6` on the last iteration.
 
-:numref:`fig-annealing` A shows a schematic example of the temperature over time when we use actflag{\-maxiter 10 -temp 5 -anneal_begin 0.3 -anneal_end 0.8}.
+:numref:`fig-annealing` shows a schematic example of the temperature over time with and without global annealing.
 
 .. figure:: ../images/local-global-annealing.pdf
    :name: fig-annealing
    :width: 60%
    :align: center
 
-   A: Annealing during a HYBRID run with global annealing turned off. B: With global annealing turned on.
+   A: Annealing during a HYBRID run with global annealing turned off, i.e. using *-maxiter 10 -temp 5 -anneal_begin 0.3 -anneal_end 0.8*. B: With global annealing turned on, i.e. using *-maxiter 10 -temp 5 -anneal_begin 0.1 -anneal_end 0.9 -anneal_global_begin 0.1 -anneal_global_end 0.9*.
 
 ------------------
 Multiple MCMC runs
