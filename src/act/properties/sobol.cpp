@@ -48,7 +48,7 @@ SobolSequence::SobolSequence()
                 {
                     this_iv = this_iv ^ int_vec_ptr[jbit-ldeg][kdim];
                 }
-                this_poly = this_poly * 2;
+                this_poly = this_poly / 2;
             }
             int_vec_ptr[jbit][kdim] = this_iv;
         }
