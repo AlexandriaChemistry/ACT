@@ -229,7 +229,6 @@ void DimerGenerator::generateRandomNumbers(int ndimers)
     long long int sobolSeed = 0;
     // Initialize first and ignore the data.
     std::vector<double> q(2*DIM, 0.0);
-    i8_sobol(2*DIM, &sobolSeed, q.data());
     SobolSequence ss;
     allRandom_.clear();
     for(int i = 0; i < ndimers; i++)
