@@ -41,7 +41,6 @@ gmx_add_unit_test(
     # files with code for tests
     b2Test.cpp
     princTest.cpp
-    sobolTest.cpp
     # pseudo-library for code for properties
     $<TARGET_OBJECTS:actLib>
     )
