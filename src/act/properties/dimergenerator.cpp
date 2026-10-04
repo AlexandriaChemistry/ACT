@@ -41,7 +41,6 @@
 #include "act/forces/forcecomputer.h"
 #include "act/molprop/molprop_xml.h"
 #include "act/properties/rotator.h"
-#include "act/properties/sobol.h"
 #include "act/utility/memory_check.h"
 #include "act/utility/stringutil.h"
 #include "external/quasirandom_sequences/sobol.h"
@@ -96,8 +95,8 @@ void DimerGenerator::addOptions(std::vector<t_pargs>      *pa,
           "Random number seed to generate monomer orientations, only when using pseudorandom numbers. If dimerseed is 0, a seed will be generated." },
         { "-randalg", FALSE, etENUM, {randAlgStr},
           "Random number generation algorithm. Default is Sobol since it converges faster" },
-        { "-oldsobol", FALSE, etBOOL, {&oldSobol_},
-          "Use the old Sobol algorithm" },
+        //{ "-oldsobol", FALSE, etBOOL, {&oldSobol_},
+        //"Use the old Sobol algorithm" },
         { "-flex", FALSE, etBOOL, {&flexible_},
           "Use flexible monomers in dimer sampling. Not implemented completely yet, activating this flag will use the potential energy rather than the interaction energy leading to incorrect results." },
         { "-minimize_dimers", FALSE, etBOOL, {&minimize_},
@@ -229,7 +228,6 @@ void DimerGenerator::generateRandomNumbers(int ndimers)
     long long int sobolSeed = 0;
     // Initialize first and ignore the data.
     std::vector<double> q(2*DIM, 0.0);
-    SobolSequence ss;
     allRandom_.clear();
     for(int i = 0; i < ndimers; i++)
     {
@@ -242,7 +240,7 @@ void DimerGenerator::generateRandomNumbers(int ndimers)
             }
             else
             {
-                ss.seq(2*DIM, &q);
+                // Maybe another implementation sometime?
             }
         }
         else
