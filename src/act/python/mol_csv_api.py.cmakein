@@ -235,6 +235,14 @@ class Molecule:
             self.comment     = row[22]
         self.check_latex()
         self.check_html()
+        self.natom           = self.count_atoms()
+
+    def count_atoms(self)->int:
+        natom     = 0
+        form_dict = parse_formula(self.formula)
+        for elem in form_dict.keys():
+            natom += form_dict[elem]
+        return natom
 
     def classes(self):
         c = []
