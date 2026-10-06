@@ -1027,14 +1027,13 @@ static double gmx_unused computeNonBondedTest(gmx_unused MsgHandler             
 static double computeCoulombGaussian(MsgHandler                        *msghandler,
                                      const TopologyEntryVector         &pairs,
                                      const std::vector<ActAtom>        &atoms,
-                                     const std::vector<gmx::RVec>      *coordinates,
-                                     std::vector<gmx::RVec>            *forces,
-                                     std::map<InteractionType, double> *energies,
+                                     const std::vector<std::vector<gmx::RVec>>      *coordinates,
+                                     std::vector<std::vector<gmx::RVec>>            *forces,
+                                     std::vector<std::map<InteractionType, double>> *energies,
                                      double                             epsilonr)
 {
-    double ebond = 0;
-    auto   x     = *coordinates;
-    double vc_pt = 0;
+    std::vector<double> ebond(coordinates->size(), 0);
+
     for (const auto &b : pairs)
     {
         // Get the parameters.
@@ -1046,34 +1045,31 @@ static double computeCoulombGaussian(MsgHandler                        *msghandl
         auto jzeta  = params[coulZETA2];
         // Get the atom indices
         real qq         = ONE_4PI_EPS0*atoms[ai].charge()*atoms[aj].charge()/epsilonr;
-        rvec dx;
-        rvec_sub(x[ai], x[aj], dx);
-        auto dr2        = iprod(dx, dx);
-        auto r          = std::sqrt(dr2);
-        real velec =  qq*Coulomb_GG(r, izeta, jzeta);
-        real felec = -qq*DCoulomb_GG(r, izeta, jzeta);
+        for(size_t i = 0; i < coordinates->size(); i++)
+        {
+            auto &x = (*coordinates)[i];
+            rvec dx;
+            rvec_sub(x[ai], x[aj], dx);
+            auto dr2   = iprod(dx, dx);
+            auto r     = std::sqrt(dr2);
+            real velec =  qq*Coulomb_GG(r, izeta, jzeta);
+            real felec = -qq*DCoulomb_GG(r, izeta, jzeta);
 
-        if (msghandler && msghandler->debug())
-        {
-            auto r1 = std::sqrt(dr2);
-            msghandler->writeDebug(gmx::formatString("vcoul ai %d aj %d %g izeta %g jzeta %g qi %g qj %g vcoul_pc %g dist %g felec %g",
-                                                     ai, aj, velec, izeta, jzeta, 
-                                                     atoms[ai].charge(), atoms[aj].charge(), qq/r1, r1, felec/r1));
-            vc_pt += qq/r1;
-        }
-        ebond += velec;
-        if (dr2 > 0)
-        {
-            felec *= gmx::invsqrt(dr2);
-            pairforces(felec, dx, indices, forces);
+            // TODO: get rid of if statement
+            if (dr2 > 0)
+            {
+                felec *= gmx::invsqrt(dr2);
+                pairforces(felec, dx, indices, &((*forces)[i]));
+            }
+            vbond[i] += velec;
         }
     }
-    if (msghandler && msghandler->debug())
+    double ebond = 0;
+    for(size_t i = 0; i < coordinates->size(); i++)
     {
-        msghandler->writeDebug(gmx::formatString("vcoul %g vcoul_pc %g", ebond, vc_pt));
+        (*energies)[i].insert({InteractionType::ELECTROSTATICS, vbond[i]});
+        ebond += vbond[i];
     }
-    energies->insert({InteractionType::ELECTROSTATICS, ebond});
-
     return ebond;
 }
 
