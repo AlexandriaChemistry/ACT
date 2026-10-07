@@ -1,0 +1,5 @@
+<map id="ga::Selector" name="ga::Selector">
+<area shape="rect" id="Node000001" title="Abstract class to select an Individual from the population based on its selection probability." alt="" coords="33,5,131,33"/>
+<area shape="rect" id="Node000002" href="$classga_1_1RouletteSelector.xhtml" title="Class for roulette&#45;based selection. Uses cumulative probability to perform selection." alt="" coords="5,81,159,109"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="84,47,85,81,79,80,80,51"/>
+</map>

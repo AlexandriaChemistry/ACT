@@ -1,0 +1,5 @@
+<map id="ga::Initializer" name="ga::Initializer">
+<area shape="rect" id="Node000001" title="Abstract class for initializing and randomizing Individual/Genome instances." alt="" coords="47,5,153,33"/>
+<area shape="rect" id="Node000002" href="$classalexandria_1_1ACMInitializer.xhtml" title="Initializes Individual instances as ACMIndividual objects." alt="" coords="5,81,195,109"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="102,47,102,82,98,80,98,51"/>
+</map>
