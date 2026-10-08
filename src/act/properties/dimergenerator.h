@@ -50,7 +50,7 @@ namespace alexandria
 {
 
 //! To distinguish algorithms for spherical sampling
-enum class RandAlg { Sobol, Pseudo };
+enum class RandAlg { Sobol, SobolOwen, Pseudo };
 
 /*! Convert string to corresponding algorithm
  * \param[in] str The string from the commandline
@@ -87,8 +87,6 @@ private:
     bool   flexible_    = false;
     //! Whether to use minimize the monomers before generating dimers
     bool   minimize_    = true;
-    //! Whether to use the old Sobol algorithm
-    bool   oldSobol_    = true;
     //! Low-level debugging
     bool   debugGD_     = false;
     //! The random algorithm

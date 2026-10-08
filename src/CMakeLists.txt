@@ -115,6 +115,7 @@ add_subdirectory(act)
 
 # External code that is included in the ACT library
 add_subdirectory(external/quasirandom_sequences)
+add_subdirectory(external/sobolowen)
 add_subdirectory(external/stlbfgs)
 
 

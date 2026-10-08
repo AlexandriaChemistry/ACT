@@ -44,6 +44,7 @@
 #include "act/utility/memory_check.h"
 #include "act/utility/stringutil.h"
 #include "external/quasirandom_sequences/sobol.h"
+#include "external/sobolowen/sobolowen.h"
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/trxio.h"
@@ -55,6 +56,7 @@ namespace alexandria
 
 std::map<const char *,RandAlg> string2RA = {
     { "Sobol", RandAlg::Sobol },
+    { "SobolOwen", RandAlg::SobolOwen },
     { "Pseudo", RandAlg::Pseudo }
 };
 
@@ -78,7 +80,7 @@ static std::vector<const char *> dg_desc = {
 };
 
 //! \brief Couple of string to use in cmdline option for the algorithm
-static const char *randAlgStr[5] = {nullptr, "Sobol", "Pseudo", nullptr};
+static const char *randAlgStr[5] = {nullptr, "Sobol", "SobolOwen", "Pseudo", nullptr};
 
 void DimerGenerator::addOptions(std::vector<t_pargs>      *pa,
                                 std::vector<t_filenm>     *fnm,
@@ -95,8 +97,6 @@ void DimerGenerator::addOptions(std::vector<t_pargs>      *pa,
           "Random number seed to generate monomer orientations, only when using pseudorandom numbers. If dimerseed is 0, a seed will be generated." },
         { "-randalg", FALSE, etENUM, {randAlgStr},
           "Random number generation algorithm. Default is Sobol since it converges faster" },
-        //{ "-oldsobol", FALSE, etBOOL, {&oldSobol_},
-        //"Use the old Sobol algorithm" },
         { "-flex", FALSE, etBOOL, {&flexible_},
           "Use flexible monomers in dimer sampling. Not implemented completely yet, activating this flag will use the potential energy rather than the interaction energy leading to incorrect results." },
         { "-minimize_dimers", FALSE, etBOOL, {&minimize_},
@@ -226,29 +226,40 @@ void DimerGenerator::read(std::vector<std::vector<gmx::RVec>> *coords)
 void DimerGenerator::generateRandomNumbers(int ndimers)
 {
     long long int sobolSeed = 0;
-    // Initialize first and ignore the data.
+    // Initialize 6D array
     std::vector<double> q(2*DIM, 0.0);
+    // With Owen scrambling
+    sobolowen::StatefulGenerator32f ss(2*DIM); // 6D generator
+
     allRandom_.clear();
     for(int i = 0; i < ndimers; i++)
     {
-        if (RandAlg::Sobol == randAlg_)
+        switch (randAlg_)
         {
-            // Quasi random numbers
-            if (oldSobol_)
+        case RandAlg::Sobol:
             {
+                // Quasi random numbers
                 i8_sobol(2*DIM, &sobolSeed, q.data());
+                break;
             }
-            else
+        case RandAlg::SobolOwen:
             {
-                // Maybe another implementation sometime?
+                std::vector<float> f(2*DIM, 0.0);
+                ss.get_sample(f.data());
+                for(size_t j = 0; j < 2*DIM; j++)
+                {
+                    q[j] = f[j];
+                }
+                break;
             }
-        }
-        else
-        {
-            for(size_t j = 0; j < 2*DIM; j++)
+        case RandAlg::Pseudo:
             {
-                // "True" random numbers
-                q[j] = dis_(gen_);
+                for(size_t j = 0; j < 2*DIM; j++)
+                {
+                    // "True" random numbers
+                    q[j] = dis_(gen_);
+                }
+                break;
             }
         }
         allRandom_.push_back(q);
