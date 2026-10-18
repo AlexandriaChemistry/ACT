@@ -146,6 +146,7 @@ void FragmentHandler::init(MsgHandler                   *msghandler,
     {
         // Finaly determine molecule boundaries
         atomStart_.resize(fragments->size(), 0);
+        polinfo_.resize(fragments->size());
         for(size_t ff = 0; ff < topologies_.size(); ff++)
         {
             if (0 == ff)
@@ -156,6 +157,7 @@ void FragmentHandler::init(MsgHandler                   *msghandler,
             {
                 atomStart_[ff] = atomStart_[ff-1] + topologies_[ff-1].atoms().size();
             }
+            polinfo_[ff].init(pd, topologies_[ff]);
         }
     }
     else

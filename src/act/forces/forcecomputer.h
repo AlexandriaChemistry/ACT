@@ -35,6 +35,7 @@
 #include "act/forces/vsitehandler.h"
 #include "act/forcefield/forcefield.h"
 #include "act/forcefield/potential.h"
+#include "act/topology/coords_energy.h"
 #include "act/topology/topology.h"
 #include "gromacs/math/vectypes.h"
 
@@ -43,6 +44,9 @@ namespace alexandria
 
 class QtypeProps;
 class MsgHandler;
+
+//! Determines what shells are relaxed
+enum class RelaxShells { None, All, Dimer, Mononomer1, Monomer2 };
 
 /*! \brief Class to compute all the forces in a molecule or complex.
  * It is imperative that there is only one force computer in each program,
@@ -70,6 +74,16 @@ private:
     mutable size_t nShellIter_ = 0;
     //! Total number of failed shell-minimizations across all compute() calls
     mutable size_t nShellConvergeFailed_ = 0;
+    /*! \brief Update shell positions if needed.
+     * This will work on a whole ACT mol or just one of its monomers.
+     * \param[in]    mol      The ACT molecule 
+     * \param[in]    top      The topology
+     * \param[inout] mycoords The coordinates and energy array
+     * \return The number of shells that converged
+     */
+    size_t ForceComputer::updateShells(const ACTmol   &mol,
+                                       const Topology *top,
+                                       coordsEnergy   *myCoords)
 
  public:
     //! \brief Default constructor
@@ -130,6 +144,17 @@ private:
                      std::vector<gmx::RVec>            *forces,
                      std::map<InteractionType, double> *energies,
                      const gmx::RVec                   &field) const;
+    /*! Do one actual computations.
+     * Will do one force/energy computation for many coordinate sets
+     * \param[in]  msg_handler For debugging, may be nullptr
+     * \param[in]  pd          The force field structure
+     * \param[in]  mols        The molecules and/or molecule dimers
+     * \param[in]  field       Optional electric field to be applied
+     */
+    void computeManyOnce(MsgHandler          *msg_handler,
+                         const ForceField    *pd,
+                         std::vector<ACTMol> *mols,
+                         const gmx::RVec     &field) const;
     /*! Do complete energy/force computation.
      * If shells are present their positions will be minimized.
      * If the shell minimization does not converge a warning will
@@ -155,6 +180,53 @@ private:
                  bool                               resetShells = true,
                  std::set<int>                      relax = {}) const;
                  
+    /*! Do many complete energy/force computation.
+     * If shells are present their positions will be minimized.
+     * If the shell minimization does not converge a warning will
+     * be written.
+     * \param[in]  msg_handler For debugging, may be nullptr
+     * \param[in]  pd          Pointer to force field structure
+     * \param[in]  mols        The molecules and/or molecule dimers
+     * \param[in]  field       Optional electric field to be applied
+     * \param[in]  resetShells Set the position of the shells to that of the connecting atoms
+     * \param[in]  relax       Specify the shell indices that should be relaxed. If empty, all shells will be relaxed.
+     */
+    void computeMany(MsgHandler          *msg_handler,
+                     const ForceField    *pd,
+                     std::vector<ACTMol> *mols,
+                     const gmx::RVec     &field = { 0.0, 0.0, 0.0 },
+                     bool                 resetShells = true,
+                     std::set<int>        relax = {}) const;
+                 
+    /*! \brief Compute energies and forces for monomers and/or dimers.
+     * Despite the name of the function it is possible to select RelaxShells::None
+     * which results in a single energy calculation. This will happen in case of
+     * a non-polarizable force field.
+     * Different molecules and conformation may take different number of 
+     * iterations, but the intention of the code is to keep running just until
+     * the position of the selected shells have been minimized, or maxiter has been
+     * reached.
+     * \param[in] msghandler     For debugging and messages
+     * \param[in] pd             An ACT force field
+     * \param[in] allmols        Vector containing all the molecules
+     * \param[in] relaxShells    Whether to relax some shells, and if yes which one (see enum)
+     * \param[in] forceTolerance Maximum RMS force for convergance
+     * \param[in] maxIter        Maximum number of iterations minimizing the shells
+     * \param[in] maxShellDist   Maximum distance away from the core (or vsite) that a shell is
+     *                           allowed to be. If zero, this is ignored and shell can move
+     *                           wherever they like.
+     * \param[in] resetShells    Whether or not to reset the shell positions before relaxation.
+     *                           This is an optimization that may or may not work. 
+     */
+    void computeRelaxedEnergies(MsgHandler          *msghandler,
+                                const ForceField    *pd,
+                                std::vector<ACTMol> *allmols,
+                                RelaxShells          relax,
+                                double               forceTolerance,
+                                size_t               maxIter,
+                                double               maxShellDist,
+                                bool                 resetShells);
+
     /*! \brief Return the ACT potential used
      * In practice this converts the InteractionType to the ftype
      * used within the force computer.

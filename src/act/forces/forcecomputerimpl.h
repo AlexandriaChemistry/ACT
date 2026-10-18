@@ -39,22 +39,13 @@ class ActAtom;
 class MsgHandler;
 
 //! \brief Function type to compute different interactions
-typedef double (*bondForceComputer)(MsgHandler                        *msghandler,
-                                    const TopologyEntryVector         &bonds,
-                                    const std::vector<ActAtom>        &atoms,
-                                    const std::vector<gmx::RVec>      *coordinates,
-                                    std::vector<gmx::RVec>            *forces,
-                                    std::map<InteractionType, double> *energies,
-                                    double                             value);
-
-//! Note s since plural
-typedef double (*bondForcesComputer)(MsgHandler                                     *msghandler,
-                                     const TopologyEntryVector                      &bonds,
-                                     const std::vector<ActAtom>                     &atoms,
-                                     const std::vector<std::vector<gmx::RVec>>      *coordinates,
-                                     std::vector<std::vector<gmx::RVec>>            *forces,
-                                     std::vector<std::map<InteractionType, double>> *energies,
-                                     double                                          value);
+typedef double (*bondForceComputer)(MsgHandler                         *msghandler,
+                                    const TopologyEntryVector          &bonds,
+                                    const std::vector<ActAtom>         &atoms,
+                                    const std::vector<gmx::RVec>       *coordinates,
+                                    std::vector<gmx::RVec>             *forces,
+                                    std::map<InteractionType, double>  *energies,
+                                    double                              value);
 
 /*! \brief Return a bonded force computer according to typedef.
  * \param[in] pot    The ACT potential type

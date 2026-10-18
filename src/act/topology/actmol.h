@@ -45,7 +45,9 @@
 #include "act/qgen/qgen_acm.h"
 #include "act/qgen/qgen_resp.h"
 #include "act/qgen/qtype.h"
+#include "act/topology/coords_energy.h"
 #include "act/topology/fragmenthandler.h"
+#include "act/topology/polinfo.h"
 #include "act/utility/communicationrecord.h"
 #include "act/utility/regression.h"
 #include "gromacs/math/vec.h"
@@ -64,88 +66,6 @@ enum class eSupport {
     //! Supported on another core
     Remote
 };
-
-/*! \brief Class to hold corresponding QM (reference) and ACT energies
- */
-class ACTEnergy
-{
-private:
-    //! Id of the experiment
-    int    experiment_ = 0;
-    //! Copy of the datafile name
-    std::string datafile_;
-    //! QM energy
-    double eqm_        = 0;
-    //! ACT energy
-    double eact_       = 0;
-    //! QM present
-    bool haveQM_       = false;
-    //! ACT present
-    bool haveACT_      = false;
-public:
-    /*! \brief Constructor
-     * \param[in] experiment The id
-     * \param[in] eqm        The QM energy
-     * \param[in] eact       The ACT energy
-     */
-    ACTEnergy(int experiment, const std::string &datafile, double eqm, double eact) : experiment_(experiment), datafile_(datafile)
-    {
-        setQM(eqm);
-        setACT(eact);
-    }
-    /*! \brief Constructor
-     * \param[in] experiment The id
-     */
-    ACTEnergy(int experiment, const std::string &datafile) : experiment_(experiment), datafile_(datafile) {}
-
-    //! \return The experiment ID
-    int id() const { return experiment_; }
-
-    //! \return The data file name
-    const std::string &datafile() const { return datafile_; }
-
-    //! Is there a QM energy
-    bool haveQM() const { return haveQM_; }
-
-    //! \return The QM energy    
-    double eqm() const
-    {
-        if (!haveQM_)
-        {
-            GMX_THROW(gmx::InvalidInputError("Trying to extract a QM energy when there is none"));
-        }
-        return eqm_;
-    }
-
-    //! set QM value
-    void setQM(double eqm)
-    {
-        eqm_ = eqm;
-        haveQM_ = true;
-    }
-
-    //! Is there an ACT energy
-    bool haveACT() const { return haveACT_; }
-
-    //! \return The ACT energy
-    double eact() const
-    {
-        GMX_RELEASE_ASSERT(haveACT_, "Trying to extract an ACT energy when there is none");
-        return eact_;
-    }
-
-    //! set ACT value
-    void setACT(double eact)
-    {
-        eact_ = eact;
-        haveACT_ = true;
-    }
-};
-
-//! \brief Map to match interaction type to energies
-typedef std::map<InteractionType, ACTEnergy> ACTEnergyMap;
-//! \brief Vector of the above
-typedef std::vector<ACTEnergyMap>            ACTEnergyMapVector;
 
 /*! \brief Class to hold corresponding QM (reference) adn ACT props
  */
@@ -227,8 +147,15 @@ private:
     JobType                          myJobType_        = JobType::UNKNOWN;
     //! Vector of charge type dependent properties
     std::vector<ACTQprop>            qProps_;
+    //! Information about polarization stuff
+    PolInfo                          polinfo_;
     //! Is this a linear molecule? Will be checked first when generating a topology.
     bool                             isLinear_ = false;
+    //! Coordinates and energies from all experiments
+    std::vector<CoordsEnergy>        dimerCoords_;
+    std::vector<CoordsEnergy>        monomerCoords_[2];
+    //! \brief Routine to gather the CoordsEnergy
+    
     /*! \brief
      * Add vsites on bonds to hos bond shell particles
      *
@@ -349,27 +276,31 @@ public:
     
     //! \return true if shells are present
     bool haveShells() const { return bHaveShells_; }
-    
     //! \return whether this is a linear molecule
     bool linearMolecule() const { return isLinear_; }
     
     //! \return how this compound is supported on this processor
     eSupport support() const { return eSupp_; }
-    
+    //! \return the polarization info
+    const PolInfo &polInfo() const { return polinfo_; }
     /*! \brief Set the support type
      * \param[in] esup The support type
      */
     void setSupport(eSupport esup) { eSupp_ = esup; }
-    
+    //! Extract the coordinates and observables in easy to digest chunks
+    void collectCoordsEnergy();
+    //! \return the dimerCoords
+    std::vector<CoordsEnergy> *dimerCoords() { return &dimerCoords_; }
+    /*! \return the monomerCoords
+     * \param[in] index Must be zero or one, otherwise bad things will happen.
+     */
+    std::vector<CoordsEnergy> *monomerCoords(size_t index) { return &monomerCoords_[index]; }
     //! \return the number of real atoms, i.e. not shells or vsites
     int nRealAtoms() const { return realAtoms_.size(); }
     
     //! \return the indexex of real atoms
     const std::vector<int> &realAtoms() const { return realAtoms_; }
 
-    //! \return the GROMACS energy data
-    //const gmx_enerdata_t *enerdata() const { return enerd_; }
-    
     /*! Return an energy component
      * \param[in]  mpo  The particular term that is requested
      * \param[out] ener The value found
@@ -413,6 +344,14 @@ public:
                          ACTEnergyMapVector                                                *interactionEnergyMap,
                          std::vector<std::pair<double, std::map<InteractionType, double>>> *energyComponentMap,
                          bool                                                               separateInductionCorrection) const;
+    void forceEnergyMapsNew(MsgHandler                                                        *msghandler,
+                            const ForceField                                                  *pd,
+                            const ForceComputer                                               *forceComp,
+                            std::vector<std::vector<std::pair<double, double> > >             *forceMap,
+                            std::vector<ACTEnergy>                                            *energyMap,
+                            ACTEnergyMapVector                                                *interactionEnergyMap,
+                            std::vector<std::pair<double, std::map<InteractionType, double>>> *energyComponentMap,
+                            bool                                                               separateInductionCorrection) const;
     
     //! Return the reference frequencies collected earlier
     const std::vector<double> &referenceFrequencies() const { return ref_frequencies_; }
@@ -472,7 +411,7 @@ public:
      * \return atoms data
      */
     const std::vector<ActAtom> &atomsConst() const { return topology_.atoms(); }
-    
+
     /*! \brief Return the bond order
      * \param[in] ai Atom I
      * \param[in] aj Atom J
@@ -667,6 +606,11 @@ public:
                                       std::vector<gmx::RVec>            *interactionForces,
                                       std::vector<gmx::RVec>            *coords,
                                       bool                               separateInductionCorrection) const;
+    
+    double calculateInteractionEnergyNew(MsgHandler          *msghandler,
+                                         const ForceField    *pd,
+                                         const ForceComputer *forceComputer,
+                                         bool                 separateInductionCorrection) const;
     
     /*! \brief
      * Update internal structures for bondtype due to changes in pd
