@@ -132,11 +132,11 @@ real calc_fscale(real k1, real k2, real F0)
     }
 }
 
-static void update_shell_pos(int                           shell,
-                             std::vector<gmx::RVec>       *coordinates,
-                             const std::vector<gmx::RVec> &forces,
-                             double                        fcShell,
-                             double                        fcHyper)
+static inine void update_shell_pos(int                           shell,
+                                   std::vector<gmx::RVec>       *coordinates,
+                                   const std::vector<gmx::RVec> &forces,
+                                   double                        fcShell,
+                                   double                        fcHyper)
 {
     auto Fnorm  = norm(forces[shell]);
     auto fscale = calc_fscale(fcShell, fcHyper, Fnorm);
@@ -377,6 +377,307 @@ void ForceComputer::compute(MsgHandler                        *msg_handler,
     spreadVsiteForces(top, coordinates, forces);
 }
 
+/*! \brief Reset shell to the position of their parents
+ * \param[in] atoms     The atom info
+ * \param[inout] coords The coordinates
+ */
+static void resetShells(const std::vector<ActAtom> &atoms,
+                        std::vector<gmx::RVec>     *coords)
+{
+    for(size_t i = 0; i < atoms.size(); i++)
+    {
+        if (atoms[i].pType() == ActParticle::Shell &&
+            atoms[i].parents().size() == 1)
+        {
+            auto parent = atoms[i].parents()[0];
+            copy_rvec((*coords)[parent], (*coords)[i]);
+        }
+    }
+}
+
+size_t ForceComputer::updateShells(const Topology            *top,
+                                   size_t                     nShell,
+                                   const std::vector<bool>    isShell,
+                                   const std::vector<double>  fcShell1,
+                                   const std::vector<double>  fcHyper,
+                                   coordsEnergy              *myCoords)
+{
+    size_t numberDone = 0;
+    for(auto &dim : myCoords)
+    {
+        if (dim.done)
+        {
+            numberDone += 1;
+            continue;
+        }
+        // Mean square shell force
+        double msForce = dotProdRvec(isShell, dim.fcalc)/nShell;
+        if (msForce <= msForceToler_)
+        {
+            dim.done    = true;
+            numberDone += 1;
+        }
+        else
+        {
+            auto &pols = top->entry(itype);
+            // Loop over polarizabilities
+            for(const auto &p : pols)
+            {
+                // Displace the shells according to the force
+                // Since the potential is harmonic we use Hooke's law
+                // F = k dx -> dx = F / k
+                // Note that this only works for purely harmonic potentials,
+                // see function calc_fscale for quartic potentials.
+                int shell = p->atomIndex(1);
+                update_shell_positions(p->atomIndex(0), p->atomIndex(1), dim.x, dim.fcalc,
+                                       fcShell_1[shell], fcHyper[shell]);
+                // Check distance from parent, if there is only one
+                if (maxShellDistance2 > 0 && atoms[shell].parents().size() == 1)
+                {
+                    int core = atoms[shell].parents()[0];
+                    rvec dx;
+                    rvec_sub(dim.x[shell], dim.x[core], dx);
+                    real dx2 = iprod(dx, dx);
+                    if (dx2 > maxShellDistance2)
+                    {
+                        // Move back the shell/drude to the wall distance
+                        real scale = std::sqrt(maxShellDistance2/dx2);
+                        for (int m = 0; m < DIM; m++)
+                        {
+                            dim.x[shell][m] = dim.x[core][m] + scale*dx[m];
+                        } 
+                    }
+                }
+            }
+        }
+    }
+    return numberDone;
+}
+
+void ForceComputer::computeRelaxedEnergies(MsgHandler          *msghandler,
+                                           const ForceField    *pd,
+                                           std::vector<ACTMol> *allmols,
+                                           RelaxShells          relax,
+                                           bool                 resetShells)
+{
+    // Loop over molecules
+    // TODO simd-ify vsite handling as well
+    for(auto &mol : *allmols)
+    {
+        // Shortcuts...
+        auto &tops  = mol.fragmentHandler()->topologies();
+        if (tops.size() == 2)
+        {
+            // We have a dimer!
+            auto top    = mol.topology();
+            auto &atoms = top->atoms();
+            // Virtual sites for dimer
+            for(auto &dim : mol.dimerCoords())
+            {
+                nEval_ += 1;
+                constructVsiteCoordinates(top, &dim.x);
+                // Reset shells if needed and if possible
+                if (resetShell)
+                {
+                    resetShells(atoms, &dim.x);
+                }
+                // Store energy terms in an independent copy.
+                for(auto &em : dim.eMap)
+                {
+                    em.second.backup();
+                }
+            }
+        }
+        // Virtual sites for monomers
+        for(size_t index = 0; index < tops.size(); index++)
+        {
+            auto &top   = tops[index];
+            auto &atoms = top.atomsConst();
+            for(auto &mon : mol.monomerCoords(index))
+            {
+                nEval_ += 1;
+                constructVsiteCoordinates(&top, &mon.x);
+                // Reset shells if needed and if possible
+                if (resetShell)
+                {
+                    resetShells(atoms, &mon.x);
+                }
+                // Store energy terms in an independent copy.
+                for(auto &em : mon.eMap)
+                {
+                    em.second.backup();
+                }
+            }
+        }
+    }
+    // Do first calculation every time.
+    computeEnergies(msghandler, pd, allmols);
+
+    if (relax == RelaxShells::None)
+    {
+        // We are done, good job!
+        return;
+    }
+
+    // Now let's have a look whether we are polarizable
+    auto itype = InteractionType::POLARIZATION;
+    if (pd->polarizable())
+    {
+        // We have already done one energy calculation
+        int    iter    = 1;
+        // Prevent shells from flying off.
+        real maxShellDistance2 = gmx::square(maxShellDistance_);
+        bool allDone = false;
+        while (iter < maxiter_ && !allDone)
+        {
+            // Set loop variable to true
+            allDone = true;
+            for(auto &mol : *allmols)
+            {
+                // If the shell info is empty, try and fill it
+                if (mol.isShell().empty())
+                {
+                    mol.generatePolarizationInformation(pd);
+                }
+                // If still empty there are no shells
+                if (mol.isShell().empty())
+                {
+                    continue;
+                }
+                // Shortcuts...
+                auto &fh    = mol.fragmentHandler()
+                auto &tops  = fh->topologies();
+                auto &pols  = fh->polInfo();
+                if (tops.size() == 2 && (relax == RelaxShell::All || relax == RelaxShell::Dimer))
+                {
+                    auto &pi = mol.polInfo();
+                    if (mol.dimerCoords().size() !=
+                        updateShells(mol.topology(), pi.nShell(), pi.isShell(),
+                                     pi.fcShell1(), pi.fcHyper(), &mol.dimerCoords()))
+                    {
+                        allDone = false;
+                    }
+                    if (relax == RelaxShell::All || relax == RelaxShell::Monomer2)
+                    {
+                        if (mol.monomerCoords(1).size() !=
+                            updateShells(tops[1], pols[1].nShell(), pols[1].isShell(),
+                                         pols[1].fcShell1(), pols[1].fcHyper(), &mol.monomerCoords(1)))
+                        {
+                            allDone = false;
+                        }
+                    }
+                }
+                if (relax == RelaxShell::All || relax == RelaxShell::Monomer1)
+                {
+                    if (mol.monomerCoords(0).size() !=
+                        updateShells(tops[0], pols[0].nShell(), pols[0].isShell(),
+                                     pols[0].fcShell1(), pols[0].fcHyper(), &mol.monomerCoords(0)))
+                    {
+                        allDone = false;
+                    }
+                }
+            }
+            // Do next calculation
+            if (!allDone)
+            {
+                computeEnergies(msghandler, pd, allmols);
+                iter    += 1;
+                nShellIter_ += 1;
+            }
+        }
+        if (!allDone)
+        {
+            nShellConvergeFailed_ += 1;
+            if (msg_handler && msg_handler->debug())
+            {
+                msg_handler->msg(ACTStatus::Debug,
+                                 gmx::formatString("Shell optimization did not converge. RMS force is %g, iter %d/%d, total evals %zu, total shell iters %zu", std::sqrt(msForce), iter, maxiter_, nEval_, nShellIter_));
+            }
+        }
+    }
+    {
+        // Now post-process the energies
+        // Extract electrostatics once more
+        // Note that the INDUCTIONCORRECTION is treated in the calling routine
+        std::set<InteractionType> eTerms = {
+            InteractionType::ELECTROSTATICS,
+            InteractionType::POLARIZATION,
+            InteractionType::CHARGETRANSFER
+        };
+        for(auto &mol : *allmols)
+        {
+            for
+            // Induction energy
+            bool   haveInduction = false;
+            double eInduction    = 0;
+            for(const auto et : eTerms)
+            {
+                auto tt = energies->find(et);
+                if (energies->end() != tt &&
+                    eBefore.end() != eBefore.find(et))
+                {
+                    eInduction   += tt->second - eBefore[et];
+                    tt->second    = eBefore[et];
+                    haveInduction = true;
+                }
+            }
+            if (haveInduction)
+            {
+                energies->insert_or_assign(InteractionType::INDUCTION, eInduction);
+            }
+        }
+    }
+    {
+        // Sum of all electrostatic terms
+        double allelec = 0;
+        for(const auto &itype : { InteractionType::ELECTROSTATICS,
+                                  InteractionType::POLARIZATION,
+                                  InteractionType::INDUCTION,
+                                  InteractionType::INDUCTIONCORRECTION })
+        {
+            auto ee = energies->find(itype);
+            if (energies->end() != ee)
+            {
+                allelec += ee->second;
+            }
+        }
+        energies->insert_or_assign(InteractionType::ALLELEC, allelec);
+    }
+    {
+        // Sum of exchange and induction terms
+        double exchind = 0;
+        for(const auto &itype : { InteractionType::EXCHANGE, InteractionType::INDUCTION, InteractionType::INDUCTIONCORRECTION })
+        {
+            auto ee = energies->find(itype);
+            if (energies->end() != ee)
+            {
+                exchind += ee->second;
+            }
+        }
+        energies->insert_or_assign(InteractionType::EXCHIND, exchind);
+    }
+    // Spread forces to atoms
+    spreadVsiteForces(top, coordinates, forces);
+
+}
+void ForceComputer::computeMany(MsgHandler                                     *msg_handler,
+                                const ForceField                               *pd,
+                                const Topology                                 *top,
+                                std::vector<std::vector<gmx::RVec>>            *coordinates,
+                                std::vector<std::vector<gmx::RVec>>            *forces,
+                                std::vector<std::map<InteractionType, double>> *energies,
+                                const gmx::RVec                                &field,
+                                bool                                            resetShells,
+                                std::set<int>                                   relax) const
+{
+    for(size_t i = 0; i < coordinates->size(); i++)
+    {
+        compute(msg_handler, pd, top, &((*coordinates)[i]), &((*forces)[i]), &((*energies)[i]),
+                field, resetShells, relax);
+    }
+
+}
+
 void ForceComputer::computeOnce(MsgHandler                        *msg_handler,
                                 const ForceField                  *pd,
                                 const Topology                    *top,
@@ -454,6 +755,18 @@ void ForceComputer::computeOnce(MsgHandler                        *msg_handler,
         ivdwcorr->second = 0;
     }
     energies->insert_or_assign( InteractionType::EPOT, epot );
+}
+
+void ForceComputer::computeManyOnce(MsgHandler          *msg_handler,
+                                    const ForceField    *pd,
+                                    std::vector<ACTMol> *mols,
+                                    const gmx::RVec     &field) const
+{
+    for(size_t i = 0; i < mols->size(); i++)
+    {
+        computeOnce(msg_handler, pd, mols->topology(),
+                    &((*coordinates)[i]), &((*forces)[i]), &((*energies)[i]), field);
+    }
 }
 
 Potential ForceComputer::ftype(const ForceField *pd,

@@ -47,6 +47,7 @@
 #include "act/basics/msg_handler.h"
 #include "act/forcefield/forcefield_parameter.h"
 #include "act/forcefield/forcefield_parametername.h"
+#include "act/forces/forcesSimd.h"
 #include "act/molprop/composition.h"
 #include "act/molprop/experiment.h"
 #include "act/molprop/molprop_util.h"
@@ -283,6 +284,49 @@ std::vector<gmx::RVec> ACTMol::xOriginal() const
     return xOriginal_;
 }
 
+void ACTMol::collectCoordsEnergy()
+{
+    std::map<MolPropObservable, InteractionType> interE = { 
+        { MolPropObservable::INTERACTIONENERGY,   InteractionType::EPOT                 },
+        { MolPropObservable::ELECTROSTATICS,      InteractionType::ELECTROSTATICS       },
+        { MolPropObservable::DISPERSION,          InteractionType::DISPERSION           },
+        { MolPropObservable::EXCHANGE,            InteractionType::EXCHANGE             },
+        { MolPropObservable::VDWCORRECTION,       InteractionType::VDWCORRECTION        },
+        { MolPropObservable::INDUCTIONCORRECTION, InteractionType::INDUCTIONCORRECTION  },
+        { MolPropObservable::INDUCTION,           InteractionType::INDUCTION            },
+        { MolPropObservable::CHARGETRANSFER,      InteractionType::CHARGETRANSFER       }
+    };
+    bool isDimer  = fragments().size() == 2;
+    int  natom1   = fragmentHandler()->atomStart()[1];
+    auto allExper = experimentConst();
+    size_t nDimer = 0;
+    for (const auto &exper : allExper)
+    {
+        // We compute either interaction energies or normal energies for one experiment
+        bool doInter = false;
+        for(auto &ie : interE)
+        {
+            if (exper.hasProperty(ie.first))
+            {
+                doInter = true;
+            }
+        }
+        // Not all data has corresponding coordinates, e.g. if it is from wet lab experiments.
+        if (doInter && isDimer && !exper.getCoordinates().empty())
+        {
+            // Copy coordinates
+            auto x = experCoords(exper.getCoordinates());
+            ++nDimer;
+            dimerCoords_.resize(nDimer);
+            dimerCoords_.back().x = x;
+            monomer1Coords_.resize(nDimer);
+            monomer2Coords_.resize(nDimer);
+            std::copy(x.begin(), x.begin()+natom1, std::back_inserter(monomer1Coords_.back().x));
+            std::copy(x.begin()+natom1, x.end(),   std::back_inserter(monomer2Coords_.back().x));
+        }
+    }
+}
+
 void ACTMol::forceEnergyMaps(MsgHandler                                                        *msghandler,
                              const ForceField                                                  *pd,
                              const ForceComputer                                               *forceComp,
@@ -458,6 +502,182 @@ void ACTMol::forceEnergyMaps(MsgHandler                                         
     }
 }
 
+void ACTMol::forceEnergyMapsNew(MsgHandler                                                        *msghandler,
+                                const ForceField                                                  *pd,
+                                const ForceComputer                                               *forceComp,
+                                std::vector<std::vector<std::pair<double, double> > >             *forceMap,
+                                std::vector<ACTEnergy>                                            *energyMap,
+                                ACTEnergyMapVector                                                *interactionEnergyMap,
+                                std::vector<std::pair<double, std::map<InteractionType, double>>> *energyComponentMap,
+                                bool                                                               separateInductionCorrection) const
+{
+    auto       myatoms = topology_.atoms();
+    forceMap->clear();
+    energyMap->clear();
+    interactionEnergyMap->clear();
+    energyComponentMap->clear();
+    gmx::RVec fzero = { 0, 0, 0 };
+    std::map<MolPropObservable, InteractionType> interE = { 
+        { MolPropObservable::INTERACTIONENERGY, InteractionType::EPOT           },
+        { MolPropObservable::ELECTROSTATICS,    InteractionType::ELECTROSTATICS },
+        { MolPropObservable::DISPERSION,        InteractionType::DISPERSION     },
+        { MolPropObservable::EXCHANGE,          InteractionType::EXCHANGE       },
+        { MolPropObservable::VDWCORRECTION,     InteractionType::VDWCORRECTION  },
+        { MolPropObservable::INDUCTIONCORRECTION, InteractionType::INDUCTIONCORRECTION  },
+        { MolPropObservable::INDUCTION,         InteractionType::INDUCTION      },
+        { MolPropObservable::CHARGETRANSFER,    InteractionType::CHARGETRANSFER }
+    };
+    if (!forceComp)
+    {
+        msghandler->fatal("No force computer supplied to ACTMol::forceEnergyMaps");
+    }
+    std::vector<std::vector<gmx::RVec>> allcoords;
+    bool anyDoInter = false;
+    auto allExper = experimentConst();
+    for (const auto &exper : allExper)
+    {
+        // Not all data has corresponding coordinates, e.g. if it is from wet lab experiments.
+        if (exper.getCoordinates().empty())
+        {
+            continue;
+        }
+        // Copy coordinates
+        // TODO: do this once for each actmol.
+        allcoords.push_back(experCoords(exper.getCoordinates()));
+        // We compute either interaction energies or normal energies for one experiment
+        for(auto &ie : interE)
+        {
+            if (exper.hasProperty(ie.first))
+            {
+                anyDoInter = true;
+                break;
+            }
+        }
+    }
+    if (anyDoInter)
+    {
+        // Complicated way of combined multiple terms into one observable
+        std::map<InteractionType,  std::set<MolPropObservable>> combined = {
+            { InteractionType::ALLELEC, { MolPropObservable::ELECTROSTATICS,
+                                          MolPropObservable::INDUCTION,
+                                          MolPropObservable::INDUCTIONCORRECTION } },
+            { InteractionType::EXCHIND,  { MolPropObservable::EXCHANGE,
+                                           MolPropObservable::INDUCTION,
+                                           MolPropObservable::INDUCTIONCORRECTION } }
+        };
+
+        calculateInteractionEnergyNew(msghandler, pd, forceComp, separateInductionCorrection);
+        for(size_t i = 0; i < dimerCoords_.size(); i++)
+        {
+            ACTEnergyMap aemap;
+            for (auto &ener : einter[i])
+            {
+                std::set<MolPropObservable> mpos;
+                // Check whether one is enough or we have to look up multiple
+                auto combine = combined.find(ener.first);
+                if (combine != combined.end())
+                {
+                    // Combine multiple QM observable
+                    for(const auto &mpo : combine->second)
+                    {
+                        mpos.insert(mpo);
+                    }
+                }
+                else
+                {
+                    // Find the correct QM observable
+                    for(const auto &ie : interE)
+                    {
+                        if (ie.second == ener.first)
+                        {
+                            mpos.insert(ie.first);
+                            break;
+                        }
+                    }
+                }
+                // Loop over sets of observable to combine QM data
+                double my_qm    = 0;
+                size_t foundQM  = 0;
+                for(const auto &mpo : mpos)
+                {
+                    if (allExper[i].hasProperty(mpo))
+                    {
+                        auto &propvec = allExper[i].propertyConst(mpo);
+                        if (propvec.size() != 1)
+                        {
+                            msghandler->fatal(gmx::formatString("Expected just one QM value per experiment for %s iso %zu", mpo_name(mpo), propvec.size()).c_str());
+                        }
+                        my_qm += propvec[0]->getValue();
+                        foundQM    += 1;
+                    }
+                }
+                //! \todo Store the interaction forces
+                ACTEnergy my_all(allExper[i].id(), allExper[i].datafile());
+                my_all.setACT(ener.second);
+                if (foundQM == mpos.size() ||
+                    (foundQM == mpos.size()-1 && !separateInductionCorrection))
+                {
+                    my_all.setQM(my_qm);
+                }
+                aemap.insert({ener.first, my_all});
+            }
+            if (aemap.size() > 0)
+            {
+                interactionEnergyMap->push_back(aemap);
+            }
+        }
+    }
+    else
+    {
+        std::vector<std::map<InteractionType, double>> energies(allcoords.size());;
+        std::vector<std::vector<gmx::RVec>> forces(allcoords.size());
+        for(size_t i = 0; i < allcoords.size(); i++)
+        {
+            forces[i].resize(topology_.atoms().size());
+        }
+        forceComp->computeMany(msghandler, pd, &topology_,
+                               &allcoords, &forces, &energies);
+        for(size_t i = 0; i < allcoords.size(); i++)
+        {
+            auto &eprops = allExper[i].propertyConst(MolPropObservable::DELTAE0);
+            if (eprops.size() > 1)
+            {
+                msghandler->fatal("Multiple energies for this experiment");
+            }
+            else if (eprops.size() == 1)
+            {
+                energyMap->push_back(ACTEnergy(allExper[i].id(), allExper[i].datafile(),
+                                               eprops[0]->getValue(),
+                                               energies[i][InteractionType::EPOT]));
+                energyComponentMap->push_back({ eprops[0]->getValue(), std::move(energies[i]) });
+            }
+
+            const std::vector<gmx::RVec> &fff = allExper[i].getForces();
+            if (!fff.empty())
+            {
+                size_t ifff = 0;
+                std::vector<std::pair<double, double> > thisForce;
+                for (size_t j = 0; j < myatoms.size(); j++)
+                {
+                    if (myatoms[i].pType() == ActParticle::Atom)
+                    {
+                        if (ifff >= fff.size())
+                        {
+                            msghandler->fatal(gmx::formatString("Inconsistency: there are %lu atoms and shells, but only %zu forces", myatoms.size(), fff.size()));
+                        }
+                        for(int m = 0; m < DIM; m++)
+                        {
+                            thisForce.push_back({ fff[ifff][m], forces[i][j][m] });
+                        }
+                        ifff += 1;
+                    }
+                }
+                forceMap->push_back(std::move(thisForce));
+            }
+        }
+    }
+}
+
 /*! \brief Determine whether a molecule has linear coordinates
  * This routine will only work for subsequent atoms. 
  * \todo It should use bond information
@@ -577,6 +797,9 @@ void ACTMol::GenerateTopology(MsgHandler        *msghandler,
             }
         }
     }
+    // Setup polinfo
+    polinfo_.init(pd, topology());
+
     if (msghandler->ok() && missing != missingParameters::Generate)
     {
         std::vector<InteractionType> itUpdate;
@@ -911,6 +1134,258 @@ double ACTMol::calculateInteractionEnergy(MsgHandler                        *msg
     }
     checkEnergies(msghandler, "Inter 3", *einter);
     // Add dimer forces to the interaction forces
+    for(size_t i = 0; i < topology_.atoms().size(); i++)
+    {
+        for(int m = 0; m< DIM; m++)
+        {
+            (*interactionForces)[i][m] += forces[i][m];
+        }
+    }
+    msghandler->writeDebug(gmx::formatString("%s result:", getMolname().c_str()));
+    printEmap(msghandler, einter);
+
+    return epot;
+}
+
+double ACTMol::calculateInteractionEnergyNew(MsgHandler          *msghandler,
+                                             const ForceField    *pd,
+                                             const ForceComputer *forceComputer,
+                                             bool                 separateInductionCorrection) const
+{
+    auto &tops = fraghandler_.topologies();
+    einter->clear();
+    if (tops.size() != 2)
+    {
+        return 0;
+    }
+    // First, compute the total energy
+
+    // First compute the relaxed monomer energies
+    std::map<InteractionType, double> e_monomer[2];
+    auto &astart = fraghandler_.atomStart();
+    auto itInduc = InteractionType::INDUCTION;
+    auto itICorr = InteractionType::INDUCTIONCORRECTION;
+    auto itElec  = InteractionType::ELECTROSTATICS;
+    auto itPolar = InteractionType::POLARIZATION;
+    for(size_t ff = 0; ff < tops.size(); ff++)
+    {
+        int natom = tops[ff].atoms().size();
+        std::vector<gmx::RVec> forces(natom, fzero);
+        std::vector<gmx::RVec> myx(natom);
+        int j = 0;
+        for (size_t i = astart[ff]; i < astart[ff]+natom; i++)
+        {
+            copy_rvec((*coords)[i], myx[j]);
+            j++;
+        }
+        forceComputer->compute(msghandler, pd, &tops[ff],
+                               &myx, &forces, &e_monomer[ff]);
+        j = 0;
+        for (size_t i = astart[ff]; i < astart[ff]+natom; i++)
+        {
+            // Copy back coordinates to original array to store relaxed shell positions
+            copy_rvec(myx[j], (*coords)[i]);
+            // Store interaction forces
+            for(int m = 0; m < DIM; m++)
+            {
+                (*interactionForces)[i][m] -= forces[j][m];
+            }
+            j++;
+        }
+        msghandler->writeDebug(gmx::formatString("%s monomer[%zu]:", getMolname().c_str(), ff));
+        printEmap(msghandler, &e_monomer[ff]);
+        
+        // If present, move induction in monomer to electrostatics
+        auto ei = e_monomer[ff].find(itInduc);
+        if (e_monomer[ff].end() != ei)
+        {
+            e_monomer[ff][itElec] += ei->second;
+            ei->second = 0;
+            msghandler->writeDebug(gmx::formatString("%s 'corrected' monomer[%zu]:", getMolname().c_str(), ff));
+            printEmap(msghandler, &e_monomer[ff]);
+        }
+        checkEnergies(msghandler, "Monomer", e_monomer[ff]);
+    }
+    //! \todo forces are overwritten, not trustable!
+    std::vector<gmx::RVec> forces(topology_.atoms().size(), fzero);
+    std::map<InteractionType, double> e_total;
+    auto myatoms = topology_.atoms();
+    // Now compute the total relaxed energy
+    {
+        // Make a copy of the coordinates, since shell positions will change
+        std::vector<gmx::RVec> mycoords = *coords;
+        // Note that here the shells start in the position of the relaxed
+        // monomers such as to only measure the induction due to the dimer
+        forceComputer->compute(msghandler, pd, &topology_,
+                               &mycoords, &forces, &e_total, fzero, false);
+        // Move remaining polarisation energy to the electrostatics.
+        // Since we started with the shells in the relaxed monomer position,
+        // not the entire polarization will have been moved to induction.
+        auto eip = e_total.find(itPolar);
+        auto eie = e_total.find(itElec);
+        if (e_total.end() != eip &&
+            e_total.end() != eie)
+        {
+            eie->second += eip->second;
+            // Erase polarization term!
+            e_total.erase(eip);
+        }
+        msghandler->writeDebug(gmx::formatString("%s total:", getMolname().c_str()));
+        printEmap(msghandler, &e_total);
+        checkEnergies(msghandler, "Total", e_total);
+    }
+    // Store this for the return value
+    double epot = e_total[InteractionType::EPOT];
+    // Now time to compute mutual induction for the dimer.
+    // This means, that the shells of one molecule are allowed
+    // to relax, but not the other.
+    std::map<InteractionType, double> e_dimer[2];
+    for(size_t ff = 0; ff < tops.size(); ff++)
+    { 
+        // Relax molecule ff only
+        std::set<int> myshells;
+        int natom = tops[ff].atoms().size();
+        for(size_t i = astart[ff]; i < astart[ff]+natom; i++)
+        {
+            if (myatoms[i].pType() == ActParticle::Shell)
+            {
+                myshells.insert(i);
+            }
+        }
+        // Make a fresh copy of the coordinates
+        std::vector<gmx::RVec> mycoords = *coords;
+        // Eqn 6
+        forceComputer->compute(msghandler, pd, &topology_,
+                               &mycoords, &forces, &e_dimer[ff],
+                               fzero, false, myshells);
+        msghandler->writeDebug(gmx::formatString("%s dimer[%lu]:", getMolname().c_str(), ff));
+        printEmap(msghandler, &e_dimer[ff]);
+
+        checkEnergies(msghandler, "Dimer", e_dimer[ff]);
+    }
+    // Now compute interaction energy terms
+    *einter = e_total;
+
+    // First subtract everything from the monomers.
+    // This gives us correct electrostatics to get Eqn. 8.2 in the manual
+    for(size_t ff = 0; ff < tops.size(); ff++)
+    {
+        for(const auto &ee : e_monomer[ff])
+        {
+            if (ee.second == 0)
+            {
+                continue;
+            }
+            auto eif = einter->find(ee.first);
+            if (einter->end() == eif)
+            {
+                einter->insert({ee.first, 0.0});
+            }
+            einter->find(ee.first)->second -= ee.second;
+        }
+    }
+    msghandler->writeDebug(gmx::formatString("%s total:", getMolname().c_str()));
+    printEmap(msghandler, &e_total);
+    msghandler->writeDebug(gmx::formatString("%s einter:", getMolname().c_str()));
+    printEmap(msghandler, einter);
+
+    checkEnergies(msghandler, "Inter 0", *einter);
+    // Check, to see whether induction needs to be summed or split
+    if (separateInductionCorrection)
+    {
+        // Compute the induction energy to the second order, Eqn. 8.3 in the manual
+        double delta_einduc2 = 0;
+        
+        for(size_t ff = 0; ff < tops.size(); ff++)
+        {
+            for(const auto itype : {itInduc})
+            {
+                auto ee = e_dimer[ff].find(itype);
+                if (e_dimer[ff].end() != ee)
+                {
+                    delta_einduc2 += ee->second;
+                    ee->second = 0;
+                }
+            }
+        }
+        // Finally, compute the remaining (garbage bin) terms, Eqn. 8.4 in the manual
+        // by moving induction energy from the induction term to the
+        // induction correction term.
+        auto eit = einter->find(itInduc);
+        if (einter->end() == eit)
+        {
+            einter->insert({ itInduc, 0 });
+            eit = einter->find(itInduc);
+        }
+
+        // Compute higher order induction
+        double induc3 = eit->second -  delta_einduc2;
+        // Store higher order induction in einter
+        auto eee = einter->find(itICorr);
+        if (eee == einter->end())
+        {
+            einter->insert({itICorr, induc3});
+        }
+        else
+        {
+            eee->second += induc3;
+        }
+        // Correct total induction for this
+        eit->second -= induc3;
+    }
+    else
+    {
+        // Sum Induction Correction into total Induction
+        auto eic = einter->find(itICorr);
+        if (einter->end() != eic)
+        {
+            auto eif = einter->find(itInduc);
+            if (einter->end() == eif)
+            {
+                einter->insert({itInduc, 0});
+            }
+            einter->find(itInduc)->second += eic->second;
+            // Erase induction correction term.
+            einter->erase(eic);
+        }
+    }
+    checkEnergies(msghandler, "Inter 1", *einter);
+    {
+        // Gather the terms for ALLELEC output.
+        auto eall = einter->find(InteractionType::ALLELEC);
+        eall->second = 0;
+        if (einter->end() != eall)
+        {
+            for(auto itype : { itElec, itInduc, itICorr })
+            {
+                auto ee = einter->find(itype);
+                if (einter->end() != ee)
+                {
+                    eall->second += ee->second;
+                }
+            }
+        }
+    }
+    checkEnergies(msghandler, "Inter 2", *einter);
+    {
+        // Gather the terms for EXCHIND output.
+        auto eall = einter->find(InteractionType::EXCHIND);
+        eall->second = 0;
+        if (einter->end() != eall)
+        {
+            for(auto itype : { InteractionType::EXCHANGE, itInduc, itICorr })
+            {
+                auto ee = einter->find(itype);
+                if (einter->end() != ee)
+                {
+                    eall->second += ee->second;
+                }
+            }
+        }
+    }
+    checkEnergies(msghandler, "Inter 3", *einter);
+    // Add dimer forces to the interaction forces
+    //! \todo this is not correct anymore, see above.
     for(size_t i = 0; i < topology_.atoms().size(); i++)
     {
         for(int m = 0; m< DIM; m++)
