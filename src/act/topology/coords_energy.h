@@ -55,6 +55,8 @@ private:
     //! ACT present
     bool haveACT_      = false;
 public:
+    // Empty Constructor
+    ACTEnergy() {}
     /*! \brief Constructor
      * \param[in] experiment The id
      * \param[in] eqm        The QM energy
@@ -116,6 +118,12 @@ public:
     void backup()
     {
         eactBefore_ = eact_;
+    }
+    //! Reset backup ACT energy
+    void restoreBackup()
+    {
+        eact_       = eactBefore_;
+        eactBefore_ = 0;
     }
     //! \return backup energy
     double eactBefore() const { return eactBefore_; }

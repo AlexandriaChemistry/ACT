@@ -35,6 +35,7 @@
 #include "act/forces/vsitehandler.h"
 #include "act/forcefield/forcefield.h"
 #include "act/forcefield/potential.h"
+#include "act/topology/actmol.h"
 #include "act/topology/coords_energy.h"
 #include "act/topology/topology.h"
 #include "gromacs/math/vectypes.h"
@@ -42,11 +43,12 @@
 namespace alexandria
 {
 
-class QtypeProps;
 class MsgHandler;
+class QtypeProps;
+class Topology;
 
 //! Determines what shells are relaxed
-enum class RelaxShells { None, All, Dimer, Mononomer1, Monomer2 };
+enum class RelaxShells { None, All, Dimer, Monomer1, Monomer2 };
 
 /*! \brief Class to compute all the forces in a molecule or complex.
  * It is imperative that there is only one force computer in each program,
@@ -81,9 +83,12 @@ private:
      * \param[inout] mycoords The coordinates and energy array
      * \return The number of shells that converged
      */
-    size_t ForceComputer::updateShells(const ACTmol   &mol,
-                                       const Topology *top,
-                                       coordsEnergy   *myCoords)
+    size_t updateShells(const Topology            *top,
+                        size_t                     nShell,
+                        const std::vector<bool>    isShell,
+                        const std::vector<double>  fcShell1,
+                        const std::vector<double>  fcHyper,
+                        std::vector<CoordsEnergy> *myCoords);
 
  public:
     //! \brief Default constructor
@@ -180,6 +185,12 @@ private:
                  bool                               resetShells = true,
                  std::set<int>                      relax = {}) const;
                  
+    void computeRelaxedEnergies(MsgHandler          *msghandler,
+                                const ForceField    *pd,
+                                std::vector<ACTMol> *allmols,
+                                RelaxShells          relax,
+                                bool                 resetShells);
+
     /*! Do many complete energy/force computation.
      * If shells are present their positions will be minimized.
      * If the shell minimization does not converge a warning will
@@ -304,7 +315,6 @@ private:
  * \return Force scaling constant when hyper polarizability is used
  */
 real calc_fscale(real k1, real k2, real F);
-
 
 } // namespace alexandria
 

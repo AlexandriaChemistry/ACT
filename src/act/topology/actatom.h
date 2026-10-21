@@ -31,11 +31,9 @@
  * \author Mohammad Mehdi Ghahremanpour <mohammad.ghahremanpour@icm.uu.se>
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
-
 #ifndef ACT_ACTATOM_H
 #define ACT_ACTATOM_H
 
-#include <list>
 #include <vector>
 
 #include "act/basics/act_particle.h"
@@ -184,12 +182,6 @@ public:
      */
     void setResidueNumber(int resnr) { residueNumber_ = resnr; }
 };
-
-class ActAtomListItem;
-
-//! Shortcut for passing this around.
-typedef std::list<ActAtomListItem> AtomList;
-
 
 } // namespace alexandria
 

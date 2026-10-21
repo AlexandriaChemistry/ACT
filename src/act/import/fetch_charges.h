@@ -1,7 +1,7 @@
 /*
  * This source file is part of the Alexandria Chemistry Toolkit.
  *
- * Copyright (C) 2023-2025
+ * Copyright (C) 2023-2026
  *
  * Developers:
  *             Mohammad Mehdi Ghahremanpour,
@@ -39,21 +39,15 @@
 #include <vector>
 
 #include "act/basics/msg_handler.h"
+#include "act/import/chargemap.h"
 #include "act/forcefield/forcefield.h"
 #include "act/forces/forcecomputer.h"
 #include "act/molprop/molprop.h"
+#include "act/topology/actmol.h"
 #include "act/utility/communicationrecord.h"
 
 namespace alexandria
 {
-
-class ACTMol;
-
-/*! \brief chargeMap definition.
- * First string is the molecule identifier, which should be the InChi.
- * Vector contains pairs of identifier and charge.
- */
-typedef std::map<std::string, std::vector<std::pair<Identifier, double> > > ChargeMap;
 
 /*! \brief Generate charges for all compounds in a molprop file.
  *

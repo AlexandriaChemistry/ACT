@@ -37,7 +37,6 @@
 
 #include <map>
 
-#include "act/alexandria/molselect.h"
 #include "act/basics/msg_handler.h"
 #include "act/forces/forcecomputer.h"
 #include "act/molprop/molprop.h"
@@ -48,12 +47,9 @@
 #include "act/topology/coords_energy.h"
 #include "act/topology/fragmenthandler.h"
 #include "act/topology/polinfo.h"
+#include "act/topology/topology.h"
 #include "act/utility/communicationrecord.h"
-#include "act/utility/regression.h"
-#include "gromacs/math/vec.h"
-#include "gromacs/math/paddedvector.h"
 #include "gromacs/math/vectypes.h"
-
 namespace alexandria
 {
 
@@ -344,15 +340,7 @@ public:
                          ACTEnergyMapVector                                                *interactionEnergyMap,
                          std::vector<std::pair<double, std::map<InteractionType, double>>> *energyComponentMap,
                          bool                                                               separateInductionCorrection) const;
-    void forceEnergyMapsNew(MsgHandler                                                        *msghandler,
-                            const ForceField                                                  *pd,
-                            const ForceComputer                                               *forceComp,
-                            std::vector<std::vector<std::pair<double, double> > >             *forceMap,
-                            std::vector<ACTEnergy>                                            *energyMap,
-                            ACTEnergyMapVector                                                *interactionEnergyMap,
-                            std::vector<std::pair<double, std::map<InteractionType, double>>> *energyComponentMap,
-                            bool                                                               separateInductionCorrection) const;
-    
+      
     //! Return the reference frequencies collected earlier
     const std::vector<double> &referenceFrequencies() const { return ref_frequencies_; }
     
@@ -567,23 +555,6 @@ public:
     //! \brief Update GROMACS data structures
     void updateMDAtoms();
     
-    /*! \brief Calculate the forces and energies
-     * For a polarizable model the shell positions are minimized.
-     * This code is maintained only for comparing ACT native energies and forces
-     * to the gromacs code. Do not use in production code.
-     * \param[in]  crtmp         Temporary communication record with one core only.
-     * \param[in]  coordinates   The atomic coordinates
-     * \param[out] forces        Force array
-     * \param[out] energies      The energy components
-     * \param[out] shellForceRMS Root mean square force on the shells
-     * \return ACTMessage::OK if everything worked fine, error code otherwise.
-     */
-    ACTMessage calculateEnergyOld(const t_commrec                   *crtmp,
-                                  std::vector<gmx::RVec>            *coordinates,
-                                  PaddedVector<gmx::RVec>           *forces,
-                                  std::map<InteractionType, double> *energies,
-                                  real                              *shellForceRMS);
-    
     /*! \brief Calculate the interaction energies.
      * For a system with multiple fragments this will compute
      * Epot(system) - Sum_f Epot(f) 
@@ -606,12 +577,7 @@ public:
                                       std::vector<gmx::RVec>            *interactionForces,
                                       std::vector<gmx::RVec>            *coords,
                                       bool                               separateInductionCorrection) const;
-    
-    double calculateInteractionEnergyNew(MsgHandler          *msghandler,
-                                         const ForceField    *pd,
-                                         const ForceComputer *forceComputer,
-                                         bool                 separateInductionCorrection) const;
-    
+      
     /*! \brief
      * Update internal structures for bondtype due to changes in pd
      *
@@ -712,6 +678,6 @@ public:
     
 };
 
-}
+} // namespace
 
 #endif
