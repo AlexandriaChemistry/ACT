@@ -157,7 +157,7 @@ void FragmentHandler::init(MsgHandler                   *msghandler,
             {
                 atomStart_[ff] = atomStart_[ff-1] + topologies_[ff-1].atoms().size();
             }
-            polinfo_[ff].init(pd, topologies_[ff]);
+            polinfo_[ff].init(pd, &topologies_[ff]);
         }
     }
     else

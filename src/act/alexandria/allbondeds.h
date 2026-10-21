@@ -44,6 +44,7 @@
 #include "act/forcefield/forcefield.h"
 #include "act/statistics/statistics.h"
 #include "act/topology/actmol.h"
+#include "act/alexandria/molselect.h"
 
 namespace gmx
 {

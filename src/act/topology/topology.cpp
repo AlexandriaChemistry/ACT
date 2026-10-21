@@ -35,7 +35,6 @@
 #include "topology.h"
 
 #include <algorithm>
-#include <list>
 #include <map>
 #include <set>
 #include <string>
@@ -52,37 +51,6 @@
 
 namespace alexandria
 {
-
-class ActAtomListItem
-{
-private:
-    //! The atom information
-    ActAtom   atom_;
-    //! The original index
-    size_t    index_ = 0;
-    //! Atomic coordinates
-    gmx::RVec x_     = { 0, 0, 0 };
-public:
-    //! constructor
-    ActAtomListItem(const ActAtom   atom,
-                    size_t          index,
-                    const gmx::RVec x) : atom_(atom), index_(index), x_(x) {}
-
-    //! \return the atom
-    const ActAtom atom() const { return atom_; }
-
-    //! \return pointer to the atom for editing
-    ActAtom *atomPtr() { return &atom_; }
-
-    //! \return the index
-    size_t index() const { return index_; }
-
-    //! \return the coordinates
-    const gmx::RVec x() const { return x_; }
-
-    //! Equal index
-    bool operator==(size_t index) const { return index == index_; }
-};
 
 void Topology::init(const std::vector<Bond> &bonds)
 {

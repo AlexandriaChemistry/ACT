@@ -36,7 +36,6 @@
 #define ACT_TOPOLOGY_H
 
 #include <cstdio>
-#include <list>
 #include <map>
 #include <vector>
 
@@ -50,6 +49,7 @@
 #include "act/molprop/molprop.h"
 #include "act/molprop/topologyentry.h"
 #include "act/topology/actatom.h"
+#include "act/topology/actatomlist.h"
 #include "act/topology/actmol_low.h"
 #include "act/utility/communicationrecord.h"
 
@@ -333,7 +333,7 @@ private:
     const TopologyEntryVector &entry(InteractionType itype) const;
 
     //! \return the whole map of parameters
-    std::map<InteractionType, TopologyEntryVector> *entries() { return &entries_; }
+    std::map<InteractionType, TopologyEntryVector> *entriesPtr() { return &entries_; }
 
     //! \return the whole map of parameters, const style
     const std::map<InteractionType, TopologyEntryVector> &entries() const { return entries_; }

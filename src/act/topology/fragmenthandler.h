@@ -29,17 +29,16 @@
 #define ACT_TOPOLOGY_FRAGMENTHANDLER_H
 #include <vector>
 
-#include "act/import/fetch_charges.h"
+#include "act/import/chargemap.h"
 #include "act/molprop/fragment.h"
 #include "act/qgen/qgen_acm.h"
 #include "act/topology/actmol_low.h"
 #include "act/topology/polinfo.h"
+#include "act/topology/topology.h"
 
 namespace alexandria
 {
 
-class Topology;
-    
 /*! Class to control charge generation for fragments
  */
 class FragmentHandler

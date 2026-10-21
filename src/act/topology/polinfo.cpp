@@ -30,19 +30,26 @@
 
 #include "act/basics/identifier.h"
 #include "act/forcefield/forcefield.h"
-    
+#include "act/forcefield/forcefield_parametername.h"
+#include "act/topology/topology.h"
+
 namespace alexandria
 {
 
 void PolInfo::init(const ForceField *pd,
                    const Topology   *top)
 {
+    auto itype    = InteractionType::POLARIZATION;
+    if (!pd->interactionPresent(itype))
+    {
+        return;
+    }
     auto &ffpl    = pd->findForcesConst(itype);
     auto pol_name = potentialToParameterName(ffpl.potential());
     // Reset arrays
     isShell_.clear();
     fcHyper_.clear();
-    fc_Shell1_.clear();
+    fcShell1_.clear();
     for(auto &aa : top->atoms())
     {
         bool bIS = aa.pType() == ActParticle::Shell;

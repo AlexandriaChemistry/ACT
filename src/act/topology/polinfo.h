@@ -70,4 +70,6 @@ public:
     size_t nShell() const { return nShell_; }
 };
 
+} // namespace
+
 #endif

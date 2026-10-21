@@ -47,7 +47,7 @@
 #include "act/basics/msg_handler.h"
 #include "act/forcefield/forcefield_parameter.h"
 #include "act/forcefield/forcefield_parametername.h"
-#include "act/forces/forcesSimd.h"
+#include "act/forces/forces_simd.h"
 #include "act/molprop/composition.h"
 #include "act/molprop/experiment.h"
 #include "act/molprop/molprop_util.h"
@@ -298,7 +298,7 @@ void ACTMol::collectCoordsEnergy()
     };
     bool isDimer  = fragments().size() == 2;
     int  natom1   = fragmentHandler()->atomStart()[1];
-    auto allExper = experimentConst();
+    const auto &allExper = experimentConst();
     size_t nDimer = 0;
     for (const auto &exper : allExper)
     {
@@ -319,10 +319,10 @@ void ACTMol::collectCoordsEnergy()
             ++nDimer;
             dimerCoords_.resize(nDimer);
             dimerCoords_.back().x = x;
-            monomer1Coords_.resize(nDimer);
-            monomer2Coords_.resize(nDimer);
-            std::copy(x.begin(), x.begin()+natom1, std::back_inserter(monomer1Coords_.back().x));
-            std::copy(x.begin()+natom1, x.end(),   std::back_inserter(monomer2Coords_.back().x));
+            monomerCoords_[0].resize(nDimer);
+            monomerCoords_[1].resize(nDimer);
+            std::copy(x.begin(), x.begin()+natom1, std::back_inserter(monomerCoords_[0].back().x));
+            std::copy(x.begin()+natom1, x.end(),   std::back_inserter(monomerCoords_[1].back().x));
         }
     }
 }
@@ -502,6 +502,7 @@ void ACTMol::forceEnergyMaps(MsgHandler                                         
     }
 }
 
+#if 0
 void ACTMol::forceEnergyMapsNew(MsgHandler                                                        *msghandler,
                                 const ForceField                                                  *pd,
                                 const ForceComputer                                               *forceComp,
@@ -533,7 +534,7 @@ void ACTMol::forceEnergyMapsNew(MsgHandler                                      
     }
     std::vector<std::vector<gmx::RVec>> allcoords;
     bool anyDoInter = false;
-    auto allExper = experimentConst();
+    const auto &allExper = experimentConst();
     for (const auto &exper : allExper)
     {
         // Not all data has corresponding coordinates, e.g. if it is from wet lab experiments.
@@ -677,6 +678,7 @@ void ACTMol::forceEnergyMapsNew(MsgHandler                                      
         }
     }
 }
+#endif
 
 /*! \brief Determine whether a molecule has linear coordinates
  * This routine will only work for subsequent atoms. 
@@ -803,7 +805,7 @@ void ACTMol::GenerateTopology(MsgHandler        *msghandler,
     if (msghandler->ok() && missing != missingParameters::Generate)
     {
         std::vector<InteractionType> itUpdate;
-        for(auto &entry : *(topology_.entries()))
+        for(const auto &entry : topology_.entries())
         {
             itUpdate.push_back(entry.first);
         }
@@ -1147,6 +1149,7 @@ double ACTMol::calculateInteractionEnergy(MsgHandler                        *msg
     return epot;
 }
 
+#if 0
 double ACTMol::calculateInteractionEnergyNew(MsgHandler          *msghandler,
                                              const ForceField    *pd,
                                              const ForceComputer *forceComputer,
@@ -1398,6 +1401,7 @@ double ACTMol::calculateInteractionEnergyNew(MsgHandler          *msghandler,
 
     return epot;
 }
+#endif
 
 ACTMessage ACTMol::GenerateAcmCharges(MsgHandler             *msg_handler,
                                       ForceField             *pd,
@@ -1923,7 +1927,7 @@ void ACTMol::PrintTopology(MsgHandler                   *msg_handler,
     }
     if (msg_handler->verbose())
     {
-        for (auto &entry : *(topology_.entries()))
+        for (const auto &entry : topology_.entries())
         {
             auto &fs = pd->findForcesConst(entry.first);
             auto ftype = fs.potential();

@@ -25,13 +25,16 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor,
  * Boston, MA  02110-1301, USA.
  */
-#include "forcecomputerimpl.h"
+#include "forces_simd.h"
 
 #include "act/basics/msg_handler.h"
 #include "act/coulombintegrals/gaussian_integrals.h"
 #include "act/coulombintegrals/slater_integrals.h"
 #include "act/forcefield/forcefield_parametername.h"
 #include "act/forces/forcecomputerutils.h"
+#include "act/molprop/topologyentry.h"
+#include "act/topology/actmol.h"
+#include "act/topology/coords_energy.h"
 #include "act/topology/topology.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/units.h"
@@ -51,12 +54,11 @@ namespace alexandria
  */
 static inline void computeFBPOSRE(gmx_unused MsgHandler        *msghandler,
                                   const TopologyEntryVector    &aindex,
-                                  const std::vector<gmx::RVec> *coordinates,
+                                  const std::vector<gmx::RVec> &x,
                                   std::vector<gmx::RVec>       *forces,
                                   double                        energies[MAX_ENER])
 {
     double epr  = 0;
-    auto   &x    = *coordinates;
     for (const auto &b : aindex)
     {
         // Get the parameters. We have to know their names to do this.
@@ -121,13 +123,12 @@ static inline void pairforces(double                  fscalar,
  */
 static inline void computeLJ12_6(gmx_unused MsgHandler        *msghandler,
                                  const TopologyEntryVector    &pairs,
-                                 const std::vector<gmx::RVec> *coordinates,
+                                 const std::vector<gmx::RVec> &x,
                                  std::vector<gmx::RVec>       *forces,
                                  double                        energies[MAX_ENER])
 {
     double erep  = 0;
     double edisp = 0;
-    auto   &x    = *coordinates;
     for (const auto &b : pairs)
     {
         // Get the parameters. We have to know their names to do this.
@@ -168,7 +169,7 @@ static inline void computeLJ12_6(gmx_unused MsgHandler        *msghandler,
     }
 #endif
     energies[0] = erep;
-    energies[1] = edisp);
+    energies[1] = edisp;
 }
 
 /*! \brief Compute Lennard-Jones 12-6-4 energy and forces
@@ -180,7 +181,7 @@ static inline void computeLJ12_6(gmx_unused MsgHandler        *msghandler,
  */
 static inline void computeLJ12_6_4(gmx_unused MsgHandler        *msghandler,
                                    const TopologyEntryVector    &pairs,
-                                   const std::vector<gmx::RVec> *coordinates,
+                                   const std::vector<gmx::RVec> &x,
                                    std::vector<gmx::RVec>       *forces,
                                    double                        energies[MAX_ENER])
 {
@@ -188,7 +189,6 @@ static inline void computeLJ12_6_4(gmx_unused MsgHandler        *msghandler,
     double edisp = 0; // dipole-dipole (1/r^6)
     double emid  = 0; // monopole-induced dipole (mid) (1/r^4) 
 
-    auto   &x    = *coordinates;
     for (const auto &b : pairs)
     {
         // Get the parameters. We have to know their names to do this.
@@ -248,15 +248,14 @@ static inline void computeLJ12_6_4(gmx_unused MsgHandler        *msghandler,
  * \param[inout] energies    The energy per type
  * \return total energy
  */
-static inline void computeLJ8_6(MsgHandler                   *msghandler,
+static inline void computeLJ8_6(gmx_unused MsgHandler        *msghandler,
                                 const TopologyEntryVector    &pairs,
-                                const std::vector<gmx::RVec> *coordinates,
+                                const std::vector<gmx::RVec> &x,
                                 std::vector<gmx::RVec>       *forces,
                                 double                        energies[MAX_ENER])
 {   
     double erep  = 0;
     double edisp = 0;
-    auto   x     = *coordinates;
     for (const auto &b : pairs)
     {   
         // Get the parameters. We have to know their names to do this.
@@ -310,13 +309,12 @@ static inline void computeLJ8_6(MsgHandler                   *msghandler,
  */
 static inline void computeLJ14_7(gmx_unused MsgHandler        *msghandler,
                                  const TopologyEntryVector    &pairs,
-                                 const std::vector<gmx::RVec> *coordinates,
+                                 const std::vector<gmx::RVec> &x,
                                  std::vector<gmx::RVec>       *forces,
                                  double                        energies[MAX_ENER])
 {
     double erep  = 0;
     double edisp = 0;
-    auto   x     = *coordinates;
     for (const auto &b : pairs)
     {
         // Get the parameters. We have to know their names to do this.
@@ -412,19 +410,18 @@ static inline double lowBornMayer(gmx_unused MsgHandler        *msghandler,
  */
 static inline void computeBornMayer(MsgHandler                   *msghandler,
                                     const TopologyEntryVector    &pairs,
-                                    const std::vector<gmx::RVec> *coordinates,
+                                    const std::vector<gmx::RVec> &x,
                                     std::vector<gmx::RVec>       *forces,
                                     double                        energies[MAX_ENER])
 {
     double eexp  = 0;
-    auto   x     = *coordinates;
     for (const auto &b : pairs)
     {
         // Get the parameters. We have to know their names to do this.
         auto &params    = b->params();
         // Charge transfer correction, according to Eqn. 20, Walker et al.
         // https://doi.org/10.1002/jcc.26954
-        eexp += lowBornMayer(msghandler, b->atomIndices(), *coordinates, -params[expA],
+        eexp += lowBornMayer(msghandler, b->atomIndices(), x, -params[expA],
                              params[expB], forces);
     }
     energies[0] = eexp;
@@ -439,7 +436,7 @@ static inline void computeBornMayer(MsgHandler                   *msghandler,
  * \param[inout] forces      The forces on all particles
  * \return total energy
  */
-static inline double lowSlaterISA(MsgHandler                   *msghandler,
+static inline double lowSlaterISA(gmx_unused MsgHandler        *msghandler,
                                   const std::vector<int>       &indices,
                                   const std::vector<gmx::RVec> &x,
                                   double                        aexp,
@@ -485,12 +482,11 @@ static inline double lowSlaterISA(MsgHandler                   *msghandler,
  */
 static inline void computeSlaterISA(MsgHandler                   *msghandler,
                                     const TopologyEntryVector    &pairs,
-                                    const std::vector<gmx::RVec> *coordinates,
+                                    const std::vector<gmx::RVec> &x,
                                     std::vector<gmx::RVec>       *forces,
                                     double                        energies[MAX_ENER])
 {
     double  eexp  = 0;
-    auto   &x     = *coordinates;
     for (const auto &b : pairs)
     {
         // Get the parameters. We have to know their names to do this.
@@ -509,12 +505,11 @@ static inline void computeSlaterISA(MsgHandler                   *msghandler,
  */
 static inline void computeDoubleExponential(gmx_unused MsgHandler        *msghandler,
                                             const TopologyEntryVector    &pairs,
-                                            const std::vector<gmx::RVec> *coordinates,
+                                            const std::vector<gmx::RVec> &x,
                                             std::vector<gmx::RVec>       *forces,
                                             double                        energies[MAX_ENER])
 {
     double eexp  = 0;
-    auto   x     = *coordinates;
     for (const auto &b : pairs)
     {
         // Get the parameters. We have to know their names to do this.
@@ -590,15 +585,14 @@ static inline void wang_buckingham(real sigma, real epsilon, real gamma,
  * \param[inout] forces      The forces on all particles
  * \param[inout] energies    The energy per type
  */
-static inline void computeWBH(MsgHandler                   *msghandler,
+static inline void computeWBH(gmx_unused MsgHandler        *msghandler,
                               const TopologyEntryVector    &pairs,
-                              const std::vector<gmx::RVec> *coordinates,
+                              const std::vector<gmx::RVec> &x,
                               std::vector<gmx::RVec>       *forces,
                               double                        energies[MAX_ENER])
 {
     double erep  = 0;
     double edisp = 0;
-    auto   x     = *coordinates;
     for (const auto &b : pairs)
     {
         // Get the parameters. We have to know their names to do this.
@@ -640,15 +634,14 @@ static inline void computeWBH(MsgHandler                   *msghandler,
  * \param[inout] forces      The forces on all particles
  * \param[inout] energies    The energy per type
  */
-static inline void computeBuckingham(MsgHandler                   *msghandler,
+static inline void computeBuckingham(gmx_unused MsgHandler        *msghandler,
                                      const TopologyEntryVector    &pairs,
-                                     const std::vector<gmx::RVec> *coordinates,
+                                     const std::vector<gmx::RVec> &x,
                                      std::vector<gmx::RVec>       *forces,
                                      double                        energies[MAX_ENER])
 {
     double erep  = 0;
     double edisp = 0;
-    auto   x     = *coordinates;
     for (const auto &b : pairs)
     {
         // Get the parameters. We have to know their names to do this.
@@ -693,7 +686,7 @@ static inline void computeBuckingham(MsgHandler                   *msghandler,
  * \param[inout] forces  The forces on all particles
  * \return total energy
  */
-static inline double TT_Dispersion(MsgHandler                   *msghandler,
+static inline double TT_Dispersion(gmx_unused MsgHandler        *msghandler,
                                    const std::vector<int>       &indices,
                                    const std::vector<gmx::RVec> &x,
                                    double                        bDisp,
@@ -760,7 +753,7 @@ static inline double TT_Dispersion(MsgHandler                   *msghandler,
  */
 static inline void computeTangToennies(MsgHandler                   *msghandler,
                                        const TopologyEntryVector    &pairs,
-                                       const std::vector<gmx::RVec> *coordinates,
+                                       const std::vector<gmx::RVec> &x,
                                        std::vector<gmx::RVec>       *forces,
                                        double                        energies[MAX_ENER])
 {
@@ -771,8 +764,8 @@ static inline void computeTangToennies(MsgHandler                   *msghandler,
         // Get the parameters. We have to know their names to do this.
         auto &params    = b->params();
         // Call low level routines
-        erep  += lowBornMayer(msghandler, b->atomIndices(), *coordinates, params[ttA], params[ttB], forces);
-        edisp += TT_Dispersion(msghandler, b->atomIndices(), *coordinates, params[ttB],
+        erep  += lowBornMayer(msghandler, b->atomIndices(), x, params[ttA], params[ttB], forces);
+        edisp += TT_Dispersion(msghandler, b->atomIndices(), x, params[ttB],
                                { params[ttC6], params[ttC8], params[ttC10] }, forces);
     }
     energies[0] = erep;
@@ -788,7 +781,7 @@ static inline void computeTangToennies(MsgHandler                   *msghandler,
  */
 static inline void computeTT2b(MsgHandler                   *msghandler,
                                const TopologyEntryVector    &pairs,
-                               const std::vector<gmx::RVec> *coordinates,
+                               const std::vector<gmx::RVec> &x,
                                std::vector<gmx::RVec>       *forces,
                                double                        energies[MAX_ENER])
 {
@@ -799,8 +792,8 @@ static inline void computeTT2b(MsgHandler                   *msghandler,
         // Get the parameters. We have to know their names to do this.
         auto &params    = b->params();
         // Call low level routines
-        erep  += lowBornMayer(msghandler, b->atomIndices(), *coordinates, params[tt2bA], params[tt2bBexch], forces);
-        edisp += TT_Dispersion(msghandler, b->atomIndices(), *coordinates, params[tt2bBdisp],
+        erep  += lowBornMayer(msghandler, b->atomIndices(), x, params[tt2bA], params[tt2bBexch], forces);
+        edisp += TT_Dispersion(msghandler, b->atomIndices(), x, params[tt2bBdisp],
                                { params[tt2bC6], params[tt2bC8], params[tt2bC10] }, forces);
     }
     energies[0] = erep;
@@ -817,7 +810,7 @@ static inline void computeTT2b(MsgHandler                   *msghandler,
  */
 static inline void computeSlater_ISA_TT(MsgHandler                   *msghandler,
                                         const TopologyEntryVector    &pairs,
-                                        const std::vector<gmx::RVec> *coordinates,
+                                        const std::vector<gmx::RVec> &x,
                                         std::vector<gmx::RVec>       *forces,
                                         double                        energies[MAX_ENER])
 {
@@ -828,8 +821,8 @@ static inline void computeSlater_ISA_TT(MsgHandler                   *msghandler
         // Get the parameters. We have to know their names to do this.
         auto &params    = b->params();
         // Call low level routines
-        erep  += lowSlaterISA(msghandler, b->atomIndices(), *coordinates, params[SIttA], params[SIttBexch], forces);
-        edisp += TT_Dispersion(msghandler, b->atomIndices(), *coordinates, params[SIttBdisp],
+        erep  += lowSlaterISA(msghandler, b->atomIndices(), x, params[SIttA], params[SIttBexch], forces);
+        edisp += TT_Dispersion(msghandler, b->atomIndices(), x, params[SIttBdisp],
                                { params[SIttC6], params[SIttC8], params[SIttC10] }, forces);
     }
     energies[0] = erep;
@@ -845,15 +838,14 @@ static inline void computeSlater_ISA_TT(MsgHandler                   *msghandler
  * \param[inout] forces      The forces on all particles
  * \param[inout] energies    The energy per type
  */
-static inline void computeGeneralizedBham(MsgHandler                   *msghandler,
+static inline void computeGeneralizedBham(gmx_unused MsgHandler        *msghandler,
                                           const TopologyEntryVector    &pairs,
-                                          const std::vector<gmx::RVec> *coordinates,
+                                          const std::vector<gmx::RVec> &x,
                                           std::vector<gmx::RVec>       *forces,
                                           double                        energies[MAX_ENER])
 {
     double erep  = 0;
     double edisp = 0;
-    auto   x     = *coordinates;
     for (const auto &b : pairs)
     {
         // Get the parameters. We have to know their names to do this.
@@ -911,14 +903,15 @@ static inline void computeGeneralizedBham(MsgHandler                   *msghandl
 static inline void computeCoulombGaussian(gmx_unused MsgHandler        *msghandler,
                                           const TopologyEntryVector    &pairs,
                                           const std::vector<ActAtom>   &atoms,
-                                          const std::vector<gmx::RVec> *coordinates,
+                                          const std::vector<gmx::RVec> &x,
                                           std::vector<gmx::RVec>       *forces,
                                           double                        energies[MAX_ENER],
                                           double                        epsilonr)
 {
     double ebond = 0;
-    auto   x     = *coordinates;
+#ifdef DEBUG
     double vc_pt = 0;
+#endif
     for (const auto &b : pairs)
     {
         // Get the parameters.
@@ -971,16 +964,15 @@ static inline void computeCoulombGaussian(gmx_unused MsgHandler        *msghandl
  * \param[inout] energies    The energy per type
  * \return total energy
  */
-static inline void computeCoulombSlater(MsgHandler                   *msghandler,
+static inline void computeCoulombSlater(gmx_unused MsgHandler        *msghandler,
                                         const TopologyEntryVector    &pairs,
                                         const std::vector<ActAtom>   &atoms,
-                                        const std::vector<gmx::RVec> *coordinates,
+                                        const std::vector<gmx::RVec> &x,
                                         std::vector<gmx::RVec>       *forces,
                                         double                        energies[MAX_ENER],
                                         double                        epsilonr)
 {
     double ebond = 0;
-    auto   x     = *coordinates;
     for (const auto &b : pairs)
     {
         // Get the parameters.
@@ -1048,12 +1040,11 @@ static inline void harmonic(real k, real x0, real x, real *V, real *F)
  * \param[inout] energies    The energy per type
  */
 static inline void computeBonds(const TopologyEntryVector    &bonds,
-                                const std::vector<gmx::RVec> *coordinates,
+                                const std::vector<gmx::RVec> &x,
                                 std::vector<gmx::RVec>       *forces,
                                 double                        energies[MAX_ENER])
 {
     double ebond = 0;
-    auto   x     = *coordinates;
     
     for (const auto &b : bonds)
     {
@@ -1090,12 +1081,11 @@ static inline void computeBonds(const TopologyEntryVector    &bonds,
  * \param[inout] energies    The energy per type
  */
 static inline void computeCubic(const TopologyEntryVector    &bonds,
-                                const std::vector<gmx::RVec> *coordinates,
+                                const std::vector<gmx::RVec> &x,
                                 std::vector<gmx::RVec>       *forces,
                                 double                        energies[MAX_ENER])
 {
     double ebond = 0;
-    auto   x     = *coordinates;
     
     for (const auto &b : bonds)
     {
@@ -1138,12 +1128,11 @@ static inline void computeCubic(const TopologyEntryVector    &bonds,
  */
 static inline void computeMorse(gmx_unused MsgHandler        *msghandler,
                                 const TopologyEntryVector    &bonds,
-                                const std::vector<gmx::RVec> *coordinates,
+                                const std::vector<gmx::RVec> &x,
                                 std::vector<gmx::RVec>       *forces,
                                 double                        energies[MAX_ENER])
 {
     double  ebond = 0;
-    auto    x     = *coordinates;
     for (const auto &b : bonds)
     {
         // Get the atom indices
@@ -1183,12 +1172,11 @@ static inline void computeMorse(gmx_unused MsgHandler        *msghandler,
  * \param[inout] energies    The energy per type
  */
 static inline void computeHua(const TopologyEntryVector    &bonds,
-                              const std::vector<gmx::RVec> *coordinates,
+                              const std::vector<gmx::RVec> &x,
                               std::vector<gmx::RVec>       *forces,
                               double                        energies[MAX_ENER])
 {
     double  ebond = 0;
-    auto    x     = *coordinates;
     for (const auto &b : bonds)
     {
         // Get the parameters. We have to know their names to do this.
@@ -1212,7 +1200,7 @@ static inline void computeHua(const TopologyEntryVector    &bonds,
 
         pairforces(fbond, dx, indices, forces);
     }
-    energies[0] ebond;
+    energies[0] = ebond;
 }
 
 /*! \brief Compute energy and forces for the linear angle potential
@@ -1222,12 +1210,11 @@ static inline void computeHua(const TopologyEntryVector    &bonds,
  * \param[inout] energies    The energy per type
  */
 static inline void computeLinearAngles(const TopologyEntryVector    &angles,
-                                       const std::vector<gmx::RVec> *coordinates,
+                                       const std::vector<gmx::RVec> &x,
                                        std::vector<gmx::RVec>       *forces,
                                        double                        energies[MAX_ENER])
 {
     double  ebond = 0;
-    auto    x     = *coordinates;
     auto   &f     = *forces;
     for (const auto &aaa : angles)
     {
@@ -1271,14 +1258,13 @@ static inline void computeLinearAngles(const TopologyEntryVector    &angles,
  * \param[inout] forces      The forces on all particles
  * \param[inout] energies    The energy per type
  */
-static inline void computeAngles(MsgHandler                   *msghandler,
+static inline void computeAngles(gmx_unused MsgHandler        *msghandler,
                                  const TopologyEntryVector    &angles,
-                                 const std::vector<gmx::RVec> *coordinates,
+                                 const std::vector<gmx::RVec> &x,
                                  std::vector<gmx::RVec>       *forces,
                                  double                        energies[MAX_ENER])
 {
     double  energy = 0, costh = 0;
-    auto    x     = *coordinates;
     auto   &f     = *forces;
 
     for (const auto &a : angles)
@@ -1346,12 +1332,11 @@ static inline void computeAngles(MsgHandler                   *msghandler,
  * \param[inout] energies    The energy per type
  */
 static inline void computeUreyBradley(const TopologyEntryVector    &angles,
-                                      const std::vector<gmx::RVec> *coordinates,
+                                      const std::vector<gmx::RVec> &x,
                                       std::vector<gmx::RVec>       *forces,
                                       double                        energies[MAX_ENER])
 {
     double  energy = 0, costh = 0;
-    auto    x     = *coordinates;
     auto   &f     = *forces;
     const  real half = 0.5;
     for (const auto &a : angles)
@@ -1433,16 +1418,15 @@ static inline void computeUreyBradley(const TopologyEntryVector    &angles,
  * \param[inout] forces      The forces on all particles
  * \param[inout] energies    The energy per type
  */
-static double computePolarization(gmx_unused MsgHandler        *msghandler,
-                                  const TopologyEntryVector    &bonds,
-                                  const std::vector<ActAtom>   &atoms,
-                                  const std::vector<gmx::RVec> *coordinates,
-                                  std::vector<gmx::RVec>       *forces,
-                                  double                        energies[MAX_ENER])
+static void computePolarization(gmx_unused MsgHandler        *msghandler,
+                                const TopologyEntryVector    &bonds,
+                                const std::vector<ActAtom>   &atoms,
+                                const std::vector<gmx::RVec> &x,
+                                std::vector<gmx::RVec>       *forces,
+                                double                        energies[MAX_ENER])
 {
     const real half = 0.5;
     double ebond    = 0;
-    auto   x        = *coordinates;
     for (const auto &b : bonds)
     {
         // Get the parameters. We have to know their names to do this.
@@ -1566,12 +1550,11 @@ static inline real dih_angle(const rvec xi, const rvec xj, const rvec xk, const 
  * \param[inout] energies    The energy per type
  */
 static inline void computeFourDihs(const TopologyEntryVector    &propers,
-                                   const std::vector<gmx::RVec> *coordinates,
+                                   const std::vector<gmx::RVec> &x,
                                    std::vector<gmx::RVec>       *forces,
                                    double                        energies[MAX_ENER])
 {
     double energy = 0;
-    auto   x      = *coordinates;
     for (const auto &a : propers)
     {
         // Get the parameters. We have to know their names to do this.
@@ -1625,12 +1608,11 @@ static inline void computeFourDihs(const TopologyEntryVector    &propers,
  * \return total energy
  */
 static inline void computeImpropers(const TopologyEntryVector    &impropers,
-                                    const std::vector<gmx::RVec> *coordinates,
+                                    const std::vector<gmx::RVec> &x,
                                     std::vector<gmx::RVec>       *forces,
                                     double                        energies[MAX_ENER])
 {
     double  energy = 0;
-    auto    x     = *coordinates;
     const  real half = 0.5;
     for (const auto &a : impropers)
     {
@@ -1667,14 +1649,13 @@ static inline void computeImpropers(const TopologyEntryVector    &impropers,
  * \param[inout] forces      The forces on all particles
  * \param[inout] energies    The energy per type
  */
-static inline void computePropers(MsgHandler                   *msghandler,
+static inline void computePropers(gmx_unused MsgHandler        *msghandler,
                                   const TopologyEntryVector    &propers,
-                                  const std::vector<gmx::RVec> *coordinates,
+                                  const std::vector<gmx::RVec> &x,
                                   std::vector<gmx::RVec>       *forces,
                                   double                        energies[MAX_ENER])
 {
     double energy = 0;
-    auto   x      = *coordinates;
     for (const auto &a : propers)
     {
         // Get the parameters. We have to know their names to do this.
@@ -1711,19 +1692,21 @@ static inline void computePropers(MsgHandler                   *msghandler,
     energies[0] = energy;
 }
 
-static inline void calcSome(MsgHandler                *msghandler,
-                            Potential                  mypot,
-                            const TopologyEntryVector  topentries,
-                            std::vector<CoordsEnergy> *coords)
+static inline void calcSome(MsgHandler                 *msghandler,
+                            Potential                   mypot,
+                            const TopologyEntryVector  &topentries,
+                            const std::vector<ActAtom> &atoms,
+                            std::vector<CoordsEnergy>  *coords,
+                            double                      epsilonr)
 {
-    double ezero[MAX_ENER] = { 0, 0, 0, 0 };
+    double ezero[MAX_ENER] = { 0, 0, 0 };
     //std::vector<double[MAX_ENER]> energies(coords->size(), ezero);
     // Loop over all coordinate arrays and parallellize
 #pragma omp simd
     for(size_t i = 0; i < coords->size(); i++)
     {
         // This is related to shell relaxation
-        if (coords[i]->done)
+        if ((*coords)[i].done)
         {
             continue;
         }
@@ -1744,7 +1727,7 @@ static inline void calcSome(MsgHandler                *msghandler,
             eMap[InteractionType::BONDS].setACT(energies[0]);
             break;
         case Potential::MORSE_BONDS:
-            computeMorse(topentries, x, &fcalc, energies);
+            computeMorse(msghandler, topentries, x, &fcalc, energies);
             eMap[InteractionType::BONDS].setACT(energies[0]);
             break;
         case Potential::HUA_BONDS:
@@ -1756,7 +1739,7 @@ static inline void calcSome(MsgHandler                *msghandler,
             eMap[InteractionType::BONDS].setACT(energies[0]);
             break;
         case Potential::HARMONIC_ANGLES:
-            computeAngles(topentries, x, &fcalc, energies);
+            computeAngles(msghandler, topentries, x, &fcalc, energies);
             eMap[InteractionType::ANGLES].setACT(energies[0]);
             break;
         case Potential::LINEAR_ANGLES:
@@ -1764,82 +1747,82 @@ static inline void calcSome(MsgHandler                *msghandler,
             eMap[InteractionType::LINEAR_ANGLES].setACT(energies[0]);
             break;
         case Potential::LJ12_6:
-            computeLJ12_6(topentries, x, &fcalc, energies);
+            computeLJ12_6(msghandler, topentries, x, &fcalc, energies);
             eMap[InteractionType::EXCHANGE].setACT(energies[0]);
             eMap[InteractionType::DISPERSION].setACT(energies[1]);
             break;
         case Potential::LJ12_6_4:
-            computeLJ12_6_4(topentries, x, &fcalc, energies);
+            computeLJ12_6_4(msghandler, topentries, x, &fcalc, energies);
             eMap[InteractionType::EXCHANGE].setACT(energies[0]);
             eMap[InteractionType::DISPERSION].setACT(energies[1]);
             eMap[InteractionType::INDUCTION].setACT(energies[2]);
             break;
         case Potential::LJ8_6:
-            computeLJ8_6(topentries, x, &fcalc, energies);
+            computeLJ8_6(msghandler, topentries, x, &fcalc, energies);
             eMap[InteractionType::EXCHANGE].setACT(energies[0]);
             eMap[InteractionType::DISPERSION].setACT(energies[1]);
             break;
         case Potential::LJ14_7:
-            computeLJ14_7(topentries, x, &fcalc, energies);
+            computeLJ14_7(msghandler, topentries, x, &fcalc, energies);
             eMap[InteractionType::EXCHANGE].setACT(energies[0]);
             eMap[InteractionType::DISPERSION].setACT(energies[1]);
             break;
         case Potential::BUCKINGHAM:
-            computeBuckingham(topentries, x, &fcalc, energies);
+            computeBuckingham(msghandler, topentries, x, &fcalc, energies);
             eMap[InteractionType::EXCHANGE].setACT(energies[0]);
             eMap[InteractionType::DISPERSION].setACT(energies[1]);
             break;
         case Potential::WANG_BUCKINGHAM:
-            computeWBH(topentries, x, &fcalc, energies);
+            computeWBH(msghandler, topentries, x, &fcalc, energies);
             eMap[InteractionType::EXCHANGE].setACT(energies[0]);
             eMap[InteractionType::DISPERSION].setACT(energies[1]);
             break;
         case Potential::TANG_TOENNIES:
-            computeTangToennies(topentries, x, &fcalc, energies);
+            computeTangToennies(msghandler, topentries, x, &fcalc, energies);
             eMap[InteractionType::EXCHANGE].setACT(energies[0]);
             eMap[InteractionType::DISPERSION].setACT(energies[1]);
             break;
         case Potential::TT2b:
-            computeTT2b(topentries, x, &fcalc, energies);
+            computeTT2b(msghandler, topentries, x, &fcalc, energies);
             eMap[InteractionType::EXCHANGE].setACT(energies[0]);
             eMap[InteractionType::DISPERSION].setACT(energies[1]);
             break;
         case Potential::SLATER_ISA_TT:
-            computeSlater_ISA_TT(topentries, x, &fcalc, energies);
+            computeSlater_ISA_TT(msghandler, topentries, x, &fcalc, energies);
             eMap[InteractionType::EXCHANGE].setACT(energies[0]);
             eMap[InteractionType::DISPERSION].setACT(energies[1]);
             break;
         case Potential::GENERALIZED_BUCKINGHAM:
-            computeGeneralizedBham(topentries, x, &fcalc, energies);
+            computeGeneralizedBham(msghandler, topentries, x, &fcalc, energies);
             eMap[InteractionType::EXCHANGE].setACT(energies[0]);
             eMap[InteractionType::DISPERSION].setACT(energies[1]);
             break;
         case Potential::BORN_MAYER:
-            computeBornMayer(topentries, x, &fcalc, energies);
+            computeBornMayer(msghandler, topentries, x, &fcalc, energies);
             eMap[InteractionType::EXCHANGE].setACT(energies[0]);
             break;
         case Potential::SLATER_ISA:
-            computeSlaterISA(topentries, x, &fcalc, energies);
+            computeSlaterISA(msghandler, topentries, x, &fcalc, energies);
             eMap[InteractionType::EXCHANGE].setACT(energies[0]);
             break;
         case Potential::MACDANIEL_SCHMIDT:
-            computeDoubleExponential(topentries, x, &fcalc, energies);
+            computeDoubleExponential(msghandler, topentries, x, &fcalc, energies);
             eMap[InteractionType::EXCHANGE].setACT(energies[0]);
             break;
         case Potential::COULOMB_POINT:
-            computeCoulombGaussian(topentries, x, &fcalc, energies);
-            eMap[InteractionType::COULOMB].setACT(energies[0]);
+            computeCoulombGaussian(msghandler, topentries, atoms, x, &fcalc, energies, epsilonr);
+            eMap[InteractionType::ELECTROSTATICS].setACT(energies[0]);
             break;
         case Potential::COULOMB_GAUSSIAN:
-            computeCoulombGaussian(topentries, x, &fcalc, energies);
-            eMap[InteractionType::COULOMB].setACT(energies[0]);
+            computeCoulombGaussian(msghandler, topentries, atoms, x, &fcalc, energies, epsilonr);
+            eMap[InteractionType::ELECTROSTATICS].setACT(energies[0]);
             break;
         case Potential::COULOMB_SLATER:
-            computeCoulombSlater(topentries, x, &fcalc, energies);
-            eMap[InteractionType::COULOMB].setACT(energies[0]);
+            computeCoulombSlater(msghandler, topentries, atoms, x, &fcalc, energies, epsilonr);
+            eMap[InteractionType::ELECTROSTATICS].setACT(energies[0]);
             break;
         case Potential::POLARIZATION:
-            computePolarization(topentries, x, &fcalc, energies);
+            computePolarization(msghandler, topentries, atoms, x, &fcalc, energies);
             eMap[InteractionType::POLARIZATION].setACT(energies[0]);
             break;
         case Potential::HARMONIC_DIHEDRALS:
@@ -1847,7 +1830,7 @@ static inline void calcSome(MsgHandler                *msghandler,
             eMap[InteractionType::IMPROPER_DIHEDRALS].setACT(energies[0]);
             break;
         case Potential::PROPER_DIHEDRALS:
-            computePropers(topentries, x, &fcalc, energies);
+            computePropers(msghandler, topentries, x, &fcalc, energies);
             eMap[InteractionType::PROPER_DIHEDRALS].setACT(energies[0]);
             break;
         case Potential::FOURIER_DIHEDRALS:
@@ -1859,10 +1842,43 @@ static inline void calcSome(MsgHandler                *msghandler,
             eMap[InteractionType::ANGLES].setACT(energies[0]);
             break;
         case Potential::POSITION_RESTRAINT:
-            computeFBPOSRE(topentries, x, &fcalc, energies);
-            eMap[InteractionType::POSITION_RESTRAINTS].setACT(energies[0]);
+            computeFBPOSRE(msghandler, topentries, x, &fcalc, energies);
+            eMap[InteractionType::POSITION_RESTRAINT].setACT(energies[0]);
+            break;
+        default:
             break;
         }
+    }
+}
+
+static inline void lowComputeEnergies(MsgHandler                *msghandler,
+                                      const ForceField          *pd,
+                                      const Topology            *top,
+                                      std::vector<CoordsEnergy> *coords,
+                                      double                     epsilonr)
+{
+    for(const auto &entry : top->entries())
+    {
+        //! \todo Can we prevent this check?
+        if (entry.second.empty())
+        {
+            continue;
+        }
+        // Not all potentials are available in the force field,
+        // in particular restraint potentials.
+        gmx_unused Potential mypot;
+        if (pd->interactionPresent(entry.first))
+        {
+            // Force field parameter list
+            auto &ffpl = pd->findForcesConst(entry.first);
+            // The function we need to do the math
+            mypot = ffpl.potential();
+        }
+        else
+        {
+            mypot = defaultPotential(entry.first);
+        }
+        calcSome(msghandler, mypot, entry.second, top->atoms(), coords, epsilonr);
     }
 }
 
@@ -1870,39 +1886,32 @@ void computeEnergies(MsgHandler          *msghandler,
                      const ForceField    *pd,
                      std::vector<ACTMol> *allmols)
 {
+    double epsilonr = 1;
+    auto iCoul = InteractionType::ELECTROSTATICS;
+    if (pd->interactionPresent(iCoul))
+    {
+        auto ffpl = pd->findForcesConst(iCoul);
+        std::string epsr = "epsilonr";
+        if (ffpl.optionExists(epsr))
+        {
+            epsilonr = std::atof(ffpl.optionValue(epsr).c_str());
+        }
+    }
     // Loop over molecules
     for(auto &mol : *allmols)
     {
-        // Loop over topology entries
-        for(const auto &entry : mol.topology()->entries())
+        auto &tops  = mol.fragmentHandler()->topologies();
+        bool isDimer = tops.size() == 2;
+        // Loop over topology entries, in principle the dimer should have everything
+        // that the monomers have as well.
+        //! \todo Check whether dimers and monomers have the same entries
+        lowComputeEnergies(msghandler, pd, &tops[0], mol.monomerCoords(0), epsilonr);
+        if (isDimer)
         {
-            if (entry.second.empty())
-            {
-                continue;
-            }
-            // Not all potentials are available in the force field,
-            // in particular restraint potentials.
-            Potential mypot;
-            if (pd->interactionPresent(entry.first))
-            {
-                // Force field parameter list
-                auto &ffpl = pd->findForcesConst(entry.first);
-                // The function we need to do the math
-                mypot = ffpl.potential();
-            }
-            else
-            {
-                mypot = defaultPotential(entry.first);
-            }
-            calcSome(msghandler, mypot, entry.second, mol.monomerCoords(0));
-            if (mol.isDimer())
-            {
-                calcSome(msghandler, mypot, entry.second, mol.dimerCoords());
-                calcSome(msghandler, mypot, entry.second, mol.monomerCoords(1));
-            }
+            lowComputeEnergies(msghandler, pd, &tops[1], mol.monomerCoords(1), epsilonr);
+            lowComputeEnergies(msghandler, pd, mol.topology(), mol.dimerCoords(), epsilonr);
         }
     }
 }
 
 } // namespace
-    
