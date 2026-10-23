@@ -26,6 +26,7 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
+#define DBG_EMAP 1
 #include <gtest/gtest.h>
 #include <cmath>
 #include <map>
