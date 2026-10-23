@@ -148,6 +148,8 @@ typedef struct
     std::vector<gmx::RVec> fobs;
     //! Energy map comparing QM to ACT energies
     ACTEnergyMap           eMap;
+    //! Lowest energy for use in Boltzmann weighting
+    double                 eMin;
 } CoordsEnergy;
 
 } // namespace

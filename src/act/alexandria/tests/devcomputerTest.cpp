@@ -193,19 +193,19 @@ protected:
         DevResults results;
         for(auto &mp : mps)
         {
-            ACTMol actmol;
-            actmol.Merge(&mp);
-            actmol.GenerateTopology(&msghandler, pd, missingParameters::Ignore);
+            std::vector<ACTMol> actmols(1);
+            actmols[0].Merge(&mp);
+            actmols[0].GenerateTopology(&msghandler, pd, missingParameters::Ignore);
             EXPECT_TRUE(msghandler.ok());
             if (!msghandler.ok())
             {
                 continue;
             }
-            auto &atoms = actmol.atomsConst();
-            std::vector<gmx::RVec> forces(atoms.size());
-            std::vector<gmx::RVec> coords = actmol.xOriginal();
-            actmol.generateCharges(&msghandler, pd, &forceComputer,
-                                   pd->chargeGenerationAlgorithm(), &coords, &forces);
+            auto &atoms = actmols[0].atomsConst();
+            std::vector<gmx::RVec> forces(actmols[0].atomsConst().size());
+            std::vector<gmx::RVec> coords = actmols[0].xOriginal();
+            actmols[0].generateCharges(&msghandler, pd, &forceComputer,
+                                       pd->chargeGenerationAlgorithm(), &coords, &forces);
             std::vector<double> qq;
             for(size_t j = 0; j < atoms.size(); j++)
             {
@@ -213,28 +213,27 @@ protected:
             }
             if (checker)
             {
-                std::string label(actmol.getMolname());
+                std::string label(actmols[0].getMolname());
                 label += "-charge";
                 checker->checkSequence(qq.begin(), qq.end(), label.c_str());
             }
             computer.calcDeviation(&msghandler,
                                    &forceComputer,
-                                   &actmol,
-                                   &coords,
+                                   &actmols,
                                    &targets,
                                    pd,
                                    opts.lossFunction);
             for(const auto &t : targets)
             {
-                results[resultKey(actmol.getMolname(), t.first)] =
+                results[resultKey(actmols[0].getMolname(), t.first)] =
                     { t.second.totalWeight(), t.second.chiSquared() };
                 if (checker)
                 {
                     std::string weight = gmx::formatString("%s-%s-weight",
-                                                           actmol.getMolname().c_str(), rmsName(t.first));
+                                                           actmols[0].getMolname().c_str(), rmsName(t.first));
                     checker->checkDouble(t.second.totalWeight(), weight.c_str());
                     std::string chi2 = gmx::formatString("%s-%s-chi2",
-                                                         actmol.getMolname().c_str(), rmsName(t.first));
+                                                         actmols[0].getMolname().c_str(), rmsName(t.first));
                     checker->checkDouble(t.second.chiSquared(), chi2.c_str());
                 }
             }

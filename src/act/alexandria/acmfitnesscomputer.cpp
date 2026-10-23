@@ -256,16 +256,16 @@ double ACMFitnessComputer::calcDeviation(MsgHandler   *msghandler,
                 msghandler->msg(ACTStatus::Warning,
                                 "No devComputers: no deviation from reference values will be computed.");
             }
-            for (DevComputer *mydev : devComputers_)
-            {
-                mydev->calcDeviation(msghandler, forceComp_, &(*actmol), &coords, targets,
-                                     sii_->forcefield(), lossFunction_);
-            }
             msghandler->writeDebug(gmx::formatString("CalcDev: rank %d mol %s #energies %zu tw %g\n",
                                                      cr->rank(), actmol->getMolname().c_str(), actmol->experimentConst().size(),
                                                      targets->find(eRMS::EPOT)->second.totalWeight()));
             nlocal++;
         }
+    }
+    for (DevComputer *mydev : devComputers_)
+    {
+        mydev->calcDeviation(msghandler, forceComp_, mymols, targets,
+                             sii_->forcefield(), lossFunction_);
     }
     // Sum the terms of the chi-squared once we have done calculations
     // for all the molecules.

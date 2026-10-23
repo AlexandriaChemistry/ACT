@@ -283,8 +283,14 @@ public:
      * \param[in] esup The support type
      */
     void setSupport(eSupport esup) { eSupp_ = esup; }
-    //! Extract the coordinates and observables in easy to digest chunks
-    void collectCoordsEnergy();
+
+    //! \return whether an actmol really is a dimer     
+    bool isDimer() const { return fragments().size() == 2; };
+
+    /*! Extract the coordinates and observables in easy to digest chunks
+     * \param[in] msghandler For reporting. May be nullptr.
+     */
+    void collectCoordsEnergy(MsgHandler *msghandler);
     //! \return the dimerCoords
     std::vector<CoordsEnergy> *dimerCoords() { return &dimerCoords_; }
     /*! \return the monomerCoords
