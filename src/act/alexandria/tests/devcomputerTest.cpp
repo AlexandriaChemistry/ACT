@@ -86,10 +86,19 @@ protected:
             {
                 continue;
             }
-            std::vector<gmx::RVec> forces(actmol.atomsConst().size());
+            auto &atoms = actmol.atomsConst();
+            std::vector<gmx::RVec> forces(atoms.size());
             std::vector<gmx::RVec> coords = actmol.xOriginal();
             actmol.generateCharges(&msghandler, pd, &forceComputer,
                                    pd->chargeGenerationAlgorithm(), &coords, &forces);
+            std::vector<double> qq;
+            for(size_t j = 0; j < atoms.size(); j++)
+            {
+                qq.push_back(atoms[j].charge());
+            }
+            std::string label(actmol.getMolname());
+            label += "-charge";
+            checker_.checkSequence(qq.begin(), qq.end(), label.c_str());
             computer.calcDeviation(&msghandler,
                                    &forceComputer,
                                    &actmol,

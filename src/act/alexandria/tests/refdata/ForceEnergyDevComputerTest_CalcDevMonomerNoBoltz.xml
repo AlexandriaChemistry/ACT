@@ -1,14 +1,51 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
+  <Sequence Name="1-butanol-charge">
+    <Int Name="Length">15</Int>
+    <Real>-0.21045140470766083</Real>
+    <Real>0.074735394888356566</Real>
+    <Real>0.074735394888356566</Real>
+    <Real>0.074735394888356566</Real>
+    <Real>-0.17691320980485775</Real>
+    <Real>0.084994896570874806</Real>
+    <Real>0.084994689809106003</Real>
+    <Real>-0.16823890660082655</Real>
+    <Real>0.092872669445153058</Real>
+    <Real>0.092872529285439889</Real>
+    <Real>-0.1654792476195372</Real>
+    <Real>0.091622165448059831</Real>
+    <Real>0.091622304659656081</Real>
+    <Real>-0.14950091876507515</Real>
+    <Real>0.10739824761459811</Real>
+  </Sequence>
   <Real Name="1-butanol-EPOT-weight">2</Real>
   <Real Name="1-butanol-EPOT-chi2">2384.6595003412044</Real>
   <Real Name="1-butanol-Force2-weight">0</Real>
   <Real Name="1-butanol-Force2-chi2">0</Real>
+  <Sequence Name="acetone-charge">
+    <Int Name="Length">10</Int>
+    <Real>-0.063414428642176085</Real>
+    <Real>-0.084746527490530271</Real>
+    <Real>-0.19209114631363067</Real>
+    <Real>-0.1920911463136307</Real>
+    <Real>0.088723874793327953</Real>
+    <Real>0.088723874793327953</Real>
+    <Real>0.088723874793327953</Real>
+    <Real>0.088723874793327953</Real>
+    <Real>0.088723874793327953</Real>
+    <Real>0.088723874793327953</Real>
+  </Sequence>
   <Real Name="acetone-EPOT-weight">3</Real>
   <Real Name="acetone-EPOT-chi2">2412.3913975449673</Real>
   <Real Name="acetone-Force2-weight">0</Real>
   <Real Name="acetone-Force2-chi2">0</Real>
+  <Sequence Name="water-charge">
+    <Int Name="Length">3</Int>
+    <Real>0.097171464099894106</Real>
+    <Real>-0.19434292819978821</Real>
+    <Real>0.097171464099894106</Real>
+  </Sequence>
   <Real Name="water-EPOT-weight">5</Real>
   <Real Name="water-EPOT-chi2">3238.9129007880761</Real>
   <Real Name="water-Force2-weight">0</Real>
