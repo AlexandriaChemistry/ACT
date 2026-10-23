@@ -38,6 +38,8 @@
 #include "act/topology/topology.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/units.h"
+#include <cstdio>
+#define DBG_SUB 1
 
 namespace alexandria
 {
@@ -1893,6 +1895,51 @@ static inline void lowComputeEnergies(MsgHandler                *msghandler,
     }
 }
 
+/*! \brief Subtract the two monomer energy contributions from the dimer energy map.
+ * The dimer coordinates hold the *total* dimer energy for every interaction type
+ * (intramolecular + intermolecular), whereas the QM reference values (eqm) and the
+ * fitting targets describe the *interaction* energy only. To make the ACT values
+ * (eact) comparable to the QM interaction energies, we subtract the two monomer
+ * contributions, mirroring the old \c einter = E_dimer - E_mono1 - E_mono2 logic.
+ * Only the ACT values are modified; the QM values (eqm) are left untouched.
+ * @param[in] dimer  The dimer coordinate/energy array
+ * @param[in] mon0   The first monomer coordinate/energy array
+ * @param[in] mon1   The second monomer coordinate/energy array
+ */
+static void subtractMonomerEnergies(std::vector<CoordsEnergy>  *dimer,
+                                    const std::vector<CoordsEnergy> *mon0,
+                                    const std::vector<CoordsEnergy> *mon1)
+{
+    size_t n = dimer->size();
+    n = std::min(n, mon0->size());
+    n = std::min(n, mon1->size());
+    for(size_t i = 0; i < n; i++)
+    {
+        ACTEnergyMap &dmap  = (*dimer)[i].eMap;
+        const auto   &m0map = (*mon0)[i].eMap;
+        const auto   &m1map = (*mon1)[i].eMap;
+        for(auto &kv : dmap)
+        {
+            if (!kv.second.haveACT())
+            {
+                continue;
+            }
+            double subtract = 0.0;
+            auto it0 = m0map.find(kv.first);
+            if (it0 != m0map.end() && it0->second.haveACT())
+            {
+                subtract += it0->second.eact();
+            }
+            auto it1 = m1map.find(kv.first);
+            if (it1 != m1map.end() && it1->second.haveACT())
+            {
+                subtract += it1->second.eact();
+            }
+            kv.second.setACT(kv.second.eact() - subtract);
+        }
+    }
+}
+
 void computeEnergies(MsgHandler          *msghandler,
                      const ForceField    *pd,
                      std::vector<ACTMol> *allmols)
@@ -1920,6 +1967,28 @@ void computeEnergies(MsgHandler          *msghandler,
         {
             lowComputeEnergies(msghandler, pd, &tops[1], mol.monomerCoords(1), epsilonr);
             lowComputeEnergies(msghandler, pd, mol.topology(), mol.dimerCoords(), epsilonr);
+#ifdef DBG_SUB
+            {
+                auto &dm = (*mol.dimerCoords())[0].eMap;
+                auto k = InteractionType::ELECTROSTATICS;
+                fprintf(stderr, "SUBTR before: dimer COULOMB=%g mon0=%g mon1=%g\n",
+                        dm.count(k) && dm[k].haveACT() ? dm[k].eact() : -1e9,
+                        (*mol.monomerCoords(0))[0].eMap.count(k) && (*mol.monomerCoords(0))[0].eMap[k].haveACT() ? (*mol.monomerCoords(0))[0].eMap[k].eact() : -1e9,
+                        (*mol.monomerCoords(1))[0].eMap.count(k) && (*mol.monomerCoords(1))[0].eMap[k].haveACT() ? (*mol.monomerCoords(1))[0].eMap[k].eact() : -1e9);
+            }
+#endif
+            // The dimer eMap now holds total (intramolecular + intermolecular) ACT
+            // energies. Subtract the two monomer contributions so that it describes
+            // the interaction energy only, matching the QM interaction energies.
+            subtractMonomerEnergies(mol.dimerCoords(), mol.monomerCoords(0), mol.monomerCoords(1));
+#ifdef DBG_SUB
+            {
+                auto &dm = (*mol.dimerCoords())[0].eMap;
+                auto k = InteractionType::ELECTROSTATICS;
+                fprintf(stderr, "SUBTR after:  dimer COULOMB=%g\n",
+                        dm.count(k) && dm[k].haveACT() ? dm[k].eact() : -1e9);
+            }
+#endif
         }
     }
 }

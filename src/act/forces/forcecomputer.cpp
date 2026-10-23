@@ -404,7 +404,7 @@ size_t ForceComputer::updateShells(const Topology            *top,
                                    const std::vector<bool>    isShell,
                                    const std::vector<double>  fcShell1,
                                    const std::vector<double>  fcHyper,
-                                   std::vector<CoordsEnergy> *myCoords)
+                                   std::vector<CoordsEnergy> *myCoords) const
 {
     auto   itype      = InteractionType::POLARIZATION;
     size_t numberDone = 0;
@@ -513,10 +513,10 @@ static inline void calcInduction(ACTEnergyMap *eMap)
             allElec += et.second.eact();
         }
         auto ex = exchIndTerms.find(et.first);
-        if (exchIndTerms.end() != ex)
+        if (exchIndTerms.end() != ex && et.second.haveACT())
         {
             exchInd += et.second.eact();
-        }   
+        }
     }
     if (haveInduction)
     {
@@ -531,15 +531,13 @@ void ForceComputer::computeRelaxedEnergies(MsgHandler          *msghandler,
                                            const ForceField    *pd,
                                            std::vector<ACTMol> *allmols,
                                            RelaxShells          relax,
-                                           bool                 resetTheShells)
+                                           bool                 resetTheShells) const
 {
     // Loop over molecules
     // TODO simd-ify vsite handling as well
     for(auto &mol : *allmols)
     {
-        // Shortcuts...
-        auto &tops  = mol.fragmentHandler()->topologies();
-        if (tops.size() == 2)
+        if (mol.isDimer())
         {
             // We have a dimer!
             auto top    = mol.topology();
@@ -554,13 +552,10 @@ void ForceComputer::computeRelaxedEnergies(MsgHandler          *msghandler,
                 {
                     resetShells(atoms, &dim.x);
                 }
-                // Store energy terms in an independent copy.
-                for(auto &em : dim.eMap)
-                {
-                    em.second.backup();
-                }
             }
         }
+        // Shortcuts...
+        auto &tops  = mol.fragmentHandler()->topologies();
         // Virtual sites for monomers
         for(size_t index = 0; index < tops.size(); index++)
         {
@@ -575,6 +570,30 @@ void ForceComputer::computeRelaxedEnergies(MsgHandler          *msghandler,
                 {
                     resetShells(atoms, &mon.x);
                 }
+            }
+        }
+    }
+    // Do first calculation every time.
+    computeEnergies(msghandler, pd, allmols);
+    // Store original energies
+    for(auto &mol : *allmols)
+    {
+        if (mol.isDimer())
+        {
+            for(auto &dim : *mol.dimerCoords())
+            {
+                for(auto &em : dim.eMap)
+                {
+                    em.second.backup();
+                }
+            }
+        }
+        // Shortcuts...
+        auto &tops  = mol.fragmentHandler()->topologies();
+        for(size_t index = 0; index < tops.size(); index++)
+        {
+            for(auto &mon : *mol.monomerCoords(index))
+            {
                 // Store energy terms in an independent copy.
                 for(auto &em : mon.eMap)
                 {
@@ -583,8 +602,6 @@ void ForceComputer::computeRelaxedEnergies(MsgHandler          *msghandler,
             }
         }
     }
-    // Do first calculation every time.
-    computeEnergies(msghandler, pd, allmols);
 
     if (relax == RelaxShells::None)
     {
@@ -661,6 +678,34 @@ void ForceComputer::computeRelaxedEnergies(MsgHandler          *msghandler,
     // Now post-process the energies to extract induction and allelec
     for(auto &mol : *allmols)
     {
+        // First, subtract monomer energies from dimer energies
+        auto &dimers = *mol.dimerCoords();
+        for(size_t i = 0; i < dimers.size(); i++)
+        {
+            // Shortcut :(
+            auto &eMap = dimers[i].eMap;
+            for(auto &e : eMap)
+            {
+                if (!eMap[e.first].haveACT())
+                {
+                    continue;
+                }
+                double edim = eMap[e.first].eact();
+                double edb4 = eMap[e.first].eactBefore();
+                for(size_t j = 0; j < 2; j++)
+                {
+                    auto mm = (*mol.monomerCoords(j))[i].eMap.find(e.first);
+                    if (mm != (*mol.monomerCoords(j))[i].eMap.end())
+                    {
+                        edim -= mm->second.eact();
+                        edb4 -= mm->second.eactBefore();
+                    }
+                }
+                eMap[e.first].setACT(edb4);
+                eMap[e.first].backup();
+                eMap[e.first].setACT(edim);
+            }
+        }
         for(auto &dim : *mol.dimerCoords())
         {
             calcInduction(&dim.eMap);

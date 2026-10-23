@@ -553,7 +553,7 @@ void ForceEnergyDevComputer::calcDeviation(MsgHandler                     *msgha
     if (doForce2 || doEpot || doInter)
     {
         // Compute all energies and forces at once
-        computeEnergies(msghandler, forcefield, actmols);
+        forceComputer->computeRelaxedEnergies(msghandler, forcefield, actmols, RelaxShells::All, true);
         for(auto actmol = actmols->begin(); actmol < actmols->end(); ++actmol)
         {
             if (doForce2)

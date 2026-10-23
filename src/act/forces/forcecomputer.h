@@ -88,7 +88,7 @@ private:
                         const std::vector<bool>    isShell,
                         const std::vector<double>  fcShell1,
                         const std::vector<double>  fcHyper,
-                        std::vector<CoordsEnergy> *myCoords);
+                        std::vector<CoordsEnergy> *myCoords) const;
 
  public:
     //! \brief Default constructor
@@ -185,11 +185,26 @@ private:
                  bool                               resetShells = true,
                  std::set<int>                      relax = {}) const;
                  
+    /*! \brief Compute energies and forces for monomers and/or dimers.
+     * Despite the name of the function it is possible to select RelaxShells::None
+     * which results in a single energy calculation. This will happen in case of
+     * a non-polarizable force field.
+     * Different molecules and conformation may take different number of 
+     * iterations, but the intention of the code is to keep running just until
+     * the position of the selected shells have been minimized, or maxiter has been
+     * reached.
+     * \param[in] msghandler     For debugging and messages
+     * \param[in] pd             An ACT force field
+     * \param[in] allmols        Vector containing all the molecules
+     * \param[in] relax          Whether to relax some shells, and if yes which one (see enum)
+     * \param[in] resetShells    Whether or not to reset the shell positions before relaxation.
+     *                           This is an optimization that may or may not work. 
+     */
     void computeRelaxedEnergies(MsgHandler          *msghandler,
                                 const ForceField    *pd,
                                 std::vector<ACTMol> *allmols,
                                 RelaxShells          relax,
-                                bool                 resetShells);
+                                bool                 resetShells) const;
 
     /*! Do many complete energy/force computation.
      * If shells are present their positions will be minimized.
@@ -208,35 +223,6 @@ private:
                      const gmx::RVec     &field = { 0.0, 0.0, 0.0 },
                      bool                 resetShells = true,
                      std::set<int>        relax = {}) const;
-                 
-    /*! \brief Compute energies and forces for monomers and/or dimers.
-     * Despite the name of the function it is possible to select RelaxShells::None
-     * which results in a single energy calculation. This will happen in case of
-     * a non-polarizable force field.
-     * Different molecules and conformation may take different number of 
-     * iterations, but the intention of the code is to keep running just until
-     * the position of the selected shells have been minimized, or maxiter has been
-     * reached.
-     * \param[in] msghandler     For debugging and messages
-     * \param[in] pd             An ACT force field
-     * \param[in] allmols        Vector containing all the molecules
-     * \param[in] relaxShells    Whether to relax some shells, and if yes which one (see enum)
-     * \param[in] forceTolerance Maximum RMS force for convergance
-     * \param[in] maxIter        Maximum number of iterations minimizing the shells
-     * \param[in] maxShellDist   Maximum distance away from the core (or vsite) that a shell is
-     *                           allowed to be. If zero, this is ignored and shell can move
-     *                           wherever they like.
-     * \param[in] resetShells    Whether or not to reset the shell positions before relaxation.
-     *                           This is an optimization that may or may not work. 
-     */
-    void computeRelaxedEnergies(MsgHandler          *msghandler,
-                                const ForceField    *pd,
-                                std::vector<ACTMol> *allmols,
-                                RelaxShells          relax,
-                                double               forceTolerance,
-                                size_t               maxIter,
-                                double               maxShellDist,
-                                bool                 resetShells);
 
     /*! \brief Return the ACT potential used
      * In practice this converts the InteractionType to the ftype

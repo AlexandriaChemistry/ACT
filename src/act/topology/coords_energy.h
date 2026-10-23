@@ -104,7 +104,10 @@ public:
     //! \return The ACT energy
     double eact() const
     {
-        GMX_RELEASE_ASSERT(haveACT_, "Trying to extract an ACT energy when there is none");
+        if (!haveACT_)
+        {
+            GMX_THROW(gmx::InternalError("Trying to extract an ACT energy when there is none"));
+        }
         return eact_;
     }
 
