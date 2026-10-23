@@ -284,9 +284,9 @@ std::vector<gmx::RVec> ACTMol::xOriginal() const
     return xOriginal_;
 }
 
-void ACTMol::collectCoordsEnergy()
+void ACTMol::collectCoordsEnergy(MsgHandler *msghandler)
 {
-    std::map<MolPropObservable, InteractionType> interE = { 
+    std::map<MolPropObservable, InteractionType> interE = {
         { MolPropObservable::INTERACTIONENERGY,   InteractionType::EPOT                 },
         { MolPropObservable::ELECTROSTATICS,      InteractionType::ELECTROSTATICS       },
         { MolPropObservable::DISPERSION,          InteractionType::DISPERSION           },
@@ -296,34 +296,108 @@ void ACTMol::collectCoordsEnergy()
         { MolPropObservable::INDUCTION,           InteractionType::INDUCTION            },
         { MolPropObservable::CHARGETRANSFER,      InteractionType::CHARGETRANSFER       }
     };
-    bool isDimer  = fragments().size() == 2;
+    std::map<MolPropObservable, InteractionType> intraE = {
+        { MolPropObservable::DELTAE0, InteractionType::EPOT }
+    };
     int  natom1   = fragmentHandler()->atomStart()[1];
-    const auto &allExper = experimentConst();
-    size_t nDimer = 0;
-    for (const auto &exper : allExper)
+    size_t nDimer   = 0;
+    size_t nMonomer = 0;
+    for (const auto &exper : experimentConst())
     {
         // We compute either interaction energies or normal energies for one experiment
-        bool doInter = false;
-        for(auto &ie : interE)
+        if (isDimer())
         {
-            if (exper.hasProperty(ie.first))
+            bool doInter = false;
+            for(auto &ie : interE)
             {
-                doInter = true;
+                if (exper.hasProperty(ie.first))
+                {
+                    doInter = true;
+                }
+            }
+            // Not all data has corresponding coordinates, e.g. if it is from wet lab experiments.
+            if (doInter && !exper.getCoordinates().empty())
+            {
+                // Copy coordinates
+                auto exp_x = exper.getCoordinates();
+                if (exp_x.empty())
+                {
+                    continue;
+                }
+                auto x = experCoords(exp_x);
+                ++nDimer;
+                dimerCoords_.resize(nDimer);
+                dimerCoords_.back().x = x;
+                monomerCoords_[0].resize(nDimer);
+                monomerCoords_[1].resize(nDimer);
+                std::copy(x.begin(), x.begin()+natom1, std::back_inserter(monomerCoords_[0].back().x));
+                std::copy(x.begin()+natom1, x.end(),   std::back_inserter(monomerCoords_[1].back().x));
+                // Lowest energy for Boltzmann weighting
+                double eMin = 1e8;
+                // Copy energies for the correct QM observables
+                for(const auto &ie : interE)
+                {
+                    if (exper.hasProperty(ie.first))
+                    {
+                        auto &propvec = exper.propertyConst(ie.first);
+                        if (propvec.size() != 1)
+                        {
+                            msghandler->fatal(gmx::formatString("Expected just one QM value per experiment for %s iso %zu", mpo_name(ie.first), propvec.size()).c_str());
+                        }
+                        double eqm = propvec[0]->getValue();
+                        dimerCoords_.back().eMap[ie.second].setQM(eqm);
+                        if (ie.second == InteractionType::EPOT)
+                        {
+                            eMin = std::min(eMin, eqm);
+                        }
+                    }
+                }
+                dimerCoords_.back().eMin = eMin;
             }
         }
-        // Not all data has corresponding coordinates, e.g. if it is from wet lab experiments.
-        if (doInter && isDimer && !exper.getCoordinates().empty())
+        else
         {
             // Copy coordinates
-            auto x = experCoords(exper.getCoordinates());
-            ++nDimer;
-            dimerCoords_.resize(nDimer);
-            dimerCoords_.back().x = x;
-            monomerCoords_[0].resize(nDimer);
-            monomerCoords_[1].resize(nDimer);
-            std::copy(x.begin(), x.begin()+natom1, std::back_inserter(monomerCoords_[0].back().x));
-            std::copy(x.begin()+natom1, x.end(),   std::back_inserter(monomerCoords_[1].back().x));
+            auto exp_x = exper.getCoordinates();
+            if (exp_x.empty())
+            {
+                continue;
+            }
+            auto x = experCoords(exp_x);
+            ++nMonomer;
+            monomerCoords_[0].resize(nMonomer);
+            std::copy(x.begin(), x.end(), std::back_inserter(monomerCoords_[0].back().x));
+            // Lowest energy for Boltzmann weighting
+            double eMin = 1e8;
+            // Copy energies for the correct QM observables
+            for(const auto &ie : intraE)
+            {
+                if (exper.hasProperty(ie.first))
+                {
+                    auto &propvec = exper.propertyConst(ie.first);
+                    if (propvec.size() != 1)
+                    {
+                        msghandler->fatal(gmx::formatString("Expected just one QM value per experiment for %s iso %zu", mpo_name(ie.first), propvec.size()).c_str());
+                    }
+                    double eqm = propvec[0]->getValue();
+                    monomerCoords_[0].back().eMap[ie.second].setQM(propvec[0]->getValue());
+                    // For monomers this corresponds to the eRMS::DeltaE0
+                    if (ie.second == InteractionType::EPOT)
+                    {
+                        eMin = std::min(eMin, eqm);
+                    }
+                }
+            }
+            // Check for forces
+            monomerCoords_[0].back().fobs = exper.getForces();
+            monomerCoords_[0].back().eMin = eMin;
         }
+    }
+    if (msghandler)
+    {
+        msghandler->msg(ACTStatus::Verbose,
+                        gmx::formatString("Found %zu dimer(s) and %zu monomer(s) for %s",
+                                          nDimer, nMonomer, getMolname().c_str()));
     }
 }
 
@@ -824,6 +898,8 @@ void ACTMol::GenerateTopology(MsgHandler        *msghandler,
     {
         msghandler->msg(ACTStatus::Error, gmx::formatString("Cannot make topology for %s", getMolname().c_str()));
     }
+    // Finally collect data for fast force calculations
+    collectCoordsEnergy(msghandler);
 }
 
 double ACTMol::bondOrder(int ai, int aj) const

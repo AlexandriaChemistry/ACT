@@ -1714,7 +1714,10 @@ static inline void calcSome(MsgHandler                 *msghandler,
         // Shortcuts
         const auto &x     = (*coords)[i].x;
         auto       &fcalc = (*coords)[i].fcalc;
+        gmx::RVec fzero   = { 0, 0, 0 };
+        fcalc.resize(x.size(), fzero); 
         auto       &eMap  = (*coords)[i].eMap;
+        double      epot  = 0;
         // In the best of worlds, the switch is replicated into many loops 
         // and all the function calls are inlined. If it does not work, the loops
         // can be switched manually.
@@ -1848,6 +1851,14 @@ static inline void calcSome(MsgHandler                 *msghandler,
         default:
             break;
         }
+        // Sum into potential energy.
+        epot = energies[0] + energies[1] + energies[2];
+        auto itype = InteractionType::EPOT;
+        if (!eMap[itype].haveACT())
+        {
+            eMap[itype].setACT(0.0);
+        }
+        eMap[itype].setACT(epot + eMap[itype].eact());
     }
 }
 
@@ -1901,12 +1912,11 @@ void computeEnergies(MsgHandler          *msghandler,
     for(auto &mol : *allmols)
     {
         auto &tops  = mol.fragmentHandler()->topologies();
-        bool isDimer = tops.size() == 2;
         // Loop over topology entries, in principle the dimer should have everything
         // that the monomers have as well.
         //! \todo Check whether dimers and monomers have the same entries
         lowComputeEnergies(msghandler, pd, &tops[0], mol.monomerCoords(0), epsilonr);
-        if (isDimer)
+        if (mol.isDimer())
         {
             lowComputeEnergies(msghandler, pd, &tops[1], mol.monomerCoords(1), epsilonr);
             lowComputeEnergies(msghandler, pd, mol.topology(), mol.dimerCoords(), epsilonr);
