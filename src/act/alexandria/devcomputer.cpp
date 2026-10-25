@@ -532,28 +532,19 @@ void ForceEnergyDevComputer::calcDeviation(MsgHandler                     *msgha
         }
     }
     // Check whether we should sum the induction terms
-    bool sumInductionTerms = false;
+    bool sepInductionTerms = false;
     if (doInter)
     {
         auto tdhf = targets->find(eRMS::DeltaHF);
-        if (tdhf == targets->end() || tdhf->second.weight() == 0)
+        if (tdhf != targets->end() && tdhf->second.weight() != 0)
         {
-            // No -fc_deltahf option was passed
-            if (targets->find(eRMS::Induction) != targets->end())
-            {
-                sumInductionTerms = true;
-                msghandler->msg(ACTStatus::Debug, "Sum induction terms: ON");
-            }
+            sepInductionTerms = true;
         }
-    }
-    if (sumInductionTerms)
-    {
-        msghandler->fatal("Please fix code to sum induction terms in devcomputer.cpp");   
     }
     if (doForce2 || doEpot || doInter)
     {
         // Compute all energies and forces at once
-        forceComputer->computeRelaxedEnergies(msghandler, forcefield, actmols, RelaxShells::All, true);
+        forceComputer->computeRelaxedEnergies(msghandler, forcefield, actmols, true, sepInductionTerms);
         for(auto actmol = actmols->begin(); actmol < actmols->end(); ++actmol)
         {
             if (doForce2)

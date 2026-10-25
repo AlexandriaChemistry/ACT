@@ -47,9 +47,6 @@ class MsgHandler;
 class QtypeProps;
 class Topology;
 
-//! Determines what shells are relaxed
-enum class RelaxShells { None, All, Dimer, Monomer1, Monomer2 };
-
 /*! \brief Class to compute all the forces in a molecule or complex.
  * It is imperative that there is only one force computer in each program,
  * since results may depend on the flags given when initiating. This goes
@@ -84,11 +81,20 @@ private:
      * \return The number of shells that converged
      */
     size_t updateShells(const Topology            *top,
+                        size_t                     offset,
                         size_t                     nShell,
                         const std::vector<bool>    isShell,
                         const std::vector<double>  fcShell1,
                         const std::vector<double>  fcHyper,
                         std::vector<CoordsEnergy> *myCoords) const;
+    void relaxMonomer(MsgHandler          *msg_handler,
+                      const ForceField    *pd,
+                      size_t               im,
+                      std::vector<ACTMol> *allmols) const;
+    void relaxDimer(MsgHandler          *msg_handler,
+                    const ForceField    *pd,
+                    bool                 fixMonomer[2],
+                    std::vector<ACTMol> *allmols) const;
 
  public:
     //! \brief Default constructor
@@ -173,7 +179,6 @@ private:
      * \param[out] energies    The energy components
      * \param[in]  field       Optional electric field to be applied
      * \param[in]  resetShells Set the position of the shells to that of the connecting atoms
-     * \param[in]  relax       Specify the shell indices that should be relaxed. If empty, all shells will be relaxed.
      */
     void compute(MsgHandler                        *msg_handler,
                  const ForceField                  *pd,
@@ -196,16 +201,16 @@ private:
      * \param[in] msghandler     For debugging and messages
      * \param[in] pd             An ACT force field
      * \param[in] allmols        Vector containing all the molecules
-     * \param[in] relax          Whether to relax some shells, and if yes which one (see enum)
      * \param[in] resetShells    Whether or not to reset the shell positions before relaxation.
      *                           This is an optimization that may or may not work. 
+     * \param[in] separateInductionCorrection Whether or not to treat induction correction separately
      */
     void computeRelaxedEnergies(MsgHandler          *msghandler,
                                 const ForceField    *pd,
                                 std::vector<ACTMol> *allmols,
-                                RelaxShells          relax,
-                                bool                 resetShells) const;
-
+                                bool                 resetShells,
+                                bool                 separateInductionCorrection) const;
+                                                                
     /*! Do many complete energy/force computation.
      * If shells are present their positions will be minimized.
      * If the shell minimization does not converge a warning will

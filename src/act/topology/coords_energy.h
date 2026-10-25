@@ -145,6 +145,8 @@ typedef struct
     std::string            dataFile;
     //! Coordinates
     std::vector<gmx::RVec> x;
+    //! Relaxed coordinates
+    std::vector<gmx::RVec> xrelax;
     //! Computed forces
     std::vector<gmx::RVec> fcalc;
     //! Observed forces

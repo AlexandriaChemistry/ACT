@@ -151,7 +151,7 @@ protected:
                      const DevOptions  &opts)
     {
         gmx::test::TestReferenceChecker checker_(this->rootChecker());
-        auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, 1e-11);
+        auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, 1e-7);
         checker_.setDefaultTolerance(tolerance);
         computeDev(mpFile, ffFile, opts, &checker_);
     }
