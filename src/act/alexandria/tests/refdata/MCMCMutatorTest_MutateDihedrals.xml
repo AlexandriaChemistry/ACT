@@ -56,7 +56,7 @@
     <Real>360</Real>
   </Sequence>
   <Int64 Name="numberObjectiveFunctionCalls">141</Int64>
-  <Int64 Name="numEvaluations ForceComputer">1277</Int64>
+  <Int64 Name="numEvaluations ForceComputer">564</Int64>
   <Int64 Name="numShellIterations ForceComputer">0</Int64>
   <Int64 Name="numShellConvergenceFailed ForceComputer">0</Int64>
   <Sequence Name="Random numbers">
