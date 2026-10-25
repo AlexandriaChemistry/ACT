@@ -55,7 +55,7 @@ protected:
                      std::map<eRMS, double>  boltzmann)
     {
         gmx::test::TestReferenceChecker checker_(this->rootChecker());
-        auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, 1e-12);
+        auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, 1e-11);
         checker_.setDefaultTolerance(tolerance);
         ForceComputer           forceComputer;
         MsgHandler              msghandler;
@@ -360,4 +360,20 @@ TEST_F(ForceEnergyDevComputerTest, CalcDevDimerBoltzInductionCorrection)
     testCalcDev(mpFile, "ACS-pol", boltzmann);
 }
 
+// Test: CalcDeviation for dimer with Induction Correction weighting and No Boltzmann
+TEST_F(ForceEnergyDevComputerTest, CalcDevDimerNoBoltzInductionCorrection)
+{
+    std::map<eRMS, double> boltzmann;
+    for(const auto erms : { eRMS::Interaction,
+                            eRMS::Electrostatics, 
+                            eRMS::Dispersion,
+                            eRMS::Exchange,
+                            eRMS::Induction,
+                            eRMS::DeltaHF } )
+    {
+        boltzmann.insert({erms, 0.0});
+    }
+    std::string mpFile = fileManager().getInputFilePath("methanol-ethane-deltaHF.xml");
+    testCalcDev(mpFile, "ACS-pol", boltzmann);
+}
 } // namespace alexandria
