@@ -50,7 +50,7 @@
     <Real>346172.59388738719</Real>
   </Sequence>
   <Int64 Name="numberObjectiveFunctionCalls">121</Int64>
-  <Int64 Name="numEvaluations ForceComputer">1097</Int64>
+  <Int64 Name="numEvaluations ForceComputer">484</Int64>
   <Int64 Name="numShellIterations ForceComputer">0</Int64>
   <Int64 Name="numShellConvergenceFailed ForceComputer">0</Int64>
   <Sequence Name="Random numbers">

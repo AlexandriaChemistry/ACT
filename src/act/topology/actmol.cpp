@@ -393,6 +393,31 @@ void ACTMol::collectCoordsEnergy(MsgHandler *msghandler)
             monomerCoords_[0].back().eMin = eMin;
         }
     }
+    // Boltzmann weighting uses a single reference energy shared by all
+    // conformations of a molecule: the lowest QM potential energy. With that
+    // choice the lowest-energy conformation has weight one and the others are
+    // down-weighted by exp(-beta*(E - E_min)). The per-conformation eMin set
+    // above holds each conformation's own energy, which would make every weight
+    // exactly one, so here we overwrite it with the global minimum.
+    {
+        std::vector<CoordsEnergy> *allConf = isDimer() ? &dimerCoords_ : &monomerCoords_[0];
+        double                    globalMin = 1e8;
+        for (auto &ce : *allConf)
+        {
+            auto it = ce.eMap.find(InteractionType::EPOT);
+            if (it != ce.eMap.end() && it->second.haveQM())
+            {
+                globalMin = std::min(globalMin, it->second.eqm());
+            }
+        }
+        if (globalMin < 1e8)
+        {
+            for (auto &ce : *allConf)
+            {
+                ce.eMin = globalMin;
+            }
+        }
+    }
     if (msghandler)
     {
         msghandler->msg(ACTStatus::Verbose,
@@ -1512,9 +1537,14 @@ ACTMessage ACTMol::GenerateAcmCharges(MsgHandler             *msg_handler,
         if (eQgen::OK == eqgen)
         {
             // The purpose of this force calculation is to minimize shell
-            // positions and to place virtual sites.
-            forceComp->compute(msg_handler, pd, &topology_,
-                               coords, forces, &energies);
+            // positions and to place virtual sites. For molecules that have
+            // neither it is a no-op and would still incur a full (discarded)
+            // energy evaluation, so skip it in that common case.
+            if (haveShells() || topology_.hasVsites())
+            {
+                forceComp->compute(msg_handler, pd, &topology_,
+                                   coords, forces, &energies);
+            }
             std::vector<double> qnew;
             fraghandler_.fetchCharges(msg_handler, &qnew);
             GMX_RELEASE_ASSERT(qold.size()==qnew.size(), "Cannot fetch new charges");
@@ -1571,7 +1601,12 @@ void ACTMol::updateQprops(const ForceField          *pd,
         auto qcalc = qp->qPact();
         qcalc->setQ(*myatoms);
         auto myx = qcalc->x();
-        forceComp->compute(nullptr, pd, &topology_, &myx, forces, &energies);
+        // Only needed to place virtual sites; for topologies without vsites it
+        // would be a no-op and still incur a full (discarded) energy evaluation.
+        if (topology_.hasVsites())
+        {
+            forceComp->compute(nullptr, pd, &topology_, &myx, forces, &energies);
+        }
         //! \todo, likely we should not change the coordinates here, just the charges
         qcalc->setX(myx);
     }

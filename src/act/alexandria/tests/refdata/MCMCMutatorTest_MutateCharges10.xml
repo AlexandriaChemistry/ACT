@@ -32,7 +32,7 @@
     <Real>13.092806174946618</Real>
   </Sequence>
   <Int64 Name="numberObjectiveFunctionCalls">13</Int64>
-  <Int64 Name="numEvaluations ForceComputer">112</Int64>
+  <Int64 Name="numEvaluations ForceComputer">0</Int64>
   <Int64 Name="numShellIterations ForceComputer">0</Int64>
   <Int64 Name="numShellConvergenceFailed ForceComputer">0</Int64>
   <Sequence Name="Random numbers">
