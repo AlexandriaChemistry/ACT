@@ -21,15 +21,15 @@
     <String>o3_z chi</String>
     <String>o3_z eta</String>
   </Sequence>
-  <Real Name="Fitness-after">487.47366542423936</Real>
+  <Real Name="Fitness-after">492.39311233023415</Real>
   <Sequence Name="Genome-after">
     <Int Name="Length">6</Int>
-    <Real>4.9685799702927103</Real>
-    <Real>11.841106202395805</Real>
+    <Real>4.8537421981867777</Real>
+    <Real>12.137260567543729</Real>
     <Real>3.249325186772253</Real>
-    <Real>9.7269493188799387</Real>
-    <Real>5.2026082623066037</Real>
-    <Real>12.439317474010302</Real>
+    <Real>9.7269493188799405</Real>
+    <Real>5.197793107280317</Real>
+    <Real>12.527413851500429</Real>
   </Sequence>
   <Int64 Name="numberObjectiveFunctionCalls">31</Int64>
   <Int64 Name="numEvaluations ForceComputer">256</Int64>

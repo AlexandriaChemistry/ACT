@@ -37,7 +37,7 @@
     <String>h_b~c3_b~o3_b~h_b kp</String>
     <String>h_b~c3_b~o3_b~h_b phi0</String>
   </Sequence>
-  <Real Name="Fitness-after">36592982.140515924</Real>
+  <Real Name="Fitness-after">36592982.840353601</Real>
   <Sequence Name="Genome-after">
     <Int Name="Length">14</Int>
     <Real>6.1975068717045376</Real>
@@ -52,7 +52,7 @@
     <Real>291.44460018900321</Real>
     <Real>7.722409638034005</Real>
     <Real>328.9500200590827</Real>
-    <Real>3.6145146772024677</Real>
+    <Real>3.6898330295004103</Real>
     <Real>360</Real>
   </Sequence>
   <Int64 Name="numberObjectiveFunctionCalls">141</Int64>
