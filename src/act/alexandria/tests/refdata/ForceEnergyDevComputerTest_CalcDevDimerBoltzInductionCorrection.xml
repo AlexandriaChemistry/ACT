@@ -1,0 +1,37 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Sequence Name="methanol#ethane-charge">
+    <Int Name="Length">18</Int>
+    <Real>1.3333333333333333</Real>
+    <Real>-4.5</Real>
+    <Real>1.3333333333333333</Real>
+    <Real>1.3333333333333333</Real>
+    <Real>-3.5</Real>
+    <Real>1.3333333333333333</Real>
+    <Real>1.3333333333333333</Real>
+    <Real>1.3333333333333333</Real>
+    <Real>0.875</Real>
+    <Real>-3.5</Real>
+    <Real>0.875</Real>
+    <Real>0.875</Real>
+    <Real>0.875</Real>
+    <Real>0.875</Real>
+    <Real>-3.5</Real>
+    <Real>0.875</Real>
+    <Real>0.875</Real>
+    <Real>0.875</Real>
+  </Sequence>
+  <Real Name="methanol#ethane-Interaction-weight">10.720082274065813</Real>
+  <Real Name="methanol#ethane-Interaction-chi2">200162.79134477352</Real>
+  <Real Name="methanol#ethane-Electrostatics-weight">10.720082274065813</Real>
+  <Real Name="methanol#ethane-Electrostatics-chi2">210335.59153525264</Real>
+  <Real Name="methanol#ethane-Exchange-weight">10.720082274065813</Real>
+  <Real Name="methanol#ethane-Exchange-chi2">360.5989688588499</Real>
+  <Real Name="methanol#ethane-Dispersion-weight">10.720082274065813</Real>
+  <Real Name="methanol#ethane-Dispersion-chi2">817.70584208021626</Real>
+  <Real Name="methanol#ethane-Induction-weight">10.720082274065813</Real>
+  <Real Name="methanol#ethane-Induction-chi2">2.3746408514709403</Real>
+  <Real Name="methanol#ethane-DeltaHF-weight">10.720082274065813</Real>
+  <Real Name="methanol#ethane-DeltaHF-chi2">0.0028513946988466066</Real>
+</ReferenceData>

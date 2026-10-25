@@ -33,7 +33,7 @@
     <String>h_b~c3_b~o3_b angle</String>
     <String>h_b~c3_b~o3_b kt</String>
   </Sequence>
-  <Real Name="Fitness-after">35380236.563943774</Real>
+  <Real Name="Fitness-after">35380238.54635676</Real>
   <Sequence Name="Genome-after">
     <Int Name="Length">12</Int>
     <Real>107.58111715237619</Real>
@@ -45,9 +45,9 @@
     <Real>119.22696654071673</Real>
     <Real>273.41444505513272</Real>
     <Real>107.25241646332219</Real>
-    <Real>299.3787481368222</Real>
+    <Real>299.55576047455116</Real>
     <Real>109.0702345511139</Real>
-    <Real>327.94571734558036</Real>
+    <Real>328.14374004935786</Real>
   </Sequence>
   <Int64 Name="numberObjectiveFunctionCalls">121</Int64>
   <Int64 Name="numEvaluations ForceComputer">1097</Int64>

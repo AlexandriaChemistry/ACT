@@ -33,11 +33,11 @@
     <String>h_b~o3_b bondlength</String>
     <String>h_b~o3_b kb</String>
   </Sequence>
-  <Real Name="Fitness-after">5705061.0609146496</Real>
+  <Real Name="Fitness-after">5705061.0609146534</Real>
   <Sequence Name="Genome-after">
     <Int Name="Length">12</Int>
     <Real>-318.89832649461448</Real>
-    <Real>132.67044875612578</Real>
+    <Real>132.67044875612575</Real>
     <Real>295474.85586395639</Real>
     <Real>-238.39753722665625</Real>
     <Real>100.68038950847067</Real>

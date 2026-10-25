@@ -51,6 +51,7 @@ protected:
     ForceEnergyDevComputerTest() = default;
 
     void testCalcDev(const std::string      &mpFile,
+                     const std::string      &ffFile,
                      std::map<eRMS, double>  boltzmann)
     {
         gmx::test::TestReferenceChecker checker_(this->rootChecker());
@@ -61,7 +62,7 @@ protected:
         // Use next statement for debugging only
         // msghandler.setPrintLevel(ACTStatus::Debug);
         //! FF
-        auto pd = getForceField("ACS-g2");
+        auto pd = getForceField(ffFile);
 
         //! Vector of molecule properties
         std::vector<alexandria::MolProp>  mps;
@@ -266,7 +267,7 @@ TEST_F(ForceEnergyDevComputerTest, CalcDevMonomerNoBoltz)
         boltzmann.insert({erms, 0.0});
     }
     std::string mpFile = fileManager().getInputFilePath("../../molprop/tests/molprop.xml");
-    testCalcDev(mpFile, boltzmann);
+    testCalcDev(mpFile, "ACS-g2", boltzmann);
 }
 
 // Test: CalcDeviation for dimer without Boltzmann weighting
@@ -281,7 +282,7 @@ TEST_F(ForceEnergyDevComputerTest, CalcDevDimerNoBoltz)
         boltzmann.insert({erms, 0.0});
     }
     std::string mpFile = fileManager().getInputFilePath("mpdimer.xml");
-    testCalcDev(mpFile, boltzmann);
+    testCalcDev(mpFile, "ACS-g2", boltzmann);
 }
 
 // Test: CalcDeviation for monomer with Boltzmann weighting
@@ -294,7 +295,7 @@ TEST_F(ForceEnergyDevComputerTest, CalcDevMonomerBoltz)
         boltzmann.insert({erms, 500.0});
     }
     std::string mpFile = fileManager().getInputFilePath("../../molprop/tests/molprop.xml");
-    testCalcDev(mpFile, boltzmann);
+    testCalcDev(mpFile, "ACS-g2", boltzmann);
 }
 
 // Test: CalcDeviation for dimer with Boltzmann weighting
@@ -309,7 +310,54 @@ TEST_F(ForceEnergyDevComputerTest, CalcDevDimerBoltz)
         boltzmann.insert({erms, 500.0});
     }
     std::string mpFile = fileManager().getInputFilePath("mpdimer.xml");
-    testCalcDev(mpFile, boltzmann);
+    testCalcDev(mpFile, "ACS-g2", boltzmann);
+}
+
+// Test: CalcDeviation for polarizable dimer with Boltzmann weighting
+TEST_F(ForceEnergyDevComputerTest, CalcDevDimerBoltzPol)
+{
+    std::map<eRMS, double> boltzmann;
+    for(const auto erms : { eRMS::Interaction,
+                            eRMS::Electrostatics, 
+                            eRMS::Dispersion,
+                            eRMS::Exchange })
+    {
+        boltzmann.insert({erms, 500.0});
+    }
+    std::string mpFile = fileManager().getInputFilePath("mpdimer.xml");
+    testCalcDev(mpFile, "ACS-pol", boltzmann);
+}
+
+// Test: CalcDeviation for polarizable dimer without Boltzmann weighting
+TEST_F(ForceEnergyDevComputerTest, CalcDevDimerNoBoltzPol)
+{
+    std::map<eRMS, double> boltzmann;
+    for(const auto erms : { eRMS::Interaction,
+                            eRMS::Electrostatics, 
+                            eRMS::Dispersion,
+                            eRMS::Exchange })
+    {
+        boltzmann.insert({erms, 0.0});
+    }
+    std::string mpFile = fileManager().getInputFilePath("mpdimer.xml");
+    testCalcDev(mpFile, "ACS-pol", boltzmann);
+}
+
+// Test: CalcDeviation for dimer with Induction Correction weighting
+TEST_F(ForceEnergyDevComputerTest, CalcDevDimerBoltzInductionCorrection)
+{
+    std::map<eRMS, double> boltzmann;
+    for(const auto erms : { eRMS::Interaction,
+                            eRMS::Electrostatics, 
+                            eRMS::Dispersion,
+                            eRMS::Exchange,
+                            eRMS::Induction,
+                            eRMS::DeltaHF } )
+    {
+        boltzmann.insert({erms, 500.0});
+    }
+    std::string mpFile = fileManager().getInputFilePath("methanol-ethane-deltaHF.xml");
+    testCalcDev(mpFile, "ACS-pol", boltzmann);
 }
 
 } // namespace alexandria
