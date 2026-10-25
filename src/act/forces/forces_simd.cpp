@@ -1910,7 +1910,8 @@ static inline void lowComputeEnergies(MsgHandler                *msghandler,
 
 void computeEnergies(MsgHandler          *msghandler,
                      const ForceField    *pd,
-                     std::vector<ACTMol> *allmols)
+                     std::vector<ACTMol> *allmols,
+                     size_t               what)
 {
     double epsilonr = 1;
     auto iCoul = InteractionType::ELECTROSTATICS;
@@ -1930,11 +1931,13 @@ void computeEnergies(MsgHandler          *msghandler,
         // Loop over topology entries, in principle the dimer should have everything
         // that the monomers have as well.
         //! \todo Check whether dimers and monomers have the same entries
-        lowComputeEnergies(msghandler, pd, &tops[0], mol.monomerCoords(0), epsilonr);
-        if (mol.isDimer())
+        if (what >= 2)
         {
-            lowComputeEnergies(msghandler, pd, &tops[1], mol.monomerCoords(1), epsilonr);
             lowComputeEnergies(msghandler, pd, mol.topology(), mol.dimerCoords(), epsilonr);
+        }
+        else
+        {
+            lowComputeEnergies(msghandler, pd, &tops[what], mol.monomerCoords(what), epsilonr);
         }
     }
 }
