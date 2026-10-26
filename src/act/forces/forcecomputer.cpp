@@ -517,7 +517,7 @@ static inline void calcInduction(ACTEnergyMap *eMap)
     double eInduction    = 0;
     double allElec       = 0;
     double exchInd       = 0;
-    for(auto et : *eMap)
+    for(auto &et : *eMap)
     {
         auto tt = elecTerms.find(et.first);
         if (elecTerms.end() != tt)
@@ -544,6 +544,89 @@ static inline void calcInduction(ACTEnergyMap *eMap)
     }
     addToMap(InteractionType::ALLELEC, eMap, allElec);
     addToMap(InteractionType::EXCHIND, eMap, exchInd);
+}
+
+/*! \brief Sum the ACT energy terms that change upon shell relaxation
+ * \param[in] eMap The energy map
+ * \return The sum of electrostatics, polarization and charge transfer
+ */
+static double sumElecTerms(const ACTEnergyMap &eMap)
+{
+    double esum = 0;
+    for(const auto itype : { InteractionType::ELECTROSTATICS,
+                             InteractionType::POLARIZATION,
+                             InteractionType::CHARGETRANSFER })
+    {
+        auto ee = eMap.find(itype);
+        if (eMap.end() != ee && ee->second.haveACT())
+        {
+            esum += ee->second.eact();
+        }
+    }
+    return esum;
+}
+
+/*! \brief Copy the relaxed monomer shell positions into the dimer
+ * \param[inout] allmols The molecules
+ */
+static void copyRelaxedMonomerShells(std::vector<ACTMol> *allmols)
+{
+    for(auto &mol : *allmols)
+    {
+        if (!mol.isDimer())
+        {
+            continue;
+        }
+        auto  fh     = mol.fragmentHandler();
+        auto &tops   = fh->topologies();
+        auto &astart = fh->atomStart();
+        auto &dimers = *mol.dimerCoords();
+        for(size_t im = 0; im < tops.size(); im++)
+        {
+            auto &atoms = tops[im].atoms();
+            auto &mons  = *mol.monomerCoords(im);
+            for(size_t i = 0; i < dimers.size(); i++)
+            {
+                for(size_t j = 0; j < atoms.size(); j++)
+                {
+                    if (atoms[j].pType() == ActParticle::Shell)
+                    {
+                        copy_rvec(mons[i].xrelax[j], dimers[i].x[astart[im]+j]);
+                    }
+                }
+            }
+        }
+    }
+}
+
+/*! \brief Clear the forces and then compute energies and forces
+ * The low-level routines add to the forces, so they have to be
+ * cleared before each new evaluation.
+ * \param[in]    msghandler For debugging and messages
+ * \param[in]    pd         The force field
+ * \param[inout] allmols    The molecules
+ * \param[in]    what       If 0, first monomer, if 1, second monomer, if 2 the dimer
+ */
+static void computeEnergiesFromScratch(MsgHandler          *msghandler,
+                                       const ForceField    *pd,
+                                       std::vector<ACTMol> *allmols,
+                                       size_t               what)
+{
+    gmx::RVec fzero = { 0, 0, 0 };
+    for(auto &mol : *allmols)
+    {
+        auto &tops = mol.fragmentHandler()->topologies();
+        if (tops.size() == 1 && what > 0)
+        {
+            continue;
+        }
+        auto coords = what >= 2 ? mol.dimerCoords() : mol.monomerCoords(what);
+        for(auto &ce : *coords)
+        {
+            std::fill(ce.fcalc.begin(), ce.fcalc.end(), fzero);
+        }
+    }
+    computeEnergies(msghandler, pd, allmols, what);
 }
 
 void ForceComputer::relaxMonomer(MsgHandler          *msghandler,
@@ -577,7 +660,7 @@ void ForceComputer::relaxMonomer(MsgHandler          *msghandler,
         }
         if (!allDone)
         {
-            computeEnergies(msghandler, pd, allmols, im);
+            computeEnergiesFromScratch(msghandler, pd, allmols, im);
         }
         iter++;
     }
@@ -607,8 +690,12 @@ void ForceComputer::relaxDimer(MsgHandler          *msghandler,
             {
                 if (!fixMonomer[im])
                 {
-                    // \todo this code should work on part of the dimercoords only,
-                    // namely that part that correspond to the monomer im
+                    // The done flag is per dimer conformation, but convergence
+                    // has to be checked for each monomer separately.
+                    for(auto &dim : *mol.dimerCoords())
+                    {
+                        dim.done = false;
+                    }
                     if (mol.monomerCoords(im)->size() !=
                         updateShells(&tops[im], fh->atomStart()[im],
                                      pols[im].nShell(), pols[im].isShell(),
@@ -623,7 +710,7 @@ void ForceComputer::relaxDimer(MsgHandler          *msghandler,
         if (!allDone)
         {
             // Not all done, recompute
-            computeEnergies(msghandler, pd, allmols, 2);
+            computeEnergiesFromScratch(msghandler, pd, allmols, 2);
         }
         iter++;
     }
@@ -676,9 +763,9 @@ void ForceComputer::computeRelaxedEnergies(MsgHandler          *msghandler,
         }
     }
     // Do first calculation every time.
-    computeEnergies(msghandler, pd, allmols, 0); // Monomer 0
-    computeEnergies(msghandler, pd, allmols, 1); // Monomer 1
-    computeEnergies(msghandler, pd, allmols, 2); // Complete topology
+    computeEnergiesFromScratch(msghandler, pd, allmols, 0); // Monomer 0
+    computeEnergiesFromScratch(msghandler, pd, allmols, 1); // Monomer 1
+    computeEnergiesFromScratch(msghandler, pd, allmols, 2); // Complete topology
 
     // Store the original (unrelaxed) energies so that we can extract the
     // induction later. Only terms that actually have an ACT energy are backed
@@ -737,31 +824,74 @@ void ForceComputer::computeRelaxedEnergies(MsgHandler          *msghandler,
             }
         }
     }
+    // Second order induction energy for each dimer conformation of each molecule
+    std::vector<std::vector<double>> eInduc2(allmols->size());
+    bool doInduc2 = pd->polarizable() && separateInductionCorrection;
     // From now on, only polarizable models relax the dimer further, but the
     // post-processing below runs in all cases.
     if (pd->polarizable())
     {
-        if (separateInductionCorrection)
+        if (doInduc2)
         {
-            // We have to compute second order induction first
-            // Relax monomer 0 in the presence of monomer 1
-            bool ft[2] = { false, true };
-            relaxDimer(msghandler, pd, ft, allmols);
-            // \todo Extract energy
-            // Reset coordinates for monomer 0 to the relaxed coordinates
-            for(auto &mol : *allmols)
+            // Store the original dimer coordinates, such that the final
+            // relaxation below does not depend on what we do here.
+            std::vector<std::vector<std::vector<gmx::RVec>>> xdimer(allmols->size());
+            for(size_t k = 0; k < allmols->size(); k++)
             {
-                for(auto &mon : *mol.monomerCoords(0))
+                auto &mol = (*allmols)[k];
+                if (mol.isDimer())
                 {
-                    // Copy coordinates
-                    mon.x = mon.xrelax;
+                    for(auto &dim : *mol.dimerCoords())
+                    {
+                        xdimer[k].push_back(dim.x);
+                    }
+                    eInduc2[k].resize(mol.dimerCoords()->size(), 0.0);
                 }
             }
-            // Now do the reverse
-            bool tf[2] = { true, false };
-            relaxDimer(msghandler, pd, tf, allmols);
-            // \todo Extract energy
-            // No need to reset coordinates
+            // We have to compute second order induction first, starting
+            // from the shells in the relaxed monomer positions.
+            copyRelaxedMonomerShells(allmols);
+            computeEnergiesFromScratch(msghandler, pd, allmols, 2);
+            // Reference energy without mutual induction
+            std::vector<std::vector<double>> eRef(allmols->size());
+            for(size_t k = 0; k < allmols->size(); k++)
+            {
+                for(auto &dim : *(*allmols)[k].dimerCoords())
+                {
+                    eRef[k].push_back(sumElecTerms(dim.eMap));
+                }
+            }
+            for(size_t im = 0; im < 2; im++)
+            {
+                if (im > 0)
+                {
+                    // Reset coordinates to the relaxed monomer shells
+                    copyRelaxedMonomerShells(allmols);
+                    computeEnergiesFromScratch(msghandler, pd, allmols, 2);
+                }
+                // Relax monomer im in the presence of the other monomer
+                bool fixMonomer[2] = { im != 0, im != 1 };
+                relaxDimer(msghandler, pd, fixMonomer, allmols);
+                // Extract energy
+                for(size_t k = 0; k < allmols->size(); k++)
+                {
+                    auto &dimers = *(*allmols)[k].dimerCoords();
+                    for(size_t i = 0; i < dimers.size(); i++)
+                    {
+                        eInduc2[k][i] += sumElecTerms(dimers[i].eMap) - eRef[k][i];
+                    }
+                }
+            }
+            // Restore the original dimer coordinates and energies
+            for(size_t k = 0; k < allmols->size(); k++)
+            {
+                auto &dimers = *(*allmols)[k].dimerCoords();
+                for(size_t i = 0; i < dimers.size(); i++)
+                {
+                    dimers[i].x = xdimer[k][i];
+                }
+            }
+            computeEnergiesFromScratch(msghandler, pd, allmols, 2);
         }
         // Final, total energy
         bool ff[2] = { false, false };
@@ -802,6 +932,24 @@ void ForceComputer::computeRelaxedEnergies(MsgHandler          *msghandler,
         for(auto &dim : *mol.dimerCoords())
         {
             calcInduction(&dim.eMap);
+        }
+        if (doInduc2)
+        {
+            // Split the total induction into second order induction and
+            // the remaining higher order induction correction.
+            size_t k = &mol - allmols->data();
+            for(size_t i = 0; i < dimers.size(); i++)
+            {
+                auto &eMap   = dimers[i].eMap;
+                auto  eit    = eMap.find(InteractionType::INDUCTION);
+                double eInd  = 0;
+                if (eMap.end() != eit && eit->second.haveACT())
+                {
+                    eInd = eit->second.eact();
+                }
+                addToMap(InteractionType::INDUCTION, &eMap, eInduc2[k][i]);
+                addToMap(InteractionType::INDUCTIONCORRECTION, &eMap, eInd - eInduc2[k][i]);
+            }
         }
         for(size_t i = 0; i < 2; i++)
         {
