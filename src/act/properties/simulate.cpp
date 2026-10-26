@@ -157,7 +157,17 @@ int simulate(int argc, char *argv[])
     forceComp.init(shellToler, sch.maxIter(), forceComp.maxShellDistance(), epsilonr);
 
     std::vector<ACTMol> actmols;
-    compR.read(&msghandler, pd, &forceComp, &actmols);
+    try
+    {
+        compR.read(&msghandler, pd, &forceComp, &actmols);
+    }
+    catch (const std::exception &ex)
+    {
+        // E.g. a file that does not exist
+        msghandler.msg(ACTStatus::Error,
+                       gmx::formatString("Could not read molecules: %s", ex.what()));
+        actmols.clear();
+    }
     if (actmols.empty())
     {
         fprintf(stderr, "Could not read or process molecules. Please check the log file for more information.\n");
@@ -334,7 +344,8 @@ int simulate(int argc, char *argv[])
         }
         if (eMinimizeStatus::OK == eMin && sch.nsteps() > 0)
         {
-            molhandler.simulate(&msghandler, &pd, &actmol, &forceComp, sch,
+            // Start from the minimized coordinates, if we minimized
+            molhandler.simulate(&msghandler, &pd, &actmol, xmin, &forceComp, sch,
                                 opt2fn("-o", fnm.size(),fnm.data()),
                                 opt2fn("-e", fnm.size(),fnm.data()),
                                 oenv);

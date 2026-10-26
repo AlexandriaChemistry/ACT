@@ -152,6 +152,7 @@ public:
      * \param[in] msghandler     MsgHandler
      * \param[in] pd             Pointer to force field structure
      * \param[in] mol            The molecule object (will be modified)
+     * \param[in] xmol           The starting coordinates
      * \param[in] forceComp      Force Computer utility
      * \param[in] simConfig      Simulation configuration handler
      * \param[in] trajectoryFile Filename for writing coordinates
@@ -161,6 +162,7 @@ public:
     void simulate(MsgHandler                    *msghandler,
                   const ForceField              *pd,
                   ACTMol                        *mol,
+                  const std::vector<gmx::RVec>  &xmol,
                   const ForceComputer           *forceComp,
                   const SimulationConfigHandler &simConfig,
                   const char                    *trajectoryFile,

@@ -1231,15 +1231,15 @@ static void printEnergies(FILE                                    *exvg,
 }
 
 //! \brief Make arrays the length of the number of atoms
-static void initArrays(const ACTMol           *mol,
-                       std::vector<gmx::RVec> *coordinates, 
-                       std::vector<gmx::RVec> *velocities, 
-                       std::vector<gmx::RVec> *forcesCur,
-                       std::vector<gmx::RVec> *forcesPrev,
-                       std::vector<double>    *inv2mass,
-                       std::vector<double>    *mass_2)
+static void initArrays(const ACTMol                 *mol,
+                       const std::vector<gmx::RVec> &xmol,
+                       std::vector<gmx::RVec>       *coordinates,
+                       std::vector<gmx::RVec>       *velocities,
+                       std::vector<gmx::RVec>       *forcesCur,
+                       std::vector<gmx::RVec>       *forcesPrev,
+                       std::vector<double>          *inv2mass,
+                       std::vector<double>          *mass_2)
 {
-    auto xmol = mol->xOriginal();
     coordinates->resize(xmol.size());
     velocities->resize(xmol.size());
     forcesPrev->resize(xmol.size());
@@ -1267,6 +1267,7 @@ static void initArrays(const ACTMol           *mol,
 void MolHandler::simulate(MsgHandler                    *msghandler,
                           const ForceField              *pd,
                           ACTMol                        *mol,
+                          const std::vector<gmx::RVec>  &xmol,
                           const ForceComputer           *forceComp,
                           const SimulationConfigHandler &simConfig,
                           const char                    *trajectoryFile,
@@ -1291,9 +1292,9 @@ void MolHandler::simulate(MsgHandler                    *msghandler,
 #define prev (1-cur)
 
     // Initiate coordinates, etc.
-    initArrays(mol, &coordinates, &velocities,
+    initArrays(mol, xmol, &coordinates, &velocities,
                &forces[cur], &forces[prev], &inv2mass, &mass_2);
-               
+
     // Generate velocities
     if (simConfig.temperature() > 0)
     {
@@ -1301,7 +1302,6 @@ void MolHandler::simulate(MsgHandler                    *msghandler,
                       mol->atomsConst(), &velocities, msghandler->tw());
         stop_cm(mol->atomsConst(), coordinates, &velocities);
     }
-    auto xmol    = mol->xOriginal();
     auto deltat  = simConfig.deltat();
     auto deltat2 = deltat*deltat;
     // For trajectory writing
@@ -1325,11 +1325,21 @@ void MolHandler::simulate(MsgHandler                    *msghandler,
     auto bondPotential = pd->findForcesConst(InteractionType::BONDS).potential();
     int nDOF           = DIM*mol->nRealAtoms();
     msghandler->write("\nWill start simulation.\n");
+    // Compute forces and energies for the starting coordinates
+    forceComp->compute(msghandler, pd, mol->topology(), &coordinates,
+                       &forces[prev], &energies);
     for (int step = 0; step < simConfig.nsteps(); step++)
     {
-        // Check whether we need to print stuff
-        bool   doPrintEner = simConfig.nstener() > 0 && step % simConfig.nstener() == 0;
-        double ekin        = 0;
+        // Print the energies at the current time, i.e. before integrating
+        if (simConfig.nstener() > 0 && step % simConfig.nstener() == 0)
+        {
+            double ekin = 0;
+            for(size_t i = 0; i < xmol.size(); i++)
+            {
+                ekin += mass_2[i]*rvecNormSquared(velocities[i]);
+            }
+            printEnergies(exvg, step, deltat, energies, ekin, nDOF, oenv);
+        }
         // Integrate positions using velocity Verlet
         for(size_t i = 0; i < xmol.size(); i++)
         {
@@ -1338,12 +1348,8 @@ void MolHandler::simulate(MsgHandler                    *msghandler,
                 double dt2m = deltat2*inv2mass[i];
                 for(int m = 0; m < DIM; m++)
                 {
-                    coordinates[i][m] += (deltat*velocities[i][m] + 
+                    coordinates[i][m] += (deltat*velocities[i][m] +
                                           dt2m*forces[prev][i][m]);
-                }
-                if (doPrintEner)
-                {
-                    ekin += mass_2[i]*rvecNormSquared(velocities[i]);
                 }
             }
         }
@@ -1356,11 +1362,6 @@ void MolHandler::simulate(MsgHandler                    *msghandler,
         // Compute forces and energies
         forceComp->compute(msghandler, pd, mol->topology(), &coordinates,
                            &forces[cur], &energies);
-        // Write energies if requested
-        if (doPrintEner)
-        {
-            printEnergies(exvg, step, deltat, energies, ekin, nDOF, oenv);
-        }
         // Integrate velocities using velocity Verlet
         for(size_t i = 0; i < xmol.size(); i++)
         {
