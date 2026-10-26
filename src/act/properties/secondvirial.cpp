@@ -369,33 +369,25 @@ void ReRunner::runB2(CommunicationRecord         *cr,
         nrest  = maxdimer % cr->size();
 
         // Make sure that different nodes have different random number generator seed.
-        // For each dimer, 2 x 3 = 6 random numbers are needed. That means, each node
-        // uses ndimer x 6. However (see below), if nrest != 0, the master will get that
-        // number. 
+        // For each dimer, 2 x 3 = 6 random numbers are needed. That means, each helper
+        // uses ndimer x 6. The master takes the first ndimer + nrest sets of random
+        // numbers, such that all maxdimer dimers are used.
         if (cr->isMaster())
         {
             gendimers_.generateRandomNumbers(maxdimer);
             auto allRand = gendimers_.allRandom();
-            int ioffset = 0;
-            if (nrest > 0)
-            {
-                ioffset = 1;
-            }
             for(int dst = 1; dst < cr->size(); dst++)
             {
                 cr->send(dst, ndimer);
-                int nn = nrest + (dst-ioffset)*ndimer;
+                int nn = nrest + dst*ndimer;
                 for(int j = 0; j < ndimer; j++)
                 {
                     cr->send(dst, allRand[nn + j]);
                 }
             }
-            if (nrest > 0)
-            {
-                ndimer = nrest;
-            }
+            msghandler->write(gmx::formatString("Will generate or read %d dimers on helpers and %d on master.", ndimer, ndimer + nrest));
+            ndimer += nrest;
             gendimers_.resetAllRandom(ndimer);
-            msghandler->write(gmx::formatString("Will generate or read %d dimers on helpers and %d on master.", ndimer, nrest));
         }
         else
         {
@@ -427,7 +419,10 @@ void ReRunner::runB2(CommunicationRecord         *cr,
     
     double xmin = 0;
     gmx::RVec rvnul = { 0, 0, 0 };
-    std::vector<gmx::RVec> inertia = { rvnul, rvnul };
+    // Moments of inertia, averaged over all dimers.
+    std::vector<gmx::RVec> inertia    = { rvnul, rvnul };
+    std::vector<gmx::RVec> inertiaSum = { rvnul, rvnul };
+    size_t                 nInertia   = 0;
     // First time around before generating
     gendimers_.prepare(msghandler, pd, actmol);
     // Collect all generated dimer coordinates for -ox output (only when requested)
@@ -568,9 +563,10 @@ void ReRunner::runB2(CommunicationRecord         *cr,
                     // Update total torque
                     rvec_inc(torqueRot[kk], ti);
                 }
-                rvec_inc(inertia[kk], inertia1);
+                rvec_inc(inertiaSum[kk], inertia1);
                 torqueMol[kk][idim] = torqueRot[kk];
             }
+            nInertia += 1;
             // Check consistency from the rotation algorithm.
             rvec dx;
             rvec_sub(com[0], com[1], dx);
@@ -612,13 +608,6 @@ void ReRunner::runB2(CommunicationRecord         *cr,
         if (msghandler->verbose())
         {
             msghandler->write("");
-        }
-        for(int kk = 0; kk < 2; kk++)
-        {
-            for(int m = 0; m < DIM; m++)
-            {
-                inertia[kk][m] /= edist.get_npoints();
-            }
         }
         // Now we have computed energies, forces and torques for one dimer.
         // Time to update the intermediate structure
@@ -664,6 +653,13 @@ void ReRunner::runB2(CommunicationRecord         *cr,
                                // Gray and Gubbins Eqn. 3.281
                                ipf0, ipf1, tau[0], tau[1]);
             }
+        }
+    }
+    for(int kk = 0; kk < 2 && nInertia > 0; kk++)
+    {
+        for(int m = 0; m < DIM; m++)
+        {
+            inertia[kk][m] = inertiaSum[kk][m]/nInertia;
         }
     }
     // Sum b2data over processors
