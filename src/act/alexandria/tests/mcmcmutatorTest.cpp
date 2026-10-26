@@ -86,36 +86,46 @@ protected:
                   const std::vector<std::string> &fitstrings,
                   std::vector<alexandria::eRMS>  &eRms)
     {
-        BayesConfigHandler        bch;
-        int                       seed           = 1993;
         int                       maxgenerations = 10;
         ChargeGenerationAlgorithm alg            = ChargeGenerationAlgorithm::EEM;
         int nmiddlemen = 1;
-        auto gth   = new GaTestHelper(nmiddlemen, fitstrings, eRms);
-        auto mymut = new MCMCMutator(seed, &bch, gth->fitnessComputer,
-                                     gth->sii, false, alg, maxgenerations);
-        bch.setMaxIter(maxiter);
-        checker_->checkInt64(bch.maxIter(), "MaxIter");
-        checker_->checkReal(before.fitness(iMolSelect::Train), "Fitness-before");
-        checker_->checkSequence(before.bases().begin(),
-                                before.bases().end(), "Genome-before");
-        checker_->checkSequence(gth->sii->paramNames().begin(),
-                                gth->sii->paramNames().end(), "Parameters");
-        ga::Genome after = before;
-        mymut->mutate(gth->msghandler, &before, &after, 0.0);
-        checker_->checkReal(after.fitness(iMolSelect::Train), "Fitness-after");
-        checker_->checkSequence(after.bases().begin(),
-                                after.bases().end(), "Genome-after");
-        checker_->checkInt64(mymut->numberObjectiveFunctionCalls(), "numberObjectiveFunctionCalls");
-        checker_->checkInt64(gth->forceComputer->numEvaluations(), "numEvaluations ForceComputer");
-        checker_->checkInt64(gth->forceComputer->numShellIterations(), "numShellIterations ForceComputer");
-        checker_->checkInt64(gth->forceComputer->numShellConvergenceFailed(), "numShellConvergenceFailed ForceComputer");
-        auto allRand = mymut->allRand();
-        checker_->checkSequence(allRand.begin(), allRand.end(), "Random numbers");
-        auto randInd = mymut->randIndices();
-        checker_->checkSequence(randInd.begin(), randInd.end(), "Random parameter indices");
-        delete mymut;
-        delete gth;
+        // The first seed is checked at the root level, the others in a compound
+        for(int seed : { 1993, 1997 })
+        {
+            gmx::test::TestReferenceChecker checker(*checker_);
+            if (seed != 1993)
+            {
+                checker = checker_->checkCompound("Seed", gmx::formatString("Seed%d", seed).c_str());
+            }
+            // Start from the same genome for each seed
+            ga::Genome         mybefore = before;
+            BayesConfigHandler bch;
+            auto gth   = new GaTestHelper(nmiddlemen, fitstrings, eRms);
+            auto mymut = new MCMCMutator(seed, &bch, gth->fitnessComputer,
+                                         gth->sii, false, alg, maxgenerations);
+            bch.setMaxIter(maxiter);
+            checker.checkInt64(bch.maxIter(), "MaxIter");
+            checker.checkReal(mybefore.fitness(iMolSelect::Train), "Fitness-before");
+            checker.checkSequence(mybefore.bases().begin(),
+                                  mybefore.bases().end(), "Genome-before");
+            checker.checkSequence(gth->sii->paramNames().begin(),
+                                  gth->sii->paramNames().end(), "Parameters");
+            ga::Genome after = mybefore;
+            mymut->mutate(gth->msghandler, &mybefore, &after, 0.0);
+            checker.checkReal(after.fitness(iMolSelect::Train), "Fitness-after");
+            checker.checkSequence(after.bases().begin(),
+                                  after.bases().end(), "Genome-after");
+            checker.checkInt64(mymut->numberObjectiveFunctionCalls(), "numberObjectiveFunctionCalls");
+            checker.checkInt64(gth->forceComputer->numEvaluations(), "numEvaluations ForceComputer");
+            checker.checkInt64(gth->forceComputer->numShellIterations(), "numShellIterations ForceComputer");
+            checker.checkInt64(gth->forceComputer->numShellConvergenceFailed(), "numShellConvergenceFailed ForceComputer");
+            auto allRand = mymut->allRand();
+            checker.checkSequence(allRand.begin(), allRand.end(), "Random numbers");
+            auto randInd = mymut->randIndices();
+            checker.checkSequence(randInd.begin(), randInd.end(), "Random parameter indices");
+            delete mymut;
+            delete gth;
+        }
    }
 };
 

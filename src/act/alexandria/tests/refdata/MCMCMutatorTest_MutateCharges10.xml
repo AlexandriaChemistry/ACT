@@ -83,4 +83,88 @@
     <Int>5</Int>
     <Int>0</Int>
   </Sequence>
+  <Seed Name="Seed1997">
+    <Int64 Name="MaxIter">2</Int64>
+    <Real Name="Fitness-before">10</Real>
+    <Sequence Name="Genome-before">
+      <Int Name="Length">6</Int>
+      <Real>4.5</Real>
+      <Real>12</Real>
+      <Real>3.2999999999999998</Real>
+      <Real>10</Real>
+      <Real>5</Real>
+      <Real>13</Real>
+    </Sequence>
+    <Sequence Name="Parameters">
+      <Int Name="Length">6</Int>
+      <String>c3_z chi</String>
+      <String>c3_z eta</String>
+      <String>h_z chi</String>
+      <String>h_z eta</String>
+      <String>o3_z chi</String>
+      <String>o3_z eta</String>
+    </Sequence>
+    <Real Name="Fitness-after">0.00049454100843560674</Real>
+    <Sequence Name="Genome-after">
+      <Int Name="Length">6</Int>
+      <Real>4.4257539519835083</Real>
+      <Real>12.439491978178205</Real>
+      <Real>3.2999999999999998</Real>
+      <Real>10</Real>
+      <Real>5.1366847595205858</Real>
+      <Real>13.326849667352965</Real>
+    </Sequence>
+    <Int64 Name="numberObjectiveFunctionCalls">13</Int64>
+    <Int64 Name="numEvaluations ForceComputer">112</Int64>
+    <Int64 Name="numShellIterations ForceComputer">0</Int64>
+    <Int64 Name="numShellConvergenceFailed ForceComputer">0</Int64>
+    <Sequence Name="Random numbers">
+      <Int Name="Length">30</Int>
+      <Real>0.66266716871670173</Real>
+      <Real>0.45007077233743786</Real>
+      <Real>0.50308221916815032</Real>
+      <Real>0.83491113222555435</Real>
+      <Real>0.98525235964735636</Real>
+      <Real>0.54042372304600073</Real>
+      <Real>0.75425188653430308</Real>
+      <Real>0.5456168331600405</Real>
+      <Real>0.6300683607504981</Real>
+      <Real>0.65457279649255329</Real>
+      <Real>0.85672390085534156</Real>
+      <Real>0.6613675952888467</Real>
+      <Real>0.28284077019727571</Real>
+      <Real>0.65007233578201185</Real>
+      <Real>0.67641746394027025</Real>
+      <Real>0.060823004128559233</Real>
+      <Real>0.12876975991754086</Real>
+      <Real>0.22028635921064987</Real>
+      <Real>0.26048373370763067</Real>
+      <Real>0.49019467958231494</Real>
+      <Real>0.26767731233591746</Real>
+      <Real>0.88818909447429173</Real>
+      <Real>0.22689035476172909</Real>
+      <Real>0.28099466290565334</Real>
+      <Real>0.73202175119090096</Real>
+      <Real>0.051862156929567201</Real>
+      <Real>0.66643301300781876</Real>
+      <Real>0.85674593167263047</Real>
+      <Real>0.9175205309379989</Real>
+      <Real>0.30733791638735913</Real>
+    </Sequence>
+    <Sequence Name="Random parameter indices">
+      <Int Name="Length">12</Int>
+      <Int>4</Int>
+      <Int>5</Int>
+      <Int>4</Int>
+      <Int>4</Int>
+      <Int>5</Int>
+      <Int>4</Int>
+      <Int>0</Int>
+      <Int>1</Int>
+      <Int>1</Int>
+      <Int>1</Int>
+      <Int>4</Int>
+      <Int>5</Int>
+    </Sequence>
+  </Seed>
 </ReferenceData>
