@@ -594,7 +594,7 @@ void ForceEnergyDevComputer::calcDeviation(MsgHandler                     *msgha
                     for (auto iter = rmsE.begin(); iter != rmsE.end(); ++iter)
                     {
                         auto dd = eMap.find(iter->itype);
-                        if (dd != eMap.end())
+                        if (dd != eMap.end() && dd->second.haveACT())
                         {
                             if (std::isfinite(dd->second.eact()))
                             {

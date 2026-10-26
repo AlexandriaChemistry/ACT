@@ -418,7 +418,18 @@ size_t ForceComputer::updateShells(const Topology            *top,
             continue;
         }
         // Mean square shell force
-        double msForce = dotProdRvec(isShell, *(&dim.fcalc + offset))/nShell;
+        double msForce = 0;
+        for(size_t i = 0; i < isShell.size(); i++)
+        {
+            if (isShell[i])
+            {
+                msForce += iprod(dim.fcalc[i+offset], dim.fcalc[i+offset]);
+            }
+        }
+        if (nShell > 0)
+        {
+            msForce /= nShell;
+        }
         if (msForce <= msForceToler_)
         {
             dim.done    = true;
@@ -436,16 +447,23 @@ size_t ForceComputer::updateShells(const Topology            *top,
                 // F = k dx -> dx = F / k
                 // Note that this only works for purely harmonic potentials,
                 // see function calc_fscale for quartic potentials.
-                int shell = p->atomIndex(1) - offset;
-                update_shell_positions(p->atomIndex(0), p->atomIndex(1),
+                // The atom indices stored in the fragment topology are local,
+                // whereas the coordinates/forces of the dimer are global, so
+                // we add the offset to map local -> global indices.
+                int shellLocal   = p->atomIndex(1);
+                int coreLocal    = p->atomIndex(0);
+                int shellGlobal  = shellLocal + static_cast<int>(offset);
+                int coreGlobal   = coreLocal + static_cast<int>(offset);
+                update_shell_positions(coreGlobal, shellGlobal,
                                        &dim.x, dim.fcalc,
-                                       fcShell1[shell], fcHyper[shell]);
+                                       fcShell1[shellLocal], fcHyper[shellLocal]);
                 // Check distance from parent, if there is only one
-                if (maxShellDistance2 > 0 && atoms[shell].parents().size() == 1)
+                if (maxShellDistance2 > 0 && atoms[shellLocal].parents().size() == 1)
                 {
-                    int core = atoms[shell].parents()[0];
+                    int coreParentLocal  = atoms[shellLocal].parents()[0];
+                    int coreParentGlobal = coreParentLocal + static_cast<int>(offset);
                     rvec dx;
-                    rvec_sub(dim.x[shell], dim.x[core], dx);
+                    rvec_sub(dim.x[shellGlobal], dim.x[coreParentGlobal], dx);
                     real dx2 = iprod(dx, dx);
                     if (dx2 > maxShellDistance2)
                     {
@@ -453,8 +471,8 @@ size_t ForceComputer::updateShells(const Topology            *top,
                         real scale = std::sqrt(maxShellDistance2/dx2);
                         for (int m = 0; m < DIM; m++)
                         {
-                            dim.x[shell][m] = dim.x[core][m] + scale*dx[m];
-                        } 
+                            dim.x[shellGlobal][m] = dim.x[coreParentGlobal][m] + scale*dx[m];
+                        }
                     }
                 }
             }
@@ -555,8 +573,11 @@ void ForceComputer::relaxMonomer(MsgHandler          *msghandler,
             {
                 allDone = false;
                 // Not all done, recompute
-                computeEnergies(msghandler, pd, allmols, im);
             }
+        }
+        if (!allDone)
+        {
+            computeEnergies(msghandler, pd, allmols, im);
         }
         iter++;
     }
@@ -588,18 +609,21 @@ void ForceComputer::relaxDimer(MsgHandler          *msghandler,
                 {
                     // \todo this code should work on part of the dimercoords only,
                     // namely that part that correspond to the monomer im
-                    allDone = (mol.monomerCoords(im)->size() !=
-                               updateShells(&tops[im], fh->atomStart()[im],
-                                            pols[im].nShell(), pols[im].isShell(),
-                                            pols[im].fcShell1(), pols[im].fcHyper(),
-                                            mol.dimerCoords()));
+                    if (mol.monomerCoords(im)->size() !=
+                        updateShells(&tops[im], fh->atomStart()[im],
+                                     pols[im].nShell(), pols[im].isShell(),
+                                     pols[im].fcShell1(), pols[im].fcHyper(),
+                                     mol.dimerCoords()))
+                    {
+                        allDone = false;
+                    }
                 }
             }
-            if (!allDone)
-            {
-                // Not all done, recompute
-                computeEnergies(msghandler, pd, allmols, 2);
-            }
+        }
+        if (!allDone)
+        {
+            // Not all done, recompute
+            computeEnergies(msghandler, pd, allmols, 2);
         }
         iter++;
     }
@@ -656,6 +680,41 @@ void ForceComputer::computeRelaxedEnergies(MsgHandler          *msghandler,
     computeEnergies(msghandler, pd, allmols, 1); // Monomer 1
     computeEnergies(msghandler, pd, allmols, 2); // Complete topology
 
+    // Store the original (unrelaxed) energies so that we can extract the
+    // induction later. Only terms that actually have an ACT energy are backed
+    // up, otherwise we would throw when reading their (absent) ACT energy.
+    for(auto &mol : *allmols)
+    {
+        if (mol.isDimer())
+        {
+            for(auto &dim : *mol.dimerCoords())
+            {
+                for(auto &em : dim.eMap)
+                {
+                    if (em.second.haveACT())
+                    {
+                        em.second.backup();
+                    }
+                }
+            }
+        }
+        // Shortcuts...
+        auto &tops  = mol.fragmentHandler()->topologies();
+        for(size_t index = 0; index < tops.size(); index++)
+        {
+            for(auto &mon : *mol.monomerCoords(index))
+            {
+                // Backup the energy terms in an independent copy.
+                for(auto &em : mon.eMap)
+                {
+                    if (em.second.haveACT())
+                    {
+                        em.second.backup();
+                    }
+                }
+            }
+        }
+    }
     // Now let's have a look whether we are polarizable
     if (pd->polarizable())
     {
@@ -663,92 +722,51 @@ void ForceComputer::computeRelaxedEnergies(MsgHandler          *msghandler,
         {
             relaxMonomer(msghandler, pd, im, allmols);
         }
-    }
-    // Now we have the initial "relaxed" monomers and we can compute the total
-    // electrostatic interaction energy and other terms. Only Induction and/or
-    // InductionCorrection will change down the line (and combined terms such as
-    // AllElec or ExchInd), if we are polarisable.
-    // Store original energies
-    for(auto &mol : *allmols)
-    {
-        if (mol.isDimer())
-        {
-            for(size_t idim = 0; idim < mol.dimerCoords()->size(); idim++)
-            {
-                auto &eMap = (*mol.dimerCoords())[idim].eMap;
-                for(auto &e : eMap)
-                {
-                    double edim = e.second.eact();
-                    for(size_t j = 0; j < 2; j++)
-                    {
-                        auto mm = (*mol.monomerCoords(j))[j].eMap.find(e.first);
-                        if (mm != (*mol.monomerCoords(j))[j].eMap.end())
-                        {
-                            edim -= mm->second.eact();
-                        }
-                    }
-                    eMap[e.first].setACT(edim);
-                    eMap[e.first].backup();
-                }
-            }
-        }
-    }
-    // If we are not polarizable, we are done
-    if (!pd->polarizable())
-    {
-        // Done!
-        return;
-    }
-    // Backup coordinates for monomers
-    for(auto &mol : *allmols)
-    {
-        // Shortcuts...
-        auto &tops  = mol.fragmentHandler()->topologies();
-        for(size_t index = 0; index < tops.size(); index++)
-        {
-            for(auto &mon : *mol.monomerCoords(index))
-            {
-                // Store energy terms in an independent copy.
-                for(auto &em : mon.eMap)
-                {
-                    em.second.backup();
-                }
-                // Copy coordinates
-                mon.xrelax = mon.x;
-            }
-        }
-    }
-    // From now on, only polarizable models, no more ifs needed.
-    if (separateInductionCorrection)
-    {
-        // We have to compute second order induction first
-        // Relax monomer 0 in the presence of monomer 1
-        bool ft[2] = { false, true };
-        relaxDimer(msghandler, pd, ft, allmols);
-        // \todo Extract energy
-        // Reset coordinates for monomer 0 to the relaxed coordinates
+        // Backup the now-relaxed monomer coordinates so that we can return to
+        // them later when computing the second order induction.
         for(auto &mol : *allmols)
         {
-            for(auto &mon : *mol.monomerCoords(0))
+            // Shortcuts...
+            auto &tops  = mol.fragmentHandler()->topologies();
+            for(size_t index = 0; index < tops.size(); index++)
             {
-                // Store energy terms in an independent copy.
-                for(auto &em : mon.eMap)
+                for(auto &mon : *mol.monomerCoords(index))
                 {
-                    em.second.backup();
+                    mon.xrelax = mon.x;
                 }
-                // Copy coordinates
-                mon.x = mon.xrelax;
             }
         }
-        // Now do the reverse
-        bool tf[2] = { true, false };
-        relaxDimer(msghandler, pd, tf, allmols);
-        // \todo Extract energy
-        // No need to reset coordinates
     }
-    // Final, total energy
-    bool ff[2] = { false, false };
-    relaxDimer(msghandler, pd, ff, allmols);
+    // From now on, only polarizable models relax the dimer further, but the
+    // post-processing below runs in all cases.
+    if (pd->polarizable())
+    {
+        if (separateInductionCorrection)
+        {
+            // We have to compute second order induction first
+            // Relax monomer 0 in the presence of monomer 1
+            bool ft[2] = { false, true };
+            relaxDimer(msghandler, pd, ft, allmols);
+            // \todo Extract energy
+            // Reset coordinates for monomer 0 to the relaxed coordinates
+            for(auto &mol : *allmols)
+            {
+                for(auto &mon : *mol.monomerCoords(0))
+                {
+                    // Copy coordinates
+                    mon.x = mon.xrelax;
+                }
+            }
+            // Now do the reverse
+            bool tf[2] = { true, false };
+            relaxDimer(msghandler, pd, tf, allmols);
+            // \todo Extract energy
+            // No need to reset coordinates
+        }
+        // Final, total energy
+        bool ff[2] = { false, false };
+        relaxDimer(msghandler, pd, ff, allmols);
+    }
     
     // Now post-process the energies to extract induction and allelec
     for(auto &mol : *allmols)

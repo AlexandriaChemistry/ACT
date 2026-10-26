@@ -1931,6 +1931,10 @@ void computeEnergies(MsgHandler          *msghandler,
         // Loop over topology entries, in principle the dimer should have everything
         // that the monomers have as well.
         //! \todo Check whether dimers and monomers have the same entries
+        if (tops.size() == 1 && what > 0)
+        {
+            continue;
+        }
         if (what >= 2)
         {
             lowComputeEnergies(msghandler, pd, mol.topology(), mol.dimerCoords(), epsilonr);
