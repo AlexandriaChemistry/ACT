@@ -492,8 +492,10 @@ static inline void addToMap(InteractionType  itype,
     }
     else
     {
+        // Only an ACT value, there is no QM reference for this term
         std::string dataFile;
-        ACTEnergy ae(0, dataFile, 0, value);
+        ACTEnergy ae(0, dataFile);
+        ae.setACT(value);
         eMap->insert({itype, ae});
     }
 }
@@ -507,11 +509,6 @@ static inline void calcInduction(ACTEnergyMap *eMap)
         InteractionType::POLARIZATION,
         InteractionType::CHARGETRANSFER
     };
-    std::set<InteractionType> exchIndTerms = {
-        InteractionType::EXCHANGE, InteractionType::INDUCTION,
-        InteractionType::INDUCTIONCORRECTION
-    };
-
     // Induction energy
     bool   haveInduction = false;
     double eInduction    = 0;
@@ -531,16 +528,28 @@ static inline void calcInduction(ACTEnergyMap *eMap)
             // Copy new value
             allElec += et.second.eact();
         }
-        auto ex = exchIndTerms.find(et.first);
-        if (exchIndTerms.end() != ex && et.second.haveACT())
+        if (InteractionType::EXCHANGE == et.first && et.second.haveACT())
         {
             exchInd += et.second.eact();
         }
     }
     if (haveInduction)
     {
+        // This is the total induction including the induction correction,
+        // which may be split off later. The induction and induction
+        // correction in the map are not up to date yet.
         addToMap(InteractionType::INDUCTION, eMap, eInduction);
         allElec += eInduction;
+        exchInd += eInduction;
+    }
+    else
+    {
+        // Induction from a potential function rather than from shells
+        auto ei = eMap->find(InteractionType::INDUCTION);
+        if (eMap->end() != ei && ei->second.haveACT())
+        {
+            exchInd += ei->second.eact();
+        }
     }
     addToMap(InteractionType::ALLELEC, eMap, allElec);
     addToMap(InteractionType::EXCHIND, eMap, exchInd);

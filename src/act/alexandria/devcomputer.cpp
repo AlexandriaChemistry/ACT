@@ -480,9 +480,67 @@ static inline void calc_force_loss(const std::vector<CoordsEnergy> *coords,
             losses[ix]  = lss;
         }
     }
-    // Gather results
-    *weight = std::accumulate(weights.begin(), weights.end(), 0);
-    *loss2  = std::accumulate(losses.begin(), losses.end(), 0);
+    // Gather results, the initial value must be a double to prevent rounding
+    *weight = std::accumulate(weights.begin(), weights.end(), 0.0);
+    *loss2  = std::accumulate(losses.begin(), losses.end(), 0.0);
+}
+
+/*! \brief Find the QM reference energy for an interaction energy term
+ * Some terms combine several QM observables. The induction correction
+ * may be missing if it is not treated separately, in which case it is also
+ * added to the induction.
+ * \param[in]  eMap         The energies
+ * \param[in]  itype        The term
+ * \param[in]  sepIndCorr   Whether the induction correction is separate
+ * \param[out] eqm          The QM reference
+ * \return whether there is a QM reference
+ */
+static bool qmReference(const ACTEnergyMap &eMap,
+                        InteractionType     itype,
+                        bool                sepIndCorr,
+                        double             *eqm)
+{
+    auto itICorr = InteractionType::INDUCTIONCORRECTION;
+    std::vector<InteractionType> terms;
+    switch (itype)
+    {
+    case InteractionType::ALLELEC:
+        terms = { InteractionType::ELECTROSTATICS, InteractionType::INDUCTION, itICorr };
+        break;
+    case InteractionType::EXCHIND:
+        terms = { InteractionType::EXCHANGE, InteractionType::INDUCTION, itICorr };
+        break;
+    case InteractionType::INDUCTION:
+        if (sepIndCorr)
+        {
+            terms = { itype };
+        }
+        else
+        {
+            // The ACT induction includes the induction correction
+            terms = { itype, itICorr };
+        }
+        break;
+    default:
+        terms = { itype };
+    }
+    *eqm         = 0;
+    size_t found = 0;
+    for(auto t : terms)
+    {
+        auto ee = eMap.find(t);
+        if (eMap.end() != ee && ee->second.haveQM())
+        {
+            *eqm  += ee->second.eqm();
+            found += 1;
+        }
+        else if (t == itICorr && !sepIndCorr && terms.size() > 1)
+        {
+            // Allowed to be missing
+            found += 1;
+        }
+    }
+    return found == terms.size();
 }
 
 void ForceEnergyDevComputer::calcDeviation(MsgHandler                     *msghandler,
@@ -531,16 +589,9 @@ void ForceEnergyDevComputer::calcDeviation(MsgHandler                     *msgha
             iter = tmp;
         }
     }
-    // Check whether we should sum the induction terms
-    bool sepInductionTerms = false;
-    if (doInter)
-    {
-        auto tdhf = targets->find(eRMS::DeltaHF);
-        if (tdhf != targets->end() && tdhf->second.weight() != 0)
-        {
-            sepInductionTerms = true;
-        }
-    }
+    // Whether to treat the induction correction separately is set by the
+    // caller, see ACMFitnessComputer::fillDevComputers.
+    bool sepInductionTerms = separateInductionCorrection_;
     if (doForce2 || doEpot || doInter)
     {
         // Compute all energies and forces at once
@@ -593,12 +644,14 @@ void ForceEnergyDevComputer::calcDeviation(MsgHandler                     *msgha
                     }
                     for (auto iter = rmsE.begin(); iter != rmsE.end(); ++iter)
                     {
-                        auto dd = eMap.find(iter->itype);
-                        if (dd != eMap.end() && dd->second.haveACT())
+                        auto   dd  = eMap.find(iter->itype);
+                        double eqm = 0;
+                        if (dd != eMap.end() && dd->second.haveACT() &&
+                            qmReference(eMap, iter->itype, sepInductionTerms, &eqm))
                         {
                             if (std::isfinite(dd->second.eact()))
                             {
-                                iter->loss   += w * loss(lossFunction, 1, dd->second.eqm() - dd->second.eact());
+                                iter->loss   += w * loss(lossFunction, 1, eqm - dd->second.eact());
                                 iter->weight += w;
                             }
                         }
