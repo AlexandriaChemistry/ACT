@@ -29,6 +29,7 @@
 #include <gtest/gtest.h>
 #include <cmath>
 #include <map>
+#include <numeric>
 #include <set>
 #include <string>
 #include <vector>
@@ -61,6 +62,8 @@ struct DevOptions
     LossFunction           lossFunction                = LossFunction::MSE;
     //! Whether to split off induction correction from induction
     bool                   separateInductionCorrection = true;
+    //! Relative tolerance for comparing to reference data
+    double                 tolerance                   = 1e-7;
 };
 
 //! \return key for the DevResults map
@@ -151,7 +154,7 @@ protected:
                      const DevOptions  &opts)
     {
         gmx::test::TestReferenceChecker checker_(this->rootChecker());
-        auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, 1e-7);
+        auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, opts.tolerance);
         checker_.setDefaultTolerance(tolerance);
         computeDev(mpFile, ffFile, opts, &checker_);
     }
@@ -674,6 +677,10 @@ TEST_F(ForceEnergyDevComputerTest, CalcDevDimerExchIndAllElecPolNotSeparated)
     DevOptions opts;
     opts.weights                     = unitWeights({ eRMS::Interaction, eRMS::ExchInd, eRMS::AllElec });
     opts.separateInductionCorrection = false;
+    // ACS-pol has no exchange for these dimers, so ExchInd is just the induction,
+    // which is about 1e-6 kJ/mol here and therefore depends on the convergence
+    // of the shell positions.
+    opts.tolerance                   = 1e-6;
     testCalcDev(dimerFile(), "ACS-pol", opts);
 }
 
@@ -941,21 +948,37 @@ protected:
         }
         BoundsDevComputer   computer(nullptr);
         EXPECT_EQ("Bounds", computer.name());
-        std::vector<double> chi2;
-        for(auto &mol : mols)
+        auto newTargets = []()
         {
             std::map<eRMS, FittingTarget> targets;
             targets.insert({eRMS::BOUNDS, FittingTarget(eRMS::BOUNDS, iMolSelect::Train)});
             targets.find(eRMS::BOUNDS)->second.setWeight(1);
-            std::vector<gmx::RVec> coords = mol.xOriginal();
-            computer.calcDeviation(&msghandler, &forceComputer, &mol, &coords,
+            return targets;
+        };
+        // One molecule at a time
+        std::vector<double> chi2;
+        for(auto &mol : mols)
+        {
+            std::vector<ACTMol> one;
+            one.push_back(std::move(mol));
+            auto targets = newTargets();
+            computer.calcDeviation(&msghandler, &forceComputer, &one,
                                    &targets, &pdBounds, LossFunction::MSE);
+            mol = std::move(one[0]);
             auto &t = targets.find(eRMS::BOUNDS)->second;
             EXPECT_EQ(1, t.totalWeight());
             checker_.checkDouble(t.chiSquared(),
                                  gmx::formatString("%s-Bounds-chi2", mol.getMolname().c_str()).c_str());
             chi2.push_back(t.chiSquared());
         }
+        // All molecules at once give the sum
+        auto targets = newTargets();
+        computer.calcDeviation(&msghandler, &forceComputer, &mols,
+                               &targets, &pdBounds, LossFunction::MSE);
+        auto &t = targets.find(eRMS::BOUNDS)->second;
+        EXPECT_EQ(mols.size(), t.totalWeight());
+        double sum = std::accumulate(chi2.begin(), chi2.end(), 0.0);
+        EXPECT_NEAR(sum, t.chiSquared(), 1e-10*(std::abs(sum) + 1));
         return chi2;
     }
 
@@ -971,12 +994,16 @@ protected:
         auto          mols = prepareMolecules(&msghandler, pd, &forceComputer);
         MultiPoleDevComputer computer(mpo);
         EXPECT_EQ(mpo_name(mpo), computer.name());
-        for(auto &mol : mols)
+        auto newTargets = [erms]()
         {
             std::map<eRMS, FittingTarget> targets;
             targets.insert({erms, FittingTarget(erms, iMolSelect::Train)});
             targets.find(erms)->second.setWeight(1);
-            // Compute the moments first, as ACMFitnessComputer::computeMultipoles does
+            return targets;
+        };
+        // Compute the moments first, as ACMFitnessComputer::computeMultipoles does
+        for(auto &mol : mols)
+        {
             auto qProps = mol.qProps();
             for(auto qp = qProps->begin(); qp < qProps->end(); ++qp)
             {
@@ -984,9 +1011,17 @@ protected:
                 qcalc->setQ(mol.atomsConst());
                 qcalc->calcMoments();
             }
-            std::vector<gmx::RVec> coords = mol.xOriginal();
-            computer.calcDeviation(&msghandler, &forceComputer, &mol, &coords,
+        }
+        // One molecule at a time
+        double weightSum = 0, chi2Sum = 0;
+        for(auto &mol : mols)
+        {
+            std::vector<ACTMol> one;
+            one.push_back(std::move(mol));
+            auto targets = newTargets();
+            computer.calcDeviation(&msghandler, &forceComputer, &one,
                                    &targets, pd, LossFunction::MSE);
+            mol = std::move(one[0]);
             auto &t = targets.find(erms)->second;
             EXPECT_GT(t.totalWeight(), 0) << mol.getMolname();
             EXPECT_TRUE(std::isfinite(t.chiSquared())) << mol.getMolname();
@@ -994,7 +1029,16 @@ protected:
                                  gmx::formatString("%s-%s-weight", mol.getMolname().c_str(), rmsName(erms)).c_str());
             checker_.checkDouble(t.chiSquared(),
                                  gmx::formatString("%s-%s-chi2", mol.getMolname().c_str(), rmsName(erms)).c_str());
+            weightSum += t.totalWeight();
+            chi2Sum   += t.chiSquared();
         }
+        // All molecules at once give the sum
+        auto targets = newTargets();
+        computer.calcDeviation(&msghandler, &forceComputer, &mols,
+                               &targets, pd, LossFunction::MSE);
+        auto &t = targets.find(erms)->second;
+        EXPECT_DOUBLE_EQ(weightSum, t.totalWeight());
+        EXPECT_NEAR(chi2Sum, t.chiSquared(), 1e-10*(chi2Sum + 1));
     }
 };
 
@@ -1006,18 +1050,15 @@ TEST_F(PropertyDevComputerTest, BoundsNoTarget)
     auto          pd   = getForceField("ACS-g2");
     auto          mols = prepareMolecules(&msghandler, pd, &forceComputer);
     BoundsDevComputer computer(nullptr);
-    for(auto &mol : mols)
-    {
-        std::map<eRMS, FittingTarget> targets;
-        targets.insert({eRMS::EPOT, FittingTarget(eRMS::EPOT, iMolSelect::Train)});
-        targets.find(eRMS::EPOT)->second.setWeight(1);
-        std::vector<gmx::RVec> coords = mol.xOriginal();
-        computer.calcDeviation(&msghandler, &forceComputer, &mol, &coords,
-                               &targets, pd, LossFunction::MSE);
-        EXPECT_EQ(1u, targets.size());
-        EXPECT_EQ(0, targets.find(eRMS::EPOT)->second.totalWeight());
-        EXPECT_EQ(0, targets.find(eRMS::EPOT)->second.chiSquared());
-    }
+
+    std::map<eRMS, FittingTarget> targets;
+    targets.insert({eRMS::EPOT, FittingTarget(eRMS::EPOT, iMolSelect::Train)});
+    targets.find(eRMS::EPOT)->second.setWeight(1);
+    computer.calcDeviation(&msghandler, &forceComputer, &mols,
+                           &targets, pd, LossFunction::MSE);
+    EXPECT_EQ(1u, targets.size());
+    EXPECT_EQ(0, targets.find(eRMS::EPOT)->second.totalWeight());
+    EXPECT_EQ(0, targets.find(eRMS::EPOT)->second.chiSquared());
 }
 
 // Test: ACM charges without a range (minimum == maximum) are not checked
@@ -1125,7 +1166,7 @@ TEST_F(PropertyDevComputerTest, MultipoleUnsupportedThrows)
     std::map<eRMS, FittingTarget> targets;
     targets.insert({eRMS::Polar, FittingTarget(eRMS::Polar, iMolSelect::Train)});
     std::vector<gmx::RVec> coords = mols[0].xOriginal();
-    EXPECT_THROW(computer.calcDeviation(&msghandler, &forceComputer, &mols[0], &coords,
+    EXPECT_THROW(computer.calcDeviation(&msghandler, &forceComputer, &mols,
                                         &targets, pd, LossFunction::MSE),
                  gmx::InvalidInputError);
 }
