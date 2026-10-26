@@ -340,6 +340,15 @@ void ACTMol::forceEnergyMaps(MsgHandler                                         
                                                MolPropObservable::INDUCTION,
                                                MolPropObservable::INDUCTIONCORRECTION } }
             };
+            if (!separateInductionCorrection)
+            {
+                // The induction correction is summed into the ACT induction
+                // (see calculateInteractionEnergy), so the QM reference
+                // should include it as well.
+                combined.insert({ InteractionType::INDUCTION,
+                                  { MolPropObservable::INDUCTION,
+                                    MolPropObservable::INDUCTIONCORRECTION } });
+            }
             std::vector<gmx::RVec> interactionForces(myatoms.size(), fzero);
             std::vector<gmx::RVec> mycoords(myatoms.size(), fzero);
             

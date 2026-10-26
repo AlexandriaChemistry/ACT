@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Real Name="1-butanol-HEXADEC-weight">2</Real>
+  <Real Name="1-butanol-HEXADEC-chi2">0.00054103328757443519</Real>
+  <Real Name="acetone-HEXADEC-weight">1</Real>
+  <Real Name="acetone-HEXADEC-chi2">3.96358540254394e-05</Real>
+  <Real Name="water-HEXADEC-weight">2</Real>
+  <Real Name="water-HEXADEC-chi2">1.5719535427289748e-07</Real>
+</ReferenceData>
