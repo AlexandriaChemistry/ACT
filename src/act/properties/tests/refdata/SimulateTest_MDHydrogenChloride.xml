@@ -1,0 +1,118 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Sequence Name="Legends">
+    <Int Name="Length">7</Int>
+    <String>BONDS</String>
+    <String>ALLELEC</String>
+    <String>EXCHIND</String>
+    <String>EPOT</String>
+    <String>EKIN</String>
+    <String>ETOT</String>
+    <String>TEMPERATURE</String>
+  </Sequence>
+  <Sequence Name="Time">
+    <Int Name="Length">10</Int>
+    <Real>0</Real>
+    <Real>0.002</Real>
+    <Real>0.0040000000000000001</Real>
+    <Real>0.0060000000000000001</Real>
+    <Real>0.0080000000000000002</Real>
+    <Real>0.01</Real>
+    <Real>0.012</Real>
+    <Real>0.014</Real>
+    <Real>0.016</Real>
+    <Real>0.017999999999999999</Real>
+  </Sequence>
+  <Sequence Name="BONDS">
+    <Int Name="Length">10</Int>
+    <Real>0.0014499999999999999</Real>
+    <Real>0.44592999999999999</Real>
+    <Real>0.43053000000000002</Real>
+    <Real>0.0036600000000000001</Real>
+    <Real>0.51229000000000002</Real>
+    <Real>0.37079000000000001</Real>
+    <Real>0.021239999999999998</Real>
+    <Real>0.54944999999999999</Real>
+    <Real>0.29241</Real>
+    <Real>0.05824</Real>
+  </Sequence>
+  <Sequence Name="ALLELEC">
+    <Int Name="Length">10</Int>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+  </Sequence>
+  <Sequence Name="EXCHIND">
+    <Int Name="Length">10</Int>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+  </Sequence>
+  <Sequence Name="EPOT">
+    <Int Name="Length">10</Int>
+    <Real>0.0014499999999999999</Real>
+    <Real>0.44592999999999999</Real>
+    <Real>0.43053000000000002</Real>
+    <Real>0.0036600000000000001</Real>
+    <Real>0.51229000000000002</Real>
+    <Real>0.37079000000000001</Real>
+    <Real>0.021239999999999998</Real>
+    <Real>0.54944999999999999</Real>
+    <Real>0.29241</Real>
+    <Real>0.05824</Real>
+  </Sequence>
+  <Sequence Name="EKIN">
+    <Int Name="Length">10</Int>
+    <Real>0.75199000000000005</Real>
+    <Real>0.30882999999999999</Real>
+    <Real>0.32418999999999998</Real>
+    <Real>0.74978999999999996</Real>
+    <Real>0.24263999999999999</Real>
+    <Real>0.38373000000000002</Real>
+    <Real>0.73226000000000002</Real>
+    <Real>0.20563000000000001</Real>
+    <Real>0.46189999999999998</Real>
+    <Real>0.69535999999999998</Real>
+  </Sequence>
+  <Sequence Name="ETOT">
+    <Int Name="Length">10</Int>
+    <Real>0.75344</Real>
+    <Real>0.75475999999999999</Real>
+    <Real>0.75471999999999995</Real>
+    <Real>0.75344999999999995</Real>
+    <Real>0.75492999999999999</Real>
+    <Real>0.75451999999999997</Real>
+    <Real>0.75349999999999995</Real>
+    <Real>0.75507000000000002</Real>
+    <Real>0.75431000000000004</Real>
+    <Real>0.75360000000000005</Real>
+  </Sequence>
+  <Sequence Name="TEMPERATURE">
+    <Int Name="Length">10</Int>
+    <Real>10.049340000000001</Real>
+    <Real>4.1271100000000001</Real>
+    <Real>4.3323400000000003</Real>
+    <Real>10.01986</Real>
+    <Real>3.2425799999999998</Real>
+    <Real>5.1279500000000002</Real>
+    <Real>9.7856100000000001</Real>
+    <Real>2.7478899999999999</Real>
+    <Real>6.1726099999999997</Real>
+    <Real>9.2925400000000007</Real>
+  </Sequence>
+</ReferenceData>
