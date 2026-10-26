@@ -142,7 +142,17 @@ int nma(int argc, char *argv[])
     }
 
     std::vector<ACTMol> actmols;
-    compR.read(&msghandler, pd, &forceComp, &actmols);
+    try
+    {
+        compR.read(&msghandler, pd, &forceComp, &actmols);
+    }
+    catch (const std::exception &ex)
+    {
+        // E.g. a file that does not exist
+        msghandler.msg(ACTStatus::Error,
+                       gmx::formatString("Could not read molecules: %s", ex.what()));
+        actmols.clear();
+    }
     if (actmols.empty())
     {
         return 1;
@@ -181,19 +191,14 @@ int nma(int argc, char *argv[])
             auto confout = opt2fn_null("-c", fnm.size(),fnm.data());
             if (confout)
             {
-                matrix box;
-                clear_mat(box);
-                //! \todo This will crash
-                write_sto_conf(confout, actmol.getMolname().c_str(),
-                               nullptr,
-                               as_rvec_array(xmin.data()), nullptr,
-                               epbcNONE, box);
+                matrix box = { { 2, 0, 0 }, { 0, 2, 0 }, { 0, 0, 2 } };
+                actmol.PrintConformation(confout, xmin, false, box);
             }
         }
     }
     else
     {
-        fprintf(stderr, "Running NMA with prior minimization, check your output!\n");
+        fprintf(stderr, "Running NMA without prior minimization, check your output!\n");
     }
     if (eMinimizeStatus::OK == eMin)
     {

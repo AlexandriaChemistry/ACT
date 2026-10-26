@@ -74,6 +74,8 @@ class AllmolsTest : public gmx::test::CommandLineTestBase
             checker_.checkInteger(amol->csid, "ChemSpiderID");
             checker_.checkInteger(amol->pubid, "PubChemID");
             checker_.checkString(amol->inchikey, "InChiKey");
+            checker_.checkString(amol->pointGroup, "PointGroup");
+            checker_.checkInteger(amol->symmetryNumber, "SymmetryNumber");
         }
     }
 

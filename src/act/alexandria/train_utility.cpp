@@ -726,6 +726,7 @@ static void addThermo(MsgHandler                *msghandler,
     JsonTree jtcRT(gmx::formatString("T=%g", roomTemp));
     ThermoChemistry tc0(msghandler, mol, *coords, atomenergy, freq, epot, 0.0, 1, scale_factor);
     ThermoChemistry tcRT(msghandler, mol, *coords, atomenergy, freq, epot, roomTemp, 1, scale_factor);
+    jtree->addObject("Symmetry number", gmx::formatString("%d", tcRT.symmetryNumber()));
     {
         jtc0.addValueUnit("Zero point energy", gmx_ftoa(tc0.ZPE()), eunit);
         jtcRT.addValueUnit("Zero point energy", gmx_ftoa(tcRT.ZPE()), eunit);

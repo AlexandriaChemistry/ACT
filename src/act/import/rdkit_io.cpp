@@ -88,6 +88,13 @@ static bool updateFragmentFromInchi(MsgHandler           *msg_handler,
         fptr->setCharge(amol->charge);
         fptr->setMass(amol->mass);
         fptr->setFormula(amol->formula);
+        // The database value may be wrong for some compounds. The thermochemistry
+        // computes the symmetry number from the structure and only uses this as
+        // a fallback.
+        if (amol->symmetryNumber > 0)
+        {
+            fptr->setSymmetryNumber(amol->symmetryNumber);
+        }
         return true;
     }
     else

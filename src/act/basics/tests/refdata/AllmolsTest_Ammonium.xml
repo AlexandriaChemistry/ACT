@@ -10,4 +10,6 @@
   <Int Name="ChemSpiderID">218</Int>
   <Int Name="PubChemID">223</Int>
   <String Name="InChiKey">QGZKDVFQNNGYKY-UHFFFAOYSA-O</String>
+  <String Name="PointGroup">Td</String>
+  <Int Name="SymmetryNumber">12</Int>
 </ReferenceData>
