@@ -57,6 +57,8 @@ AlexandriaMol::AlexandriaMol(const std::vector<std::string> &line)
         pubid    = my_atoi(line[9].c_str(), "pubchem");
         inchi    = line[10];
         inchikey = line[11];
+        pointGroup     = line[15];
+        symmetryNumber = my_atoi(line[16].c_str(), "symmetry number");
         for(auto ss : split(line[12], ';'))
         {
             classid.insert(ss);

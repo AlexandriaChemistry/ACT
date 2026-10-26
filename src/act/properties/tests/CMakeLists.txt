@@ -42,6 +42,8 @@ gmx_add_unit_test(
     b2Test.cpp
     princTest.cpp
     simulateTest.cpp
+    nmaTest.cpp
+    symmetrynumberTest.cpp
     # pseudo-library for code for properties
     $<TARGET_OBJECTS:actLib>
     )

@@ -42,7 +42,9 @@
 #include <cstdio>
 
 #include "act/molprop/molpropobservable.h"
+#include "act/basics/msg_handler.h"
 #include "act/properties/princ.h"
+#include "act/properties/symmetrynumber.h"
 #include "act/topology/actmol.h"
 #include "act/topology/topology.h"
 #include "act/utility/units.h"
@@ -83,7 +85,12 @@ double ThermoChemistry::zeroPointEnergy(const std::vector<double> &frequencies,
     double zpe    = 0;
     for (const auto &omega : frequencies)
     {
-        zpe += 0.5 * factor * scale_factor * omega;
+        // Imaginary modes are stored as negative frequencies and,
+        // like in calcVibrationalProperties, do not contribute.
+        if (omega > 0)
+        {
+            zpe += 0.5 * factor * scale_factor * omega;
+        }
     }
     return zpe;
 }
@@ -244,6 +251,59 @@ static void calcTheta(MsgHandler                   *msghandler,
     }
 }
 
+/*! \brief Determine the rotational symmetry number
+ * The symmetry number is computed from the structure. If that fails, the
+ * value stored for the compound (e.g. from the database) is used.
+ * \param[in] msghandler For warnings, may be nullptr
+ * \param[in] actmol     The molecule
+ * \param[in] coords     The coordinates
+ * \param[in] warn       Whether to warn about differences
+ * \return The symmetry number
+ */
+static int symmetryNumberFromStructure(MsgHandler                   *msghandler,
+                                       const ACTMol                 *actmol,
+                                       const std::vector<gmx::RVec> &coords,
+                                       bool                          warn)
+{
+    int stored = 1;
+    if (actmol->fragments().size() == 1)
+    {
+        stored = std::max(1, actmol->fragments()[0].symmetryNumber());
+    }
+    // Only real atoms, not shells or virtual sites
+    std::vector<int>       atomicNumbers;
+    std::vector<double>    masses;
+    std::vector<gmx::RVec> x;
+    const auto            &atoms = actmol->topology()->atoms();
+    for(size_t i = 0; i < atoms.size(); i++)
+    {
+        if (atoms[i].pType() == ActParticle::Atom)
+        {
+            atomicNumbers.push_back(atoms[i].atomicNumber());
+            masses.push_back(atoms[i].mass());
+            x.push_back(coords[i]);
+        }
+    }
+    int computed = rotationalSymmetryNumber(atomicNumbers, masses, x);
+    if (computed == 0)
+    {
+        if (warn && msghandler)
+        {
+            msghandler->msg(ACTStatus::Warning,
+                            gmx::formatString("Could not compute the rotational symmetry number of %s, using %d",
+                                              actmol->getMolname().c_str(), stored));
+        }
+        return stored;
+    }
+    if (computed != stored && warn && msghandler)
+    {
+        msghandler->msg(ACTStatus::Warning,
+                        gmx::formatString("Rotational symmetry number of %s computed from the structure is %d, the stored value is %d. Using %d.",
+                                          actmol->getMolname().c_str(), computed, stored, computed));
+    }
+    return computed;
+}
+
 ThermoChemistry::ThermoChemistry(MsgHandler                   *msghandler,
                                  const ACTMol                 *actmol,
                                  const std::vector<gmx::RVec> &coords,
@@ -256,11 +316,8 @@ ThermoChemistry::ThermoChemistry(MsgHandler                   *msghandler,
 {
     rvec   theta;
     calcTheta(msghandler, actmol, coords, theta);
-    double sigma_r = 1;
-    if (actmol->fragments().size() == 1)
-    {
-        sigma_r = actmol->fragments()[0].symmetryNumber();
-    }
+    symmetryNumber_ = symmetryNumberFromStructure(msghandler, actmol, coords, temperature > 0);
+    double sigma_r  = symmetryNumber_;
     zpe_ = zeroPointEnergy(frequencies, scale_factor);
     cv_[TCComponent::Translation]  = 1.5*RGAS;
     cv_[TCComponent::Rotation]     = actmol->linearMolecule() ? RGAS : 1.5*RGAS;

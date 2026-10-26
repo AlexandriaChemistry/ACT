@@ -75,6 +75,7 @@ class ThermoChemistry
 private:
     double zpe_             = 0;
     double dhForm_          = 0;
+    int    symmetryNumber_  = 1;
     std::map<TCComponent, double> cv_;
     std::map<TCComponent, double> S0_;
     std::map<TCComponent, double> E_;
@@ -174,6 +175,9 @@ public:
     
     //! return the enthalpy of formation
     double DHform() const { return dhForm_; }
+
+    //! return the rotational symmetry number used for the rotational entropy
+    int symmetryNumber() const { return symmetryNumber_; }
 };
 
 }

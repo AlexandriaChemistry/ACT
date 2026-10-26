@@ -65,6 +65,10 @@ namespace alexandria
         std::string inchi;
         //! InChiKey
         std::string inchikey;
+        //! Point group
+        std::string pointGroup;
+        //! Rotational symmetry number, 0 if unknown
+        int         symmetryNumber = 0;
         //! Class identifiers
         std::set<std::string> classid;
         //! Synonyms
