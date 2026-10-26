@@ -33,9 +33,12 @@
 #include <cmath>
 
 #include <map>
+#include <string>
+#include <vector>
 
 #include <gtest/gtest.h>
 
+#include "act/basics/msg_handler.h"
 #include "act/properties/b2data.h"
 #include "act/properties/secondvirial.h"
 #include "gromacs/math/units.h"
@@ -173,6 +176,130 @@ TEST_F (SecondVirialTest, LennardJonesXenon)
     // Those numbers were computed manually but our values are very close indeed.
     // In addition, the tabulated values did not include quantum corrections.
     testB2(true, sig, eps, mass, Temperature);
+}
+
+//! Results of the B2Data integration
+struct B2Result
+{
+    //! Classical second virial (nm^3)
+    double classical = 0;
+    //! Translational quantum correction (nm^3)
+    double force     = 0;
+    //! Rotational quantum correction for molecule 1 (nm^3)
+    double torque1   = 0;
+    //! Rotational quantum correction for molecule 2 (nm^3)
+    double torque2   = 0;
+};
+
+/*! \brief Integrate synthetic data that is constant up to rmax
+ * \param[in] mayer   Mayer function value for r < sigma, zero beyond
+ * \param[in] sigma   Range of the Mayer function (nm)
+ * \param[in] F2      Weighted square force on each molecule
+ * \param[in] tau2    Weighted square torque on each molecule
+ * \param[in] mass    Mass of each molecule
+ * \param[in] inertia Moments of inertia of each molecule
+ * \param[in] beta    1/kT
+ * \return The integrated components
+ */
+B2Result integrateSynthetic(double                        mayer,
+                            double                        sigma,
+                            const double                  F2[2],
+                            const gmx::RVec               tau2[2],
+                            const std::vector<double>    &mass,
+                            const std::vector<gmx::RVec> &inertia,
+                            double                        beta)
+{
+    // Bins of 1 pm up to 1 nm
+    int    nbins = 1001;
+    double bw    = 0.001;
+    B2Data b2data(nbins, { 1.0/(BOLTZ*beta) });
+    for(int i = 0; i < nbins; i++)
+    {
+        double r = i*bw;
+        b2data.addData(0, i, r, r < sigma ? mayer : 0, F2[0], F2[1], tau2[0], tau2[1]);
+    }
+    MsgHandler msghandler;
+    B2Result   res;
+    b2data.integrate(&msghandler, 0, beta, mass, inertia,
+                     &res.classical, &res.force, &res.torque1, &res.torque2);
+    EXPECT_TRUE(msghandler.ok());
+    return res;
+}
+
+//! \return the prefactor of the quantum corrections, beta^3 hbar^2/24
+double hbarFactor(double beta)
+{
+    return beta*gmx::square(beta*PLANCK/(2*M_PI))/24;
+}
+
+//! \return 4 pi R^3/3 for R = 1 nm, the integral of a constant over the grid
+double sphereVolume()
+{
+    return 4*M_PI/3;
+}
+
+//! Relative tolerance for the numerical integration of a constant
+const double integrationTolerance = 1e-5;
+
+// Test: The classical second virial of hard spheres is 2 pi sigma^3/3
+TEST(B2DataTest, HardSpheres)
+{
+    double    F2[2]      = { 0, 0 };
+    gmx::RVec tau2[2]    = { { 0, 0, 0 }, { 0, 0, 0 } };
+    double    sigma      = 0.3;
+    auto      res        = integrateSynthetic(-1, sigma, F2, tau2, { 18, 18 },
+                                              { { 1, 1, 1 }, { 1, 1, 1 } }, 1.0/(BOLTZ*300));
+    EXPECT_NEAR(2*M_PI*std::pow(sigma, 3)/3, res.classical, 1e-2*2*M_PI*std::pow(sigma, 3)/3);
+    EXPECT_EQ(0, res.force);
+    EXPECT_EQ(0, res.torque1);
+    EXPECT_EQ(0, res.torque2);
+}
+
+// Test: The translational quantum correction, Schenter Eqn. 9
+TEST(B2DataTest, ForceCorrection)
+{
+    double    beta    = 1.0/(BOLTZ*300);
+    double    F2[2]   = { 100, 300 };
+    gmx::RVec tau2[2] = { { 0, 0, 0 }, { 0, 0, 0 } };
+    std::vector<double> mass = { 18, 36 };
+    auto res      = integrateSynthetic(0, 0, F2, tau2, mass,
+                                       { { 1, 1, 1 }, { 1, 1, 1 } }, beta);
+    double expect = 0.5*hbarFactor(beta)*sphereVolume()*(F2[0]/mass[0] + F2[1]/mass[1]);
+    EXPECT_NEAR(expect, res.force, integrationTolerance*expect);
+}
+
+// Test: The rotational quantum corrections, Gray and Gubbins Eqn. 3.282
+TEST(B2DataTest, TorqueCorrection)
+{
+    double    beta    = 1.0/(BOLTZ*300);
+    double    F2[2]   = { 0, 0 };
+    gmx::RVec tau2    = { 50, 70, 90 };
+    gmx::RVec tau[2]  = { tau2, tau2 };
+    gmx::RVec I       = { 0.006, 0.012, 0.018 };
+    // Identical molecules give identical torque corrections
+    auto res     = integrateSynthetic(0, 0, F2, tau, { 18, 18 }, { I, I }, beta);
+    double expect = hbarFactor(beta)*sphereVolume()*(tau2[XX]/I[XX] + tau2[YY]/I[YY] + tau2[ZZ]/I[ZZ]);
+    EXPECT_NEAR(expect, res.torque1, integrationTolerance*expect);
+    EXPECT_DOUBLE_EQ(res.torque1, res.torque2);
+    // Doubling the moments of inertia of molecule 2 halves its correction
+    gmx::RVec I2  = { 2*I[XX], 2*I[YY], 2*I[ZZ] };
+    auto res2     = integrateSynthetic(0, 0, F2, tau, { 18, 18 }, { I, I2 }, beta);
+    EXPECT_DOUBLE_EQ(res.torque1, res2.torque1);
+    EXPECT_NEAR(0.5*res.torque2, res2.torque2, 1e-12*res.torque2);
+}
+
+// Test: Axes with zero moment of inertia (linear molecules) do not contribute
+TEST(B2DataTest, LinearMolecule)
+{
+    double    beta    = 1.0/(BOLTZ*300);
+    double    F2[2]   = { 0, 0 };
+    gmx::RVec tau2    = { 50, 70, 90 };
+    gmx::RVec tau[2]  = { tau2, tau2 };
+    gmx::RVec I       = { 0, 0.012, 0.012 };
+    auto res      = integrateSynthetic(0, 0, F2, tau, { 44, 44 }, { I, I }, beta);
+    double expect = hbarFactor(beta)*sphereVolume()*(tau2[YY] + tau2[ZZ])/I[YY];
+    EXPECT_TRUE(std::isfinite(res.torque1));
+    EXPECT_NEAR(expect, res.torque1, integrationTolerance*expect);
 }
 
 }

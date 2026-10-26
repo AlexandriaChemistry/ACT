@@ -729,7 +729,7 @@ double ACTMol::calculateInteractionEnergy(MsgHandler                        *msg
         }
         checkEnergies(msghandler, "Monomer", e_monomer[ff]);
     }
-    //! \todo forces are overwritten, not trustable!
+    // Forces in the fully relaxed dimer, used for the interaction forces
     std::vector<gmx::RVec> forces(topology_.atoms().size(), fzero);
     std::map<InteractionType, double> e_total;
     auto myatoms = topology_.atoms();
@@ -777,9 +777,12 @@ double ACTMol::calculateInteractionEnergy(MsgHandler                        *msg
         }
         // Make a fresh copy of the coordinates
         std::vector<gmx::RVec> mycoords = *coords;
+        // Use separate forces, since here the shells of the other
+        // molecule are not relaxed.
+        std::vector<gmx::RVec> dimerForces(topology_.atoms().size(), fzero);
         // Eqn 6
         forceComputer->compute(msghandler, pd, &topology_,
-                               &mycoords, &forces, &e_dimer[ff],
+                               &mycoords, &dimerForces, &e_dimer[ff],
                                fzero, false, myshells);
         msghandler->writeDebug(gmx::formatString("%s dimer[%lu]:", getMolname().c_str(), ff));
         printEmap(msghandler, &e_dimer[ff]);
@@ -908,7 +911,6 @@ double ACTMol::calculateInteractionEnergy(MsgHandler                        *msg
     }
     checkEnergies(msghandler, "Inter 3", *einter);
     // Add dimer forces to the interaction forces
-    //! \todo this is not correct anymore, see above.
     for(size_t i = 0; i < topology_.atoms().size(); i++)
     {
         for(int m = 0; m< DIM; m++)
