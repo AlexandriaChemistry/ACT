@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Real Name="1-butanol-OCT-weight">2</Real>
+  <Real Name="1-butanol-OCT-chi2">0.00011869322606463763</Real>
+  <Real Name="acetone-OCT-weight">1</Real>
+  <Real Name="acetone-OCT-chi2">6.2632319786627236e-07</Real>
+  <Real Name="water-OCT-weight">2</Real>
+  <Real Name="water-OCT-chi2">1.9898032173094105e-07</Real>
+</ReferenceData>

@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Real Name="1-butanol-QUAD-weight">2</Real>
+  <Real Name="1-butanol-QUAD-chi2">5.4533448156079481e-05</Real>
+  <Real Name="acetone-QUAD-weight">1</Real>
+  <Real Name="acetone-QUAD-chi2">5.7720030008811696e-05</Real>
+  <Real Name="water-QUAD-weight">2</Real>
+  <Real Name="water-QUAD-chi2">2.7405692754080259e-05</Real>
+</ReferenceData>

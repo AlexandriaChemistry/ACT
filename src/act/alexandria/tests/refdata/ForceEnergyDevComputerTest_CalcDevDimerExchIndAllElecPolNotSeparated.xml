@@ -1,0 +1,99 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Sequence Name="1-propanol#ethane-charge">
+    <Int Name="Length">26</Int>
+    <Real>1.25</Real>
+    <Real>-3.5</Real>
+    <Real>1.25</Real>
+    <Real>1.25</Real>
+    <Real>1.25</Real>
+    <Real>1.25</Real>
+    <Real>-3.5</Real>
+    <Real>1.25</Real>
+    <Real>1.25</Real>
+    <Real>1.25</Real>
+    <Real>-3.5</Real>
+    <Real>1.25</Real>
+    <Real>1.25</Real>
+    <Real>1.25</Real>
+    <Real>-4.5</Real>
+    <Real>1.25</Real>
+    <Real>0.875</Real>
+    <Real>-3.5</Real>
+    <Real>0.875</Real>
+    <Real>0.875</Real>
+    <Real>0.875</Real>
+    <Real>0.875</Real>
+    <Real>-3.5</Real>
+    <Real>0.875</Real>
+    <Real>0.875</Real>
+    <Real>0.875</Real>
+  </Sequence>
+  <Real Name="1-propanol#ethane-Interaction-weight">37</Real>
+  <Real Name="1-propanol#ethane-Interaction-chi2">404972.26895299723</Real>
+  <Real Name="1-propanol#ethane-AllElec-weight">37</Real>
+  <Real Name="1-propanol#ethane-AllElec-chi2">416373.43906902999</Real>
+  <Real Name="1-propanol#ethane-ExchInd-weight">37</Real>
+  <Real Name="1-propanol#ethane-ExchInd-chi2">1435.0294721559892</Real>
+  <Sequence Name="guanidinium#water-charge">
+    <Int Name="Length">18</Int>
+    <Real>1.5406772132592108</Real>
+    <Real>-3.5</Real>
+    <Real>1.5579578979657442</Real>
+    <Real>-4</Real>
+    <Real>1.557956477375998</Real>
+    <Real>-4</Real>
+    <Real>1.5579593362839619</Real>
+    <Real>-4</Real>
+    <Real>1.714241815042207</Real>
+    <Real>1.714241815042207</Real>
+    <Real>1.7142416080364145</Real>
+    <Real>1.7142416080364145</Real>
+    <Real>1.7142411144789207</Real>
+    <Real>1.7142411144789207</Real>
+    <Real>1.5</Real>
+    <Real>-4.5</Real>
+    <Real>1.5</Real>
+    <Real>1.5</Real>
+  </Sequence>
+  <Real Name="guanidinium#water-Interaction-weight">191</Real>
+  <Real Name="guanidinium#water-Interaction-chi2">4174597.3412077799</Real>
+  <Real Name="guanidinium#water-AllElec-weight">191</Real>
+  <Real Name="guanidinium#water-AllElec-chi2">4103713.4857785609</Real>
+  <Real Name="guanidinium#water-ExchInd-weight">191</Real>
+  <Real Name="guanidinium#water-ExchInd-chi2">5622.208197143018</Real>
+  <Sequence Name="water#1-butanol-charge">
+    <Int Name="Length">24</Int>
+    <Real>1.5</Real>
+    <Real>-4.5</Real>
+    <Real>1.5</Real>
+    <Real>1.5</Real>
+    <Real>1.2333333333333334</Real>
+    <Real>-3.5</Real>
+    <Real>1.2333333333333334</Real>
+    <Real>1.2333333333333334</Real>
+    <Real>1.2333333333333334</Real>
+    <Real>1.2333333333333334</Real>
+    <Real>-3.5</Real>
+    <Real>1.2333333333333334</Real>
+    <Real>1.2333333333333334</Real>
+    <Real>1.2333333333333334</Real>
+    <Real>-3.5</Real>
+    <Real>1.2333333333333334</Real>
+    <Real>1.2333333333333334</Real>
+    <Real>1.2333333333333334</Real>
+    <Real>-3.5</Real>
+    <Real>1.2333333333333334</Real>
+    <Real>1.2333333333333334</Real>
+    <Real>1.2333333333333334</Real>
+    <Real>-4.5</Real>
+    <Real>1.2333333333333334</Real>
+  </Sequence>
+  <Real Name="water#1-butanol-Interaction-weight">243</Real>
+  <Real Name="water#1-butanol-Interaction-chi2">5557753.1094243461</Real>
+  <Real Name="water#1-butanol-AllElec-weight">243</Real>
+  <Real Name="water#1-butanol-AllElec-chi2">5480854.0820536306</Real>
+  <Real Name="water#1-butanol-ExchInd-weight">243</Real>
+  <Real Name="water#1-butanol-ExchInd-chi2">6643.0730185968141</Real>
+</ReferenceData>

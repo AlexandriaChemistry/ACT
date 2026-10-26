@@ -1,0 +1,31 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Sequence Name="methanol#ethane-charge">
+    <Int Name="Length">18</Int>
+    <Real>1.3333333333333333</Real>
+    <Real>-4.5</Real>
+    <Real>1.3333333333333333</Real>
+    <Real>1.3333333333333333</Real>
+    <Real>-3.5</Real>
+    <Real>1.3333333333333333</Real>
+    <Real>1.3333333333333333</Real>
+    <Real>1.3333333333333333</Real>
+    <Real>0.875</Real>
+    <Real>-3.5</Real>
+    <Real>0.875</Real>
+    <Real>0.875</Real>
+    <Real>0.875</Real>
+    <Real>0.875</Real>
+    <Real>-3.5</Real>
+    <Real>0.875</Real>
+    <Real>0.875</Real>
+    <Real>0.875</Real>
+  </Sequence>
+  <Real Name="methanol#ethane-Interaction-weight">11</Real>
+  <Real Name="methanol#ethane-Interaction-chi2">205248.08685367097</Real>
+  <Real Name="methanol#ethane-Electrostatics-weight">11</Real>
+  <Real Name="methanol#ethane-Electrostatics-chi2">215688.54067517494</Real>
+  <Real Name="methanol#ethane-Induction-weight">11</Real>
+  <Real Name="methanol#ethane-Induction-chi2">2.5675560039945275</Real>
+</ReferenceData>

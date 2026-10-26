@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Real Name="1-butanol-Bounds-chi2">37501.065170340662</Real>
+  <Real Name="acetone-Bounds-chi2">25000.705052842255</Real>
+  <Real Name="water-Bounds-chi2">7500.2423385717739</Real>
+</ReferenceData>
