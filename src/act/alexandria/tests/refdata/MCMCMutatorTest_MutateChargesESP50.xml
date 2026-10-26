@@ -144,4 +144,150 @@
     <Int>4</Int>
     <Int>4</Int>
   </Sequence>
+  <Seed Name="Seed1997">
+    <Int64 Name="MaxIter">5</Int64>
+    <Real Name="Fitness-before">10000</Real>
+    <Sequence Name="Genome-before">
+      <Int Name="Length">6</Int>
+      <Real>4.5</Real>
+      <Real>12</Real>
+      <Real>3.2999999999999998</Real>
+      <Real>10</Real>
+      <Real>5</Real>
+      <Real>13</Real>
+    </Sequence>
+    <Sequence Name="Parameters">
+      <Int Name="Length">6</Int>
+      <String>c3_z chi</String>
+      <String>c3_z eta</String>
+      <String>h_z chi</String>
+      <String>h_z eta</String>
+      <String>o3_z chi</String>
+      <String>o3_z eta</String>
+    </Sequence>
+    <Real Name="Fitness-after">480.97423233698345</Real>
+    <Sequence Name="Genome-after">
+      <Int Name="Length">6</Int>
+      <Real>4.4257539519835083</Real>
+      <Real>12.503152183707352</Real>
+      <Real>3.2348958162981223</Real>
+      <Real>9.5482028354754895</Real>
+      <Real>5.2356220791356574</Real>
+      <Real>12.498540077022422</Real>
+    </Sequence>
+    <Int64 Name="numberObjectiveFunctionCalls">31</Int64>
+    <Int64 Name="numEvaluations ForceComputer">256</Int64>
+    <Int64 Name="numShellIterations ForceComputer">0</Int64>
+    <Int64 Name="numShellConvergenceFailed ForceComputer">0</Int64>
+    <Sequence Name="Random numbers">
+      <Int Name="Length">74</Int>
+      <Real>0.66266716871670173</Real>
+      <Real>0.45007077233743786</Real>
+      <Real>0.50308221916815032</Real>
+      <Real>0.83491113222555435</Real>
+      <Real>0.98525235964735636</Real>
+      <Real>0.54042372304600073</Real>
+      <Real>0.75425188653430308</Real>
+      <Real>0.5456168331600405</Real>
+      <Real>0.6300683607504981</Real>
+      <Real>0.65457279649255329</Real>
+      <Real>0.85672390085534156</Real>
+      <Real>0.6613675952888467</Real>
+      <Real>0.28284077019727571</Real>
+      <Real>0.65007233578201185</Real>
+      <Real>0.67641746394027025</Real>
+      <Real>0.060823004128559233</Real>
+      <Real>0.12876975991754086</Real>
+      <Real>0.22028635921064987</Real>
+      <Real>0.26048373370763067</Real>
+      <Real>0.49019467958231494</Real>
+      <Real>0.26767731233591746</Real>
+      <Real>0.88818909447429173</Real>
+      <Real>0.22689035476172909</Real>
+      <Real>0.28099466290565334</Real>
+      <Real>0.73202175119090096</Real>
+      <Real>0.051862156929567201</Real>
+      <Real>0.66643301300781876</Real>
+      <Real>0.85674593167263047</Real>
+      <Real>0.9175205309379989</Real>
+      <Real>0.30733791638735913</Real>
+      <Real>0.75024932517701415</Real>
+      <Real>0.17784159682227615</Real>
+      <Real>0.27113570520411301</Real>
+      <Real>0.57965634483918793</Real>
+      <Real>0.41440767464279415</Real>
+      <Real>0.31297959610463305</Real>
+      <Real>0.22197350525152432</Real>
+      <Real>0.14612732561009448</Real>
+      <Real>0.041125828437607113</Real>
+      <Real>0.83178940797310452</Real>
+      <Real>0.76569169393905678</Real>
+      <Real>0.60461696295098621</Real>
+      <Real>0.96557591600490289</Real>
+      <Real>0.68103382626751341</Real>
+      <Real>0.81993362370467449</Real>
+      <Real>0.77236977937862061</Real>
+      <Real>0.45546892083856572</Real>
+      <Real>0.78156365106974968</Real>
+      <Real>0.29196323812028996</Real>
+      <Real>0.27296304932244142</Real>
+      <Real>0.58841695212381517</Real>
+      <Real>0.35132517074191993</Real>
+      <Real>0.56696593477167045</Real>
+      <Real>0.006801101577909279</Real>
+      <Real>0.43376418060958499</Real>
+      <Real>0.23549163056616426</Real>
+      <Real>0.51064058953705516</Real>
+      <Real>0.69174668587048527</Real>
+      <Real>0.44267181657710247</Real>
+      <Real>0.59544538609064424</Real>
+      <Real>0.45129516193970004</Real>
+      <Real>0.081608850338373035</Real>
+      <Real>0.092116209061950685</Real>
+      <Real>0.70055222094060565</Real>
+      <Real>0.40252131262633173</Real>
+      <Real>0.84043450351828908</Real>
+      <Real>0.93747429741881472</Real>
+      <Real>0.8325458953962992</Real>
+      <Real>0.6466302586698629</Real>
+      <Real>0.73638339143133746</Real>
+      <Real>0.65464850991579626</Real>
+      <Real>0.84014040746180429</Real>
+      <Real>0.83746117707621026</Real>
+      <Real>0.24875780940714845</Real>
+    </Sequence>
+    <Sequence Name="Random parameter indices">
+      <Int Name="Length">30</Int>
+      <Int>4</Int>
+      <Int>5</Int>
+      <Int>4</Int>
+      <Int>4</Int>
+      <Int>5</Int>
+      <Int>4</Int>
+      <Int>0</Int>
+      <Int>1</Int>
+      <Int>1</Int>
+      <Int>1</Int>
+      <Int>4</Int>
+      <Int>5</Int>
+      <Int>4</Int>
+      <Int>3</Int>
+      <Int>2</Int>
+      <Int>0</Int>
+      <Int>4</Int>
+      <Int>5</Int>
+      <Int>5</Int>
+      <Int>5</Int>
+      <Int>1</Int>
+      <Int>3</Int>
+      <Int>2</Int>
+      <Int>3</Int>
+      <Int>3</Int>
+      <Int>0</Int>
+      <Int>2</Int>
+      <Int>5</Int>
+      <Int>4</Int>
+      <Int>5</Int>
+    </Sequence>
+  </Seed>
 </ReferenceData>
