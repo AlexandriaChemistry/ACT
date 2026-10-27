@@ -204,12 +204,17 @@ private:
      * \param[in] resetShells    Whether or not to reset the shell positions before relaxation.
      *                           This is an optimization that may or may not work. 
      * \param[in] separateInductionCorrection Whether or not to treat induction correction separately
+     * \param[in] computeForces  Whether the forces are needed. If not, they are not
+     *                           computed and the forces of the conformations are not
+     *                           meaningful afterwards. Polarizable force fields always
+     *                           compute forces, since the shells are relaxed with them.
      */
     void computeRelaxedEnergies(MsgHandler          *msghandler,
                                 const ForceField    *pd,
                                 std::vector<ACTMol> *allmols,
                                 bool                 resetShells,
-                                bool                 separateInductionCorrection) const;
+                                bool                 separateInductionCorrection,
+                                bool                 computeForces = true) const;
                                                                 
     /*! Do many complete energy/force computation.
      * If shells are present their positions will be minimized.

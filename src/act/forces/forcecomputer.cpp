@@ -699,8 +699,11 @@ void ForceComputer::computeRelaxedEnergies(MsgHandler          *msghandler,
                                            const ForceField    *pd,
                                            std::vector<ACTMol> *allmols,
                                            bool                 resetTheShells,
-                                           bool                 separateInductionCorrection) const
+                                           bool                 separateInductionCorrection,
+                                           bool                 computeForces) const
 {
+    // Shells are relaxed using the forces
+    bool forces = computeForces || pd->polarizable();
     // Loop over molecules
     // TODO simd-ify vsite handling as well
     for(auto &mol : *allmols)
@@ -742,9 +745,9 @@ void ForceComputer::computeRelaxedEnergies(MsgHandler          *msghandler,
         }
     }
     // Do first calculation every time.
-    computeEnergies(msghandler, pd, allmols, 0); // Monomer 0
-    computeEnergies(msghandler, pd, allmols, 1); // Monomer 1
-    computeEnergies(msghandler, pd, allmols, 2); // Complete topology
+    computeEnergies(msghandler, pd, allmols, 0, forces); // Monomer 0
+    computeEnergies(msghandler, pd, allmols, 1, forces); // Monomer 1
+    computeEnergies(msghandler, pd, allmols, 2, forces); // Complete topology
 
     // Store the original (unrelaxed) energies so that we can extract the
     // induction later. Only terms that actually have an ACT energy are backed
@@ -939,6 +942,10 @@ void ForceComputer::computeRelaxedEnergies(MsgHandler          *msghandler,
                 calcInduction(&mono.eMap);
             }
         }
+    }
+    if (!forces)
+    {
+        return;
     }
     // Spread forces to atoms
     // Loop over molecules
