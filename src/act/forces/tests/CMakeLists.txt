@@ -42,7 +42,12 @@ gmx_add_unit_test(
     forcecomputerutilsTest.cpp
     forceComputerImplementationTest.cpp
     forceComputerTest.cpp
+    forcesSimdTest.cpp
+    simdMathTest.cpp
     vsiteTest.cpp
     # pseudo-library for code for alexandria
     )
+if(ACT_SIMD_AVX_512_FLAGS)
+    set_source_files_properties(simdMathTest.cpp PROPERTIES COMPILE_OPTIONS "${ACT_SIMD_AVX_512_FLAGS}")
+endif()
 target_link_libraries(${exename} actLib libactgromacs ${GMX_EXTRA_LIBRARIES} ${XML_LIBRARIES} ${GMX_EXE_LINKER_FLAGS})

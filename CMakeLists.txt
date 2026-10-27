@@ -232,6 +232,22 @@ gmx_option_multichoice(
 gmx_dependent_cache_variable(GMX_SIMD_REF_FLOAT_WIDTH  "Reference SIMD single precision width" STRING "4" "GMX_SIMD STREQUAL REFERENCE")
 gmx_dependent_cache_variable(GMX_SIMD_REF_DOUBLE_WIDTH "Reference SIMD double precision width" STRING "2" "GMX_SIMD STREQUAL REFERENCE")
 
+# The force routines have explicit SIMD code for ARM NEON, which is used
+# automatically, and for AVX-512, which has to be selected since many x86
+# processors do not have it. Only the files with the explicit SIMD code are
+# compiled for AVX-512, the processor running the code must support it.
+option(ACT_SIMD_AVX_512 "Use AVX-512 for the explicit SIMD force routines" OFF)
+set(ACT_SIMD_AVX_512_FLAGS "")
+if(ACT_SIMD_AVX_512)
+    include(CheckCXXCompilerFlag)
+    check_cxx_compiler_flag(-mavx512f CXX_FLAG_MAVX512F)
+    if(NOT CXX_FLAG_MAVX512F)
+        message(FATAL_ERROR "ACT_SIMD_AVX_512 is ON, but the compiler does not support -mavx512f")
+    endif()
+    set(ACT_SIMD_AVX_512_FLAGS "-mavx512f")
+    message(STATUS "Using AVX-512 for the explicit SIMD force routines")
+endif()
+
 # This should be moved to a separate NBNXN cmake module when that code is cleaned up and modularized
 
 option(GMX_BROKEN_CALLOC "Work around broken calloc()" OFF)

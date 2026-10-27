@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Real Name="BONDS-0">-1195.0071236117196</Real>
+  <Real Name="EPOT-0">-1195.0071236117196</Real>
+  <Real Name="BONDS-1">-1054.5911320361906</Real>
+  <Real Name="EPOT-1">-1054.5911320361906</Real>
+  <Real Name="BONDS-2">-1167.7867200815861</Real>
+  <Real Name="EPOT-2">-1167.7867200815861</Real>
+  <Real Name="BONDS-3">-1188.4294595700978</Real>
+  <Real Name="EPOT-3">-1188.4294595700978</Real>
+  <Real Name="BONDS-4">-1169.0009445901799</Real>
+  <Real Name="EPOT-4">-1169.0009445901799</Real>
+  <Real Name="BONDS-5">-1188.5234182385198</Real>
+  <Real Name="EPOT-5">-1188.5234182385198</Real>
+  <Real Name="BONDS-6">-1186.5606499241071</Real>
+  <Real Name="EPOT-6">-1186.5606499241071</Real>
+</ReferenceData>

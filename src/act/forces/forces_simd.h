@@ -3,6 +3,8 @@
 
 #include <vector>
 
+#include "act/forcefield/potential.h"
+#include "act/molprop/topologyentry.h"
 #include "act/topology/actmol.h"
 
 namespace alexandria
@@ -21,6 +23,26 @@ void computeEnergies(MsgHandler          *msghandler,
                      const ForceField    *pd,
                      std::vector<ACTMol> *allmols,
                      size_t               what);
+
+/*! \brief Compute the energies and forces of one potential for all conformations
+ * The energy maps and forces of the conformations are cleared first.
+ * This is mainly intended for testing.
+ * \param[in]    msghandler    For warnings and errors
+ * \param[in]    mypot         The potential
+ * \param[in]    topentries    The interactions
+ * \param[in]    atoms         The atoms
+ * \param[inout] coords        The conformations
+ * \param[in]    epsilonr      Relative dielectric constant
+ * \param[in]    conformations Whether to loop over the conformations in the
+ *                             inner loop (vectorized) or the outer loop
+ */
+void computePotential(MsgHandler                 *msghandler,
+                      Potential                   mypot,
+                      const TopologyEntryVector  &topentries,
+                      const std::vector<ActAtom> &atoms,
+                      std::vector<CoordsEnergy>  *coords,
+                      double                      epsilonr,
+                      bool                        conformations);
 
 } // namespace
 

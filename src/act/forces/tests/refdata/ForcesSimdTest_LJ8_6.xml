@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Real Name="DISPERSION-0">-3.9481718636613485</Real>
+  <Real Name="EXCHANGE-0">2.5087701820532216</Real>
+  <Real Name="EPOT-0">-1.439401681608127</Real>
+  <Real Name="DISPERSION-1">-4.7232359803931772</Real>
+  <Real Name="EXCHANGE-1">3.3957894251171408</Real>
+  <Real Name="EPOT-1">-1.3274465552760364</Real>
+  <Real Name="DISPERSION-2">-5.0751958379927826</Real>
+  <Real Name="EXCHANGE-2">3.7367997406778</Real>
+  <Real Name="EPOT-2">-1.3383960973149827</Real>
+  <Real Name="DISPERSION-3">-5.8290337259839342</Real>
+  <Real Name="EXCHANGE-3">4.4826521500646246</Real>
+  <Real Name="EPOT-3">-1.3463815759193096</Real>
+  <Real Name="DISPERSION-4">-4.6231732908514616</Real>
+  <Real Name="EXCHANGE-4">3.2209224438821686</Real>
+  <Real Name="EPOT-4">-1.4022508469692929</Real>
+  <Real Name="DISPERSION-5">-5.2208686801664905</Real>
+  <Real Name="EXCHANGE-5">3.9445273876144467</Real>
+  <Real Name="EPOT-5">-1.2763412925520439</Real>
+  <Real Name="DISPERSION-6">-5.1471539784691398</Real>
+  <Real Name="EXCHANGE-6">3.8376418216060073</Real>
+  <Real Name="EPOT-6">-1.3095121568631325</Real>
+</ReferenceData>

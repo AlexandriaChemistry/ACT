@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Real Name="EXCHANGE-0">-3.6481385674180378</Real>
+  <Real Name="EPOT-0">-3.6481385674180378</Real>
+  <Real Name="EXCHANGE-1">-5.2982942636444825</Real>
+  <Real Name="EPOT-1">-5.2982942636444825</Real>
+  <Real Name="EXCHANGE-2">-5.8945031488193598</Real>
+  <Real Name="EPOT-2">-5.8945031488193598</Real>
+  <Real Name="EXCHANGE-3">-7.1667187149362857</Real>
+  <Real Name="EPOT-3">-7.1667187149362857</Real>
+  <Real Name="EXCHANGE-4">-4.9564712090511822</Real>
+  <Real Name="EPOT-4">-4.9564712090511822</Real>
+  <Real Name="EXCHANGE-5">-6.2905712536217679</Real>
+  <Real Name="EPOT-5">-6.2905712536217679</Real>
+  <Real Name="EXCHANGE-6">-6.0813248091635614</Real>
+  <Real Name="EPOT-6">-6.0813248091635614</Real>
+</ReferenceData>

@@ -1,0 +1,171 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Sequence Name="1-butanol-charge">
+    <Int Name="Length">15</Int>
+    <Real>-0.33512627835737757</Real>
+    <Real>0.11845395370175958</Real>
+    <Real>0.11845395370175958</Real>
+    <Real>0.11845395370175958</Real>
+    <Real>-0.27384407290329416</Real>
+    <Real>0.13241215911253251</Real>
+    <Real>0.13241173871427189</Real>
+    <Real>-0.26218817235371239</Real>
+    <Real>0.14456551042999308</Real>
+    <Real>0.14456527777340394</Real>
+    <Real>-0.25793851438827575</Real>
+    <Real>0.14240107676944339</Real>
+    <Real>0.14240132179113144</Real>
+    <Real>-0.23323846304752235</Real>
+    <Real>0.16821655535412719</Real>
+  </Sequence>
+  <Real Name="1-butanol-conf0-EXCHANGE">82.392131664045934</Real>
+  <Real Name="1-butanol-conf0-DISPERSION">-92.035159361622988</Real>
+  <Real Name="1-butanol-conf0-EPOT">-2877.1528763709034</Real>
+  <Sequence Name="1-butanol-conf0-forces">
+    <Int Name="Length">45</Int>
+    <Real>-204.332858503007</Real>
+    <Real>-118.94731390932051</Real>
+    <Real>-0.041473903203333225</Real>
+    <Real>26.247829354960409</Real>
+    <Real>154.7599064793007</Real>
+    <Real>0.0034797928541425412</Real>
+    <Real>127.5436876578004</Real>
+    <Real>29.579807282977587</Real>
+    <Real>-82.491401318653402</Real>
+    <Real>127.52523876011013</Real>
+    <Real>29.571882373922559</Real>
+    <Real>82.526532265372936</Real>
+    <Real>-125.30024789636087</Real>
+    <Real>114.66236986384207</Real>
+    <Real>-0.1188556494285563</Real>
+    <Real>8.5756464635810357</Real>
+    <Real>-167.29010376647696</Real>
+    <Real>-8.3686288777372635</Real>
+    <Real>8.5719944674695032</Real>
+    <Real>-167.38368786256646</Real>
+    <Real>8.4944506889589881</Real>
+    <Real>-197.14199213399002</Real>
+    <Real>-152.88497852678287</Real>
+    <Real>0.0045234606482212588</Real>
+    <Real>-31.894239074139378</Real>
+    <Real>126.87841612911646</Real>
+    <Real>11.3520192931759</Real>
+    <Real>-31.89144381345298</Real>
+    <Real>126.8872823675909</Real>
+    <Real>-11.374743018400022</Real>
+    <Real>255.31262084770722</Real>
+    <Real>367.81820959565772</Real>
+    <Real>0.028778764732376727</Real>
+    <Real>-4.3240332990454533</Real>
+    <Real>-205.70799262703886</Real>
+    <Real>-71.614330736399921</Real>
+    <Real>-4.3415592937061049</Real>
+    <Real>-205.67926115850943</Real>
+    <Real>71.594956943056957</Real>
+    <Real>29.227779560015478</Real>
+    <Real>30.651093226073058</Real>
+    <Real>0.0026491052408417204</Real>
+    <Real>16.221576902057485</Real>
+    <Real>37.084370532213569</Real>
+    <Real>0.0020431897820607503</Real>
+  </Sequence>
+  <Real Name="1-butanol-conf1-EXCHANGE">82.05653405789883</Real>
+  <Real Name="1-butanol-conf1-DISPERSION">-91.778522004961559</Real>
+  <Real Name="1-butanol-conf1-EPOT">-2876.0425668751946</Real>
+  <Sequence Name="1-butanol-conf1-forces">
+    <Int Name="Length">45</Int>
+    <Real>-225.34954100641505</Real>
+    <Real>-140.81380212178459</Real>
+    <Real>0.0041003489669100227</Real>
+    <Real>117.47985160907453</Real>
+    <Real>89.361058964508558</Real>
+    <Real>0.011183452580783754</Real>
+    <Real>132.91645853226427</Real>
+    <Real>100.74281859054267</Real>
+    <Real>9.5742397558673602</Real>
+    <Real>132.8857056280678</Real>
+    <Real>100.76035387079651</Real>
+    <Real>-9.5753680971449953</Real>
+    <Real>-132.81095171195585</Real>
+    <Real>175.89943799591003</Real>
+    <Real>-0.075133347902194378</Real>
+    <Real>3.616477957852771</Real>
+    <Real>-247.13245652292161</Real>
+    <Real>-101.4445624513082</Real>
+    <Real>3.5905404487288557</Real>
+    <Real>-247.15424886339952</Real>
+    <Real>101.50758641902152</Real>
+    <Real>-102.6341366492083</Real>
+    <Real>-190.89839905186679</Real>
+    <Real>-0.02986435134270923</Real>
+    <Real>-43.678739530459708</Real>
+    <Real>204.33248346864283</Real>
+    <Real>100.59753002293543</Real>
+    <Real>-43.669188695899365</Real>
+    <Real>204.34478327062357</Real>
+    <Real>-100.59140800118944</Real>
+    <Real>-215.95446135118274</Real>
+    <Real>711.7837109713164</Real>
+    <Real>0.058254008802208372</Real>
+    <Real>35.189068811442688</Real>
+    <Real>-355.2797783009878</Real>
+    <Real>-195.05263553435864</Real>
+    <Real>35.182407545030848</Real>
+    <Real>-355.25379369234054</Real>
+    <Real>195.01549027933629</Real>
+    <Real>276.02444509282253</Real>
+    <Real>-38.373126084734054</Real>
+    <Real>0.022735406511777967</Real>
+    <Real>27.212063319836545</Real>
+    <Real>-12.319042494305371</Real>
+    <Real>-0.022147910776173063</Real>
+  </Sequence>
+  <Real Name="1-butanol-EPOT-weight">2</Real>
+  <Real Name="1-butanol-EPOT-chi2">16383255.639228832</Real>
+  <Sequence Name="water-charge">
+    <Int Name="Length">4</Int>
+    <Real>0.15627791546449221</Real>
+    <Real>-0.31255583092898442</Real>
+    <Real>0.15627791546449221</Real>
+    <Real>0</Real>
+  </Sequence>
+  <Real Name="water-conf0-EXCHANGE">1.9438820561133139</Real>
+  <Real Name="water-conf0-DISPERSION">-1.7470172569471636</Real>
+  <Real Name="water-conf0-EPOT">-377.89158443930182</Real>
+  <Sequence Name="water-conf0-forces">
+    <Int Name="Length">12</Int>
+    <Real>0</Real>
+    <Real>180.37494064926082</Real>
+    <Real>-43.066945643647692</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>86.133891287295384</Real>
+    <Real>0</Real>
+    <Real>-180.37494064926082</Real>
+    <Real>-43.066945643647692</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+  </Sequence>
+  <Real Name="water-conf1-EXCHANGE">1.9700980283111456</Real>
+  <Real Name="water-conf1-DISPERSION">-1.7693956066908214</Real>
+  <Real Name="water-conf1-EPOT">-377.63854124002302</Real>
+  <Sequence Name="water-conf1-forces">
+    <Int Name="Length">12</Int>
+    <Real>0</Real>
+    <Real>221.29779562772978</Real>
+    <Real>19.735858455252142</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>-39.471716910504284</Real>
+    <Real>0</Real>
+    <Real>-221.29779562772978</Real>
+    <Real>19.735858455252142</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+    <Real>0</Real>
+  </Sequence>
+  <Real Name="water-EPOT-weight">4</Real>
+  <Real Name="water-EPOT-chi2">16639963.628704077</Real>
+</ReferenceData>
