@@ -73,7 +73,7 @@ static double computeFBPOSRE(MsgHandler                            *msghandler,
             auto r1   = std::sqrt(dr2);
             auto dr   = r1-R0;
             epr      += 0.5*K*dr*dr;
-            auto fpr  = -K/r1;
+            auto fpr  = -K*dr/r1;
             for (int m = 0; m < DIM; m++)
             {
                 (*forces)[ai][m] += fpr*x[ai][m];
@@ -706,7 +706,7 @@ static double computeBuckingham(MsgHandler                            *msghandle
                 msghandler->writeDebug(gmx::formatString("BHAM ai %d aj %d A %g b %g c6 %g erep: %g edisp: %g",
                                                          indices[0], indices[1], Abh, bbh, c6bh, eerep, eedisp));
             }
-            real fbond  = (bbh*eerep + 6*edisp*rinv)*rinv;
+            real fbond  = (bbh*eerep + 6*eedisp*rinv)*rinv;
             pairforces(fbond, dx, indices, forces);
         }
     }
