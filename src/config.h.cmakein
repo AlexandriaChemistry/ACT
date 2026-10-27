@@ -62,6 +62,15 @@
 /* Use built in fftpack FFT library */
 #cmakedefine01 GMX_FFT_FFTPACK
 
+/* ARM NEON was selected for the explicit SIMD force routines */
+#cmakedefine01 ACT_SIMD_ARM_NEON
+
+/* AVX2 was selected for the explicit SIMD force routines */
+#cmakedefine01 ACT_SIMD_AVX2
+
+/* AVX-512 was selected for the explicit SIMD force routines */
+#cmakedefine01 ACT_SIMD_AVX_512
+
 /* Target platform is x86 or x86_64 */
 #cmakedefine01 GMX_TARGET_X86
 

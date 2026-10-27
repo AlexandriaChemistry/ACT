@@ -196,7 +196,11 @@ void writeSimdInformation(gmx::TextWriter *writer)
     if (type == ExplicitSimd::None)
     {
         status = "not compiled in, potentials vectorized by the compiler";
-        if (processorSupports(ExplicitSimd::Avx512))
+        if (processorSupports(ExplicitSimd::ArmNeon))
+        {
+            status += ", configure with -DACT_SIMD=ARM_NEON to use ARM-NEON";
+        }
+        else if (processorSupports(ExplicitSimd::Avx512))
         {
             status += ", configure with -DACT_SIMD=AVX_512 to use AVX-512";
         }
