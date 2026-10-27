@@ -565,7 +565,8 @@ TEST_F(ForceEnergyDevComputerTest, CalcDevMonomerNoBoltz)
 TEST_F(ForceEnergyDevComputerTest, CalcDevMonomerLJ14_7)
 {
     DevOptions opts;
-    opts.weights            = unitWeights({ eRMS::EPOT });
+    // Forces are only computed if they are fitted
+    opts.weights            = unitWeights({ eRMS::EPOT, eRMS::Force2 });
     opts.checkConformations = true;
     // The force field has all parameters for these molecules, water has a
     // VSITE3FD virtual site.

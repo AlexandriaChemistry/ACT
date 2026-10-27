@@ -123,6 +123,8 @@
   </Sequence>
   <Real Name="1-butanol-EPOT-weight">2</Real>
   <Real Name="1-butanol-EPOT-chi2">16383255.639228832</Real>
+  <Real Name="1-butanol-Force2-weight">0</Real>
+  <Real Name="1-butanol-Force2-chi2">0</Real>
   <Sequence Name="water-charge">
     <Int Name="Length">4</Int>
     <Real>0.15627791546449221</Real>
@@ -168,4 +170,6 @@
   </Sequence>
   <Real Name="water-EPOT-weight">4</Real>
   <Real Name="water-EPOT-chi2">16639963.628704077</Real>
+  <Real Name="water-Force2-weight">0</Real>
+  <Real Name="water-Force2-chi2">0</Real>
 </ReferenceData>

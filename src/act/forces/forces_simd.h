@@ -18,11 +18,14 @@ class MsgHandler;
  * \param[in] pd         An ACT force field
  * \param[in] allmols    Vector containing all the molecules
  * \param[in] what       If 0, first monomer, if 1, second monomer, if 2 the dimer
+ * \param[in] forces     Whether to compute forces. If not, the computed forces
+ *                       of the conformations are not meaningful.
  */
 void computeEnergies(MsgHandler          *msghandler,
                      const ForceField    *pd,
                      std::vector<ACTMol> *allmols,
-                     size_t               what);
+                     size_t               what,
+                     bool                 forces = true);
 
 /*! \brief Compute the energies and forces of one potential for all conformations
  * The energy maps and forces of the conformations are cleared first.

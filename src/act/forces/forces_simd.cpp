@@ -1859,9 +1859,10 @@ public:
 
     /*! \brief Copy the coordinates of all conformations and clear the forces
      * \param[in] coords The conformations, all with the same number of particles
+     * \param[in] forces Whether forces will be computed, if not they are not cleared
      * \return false if the conformations do not have the same size
      */
-    bool setCoordinates(const std::vector<CoordsEnergy> &coords)
+    bool setCoordinates(const std::vector<CoordsEnergy> &coords, bool forces = true)
     {
         nconf = coords.size();
         if (nconf == 0)
@@ -1879,7 +1880,10 @@ public:
             }
         }
         x.resize(DIM*natom*stride);
-        f.assign(DIM*natom*stride, 0.0);
+        if (forces)
+        {
+            f.assign(DIM*natom*stride, 0.0);
+        }
         for(size_t a = 0; a < natom; a++)
         {
             for(int m = 0; m < DIM; m++)
@@ -1934,14 +1938,17 @@ public:
  * forces and energies are copied back. Since the conformations are
  * independent, the loop over them can be vectorized, provided the
  * compiler can inline everything.
+ * Without forces, the forces are neither loaded nor stored, and the
+ * compiler removes their computation since they are not used.
  * \tparam       NATOM     Number of atoms per interaction
  * \tparam       Vectorize Whether to ask the compiler to vectorize
+ * \tparam       Forces    Whether to compute forces
  * \param[in]    entries   The atom identifiers and parameters
  * \param[inout] ca        Coordinates and forces of all conformations
  * \param[inout] energies  Energies, term k of conformation c at energies[k*stride + c]
  * \param[in]    one       Function computing one interaction
  */
-template <int NATOM, bool Vectorize, typename One>
+template <int NATOM, bool Vectorize, bool Forces, typename One>
 static void computeConformations(const TopologyEntryVector &entries,
                                  ConformationArrays        *ca,
                                  double                    *energies,
@@ -1968,7 +1975,7 @@ static void computeConformations(const TopologyEntryVector &entries,
         for (int a = 0; a < NATOM; a++)
         {
             xa[a] = ca->x.data() + DIM*indices[a]*nconf;
-            fa[a] = ca->f.data() + DIM*indices[a]*nconf;
+            fa[a] = Forces ? ca->f.data() + DIM*indices[a]*nconf : nullptr;
         }
         withOne(one, entry, [&](const auto &o)
         {
@@ -1980,7 +1987,7 @@ static void computeConformations(const TopologyEntryVector &entries,
                     for (int m = 0; m < DIM; m++)
                     {
                         xl[a][m] = xa[a][m*nconf+c];
-                        fl[a][m] = fa[a][m*nconf+c];
+                        fl[a][m] = Forces ? fa[a][m*nconf+c] : 0.0;
                     }
                 }
                 double el[MAX_ENER];
@@ -1989,11 +1996,14 @@ static void computeConformations(const TopologyEntryVector &entries,
                     el[k] = energies[k*nconf+c];
                 }
                 o(nullptr, entry, lidx, xl, &fl, el);
-                for (int a = 0; a < NATOM; a++)
+                if constexpr (Forces)
                 {
-                    for (int m = 0; m < DIM; m++)
+                    for (int a = 0; a < NATOM; a++)
                     {
-                        fa[a][m*nconf+c] = fl[a][m];
+                        for (int m = 0; m < DIM; m++)
+                        {
+                            fa[a][m*nconf+c] = fl[a][m];
+                        }
                     }
                 }
                 for (int k = 0; k < MAX_ENER; k++)
@@ -2027,6 +2037,7 @@ static void computeConformations(const TopologyEntryVector &entries,
  * \param[inout] coords     The conformations, the energies are stored here
  * \param[inout] ca         Coordinates and forces of all conformations
  * \param[in]    epsilonr   Relative dielectric constant
+ * \param[in]    forces     Whether to compute forces
  * \return false if this potential is not implemented this way
  */
 static bool calcConformations(Potential                   mypot,
@@ -2034,7 +2045,8 @@ static bool calcConformations(Potential                   mypot,
                               const std::vector<ActAtom> &atoms,
                               std::vector<CoordsEnergy>  *coords,
                               ConformationArrays         *ca,
-                              double                      epsilonr)
+                              double                      epsilonr,
+                              bool                        forces)
 {
     // Energy term k of conformation c is stored at k*stride + c
     auto &energies = ca->energies;
@@ -2042,11 +2054,18 @@ static bool calcConformations(Potential                   mypot,
     // Use explicit SIMD where available
     if (!(useExplicitSimd() &&
           computeExplicitSimd(mypot, topentries, atoms, epsilonr, ca->stride,
-                              ca->x.data(), ca->f.data(), energies.data())) &&
+                              ca->x.data(), ca->f.data(), energies.data(), forces)) &&
         !dispatchPotential(mypot, atoms, epsilonr,
                            [&]<int NATOM, bool Vectorize>(auto one)
                            {
-                               computeConformations<NATOM, Vectorize>(topentries, ca, energies.data(), one);
+                               if (forces)
+                               {
+                                   computeConformations<NATOM, Vectorize, true>(topentries, ca, energies.data(), one);
+                               }
+                               else
+                               {
+                                   computeConformations<NATOM, Vectorize, false>(topentries, ca, energies.data(), one);
+                               }
                            }))
     {
         return false;
@@ -2062,13 +2081,16 @@ static bool calcConformations(Potential                   mypot,
  * \param[inout] coords        The conformations
  * \param[in]    epsilonr      Relative dielectric constant
  * \param[in]    conformations Whether to loop over the conformations in the inner loop
+ * \param[in]    forces        Whether to compute forces, if not the forces
+ *                             in coords are not meaningful
  */
 static inline void lowComputeEnergies(MsgHandler                *msghandler,
                                       const ForceField          *pd,
                                       const Topology            *top,
                                       std::vector<CoordsEnergy> *coords,
                                       double                     epsilonr,
-                                      bool                       conformations)
+                                      bool                       conformations,
+                                      bool                       forces)
 {
     for(auto &ce : *coords)
     {
@@ -2085,16 +2107,24 @@ static inline void lowComputeEnergies(MsgHandler                *msghandler,
         }
         // Also reset the done flag to make sure energies are computed once at least
         ce.done = false;
-        // Clear the forces, calcSome adds the forces of each potential to them
-        gmx::RVec fzero = { 0, 0, 0 };
-        ce.fcalc.assign(ce.x.size(), fzero);
+        // Clear the forces, calcSome adds the forces of each potential to them.
+        // Without forces calcSome still needs the memory, but not the values.
+        if (forces)
+        {
+            gmx::RVec fzero = { 0, 0, 0 };
+            ce.fcalc.assign(ce.x.size(), fzero);
+        }
+        else
+        {
+            ce.fcalc.resize(ce.x.size());
+        }
     }
     // Coordinates and forces of all conformations, for looping over
     // conformations in the inner loop. Kept between calls such that the
     // memory is reused, setCoordinates sets all members.
     static thread_local ConformationArrays ca;
     // With a single conformation there is nothing to vectorize.
-    bool haveArrays     = conformations && coords->size() > 1 && ca.setCoordinates(*coords);
+    bool haveArrays     = conformations && coords->size() > 1 && ca.setCoordinates(*coords, forces);
     // Whether the current forces are in ca rather than in coords
     bool forcesInArrays = haveArrays;
     for(const auto &entry : top->entries())
@@ -2120,22 +2150,25 @@ static inline void lowComputeEnergies(MsgHandler                *msghandler,
         }
         if (haveArrays)
         {
-            if (!forcesInArrays)
+            if (forces && !forcesInArrays)
             {
                 ca.loadForces(*coords);
                 forcesInArrays = true;
             }
             if (calcConformations(mypot, entry.second, top->atoms(),
-                                  coords, &ca, epsilonr))
+                                  coords, &ca, epsilonr, forces))
             {
                 continue;
             }
-            ca.storeForces(coords);
+            if (forces)
+            {
+                ca.storeForces(coords);
+            }
             forcesInArrays = false;
         }
         calcSome(msghandler, mypot, entry.second, top->atoms(), coords, epsilonr);
     }
-    if (forcesInArrays)
+    if (forces && forcesInArrays)
     {
         ca.storeForces(coords);
     }
@@ -2144,7 +2177,8 @@ static inline void lowComputeEnergies(MsgHandler                *msghandler,
 void computeEnergies(MsgHandler          *msghandler,
                      const ForceField    *pd,
                      std::vector<ACTMol> *allmols,
-                     size_t               what)
+                     size_t               what,
+                     bool                 forces)
 {
     double epsilonr = 1;
     auto iCoul = InteractionType::ELECTROSTATICS;
@@ -2170,11 +2204,11 @@ void computeEnergies(MsgHandler          *msghandler,
         }
         if (what >= 2)
         {
-            lowComputeEnergies(msghandler, pd, mol.topology(), mol.dimerCoords(), epsilonr, true);
+            lowComputeEnergies(msghandler, pd, mol.topology(), mol.dimerCoords(), epsilonr, true, forces);
         }
         else
         {
-            lowComputeEnergies(msghandler, pd, &tops[what], mol.monomerCoords(what), epsilonr, true);
+            lowComputeEnergies(msghandler, pd, &tops[what], mol.monomerCoords(what), epsilonr, true, forces);
         }
     }
 }
@@ -2196,7 +2230,7 @@ void computePotential(MsgHandler                 *msghandler,
     }
     ConformationArrays ca;
     if (conformations && coords->size() > 1 && ca.setCoordinates(*coords) &&
-        calcConformations(mypot, topentries, atoms, coords, &ca, epsilonr))
+        calcConformations(mypot, topentries, atoms, coords, &ca, epsilonr, true))
     {
         ca.storeForces(coords);
     }

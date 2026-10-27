@@ -84,8 +84,9 @@ size_t explicitSimdWidth();
  * \param[in]    epsilonr Relative dielectric constant
  * \param[in]    stride   Number of conformations, a multiple of explicitSimdWidth()
  * \param[in]    x        Coordinates
- * \param[inout] f        Forces
+ * \param[inout] f        Forces, not used if forces is false
  * \param[inout] energies Energies
+ * \param[in]    forces   Whether to compute forces
  * Only call this if useExplicitSimd() returns true, since the processor
  * may not support the instructions otherwise.
  * \return false if this potential is not available with explicit SIMD
@@ -97,7 +98,8 @@ bool computeExplicitSimd(Potential                   mypot,
                          size_t                      stride,
                          const double               *x,
                          double                     *f,
-                         double                     *energies);
+                         double                     *energies,
+                         bool                        forces);
 
 } // namespace alexandria
 

@@ -656,11 +656,14 @@ struct HuaBond
  * \param[in]    atoms    The atoms
  * \param[in]    epsilonr Relative dielectric constant
  * \param[in]    stride   Number of conformations, a multiple of simdWidth
+ * Without forces the compiler removes their computation from the kernel,
+ * since the force is not used.
+ * \tparam       Forces   Whether to compute forces
  * \param[in]    x        Coordinates
- * \param[inout] f        Forces
+ * \param[inout] f        Forces, not used if Forces is false
  * \param[inout] energies Energies
  */
-template <typename Kernel>
+template <typename Kernel, bool Forces>
 void computePairs(const TopologyEntryVector  &entries,
                   const std::vector<ActAtom> &atoms,
                   double                      epsilonr,
@@ -704,12 +707,15 @@ void computePairs(const TopologyEntryVector  &entries,
             {
                 simd::store(energies + k*stride + c, e[k]);
             }
-            for (int m = 0; m < DIM; m++)
+            if constexpr (Forces)
             {
-                double *fi = f + pp.i + m*stride + c;
-                double *fj = f + pp.j + m*stride + c;
-                simd::store(fi, simd::fma(fscal, dx[m], simd::load(fi)));
-                simd::store(fj, simd::load(fj) - fscal*dx[m]);
+                for (int m = 0; m < DIM; m++)
+                {
+                    double *fi = f + pp.i + m*stride + c;
+                    double *fj = f + pp.j + m*stride + c;
+                    simd::store(fi, simd::fma(fscal, dx[m], simd::load(fi)));
+                    simd::store(fj, simd::load(fj) - fscal*dx[m]);
+                }
             }
         }
     }
@@ -740,11 +746,19 @@ bool computeExplicitSimd(Potential                   mypot,
                          size_t                      stride,
                          const double               *x,
                          double                     *f,
-                         double                     *energies)
+                         double                     *energies,
+                         bool                        forces)
 {
     auto pairs = [&](auto kernel)
     {
-        computePairs<decltype(kernel)>(entries, atoms, epsilonr, stride, x, f, energies);
+        if (forces)
+        {
+            computePairs<decltype(kernel), true>(entries, atoms, epsilonr, stride, x, f, energies);
+        }
+        else
+        {
+            computePairs<decltype(kernel), false>(entries, atoms, epsilonr, stride, x, f, energies);
+        }
         return true;
     };
     switch (mypot)
@@ -791,7 +805,7 @@ ExplicitSimd explicitSimdType()
 }
 
 bool computeExplicitSimd(Potential, const TopologyEntryVector &, const std::vector<ActAtom> &,
-                         double, size_t, const double *, double *, double *)
+                         double, size_t, const double *, double *, double *, bool)
 {
     return false;
 }

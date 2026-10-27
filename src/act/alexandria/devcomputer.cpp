@@ -594,8 +594,8 @@ void ForceEnergyDevComputer::calcDeviation(MsgHandler                     *msgha
     bool sepInductionTerms = separateInductionCorrection_;
     if (doForce2 || doEpot || doInter)
     {
-        // Compute all energies and forces at once
-        forceComputer->computeRelaxedEnergies(msghandler, forcefield, actmols, true, sepInductionTerms);
+        // Compute all energies at once, and the forces if needed
+        forceComputer->computeRelaxedEnergies(msghandler, forcefield, actmols, true, sepInductionTerms, doForce2);
         for(auto actmol = actmols->begin(); actmol < actmols->end(); ++actmol)
         {
             if (doForce2)
