@@ -27,11 +27,46 @@
  */
 #include "generate_dependent.h"
 
+#include <algorithm>
+#include <vector>
+
 #include "act/forcefield/forcefield.h"
 #include "act/forcefield/forcefield_parametername.h"
 
 namespace alexandria
 {
+
+//! The parameters of a single particle type, from which pair parameters are made
+struct SingleParameters
+{
+    //! The identifier
+    const Identifier       *id;
+    //! The parameters
+    ForceFieldParameterMap *params;
+};
+
+/*! \brief Collect the parameters of single particle types
+ * The list also contains the pair parameters, which are skipped. Since
+ * the list is a std::map, the pointers stay valid when pairs are added.
+ * \param[in] parameters All parameters of an interaction type
+ * \return The single particle parameters, sorted by identifier, such that
+ *         for pairs (i, j) with i <= j the identifier of i is not larger
+ */
+static std::vector<SingleParameters> singleParameters(ForceFieldParameterListMap *parameters)
+{
+    std::vector<SingleParameters> singles;
+    for (auto &p : *parameters)
+    {
+        if (p.first.atoms().size() <= 1)
+        {
+            singles.push_back({ &p.first, &p.second });
+        }
+    }
+    std::sort(singles.begin(), singles.end(),
+              [](const SingleParameters &a, const SingleParameters &b)
+              { return a.id->id() < b.id->id(); });
+    return singles;
+}
 
 /*! \brief Generation parameters using combination rules
  * \param[in]    msghandler For debugging info
@@ -52,79 +87,68 @@ static void generateParameterPairs(MsgHandler      *msghandler,
     {
         return;
     }
-    auto forcesVdw = pd->findForces(itype);
-    auto comb_rule = forcesVdw->combinationRules();
-    // We temporarily store the new parameters here
-    ForceFieldParameterListMap *parm = forcesVdw->parameters();;
-    
+    auto        forcesVdw = pd->findForces(itype);
+    const auto &comb_rule = forcesVdw->combinationRules();
+    // The new parameters are added to the same list
+    ForceFieldParameterListMap *parm = forcesVdw->parameters();
+
+    // If the combination rule was updated all pairs change
+    bool crupdated = false;
+    for(const auto &cr : comb_rule)
+    {
+        crupdated = crupdated || cr.second.ffplConst().updated();
+    }
+    auto singles = singleParameters(parm);
+    // Check whether the parameters for each particle type have been updated
+    std::vector<bool> updated;
+    for(const auto &single : singles)
+    {
+        bool supdated = false;
+        for(const auto &p : *single.params)
+        {
+            supdated = supdated || p.second.updated();
+        }
+        updated.push_back(supdated);
+    }
+    // With the Kronecker combination rule pairs are only included if one
+    // particle is a vsite and the other an atom.
+    bool kronecker = (Potential::BORN_MAYER == forcesVdw->potential() ||
+                      Potential::MORSE_BONDS == forcesVdw->potential());
+    std::vector<const ParticleType *> ptypes;
+    if (kronecker)
+    {
+        for(const auto &single : singles)
+        {
+            const auto &atom = single.id->atoms()[0];
+            ptypes.push_back(pd->hasParticleType(atom) ? pd->findParticleType(atom) : nullptr);
+        }
+    }
+
     // Now do the double loop
     int nid = 0;
-    for (auto &ivdw : *forcesVdw->parameters())
+    for (size_t i = 0; i < singles.size(); i++)
     {
-        auto &iid    = ivdw.first;
-        // Check whether this is a single atom parameter
-        if (iid.atoms().size() > 1)
+        for (size_t j = i; j < singles.size(); j++)
         {
-            continue;
-        }
-        // Check whether the parameter for atom i has been updated
-        auto &iparam = ivdw.second;
-        bool iupdated = false;
-        for(const auto &ip : iparam)
-        {
-            iupdated = iupdated || ip.second.updated();
-        }
-        for (auto &jvdw : *forcesVdw->parameters())
-        {
-            auto &jid    = jvdw.first;
-            // Check whether this is a single atom parameter and
-            // whether this is is larger or equal to iid.
-            if (jid.atoms().size() > 1 || jid.id() < iid.id())
+            if (!(updated[i] || updated[j] || crupdated || force))
             {
                 continue;
             }
-            // Test whether or not to include this pair.
-            // This will only be used with the Kronecker combination rule.
             bool includePair = true;
-            if (Potential::BORN_MAYER == forcesVdw->potential() || 
-                Potential::MORSE_BONDS == forcesVdw->potential())
+            if (kronecker && ptypes[i] && ptypes[j])
             {
-                auto ai = iid.atoms()[0];
-                auto aj = jid.atoms()[0];
-                if (pd->hasParticleType(ai) && pd->hasParticleType(aj))
-                {
-                    auto pti = pd->findParticleType(ai)->apType();
-                    auto ptj = pd->findParticleType(aj)->apType();
-                    // The pair will be included only if one particle is a vsite
-                    // and the other an atom.
-                    includePair = ((ActParticle::Vsite == pti && ActParticle::Atom == ptj) ||
-                                   (ActParticle::Vsite == ptj && ActParticle::Atom == pti));
-                }
-            }
-            // Check whether the parameter for atom j has been updated
-            auto &jparam = jvdw.second;
-            bool jupdated = false;
-            for(const auto &jp : jparam)
-            {
-                jupdated = jupdated || jp.second.updated();
-            }
-            // Check whether the combination rule was updated
-            bool crupdated = false;
-            for(const auto &cr : comb_rule)
-            {
-                crupdated = crupdated || cr.second.ffplConst().updated();
-            }
-            if (!(iupdated || jupdated || crupdated || force))
-            {
-                continue;
+                auto pti = ptypes[i]->apType();
+                auto ptj = ptypes[j]->apType();
+                includePair = ((ActParticle::Vsite == pti && ActParticle::Atom == ptj) ||
+                               (ActParticle::Vsite == ptj && ActParticle::Atom == pti));
             }
             // Fill the parameters, potential dependent
             ForceFieldParameterMap pmap;
             evalCombinationRule(forcesVdw->potential(),
-                                comb_rule, ivdw.second, jvdw.second, includePair, &pmap);
+                                comb_rule, *singles[i].params, *singles[j].params, includePair, &pmap);
             if (!pmap.empty())
             {
-                auto myId = Identifier({ iid.id(), jid.id() }, { 1 }, CanSwap::Yes);
+                auto myId = Identifier({ singles[i].id->id(), singles[j].id->id() }, { 1 }, CanSwap::Yes);
                 if (msghandler && msghandler->debug())
                 {
                     auto mystr = gmx::formatString("Generated pair parameters for %s / %s",
@@ -168,29 +192,29 @@ static void generateCoulombParameterPairs(ForceField *pd, bool force)
     auto zeta = cname[coulZETA];
     // Finally add the new parameters to the exisiting list
     auto fold = forcesCoul->parameters();
+    // The zeta of each particle type and whether it was updated
+    auto singles = singleParameters(fold);
+    std::vector<double> zetas;
+    std::vector<bool>   updated;
+    for(const auto &single : singles)
+    {
+        const auto &p = (*single.params)[zeta];
+        zetas.push_back(p.internalValue());
+        updated.push_back(p.updated());
+    }
     // Now do the double loop
     int nid = 0;
-    for (auto &icoul : *forcesCoul->parameters())
+    for (size_t i = 0; i < singles.size(); i++)
     {
-        auto &iid    = icoul.first;
-        // Check whether this is a single atom parameter
-        if (iid.atoms().size() > 1)
+        double izeta = zetas[i];
+        for (size_t j = i; j < singles.size(); j++)
         {
-            continue;
-        }
-        double izeta = icoul.second[zeta].internalValue();
-        for (auto &jcoul : *forcesCoul->parameters())
-        {
-            auto &jid    = jcoul.first;
-            // Check whether this is a single atom parameter and
-            // whether this is is larger or equal to iid.
-            if (jid.atoms().size() > 1 || jid.id() < iid.id() ||
-                (!icoul.second[zeta].updated() && !jcoul.second[zeta].updated() && !force))
+            if (!updated[i] && !updated[j] && !force)
             {
                 continue;
             }
-            double     jzeta  = jcoul.second[zeta].internalValue();
-            Identifier pairID({ iid.id(), jid.id() }, { 1 }, CanSwap::Yes);
+            double     jzeta  = zetas[j];
+            Identifier pairID({ singles[i].id->id(), singles[j].id->id() }, { 1 }, CanSwap::Yes);
             nid += 1;
             auto       oldfp  = fold->find(pairID);
             if (oldfp == fold->end())
