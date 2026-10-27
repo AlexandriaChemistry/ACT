@@ -402,22 +402,24 @@ static void spread_vsite2fd(const rvec xi,
     {
         GMX_THROW(gmx::InternalError(gmx::formatString("Distance between atoms is zero").c_str()));
     }
-    real gamma = a*gmx::invsqrt(iprod(dx, dx));
-    rvec xis;
-    for (int m = 0; m < DIM; m++)
-    {
-        xis[m] = xi[m] + gamma*dx[m];
-    }
-    rvec p;
-    svmul(iprod(xis, fav)/iprod(xis, xis), xis, p);
+    // The virtual site is at xi + a*u, with u the unit vector from i to j,
+    // see constr_vsite2fd. The derivative of u with respect to xj is
+    // (1 - u u^T)/|dx|, which gives the force on j, the remainder goes to i.
+    real invd  = gmx::invsqrt(iprod(dx, dx));
+    real gamma = a*invd;
+    rvec u;
+    svmul(invd, dx, u);
+    real fu = iprod(fav, u);
     rvec df;
     for(int m = 0; m < DIM; m++)
     {
-        df[m] = gamma*(fav[m]-p[m]);
+        df[m] = gamma*(fav[m] - fu*u[m]);
     }
-    
-    rvec_inc(fi, df);
-    rvec_dec(fj, df);
+    for(int m = 0; m < DIM; m++)
+    {
+        fi[m] += fav[m] - df[m];
+    }
+    rvec_inc(fj, df);
     
     /* 6 Flops */
     clear_rvec(fav);
@@ -454,8 +456,9 @@ static void spread_vsite4(rvec ffi,
     rvec fi, fj, fk, fl;
     real d = 1 - a - b - c;
     /* 3 flops */
-    svmul(d, fav, fi);
-    svmul(a, fav, fj);
+    // Same weights as in constr_vsite4
+    svmul(a, fav, fi);
+    svmul(d, fav, fj);
     svmul(b, fav, fk);
     svmul(c, fav, fl);
     /* 12 flops */
@@ -472,115 +475,46 @@ static void spread_vsite4(rvec ffi,
 
 static void spread_vsite3FD(const std::vector<int> &ia, real a, real b,
                             const rvec x[], rvec f[], rvec fshift[],
-                            gmx_bool VirCorr, matrix dxdf,
+                            gmx_bool VirCorr, gmx_unused matrix dxdf,
                             const t_pbc *pbc, const t_graph *g)
 {
-    real    c, invl, fproj, a1;
-    rvec    xvi, xij, xjk, xix, fv, temp;
-    int     av, ai, aj, ak;
-    int     svi, sji, skj;
-    ivec    di;
-
-    av = ia[4];
-    ai = ia[2];
-    aj = ia[1];
-    ak = ia[3];
+    // Shift forces and the virial are not used in ACT
+    GMX_RELEASE_ASSERT(fshift == nullptr && !VirCorr && g == nullptr,
+                       "Shift forces and virial not supported for VSITE3FD");
+    // Same order as in constructPositions, the virtual site is last
+    int ai = ia[0];
+    int aj = ia[1];
+    int ak = ia[2];
+    int av = ia[3];
+    rvec fv;
     copy_rvec(f[av], fv);
     clear_rvec(f[av]);
 
-    sji = pbc_rvec_sub(pbc, x[aj], x[ai], xij);
-    skj = pbc_rvec_sub(pbc, x[ak], x[aj], xjk);
-    /* 6 flops */
-
-    /* xix goes from i to point x on the line jk */
-    xix[XX] = xij[XX]+a*xjk[XX];
-    xix[YY] = xij[YY]+a*xjk[YY];
-    xix[ZZ] = xij[ZZ]+a*xjk[ZZ];
-    /* 6 flops */
-
-    invl = gmx::invsqrt(iprod(xix, xix));
-    c    = b*invl;
-    /* 4 + ?10? flops */
-
-    fproj = iprod(xix, fv)*invl*invl; /* = (xix . f)/(xix . xix) */
-
-    temp[XX] = c*(fv[XX]-fproj*xix[XX]);
-    temp[YY] = c*(fv[YY]-fproj*xix[YY]);
-    temp[ZZ] = c*(fv[ZZ]-fproj*xix[ZZ]);
-    /* 16 */
-
-    /* c is already calculated in constr_vsite3FD
-       storing c somewhere will save 26 flops!     */
-
-    a1         = 1 - a;
-    f[ai][XX] += fv[XX] - temp[XX];
-    f[ai][YY] += fv[YY] - temp[YY];
-    f[ai][ZZ] += fv[ZZ] - temp[ZZ];
-    f[aj][XX] += a1*temp[XX];
-    f[aj][YY] += a1*temp[YY];
-    f[aj][ZZ] += a1*temp[ZZ];
-    f[ak][XX] += a*temp[XX];
-    f[ak][YY] += a*temp[YY];
-    f[ak][ZZ] += a*temp[ZZ];
-    /* 19 Flops */
-
-    if (g)
+    // The virtual site is at xj + b*t/|t| with t = (xi - xj) + a*(xk - xj),
+    // see constr_vsite3FD. With P = 1 - t t^T/|t|^2 and c = b/|t| the
+    // derivatives of the position are c P with respect to xi, a c P with
+    // respect to xk, and 1 - (1 + a) c P with respect to xj.
+    rvec xji, xjk, t;
+    pbc_rvec_sub(pbc, x[ai], x[aj], xji);
+    pbc_rvec_sub(pbc, x[ak], x[aj], xjk);
+    for (int m = 0; m < DIM; m++)
     {
-        ivec_sub(SHIFT_IVEC(g, ia[1]), SHIFT_IVEC(g, ai), di);
-        svi = IVEC2IS(di);
-        ivec_sub(SHIFT_IVEC(g, aj), SHIFT_IVEC(g, ai), di);
-        sji = IVEC2IS(di);
-        ivec_sub(SHIFT_IVEC(g, ak), SHIFT_IVEC(g, aj), di);
-        skj = IVEC2IS(di);
+        t[m] = xji[m] + a*xjk[m];
     }
-    else if (pbc)
+    real invl  = gmx::invsqrt(iprod(t, t));
+    real c     = b*invl;
+    real fproj = iprod(t, fv)*invl*invl;
+    rvec temp;
+    for (int m = 0; m < DIM; m++)
     {
-        svi = pbc_rvec_sub(pbc, x[av], x[ai], xvi);
+        temp[m] = c*(fv[m] - fproj*t[m]);
     }
-    else
+    for (int m = 0; m < DIM; m++)
     {
-        svi = CENTRAL;
+        f[ai][m] += temp[m];
+        f[ak][m] += a*temp[m];
+        f[aj][m] += fv[m] - (1 + a)*temp[m];
     }
-
-    if (fshift && (svi != CENTRAL || sji != CENTRAL || skj != CENTRAL))
-    {
-        rvec_dec(fshift[svi], fv);
-        fshift[CENTRAL][XX] += fv[XX] - (1 + a)*temp[XX];
-        fshift[CENTRAL][YY] += fv[YY] - (1 + a)*temp[YY];
-        fshift[CENTRAL][ZZ] += fv[ZZ] - (1 + a)*temp[ZZ];
-        fshift[    sji][XX] += temp[XX];
-        fshift[    sji][YY] += temp[YY];
-        fshift[    sji][ZZ] += temp[ZZ];
-        fshift[    skj][XX] += a*temp[XX];
-        fshift[    skj][YY] += a*temp[YY];
-        fshift[    skj][ZZ] += a*temp[ZZ];
-    }
-
-    if (VirCorr)
-    {
-        /* When VirCorr=TRUE, the virial for the current forces is not
-         * calculated from the redistributed forces. This means that
-         * the effect of non-linear virtual site constructions on the virial
-         * needs to be added separately. This contribution can be calculated
-         * in many ways, but the simplest and cheapest way is to use
-         * the first constructing atom ai as a reference position in space:
-         * subtract (xv-xi)*fv and add (xj-xi)*fj + (xk-xi)*fk.
-         */
-        rvec xiv;
-
-        pbc_rvec_sub(pbc, x[av], x[ai], xiv);
-
-        for (int i = 0; i < DIM; i++)
-        {
-            for (int j = 0; j < DIM; j++)
-            {
-                /* As xix is a linear combination of j and k, use that here */
-                dxdf[i][j] += -xiv[i]*fv[j] + xix[i]*temp[j];
-            }
-        }
-    }
-
-    /* TOTAL: 61 flops */
 }
 
 static void spread_vsite3FAD(const std::vector<int> &ia, real a, real b,
@@ -595,12 +529,13 @@ static void spread_vsite3FAD(const std::vector<int> &ia, real a, real b,
     int     svi, sji, skj, d;
     ivec    di;
 
-    av = ia[4];
-    ai = ia[1];
-    aj = ia[2];
-    ak = ia[3];
-    copy_rvec(f[ia[1]], fv);
-    clear_rvec(f[ia[1]]);
+    // Same order as in constructPositions, the virtual site is last
+    ai = ia[0];
+    aj = ia[1];
+    ak = ia[2];
+    av = ia[3];
+    copy_rvec(f[av], fv);
+    clear_rvec(f[av]);
 
     sji = pbc_rvec_sub(pbc, x[aj], x[ai], xij);
     skj = pbc_rvec_sub(pbc, x[ak], x[aj], xjk);
@@ -650,7 +585,7 @@ static void spread_vsite3FAD(const std::vector<int> &ia, real a, real b,
 
     if (g)
     {
-        ivec_sub(SHIFT_IVEC(g, ia[1]), SHIFT_IVEC(g, ai), di);
+        ivec_sub(SHIFT_IVEC(g, av), SHIFT_IVEC(g, ai), di);
         svi = IVEC2IS(di);
         ivec_sub(SHIFT_IVEC(g, aj), SHIFT_IVEC(g, ai), di);
         sji = IVEC2IS(di);
@@ -1304,7 +1239,7 @@ void VsiteHandler::distributeForces(const Topology               *top,
                               params[vsite3sA], params[vsite3sA]);
                 break;
             case InteractionType::VSITE3FD:
-                spread_vsite3FD(atomIndices, params[vsite3A], params[vsite3B], x, f, fshift,
+                spread_vsite3FD(atomIndices, params[vsite3fdA], params[vsite3fdB], x, f, fshift,
                                 VirCorr, dxdf, &pbc_, g);
                 break;
             case InteractionType::VSITE3FAD:
