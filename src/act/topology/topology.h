@@ -37,6 +37,7 @@
 
 #include <cstdio>
 #include <map>
+#include <set>
 #include <vector>
 
 #include "act/basics/act_particle.h"
@@ -218,10 +219,15 @@ private:
      * \param[in] msghandler Message handler
      * \param[in] pd The force field structure
      * \param[in] missing How to handle missing parameters
+     * \param[in] itypes  If not nullptr, only the entries of these
+     *                    interaction types are filled, which is useful
+     *                    if only their parameters changed since the
+     *                    previous call
      */
-    void fillParameters(MsgHandler        *msghandler,
-                        const ForceField  *pd,
-                        missingParameters missing);
+    void fillParameters(MsgHandler                      *msghandler,
+                        const ForceField                *pd,
+                        missingParameters                missing,
+                        const std::set<InteractionType> *itypes = nullptr);
 
     /*! \brief Special purpose routine to add position restraints to all atoms
      * \param[in] msghandler For warnings etc.

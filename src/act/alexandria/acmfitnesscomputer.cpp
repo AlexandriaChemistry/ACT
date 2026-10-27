@@ -35,6 +35,8 @@
 
 #include "acmfitnesscomputer.h"
 
+#include <set>
+
 #include "act/basics/dataset.h"
 #include "act/basics/msg_handler.h"
 #include "act/ga/genome.h"
@@ -202,6 +204,15 @@ double ACMFitnessComputer::calcDeviation(MsgHandler   *msghandler,
     sii_->resetChiSquared(ims);
 
 
+    // Only the parameters that are optimized change, therefore only the
+    // topology entries of their interaction types have to be updated.
+    // All entries were filled when the topologies were made.
+    std::set<InteractionType> itUpdate;
+    for(const auto &oi : sii_->optIndex())
+    {
+        itUpdate.insert(oi.iType());
+    }
+
     // Loop over molecules
     int ntrain = 0;
     int nlocal = 0;
@@ -219,20 +230,13 @@ double ACMFitnessComputer::calcDeviation(MsgHandler   *msghandler,
         if ((actmol->support() == eSupport::Local) ||
             (task == CalcDev::ComputeAll && actmol->support() == eSupport::Remote))
         {
-            std::vector<InteractionType> itUpdate;
-            for(auto &io : molgen_->iopt())
-            {
-                if (io.second)
-                {
-                    itUpdate.push_back(io.first);
-                }
-            }
             // Now update the topology
-            actmol->topologyPtr()->fillParameters(msghandler, sii_->forcefield(), missingParameters::Error);
+            actmol->topologyPtr()->fillParameters(msghandler, sii_->forcefield(),
+                                                  missingParameters::Error, &itUpdate);
             // Fill the fragments too if there are any
             for(auto &ft : actmol->fragmentHandler()->topologiesPtr())
             {
-                ft.fillParameters(msghandler, sii_->forcefield(), missingParameters::Error);
+                ft.fillParameters(msghandler, sii_->forcefield(), missingParameters::Error, &itUpdate);
             }
 
             // Run charge generation including shell minimization
