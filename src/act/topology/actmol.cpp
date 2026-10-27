@@ -210,11 +210,15 @@ std::vector<gmx::RVec> ACTMol::experCoords(const std::vector<gmx::RVec> &xxx) co
     auto topol   = topology();
     auto myatoms = topol->atoms();
     // Called this function too early?
-    GMX_RELEASE_ASSERT(!myatoms.empty(), "No topology to generate coordinates.");
-
+    if (myatoms.empty())
+    {
+        GMX_THROW(gmx::InternalError("No topology to generate coordinates."));
+    }
     // Called this function too early?
-    GMX_RELEASE_ASSERT(!xxx.empty(), "No coordinates.");
-
+    if (xxx.empty())
+    {
+        GMX_THROW(gmx::InternalError("Empty coordinate array passed."));
+    }
     gmx::RVec fzero = { 0, 0, 0 };
     std::vector<gmx::RVec> coords(myatoms.size(), fzero);
     int j = 0;
@@ -920,13 +924,13 @@ void ACTMol::GenerateTopology(MsgHandler        *msghandler,
         isLinear_ = isLinearMolecule(msghandler, topology_.atoms(), coords);
         // Symmetrize the atoms
         get_symmetrized_charges(&topology_, pd, nullptr, &symmetric_charges_);
+        // Finally collect data for fast force calculations
+        collectCoordsEnergy(msghandler);
     }
     else
     {
         msghandler->msg(ACTStatus::Error, gmx::formatString("Cannot make topology for %s", getMolname().c_str()));
     }
-    // Finally collect data for fast force calculations
-    collectCoordsEnergy(msghandler);
 }
 
 double ACTMol::bondOrder(int ai, int aj) const
