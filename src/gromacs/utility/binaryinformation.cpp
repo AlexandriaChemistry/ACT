@@ -227,7 +227,6 @@ void gmx_print_version_info(gmx::TextWriter *writer)
     writer->writeLine("MPI library:        none");
 #endif
     writer->writeLine(formatString("GPU support:        %s", getGpuImplementationString()));
-    writer->writeLine(formatString("SIMD instructions:  %s", GMX_SIMD_STRING));
 
 
     /* TODO: The below strings can be quite long, so it would be nice to wrap

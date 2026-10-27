@@ -54,12 +54,7 @@
 #include <stdio.h>
 
 #if !GMX_NATIVE_WINDOWS
-/* Ugly hack because the openmp implementation below hacks into the SIMD
- * settings to decide when to use _mm_pause(). This should eventually be
- * changed into proper detection of the intrinsics uses, not SIMD.
- */
-#if GMX_SIMD_X86_SSE2 || GMX_SIMD_X86_SSE4_1 || GMX_SIMD_X86_AVX_128_FMA || \
-    GMX_SIMD_X86_AVX_256 || GMX_SIMD_X86_AVX2_256
+#if defined(__SSE2__)
 #    include <xmmintrin.h>
 #endif
 #else
@@ -127,12 +122,7 @@ gmx_bool gmx_omp_check_thread_affinity(char **message);
 static inline void gmx_pause()
 {
 #ifndef _MSC_VER
-    /* Ugly hack because the openmp implementation below hacks into the SIMD
-     * settings to decide when to use _mm_pause(). This should eventually be
-     * changed into proper detection of the intrinsics uses, not SIMD.
-     */
-#if (GMX_SIMD_X86_SSE2 || GMX_SIMD_X86_SSE4_1 || GMX_SIMD_X86_AVX_128_FMA || \
-     GMX_SIMD_X86_AVX_256 || GMX_SIMD_X86_AVX2_256) && !defined(__MINGW32__)
+#if defined(__SSE2__) && !defined(__MINGW32__)
     /* Replace with tbb::internal::atomic_backoff when/if we use TBB */
     _mm_pause();
 #elif defined __MIC__

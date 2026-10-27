@@ -196,8 +196,6 @@ set(CMAKE_PREFIX_PATH "" CACHE STRING "Extra locations to search for external li
 
 gmx_set_boolean(GMX_DOUBLE_DEFAULT ON)
 option(GMX_DOUBLE "Use double precision (much slower, use only if you really need it)" ${GMX_DOUBLE_DEFAULT})
-option(GMX_RELAXED_DOUBLE_PRECISION "Accept single precision 1/sqrt(x) when using Fujitsu HPC-ACE SIMD" OFF)
-mark_as_advanced(GMX_RELAXED_DOUBLE_PRECISION)
 
 option(GMX_MPI    "Build a parallel (message-passing) version of ACT" ON)
 gmx_dependent_option(
@@ -216,21 +214,11 @@ set(GMX_GPU_ACCELERATION_FRAMEWORK "GMX_GPU_NONE")
 set(GMX_GPU "GMX_GPU_NONE")
 set(GMX_USE_CUDA OFF)
 
-gmx_option_multichoice(
-    GMX_SIMD
-    "SIMD instruction set for CPU kernels and compiler optimization"
-    "None"
-    None Reference)
-#    AUTO None SSE2 SSE4.1 AVX_128_FMA AVX_256 AVX2_256 AVX2_128 AVX_512 AVX_512_KNL  ARM_NEON ARM_NEON_ASIMD IBM_VMX IBM_VSX Sparc64_HPC_ACE Reference)
-
 #gmx_option_multichoice(
 #    GMX_QMMM_PROGRAM
 #    "QM package for QM/MM"
 #    None
 #    none gaussian mopac gamess orca)
-
-gmx_dependent_cache_variable(GMX_SIMD_REF_FLOAT_WIDTH  "Reference SIMD single precision width" STRING "4" "GMX_SIMD STREQUAL REFERENCE")
-gmx_dependent_cache_variable(GMX_SIMD_REF_DOUBLE_WIDTH "Reference SIMD double precision width" STRING "2" "GMX_SIMD STREQUAL REFERENCE")
 
 include(actManageSimd)
 
@@ -314,9 +302,7 @@ gmx_test_compiler_problems()
 # want such variables to always have a definition, because #if is more
 # robust than #ifdef. So, we put this value on the compiler command
 # line in all cases.
-#
-# GMX_RELAXED_DOUBLE_PRECISION does not need to be handled here,
-# because no installed header needs it
+
 if(GMX_DOUBLE)
     set(GMX_DOUBLE_VALUE 1)
 else()
@@ -594,20 +580,6 @@ if (GMX_USE_RDTSCP STREQUAL "ON")
     set(HAVE_RDTSCP 1)
 elseif(GMX_USE_RDTSCP STREQUAL "DETECT")
     gmx_check_rdtscp()
-elseif(GMX_USE_RDTSCP STREQUAL "AUTO")
-    # If the user specified automated SIMD selection, that the choice
-    # is made based on detection on the build host. If so, then RDTSCP
-    # should be chosen the same way.
-    #
-    # If the user specified an AVX SIMD level (e.g. when
-    # cross-compiling GROMACS) then they will get our best guess, ie
-    # that in practice AVX mostly correlates with rdtscp (and anyway
-    # is only relevant in rather old x86 hardware).
-    if (GMX_SIMD STREQUAL "AUTO")
-        gmx_check_rdtscp()
-    elseif (GMX_SIMD MATCHES "AVX")
-        set(HAVE_RDTSCP 1)
-    endif()
 endif()
 gmx_check_if_changed(HAVE_RDTSCP_CHANGED HAVE_RDTSCP)
 if (HAVE_RDTSCP_CHANGED)
@@ -637,17 +609,6 @@ if(NOT GMX_SYSTEM_XDR OR CMAKE_SYSTEM_NAME STREQUAL "Darwin")
     set(GMX_INTERNAL_XDR 1)
 endif()
 
-
-##################################################
-# Process SIMD instruction settings
-##################################################
-# This checks what flags to add in order to
-# support the SIMD instructions we need, it sets
-# correct defines for the SIMD instructions supported,
-# and adds advanced options to control accuracy
-# for SIMD math operations.
-include(gmxManageSimd)
-gmx_manage_simd()
 
 include(gmxManageCycleCounters)
 gmx_manage_cycle_counters()
@@ -697,16 +658,16 @@ endif()
 # # # # # # # # # # NO MORE TESTS AFTER THIS LINE! # # # # # # # # # # #
 # these are set after everything else
 if (NOT GMX_SKIP_DEFAULT_CFLAGS)
-    set(CMAKE_C_FLAGS "${SIMD_C_FLAGS} ${GMX_SIMD_VECTORIZATION_C_FLAGS} ${MPI_COMPILE_FLAGS} ${EXTRA_C_FLAGS} ${CMAKE_C_FLAGS}")
-    set(CMAKE_CXX_FLAGS "${SIMD_CXX_FLAGS} ${GMX_SIMD_VECTORIZATION_CXX_FLAGS} ${MPI_COMPILE_FLAGS} ${EXTRA_CXX_FLAGS} ${CMAKE_CXX_FLAGS}")
+    set(CMAKE_C_FLAGS "${GMX_SIMD_VECTORIZATION_C_FLAGS} ${MPI_COMPILE_FLAGS} ${EXTRA_C_FLAGS} ${CMAKE_C_FLAGS}")
+    set(CMAKE_CXX_FLAGS "${GMX_SIMD_VECTORIZATION_CXX_FLAGS} ${MPI_COMPILE_FLAGS} ${EXTRA_CXX_FLAGS} ${CMAKE_CXX_FLAGS}")
     set(CMAKE_EXE_LINKER_FLAGS "${FFT_LINKER_FLAGS} ${MPI_LINKER_FLAGS} ${GMX_SIMD_VECTORIZATION_LINKER_FLAGS} ${CMAKE_EXE_LINKER_FLAGS}")
     set(CMAKE_SHARED_LINKER_FLAGS "${FFT_LINKER_FLAGS} ${MPI_LINKER_FLAGS} ${GMX_SIMD_VECTORIZATION_LINKER_FLAGS} ${CMAKE_SHARED_LINKER_FLAGS}")
 else()
     message("Recommended flags which are not added because GMX_SKIP_DEFAULT_CFLAGS=yes:")
-    message("CMAKE_C_FLAGS: ${SIMD_C_FLAGS} ${GMX_SIMD_VECTORIZATION_C_FLAGS} ${MPI_COMPILE_FLAGS} ${EXTRA_C_FLAGS} ${GMXC_CFLAGS}")
+    message("CMAKE_C_FLAGS: ${GMX_SIMD_VECTORIZATION_C_FLAGS} ${MPI_COMPILE_FLAGS} ${EXTRA_C_FLAGS} ${GMXC_CFLAGS}")
     message("CMAKE_C_FLAGS_RELEASE: ${GMXC_CFLAGS_RELEASE}")
     message("CMAKE_C_FLAGS_DEBUG: ${GMXC_CFLAGS_DEBUG}")
-    message("CMAKE_CXX_FLAGS: ${SIMD_CXX_FLAGS} ${GMX_SIMD_VECTORIZATION_CXX_FLAGS} ${MPI_COMPILE_FLAGS} ${EXTRA_CXX_FLAGS} ${GMXC_CXXFLAGS}")
+    message("CMAKE_CXX_FLAGS: ${GMX_SIMD_VECTORIZATION_CXX_FLAGS} ${MPI_COMPILE_FLAGS} ${EXTRA_CXX_FLAGS} ${GMXC_CXXFLAGS}")
     message("CMAKE_CXX_FLAGS_RELEASE: ${GMXC_CXXFLAGS_RELEASE}")
     message("CMAKE_CXX_FLAGS_DEBUG: ${GMXC_CXXFLAGS_DEBUG}")
     message("CMAKE_EXE_LINKER_FLAGS: ${FFT_LINKER_FLAGS} ${MPI_LINKER_FLAGS} ${GMX_SIMD_VECTORIZATION_LINKER_FLAGS}")
