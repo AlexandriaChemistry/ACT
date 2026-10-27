@@ -49,8 +49,6 @@
 
 #include "act/forces/simd_math.h"
 
-#include <cstdlib>
-
 #ifdef ACT_HAVE_SIMD
 
 #include "act/coulombintegrals/gaussian_integrals.h"
@@ -724,6 +722,15 @@ size_t explicitSimdWidth()
     return simd::simdWidth;
 }
 
+ExplicitSimd explicitSimdType()
+{
+#if defined(__AVX512F__)
+    return ExplicitSimd::Avx512;
+#else
+    return ExplicitSimd::ArmNeon;
+#endif
+}
+
 bool computeExplicitSimd(Potential                   mypot,
                          const TopologyEntryVector  &entries,
                          const std::vector<ActAtom> &atoms,
@@ -733,13 +740,6 @@ bool computeExplicitSimd(Potential                   mypot,
                          double                     *f,
                          double                     *energies)
 {
-    // Setting this environment variable turns the explicit SIMD off,
-    // which is useful for comparing performance and results.
-    static const bool disabled = std::getenv("ACT_NO_EXPLICIT_SIMD") != nullptr;
-    if (disabled)
-    {
-        return false;
-    }
     auto pairs = [&](auto kernel)
     {
         computePairs<decltype(kernel)>(entries, atoms, epsilonr, stride, x, f, energies);
@@ -781,6 +781,11 @@ namespace alexandria
 size_t explicitSimdWidth()
 {
     return 1;
+}
+
+ExplicitSimd explicitSimdType()
+{
+    return ExplicitSimd::None;
 }
 
 bool computeExplicitSimd(Potential, const TopologyEntryVector &, const std::vector<ActAtom> &,

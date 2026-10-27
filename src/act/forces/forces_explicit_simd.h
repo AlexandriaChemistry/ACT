@@ -32,9 +32,9 @@
  * on the processor, at present there are ones for ARM NEON and AVX-512,
  * see simd_math.h. Where no
  * implementation is available, the functions here report that, and the
- * code in forces_simd.cpp is used instead. That code is also used when
- * the environment variable ACT_NO_EXPLICIT_SIMD is set, which allows
- * comparing the performance and results of the two.
+ * code in forces_simd.cpp is used instead. Whether the explicit SIMD can
+ * and should be used on the processor at hand is decided by
+ * useExplicitSimd() in simd_information.h.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 #ifndef ACT_FORCES_EXPLICIT_SIMD_H
@@ -52,6 +52,20 @@ namespace alexandria
 
 //! Number of energy terms a potential can have
 constexpr int explicitSimdEnergyTerms = 3;
+
+//! The instruction sets that the explicit SIMD can be compiled for
+enum class ExplicitSimd
+{
+    None,
+    ArmNeon,
+    Avx512
+};
+
+/*! \brief The instruction set the explicit SIMD was compiled for
+ * Since the code is compiled for this instruction set, this function is
+ * safe to call on any processor, but computeExplicitSimd is not.
+ */
+ExplicitSimd explicitSimdType();
 
 /*! \brief The number of conformations computed at once
  * The arrays passed to computeExplicitSimd have to hold a multiple of
@@ -71,8 +85,9 @@ size_t explicitSimdWidth();
  * \param[in]    x        Coordinates
  * \param[inout] f        Forces
  * \param[inout] energies Energies
- * \return false if this potential is not available with explicit SIMD,
- *         or if the environment variable ACT_NO_EXPLICIT_SIMD is set
+ * Only call this if useExplicitSimd() returns true, since the processor
+ * may not support the instructions otherwise.
+ * \return false if this potential is not available with explicit SIMD
  */
 bool computeExplicitSimd(Potential                   mypot,
                          const TopologyEntryVector  &entries,
