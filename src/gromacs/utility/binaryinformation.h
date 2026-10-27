@@ -94,6 +94,16 @@ class BinaryInformationSettings
             suffix_ = suffix;
             return *this;
         }
+        /*! \brief Print more information about the software and compilation.
+         * The function is called after the build settings, if those are
+         * printed, and can be used by code that this library does not
+         * know about.
+         */
+        BinaryInformationSettings &extraInfo(void (*extraInfo)(TextWriter *writer))
+        {
+            extraInfo_ = extraInfo;
+            return *this;
+        }
 
     private:
         bool        bExtendedInfo_;
@@ -101,6 +111,7 @@ class BinaryInformationSettings
         bool        bGeneratedByHeader_;
         const char *prefix_;
         const char *suffix_;
+        void        (*extraInfo_)(TextWriter *writer);
 
         //! Needed to read the members without otherwise unnecessary accessors.
         friend void printBinaryInformation(

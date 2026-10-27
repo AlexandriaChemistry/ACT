@@ -36,6 +36,7 @@
 #include "act/coulombintegrals/slater_integrals.h"
 #include "act/forcefield/forcefield_parametername.h"
 #include "act/forces/forces_explicit_simd.h"
+#include "act/forces/simd_information.h"
 #include "act/forces/forcecomputerutils.h"
 #include "act/molprop/topologyentry.h"
 #include "act/topology/actmol.h"
@@ -2023,8 +2024,9 @@ static bool calcConformations(Potential                   mypot,
     // Energy term k of conformation c is stored at k*stride + c
     std::vector<double> energies(MAX_ENER*ca->stride, 0.0);
     // Use explicit SIMD where available
-    if (!computeExplicitSimd(mypot, topentries, atoms, epsilonr, ca->stride,
-                             ca->x.data(), ca->f.data(), energies.data()) &&
+    if (!(useExplicitSimd() &&
+          computeExplicitSimd(mypot, topentries, atoms, epsilonr, ca->stride,
+                              ca->x.data(), ca->f.data(), energies.data())) &&
         !dispatchPotential(mypot, atoms, epsilonr,
                            [&]<int NATOM, bool Vectorize>(auto one)
                            {

@@ -38,6 +38,7 @@
 #include <cstdlib>
 
 #include "act/basics/version.h"
+#include "act/forces/simd_information.h"
 #include "act/utility/communicationrecord.h"
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/utility/binaryinformation.h"
@@ -214,7 +215,8 @@ void MsgHandler::addOptions(std::vector<t_pargs>      *pargs,
 static void printBinInfo(gmx::TextWriter *tw)
 {
     gmx::BinaryInformationSettings settings;
-    printBinaryInformation(tw, gmx::getProgramContext(), settings.extendedInfo(true));
+    settings.extendedInfo(true).extraInfo(alexandria::writeSimdInformation);
+    printBinaryInformation(tw, gmx::getProgramContext(), settings);
 }
 
 void MsgHandler::optionsFinished(const std::vector<t_filenm> &filenm,

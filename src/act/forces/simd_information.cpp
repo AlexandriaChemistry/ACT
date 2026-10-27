@@ -1,0 +1,211 @@
+/*
+ * This source file is part of the Alexandria Chemistry Toolkit.
+ *
+ * Copyright (C) 2026
+ *
+ * Developers:
+ *             Mohammad Mehdi Ghahremanpour,
+ *             Julian Marrades,
+ *             Marie-Madeleine Walz,
+ *             Paul J. van Maaren,
+ *             David van der Spoel (Project leader)
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor,
+ * Boston, MA  02110-1301, USA.
+ */
+/*! \internal \brief
+ * Runtime detection of the SIMD instructions of the processor.
+ * \author David van der Spoel <david.vanderspoel@icm.uu.se>
+ */
+#include "actpre.h"
+
+#include "simd_information.h"
+
+#include <cstdlib>
+#include <cstring>
+#include <string>
+
+#include "act/forces/forces_explicit_simd.h"
+#include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/textwriter.h"
+
+#if (defined(__x86_64__) || defined(__i386__)) && defined(__GNUC__)
+#    include <cpuid.h>
+#    define ACT_X86 1
+#endif
+#if defined(__aarch64__) && defined(__linux__)
+#    include <sys/auxv.h>
+#endif
+#if defined(__APPLE__)
+#    include <sys/sysctl.h>
+#endif
+
+namespace alexandria
+{
+
+namespace
+{
+
+//! \return The name of the processor, or an empty string if unknown
+std::string processorName()
+{
+    char name[256] = { 0 };
+#if ACT_X86
+    unsigned int regs[12];
+    if (__get_cpuid(0x80000000, &regs[0], &regs[1], &regs[2], &regs[3]) && regs[0] >= 0x80000004)
+    {
+        for (unsigned int i = 0; i < 3; i++)
+        {
+            __get_cpuid(0x80000002 + i, &regs[4*i], &regs[4*i+1], &regs[4*i+2], &regs[4*i+3]);
+        }
+        std::memcpy(name, regs, sizeof(regs));
+    }
+#elif defined(__APPLE__)
+    size_t len = sizeof(name) - 1;
+    if (sysctlbyname("machdep.cpu.brand_string", name, &len, nullptr, 0) != 0)
+    {
+        name[0] = '\0';
+    }
+#endif
+    return gmx::stripString(name);
+}
+
+//! \return The SIMD instructions of the processor, detected at runtime
+std::string processorSimd()
+{
+    std::string simd;
+#if ACT_X86
+    __builtin_cpu_init();
+    // The names have to be literals, therefore no loop
+    if (__builtin_cpu_supports("sse2"))    { simd += " SSE2"; }
+    if (__builtin_cpu_supports("sse4.1"))  { simd += " SSE4.1"; }
+    if (__builtin_cpu_supports("avx"))     { simd += " AVX"; }
+    if (__builtin_cpu_supports("avx2"))    { simd += " AVX2"; }
+    if (__builtin_cpu_supports("fma"))     { simd += " FMA"; }
+    if (__builtin_cpu_supports("avx512f")) { simd += " AVX-512"; }
+#elif defined(__aarch64__)
+    // NEON is part of every aarch64 processor
+    simd += " ARM-NEON";
+#    if defined(__linux__) && defined(HWCAP_SVE)
+    if (getauxval(AT_HWCAP) & HWCAP_SVE) { simd += " SVE"; }
+#    endif
+#endif
+    return simd.empty() ? "none" : simd.substr(1);
+}
+
+//! \return Whether the processor can run code for this instruction set
+bool processorSupports(ExplicitSimd type)
+{
+    switch (type)
+    {
+    case ExplicitSimd::ArmNeon:
+#if defined(__aarch64__)
+        return true;
+#else
+        return false;
+#endif
+    case ExplicitSimd::Avx512:
+#if ACT_X86
+        // This also checks that the operating system saves the AVX-512 registers
+        __builtin_cpu_init();
+        return __builtin_cpu_supports("avx512f");
+#else
+        return false;
+#endif
+    default:
+        return false;
+    }
+}
+
+//! \return The name of an instruction set
+const char *simdName(ExplicitSimd type)
+{
+    switch (type)
+    {
+    case ExplicitSimd::ArmNeon: return "ARM-NEON";
+    case ExplicitSimd::Avx512:  return "AVX-512";
+    default:                    return "none";
+    }
+}
+
+//! \return The SIMD instructions the compiler may use for the rest of the code
+const char *compilerSimd()
+{
+#if defined(__AVX512F__)
+    return "AVX-512";
+#elif defined(__AVX2__)
+    return "AVX2";
+#elif defined(__AVX__)
+    return "AVX";
+#elif defined(__SSE4_1__)
+    return "SSE4.1";
+#elif defined(__SSE2__)
+    return "SSE2";
+#elif defined(__ARM_NEON)
+    return "ARM-NEON";
+#else
+    return "none";
+#endif
+}
+
+//! \return Whether the environment variable turns off the explicit SIMD
+bool explicitSimdTurnedOff()
+{
+    return std::getenv("ACT_NO_EXPLICIT_SIMD") != nullptr;
+}
+
+} // namespace
+
+bool useExplicitSimd()
+{
+    static const bool use = (processorSupports(explicitSimdType()) && !explicitSimdTurnedOff());
+    return use;
+}
+
+void writeSimdInformation(gmx::TextWriter *writer)
+{
+    std::string name = processorName();
+    if (!name.empty())
+    {
+        writer->writeLine(gmx::formatString("Processor:          %s", name.c_str()));
+    }
+    writer->writeLine(gmx::formatString("Processor SIMD:     %s (detected at runtime)", processorSimd().c_str()));
+    writer->writeLine(gmx::formatString("Compiler SIMD:      %s (loops vectorized by the compiler)", compilerSimd()));
+    ExplicitSimd type = explicitSimdType();
+    std::string  status;
+    if (type == ExplicitSimd::None)
+    {
+        status = "not compiled in, potentials vectorized by the compiler";
+        if (processorSupports(ExplicitSimd::Avx512))
+        {
+            status += ", configure with -DACT_SIMD_AVX_512=ON to use AVX-512";
+        }
+    }
+    else if (!processorSupports(type))
+    {
+        status = gmx::formatString("%s compiled in, but not supported by this processor, not used", simdName(type));
+    }
+    else if (explicitSimdTurnedOff())
+    {
+        status = gmx::formatString("%s, turned off by ACT_NO_EXPLICIT_SIMD", simdName(type));
+    }
+    else
+    {
+        status = gmx::formatString("%s, %zu conformations at once, in use", simdName(type), explicitSimdWidth());
+    }
+    writer->writeLine(gmx::formatString("Explicit SIMD:      %s", status.c_str()));
+}
+
+} // namespace alexandria

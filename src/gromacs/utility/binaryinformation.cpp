@@ -264,7 +264,7 @@ namespace gmx
 
 BinaryInformationSettings::BinaryInformationSettings()
     : bExtendedInfo_(false), bCopyright_(false),
-      bGeneratedByHeader_(false), prefix_(""), suffix_("")
+      bGeneratedByHeader_(false), prefix_(""), suffix_(""), extraInfo_(nullptr)
 {
 }
 
@@ -351,6 +351,10 @@ void printBinaryInformation(TextWriter                      *writer,
         writer->writeLine("Software and compilation information");
         writer->writeLine("====================================");
         gmx_print_version_info(writer);
+        if (settings.extraInfo_)
+        {
+            settings.extraInfo_(writer);
+        }
         writer->ensureEmptyLine();
     }
 }
