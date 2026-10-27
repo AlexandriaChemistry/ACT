@@ -1775,16 +1775,20 @@ static void fillParams(MsgHandler                      *msghandler,
                        std::vector<double>             *param,
                        missingParameters                missing)
 {
-    std::string msg = potentialToString(fs.potential()) + " " + btype.id();
-    if (!fs.parameterExists(btype))
+    // This is called for every interaction in every optimization step,
+    // so look up the parameters only once and make messages only if needed.
+    const auto &parameters = fs.parametersConst();
+    auto        ffiter     = parameters.find(btype);
+    if (parameters.end() == ffiter)
     {
         if (missingParameters::Ignore != missing)
         {
-            msghandler->msg(ACTStatus::Error, ACTMessage::MissingFFParameter, msg);
+            msghandler->msg(ACTStatus::Error, ACTMessage::MissingFFParameter,
+                            potentialToString(fs.potential()) + " " + btype.id());
         }
         return;
     }
-    auto ff = fs.findParameterMapConst(btype);
+    const auto &ff = ffiter->second;
 
     if (param->empty())
     {
@@ -1804,43 +1808,45 @@ static void fillParams(MsgHandler                      *msghandler,
     }
     if (found != independent)
     {
-        msg += gmx::formatString(" found %d, expected %d independent parameters", found, independent);
+        auto msg = gmx::formatString("%s %s found %d, expected %d independent parameters",
+                                     potentialToString(fs.potential()).c_str(), btype.id().c_str(),
+                                     found, independent);
         msghandler->msg(ACTStatus::Warning, ACTMessage::MissingFFParameter, msg);
     }
 }
 
-void Topology::fillParameters(MsgHandler        *msghandler,
-                              const ForceField  *pd,
-                              missingParameters  missing)
+void Topology::fillParameters(MsgHandler                      *msghandler,
+                              const ForceField                *pd,
+                              missingParameters                missing,
+                              const std::set<InteractionType> *itypes)
 {
+    // Reused for all entries to avoid allocating memory for each
+    std::vector<double> param;
     for(auto &entry : entries_)
     {
-        if (!pd->interactionPresent(entry.first))
+        if (!pd->interactionPresent(entry.first) ||
+            (itypes && itypes->find(entry.first) == itypes->end()))
         {
             continue;
         }
         auto &fs = pd->findForcesConst(entry.first);
+        auto  pp = potprops.find(fs.potential());
+        if (potprops.end() == pp)
+        {
+            GMX_THROW(gmx::InternalError(gmx::formatString("Missing case %s when filling the topology structure.",
+                                                           potentialToString(fs.potential()).c_str()).c_str()));
+        }
 
         // Loop over entries, increment of tp handled at end.
         for(auto tp = entry.second.begin(); tp < entry.second.end(); )
         {
-            auto &topentry = *tp;
+            auto       &topentry = *tp;
+            const auto &topID    = topentry->id();
 
-            const auto          &topID = topentry->id();
-            std::vector<double>  param;
-
-            auto pp = potprops.find(fs.potential());
-            if (potprops.end() != pp)
-            {
-                fillParams(msghandler, fs, topID,
-                           pp->second.param.size(), pp->second.param, &param,
-                           missing);
-            }
-            else
-            {
-                GMX_THROW(gmx::InternalError(gmx::formatString("Missing case %s when filling the topology structure.",
-                                                               potentialToString(fs.potential()).c_str()).c_str()));
-            }
+            param.clear();
+            fillParams(msghandler, fs, topID,
+                       pp->second.param.size(), pp->second.param, &param,
+                       missing);
             if (param.empty())
             {
                 tp = entry.second.erase(tp);
