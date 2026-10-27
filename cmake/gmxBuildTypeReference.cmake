@@ -43,7 +43,6 @@ mark_as_advanced( CMAKE_CXX_FLAGS_REFERENCE CMAKE_C_FLAGS_REFERENCE CMAKE_EXE_LI
 if("${CMAKE_BUILD_TYPE}" STREQUAL "Reference")
     set(GMX_GPU OFF CACHE BOOL "Disabled for regressiontests reference builds" FORCE)
     set(GMX_OPENMP OFF CACHE BOOL "Disabled for regressiontests reference builds" FORCE)
-    set(GMX_SIMD "None" CACHE STRING "Disabled for regressiontests reference builds" FORCE)
     set(GMX_FFT_LIBRARY "fftpack" CACHE STRING "Use fftpack for regressiontests reference builds" FORCE)
     set(GMX_SOFTWARE_INVSQRT OFF CACHE BOOL "Disabled for regressiontests reference builds" FORCE)
     set(GMX_THREAD_MPI OFF CACHE BOOL "Disabled for regressiontests reference builds" FORCE)
