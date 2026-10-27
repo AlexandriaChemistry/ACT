@@ -67,6 +67,89 @@ if(GMX_OPENMP)
         set(GMX_OPENMP OFF CACHE STRING "Whether GROMACS will use OpenMP parallelism." FORCE)
     endif()
 endif()
+# Compiler vectorization of loops marked with "#pragma omp simd".
+# This only enables the OpenMP SIMD directives, not OpenMP multithreading,
+# so it can be used independently of GMX_OPENMP. The flags are collected in
+# GMX_SIMD_VECTORIZATION_C_FLAGS, GMX_SIMD_VECTORIZATION_CXX_FLAGS and
+# GMX_SIMD_VECTORIZATION_LINKER_FLAGS and added to the compiler flags in the
+# main CMakeLists.txt.
+option(GMX_OPENMP_SIMD "Enable OpenMP SIMD directives for compiler vectorization of loops" ON)
+option(GMX_VECTOR_MATH "Use a vector math library for math functions (exp, erf, ...) in vectorized loops" ON)
+mark_as_advanced(GMX_OPENMP_SIMD GMX_VECTOR_MATH)
+set(GMX_SIMD_VECTORIZATION_C_FLAGS "")
+set(GMX_SIMD_VECTORIZATION_CXX_FLAGS "")
+set(GMX_SIMD_VECTORIZATION_LINKER_FLAGS "")
+if(GMX_OPENMP_SIMD)
+    include(CheckCXXCompilerFlag)
+    include(CheckCXXSourceCompiles)
+    # Flag for the OpenMP SIMD directives
+    set(_omp_simd_flag "")
+    foreach(_flag -fopenmp-simd -qopenmp-simd)
+        string(MAKE_C_IDENTIFIER "CXX_FLAG${_flag}" _var)
+        check_cxx_compiler_flag(${_flag} ${_var})
+        if(${_var})
+            set(_omp_simd_flag ${_flag})
+            break()
+        endif()
+    endforeach()
+    if(_omp_simd_flag)
+        set(GMX_SIMD_VECTORIZATION_C_FLAGS   "${_omp_simd_flag}")
+        set(GMX_SIMD_VECTORIZATION_CXX_FLAGS "${_omp_simd_flag}")
+        # A loop marked for vectorization may still not be vectorized, for
+        # instance when it calls math functions without a vector math library.
+        # The compiler then warns, which should not stop the build with -Werror.
+        check_cxx_compiler_flag(-Wno-error=pass-failed CXX_FLAG_WNO_ERROR_PASS_FAILED)
+        if(CXX_FLAG_WNO_ERROR_PASS_FAILED)
+            set(GMX_SIMD_VECTORIZATION_CXX_FLAGS "${GMX_SIMD_VECTORIZATION_CXX_FLAGS} -Wno-error=pass-failed")
+        endif()
+        if(GMX_VECTOR_MATH)
+            # Vector math library, the first one that compiles and links a
+            # vectorized loop calling exp and erf is used.
+            if(APPLE)
+                set(_veclibs "Darwin_libsystem_m")
+            else()
+                set(_veclibs "libmvec;SVML")
+            endif()
+            set(_vector_math_found FALSE)
+            foreach(_veclib ${_veclibs})
+                set(_veclib_libs "")
+                if(_veclib STREQUAL "libmvec")
+                    set(_veclib_libs "-lmvec")
+                endif()
+                set(CMAKE_REQUIRED_FLAGS "${_omp_simd_flag} -fveclib=${_veclib}")
+                set(CMAKE_REQUIRED_LIBRARIES "${_veclib_libs}")
+                string(MAKE_C_IDENTIFIER "CXX_VECLIB_${_veclib}" _var)
+                check_cxx_source_compiles("
+#include <cmath>
+int main(int argc, char *argv[])
+{
+    double x[64], y[64];
+    for (int i = 0; i < 64; i++) { x[i] = argc*0.01*i; }
+#pragma omp simd
+    for (int i = 0; i < 64; i++) { y[i] = std::exp(-x[i]) + std::erf(x[i]); }
+    return y[argc] > 0 ? 0 : 1;
+}" ${_var})
+                unset(CMAKE_REQUIRED_FLAGS)
+                unset(CMAKE_REQUIRED_LIBRARIES)
+                if(${_var})
+                    set(GMX_SIMD_VECTORIZATION_C_FLAGS   "${GMX_SIMD_VECTORIZATION_C_FLAGS} -fveclib=${_veclib}")
+                    set(GMX_SIMD_VECTORIZATION_CXX_FLAGS "${GMX_SIMD_VECTORIZATION_CXX_FLAGS} -fveclib=${_veclib}")
+                    set(GMX_SIMD_VECTORIZATION_LINKER_FLAGS "${_veclib_libs}")
+                    set(_vector_math_found TRUE)
+                    message(STATUS "Using vector math library ${_veclib} for vectorized loops")
+                    break()
+                endif()
+            endforeach()
+            if(NOT _vector_math_found)
+                message(STATUS "No vector math library found, loops calling math functions will not be vectorized")
+            endif()
+        endif()
+        message(STATUS "Flags for compiler vectorization: ${GMX_SIMD_VECTORIZATION_CXX_FLAGS}")
+    else()
+        message(STATUS "The compiler does not support OpenMP SIMD directives, loops marked with #pragma omp simd may not be vectorized")
+    endif()
+endif()
+
 gmx_dependent_cache_variable(GMX_OPENMP_MAX_THREADS
     "Maximum number of OpenMP Threads supported. Has to be 32 or a multiple of 64."
     STRING 64 GMX_OPENMP)
