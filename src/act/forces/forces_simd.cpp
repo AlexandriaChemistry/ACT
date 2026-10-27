@@ -61,6 +61,17 @@ static_assert(MAX_ENER == explicitSimdEnergyTerms);
 #define ACT_ALWAYS_INLINE inline
 #endif
 
+/*! \brief Prevent inlining of a function.
+ * Used to keep loops that are almost the same in different functions,
+ * since the compiler may otherwise merge them into a loop that it
+ * cannot vectorize.
+ */
+#if defined(__GNUC__) || defined(__clang__)
+#define ACT_NOINLINE __attribute__((noinline))
+#else
+#define ACT_NOINLINE
+#endif
+
 /* The energy and forces of each potential are computed for one
  * interaction at a time by a function xxxOne. These functions are used
  * both for one conformation at a time (see calcSome) and for all
@@ -2030,6 +2041,34 @@ static void computeConformations(const TopologyEntryVector &entries,
     }
 }
 
+/*! \brief Compute a potential for all conformations without explicit SIMD
+ * The versions with and without forces are kept in separate functions,
+ * since the compiler merges their loops into loops it cannot vectorize
+ * otherwise.
+ * \tparam       Forces     Whether to compute forces
+ * \param[in]    mypot      The potential
+ * \param[in]    topentries The interactions
+ * \param[in]    atoms      The atoms
+ * \param[inout] ca         Coordinates and forces of all conformations
+ * \param[inout] energies   Energies, term k of conformation c at energies[k*stride + c]
+ * \param[in]    epsilonr   Relative dielectric constant
+ * \return false if the potential is not implemented
+ */
+template <bool Forces>
+static ACT_NOINLINE bool dispatchConformations(Potential                   mypot,
+                                               const TopologyEntryVector  &topentries,
+                                               const std::vector<ActAtom> &atoms,
+                                               ConformationArrays         *ca,
+                                               double                     *energies,
+                                               double                      epsilonr)
+{
+    return dispatchPotential(mypot, atoms, epsilonr,
+                             [&]<int NATOM, bool Vectorize>(auto one)
+                             {
+                                 computeConformations<NATOM, Vectorize, Forces>(topentries, ca, energies, one);
+                             });
+}
+
 /*! \brief Compute a potential with conformations in the inner loop
  * \param[in]    mypot      The potential
  * \param[in]    topentries The interactions
@@ -2055,18 +2094,9 @@ static bool calcConformations(Potential                   mypot,
     if (!(useExplicitSimd() &&
           computeExplicitSimd(mypot, topentries, atoms, epsilonr, ca->stride,
                               ca->x.data(), ca->f.data(), energies.data(), forces)) &&
-        !dispatchPotential(mypot, atoms, epsilonr,
-                           [&]<int NATOM, bool Vectorize>(auto one)
-                           {
-                               if (forces)
-                               {
-                                   computeConformations<NATOM, Vectorize, true>(topentries, ca, energies.data(), one);
-                               }
-                               else
-                               {
-                                   computeConformations<NATOM, Vectorize, false>(topentries, ca, energies.data(), one);
-                               }
-                           }))
+        !(forces ?
+          dispatchConformations<true>(mypot, topentries, atoms, ca, energies.data(), epsilonr) :
+          dispatchConformations<false>(mypot, topentries, atoms, ca, energies.data(), epsilonr)))
     {
         return false;
     }
