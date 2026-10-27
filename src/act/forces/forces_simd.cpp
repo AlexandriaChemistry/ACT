@@ -1593,20 +1593,33 @@ static inline void computeConformation(MsgHandler                   *msghandler,
  * \param[in] mypot The potential
  * \return The interaction type for each energy term, at most MAX_ENER
  */
-static std::vector<InteractionType> energyTypes(Potential mypot)
+static const std::vector<InteractionType> &energyTypes(Potential mypot)
 {
+    // Static, since this is called for every potential in every energy calculation
+    static const std::vector<InteractionType> none;
+    static const std::vector<InteractionType> bonds        = { InteractionType::BONDS };
+    static const std::vector<InteractionType> angles       = { InteractionType::ANGLES };
+    static const std::vector<InteractionType> linearAngles = { InteractionType::LINEAR_ANGLES };
+    static const std::vector<InteractionType> exchDisp     = { InteractionType::EXCHANGE, InteractionType::DISPERSION };
+    static const std::vector<InteractionType> exchDispInd  = { InteractionType::EXCHANGE, InteractionType::DISPERSION, InteractionType::INDUCTION };
+    static const std::vector<InteractionType> exchange     = { InteractionType::EXCHANGE };
+    static const std::vector<InteractionType> elec         = { InteractionType::ELECTROSTATICS };
+    static const std::vector<InteractionType> polarization = { InteractionType::POLARIZATION };
+    static const std::vector<InteractionType> improper     = { InteractionType::IMPROPER_DIHEDRALS };
+    static const std::vector<InteractionType> proper       = { InteractionType::PROPER_DIHEDRALS };
+    static const std::vector<InteractionType> posres       = { InteractionType::POSITION_RESTRAINT };
     switch(mypot)
     {
     case Potential::HARMONIC_BONDS:
     case Potential::MORSE_BONDS:
     case Potential::HUA_BONDS:
     case Potential::CUBIC_BONDS:
-        return { InteractionType::BONDS };
+        return bonds;
     case Potential::HARMONIC_ANGLES:
     case Potential::UREY_BRADLEY_ANGLES:
-        return { InteractionType::ANGLES };
+        return angles;
     case Potential::LINEAR_ANGLES:
-        return { InteractionType::LINEAR_ANGLES };
+        return linearAngles;
     case Potential::LJ12_6:
     case Potential::LJ8_6:
     case Potential::LJ14_7:
@@ -1616,28 +1629,28 @@ static std::vector<InteractionType> energyTypes(Potential mypot)
     case Potential::TT2b:
     case Potential::SLATER_ISA_TT:
     case Potential::GENERALIZED_BUCKINGHAM:
-        return { InteractionType::EXCHANGE, InteractionType::DISPERSION };
+        return exchDisp;
     case Potential::LJ12_6_4:
-        return { InteractionType::EXCHANGE, InteractionType::DISPERSION, InteractionType::INDUCTION };
+        return exchDispInd;
     case Potential::BORN_MAYER:
     case Potential::SLATER_ISA:
     case Potential::MACDANIEL_SCHMIDT:
-        return { InteractionType::EXCHANGE };
+        return exchange;
     case Potential::COULOMB_POINT:
     case Potential::COULOMB_GAUSSIAN:
     case Potential::COULOMB_SLATER:
-        return { InteractionType::ELECTROSTATICS };
+        return elec;
     case Potential::POLARIZATION:
-        return { InteractionType::POLARIZATION };
+        return polarization;
     case Potential::HARMONIC_DIHEDRALS:
-        return { InteractionType::IMPROPER_DIHEDRALS };
+        return improper;
     case Potential::PROPER_DIHEDRALS:
     case Potential::FOURIER_DIHEDRALS:
-        return { InteractionType::PROPER_DIHEDRALS };
+        return proper;
     case Potential::POSITION_RESTRAINT:
-        return { InteractionType::POSITION_RESTRAINT };
+        return posres;
     default:
-        return {};
+        return none;
     }
 }
 
@@ -1655,7 +1668,7 @@ static void storeEnergies(Potential                  mypot,
                           size_t                     confStride,
                           size_t                     termStride)
 {
-    auto itypes = energyTypes(mypot);
+    const auto &itypes = energyTypes(mypot);
     for(size_t i = 0; i < coords->size(); i++)
     {
         if ((*coords)[i].done)
@@ -1668,13 +1681,13 @@ static void storeEnergies(Potential                  mypot,
         {
             eMap[itypes[k]].setACT(myener[k*termStride]);
         }
-        double epot  = myener[0] + myener[termStride] + myener[2*termStride];
-        auto   itype = InteractionType::EPOT;
-        if (!eMap[itype].haveACT())
+        double epot = myener[0] + myener[termStride] + myener[2*termStride];
+        auto  &eEpot = eMap[InteractionType::EPOT];
+        if (!eEpot.haveACT())
         {
-            eMap[itype].setACT(0.0);
+            eEpot.setACT(0.0);
         }
-        eMap[itype].setACT(epot + eMap[itype].eact());
+        eEpot.setACT(epot + eEpot.eact());
     }
 }
 
@@ -1841,6 +1854,8 @@ public:
     std::vector<double> x;
     //! Forces
     std::vector<double> f;
+    //! Energies of one potential, kept here to reuse the memory
+    std::vector<double> energies;
 
     /*! \brief Copy the coordinates of all conformations and clear the forces
      * \param[in] coords The conformations, all with the same number of particles
@@ -2022,7 +2037,8 @@ static bool calcConformations(Potential                   mypot,
                               double                      epsilonr)
 {
     // Energy term k of conformation c is stored at k*stride + c
-    std::vector<double> energies(MAX_ENER*ca->stride, 0.0);
+    auto &energies = ca->energies;
+    energies.assign(MAX_ENER*ca->stride, 0.0);
     // Use explicit SIMD where available
     if (!(useExplicitSimd() &&
           computeExplicitSimd(mypot, topentries, atoms, epsilonr, ca->stride,
@@ -2062,9 +2078,10 @@ static inline void lowComputeEnergies(MsgHandler                *msghandler,
         // while training with the MCMC mutator) keep adding onto the value left by
         // the previous call, so the total grows without bound instead of being
         // recomputed from scratch each time.
-        if (ce.eMap.count(InteractionType::EPOT))
+        auto epot = ce.eMap.find(InteractionType::EPOT);
+        if (ce.eMap.end() != epot)
         {
-            ce.eMap[InteractionType::EPOT].setACT(0.0);
+            epot->second.setACT(0.0);
         }
         // Also reset the done flag to make sure energies are computed once at least
         ce.done = false;
@@ -2073,8 +2090,9 @@ static inline void lowComputeEnergies(MsgHandler                *msghandler,
         ce.fcalc.assign(ce.x.size(), fzero);
     }
     // Coordinates and forces of all conformations, for looping over
-    // conformations in the inner loop.
-    ConformationArrays ca;
+    // conformations in the inner loop. Kept between calls such that the
+    // memory is reused, setCoordinates sets all members.
+    static thread_local ConformationArrays ca;
     // With a single conformation there is nothing to vectorize.
     bool haveArrays     = conformations && coords->size() > 1 && ca.setCoordinates(*coords);
     // Whether the current forces are in ca rather than in coords
