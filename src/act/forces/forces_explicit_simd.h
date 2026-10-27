@@ -29,7 +29,7 @@
  * Potentials computed for many conformations at once with explicit SIMD.
  *
  * The SIMD lanes hold different conformations. The implementation depends
- * on the processor, at present there are ones for ARM NEON and AVX-512,
+ * on the processor, at present there are ones for ARM NEON, AVX2 and AVX-512,
  * see simd_math.h. Where no
  * implementation is available, the functions here report that, and the
  * code in forces_simd.cpp is used instead. Whether the explicit SIMD can
@@ -58,6 +58,7 @@ enum class ExplicitSimd
 {
     None,
     ArmNeon,
+    Avx2,
     Avx512
 };
 

@@ -116,6 +116,13 @@ bool processorSupports(ExplicitSimd type)
 #else
         return false;
 #endif
+    case ExplicitSimd::Avx2:
+#if ACT_X86
+        __builtin_cpu_init();
+        return __builtin_cpu_supports("avx2") && __builtin_cpu_supports("fma");
+#else
+        return false;
+#endif
     case ExplicitSimd::Avx512:
 #if ACT_X86
         // This also checks that the operating system saves the AVX-512 registers
@@ -135,6 +142,7 @@ const char *simdName(ExplicitSimd type)
     switch (type)
     {
     case ExplicitSimd::ArmNeon: return "ARM-NEON";
+    case ExplicitSimd::Avx2:    return "AVX2";
     case ExplicitSimd::Avx512:  return "AVX-512";
     default:                    return "none";
     }
@@ -190,7 +198,11 @@ void writeSimdInformation(gmx::TextWriter *writer)
         status = "not compiled in, potentials vectorized by the compiler";
         if (processorSupports(ExplicitSimd::Avx512))
         {
-            status += ", configure with -DACT_SIMD_AVX_512=ON to use AVX-512";
+            status += ", configure with -DACT_SIMD=AVX_512 to use AVX-512";
+        }
+        else if (processorSupports(ExplicitSimd::Avx2))
+        {
+            status += ", configure with -DACT_SIMD=AVX2 to use AVX2";
         }
     }
     else if (!processorSupports(type))
