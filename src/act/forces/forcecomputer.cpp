@@ -608,36 +608,6 @@ static void copyRelaxedMonomerShells(std::vector<ACTMol> *allmols)
     }
 }
 
-/*! \brief Clear the forces and then compute energies and forces
- * The low-level routines add to the forces, so they have to be
- * cleared before each new evaluation.
- * \param[in]    msghandler For debugging and messages
- * \param[in]    pd         The force field
- * \param[inout] allmols    The molecules
- * \param[in]    what       If 0, first monomer, if 1, second monomer, if 2 the dimer
- */
-static void computeEnergiesFromScratch(MsgHandler          *msghandler,
-                                       const ForceField    *pd,
-                                       std::vector<ACTMol> *allmols,
-                                       size_t               what)
-{
-    gmx::RVec fzero = { 0, 0, 0 };
-    for(auto &mol : *allmols)
-    {
-        auto &tops = mol.fragmentHandler()->topologies();
-        if (tops.size() == 1 && what > 0)
-        {
-            continue;
-        }
-        auto coords = what >= 2 ? mol.dimerCoords() : mol.monomerCoords(what);
-        for(auto &ce : *coords)
-        {
-            std::fill(ce.fcalc.begin(), ce.fcalc.end(), fzero);
-        }
-    }
-    computeEnergies(msghandler, pd, allmols, what);
-}
-
 void ForceComputer::relaxMonomer(MsgHandler          *msghandler,
                                  const ForceField    *pd,
                                  size_t               im,
@@ -669,7 +639,7 @@ void ForceComputer::relaxMonomer(MsgHandler          *msghandler,
         }
         if (!allDone)
         {
-            computeEnergiesFromScratch(msghandler, pd, allmols, im);
+            computeEnergies(msghandler, pd, allmols, im);
         }
         iter++;
     }
@@ -719,7 +689,7 @@ void ForceComputer::relaxDimer(MsgHandler          *msghandler,
         if (!allDone)
         {
             // Not all done, recompute
-            computeEnergiesFromScratch(msghandler, pd, allmols, 2);
+            computeEnergies(msghandler, pd, allmols, 2);
         }
         iter++;
     }
@@ -772,9 +742,9 @@ void ForceComputer::computeRelaxedEnergies(MsgHandler          *msghandler,
         }
     }
     // Do first calculation every time.
-    computeEnergiesFromScratch(msghandler, pd, allmols, 0); // Monomer 0
-    computeEnergiesFromScratch(msghandler, pd, allmols, 1); // Monomer 1
-    computeEnergiesFromScratch(msghandler, pd, allmols, 2); // Complete topology
+    computeEnergies(msghandler, pd, allmols, 0); // Monomer 0
+    computeEnergies(msghandler, pd, allmols, 1); // Monomer 1
+    computeEnergies(msghandler, pd, allmols, 2); // Complete topology
 
     // Store the original (unrelaxed) energies so that we can extract the
     // induction later. Only terms that actually have an ACT energy are backed
@@ -860,7 +830,7 @@ void ForceComputer::computeRelaxedEnergies(MsgHandler          *msghandler,
             // We have to compute second order induction first, starting
             // from the shells in the relaxed monomer positions.
             copyRelaxedMonomerShells(allmols);
-            computeEnergiesFromScratch(msghandler, pd, allmols, 2);
+            computeEnergies(msghandler, pd, allmols, 2);
             // Reference energy without mutual induction
             std::vector<std::vector<double>> eRef(allmols->size());
             for(size_t k = 0; k < allmols->size(); k++)
@@ -876,7 +846,7 @@ void ForceComputer::computeRelaxedEnergies(MsgHandler          *msghandler,
                 {
                     // Reset coordinates to the relaxed monomer shells
                     copyRelaxedMonomerShells(allmols);
-                    computeEnergiesFromScratch(msghandler, pd, allmols, 2);
+                    computeEnergies(msghandler, pd, allmols, 2);
                 }
                 // Relax monomer im in the presence of the other monomer
                 bool fixMonomer[2] = { im != 0, im != 1 };
@@ -900,7 +870,7 @@ void ForceComputer::computeRelaxedEnergies(MsgHandler          *msghandler,
                     dimers[i].x = xdimer[k][i];
                 }
             }
-            computeEnergiesFromScratch(msghandler, pd, allmols, 2);
+            computeEnergies(msghandler, pd, allmols, 2);
         }
         // Final, total energy
         bool ff[2] = { false, false };
