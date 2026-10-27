@@ -40,6 +40,8 @@
 #include <cmath>
 #include <memory>
 
+#include <set>
+
 #include <gtest/gtest.h>
 
 #include "act/import/import.h"
@@ -69,6 +71,15 @@ protected:
                const std::string &molName,
                ACTMol            *mol)
     {
+        std::string fileName = gmx::formatString("%s.sdf", molName.c_str());
+        return setupFile(ff, gmx::test::TestFileManager::getInputFilePath(fileName), mol);
+    }
+
+    //! Read a molecule from a file and generate the topology
+    bool setupFile(const std::string &ff,
+                   const std::string &dataName,
+                   ACTMol            *mol)
+    {
         // Get forcefield
         auto pd  = getForceField(ff);
         
@@ -76,8 +87,6 @@ protected:
         bool   userqtot   = false;
         double qtot_babel = 0;
         const char           *conf      = (char *)"minimum";
-        std::string fileName = gmx::formatString("%s.sdf", molName.c_str());
-        std::string dataName = gmx::test::TestFileManager::getInputFilePath(fileName);
         MsgHandler msghandler;
         msghandler.setPrintLevel(ACTStatus::Warning);
         importFile(&msghandler, pd, dataName.c_str(), &molprops,
@@ -173,7 +182,118 @@ protected:
             }
         }
     }
+
+    /*! \brief Check the distribution of forces on virtual sites by finite differences
+     *
+     * A constant force F_v on each virtual site corresponds to the energy
+     * E = -sum_v F_v . x_v(x), where the virtual site positions x_v depend on
+     * the positions x of the atoms. The force on atom a is then
+     * -dE/dx_a = sum_v F_v . dx_v/dx_a, which is computed numerically.
+     * \param[in] ff       The force field
+     * \param[in] dataName The molecule file
+     * \param[in] vsites   The virtual site types that should be present
+     */
+    void testSpread(const std::string                 &ff,
+                    const std::string                 &dataName,
+                    const std::set<InteractionType>   &vsites)
+    {
+        ACTMol mol;
+        ASSERT_TRUE(setupFile(ff, dataName, &mol));
+        auto top = mol.topology();
+        // The virtual site types in the topology
+        std::set<InteractionType> found;
+        for (const auto &entry : top->entries())
+        {
+            if (isVsite(entry.first) && !entry.second.empty())
+            {
+                found.insert(entry.first);
+            }
+        }
+        auto names = [](const std::set<InteractionType> &its)
+        {
+            std::string str;
+            for (auto it : its)
+            {
+                str += interactionTypeToString(it) + " ";
+            }
+            return str;
+        };
+        EXPECT_EQ(names(vsites), names(found));
+        VsiteHandler vh;
+        vh.init(box, dt);
+        std::vector<gmx::RVec> coords = mol.xOriginal();
+        vh.constructPositions(top, &coords, box);
+        // A different force on each virtual site
+        const auto &atoms = top->atoms();
+        std::vector<gmx::RVec> fvsite(coords.size(), { 0, 0, 0 });
+        int nvsite = 0;
+        for (size_t i = 0; i < atoms.size(); i++)
+        {
+            if (atoms[i].pType() == ActParticle::Vsite)
+            {
+                nvsite += 1;
+                fvsite[i] = { 1.0*nvsite, -0.5, 0.25*nvsite };
+            }
+        }
+        ASSERT_GT(nvsite, 0);
+        std::vector<gmx::RVec> forces = fvsite;
+        vh.distributeForces(top, coords, &forces, box);
+        // Energy as a function of the coordinates
+        auto energy = [&](std::vector<gmx::RVec> x)
+        {
+            vh.constructPositions(top, &x, box);
+            double e = 0;
+            for (size_t i = 0; i < x.size(); i++)
+            {
+                e -= iprod(fvsite[i], x[i]);
+            }
+            return e;
+        };
+        double h = 1e-6;
+        for (size_t i = 0; i < atoms.size(); i++)
+        {
+            for (int m = 0; m < DIM; m++)
+            {
+                if (atoms[i].pType() == ActParticle::Vsite)
+                {
+                    // The force has been moved to the atoms
+                    EXPECT_EQ(0, forces[i][m]) << "vsite " << i;
+                    continue;
+                }
+                auto xp = coords;
+                auto xm = coords;
+                xp[i][m] += h;
+                xm[i][m] -= h;
+                double fnum = -(energy(xp) - energy(xm))/(2*h);
+                EXPECT_NEAR(fnum, forces[i][m], 1e-5) << "atom " << i << " " << atoms[i].name() << " dim " << m;
+            }
+        }
+    }
 };
+
+TEST_F (VsiteHandlerTest, SpreadVsite2HF)
+{
+    testSpread("ACS-pg-vs2", gmx::test::TestFileManager::getInputFilePath("hydrogen-fluoride.sdf"),
+               { InteractionType::VSITE1, InteractionType::VSITE2 });
+}
+
+TEST_F (VsiteHandlerTest, SpreadVsite3Water)
+{
+    testSpread("ACS-pg-vs3", gmx::test::TestFileManager::getInputFilePath("water.sdf"),
+               { InteractionType::VSITE3, InteractionType::VSITE3OUT });
+}
+
+TEST_F (VsiteHandlerTest, SpreadVsite3SWater)
+{
+    testSpread("water_hyperpol", gmx::test::TestFileManager::getInputFilePath("water.sdf"),
+               { InteractionType::VSITE3S });
+}
+
+TEST_F (VsiteHandlerTest, SpreadVsite3FDWater)
+{
+    testSpread("ACS-v3fds", gmx::test::TestFileManager::getInputFilePath("water.sdf"),
+               { InteractionType::VSITE3FD });
+}
 
 TEST_F (VsiteHandlerTest, VSite2HF)
 {
