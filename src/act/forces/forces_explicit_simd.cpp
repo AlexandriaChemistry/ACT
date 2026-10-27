@@ -726,6 +726,8 @@ ExplicitSimd explicitSimdType()
 {
 #if defined(__AVX512F__)
     return ExplicitSimd::Avx512;
+#elif defined(__AVX2__)
+    return ExplicitSimd::Avx2;
 #else
     return ExplicitSimd::ArmNeon;
 #endif
