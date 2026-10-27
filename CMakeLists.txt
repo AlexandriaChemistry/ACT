@@ -232,32 +232,7 @@ gmx_option_multichoice(
 gmx_dependent_cache_variable(GMX_SIMD_REF_FLOAT_WIDTH  "Reference SIMD single precision width" STRING "4" "GMX_SIMD STREQUAL REFERENCE")
 gmx_dependent_cache_variable(GMX_SIMD_REF_DOUBLE_WIDTH "Reference SIMD double precision width" STRING "2" "GMX_SIMD STREQUAL REFERENCE")
 
-# The force routines have explicit SIMD code for ARM NEON, which is used
-# automatically, and for AVX2 and AVX-512, one of which has to be selected
-# since x86 processors differ. Only forces_explicit_simd.cpp is compiled with
-# these flags, and it is only used if the processor running the code supports
-# them, otherwise the code vectorized by the compiler is used.
-set(ACT_SIMD "NONE" CACHE STRING "Explicit SIMD for the force routines on x86: NONE, AVX2 (with FMA, for instance AMD Zen 2/3) or AVX_512")
-set_property(CACHE ACT_SIMD PROPERTY STRINGS NONE AVX2 AVX_512)
-set(ACT_SIMD_FLAGS "")
-if(ACT_SIMD STREQUAL "AVX2")
-    set(_act_simd_flags "-mavx2;-mfma")
-elseif(ACT_SIMD STREQUAL "AVX_512")
-    set(_act_simd_flags "-mavx512f")
-elseif(NOT ACT_SIMD STREQUAL "NONE")
-    message(FATAL_ERROR "ACT_SIMD should be NONE, AVX2 or AVX_512, not ${ACT_SIMD}")
-endif()
-if(_act_simd_flags)
-    include(CheckCXXCompilerFlag)
-    string(REPLACE ";" " " _act_simd_flags_string "${_act_simd_flags}")
-    string(MAKE_C_IDENTIFIER "CXX_FLAG_ACT_SIMD_${ACT_SIMD}" _var)
-    check_cxx_compiler_flag("${_act_simd_flags_string}" ${_var})
-    if(NOT ${_var})
-        message(FATAL_ERROR "ACT_SIMD is ${ACT_SIMD}, but the compiler does not support ${_act_simd_flags_string}")
-    endif()
-    set(ACT_SIMD_FLAGS "${_act_simd_flags}")
-    message(STATUS "Using ${ACT_SIMD} for the explicit SIMD force routines")
-endif()
+include(actManageSimd)
 
 # This should be moved to a separate NBNXN cmake module when that code is cleaned up and modularized
 

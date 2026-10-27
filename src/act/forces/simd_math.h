@@ -28,9 +28,9 @@
 /*! \internal \brief
  * Explicit SIMD in double precision.
  *
- * Selects the SIMD primitives for the processor the code is compiled for,
+ * Selects the SIMD primitives chosen with the CMake option ACT_SIMD,
  * AVX-512 (simd_avx512.h), AVX2 with FMA (simd_avx2.h) or ARM NEON
- * (simd_neon.h), and defines
+ * (simd_neon.h), if the compiler targets that instruction set, and defines
  * ACT_HAVE_SIMD if there are any. Both provide the type SimdDouble with
  * simdWidth doubles and the same operations, such that the code using them
  * does not depend on the processor.
@@ -45,13 +45,15 @@
 #ifndef ACT_FORCES_SIMD_MATH_H
 #define ACT_FORCES_SIMD_MATH_H
 
-#if defined(__AVX512F__)
+#include "config.h"
+
+#if ACT_SIMD_AVX_512 && defined(__AVX512F__)
 #    include "act/forces/simd_avx512.h"
 #    define ACT_HAVE_SIMD 1
-#elif defined(__AVX2__) && defined(__FMA__)
+#elif ACT_SIMD_AVX2 && defined(__AVX2__) && defined(__FMA__)
 #    include "act/forces/simd_avx2.h"
 #    define ACT_HAVE_SIMD 1
-#elif defined(__ARM_NEON) && defined(__aarch64__)
+#elif ACT_SIMD_ARM_NEON && defined(__ARM_NEON) && defined(__aarch64__)
 #    include "act/forces/simd_neon.h"
 #    define ACT_HAVE_SIMD 1
 #endif

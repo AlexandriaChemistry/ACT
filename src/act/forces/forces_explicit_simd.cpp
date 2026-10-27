@@ -724,9 +724,9 @@ size_t explicitSimdWidth()
 
 ExplicitSimd explicitSimdType()
 {
-#if defined(__AVX512F__)
+#if ACT_SIMD_AVX_512
     return ExplicitSimd::Avx512;
-#elif defined(__AVX2__)
+#elif ACT_SIMD_AVX2
     return ExplicitSimd::Avx2;
 #else
     return ExplicitSimd::ArmNeon;
