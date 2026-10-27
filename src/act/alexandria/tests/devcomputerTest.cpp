@@ -64,6 +64,10 @@ struct DevOptions
     bool                   separateInductionCorrection = true;
     //! Relative tolerance for comparing to reference data
     double                 tolerance                   = 1e-7;
+    //! Also check the van der Waals energies and forces of each conformation
+    bool                   checkConformations          = false;
+    //! Only use these molecules, all if empty
+    std::set<std::string>  molecules;
 };
 
 //! \return key for the DevResults map
@@ -196,6 +200,10 @@ protected:
         DevResults results;
         for(auto &mp : mps)
         {
+            if (!opts.molecules.empty() && opts.molecules.count(mp.getMolname()) == 0)
+            {
+                continue;
+            }
             std::vector<ACTMol> actmols(1);
             actmols[0].Merge(&mp);
             actmols[0].GenerateTopology(&msghandler, pd, missingParameters::Ignore);
@@ -226,6 +234,10 @@ protected:
                                    &targets,
                                    pd,
                                    opts.lossFunction);
+            if (checker && opts.checkConformations)
+            {
+                checkConformations(actmols[0], checker);
+            }
             for(const auto &t : targets)
             {
                 results[resultKey(actmols[0].getMolname(), t.first)] =
@@ -340,6 +352,46 @@ protected:
             }
         }
         return nonZeroDHF;
+    }
+
+    /*! \brief Check the van der Waals energies and forces of each conformation
+     * \param[in] actmol  The molecule after calcDeviation
+     * \param[in] checker Reference data checker
+     */
+    static void checkConformations(ACTMol                          &actmol,
+                                   gmx::test::TestReferenceChecker *checker)
+    {
+        const auto *coords = actmol.isDimer() ? actmol.dimerCoords() : actmol.monomerCoords(0);
+        EXPECT_FALSE(coords->empty()) << actmol.getMolname();
+        for(size_t i = 0; i < coords->size(); i++)
+        {
+            const auto &ce    = (*coords)[i];
+            auto        label = gmx::formatString("%s-conf%zu", actmol.getMolname().c_str(), i);
+            for(const auto itype : { InteractionType::EXCHANGE,
+                                     InteractionType::DISPERSION,
+                                     InteractionType::EPOT })
+            {
+                auto ee = ce.eMap.find(itype);
+                ASSERT_TRUE(ce.eMap.end() != ee && ee->second.haveACT())
+                    << label << " " << interactionTypeToString(itype);
+                checker->checkDouble(ee->second.eact(),
+                                     gmx::formatString("%s-%s", label.c_str(),
+                                                       interactionTypeToString(itype).c_str()).c_str());
+            }
+            // Repulsion and attraction
+            EXPECT_GT(ce.eMap.find(InteractionType::EXCHANGE)->second.eact(), 0) << label;
+            EXPECT_LT(ce.eMap.find(InteractionType::DISPERSION)->second.eact(), 0) << label;
+            std::vector<double> f;
+            for(const auto &fi : ce.fcalc)
+            {
+                for(int m = 0; m < DIM; m++)
+                {
+                    EXPECT_TRUE(std::isfinite(fi[m])) << label;
+                    f.push_back(fi[m]);
+                }
+            }
+            checker->checkSequence(f.begin(), f.end(), (label + "-forces").c_str());
+        }
     }
 
     //! Run monomer and dimer tests with a loss function
@@ -507,6 +559,18 @@ TEST_F(ForceEnergyDevComputerTest, CalcDevMonomerNoBoltz)
     }
     std::string mpFile = fileManager().getInputFilePath("../../molprop/tests/molprop.xml");
     testCalcDev(mpFile, "ACS-g2", boltzmann);
+}
+
+// Test: Buffered 14-7 van der Waals energies and forces (force field ACS-v3fds)
+TEST_F(ForceEnergyDevComputerTest, CalcDevMonomerLJ14_7)
+{
+    DevOptions opts;
+    opts.weights            = unitWeights({ eRMS::EPOT });
+    opts.checkConformations = true;
+    // The force field has all parameters for these molecules, water has a
+    // VSITE3FD virtual site.
+    opts.molecules          = { "1-butanol", "water" };
+    testCalcDev(monomerFile(), "../../forces/tests/ACS-v3fds", opts);
 }
 
 // Test: CalcDeviation for dimer without Boltzmann weighting
