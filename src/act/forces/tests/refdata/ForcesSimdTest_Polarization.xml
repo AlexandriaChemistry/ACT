@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Real Name="POLARIZATION-0">11.108231648423354</Real>
+  <Real Name="EPOT-0">11.108231648423354</Real>
+  <Real Name="POLARIZATION-1">61.35437713868091</Real>
+  <Real Name="EPOT-1">61.35437713868091</Real>
+  <Real Name="POLARIZATION-2">25.443212373851285</Real>
+  <Real Name="EPOT-2">25.443212373851285</Real>
+  <Real Name="POLARIZATION-3">9.3299072230690285</Real>
+  <Real Name="EPOT-3">9.3299072230690285</Real>
+  <Real Name="POLARIZATION-4">11.708469394345176</Real>
+  <Real Name="EPOT-4">11.708469394345176</Real>
+  <Real Name="POLARIZATION-5">34.368055388263137</Real>
+  <Real Name="EPOT-5">34.368055388263137</Real>
+  <Real Name="POLARIZATION-6">33.101504422722009</Real>
+  <Real Name="EPOT-6">33.101504422722009</Real>
+</ReferenceData>

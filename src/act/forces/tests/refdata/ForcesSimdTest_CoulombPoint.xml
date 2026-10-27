@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Real Name="COULOMB-0">178.6784895019747</Real>
+  <Real Name="EPOT-0">178.6784895019747</Real>
+  <Real Name="COULOMB-1">179.64701828362681</Real>
+  <Real Name="EPOT-1">179.64701828362681</Real>
+  <Real Name="COULOMB-2">183.55667807750996</Real>
+  <Real Name="EPOT-2">183.55667807750996</Real>
+  <Real Name="COULOMB-3">188.77741313116471</Real>
+  <Real Name="EPOT-3">188.77741313116471</Real>
+  <Real Name="COULOMB-4">182.94887693441774</Real>
+  <Real Name="EPOT-4">182.94887693441774</Real>
+  <Real Name="COULOMB-5">183.83275208337207</Real>
+  <Real Name="EPOT-5">183.83275208337207</Real>
+  <Real Name="COULOMB-6">183.64710543672712</Real>
+  <Real Name="EPOT-6">183.64710543672712</Real>
+</ReferenceData>

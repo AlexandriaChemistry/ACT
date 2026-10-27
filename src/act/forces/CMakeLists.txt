@@ -27,6 +27,10 @@
 
 file(GLOB UTILITY_SOURCES *.cpp *.h)
 target_sources(actLib PRIVATE ${UTILITY_SOURCES})
+if(ACT_SIMD_AVX_512_FLAGS)
+    set_source_files_properties(forces_explicit_simd.cpp TARGET_DIRECTORY actLib
+                                PROPERTIES COMPILE_OPTIONS "${ACT_SIMD_AVX_512_FLAGS}")
+endif()
 	
 if (BUILD_TESTING)
     add_subdirectory(tests)
