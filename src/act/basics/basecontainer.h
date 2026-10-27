@@ -34,6 +34,8 @@
 #define ACT_BASICS_BASECONTAINER_H
 
 #include <any>
+#include <type_traits>
+#include <utility>
 
 namespace alexandria
 {
@@ -43,26 +45,62 @@ namespace alexandria
 // See also
 // https://stackoverflow.com/questions/76379814/how-to-use-const-variables-using-c17-stdany-in-a-stdvector
 // It requires C++17.
+//
+// The address of the stored object is kept, since std::any_cast checks the
+// type on every access, which is expensive in inner loops. The address
+// changes when the storage is copied or moved, therefore it is recomputed
+// there.
 
 template<typename ActBase>
 struct BaseContainer
 {
 public:
     template<typename ConcreteType>
+        requires (!std::is_same_v<std::remove_cvref_t<ConcreteType>, BaseContainer>)
     BaseContainer(ConcreteType&& object)
         : storage{std::forward<ConcreteType>(object)}
-        , getter{ [](std::any &storage) -> ActBase& { return std::any_cast<ConcreteType&>(storage); } }
-        , const_getter{ [](const std::any &storage) -> const ActBase& { return std::any_cast<const ConcreteType&>(storage); } }
-
+        , getter{ [](std::any &storage) -> ActBase& { return std::any_cast<std::remove_cvref_t<ConcreteType>&>(storage); } }
+        , object_{ &getter(storage) }
     {}
-    
-    const ActBase *operator->() const { return &const_getter(storage); }
-    ActBase *operator->() { return &getter(storage); }
-    
+
+    BaseContainer(const BaseContainer &other)
+        : storage{other.storage}, getter{other.getter}, object_{ &getter(storage) }
+    {}
+
+    BaseContainer(BaseContainer &&other) noexcept
+        : storage{std::move(other.storage)}, getter{other.getter}, object_{ &getter(storage) }
+    {}
+
+    BaseContainer &operator=(const BaseContainer &other)
+    {
+        if (this != &other)
+        {
+            storage = other.storage;
+            getter  = other.getter;
+            object_ = &getter(storage);
+        }
+        return *this;
+    }
+
+    BaseContainer &operator=(BaseContainer &&other) noexcept
+    {
+        if (this != &other)
+        {
+            storage = std::move(other.storage);
+            getter  = other.getter;
+            object_ = &getter(storage);
+        }
+        return *this;
+    }
+
+    const ActBase *operator->() const { return object_; }
+    ActBase *operator->() { return object_; }
+
 private:
     std::any storage;
     ActBase& (*getter)(std::any&);
-    const ActBase& (*const_getter)(const std::any&);
+    //! The stored object
+    ActBase *object_;
 };
 
 } // namespace alexandria

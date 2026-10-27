@@ -504,10 +504,11 @@ static inline void calcInduction(ACTEnergyMap *eMap)
 {
     // Extract electrostatics once more
     // Note that the INDUCTIONCORRECTION is treated in the calling routine
-    std::set<InteractionType> elecTerms = {
-        InteractionType::ELECTROSTATICS,
-        InteractionType::POLARIZATION,
-        InteractionType::CHARGETRANSFER
+    auto isElecTerm = [](InteractionType itype)
+    {
+        return (InteractionType::ELECTROSTATICS == itype ||
+                InteractionType::POLARIZATION   == itype ||
+                InteractionType::CHARGETRANSFER == itype);
     };
     // Induction energy
     bool   haveInduction = false;
@@ -516,8 +517,7 @@ static inline void calcInduction(ACTEnergyMap *eMap)
     double exchInd       = 0;
     for(auto &et : *eMap)
     {
-        auto tt = elecTerms.find(et.first);
-        if (elecTerms.end() != tt)
+        if (isElecTerm(et.first))
         {
             if (et.second.eactBefore() != et.second.eact())
             {
@@ -884,28 +884,30 @@ void ForceComputer::computeRelaxedEnergies(MsgHandler          *msghandler,
         auto &dimers = *mol.dimerCoords();
         for(size_t i = 0; i < dimers.size(); i++)
         {
-            // Shortcut :(
             auto &eMap = dimers[i].eMap;
+            const ACTEnergyMap *monoMap[2] = { &(*mol.monomerCoords(0))[i].eMap,
+                                               &(*mol.monomerCoords(1))[i].eMap };
             for(auto &e : eMap)
             {
-                if (!eMap[e.first].haveACT())
+                auto &ener = e.second;
+                if (!ener.haveACT())
                 {
                     continue;
                 }
-                double edim = eMap[e.first].eact();
-                double edb4 = eMap[e.first].eactBefore();
+                double edim = ener.eact();
+                double edb4 = ener.eactBefore();
                 for(size_t j = 0; j < 2; j++)
                 {
-                    auto mm = (*mol.monomerCoords(j))[i].eMap.find(e.first);
-                    if (mm != (*mol.monomerCoords(j))[i].eMap.end())
+                    auto mm = monoMap[j]->find(e.first);
+                    if (mm != monoMap[j]->end())
                     {
                         edim -= mm->second.eact();
                         edb4 -= mm->second.eactBefore();
                     }
                 }
-                eMap[e.first].setACT(edb4);
-                eMap[e.first].backup();
-                eMap[e.first].setACT(edim);
+                ener.setACT(edb4);
+                ener.backup();
+                ener.setACT(edim);
             }
         }
         for(auto &dim : *mol.dimerCoords())
