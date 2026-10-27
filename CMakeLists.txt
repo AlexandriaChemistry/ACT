@@ -239,13 +239,6 @@ gmx_dependent_cache_variable(GMX_SIMD_REF_DOUBLE_WIDTH "Reference SIMD double pr
 # them, otherwise the code vectorized by the compiler is used.
 set(ACT_SIMD "NONE" CACHE STRING "Explicit SIMD for the force routines on x86: NONE, AVX2 (with FMA, for instance AMD Zen 2/3) or AVX_512")
 set_property(CACHE ACT_SIMD PROPERTY STRINGS NONE AVX2 AVX_512)
-# The option used before ACT_SIMD existed
-option(ACT_SIMD_AVX_512 "Deprecated, use ACT_SIMD=AVX_512" OFF)
-mark_as_advanced(ACT_SIMD_AVX_512)
-if(ACT_SIMD_AVX_512)
-    set(ACT_SIMD "AVX_512" CACHE STRING "" FORCE)
-    set(ACT_SIMD_AVX_512 OFF CACHE BOOL "Deprecated, use ACT_SIMD=AVX_512" FORCE)
-endif()
 set(ACT_SIMD_FLAGS "")
 if(ACT_SIMD STREQUAL "AVX2")
     set(_act_simd_flags "-mavx2;-mfma")
