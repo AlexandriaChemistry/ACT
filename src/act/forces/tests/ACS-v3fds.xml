@@ -1239,7 +1239,7 @@
       <parameter type="vs2a" unit="" value="-0.5" uncertainty="0" minimum="-1" maximum="0" ntrain="0" mutability="Bounded" nonnegative="no"/>
     </parameterlist>
   </interaction>
-  <interaction type="VSITE3FD" function="VSITE3" canswap="false">
+  <interaction type="VSITE3FD" function="VSITE3FD" canswap="false">
     <parameterlist identifier="h_b~o3_b~h_b!v3Ow">
       <parameter type="vs3fd_a" unit="" value="1" uncertainty="0" minimum="1" maximum="1" ntrain="0" mutability="Bounded" nonnegative="no"/>
       <parameter type="vs3fd_b" unit="" value="0.15" uncertainty="0" minimum="0" maximum="0.3" ntrain="0" mutability="Bounded" nonnegative="no"/>
