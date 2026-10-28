@@ -1605,7 +1605,7 @@ static ACT_ALWAYS_INLINE void withOne(const One           &one,
  */
 template <typename One>
 static inline void computeConformation(MsgHandler                   *msghandler,
-                                       const TopologyEntryVector    &entries,
+                                       TopologyEntryRange            entries,
                                        const std::vector<gmx::RVec> &x,
                                        std::vector<gmx::RVec>       *forces,
                                        double                        energies[MAX_ENER],
@@ -2005,7 +2005,7 @@ static void keepEnergies(const double   *energies,
 
 static inline void calcSome(MsgHandler                 *msghandler,
                             Potential                   mypot,
-                            const TopologyEntryVector  &topentries,
+                            TopologyEntryRange          topentries,
                             const std::vector<ActAtom> &atoms,
                             std::vector<CoordsEnergy>  *coords,
                             ConformationEnergies       *cener,
@@ -2060,7 +2060,7 @@ static inline void calcSome(MsgHandler                 *msghandler,
  * \param[in]    one       Function computing one interaction
  */
 template <int NATOM, bool Vectorize, bool Forces, typename One>
-static void computeConformations(const TopologyEntryVector &entries,
+static void computeConformations(TopologyEntryRange         entries,
                                  ConformationArrays        *ca,
                                  double                    *energies,
                                  One                        one)
@@ -2156,7 +2156,7 @@ static void computeConformations(const TopologyEntryVector &entries,
  */
 template <bool Forces>
 static ACT_NOINLINE bool dispatchConformations(Potential                   mypot,
-                                               const TopologyEntryVector  &topentries,
+                                               TopologyEntryRange          topentries,
                                                const std::vector<ActAtom> &atoms,
                                                ConformationArrays         *ca,
                                                double                     *energies,
@@ -2181,7 +2181,7 @@ static ACT_NOINLINE bool dispatchConformations(Potential                   mypot
  * \return false if this potential is not implemented this way
  */
 static bool calcConformations(Potential                        mypot,
-                              const TopologyEntryVector       &topentries,
+                              TopologyEntryRange               topentries,
                               const std::vector<ActAtom>      &atoms,
                               ConformationArrays              *ca,
                               ConformationEnergies            *cener,
@@ -2230,6 +2230,9 @@ static bool calcConformations(Potential                        mypot,
  *                             Their energies and forces are those of the
  *                             previous call, since their shells did not move.
  *                             If false, the done flags are reset.
+ * \param[in]    intermolecular Whether to compute only the intermolecular
+ *                             interactions, see Topology::separateIntermolecular.
+ *                             The energies of the other interaction types are zero.
  */
 static inline void lowComputeEnergies(MsgHandler                *msghandler,
                                       const ForceField          *pd,
@@ -2239,8 +2242,9 @@ static inline void lowComputeEnergies(MsgHandler                *msghandler,
                                       double                     epsilonr,
                                       bool                       conformations,
                                       bool                       forces,
-                                      bool                       reuse    = false,
-                                      bool                       skipDone = false)
+                                      bool                       reuse          = false,
+                                      bool                       skipDone       = false,
+                                      bool                       intermolecular = false)
 {
     static const size_t timer = Timings::instance().index("Energy calculation overhead");
     ScopedTimer         scoped(timer);
@@ -2329,6 +2333,11 @@ static inline void lowComputeEnergies(MsgHandler                *msghandler,
         {
             continue;
         }
+        // The interactions to compute, without intramolecular ones they
+        // may be none, then the energies are zero.
+        TopologyEntryRange entries = (intermolecular ?
+                                      top->intermolecular(entry.first, entry.second) :
+                                      TopologyEntryRange(entry.second));
         // Use the energies of the previous call if nothing changed. Forces
         // are not kept, so this is only possible if they are not needed.
         CachedEnergies *cached = nullptr;
@@ -2338,7 +2347,7 @@ static inline void lowComputeEnergies(MsgHandler                *msghandler,
             if (cached->valid && cached->potential == mypot &&
                 cached->parameterVersion == top->parameterVersion(entry.first) &&
                 cached->coordinateVersion == cdata->coordinates.value() &&
-                cached->nentries == entry.second.size() &&
+                cached->nentries == entries.size() &&
                 cached->nconf == coords->size() &&
                 sameCharges(mypot, top->atoms(), cached->charges))
             {
@@ -2352,7 +2361,7 @@ static inline void lowComputeEnergies(MsgHandler                *msghandler,
             cached->potential         = mypot;
             cached->parameterVersion  = top->parameterVersion(entry.first);
             cached->coordinateVersion = cdata->coordinates.value();
-            cached->nentries          = entry.second.size();
+            cached->nentries          = entries.size();
             cached->nconf             = coords->size();
             keepCharges(mypot, top->atoms(), &cached->charges);
         }
@@ -2363,7 +2372,7 @@ static inline void lowComputeEnergies(MsgHandler                *msghandler,
                 ca.loadForces(*coords);
                 forcesInArrays = true;
             }
-            if (calcConformations(mypot, entry.second, top->atoms(),
+            if (calcConformations(mypot, entries, top->atoms(),
                                   &ca, &cener, epsilonr, forces, cached))
             {
                 continue;
@@ -2374,7 +2383,7 @@ static inline void lowComputeEnergies(MsgHandler                *msghandler,
             }
             forcesInArrays = false;
         }
-        calcSome(msghandler, mypot, entry.second, top->atoms(), coords, &cener, epsilonr, cached);
+        calcSome(msghandler, mypot, entries, top->atoms(), coords, &cener, epsilonr, cached);
     }
     if (forces && forcesInArrays)
     {
@@ -2387,7 +2396,8 @@ void computeEnergies(MsgHandler                  *msghandler,
                      const std::vector<ACTMol *> &allmols,
                      size_t                       what,
                      bool                         forces,
-                     bool                         skipDone)
+                     bool                         skipDone,
+                     bool                         intermolecular)
 {
     double epsilonr = 1;
     auto iCoul = InteractionType::ELECTROSTATICS;
@@ -2415,10 +2425,16 @@ void computeEnergies(MsgHandler                  *msghandler,
         {
             continue;
         }
+        // The monomers of a dimer are not needed for intermolecular energies
+        bool inter = intermolecular && tops.size() == 2 && mol.topology()->hasIntermolecular();
+        if (inter && what < 2)
+        {
+            continue;
+        }
         if (what >= 2)
         {
             lowComputeEnergies(msghandler, pd, mol.topology(), mol.dimerCoords(),
-                               mol.conformationData(2), epsilonr, true, forces, reuse, skipDone);
+                               mol.conformationData(2), epsilonr, true, forces, reuse, skipDone, inter);
         }
         else
         {

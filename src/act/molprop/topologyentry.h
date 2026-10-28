@@ -38,6 +38,7 @@
 #include <cstdio>
 #include <any>
 #include <map>
+#include <span>
 #include <vector>
 
 #include "act/basics/basecontainer.h"
@@ -235,6 +236,9 @@ public:
 
 //! Vector of TopologyEntry items or inherited variants
 typedef std::vector<BaseContainer<TopologyEntry>> TopologyEntryVector;
+
+//! A part of a TopologyEntryVector, without copying the entries
+typedef std::span<const BaseContainer<TopologyEntry>> TopologyEntryRange;
 
 /*! \brief
  * Single atom

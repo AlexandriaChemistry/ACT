@@ -92,7 +92,7 @@ size_t explicitSimdWidth();
  * \return false if this potential is not available with explicit SIMD
  */
 bool computeExplicitSimd(Potential                   mypot,
-                         const TopologyEntryVector  &entries,
+                         TopologyEntryRange          entries,
                          const std::vector<ActAtom> &atoms,
                          double                      epsilonr,
                          size_t                      stride,

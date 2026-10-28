@@ -1523,6 +1523,27 @@ const TopologyEntryVector &Topology::entry(InteractionType itype) const
     return entries_.find(itype)->second;
 }
 
+void Topology::separateIntermolecular(size_t natom0)
+{
+    intermolecularStart_.clear();
+    for(auto &entry : entries_)
+    {
+        auto &vec  = entry.second;
+        auto  last = std::stable_partition(vec.begin(), vec.end(),
+                                           [natom0](const BaseContainer<TopologyEntry> &b)
+                                           {
+                                               bool first = false, second = false;
+                                               for(auto a : b->atomIndices())
+                                               {
+                                                   first  = first  || static_cast<size_t>(a) <  natom0;
+                                                   second = second || static_cast<size_t>(a) >= natom0;
+                                               }
+                                               return !(first && second);
+                                           });
+        intermolecularStart_[entry.first] = last - vec.begin();
+    }
+}
+
 void Topology::addResidue(int                residueNumber,
                           const std::string &residueName)
 {

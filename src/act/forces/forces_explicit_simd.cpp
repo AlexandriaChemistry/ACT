@@ -691,7 +691,7 @@ struct HuaBond
  * \param[inout] energies Energies
  */
 template <typename Kernel, bool Forces>
-void computePairs(const TopologyEntryVector  &entries,
+void computePairs(TopologyEntryRange          entries,
                   const std::vector<ActAtom> &atoms,
                   double                      epsilonr,
                   size_t                      stride,
@@ -771,7 +771,7 @@ struct AngleParams
  * \param[inout] energies Energies
  */
 template <bool Forces>
-void computeAngles(const TopologyEntryVector &entries,
+void computeAngles(TopologyEntryRange         entries,
                    size_t                     stride,
                    const double              *x,
                    double                    *f,
@@ -850,7 +850,7 @@ struct DihedralParams
 };
 
 //! Prepare the dihedrals, with at most fdihNR parameters
-static std::vector<DihedralParams> prepareDihedrals(const TopologyEntryVector &entries,
+static std::vector<DihedralParams> prepareDihedrals(TopologyEntryRange         entries,
                                                     size_t                     stride)
 {
     std::vector<DihedralParams> dihedrals;
@@ -999,7 +999,7 @@ static inline SimdDouble invNormProduct(const DihedralVectors &v)
  * \param[inout] energies Energies
  */
 template <bool Forces>
-void computeFourierDihedrals(const TopologyEntryVector &entries,
+void computeFourierDihedrals(TopologyEntryRange         entries,
                              size_t                     stride,
                              const double              *x,
                              double                    *f,
@@ -1048,7 +1048,7 @@ void computeFourierDihedrals(const TopologyEntryVector &entries,
  * \param[inout] energies Energies
  */
 template <bool Forces>
-void computeImproperDihedrals(const TopologyEntryVector &entries,
+void computeImproperDihedrals(TopologyEntryRange         entries,
                               size_t                     stride,
                               const double              *x,
                               double                    *f,
@@ -1092,7 +1092,7 @@ ExplicitSimd explicitSimdType()
 }
 
 bool computeExplicitSimd(Potential                   mypot,
-                         const TopologyEntryVector  &entries,
+                         TopologyEntryRange          entries,
                          const std::vector<ActAtom> &atoms,
                          double                      epsilonr,
                          size_t                      stride,
@@ -1186,7 +1186,7 @@ ExplicitSimd explicitSimdType()
     return ExplicitSimd::None;
 }
 
-bool computeExplicitSimd(Potential, const TopologyEntryVector &, const std::vector<ActAtom> &,
+bool computeExplicitSimd(Potential, TopologyEntryRange, const std::vector<ActAtom> &,
                          double, size_t, const double *, double *, double *, bool)
 {
     return false;

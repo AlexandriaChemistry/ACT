@@ -31,13 +31,19 @@ class MsgHandler;
  *                       shells converged, see CoordsEnergy::done, they keep
  *                       their energies and forces. If false, the done flags
  *                       are reset.
+ * \param[in] intermolecular Whether to compute only the intermolecular
+ *                       interactions of dimers, which gives the interaction
+ *                       energies directly if there is no polarization. The
+ *                       monomers of the dimers are then not computed, see
+ *                       Topology::separateIntermolecular.
  */
 void computeEnergies(MsgHandler                  *msghandler,
                      const ForceField            *pd,
                      const std::vector<ACTMol *> &allmols,
                      size_t                       what,
-                     bool                         forces   = true,
-                     bool                         skipDone = false);
+                     bool                         forces         = true,
+                     bool                         skipDone       = false,
+                     bool                         intermolecular = false);
 
 /*! \brief Compute the energies and forces of one potential for all conformations
  * The energy maps and forces of the conformations are cleared first.
