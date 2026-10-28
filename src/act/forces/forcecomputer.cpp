@@ -951,15 +951,6 @@ void ForceComputer::computeRelaxedEnergies(MsgHandler          *msghandler,
         {
             calcInduction(monomers[i]);
         }
-        // Report the energies in the energy maps of the conformations
-        if (mol.isDimer())
-        {
-            dimer->store(mol.dimerCoords());
-        }
-        for(size_t i = 0; i < tops.size(); i++)
-        {
-            monomers[i]->store(mol.monomerCoords(i));
-        }
     }
     if (!forces)
     {

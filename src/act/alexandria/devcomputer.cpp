@@ -615,6 +615,14 @@ void ForceEnergyDevComputer::calcDeviation(MsgHandler                     *msgha
                 }
                 double     beta   = computeBeta(eRMS::Interaction);
                 const auto coords = actmol->dimerCoords();
+                // The ACT energies are taken from the conformation data,
+                // the QM energies from the energy maps.
+                auto      &ener   = actmol->conformationData(2)->energies;
+                std::vector<ConformationEnergies::Term> eact;
+                for (const auto &r : rmsE)
+                {
+                    eact.push_back(ener.find(r.itype));
+                }
 #pragma omp simd
                 for(size_t i = 0; i < coords->size(); i++)
                 {
@@ -635,17 +643,17 @@ void ForceEnergyDevComputer::calcDeviation(MsgHandler                     *msgha
                             w = 1e-8;
                         }
                     }
-                    for (auto iter = rmsE.begin(); iter != rmsE.end(); ++iter)
+                    for (size_t j = 0; j < rmsE.size(); j++)
                     {
-                        auto   dd  = eMap.find(iter->itype);
+                        auto  &rms = rmsE[j];
                         double eqm = 0;
-                        if (dd != eMap.end() && dd->second.haveACT() &&
-                            qmReference(eMap, iter->itype, sepInductionTerms, &eqm))
+                        if (i < ener.nconf() && eact[j].has(i) &&
+                            qmReference(eMap, rms.itype, sepInductionTerms, &eqm))
                         {
-                            if (std::isfinite(dd->second.eact()))
+                            if (std::isfinite(eact[j].act[i]))
                             {
-                                iter->loss   += w * loss(lossFunction, 1, eqm - dd->second.eact());
-                                iter->weight += w;
+                                rms.loss   += w * loss(lossFunction, 1, eqm - eact[j].act[i]);
+                                rms.weight += w;
                             }
                         }
                     }
@@ -660,6 +668,8 @@ void ForceEnergyDevComputer::calcDeviation(MsgHandler                     *msgha
             {
                 double     beta   = computeBeta(eRMS::EPOT);
                 const auto coords = actmol->monomerCoords(0);
+                auto      &ener   = actmol->conformationData(0)->energies;
+                auto       epot   = ener.find(InteractionType::EPOT);
 #pragma omp simd
                 for(size_t i = 0; i < coords->size(); i++)
                 {
@@ -684,9 +694,9 @@ void ForceEnergyDevComputer::calcDeviation(MsgHandler                     *msgha
                             }
                         }
                         // std::isfinite checks for both Inf and NaN values.
-                        if (dd->second.haveACT() && std::isfinite(dd->second.eact()))
+                        if (i < ener.nconf() && epot.has(i) && std::isfinite(epot.act[i]))
                         {
-                            double myloss = w * loss(lossFunction, w, eqm-dd->second.eact());
+                            double myloss = w * loss(lossFunction, w, eqm-epot.act[i]);
                             te->second.increase(w, myloss);
                         }
                     }

@@ -305,6 +305,10 @@ public:
      * \return The data
      */
     ConformationData *conformationData(size_t what) { return &conformationData_[what]; }
+    /*! \brief Copy the ACT energies from the conformation data to the energy
+     * maps of the dimer and monomer conformations
+     */
+    void storeEnergies();
     //! \return the number of real atoms, i.e. not shells or vsites
     int nRealAtoms() const { return realAtoms_.size(); }
     

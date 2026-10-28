@@ -288,6 +288,18 @@ std::vector<gmx::RVec> ACTMol::xOriginal() const
     return xOriginal_;
 }
 
+void ACTMol::storeEnergies()
+{
+    if (isDimer())
+    {
+        conformationData_[2].energies.store(&dimerCoords_);
+    }
+    for(size_t i = 0; i < fragmentHandler()->topologies().size() && i < 2; i++)
+    {
+        conformationData_[i].energies.store(&monomerCoords_[i]);
+    }
+}
+
 void ACTMol::collectCoordsEnergy(MsgHandler *msghandler)
 {
     // The conformations are made anew
