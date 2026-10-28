@@ -239,8 +239,10 @@ void printTimings(const CommunicationRecord *cr,
         }
     }
     tw->writeStringFormatted(" (%s).\n", counts.c_str());
-    tw->writeStringFormatted("The time of each part excludes the parts that it calls. 'MPI' includes waiting\n");
-    tw->writeStringFormatted("for other processes. The columns per role are averages per process in seconds.\n");
+    tw->writeStringFormatted("The time of each part excludes the parts that it calls. MPI times are given per\n");
+    tw->writeStringFormatted("part of the program they are called from. 'MPI waiting' is waiting for a message\n");
+    tw->writeStringFormatted("to arrive, 'MPI collectives' includes waiting for the other processes. The\n");
+    tw->writeStringFormatted("columns per role are averages per process in seconds.\n");
     tw->writeStringFormatted("Wall time of the master %.2f s.\n\n", mine.wallTime);
     std::string header = gmx::formatString("%-48s %10s %6s", "Part", "Seconds", "%");
     for (size_t r = 0; r < roles.size(); r++)
@@ -274,24 +276,29 @@ void printTimings(const CommunicationRecord *cr,
     {
         printRow(row.first, row.second);
     }
-    // Subtotal of the potentials
-    const std::string potential = "Potential ";
-    Sum               potentials;
-    for (const auto &row : rows)
+    // Subtotals of the potentials and of MPI
+    auto subtotal = [&rows, &printRow](const std::string &prefix, const std::string &name)
     {
-        if (row.first.compare(0, potential.size(), potential) == 0)
+        Sum sum;
+        for (const auto &row : rows)
         {
-            potentials.seconds += row.second.seconds;
-            for (const auto &pr : row.second.perRole)
+            if (row.first.compare(0, prefix.size(), prefix) == 0)
             {
-                potentials.perRole[pr.first] += pr.second;
+                sum.seconds += row.second.seconds;
+                sum.calls   += row.second.calls;
+                for (const auto &pr : row.second.perRole)
+                {
+                    sum.perRole[pr.first] += pr.second;
+                }
             }
         }
-    }
-    if (potentials.seconds > 0)
-    {
-        printRow("All potentials", potentials);
-    }
+        if (sum.seconds > 0)
+        {
+            printRow(name, sum);
+        }
+    };
+    subtotal("Potential ", "All potentials");
+    subtotal("MPI ", "All MPI");
     Sum total;
     total.seconds = totalWall;
     for (const auto &pt : all)
