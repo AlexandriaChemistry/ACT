@@ -35,6 +35,7 @@
 
 #include "acmfitnesscomputer.h"
 
+#include <limits>
 #include <set>
 
 #include "act/basics/dataset.h"
@@ -222,6 +223,10 @@ double ACMFitnessComputer::calcDeviation(MsgHandler   *msghandler,
     int ntrain = 0;
     int nlocal = 0;
     auto mymols = molgen_->actmolsPtr();
+    // Nothing has been filled or generated for new molecules
+    const size_t never = std::numeric_limits<size_t>::max();
+    filledVersion_.resize(mymols->size());
+    chargeVersion_.resize(mymols->size(), never);
     // The molecules in this dataset that this node computes
     std::vector<ACTMol *> selected;
     for (auto actmol = mymols->begin(); actmol < mymols->end(); ++actmol)
@@ -237,26 +242,48 @@ double ACMFitnessComputer::calcDeviation(MsgHandler   *msghandler,
         if ((actmol->support() == eSupport::Local) ||
             (task == CalcDev::ComputeAll && actmol->support() == eSupport::Remote))
         {
+            size_t imol = actmol - mymols->begin();
             {
-                // Now update the topology
+                // Now update the topology, only the interaction types of
+                // which parameters changed since the last time.
                 static const size_t timer = Timings::instance().index("Topology parameter update");
                 ScopedTimer         scoped(timer);
-                actmol->topologyPtr()->fillParameters(msghandler, sii_->forcefield(),
-                                                      missingParameters::Error, &itUpdate);
-                // Fill the fragments too if there are any
-                for(auto &ft : actmol->fragmentHandler()->topologiesPtr())
+                auto                &filled = filledVersion_[imol];
+                std::set<InteractionType> itFill;
+                for(auto itype : itUpdate)
                 {
-                    ft.fillParameters(msghandler, sii_->forcefield(), missingParameters::Error, &itUpdate);
+                    auto fv = filled.find(itype);
+                    if (filled.end() == fv || fv->second != sii_->parameterVersion(itype))
+                    {
+                        itFill.insert(itype);
+                    }
+                }
+                if (!itFill.empty())
+                {
+                    actmol->topologyPtr()->fillParameters(msghandler, sii_->forcefield(),
+                                                          missingParameters::Error, &itFill);
+                    // Fill the fragments too if there are any
+                    for(auto &ft : actmol->fragmentHandler()->topologiesPtr())
+                    {
+                        ft.fillParameters(msghandler, sii_->forcefield(), missingParameters::Error, &itFill);
+                    }
+                    for(auto itype : itFill)
+                    {
+                        filled[itype] = sii_->parameterVersion(itype);
+                    }
                 }
             }
+            if (chargeVersion_[imol] != sii_->chargeParameterVersion())
             {
-                // Run charge generation including shell minimization
+                // Run charge generation including shell minimization,
+                // only if parameters changed that the charges depend on.
                 static const size_t timer = Timings::instance().index("Charge generation");
                 ScopedTimer         scoped(timer);
                 std::vector<gmx::RVec> forces(actmol->atomsConst().size(), { 0, 0, 0 });
                 std::vector<gmx::RVec> coords = actmol->xOriginal();
                 actmol->generateCharges(msghandler, sii_->forcefield(), forceComp_,
                                         algorithm_, &coords, &forces, true);
+                chargeVersion_[imol] = sii_->chargeParameterVersion();
             }
 
             // Check whether we have to disable this compound

@@ -34,6 +34,10 @@
 #ifndef FFUTIL_H
 #define FFUTIL_H
 
+#include <set>
+
+#include "act/basics/interactiontype.h"
+
 namespace alexandria
 {
 
@@ -46,10 +50,14 @@ class MsgHandler;
  * \param[in]    msghandler For debugging info
  * \param[inout] pd         The force field structure
  * \param[in]    force      Update all parameters in the matrices
+ * \param[in]    changed    If not nullptr, only the parameters of these
+ *                          interaction types may have been updated, such
+ *                          that the other ones can be skipped
  */
-void generateDependentParameter(MsgHandler *msghandler,
-                                ForceField *pd,
-                                bool        force = false);
+void generateDependentParameter(MsgHandler                      *msghandler,
+                                ForceField                      *pd,
+                                bool                             force   = false,
+                                const std::set<InteractionType> *changed = nullptr);
 
 }
 #endif

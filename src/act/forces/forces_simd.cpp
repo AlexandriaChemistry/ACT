@@ -1711,6 +1711,72 @@ static void storeEnergies(Potential                        mypot,
     }
 }
 
+/*! \brief Whether a potential uses the charges of the atoms
+ * Potentials that use ActAtom::charge must be listed here, since their
+ * energies can only be used again if the charges did not change.
+ * \param[in] mypot The potential
+ */
+static bool usesCharges(Potential mypot)
+{
+    switch (mypot)
+    {
+    case Potential::COULOMB_POINT:
+    case Potential::COULOMB_GAUSSIAN:
+    case Potential::COULOMB_SLATER:
+    case Potential::POLARIZATION:
+        return true;
+    default:
+        return false;
+    }
+}
+
+/*! \brief Keep the charges of the atoms, if the potential uses them
+ * \param[in]  mypot   The potential
+ * \param[in]  atoms   The atoms
+ * \param[out] charges The charges, empty if they are not used
+ */
+static void keepCharges(Potential                   mypot,
+                        const std::vector<ActAtom> &atoms,
+                        std::vector<double>        *charges)
+{
+    charges->clear();
+    if (usesCharges(mypot))
+    {
+        for(const auto &atom : atoms)
+        {
+            charges->push_back(atom.charge());
+        }
+    }
+}
+
+/*! \brief Whether the charges of the atoms are the ones kept
+ * \param[in] mypot   The potential
+ * \param[in] atoms   The atoms
+ * \param[in] charges The charges from keepCharges
+ * \return true if the potential does not use charges or they are the same
+ */
+static bool sameCharges(Potential                   mypot,
+                        const std::vector<ActAtom> &atoms,
+                        const std::vector<double>  &charges)
+{
+    if (!usesCharges(mypot))
+    {
+        return true;
+    }
+    if (charges.size() != atoms.size())
+    {
+        return false;
+    }
+    for(size_t i = 0; i < atoms.size(); i++)
+    {
+        if (atoms[i].charge() != charges[i])
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
 /*! \brief Call a function for each potential
  * The function is called with the number of atoms per interaction,
  * whether the loop over conformations can be vectorized and a function
@@ -1843,13 +1909,36 @@ static size_t potentialTimer(Potential mypot)
     return timers[ip];
 }
 
+/*! \brief Keep the energies of a potential, to use them again
+ * \param[in]  energies   The energies, as passed to storeEnergies
+ * \param[in]  size       Number of energies
+ * \param[in]  confStride Distance between the energies of conformations
+ * \param[in]  termStride Distance between the energy terms of a conformation
+ * \param[out] cached     Where to keep them, may be nullptr
+ */
+static void keepEnergies(const double   *energies,
+                         size_t          size,
+                         size_t          confStride,
+                         size_t          termStride,
+                         CachedEnergies *cached)
+{
+    if (cached)
+    {
+        cached->energies.assign(energies, energies + size);
+        cached->confStride = confStride;
+        cached->termStride = termStride;
+        cached->valid      = true;
+    }
+}
+
 static inline void calcSome(MsgHandler                 *msghandler,
                             Potential                   mypot,
                             const TopologyEntryVector  &topentries,
                             const std::vector<ActAtom> &atoms,
                             std::vector<CoordsEnergy>  *coords,
                             ConformationEnergies       *cener,
-                            double                      epsilonr)
+                            double                      epsilonr,
+                            CachedEnergies             *cached = nullptr)
 {
     ScopedTimer timer(potentialTimer(mypot));
     // Energies for each conformation, MAX_ENER per conformation
@@ -1876,6 +1965,7 @@ static inline void calcSome(MsgHandler                 *msghandler,
     }
     // Store the energies and sum them into the potential energy.
     storeEnergies(mypot, *coords, cener, energies.data(), MAX_ENER, 1);
+    keepEnergies(energies.data(), energies.size(), MAX_ENER, 1, cached);
 }
 
 /*! \brief Compute one potential for all conformations
@@ -2015,6 +2105,7 @@ static ACT_NOINLINE bool dispatchConformations(Potential                   mypot
  * \param[inout] cener      The energies of all conformations
  * \param[in]    epsilonr   Relative dielectric constant
  * \param[in]    forces     Whether to compute forces
+ * \param[out]   cached     If not nullptr, the energies are kept here
  * \return false if this potential is not implemented this way
  */
 static bool calcConformations(Potential                        mypot,
@@ -2024,7 +2115,8 @@ static bool calcConformations(Potential                        mypot,
                               ConformationArrays              *ca,
                               ConformationEnergies            *cener,
                               double                           epsilonr,
-                              bool                             forces)
+                              bool                             forces,
+                              CachedEnergies                  *cached = nullptr)
 {
     ScopedTimer timer(potentialTimer(mypot));
     // Energy term k of conformation c is stored at k*stride + c
@@ -2041,6 +2133,7 @@ static bool calcConformations(Potential                        mypot,
         return false;
     }
     storeEnergies(mypot, coords, cener, energies.data(), 1, ca->stride);
+    keepEnergies(energies.data(), energies.size(), 1, ca->stride, cached);
     return true;
 }
 
@@ -2055,6 +2148,12 @@ static bool calcConformations(Potential                        mypot,
  * \param[in]    conformations Whether to loop over the conformations in the inner loop
  * \param[in]    forces        Whether to compute forces, if not the forces
  *                             in coords are not meaningful
+ * \param[in]    reuse         Whether the energies of an interaction type can
+ *                             be taken from the previous call, if its
+ *                             parameters, the coordinates and the charges
+ *                             did not change, see CachedEnergies. This
+ *                             requires that all changes of the coordinates
+ *                             are known to cdata.
  */
 static inline void lowComputeEnergies(MsgHandler                *msghandler,
                                       const ForceField          *pd,
@@ -2063,7 +2162,8 @@ static inline void lowComputeEnergies(MsgHandler                *msghandler,
                                       ConformationData          *cdata,
                                       double                     epsilonr,
                                       bool                       conformations,
-                                      bool                       forces)
+                                      bool                       forces,
+                                      bool                       reuse = false)
 {
     static const size_t timer = Timings::instance().index("Energy calculation overhead");
     ScopedTimer         scoped(timer);
@@ -2126,6 +2226,38 @@ static inline void lowComputeEnergies(MsgHandler                *msghandler,
         {
             mypot = defaultPotential(entry.first);
         }
+        // Virtual sites have no energy
+        if (energyTypes(mypot).empty())
+        {
+            continue;
+        }
+        // Use the energies of the previous call if nothing changed. Forces
+        // are not kept, so this is only possible if they are not needed.
+        CachedEnergies *cached = nullptr;
+        if (reuse && !forces)
+        {
+            cached = &cdata->cache[entry.first];
+            if (cached->valid && cached->potential == mypot &&
+                cached->parameterVersion == top->parameterVersion(entry.first) &&
+                cached->coordinateVersion == cdata->coordinates.value() &&
+                cached->nentries == entry.second.size() &&
+                cached->nconf == coords->size() &&
+                sameCharges(mypot, top->atoms(), cached->charges))
+            {
+                static const size_t timer = Timings::instance().index("Energies used again");
+                ScopedTimer         scoped(timer);
+                storeEnergies(mypot, *coords, &cener, cached->energies.data(),
+                              cached->confStride, cached->termStride);
+                continue;
+            }
+            cached->valid             = false;
+            cached->potential         = mypot;
+            cached->parameterVersion  = top->parameterVersion(entry.first);
+            cached->coordinateVersion = cdata->coordinates.value();
+            cached->nentries          = entry.second.size();
+            cached->nconf             = coords->size();
+            keepCharges(mypot, top->atoms(), &cached->charges);
+        }
         if (haveArrays)
         {
             if (forces && !forcesInArrays)
@@ -2134,7 +2266,7 @@ static inline void lowComputeEnergies(MsgHandler                *msghandler,
                 forcesInArrays = true;
             }
             if (calcConformations(mypot, entry.second, top->atoms(),
-                                  *coords, &ca, &cener, epsilonr, forces))
+                                  *coords, &ca, &cener, epsilonr, forces, cached))
             {
                 continue;
             }
@@ -2144,7 +2276,7 @@ static inline void lowComputeEnergies(MsgHandler                *msghandler,
             }
             forcesInArrays = false;
         }
-        calcSome(msghandler, mypot, entry.second, top->atoms(), coords, &cener, epsilonr);
+        calcSome(msghandler, mypot, entry.second, top->atoms(), coords, &cener, epsilonr, cached);
     }
     if (forces && forcesInArrays)
     {
@@ -2169,6 +2301,9 @@ void computeEnergies(MsgHandler                  *msghandler,
             epsilonr = std::atof(ffpl.optionValue(epsr).c_str());
         }
     }
+    // The conformations of the molecules only change if virtual sites are
+    // constructed again, which ConformationData knows, or if shells move.
+    bool reuse = !pd->polarizable();
     // Loop over molecules
     for(auto molptr : allmols)
     {
@@ -2184,12 +2319,12 @@ void computeEnergies(MsgHandler                  *msghandler,
         if (what >= 2)
         {
             lowComputeEnergies(msghandler, pd, mol.topology(), mol.dimerCoords(),
-                               mol.conformationData(2), epsilonr, true, forces);
+                               mol.conformationData(2), epsilonr, true, forces, reuse);
         }
         else
         {
             lowComputeEnergies(msghandler, pd, &tops[what], mol.monomerCoords(what),
-                               mol.conformationData(what), epsilonr, true, forces);
+                               mol.conformationData(what), epsilonr, true, forces, reuse);
         }
     }
 }

@@ -672,6 +672,7 @@ static bool vsitesOutdated(const Topology *top, ConformationData *cdata)
         cdata->haveVsites   = true;
         cdata->vsiteVersion = top->vsiteVersion();
         cdata->arrays.invalidateVsites();
+        cdata->coordinates.update();
     }
     return outdated;
 }

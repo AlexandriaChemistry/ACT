@@ -36,6 +36,7 @@
 #ifndef ALEXANDRIA_STATICINDIVIDUALINFO_H
 #define ALEXANDRIA_STATICINDIVIDUALINFO_H
 
+#include <algorithm>
 #include <map>
 #include <set>
 #include <string>
@@ -68,6 +69,14 @@ private:
     CommunicationRecord                                 *cr_;
     //! ForceField for this individual
     ForceField                                           pd_;
+    //! Number of calls of updateForceField, used for the versions below
+    size_t                                               nUpdate_          = 0;
+    //! Last update of the parameters of each interaction type
+    std::map<InteractionType, size_t>                    typeUpdate_;
+    //! Last update that may have changed the parameters of all interaction types
+    size_t                                               allUpdate_        = 0;
+    //! Last update that may have changed the charges
+    size_t                                               chargeUpdate_     = 0;
     //! Base targets_ from which to make copies
     std::map<iMolSelect, std::map<eRMS, FittingTarget>>  targets_;
     //! Default parameter values as specified by input file
@@ -175,6 +184,23 @@ public:
     void updateForceField(MsgHandler                *msghandler,
                           const std::set<int>       &changed,
                           const std::vector<double> &bases);
+
+    /*! \brief Version of the parameters of an interaction type
+     * \param[in] itype The interaction type
+     * \return A number that changes when updateForceField may have changed
+     *         the parameters of itype, including the ones generated from
+     *         them, for instance with combination rules.
+     */
+    size_t parameterVersion(InteractionType itype) const
+    {
+        auto tu = typeUpdate_.find(itype);
+        return std::max(allUpdate_, typeUpdate_.end() == tu ? 0 : tu->second);
+    }
+
+    /*! \return A number that changes when updateForceField may have changed
+     * parameters that the charges depend on.
+     */
+    size_t chargeParameterVersion() const { return chargeUpdate_; }
     
     /*! \brief Save the current state of the Force Field to the output file
      * \param[in] updateCheckSum If true, the checksum is updated, typically

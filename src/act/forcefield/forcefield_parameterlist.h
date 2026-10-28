@@ -62,22 +62,24 @@ typedef std::map<Identifier, ForceFieldParameterMap> ForceFieldParameterListMap;
 class StructureVersion
 {
  public:
-    StructureVersion() : value_(next()) {}
-    StructureVersion(const StructureVersion &) : value_(next()) {}
-    StructureVersion &operator=(const StructureVersion &)
+    // None of these can throw, which allows containers to move the
+    // objects that contain a StructureVersion.
+    StructureVersion() noexcept : value_(next()) {}
+    StructureVersion(const StructureVersion &) noexcept : value_(next()) {}
+    StructureVersion &operator=(const StructureVersion &) noexcept
     {
         value_ = next();
         return *this;
     }
     //! Take a new number
-    void update() { value_ = next(); }
+    void update() noexcept { value_ = next(); }
     //! \return The number
     size_t value() const { return value_; }
  private:
     //! The number
     size_t value_;
     //! \return A number that has not been used before
-    static size_t next()
+    static size_t next() noexcept
     {
         static std::atomic<size_t> counter{0};
         return ++counter;
