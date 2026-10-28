@@ -303,7 +303,9 @@ void ACTMol::collectCoordsEnergy(MsgHandler *msghandler)
     std::map<MolPropObservable, InteractionType> intraE = {
         { MolPropObservable::DELTAE0, InteractionType::EPOT }
     };
-    int  natom1   = fragmentHandler()->atomStart()[1];
+    // Start of the second monomer, there is only one fragment if this is not a dimer
+    auto &astart  = fragmentHandler()->atomStart();
+    int  natom1   = astart.size() > 1 ? astart[1] : 0;
     size_t nDimer   = 0;
     size_t nMonomer = 0;
     for (const auto &exper : experimentConst())
