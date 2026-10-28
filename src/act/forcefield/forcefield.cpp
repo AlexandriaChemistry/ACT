@@ -43,6 +43,7 @@
 #include <algorithm>
 #include <chrono>
 #include <map>
+#include <set>
 #include <vector>
 
 #include "gromacs/fileio/md5.h"
@@ -51,6 +52,8 @@
 
 #include "act/forcefield/act_checksum.h"
 #include "act/forcefield/forcefield_xml.h"
+#include "act/forcefield/forcefield_parametername.h"
+#include "act/forcefield/generate_dependent.h"
 #include "act/forcefield/potential.h"
 #include "act/basics/msg_handler.h"
 #include "act/utility/stringutil.h"
@@ -273,6 +276,267 @@ void ForceField::checkForPolarizability()
     auto f = forces_.find(InteractionType::POLARIZATION);
     
     polarizable_ = (f != forces_.end() && f->second.numberOfParameters() > 0);
+}
+
+/*! \brief Whether an interaction is zero for any distance
+ * \param[in] pot    The potential
+ * \param[in] params Its parameters
+ * \return true if the parameters that scale the energy are zero
+ */
+static bool vanishes(Potential pot, const ForceFieldParameterMap &params)
+{
+    const auto &names = potentialToParameterName(pot);
+    // The indices of the parameters that scale the energy, all if empty
+    std::vector<int> scale;
+    switch (pot)
+    {
+    case Potential::LJ12_6:
+        scale = { lj12_6EPSILON };
+        break;
+    case Potential::LJ8_6:
+        scale = { lj8_6EPSILON };
+        break;
+    case Potential::LJ14_7:
+        scale = { lj14_7EPSILON };
+        break;
+    case Potential::WANG_BUCKINGHAM:
+        scale = { wbhEPSILON };
+        break;
+    case Potential::GENERALIZED_BUCKINGHAM:
+        scale = { gbhEPSILON };
+        break;
+    case Potential::LJ12_6_4:
+        scale = { lj12_6_4EPSILON, lj12_6_4GAMMA };
+        break;
+    case Potential::BUCKINGHAM:
+        scale = { bhA, bhC6 };
+        break;
+    case Potential::TANG_TOENNIES:
+        scale = { ttA, ttC6, ttC8, ttC10 };
+        break;
+    case Potential::TT2b:
+        scale = { tt2bA, tt2bC6, tt2bC8, tt2bC10 };
+        break;
+    case Potential::SLATER_ISA_TT:
+        scale = { SIttA, SIttC6, SIttC8, SIttC10 };
+        break;
+    case Potential::BORN_MAYER:
+    case Potential::SLATER_ISA:
+        scale = { expA };
+        break;
+    case Potential::MACDANIEL_SCHMIDT:
+        scale = { dexpA1, dexpA2 };
+        break;
+    default:
+        break;
+    }
+    for(const auto &p : params)
+    {
+        bool scales = scale.empty();
+        for(auto k : scale)
+        {
+            scales = scales || (static_cast<size_t>(k) < names.size() && names[k] == p.first);
+        }
+        // Some combination rules give NaN for two zero parameters, which
+        // means that neither particle has this interaction.
+        if (scales && p.second.value() != 0 && !std::isnan(p.second.value()))
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
+void ForceField::convertVsite1(MsgHandler *msghandler)
+{
+    auto fv = forces_.find(InteractionType::VSITE1);
+    if (forces_.end() == fv)
+    {
+        return;
+    }
+    // The pair parameters made with combination rules have to vanish too
+    generateDependentParameter(msghandler, this, true);
+    // Interaction types in which a virtual site that only carries a charge
+    // may occur, and those of which its parameters have to be zero.
+    const std::set<InteractionType> allowed    = { InteractionType::VSITE1, InteractionType::VDW,
+                                                   InteractionType::VDWCORRECTION,
+                                                   InteractionType::INDUCTIONCORRECTION,
+                                                   InteractionType::ELECTROSTATICS };
+    const std::set<InteractionType> mustBeZero = { InteractionType::VDW, InteractionType::VDWCORRECTION,
+                                                   InteractionType::INDUCTIONCORRECTION };
+    // The names by which the parameters of other interaction types refer to a particle type
+    auto names = [](const ParticleType &pt)
+    {
+        std::set<std::string> nm = { pt.id().id() };
+        for(const auto &opt : pt.optionsConst())
+        {
+            if (opt.first != "element" && opt.first != "atomnumber" && opt.first != "row" &&
+                opt.first != rowVSName)
+            {
+                nm.insert(opt.second);
+            }
+        }
+        return nm;
+    };
+    // Whether an identifier refers to one of the names
+    auto refers = [](const Identifier &id, const std::set<std::string> &nm)
+    {
+        for(const auto &a : id.atoms())
+        {
+            if (nm.count(a) > 0)
+            {
+                return true;
+            }
+        }
+        return false;
+    };
+    // The virtual site type of each atom type, if it can be converted
+    std::map<std::string, std::string> vsiteOf;
+    // The number of VSITE1 entries of each virtual site type
+    std::map<std::string, int>         nuse;
+    // The virtual sites that are kept, with the reason
+    std::map<std::string, std::string> rejected;
+    auto reject = [&rejected](const std::string &vs, const std::string &why)
+    {
+        rejected.insert({ vs, why });
+    };
+    for(const auto &entry : fv->second.parametersConst())
+    {
+        const auto &atoms = entry.first.atoms();
+        if (atoms.size() != 2 || !hasParticleType(atoms[0]) || !hasParticleType(atoms[1]))
+        {
+            continue;
+        }
+        nuse[atoms[1]] += 1;
+        const auto *pa = findParticleType(atoms[0]);
+        const auto *pv = findParticleType(atoms[1]);
+        if (pa->apType() != ActParticle::Atom || pv->apType() != ActParticle::Vsite ||
+            pa->hasChargeVS() || vsiteOf.count(atoms[0]) > 0)
+        {
+            reject(atoms[1], "not a single virtual site on an atom");
+            continue;
+        }
+        vsiteOf.insert({ atoms[0], atoms[1] });
+    }
+    // Check that the virtual sites only carry a charge, and that their names
+    // are not used by other particle types.
+    std::set<std::string> vsites;
+    for(const auto &av : vsiteOf)
+    {
+        vsites.insert(av.second);
+    }
+    for(const auto &vs : vsites)
+    {
+        auto nm = names(*findParticleType(vs));
+        for(const auto &pt : alexandria_)
+        {
+            if (vsites.count(pt.first.id()) == 0)
+            {
+                for(const auto &n : names(pt.second))
+                {
+                    if (nm.count(n) > 0)
+                    {
+                        reject(vs, "name " + n + " is used by " + pt.first.id());
+                    }
+                }
+            }
+        }
+        for(const auto &fs : forces_)
+        {
+            for(const auto &p : fs.second.parametersConst())
+            {
+                if (!refers(p.first, nm))
+                {
+                    continue;
+                }
+                if (allowed.count(fs.first) == 0)
+                {
+                    reject(vs, "it has " + interactionTypeToString(fs.first) + " parameters");
+                }
+                else if (mustBeZero.count(fs.first) > 0 && !vanishes(fs.second.potential(), p.second))
+                {
+                    reject(vs, "it has " + interactionTypeToString(fs.first) + " interactions with " + p.first.id());
+                }
+            }
+        }
+    }
+    // Now convert
+    const auto *fsCoul = forces_.count(InteractionType::ELECTROSTATICS) ?
+        &forces_.find(InteractionType::ELECTROSTATICS)->second : nullptr;
+    std::set<std::string> removeNames;
+    std::set<std::string> converted;
+    if (msghandler)
+    {
+        for(const auto &r : rejected)
+        {
+            msghandler->msg(ACTStatus::Verbose,
+                            gmx::formatString("Keeping virtual site %s, since %s", r.first.c_str(), r.second.c_str()));
+        }
+    }
+    for(const auto &av : vsiteOf)
+    {
+        if (rejected.count(av.second) > 0)
+        {
+            continue;
+        }
+        auto *pa = findParticleType(av.first);
+        const auto *pv = findParticleType(av.second);
+        pa->addForceFieldParameter(chargeVSName, pv->parameterConst("charge"));
+        ForceFieldParameter zeta("1/nm", 0, 0, 0, 0, 0, Mutability::Fixed, true, true);
+        if (fsCoul && pv->hasInteractionType(InteractionType::ELECTROSTATICS))
+        {
+            auto ztype = pv->interactionTypeToIdentifier(InteractionType::ELECTROSTATICS);
+            if (fsCoul->parameterExists(ztype))
+            {
+                zeta = fsCoul->findParameterTypeConst(ztype, "zeta");
+            }
+        }
+        pa->addForceFieldParameter(zetaVSName, zeta);
+        pa->setOption(rowVSName, std::to_string(pv->row()));
+        auto nm = names(*pv);
+        removeNames.insert(nm.begin(), nm.end());
+        converted.insert(av.second);
+        if (msghandler)
+        {
+            msghandler->msg(ACTStatus::Verbose,
+                            gmx::formatString("Replaced virtual site %s on %s by a second charge %g with zeta %g",
+                                              av.second.c_str(), av.first.c_str(),
+                                              pa->chargeVS(), pa->zetaVS()));
+        }
+    }
+    // Remove the virtual sites that were converted completely
+    for(const auto &vs : converted)
+    {
+        if (nuse[vs] != std::count_if(vsiteOf.begin(), vsiteOf.end(),
+                                      [&vs](const auto &av) { return av.second == vs; }))
+        {
+            GMX_THROW(gmx::InternalError(gmx::formatString("Virtual site %s was only partly converted", vs.c_str())));
+        }
+        alexandria_.erase(Identifier(vs));
+    }
+    for(auto &fs : forces_)
+    {
+        auto params = fs.second.parameters();
+        for(auto p = params->begin(); p != params->end(); )
+        {
+            if (refers(p->first, removeNames))
+            {
+                p = params->erase(p);
+            }
+            else
+            {
+                ++p;
+            }
+        }
+    }
+    if (msghandler && !converted.empty())
+    {
+        size_t natype = std::count_if(vsiteOf.begin(), vsiteOf.end(),
+                                      [&converted](const auto &av) { return converted.count(av.second) > 0; });
+        msghandler->msg(ACTStatus::Verbose,
+                        gmx::formatString("Replaced %zu virtual site types by second charges of %zu atom types.",
+                                          converted.size(), natype));
+    }
 }
 
 void ForceField::addParticleType(const ParticleType &ptp)

@@ -57,10 +57,14 @@ namespace alexandria
      * \param[in]  fileName   The filename to read from
      * \param[out] pd         The ForceField class instance
      * \param[in]  msgHandler MsgHandler for debug output, may be nullptr
+     * \param[in]  convert    Whether to replace virtual sites on top of atoms
+     *                        by second charges, see ForceField::convertVsite1.
+     *                        Only for testing should this be false.
      */
     void readForceField(const std::string &fileName,
                         ForceField        *pd,
-                        MsgHandler        *msgHandler = nullptr);
+                        MsgHandler        *msgHandler = nullptr,
+                        bool               convert    = true);
 
 } // namespace alexandria
 

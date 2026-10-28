@@ -352,6 +352,18 @@ class ForceField
     
     //! Turn polarizability on or off automatically
     void checkForPolarizability();
+
+    /*! \brief Replace virtual sites on top of atoms by a second charge
+     * Force field files may contain virtual sites of type VSITE1 that only
+     * carry a charge, on top of an atom. These are replaced by a second
+     * charge of the atom type, see ParticleType::chargeVS, which takes the
+     * charge, the width of the charge distribution and the row of the
+     * virtual site. The virtual site types and their parameters are removed.
+     * Virtual sites that have other interactions, for instance Van der Waals
+     * parameters, are kept.
+     * \param[in] msghandler For messages, may be nullptr
+     */
+    void convertVsite1(MsgHandler *msghandler);
     
     /*! Spread from master to other nodes
      * \param[in] cr    Communication record
