@@ -53,26 +53,53 @@
 namespace alexandria
 {
 
-/*! \brief Compute dot prot of a vector but only for shells
+/*! \brief Compute the sum of the squared forces on the shells
  * Used to compute the mean square force on shell particles when
  * minimizing the energy with respect to the shell positions.
- * \param[in] isShell Whether or not the particles are shells
- * \param[in] rv      The vector or RVec, usually forces
- * \return The mean square force
+ * A shell at the maximum distance from its core with a force pointing
+ * away from the core is held there, see update_shell_positions. For such
+ * a shell only the force perpendicular to the core-shell vector counts,
+ * since that is the only force that can still be relaxed.
+ * \param[in] atoms             The particles
+ * \param[in] isShell           Whether or not the particles are shells
+ * \param[in] x                 The coordinates
+ * \param[in] f                 The forces
+ * \param[in] offset            Index of the first particle in x and f
+ * \param[in] maxShellDistance2 Square of the maximum core-shell distance, 0 if there is none
+ * \return The sum of the squared shell forces
  */
-static double dotProdRvec(const std::vector<bool>      &isShell,
-                          const std::vector<gmx::RVec> &rv)
+static double shellForce2(const std::vector<ActAtom>   &atoms,
+                          const std::vector<bool>      &isShell,
+                          const std::vector<gmx::RVec> &x,
+                          const std::vector<gmx::RVec> &f,
+                          size_t                        offset,
+                          double                        maxShellDistance2)
 {
-    double dpr = 0;
-    int    i   = 0;
-    for(const auto &rr : rv)
+    // Shells are put on the wall by scaling, allow for rounding
+    const double atWall = 0.9999*maxShellDistance2;
+    double       f2sum  = 0;
+    for(size_t i = 0; i < isShell.size(); i++)
     {
-        if (isShell[i++])
+        if (!isShell[i])
         {
-            dpr += iprod(rr, rr);
+            continue;
         }
+        const auto &fi = f[i+offset];
+        double      f2 = iprod(fi, fi);
+        if (maxShellDistance2 > 0 && atoms[i].parents().size() == 1)
+        {
+            rvec dx;
+            rvec_sub(x[i+offset], x[atoms[i].parents()[0]+offset], dx);
+            double dx2 = iprod(dx, dx);
+            double fdx = iprod(fi, dx);
+            if (dx2 >= atWall && fdx > 0)
+            {
+                f2 -= fdx*fdx/dx2;
+            }
+        }
+        f2sum += f2;
     }
-    return dpr;
+    return f2sum;
 }
 
 void ForceComputer::init(double  msForce,
@@ -270,10 +297,10 @@ void ForceComputer::compute(MsgHandler                        *msg_handler,
             fcHyper.push_back(fchyper);
             fcShell_1.push_back(fc_1);
         }
-        msForce    = dotProdRvec(isShell, *forces)/nshell;
         auto &pols = top->entry(itype);
         // Prevent shells from flying off.
         real maxShellDistance2 = gmx::square(maxShellDistance_);
+        msForce    = shellForce2(atoms, isShell, *coordinates, *forces, 0, maxShellDistance2)/nshell;
         while (msForce > msForceToler_ && iter < maxiter_)
         {
             // Loop over polarizabilities
@@ -311,7 +338,7 @@ void ForceComputer::compute(MsgHandler                        *msg_handler,
             }
             // Do next calculation
             computeOnce(msg_handler, pd, top, coordinates, forces, energies, field);
-            msForce  = dotProdRvec(isShell, *forces)/nshell;
+            msForce  = shellForce2(atoms, isShell, *coordinates, *forces, 0, maxShellDistance2)/nshell;
             iter    += 1;
             nShellIter_ += 1;
         }
@@ -433,14 +460,8 @@ size_t ForceComputer::updateShells(const Topology            *top,
             continue;
         }
         // Mean square shell force
-        double msForce = 0;
-        for(size_t i = 0; i < isShell.size(); i++)
-        {
-            if (isShell[i])
-            {
-                msForce += iprod(dim.fcalc[i+offset], dim.fcalc[i+offset]);
-            }
-        }
+        double msForce = shellForce2(top->atoms(), isShell, dim.x, dim.fcalc,
+                                     offset, maxShellDistance2);
         if (nShell > 0)
         {
             msForce /= nShell;
