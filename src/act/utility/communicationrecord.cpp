@@ -35,6 +35,7 @@
 #include "gromacs/gmxlib/network.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
+#include "act/utility/timings.h"
 
 namespace alexandria
 {
@@ -313,6 +314,8 @@ MPI_Comm CommunicationRecord::create_column_comm(int column, int superior) const
 
 void CommunicationRecord::send_low(int dest, const void *buf, int bufsize) const
 {
+    static const size_t timer = Timings::instance().index("MPI communication and waiting");
+    ScopedTimer         scoped(timer);
     int         tag = 0;
     MPI_Status  status;
     MPI_Request req;
@@ -326,6 +329,8 @@ void CommunicationRecord::send_low(int dest, const void *buf, int bufsize) const
 
 void CommunicationRecord::recv_low( int src, void *buf, int bufsize) const
 {
+    static const size_t timer = Timings::instance().index("MPI communication and waiting");
+    ScopedTimer         scoped(timer);
     int         tag = 0;
     MPI_Status  status;
     MPI_Request req;
@@ -340,6 +345,8 @@ void CommunicationRecord::recv_low( int src, void *buf, int bufsize) const
 //! \brief Broadcase a string
 template <> void CommunicationRecord::bcast<std::string>(std::string *str, MPI_Comm comm, int root) const
 {
+    static const size_t timer = Timings::instance().index("MPI communication and waiting");
+    ScopedTimer         scoped(timer);
     check_init_done();
     int ssize = str->size();
     check_return("MPI_Bcast", MPI_Bcast((void *)&ssize, 1, MPI_INT, root, comm));
@@ -353,6 +360,8 @@ template <> void CommunicationRecord::bcast<std::string>(std::string *str, MPI_C
 //! \brief Broadcase an int
 template <> void CommunicationRecord::bcast<int>(int *i, MPI_Comm comm, int root) const
 {
+    static const size_t timer = Timings::instance().index("MPI communication and waiting");
+    ScopedTimer         scoped(timer);
     check_init_done();
     check_return("MPI_Bcast", MPI_Bcast((void *)i, 1, MPI_INT, root, comm));
 }
@@ -360,6 +369,8 @@ template <> void CommunicationRecord::bcast<int>(int *i, MPI_Comm comm, int root
 //! \brief Broadcase an unsigned int
 template <> void CommunicationRecord::bcast<unsigned int>(unsigned int *i, MPI_Comm comm, int root) const
 {
+    static const size_t timer = Timings::instance().index("MPI communication and waiting");
+    ScopedTimer         scoped(timer);
     check_init_done();
     check_return("MPI_Bcast", MPI_Bcast((void *)i, 1, MPI_UNSIGNED, root, comm));
 }
@@ -367,6 +378,8 @@ template <> void CommunicationRecord::bcast<unsigned int>(unsigned int *i, MPI_C
 //! \brief Broadcase a bool
 template <> void CommunicationRecord::bcast<bool>(bool *b, MPI_Comm comm, int root) const
 {
+    static const size_t timer = Timings::instance().index("MPI communication and waiting");
+    ScopedTimer         scoped(timer);
     check_init_done();
     int d = *b ? 1 : 0;
     check_return("MPI_Bcast", MPI_Bcast((void *)&d, 1, MPI_INT, root, comm));
@@ -376,6 +389,8 @@ template <> void CommunicationRecord::bcast<bool>(bool *b, MPI_Comm comm, int ro
 //! \brief Broadcase a double
 template <> void CommunicationRecord::bcast<double>(double *d, MPI_Comm comm, int root) const
 {
+    static const size_t timer = Timings::instance().index("MPI communication and waiting");
+    ScopedTimer         scoped(timer);
     check_init_done();
     check_return("MPI_Bcast", MPI_Bcast((void *)d, 1, MPI_DOUBLE, root, comm));
 }
@@ -383,6 +398,8 @@ template <> void CommunicationRecord::bcast<double>(double *d, MPI_Comm comm, in
 //! \brief Broadcase a size_t
 template <> void CommunicationRecord::bcast<size_t>(size_t *d, MPI_Comm comm, int root) const
 {
+    static const size_t timer = Timings::instance().index("MPI communication and waiting");
+    ScopedTimer         scoped(timer);
     check_init_done();
     check_return("MPI_Bcast", MPI_Bcast((void *)d, 1, MPI_UNSIGNED_LONG, root, comm));
 }
@@ -392,6 +409,8 @@ template <> void CommunicationRecord::bcast<std::vector<double>>(std::vector<dou
                                                                  MPI_Comm             comm,
                                                                  int                  root) const
 {
+    static const size_t timer = Timings::instance().index("MPI communication and waiting");
+    ScopedTimer         scoped(timer);
     check_init_done();
     int ssize = d->size(); 
     check_return("MPI_Bcast", MPI_Bcast((void *)&ssize, 1, MPI_INT, root, comm));
@@ -694,6 +713,8 @@ template <> void CommunicationRecord::recv<std::vector<int>>(int src,
 void CommunicationRecord::sumd_helpers(int    nr, 
                                        double r[]) const
 {
+    static const size_t timer = Timings::instance().index("MPI communication and waiting");
+    ScopedTimer         scoped(timer);
     if (nhelper_per_middleman_ == 0)
     {
         return;
@@ -710,6 +731,8 @@ void CommunicationRecord::sumd_helpers(int    nr,
 void CommunicationRecord::sumi_helpers(int nr, 
                                        int r[]) const
 {
+    static const size_t timer = Timings::instance().index("MPI communication and waiting");
+    ScopedTimer         scoped(timer);
     if (nhelper_per_middleman_ == 0)
     {
         return;

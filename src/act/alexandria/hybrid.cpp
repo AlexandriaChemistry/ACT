@@ -42,6 +42,7 @@
 #include "act/forces/forcecomputerstatistics.h"
 #include "act/ga/gene_pool.h"
 #include "act/utility/communicationrecord.h"
+#include "act/utility/timings.h"
 
 namespace ga
 {
@@ -123,6 +124,8 @@ void HybridGAMC::doCrossOver(alexandria::MsgHandler                 *msghandler,
 bool HybridGAMC::evolve(alexandria::MsgHandler       *msghandler,
                         std::map<iMolSelect, Genome> *bestGenome)
 {
+    static const size_t timer = alexandria::Timings::instance().index("Genetic algorithm");
+    alexandria::ScopedTimer scoped(timer);
     auto cr = sii_->commRec();
     //! \todo have we already checked that the number of processors is the correct one?
     if (cr->nmiddlemen() < 2)

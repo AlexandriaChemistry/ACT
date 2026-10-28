@@ -31,6 +31,7 @@
     
 #include "sensitivity.h"
 #include "act/basics/dataset.h"
+#include "act/utility/timings.h"
 
 namespace alexandria
 {
@@ -56,6 +57,8 @@ ACTHelper::ACTHelper(MsgHandler                *msghandler,
 
 void ACTHelper::run(MsgHandler *msghandler)
 {
+    static const size_t timer = Timings::instance().index("Helper loop");
+    ScopedTimer         scoped(timer);
     // H E L P E R   N O D E
     CalcDev cd = CalcDev::Compute;
     cd = fitComp_.distributeTasks(cd);

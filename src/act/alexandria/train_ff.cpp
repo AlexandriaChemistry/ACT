@@ -37,6 +37,7 @@
 
 #include "train_ff.h"
 
+#include <chrono>
 #include <cctype>
 #include <cmath>
 #include <cstdio>
@@ -66,6 +67,7 @@
 #include "act/utility/units.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/gmxfio.h"
+#include "act/utility/timings.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
@@ -755,6 +757,18 @@ bool OptACM::runMaster(bool      optimize,
  */
 int train_ff(int argc, char *argv[])
 {
+    // Time the phases of the program, the parts of the training are
+    // timed where they are done, see printTimings.
+    auto    wallStart  = std::chrono::steady_clock::now();
+    auto   &timings    = Timings::instance();
+    size_t  phaseTimer = timings.index("Startup");
+    timings.start(phaseTimer);
+    auto    nextPhase  = [&timings, &phaseTimer](const char *name)
+    {
+        timings.stop(phaseTimer);
+        phaseTimer = timings.index(name);
+        timings.start(phaseTimer);
+    };
     std::vector<const char *> desc = {
         "train_ff reads a series of molecules and corresponding physico-chemical",
         "properties from a file. The properties can either originate from",
@@ -1016,6 +1030,7 @@ int train_ff(int argc, char *argv[])
         opt.initChargeGeneration(iMolSelect::Ignore);
     }
 
+    nextPhase("Training (other)");
     int initOK   = 0;
     if (opt.commRec()->isMaster())
     {
@@ -1039,6 +1054,7 @@ int train_ff(int argc, char *argv[])
                 opt.msgHandler()->msg(ACTStatus::Info, msg);
             }
         }
+        nextPhase("Output");
         if (bMinimum || bForceOutput || !bOptimize)
         {
             if (bForceOutput && !bMinimum)
@@ -1098,6 +1114,9 @@ int train_ff(int argc, char *argv[])
             }
         }
     }
+    timings.stop(phaseTimer);
+    double wallTime = std::chrono::duration<double>(std::chrono::steady_clock::now() - wallStart).count();
+    printTimings(opt.commRec(), opt.commRec()->isMaster() ? opt.msgHandler()->tw() : nullptr, wallTime);
     return 0;
 }
 
