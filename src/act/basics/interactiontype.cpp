@@ -171,25 +171,28 @@ int interactionTypeToNatoms(InteractionType iType)
     return 0;
 }
 
-//! Presorted set, just in case it speeds up finding, although it shouldn't matter.
-static const std::set myvs = {
-    InteractionType::VSITE1,
-    InteractionType::VSITE2,
-    InteractionType::VSITE2FD,
-    InteractionType::VSITE3,
-    InteractionType::VSITE3FAD,
-    InteractionType::VSITE3FD,
-    InteractionType::VSITE3OUT,
-    InteractionType::VSITE3OUTS,
-    InteractionType::VSITE3S,
-    InteractionType::VSITE4,
-    InteractionType::VSITE4S,
-    InteractionType::VSITE4S3
- };
-
 bool isVsite(InteractionType iType)
 {
-    return (myvs.end() != myvs.find(iType));
+    // This is called for every interaction type when constructing virtual
+    // sites in each conformation, a switch is faster than looking it up.
+    switch (iType)
+    {
+    case InteractionType::VSITE1:
+    case InteractionType::VSITE2:
+    case InteractionType::VSITE2FD:
+    case InteractionType::VSITE3:
+    case InteractionType::VSITE3FAD:
+    case InteractionType::VSITE3FD:
+    case InteractionType::VSITE3OUT:
+    case InteractionType::VSITE3OUTS:
+    case InteractionType::VSITE3S:
+    case InteractionType::VSITE4:
+    case InteractionType::VSITE4S:
+    case InteractionType::VSITE4S3:
+        return true;
+    default:
+        return false;
+    }
 }
 
 } // namespace alexandria

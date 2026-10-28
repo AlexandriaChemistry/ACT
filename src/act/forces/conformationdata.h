@@ -407,8 +407,8 @@ struct CachedEnergies
  */
 struct DeviationReference
 {
-    //! ConformationData::coordinates of the conformations
-    size_t                           coordinateVersion = 0;
+    //! ConformationData::conformations of the conformations
+    size_t                           conformationVersion = 0;
     //! The inverse Boltzmann temperature
     double                           beta              = 0;
     //! Whether the induction correction is separate from the induction
@@ -435,6 +435,10 @@ struct ConformationData
     size_t               vsiteVersion = 0;
     //! Changes when the coordinates of the conformations change
     StructureVersion     coordinates;
+    /*! Changes when the conformations are made anew, but not when only
+     * the virtual sites move, unlike coordinates
+     */
+    StructureVersion     conformations;
     //! Energies of each interaction type, to use again if nothing changed
     std::map<InteractionType, CachedEnergies> cache;
     //! Reference data for computing deviations
@@ -446,6 +450,7 @@ struct ConformationData
         arrays.invalidate();
         haveVsites = false;
         coordinates.update();
+        conformations.update();
     }
 };
 
