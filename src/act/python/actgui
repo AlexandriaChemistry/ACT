@@ -714,7 +714,7 @@ class AtomTypes:
             time.sleep(0.1)
 
     def help(self):
-        helpstr = "Select VSite for all atomtypes that you want to use an on-atom virtual site - this only makes sense for Gaussian or Slater distributed Coulomb though. In this case a force field will be created with a point charge on the core and a distributed charge virtual site. See Van der Spoel and Hosseini, Phys. Chem. Chem. Phys. 27 (2025) 13817. https://doi.org/10.1039/D5CP01254F\n\nSelect a Shell for all particles that you would like to be polarizable."
+        helpstr = "Select VSite for all atomtypes that you want to use an on-atom virtual site - this only makes sense for Gaussian or Slater distributed Coulomb though. In this case a force field will be created with a point charge on the core and a distributed charge at the same position, stored as a second charge (chargeVS and zetaVS) of the atom type. Only if Van der Waals interactions are used on virtual sites, separate virtual site particles are made. See Van der Spoel and Hosseini, Phys. Chem. Chem. Phys. 27 (2025) 13817. https://doi.org/10.1039/D5CP01254F\n\nSelect a Shell for all particles that you would like to be polarizable."
         show_info(helpstr)
 
     def doneSelect(self):
@@ -1022,11 +1022,19 @@ class FFGenerator:
             show_info("No atom types selected!")
             return False
 
+        # Set some shortcuts
+        vdwPart = self.vdwSel.vdwParticles()
+        qdist   = self.qSel.qModel()
+        # A virtual site on top of an atom that only carries a charge is
+        # stored as a second charge of the atom type, with chargeVS, zetaVS
+        # and rowVS. Only if virtual sites have Van der Waals interactions
+        # separate vsite1 particles are needed.
+        secondCharge = not vdwPart[VSite]
         # Do we need to generate vsite1 definitions?
         self.vsite_file = None
         needVS1 = False
         for atp in atype_props:
-            if atype_props[atp][VSite] > 0:
+            if atype_props[atp][VSite] > 0 and not secondCharge:
                 needVS1 = True
         if needVS1 or (self.opt_vsites and len(self.opt_vsites) > 0):
             # Yes!
@@ -1050,9 +1058,6 @@ class FFGenerator:
                     self.vs1f.write("%s\n" % line)
 
         allData = {}
-        # Set some shortcuts
-        vdwPart = self.vdwSel.vdwParticles()
-        qdist   = self.qSel.qModel()
         # Convenience function
         def setParam(atp:str, inter:str, pname:str, mymin:float, mymax:float, mymut:str, unit:str,
                      nonNegative=True):
@@ -1132,7 +1137,7 @@ class FFGenerator:
             polarizable = atype_props[atp][Shell] > 0
             haveVS1     = atype_props[atp][VSite] > 0
             for vdwtp in [ Atom, Shell, VSite ]:
-                if vdwtp == VSite and not haveVS1:
+                if vdwtp == VSite and (not haveVS1 or secondCharge):
                     continue
                 if vdwtp == Shell and not polarizable:
                     continue
@@ -1196,6 +1201,16 @@ class FFGenerator:
                     setParam(atype_name, coul, "zeta", 0, 0, Fixed, "1/nm")
                 else:
                     setParam(atype_name, coul, "zeta", 4, 20, Bounded, "1/nm")
+
+                # The distributed charge on top of the atom, with the same
+                # parameters as a vsite1 would have.
+                if vdwtp == Atom and haveVS1 and secondCharge:
+                    setParam(atype_name, "", "chargeVS", -atomNR, 0, Bounded, "e", False)
+                    if qdist == Point:
+                        setParam(atype_name, "", "zetaVS", 0, 0, Fixed, "1/nm")
+                    else:
+                        setParam(atype_name, "", "zetaVS", 4, 20, Bounded, "1/nm")
+                    allData[atype_name]["rowVS"] = min(atype_props[atp]['Row'], self.qSel.row.get())
 
                 if polarizable and vdwtp == Shell:
                     setParam(atype_name, "POLARIZATION", "alpha", 1e-6, 12, Bounded, "Angstrom3")

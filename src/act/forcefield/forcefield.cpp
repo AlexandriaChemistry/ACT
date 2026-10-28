@@ -278,10 +278,11 @@ void ForceField::checkForPolarizability()
     polarizable_ = (f != forces_.end() && f->second.numberOfParameters() > 0);
 }
 
-/*! \brief Whether an interaction is zero for any distance
+/*! \brief Whether an interaction is zero for any distance, also when training
  * \param[in] pot    The potential
  * \param[in] params Its parameters
- * \return true if the parameters that scale the energy are zero
+ * \return true if the parameters that scale the energy are zero and cannot
+ *         be trained
  */
 static bool vanishes(Potential pot, const ForceFieldParameterMap &params)
 {
@@ -327,9 +328,9 @@ static bool vanishes(Potential pot, const ForceFieldParameterMap &params)
     case Potential::MACDANIEL_SCHMIDT:
         scale = { dexpA1, dexpA2 };
         break;
-    case Potential::POLARIZATION:
-        // Without polarizability there is no shell
-        scale = { polALPHA };
+    case Potential::MORSE_BONDS:
+        // As used for induction corrections
+        scale = { morseDE, morseD0 };
         break;
     default:
         break;
@@ -343,7 +344,8 @@ static bool vanishes(Potential pot, const ForceFieldParameterMap &params)
         }
         // Some combination rules give NaN for two zero parameters, which
         // means that neither particle has this interaction.
-        if (scales && p.second.value() != 0 && !std::isnan(p.second.value()))
+        if (scales && ((p.second.value() != 0 && !std::isnan(p.second.value())) ||
+                       p.second.isMutable()))
         {
             return false;
         }
@@ -358,7 +360,24 @@ void ForceField::convertVsite1(MsgHandler *msghandler)
     {
         return;
     }
-    // The pair parameters made with combination rules have to vanish too
+    // The pair parameters made with combination rules have to vanish too,
+    // which can only be checked if there are combination rules.
+    for(auto itype : { InteractionType::VDW, InteractionType::VDWCORRECTION,
+                       InteractionType::INDUCTIONCORRECTION })
+    {
+        auto fs = forces_.find(itype);
+        if (forces_.end() != fs && !fs->second.parametersConst().empty() &&
+            fs->second.combinationRules().empty())
+        {
+            if (msghandler)
+            {
+                msghandler->msg(ACTStatus::Warning,
+                                gmx::formatString("Keeping virtual sites, since there are no combination rules for %s",
+                                                  interactionTypeToString(itype).c_str()));
+            }
+            return;
+        }
+    }
     generateDependentParameter(msghandler, this, true);
     // Interaction types in which a virtual site that only carries a charge
     // may occur, and those of which its parameters have to be zero.
@@ -368,8 +387,7 @@ void ForceField::convertVsite1(MsgHandler *msghandler)
                                                    InteractionType::POLARIZATION,
                                                    InteractionType::ELECTROSTATICS };
     const std::set<InteractionType> mustBeZero = { InteractionType::VDW, InteractionType::VDWCORRECTION,
-                                                   InteractionType::INDUCTIONCORRECTION,
-                                                   InteractionType::POLARIZATION };
+                                                   InteractionType::INDUCTIONCORRECTION };
     // The names by which the parameters of other interaction types refer to a particle type
     auto names = [](const ParticleType &pt)
     {
@@ -433,7 +451,8 @@ void ForceField::convertVsite1(MsgHandler *msghandler)
     }
     for(const auto &vs : vsites)
     {
-        auto nm = names(*findParticleType(vs));
+        const auto *pv = findParticleType(vs);
+        auto        nm = names(*pv);
         for(const auto &pt : alexandria_)
         {
             if (vsites.count(pt.first.id()) == 0)
@@ -458,6 +477,14 @@ void ForceField::convertVsite1(MsgHandler *msghandler)
                 if (allowed.count(fs.first) == 0)
                 {
                     reject(vs, "it has " + interactionTypeToString(fs.first) + " parameters");
+                }
+                else if (InteractionType::POLARIZATION == fs.first)
+                {
+                    // The polarization parameters only matter for a shell
+                    if (pv->hasInteractionType(InteractionType::POLARIZATION))
+                    {
+                        reject(vs, "it has a shell");
+                    }
                 }
                 else if (mustBeZero.count(fs.first) > 0 && !vanishes(fs.second.potential(), p.second))
                 {
@@ -534,6 +561,11 @@ void ForceField::convertVsite1(MsgHandler *msghandler)
                 ++p;
             }
         }
+    }
+    // Without virtual sites on atoms there may be no VSITE1 left
+    if (!converted.empty() && forces_.find(InteractionType::VSITE1)->second.parametersConst().empty())
+    {
+        forces_.erase(InteractionType::VSITE1);
     }
     if (msghandler && !converted.empty())
     {
