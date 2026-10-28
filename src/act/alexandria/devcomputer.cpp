@@ -34,6 +34,7 @@
  */
 #include "devcomputer.h"
 
+#include <algorithm>
 #include <map>
 #include <numeric>
 #include <string>
@@ -573,22 +574,14 @@ void ForceEnergyDevComputer::calcDeviation(MsgHandler                     *msgha
         { eRMS::ExchInd,        InteractionType::EXCHIND             },
         { eRMS::AllElec,        InteractionType::ALLELEC             }
     };
-    for (auto iter = rmsE.begin(); iter < rmsE.end(); )
-    {
-        auto ttt = targets->find(iter->rms);
-        if (ttt != targets->end() && ttt->second.weight() > 0)
-        {
-            doInter = true;
-            ++iter;
-        }
-        else
-        {
-            auto tmp = iter;
-            ++tmp;
-            rmsE.erase(iter);
-            iter = tmp;
-        }
-    }
+    // Remove the terms without a target or with zero weight
+    rmsE.erase(std::remove_if(rmsE.begin(), rmsE.end(),
+                              [targets](const rmsInter &r)
+                              {
+                                  auto ttt = targets->find(r.rms);
+                                  return ttt == targets->end() || ttt->second.weight() <= 0;
+                              }), rmsE.end());
+    doInter = !rmsE.empty();
     // Whether to treat the induction correction separately is set by the
     // caller, see ACMFitnessComputer::fillDevComputers.
     bool sepInductionTerms = separateInductionCorrection_;
