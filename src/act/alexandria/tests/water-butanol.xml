@@ -1,0 +1,475 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE molprops.dtd PUBLIC "molprops.dtd" "molprops.dtd">
+<molecules>
+  <molecule molname="water#1-butanol">
+    <fragments>
+      <fragment identifier="InChI=1S/H2O/h1H2" mass="18.015" charge="0" multiplicity="1" symmetry_number="2" formula="H2O"> 1 2 3</fragment>
+      <fragment identifier="InChI=1S/C4H10O/c1-2-3-4-5/h5H,2-4H2,1H3" mass="74.123" charge="0" multiplicity="1" symmetry_number="1" formula="C4H10O"> 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18</fragment>
+    </fragments>
+    <molinfo iupac="water#1-butanol" cas="" cid="" inchi=""/>
+    <bond ai="1" aj="2" bondorder="1"/>
+    <bond ai="1" aj="3" bondorder="1"/>
+    <bond ai="4" aj="7" bondorder="1"/>
+    <bond ai="5" aj="4" bondorder="1"/>
+    <bond ai="6" aj="4" bondorder="1"/>
+    <bond ai="8" aj="11" bondorder="1"/>
+    <bond ai="8" aj="4" bondorder="1"/>
+    <bond ai="8" aj="9" bondorder="1"/>
+    <bond ai="10" aj="8" bondorder="1"/>
+    <bond ai="11" aj="14" bondorder="1"/>
+    <bond ai="11" aj="13" bondorder="1"/>
+    <bond ai="12" aj="11" bondorder="1"/>
+    <bond ai="14" aj="15" bondorder="1"/>
+    <bond ai="16" aj="14" bondorder="1"/>
+    <bond ai="17" aj="14" bondorder="1"/>
+    <bond ai="17" aj="18" bondorder="1"/>
+    <experiment datasource="Theory" reference="Spoel2026a" conformation="conformation" program="Psi4" method="sapt2+(ccd)dmp2" basisset="aug-cc-pvtz" jobtype="SP" datafile="0253">
+      <energy type="InteractionEnergy" unit="kJ/mol" temperature="0" phase="gas">
+        <average>-2.861</average>
+        <error>0</error>
+      </energy>
+      <energy type="Electrostatics" unit="kJ/mol" temperature="0" phase="gas">
+        <average>-1.515</average>
+        <error>0</error>
+      </energy>
+      <energy type="Induction" unit="kJ/mol" temperature="0" phase="gas">
+        <average>-0.649705</average>
+        <error>0</error>
+      </energy>
+      <energy type="Exchange" unit="kJ/mol" temperature="0" phase="gas">
+        <average>3.118</average>
+        <error>0</error>
+      </energy>
+      <energy type="Dispersion" unit="kJ/mol" temperature="0" phase="gas">
+        <average>-3.814</average>
+        <error>0</error>
+      </energy>
+      <atom name="O" obtype="o3" atomid="0" coord_unit="Angstrom">
+        <x>-0.0608884</x>
+        <y>0.00452896</y>
+        <z>-3.59586</z>
+      </atom>
+      <atom name="H" obtype="h" atomid="1" coord_unit="Angstrom">
+        <x>0.226954</x>
+        <y>-0.494469</y>
+        <z>-4.3661</z>
+      </atom>
+      <atom name="H" obtype="h" atomid="2" coord_unit="Angstrom">
+        <x>0.736378</x>
+        <y>0.421612</y>
+        <z>-3.25596</z>
+      </atom>
+      <atom name="C" obtype="c3" atomid="3" coord_unit="Angstrom">
+        <x>-2.21967</x>
+        <y>-1.23126</y>
+        <z>0.280331</z>
+      </atom>
+      <atom name="H" obtype="h" atomid="4" coord_unit="Angstrom">
+        <x>-3.05214</x>
+        <y>-1.11056</y>
+        <z>-0.415733</z>
+      </atom>
+      <atom name="H" obtype="h" atomid="5" coord_unit="Angstrom">
+        <x>-1.76934</x>
+        <y>-2.2097</y>
+        <z>0.095817</z>
+      </atom>
+      <atom name="H" obtype="h" atomid="6" coord_unit="Angstrom">
+        <x>-2.6298</x>
+        <y>-1.24153</y>
+        <z>1.29295</z>
+      </atom>
+      <atom name="C" obtype="c3" atomid="7" coord_unit="Angstrom">
+        <x>-1.18603</x>
+        <y>-0.107475</y>
+        <z>0.114503</z>
+      </atom>
+      <atom name="H" obtype="h" atomid="8" coord_unit="Angstrom">
+        <x>-1.67476</x>
+        <y>0.860388</y>
+        <z>0.271476</z>
+      </atom>
+      <atom name="H" obtype="h" atomid="9" coord_unit="Angstrom">
+        <x>-0.819671</x>
+        <y>-0.101578</y>
+        <z>-0.918187</z>
+      </atom>
+      <atom name="C" obtype="c3" atomid="10" coord_unit="Angstrom">
+        <x>0.00380394</x>
+        <y>-0.242994</y>
+        <z>1.07926</z>
+      </atom>
+      <atom name="H" obtype="h" atomid="11" coord_unit="Angstrom">
+        <x>0.505627</x>
+        <y>-1.20178</y>
+        <z>0.922128</z>
+      </atom>
+      <atom name="H" obtype="h" atomid="12" coord_unit="Angstrom">
+        <x>-0.350784</x>
+        <y>-0.238568</y>
+        <z>2.11356</z>
+      </atom>
+      <atom name="C" obtype="c3" atomid="13" coord_unit="Angstrom">
+        <x>1.03114</x>
+        <y>0.866813</y>
+        <z>0.920525</z>
+      </atom>
+      <atom name="H" obtype="h" atomid="14" coord_unit="Angstrom">
+        <x>0.566471</x>
+        <y>1.84252</y>
+        <z>1.1072</z>
+      </atom>
+      <atom name="H" obtype="h" atomid="15" coord_unit="Angstrom">
+        <x>1.434</x>
+        <y>0.866851</y>
+        <z>-0.0996505</z>
+      </atom>
+      <atom name="O" obtype="o3" atomid="16" coord_unit="Angstrom">
+        <x>2.0945</x>
+        <y>0.614112</y>
+        <z>1.88915</z>
+      </atom>
+      <atom name="H" obtype="h" atomid="17" coord_unit="Angstrom">
+        <x>2.78026</x>
+        <y>1.30097</y>
+        <z>1.82674</z>
+      </atom>
+    </experiment>
+    <experiment datasource="Theory" reference="Spoel2026a" conformation="conformation" program="Psi4" method="sapt2+(ccd)dmp2" basisset="aug-cc-pvtz" jobtype="SP" datafile="0254">
+      <energy type="InteractionEnergy" unit="kJ/mol" temperature="0" phase="gas">
+        <average>-3.742</average>
+        <error>0</error>
+      </energy>
+      <energy type="Electrostatics" unit="kJ/mol" temperature="0" phase="gas">
+        <average>-1.037</average>
+        <error>0</error>
+      </energy>
+      <energy type="Induction" unit="kJ/mol" temperature="0" phase="gas">
+        <average>-0.954262</average>
+        <error>0</error>
+      </energy>
+      <energy type="Exchange" unit="kJ/mol" temperature="0" phase="gas">
+        <average>2.652</average>
+        <error>0</error>
+      </energy>
+      <energy type="Dispersion" unit="kJ/mol" temperature="0" phase="gas">
+        <average>-4.402</average>
+        <error>0</error>
+      </energy>
+      <atom name="O" obtype="o3" atomid="0" coord_unit="Angstrom">
+        <x>0.0385538</x>
+        <y>0.0077677</y>
+        <z>-3.36668</z>
+      </atom>
+      <atom name="H" obtype="h" atomid="1" coord_unit="Angstrom">
+        <x>0.238086</x>
+        <y>0.245277</y>
+        <z>-2.45625</z>
+      </atom>
+      <atom name="H" obtype="h" atomid="2" coord_unit="Angstrom">
+        <x>-0.846571</x>
+        <y>-0.3676</y>
+        <z>-3.33887</z>
+      </atom>
+      <atom name="C" obtype="c3" atomid="3" coord_unit="Angstrom">
+        <x>2.57707</x>
+        <y>0.0139909</y>
+        <z>0.404298</z>
+      </atom>
+      <atom name="H" obtype="h" atomid="4" coord_unit="Angstrom">
+        <x>3.40494</x>
+        <y>0.722729</y>
+        <z>0.470734</z>
+      </atom>
+      <atom name="H" obtype="h" atomid="5" coord_unit="Angstrom">
+        <x>2.80635</x>
+        <y>-0.829651</y>
+        <z>1.05994</z>
+      </atom>
+      <atom name="H" obtype="h" atomid="6" coord_unit="Angstrom">
+        <x>2.54193</x>
+        <y>-0.363438</y>
+        <z>-0.620411</z>
+      </atom>
+      <atom name="C" obtype="c3" atomid="7" coord_unit="Angstrom">
+        <x>1.24597</x>
+        <y>0.672235</y>
+        <z>0.796337</z>
+      </atom>
+      <atom name="H" obtype="h" atomid="8" coord_unit="Angstrom">
+        <x>1.06172</x>
+        <y>1.53327</y>
+        <z>0.144477</z>
+      </atom>
+      <atom name="H" obtype="h" atomid="9" coord_unit="Angstrom">
+        <x>1.32441</x>
+        <y>1.0701</y>
+        <z>1.8143</z>
+      </atom>
+      <atom name="C" obtype="c3" atomid="10" coord_unit="Angstrom">
+        <x>0.0539804</x>
+        <y>-0.295974</y>
+        <z>0.715313</z>
+      </atom>
+      <atom name="H" obtype="h" atomid="11" coord_unit="Angstrom">
+        <x>0.223385</x>
+        <y>-1.1538</y>
+        <z>1.37199</z>
+      </atom>
+      <atom name="H" obtype="h" atomid="12" coord_unit="Angstrom">
+        <x>-0.0395578</x>
+        <y>-0.690066</y>
+        <z>-0.300296</z>
+      </atom>
+      <atom name="C" obtype="c3" atomid="13" coord_unit="Angstrom">
+        <x>-1.26742</x>
+        <y>0.349493</y>
+        <z>1.10206</z>
+      </atom>
+      <atom name="H" obtype="h" atomid="14" coord_unit="Angstrom">
+        <x>-1.48493</x>
+        <y>1.19447</y>
+        <z>0.437613</z>
+      </atom>
+      <atom name="H" obtype="h" atomid="15" coord_unit="Angstrom">
+        <x>-1.21861</x>
+        <y>0.724722</y>
+        <z>2.13156</z>
+      </atom>
+      <atom name="O" obtype="o3" atomid="16" coord_unit="Angstrom">
+        <x>-2.30138</x>
+        <y>-0.674722</y>
+        <z>0.980629</z>
+      </atom>
+      <atom name="H" obtype="h" atomid="17" coord_unit="Angstrom">
+        <x>-3.17056</x>
+        <y>-0.308983</y>
+        <z>1.21876</z>
+      </atom>
+    </experiment>
+    <experiment datasource="Theory" reference="Spoel2026a" conformation="conformation" program="Psi4" method="sapt2+(ccd)dmp2" basisset="aug-cc-pvtz" jobtype="SP" datafile="0231">
+      <energy type="InteractionEnergy" unit="kJ/mol" temperature="0" phase="gas">
+        <average>-0.929488</average>
+        <error>0</error>
+      </energy>
+      <energy type="Electrostatics" unit="kJ/mol" temperature="0" phase="gas">
+        <average>-2.289</average>
+        <error>0</error>
+      </energy>
+      <energy type="Induction" unit="kJ/mol" temperature="0" phase="gas">
+        <average>-0.925442</average>
+        <error>0</error>
+      </energy>
+      <energy type="Exchange" unit="kJ/mol" temperature="0" phase="gas">
+        <average>7.505</average>
+        <error>0</error>
+      </energy>
+      <energy type="Dispersion" unit="kJ/mol" temperature="0" phase="gas">
+        <average>-5.220</average>
+        <error>0</error>
+      </energy>
+      <atom name="O" obtype="o3" atomid="0" coord_unit="Angstrom">
+        <x>0.063223</x>
+        <y>0.00775693</y>
+        <z>-4.08492</z>
+      </atom>
+      <atom name="H" obtype="h" atomid="1" coord_unit="Angstrom">
+        <x>-0.622619</x>
+        <y>0.682032</y>
+        <z>-4.07519</z>
+      </atom>
+      <atom name="H" obtype="h" atomid="2" coord_unit="Angstrom">
+        <x>-0.382391</x>
+        <y>-0.805759</y>
+        <z>-3.83047</z>
+      </atom>
+      <atom name="C" obtype="c3" atomid="3" coord_unit="Angstrom">
+        <x>-1.59342</x>
+        <y>-0.656577</y>
+        <z>2.94738</z>
+      </atom>
+      <atom name="H" obtype="h" atomid="4" coord_unit="Angstrom">
+        <x>-1.58222</x>
+        <y>-0.652335</y>
+        <z>4.03915</z>
+      </atom>
+      <atom name="H" obtype="h" atomid="5" coord_unit="Angstrom">
+        <x>-2.44301</x>
+        <y>-0.0523487</y>
+        <z>2.61985</z>
+      </atom>
+      <atom name="H" obtype="h" atomid="6" coord_unit="Angstrom">
+        <x>-1.77164</x>
+        <y>-1.68334</y>
+        <z>2.61919</z>
+      </atom>
+      <atom name="C" obtype="c3" atomid="7" coord_unit="Angstrom">
+        <x>-0.276107</x>
+        <y>-0.114147</y>
+        <z>2.37357</z>
+      </atom>
+      <atom name="H" obtype="h" atomid="8" coord_unit="Angstrom">
+        <x>0.557852</x>
+        <y>-0.718599</y>
+        <z>2.74695</z>
+      </atom>
+      <atom name="H" obtype="h" atomid="9" coord_unit="Angstrom">
+        <x>-0.109175</x>
+        <y>0.902182</y>
+        <z>2.74762</z>
+      </atom>
+      <atom name="C" obtype="c3" atomid="10" coord_unit="Angstrom">
+        <x>-0.253437</x>
+        <y>-0.104158</y>
+        <z>0.835972</z>
+      </atom>
+      <atom name="H" obtype="h" atomid="11" coord_unit="Angstrom">
+        <x>-1.07591</x>
+        <y>0.506662</y>
+        <z>0.453581</z>
+      </atom>
+      <atom name="H" obtype="h" atomid="12" coord_unit="Angstrom">
+        <x>-0.408082</x>
+        <y>-1.11652</y>
+        <z>0.452929</z>
+      </atom>
+      <atom name="C" obtype="c3" atomid="13" coord_unit="Angstrom">
+        <x>1.04837</x>
+        <y>0.431656</y>
+        <z>0.261087</z>
+      </atom>
+      <atom name="H" obtype="h" atomid="14" coord_unit="Angstrom">
+        <x>1.89225</x>
+        <y>-0.182459</y>
+        <z>0.597976</z>
+      </atom>
+      <atom name="H" obtype="h" atomid="15" coord_unit="Angstrom">
+        <x>1.21579</x>
+        <y>1.46176</y>
+        <z>0.598609</z>
+      </atom>
+      <atom name="O" obtype="o3" atomid="16" coord_unit="Angstrom">
+        <x>0.931095</x>
+        <y>0.384009</y>
+        <z>-1.19384</z>
+      </atom>
+      <atom name="H" obtype="h" atomid="17" coord_unit="Angstrom">
+        <x>1.74368</x>
+        <y>0.718541</y>
+        <z>-1.61065</z>
+      </atom>
+    </experiment>
+    <experiment datasource="Theory" reference="Spoel2026a" conformation="conformation" program="Psi4" method="sapt2+(ccd)dmp2" basisset="aug-cc-pvtz" jobtype="SP" datafile="0236">
+      <energy type="InteractionEnergy" unit="kJ/mol" temperature="0" phase="gas">
+        <average>-1.596</average>
+        <error>0</error>
+      </energy>
+      <energy type="Electrostatics" unit="kJ/mol" temperature="0" phase="gas">
+        <average>-0.104332</average>
+        <error>0</error>
+      </energy>
+      <energy type="Induction" unit="kJ/mol" temperature="0" phase="gas">
+        <average>-0.830902</average>
+        <error>0</error>
+      </energy>
+      <energy type="Exchange" unit="kJ/mol" temperature="0" phase="gas">
+        <average>3.307</average>
+        <error>0</error>
+      </energy>
+      <energy type="Dispersion" unit="kJ/mol" temperature="0" phase="gas">
+        <average>-3.968</average>
+        <error>0</error>
+      </energy>
+      <atom name="O" obtype="o3" atomid="0" coord_unit="Angstrom">
+        <x>0.0250201</x>
+        <y>0.0602809</y>
+        <z>-4.10039</z>
+      </atom>
+      <atom name="H" obtype="h" atomid="1" coord_unit="Angstrom">
+        <x>0.175936</x>
+        <y>-0.659259</y>
+        <z>-3.48022</z>
+      </atom>
+      <atom name="H" obtype="h" atomid="2" coord_unit="Angstrom">
+        <x>-0.57526</x>
+        <y>-0.299942</y>
+        <z>-4.75995</z>
+      </atom>
+      <atom name="C" obtype="c3" atomid="3" coord_unit="Angstrom">
+        <x>-1.2933</x>
+        <y>-1.33984</y>
+        <z>-0.828668</z>
+      </atom>
+      <atom name="H" obtype="h" atomid="4" coord_unit="Angstrom">
+        <x>-2.01634</x>
+        <y>-2.15655</y>
+        <z>-0.876496</z>
+      </atom>
+      <atom name="H" obtype="h" atomid="5" coord_unit="Angstrom">
+        <x>-1.73607</x>
+        <y>-0.472453</y>
+        <z>-1.32442</z>
+      </atom>
+      <atom name="H" obtype="h" atomid="6" coord_unit="Angstrom">
+        <x>-0.414446</x>
+        <y>-1.63762</y>
+        <z>-1.40543</z>
+      </atom>
+      <atom name="C" obtype="c3" atomid="7" coord_unit="Angstrom">
+        <x>-0.915914</x>
+        <y>-1.01282</y>
+        <z>0.623728</z>
+      </atom>
+      <atom name="H" obtype="h" atomid="8" coord_unit="Angstrom">
+        <x>-0.507785</x>
+        <y>-1.90962</y>
+        <z>1.10274</z>
+      </atom>
+      <atom name="H" obtype="h" atomid="9" coord_unit="Angstrom">
+        <x>-1.82111</x>
+        <y>-0.751803</y>
+        <z>1.18336</z>
+      </atom>
+      <atom name="C" obtype="c3" atomid="10" coord_unit="Angstrom">
+        <x>0.102221</x>
+        <y>0.134509</y>
+        <z>0.732616</z>
+      </atom>
+      <atom name="H" obtype="h" atomid="11" coord_unit="Angstrom">
+        <x>-0.301095</x>
+        <y>1.03811</y>
+        <z>0.267183</z>
+      </atom>
+      <atom name="H" obtype="h" atomid="12" coord_unit="Angstrom">
+        <x>1.01411</x>
+        <y>-0.121377</y>
+        <z>0.186267</z>
+      </atom>
+      <atom name="C" obtype="c3" atomid="13" coord_unit="Angstrom">
+        <x>0.48051</x>
+        <y>0.463388</y>
+        <z>2.16824</z>
+      </atom>
+      <atom name="H" obtype="h" atomid="14" coord_unit="Angstrom">
+        <x>0.922323</x>
+        <y>-0.414944</y>
+        <z>2.65415</z>
+      </atom>
+      <atom name="H" obtype="h" atomid="15" coord_unit="Angstrom">
+        <x>-0.409898</x>
+        <y>0.75958</y>
+        <z>2.73613</z>
+      </atom>
+      <atom name="O" obtype="o3" atomid="16" coord_unit="Angstrom">
+        <x>1.44418</x>
+        <y>1.55975</y>
+        <z>2.12165</z>
+      </atom>
+      <atom name="H" obtype="h" atomid="17" coord_unit="Angstrom">
+        <x>1.71865</x>
+        <y>1.80839</y>
+        <z>3.02097</z>
+      </atom>
+    </experiment>
+  </molecule>
+</molecules>

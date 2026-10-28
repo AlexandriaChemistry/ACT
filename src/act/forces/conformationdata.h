@@ -42,10 +42,13 @@
 #include <algorithm>
 #include <array>
 #include <cstddef>
+#include <map>
 #include <vector>
 
 #include "act/basics/act_particle.h"
 #include "act/basics/interactiontype.h"
+#include "act/forcefield/forcefield_parameterlist.h"
+#include "act/forcefield/potential.h"
 #include "act/forces/forces_explicit_simd.h"
 #include "act/topology/actatom.h"
 #include "act/topology/coords_energy.h"
@@ -357,6 +360,34 @@ private:
 };
 
 //! Coordinates, forces and energies of all conformations of a topology
+/*! \brief Energies of the entries of one interaction type in all conformations
+ * They can be used again as long as the parameters, the coordinates and,
+ * if the potential uses them, the charges did not change.
+ */
+struct CachedEnergies
+{
+    //! Whether energies have been stored
+    bool                valid             = false;
+    //! The potential
+    Potential           potential         = Potential::NONE;
+    //! Topology::parameterVersion of the interaction type
+    size_t              parameterVersion  = 0;
+    //! ConformationData::coordinates
+    size_t              coordinateVersion = 0;
+    //! Number of entries
+    size_t              nentries          = 0;
+    //! Number of conformations
+    size_t              nconf             = 0;
+    //! The charges of the atoms, if the potential uses them
+    std::vector<double> charges;
+    //! The energies, as passed to storeEnergies
+    std::vector<double> energies;
+    //! Distance between the energies of conformations
+    size_t              confStride        = 0;
+    //! Distance between the energy terms of a conformation
+    size_t              termStride        = 0;
+};
+
 struct ConformationData
 {
     //! Coordinates and forces
@@ -367,12 +398,17 @@ struct ConformationData
     bool                 haveVsites   = false;
     //! The Topology::vsiteVersion the virtual sites were constructed for
     size_t               vsiteVersion = 0;
+    //! Changes when the coordinates of the conformations change
+    StructureVersion     coordinates;
+    //! Energies of each interaction type, to use again if nothing changed
+    std::map<InteractionType, CachedEnergies> cache;
 
     //! Mark the coordinates and virtual sites as outdated
     void invalidate()
     {
         arrays.invalidate();
         haveVsites = false;
+        coordinates.update();
     }
 };
 

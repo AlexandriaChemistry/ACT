@@ -1555,6 +1555,7 @@ void Topology::addEntry(InteractionType            itype,
             newv.push_back(ee);
         }
         entries_.insert({ itype, std::move(newv) });
+        parameterVersion_[itype].update();
     }
 }
 
@@ -1838,8 +1839,10 @@ void Topology::fillParameters(MsgHandler                      *msghandler,
                                                            potentialToString(fs.potential()).c_str()).c_str()));
         }
         // The positions of virtual sites only have to be constructed again
-        // if their parameters change.
-        bool vsite = isVsite(entry.first);
+        // if their parameters change, and energies only have to be computed
+        // again if the parameters changed.
+        bool vsite   = isVsite(entry.first);
+        bool changed = false;
 
         // Loop over entries, increment of tp handled at end.
         for(auto tp = entry.second.begin(); tp < entry.second.end(); )
@@ -1851,9 +1854,9 @@ void Topology::fillParameters(MsgHandler                      *msghandler,
             fillParams(msghandler, fs, topentry->selfPtr(),
                        pp->second.param.size(), pp->second.param, &param,
                        missing);
-            if (vsite && (param.empty() || !msghandler->ok() || param != topentry->params()))
+            if (param.empty() || !msghandler->ok() || param != topentry->params())
             {
-                vsiteVersion_ += 1;
+                changed = true;
             }
             if (param.empty())
             {
@@ -1870,6 +1873,9 @@ void Topology::fillParameters(MsgHandler                      *msghandler,
                     if (missing == missingParameters::Error)
                     {
                         msghandler->msg(ACTStatus::Error, ACTMessage::MissingFFParameter, msg);
+                        // The entries may have changed
+                        parameterVersion_[entry.first].update();
+                        vsiteVersion_ += 1;
                         return;
                     }
                     else if (missing == missingParameters::Ignore)
@@ -1887,6 +1893,14 @@ void Topology::fillParameters(MsgHandler                      *msghandler,
                     topentry->setParams(param);
                     ++tp;
                 }
+            }
+        }
+        if (changed)
+        {
+            parameterVersion_[entry.first].update();
+            if (vsite)
+            {
+                vsiteVersion_ += 1;
             }
         }
     }

@@ -74,6 +74,10 @@ private:
     std::vector<int>                                          realAtoms_;
     //! Changes when the parameters of the virtual sites change
     size_t                                                    vsiteVersion_ = 0;
+    //! Changes when fillParameters changes the parameters of an interaction type
+    std::map<InteractionType, StructureVersion>               parameterVersion_;
+    //! Version of the interaction types not in parameterVersion_
+    StructureVersion                                          initialVersion_;
 
     /*! Generate virtual sites for atoms.
      * \param[in] msghandler Message handler
@@ -236,6 +240,19 @@ private:
      * be constructed again.
      */
     size_t vsiteVersion() const { return vsiteVersion_; }
+
+    /*! \brief Version of the parameters of an interaction type
+     * Two topologies, including copies, never have the same version.
+     * \param[in] itype The interaction type
+     * \return A number that changes when fillParameters changes the
+     *         parameters of the entries of itype, such that energies
+     *         computed before can be used again as long as it is the same.
+     */
+    size_t parameterVersion(InteractionType itype) const
+    {
+        auto pv = parameterVersion_.find(itype);
+        return parameterVersion_.end() == pv ? initialVersion_.value() : pv->second.value();
+    }
 
     /*! \brief Special purpose routine to add position restraints to all atoms
      * \param[in] msghandler For warnings etc.

@@ -170,10 +170,44 @@ void StaticIndividualInfo::updateForceField(MsgHandler                *msghandle
             // p->setUncertainty(psigma_[n]);
         }
     }
-    //! \todo This will generate the whole matrix of parameters from scratch.
-    // It would be more efficient to only generate the atom type pair parameters for
-    // which one of the atomic Van der Waals or Coulomb parameters changed.
-    generateDependentParameter(msghandler, &pd_);
+    // Keep track of what may have changed, such that only what depends on
+    // it has to be computed again. Particle type parameters may be used
+    // anywhere.
+    nUpdate_ += 1;
+    std::set<InteractionType> types;
+    bool                      all = false;
+    for(int n : mychanged)
+    {
+        if (!optIndex_[n].particleType().empty())
+        {
+            all = true;
+        }
+        types.insert(optIndex_[n].iType());
+    }
+    // Interaction types that the charges do not depend on, unless shells
+    // are relaxed in the field of all interactions.
+    static const std::set<InteractionType> noCharge = {
+        InteractionType::BONDS, InteractionType::ANGLES, InteractionType::LINEAR_ANGLES,
+        InteractionType::PROPER_DIHEDRALS, InteractionType::IMPROPER_DIHEDRALS,
+        InteractionType::VDW, InteractionType::VDWCORRECTION, InteractionType::INDUCTIONCORRECTION
+    };
+    bool charges = all || pd_.polarizable();
+    for(auto itype : types)
+    {
+        typeUpdate_[itype] = nUpdate_;
+        charges            = charges || noCharge.count(itype) == 0;
+    }
+    if (all)
+    {
+        allUpdate_ = nUpdate_;
+    }
+    if (charges)
+    {
+        chargeUpdate_ = nUpdate_;
+    }
+    // Only the pair parameters of the particle types of which parameters
+    // were updated are generated again.
+    generateDependentParameter(msghandler, &pd_, false, all ? nullptr : &types);
     for(int n : mychanged)
     {
         optIndex_[n].forceFieldParameter()->setUpdated(false);

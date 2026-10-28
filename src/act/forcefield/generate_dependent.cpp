@@ -45,6 +45,30 @@ struct SingleParameters
     ForceFieldParameterMap *params;
 };
 
+/*! \brief The single particle types of a parameter list and their pairs
+ * Finding the single particle types means going through all entries of
+ * the list, which contains all pairs too, and sorting them. Since this is
+ * done after each change of a parameter during training, the result is
+ * kept, together with pointers to the pair entries. They stay valid as
+ * long as entries are only added, see ForceFieldParameterList::structureVersion,
+ * and the number of entries does not change.
+ */
+struct SingleParameterCache
+{
+    //! The list for which this was made
+    const ForceFieldParameterList *list      = nullptr;
+    //! Structure version of the list
+    size_t                         version   = 0;
+    //! Number of entries in the list
+    size_t                         nentries  = 0;
+    //! The single particle types, sorted by identifier
+    std::vector<SingleParameters>  singles;
+    //! The pair entries for i <= j at index i*singles.size() + j, nullptr if absent
+    std::vector<ForceFieldParameterMap *> pairs;
+    //! The particle types of the singles, if needed
+    std::vector<const ParticleType *>    ptypes;
+};
+
 /*! \brief Collect the parameters of single particle types
  * The list also contains the pair parameters, which are skipped. Since
  * the list is a std::map, the pointers stay valid when pairs are added.
@@ -66,6 +90,68 @@ static std::vector<SingleParameters> singleParameters(ForceFieldParameterListMap
               [](const SingleParameters &a, const SingleParameters &b)
               { return a.id->id() < b.id->id(); });
     return singles;
+}
+
+/*! \brief Find the single particle types of a list and their pairs
+ * \param[in]    pd     The force field, for the particle types
+ * \param[inout] list   The parameter list
+ * \param[in]    ptypes Whether the particle types are needed
+ * \return The singles and pairs, which stay valid until the next call
+ *         for a different list or after the list changed
+ */
+static SingleParameterCache *singleParameterCache(const ForceField        *pd,
+                                                  ForceFieldParameterList *list,
+                                                  bool                     ptypes)
+{
+    // One for each interaction type with pair parameters
+    static std::vector<SingleParameterCache> caches;
+    auto parm = list->parametersNoRemoval();
+    SingleParameterCache *cache = nullptr;
+    for(auto &c : caches)
+    {
+        if (c.list == list)
+        {
+            cache = &c;
+        }
+    }
+    if (nullptr == cache)
+    {
+        caches.push_back(SingleParameterCache());
+        cache       = &caches.back();
+        cache->list = list;
+    }
+    if (cache->version == list->structureVersion() && cache->nentries == parm->size() &&
+        !(ptypes && cache->ptypes.size() != cache->singles.size()))
+    {
+        return cache;
+    }
+    cache->version  = list->structureVersion();
+    cache->nentries = parm->size();
+    cache->singles  = singleParameters(parm);
+    size_t n        = cache->singles.size();
+    cache->pairs.assign(n*n, nullptr);
+    for(size_t i = 0; i < n; i++)
+    {
+        for(size_t j = i; j < n; j++)
+        {
+            auto myId = Identifier({ cache->singles[i].id->id(), cache->singles[j].id->id() }, { 1 }, CanSwap::Yes);
+            auto pp   = parm->find(myId);
+            if (parm->end() != pp)
+            {
+                cache->pairs[i*n+j] = &pp->second;
+            }
+        }
+    }
+    cache->ptypes.clear();
+    if (ptypes)
+    {
+        for(const auto &single : cache->singles)
+        {
+            const auto &atom = single.id->atoms()[0];
+            cache->ptypes.push_back(pd->hasParticleType(atom) ? pd->findParticleType(atom) : nullptr);
+        }
+    }
+    return cache;
 }
 
 /*! \brief Generation parameters using combination rules
@@ -91,6 +177,10 @@ static void generateParameterPairs(MsgHandler      *msghandler,
     const auto &comb_rule = forcesVdw->combinationRules();
     // The new parameters are added to the same list
     ForceFieldParameterListMap *parm = forcesVdw->parametersNoRemoval();
+    // With the Kronecker combination rule pairs are only included if one
+    // particle is a vsite and the other an atom.
+    bool kronecker = (Potential::BORN_MAYER == forcesVdw->potential() ||
+                      Potential::MORSE_BONDS == forcesVdw->potential());
 
     // If the combination rule was updated all pairs change
     bool crupdated = false;
@@ -98,7 +188,9 @@ static void generateParameterPairs(MsgHandler      *msghandler,
     {
         crupdated = crupdated || cr.second.ffplConst().updated();
     }
-    auto singles = singleParameters(parm);
+    auto        cache   = singleParameterCache(pd, forcesVdw, kronecker);
+    const auto &singles = cache->singles;
+    size_t      nsingle = singles.size();
     // Check whether the parameters for each particle type have been updated
     std::vector<bool> updated;
     for(const auto &single : singles)
@@ -110,25 +202,13 @@ static void generateParameterPairs(MsgHandler      *msghandler,
         }
         updated.push_back(supdated);
     }
-    // With the Kronecker combination rule pairs are only included if one
-    // particle is a vsite and the other an atom.
-    bool kronecker = (Potential::BORN_MAYER == forcesVdw->potential() ||
-                      Potential::MORSE_BONDS == forcesVdw->potential());
-    std::vector<const ParticleType *> ptypes;
-    if (kronecker)
-    {
-        for(const auto &single : singles)
-        {
-            const auto &atom = single.id->atoms()[0];
-            ptypes.push_back(pd->hasParticleType(atom) ? pd->findParticleType(atom) : nullptr);
-        }
-    }
+    const auto &ptypes = cache->ptypes;
 
     // Now do the double loop
     int nid = 0;
-    for (size_t i = 0; i < singles.size(); i++)
+    for (size_t i = 0; i < nsingle; i++)
     {
-        for (size_t j = i; j < singles.size(); j++)
+        for (size_t j = i; j < nsingle; j++)
         {
             if (!(updated[i] || updated[j] || crupdated || force))
             {
@@ -148,9 +228,9 @@ static void generateParameterPairs(MsgHandler      *msghandler,
                                 comb_rule, *singles[i].params, *singles[j].params, includePair, &pmap);
             if (!pmap.empty())
             {
-                auto myId = Identifier({ singles[i].id->id(), singles[j].id->id() }, { 1 }, CanSwap::Yes);
                 if (msghandler && msghandler->debug())
                 {
+                    auto myId  = Identifier({ singles[i].id->id(), singles[j].id->id() }, { 1 }, CanSwap::Yes);
                     auto mystr = gmx::formatString("Generated pair parameters for %s / %s",
                                                    potentialToString(forcesVdw->potential()).c_str(),
                                                    myId.id().c_str());
@@ -160,7 +240,17 @@ static void generateParameterPairs(MsgHandler      *msghandler,
                     }
                     msghandler->writeDebug(mystr);
                 }
-                parm->insert_or_assign(std::move(myId), std::move(pmap));
+                auto pair = cache->pairs[i*nsingle+j];
+                if (pair)
+                {
+                    // The same as insert_or_assign, without looking up the identifier
+                    *pair = std::move(pmap);
+                }
+                else
+                {
+                    auto myId = Identifier({ singles[i].id->id(), singles[j].id->id() }, { 1 }, CanSwap::Yes);
+                    parm->insert_or_assign(std::move(myId), std::move(pmap));
+                }
                 nid += 1;
             }
         }
@@ -193,7 +283,8 @@ static void generateCoulombParameterPairs(ForceField *pd, bool force)
     // Finally add the new parameters to the exisiting list
     auto fold = forcesCoul->parametersNoRemoval();
     // The zeta of each particle type and whether it was updated
-    auto singles = singleParameters(fold);
+    auto        cache   = singleParameterCache(pd, forcesCoul, false);
+    const auto &singles = cache->singles;
     std::vector<double> zetas;
     std::vector<bool>   updated;
     for(const auto &single : singles)
@@ -213,12 +304,12 @@ static void generateCoulombParameterPairs(ForceField *pd, bool force)
             {
                 continue;
             }
-            double     jzeta  = zetas[j];
-            Identifier pairID({ singles[i].id->id(), singles[j].id->id() }, { 1 }, CanSwap::Yes);
+            double jzeta = zetas[j];
             nid += 1;
-            auto       oldfp  = fold->find(pairID);
-            if (oldfp == fold->end())
+            auto   pair  = cache->pairs[i*singles.size()+j];
+            if (nullptr == pair)
             {
+                Identifier pairID({ singles[i].id->id(), singles[j].id->id() }, { 1 }, CanSwap::Yes);
                 ForceFieldParameterMap ffpm = {
                     { cname[coulZETA], 
                       ForceFieldParameter(unit, izeta, 0, 1, izeta, izeta, mutd, false, true) },
@@ -229,9 +320,9 @@ static void generateCoulombParameterPairs(ForceField *pd, bool force)
             }
             else
             {
-                auto &pi = oldfp->second.find(cname[coulZETA])->second;
+                auto &pi = pair->find(cname[coulZETA])->second;
                 pi.forceSetValue(izeta);
-                auto &pj = oldfp->second.find(cname[coulZETA2])->second;
+                auto &pj = pair->find(cname[coulZETA2])->second;
                 pj.forceSetValue(jzeta);
             }
         }
@@ -244,14 +335,27 @@ static void generateCoulombParameterPairs(ForceField *pd, bool force)
     // Phew, we're done!
 }
     
-void generateDependentParameter(MsgHandler *msghandler,
-                                ForceField *pd,
-                                bool        force)
+void generateDependentParameter(MsgHandler                      *msghandler,
+                                ForceField                      *pd,
+                                bool                             force,
+                                const std::set<InteractionType> *changed)
 {
-    generateParameterPairs(msghandler, pd, InteractionType::VDW, force);
-    generateParameterPairs(msghandler, pd, InteractionType::VDWCORRECTION, force);
-    generateParameterPairs(msghandler, pd, InteractionType::INDUCTIONCORRECTION, force);
-    generateCoulombParameterPairs(pd, force);
+    auto todo = [force, changed](InteractionType itype)
+    {
+        return force || nullptr == changed || changed->count(itype) > 0;
+    };
+    for(auto itype : { InteractionType::VDW, InteractionType::VDWCORRECTION,
+                       InteractionType::INDUCTIONCORRECTION })
+    {
+        if (todo(itype))
+        {
+            generateParameterPairs(msghandler, pd, itype, force);
+        }
+    }
+    if (todo(InteractionType::ELECTROSTATICS))
+    {
+        generateCoulombParameterPairs(pd, force);
+    }
 }
 
 } // namespace

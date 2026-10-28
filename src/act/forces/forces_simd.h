@@ -17,6 +17,10 @@ class MsgHandler;
  * The energies are stored in the conformation data of the molecules, see
  * ACTMol::conformationData, not in the energy maps of the conformations.
  * ConformationEnergies::store copies them there.
+ * Unless forces are computed or the force field is polarizable, the energies
+ * of an interaction type are taken from the previous call if its parameters
+ * (see Topology::parameterVersion), the coordinates (see ConformationData)
+ * and the charges did not change.
  * \param[in] msghandler For debugging and messages
  * \param[in] pd         An ACT force field
  * \param[in] allmols    Vector containing all the molecules

@@ -37,6 +37,9 @@
 #include "act/alexandria/devcomputer.h"
 #include "act/alexandria/molgen.h"
 #include "act/forcefield/forcefield_utils.h"
+#include "act/forcefield/generate_dependent.h"
+#include "act/forces/conformationdata.h"
+#include "act/utility/timings.h"
 #include "act/molprop/molprop_xml.h"
 #include "act/topology/actmol.h"
 
@@ -956,6 +959,106 @@ static const std::map<MolPropObservable, iqmType> propertyIqm = {
 };
 
 // Test fixture for the DevComputers of molecular properties
+//! \return the energies of all terms and conformations of the molecules
+static std::vector<double> allEnergies(std::vector<ACTMol> *mols)
+{
+    std::vector<double> e;
+    for(auto &mol : *mols)
+    {
+        for(size_t what = 0; what < 3; what++)
+        {
+            auto &ener = mol.conformationData(what)->energies;
+            for(auto t : ener.types())
+            {
+                auto term = ener.find(t);
+                for(size_t c = 0; c < ener.nconf(); c++)
+                {
+                    e.push_back(term.has(c) ? term.act[c] : 0.0);
+                }
+            }
+        }
+    }
+    return e;
+}
+
+/*! \brief Compute the energies of all molecules
+ * \param[in]    forceComputer To compute the energies
+ * \param[in]    pd            The force field
+ * \param[inout] mols          The molecules
+ * \param[in]    fresh         Whether to forget the energies of earlier calls first
+ * \return the energies, see allEnergies
+ */
+static std::vector<double> computeAll(const ForceComputer *forceComputer,
+                                      const ForceField    *pd,
+                                      std::vector<ACTMol> *mols,
+                                      bool                 fresh)
+{
+    if (fresh)
+    {
+        for(auto &mol : *mols)
+        {
+            for(size_t what = 0; what < 3; what++)
+            {
+                mol.conformationData(what)->cache.clear();
+            }
+        }
+    }
+    MsgHandler msghandler;
+    forceComputer->computeRelaxedEnergies(&msghandler, pd, pointers(mols), true, false, false);
+    EXPECT_TRUE(msghandler.ok());
+    return allEnergies(mols);
+}
+
+/*! \brief Fill the parameters of the topologies of the molecules
+ * \param[in]    pd   The force field
+ * \param[inout] mols The molecules
+ */
+static void fillAll(const ForceField *pd, std::vector<ACTMol> *mols)
+{
+    MsgHandler msghandler;
+    for(auto &mol : *mols)
+    {
+        mol.topologyPtr()->fillParameters(&msghandler, pd, missingParameters::Ignore);
+        for(auto &ft : mol.fragmentHandler()->topologiesPtr())
+        {
+            ft.fillParameters(&msghandler, pd, missingParameters::Ignore);
+        }
+    }
+}
+
+/*! \brief Change the first parameter of entries of an interaction type
+ * \param[inout] pd          The force field
+ * \param[in]    itype       The interaction type
+ * \param[in]    factor      To multiply the parameters with
+ * \param[in]    singlesOnly Only change the entries of single particle
+ *                           types, since pairs are made from them
+ */
+static void changeParameters(ForceField      *pd,
+                             InteractionType  itype,
+                             double           factor,
+                             bool             singlesOnly)
+{
+    auto params = pd->findForces(itype)->parametersNoRemoval();
+    std::vector<ForceFieldParameter *> changed;
+    for(auto &entry : *params)
+    {
+        if (!singlesOnly || entry.first.atoms().size() <= 1)
+        {
+            auto &p = entry.second.begin()->second;
+            p.forceSetValue(factor*p.value());
+            p.setUpdated(true);
+            changed.push_back(&p);
+        }
+    }
+    EXPECT_FALSE(changed.empty());
+    MsgHandler msghandler;
+    generateDependentParameter(&msghandler, pd);
+    for(auto p : changed)
+    {
+        p->setUpdated(false);
+    }
+}
+
 class PropertyDevComputerTest : public gmx::test::CommandLineTestBase
 {
 protected:
@@ -965,15 +1068,21 @@ protected:
     std::string monomerFile() { return fileManager().getInputFilePath("../../molprop/tests/molprop.xml"); }
 
     //! Read molecules, generate topologies and charges like MolGen does
-    std::vector<ACTMol> prepareMolecules(MsgHandler          *msghandler,
-                                         ForceField          *pd,
-                                         const ForceComputer *forceComputer)
+    std::vector<ACTMol> prepareMolecules(MsgHandler                  *msghandler,
+                                         ForceField                  *pd,
+                                         const ForceComputer         *forceComputer,
+                                         const std::set<std::string> &molecules = {},
+                                         const std::string           &mpFile    = "")
     {
         std::vector<alexandria::MolProp> mps;
-        MolPropRead(msghandler, monomerFile().c_str(), &mps);
+        MolPropRead(msghandler, mpFile.empty() ? monomerFile().c_str() : mpFile.c_str(), &mps);
         std::vector<ACTMol> mols;
         for(auto &mp : mps)
         {
+            if (!molecules.empty() && molecules.count(mp.getMolname()) == 0)
+            {
+                continue;
+            }
             ACTMol actmol;
             actmol.Merge(&mp);
             actmol.GenerateTopology(msghandler, pd, missingParameters::Ignore);
@@ -993,6 +1102,74 @@ protected:
         }
         EXPECT_FALSE(mols.empty());
         return mols;
+    }
+
+    /*! \brief Check that energies used again are those computed from scratch
+     * The energies of an interaction type are used again if its parameters,
+     * the coordinates and, if used, the charges did not change, see
+     * CachedEnergies. After changing each of them, the energies have to
+     * change and to be the same as without the energies of earlier calls.
+     * \param[in] ffName    The force field
+     * \param[in] mpFile    The molecules, the monomer file if empty
+     * \param[in] molecules The molecules to use, all if empty
+     * \param[in] vsite     Whether to change a virtual site parameter too
+     */
+    void testEnergiesUsedAgain(const std::string             &ffName,
+                               const std::string             &mpFile,
+                               const std::set<std::string>   &molecules,
+                               bool                           vsite)
+    {
+        ForceComputer forceComputer;
+        MsgHandler    msghandler;
+        // A copy, since the parameters are changed
+        ForceField    pd   = *getForceField(ffName);
+        ASSERT_FALSE(pd.polarizable());
+        auto          mols = prepareMolecules(&msghandler, &pd, &forceComputer, molecules, mpFile);
+        ASSERT_FALSE(mols.empty());
+        auto &timings = Timings::instance();
+        auto  reused  = timings.index("Energies used again");
+        auto  e0      = computeAll(&forceComputer, &pd, &mols, false);
+        // Nothing changed, all energies are used again
+        double ncalls = timings.calls()[reused];
+        EXPECT_EQ(e0, computeAll(&forceComputer, &pd, &mols, false));
+        EXPECT_LT(ncalls, timings.calls()[reused]);
+        // Van der Waals parameters
+        changeParameters(&pd, InteractionType::VDW, 1.1, true);
+        fillAll(&pd, &mols);
+        auto e1 = computeAll(&forceComputer, &pd, &mols, false);
+        EXPECT_NE(e0, e1);
+        EXPECT_EQ(e1, computeAll(&forceComputer, &pd, &mols, true));
+        // Charges, virtual sites get a charge such that their position matters
+        auto newCharge = [](ActAtom *atom)
+        {
+            atom->setCharge(0.9*atom->charge() + (atom->pType() == ActParticle::Vsite ? 0.1 : 0.0));
+        };
+        for(auto &mol : mols)
+        {
+            for(auto &atom : *mol.atoms())
+            {
+                newCharge(&atom);
+            }
+            for(auto &ft : mol.fragmentHandler()->topologiesPtr())
+            {
+                for(auto &atom : *ft.atomsPtr())
+                {
+                    newCharge(&atom);
+                }
+            }
+        }
+        auto e2 = computeAll(&forceComputer, &pd, &mols, false);
+        EXPECT_NE(e1, e2);
+        EXPECT_EQ(e2, computeAll(&forceComputer, &pd, &mols, true));
+        if (vsite)
+        {
+            // Virtual sites move, and with them the coordinates
+            changeParameters(&pd, InteractionType::VSITE3FD, 1.2, false);
+            fillAll(&pd, &mols);
+            auto e3 = computeAll(&forceComputer, &pd, &mols, false);
+            EXPECT_NE(e2, e3);
+            EXPECT_EQ(e3, computeAll(&forceComputer, &pd, &mols, true));
+        }
     }
 
     //! Set the bounds of all ACM charges in a force field
@@ -1128,6 +1305,21 @@ protected:
         EXPECT_NEAR(chi2Sum, t.chiSquared(), 1e-10*(chi2Sum + 1));
     }
 };
+
+
+// Test: Energies used again are the same as computed from scratch
+TEST_F(PropertyDevComputerTest, EnergiesUsedAgain)
+{
+    testEnergiesUsedAgain("ACS-g2", "", {}, false);
+}
+
+// Test: The same with a dimer with a virtual site, of which the parameter changes.
+// Within water the virtual site has no interactions, in the dimer it has.
+TEST_F(PropertyDevComputerTest, EnergiesUsedAgainVsite)
+{
+    testEnergiesUsedAgain("../../forces/tests/ACS-v3fds", fileManager().getInputFilePath("water-butanol.xml"),
+                          { "water#1-butanol" }, true);
+}
 
 // Test: Without a BOUNDS target nothing is computed
 TEST_F(PropertyDevComputerTest, BoundsNoTarget)

@@ -36,6 +36,7 @@
 #ifndef ALEXANDRIA_ACMFITNESSCOMPUTER_H
 #define ALEXANDRIA_ACMFITNESSCOMPUTER_H
 
+#include <map>
 #include <vector>
 
 #include "act/ga/fitness_computer.h"
@@ -75,6 +76,13 @@ private:
     ChargeGenerationAlgorithm  algorithm_;
     //! Amount of times calcDeviation() has been called
     int numberCalcDevCalled_ = 0;
+    /*! For each molecule, the version of the parameters of each interaction
+     * type that its topologies were filled with, see
+     * StaticIndividualInfo::parameterVersion.
+     */
+    std::vector<std::map<InteractionType, size_t>> filledVersion_;
+    //! For each molecule, the parameter version that its charges were generated with
+    std::vector<size_t>                            chargeVersion_;
     //! The loss function
     LossFunction lossFunction_;
 
