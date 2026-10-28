@@ -563,7 +563,8 @@ static void processTree(MsgHandler           *msgHandler,
 
 void readForceField(const std::string &fileName,
                     ForceField        *pd,
-                    MsgHandler        *msgHandler)
+                    MsgHandler        *msgHandler,
+                    bool               convert)
 {
     xmlDocPtr   doc;
     std::string fn, fn2;
@@ -607,6 +608,11 @@ void readForceField(const std::string &fileName,
 
     xmlFreeDoc(doc);
 
+    // Virtual sites on top of atoms are read, but stored as second charges
+    if (convert)
+    {
+        pd->convertVsite1(msgHandler);
+    }
     // Generate maps
     pd->checkForPolarizability();
     pd->checkConsistency(msgHandler);
