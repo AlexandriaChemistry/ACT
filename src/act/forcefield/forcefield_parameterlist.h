@@ -35,6 +35,7 @@
 #define FORCEFIELDPARAMETERLIST_H
 
 #include <algorithm>
+#include <atomic>
 #include <map>
 #include <utility>
 
@@ -52,6 +53,36 @@ namespace alexandria
 
 //! \brief Shortcut for recurring declaration
 typedef std::map<Identifier, ForceFieldParameterMap> ForceFieldParameterListMap;
+
+/*! \brief Number identifying the structure of a parameter map
+ * The number changes whenever pointers into the map may become invalid.
+ * Construction, copying and assignment take a new number, such that two
+ * objects never have the same number.
+ */
+class StructureVersion
+{
+ public:
+    StructureVersion() : value_(next()) {}
+    StructureVersion(const StructureVersion &) : value_(next()) {}
+    StructureVersion &operator=(const StructureVersion &)
+    {
+        value_ = next();
+        return *this;
+    }
+    //! Take a new number
+    void update() { value_ = next(); }
+    //! \return The number
+    size_t value() const { return value_; }
+ private:
+    //! The number
+    size_t value_;
+    //! \return A number that has not been used before
+    static size_t next()
+    {
+        static std::atomic<size_t> counter{0};
+        return ++counter;
+    }
+};
 
 /*! \brief Class to hold the parameters for an interaction type
  *
@@ -213,11 +244,33 @@ class ForceFieldParameterList
     //! Return the parameters map as a const variable
     const ForceFieldParameterListMap &parametersConst() const { return parameters_; };
     
-    //! Return the parameters map as an editable variable
-    ForceFieldParameterListMap *parameters() { return &parameters_; };
-    
+    /*! \brief Return the parameters map as an editable variable
+     * Since entries may be removed, pointers into the map are no longer
+     * valid afterwards, see structureVersion().
+     */
+    ForceFieldParameterListMap *parameters()
+    {
+        version_.update();
+        return &parameters_;
+    };
+
+    /*! \brief Return the parameters map for changing values and adding entries
+     * Entries must not be removed, such that pointers to the existing entries,
+     * but not to the parameters inside them, stay valid.
+     */
+    ForceFieldParameterListMap *parametersNoRemoval() { return &parameters_; };
+
+    /*! \return A number that changes whenever pointers to the entries of the
+     * parameter map may have become invalid.
+     */
+    size_t structureVersion() const { return version_.value(); }
+
     //! Clear the parameter map
-    void clearParameters() { parameters_.clear(); }
+    void clearParameters()
+    {
+        parameters_.clear();
+        version_.update();
+    }
 
     /*! \brief Add one parameter to the map
      *
@@ -299,6 +352,7 @@ class ForceFieldParameterList
     void eraseParameter()
     {
         parameters_.clear();
+        version_.update();
         counter_ = 0;
     }
 
@@ -345,8 +399,11 @@ class ForceFieldParameterList
     //! Map structure for combination rules associated with the parameter list
     CombRuleSet combrules_;
         
-    //! Map of parameters 
+    //! Map of parameters
     ForceFieldParameterListMap parameters_;
+
+    //! Structure of the map of parameters
+    StructureVersion version_;
 
     //! Counter for index
     int counter_ = 0;
