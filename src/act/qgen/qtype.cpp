@@ -89,7 +89,7 @@ QtypeProps::QtypeProps(qPropertyType                 qtype,
     for (size_t i = 0; i < atoms.size(); i++)
     {
         atomNumber_.push_back(atoms[i].atomicNumber());
-        q_.push_back(atoms[i].charge());
+        q_.push_back(atoms[i].totalCharge());
     }
     // Compute CoC (atomNumber_ and x_ are always consistent here)
     computeCoC(nullptr);
@@ -170,7 +170,8 @@ void QtypeProps::setQ(const std::vector<ActAtom> &atoms)
     for(size_t i = 0; i < atoms.size(); i++)
     {
         atomNumber_[i] = atoms[i].atomicNumber();
-        q_[i] = atoms[i].charge();
+        // The second charge is on the atom too
+        q_[i] = atoms[i].totalCharge();
     }
     // atomNumber_ and x_ are always consistent here
     computeCoC(nullptr);

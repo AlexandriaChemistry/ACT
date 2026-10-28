@@ -76,6 +76,12 @@ private:
     double           invmass_ = 0;
     //! The charge
     double           charge_;
+    //! Second charge at the same position, see ParticleType::chargeVS
+    double           chargeVS_ = 0;
+    //! Width of the distribution of the second charge
+    double           zetaVS_   = 0;
+    //! Row of the second charge, for Slater distributions
+    int              rowVS_    = 0;
     //! Residue number. If at -1 it means it has not been set.
     int              residueNumber_ = -1;
 public:
@@ -97,7 +103,8 @@ public:
 
     ActAtom(const ParticleType &pt) :
         id_({ pt.id() }), name_(pt.id().id() ), elem_(pt.element()), ffType_( pt.id().id() ),
-        apType_( pt.apType()), atomicNumber_(pt.atomnumber()), mass_(pt.mass()), charge_(pt.charge())
+        apType_( pt.apType()), atomicNumber_(pt.atomnumber()), mass_(pt.mass()), charge_(pt.charge()),
+        chargeVS_(pt.chargeVS()), zetaVS_(pt.zetaVS()), rowVS_(pt.rowVS())
     {
         if (pt.mass() > 0)
         {
@@ -173,6 +180,32 @@ public:
      * \param[in] newcharge The new value
      */
     void setCharge(double newcharge) { charge_ = newcharge; }
+
+    /*! \return the second charge, at the same position but with its own
+     * distribution, see ParticleType::chargeVS
+     */
+    double chargeVS() const { return chargeVS_; }
+
+    //! \return the width of the distribution of the second charge
+    double zetaVS() const { return zetaVS_; }
+
+    //! \return the row of the second charge
+    int rowVS() const { return rowVS_; }
+
+    //! \return the sum of the charge and the second charge
+    double totalCharge() const { return charge_ + chargeVS_; }
+
+    /*! \brief Set the second charge
+     * \param[in] chargeVS The charge
+     * \param[in] zetaVS   The width of its distribution
+     * \param[in] rowVS    Its row
+     */
+    void setChargeVS(double chargeVS, double zetaVS, int rowVS)
+    {
+        chargeVS_ = chargeVS;
+        zetaVS_   = zetaVS;
+        rowVS_    = rowVS;
+    }
 
     //! return the residue number
     int residueNumber() const { return residueNumber_; }

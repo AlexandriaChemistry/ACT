@@ -767,6 +767,25 @@ static ACT_ALWAYS_INLINE void generalizedBhamOne(gmx_unused MsgHandler *msghandl
 }
 
 //! Coulomb between Gaussian (or point) charges for one pair
+/*! \brief Width of the interaction of two Gaussian charge distributions
+ * As in Coulomb_GG, a zero width means a point charge.
+ * \param[in] izeta Width of the first distribution
+ * \param[in] jzeta Width of the second distribution
+ */
+static ACT_ALWAYS_INLINE real combinedZeta(real izeta, real jzeta)
+{
+    if (izeta == 0 || jzeta == 0)
+    {
+        return izeta + jzeta;
+    }
+    return izeta*jzeta*gmx::invsqrt(izeta*izeta + jzeta*jzeta);
+}
+
+/*! \brief Coulomb between Gaussian charges for one pair
+ * Each particle may have a second charge at the same position with its
+ * own width, see ActAtom::chargeVS, such that there are up to four terms.
+ * Terms without charge are skipped, except the first one.
+ */
 template <typename I, typename X, typename F>
 static ACT_ALWAYS_INLINE void coulombGaussianOne(gmx_unused MsgHandler      *msghandler,
                                       const TopologyEntry        &b,
@@ -783,47 +802,60 @@ static ACT_ALWAYS_INLINE void coulombGaussianOne(gmx_unused MsgHandler      *msg
     auto aj       = indices[1];
     // Get the parameters.
     auto &params= b.params();
-    auto izeta  = params[coulZETA];
-    auto jzeta  = params[coulZETA2];
-    real qq         = ONE_4PI_EPS0*atoms[gindices[0]].charge()*atoms[gindices[1]].charge()/epsilonr;
-    // Width of the combined Gaussian, as in Coulomb_GG. This depends only on
-    // the parameters, which allows the compiler to compute it once for all
+    const auto &atomi = atoms[gindices[0]];
+    const auto &atomj = atoms[gindices[1]];
+    // The charges and widths of both particles. These depend only on the
+    // parameters, which allows the compiler to compute them once for all
     // conformations.
-    real zeta;
-    if (izeta == 0 || jzeta == 0)
-    {
-        zeta = izeta + jzeta;
-    }
-    else
-    {
-        zeta = izeta*jzeta*gmx::invsqrt(izeta*izeta + jzeta*jzeta);
-    }
+    const real qi[2] = { atomi.charge(), atomi.chargeVS() };
+    const real qj[2] = { atomj.charge(), atomj.chargeVS() };
+    const real zi[2] = { params[coulZETA], atomi.zetaVS() };
+    const real zj[2] = { params[coulZETA2], atomj.zetaVS() };
     rvec dx;
     rvec_sub(x[ai], x[aj], dx);
     auto dr2        = iprod(dx, dx);
+    real felec      = 0;
+    for(int a = 0; a < 2; a++)
+    {
+        for(int c = 0; c < 2; c++)
+        {
+            if (a+c > 0 && qi[a]*qj[c] == 0)
+            {
+                continue;
+            }
+            real qq   = ONE_4PI_EPS0*qi[a]*qj[c]/epsilonr;
+            // Width of the combined Gaussian, as in Coulomb_GG
+            real zeta = combinedZeta(zi[a], zj[c]);
+            if (zeta == 0)
+            {
+                // Two point charges, which only occurs for terms with a
+                // second charge, since the point charge kernel is used otherwise.
+                if (dr2 > 0)
+                {
+                    auto rinv = gmx::invsqrt(dr2);
+                    e[0]     += qq*rinv;
+                    felec    += qq*rinv*rinv*rinv;
+                }
+            }
+            else if (dr2 > 0)
+            {
+                // As Coulomb_GG and DCoulomb_GG, but computing erf only once
+                auto rinv   = gmx::invsqrt(dr2);
+                auto rz     = zeta*dr2*rinv;
+                auto erfrz  = std::erf(rz);
+                e[0]       += qq*erfrz*rinv;
+                // The scalar force divided by r
+                felec      += qq*(erfrz*rinv - 2*invsqrt_pi*zeta*std::exp(-rz*rz))*rinv*rinv;
+            }
+            else
+            {
+                e[0] += qq*Nuclear_GG(0, zeta);
+            }
+        }
+    }
     if (dr2 > 0)
     {
-        // As Coulomb_GG and DCoulomb_GG, but computing erf only once
-        auto rinv   = gmx::invsqrt(dr2);
-        auto rz     = zeta*dr2*rinv;
-        auto erfrz  = std::erf(rz);
-        real velec  = qq*erfrz*rinv;
-        // The scalar force divided by r
-        real felec  = qq*(erfrz*rinv - 2*invsqrt_pi*zeta*std::exp(-rz*rz))*rinv*rinv;
-#ifdef DEBUG
-        if (msghandler && msghandler->debug())
-        {
-            msghandler->writeDebug(gmx::formatString("vcoul ai %d aj %d %g izeta %g jzeta %g qi %g qj %g vcoul_pc %g dist %g felec %g",
-                                                     gindices[0], gindices[1], velec, izeta, jzeta,
-                                                     atoms[gindices[0]].charge(), atoms[gindices[1]].charge(), qq*rinv, 1/rinv, felec));
-        }
-#endif
-        e[0] += velec;
         pairforces(felec, dx, indices, forces);
-    }
-    else
-    {
-        e[0] += qq*Nuclear_GG(0, zeta);
     }
 }
 
@@ -859,7 +891,11 @@ static ACT_ALWAYS_INLINE void coulombPointOne(gmx_unused MsgHandler      *msghan
     }
 }
 
-//! Coulomb between Slater charges for one pair
+/*! \brief Coulomb between Slater charges for one pair
+ * Each particle may have a second charge at the same position with its
+ * own width and row, see ActAtom::chargeVS, such that there are up to four
+ * terms. Terms without charge are skipped, except the first one.
+ */
 template <typename I, typename X, typename F>
 static ACT_ALWAYS_INLINE void coulombSlaterOne(gmx_unused MsgHandler      *msghandler,
                                     const TopologyEntry        &b,
@@ -876,30 +912,35 @@ static ACT_ALWAYS_INLINE void coulombSlaterOne(gmx_unused MsgHandler      *msgha
     auto aj       = indices[1];
     // Get the parameters. We have to know their names to do this.
     auto &params= b.params();
-    auto izeta  = params[coulZETA];
-    auto jzeta  = params[coulZETA2];
-    auto irow   = atoms[gindices[0]].row();
-    auto jrow   = atoms[gindices[1]].row();
-    real qq     = ONE_4PI_EPS0*atoms[gindices[0]].charge()*atoms[gindices[1]].charge()/epsilonr;
+    const auto &atomi = atoms[gindices[0]];
+    const auto &atomj = atoms[gindices[1]];
+    const real qi[2]   = { atomi.charge(), atomi.chargeVS() };
+    const real qj[2]   = { atomj.charge(), atomj.chargeVS() };
+    const real zi[2]   = { params[coulZETA], atomi.zetaVS() };
+    const real zj[2]   = { params[coulZETA2], atomj.zetaVS() };
+    const int  rowi[2] = { atomi.row(), atomi.rowVS() };
+    const int  rowj[2] = { atomj.row(), atomj.rowVS() };
     rvec dx;
     rvec_sub(x[ai], x[aj], dx);
     auto dr2   = iprod(dx, dx);
     real r1    = std::sqrt(dr2);
-    real velec =  qq*Coulomb_SS(r1, irow, jrow, izeta, jzeta);
-    // The DCoulomb_SS code returns the derivative of the energy
-    // so we still need a minus sign.
-    // https://github.com/dspoel/ACT/issues/369
-    real felec = -qq*DCoulomb_SS(r1, irow, jrow, izeta, jzeta);
-#ifdef DEBUG
-    if (msghandler && msghandler->debug())
+    real felec = 0;
+    for(int a = 0; a < 2; a++)
     {
-        auto r1 = std::sqrt(dr2);
-        msghandler->writeDebug(gmx::formatString("vcoul ai %d aj %d %g fcoul %g izeta %g jzeta %g qi %g qj %g vcoul_pc %g fcoul_pc %g dist %g",
-                                                 gindices[0], gindices[1], velec, felec, izeta, jzeta, atoms[gindices[0]].charge(),
-                                                 atoms[gindices[1]].charge(), qq/r1, qq/dr2, r1));
+        for(int c = 0; c < 2; c++)
+        {
+            if (a+c > 0 && qi[a]*qj[c] == 0)
+            {
+                continue;
+            }
+            real qq = ONE_4PI_EPS0*qi[a]*qj[c]/epsilonr;
+            e[0]   += qq*Coulomb_SS(r1, rowi[a], rowj[c], zi[a], zj[c]);
+            // The DCoulomb_SS code returns the derivative of the energy
+            // so we still need a minus sign.
+            // https://github.com/dspoel/ACT/issues/369
+            felec  -= qq*DCoulomb_SS(r1, rowi[a], rowj[c], zi[a], zj[c]);
+        }
     }
-#endif
-    e[0] += velec;
     if (dr2 > 0)
     {
         felec *= gmx::invsqrt(dr2);
@@ -1730,7 +1771,23 @@ static bool usesCharges(Potential mypot)
     }
 }
 
+//! Number of values per atom kept by keepCharges
+static const size_t chargeValues = 4;
+
+/*! \brief The charge and the second charge of an atom with its distribution
+ * \param[in]  atom The atom
+ * \param[out] q    The values
+ */
+static void chargeOf(const ActAtom &atom, double q[chargeValues])
+{
+    q[0] = atom.charge();
+    q[1] = atom.chargeVS();
+    q[2] = atom.zetaVS();
+    q[3] = atom.rowVS();
+}
+
 /*! \brief Keep the charges of the atoms, if the potential uses them
+ * The second charges and their distributions are kept as well.
  * \param[in]  mypot   The potential
  * \param[in]  atoms   The atoms
  * \param[out] charges The charges, empty if they are not used
@@ -1744,7 +1801,9 @@ static void keepCharges(Potential                   mypot,
     {
         for(const auto &atom : atoms)
         {
-            charges->push_back(atom.charge());
+            double q[chargeValues];
+            chargeOf(atom, q);
+            charges->insert(charges->end(), q, q + chargeValues);
         }
     }
 }
@@ -1763,13 +1822,15 @@ static bool sameCharges(Potential                   mypot,
     {
         return true;
     }
-    if (charges.size() != atoms.size())
+    if (charges.size() != chargeValues*atoms.size())
     {
         return false;
     }
     for(size_t i = 0; i < atoms.size(); i++)
     {
-        if (atoms[i].charge() != charges[i])
+        double q[chargeValues];
+        chargeOf(atoms[i], q);
+        if (!std::equal(q, q + chargeValues, charges.begin() + chargeValues*i))
         {
             return false;
         }
@@ -1858,8 +1919,10 @@ static bool dispatchPotential(Potential                   mypot,
     case Potential::COULOMB_POINT:
     case Potential::COULOMB_GAUSSIAN:
         // Point charges are cheaper, in particular when vectorized
-        func.template operator()<2, true>(OneSelect { [](const TopologyEntry &b)
-                                                      { return b.params()[coulZETA] == 0 && b.params()[coulZETA2] == 0; },
+        func.template operator()<2, true>(OneSelect { [&atoms](const TopologyEntry &b)
+                                                      { return (b.params()[coulZETA] == 0 && b.params()[coulZETA2] == 0 &&
+                                                                atoms[b.atomIndices()[0]].chargeVS() == 0 &&
+                                                                atoms[b.atomIndices()[1]].chargeVS() == 0); },
                                                       ONE_INTERACTION_ATOMS_EPSR(coulombPointOne),
                                                       ONE_INTERACTION_ATOMS_EPSR(coulombGaussianOne) });
         break;

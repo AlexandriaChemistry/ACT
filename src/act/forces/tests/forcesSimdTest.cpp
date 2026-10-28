@@ -42,6 +42,7 @@
 #include "../forces_simd.h"
 
 #include <cmath>
+#include <set>
 
 #include <gtest/gtest.h>
 
@@ -154,6 +155,92 @@ protected:
     double epot(const std::vector<CoordsEnergy> &coords, size_t c)
     {
         return coords[c].eMap.find(InteractionType::EPOT)->second.eact();
+    }
+
+    //! \return the potential energy of all conformations with the given atoms
+    std::vector<double> energies(Potential                       mypot,
+                                 const std::vector<Interaction> &inter,
+                                 const std::vector<ActAtom>     &atoms)
+    {
+        auto coords = makeCoords(x_);
+        computePotential(nullptr, mypot, makeEntries(inter), atoms, &coords, 1, true);
+        std::vector<double> e;
+        for (size_t c = 0; c < nconf_; c++)
+        {
+            e.push_back(epot(coords, c));
+        }
+        return e;
+    }
+
+    /*! \brief Test Coulomb with second charges on some of the atoms
+     * Besides the usual tests the energy is compared to the sum of the
+     * four combinations of the charges of both atoms in each pair, computed
+     * with one charge per atom. The atoms are first or second in the pairs,
+     * such that the charges can be chosen per role.
+     * \param[in] mypot The potential
+     * \param[in] inter Pairs with the widths of the first charges
+     */
+    void testSecondCharges(Potential mypot, const std::vector<Interaction> &inter)
+    {
+        const std::vector<double> qvs   = { -0.8, 0.6, 0.0, -0.4, -1.1, 0.9, 0.0 };
+        const std::vector<double> zvs   = { 8.0, 11.0, 0.0, 7.0, 9.0, 10.0, 0.0 };
+        const std::vector<int>    rowvs = { 1, 2, 1, 1, 2, 1, 1 };
+        auto original = atoms_;
+        for (size_t i = 0; i < atoms_.size(); i++)
+        {
+            atoms_[i].setChargeVS(qvs[i], zvs[i], rowvs[i]);
+        }
+        test(mypot, inter);
+        auto eSecond = energies(mypot, inter, atoms_);
+        atoms_       = original;
+        // The atoms that are first and second in the pairs
+        std::set<int> first, second;
+        for (const auto &i : inter)
+        {
+            first.insert(i.atoms[0]);
+            second.insert(i.atoms[1]);
+        }
+        for (auto a : first)
+        {
+            ASSERT_EQ(0u, second.count(a));
+        }
+        std::vector<double> eSum(nconf_, 0.0);
+        for (int a = 0; a < 2; a++)
+        {
+            for (int c = 0; c < 2; c++)
+            {
+                // Atoms with only the first or only the second charge
+                std::vector<ActAtom> atoms;
+                for (size_t k = 0; k < original.size(); k++)
+                {
+                    const auto &o   = original[k];
+                    bool        vs  = (first.count(k) && a == 1) || (second.count(k) && c == 1);
+                    atoms.push_back(ActAtom(o.name(), o.element(), o.ffType(), o.pType(), o.atomicNumber(),
+                                            o.mass(), vs ? qvs[k] : o.charge(), vs ? rowvs[k] : o.row()));
+                }
+                auto myinter = inter;
+                for (auto &i : myinter)
+                {
+                    if (a == 1)
+                    {
+                        i.params[0] = zvs[i.atoms[0]];
+                    }
+                    if (c == 1)
+                    {
+                        i.params[1] = zvs[i.atoms[1]];
+                    }
+                }
+                auto e = energies(mypot, myinter, atoms);
+                for (size_t conf = 0; conf < nconf_; conf++)
+                {
+                    eSum[conf] += e[conf];
+                }
+            }
+        }
+        for (size_t conf = 0; conf < nconf_; conf++)
+        {
+            EXPECT_NEAR(eSum[conf], eSecond[conf], 1e-10*(1 + std::abs(eSum[conf]))) << "conformation " << conf;
+        }
     }
 
     void test(Potential mypot, const std::vector<Interaction> &inter)
@@ -362,6 +449,21 @@ TEST_F(ForcesSimdTest, CoulombGaussian)
 TEST_F(ForcesSimdTest, CoulombSlater)
 {
     test(Potential::COULOMB_SLATER, pairs({ 25, 20 }));
+}
+
+TEST_F(ForcesSimdTest, CoulombPointSecondCharges)
+{
+    testSecondCharges(Potential::COULOMB_POINT, pairs({ 0, 0 }));
+}
+
+TEST_F(ForcesSimdTest, CoulombGaussianSecondCharges)
+{
+    testSecondCharges(Potential::COULOMB_GAUSSIAN, pairs({ 12, 9 }));
+}
+
+TEST_F(ForcesSimdTest, CoulombSlaterSecondCharges)
+{
+    testSecondCharges(Potential::COULOMB_SLATER, pairs({ 25, 20 }));
 }
 
 TEST_F(ForcesSimdTest, Polarization)

@@ -142,6 +142,35 @@ QgenAcm::QgenAcm(MsgHandler                 *msghandler,
             acm_id_.push_back(nullptr);
         }
     }
+    // Second charges are fixed charges at the position of their atom,
+    // treated like fixed virtual sites. They are stored after the atoms.
+    for (size_t i = 0; i < atoms.size(); i++)
+    {
+        auto atype = pd->findParticleType(atoms[i].ffType());
+        if (!atype->hasChargeVS())
+        {
+            continue;
+        }
+        parentVS_.push_back(i);
+        typeVS_.push_back(atype);
+        fixed_.push_back(q_.size());
+        q_.push_back(atype->chargeVS());
+        charge_.push_back(&atype->parameterConst(chargeVSName));
+        eta_.push_back(0.0);
+        chi0_.push_back(0.0);
+        row_.push_back(0);
+        acm_id_.push_back(nullptr);
+        if (qt.potential() != Potential::COULOMB_POINT)
+        {
+            const auto *qdist = &atype->parameterConst(zetaVSName);
+            zeta_.push_back(qdist->value());
+            qdist_id_.push_back(qdist);
+        }
+        else
+        {
+            zeta_.push_back(0.0);
+        }
+    }
     // By only working on compounds that have nonFixed particles,
     // we can allow completely fixed compounds to be used, for
     // instance a particular water model.
@@ -153,7 +182,7 @@ QgenAcm::QgenAcm(MsgHandler                 *msghandler,
         // Fixed shells and fixed vsites are allowed.
         for (size_t i : fixed_)
         {
-            if (atoms[i].pType() == ActParticle::Atom)
+            if (i < natom_ && atoms[i].pType() == ActParticle::Atom)
             {
                 msghandler->fatal("Compounds with part of the atoms having fixed charges are not supported.");
             }
@@ -196,7 +225,7 @@ QgenAcm::QgenAcm(MsgHandler                 *msghandler,
 
     rhs_.resize(nonFixed_.size() + 1, 0);
     Jcc_.resize(nonFixed_.size() + 1, {0});
-    x_.resize(atoms.size(), {0, 0, 0});
+    x_.resize(q_.size(), {0, 0, 0});
 
     for (size_t ii = 0; ii < nonFixed_.size()+1; ii++)
     {
@@ -471,18 +500,27 @@ void QgenAcm::copyChargesToAtoms(std::vector<ActAtom> *atoms)
     {
         (*atoms)[i].setCharge(q_[i]);
     }
+    for (size_t k = 0; k < parentVS_.size(); k++)
+    {
+        (*atoms)[parentVS_[k]].setChargeVS(q_[natom_+k], typeVS_[k]->zetaVS(), typeVS_[k]->rowVS());
+    }
 }
 
 void QgenAcm::updatePositions(MsgHandler                   *msg_handler,
                               const std::vector<gmx::RVec> &x)
 {
-    if (x.size() - x_.size() != 0)
+    if (x.size() != natom_)
     {
-        msg_handler->fatal(gmx::formatString("Arrays not equally long. New %zu Old %zu. Help!", x.size(), x_.size()));
+        msg_handler->fatal(gmx::formatString("Arrays not equally long. New %zu Old %zu. Help!", x.size(), natom_));
     }
     for (size_t i = 0; i < x.size(); i++)
     {
         copy_rvec(x[i], x_[i]);
+    }
+    // The second charges are on their atoms
+    for (size_t k = 0; k < parentVS_.size(); k++)
+    {
+        copy_rvec(x_[parentVS_[k]], x_[natom_+k]);
     }
 }
 
@@ -680,8 +718,9 @@ void QgenAcm::solveSQE(MsgHandler              *msg_handler,
         q_[nfi] = myq[i] + qfixed/nonFixed_.size();
     }
 
+    // Including the second charges
     double qtot    = 0;
-    for (size_t i = 0; i < natom_; i++)
+    for (size_t i = 0; i < q_.size(); i++)
     {
         qtot += q_[i];
     }
