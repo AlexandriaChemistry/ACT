@@ -81,6 +81,8 @@ private:
      * \param[in]    offset   Index of the first atom of the topology in the coordinates
      * \param[in]    nShell   The number of shells
      * \param[in]    isShell  Whether each atom is a shell
+     * \param[in]    fragment The fragment the shells belong to, for keeping
+     *                         the step of the shells of each fragment
      * \param[inout] myCoords The coordinates and energy array
      * \return The number of shells that converged
      */
@@ -88,6 +90,7 @@ private:
                         size_t                     offset,
                         size_t                     nShell,
                         const std::vector<bool>    isShell,
+                        size_t                     fragment,
                         std::vector<CoordsEnergy> *myCoords) const;
     void relaxMonomer(MsgHandler                  *msg_handler,
                       const ForceField            *pd,
