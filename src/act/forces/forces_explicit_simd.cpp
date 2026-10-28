@@ -26,7 +26,8 @@
  * Boston, MA  02110-1301, USA.
  */
 /*! \internal \brief
- * Pair potentials for many conformations at once with explicit SIMD.
+ * Pair potentials, harmonic angles, and Fourier and improper dihedrals
+ * for many conformations at once with explicit SIMD.
  *
  * The SIMD type and math functions come from simd_math.h, such that this
  * code is the same for all processors.
@@ -811,6 +812,241 @@ void computeAngles(const TopologyEntryVector &entries,
     }
 }
 
+//! A dihedral with prepared parameters
+struct DihedralParams
+{
+    //! Offsets of the coordinates of the four atoms
+    size_t i, j, k, l;
+    //! Number of parameters
+    size_t nparam;
+    //! The parameters
+    double c[fdihNR];
+};
+
+//! Prepare the dihedrals, with at most fdihNR parameters
+static std::vector<DihedralParams> prepareDihedrals(const TopologyEntryVector &entries,
+                                                    size_t                     stride)
+{
+    std::vector<DihedralParams> dihedrals;
+    dihedrals.reserve(entries.size());
+    for (const auto &b : entries)
+    {
+        const TopologyEntry &entry   = *b.operator->();
+        auto                &indices = entry.atomIndices();
+        auto                &params  = entry.params();
+        DihedralParams       dp      = { DIM*indices[0]*stride, DIM*indices[1]*stride,
+                                         DIM*indices[2]*stride, DIM*indices[3]*stride,
+                                         std::min(params.size(), static_cast<size_t>(fdihNR)), {} };
+        for (size_t p = 0; p < dp.nparam; p++)
+        {
+            dp.c[p] = params[p];
+        }
+        dihedrals.push_back(dp);
+    }
+    return dihedrals;
+}
+
+//! The vectors of a dihedral, as in dih_angle in forces_simd.cpp
+struct DihedralVectors
+{
+    //! Vectors between the atoms
+    SimdDouble r_ij[DIM], r_kj[DIM], r_kl[DIM];
+    //! Normals of the planes, m = r_ij x r_kj and n = r_kj x r_kl
+    SimdDouble m[DIM], n[DIM];
+    //! Squared lengths of m, n and r_kj
+    SimdDouble iprm, iprn, nrkj2;
+    //! Inner products m.n and r_ij.n
+    SimdDouble mn, ipr;
+};
+
+//! Compute the vectors of dihedral d for conformations c to c + simdWidth - 1
+static inline void dihedralVectors(const DihedralParams &d,
+                                   size_t                stride,
+                                   size_t                c,
+                                   const double         *x,
+                                   DihedralVectors      *v)
+{
+    for (int m = 0; m < DIM; m++)
+    {
+        SimdDouble xj = simd::load(x + d.j + m*stride + c);
+        SimdDouble xk = simd::load(x + d.k + m*stride + c);
+        v->r_ij[m] = simd::load(x + d.i + m*stride + c) - xj;
+        v->r_kj[m] = xk - xj;
+        v->r_kl[m] = xk - simd::load(x + d.l + m*stride + c);
+    }
+    auto cprod = [](const SimdDouble *a, const SimdDouble *b, SimdDouble *axb)
+    {
+        axb[XX] = a[YY]*b[ZZ] - a[ZZ]*b[YY];
+        axb[YY] = a[ZZ]*b[XX] - a[XX]*b[ZZ];
+        axb[ZZ] = a[XX]*b[YY] - a[YY]*b[XX];
+    };
+    cprod(v->r_ij, v->r_kj, v->m);
+    cprod(v->r_kj, v->r_kl, v->n);
+    v->iprm  = 0.0;
+    v->iprn  = 0.0;
+    v->nrkj2 = 0.0;
+    v->mn    = 0.0;
+    v->ipr   = 0.0;
+    for (int m = 0; m < DIM; m++)
+    {
+        v->iprm  = simd::fma(v->m[m], v->m[m], v->iprm);
+        v->iprn  = simd::fma(v->n[m], v->n[m], v->iprn);
+        v->nrkj2 = simd::fma(v->r_kj[m], v->r_kj[m], v->nrkj2);
+        v->mn    = simd::fma(v->m[m], v->n[m], v->mn);
+        v->ipr   = simd::fma(v->r_ij[m], v->n[m], v->ipr);
+    }
+}
+
+/*! \brief Add the forces of a dihedral, as do_dih_fup_noshiftf in forces_simd.cpp
+ * \param[in]    d      The dihedral
+ * \param[in]    stride Number of conformations
+ * \param[in]    c      The first conformation
+ * \param[in]    v      The vectors of the dihedral
+ * \param[in]    nrkj   Length of r_kj
+ * \param[in]    s      1/(|m| |n|), finite
+ * \param[in]    ddphi  Derivative of the energy with respect to the angle
+ * \param[inout] f      The forces
+ */
+static inline void dihedralForces(const DihedralParams  &d,
+                                  size_t                 stride,
+                                  size_t                 c,
+                                  const DihedralVectors &v,
+                                  SimdDouble             nrkj,
+                                  SimdDouble             s,
+                                  SimdDouble             ddphi,
+                                  double                *f)
+{
+    // There is no force if one of the planes is not defined
+    SimdDouble toler  = v.nrkj2*GMX_REAL_EPS;
+    simd::SimdBool ok = v.iprm > toler && v.iprn > toler;
+    SimdDouble dd     = simd::select(ok, ddphi, 0.0)*nrkj;
+    // 1/iprm and 1/iprn from s, such that there is no division
+    SimdDouble s2     = s*s;
+    SimdDouble a      = -dd*(s2*v.iprn);
+    SimdDouble b      = dd*(s2*v.iprm);
+    SimdDouble nrkj_2 = 1.0/simd::select(ok, v.nrkj2, 1.0);
+    SimdDouble p      = 0.0, q = 0.0;
+    for (int m = 0; m < DIM; m++)
+    {
+        p = simd::fma(v.r_ij[m], v.r_kj[m], p);
+        q = simd::fma(v.r_kl[m], v.r_kj[m], q);
+    }
+    p *= nrkj_2;
+    q *= nrkj_2;
+    for (int m = 0; m < DIM; m++)
+    {
+        SimdDouble f_i  = a*v.m[m];
+        SimdDouble f_l  = b*v.n[m];
+        SimdDouble svec = p*f_i - q*f_l;
+        double    *fi   = f + d.i + m*stride + c;
+        double    *fj   = f + d.j + m*stride + c;
+        double    *fk   = f + d.k + m*stride + c;
+        double    *fl   = f + d.l + m*stride + c;
+        simd::store(fi, simd::load(fi) + f_i);
+        simd::store(fj, simd::load(fj) - (f_i - svec));
+        simd::store(fk, simd::load(fk) - (f_l + svec));
+        simd::store(fl, simd::load(fl) + f_l);
+    }
+}
+
+/*! \brief 1/(|m| |n|) of a dihedral, 1 if one of the planes is not defined
+ * \param[in] v The vectors of the dihedral
+ */
+static inline SimdDouble invNormProduct(const DihedralVectors &v)
+{
+    SimdDouble mn2 = v.iprm*v.iprn;
+    return simd::invsqrt(simd::select(mn2 > 0.0, mn2, 1.0));
+}
+
+/*! \brief Compute Fourier dihedrals for all conformations
+ * The energy is a polynomial in cos(phi), with phi = pi + psi and psi the
+ * angle between the planes. Rather than computing psi with atan2 and then
+ * its cosine and sine, as fourDihOne in forces_simd.cpp does, these are
+ * computed from the vectors: cos(psi) = m.n/(|m| |n|) and, since
+ * m x n = r_kj (r_ij.n), sin(psi) = |r_kj| (r_ij.n)/(|m| |n|). If one of
+ * the planes is not defined psi is zero, as with atan2(0, 0).
+ * \tparam       Forces   Whether to compute forces
+ * \param[in]    entries  The interactions
+ * \param[in]    stride   Number of conformations, a multiple of simdWidth
+ * \param[in]    x        Coordinates
+ * \param[inout] f        Forces, not used if Forces is false
+ * \param[inout] energies Energies
+ */
+template <bool Forces>
+void computeFourierDihedrals(const TopologyEntryVector &entries,
+                             size_t                     stride,
+                             const double              *x,
+                             double                    *f,
+                             double                    *energies)
+{
+    for (const auto &d : prepareDihedrals(entries, stride))
+    {
+        for (size_t c = 0; c < stride; c += simd::simdWidth)
+        {
+            DihedralVectors v;
+            dihedralVectors(d, stride, c, x, &v);
+            SimdDouble s       = invNormProduct(v);
+            SimdDouble defined = v.iprm*v.iprn;
+            SimdDouble cos_phi = -simd::select(defined > 0.0, v.mn*s, 1.0);
+            // As in fourDihOne, energy sum_j c_j cos^j(phi) and its derivative
+            SimdDouble cosfac  = 1.0;
+            SimdDouble ener    = d.c[0];
+            SimdDouble dvdphi  = 0.0;
+            for (size_t j = 1; j < d.nparam; j++)
+            {
+                dvdphi  = simd::fma(static_cast<double>(j)*d.c[j], cosfac, dvdphi);
+                cosfac *= cos_phi;
+                ener    = simd::fma(d.c[j], cosfac, ener);
+            }
+            simd::store(energies + c, simd::load(energies + c) + ener);
+            if constexpr (Forces)
+            {
+                // -sin(phi) = sin(psi)
+                SimdDouble nrkj = simd::sqrt(v.nrkj2);
+                dvdphi *= nrkj*v.ipr*s;
+                dihedralForces(d, stride, c, v, nrkj, s, dvdphi, f);
+            }
+        }
+    }
+}
+
+/*! \brief Compute harmonic improper dihedrals for all conformations
+ * The angle is computed with a SIMD arc tangent, as in GROMACS. With
+ * m x n = r_kj (r_ij.n), atan2(|r_kj| (r_ij.n), m.n) is the angle with
+ * the sign of r_ij.n that dih_angle in forces_simd.cpp computes.
+ * \tparam       Forces   Whether to compute forces
+ * \param[in]    entries  The interactions
+ * \param[in]    stride   Number of conformations, a multiple of simdWidth
+ * \param[in]    x        Coordinates
+ * \param[inout] f        Forces, not used if Forces is false
+ * \param[inout] energies Energies
+ */
+template <bool Forces>
+void computeImproperDihedrals(const TopologyEntryVector &entries,
+                              size_t                     stride,
+                              const double              *x,
+                              double                    *f,
+                              double                    *energies)
+{
+    for (const auto &d : prepareDihedrals(entries, stride))
+    {
+        double kA    = d.c[idihKPHI];
+        double halfk = 0.5*kA;
+        for (size_t c = 0; c < stride; c += simd::simdWidth)
+        {
+            DihedralVectors v;
+            dihedralVectors(d, stride, c, x, &v);
+            SimdDouble nrkj = simd::sqrt(v.nrkj2);
+            SimdDouble phi  = simd::atan2(nrkj*v.ipr, v.mn);
+            simd::store(energies + c, simd::fma(halfk*phi, phi, simd::load(energies + c)));
+            if constexpr (Forces)
+            {
+                dihedralForces(d, stride, c, v, nrkj, invNormProduct(v), kA*phi, f);
+            }
+        }
+    }
+}
+
 } // namespace
 
 size_t explicitSimdWidth()
@@ -880,6 +1116,26 @@ bool computeExplicitSimd(Potential                   mypot,
         else
         {
             computeAngles<false>(entries, stride, x, f, energies);
+        }
+        return true;
+    case Potential::FOURIER_DIHEDRALS:
+        if (forces)
+        {
+            computeFourierDihedrals<true>(entries, stride, x, f, energies);
+        }
+        else
+        {
+            computeFourierDihedrals<false>(entries, stride, x, f, energies);
+        }
+        return true;
+    case Potential::HARMONIC_DIHEDRALS:
+        if (forces)
+        {
+            computeImproperDihedrals<true>(entries, stride, x, f, energies);
+        }
+        else
+        {
+            computeImproperDihedrals<false>(entries, stride, x, f, energies);
         }
         return true;
     default:

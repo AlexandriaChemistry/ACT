@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Real Name="PROPER_DIHEDRALS-0">4.6667347385693825</Real>
+  <Real Name="EPOT-0">4.6667347385693825</Real>
+  <Real Name="PROPER_DIHEDRALS-1">4.7268122960710777</Real>
+  <Real Name="EPOT-1">4.7268122960710777</Real>
+  <Real Name="PROPER_DIHEDRALS-2">4.6691799423188822</Real>
+  <Real Name="EPOT-2">4.6691799423188822</Real>
+  <Real Name="PROPER_DIHEDRALS-3">4.6820862952526969</Real>
+  <Real Name="EPOT-3">4.6820862952526969</Real>
+  <Real Name="PROPER_DIHEDRALS-4">4.6671251264057707</Real>
+  <Real Name="EPOT-4">4.6671251264057707</Real>
+  <Real Name="PROPER_DIHEDRALS-5">4.7306881399930596</Real>
+  <Real Name="EPOT-5">4.7306881399930596</Real>
+  <Real Name="PROPER_DIHEDRALS-6">4.7024953321399607</Real>
+  <Real Name="EPOT-6">4.7024953321399607</Real>
+</ReferenceData>
