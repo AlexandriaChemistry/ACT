@@ -784,7 +784,7 @@ void ACTMol::forceEnergyMapsNew(MsgHandler                                      
                 std::vector<std::pair<double, double> > thisForce;
                 for (size_t j = 0; j < myatoms.size(); j++)
                 {
-                    if (myatoms[i].pType() == ActParticle::Atom)
+                    if (myatoms[j].pType() == ActParticle::Atom)
                     {
                         if (ifff >= fff.size())
                         {

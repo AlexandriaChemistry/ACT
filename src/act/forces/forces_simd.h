@@ -24,11 +24,11 @@ class MsgHandler;
  * \param[in] forces     Whether to compute forces. If not, the computed forces
  *                       of the conformations are not meaningful.
  */
-void computeEnergies(MsgHandler          *msghandler,
-                     const ForceField    *pd,
-                     std::vector<ACTMol> *allmols,
-                     size_t               what,
-                     bool                 forces = true);
+void computeEnergies(MsgHandler                  *msghandler,
+                     const ForceField            *pd,
+                     const std::vector<ACTMol *> &allmols,
+                     size_t                       what,
+                     bool                         forces = true);
 
 /*! \brief Compute the energies and forces of one potential for all conformations
  * The energy maps and forces of the conformations are cleared first.

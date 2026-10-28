@@ -60,7 +60,7 @@ namespace alexandria
 
 void BoundsDevComputer::calcDeviation(MsgHandler                    *,
                                       const ForceComputer           *,
-                                      std::vector<ACTMol>           *actmol,
+                                      const std::vector<ACTMol *>   &actmols,
                                       std::map<eRMS, FittingTarget> *targets,
                                       const ForceField              *forcefield,
                                       LossFunction                   lossFunction)
@@ -70,7 +70,7 @@ void BoundsDevComputer::calcDeviation(MsgHandler                    *,
     {
         return;
     }
-    for(auto mol = actmol->begin(); mol < actmol->end(); ++mol)
+    for(auto mol : actmols)
     {
         double bound = 0;
         // Check ACM charges
@@ -119,12 +119,12 @@ void BoundsDevComputer::calcDeviation(MsgHandler                    *,
 
 void EspDevComputer::calcDeviation(MsgHandler                    *msghandler,
                                    const ForceComputer           *forceComputer,
-                                   std::vector<ACTMol>           *actmols,
+                                   const std::vector<ACTMol *>   &actmols,
                                    std::map<eRMS, FittingTarget> *targets,
                                    const ForceField              *forcefield,
                                    gmx_unused LossFunction        lossFunction)
 {
-    for(auto actmol = actmols->begin(); actmol < actmols->end(); ++actmol)
+    for(auto actmol : actmols)
     {
         real rrms     = 0;
         real cosangle = 0;
@@ -223,12 +223,12 @@ PolarDevComputer::PolarDevComputer()
 
 void PolarDevComputer::calcDeviation(MsgHandler                    *msghandler,
                                      const ForceComputer           *forceComputer,
-                                     std::vector<ACTMol>           *actmols,
+                                     const std::vector<ACTMol *>   &actmols,
                                      std::map<eRMS, FittingTarget> *targets,
                                      const ForceField              *forcefield,
                                      LossFunction                   lossFunction)
 {
-    for(auto actmol = actmols->begin(); actmol < actmols->end(); ++actmol)
+    for(auto actmol : actmols)
     {
         auto qProps = actmol->qProps();
         int    ndiff = 0;
@@ -268,12 +268,12 @@ void PolarDevComputer::calcDeviation(MsgHandler                    *msghandler,
 
 void MultiPoleDevComputer::calcDeviation(MsgHandler                    *msghandler,
                                          const ForceComputer           *forceComputer,
-                                         std::vector<ACTMol>           *actmols,
+                                         const std::vector<ACTMol *>   &actmols,
                                          std::map<eRMS, FittingTarget> *targets,
                                          const ForceField              *forcefield,
                                          LossFunction                   lossFunction)
 {
-    for(auto actmol = actmols->begin(); actmol < actmols->end(); ++actmol)
+    for(auto actmol : actmols)
     {
         auto   qProps   = actmol->qProps();
         int    ndiff    = 0;
@@ -344,12 +344,12 @@ HarmonicsDevComputer::HarmonicsDevComputer(MolPropObservable  mpo)
 
 void HarmonicsDevComputer::calcDeviation(MsgHandler                    *msghandler,
                                          const ForceComputer           *forceComputer,
-                                         std::vector<ACTMol>           *actmols,
+                                         const std::vector<ACTMol *>   &actmols,
                                          std::map<eRMS, FittingTarget> *targets,
                                          const ForceField              *forcefield,
                                          LossFunction                   lossFunction)
 {
-    for(auto actmol = actmols->begin(); actmol < actmols->end(); ++actmol)
+    for(auto actmol : actmols)
     {
         // Only compute frequencies for structures that have an optimize reference
         if (JobType::OPT != actmol->jobType())
@@ -445,41 +445,68 @@ double ForceEnergyDevComputer::computeBeta(eRMS ermsi)
 }
 
 /*! \brief Compute loss due to forces
+ * The reference forces are those of the atoms only, the computed forces
+ * are those of all particles, therefore the particles that are not atoms,
+ * such as shells and virtual sites, are skipped.
+ * \param[in]  msghandler   For error messages
+ * \param[in]  molname      Name of the molecule, for error messages
+ * \param[in]  atoms        The particles of the topology of the conformations
  * \param[in]  coords       The data including fcalc and fobs
  * \param[in]  lossFunction The loss function to use
  * \param[out] weight       The total weight corresponding to the loss
- * \param[out] loss         The aggregate loss
+ * \param[out] loss2        The aggregate loss
  */
-static inline void calc_force_loss(const std::vector<CoordsEnergy> *coords,
-                                   LossFunction                     lossFunction,
-                                   double                          *weight,
-                                   double                          *loss2)
+static void calc_force_loss(MsgHandler                      *msghandler,
+                            const std::string               &molname,
+                            const std::vector<ActAtom>      &atoms,
+                            const std::vector<CoordsEnergy> *coords,
+                            LossFunction                     lossFunction,
+                            double                          *weight,
+                            double                          *loss2)
 {
+    std::vector<size_t> atomIndex;
+    for(size_t i = 0; i < atoms.size(); i++)
+    {
+        if (atoms[i].pType() == ActParticle::Atom)
+        {
+            atomIndex.push_back(i);
+        }
+    }
     std::vector<double> weights(coords->size(), 0);
     std::vector<double> losses(coords->size(), 0);
-#pragma omp simd
     for(size_t ix = 0; ix < coords->size(); ix++)
     {
         auto &x = (*coords)[ix];
-        if (x.fcalc.size() == x.fobs.size())
+        // Not all conformations need to have reference forces
+        if (x.fobs.empty())
         {
-            double www  = 0;
-            double lss = 0;
-            for(size_t i = 0; i < x.fcalc.size(); i++)
-            {
+            continue;
+        }
+        if (x.fobs.size() != atomIndex.size() || x.fcalc.size() != atoms.size())
+        {
+            msghandler->msg(ACTStatus::Fatal,
+                            gmx::formatString("Inconsistency for %s: there are %zu atoms and %zu particles, but %zu reference and %zu computed forces",
+                                              molname.c_str(), atomIndex.size(), atoms.size(),
+                                              x.fobs.size(), x.fcalc.size()));
+            return;
+        }
+        double www = 0;
+        double lss = 0;
+        for(size_t i = 0; i < atomIndex.size(); i++)
+        {
+            auto &fc = x.fcalc[atomIndex[i]];
 #pragma unroll
-                for(int m = 0; m < DIM; m++)
+            for(int m = 0; m < DIM; m++)
+            {
+                if (std::isfinite(fc[m]))
                 {
-                    if (std::isfinite(x.fcalc[i][m]))
-                    {
-                        lss += loss(lossFunction, 1, x.fcalc[i][m] - x.fobs[i][m]);
-                        www += 1;
-                    }
+                    lss += loss(lossFunction, 1, fc[m] - x.fobs[i][m]);
+                    www += 1;
                 }
             }
-            weights[ix] = www;
-            losses[ix]  = lss;
         }
+        weights[ix] = www;
+        losses[ix]  = lss;
     }
     // Gather results, the initial value must be a double to prevent rounding
     *weight = std::accumulate(weights.begin(), weights.end(), 0.0);
@@ -546,7 +573,7 @@ static bool qmReference(const ACTEnergyMap &eMap,
 
 void ForceEnergyDevComputer::calcDeviation(MsgHandler                     *msghandler,
                                            gmx_unused const ForceComputer *forceComputer,
-                                           std::vector<ACTMol>            *actmols,
+                                           const std::vector<ACTMol *>    &actmols,
                                            std::map<eRMS, FittingTarget>  *targets,
                                            const ForceField               *forcefield,
                                            LossFunction                    lossFunction)
@@ -589,7 +616,7 @@ void ForceEnergyDevComputer::calcDeviation(MsgHandler                     *msgha
     {
         // Compute all energies at once, and the forces if needed
         forceComputer->computeRelaxedEnergies(msghandler, forcefield, actmols, true, sepInductionTerms, doForce2);
-        for(auto actmol = actmols->begin(); actmol < actmols->end(); ++actmol)
+        for(auto actmol : actmols)
         {
             if (doForce2)
             {
@@ -597,11 +624,14 @@ void ForceEnergyDevComputer::calcDeviation(MsgHandler                     *msgha
                 double weight = 0, loss = 0;
                 if (actmol->isDimer())
                 {
-                    calc_force_loss(actmol->dimerCoords(), lossFunction, &weight, &loss);
+                    calc_force_loss(msghandler, actmol->getMolname(), actmol->topology()->atoms(),
+                                    actmol->dimerCoords(), lossFunction, &weight, &loss);
                 }
                 else
                 {
-                    calc_force_loss(actmol->monomerCoords(0), lossFunction, &weight, &loss);
+                    calc_force_loss(msghandler, actmol->getMolname(),
+                                    actmol->fragmentHandler()->topologies()[0].atoms(),
+                                    actmol->monomerCoords(0), lossFunction, &weight, &loss);
                 }
                 tf->second.increase(weight, loss);
             }

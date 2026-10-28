@@ -87,14 +87,14 @@ private:
                         const std::vector<double>  fcShell1,
                         const std::vector<double>  fcHyper,
                         std::vector<CoordsEnergy> *myCoords) const;
-    void relaxMonomer(MsgHandler          *msg_handler,
-                      const ForceField    *pd,
-                      size_t               im,
-                      std::vector<ACTMol> *allmols) const;
-    void relaxDimer(MsgHandler          *msg_handler,
-                    const ForceField    *pd,
-                    bool                 fixMonomer[2],
-                    std::vector<ACTMol> *allmols) const;
+    void relaxMonomer(MsgHandler                  *msg_handler,
+                      const ForceField            *pd,
+                      size_t                       im,
+                      const std::vector<ACTMol *> &allmols) const;
+    void relaxDimer(MsgHandler                  *msg_handler,
+                    const ForceField            *pd,
+                    bool                         fixMonomer[2],
+                    const std::vector<ACTMol *> &allmols) const;
 
  public:
     //! \brief Default constructor
@@ -203,7 +203,7 @@ private:
      * ACTMol::storeEnergies copies them to the energy maps.
      * \param[in] msghandler     For debugging and messages
      * \param[in] pd             An ACT force field
-     * \param[in] allmols        Vector containing all the molecules
+     * \param[in] allmols        The molecules to compute
      * \param[in] resetShells    Whether or not to reset the shell positions before relaxation.
      *                           This is an optimization that may or may not work. 
      * \param[in] separateInductionCorrection Whether or not to treat induction correction separately
@@ -212,12 +212,12 @@ private:
      *                           meaningful afterwards. Polarizable force fields always
      *                           compute forces, since the shells are relaxed with them.
      */
-    void computeRelaxedEnergies(MsgHandler          *msghandler,
-                                const ForceField    *pd,
-                                std::vector<ACTMol> *allmols,
-                                bool                 resetShells,
-                                bool                 separateInductionCorrection,
-                                bool                 computeForces = true) const;
+    void computeRelaxedEnergies(MsgHandler                  *msghandler,
+                                const ForceField            *pd,
+                                const std::vector<ACTMol *> &allmols,
+                                bool                         resetShells,
+                                bool                         separateInductionCorrection,
+                                bool                         computeForces = true) const;
                                                                 
     /*! Do many complete energy/force computation.
      * If shells are present their positions will be minimized.
