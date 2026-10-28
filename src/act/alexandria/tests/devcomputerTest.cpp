@@ -1495,6 +1495,40 @@ TEST_F(PropertyDevComputerTest, SecondChargesAsVsitesPolarizableIons)
                                  { { "Na+_s", 0.18 }, { "Cl-_s", 3.4 } });
 }
 
+// Test: After training polarizabilities the shells are relaxed with the new
+// force constants, giving the same energies as molecules made with them.
+TEST_F(PropertyDevComputerTest, ShellsRelaxedAfterChangingAlpha)
+{
+    ForceComputer forceComputer;
+    MsgHandler    msghandler;
+    ForceField    pd;
+    readForceField(fileManager().getInputFilePath("PG-pol-ions.xml"), &pd);
+    ASSERT_TRUE(pd.polarizable());
+    auto mpFile  = fileManager().getInputFilePath("ion-water.xml");
+    auto mols    = prepareMolecules(&msghandler, &pd, &forceComputer, {}, mpFile);
+    ASSERT_FALSE(mols.empty());
+    auto before  = computeAll(&forceComputer, &pd, &mols, false);
+    // Polarizable ions, as in training
+    for(const auto &a : std::map<std::string, double>{ { "Na+_s", 0.18 }, { "Cl-_s", 3.4 } })
+    {
+        auto params = pd.findForces(InteractionType::POLARIZATION)->parametersNoRemoval();
+        auto pp     = params->find(Identifier(a.first));
+        ASSERT_TRUE(params->end() != pp) << a.first;
+        pp->second.find("alpha")->second.forceSetValue(a.second);
+    }
+    fillAll(&pd, &mols);
+    auto after   = computeAll(&forceComputer, &pd, &mols, false);
+    EXPECT_NE(before, after);
+    // Molecules made with the new polarizabilities
+    auto newMols = prepareMolecules(&msghandler, &pd, &forceComputer, {}, mpFile);
+    auto fresh   = computeAll(&forceComputer, &pd, &newMols, false);
+    ASSERT_EQ(fresh.size(), after.size());
+    for(size_t i = 0; i < fresh.size(); i++)
+    {
+        EXPECT_NEAR(fresh[i], after[i], 1e-10*(1 + std::abs(fresh[i]))) << i;
+    }
+}
+
 // Test: Energies used again are the same as computed from scratch
 TEST_F(PropertyDevComputerTest, EnergiesUsedAgain)
 {
