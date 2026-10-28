@@ -1837,6 +1837,9 @@ void Topology::fillParameters(MsgHandler                      *msghandler,
             GMX_THROW(gmx::InternalError(gmx::formatString("Missing case %s when filling the topology structure.",
                                                            potentialToString(fs.potential()).c_str()).c_str()));
         }
+        // The positions of virtual sites only have to be constructed again
+        // if their parameters change.
+        bool vsite = isVsite(entry.first);
 
         // Loop over entries, increment of tp handled at end.
         for(auto tp = entry.second.begin(); tp < entry.second.end(); )
@@ -1848,6 +1851,10 @@ void Topology::fillParameters(MsgHandler                      *msghandler,
             fillParams(msghandler, fs, topentry->selfPtr(),
                        pp->second.param.size(), pp->second.param, &param,
                        missing);
+            if (vsite && (param.empty() || !msghandler->ok() || param != topentry->params()))
+            {
+                vsiteVersion_ += 1;
+            }
             if (param.empty())
             {
                 tp = entry.second.erase(tp);

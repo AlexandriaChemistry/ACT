@@ -305,7 +305,7 @@ void ACTMol::collectCoordsEnergy(MsgHandler *msghandler)
     // The conformations are made anew
     for(auto &cd : conformationData_)
     {
-        cd.arrays.invalidate();
+        cd.invalidate();
     }
     std::map<MolPropObservable, InteractionType> interE = {
         { MolPropObservable::INTERACTIONENERGY,   InteractionType::EPOT                 },

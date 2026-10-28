@@ -83,9 +83,17 @@ public:
      */
     void invalidate() { valid_ = false; }
 
+    /*! \brief Mark the coordinates of the virtual sites as outdated
+     * Has to be called when the positions of the virtual sites in the
+     * conformations change, the next call of setCoordinates then
+     * copies them.
+     */
+    void invalidateVsites() { vsitesValid_ = false; }
+
     /*! \brief Copy the coordinates of all conformations and clear the forces
-     * Only the coordinates of virtual sites and shells are copied if those
-     * of all particles were copied before, since the atoms do not move.
+     * Only the coordinates of shells, and of virtual sites if they changed,
+     * are copied if those of all particles were copied before, since the
+     * atoms do not move.
      * \param[in] coords The conformations, all with the same number of particles
      * \param[in] atoms  The particles
      * \param[in] forces Whether forces will be computed, if not they are not cleared
@@ -121,25 +129,38 @@ public:
         }
         if (reuse)
         {
-            for(auto a : variable_)
+            for(auto a : shells_)
             {
                 copyParticle(coords, a);
+            }
+            if (!vsitesValid_)
+            {
+                for(auto a : vsites_)
+                {
+                    copyParticle(coords, a);
+                }
             }
         }
         else
         {
             x.resize(DIM*natom*stride);
-            variable_.clear();
+            shells_.clear();
+            vsites_.clear();
             for(size_t a = 0; a < natom; a++)
             {
                 copyParticle(coords, a);
-                if (atoms.size() != natom || atoms[a].pType() != ActParticle::Atom)
+                if (atoms.size() != natom || atoms[a].pType() == ActParticle::Shell)
                 {
-                    variable_.push_back(a);
+                    shells_.push_back(a);
+                }
+                else if (atoms[a].pType() != ActParticle::Atom)
+                {
+                    vsites_.push_back(a);
                 }
             }
             valid_ = true;
         }
+        vsitesValid_ = true;
         return true;
     }
 
@@ -177,9 +198,13 @@ public:
 
 private:
     //! Whether x holds the coordinates of all particles
-    bool                valid_ = false;
-    //! The particles that are not atoms, their coordinates can change
-    std::vector<size_t> variable_;
+    bool                valid_       = false;
+    //! Whether x holds the current coordinates of the virtual sites
+    bool                vsitesValid_ = false;
+    //! The shells, or all particles if their types are not known, their coordinates change
+    std::vector<size_t> shells_;
+    //! The other particles that are not atoms, their coordinates change with their parameters
+    std::vector<size_t> vsites_;
 
     //! Copy the coordinates of particle a of all conformations, including the padding
     void copyParticle(const std::vector<CoordsEnergy> &coords, size_t a)
@@ -338,6 +363,17 @@ struct ConformationData
     ConformationArrays   arrays;
     //! Energies
     ConformationEnergies energies;
+    //! Whether the virtual sites in the conformations were constructed
+    bool                 haveVsites   = false;
+    //! The Topology::vsiteVersion the virtual sites were constructed for
+    size_t               vsiteVersion = 0;
+
+    //! Mark the coordinates and virtual sites as outdated
+    void invalidate()
+    {
+        arrays.invalidate();
+        haveVsites = false;
+    }
 };
 
 } // namespace alexandria

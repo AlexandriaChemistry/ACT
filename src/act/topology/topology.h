@@ -72,6 +72,8 @@ private:
     std::vector<std::string>                                  residueNames_;
     //! The real atoms, that is, not the vsites or shells
     std::vector<int>                                          realAtoms_;
+    //! Changes when the parameters of the virtual sites change
+    size_t                                                    vsiteVersion_ = 0;
 
     /*! Generate virtual sites for atoms.
      * \param[in] msghandler Message handler
@@ -228,6 +230,12 @@ private:
                         const ForceField                *pd,
                         missingParameters                missing,
                         const std::set<InteractionType> *itypes = nullptr);
+
+    /*! \return A number that changes when fillParameters changes the
+     * parameters of the virtual sites, such that their positions have to
+     * be constructed again.
+     */
+    size_t vsiteVersion() const { return vsiteVersion_; }
 
     /*! \brief Special purpose routine to add position restraints to all atoms
      * \param[in] msghandler For warnings etc.
