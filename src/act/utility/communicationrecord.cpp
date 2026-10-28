@@ -27,6 +27,7 @@
  */
 #include "communicationrecord.h"
 
+#include <algorithm>
 #include <limits>
 #include <map>
 #include <set>
@@ -389,77 +390,141 @@ void CommunicationRecord::recv_low( int src, void *buf, int bufsize) const
     check_return("MPI_Wait failed", MPI_Wait(&req, &status));
 }
 
-//! \brief Broadcase a string
+void CommunicationRecord::bcast_low(void *buf, size_t nbytes, MPI_Comm comm, int root) const
+{
+    check_init_done();
+    if (!packing_)
+    {
+        ScopedTimer scoped(mpiTimer(MpiTime::Collective));
+        if (nbytes > static_cast<size_t>(std::numeric_limits<int>::max()))
+        {
+            GMX_THROW(gmx::InternalError("Too much data for a broadcast"));
+        }
+        check_return("MPI_Bcast", MPI_Bcast(buf, static_cast<int>(nbytes), MPI_BYTE, root, comm));
+        return;
+    }
+    if (comm != packComm_ || root != packRoot_)
+    {
+        GMX_THROW(gmx::InternalError("Broadcast with another communicator or root while packing broadcasts"));
+    }
+    auto bytes = static_cast<char *>(buf);
+    if (packIsRoot_)
+    {
+        packBuffer_.insert(packBuffer_.end(), bytes, bytes + nbytes);
+    }
+    else
+    {
+        if (packPosition_ + nbytes > packBuffer_.size())
+        {
+            GMX_THROW(gmx::InternalError("Unpacking more data than was broadcast"));
+        }
+        std::copy(packBuffer_.begin() + packPosition_, packBuffer_.begin() + packPosition_ + nbytes, bytes);
+        packPosition_ += nbytes;
+    }
+}
+
+void CommunicationRecord::startPackedBcast(MPI_Comm comm, int root) const
+{
+    check_init_done();
+    if (packing_)
+    {
+        GMX_THROW(gmx::InternalError("Already packing broadcasts"));
+    }
+    int myrank = 0;
+    check_return("MPI_Comm_rank", MPI_Comm_rank(comm, &myrank));
+    packComm_     = comm;
+    packRoot_     = root;
+    packIsRoot_   = (myrank == root);
+    packPosition_ = 0;
+    packBuffer_.clear();
+    if (!packIsRoot_)
+    {
+        // Receive what the root sends in finishPackedBcast
+        size_t nbytes = 0;
+        bcast_low(&nbytes, sizeof(nbytes), comm, root);
+        packBuffer_.resize(nbytes);
+        bcast_low(packBuffer_.data(), nbytes, comm, root);
+    }
+    packing_ = true;
+}
+
+void CommunicationRecord::finishPackedBcast() const
+{
+    if (!packing_)
+    {
+        GMX_THROW(gmx::InternalError("Not packing broadcasts"));
+    }
+    packing_ = false;
+    if (packIsRoot_)
+    {
+        size_t nbytes = packBuffer_.size();
+        bcast_low(&nbytes, sizeof(nbytes), packComm_, packRoot_);
+        bcast_low(packBuffer_.data(), nbytes, packComm_, packRoot_);
+    }
+    else if (packPosition_ != packBuffer_.size())
+    {
+        GMX_THROW(gmx::InternalError("Not all broadcast data was unpacked"));
+    }
+    packBuffer_.clear();
+    packBuffer_.shrink_to_fit();
+}
+
+//! \brief Broadcast a string
 template <> void CommunicationRecord::bcast<std::string>(std::string *str, MPI_Comm comm, int root) const
 {
-    ScopedTimer scoped(mpiTimer(MpiTime::Collective));
-    check_init_done();
     int ssize = str->size();
-    check_return("MPI_Bcast", MPI_Bcast((void *)&ssize, 1, MPI_INT, root, comm));
+    bcast_low(&ssize, sizeof(ssize), comm, root);
     if (root != rank_)
     {
         str->resize(ssize);
     }
-    check_return("MPI_Bcast", MPI_Bcast((void *)str->data(), ssize, MPI_BYTE, root, comm));
+    bcast_low(str->data(), ssize, comm, root);
 }
     
-//! \brief Broadcase an int
+//! \brief Broadcast an int
 template <> void CommunicationRecord::bcast<int>(int *i, MPI_Comm comm, int root) const
 {
-    ScopedTimer scoped(mpiTimer(MpiTime::Collective));
-    check_init_done();
-    check_return("MPI_Bcast", MPI_Bcast((void *)i, 1, MPI_INT, root, comm));
+    bcast_low(i, sizeof(*i), comm, root);
 }
 
-//! \brief Broadcase an unsigned int
+//! \brief Broadcast an unsigned int
 template <> void CommunicationRecord::bcast<unsigned int>(unsigned int *i, MPI_Comm comm, int root) const
 {
-    ScopedTimer scoped(mpiTimer(MpiTime::Collective));
-    check_init_done();
-    check_return("MPI_Bcast", MPI_Bcast((void *)i, 1, MPI_UNSIGNED, root, comm));
+    bcast_low(i, sizeof(*i), comm, root);
 }
 
-//! \brief Broadcase a bool
+//! \brief Broadcast a bool
 template <> void CommunicationRecord::bcast<bool>(bool *b, MPI_Comm comm, int root) const
 {
-    ScopedTimer scoped(mpiTimer(MpiTime::Collective));
-    check_init_done();
     int d = *b ? 1 : 0;
-    check_return("MPI_Bcast", MPI_Bcast((void *)&d, 1, MPI_INT, root, comm));
+    bcast_low(&d, sizeof(d), comm, root);
     *b = d;
 }
 
-//! \brief Broadcase a double
+//! \brief Broadcast a double
 template <> void CommunicationRecord::bcast<double>(double *d, MPI_Comm comm, int root) const
 {
-    ScopedTimer scoped(mpiTimer(MpiTime::Collective));
-    check_init_done();
-    check_return("MPI_Bcast", MPI_Bcast((void *)d, 1, MPI_DOUBLE, root, comm));
+    bcast_low(d, sizeof(*d), comm, root);
 }
 
-//! \brief Broadcase a size_t
+//! \brief Broadcast a size_t
 template <> void CommunicationRecord::bcast<size_t>(size_t *d, MPI_Comm comm, int root) const
 {
-    ScopedTimer scoped(mpiTimer(MpiTime::Collective));
-    check_init_done();
-    check_return("MPI_Bcast", MPI_Bcast((void *)d, 1, MPI_UNSIGNED_LONG, root, comm));
+    bcast_low(d, sizeof(*d), comm, root);
 }
 
-//! \brief Broadcase a vector of doubles
+//! \brief Broadcast a vector of doubles
 template <> void CommunicationRecord::bcast<std::vector<double>>(std::vector<double> *d,
                                                                  MPI_Comm             comm,
                                                                  int                  root) const
 {
-    ScopedTimer scoped(mpiTimer(MpiTime::Collective));
-    check_init_done();
     int ssize = d->size(); 
-    check_return("MPI_Bcast", MPI_Bcast((void *)&ssize, 1, MPI_INT, root, comm));
+    bcast_low(&ssize, sizeof(ssize), comm, root);
     if (root != rank_)
     {
         d->resize(ssize);
     }
-
-    check_return("MPI_Bcast", MPI_Bcast((void *)d->data(), ssize, MPI_DOUBLE, root, comm));
+    bcast_low(d->data(), ssize*sizeof(double), comm, root);
 }
 
 //! \brief Send a string
