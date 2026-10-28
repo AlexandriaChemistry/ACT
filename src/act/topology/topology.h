@@ -53,6 +53,7 @@
 #include "act/topology/actatomlist.h"
 #include "act/topology/actmol_low.h"
 #include "act/utility/communicationrecord.h"
+#include "gromacs/utility/exceptions.h"
 
 namespace alexandria
 {
@@ -78,6 +79,8 @@ private:
     std::map<InteractionType, StructureVersion>               parameterVersion_;
     //! Version of the interaction types not in parameterVersion_
     StructureVersion                                          initialVersion_;
+    //! Position of the first intermolecular entry of each interaction type, see separateIntermolecular
+    std::map<InteractionType, size_t>                         intermolecularStart_;
 
     /*! Generate virtual sites for atoms.
      * \param[in] msghandler Message handler
@@ -362,6 +365,40 @@ private:
      * \throws if not found. If you do not want that to happen, check first!
      */
     const TopologyEntryVector &entry(InteractionType itype) const;
+
+    /*! \brief Put the intermolecular entries of a dimer after the others
+     * Within each interaction type, the entries with atoms in both
+     * fragments are moved to the end, keeping the order otherwise.
+     * Without polarization, interaction energies are then the energies
+     * of the intermolecular entries only, see intermolecular.
+     * \param[in] natom0 The number of particles in the first fragment,
+     *                   the particles of each fragment are contiguous
+     */
+    void separateIntermolecular(size_t natom0);
+
+    /*! \brief The intermolecular entries of an interaction type
+     * \param[in] itype   The interaction type
+     * \param[in] entries The entries of that type in this topology
+     * \return The intermolecular entries, or all of them if
+     *         separateIntermolecular was not called
+     */
+    TopologyEntryRange intermolecular(InteractionType            itype,
+                                      const TopologyEntryVector &entries) const
+    {
+        if (intermolecularStart_.empty())
+        {
+            return TopologyEntryRange(entries);
+        }
+        auto it = intermolecularStart_.find(itype);
+        if (it == intermolecularStart_.end() || it->second > entries.size())
+        {
+            GMX_THROW(gmx::InternalError("Entries were added after separating the intermolecular ones"));
+        }
+        return TopologyEntryRange(entries).subspan(it->second);
+    }
+
+    //! \return Whether the intermolecular entries are known, see separateIntermolecular
+    bool hasIntermolecular() const { return !intermolecularStart_.empty(); }
 
     //! \return the whole map of parameters
     std::map<InteractionType, TopologyEntryVector> *entriesPtr() { return &entries_; }

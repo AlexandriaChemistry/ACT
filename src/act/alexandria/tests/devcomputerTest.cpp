@@ -1529,6 +1529,94 @@ TEST_F(PropertyDevComputerTest, ShellsRelaxedAfterChangingAlpha)
     }
 }
 
+// Test: Without polarization and forces, the interaction energies of dimers
+// are computed from the intermolecular interactions only. They are the same
+// as the dimer energies minus those of the monomers, computed with forces.
+static void compareIntermolecular(const ForceField *pd, std::vector<ACTMol> *mols)
+{
+    ASSERT_FALSE(pd->polarizable());
+    ForceComputer forceComputer;
+    std::vector<std::vector<std::map<InteractionType, std::vector<double>>>> energies;
+    for(bool forces : { true, false })
+    {
+        MsgHandler mh;
+        forceComputer.computeRelaxedEnergies(&mh, pd, pointers(mols), true, false, forces);
+        EXPECT_TRUE(mh.ok());
+        std::vector<std::map<InteractionType, std::vector<double>>> e;
+        for(auto &mol : *mols)
+        {
+            std::map<InteractionType, std::vector<double>> emol;
+            if (mol.isDimer())
+            {
+                EXPECT_TRUE(mol.topology()->hasIntermolecular());
+                auto &ener = mol.conformationData(2)->energies;
+                for(auto t : ener.types())
+                {
+                    auto term = ener.find(t);
+                    for(size_t c = 0; c < ener.nconf(); c++)
+                    {
+                        emol[t].push_back(term.has(c) ? term.act[c] : 0.0);
+                    }
+                }
+            }
+            e.push_back(emol);
+        }
+        energies.push_back(e);
+    }
+    size_t ndimer = 0;
+    for(size_t m = 0; m < mols->size(); m++)
+    {
+        SCOPED_TRACE((*mols)[m].getMolname());
+        auto &full  = energies[0][m];
+        auto &inter = energies[1][m];
+        ndimer += full.empty() ? 0 : 1;
+        for(const auto &f : full)
+        {
+            auto i = inter.find(f.first);
+            ASSERT_TRUE(inter.end() != i) << interactionTypeToString(f.first);
+            ASSERT_EQ(f.second.size(), i->second.size());
+            for(size_t c = 0; c < f.second.size(); c++)
+            {
+                EXPECT_NEAR(f.second[c], i->second[c], 1e-8*(1 + std::abs(f.second[c])))
+                    << interactionTypeToString(f.first) << " conformation " << c;
+            }
+        }
+    }
+    EXPECT_LT(0u, ndimer);
+}
+
+TEST_F(PropertyDevComputerTest, IntermolecularEnergies)
+{
+    ForceField    pd;
+    readForceField(fileManager().getInputFilePath("../../constraints/tests/PC+GV-elec.xml"), &pd);
+    ForceComputer forceComputer;
+    MsgHandler    msghandler;
+    auto mols = prepareMolecules(&msghandler, &pd, &forceComputer, {},
+                                 fileManager().getInputFilePath("mpdimer.xml"));
+    compareIntermolecular(&pd, &mols);
+}
+
+TEST_F(PropertyDevComputerTest, IntermolecularEnergiesACSg2)
+{
+    ForceField    pd = *getForceField("ACS-g2");
+    ForceComputer forceComputer;
+    MsgHandler    msghandler;
+    auto mols = prepareMolecules(&msghandler, &pd, &forceComputer, {},
+                                 fileManager().getInputFilePath("mpdimer.xml"));
+    compareIntermolecular(&pd, &mols);
+}
+
+// Test: The same with a virtual site, that only interacts in the dimer
+TEST_F(PropertyDevComputerTest, IntermolecularEnergiesVsite)
+{
+    ForceField    pd = *getForceField("../../forces/tests/ACS-v3fds");
+    ForceComputer forceComputer;
+    MsgHandler    msghandler;
+    auto mols = prepareMolecules(&msghandler, &pd, &forceComputer, { "water#1-butanol" },
+                                 fileManager().getInputFilePath("water-butanol.xml"));
+    compareIntermolecular(&pd, &mols);
+}
+
 // Test: Energies used again are the same as computed from scratch
 TEST_F(PropertyDevComputerTest, EnergiesUsedAgain)
 {

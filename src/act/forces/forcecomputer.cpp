@@ -929,10 +929,15 @@ void ForceComputer::computeRelaxedEnergies(MsgHandler                  *msghandl
     ScopedTimer         scoped(timer);
     // Shells are relaxed using the forces
     bool forces = computeForces || pd->polarizable();
+    // Without polarization, the interaction energies of dimers are those of
+    // the intermolecular interactions, the monomers are not needed then.
+    // The forces would lack the intramolecular contributions.
+    bool intermolecular = !forces;
     // Loop over molecules
     for(auto molptr : allmols)
     {
         auto &mol = *molptr;
+        bool  inter = intermolecular && mol.isDimer() && mol.topology()->hasIntermolecular();
         if (mol.isDimer())
         {
             // We have a dimer!
@@ -959,7 +964,7 @@ void ForceComputer::computeRelaxedEnergies(MsgHandler                  *msghandl
         // Shortcuts...
         auto &tops  = mol.fragmentHandler()->topologies();
         // Virtual sites for monomers
-        for(size_t index = 0; index < tops.size(); index++)
+        for(size_t index = 0; index < tops.size() && !inter; index++)
         {
             auto &top    = tops[index];
             bool  vsites = vsitesOutdated(&top, mol.conformationData(index));
@@ -981,9 +986,9 @@ void ForceComputer::computeRelaxedEnergies(MsgHandler                  *msghandl
         }
     }
     // Do first calculation every time.
-    computeEnergies(msghandler, pd, allmols, 0, forces); // Monomer 0
-    computeEnergies(msghandler, pd, allmols, 1, forces); // Monomer 1
-    computeEnergies(msghandler, pd, allmols, 2, forces); // Complete topology
+    computeEnergies(msghandler, pd, allmols, 0, forces, false, intermolecular); // Monomer 0
+    computeEnergies(msghandler, pd, allmols, 1, forces, false, intermolecular); // Monomer 1
+    computeEnergies(msghandler, pd, allmols, 2, forces, false, intermolecular); // Complete topology
 
     // Store the original (unrelaxed) energies so that we can extract the
     // induction later. Only terms that actually have an ACT energy are backed up.
@@ -1103,10 +1108,15 @@ void ForceComputer::computeRelaxedEnergies(MsgHandler                  *msghandl
         auto *dimer = &mol.conformationData(2)->energies;
         ConformationEnergies *monomers[2] = { &mol.conformationData(0)->energies,
                                               &mol.conformationData(1)->energies };
+        bool inter = intermolecular && mol.isDimer() && mol.topology()->hasIntermolecular();
         if (mol.isDimer())
         {
-            // First, subtract monomer energies from dimer energies
-            subtractMonomers(dimer, monomers);
+            // First, subtract monomer energies from dimer energies,
+            // unless only the intermolecular interactions were computed
+            if (!inter)
+            {
+                subtractMonomers(dimer, monomers);
+            }
             calcInduction(dimer);
             if (doInduc2)
             {
@@ -1132,7 +1142,7 @@ void ForceComputer::computeRelaxedEnergies(MsgHandler                  *msghandl
             }
         }
         auto &tops = mol.fragmentHandler()->topologies();
-        for(size_t i = 0; i < tops.size(); i++)
+        for(size_t i = 0; i < tops.size() && !inter; i++)
         {
             calcInduction(monomers[i]);
         }

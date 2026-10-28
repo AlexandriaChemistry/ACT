@@ -910,6 +910,11 @@ void ACTMol::GenerateTopology(MsgHandler        *msghandler,
     if (msghandler->ok())
     {
         topology_.build(msghandler, pd, &coords, 175.0, 5.0, missing);
+        if (isDimer() && fraghandler_.atomStart().size() == 2)
+        {
+            // Interaction energies without polarization only need these
+            topology_.separateIntermolecular(fraghandler_.atomStart()[1]);
+        }
     }
     if (msghandler->ok())
     {
