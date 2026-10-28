@@ -1105,6 +1105,168 @@ protected:
         return mols;
     }
 
+    /*! \brief Compare virtual sites on top of atoms to the second charges that replace them
+     * The force field is read with and without replacing the virtual sites,
+     * see ForceField::convertVsite1, and the charges, the energies of all
+     * terms and conformations and the forces of the atoms have to be the
+     * same, apart from rounding.
+     * \param[in] ffFile      The force field
+     * \param[in] mpFile      The molecules
+     * \param[in] vsiteType   A virtual site type that is replaced
+     * \param[in] atomType    Its atom type
+     * \param[in] polarizable Whether the force field has shells
+     * \param[in] tolerance   Relative tolerance for charges and energies,
+     *                        the one for forces is 100 times larger
+     * \param[in] alphas      Polarizabilities of shells to change, in the
+     *                        unit of the force field
+     */
+    void compareSecondChargesToVsites(const std::string                   &ffFile,
+                                      const std::string                   &mpFile,
+                                      const std::string                   &vsiteType,
+                                      const std::string                   &atomType,
+                                      bool                                 polarizable,
+                                      double                               tolerance,
+                                      const std::map<std::string, double> &alphas = {})
+    {
+        ForceField pdVsite, pdCharge;
+        readForceField(fileManager().getInputFilePath(ffFile), &pdVsite, nullptr, false);
+        readForceField(fileManager().getInputFilePath(ffFile), &pdCharge);
+        for(auto pd : { &pdVsite, &pdCharge })
+        {
+            for(const auto &a : alphas)
+            {
+                auto params = pd->findForces(InteractionType::POLARIZATION)->parametersNoRemoval();
+                auto pp     = params->find(Identifier(a.first));
+                ASSERT_TRUE(params->end() != pp) << a.first;
+                pp->second.find("alpha")->second.forceSetValue(a.second);
+            }
+        }
+        ASSERT_TRUE(pdVsite.hasParticleType(vsiteType));
+        ASSERT_FALSE(pdCharge.hasParticleType(vsiteType));
+        ASSERT_TRUE(pdCharge.findParticleType(atomType)->hasChargeVS());
+        ASSERT_EQ(polarizable, pdCharge.polarizable());
+        ForceComputer forceComputer;
+        MsgHandler    msghandler;
+        auto molsV  = prepareMolecules(&msghandler, &pdVsite, &forceComputer, {},
+                                       fileManager().getInputFilePath(mpFile));
+        auto molsC  = prepareMolecules(&msghandler, &pdCharge, &forceComputer, {},
+                                       fileManager().getInputFilePath(mpFile));
+        ASSERT_EQ(molsV.size(), molsC.size());
+        ASSERT_FALSE(molsV.empty());
+        if (polarizable)
+        {
+            // The shells have to be there, and stay excluded from their cores
+            size_t nshell = 0;
+            for(const auto &mol : molsC)
+            {
+                for(const auto &atom : mol.atomsConst())
+                {
+                    nshell += atom.pType() == ActParticle::Shell ? 1 : 0;
+                }
+            }
+            EXPECT_LT(0u, nshell);
+        }
+        for(auto pmols : { &molsV, &molsC })
+        {
+            MsgHandler mh;
+            forceComputer.computeRelaxedEnergies(&mh, pmols == &molsV ? &pdVsite : &pdCharge,
+                                                 pointers(pmols), true, false, true);
+            EXPECT_TRUE(mh.ok());
+        }
+        // Whether a particle is a virtual site that was replaced by a second charge
+        auto replaced = [&pdCharge](const ActAtom &atom)
+        {
+            return atom.pType() == ActParticle::Vsite && !pdCharge.hasParticleType(atom.ffType());
+        };
+        // Compare forces of the other particles only, the forces on virtual
+        // sites have been spread over the atoms.
+        auto compareForces = [&replaced, tolerance](const std::vector<ActAtom>       &atomsV,
+                                const std::vector<CoordsEnergy>  &coordsV,
+                                const std::vector<CoordsEnergy>  &coordsC)
+        {
+            ASSERT_EQ(coordsV.size(), coordsC.size());
+            for(size_t c = 0; c < coordsV.size(); c++)
+            {
+                size_t k = 0;
+                for(size_t i = 0; i < atomsV.size(); i++)
+                {
+                    if (replaced(atomsV[i]))
+                    {
+                        continue;
+                    }
+                    ASSERT_LT(k, coordsC[c].fcalc.size());
+                    for(int m = 0; m < DIM; m++)
+                    {
+                        EXPECT_NEAR(coordsV[c].fcalc[i][m], coordsC[c].fcalc[k][m],
+                                    100*tolerance*(1 + std::abs(coordsV[c].fcalc[i][m])));
+                    }
+                    k++;
+                }
+                EXPECT_EQ(k, coordsC[c].fcalc.size());
+            }
+        };
+        for(size_t m = 0; m < molsV.size(); m++)
+        {
+            auto &molV = molsV[m];
+            auto &molC = molsC[m];
+            SCOPED_TRACE(molV.getMolname());
+            // Charges, the second charge is the charge of the virtual site
+            const auto &atomsV = molV.atomsConst();
+            const auto &atomsC = molC.atomsConst();
+            size_t k = 0;
+            for(size_t i = 0; i < atomsV.size(); i++)
+            {
+                if (replaced(atomsV[i]))
+                {
+                    continue;
+                }
+                ASSERT_LT(k, atomsC.size());
+                double qvs = 0;
+                for(auto v : atomsV[i].vsites())
+                {
+                    if (replaced(atomsV[v]))
+                    {
+                        qvs += atomsV[v].charge();
+                    }
+                }
+                EXPECT_NEAR(atomsV[i].charge(), atomsC[k].charge(), tolerance);
+                EXPECT_NEAR(qvs, atomsC[k].chargeVS(), tolerance);
+                k++;
+            }
+            EXPECT_EQ(k, atomsC.size());
+            EXPECT_LT(atomsC.size(), atomsV.size());
+            // Energies of the dimer and the monomers
+            for(size_t what = 0; what < 3; what++)
+            {
+                auto &eV = molV.conformationData(what)->energies;
+                auto &eC = molC.conformationData(what)->energies;
+                ASSERT_EQ(eV.types(), eC.types());
+                ASSERT_EQ(eV.nconf(), eC.nconf());
+                for(auto t : eV.types())
+                {
+                    auto tV = eV.find(t);
+                    auto tC = eC.find(t);
+                    for(size_t c = 0; c < eV.nconf(); c++)
+                    {
+                        ASSERT_EQ(tV.has(c), tC.has(c));
+                        if (tV.has(c))
+                        {
+                            EXPECT_NEAR(tV.act[c], tC.act[c], tolerance*(1 + std::abs(tV.act[c])))
+                                << interactionTypeToString(t) << " conformation " << c << " part " << what;
+                        }
+                    }
+                }
+            }
+            // Forces
+            compareForces(atomsV, *molV.dimerCoords(), *molC.dimerCoords());
+            auto &fragV = molV.fragmentHandler()->topologies();
+            for(size_t f = 0; f < fragV.size(); f++)
+            {
+                compareForces(fragV[f].atoms(), *molV.monomerCoords(f), *molC.monomerCoords(f));
+            }
+        }
+    }
+
     /*! \brief Check that energies used again are those computed from scratch
      * The energies of an interaction type are used again if its parameters,
      * the coordinates and, if used, the charges did not change, see
@@ -1312,119 +1474,25 @@ protected:
 // forces as the second charges that replace them, see ForceField::convertVsite1
 TEST_F(PropertyDevComputerTest, SecondChargesAsVsites)
 {
-    auto       ffFile = fileManager().getInputFilePath("../../constraints/tests/PC+GV-elec.xml");
-    ForceField pdVsite, pdCharge;
-    readForceField(ffFile, &pdVsite, nullptr, false);
-    readForceField(ffFile, &pdCharge);
-    ASSERT_TRUE(pdVsite.hasParticleType("v1ow"));
-    ASSERT_FALSE(pdCharge.hasParticleType("v1ow"));
-    ASSERT_TRUE(pdCharge.findParticleType("ow")->hasChargeVS());
-    ForceComputer forceComputer;
-    MsgHandler    msghandler;
-    auto mpFile = fileManager().getInputFilePath("mpdimer.xml");
-    auto molsV  = prepareMolecules(&msghandler, &pdVsite, &forceComputer, {}, mpFile);
-    auto molsC  = prepareMolecules(&msghandler, &pdCharge, &forceComputer, {}, mpFile);
-    ASSERT_EQ(molsV.size(), molsC.size());
-    ASSERT_FALSE(molsV.empty());
-    for(auto pmols : { &molsV, &molsC })
-    {
-        MsgHandler mh;
-        forceComputer.computeRelaxedEnergies(&mh, pmols == &molsV ? &pdVsite : &pdCharge,
-                                             pointers(pmols), true, false, true);
-        EXPECT_TRUE(mh.ok());
-    }
-    // Whether a particle is a virtual site that was replaced by a second charge
-    auto replaced = [&pdCharge](const ActAtom &atom)
-    {
-        return atom.pType() == ActParticle::Vsite && !pdCharge.hasParticleType(atom.ffType());
-    };
-    // Compare forces of the other particles only, the forces on virtual
-    // sites have been spread over the atoms.
-    auto compareForces = [&replaced](const std::vector<ActAtom>       &atomsV,
-                            const std::vector<CoordsEnergy>  &coordsV,
-                            const std::vector<CoordsEnergy>  &coordsC)
-    {
-        ASSERT_EQ(coordsV.size(), coordsC.size());
-        for(size_t c = 0; c < coordsV.size(); c++)
-        {
-            size_t k = 0;
-            for(size_t i = 0; i < atomsV.size(); i++)
-            {
-                if (replaced(atomsV[i]))
-                {
-                    continue;
-                }
-                ASSERT_LT(k, coordsC[c].fcalc.size());
-                for(int m = 0; m < DIM; m++)
-                {
-                    EXPECT_NEAR(coordsV[c].fcalc[i][m], coordsC[c].fcalc[k][m],
-                                1e-8*(1 + std::abs(coordsV[c].fcalc[i][m])));
-                }
-                k++;
-            }
-            EXPECT_EQ(k, coordsC[c].fcalc.size());
-        }
-    };
-    for(size_t m = 0; m < molsV.size(); m++)
-    {
-        auto &molV = molsV[m];
-        auto &molC = molsC[m];
-        SCOPED_TRACE(molV.getMolname());
-        // Charges, the second charge is the charge of the virtual site
-        const auto &atomsV = molV.atomsConst();
-        const auto &atomsC = molC.atomsConst();
-        size_t k = 0;
-        for(size_t i = 0; i < atomsV.size(); i++)
-        {
-            if (replaced(atomsV[i]))
-            {
-                continue;
-            }
-            ASSERT_LT(k, atomsC.size());
-            double qvs = 0;
-            for(auto v : atomsV[i].vsites())
-            {
-                if (replaced(atomsV[v]))
-                {
-                    qvs += atomsV[v].charge();
-                }
-            }
-            EXPECT_NEAR(atomsV[i].charge(), atomsC[k].charge(), 1e-10);
-            EXPECT_NEAR(qvs, atomsC[k].chargeVS(), 1e-10);
-            k++;
-        }
-        EXPECT_EQ(k, atomsC.size());
-        EXPECT_LT(atomsC.size(), atomsV.size());
-        // Energies of the dimer and the monomers
-        for(size_t what = 0; what < 3; what++)
-        {
-            auto &eV = molV.conformationData(what)->energies;
-            auto &eC = molC.conformationData(what)->energies;
-            ASSERT_EQ(eV.types(), eC.types());
-            ASSERT_EQ(eV.nconf(), eC.nconf());
-            for(auto t : eV.types())
-            {
-                auto tV = eV.find(t);
-                auto tC = eC.find(t);
-                for(size_t c = 0; c < eV.nconf(); c++)
-                {
-                    ASSERT_EQ(tV.has(c), tC.has(c));
-                    if (tV.has(c))
-                    {
-                        EXPECT_NEAR(tV.act[c], tC.act[c], 1e-10*(1 + std::abs(tV.act[c])))
-                            << interactionTypeToString(t) << " conformation " << c << " part " << what;
-                    }
-                }
-            }
-        }
-        // Forces
-        compareForces(atomsV, *molV.dimerCoords(), *molC.dimerCoords());
-        auto &fragV = molV.fragmentHandler()->topologies();
-        for(size_t f = 0; f < fragV.size(); f++)
-        {
-            compareForces(fragV[f].atoms(), *molV.monomerCoords(f), *molC.monomerCoords(f));
-        }
-    }
+    compareSecondChargesToVsites("../../constraints/tests/PC+GV-elec.xml", "mpdimer.xml",
+                                 "v1ow", "ow", false, 1e-10);
+}
+
+// Test: The same for a polarizable force field, with shells on the ions,
+// which are excluded from their own second charge as from the virtual site.
+TEST_F(PropertyDevComputerTest, SecondChargesAsVsitesPolarizable)
+{
+    compareSecondChargesToVsites("PG-pol-ions.xml", "ion-water.xml",
+                                 "v1Na+", "Na+", true, 1e-10);
+}
+
+// Test: The same with polarizable ions, the ion shells have a negligible
+// polarizability in the force field file, such that they hardly move.
+TEST_F(PropertyDevComputerTest, SecondChargesAsVsitesPolarizableIons)
+{
+    compareSecondChargesToVsites("PG-pol-ions.xml", "ion-water.xml",
+                                 "v1Na+", "Na+", true, 1e-10,
+                                 { { "Na+_s", 0.18 }, { "Cl-_s", 3.4 } });
 }
 
 // Test: Energies used again are the same as computed from scratch
