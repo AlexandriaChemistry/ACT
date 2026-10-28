@@ -70,6 +70,17 @@ struct DevOptions
     std::set<std::string>  molecules;
 };
 
+//! \return pointers to the molecules, as the DevComputers take them
+static std::vector<ACTMol *> pointers(std::vector<ACTMol> *mols)
+{
+    std::vector<ACTMol *> ptrs;
+    for(auto &mol : *mols)
+    {
+        ptrs.push_back(&mol);
+    }
+    return ptrs;
+}
+
 //! \return key for the DevResults map
 static std::string resultKey(const std::string &molname, eRMS erms)
 {
@@ -230,7 +241,7 @@ protected:
             }
             computer.calcDeviation(&msghandler,
                                    &forceComputer,
-                                   &actmols,
+                                   pointers(&actmols),
                                    &targets,
                                    pd,
                                    opts.lossFunction);
@@ -573,6 +584,20 @@ TEST_F(ForceEnergyDevComputerTest, CalcDevMonomerLJ14_7)
     // VSITE3FD virtual site.
     opts.molecules          = { "1-butanol", "water" };
     testCalcDev(monomerFile(), "../../forces/tests/ACS-v3fds", opts);
+}
+
+// Test: Forces of a molecule with a virtual site are compared atom by atom
+TEST_F(ForceEnergyDevComputerTest, CalcDevMonomerForcesVsite)
+{
+    DevOptions opts;
+    opts.weights = unitWeights({ eRMS::EPOT, eRMS::Force2 });
+    // Water with QM forces for four conformations and a VSITE3FD virtual site
+    gmx::test::TestReferenceChecker checker(this->rootChecker());
+    checker.setDefaultTolerance(gmx::test::relativeToleranceAsFloatingPoint(1.0, opts.tolerance));
+    auto results = computeDev(fileManager().getInputFilePath("water-forces.xml"),
+                              "../../forces/tests/ACS-v3fds", opts, &checker);
+    // Three atoms with three force components for each conformation
+    EXPECT_EQ(4*3*DIM, results[resultKey("water", eRMS::Force2)].first);
 }
 
 // Test: CalcDeviation for dimer without Boltzmann weighting
@@ -1025,12 +1050,10 @@ protected:
         std::vector<double> chi2;
         for(auto &mol : mols)
         {
-            std::vector<ACTMol> one;
-            one.push_back(std::move(mol));
+            std::vector<ACTMol *> one = { &mol };
             auto targets = newTargets();
-            computer.calcDeviation(&msghandler, &forceComputer, &one,
+            computer.calcDeviation(&msghandler, &forceComputer, one,
                                    &targets, &pdBounds, LossFunction::MSE);
-            mol = std::move(one[0]);
             auto &t = targets.find(eRMS::BOUNDS)->second;
             EXPECT_EQ(1, t.totalWeight());
             checker_.checkDouble(t.chiSquared(),
@@ -1039,7 +1062,7 @@ protected:
         }
         // All molecules at once give the sum
         auto targets = newTargets();
-        computer.calcDeviation(&msghandler, &forceComputer, &mols,
+        computer.calcDeviation(&msghandler, &forceComputer, pointers(&mols),
                                &targets, &pdBounds, LossFunction::MSE);
         auto &t = targets.find(eRMS::BOUNDS)->second;
         EXPECT_EQ(mols.size(), t.totalWeight());
@@ -1082,12 +1105,10 @@ protected:
         double weightSum = 0, chi2Sum = 0;
         for(auto &mol : mols)
         {
-            std::vector<ACTMol> one;
-            one.push_back(std::move(mol));
+            std::vector<ACTMol *> one = { &mol };
             auto targets = newTargets();
-            computer.calcDeviation(&msghandler, &forceComputer, &one,
+            computer.calcDeviation(&msghandler, &forceComputer, one,
                                    &targets, pd, LossFunction::MSE);
-            mol = std::move(one[0]);
             auto &t = targets.find(erms)->second;
             EXPECT_GT(t.totalWeight(), 0) << mol.getMolname();
             EXPECT_TRUE(std::isfinite(t.chiSquared())) << mol.getMolname();
@@ -1100,7 +1121,7 @@ protected:
         }
         // All molecules at once give the sum
         auto targets = newTargets();
-        computer.calcDeviation(&msghandler, &forceComputer, &mols,
+        computer.calcDeviation(&msghandler, &forceComputer, pointers(&mols),
                                &targets, pd, LossFunction::MSE);
         auto &t = targets.find(erms)->second;
         EXPECT_DOUBLE_EQ(weightSum, t.totalWeight());
@@ -1120,7 +1141,7 @@ TEST_F(PropertyDevComputerTest, BoundsNoTarget)
     std::map<eRMS, FittingTarget> targets;
     targets.insert({eRMS::EPOT, FittingTarget(eRMS::EPOT, iMolSelect::Train)});
     targets.find(eRMS::EPOT)->second.setWeight(1);
-    computer.calcDeviation(&msghandler, &forceComputer, &mols,
+    computer.calcDeviation(&msghandler, &forceComputer, pointers(&mols),
                            &targets, pd, LossFunction::MSE);
     EXPECT_EQ(1u, targets.size());
     EXPECT_EQ(0, targets.find(eRMS::EPOT)->second.totalWeight());
@@ -1232,7 +1253,7 @@ TEST_F(PropertyDevComputerTest, MultipoleUnsupportedThrows)
     std::map<eRMS, FittingTarget> targets;
     targets.insert({eRMS::Polar, FittingTarget(eRMS::Polar, iMolSelect::Train)});
     std::vector<gmx::RVec> coords = mols[0].xOriginal();
-    EXPECT_THROW(computer.calcDeviation(&msghandler, &forceComputer, &mols,
+    EXPECT_THROW(computer.calcDeviation(&msghandler, &forceComputer, pointers(&mols),
                                         &targets, pd, LossFunction::MSE),
                  gmx::InvalidInputError);
 }

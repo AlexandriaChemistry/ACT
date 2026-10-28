@@ -217,6 +217,8 @@ double ACMFitnessComputer::calcDeviation(MsgHandler   *msghandler,
     int ntrain = 0;
     int nlocal = 0;
     auto mymols = molgen_->actmolsPtr();
+    // The molecules in this dataset that this node computes
+    std::vector<ACTMol *> selected;
     for (auto actmol = mymols->begin(); actmol < mymols->end(); ++actmol)
     {
         msghandler->writeDebug(gmx::formatString("CalcDev: mol %s dataset %s\n",
@@ -263,12 +265,13 @@ double ACMFitnessComputer::calcDeviation(MsgHandler   *msghandler,
             msghandler->writeDebug(gmx::formatString("CalcDev: rank %d mol %s #energies %zu tw %g\n",
                                                      cr->rank(), actmol->getMolname().c_str(), actmol->experimentConst().size(),
                                                      targets->find(eRMS::EPOT)->second.totalWeight()));
+            selected.push_back(&(*actmol));
             nlocal++;
         }
     }
     for (DevComputer *mydev : devComputers_)
     {
-        mydev->calcDeviation(msghandler, forceComp_, mymols, targets,
+        mydev->calcDeviation(msghandler, forceComp_, selected, targets,
                              sii_->forcefield(), lossFunction_);
     }
     // Sum the terms of the chi-squared once we have done calculations

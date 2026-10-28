@@ -678,10 +678,11 @@ static bool vsitesOutdated(const Topology *top, ConformationData *cdata)
 /*! \brief Copy the relaxed monomer shell positions into the dimer
  * \param[inout] allmols The molecules
  */
-static void copyRelaxedMonomerShells(std::vector<ACTMol> *allmols)
+static void copyRelaxedMonomerShells(const std::vector<ACTMol *> &allmols)
 {
-    for(auto &mol : *allmols)
+    for(auto molptr : allmols)
     {
+        auto &mol = *molptr;
         if (!mol.isDimer())
         {
             continue;
@@ -708,10 +709,10 @@ static void copyRelaxedMonomerShells(std::vector<ACTMol> *allmols)
     }
 }
 
-void ForceComputer::relaxMonomer(MsgHandler          *msghandler,
-                                 const ForceField    *pd,
-                                 size_t               im,
-                                 std::vector<ACTMol> *allmols) const
+void ForceComputer::relaxMonomer(MsgHandler                  *msghandler,
+                                 const ForceField            *pd,
+                                 size_t                       im,
+                                 const std::vector<ACTMol *> &allmols) const
 {
     // We have already done one energy calculation
     int iter     = 1;
@@ -721,8 +722,9 @@ void ForceComputer::relaxMonomer(MsgHandler          *msghandler,
     {
         // Set loop variable to true
         allDone = true;
-        for(auto &mol : *allmols)
+        for(auto molptr : allmols)
         {
+            auto &mol = *molptr;
             // Shortcuts...
             auto  fh    = mol.fragmentHandler();
             auto &tops  = fh->topologies();
@@ -745,10 +747,10 @@ void ForceComputer::relaxMonomer(MsgHandler          *msghandler,
     }
 }
 
-void ForceComputer::relaxDimer(MsgHandler          *msghandler,
-                               const ForceField    *pd,
-                               bool                 fixMonomer[2],
-                               std::vector<ACTMol> *allmols) const
+void ForceComputer::relaxDimer(MsgHandler                  *msghandler,
+                               const ForceField            *pd,
+                               bool                         fixMonomer[2],
+                               const std::vector<ACTMol *> &allmols) const
 {
     // We have already done one energy calculation
     int iter     = 1;
@@ -758,8 +760,9 @@ void ForceComputer::relaxDimer(MsgHandler          *msghandler,
     {
         // Set loop variable to true
         allDone = true;
-        for(auto &mol : *allmols)
+        for(auto molptr : allmols)
         {
+            auto &mol = *molptr;
             // Shortcuts...
             auto  fh    = mol.fragmentHandler();
             auto &tops  = fh->topologies();
@@ -795,18 +798,19 @@ void ForceComputer::relaxDimer(MsgHandler          *msghandler,
     }
 }
 
-void ForceComputer::computeRelaxedEnergies(MsgHandler          *msghandler,
-                                           const ForceField    *pd,
-                                           std::vector<ACTMol> *allmols,
-                                           bool                 resetTheShells,
-                                           bool                 separateInductionCorrection,
-                                           bool                 computeForces) const
+void ForceComputer::computeRelaxedEnergies(MsgHandler                  *msghandler,
+                                           const ForceField            *pd,
+                                           const std::vector<ACTMol *> &allmols,
+                                           bool                         resetTheShells,
+                                           bool                         separateInductionCorrection,
+                                           bool                         computeForces) const
 {
     // Shells are relaxed using the forces
     bool forces = computeForces || pd->polarizable();
     // Loop over molecules
-    for(auto &mol : *allmols)
+    for(auto molptr : allmols)
     {
+        auto &mol = *molptr;
         if (mol.isDimer())
         {
             // We have a dimer!
@@ -858,8 +862,9 @@ void ForceComputer::computeRelaxedEnergies(MsgHandler          *msghandler,
 
     // Store the original (unrelaxed) energies so that we can extract the
     // induction later. Only terms that actually have an ACT energy are backed up.
-    for(auto &mol : *allmols)
+    for(auto molptr : allmols)
     {
+        auto &mol = *molptr;
         for(size_t what = 0; what < 3; what++)
         {
             backupEnergies(&mol.conformationData(what)->energies);
@@ -874,8 +879,9 @@ void ForceComputer::computeRelaxedEnergies(MsgHandler          *msghandler,
         }
         // Backup the now-relaxed monomer coordinates so that we can return to
         // them later when computing the second order induction.
-        for(auto &mol : *allmols)
+        for(auto molptr : allmols)
         {
+            auto &mol = *molptr;
             // Shortcuts...
             auto &tops  = mol.fragmentHandler()->topologies();
             for(size_t index = 0; index < tops.size(); index++)
@@ -888,7 +894,7 @@ void ForceComputer::computeRelaxedEnergies(MsgHandler          *msghandler,
         }
     }
     // Second order induction energy for each dimer conformation of each molecule
-    std::vector<std::vector<double>> eInduc2(allmols->size());
+    std::vector<std::vector<double>> eInduc2(allmols.size());
     bool doInduc2 = pd->polarizable() && separateInductionCorrection;
     // From now on, only polarizable models relax the dimer further, but the
     // post-processing below runs in all cases.
@@ -898,10 +904,10 @@ void ForceComputer::computeRelaxedEnergies(MsgHandler          *msghandler,
         {
             // Store the original dimer coordinates, such that the final
             // relaxation below does not depend on what we do here.
-            std::vector<std::vector<std::vector<gmx::RVec>>> xdimer(allmols->size());
-            for(size_t k = 0; k < allmols->size(); k++)
+            std::vector<std::vector<std::vector<gmx::RVec>>> xdimer(allmols.size());
+            for(size_t k = 0; k < allmols.size(); k++)
             {
-                auto &mol = (*allmols)[k];
+                auto &mol = (*allmols[k]);
                 if (mol.isDimer())
                 {
                     for(auto &dim : *mol.dimerCoords())
@@ -916,10 +922,10 @@ void ForceComputer::computeRelaxedEnergies(MsgHandler          *msghandler,
             copyRelaxedMonomerShells(allmols);
             computeEnergies(msghandler, pd, allmols, 2);
             // Reference energy without mutual induction
-            std::vector<std::vector<double>> eRef(allmols->size());
-            for(size_t k = 0; k < allmols->size(); k++)
+            std::vector<std::vector<double>> eRef(allmols.size());
+            for(size_t k = 0; k < allmols.size(); k++)
             {
-                eRef[k] = sumElecTerms(&(*allmols)[k].conformationData(2)->energies);
+                eRef[k] = sumElecTerms(&(*allmols[k]).conformationData(2)->energies);
             }
             for(size_t im = 0; im < 2; im++)
             {
@@ -933,9 +939,9 @@ void ForceComputer::computeRelaxedEnergies(MsgHandler          *msghandler,
                 bool fixMonomer[2] = { im != 0, im != 1 };
                 relaxDimer(msghandler, pd, fixMonomer, allmols);
                 // Extract energy
-                for(size_t k = 0; k < allmols->size(); k++)
+                for(size_t k = 0; k < allmols.size(); k++)
                 {
-                    auto esum = sumElecTerms(&(*allmols)[k].conformationData(2)->energies);
+                    auto esum = sumElecTerms(&(*allmols[k]).conformationData(2)->energies);
                     for(size_t i = 0; i < eInduc2[k].size() && i < esum.size(); i++)
                     {
                         eInduc2[k][i] += esum[i] - eRef[k][i];
@@ -943,9 +949,9 @@ void ForceComputer::computeRelaxedEnergies(MsgHandler          *msghandler,
                 }
             }
             // Restore the original dimer coordinates and energies
-            for(size_t k = 0; k < allmols->size(); k++)
+            for(size_t k = 0; k < allmols.size(); k++)
             {
-                auto &dimers = *(*allmols)[k].dimerCoords();
+                auto &dimers = *(*allmols[k]).dimerCoords();
                 for(size_t i = 0; i < dimers.size(); i++)
                 {
                     dimers[i].x = xdimer[k][i];
@@ -959,8 +965,9 @@ void ForceComputer::computeRelaxedEnergies(MsgHandler          *msghandler,
     }
     
     // Now post-process the energies to extract induction and allelec
-    for(auto &mol : *allmols)
+    for(const auto &molptr : allmols)
     {
+        auto &mol = *molptr;
         auto *dimer = &mol.conformationData(2)->energies;
         ConformationEnergies *monomers[2] = { &mol.conformationData(0)->energies,
                                               &mol.conformationData(1)->energies };
@@ -973,7 +980,7 @@ void ForceComputer::computeRelaxedEnergies(MsgHandler          *msghandler,
             {
                 // Split the total induction into second order induction and
                 // the remaining higher order induction correction.
-                size_t k     = &mol - allmols->data();
+                size_t k     = &molptr - allmols.data();
                 auto   eit   = dimer->find(InteractionType::INDUCTION);
                 std::vector<double> eInd(dimer->nconf(), 0.0);
                 for(size_t i = 0; i < dimer->nconf(); i++)
@@ -1004,8 +1011,9 @@ void ForceComputer::computeRelaxedEnergies(MsgHandler          *msghandler,
     }
     // Spread forces to atoms
     // Loop over molecules
-    for(auto &mol : *allmols)
+    for(auto molptr : allmols)
     {
+        auto &mol = *molptr;
         // Shortcuts...
         auto &tops  = mol.fragmentHandler()->topologies();
         if (tops.size() == 2)

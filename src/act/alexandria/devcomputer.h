@@ -80,14 +80,14 @@ public:
      * Put the value into the appropriate FittingTarget.
      * @param msghandler    For status and output
      * @param forceComputer The utility to compute forces and energies
-     * @param actmols       Pointer to a vector of molecules to compute the deviation for
+     * @param actmols       The molecules to compute the deviation for
      * @param targets       Map between different components of chi-squared and their fitting targets
      * @param forcefield    Pointer to ForceField structure, that should contain the newest parameters
      * @param lossFunction  What functional form to use for the loss function
      */
     virtual void calcDeviation(MsgHandler                    *msghandler,
                                const ForceComputer           *forceComputer,
-                               std::vector<ACTMol>           *actmols,
+                               const std::vector<ACTMol *>   &actmols,
                                std::map<eRMS, FittingTarget> *targets,
                                const ForceField              *forcefield,
                                LossFunction                   lossFunction) = 0;
@@ -119,7 +119,7 @@ public:
 
     virtual void calcDeviation(MsgHandler                    *msghandler,
                                const ForceComputer           *forceComputer,
-                               std::vector<ACTMol>           *actmol,
+                               const std::vector<ACTMol *>   &actmols,
                                std::map<eRMS, FittingTarget> *targets,
                                const ForceField              *forcefield,
                                LossFunction                   lossFunction);
@@ -148,7 +148,7 @@ public:
 
     virtual void calcDeviation(MsgHandler                    *msghandler,
                                const ForceComputer           *forceComputer,
-                               std::vector<ACTMol>           *actmol,
+                               const std::vector<ACTMol *>   &actmols,
                                std::map<eRMS, FittingTarget> *targets,
                                const ForceField              *forcefield,
                                LossFunction                   lossFunction);
@@ -189,7 +189,7 @@ public:
 
     virtual void calcDeviation(MsgHandler                    *msghandler,
                                const ForceComputer           *forceComputer,
-                               std::vector<ACTMol>           *actmol,
+                               const std::vector<ACTMol *>   &actmols,
                                std::map<eRMS, FittingTarget> *targets,
                                const ForceField              *forcefield,
                                LossFunction                   lossFunction);
@@ -213,7 +213,7 @@ public:
 
     virtual void calcDeviation(MsgHandler                    *msghandler,
                                const ForceComputer           *forceComputer,
-                               std::vector<ACTMol>           *actmol,
+                               const std::vector<ACTMol *>   &actmols,
                                std::map<eRMS, FittingTarget> *targets,
                                const ForceField              *forcefield,
                                LossFunction                   lossFunction);
@@ -241,7 +241,7 @@ public:
 
     virtual void calcDeviation(MsgHandler                    *msghandler,
                                const ForceComputer           *forceComputer,
-                               std::vector<ACTMol>           *actmol,
+                               const std::vector<ACTMol *>   &actmols,
                                std::map<eRMS, FittingTarget> *targets,
                                const ForceField              *forcefield,
                                LossFunction                   lossFunction);
@@ -285,7 +285,7 @@ public:
 
     virtual void calcDeviation(MsgHandler                    *msghandler,
                                const ForceComputer           *forceComputer,
-                               std::vector<ACTMol>           *actmol,
+                               const std::vector<ACTMol *>   &actmols,
                                std::map<eRMS, FittingTarget> *targets,
                                const ForceField              *forcefield,
                                LossFunction                   lossFunction);

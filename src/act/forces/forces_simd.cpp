@@ -2125,11 +2125,11 @@ static inline void lowComputeEnergies(MsgHandler                *msghandler,
     }
 }
 
-void computeEnergies(MsgHandler          *msghandler,
-                     const ForceField    *pd,
-                     std::vector<ACTMol> *allmols,
-                     size_t               what,
-                     bool                 forces)
+void computeEnergies(MsgHandler                  *msghandler,
+                     const ForceField            *pd,
+                     const std::vector<ACTMol *> &allmols,
+                     size_t                       what,
+                     bool                         forces)
 {
     double epsilonr = 1;
     auto iCoul = InteractionType::ELECTROSTATICS;
@@ -2143,8 +2143,9 @@ void computeEnergies(MsgHandler          *msghandler,
         }
     }
     // Loop over molecules
-    for(auto &mol : *allmols)
+    for(auto molptr : allmols)
     {
+        auto &mol   = *molptr;
         auto &tops  = mol.fragmentHandler()->topologies();
         // Loop over topology entries, in principle the dimer should have everything
         // that the monomers have as well.

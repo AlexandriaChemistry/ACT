@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Sequence Name="water-charge">
+    <Int Name="Length">4</Int>
+    <Real>-0.31119084081922088</Real>
+    <Real>0.15559542040961044</Real>
+    <Real>0.15559542040961044</Real>
+    <Real>0</Real>
+  </Sequence>
+  <Real Name="water-EPOT-weight">4</Real>
+  <Real Name="water-EPOT-chi2">1399406.3315910739</Real>
+  <Real Name="water-Force2-weight">36</Real>
+  <Real Name="water-Force2-chi2">5269732.1767865364</Real>
+</ReferenceData>
