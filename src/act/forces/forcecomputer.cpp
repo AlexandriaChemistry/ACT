@@ -28,6 +28,7 @@
 #include "forcecomputer.h"
 
 #include <algorithm>
+#include <limits>
 #include <set>
 #include <utility>
 #include <vector>
@@ -171,24 +172,34 @@ static inline void update_shell_pos(int                           shell,
                                     std::vector<gmx::RVec>       *coordinates,
                                     const std::vector<gmx::RVec> &forces,
                                     double                        fcShell,
-                                    double                        fcHyper)
+                                    double                        fcHyper,
+                                    double                        step)
 {
     auto Fnorm  = norm(forces[shell]);
-    auto fscale = calc_fscale(fcShell, fcHyper, Fnorm);
-    //! \todo Please check reducing fscale to speed up convergence
-    fscale *= 0.5;
+    auto fscale = step*calc_fscale(fcShell, fcHyper, Fnorm);
     for(int m = 0; m < DIM; m++)
     {
         (*coordinates)[shell][m] -= forces[shell][m] * fscale;
     }
 }
 
+/*! \brief Move a shell towards the minimum of its potential
+ * \param[in]    core        The core of the shell
+ * \param[in]    shell       The shell
+ * \param[inout] coordinates The coordinates
+ * \param[in]    forces      The forces
+ * \param[in]    fcShell     The harmonic force constant of the shell
+ * \param[in]    fcHyper     The quartic force constant of the shell
+ * \param[in]    step        Fraction of the displacement that would bring
+ *                            an isolated shell to its minimum
+ */
 static void update_shell_positions(int                           core,
                                    int                           shell,
                                    std::vector<gmx::RVec>       *coordinates,
                                    const std::vector<gmx::RVec> &forces,
                                    double                        fcShell,
-                                   double                        fcHyper)
+                                   double                        fcHyper,
+                                   double                        step)
 {
     // Core shell vector
     gmx::RVec r_core_shell;
@@ -199,7 +210,7 @@ static void update_shell_positions(int                           core,
     //double cosang = cos_angle(r_core_shell, forces[shell]);
     if (rcs == 0)
     {
-        update_shell_pos(shell, coordinates, forces, fcShell, fcHyper);
+        update_shell_pos(shell, coordinates, forces, fcShell, fcHyper, step);
     }
     else
     {
@@ -216,7 +227,7 @@ static void update_shell_positions(int                           core,
         // r_core_shell / Fspring = x / Ftotal
         double fpol = - 4*fcHyper*rcs*rcs*rcs - fcShell*rcs;
         // Ratio between polarization force and distance
-        double fac  = 0.5*std::abs(rcs/fpol);
+        double fac  = step*std::abs(rcs/fpol);
         for(int m = 0; m < DIM; m++)
         {
             (*coordinates)[shell][m] += fac*forces[shell][m];
@@ -301,6 +312,8 @@ void ForceComputer::compute(MsgHandler                        *msg_handler,
         // Prevent shells from flying off.
         real maxShellDistance2 = gmx::square(maxShellDistance_);
         msForce    = shellForce2(atoms, isShell, *coordinates, *forces, 0, maxShellDistance2)/nshell;
+        // Fraction of the step to the minimum of an isolated shell
+        double step = 1;
         while (msForce > msForceToler_ && iter < maxiter_)
         {
             // Loop over polarizabilities
@@ -316,7 +329,7 @@ void ForceComputer::compute(MsgHandler                        *msg_handler,
                 {
                     update_shell_positions(p->atomIndex(0), p->atomIndex(1),
                                            coordinates, *forces,
-                                           fcShell_1[shell], fcHyper[shell]);
+                                           fcShell_1[shell], fcHyper[shell], step);
                     // Check distance from parent, if there is only one
                     if (maxShellDistance2 > 0 && atoms[shell].parents().size() == 1)
                     {
@@ -338,7 +351,14 @@ void ForceComputer::compute(MsgHandler                        *msg_handler,
             }
             // Do next calculation
             computeOnce(msg_handler, pd, top, coordinates, forces, energies, field);
-            msForce  = shellForce2(atoms, isShell, *coordinates, *forces, 0, maxShellDistance2)/nshell;
+            double msForceNew = shellForce2(atoms, isShell, *coordinates, *forces, 0, maxShellDistance2)/nshell;
+            // Coupled shells can overshoot, then the step is reduced.
+            // Smaller steps can freeze shells far from the minimum.
+            if (msForceNew > msForce)
+            {
+                step = 0.5;
+            }
+            msForce  = msForceNew;
             iter    += 1;
             nShellIter_ += 1;
         }
@@ -447,6 +467,7 @@ size_t ForceComputer::updateShells(const Topology            *top,
                                    size_t                     offset,
                                    size_t                     nShell,
                                    const std::vector<bool>    isShell,
+                                   size_t                     fragment,
                                    std::vector<CoordsEnergy> *myCoords) const
 {
     auto   itype      = InteractionType::POLARIZATION;
@@ -473,6 +494,12 @@ size_t ForceComputer::updateShells(const Topology            *top,
         }
         else
         {
+            // Coupled shells can overshoot, then the step is reduced, see compute
+            if (msForce > dim.shellForce[fragment])
+            {
+                dim.shellStep[fragment] = 0.5;
+            }
+            dim.shellForce[fragment] = msForce;
             auto &pols  = top->entry(itype);
             auto &atoms = top->atoms();
             // Loop over polarizabilities
@@ -502,7 +529,8 @@ size_t ForceComputer::updateShells(const Topology            *top,
                 }
                 update_shell_positions(coreGlobal, shellGlobal,
                                        &dim.x, dim.fcalc,
-                                       fc1, params[polFCHYPER]);
+                                       fc1, params[polFCHYPER],
+                                       dim.shellStep[fragment]);
                 // Check distance from parent, if there is only one
                 if (maxShellDistance2 > 0 && atoms[shellLocal].parents().size() == 1)
                 {
@@ -763,6 +791,21 @@ static void copyRelaxedMonomerShells(const std::vector<ACTMol *> &allmols)
     }
 }
 
+/*! \brief Start the shell relaxation with full steps
+ * \param[inout] coords The conformations
+ */
+static void resetShellSteps(std::vector<CoordsEnergy> *coords)
+{
+    for(auto &ce : *coords)
+    {
+        for(size_t i = 0; i < 2; i++)
+        {
+            ce.shellStep[i]  = 1;
+            ce.shellForce[i] = std::numeric_limits<double>::max();
+        }
+    }
+}
+
 void ForceComputer::relaxMonomer(MsgHandler                  *msghandler,
                                  const ForceField            *pd,
                                  size_t                       im,
@@ -770,6 +813,10 @@ void ForceComputer::relaxMonomer(MsgHandler                  *msghandler,
 {
     static const size_t timer = Timings::instance().index("Shell relaxation");
     ScopedTimer         scoped(timer);
+    for(auto molptr : allmols)
+    {
+        resetShellSteps(molptr->monomerCoords(im));
+    }
     // We have already done one energy calculation
     int iter     = 1;
     // Prevent shells from flying off.
@@ -788,7 +835,7 @@ void ForceComputer::relaxMonomer(MsgHandler                  *msghandler,
             // Relax monomers first.
             if (mol.monomerCoords(im)->size() !=
                 updateShells(&tops[im], 0, pols[im].nShell(), pols[im].isShell(),
-                             mol.monomerCoords(im)))
+                             0, mol.monomerCoords(im)))
             {
                 allDone = false;
                 // Not all done, recompute
@@ -809,6 +856,10 @@ void ForceComputer::relaxDimer(MsgHandler                  *msghandler,
 {
     static const size_t timer = Timings::instance().index("Shell relaxation");
     ScopedTimer         scoped(timer);
+    for(auto molptr : allmols)
+    {
+        resetShellSteps(molptr->dimerCoords());
+    }
     // We have already done one energy calculation
     int iter     = 1;
     // Prevent shells from flying off.
@@ -838,7 +889,7 @@ void ForceComputer::relaxDimer(MsgHandler                  *msghandler,
                     if (mol.monomerCoords(im)->size() !=
                         updateShells(&tops[im], fh->atomStart()[im],
                                      pols[im].nShell(), pols[im].isShell(),
-                                     mol.dimerCoords()))
+                                     im, mol.dimerCoords()))
                     {
                         allDone = false;
                     }

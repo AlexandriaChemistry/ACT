@@ -155,6 +155,10 @@ typedef struct
     ACTEnergyMap           eMap;
     //! Lowest energy for use in Boltzmann weighting
     double                 eMin;
+    //! Step of the shells of each fragment in shell relaxation, see ForceComputer
+    double                 shellStep[2];
+    //! Mean square shell force of each fragment in the previous relaxation step
+    double                 shellForce[2];
 } CoordsEnergy;
 
 } // namespace

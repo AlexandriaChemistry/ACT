@@ -256,7 +256,7 @@ protected:
         if (pd->polarizable())
         {
             // Verify that shell minimization was completed
-            EXPECT_GE(fc.numShellIterations(), 5u);
+            EXPECT_GE(fc.numShellIterations(), 1u);
             EXPECT_EQ(0u, fc.numShellConvergenceFailed());
         }
         return msghandler_.ok();
