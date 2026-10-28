@@ -46,6 +46,13 @@
 namespace alexandria
 {
 
+//! Name of the parameter for the second charge of a particle, see ParticleType::chargeVS
+const char chargeVSName[] = "chargeVS";
+//! Name of the parameter for the width of the second charge
+const char zetaVSName[]   = "zetaVS";
+//! Name of the option for the row of the second charge
+const char rowVSName[]    = "rowVS";
+
 /*! \brief Produce a string. Will crash if there is no corresponding string.
  * \param[in] itype The interaction type
  * \return a topology option corresponding to the input. 
@@ -140,7 +147,7 @@ class ParticleType
                                 const ForceFieldParameter &param)
     {
         parameterMap_.insert({type, param});
-        if (type.compare("charge") != 0)
+        if (type.compare("charge") != 0 && type.compare(chargeVSName) != 0)
         {
             parameterMap_.find(type)->second.setNonNegative();
         }
@@ -186,6 +193,22 @@ class ParticleType
      * \return charge of the particle if present, zero otherwise
      */
     double charge() const;
+
+    //! \return whether the particle has a second charge, see chargeVS
+    bool hasChargeVS() const { return hasParameter(chargeVSName); }
+
+    /*! \return The second charge of the particle, at the same position
+     * but with its own distribution, see zetaVS and rowVS, or 0. It
+     * replaces a virtual site of type VSITE1 on top of the particle,
+     * see ForceField::convertVsite1.
+     */
+    double chargeVS() const;
+
+    //! \return The width of the distribution of the second charge, 0 for a point charge
+    double zetaVS() const;
+
+    //! \return The row of the second charge, for Slater distributions
+    int rowVS() const;
         
     /*! \brief Return atomnumber
      * \return atomnumber of the particle or 0 if not available

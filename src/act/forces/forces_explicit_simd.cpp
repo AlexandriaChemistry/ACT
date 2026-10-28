@@ -463,45 +463,71 @@ struct SlaterISATT
 //! Coulomb between point or Gaussian charges
 struct Coulomb
 {
-    //! \copydoc LJ12_6::prepare
+    /*! \copydoc LJ12_6::prepare
+     * Each particle may have a second charge at the same position with its
+     * own width, see ActAtom::chargeVS, such that there are up to four terms,
+     * stored as pairs of the charge product and the combined width. Terms
+     * without charge are stored with a zero charge product, except the first.
+     */
     static bool prepare(const TopologyEntry &b, const std::vector<ActAtom> &atoms, double epsilonr, double *p)
     {
         auto &params   = b.params();
         auto &gindices = b.atomIndices();
-        auto  izeta    = params[coulZETA];
-        auto  jzeta    = params[coulZETA2];
-        p[0] = ONE_4PI_EPS0*atoms[gindices[0]].charge()*atoms[gindices[1]].charge()/epsilonr;
-        // Width of the combined Gaussian, as in Coulomb_GG, zero for point charges
-        if (izeta == 0 || jzeta == 0)
+        const auto &atomi = atoms[gindices[0]];
+        const auto &atomj = atoms[gindices[1]];
+        const double qi[2] = { atomi.charge(), atomi.chargeVS() };
+        const double qj[2] = { atomj.charge(), atomj.chargeVS() };
+        const double zi[2] = { params[coulZETA], atomi.zetaVS() };
+        const double zj[2] = { params[coulZETA2], atomj.zetaVS() };
+        for(int a = 0; a < 2; a++)
         {
-            p[1] = izeta + jzeta;
-        }
-        else
-        {
-            p[1] = izeta*jzeta/std::sqrt(izeta*izeta + jzeta*jzeta);
+            for(int c = 0; c < 2; c++)
+            {
+                double *pk = p + 2*(2*a + c);
+                pk[0] = ONE_4PI_EPS0*qi[a]*qj[c]/epsilonr;
+                // Width of the combined Gaussian, as in Coulomb_GG, zero for point charges
+                if (zi[a] == 0 || zj[c] == 0)
+                {
+                    pk[1] = zi[a] + zj[c];
+                }
+                else
+                {
+                    pk[1] = zi[a]*zj[c]/std::sqrt(zi[a]*zi[a] + zj[c]*zj[c]);
+                }
+            }
         }
         return true;
     }
     //! \copydoc LJ12_6::compute
     static void compute(const double *p, SimdDouble rsq, SimdDouble *e, SimdDouble *fscal)
     {
-        auto       qq      = p[0];
-        auto       zeta    = p[1];
         // Particles on top of each other only have an energy with Gaussian charges
         auto       overlap = !(rsq > 0.0);
         SimdDouble rinv    = simd::invsqrt(rsq);
-        if (zeta == 0)
+        for(int k = 0; k < 4; k++)
         {
-            e[0]  += simd::select(overlap, 0.0, qq*rinv);
-            *fscal = simd::select(overlap, 0.0, qq*rinv*rinv*rinv);
-        }
-        else
-        {
-            SimdDouble rz    = zeta*rsq*rinv;
-            SimdDouble erfrz = simd::erf(rz);
-            e[0]  += simd::select(overlap, qq*2*zeta*invsqrt_pi, qq*erfrz*rinv);
-            *fscal = simd::select(overlap, 0.0,
+            auto qq   = p[2*k];
+            auto zeta = p[2*k+1];
+            if (k > 0 && qq == 0)
+            {
+                continue;
+            }
+            SimdDouble ek, fk;
+            if (zeta == 0)
+            {
+                ek = simd::select(overlap, 0.0, qq*rinv);
+                fk = simd::select(overlap, 0.0, qq*rinv*rinv*rinv);
+            }
+            else
+            {
+                SimdDouble rz    = zeta*rsq*rinv;
+                SimdDouble erfrz = simd::erf(rz);
+                ek = simd::select(overlap, qq*2*zeta*invsqrt_pi, qq*erfrz*rinv);
+                fk = simd::select(overlap, 0.0,
                                   qq*(erfrz*rinv - 2*invsqrt_pi*zeta*simd::exp(-rz*rz))*rinv*rinv);
+            }
+            e[0]  += ek;
+            *fscal = (k == 0) ? fk : *fscal + fk;
         }
     }
 };

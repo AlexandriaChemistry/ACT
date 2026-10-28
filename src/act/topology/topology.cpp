@@ -1311,6 +1311,7 @@ void Topology::GenerateAtoms(MsgHandler             *msghandler,
 
                 ActAtom newatom(cai.getName(), atype->element(), cai.getObtype(), ActParticle::Atom,
                                 atype->atomnumber(), atype->mass(), atype->charge(), atype->row());
+                newatom.setChargeVS(atype->chargeVS(), atype->zetaVS(), atype->rowVS());
                 newatom.setResidueNumber(nres-1);
                 addAtom(newatom);
                 realAtoms_.push_back(natom++);

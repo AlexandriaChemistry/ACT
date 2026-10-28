@@ -63,6 +63,8 @@ enum class eQgen {
 namespace alexandria
 {
 
+class ParticleType;
+
 class ActAtom;
 class Bond;
 class ForceField;
@@ -186,6 +188,12 @@ private:
     std::vector<int>                 nonFixed_;
     //! The atoms/shells not to optimize charges for
     std::vector<int>                 fixed_;
+    /*! The atom of each second charge, see ParticleType::chargeVS. The
+     * second charges are fixed, they are stored after the atoms.
+     */
+    std::vector<size_t>              parentVS_;
+    //! The particle type of each second charge
+    std::vector<const ParticleType *> typeVS_;
     //! The row number for each of the atoms
     std::vector<int>                 row_;
     //! The atomic charges

@@ -81,7 +81,8 @@ void BoundsDevComputer::calcDeviation(MsgHandler                    *,
             auto p  = forcefield->findParticleType(pt)->parameterConst("charge");
             if (p.mutability() == Mutability::ACM && p.maximum() > p.minimum())
             {
-                double q = atom.charge();
+                // Including the second charge, if any
+                double q = atom.totalCharge();
                 // Add shell charge(s)
                 for(auto ss : atom.shells())
                 {

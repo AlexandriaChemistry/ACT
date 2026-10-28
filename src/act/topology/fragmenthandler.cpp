@@ -231,7 +231,10 @@ eQgen FragmentHandler::generateCharges(MsgHandler                   *msg_handler
                 // Copy back charges for this fragment to combined topology atoms
                 for(size_t a = 0; a < topologies_[ff].atoms().size(); a++)
                 {
-                    (*atoms)[atomStart_[ff]+a].setCharge(topologies_[ff].atoms()[a].charge());
+                    const auto &fa = topologies_[ff].atoms()[a];
+                    auto       &ca = (*atoms)[atomStart_[ff]+a];
+                    ca.setCharge(fa.charge());
+                    ca.setChargeVS(fa.chargeVS(), fa.zetaVS(), fa.rowVS());
                 }
             }
         }
@@ -260,7 +263,10 @@ eQgen FragmentHandler::generateCharges(MsgHandler                   *msg_handler
                 }
                 (*ta)[a].setCharge(qnew);
                 (*atoms)[atomStart_[ff]+a].setCharge(qnew);
-                qtot += qnew;
+                // The second charge, if any, is part of the total too
+                (*ta)[a].setChargeVS(ptype->chargeVS(), ptype->zetaVS(), ptype->rowVS());
+                (*atoms)[atomStart_[ff]+a].setChargeVS(ptype->chargeVS(), ptype->zetaVS(), ptype->rowVS());
+                qtot += qnew + ptype->chargeVS();
             }
             // Make sure that the total charge is integer.
             double dq = (qtotal_[ff]-qtot)/ta->size();
@@ -293,7 +299,8 @@ bool FragmentHandler::fetchCharges(std::vector<ActAtom> *atoms)
         auto ats = topologies_[i].atoms();
         for(size_t j = 0; j < ats.size(); j++)
         {
-            (*atoms)[k++].setCharge(ats[j].charge());
+            (*atoms)[k].setCharge(ats[j].charge());
+            (*atoms)[k++].setChargeVS(ats[j].chargeVS(), ats[j].zetaVS(), ats[j].rowVS());
         }
     }
     return true;

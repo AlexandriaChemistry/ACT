@@ -74,7 +74,7 @@ const std::string &interactionTypeToParticleSubtype(InteractionType itype)
 
 //! List of potential options for a particle
 static std::list<std::string> particleOptions = 
-    { "element", "atomnumber", "row" };
+    { "element", "atomnumber", "row", rowVSName };
 
 const std::string &ParticleType::optionValue(const std::string &type) const
 {
@@ -195,6 +195,16 @@ double ParticleType::charge() const
     return 0.0;
 }
 
+double ParticleType::chargeVS() const
+{
+    return hasParameter(chargeVSName) ? paramValue(chargeVSName) : 0.0;
+}
+
+double ParticleType::zetaVS() const
+{
+    return hasParameter(zetaVSName) ? parameterConst(zetaVSName).internalValue() : 0.0;
+}
+
 //! \return int from string, else 0. DANGEROUS.
 static int myatoi(const std::string &str)
 {
@@ -225,6 +235,11 @@ int ParticleType::row() const
         return myatoi(optionValue(anr));
     }
     return 0;
+}
+
+int ParticleType::rowVS() const
+{
+    return hasOption(rowVSName) ? myatoi(optionValue(rowVSName)) : 0;
 }
 
 std::string ParticleType::element() const
