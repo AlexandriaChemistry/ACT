@@ -27,12 +27,17 @@ class MsgHandler;
  * \param[in] what       If 0, first monomer, if 1, second monomer, if 2 the dimer
  * \param[in] forces     Whether to compute forces. If not, the computed forces
  *                       of the conformations are not meaningful.
+ * \param[in] skipDone   Whether to leave out the conformations for which the
+ *                       shells converged, see CoordsEnergy::done, they keep
+ *                       their energies and forces. If false, the done flags
+ *                       are reset.
  */
 void computeEnergies(MsgHandler                  *msghandler,
                      const ForceField            *pd,
                      const std::vector<ACTMol *> &allmols,
                      size_t                       what,
-                     bool                         forces = true);
+                     bool                         forces   = true,
+                     bool                         skipDone = false);
 
 /*! \brief Compute the energies and forces of one potential for all conformations
  * The energy maps and forces of the conformations are cleared first.

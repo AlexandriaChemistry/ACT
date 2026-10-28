@@ -57,20 +57,22 @@
 namespace alexandria
 {
 
-/*! \brief Coordinates and forces of all conformations of a topology.
+/*! \brief Coordinates and forces of the conformations of a topology.
  *
- * Component m of particle a in conformation c is stored at (3*a+m)*stride + c,
+ * Component m of particle a in slot c is stored at (3*a+m)*stride + c,
  * such that loops over conformations access memory contiguously and can be
- * vectorized. The stride is the number of conformations rounded up to a
- * multiple of the explicit SIMD width. The extra conformations are copies of
+ * vectorized. The slots hold all conformations, or only those for which the
+ * shells did not converge yet, see CoordsEnergy::done, and conformation(c)
+ * is the conformation in slot c. The stride is the number of slots rounded
+ * up to a multiple of the explicit SIMD width. The extra slots are copies of
  * the last one, they are computed but not used.
  */
 class ConformationArrays
 {
 public:
-    //! Number of conformations
+    //! Number of slots, that is conformations in the arrays
     size_t              nconf  = 0;
-    //! Number of conformations including the padding
+    //! Number of slots including the padding
     size_t              stride = 0;
     //! Coordinates
     std::vector<double> x;
@@ -93,26 +95,23 @@ public:
      */
     void invalidateVsites() { vsitesValid_ = false; }
 
-    /*! \brief Copy the coordinates of all conformations and clear the forces
+    /*! \brief Copy the coordinates of the conformations and clear the forces
      * Only the coordinates of shells, and of virtual sites if they changed,
-     * are copied if those of all particles were copied before, since the
-     * atoms do not move.
-     * \param[in] coords The conformations, all with the same number of particles
-     * \param[in] atoms  The particles
-     * \param[in] forces Whether forces will be computed, if not they are not cleared
-     * \return false if the conformations do not have the same size
+     * are copied if those of all particles of the same conformations were
+     * copied before, since the atoms do not move.
+     * \param[in] coords   The conformations, all with the same number of particles
+     * \param[in] atoms    The particles
+     * \param[in] forces   Whether forces will be computed, if not they are not cleared
+     * \param[in] skipDone Whether to leave out the conformations that are done
+     * \return false if the conformations do not have the same size or
+     *         there is no conformation left
      */
     bool setCoordinates(const std::vector<CoordsEnergy> &coords,
                         const std::vector<ActAtom>      &atoms,
-                        bool                             forces = true)
+                        bool                             forces   = true,
+                        bool                             skipDone = false)
     {
-        size_t nc = coords.size();
-        if (nc == 0)
-        {
-            valid_ = false;
-            return false;
-        }
-        size_t natom = coords[0].x.size();
+        size_t natom = coords.empty() ? 0 : coords[0].x.size();
         for(const auto &ce : coords)
         {
             if (ce.x.size() != natom)
@@ -121,9 +120,30 @@ public:
                 return false;
             }
         }
+        // The same slots as before unless conformations are left out
+        bool sameSlots = (valid_ && confs_.size() == coords.size() && !skipDone);
+        if (!sameSlots)
+        {
+            std::vector<size_t> confs;
+            for(size_t c = 0; c < coords.size(); c++)
+            {
+                if (!skipDone || !coords[c].done)
+                {
+                    confs.push_back(c);
+                }
+            }
+            sameSlots = (valid_ && confs == confs_);
+            confs_.swap(confs);
+        }
+        size_t nc = confs_.size();
+        if (nc == 0)
+        {
+            valid_ = false;
+            return false;
+        }
         size_t width = explicitSimdWidth();
         size_t st    = ((nc + width - 1)/width)*width;
-        bool   reuse = valid_ && nc == nconf && st == stride && x.size() == DIM*natom*st;
+        bool   reuse = sameSlots && nc == nconf && st == stride && x.size() == DIM*natom*st;
         nconf  = nc;
         stride = st;
         if (forces)
@@ -167,7 +187,7 @@ public:
         return true;
     }
 
-    //! Copy the forces of all conformations into this structure
+    //! Copy the forces of the conformations into this structure
     void loadForces(const std::vector<CoordsEnergy> &coords)
     {
         size_t natom = f.size()/(DIM*stride);
@@ -177,7 +197,7 @@ public:
             {
                 for(size_t c = 0; c < nconf; c++)
                 {
-                    f[(DIM*a+m)*stride + c] = coords[c].fcalc[a][m];
+                    f[(DIM*a+m)*stride + c] = coords[confs_[c]].fcalc[a][m];
                 }
             }
         }
@@ -193,28 +213,33 @@ public:
             {
                 for(size_t c = 0; c < nconf; c++)
                 {
-                    (*coords)[c].fcalc[a][m] = f[(DIM*a+m)*stride + c];
+                    (*coords)[confs_[c]].fcalc[a][m] = f[(DIM*a+m)*stride + c];
                 }
             }
         }
     }
+
+    //! \return The conformations in the slots
+    const std::vector<size_t> &conformations() const { return confs_; }
 
 private:
     //! Whether x holds the coordinates of all particles
     bool                valid_       = false;
     //! Whether x holds the current coordinates of the virtual sites
     bool                vsitesValid_ = false;
+    //! The conformation in each slot
+    std::vector<size_t> confs_;
     //! The shells, or all particles if their types are not known, their coordinates change
     std::vector<size_t> shells_;
     //! The other particles that are not atoms, their coordinates change with their parameters
     std::vector<size_t> vsites_;
 
-    //! Copy the coordinates of particle a of all conformations, including the padding
+    //! Copy the coordinates of particle a of all slots, including the padding
     void copyParticle(const std::vector<CoordsEnergy> &coords, size_t a)
     {
         for(size_t c = 0; c < stride; c++)
         {
-            const auto &xc = coords[std::min(c, nconf-1)].x[a];
+            const auto &xc = coords[confs_[std::min(c, nconf-1)]].x[a];
             for(int m = 0; m < DIM; m++)
             {
                 x[(DIM*a+m)*stride + c] = xc[m];
