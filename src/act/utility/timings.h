@@ -101,6 +101,12 @@ public:
     //! \brief Stop timing region id, it must be the last one started
     void stop(size_t id);
 
+    //! Returned by parent if no region is active
+    static constexpr size_t none = static_cast<size_t>(-1);
+
+    //! \return the innermost region that is active, or none
+    size_t parent() const { return active_.empty() ? none : active_.back().id; }
+
     //! \return the names of the regions
     const std::vector<std::string> &names() const { return names_; }
 
