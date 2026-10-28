@@ -41,6 +41,7 @@
 #include "act/basics/msg_handler.h"
 #include "act/ga/genome.h"
 #include "act/utility/communicationrecord.h"
+#include "act/utility/timings.h"
 
 namespace alexandria
 {
@@ -125,6 +126,8 @@ void ACMFitnessComputer::distributeParameters(MsgHandler                *msghand
                                               const std::vector<double> *params,
                                               const std::set<int>       &changed)
 {
+    static const size_t timer = Timings::instance().index("Parameter distribution");
+    ScopedTimer         scoped(timer);
     if (msghandler && msghandler->debug())
     {
         msghandler->writeDebug("Starting to distribute parameters\n");
@@ -173,6 +176,8 @@ double ACMFitnessComputer::calcDeviation(MsgHandler   *msghandler,
                                          CalcDev       task,
                                          iMolSelect    ims)
 {
+    static const size_t timer = Timings::instance().index("Fitness computation overhead");
+    ScopedTimer         scoped(timer);
     msghandler->writeDebug("CalcDev starting");
 
     auto cr = sii_->commRec();
@@ -232,20 +237,27 @@ double ACMFitnessComputer::calcDeviation(MsgHandler   *msghandler,
         if ((actmol->support() == eSupport::Local) ||
             (task == CalcDev::ComputeAll && actmol->support() == eSupport::Remote))
         {
-            // Now update the topology
-            actmol->topologyPtr()->fillParameters(msghandler, sii_->forcefield(),
-                                                  missingParameters::Error, &itUpdate);
-            // Fill the fragments too if there are any
-            for(auto &ft : actmol->fragmentHandler()->topologiesPtr())
             {
-                ft.fillParameters(msghandler, sii_->forcefield(), missingParameters::Error, &itUpdate);
+                // Now update the topology
+                static const size_t timer = Timings::instance().index("Topology parameter update");
+                ScopedTimer         scoped(timer);
+                actmol->topologyPtr()->fillParameters(msghandler, sii_->forcefield(),
+                                                      missingParameters::Error, &itUpdate);
+                // Fill the fragments too if there are any
+                for(auto &ft : actmol->fragmentHandler()->topologiesPtr())
+                {
+                    ft.fillParameters(msghandler, sii_->forcefield(), missingParameters::Error, &itUpdate);
+                }
             }
-
-            // Run charge generation including shell minimization
-            std::vector<gmx::RVec> forces(actmol->atomsConst().size(), { 0, 0, 0 });
-            std::vector<gmx::RVec> coords = actmol->xOriginal();
-            actmol->generateCharges(msghandler, sii_->forcefield(), forceComp_,
-                                    algorithm_, &coords, &forces, true);
+            {
+                // Run charge generation including shell minimization
+                static const size_t timer = Timings::instance().index("Charge generation");
+                ScopedTimer         scoped(timer);
+                std::vector<gmx::RVec> forces(actmol->atomsConst().size(), { 0, 0, 0 });
+                std::vector<gmx::RVec> coords = actmol->xOriginal();
+                actmol->generateCharges(msghandler, sii_->forcefield(), forceComp_,
+                                        algorithm_, &coords, &forces, true);
+            }
 
             // Check whether we have to disable this compound
             if (!msghandler->ok() && removeMol_)
@@ -271,6 +283,7 @@ double ACMFitnessComputer::calcDeviation(MsgHandler   *msghandler,
     }
     for (DevComputer *mydev : devComputers_)
     {
+        ScopedTimer timer(Timings::instance().index("Deviation " + mydev->name()));
         mydev->calcDeviation(msghandler, forceComp_, selected, targets,
                              sii_->forcefield(), lossFunction_);
     }

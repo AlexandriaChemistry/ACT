@@ -44,6 +44,7 @@
 #include "act/forcefield/generate_dependent.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/textwriter.h"
+#include "act/utility/timings.h"
 
 namespace alexandria
 {
@@ -122,6 +123,8 @@ void StaticIndividualInfo::updateForceField(MsgHandler                *msghandle
                                             const std::set<int>       &changed,
                                             const std::vector<double> &bases)
 {
+    static const size_t timer = Timings::instance().index("Force field update");
+    ScopedTimer         scoped(timer);
     if (bases.size() == 0)
     {
         return;

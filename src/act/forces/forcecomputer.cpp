@@ -42,6 +42,7 @@
 #include "act/topology/actmol.h"
 #include "act/topology/fragmenthandler.h"
 #include "act/topology/topology.h"
+#include "act/utility/timings.h"
 #include "gromacs/gmxpreprocess/grompp-impl.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
@@ -714,6 +715,8 @@ void ForceComputer::relaxMonomer(MsgHandler                  *msghandler,
                                  size_t                       im,
                                  const std::vector<ACTMol *> &allmols) const
 {
+    static const size_t timer = Timings::instance().index("Shell relaxation");
+    ScopedTimer         scoped(timer);
     // We have already done one energy calculation
     int iter     = 1;
     // Prevent shells from flying off.
@@ -752,6 +755,8 @@ void ForceComputer::relaxDimer(MsgHandler                  *msghandler,
                                bool                         fixMonomer[2],
                                const std::vector<ACTMol *> &allmols) const
 {
+    static const size_t timer = Timings::instance().index("Shell relaxation");
+    ScopedTimer         scoped(timer);
     // We have already done one energy calculation
     int iter     = 1;
     // Prevent shells from flying off.
@@ -805,6 +810,8 @@ void ForceComputer::computeRelaxedEnergies(MsgHandler                  *msghandl
                                            bool                         separateInductionCorrection,
                                            bool                         computeForces) const
 {
+    static const size_t timer = Timings::instance().index("Energy calculation overhead");
+    ScopedTimer         scoped(timer);
     // Shells are relaxed using the forces
     bool forces = computeForces || pd->polarizable();
     // Loop over molecules

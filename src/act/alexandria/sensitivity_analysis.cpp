@@ -36,6 +36,7 @@
 #include "act/basics/msg_handler.h"
 #include "act/utility/jsontree.h"
 #include "act/alexandria/acmfitnesscomputer.h"
+#include "act/utility/timings.h"
 
 namespace alexandria
 {
@@ -48,6 +49,8 @@ bool SensitivityAnalysis::run(MsgHandler           *msghandler,
                               JsonTree             *jtree,
                               bool                  quiet)
 {
+    static const size_t timer = Timings::instance().index("Sensitivity analysis");
+    ScopedTimer         scoped(timer);
     std::vector<double> *param = genome->basesPtr();
     const auto upperBound      = sii->upperBound();
     const auto lowerBound      = sii->lowerBound();

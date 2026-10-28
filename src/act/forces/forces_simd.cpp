@@ -29,6 +29,7 @@
 
 #include <algorithm>
 #include <array>
+#include <limits>
 #include <type_traits>
 
 #include "act/basics/msg_handler.h"
@@ -43,6 +44,7 @@
 #include "act/topology/actmol.h"
 #include "act/topology/coords_energy.h"
 #include "act/topology/topology.h"
+#include "act/utility/timings.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/units.h"
 
@@ -1820,6 +1822,27 @@ static bool dispatchPotential(Potential                   mypot,
     return true;
 }
 
+/*! \brief Timer for a potential
+ * \param[in] mypot The potential
+ * \return the index of its timer, see Timings
+ */
+static size_t potentialTimer(Potential mypot)
+{
+    // Indexed by potential, the timers are registered when first used
+    static std::vector<size_t> timers;
+    static const size_t        unset = std::numeric_limits<size_t>::max();
+    size_t                     ip    = static_cast<size_t>(mypot);
+    if (ip >= timers.size())
+    {
+        timers.resize(ip + 1, unset);
+    }
+    if (timers[ip] == unset)
+    {
+        timers[ip] = Timings::instance().index("Potential " + potentialToString(mypot));
+    }
+    return timers[ip];
+}
+
 static inline void calcSome(MsgHandler                 *msghandler,
                             Potential                   mypot,
                             const TopologyEntryVector  &topentries,
@@ -1828,6 +1851,7 @@ static inline void calcSome(MsgHandler                 *msghandler,
                             ConformationEnergies       *cener,
                             double                      epsilonr)
 {
+    ScopedTimer timer(potentialTimer(mypot));
     // Energies for each conformation, MAX_ENER per conformation
     std::vector<double> energies(coords->size()*MAX_ENER, 0.0);
     // Loop over all coordinate arrays.
@@ -2002,6 +2026,7 @@ static bool calcConformations(Potential                        mypot,
                               double                           epsilonr,
                               bool                             forces)
 {
+    ScopedTimer timer(potentialTimer(mypot));
     // Energy term k of conformation c is stored at k*stride + c
     auto &energies = ca->energies;
     energies.assign(MAX_ENER*ca->stride, 0.0);
@@ -2040,6 +2065,8 @@ static inline void lowComputeEnergies(MsgHandler                *msghandler,
                                       bool                       conformations,
                                       bool                       forces)
 {
+    static const size_t timer = Timings::instance().index("Energy calculation overhead");
+    ScopedTimer         scoped(timer);
     auto &cener = cdata->energies;
     cener.setNumberOfConformations(coords->size());
     // Reset the accumulated total potential energy (EPOT) for every conformation

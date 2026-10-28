@@ -44,6 +44,7 @@
 #include "act/utility/jsontree.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/utility/textwriter.h"
+#include "act/utility/timings.h"
 
 namespace alexandria
 {
@@ -73,6 +74,8 @@ void MCMCMutator::mutate(MsgHandler                *msghandler,
                          ga::Genome                *bestGenome,
                          gmx_unused double          prMut)
 {
+    static const size_t timer = Timings::instance().index("MCMC steps");
+    ScopedTimer         scoped(timer);
     int    nsum             = 0;
     size_t nParam           = genome->nBase();
 

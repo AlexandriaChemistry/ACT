@@ -28,6 +28,7 @@
 #include "act/utility/communicationrecord.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/textwriter.h"
+#include "act/utility/timings.h"
 
 namespace alexandria
 {
@@ -98,6 +99,8 @@ ACTMiddleMan::ACTMiddleMan(MsgHandler                *msghandler,
     
 void ACTMiddleMan::run(MsgHandler *msghandler)
 {
+    static const size_t timer = Timings::instance().index("Middleman loop");
+    ScopedTimer         scoped(timer);
     auto cr = ind_->sii()->commRec();
     GMX_RELEASE_ASSERT(cr->isMiddleMan(), "I thought I was the middle man...");
     // Check whether we need to accept a genome from the master

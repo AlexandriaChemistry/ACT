@@ -41,6 +41,7 @@
 #include "act/utility/communicationrecord.h"
 #include "mcmcmutator.h"
 #include "train_ff.h"
+#include "act/utility/timings.h"
 
 namespace ga
 {
@@ -48,6 +49,8 @@ namespace ga
 bool MCMC::evolve(alexandria::MsgHandler       *msghandler,
                   std::map<iMolSelect, Genome> *bestGenome)
 {
+    static const size_t timer = alexandria::Timings::instance().index("MCMC driver");
+    alexandria::ScopedTimer scoped(timer);
     if (sii_->nParam() < 1)
     {
         msghandler->msg(alexandria::ACTStatus::Error,
