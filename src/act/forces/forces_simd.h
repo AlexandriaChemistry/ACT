@@ -14,6 +14,9 @@ class ForceField;
 class MsgHandler;
 
 /*! \brief Compute energies and forces for monomers and/or dimers.
+ * The energies are stored in the conformation data of the molecules, see
+ * ACTMol::conformationData, not in the energy maps of the conformations.
+ * ConformationEnergies::store copies them there.
  * \param[in] msghandler For debugging and messages
  * \param[in] pd         An ACT force field
  * \param[in] allmols    Vector containing all the molecules

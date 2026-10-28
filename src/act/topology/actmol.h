@@ -38,6 +38,7 @@
 #include <map>
 
 #include "act/basics/msg_handler.h"
+#include "act/forces/conformationdata.h"
 #include "act/forces/forcecomputer.h"
 #include "act/molprop/molprop.h"
 #include "act/forcefield/forcefield.h"
@@ -150,6 +151,8 @@ private:
     //! Coordinates and energies from all experiments
     std::vector<CoordsEnergy>        dimerCoords_;
     std::vector<CoordsEnergy>        monomerCoords_[2];
+    //! The same for computing all conformations at once, monomers first, then the dimer
+    ConformationData                 conformationData_[3];
     //! \brief Routine to gather the CoordsEnergy
     
     /*! \brief
@@ -297,6 +300,11 @@ public:
      * \param[in] index Must be zero or one, otherwise bad things will happen.
      */
     std::vector<CoordsEnergy> *monomerCoords(size_t index) { return &monomerCoords_[index]; }
+    /*! \brief Data for computing all conformations at once
+     * \param[in] what 0 or 1 for the monomers, 2 for the dimer
+     * \return The data
+     */
+    ConformationData *conformationData(size_t what) { return &conformationData_[what]; }
     //! \return the number of real atoms, i.e. not shells or vsites
     int nRealAtoms() const { return realAtoms_.size(); }
     
