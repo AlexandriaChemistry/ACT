@@ -1855,6 +1855,13 @@ void Topology::fillParameters(MsgHandler                      *msghandler,
             fillParams(msghandler, fs, topentry->selfPtr(),
                        pp->second.param.size(), pp->second.param, &param,
                        missing);
+            // The widths of the charge distributions belong to the atoms,
+            // in the order of the atoms of the entry.
+            if (InteractionType::ELECTROSTATICS == entry.first && param.size() > coulZETA2 &&
+                topentry->swapped())
+            {
+                std::swap(param[coulZETA], param[coulZETA2]);
+            }
             if (param.empty() || !msghandler->ok() || param != topentry->params())
             {
                 changed = true;
@@ -1981,8 +1988,9 @@ void Topology::setEntryIdentifiers(MsgHandler       *msghandler,
             }
             else
             {
-                (*topentry)->setId({ Identifier(btype, (*topentry)->bondOrders(),
-                                                fs.canSwap()) });
+                Identifier id(btype, (*topentry)->bondOrders(), fs.canSwap());
+                (*topentry)->setSwapped(id.atoms() != btype);
+                (*topentry)->setId(id);
             }
         }
         else if (msghandler->debug())
