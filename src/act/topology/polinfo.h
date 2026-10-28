@@ -45,16 +45,14 @@ class PolInfo
 private:
     // Is this particle a shell?
     std::vector<bool>              isShell_;
-    // One over force constant for this particle
-    std::vector<double>            fcShell1_;
-    // Hyperforce constant
-    std::vector<double>            fcHyper_;
     // Number of shells
     size_t                         nShell_ = 0;
 public:
     //! Constructor
     PolInfo() {}
     /*! \brief Store polarization information
+     * The force constants of the shells are not stored, since they change
+     * when the polarizabilities or the shell charges are trained.
      * \param[in] pd  The force field
      * \param[in] top A topology
      */
@@ -62,10 +60,6 @@ public:
               const Topology   *top);
     //! \return the isShell data
     const std::vector<bool> isShell() const { return isShell_; }
-    //! \return the fcShell1 data
-    const std::vector<double> fcShell1() const { return fcShell1_; }
-    //! \return hyperforce constant
-    const std::vector<double> &fcHyper() const { return fcHyper_; }
     //! \return number of shells
     size_t nShell() const { return nShell_; }
 };

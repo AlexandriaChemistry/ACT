@@ -39,42 +39,20 @@ namespace alexandria
 void PolInfo::init(const ForceField *pd,
                    const Topology   *top)
 {
-    auto itype    = InteractionType::POLARIZATION;
-    if (!pd->interactionPresent(itype))
+    isShell_.clear();
+    nShell_ = 0;
+    if (!pd->interactionPresent(InteractionType::POLARIZATION))
     {
         return;
     }
-    auto &ffpl    = pd->findForcesConst(itype);
-    auto pol_name = potentialToParameterName(ffpl.potential());
-    // Reset arrays
-    isShell_.clear();
-    fcHyper_.clear();
-    fcShell1_.clear();
     for(auto &aa : top->atoms())
     {
         bool bIS = aa.pType() == ActParticle::Shell;
         isShell_.push_back(bIS);
-        double fc_1    = 0;
-        double fchyper = 0;
         if (bIS)
         {
-            Identifier atID(aa.ffType());
-            auto params = ffpl.findParameterMapConst(atID);
-            auto alpha  = params.find(pol_name[polALPHA])->second.internalValue();
-            auto ffp = params.find(pol_name[polFCHYPER]);
-            if (ffp != params.end())
-            {
-                fchyper = ffp->second.internalValue();
-            }
-            auto q     = aa.charge();
-            if (alpha > 0 && q != 0)
-            {
-                fc_1 = (q*q*ONE_4PI_EPS0)/alpha;
-            }
             nShell_ += 1;
         }
-        fcHyper_.push_back(fchyper);
-        fcShell1_.push_back(fc_1);
     }
 }
 

@@ -420,8 +420,6 @@ size_t ForceComputer::updateShells(const Topology            *top,
                                    size_t                     offset,
                                    size_t                     nShell,
                                    const std::vector<bool>    isShell,
-                                   const std::vector<double>  fcShell1,
-                                   const std::vector<double>  fcHyper,
                                    std::vector<CoordsEnergy> *myCoords) const
 {
     auto   itype      = InteractionType::POLARIZATION;
@@ -471,9 +469,19 @@ size_t ForceComputer::updateShells(const Topology            *top,
                 int coreLocal    = p->atomIndex(0);
                 int shellGlobal  = shellLocal + static_cast<int>(offset);
                 int coreGlobal   = coreLocal + static_cast<int>(offset);
+                // The force constant from the current polarizability and
+                // shell charge, since both may be trained, as in compute.
+                auto   &params = p->params();
+                double  alpha  = params[polALPHA];
+                double  qshell = atoms[shellLocal].charge();
+                double  fc1    = 0;
+                if (alpha > 0 && qshell != 0)
+                {
+                    fc1 = (qshell*qshell*ONE_4PI_EPS0)/alpha;
+                }
                 update_shell_positions(coreGlobal, shellGlobal,
                                        &dim.x, dim.fcalc,
-                                       fcShell1[shellLocal], fcHyper[shellLocal]);
+                                       fc1, params[polFCHYPER]);
                 // Check distance from parent, if there is only one
                 if (maxShellDistance2 > 0 && atoms[shellLocal].parents().size() == 1)
                 {
@@ -759,7 +767,6 @@ void ForceComputer::relaxMonomer(MsgHandler                  *msghandler,
             // Relax monomers first.
             if (mol.monomerCoords(im)->size() !=
                 updateShells(&tops[im], 0, pols[im].nShell(), pols[im].isShell(),
-                             pols[im].fcShell1(), pols[im].fcHyper(),
                              mol.monomerCoords(im)))
             {
                 allDone = false;
@@ -810,7 +817,6 @@ void ForceComputer::relaxDimer(MsgHandler                  *msghandler,
                     if (mol.monomerCoords(im)->size() !=
                         updateShells(&tops[im], fh->atomStart()[im],
                                      pols[im].nShell(), pols[im].isShell(),
-                                     pols[im].fcShell1(), pols[im].fcHyper(),
                                      mol.dimerCoords()))
                     {
                         allDone = false;

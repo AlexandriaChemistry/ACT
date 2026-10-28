@@ -75,17 +75,19 @@ private:
     mutable size_t nShellConvergeFailed_ = 0;
     /*! \brief Update shell positions if needed.
      * This will work on a whole ACT mol or just one of its monomers.
-     * \param[in]    mol      The ACT molecule 
+     * The force constants of the shells are computed from the current
+     * polarizabilities and shell charges in the topology.
      * \param[in]    top      The topology
-     * \param[inout] mycoords The coordinates and energy array
+     * \param[in]    offset   Index of the first atom of the topology in the coordinates
+     * \param[in]    nShell   The number of shells
+     * \param[in]    isShell  Whether each atom is a shell
+     * \param[inout] myCoords The coordinates and energy array
      * \return The number of shells that converged
      */
     size_t updateShells(const Topology            *top,
                         size_t                     offset,
                         size_t                     nShell,
                         const std::vector<bool>    isShell,
-                        const std::vector<double>  fcShell1,
-                        const std::vector<double>  fcHyper,
                         std::vector<CoordsEnergy> *myCoords) const;
     void relaxMonomer(MsgHandler                  *msg_handler,
                       const ForceField            *pd,
