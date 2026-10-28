@@ -90,7 +90,7 @@ static void generateParameterPairs(MsgHandler      *msghandler,
     auto        forcesVdw = pd->findForces(itype);
     const auto &comb_rule = forcesVdw->combinationRules();
     // The new parameters are added to the same list
-    ForceFieldParameterListMap *parm = forcesVdw->parameters();
+    ForceFieldParameterListMap *parm = forcesVdw->parametersNoRemoval();
 
     // If the combination rule was updated all pairs change
     bool crupdated = false;
@@ -167,7 +167,7 @@ static void generateParameterPairs(MsgHandler      *msghandler,
     }
     if (msghandler && msghandler->debug())
     {
-        int np = forcesVdw->parameters()->size();
+        int np = forcesVdw->numberOfParameters();
         msghandler->writeDebug(gmx::formatString("Made %d/%d identifiers for %s in generateParameterPairs\n",
                                                  nid, np, interactionTypeToString(itype).c_str()));
     }
@@ -191,7 +191,7 @@ static void generateCoulombParameterPairs(ForceField *pd, bool force)
     auto cname = potentialToParameterName(Potential::COULOMB_GAUSSIAN);
     auto zeta = cname[coulZETA];
     // Finally add the new parameters to the exisiting list
-    auto fold = forcesCoul->parameters();
+    auto fold = forcesCoul->parametersNoRemoval();
     // The zeta of each particle type and whether it was updated
     auto singles = singleParameters(fold);
     std::vector<double> zetas;
@@ -238,7 +238,7 @@ static void generateCoulombParameterPairs(ForceField *pd, bool force)
     }
     if (debug)
     {
-        int np = forcesCoul->parameters()->size();
+        int np = forcesCoul->numberOfParameters();
         fprintf(debug, "Made %d/%d identifiers in generateCoulombParameterPairs\n", nid, np);
     }
     // Phew, we're done!

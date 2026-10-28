@@ -1769,17 +1769,18 @@ void Topology::addFBPR(MsgHandler *msghandler,
 //! \brief Low-level parameter filling
 static void fillParams(MsgHandler                      *msghandler,
                        const ForceFieldParameterList   &fs,
-                       const Identifier                &btype,
+                       TopologyEntry                   *topentry,
                        int                              independent,
                        const std::vector<const char *> &param_names,
                        std::vector<double>             *param,
                        missingParameters                missing)
 {
     // This is called for every interaction in every optimization step,
-    // so look up the parameters only once and make messages only if needed.
-    const auto &parameters = fs.parametersConst();
-    auto        ffiter     = parameters.find(btype);
-    if (parameters.end() == ffiter)
+    // so the entry keeps the parameters it found and messages are made
+    // only if needed.
+    const auto &btype  = topentry->id();
+    const auto *ffiter = topentry->forceFieldParameters(fs);
+    if (nullptr == ffiter)
     {
         if (missingParameters::Ignore != missing)
         {
@@ -1788,7 +1789,7 @@ static void fillParams(MsgHandler                      *msghandler,
         }
         return;
     }
-    const auto &ff = ffiter->second;
+    const auto &ff = *ffiter;
 
     if (param->empty())
     {
@@ -1844,7 +1845,7 @@ void Topology::fillParameters(MsgHandler                      *msghandler,
             const auto &topID    = topentry->id();
 
             param.clear();
-            fillParams(msghandler, fs, topID,
+            fillParams(msghandler, fs, topentry->selfPtr(),
                        pp->second.param.size(), pp->second.param, &param,
                        missing);
             if (param.empty())

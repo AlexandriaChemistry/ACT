@@ -64,6 +64,12 @@ private:
     Identifier                                  id_;
     //! The gromacs topology index (in idef.ffparams)
     int                                         gromacsType_ = -1;
+    //! The force field parameters of id_, see forceFieldParameters()
+    const ForceFieldParameterMap               *ffParams_    = nullptr;
+    //! The parameter list ffParams_ belongs to
+    const ForceFieldParameterList              *ffList_      = nullptr;
+    //! The structure version of ffList_ when ffParams_ was set
+    size_t                                      ffVersion_   = 0;
 public:
     //! Default empty constructor
     TopologyEntry() {}
@@ -138,7 +144,31 @@ public:
     /*! \brief Set the identifier(s)
      * \param[in] id    The identifier(s)
      */
-    void setId(const Identifier &id) { id_ = id; }
+    void setId(const Identifier &id)
+    {
+        id_       = id;
+        ffParams_ = nullptr;
+    }
+
+    /*! \brief Look up the force field parameters of this entry
+     * The result is kept, since this is called for every interaction in
+     * every optimization step. It is looked up again if the parameter list
+     * is a different one or its structure changed.
+     * \param[in] fs The parameter list
+     * \return The parameters, or nullptr if there are none
+     */
+    const ForceFieldParameterMap *forceFieldParameters(const ForceFieldParameterList &fs)
+    {
+        if (ffParams_ == nullptr || ffList_ != &fs || ffVersion_ != fs.structureVersion())
+        {
+            const auto &parameters = fs.parametersConst();
+            auto        ffiter     = parameters.find(id_);
+            ffParams_  = parameters.end() == ffiter ? nullptr : &ffiter->second;
+            ffList_    = &fs;
+            ffVersion_ = fs.structureVersion();
+        }
+        return ffParams_;
+    }
 
     /*! \brief Set the parameters
      * \param[in] param The parameter(s)

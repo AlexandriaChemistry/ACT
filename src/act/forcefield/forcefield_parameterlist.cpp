@@ -376,6 +376,7 @@ CommunicationStatus ForceFieldParameterList::BroadCast(const CommunicationRecord
         else
         {
             parameters_.clear();
+            version_.update();
             for(size_t i = 0; i < nparam; i++)
             {
                 Identifier key;
@@ -470,6 +471,7 @@ CommunicationStatus ForceFieldParameterList::Receive(const CommunicationRecord *
         size_t nparam;
         cr->recv(src, &nparam);
         parameters_.clear();
+        version_.update();
         for(size_t i = 0; i < nparam; i++)
         {
             Identifier key;
