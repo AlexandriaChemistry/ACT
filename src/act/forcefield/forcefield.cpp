@@ -327,6 +327,10 @@ static bool vanishes(Potential pot, const ForceFieldParameterMap &params)
     case Potential::MACDANIEL_SCHMIDT:
         scale = { dexpA1, dexpA2 };
         break;
+    case Potential::POLARIZATION:
+        // Without polarizability there is no shell
+        scale = { polALPHA };
+        break;
     default:
         break;
     }
@@ -361,9 +365,11 @@ void ForceField::convertVsite1(MsgHandler *msghandler)
     const std::set<InteractionType> allowed    = { InteractionType::VSITE1, InteractionType::VDW,
                                                    InteractionType::VDWCORRECTION,
                                                    InteractionType::INDUCTIONCORRECTION,
+                                                   InteractionType::POLARIZATION,
                                                    InteractionType::ELECTROSTATICS };
     const std::set<InteractionType> mustBeZero = { InteractionType::VDW, InteractionType::VDWCORRECTION,
-                                                   InteractionType::INDUCTIONCORRECTION };
+                                                   InteractionType::INDUCTIONCORRECTION,
+                                                   InteractionType::POLARIZATION };
     // The names by which the parameters of other interaction types refer to a particle type
     auto names = [](const ParticleType &pt)
     {
