@@ -146,6 +146,74 @@ static inline SimdDouble erf(SimdDouble x)
     return select(small, ratio, select(x < 0.0, -large, large));
 }
 
+//! Coefficients of asin(x) = x + x z P(z)/Q(z) with z = x^2 for |x| <= 0.625, from the Cephes library
+const double asinP[] = { 4.253011369004428248960E-3, -6.019598008014123785661E-1, 5.444622390564711410273E0,
+                         -1.626247967210700244449E1, 1.956261983317594739197E1, -8.198089802484824371615E0 };
+//! See asinP
+const double asinQ[] = { 1.0, -1.474091372988853791896E1, 7.049610280856842141659E1,
+                         -1.471791292232726029859E2, 1.395105614657485689735E2, -4.918853881490881290097E1 };
+
+/*! \brief Arc sine for small arguments
+ * \param[in] x The argument, |x| <= 0.625
+ */
+static inline SimdDouble asinSmall(SimdDouble x)
+{
+    SimdDouble z = x*x;
+    SimdDouble p = z*polynomial(z, asinP)/polynomial(z, asinQ);
+    return fma(x, p, x);
+}
+
+/*! \brief Arc sine
+ * The rational approximations of the Cephes library, also used in the
+ * SIMD math of GROMACS: for |x| <= 0.625 asin(x) = x + x z P(z)/Q(z) with
+ * z = x^2, otherwise asin(x) = pi/2 - sqrt(2z) (1 + z R(z)/S(z)) with
+ * z = 1 - |x|. Both are computed and the right one selected, using a
+ * single division.
+ */
+static inline SimdDouble asin(SimdDouble x)
+{
+    const double R[] = { 2.967721961301243206100E-3, -5.634242780008963776856E-1, 6.968710824104713396794E0,
+                         -2.556901049652824852289E1, 2.853665548261061424989E1 };
+    const double S[] = { 1.0, -2.194779531642920639778E1, 1.470656354026814941758E2,
+                         -3.838770957603691357202E2, 3.424398657913078477438E2 };
+    // pi/4 and the part of pi/2 that does not fit
+    const double pio4    = 7.85398163397448309616E-1;
+    const double lowPio2 = 6.123233995736765886130E-17;
+    SimdDouble   ax      = abs(x);
+    SimdBool     big     = ax > 0.625;
+    SimdDouble   z       = select(big, 1.0 - ax, ax*ax);
+    SimdDouble   num     = select(big, polynomial(z, R), polynomial(z, asinP));
+    SimdDouble   den     = select(big, polynomial(z, S), polynomial(z, asinQ));
+    SimdDouble   p       = z*num/den;
+    SimdDouble   s       = sqrt(z + z);
+    SimdDouble   large   = ((pio4 - s) - (s*p - lowPio2)) + pio4;
+    SimdDouble   result  = select(big, large, fma(ax, p, ax));
+    return select(x < 0.0, -result, result);
+}
+
+/*! \brief Arc cosine
+ * As in the Cephes library and GROMACS, acos(x) = pi/2 - asin(x) for
+ * |x| <= 0.5 and acos(x) = 2 asin(sqrt((1 - |x|)/2)) otherwise, or pi
+ * minus that for negative x, which is accurate close to -1 and 1.
+ * The argument of asin is never larger than 0.5.
+ * \param[in] x The argument, in [-1, 1]
+ */
+static inline SimdDouble acos(SimdDouble x)
+{
+    // pi/4 and pi/2, with the parts of pi/2 and pi that do not fit
+    const double pio4     = 7.85398163397448309616E-1;
+    const double pio2     = 1.57079632679489661923E0;
+    const double lowPio2  = 6.123233995736765886130E-17;
+    const double lowPi    = 1.2246467991473531772E-16;
+    SimdDouble   ax       = abs(x);
+    SimdBool     big      = ax > 0.5;
+    SimdDouble   a        = asinSmall(select(big, sqrt(0.5 - 0.5*ax), x));
+    SimdDouble   twoa     = a + a;
+    SimdDouble   small    = ((pio4 - a) + lowPio2) + pio4;
+    SimdDouble   negative = ((pio2 - twoa) + lowPi) + pio2;
+    return select(big, select(x < 0.0, negative, twoa), small);
+}
+
 } // namespace simd
 
 } // namespace alexandria

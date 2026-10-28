@@ -119,6 +119,22 @@ TEST(SimdMathTest, Erf)
     EXPECT_LE(maxError(func, ref, -1, 1, true), 8);
 }
 
+TEST(SimdMathTest, Asin)
+{
+    auto func = [](SimdDouble x) { return simd::asin(x); };
+    auto ref  = [](double x) { return std::asin(x); };
+    EXPECT_LE(maxError(func, ref, -1, 1, true), 2);
+    EXPECT_LE(maxError(func, ref, -1e-6, 1e-6, true), 2);
+}
+
+TEST(SimdMathTest, Acos)
+{
+    auto func = [](SimdDouble x) { return simd::acos(x); };
+    auto ref  = [](double x) { return std::acos(x); };
+    EXPECT_LE(maxError(func, ref, -1, 1, true), 2);
+    EXPECT_LE(maxError(func, ref, 1-1e-6, 1, false), 1e-16);
+}
+
 } // namespace
 
 } // namespace alexandria
