@@ -135,6 +135,47 @@ TEST(SimdMathTest, Acos)
     EXPECT_LE(maxError(func, ref, 1-1e-6, 1, false), 1e-16);
 }
 
+TEST(SimdMathTest, Atan2)
+{
+    // Points on circles of different radius around the origin, in all
+    // quadrants, and the axes, which are on the grid of angles as well
+    for (double radius : { 1e-5, 0.3, 1.0, 70.0 })
+    {
+        auto func = [radius](SimdDouble phi)
+        {
+            double p[simd::simdWidth], x[simd::simdWidth], y[simd::simdWidth];
+            simd::store(p, phi);
+            for (size_t k = 0; k < simd::simdWidth; k++)
+            {
+                x[k] = radius*std::cos(p[k]);
+                y[k] = radius*std::sin(p[k]);
+            }
+            return simd::atan2(simd::load(y), simd::load(x));
+        };
+        auto ref  = [radius](double phi)
+        {
+            return std::atan2(radius*std::sin(phi), radius*std::cos(phi));
+        };
+        EXPECT_LE(maxError(func, ref, -M_PI, M_PI, true), 2) << "radius " << radius;
+    }
+    const double x[] = { 0, 1, 0, -1, 0, 3e-200, -2, 5 };
+    const double y[] = { 0, 0, 1, 0, -1, 1, 1e-300, -1e-300 };
+    for (size_t i = 0; i < sizeof(x)/sizeof(x[0]); i += simd::simdWidth)
+    {
+        double xs[simd::simdWidth], ys[simd::simdWidth], r[simd::simdWidth];
+        for (size_t k = 0; k < simd::simdWidth; k++)
+        {
+            xs[k] = x[(i+k) % 8];
+            ys[k] = y[(i+k) % 8];
+        }
+        simd::store(r, simd::atan2(simd::load(ys), simd::load(xs)));
+        for (size_t k = 0; k < simd::simdWidth; k++)
+        {
+            EXPECT_EQ(std::atan2(ys[k], xs[k]), r[k]) << "x " << xs[k] << " y " << ys[k];
+        }
+    }
+}
+
 } // namespace
 
 } // namespace alexandria

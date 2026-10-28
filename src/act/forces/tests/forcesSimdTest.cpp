@@ -420,6 +420,11 @@ TEST_F(ForcesSimdTest, FourierDihedrals)
     test(Potential::FOURIER_DIHEDRALS, dihedrals({ 3, -2, 1, 4, -1, 0.5 }));
 }
 
+TEST_F(ForcesSimdTest, FourierDihedralsFewParameters)
+{
+    test(Potential::FOURIER_DIHEDRALS, dihedrals({ 3, -2, 1.5 }));
+}
+
 } // namespace
 
 } // namespace alexandria

@@ -214,6 +214,48 @@ static inline SimdDouble acos(SimdDouble x)
     return select(big, select(x < 0.0, negative, twoa), small);
 }
 
+/*! \brief Arc tangent of y/x in the quadrant of (x, y)
+ * The algorithm of atan in the Cephes library, also used in the SIMD math
+ * of GROMACS: t = |y|/|x| is reduced to |t| <= tan(pi/8) with
+ * atan(t) = pi/2 + atan(-1/t) for t > tan(3pi/8) and
+ * atan(t) = pi/4 + atan((t - 1)/(t + 1)) for t > 0.66, followed by
+ * atan(t) = t + t z P(z)/Q(z) with z = t^2. The reduced argument is
+ * computed from |x| and |y| with a single division. As std::atan2,
+ * atan2(0, 0) is 0, but the result for y = -0 is positive.
+ * \param[in] y The numerator
+ * \param[in] x The denominator
+ * \return The angle in [-pi, pi]
+ */
+static inline SimdDouble atan2(SimdDouble y, SimdDouble x)
+{
+    const double P[] = { -8.750608600031904122785E-1, -1.615753718733365076637E1, -7.500855792314704667340E1,
+                         -1.228866684490136173410E2, -6.485021904942025371773E1 };
+    const double Q[] = { 1.0, 2.485846490142306297962E1, 1.650270098316988542046E2, 4.328810604912902668951E2,
+                         4.853903996359136964868E2, 1.945506571482613964425E2 };
+    const double tan3pio8 = 2.41421356237309504880;
+    // pi/4, pi/2 and pi, with the parts of pi/2 and pi that do not fit
+    const double pio4     = 7.85398163397448309616E-1;
+    const double pio2     = 1.57079632679489661923E0;
+    const double pi       = 3.14159265358979323846E0;
+    const double lowPio2  = 6.123233995736765886130E-17;
+    const double lowPi    = 1.2246467991473531772E-16;
+    SimdDouble   ax       = abs(x);
+    SimdDouble   ay       = abs(y);
+    SimdBool     big      = ay > tan3pio8*ax;
+    SimdBool     mid      = ay > 0.66*ax;
+    SimdDouble   num      = select(big, -ax, select(mid, ay - ax, ay));
+    // The denominator is only zero if x and y both are
+    SimdDouble   den      = select(big, ay, select(mid, ay + ax, select(ax > 0.0, ax, 1.0)));
+    SimdDouble   t        = num/den;
+    SimdDouble   z        = t*t;
+    SimdDouble   p        = z*polynomial(z, P)/polynomial(z, Q);
+    SimdDouble   base     = select(big, pio2, select(mid, pio4, 0.0));
+    SimdDouble   low      = select(big, lowPio2, select(mid, 0.5*lowPio2, 0.0));
+    SimdDouble   r        = base + (fma(t, p, t) + low);
+    r                     = select(x < 0.0, (pi - r) + lowPi, r);
+    return select(y < 0.0, -r, r);
+}
+
 } // namespace simd
 
 } // namespace alexandria
