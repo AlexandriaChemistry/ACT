@@ -1033,7 +1033,10 @@ void ForceField::sendToHelpers(const CommunicationRecord *cr, int root, bool bca
     {
         if (bcast)
         {
+            // Packed into a single broadcast, the broadcasts in BroadCast use root 0
+            cr->startPackedBcast(cr->send_helpers(), 0);
             BroadCast(cr, root, cr->send_helpers(), msgHandler);
+            cr->finishPackedBcast();
         }
         else
         {
@@ -1055,7 +1058,10 @@ void ForceField::sendToHelpers(const CommunicationRecord *cr, int root, bool bca
     {
         if (bcast)
         {
+            // Packed into a single broadcast, the broadcasts in BroadCast use root 0
+            cr->startPackedBcast(cr->send_helpers(), 0);
             BroadCast(cr, root, cr->send_helpers(), msgHandler);
+            cr->finishPackedBcast();
         }
         else
         {

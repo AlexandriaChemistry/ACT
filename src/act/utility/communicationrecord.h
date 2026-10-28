@@ -115,9 +115,29 @@ private:
     bool              doneCalled_            = false;
     //! Pointer to MsgHandler object
     MsgHandler       *msg_handler_           = nullptr;
+    //! Whether broadcasts are packed, see startPackedBcast
+    mutable bool              packing_       = false;
+    //! The communicator of the packed broadcasts
+    mutable MPI_Comm          packComm_      = MPI_COMM_NULL;
+    //! The root of the packed broadcasts
+    mutable int               packRoot_      = 0;
+    //! Whether this process is the root of the packed broadcasts
+    mutable bool              packIsRoot_    = false;
+    //! The packed data
+    mutable std::vector<char> packBuffer_;
+    //! Position of the next data to unpack
+    mutable size_t            packPosition_  = 0;
     /*************************************************
      *           LOW LEVEL ROUTINES                  *
      *************************************************/
+
+    /*! Broadcast bytes, or pack or unpack them, see startPackedBcast
+     * \param[inout] buf    The data
+     * \param[in]    nbytes The number of bytes
+     * \param[in]    comm   MPI communicator
+     * \param[in]    root   The root of the broadcast
+     */
+    void bcast_low(void *buf, size_t nbytes, MPI_Comm comm, int root) const;
 
     /*! Send a buffer to another processor.
      * \param[in] dest    The destination processor
@@ -243,6 +263,23 @@ public:
      */
     template<typename T>
     void bcast(T *t, MPI_Comm comm, int root=0) const;
+
+    /*! \brief Pack the broadcasts that follow into a single one
+     * Many small broadcasts, such as those of all the data of a molecule,
+     * take much longer than a single one with the same data. Until
+     * finishPackedBcast is called, the root collects the data of the
+     * broadcasts on comm, and the other processes take them from the data
+     * they receive here. All processes have to make the same broadcasts in
+     * between, and no other broadcasts.
+     * \param[in] comm MPI communicator
+     * \param[in] root The root of the broadcasts
+     */
+    void startPackedBcast(MPI_Comm comm, int root = 0) const;
+
+    /*! \brief Finish packing broadcasts, see startPackedBcast
+     * The root broadcasts the collected data here.
+     */
+    void finishPackedBcast() const;
 
     /*! Send data to another processor.
      * \param[in] dest The destination processor

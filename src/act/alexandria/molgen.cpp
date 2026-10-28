@@ -996,8 +996,10 @@ size_t MolGen::Read(MsgHandler                          *msghandler,
                     cr_->bcast(&bcint, mycomms[myindex]);
                     // Send the index of the target group
                     cr_->bcast(&comm_index, mycomms[myindex]);
-                    // Send the molecule
+                    // Send the molecule, packed into a single broadcast
+                    cr_->startPackedBcast(mycomms[myindex], root);
                     cs = actmol->BroadCast(cr_, root, mycomms[myindex]);
+                    cr_->finishPackedBcast();
                     if (CommunicationStatus::OK != cs)
                     {
                         GMX_THROW(gmx::InternalError(gmx::formatString("Could not broadcast %s to middlemen", actmol->getMolname().c_str()).c_str()));
@@ -1009,7 +1011,9 @@ size_t MolGen::Read(MsgHandler                          *msghandler,
                     // We only send relevant molecules to the helpers
                     cr_->bcast(&bcint, mycomms[comm_index]);
                     cr_->bcast(&comm_index, mycomms[comm_index]);
+                    cr_->startPackedBcast(mycomms[comm_index], root);
                     cs = actmol->BroadCast(cr_, root, mycomms[comm_index]);
+                    cr_->finishPackedBcast();
                     if (CommunicationStatus::OK != cs)
                     {
                         GMX_THROW(gmx::InternalError(gmx::formatString("Could not broadcast %s to helpers", actmol->getMolname().c_str()).c_str()));
@@ -1068,7 +1072,9 @@ size_t MolGen::Read(MsgHandler                          *msghandler,
             }
             int comm_index = 0;
             cr_->bcast(&comm_index, mycomm);
+            cr_->startPackedBcast(mycomm, root);
             CommunicationStatus cs = actmol.BroadCast(cr_, root, mycomm);
+            cr_->finishPackedBcast();
             if (CommunicationStatus::OK != cs)
             {
                 imm = ACTMessage::CommProblem;
