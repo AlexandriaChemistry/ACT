@@ -721,6 +721,96 @@ void computePairs(const TopologyEntryVector  &entries,
     }
 }
 
+//! A harmonic angle with prepared parameters
+struct AngleParams
+{
+    //! Offsets of the coordinates of the three atoms
+    size_t i, j, k;
+    //! The reference angle
+    double theta0;
+    //! The force constant
+    double kt;
+};
+
+/*! \brief Compute harmonic angles for all conformations
+ * As angles_simd in GROMACS, the cosine of the angle is computed from the
+ * vectors and the angle with a SIMD arc cosine. The formulas are those of
+ * angleOne in forces_simd.cpp.
+ * \tparam       Forces   Whether to compute forces
+ * \param[in]    entries  The interactions
+ * \param[in]    stride   Number of conformations, a multiple of simdWidth
+ * \param[in]    x        Coordinates
+ * \param[inout] f        Forces, not used if Forces is false
+ * \param[inout] energies Energies
+ */
+template <bool Forces>
+void computeAngles(const TopologyEntryVector &entries,
+                   size_t                     stride,
+                   const double              *x,
+                   double                    *f,
+                   double                    *energies)
+{
+    std::vector<AngleParams> angles;
+    angles.reserve(entries.size());
+    for (const auto &b : entries)
+    {
+        const TopologyEntry &entry   = *b.operator->();
+        auto                &indices = entry.atomIndices();
+        angles.push_back({ DIM*indices[0]*stride, DIM*indices[1]*stride, DIM*indices[2]*stride,
+                           entry.params()[angleANGLE], entry.params()[angleKT] });
+    }
+    for (const auto &a : angles)
+    {
+        double halfk = 0.5*a.kt;
+        for (size_t c = 0; c < stride; c += simd::simdWidth)
+        {
+            SimdDouble rij[DIM], rkj[DIM];
+            SimdDouble ip = 0.0, ipa = 0.0, ipb = 0.0;
+            for (int m = 0; m < DIM; m++)
+            {
+                SimdDouble xj = simd::load(x + a.j + m*stride + c);
+                rij[m] = simd::load(x + a.i + m*stride + c) - xj;
+                rkj[m] = simd::load(x + a.k + m*stride + c) - xj;
+                ip     = simd::fma(rij[m], rkj[m], ip);
+                ipa    = simd::fma(rij[m], rij[m], ipa);
+                ipb    = simd::fma(rkj[m], rkj[m], ipb);
+            }
+            // As cos_angle, limited to [-1, 1]
+            SimdDouble ipab  = ipa*ipb;
+            SimdDouble costh = simd::select(ipab > 0.0, ip*simd::invsqrt(ipab), 1.0);
+            costh            = simd::min(simd::max(costh, -1.0), 1.0);
+            SimdDouble dth   = simd::acos(costh) - a.theta0;
+            SimdDouble e     = simd::load(energies + c);
+            simd::store(energies + c, simd::fma(halfk, dth*dth, e));
+            if constexpr (Forces)
+            {
+                // There is no force for angles of 0 and 180 degrees
+                SimdDouble costh2 = costh*costh;
+                SimdDouble st     = simd::select(costh2 < 1.0,
+                                                 (-a.kt*dth)*simd::invsqrt(1.0 - costh2), 0.0);
+                SimdDouble sth    = st*costh;
+                SimdDouble nrij_1 = simd::invsqrt(ipa);
+                SimdDouble nrkj_1 = simd::invsqrt(ipb);
+                SimdDouble cik    = st*nrij_1*nrkj_1;
+                SimdDouble cii    = sth*nrij_1*nrij_1;
+                SimdDouble ckk    = sth*nrkj_1*nrkj_1;
+                for (int m = 0; m < DIM; m++)
+                {
+                    SimdDouble f_im = -(cik*rkj[m] - cii*rij[m]);
+                    SimdDouble f_km = -(cik*rij[m] - ckk*rkj[m]);
+                    SimdDouble f_jm = -f_im - f_km;
+                    double    *fi   = f + a.i + m*stride + c;
+                    double    *fj   = f + a.j + m*stride + c;
+                    double    *fk   = f + a.k + m*stride + c;
+                    simd::store(fi, simd::load(fi) + f_im);
+                    simd::store(fj, simd::load(fj) + f_jm);
+                    simd::store(fk, simd::load(fk) + f_km);
+                }
+            }
+        }
+    }
+}
+
 } // namespace
 
 size_t explicitSimdWidth()
@@ -782,6 +872,16 @@ bool computeExplicitSimd(Potential                   mypot,
     case Potential::CUBIC_BONDS:          return pairs(CubicBond{});
     case Potential::MORSE_BONDS:          return pairs(MorseBond{});
     case Potential::HUA_BONDS:            return pairs(HuaBond{});
+    case Potential::HARMONIC_ANGLES:
+        if (forces)
+        {
+            computeAngles<true>(entries, stride, x, f, energies);
+        }
+        else
+        {
+            computeAngles<false>(entries, stride, x, f, energies);
+        }
+        return true;
     default:
         return false;
     }
