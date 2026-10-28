@@ -70,6 +70,8 @@ private:
     const ForceFieldParameterList              *ffList_      = nullptr;
     //! The structure version of ffList_ when ffParams_ was set
     size_t                                      ffVersion_   = 0;
+    //! Whether the atoms of id_ are in the reverse order of the atoms of this entry
+    bool                                        swapped_     = false;
 public:
     //! Default empty constructor
     TopologyEntry() {}
@@ -169,6 +171,18 @@ public:
         }
         return ffParams_;
     }
+
+    /*! \return whether the atoms of the identifier are in the reverse order
+     * of the atoms of this entry, which happens if they can be swapped.
+     * Parameters that belong to one of the atoms, rather than to the pair,
+     * are then in the reverse order too.
+     */
+    bool swapped() const { return swapped_; }
+
+    /*! \brief Set whether the identifier is swapped, see swapped()
+     * \param[in] swapped The value
+     */
+    void setSwapped(bool swapped) { swapped_ = swapped; }
 
     /*! \brief Set the parameters
      * \param[in] param The parameter(s)
