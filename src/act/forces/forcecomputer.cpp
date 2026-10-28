@@ -636,6 +636,45 @@ static void subtractMonomers(ConformationEnergies *dimer, ConformationEnergies *
     }
 }
 
+/*! \brief Check whether the virtual sites have to be constructed
+ * The atoms do not move, therefore the virtual sites only have to be
+ * constructed the first time and when their parameters changed, unless
+ * shells are used to construct them.
+ * \param[in]    top   The topology
+ * \param[inout] cdata The conformation data, updated if the virtual sites
+ *                     have to be constructed
+ * \return Whether the virtual sites have to be constructed
+ */
+static bool vsitesOutdated(const Topology *top, ConformationData *cdata)
+{
+    bool outdated = (!cdata->haveVsites || cdata->vsiteVersion != top->vsiteVersion());
+    if (!outdated)
+    {
+        auto &atoms = top->atoms();
+        for(const auto &entry : top->entries())
+        {
+            if (!isVsite(entry.first))
+            {
+                continue;
+            }
+            for(const auto &vs : entry.second)
+            {
+                for(auto a : vs->atomIndices())
+                {
+                    outdated = outdated || atoms[a].pType() == ActParticle::Shell;
+                }
+            }
+        }
+    }
+    if (outdated)
+    {
+        cdata->haveVsites   = true;
+        cdata->vsiteVersion = top->vsiteVersion();
+        cdata->arrays.invalidateVsites();
+    }
+    return outdated;
+}
+
 /*! \brief Copy the relaxed monomer shell positions into the dimer
  * \param[inout] allmols The molecules
  */
@@ -766,7 +805,6 @@ void ForceComputer::computeRelaxedEnergies(MsgHandler          *msghandler,
     // Shells are relaxed using the forces
     bool forces = computeForces || pd->polarizable();
     // Loop over molecules
-    // TODO simd-ify vsite handling as well
     for(auto &mol : *allmols)
     {
         if (mol.isDimer())
@@ -774,11 +812,15 @@ void ForceComputer::computeRelaxedEnergies(MsgHandler          *msghandler,
             // We have a dimer!
             auto top    = mol.topology();
             auto &atoms = top->atoms();
+            bool vsites = vsitesOutdated(top, mol.conformationData(2));
             // Virtual sites for dimer
             for(auto &dim : *mol.dimerCoords())
             {
                 nEval_ += 1;
-                constructVsiteCoordinates(top, &dim.x);
+                if (vsites)
+                {
+                    constructVsiteCoordinates(top, &dim.x);
+                }
                 // Reset shells if needed and if possible
                 if (resetTheShells)
                 {
@@ -791,12 +833,16 @@ void ForceComputer::computeRelaxedEnergies(MsgHandler          *msghandler,
         // Virtual sites for monomers
         for(size_t index = 0; index < tops.size(); index++)
         {
-            auto &top   = tops[index];
-            auto &atoms = top.atoms();
+            auto &top    = tops[index];
+            auto &atoms  = top.atoms();
+            bool  vsites = vsitesOutdated(&top, mol.conformationData(index));
             for(auto &mon : *mol.monomerCoords(index))
             {
                 nEval_ += 1;
-                constructVsiteCoordinates(&top, &mon.x);
+                if (vsites)
+                {
+                    constructVsiteCoordinates(&top, &mon.x);
+                }
                 // Reset shells if needed and if possible
                 if (resetTheShells)
                 {
