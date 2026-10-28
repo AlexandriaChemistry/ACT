@@ -63,7 +63,8 @@ using gmx::RVec;
 
 static int pbc_rvec_sub(const t_pbc *pbc, const rvec xi, const rvec xj, rvec dx)
 {
-    if (pbc)
+    // Without periodic boundaries pbc_dx_aiuc computes the same
+    if (pbc && pbc->ePBC != epbcNONE)
     {
         return pbc_dx_aiuc(pbc, xi, xj, dx);
     }
@@ -90,7 +91,7 @@ static void constr_vsite2(const rvec xi, const rvec xj, rvec x, real a, const t_
     if (pbc)
     {
         rvec dx;
-        pbc_dx_aiuc(pbc, xj, xi, dx);
+        pbc_rvec_sub(pbc, xj, xi, dx);
         x[XX] = xi[XX] + a*dx[XX];
         x[YY] = xi[YY] + a*dx[YY];
         x[ZZ] = xi[ZZ] + a*dx[ZZ];

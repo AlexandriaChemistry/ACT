@@ -586,13 +586,13 @@ static bool referenceValid(const DeviationReference         &ref,
                            double                            beta,
                            bool                              sep)
 {
-    return (ref.coordinateVersion == cdata.coordinates.value() && ref.beta == beta &&
+    return (ref.conformationVersion == cdata.conformations.value() && ref.beta == beta &&
             ref.separate == sep && ref.itypes == itypes && ref.weight.size() == nconf);
 }
 
 /*! \brief The reference interaction energies and Boltzmann weights of dimers
  * They are computed once for the conformations, since they only depend on
- * the quantum chemistry data.
+ * the quantum chemistry data, not on the positions of virtual sites.
  * \param[inout] cdata  The conformation data of the dimer
  * \param[in]    coords The conformations
  * \param[in]    itypes The interaction types
@@ -611,7 +611,7 @@ static const DeviationReference &interactionReference(ConformationData          
     {
         return ref;
     }
-    ref.coordinateVersion = cdata->coordinates.value();
+    ref.conformationVersion = cdata->conformations.value();
     ref.beta              = beta;
     ref.separate          = sep;
     ref.itypes            = itypes;
@@ -653,7 +653,7 @@ static const DeviationReference &epotReference(ConformationData                *
     {
         return ref;
     }
-    ref.coordinateVersion = cdata->coordinates.value();
+    ref.conformationVersion = cdata->conformations.value();
     ref.beta              = beta;
     ref.separate          = false;
     ref.itypes            = itypes;
