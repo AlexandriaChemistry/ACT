@@ -198,6 +198,9 @@ private:
      * iterations, but the intention of the code is to keep running just until
      * the position of the selected shells have been minimized, or maxiter has been
      * reached.
+     * The ACT energies are stored in the conformation data of the molecules,
+     * see ACTMol::conformationData, not in the energy maps of the conformations.
+     * ACTMol::storeEnergies copies them to the energy maps.
      * \param[in] msghandler     For debugging and messages
      * \param[in] pd             An ACT force field
      * \param[in] allmols        Vector containing all the molecules

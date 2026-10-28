@@ -236,6 +236,7 @@ protected:
                                    opts.lossFunction);
             if (checker && opts.checkConformations)
             {
+                actmols[0].storeEnergies();
                 checkConformations(actmols[0], checker);
             }
             for(const auto &t : targets)
