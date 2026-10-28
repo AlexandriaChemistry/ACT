@@ -320,7 +320,7 @@ CommunicationStatus ForceFieldParameterList::BroadCast(const CommunicationRecord
                 std::string value = combinationRuleName(opt->second.rule());
                 cr->bcast(&key, comm);
                 cr->bcast(&value, comm);
-                opt->second.ffpl()->BroadCast(cr, root, cr->comm_world());
+                opt->second.ffpl()->BroadCast(cr, root, comm);
             }
         }
         else
@@ -344,7 +344,7 @@ CommunicationStatus ForceFieldParameterList::BroadCast(const CommunicationRecord
                 {
                     ParamCombRule p(ccc);
                     ForceFieldParameter ffp;
-                    ffp.BroadCast(cr, root, cr->comm_world());
+                    ffp.BroadCast(cr, root, comm);
                     p.addForceFieldParameter(ffp);
                     combrules_.insert({key, std::move(p)});
                 }
