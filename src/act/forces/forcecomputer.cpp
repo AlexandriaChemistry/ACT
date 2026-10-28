@@ -843,7 +843,8 @@ void ForceComputer::relaxMonomer(MsgHandler                  *msghandler,
         }
         if (!allDone)
         {
-            computeEnergies(msghandler, pd, allmols, im);
+            // Only for the conformations that did not converge
+            computeEnergies(msghandler, pd, allmols, im, true, true);
         }
         iter++;
     }
@@ -875,31 +876,43 @@ void ForceComputer::relaxDimer(MsgHandler                  *msghandler,
             auto  fh    = mol.fragmentHandler();
             auto &tops  = fh->topologies();
             auto &pols  = fh->polInfo();
-            // Relax monomers first.
+            // The done flag is per dimer conformation, but convergence
+            // has to be checked for each monomer separately. A conformation
+            // is done when the shells of all monomers that are relaxed converged.
+            auto              &dims = *mol.dimerCoords();
+            std::vector<char>  wasDone(dims.size()), done(dims.size());
+            for(size_t c = 0; c < dims.size(); c++)
+            {
+                wasDone[c] = dims[c].done;
+                done[c]    = 1;
+            }
             for(size_t im = 0; im < 2; im++)
             {
                 if (!fixMonomer[im])
                 {
-                    // The done flag is per dimer conformation, but convergence
-                    // has to be checked for each monomer separately.
-                    for(auto &dim : *mol.dimerCoords())
+                    for(size_t c = 0; c < dims.size(); c++)
                     {
-                        dim.done = false;
+                        dims[c].done = wasDone[c];
                     }
-                    if (mol.monomerCoords(im)->size() !=
-                        updateShells(&tops[im], fh->atomStart()[im],
-                                     pols[im].nShell(), pols[im].isShell(),
-                                     im, mol.dimerCoords()))
+                    updateShells(&tops[im], fh->atomStart()[im],
+                                 pols[im].nShell(), pols[im].isShell(),
+                                 im, &dims);
+                    for(size_t c = 0; c < dims.size(); c++)
                     {
-                        allDone = false;
+                        done[c] = done[c] && dims[c].done;
                     }
                 }
+            }
+            for(size_t c = 0; c < dims.size(); c++)
+            {
+                dims[c].done = done[c];
+                allDone      = allDone && done[c];
             }
         }
         if (!allDone)
         {
-            // Not all done, recompute
-            computeEnergies(msghandler, pd, allmols, 2);
+            // Not all done, recompute the conformations that did not converge
+            computeEnergies(msghandler, pd, allmols, 2, true, true);
         }
         iter++;
     }
