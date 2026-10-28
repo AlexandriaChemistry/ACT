@@ -74,11 +74,10 @@ void BoundsDevComputer::calcDeviation(MsgHandler                    *,
     {
         double bound = 0;
         // Check ACM charges
-        auto atoms = mol->atomsConst();
+        const auto &atoms = mol->atomsConst();
         for(const auto &atom: atoms)
         {
-            auto pt = atom.ffType();
-            auto p  = forcefield->findParticleType(pt)->parameterConst("charge");
+            const auto &p = forcefield->findParticleType(atom.ffType())->parameterConst("charge");
             if (p.mutability() == Mutability::ACM && p.maximum() > p.minimum())
             {
                 // Including the second charge, if any
@@ -572,6 +571,114 @@ static bool qmReference(const ACTEnergyMap &eMap,
     return found == terms.size();
 }
 
+/*! \brief Whether the reference data was made for these conformations and settings
+ * \param[in] ref    The reference data
+ * \param[in] cdata  The conformation data it belongs to
+ * \param[in] nconf  Number of conformations
+ * \param[in] itypes The interaction types
+ * \param[in] beta   The inverse Boltzmann temperature
+ * \param[in] sep    Whether the induction correction is separate
+ */
+static bool referenceValid(const DeviationReference         &ref,
+                           const ConformationData           &cdata,
+                           size_t                            nconf,
+                           const std::vector<InteractionType> &itypes,
+                           double                            beta,
+                           bool                              sep)
+{
+    return (ref.coordinateVersion == cdata.coordinates.value() && ref.beta == beta &&
+            ref.separate == sep && ref.itypes == itypes && ref.weight.size() == nconf);
+}
+
+/*! \brief The reference interaction energies and Boltzmann weights of dimers
+ * They are computed once for the conformations, since they only depend on
+ * the quantum chemistry data.
+ * \param[inout] cdata  The conformation data of the dimer
+ * \param[in]    coords The conformations
+ * \param[in]    itypes The interaction types
+ * \param[in]    beta   The inverse Boltzmann temperature, no weighting if zero
+ * \param[in]    sep    Whether the induction correction is separate
+ * \return The reference data
+ */
+static const DeviationReference &interactionReference(ConformationData                   *cdata,
+                                                      const std::vector<CoordsEnergy>    &coords,
+                                                      const std::vector<InteractionType> &itypes,
+                                                      double                              beta,
+                                                      bool                                sep)
+{
+    auto &ref = cdata->deviation;
+    if (referenceValid(ref, *cdata, coords.size(), itypes, beta, sep))
+    {
+        return ref;
+    }
+    ref.coordinateVersion = cdata->coordinates.value();
+    ref.beta              = beta;
+    ref.separate          = sep;
+    ref.itypes            = itypes;
+    ref.weight.assign(coords.size(), 1.0);
+    ref.energy.assign(itypes.size(), std::vector<double>(coords.size(), 0.0));
+    ref.have.assign(itypes.size(), std::vector<char>(coords.size(), 0));
+    for(size_t i = 0; i < coords.size(); i++)
+    {
+        const auto &eMap = coords[i].eMap;
+        auto        dd   = eMap.find(InteractionType::EPOT);
+        if (dd != eMap.end() && beta > 0)
+        {
+            double earg = beta*(dd->second.eqm() - coords[i].eMin);
+            // Otherwise the weight is (close to) zero.
+            // Totally zero will not work due to checks later.
+            ref.weight[i] = earg < DOUBLE_MAX_LOG ? std::exp(-earg) : 1e-8;
+        }
+        for(size_t j = 0; j < itypes.size(); j++)
+        {
+            ref.have[j][i] = qmReference(eMap, itypes[j], sep, &ref.energy[j][i]);
+        }
+    }
+    return ref;
+}
+
+/*! \brief The reference potential energies and Boltzmann weights of monomers
+ * \param[inout] cdata  The conformation data of the monomer
+ * \param[in]    coords The conformations
+ * \param[in]    beta   The inverse Boltzmann temperature, no weighting if zero
+ * \return The reference data, with only EPOT
+ */
+static const DeviationReference &epotReference(ConformationData                *cdata,
+                                               const std::vector<CoordsEnergy> &coords,
+                                               double                           beta)
+{
+    const std::vector<InteractionType> itypes = { InteractionType::EPOT };
+    auto &ref = cdata->deviation;
+    if (referenceValid(ref, *cdata, coords.size(), itypes, beta, false))
+    {
+        return ref;
+    }
+    ref.coordinateVersion = cdata->coordinates.value();
+    ref.beta              = beta;
+    ref.separate          = false;
+    ref.itypes            = itypes;
+    ref.weight.assign(coords.size(), 1.0);
+    ref.energy.assign(1, std::vector<double>(coords.size(), 0.0));
+    ref.have.assign(1, std::vector<char>(coords.size(), 0));
+    for(size_t i = 0; i < coords.size(); i++)
+    {
+        const auto &eMap = coords[i].eMap;
+        auto        dd   = eMap.find(InteractionType::EPOT);
+        if (dd != eMap.end() && dd->second.haveQM())
+        {
+            double eqm = dd->second.eqm();
+            if (beta > 0)
+            {
+                double earg   = beta*(eqm - coords[i].eMin);
+                ref.weight[i] = earg < DOUBLE_MAX_LOG ? std::exp(-earg) : 1e-8;
+            }
+            ref.energy[0][i] = eqm;
+            ref.have[0][i]   = 1;
+        }
+    }
+    return ref;
+}
+
 void ForceEnergyDevComputer::calcDeviation(MsgHandler                     *msghandler,
                                            gmx_unused const ForceComputer *forceComputer,
                                            const std::vector<ACTMol *>    &actmols,
@@ -647,45 +754,29 @@ void ForceEnergyDevComputer::calcDeviation(MsgHandler                     *msgha
                 double     beta   = computeBeta(eRMS::Interaction);
                 const auto coords = actmol->dimerCoords();
                 // The ACT energies are taken from the conformation data,
-                // the QM energies from the energy maps.
-                auto      &ener   = actmol->conformationData(2)->energies;
-                std::vector<ConformationEnergies::Term> eact;
+                // the QM energies and weights from the reference data.
+                auto      *cdata  = actmol->conformationData(2);
+                auto      &ener   = cdata->energies;
+                std::vector<InteractionType> itypes;
                 for (const auto &r : rmsE)
                 {
-                    eact.push_back(ener.find(r.itype));
+                    itypes.push_back(r.itype);
                 }
-#pragma omp simd
-                for(size_t i = 0; i < coords->size(); i++)
+                const auto &ref   = interactionReference(cdata, *coords, itypes, beta, sepInductionTerms);
+                size_t      nconf = std::min(coords->size(), ener.nconf());
+                for (size_t j = 0; j < rmsE.size(); j++)
                 {
-                    const auto &eMap = (*coords)[i].eMap;
-                    double w         = 1;
-                    auto   dd        = eMap.find(InteractionType::EPOT);
-                    if (dd != eMap.end() && beta > 0)
+                    auto        &rms  = rmsE[j];
+                    auto         eact = ener.find(rms.itype);
+                    const auto  &eqm  = ref.energy[j];
+                    const auto  &have = ref.have[j];
+                    const auto  &w    = ref.weight;
+                    for(size_t i = 0; i < nconf; i++)
                     {
-                        double earg = beta*(dd->second.eqm() - (*coords)[i].eMin);
-                        if (earg < DOUBLE_MAX_LOG)
+                        if (eact.has(i) && have[i] && std::isfinite(eact.act[i]))
                         {
-                            w = std::exp(-earg);
-                        }
-                        else
-                        {
-                            // Otherwise the weight is (close to) zero.
-                            // Totally zero will not work due to checks later.
-                            w = 1e-8;
-                        }
-                    }
-                    for (size_t j = 0; j < rmsE.size(); j++)
-                    {
-                        auto  &rms = rmsE[j];
-                        double eqm = 0;
-                        if (i < ener.nconf() && eact[j].has(i) &&
-                            qmReference(eMap, rms.itype, sepInductionTerms, &eqm))
-                        {
-                            if (std::isfinite(eact[j].act[i]))
-                            {
-                                rms.loss   += w * loss(lossFunction, 1, eqm - eact[j].act[i]);
-                                rms.weight += w;
-                            }
+                            rms.loss   += w[i] * loss(lossFunction, 1, eqm[i] - eact.act[i]);
+                            rms.weight += w[i];
                         }
                     }
                 }
@@ -699,37 +790,21 @@ void ForceEnergyDevComputer::calcDeviation(MsgHandler                     *msgha
             {
                 double     beta   = computeBeta(eRMS::EPOT);
                 const auto coords = actmol->monomerCoords(0);
-                auto      &ener   = actmol->conformationData(0)->energies;
+                auto      *cdata  = actmol->conformationData(0);
+                auto      &ener   = cdata->energies;
                 auto       epot   = ener.find(InteractionType::EPOT);
-#pragma omp simd
-                for(size_t i = 0; i < coords->size(); i++)
+                const auto &ref   = epotReference(cdata, *coords, beta);
+                const auto &eqm   = ref.energy[0];
+                const auto &have  = ref.have[0];
+                const auto &w     = ref.weight;
+                size_t      nconf = std::min(coords->size(), ener.nconf());
+                for(size_t i = 0; i < nconf; i++)
                 {
-                    const auto &eMap = (*coords)[i].eMap;
-                    double w         = 1;
-                    auto   dd        = eMap.find(InteractionType::EPOT);
-                    if (dd != eMap.end() && dd->second.haveQM())
+                    // std::isfinite checks for both Inf and NaN values.
+                    if (have[i] && epot.has(i) && std::isfinite(epot.act[i]))
                     {
-                        double eqm  = dd->second.eqm();
-                        if (beta > 0)
-                        {
-                            double earg = beta*(eqm - (*coords)[i].eMin);
-                            if (earg < DOUBLE_MAX_LOG)
-                            {
-                                w = std::exp(-earg);
-                            }
-                            else
-                            {
-                                // Otherwise the weight is (close to) zero.
-                                // Totally zero will not work due to checks later.
-                                w = 1e-8;
-                            }
-                        }
-                        // std::isfinite checks for both Inf and NaN values.
-                        if (i < ener.nconf() && epot.has(i) && std::isfinite(epot.act[i]))
-                        {
-                            double myloss = w * loss(lossFunction, w, eqm-epot.act[i]);
-                            te->second.increase(w, myloss);
-                        }
+                        double myloss = w[i] * loss(lossFunction, w[i], eqm[i]-epot.act[i]);
+                        te->second.increase(w[i], myloss);
                     }
                 }
             }

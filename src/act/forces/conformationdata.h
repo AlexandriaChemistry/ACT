@@ -307,6 +307,16 @@ public:
     //! \return The interaction types present, in increasing order like in an energy map
     const std::vector<InteractionType> &types() const { return types_; }
 
+    /*! \brief Set whether the backups are the energies before relaxing shells
+     * Without shells the energies do not change, and the backups are not
+     * made. They are then taken to be the same as the energies.
+     * \param[in] backups Whether there are backups
+     */
+    void setBackups(bool backups) { backups_ = backups; }
+
+    //! \return Whether the backups are the energies before relaxing shells, see setBackups
+    bool haveBackups() const { return backups_; }
+
     /*! \brief Copy the energies to the energy maps of the conformations
      * \param[inout] coords The conformations
      */
@@ -321,7 +331,7 @@ public:
                 if (d.have[c])
                 {
                     auto &e = eMap[t];
-                    e.setACT(d.before[c]);
+                    e.setACT(backups_ ? d.before[c] : d.act[c]);
                     e.backup();
                     e.setACT(d.act[c]);
                 }
@@ -344,6 +354,8 @@ private:
     };
     //! Number of conformations
     size_t                      nconf_ = 0;
+    //! Whether the backups are the energies before relaxing shells, see setBackups
+    bool                        backups_ = false;
     //! Position of each interaction type in data_, -1 if not present
     std::array<int, ntype_>     index_;
     //! The interaction types present, sorted
@@ -388,6 +400,29 @@ struct CachedEnergies
     size_t              termStride        = 0;
 };
 
+/*! \brief Reference data of all conformations for computing deviations
+ * The quantum chemistry energies and the Boltzmann weights do not change
+ * when the parameters change, they are kept here by the code computing the
+ * deviations, see ForceEnergyDevComputer.
+ */
+struct DeviationReference
+{
+    //! ConformationData::coordinates of the conformations
+    size_t                           coordinateVersion = 0;
+    //! The inverse Boltzmann temperature
+    double                           beta              = 0;
+    //! Whether the induction correction is separate from the induction
+    bool                             separate          = false;
+    //! The interaction types
+    std::vector<InteractionType>     itypes;
+    //! Weight of each conformation
+    std::vector<double>              weight;
+    //! Reference energy of each interaction type and conformation
+    std::vector<std::vector<double>> energy;
+    //! Whether there is a reference energy for each interaction type and conformation
+    std::vector<std::vector<char>>   have;
+};
+
 struct ConformationData
 {
     //! Coordinates and forces
@@ -402,6 +437,8 @@ struct ConformationData
     StructureVersion     coordinates;
     //! Energies of each interaction type, to use again if nothing changed
     std::map<InteractionType, CachedEnergies> cache;
+    //! Reference data for computing deviations
+    DeviationReference   deviation;
 
     //! Mark the coordinates and virtual sites as outdated
     void invalidate()

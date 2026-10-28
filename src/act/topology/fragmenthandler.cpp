@@ -173,7 +173,7 @@ void FragmentHandler::fetchCharges(MsgHandler *msg_handler, std::vector<double> 
     qq->resize(natoms_, 0);
     for(size_t ff = 0; ff < topologies_.size(); ++ff)
     {
-        auto myatoms = topologies_[ff].atoms();
+        const auto &myatoms = topologies_[ff].atoms();
         for (size_t a = 0; a < myatoms.size(); a++)
         {
             //! \todo: Check whether this works for polarizable models
@@ -296,7 +296,7 @@ bool FragmentHandler::fetchCharges(std::vector<ActAtom> *atoms)
     size_t k = 0;
     for(size_t i = 0; i < topologies_.size(); i++)
     {
-        auto ats = topologies_[i].atoms();
+        const auto &ats = topologies_[i].atoms();
         for(size_t j = 0; j < ats.size(); j++)
         {
             (*atoms)[k].setCharge(ats[j].charge());

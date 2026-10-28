@@ -27,7 +27,9 @@
  */
 #include "forcecomputer.h"
 
+#include <algorithm>
 #include <set>
+#include <utility>
 #include <vector>
 
 #include <cstdlib>
@@ -383,21 +385,34 @@ void ForceComputer::compute(MsgHandler                        *msg_handler,
     spreadVsiteForces(top, coordinates, forces);
 }
 
-/*! \brief Reset shell to the position of their parents
- * \param[in] atoms     The atom info
- * \param[inout] coords The coordinates
+/*! \brief The shells with one parent particle, with that parent
+ * \param[in] atoms The particles
+ * \return The shells and their parents
  */
-static void resetShells(const std::vector<ActAtom> &atoms,
-                        std::vector<gmx::RVec>     *coords)
+static std::vector<std::pair<size_t, size_t>> shellParents(const std::vector<ActAtom> &atoms)
 {
+    std::vector<std::pair<size_t, size_t>> shells;
     for(size_t i = 0; i < atoms.size(); i++)
     {
         if (atoms[i].pType() == ActParticle::Shell &&
             atoms[i].parents().size() == 1)
         {
-            auto parent = atoms[i].parents()[0];
-            copy_rvec((*coords)[parent], (*coords)[i]);
+            shells.push_back({ i, atoms[i].parents()[0] });
         }
+    }
+    return shells;
+}
+
+/*! \brief Put shells on top of their parent particle
+ * \param[in]    shells The shells and their parents, see shellParents
+ * \param[inout] coords The coordinates
+ */
+static void resetShells(const std::vector<std::pair<size_t, size_t>> &shells,
+                        std::vector<gmx::RVec>                       *coords)
+{
+    for(const auto &sp : shells)
+    {
+        copy_rvec((*coords)[sp.second], (*coords)[sp.first]);
     }
 }
 
@@ -526,7 +541,8 @@ static void calcInduction(ConformationEnergies *cener)
             }
             if (isElecTerm(tt.first))
             {
-                if (et.before[c] != et.act[c])
+                // Without backups nothing was relaxed
+                if (cener->haveBackups() && et.before[c] != et.act[c])
                 {
                     eInduction += et.act[c] - et.before[c];
                     et.restoreBackup(c);
@@ -591,16 +607,12 @@ static std::vector<double> sumElecTerms(ConformationEnergies *cener)
  */
 static void backupEnergies(ConformationEnergies *cener)
 {
+    // The backups are only used for conformations with an energy, so
+    // copying all of them is the same as copying only those.
     for(auto t : cener->types())
     {
         auto et = cener->find(t);
-        for(size_t c = 0; c < cener->nconf(); c++)
-        {
-            if (et.has(c))
-            {
-                et.before[c] = et.act[c];
-            }
-        }
+        std::copy(et.act, et.act + cener->nconf(), et.before);
     }
 }
 
@@ -611,6 +623,8 @@ static void backupEnergies(ConformationEnergies *cener)
  */
 static void subtractMonomers(ConformationEnergies *dimer, ConformationEnergies *monomers[2])
 {
+    // Without backups, they are the same as the energies
+    bool backups = dimer->haveBackups();
     for(auto t : dimer->types())
     {
         auto ed = dimer->find(t);
@@ -622,17 +636,26 @@ static void subtractMonomers(ConformationEnergies *dimer, ConformationEnergies *
                 continue;
             }
             double edim = ed.act[c];
-            double edb4 = ed.before[c];
             for(size_t j = 0; j < 2; j++)
             {
                 if (c < monomers[j]->nconf() && em[j].has(c))
                 {
                     edim -= em[j].act[c];
-                    edb4 -= em[j].before[c];
                 }
             }
-            ed.before[c] = edb4;
-            ed.act[c]    = edim;
+            ed.act[c] = edim;
+            if (backups)
+            {
+                double edb4 = ed.before[c];
+                for(size_t j = 0; j < 2; j++)
+                {
+                    if (c < monomers[j]->nconf() && em[j].has(c))
+                    {
+                        edb4 -= em[j].before[c];
+                    }
+                }
+                ed.before[c] = edb4;
+            }
         }
     }
 }
@@ -823,8 +846,13 @@ void ForceComputer::computeRelaxedEnergies(MsgHandler                  *msghandl
         {
             // We have a dimer!
             auto top    = mol.topology();
-            auto &atoms = top->atoms();
             bool vsites = vsitesOutdated(top, mol.conformationData(2));
+            // Only the shells, if any, are reset
+            std::vector<std::pair<size_t, size_t>> shells;
+            if (resetTheShells)
+            {
+                shells = shellParents(top->atoms());
+            }
             // Virtual sites for dimer
             for(auto &dim : *mol.dimerCoords())
             {
@@ -834,10 +862,7 @@ void ForceComputer::computeRelaxedEnergies(MsgHandler                  *msghandl
                     constructVsiteCoordinates(top, &dim.x);
                 }
                 // Reset shells if needed and if possible
-                if (resetTheShells)
-                {
-                    resetShells(atoms, &dim.x);
-                }
+                resetShells(shells, &dim.x);
             }
         }
         // Shortcuts...
@@ -846,8 +871,12 @@ void ForceComputer::computeRelaxedEnergies(MsgHandler                  *msghandl
         for(size_t index = 0; index < tops.size(); index++)
         {
             auto &top    = tops[index];
-            auto &atoms  = top.atoms();
             bool  vsites = vsitesOutdated(&top, mol.conformationData(index));
+            std::vector<std::pair<size_t, size_t>> shells;
+            if (resetTheShells)
+            {
+                shells = shellParents(top.atoms());
+            }
             for(auto &mon : *mol.monomerCoords(index))
             {
                 nEval_ += 1;
@@ -856,10 +885,7 @@ void ForceComputer::computeRelaxedEnergies(MsgHandler                  *msghandl
                     constructVsiteCoordinates(&top, &mon.x);
                 }
                 // Reset shells if needed and if possible
-                if (resetTheShells)
-                {
-                    resetShells(atoms, &mon.x);
-                }
+                resetShells(shells, &mon.x);
             }
         }
     }
@@ -870,12 +896,19 @@ void ForceComputer::computeRelaxedEnergies(MsgHandler                  *msghandl
 
     // Store the original (unrelaxed) energies so that we can extract the
     // induction later. Only terms that actually have an ACT energy are backed up.
+    // Only if shells are relaxed the energies change.
+    bool relax = pd->polarizable();
     for(auto molptr : allmols)
     {
         auto &mol = *molptr;
         for(size_t what = 0; what < 3; what++)
         {
-            backupEnergies(&mol.conformationData(what)->energies);
+            auto &energies = mol.conformationData(what)->energies;
+            energies.setBackups(relax);
+            if (relax)
+            {
+                backupEnergies(&energies);
+            }
         }
     }
     // Now let's have a look whether we are polarizable

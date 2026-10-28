@@ -308,9 +308,19 @@ double ACMFitnessComputer::calcDeviation(MsgHandler   *msghandler,
             nlocal++;
         }
     }
-    for (DevComputer *mydev : devComputers_)
+    // The timer of each DevComputer
+    if (devTimers_.size() != devComputers_.size())
     {
-        ScopedTimer timer(Timings::instance().index("Deviation " + mydev->name()));
+        devTimers_.clear();
+        for (DevComputer *mydev : devComputers_)
+        {
+            devTimers_.push_back(Timings::instance().index("Deviation " + mydev->name()));
+        }
+    }
+    for (size_t d = 0; d < devComputers_.size(); d++)
+    {
+        DevComputer *mydev = devComputers_[d];
+        ScopedTimer timer(devTimers_[d]);
         mydev->calcDeviation(msghandler, forceComp_, selected, targets,
                              sii_->forcefield(), lossFunction_);
     }
