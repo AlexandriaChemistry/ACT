@@ -35,6 +35,7 @@
 #include "act/basics/chargemodel.h"
 #include "act/basics/msg_handler.h"
 #include "act/forcefield/forcefield_parametername.h"
+#include "act/forces/conformationdata.h"
 #include "act/forces/forcecomputerimpl.h"
 #include "act/forces/forces_simd.h"
 #include "act/qgen/qtype.h"
@@ -481,98 +482,158 @@ size_t ForceComputer::updateShells(const Topology            *top,
     return numberDone;
 }
 
-static inline void addToMap(InteractionType  itype,
-                            ACTEnergyMap    *eMap,
-                            double           value)
+//! \return Whether an interaction type changes upon shell relaxation
+static inline bool isElecTerm(InteractionType itype)
 {
-    auto tt = eMap->find(itype);
-    if (eMap->end() != tt)
-    {
-        tt->second.setACT(value);
-    }
-    else
-    {
-        // Only an ACT value, there is no QM reference for this term
-        std::string dataFile;
-        ACTEnergy ae(0, dataFile);
-        ae.setACT(value);
-        eMap->insert({itype, ae});
-    }
+    return (InteractionType::ELECTROSTATICS == itype ||
+            InteractionType::POLARIZATION   == itype ||
+            InteractionType::CHARGETRANSFER == itype);
 }
 
-static inline void calcInduction(ACTEnergyMap *eMap)
+/*! \brief Compute the induction, all electrostatics and exchange plus induction
+ * The induction is the change of the electrostatic terms since their backup,
+ * and these terms are restored to their backup.
+ * \param[inout] cener The energies of all conformations
+ */
+static void calcInduction(ConformationEnergies *cener)
 {
-    // Extract electrostatics once more
-    // Note that the INDUCTIONCORRECTION is treated in the calling routine
-    auto isElecTerm = [](InteractionType itype)
+    // The terms present, in the same order as in an energy map.
+    // Note that the INDUCTIONCORRECTION is treated in the calling routine.
+    std::vector<std::pair<InteractionType, ConformationEnergies::Term>> terms;
+    for(auto t : cener->types())
     {
-        return (InteractionType::ELECTROSTATICS == itype ||
-                InteractionType::POLARIZATION   == itype ||
-                InteractionType::CHARGETRANSFER == itype);
-    };
-    // Induction energy
-    bool   haveInduction = false;
-    double eInduction    = 0;
-    double allElec       = 0;
-    double exchInd       = 0;
-    for(auto &et : *eMap)
-    {
-        if (isElecTerm(et.first))
+        if (isElecTerm(t) || InteractionType::EXCHANGE == t)
         {
-            if (et.second.eactBefore() != et.second.eact())
+            terms.push_back({ t, cener->find(t) });
+        }
+    }
+    auto induction = cener->find(InteractionType::INDUCTION);
+    auto eAllElec  = cener->add(InteractionType::ALLELEC);
+    auto eExchInd  = cener->add(InteractionType::EXCHIND);
+    for(size_t c = 0; c < cener->nconf(); c++)
+    {
+        bool   haveInduction = false;
+        double eInduction    = 0;
+        double allElec       = 0;
+        double exchInd       = 0;
+        for(auto &tt : terms)
+        {
+            auto &et = tt.second;
+            if (!et.has(c))
             {
-                eInduction += et.second.eact() - et.second.eactBefore();
-                et.second.restoreBackup();
-                haveInduction = true;
+                continue;
             }
-            // Copy new value
-            allElec += et.second.eact();
+            if (isElecTerm(tt.first))
+            {
+                if (et.before[c] != et.act[c])
+                {
+                    eInduction += et.act[c] - et.before[c];
+                    et.restoreBackup(c);
+                    haveInduction = true;
+                }
+                // Copy new value
+                allElec += et.act[c];
+            }
+            else
+            {
+                exchInd += et.act[c];
+            }
         }
-        if (InteractionType::EXCHANGE == et.first && et.second.haveACT())
+        if (haveInduction)
         {
-            exchInd += et.second.eact();
+            // This is the total induction including the induction correction,
+            // which may be split off later. The induction and induction
+            // correction are not up to date yet.
+            if (!induction.have)
+            {
+                induction = cener->add(InteractionType::INDUCTION);
+            }
+            induction.set(c, eInduction);
+            allElec += eInduction;
+            exchInd += eInduction;
         }
-    }
-    if (haveInduction)
-    {
-        // This is the total induction including the induction correction,
-        // which may be split off later. The induction and induction
-        // correction in the map are not up to date yet.
-        addToMap(InteractionType::INDUCTION, eMap, eInduction);
-        allElec += eInduction;
-        exchInd += eInduction;
-    }
-    else
-    {
-        // Induction from a potential function rather than from shells
-        auto ei = eMap->find(InteractionType::INDUCTION);
-        if (eMap->end() != ei && ei->second.haveACT())
+        else if (induction.has(c))
         {
-            exchInd += ei->second.eact();
+            // Induction from a potential function rather than from shells
+            exchInd += induction.act[c];
         }
+        eAllElec.set(c, allElec);
+        eExchInd.set(c, exchInd);
     }
-    addToMap(InteractionType::ALLELEC, eMap, allElec);
-    addToMap(InteractionType::EXCHIND, eMap, exchInd);
 }
 
 /*! \brief Sum the ACT energy terms that change upon shell relaxation
- * \param[in] eMap The energy map
- * \return The sum of electrostatics, polarization and charge transfer
+ * \param[inout] cener The energies of all conformations
+ * \return The sum of electrostatics, polarization and charge transfer for each conformation
  */
-static double sumElecTerms(const ACTEnergyMap &eMap)
+static std::vector<double> sumElecTerms(ConformationEnergies *cener)
 {
-    double esum = 0;
+    std::vector<double> esum(cener->nconf(), 0.0);
     for(const auto itype : { InteractionType::ELECTROSTATICS,
                              InteractionType::POLARIZATION,
                              InteractionType::CHARGETRANSFER })
     {
-        auto ee = eMap.find(itype);
-        if (eMap.end() != ee && ee->second.haveACT())
+        auto ee = cener->find(itype);
+        for(size_t c = 0; c < cener->nconf(); c++)
         {
-            esum += ee->second.eact();
+            if (ee.has(c))
+            {
+                esum[c] += ee.act[c];
+            }
         }
     }
     return esum;
+}
+
+/*! \brief Back up all ACT energies
+ * \param[inout] cener The energies of all conformations
+ */
+static void backupEnergies(ConformationEnergies *cener)
+{
+    for(auto t : cener->types())
+    {
+        auto et = cener->find(t);
+        for(size_t c = 0; c < cener->nconf(); c++)
+        {
+            if (et.has(c))
+            {
+                et.before[c] = et.act[c];
+            }
+        }
+    }
+}
+
+/*! \brief Subtract the energies of the monomers from those of the dimer
+ * The backups are subtracted as well.
+ * \param[inout] dimer    The energies of the dimer conformations
+ * \param[inout] monomers The energies of the monomer conformations
+ */
+static void subtractMonomers(ConformationEnergies *dimer, ConformationEnergies *monomers[2])
+{
+    for(auto t : dimer->types())
+    {
+        auto ed = dimer->find(t);
+        ConformationEnergies::Term em[2] = { monomers[0]->find(t), monomers[1]->find(t) };
+        for(size_t c = 0; c < dimer->nconf(); c++)
+        {
+            if (!ed.has(c))
+            {
+                continue;
+            }
+            double edim = ed.act[c];
+            double edb4 = ed.before[c];
+            for(size_t j = 0; j < 2; j++)
+            {
+                if (c < monomers[j]->nconf() && em[j].has(c))
+                {
+                    edim -= em[j].act[c];
+                    edb4 -= em[j].before[c];
+                }
+            }
+            ed.before[c] = edb4;
+            ed.act[c]    = edim;
+        }
+    }
 }
 
 /*! \brief Copy the relaxed monomer shell positions into the dimer
@@ -750,38 +811,12 @@ void ForceComputer::computeRelaxedEnergies(MsgHandler          *msghandler,
     computeEnergies(msghandler, pd, allmols, 2, forces); // Complete topology
 
     // Store the original (unrelaxed) energies so that we can extract the
-    // induction later. Only terms that actually have an ACT energy are backed
-    // up, otherwise we would throw when reading their (absent) ACT energy.
+    // induction later. Only terms that actually have an ACT energy are backed up.
     for(auto &mol : *allmols)
     {
-        if (mol.isDimer())
+        for(size_t what = 0; what < 3; what++)
         {
-            for(auto &dim : *mol.dimerCoords())
-            {
-                for(auto &em : dim.eMap)
-                {
-                    if (em.second.haveACT())
-                    {
-                        em.second.backup();
-                    }
-                }
-            }
-        }
-        // Shortcuts...
-        auto &tops  = mol.fragmentHandler()->topologies();
-        for(size_t index = 0; index < tops.size(); index++)
-        {
-            for(auto &mon : *mol.monomerCoords(index))
-            {
-                // Backup the energy terms in an independent copy.
-                for(auto &em : mon.eMap)
-                {
-                    if (em.second.haveACT())
-                    {
-                        em.second.backup();
-                    }
-                }
-            }
+            backupEnergies(&mol.conformationData(what)->energies);
         }
     }
     // Now let's have a look whether we are polarizable
@@ -838,10 +873,7 @@ void ForceComputer::computeRelaxedEnergies(MsgHandler          *msghandler,
             std::vector<std::vector<double>> eRef(allmols->size());
             for(size_t k = 0; k < allmols->size(); k++)
             {
-                for(auto &dim : *(*allmols)[k].dimerCoords())
-                {
-                    eRef[k].push_back(sumElecTerms(dim.eMap));
-                }
+                eRef[k] = sumElecTerms(&(*allmols)[k].conformationData(2)->energies);
             }
             for(size_t im = 0; im < 2; im++)
             {
@@ -857,10 +889,10 @@ void ForceComputer::computeRelaxedEnergies(MsgHandler          *msghandler,
                 // Extract energy
                 for(size_t k = 0; k < allmols->size(); k++)
                 {
-                    auto &dimers = *(*allmols)[k].dimerCoords();
-                    for(size_t i = 0; i < dimers.size(); i++)
+                    auto esum = sumElecTerms(&(*allmols)[k].conformationData(2)->energies);
+                    for(size_t i = 0; i < eInduc2[k].size() && i < esum.size(); i++)
                     {
-                        eInduc2[k][i] += sumElecTerms(dimers[i].eMap) - eRef[k][i];
+                        eInduc2[k][i] += esum[i] - eRef[k][i];
                     }
                 }
             }
@@ -883,64 +915,50 @@ void ForceComputer::computeRelaxedEnergies(MsgHandler          *msghandler,
     // Now post-process the energies to extract induction and allelec
     for(auto &mol : *allmols)
     {
-        // First, subtract monomer energies from dimer energies
-        auto &dimers = *mol.dimerCoords();
-        for(size_t i = 0; i < dimers.size(); i++)
+        auto *dimer = &mol.conformationData(2)->energies;
+        ConformationEnergies *monomers[2] = { &mol.conformationData(0)->energies,
+                                              &mol.conformationData(1)->energies };
+        if (mol.isDimer())
         {
-            auto &eMap = dimers[i].eMap;
-            const ACTEnergyMap *monoMap[2] = { &(*mol.monomerCoords(0))[i].eMap,
-                                               &(*mol.monomerCoords(1))[i].eMap };
-            for(auto &e : eMap)
+            // First, subtract monomer energies from dimer energies
+            subtractMonomers(dimer, monomers);
+            calcInduction(dimer);
+            if (doInduc2)
             {
-                auto &ener = e.second;
-                if (!ener.haveACT())
+                // Split the total induction into second order induction and
+                // the remaining higher order induction correction.
+                size_t k     = &mol - allmols->data();
+                auto   eit   = dimer->find(InteractionType::INDUCTION);
+                std::vector<double> eInd(dimer->nconf(), 0.0);
+                for(size_t i = 0; i < dimer->nconf(); i++)
                 {
-                    continue;
-                }
-                double edim = ener.eact();
-                double edb4 = ener.eactBefore();
-                for(size_t j = 0; j < 2; j++)
-                {
-                    auto mm = monoMap[j]->find(e.first);
-                    if (mm != monoMap[j]->end())
+                    if (eit.has(i))
                     {
-                        edim -= mm->second.eact();
-                        edb4 -= mm->second.eactBefore();
+                        eInd[i] = eit.act[i];
                     }
                 }
-                ener.setACT(edb4);
-                ener.backup();
-                ener.setACT(edim);
-            }
-        }
-        for(auto &dim : *mol.dimerCoords())
-        {
-            calcInduction(&dim.eMap);
-        }
-        if (doInduc2)
-        {
-            // Split the total induction into second order induction and
-            // the remaining higher order induction correction.
-            size_t k = &mol - allmols->data();
-            for(size_t i = 0; i < dimers.size(); i++)
-            {
-                auto &eMap   = dimers[i].eMap;
-                auto  eit    = eMap.find(InteractionType::INDUCTION);
-                double eInd  = 0;
-                if (eMap.end() != eit && eit->second.haveACT())
+                auto induction  = dimer->add(InteractionType::INDUCTION);
+                auto correction = dimer->add(InteractionType::INDUCTIONCORRECTION);
+                for(size_t i = 0; i < dimer->nconf() && i < eInduc2[k].size(); i++)
                 {
-                    eInd = eit->second.eact();
+                    induction.set(i, eInduc2[k][i]);
+                    correction.set(i, eInd[i] - eInduc2[k][i]);
                 }
-                addToMap(InteractionType::INDUCTION, &eMap, eInduc2[k][i]);
-                addToMap(InteractionType::INDUCTIONCORRECTION, &eMap, eInd - eInduc2[k][i]);
             }
         }
-        for(size_t i = 0; i < 2; i++)
+        auto &tops = mol.fragmentHandler()->topologies();
+        for(size_t i = 0; i < tops.size(); i++)
         {
-            for(auto &mono : *mol.monomerCoords(i))
-            {
-                calcInduction(&mono.eMap);
-            }
+            calcInduction(monomers[i]);
+        }
+        // Report the energies in the energy maps of the conformations
+        if (mol.isDimer())
+        {
+            dimer->store(mol.dimerCoords());
+        }
+        for(size_t i = 0; i < tops.size(); i++)
+        {
+            monomers[i]->store(mol.monomerCoords(i));
         }
     }
     if (!forces)
