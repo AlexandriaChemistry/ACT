@@ -1732,23 +1732,30 @@ static void storeEnergies(Potential                        mypot,
         terms[k] = cener->add(itypes[k]);
     }
     auto eEpot = cener->add(InteractionType::EPOT);
-    for(size_t i = 0; i < coords.size(); i++)
+    // No conformation is done, since the flags are reset before computing
+    // the energies, see lowComputeEnergies and computePotential. As
+    // Term::set, but without branches, one term at a time such that the
+    // energies are contiguous.
+    size_t nconf = coords.size();
+    for(size_t k = 0; k < itypes.size(); k++)
     {
-        if (coords[i].done)
+        const double *ek = energies + k*termStride;
+        auto         &t  = terms[k];
+        for(size_t i = 0; i < nconf; i++)
         {
-            continue;
+            t.before[i] = t.have[i] ? t.before[i] : 0.0;
+            t.have[i]   = 1;
+            t.act[i]    = ek[i*confStride];
         }
+    }
+    for(size_t i = 0; i < nconf; i++)
+    {
         const double *myener = energies + i*confStride;
-        for(size_t k = 0; k < itypes.size(); k++)
-        {
-            terms[k].set(i, myener[k*termStride]);
-        }
-        double epot = myener[0] + myener[termStride] + myener[2*termStride];
-        if (!eEpot.has(i))
-        {
-            eEpot.set(i, 0.0);
-        }
-        eEpot.set(i, epot + eEpot.act[i]);
+        double epot  = myener[0] + myener[termStride] + myener[2*termStride];
+        double prev  = eEpot.have[i] ? eEpot.act[i] : 0.0;
+        eEpot.before[i] = eEpot.have[i] ? eEpot.before[i] : 0.0;
+        eEpot.have[i]   = 1;
+        eEpot.act[i]    = epot + prev;
     }
 }
 
@@ -2239,9 +2246,12 @@ static inline void lowComputeEnergies(MsgHandler                *msghandler,
     // the previous call, so the total grows without bound instead of being
     // recomputed from scratch each time.
     auto eEpot = cener.add(InteractionType::EPOT);
+    // As eEpot.set(c, 0.0), without branches
     for(size_t c = 0; c < coords->size(); c++)
     {
-        eEpot.set(c, 0.0);
+        eEpot.before[c] = eEpot.have[c] ? eEpot.before[c] : 0.0;
+        eEpot.have[c]   = 1;
+        eEpot.act[c]    = 0.0;
     }
     for(auto &ce : *coords)
     {
@@ -2254,7 +2264,7 @@ static inline void lowComputeEnergies(MsgHandler                *msghandler,
             gmx::RVec fzero = { 0, 0, 0 };
             ce.fcalc.assign(ce.x.size(), fzero);
         }
-        else
+        else if (ce.fcalc.size() != ce.x.size())
         {
             ce.fcalc.resize(ce.x.size());
         }
