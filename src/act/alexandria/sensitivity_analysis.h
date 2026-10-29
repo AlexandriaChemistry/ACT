@@ -68,6 +68,10 @@ public:
      * \param[in] ims        Dataset to perform sensitivity analysis on
      * \param[in] jtree      For machine readable output, may be nullptr
      * \param[in] quiet      Do not print to log file
+     * \param[in] useMiddlemen Whether the middlemen compute part of the
+     *                       deviations for the training set. They have to
+     *                       be waiting for work from the master, see
+     *                       ACTMiddleMan::run.
      * \return true if the current genome represents a local minimum in parameter space
      */
     bool run(MsgHandler           *msghandler,
@@ -76,7 +80,8 @@ public:
              ga::Genome           *genome,
              iMolSelect            ims,
              JsonTree             *jtree,
-             bool                  quiet = false);
+             bool                  quiet        = false,
+             bool                  useMiddlemen = false);
 
     //! \return The force constants
     const std::vector<double> forceConstants() const { return forceConstant_; }

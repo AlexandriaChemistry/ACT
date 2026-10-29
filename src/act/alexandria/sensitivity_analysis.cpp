@@ -34,8 +34,11 @@
 #include "sensitivity_analysis.h"
 
 #include "act/basics/msg_handler.h"
+#include "act/utility/communicationrecord.h"
 #include "act/utility/jsontree.h"
 #include "act/alexandria/acmfitnesscomputer.h"
+#include "act/alexandria/staticindividualinfo.h"
+#include "act/ga/genome.h"
 #include "act/utility/timings.h"
 
 namespace alexandria
@@ -47,7 +50,8 @@ bool SensitivityAnalysis::run(MsgHandler           *msghandler,
                               ga::Genome           *genome,
                               iMolSelect            ims,
                               JsonTree             *jtree,
-                              bool                  quiet)
+                              bool                  quiet,
+                              bool                  useMiddlemen)
 {
     static const size_t timer = Timings::instance().index("Sensitivity analysis");
     ScopedTimer         scoped(timer);
@@ -75,34 +79,66 @@ bool SensitivityAnalysis::run(MsgHandler           *msghandler,
         tw->writeStringFormatted("\nStarting sensitivity analysis. chi2_0 = %g nParam = %zu\n",
                                  chi2_0, param->size());
     }
+    // Each parameter is changed to three values, the chi2 of all of them
+    // is computed first. Each value is computed on its own, by the master
+    // or by one of the middlemen, which only compute the training set.
+    auto                cr       = sii->commRec();
+    std::vector<int>    workers;
+    if (useMiddlemen && iMolSelect::Train == ims && cr->isMaster())
+    {
+        workers = cr->middlemen();
+    }
+    size_t              np       = param->size();
+    std::vector<double> pvalue(3*np), chi2(3*np);
+    for (size_t i = 0; i < np; ++i)
+    {
+        double deltap   = (upperBound[i]-lowerBound[i])/200;
+        double pmin     = std::max((*param)[i]-deltap, lowerBound[i]);
+        double pmax     = std::min((*param)[i]+deltap, upperBound[i]);
+        pvalue[3*i]     = pmin;
+        pvalue[3*i + 1] = 0.5*(pmin+pmax);
+        pvalue[3*i + 2] = pmax;
+    }
+    for (size_t first = 0; first < pvalue.size(); first += workers.size() + 1)
+    {
+        // The middlemen get the values after the first one
+        size_t nsent = std::min(workers.size(), pvalue.size() - first - 1);
+        for (size_t w = 0; w < nsent; w++)
+        {
+            size_t     k = first + 1 + w;
+            ga::Genome g = *genome;
+            (*g.basesPtr())[k/3] = pvalue[k];
+            cr->send_data(workers[w]);
+            g.Send(cr, workers[w]);
+            cr->send(workers[w], TrainFFMiddlemanMode::FITNESS);
+        }
+        // The master computes the first one
+        size_t        i      = first/3;
+        double        pstore = (*param)[i];
+        std::set<int> changed = { static_cast<int>(i) };
+        (*param)[i] = pvalue[first];
+        sii->updateForceField(msghandler, changed, *param);
+        fitComp->distributeTasks(cdc);
+        chi2[first] = fitComp->calcDeviation(msghandler, cdc, ims);
+        (*param)[i] = pstore;
+        sii->updateForceField(msghandler, changed, *param);
+        for (size_t w = 0; w < nsent; w++)
+        {
+            cr->recv(workers[w], &chi2[first + 1 + w]);
+        }
+    }
     JsonTree sens("sensitivity");
     bool minimum = true;
     // Reset force constants every run
     forceConstant_.clear();
-    for (size_t i = 0; i < param->size(); ++i)
+    for (size_t i = 0; i < np; ++i)
     {
         Sensitivity s;
+        for (size_t k = 3*i; k < 3*i + 3; k++)
+        {
+            s.add(pvalue[k], chi2[k]);
+        }
         double pstore = (*param)[i];
-        double deltap = (upperBound[i]-lowerBound[i])/200;
-        double pmin   = std::max((*param)[i]-deltap, lowerBound[i]);
-        double pmax   = std::min((*param)[i]+deltap, upperBound[i]);
-        double p_0    = 0.5*(pmin+pmax);
-        std::set<int> changed;
-        changed.insert(i);
-        (*param)[i]     = pmin;
-        sii->updateForceField(msghandler, changed, *param);
-        fitComp->distributeTasks(cdc);
-        s.add((*param)[i], fitComp->calcDeviation(msghandler, cdc, ims));
-        (*param)[i]     = p_0;
-        sii->updateForceField(msghandler, changed, *param);
-        fitComp->distributeTasks(cdc);
-        s.add((*param)[i], fitComp->calcDeviation(msghandler, cdc, ims));
-        (*param)[i]     = pmax;
-        sii->updateForceField(msghandler, changed, *param);
-        fitComp->distributeTasks(cdc);
-        s.add((*param)[i],  fitComp->calcDeviation(msghandler, cdc, ims));
-        (*param)[i]     = pstore;
-        sii->updateForceField(msghandler, changed, *param);
         s.computeForceConstants(tw);
         minimum = minimum && s.a() >= 0;
         // Compute dimensionless force constant, or zero if undefined

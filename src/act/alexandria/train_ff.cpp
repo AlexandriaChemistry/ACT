@@ -661,10 +661,12 @@ bool OptACM::runMaster(bool      optimize,
     }
     if (gach_.optimizer() != OptimizerAlg::GA && sensitivity && msghandler_.ok())
     {
-        // Do sensitivity analysis only on the training set
+        // Do sensitivity analysis only on the training set. After training
+        // the middlemen wait for work and compute part of it.
         SensitivityAnalysis sens;
         (void) sens.run(&msghandler_, sii_, fitComp_,
-                        &bestGenome[iMolSelect::Train], iMolSelect::Train, jtree);
+                        &bestGenome[iMolSelect::Train], iMolSelect::Train, jtree,
+                        false, optimize);
     }
     // Stop the middlemen ...
     if (commRec_.nmiddlemen() > 1)
