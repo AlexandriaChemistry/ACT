@@ -10,13 +10,13 @@ Using ACT simulate
 The command *alexandria simulate* will perform a simulation in the gas phase, i.e. without periodic boundary conditions. This obviously limits the usefulness but the OpenMM software can be used for condensed-phase simulations using ACT force fields :cite:p:`Kriz2024a,Spoel2025b`.
 The *alexandria simulate* utility is aimed for validation of the potentials, for instance by evaluating whether the total energy is conserved, it can be verified that the force is the derivative of the potential. The integration algorithm and the relaxation of shells are described in :ref:`sec-integration`.
 
-The utility can also be used to minimize the energy of a molecule or small cluster
+The energy of a molecule or small cluster can be minimized using *alexandria minimize*::
 
-    alexandria simulate -minimize -ff actff.xml -f coords.pdb 
+    alexandria minimize -ff actff.xml -f coords.pdb 
     -charges mp2.xml -c afterem.pdb -g minimize.log
 
 where *actff.xml* is the force field file, *coords.pdb* is a structure file (*xyz* and *sdf*
-are supported as well). The *alexandira -charges mp2.xml* indicates a molprop file (database) with monomeric (optimized) structures used for generating charges. The files *afterem.pdb* and *minimize.log* are output files.
+are supported as well). The *-charges mp2.xml* option indicates a molprop file (database) with monomeric (optimized) structures used for generating charges. The files *afterem.pdb* and *minimize.log* are output files. The minimization algorithm is selected with *-minalg*, atoms can be frozen using an index file with *-freeze* and bond lengths or angles can be constrained with *-constrain*, see :ref:`sec-constraints`. The same minimization can be done using *alexandria simulate -minimize*, which can in addition run a simulation starting from the minimized structure.
 
 ========================
 The ACT-OpenMM interface

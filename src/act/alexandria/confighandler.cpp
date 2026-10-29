@@ -406,15 +406,27 @@ eMinimizeAlgorithm stringToEMinimizeAlgorithm(const std::string &str)
 void SimulationConfigHandler::add_options(std::vector<t_pargs>             *pargs,
                                           gmx_unused std::vector<t_filenm> *fnms)
 {
+    std::vector<t_pargs> extra = {
+        { "-sp", FALSE, etBOOL, {&singlePoint_},
+          "Do a single point energy calculation and call it a day." },
+        { "-minimize", FALSE, etBOOL, {&minimize_},
+          "Minimize the energy with respect to input coordinates." }
+    };
+    for(auto &i : extra)
+    {
+        pargs->push_back(i);
+    }
+    add_minimize_options(pargs, false);
+}
+
+void SimulationConfigHandler::add_minimize_options(std::vector<t_pargs> *pargs,
+                                                   bool                  writeShells)
+{
     // The parser stores the choice in the first element of an enum, which
     // would otherwise become the default when the options are parsed again.
     eminAlgs[0]     = nullptr;
     constrainStr[0] = nullptr;
     std::vector<t_pargs> extra = {
-        { "-sp", FALSE, etBOOL, {&singlePoint_},
-          "Do a single point energy calculation and call it a day." },
-        { "-minimize", FALSE, etBOOL, {&minimize_},
-          "Minimize the energy with respect to input coordinates." },
         { "-minalg",   FALSE, etENUM, {&eminAlgs}, 
           "Algorithm to use for minimization." },
         { "-maxiter",FALSE, etINT,  {&maxIter_},
@@ -440,6 +452,11 @@ void SimulationConfigHandler::add_options(std::vector<t_pargs>             *parg
         { "-constr_toler", FALSE, etREAL, {&constraintTolerance_},
           "Relative tolerance for the constrained distances" }
     };
+    if (writeShells)
+    {
+        extra.push_back({ "-ws", FALSE, etBOOL, {&writeShells_},
+                          "Write coordinates of shell particles to the final coordinates as well." });
+    }
     for(auto &i : extra)
     {
         pargs->push_back(i);
