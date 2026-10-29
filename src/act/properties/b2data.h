@@ -55,8 +55,8 @@ private:
     std::vector<std::vector<double>>    exp_F2_[2];
     //! Torque on two compounds
     std::vector<std::vector<gmx::RVec>> exp_tau_[2];
-    //! Number of entries per bin
-    std::vector<std::vector<int>>       n_U12_;
+    //! Sum of the weights of the entries per bin
+    std::vector<std::vector<double>>    n_U12_;
     //! Mayer functions
     std::vector<std::vector<double>>    mayer_;
     //! Distance scale
@@ -82,7 +82,8 @@ public:
     void aggregate(CommunicationRecord *cr);
 
     /*! \brief Add one data point.
-     * Adds all values and increments internal counter.
+     * Adds all values times the weight, and the weight to the internal
+     * counter, such that the averages are weighted.
      * \param[in] iTemp    Temperature index
      * \param[in] index    Distance index
      * \param[in] dist     The distance between molecules
@@ -91,10 +92,12 @@ public:
      * \param[in] exp_F1   Exp weighted Force on molecule 1
      * \param[in] exp_tau0 Exp weighted Torque on molecule 0
      * \param[in] exp_tau1 Exp weighted Torque on molecule 1
+     * \param[in] weight   Weight of the orientation, see DimerGenerator
      */
     void addData(size_t iTemp, size_t index, double dist,
                  double exp_U12, double exp_F0, double exp_F1,
-                 const gmx::RVec exp_tau0, const gmx::RVec exp_tau1);
+                 const gmx::RVec exp_tau0, const gmx::RVec exp_tau1,
+                 double weight = 1);
 
     /*! \brief Do the integration of the exponent weight functions
      * Compute classical B2 and quantum correction. The bins hold equidistant

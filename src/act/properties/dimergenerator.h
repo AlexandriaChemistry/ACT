@@ -49,8 +49,12 @@
 namespace alexandria
 {
 
-//! To distinguish algorithms for spherical sampling
-enum class RandAlg { Sobol, SobolOwen, Pseudo };
+/*! \brief To distinguish algorithms for spherical sampling
+ * Sobol and SobolOwen use quasi-random numbers, Pseudo pseudo-random
+ * numbers. Gauss uses a grid of Euler angles, as in the program Orient,
+ * see DimerGenerator::generateRandomNumbers.
+ */
+enum class RandAlg { Sobol, SobolOwen, Pseudo, Gauss };
 
 /*! Convert string to corresponding algorithm
  * \param[in] str The string from the commandline
@@ -58,7 +62,8 @@ enum class RandAlg { Sobol, SobolOwen, Pseudo };
  */
 RandAlg stringToRandAlg(const char *str);
 
-typedef struct
+//! The coordinates of a dimer at one distance
+struct dimer_coords
 {
     //! Dstance between center of mass of compounds
     double                 dist;
@@ -68,7 +73,9 @@ typedef struct
     size_t                 natom[2];
     //! The actual coordinates as a single array for the whole dimer
     std::vector<gmx::RVec> coords;
-} dimer_coords;
+    //! The weight of the orientation in averages over orientations
+    double                 weight = 1;
+};
 
 class DimerGenerator
 {
@@ -91,6 +98,12 @@ private:
     bool   debugGD_     = false;
     //! The random algorithm
     RandAlg                                randAlg_ = RandAlg::Sobol;
+    //! Number of points for alpha in the Gauss algorithm
+    int                                    nalpha_  = 7;
+    //! Number of points for beta in the Gauss algorithm
+    int                                    nbeta_   = 7;
+    //! Number of points for gamma in the Gauss algorithm
+    int                                    ngamma_  = 7;
     //! Random device
     std::random_device                     rd_;
     //! Generator
@@ -144,9 +157,36 @@ public:
     void setSeed(int seed);
 
     /*! Generate the random numbers for all rotations
-     * \param[in] ndimers The number of dimers
+     * For each orientation there are 6 numbers between 0 and 1, three for
+     * the Euler angles of each molecule, see Rotator::randomRotate. With
+     * the Gauss algorithm, the orientations are the points of the grid
+     * and there is a seventh number, the weight of the orientation.
+     * \param[in] ndimers The number of dimers, not used for the Gauss algorithm
      */
     void generateRandomNumbers(int ndimers);
+
+    //! \return The algorithm for sampling orientations
+    RandAlg randAlg() const { return randAlg_; }
+
+    /*! \brief Use the Gauss algorithm with a grid of orientations
+     * \param[in] nalpha Number of points for alpha of the second molecule
+     * \param[in] nbeta  Number of points for beta of each molecule
+     * \param[in] ngamma Number of points for gamma of each molecule
+     */
+    void setGaussGrid(int nalpha, int nbeta, int ngamma)
+    {
+        randAlg_ = RandAlg::Gauss;
+        nalpha_  = nalpha;
+        nbeta_   = nbeta;
+        ngamma_  = ngamma;
+    }
+
+    /*! \brief The number of orientations
+     * \param[in] ndimers The number of orientations asked for
+     * \return The number of points of the grid for the Gauss algorithm,
+     *         ndimers otherwise
+     */
+    int numberOfOrientations(int ndimers) const;
 
     //! \return The list of random numbers
     const std::vector<std::vector<double>> &allRandom() const { return allRandom_; }
