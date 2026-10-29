@@ -38,6 +38,7 @@
 #include <vector>
 
 #include "act/alexandria/loss_function.h"
+#include "act/constraints/shake.h"
 #include "gromacs/commandline/pargs.h"
 
 namespace alexandria
@@ -494,8 +495,8 @@ private:
     double             kFBPR_                = 0;
     //! Radius for flat-bottom position restraints (from origin)
     double             r0FBPR_               = 0;
-    //! Constrain bond lengths in simulation and minimization
-    bool               constrain_            = false;
+    //! What to constrain in simulations
+    ConstraintType     constrain_            = ConstraintType::No;
     //! Maxiter for SHAKE and RATTLE
     int                constraintMaxIter_    = 1000;
     //! Relative tolerance for constraining bond lengths
@@ -555,8 +556,11 @@ public:
     //! \return whether or not to do a single point energy calculation
     bool singlePoint() const { return singlePoint_; }
 
-    //! \return whether to constrain bonds
-    bool constrain() const { return constrain_; }
+    //! \return what to constrain
+    ConstraintType constraintType() const { return constrain_; }
+
+    //! \return whether to constrain anything
+    bool constrain() const { return ConstraintType::No != constrain_; }
 
     //! \return Max number of SHAKE/RATTLE iterations
     int constraintMaxIter() const { return constraintMaxIter_; }

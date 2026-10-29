@@ -27,6 +27,7 @@
  */
 #include <cmath>
 #include <fstream>
+#include <map>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -344,17 +345,21 @@ TEST_F(SimulateTest, Reproducibility)
 // the degrees of freedom without center of mass motion and constraints
 TEST_F(SimulateTest, InitialTemperature)
 {
-    // Acetone has 10 atoms and 9 bonds
-    for(bool constrain : { false, true })
+    // Acetone has 10 atoms and 9 bonds. Of the 3 angles around the
+    // planar carbon two are constrained, and of the 6 angles around
+    // each methyl carbon five, leaving the methyl rotations and the
+    // out of plane motion of the planar carbon.
+    std::map<std::string, double> nDOF = {
+        { "no",     3*9 },
+        { "bonds",  3*9-9 },
+        { "angles", 3*9-9-12 }
+    };
+    for(const auto &nd : nDOF)
     {
         SimulateFiles files;
-        auto cmd = baseCommand("acetone.sdf",
-                               constrain ? "tempcons" : "temp", &files);
+        auto cmd = baseCommand("acetone.sdf", "temp" + nd.first, &files);
         addMD(&cmd, 300, 1993);
-        if (constrain)
-        {
-            cmd.append("-constrain");
-        }
+        cmd.addOption("-constrain", nd.first);
         ASSERT_EQ(0, run(&cmd));
         auto xvg   = readXvg(files.energy);
         ASSERT_FALSE(xvg.rows.empty());
@@ -364,36 +369,86 @@ TEST_F(SimulateTest, InitialTemperature)
         ASSERT_GT(cTemp, 0);
         auto ekin  = xvg.rows[0][cEkin];
         auto temp  = xvg.rows[0][cTemp];
-        EXPECT_NEAR(300, temp, 1e-4);
-        double nDOF = constrain ? 3*9-9 : 3*9;
-        EXPECT_NEAR(nDOF, 2*ekin/(BOLTZ*temp), 1e-3);
+        EXPECT_NEAR(300, temp, 1e-4) << nd.first;
+        EXPECT_NEAR(nd.second, 2*ekin/(BOLTZ*temp), 1e-3) << nd.first;
     }
 }
 
 // Test: The total energy is conserved with constraints
 TEST_F(SimulateTest, ConstrainedEnergyConservation)
 {
+    for(const std::string constrain : { "bonds", "angles" })
+    {
+        SimulateFiles files;
+        auto cmd = baseCommand("acetone.sdf", "conserve" + constrain, &files);
+        cmd.addOption("-nsteps", 2500);
+        cmd.addOption("-deltat", 0.0002);
+        cmd.addOption("-temp", 300);
+        cmd.addOption("-seed", 1993);
+        cmd.addOption("-nstener", 10);
+        cmd.addOption("-constrain", constrain);
+        ASSERT_EQ(0, run(&cmd));
+        auto xvg   = readXvg(files.energy);
+        int  cEtot = xvg.column("ETOT");
+        ASSERT_GT(cEtot, 0);
+        size_t nav = 10;
+        ASSERT_GT(xvg.rows.size(), 2*nav);
+        double first = 0, last = 0;
+        for(size_t i = 0; i < nav; i++)
+        {
+            first += xvg.rows[i][cEtot];
+            last  += xvg.rows[xvg.rows.size()-1-i][cEtot];
+        }
+        EXPECT_NEAR(first/nav, last/nav, 0.01) << constrain;
+    }
+}
+
+// Test: Angle constraints work in a ring
+TEST_F(SimulateTest, AngleConstraintsUracil)
+{
     SimulateFiles files;
-    auto cmd = baseCommand("acetone.sdf", "conserve", &files);
+    auto cmd = baseCommand("uracil.sdf", "uracilangles", &files);
     cmd.addOption("-nsteps", 2500);
     cmd.addOption("-deltat", 0.0002);
     cmd.addOption("-temp", 300);
     cmd.addOption("-seed", 1993);
     cmd.addOption("-nstener", 10);
-    cmd.append("-constrain");
+    cmd.addOption("-constrain", "angles");
     ASSERT_EQ(0, run(&cmd));
     auto xvg   = readXvg(files.energy);
+    ASSERT_FALSE(xvg.rows.empty());
+    // Uracil has 12 atoms and 12 bonds. Of the 18 angles, two around
+    // each of the six planar ring atoms are constrained, but three of
+    // those are redundant since they close the ring.
+    int  cEkin = xvg.column("EKIN");
+    int  cTemp = xvg.column("TEMPERATURE");
     int  cEtot = xvg.column("ETOT");
     ASSERT_GT(cEtot, 0);
-    size_t nav = 10;
-    ASSERT_GT(xvg.rows.size(), 2*nav);
-    double first = 0, last = 0;
-    for(size_t i = 0; i < nav; i++)
+    EXPECT_NEAR(3*11-12-9, 2*xvg.rows[0][cEkin]/(BOLTZ*xvg.rows[0][cTemp]), 1e-3);
+    EXPECT_NEAR(xvg.rows[0][cEtot], xvg.rows.back()[cEtot], 0.01);
+}
+
+// Test: Angle constraints keep the angles at their reference values
+TEST_F(SimulateTest, AngleConstraintsWater)
+{
+    SimulateFiles files;
+    auto cmd = baseCommand("water-3-oep.log.pdb", "waterangles", &files);
+    addMD(&cmd, 300, 1993);
+    cmd.addOption("-constrain", "angles");
+    ASSERT_EQ(0, run(&cmd));
+    auto xvg = readXvg(files.energy);
+    ASSERT_FALSE(xvg.rows.empty());
+    // Water is rigid, so only the rotations remain
+    int  cEkin = xvg.column("EKIN");
+    int  cTemp = xvg.column("TEMPERATURE");
+    EXPECT_NEAR(3, 2*xvg.rows[0][cEkin]/(BOLTZ*xvg.rows[0][cTemp]), 1e-3);
+    // With a rigid molecule the potential energy does not change
+    int  cEpot = xvg.column("EPOT");
+    ASSERT_GT(cEpot, 0);
+    for(const auto &row : xvg.rows)
     {
-        first += xvg.rows[i][cEtot];
-        last  += xvg.rows[xvg.rows.size()-1-i][cEtot];
+        EXPECT_NEAR(xvg.rows[0][cEpot], row[cEpot], 1e-3);
     }
-    EXPECT_NEAR(first/nav, last/nav, 0.01);
 }
 
 // Test: Without an initial temperature no velocities are generated

@@ -38,12 +38,15 @@
 
 #include "act/constraints/shake.h"
 #include "act/forcefield/forcefield.h"
+#include "act/forcefield/forcefield_parametername.h"
 #include "act/forcefield/forcefield_utils.h"
 #include "act/forces/forcecomputer.h"
+#include "act/forces/forcecomputerutils.h"
 #include "act/topology/actmol.h"
 #include "act/topology/actmol_util.h"
 #include "act/topology/topology.h"
 #include "gromacs/math/units.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "testutils/cmdlinetest.h"
@@ -74,6 +77,7 @@ protected:
     }
     
     void testConstrainer(const std::string &molname,
+                         ConstraintType     ctype,
                          int                maxiter,
                          double             toler,
                          double             invdt)
@@ -95,6 +99,13 @@ protected:
         {
             checker_.checkString(mol.getMolname(), "molname");
             std::vector<gmx::RVec> coords = mol.xOriginal();
+            ccc.makeConstraints(&msghandler, ctype, pd, mol.topology(), coords);
+            if (ConstraintType::Bonds != ctype)
+            {
+                checker_.checkInt64(ccc.numBondConstraints(), "bond constraints");
+                checker_.checkInt64(ccc.numAngleConstraints(), "angle constraints");
+                checker_.checkInt64(ccc.numRedundantAngles(), "redundant angles");
+            }
             std::vector<gmx::RVec> velocities(coords.size(), vZero);
             auto atoms = mol.topology()->atoms();
             for(size_t i = 0; i < atoms.size(); i++)
@@ -110,27 +121,49 @@ protected:
                 }
             }
             checker_.checkSequence(coords.begin(), coords.end(), "coordinates before");
-            auto pot = pd->findForcesConst(InteractionType::BONDS).potential();
-            int error = ccc.shake(&msghandler,
-                                  pot,
-                                  mol.topology()->entry(InteractionType::BONDS),
-                                  atoms,
-                                  &coords);
+            int error = ccc.shake(&msghandler, &coords);
             EXPECT_TRUE(error == 0);
             if (error == 0)
             {
                 checker_.checkSequence(coords.begin(), coords.end(), "coordinates after");
             }
+            // All distances should be at their constrained values
+            auto &pairs = ccc.pairs();
+            for(size_t ll = 0; ll < pairs.size(); ll++)
+            {
+                rvec dx;
+                rvec_sub(coords[pairs[ll][0]], coords[pairs[ll][1]], dx);
+                EXPECT_NEAR(ccc.length(ll), norm(dx), 2*toler*ccc.length(ll)) << "constraint " << ll;
+            }
+            if (ConstraintType::Angles == ctype && ccc.numRedundantAngles() == 0)
+            {
+                // Without redundant constraints all angles are at their reference values
+                for(const auto &a : mol.topology()->entry(InteractionType::ANGLES))
+                {
+                    auto &ind = a->atomIndices();
+                    rvec  r_ij, r_kj;
+                    real  costh;
+                    auto  theta = bond_angle(coords[ind[0]], coords[ind[1]], coords[ind[2]],
+                                             r_ij, r_kj, &costh);
+                    EXPECT_NEAR(a->params()[angleANGLE], theta, 1e-3);
+                }
+            }
             checker_.checkSequence(velocities.begin(), velocities.end(), "velocities before");
-            error = ccc.rattle(&msghandler,
-                               pot,
-                               mol.topology()->entry(InteractionType::BONDS),
-                               mol.topology()->atoms(),
-                               coords, &velocities);
+            error = ccc.rattle(&msghandler, coords, &velocities);
             EXPECT_TRUE(error == 0);
             if (error == 0)
             {
                 checker_.checkSequence(velocities.begin(), velocities.end(), "velocities after");
+            }
+            // No relative velocity along the constraints, within the
+            // tolerance of rattle, which is relative to the change of
+            // the distance in one time step.
+            for(size_t ll = 0; ll < pairs.size(); ll++)
+            {
+                rvec dx, dv;
+                rvec_sub(coords[pairs[ll][0]], coords[pairs[ll][1]], dx);
+                rvec_sub(velocities[pairs[ll][0]], velocities[pairs[ll][1]], dv);
+                EXPECT_NEAR(0, iprod(dx, dv)/norm(dx), 2*toler*ccc.length(ll)*invdt) << "constraint " << ll;
             }
         }
     }
@@ -142,12 +175,42 @@ protected:
 
 TEST_F (ConstraintsTest, Water) 
 {
-    testConstrainer("water-3-oep.log.pdb",100, 1e-4, 1000);
+    testConstrainer("water-3-oep.log.pdb", ConstraintType::Bonds, 100, 1e-4, 1000);
 }
 
 TEST_F (ConstraintsTest, Acetate) 
 {
-    testConstrainer("acetate.sdf", 1000, 1e-4, 1000);
+    testConstrainer("acetate.sdf", ConstraintType::Bonds, 1000, 1e-4, 1000);
+}
+
+TEST_F (ConstraintsTest, WaterAngles) 
+{
+    testConstrainer("water-3-oep.log.pdb", ConstraintType::Angles, 100, 1e-4, 1000);
+}
+
+TEST_F (ConstraintsTest, AcetateAngles) 
+{
+    testConstrainer("acetate.sdf", ConstraintType::Angles, 1000, 1e-4, 1000);
+}
+
+TEST_F (ConstraintsTest, MethanethiolAngles) 
+{
+    testConstrainer("methanethiol.sdf", ConstraintType::Angles, 1000, 1e-4, 1000);
+}
+
+TEST_F (ConstraintsTest, NoConstraints) 
+{
+    testConstrainer("acetate.sdf", ConstraintType::No, 1000, 1e-4, 1000);
+}
+
+TEST(ConstraintTypeTest, Strings)
+{
+    for(auto ct : { ConstraintType::No, ConstraintType::Bonds, ConstraintType::Angles })
+    {
+        EXPECT_EQ(ct, stringToConstraintType(constraintTypeToString(ct)));
+    }
+    EXPECT_EQ("angles", constraintTypeToString(ConstraintType::Angles));
+    EXPECT_THROW(stringToConstraintType("dihedrals"), gmx::InvalidInputError);
 }
 
 }

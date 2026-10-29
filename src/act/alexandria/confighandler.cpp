@@ -375,6 +375,9 @@ void GAConfigHandler::check_pargs(MsgHandler *msghandler)
 //! \brief Couple of string to use in cmdline option for the minimizer algorithm
 static const char *eminAlgs[5] = {nullptr, "LBFGS", "Newton", "Steep", nullptr};
 
+//! \brief Strings to use in the cmdline option for constraints
+static const char *constrainStr[5] = {nullptr, "no", "bonds", "angles", nullptr};
+
 //! \brief Map from enum to string
 std::map<eMinimizeAlgorithm, std::string> eMinAlg2String = {
     { eMinimizeAlgorithm::LBFGS,  "LBFGS"  },
@@ -426,12 +429,12 @@ void SimulationConfigHandler::add_options(std::vector<t_pargs>             *parg
           "Force constant (kJ/mol nm) for flat-bottom position restraints, zero means no restraints" },
         { "-r0fbpr", FALSE, etREAL, {&r0FBPR_},
           "Radius (nm) for flat-bottom position restraints (from origin)" },
-        { "-constrain", FALSE, etBOOL, {&constrain_},
-          "Constrain bond lengths and velocities along bonds in simulations and minimizations" },
+        { "-constrain", FALSE, etENUM, {constrainStr},
+          "Constrain bond lengths, or bond lengths and angles, and the velocities along them in MD simulations. Angle constraints keep the distance between the outer atoms of each angle constant." },
         { "-constr_maxiter", FALSE, etINT, {&constraintMaxIter_},
-          "Max number of iterations for SHAKE and RATTLE" },
+          "Max number of iterations for SHAKE" },
         { "-constr_toler", FALSE, etREAL, {&constraintTolerance_},
-          "Relative tolerance for constraining bond lengths" }
+          "Relative tolerance for the constrained distances" }
     };
     for(auto &i : extra)
     {
@@ -470,7 +473,8 @@ void SimulationConfigHandler::check_pargs(MsgHandler *)
     GMX_RELEASE_ASSERT(nsteps_ >= 0, "Number of steps must be larger than zero");
     GMX_RELEASE_ASSERT(temperature_ >= 0, "Temperature must be larger than zero");
     GMX_RELEASE_ASSERT(deltat_ > 0, "Integration time step must be larger than zero");
-    minAlg_ = stringToEMinimizeAlgorithm(eminAlgs[0]);
+    minAlg_    = stringToEMinimizeAlgorithm(eminAlgs[0]);
+    constrain_ = stringToConstraintType(constrainStr[0]);
 }
 
 /* * * * * * * * * * * * * * * * * * * * * *

@@ -34,18 +34,40 @@
 #ifndef ACT_SHAKE_H
 #define ACT_SHAKE_H
 
+#include <array>
+#include <cmath>
+#include <string>
 #include <vector>
 
-#include "act/forcefield/potential.h"
-#include "act/molprop/topologyentry.h"
 #include "gromacs/math/vec.h"
 
 namespace alexandria
 {
 
 class ActAtom;
-class ACTMol;
+class ForceField;
 class MsgHandler;
+class Topology;
+
+//! \brief What to constrain in a simulation
+enum class ConstraintType {
+    //! No constraints
+    No,
+    //! Bond lengths
+    Bonds,
+    //! Bond lengths and the distances between the outer atoms of angles
+    Angles
+};
+
+//! \return string corresponding to the constraint type
+const std::string &constraintTypeToString(ConstraintType ct);
+
+/*! \brief Map string to constraint type
+ * \param[in] str The string
+ * \return the constraint type
+ * \throws if the string does not correspond to a constraint type
+ */
+ConstraintType stringToConstraintType(const std::string &str);
 
 class Constrainer
 {
@@ -56,102 +78,149 @@ private:
     double toler_   = 1e-4;
     //! Inverse time step (1/0.001 ps -> 1000)
     double invdt_   = 1000;
-    //! Overrelaxation
-    double omega_   = 1;
-    //! Preparation stuff, determined just once
+    //! The atom pairs with a constrained distance
+    std::vector<std::array<int, 2>> pairs_;
+    //! Number of bond constraints, these come first in pairs_
+    size_t                 nbonds_            = 0;
+    //! Number of angles that were not constrained since they are redundant
+    size_t                 nredundant_        = 0;
+    //! Squared constrained distances
     std::vector<double>    constraint_distance_squared_;
-    std::vector<double>    half_reduced_mass_;
+    //! Inverse tolerances on the squared distances
     std::vector<double>    distance_squared_tolerance_;
+    //! Distance vectors of the constrained pairs in the reference coordinates
     std::vector<gmx::RVec> initial_displacements_;
-    std::vector<double>    scaled_lagrange_multiplier_;
+    //! Inverse masses of all particles
     std::vector<double>    invmass_;
-    std::vector<double>    m2_;
-    /*! \brief Prepare for shaking or rattling by filling some constant arrays
-     * \param[in]    msghandler For warnings and errors
-     * \param[in]    pot        The bond potential used
-     * \param[in]    bonds      The atom identifiers and parameters
-     * \param[in]    atoms      The atoms
-     */
-    void prepareConstants(MsgHandler                 *msghandler,
-                          Potential                   pot,
-                          const TopologyEntryVector  &bonds,
-                          const std::vector<ActAtom> &atoms);
+    //! Two constraints that share an atom
+    struct CoupledPair
+    {
+        //! The first constraint
+        int    a;
+        //! The second constraint
+        int    b;
+        //! How moving the atoms of b changes the distance vector of a
+        double coupling;
+    };
+    //! All pairs of coupled constraints, including each constraint with itself
+    std::vector<CoupledPair> coupled_;
+
+    //! \brief Make the list of constraints, see makeConstraints
+    void makeConstraintList(MsgHandler                   *msghandler,
+                            ConstraintType                ctype,
+                            const ForceField             *pd,
+                            const Topology               *top,
+                            const std::vector<gmx::RVec> &positions);
+
+    //! \brief Find the coupled constraints
+    void makeCoupledPairs();
 
     /*! \brief Prepare for shaking or rattling by computing the initial displacements
-     * \param[in]    msghandler For warnings and errors
-     * \param[in]    bonds      The atom identifiers and parameters
-     * \param[inout] positions  The coordinates of all particles
+     * \param[in] positions  The coordinates of all particles
      */
-    void computeInitialDisplacements(MsgHandler                   *msghandler,
-                                     const TopologyEntryVector    &bonds,
-                                     const std::vector<gmx::RVec> &positions);
+    void computeInitialDisplacements(const std::vector<gmx::RVec> &positions);
+
+    /*! \brief Add a constraint
+     * \param[in] ai     The first atom
+     * \param[in] aj     The second atom
+     * \param[in] length The distance between the atoms
+     */
+    void addConstraint(int ai, int aj, double length);
 
 public:
     Constrainer(int maxiter, double toler, double invdt) : maxiter_(maxiter), toler_(toler), invdt_(invdt)
     {}
 
+    /*! \brief Make the list of constraints
+     *
+     * With bond constraints, all bonds are constrained to the reference
+     * bond length. With angle constraints, the distance between the outer
+     * atoms i and k of each angle i-j-k is constrained as well, to the
+     * distance given by the reference bond lengths and angle. Around an
+     * atom with n bonded neighbours at most 2n-3 angles are constrained,
+     * since more would be redundant, and two around a planar atom with
+     * three neighbours. Angles of more than 175 degrees are not
+     * constrained either. Finally, an angle constraint is left out if it
+     * is (nearly) linearly dependent on the other constraints in the
+     * starting coordinates, for instance in rings.
+     *
+     * \param[in] msghandler For warnings and errors
+     * \param[in] ctype      What to constrain
+     * \param[in] pd         The force field
+     * \param[in] top        The topology
+     * \param[in] positions  The starting coordinates
+     */
+    void makeConstraints(MsgHandler                   *msghandler,
+                         ConstraintType                ctype,
+                         const ForceField             *pd,
+                         const Topology               *top,
+                         const std::vector<gmx::RVec> &positions);
+
+    //! \return the number of constraints
+    size_t numConstraints() const { return pairs_.size(); }
+
+    //! \return the number of bond constraints
+    size_t numBondConstraints() const { return nbonds_; }
+
+    //! \return the number of angle constraints
+    size_t numAngleConstraints() const { return pairs_.size() - nbonds_; }
+
+    //! \return the number of angles that were left out since they are redundant
+    size_t numRedundantAngles() const { return nredundant_; }
+
+    //! \return the atom pairs with a constrained distance
+    const std::vector<std::array<int, 2>> &pairs() const { return pairs_; }
+
+    //! \return the constrained distance of a pair
+    double length(size_t index) const { return std::sqrt(constraint_distance_squared_[index]); }
+
     /*! \brief Execute the Shake algorithm
      *
-     * Original implementation from R.C. van Schaik and W.F. van Gunsteren
-     * (ETH Zuerich, June 1992), adapted for GROMACS by David van der
-     * Spoel November 1992. Adapted for ACT by DvdS, August 2026.
-     *
-     * The algorithm here is based section five of Ryckaert, Ciccotti and
-     * Berendsen, J Comp Phys, 23, 327, 1977.
+     * The constraint equations of Ryckaert, Ciccotti and Berendsen,
+     * J Comp Phys, 23, 327, 1977 are solved for all constraints
+     * together by Newton iterations, as in the matrix SHAKE algorithm of
+     * Kraeutler, van Gunsteren and Huenenberger, J Comput Chem 22, 501,
+     * 2001. Unlike iterating over the constraints one at a time, this
+     * converges quickly for coupled constraints, as with angle constraints.
      *
      * \param[in]    msghandler For warnings and errors
-     * \param[in]    bonds      The atom identifiers and parameters
-     * \param[in]    atoms      The atoms
      * \param[inout] positions  The coordinates of all particles
      * \return error code corresponding the (n+1)th constraint or zero if fine
      */
-    int shake(MsgHandler                   *msghandler,
-              Potential                     pot,
-              const TopologyEntryVector    &bonds,
-              const std::vector<ActAtom>   &atoms,
-              std::vector<gmx::RVec>       *positions)
+    int shake(MsgHandler             *msghandler,
+              std::vector<gmx::RVec> *positions)
     {
-        return shake(msghandler, pot, bonds, atoms, *positions,
-                     positions, nullptr);
+        return shake(msghandler, *positions, positions, nullptr);
     }
 
     /*! \brief Execute the Shake algorithm as the first part of rattle
      *
-     * The constraint forces act along the bonds in the reference
+     * The constraint forces act along the constrained pairs in the reference
      * coordinates, that should satisfy the constraints. The displacements
      * due to the constraints divided by the time step are added to the
      * velocities, as in the first part of the rattle algorithm.
      * See Andersen, J Comp Phys, 52, 24, 1983.
      *
      * \param[in]    msghandler For warnings and errors
-     * \param[in]    bonds      The atom identifiers and parameters
-     * \param[in]    atoms      The atoms
      * \param[in]    reference  The coordinates before the integration step
      * \param[inout] positions  The coordinates of all particles
      * \param[inout] velocities The velocities for all particles, may be nullptr
      * \return error code corresponding the (n+1)th constraint or zero if fine
      */
     int shake(MsgHandler                   *msghandler,
-              Potential                     pot,
-              const TopologyEntryVector    &bonds,
-              const std::vector<ActAtom>   &atoms,
               const std::vector<gmx::RVec> &reference,
               std::vector<gmx::RVec>       *positions,
               std::vector<gmx::RVec>       *velocities);
 
-    /*! \brief Execute the rattle algorithm
-     *     rattle added by M.R. Shirts, April 2004, from code written by Jay Ponder in TINKER
-     *     second part of rattle algorithm
+    /*! \brief Execute the second part of the rattle algorithm
+     *
+     * The velocity components along the constraints are removed by
+     * solving the linear equations for all constraints together.
      * \param[in]    msghandler For warnings and errors
-     * \param[in]    bonds      The atom identifiers and parameters
-     * \param[in]    atoms      The atoms
-     * \param[inout] positions  The coordinates of all particles
+     * \param[in]    positions  The coordinates of all particles
      * \param[inout] velocities The velocities for all particles
      */
     int rattle(MsgHandler                   *msghandler,
-               Potential                     pot,
-               const TopologyEntryVector    &bonds,
-               const std::vector<ActAtom>   &atoms,
                const std::vector<gmx::RVec> &positions,
                std::vector<gmx::RVec>       *velocities);
 };
