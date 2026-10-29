@@ -41,7 +41,6 @@ ACTHelper::ACTHelper(MsgHandler                *msghandler,
                      MolGen                    *mg,
                      double                     shellToler,
                      int                        shellMaxIter,
-                     double                     shellMaxDistance,
                      ChargeGenerationAlgorithm  algorithm,
                      LossFunction               lossFunction)
 {
@@ -51,7 +50,7 @@ ACTHelper::ACTHelper(MsgHandler                *msghandler,
     {
         epsilonr = 1;
     }
-    forceComp_.init(shellToler, shellMaxIter, shellMaxDistance, epsilonr);
+    forceComp_.init(shellToler, shellMaxIter, epsilonr);
     fitComp_.init(msghandler, sii, mg, false, &forceComp_, algorithm, lossFunction);
 }
 

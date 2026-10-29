@@ -210,8 +210,7 @@ void OptACM::initForceComputer()
     {
         epsilonr = 1;
     }
-    forceComp_->init(bch_.shellToler(),
-                     bch_.shellMaxIter(), bch_.shellMaxDistance(), epsilonr);
+    forceComp_->init(bch_.shellToler(), bch_.shellMaxIter(), epsilonr);
 }
 
 //! \todo rename function and make a coupling between targets from the command line
@@ -1123,7 +1122,6 @@ int train_ff(int argc, char *argv[])
                     ACTHelper helper(opt.msgHandler(), opt.sii(), opt.mg(),
                                      opt.bch()->shellToler(),
                                      opt.bch()->shellMaxIter(),
-                                     opt.bch()->shellMaxDistance(),
                                      compR.algorithm(),
                                      opt.gach()->lossFunction());
                     helper.run(opt.msgHandler());

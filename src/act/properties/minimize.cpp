@@ -240,7 +240,7 @@ int minimize(int argc, char *argv[])
     {
         epsilonr = 1;
     }
-    forceComp.init(shellToler, sch.maxIter(), forceComp.maxShellDistance(), epsilonr);
+    forceComp.init(shellToler, sch.maxIter(), epsilonr);
 
     std::vector<ACTMol> actmols;
     try

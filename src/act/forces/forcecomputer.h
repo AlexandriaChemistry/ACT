@@ -96,10 +96,24 @@ struct ConformationSet
     void invalidate() { data.invalidate(); }
 };
 
+//! Name of the option of the polarization for the maximum distance between a shell and its core
+const char shellMaxDistanceName[] = "shellmaxdistance";
+
+/*! \brief Return the maximum distance between a shell and its core
+ * This is part of the force field, since the parameters are trained with
+ * it. It is the option shellMaxDistanceName of the polarization, and
+ * 0.02 nm if the force field does not have it. Zero means that there is
+ * no maximum. A shell held at this distance by a force pointing away from
+ * its core counts as relaxed when the force perpendicular to the
+ * core-shell vector is small enough.
+ * \param[in] pd The force field
+ * \return The distance in nm
+ */
+double shellMaxDistance(const ForceField *pd);
+
 /*! \brief Class to compute all the forces in a molecule or complex.
  * It is imperative that there is only one force computer in each program,
- * since results may depend on the flags given when initiating. This goes
- * in particule for the maxShellDistance.
+ * since results may depend on the flags given when initiating.
  */
 class ForceComputer
 {
@@ -108,8 +122,6 @@ private:
     double         msForceToler_     = 1e-6;
     //! Maximum number of iterations to spend on minimizing shells
     int            maxiter_          = 25;
-    //! Maximum allowed distance for shells to be away from their core
-    double         maxShellDistance_ = 0.04;
     //! Relative dielectric constant
     double         epsilonr_         = 1.0;
     //! Virtual site handler
@@ -130,6 +142,8 @@ private:
      * \param[in]    isShell  Whether each atom is a shell
      * \param[in]    fragment The fragment the shells belong to, for keeping
      *                         the step of the shells of each fragment
+     * \param[in]    maxShellDistance The maximum distance between a shell and
+     *                         its core, see shellMaxDistance
      * \param[inout] myCoords The coordinates and energy array
      * \return The number of shells that converged
      */
@@ -138,6 +152,7 @@ private:
                         size_t                     nShell,
                         const std::vector<bool>    isShell,
                         size_t                     fragment,
+                        double                     maxShellDistance,
                         std::vector<CoordsEnergy> *myCoords) const;
     /*! \brief Relax the shells of one monomer in all conformations of all molecules
      * Iterates shell updates and energy computations until all shells
@@ -176,25 +191,21 @@ private:
     /*! \brief Constructor with initialization of variables
      * \param[in] msForce          The tolerance for the mean square force on shells
      * \param[in] maxiter          The maximum number of iterations for shell minimization
-     * \param[in] maxShellDistance Maximum allowed distance (nm) for shells to be away from their core
      * \param[in] epsilonr         Relative dielectric constant
      */
     ForceComputer(double   msForce,
                   int      maxiter,
-                  double   maxShellDistance,
                   double   epsilonr)
     {
-        init(msForce, maxiter, maxShellDistance, epsilonr);
+        init(msForce, maxiter, epsilonr);
     }
     /*! \brief Initialization of variables
      * \param[in] msForce          The tolerance for the mean square force on shells
      * \param[in] maxiter          The maximum number of iterations for shell minimization
-     * \param[in] maxShellDistance Maximum allowed distance (nm) for shells to be away from their core
      * \param[in] epsilonr         Relative dielectric constant
      */
     void init(double   msForce,
               int      maxiter,
-              double   maxShellDistance,
               double   epsilonr);
 
     /*! \brief Generate coordinates for virtual sites
@@ -367,9 +378,6 @@ private:
      * \param[in] maxiter The number!
      */
     void setMaxIter(int maxiter) { maxiter_ = maxiter; }
-
-    //! \return the maximum allowed distance for a shell to be displaced from its core
-    double maxShellDistance() const { return maxShellDistance_; }
 
     /*! \brief Plot the potential functions
      * This plots the potential functions corresponding to

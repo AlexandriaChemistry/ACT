@@ -371,6 +371,7 @@ int gen_ff(int argc, char*argv[])
     int               nexclqq  = 2;
     int               nexclvdw = 2;
     double            epsilonr = 1;
+    double            shellMaxDistance = 0.02;
     bool              qsymm    = true;
     std::vector<const char *>qdn2    = { nullptr, "GAUSSIAN", "POINT", "SLATER", nullptr };
     std::vector<const char *>bondfn  = { nullptr };
@@ -428,6 +429,8 @@ int gen_ff(int argc, char*argv[])
           "Number of exclusions for Van der Waals interactions and Van der Waals corrections." },
         { "-epsilonr", FALSE, etREAL, {&epsilonr},
           "Relative dielectric constant. 1 is recommended for polarizable force fields, but maybe 1.7 might work for non-polarizable force fields instead of charge scaling." },
+        { "-shellmaxdistance", FALSE, etREAL, {&shellMaxDistance},
+          "Maximum distance (nm) between a shell and its core, 0 means no maximum. The shells of hyperpolarizable models may not need one." },
         { "-qsymm", FALSE, etBOOL, {&qsymm},
           "Implement symmetrization of charges in the force field" },
         { "-qdist", FALSE, etENUM, {qdn2.data()},
@@ -692,6 +695,7 @@ int gen_ff(int argc, char*argv[])
     {
         auto fsp = pd.findForces(itPol);
         fsp->setFunction(potentialToString(Potential::POLARIZATION));
+        fsp->addOption(shellMaxDistanceName, gmx_ftoa(shellMaxDistance));
     }
     // Bonded functions need to be added
     ForceFieldParameterList bonds(bondfn[0], CanSwap::Yes);

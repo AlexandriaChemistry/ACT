@@ -102,14 +102,27 @@ static double shellForce2(const std::vector<ActAtom>   &atoms,
     return f2sum;
 }
 
+double shellMaxDistance(const ForceField *pd)
+{
+    double maxShellDistance = 0.02;
+    auto   itype            = InteractionType::POLARIZATION;
+    if (pd->interactionPresent(itype))
+    {
+        auto &fs = pd->findForcesConst(itype);
+        if (fs.optionExists(shellMaxDistanceName))
+        {
+            maxShellDistance = std::atof(fs.optionValue(shellMaxDistanceName).c_str());
+        }
+    }
+    return maxShellDistance;
+}
+
 void ForceComputer::init(double  msForce,
                          int     maxiter,
-                         double  maxShellDistance,
                          double  epsilonr)
 {
     msForceToler_     = msForce;
     maxiter_          = maxiter;
-    maxShellDistance_ = maxShellDistance;
     epsilonr_         = epsilonr;
 }
 
@@ -316,11 +329,12 @@ size_t ForceComputer::updateShells(const Topology            *top,
                                    size_t                     nShell,
                                    const std::vector<bool>    isShell,
                                    size_t                     fragment,
+                                   double                     maxShellDistance,
                                    std::vector<CoordsEnergy> *myCoords) const
 {
     auto   itype      = InteractionType::POLARIZATION;
     size_t numberDone = 0;
-    double maxShellDistance2 = maxShellDistance_*maxShellDistance_;
+    double maxShellDistance2 = maxShellDistance*maxShellDistance;
     for(auto &dim : *myCoords)
     {
         if (dim.done)
@@ -730,6 +744,7 @@ void ForceComputer::relaxMonomer(MsgHandler                  *msghandler,
 {
     static const size_t timer = Timings::instance().index("Shell relaxation");
     ScopedTimer         scoped(timer);
+    double              maxShellDistance = shellMaxDistance(pd);
     for(auto molptr : allmols)
     {
         resetShellSteps(molptr->monomerCoords(im));
@@ -752,7 +767,7 @@ void ForceComputer::relaxMonomer(MsgHandler                  *msghandler,
             // Relax monomers first.
             if (mol.monomerCoords(im)->size() !=
                 updateShells(&tops[im], 0, pols[im].nShell(), pols[im].isShell(),
-                             0, mol.monomerCoords(im)))
+                             0, maxShellDistance, mol.monomerCoords(im)))
             {
                 allDone = false;
                 // Not all done, recompute
@@ -773,7 +788,7 @@ void ForceComputer::relaxMonomer(MsgHandler                  *msghandler,
         iter++;
     }
     // Check the conformations computed last
-    double maxShellDistance2 = maxShellDistance_*maxShellDistance_;
+    double maxShellDistance2 = maxShellDistance*maxShellDistance;
     for(auto molptr : allmols)
     {
         auto  fh   = molptr->fragmentHandler();
@@ -803,6 +818,7 @@ void ForceComputer::relaxDimer(MsgHandler                  *msghandler,
 {
     static const size_t timer = Timings::instance().index("Shell relaxation");
     ScopedTimer         scoped(timer);
+    double              maxShellDistance = shellMaxDistance(pd);
     for(auto molptr : allmols)
     {
         resetShellSteps(molptr->dimerCoords());
@@ -842,7 +858,7 @@ void ForceComputer::relaxDimer(MsgHandler                  *msghandler,
                     }
                     updateShells(&tops[im], fh->atomStart()[im],
                                  pols[im].nShell(), pols[im].isShell(),
-                                 im, &dims);
+                                 im, maxShellDistance, &dims);
                     for(size_t c = 0; c < dims.size(); c++)
                     {
                         done[c] = done[c] && dims[c].done;
@@ -871,7 +887,7 @@ void ForceComputer::relaxDimer(MsgHandler                  *msghandler,
     }
     // Check the conformations computed last, the shells of the monomers that
     // are relaxed have to be converged
-    double maxShellDistance2 = maxShellDistance_*maxShellDistance_;
+    double maxShellDistance2 = maxShellDistance*maxShellDistance;
     for(auto molptr : allmols)
     {
         auto  fh   = molptr->fragmentHandler();
@@ -1212,6 +1228,7 @@ void ForceComputer::computeTotal(MsgHandler                                     
                                  const ShellOptions                             &options,
                                  std::vector<std::map<InteractionType, double>> *energies) const
 {
+    double maxShellDistance = shellMaxDistance(pd);
     auto  top   = set->top;
     auto &confs = set->confs;
     auto  cdata = &set->data;
@@ -1261,7 +1278,7 @@ void ForceComputer::computeTotal(MsgHandler                                     
         bool allDone = false;
         while (iter < maxiter_ && !allDone)
         {
-            allDone = (updateShells(top, 0, nShell, isShell, 0, &confs) == confs.size());
+            allDone = (updateShells(top, 0, nShell, isShell, 0, maxShellDistance, &confs) == confs.size());
             if (!allDone)
             {
                 // Only for the conformations that did not converge
@@ -1275,7 +1292,7 @@ void ForceComputer::computeTotal(MsgHandler                                     
             iter++;
         }
         // Check the conformations computed last
-        double maxShellDistance2 = maxShellDistance_*maxShellDistance_;
+        double maxShellDistance2 = maxShellDistance*maxShellDistance;
         for(auto &conf : confs)
         {
             if (conf.done)
