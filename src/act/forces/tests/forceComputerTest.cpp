@@ -450,6 +450,32 @@ TEST (Fscale, ZeroForce)
     EXPECT_EQ(calc_fscale(1, 1, 0), 0);
 }
 
+TEST (ShellForceConstant, Harmonic)
+{
+    EXPECT_DOUBLE_EQ(3.0, shellForceConstant(3, 0, 0, 0.01));
+}
+
+TEST (ShellForceConstant, QuarticFromZero)
+{
+    // Force of 1/2 k1 r^2 + k2 r^4 divided by r
+    double r = 0.01;
+    EXPECT_DOUBLE_EQ(3 + 4*1e5*r*r, shellForceConstant(3, 1e5, 0, r));
+}
+
+TEST (ShellForceConstant, InsideHyper)
+{
+    // The quartic term does not act within rh
+    EXPECT_DOUBLE_EQ(3.0, shellForceConstant(3, 1e5, 0.02, 0.01));
+}
+
+TEST (ShellForceConstant, BeyondHyper)
+{
+    double r  = 0.03;
+    double rh = 0.02;
+    EXPECT_DOUBLE_EQ(3 + 4*1e5*(r-rh)*(r-rh)*(r-rh)/r,
+                     shellForceConstant(3, 1e5, rh, r));
+}
+
 TEST_F(ForceComputerIntegrationTest, ComputeStatisticsAreTracked)
 {
     auto pd = getForceField("ACS-pg-vs2");
