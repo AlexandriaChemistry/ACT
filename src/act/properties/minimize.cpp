@@ -123,16 +123,20 @@ eMinimizeStatus minimizeMolecule(MsgHandler                    *msghandler,
         if (actmol->fragmentHandler()->topologies().size() == 2)
         {
             // Make a copy to keep the correct shell coordinates when saving the structure.
-            auto newxmin = *xmin;
-            std::map<InteractionType, double> einter;
-            std::vector<gmx::RVec>            interactionForces;
-            actmol->calculateInteractionEnergy(msghandler, pd, forceComp, &einter,
-                                               &interactionForces, &newxmin, true);
-            for(const auto &ei : einter)
+            std::vector<std::vector<gmx::RVec>>            newxmin = { *xmin };
+            std::vector<std::map<InteractionType, double>> einter;
+            std::vector<double>                            epot;
+            std::vector<std::vector<gmx::RVec>>            interactionForces;
+            forceComp->computeInteraction(msghandler, pd, actmol, &newxmin, true,
+                                          &einter, &epot, &interactionForces);
+            for(const auto &ec : einter)
             {
-                msghandler->msg(ACTStatus::Info,
-                                gmx::formatString("Interaction energy %s: %g",
-                                                  interactionTypeToString(ei.first).c_str(), ei.second));
+                for(const auto &ei : ec)
+                {
+                    msghandler->msg(ACTStatus::Info,
+                                    gmx::formatString("Interaction energy %s: %g",
+                                                      interactionTypeToString(ei.first).c_str(), ei.second));
+                }
             }
         }
         // Multipoles

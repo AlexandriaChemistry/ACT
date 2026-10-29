@@ -298,27 +298,17 @@ void ReRunner::rerun(MsgHandler       *msghandler,
     {
         allCoords.push_back(allParticleCoords(atoms, x));
     }
+    // Compute the energies of all structures at once
     std::vector<std::map<InteractionType, double>> allEnergies;
-    std::vector<double>                            allEpot;
-    std::vector<std::vector<gmx::RVec>>            allForces;
-    if (actmol->topology()->hasEntry(InteractionType::POSITION_RESTRAINT))
     {
-        // The SIMD routines use the fragment topology for a monomer,
-        // that does not have the position restraints.
-        for(auto &coords : allCoords)
+        ConformationSet set;
+        set.top = actmol->topology();
+        set.setCoordinates(allCoords);
+        forceComp_->computeTotal(msghandler, pd, &set, ShellOptions(), &allEnergies);
+        for(size_t c = 0; c < allCoords.size(); c++)
         {
-            std::vector<gmx::RVec>            forces(coords.size());
-            std::map<InteractionType, double> energies;
-            forceComp_->compute(msghandler, pd, actmol->topology(),
-                                &coords, &forces, &energies);
-            allEnergies.push_back(energies);
+            allCoords[c] = set.confs[c].x;
         }
-    }
-    else
-    {
-        // Compute the energies of all structures at once
-        actmol->calculateEnergies(msghandler, pd, forceComp_, &allCoords, false, false,
-                                  &allEnergies, &allEpot, &allForces);
     }
     for (size_t idim = 0; idim < allCoords.size(); idim++)
     {
@@ -525,8 +515,8 @@ void ReRunner::runB2(CommunicationRecord         *cr,
             std::vector<std::map<InteractionType, double>> allEinter;
             std::vector<double>                            allEpot;
             std::vector<std::vector<gmx::RVec>>            allForces;
-            actmol->calculateEnergies(msghandler, pd, forceComp_, &allCoordsShells, true, true,
-                                      &allEinter, &allEpot, &allForces);
+            forceComp_->computeInteraction(msghandler, pd, actmol, &allCoordsShells, true,
+                                           &allEinter, &allEpot, &allForces);
             // Loop over dimers
             for (size_t idim = 0; idim < dimers.size(); idim++)
             {

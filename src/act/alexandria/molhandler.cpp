@@ -1394,44 +1394,6 @@ static void printEnergies(FILE                                    *exvg,
     fprintf(exvg, " %.5f %.5f %.5f\n", ekin, ekin+epot, temp);
 }
 
-/*! \brief Compute the energies and forces of one structure
- *
- * The SIMD routines are used, see ACTMol::calculateEnergies, unless the
- * topology has position restraints, which the fragment topology that
- * these use for a monomer does not have.
- * \param[in]    msghandler For messages
- * \param[in]    pd         The force field
- * \param[in]    mol        The molecule
- * \param[in]    forceComp  The force computer
- * \param[inout] coords     The coordinates, on return with relaxed shells
- * \param[out]   forces     The forces
- * \param[out]   energies   The energy components
- */
-static void computeStructure(MsgHandler                        *msghandler,
-                             const ForceField                  *pd,
-                             ACTMol                            *mol,
-                             const ForceComputer               *forceComp,
-                             std::vector<gmx::RVec>            *coords,
-                             std::vector<gmx::RVec>            *forces,
-                             std::map<InteractionType, double> *energies)
-{
-    if (mol->topology()->hasEntry(InteractionType::POSITION_RESTRAINT))
-    {
-        forceComp->compute(msghandler, pd, mol->topology(), coords,
-                           forces, energies);
-        return;
-    }
-    std::vector<std::vector<gmx::RVec>>            x = { *coords };
-    std::vector<std::map<InteractionType, double>> e;
-    std::vector<double>                            epot;
-    std::vector<std::vector<gmx::RVec>>            f;
-    mol->calculateEnergies(msghandler, pd, forceComp, &x, false, false,
-                           &e, &epot, &f);
-    *coords   = x[0];
-    *forces   = f[0];
-    *energies = e[0];
-}
-
 //! \brief Make arrays the length of the number of atoms
 static void initArrays(const ACTMol                 *mol,
                        const std::vector<gmx::RVec> &xmol,
@@ -1569,8 +1531,8 @@ void MolHandler::simulate(MsgHandler                    *msghandler,
     }
     msghandler->write("\nWill start simulation.\n");
     // Compute forces and energies for the starting coordinates
-    computeStructure(msghandler, pd, mol, forceComp, &coordinates,
-                     &forces[prev], &energies);
+    forceComp->compute(msghandler, pd, mol->topology(), &coordinates,
+                       &forces[prev], &energies);
     for (int step = 0; step < simConfig.nsteps(); step++)
     {
         // Print the energies at the current time, i.e. before integrating
@@ -1611,8 +1573,8 @@ void MolHandler::simulate(MsgHandler                    *msghandler,
             }
         }
         // Compute forces and energies
-        computeStructure(msghandler, pd, mol, forceComp, &coordinates,
-                         &forces[cur], &energies);
+        forceComp->compute(msghandler, pd, mol->topology(), &coordinates,
+                           &forces[cur], &energies);
         // Integrate velocities using velocity Verlet
         for(size_t i = 0; i < xmol.size(); i++)
         {

@@ -163,11 +163,17 @@ int min_complex(int argc, char *argv[])
     
             if (eMinimizeStatus::OK == eMin)
             {
-                std::vector<gmx::RVec> interactionForces;
+                std::vector<std::vector<gmx::RVec>>            xinter = { xmin };
+                std::vector<std::map<InteractionType, double>> einters;
+                std::vector<double>                            epots;
+                std::vector<std::vector<gmx::RVec>>            interactionForces;
+                forceComp.computeInteraction(&msghandler, &pd, &actmol, &xinter, true,
+                                             &einters, &epots, &interactionForces);
                 std::map<InteractionType, double> einter;
-                actmol.calculateInteractionEnergy(&msghandler, &pd, &forceComp,
-                                                  &einter, &interactionForces,
-                                                  &xmin, true);
+                if (!einters.empty())
+                {
+                    einter = einters[0];
+                }
 
                 auto rmsd = molhandler.coordinateRmsd(actmol.atomsConst(), coords, &xmin);
                 tw->writeStringFormatted("%s final energy: %g. Interaction energy: %g. RMSD wrt original structure %g nm.\n",

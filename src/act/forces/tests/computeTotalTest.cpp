@@ -28,8 +28,7 @@
 
 /*! \internal \brief
  * Tests comparing ForceComputer::computeTotal and computeInteraction,
- * which use the SIMD routines, with compute, computeOnce and
- * ACTMol::calculateInteractionEnergy.
+ * which use the SIMD routines, with compute and computeOnce.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 #include "actpre.h"
@@ -208,7 +207,10 @@ protected:
         }
     }
 
-    /*! \brief Compare computeInteraction with calculateInteractionEnergy
+    /*! \brief Compare computeInteraction with the energies of the dimer and the monomers
+     * The interaction energy is the energy of the relaxed dimer minus those
+     * of the relaxed monomers, each computed with compute, and the
+     * interaction forces are the differences of the forces.
      * \param[in] ffName     The force field
      * \param[in] molName    The dimer
      * \param[in] nconf      The number of conformations
@@ -260,40 +262,54 @@ protected:
         forceComp_.computeInteraction(&msghandler_, pd, &mol, &xinter, separate,
                                       &einter, &epot, &finter);
         ASSERT_EQ(nconf, einter.size());
+        const auto &tops   = mol.fragmentHandler()->topologies();
+        const auto &astart = mol.fragmentHandler()->atomStart();
         for(size_t c = 0; c < nconf; c++)
         {
             auto label = gmx::formatString("%s %s conformation %zu", ffName.c_str(), molName.c_str(), c);
-            auto xref  = x[c];
-            std::map<InteractionType, double> eref;
-            std::vector<gmx::RVec>            fref;
-            double epotref = mol.calculateInteractionEnergy(&msghandler_, pd, &forceComp_,
-                                                            &eref, &fref, &xref, separate);
-            // The split of the electrostatics between COULOMB and the
-            // INDUCTIONCORRECTION differs, since calculateInteractionEnergy
-            // takes the electrostatics before relaxation with the shells
-            // in the relaxed monomers and computeRelaxedEnergies with the
-            // shells on their cores. The sums and all other terms agree.
-            auto icoul = InteractionType::ELECTROSTATICS;
-            auto icorr = InteractionType::INDUCTIONCORRECTION;
-            auto iexci = InteractionType::EXCHIND;
-            auto icoulCorr = [&](const std::map<InteractionType, double> &e)
+            // The dimer
+            auto                              xdimer = x[c];
+            std::vector<gmx::RVec>            fref(xdimer.size());
+            std::map<InteractionType, double> edimer;
+            forceComp_.compute(&msghandler_, pd, mol.topology(), &xdimer, &fref, &edimer);
+            double eref = edimer[InteractionType::EPOT];
+            EXPECT_NEAR(eref, epot[c], 1e-7*std::max(1.0, std::abs(eref))) << label;
+            // Minus the monomers
+            for(size_t ff = 0; ff < tops.size(); ff++)
             {
-                return e.at(icoul) + (e.count(icorr) ? e.at(icorr) : 0.0);
-            };
-            EXPECT_NEAR(icoulCorr(eref), icoulCorr(einter[c]),
-                        1e-7*std::max(1.0, std::abs(icoulCorr(eref)))) << label;
-            auto eref2 = eref, einter2 = einter[c];
-            for(auto t : { icoul, icorr, iexci })
-            {
-                eref2.erase(t);
-                einter2.erase(t);
+                size_t                            natom = tops[ff].atoms().size();
+                std::vector<gmx::RVec>            xmon(x[c].begin()+astart[ff], x[c].begin()+astart[ff]+natom);
+                std::vector<gmx::RVec>            fmon(natom);
+                std::map<InteractionType, double> emon;
+                forceComp_.compute(&msghandler_, pd, &tops[ff], &xmon, &fmon, &emon);
+                eref -= emon[InteractionType::EPOT];
+                for(size_t i = 0; i < natom; i++)
+                {
+                    rvec_dec(fref[astart[ff]+i], fmon[i]);
+                }
             }
-            // calculateInteractionEnergy moves the polarization to the electrostatics
-            EXPECT_EQ(0, einter2[InteractionType::POLARIZATION]) << label;
-            einter2.erase(InteractionType::POLARIZATION);
-            compareEnergies(eref2, einter2, 1e-7, label);
-            EXPECT_NEAR(epotref, epot[c], 1e-7*std::max(1.0, std::abs(epotref))) << label;
+            double einterPot = einter[c][InteractionType::EPOT];
+            EXPECT_NEAR(eref, einterPot, 1e-7*std::max(1.0, std::abs(eref))) << label;
             compareForces(fref, finter[c], 1e-5, label);
+            // The terms add up to the interaction energy, except those that
+            // are sums of other terms.
+            std::set<InteractionType> sums = { InteractionType::ALLELEC, InteractionType::EXCHIND,
+                                               InteractionType::EPOT };
+            double esum = 0;
+            for(const auto &e : einter[c])
+            {
+                if (sums.count(e.first) == 0)
+                {
+                    esum += e.second;
+                }
+            }
+            EXPECT_NEAR(einterPot, esum, 1e-7*std::max(1.0, std::abs(einterPot))) << label;
+            // The polarization is part of the induction
+            EXPECT_TRUE(einter[c].end() == einter[c].find(InteractionType::POLARIZATION)) << label;
+            if (!separate)
+            {
+                EXPECT_TRUE(einter[c].end() == einter[c].find(InteractionType::INDUCTIONCORRECTION)) << label;
+            }
         }
     }
 };
