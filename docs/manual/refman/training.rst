@@ -1,3 +1,5 @@
+.. _sec-training:
+
 *******************************
 Force Field Training Algorithms
 *******************************

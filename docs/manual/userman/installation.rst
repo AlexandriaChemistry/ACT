@@ -139,8 +139,55 @@ where *Value* can be *ON* or *OFF* or something more option specific.
    +----------------------+------------------------------------------------------------+
    | CMAKE_CXX_FLAGS      | See previous entry, you likely need to add both.           |
    +----------------------+------------------------------------------------------------+
-   
-   
+   | ACT_SIMD             | Explicit SIMD instructions for the energy and force        |
+   +----------------------+------------------------------------------------------------+
+   |                      | routines: AUTO (default), NONE, ARM_NEON, AVX2 (with FMA,  |
+   +----------------------+------------------------------------------------------------+
+   |                      | for instance Intel Haswell and AMD Zen and later) or       |
+   +----------------------+------------------------------------------------------------+
+   |                      | AVX_512. AUTO selects the best SIMD for the processor that |
+   +----------------------+------------------------------------------------------------+
+   |                      | cmake runs on, or AVX2 if the compiler cannot produce      |
+   +----------------------+------------------------------------------------------------+
+   |                      | AVX-512 code. NONE turns explicit SIMD off. Only the       |
+   +----------------------+------------------------------------------------------------+
+   |                      | explicit SIMD routines are compiled for this SIMD, and     |
+   +----------------------+------------------------------------------------------------+
+   |                      | they are only used if the processor running the program    |
+   +----------------------+------------------------------------------------------------+
+   |                      | supports it. Otherwise the routines vectorized by the      |
+   +----------------------+------------------------------------------------------------+
+   |                      | compiler are used, such that the program also runs on      |
+   +----------------------+------------------------------------------------------------+
+   |                      | processors with less SIMD.                                 |
+   +----------------------+------------------------------------------------------------+
+   | GMX_OPENMP_SIMD      | Let the compiler vectorize the loops over conformations    |
+   +----------------------+------------------------------------------------------------+
+   |                      | marked with OpenMP SIMD directives, using -fopenmp-simd.   |
+   +----------------------+------------------------------------------------------------+
+   |                      | This does not turn on OpenMP multithreading. Default ON.   |
+   +----------------------+------------------------------------------------------------+
+   | GMX_VECTOR_MATH      | Use a vector math library for mathematical functions such  |
+   +----------------------+------------------------------------------------------------+
+   |                      | as exp and erf in the loops vectorized by the compiler:    |
+   +----------------------+------------------------------------------------------------+
+   |                      | the system math library on macOS, libmvec or SVML          |
+   +----------------------+------------------------------------------------------------+
+   |                      | otherwise. Without such a library these loops are not      |
+   +----------------------+------------------------------------------------------------+
+   |                      | vectorized. Default ON.                                    |
+   +----------------------+------------------------------------------------------------+
+
+The SIMD (single instruction, multiple data) instructions of the processor are used to compute the energies and forces of several conformations of a molecule at once, which speeds up training considerably.
+At the start of each program the log file reports the SIMD of the processor, the SIMD the compiler could use for the rest of the code and whether explicit SIMD is used, for instance::
+
+  Explicit SIMD:      AVX2, 4 conformations at once, in use
+
+For most users the defaults are best. To build for a cluster with processors different from the one where you compile, set *ACT_SIMD* to the SIMD of the compute nodes. Since the explicit SIMD routines are only used if the processor supports them, a program built with AVX_512 still runs correctly on a processor with only AVX2, albeit more slowly. The rest of the code is vectorized by the compiler for the instructions given in *CMAKE_CXX_FLAGS*, for instance *-march=native* to use all instructions of the processor where you compile.
+Setting the environment variable *ACT_NO_EXPLICIT_SIMD* when running a program turns off the explicit SIMD routines, which can be used to check the results or the speed of the different routines::
+
+  ACT_NO_EXPLICIT_SIMD=1 alexandria train_ff ...
+
 ============================
 Troubleshooting Installation
 ============================
