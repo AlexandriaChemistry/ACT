@@ -346,6 +346,8 @@ public:
      * reference energies paired with a map of ACT energy components. The 
      * InteractionType index points to the energy type in the
      * energyComponentsMap.
+     * The structures of each kind are computed together, the conformations
+     * of the molecule stay as they are.
      * \param[in]  msghandler                 A message handler
      * \param[in]  pd                         The force field structure
      * \param[in]  forceComp                  The force computer utility
@@ -362,7 +364,7 @@ public:
                          std::vector<ACTEnergy>                                            *energyMap,
                          ACTEnergyMapVector                                                *interactionEnergyMap,
                          std::vector<std::pair<double, std::map<InteractionType, double>>> *energyComponentMap,
-                         bool                                                               separateInductionCorrection) const;
+                         bool                                                               separateInductionCorrection);
       
     //! \return the reference frequencies collected earlier
     const std::vector<double> &referenceFrequencies() const { return ref_frequencies_; }

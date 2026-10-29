@@ -458,14 +458,13 @@ void ACTMol::forceEnergyMaps(MsgHandler                                         
                              std::vector<ACTEnergy>                                            *energyMap,
                              ACTEnergyMapVector                                                *interactionEnergyMap,
                              std::vector<std::pair<double, std::map<InteractionType, double>>> *energyComponentMap,
-                             bool                                                               separateInductionCorrection) const
+                             bool                                                               separateInductionCorrection)
 {
     auto       myatoms = topology_.atoms();
     forceMap->clear();
     energyMap->clear();
     interactionEnergyMap->clear();
     energyComponentMap->clear();
-    gmx::RVec fzero = { 0, 0, 0 };
     std::map<MolPropObservable, InteractionType> interE = { 
         { MolPropObservable::INTERACTIONENERGY, InteractionType::EPOT           },
         { MolPropObservable::ELECTROSTATICS,    InteractionType::ELECTROSTATICS },
@@ -480,6 +479,10 @@ void ACTMol::forceEnergyMaps(MsgHandler                                         
     {
         msghandler->fatal("No force computer supplied to ACTMol::forceEnergyMaps");
     }
+    // The experiments with interaction energies and with energies, and
+    // their coordinates. The conformations of each kind are computed together.
+    std::vector<const Experiment *>     interExper, energyExper;
+    std::vector<std::vector<gmx::RVec>> interCoords, energyCoords;
     for (const auto &exper : experimentConst())
     {
         // Not all data has corresponding coordinates, e.g. if it is from wet lab experiments.
@@ -488,7 +491,6 @@ void ACTMol::forceEnergyMaps(MsgHandler                                         
             continue;
         }
         // We compute either interaction energies or normal energies for one experiment
-        auto coords  = experCoords(exper.getCoordinates());
         bool doInter = false;
         for(auto &ie : interE)
         {
@@ -499,31 +501,61 @@ void ACTMol::forceEnergyMaps(MsgHandler                                         
         }
         if (doInter)
         {
-            // Complicated way of combined multiple terms into one observable
-            std::map<InteractionType,  std::set<MolPropObservable>> combined = {
-                { InteractionType::ALLELEC, { MolPropObservable::ELECTROSTATICS,
-                                              MolPropObservable::INDUCTION,
-                                              MolPropObservable::INDUCTIONCORRECTION } },
-                { InteractionType::EXCHIND,  { MolPropObservable::EXCHANGE,
-                                               MolPropObservable::INDUCTION,
-                                               MolPropObservable::INDUCTIONCORRECTION } }
-            };
-            if (!separateInductionCorrection)
+            // Only a dimer has interaction energies
+            if (isDimer())
             {
-                // The induction correction is summed into the ACT induction
-                // (see calculateInteractionEnergy), so the QM reference
-                // should include it as well.
-                combined.insert({ InteractionType::INDUCTION,
-                                  { MolPropObservable::INDUCTION,
-                                    MolPropObservable::INDUCTIONCORRECTION } });
+                interExper.push_back(&exper);
+                interCoords.push_back(experCoords(exper.getCoordinates()));
             }
-            std::vector<gmx::RVec> interactionForces(myatoms.size(), fzero);
-            std::vector<gmx::RVec> mycoords(myatoms.size(), fzero);
-            
-            std::map<InteractionType, double> einter;
-            calculateInteractionEnergy(msghandler,
-                                       pd, forceComp, &einter, &interactionForces, &coords,
-                                       separateInductionCorrection);
+        }
+        else if (exper.hasProperty(MolPropObservable::DELTAE0))
+        {
+            energyExper.push_back(&exper);
+            energyCoords.push_back(experCoords(exper.getCoordinates()));
+        }
+    }
+    if (!interCoords.empty())
+    {
+        // Complicated way of combined multiple terms into one observable
+        std::map<InteractionType,  std::set<MolPropObservable>> combined = {
+            { InteractionType::ALLELEC, { MolPropObservable::ELECTROSTATICS,
+                                          MolPropObservable::INDUCTION,
+                                          MolPropObservable::INDUCTIONCORRECTION } },
+            { InteractionType::EXCHIND,  { MolPropObservable::EXCHANGE,
+                                           MolPropObservable::INDUCTION,
+                                           MolPropObservable::INDUCTIONCORRECTION } }
+        };
+        if (!separateInductionCorrection)
+        {
+            // The induction correction is summed into the ACT induction
+            // (see ForceComputer::computeInteraction), so the QM reference
+            // should include it as well.
+            combined.insert({ InteractionType::INDUCTION,
+                              { MolPropObservable::INDUCTION,
+                                MolPropObservable::INDUCTIONCORRECTION } });
+        }
+        // The conformations of the molecule, which hold the reference data
+        // for training, are replaced by computeInteraction. Hence they are
+        // restored afterwards.
+        auto                      dimers      = dimerCoords_;
+        std::vector<CoordsEnergy> monomers[2] = { monomerCoords_[0], monomerCoords_[1] };
+        std::vector<ConformationData> cdata(std::begin(conformationData_), std::end(conformationData_));
+        std::vector<std::map<InteractionType, double>> einters;
+        std::vector<double>                            epots;
+        std::vector<std::vector<gmx::RVec>>            interactionForces;
+        forceComp->computeInteraction(msghandler, pd, this, &interCoords,
+                                      separateInductionCorrection,
+                                      &einters, &epots, &interactionForces);
+        dimerCoords_ = std::move(dimers);
+        for(size_t k = 0; k < 2; k++)
+        {
+            monomerCoords_[k] = std::move(monomers[k]);
+        }
+        std::move(cdata.begin(), cdata.end(), std::begin(conformationData_));
+        for(size_t k = 0; k < interExper.size(); k++)
+        {
+            const auto  &exper  = *interExper[k];
+            const auto  &einter = einters[k];
             ACTEnergyMap aemap;
             for (auto &ener : einter)
             {
@@ -581,12 +613,19 @@ void ACTMol::forceEnergyMaps(MsgHandler                                         
                 interactionEnergyMap->push_back(aemap);
             }
         }
-        else if (exper.hasProperty(MolPropObservable::DELTAE0))
+    }
+    if (!energyCoords.empty())
+    {
+        ConformationSet set;
+        set.top = &topology_;
+        set.setCoordinates(energyCoords);
+        std::vector<std::map<InteractionType, double>> allEnergies;
+        forceComp->computeTotal(msghandler, pd, &set, ShellOptions(), &allEnergies);
+        for(size_t k = 0; k < energyExper.size(); k++)
         {
-            std::map<InteractionType, double> energies;
-            std::vector<gmx::RVec> forces(myatoms.size(), fzero);
-            forceComp->compute(msghandler, pd, &topology_,
-                               &coords, &forces, &energies);
+            const auto &exper    = *energyExper[k];
+            auto       &energies = allEnergies[k];
+            const auto &forces   = set.confs[k].fcalc;
             auto &eprops = exper.propertyConst(MolPropObservable::DELTAE0);
             if (eprops.size() > 1)
             {
