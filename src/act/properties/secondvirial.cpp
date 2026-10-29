@@ -231,6 +231,51 @@ void ReRunner::plotB2temp(const char *b2file)
     xvgrclose(b2p);
 }
 
+/*! \brief Make the coordinates of all particles from those of the atoms
+ *
+ * If there are as many input coordinates as particles, they are used as
+ * they are. Otherwise the input has the atoms only, and the other particles
+ * get the coordinates of their parent atom.
+ * \param[in] atoms The particles
+ * \param[in] x     The input coordinates
+ * \return the coordinates of all particles
+ */
+static std::vector<gmx::RVec> allParticleCoords(const std::vector<ActAtom>   &atoms,
+                                                const std::vector<gmx::RVec> &x)
+{
+    if (x.size() == atoms.size())
+    {
+        return x;
+    }
+    std::vector<gmx::RVec> coords;
+    size_t index = 0;
+    for(size_t i = 0; i < atoms.size(); i++)
+    {
+        if (atoms[i].pType() == ActParticle::Atom)
+        {
+            if (index >= x.size())
+            {
+                GMX_THROW(gmx::InvalidInputError(gmx::formatString("Number of (generated) coordinates in trajectory (%zu) does not match molecule file (%zu)", x.size(), atoms.size()).c_str()));
+            }
+            coords.push_back(x[index++]);
+        }
+        else if (!atoms[i].parents().empty() && atoms[i].parents()[0] < static_cast<int>(i))
+        {
+            coords.push_back(coords[atoms[i].parents()[0]]);
+        }
+        else
+        {
+            // Will be constructed, e.g. a virtual site
+            coords.push_back({ 0, 0, 0 });
+        }
+    }
+    if (index != x.size())
+    {
+        GMX_THROW(gmx::InvalidInputError(gmx::formatString("Number of (generated) coordinates in trajectory (%zu) does not match molecule file (%zu)", x.size(), atoms.size()).c_str()));
+    }
+    return coords;
+}
+
 void ReRunner::rerun(MsgHandler       *msghandler,
                      const ForceField *pd,
                      const ACTMol     *actmol,
@@ -252,31 +297,7 @@ void ReRunner::rerun(MsgHandler       *msghandler,
     const auto &atoms = actmol->atomsConst();
     for (size_t idim = 0; idim < dimers.size(); idim++)
     {
-        std::vector<gmx::RVec> coords;
-        if (dimers[idim].size() == atoms.size())
-        {
-            // Assume there are shells in the input
-            coords = dimers[idim];
-        }
-        else
-        {
-            size_t index = 0;
-            for(size_t i = 0; i < atoms.size(); i++)
-            {
-                if (index < dimers[idim].size())
-                {
-                    coords.push_back(dimers[idim][index]);
-                }
-                else
-                {
-                    GMX_THROW(gmx::InvalidInputError(gmx::formatString("Number of (generated) coordinates in trajectory (%zu) does not match molecule file (%zu)", dimers[idim].size(), atoms.size()).c_str()));
-                }
-                if (atoms[i].pType() == ActParticle::Atom)
-                {
-                    index++;
-                }
-            }
-        }
+        std::vector<gmx::RVec> coords = allParticleCoords(atoms, dimers[idim]);
         std::vector<gmx::RVec> forces(coords.size());
         std::string out = gmx::formatString("%5d", mp_index);
         if (eInter_)
@@ -459,31 +480,7 @@ void ReRunner::runB2(CommunicationRecord         *cr,
         const auto &atoms = actmol->atomsConst();
         for (size_t idim = 0; idim < dimers.size(); idim++)
         {
-            std::vector<gmx::RVec> coords;
-            if (dimers[idim].coords.size() == atoms.size())
-            {
-                // Assume there are NO shells in the input
-                coords = dimers[idim].coords;
-            }
-            else
-            {
-                size_t index = 0;
-                for(size_t i = 0; i < atoms.size(); i++)
-                {
-                    if (index < dimers[idim].coords.size())
-                    {
-                        coords.push_back(dimers[idim].coords[index]);
-                    }
-                    else
-                    {
-                        GMX_THROW(gmx::InvalidInputError(gmx::formatString("Number of (generated) coordinates in trajectory (%zu) does not match molecule file (%zu)", dimers[idim].coords.size(), atoms.size()).c_str()));
-                    }
-                    if (atoms[i].pType() == ActParticle::Atom)
-                    {
-                        index++;
-                    }
-                }
-            }
+            std::vector<gmx::RVec> coords = allParticleCoords(atoms, dimers[idim].coords);
             std::vector<gmx::RVec> forces(coords.size(), rvnul);
             std::map<InteractionType, double> einter;
             auto epot = actmol->calculateInteractionEnergy(msghandler, pd, forceComp_,
