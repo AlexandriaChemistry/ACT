@@ -1433,7 +1433,8 @@ void ForceComputer::computeInteraction(MsgHandler                               
         std::map<InteractionType, double> emap;
         for(const auto &e : dimers[c].eMap)
         {
-            if (e.second.haveACT())
+            // The polarization is part of the induction
+            if (e.second.haveACT() && InteractionType::POLARIZATION != e.first)
             {
                 emap.insert({ e.first, e.second.eact() });
             }
