@@ -571,7 +571,10 @@ TEST_F(ForceComputerIntegrationTest, ComputeStatisticsAreTrackedDimerHyper)
 
     mol.generateCharges(&msghandler, pd, &fc, pd->chargeGenerationAlgorithm(),
                         &coords, &forces);
-    EXPECT_EQ(fc.numEvaluations(), 1u);
+    // The charge generation for a polarizable model alternates with
+    // relaxing the shells until the charges do not change anymore,
+    // which takes two iterations here.
+    EXPECT_EQ(fc.numEvaluations(), 2u);
     EXPECT_GE(fc.numShellIterations(), 5u);
     EXPECT_EQ(0u, fc.numShellConvergenceFailed());
     std::map<InteractionType, double> energies;
