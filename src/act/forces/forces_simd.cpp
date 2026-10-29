@@ -2274,7 +2274,8 @@ static inline void lowComputeEnergies(MsgHandler                *msghandler,
                                       bool                       forces,
                                       bool                       reuse          = false,
                                       bool                       skipDone       = false,
-                                      bool                       intermolecular = false)
+                                      bool                       intermolecular = false,
+                                      bool                       allForces      = true)
 {
     static const size_t timer = Timings::instance().index("Energy calculation overhead");
     ScopedTimer         scoped(timer);
@@ -2549,7 +2550,14 @@ static inline void lowComputeEnergies(MsgHandler                *msghandler,
     }
     if (forces && forcesInArrays)
     {
-        ca.storeForces(coords);
+        if (allForces)
+        {
+            ca.storeForces(coords);
+        }
+        else
+        {
+            ca.storeShellForces(coords);
+        }
     }
 }
 
@@ -2594,7 +2602,8 @@ void computeEnergies(MsgHandler                  *msghandler,
                      size_t                       what,
                      bool                         forces,
                      bool                         skipDone,
-                     bool                         intermolecular)
+                     bool                         intermolecular,
+                     bool                         allForces)
 {
     double epsilonr = relativeDielectric(pd);
     // The conformations of the molecules only change if virtual sites are
@@ -2621,12 +2630,14 @@ void computeEnergies(MsgHandler                  *msghandler,
         if (what >= 2)
         {
             lowComputeEnergies(msghandler, pd, mol.topology(), mol.dimerCoords(),
-                               mol.conformationData(2), epsilonr, true, forces, reuse, skipDone, inter);
+                               mol.conformationData(2), epsilonr, true, forces, reuse, skipDone, inter,
+                               allForces);
         }
         else
         {
             lowComputeEnergies(msghandler, pd, &tops[what], mol.monomerCoords(what),
-                               mol.conformationData(what), epsilonr, true, forces, reuse, skipDone);
+                               mol.conformationData(what), epsilonr, true, forces, reuse, skipDone,
+                               false, allForces);
         }
     }
 }

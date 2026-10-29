@@ -36,6 +36,9 @@ class MsgHandler;
  *                       energies directly if there is no polarization. The
  *                       monomers of the dimers are then not computed, see
  *                       Topology::separateIntermolecular.
+ * \param[in] allForces  Whether the forces on all particles are needed. If not,
+ *                       only those on the shells are meaningful, which is
+ *                       enough for relaxing the shells.
  */
 void computeEnergies(MsgHandler                  *msghandler,
                      const ForceField            *pd,
@@ -43,7 +46,8 @@ void computeEnergies(MsgHandler                  *msghandler,
                      size_t                       what,
                      bool                         forces         = true,
                      bool                         skipDone       = false,
-                     bool                         intermolecular = false);
+                     bool                         intermolecular = false,
+                     bool                         allForces      = true);
 
 /*! \brief Compute the energies and forces of the conformations of one topology
  * The energies are stored in the conformation data, the forces in the
