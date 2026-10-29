@@ -658,15 +658,23 @@ bool OptACM::runMaster(bool      optimize,
 
         bestGenome[iMolSelect::Train] = ind->genome();
         delete ind;
+        // The middlemen wait for a genome to start from, as in training,
+        // before they can be given work or be stopped.
+        for(auto &dest : commRec_.middlemen())
+        {
+            int read = 1;
+            commRec_.send(dest, read);
+            commRec_.send(dest, bestGenome[iMolSelect::Train].bases());
+        }
     }
     if (gach_.optimizer() != OptimizerAlg::GA && sensitivity && msghandler_.ok())
     {
-        // Do sensitivity analysis only on the training set. After training
-        // the middlemen wait for work and compute part of it.
+        // Do sensitivity analysis only on the training set. The middlemen
+        // wait for work and compute part of it.
         SensitivityAnalysis sens;
         (void) sens.run(&msghandler_, sii_, fitComp_,
                         &bestGenome[iMolSelect::Train], iMolSelect::Train, jtree,
-                        false, optimize);
+                        false, true);
     }
     // Stop the middlemen ...
     if (commRec_.nmiddlemen() > 1)
