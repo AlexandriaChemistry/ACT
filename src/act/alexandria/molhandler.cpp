@@ -63,6 +63,7 @@
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/mdtypes/enerdata.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/utility/futil.h"
 
 namespace alexandria

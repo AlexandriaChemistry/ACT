@@ -52,28 +52,11 @@
 #include "act/topology/topology.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
-#include "gromacs/pbcutil/ishift.h"
-#include "gromacs/pbcutil/mshift.h"
-#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
 
 using gmx::RVec;
-
-static int pbc_rvec_sub(const t_pbc *pbc, const rvec xi, const rvec xj, rvec dx)
-{
-    // Without periodic boundaries pbc_dx_aiuc computes the same
-    if (pbc && pbc->ePBC != epbcNONE)
-    {
-        return pbc_dx_aiuc(pbc, xi, xj, dx);
-    }
-    else
-    {
-        rvec_sub(xi, xj, dx);
-        return CENTRAL;
-    }
-}
 
 /* Vsite construction routines */
 
@@ -83,28 +66,14 @@ static void constr_vsite1(const rvec xi, rvec x)
     /* TOTAL: 0 flops */
 }
 
-static void constr_vsite2(const rvec xi, const rvec xj, rvec x, real a, const t_pbc *pbc)
+static void constr_vsite2(const rvec xi, const rvec xj, rvec x, real a)
 {
-    real b = 1 - a;
-    /* 1 flop */
-
-    if (pbc)
-    {
-        rvec dx;
-        pbc_rvec_sub(pbc, xj, xi, dx);
-        x[XX] = xi[XX] + a*dx[XX];
-        x[YY] = xi[YY] + a*dx[YY];
-        x[ZZ] = xi[ZZ] + a*dx[ZZ];
-    }
-    else
-    {
-        x[XX] = b*xi[XX] + a*xj[XX];
-        x[YY] = b*xi[YY] + a*xj[YY];
-        x[ZZ] = b*xi[ZZ] + a*xj[ZZ];
-        /* 9 Flops */
-    }
-
-    /* TOTAL: 10 flops */
+    rvec dx;
+    rvec_sub(xj, xi, dx);
+    x[XX] = xi[XX] + a*dx[XX];
+    x[YY] = xi[YY] + a*dx[YY];
+    x[ZZ] = xi[ZZ] + a*dx[ZZ];
+    /* TOTAL: 9 flops */
 }
 
 static void constr_vsite2fd(const rvec xi, const rvec xj, rvec x, real a)
@@ -148,14 +117,13 @@ static gmx_unused void constr_vsite4(const rvec xi, const rvec xj, const rvec xk
     /* TOTAL: 24 flops */
 }
 
-static void constr_vsite3FD(const rvec xi, const rvec xj, const rvec xk, rvec x, real a, real b,
-                            const t_pbc *pbc)
+static void constr_vsite3FD(const rvec xi, const rvec xj, const rvec xk, rvec x, real a, real b)
 {
     rvec xij, xjk, temp;
     real c;
 
-    pbc_rvec_sub(pbc, xi, xj, xij);
-    pbc_rvec_sub(pbc, xk, xj, xjk);
+    rvec_sub(xi, xj, xij);
+    rvec_sub(xk, xj, xjk);
     /* 6 flops */
 
     /* temp goes from i to a point on the line jk */
@@ -175,14 +143,14 @@ static void constr_vsite3FD(const rvec xi, const rvec xj, const rvec xk, rvec x,
     /* TOTAL: 34 flops */
 }
 
-static void constr_vsite3FAD(const rvec xi, const rvec xj, const rvec xk, rvec x, real a, real b, const t_pbc *pbc)
+static void constr_vsite3FAD(const rvec xi, const rvec xj, const rvec xk, rvec x, real a, real b)
 {
     gmx_fatal(FARGS, "Fix code in constr_vsite3FAD before using");
     rvec xij, xjk, xp;
     real a1, b1, c1, invdij;
 
-    pbc_rvec_sub(pbc, xj, xi, xij);
-    pbc_rvec_sub(pbc, xk, xj, xjk);
+    rvec_sub(xj, xi, xij);
+    rvec_sub(xk, xj, xjk);
     /* 6 flops */
 
     invdij = gmx::invsqrt(iprod(xij, xij));
@@ -203,13 +171,13 @@ static void constr_vsite3FAD(const rvec xi, const rvec xj, const rvec xk, rvec x
 }
 
 static void constr_vsite3OUT(const rvec xi, const rvec xj, const rvec xk, rvec x,
-                             real a, real b, real c, const t_pbc *pbc)
+                             real a, real b, real c)
 {
     rvec xij, xik, temp;
 
     /* For water-like compounds this assumes O H H as the order of atoms */
-    pbc_rvec_sub(pbc, xj, xi, xij);
-    pbc_rvec_sub(pbc, xk, xi, xik);
+    rvec_sub(xj, xi, xij);
+    rvec_sub(xk, xi, xik);
     cprod(xij, xik, temp);
     /* 15 Flops */
 
@@ -222,14 +190,14 @@ static void constr_vsite3OUT(const rvec xi, const rvec xj, const rvec xk, rvec x
 }
 
 static gmx_unused void constr_vsite4FD(const rvec xi, const rvec xj, const rvec xk, const rvec xl, rvec x,
-                                       real a, real b, real c, const t_pbc *pbc)
+                                       real a, real b, real c)
 {
     rvec xij, xjk, xjl, temp;
     real d;
 
-    pbc_rvec_sub(pbc, xj, xi, xij);
-    pbc_rvec_sub(pbc, xk, xj, xjk);
-    pbc_rvec_sub(pbc, xl, xj, xjl);
+    rvec_sub(xj, xi, xij);
+    rvec_sub(xk, xj, xjk);
+    rvec_sub(xl, xj, xjl);
     /* 9 flops */
 
     /* temp goes from i to a point on the plane jkl */
@@ -250,15 +218,15 @@ static gmx_unused void constr_vsite4FD(const rvec xi, const rvec xj, const rvec 
 }
 
 static gmx_unused void constr_vsite4FDN(const rvec xi, const rvec xj, const rvec xk, const rvec xl, rvec x,
-                                        real a, real b, real c, const t_pbc *pbc)
+                                        real a, real b, real c)
 {
     gmx_fatal(FARGS, "Fix code in constr_vsite4FDN before using");
     rvec xij, xik, xil, ra, rb, rja, rjb, rm;
     real d;
 
-    pbc_rvec_sub(pbc, xj, xi, xij);
-    pbc_rvec_sub(pbc, xk, xi, xik);
-    pbc_rvec_sub(pbc, xl, xi, xil);
+    rvec_sub(xj, xi, xij);
+    rvec_sub(xk, xi, xik);
+    rvec_sub(xl, xi, xil);
     /* 9 flops */
 
     ra[XX] = a*xik[XX];
@@ -292,7 +260,7 @@ static gmx_unused void constr_vsite4FDN(const rvec xi, const rvec xj, const rvec
 
 static gmx_unused int constr_vsiten(const std::vector<int> &ia,
                                     const t_iparams ip[],
-                                    rvec *x, const t_pbc *pbc)
+                                    rvec *x)
 {
     gmx_fatal(FARGS, "Fix code in constr_vsiten before using");
     rvec x1, dx;
@@ -309,14 +277,7 @@ static gmx_unused int constr_vsiten(const std::vector<int> &ia,
     {
         ai = ia[i+2];
         a  = ip[ia[i]].vsiten.a;
-        if (pbc)
-        {
-            pbc_dx_aiuc(pbc, x[ai], x1, dx);
-        }
-        else
-        {
-            rvec_sub(x[ai], x1, dx);
-        }
+        rvec_sub(x[ai], x1, dx);
         dsum[XX] += a*dx[XX];
         dsum[YY] += a*dx[YY];
         dsum[ZZ] += a*dx[ZZ];
@@ -339,14 +300,10 @@ static void spread_vsite1(const std::vector<int> &ia, rvec f[])
 }
 
 static void spread_vsite2(const std::vector<int> &ia, real a,
-                          const rvec x[],
-                          rvec f[], rvec fshift[],
-                          const t_pbc *pbc, const t_graph *g)
+                          rvec f[])
 {
-    rvec fi, fj, dx;
+    rvec fi, fj;
     int  av, ai, aj;
-    ivec di;
-    int  siv, sij;
 
     av = ia[2];
     ai = ia[0];
@@ -360,31 +317,6 @@ static void spread_vsite2(const std::vector<int> &ia, real a,
     rvec_inc(f[aj], fj);
     /* 6 Flops */
     clear_rvec(f[av]);
-
-    if (g)
-    {
-        ivec_sub(SHIFT_IVEC(g, ai), SHIFT_IVEC(g, av), di);
-        siv = IVEC2IS(di);
-        ivec_sub(SHIFT_IVEC(g, ai), SHIFT_IVEC(g, aj), di);
-        sij = IVEC2IS(di);
-    }
-    else if (pbc)
-    {
-        siv = pbc_dx_aiuc(pbc, x[ai], x[av], dx);
-        sij = pbc_dx_aiuc(pbc, x[ai], x[aj], dx);
-    }
-    else
-    {
-        siv = CENTRAL;
-        sij = CENTRAL;
-    }
-
-    if (fshift && (siv != CENTRAL || sij != CENTRAL))
-    {
-        rvec_inc(fshift[siv], f[av]);
-        rvec_dec(fshift[CENTRAL], fi);
-        rvec_dec(fshift[sij], fj);
-    }
 
     /* TOTAL: 13 flops */
 }
@@ -475,13 +407,11 @@ static void spread_vsite4(rvec ffi,
 }
 
 static void spread_vsite3FD(const std::vector<int> &ia, real a, real b,
-                            const rvec x[], rvec f[], rvec fshift[],
-                            gmx_bool VirCorr, gmx_unused matrix dxdf,
-                            const t_pbc *pbc, const t_graph *g)
+                            const rvec x[], rvec f[],
+                            gmx_bool VirCorr, gmx_unused matrix dxdf)
 {
-    // Shift forces and the virial are not used in ACT
-    GMX_RELEASE_ASSERT(fshift == nullptr && !VirCorr && g == nullptr,
-                       "Shift forces and virial not supported for VSITE3FD");
+    // The virial is not used in ACT
+    GMX_RELEASE_ASSERT(!VirCorr, "Virial not supported for VSITE3FD");
     // Same order as in constructPositions, the virtual site is last
     int ai = ia[0];
     int aj = ia[1];
@@ -496,8 +426,8 @@ static void spread_vsite3FD(const std::vector<int> &ia, real a, real b,
     // derivatives of the position are c P with respect to xi, a c P with
     // respect to xk, and 1 - (1 + a) c P with respect to xj.
     rvec xji, xjk, t;
-    pbc_rvec_sub(pbc, x[ai], x[aj], xji);
-    pbc_rvec_sub(pbc, x[ak], x[aj], xjk);
+    rvec_sub(x[ai], x[aj], xji);
+    rvec_sub(x[ak], x[aj], xjk);
     for (int m = 0; m < DIM; m++)
     {
         t[m] = xji[m] + a*xjk[m];
@@ -520,15 +450,12 @@ static void spread_vsite3FD(const std::vector<int> &ia, real a, real b,
 
 static void spread_vsite3FAD(const std::vector<int> &ia, real a, real b,
                              const rvec x[],
-                             rvec f[], rvec fshift[],
-                             gmx_bool VirCorr, matrix dxdf,
-                             const t_pbc *pbc, const t_graph *g)
+                             rvec f[],
+                             gmx_bool VirCorr, matrix dxdf)
 {
-    rvec    xvi, xij, xjk, xperp, Fpij, Fppp, fv, f1, f2, f3;
+    rvec    xij, xjk, xperp, Fpij, Fppp, fv, f1, f2, f3;
     real    a1, b1, c1, c2, invdij, invdij2, invdp, fproj;
-    int     av, ai, aj, ak;
-    int     svi, sji, skj, d;
-    ivec    di;
+    int     av, ai, aj, ak, d;
 
     // Same order as in constructPositions, the virtual site is last
     ai = ia[0];
@@ -538,8 +465,8 @@ static void spread_vsite3FAD(const std::vector<int> &ia, real a, real b,
     copy_rvec(f[av], fv);
     clear_rvec(f[av]);
 
-    sji = pbc_rvec_sub(pbc, x[aj], x[ai], xij);
-    skj = pbc_rvec_sub(pbc, x[ak], x[aj], xjk);
+    rvec_sub(x[aj], x[ai], xij);
+    rvec_sub(x[ak], x[aj], xjk);
     /* 6 flops */
 
     invdij    = gmx::invsqrt(iprod(xij, xij));
@@ -584,44 +511,12 @@ static void spread_vsite3FAD(const std::vector<int> &ia, real a, real b,
     f[ak][ZZ] +=                      f2[ZZ];
     /* 30 Flops */
 
-    if (g)
-    {
-        ivec_sub(SHIFT_IVEC(g, av), SHIFT_IVEC(g, ai), di);
-        svi = IVEC2IS(di);
-        ivec_sub(SHIFT_IVEC(g, aj), SHIFT_IVEC(g, ai), di);
-        sji = IVEC2IS(di);
-        ivec_sub(SHIFT_IVEC(g, ak), SHIFT_IVEC(g, aj), di);
-        skj = IVEC2IS(di);
-    }
-    else if (pbc)
-    {
-        svi = pbc_rvec_sub(pbc, x[av], x[ai], xvi);
-    }
-    else
-    {
-        svi = CENTRAL;
-    }
-
-    if (fshift && (svi != CENTRAL || sji != CENTRAL || skj != CENTRAL))
-    {
-        rvec_dec(fshift[svi], fv);
-        fshift[CENTRAL][XX] += fv[XX] - f1[XX] - (1-c1)*f2[XX] + f3[XX];
-        fshift[CENTRAL][YY] += fv[YY] - f1[YY] - (1-c1)*f2[YY] + f3[YY];
-        fshift[CENTRAL][ZZ] += fv[ZZ] - f1[ZZ] - (1-c1)*f2[ZZ] + f3[ZZ];
-        fshift[    sji][XX] +=          f1[XX] -    c1 *f2[XX] - f3[XX];
-        fshift[    sji][YY] +=          f1[YY] -    c1 *f2[YY] - f3[YY];
-        fshift[    sji][ZZ] +=          f1[ZZ] -    c1 *f2[ZZ] - f3[ZZ];
-        fshift[    skj][XX] +=                          f2[XX];
-        fshift[    skj][YY] +=                          f2[YY];
-        fshift[    skj][ZZ] +=                          f2[ZZ];
-    }
-
     if (VirCorr)
     {
         rvec xiv;
         int  i, j;
 
-        pbc_rvec_sub(pbc, x[av], x[ai], xiv);
+        rvec_sub(x[av], x[ai], xiv);
 
         for (i = 0; i < DIM; i++)
         {
@@ -641,15 +536,12 @@ static void spread_vsite3FAD(const std::vector<int> &ia, real a, real b,
 
 static void spread_vsite3OUT(const std::vector<int> &ia, real a, real b, real c,
                              const rvec x[],
-                             rvec f[], rvec fshift[],
-                             gmx_bool VirCorr, matrix dxdf,
-                             const t_pbc *pbc, const t_graph *g)
+                             rvec f[],
+                             gmx_bool VirCorr, matrix dxdf)
 {
-    rvec    xvi, xij, xik, fv, fj, fk;
+    rvec    xij, xik, fv, fj, fk;
     real    cfx, cfy, cfz;
     int     av, ai, aj, ak;
-    ivec    di;
-    int     svi, sji, ski;
 
     // ACT uses H O H but the code below needs
     // O H H so renumber the atoms.
@@ -658,8 +550,8 @@ static void spread_vsite3OUT(const std::vector<int> &ia, real a, real b, real c,
     aj = ia[0];
     ak = ia[2];
 
-    sji = pbc_rvec_sub(pbc, x[aj], x[ai], xij);
-    ski = pbc_rvec_sub(pbc, x[ak], x[ai], xik);
+    rvec_sub(x[aj], x[ai], xij);
+    rvec_sub(x[ak], x[ai], xik);
     /* 6 Flops */
 
     copy_rvec(f[av], fv);
@@ -685,39 +577,11 @@ static void spread_vsite3OUT(const std::vector<int> &ia, real a, real b, real c,
     rvec_inc(f[ak], fk);
     /* 15 Flops */
 
-    if (g)
-    {
-        ivec_sub(SHIFT_IVEC(g, ia[1]), SHIFT_IVEC(g, ai), di);
-        svi = IVEC2IS(di);
-        ivec_sub(SHIFT_IVEC(g, aj), SHIFT_IVEC(g, ai), di);
-        sji = IVEC2IS(di);
-        ivec_sub(SHIFT_IVEC(g, ak), SHIFT_IVEC(g, ai), di);
-        ski = IVEC2IS(di);
-    }
-    else if (pbc)
-    {
-        svi = pbc_rvec_sub(pbc, x[av], x[ai], xvi);
-    }
-    else
-    {
-        svi = CENTRAL;
-    }
-
-    if (fshift && (svi != CENTRAL || sji != CENTRAL || ski != CENTRAL))
-    {
-        rvec_dec(fshift[svi], fv);
-        fshift[CENTRAL][XX] += fv[XX] - fj[XX] - fk[XX];
-        fshift[CENTRAL][YY] += fv[YY] - fj[YY] - fk[YY];
-        fshift[CENTRAL][ZZ] += fv[ZZ] - fj[ZZ] - fk[ZZ];
-        rvec_inc(fshift[sji], fj);
-        rvec_inc(fshift[ski], fk);
-    }
-
     if (VirCorr)
     {
         rvec xiv;
 
-        pbc_rvec_sub(pbc, x[av], x[ai], xiv);
+        rvec_sub(x[av], x[ai], xiv);
 
         for (int i = 0; i < DIM; i++)
         {
@@ -732,15 +596,12 @@ static void spread_vsite3OUT(const std::vector<int> &ia, real a, real b, real c,
 }
 
 static void gmx_unused spread_vsite4FD(const std::vector<int> &ia, real a, real b, real c,
-                                       const rvec x[], rvec f[], rvec fshift[],
-                                       gmx_bool VirCorr, matrix dxdf,
-                                       const t_pbc *pbc, const t_graph *g)
+                                       const rvec x[], rvec f[],
+                                       gmx_bool VirCorr, matrix dxdf)
 {
     real    d, invl, fproj, a1;
-    rvec    xvi, xij, xjk, xjl, xix, fv, temp;
-    int     av, ai, aj, ak, al;
-    ivec    di;
-    int     svi, sji, skj, slj, m;
+    rvec    xij, xjk, xjl, xix, fv, temp;
+    int     av, ai, aj, ak, al, m;
 
     av = ia[1];
     ai = ia[2];
@@ -748,9 +609,9 @@ static void gmx_unused spread_vsite4FD(const std::vector<int> &ia, real a, real 
     ak = ia[4];
     al = ia[5];
 
-    sji = pbc_rvec_sub(pbc, x[aj], x[ai], xij);
-    skj = pbc_rvec_sub(pbc, x[ak], x[aj], xjk);
-    slj = pbc_rvec_sub(pbc, x[al], x[aj], xjl);
+    rvec_sub(x[aj], x[ai], xij);
+    rvec_sub(x[ak], x[aj], xjk);
+    rvec_sub(x[al], x[aj], xjl);
     /* 9 flops */
 
     /* xix goes from i to point x on the plane jkl */
@@ -788,45 +649,12 @@ static void gmx_unused spread_vsite4FD(const std::vector<int> &ia, real a, real 
     }
     /* 26 Flops */
 
-    if (g)
-    {
-        ivec_sub(SHIFT_IVEC(g, ia[1]), SHIFT_IVEC(g, ai), di);
-        svi = IVEC2IS(di);
-        ivec_sub(SHIFT_IVEC(g, aj), SHIFT_IVEC(g, ai), di);
-        sji = IVEC2IS(di);
-        ivec_sub(SHIFT_IVEC(g, ak), SHIFT_IVEC(g, aj), di);
-        skj = IVEC2IS(di);
-        ivec_sub(SHIFT_IVEC(g, al), SHIFT_IVEC(g, aj), di);
-        slj = IVEC2IS(di);
-    }
-    else if (pbc)
-    {
-        svi = pbc_rvec_sub(pbc, x[av], x[ai], xvi);
-    }
-    else
-    {
-        svi = CENTRAL;
-    }
-
-    if (fshift &&
-        (svi != CENTRAL || sji != CENTRAL || skj != CENTRAL || slj != CENTRAL))
-    {
-        rvec_dec(fshift[svi], fv);
-        for (m = 0; m < DIM; m++)
-        {
-            fshift[CENTRAL][m] += fv[m] - (1 + a + b)*temp[m];
-            fshift[    sji][m] += temp[m];
-            fshift[    skj][m] += a*temp[m];
-            fshift[    slj][m] += b*temp[m];
-        }
-    }
-
     if (VirCorr)
     {
         rvec xiv;
         int  i, j;
 
-        pbc_rvec_sub(pbc, x[av], x[ai], xiv);
+        rvec_sub(x[av], x[ai], xiv);
 
         for (i = 0; i < DIM; i++)
         {
@@ -842,17 +670,14 @@ static void gmx_unused spread_vsite4FD(const std::vector<int> &ia, real a, real 
 
 
 static gmx_unused void spread_vsite4FDN(const std::vector<int> &ia, real a, real b, real c,
-                                        const rvec x[], rvec f[], rvec fshift[],
-                                        gmx_bool VirCorr, matrix dxdf,
-                                        const t_pbc *pbc, const t_graph *g)
+                                        const rvec x[], rvec f[],
+                                        gmx_bool VirCorr, matrix dxdf)
 {
-    rvec xvi, xij, xik, xil, ra, rb, rja, rjb, rab, rm, rt;
+    rvec xij, xik, xil, ra, rb, rja, rjb, rab, rm, rt;
     rvec fv, fj, fk, fl;
     real invrm, denom;
     real cfx, cfy, cfz;
-    ivec di;
     int  av, ai, aj, ak, al;
-    int  svi, sij, sik, sil;
 
     /* DEBUG: check atom indices */
     av = ia[1];
@@ -864,9 +689,9 @@ static gmx_unused void spread_vsite4FDN(const std::vector<int> &ia, real a, real
     copy_rvec(f[av], fv);
     clear_rvec(f[av]);
 
-    sij = pbc_rvec_sub(pbc, x[aj], x[ai], xij);
-    sik = pbc_rvec_sub(pbc, x[ak], x[ai], xik);
-    sil = pbc_rvec_sub(pbc, x[al], x[ai], xil);
+    rvec_sub(x[aj], x[ai], xij);
+    rvec_sub(x[ak], x[ai], xik);
+    rvec_sub(x[al], x[ai], xil);
     /* 9 flops */
 
     ra[XX] = a*xik[XX];
@@ -943,43 +768,12 @@ static gmx_unused void spread_vsite4FDN(const std::vector<int> &ia, real a, real
     rvec_inc(f[al], fl);
     /* 21 flops */
 
-    if (g)
-    {
-        ivec_sub(SHIFT_IVEC(g, av), SHIFT_IVEC(g, ai), di);
-        svi = IVEC2IS(di);
-        ivec_sub(SHIFT_IVEC(g, aj), SHIFT_IVEC(g, ai), di);
-        sij = IVEC2IS(di);
-        ivec_sub(SHIFT_IVEC(g, ak), SHIFT_IVEC(g, ai), di);
-        sik = IVEC2IS(di);
-        ivec_sub(SHIFT_IVEC(g, al), SHIFT_IVEC(g, ai), di);
-        sil = IVEC2IS(di);
-    }
-    else if (pbc)
-    {
-        svi = pbc_rvec_sub(pbc, x[av], x[ai], xvi);
-    }
-    else
-    {
-        svi = CENTRAL;
-    }
-
-    if (fshift && (svi != CENTRAL || sij != CENTRAL || sik != CENTRAL || sil != CENTRAL))
-    {
-        rvec_dec(fshift[svi], fv);
-        fshift[CENTRAL][XX] += fv[XX] - fj[XX] - fk[XX] - fl[XX];
-        fshift[CENTRAL][YY] += fv[YY] - fj[YY] - fk[YY] - fl[YY];
-        fshift[CENTRAL][ZZ] += fv[ZZ] - fj[ZZ] - fk[ZZ] - fl[ZZ];
-        rvec_inc(fshift[sij], fj);
-        rvec_inc(fshift[sik], fk);
-        rvec_inc(fshift[sil], fl);
-    }
-
     if (VirCorr)
     {
         rvec xiv;
         int  i, j;
 
-        pbc_rvec_sub(pbc, x[av], x[ai], xiv);
+        rvec_sub(x[av], x[ai], xiv);
 
         for (i = 0; i < DIM; i++)
         {
@@ -996,14 +790,11 @@ static gmx_unused void spread_vsite4FDN(const std::vector<int> &ia, real a, real
 
 static gmx_unused int spread_vsiten(const std::vector<int> &ia,
                                     const t_iparams ip[],
-                                    const rvec x[], rvec f[], rvec fshift[],
-                                    const t_pbc *pbc, const t_graph *g)
+                                    const rvec x[], rvec f[])
 {
-    rvec xv, dx, fi;
+    rvec xv, fi;
     int  n3, av, i, ai;
     real a;
-    ivec di;
-    int  siv;
 
     n3 = 3*ip[ia[0]].vsiten.n;
     av = ia[1];
@@ -1012,27 +803,9 @@ static gmx_unused int spread_vsiten(const std::vector<int> &ia,
     for (i = 0; i < n3; i += 3)
     {
         ai = ia[i+2];
-        if (g)
-        {
-            ivec_sub(SHIFT_IVEC(g, ai), SHIFT_IVEC(g, av), di);
-            siv = IVEC2IS(di);
-        }
-        else if (pbc)
-        {
-            siv = pbc_dx_aiuc(pbc, x[ai], xv, dx);
-        }
-        else
-        {
-            siv = CENTRAL;
-        }
         a = ip[ia[i]].vsiten.a;
         svmul(a, f[av], fi);
         rvec_inc(f[ai], fi);
-        if (fshift && siv != CENTRAL)
-        {
-            rvec_inc(fshift[siv], fi);
-            rvec_dec(fshift[CENTRAL], fi);
-        }
         /* 6 Flops */
     }
     clear_rvec(f[av]);
@@ -1044,33 +817,9 @@ static gmx_unused int spread_vsiten(const std::vector<int> &ia,
 namespace alexandria
 {
 
-VsiteHandler::VsiteHandler()
+void VsiteHandler::constructPositions(const Topology         *top,
+                                      std::vector<gmx::RVec> *coordinates) const
 {
-    matrix box;
-    clear_mat(box);
-    init(box, dt_);
-}
-
-void VsiteHandler::init(matrix &box, real dt)
-{
-    set_pbc(&pbc_, -1, box);
-    //! \todo More checking.
-    if (pbc_.ePBC != epbcNONE)
-    {
-        GMX_THROW(gmx::InvalidInputError(gmx::formatString("No support for periodic boundary conditions").c_str()));
-    }
-    dt_      = dt;
-    initPBC_ = true;
-}
-
-void VsiteHandler::constructPositions(const Topology          *top,
-                                      std::vector<gmx::RVec>  *coordinates,
-                                      const gmx_unused matrix &box) const
-{
-    if (!initPBC_)
-    {
-        GMX_THROW(gmx::InternalError("PBC has not been initiated"));
-    }
     // Ugly shortcut...
     std::vector<gmx::RVec>    &x      = *coordinates;
     for (const auto &entry: top->entries())
@@ -1100,7 +849,7 @@ void VsiteHandler::constructPositions(const Topology          *top,
                 break;
             case InteractionType::VSITE2:
                 ak = atomIndices[2];
-                constr_vsite2(x[ai], x[aj], x[ak], params[vsite2A], &pbc_);
+                constr_vsite2(x[ai], x[aj], x[ak], params[vsite2A]);
                 if (debug)
                 {
                     fprintf(debug, "vsite a = %g\n", params[vsite2A]);
@@ -1130,13 +879,13 @@ void VsiteHandler::constructPositions(const Topology          *top,
                 ak = atomIndices[2];
                 al = atomIndices[3];
                 constr_vsite3FD(x[ai], x[aj], x[ak], x[al],
-                                params[vsite3fdA], params[vsite3fdB], &pbc_);
+                                params[vsite3fdA], params[vsite3fdB]);
                 break;
             case InteractionType::VSITE3FAD:
                 ak = atomIndices[2];
                 al = atomIndices[3];
                 constr_vsite3FAD(x[ai], x[aj], x[ak], x[al],
-                                 params[vsite3fadA], params[vsite3fadB], &pbc_);
+                                 params[vsite3fadA], params[vsite3fadB]);
                 break;
 
             case InteractionType::VSITE3OUT:
@@ -1146,7 +895,7 @@ void VsiteHandler::constructPositions(const Topology          *top,
                     al                 = atomIndices[3];
                     constr_vsite3OUT(x[aj], x[ai], x[ak], x[al],
                                      params[vsite3outA], params[vsite3outB],
-                                     vsite3out_vs->sign() * params[vsite3outC], &pbc_);
+                                     vsite3out_vs->sign() * params[vsite3outC]);
                     if (debug)
                     {
                         fprintf(debug, "vs3out: sign= %2d, A=%g, B=%g, C=%g\n",
@@ -1162,7 +911,7 @@ void VsiteHandler::constructPositions(const Topology          *top,
                     al                 = atomIndices[3];
                     constr_vsite3OUT(x[aj], x[ai], x[ak], x[al],
                                      params[vsite3outsA], params[vsite3outsA],
-                                     vsite3out_vs->sign() * params[vsite3outsC], &pbc_);
+                                     vsite3out_vs->sign() * params[vsite3outsC]);
                     if (debug)
                     {
                         fprintf(debug, "vs3out: sign= %2d, A=%g, C=%g\n",
@@ -1192,17 +941,10 @@ void VsiteHandler::constructPositions(const Topology          *top,
 
 void VsiteHandler::distributeForces(const Topology               *top,
                                     const std::vector<gmx::RVec> &coords,
-                                    std::vector<gmx::RVec>       *forces,
-                                    const gmx_unused matrix      &box) const
+                                    std::vector<gmx::RVec>       *forces) const
 {
-    if (!initPBC_)
-    {
-        GMX_THROW(gmx::InternalError("PBC has not been initiated"));
-    }
     bool     VirCorr = false;
     matrix   dxdf    = { { 0 } };
-    rvec    *fshift  = nullptr;
-    t_graph *g       = nullptr;
     // Some shortcuts
     const auto &x    = as_rvec_array(coords.data());
     rvec       *f    = as_rvec_array((*forces).data());
@@ -1223,7 +965,7 @@ void VsiteHandler::distributeForces(const Topology               *top,
                 spread_vsite1(atomIndices, f);
                 break;
             case InteractionType::VSITE2:
-                spread_vsite2(atomIndices, params[vsite2A], x, f, fshift, &pbc_, g);
+                spread_vsite2(atomIndices, params[vsite2A], f);
                 break;
             case InteractionType::VSITE2FD:
                 spread_vsite2fd(x[atomIndices[0]], x[atomIndices[1]], params[vsite2fdA],
@@ -1240,18 +982,18 @@ void VsiteHandler::distributeForces(const Topology               *top,
                               params[vsite3sA], params[vsite3sA]);
                 break;
             case InteractionType::VSITE3FD:
-                spread_vsite3FD(atomIndices, params[vsite3fdA], params[vsite3fdB], x, f, fshift,
-                                VirCorr, dxdf, &pbc_, g);
+                spread_vsite3FD(atomIndices, params[vsite3fdA], params[vsite3fdB], x, f,
+                                VirCorr, dxdf);
                 break;
             case InteractionType::VSITE3FAD:
-                spread_vsite3FAD(atomIndices, params[vsite3fadA], params[vsite3fadB], x, f, fshift, VirCorr, dxdf, &pbc_, g);
+                spread_vsite3FAD(atomIndices, params[vsite3fadA], params[vsite3fadB], x, f, VirCorr, dxdf);
                 break;
             case InteractionType::VSITE3OUT:
                 {
                     auto vsite3out_vs = static_cast <const Vsite3OUT*> (vs->self());
                     spread_vsite3OUT(atomIndices, params[vsite3outA], params[vsite3outB],
                                      vsite3out_vs->sign() * params[vsite3outC],
-                                     x, f, fshift, VirCorr, dxdf, &pbc_, g);
+                                     x, f, VirCorr, dxdf);
                 }
                 break;
             case InteractionType::VSITE3OUTS:
@@ -1259,7 +1001,7 @@ void VsiteHandler::distributeForces(const Topology               *top,
                     auto vsite3out_vs = static_cast <const Vsite3OUT*> (vs->self());
                     spread_vsite3OUT(atomIndices, params[vsite3outsA], params[vsite3outsA], 
                                      vsite3out_vs->sign() * params[vsite3outsC],
-                                     x, f, fshift, VirCorr, dxdf, &pbc_, g);
+                                     x, f, VirCorr, dxdf);
                 }
                 break;
             case InteractionType::VSITE4:

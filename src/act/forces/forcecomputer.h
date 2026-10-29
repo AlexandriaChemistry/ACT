@@ -63,8 +63,6 @@ private:
     double         maxShellDistance_ = 0.04;
     //! Relative dielectric constant
     double         epsilonr_         = 1.0;
-    //! Box for periodic boundaries
-    matrix         box_   = { { 0 } };
     //! Virtual site handler
     VsiteHandler   vsiteHandler_;
     //! Total number of energy/force evaluations performed (calls to computeOnce)
@@ -319,7 +317,7 @@ private:
     void generateVsites(const Topology         *top,
                         std::vector<gmx::RVec> *coordinates)
     {
-        vsiteHandler_.constructPositions(top, coordinates, box_);
+        vsiteHandler_.constructPositions(top, coordinates);
     }
 };
 

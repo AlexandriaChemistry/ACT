@@ -112,16 +112,13 @@ void ForceComputer::init(double  msForce,
     maxiter_          = maxiter;
     maxShellDistance_ = maxShellDistance;
     epsilonr_         = epsilonr;
-    clear_mat(box_);
-    real dt = 0.001;
-    vsiteHandler_.init(box_, dt);
 }
 
 void ForceComputer::constructVsiteCoordinates(const Topology         *top,
                                               std::vector<gmx::RVec> *coordinates) const
 {
     // Construct virtual site coordinates
-    vsiteHandler_.constructPositions(top, coordinates, box_);
+    vsiteHandler_.constructPositions(top, coordinates);
 }
 
 void ForceComputer::spreadVsiteForces(const Topology               *top,
@@ -129,7 +126,7 @@ void ForceComputer::spreadVsiteForces(const Topology               *top,
                                       std::vector<gmx::RVec>       *forces) const
 {
     // Spread virtual site forces
-    vsiteHandler_.distributeForces(top, *coordinates, forces, box_);
+    vsiteHandler_.distributeForces(top, *coordinates, forces);
 }
 
 real calc_fscale(real k1, real k2, real F0)

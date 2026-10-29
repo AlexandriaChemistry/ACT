@@ -55,6 +55,7 @@
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/pbcutil/pbc.h"
 #include "gromacs/utility/baseversion.h"
 #include "gromacs/utility/coolstuff.h"
 #include "gromacs/utility/exceptions.h"
