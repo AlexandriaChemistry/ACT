@@ -130,8 +130,6 @@ private:
     // Optimized coordinates from the input.
     //std::vector<gmx::RVec>           optimizedCoordinates_;
     // Older stuff
-    //! Whether shells are present (currently not set to true anywhere)
-    bool                             bHaveShells_    = false;
     //! Whether virtual sites are present (currently unused)
     bool                             bHaveVSites_    = false;
     //! Tolerance for converged SQE or EEM calculations
@@ -281,7 +279,7 @@ public:
     const JobType &jobType() const { return myJobType_; }
     
     //! \return true if shells are present
-    bool haveShells() const { return bHaveShells_; }
+    bool haveShells() const { return topology_.hasShells(); }
     //! \return whether this is a linear molecule
     bool linearMolecule() const { return isLinear_; }
     
