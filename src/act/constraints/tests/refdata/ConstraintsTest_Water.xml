@@ -28,19 +28,19 @@
   <Sequence Name="coordinates after">
     <Int Name="Length">4</Int>
     <Vector>
-      <Real Name="X">0.00060438647408284671</Real>
-      <Real Name="Y">0.0012216943187092319</Real>
-      <Real Name="Z">0.010546364882082137</Real>
+      <Real Name="X">0.00060437864144978763</Real>
+      <Real Name="Y">0.0012219868190429595</Real>
+      <Real Name="Z">0.010546244465114462</Real>
     </Vector>
     <Vector>
-      <Real Name="X">-0.0018603074504221393</Real>
-      <Real Name="Y">0.079309735930034389</Real>
-      <Real Name="Z">-0.047624763516223037</Real>
+      <Real Name="X">-0.0018601936374998452</Real>
+      <Real Name="Y">0.079306131854161757</Real>
+      <Real Name="Z">-0.047622074685933838</Real>
     </Vector>
     <Vector>
-      <Real Name="X">0.0013906765808506536</Real>
-      <Real Name="Y">-0.07667931235900205</Real>
-      <Real Name="Z">-0.04791123241034205</Real>
+      <Real Name="X">0.0013906871031097929</Real>
+      <Real Name="Y">-0.07668035143209205</Real>
+      <Real Name="Z">-0.047912009742235945</Real>
     </Vector>
     <Vector>
       <Real Name="X">0</Real>
@@ -74,19 +74,19 @@
   <Sequence Name="velocities after">
     <Int Name="Length">4</Int>
     <Vector>
-      <Real Name="X">0.0301757638705763</Real>
-      <Real Name="Y">0.060089908613099166</Real>
-      <Real Name="Z">-0.062161560567351649</Real>
+      <Real Name="X">0.030155036705635831</Real>
+      <Real Name="Y">0.061179704662385793</Real>
+      <Real Name="Z">-0.062021277209727499</Real>
     </Vector>
     <Vector>
-      <Real Name="X">-0.091767456339769363</Real>
-      <Real Name="Y">0.10599770536774822</Real>
-      <Real Name="Z">-0.011715090322937669</Real>
+      <Real Name="X">-0.091540441897074359</Real>
+      <Real Name="Y">0.098805259045026267</Real>
+      <Real Name="Z">-0.0063571872766725367</Real>
     </Vector>
     <Vector>
-      <Real Name="X">0.068977381460417736</Real>
-      <Real Name="Y">0.041315040078805113</Real>
-      <Real Name="Z">-0.013972307096165353</Real>
+      <Real Name="X">0.06907938993939014</Real>
+      <Real Name="Y">0.031208068888920127</Real>
+      <Real Name="Z">-0.021557067521110806</Real>
     </Vector>
     <Vector>
       <Real Name="X">0</Real>

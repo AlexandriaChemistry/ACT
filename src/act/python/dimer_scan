@@ -237,7 +237,7 @@ def run_dimer(system: str, root: str, c1: str, c2: str, xml: str,
             outpdb = "final.pdb"
             command = f"alexandria simulate -v 3 -toler 0.000000001 -freeze {fndx} -ff {xml} -forcereminimize -maxretries 1 -minimize -minalg LBFGS -f {pdb} -c {outpdb} -g {mylog}"
             if constrain:
-                command += " -constrain "
+                command += " -constrain bonds "
             if molprop and os.path.exists(molprop):
                 command += f" -charges {molprop} "
             command += " > sim.txt 2>&1 "

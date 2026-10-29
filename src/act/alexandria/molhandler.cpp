@@ -1303,7 +1303,6 @@ void MolHandler::simulate(MsgHandler                    *msghandler,
     Constrainer constrainer(simConfig.constraintMaxIter(),
                             simConfig.constraintTolerance(),
                             1.0/deltat);
-    auto bondPotential = pd->findForcesConst(InteractionType::BONDS).potential();
     // The center of mass does not move, since the initial velocities
     // are either zero or have the center of mass motion removed and
     // there are no external forces. Each constraint removes one more
@@ -1311,11 +1310,22 @@ void MolHandler::simulate(MsgHandler                    *msghandler,
     int nDOF           = DIM*(mol->nRealAtoms() - 1);
     if (simConfig.constrain())
     {
-        nDOF -= mol->topology()->entry(InteractionType::BONDS).size();
+        constrainer.makeConstraints(msghandler, simConfig.constraintType(),
+                                    pd, mol->topology(), coordinates);
+        msghandler->write(gmx::formatString("Constraining %zu bonds and %zu angles.",
+                                            constrainer.numBondConstraints(),
+                                            constrainer.numAngleConstraints()));
+        if (constrainer.numRedundantAngles() > 0)
+        {
+            msghandler->write(gmx::formatString("Left out %zu angle constraints that are redundant.",
+                                                constrainer.numRedundantAngles()));
+        }
+        nDOF -= constrainer.numConstraints();
         // Start from coordinates that satisfy the constraints
-        constrainer.shake(msghandler, bondPotential,
-                          mol->topology()->entry(InteractionType::BONDS),
-                          mol->topology()->atoms(), &coordinates);
+        if (constrainer.shake(msghandler, &coordinates) != 0)
+        {
+            msghandler->fatal("Could not constrain the starting coordinates. The reference bond lengths and angles may be inconsistent, for instance in rings. Try -constrain bonds.");
+        }
     }
     // Generate velocities
     if (simConfig.temperature() > 0)
@@ -1325,10 +1335,7 @@ void MolHandler::simulate(MsgHandler                    *msghandler,
         stop_cm(mol->atomsConst(), coordinates, &velocities);
         if (simConfig.constrain())
         {
-            constrainer.rattle(msghandler, bondPotential,
-                               mol->topology()->entry(InteractionType::BONDS),
-                               mol->topology()->atoms(),
-                               coordinates, &velocities);
+            constrainer.rattle(msghandler, coordinates, &velocities);
         }
         // Scale the velocities to the requested temperature for the
         // remaining degrees of freedom.
@@ -1399,10 +1406,11 @@ void MolHandler::simulate(MsgHandler                    *msghandler,
         {
             // First part of rattle, constrain the positions along the
             // previous bonds and correct the velocities accordingly.
-            constrainer.shake(msghandler, bondPotential,
-                              mol->topology()->entry(InteractionType::BONDS),
-                              mol->topology()->atoms(), xprev,
-                              &coordinates, &velocities);
+            if (constrainer.shake(msghandler, xprev, &coordinates, &velocities) != 0)
+            {
+                msghandler->msg(ACTStatus::Warning,
+                                gmx::formatString("SHAKE did not converge at step %d.", step));
+            }
         }
         // Compute forces and energies
         forceComp->compute(msghandler, pd, mol->topology(), &coordinates,
@@ -1421,10 +1429,11 @@ void MolHandler::simulate(MsgHandler                    *msghandler,
         }
         if (simConfig.constrain())
         {
-            constrainer.rattle(msghandler, bondPotential,
-                               mol->topology()->entry(InteractionType::BONDS),
-                               mol->topology()->atoms(), 
-                               coordinates, &velocities);
+            if (constrainer.rattle(msghandler, coordinates, &velocities) != 0)
+            {
+                msghandler->msg(ACTStatus::Warning,
+                                gmx::formatString("RATTLE did not converge at step %d.", step));
+            }
         }
         // Write output if needed
         if (simConfig.nstxout() > 0 && step % simConfig.nstxout() == 0)

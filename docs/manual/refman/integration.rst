@@ -76,9 +76,9 @@ after which the forces :math:`{\bf F}_i(t+\Delta t)` are computed for the new co
 .. math:: {\bf v}_i(t+\Delta t) ~=~ {\bf v}_i(t) + \frac{\Delta t}{2m_i}\left[{\bf F}_i(t) + {\bf F}_i(t+\Delta t)\right].
    :label: vvvel
 
-Only particles with a mass are integrated. Virtual sites are constructed from the atoms before the forces are computed, and the forces on them are distributed over the atoms they are constructed from. The shells are relaxed for each new configuration of the atoms as described in :ref:`sec-shellrelax`, starting from their cores. With the option *-constrain* all bond lengths are kept constant at the reference bond lengths of the force field, using the RATTLE algorithm :cite:p:`Ryckaert1977a,Andersen1983a`. In the first part, the coordinates from Eqn. :eq:`vvpos` are constrained with SHAKE, using constraint forces along the bonds at time :math:`t`, and the displacements due to the constraints, divided by :math:`\Delta t`, are added to the velocities. In the second part, the velocity components along the bonds are removed after Eqn. :eq:`vvvel`, such that the velocities are consistent with the constraints. The starting coordinates are constrained as well. The relative tolerance and the maximum number of iterations of SHAKE and RATTLE are set with *-constr_toler* and *-constr_maxiter*.
+Only particles with a mass are integrated. Virtual sites are constructed from the atoms before the forces are computed, and the forces on them are distributed over the atoms they are constructed from. The shells are relaxed for each new configuration of the atoms as described in :ref:`sec-shellrelax`, starting from their cores. Bond lengths and angles can be constrained, as described in :ref:`sec-constraints`.
 
-With *-temp* larger than zero, the initial velocities are generated from a Maxwell distribution at that temperature, using the random number seed *-seed*. The motion of the center of mass is removed, the velocity components along constrained bonds are removed, and finally the velocities are scaled such that the temperature, Eqn. :eq:`tempmd`, is exactly the requested one. There is no thermostat, the simulation conserves the total energy, which can be used to validate the forces. The energy file contains the potential energy terms, the kinetic energy :math:`E_{kin} = \frac{1}{2}\sum_i m_i{\bf v}_i^2`, the total energy and the temperature
+With *-temp* larger than zero, the initial velocities are generated from a Maxwell distribution at that temperature, using the random number seed *-seed*. The motion of the center of mass is removed, the velocity components along the constraints are removed, and finally the velocities are scaled such that the temperature, Eqn. :eq:`tempmd`, is exactly the requested one. There is no thermostat, the simulation conserves the total energy, which can be used to validate the forces. The energy file contains the potential energy terms, the kinetic energy :math:`E_{kin} = \frac{1}{2}\sum_i m_i{\bf v}_i^2`, the total energy and the temperature
 
 .. math:: T ~=~ \frac{2E_{kin}}{N_{df}\,k_B},
    :label: tempmd
@@ -88,4 +88,32 @@ which are written every *-nstener* steps before the step is taken. The number of
 .. math:: N_{df} ~=~ 3N - 3 - N_c,
    :label: ndf
 
-for :math:`N` atoms with a mass and :math:`N_c` constraints (the number of bonds when *-constrain* is used, zero otherwise). Shells and virtual sites do not contribute, since they have no mass. Three degrees of freedom are subtracted for the center of mass, which does not move, since there are no external forces and the initial velocities are either zero or have the center of mass motion removed. Since the potential energy takes up part of the initial kinetic energy, the temperature during the simulation is lower than the initial one, about half of it if the starting structure is close to the minimum of the energy. The time step is set with *-deltat* (ps) and the number of steps with *-nsteps*.
+for :math:`N` atoms with a mass and :math:`N_c` constraints, see :ref:`sec-constraints`. Shells and virtual sites do not contribute, since they have no mass. Three degrees of freedom are subtracted for the center of mass, which does not move, since there are no external forces and the initial velocities are either zero or have the center of mass motion removed. Since the potential energy takes up part of the initial kinetic energy, the temperature during the simulation is lower than the initial one, about half of it if the starting structure is close to the minimum of the energy. The time step is set with *-deltat* (ps) and the number of steps with *-nsteps*.
+
+.. _sec-constraints:
+
+-----------
+Constraints
+-----------
+With the option *-constrain* the fastest motions can be removed from the simulation, using the RATTLE algorithm :cite:p:`Ryckaert1977a,Andersen1983a`. Each constraint keeps the distance :math:`d_c` between two atoms constant. The option has three choices:
+
+* *no*: there are no constraints (the default).
+* *bonds*: the length of each bond is kept at the reference bond length :math:`b_0` of the force field.
+* *angles*: in addition to the bonds, for each angle :math:`i-j-k` the distance between the outer atoms :math:`i` and :math:`k` is kept constant. Together with the constrained bonds :math:`i-j` and :math:`j-k` this keeps the angle at its reference value :math:`\theta_0`, since
+
+  .. math:: d_{ik} ~=~ \sqrt{b_{ij}^2 + b_{jk}^2 - 2\,b_{ij}\,b_{jk}\cos\theta_0}.
+     :label: dik
+
+Not all angles can be constrained independently. The positions of :math:`n` atoms bonded to the same atom, relative to each other, are determined by :math:`2n-3` angles, for instance five of the six angles around a tetrahedral carbon. Around an atom with three neighbours of which the reference angles add up to more than 355\ :math:`^{\circ}`, only two angles are constrained, since the third one follows from the other two in a planar group. Angles larger than 175\ :math:`^{\circ}` are not constrained, since the distance :math:`d_{ik}` does not determine a (nearly) linear angle. Finally, an angle constraint that depends linearly on the other constraints in the starting coordinates is left out as well. This is the case in rings, where the angles also have to close the ring. The log file lists the number of bond and angle constraints and the number of angles that were left out. The angles that are not constrained still contribute to the potential energy. Note that when the reference values of the angles in a ring are not consistent with a planar ring, the ring has to pucker to satisfy the constraints, which may not be possible from a planar starting structure. In that case the simulation stops with an error, and *-constrain bonds* can be used instead.
+
+In the first part of RATTLE, the coordinates :math:`{\bf r}_i'` from Eqn. :eq:`vvpos` are corrected by constraint forces along the distance vectors :math:`{\bf r}_c(t)` of the constrained pairs at time :math:`t`
+
+.. math:: {\bf r}_i(t+\Delta t) ~=~ {\bf r}_i' + \frac{1}{m_i}\sum_c g_c\,\sigma_{ic}\,{\bf r}_c(t),
+   :label: shake
+
+where :math:`\sigma_{ic}` is 1 if atom :math:`i` is the first atom of constraint :math:`c`, -1 if it is the second and 0 otherwise. The multipliers :math:`g_c` follow from the conditions :math:`|{\bf r}_c(t+\Delta t)|^2 = d_c^2`. Since angle constraints are strongly coupled to the bond constraints, these non-linear equations are solved for all constraints together by Newton iterations, as in the matrix SHAKE algorithm :cite:p:`Kraeutler2001a`, rather than one constraint at a time as in the original SHAKE algorithm, which converges very slowly for coupled constraints. The step is halved when it does not reduce the deviations from the constraints. The displacements due to the constraints, divided by :math:`\Delta t`, are added to the velocities. In the second part of RATTLE, after Eqn. :eq:`vvvel`, the velocity components along the constraints are removed by solving the linear equations
+
+.. math:: {\bf r}_c\cdot\left({\bf v}_{c_1} - {\bf v}_{c_2}\right) ~=~ 0
+   :label: rattle
+
+for all constraints together, where :math:`c_1` and :math:`c_2` are the atoms of constraint :math:`c`. The starting coordinates are constrained as well. The relative tolerance on the constrained distances and the maximum number of iterations are set with *-constr_toler* and *-constr_maxiter*. Each constraint removes one degree of freedom, such that :math:`N_c` in Eqn. :eq:`ndf` is the number of constraints. For acetone, for instance, there are 9 bond constraints and 12 angle constraints, leaving 6 degrees of freedom: the rotation of the molecule, the rotation of the two methyl groups and the out of plane motion of the carbonyl carbon.

@@ -1,0 +1,160 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="molname"></String>
+  <Int64 Name="bond constraints">0</Int64>
+  <Int64 Name="angle constraints">0</Int64>
+  <Int64 Name="redundant angles">0</Int64>
+  <Sequence Name="coordinates before">
+    <Int Name="Length">7</Int>
+    <Vector>
+      <Real Name="X">-0.13438</Real>
+      <Real Name="Y">-0.0034099999999999994</Real>
+      <Real Name="Z">-0.0012099999999999999</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0.01916</Real>
+      <Real Name="Y">0.0011299999999999999</Real>
+      <Real Name="Z">0.00042999999999999999</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0.081449999999999995</Real>
+      <Real Name="Y">-0.11173999999999999</Real>
+      <Real Name="Z">-0.0017600000000000001</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0.071279999999999996</Real>
+      <Real Name="Y">0.11613</Real>
+      <Real Name="Z">0.0014399999999999999</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-0.17330000000000001</Real>
+      <Real Name="Y">-0.10918</Real>
+      <Real Name="Z">-0.00056999999999999976</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-0.17235999999999999</Real>
+      <Real Name="Y">0.047689999999999989</Real>
+      <Real Name="Z">0.08768999999999999</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-0.17521999999999999</Real>
+      <Real Name="Y">0.050309999999999994</Real>
+      <Real Name="Z">-0.086279999999999996</Real>
+    </Vector>
+  </Sequence>
+  <Sequence Name="coordinates after">
+    <Int Name="Length">7</Int>
+    <Vector>
+      <Real Name="X">-0.13438</Real>
+      <Real Name="Y">-0.0034099999999999994</Real>
+      <Real Name="Z">-0.0012099999999999999</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0.01916</Real>
+      <Real Name="Y">0.0011299999999999999</Real>
+      <Real Name="Z">0.00042999999999999999</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0.081449999999999995</Real>
+      <Real Name="Y">-0.11173999999999999</Real>
+      <Real Name="Z">-0.0017600000000000001</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0.071279999999999996</Real>
+      <Real Name="Y">0.11613</Real>
+      <Real Name="Z">0.0014399999999999999</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-0.17330000000000001</Real>
+      <Real Name="Y">-0.10918</Real>
+      <Real Name="Z">-0.00056999999999999976</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-0.17235999999999999</Real>
+      <Real Name="Y">0.047689999999999989</Real>
+      <Real Name="Z">0.08768999999999999</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-0.17521999999999999</Real>
+      <Real Name="Y">0.050309999999999994</Real>
+      <Real Name="Z">-0.086279999999999996</Real>
+    </Vector>
+  </Sequence>
+  <Sequence Name="velocities before">
+    <Int Name="Length">7</Int>
+    <Vector>
+      <Real Name="X">0.029999999999999999</Real>
+      <Real Name="Y">0.069999999999999993</Real>
+      <Real Name="Z">-0.059999999999999998</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-0.090000000000000011</Real>
+      <Real Name="Y">0.050000000000000003</Real>
+      <Real Name="Z">0.029999999999999999</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0.069999999999999993</Real>
+      <Real Name="Y">-0.059999999999999998</Real>
+      <Real Name="Z">-0.090000000000000011</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0.050000000000000003</Real>
+      <Real Name="Y">0.029999999999999999</Real>
+      <Real Name="Z">0.069999999999999993</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-0.059999999999999998</Real>
+      <Real Name="Y">-0.090000000000000011</Real>
+      <Real Name="Z">0.050000000000000003</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0.029999999999999999</Real>
+      <Real Name="Y">0.069999999999999993</Real>
+      <Real Name="Z">-0.059999999999999998</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-0.090000000000000011</Real>
+      <Real Name="Y">0.050000000000000003</Real>
+      <Real Name="Z">0.029999999999999999</Real>
+    </Vector>
+  </Sequence>
+  <Sequence Name="velocities after">
+    <Int Name="Length">7</Int>
+    <Vector>
+      <Real Name="X">0.029999999999999999</Real>
+      <Real Name="Y">0.069999999999999993</Real>
+      <Real Name="Z">-0.059999999999999998</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-0.090000000000000011</Real>
+      <Real Name="Y">0.050000000000000003</Real>
+      <Real Name="Z">0.029999999999999999</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0.069999999999999993</Real>
+      <Real Name="Y">-0.059999999999999998</Real>
+      <Real Name="Z">-0.090000000000000011</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0.050000000000000003</Real>
+      <Real Name="Y">0.029999999999999999</Real>
+      <Real Name="Z">0.069999999999999993</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-0.059999999999999998</Real>
+      <Real Name="Y">-0.090000000000000011</Real>
+      <Real Name="Z">0.050000000000000003</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">0.029999999999999999</Real>
+      <Real Name="Y">0.069999999999999993</Real>
+      <Real Name="Z">-0.059999999999999998</Real>
+    </Vector>
+    <Vector>
+      <Real Name="X">-0.090000000000000011</Real>
+      <Real Name="Y">0.050000000000000003</Real>
+      <Real Name="Z">0.029999999999999999</Real>
+    </Vector>
+  </Sequence>
+</ReferenceData>
