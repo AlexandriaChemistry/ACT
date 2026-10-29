@@ -57,9 +57,13 @@ public:
     float64x2_t v;
     //! Uninitialized
     SimdDouble() = default;
-    //! Set all elements to a
+    /*! \brief Set all elements to a
+     * \param[in] a The value
+     */
     SimdDouble(double a) : v(vdupq_n_f64(a)) {}
-    //! From NEON type
+    /*! \brief From NEON type
+     * \param[in] a The NEON vector
+     */
     explicit SimdDouble(float64x2_t a) : v(a) {}
 };
 
@@ -69,7 +73,9 @@ class SimdBool
 public:
     //! The data, all bits set for true
     uint64x2_t v;
-    //! From NEON type
+    /*! \brief From NEON type
+     * \param[in] a The NEON vector
+     */
     explicit SimdBool(uint64x2_t a) : v(a) {}
 };
 

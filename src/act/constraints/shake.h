@@ -59,7 +59,10 @@ enum class ConstraintType {
     Angles
 };
 
-//! \return string corresponding to the constraint type
+/*! \brief Map constraint type to string
+ * \param[in] ct The constraint type
+ * \return string corresponding to the constraint type
+ */
 const std::string &constraintTypeToString(ConstraintType ct);
 
 /*! \brief Map string to constraint type
@@ -69,6 +72,12 @@ const std::string &constraintTypeToString(ConstraintType ct);
  */
 ConstraintType stringToConstraintType(const std::string &str);
 
+/*! \brief Distance constraints using SHAKE and RATTLE
+ *
+ * Constrains bond lengths and, for angle constraints, the 1-3 distances
+ * of angles. All constraints are solved together using Newton iterations
+ * (matrix SHAKE).
+ */
 class Constrainer
 {
 private:
@@ -105,7 +114,13 @@ private:
     //! All pairs of coupled constraints, including each constraint with itself
     std::vector<CoupledPair> coupled_;
 
-    //! \brief Make the list of constraints, see makeConstraints
+    /*! \brief Make the list of constraints, see makeConstraints
+     * \param[in] msghandler For warnings and errors
+     * \param[in] ctype      What to constrain
+     * \param[in] pd         The force field
+     * \param[in] top        The topology
+     * \param[in] positions  The starting coordinates
+     */
     void makeConstraintList(MsgHandler                   *msghandler,
                             ConstraintType                ctype,
                             const ForceField             *pd,
@@ -128,6 +143,11 @@ private:
     void addConstraint(int ai, int aj, double length);
 
 public:
+    /*! \brief Constructor
+     * \param[in] maxiter Max number of iterations to try constraining
+     * \param[in] toler   Relative tolerance for the constrained distances
+     * \param[in] invdt   Inverse time step, used to turn SHAKE displacements into velocity corrections
+     */
     Constrainer(int maxiter, double toler, double invdt) : maxiter_(maxiter), toler_(toler), invdt_(invdt)
     {}
 
@@ -179,7 +199,10 @@ public:
     //! \return the atom pairs with a constrained distance
     const std::vector<std::array<int, 2>> &pairs() const { return pairs_; }
 
-    //! \return the constrained distance of a pair
+    /*! \brief Return the constrained distance of a pair
+     * \param[in] index The index of the constraint
+     * \return the constrained distance
+     */
     double length(size_t index) const { return std::sqrt(constraint_distance_squared_[index]); }
 
     /*! \brief Execute the Shake algorithm
@@ -227,6 +250,7 @@ public:
      * \param[in]    msghandler For warnings and errors
      * \param[in]    positions  The coordinates of all particles
      * \param[inout] velocities The velocities for all particles
+     * \return zero if fine, 1 if the equations could not be solved
      */
     int rattle(MsgHandler                   *msghandler,
                const std::vector<gmx::RVec> &positions,

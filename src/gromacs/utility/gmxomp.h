@@ -73,6 +73,7 @@
  * defined at that point in the code.
  *
  * Acts as a wrapper for omp_get_max_threads().
+ * \return the maximum number of threads
  */
 int gmx_omp_get_max_threads();
 
@@ -80,6 +81,7 @@ int gmx_omp_get_max_threads();
  * Returns the number of processors available when the function is called.
  *
  * Acts as a wrapper around omp_get_num_procs().
+ * \return the number of processors
  */
 int gmx_omp_get_num_procs();
 
@@ -87,6 +89,7 @@ int gmx_omp_get_num_procs();
  * Returns the thread number of the thread executing within its thread team.
  *
  * Acts as a wrapper for omp_get_thread_num().
+ * \return the thread number
  */
 int gmx_omp_get_thread_num();
 
@@ -95,6 +98,7 @@ int gmx_omp_get_thread_num();
  * by a num_threads clause.
  *
  * Acts as a wrapper for omp_set_num_threads().
+ * \param[in] num_threads The number of threads
  */
 void gmx_omp_set_num_threads(int num_threads);
 

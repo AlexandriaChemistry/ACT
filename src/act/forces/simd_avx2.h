@@ -60,9 +60,13 @@ public:
     __m256d v;
     //! Uninitialized
     SimdDouble() = default;
-    //! Set all elements to a
+    /*! \brief Set all elements to a
+     * \param[in] a The value
+     */
     SimdDouble(double a) : v(_mm256_set1_pd(a)) {}
-    //! From AVX type
+    /*! \brief From AVX type
+     * \param[in] a The AVX vector
+     */
     explicit SimdDouble(__m256d a) : v(a) {}
 };
 
@@ -72,7 +76,9 @@ class SimdBool
 public:
     //! The data, all bits set for true
     __m256d v;
-    //! From AVX type
+    /*! \brief From AVX type
+     * \param[in] a The AVX vector
+     */
     explicit SimdBool(__m256d a) : v(a) {}
 };
 

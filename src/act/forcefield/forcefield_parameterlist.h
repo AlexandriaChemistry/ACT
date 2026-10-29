@@ -65,7 +65,11 @@ class StructureVersion
     // None of these can throw, which allows containers to move the
     // objects that contain a StructureVersion.
     StructureVersion() noexcept : value_(next()) {}
+    //! Copy constructor, takes a new number rather than copying it
     StructureVersion(const StructureVersion &) noexcept : value_(next()) {}
+    /*! \brief Assignment, takes a new number rather than copying it
+     * \return this object
+     */
     StructureVersion &operator=(const StructureVersion &) noexcept
     {
         value_ = next();
@@ -107,16 +111,21 @@ class ForceFieldParameterList
     ForceFieldParameterList(const std::string &function,
                             CanSwap            canSwap);
    
-    //! \brief Return the function name
+    //! \return the potential function
     Potential potential() const { return pot_; }
 
-    //! \brief Set the function name
+    /*! \brief Set the function name
+     * \param[in] function Name of the potential function
+     * \throw if function is not recognized
+     */
     void setFunction(const std::string &function);
 
-    //! \brief Return whether or not identifiers can be swapped
+    //! \return whether or not identifiers can be swapped
     CanSwap canSwap() const { return canSwap_; }
 
-    //! \brief Set whether or not identifiers can be swapped
+    /*! \brief Set whether or not identifiers can be swapped
+     * \param[in] cs The new value
+     */
     void setCanSwap(CanSwap cs) { canSwap_ = cs; }
 
     /*! \brief Add function specific options
@@ -166,7 +175,7 @@ class ForceFieldParameterList
         return ov->second;
     }
 
-    //! Return the options map
+    //! \return the options map
     const std::map<std::string, std::string> &option() const { return options_; }
 
     /*! \brief Add function specific combination rule
@@ -240,15 +249,16 @@ class ForceFieldParameterList
         return &ov->second;
     }
 
-    //! Return the combination rule map
+    //! \return the combination rule map
     const CombRuleSet &combinationRules() const { return combrules_; }
 
-    //! Return the parameters map as a const variable
+    //! \return the parameters map as a const variable
     const ForceFieldParameterListMap &parametersConst() const { return parameters_; };
     
     /*! \brief Return the parameters map as an editable variable
      * Since entries may be removed, pointers into the map are no longer
      * valid afterwards, see structureVersion().
+     * \return pointer to the parameters map
      */
     ForceFieldParameterListMap *parameters()
     {
@@ -259,6 +269,7 @@ class ForceFieldParameterList
     /*! \brief Return the parameters map for changing values and adding entries
      * Entries must not be removed, such that pointers to the existing entries,
      * but not to the parameters inside them, stay valid.
+     * \return pointer to the parameters map
      */
     ForceFieldParameterListMap *parametersNoRemoval() { return &parameters_; };
 
@@ -300,7 +311,7 @@ class ForceFieldParameterList
      */
     size_t numberOfParameters() const { return parameters_.size(); }
 
-    //! \brief return whether or not there are any parameters
+    //! \return whether or not the parameter map is empty
     bool empty() const { return parameters_.size() == 0; }
     
     /*! \brief check whether any parameter exists for identifier
@@ -334,6 +345,7 @@ class ForceFieldParameterList
      *
      * \param[in] identifier String with atoms or bonds
      * \param[in] type       The parameter type, e.g. sigma or bondlength
+     * \return the parameter
      * \throws if not found
      */
     const ForceFieldParameter &findParameterTypeConst(const Identifier  &identifier,
@@ -343,6 +355,7 @@ class ForceFieldParameterList
      *
      * \param[in] identifier String with atoms or bonds
      * \param[in] type       The parameter type, e.g. sigma or bondlength
+     * \return pointer to the parameter
      * \throws if not found
      */
     ForceFieldParameter *findParameterType(const Identifier  &identifier,
@@ -366,6 +379,7 @@ class ForceFieldParameterList
     /*! \brief Send the contents to another processor
      * \param[in] cr   Communication data structure
      * \param[in] dest Processor id to send the data to
+     * \return The status of the communication
      */
     CommunicationStatus Send(const CommunicationRecord *cr, int dest) const;
 
@@ -382,6 +396,7 @@ class ForceFieldParameterList
     /*! \brief Receive contents from another processor
      * \param[in] cr  Communication data structure
      * \param[in] src Processor id to receive the data from
+     * \return The status of the communication
      */
     CommunicationStatus Receive(const CommunicationRecord *cr, int src);
 

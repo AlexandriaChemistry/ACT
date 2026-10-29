@@ -43,6 +43,9 @@
 namespace alexandria
 {
 
+/*! \brief A particle in a molecule: an atom, a shell or a virtual site,
+ * with its properties and its relations to other particles.
+ */
 class ActAtom
 {
 private:
@@ -85,6 +88,16 @@ private:
     //! Residue number. If at -1 it means it has not been set.
     int              residueNumber_ = -1;
 public:
+    /*! \brief Constructor
+     * \param[in] name         The atom name, also used as identifier
+     * \param[in] elem         The chemical element
+     * \param[in] ffType       The atom type in the force field
+     * \param[in] apType       The particle type
+     * \param[in] atomicNumber The atomic number
+     * \param[in] newmass      The mass
+     * \param[in] newcharge    The charge
+     * \param[in] row          Row in the periodic table
+     */
     ActAtom(const std::string &name,
             const std::string &elem,
             const std::string &ffType,
@@ -101,6 +114,9 @@ public:
         }
     }
 
+    /*! \brief Constructor copying the properties of a force field particle type
+     * \param[in] pt The particle type
+     */
     ActAtom(const ParticleType &pt) :
         id_({ pt.id() }), name_(pt.id().id() ), elem_(pt.element()), ffType_( pt.id().id() ),
         apType_( pt.apType()), atomicNumber_(pt.atomnumber()), mass_(pt.mass()), charge_(pt.charge()),
@@ -170,7 +186,7 @@ public:
     //! \return the mass
     double mass() const { return mass_; }
 
-    //! \return the mass
+    //! \return the inverse mass, 0 if the mass is not positive
     double invmass() const { return invmass_; }
 
     //! \return the charge
@@ -207,7 +223,7 @@ public:
         rowVS_    = rowVS;
     }
 
-    //! return the residue number
+    //! \return the residue number, -1 if not set
     int residueNumber() const { return residueNumber_; }
 
     /*! set the residue number

@@ -58,6 +58,9 @@
 namespace alexandria
 {
 
+/*! \brief The topology of a molecule: its particles, the interactions
+ * between them and the non-bonded exclusions.
+ */
 class Topology
 {
 private:
@@ -170,7 +173,7 @@ private:
      */
     void init(const std::vector<Bond> &bonds);
 
-    //! Return the name
+    //! \return the molecule (compound) name
     const std::string &moleculeName() const { return moleculeName_; }
 
     /*! Find a bond between two atoms
@@ -186,10 +189,15 @@ private:
      */
     void addBond(const Bond &bond);
 
-    //! Add an atom to the topology
+    /*! \brief Add an atom to the topology
+     * \param[in] atom The atom to add
+     */
     void addAtom(const ActAtom &atom) { atoms_.push_back(atom); }
 
-    //! Debugging stuff
+    /*! \brief Write the first two atom indices of each entry of an interaction type
+     * \param[in] tw    The text writer, nothing is written if nullptr
+     * \param[in] itype The interaction type
+     */
     void dumpPairlist(gmx::TextWriter *tw, InteractionType itype) const;
 
     //! \return the array of real atoms

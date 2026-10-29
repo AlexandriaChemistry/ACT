@@ -66,6 +66,7 @@ public:
     /*!
      * \brief Check the validity of the provided arguments
      * Throw an exception if an invalid combination of arguments is encountered
+     * \param[in] msghandler Message handler
      */
     virtual void check_pargs(MsgHandler *msghandler) = 0;
 
@@ -336,10 +337,11 @@ public:
     /*!
      * \brief Check the validity of the provided arguments
      * Throw an exception if an invalid combination of arguments is encountered
+     * \param[in] msghandler Message handler
      */
     virtual void check_pargs(MsgHandler *msghandler);
 
-    //! \brief Return Max # iterations
+    //! \return Max # iterations
     int maxIter() const { return maxiter_; }
 
     /*! \brief Set the number of iterations
@@ -347,7 +349,7 @@ public:
      */
     void setMaxIter(int maxiter) { maxiter_ = maxiter; }
 
-    //! \brief Return temperature
+    //! \return temperature for the Monte Carlo simulation
     real temperature() const { return temperature_; }
 
     /*! \brief set a new value for temperature
@@ -382,22 +384,24 @@ public:
                        int max_generations,
                        int iteration);
 
-    //! \brief Return the step
+    //! \return the MCMC step size, as fraction of the allowed range of each parameter
     real step() const { return step_; }
 
-    //! \brief Set the step
+    /*! \brief Set the step
+     * \param[in] step The new step size
+     */
     void setStep(real step) { step_ = step; }
 
     //! \return whether adaptive steps should be used
     bool adaptiveStep() const { return adaptiveStep_; }
 
-    //! \brief Return whether or not temperature weighting should be considered
+    //! \return whether or not temperature weighting should be considered
     bool temperatureWeighting() const { return tempWeight_; }
 
     //! \return true if any annealing was requested
     bool annealing() const { return anneal_begin_ < 1; }
 
-    //! \true return fraction of generations where global annealing will start
+    //! \return fraction of generations where global annealing will start
     double globalAnnealBegin() const { return anneal_global_begin_; }
 
     /*! Set global annealing
@@ -445,7 +449,10 @@ enum class eMinimizeAlgorithm {
     LBFGS, Steep, Newton
 };
 
-//! \brief Map algorithm to string
+/*! \brief Map algorithm to string
+ * \param[in] e The algorithm
+ * \return the name of the algorithm
+ */
 const std::string &eMinimizeAlgorithmToString(eMinimizeAlgorithm e);
 
 /*! \brief Map string to algorithm
@@ -454,6 +461,7 @@ const std::string &eMinimizeAlgorithmToString(eMinimizeAlgorithm e);
  */
 eMinimizeAlgorithm stringToEMinimizeAlgorithm(const std::string &str);
 
+//! \brief Class to handle command line options for MD simulations and energy minimization
 class SimulationConfigHandler : ConfigHandler
 {
 private:
@@ -520,6 +528,7 @@ public:
     /*!
      * \brief Check the validity of the provided arguments
      * Throw an exception if an invalid combination of arguments is encountered
+     * \param[in] msghandler Message handler
      */
     virtual void check_pargs(MsgHandler *msghandler);
 
@@ -538,10 +547,10 @@ public:
     //! \return initial simulation temperature
     double temperature() const { return temperature_; }
 
-    //! Force constant for flat-bottom position restraints, zero means no restraints"
+    //! \return force constant (kJ/mol nm) for flat-bottom position restraints, zero means no restraints
     double kFBPR() const { return kFBPR_; }
 
-    //! Radius for flat-bottom position restraints (from origin)
+    //! \return radius (nm) for flat-bottom position restraints (from origin)
     double r0FBPR() const { return r0FBPR_; }
 
     //! \return user provided random number seed
@@ -568,7 +577,9 @@ public:
     //! \return The relative tolerance for SHAKE/RATTLE
     double constraintTolerance() const { return constraintTolerance_; }
 
-    //! Set the minimize option
+    /*! \brief Set the minimize option
+     * \param[in] minimize Whether or not to minimize
+     */
     void setMinimize(bool minimize) { minimize_ = minimize; }
 
     //! \return the minimization algorithm
@@ -588,7 +599,9 @@ public:
     //! \return whether to force multiple minimizations
     bool forceReminimize() const { return forceReminimize_; }
 
-    //! \brief Set the minimization algorithm
+    /*! \brief Set the minimization algorithm
+     * \param[in] minAlg The new algorithm
+     */
     void setMinimizeAlgorithm(eMinimizeAlgorithm minAlg) { minAlg_ = minAlg; }
     
     //! \return the convergence tolerance (RMS force) for the minimizer

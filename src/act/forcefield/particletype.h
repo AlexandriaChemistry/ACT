@@ -86,14 +86,17 @@ class ParticleType
     id_(id), desc_(desc), apType_(apType) {}
 
     /*! \brief Return the identifier
+     * \return the identifier
      */
     const Identifier &id() const { return id_; }
 
     /*! \brief Return the decription of particle
+     * \return the description
      */
     const std::string &description() const { return desc_; }
 
     /*! \brief Return the type of particle
+     * \return the ACT particle type
      */
     ActParticle apType() const { return apType_; }
 
@@ -130,11 +133,14 @@ class ParticleType
     const std::map<std::string,std::string> optionsConst() const { return option_; }
     
     /*! \brief Return whether the interaction type is supported
+     * \param[in] itype The interaction type to look for
+     * \return true if this particle has an option (subtype) for \p itype
      */
     bool hasInteractionType(InteractionType itype) const;
     /*! \brief Get identifier corresponding to interactiontype
      * 
      * \param[in] itype The interaction type to look for
+     * \return the identifier
      * \throws if option does not exist for this particle.
      */
     Identifier interactionTypeToIdentifier(InteractionType itype) const;
@@ -178,10 +184,18 @@ class ParticleType
      */
     double paramValue(const std::string &type) const;
     
-    //! Return force field parameter corresponding to type
+    /*! \brief Return force field parameter corresponding to type
+     * \param[in] type The parameter name
+     * \return the parameter
+     * \throws if not present
+     */
     const ForceFieldParameter &parameterConst(const std::string &type) const;
 
-    //! Return mutable force field parameter corresponding to type
+    /*! \brief Return mutable force field parameter corresponding to type
+     * \param[in] type The parameter name
+     * \return pointer to the parameter
+     * \throws if not present
+     */
     ForceFieldParameter *parameter(const std::string &type);
 
     /*! \brief Return mass
@@ -228,6 +242,7 @@ class ParticleType
     /*! \brief Distribute my data
      * \param[in] cr   communication record
      * \param[in] dest Destination processor
+     * \return the status of the communication
      */
     CommunicationStatus Send(const CommunicationRecord *cr, int dest);
     
@@ -235,6 +250,7 @@ class ParticleType
      * \param[in] cr   communication record
      * \param[in] root The MPI root
      * \param[in] comm MPI communicator
+     * \return the status of the communication
      */
     CommunicationStatus BroadCast(const CommunicationRecord *cr,
                                   int                        root,
@@ -243,6 +259,7 @@ class ParticleType
     /*! \brief Receive my data
      * \param[in] cr  communication record
      * \param[in] src Source processor
+     * \return the status of the communication
      */
     CommunicationStatus Receive(const CommunicationRecord *cr, int src);
 

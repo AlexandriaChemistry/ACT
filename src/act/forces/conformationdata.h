@@ -187,7 +187,9 @@ public:
         return true;
     }
 
-    //! Copy the forces of the conformations into this structure
+    /*! \brief Copy the forces of the conformations into this structure
+     * \param[in] coords The conformations
+     */
     void loadForces(const std::vector<CoordsEnergy> &coords)
     {
         size_t natom = f.size()/(DIM*stride);
@@ -203,7 +205,9 @@ public:
         }
     }
 
-    //! Copy the forces back to the conformations
+    /*! \brief Copy the forces back to the conformations
+     * \param[inout] coords The conformations
+     */
     void storeForces(std::vector<CoordsEnergy> *coords) const
     {
         size_t natom = f.size()/(DIM*stride);
@@ -234,7 +238,10 @@ private:
     //! The other particles that are not atoms, their coordinates change with their parameters
     std::vector<size_t> vsites_;
 
-    //! Copy the coordinates of particle a of all slots, including the padding
+    /*! \brief Copy the coordinates of particle a of all slots, including the padding
+     * \param[in] coords The conformations
+     * \param[in] a      The particle index
+     */
     void copyParticle(const std::vector<CoordsEnergy> &coords, size_t a)
     {
         for(size_t c = 0; c < stride; c++)
@@ -268,9 +275,15 @@ public:
         //! Whether there is an energy
         char   *have   = nullptr;
 
-        //! \return Whether there is an energy for conformation c
+        /*! \brief Whether there is an energy for conformation c
+         * \param[in] c The conformation index
+         * \return Whether there is an energy for conformation c
+         */
         bool has(size_t c) const { return have && have[c]; }
-        //! Set the energy of conformation c, a new energy has no backup
+        /*! \brief Set the energy of conformation c, a new energy has no backup
+         * \param[in] c     The conformation index
+         * \param[in] value The energy
+         */
         void set(size_t c, double value)
         {
             if (!have[c])
@@ -280,7 +293,9 @@ public:
             }
             act[c] = value;
         }
-        //! Restore the backup of conformation c, as ACTEnergy::restoreBackup
+        /*! \brief Restore the backup of conformation c, as ACTEnergy::restoreBackup
+         * \param[in] c The conformation index
+         */
         void restoreBackup(size_t c)
         {
             act[c]    = before[c];
@@ -308,7 +323,10 @@ public:
     //! \return The number of conformations
     size_t nconf() const { return nconf_; }
 
-    //! \return The data for interaction type t, added if not present
+    /*! \brief Find the data for an interaction type, add it if not present
+     * \param[in] t The interaction type
+     * \return The data for interaction type t
+     */
     Term add(InteractionType t)
     {
         auto &i = index_[static_cast<size_t>(t)];
@@ -322,7 +340,10 @@ public:
         return term(i);
     }
 
-    //! \return The data for interaction type t, with null pointers if not present
+    /*! \brief Find the data for an interaction type
+     * \param[in] t The interaction type
+     * \return The data for interaction type t, with null pointers if not present
+     */
     Term find(InteractionType t)
     {
         auto i = index_[static_cast<size_t>(t)];
@@ -388,7 +409,10 @@ private:
     //! The data, the vectors keep their memory when data_ grows
     std::vector<Data>           data_;
 
-    //! \return Pointers to the data at position i
+    /*! \brief Get pointers to the data
+     * \param[in] i Position in data_
+     * \return Pointers to the data at position i
+     */
     Term term(int i)
     {
         auto &d = data_[i];
@@ -396,7 +420,6 @@ private:
     }
 };
 
-//! Coordinates, forces and energies of all conformations of a topology
 /*! \brief Energies of the entries of one interaction type in all conformations
  * They can be used again as long as the parameters, the coordinates and,
  * if the potential uses them, the charges did not change.
@@ -448,6 +471,7 @@ struct DeviationReference
     std::vector<std::vector<char>>   have;
 };
 
+//! Coordinates, forces and energies of all conformations of a topology
 struct ConformationData
 {
     //! Coordinates and forces

@@ -58,9 +58,13 @@ public:
     __m512d v;
     //! Uninitialized
     SimdDouble() = default;
-    //! Set all elements to a
+    /*! \brief Set all elements to a
+     * \param[in] a The value
+     */
     SimdDouble(double a) : v(_mm512_set1_pd(a)) {}
-    //! From AVX-512 type
+    /*! \brief From AVX-512 type
+     * \param[in] a The AVX-512 vector
+     */
     explicit SimdDouble(__m512d a) : v(a) {}
 };
 
@@ -70,7 +74,9 @@ class SimdBool
 public:
     //! The data, one bit per element
     __mmask8 v;
-    //! From AVX-512 type
+    /*! \brief From AVX-512 type
+     * \param[in] a The AVX-512 mask
+     */
     explicit SimdBool(__mmask8 a) : v(a) {}
 };
 

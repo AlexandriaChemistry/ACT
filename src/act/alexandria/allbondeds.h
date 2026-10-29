@@ -69,7 +69,7 @@ namespace alexandria
          */
         OneBonded(const Identifier &id) : id_(id) {}
     
-        //! Return my id
+        //! \return my id
         const Identifier &id() const { return id_; }
     
         /*! Add data point to histogram
