@@ -2,17 +2,17 @@
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
   <Temperature Name="400">
-    <Real Name="B2(Classical)">-288.87099999999998</Real>
+    <Real Name="B2(Classical)">-279.66399999999999</Real>
     <Real Name="B2(Force)">3.7080899999999999</Real>
     <Real Name="B2(Torque1)">42.162399999999998</Real>
     <Real Name="B2(Torque2)">41.625700000000002</Real>
-    <Real Name="B2(Total)">-243.26900000000001</Real>
+    <Real Name="B2(Total)">-234.06200000000001</Real>
   </Temperature>
   <Temperature Name="500">
-    <Real Name="B2(Classical)">-140.66900000000001</Real>
+    <Real Name="B2(Classical)">-131.46199999999999</Real>
     <Real Name="B2(Force)">1.15124</Real>
     <Real Name="B2(Torque1)">12.9406</Real>
     <Real Name="B2(Torque2)">12.8527</Real>
-    <Real Name="B2(Total)">-126.621</Real>
+    <Real Name="B2(Total)">-117.414</Real>
   </Temperature>
 </ReferenceData>

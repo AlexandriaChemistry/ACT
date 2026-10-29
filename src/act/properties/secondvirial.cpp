@@ -458,7 +458,6 @@ void ReRunner::runB2(CommunicationRecord         *cr,
     // Temporary arrays for weighted properties.
     B2Data b2data(gendimers_.ndist(), Temperature);
     
-    double xmin = 0;
     gmx::RVec rvnul = { 0, 0, 0 };
     // Moments of inertia, averaged over all dimers.
     std::vector<gmx::RVec> inertia    = { rvnul, rvnul };
@@ -649,7 +648,6 @@ void ReRunner::runB2(CommunicationRecord         *cr,
             // Time to update the intermediate structure
             auto &x = edist.getX();
             auto &y = edist.getY();
-            xmin = *std::min_element(x.begin(), x.end());
             for(size_t iTemp = 0; iTemp < Temperature.size(); iTemp++)
             {
                 auto T      = Temperature[iTemp];
@@ -718,8 +716,6 @@ void ReRunner::runB2(CommunicationRecord         *cr,
             {
                 auto T      = Temperature[iTemp];
                 double beta = 1.0/(BOLTZ*T);
-                // Starting energy, all values until first data entry
-                b2total.fillToXmin(iTemp, xmin, gendimers_.binwidth());
                 // Now compute the components
                 double Bclass, BqmForce, BqmTorque1, BqmTorque2;
                 b2total.integrate(msghandler, iTemp, beta, masses, inertia,

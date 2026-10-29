@@ -195,18 +195,6 @@ void B2Data::addData(size_t iTemp, size_t index, double dist,
     n_U12_[iTemp][index]      += 1;
 }
 
-void B2Data::fillToXmin(int iTemp, double xmin, double binWidth)
-{
-    size_t jj = 0;
-    while(jj*binWidth < xmin && jj < exp_U12_[iTemp].size())
-    {
-        dist_[jj] = jj*binWidth;
-        exp_U12_[iTemp][jj] = -1;
-        n_U12_[iTemp][jj]   = 1;
-        jj += 1;
-    }
-}
-
 void B2Data::integrate(MsgHandler *msghandler,
                        int iTemp, double beta,
                        const std::vector<double>    &mass,
@@ -225,7 +213,7 @@ void B2Data::integrate(MsgHandler *msghandler,
         myBtorq[kk].resize(n_U12_[iTemp].size(), 0);
     }
     std::vector<double> myBtorq2(n_U12_[iTemp].size(), 0);
-    for(size_t ii = 1; ii < n_U12_[iTemp].size(); ii++)
+    for(size_t ii = 0; ii < n_U12_[iTemp].size(); ii++)
     {
         if (n_U12_[iTemp][ii] > 0)
         {
@@ -256,6 +244,10 @@ void B2Data::integrate(MsgHandler *msghandler,
         }
     }
     *Bclass     = -0.5*simpsonIntegrate(msghandler, true, dist_, mayer_[iTemp]);
+    // Below the shortest distance the Mayer function is -1, which gives
+    // the volume of a sphere with that radius times one half
+    double xmin = dist_.empty() ? 0.0 : dist_[0];
+    *Bclass    += (2.0*M_PI/3.0)*xmin*xmin*xmin;
     *BqmForce   =  0.5*hbarfac*simpsonIntegrate(msghandler, true, dist_, myBforce);
     *BqmTorque1 = hbarfac*simpsonIntegrate(msghandler, true, dist_, myBtorq[0]);
     *BqmTorque2 = hbarfac*simpsonIntegrate(msghandler, true, dist_, myBtorq[1]);

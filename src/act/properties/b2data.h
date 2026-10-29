@@ -96,15 +96,11 @@ public:
                  double exp_U12, double exp_F0, double exp_F1,
                  const gmx::RVec exp_tau0, const gmx::RVec exp_tau1);
 
-    /*! \brief  Fill the Mayer function with -1 values
-     * \param[in] iTemp    Temperature index
-     * \param[in] xmin     First non-zero energy
-     * \param[in] binWidth The bin width in the arrays
-     */
-    void fillToXmin(int iTemp, double xmin, double binWidth);
-
     /*! \brief Do the integration of the exponent weight functions
-     * Compute classical B2 and quantum correction.
+     * Compute classical B2 and quantum correction. The bins hold equidistant
+     * distances, starting at the shortest distance of the dimers. Below it
+     * the Mayer function is assumed to be -1, which gives a hard core
+     * contribution to the classical B2.
      * \param[in]  msghandler For debugging
      * \param[in]  iTemp      Temperature index
      * \param[in]  beta       Boltzmann factor

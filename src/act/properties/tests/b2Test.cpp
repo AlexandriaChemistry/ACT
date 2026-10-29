@@ -88,11 +88,11 @@ protected:
         double rmax  = 10;
         // We will add data points until rmax+x0
         int    irmax = (x0+rmax)/bw;
-        B2Data b2data(irmax, Temperature);
-        // We start computing from x0, however we need the points from zero
-        // for integration later. The integer index times the binwidth is
-        // used as the distance in the integration algorithm.
-        for(int i = int(x0/bw); i < irmax; i++)
+        int    i0    = std::round(x0/bw);
+        // The bins start at x0, as for the dimers of b2, below the Mayer
+        // function is -1.
+        B2Data b2data(irmax - i0, Temperature);
+        for(int i = i0; i < irmax; i++)
         {
             if (LJ)
             {
@@ -104,7 +104,7 @@ protected:
                 {
                     double beta  = 1.0/(BOLTZ*Temperature[iTemp]);
                     double g0_12 = std::exp(-beta*y);
-                    b2data.addData(iTemp, i, x, g0_12-1,
+                    b2data.addData(iTemp, i - i0, x, g0_12-1,
                                    g0_12*f*f, g0_12*f*f, ttt, ttt);
                 }
             }
@@ -126,7 +126,6 @@ protected:
             {
                 double Bclass, BqmForce, BqmTorque1, BqmTorque2;
                 double beta = 1.0/(BOLTZ*Temperature[iTemp]);
-                b2data.fillToXmin(iTemp, x0, bw);
                 b2data.integrate(&msghandler,
                                  iTemp, beta, m2, inertia,
                                  &Bclass, &BqmForce,
