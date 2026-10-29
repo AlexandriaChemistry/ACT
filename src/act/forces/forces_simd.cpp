@@ -2316,8 +2316,11 @@ static inline void lowComputeEnergies(MsgHandler                *msghandler,
     // relaxing the shells.
     auto &fixed      = cdata->fixed;
     bool  splitShell = forces && !intermolecular && top->hasShellSplit();
+    // Whether the conformations are computed in arrays, see below. The
+    // forces of the entries without shells are kept in the same layout.
+    bool  useArrays  = conformations && coords->size() > 1;
     bool  useFixed   = (splitShell && skipDone && fixed.valid &&
-                        fixed.forces.size() == coords->size());
+                        fixed.nconf == coords->size() && fixed.inArrays == useArrays);
     bool  keepFixed  = splitShell && !useFixed;
     if (useFixed)
     {
@@ -2336,6 +2339,23 @@ static inline void lowComputeEnergies(MsgHandler                *msghandler,
             }
         }
     }
+    // Coordinates and forces of the conformations, for looping over
+    // conformations in the inner loop. Kept between calls, since only the
+    // coordinates of virtual sites and shells change. With a single
+    // conformation there is nothing to vectorize. When starting from the
+    // forces of the entries without shells, these are copied in instead of
+    // clearing the forces.
+    auto &ca = cdata->arrays;
+    bool haveArrays = (useArrays &&
+                       ca.setCoordinates(*coords, top->atoms(), forces && !useFixed, skipDone));
+    GMX_RELEASE_ASSERT(haveArrays || !(useFixed && fixed.inArrays),
+                       "The forces of the entries without shells were kept in arrays");
+    if (haveArrays && useFixed)
+    {
+        ca.loadForces(fixed.arrayForces, fixed.stride, fixed.slots);
+    }
+    // Whether the current forces are in ca rather than in coords
+    bool forcesInArrays = haveArrays;
     for(size_t c = 0; c < coords->size(); c++)
     {
         auto &ce = (*coords)[c];
@@ -2343,33 +2363,27 @@ static inline void lowComputeEnergies(MsgHandler                *msghandler,
         {
             continue;
         }
-        // Clear the forces, calcSome adds the forces of each potential to them.
+        // With arrays all forces are copied back to the conformations.
+        // Otherwise calcSome adds the forces of each potential to them,
+        // starting from zero or the forces of the entries without shells.
         // Without forces calcSome still needs the memory, but not the values.
-        if (useFixed)
+        if (forces && !haveArrays)
         {
-            ce.fcalc = fixed.forces[c];
-        }
-        else if (forces)
-        {
-            gmx::RVec fzero = { 0, 0, 0 };
-            ce.fcalc.assign(ce.x.size(), fzero);
+            if (useFixed)
+            {
+                ce.fcalc = fixed.forces[c];
+            }
+            else
+            {
+                gmx::RVec fzero = { 0, 0, 0 };
+                ce.fcalc.assign(ce.x.size(), fzero);
+            }
         }
         else if (ce.fcalc.size() != ce.x.size())
         {
             ce.fcalc.resize(ce.x.size());
         }
     }
-    // Coordinates and forces of the conformations, for looping over
-    // conformations in the inner loop. Kept between calls, since only the
-    // coordinates of virtual sites and shells change.
-    auto &ca = cdata->arrays;
-    // With a single conformation there is nothing to vectorize.
-    bool haveArrays     = (conformations && coords->size() > 1 &&
-                           ca.setCoordinates(*coords, top->atoms(), forces, skipDone));
-    // Whether the current forces are in ca rather than in coords. When
-    // starting from the forces of the entries without shells, these are in
-    // coords and have to be loaded into ca.
-    bool forcesInArrays = haveArrays && !useFixed;
     // Which entries to compute
     enum class Part { All, NoShells, Shells };
     auto computePart = [&](Part part)
@@ -2475,12 +2489,30 @@ static inline void lowComputeEnergies(MsgHandler                *msghandler,
     else if (keepFixed)
     {
         computePart(Part::NoShells);
-        // Keep the energies and forces of the entries without shells
-        if (forcesInArrays)
+        // Keep the energies and forces of the entries without shells, in
+        // the arrays if these are used
+        fixed.inArrays = haveArrays;
+        if (haveArrays)
         {
-            ca.storeForces(coords);
-            forcesInArrays = false;
+            if (!forcesInArrays)
+            {
+                ca.loadForces(*coords);
+                forcesInArrays = true;
+            }
+            fixed.arrayForces = ca.f;
+            fixed.stride      = ca.stride;
+            fixed.slots       = ca.conformations();
+            fixed.forces.clear();
         }
+        else
+        {
+            fixed.forces.resize(coords->size());
+            for(size_t c = 0; c < coords->size(); c++)
+            {
+                fixed.forces[c] = (*coords)[c].fcalc;
+            }
+        }
+        fixed.nconf = coords->size();
         fixed.types = cener.types();
         fixed.energies.resize(fixed.types.size());
         fixed.have.resize(fixed.types.size());
@@ -2489,11 +2521,6 @@ static inline void lowComputeEnergies(MsgHandler                *msghandler,
             auto t = cener.find(fixed.types[k]);
             fixed.energies[k].assign(t.act, t.act + coords->size());
             fixed.have[k].assign(t.have, t.have + coords->size());
-        }
-        fixed.forces.resize(coords->size());
-        for(size_t c = 0; c < coords->size(); c++)
-        {
-            fixed.forces[c] = (*coords)[c].fcalc;
         }
         fixed.valid = true;
         cener.setAccumulate(true);
