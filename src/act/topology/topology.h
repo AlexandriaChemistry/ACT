@@ -367,6 +367,9 @@ private:
     //! \return whether there are any virtual sites
     bool hasVsites() const;
 
+    //! \return whether there are any shells
+    bool hasShells() const;
+
     /*! \brief Return the desired entry or throw
      * \param[in] itype The desired interaction type
      * \return a vector of pointers

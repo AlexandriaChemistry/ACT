@@ -93,6 +93,18 @@ bool Topology::hasVsites() const
             hasEntry(InteractionType::VSITE3OUTS));
 }
 
+bool Topology::hasShells() const
+{
+    for (const auto &a : atoms_)
+    {
+        if (ActParticle::Shell == a.pType())
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
 void Topology::addShells(MsgHandler       *msghandler,
                          const ForceField *pd,
                          AtomList         *atomList)
