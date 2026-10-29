@@ -163,4 +163,41 @@ TEST(SimpsonTest, EvenVectorCosine)
     EXPECT_NEAR(integral, 1, 1e-4);
 }
 
+TEST(SimpsonTest, OddVectorLastPointSpherical)
+{
+    // Simpson integration is exact for 4 pi x^2
+    std::vector<double> x = { 0, 0.5, 1 };
+    std::vector<double> y = { 1, 1, 1 };
+    alexandria::MsgHandler mh;
+    auto integral = simpsonIntegrate(&mh, true, x, y);
+    EXPECT_TRUE(mh.ok());
+    EXPECT_NEAR(integral, 4*M_PI/3, 1e-12);
+}
 
+TEST(SimpsonTest, EvenVectorLastPoint)
+{
+    // With the zero added at x = 1, Simpson integration is exact for 1 - x
+    std::vector<double> x = { 0, 0.25, 0.5, 0.75 };
+    std::vector<double> y;
+    for(auto xx : x)
+    {
+        y.push_back(1 - xx);
+    }
+    alexandria::MsgHandler mh;
+    auto integral = simpsonIntegrate(&mh, false, x, y, true);
+    EXPECT_TRUE(mh.ok());
+    EXPECT_NEAR(integral, 0.5, 1e-12);
+}
+
+TEST(SimpsonTest, NonUniformSpacing)
+{
+    // Larger and smaller steps than the first are both detected
+    for(const std::vector<double> &x : { std::vector<double>{ 0, 0.1, 0.3, 0.4, 0.5 },
+                                         std::vector<double>{ 0, 0.2, 0.3, 0.5, 0.7 } })
+    {
+        std::vector<double> y(x.size(), 1.0);
+        alexandria::MsgHandler mh;
+        (void) simpsonIntegrate(&mh, false, x, y);
+        EXPECT_FALSE(mh.ok());
+    }
+}

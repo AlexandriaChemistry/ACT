@@ -357,6 +357,7 @@ Code to compute the second virial coefficient is available in the *alexandria b2
   -maxdimer 32768
 
 where TIP4P corresponds to the well-known water model :cite:p:`Jorgensen1983a`, the :math:`T_1` and :math:`T_2` are the temperature limits (note gas-phase for water), :math:`dT` is the temperature interval and maxdimer determines how many relative orientations will be evaluated.
+For each orientation the energies are computed at *-ndist* equidistant distances between the centers of mass from *-mindist* to *-maxdist*, and the integrals are computed over this range. Below *-mindist* the molecules are assumed to overlap, that is the Mayer function :math:`e^{-\beta u_{12}}-1` is -1, which adds :math:`\frac{2\pi}{3} r_{min}^3` to :math:`B_2^{cl}(T)`. Therefore *-mindist* should be well inside the repulsive wall of the potential.
 Two algorithms can be used to sample orientations. 
 If the Sobol algorithm for `Quasi-Random`_ numbers is used :cite:p:`Millot1998a`, the number of dimers should be a power of two. If, on the other hand, Pseudo-random numbers are used, there is no such requirement.
 The result is plotted in :numref:`fig-b2`.

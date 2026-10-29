@@ -71,7 +71,7 @@ double simpsonIntegrate(alexandria::MsgHandler    *msghandler,
     for(size_t i = 1; i < x.size()-1; i++)
     {
         double dx2 = x[i+1]-x[i];
-        if ((dx-dx2)/(dx+dx2) > toler)
+        if (std::abs(dx-dx2) > toler*std::abs(dx+dx2))
         {
             msghandler->msg(alexandria::ACTStatus::Error,
                             gmx::formatString("x vectors is not uniformly space. Got %g first, and now %g", dx, dx2));
@@ -94,15 +94,24 @@ double simpsonIntegrate(alexandria::MsgHandler    *msghandler,
     {
         // Last point!
         double yy = y[x.size()-1];
-        double xx = x[x.size()-1]+dx;
+        double xx = x[x.size()-1];
         if (spherical)
         {
             yy *= 4*M_PI*xx*xx;
         }
         integral += yy*dx_3;
     }
-    // If we use zeroPadding we assume that the last entry in y is zero,
-    // so we do not have to add anything.
+    else
+    {
+        // With zeroPadding a zero is added after the last point, which
+        // then has an odd index.
+        double yy = y[x.size()-1];
+        if (spherical)
+        {
+            yy *= 4*M_PI*x[x.size()-1]*x[x.size()-1];
+        }
+        integral += 4*yy*dx_3;
+    }
     return integral;
 }
 
