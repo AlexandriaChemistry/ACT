@@ -521,10 +521,12 @@ struct Coulomb
             else
             {
                 SimdDouble rz    = zeta*rsq*rinv;
-                SimdDouble erfrz = simd::erf(rz);
+                // The exponential for the force comes with the error function
+                SimdDouble exprz2;
+                SimdDouble erfrz = simd::erfAndExp(rz, &exprz2);
                 ek = simd::select(overlap, qq*2*zeta*invsqrt_pi, qq*erfrz*rinv);
                 fk = simd::select(overlap, 0.0,
-                                  qq*(erfrz*rinv - 2*invsqrt_pi*zeta*simd::exp(-rz*rz))*rinv*rinv);
+                                  qq*(erfrz*rinv - 2*invsqrt_pi*zeta*exprz2)*rinv*rinv);
             }
             e[0]  += ek;
             *fscal = (k == 0) ? fk : *fscal + fk;

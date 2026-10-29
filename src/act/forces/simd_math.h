@@ -115,14 +115,19 @@ static inline SimdDouble exp(SimdDouble x)
     return select(x < minArg, 0.0, select(x > maxArg, HUGE_VAL, result));
 }
 
-/*! \brief Error function
+/*! \brief Error function and the exponential it uses
  * The rational approximations of the Cephes library: for |x| < 1
  * erf(x) = x T(x^2)/U(x^2), otherwise erf(x) = 1 - erfc(x) with
  * erfc(x) = exp(-x^2) P(x)/Q(x). Both are computed and the right one
  * selected, using a single division. The absolute error is at most a
- * few times 1e-16.
+ * few times 1e-16. Since exp(-x^2) is computed in any case, it is
+ * returned as well, for instance for the derivative of erf.
+ * \param[in]  x      The argument
+ * \param[out] expmx2 exp(-x^2) for |x| <= 8, exp(-64) beyond, which is
+ *                    zero compared to erf(x) in double precision
+ * \return erf(x)
  */
-static inline SimdDouble erf(SimdDouble x)
+static inline SimdDouble erfAndExp(SimdDouble x, SimdDouble *expmx2)
 {
     const double T[] = { 9.60497373987051638749E0, 9.00260197203842689217E1, 2.23200534594684319226E3,
                          7.00332514112805075473E3, 5.55923013010394962768E4 };
@@ -139,11 +144,22 @@ static inline SimdDouble erf(SimdDouble x)
     SimdDouble x2    = x*x;
     // Beyond 8 erfc is zero in double precision
     SimdDouble a     = min(ax, 8.0);
-    SimdDouble num   = select(small, x*polynomial(x2, T), exp(-a*a)*polynomial(a, P));
+    *expmx2          = exp(-a*a);
+    SimdDouble num   = select(small, x*polynomial(x2, T), *expmx2*polynomial(a, P));
     SimdDouble den   = select(small, polynomial(x2, U), polynomial(a, Q));
     SimdDouble ratio = num/den;
     SimdDouble large = 1.0 - ratio;
     return select(small, ratio, select(x < 0.0, -large, large));
+}
+
+/*! \brief Error function, see erfAndExp
+ * \param[in] x The argument
+ * \return erf(x)
+ */
+static inline SimdDouble erf(SimdDouble x)
+{
+    SimdDouble expmx2;
+    return erfAndExp(x, &expmx2);
 }
 
 //! Coefficients of asin(x) = x + x z P(z)/Q(z) with z = x^2 for |x| <= 0.625, from the Cephes library
