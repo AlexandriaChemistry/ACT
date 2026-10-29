@@ -599,6 +599,35 @@ public:
                                       std::vector<gmx::RVec>            *interactionForces,
                                       std::vector<gmx::RVec>            *coords,
                                       bool                               separateInductionCorrection) const;
+
+    /*! \brief Calculate the energies of many conformations at once.
+     * The conformations are computed together with the SIMD routines.
+     * For a dimer with interaction set, the interaction energies and
+     * forces are computed as in calculateInteractionEnergy, see
+     * ForceComputer::computeRelaxedEnergies. Otherwise the total energies
+     * and forces are computed, see ForceComputer::computeTotalEnergies.
+     * This replaces the conformations stored in this molecule.
+     * \param[in]    msghandler                  A message handler
+     * \param[in]    pd                          The force field
+     * \param[in]    forceComputer               The code to run the calculations.
+     * \param[inout] coords                      Coordinates of all particles of each conformation,
+     *                                           on return with the relaxed shells
+     * \param[in]    interaction                 Whether to compute interaction energies of a dimer
+     * \param[in]    separateInductionCorrection Whether to store InductionCorrection separately or add it to Induction
+     * \param[out]   energies                    For each conformation the (interaction) energy components
+     * \param[out]   epot                        For each conformation the potential energy of the
+     *                                           dimer or monomer
+     * \param[out]   forces                      For each conformation the (interaction) forces
+     */
+    void calculateEnergies(MsgHandler                                     *msghandler,
+                           const ForceField                               *pd,
+                           const ForceComputer                            *forceComputer,
+                           std::vector<std::vector<gmx::RVec>>            *coords,
+                           bool                                            interaction,
+                           bool                                            separateInductionCorrection,
+                           std::vector<std::map<InteractionType, double>> *energies,
+                           std::vector<double>                            *epot,
+                           std::vector<std::vector<gmx::RVec>>            *forces);
       
     /*! \brief
      * Update internal structures for bondtype due to changes in pd

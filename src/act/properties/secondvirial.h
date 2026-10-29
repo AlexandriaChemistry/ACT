@@ -150,26 +150,28 @@ public:
     /*! \brief Do the rerunning with different options
      * \param[in] msghandler The MsgHandler for printing and status
      * \param[in] pd             Force field structure
-     * \param[in] actmol         Structure with molecule info
+     * \param[inout] actmol      Structure with molecule info, the structures
+     *                           are stored in it as its conformations
      * \param[in] verbose        Whether or not to print a lot
      */
     void rerun(MsgHandler       *msghandler,
                const ForceField *pd,
-               const ACTMol     *actmol,
+               ACTMol           *actmol,
                bool              verbose);
 
     /*! \brief Compute second virial coefficient including QM corrections
      * \param[in] cr         Communication Record for parallel calcs
      * \param[in] msghandler The MsgHandler for printing and status
      * \param[in] pd         Force field structure
-     * \param[in] actmol     Structure with molecule info
+     * \param[inout] actmol   Structure with molecule info, the dimers are
+     *                        stored in it as its conformations
      * \param[in] maxdimer   Number of dimers to generate (if any)
      * \param[in] fnm        The filenames
      */
     void runB2(CommunicationRecord         *cr,
                MsgHandler                  *msghandler,
                const ForceField            *pd,
-               const ACTMol                *actmol,
+               ACTMol                      *actmol,
                int                          maxdimer,
                const std::vector<t_filenm> &fnm);
 

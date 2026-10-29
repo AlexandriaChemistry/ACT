@@ -239,6 +239,24 @@ private:
                                 bool                         resetShells,
                                 bool                         separateInductionCorrection,
                                 bool                         computeForces = true) const;
+
+    /*! \brief Compute the total energies and forces of many conformations at once
+     *
+     * For a dimer the conformations of the complete topology are computed,
+     * see ACTMol::dimerCoords, for a monomer those of the monomer, see
+     * ACTMol::monomerCoords. All shells are relaxed. The energies are
+     * stored in the conformation data of the molecules, see
+     * ACTMol::conformationData, ACTMol::storeEnergies copies them to the
+     * energy maps of the conformations.
+     * \param[in] msghandler  For debugging and messages
+     * \param[in] pd          An ACT force field
+     * \param[in] allmols     The molecules to compute
+     * \param[in] resetShells Whether to reset the shells to their parents first
+     */
+    void computeTotalEnergies(MsgHandler                  *msghandler,
+                              const ForceField            *pd,
+                              const std::vector<ACTMol *> &allmols,
+                              bool                         resetShells) const;
                                                                 
     /*! Do many complete energy/force computation.
      * If shells are present their positions will be minimized.

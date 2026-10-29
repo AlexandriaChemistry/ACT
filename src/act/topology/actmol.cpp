@@ -1020,6 +1020,163 @@ static void checkEnergies(MsgHandler                              *msghandler,
     }
 }
 
+void ACTMol::calculateEnergies(MsgHandler                                     *msghandler,
+                               const ForceField                               *pd,
+                               const ForceComputer                            *forceComputer,
+                               std::vector<std::vector<gmx::RVec>>            *coords,
+                               bool                                            interaction,
+                               bool                                            separateInductionCorrection,
+                               std::vector<std::map<InteractionType, double>> *energies,
+                               std::vector<double>                            *epot,
+                               std::vector<std::vector<gmx::RVec>>            *forces)
+{
+    // Replace the conformations, the monomers of a dimer are needed
+    // for the interaction energies.
+    for(auto &cd : conformationData_)
+    {
+        cd.invalidate();
+    }
+    dimerCoords_.clear();
+    monomerCoords_[0].clear();
+    monomerCoords_[1].clear();
+    bool   dimer  = isDimer();
+    // Interaction energies need the monomers as well
+    bool   inter  = dimer && interaction;
+    auto  &astart = fragmentHandler()->atomStart();
+    size_t natom1 = dimer ? astart[1] : 0;
+    for(const auto &x : *coords)
+    {
+        CoordsEnergy ce = {};
+        ce.x = x;
+        if (dimer && !inter)
+        {
+            dimerCoords_.push_back(ce);
+        }
+        else if (inter)
+        {
+            dimerCoords_.push_back(ce);
+            for(size_t k = 0; k < 2; k++)
+            {
+                CoordsEnergy mon = {};
+                if (k == 0)
+                {
+                    mon.x.assign(x.begin(), x.begin()+natom1);
+                }
+                else
+                {
+                    mon.x.assign(x.begin()+natom1, x.end());
+                }
+                mon.xrelax = mon.x;
+                monomerCoords_[k].push_back(mon);
+            }
+        }
+        else
+        {
+            ce.xrelax = ce.x;
+            monomerCoords_[0].push_back(ce);
+        }
+    }
+    if (inter)
+    {
+        forceComputer->computeRelaxedEnergies(msghandler, pd, { this }, true,
+                                              separateInductionCorrection, true);
+    }
+    else
+    {
+        forceComputer->computeTotalEnergies(msghandler, pd, { this }, true);
+    }
+    storeEnergies();
+    energies->clear();
+    epot->clear();
+    forces->clear();
+    auto &confs = dimer ? dimerCoords_ : monomerCoords_[0];
+    for(size_t c = 0; c < confs.size(); c++)
+    {
+        std::map<InteractionType, double> emap;
+        for(const auto &e : confs[c].eMap)
+        {
+            if (e.second.haveACT())
+            {
+                emap.insert({ e.first, e.second.eact() });
+            }
+        }
+        if (!inter)
+        {
+            // The same terms as in ForceComputer::compute. The change of the
+            // electrostatic terms due to the relaxation of the shells is the
+            // induction energy.
+            bool   haveInduction = false;
+            double eInduction    = 0;
+            for(auto et : { InteractionType::ELECTROSTATICS,
+                            InteractionType::POLARIZATION,
+                            InteractionType::CHARGETRANSFER })
+            {
+                auto tt = emap.find(et);
+                if (emap.end() != tt)
+                {
+                    double before = confs[c].eMap[et].eactBefore();
+                    eInduction   += tt->second - before;
+                    tt->second    = before;
+                    haveInduction = true;
+                }
+            }
+            if (haveInduction)
+            {
+                emap.insert_or_assign(InteractionType::INDUCTION, eInduction);
+            }
+            auto sum = [&emap](std::initializer_list<InteractionType> itypes)
+            {
+                double esum = 0;
+                for(auto itype : itypes)
+                {
+                    auto ee = emap.find(itype);
+                    if (emap.end() != ee)
+                    {
+                        esum += ee->second;
+                    }
+                }
+                return esum;
+            };
+            emap.insert_or_assign(InteractionType::ALLELEC,
+                                  sum({ InteractionType::ELECTROSTATICS,
+                                        InteractionType::POLARIZATION,
+                                        InteractionType::INDUCTION,
+                                        InteractionType::INDUCTIONCORRECTION }));
+            emap.insert_or_assign(InteractionType::EXCHIND,
+                                  sum({ InteractionType::EXCHANGE,
+                                        InteractionType::INDUCTION,
+                                        InteractionType::INDUCTIONCORRECTION }));
+        }
+        auto   ep = emap.find(InteractionType::EPOT);
+        double e  = (emap.end() != ep) ? ep->second : 0;
+        auto   f  = confs[c].fcalc;
+        (*coords)[c] = confs[c].x;
+        if (inter)
+        {
+            // The dimer energy is the interaction energy plus the energies of
+            // the relaxed monomers, and the interaction forces are the dimer
+            // forces minus the forces in the monomers.
+            for(size_t k = 0; k < 2; k++)
+            {
+                auto &mon = monomerCoords_[k][c];
+                auto  mep = mon.eMap.find(InteractionType::EPOT);
+                if (mon.eMap.end() != mep && mep->second.haveACT())
+                {
+                    e += mep->second.eact();
+                }
+                size_t offset = (k == 0) ? 0 : natom1;
+                for(size_t i = 0; i < mon.fcalc.size(); i++)
+                {
+                    rvec_dec(f[offset+i], mon.fcalc[i]);
+                }
+            }
+        }
+        energies->push_back(emap);
+        epot->push_back(e);
+        forces->push_back(f);
+    }
+}
+
 double ACTMol::calculateInteractionEnergy(MsgHandler                        *msghandler,
                                           const ForceField                  *pd,
                                           const ForceComputer               *forceComputer,
