@@ -28,7 +28,7 @@
   </Sequence>
   <Sequence Name="Intensities">
     <Int Name="Length">1</Int>
-    <Real>0.014069971082875377</Real>
+    <Real>0.014869320737936476</Real>
   </Sequence>
   <Real Name="Zero point energy (kJ/mol)">17.245131025243584</Real>
   <Real Name="Delta H form (kJ/mol)">363.87468590432445</Real>

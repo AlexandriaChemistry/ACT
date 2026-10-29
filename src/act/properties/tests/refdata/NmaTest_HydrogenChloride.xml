@@ -7,7 +7,7 @@
   </Sequence>
   <Sequence Name="Intensities">
     <Int Name="Length">1</Int>
-    <Real>0.014069999999999999</Real>
+    <Real>0.0148693</Real>
   </Sequence>
   <Real Name="Epot">1.1134e-28</Real>
   <Thermochemistry Name="T=0">
