@@ -323,6 +323,45 @@ TEST_F(ComputeTotalTest, PolarizableDimer)
     testTotal("ACS-pg-vs2", "hbr-hf", 3, ShellOptions());
 }
 
+TEST_F(ComputeTotalTest, InductionCorrectionPotential)
+{
+    // MACDANIEL_SCHMIDT for the INDUCTIONCORRECTION. Its parameters are
+    // zero in the force field, therefore they are set in the topology.
+    auto pd = getForceField("ACS-pol");
+    ASSERT_NE(nullptr, pd);
+    ACTMol mol;
+    ASSERT_TRUE(readMolecule(&msghandler_, pd, "water_dimer", &mol));
+    auto itype   = InteractionType::INDUCTIONCORRECTION;
+    auto entries = mol.topologyPtr()->entriesPtr();
+    ASSERT_TRUE(entries->end() != entries->find(itype));
+    for(auto &e : entries->find(itype)->second)
+    {
+        e->setParams({ 2000.0, 1000.0, 20.0 });
+    }
+    auto top = mol.topology();
+    std::vector<std::vector<gmx::RVec>> x = { displaced(mol.xOriginal(), 0),
+                                              displaced(mol.xOriginal(), 1),
+                                              displaced(mol.xOriginal(), 2) };
+    ConformationSet set;
+    set.top = top;
+    set.setCoordinates(x);
+    std::vector<std::map<InteractionType, double>> energies;
+    forceComp_.computeTotal(&msghandler_, pd, &set, ShellOptions(), &energies);
+    for(size_t c = 0; c < x.size(); c++)
+    {
+        auto label = gmx::formatString("conformation %zu", c);
+        auto xref  = x[c];
+        std::vector<gmx::RVec>            fref(xref.size());
+        std::map<InteractionType, double> eref;
+        forceComp_.compute(&msghandler_, pd, top, &xref, &fref, &eref);
+        // The correction is booked as such, not as exchange
+        ASSERT_TRUE(eref.end() != eref.find(itype));
+        EXPECT_NE(0, eref[itype]) << label;
+        compareEnergies(eref, energies[c], 1e-8, label);
+        compareForces(fref, set.confs[c].fcalc, 1e-6, label);
+    }
+}
+
 TEST_F(ComputeTotalTest, ElectricField)
 {
     ShellOptions options;
@@ -471,6 +510,18 @@ TEST_F(ComputeTotalTest, InteractionHyperpolarizable)
 TEST_F(ComputeTotalTest, InteractionNotSeparated)
 {
     testInteraction("water_hyperpol", "water_dimer", 3, false);
+}
+
+TEST_F(ComputeTotalTest, InteractionCorrectionPotential)
+{
+    // MACDANIEL_SCHMIDT for the INDUCTIONCORRECTION, with parameters
+    // since they are zero in the force field
+    testInteraction("ACS-pol", "water_dimer", 3, true, { 2000.0, 1000.0, 20.0 });
+}
+
+TEST_F(ComputeTotalTest, InteractionCorrectionPotentialNotSeparated)
+{
+    testInteraction("ACS-pol", "water_dimer", 3, false, { 2000.0, 1000.0, 20.0 });
 }
 
 } // namespace
