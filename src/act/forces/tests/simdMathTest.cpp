@@ -119,6 +119,18 @@ TEST(SimdMathTest, Erf)
     EXPECT_LE(maxError(func, ref, -1, 1, true), 8);
 }
 
+TEST(SimdMathTest, ErfAndExp)
+{
+    // The error function is the same as without the exponential
+    auto ferf = [](SimdDouble x) { SimdDouble e; return simd::erfAndExp(x, &e); };
+    auto rerf = [](double x) { return std::erf(x); };
+    EXPECT_LE(maxError(ferf, rerf, -10, 10, false), 5e-16);
+    // The exponential is that of simd::exp(-x^2) up to |x| = 8
+    auto fexp = [](SimdDouble x) { SimdDouble e; simd::erfAndExp(x, &e); return e; };
+    auto rexp = [](double x) { return std::exp(-x*x); };
+    EXPECT_LE(maxError(fexp, rexp, -8, 8, true), 2);
+}
+
 TEST(SimdMathTest, Asin)
 {
     auto func = [](SimdDouble x) { return simd::asin(x); };
