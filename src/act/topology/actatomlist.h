@@ -42,6 +42,9 @@
 namespace alexandria
 {
 
+/*! \brief An atom with its index and coordinates, used as an element
+ * of a list when inserting shells and virtual sites in a topology.
+ */
 class ActAtomListItem
 {
 private:
@@ -52,7 +55,11 @@ private:
     //! Atomic coordinates
     gmx::RVec x_     = { 0, 0, 0 };
 public:
-    //! constructor
+    /*! \brief Constructor
+     * \param[in] atom  The atom information
+     * \param[in] index The original index
+     * \param[in] x     The atomic coordinates
+     */
     ActAtomListItem(const ActAtom   atom,
                     size_t          index,
                     const gmx::RVec x) : atom_(atom), index_(index), x_(x) {}
@@ -69,7 +76,10 @@ public:
     //! \return the coordinates
     const gmx::RVec x() const { return x_; }
 
-    //! Equal index
+    /*! \brief Equal index
+     * \param[in] index The index to compare to
+     * \return whether index equals the index of this item
+     */
     bool operator==(size_t index) const { return index == index_; }
 };
 

@@ -56,6 +56,12 @@ namespace alexandria
 
 class MsgHandler;
 
+/*! \brief The complete force field
+ *
+ * Holds the particle types, the parameter lists for all interaction
+ * types, the symmetric charges and general properties such as the
+ * charge generation algorithm and polarizability.
+ */
 class ForceField
 {
     public:
@@ -71,10 +77,11 @@ class ForceField
         /*! \brief
          * Set the file name gentop.dat
          *
+         * \param[in] fn2 The new file name, must not be empty
          */
         void  setFilename(const std::string &fn2);
 
-        //! Return the actual filename
+        //! \return the actual filename
         const std::string &filename() const { return filename_; }
 
         /*! \brief
@@ -132,6 +139,7 @@ class ForceField
          */
         void  addParticleType(const ParticleType &ptp);
 
+        //! \return the number of particle types
         size_t getNatypes() const { return alexandria_.size(); }
 
         /*! \brief Compute dependent parameters
@@ -151,6 +159,7 @@ class ForceField
          * Return the element name corresponding to the zeta type
          *
          * \param[in] ztype  zeta Type
+         * \return the element name, fatal error if not found
          */
         const std::string ztype2elem(const std::string &ztype) const;
 
@@ -173,6 +182,11 @@ class ForceField
         return hasParticleType(id);
     }
         
+    /*! \brief Find a particle type for editing
+     * \param[in] id The identifier of the particle type
+     * \return pointer to the particle type
+     * \throw if the particle type is not found
+     */
     ParticleType *findParticleType(const Identifier &id)
     {
         auto atp = alexandria_.find(id);
@@ -183,6 +197,11 @@ class ForceField
         return &atp->second;
     }
     
+    /*! \brief Find a particle type
+     * \param[in] id The identifier of the particle type
+     * \return const pointer to the particle type
+     * \throw if the particle type is not found
+     */
     const ParticleType *findParticleType(const Identifier &id) const
     {
         auto atp = alexandria_.find(id);
@@ -197,6 +216,7 @@ class ForceField
      * Return the iterator corresponding to the atom type
      *
      * \param[in] atype  Atom Type
+     * \return pointer to the particle type
      * \throw if atom type not  found.
      */
     ParticleType *findParticleType(const std::string &atype)
@@ -209,6 +229,7 @@ class ForceField
      * Return the const_iterator corresponding to the atom type
      *
      * \param[in] atype  Atom Type
+     * \return const pointer to the particle type, the atom type must exist
      */
     const ParticleType *findParticleType(const std::string &atype) const
     {
@@ -218,6 +239,7 @@ class ForceField
     }
         
     /*! \brief Return mutable vector \p alexandria_
+     * \return pointer to the map of particle types
      */
     std::map<Identifier, ParticleType> *particleTypes() { return &alexandria_; }
 
@@ -225,6 +247,7 @@ class ForceField
     int nParticleTypes() const { return alexandria_.size(); }
     
     /*! \brief Return const vector \p alexandria_
+     * \return the map of particle types
      */
     const std::map<Identifier, ParticleType> &particleTypesConst() const { return alexandria_; }
     
@@ -233,6 +256,7 @@ class ForceField
      *
      * \param[in]  atype  Atom type
      * \param[out] ptype  Polarizability type.
+     * \return true if successful
      */
     bool atypeToPtype(const std::string &atype,
                       std::string       *ptype) const;
@@ -242,7 +266,8 @@ class ForceField
      * Return the bond type corresponding to atom type and true if successful
      *
      * \param[in]  atype  Atom type
-     * \param[out] btype  Polarizability type.
+     * \param[out] btype  Bond type.
+     * \return true if successful
      */
     bool atypeToBtype(const std::string &atype,
                       std::string       *btype) const;
@@ -252,6 +277,7 @@ class ForceField
      *
      * \param[in]  atype  Atom type
      * \param[out] ztype  Zeta type.
+     * \return true if successful
      */
     bool atypeToZtype(const std::string &atype,
                       std::string       *ztype) const;
@@ -266,10 +292,13 @@ class ForceField
     void addForces(InteractionType                iType,
                    const ForceFieldParameterList &forces);
     
+    //! \return the number of interaction types with parameters
     size_t nforces() const { return forces_.size(); }
     
+    //! \return pointer to the map of parameter lists per interaction type
     std::map<InteractionType, ForceFieldParameterList> *forces() { return &forces_; }
     
+    //! \return the map of parameter lists per interaction type
     const std::map<InteractionType, ForceFieldParameterList> &forcesConst() const { return forces_; }
     
     /*! \brief Test whether an interaction is present
@@ -295,6 +324,11 @@ class ForceField
         return &force->second;
     }
     
+    /*! \brief Return forces in a const form
+     * \param[in] iType The interaction type
+     * \return parameter list
+     * \throws if the list does not exist
+     */
     const ForceFieldParameterList &findForcesConst(InteractionType iType) const
     {
         const auto &force = forces_.find(iType);
@@ -315,6 +349,11 @@ class ForceField
      */
     bool typeToInteractionType(const std::string &type, InteractionType *itype) const;
     
+    /*! \brief Add a symmetric charge entry unless an identical one exists
+     * \param[in] central   The central atom type
+     * \param[in] attached  The attached atom type
+     * \param[in] numattach The number of attached atoms
+     */
     void addSymcharges(const std::string &central,
                        const std::string &attached,
                        int                numattach);
@@ -322,15 +361,19 @@ class ForceField
     //! \return a constant reference of \p symcharges_
     const std::vector<Symcharges> &getSymcharges() const { return symcharges_; }
     
+    //! \return iterator to the start of \p symcharges_
     SymchargesIterator getSymchargesBegin() { return symcharges_.begin(); }
     
+    //! \return iterator to the end of \p symcharges_
     SymchargesIterator getSymchargesEnd() { return symcharges_.end(); }
     
+    //! \return const iterator to the start of \p symcharges_
     SymchargesConstIterator getSymchargesBegin() const { return symcharges_.begin(); }
     
+    //! \return const iterator to the end of \p symcharges_
     SymchargesConstIterator getSymchargesEnd() const { return symcharges_.end(); }
     
-    //! Return the charge generation algorithm used
+    //! \return the charge generation algorithm used
     ChargeGenerationAlgorithm chargeGenerationAlgorithm() const { return ChargeGenerationAlgorithm_; };
 
     /*! \brief Set the charge generation algorithm
@@ -344,10 +387,12 @@ class ForceField
     //! \brief Guess the algorithm based on force field content
     void guessChargeGenerationAlgorithm();
 
-    //! Return whether the model used is polarizable.     
+    //! \return whether the model used is polarizable.     
     bool polarizable() const { return polarizable_; }
     
-    //! Turn polarizability on or off.
+    /*! \brief Turn polarizability on or off.
+     * \param[in] polar Whether the model is polarizable
+     */
     void setPolarizable(bool polar) { polarizable_ = polar; }
     
     //! Turn polarizability on or off automatically
@@ -418,30 +463,62 @@ class ForceField
                                   MPI_Comm                   comm,
                                   MsgHandler                *msgHandler=nullptr);
         
+    /*! \brief Send a whole force field to another processor
+     * \param[in] cr   Communication data structure
+     * \param[in] dest Processor id to send the data to
+     * \return The status of the communication
+     */
     CommunicationStatus Send(const CommunicationRecord *cr, int dest);
     
+    /*! \brief Receive a whole force field from another processor
+     * \param[in] cr  Communication data structure
+     * \param[in] src Processor id to receive the data from
+     * \param[in] msgHandler MsgHandler for debug output
+     * \return The status of the communication
+     */
     CommunicationStatus Receive(const CommunicationRecord *cr, int src,
                                 MsgHandler *msgHandler=nullptr);
     
-    //! \brief Check internal consistency of data structures
+    /*! \brief Check internal consistency of data structures
+     * \param[in] msgHandler MsgHandler for warnings, may be nullptr
+     */
     void checkConsistency(MsgHandler *msgHandler) const;
     
     //! \return a constant \p type2Itype_ reference
     const std::map<InteractionType, std::set<std::string>> &type2Itype() const { return type2Itype_; }
     
 private:
+    //! The force field checksum
     std::string                           checkSum_;
+    //! The time stamp of the force field
     std::string                           timeStamp_;
+    //! Parameter names per interaction type, filled on demand by typeToInteractionType
     mutable std::map<InteractionType, std::set<std::string>> type2Itype_;
+    //! The force field file name
     std::string                           filename_;
+    //! The particle types
     std::map<Identifier, ParticleType>    alexandria_;
+    //! The parameter lists per interaction type
     std::map<InteractionType, ForceFieldParameterList> forces_;
+    //! The symmetric charges
     std::vector<Symcharges>               symcharges_;
+    //! Whether the model is polarizable
     bool                                  polarizable_ = false;
+    //! The charge generation algorithm
     ChargeGenerationAlgorithm             ChargeGenerationAlgorithm_ = ChargeGenerationAlgorithm::NONE;
     
+    /*! \brief Check whether a string starts with another, ignoring case
+     * \param[in] needle   The string to look for
+     * \param[in] haystack The string to search in
+     * \return true if \p needle is found at the start of \p haystack
+     */
     gmx_bool strcasestrStart(const std::string &needle, const std::string &haystack);
 
+    /*! \brief Compute the index of an element in a vector
+     * \param[in] pointer Pointer to an element of \p vector
+     * \param[in] vector  The vector
+     * \return the index of \p pointer in \p vector
+     */
     template<class Type>
     int indexOfPointInVector(const Type *pointer, const std::vector<Type> &vector)
     {

@@ -110,6 +110,7 @@ public:
      * \param[out] atoms       Atoms structure, charges will be updated in this
      * \param[in]  x           Atomic coordinates    
      * \param[in]  bonds       List of bonds in this compound
+     * \return the status of the charge generation
      */
     eQgen generateCharges(MsgHandler                   *msg_handler,
                           const std::string            &molname,

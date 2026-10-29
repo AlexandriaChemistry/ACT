@@ -95,10 +95,14 @@ public:
      */
     size_t index(const std::string &name);
 
-    //! \brief Start timing region id
+    /*! \brief Start timing a region
+     * \param[in] id The index of the region
+     */
     void start(size_t id);
 
-    //! \brief Stop timing region id, it must be the last one started
+    /*! \brief Stop timing a region
+     * \param[in] id The index of the region, it must be the last one started
+     */
     void stop(size_t id);
 
     //! Returned by parent if no region is active

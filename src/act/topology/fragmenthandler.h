@@ -90,7 +90,7 @@ public:
      */
     void fetchCharges(MsgHandler *msg_handler, std::vector<double> *qq);
 
-    //! Return the fragment ids
+    //! \return the fragment ids
     const std::vector<std::string> &ids() const { return ids_; }
 
     //! \return the atomStart_ vector, containing one extra index more than the number of fragments.

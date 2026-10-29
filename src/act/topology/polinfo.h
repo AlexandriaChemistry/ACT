@@ -40,12 +40,13 @@ namespace alexandria
 class Topology;
 class ForceField;
 
+//! \brief Information about which particles in a topology are shells
 class PolInfo
 {
 private:
-    // Is this particle a shell?
+    //! Is this particle a shell?
     std::vector<bool>              isShell_;
-    // Number of shells
+    //! Number of shells
     size_t                         nShell_ = 0;
 public:
     //! Constructor

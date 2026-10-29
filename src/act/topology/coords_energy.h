@@ -59,6 +59,7 @@ public:
     ACTEnergy() {}
     /*! \brief Constructor
      * \param[in] experiment The id
+     * \param[in] datafile   The data file name
      * \param[in] eqm        The QM energy
      * \param[in] eact       The ACT energy
      */
@@ -69,6 +70,7 @@ public:
     }
     /*! \brief Constructor
      * \param[in] experiment The id
+     * \param[in] datafile   The data file name
      */
     ACTEnergy(int experiment, const std::string &datafile) : experiment_(experiment), datafile_(datafile) {}
 
@@ -78,7 +80,7 @@ public:
     //! \return The data file name
     const std::string &datafile() const { return datafile_; }
 
-    //! Is there a QM energy
+    //! \return whether there is a QM energy
     bool haveQM() const { return haveQM_; }
 
     //! \return The QM energy    
@@ -91,14 +93,16 @@ public:
         return eqm_;
     }
 
-    //! set QM value
+    /*! \brief Set the QM energy and mark it as present
+     * \param[in] eqm The QM energy
+     */
     void setQM(double eqm)
     {
         eqm_ = eqm;
         haveQM_ = true;
     }
 
-    //! Is there an ACT energy
+    //! \return whether there is an ACT energy
     bool haveACT() const { return haveACT_; }
 
     //! \return The ACT energy
@@ -111,7 +115,9 @@ public:
         return eact_;
     }
 
-    //! set ACT value
+    /*! \brief Set the ACT energy and mark it as present
+     * \param[in] eact The ACT energy
+     */
     void setACT(double eact)
     {
         eact_ = eact;
@@ -137,6 +143,7 @@ typedef std::map<InteractionType, ACTEnergy> ACTEnergyMap;
 //! \brief Vector of the above
 typedef std::vector<ACTEnergyMap>            ACTEnergyMapVector;
 
+//! \brief Coordinates, forces and energies of one structure of a molecule
 typedef struct
 {
     //! Indicates that the shells have converged in this structure

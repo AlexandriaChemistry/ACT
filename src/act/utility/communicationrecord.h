@@ -72,9 +72,13 @@ enum class TrainFFMiddlemanMode {
     MUTATION = 2022   // Mutate, compute fitness, send parameters and fitness back
 };
 
-//! \return A string corresponding to a CommunicationStatus
+/*! \brief Convert a CommunicationStatus to a string
+ * \param[in] cs The communication status
+ * \return A string corresponding to a CommunicationStatus
+ */
 const std::string &cs_name(CommunicationStatus cs);
 
+//! \brief Handles the MPI communication between the master, middlemen and helpers
 class CommunicationRecord
 {
 private:
@@ -160,7 +164,9 @@ private:
     void check_init_done() const;
     
 public:
-    //! \brief Constructor
+    /*! \brief Constructor
+     * \param[in] msghandler Message handler for debug output, may be nullptr
+     */
     CommunicationRecord(MsgHandler *msghandler=nullptr);
 
     //! \brief Destructor is needed to get rid of commrec

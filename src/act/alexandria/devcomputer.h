@@ -91,7 +91,7 @@ public:
                                std::map<eRMS, FittingTarget> *targets,
                                const ForceField              *forcefield,
                                LossFunction                   lossFunction) = 0;
-    //! \brief Return my name
+    //! \return my name
     const std::string name() const { return name_; }
 };
 

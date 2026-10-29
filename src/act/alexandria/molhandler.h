@@ -52,7 +52,10 @@ enum class eMinimizeStatus {
     OK, TooManySteps, Solver, NoMinimum, Constraints
 };
 
-//! Convert enum to string
+/*! \brief Convert enum to string
+ * \param[in] e The minimizer status
+ * \return the string corresponding to the status
+ */
 const std::string &eMinimizeStatusToString(eMinimizeStatus e);
 
 /*! \brief Handles molecules by performing algorithms on them
@@ -66,7 +69,7 @@ public:
     /*! \brief Compute the second derivative matrix of the potential energy
      *
      * \param[in]  pd          Pointer to force field structure
-     * \param[in]  mol        Molecule to get the hessian for
+     * \param[in]  topology   Topology of the molecule to get the hessian for
      * \param[in]  forceComp  Force Computer utility
      * \param[inout] coords   Atomic coordinates to operate on
      * \param[in]  atomIndex  Vector containing the indices of the real 

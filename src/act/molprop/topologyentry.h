@@ -77,17 +77,17 @@ public:
     //! Default empty constructor
     TopologyEntry() {}
 
-    //! Return myself or an inherited class in const form
+    //! \return a pointer to this object, which may be an inherited class
     TopologyEntry *self() { return this; }
 
     //! \return a pointer to this object
     const TopologyEntry *self() const { return this; }
 
-    //! Return myself or an inherited class in non-const form
+    //! \return a non-const pointer to this object, which may be an inherited class
     TopologyEntry *selfPtr() { return this; }
 
     /*! \brief Add one atom index
-     * \param[ai] The atom index
+     * \param[in] ai The atom index
      */
     void addAtom(int ai) { indices_.push_back(ai); }
 
@@ -101,6 +101,8 @@ public:
 
     /*! Returns an atom id
      * \param[in] ai The index number
+     * \return the atom index at position ai
+     * \throws if ai is out of range
      */
     int atomIndex(size_t ai) const
     {
@@ -118,7 +120,9 @@ public:
     //! \return the bondorders
     const std::vector<double> &bondOrders() const { return bondOrder_; }
 
-    //! Add a bond order
+    /*! \brief Add a bond order
+     * \param[in] bo The bond order
+     */
     void addBondOrder(double bo) { bondOrder_.push_back(bo); }
 
     /*! Set a specific bond order
@@ -135,13 +139,15 @@ public:
      */
     double bondOrder(size_t ai) const { return bondOrder_[ai]; }
 
-    //! \brief Bond order for the first bond
+    //! \return the bond order of the first bond
     double bondOrder() const { return bondOrder_[0]; }
 
-    //! Return the gromacs type
+    //! \return the gromacs type, -1 if not set
     int gromacsType() const { return gromacsType_; }
 
-    //! Set the gromacs type
+    /*! \brief Set the gromacs type
+     * \param[in] gromacsType The gromacs topology index
+     */
     void setGromacsType(int gromacsType) { gromacsType_ = gromacsType; }
 
     /*! \brief Set the identifier(s)
@@ -193,7 +199,7 @@ public:
     //! \return a parameter vector
     const std::vector<double> &params() const { return params_; }
 
-    //! Return my identifier(s)
+    //! \return my identifier(s)
     const Identifier &id() const { return id_; }
 
     /*! \brief Check whether this entry has nAtom atoms
@@ -252,19 +258,25 @@ class SingleAtom : public TopologyEntry
     //! Default constructor
     SingleAtom() {}
 
-    //! Constructor setting the ids of the atoms
+    /*! \brief Constructor setting the id of the atom
+     * \param[in] ai The atom index
+     */
     SingleAtom(int ai) { Set(ai); }
 
-    //! Sets the ids of the atoms
+    /*! \brief Adds the id of the atom
+     * \param[in] ai The atom index
+     */
     void Set(int ai)
     {
         addAtom(ai);
     }
 
-    //! Returns the ids of the atoms and the bondorder
+    /*! \brief Returns the id of the atom
+     * \param[out] ai The atom index
+     */
     void get(int *ai) const;
 
-    //! Returns the first atom id
+    //! \return the first atom id
     int aI() const
     {
         return atomIndex(0);
@@ -295,10 +307,16 @@ class AtomPair : public TopologyEntry
     //! Default constructor
     AtomPair() {}
 
-    //! Constructor setting the ids of the atoms
+    /*! \brief Constructor setting the ids of the atoms
+     * \param[in] ai The first atom index
+     * \param[in] aj The second atom index
+     */
     AtomPair(int ai, int aj) { Set(ai, aj); }
 
-    //! Sets the ids of the atoms
+    /*! \brief Adds the ids of the atoms and a bond order of 1
+     * \param[in] ai The first atom index
+     * \param[in] aj The second atom index
+     */
     void Set(int ai, int aj)
     {
         addAtom(ai);
@@ -307,22 +325,25 @@ class AtomPair : public TopologyEntry
         addBondOrder(1);
     }
 
-    //! Returns the ids of the atoms and the bondorder
+    /*! \brief Returns the ids of the atoms
+     * \param[out] ai The first atom index
+     * \param[out] aj The second atom index
+     */
     void get(int *ai, int *aj) const;
 
-    //! Returns the first atom id
+    //! \return the first atom id
     int aI() const
     {
         return atomIndex(0);
     }
 
-     //! Returns the second atom id
+     //! \return the second atom id
     int aJ() const
     {
         return atomIndex(1);
     }
 
-    //! Return an AtomPair with the order of atoms swapped
+    //! \return a new AtomPair with the order of atoms swapped
     AtomPair swap() const;
 
     /*! \brief Return whether two AtomPairs are the same
@@ -355,10 +376,18 @@ class Bond : public TopologyEntry
     //! Default constructor
     Bond() {}
 
-    //! Constructor setting the ids of the atoms and the bondorder
+    /*! \brief Constructor setting the ids of the atoms and the bondorder
+     * \param[in] ai        The first atom index
+     * \param[in] aj        The second atom index
+     * \param[in] bondorder The bond order
+     */
     Bond(int ai, int aj, double bondorder) { Set(ai, aj, bondorder); }
 
-     //! Sets the ids of the atoms and the bondorder
+    /*! \brief Adds the ids of the atoms and the bondorder
+     * \param[in] ai        The first atom index
+     * \param[in] aj        The second atom index
+     * \param[in] bondorder The bond order
+     */
     void Set(int ai, int aj, double bondorder)
     {
         addAtom(ai);
@@ -366,22 +395,26 @@ class Bond : public TopologyEntry
         addBondOrder(bondorder);
     }
 
-    //! Returns the ids of the atoms and the bondorder
+    /*! \brief Returns the ids of the atoms and the bondorder
+     * \param[out] ai        The first atom index
+     * \param[out] aj        The second atom index
+     * \param[out] bondorder The bond order
+     */
     void get(int *ai, int *aj, double *bondorder) const;
 
-    //! Returns the first atom id
+    //! \return the first atom id
     int aI() const
     {
         return atomIndex(0);
     }
 
-     //! Returns the second atom id
+     //! \return the second atom id
     int aJ() const
     {
         return atomIndex(1);
     }
 
-    //! Return a Bond with the order of atoms swapped
+    //! \return a new Bond with the order of atoms and bond orders swapped
     Bond swap() const;
 
     /*! \brief Return whether two Bonds are the same
@@ -426,16 +459,18 @@ class Angle : public TopologyEntry
      */
     void setBonds(const Bond &bij, const Bond &bjk);
 
-    //! Return the first bond
+    //! \return the first bond
     const Bond &bij() const { return b_[0]; }
 
-    //! Return the second bond
+    //! \return the second bond
     const Bond &bjk() const { return b_[1]; }
 
-    //! Return whether this is a linear angle
+    //! \return whether this is a linear angle
     bool isLinear() const { return isLinear_; }
 
-    //! Set whether this is a linear angle
+    /*! \brief Set whether this is a linear angle
+     * \param[in] linear The value
+     */
     void setLinear(bool linear) { isLinear_ = linear; }
 
     //! @copydoc Bond::renumberAtoms
@@ -466,13 +501,13 @@ class Improper : public TopologyEntry
      */
     Improper(const Bond &bij, const Bond &bik, const Bond &bil);
 
-    //! Return the first bond
+    //! \return the first bond
     const Bond &bij() const { return b_[0]; }
 
-    //! Return the second bond
+    //! \return the second bond
     const Bond &bik() const { return b_[1]; }
 
-    //! Return the third bond
+    //! \return the third bond
     const Bond &bil() const { return b_[2]; }
 
     //! @copydoc Bond::renumberAtoms
@@ -502,13 +537,13 @@ class Proper : public TopologyEntry
      */
     Proper(const Bond &bij, const Bond &bjk, const Bond &bkl);
 
-    //! Return the first bond
+    //! \return the first bond
     const Bond &bij() const { return b_[0]; }
 
-    //! Return the second bond
+    //! \return the second bond
     const Bond &bjk() const { return b_[1]; }
 
-    //! Return the third bond
+    //! \return the third bond
     const Bond &bkl() const { return b_[2]; }
 
     //! @copydoc Bond::renumberAtoms
@@ -527,17 +562,23 @@ class Vsite1 : public TopologyEntry
     //! Default constructor
     Vsite1() {}
 
-    //! Constructor setting the ids of the atoms and the bondorder
+    /*! \brief Constructor setting the ids of the atom and the virtual site
+     * \param[in] ai The atom index
+     * \param[in] vs The virtual site index
+     */
     Vsite1(int ai, int vs)
     {
         addAtom(ai);
         addAtom(vs);
     }
 
-    //! Returns the ids of the atoms and the bondorder
+    /*! \brief Returns the ids of the atom and the virtual site
+     * \param[out] ai The atom index
+     * \param[out] vs The virtual site index
+     */
     void get(int *ai, int *vs) const;
 
-    //! Returns the first atom id
+    //! \return the first atom id
     int aI() const
     {
         return atomIndex(0);
@@ -568,7 +609,11 @@ class Vsite2 : public TopologyEntry
     //! Default constructor
     Vsite2() {}
 
-    //! Constructor setting the ids of the atoms and the bondorder
+    /*! \brief Constructor setting the ids of the atoms and the virtual site
+     * \param[in] ai The first atom index
+     * \param[in] aj The second atom index
+     * \param[in] vs The virtual site index
+     */
     Vsite2(int ai, int aj, int vs)
     {
         addAtom(ai);
@@ -576,16 +621,20 @@ class Vsite2 : public TopologyEntry
         addAtom(vs);
     }
 
-    //! Returns the ids of the atoms and the bondorder
+    /*! \brief Returns the ids of the atoms and the virtual site
+     * \param[out] ai The first atom index
+     * \param[out] aj The second atom index
+     * \param[out] vs The virtual site index
+     */
     void get(int *ai, int *aj, int *vs) const;
 
-    //! Returns the first atom id
+    //! \return the first atom id
     int aI() const
     {
         return atomIndex(0);
     }
 
-     //! Returns the second atom id
+     //! \return the second atom id
     int aJ() const
     {
         return atomIndex(1);
@@ -610,7 +659,12 @@ class Vsite3 : public TopologyEntry
     //! Default constructor
     Vsite3() {}
 
-    //! Constructor setting the ids of the atoms and the bondorder
+    /*! \brief Constructor setting the ids of the atoms and the virtual site
+     * \param[in] ai The first atom index
+     * \param[in] aj The second atom index
+     * \param[in] ak The third atom index
+     * \param[in] vs The virtual site index
+     */
     Vsite3(int ai, int aj, int ak,  int vs)
     {
         addAtom(ai);
@@ -619,22 +673,27 @@ class Vsite3 : public TopologyEntry
         addAtom(vs);
     }
 
-    //! Returns the ids of the atoms and the bondorder
+    /*! \brief Returns the ids of the atoms and the virtual site
+     * \param[out] ai The first atom index
+     * \param[out] aj The second atom index
+     * \param[out] ak The third atom index
+     * \param[out] vs The virtual site index
+     */
     void get(int *ai, int *aj, int *ak, int *vs) const;
 
-    //! Returns the first atom id
+    //! \return the first atom id
     int aI() const
     {
         return atomIndex(0);
     }
 
-     //! Returns the second atom id
+     //! \return the second atom id
     int aJ() const
     {
         return atomIndex(1);
     }
 
-     //! Returns the third atom id
+     //! \return the third atom id
      int aK() const
      {
          return atomIndex(2);
@@ -659,7 +718,13 @@ public:
     //! Default constructor
     Vsite4() {}
 
-    //! Constructor setting the ids of the atoms and the bondorder
+    /*! \brief Constructor setting the ids of the atoms and the virtual site
+     * \param[in] ai The first atom index
+     * \param[in] aj The second atom index
+     * \param[in] ak The third atom index
+     * \param[in] al The fourth atom index
+     * \param[in] vs The virtual site index
+     */
     Vsite4(int ai, int aj, int ak, int al, int vs)
     {
         addAtom(ai);
@@ -669,28 +734,34 @@ public:
         addAtom(vs);
     }
 
-    //! Returns the ids of the atoms and the bondorder
+    /*! \brief Returns the ids of the atoms and the virtual site
+     * \param[out] ai The first atom index
+     * \param[out] aj The second atom index
+     * \param[out] ak The third atom index
+     * \param[out] al The fourth atom index
+     * \param[out] vs The virtual site index
+     */
     void get(int *ai, int *aj, int *ak, int *al, int *vs) const;
 
-    //! Returns the first atom id
+    //! \return the first atom id
     int aI() const
     {
         return atomIndex(0);
     }
 
-    //! Returns the second atom id
+    //! \return the second atom id
     int aJ() const
     {
         return atomIndex(1);
     }
 
-    //! Returns the third atom id
+    //! \return the third atom id
     int aK() const
     {
         return atomIndex(2);
     }
 
-    //! Returns the fourth atom id
+    //! \return the fourth atom id
     int aL() const
     {
         return atomIndex(3);
@@ -703,14 +774,26 @@ public:
     }
 };
 
-
+/*! \brief
+ * Virtual site based on 3 particles, out of the plane of these particles.
+ * The sign determines on which side of the plane the virtual site is.
+ *
+ * \inpublicapi
+ * \ingroup group_molprop
+ */
 class Vsite3OUT : public TopologyEntry
 {
  public:
     //! Default constructor
     Vsite3OUT() {}
 
-    //! Constructor setting the ids of the atoms and the bondorder
+    /*! \brief Constructor setting the ids of the atoms, the virtual site and the sign
+     * \param[in] ai   The first atom index
+     * \param[in] aj   The second atom index
+     * \param[in] ak   The third atom index
+     * \param[in] vs   The virtual site index
+     * \param[in] sign The sign (-1 or 1) applied to the out-of-plane parameter
+     */
     Vsite3OUT(int ai, int aj,  int ak, int vs, int sign)
        : sign_(sign)
     {
@@ -720,28 +803,37 @@ class Vsite3OUT : public TopologyEntry
         addAtom(vs);
     }
 
+    //! \return the sign applied to the out-of-plane parameter
     int sign() const
     {
         return sign_;
     }
 
  private:
+    //! The sign applied to the out-of-plane parameter
     int sign_ = 0;
 
-    //! Returns the ids of the atoms and the bondorder
+    /*! \brief Returns the ids of the atoms, the virtual site and the sign
+     * \param[out] ai   The first atom index
+     * \param[out] aj   The second atom index
+     * \param[out] ak   The third atom index
+     * \param[out] vs   The virtual site index
+     * \param[out] sign The sign applied to the out-of-plane parameter
+     */
     void get(int *ai, int *aj, int *ak, int *vs, int *sign) const;
 
-    //! Returns the first atom id
+    //! \return the first atom id
    int aI() const
    {
        return atomIndex(0);
    }
-    //! Returns the second atom id
+    //! \return the second atom id
    int aJ() const
    {
        return atomIndex(1);
    }
 
+   //! \return the third atom id
    int aK() const
    {
        return atomIndex(2);

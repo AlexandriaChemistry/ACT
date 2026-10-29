@@ -65,12 +65,14 @@ enum class ExplicitSimd
 /*! \brief The instruction set the explicit SIMD was compiled for
  * Since the code is compiled for this instruction set, this function is
  * safe to call on any processor, but computeExplicitSimd is not.
+ * \return the instruction set
  */
 ExplicitSimd explicitSimdType();
 
 /*! \brief The number of conformations computed at once
  * The arrays passed to computeExplicitSimd have to hold a multiple of
  * this number of conformations.
+ * \return the number of conformations computed at once
  */
 size_t explicitSimdWidth();
 

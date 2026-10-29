@@ -92,10 +92,26 @@ private:
                         const std::vector<bool>    isShell,
                         size_t                     fragment,
                         std::vector<CoordsEnergy> *myCoords) const;
+    /*! \brief Relax the shells of one monomer in all conformations of all molecules
+     * Iterates shell updates and energy computations until all shells
+     * converged or the max number of iterations is reached.
+     * \param[in] msg_handler For debugging, may be nullptr
+     * \param[in] pd          The force field structure
+     * \param[in] im          Index of the monomer (0 or 1)
+     * \param[in] allmols     The molecules to relax
+     */
     void relaxMonomer(MsgHandler                  *msg_handler,
                       const ForceField            *pd,
                       size_t                       im,
                       const std::vector<ACTMol *> &allmols) const;
+    /*! \brief Relax the shells in all dimer conformations of all molecules
+     * Iterates shell updates and energy computations until all shells
+     * converged or the max number of iterations is reached.
+     * \param[in] msg_handler For debugging, may be nullptr
+     * \param[in] pd          The force field structure
+     * \param[in] fixMonomer  For each monomer whether its shells are kept fixed
+     * \param[in] allmols     The molecules to relax
+     */
     void relaxDimer(MsgHandler                  *msg_handler,
                     const ForceField            *pd,
                     bool                         fixMonomer[2],
@@ -121,6 +137,7 @@ private:
      * \param[in] msForce          The tolerance for the mean square force on shells
      * \param[in] maxiter          The maximum number of iterations for shell minimization
      * \param[in] maxShellDistance Maximum allowed distance (nm) for shells to be away from their core
+     * \param[in] epsilonr         Relative dielectric constant
      */
     void init(double   msForce,
               int      maxiter,
@@ -184,6 +201,7 @@ private:
      * \param[out] energies    The energy components
      * \param[in]  field       Optional electric field to be applied
      * \param[in]  resetShells Set the position of the shells to that of the connecting atoms
+     * \param[in]  relax       Indices of the shells to relax, if empty all shells are relaxed
      */
     void compute(MsgHandler                        *msg_handler,
                  const ForceField                  *pd,

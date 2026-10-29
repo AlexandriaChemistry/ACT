@@ -51,10 +51,16 @@ namespace alexandria
 // changes when the storage is copied or moved, therefore it is recomputed
 // there.
 
+/*! \brief Container holding an object of any class derived from ActBase by value
+ * \tparam ActBase The base class that the stored objects derive from
+ */
 template<typename ActBase>
 struct BaseContainer
 {
 public:
+    /*! \brief Constructor storing a copy of, or moving, an object
+     * \param[in] object The object of a class derived from ActBase
+     */
     template<typename ConcreteType>
         requires (!std::is_same_v<std::remove_cvref_t<ConcreteType>, BaseContainer>)
     BaseContainer(ConcreteType&& object)
@@ -63,14 +69,24 @@ public:
         , object_{ &getter(storage) }
     {}
 
+    /*! \brief Copy constructor
+     * \param[in] other The container to copy
+     */
     BaseContainer(const BaseContainer &other)
         : storage{other.storage}, getter{other.getter}, object_{ &getter(storage) }
     {}
 
+    /*! \brief Move constructor
+     * \param[inout] other The container to move from
+     */
     BaseContainer(BaseContainer &&other) noexcept
         : storage{std::move(other.storage)}, getter{other.getter}, object_{ &getter(storage) }
     {}
 
+    /*! \brief Copy assignment
+     * \param[in] other The container to copy
+     * \return this container
+     */
     BaseContainer &operator=(const BaseContainer &other)
     {
         if (this != &other)
@@ -82,6 +98,10 @@ public:
         return *this;
     }
 
+    /*! \brief Move assignment
+     * \param[inout] other The container to move from
+     * \return this container
+     */
     BaseContainer &operator=(BaseContainer &&other) noexcept
     {
         if (this != &other)
@@ -93,11 +113,15 @@ public:
         return *this;
     }
 
+    //! \return a const pointer to the stored object
     const ActBase *operator->() const { return object_; }
+    //! \return a pointer to the stored object
     ActBase *operator->() { return object_; }
 
 private:
+    //! Type-erased storage holding the object
     std::any storage;
+    //! Function returning a reference to the object in storage, cast to ActBase
     ActBase& (*getter)(std::any&);
     //! The stored object
     ActBase *object_;

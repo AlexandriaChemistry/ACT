@@ -125,12 +125,14 @@ class ACTMol : public MolProp
 private:
     //! Periodic box.
     matrix                            box_;
-    // The energy storage
+    //! The energy storage (currently unused)
     std::map<InteractionType, double> energies_;
     // Optimized coordinates from the input.
     //std::vector<gmx::RVec>           optimizedCoordinates_;
     // Older stuff
+    //! Whether shells are present (currently not set to true anywhere)
     bool                             bHaveShells_    = false;
+    //! Whether virtual sites are present (currently unused)
     bool                             bHaveVSites_    = false;
     //! Tolerance for converged SQE or EEM calculations
     double                           qTolerance_     = 1e-6;
@@ -150,6 +152,7 @@ private:
     bool                             isLinear_ = false;
     //! Coordinates and energies from all experiments
     std::vector<CoordsEnergy>        dimerCoords_;
+    //! The same for each of the two monomers
     std::vector<CoordsEnergy>        monomerCoords_[2];
     //! The same for computing all conformations at once, monomers first, then the dimer
     ConformationData                 conformationData_[3];
@@ -212,6 +215,7 @@ private:
     std::vector<int>               realAtoms_; 
     //! Reference data for devcomputer
     std::vector<double>            ref_frequencies_;
+    //! Reference intensities for devcomputer
     std::vector<double>            ref_intensities_;
     //! QM method used for data
     std::string                    method_;
@@ -219,9 +223,11 @@ private:
     std::string                    basis_;
     //! Charge symmetry 
     std::vector<int>               symmetric_charges_;
+    //! How this compound is supported on this processor
     eSupport                       eSupp_         = eSupport::Local;
     //! Structure to manage charge generation
     FragmentHandler                fraghandler_;
+    //! The dataset this compound belongs to
     iMolSelect                     dataset_type_  = iMolSelect::Ignore;
     //! Internal storage for original coords
     mutable std::vector<gmx::RVec> xOriginal_;
@@ -233,11 +239,12 @@ public:
     /*! \brief
      * Return a coordinate vector of the molecule corresponding to the first experiment
      * with Jobtype Opt or Topology or SP. The array includes shells and/or vsites.
+     * \return the coordinates
      * \throws if not suitable experiment is present.
      */
     std::vector<gmx::RVec> xOriginal() const;
 
-    /* \brief Hack the original coordinates
+    /*! \brief Hack the original coordinates
      * This is useful when subsequent calls to xOriginal should return e.g. minimized coords
      * \param[in] x The new coords, that should include shells, vsites etc.
      */
@@ -359,10 +366,10 @@ public:
                          std::vector<std::pair<double, std::map<InteractionType, double>>> *energyComponentMap,
                          bool                                                               separateInductionCorrection) const;
       
-    //! Return the reference frequencies collected earlier
+    //! \return the reference frequencies collected earlier
     const std::vector<double> &referenceFrequencies() const { return ref_frequencies_; }
     
-    //! Return the reference intensities collected earlier
+    //! \return the reference intensities collected earlier
     const std::vector<double> &referenceIntensities() const { return ref_intensities_; }
 
     /*! \brief
@@ -405,12 +412,10 @@ public:
      */
     bool hasMolPropObservable(MolPropObservable mpo) const;
 
-    /*! \brief Return the fragment handler
-     */
+    //! \return the fragment handler for editing
     FragmentHandler *fragmentHandler() { return &fraghandler_; }
     
-    /*! \brief Return the fragment handler
-     */
+    //! \return the fragment handler
     const FragmentHandler *fragmentHandler() const { return &fraghandler_; }
     
     /*! \brief
@@ -436,10 +441,10 @@ public:
                           ForceField        *pd,
                           missingParameters  missing);
     
-    //! Return the ACT topology structure
+    //! \return the ACT topology structure
     const Topology *topology() const { return &topology_; }
     
-    //! Return the ACT topology structure for editing
+    //! \return the ACT topology structure for editing
     Topology *topologyPtr() { return &topology_; }
     /*! \brief
      * Update internal structures with electric moments etc.
@@ -515,6 +520,7 @@ public:
      * \param[in]  forceComp   The force computer
      * \param[out] coords      The coordinates, will be updated for shells
      * \param[out] forces      The forces
+     * \return ACTMessage::OK if successful, an error code otherwise
      */
     ACTMessage GenerateAcmCharges(MsgHandler             *msg_handler,
                                   ForceField             *pd,
@@ -657,7 +663,8 @@ public:
     
     /*! \brief
      * Equal operator for ACTMol object
-     *
+     * \param[in] mol The other molecule
+     * \return whether the molecule names are the same
      */
     bool operator==(const ACTMol &mol) const
     {
