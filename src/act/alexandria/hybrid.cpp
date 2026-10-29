@@ -491,6 +491,14 @@ bool HybridGAMC::evolve(alexandria::MsgHandler       *msghandler,
                 msghandler->write(tmpGenome.print(mess.c_str()));
             }
         }
+        // The middlemen send their statistics after mutating. They have to be
+        // received before the middlemen get more work.
+        if (msghandler->info())
+        {
+            fcStats.collect(cr,
+                            static_cast<const alexandria::ACMFitnessComputer *>(fitnessComputer())->forceComputer(),
+                            gach_->nElites());
+        }
         bool minimum = false;
         // We only do the sensitivity analysis if needed.
         if ((gach_->maxLocalMinimumGenerations() > 0) || adaptiveSteps_)
@@ -530,10 +538,7 @@ bool HybridGAMC::evolve(alexandria::MsgHandler       *msghandler,
                                  generation, minimum);
         if (msghandler->info())
         {
-            auto stats = fcStats.statistics(cr,
-                                            static_cast<const alexandria::ACMFitnessComputer *>(fitnessComputer())->forceComputer(),
-                                            gach_->nElites(), stopTraining);
-            msghandler->msg(alexandria::ACTStatus::Info, stats);
+            msghandler->msg(alexandria::ACTStatus::Info, fcStats.report(stopTraining));
         }
         msghandler->flush();
     }
