@@ -63,9 +63,6 @@ namespace
 
 class VsiteHandlerTest : public gmx::test::CommandLineTestBase
 {
-private:
-    matrix box = { { 0, 0, 0 }, { 0, 0, 0 }, { 0, 0, 0 } };
-    real   dt  = 0.001;
 protected:
     bool setup(const std::string &ff,
                const std::string &molName,
@@ -121,8 +118,7 @@ protected:
             std::vector<gmx::RVec> coords = mp_.xOriginal();
 
             VsiteHandler vh;
-            vh.init(box, dt);
-            vh.constructPositions(mp_.topology(), &coords, box);
+            vh.constructPositions(mp_.topology(), &coords);
 
             gmx::test::TestReferenceChecker checker_(this->rootChecker());
             auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, 5e-2);
@@ -150,8 +146,7 @@ protected:
             std::vector<gmx::RVec> coords = mp_.xOriginal();
 
             VsiteHandler vh;
-            vh.init(box, dt);
-            vh.constructPositions(mp_.topology(), &coords, box);
+            vh.constructPositions(mp_.topology(), &coords);
             gmx::RVec fzero = { 0, 0, 0 };
             std::vector<gmx::RVec> forces(coords.size(), fzero);
             auto  myatoms = mp_.topology()->atoms();
@@ -166,7 +161,7 @@ protected:
                 }
                 i += 1;
             }
-            vh.distributeForces(mp_.topology(), coords, &forces, box);
+            vh.distributeForces(mp_.topology(), coords, &forces);
             gmx::test::TestReferenceChecker checker_(this->rootChecker());
             auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, 5e-2);
             checker_.setDefaultTolerance(tolerance);
@@ -220,9 +215,8 @@ protected:
         };
         EXPECT_EQ(names(vsites), names(found));
         VsiteHandler vh;
-        vh.init(box, dt);
         std::vector<gmx::RVec> coords = mol.xOriginal();
-        vh.constructPositions(top, &coords, box);
+        vh.constructPositions(top, &coords);
         // A different force on each virtual site
         const auto &atoms = top->atoms();
         std::vector<gmx::RVec> fvsite(coords.size(), { 0, 0, 0 });
@@ -237,11 +231,11 @@ protected:
         }
         ASSERT_GT(nvsite, 0);
         std::vector<gmx::RVec> forces = fvsite;
-        vh.distributeForces(top, coords, &forces, box);
+        vh.distributeForces(top, coords, &forces);
         // Energy as a function of the coordinates
         auto energy = [&](std::vector<gmx::RVec> x)
         {
-            vh.constructPositions(top, &x, box);
+            vh.constructPositions(top, &x);
             double e = 0;
             for (size_t i = 0; i < x.size(); i++)
             {
