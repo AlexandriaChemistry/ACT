@@ -653,8 +653,15 @@ bool OptACM::runMaster(bool      optimize,
     }
     else
     {
-        // This is to allow a sensitivity analysis with nooptimize.
-        auto ind = static_cast<alexandria::ACMIndividual *>(initializer_->initialize());
+        // This is to allow a sensitivity analysis with nooptimize. It is
+        // done for the parameters of the force field, not random ones.
+        if (gach_.randomInit())
+        {
+            msghandler_.msg(ACTStatus::Warning,
+                            "Random initialization (-random_init) is turned off, since nothing is optimized. The parameters are those of the force field.");
+        }
+        ACMInitializer initializer(sii_, false, 0);
+        auto ind = static_cast<alexandria::ACMIndividual *>(initializer.initialize());
 
         bestGenome[iMolSelect::Train] = ind->genome();
         delete ind;
