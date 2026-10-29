@@ -37,6 +37,7 @@
 #include "act/basics/msg_handler.h"
 #include "act/molprop/molprop.h"
 #include "act/molprop/molprop_xml.h"
+#include "gromacs/math/units.h"
 
 #include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"
@@ -329,9 +330,44 @@ TEST_F(SimulateTest, Reproducibility)
     {
         EXPECT_EQ(xvg[0].rows[i], xvg[1].rows[i]) << "row " << i;
     }
+    // The initial kinetic energy is scaled to the temperature, so
+    // a different seed shows up only later in the trajectory.
     int cEkin = xvg[0].column("EKIN");
     ASSERT_GT(cEkin, 0);
-    EXPECT_NE(xvg[0].rows[0][cEkin], xvg[2].rows[0][cEkin]);
+    ASSERT_EQ(xvg[0].rows.size(), xvg[2].rows.size());
+    auto last = xvg[0].rows.size() - 1;
+    EXPECT_EQ(xvg[0].rows[0][cEkin], xvg[2].rows[0][cEkin]);
+    EXPECT_NE(xvg[0].rows[last][cEkin], xvg[2].rows[last][cEkin]);
+}
+
+// Test: The initial temperature is the requested one, computed for
+// the degrees of freedom without center of mass motion and constraints
+TEST_F(SimulateTest, InitialTemperature)
+{
+    // Acetone has 10 atoms and 9 bonds
+    for(bool constrain : { false, true })
+    {
+        SimulateFiles files;
+        auto cmd = baseCommand("acetone.sdf",
+                               constrain ? "tempcons" : "temp", &files);
+        addMD(&cmd, 300, 1993);
+        if (constrain)
+        {
+            cmd.append("-constrain");
+        }
+        ASSERT_EQ(0, run(&cmd));
+        auto xvg   = readXvg(files.energy);
+        ASSERT_FALSE(xvg.rows.empty());
+        int  cEkin = xvg.column("EKIN");
+        int  cTemp = xvg.column("TEMPERATURE");
+        ASSERT_GT(cEkin, 0);
+        ASSERT_GT(cTemp, 0);
+        auto ekin  = xvg.rows[0][cEkin];
+        auto temp  = xvg.rows[0][cTemp];
+        EXPECT_NEAR(300, temp, 1e-4);
+        double nDOF = constrain ? 3*9-9 : 3*9;
+        EXPECT_NEAR(nDOF, 2*ekin/(BOLTZ*temp), 1e-3);
+    }
 }
 
 // Test: Without an initial temperature no velocities are generated
