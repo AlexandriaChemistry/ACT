@@ -248,7 +248,8 @@ void PolarDevComputer::calcDeviation(MsgHandler                    *msghandler,
                 {
                     for(int j = 0; j < DIM; j++)
                     {
-                        diff2 += loss(lossFunction, convert_, (aelec[i][j]-acalc[i][j]));
+                        // The deviation in the unit of the polarizability
+                        diff2 += loss(lossFunction, 1, convert_*(aelec[i][j]-acalc[i][j]));
                     }
                 }
                 ndiff += 1;
@@ -363,7 +364,7 @@ void HarmonicsDevComputer::calcDeviation(MsgHandler                    *msghandl
         {
             // Something fishy happened, but it means we cannot use this structure
             // for computing frequencies.
-            return;
+            continue;
         }
         // Compute frequencies
         std::vector<double> frequencies, intensities;
@@ -803,7 +804,7 @@ void ForceEnergyDevComputer::calcDeviation(MsgHandler                     *msgha
                     // std::isfinite checks for both Inf and NaN values.
                     if (have[i] && epot.has(i) && std::isfinite(epot.act[i]))
                     {
-                        double myloss = w[i] * loss(lossFunction, w[i], eqm[i]-epot.act[i]);
+                        double myloss = w[i] * loss(lossFunction, 1, eqm[i]-epot.act[i]);
                         te->second.increase(w[i], myloss);
                     }
                 }

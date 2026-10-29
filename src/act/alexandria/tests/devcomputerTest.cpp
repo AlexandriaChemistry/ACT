@@ -2294,7 +2294,8 @@ TEST_F(PropertyDevComputerTest, EspPolarizable)
 }
 
 // Test: The polarizability deviation is the sum of the squared differences
-// of the tensor elements, its weight the number of reference tensors
+// of the tensor elements in the unit of the polarizability, its weight the
+// number of reference tensors
 TEST_F(PropertyDevComputerTest, Polarizability)
 {
     ForceComputer forceComputer;
@@ -2303,6 +2304,8 @@ TEST_F(PropertyDevComputerTest, Polarizability)
     ASSERT_TRUE(pd->polarizable());
     auto          mols = prepareMolecules(&msghandler, pd, &forceComputer);
     PolarDevComputer computer;
+    double convert = convertFromGromacs(1.0, mpo_unit2(MolPropObservable::POLARIZABILITY));
+    EXPECT_NE(1, convert);
     for(auto &mol : mols)
     {
         std::vector<ACTMol *> one = { &mol };
@@ -2330,7 +2333,7 @@ TEST_F(PropertyDevComputerTest, Polarizability)
                 EXPECT_LT(0, acalc[i][i]) << mol.getMolname();
                 for(int j = 0; j < DIM; j++)
                 {
-                    sum2 += gmx::square(aref[i][j] - acalc[i][j]);
+                    sum2 += gmx::square(convert*(aref[i][j] - acalc[i][j]));
                 }
             }
         }
@@ -2350,6 +2353,92 @@ TEST_F(PropertyDevComputerTest, HarmonicsFrequencies)
 TEST_F(PropertyDevComputerTest, HarmonicsIntensities)
 {
     testHarmonics(MolPropObservable::INTENSITY, eRMS::INTENSITY);
+}
+
+// Test: With Boltzmann weighting the potential energy deviation is the sum
+// of the weights times the loss, as for the interaction energies. The
+// scale of the Huber loss is not changed by the weight.
+TEST_F(PropertyDevComputerTest, EpotBoltzmannHuber)
+{
+    ForceComputer forceComputer;
+    MsgHandler    msghandler;
+    auto          pd   = getForceField("ACS-g2");
+    auto          mols = prepareMolecules(&msghandler, pd, &forceComputer);
+    double        T    = 500;
+    ForceEnergyDevComputer computer({ { eRMS::EPOT, T } });
+    std::map<eRMS, FittingTarget> targets;
+    targets.insert({eRMS::EPOT, FittingTarget(eRMS::EPOT, iMolSelect::Train)});
+    targets.find(eRMS::EPOT)->second.setWeight(1);
+    computer.calcDeviation(&msghandler, &forceComputer, pointers(&mols), &targets, pd, LossFunction::Huber);
+    auto  &t    = targets.find(eRMS::EPOT)->second;
+    double beta = 1.0/(BOLTZ*T);
+    double wsum = 0, lsum = 0;
+    for(auto &mol : mols)
+    {
+        const auto &coords = *mol.monomerCoords(0);
+        auto        epot   = mol.conformationData(0)->energies.find(InteractionType::EPOT);
+        for(size_t i = 0; i < coords.size(); i++)
+        {
+            auto ee = coords[i].eMap.find(InteractionType::EPOT);
+            if (coords[i].eMap.end() == ee || !ee->second.haveQM() || !epot.has(i))
+            {
+                continue;
+            }
+            double eqm = ee->second.eqm();
+            double w   = std::exp(-beta*(eqm - coords[i].eMin));
+            wsum += w;
+            lsum += w*loss(LossFunction::Huber, 1, eqm - epot.act[i]);
+        }
+    }
+    EXPECT_LT(0, wsum);
+    // Some weights are well below one
+    EXPECT_LT(wsum + 0.5, t.totalWeight() + mols.size() + 1);
+    EXPECT_NEAR(wsum, t.totalWeight(), 1e-10*wsum);
+    EXPECT_NEAR(lsum, t.chiSquared(), 1e-10*lsum);
+}
+
+// Test: A molecule of which the minimization fails is left out, the
+// frequencies of the following molecules are used
+TEST_F(PropertyDevComputerTest, HarmonicsAfterFailedMinimization)
+{
+    ForceComputer forceComputer;
+    MsgHandler    msghandler;
+    auto          pd = getForceField("ACS-g2");
+    // Reference frequencies, as many as each molecule has
+    auto addHarmonics = [](MolProp *mp)
+    {
+        size_t natom = (*mp->experiment())[0].NAtom();
+        auto   mpo   = MolPropObservable::FREQUENCY;
+        auto   harm  = std::make_unique<Harmonics>(mpo_unit2(mpo), 0, mpo);
+        for(size_t k = 0; k < 3*natom - 6; k++)
+        {
+            harm->addValue(1000);
+        }
+        (*mp->experiment())[0].addProperty(mpo, std::move(harm));
+    };
+    auto mols = prepareMolecules(&msghandler, pd, &forceComputer, { "acetone", "water" }, "", addHarmonics);
+    ASSERT_EQ(2u, mols.size());
+    // Acetone first, its bonds can not be minimized
+    if (mols[0].getMolname() != "acetone")
+    {
+        std::swap(mols[0], mols[1]);
+    }
+    auto entries = mols[0].topologyPtr()->entriesPtr();
+    auto bonds   = entries->find(InteractionType::BONDS);
+    ASSERT_TRUE(entries->end() != bonds);
+    for(auto &e : bonds->second)
+    {
+        e->setParams(std::vector<double>(e->params().size(), std::numeric_limits<double>::quiet_NaN()));
+    }
+    HarmonicsDevComputer computer(MolPropObservable::FREQUENCY);
+    std::map<eRMS, FittingTarget> targets;
+    targets.insert({eRMS::FREQUENCY, FittingTarget(eRMS::FREQUENCY, iMolSelect::Train)});
+    targets.find(eRMS::FREQUENCY)->second.setWeight(1);
+    computer.calcDeviation(&msghandler, &forceComputer, pointers(&mols), &targets, pd, LossFunction::MSE);
+    auto &t = targets.find(eRMS::FREQUENCY)->second;
+    // Only water
+    EXPECT_EQ(1, t.totalWeight());
+    EXPECT_TRUE(std::isfinite(t.chiSquared()));
 }
 
 } // namespace alexandria

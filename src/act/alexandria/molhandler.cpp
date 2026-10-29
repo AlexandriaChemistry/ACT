@@ -48,6 +48,7 @@
 #include "molhandler.h"
 
 #include <array>
+#include <limits>
 #include <numeric>
 #include <random>
 
@@ -920,8 +921,10 @@ eMinimizeStatus MolHandler::minimizeCoordinates(MsgHandler                      
         double displacement = simConfig.minimizeDisplacement();
         int maxRetry        = simConfig.minimizeRetries();
         int retry           = 0;
-        // Large number!
-        double eMin         = 1e8;
+        // The lowest energy found, a structure with an energy that is not
+        // finite is never stored
+        double eMin         = std::numeric_limits<double>::max();
+        bool   haveMinimum  = false;
         while (retry < maxRetry && (!converged || simConfig.forceReminimize()))
         {
             if (retry > 0)
@@ -962,10 +965,13 @@ eMinimizeStatus MolHandler::minimizeCoordinates(MsgHandler                      
                     newCoords[current]   = *lbfgs->coordinates();
                     newEnergies[current] = *lbfgs->energies();
                     eMin                 = enew;
+                    haveMinimum          = true;
                 }
             }
             retry += 1;
         }
+        // Only a stored structure is a minimum
+        converged = haveMinimum;
         // If applicable, print the force between the frozen two atoms
         lbfgs->printFrozenForce(msghandler->tw(), myFreeze);
 
