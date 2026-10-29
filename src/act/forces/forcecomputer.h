@@ -47,6 +47,50 @@ class MsgHandler;
 class QtypeProps;
 class Topology;
 
+//! \brief How to treat the shells when computing total energies, see ForceComputer::computeTotal
+struct ShellOptions
+{
+    //! Whether to relax the shells, otherwise they stay where they are
+    bool          relax       = true;
+    //! Whether to put the shells on top of their core first
+    bool          resetShells = true;
+    //! Indices of the shells to relax, if empty all shells are relaxed
+    std::set<int> relaxShells;
+    //! Electric field applied to the charges
+    gmx::RVec     field       = { 0.0, 0.0, 0.0 };
+};
+
+/*! \brief Conformations of one topology, with the data for computing them
+ * The data of the conformations is kept between calculations, which is
+ * faster if only the coordinates of some particles change. Use
+ * setCoordinates or invalidate after changing the coordinates.
+ */
+struct ConformationSet
+{
+    //! The topology
+    const Topology           *top = nullptr;
+    //! The conformations
+    std::vector<CoordsEnergy> confs;
+    //! The data for computing them
+    ConformationData          data;
+
+    /*! \brief Replace the conformations
+     * \param[in] x The coordinates of all particles of each conformation
+     */
+    void setCoordinates(const std::vector<std::vector<gmx::RVec>> &x)
+    {
+        confs.resize(x.size());
+        for(size_t c = 0; c < x.size(); c++)
+        {
+            confs[c].x = x[c];
+        }
+        data.invalidate();
+    }
+
+    //! \brief Mark the coordinates as changed
+    void invalidate() { data.invalidate(); }
+};
+
 /*! \brief Class to compute all the forces in a molecule or complex.
  * It is imperative that there is only one force computer in each program,
  * since results may depend on the flags given when initiating. This goes
@@ -186,6 +230,52 @@ private:
                          const ForceField    *pd,
                          std::vector<ACTMol> *mols,
                          const gmx::RVec     &field) const;
+    /*! \brief Compute the total energies and forces of many conformations
+     *
+     * The conformations are computed together with the SIMD routines. The
+     * virtual sites are constructed, the shells relaxed as in the options
+     * and the forces on the virtual sites spread over their parents. The
+     * energy terms are those of compute, including INDUCTION, ALLELEC and
+     * EXCHIND.
+     * \param[in]    msghandler For debugging, may be nullptr
+     * \param[in]    pd         The force field
+     * \param[inout] set        The conformations, on return with the forces
+     *                          and the relaxed shells
+     * \param[in]    options    How to treat the shells, and the electric field
+     * \param[out]   energies   The energy terms of each conformation
+     */
+    void computeTotal(MsgHandler                                     *msghandler,
+                      const ForceField                               *pd,
+                      ConformationSet                                *set,
+                      const ShellOptions                             &options,
+                      std::vector<std::map<InteractionType, double>> *energies) const;
+
+    /*! \brief Compute interaction energies of many dimer conformations
+     *
+     * The conformations are computed together with the SIMD routines, see
+     * computeRelaxedEnergies. This replaces the conformations stored in the
+     * molecule.
+     * \param[in]    msghandler                  For debugging, may be nullptr
+     * \param[in]    pd                          The force field
+     * \param[inout] mol                         The dimer, the conformations are stored in it
+     * \param[inout] coords                      Coordinates of all particles of each
+     *                                           conformation, on return with the relaxed shells
+     * \param[in]    separateInductionCorrection Whether to store InductionCorrection separately
+     *                                           or add it to Induction
+     * \param[out]   einter                      The interaction energy terms of each conformation
+     * \param[out]   epot                        The potential energy of each dimer conformation
+     * \param[out]   forces                      The interaction forces of each conformation, the
+     *                                           forces in the dimer minus those in the monomers
+     */
+    void computeInteraction(MsgHandler                                     *msghandler,
+                            const ForceField                               *pd,
+                            ACTMol                                         *mol,
+                            std::vector<std::vector<gmx::RVec>>            *coords,
+                            bool                                            separateInductionCorrection,
+                            std::vector<std::map<InteractionType, double>> *einter,
+                            std::vector<double>                            *epot,
+                            std::vector<std::vector<gmx::RVec>>            *forces) const;
+
     /*! Do complete energy/force computation.
      * If shells are present their positions will be minimized.
      * If the shell minimization does not converge a warning will

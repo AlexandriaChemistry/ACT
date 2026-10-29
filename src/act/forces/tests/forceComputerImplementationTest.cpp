@@ -27,18 +27,20 @@
  */
 /*! \internal \file
  * \brief
- * Implements test of bonded force routines
+ * Implements test of the force routines of each potential, see
+ * computePotential in forces_simd.
  *
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  * \ingroup group_forces_tests
  */
 #include "actpre.h"
 
-#include "../forcecomputerimpl.h"
+#include "../forces_simd.h"
 
 #include <cmath>
 
 #include <functional>
+#include <map>
 #include <memory>
 #include <string>
 #include <tuple>
@@ -49,6 +51,7 @@
 #include "act/forcefield/forcefield_parametername.h"
 #include "act/forcefield/forcefield_utils.h"
 #include "act/molprop/topologyentry.h"
+#include "act/topology/coords_energy.h"
 #include "act/topology/topology.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
@@ -125,6 +128,44 @@ static std::string fcStrippedRefDataFilename()
     return stem;
 }
 
+/*! \brief Compute the energy and forces of one potential for one structure
+ * \param[in]  p           The potential
+ * \param[in]  top         The interactions
+ * \param[in]  atoms       The particles
+ * \param[in]  coordinates The coordinates
+ * \param[out] forces      The forces
+ * \param[out] energies    The energy terms, without the total
+ * \param[in]  epsilonr    Relative dielectric constant
+ * \return The total energy
+ */
+static double computeOne(Potential                          p,
+                         const TopologyEntryVector         &top,
+                         const std::vector<ActAtom>        &atoms,
+                         const std::vector<gmx::RVec>      *coordinates,
+                         std::vector<gmx::RVec>            *forces,
+                         std::map<InteractionType, double> *energies,
+                         double                             epsilonr)
+{
+    std::vector<CoordsEnergy> coords(1);
+    coords[0].x = *coordinates;
+    computePotential(nullptr, p, top, atoms, &coords, epsilonr, false);
+    *forces = coords[0].fcalc;
+    energies->clear();
+    double epot = 0;
+    for(const auto &e : coords[0].eMap)
+    {
+        if (InteractionType::EPOT == e.first)
+        {
+            epot = e.second.eact();
+        }
+        else
+        {
+            energies->insert({ e.first, e.second.eact() });
+        }
+    }
+    return epot;
+}
+
 class ForceComputerImplementationTest : public ::testing::TestWithParam<FCTestParam>
 {
 protected:
@@ -157,16 +198,13 @@ protected:
         // Energy map
         std::map<InteractionType, double> energies;
 
-        // The correct force computer
-        auto bfc = getBondForceComputer(p);
-
         double epsilonr = 1;
         if (pd && !ffOption(*pd, InteractionType::ELECTROSTATICS, 
                       "epsilonr", &epsilonr))
         {
             epsilonr = 1;
         }
-        auto epot = bfc(nullptr, top, atoms_, coordinates, &forces, &energies, epsilonr);
+        auto epot = computeOne(p, top, atoms_, coordinates, &forces, &energies, epsilonr);
         checker_.checkReal(epot, "Epot");
         checker_.checkSequence(forces.begin(), forces.end(), "Forces");
         for (const auto &e : energies)
@@ -191,7 +229,7 @@ protected:
         }
         // Energy map
         std::map<InteractionType, double> energies2;
-        (void) bfc(nullptr, top, atoms_, &coords2, &forces2, &energies2, epsilonr);
+        (void) computeOne(p, top, atoms_, &coords2, &forces2, &energies2, epsilonr);
         double ediff = 1e-8;
         // First, check that both maps have the same number of entries
         ASSERT_EQ(energies.size(), energies2.size());
@@ -229,7 +267,7 @@ protected:
             auto newx = *coordinates;
             newx[1][ZZ] += (2*k-1)*dx;
             rvec_sub((*coordinates)[1], newx[1], dxvector[k]);
-            ener[k] = bfc(nullptr, top, atoms_, &newx, &forces, &energies, epsilonr);
+            ener[k] = computeOne(p, top, atoms_, &newx, &forces, &energies, epsilonr);
         }
         // Compute numerical derivative
         double fz = -(ener[1]-ener[0])/(norm(dxvector[0])+norm(dxvector[1]));

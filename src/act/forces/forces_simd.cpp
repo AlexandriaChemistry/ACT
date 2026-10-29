@@ -2481,13 +2481,11 @@ static inline void lowComputeEnergies(MsgHandler                *msghandler,
     }
 }
 
-void computeEnergies(MsgHandler                  *msghandler,
-                     const ForceField            *pd,
-                     const std::vector<ACTMol *> &allmols,
-                     size_t                       what,
-                     bool                         forces,
-                     bool                         skipDone,
-                     bool                         intermolecular)
+/*! \brief The relative dielectric constant of a force field
+ * \param[in] pd The force field
+ * \return The epsilonr option of the electrostatics, or 1
+ */
+static double relativeDielectric(const ForceField *pd)
 {
     double epsilonr = 1;
     auto iCoul = InteractionType::ELECTROSTATICS;
@@ -2500,6 +2498,33 @@ void computeEnergies(MsgHandler                  *msghandler,
             epsilonr = std::atof(ffpl.optionValue(epsr).c_str());
         }
     }
+    return epsilonr;
+}
+
+void computeConformations(MsgHandler                *msghandler,
+                          const ForceField          *pd,
+                          const Topology            *top,
+                          std::vector<CoordsEnergy> *coords,
+                          ConformationData          *cdata,
+                          bool                       forces,
+                          bool                       skipDone)
+{
+    // The conformations only change if virtual sites are constructed
+    // again, which ConformationData knows, or if shells move.
+    bool reuse = !pd->polarizable();
+    lowComputeEnergies(msghandler, pd, top, coords, cdata, relativeDielectric(pd),
+                       true, forces, reuse, skipDone);
+}
+
+void computeEnergies(MsgHandler                  *msghandler,
+                     const ForceField            *pd,
+                     const std::vector<ACTMol *> &allmols,
+                     size_t                       what,
+                     bool                         forces,
+                     bool                         skipDone,
+                     bool                         intermolecular)
+{
+    double epsilonr = relativeDielectric(pd);
     // The conformations of the molecules only change if virtual sites are
     // constructed again, which ConformationData knows, or if shells move.
     bool reuse = !pd->polarizable();

@@ -41,6 +41,7 @@ gmx_add_unit_test(
     # files with code for tests
     forcecomputerutilsTest.cpp
     forceComputerImplementationTest.cpp
+    computeTotalTest.cpp
     forceComputerTest.cpp
     forcesSimdTest.cpp
     simdMathTest.cpp

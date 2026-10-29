@@ -536,6 +536,11 @@ size_t ForceComputer::updateShells(const Topology            *top,
                 // we add the offset to map local -> global indices.
                 int shellLocal   = p->atomIndex(1);
                 int coreLocal    = p->atomIndex(0);
+                // Only the shells in the mask are relaxed
+                if (!isShell[shellLocal])
+                {
+                    continue;
+                }
                 int shellGlobal  = shellLocal + static_cast<int>(offset);
                 int coreGlobal   = coreLocal + static_cast<int>(offset);
                 // The force constant from the current polarizability and
@@ -1291,6 +1296,269 @@ void ForceComputer::computeTotalEnergies(MsgHandler                  *msghandler
         {
             spreadVsiteForces(molptr->topology(), &dim.x, &dim.fcalc);
         }
+    }
+}
+
+/*! \brief Add the forces of an electric field on the charges
+ * \param[in]    atoms  The particles
+ * \param[in]    field  The electric field
+ * \param[inout] coords The conformations, only those not done are changed
+ */
+static void addFieldForces(const std::vector<ActAtom>  &atoms,
+                           const gmx::RVec             &field,
+                           std::vector<CoordsEnergy>   *coords)
+{
+    if (0 == field[XX] && 0 == field[YY] && 0 == field[ZZ])
+    {
+        return;
+    }
+    for(auto &ce : *coords)
+    {
+        if (ce.done)
+        {
+            continue;
+        }
+        for(size_t i = 0; i < atoms.size() && i < ce.fcalc.size(); i++)
+        {
+            real fac = FIELDFAC*atoms[i].charge();
+            for(int m = 0; m < DIM; m++)
+            {
+                ce.fcalc[i][m] += fac*field[m];
+            }
+        }
+    }
+}
+
+void ForceComputer::computeTotal(MsgHandler                                     *msghandler,
+                                 const ForceField                               *pd,
+                                 ConformationSet                                *set,
+                                 const ShellOptions                             &options,
+                                 std::vector<std::map<InteractionType, double>> *energies) const
+{
+    auto  top   = set->top;
+    auto &confs = set->confs;
+    auto  cdata = &set->data;
+    auto &atoms = top->atoms();
+    // Construct the virtual sites and reset the shells
+    bool vsites = vsitesOutdated(top, cdata);
+    std::vector<std::pair<size_t, size_t>> shells;
+    if (options.resetShells)
+    {
+        shells = shellParents(atoms);
+    }
+    for(auto &conf : confs)
+    {
+        nEval_ += 1;
+        if (vsites)
+        {
+            constructVsiteCoordinates(top, &conf.x);
+        }
+        resetShells(shells, &conf.x);
+    }
+    computeConformations(msghandler, pd, top, &confs, cdata, true, false);
+    addFieldForces(atoms, options.field, &confs);
+    // The energies before relaxing the shells give the induction energy
+    auto &cener = cdata->energies;
+    auto  itype = InteractionType::POLARIZATION;
+    bool  relax = options.relax && pd->polarizable() && top->hasEntry(itype);
+    cener.setBackups(relax);
+    if (relax)
+    {
+        backupEnergies(&cener);
+        // The shells to relax
+        std::vector<bool> isShell(atoms.size(), false);
+        size_t            nShell = 0;
+        for(size_t i = 0; i < atoms.size(); i++)
+        {
+            if (atoms[i].pType() == ActParticle::Shell &&
+                (options.relaxShells.empty() ||
+                 options.relaxShells.end() != options.relaxShells.find(i)))
+            {
+                isShell[i] = true;
+                nShell    += 1;
+            }
+        }
+        resetShellSteps(&confs);
+        // We have already done one energy calculation
+        int  iter    = 1;
+        bool allDone = false;
+        while (iter < maxiter_ && !allDone)
+        {
+            allDone = (updateShells(top, 0, nShell, isShell, 0, &confs) == confs.size());
+            if (!allDone)
+            {
+                // Only for the conformations that did not converge
+                for(const auto &conf : confs)
+                {
+                    nShellIter_ += conf.done ? 0 : 1;
+                }
+                computeConformations(msghandler, pd, top, &confs, cdata, true, true);
+                addFieldForces(atoms, options.field, &confs);
+            }
+            iter++;
+        }
+        // Check the conformations computed last
+        double maxShellDistance2 = maxShellDistance_*maxShellDistance_;
+        for(auto &conf : confs)
+        {
+            if (conf.done)
+            {
+                continue;
+            }
+            double msForce = shellForce2(atoms, isShell, conf.x, conf.fcalc, 0, maxShellDistance2);
+            if (nShell > 0)
+            {
+                msForce /= nShell;
+            }
+            if (msForce > msForceToler_)
+            {
+                nShellConvergeFailed_ += 1;
+            }
+            conf.done = true;
+        }
+    }
+    // The energy terms, as in compute
+    energies->clear();
+    for(size_t c = 0; c < confs.size(); c++)
+    {
+        std::map<InteractionType, double> emap;
+        for(auto t : cener.types())
+        {
+            auto et = cener.find(t);
+            if (et.has(c))
+            {
+                emap.insert({ t, et.act[c] });
+            }
+        }
+        // The change of the electrostatic terms due to the relaxation
+        // of the shells is the induction energy.
+        bool   haveInduction = false;
+        double eInduction    = 0;
+        for(auto et : { InteractionType::ELECTROSTATICS,
+                        InteractionType::POLARIZATION,
+                        InteractionType::CHARGETRANSFER })
+        {
+            auto tt = emap.find(et);
+            if (emap.end() != tt)
+            {
+                double before = relax ? cener.find(et).before[c] : tt->second;
+                eInduction   += tt->second - before;
+                tt->second    = before;
+                haveInduction = true;
+            }
+        }
+        if (haveInduction)
+        {
+            emap.insert_or_assign(InteractionType::INDUCTION, eInduction);
+        }
+        auto sum = [&emap](std::initializer_list<InteractionType> itypes)
+        {
+            double esum = 0;
+            for(auto it : itypes)
+            {
+                auto ee = emap.find(it);
+                if (emap.end() != ee)
+                {
+                    esum += ee->second;
+                }
+            }
+            return esum;
+        };
+        emap.insert_or_assign(InteractionType::ALLELEC,
+                              sum({ InteractionType::ELECTROSTATICS,
+                                    InteractionType::POLARIZATION,
+                                    InteractionType::INDUCTION,
+                                    InteractionType::INDUCTIONCORRECTION }));
+        emap.insert_or_assign(InteractionType::EXCHIND,
+                              sum({ InteractionType::EXCHANGE,
+                                    InteractionType::INDUCTION,
+                                    InteractionType::INDUCTIONCORRECTION }));
+        energies->push_back(emap);
+    }
+    // Spread forces to atoms
+    for(auto &conf : confs)
+    {
+        spreadVsiteForces(top, &conf.x, &conf.fcalc);
+    }
+}
+
+void ForceComputer::computeInteraction(MsgHandler                                     *msghandler,
+                                       const ForceField                               *pd,
+                                       ACTMol                                         *mol,
+                                       std::vector<std::vector<gmx::RVec>>            *coords,
+                                       bool                                            separateInductionCorrection,
+                                       std::vector<std::map<InteractionType, double>> *einter,
+                                       std::vector<double>                            *epot,
+                                       std::vector<std::vector<gmx::RVec>>            *forces) const
+{
+    einter->clear();
+    epot->clear();
+    forces->clear();
+    if (!mol->isDimer())
+    {
+        return;
+    }
+    // Replace the conformations of the dimer and its monomers
+    for(size_t what = 0; what < 3; what++)
+    {
+        mol->conformationData(what)->invalidate();
+    }
+    auto  &dimers = *mol->dimerCoords();
+    auto  &mons0  = *mol->monomerCoords(0);
+    auto  &mons1  = *mol->monomerCoords(1);
+    size_t natom1 = mol->fragmentHandler()->atomStart()[1];
+    dimers.clear();
+    mons0.clear();
+    mons1.clear();
+    for(const auto &x : *coords)
+    {
+        CoordsEnergy ce = {};
+        ce.x = x;
+        dimers.push_back(ce);
+        CoordsEnergy m0 = {}, m1 = {};
+        m0.x.assign(x.begin(), x.begin()+natom1);
+        m1.x.assign(x.begin()+natom1, x.end());
+        m0.xrelax = m0.x;
+        m1.xrelax = m1.x;
+        mons0.push_back(m0);
+        mons1.push_back(m1);
+    }
+    computeRelaxedEnergies(msghandler, pd, { mol }, true, separateInductionCorrection, true);
+    mol->storeEnergies();
+    for(size_t c = 0; c < dimers.size(); c++)
+    {
+        std::map<InteractionType, double> emap;
+        for(const auto &e : dimers[c].eMap)
+        {
+            if (e.second.haveACT())
+            {
+                emap.insert({ e.first, e.second.eact() });
+            }
+        }
+        // The dimer energy is the interaction energy plus the energies of
+        // the relaxed monomers, and the interaction forces are the dimer
+        // forces minus the forces in the monomers.
+        auto   ep = emap.find(InteractionType::EPOT);
+        double e  = (emap.end() != ep) ? ep->second : 0;
+        auto   f  = dimers[c].fcalc;
+        for(size_t k = 0; k < 2; k++)
+        {
+            auto &mon = (*mol->monomerCoords(k))[c];
+            auto  mep = mon.eMap.find(InteractionType::EPOT);
+            if (mon.eMap.end() != mep && mep->second.haveACT())
+            {
+                e += mep->second.eact();
+            }
+            size_t offset = (k == 0) ? 0 : natom1;
+            for(size_t i = 0; i < mon.fcalc.size(); i++)
+            {
+                rvec_dec(f[offset+i], mon.fcalc[i]);
+            }
+        }
+        (*coords)[c] = dimers[c].x;
+        einter->push_back(emap);
+        epot->push_back(e);
+        forces->push_back(f);
     }
 }
 
