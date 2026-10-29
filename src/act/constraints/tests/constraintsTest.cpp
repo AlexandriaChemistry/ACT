@@ -203,6 +203,93 @@ TEST_F (ConstraintsTest, NoConstraints)
     testConstrainer("acetate.sdf", ConstraintType::No, 1000, 1e-4, 1000);
 }
 
+//! \brief Load a molecule with a force field for the constraint tests
+static void loadMolecule(ForceField          *pd,
+                         const std::string   &molname,
+                         std::vector<ACTMol> *mps)
+{
+    ForceComputer forceComp;
+    MsgHandler    msghandler;
+    msghandler.setPrintLevel(ACTStatus::Warning);
+    auto dataName = gmx::test::TestFileManager::getInputFilePath("../../alexandria/tests/mols/" + molname);
+    initACTMol(&msghandler, dataName, pd, &forceComp, mps);
+}
+
+TEST(ConstrainerTest, ProjectForces)
+{
+    auto               *pd  = getForceField("PC+GV-elec");
+    std::vector<ACTMol> mps;
+    loadMolecule(pd, "acetate.sdf", &mps);
+    ASSERT_EQ(1u, mps.size());
+    auto               &mol = mps[0];
+    Constrainer         ccc(100, 1e-8, 1);
+    auto        coords = mol.xOriginal();
+    ccc.makeConstraints(nullptr, ConstraintType::Angles, pd, mol.topology(), coords);
+    ASSERT_EQ(0, ccc.shake(nullptr, &coords));
+    std::vector<gmx::RVec> forces(coords.size());
+    for(size_t i = 0; i < forces.size(); i++)
+    {
+        for(int m = 0; m < DIM; m++)
+        {
+            forces[i][m] = std::sin(1.0 + 3*i + m);
+        }
+    }
+    ASSERT_EQ(0, ccc.projectForces(nullptr, coords, &forces));
+    // The accelerations do not change the constrained distances
+    auto &atoms = mol.topology()->atoms();
+    for(size_t c = 0; c < ccc.numConstraints(); c++)
+    {
+        auto  &p = ccc.pairs()[c];
+        rvec   dx, ai, aj, da;
+        rvec_sub(coords[p[0]], coords[p[1]], dx);
+        svmul(atoms[p[0]].invmass(), forces[p[0]], ai);
+        svmul(atoms[p[1]].invmass(), forces[p[1]], aj);
+        rvec_sub(ai, aj, da);
+        EXPECT_NEAR(0, iprod(dx, da), 1e-10) << "constraint " << c;
+    }
+    // Projecting again does not change anything
+    auto forces2 = forces;
+    ASSERT_EQ(0, ccc.projectForces(nullptr, coords, &forces2));
+    for(size_t i = 0; i < forces.size(); i++)
+    {
+        for(int m = 0; m < DIM; m++)
+        {
+            EXPECT_NEAR(forces[i][m], forces2[i][m], 1e-10);
+        }
+    }
+}
+
+TEST(ConstrainerTest, Frozen)
+{
+    auto               *pd  = getForceField("PC+GV-elec");
+    std::vector<ACTMol> mps;
+    loadMolecule(pd, "acetate.sdf", &mps);
+    ASSERT_EQ(1u, mps.size());
+    auto               &mol = mps[0];
+    Constrainer         ccc(100, 1e-8, 1);
+    auto        coords = mol.xOriginal();
+    ccc.makeConstraints(nullptr, ConstraintType::Bonds, pd, mol.topology(), coords);
+    // Freeze the two carbons, the bond between them is not constrained anymore
+    ccc.setFrozen({ 0, 1 });
+    EXPECT_EQ(5u, ccc.numConstraints());
+    auto xfrozen = coords;
+    ASSERT_EQ(0, ccc.shake(nullptr, &coords));
+    for(int i : { 0, 1 })
+    {
+        for(int m = 0; m < DIM; m++)
+        {
+            EXPECT_EQ(xfrozen[i][m], coords[i][m]);
+        }
+    }
+    for(size_t c = 0; c < ccc.numConstraints(); c++)
+    {
+        auto &p = ccc.pairs()[c];
+        rvec  dx;
+        rvec_sub(coords[p[0]], coords[p[1]], dx);
+        EXPECT_NEAR(ccc.length(c), norm(dx), 1e-8);
+    }
+}
+
 TEST(ConstraintTypeTest, Strings)
 {
     for(auto ct : { ConstraintType::No, ConstraintType::Bonds, ConstraintType::Angles })

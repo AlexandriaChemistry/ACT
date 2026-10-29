@@ -406,6 +406,10 @@ eMinimizeAlgorithm stringToEMinimizeAlgorithm(const std::string &str)
 void SimulationConfigHandler::add_options(std::vector<t_pargs>             *pargs,
                                           gmx_unused std::vector<t_filenm> *fnms)
 {
+    // The parser stores the choice in the first element of an enum, which
+    // would otherwise become the default when the options are parsed again.
+    eminAlgs[0]     = nullptr;
+    constrainStr[0] = nullptr;
     std::vector<t_pargs> extra = {
         { "-sp", FALSE, etBOOL, {&singlePoint_},
           "Do a single point energy calculation and call it a day." },
@@ -430,7 +434,7 @@ void SimulationConfigHandler::add_options(std::vector<t_pargs>             *parg
         { "-r0fbpr", FALSE, etREAL, {&r0FBPR_},
           "Radius (nm) for flat-bottom position restraints (from origin)" },
         { "-constrain", FALSE, etENUM, {constrainStr},
-          "Constrain bond lengths, or bond lengths and angles, and the velocities along them in MD simulations. Angle constraints keep the distance between the outer atoms of each angle constant." },
+          "Constrain bond lengths, or bond lengths and angles, in energy minimization and MD simulations. Angle constraints keep the distance between the outer atoms of each angle constant." },
         { "-constr_maxiter", FALSE, etINT, {&constraintMaxIter_},
           "Max number of iterations for SHAKE" },
         { "-constr_toler", FALSE, etREAL, {&constraintTolerance_},

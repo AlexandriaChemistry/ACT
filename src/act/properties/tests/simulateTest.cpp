@@ -451,6 +451,105 @@ TEST_F(SimulateTest, AngleConstraintsWater)
     }
 }
 
+// Test: The minimizers find the same structure with constraints
+TEST_F(SimulateTest, MinimizeConstrained)
+{
+    std::string molFile("methanethiol.sdf");
+    auto distance = [](const std::vector<std::vector<double>> &x, int i, int j)
+    {
+        double d2 = 0;
+        for(int m = 0; m < DIM; m++)
+        {
+            double dx = x[i][m] - x[j][m];
+            d2       += dx*dx;
+        }
+        return std::sqrt(d2);
+    };
+    std::map<std::string, std::vector<std::vector<double>>> xmin;
+    for(const std::string constrain : { "bonds", "angles" })
+    {
+        for(const std::string alg : { "LBFGS", "Steep", "Newton" })
+        {
+            SimulateFiles files;
+            auto label   = "min" + constrain + alg;
+            auto cmd     = baseCommand(molFile, label, &files);
+            auto confout = fileManager().getTemporaryFilePath(label + "-confout.pdb");
+            cmd.addOption("-minimize");
+            cmd.addOption("-minalg", alg);
+            cmd.addOption("-maxiter", 1000);
+            cmd.addOption("-constrain", constrain);
+            cmd.addOption("-c", confout);
+            ASSERT_EQ(0, run(&cmd)) << label;
+            xmin.insert({ label, readPdbCoordinates(confout) });
+        }
+        // The structures can be translated or rotated with respect
+        // to each other, so compare all distances. Coordinates are
+        // written with three decimals.
+        double toler = 3e-3;
+        auto  &xref  = xmin["min" + constrain + "LBFGS"];
+        for(const std::string alg : { "Steep", "Newton" })
+        {
+            auto &x = xmin["min" + constrain + alg];
+            ASSERT_EQ(xref.size(), x.size());
+            for(size_t i = 0; i < x.size(); i++)
+            {
+                for(size_t j = i+1; j < x.size(); j++)
+                {
+                    EXPECT_NEAR(distance(xref, i, j), distance(x, i, j), toler)
+                        << constrain << " " << alg << " atoms " << i+1 << " " << j+1;
+                }
+            }
+        }
+    }
+    // Both constrain the bonds to the same lengths. The atoms are S H C H H H.
+    auto &xb = xmin["minbondsLBFGS"];
+    auto &xa = xmin["minanglesLBFGS"];
+    for(const auto &bond : std::vector<std::pair<int, int>>{ { 0, 1 }, { 0, 2 }, { 2, 3 }, { 2, 4 }, { 2, 5 } })
+    {
+        EXPECT_NEAR(distance(xb, bond.first, bond.second),
+                    distance(xa, bond.first, bond.second), 3e-3) << "bond " << bond.first+1 << "-" << bond.second+1;
+    }
+    // The angle constraints change the distances between the hydrogens
+    double maxDiff = 0;
+    for(size_t i = 0; i < xa.size(); i++)
+    {
+        for(size_t j = i+1; j < xa.size(); j++)
+        {
+            maxDiff = std::max(maxDiff, std::abs(distance(xa, i, j) - distance(xb, i, j)));
+        }
+    }
+    EXPECT_LT(0.03, maxDiff);
+}
+
+// Test: Freezing atoms in a minimization with constraints
+TEST_F(SimulateTest, MinimizeFreezeConstrained)
+{
+    std::string   molFile("acetone-3-oep.log.pdb");
+    SimulateFiles files;
+    auto cmd     = baseCommand(molFile, "freezecons", &files);
+    auto confout = fileManager().getTemporaryFilePath("freezecons-confout.pdb");
+    auto ndx     = fileManager().getTemporaryFilePath("freezecons.ndx");
+    {
+        std::ofstream out(ndx);
+        out << "[ Frozen ]\n1 2\n";
+    }
+    cmd.addOption("-minimize");
+    cmd.addOption("-c", confout);
+    cmd.addOption("-freeze", ndx);
+    cmd.addOption("-constrain", "angles");
+    ASSERT_EQ(0, run(&cmd));
+    auto xin  = readPdbCoordinates(alexandriaFile("mols/" + molFile));
+    auto xout = readPdbCoordinates(confout);
+    ASSERT_EQ(xin.size(), xout.size());
+    for(size_t i = 0; i < 2; i++)
+    {
+        for(int m = 0; m < 3; m++)
+        {
+            EXPECT_NEAR(xin[i][m], xout[i][m], 1.5e-3) << "atom " << i+1;
+        }
+    }
+}
+
 // Test: Without an initial temperature no velocities are generated
 TEST_F(SimulateTest, ZeroTemperature)
 {

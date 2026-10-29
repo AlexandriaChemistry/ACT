@@ -49,7 +49,7 @@ class ACTMol;
 
 //! \brief enum to distinguish result of minimizer
 enum class eMinimizeStatus {
-    OK, TooManySteps, Solver, NoMinimum
+    OK, TooManySteps, Solver, NoMinimum, Constraints
 };
 
 //! Convert enum to string

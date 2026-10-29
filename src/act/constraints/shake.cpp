@@ -483,6 +483,72 @@ int Constrainer::shake(gmx_unused MsgHandler        *msghandler,
     return error;
 }
 
+void Constrainer::setFrozen(const std::vector<int> &frozen)
+{
+    for (auto f : frozen)
+    {
+        invmass_[f] = 0;
+    }
+    std::vector<std::array<int, 2>> pairs;
+    std::vector<double>             d2, tol;
+    size_t                          nbonds = 0;
+    for (size_t a = 0; a < pairs_.size(); a++)
+    {
+        if (invmass_[pairs_[a][0]] > 0 || invmass_[pairs_[a][1]] > 0)
+        {
+            pairs.push_back(pairs_[a]);
+            d2.push_back(constraint_distance_squared_[a]);
+            tol.push_back(distance_squared_tolerance_[a]);
+            if (a < nbonds_)
+            {
+                nbonds += 1;
+            }
+        }
+    }
+    pairs_                       = pairs;
+    constraint_distance_squared_ = d2;
+    distance_squared_tolerance_  = tol;
+    nbonds_                      = nbonds;
+    makeCoupledPairs();
+}
+
+/*! \brief Remove the components along the constraints from vectors
+ *
+ * Solves the linear equations for the multipliers h such that
+ * r_a . (u_a1 + invmass_a1 Delta_a1 - u_a2 - invmass_a2 Delta_a2) = 0
+ * for all constraints a, where Delta_i = sum_b sigma_ib h_b r_b.
+ * \param[in]    pairs   The constrained atom pairs
+ * \param[in]    coupled The coupled constraints
+ * \param[in]    invmass The inverse masses
+ * \param[in]    r       The distance vectors of the constraints
+ * \param[in]    u       The vectors (velocities) per atom
+ * \param[out]   h       The multipliers
+ * \return whether the solution is finite
+ */
+template <typename CoupledPair>
+static bool solveProjection(const std::vector<std::array<int, 2>> &pairs,
+                            const std::vector<CoupledPair>        &coupled,
+                            const std::vector<gmx::RVec>          &r,
+                            const std::vector<gmx::RVec>          &u,
+                            Eigen::VectorXd                       *h)
+{
+    auto            nc = pairs.size();
+    Eigen::MatrixXd A  = Eigen::MatrixXd::Zero(nc, nc);
+    Eigen::VectorXd uproj(nc);
+    for (size_t a = 0; a < nc; a++)
+    {
+        rvec du;
+        rvec_sub(u[pairs[a][0]], u[pairs[a][1]], du);
+        uproj[a] = -iprod(du, r[a]);
+    }
+    for (const auto &c : coupled)
+    {
+        A(c.a, c.b) = c.coupling*iprod(r[c.a], r[c.b]);
+    }
+    *h = A.partialPivLu().solve(uproj);
+    return h->allFinite();
+}
+
 int Constrainer::rattle(MsgHandler                   *msghandler,
                         const std::vector<gmx::RVec> &positions,
                         std::vector<gmx::RVec>       *velocities)
@@ -494,22 +560,9 @@ int Constrainer::rattle(MsgHandler                   *msghandler,
     computeInitialDisplacements(positions);
     // The velocity constraints are linear, such that one solution of the
     // linear equations removes all velocity components along the constraints.
-    auto            nc = pairs_.size();
-    Eigen::MatrixXd A  = Eigen::MatrixXd::Zero(nc, nc);
-    Eigen::VectorXd vproj(nc);
-    for (size_t a = 0; a < nc; a++)
-    {
-        rvec dv;
-        rvec_sub((*velocities)[pairs_[a][0]], (*velocities)[pairs_[a][1]], dv);
-        vproj[a] = -iprod(dv, initial_displacements_[a]);
-    }
-    for (const auto &c : coupled_)
-    {
-        A(c.a, c.b) = c.coupling*iprod(initial_displacements_[c.a], initial_displacements_[c.b]);
-    }
-    Eigen::VectorXd h = A.partialPivLu().solve(vproj);
+    Eigen::VectorXd h;
     int error = 0;
-    if (h.allFinite())
+    if (solveProjection(pairs_, coupled_, initial_displacements_, *velocities, &h))
     {
         displace(pairs_, invmass_, initial_displacements_, h, velocities);
     }
@@ -522,6 +575,32 @@ int Constrainer::rattle(MsgHandler                   *msghandler,
         msghandler->writeDebug(gmx::formatString("Rattled with error code %d", error));
     }
     return error;
+}
+
+int Constrainer::projectForces(gmx_unused MsgHandler        *msghandler,
+                               const std::vector<gmx::RVec> &positions,
+                               std::vector<gmx::RVec>       *forces)
+{
+    if (pairs_.empty())
+    {
+        return 0;
+    }
+    computeInitialDisplacements(positions);
+    // The accelerations, the forces divided by the masses
+    std::vector<gmx::RVec> acc(forces->size());
+    for (size_t i = 0; i < forces->size(); i++)
+    {
+        svmul(invmass_[i], (*forces)[i], acc[i]);
+    }
+    Eigen::VectorXd h;
+    if (!solveProjection(pairs_, coupled_, initial_displacements_, acc, &h))
+    {
+        return 1;
+    }
+    // Add the constraint forces, without dividing by the masses
+    std::vector<double> ones(invmass_.size(), 1.0);
+    displace(pairs_, ones, initial_displacements_, h, forces);
+    return 0;
 }
 
 } // namespace alexandria
