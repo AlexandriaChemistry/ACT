@@ -58,6 +58,11 @@ struct ShellOptions
     std::set<int> relaxShells;
     //! Electric field applied to the charges
     gmx::RVec     field       = { 0.0, 0.0, 0.0 };
+    //! Whether to add INDUCTION, ALLELEC and EXCHIND as compute, otherwise
+    //! the energies are those of the potentials, as in computeOnce
+    bool          energyTerms = true;
+    //! Whether to construct the virtual sites and spread their forces
+    bool          virtualSites = true;
 };
 
 /*! \brief Conformations of one topology, with the data for computing them
