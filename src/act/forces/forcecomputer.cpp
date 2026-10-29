@@ -257,200 +257,19 @@ void ForceComputer::compute(MsgHandler                        *msg_handler,
                             bool                               resetShells,
                             std::set<int>                      relax) const
 {
-    nEval_ += 1;
-    constructVsiteCoordinates(top, coordinates);
-    // Short-cut
-    auto &atoms = top->atoms();
-    // Reset shells if needed and if possible
-    if (resetShells)
-    {
-        for(size_t i = 0; i < top->nAtoms(); i++)
-        {
-            if (atoms[i].pType() == ActParticle::Shell &&
-                atoms[i].parents().size() == 1)
-            {
-                auto parent = atoms[i].parents()[0];
-                copy_rvec((*coordinates)[parent], (*coordinates)[i]);
-            }
-        }
-    }
-    // Do first calculation every time.
-    computeOnce(msg_handler, pd, top, coordinates, forces, energies, field);
-    // Store total electrostatics energy in independent copy.
-    std::map<InteractionType, double> eBefore = *energies;
-
-    // Now let's have a look whether we are polarizable
-    auto itype = InteractionType::POLARIZATION;
-    if (pd->polarizable() && top->hasEntry(itype))
-    {
-        // mean square shell force
-        double msForce = 0;
-        int    iter    = 1;
-        // Is this particle a shell?
-        std::vector<bool>   isShell;
-        // One over force constant for this particle
-        std::vector<double> fcShell_1;
-        std::vector<double> fcHyper;
-        std::vector<double> rHyper;
-        auto &ffpl  = pd->findForcesConst(itype);
-        auto pol_name = potentialToParameterName(ffpl.potential());
-        int  nshell = 0;
-        for(auto &aa : atoms)
-        {
-            bool bIS = aa.pType() == ActParticle::Shell;
-            isShell.push_back(bIS);
-            double fc_1    = 0;
-            double fchyper = 0;
-            double rhyper  = 0;
-            if (bIS)
-            {
-                Identifier atID(aa.ffType());
-                auto params = ffpl.findParameterMapConst(atID);
-                auto alpha  = params.find(pol_name[polALPHA])->second.internalValue();
-                auto ffp = params.find(pol_name[polFCHYPER]);
-                if (ffp != params.end())
-                {
-                    fchyper = ffp->second.internalValue();
-                }
-                auto ffr = params.find(pol_name[polRHYPER]);
-                if (ffr != params.end())
-                {
-                    rhyper = ffr->second.internalValue();
-                }
-                auto q     = aa.charge();
-                if (alpha > 0 && q != 0)
-                {
-                    fc_1 = (q*q*ONE_4PI_EPS0)/alpha;
-                }
-                nshell += 1;
-            }
-            fcHyper.push_back(fchyper);
-            rHyper.push_back(rhyper);
-            fcShell_1.push_back(fc_1);
-        }
-        auto &pols = top->entry(itype);
-        // Prevent shells from flying off.
-        real maxShellDistance2 = gmx::square(maxShellDistance_);
-        msForce    = shellForce2(atoms, isShell, *coordinates, *forces, 0, maxShellDistance2)/nshell;
-        // Fraction of the step to the minimum of an isolated shell
-        double step = 1;
-        while (msForce > msForceToler_ && iter < maxiter_)
-        {
-            // Loop over polarizabilities
-            for(const auto &p : pols)
-            {
-                // Displace the shells according to the force
-                // Since the potential is harmonic we use Hooke's law
-                // F = k dx -> dx = F / k
-                // Note that this only works for purely harmonic potentials,
-                // see function calc_fscale for quartic potentials.
-                int shell = p->atomIndex(1);
-                if (relax.empty() || relax.end() != relax.find(shell))
-                {
-                    update_shell_positions(p->atomIndex(0), p->atomIndex(1),
-                                           coordinates, *forces,
-                                           fcShell_1[shell], fcHyper[shell],
-                                           rHyper[shell], step);
-                    // Check distance from parent, if there is only one
-                    if (maxShellDistance2 > 0 && atoms[shell].parents().size() == 1)
-                    {
-                        int core = atoms[shell].parents()[0];
-                        rvec dx;
-                        rvec_sub((*coordinates)[shell], (*coordinates)[core], dx);
-                        real dx2 = iprod(dx, dx);
-                        if (dx2 > maxShellDistance2)
-                        {
-                            // Move back the shell/drude to the wall distance
-                            real scale = std::sqrt(maxShellDistance2/dx2);
-                            for (int m = 0; m < DIM; m++)
-                            {
-                                (*coordinates)[shell][m] = (*coordinates)[core][m] + scale*dx[m];
-                            } 
-                        }
-                    }
-                }
-            }
-            // Do next calculation
-            computeOnce(msg_handler, pd, top, coordinates, forces, energies, field);
-            double msForceNew = shellForce2(atoms, isShell, *coordinates, *forces, 0, maxShellDistance2)/nshell;
-            // Coupled shells can overshoot, then the step is reduced.
-            // Smaller steps can freeze shells far from the minimum.
-            if (msForceNew > msForce)
-            {
-                step = 0.5;
-            }
-            msForce  = msForceNew;
-            iter    += 1;
-            nShellIter_ += 1;
-        }
-        if (msForce > msForceToler_)
-        {
-            nShellConvergeFailed_ += 1;
-            if (msg_handler && msg_handler->debug())
-            {
-                msg_handler->msg(ACTStatus::Debug,
-                                 gmx::formatString("Shell optimization did not converge. RMS force is %g, iter %d/%d, total evals %zu, total shell iters %zu", std::sqrt(msForce), iter, maxiter_, nEval_, nShellIter_));
-            }
-        }
-    }
-    {
-        // Induction energy
-        bool   haveInduction = false;
-        double eInduction    = 0;
-        // Extract electrostatics once more
-        // Note that the INDUCTIONCORRECTION is treated in the calling routine
-        std::set<InteractionType> eTerms = {
-            InteractionType::ELECTROSTATICS,
-            InteractionType::POLARIZATION,
-            InteractionType::CHARGETRANSFER
-        };
-        for(const auto et : eTerms)
-        {
-            auto tt = energies->find(et);
-            if (energies->end() != tt &&
-                eBefore.end() != eBefore.find(et))
-            {
-                eInduction   += tt->second - eBefore[et];
-                tt->second    = eBefore[et];
-                haveInduction = true;
-            }
-        }
-        if (haveInduction)
-        {
-            energies->insert_or_assign(InteractionType::INDUCTION, eInduction);
-        }
-    }
-    {
-        // Sum of all electrostatic terms
-        double allelec = 0;
-        for(const auto &itype : { InteractionType::ELECTROSTATICS,
-                                  InteractionType::POLARIZATION,
-                                  InteractionType::INDUCTION,
-                                  InteractionType::INDUCTIONCORRECTION })
-        {
-            auto ee = energies->find(itype);
-            if (energies->end() != ee)
-            {
-                allelec += ee->second;
-            }
-        }
-        energies->insert_or_assign(InteractionType::ALLELEC, allelec);
-    }
-    {
-        // Sum of exchange and induction terms
-        double exchind = 0;
-        for(const auto &itype : { InteractionType::EXCHANGE, InteractionType::INDUCTION, InteractionType::INDUCTIONCORRECTION })
-        {
-            auto ee = energies->find(itype);
-            if (energies->end() != ee)
-            {
-                exchind += ee->second;
-            }
-        }
-        energies->insert_or_assign(InteractionType::EXCHIND, exchind);
-    }
-    // Spread forces to atoms
-    spreadVsiteForces(top, coordinates, forces);
+    // One conformation, computed with the SIMD routines
+    ConformationSet set;
+    set.top = top;
+    set.setCoordinates({ *coordinates });
+    ShellOptions options;
+    options.field       = field;
+    options.resetShells = resetShells;
+    options.relaxShells = relax;
+    std::vector<std::map<InteractionType, double>> emaps;
+    computeTotal(msg_handler, pd, &set, options, &emaps);
+    *coordinates = set.confs[0].x;
+    *forces      = set.confs[0].fcalc;
+    *energies    = emaps[0];
 }
 
 /*! \brief The shells with one parent particle, with that parent
@@ -1416,7 +1235,7 @@ void ForceComputer::computeTotal(MsgHandler                                     
     auto  cdata = &set->data;
     auto &atoms = top->atoms();
     // Construct the virtual sites and reset the shells
-    bool vsites = vsitesOutdated(top, cdata);
+    bool vsites = options.virtualSites && vsitesOutdated(top, cdata);
     std::vector<std::pair<size_t, size_t>> shells;
     if (options.resetShells)
     {
@@ -1506,6 +1325,11 @@ void ForceComputer::computeTotal(MsgHandler                                     
                 emap.insert({ t, et.act[c] });
             }
         }
+        if (!options.energyTerms)
+        {
+            energies->push_back(emap);
+            continue;
+        }
         // The change of the electrostatic terms due to the relaxation
         // of the shells is the induction energy.
         bool   haveInduction = false;
@@ -1554,7 +1378,10 @@ void ForceComputer::computeTotal(MsgHandler                                     
     // Spread forces to atoms
     for(auto &conf : confs)
     {
-        spreadVsiteForces(top, &conf.x, &conf.fcalc);
+        if (options.virtualSites)
+        {
+            spreadVsiteForces(top, &conf.x, &conf.fcalc);
+        }
     }
 }
 
@@ -1646,75 +1473,23 @@ void ForceComputer::computeOnce(MsgHandler                        *msg_handler,
                                 std::map<InteractionType, double> *energies,
                                 const gmx::RVec                   &field) const
 {
-    // Clear energies
-    energies->clear();
-    // Clear forces
-    auto &atoms = top->atoms();
-    for(size_t ff = 0; ff < forces->size(); ++ff)
-    {
-        real fac = FIELDFAC*atoms[ff].charge();
-        svmul(fac, field, (*forces)[ff]);
-    }
-    double epot = 0;
-    for(const auto &entry : top->entries())
-    {
-        if (entry.second.empty())
-        {
-            continue;
-        }
-        // Not all potentials are available in the force field,
-        // in particular restraint potentials.
-        Potential mypot;
-        if (pd->interactionPresent(entry.first))
-        {
-            // Force field parameter list
-            auto &ffpl = pd->findForcesConst(entry.first);
-            // The function we need to do the math
-            mypot = ffpl.potential();
-        }
-        else
-        {
-            mypot = defaultPotential(entry.first);
-        }
-        auto bfc   = getBondForceComputer(mypot);
-        if (bfc)
-        {
-            // Now do the calculations and store the energy
-            std::map<InteractionType, double> my_energy;
-            auto ener = bfc(msg_handler, entry.second, atoms, coordinates, forces, &my_energy, epsilonr_);
-            if (my_energy.size() > 1)
-            {
-                for(const auto &me : my_energy)
-                {
-                    if (energies->find(me.first) != energies->end())
-                    {
-                        GMX_THROW(gmx::InternalError(gmx::formatString("Energy term %s occurs twice",
-                                                                       interactionTypeToString(me.first).c_str()).c_str()));
-                    }
-                    energies->insert_or_assign( me.first, me.second );
-                    epot += me.second;
-                }
-            }
-            else
-            {
-                energies->insert_or_assign( entry.first, ener );
-
-                epot += ener;
-            }
-        }
-        else if (debug && !isVsite(entry.first))
-        {
-            fprintf(debug, "Please implement a force function for type %s\n",
-                    potentialToString(mypot).c_str());
-        }
-    }
-    auto ivdwcorr = energies->find(InteractionType::VDWCORRECTION);
-    if (energies->end() != ivdwcorr)
-    {
-        energies->find(InteractionType::EXCHANGE)->second += ivdwcorr->second;
-        ivdwcorr->second = 0;
-    }
-    energies->insert_or_assign( InteractionType::EPOT, epot );
+    // One conformation, computed with the SIMD routines, the shells
+    // and the virtual sites stay where they are
+    ConformationSet set;
+    set.top = top;
+    set.setCoordinates({ *coordinates });
+    ShellOptions options;
+    options.relax        = false;
+    options.resetShells  = false;
+    options.field        = field;
+    options.energyTerms  = false;
+    options.virtualSites = false;
+    std::vector<std::map<InteractionType, double>> emaps;
+    computeTotal(msg_handler, pd, &set, options, &emaps);
+    // The evaluations are counted by the callers of computeOnce
+    nEval_      -= 1;
+    *forces      = set.confs[0].fcalc;
+    *energies    = emaps[0];
 }
 
 Potential ForceComputer::ftype(const ForceField *pd,

@@ -89,7 +89,7 @@
   </Sequence>
   <Sequence Name="Intensities">
     <Int Name="Length">24</Int>
-    <Real>0.098088066411596897</Real>
+    <Real>0.032770380397901908</Real>
     <Real>0.15833886727617236</Real>
     <Real>0.055973381493477137</Real>
     <Real>0.031570084849598536</Real>
