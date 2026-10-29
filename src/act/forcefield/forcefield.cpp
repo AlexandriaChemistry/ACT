@@ -278,16 +278,12 @@ void ForceField::checkForPolarizability()
     polarizable_ = (f != forces_.end() && f->second.numberOfParameters() > 0);
 }
 
-/*! \brief Whether an interaction is zero for any distance, also when training
- * \param[in] pot    The potential
- * \param[in] params Its parameters
- * \return true if the parameters that scale the energy are zero and cannot
- *         be trained
+/*! \brief The parameters that scale the energy of an interaction
+ * \param[in] pot The potential
+ * \return The indices of the parameters, all of them if empty
  */
-static bool vanishes(Potential pot, const ForceFieldParameterMap &params)
+static std::vector<int> scaleIndices(Potential pot)
 {
-    const auto &names = potentialToParameterName(pot);
-    // The indices of the parameters that scale the energy, all if empty
     std::vector<int> scale;
     switch (pot)
     {
@@ -335,13 +331,37 @@ static bool vanishes(Potential pot, const ForceFieldParameterMap &params)
     default:
         break;
     }
+    return scale;
+}
+
+/*! \brief Whether a parameter scales the energy of an interaction
+ * \param[in] pot  The potential
+ * \param[in] name The name of the parameter
+ * \return true if the energy vanishes when the parameter is zero
+ */
+static bool scalesEnergy(Potential pot, const std::string &name)
+{
+    const auto &names = potentialToParameterName(pot);
+    auto        scale = scaleIndices(pot);
+    bool        scales = scale.empty();
+    for(auto k : scale)
+    {
+        scales = scales || (static_cast<size_t>(k) < names.size() && names[k] == name);
+    }
+    return scales;
+}
+
+/*! \brief Whether an interaction is zero for any distance, also when training
+ * \param[in] pot    The potential
+ * \param[in] params Its parameters
+ * \return true if the parameters that scale the energy are zero and cannot
+ *         be trained
+ */
+static bool vanishes(Potential pot, const ForceFieldParameterMap &params)
+{
     for(const auto &p : params)
     {
-        bool scales = scale.empty();
-        for(auto k : scale)
-        {
-            scales = scales || (static_cast<size_t>(k) < names.size() && names[k] == p.first);
-        }
+        bool scales = scalesEnergy(pot, p.first);
         // Some combination rules give NaN for two zero parameters, which
         // means that neither particle has this interaction.
         if (scales && ((p.second.value() != 0 && !std::isnan(p.second.value())) ||
@@ -575,6 +595,116 @@ void ForceField::convertVsite1(MsgHandler *msghandler)
                         gmx::formatString("Replaced %zu virtual site types by second charges of %zu atom types.",
                                           converted.size(), natype));
     }
+}
+
+void ForceField::expandSecondCharges(MsgHandler *msghandler)
+{
+    std::vector<std::string> atypes;
+    for(const auto &pt : alexandria_)
+    {
+        if (pt.second.hasChargeVS())
+        {
+            atypes.push_back(pt.first.id());
+        }
+    }
+    if (atypes.empty())
+    {
+        return;
+    }
+    if (forces_.find(InteractionType::VSITE1) == forces_.end())
+    {
+        addForces(InteractionType::VSITE1,
+                  ForceFieldParameterList(potentialToString(Potential::VSITE1), CanSwap::Yes));
+    }
+    auto *fv = findForces(InteractionType::VSITE1);
+    // Whether a name is used by a particle type or by parameters
+    auto used = [this](const std::string &name)
+    {
+        if (hasParticleType(name))
+        {
+            return true;
+        }
+        for(const auto &fs : forces_)
+        {
+            if (fs.second.parameterExists(Identifier(name)) ||
+                fs.second.parameterExists(Identifier(name + "_z")))
+            {
+                return true;
+            }
+        }
+        return false;
+    };
+    for(const auto &atype : atypes)
+    {
+        auto       *pa = findParticleType(atype);
+        std::string vs = "v1" + atype;
+        for(int k = 2; used(vs); k++)
+        {
+            vs = gmx::formatString("v1%s_%d", atype.c_str(), k);
+        }
+        ParticleType pv(Identifier(vs), "", ActParticle::Vsite);
+        pv.setOption("atomnumber", "0");
+        pv.setOption("element", "VS");
+        pv.setOption("row", std::to_string(pa->rowVS()));
+        pv.setOption(interactionTypeToParticleSubtype(InteractionType::BONDS), vs);
+        pv.addForceFieldParameter("charge", pa->parameterConst(chargeVSName));
+        pv.addForceFieldParameter("mass", ForceFieldParameter("Da", 0, 0, 0, 0, 0, Mutability::Fixed, true, true));
+        if (forces_.count(InteractionType::ELECTROSTATICS) > 0)
+        {
+            // The distribution of the second charge, the other parameters
+            // are those of the atom.
+            auto &fs   = forces_.find(InteractionType::ELECTROSTATICS)->second;
+            auto  ztype = vs + "_z";
+            auto  pmap  = fs.findParameterMapConst(pa->interactionTypeToIdentifier(InteractionType::ELECTROSTATICS));
+            pmap.find("zeta")->second = pa->parameterConst(zetaVSName);
+            for(const auto &p : pmap)
+            {
+                fs.addParameter(Identifier(ztype), p.first, p.second);
+            }
+            pv.setOption(interactionTypeToParticleSubtype(InteractionType::ELECTROSTATICS), ztype);
+        }
+        // Interactions that the virtual site does not have, its parameters
+        // are those of the atom with the energy scaled to zero.
+        for(auto itype : { InteractionType::VDW, InteractionType::VDWCORRECTION,
+                           InteractionType::INDUCTIONCORRECTION })
+        {
+            auto fs = forces_.find(itype);
+            if (forces_.end() == fs || !pa->hasInteractionType(itype))
+            {
+                continue;
+            }
+            auto pid = pa->interactionTypeToIdentifier(itype);
+            if (!fs->second.parameterExists(pid))
+            {
+                continue;
+            }
+            auto pmap = fs->second.findParameterMapConst(pid);
+            for(auto &p : pmap)
+            {
+                if (scalesEnergy(fs->second.potential(), p.first))
+                {
+                    p.second.setMinimum(0);
+                    p.second.forceSetValue(0);
+                    p.second.setMutability(Mutability::Fixed);
+                }
+                fs->second.addParameter(Identifier(vs), p.first, p.second);
+            }
+            pv.setOption(interactionTypeToParticleSubtype(itype), vs);
+        }
+        addParticleType(pv);
+        fv->addParameter(Identifier(InteractionType::VSITE1, atype + "!" + vs, CanSwap::Yes), "vs1a",
+                         ForceFieldParameter("", 1, 0, 0, 1, 1, Mutability::Fixed, true, false));
+        if (msghandler)
+        {
+            msghandler->msg(ACTStatus::Verbose,
+                            gmx::formatString("Replaced second charge %g with zeta %g of %s by virtual site %s",
+                                              pa->chargeVS(), pa->zetaVS(), atype.c_str(), vs.c_str()));
+        }
+        pa->parameters()->erase(chargeVSName);
+        pa->parameters()->erase(zetaVSName);
+        pa->removeOption(rowVSName);
+    }
+    generateDependentParameter(msghandler, this, true);
 }
 
 void ForceField::addParticleType(const ParticleType &ptp)

@@ -158,7 +158,7 @@ void MolHandler::computeHessian(const ForceField                  *pd,
                     {
                         for(int m = 0; m < DIM; m++)
                         {
-                            mu[delta][m] += atoms[ii].charge()*(*coords)[ii][m];
+                            mu[delta][m] += atoms[ii].totalCharge()*(*coords)[ii][m];
                         }
                     }
                 }

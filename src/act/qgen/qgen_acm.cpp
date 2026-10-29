@@ -330,7 +330,7 @@ void QgenAcm::dump(MsgHandler                 *msg_handler,
         {
             for (auto m = 0; m < DIM; m++)
             {
-                mu[m] += (*atoms)[i].charge() * x_[i][m] * ENM2DEBYE;
+                mu[m] += (*atoms)[i].totalCharge() * x_[i][m] * ENM2DEBYE;
             }
             auto msg = gmx::formatString("%4s %4s%5lu %8g %8g",
                                              "",

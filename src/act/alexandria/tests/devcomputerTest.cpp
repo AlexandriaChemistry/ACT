@@ -40,6 +40,8 @@
 #include "act/forcefield/forcefield_xml.h"
 #include "act/forcefield/generate_dependent.h"
 #include "act/forces/conformationdata.h"
+#include "act/qgen/qgen_resp.h"
+#include "act/qgen/qtype.h"
 #include "act/utility/timings.h"
 #include "act/molprop/molprop_xml.h"
 #include "act/topology/actmol.h"
@@ -1264,6 +1266,192 @@ protected:
             {
                 compareForces(fragV[f].atoms(), *molV.monomerCoords(f), *molC.monomerCoords(f));
             }
+            // The coordinates, with the virtual sites on their atoms
+            const auto         &xC = molC.xOriginal();
+            std::vector<gmx::RVec> xV(atomsV.size(), { 0, 0, 0 });
+            k = 0;
+            for(size_t i = 0; i < atomsV.size(); i++)
+            {
+                if (!replaced(atomsV[i]))
+                {
+                    xV[i] = xC[k++];
+                    for(auto v : atomsV[i].vsites())
+                    {
+                        if (replaced(atomsV[v]))
+                        {
+                            xV[v] = xC[k-1];
+                        }
+                    }
+                }
+            }
+            compareMultipoles(atomsV, xV, atomsC, xC, tolerance);
+            compareEsp(&pdVsite, molV, xV, &pdCharge, molC, xC, molV.totalCharge(), tolerance);
+        }
+        compareExpanded(mpFile, pdCharge, &molsV, tolerance);
+    }
+
+    /*! \brief Check that second charges turned back into virtual sites,
+     * as for GROMACS and OpenMM, give the molecules with virtual sites.
+     * \param[in] mpFile    The molecules
+     * \param[in] pdCharge  The force field with second charges
+     * \param[in] molsV     The molecules with virtual sites, with energies
+     * \param[in] tolerance The tolerance
+     */
+    void compareExpanded(const std::string         &mpFile,
+                         const ForceField          &pdCharge,
+                         std::vector<ACTMol>       *molsV,
+                         double                     tolerance)
+    {
+        ForceField pdExpand = pdCharge;
+        MsgHandler msghandler;
+        pdExpand.expandSecondCharges(&msghandler);
+        EXPECT_TRUE(msghandler.ok());
+        for(const auto &pt : pdExpand.particleTypesConst())
+        {
+            EXPECT_FALSE(pt.second.hasChargeVS()) << pt.first.id();
+        }
+        ASSERT_TRUE(pdExpand.interactionPresent(InteractionType::VSITE1));
+        ForceComputer forceComputer;
+        auto molsE = prepareMolecules(&msghandler, &pdExpand, &forceComputer, {},
+                                      fileManager().getInputFilePath(mpFile));
+        ASSERT_EQ(molsV->size(), molsE.size());
+        forceComputer.computeRelaxedEnergies(&msghandler, &pdExpand, pointers(&molsE), true, false, true);
+        EXPECT_TRUE(msghandler.ok());
+        for(size_t m = 0; m < molsV->size(); m++)
+        {
+            auto &molV = (*molsV)[m];
+            SCOPED_TRACE(molV.getMolname());
+            const auto &atomsV = molV.atomsConst();
+            const auto &atomsE = molsE[m].atomsConst();
+            ASSERT_EQ(atomsV.size(), atomsE.size());
+            for(size_t i = 0; i < atomsV.size(); i++)
+            {
+                EXPECT_EQ(atomsV[i].pType(), atomsE[i].pType()) << i;
+                EXPECT_NEAR(atomsV[i].charge(), atomsE[i].charge(), tolerance) << i;
+                EXPECT_EQ(0, atomsE[i].chargeVS()) << i;
+            }
+            for(size_t what = 0; what < 3; what++)
+            {
+                auto &eV = molV.conformationData(what)->energies;
+                auto &eE = molsE[m].conformationData(what)->energies;
+                ASSERT_EQ(eV.types(), eE.types());
+                for(auto t : eV.types())
+                {
+                    auto tV = eV.find(t);
+                    auto tE = eE.find(t);
+                    for(size_t c = 0; c < eV.nconf(); c++)
+                    {
+                        ASSERT_EQ(tV.has(c), tE.has(c));
+                        if (tV.has(c))
+                        {
+                            EXPECT_NEAR(tV.act[c], tE.act[c], tolerance*(1 + std::abs(tV.act[c])))
+                                << interactionTypeToString(t) << " conformation " << c << " part " << what;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /*! \brief Compare the multipoles of two representations of a molecule
+     * \param[in] atomsA    The atoms of the first
+     * \param[in] xA        Their coordinates
+     * \param[in] atomsB    The atoms of the second
+     * \param[in] xB        Their coordinates
+     * \param[in] tolerance The tolerance
+     */
+    void compareMultipoles(const std::vector<ActAtom>   &atomsA,
+                           const std::vector<gmx::RVec> &xA,
+                           const std::vector<ActAtom>   &atomsB,
+                           const std::vector<gmx::RVec> &xB,
+                           double                        tolerance)
+    {
+        QtypeProps qA(qPropertyType::ACM, atomsA, xA);
+        QtypeProps qB(qPropertyType::ACM, atomsB, xB);
+        MsgHandler msghandler;
+        for(auto q : { &qA, &qB })
+        {
+            q->initializeMoments();
+            q->calcMoments(&msghandler);
+        }
+        for(auto mpo : { MolPropObservable::DIPOLE, MolPropObservable::QUADRUPOLE })
+        {
+            auto mA = qA.getMultipole(&msghandler, mpo);
+            auto mB = qB.getMultipole(&msghandler, mpo);
+            ASSERT_EQ(mA.size(), mB.size());
+            double norm = 0;
+            for(size_t m = 0; m < mA.size(); m++)
+            {
+                EXPECT_NEAR(mA[m], mB[m], tolerance*(1 + std::abs(mA[m])))
+                    << mpo_name(mpo) << " " << m;
+                norm += std::abs(mA[m]);
+            }
+            if (MolPropObservable::DIPOLE == mpo)
+            {
+                EXPECT_LT(0, norm);
+            }
+        }
+    }
+
+    /*! \brief Compare the electrostatic potential and the RESP charges
+     * of two representations of a molecule
+     * The potential of the first is used as the reference for fitting.
+     * \param[in] pdA       The force field of the first
+     * \param[in] molA      The first molecule
+     * \param[in] xA        Its coordinates
+     * \param[in] pdB       The force field of the second
+     * \param[in] molB      The second molecule
+     * \param[in] xB        Its coordinates
+     * \param[in] qtot      The total charge
+     * \param[in] tolerance The tolerance
+     */
+    void compareEsp(const ForceField             *pdA,
+                    const ACTMol                 &molA,
+                    const std::vector<gmx::RVec> &xA,
+                    const ForceField             *pdB,
+                    const ACTMol                 &molB,
+                    const std::vector<gmx::RVec> &xB,
+                    int                           qtot,
+                    double                        tolerance)
+    {
+        MsgHandler msghandler;
+        auto pot = pdA->findForcesConst(InteractionType::ELECTROSTATICS).potential();
+        std::vector<QgenResp> resp(2);
+        std::vector<const ForceField *>             pds   = { pdA, pdB };
+        std::vector<const ACTMol *>                 mols  = { &molA, &molB };
+        std::vector<const std::vector<gmx::RVec> *> xs    = { &xA, &xB };
+        for(size_t r = 0; r < resp.size(); r++)
+        {
+            resp[r].setChargeDistributionType(potentialToChargeDistributionType(pot));
+            resp[r].setAtomInfo(&msghandler, mols[r]->atomsConst(), pds[r], qtot);
+            resp[r].updateAtomCharges(&msghandler, mols[r]->atomsConst());
+            resp[r].updateAtomCoords(*xs[r]);
+            resp[r].setAtomSymmetry({});
+        }
+        resp[0].makeGrid(0.1, 0.3, xA);
+        ASSERT_LT(0u, resp[0].nEsp());
+        resp[0].calcPot(&msghandler, 1);
+        // The potential of the first is the reference for the second
+        for(auto &ep : resp[0].espPoints())
+        {
+            auto x = ep.esp();
+            resp[1].addEspPoint(x[XX], x[YY], x[ZZ], ep.vCalc());
+        }
+        resp[1].calcPot(&msghandler, 1);
+        ASSERT_EQ(resp[0].nEsp(), resp[1].nEsp());
+        for(size_t j = 0; j < resp[0].nEsp(); j++)
+        {
+            double v = resp[0].espPoint(j).vCalc();
+            EXPECT_NEAR(v, resp[1].espPoint(j).vCalc(), tolerance*(1 + std::abs(v))) << j;
+        }
+        // Fitting the charges of the second to the potential of the first
+        // gives the charges back, the second charges are fixed.
+        resp[1].optimizeCharges(&msghandler, 1);
+        EXPECT_TRUE(msghandler.ok());
+        const auto &atomsB = molB.atomsConst();
+        for(size_t i = 0; i < atomsB.size(); i++)
+        {
+            EXPECT_NEAR(atomsB[i].charge(), resp[1].getCharge(i), 1e-6) << i;
         }
     }
 

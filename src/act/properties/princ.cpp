@@ -219,7 +219,7 @@ real calc_xcm(const std::vector<gmx::RVec> &x,
         {
             if (bQ)
             {
-                m0 = std::abs(atoms[ii].charge());
+                m0 = std::abs(atoms[ii].totalCharge());
             }
             else
             {
