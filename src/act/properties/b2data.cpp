@@ -102,7 +102,7 @@ void B2Data::aggregate(CommunicationRecord *cr)
                 }
                 for(size_t i = 0; i < n_U12_.size(); i++)
                 {
-                    std::vector<int> d;
+                    std::vector<double> d;
                     cr->recv(src, &d);
                     for(size_t j = 0; j < d.size(); j++)
                     {
@@ -176,7 +176,8 @@ void B2Data::aggregate(CommunicationRecord *cr)
     
 void B2Data::addData(size_t iTemp, size_t index, double dist,
                      double exp_U12, double exp_F0, double exp_F1,
-                     const gmx::RVec exp_tau0, const gmx::RVec exp_tau1)
+                     const gmx::RVec exp_tau0, const gmx::RVec exp_tau1,
+                     double weight)
 {
     if (iTemp >= exp_U12_.size())
     {
@@ -187,12 +188,15 @@ void B2Data::addData(size_t iTemp, size_t index, double dist,
         GMX_THROW(gmx::InternalError(gmx::formatString("index = %zu, should be less than %zu", index, exp_U12_[iTemp].size()).c_str()));
     }
     dist_[index]               = dist;
-    exp_U12_[iTemp][index]    += exp_U12;
-    exp_F2_[0][iTemp][index]  += exp_F0;
-    exp_F2_[1][iTemp][index]  += exp_F1;
-    rvec_inc(exp_tau_[0][iTemp][index], exp_tau0);
-    rvec_inc(exp_tau_[1][iTemp][index], exp_tau1);
-    n_U12_[iTemp][index]      += 1;
+    exp_U12_[iTemp][index]    += weight*exp_U12;
+    exp_F2_[0][iTemp][index]  += weight*exp_F0;
+    exp_F2_[1][iTemp][index]  += weight*exp_F1;
+    for(int m = 0; m < DIM; m++)
+    {
+        exp_tau_[0][iTemp][index][m] += weight*exp_tau0[m];
+        exp_tau_[1][iTemp][index][m] += weight*exp_tau1[m];
+    }
+    n_U12_[iTemp][index]      += weight;
 }
 
 void B2Data::integrate(MsgHandler *msghandler,

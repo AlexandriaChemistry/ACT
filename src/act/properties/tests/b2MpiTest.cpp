@@ -104,14 +104,16 @@ class WaterB2Test : public gmx::test::CommandLineTestBase
 {
 protected:
     /*! \brief Run the b2 tool for the water dimer
-     * \param[in]  ffName  Force field file in this directory
-     * \param[in]  nDimer  Number of dimer orientations
-     * \param[out] mayer   The Mayer functions, first column distance
+     * \param[in]  ffName   Force field file in this directory
+     * \param[in]  nDimer   Number of dimer orientations
+     * \param[in]  sampling Options for sampling the orientations
+     * \param[out] mayer    The Mayer functions, first column distance
      * \return The B2 components for 400 and 500 K
      */
-    std::vector<B2Row> runB2(const std::string                &ffName,
-                             int                               nDimer,
-                             std::vector<std::vector<double>> *mayer)
+    std::vector<B2Row> runB2(const std::string                                &ffName,
+                             int                                               nDimer,
+                             const std::vector<std::pair<std::string, int>>   &sampling,
+                             std::vector<std::vector<double>>                 *mayer)
     {
         gmx::test::CommandLine cmd;
         cmd.append("b2");
@@ -122,8 +124,20 @@ protected:
         cmd.addOption("-maxdist", 1.2);
         cmd.addOption("-ndist", 111);
         cmd.addOption("-maxdimer", nDimer);
-        // Sobol sampling is deterministic and converges fast
-        cmd.addOption("-randalg", "Sobol");
+        // Sobol sampling is deterministic and converges fast, unless a
+        // grid is used
+        if (sampling.empty())
+        {
+            cmd.addOption("-randalg", "Sobol");
+        }
+        else
+        {
+            cmd.addOption("-randalg", "Gauss");
+            for(const auto &s : sampling)
+            {
+                cmd.addOption(s.first.c_str(), s.second);
+            }
+        }
         cmd.addOption("-T1", 400.0);
         cmd.addOption("-T2", 500.0);
         cmd.addOption("-dT", 100.0);
@@ -157,10 +171,11 @@ protected:
      * rank, therefore all ranks wait until the master has checked the
      * results.
      */
-    void testWater(const std::string &ffName, int nDimer, bool checkTorqueSymmetry)
+    void testWater(const std::string &ffName, int nDimer, bool checkTorqueSymmetry,
+                   const std::vector<std::pair<std::string, int>> &sampling = {})
     {
         std::vector<std::vector<double>> mayer;
-        auto rows = runB2(ffName, nDimer, &mayer);
+        auto rows = runB2(ffName, nDimer, sampling, &mayer);
         if (gmx_node_rank() == 0)
         {
             checkWater(rows, mayer, checkTorqueSymmetry);
@@ -237,6 +252,12 @@ TEST_F(WaterB2Test, SPCE)
 TEST_F(WaterB2Test, SPCEUnevenDimers)
 {
     testWater("SPCE.xml", 3203, true);
+}
+
+// Test: A grid of orientations as in the program Orient, -maxdimer is not used
+TEST_F(WaterB2Test, SPCEGauss)
+{
+    testWater("SPCE.xml", 1024, true, { { "-nalpha", 9 }, { "-nbeta", 9 }, { "-ngamma", 9 } });
 }
 
 TEST_F(WaterB2Test, SWM4NDP)

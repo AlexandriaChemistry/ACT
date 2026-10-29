@@ -385,10 +385,18 @@ void ReRunner::runB2(CommunicationRecord         *cr,
     // until maxdimer, each round adding to the data of the previous ones,
     // such that the convergence with the number of orientations can be
     // followed. All orientations together are the same as in one round.
+    // A grid of orientations is only complete in one round.
     std::vector<int> rounds;
-    for(int n = 1024; n < maxdimer; n *= 2)
+    if (RandAlg::Gauss == gendimers_.randAlg())
     {
-        rounds.push_back(n);
+        maxdimer = gendimers_.numberOfOrientations(maxdimer);
+    }
+    else
+    {
+        for(int n = 1024; n < maxdimer; n *= 2)
+        {
+            rounds.push_back(n);
+        }
     }
     rounds.push_back(maxdimer);
     // The master generates the random numbers of all orientations and hands
@@ -685,7 +693,7 @@ void ReRunner::runB2(CommunicationRecord         *cr,
                     b2data.addData(iTemp, dimers[ii].index, 
                                    dimers[ii].dist, g0_12-1,
                                    // Gray and Gubbins Eqn. 3.281
-                                   ipf0, ipf1, tau[0], tau[1]);
+                                   ipf0, ipf1, tau[0], tau[1], dimers[ii].weight);
                 }
             }
         }

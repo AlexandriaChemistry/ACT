@@ -35,6 +35,7 @@
 #include <cctype>
 #include <cmath>
 #include <cstdlib>
+#include <cstring>
 
 #include "act/alexandria/molhandler.h"
 #include "act/basics/msg_handler.h"
@@ -57,14 +58,15 @@ namespace alexandria
 std::map<const char *,RandAlg> string2RA = {
     { "Sobol", RandAlg::Sobol },
     { "SobolOwen", RandAlg::SobolOwen },
-    { "Pseudo", RandAlg::Pseudo }
+    { "Pseudo", RandAlg::Pseudo },
+    { "Gauss", RandAlg::Gauss }
 };
 
 RandAlg stringToRandAlg(const char *str)
 {
     for(const auto &s2RA : string2RA)
     {
-        if (s2RA.first == str)
+        if (str && strcmp(s2RA.first, str) == 0)
         {
             return s2RA.second;
         }
@@ -76,11 +78,18 @@ RandAlg stringToRandAlg(const char *str)
 //! \brief Description for command line
 static std::vector<const char *> dg_desc = {
     "If a trajectory or a series of structures of the same compound is passed (in GROMACS format), ",
-    "the energies will be computed for those structures and no simulation will be performed.[PAR]"
+    "the energies will be computed for those structures and no simulation will be performed.[PAR]",
+    "The orientations of the molecules are sampled with quasi-random numbers (Sobol or SobolOwen),",
+    "with pseudo-random numbers (Pseudo), or on a grid of Euler angles (Gauss), as in the program",
+    "Orient. The Gauss grid has Gauss-Legendre points in the cosine of beta for both molecules,",
+    "and equally spaced points in alpha of the second molecule and in gamma of both. Rotating",
+    "both molecules around the line between their centers of mass does not change the dimer,",
+    "therefore alpha of the first molecule is zero. There are nalpha x nbeta^2 x ngamma^2",
+    "orientations, and -maxdimer is not used. For linear molecules, ngamma can be one.[PAR]"
 };
 
 //! \brief Couple of string to use in cmdline option for the algorithm
-static const char *randAlgStr[5] = {nullptr, "Sobol", "SobolOwen", "Pseudo", nullptr};
+static const char *randAlgStr[6] = {nullptr, "Sobol", "SobolOwen", "Pseudo", "Gauss", nullptr};
 
 void DimerGenerator::addOptions(std::vector<t_pargs>      *pa,
                                 std::vector<t_filenm>     *fnm,
@@ -97,6 +106,12 @@ void DimerGenerator::addOptions(std::vector<t_pargs>      *pa,
           "Random number seed to generate monomer orientations, only when using pseudorandom numbers. If dimerseed is 0, a seed will be generated." },
         { "-randalg", FALSE, etENUM, {randAlgStr},
           "Random number generation algorithm. Default is Sobol since it converges faster" },
+        { "-nalpha", FALSE, etINT, {&nalpha_},
+          "Number of equally spaced points for the Euler angle alpha of the second molecule, for the Gauss algorithm." },
+        { "-nbeta", FALSE, etINT, {&nbeta_},
+          "Number of Gauss-Legendre points for the cosine of the Euler angle beta of each molecule, for the Gauss algorithm." },
+        { "-ngamma", FALSE, etINT, {&ngamma_},
+          "Number of equally spaced points for the Euler angle gamma of each molecule, for the Gauss algorithm." },
         { "-flex", FALSE, etBOOL, {&flexible_},
           "Use flexible monomers in dimer sampling. Not implemented completely yet, activating this flag will use the potential energy rather than the interaction energy leading to incorrect results." },
         { "-minimize_dimers", FALSE, etBOOL, {&minimize_},
@@ -223,8 +238,87 @@ void DimerGenerator::read(std::vector<std::vector<gmx::RVec>> *coords)
     while (read_next_x(oenv, status, &t, x, box));
 }
 
+/*! \brief Points and weights for Gauss-Legendre integration from -1 to 1
+ * \param[in]  n The number of points
+ * \param[out] x The points
+ * \param[out] w The weights
+ */
+static void gaussLegendre(int n, std::vector<double> *x, std::vector<double> *w)
+{
+    x->resize(n);
+    w->resize(n);
+    // The points are symmetric, only half of them is computed
+    for(int i = 0; i < (n+1)/2; i++)
+    {
+        // Initial guess for root i of the Legendre polynomial of order n
+        double z  = std::cos(M_PI*(i + 0.75)/(n + 0.5));
+        double z1 = 0;
+        double pp = 0;
+        do
+        {
+            // The polynomial p1 and its derivative pp at z, by recurrence
+            double p1 = 1, p2 = 0;
+            for(int j = 1; j <= n; j++)
+            {
+                double p3 = p2;
+                p2 = p1;
+                p1 = ((2*j - 1)*z*p2 - (j - 1)*p3)/j;
+            }
+            pp = n*(z*p1 - p2)/(z*z - 1);
+            z1 = z;
+            z  = z1 - p1/pp;
+        }
+        while (std::abs(z - z1) > 1e-15);
+        (*x)[i]       = -z;
+        (*x)[n-1-i]   =  z;
+        (*w)[i]       = 2/((1 - z*z)*pp*pp);
+        (*w)[n-1-i]   = (*w)[i];
+    }
+}
+
+int DimerGenerator::numberOfOrientations(int ndimers) const
+{
+    if (RandAlg::Gauss == randAlg_)
+    {
+        return nalpha_*nbeta_*nbeta_*ngamma_*ngamma_;
+    }
+    return ndimers;
+}
+
 void DimerGenerator::generateRandomNumbers(int ndimers)
 {
+    if (RandAlg::Gauss == randAlg_)
+    {
+        // The grid of the program Orient. The numbers are those that give
+        // the Euler angles in Rotator::randomRotate.
+        std::vector<double> x, w;
+        gaussLegendre(nbeta_, &x, &w);
+        allRandom_.clear();
+        for(int g1 = 0; g1 < ngamma_; g1++)
+        {
+            for(int g2 = 0; g2 < ngamma_; g2++)
+            {
+                for(int b1 = 0; b1 < nbeta_; b1++)
+                {
+                    for(int b2 = 0; b2 < nbeta_; b2++)
+                    {
+                        for(int a2 = 0; a2 < nalpha_; a2++)
+                        {
+                            allRandom_.push_back({ 0.0,
+                                                   0.5*(x[b1] + 1),
+                                                   (0.25 + g1)/ngamma_,
+                                                   (0.25 + a2)/nalpha_,
+                                                   0.5*(x[b2] + 1),
+                                                   (0.25 + g2)/ngamma_,
+                                                   w[b1]*w[b2] });
+                        }
+                    }
+                }
+            }
+        }
+        return;
+    }
+
     long long int sobolSeed = 0;
     // Initialize 6D array
     std::vector<double> q(2*DIM, 0.0);
@@ -261,6 +355,9 @@ void DimerGenerator::generateRandomNumbers(int ndimers)
                 }
                 break;
             }
+        case RandAlg::Gauss:
+            // Handled above
+            break;
         }
         allRandom_.push_back(q);
     }
@@ -382,6 +479,8 @@ std::vector<dimer_coords> DimerGenerator::generateDimers(MsgHandler *msghandler)
         }
         msghandler->writeDebug(oss);
     }
+    // The weight of this orientation, if there is one
+    double weight = allRandom_[randIndex_].size() > 2*DIM ? allRandom_[randIndex_][2*DIM] : 1.0;
     randIndex_ += 1;
     // Initiate the big array
     std::vector<dimer_coords> coords(ndist_);
@@ -394,8 +493,9 @@ std::vector<dimer_coords> DimerGenerator::generateDimers(MsgHandler *msghandler)
         {
             dist += idist*binWidth_;
         }
-        coords[idist].dist  = dist;
-        coords[idist].index = idist;
+        coords[idist].dist   = dist;
+        coords[idist].index  = idist;
+        coords[idist].weight = weight;
         for(int kk = 0; kk < 2; kk++)
         {
             coords[idist].natom[kk] = atoms_[kk].size();

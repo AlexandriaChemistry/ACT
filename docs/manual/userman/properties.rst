@@ -358,8 +358,15 @@ Code to compute the second virial coefficient is available in the *alexandria b2
 
 where TIP4P corresponds to the well-known water model :cite:p:`Jorgensen1983a`, the :math:`T_1` and :math:`T_2` are the temperature limits (note gas-phase for water), :math:`dT` is the temperature interval and maxdimer determines how many relative orientations will be evaluated.
 For each orientation the energies are computed at *-ndist* equidistant distances between the centers of mass from *-mindist* to *-maxdist*, and the integrals are computed over this range. Below *-mindist* the molecules are assumed to overlap, that is the Mayer function :math:`e^{-\beta u_{12}}-1` is -1, which adds :math:`\frac{2\pi}{3} r_{min}^3` to :math:`B_2^{cl}(T)`. Therefore *-mindist* should be well inside the repulsive wall of the potential.
-Two algorithms can be used to sample orientations. 
-If the Sobol algorithm for `Quasi-Random`_ numbers is used :cite:p:`Millot1998a`, the number of dimers should be a power of two. If, on the other hand, Pseudo-random numbers are used, there is no such requirement.
+
+Several algorithms can be used to sample orientations (*-randalg*). 
+
+- If the **Sobol** algorithm for `Quasi-Random`_ numbers is used :cite:p:`Millot1998a`, the number of dimers should be a power of two. 
+
+- If, on the other hand, **Pseudo-random** numbers are used, there is no such requirement.
+
+- The **Gauss** algorithm uses a grid of Euler angles instead, as in the program Orient :cite:p:`Stone2018a`. The cosine of :math:`\beta` of each molecule is integrated with *-nbeta* Gauss-Legendre points, and :math:`\alpha` of the second molecule and :math:`\gamma` of each molecule with *-nalpha* and *-ngamma* equally spaced points. Since rotating both molecules around the line between their centers of mass does not change the dimer, :math:`\alpha` of the first molecule is zero. This gives *-nalpha* :math:`\times` *-nbeta*:sup:`2` :math:`\times` *-ngamma*:sup:`2` orientations, *-maxdimer* is not used, and the orientations are computed in a single round. For linear molecules *-ngamma 1* is sufficient. For water, a grid of 9 points for each angle gives the classical second virial and the quantum corrections within a few tenths of a percent, at a fraction of the cost of Sobol sampling with a similar accuracy.
+
 The result is plotted in :numref:`fig-b2`.
 
 .. _Quasi-Random: https://en.wikipedia.org/wiki/Sobol_sequence

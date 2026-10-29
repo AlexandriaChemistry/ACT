@@ -40,6 +40,7 @@
 
 #include "act/basics/msg_handler.h"
 #include "act/properties/b2data.h"
+#include "act/properties/dimergenerator.h"
 #include "act/properties/secondvirial.h"
 #include "gromacs/math/units.h"
 #include "gromacs/utility/stringutil.h"
@@ -299,6 +300,84 @@ TEST(B2DataTest, LinearMolecule)
     double expect = hbarFactor(beta)*sphereVolume()*(tau2[YY] + tau2[ZZ])/I[YY];
     EXPECT_TRUE(std::isfinite(res.torque1));
     EXPECT_NEAR(expect, res.torque1, integrationTolerance*expect);
+}
+
+
+// Test: Data points count with their weight, as for a grid of orientations
+TEST(B2DataTest, WeightedAverage)
+{
+    double    beta    = 1.0/(BOLTZ*300);
+    gmx::RVec tau2    = { 50, 70, 90 };
+    gmx::RVec I       = { 0.006, 0.012, 0.018 };
+    std::vector<double>    mass    = { 18, 18 };
+    std::vector<gmx::RVec> inertia = { I, I };
+    // A Mayer function of -1 with weight 3 and of 0 with weight 1 below
+    // 0.3 nm, the same as -0.75 with weight one.
+    int    nbins = 1001;
+    double bw    = 0.001;
+    B2Data weighted(nbins, { 300 }), single(nbins, { 300 });
+    gmx::RVec zero = { 0, 0, 0 };
+    for(int i = 0; i < nbins; i++)
+    {
+        double r = i*bw;
+        weighted.addData(0, i, r, r < 0.3 ? -1 : 0, 10, 10, tau2, tau2, 3);
+        weighted.addData(0, i, r, 0, 2, 2, zero, zero, 1);
+        single.addData(0, i, r, r < 0.3 ? -0.75 : 0, 8, 8, { 37.5, 52.5, 67.5 }, { 37.5, 52.5, 67.5 });
+    }
+    MsgHandler msghandler;
+    B2Result   rw, rs;
+    weighted.integrate(&msghandler, 0, beta, mass, inertia, &rw.classical, &rw.force, &rw.torque1, &rw.torque2);
+    single.integrate(&msghandler, 0, beta, mass, inertia, &rs.classical, &rs.force, &rs.torque1, &rs.torque2);
+    EXPECT_TRUE(msghandler.ok());
+    EXPECT_NEAR(rs.classical, rw.classical, 1e-12*std::abs(rs.classical));
+    EXPECT_NEAR(rs.force, rw.force, 1e-12*rs.force);
+    EXPECT_NEAR(rs.torque1, rw.torque1, 1e-12*rs.torque1);
+    EXPECT_NEAR(rs.torque2, rw.torque2, 1e-12*rs.torque2);
+}
+
+// Test: The grid of orientations as in the program Orient. Gauss-Legendre
+// integration over cos(beta) with n points is exact for polynomials up
+// to order 2n-1, and the equally spaced angles average cosines to zero.
+TEST(GaussGridTest, Orientations)
+{
+    int nalpha = 3, nbeta = 4, ngamma = 2;
+    DimerGenerator gendimers;
+    gendimers.setGaussGrid(nalpha, nbeta, ngamma);
+    EXPECT_EQ(RandAlg::Gauss, gendimers.randAlg());
+    int nori = nalpha*nbeta*nbeta*ngamma*ngamma;
+    EXPECT_EQ(nori, gendimers.numberOfOrientations(1024));
+    gendimers.generateRandomNumbers(1024);
+    const auto &q = gendimers.allRandom();
+    ASSERT_EQ(static_cast<size_t>(nori), q.size());
+    double wsum = 0, c2 = 0, c4 = 0, c22 = 0, cg1 = 0, ca2 = 0;
+    for(const auto &qq : q)
+    {
+        ASSERT_EQ(7u, qq.size());
+        for(int j = 0; j < 6; j++)
+        {
+            EXPECT_GE(qq[j], 0);
+            EXPECT_LT(qq[j], 1);
+        }
+        // Rotating both molecules about the line between them does not
+        // change the dimer, alpha of the first molecule is zero
+        EXPECT_EQ(0, qq[0]);
+        double w  = qq[6];
+        double b1 = 2*qq[1] - 1;
+        double b2 = 2*qq[4] - 1;
+        wsum += w;
+        c2   += w*b1*b1;
+        c4   += w*b2*b2*b2*b2;
+        c22  += w*b1*b1*b2*b2;
+        cg1  += w*std::cos(2*M_PI*qq[2]);
+        ca2  += w*std::cos(2*M_PI*qq[3]);
+    }
+    // The Gauss-Legendre weights add up to two for each molecule
+    EXPECT_NEAR(4.0*nalpha*ngamma*ngamma, wsum, 1e-12*wsum);
+    EXPECT_NEAR(1.0/3, c2/wsum, 1e-12);
+    EXPECT_NEAR(1.0/5, c4/wsum, 1e-12);
+    EXPECT_NEAR(1.0/9, c22/wsum, 1e-12);
+    EXPECT_NEAR(0, cg1/wsum, 1e-12);
+    EXPECT_NEAR(0, ca2/wsum, 1e-12);
 }
 
 }
