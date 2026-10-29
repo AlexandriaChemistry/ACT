@@ -224,6 +224,24 @@ public:
         }
     }
 
+    /*! \brief Copy the forces on the shells back to the conformations
+     * The forces on the other particles are not changed.
+     * \param[inout] coords The conformations
+     */
+    void storeShellForces(std::vector<CoordsEnergy> *coords) const
+    {
+        for(auto a : shells_)
+        {
+            for(int m = 0; m < DIM; m++)
+            {
+                for(size_t c = 0; c < nconf; c++)
+                {
+                    (*coords)[confs_[c]].fcalc[a][m] = f[(DIM*a+m)*stride + c];
+                }
+            }
+        }
+    }
+
     /*! \brief Set the forces from forces kept in the same layout
      * The forces may have been kept for more conformations than are in
      * the slots now, see conformations.

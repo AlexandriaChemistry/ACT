@@ -146,11 +146,14 @@ private:
      * \param[in] pd          The force field structure
      * \param[in] im          Index of the monomer (0 or 1)
      * \param[in] allmols     The molecules to relax
+     * \param[in] allForces   Whether the forces on all particles are needed,
+     *                        otherwise only those on the shells are computed
      */
     void relaxMonomer(MsgHandler                  *msg_handler,
                       const ForceField            *pd,
                       size_t                       im,
-                      const std::vector<ACTMol *> &allmols) const;
+                      const std::vector<ACTMol *> &allmols,
+                      bool                         allForces) const;
     /*! \brief Relax the shells in all dimer conformations of all molecules
      * Iterates shell updates and energy computations until all shells
      * converged or the max number of iterations is reached.
@@ -158,11 +161,14 @@ private:
      * \param[in] pd          The force field structure
      * \param[in] fixMonomer  For each monomer whether its shells are kept fixed
      * \param[in] allmols     The molecules to relax
+     * \param[in] allForces   Whether the forces on all particles are needed,
+     *                        otherwise only those on the shells are computed
      */
     void relaxDimer(MsgHandler                  *msg_handler,
                     const ForceField            *pd,
                     bool                         fixMonomer[2],
-                    const std::vector<ACTMol *> &allmols) const;
+                    const std::vector<ACTMol *> &allmols,
+                    bool                         allForces) const;
 
  public:
     //! \brief Default constructor

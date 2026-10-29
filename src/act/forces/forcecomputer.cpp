@@ -716,7 +716,8 @@ static void resetShellSteps(std::vector<CoordsEnergy> *coords)
 void ForceComputer::relaxMonomer(MsgHandler                  *msghandler,
                                  const ForceField            *pd,
                                  size_t                       im,
-                                 const std::vector<ACTMol *> &allmols) const
+                                 const std::vector<ACTMol *> &allmols,
+                                 bool                         allForces) const
 {
     static const size_t timer = Timings::instance().index("Shell relaxation");
     ScopedTimer         scoped(timer);
@@ -751,7 +752,7 @@ void ForceComputer::relaxMonomer(MsgHandler                  *msghandler,
         if (!allDone)
         {
             // Only for the conformations that did not converge
-            computeEnergies(msghandler, pd, allmols, im, true, true);
+            computeEnergies(msghandler, pd, allmols, im, true, true, false, allForces);
         }
         iter++;
     }
@@ -760,7 +761,8 @@ void ForceComputer::relaxMonomer(MsgHandler                  *msghandler,
 void ForceComputer::relaxDimer(MsgHandler                  *msghandler,
                                const ForceField            *pd,
                                bool                         fixMonomer[2],
-                               const std::vector<ACTMol *> &allmols) const
+                               const std::vector<ACTMol *> &allmols,
+                               bool                         allForces) const
 {
     static const size_t timer = Timings::instance().index("Shell relaxation");
     ScopedTimer         scoped(timer);
@@ -819,7 +821,7 @@ void ForceComputer::relaxDimer(MsgHandler                  *msghandler,
         if (!allDone)
         {
             // Not all done, recompute the conformations that did not converge
-            computeEnergies(msghandler, pd, allmols, 2, true, true);
+            computeEnergies(msghandler, pd, allmols, 2, true, true, false, allForces);
         }
         iter++;
     }
@@ -892,10 +894,13 @@ void ForceComputer::computeRelaxedEnergies(MsgHandler                  *msghandl
             }
         }
     }
+    // Without forces in the result, only those on the shells are needed
+    // for relaxing them
+    bool allForces = computeForces;
     // Do first calculation every time.
-    computeEnergies(msghandler, pd, allmols, 0, forces, false, intermolecular); // Monomer 0
-    computeEnergies(msghandler, pd, allmols, 1, forces, false, intermolecular); // Monomer 1
-    computeEnergies(msghandler, pd, allmols, 2, forces, false, intermolecular); // Complete topology
+    computeEnergies(msghandler, pd, allmols, 0, forces, false, intermolecular, allForces); // Monomer 0
+    computeEnergies(msghandler, pd, allmols, 1, forces, false, intermolecular, allForces); // Monomer 1
+    computeEnergies(msghandler, pd, allmols, 2, forces, false, intermolecular, allForces); // Complete topology
 
     // Store the original (unrelaxed) energies so that we can extract the
     // induction later. Only terms that actually have an ACT energy are backed up.
@@ -919,7 +924,7 @@ void ForceComputer::computeRelaxedEnergies(MsgHandler                  *msghandl
     {
         for(size_t im = 0; im < 2; im++)
         {
-            relaxMonomer(msghandler, pd, im, allmols);
+            relaxMonomer(msghandler, pd, im, allmols, allForces);
         }
         // Backup the now-relaxed monomer coordinates so that we can return to
         // them later when computing the second order induction.
@@ -964,7 +969,7 @@ void ForceComputer::computeRelaxedEnergies(MsgHandler                  *msghandl
             // We have to compute second order induction first, starting
             // from the shells in the relaxed monomer positions.
             copyRelaxedMonomerShells(allmols);
-            computeEnergies(msghandler, pd, allmols, 2);
+            computeEnergies(msghandler, pd, allmols, 2, true, false, false, allForces);
             // Reference energy without mutual induction
             std::vector<std::vector<double>> eRef(allmols.size());
             for(size_t k = 0; k < allmols.size(); k++)
@@ -977,11 +982,11 @@ void ForceComputer::computeRelaxedEnergies(MsgHandler                  *msghandl
                 {
                     // Reset coordinates to the relaxed monomer shells
                     copyRelaxedMonomerShells(allmols);
-                    computeEnergies(msghandler, pd, allmols, 2);
+                    computeEnergies(msghandler, pd, allmols, 2, true, false, false, allForces);
                 }
                 // Relax monomer im in the presence of the other monomer
                 bool fixMonomer[2] = { im != 0, im != 1 };
-                relaxDimer(msghandler, pd, fixMonomer, allmols);
+                relaxDimer(msghandler, pd, fixMonomer, allmols, allForces);
                 // Extract energy
                 for(size_t k = 0; k < allmols.size(); k++)
                 {
@@ -1001,11 +1006,11 @@ void ForceComputer::computeRelaxedEnergies(MsgHandler                  *msghandl
                     dimers[i].x = xdimer[k][i];
                 }
             }
-            computeEnergies(msghandler, pd, allmols, 2);
+            computeEnergies(msghandler, pd, allmols, 2, true, false, false, allForces);
         }
         // Final, total energy
         bool ff[2] = { false, false };
-        relaxDimer(msghandler, pd, ff, allmols);
+        relaxDimer(msghandler, pd, ff, allmols, allForces);
     }
     
     // Now post-process the energies to extract induction and allelec
@@ -1067,7 +1072,7 @@ void ForceComputer::computeRelaxedEnergies(MsgHandler                  *msghandl
             }
         }
     }
-    if (!forces)
+    if (!allForces)
     {
         return;
     }
