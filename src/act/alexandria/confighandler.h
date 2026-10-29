@@ -516,6 +516,14 @@ public:
      */
     void add_MD_options(std::vector<t_pargs> *pargs);
 
+    /*! \brief Add the command-line arguments for energy minimization
+     * \param[inout] pargs       Pointer to arguments vector
+     * \param[in]    writeShells Whether to add the option for writing shells,
+     *                           that is part of the MD options otherwise
+     */
+    void add_minimize_options(std::vector<t_pargs> *pargs,
+                              bool                  writeShells);
+
     /*!
      * \brief Add command-line arguments to a vector
      * @param pargs     pointer to arguments vector

@@ -729,6 +729,65 @@ TEST_F(SimulateTest, MissingMolecule)
     EXPECT_EQ(1, run(&cmd));
 }
 
+//! \brief Make a command line for the minimize tool
+static gmx::test::CommandLine minimizeCommand(const std::string &ff,
+                                              const std::string &molFile,
+                                              const std::string &confout,
+                                              const std::string &log)
+{
+    gmx::test::CommandLine cmd;
+    cmd.append("minimize");
+    cmd.addOption("-ff", ff);
+    cmd.addOption("-f", molFile);
+    cmd.addOption("-c", confout);
+    cmd.addOption("-g", log);
+    return cmd;
+}
+
+// Test: alexandria minimize gives the same structure as simulate -minimize
+TEST_F(SimulateTest, MinimizeTool)
+{
+    for(const std::string constrain : { "no", "bonds" })
+    {
+        std::string   molFile("water_dimer.pdb");
+        SimulateFiles files;
+        auto cmd     = baseCommand(molFile, "simmin" + constrain, &files);
+        auto simout  = fileManager().getTemporaryFilePath("simmin" + constrain + "-confout.pdb");
+        cmd.addOption("-minimize");
+        cmd.addOption("-constrain", constrain);
+        cmd.addOption("-c", simout);
+        ASSERT_EQ(0, run(&cmd));
+
+        auto minout  = fileManager().getTemporaryFilePath("minimize" + constrain + "-confout.pdb");
+        auto mincmd  = minimizeCommand(alexandriaFile("ACS-g.xml"),
+                                       alexandriaFile("mols/" + molFile), minout,
+                                       fileManager().getTemporaryFilePath("minimize" + constrain + ".log"));
+        mincmd.addOption("-constrain", constrain);
+        ASSERT_EQ(0, minimize(mincmd.argc(), mincmd.argv()));
+
+        auto xsim = readPdbCoordinates(simout);
+        auto xmin = readPdbCoordinates(minout);
+        ASSERT_EQ(xsim.size(), xmin.size());
+        for(size_t i = 0; i < xsim.size(); i++)
+        {
+            for(int m = 0; m < DIM; m++)
+            {
+                EXPECT_EQ(xsim[i][m], xmin[i][m]) << constrain << " atom " << i+1;
+            }
+        }
+    }
+}
+
+// Test: alexandria minimize fails for a missing molecule
+TEST_F(SimulateTest, MinimizeToolMissingMolecule)
+{
+    auto cmd = minimizeCommand(alexandriaFile("ACS-g.xml"),
+                               alexandriaFile("mols/does-not-exist.sdf"),
+                               fileManager().getTemporaryFilePath("missing-confout.pdb"),
+                               fileManager().getTemporaryFilePath("minimize-missing.log"));
+    EXPECT_EQ(1, minimize(cmd.argc(), cmd.argv()));
+}
+
 } // namespace
 
 } // namespace alexandria

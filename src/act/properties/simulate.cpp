@@ -42,6 +42,7 @@
 #include "act/import/compound_reader.h"
 #include "act/molprop/molprop_util.h"
 #include "act/molprop/molprop_xml.h"
+#include "act/properties/minimize.h"
 #include "act/properties/secondvirial.h"
 #include "act/topology/actmol.h"
 #include "act/topology/fragmenthandler.h"
@@ -75,6 +76,7 @@ int simulate(int argc, char *argv[])
         "The input is given by a coordinate file, a force field file and",
         "command line options. During the simulation an energy file,",
         "a trajectory file and a log file are generated.[PAR]",
+        "The minimization is the same as in alexandria minimize.",
         "During minimization a user select group of atoms can be frozen.",
         "To do so, supply an index file with atom numbers (first atom is 1)",
         "and numbering should disregard shells and virtual sites if present",
@@ -260,87 +262,9 @@ int simulate(int argc, char *argv[])
         }
         else if (sch.minimize())
         {
-            std::vector<int> freeze;
-            auto freezeName = opt2fn_null("-freeze", fnm.size(),fnm.data());
-            if (nullptr != freezeName)
-            {
-                int isize;
-                int *myindex;
-                char *grpnames;
-                rd_index(freezeName, 1, &isize, &myindex, &grpnames);
-                if (isize > 0)
-                {
-                    printf("Will freeze %d atoms %s\n", isize, grpnames);
-                    for(int ii = 0; ii < isize; ii++)
-                    {
-                        freeze.push_back(myindex[ii]);
-                    }
-                }
-            }
-
-            std::map<InteractionType, double> energies;
-            {
-                std::vector<gmx::RVec> forces(actmol.atomsConst().size());
-                forceComp.compute(&msghandler, &pd, actmol.topology(), &xmin, &forces, &energies);
-                JsonTree jtener("Energies before");
-                std::string unit("kJ/mol");
-                for (const auto &ener : energies)
-                {
-                    auto val = gmx::formatString("%.4f", ener.second);
-                    jtener.addValueUnit(interactionTypeToString(ener.first),
-                                        val.c_str(), unit);
-                }
-                jtree.addObject(jtener);
-                // Multipoles
-                msghandler.write("Multipole before minimization");
-                analyse_multipoles(&msghandler, &actmol, {}, &pd, &forceComp, nullptr);
-            }
-            // Now do the minimization.
-            msghandler.write(gmx::formatString("Starting minimization of '%s' using %s algorithm.\n",
-                                               actmol.getMolname().c_str(),
-                                               eMinimizeAlgorithmToString(sch.minAlg()).c_str()));
-
-            eMin = molhandler.minimizeCoordinates(&msghandler, &pd, actmol.topology(), &forceComp, sch,
-                                                  &xmin, &energies, freeze);
-            if (eMinimizeStatus::OK == eMin)
-            {
-                auto rmsd = molhandler.coordinateRmsd(actmol.atomsConst(), coords, &xmin);
-                msghandler.msg(ACTStatus::Info,
-                               gmx::formatString("Final energy: %g RMSD wrt original structure %g nm.",
-                                                 energies[InteractionType::EPOT], rmsd));
-                if (nfrag == 2)
-                {
-                    // Make a copy to keep the correct shell coordinates when saving the structure.
-                    auto newxmin = xmin;
-                    std::map<InteractionType, double> einter;
-                    std::vector<gmx::RVec>            interactionForces;
-                    actmol.calculateInteractionEnergy(&msghandler, &pd, &forceComp, &einter,
-                                                      &interactionForces, &newxmin, true);
-                    for(const auto &ei : einter)
-                    {
-                        msghandler.msg(ACTStatus::Info,
-                                       gmx::formatString("Interaction energy %s: %g",
-                                                         interactionTypeToString(ei.first).c_str(), ei.second));
-                    }
-                }
-                // Multipoles
-                msghandler.write("Multipole after minimization");
-                // This is a hack for printing.
-                for(auto &qp : (*actmol.qProps()))
-                {
-                    qp.qPact()->setX(xmin);
-                }
-                analyse_multipoles(&msghandler, &actmol, {}, &pd, &forceComp, nullptr);
-                JsonTree jtener("Energies after");
-                std::string unit("kJ/mol");
-                for (const auto &ener : energies)
-                {
-                    auto val = gmx::formatString("%.4f", ener.second);
-                    jtener.addValueUnit(interactionTypeToString(ener.first),
-                                        val.c_str(), unit);
-                }
-                jtree.addObject(jtener);
-            }
+            eMin = minimizeMolecule(&msghandler, &pd, &forceComp, sch,
+                                    opt2fn_null("-freeze", fnm.size(),fnm.data()),
+                                    &actmol, &xmin, &jtree);
         }
         if (eMinimizeStatus::OK == eMin && sch.nsteps() > 0)
         {

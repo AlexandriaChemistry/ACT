@@ -235,7 +235,7 @@ def run_dimer(system: str, root: str, c1: str, c2: str, xml: str,
 
             mylog = "simulation.log"
             outpdb = "final.pdb"
-            command = f"alexandria simulate -v 3 -toler 0.000000001 -freeze {fndx} -ff {xml} -forcereminimize -maxretries 1 -minimize -minalg LBFGS -f {pdb} -c {outpdb} -g {mylog}"
+            command = f"alexandria minimize -v 3 -toler 0.000000001 -freeze {fndx} -ff {xml} -forcereminimize -maxretries 1 -minalg LBFGS -f {pdb} -c {outpdb} -g {mylog}"
             if constrain:
                 command += " -constrain bonds "
             if molprop and os.path.exists(molprop):
@@ -244,7 +244,7 @@ def run_dimer(system: str, root: str, c1: str, c2: str, xml: str,
             os.system(command)
 
         except Exception as e:
-            print(f"Error generating PDB file or running simulation: {e}")
+            print(f"Error generating PDB file or running minimization: {e}")
         os.chdir("..")
 
 def fetch_energy(c1: str, c2: str, pol: bool, vs: bool, rmin: float, distances: list):
