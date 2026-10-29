@@ -1286,7 +1286,7 @@ void MolHandler::simulate(MsgHandler                    *msghandler,
     FILE                              *traj = gmx_ffopen(trajectoryFile, "w");
     FILE                              *exvg = xvgropen(energyFile, "ACT Energies",
                                                        "Time (ps)", "Energy (kJ/mol)", oenv);
-    std::vector<gmx::RVec>             coordinates, velocities, forces[2];
+    std::vector<gmx::RVec>             coordinates, velocities, forces[2], xprev;
     std::map<InteractionType, double>  energies;
     std::vector<double>                inv2mass;
     std::vector<double>                mass_2;
@@ -1379,6 +1379,10 @@ void MolHandler::simulate(MsgHandler                    *msghandler,
             printEnergies(exvg, step, deltat, energies, ekin, nDOF, oenv);
         }
         // Integrate positions using velocity Verlet
+        if (simConfig.constrain())
+        {
+            xprev = coordinates;
+        }
         for(size_t i = 0; i < xmol.size(); i++)
         {
             if (inv2mass[i] > 0)
@@ -1393,9 +1397,12 @@ void MolHandler::simulate(MsgHandler                    *msghandler,
         }
         if (simConfig.constrain())
         {
+            // First part of rattle, constrain the positions along the
+            // previous bonds and correct the velocities accordingly.
             constrainer.shake(msghandler, bondPotential,
                               mol->topology()->entry(InteractionType::BONDS),
-                              mol->topology()->atoms(), &coordinates);
+                              mol->topology()->atoms(), xprev,
+                              &coordinates, &velocities);
         }
         // Compute forces and energies
         forceComp->compute(msghandler, pd, mol->topology(), &coordinates,

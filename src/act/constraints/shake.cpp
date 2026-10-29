@@ -112,14 +112,22 @@ void Constrainer::computeInitialDisplacements(gmx_unused MsgHandler        *msgh
     }
 }                      
 
-int Constrainer::shake(gmx_unused MsgHandler      *msghandler,
-                       Potential                   pot,
-                       const TopologyEntryVector  &bonds,
-                       const std::vector<ActAtom> &atoms,
-                       std::vector<gmx::RVec>     *positions)
+int Constrainer::shake(gmx_unused MsgHandler        *msghandler,
+                       Potential                     pot,
+                       const TopologyEntryVector    &bonds,
+                       const std::vector<ActAtom>   &atoms,
+                       const std::vector<gmx::RVec> &reference,
+                       std::vector<gmx::RVec>       *positions,
+                       std::vector<gmx::RVec>       *velocities)
 {
     prepareConstants(msghandler, pot, bonds, atoms);
-    computeInitialDisplacements(msghandler, bonds, *positions);
+    computeInitialDisplacements(msghandler, bonds, reference);
+    // Keep the unconstrained positions to correct the velocities
+    std::vector<gmx::RVec> unconstrained;
+    if (velocities)
+    {
+        unconstrained = *positions;
+    }
     bool converged = false;
     int  error     = 0;
     for(int iter = 0; iter < maxiter_ && !converged; iter++)
@@ -170,6 +178,16 @@ int Constrainer::shake(gmx_unused MsgHandler      *msghandler,
     if (error == 0 && !converged)
     {
         error = -1;
+    }
+    if (velocities)
+    {
+        for(size_t i = 0; i < positions->size(); i++)
+        {
+            for(int m = 0; m < DIM; m++)
+            {
+                (*velocities)[i][m] += ((*positions)[i][m] - unconstrained[i][m])*invdt_;
+            }
+        }
     }
     return error;
 }
