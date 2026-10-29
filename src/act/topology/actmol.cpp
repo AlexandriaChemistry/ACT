@@ -915,6 +915,13 @@ void ACTMol::GenerateTopology(MsgHandler        *msghandler,
             // Interaction energies without polarization only need these
             topology_.separateIntermolecular(fraghandler_.atomStart()[1]);
         }
+        // With polarization only the entries with shells change when
+        // relaxing the shells
+        topology_.separateShells();
+        for(auto &top : fraghandler_.topologiesPtr())
+        {
+            top.separateShells();
+        }
     }
     if (msghandler->ok())
     {

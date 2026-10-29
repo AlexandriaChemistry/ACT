@@ -363,6 +363,16 @@ public:
     //! \return Whether the backups are the energies before relaxing shells, see setBackups
     bool haveBackups() const { return backups_; }
 
+    /*! \brief Set whether new energies are added to the present ones
+     * Normally the energies of an interaction type are replaced, but when the
+     * entries of a type are computed in parts they have to be added.
+     * \param[in] accumulate Whether to add the energies
+     */
+    void setAccumulate(bool accumulate) { accumulate_ = accumulate; }
+
+    //! \return Whether new energies are added to the present ones, see setAccumulate
+    bool accumulate() const { return accumulate_; }
+
     /*! \brief Copy the energies to the energy maps of the conformations
      * \param[inout] coords The conformations
      */
@@ -402,6 +412,8 @@ private:
     size_t                      nconf_ = 0;
     //! Whether the backups are the energies before relaxing shells, see setBackups
     bool                        backups_ = false;
+    //! Whether new energies are added to the present ones, see setAccumulate
+    bool                        accumulate_ = false;
     //! Position of each interaction type in data_, -1 if not present
     std::array<int, ntype_>     index_;
     //! The interaction types present, sorted
@@ -448,6 +460,25 @@ struct CachedEnergies
     size_t              termStride        = 0;
 };
 
+/*! \brief Energies and forces of the entries without shells in all conformations
+ * While relaxing the shells, only the entries with shells change, see
+ * Topology::separateShells. The others are computed once, in the first
+ * calculation of the conformations, and kept here.
+ */
+struct FixedEnergies
+{
+    //! Whether energies and forces have been stored
+    bool                                valid = false;
+    //! The interaction types, including EPOT
+    std::vector<InteractionType>        types;
+    //! For each type the energy of each conformation
+    std::vector<std::vector<double>>    energies;
+    //! For each type whether each conformation has an energy
+    std::vector<std::vector<char>>      have;
+    //! The forces of each conformation
+    std::vector<std::vector<gmx::RVec>> forces;
+};
+
 /*! \brief Reference data of all conformations for computing deviations
  * The quantum chemistry energies and the Boltzmann weights do not change
  * when the parameters change, they are kept here by the code computing the
@@ -492,11 +523,14 @@ struct ConformationData
     std::map<InteractionType, CachedEnergies> cache;
     //! Reference data for computing deviations
     DeviationReference   deviation;
+    //! Energies and forces of the entries without shells
+    FixedEnergies        fixed;
 
     //! Mark the coordinates and virtual sites as outdated
     void invalidate()
     {
         arrays.invalidate();
+        fixed.valid = false;
         haveVsites = false;
         coordinates.update();
         conformations.update();

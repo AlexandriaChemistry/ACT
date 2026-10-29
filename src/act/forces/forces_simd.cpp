@@ -1735,6 +1735,8 @@ static void storeEnergies(Potential             mypot,
         terms[k] = cener->add(itypes[k]);
     }
     auto eEpot = cener->add(InteractionType::EPOT);
+    // When the entries are computed in parts, the energies are added
+    bool accumulate = cener->accumulate();
     // As Term::set, but without branches, one term at a time such that the
     // energies are contiguous.
     for(size_t k = 0; k < itypes.size(); k++)
@@ -1744,9 +1746,10 @@ static void storeEnergies(Potential             mypot,
         for(size_t i = 0; i < nslot; i++)
         {
             size_t c    = confs ? confs[i] : i;
+            double prev = (accumulate && t.have[c]) ? t.act[c] : 0.0;
             t.before[c] = t.have[c] ? t.before[c] : 0.0;
             t.have[c]   = 1;
-            t.act[c]    = ek[i*confStride];
+            t.act[c]    = prev + ek[i*confStride];
         }
     }
     for(size_t i = 0; i < nslot; i++)
@@ -2280,15 +2283,46 @@ static inline void lowComputeEnergies(MsgHandler                *msghandler,
         eEpot.act[c]    = keep ? eEpot.act[c] : 0.0;
         eEpot.have[c]   = 1;
     }
-    for(auto &ce : *coords)
+    // With shells, the entries without shells do not change while the shells
+    // are relaxed. Their energies and forces are computed in the first
+    // calculation, in which skipDone is false, and used again in the calls
+    // relaxing the shells.
+    auto &fixed      = cdata->fixed;
+    bool  splitShell = forces && !intermolecular && top->hasShellSplit();
+    bool  useFixed   = (splitShell && skipDone && fixed.valid &&
+                        fixed.forces.size() == coords->size());
+    bool  keepFixed  = splitShell && !useFixed;
+    if (useFixed)
     {
+        // Start from the energies of the entries without shells
+        for(size_t k = 0; k < fixed.types.size(); k++)
+        {
+            auto t = cener.add(fixed.types[k]);
+            for(size_t c = 0; c < coords->size(); c++)
+            {
+                if (!(*coords)[c].done)
+                {
+                    t.before[c] = t.have[c] ? t.before[c] : 0.0;
+                    t.have[c]   = fixed.have[k][c];
+                    t.act[c]    = fixed.energies[k][c];
+                }
+            }
+        }
+    }
+    for(size_t c = 0; c < coords->size(); c++)
+    {
+        auto &ce = (*coords)[c];
         if (ce.done)
         {
             continue;
         }
         // Clear the forces, calcSome adds the forces of each potential to them.
         // Without forces calcSome still needs the memory, but not the values.
-        if (forces)
+        if (useFixed)
+        {
+            ce.fcalc = fixed.forces[c];
+        }
+        else if (forces)
         {
             gmx::RVec fzero = { 0, 0, 0 };
             ce.fcalc.assign(ce.x.size(), fzero);
@@ -2305,85 +2339,141 @@ static inline void lowComputeEnergies(MsgHandler                *msghandler,
     // With a single conformation there is nothing to vectorize.
     bool haveArrays     = (conformations && coords->size() > 1 &&
                            ca.setCoordinates(*coords, top->atoms(), forces, skipDone));
-    // Whether the current forces are in ca rather than in coords
-    bool forcesInArrays = haveArrays;
-    for(const auto &entry : top->entries())
+    // Whether the current forces are in ca rather than in coords. When
+    // starting from the forces of the entries without shells, these are in
+    // coords and have to be loaded into ca.
+    bool forcesInArrays = haveArrays && !useFixed;
+    // Which entries to compute
+    enum class Part { All, NoShells, Shells };
+    auto computePart = [&](Part part)
     {
-        //! \todo Can we prevent this check?
-        if (entry.second.empty())
+        for(const auto &entry : top->entries())
         {
-            continue;
-        }
-        // Not all potentials are available in the force field,
-        // in particular restraint potentials.
-        gmx_unused Potential mypot;
-        if (pd->interactionPresent(entry.first))
-        {
-            // Force field parameter list
-            auto &ffpl = pd->findForcesConst(entry.first);
-            // The function we need to do the math
-            mypot = ffpl.potential();
-        }
-        else
-        {
-            mypot = defaultPotential(entry.first);
-        }
-        // Virtual sites have no energy
-        if (energyTypes(mypot).empty())
-        {
-            continue;
-        }
-        // The interactions to compute, without intramolecular ones they
-        // may be none, then the energies are zero.
-        TopologyEntryRange entries = (intermolecular ?
-                                      top->intermolecular(entry.first, entry.second) :
-                                      TopologyEntryRange(entry.second));
-        // Use the energies of the previous call if nothing changed. Forces
-        // are not kept, so this is only possible if they are not needed.
-        CachedEnergies *cached = nullptr;
-        if (reuse && !forces)
-        {
-            cached = &cdata->cache[entry.first];
-            if (cached->valid && cached->potential == mypot &&
-                cached->parameterVersion == top->parameterVersion(entry.first) &&
-                cached->coordinateVersion == cdata->coordinates.value() &&
-                cached->nentries == entries.size() &&
-                cached->nconf == coords->size() &&
-                sameCharges(mypot, top->atoms(), cached->charges))
-            {
-                static const size_t timer = Timings::instance().index("Energies used again");
-                ScopedTimer         scoped(timer);
-                storeEnergies(mypot, coords->size(), nullptr, &cener, cached->energies.data(),
-                              cached->confStride, cached->termStride);
-                continue;
-            }
-            cached->valid             = false;
-            cached->potential         = mypot;
-            cached->parameterVersion  = top->parameterVersion(entry.first);
-            cached->coordinateVersion = cdata->coordinates.value();
-            cached->nentries          = entries.size();
-            cached->nconf             = coords->size();
-            keepCharges(mypot, top->atoms(), &cached->charges);
-        }
-        if (haveArrays)
-        {
-            if (forces && !forcesInArrays)
-            {
-                ca.loadForces(*coords);
-                forcesInArrays = true;
-            }
-            if (calcConformations(mypot, entries, top->atoms(),
-                                  &ca, &cener, epsilonr, forces, cached))
+            //! \todo Can we prevent this check?
+            if (entry.second.empty())
             {
                 continue;
             }
-            if (forces)
+            // Not all potentials are available in the force field,
+            // in particular restraint potentials.
+            gmx_unused Potential mypot;
+            if (pd->interactionPresent(entry.first))
             {
-                ca.storeForces(coords);
+                // Force field parameter list
+                auto &ffpl = pd->findForcesConst(entry.first);
+                // The function we need to do the math
+                mypot = ffpl.potential();
             }
+            else
+            {
+                mypot = defaultPotential(entry.first);
+            }
+            // Virtual sites have no energy
+            if (energyTypes(mypot).empty())
+            {
+                continue;
+            }
+            // The interactions to compute, without intramolecular ones they
+            // may be none, then the energies are zero.
+            TopologyEntryRange entries = (intermolecular ?
+                                          top->intermolecular(entry.first, entry.second) :
+                                          TopologyEntryRange(entry.second));
+            if (Part::All != part)
+            {
+                entries = top->shellEntries(entry.first, entry.second, Part::Shells == part);
+                // Types without entries with shells keep the energies
+                // of those without, the others are computed even if
+                // empty, such that their energies are zero.
+                if (Part::Shells == part && entries.empty())
+                {
+                    continue;
+                }
+            }
+            // Use the energies of the previous call if nothing changed. Forces
+            // are not kept, so this is only possible if they are not needed.
+            CachedEnergies *cached = nullptr;
+            if (reuse && !forces)
+            {
+                cached = &cdata->cache[entry.first];
+                if (cached->valid && cached->potential == mypot &&
+                    cached->parameterVersion == top->parameterVersion(entry.first) &&
+                    cached->coordinateVersion == cdata->coordinates.value() &&
+                    cached->nentries == entries.size() &&
+                    cached->nconf == coords->size() &&
+                    sameCharges(mypot, top->atoms(), cached->charges))
+                {
+                    static const size_t timer = Timings::instance().index("Energies used again");
+                    ScopedTimer         scoped(timer);
+                    storeEnergies(mypot, coords->size(), nullptr, &cener, cached->energies.data(),
+                                  cached->confStride, cached->termStride);
+                    continue;
+                }
+                cached->valid             = false;
+                cached->potential         = mypot;
+                cached->parameterVersion  = top->parameterVersion(entry.first);
+                cached->coordinateVersion = cdata->coordinates.value();
+                cached->nentries          = entries.size();
+                cached->nconf             = coords->size();
+                keepCharges(mypot, top->atoms(), &cached->charges);
+            }
+            if (haveArrays)
+            {
+                if (forces && !forcesInArrays)
+                {
+                    ca.loadForces(*coords);
+                    forcesInArrays = true;
+                }
+                if (calcConformations(mypot, entries, top->atoms(),
+                                      &ca, &cener, epsilonr, forces, cached))
+                {
+                    continue;
+                }
+                if (forces)
+                {
+                    ca.storeForces(coords);
+                }
+                forcesInArrays = false;
+            }
+            calcSome(msghandler, mypot, entries, top->atoms(), coords, &cener, epsilonr, cached);
+        }
+    };
+    if (useFixed)
+    {
+        cener.setAccumulate(true);
+        computePart(Part::Shells);
+        cener.setAccumulate(false);
+    }
+    else if (keepFixed)
+    {
+        computePart(Part::NoShells);
+        // Keep the energies and forces of the entries without shells
+        if (forcesInArrays)
+        {
+            ca.storeForces(coords);
             forcesInArrays = false;
         }
-        calcSome(msghandler, mypot, entries, top->atoms(), coords, &cener, epsilonr, cached);
+        fixed.types = cener.types();
+        fixed.energies.resize(fixed.types.size());
+        fixed.have.resize(fixed.types.size());
+        for(size_t k = 0; k < fixed.types.size(); k++)
+        {
+            auto t = cener.find(fixed.types[k]);
+            fixed.energies[k].assign(t.act, t.act + coords->size());
+            fixed.have[k].assign(t.have, t.have + coords->size());
+        }
+        fixed.forces.resize(coords->size());
+        for(size_t c = 0; c < coords->size(); c++)
+        {
+            fixed.forces[c] = (*coords)[c].fcalc;
+        }
+        fixed.valid = true;
+        cener.setAccumulate(true);
+        computePart(Part::Shells);
+        cener.setAccumulate(false);
+    }
+    else
+    {
+        computePart(Part::All);
     }
     if (forces && forcesInArrays)
     {

@@ -1556,6 +1556,41 @@ void Topology::separateIntermolecular(size_t natom0)
     }
 }
 
+void Topology::separateShells()
+{
+    shellStart_.clear();
+    std::vector<char> isShell;
+    bool              haveShells = false;
+    for(const auto &a : atoms_)
+    {
+        isShell.push_back(a.pType() == ActParticle::Shell);
+        haveShells = haveShells || isShell.back();
+    }
+    if (!haveShells)
+    {
+        return;
+    }
+    // The order of separateIntermolecular is lost
+    intermolecularStart_.clear();
+    for(auto &entry : entries_)
+    {
+        auto &vec  = entry.second;
+        auto  last = std::stable_partition(vec.begin(), vec.end(),
+                                           [&isShell](const BaseContainer<TopologyEntry> &b)
+                                           {
+                                               for(auto a : b->atomIndices())
+                                               {
+                                                   if (isShell[a])
+                                                   {
+                                                       return false;
+                                                   }
+                                               }
+                                               return true;
+                                           });
+        shellStart_[entry.first] = last - vec.begin();
+    }
+}
+
 void Topology::addResidue(int                residueNumber,
                           const std::string &residueName)
 {

@@ -84,6 +84,8 @@ private:
     StructureVersion                                          initialVersion_;
     //! Position of the first intermolecular entry of each interaction type, see separateIntermolecular
     std::map<InteractionType, size_t>                         intermolecularStart_;
+    //! Position of the first entry with a shell of each interaction type, see separateShells
+    std::map<InteractionType, size_t>                         shellStart_;
 
     /*! Generate virtual sites for atoms.
      * \param[in] msghandler Message handler
@@ -410,6 +412,34 @@ private:
 
     //! \return Whether the intermolecular entries are known, see separateIntermolecular
     bool hasIntermolecular() const { return !intermolecularStart_.empty(); }
+
+    /*! \brief Put the entries with shells after the others
+     * Within each interaction type, the entries with a shell are moved to
+     * the end, keeping the order otherwise. During the relaxation of the
+     * shells only these have to be computed again. This replaces the order
+     * of separateIntermolecular, which is only used without shells.
+     * Nothing is done if there are no shells.
+     */
+    void separateShells();
+
+    //! \return Whether the entries with shells are known, see separateShells
+    bool hasShellSplit() const { return !shellStart_.empty(); }
+
+    /*! \brief The entries of an interaction type with or without shells
+     * \param[in] itype   The interaction type
+     * \param[in] entries The entries of that type in this topology
+     * \param[in] shells  Whether to return the entries with shells or those without
+     * \return The entries. Entries of a type that was added after separateShells
+     *         count as entries with shells.
+     */
+    TopologyEntryRange shellEntries(InteractionType            itype,
+                                    const TopologyEntryVector &entries,
+                                    bool                       shells) const
+    {
+        auto   it    = shellStart_.find(itype);
+        size_t start = (it == shellStart_.end() || it->second > entries.size()) ? 0 : it->second;
+        return shells ? TopologyEntryRange(entries).subspan(start) : TopologyEntryRange(entries).first(start);
+    }
 
     //! \return the whole map of parameters
     std::map<InteractionType, TopologyEntryVector> *entriesPtr() { return &entries_; }
