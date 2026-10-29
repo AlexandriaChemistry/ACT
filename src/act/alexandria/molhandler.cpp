@@ -1226,7 +1226,11 @@ static void printEnergies(FILE                                    *exvg,
         fprintf(exvg, "  %.5f", e.second);
     }
     auto epot = energies.find(InteractionType::EPOT)->second;
-    auto temp = ekin*2/(3*nDOF*BOLTZ);
+    double temp = 0;
+    if (nDOF > 0)
+    {
+        temp = 2*ekin/(nDOF*BOLTZ);
+    }
     fprintf(exvg, " %.5f %.5f %.5f\n", ekin, ekin+epot, temp);
 }
 
@@ -1295,14 +1299,53 @@ void MolHandler::simulate(MsgHandler                    *msghandler,
     initArrays(mol, xmol, &coordinates, &velocities,
                &forces[cur], &forces[prev], &inv2mass, &mass_2);
 
+    auto deltat  = simConfig.deltat();
+    Constrainer constrainer(simConfig.constraintMaxIter(),
+                            simConfig.constraintTolerance(),
+                            1.0/deltat);
+    auto bondPotential = pd->findForcesConst(InteractionType::BONDS).potential();
+    // The center of mass does not move, since the initial velocities
+    // are either zero or have the center of mass motion removed and
+    // there are no external forces. Each constraint removes one more
+    // degree of freedom.
+    int nDOF           = DIM*(mol->nRealAtoms() - 1);
+    if (simConfig.constrain())
+    {
+        nDOF -= mol->topology()->entry(InteractionType::BONDS).size();
+        // Start from coordinates that satisfy the constraints
+        constrainer.shake(msghandler, bondPotential,
+                          mol->topology()->entry(InteractionType::BONDS),
+                          mol->topology()->atoms(), &coordinates);
+    }
     // Generate velocities
     if (simConfig.temperature() > 0)
     {
         maxwell_speed(simConfig.temperature(), simConfig.seed(),
                       mol->atomsConst(), &velocities, msghandler->tw());
         stop_cm(mol->atomsConst(), coordinates, &velocities);
+        if (simConfig.constrain())
+        {
+            constrainer.rattle(msghandler, bondPotential,
+                               mol->topology()->entry(InteractionType::BONDS),
+                               mol->topology()->atoms(),
+                               coordinates, &velocities);
+        }
+        // Scale the velocities to the requested temperature for the
+        // remaining degrees of freedom.
+        double ekin = 0;
+        for(size_t i = 0; i < xmol.size(); i++)
+        {
+            ekin += mass_2[i]*rvecNormSquared(velocities[i]);
+        }
+        if (ekin > 0 && nDOF > 0)
+        {
+            double scale = std::sqrt(0.5*nDOF*BOLTZ*simConfig.temperature()/ekin);
+            for(auto &v : velocities)
+            {
+                svmul(scale, v, v);
+            }
+        }
     }
-    auto deltat  = simConfig.deltat();
     auto deltat2 = deltat*deltat;
     // For trajectory writing
     matrix      box   = { { 4, 0, 0 }, { 0, 4, 0 }, { 0, 0, 4 } };
@@ -1319,11 +1362,6 @@ void MolHandler::simulate(MsgHandler                    *msghandler,
             }
         }
     }
-    Constrainer constrainer(simConfig.constraintMaxIter(),
-                            simConfig.constraintTolerance(),
-                            1.0/deltat);
-    auto bondPotential = pd->findForcesConst(InteractionType::BONDS).potential();
-    int nDOF           = DIM*mol->nRealAtoms();
     msghandler->write("\nWill start simulation.\n");
     // Compute forces and energies for the starting coordinates
     forceComp->compute(msghandler, pd, mol->topology(), &coordinates,
