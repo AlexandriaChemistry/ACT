@@ -47,6 +47,14 @@ private:
     size_t totalShellIter_ = 0;
     //! Total number of failed shell-minimizations across all compute() calls
     size_t totalShellConvergeFailed_ = 0;
+    //! Number of evaluations in the last call of collect
+    size_t lastEval_      = 0;
+    //! Number of shell-minimization iterations in the last call of collect
+    size_t lastShellIter_ = 0;
+    //! Number of failed shell-minimizations in the last call of collect
+    size_t lastShellConvergeFailed_ = 0;
+    //! Whether collect was called on the master
+    bool   master_        = false;
      
 public:
     //! Constructor
@@ -64,6 +72,24 @@ public:
                            const ForceComputer       *forceComp,
                            int                        nElites,
                            bool                       aggregate);
+
+    /*! \brief Collects statistics from other nodes, as statistics does,
+     * without summarizing them. On other nodes than the master the
+     * statistics are sent to the master.
+     * \param[in] cr        Communication Infrastructure
+     * \param[in] forceComp The local force computer. Values will be reset.
+     * \param[in] nElites   The number of elite middlemen to ignore
+     */
+    void collect(const CommunicationRecord *cr,
+                 const ForceComputer       *forceComp,
+                 int                        nElites);
+
+    /*! \brief Summarize the statistics collected
+     * \param[in] aggregate Sum over all generations / iterations, otherwise
+     *                      only those of the last call of collect
+     * \return Summarizing string on master node, empty string on others
+     */
+    std::string report(bool aggregate) const;
 };
 
 } // namespace

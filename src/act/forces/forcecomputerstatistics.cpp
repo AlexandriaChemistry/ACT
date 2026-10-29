@@ -56,13 +56,21 @@ std::string ForceComputerStatistics::statistics(const CommunicationRecord *cr,
                                                 int                        nElites,
                                                 bool                       aggregate)
 {
+    collect(cr, forceComp, nElites);
+    return report(aggregate);
+}
+
+void ForceComputerStatistics::collect(const CommunicationRecord *cr,
+                                      const ForceComputer       *forceComp,
+                                      int                        nElites)
+{
     size_t totalEval        = forceComp->numEvaluations();
     size_t totalShellIter   = forceComp->numShellIterations();
     size_t totalShellFailed = forceComp->numShellConvergenceFailed();
     forceComp->resetStatistics();
-    std::string stats;
+    master_ = cr->isMaster();
     // Now communicate
-    if (cr->isMaster())
+    if (master_)
     {
         // Middlemen does not include the master, hence <=
         for(size_t i = std::max(1, nElites); i <= cr->middlemen().size(); i++)
@@ -80,20 +88,31 @@ std::string ForceComputerStatistics::statistics(const CommunicationRecord *cr,
         totalEval_                += totalEval;
         totalShellIter_           += totalShellIter;
         totalShellConvergeFailed_ += totalShellFailed;
-        if (aggregate)
-        {
-            makeTheString(totalEval_, totalShellIter_, totalShellConvergeFailed_, aggregate, &stats);
-        }
-        else
-        {
-            makeTheString(totalEval, totalShellIter, totalShellFailed, aggregate, &stats);
-        }
+        lastEval_                  = totalEval;
+        lastShellIter_             = totalShellIter;
+        lastShellConvergeFailed_   = totalShellFailed;
     }
     else
     {
         cr->send(0, totalEval);
         cr->send(cr->superior(), totalShellIter);
         cr->send(cr->superior(), totalShellFailed);
+    }
+}
+
+std::string ForceComputerStatistics::report(bool aggregate) const
+{
+    std::string stats;
+    if (master_)
+    {
+        if (aggregate)
+        {
+            makeTheString(totalEval_, totalShellIter_, totalShellConvergeFailed_, aggregate, &stats);
+        }
+        else
+        {
+            makeTheString(lastEval_, lastShellIter_, lastShellConvergeFailed_, aggregate, &stats);
+        }
     }
     return stats;
 }
