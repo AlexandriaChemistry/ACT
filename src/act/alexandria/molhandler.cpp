@@ -715,7 +715,9 @@ static void func(const std::vector<double> &x, double &f, std::vector<double> &g
     {
         // The energy is that of the closest coordinates that satisfy
         // the constraints, and the gradient is along the constraints.
-        if (lbfgs->constrainer()->shake(lbfgs->mh(), reference, coords, nullptr) != 0)
+        // The constraint directions are taken from x itself, such that
+        // the energy only depends on x, as the line search requires.
+        if (lbfgs->constrainer()->shake(lbfgs->mh(), coords) != 0)
         {
             // A step that is too large for the constraints
             *coords = reference;
