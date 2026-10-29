@@ -13,12 +13,10 @@
   <Real Name="Molecule 2 charge">-1</Real>
   <Real Name="BONDS">0</Real>
   <Real Name="ANGLES">0</Real>
-  <Real Name="DISPERSION">-0.8580152369391314</Real>
-  <Real Name="EXCHANGE">0.03043149878578788</Real>
-  <Real Name="COULOMB">-15.130221471669529</Real>
-  <Real Name="INDUCTION">0</Real>
-  <Real Name="INDUCTIONCORRECTION">0</Real>
-  <Real Name="ALLELEC">-15.130221471669529</Real>
-  <Real Name="EXCHIND">0.03043149878578788</Real>
-  <Real Name="EPOT">-15.957805209822709</Real>
+  <Real Name="DISPERSION">-0.85801523693913162</Real>
+  <Real Name="EXCHANGE">0.030431498785711771</Real>
+  <Real Name="COULOMB">-15.130221471669522</Real>
+  <Real Name="ALLELEC">-15.130221471669522</Real>
+  <Real Name="EXCHIND">0.030431498785711771</Real>
+  <Real Name="EPOT">-15.957805209822936</Real>
 </ReferenceData>

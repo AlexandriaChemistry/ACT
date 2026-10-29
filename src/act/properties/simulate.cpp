@@ -246,17 +246,22 @@ int simulate(int argc, char *argv[])
             if (nfrag == 2)
             {
                 // Make a copy to keep the correct shell coordinates when saving the structure.
-                auto newxmin = xmin;
-                std::map<InteractionType, double> einter;
-                std::vector<gmx::RVec>            interactionForces;
-                bool                              separateInductionCorrection = false;
-                actmol.calculateInteractionEnergy(&msghandler, &pd, &forceComp, &einter,
-                                                  &interactionForces, &newxmin, separateInductionCorrection);
-                for(const auto &ei : einter)
+                std::vector<std::vector<gmx::RVec>>            newxmin = { xmin };
+                std::vector<std::map<InteractionType, double>> einter;
+                std::vector<double>                            epot;
+                std::vector<std::vector<gmx::RVec>>            interactionForces;
+                bool                                           separateInductionCorrection = false;
+                forceComp.computeInteraction(&msghandler, &pd, &actmol, &newxmin,
+                                             separateInductionCorrection,
+                                             &einter, &epot, &interactionForces);
+                for(const auto &ec : einter)
                 {
-                    msghandler.msg(ACTStatus::Info,
-                                   gmx::formatString("Interaction energy %s: %g",
-                                                     interactionTypeToString(ei.first).c_str(), ei.second));
+                    for(const auto &ei : ec)
+                    {
+                        msghandler.msg(ACTStatus::Info,
+                                       gmx::formatString("Interaction energy %s: %g",
+                                                         interactionTypeToString(ei.first).c_str(), ei.second));
+                    }
                 }
             }
         }

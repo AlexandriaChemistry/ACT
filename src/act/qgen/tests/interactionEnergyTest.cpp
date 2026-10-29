@@ -202,10 +202,13 @@ protected:
             ForceComputer fcomp(rmsToler, 25, 0.04, epsilonr);
             if (mp_.fragmentHandler()->topologies().size() > 1)
             {
-                std::vector<gmx::RVec> forces;
-                std::vector<gmx::RVec> coords = mp_.xOriginal();
-                std::map<InteractionType, double> einter;
-                mp_.calculateInteractionEnergy(&msghandler, pd, &fcomp, &einter, &forces, &coords, true);
+                std::vector<std::vector<gmx::RVec>>            coords = { mp_.xOriginal() };
+                std::vector<std::map<InteractionType, double>> einters;
+                std::vector<double>                            epots;
+                std::vector<std::vector<gmx::RVec>>            forces;
+                fcomp.computeInteraction(&msghandler, pd, &mp_, &coords, true, &einters, &epots, &forces);
+                ASSERT_EQ(1u, einters.size());
+                auto &einter = einters[0];
                 for(const auto &e : einter)
                 {
                     checker_.checkReal(e.second, interactionTypeToString(e.first).c_str());
@@ -217,9 +220,11 @@ protected:
                 auto iepot = InteractionType::EPOT;
                 EXPECT_TRUE(std::abs(esum - einter[iepot]) <= toler);
                 // Check what happens when we sum induction correction into induction
-                std::map<InteractionType, double> einter2;
-                mp_.calculateInteractionEnergy(&msghandler, pd, &fcomp, &einter2, &forces, &coords, true);
-                EXPECT_TRUE(std::abs(einter2[iepot]-einter[iepot]) <= toler);
+                std::vector<std::vector<gmx::RVec>>            coords2 = { mp_.xOriginal() };
+                std::vector<std::map<InteractionType, double>> einters2;
+                fcomp.computeInteraction(&msghandler, pd, &mp_, &coords2, false, &einters2, &epots, &forces);
+                ASSERT_EQ(1u, einters2.size());
+                EXPECT_TRUE(std::abs(einters2[0][iepot]-einter[iepot]) <= toler);
             }
         }
     }

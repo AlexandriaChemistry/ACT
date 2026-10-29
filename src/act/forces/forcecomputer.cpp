@@ -39,7 +39,6 @@
 #include "act/basics/msg_handler.h"
 #include "act/forcefield/forcefield_parametername.h"
 #include "act/forces/conformationdata.h"
-#include "act/forces/forcecomputerimpl.h"
 #include "act/forces/forces_simd.h"
 #include "act/qgen/qtype.h"
 #include "act/topology/actmol.h"
@@ -1101,99 +1100,6 @@ void ForceComputer::computeRelaxedEnergies(MsgHandler                  *msghandl
     }
 }
 
-void ForceComputer::computeTotalEnergies(MsgHandler                  *msghandler,
-                                         const ForceField            *pd,
-                                         const std::vector<ACTMol *> &allmols,
-                                         bool                         resetTheShells) const
-{
-    static const size_t timer = Timings::instance().index("Energy calculation overhead");
-    ScopedTimer         scoped(timer);
-    // The complete topology is that of the dimer, or of the monomer
-    std::vector<ACTMol *> dimers, monomers;
-    for(auto molptr : allmols)
-    {
-        auto &mol    = *molptr;
-        bool  dimer  = mol.isDimer();
-        auto  top    = dimer ? mol.topology() : &mol.fragmentHandler()->topologies()[0];
-        auto  confs  = dimer ? mol.dimerCoords() : mol.monomerCoords(0);
-        bool  vsites = vsitesOutdated(top, mol.conformationData(dimer ? 2 : 0));
-        std::vector<std::pair<size_t, size_t>> shells;
-        if (resetTheShells)
-        {
-            shells = shellParents(top->atoms());
-        }
-        for(auto &conf : *confs)
-        {
-            nEval_ += 1;
-            if (vsites)
-            {
-                constructVsiteCoordinates(top, &conf.x);
-            }
-            resetShells(shells, &conf.x);
-        }
-        if (dimer)
-        {
-            dimers.push_back(molptr);
-        }
-        else
-        {
-            monomers.push_back(molptr);
-        }
-    }
-    // The energies before relaxing the shells give the induction energy
-    bool relax = pd->polarizable();
-    auto backup = [relax](ACTMol *mol, size_t what)
-    {
-        auto &energies = mol->conformationData(what)->energies;
-        energies.setBackups(relax);
-        if (relax)
-        {
-            backupEnergies(&energies);
-        }
-    };
-    if (!monomers.empty())
-    {
-        computeEnergies(msghandler, pd, monomers, 0);
-        for(auto molptr : monomers)
-        {
-            backup(molptr, 0);
-        }
-        if (pd->polarizable())
-        {
-            relaxMonomer(msghandler, pd, 0, monomers);
-        }
-    }
-    if (!dimers.empty())
-    {
-        computeEnergies(msghandler, pd, dimers, 2);
-        for(auto molptr : dimers)
-        {
-            backup(molptr, 2);
-        }
-        if (pd->polarizable())
-        {
-            bool fixMonomer[2] = { false, false };
-            relaxDimer(msghandler, pd, fixMonomer, dimers);
-        }
-    }
-    // Spread forces to atoms
-    for(auto molptr : monomers)
-    {
-        auto top = &molptr->fragmentHandler()->topologies()[0];
-        for(auto &mon : *molptr->monomerCoords(0))
-        {
-            spreadVsiteForces(top, &mon.x, &mon.fcalc);
-        }
-    }
-    for(auto molptr : dimers)
-    {
-        for(auto &dim : *molptr->dimerCoords())
-        {
-            spreadVsiteForces(molptr->topology(), &dim.x, &dim.fcalc);
-        }
-    }
-}
-
 /*! \brief Add the forces of an electric field on the charges
  * \param[in]    atoms  The particles
  * \param[in]    field  The electric field
@@ -1504,6 +1410,29 @@ Potential ForceComputer::ftype(const ForceField *pd,
     return ftype;
 }
 
+/*! \brief Compute the energy of one potential for one structure
+ * \param[in] msghandler For warnings and errors
+ * \param[in] pot        The potential
+ * \param[in] entries    The interactions
+ * \param[in] atoms      The atoms
+ * \param[in] x          The coordinates
+ * \param[in] epsilonr   Relative dielectric constant
+ * \return The energy
+ */
+static double potentialEnergy(MsgHandler                   *msghandler,
+                              Potential                     pot,
+                              const TopologyEntryVector    &entries,
+                              const std::vector<ActAtom>   &atoms,
+                              const std::vector<gmx::RVec> &x,
+                              double                        epsilonr)
+{
+    std::vector<CoordsEnergy> ce(1);
+    ce[0].x = x;
+    computePotential(msghandler, pot, entries, atoms, &ce, epsilonr, false);
+    auto ep = ce[0].eMap.find(InteractionType::EPOT);
+    return (ce[0].eMap.end() != ep && ep->second.haveACT()) ? ep->second.eact() : 0;
+}
+
 void ForceComputer::plot(MsgHandler        *msghandler,
                          const ForceField  *pd,
                          InteractionType    itype) const
@@ -1526,14 +1455,6 @@ void ForceComputer::plot(MsgHandler        *msghandler,
         { InteractionType::ELECTROSTATICS,     "acmtype" }
     };
     auto &fs   = pd->findForcesConst(itype);
-    // The function we need to do the math
-    auto bfc   = getBondForceComputer(fs.potential());
-    if (nullptr == bfc)
-    {
-        fprintf(stderr, "Please implement a force function for type %s\n",
-                potentialToString(fs.potential()).c_str());
-    }
-    else
     {
         std::vector<std::pair<int, int>> linear_bonds = {
             { 0, 1}, {1, 2}, {2, 3}
@@ -1730,9 +1651,9 @@ void ForceComputer::plot(MsgHandler        *msghandler,
                         double theta = (th0+i*delta);
                         coordinates[ak][0] = 1+std::cos(theta*DEG2RAD);
                         coordinates[ak][1] = std::sin(theta*DEG2RAD);
-                        energies.clear();
-                        bfc(msghandler, top.entry(itype), top.atoms(), &coordinates, &forces, &energies, epsilonr_);
-                        fprintf(fp, "%10g  %10g\n", theta, energies[itype]);
+                        double ener = potentialEnergy(msghandler, fs.potential(), top.entry(itype),
+                                                      top.atoms(), coordinates, epsilonr_);
+                        fprintf(fp, "%10g  %10g\n", theta, ener);
                     }
                 }
                 break;
@@ -1749,9 +1670,9 @@ void ForceComputer::plot(MsgHandler        *msghandler,
                     {
                         double xx = (r0+i*delta);
                         coordinates[1][1] = xx;
-                        energies.clear();
-                        bfc(msghandler, top.entry(itype), top.atoms(), &coordinates, &forces, &energies, epsilonr_);
-                        fprintf(fp, "%10g  %10g\n", xx, energies[itype]);
+                        double ener = potentialEnergy(msghandler, fs.potential(), top.entry(itype),
+                                                      top.atoms(), coordinates, epsilonr_);
+                        fprintf(fp, "%10g  %10g\n", xx, ener);
                     }
 
                 }
@@ -1769,9 +1690,9 @@ void ForceComputer::plot(MsgHandler        *msghandler,
                         double theta = (th0+i*delta);
                         coordinates[3][0] = 1+std::cos(theta*DEG2RAD);
                         coordinates[3][1] = 1+std::sin(theta*DEG2RAD);
-                        energies.clear();
-                        bfc(msghandler, top.entry(itype), top.atoms(), &coordinates, &forces, &energies, epsilonr_);
-                        fprintf(fp, "%10g  %10g\n", theta, energies[itype]);
+                        double ener = potentialEnergy(msghandler, fs.potential(), top.entry(itype),
+                                                      top.atoms(), coordinates, epsilonr_);
+                        fprintf(fp, "%10g  %10g\n", theta, ener);
                     }
                 }
                 break;
@@ -1787,9 +1708,9 @@ void ForceComputer::plot(MsgHandler        *msghandler,
                     {
                         double theta = (th0+i*delta);
                         coordinates[3][2] = theta;
-                        energies.clear();
-                        bfc(msghandler, top.entry(itype), top.atoms(), &coordinates, &forces, &energies, epsilonr_);
-                        fprintf(fp, "%10g  %10g\n", theta, energies[itype]);
+                        double ener = potentialEnergy(msghandler, fs.potential(), top.entry(itype),
+                                                      top.atoms(), coordinates, epsilonr_);
+                        fprintf(fp, "%10g  %10g\n", theta, ener);
                     }
                 }
                 break;
