@@ -334,6 +334,27 @@ TEST_F(ComputeTotalTest, HyperpolarizableDimer)
     testTotal("water_hyperpol", "water_dimer", 3, ShellOptions());
 }
 
+// Test: The shells of a hyperpolarizable dimer converge in a few steps.
+// The quartic term of the polarization of oxygen makes the stiffness of the
+// spring along the core-shell vector three times larger than perpendicular
+// to it, which is taken into account in the step.
+TEST_F(ComputeTotalTest, HyperpolarizableConvergence)
+{
+    auto pd = getForceField("water_hyperpol");
+    ASSERT_NE(nullptr, pd);
+    ACTMol mol;
+    ASSERT_TRUE(readMolecule(&msghandler_, pd, "water_dimer", &mol));
+    // Without a maximum shell distance
+    ForceComputer forceComp(1e-6, 100, 0, 1);
+    ConformationSet set;
+    set.top = mol.topology();
+    set.setCoordinates({ mol.xOriginal() });
+    std::vector<std::map<InteractionType, double>> energies;
+    forceComp.computeTotal(&msghandler_, pd, &set, ShellOptions(), &energies);
+    EXPECT_EQ(0u, forceComp.numShellConvergenceFailed());
+    EXPECT_LE(forceComp.numShellIterations(), 8u);
+}
+
 TEST_F(ComputeTotalTest, PolarizableDimer)
 {
     testTotal("ACS-pg-vs2", "hbr-hf", 3, ShellOptions());

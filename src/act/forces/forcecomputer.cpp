@@ -234,14 +234,23 @@ static void update_shell_positions(int                           core,
         //          Fspring    ^
         //  Core    <-------- Shell ---> r_core_shell
         //
-        // We want to determine what distance x along the F_total vector the shell
-        // has to be displaced. To do so, we assume that
-        // r_core_shell / Fspring = x / Ftotal
-        // Ratio between distance and polarization force
-        double fac  = step/shellForceConstant(fcShell, fcHyper, rHyper, rcs);
+        // We want to determine the displacement of the shell that cancels
+        // the total force, assuming the other forces do not change, that is
+        // a Newton step for the spring. For a spring potential V(r) the
+        // stiffness along the core-shell vector is V''(r), perpendicular
+        // to it V'(r)/r. These differ for a quartic spring.
+        double kperp = shellForceConstant(fcShell, fcHyper, rHyper, rcs);
+        double kpar  = fcShell;
+        if (fcHyper > 0 && rcs > rHyper)
+        {
+            double drh = rcs - rHyper;
+            kpar      += 12*fcHyper*drh*drh;
+        }
+        double fpar = iprod(forces[shell], r_core_shell)/rcs;
         for(int m = 0; m < DIM; m++)
         {
-            (*coordinates)[shell][m] += fac*forces[shell][m];
+            double fparm = fpar*r_core_shell[m]/rcs;
+            (*coordinates)[shell][m] += step*(fparm/kpar + (forces[shell][m] - fparm)/kperp);
         }
     }
 }
@@ -752,9 +761,37 @@ void ForceComputer::relaxMonomer(MsgHandler                  *msghandler,
         if (!allDone)
         {
             // Only for the conformations that did not converge
+            for(auto molptr : allmols)
+            {
+                for(const auto &mon : *molptr->monomerCoords(im))
+                {
+                    nShellIter_ += mon.done ? 0 : 1;
+                }
+            }
             computeEnergies(msghandler, pd, allmols, im, true, true, false, allForces);
         }
         iter++;
+    }
+    // Check the conformations computed last
+    double maxShellDistance2 = maxShellDistance_*maxShellDistance_;
+    for(auto molptr : allmols)
+    {
+        auto  fh   = molptr->fragmentHandler();
+        auto &tops = fh->topologies();
+        auto &pols = fh->polInfo();
+        if (im >= tops.size() || pols[im].nShell() == 0)
+        {
+            continue;
+        }
+        for(const auto &mon : *molptr->monomerCoords(im))
+        {
+            if (!mon.done &&
+                shellForce2(tops[im].atoms(), pols[im].isShell(), mon.x, mon.fcalc,
+                            0, maxShellDistance2)/pols[im].nShell() > msForceToler_)
+            {
+                nShellConvergeFailed_ += 1;
+            }
+        }
     }
 }
 
@@ -821,9 +858,43 @@ void ForceComputer::relaxDimer(MsgHandler                  *msghandler,
         if (!allDone)
         {
             // Not all done, recompute the conformations that did not converge
+            for(auto molptr : allmols)
+            {
+                for(const auto &dim : *molptr->dimerCoords())
+                {
+                    nShellIter_ += dim.done ? 0 : 1;
+                }
+            }
             computeEnergies(msghandler, pd, allmols, 2, true, true, false, allForces);
         }
         iter++;
+    }
+    // Check the conformations computed last, the shells of the monomers that
+    // are relaxed have to be converged
+    double maxShellDistance2 = maxShellDistance_*maxShellDistance_;
+    for(auto molptr : allmols)
+    {
+        auto  fh   = molptr->fragmentHandler();
+        auto &tops = fh->topologies();
+        auto &pols = fh->polInfo();
+        for(const auto &dim : *molptr->dimerCoords())
+        {
+            if (dim.done)
+            {
+                continue;
+            }
+            bool failed = false;
+            for(size_t im = 0; im < tops.size() && im < 2; im++)
+            {
+                if (!fixMonomer[im] && pols[im].nShell() > 0 &&
+                    shellForce2(tops[im].atoms(), pols[im].isShell(), dim.x, dim.fcalc,
+                                fh->atomStart()[im], maxShellDistance2)/pols[im].nShell() > msForceToler_)
+                {
+                    failed = true;
+                }
+            }
+            nShellConvergeFailed_ += failed ? 1 : 0;
+        }
     }
 }
 
