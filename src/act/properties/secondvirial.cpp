@@ -278,7 +278,7 @@ static std::vector<gmx::RVec> allParticleCoords(const std::vector<ActAtom>   &at
 
 void ReRunner::rerun(MsgHandler       *msghandler,
                      const ForceField *pd,
-                     const ACTMol     *actmol,
+                     ACTMol           *actmol,
                      bool              verbose)
 {
     std::vector<std::vector<gmx::RVec>> dimers;
@@ -290,21 +290,43 @@ void ReRunner::rerun(MsgHandler       *msghandler,
     {
         msghandler->writeDebug(memory_usage());
     }
-    std::map<InteractionType, double> energies;
-    int mp_index = 0;
     gmx_stats edist;
-    // Loop over molecules
+    // Coordinates of all particles of each structure
     const auto &atoms = actmol->atomsConst();
-    for (size_t idim = 0; idim < dimers.size(); idim++)
+    std::vector<std::vector<gmx::RVec>> allCoords;
+    for (const auto &x : dimers)
     {
-        std::vector<gmx::RVec> coords = allParticleCoords(atoms, dimers[idim]);
-        std::vector<gmx::RVec> forces(coords.size());
-        std::string out = gmx::formatString("%5d", mp_index);
-        if (eInter_)
+        allCoords.push_back(allParticleCoords(atoms, x));
+    }
+    std::vector<std::map<InteractionType, double>> allEnergies;
+    std::vector<double>                            allEpot;
+    std::vector<std::vector<gmx::RVec>>            allForces;
+    if (actmol->topology()->hasEntry(InteractionType::POSITION_RESTRAINT))
+    {
+        // The SIMD routines use the fragment topology for a monomer,
+        // that does not have the position restraints.
+        for(auto &coords : allCoords)
         {
+            std::vector<gmx::RVec>            forces(coords.size());
             std::map<InteractionType, double> energies;
             forceComp_->compute(msghandler, pd, actmol->topology(),
                                 &coords, &forces, &energies);
+            allEnergies.push_back(energies);
+        }
+    }
+    else
+    {
+        // Compute the energies of all structures at once
+        actmol->calculateEnergies(msghandler, pd, forceComp_, &allCoords, false, false,
+                                  &allEnergies, &allEpot, &allForces);
+    }
+    for (size_t idim = 0; idim < allCoords.size(); idim++)
+    {
+        const auto &coords   = allCoords[idim];
+        auto       &energies = allEnergies[idim];
+        std::string out = gmx::formatString("%5zu", idim);
+        if (eInter_)
+        {
             auto atomStart  = actmol->fragmentHandler()->atomStart();
             std::vector<gmx::RVec> com        = { { 0, 0, 0 }, { 0, 0, 0 } };
             std::vector<double>    mtot       = { 0, 0 };
@@ -340,8 +362,6 @@ void ReRunner::rerun(MsgHandler       *msghandler,
         }
         else
         {
-            forceComp_->compute(msghandler, pd, actmol->topology(),
-                                &coords, &forces, &energies);
             for(const auto &ee : energies)
             {
                 out += gmx::formatString("  %s %8g", interactionTypeToString(ee.first).c_str(), ee.second);
@@ -351,7 +371,6 @@ void ReRunner::rerun(MsgHandler       *msghandler,
         {
             msghandler->write(out);
         }
-        mp_index++;
     }
     if (verbose && msghandler)
     {
@@ -362,7 +381,7 @@ void ReRunner::rerun(MsgHandler       *msghandler,
 void ReRunner::runB2(CommunicationRecord         *cr,
                      MsgHandler                  *msghandler,
                      const ForceField            *pd,
-                     const ACTMol                *actmol,
+                     ACTMol                      *actmol,
                      int                          maxdimer,
                      const std::vector<t_filenm> &fnm)
 {
@@ -476,15 +495,26 @@ void ReRunner::runB2(CommunicationRecord         *cr,
             forceMol[kk].resize(dimers.size(), rvnul);
         }
 
-        // Loop over dimers
+        // Coordinates of all particles of the dimers
         const auto &atoms = actmol->atomsConst();
+        std::vector<std::vector<gmx::RVec>> allCoordsShells;
+        for (const auto &d : dimers)
+        {
+            allCoordsShells.push_back(allParticleCoords(atoms, d.coords));
+        }
+        // Compute the interaction energies and forces of all dimers at once
+        std::vector<std::map<InteractionType, double>> allEinter;
+        std::vector<double>                            allEpot;
+        std::vector<std::vector<gmx::RVec>>            allForces;
+        actmol->calculateEnergies(msghandler, pd, forceComp_, &allCoordsShells, true, true,
+                                  &allEinter, &allEpot, &allForces);
+        // Loop over dimers
         for (size_t idim = 0; idim < dimers.size(); idim++)
         {
-            std::vector<gmx::RVec> coords = allParticleCoords(atoms, dimers[idim].coords);
-            std::vector<gmx::RVec> forces(coords.size(), rvnul);
-            std::map<InteractionType, double> einter;
-            auto epot = actmol->calculateInteractionEnergy(msghandler, pd, forceComp_,
-                                                           &einter, &forces, &coords, true);
+            const auto &coords = allCoordsShells[idim];
+            const auto &forces = allForces[idim];
+            auto       &einter = allEinter[idim];
+            auto        epot   = allEpot[idim];
 
             auto atomStart  = actmol->fragmentHandler()->atomStart();
             std::vector<gmx::RVec> f          = { rvnul, rvnul };

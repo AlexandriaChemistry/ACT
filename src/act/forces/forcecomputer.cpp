@@ -1201,6 +1201,99 @@ void ForceComputer::computeRelaxedEnergies(MsgHandler                  *msghandl
     }
 }
 
+void ForceComputer::computeTotalEnergies(MsgHandler                  *msghandler,
+                                         const ForceField            *pd,
+                                         const std::vector<ACTMol *> &allmols,
+                                         bool                         resetTheShells) const
+{
+    static const size_t timer = Timings::instance().index("Energy calculation overhead");
+    ScopedTimer         scoped(timer);
+    // The complete topology is that of the dimer, or of the monomer
+    std::vector<ACTMol *> dimers, monomers;
+    for(auto molptr : allmols)
+    {
+        auto &mol    = *molptr;
+        bool  dimer  = mol.isDimer();
+        auto  top    = dimer ? mol.topology() : &mol.fragmentHandler()->topologies()[0];
+        auto  confs  = dimer ? mol.dimerCoords() : mol.monomerCoords(0);
+        bool  vsites = vsitesOutdated(top, mol.conformationData(dimer ? 2 : 0));
+        std::vector<std::pair<size_t, size_t>> shells;
+        if (resetTheShells)
+        {
+            shells = shellParents(top->atoms());
+        }
+        for(auto &conf : *confs)
+        {
+            nEval_ += 1;
+            if (vsites)
+            {
+                constructVsiteCoordinates(top, &conf.x);
+            }
+            resetShells(shells, &conf.x);
+        }
+        if (dimer)
+        {
+            dimers.push_back(molptr);
+        }
+        else
+        {
+            monomers.push_back(molptr);
+        }
+    }
+    // The energies before relaxing the shells give the induction energy
+    bool relax = pd->polarizable();
+    auto backup = [relax](ACTMol *mol, size_t what)
+    {
+        auto &energies = mol->conformationData(what)->energies;
+        energies.setBackups(relax);
+        if (relax)
+        {
+            backupEnergies(&energies);
+        }
+    };
+    if (!monomers.empty())
+    {
+        computeEnergies(msghandler, pd, monomers, 0);
+        for(auto molptr : monomers)
+        {
+            backup(molptr, 0);
+        }
+        if (pd->polarizable())
+        {
+            relaxMonomer(msghandler, pd, 0, monomers);
+        }
+    }
+    if (!dimers.empty())
+    {
+        computeEnergies(msghandler, pd, dimers, 2);
+        for(auto molptr : dimers)
+        {
+            backup(molptr, 2);
+        }
+        if (pd->polarizable())
+        {
+            bool fixMonomer[2] = { false, false };
+            relaxDimer(msghandler, pd, fixMonomer, dimers);
+        }
+    }
+    // Spread forces to atoms
+    for(auto molptr : monomers)
+    {
+        auto top = &molptr->fragmentHandler()->topologies()[0];
+        for(auto &mon : *molptr->monomerCoords(0))
+        {
+            spreadVsiteForces(top, &mon.x, &mon.fcalc);
+        }
+    }
+    for(auto molptr : dimers)
+    {
+        for(auto &dim : *molptr->dimerCoords())
+        {
+            spreadVsiteForces(molptr->topology(), &dim.x, &dim.fcalc);
+        }
+    }
+}
+
 void ForceComputer::computeOnce(MsgHandler                        *msg_handler,
                                 const ForceField                  *pd,
                                 const Topology                    *top,
