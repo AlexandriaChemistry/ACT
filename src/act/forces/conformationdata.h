@@ -53,6 +53,7 @@
 #include "act/topology/actatom.h"
 #include "act/topology/coords_energy.h"
 #include "gromacs/math/vectypes.h"
+#include "gromacs/utility/gmxassert.h"
 
 namespace alexandria
 {
@@ -219,6 +220,50 @@ public:
                 {
                     (*coords)[confs_[c]].fcalc[a][m] = f[(DIM*a+m)*stride + c];
                 }
+            }
+        }
+    }
+
+    /*! \brief Set the forces from forces kept in the same layout
+     * The forces may have been kept for more conformations than are in
+     * the slots now, see conformations.
+     * \param[in] src       The forces
+     * \param[in] srcStride The stride of src
+     * \param[in] srcConfs  The conformation in each slot of src, it has to
+     *                      contain all conformations in the slots now
+     */
+    void loadForces(const std::vector<double> &src,
+                    size_t                     srcStride,
+                    const std::vector<size_t> &srcConfs)
+    {
+        size_t nrow = x.size()/stride;
+        f.resize(nrow*stride);
+        if (srcConfs == confs_ && srcStride == stride)
+        {
+            std::copy(src.begin(), src.begin() + nrow*stride, f.begin());
+            return;
+        }
+        // The slot of each conformation in src
+        std::vector<size_t> srcSlot(stride);
+        size_t              k = 0;
+        for(size_t c = 0; c < stride; c++)
+        {
+            size_t conf = confs_[std::min(c, nconf-1)];
+            while (k < srcConfs.size() && srcConfs[k] < conf)
+            {
+                k++;
+            }
+            GMX_RELEASE_ASSERT(k < srcConfs.size() && srcConfs[k] == conf,
+                               "Forces of a conformation were not kept");
+            srcSlot[c] = k;
+        }
+        for(size_t row = 0; row < nrow; row++)
+        {
+            const double *s = src.data() + row*srcStride;
+            double       *d = f.data() + row*stride;
+            for(size_t c = 0; c < stride; c++)
+            {
+                d[c] = s[srcSlot[c]];
             }
         }
     }
@@ -481,13 +526,23 @@ struct FixedEnergies
 {
     //! Whether energies and forces have been stored
     bool                                valid = false;
+    //! The number of conformations
+    size_t                              nconf = 0;
+    //! Whether the forces are in arrayForces rather than forces
+    bool                                inArrays = false;
+    //! The forces in the layout of ConformationArrays
+    std::vector<double>                 arrayForces;
+    //! The stride of arrayForces
+    size_t                              stride = 0;
+    //! The conformation in each slot of arrayForces
+    std::vector<size_t>                 slots;
     //! The interaction types, including EPOT
     std::vector<InteractionType>        types;
     //! For each type the energy of each conformation
     std::vector<std::vector<double>>    energies;
     //! For each type whether each conformation has an energy
     std::vector<std::vector<char>>      have;
-    //! The forces of each conformation
+    //! The forces of each conformation, unless inArrays
     std::vector<std::vector<gmx::RVec>> forces;
 };
 
