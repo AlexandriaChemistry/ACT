@@ -73,7 +73,8 @@ std::map<eMinimizeStatus, std::string> eMinStat2String = {
     { eMinimizeStatus::OK,           "OK"             },
     { eMinimizeStatus::TooManySteps, "Too many steps" },
     { eMinimizeStatus::Solver,       "Solver failed"  },
-    { eMinimizeStatus::NoMinimum,    "There is no minimum"  }
+    { eMinimizeStatus::NoMinimum,    "There is no minimum"  },
+    { eMinimizeStatus::Constraints,  "Could not satisfy the constraints"  }
 };
 
 const std::string &eMinimizeStatusToString(eMinimizeStatus e)
@@ -590,6 +591,8 @@ private:
     std::map<InteractionType, double>  energies_;
     //! Vector of real atoms
     const std::vector<int>             theAtoms_;
+    //! Constraints, or nullptr if there are none
+    Constrainer                       *constrainer_;
 public:
     //! Constructor
     StlbfgsHandler(const ForceField       *pd,
@@ -597,8 +600,10 @@ public:
                    const Topology         *topology,
                    const ForceComputer    *forceComp,
                    const std::vector<int> &theAtoms,
-                   const std::vector<gmx::RVec> &coords) :
-        pd_(pd), mh_(mh), topology_(topology), forceComp_(forceComp), coords_(coords), theAtoms_(theAtoms)
+                   const std::vector<gmx::RVec> &coords,
+                   Constrainer            *constrainer) :
+        pd_(pd), mh_(mh), topology_(topology), forceComp_(forceComp), coords_(coords), theAtoms_(theAtoms),
+        constrainer_(constrainer)
     {
         gmx::RVec vzero = { 0, 0, 0 };
         forces_.resize(topology->atoms().size(), vzero);
@@ -630,6 +635,9 @@ public:
 
     //! \return the atom indices
     const std::vector<int> &theAtoms() const { return theAtoms_; }
+
+    //! \return the constraints, or nullptr if there are none
+    Constrainer *constrainer() const { return constrainer_; }
 
     //! \brief print force on frozen atom
     void printFrozenForce(gmx::TextWriter *tw, const std::vector<int> &myFreeze)
@@ -687,12 +695,31 @@ static void func(const std::vector<double> &x, double &f, std::vector<double> &g
     }
     auto coords = lbfgs->coordinates();
     auto forces = lbfgs->forces();
+    // The previous coordinates, that satisfy the constraints
+    std::vector<gmx::RVec> reference;
+    if (lbfgs->constrainer())
+    {
+        reference = *coords;
+    }
     size_t jj   = 0;
     for (auto i : theAtoms)
     {
         for(int j = 0; j < DIM; j++)
         {
             (*coords)[i][j] = x[jj++];
+        }
+    }
+    // Energy penalty to make the line search back off
+    double penalty = 0;
+    if (lbfgs->constrainer())
+    {
+        // The energy is that of the closest coordinates that satisfy
+        // the constraints, and the gradient is along the constraints.
+        if (lbfgs->constrainer()->shake(lbfgs->mh(), reference, coords, nullptr) != 0)
+        {
+            // A step that is too large for the constraints
+            *coords = reference;
+            penalty = 1e6;
         }
     }
     gmx::RVec field = { 0, 0, 0 };
@@ -702,7 +729,11 @@ static void func(const std::vector<double> &x, double &f, std::vector<double> &g
                                     forces, lbfgs->energies(), field);
     lbfgs->forceComp()->spreadVsiteForces(lbfgs->topology(), coords,
                                           forces);
-    f  = lbfgs->energy(InteractionType::EPOT);
+    if (lbfgs->constrainer())
+    {
+        lbfgs->constrainer()->projectForces(lbfgs->mh(), *coords, forces);
+    }
+    f  = lbfgs->energy(InteractionType::EPOT) + penalty;
     jj = 0;
     rvec   fsum = { 0, 0, 0 };
     double fmax = 0;
@@ -790,13 +821,57 @@ eMinimizeStatus MolHandler::minimizeCoordinates(MsgHandler                      
             theAtoms.push_back(atom);
         }
     }
+    // Constraints, the starting coordinates have to satisfy them
+    std::vector<gmx::RVec> xstart = *coords;
+    // Near the minimum the steps are much smaller than the errors that
+    // the tolerance for simulations allows, which would make the energy
+    // change irregularly. The Newton iterations in SHAKE converge
+    // quadratically, such that a much smaller tolerance is cheap.
+    Constrainer            constrainer(simConfig.constraintMaxIter(),
+                                       std::min(simConfig.constraintTolerance(),
+                                                1000*GMX_REAL_EPS), 1.0);
+    bool                   constrain = simConfig.constrain();
+    if (constrain)
+    {
+        constrainer.makeConstraints(msghandler, simConfig.constraintType(),
+                                    pd, topology, xstart);
+        constrainer.setFrozen(myFreeze);
+        if (msghandler->verbose())
+        {
+            msghandler->write(gmx::formatString("Constraining %zu bonds and %zu angles in minimization.",
+                                                constrainer.numBondConstraints(),
+                                                constrainer.numAngleConstraints()));
+        }
+        if (constrainer.shake(msghandler, &xstart) != 0)
+        {
+            return eMinimizeStatus::Constraints;
+        }
+    }
+    // Remove the force components along the constraints
+    auto constrainForces = [&](const std::vector<gmx::RVec> &x,
+                               std::vector<gmx::RVec>       *f)
+    {
+        if (constrain)
+        {
+            constrainer.projectForces(msghandler, x, f);
+        }
+    };
+    // Constrain coordinates, using the reference coordinates for the directions
+    auto constrainCoords = [&](const std::vector<gmx::RVec> &xref,
+                               std::vector<gmx::RVec>       *x)
+    {
+        if (constrain)
+        {
+            constrainer.shake(msghandler, xref, x, nullptr);
+        }
+    };
     bool                firstStep = true;
     double              epotMin = 1e8;
     double              msfMin  = 1e16;
     // Two sets of coordinates
     std::vector<gmx::RVec> newCoords[2];
-    newCoords[0] = *coords;
-    newCoords[1] = *coords;
+    newCoords[0] = xstart;
+    newCoords[1] = xstart;
     std::map<InteractionType, double> newEnergies[2];
     double gamma_max    = 1e-5;
     double gamma        = gamma_max;
@@ -805,7 +880,8 @@ eMinimizeStatus MolHandler::minimizeCoordinates(MsgHandler                      
 #define next (1-current)
     if (simConfig.minAlg() == eMinimizeAlgorithm::LBFGS)
     {
-        lbfgs = new StlbfgsHandler(pd, msghandler, topology, forceComp, theAtoms, *coords);
+        lbfgs = new StlbfgsHandler(pd, msghandler, topology, forceComp, theAtoms, xstart,
+                                   constrain ? &constrainer : nullptr);
 
         STLBFGS::Optimizer                      opt{func, 1000};
         opt.ftol    = simConfig.forceTolerance();
@@ -834,7 +910,7 @@ eMinimizeStatus MolHandler::minimizeCoordinates(MsgHandler                      
             {
                 for(int j = 0; j < DIM; j++)
                 {
-                    sx[DIM*i+j] = (*coords)[theAtoms[i]][j] + retry * dis(gen) * displacement;
+                    sx[DIM*i+j] = xstart[theAtoms[i]][j] + retry * dis(gen) * displacement;
                 }
             }
             converged = opt.run(sx);
@@ -844,6 +920,7 @@ eMinimizeStatus MolHandler::minimizeCoordinates(MsgHandler                      
                 lbfgs->forceComp()->compute(msghandler, lbfgs->pd(), topology,
                                             lbfgs->coordinates(),
                                             lbfgs->forces(), lbfgs->energies());
+                constrainForces(*lbfgs->coordinates(), lbfgs->forces());
                 double enew = lbfgs->energy(InteractionType::EPOT);
                 if (msghandler->verbose())
                 {
@@ -909,7 +986,59 @@ eMinimizeStatus MolHandler::minimizeCoordinates(MsgHandler                      
                 // Hessian.averageTriangle();
                 MatrixWrapper H2(Hessian);
                 // Solve H delta X = -grad (E) = force(E)
-                int result = Hessian.solve(f0, &deltaX[current]);
+                int result = 0;
+                if (constrain && constrainer.numConstraints() > 0)
+                {
+                    // With constraints, solve the KKT equations
+                    // H delta X + J^T mu = force(E) and J delta X = 0,
+                    // where the rows of J are the gradients of the constraints.
+                    size_t        n  = DIM*theAtoms.size();
+                    size_t        nc = constrainer.numConstraints();
+                    MatrixWrapper KKT(n+nc, n+nc);
+                    for(size_t ii = 0; ii < n; ii++)
+                    {
+                        for(size_t kk = 0; kk < n; kk++)
+                        {
+                            KKT.set(ii, kk, Hessian.get(ii, kk));
+                        }
+                    }
+                    std::map<int, int> atomIndex;
+                    for(size_t ii = 0; ii < theAtoms.size(); ii++)
+                    {
+                        atomIndex.insert({ theAtoms[ii], ii });
+                    }
+                    auto &x = newCoords[current];
+                    for(size_t c = 0; c < nc; c++)
+                    {
+                        auto &pair = constrainer.pairs()[c];
+                        rvec  dx;
+                        rvec_sub(x[pair[0]], x[pair[1]], dx);
+                        for(int k = 0; k < 2; k++)
+                        {
+                            auto ai = atomIndex.find(pair[k]);
+                            if (atomIndex.end() == ai)
+                            {
+                                // A frozen atom
+                                continue;
+                            }
+                            double sign = (0 == k) ? 1 : -1;
+                            for(int m = 0; m < DIM; m++)
+                            {
+                                KKT.set(n+c, DIM*ai->second+m, sign*dx[m]);
+                                KKT.set(DIM*ai->second+m, n+c, sign*dx[m]);
+                            }
+                        }
+                    }
+                    std::vector<double> rhs = f0;
+                    rhs.resize(n+nc, 0.0);
+                    std::vector<double> solution(n+nc, 0.0);
+                    result = KKT.solve(rhs, &solution);
+                    deltaX[current].assign(solution.begin(), solution.begin()+n);
+                }
+                else
+                {
+                    result = Hessian.solve(f0, &deltaX[current]);
+                }
                 if (0 != result)
                 {
                     eMin = eMinimizeStatus::Solver;
@@ -925,6 +1054,7 @@ eMinimizeStatus MolHandler::minimizeCoordinates(MsgHandler                      
                             forces[current][ii][m] = f0[jj++];
                         }
                     }
+                    constrainForces(newCoords[current], &forces[current]);
                     if (msghandler->debug() && firstStep)
                     {
                         msghandler->writeDebug(gmx::formatString("Sum of forces: %g sum of displacement: %g\n",
@@ -960,6 +1090,7 @@ eMinimizeStatus MolHandler::minimizeCoordinates(MsgHandler                      
                 forceComp->compute(msghandler, pd, topology,
                                    &newCoords[current],
                                    &forces[current], &newEnergies[current]);
+                constrainForces(newCoords[current], &forces[current]);
                 if (!firstStep)
                 {
                     double teller = 0, noemer = 0;
@@ -1012,10 +1143,12 @@ eMinimizeStatus MolHandler::minimizeCoordinates(MsgHandler                      
         do
         {
             updateCoords(theAtoms, newCoords[current], &(newCoords[next]), gamma, deltaX[current]);
+            constrainCoords(newCoords[current], &newCoords[next]);
             
             // Do an energy and force calculation with the new coordinates
             forceComp->compute(msghandler, pd, topology, &newCoords[next],
                                &forces[next], &newEnergies[next]);
+            constrainForces(newCoords[next], &forces[next]);
             double epotNew = newEnergies[next][InteractionType::EPOT];
             double msfNew  = msForce(theAtoms, forces[next]);
             acceptStep     = (epotNew <= epotMin) || (msfNew < msfMin);
@@ -1028,8 +1161,10 @@ eMinimizeStatus MolHandler::minimizeCoordinates(MsgHandler                      
                     printEnergies(msghandler->tw(), myIter, msfNew, 0, 0, newEnergies[next], gamma);
                 }
                 updateCoords(theAtoms, newCoords[current], &(newCoords[next]), 0.5*gamma, deltaX[current]);
+                constrainCoords(newCoords[current], &newCoords[next]);
                 forceComp->compute(msghandler, pd, topology, &newCoords[next],
                                    &forces[next], &newEnergies[next]);
+                constrainForces(newCoords[next], &forces[next]);
                 if (msghandler->verbose())
                 {
                     msghandler->write("Trying line minimization, step 2.\n");
@@ -1046,8 +1181,10 @@ eMinimizeStatus MolHandler::minimizeCoordinates(MsgHandler                      
                 {
                     gmin = -gamma*abc[1]/(2*abc[0]);
                     updateCoords(theAtoms, newCoords[current], &(newCoords[next]), gmin, deltaX[current]);
+                    constrainCoords(newCoords[current], &newCoords[next]);
                     forceComp->compute(msghandler, pd, topology, &newCoords[next],
                                        &forces[next], &newEnergies[next]);
+                    constrainForces(newCoords[next], &forces[next]);
                     double epotGmin = newEnergies[next][InteractionType::EPOT];
                     acceptStep = (epotGmin <= epotMin);
                 }

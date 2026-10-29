@@ -156,6 +156,14 @@ public:
                          const Topology               *top,
                          const std::vector<gmx::RVec> &positions);
 
+    /*! \brief Keep atoms at their positions
+     *
+     * Frozen atoms are not moved by the constraints. Constraints between
+     * two frozen atoms are removed. Call this after makeConstraints.
+     * \param[in] frozen The indices of the frozen atoms
+     */
+    void setFrozen(const std::vector<int> &frozen);
+
     //! \return the number of constraints
     size_t numConstraints() const { return pairs_.size(); }
 
@@ -223,6 +231,21 @@ public:
     int rattle(MsgHandler                   *msghandler,
                const std::vector<gmx::RVec> &positions,
                std::vector<gmx::RVec>       *velocities);
+
+    /*! \brief Remove the force components along the constraints
+     *
+     * Forces of constraints are added such that the accelerations of the
+     * atoms do not change the constrained distances. The result is zero
+     * at a minimum of the energy under the constraints, for instance for
+     * the convergence check in energy minimization.
+     * \param[in]    msghandler For warnings and errors
+     * \param[in]    positions  The coordinates of all particles
+     * \param[inout] forces     The forces on all particles
+     * \return zero if fine
+     */
+    int projectForces(MsgHandler                   *msghandler,
+                      const std::vector<gmx::RVec> &positions,
+                      std::vector<gmx::RVec>       *forces);
 };
 
 } // namespace alexandria
