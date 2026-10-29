@@ -838,7 +838,6 @@ int b2(int argc, char *argv[])
     double                    shellToler       = 1e-6;
     int                       maxdimers        = 1024;
     int                       shellMaxIter     = 25;
-    double                    shellMaxDistance = 0.04; // nm
     bool                      json             = false;
     std::vector<t_pargs>      pa = {
         { "-name",   FALSE, etSTR,  {&molnm},
@@ -849,8 +848,6 @@ int b2(int argc, char *argv[])
           "Tolerance for shell force optimization (mean square force)." },
         { "-shellMaxIter", FALSE, etINT, {&shellMaxIter},
           "Max number of iterations for minimizing shell positions" },
-        { "-shellMaxDistance", FALSE, etREAL, {&shellMaxDistance},
-          "Max distance between shell and core (nm)" },
         { "-json", FALSE, etBOOL, {&json},
           "Print part of the output in json format." }
     };
@@ -896,7 +893,7 @@ int b2(int argc, char *argv[])
         epsilonr = 1;
     }
 
-    ForceComputer forceComp(shellToler, shellMaxIter, shellMaxDistance, epsilonr);
+    ForceComputer forceComp(shellToler, shellMaxIter, epsilonr);
     
     JsonTree jtree("SecondVirialCoefficient");
     if (msghandler.info())

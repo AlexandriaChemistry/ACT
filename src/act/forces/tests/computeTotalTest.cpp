@@ -160,7 +160,7 @@ class ComputeTotalTest : public ::testing::Test
 protected:
     MsgHandler    msghandler_;
     //! Tight convergence, such that both methods find the same minimum
-    ForceComputer forceComp_ = ForceComputer(1e-12, 200, 0.04, 1);
+    ForceComputer forceComp_ = ForceComputer(1e-12, 200, 1);
 
     ComputeTotalTest()
     {
@@ -334,23 +334,40 @@ TEST_F(ComputeTotalTest, HyperpolarizableDimer)
     testTotal("water_hyperpol", "water_dimer", 3, ShellOptions());
 }
 
+// Test: The maximum distance between shells and cores is an option of the
+// polarization in the force field, 0.02 nm if it is not there.
+TEST_F(ComputeTotalTest, ShellMaxDistanceOption)
+{
+    auto pd0 = getForceField("water_hyperpol");
+    ASSERT_NE(nullptr, pd0);
+    ForceField pd = *pd0;
+    auto       fs = pd.findForces(InteractionType::POLARIZATION);
+    ASSERT_FALSE(fs->optionExists(shellMaxDistanceName));
+    EXPECT_DOUBLE_EQ(0.02, shellMaxDistance(&pd));
+    fs->addOption(shellMaxDistanceName, "0.035");
+    EXPECT_DOUBLE_EQ(0.035, shellMaxDistance(&pd));
+}
+
 // Test: The shells of a hyperpolarizable dimer converge in a few steps.
 // The quartic term of the polarization of oxygen makes the stiffness of the
 // spring along the core-shell vector three times larger than perpendicular
 // to it, which is taken into account in the step.
 TEST_F(ComputeTotalTest, HyperpolarizableConvergence)
 {
-    auto pd = getForceField("water_hyperpol");
-    ASSERT_NE(nullptr, pd);
-    ACTMol mol;
-    ASSERT_TRUE(readMolecule(&msghandler_, pd, "water_dimer", &mol));
+    auto pd0 = getForceField("water_hyperpol");
+    ASSERT_NE(nullptr, pd0);
     // Without a maximum shell distance
-    ForceComputer forceComp(1e-6, 100, 0, 1);
+    ForceField pd = *pd0;
+    pd.findForces(InteractionType::POLARIZATION)->addOption(shellMaxDistanceName, "0");
+    EXPECT_EQ(0, shellMaxDistance(&pd));
+    ACTMol mol;
+    ASSERT_TRUE(readMolecule(&msghandler_, &pd, "water_dimer", &mol));
+    ForceComputer forceComp(1e-6, 100, 1);
     ConformationSet set;
     set.top = mol.topology();
     set.setCoordinates({ mol.xOriginal() });
     std::vector<std::map<InteractionType, double>> energies;
-    forceComp.computeTotal(&msghandler_, pd, &set, ShellOptions(), &energies);
+    forceComp.computeTotal(&msghandler_, &pd, &set, ShellOptions(), &energies);
     EXPECT_EQ(0u, forceComp.numShellConvergenceFailed());
     EXPECT_LE(forceComp.numShellIterations(), 8u);
 }

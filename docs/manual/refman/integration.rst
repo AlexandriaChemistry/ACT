@@ -24,14 +24,19 @@ The shells have no mass. In the adiabatic approximation they follow the atoms in
    .. math:: \Delta{\bf r}_s ~=~ \lambda\,\frac{{\bf F}_s}{k_s},\qquad k_s ~=~ \frac{1}{4\pi\varepsilon_0}\frac{q_s^2}{\alpha_c},
       :label: shellstep
 
-   where :math:`k_s` is the force constant of the core-shell spring, see Eqn. :eq:`vpol`. With :math:`\lambda = 1` this step would bring an isolated shell to its minimum, since the force of the spring then cancels the force :math:`{\bf F}_s` from the other particles. With hyperpolarization, the potential of the core-shell pair has an additional term :math:`k_h\,(r_{cs}-r_h)^4` for distances :math:`r_{cs}` larger than :math:`r_h`. For a shell away from its core, :math:`k_s` in Eqn. :eq:`shellstep` is then replaced by the ratio of the core-shell force and the distance
+   where :math:`k_s` is the force constant of the core-shell spring, see Eqn. :eq:`vpol`. With :math:`\lambda = 1` this step would bring an isolated shell to its minimum, since the force of the spring then cancels the force :math:`{\bf F}_s` from the other particles. With hyperpolarization, the potential of the core-shell pair has an additional term :math:`k_h\,(r_{cs}-r_h)^4` for distances :math:`r_{cs}` larger than :math:`r_h`. The stiffness of the spring then depends on the direction. For a shell away from its core, the component of :math:`{\bf F}_s` perpendicular to the core-shell vector is divided by the ratio of the core-shell force and the distance
 
-.. math:: k_s + 4k_h\,\frac{(r_{cs}-r_h)^3}{r_{cs}}\qquad\mbox{if}\quad r_{cs} > r_h.
+.. math:: k_s + 4k_h\,\frac{(r_{cs}-r_h)^3}{r_{cs}}\qquad\mbox{if}\quad r_{cs} > r_h,
    :label: kshyper
 
-For a shell on top of its core, the quartic term only contributes if :math:`r_h = 0`, and then the displacement :math:`\Delta r` is the solution of :math:`\left|{\bf F}_s\right| = k_s\,\Delta r + 4k_h\,\Delta r^3`. The force constants are computed from the current polarizabilities and shell charges, such that they are correct during training as well.
+and the component along the core-shell vector by the second derivative of the potential
+
+.. math:: k_s + 12k_h\,(r_{cs}-r_h)^2\qquad\mbox{if}\quad r_{cs} > r_h.
+   :label: kshyperpar
+
+This is a Newton step for an isolated shell. For a shell on top of its core, the quartic term only contributes if :math:`r_h = 0`, and then the displacement :math:`\Delta r` is the solution of :math:`\left|{\bf F}_s\right| = k_s\,\Delta r + 4k_h\,\Delta r^3`. The force constants are computed from the current polarizabilities and shell charges, such that they are correct during training as well.
 #. Since the shells interact with each other, a full step (:math:`\lambda = 1`) can overshoot. If :math:`F_{ms}` increases, the step is reduced to :math:`\lambda = 1/2` for the rest of the relaxation. Smaller steps are not used, since they can freeze the shells far from their minimum.
-#. A shell with one core is not allowed to move further away from it than a maximum distance :math:`d_{max}`. If the step brings a shell further away, it is moved back to the sphere with radius :math:`d_{max}` around its core, along the core-shell vector. This prevents the polarization catastrophe, where shells of neighbouring molecules attract each other without limit.
+#. A shell with one core is not allowed to move further away from it than a maximum distance :math:`d_{max}`. If the step brings a shell further away, it is moved back to the sphere with radius :math:`d_{max}` around its core, along the core-shell vector. This prevents the polarization catastrophe, where shells of neighbouring molecules attract each other without limit. With hyperpolarization the quartic term usually prevents it as well, then :math:`d_{max}` can be switched off.
 #. The forces are computed again and the procedure is repeated from step 2, until the shells are converged or the maximum number of iterations is reached.
 
 A shell held at :math:`d_{max}` by a force pointing away from its core can never reach a zero force. For such a shell only the component of the force perpendicular to the core-shell vector :math:`{\bf r}_{cs}` is used in Eqn. :eq:`fmsshell`
@@ -41,7 +46,14 @@ A shell held at :math:`d_{max}` by a force pointing away from its core can never
 
 which is zero at the minimum of the energy on the sphere.
 
-The options that control the relaxation are listed in :numref:`tab-shellrelax`.
+The maximum distance :math:`d_{max}` is part of the force field, since its parameters are trained with it. It is the option *shellmaxdistance* (in nm) of the polarization in the force field file,
+
+.. code-block:: xml
+
+   <interaction type="POLARIZATION" function="POLARIZATION" canswap="true">
+     <option key="shellmaxdistance" value="0.02"/>
+
+where 0 means that there is no maximum. It can be set with *alexandria gen_ff -shellmaxdistance*, or by editing the file, but not when training or using the force field. Without the option it is 0.02 nm. The other options that control the relaxation are listed in :numref:`tab-shellrelax`.
 
 .. table:: Options for the shell relaxation.
    :name: tab-shellrelax
@@ -54,9 +66,6 @@ The options that control the relaxation are listed in :numref:`tab-shellrelax`.
    +----------------------+---------------------+--------------------+--------------------------------------+
    | Maximum number of    | -shell_max_iter     | -maxiter           | 25 (train_ff), 100 (simulate)        |
    | iterations           |                     |                    |                                      |
-   +----------------------+---------------------+--------------------+--------------------------------------+
-   | :math:`d_{max}` (nm) | -shell_max_distance |                    | 0.02 (train_ff), 0.04 (simulate),    |
-   |                      |                     |                    | 0 means no maximum                   |
    +----------------------+---------------------+--------------------+--------------------------------------+
 
 ----------------------------

@@ -60,7 +60,6 @@ namespace alexandria
          * \param[in] mg               Information about this helpers molecules
          * \param[in] shellToler       Tolerance for minimizing shell positions
          * \param[in] shellMaxIter     Max # iterations for the same
-         * \param[in] shellMaxDistance Max allowed distance between core and shell
          * \param[in] algorithm        The charge generation algorithm
          * \param[in] lossFunction     The loss function to use
          */
@@ -69,7 +68,6 @@ namespace alexandria
                   MolGen                    *mg,
                   double                     shellToler,
                   int                        shellMaxIter,
-                  double                     shellMaxDistance,
                   ChargeGenerationAlgorithm  algorithm,
                   LossFunction               lossFunction);
         

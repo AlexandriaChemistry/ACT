@@ -546,7 +546,7 @@ static void plotInteractions(MsgHandler        *msghandler,
     {
         return;
     }
-    ForceComputer fc(1e-3, 100, 0.0, 1.0);
+    ForceComputer fc(1e-3, 100, 1.0);
     for(auto &m : myset)
     {
         fc.plot(msghandler, pd, m);

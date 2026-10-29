@@ -321,8 +321,6 @@ private:
     double shellToler_       = 1e-3;
     //! Maxiter for shell optimization
     int shellMaxIter_        = 25;
-    //! Max distance between shell and core
-    double shellMaxDistance_ = 0.02;
 
 public:
     /*!
@@ -439,9 +437,6 @@ public:
 
     //! \return shell iterations
     int shellMaxIter() const { return shellMaxIter_; }
-
-    //! \return max shell distance from core
-    double shellMaxDistance() const { return shellMaxDistance_; }
 };
 
 //! \brief Enum for selecting the coordinate minimizer in simulate

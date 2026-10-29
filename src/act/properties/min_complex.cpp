@@ -123,7 +123,7 @@ int min_complex(int argc, char *argv[])
     {
         epsilonr = 1;
     }
-    forceComp.init(shellToler, sch.maxIter(), forceComp.maxShellDistance(), epsilonr);
+    forceComp.init(shellToler, sch.maxIter(), epsilonr);
     print_header(tw, pa, fnm);
     
     std::vector<MolProp> mps;

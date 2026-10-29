@@ -140,8 +140,6 @@ void BayesConfigHandler::add_options(std::vector<t_pargs>             *pargs,
           "Tolerance (RMS force) for minimizing shell positions" },
         { "-shell_max_iter", FALSE, etINT, {&shellMaxIter_},
           "Max number of iterations for minimizing shell positions" },
-        { "-shell_max_distance", FALSE, etREAL, {&shellMaxDistance_},
-          "Max distance between shell and core (nm). A shell held at this distance by a force pointing away from its core counts as relaxed when the force perpendicular to the core-shell vector is small enough." }
     };
     for (size_t i = 0; i < pa.size(); i++)
     {
