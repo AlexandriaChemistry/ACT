@@ -224,17 +224,6 @@ private:
                      std::vector<gmx::RVec>            *forces,
                      std::map<InteractionType, double> *energies,
                      const gmx::RVec                   &field) const;
-    /*! Do one actual computations.
-     * Will do one force/energy computation for many coordinate sets
-     * \param[in]  msg_handler For debugging, may be nullptr
-     * \param[in]  pd          The force field structure
-     * \param[in]  mols        The molecules and/or molecule dimers
-     * \param[in]  field       Optional electric field to be applied
-     */
-    void computeManyOnce(MsgHandler          *msg_handler,
-                         const ForceField    *pd,
-                         std::vector<ACTMol> *mols,
-                         const gmx::RVec     &field) const;
     /*! \brief Compute the total energies and forces of many conformations
      *
      * The conformations are computed together with the SIMD routines. The
@@ -353,24 +342,6 @@ private:
                               const std::vector<ACTMol *> &allmols,
                               bool                         resetShells) const;
                                                                 
-    /*! Do many complete energy/force computation.
-     * If shells are present their positions will be minimized.
-     * If the shell minimization does not converge a warning will
-     * be written.
-     * \param[in]  msg_handler For debugging, may be nullptr
-     * \param[in]  pd          Pointer to force field structure
-     * \param[in]  mols        The molecules and/or molecule dimers
-     * \param[in]  field       Optional electric field to be applied
-     * \param[in]  resetShells Set the position of the shells to that of the connecting atoms
-     * \param[in]  relax       Specify the shell indices that should be relaxed. If empty, all shells will be relaxed.
-     */
-    void computeMany(MsgHandler          *msg_handler,
-                     const ForceField    *pd,
-                     std::vector<ACTMol> *mols,
-                     const gmx::RVec     &field = { 0.0, 0.0, 0.0 },
-                     bool                 resetShells = true,
-                     std::set<int>        relax = {}) const;
-
     /*! \brief Return the ACT potential used
      * In practice this converts the InteractionType to the ftype
      * used within the force computer.

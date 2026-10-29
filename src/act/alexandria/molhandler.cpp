@@ -47,6 +47,7 @@
 
 #include "molhandler.h"
 
+#include <array>
 #include <numeric>
 #include <random>
 
@@ -94,49 +95,33 @@ void MolHandler::computeHessian(const ForceField                  *pd,
                                 std::vector<gmx::RVec>            *dpdq) const
 {
     const auto &atoms    = topology->atoms();
-    std::vector<gmx::RVec> fzero(atoms.size());
-    forceComp->compute(nullptr, pd, topology, coords, &fzero, energyZero);
-    forceZero->clear();
-    for(auto &atom : atomIndex)
-    {
-        for(int m = 0; m < DIM; m++)
-        {
-            forceZero->push_back(fzero[atom][m]);
-        }
-    }
-    
     //double      stepSize = 1e-12; // nm
 #define GMX_DOUBLE_EPS 2.2204460492503131e-16
     double stepSize = 1.0 * std::sqrt(GMX_DOUBLE_EPS);
 
-    if (dpdq)
-    {
-        gmx::RVec zero = { 0, 0, 0 };
-        dpdq->resize(atomIndex.size(), zero);
-    }
-    std::vector<gmx::RVec> forces[2];
-    forces[0].resize(atoms.size());
-    forces[1].resize(atoms.size());
+    // The input structure first, then for each coordinate of each atom
+    // the structures with that coordinate shifted down and up. They are
+    // all computed together.
+    std::vector<std::vector<gmx::RVec>> xs = { *coords };
+    std::vector<std::array<double, 2>>  xxx;
     for(size_t ai = 0; ai < atomIndex.size(); ai++)
     {
-        gmx::RVec mu[2] = { { 0, 0, 0 }, { 0, 0, 0 } };
         auto atomI = atomIndex[ai];
         for(int atomXYZ = 0; atomXYZ < DIM; atomXYZ++)
         {
-            int    column = ai*DIM+atomXYZ;
-            double xyzRef = (*coords)[atomI][atomXYZ];
-            double xxx[2];
-            bool   stepsDone = false;
-            double myStep    = stepSize;
+            double                xyzRef    = (*coords)[atomI][atomXYZ];
+            std::array<double, 2> xd;
+            bool                  stepsDone = false;
+            double                myStep    = stepSize;
             do {
                 for(int delta = 0; delta <= 1; delta++)
                 {
-                    xxx[delta] = xyzRef + (2*delta-1)*myStep;
+                    xd[delta] = xyzRef + (2*delta-1)*myStep;
                 }
                 // Make sure that the coordinate is in fact chenged.
                 // If the delta is too small, numeric issues may kick
                 // in.
-                stepsDone = (xxx[0] < xyzRef && xxx[1] > xyzRef);
+                stepsDone = (xd[0] < xyzRef && xd[1] > xyzRef);
                 if (!stepsDone)
                 {
                     myStep *= 2;
@@ -145,47 +130,76 @@ void MolHandler::computeHessian(const ForceField                  *pd,
             while (!stepsDone);
             for(int delta = 0; delta <= 1; delta++)
             {
-                (*coords)[atomI][atomXYZ] = xxx[delta];
-                std::map<InteractionType, double> energies;
-                forceComp->compute(nullptr, pd, topology, coords,
-                                   &forces[delta], &energies);
-
-                if (dpdq)
-                {
-                    // To compute dipole we need to take shells into account as well!
-                    // The same goes for virtual sites.
-                    for(size_t ii = 0; ii < atoms.size(); ii++)
-                    {
-                        for(int m = 0; m < DIM; m++)
-                        {
-                            mu[delta][m] += atoms[ii].totalCharge()*(*coords)[ii][m];
-                        }
-                    }
-                }
+                xs.push_back(*coords);
+                xs.back()[atomI][atomXYZ] = xd[delta];
             }
-            // Restore position
-            (*coords)[atomI][atomXYZ] = xyzRef;
-            
+            xxx.push_back(xd);
+        }
+    }
+    ConformationSet set;
+    set.top = topology;
+    set.setCoordinates(xs);
+    std::vector<std::map<InteractionType, double>> energies;
+    forceComp->computeTotal(nullptr, pd, &set, ShellOptions(), &energies);
+    const auto &confs = set.confs;
+    // The input structure with the relaxed shells and the virtual sites
+    *coords     = confs[0].x;
+    *energyZero = energies[0];
+    forceZero->clear();
+    for(auto &atom : atomIndex)
+    {
+        for(int m = 0; m < DIM; m++)
+        {
+            forceZero->push_back(confs[0].fcalc[atom][m]);
+        }
+    }
+    if (dpdq)
+    {
+        gmx::RVec zero = { 0, 0, 0 };
+        dpdq->resize(atomIndex.size(), zero);
+    }
+    for(size_t ai = 0; ai < atomIndex.size(); ai++)
+    {
+        // The dipoles are summed over the three coordinates of the atom
+        gmx::RVec mu[2] = { { 0, 0, 0 }, { 0, 0, 0 } };
+        for(int atomXYZ = 0; atomXYZ < DIM; atomXYZ++)
+        {
+            int         column = ai*DIM+atomXYZ;
+            const auto &xd     = xxx[column];
+            const auto &f0     = confs[1+2*column].fcalc;
+            const auto &f1     = confs[2+2*column].fcalc;
             for(size_t aj = 0; aj < atomIndex.size(); aj++)
             {
                 int    atomJ = atomIndex[aj];
                 for(int d = 0; d < DIM; d++)
                 {
                     int    row   = aj*DIM+d;
-                    double value = -(forces[1][atomJ][d]-forces[0][atomJ][d])/(xxx[1]-xxx[0]);
+                    double value = -(f1[atomJ][d]-f0[atomJ][d])/(xd[1]-xd[0]);
                     hessian->set(column, row, value);
                 }
             }
             if (dpdq)
             {
+                // To compute dipole we need to take shells into account as well!
+                // The same goes for virtual sites.
+                for(int delta = 0; delta <= 1; delta++)
+                {
+                    const auto &x = confs[1+2*column+delta].x;
+                    for(size_t ii = 0; ii < atoms.size(); ii++)
+                    {
+                        for(int m = 0; m < DIM; m++)
+                        {
+                            mu[delta][m] += atoms[ii].totalCharge()*x[ii][m];
+                        }
+                    }
+                }
                 for(int d = 0; d < DIM; d++)
                 {
-                    (*dpdq)[ai][d] += (mu[1][d]-mu[0][d])/(xxx[1]-xxx[0]);
+                    (*dpdq)[ai][d] += (mu[1][d]-mu[0][d])/(xd[1]-xd[0]);
                 }
             }
         }
     }
-    forceComp->compute(nullptr, pd, topology, coords, &fzero, energyZero);
 }
 
 //! \brief Compute frequencies
