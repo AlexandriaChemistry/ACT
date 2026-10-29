@@ -82,7 +82,9 @@ public:
      *                        that is, not on the shells or vsites. Will be cleared
      *                        and overwritten
      * \param[out] energyZero The energies corresponding to the input structure.
-     * \param[out] dpdq       Derivative of dipole moment with respect to atomic coordinates.
+     * \param[out] dpdq       Derivative of dipole moment with respect to atomic coordinates,
+     *                        element i*DIM+k is the derivative with respect to
+     *                        coordinate k of atom atomIndex[i].
      *                        If nullptr it will not be used. This can be used to compute
      *                        infrared intensities from a NMA. See Henschel et al.
      *                        J. Chem. Theory Comput. 16 (2020) 3307-3315.

@@ -9,9 +9,9 @@
   </Sequence>
   <Sequence Name="Intensities">
     <Int Name="Length">3</Int>
-    <Real>0.019423800000000001</Real>
-    <Real>0.026627499999999998</Real>
-    <Real>0.026502999999999999</Real>
+    <Real>0.013177599999999999</Real>
+    <Real>0.0079168599999999995</Real>
+    <Real>0.0144791</Real>
   </Sequence>
   <Real Name="Epot">1.0638e-09</Real>
   <Thermochemistry Name="T=0">

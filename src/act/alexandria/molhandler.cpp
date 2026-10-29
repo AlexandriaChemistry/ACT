@@ -156,12 +156,10 @@ void MolHandler::computeHessian(const ForceField                  *pd,
     if (dpdq)
     {
         gmx::RVec zero = { 0, 0, 0 };
-        dpdq->resize(atomIndex.size(), zero);
+        dpdq->resize(DIM*atomIndex.size(), zero);
     }
     for(size_t ai = 0; ai < atomIndex.size(); ai++)
     {
-        // The dipoles are summed over the three coordinates of the atom
-        gmx::RVec mu[2] = { { 0, 0, 0 }, { 0, 0, 0 } };
         for(int atomXYZ = 0; atomXYZ < DIM; atomXYZ++)
         {
             int         column = ai*DIM+atomXYZ;
@@ -182,6 +180,7 @@ void MolHandler::computeHessian(const ForceField                  *pd,
             {
                 // To compute dipole we need to take shells into account as well!
                 // The same goes for virtual sites.
+                gmx::RVec mu[2] = { { 0, 0, 0 }, { 0, 0, 0 } };
                 for(int delta = 0; delta <= 1; delta++)
                 {
                     const auto &x = confs[1+2*column+delta].x;
@@ -195,7 +194,7 @@ void MolHandler::computeHessian(const ForceField                  *pd,
                 }
                 for(int d = 0; d < DIM; d++)
                 {
-                    (*dpdq)[ai][d] += (mu[1][d]-mu[0][d])/(xd[1]-xd[0]);
+                    (*dpdq)[column][d] = (mu[1][d]-mu[0][d])/(xd[1]-xd[0]);
                 }
             }
         }
@@ -358,17 +357,20 @@ static void solveEigen(const MatrixWrapper          &hessian,
                                             nnegative-rot_trans));
     }
 
+    // The intensity of a mode is the square of the derivative of the
+    // dipole moment along the mode, which is the sum of the derivatives
+    // with respect to the coordinates, weighted by the displacements.
     std::vector<double> In(matrixSide, 0);
     for(Eigen::Index col = 0; col < matrixSide; col++)
     {
-        auto evec = evecs.col(col);
+        auto      evec = evecs.col(col);
+        gmx::RVec dmudQ = { 0, 0, 0 };
         for (Eigen::Index row = 0; row < matrixSide; row++)
         {
             // The eigenvectors should be normalized (length 1).
             // This is indeed the case.
             auto myev  = evec[row];
             auto atomI = row / DIM;
-            int k      = row % DIM;
             size_t ai  = atomIndex[atomI];
             // The components of the root-mass weighted Hessian
             // have unit kJ/(Da mol nm^2). Even though the eigenvectors
@@ -383,9 +385,12 @@ static void solveEigen(const MatrixWrapper          &hessian,
             // get the units (almost) correct. nm^2 g / cm mol. This means
             // (10^-18/10^-2) m g / mol = 10^-16 m g / mol or
             // 10^-13 g km/mol. Not clear yet how to get rid of the gram.
-            In[col] += gmx::square(dpdq[atomI][k]*myev*
-                                   gmx::invsqrt(atoms[ai].mass()));
+            for(int d = 0; d < DIM; d++)
+            {
+                dmudQ[d] += dpdq[row][d]*myev*gmx::invsqrt(atoms[ai].mass());
+            }
         }
+        In[col] = iprod(dmudQ, dmudQ);
     }
     intensities->clear();
     for(int i = rot_trans; i < matrixSide; i++)
@@ -471,10 +476,11 @@ void MolHandler::nma(const ForceField         *pd,
     {
         output->push_back("Symmetrized Hessian:");
         output->push_back(hessian.toString());
-        for(size_t i = 0; i < atomIndex.size(); i++)
+        for(size_t i = 0; i < dpdq.size(); i++)
         {
-            output->push_back(gmx::formatString("dpdq[%2zu] =  %10g  %10g  %10g",
-                                                i, dpdq[i][XX], dpdq[i][YY], dpdq[i][ZZ]));
+            output->push_back(gmx::formatString("dpdq[%2zu][%c] =  %10g  %10g  %10g",
+                                                i/DIM, 'x' + static_cast<char>(i % DIM),
+                                                dpdq[i][XX], dpdq[i][YY], dpdq[i][ZZ]));
         }
     }
     // Divide the elements hessian[i][j] by sqrt(mass[i])*sqrt(mass[j])

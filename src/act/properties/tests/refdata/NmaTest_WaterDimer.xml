@@ -18,18 +18,18 @@
   </Sequence>
   <Sequence Name="Intensities">
     <Int Name="Length">12</Int>
-    <Real>0.0130431</Real>
-    <Real>0.033930799999999997</Real>
-    <Real>0.064527899999999999</Real>
-    <Real>0.00560028</Real>
-    <Real>0.049748500000000001</Real>
-    <Real>0.034904499999999998</Real>
-    <Real>0.026958699999999999</Real>
-    <Real>0.043394200000000001</Real>
-    <Real>0.037753099999999998</Real>
-    <Real>0.0342668</Real>
-    <Real>0.041743200000000001</Real>
-    <Real>0.028998400000000001</Real>
+    <Real>0.00146386</Real>
+    <Real>0.0081420999999999993</Real>
+    <Real>0.014243199999999999</Real>
+    <Real>0.00040756700000000001</Real>
+    <Real>0.012534999999999999</Real>
+    <Real>0.017499799999999999</Real>
+    <Real>0.0161367</Real>
+    <Real>0.010252499999999999</Real>
+    <Real>0.0105545</Real>
+    <Real>0.0055230699999999997</Real>
+    <Real>0.0142465</Real>
+    <Real>0.0144811</Real>
   </Sequence>
   <Real Name="Epot">-2.3279999999999998</Real>
   <Thermochemistry Name="T=0">
