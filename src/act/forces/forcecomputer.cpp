@@ -662,6 +662,69 @@ static void calcInduction(ConformationEnergies *cener)
     }
 }
 
+/*! \brief Take the induction correction of a potential into account
+ * A potential for the INDUCTIONCORRECTION, e.g. MACDANIEL_SCHMIDT, is part
+ * of all electrostatics and of exchange plus induction, as in
+ * ForceComputer::compute. If it is not treated separately, it is moved to
+ * the induction.
+ * \param[inout] cener      The energies of all conformations
+ * \param[in]    correction The induction correction of the potential per conformation
+ * \param[in]    toInduction Whether to move the correction to the induction
+ */
+static void addCorrection(ConformationEnergies      *cener,
+                          const std::vector<double> &correction,
+                          bool                       toInduction)
+{
+    auto eAllElec = cener->add(InteractionType::ALLELEC);
+    auto eExchInd = cener->add(InteractionType::EXCHIND);
+    for(size_t c = 0; c < cener->nconf() && c < correction.size(); c++)
+    {
+        if (eAllElec.has(c))
+        {
+            eAllElec.act[c] += correction[c];
+        }
+        if (eExchInd.has(c))
+        {
+            eExchInd.act[c] += correction[c];
+        }
+    }
+    if (toInduction)
+    {
+        auto induction = cener->add(InteractionType::INDUCTION);
+        auto icorr     = cener->find(InteractionType::INDUCTIONCORRECTION);
+        for(size_t c = 0; c < cener->nconf() && c < correction.size(); c++)
+        {
+            if (icorr.has(c))
+            {
+                induction.set(c, (induction.has(c) ? induction.act[c] : 0.0) + correction[c]);
+                icorr.have[c] = 0;
+            }
+        }
+    }
+}
+
+/*! \brief The induction correction of a potential in all conformations
+ * \param[in] cener The energies of all conformations
+ * \return The correction of each conformation, empty if there is none
+ */
+static std::vector<double> potentialCorrection(ConformationEnergies *cener)
+{
+    std::vector<double> correction;
+    auto icorr = cener->find(InteractionType::INDUCTIONCORRECTION);
+    if (icorr.have)
+    {
+        correction.resize(cener->nconf(), 0.0);
+        for(size_t c = 0; c < cener->nconf(); c++)
+        {
+            if (icorr.has(c))
+            {
+                correction[c] = icorr.act[c];
+            }
+        }
+    }
+    return correction;
+}
+
 /*! \brief Sum the ACT energy terms that change upon shell relaxation
  * \param[inout] cener The energies of all conformations
  * \return The sum of electrostatics, polarization and charge transfer for each conformation
@@ -1144,6 +1207,9 @@ void ForceComputer::computeRelaxedEnergies(MsgHandler                  *msghandl
                 subtractMonomers(dimer, monomers);
             }
             calcInduction(dimer);
+            // The induction correction from a potential, before the
+            // induction correction from the shells is added
+            auto correction = potentialCorrection(dimer);
             if (doInduc2)
             {
                 // Split the total induction into second order induction and
@@ -1158,19 +1224,29 @@ void ForceComputer::computeRelaxedEnergies(MsgHandler                  *msghandl
                         eInd[i] = eit.act[i];
                     }
                 }
-                auto induction  = dimer->add(InteractionType::INDUCTION);
-                auto correction = dimer->add(InteractionType::INDUCTIONCORRECTION);
+                auto induction   = dimer->add(InteractionType::INDUCTION);
+                auto icorrection = dimer->add(InteractionType::INDUCTIONCORRECTION);
                 for(size_t i = 0; i < dimer->nconf() && i < eInduc2[k].size(); i++)
                 {
+                    double ecorr = i < correction.size() ? correction[i] : 0.0;
                     induction.set(i, eInduc2[k][i]);
-                    correction.set(i, eInd[i] - eInduc2[k][i]);
+                    icorrection.set(i, ecorr + eInd[i] - eInduc2[k][i]);
                 }
+            }
+            if (!correction.empty())
+            {
+                addCorrection(dimer, correction, !separateInductionCorrection);
             }
         }
         auto &tops = mol.fragmentHandler()->topologies();
         for(size_t i = 0; i < tops.size() && !inter; i++)
         {
             calcInduction(monomers[i]);
+            auto correction = potentialCorrection(monomers[i]);
+            if (!correction.empty())
+            {
+                addCorrection(monomers[i], correction, false);
+            }
         }
     }
     if (!forces)

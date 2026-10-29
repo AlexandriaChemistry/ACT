@@ -1720,6 +1720,33 @@ static const std::vector<InteractionType> &energyTypes(Potential mypot)
  * \param[in]    confStride Stride between slots
  * \param[in]    termStride Stride between energy terms
  */
+/*! \brief The energy terms of a potential used for an interaction type
+ * A potential with one term, used for a correction, gives the energy of
+ * that correction rather than its usual term, e.g. MACDANIEL_SCHMIDT for
+ * INDUCTIONCORRECTION or BORN_MAYER for VDWCORRECTION.
+ * \param[in] mypot The potential
+ * \param[in] itype The interaction type
+ * \return The energy terms
+ */
+static const std::vector<InteractionType> &energyTypes(Potential mypot, InteractionType itype)
+{
+    static const std::vector<InteractionType> inductionCorrection = { InteractionType::INDUCTIONCORRECTION };
+    static const std::vector<InteractionType> vdwCorrection       = { InteractionType::VDWCORRECTION };
+    const auto &types = energyTypes(mypot);
+    if (types.size() == 1)
+    {
+        if (InteractionType::INDUCTIONCORRECTION == itype)
+        {
+            return inductionCorrection;
+        }
+        else if (InteractionType::VDWCORRECTION == itype)
+        {
+            return vdwCorrection;
+        }
+    }
+    return types;
+}
+
 static void storeEnergies(Potential             mypot,
                           size_t                nslot,
                           const size_t         *confs,
@@ -1728,7 +1755,7 @@ static void storeEnergies(Potential             mypot,
                           size_t                confStride,
                           size_t                termStride)
 {
-    const auto &itypes = energyTypes(mypot);
+    const auto &itypes = cener->termTypes() ? *cener->termTypes() : energyTypes(mypot);
     std::array<ConformationEnergies::Term, MAX_ENER> terms;
     for(size_t k = 0; k < itypes.size(); k++)
     {
@@ -2373,6 +2400,8 @@ static inline void lowComputeEnergies(MsgHandler                *msghandler,
             {
                 continue;
             }
+            // The terms depend on the interaction type for some potentials
+            cener.setTermTypes(&energyTypes(mypot, entry.first));
             // The interactions to compute, without intramolecular ones they
             // may be none, then the energies are zero.
             TopologyEntryRange entries = (intermolecular ?
@@ -2474,6 +2503,22 @@ static inline void lowComputeEnergies(MsgHandler                *msghandler,
     else
     {
         computePart(Part::All);
+    }
+    cener.setTermTypes(nullptr);
+    // The van der Waals correction is part of the exchange, as in
+    // ForceComputer::computeOnce
+    auto vdwCorr = cener.find(InteractionType::VDWCORRECTION);
+    if (vdwCorr.have)
+    {
+        auto exchange = cener.add(InteractionType::EXCHANGE);
+        for(size_t c = 0; c < coords->size(); c++)
+        {
+            if (!(*coords)[c].done && vdwCorr.has(c))
+            {
+                exchange.set(c, (exchange.has(c) ? exchange.act[c] : 0.0) + vdwCorr.act[c]);
+                vdwCorr.act[c] = 0;
+            }
+        }
     }
     if (forces && forcesInArrays)
     {

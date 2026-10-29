@@ -373,6 +373,16 @@ public:
     //! \return Whether new energies are added to the present ones, see setAccumulate
     bool accumulate() const { return accumulate_; }
 
+    /*! \brief Set the energy terms of the next potential
+     * Some potentials give the energy of different terms, depending on
+     * the interaction type they are used for.
+     * \param[in] types The terms, or nullptr for those of the potential
+     */
+    void setTermTypes(const std::vector<InteractionType> *types) { termTypes_ = types; }
+
+    //! \return The energy terms of the next potential, see setTermTypes
+    const std::vector<InteractionType> *termTypes() const { return termTypes_; }
+
     /*! \brief Copy the energies to the energy maps of the conformations
      * \param[inout] coords The conformations
      */
@@ -414,6 +424,8 @@ private:
     bool                        backups_ = false;
     //! Whether new energies are added to the present ones, see setAccumulate
     bool                        accumulate_ = false;
+    //! The energy terms of the next potential, see setTermTypes
+    const std::vector<InteractionType> *termTypes_ = nullptr;
     //! Position of each interaction type in data_, -1 if not present
     std::array<int, ntype_>     index_;
     //! The interaction types present, sorted
