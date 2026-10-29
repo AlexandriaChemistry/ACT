@@ -320,6 +320,19 @@ private:
  */
 real calc_fscale(real k1, real k2, real F);
 
+/*! \brief Return the ratio of the polarization force and the core-shell distance
+ *
+ * The polarization potential is 1/2 k1 r^2 + k2 (r - rh)^4, where the
+ * quartic term acts for distances r larger than rh only.
+ *
+ * \param[in] k1 The harmonic force constant
+ * \param[in] k2 The quartic force constant
+ * \param[in] rh The distance beyond which the quartic term acts
+ * \param[in] r  The core-shell distance, larger than zero
+ * \return The force divided by the distance
+ */
+double shellForceConstant(double k1, double k2, double rh, double r);
+
 } // namespace alexandria
 
 #endif

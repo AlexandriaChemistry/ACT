@@ -24,7 +24,12 @@ The shells have no mass. In the adiabatic approximation they follow the atoms in
    .. math:: \Delta{\bf r}_s ~=~ \lambda\,\frac{{\bf F}_s}{k_s},\qquad k_s ~=~ \frac{1}{4\pi\varepsilon_0}\frac{q_s^2}{\alpha_c},
       :label: shellstep
 
-   where :math:`k_s` is the force constant of the core-shell spring, see Eqn. :eq:`vpol`. With :math:`\lambda = 1` this step would bring an isolated shell to its minimum, since the force of the spring then cancels the force :math:`{\bf F}_s` from the other particles. With hyperpolarization, the force constant of the quartic term at the current core-shell distance is added to :math:`k_s`. The force constants are computed from the current polarizabilities and shell charges, such that they are correct during training as well.
+   where :math:`k_s` is the force constant of the core-shell spring, see Eqn. :eq:`vpol`. With :math:`\lambda = 1` this step would bring an isolated shell to its minimum, since the force of the spring then cancels the force :math:`{\bf F}_s` from the other particles. With hyperpolarization, the potential of the core-shell pair has an additional term :math:`k_h\,(r_{cs}-r_h)^4` for distances :math:`r_{cs}` larger than :math:`r_h`. For a shell away from its core, :math:`k_s` in Eqn. :eq:`shellstep` is then replaced by the ratio of the core-shell force and the distance
+
+.. math:: k_s + 4k_h\,\frac{(r_{cs}-r_h)^3}{r_{cs}}\qquad\mbox{if}\quad r_{cs} > r_h.
+   :label: kshyper
+
+For a shell on top of its core, the quartic term only contributes if :math:`r_h = 0`, and then the displacement :math:`\Delta r` is the solution of :math:`\left|{\bf F}_s\right| = k_s\,\Delta r + 4k_h\,\Delta r^3`. The force constants are computed from the current polarizabilities and shell charges, such that they are correct during training as well.
 #. Since the shells interact with each other, a full step (:math:`\lambda = 1`) can overshoot. If :math:`F_{ms}` increases, the step is reduced to :math:`\lambda = 1/2` for the rest of the relaxation. Smaller steps are not used, since they can freeze the shells far from their minimum.
 #. A shell with one core is not allowed to move further away from it than a maximum distance :math:`d_{max}`. If the step brings a shell further away, it is moved back to the sphere with radius :math:`d_{max}` around its core, along the core-shell vector. This prevents the polarization catastrophe, where shells of neighbouring molecules attract each other without limit.
 #. The forces are computed again and the procedure is repeated from step 2, until the shells are converged or the maximum number of iterations is reached.

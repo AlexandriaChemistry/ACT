@@ -168,6 +168,17 @@ real calc_fscale(real k1, real k2, real F0)
     }
 }
 
+double shellForceConstant(double k1, double k2, double rh, double r)
+{
+    double fc = k1;
+    if (k2 > 0 && r > rh)
+    {
+        double drh = r - rh;
+        fc        += 4*k2*drh*drh*drh/r;
+    }
+    return fc;
+}
+
 static inline void update_shell_pos(int                           shell,
                                     std::vector<gmx::RVec>       *coordinates,
                                     const std::vector<gmx::RVec> &forces,
@@ -190,6 +201,7 @@ static inline void update_shell_pos(int                           shell,
  * \param[in]    forces      The forces
  * \param[in]    fcShell     The harmonic force constant of the shell
  * \param[in]    fcHyper     The quartic force constant of the shell
+ * \param[in]    rHyper      The distance beyond which the quartic term acts
  * \param[in]    step        Fraction of the displacement that would bring
  *                            an isolated shell to its minimum
  */
@@ -199,6 +211,7 @@ static void update_shell_positions(int                           core,
                                    const std::vector<gmx::RVec> &forces,
                                    double                        fcShell,
                                    double                        fcHyper,
+                                   double                        rHyper,
                                    double                        step)
 {
     // Core shell vector
@@ -210,7 +223,10 @@ static void update_shell_positions(int                           core,
     //double cosang = cos_angle(r_core_shell, forces[shell]);
     if (rcs == 0)
     {
-        update_shell_pos(shell, coordinates, forces, fcShell, fcHyper, step);
+        // On top of the core the quartic term only contributes if
+        // it starts at zero distance.
+        update_shell_pos(shell, coordinates, forces, fcShell,
+                         rHyper > 0 ? 0 : fcHyper, step);
     }
     else
     {
@@ -225,9 +241,8 @@ static void update_shell_positions(int                           core,
         // We want to determine what distance x along the F_total vector the shell
         // has to be displaced. To do so, we assume that
         // r_core_shell / Fspring = x / Ftotal
-        double fpol = - 4*fcHyper*rcs*rcs*rcs - fcShell*rcs;
-        // Ratio between polarization force and distance
-        double fac  = step*std::abs(rcs/fpol);
+        // Ratio between distance and polarization force
+        double fac  = step/shellForceConstant(fcShell, fcHyper, rHyper, rcs);
         for(int m = 0; m < DIM; m++)
         {
             (*coordinates)[shell][m] += fac*forces[shell][m];
@@ -279,6 +294,7 @@ void ForceComputer::compute(MsgHandler                        *msg_handler,
         // One over force constant for this particle
         std::vector<double> fcShell_1;
         std::vector<double> fcHyper;
+        std::vector<double> rHyper;
         auto &ffpl  = pd->findForcesConst(itype);
         auto pol_name = potentialToParameterName(ffpl.potential());
         int  nshell = 0;
@@ -288,6 +304,7 @@ void ForceComputer::compute(MsgHandler                        *msg_handler,
             isShell.push_back(bIS);
             double fc_1    = 0;
             double fchyper = 0;
+            double rhyper  = 0;
             if (bIS)
             {
                 Identifier atID(aa.ffType());
@@ -298,6 +315,11 @@ void ForceComputer::compute(MsgHandler                        *msg_handler,
                 {
                     fchyper = ffp->second.internalValue();
                 }
+                auto ffr = params.find(pol_name[polRHYPER]);
+                if (ffr != params.end())
+                {
+                    rhyper = ffr->second.internalValue();
+                }
                 auto q     = aa.charge();
                 if (alpha > 0 && q != 0)
                 {
@@ -306,6 +328,7 @@ void ForceComputer::compute(MsgHandler                        *msg_handler,
                 nshell += 1;
             }
             fcHyper.push_back(fchyper);
+            rHyper.push_back(rhyper);
             fcShell_1.push_back(fc_1);
         }
         auto &pols = top->entry(itype);
@@ -329,7 +352,8 @@ void ForceComputer::compute(MsgHandler                        *msg_handler,
                 {
                     update_shell_positions(p->atomIndex(0), p->atomIndex(1),
                                            coordinates, *forces,
-                                           fcShell_1[shell], fcHyper[shell], step);
+                                           fcShell_1[shell], fcHyper[shell],
+                                           rHyper[shell], step);
                     // Check distance from parent, if there is only one
                     if (maxShellDistance2 > 0 && atoms[shell].parents().size() == 1)
                     {
@@ -529,7 +553,7 @@ size_t ForceComputer::updateShells(const Topology            *top,
                 }
                 update_shell_positions(coreGlobal, shellGlobal,
                                        &dim.x, dim.fcalc,
-                                       fc1, params[polFCHYPER],
+                                       fc1, params[polFCHYPER], params[polRHYPER],
                                        dim.shellStep[fragment]);
                 // Check distance from parent, if there is only one
                 if (maxShellDistance2 > 0 && atoms[shellLocal].parents().size() == 1)
