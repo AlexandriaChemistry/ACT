@@ -179,6 +179,8 @@ int gentop(int argc, char *argv[])
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     (void) pd.verifyCheckSum(&msghandler);
+    // GROMACS and OpenMM do not support second charges, use virtual sites instead
+    pd.expandSecondCharges(&msghandler);
 
     auto &fs = pd.findForcesConst(InteractionType::ELECTROSTATICS);
     std::string my_pol;

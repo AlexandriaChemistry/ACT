@@ -409,6 +409,17 @@ class ForceField
      * \param[in] msghandler For messages, may be nullptr
      */
     void convertVsite1(MsgHandler *msghandler);
+
+    /*! \brief Replace second charges by virtual sites on top of the atoms
+     * The inverse of convertVsite1, for programs that do not support
+     * second charges, such as GROMACS and OpenMM. Each atom type with a
+     * second charge gets a virtual site type of type VSITE1 that carries
+     * the charge, with the width and row of the second charge. Its other
+     * nonbonded parameters are those of the atom with the energy scaled
+     * to zero.
+     * \param[in] msghandler For messages, may be nullptr
+     */
+    void expandSecondCharges(MsgHandler *msghandler);
     
     /*! Spread from master to other nodes
      * \param[in] cr    Communication record

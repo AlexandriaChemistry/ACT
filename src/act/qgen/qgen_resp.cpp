@@ -84,6 +84,9 @@ void QgenResp::updateAtomCharges(MsgHandler                 *msghandler,
             q_[i]    = charge_[i]->value();
             qshell_ += q_[i];
         }
+        // The second charges are fixed
+        qVS_[i]  = atoms[i].chargeVS();
+        qshell_ += qVS_[i];
     }
 }
 
@@ -130,6 +133,12 @@ void QgenResp::setAtomInfo(MsgHandler                   *msg_handler,
             nFixed_++;
             qshell_ += q_[i];
         }
+        // A second charge at the position of the atom, as a virtual site
+        // on top of it would be, see ForceField::convertVsite1
+        qVS_.push_back(atoms[i].chargeVS());
+        zetaVS_.push_back(haveZeta ? atoms[i].zetaVS() : 0.0);
+        rowVS_.push_back(atoms[i].rowVS());
+        qshell_ += qVS_.back();
     }
 }
 
@@ -419,6 +428,12 @@ void QgenResp::calcPot(MsgHandler *msg_handler,
                               row_[j]);
             qtot += q_[j];
             vv += (scale_factor*q_[j]*epot);
+            if (qVS_[j] != 0)
+            {
+                qtot += qVS_[j];
+                vv   += scale_factor*qVS_[j]*calcJ(msg_handler, ChargeDistributionType_, espx,
+                                                   x_[j], zetaVS_[j], rowVS_[j]);
+            }
         }
         if (msg_handler && msg_handler->debug())
         {
@@ -485,6 +500,12 @@ void QgenResp::optimizeCharges(MsgHandler *msg_handler,
                 // shell. Note that this is not written explicitly in the
                 // JCTC paper (the charge is not mentioned).
                 rhs[j] -= pot*q_[ii];
+            }
+            // The second charges are fixed as well
+            if (qVS_[ii] != 0)
+            {
+                rhs[j] -= scale_factor*qVS_[ii]*calcJ(msg_handler, ChargeDistributionType_, espx,
+                                                      x_[ii], zetaVS_[ii], rowVS_[ii]);
             }
         }
     }
@@ -588,6 +609,7 @@ void QgenResp::updateZeta(const std::vector<ActAtom> &atoms,
         auto myid  = atype->interactionTypeToIdentifier(InteractionType::ELECTROSTATICS);
         auto eep   = fs.findParameterMapConst(myid);
         zeta_[i]   = eep.find("zeta")->second.value();
+        zetaVS_[i] = atoms[i].zetaVS();
     }
 }
 

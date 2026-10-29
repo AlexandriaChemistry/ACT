@@ -109,6 +109,11 @@ class ParticleType
      */
     void setOption(const std::string &key,
                    const std::string &value);
+
+    /*! \brief Remove an option, if present
+     * \param[in] key Key
+     */
+    void removeOption(const std::string &key) { option_.erase(key); }
     
     /*! \brief Return true if option is present
      * \param[in] type The key value of the option

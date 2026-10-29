@@ -526,10 +526,14 @@ void TrainForceFieldPrinter::printAtoms(gmx::TextWriter              *tw,
 {
     std::map<qPropertyType, const std::vector<double> > qQM;
     JsonTree jtatoms("atoms");
-    tw->writeStringFormatted("Atom   Type            ACM        x        y   z(pm)          fx         fy fz(kJ/mol nm)     qtot\n");
+    auto    &myatoms = mol->atomsConst();
+    // Print the second charges in their own column, if there are any
+    bool     haveVS  = std::any_of(myatoms.begin(), myatoms.end(),
+                                   [](const ActAtom &a) { return a.chargeVS() != 0; });
+    tw->writeStringFormatted("Atom   Type            ACM%s        x        y   z(pm)          fx         fy fz(kJ/mol nm)     qtot\n",
+                             haveVS ? "         qVS" : "");
     int      i       = 0;
     double   qtot    = 0;
-    auto    &myatoms = mol->atomsConst();
     for (size_t j = i = 0; j < myatoms.size(); j++)
     {
         JsonTree atom(std::to_string(j));
@@ -537,6 +541,10 @@ void TrainForceFieldPrinter::printAtoms(gmx::TextWriter              *tw,
         atom.addObject(JsonTree("atomicnumber", std::to_string(myatoms[j].atomicNumber())));
         atom.addObject(JsonTree("fftype", myatoms[j].ffType()));
         atom.addObject(JsonTree("charge", std::to_string(myatoms[j].charge())));
+        if (haveVS)
+        {
+            atom.addObject(JsonTree(chargeVSName, std::to_string(myatoms[j].chargeVS())));
+        }
         atom.addObject(JsonTree("x", std::to_string(coords[j][XX])));
         atom.addObject(JsonTree("y", std::to_string(coords[j][YY])));
         atom.addObject(JsonTree("z", std::to_string(coords[j][ZZ])));
@@ -552,7 +560,11 @@ void TrainForceFieldPrinter::printAtoms(gmx::TextWriter              *tw,
                                      j+1,
                                      myatoms[j].ffType().c_str(),
                                      qCalc);
-            qtot += qCalc;
+            if (haveVS)
+            {
+                tw->writeStringFormatted("  %10g", myatoms[j].chargeVS());
+            }
+            qtot += myatoms[j].totalCharge();
             tw->writeStringFormatted(" %8.3f %8.3f %8.3f %10.3f %10.3f %10.3f  %10g\n", 
                                      convertFromGromacs(coords[j][XX], "pm"),
                                      convertFromGromacs(coords[j][YY], "pm"),
@@ -569,7 +581,11 @@ void TrainForceFieldPrinter::printAtoms(gmx::TextWriter              *tw,
                                      j+1,
                                      myatoms[j].ffType().c_str(),
                                      myatoms[j].charge());
-            qtot += myatoms[j].charge();
+            if (haveVS)
+            {
+                tw->writeStringFormatted("  %10g", myatoms[j].chargeVS());
+            }
+            qtot += myatoms[j].totalCharge();
             for(auto &qt : qQM)
             {
                 if (!qQM.find(qt.first)->second.empty())
@@ -1616,11 +1632,11 @@ void TrainForceFieldPrinter::print(MsgHandler                  *msghandler,
                     auto llF = lll->second.find(atoms[ai].ffType());
                     if (lll->second.end() != llF)
                     {
-                        auto qa = atoms[ai].charge();
+                        auto qa = atoms[ai].totalCharge();
                         if (ai < atoms.size() -1 && 
                             atoms[ai+1].pType() == ActParticle::Shell)
                         {
-                            qa += atoms[ai+1].charge();
+                            qa += atoms[ai+1].totalCharge();
                         }
                         llF->second.add_point(1, qa, 0, 0);
                     }

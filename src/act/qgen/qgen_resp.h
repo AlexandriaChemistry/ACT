@@ -309,6 +309,12 @@ class QgenResp
         std::vector<int>         atomnumber_;
         std::vector<int>         row_;
         std::vector<bool>        mutable_;
+        //! The second charge of each atom, at its position, see ActAtom::chargeVS
+        std::vector<double>      qVS_;
+        //! The width of the distribution of the second charges
+        std::vector<double>      zetaVS_;
+        //! The row of the second charges, for Slater distributions
+        std::vector<int>         rowVS_;
         std::vector<gmx::RVec>   x_;
         std::vector<std::string> dzatoms_;
         std::string              stoichiometry_;
