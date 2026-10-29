@@ -6,6 +6,7 @@ Reference Manual
    :maxdepth: 3
 
    energy
+   integration
    training
    fitness
    sensitivity
