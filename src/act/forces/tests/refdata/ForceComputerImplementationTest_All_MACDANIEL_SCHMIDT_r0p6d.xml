@@ -15,6 +15,6 @@
       <Real Name="Z">205.38800754088209</Real>
     </Vector>
   </Sequence>
-  <Real Name="INDUCTIONCORRECTION">25.857226636519709</Real>
+  <Real Name="EXCHANGE">25.857226636519709</Real>
   <Real Name="fz">205.3880075324258</Real>
 </ReferenceData>

@@ -45,6 +45,27 @@ void computeEnergies(MsgHandler                  *msghandler,
                      bool                         skipDone       = false,
                      bool                         intermolecular = false);
 
+/*! \brief Compute the energies and forces of the conformations of one topology
+ * The energies are stored in the conformation data, the forces in the
+ * conformations. The shells are not relaxed and the forces on virtual
+ * sites are not spread, see ForceComputer::computeTotal.
+ * \param[in]    msghandler For warnings and errors
+ * \param[in]    pd         An ACT force field
+ * \param[in]    top        The topology
+ * \param[inout] coords     The conformations
+ * \param[inout] cdata      The data of the conformations
+ * \param[in]    forces     Whether to compute forces
+ * \param[in]    skipDone   Whether to leave out the conformations for which the
+ *                          shells converged, see computeEnergies
+ */
+void computeConformations(MsgHandler                *msghandler,
+                          const ForceField          *pd,
+                          const Topology            *top,
+                          std::vector<CoordsEnergy> *coords,
+                          ConformationData          *cdata,
+                          bool                       forces,
+                          bool                       skipDone);
+
 /*! \brief Compute the energies and forces of one potential for all conformations
  * The energy maps and forces of the conformations are cleared first.
  * This is mainly intended for testing.
