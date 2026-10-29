@@ -28,6 +28,9 @@
 
 #include <gtest/gtest.h>
 #include <cmath>
+#include <functional>
+#include <limits>
+#include <memory>
 #include <map>
 #include <numeric>
 #include <set>
@@ -951,6 +954,62 @@ TEST_F(ForceEnergyDevComputerTest, VeryLowTemperatureDimer)
     }
 }
 
+// Test: Monomers have no interaction energies, the interaction targets get no data
+TEST_F(ForceEnergyDevComputerTest, InteractionTargetsOnMonomers)
+{
+    DevOptions opts;
+    opts.weights = unitWeights(dimerTargets);
+    auto results = computeDev(monomerFile(), "ACS-g2", opts, nullptr);
+    EXPECT_FALSE(results.empty());
+    for(const auto &r : results)
+    {
+        EXPECT_EQ(0, r.second.first) << r.first;
+        EXPECT_EQ(0, r.second.second) << r.first;
+    }
+}
+
+/*! \brief Check that a very high Boltzmann temperature gives the same
+ * results as no Boltzmann weighting, since all weights are then one.
+ * \param[in] rref The results without Boltzmann weighting
+ * \param[in] rhot The results at a very high temperature
+ */
+static void compareVeryHighTemperature(const DevResults &rref,
+                                       const DevResults &rhot)
+{
+    ASSERT_EQ(rref.size(), rhot.size());
+    for(const auto &r : rhot)
+    {
+        auto ref = rref.find(r.first);
+        ASSERT_TRUE(rref.end() != ref) << r.first;
+        EXPECT_NEAR(ref->second.first, r.second.first, 1e-6*std::abs(ref->second.first)) << r.first;
+        EXPECT_NEAR(ref->second.second, r.second.second, 1e-6*std::abs(ref->second.second)) << r.first;
+    }
+}
+
+// Test: At very high temperature all monomer conformations have weight one
+TEST_F(ForceEnergyDevComputerTest, VeryHighTemperatureMonomer)
+{
+    DevOptions noBoltz;
+    noBoltz.weights = unitWeights({ eRMS::EPOT });
+    DevOptions hot;
+    hot.weights   = noBoltz.weights;
+    hot.boltzmann = sameTemperature({ eRMS::EPOT }, 1e12);
+    compareVeryHighTemperature(computeDev(monomerFile(), "ACS-g2", noBoltz, nullptr),
+                               computeDev(monomerFile(), "ACS-g2", hot, nullptr));
+}
+
+// Test: At very high temperature all dimer conformations have weight one
+TEST_F(ForceEnergyDevComputerTest, VeryHighTemperatureDimer)
+{
+    DevOptions noBoltz;
+    noBoltz.weights = unitWeights(dimerTargets);
+    DevOptions hot;
+    hot.weights   = noBoltz.weights;
+    hot.boltzmann = sameTemperature({ eRMS::Interaction }, 1e12);
+    compareVeryHighTemperature(computeDev(dimerFile(), "ACS-g2", noBoltz, nullptr),
+                               computeDev(dimerFile(), "ACS-g2", hot, nullptr));
+}
+
 //! Molprop observables to read when preparing molecules
 static const std::map<MolPropObservable, iqmType> propertyIqm = {
     { MolPropObservable::POTENTIAL,      iqmType::QM },
@@ -1070,12 +1129,22 @@ protected:
     //! \return the monomer test file
     std::string monomerFile() { return fileManager().getInputFilePath("../../molprop/tests/molprop.xml"); }
 
-    //! Read molecules, generate topologies and charges like MolGen does
-    std::vector<ACTMol> prepareMolecules(MsgHandler                  *msghandler,
-                                         ForceField                  *pd,
-                                         const ForceComputer         *forceComputer,
-                                         const std::set<std::string> &molecules = {},
-                                         const std::string           &mpFile    = "")
+    /*! \brief Read molecules, generate topologies and charges like MolGen does
+     * \param[in] msghandler    For messages
+     * \param[in] pd            The force field
+     * \param[in] forceComputer The force computer
+     * \param[in] molecules     The molecules to use, all if empty
+     * \param[in] mpFile        The molecule file, the monomer file if empty
+     * \param[in] modify        If not empty, changes the data of each molecule
+     *                          before its topology is made
+     * \return The molecules
+     */
+    std::vector<ACTMol> prepareMolecules(MsgHandler                           *msghandler,
+                                         ForceField                           *pd,
+                                         const ForceComputer                  *forceComputer,
+                                         const std::set<std::string>          &molecules = {},
+                                         const std::string                    &mpFile    = "",
+                                         const std::function<void(MolProp *)> &modify    = nullptr)
     {
         std::vector<alexandria::MolProp> mps;
         MolPropRead(msghandler, mpFile.empty() ? monomerFile().c_str() : mpFile.c_str(), &mps);
@@ -1085,6 +1154,10 @@ protected:
             if (!molecules.empty() && molecules.count(mp.getMolname()) == 0)
             {
                 continue;
+            }
+            if (modify)
+            {
+                modify(&mp);
             }
             ACTMol actmol;
             actmol.Merge(&mp);
@@ -1655,6 +1728,174 @@ protected:
         EXPECT_DOUBLE_EQ(weightSum, t.totalWeight());
         EXPECT_NEAR(chi2Sum, t.chiSquared(), 1e-10*(chi2Sum + 1));
     }
+
+    /*! \brief Check the force deviation of dimers
+     * The reference forces differ by one from the computed ones in each
+     * component of each atom, the forces of shells and virtual sites are
+     * not used.
+     * \param[in] ffFile The force field
+     */
+    void testDimerForces(const std::string &ffFile)
+    {
+        ForceComputer forceComputer;
+        MsgHandler    msghandler;
+        auto          pd   = getForceField(ffFile);
+        auto          mols = prepareMolecules(&msghandler, pd, &forceComputer, {},
+                                              fileManager().getInputFilePath("mpdimer.xml"));
+        ASSERT_FALSE(mols.empty());
+        forceComputer.computeRelaxedEnergies(&msghandler, pd, pointers(&mols), true, true, true);
+        double ncomponent = 0;
+        size_t nother     = 0;
+        for(auto &mol : mols)
+        {
+            ASSERT_TRUE(mol.isDimer());
+            const auto &atoms = mol.topology()->atoms();
+            for(auto &dim : *mol.dimerCoords())
+            {
+                dim.fobs.clear();
+                for(size_t i = 0; i < atoms.size(); i++)
+                {
+                    if (atoms[i].pType() == ActParticle::Atom)
+                    {
+                        gmx::RVec f = dim.fcalc[i];
+                        f[XX] += 1;
+                        f[YY] -= 1;
+                        f[ZZ] += 1;
+                        dim.fobs.push_back(f);
+                        ncomponent += DIM;
+                    }
+                    else
+                    {
+                        nother += 1;
+                    }
+                }
+            }
+        }
+        if (pd->polarizable())
+        {
+            EXPECT_LT(0u, nother);
+        }
+        ForceEnergyDevComputer computer({});
+        std::map<eRMS, FittingTarget> targets;
+        targets.insert({eRMS::Force2, FittingTarget(eRMS::Force2, iMolSelect::Train)});
+        targets.find(eRMS::Force2)->second.setWeight(1);
+        computer.calcDeviation(&msghandler, &forceComputer, pointers(&mols),
+                               &targets, pd, LossFunction::MSE);
+        EXPECT_TRUE(msghandler.ok());
+        auto &t = targets.find(eRMS::Force2)->second;
+        EXPECT_DOUBLE_EQ(ncomponent, t.totalWeight());
+        EXPECT_NEAR(ncomponent, t.chiSquared(), 1e-6*ncomponent);
+    }
+
+    /*! \brief Check the ESP deviation
+     * It is the sum of the squared differences between the QM and the
+     * computed potential over all ESP points, its weight their number.
+     * \param[in] ffFile The force field
+     */
+    void testEsp(const std::string &ffFile)
+    {
+        ForceComputer forceComputer;
+        MsgHandler    msghandler;
+        auto          pd   = getForceField(ffFile);
+        auto          mols = prepareMolecules(&msghandler, pd, &forceComputer);
+        EspDevComputer computer(false);
+        double weightSum = 0, chi2Sum = 0;
+        for(auto &mol : mols)
+        {
+            std::vector<ACTMol *> one = { &mol };
+            std::map<eRMS, FittingTarget> targets;
+            targets.insert({eRMS::ESP, FittingTarget(eRMS::ESP, iMolSelect::Train)});
+            targets.find(eRMS::ESP)->second.setWeight(1);
+            computer.calcDeviation(&msghandler, &forceComputer, one, &targets, pd, LossFunction::MSE);
+            auto  &t    = targets.find(eRMS::ESP)->second;
+            size_t nesp = 0;
+            double sum2 = 0;
+            auto   qProps = mol.qProps();
+            for(auto qp = qProps->begin(); qp < qProps->end(); ++qp)
+            {
+                for(const auto &ep : qp->qgenResp()->espPoints())
+                {
+                    sum2 += gmx::square(ep.v() - ep.vCalc());
+                    nesp += 1;
+                }
+            }
+            EXPECT_LT(0u, nesp) << mol.getMolname();
+            EXPECT_LT(0, sum2) << mol.getMolname();
+            EXPECT_DOUBLE_EQ(nesp, t.totalWeight()) << mol.getMolname();
+            EXPECT_NEAR(sum2, t.chiSquared(), 1e-8*sum2) << mol.getMolname();
+            weightSum += t.totalWeight();
+            chi2Sum   += t.chiSquared();
+        }
+        // All molecules at once give the sum
+        std::map<eRMS, FittingTarget> targets;
+        targets.insert({eRMS::ESP, FittingTarget(eRMS::ESP, iMolSelect::Train)});
+        targets.find(eRMS::ESP)->second.setWeight(1);
+        computer.calcDeviation(&msghandler, &forceComputer, pointers(&mols), &targets, pd, LossFunction::MSE);
+        auto &t = targets.find(eRMS::ESP)->second;
+        EXPECT_DOUBLE_EQ(weightSum, t.totalWeight());
+        EXPECT_NEAR(chi2Sum, t.chiSquared(), 1e-8*chi2Sum);
+    }
+
+    /*! \brief Check the deviation of frequencies or intensities
+     * The reference values are those computed for water plus a shift,
+     * which then gives the deviation. If the number of reference values is
+     * wrong the molecule is not used.
+     * \param[in] mpo  The observable
+     * \param[in] erms The fitting target
+     */
+    void testHarmonics(MolPropObservable mpo, eRMS erms)
+    {
+        ForceComputer forceComputer;
+        MsgHandler    msghandler;
+        auto          pd   = getForceField("ACS-g2");
+        auto          mols = prepareMolecules(&msghandler, pd, &forceComputer, { "water" });
+        ASSERT_EQ(1u, mols.size());
+        ASSERT_EQ(JobType::OPT, mols[0].jobType());
+        // The frequencies and intensities as HarmonicsDevComputer computes them
+        MolHandler              handler;
+        SimulationConfigHandler simConfig;
+        auto coords = mols[0].xOriginal();
+        ASSERT_EQ(eMinimizeStatus::OK,
+                  handler.minimizeCoordinates(&msghandler, pd, mols[0].topology(), &forceComputer,
+                                              simConfig, &coords, nullptr, {}));
+        std::vector<double> frequencies, intensities;
+        handler.nma(pd, &mols[0], &forceComputer, &coords, &frequencies, &intensities);
+        const auto &values = MolPropObservable::FREQUENCY == mpo ? frequencies : intensities;
+        ASSERT_FALSE(values.empty());
+        const char *unit  = mpo_unit2(mpo);
+        double      shift = 2;
+        for(size_t nref : { values.size(), values.size() - 1 })
+        {
+            auto addHarmonics = [&](MolProp *mp)
+            {
+                auto harm = std::make_unique<Harmonics>(unit, 0, mpo);
+                for(size_t k = 0; k < nref; k++)
+                {
+                    harm->addValue(convertFromGromacs(values[k], unit) + shift);
+                }
+                (*mp->experiment())[0].addProperty(mpo, std::move(harm));
+            };
+            auto withRef = prepareMolecules(&msghandler, pd, &forceComputer, { "water" }, "", addHarmonics);
+            ASSERT_EQ(1u, withRef.size());
+            HarmonicsDevComputer computer(mpo);
+            std::map<eRMS, FittingTarget> targets;
+            targets.insert({erms, FittingTarget(erms, iMolSelect::Train)});
+            targets.find(erms)->second.setWeight(1);
+            computer.calcDeviation(&msghandler, &forceComputer, pointers(&withRef),
+                                   &targets, pd, LossFunction::MSE);
+            auto &t = targets.find(erms)->second;
+            if (nref == values.size())
+            {
+                double expected = values.size()*gmx::square(convertToGromacs(shift, unit));
+                EXPECT_EQ(1, t.totalWeight());
+                EXPECT_NEAR(expected, t.chiSquared(), 1e-6*expected);
+            }
+            else
+            {
+                EXPECT_EQ(0, t.totalWeight());
+            }
+        }
+    }
 };
 
 
@@ -1946,6 +2187,169 @@ TEST_F(PropertyDevComputerTest, MultipoleUnsupportedThrows)
     EXPECT_THROW(computer.calcDeviation(&msghandler, &forceComputer, pointers(&mols),
                                         &targets, pd, LossFunction::MSE),
                  gmx::InvalidInputError);
+}
+
+// Test: The force deviation of dimers uses the atoms only
+TEST_F(PropertyDevComputerTest, ForceDeviationDimer)
+{
+    testDimerForces("ACS-g2");
+}
+
+// Test: The same with shells, which are left out
+TEST_F(PropertyDevComputerTest, ForceDeviationDimerPol)
+{
+    testDimerForces("ACS-pol");
+}
+
+// Test: Calling the deviation computer again with the same targets adds
+// the same contribution, also when the reference data is used again
+TEST_F(PropertyDevComputerTest, ForceEnergyAccumulates)
+{
+    ForceComputer forceComputer;
+    MsgHandler    msghandler;
+    auto          pd   = getForceField("ACS-pol");
+    auto          mols = prepareMolecules(&msghandler, pd, &forceComputer, {},
+                                          fileManager().getInputFilePath("mpdimer.xml"));
+    ForceEnergyDevComputer computer({});
+    std::map<eRMS, FittingTarget> targets;
+    for(auto erms : dimerTargets)
+    {
+        targets.insert({erms, FittingTarget(erms, iMolSelect::Train)});
+        targets.find(erms)->second.setWeight(1);
+    }
+    computer.calcDeviation(&msghandler, &forceComputer, pointers(&mols), &targets, pd, LossFunction::MSE);
+    std::map<eRMS, std::pair<double, double>> once;
+    for(const auto &t : targets)
+    {
+        once.insert({t.first, { t.second.totalWeight(), t.second.chiSquared() }});
+        EXPECT_LT(0, t.second.totalWeight()) << rmsName(t.first);
+    }
+    computer.calcDeviation(&msghandler, &forceComputer, pointers(&mols), &targets, pd, LossFunction::MSE);
+    for(const auto &t : targets)
+    {
+        auto o = once[t.first];
+        EXPECT_NEAR(2*o.first, t.second.totalWeight(), 1e-12*o.first) << rmsName(t.first);
+        EXPECT_NEAR(2*o.second, t.second.chiSquared(), 1e-10*std::abs(o.second)) << rmsName(t.first);
+    }
+}
+
+// Test: Energies that are not finite are left out, but only for the terms
+// that are not finite
+TEST_F(PropertyDevComputerTest, NonFiniteEnergiesIgnored)
+{
+    ForceComputer forceComputer;
+    MsgHandler    msghandler;
+    auto          pd   = getForceField("ACS-g2");
+    auto          mols = prepareMolecules(&msghandler, pd, &forceComputer, {},
+                                          fileManager().getInputFilePath("mpdimer.xml"));
+    ASSERT_FALSE(mols.empty());
+    // Van der Waals parameters that give no finite energies
+    auto itype = InteractionType::VDW;
+    for(auto &mol : mols)
+    {
+        std::vector<std::map<InteractionType, TopologyEntryVector> *> allEntries = { mol.topologyPtr()->entriesPtr() };
+        for(auto &top : mol.fragmentHandler()->topologiesPtr())
+        {
+            allEntries.push_back(top.entriesPtr());
+        }
+        for(auto entries : allEntries)
+        {
+            auto ee = entries->find(itype);
+            if (entries->end() == ee)
+            {
+                continue;
+            }
+            for(auto &e : ee->second)
+            {
+                e->setParams(std::vector<double>(e->params().size(), std::numeric_limits<double>::quiet_NaN()));
+            }
+        }
+    }
+    ForceEnergyDevComputer computer({});
+    std::map<eRMS, FittingTarget> targets;
+    for(auto erms : { eRMS::Interaction, eRMS::Electrostatics })
+    {
+        targets.insert({erms, FittingTarget(erms, iMolSelect::Train)});
+        targets.find(erms)->second.setWeight(1);
+    }
+    computer.calcDeviation(&msghandler, &forceComputer, pointers(&mols), &targets, pd, LossFunction::MSE);
+    auto &tinter = targets.find(eRMS::Interaction)->second;
+    EXPECT_EQ(0, tinter.totalWeight());
+    EXPECT_EQ(0, tinter.chiSquared());
+    auto &telec = targets.find(eRMS::Electrostatics)->second;
+    EXPECT_LT(0, telec.totalWeight());
+    EXPECT_TRUE(std::isfinite(telec.chiSquared()));
+}
+
+// Test: ESP deviation, non-polarizable
+TEST_F(PropertyDevComputerTest, EspNonPolarizable)
+{
+    testEsp("ACS-g2");
+}
+
+// Test: ESP deviation, polarizable, shells are relaxed first
+TEST_F(PropertyDevComputerTest, EspPolarizable)
+{
+    testEsp("ACS-pg");
+}
+
+// Test: The polarizability deviation is the sum of the squared differences
+// of the tensor elements, its weight the number of reference tensors
+TEST_F(PropertyDevComputerTest, Polarizability)
+{
+    ForceComputer forceComputer;
+    MsgHandler    msghandler;
+    auto          pd   = getForceField("ACS-pg");
+    ASSERT_TRUE(pd->polarizable());
+    auto          mols = prepareMolecules(&msghandler, pd, &forceComputer);
+    PolarDevComputer computer;
+    for(auto &mol : mols)
+    {
+        std::vector<ACTMol *> one = { &mol };
+        std::map<eRMS, FittingTarget> targets;
+        targets.insert({eRMS::Polar, FittingTarget(eRMS::Polar, iMolSelect::Train)});
+        targets.find(eRMS::Polar)->second.setWeight(1);
+        computer.calcDeviation(&msghandler, &forceComputer, one, &targets, pd, LossFunction::MSE);
+        auto  &t    = targets.find(eRMS::Polar)->second;
+        size_t nref = 0;
+        double sum2 = 0;
+        auto   qProps = mol.qProps();
+        for(auto qp = qProps->begin(); qp < qProps->end(); ++qp)
+        {
+            auto &qref = qp->qPqmConst();
+            if (!qref.hasPolarizability())
+            {
+                continue;
+            }
+            nref += 1;
+            auto aref  = qref.polarizabilityTensor();
+            auto acalc = qp->qPact()->polarizabilityTensor();
+            for(int i = 0; i < DIM; i++)
+            {
+                // The molecules are polarizable in every direction
+                EXPECT_LT(0, acalc[i][i]) << mol.getMolname();
+                for(int j = 0; j < DIM; j++)
+                {
+                    sum2 += gmx::square(aref[i][j] - acalc[i][j]);
+                }
+            }
+        }
+        EXPECT_LT(0u, nref) << mol.getMolname();
+        EXPECT_DOUBLE_EQ(nref, t.totalWeight()) << mol.getMolname();
+        EXPECT_NEAR(sum2, t.chiSquared(), 1e-10*sum2) << mol.getMolname();
+    }
+}
+
+// Test: Deviation of the frequencies
+TEST_F(PropertyDevComputerTest, HarmonicsFrequencies)
+{
+    testHarmonics(MolPropObservable::FREQUENCY, eRMS::FREQUENCY);
+}
+
+// Test: Deviation of the intensities
+TEST_F(PropertyDevComputerTest, HarmonicsIntensities)
+{
+    testHarmonics(MolPropObservable::INTENSITY, eRMS::INTENSITY);
 }
 
 } // namespace alexandria
