@@ -370,6 +370,32 @@ TEST_F(SimulateTest, InitialTemperature)
     }
 }
 
+// Test: The total energy is conserved with constraints
+TEST_F(SimulateTest, ConstrainedEnergyConservation)
+{
+    SimulateFiles files;
+    auto cmd = baseCommand("acetone.sdf", "conserve", &files);
+    cmd.addOption("-nsteps", 2500);
+    cmd.addOption("-deltat", 0.0002);
+    cmd.addOption("-temp", 300);
+    cmd.addOption("-seed", 1993);
+    cmd.addOption("-nstener", 10);
+    cmd.append("-constrain");
+    ASSERT_EQ(0, run(&cmd));
+    auto xvg   = readXvg(files.energy);
+    int  cEtot = xvg.column("ETOT");
+    ASSERT_GT(cEtot, 0);
+    size_t nav = 10;
+    ASSERT_GT(xvg.rows.size(), 2*nav);
+    double first = 0, last = 0;
+    for(size_t i = 0; i < nav; i++)
+    {
+        first += xvg.rows[i][cEtot];
+        last  += xvg.rows[xvg.rows.size()-1-i][cEtot];
+    }
+    EXPECT_NEAR(first/nav, last/nav, 0.01);
+}
+
 // Test: Without an initial temperature no velocities are generated
 TEST_F(SimulateTest, ZeroTemperature)
 {

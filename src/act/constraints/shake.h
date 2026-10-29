@@ -109,7 +109,35 @@ public:
               Potential                     pot,
               const TopologyEntryVector    &bonds,
               const std::vector<ActAtom>   &atoms,
-              std::vector<gmx::RVec>       *positions);
+              std::vector<gmx::RVec>       *positions)
+    {
+        return shake(msghandler, pot, bonds, atoms, *positions,
+                     positions, nullptr);
+    }
+
+    /*! \brief Execute the Shake algorithm as the first part of rattle
+     *
+     * The constraint forces act along the bonds in the reference
+     * coordinates, that should satisfy the constraints. The displacements
+     * due to the constraints divided by the time step are added to the
+     * velocities, as in the first part of the rattle algorithm.
+     * See Andersen, J Comp Phys, 52, 24, 1983.
+     *
+     * \param[in]    msghandler For warnings and errors
+     * \param[in]    bonds      The atom identifiers and parameters
+     * \param[in]    atoms      The atoms
+     * \param[in]    reference  The coordinates before the integration step
+     * \param[inout] positions  The coordinates of all particles
+     * \param[inout] velocities The velocities for all particles, may be nullptr
+     * \return error code corresponding the (n+1)th constraint or zero if fine
+     */
+    int shake(MsgHandler                   *msghandler,
+              Potential                     pot,
+              const TopologyEntryVector    &bonds,
+              const std::vector<ActAtom>   &atoms,
+              const std::vector<gmx::RVec> &reference,
+              std::vector<gmx::RVec>       *positions,
+              std::vector<gmx::RVec>       *velocities);
 
     /*! \brief Execute the rattle algorithm
      *     rattle added by M.R. Shirts, April 2004, from code written by Jay Ponder in TINKER
