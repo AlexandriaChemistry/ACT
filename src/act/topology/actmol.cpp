@@ -724,6 +724,15 @@ void ACTMol::GenerateTopology(MsgHandler        *msghandler,
     {
         msghandler->msg(ACTStatus::Warning, ACTMessage::AtomTypes, "No atoms");
     }
+    // The job type of the calculation the structure is taken from, see xOriginal
+    for(auto jt : { JobType::OPT, JobType::TOPOLOGY, JobType::SP })
+    {
+        if (findExperimentConst(jt))
+        {
+            myJobType_ = jt;
+            break;
+        }
+    }
     /* Store bonds in harmonic potential list first, update type later */
     if (msghandler->ok())
     {
