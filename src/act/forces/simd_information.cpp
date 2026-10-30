@@ -49,6 +49,8 @@
 #if (defined(__x86_64__) || defined(__i386__)) && defined(__GNUC__)
 #    include <cpuid.h>
 #    define ACT_X86 1
+#else
+#    define ACT_X86 0
 #endif
 #if defined(__aarch64__) && defined(__linux__)
 #    include <sys/auxv.h>
