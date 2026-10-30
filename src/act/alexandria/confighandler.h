@@ -161,6 +161,8 @@ private:
     int cpGenInterval_ = -1;
     //! For CatastrophePenalizer, the fraction of genomes to reinitialize
     real cpPopFrac_ = 0.5;
+    //! Number of fitness evaluations per individual between writing the fitness
+    int nstFitness_ = 1;
 
 public:
 
@@ -279,6 +281,9 @@ public:
 
     //! \return for CatastrophePenalizer, the fraction of genomes to reinitialize
     real cpPopFrac() const { return cpPopFrac_; }
+
+    //! \return the number of fitness evaluations per individual between writing the fitness
+    int nstFitness() const { return nstFitness_; }
 
     /* * * * * * * * * * * * * * * * * * * * * *
     * END: Getters and setters                 *

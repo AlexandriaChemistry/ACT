@@ -283,6 +283,11 @@ This stage decides whether the GA evolution should continue or halt. We allow th
 #. flag *-max_generations*: evolution will halt after so many generations.
 #. flag *-max_test_generations* (disabled by default): evolution will halt if in the last flag *-max_test_generations* the best `deviation` of the test set found so far has not improved.
 
+-------------
+Fitness files
+-------------
+The `deviation` of each genome in the population is written to the fitness files, one for each data set, given by flag *-fitness*, at the start and then every flag *-nstfitness* fitness evaluations per genome (default 1). The last population is always written. A generation of GA has one fitness evaluation per genome, from the mutation, while a generation of HYBRID has flag *-maxiter* times the number of parameters, the number of MCMC steps. Since GA therefore needs many more generations than HYBRID, the two can be compared by using the same value of flag *-nstfitness* for both, for instance the number of MCMC steps in a HYBRID generation. With MCMC and HYBRID, the flag also sets the number of steps between writing to the parameter and `deviation` convergence files of each individual, which are written with flag *-v 4* or higher.
+
 ======
 HYBRID
 ======

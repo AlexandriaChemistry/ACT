@@ -74,6 +74,10 @@ private:
     std::vector<double>        pSigma_;
     //! Internal counter for generation number
     int                        myGeneration_   = 0;
+    //! Number of steps between writing to the convergence files
+    int                        nstFitness_     = 1;
+    //! Number of steps done
+    long                       nStep_          = 0;
     //! Copy of max generations from GA config handler
     int                        maxGenerations_ = 1;
     //! Convergence file for each parameter type
@@ -200,6 +204,17 @@ public:
 
     //! \return whether a minimum was found
     bool foundMinimum() { return bMinimum_; }
+
+    //! \return the number of steps in one mutation
+    size_t numberOfSteps() const
+    {
+        return bch_->maxIter() * sii_->nParam();
+    }
+
+    /*! \brief Set how often to write to the convergence files
+     * \param[in] nstFitness Number of steps between writing
+     */
+    void setNstFitness(int nstFitness) { nstFitness_ = nstFitness; }
 
     /*!
      * \brief Print the MC statistics to a file.

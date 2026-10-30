@@ -274,7 +274,9 @@ void GAConfigHandler::add_options(std::vector<t_pargs>             *pargs,
         { "-cp_gen_interval", FALSE, etINT, {&cpGenInterval_},
           "Interval (in number of generations) between triggering the CatastrophePenalizer." },
         { "-cp_pop_frac", FALSE, etREAL, {&cpPopFrac_},
-          "Fraction [0, 1] of the genomes to randomize when the CatastrophePenalizer is triggered." }
+          "Fraction [0, 1] of the genomes to randomize when the CatastrophePenalizer is triggered." },
+        { "-nstfitness", FALSE, etINT, {&nstFitness_},
+          "Number of fitness evaluations per individual between writing the fitness of the population to the fitness files. A generation of GA has one evaluation, of HYBRID max_iter times the number of parameters, so to compare the two, use the same value for both. For MCMC and HYBRID this is also the number of steps between writing to the convergence files. The last population is always written." }
     };
     for (int i = 0; i < asize(pa); i++)
     {
@@ -339,6 +341,8 @@ void GAConfigHandler::check_pargs(MsgHandler *msghandler)
     }
     GMX_RELEASE_ASSERT(cpPopFrac_ >= 0 && cpPopFrac_ <= 1,
                        "-cp_pop_frac must be in [0, 1].");
+
+    GMX_RELEASE_ASSERT(nstFitness_ > 0, "-nstfitness must be positive.");
 
     // Enable test loss if needed
     if (maxTestGenerations_ > 0)
