@@ -42,6 +42,7 @@ gmx_add_unit_test(
     espPointTest.cpp
     interactionEnergyTest.cpp
     qgen_acmTest.cpp
+    respEspFitTest.cpp
 #    qgen_respTest.cpp
     qtypeFunctionTest.cpp
     qtypeTest.cpp

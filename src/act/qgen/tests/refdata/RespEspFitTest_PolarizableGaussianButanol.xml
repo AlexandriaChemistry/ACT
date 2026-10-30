@@ -1,0 +1,40 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Sequence Name="Charges">
+    <Int Name="Length">30</Int>
+    <Real>1.0864118087121</Real>
+    <Real>-1.2</Real>
+    <Real>0.81158117693875531</Real>
+    <Real>-0.80000000000000004</Real>
+    <Real>0.81158004497409908</Real>
+    <Real>-0.80000000000000004</Real>
+    <Real>0.81158004759456182</Real>
+    <Real>-0.80000000000000004</Real>
+    <Real>1.3858514367664778</Real>
+    <Real>-1.2</Real>
+    <Real>0.75147240014035299</Real>
+    <Real>-0.80000000000000004</Real>
+    <Real>0.75150659751165272</Real>
+    <Real>-0.80000000000000004</Real>
+    <Real>1.2380404066534099</Real>
+    <Real>-1.2</Real>
+    <Real>0.80198160577122679</Real>
+    <Real>-0.80000000000000004</Real>
+    <Real>0.80198431801567216</Real>
+    <Real>-0.80000000000000004</Real>
+    <Real>1.7104114737305411</Real>
+    <Real>-1.2</Real>
+    <Real>0.72032080617858429</Real>
+    <Real>-0.80000000000000004</Real>
+    <Real>0.72025041957863589</Real>
+    <Real>-0.80000000000000004</Real>
+    <Real>0.24955142709836201</Real>
+    <Real>-1.2</Real>
+    <Real>1.3474760303355715</Real>
+    <Real>-0.80000000000000004</Real>
+  </Sequence>
+  <Real Name="RMS">0.0020728154509374172</Real>
+  <Real Name="RRMS">0.18734386375730191</Real>
+  <Real Name="CosAngle">0.98229530843393753</Real>
+</ReferenceData>

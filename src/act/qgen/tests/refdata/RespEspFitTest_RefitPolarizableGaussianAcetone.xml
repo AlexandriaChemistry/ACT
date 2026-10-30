@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Sequence Name="Charges">
+    <Int Name="Length">20</Int>
+    <Real>0.48893630301014496</Real>
+    <Real>-1.2</Real>
+    <Real>2.0117737621181617</Real>
+    <Real>-1.2</Real>
+    <Real>0.89280346789540421</Real>
+    <Real>-1.2</Real>
+    <Real>0.8928034678953759</Real>
+    <Real>-1.2</Real>
+    <Real>0.88561383282515616</Real>
+    <Real>-0.80000000000000004</Real>
+    <Real>0.88561383351983958</Real>
+    <Real>-0.80000000000000004</Real>
+    <Real>0.88561383319544651</Real>
+    <Real>-0.80000000000000004</Real>
+    <Real>0.88561383282516548</Real>
+    <Real>-0.80000000000000004</Real>
+    <Real>0.88561383319545617</Real>
+    <Real>-0.80000000000000004</Real>
+    <Real>0.88561383351984935</Real>
+    <Real>-0.80000000000000004</Real>
+  </Sequence>
+</ReferenceData>
