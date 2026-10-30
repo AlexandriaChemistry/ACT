@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Parameters Name="Best">
+    <Real Name="epsilon c3">0.42540899999999998</Real>
+    <Real Name="sigma c3">0.36431400000000003</Real>
+    <Real Name="epsilon o3">0.60930899999999999</Real>
+    <Real Name="sigma o3">0.86757899999999999</Real>
+    <Real Name="epsilon ow">3.854752</Real>
+    <Real Name="sigma ow">0.37510700000000002</Real>
+  </Parameters>
+  <Statistics Name="Train">
+    <Real Name="ALLELEC RMSD">4.5746450000000003</Real>
+    <Real Name="DISPERSION RMSD">287.698713</Real>
+    <Real Name="EXCHANGE RMSD">55738.877871999997</Real>
+  </Statistics>
+  <Real Name="Train chi2">3444850000</Real>
+</ReferenceData>

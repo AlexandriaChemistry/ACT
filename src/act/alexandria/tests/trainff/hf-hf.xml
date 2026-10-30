@@ -1,0 +1,666 @@
+<?xml version='1.0' encoding='utf-8'?>
+<molecules>
+  <molecule molname="hydrogen-fluoride">
+    <fragments>
+      <fragment identifier="InChI=1S/FH/h1H" mass="20.006" charge="0" multiplicity="1" symmetry_number="1" formula="HF"> 1 2</fragment>
+    </fragments>
+    <molinfo iupac="fluorane" cas="7664-39-3" cid="14214" inchi="InChI=1S/FH/h1H" />
+    <bond ai="1" aj="2" bondorder="1" />
+    <experiment datasource="Theory" reference="Spoel2026a" conformation="conformation" program="Psi4" method="MP2" basisset="aug-cc-pvtz" jobtype="Opt" datafile="0000">
+      <dipole type="Electronic" unit="D" temperature="0">
+        <x>0</x>
+        <y>0</y>
+        <z>-1.931</z>
+      </dipole>
+      <quadrupole type="Electronic" unit="B" temperature="0">
+        <xx>-1.190</xx>
+        <xy>0</xy>
+        <xz>0</xz>
+        <yy>-1.190</yy>
+        <yz>0</yz>
+        <zz>2.381</zz>
+      </quadrupole>
+      <energy type="DeltaE0" unit="kJ/mol" temperature="0" phase="gas">
+        <average>-605.741</average>
+        <error>0</error>
+      </energy>
+      <atom name="F" obtype="f" atomid="0" coord_unit="Angstrom">
+        <x>0</x>
+        <y>0</y>
+        <z>0.0376142</z>
+      </atom>
+      <atom name="H" obtype="hf" atomid="1" coord_unit="Angstrom">
+        <x>0</x>
+        <y>0</y>
+        <z>-0.882452</z>
+      </atom>
+    </experiment>
+    <experiment datasource="Theory" reference="Spoel2026a" conformation="conformation" program="Psi4" method="MP2" basisset="aug-cc-pvtz" jobtype="SP" datafile="0035">
+      <energy type="DeltaE0" unit="kJ/mol" temperature="0" phase="gas">
+        <average>-569.791</average>
+        <error>0</error>
+      </energy>
+      <atom name="F" obtype="f" atomid="0" coord_unit="Angstrom" force_unit="Hartree/Bohr">
+        <x>0</x>
+        <y>0</y>
+        <z>-0.0510304</z>
+        <fx>-0</fx>
+        <fy>-0</fy>
+        <fz>0.078697</fz>
+      </atom>
+      <atom name="H" obtype="hf" atomid="1" coord_unit="Angstrom" force_unit="Hartree/Bohr">
+        <x>0</x>
+        <y>0</y>
+        <z>0.96197</z>
+        <fx>-0</fx>
+        <fy>0</fy>
+        <fz>-0.078697</fz>
+      </atom>
+    </experiment>
+    <experiment datasource="Theory" reference="Spoel2026a" conformation="conformation" program="Psi4" method="MP2" basisset="aug-cc-pvtz" jobtype="SP" datafile="0020">
+      <energy type="DeltaE0" unit="kJ/mol" temperature="0" phase="gas">
+        <average>-565.747</average>
+        <error>0</error>
+      </energy>
+      <atom name="F" obtype="f" atomid="0" coord_unit="Angstrom" force_unit="Hartree/Bohr">
+        <x>0</x>
+        <y>0</y>
+        <z>-0.0515342</z>
+        <fx>-0</fx>
+        <fy>-0</fy>
+        <fz>0.0842939</fz>
+      </atom>
+      <atom name="H" obtype="hf" atomid="1" coord_unit="Angstrom" force_unit="Hartree/Bohr">
+        <x>0</x>
+        <y>0</y>
+        <z>0.971466</z>
+        <fx>0</fx>
+        <fy>-0</fy>
+        <fz>-0.0842939</fz>
+      </atom>
+    </experiment>
+    <experiment datasource="Theory" reference="Spoel2026a" conformation="conformation" program="Psi4" method="MP2" basisset="aug-cc-pvtz" jobtype="SP" datafile="0029">
+      <energy type="DeltaE0" unit="kJ/mol" temperature="0" phase="gas">
+        <average>-541.967</average>
+        <error>0</error>
+      </energy>
+      <atom name="F" obtype="f" atomid="0" coord_unit="Angstrom" force_unit="Hartree/Bohr">
+        <x>0</x>
+        <y>0</y>
+        <z>-0.054053</z>
+        <fx>-0</fx>
+        <fy>-0</fy>
+        <fz>0.106275</fz>
+      </atom>
+      <atom name="H" obtype="hf" atomid="1" coord_unit="Angstrom" force_unit="Hartree/Bohr">
+        <x>0</x>
+        <y>0</y>
+        <z>1.01895</z>
+        <fx>0</fx>
+        <fy>-0</fy>
+        <fz>-0.106275</fz>
+      </atom>
+    </experiment>
+    <experiment datasource="Theory" reference="Spoel2026a" conformation="conformation" program="Psi4" method="MP2" basisset="aug-cc-pvtz" jobtype="SP" datafile="0019">
+      <energy type="DeltaE0" unit="kJ/mol" temperature="0" phase="gas">
+        <average>-465.331</average>
+        <error>0</error>
+      </energy>
+      <atom name="F" obtype="f" atomid="0" coord_unit="Angstrom" force_unit="Hartree/Bohr">
+        <x>0</x>
+        <y>0</y>
+        <z>-0.0379328</z>
+        <fx>-0</fx>
+        <fy>0</fy>
+        <fz>-0.374726</fz>
+      </atom>
+      <atom name="H" obtype="hf" atomid="1" coord_unit="Angstrom" force_unit="Hartree/Bohr">
+        <x>0</x>
+        <y>0</y>
+        <z>0.715067</z>
+        <fx>0</fx>
+        <fy>-0</fy>
+        <fz>0.374726</fz>
+      </atom>
+    </experiment>
+    <experiment datasource="Theory" reference="Spoel2026a" conformation="conformation" program="Psi4" method="MP2" basisset="aug-cc-pvtz" jobtype="SP" datafile="0000">
+      <energy type="DeltaE0" unit="kJ/mol" temperature="0" phase="gas">
+        <average>-583.059</average>
+        <error>0</error>
+      </energy>
+      <atom name="F" obtype="f" atomid="0" coord_unit="Angstrom" force_unit="Hartree/Bohr">
+        <x>0</x>
+        <y>0</y>
+        <z>-0.0439779</z>
+        <fx>-0</fx>
+        <fy>0</fy>
+        <fz>-0.065644</fz>
+      </atom>
+      <atom name="H" obtype="hf" atomid="1" coord_unit="Angstrom" force_unit="Hartree/Bohr">
+        <x>0</x>
+        <y>0</y>
+        <z>0.829022</z>
+        <fx>-0</fx>
+        <fy>-0</fy>
+        <fz>0.065644</fz>
+      </atom>
+    </experiment>
+    <experiment datasource="Theory" reference="Spoel2026a" conformation="conformation" program="Psi4" method="MP2" basisset="aug-cc-pvtz" jobtype="SP" datafile="0037">
+      <energy type="DeltaE0" unit="kJ/mol" temperature="0" phase="gas">
+        <average>-587.945</average>
+        <error>0</error>
+      </energy>
+      <atom name="F" obtype="f" atomid="0" coord_unit="Angstrom" force_unit="Hartree/Bohr">
+        <x>0</x>
+        <y>0</y>
+        <z>-0.0449854</z>
+        <fx>-0</fx>
+        <fy>-0</fy>
+        <fz>-0.0350699</fz>
+      </atom>
+      <atom name="H" obtype="hf" atomid="1" coord_unit="Angstrom" force_unit="Hartree/Bohr">
+        <x>0</x>
+        <y>0</y>
+        <z>0.848015</z>
+        <fx>0</fx>
+        <fy>0</fy>
+        <fz>0.0350699</fz>
+      </atom>
+    </experiment>
+    <experiment datasource="Theory" reference="Spoel2026a" conformation="conformation" program="Psi4" method="MP2" basisset="aug-cc-pvtz" jobtype="SP" datafile="0039">
+      <energy type="DeltaE0" unit="kJ/mol" temperature="0" phase="gas">
+        <average>-582.862</average>
+        <error>0</error>
+      </energy>
+      <atom name="F" obtype="f" atomid="0" coord_unit="Angstrom" force_unit="Hartree/Bohr">
+        <x>0</x>
+        <y>0</y>
+        <z>-0.0490154</z>
+        <fx>-0</fx>
+        <fy>-0</fy>
+        <fz>0.0513645</fz>
+      </atom>
+      <atom name="H" obtype="hf" atomid="1" coord_unit="Angstrom" force_unit="Hartree/Bohr">
+        <x>0</x>
+        <y>0</y>
+        <z>0.923985</z>
+        <fx>-0</fx>
+        <fy>0</fy>
+        <fz>-0.0513645</fz>
+      </atom>
+    </experiment>
+    <experiment datasource="Theory" reference="Spoel2026a" conformation="conformation" program="Psi4" method="MP2" basisset="aug-cc-pvtz" jobtype="SP" datafile="0012">
+      <energy type="DeltaE0" unit="kJ/mol" temperature="0" phase="gas">
+        <average>-556.888</average>
+        <error>0</error>
+      </energy>
+      <atom name="F" obtype="f" atomid="0" coord_unit="Angstrom" force_unit="Hartree/Bohr">
+        <x>0</x>
+        <y>0</y>
+        <z>-0.0525417</z>
+        <fx>0</fx>
+        <fy>-0</fy>
+        <fz>0.0942116</fz>
+      </atom>
+      <atom name="H" obtype="hf" atomid="1" coord_unit="Angstrom" force_unit="Hartree/Bohr">
+        <x>0</x>
+        <y>0</y>
+        <z>0.990458</z>
+        <fx>-0</fx>
+        <fy>-0</fy>
+        <fz>-0.0942116</fz>
+      </atom>
+    </experiment>
+    <experiment datasource="Theory" reference="Spoel2026a" conformation="conformation" program="Psi4" method="MP2" basisset="aug-cc-pvtz" jobtype="SP" datafile="0025">
+      <energy type="DeltaE0" unit="kJ/mol" temperature="0" phase="gas">
+        <average>-525.679</average>
+        <error>0</error>
+      </energy>
+      <atom name="F" obtype="f" atomid="0" coord_unit="Angstrom" force_unit="Hartree/Bohr">
+        <x>0</x>
+        <y>0</y>
+        <z>-0.0399478</z>
+        <fx>0</fx>
+        <fy>-0</fy>
+        <fz>-0.241797</fz>
+      </atom>
+      <atom name="H" obtype="hf" atomid="1" coord_unit="Angstrom" force_unit="Hartree/Bohr">
+        <x>0</x>
+        <y>0</y>
+        <z>0.753052</z>
+        <fx>-0</fx>
+        <fy>0</fy>
+        <fz>0.241797</fz>
+      </atom>
+    </experiment>
+  </molecule>
+  <molecule molname="hydrogen-fluoride#hydrogen-fluoride">
+    <fragments>
+      <fragment identifier="InChI=1S/FH/h1H" mass="20.006" charge="0" multiplicity="1" symmetry_number="1" formula="HF"> 1 2</fragment>
+      <fragment identifier="InChI=1S/FH/h1H" mass="20.006" charge="0" multiplicity="1" symmetry_number="1" formula="HF"> 3 4</fragment>
+    </fragments>
+    <molinfo iupac="hydrogen-fluoride#hydrogen-fluoride" cas="" cid="" inchi="" />
+    <bond ai="1" aj="2" bondorder="1" />
+    <bond ai="3" aj="4" bondorder="1" />
+    <experiment datasource="Theory" reference="Spoel2026a" conformation="conformation" program="Psi4" method="sapt2+(ccd)dmp2" basisset="aug-cc-pvtz" jobtype="SP" datafile="0602">
+      <energy type="InteractionEnergy" unit="kJ/mol" temperature="0" phase="gas">
+        <average>-1.314</average>
+        <error>0</error>
+      </energy>
+      <energy type="Electrostatics" unit="kJ/mol" temperature="0" phase="gas">
+        <average>-1.214</average>
+        <error>0</error>
+      </energy>
+      <energy type="Induction" unit="kJ/mol" temperature="0" phase="gas">
+        <average>-0.020158</average>
+        <error>0</error>
+      </energy>
+      <energy type="Exchange" unit="kJ/mol" temperature="0" phase="gas">
+        <average>0.00156792</average>
+        <error>0</error>
+      </energy>
+      <energy type="Dispersion" unit="kJ/mol" temperature="0" phase="gas">
+        <average>-0.0820036</average>
+        <error>0</error>
+      </energy>
+      <atom name="F" obtype="f" atomid="0" coord_unit="Angstrom">
+        <x>0.0998283</x>
+        <y>-2.17042</y>
+        <z>1.27979</z>
+      </atom>
+      <atom name="H" obtype="hf" atomid="1" coord_unit="Angstrom">
+        <x>-0.824172</x>
+        <y>-2.17042</y>
+        <z>1.27979</z>
+      </atom>
+      <atom name="F" obtype="f" atomid="2" coord_unit="Angstrom">
+        <x>-0.0734617</x>
+        <y>2.20982</y>
+        <z>-1.26541</z>
+      </atom>
+      <atom name="H" obtype="hf" atomid="3" coord_unit="Angstrom">
+        <x>0.327138</x>
+        <y>1.42764</y>
+        <z>-1.55086</z>
+      </atom>
+    </experiment>
+    <experiment datasource="Theory" reference="Spoel2026a" conformation="conformation" program="Psi4" method="sapt2+(ccd)dmp2" basisset="aug-cc-pvtz" jobtype="SP" datafile="0759">
+      <energy type="InteractionEnergy" unit="kJ/mol" temperature="0" phase="gas">
+        <average>-3.139</average>
+        <error>0</error>
+      </energy>
+      <energy type="Electrostatics" unit="kJ/mol" temperature="0" phase="gas">
+        <average>-3.139</average>
+        <error>0</error>
+      </energy>
+      <energy type="Induction" unit="kJ/mol" temperature="0" phase="gas">
+        <average>-0.287613</average>
+        <error>0</error>
+      </energy>
+      <energy type="Exchange" unit="kJ/mol" temperature="0" phase="gas">
+        <average>2.002</average>
+        <error>0</error>
+      </energy>
+      <energy type="Dispersion" unit="kJ/mol" temperature="0" phase="gas">
+        <average>-1.714</average>
+        <error>0</error>
+      </energy>
+      <atom name="F" obtype="f" atomid="0" coord_unit="Angstrom">
+        <x>0.469526</x>
+        <y>-0.502691</y>
+        <z>-1.44338</z>
+      </atom>
+      <atom name="H" obtype="hf" atomid="1" coord_unit="Angstrom">
+        <x>-0.454474</x>
+        <y>-0.502691</y>
+        <z>-1.44338</z>
+      </atom>
+      <atom name="F" obtype="f" atomid="2" coord_unit="Angstrom">
+        <x>-0.437504</x>
+        <y>0.546619</y>
+        <z>1.43828</z>
+      </atom>
+      <atom name="H" obtype="hf" atomid="3" coord_unit="Angstrom">
+        <x>-0.149154</x>
+        <y>-0.325391</y>
+        <z>1.53947</z>
+      </atom>
+    </experiment>
+    <experiment datasource="Theory" reference="Spoel2026a" conformation="conformation" program="Psi4" method="sapt2+(ccd)dmp2" basisset="aug-cc-pvtz" jobtype="SP" datafile="0779">
+      <energy type="InteractionEnergy" unit="kJ/mol" temperature="0" phase="gas">
+        <average>-1.617</average>
+        <error>0</error>
+      </energy>
+      <energy type="Electrostatics" unit="kJ/mol" temperature="0" phase="gas">
+        <average>-1.450</average>
+        <error>0</error>
+      </energy>
+      <energy type="Induction" unit="kJ/mol" temperature="0" phase="gas">
+        <average>-0.0235853</average>
+        <error>0</error>
+      </energy>
+      <energy type="Exchange" unit="kJ/mol" temperature="0" phase="gas">
+        <average>0.0116046</average>
+        <error>0</error>
+      </energy>
+      <energy type="Dispersion" unit="kJ/mol" temperature="0" phase="gas">
+        <average>-0.15515</average>
+        <error>0</error>
+      </energy>
+      <atom name="F" obtype="f" atomid="0" coord_unit="Angstrom">
+        <x>0.154945</x>
+        <y>-2.20639</y>
+        <z>0.385417</z>
+      </atom>
+      <atom name="H" obtype="hf" atomid="1" coord_unit="Angstrom">
+        <x>-0.769055</x>
+        <y>-2.20639</y>
+        <z>0.385417</z>
+      </atom>
+      <atom name="F" obtype="f" atomid="2" coord_unit="Angstrom">
+        <x>-0.144185</x>
+        <y>2.21362</y>
+        <z>-0.356543</z>
+      </atom>
+      <atom name="H" obtype="hf" atomid="3" coord_unit="Angstrom">
+        <x>0.566205</x>
+        <y>2.07015</y>
+        <z>-0.929733</z>
+      </atom>
+    </experiment>
+    <experiment datasource="Theory" reference="Spoel2026a" conformation="conformation" program="Psi4" method="sapt2+(ccd)dmp2" basisset="aug-cc-pvtz" jobtype="SP" datafile="2078">
+      <energy type="InteractionEnergy" unit="kJ/mol" temperature="0" phase="gas">
+        <average>-0.193667</average>
+        <error>0</error>
+      </energy>
+      <energy type="Electrostatics" unit="kJ/mol" temperature="0" phase="gas">
+        <average>-0.0743739</average>
+        <error>0</error>
+      </energy>
+      <energy type="Induction" unit="kJ/mol" temperature="0" phase="gas">
+        <average>-0.0353937</average>
+        <error>0</error>
+      </energy>
+      <energy type="Exchange" unit="kJ/mol" temperature="0" phase="gas">
+        <average>0.00119381</average>
+        <error>0</error>
+      </energy>
+      <energy type="Dispersion" unit="kJ/mol" temperature="0" phase="gas">
+        <average>-0.0850935</average>
+        <error>0</error>
+      </energy>
+      <atom name="F" obtype="f" atomid="0" coord_unit="Angstrom">
+        <x>1.99454</x>
+        <y>-1.16758</y>
+        <z>1.25742</z>
+      </atom>
+      <atom name="H" obtype="hf" atomid="1" coord_unit="Angstrom">
+        <x>1.07054</x>
+        <y>-1.16758</y>
+        <z>1.25742</z>
+      </atom>
+      <atom name="F" obtype="f" atomid="2" coord_unit="Angstrom">
+        <x>-1.9943</x>
+        <y>1.166</y>
+        <z>-1.25302</z>
+      </atom>
+      <atom name="H" obtype="hf" atomid="3" coord_unit="Angstrom">
+        <x>-1.07497</x>
+        <y>1.19743</y>
+        <z>-1.34024</z>
+      </atom>
+    </experiment>
+    <experiment datasource="Theory" reference="Spoel2026a" conformation="conformation" program="Psi4" method="sapt2+(ccd)dmp2" basisset="aug-cc-pvtz" jobtype="SP" datafile="1561">
+      <energy type="InteractionEnergy" unit="kJ/mol" temperature="0" phase="gas">
+        <average>90.586</average>
+        <error>0</error>
+      </energy>
+      <energy type="Electrostatics" unit="kJ/mol" temperature="0" phase="gas">
+        <average>62.304</average>
+        <error>0</error>
+      </energy>
+      <energy type="Induction" unit="kJ/mol" temperature="0" phase="gas">
+        <average>-25.148</average>
+        <error>0</error>
+      </energy>
+      <energy type="Exchange" unit="kJ/mol" temperature="0" phase="gas">
+        <average>68.319</average>
+        <error>0</error>
+      </energy>
+      <energy type="Dispersion" unit="kJ/mol" temperature="0" phase="gas">
+        <average>-14.889</average>
+        <error>0</error>
+      </energy>
+      <atom name="F" obtype="f" atomid="0" coord_unit="Angstrom">
+        <x>0.902426</x>
+        <y>0.824935</y>
+        <z>-0.324929</z>
+      </atom>
+      <atom name="H" obtype="hf" atomid="1" coord_unit="Angstrom">
+        <x>-0.0215739</x>
+        <y>0.824935</y>
+        <z>-0.324929</z>
+      </atom>
+      <atom name="F" obtype="f" atomid="2" coord_unit="Angstrom">
+        <x>-0.862904</x>
+        <y>-0.870495</y>
+        <z>0.331381</z>
+      </atom>
+      <atom name="H" obtype="hf" atomid="3" coord_unit="Angstrom">
+        <x>-0.723454</x>
+        <y>0.0339052</y>
+        <z>0.203321</z>
+      </atom>
+    </experiment>
+    <experiment datasource="Theory" reference="Spoel2026a" conformation="conformation" program="Psi4" method="sapt2+(ccd)dmp2" basisset="aug-cc-pvtz" jobtype="SP" datafile="2562">
+      <energy type="InteractionEnergy" unit="kJ/mol" temperature="0" phase="gas">
+        <average>-1.487</average>
+        <error>0</error>
+      </energy>
+      <energy type="Electrostatics" unit="kJ/mol" temperature="0" phase="gas">
+        <average>-3.589</average>
+        <error>0</error>
+      </energy>
+      <energy type="Induction" unit="kJ/mol" temperature="0" phase="gas">
+        <average>-0.479271</average>
+        <error>0</error>
+      </energy>
+      <energy type="Exchange" unit="kJ/mol" temperature="0" phase="gas">
+        <average>5.520</average>
+        <error>0</error>
+      </energy>
+      <energy type="Dispersion" unit="kJ/mol" temperature="0" phase="gas">
+        <average>-2.938</average>
+        <error>0</error>
+      </energy>
+      <atom name="F" obtype="f" atomid="0" coord_unit="Angstrom">
+        <x>-0.989906</x>
+        <y>-0.990337</y>
+        <z>0.146961</z>
+      </atom>
+      <atom name="H" obtype="hf" atomid="1" coord_unit="Angstrom">
+        <x>-1.37891</x>
+        <y>-1.21834</y>
+        <z>0.927961</z>
+      </atom>
+      <atom name="F" obtype="f" atomid="2" coord_unit="Angstrom">
+        <x>1.01509</x>
+        <y>1.02066</y>
+        <z>-0.144039</z>
+      </atom>
+      <atom name="H" obtype="hf" atomid="3" coord_unit="Angstrom">
+        <x>0.904094</x>
+        <y>0.646663</y>
+        <z>-0.983039</z>
+      </atom>
+    </experiment>
+    <experiment datasource="Theory" reference="Spoel2026a" conformation="conformation" program="Psi4" method="sapt2+(ccd)dmp2" basisset="aug-cc-pvtz" jobtype="SP" datafile="1123">
+      <energy type="InteractionEnergy" unit="kJ/mol" temperature="0" phase="gas">
+        <average>-14.776</average>
+        <error>0</error>
+      </energy>
+      <energy type="Electrostatics" unit="kJ/mol" temperature="0" phase="gas">
+        <average>-20.548</average>
+        <error>0</error>
+      </energy>
+      <energy type="Induction" unit="kJ/mol" temperature="0" phase="gas">
+        <average>-7.700</average>
+        <error>0</error>
+      </energy>
+      <energy type="Exchange" unit="kJ/mol" temperature="0" phase="gas">
+        <average>19.826</average>
+        <error>0</error>
+      </energy>
+      <energy type="Dispersion" unit="kJ/mol" temperature="0" phase="gas">
+        <average>-6.354</average>
+        <error>0</error>
+      </energy>
+      <atom name="F" obtype="f" atomid="0" coord_unit="Angstrom">
+        <x>-0.0235376</x>
+        <y>-0.471127</y>
+        <z>-1.35103</z>
+      </atom>
+      <atom name="H" obtype="hf" atomid="1" coord_unit="Angstrom">
+        <x>0.205462</x>
+        <y>-0.0651275</y>
+        <z>-0.538028</z>
+      </atom>
+      <atom name="F" obtype="f" atomid="2" coord_unit="Angstrom">
+        <x>0.0134624</x>
+        <y>0.483873</y>
+        <z>1.28997</z>
+      </atom>
+      <atom name="H" obtype="hf" atomid="3" coord_unit="Angstrom">
+        <x>-0.0155376</x>
+        <y>-0.175127</y>
+        <z>1.68897</z>
+      </atom>
+    </experiment>
+    <experiment datasource="Theory" reference="Spoel2026a" conformation="conformation" program="Psi4" method="sapt2+(ccd)dmp2" basisset="aug-cc-pvtz" jobtype="SP" datafile="0247">
+      <energy type="InteractionEnergy" unit="kJ/mol" temperature="0" phase="gas">
+        <average>-6.381</average>
+        <error>0</error>
+      </energy>
+      <energy type="Electrostatics" unit="kJ/mol" temperature="0" phase="gas">
+        <average>-19.313</average>
+        <error>0</error>
+      </energy>
+      <energy type="Induction" unit="kJ/mol" temperature="0" phase="gas">
+        <average>-9.092</average>
+        <error>0</error>
+      </energy>
+      <energy type="Exchange" unit="kJ/mol" temperature="0" phase="gas">
+        <average>30.564</average>
+        <error>0</error>
+      </energy>
+      <energy type="Dispersion" unit="kJ/mol" temperature="0" phase="gas">
+        <average>-8.539</average>
+        <error>0</error>
+      </energy>
+      <atom name="F" obtype="f" atomid="0" coord_unit="Angstrom">
+        <x>0.28304</x>
+        <y>0.875442</y>
+        <z>0.942739</z>
+      </atom>
+      <atom name="H" obtype="hf" atomid="1" coord_unit="Angstrom">
+        <x>-0.64096</x>
+        <y>0.875442</y>
+        <z>0.942739</z>
+      </atom>
+      <atom name="F" obtype="f" atomid="2" coord_unit="Angstrom">
+        <x>-0.24728</x>
+        <y>-0.918018</y>
+        <z>-0.958151</z>
+      </atom>
+      <atom name="H" obtype="hf" atomid="3" coord_unit="Angstrom">
+        <x>-0.0331402</x>
+        <y>-0.0728382</y>
+        <z>-0.652221</z>
+      </atom>
+    </experiment>
+    <experiment datasource="Theory" reference="Spoel2026a" conformation="conformation" program="Psi4" method="sapt2+(ccd)dmp2" basisset="aug-cc-pvtz" jobtype="SP" datafile="2327">
+      <energy type="InteractionEnergy" unit="kJ/mol" temperature="0" phase="gas">
+        <average>-7.753</average>
+        <error>0</error>
+      </energy>
+      <energy type="Electrostatics" unit="kJ/mol" temperature="0" phase="gas">
+        <average>-13.675</average>
+        <error>0</error>
+      </energy>
+      <energy type="Induction" unit="kJ/mol" temperature="0" phase="gas">
+        <average>-1.501</average>
+        <error>0</error>
+      </energy>
+      <energy type="Exchange" unit="kJ/mol" temperature="0" phase="gas">
+        <average>12.165</average>
+        <error>0</error>
+      </energy>
+      <energy type="Dispersion" unit="kJ/mol" temperature="0" phase="gas">
+        <average>-4.741</average>
+        <error>0</error>
+      </energy>
+      <atom name="F" obtype="f" atomid="0" coord_unit="Angstrom">
+        <x>-0.0713969</x>
+        <y>0.35703</y>
+        <z>-1.30552</z>
+      </atom>
+      <atom name="H" obtype="hf" atomid="1" coord_unit="Angstrom">
+        <x>-0.995397</x>
+        <y>0.35703</y>
+        <z>-1.30552</z>
+      </atom>
+      <atom name="F" obtype="f" atomid="2" coord_unit="Angstrom">
+        <x>0.0871231</x>
+        <y>-0.34326</y>
+        <z>1.33756</z>
+      </atom>
+      <atom name="H" obtype="hf" atomid="3" coord_unit="Angstrom">
+        <x>0.698943</x>
+        <y>-0.61661</y>
+        <z>0.701384</z>
+      </atom>
+    </experiment>
+    <experiment datasource="Theory" reference="Spoel2026a" conformation="conformation" program="Psi4" method="sapt2+(ccd)dmp2" basisset="aug-cc-pvtz" jobtype="SP" datafile="1029">
+      <energy type="InteractionEnergy" unit="kJ/mol" temperature="0" phase="gas">
+        <average>-19.645</average>
+        <error>0</error>
+      </energy>
+      <energy type="Electrostatics" unit="kJ/mol" temperature="0" phase="gas">
+        <average>-32.121</average>
+        <error>0</error>
+      </energy>
+      <energy type="Induction" unit="kJ/mol" temperature="0" phase="gas">
+        <average>-12.701</average>
+        <error>0</error>
+      </energy>
+      <energy type="Exchange" unit="kJ/mol" temperature="0" phase="gas">
+        <average>34.599</average>
+        <error>0</error>
+      </energy>
+      <energy type="Dispersion" unit="kJ/mol" temperature="0" phase="gas">
+        <average>-9.423</average>
+        <error>0</error>
+      </energy>
+      <atom name="F" obtype="f" atomid="0" coord_unit="Angstrom">
+        <x>-0.00408618</x>
+        <y>-0.458242</y>
+        <z>-1.28572</z>
+      </atom>
+      <atom name="H" obtype="hf" atomid="1" coord_unit="Angstrom">
+        <x>-0.344086</x>
+        <y>0.153758</y>
+        <z>-0.547715</z>
+      </atom>
+      <atom name="F" obtype="f" atomid="2" coord_unit="Angstrom">
+        <x>0.0279138</x>
+        <y>0.473758</y>
+        <z>1.22128</z>
+      </atom>
+      <atom name="H" obtype="hf" atomid="3" coord_unit="Angstrom">
+        <x>-0.105086</x>
+        <y>-0.446242</y>
+        <z>1.76228</z>
+      </atom>
+    </experiment>
+  </molecule>
+</molecules>
