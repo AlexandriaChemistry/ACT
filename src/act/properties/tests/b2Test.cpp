@@ -335,6 +335,92 @@ TEST(B2DataTest, WeightedAverage)
     EXPECT_NEAR(rs.torque2, rw.torque2, 1e-12*rs.torque2);
 }
 
+/*! \brief Compare adding the dimers of orientations at once with adding them one by one
+ * \param[in] inOrder Whether the dimers are in the order of their distances
+ */
+static void testAddOrientation(bool inOrder)
+{
+    std::vector<double>    temperatures = { 250, 400, 600 };
+    std::vector<double>    mass         = { 18, 18 };
+    gmx::RVec              I            = { 0.006, 0.012, 0.018 };
+    std::vector<gmx::RVec> inertia      = { I, I };
+    int    nbins = 501;
+    double bw    = 0.002;
+    B2Data byDimer(nbins, temperatures), byOrientation(nbins, temperatures);
+    for(int orient = 0; orient < 2; orient++)
+    {
+        std::vector<size_t>    index;
+        std::vector<double>    dist, energy, weight;
+        std::vector<double>    force2[2];
+        std::vector<gmx::RVec> torque[2];
+        for(int ii = 0; ii < nbins; ii++)
+        {
+            // Lennard-Jones like energies, with a hard core where the
+            // Boltzmann factor is zero, forces and torques that depend
+            // on the orientation.
+            int    i  = inOrder ? ii : nbins-1-ii;
+            double r  = 0.1 + i*bw;
+            double sr = 0.3/r;
+            index.push_back(i);
+            dist.push_back(r);
+            energy.push_back(4*(1+orient)*(std::pow(sr, 12) - std::pow(sr, 6)));
+            weight.push_back(1 + 2*orient);
+            for(int kk = 0; kk < 2; kk++)
+            {
+                force2[kk].push_back((1 + kk + orient)*std::pow(sr, 14));
+                torque[kk].push_back({ (1.0+kk)*sr, -0.5*sr*sr, orient*sr });
+            }
+        }
+        byOrientation.addOrientation(index, dist, energy, force2, torque, weight);
+        for(size_t iTemp = 0; iTemp < temperatures.size(); iTemp++)
+        {
+            double beta = 1.0/(BOLTZ*temperatures[iTemp]);
+            for(size_t ii = 0; ii < index.size(); ii++)
+            {
+                double    yb = energy[ii]*beta;
+                double    g  = yb < 700 ? std::exp(-yb) : 0;
+                gmx::RVec tau[2];
+                for(int kk = 0; kk < 2; kk++)
+                {
+                    for(int m = 0; m < DIM; m++)
+                    {
+                        tau[kk][m] = g*torque[kk][ii][m]*torque[kk][ii][m];
+                    }
+                }
+                byDimer.addData(iTemp, index[ii], dist[ii], g-1, g*force2[0][ii], g*force2[1][ii],
+                                tau[0], tau[1], weight[ii]);
+            }
+        }
+    }
+    MsgHandler msghandler;
+    for(size_t iTemp = 0; iTemp < temperatures.size(); iTemp++)
+    {
+        double   beta = 1.0/(BOLTZ*temperatures[iTemp]);
+        B2Result rd, ro;
+        byDimer.integrate(&msghandler, iTemp, beta, mass, inertia, &rd.classical, &rd.force, &rd.torque1, &rd.torque2);
+        byOrientation.integrate(&msghandler, iTemp, beta, mass, inertia, &ro.classical, &ro.force, &ro.torque1, &ro.torque2);
+        EXPECT_TRUE(msghandler.ok());
+        // The exponential may be vectorized, which can change the last digit
+        EXPECT_NEAR(rd.classical, ro.classical, 1e-12*std::abs(rd.classical));
+        EXPECT_NEAR(rd.force, ro.force, 1e-12*std::abs(rd.force));
+        EXPECT_NEAR(rd.torque1, ro.torque1, 1e-12*std::abs(rd.torque1));
+        EXPECT_NEAR(rd.torque2, ro.torque2, 1e-12*std::abs(rd.torque2));
+        EXPECT_NE(0, rd.torque1);
+    }
+}
+
+// Test: Adding all dimers of an orientation gives the same B2 as adding them one by one
+TEST(B2DataTest, AddOrientation)
+{
+    testAddOrientation(true);
+}
+
+// Test: The same with the dimers in another order than their distances
+TEST(B2DataTest, AddOrientationPermuted)
+{
+    testAddOrientation(false);
+}
+
 // Test: The grid of orientations as in the program Orient. Gauss-Legendre
 // integration over cos(beta) with n points is exact for polynomials up
 // to order 2n-1, and the equally spaced angles average cosines to zero.
