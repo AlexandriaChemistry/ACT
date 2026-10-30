@@ -6,7 +6,8 @@
 # Copyright 2025
 # License is GPL v. 2
 
-import copy, os, sys, tempfile, webbrowser, time
+import copy, os, subprocess, sys, tempfile, webbrowser, time
+import xml.etree.ElementTree as ET
 import tkinter as tk
 import tkinter.font as tkFont
 from tkinter import filedialog
@@ -1414,12 +1415,50 @@ class GeometryFF:
             mycmd += f" {ff} {fff[ff][var].get()} "
         print(f"Will run '{mycmd}'")
         status = os.system(mycmd)
+        if status == 0 and qalg.get() == "SQE":
+            status = self.fixMonovalentChi(self.fnms["-o"][defnm])
 
         if status == 0:
             show_info(f"Updated bond information and saved {self.fnms['-o'][defnm]}")
         else:
             show_info(f"Something went wrong when updating bond information in {self.fnms['-ff'][defnm]}")
         return status
+
+    def monovalentAcmTypes(self, ffName:str)->list:
+        # The ACM types of the atom types that can make only one bond,
+        # hydrogen and halogens, but not ions, see atomtypes_gui.csv
+        monovalent = [ "H", "F", "Cl", "Br", "I" ]
+        atype_gui  = library_file("atomtypes_gui.csv")
+        bonded     = {}
+        if atype_gui:
+            with open(atype_gui, "r") as inf:
+                for line in inf:
+                    words = line.strip().split("|")
+                    if not line.startswith("#") and len(words) == 13:
+                        try:
+                            bonded[words[0]] = words[1] in monovalent and int(words[4]) > 0
+                        except ValueError:
+                            pass
+        acmtypes = []
+        for ptype in ET.parse(ffName).getroot().iter("particletype"):
+            if ptype.get("type") == Atom and bonded.get(ptype.get("identifier"), False):
+                for opt in ptype.findall("option"):
+                    if opt.get("key") == "acmtype" and opt.get("value") not in acmtypes:
+                        acmtypes.append(opt.get("value"))
+        return acmtypes
+
+    def fixMonovalentChi(self, ffName:str)->int:
+        # With SQE the electronegativity of an atom that makes only one bond
+        # can be fixed, since the bond correction delta_chi of that bond
+        # can change instead. This reduces the number of parameters to train.
+        # See https://github.com/AlexandriaChemistry/ACT/issues/1328
+        acmtypes = self.monovalentAcmTypes(ffName)
+        if len(acmtypes) == 0:
+            return 0
+        mycmd = [ "alexandria", "edit_ff", "-ff", ffName, "-o", ffName,
+                  "-p", "chi", "-a", " ".join(acmtypes), "-mut", Fixed ]
+        print(f"Will run '{' '.join(mycmd)}'")
+        return subprocess.run(mycmd).returncode
 
     def mpfile(self):
         # Get file name
