@@ -33,7 +33,7 @@
 # the research papers on the package. Check out http://www.gromacs.org.
 
 if (NOT GMX_BUILD_UNITTESTS)
-    gmx_add_missing_tests_notice("Unit tests have not been run. You need to set GMX_BUILD_UNITTESTS=ON if you want to build and run them.")
+    message(STATUS "The unit tests are not built. You need to set GMX_BUILD_UNITTESTS=ON if you want to build and run them.")
     return()
 endif()
 
@@ -77,7 +77,6 @@ else()
     include_directories(BEFORE SYSTEM "../external/tinyxml2")
 endif()
 
-# TODO Use gmx_add_missing_tests_notice() instead of the messages below.
 set(GMX_CAN_RUN_MPI_TESTS 1)
 if (GMX_MPI)
     set(_an_mpi_variable_had_content 0)

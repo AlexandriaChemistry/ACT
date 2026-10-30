@@ -70,11 +70,6 @@ set_target_properties(alexandria PROPERTIES
 install(TARGETS alexandria
         RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/libalexandria.pc.cmakein ${CMAKE_CURRENT_BINARY_DIR}/libalexandria.pc @ONLY)
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libalexandria.pc
-        DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig
-        RENAME "libalexandria${GMX_LIBS_SUFFIX}.pc"
-        COMPONENT development)
 
 if (BUILD_TESTING)
     add_subdirectory(tests)

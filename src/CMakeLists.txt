@@ -38,13 +38,7 @@
 include(GetCompilerInfo.cmake)
 get_compiler_info(C BUILD_C_COMPILER BUILD_CFLAGS)
 get_compiler_info(CXX BUILD_CXX_COMPILER BUILD_CXXFLAGS)
-if(GMX_USE_CUDA)
-    if(NOT GMX_CLANG_CUDA)
-        GMX_SET_CUDA_NVCC_FLAGS()
-    endif()
 
-    get_cuda_compiler_info(CUDA_COMPILER_INFO CUDA_COMPILER_FLAGS)
-endif()
 
 string(TOUPPER "${CMAKE_BUILD_TYPE}" CMAKE_BUILD_TYPE_UPPER)
 configure_file(config.h.cmakein config.h)
@@ -52,36 +46,7 @@ configure_file(actpre-config.h.cmakein actpre-config.h)
 configure_file(buildinfo.h.cmakein buildinfo.h ESCAPE_QUOTES)
 
 ####
-set(IGNORED_CLANG_ALL_WARNINGS
-    "-Werror"
-    "-Wno-c++98-compat -Wno-c++98-compat-pedantic" #No intention of C++98 compability
-    "-Wno-source-uses-openmp" #Don't warn for no-omp build
-    "-Wno-documentation-unknown-command" #Custom commands are used
-    "-Wno-covered-switch-default" #GCC gives maybe-uninitialized without default label and checks for illegal enum values.
-    "-Wno-switch-enum" # default statement for enum is OK
 
-    #Following ones are undecided/TODO
-    "-Wno-disabled-macro-expansion"
-    "-Wno-deprecated-declarations"
-    "-Wno-deprecated-copy-with-dtor"
-    "-Wno-cast-align"
-    "-Wno-reserved-id-macro"
-    "-Wno-global-constructors"
-    "-Wno-exit-time-destructors"
-    "-Wno-unused-macros"
-    "-Wno-weak-vtables"
-    "-Wno-conditional-uninitialized"
-    "-Wno-format-nonliteral"
-    "-Wno-shadow"
-    "-Wno-cast-qual"
-    "-Wno-documentation"
-    "-Wno-used-but-marked-unused"
-    "-Wno-padded"
-    "-Wno-float-equal"
-    "-Wno-old-style-cast"
-    "-Wno-conversion"
-    "-Wno-double-promotion")
-string(REPLACE " " ";" IGNORED_CLANG_ALL_WARNINGS "${IGNORED_CLANG_ALL_WARNINGS}")
 
 if (GMX_CLANG_TIDY)
    set(CLANG_TIDY "clang-tidy" CACHE STRING "Name of clang-tidy executable")
@@ -89,9 +54,6 @@ if (GMX_CLANG_TIDY)
        DOC "Path to clang-tidy executable")
    if(NOT CLANG_TIDY_EXE)
        message(FATAL_ERROR "clang-tidy not found.")
-   endif()
-   if(CMAKE_VERSION VERSION_LESS "3.6")
-       message(FATAL_ERROR "clang-tidy support requires cmake 3.6.")
    endif()
 endif()
 #####
