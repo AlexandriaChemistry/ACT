@@ -695,6 +695,7 @@ int gen_ff(int argc, char*argv[])
     {
         auto fsp = pd.findForces(itPol);
         fsp->setFunction(potentialToString(Potential::POLARIZATION));
+        fsp->setCanSwap(CanSwap::Yes);
         fsp->addOption(shellMaxDistanceName, gmx_ftoa(shellMaxDistance));
     }
     // Bonded functions need to be added
