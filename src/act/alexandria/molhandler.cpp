@@ -1558,8 +1558,33 @@ void MolHandler::simulate(MsgHandler                    *msghandler,
     // Compute forces and energies for the starting coordinates
     forceComp->compute(msghandler, pd, mol->topology(), &coordinates,
                        &forces[prev], &energies);
+    // After that the shells start from a prediction of their relaxed
+    // positions, extrapolated from their positions relative to their
+    // parent particles in the two previous steps, rather than from their
+    // parent particles. Since the induction is the change of the energy
+    // from the shells on their parents, these energies are computed as
+    // well in the steps of which the energies are written.
+    std::vector<std::pair<size_t, size_t>> shellParent;
+    {
+        auto &atoms = mol->atomsConst();
+        for (size_t i = 0; i < atoms.size(); i++)
+        {
+            if (ActParticle::Shell == atoms[i].pType() && atoms[i].parents().size() == 1)
+            {
+                shellParent.push_back({ i, static_cast<size_t>(atoms[i].parents()[0]) });
+            }
+        }
+    }
+    // The shell positions relative to their parents in this and the previous step
+    std::vector<gmx::RVec> shellOffset(shellParent.size()), shellOffsetPrev(shellParent.size());
+    bool                   haveOffsetPrev = false;
     for (int step = 0; step < simConfig.nsteps(); step++)
     {
+        for (size_t k = 0; k < shellParent.size(); k++)
+        {
+            shellOffsetPrev[k] = shellOffset[k];
+            rvec_sub(coordinates[shellParent[k].first], coordinates[shellParent[k].second], shellOffset[k]);
+        }
         // Print the energies at the current time, i.e. before integrating
         if (simConfig.nstener() > 0 && step % simConfig.nstener() == 0)
         {
@@ -1602,9 +1627,25 @@ void MolHandler::simulate(MsgHandler                    *msghandler,
                                 gmx::formatString("SHAKE did not converge at step %d.", step));
             }
         }
-        // Compute forces and energies
+        // Predict the shell positions
+        for (size_t k = 0; k < shellParent.size(); k++)
+        {
+            gmx::RVec offset = shellOffset[k];
+            if (haveOffsetPrev)
+            {
+                for (int m = 0; m < DIM; m++)
+                {
+                    offset[m] = 2*shellOffset[k][m] - shellOffsetPrev[k][m];
+                }
+            }
+            rvec_add(coordinates[shellParent[k].second], offset, coordinates[shellParent[k].first]);
+        }
+        haveOffsetPrev = true;
+        // Compute forces and energies, for the induction energy also with
+        // the shells on their parents if the energies are written
+        bool writeEnergies = simConfig.nstener() > 0 && (step + 1) % simConfig.nstener() == 0;
         forceComp->compute(msghandler, pd, mol->topology(), &coordinates,
-                           &forces[cur], &energies);
+                           &forces[cur], &energies, { 0, 0, 0 }, writeEnergies, {}, writeEnergies);
         // Integrate velocities using velocity Verlet
         timings.start(integrationTimer);
         for(size_t i = 0; i < xmol.size(); i++)

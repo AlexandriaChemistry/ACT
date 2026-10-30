@@ -54,6 +54,12 @@ struct ShellOptions
     bool          relax       = true;
     //! Whether to put the shells on top of their core first
     bool          resetShells = true;
+    //! With resetShells, whether to start the relaxation from the input
+    //! positions of the shells. The energies before relaxation, from
+    //! which the induction follows, are still those with the shells on
+    //! top of their core. Useful if the input positions are close to the
+    //! relaxed ones, for instance predicted from the previous step in MD.
+    bool          shellsFromInput = false;
     //! Indices of the shells to relax, if empty all shells are relaxed
     std::set<int> relaxShells;
     //! Electric field applied to the charges
@@ -301,6 +307,8 @@ private:
      * \param[in]  field       Optional electric field to be applied
      * \param[in]  resetShells Set the position of the shells to that of the connecting atoms
      * \param[in]  relax       Indices of the shells to relax, if empty all shells are relaxed
+     * \param[in]  shellsFromInput With resetShells, start the relaxation from the
+     *                         input positions of the shells, see ShellOptions
      */
     void compute(MsgHandler                        *msg_handler,
                  const ForceField                  *pd,
@@ -310,7 +318,8 @@ private:
                  std::map<InteractionType, double> *energies,
                  const gmx::RVec                   &field = { 0.0, 0.0, 0.0 },
                  bool                               resetShells = true,
-                 std::set<int>                      relax = {}) const;
+                 std::set<int>                      relax = {},
+                 bool                               shellsFromInput = false) const;
                  
     /*! \brief Compute energies and forces for monomers and/or dimers.
      * Despite the name of the function it is possible to select RelaxShells::None
