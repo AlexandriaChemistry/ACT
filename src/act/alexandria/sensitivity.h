@@ -71,17 +71,25 @@ private:
     std::vector<double> chi2_;
     //! \brief Constants for the parabola fitting
     double a_ = 0, b_ = 0, c_ = 0;
+    //! \brief Index of the point with the original parameter value
+    size_t original_ = 1;
 public:
     //! \brief Constructor
     Sensitivity() {}
 
     /*! \brief
      * Add a point
-     * \param[in] p    The parameter value
-     * \param[in] chi2 The chi-squared value
+     * \param[in] p        The parameter value
+     * \param[in] chi2     The chi-squared value
+     * \param[in] original Whether this is the original parameter value,
+     *                     otherwise it is the second point
      */
-    void add(double p, double chi2)
+    void add(double p, double chi2, bool original = false)
     {
+        if (original)
+        {
+            original_ = p_.size();
+        }
         p_.push_back(p);
         chi2_.push_back(chi2);
     }
