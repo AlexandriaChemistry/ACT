@@ -232,8 +232,8 @@ bool HybridGAMC::evolve(alexandria::MsgHandler       *msghandler,
     (*bestGenome)[iMolSelect::Train] = pool[pold]->getBest(iMolSelect::Train);
     if (gach_->evaluateTestset())
     {
-        (*bestGenome)[iMolSelect::Test] = pool[pold]->getBest(iMolSelect::Train);
-        (*bestGenome)[iMolSelect::Test].setFitness(iMolSelect::Test, (*bestGenome)[iMolSelect::Test].fitness(iMolSelect::Train));
+        // All genomes have the fitness of the test set as well
+        (*bestGenome)[iMolSelect::Test] = pool[pold]->getBest(iMolSelect::Test);
     }
     // Open surveillance files for fitness, after initialization of bestGenome
     for(const auto &bg : *bestGenome)
