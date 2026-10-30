@@ -97,9 +97,8 @@ endif()
 #####
 
 if (BUILD_TESTING)
-    if(NOT GMX_DEVELOPER_BUILD)
-        set(UNITTEST_TARGET_OPTIONS EXCLUDE_FROM_ALL)
-    endif()
+    # The unit tests are built with 'make tests'
+    set(UNITTEST_TARGET_OPTIONS EXCLUDE_FROM_ALL)
     if (GMX_BUILD_UNITTESTS)
         add_subdirectory(external/googletest)
     endif()

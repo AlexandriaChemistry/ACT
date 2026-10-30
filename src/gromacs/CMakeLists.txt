@@ -165,18 +165,12 @@ if (GMX_CLANG_TIDY)
        "${CLANG_TIDY_EXE};-warnings-as-errors=*")
 endif()
 
-# Only install the library in mdrun-only mode if it is actually necessary
-# for the binary
-if (NOT GMX_BUILD_MDRUN_ONLY OR BUILD_SHARED_LIBS)
-    install(TARGETS libactgromacs
-            EXPORT libactgromacs
-            LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-            RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-            ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-            COMPONENT libraries)
-endif()
+install(TARGETS libactgromacs
+        EXPORT libactgromacs
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        COMPONENT libraries)
 
-if (NOT GMX_BUILD_MDRUN_ONLY)
-    include(InstallLibInfo.cmake)
-endif()
+include(InstallLibInfo.cmake)
 
