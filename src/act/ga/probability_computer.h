@@ -158,8 +158,8 @@ class RankProbabilityComputer : public ProbabilityComputer
 
 private:
 
-    //! Stores the sum of ranks. E.g., if there are 10 genomes, the sum of ranks is \f$ 1 + 2  + 3 + \dots + 9 + 10 \f$
-    double sumOfRanks_;
+    //! The indices of the genomes in order of their rank
+    std::vector<size_t> order_;
 
 public:
 
@@ -168,11 +168,14 @@ public:
      * \param[in] popSize   number of genomes in the population
      */
     RankProbabilityComputer(const int popSize)
-        : sumOfRanks_(popSize * (popSize + 1) / 2) {}
+    {
+        order_.reserve(popSize);
+    }
 
     /*!
-     * \brief Here we assume that population and fitness are sorted.<br>
-     * Compute the probability of each genome in the population
+     * \brief Compute the probability of each genome in the population.
+     * The genomes are ranked by their training fitness, such that the
+     * population does not need to be sorted.
      * \param[in] pop        pointer to the population
      * \param[in] generation the current generation number
      */

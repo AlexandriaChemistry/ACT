@@ -142,6 +142,27 @@ TEST(ProbabilityComputerTest, BoltzmannAnnealed)
     EXPECT_EQ(1.0, pop[1].probability());
 }
 
+// Test: The probability is given by the rank, also if the population is not sorted
+TEST(ProbabilityComputerTest, Rank)
+{
+    auto pop = makePopulation({ 3, 1, 4, 2 });
+    RankProbabilityComputer pc(pop.size());
+    pc.compute(&pop, 0);
+    checkProbabilities(pop);
+    std::vector<double> expected = { 0.2, 0.4, 0.1, 0.3 };
+    for (size_t i = 0; i < pop.size(); i++)
+    {
+        EXPECT_NEAR(expected[i], pop[i].probability(), 1e-15) << i;
+    }
+    // A sorted population with a different size
+    auto sorted = makePopulation({ 1, 2, 3, 4, 5 });
+    pc.compute(&sorted, 0);
+    for (size_t i = 0; i < sorted.size(); i++)
+    {
+        EXPECT_NEAR((5.0 - i)/15, sorted[i].probability(), 1e-15) << i;
+    }
+}
+
 } // namespace
 
 } // namespace ga
