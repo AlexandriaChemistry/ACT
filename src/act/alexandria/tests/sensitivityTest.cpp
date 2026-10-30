@@ -129,6 +129,85 @@ TEST(SensitivityTest, PrintsMinimumWithoutTextWriter)
     EXPECT_NEAR(5, std::stod(values["chi2_min"]), 1e-6);
 }
 
+/*! \brief A parabola through three points around a parameter
+ * \param[in] a     Curvature
+ * \param[in] pmin  Minimum, or maximum if a < 0
+ * \param[in] p     The parameter, the second point
+ * \param[in] delta Distance between the points
+ * \return the fitted parabola
+ */
+static Sensitivity parabola(double a, double pmin, double p, double delta)
+{
+    Sensitivity s;
+    for(double x : { p - delta, p, p + delta })
+    {
+        s.add(x, a*(x - pmin)*(x - pmin) + 1, x == p);
+    }
+    s.computeForceConstants(nullptr);
+    return s;
+}
+
+// Test: A parameter at the minimum of an upward parabola is converged
+TEST(SensitivityTest, ConvergedAtMinimum)
+{
+    auto s = parabola(2, 5, 5, 0.05);
+    EXPECT_TRUE(s.checkConvergence(0, 10, 0.5));
+}
+
+// Test: Within 5% of the range of the minimum is converged, beyond it not
+TEST(SensitivityTest, ConvergedWithinTolerance)
+{
+    EXPECT_TRUE(parabola(2, 5, 5.4, 0.05).checkConvergence(0, 10, 0.5));
+    EXPECT_TRUE(parabola(2, 5, 4.6, 0.05).checkConvergence(0, 10, 0.5));
+    EXPECT_FALSE(parabola(2, 5, 5.6, 0.05).checkConvergence(0, 10, 0.5));
+    EXPECT_FALSE(parabola(2, 5, 4.4, 0.05).checkConvergence(0, 10, 0.5));
+}
+
+// Test: At the maximum of a downward parabola or on a straight line the
+// parameter is not converged
+TEST(SensitivityTest, NotConvergedWithoutUpwardCurvature)
+{
+    EXPECT_FALSE(parabola(-2, 5, 5, 0.05).checkConvergence(0, 10, 0.5));
+    EXPECT_FALSE(parabola(0, 5, 5, 0.05).checkConvergence(0, 10, 0.5));
+}
+
+// Test: A parameter at a bound is converged if the minimum is beyond the bound
+TEST(SensitivityTest, ConvergedAtBound)
+{
+    // The minimum is far below the lower bound of 4
+    Sensitivity s;
+    for(double x : { 4.0, 4.05, 4.1 })
+    {
+        s.add(x, 2*(x - 1)*(x - 1), x == 4.0);
+    }
+    s.computeForceConstants(nullptr);
+    EXPECT_TRUE(s.checkConvergence(4, 14, 0.5));
+    // Not so with a lower bound that leaves room for the minimum
+    EXPECT_FALSE(s.checkConvergence(0, 10, 0.5));
+}
+
+// Test: Whether the parameter is converged is in the output
+TEST(SensitivityTest, PrintsConvergence)
+{
+    for(bool conv : { true, false })
+    {
+        auto     s = parabola(2, 5, conv ? 5.1 : 6, 0.05);
+        EXPECT_EQ(conv, s.checkConvergence(0, 10, 0.5));
+        JsonTree tree("sensitivity");
+        s.print(nullptr, &tree, "0", "c3_z chi");
+        ASSERT_EQ(1u, tree.objects().size());
+        std::string value;
+        for(const auto &obj : tree.objects()[0].objects())
+        {
+            if (obj.key() == "converged")
+            {
+                value = obj.value();
+            }
+        }
+        EXPECT_EQ(conv ? "yes" : "no", value);
+    }
+}
+
 } // namespace
 
 } // namespace alexandria

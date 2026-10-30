@@ -42,16 +42,16 @@ Algorithm
 =========
 
 For each trainable force field parameter :math:`p_i`, the algorithm evaluates
-:math:`\chi^2` at three nearby points:
+:math:`\chi^2` at three nearby points, one of which is the parameter itself:
 
-* :math:`p_\mathrm{low} = \max\!\left(p_i - \delta p,\; p_\mathrm{lower}\right)` — below the current value
-* :math:`p_0 = \tfrac{1}{2}\!\left(p_\mathrm{low} + p_\mathrm{high}\right)` — midpoint
-* :math:`p_\mathrm{high} = \min\!\left(p_i + \delta p,\; p_\mathrm{upper}\right)` — above the current value
+* :math:`p_i - \delta p,\; p_i,\; p_i + \delta p` if these are within the bounds
+* :math:`p_i,\; p_i + \delta p,\; p_i + 2\delta p` if :math:`p_i - \delta p` is below the lower bound
+* :math:`p_i - 2\delta p,\; p_i - \delta p,\; p_i` if :math:`p_i + \delta p` is above the upper bound
 
-where :math:`\delta p = (p_\mathrm{upper} - p_\mathrm{lower}) / 200` (approximately
-0.5% of the allowed range on each side of the current value) and
-:math:`p_\mathrm{lower}`, :math:`p_\mathrm{upper}` are the allowed bounds for
-the parameter.
+where :math:`\delta p = (p_\mathrm{upper} - p_\mathrm{lower}) / 200` (0.5% of
+the allowed range) and :math:`p_\mathrm{lower}`, :math:`p_\mathrm{upper}` are the
+allowed bounds for the parameter. The :math:`\chi^2` of the parameter itself is
+that of the current parameter set, so two evaluations are needed per parameter.
 
 The three :math:`(p,\,\chi^2)` pairs are then fit to a parabola
 
@@ -70,6 +70,19 @@ All other parameters are kept at their trained values while each parameter is
 perturbed in turn, so the analysis captures the *local* sensitivity around the
 training solution. The analysis is performed on the training set only.
 
+A parameter is *converged* if
+
+1. the parabola curves upwards, :math:`a > 0`, such that it has a minimum, and
+2. the parameter is within 5% of its allowed range of that minimum,
+   :math:`|p_i - p_\mathrm{opt}| \le 0.05\,(p_\mathrm{upper} - p_\mathrm{lower})`.
+
+Here :math:`p_\mathrm{opt}` is limited to the bounds, such that a parameter at a
+bound is converged if the minimum of the parabola lies beyond that bound. The
+parameter set is in a minimum if all parameters are converged. During training
+with the HYBRID optimizer, the *-max_local_minimum_generations* option stops the
+training when the best parameter set has been in a minimum for that number of
+generations.
+
 =============
 Output Format
 =============
@@ -86,12 +99,14 @@ following structure:
        p[1] 5.000   chi2[1] 0.482
        p[2] 5.100   chi2[2] 0.495
        pmin 5.002  chi2min 0.482 (estimate based on parabola)
+       converged
 
    Sensitivity C12_VDW Fit to parabola: a  4.00e-12 b -4.01e-07 c  4.82e-01
        p[0] 4.95e+04  chi2[0] 0.4820
        p[1] 5.00e+04  chi2[1] 0.4820
        p[2] 5.05e+04  chi2[2] 0.4820
        pmin 5.01e+04  chi2min 0.4820 (estimate based on parabola)
+       not converged
 
    Sensitivity analysis done.
 
@@ -109,6 +124,11 @@ The output fields are:
 * **chi2[0], chi2[1], chi2[2]** — the corresponding :math:`\chi^2` values.
 * **pmin** — the parameter value at the estimated parabolic minimum.
 * **chi2min** — the estimated minimum :math:`\chi^2` from the parabola fit.
+* **converged** or **not converged** — whether the parameter is converged, see
+  above.
+
+The same information, apart from the values of the points, is added to the json
+output file, with *converged* set to *yes* or *no*.
 
 ==============
 Interpretation

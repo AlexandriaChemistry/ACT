@@ -36,6 +36,7 @@
 
 #include "actpre.h"
 
+#include <algorithm>
 #include <cmath>
 #include <cstdio>
 #include <set>
@@ -190,9 +191,15 @@ protected:
      * The chi-squared is computed for each parameter and two values
      * half a percent of its range apart, below and above it, or on one
      * side of it if the other one is beyond a bound.
-     * \param[in] param The parameters to start from
+     * \param[in]  param     The parameters to start from
+     * \param[out] converged Whether the analysis found all parameters
+     *                       converged, may be nullptr
+     * \param[out] pmin      The minima of the parabolas, limited to the
+     *                       bounds, may be nullptr
      */
-    void checkAnalysis(const std::vector<double> &param)
+    void checkAnalysis(const std::vector<double> &param,
+                       bool                      *converged = nullptr,
+                       std::vector<double>       *pmin      = nullptr)
     {
         size_t np = sii_->nParam();
         ASSERT_EQ(np, param.size());
@@ -212,7 +219,11 @@ protected:
         EXPECT_EQ("sensitivity", sensTree.key());
         ASSERT_EQ(np, sensTree.objects().size());
 
-        bool allConvex = true;
+        bool allConverged = true;
+        if (pmin)
+        {
+            pmin->clear();
+        }
         for(size_t i = 0; i < np; i++)
         {
             double lower = sii_->lowerBound()[i];
@@ -242,11 +253,19 @@ protected:
             double s12  = (y[2] - y[1])/(x[2] - x[1]);
             double a    = (s12 - s01)/(x[2] - x[0]);
             double b    = s01 - a*(x[0] + x[1]);
-            double pmin = -b/(2*a);
+            double pmin_i = -b/(2*a);
             // The force constant is a divided by the parameter squared
             double fc   = sens.forceConstants()[i];
             EXPECT_NEAR(a, fc*param[i]*param[i], 1e-5*std::abs(a)) << sii_->paramNames()[i];
-            allConvex   = allConvex && a >= 0;
+            // Converged if the parabola curves upwards and the parameter
+            // is within 5% of the range of the minimum, limited to the bounds
+            bool conv = (a > 0 &&
+                         std::abs(param[i] - std::clamp(pmin_i, lower, upper)) <= 0.05*(upper - lower));
+            allConverged = allConverged && conv;
+            if (pmin)
+            {
+                pmin->push_back(std::clamp(pmin_i, lower, upper));
+            }
 
             const auto &entry = sensTree.objects()[i];
             EXPECT_EQ(std::to_string(i), entry.key());
@@ -254,11 +273,17 @@ protected:
                       findObject(entry, "particle")->value() + " " + findObject(entry, "parameter")->value());
             EXPECT_NEAR(param[i], findNumber(entry, "p_orig"), 1e-6) << sii_->paramNames()[i];
             EXPECT_NEAR(chi2_0, findNumber(entry, "chi2_orig"), 1e-6*chi2_0 + 1e-6);
-            EXPECT_NEAR(pmin, findNumber(entry, "p_min"), 1e-5*std::abs(pmin) + 1e-6)
+            EXPECT_NEAR(pmin_i, findNumber(entry, "p_min"), 1e-5*std::abs(pmin_i) + 1e-6)
+                << sii_->paramNames()[i];
+            EXPECT_EQ(conv ? "yes" : "no", findObject(entry, "converged")->value())
                 << sii_->paramNames()[i];
         }
-        // The genome is a minimum if all parabolas curve upwards
-        EXPECT_EQ(allConvex, minimum);
+        // The genome is a minimum if all parameters are converged
+        EXPECT_EQ(allConverged, minimum);
+        if (converged)
+        {
+            *converged = minimum;
+        }
     }
 
     /*! \brief Compute the chi-squared for some parameters
@@ -295,6 +320,24 @@ TEST_F(SensitivityAnalysisTrainTest, ParametersAtBounds)
     param[2]    = sii_->lowerBound()[2] + 0.5*delta(2);
     param[3]    = sii_->upperBound()[3] - 0.5*delta(3);
     checkAnalysis(param);
+}
+
+// Test: Moving the parameters to the minima of their parabolas, the
+// analysis finds them converged after a few steps
+TEST_F(SensitivityAnalysisTrainTest, ConvergedAtMinimum)
+{
+    auto param     = genome_.bases();
+    bool converged = false;
+    std::vector<double> pmin;
+    checkAnalysis(param, &converged, &pmin);
+    // At the parameters of the force field the parameters are not converged
+    EXPECT_FALSE(converged);
+    for(int step = 0; step < 20 && !converged; step++)
+    {
+        param = pmin;
+        checkAnalysis(param, &converged, &pmin);
+    }
+    EXPECT_TRUE(converged);
 }
 
 // Test: After the analysis the genome and the force field are as before

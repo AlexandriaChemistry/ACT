@@ -72,7 +72,11 @@ public:
      *                       deviations for the training set. They have to
      *                       be waiting for work from the master, see
      *                       ACTMiddleMan::run.
-     * \return true if the current genome represents a local minimum in parameter space
+     * \return true if all parameters are converged, that is the parabola
+     *         through the chi2 of each of them curves upwards, and the
+     *         parameter is within 5% of its range of the minimum of the
+     *         parabola, limited to the bounds of the parameter. See
+     *         Sensitivity::checkConvergence.
      */
     bool run(MsgHandler           *msghandler,
              StaticIndividualInfo *sii,
