@@ -35,6 +35,8 @@
 
 #include "penalizer.h"
 
+#include "act/utility/portable_random.h"
+
 #include "gromacs/utility/textwriter.h"
 
 namespace ga
@@ -224,8 +226,7 @@ static void printCause(gmx::TextWriter *tw,
         "Mutant fungi wipe out industrial agriculture in North America.\n%g percent of the population has to start from scratch.\n",
         "Tricholoma fungi adapt to oil palm trees in south east Asia, turning them into matsutake mushrooms.\n%g percent of the population are impoverished and replaced.\n"
     };
-    std::uniform_int_distribution<int>  distr(0, ccc.size());
-    int csel = distr(gen) % ccc.size();
+    int csel = alexandria::portableIndex(&gen, ccc.size());
     tw->writeStringFormatted("\nGeneration %d: ", generation);
     tw->writeStringFormatted(ccc[csel], percentage);
 }
@@ -241,7 +242,7 @@ bool CatastrophePenalizer::penalize(gmx::TextWriter *tw,
             printCause(tw, generation, popFrac_ * 100, gen);
         }
         // Shuffle the indices vector and randomize the last (100 - popFrac_*100)%
-        std::shuffle(availableIndices_.begin(), availableIndices_.end(), gen);
+        alexandria::portableShuffle(&availableIndices_, &gen);
         size_t i = static_cast<size_t>(
             lround(
                 (1-popFrac_) * static_cast<double>(availableIndices_.size())

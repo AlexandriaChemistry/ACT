@@ -42,6 +42,7 @@ gmx_add_unit_test(
     jsontreeTest.cpp
     latexutilTest.cpp
     memorycheckTest.cpp
+    portablerandomTest.cpp
     regressionTest.cpp
     simpsonTest.cpp
     stringutilTest.cpp
