@@ -44,13 +44,5 @@ macro(gmx_test_compiler_problems)
         message(WARNING "The versions of the C and C++ compilers do not match (${CMAKE_C_COMPILER_VERSION} and ${CMAKE_CXX_COMPILER_VERSION}, respectively). Mixing different C/C++ compilers can cause problems.")
     endif()
 
-    # Note that we've already tested that the compiler works with C++11
-    if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-        if(WIN32 AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS "3.5.0")
-            message(WARNING "Using Clang on Windows requires Clang 3.5.0")
-        endif()
-    elseif("${CMAKE_CXX_COMPILER_ID}" STREQUAL "PGI")
-        message(WARNING "Currently tested PGI compiler versions (up to 15.7) generate binaries that do not pass all regression test, and the generated binaries are significantly slower than with GCC, ICC or Clang. For now we do not recommend PGI beyond development testing - make sure to run the regressiontests.")
-    endif()
 
 endmacro(gmx_test_compiler_problems)
