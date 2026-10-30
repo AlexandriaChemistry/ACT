@@ -33,6 +33,7 @@
 
 #include "actpre.h"
 
+#include <map>
 #include <string>
 
 #include <gtest/gtest.h>
@@ -101,6 +102,31 @@ TEST(SensitivityTest, InsufficientPointsLeavesConstantsZero)
     EXPECT_TRUE(s.a()==0);
     EXPECT_TRUE(s.b()==0);
     EXPECT_TRUE(s.c()==0);
+}
+
+// Test: The minimum of the parabola is in the output, also without a text writer
+TEST(SensitivityTest, PrintsMinimumWithoutTextWriter)
+{
+    // chi2 = 3 (p - 2)^2 + 5 = 3 p^2 - 12 p + 17
+    Sensitivity s;
+    for(double p : { 1.5, 2.25, 3.0 })
+    {
+        s.add(p, 3*p*p - 12*p + 17);
+    }
+    s.computeForceConstants(nullptr);
+    JsonTree tree("sensitivity");
+    s.print(nullptr, &tree, "0", "c3_z chi");
+    ASSERT_EQ(1u, tree.objects().size());
+    std::map<std::string, std::string> values;
+    for(const auto &obj : tree.objects()[0].objects())
+    {
+        values[obj.key()] = obj.value();
+    }
+    EXPECT_EQ("c3_z", values["particle"]);
+    EXPECT_EQ("chi", values["parameter"]);
+    EXPECT_NEAR(2.25, std::stod(values["p_orig"]), 1e-6);
+    EXPECT_NEAR(2, std::stod(values["p_min"]), 1e-6);
+    EXPECT_NEAR(5, std::stod(values["chi2_min"]), 1e-6);
 }
 
 } // namespace

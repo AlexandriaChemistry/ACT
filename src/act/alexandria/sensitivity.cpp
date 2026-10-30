@@ -95,8 +95,14 @@ void Sensitivity::print(gmx::TextWriter      *tw,
                         const std::string    &index,
                         const std::string    &label)
 {
+    // The extremum of the parabola, also needed without a text writer
     double p_min    = 0;
     double chi2_min = 0;
+    if (a_ != 0.0)
+    {
+        p_min    = -b_/(2.0*a_);
+        chi2_min = a_*p_min*p_min + b_*p_min + c_;
+    }
     if (tw)
     {
         tw->writeStringFormatted("Sensitivity %s Fit to parabola: a %10g b %10g c %10g\n",
@@ -107,8 +113,6 @@ void Sensitivity::print(gmx::TextWriter      *tw,
         }
         if (a_ != 0.0)
         {
-            p_min = -b_/(2.0*a_);
-            chi2_min = a_*p_min*p_min + b_*p_min + c_;
             tw->writeStringFormatted("    pmin %g chi2min %g (estimate based on parabola)\n",
                                      p_min, chi2_min);
         }
