@@ -46,7 +46,5 @@ gmx_add_unit_test(
 #    qgen_respTest.cpp
     qtypeFunctionTest.cpp
     qtypeTest.cpp
-    # pseudo-library for code for alexandria
-    $<TARGET_OBJECTS:actLib>
     )
-target_link_libraries(${exename} libactgromacs ${GMX_EXTRA_LIBRARIES} ${XML_LIBRARIES} ${GMX_EXE_LINKER_FLAGS})
+target_link_libraries(${exename} actLib ${GMX_EXE_LINKER_FLAGS})

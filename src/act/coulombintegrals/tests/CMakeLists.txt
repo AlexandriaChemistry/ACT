@@ -35,4 +35,4 @@
 gmx_add_unit_test(CoulombIntegralsTest coulombIntegrals-test
                   coulombintegralstest.cpp)
 
-target_link_libraries(coulombIntegrals-test libactgromacs actLib ${GMX_EXTRA_LIBRARIES} ${XML_LIBRARIES} ${GMX_EXE_LINKER_FLAGS})
+target_link_libraries(coulombIntegrals-test actLib ${GMX_EXE_LINKER_FLAGS})

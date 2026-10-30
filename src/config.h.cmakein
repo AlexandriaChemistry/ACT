@@ -213,8 +213,6 @@
 /* Define to 1 if you have the SQLITE3 library (-lsqlite3). */
 #cmakedefine01 HAVE_LIBSQLITE3
 
-/* Define to 1 if you have the xml2 library (-lxml2). */
-#cmakedefine01 HAVE_LIBXML2
 
 /* Define to 1 if you have the openbabel3 library (-lopenbabel3). */
 #cmakedefine01 HAVE_LIBOPENBABEL3

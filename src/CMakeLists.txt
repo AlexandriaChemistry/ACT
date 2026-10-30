@@ -71,6 +71,9 @@ add_subdirectory(gromacs)
 
 # The ACT library file
 add_library(actLib "")
+# Everything that uses the ACT code links this library, which brings
+# libactgromacs and the external libraries along.
+target_link_libraries(actLib PUBLIC libactgromacs ${GMX_EXTRA_LIBRARIES})
 # And the source code
 add_subdirectory(act)
 
