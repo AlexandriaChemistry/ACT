@@ -270,6 +270,19 @@ static void print_polarizability(gmx::TextWriter   *tw,
     }
 }
 
+/*! \brief Name of a term of the interaction energies
+ * The EPOT term is the interaction energy, the difference between the
+ * potential energy of the dimer and those of the monomers, so it is
+ * called INTERACTION rather than EPOT.
+ * \param[in] itype The term
+ * \return the name
+ */
+static const std::string &interactionEnergyName(InteractionType itype)
+{
+    static const std::string interaction("INTERACTION");
+    return InteractionType::EPOT == itype ? interaction : interactionTypeToString(itype);
+}
+
 TrainForceFieldPrinter::TrainForceFieldPrinter()
 {
     terms_ = { InteractionType::EPOT,
@@ -1129,7 +1142,7 @@ void TrainForceFieldPrinter::printEnergyForces(MsgHandler                       
         std::string mysub;
         for(const auto &t : terms_)
         {
-            myheader += gmx::formatString("%15s     ", interactionTypeToString(t).c_str());
+            myheader += gmx::formatString("%15s     ", interactionEnergyName(t).c_str());
             mysub    += gmx::formatString(" %9s %9s", "QM", "ACT");
         }
         msghandler->write(myheader);
@@ -1167,7 +1180,7 @@ void TrainForceFieldPrinter::printEnergyForces(MsgHandler                       
                 {
                     auto ttt = iem.find(t);
                     
-                    JsonTree jterm(interactionTypeToString(t));
+                    JsonTree jterm(interactionEnergyName(t));
                     bool     found = false;
                     if (iem.end() != ttt && ttt->second.haveQM())
                     {
@@ -1226,7 +1239,7 @@ void TrainForceFieldPrinter::printEnergyForces(MsgHandler                       
         auto mystat = &myeinter[tt];
         if (mystat->get_npoints() > 0)
         {
-            msghandler->write(low_print_stats(mystat, interactionTypeToString(tt).c_str(),
+            msghandler->write(low_print_stats(mystat, interactionEnergyName(tt).c_str(),
                                               mol->getMolname().c_str()));
         }
     }
@@ -1393,7 +1406,7 @@ void TrainForceFieldPrinter::printOutliers(gmx::TextWriter                      
                                            const std::vector<alexandria::ACTMol> *actmol)
 {
     double epotMax = 1.5*sigma;
-    auto   intName = interactionTypeToString(itype);
+    auto   intName = bIntermolecular ? interactionEnergyName(itype) : interactionTypeToString(itype);
     auto   label   = gmx::formatString("%s-%s", intName.c_str(), iMolSelectName(ims).c_str());
     tw->writeStringFormatted("\nOverview of %s outliers for %s (Diff > %.3f)\n",
             label.c_str(), qPropertyTypeName(qPropertyType::ACM).c_str(), epotMax);
@@ -1703,7 +1716,7 @@ void TrainForceFieldPrinter::print(MsgHandler                  *msghandler,
             {
                 if (lsq_einter_[tt][ims.first][qt].get_npoints() > 0)
                 {
-                    print_stats(tw, interactionTypeToString(tt).c_str(),
+                    print_stats(tw, interactionEnergyName(tt).c_str(),
                                 "kJ/mol", 1.0, &lsq_einter_[tt][ims.first][qt],
                                 header, "SAPT", name.c_str(), useOffset_, &jstats);
                     header = false;
@@ -1761,8 +1774,9 @@ void TrainForceFieldPrinter::print(MsgHandler                  *msghandler,
                lsq_epot_, oenv);
     for(const auto &tt : terms_)
     {
-        std::string fnm   = gmx::formatString("%s.xvg", interactionTypeToString(tt).c_str());
-        std::string title = gmx::formatString("%s (kJ/mol)", interactionTypeToString(tt).c_str());
+        std::string fnm   = gmx::formatString("%s.xvg", interactionEnergyName(tt).c_str());
+        std::string title = gmx::formatString("%s (kJ/mol)",
+                                              InteractionType::EPOT == tt ? "Interaction energy" : interactionTypeToString(tt).c_str());
         print_corr(fnm.c_str(), nullptr, title.c_str(), alex, lsq_einter_[tt], oenv);
     }
     print_corr(opt2fn_null("-forcecorr", filenm.size(), filenm.data()),
