@@ -152,9 +152,14 @@ else()
     # list of commits and their annotated names in ACT_REMOTES
     # the max-count limit is there to put an upper bound on the execution time
     set(BASEREVCOMMAND "COMMAND ${GIT_EXECUTABLE} rev-list --max-count=1000 HEAD")
+    # The --stdin option of name-rev is called --annotate-stdin since git 2.35
+    set(NAMEREV_STDIN "--annotate-stdin")
+    if (GIT_VERSION_STRING VERSION_LESS "2.35")
+        set(NAMEREV_STDIN "--stdin")
+    endif()
     foreach(REMOTE ${ACT_REMOTES})
         string(REGEX REPLACE "remote\\.(.*)\\.url.*" "\\1" REMOTE ${REMOTE})
-        set(BASEREVCOMMAND "${BASEREVCOMMAND} COMMAND ${GIT_EXECUTABLE} name-rev --stdin --refs=refs/remotes/${REMOTE}/*")
+        set(BASEREVCOMMAND "${BASEREVCOMMAND} COMMAND ${GIT_EXECUTABLE} name-rev ${NAMEREV_STDIN} --refs=refs/remotes/${REMOTE}/*")
     endforeach(REMOTE)
     # this is necessary for CMake to properly split the variable into
     # parameters for execute_process().

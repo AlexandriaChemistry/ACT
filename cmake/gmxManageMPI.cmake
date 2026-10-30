@@ -53,6 +53,22 @@ if(GMX_MPI)
         # The imported target provides the flags and include directories
         list(APPEND GMX_COMMON_LIBRARIES MPI::MPI_C)
         set(MPIEXEC ${MPIEXEC_EXECUTABLE})
+        # Leave out the link options of MPI that are in the linker flags
+        # already, such as the rpath of a conda environment, since the
+        # linker warns about duplicates.
+        get_target_property(_mpi_link_options MPI::MPI_C INTERFACE_LINK_OPTIONS)
+        if(_mpi_link_options)
+          separate_arguments(_linker_flags NATIVE_COMMAND "${CMAKE_EXE_LINKER_FLAGS}")
+          set(_kept_options)
+          foreach(_option IN LISTS _mpi_link_options)
+            string(REPLACE "$<COMMA>" "," _plain "${_option}")
+            string(REGEX REPLACE "^\\$<HOST_LINK:(SHELL:)?(.*)>$" "\\2" _plain "${_plain}")
+            if(NOT _plain IN_LIST _linker_flags)
+              list(APPEND _kept_options "${_option}")
+            endif()
+          endforeach()
+          set_target_properties(MPI::MPI_C PROPERTIES INTERFACE_LINK_OPTIONS "${_kept_options}")
+        endif()
       endif()
       set(MPI_FOUND ${MPI_C_FOUND})
   else()
