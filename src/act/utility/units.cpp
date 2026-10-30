@@ -107,17 +107,14 @@ const static std::map<const std::string, std::pair<const std::string, double> > 
         { "",            { "", 1 } }
     };
 
+// An unknown unit is an error, since a wrong conversion would give
+// wrong results.
 std::string gromacsUnit(const std::string &unit)
 {
     auto uc = unitConversion.find(unit);
     if (uc  == unitConversion.end())
     {
-#if CMAKE_BUILD_TYPE == CMAKE_BUILD_TYPE_DEBUG
         GMX_THROW(gmx::InternalError(gmx::formatString("Unknown unit '%s'\n", unit.c_str()).c_str()));
-#else
-        fprintf(stderr, "Unknown unit getting GROMACS unit %s\n", unit.c_str());
-#endif
-        return "";
     }
     return uc->second.first;
     
@@ -128,12 +125,7 @@ double convertToGromacs(double x, const std::string &unit)
     auto uc = unitConversion.find(unit);
     if (uc  == unitConversion.end())
     {
-#if CMAKE_BUILD_TYPE == CMAKE_BUILD_TYPE_DEBUG
         GMX_THROW(gmx::InternalError(gmx::formatString("Unknown unit '%s'\n", unit.c_str()).c_str()));
-#else
-        fprintf(stderr, "Unknown unit converting to GROMACS %s\n", unit.c_str());
-#endif
-        return 1;
     }
     return x*uc->second.second;
 }
@@ -143,12 +135,7 @@ double convertFromGromacs(double x, const std::string &unit)
     auto uc = unitConversion.find(unit);
     if (uc  == unitConversion.end())
     {
-#if CMAKE_BUILD_TYPE == CMAKE_BUILD_TYPE_DEBUG
         GMX_THROW(gmx::InternalError(gmx::formatString("Unknown unit %s\n", unit.c_str()).c_str()));
-#else
-        fprintf(stderr, "Unknown unit converting from GROMACS %s\n", unit.c_str());
-#endif
-        return 1;
     }
     return x/uc->second.second;
 }

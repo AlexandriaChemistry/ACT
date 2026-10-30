@@ -95,13 +95,12 @@ TEST_F(UnitsTest, FromGromacs)
     fromTest(1.23e-5);
 }
 
-#if CMAKE_BUILD_TYPE == CMAKE_BUILD_TYPE_DEBUG
 TEST(UnitsTestSimple, WrongUnitThrows)
 {
+    EXPECT_THROW((void) gromacsUnit("Baz"), gmx::InternalError);
     EXPECT_THROW((void) convertToGromacs(1.0, "Foo"), gmx::InternalError);
     EXPECT_THROW((void) convertFromGromacs(2.2, "Bar"), gmx::InternalError);
 }
-#endif
 }
 
 } // namespace
