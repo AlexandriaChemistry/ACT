@@ -32,6 +32,8 @@
  */
 #include "b2data.h"
 
+#include <cmath>
+#include <cstdio>
 #include <sstream>
 
 #include "act/utility/simpson.h"
@@ -197,6 +199,95 @@ void B2Data::addData(size_t iTemp, size_t index, double dist,
         exp_tau_[1][iTemp][index][m] += weight*exp_tau1[m];
     }
     n_U12_[iTemp][index]      += weight;
+}
+
+void B2Data::addOrientation(const std::vector<size_t>    &index,
+                            const std::vector<double>    &dist,
+                            const std::vector<double>    &energy,
+                            const std::vector<double>     force2[2],
+                            const std::vector<gmx::RVec>  torque[2],
+                            const std::vector<double>    &weight)
+{
+    size_t ndimer = index.size();
+    if (dist.size() != ndimer || energy.size() != ndimer || weight.size() != ndimer ||
+        force2[0].size() != ndimer || force2[1].size() != ndimer ||
+        torque[0].size() != ndimer || torque[1].size() != ndimer)
+    {
+        GMX_THROW(gmx::InternalError("Inconsistent number of dimers"));
+    }
+    // Whether the dimers are in the order of their distances
+    bool inOrder = true;
+    for(size_t ii = 0; ii < ndimer; ii++)
+    {
+        if (index[ii] >= dist_.size())
+        {
+            GMX_THROW(gmx::InternalError(gmx::formatString("index = %zu, should be less than %zu", index[ii], dist_.size()).c_str()));
+        }
+        dist_[index[ii]] = dist[ii];
+        inOrder          = inOrder && index[ii] == ii;
+    }
+    // The Boltzmann factors of the dimers at one temperature
+    std::vector<double> g0_12(ndimer);
+    for(size_t iTemp = 0; iTemp < temperatures_.size(); iTemp++)
+    {
+        auto T = temperatures_[iTemp];
+        if (T == 0)
+        {
+            fprintf(stderr, "Please provide a finite temperature to compute second virial.\n");
+            continue;
+        }
+        double beta = 1.0/(BOLTZ*T);
+        auto  &eU12 = exp_U12_[iTemp];
+        auto  &eF0  = exp_F2_[0][iTemp];
+        auto  &eF1  = exp_F2_[1][iTemp];
+        auto  &eT0  = exp_tau_[0][iTemp];
+        auto  &eT1  = exp_tau_[1][iTemp];
+        auto  &nU12 = n_U12_[iTemp];
+        for(size_t ii = 0; ii < ndimer; ii++)
+        {
+            // Gray and Gubbins Eqn. 3.261
+            double yb = energy[ii]*beta;
+            g0_12[ii] = yb < 700 ? std::exp(-yb) : 0;
+        }
+        // Terms with a Boltzmann factor of zero add zero, the sums are
+        // never negative zero, so adding zero does not change them.
+        auto add = [&](size_t ii, size_t j)
+        {
+            double g    = g0_12[ii];
+            bool   some = g > 0;
+            double w    = weight[ii];
+            eU12[j] += w*(g-1);
+            // Gray and Gubbins Eqn. 3.272
+            double ipf0 = some ? g*force2[0][ii] : 0.0;
+            double ipf1 = some ? g*force2[1][ii] : 0.0;
+            eF0[j] += w*ipf0;
+            eF1[j] += w*ipf1;
+            for(int m = 0; m < DIM; m++)
+            {
+                // Gray and Gubbins Eqn. 3.282
+                double tau0 = some ? g*torque[0][ii][m]*torque[0][ii][m] : 0.0;
+                double tau1 = some ? g*torque[1][ii][m]*torque[1][ii][m] : 0.0;
+                eT0[j][m] += w*tau0;
+                eT1[j][m] += w*tau1;
+            }
+            nU12[j] += w;
+        };
+        if (inOrder)
+        {
+            // Without indirect indexing the loop can be vectorized
+            for(size_t ii = 0; ii < ndimer; ii++)
+            {
+                add(ii, ii);
+            }
+        }
+        else
+        {
+            for(size_t ii = 0; ii < ndimer; ii++)
+            {
+                add(ii, index[ii]);
+            }
+        }
+    }
 }
 
 void B2Data::integrate(MsgHandler *msghandler,

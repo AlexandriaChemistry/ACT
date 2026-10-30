@@ -495,6 +495,37 @@ void ReRunner::runB2(CommunicationRecord         *cr,
     B2Data b2total(gendimers_.ndist(), Temperature);
     // The total B2 of each round, for the convergence table
     std::vector<std::vector<double>> b2rounds;
+    // The molecules of the dimers, the same in all dimers
+    const auto &atoms     = actmol->atomsConst();
+    const auto &atomStart = actmol->fragmentHandler()->atomStart();
+    const auto &tops      = actmol->fragmentHandler()->topologies();
+    // Whether the monomers are flexible, otherwise they are rigid
+    bool        flexible  = gendimers_.flexible();
+    size_t                 natom[2];
+    std::vector<int>       molIndex[2];
+    std::vector<real>      molMass[2];
+    // Coordinates relative to the center of mass
+    std::vector<gmx::RVec> xCom[2];
+    // Principal axes and moments of inertia of the current dimer
+    matrix                 trans[2];
+    gmx::RVec              inertia1[2];
+    for(int kk = 0; kk < 2; kk++)
+    {
+        natom[kk] = tops[kk].atoms().size();
+        for(size_t i = atomStart[kk]; i < atomStart[kk]+natom[kk]; i++)
+        {
+            // Store atom index relative to molecule start
+            molIndex[kk].push_back(i-atomStart[kk]);
+            molMass[kk].push_back(atoms[i].mass());
+        }
+        xCom[kk].resize(natom[kk]);
+    }
+    // Squared forces and torques on the molecules, energies, distances,
+    // distance indices and weights of the dimers of an orientation
+    std::vector<double>    force2Mol[2];
+    std::vector<gmx::RVec> torqueMol[2];
+    std::vector<double>    dimEnergy, dimDist, dimWeight;
+    std::vector<size_t>    dimIndex;
     int ndone = 0;
     for(auto nround : rounds)
     {
@@ -515,22 +546,8 @@ void ReRunner::runB2(CommunicationRecord         *cr,
                     }
                 }
             }
-            // Structures to store energies, forces and torques
-            gmx_stats                           edist;
-            std::map<InteractionType, double>   energies;
-            std::vector<std::vector<gmx::RVec>> forceMol;
-            std::vector<std::vector<gmx::RVec>> torqueMol;
-            forceMol.resize(2);
-            torqueMol.resize(2);
-            for(int kk = 0; kk < 2; kk++)
-            {
-                torqueMol[kk].resize(dimers.size(), rvnul);
-                forceMol[kk].resize(dimers.size(), rvnul);
-            }
-
             // Coordinates of all particles of the dimers
             timings.start(energyTimer);
-            const auto &atoms = actmol->atomsConst();
             std::vector<std::vector<gmx::RVec>> allCoordsShells;
             for (const auto &d : dimers)
             {
@@ -545,24 +562,31 @@ void ReRunner::runB2(CommunicationRecord         *cr,
             timings.stop(energyTimer);
             // Loop over dimers
             timings.start(torqueTimer);
-            for (size_t idim = 0; idim < dimers.size(); idim++)
+            size_t ndim = dimers.size();
+            for(int kk = 0; kk < 2; kk++)
+            {
+                force2Mol[kk].resize(ndim);
+                torqueMol[kk].resize(ndim);
+            }
+            dimIndex.resize(ndim);
+            dimDist.resize(ndim);
+            dimEnergy.resize(ndim);
+            dimWeight.resize(ndim);
+            for (size_t idim = 0; idim < ndim; idim++)
             {
                 const auto &coords = allCoordsShells[idim];
                 const auto &forces = allForces[idim];
                 auto       &einter = allEinter[idim];
                 auto        epot   = allEpot[idim];
 
-                auto atomStart  = actmol->fragmentHandler()->atomStart();
-                std::vector<gmx::RVec> f          = { rvnul, rvnul };
-                std::vector<gmx::RVec> com        = { rvnul, rvnul };
-                std::vector<double>    mtot       = { 0, 0 };
-                std::vector<gmx::RVec> torque     = { rvnul, rvnul };
-                std::vector<gmx::RVec> torqueRot  = { rvnul, rvnul };
-                const auto &tops  = actmol->fragmentHandler()->topologies();
+                gmx::RVec f[2]         = { rvnul, rvnul };
+                gmx::RVec com[2]       = { rvnul, rvnul };
+                double    mtot[2]      = { 0, 0 };
+                gmx::RVec torque[2]    = { rvnul, rvnul };
+                gmx::RVec torqueRot[2] = { rvnul, rvnul };
                 for(int kk = 0; kk < 2; kk++)
                 {
-                    auto natom = tops[kk].atoms().size();
-                    for(size_t i = atomStart[kk]; i < atomStart[kk]+natom; i++)
+                    for(size_t i = atomStart[kk]; i < atomStart[kk]+natom[kk]; i++)
                     {
                         gmx::RVec mr1;
                         auto      mi = atoms[i].mass();
@@ -579,29 +603,21 @@ void ReRunner::runB2(CommunicationRecord         *cr,
                         // Normalize
                         com[kk][m] /= mtot[kk];
                     }
-                    copy_rvec(f[kk], forceMol[kk][idim]);
-
                     // Compute the coordinates relative to the center of mass
-                    std::vector<real>      mass;
-                    std::vector<int>       index;
-                    std::vector<gmx::RVec> x_com;
-                    for(size_t i = atomStart[kk]; i < atomStart[kk]+natom; i++)
+                    auto &xc = xCom[kk];
+                    for(size_t i = atomStart[kk]; i < atomStart[kk]+natom[kk]; i++)
                     {
-                        // Store atom index relative to molecule start
-                        index.push_back(i-atomStart[kk]);
-                        // Store mass
-                        mass.push_back(atoms[i].mass());
-                        // Subtract COM and store
-                        gmx::RVec ri;
-                        rvec_sub(coords[i], com[kk], ri);
-                        x_com.push_back(ri);
+                        rvec_sub(coords[i], com[kk], xc[i-atomStart[kk]]);
                     }
-                    // Compute moments of inertia and transformation matrix
-                    gmx::RVec inertia1;
-                    clear_rvec(inertia1);
-                    matrix trans;
-                    clear_mat(trans);
-                    principal_comp(index, mass, x_com, &trans, &inertia1);
+                    // Compute moments of inertia and transformation matrix.
+                    // Rigid molecules are only translated between the dimers
+                    // of an orientation, so their principal axes are the same.
+                    if (flexible || 0 == idim)
+                    {
+                        clear_rvec(inertia1[kk]);
+                        clear_mat(trans[kk]);
+                        principal_comp(molIndex[kk], molMass[kk], xc, &trans[kk], &inertia1[kk]);
+                    }
 
                     // Move to inertial frame (only well-defined for
                     // rigid molecules).
@@ -612,21 +628,22 @@ void ReRunner::runB2(CommunicationRecord         *cr,
                     // Since the rotations are different for both molecules, this does not
                     // hold after the rotations are done.
                     //! \todo: write out the math.
-                    for(size_t i = atomStart[kk]; i < atomStart[kk]+natom; i++)
+                    for(size_t i = atomStart[kk]; i < atomStart[kk]+natom[kk]; i++)
                     {
                         gmx::RVec ri, fi, ti;
-                        cprod(x_com[i-atomStart[kk]], forces[i], ti);
+                        cprod(xc[i-atomStart[kk]], forces[i], ti);
                         rvec_inc(torque[kk], ti);
                         // Rotate coordinates
-                        mvmul(trans, x_com[i-atomStart[kk]], ri);
+                        mvmul(trans[kk], xc[i-atomStart[kk]], ri);
                         // Rotate force vector
-                        mvmul(trans, forces[i], fi);
+                        mvmul(trans[kk], forces[i], fi);
                         // Compute torque on this atom
                         cprod(ri, fi, ti);
                         // Update total torque
                         rvec_inc(torqueRot[kk], ti);
                     }
-                    rvec_inc(inertiaSum[kk], inertia1);
+                    rvec_inc(inertiaSum[kk], inertia1[kk]);
+                    force2Mol[kk][idim] = iprod(f[kk], f[kk]);
                     torqueMol[kk][idim] = torqueRot[kk];
                 }
                 nInertia += 1;
@@ -655,14 +672,10 @@ void ReRunner::runB2(CommunicationRecord         *cr,
                                              torqueRot[1][XX], torqueRot[1][YY], torqueRot[1][ZZ]);
                     msghandler->write(out);
                 }
-                if (gendimers_.flexible())
-                {
-                    edist.add_point(rcom, epot, 0, 0);
-                }
-                else
-                {
-                    edist.add_point(rcom, einter[InteractionType::EPOT], 0, 0);
-                }
+                dimIndex[idim]  = dimers[idim].index;
+                dimDist[idim]   = rcom;
+                dimEnergy[idim] = flexible ? epot : einter[InteractionType::EPOT];
+                dimWeight[idim] = dimers[idim].weight;
                 if (msghandler->verbose())
                 {
                     msghandler->write(gmx::formatString("epot %g einter[InteractionType::EPOT] %g diff %g", epot, einter[InteractionType::EPOT], epot-einter[InteractionType::EPOT]));
@@ -673,51 +686,10 @@ void ReRunner::runB2(CommunicationRecord         *cr,
                 msghandler->write("");
             }
             timings.stop(torqueTimer);
-            // Now we have computed energies, forces and torques for one dimer.
-            // Time to update the intermediate structure
+            // Now we have computed energies, forces and torques for all
+            // dimers of this orientation. Time to update the intermediate structure
             ScopedTimer scoped(addTimer);
-            auto &x = edist.getX();
-            auto &y = edist.getY();
-            for(size_t iTemp = 0; iTemp < Temperature.size(); iTemp++)
-            {
-                auto T      = Temperature[iTemp];
-                if (T == 0)
-                {
-                    fprintf(stderr, "Please provide a finite temperature to compute second virial.\n");
-                    continue;
-                }
-                double beta = 1.0/(BOLTZ*T);
-                for(size_t ii = 0; ii < x.size(); ii++)
-                {
-                    // Gray and Gubbins Eqn. 3.261
-                    double yb = y[ii]*beta;
-                    double g0_12 = yb < 700 ? std::exp(-yb) : 0;
-                    gmx::RVec tau[2];
-                    for(int kk = 0; kk < 2; kk++)
-                    {
-                        clear_rvec(tau[kk]);
-                        if (g0_12 > 0)
-                        {
-                            for(int m = 0; m < DIM; m++)
-                            {
-                                // Gray and Gubbins Eqn. 3.282
-                                tau[kk][m] = g0_12*torqueMol[kk][ii][m]*torqueMol[kk][ii][m];
-                            }
-                        }
-                    }
-                    // Gray and Gubbins Eqn. 3.272
-                    double ipf0 = 0, ipf1 = 0;
-                    if (g0_12 > 0)
-                    {
-                        ipf0 = g0_12*iprod(forceMol[0][ii], forceMol[0][ii]);
-                        ipf1 = g0_12*iprod(forceMol[1][ii], forceMol[1][ii]);
-                    }
-                    b2data.addData(iTemp, dimers[ii].index, 
-                                   dimers[ii].dist, g0_12-1,
-                                   // Gray and Gubbins Eqn. 3.281
-                                   ipf0, ipf1, tau[0], tau[1], dimers[ii].weight);
-                }
-            }
+            b2data.addOrientation(dimIndex, dimDist, dimEnergy, force2Mol, torqueMol, dimWeight);
         }
         ndone = nround;
         for(int kk = 0; kk < 2 && nInertia > 0; kk++)

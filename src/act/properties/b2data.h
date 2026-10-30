@@ -99,6 +99,26 @@ public:
                  const gmx::RVec exp_tau0, const gmx::RVec exp_tau1,
                  double weight = 1);
 
+    /*! \brief Add the dimers of one orientation at all temperatures.
+     * Gives the same sums as addData for each dimer and temperature, with
+     * the Boltzmann factor g = exp(-beta U) of the energy U of each dimer,
+     * g-1 as Mayer function, g times the squared forces and g times the
+     * squared torque components, see Gray and Gubbins Eqns. 3.261, 3.272
+     * and 3.282. Temperatures of zero are skipped.
+     * \param[in] index  Distance index of each dimer
+     * \param[in] dist   Distance between the molecules of each dimer
+     * \param[in] energy Energy of each dimer
+     * \param[in] force2 Squared force on each molecule of each dimer
+     * \param[in] torque Torque on each molecule of each dimer
+     * \param[in] weight Weight of each dimer, see DimerGenerator
+     */
+    void addOrientation(const std::vector<size_t>    &index,
+                        const std::vector<double>    &dist,
+                        const std::vector<double>    &energy,
+                        const std::vector<double>     force2[2],
+                        const std::vector<gmx::RVec>  torque[2],
+                        const std::vector<double>    &weight);
+
     /*! \brief Do the integration of the exponent weight functions
      * Compute classical B2 and quantum correction. The bins hold equidistant
      * distances, starting at the shortest distance of the dimers. Below it
