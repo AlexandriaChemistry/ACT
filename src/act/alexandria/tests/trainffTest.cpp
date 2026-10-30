@@ -161,6 +161,21 @@ TEST_F(TrainFFTest, MCMCHydrogenFluoride)
     runAndCheck("4S-lj14-7-pg-hvdw.xml", "hf-hf", combine(mcmcOptions(3), hfOptions()));
 }
 
+// Test: The files with the correlation of the energy components get the
+// prefix given with -compound_file
+TEST_F(TrainFFTest, CompoundFilePrefix)
+{
+    auto prefix  = fileManager().getTemporaryFilePath("hf-");
+    auto options = combine(mcmcOptions(1), hfOptions());
+    options.push_back({ "-compound_file", prefix });
+    auto output = trainfftest::runTrainFF(&fileManager(), "prefix", "4S-lj14-7-pg-hvdw.xml", "hf-hf", options);
+    ASSERT_EQ(0, output.status);
+    for (const std::string term : { "ALLELEC", "DISPERSION", "EXCHANGE" })
+    {
+        EXPECT_TRUE(std::filesystem::exists(prefix + term + ".xvg")) << prefix + term + ".xvg";
+    }
+}
+
 // Test: The same seed gives the same parameters, a different one does not
 TEST_F(TrainFFTest, Reproducible)
 {

@@ -461,7 +461,9 @@ void TrainForceFieldPrinter::addOptions(std::vector<t_pargs> *pargs)
         { "-diatomics", FALSE, etBOOL, {&diatomic_},
           "Analyse diatomic compounds by plotting the reference energy minus the ACT Coulomb terms as a function of distance in one xvg file per compound." },
         { "-dump_outliers", FALSE, etREAL, {&dumpOutliers_},
-          "Dump XYZ files for outliers with deviation larger than this number times the standard deviation of the energy (DeltaE0) or interaction energy. If this number is less than zero, nothing will be dumped." }
+          "Dump XYZ files for outliers with deviation larger than this number times the standard deviation of the energy (DeltaE0) or interaction energy. If this number is less than zero, nothing will be dumped." },
+        { "-compound_file", FALSE, etSTR, {&compoundFile_},
+          "Prefix for the names of the files with the correlation of the energy components, for instance with apple they are called appleCOULOMB.xvg, appleEXCHANGE.xvg etc. The prefix can include a directory." }
     };
     doAddOptions(pargs, sizeof(pa)/sizeof(pa[0]), pa);
 }
@@ -1777,7 +1779,8 @@ void TrainForceFieldPrinter::print(MsgHandler                  *msghandler,
                lsq_epot_, oenv);
     for(const auto &tt : terms_)
     {
-        std::string fnm   = gmx::formatString("%s.xvg", interactionEnergyName(tt).c_str());
+        std::string fnm   = gmx::formatString("%s%s.xvg", compoundFile_ ? compoundFile_ : "",
+                                              interactionEnergyName(tt).c_str());
         std::string title = gmx::formatString("%s (kJ/mol)",
                                               InteractionType::EPOT == tt ? "Interaction energy" : interactionTypeToString(tt).c_str());
         print_corr(fnm.c_str(), nullptr, title.c_str(), alex, lsq_einter_[tt], oenv);

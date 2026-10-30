@@ -96,6 +96,8 @@ private:
     bool diatomic_            = false;
     //! Dump outliers to xyz files if larger or equal to zero
     real dumpOutliers_        = -1;
+    //! Prefix for the names of the files with the correlation of the energy components
+    const char *compoundFile_ = "";
     //! Data structures for storing energies per molecule
     std::map<std::string, std::vector<ACTEnergy> > molEnergyMap_;
     //! Data structures for storing energy terms per dimer

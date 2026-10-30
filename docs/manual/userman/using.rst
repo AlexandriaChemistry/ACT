@@ -207,7 +207,7 @@ Then, at the end you will see something like::
   Please check output in file train_inter.log.
 
 encouraging you to inspect the log file. It can be very helpful to check outliers that can help you to find inconsistencies in both the data and the model you are trying to train.
-After this training instance, a correlation plot *INTERACTION.xvg* of the interaction energies will be produced (:numref:`fig-epot`); you can use the::
+After this training instance, a correlation plot *INTERACTION.xvg* of the interaction energies will be produced (:numref:`fig-epot`), as well as one for each energy component, such as *COULOMB.xvg*. With the option *-compound_file* a prefix can be given for the names of these files, for instance *-compound_file inter* gives *interINTERACTION.xvg*. You can use the::
 
     ./plot-epot.sh
 
