@@ -301,6 +301,7 @@ int OptACM::initMaster(const std::vector<t_filenm> &fnm,
     {
         auto mut = new alexandria::MCMCMutator(dis(gen), &bch_, fitComp_, sii_, bch_.evaluateTestset(),
                                                algorithm, gach_.maxGenerations());
+        mut->setNstFitness(gach_.nstFitness());
         //! \todo Only open these files when we are optimizing in verbose mode.
         if (msghandler_.verbose())
         {

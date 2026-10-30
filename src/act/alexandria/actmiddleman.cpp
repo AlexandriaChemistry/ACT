@@ -88,6 +88,7 @@ ACTMiddleMan::ACTMiddleMan(MsgHandler                *msghandler,
                                                bch->evaluateTestset(),
                                                algorithm, 
                                                gach->maxGenerations());
+        mut->setNstFitness(gach->nstFitness());
         if (openConvFiles)
         {
             mut->openParamConvFiles(oenv);

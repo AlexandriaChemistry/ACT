@@ -101,6 +101,9 @@ public:
     //! \return whether a minimum was found
     virtual bool foundMinimum() = 0;
 
+    //! \return the number of steps, each with a fitness evaluation, in one mutation
+    virtual size_t numberOfSteps() const { return 1; }
+
     //! \return the ChargeGenerationAlgorithm
     alexandria::ChargeGenerationAlgorithm algorithm() const { return algorithm_; }
 

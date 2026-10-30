@@ -297,8 +297,12 @@ void MCMCMutator::stepMCMC(MsgHandler                   *msghandler,
         fitComp_->distributeParameters(msghandler, genome->basesPtr(), changed);
     }
 
-    printParameterStep(genome, xiter);
-    printChi2Step(*prevEval, xiter);
+    if (nStep_ % nstFitness_ == 0)
+    {
+        printParameterStep(genome, xiter);
+        printChi2Step(*prevEval, xiter);
+    }
+    nStep_ += 1;
 }                  
 
 void MCMCMutator::computeMeanSigma(const std::vector<double>    &sum,

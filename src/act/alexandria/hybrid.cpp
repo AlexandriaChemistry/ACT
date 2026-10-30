@@ -240,8 +240,10 @@ bool HybridGAMC::evolve(alexandria::MsgHandler       *msghandler,
     {
         openFitnessFiles(fitnessFile_, bg.first);
     }
-    // Print original fitness to surveillance files
+    // Print original fitness to surveillance files, and after that each
+    // time the individuals have done nstfitness fitness evaluations
     fprintFitness(*(pool[pold]));
+    size_t evaluationsSinceWrite = 0;
 
     // When random initialization, assume a better minimum has been found no matter what
     bool bMinimum = gach_->randomInit() ? true : false;
@@ -443,7 +445,12 @@ bool HybridGAMC::evolve(alexandria::MsgHandler       *msghandler,
         }
 
         // Print fitness to surveillance files
-        fprintFitness(*(pool[pold]));
+        evaluationsSinceWrite += mutator()->numberOfSteps();
+        if (evaluationsSinceWrite >= static_cast<size_t>(gach_->nstFitness()))
+        {
+            fprintFitness(*(pool[pold]));
+            evaluationsSinceWrite = 0;
+        }
 
         std::string msg_start;
         {
@@ -547,7 +554,11 @@ bool HybridGAMC::evolve(alexandria::MsgHandler       *msghandler,
     // No more need for the individual
     delete individual;
 
-    // Close surveillance files for fitness
+    // Print the last population, if not done yet, and close surveillance files for fitness
+    if (evaluationsSinceWrite > 0)
+    {
+        fprintFitness(*(pool[pold]));
+    }
     closeFitnessFiles();
 
     msghandler->write("GA/HYBRID Evolution is done!");

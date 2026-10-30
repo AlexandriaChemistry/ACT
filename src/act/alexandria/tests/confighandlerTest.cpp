@@ -137,6 +137,7 @@ TEST(ConfigHandlerTest, GAConfigHandlerDefaults)
     EXPECT_EQ(gaCfg.probabilityComputerAlg(), ProbabilityComputerAlg::pcRANK);
     EXPECT_EQ(gaCfg.maxGenerations(), 10);
     EXPECT_FALSE(gaCfg.evaluateTestset());
+    EXPECT_EQ(gaCfg.nstFitness(), 1);
 }
 
 TEST(ConfigHandlerTest, GAConfigHandlerSetters)
