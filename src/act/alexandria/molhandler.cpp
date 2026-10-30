@@ -1163,6 +1163,13 @@ eMinimizeStatus MolHandler::minimizeCoordinates(MsgHandler                      
             // Write stuff
             printEnergies(msghandler->tw(), myIter, msfMin, 0, 0, newEnergies[current], gamma);
             firstStep = false;
+            // A step from a converged structure can only change the
+            // energy by round-off, which may make it fail.
+            if (eMinimizeStatus::OK == eMin && msfMin <= msForceToler)
+            {
+                converged = true;
+                break;
+            }
         }
         if (eMinimizeStatus::OK != eMin)
         {
