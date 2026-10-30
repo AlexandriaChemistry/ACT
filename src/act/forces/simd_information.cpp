@@ -33,9 +33,14 @@
 
 #include "simd_information.h"
 
+#include <algorithm>
+#include <cstdint>
 #include <cstdlib>
 #include <cstring>
+#include <fstream>
 #include <string>
+#include <utility>
+#include <vector>
 
 #include "act/forces/forces_explicit_simd.h"
 #include "gromacs/utility/stringutil.h"
@@ -103,6 +108,165 @@ std::string processorSimd()
 #    endif
 #endif
     return simd.empty() ? "none" : simd.substr(1);
+}
+
+#if ACT_X86
+//! \return The vendor of an x86 processor, e.g. GenuineIntel or AuthenticAMD
+std::string x86Vendor()
+{
+    unsigned int eax, ebx, ecx, edx;
+    char         vendor[13] = { 0 };
+    if (__get_cpuid(0, &eax, &ebx, &ecx, &edx))
+    {
+        std::memcpy(vendor, &ebx, 4);
+        std::memcpy(vendor + 4, &edx, 4);
+        std::memcpy(vendor + 8, &ecx, 4);
+    }
+    return vendor;
+}
+
+//! \return The family of an x86 processor, including the extended family
+unsigned int x86Family()
+{
+    unsigned int eax = 0, ebx, ecx, edx;
+    if (!__get_cpuid(1, &eax, &ebx, &ecx, &edx))
+    {
+        return 0;
+    }
+    unsigned int family = (eax >> 8) & 0xF;
+    return family == 0xF ? family + ((eax >> 20) & 0xFF) : family;
+}
+#endif
+
+/*! \brief The maximum clock frequency
+ * \param[in]  name   Name of the processor
+ * \param[out] source How it was determined
+ * \return the frequency in GHz, or zero if not known
+ */
+double maxFrequency(const std::string &name, std::string *source)
+{
+#if defined(__linux__)
+    {
+        std::ifstream fmax("/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq");
+        double        khz = 0;
+        if (fmax >> khz && khz > 0)
+        {
+            *source = "maximum frequency from cpufreq";
+            return 1e-6*khz;
+        }
+    }
+#endif
+#if defined(__APPLE__)
+    uint64_t hz  = 0;
+    size_t   len = sizeof(hz);
+    if (sysctlbyname("hw.cpufrequency_max", &hz, &len, nullptr, 0) == 0 && hz > 0)
+    {
+        *source = "maximum frequency from sysctl";
+        return 1e-9*hz;
+    }
+    // Apple silicon does not report its frequency, the nominal maximum of
+    // the performance cores, the more specific names first
+    const std::vector<std::pair<std::string, double>> apple = {
+        { "Apple M4 Max", 4.51 }, { "Apple M4 Pro", 4.51 }, { "Apple M4", 4.4 },
+        { "Apple M3", 4.05 },
+        { "Apple M2 Ultra", 3.504 }, { "Apple M2 Max", 3.504 }, { "Apple M2 Pro", 3.504 }, { "Apple M2", 3.49 },
+        { "Apple M1 Ultra", 3.228 }, { "Apple M1 Max", 3.228 }, { "Apple M1 Pro", 3.228 }, { "Apple M1", 3.204 }
+    };
+    for (const auto &chip : apple)
+    {
+        if (name.compare(0, chip.first.size(), chip.first) == 0)
+        {
+            *source = "nominal maximum of the performance cores";
+            return chip.second;
+        }
+    }
+#endif
+    // Intel processor names end with the base frequency, e.g. @ 2.40GHz
+    auto at = name.rfind('@');
+    if (at != std::string::npos)
+    {
+        const char *begin = name.c_str() + at + 1;
+        char       *end   = nullptr;
+        double      ghz   = std::strtod(begin, &end);
+        if (end != begin && ghz > 0 && std::strncmp(end, "GHz", 3) == 0)
+        {
+            *source = "base frequency from the processor name";
+            return ghz;
+        }
+    }
+#if defined(__linux__)
+    // The current frequency, the highest of all cores
+    std::ifstream cpuinfo("/proc/cpuinfo");
+    std::string   line;
+    double        mhz = 0;
+    while (std::getline(cpuinfo, line))
+    {
+        if (line.compare(0, 7, "cpu MHz") == 0)
+        {
+            auto colon = line.find(':');
+            if (colon != std::string::npos)
+            {
+                mhz = std::max(mhz, std::strtod(line.c_str() + colon + 1, nullptr));
+            }
+        }
+    }
+    if (mhz > 0)
+    {
+        *source = "highest current frequency in /proc/cpuinfo";
+        return 1e-3*mhz;
+    }
+#endif
+    return 0;
+}
+
+/*! \brief Double precision floating point operations per cycle of one core
+ * Fused multiply-adds count as two operations, assuming two FMA units
+ * on x86 processors, four on Apple silicon and two on other ARM processors.
+ * \param[in]  name Name of the processor
+ * \param[out] simd The instructions and units it is based on
+ * \return the number of operations, or zero if not known
+ */
+int flopsPerCycle(const std::string &name, std::string *simd)
+{
+#if ACT_X86
+    (void) name;
+    __builtin_cpu_init();
+    if (__builtin_cpu_supports("avx512f"))
+    {
+        // Zen 4 executes 512-bit instructions in two halves
+        if (x86Vendor() == "AuthenticAMD" && x86Family() < 0x1A)
+        {
+            *simd = "AVX-512 executed as two 256-bit halves, two FMA units";
+            return 16;
+        }
+        *simd = "AVX-512, two 512-bit FMA units";
+        return 32;
+    }
+    if (__builtin_cpu_supports("avx2") && __builtin_cpu_supports("fma"))
+    {
+        *simd = "AVX2, two 256-bit FMA units";
+        return 16;
+    }
+    if (__builtin_cpu_supports("avx"))
+    {
+        *simd = "AVX, 256-bit addition and multiplication";
+        return 8;
+    }
+    *simd = "SSE2, 128-bit addition and multiplication";
+    return 4;
+#elif defined(__aarch64__)
+    if (name.compare(0, 5, "Apple") == 0)
+    {
+        *simd = "ARM-NEON, four 128-bit FMA units";
+        return 16;
+    }
+    *simd = "ARM-NEON, two 128-bit FMA units";
+    return 8;
+#else
+    (void) name;
+    *simd = "unknown instructions";
+    return 0;
+#endif
 }
 
 //! \return Whether the processor can run code for this instruction set
@@ -182,6 +346,40 @@ bool useExplicitSimd()
     return use;
 }
 
+PeakPerformance theoreticalPeakPerCore()
+{
+    PeakPerformance peak;
+    const char     *env = std::getenv("ACT_PEAK_GFLOPS");
+    if (env)
+    {
+        char   *end    = nullptr;
+        double  gflops = std::strtod(env, &end);
+        if (end != env && gflops > 0)
+        {
+            peak.gflops = gflops;
+            peak.basis  = "given by ACT_PEAK_GFLOPS";
+            return peak;
+        }
+    }
+    auto        name = processorName();
+    std::string simd, source;
+    int         fpc  = flopsPerCycle(name, &simd);
+    double      ghz  = maxFrequency(name, &source);
+    std::string cpu  = name.empty() ? "unknown processor" : name;
+    if (fpc > 0 && ghz > 0)
+    {
+        peak.gflops = fpc*ghz;
+        peak.basis  = gmx::formatString("%s, %d flop/cycle (%s) at %.2f GHz (%s)",
+                                        cpu.c_str(), fpc, simd.c_str(), ghz, source.c_str());
+    }
+    else
+    {
+        peak.basis  = gmx::formatString("%s, %s", cpu.c_str(),
+                                        ghz > 0 ? "unknown operations per cycle" : "unknown frequency");
+    }
+    return peak;
+}
+
 void writeSimdInformation(gmx::TextWriter *writer)
 {
     std::string name = processorName();
@@ -222,6 +420,15 @@ void writeSimdInformation(gmx::TextWriter *writer)
         status = gmx::formatString("%s, %zu conformations at once, in use", simdName(type), explicitSimdWidth());
     }
     writer->writeLine(gmx::formatString("Explicit SIMD:      %s", status.c_str()));
+    auto peak = theoreticalPeakPerCore();
+    if (peak.gflops > 0)
+    {
+        writer->writeLine(gmx::formatString("Peak per core:      %.2f GFlop/s double precision, %s", peak.gflops, peak.basis.c_str()));
+    }
+    else
+    {
+        writer->writeLine(gmx::formatString("Peak per core:      not known, %s", peak.basis.c_str()));
+    }
 }
 
 } // namespace alexandria

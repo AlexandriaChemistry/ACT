@@ -81,6 +81,10 @@ private:
     std::vector<double>      seconds_;
     //! Number of times each region was started
     std::vector<double>      calls_;
+    //! Floating point operations counted in each region, see addFlops
+    std::vector<double>      flops_;
+    //! Floating point operations counted outside of all regions
+    double                   untimedFlops_ = 0;
     //! The regions that have been started but not stopped, innermost last
     std::vector<Active>      active_;
 
@@ -112,6 +116,24 @@ public:
      */
     void reset();
 
+    /*! \brief Count floating point operations
+     * They are attributed to the innermost region that is active, such
+     * that the rate in a region follows from its time. See printTimings
+     * for what is counted.
+     * \param[in] flops The number of floating point operations
+     */
+    void addFlops(double flops)
+    {
+        if (active_.empty())
+        {
+            untimedFlops_ += flops;
+        }
+        else
+        {
+            flops_[active_.back().id] += flops;
+        }
+    }
+
     //! Returned by parent if no region is active
     static constexpr size_t none = static_cast<size_t>(-1);
 
@@ -126,6 +148,12 @@ public:
 
     //! \return how often each region was started
     const std::vector<double> &calls() const { return calls_; }
+
+    //! \return the floating point operations counted in each region
+    const std::vector<double> &flops() const { return flops_; }
+
+    //! \return the floating point operations counted outside of all regions
+    double untimedFlops() const { return untimedFlops_; }
 };
 
 //! \brief Times a region from construction until destruction
@@ -198,17 +226,32 @@ public:
     double wallTime() const;
 };
 
+//! \brief Theoretical floating point performance of one core
+struct PeakPerformance
+{
+    //! Double precision GFlop/s, zero if unknown
+    double      gflops = 0;
+    //! How it was determined
+    std::string basis;
+};
+
 /*! \brief Collect the timings of all processes and print them on the master
- * All processes in the world communicator have to call this.
+ * All processes in the world communicator have to call this. If floating
+ * point operations were counted, see Timings::addFlops, the floating point
+ * performance is printed as well, per core on average over the wall time
+ * of all processes and in the parts in which they were counted, and as a
+ * fraction of the theoretical performance if that is given.
  * \param[in]  cr       The communication record
  * \param[in]  tw       Where to print, only used on the master and may be nullptr
  * \param[in]  wallTime Wall time of this process in seconds
  * \param[out] jtree    If not nullptr, the same table is added to it on the master
+ * \param[in]  peak     Theoretical performance of one core, may be nullptr
  */
 void printTimings(const CommunicationRecord *cr,
                   gmx::TextWriter           *tw,
                   double                     wallTime,
-                  JsonTree                  *jtree = nullptr);
+                  JsonTree                  *jtree = nullptr,
+                  const PeakPerformance     *peak  = nullptr);
 
 } // namespace alexandria
 

@@ -66,6 +66,7 @@
 #include "act/utility/units.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/gmxfio.h"
+#include "act/forces/simd_information.h"
 #include "act/utility/timings.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/utility/fatalerror.h"
@@ -1117,8 +1118,9 @@ int train_ff(int argc, char *argv[])
     }
     phase.stop();
     auto json_file = opt.commRec()->isMaster() ? opt2fn_null("-json", filenms.size(), filenms.data()) : nullptr;
+    auto peak      = theoreticalPeakPerCore();
     printTimings(opt.commRec(), opt.commRec()->isMaster() ? opt.msgHandler()->tw() : nullptr,
-                 phase.wallTime(), json_file ? &jtree : nullptr);
+                 phase.wallTime(), json_file ? &jtree : nullptr, &peak);
     if (json_file)
     {
         jtree.write(json_file, true);

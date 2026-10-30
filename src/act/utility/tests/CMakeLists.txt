@@ -45,6 +45,7 @@ gmx_add_unit_test(
     regressionTest.cpp
     simpsonTest.cpp
     stringutilTest.cpp
+    timingsTest.cpp
     unitsTest.cpp
     # pseudo-library for code for alexandria
     )

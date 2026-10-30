@@ -37,6 +37,8 @@
 #ifndef ACT_FORCES_SIMD_INFORMATION_H
 #define ACT_FORCES_SIMD_INFORMATION_H
 
+#include "act/utility/timings.h"
+
 namespace gmx
 {
 class TextWriter;
@@ -52,6 +54,15 @@ namespace alexandria
  *         performance and results with and without explicit SIMD.
  */
 bool useExplicitSimd();
+
+/*! \brief The theoretical double precision floating point performance of one core
+ * It is the maximum clock frequency times the floating point operations
+ * per cycle of the widest SIMD instructions of the processor with fused
+ * multiply-add, assuming the usual number of units for the processor.
+ * The environment variable ACT_PEAK_GFLOPS, in GFlop/s, overrides it.
+ * \return the peak performance, with zero GFlop/s if it is not known
+ */
+PeakPerformance theoreticalPeakPerCore();
 
 /*! \brief Write the SIMD support of the processor and the code
  * \param[in] writer Where to write to, one line per item

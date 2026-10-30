@@ -2011,6 +2011,139 @@ static size_t potentialTimer(Potential mypot)
     return timers[ip];
 }
 
+/*! \brief Floating point operations of a potential for one conformation
+ * The operations are counted in the explicit SIMD kernels in
+ * forces_explicit_simd.cpp, the other potentials in the functions above.
+ * Each addition, subtraction, multiplication, division and square root
+ * counts as one operation and a fused multiply-add as two. Functions
+ * count as the operations of their SIMD implementation in simd_math.h:
+ * exp 26, erf with exp 82, acos 35 and atan2 32, and sin, cos and log
+ * as exp. Operations on parameters only, which the compiler moves out of
+ * the loop over conformations, and comparisons and selections are not
+ * counted. The Slater integrals are not counted.
+ * \param[in] mypot   The potential
+ * \param[in] entries The interactions
+ * \param[in] atoms   The atoms, for the charges
+ * \param[in] forces  Whether the forces are computed
+ * \return the number of operations
+ */
+static double interactionFlops(Potential                   mypot,
+                               TopologyEntryRange          entries,
+                               const std::vector<ActAtom> &atoms,
+                               bool                        forces)
+{
+    // Energy and the additional operations for the forces
+    struct Cost
+    {
+        double energy, force;
+    };
+    // The distance of a pair, and spreading its force over the atoms
+    const Cost pair     = { 9, 12 };
+    auto       constant = [&](Cost kernel, bool isPair)
+    {
+        double n = kernel.energy + (forces ? kernel.force : 0);
+        if (isPair)
+        {
+            n += pair.energy + (forces ? pair.force : 0);
+        }
+        return n*entries.size();
+    };
+    switch (mypot)
+    {
+    case Potential::LJ12_6:                 return constant({ 8, 4 }, true);
+    case Potential::LJ12_6_4:               return constant({ 10, 6 }, true);
+    case Potential::LJ8_6:                  return constant({ 8, 4 }, true);
+    case Potential::LJ14_7:                 return constant({ 23, 12 }, true);
+    case Potential::BORN_MAYER:             return constant({ 32, 3 }, true);
+    case Potential::SLATER_ISA:             return constant({ 37, 8 }, true);
+    case Potential::MACDANIEL_SCHMIDT:      return constant({ 32, 3 }, true);
+    case Potential::WANG_BUCKINGHAM:        return constant({ 42, 10 }, true);
+    case Potential::BUCKINGHAM:             return constant({ 37, 5 }, true);
+    case Potential::TANG_TOENNIES:          return constant({ 111, 29 }, true);
+    case Potential::TT2b:                   return constant({ 111, 29 }, true);
+    case Potential::SLATER_ISA_TT:          return constant({ 116, 34 }, true);
+    case Potential::GENERALIZED_BUCKINGHAM: return constant({ 100, 19 }, true);
+    case Potential::HARMONIC_BONDS:         return constant({ 8, 2 }, true);
+    case Potential::CUBIC_BONDS:            return constant({ 10, 6 }, true);
+    case Potential::MORSE_BONDS:            return constant({ 35, 4 }, true);
+    case Potential::HUA_BONDS:              return constant({ 37, 9 }, true);
+    case Potential::HARMONIC_ANGLES:        return constant({ 67, 47 }, false);
+    case Potential::LINEAR_ANGLES:          return constant({ 23, 18 }, false);
+    case Potential::UREY_BRADLEY_ANGLES:    return constant({ 77, 70 }, false);
+    case Potential::HARMONIC_DIHEDRALS:     return constant({ 94, 59 }, false);
+    case Potential::PROPER_DIHEDRALS:       return constant({ 116, 98 }, false);
+    case Potential::POSITION_RESTRAINT:     return constant({ 10, 8 }, false);
+    case Potential::COULOMB_POINT:
+    case Potential::COULOMB_GAUSSIAN:
+        {
+            // The inverse distance, and per pair of charges, as in the
+            // Coulomb kernel, see Coulomb::prepare
+            double n = 0;
+            for (const auto &b : entries)
+            {
+                const TopologyEntry &entry   = *b.operator->();
+                auto                &params  = entry.params();
+                const auto          &atomi   = atoms[entry.atomIndices()[0]];
+                const auto          &atomj   = atoms[entry.atomIndices()[1]];
+                const double         qi[2]   = { atomi.charge(), atomi.chargeVS() };
+                const double         qj[2]   = { atomj.charge(), atomj.chargeVS() };
+                const double         zi[2]   = { params[coulZETA], atomi.zetaVS() };
+                const double         zj[2]   = { params[coulZETA2], atomj.zetaVS() };
+                n += pair.energy + 2 + (forces ? pair.force : 0);
+                for (int a = 0; a < 2; a++)
+                {
+                    for (int c = 0; c < 2; c++)
+                    {
+                        if (a + c > 0 && qi[a]*qj[c] == 0)
+                        {
+                            continue;
+                        }
+                        bool gaussian = zi[a] != 0 || zj[c] != 0;
+                        n += gaussian ? 87 : 2;
+                        if (forces)
+                        {
+                            n += (gaussian ? 6 : 3) + (a + c > 0 ? 1 : 0);
+                        }
+                    }
+                }
+            }
+            return n;
+        }
+    case Potential::POLARIZATION:
+        {
+            // More with hyperpolarization
+            double n = 0;
+            for (const auto &b : entries)
+            {
+                const TopologyEntry &entry = *b.operator->();
+                bool hyper = entry.params()[polFCHYPER] > 0;
+                n += pair.energy + 2 + (hyper ? 6 : 0);
+                if (forces)
+                {
+                    n += pair.force + (hyper ? 4 : 0);
+                }
+            }
+            return n;
+        }
+    case Potential::FOURIER_DIHEDRALS:
+        {
+            // Depends on the number of terms
+            double n = 0;
+            for (const auto &b : entries)
+            {
+                const TopologyEntry &entry = *b.operator->();
+                double nterm = std::min(entry.params().size(), static_cast<size_t>(fdihNR));
+                double extra = std::max(nterm - 1, 0.0);
+                n += 63 + 3*extra + (forces ? 59 + 2*extra : 0);
+            }
+            return n;
+        }
+    default:
+        // Not counted, such as the Slater integrals
+        return 0;
+    }
+}
+
 /*! \brief Keep the energies of a potential, to use them again
  * \param[in]  energies   The energies, as passed to storeEnergies
  * \param[in]  size       Number of energies
@@ -2069,6 +2202,8 @@ static inline void calcSome(MsgHandler                 *msghandler,
     // Store the energies and sum them into the potential energy.
     storeEnergies(mypot, confs.size(), confs.data(), cener, energies.data(), MAX_ENER, 1);
     keepEnergies(energies.data(), energies.size(), MAX_ENER, 1, cached);
+    // The forces are always computed here
+    Timings::instance().addFlops(confs.size()*interactionFlops(mypot, topentries, atoms, true));
 }
 
 /*! \brief Compute one potential for all conformations
@@ -2235,6 +2370,8 @@ static bool calcConformations(Potential                        mypot,
     }
     storeEnergies(mypot, ca->nconf, ca->conformations().data(), cener, energies.data(), 1, ca->stride);
     keepEnergies(energies.data(), energies.size(), 1, ca->stride, cached);
+    // The padding conformations are computed as well, but not counted
+    Timings::instance().addFlops(ca->nconf*interactionFlops(mypot, topentries, atoms, forces));
     return true;
 }
 

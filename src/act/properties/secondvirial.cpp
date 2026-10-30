@@ -50,6 +50,7 @@
 #include "act/properties/princ.h"
 #include "act/topology/actmol.h"
 #include "act/utility/jsontree.h"
+#include "act/forces/simd_information.h"
 #include "act/utility/timings.h"
 #include "act/utility/memory_check.h"
 #include "act/utility/stringutil.h"
@@ -697,6 +698,12 @@ void ReRunner::runB2(CommunicationRecord         *cr,
             {
                 msghandler->write("");
             }
+            // Per particle the center of mass and the force 10, the coordinates
+            // relative to it 3 and the torques 54, per molecule the normalization,
+            // the moments of inertia and the squared force 11, and the
+            // distance between the centers of mass 9. The principal axes
+            // are not counted.
+            timings.addFlops(ndim*(67.0*(natom[0] + natom[1]) + 2*11 + 9));
             timings.stop(torqueTimer);
             // Now we have computed energies, forces and torques for all
             // dimers of this orientation. Time to update the intermediate structure
@@ -945,8 +952,9 @@ int b2(int argc, char *argv[])
     }
     phase.stop();
     // The timings go into the json file, or else only into the log file
+    auto peak = theoreticalPeakPerCore();
     printTimings(&cr, cr.isMaster() ? msghandler.tw() : nullptr, phase.wallTime(),
-                 writeJson ? &jtree : nullptr);
+                 writeJson ? &jtree : nullptr, &peak);
     if (writeJson)
     {
         jtree.write("b2.json", json);

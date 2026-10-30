@@ -39,6 +39,7 @@
 
 #include <cmath>
 #include <map>
+#include <tuple>
 #include <string>
 #include <vector>
 
@@ -50,6 +51,7 @@
 #include "act/forcefield/potential.h"
 #include "act/import/import.h"
 #include "act/topology/actmol.h"
+#include "act/utility/timings.h"
 #include "gromacs/math/vectypes.h"
 #include "testutils/testfilemanager.h"
 
@@ -607,6 +609,45 @@ TEST_F(ForceComputerIntegrationTest, ComputeStatisticsAreTrackedDimerHyper)
     EXPECT_EQ(0u, fc.numEvaluations());
     EXPECT_EQ(0u, fc.numShellIterations());
     EXPECT_EQ(0u, fc.numShellConvergenceFailed());
+}
+
+// Test: The floating point operations of the potentials are counted for
+// each interaction, see interactionFlops in forces_simd.cpp
+TEST_F(ForceComputerIntegrationTest, CountsFlops)
+{
+    std::string ffName("ACS-v3fds");
+    auto        pd = getForceField(ffName);
+    ASSERT_NE(nullptr, pd);
+    ASSERT_FALSE(pd->polarizable());
+    ACTMol mol;
+    ASSERT_TRUE(setupMolecule(&msghandler_, ffName, "water_dimer", &mol));
+    auto        coords = mol.xOriginal();
+    const auto *top    = mol.topology();
+    ForceComputer fc;
+    fc.constructVsiteCoordinates(top, &coords);
+    std::vector<gmx::RVec>            forces(coords.size());
+    std::map<InteractionType, double> energies;
+    auto &timings = Timings::instance();
+    timings.reset();
+    // One conformation, with forces
+    fc.computeOnce(&msghandler_, pd, top, &coords, &forces, &energies, { 0, 0, 0 });
+    EXPECT_TRUE(msghandler_.ok());
+    // Per pair the distance 9 and the forces on the atoms 12, the kernel
+    // for the energy and its force
+    const std::vector<std::tuple<std::string, InteractionType, double>> expected = {
+        { "Potential HARMONIC_BONDS",  InteractionType::BONDS,  9 + 12 + 8 + 2   },
+        { "Potential HARMONIC_ANGLES", InteractionType::ANGLES, 67 + 47          },
+        { "Potential LJ14_7",          InteractionType::VDW,    9 + 12 + 23 + 12 }
+    };
+    for (const auto &e : expected)
+    {
+        auto itype = std::get<1>(e);
+        ASSERT_TRUE(top->hasEntry(itype)) << std::get<0>(e);
+        double n = top->entry(itype).size();
+        EXPECT_GT(n, 0);
+        EXPECT_EQ(std::get<2>(e)*n, timings.flops()[timings.index(std::get<0>(e))]) << std::get<0>(e);
+    }
+    timings.reset();
 }
 
 }  // namespace
