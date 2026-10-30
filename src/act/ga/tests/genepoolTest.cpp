@@ -37,6 +37,8 @@
 #include <gtest/gtest.h>
 
 #include "act/ga/gene_pool.h"
+#include "gromacs/utility/basenetwork.h"
+#include "gromacs/utility/stringutil.h"
 
 #include "testutils/cmdlinetest.h"
 #include "testutils/mpitest.h"
@@ -97,7 +99,8 @@ protected:
             Genome g(b, fm);
             gp.addGenome(g);
         }
-        std::string fileName("gptest.csv");
+        // Each MPI rank writes its own file
+        std::string fileName = fileManager().getTemporaryFilePath(gmx::formatString("gptest%d.csv", gmx_node_rank()));
         gp.write(fileName);
         GenePool gp2;
         gp2.read(fileName);
