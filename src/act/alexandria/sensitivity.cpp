@@ -34,6 +34,8 @@
 
 #include "sensitivity.h"
 
+#include <algorithm>
+#include <cmath>
 #include <cstdlib>
 #include <map>
 #include <string>
@@ -90,6 +92,18 @@ void Sensitivity::computeForceConstants(gmx::TextWriter *tw)
     }
 }
 
+bool Sensitivity::checkConvergence(double lower, double upper, double tolerance)
+{
+    checked_   = true;
+    converged_ = false;
+    if (a_ > 0 && original_ < p_.size())
+    {
+        double pmin = std::clamp(-b_/(2.0*a_), lower, upper);
+        converged_  = std::abs(p_[original_] - pmin) <= tolerance;
+    }
+    return converged_;
+}
+
 void Sensitivity::print(gmx::TextWriter      *tw,
                         alexandria::JsonTree *jtree,
                         const std::string    &index,
@@ -116,6 +130,10 @@ void Sensitivity::print(gmx::TextWriter      *tw,
             tw->writeStringFormatted("    pmin %g chi2min %g (estimate based on parabola)\n",
                                      p_min, chi2_min);
         }
+        if (checked_)
+        {
+            tw->writeStringFormatted("    %s\n", converged_ ? "converged" : "not converged");
+        }
     }
     if (jtree)
     {
@@ -133,6 +151,10 @@ void Sensitivity::print(gmx::TextWriter      *tw,
         {
             abc.addObject("p_min", p_min);
             abc.addObject("chi2_min", chi2_min);
+        }
+        if (checked_)
+        {
+            abc.addObject("converged", converged_ ? "yes" : "no");
         }
         jtree->addObject(abc);
     }

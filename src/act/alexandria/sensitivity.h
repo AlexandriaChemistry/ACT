@@ -73,6 +73,10 @@ private:
     double a_ = 0, b_ = 0, c_ = 0;
     //! \brief Index of the point with the original parameter value
     size_t original_ = 1;
+    //! \brief Whether checkConvergence was called
+    bool   checked_   = false;
+    //! \brief Whether the parameter is converged, see checkConvergence
+    bool   converged_ = false;
 public:
     //! \brief Constructor
     Sensitivity() {}
@@ -98,6 +102,19 @@ public:
      * \param[in] tw A text writer
      */
     void computeForceConstants(gmx::TextWriter *tw);
+
+    /*! \brief Determine whether the original parameter value is converged
+     * This is the case if the parabola curves upwards, and the parameter
+     * is within the tolerance of the minimum of the parabola. The minimum
+     * is limited to the bounds, such that a parameter at a bound is
+     * converged if the minimum is beyond that bound.
+     * Call computeForceConstants first.
+     * \param[in] lower     Lower bound of the parameter
+     * \param[in] upper     Upper bound of the parameter
+     * \param[in] tolerance Largest distance to the minimum
+     * \return whether the parameter is converged
+     */
+    bool checkConvergence(double lower, double upper, double tolerance);
 
     //! Return the constants after computation
     double a() const { return a_; }

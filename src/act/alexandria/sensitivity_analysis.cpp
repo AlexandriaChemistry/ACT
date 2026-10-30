@@ -44,6 +44,12 @@
 namespace alexandria
 {
 
+/*! \brief Fraction of the range of a parameter within which it has to be
+ * from the minimum of the parabola to be converged, see
+ * Sensitivity::checkConvergence
+ */
+static const double convergenceFraction = 0.05;
+
 bool SensitivityAnalysis::run(MsgHandler           *msghandler,
                               StaticIndividualInfo *sii,
                               ACMFitnessComputer   *fitComp,
@@ -167,7 +173,9 @@ bool SensitivityAnalysis::run(MsgHandler           *msghandler,
             s.add(pstore, chi2_0, true);
         }
         s.computeForceConstants(tw);
-        minimum = minimum && s.a() >= 0;
+        double range = upperBound[i] - lowerBound[i];
+        bool   conv  = s.checkConvergence(lowerBound[i], upperBound[i], convergenceFraction*range);
+        minimum      = minimum && conv;
         // Compute dimensionless force constant, or zero if undefined
         double fc = 0;
         if (pstore != 0)
