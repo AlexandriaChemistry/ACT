@@ -41,3 +41,15 @@ install(PROGRAMS view_fitness DESTINATION bin)
 install(PROGRAMS donchev2molprop DESTINATION bin)
 install(PROGRAMS ncia2molprop DESTINATION bin)
 install(PROGRAMS actgui DESTINATION bin)
+
+# Tests of the OpenMM interface, they are skipped if OpenMM cannot be imported
+if (BUILD_TESTING AND GMX_BUILD_UNITTESTS)
+    find_package(Python3 COMPONENTS Interpreter QUIET)
+    if (Python3_Interpreter_FOUND)
+        add_test(NAME ActOpenMMTest
+                 COMMAND ${Python3_EXECUTABLE} -m unittest -v test_act_openmm
+                 WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/tests)
+        set_tests_properties(ActOpenMMTest PROPERTIES
+                             ENVIRONMENT "ACT_ALEXANDRIA=$<TARGET_FILE:alexandria>")
+    endif()
+endif()

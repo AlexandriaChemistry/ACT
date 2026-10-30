@@ -35,15 +35,18 @@ class VdW(Enum):
     TT2b   = 6
     LJ12_6_4 = 7
 
-# Map strings to VdW entries.
+# Map strings to VdW entries. The dispersionTail is whether the potential
+# decays as a power of the distance, such that the long range correction of
+# OpenMM, which integrates it beyond the cut-off, applies, see
+# useLongRangeCorrection.
 VdWDict = {
-    'LJ8_6':  { "func": VdW.LJ8_6, "params": [ "sigma", "epsilon" ] },
-    'LJ12_6': { "func": VdW.LJ12_6, "params": [ "sigma", "epsilon" ] },
-    'LJ12_6_4': { "func": VdW.LJ12_6_4, "params": [ "sigma", "epsilon", "gamma" ] },
-    'LJ14_7': { "func": VdW.LJ14_7, "params": [ "sigma", "epsilon", "gamma", "delta" ] },
-    'WANG_BUCKINGHAM':  { "func": VdW.WBHAM, "params": [ "sigma", "epsilon", "gamma" ] },
-    'GENERALIZED_BUCKINGHAM': { "func": VdW.GBHAM, "params": [ "rmin",  "epsilon", "gamma", "delta" ] },
-    'TT2b': { "func": VdW.TT2b, "params": [ "Att2b", "bExchtt2b", "bDisptt2b", "c6tt2b", "c8tt2b", "c10tt2b" ] }
+    'LJ8_6':  { "func": VdW.LJ8_6, "params": [ "sigma", "epsilon" ], "dispersionTail": True },
+    'LJ12_6': { "func": VdW.LJ12_6, "params": [ "sigma", "epsilon" ], "dispersionTail": True },
+    'LJ12_6_4': { "func": VdW.LJ12_6_4, "params": [ "sigma", "epsilon", "gamma" ], "dispersionTail": True },
+    'LJ14_7': { "func": VdW.LJ14_7, "params": [ "sigma", "epsilon", "gamma", "delta" ], "dispersionTail": True },
+    'WANG_BUCKINGHAM':  { "func": VdW.WBHAM, "params": [ "sigma", "epsilon", "gamma" ], "dispersionTail": True },
+    'GENERALIZED_BUCKINGHAM': { "func": VdW.GBHAM, "params": [ "rmin",  "epsilon", "gamma", "delta" ], "dispersionTail": True },
+    'TT2b': { "func": VdW.TT2b, "params": [ "Att2b", "bExchtt2b", "bDisptt2b", "c6tt2b", "c8tt2b", "c10tt2b" ], "dispersionTail": True }
 }
 
 # Make reverse map as well.
@@ -454,6 +457,10 @@ class ActOpenMMSim:
         # Open log file and pass it on.
         self.txt = open(self.txtfile, "w")
         self.sim_params.setText(self.txt)
+        if "useLongRangeCorrection" in self.sim_params.params:
+            msg = ("WARNING: useLongRangeCorrection in %s is ignored, please use useDispersionCorrection, which applies to all van der Waals potentials.\n" % self.datfile)
+            self.txt.write(msg)
+            sys.stderr.write(msg)
         # Default is 12-6 + Point charges, may be updated later.
         self.qdist = dictQdist[qDist.Point]
         self.vdw   = dictVdW[VdW.LJ12_6]
@@ -1001,18 +1008,38 @@ class ActOpenMMSim:
         elif not self.useOpenMMForce:
             force.setNonbondedMethod(openmm.CustomNonbondedForce.CutoffPeriodic)
 
-    def do_force_settings(self, force):
+    def useLongRangeCorrection(self)->bool:
+        """
+        Whether the custom van der Waals force gets the long range correction
+        of OpenMM, which integrates the potential beyond the cut-off assuming
+        a uniform density. This requires useDispersionCorrection, a periodic
+        system with a cut-off and a potential that decays as a power of the
+        distance. With LJPME the dispersion beyond the cut-off is computed
+        in reciprocal space already.
+        """
+        return (self.sim_params.getBool('useDispersionCorrection', False) and
+                self.nonbondedMethod in [ CutoffPeriodic, Ewald, PME ] and
+                VdWDict[self.vdw].get("dispersionTail", False))
+
+    def do_force_settings(self, force, longRangeCorrection:bool=False):
+        """
+        Settings of a nonbonded force.
+        The native NonbondedForce gets the dispersion correction if
+        useDispersionCorrection is set, a CustomNonbondedForce the long
+        range correction if longRangeCorrection is True. That should be the
+        case only for the van der Waals force, see useLongRangeCorrection,
+        not for instance for electrostatics.
+        """
         force.setCutoffDistance(self.nonbondedforce.getCutoffDistance())
         useSwitching = self.sim_params.getBool('useSwitchingFunction', False)
         force.setUseSwitchingFunction(useSwitching)
         if useSwitching:
             force.setSwitchingDistance(self.sim_params.getFloat('SwitchDistance', 0))
 
-        useDispCorr = self.sim_params.getBool('useDispersionCorrection', False)
-        if hasattr(force, 'setUseDispersionCorrection'):
-            force.setUseDispersionCorrection(useDispCorr)
-        elif hasattr(force, 'setLongRangeCorrection'):
-            force.setUseLongRangeCorrection(useDispCorr)
+        if isinstance(force, openmm.NonbondedForce):
+            force.setUseDispersionCorrection(self.sim_params.getBool('useDispersionCorrection', False))
+        elif isinstance(force, openmm.CustomNonbondedForce):
+            force.setUseLongRangeCorrection(longRangeCorrection)
         if hasattr(force, 'setReactionFieldDielectric'):
             if 'dielectricConstant' in self.sim_params.params:
                 force.setReactionFieldDielectric(self.sim_params.getFloat('dielectricConstant'))
@@ -1104,12 +1131,14 @@ class ActOpenMMSim:
         if self.makeVdWFunc():
             # General settings for custom non-bonded potentials, if they are present!
             self.do_force_settings(self.nonbondedforce)
-            for forcenm in [ "custom_vdw", "custom_coulomb" ]:
+            # Only the van der Waals force can get a long range correction
+            for forcenm, longRange in [ ( "custom_vdw", self.useLongRangeCorrection() ),
+                                        ( "custom_coulomb", False ) ]:
                 if hasattr(self, forcenm):
                     # This is now extremely ugly code
                     force = getattr(self, forcenm)
                     self.set_nb_method(force)
-                    self.do_force_settings(force)
+                    self.do_force_settings(force, longRange)
                     # Finally add it to the system forces. Well done!
                     self.add_force_group(force, True)
                     self.system.addForce(force)
