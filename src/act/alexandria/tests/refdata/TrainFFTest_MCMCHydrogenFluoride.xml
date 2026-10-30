@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Parameters Name="Best">
+    <Real Name="delta f">0.76769799999999999</Real>
+    <Real Name="epsilon f">4.0758190000000001</Real>
+    <Real Name="chi f_z">19.330762</Real>
+    <Real Name="charge v2f2">-0.13580999999999999</Real>
+    <Real Name="gamma f">0.44588899999999998</Real>
+    <Real Name="sigma f">0.34268799999999999</Real>
+    <Real Name="delta hf">1.1417809999999999</Real>
+    <Real Name="epsilon hf">0</Real>
+    <Real Name="gamma hf">0.61333099999999996</Real>
+    <Real Name="sigma hf">0.086336999999999997</Real>
+    <Real Name="vs2a f_b~hf_b!v2f1">-0.71549200000000002</Real>
+    <Real Name="vs2a f_b~hf_b!v2f2">-0.352466</Real>
+  </Parameters>
+  <Statistics Name="Train">
+    <Real Name="ALLELEC RMSD">2843.9087549999999</Real>
+    <Real Name="DISPERSION RMSD">40.835209999999996</Real>
+    <Real Name="EXCHANGE RMSD">28.479037000000002</Real>
+    <Real Name="Potential energy RMSD">374.98307599999998</Real>
+    <Real Name="RMS Force RMSD">5193.8922110000003</Real>
+    <Real Name="dipole RMSD">7.6728199999999998</Real>
+    <Real Name="quadrupole RMSD">4.2796750000000001</Real>
+  </Statistics>
+  <Real Name="Train chi2">1148070</Real>
+</ReferenceData>

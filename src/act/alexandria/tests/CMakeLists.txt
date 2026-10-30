@@ -51,7 +51,20 @@ gmx_add_unit_test(
     mcmcmutatorTest.cpp
     sensitivityTest.cpp
     sensitivityAnalysisTest.cpp
+    trainffTest.cpp
     # pseudo-library for code for alexandria
     $<TARGET_OBJECTS:actLib>
     )
 target_link_libraries(${exename} libactgromacs ${GMX_EXTRA_LIBRARIES} ${GMX_EXE_LINKER_FLAGS})
+
+gmx_add_mpi_unit_test(
+    AlexandriaMpiTests
+    alexandria-mpi-test 4
+    # files with code for tests
+    trainffMpiTest.cpp
+    # pseudo-library for code for alexandria
+    $<TARGET_OBJECTS:actLib>
+    )
+if (TARGET alexandria-mpi-test)
+    target_link_libraries(alexandria-mpi-test libactgromacs ${GMX_EXTRA_LIBRARIES} ${GMX_EXE_LINKER_FLAGS})
+endif()
