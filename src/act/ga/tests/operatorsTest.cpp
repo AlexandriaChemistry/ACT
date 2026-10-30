@@ -220,6 +220,17 @@ void checkProbabilities(const std::vector<Genome> &pop, bool strict = true)
     }
 }
 
+// Test: The probability is proportional to the inverse fitness
+TEST(ProbabilityComputerTest, Fitness)
+{
+    auto pop = makePopulation({ 3, 1, 4, 2 });
+    FitnessProbabilityComputer pc(pop.size());
+    pc.compute(&pop, 0);
+    checkProbabilities(pop);
+    double ratio = (1/(1e-4 + 1.0))/(1/(1e-4 + 4.0));
+    EXPECT_NEAR(ratio, pop[1].probability()/pop[2].probability(), 1e-12);
+}
+
 // Test: The Boltzmann probability at constant temperature
 TEST(ProbabilityComputerTest, Boltzmann)
 {
@@ -277,6 +288,80 @@ TEST(ProbabilityComputerTest, Rank)
     }
 }
 
+// Test: The generation terminator stops at the maximum number of generations
+TEST(TerminatorTest, Generation)
+{
+    GenerationTerminator term(5);
+    for (int generation = 0; generation < 5; generation++)
+    {
+        EXPECT_FALSE(term.terminate(nullptr, nullptr, generation, false)) << generation;
+    }
+    EXPECT_TRUE(term.terminate(nullptr, nullptr, 5, false));
+}
+
+// Test: The test set terminator stops if the test fitness of the best
+// genome does not improve, and an improvement resets the count
+TEST(TerminatorTest, TestGen)
+{
+    GenePool pool;
+    pool.addGenome(Genome({ 1.0 }, { { iMolSelect::Train, 1 }, { iMolSelect::Test, 10 } }));
+    TestGenTerminator term(3);
+    auto setTest = [&pool](double fitness)
+    {
+        pool.genomePtr(0)->setFitness(iMolSelect::Test, fitness);
+    };
+    // The first test fitness is an improvement
+    EXPECT_FALSE(term.terminate(nullptr, &pool, 0, false));
+    EXPECT_FALSE(term.terminate(nullptr, &pool, 1, false));
+    EXPECT_FALSE(term.terminate(nullptr, &pool, 2, false));
+    setTest(9);
+    EXPECT_FALSE(term.terminate(nullptr, &pool, 3, false));
+    // Worse is not better
+    setTest(11);
+    EXPECT_FALSE(term.terminate(nullptr, &pool, 4, false));
+    EXPECT_FALSE(term.terminate(nullptr, &pool, 5, false));
+    EXPECT_TRUE(term.terminate(nullptr, &pool, 6, false));
+}
+
+// Test: The curvature terminator stops after a number of successive minima
+TEST(TerminatorTest, Curvature)
+{
+    CurvatureTerminator term(2);
+    EXPECT_FALSE(term.terminate(nullptr, nullptr, 0, true));
+    EXPECT_FALSE(term.terminate(nullptr, nullptr, 1, false));
+    EXPECT_FALSE(term.terminate(nullptr, nullptr, 2, true));
+    EXPECT_TRUE(term.terminate(nullptr, nullptr, 3, true));
+}
+
+//! Initializer that sets all bases to a fixed value
+class MarkInitializer : public Initializer
+{
+public:
+    //! The value to set
+    static constexpr double mark = -42;
+
+    Individual *initialize() override { return nullptr; }
+
+    void randomizeGenome(Genome *genome) override
+    {
+        for (size_t j = 0; j < genome->nBase(); j++)
+        {
+            genome->setBase(j, mark);
+        }
+    }
+};
+
+//! \return the number of genomes that were reinitialized
+int countMarked(const GenePool &pool)
+{
+    int n = 0;
+    for (const auto &g : pool.genePool())
+    {
+        n += (g.base(0) == MarkInitializer::mark) ? 1 : 0;
+    }
+    return n;
+}
+
 //! Make a pool with distinct genomes
 GenePool makePool(size_t popSize)
 {
@@ -286,6 +371,34 @@ GenePool makePool(size_t popSize)
         pool.addGenome({ static_cast<double>(i), 2.0*i }, i);
     }
     return pool;
+}
+
+// Test: The catastrophe penalizer reinitializes a fraction of the
+// population at regular intervals only
+TEST(CatastrophePenalizerTest, IntervalAndFraction)
+{
+    MarkInitializer init;
+    size_t          popSize = 10;
+    auto            pool    = makePool(popSize);
+    CatastrophePenalizer pen(1332, 3, 0.3, &init, popSize);
+    for (int generation : { 0, 1, 2 })
+    {
+        EXPECT_FALSE(pen.penalize(nullptr, &pool, generation)) << generation;
+    }
+    EXPECT_EQ(0, countMarked(pool));
+    EXPECT_TRUE(pen.penalize(nullptr, &pool, 3));
+    EXPECT_EQ(3, countMarked(pool));
+    // The other genomes are not changed
+    for (size_t i = 0; i < popSize; i++)
+    {
+        auto &g = pool.genome(i);
+        if (g.base(0) != MarkInitializer::mark)
+        {
+            EXPECT_EQ(static_cast<double>(i), g.base(0));
+            EXPECT_EQ(2.0*i, g.base(1));
+        }
+    }
+    EXPECT_FALSE(pen.penalize(nullptr, &pool, 4));
 }
 
 //! Terminator and penalizer that count how often they were asked
