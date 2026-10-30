@@ -32,12 +32,22 @@
  */
 #include <cmath>
 
+#include <cstdio>
 #include <map>
+#include <string>
+#include <vector>
 
 #include <gtest/gtest.h>
 
 #include "act/alexandria/allbondeds.h"
+#include "act/alexandria/molselect.h"
+#include "act/basics/msg_handler.h"
 #include "act/forcefield/forcefield_utils.h"
+#include "act/forcefield/forcefield_xml.h"
+#include "act/molprop/molprop_xml.h"
+#include "act/topology/actmol.h"
+#include "gromacs/utility/stringstream.h"
+#include "gromacs/utility/textwriter.h"
 
 #include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"
@@ -104,6 +114,87 @@ TEST_F (AllBondedsTest, OneBondedStats){
 TEST_F (AllBondedsTest, OneBondedStatsEmpty){
     std::vector<double> xx;
     runOBstats(xx);
+}
+
+/* Test: The geometries are extracted as in geometry_ff for molecules with
+ * virtual sites. The topologies are made without parameters, such that
+ * the positions of the virtual sites cannot be constructed, see
+ * https://github.com/AlexandriaChemistry/ACT/issues/506
+ */
+TEST(AllBondedsVsiteTest, ExtractGeometries)
+{
+    MsgHandler msghandler;
+    msghandler.setPrintLevel(ACTStatus::Warning);
+    gmx::test::TestFileManager fileManager;
+    ForceField pd;
+    readForceField(fileManager.getInputFilePath("../../forces/tests/ACS-pg-vs3.xml"), &pd);
+    // As in geometry_ff, such that there are no bonds to shells
+    pd.setPolarizable(false);
+    std::vector<MolProp> mps;
+    MolPropRead(&msghandler, fileManager.getInputFilePath("../../molprop/tests/molprop.xml").c_str(), &mps);
+    auto  selName = fileManager.getTemporaryFilePath("selection.dat");
+    FILE *fp      = fopen(selName.c_str(), "w");
+    for(const char *mol : { "1-butanol", "acetone", "water" })
+    {
+        fprintf(fp, "%s|Train\n", mol);
+    }
+    fclose(fp);
+    MolSelect gms;
+    gms.read(selName.c_str());
+
+    AllBondeds          bondeds;
+    std::vector<ACTMol> actmols;
+    EXPECT_NO_THROW(bondeds.extractGeometries(&msghandler, &mps, &actmols, &pd, gms));
+    EXPECT_TRUE(msghandler.ok());
+    ASSERT_EQ(3u, actmols.size());
+    // The molecules have virtual sites without parameters
+    size_t nvsite = 0;
+    for(auto &mol : actmols)
+    {
+        size_t molvsite = 0;
+        for(const auto &entry : mol.topology()->entries())
+        {
+            if (isVsite(entry.first))
+            {
+                for(const auto &vs : entry.second)
+                {
+                    EXPECT_TRUE(vs->params().empty());
+                    molvsite += 1;
+                }
+            }
+        }
+        nvsite += molvsite;
+        // Their positions cannot be constructed, without them the atoms
+        // are at their positions in the experiment.
+        auto xexp = mol.experimentConst()[0].getCoordinates();
+        if (molvsite > 0)
+        {
+            EXPECT_THROW(mol.experCoords(xexp), gmx::InternalError) << mol.getMolname();
+        }
+        std::vector<gmx::RVec> x;
+        EXPECT_NO_THROW(x = mol.experCoords(xexp, false)) << mol.getMolname();
+        size_t j = 0;
+        for(size_t i = 0; i < x.size(); i++)
+        {
+            if (ActParticle::Atom == mol.topology()->atoms()[i].pType())
+            {
+                for(int m = 0; m < DIM; m++)
+                {
+                    EXPECT_EQ(xexp[j][m], x[i][m]);
+                }
+                j += 1;
+            }
+        }
+        EXPECT_EQ(xexp.size(), j);
+    }
+    EXPECT_GT(nvsite, 0u);
+    // Bonds and angles were found
+    gmx::StringOutputStream stream;
+    gmx::TextWriter         tw(&stream);
+    bondeds.writeSummary(&tw);
+    auto summary = stream.toString();
+    EXPECT_NE(std::string::npos, summary.find("BONDS")) << summary;
+    EXPECT_NE(std::string::npos, summary.find("ANGLES")) << summary;
 }
 
 }
