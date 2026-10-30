@@ -166,67 +166,105 @@ bool MolProp::validate(MsgHandler *msghandler)
                     gmx::formatString("Molecule %s has %zu experiment(s).",
                                       getMolname().c_str(), exper_.size()));
 
-    // Collect experiments that contain atoms
-    std::vector<const Experiment *> expWithAtoms;
-    for (const auto &ex : exper_)
+    // The reference is the experiment from which the topology is
+    // generated, see Topology::GenerateAtoms, or else the first one with atoms.
+    const Experiment *ref = nullptr;
+    for (auto jt : { JobType::OPT, JobType::TOPOLOGY, JobType::SP })
     {
-        if (ex.NAtom() > 0)
+        ref = findExperimentConst(jt);
+        if (ref)
         {
-            expWithAtoms.push_back(&ex);
+            break;
         }
     }
-
-    // Check that all experiments with atoms have the same atom order
-    if (expWithAtoms.size() > 1)
+    if (!ref || ref->NAtom() == 0)
     {
-        const auto &refAtoms = expWithAtoms[0]->calcAtomConst();
-        for (size_t ei = 1; ei < expWithAtoms.size(); ++ei)
+        ref = nullptr;
+        for (const auto &ex : exper_)
         {
-            const auto &atoms = expWithAtoms[ei]->calcAtomConst();
-            if (atoms.size() != refAtoms.size())
+            if (ex.NAtom() > 0)
             {
-                valid = false;
-                msghandler->msg(ACTStatus::Error,
-                                ACTMessage::InconsistentAtomOrder,
-                                gmx::formatString("Molecule %s: experiment %zu has %zu atoms but "
-                                                  "experiment 0 has %zu atoms.",
-                                                  getMolname().c_str(), ei,
-                                                  atoms.size(), refAtoms.size()));
-                continue;
+                ref = &ex;
+                break;
             }
-            for (size_t ai = 0; ai < refAtoms.size(); ++ai)
+        }
+    }
+    // A copy, since experiments may be removed below
+    std::vector<CalcAtom> refAtoms;
+    if (ref)
+    {
+        refAtoms = ref->calcAtomConst();
+    }
+
+    // Remove the experiments with atoms in a different order than the
+    // reference, since the coordinates are mapped onto the topology by
+    // the index of the atoms.
+    if (ref)
+    {
+        auto   refName = ref->getDatafile();
+        size_t nexper  = exper_.size();
+        std::vector<Experiment> kept;
+        for (auto &ex : exper_)
+        {
+            const auto &atoms = ex.calcAtomConst();
+            std::string diff;
+            if (!atoms.empty() && atoms.size() != refAtoms.size())
             {
-                bool nameOk   = (atoms[ai].getName()    == refAtoms[ai].getName());
-                bool obtypeOk = (atoms[ai].getObtype()  == refAtoms[ai].getObtype());
-                bool idOk     = (atoms[ai].getAtomid()  == refAtoms[ai].getAtomid());
-                if (!nameOk || !obtypeOk || !idOk)
+                diff = gmx::formatString("has %zu atoms rather than %zu",
+                                         atoms.size(), refAtoms.size());
+            }
+            for (size_t ai = 0; ai < atoms.size() && diff.empty(); ++ai)
+            {
+                if (atoms[ai].getName()   != refAtoms[ai].getName() ||
+                    atoms[ai].getObtype() != refAtoms[ai].getObtype() ||
+                    atoms[ai].getAtomid() != refAtoms[ai].getAtomid())
                 {
-                    valid = false;
-                msghandler->msg(ACTStatus::Error,
-                                    ACTMessage::InconsistentAtomOrder,
-                                    gmx::formatString("Molecule %s: atom %zu differs between "
-                                                      "experiment 0 and experiment %zu "
-                                                      "(name '%s'/'%s', obtype '%s'/'%s', "
-                                                      "atomid %d/%d).",
-                                                      getMolname().c_str(), ai,
-                                                      ei,
-                                                      refAtoms[ai].getName().c_str(),
-                                                      atoms[ai].getName().c_str(),
-                                                      refAtoms[ai].getObtype().c_str(),
-                                                      atoms[ai].getObtype().c_str(),
-                                                      refAtoms[ai].getAtomid(),
-                                                      atoms[ai].getAtomid()));
+                    diff = gmx::formatString("has atom %zu with name '%s', obtype '%s' and atomid %d "
+                                             "rather than '%s', '%s' and %d",
+                                             ai,
+                                             atoms[ai].getName().c_str(),
+                                             atoms[ai].getObtype().c_str(),
+                                             atoms[ai].getAtomid(),
+                                             refAtoms[ai].getName().c_str(),
+                                             refAtoms[ai].getObtype().c_str(),
+                                             refAtoms[ai].getAtomid());
                 }
             }
+            if (diff.empty())
+            {
+                kept.push_back(std::move(ex));
+            }
+            else
+            {
+                msghandler->msg(ACTStatus::Warning,
+                                ACTMessage::InconsistentAtomOrder,
+                                gmx::formatString("Molecule %s: removing experiment %s, which %s "
+                                                  "in the reference experiment %s.",
+                                                  getMolname().c_str(), ex.getDatafile().c_str(),
+                                                  diff.c_str(), refName.c_str()));
+            }
+        }
+        exper_ = std::move(kept);
+        if (exper_.size() < nexper)
+        {
+            // The index of an experiment is its id
+            for (size_t ei = 0; ei < exper_.size(); ++ei)
+            {
+                exper_[ei].setId(ei);
+            }
+            msghandler->msg(ACTStatus::Warning,
+                            ACTMessage::InconsistentAtomOrder,
+                            gmx::formatString("Molecule %s: removed %zu of %zu experiments with "
+                                              "atoms in a different order than the reference.",
+                                              getMolname().c_str(), nexper - exper_.size(), nexper));
         }
     }
 
     // Check that the atoms of each fragment match its formula, such that a
     // dimer A#B with the atoms in the order of B#A is detected. The
     // atom names are the elements, as in generateComposition.
-    if (!expWithAtoms.empty())
+    if (!refAtoms.empty())
     {
-        const auto &refAtoms = expWithAtoms[0]->calcAtomConst();
         for (const auto &frag : fragment_)
         {
             std::map<std::string, int> expected;

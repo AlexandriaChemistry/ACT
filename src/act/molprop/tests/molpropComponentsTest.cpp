@@ -1257,7 +1257,7 @@ TEST(MolPropValidateTest, ConsistentAtomsIsOk)
     EXPECT_EQ(0u, msghandler.warningCount(ACTMessage::InconsistentAtomOrder));
 }
 
-TEST(MolPropValidateTest, DifferentAtomCountIsError)
+TEST(MolPropValidateTest, DifferentAtomCountIsRemoved)
 {
     MolProp mp;
     mp.SetMolname("water");
@@ -1266,12 +1266,15 @@ TEST(MolPropValidateTest, DifferentAtomCountIsError)
     mp.AddExperiment(makeExperimentWithAtoms(2));
     MsgHandler msghandler;
     msghandler.setPrintLevel(ACTStatus::Warning);
-    mp.validate(&msghandler);
-    EXPECT_FALSE(msghandler.ok());
+    // The second experiment is removed, the molecule is kept
+    EXPECT_TRUE(mp.validate(&msghandler));
+    EXPECT_TRUE(msghandler.ok());
     EXPECT_GT(msghandler.warningCount(ACTMessage::InconsistentAtomOrder), 0u);
+    ASSERT_EQ(1u, mp.experimentConst().size());
+    EXPECT_EQ(0, mp.experimentConst()[0].id());
 }
 
-TEST(MolPropValidateTest, DifferentAtomNameIsError)
+TEST(MolPropValidateTest, DifferentAtomNameIsRemoved)
 {
     MolProp mp;
     mp.SetMolname("mol");
@@ -1291,12 +1294,15 @@ TEST(MolPropValidateTest, DifferentAtomNameIsError)
     }
     MsgHandler msghandler;
     msghandler.setPrintLevel(ACTStatus::Warning);
-    mp.validate(&msghandler);
-    EXPECT_FALSE(msghandler.ok());
+    // The second experiment is removed, the molecule is kept
+    EXPECT_TRUE(mp.validate(&msghandler));
+    EXPECT_TRUE(msghandler.ok());
     EXPECT_GT(msghandler.warningCount(ACTMessage::InconsistentAtomOrder), 0u);
+    ASSERT_EQ(1u, mp.experimentConst().size());
+    EXPECT_EQ(0, mp.experimentConst()[0].id());
 }
 
-TEST(MolPropValidateTest, DifferentObTypeIsError)
+TEST(MolPropValidateTest, DifferentObTypeIsRemoved)
 {
     MolProp mp;
     mp.SetMolname("mol");
@@ -1312,12 +1318,15 @@ TEST(MolPropValidateTest, DifferentObTypeIsError)
     }
     MsgHandler msghandler;
     msghandler.setPrintLevel(ACTStatus::Warning);
-    mp.validate(&msghandler);
-    EXPECT_FALSE(msghandler.ok());
+    // The second experiment is removed, the molecule is kept
+    EXPECT_TRUE(mp.validate(&msghandler));
+    EXPECT_TRUE(msghandler.ok());
     EXPECT_GT(msghandler.warningCount(ACTMessage::InconsistentAtomOrder), 0u);
+    ASSERT_EQ(1u, mp.experimentConst().size());
+    EXPECT_EQ(0, mp.experimentConst()[0].id());
 }
 
-TEST(MolPropValidateTest, DifferentAtomIdIsError)
+TEST(MolPropValidateTest, DifferentAtomIdIsRemoved)
 {
     MolProp mp;
     mp.SetMolname("mol");
@@ -1333,9 +1342,12 @@ TEST(MolPropValidateTest, DifferentAtomIdIsError)
     }
     MsgHandler msghandler;
     msghandler.setPrintLevel(ACTStatus::Warning);
-    mp.validate(&msghandler);
-    EXPECT_FALSE(msghandler.ok());
+    // The second experiment is removed, the molecule is kept
+    EXPECT_TRUE(mp.validate(&msghandler));
+    EXPECT_TRUE(msghandler.ok());
     EXPECT_GT(msghandler.warningCount(ACTMessage::InconsistentAtomOrder), 0u);
+    ASSERT_EQ(1u, mp.experimentConst().size());
+    EXPECT_EQ(0, mp.experimentConst()[0].id());
 }
 
 TEST(MolPropValidateTest, DimerNoInterFragmentBondIsOk)
@@ -1449,6 +1461,39 @@ TEST(MolPropValidateTest, AtomTypeNamesAreNotChecked)
     msghandler.setPrintLevel(ACTStatus::Warning);
     EXPECT_TRUE(mp.validate(&msghandler));
     EXPECT_EQ(0u, msghandler.warningCount(ACTMessage::InconsistentAtomOrder));
+}
+
+// Test: The reference is the experiment from which the topology is
+// generated, here the optimization, and the remaining experiments keep
+// consecutive ids
+TEST(MolPropValidateTest, ReferenceIsTopologyExperiment)
+{
+    MolProp mp;
+    mp.SetMolname("bromide#fluoride");
+    auto addExperiment = [&mp](const std::string &datafile, JobType jt, bool swapped)
+    {
+        Experiment exp("ref", "min");
+        exp.setJobtype(jt);
+        exp.setDatafile(datafile);
+        exp.AddAtom(CalcAtom(swapped ? "F" : "Br", swapped ? "F-" : "Br-", 1));
+        exp.AddAtom(CalcAtom(swapped ? "Br" : "F", swapped ? "Br-" : "F-", 2));
+        mp.AddExperiment(std::move(exp));
+    };
+    addExperiment("0000", JobType::SP, true);
+    addExperiment("0001", JobType::OPT, false);
+    addExperiment("0002", JobType::SP, false);
+    addExperiment("0003", JobType::SP, true);
+    MsgHandler msghandler;
+    msghandler.setPrintLevel(ACTStatus::Fatal);
+    EXPECT_TRUE(mp.validate(&msghandler));
+    const auto &exps = mp.experimentConst();
+    ASSERT_EQ(2u, exps.size());
+    EXPECT_EQ("0001", exps[0].getDatafile());
+    EXPECT_EQ("0002", exps[1].getDatafile());
+    for (size_t i = 0; i < exps.size(); i++)
+    {
+        EXPECT_EQ(static_cast<int>(i), exps[i].id());
+    }
 }
 
 TEST(MolPropValidateTest, NullMsgHandlerIsNoop)
