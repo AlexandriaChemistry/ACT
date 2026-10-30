@@ -89,13 +89,14 @@ list(APPEND LIBGROMACS_SOURCES ${GENERATED_VERSION_FILE}
 
 add_library(libactgromacs ${LIBGROMACS_SOURCES})
 
+# MPI is public, since the headers include mpi.h
 target_link_libraries(libactgromacs
                       PRIVATE
                       ${GMX_EXTRA_LIBRARIES}
-                      ${GMX_COMMON_LIBRARIES}
                       ${GMX_SHARED_LINKER_FLAGS}
                       ${GMX_STDLIB_LIBRARIES}
                       PUBLIC
+                      ${GMX_COMMON_LIBRARIES}
                       ${GMX_PUBLIC_LIBRARIES}
                       )
 set_target_properties(libactgromacs PROPERTIES
