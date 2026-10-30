@@ -1372,6 +1372,85 @@ TEST(MolPropValidateTest, DimerWithInterFragmentBondIsError)
     EXPECT_GT(msghandler.warningCount(ACTMessage::InterFragmentBond), 0u);
 }
 
+/*! \brief Make a molecule with one experiment and fragments
+ * \param[in] names The names of the atoms, the elements
+ * \param[in] frags The formula and atoms of each fragment
+ * \return the molecule
+ */
+static MolProp makeFragmentMolecule(const std::vector<std::string>                             &names,
+                                    const std::vector<std::pair<std::string, std::vector<int>>> &frags)
+{
+    MolProp mp;
+    mp.SetMolname("dimer");
+    for (const auto &f : frags)
+    {
+        mp.addFragment(Fragment(f.first, 1.0, 0, 1, 1, f.first, f.second));
+    }
+    Experiment exp("ref", "min");
+    for (size_t i = 0; i < names.size(); i++)
+    {
+        exp.AddAtom(CalcAtom(names[i], names[i], i + 1));
+    }
+    mp.AddExperiment(std::move(exp));
+    return mp;
+}
+
+TEST(MolPropValidateTest, FragmentFormulaIsOk)
+{
+    auto mp = makeFragmentMolecule({ "O", "H", "C", "H", "H", "H", "O", "H", "H" },
+                                   { { "CH4O", { 0, 1, 2, 3, 4, 5 } }, { "H2O", { 6, 7, 8 } } });
+    MsgHandler msghandler;
+    msghandler.setPrintLevel(ACTStatus::Warning);
+    EXPECT_TRUE(mp.validate(&msghandler));
+    EXPECT_TRUE(msghandler.ok());
+    EXPECT_EQ(0u, msghandler.warningCount(ACTMessage::InconsistentAtomOrder));
+}
+
+// Test: A dimer methanol#water with the atoms in the order of water#methanol
+TEST(MolPropValidateTest, SwappedDimerIsError)
+{
+    auto mp = makeFragmentMolecule({ "O", "H", "H", "O", "H", "C", "H", "H", "H" },
+                                   { { "CH4O", { 0, 1, 2, 3, 4, 5 } }, { "H2O", { 6, 7, 8 } } });
+    MsgHandler msghandler;
+    msghandler.setPrintLevel(ACTStatus::Fatal);
+    EXPECT_FALSE(mp.validate(&msghandler));
+    EXPECT_FALSE(msghandler.ok());
+    EXPECT_EQ(2u, msghandler.warningCount(ACTMessage::InconsistentAtomOrder));
+}
+
+// Test: The order of the elements in the formula and the charge of an ion
+// do not matter
+TEST(MolPropValidateTest, IonFormulaIsOk)
+{
+    auto mp = makeFragmentMolecule({ "Na", "Cl", "H" },
+                                   { { "Na+", { 0 } }, { "HCl", { 1, 2 } } });
+    MsgHandler msghandler;
+    msghandler.setPrintLevel(ACTStatus::Warning);
+    EXPECT_TRUE(mp.validate(&msghandler));
+    EXPECT_EQ(0u, msghandler.warningCount(ACTMessage::InconsistentAtomOrder));
+}
+
+// Test: Fragments with atom indices beyond the atoms are an error
+TEST(MolPropValidateTest, FragmentOutOfRangeIsError)
+{
+    auto mp = makeFragmentMolecule({ "O", "H", "H" }, { { "H2O", { 0, 1, 3 } } });
+    MsgHandler msghandler;
+    msghandler.setPrintLevel(ACTStatus::Fatal);
+    EXPECT_FALSE(mp.validate(&msghandler));
+    EXPECT_GT(msghandler.warningCount(ACTMessage::InconsistentAtomOrder), 0u);
+}
+
+// Test: Atom names that are not elements, such as atom types, can not be
+// checked against the formula
+TEST(MolPropValidateTest, AtomTypeNamesAreNotChecked)
+{
+    auto mp = makeFragmentMolecule({ "o3", "ho", "ho" }, { { "CH4", { 0, 1, 2 } } });
+    MsgHandler msghandler;
+    msghandler.setPrintLevel(ACTStatus::Warning);
+    EXPECT_TRUE(mp.validate(&msghandler));
+    EXPECT_EQ(0u, msghandler.warningCount(ACTMessage::InconsistentAtomOrder));
+}
+
 TEST(MolPropValidateTest, NullMsgHandlerIsNoop)
 {
     MolProp mp;
