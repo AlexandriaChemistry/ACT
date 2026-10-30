@@ -50,6 +50,7 @@
 #include "act/properties/princ.h"
 #include "act/topology/actmol.h"
 #include "act/utility/jsontree.h"
+#include "act/forces/forcecomputerstatistics.h"
 #include "act/forces/simd_information.h"
 #include "act/utility/timings.h"
 #include "act/utility/memory_check.h"
@@ -809,6 +810,29 @@ void ReRunner::runB2(CommunicationRecord         *cr,
 
     if (cr->isMaster())
     {
+        // Below the shortest distance the Mayer function is taken as -1,
+        // which is only correct if it is -1 at that distance
+        size_t nsoft = 0;
+        double fmax  = -1, Tmax = 0;
+        for(size_t iTemp = 0; iTemp < Temperature.size(); iTemp++)
+        {
+            double f = b2total.mayerAtShortestDistance(iTemp);
+            if (f > -1 + 1e-6)
+            {
+                nsoft += 1;
+                if (f > fmax)
+                {
+                    fmax = f;
+                    Tmax = Temperature[iTemp];
+                }
+            }
+        }
+        if (nsoft > 0)
+        {
+            msghandler->msg(ACTStatus::Warning,
+                            gmx::formatString("The Mayer function at the shortest distance %g nm is larger than -1 at %zu temperature(s), up to %g at %g K. Since it is taken as -1 below that distance, please decrease -mindist.",
+                                              gendimers_.mindist(), nsoft, fmax, Tmax));
+        }
         // Convergence of the total B2 with the number of orientations
         msghandler->write("\nConvergence of the total second virial coefficient (cm^3/mol) with the number of dimer orientations");
         auto header = gmx::formatString("%10s", "Dimers");
@@ -942,6 +966,17 @@ int b2(int argc, char *argv[])
         phase.next("Second virial");
         rerun.setFunctions(&forceComp, oenv);
         rerun.runB2(&cr, &msghandler, &pd, &actmol, maxdimers, fnm);
+    }
+    if (pd.polarizable())
+    {
+        // The number of shell iterations per force calculation, summed
+        // over the processes
+        ForceComputerStatistics fcStats;
+        auto stats = fcStats.statistics(&cr, &forceComp, 0, true);
+        if (cr.isMaster())
+        {
+            msghandler.write(stats);
+        }
     }
     phase.next("Output");
     bool writeJson = json && cr.isMaster();
