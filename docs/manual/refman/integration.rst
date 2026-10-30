@@ -92,17 +92,25 @@ after which the forces :math:`{\bf F}_i(t+\Delta t)` are computed for the new co
 
 Only particles with a mass are integrated. Virtual sites are constructed from the atoms before the forces are computed, and the forces on them are distributed over the atoms they are constructed from. The shells are relaxed for each new configuration of the atoms as described in :ref:`sec-shellrelax`, starting from their cores. Bond lengths and angles can be constrained, as described in :ref:`sec-constraints`.
 
-With *-temp* larger than zero, the initial velocities are generated from a Maxwell distribution at that temperature, using the random number seed *-seed*. The motion of the center of mass is removed, the velocity components along the constraints are removed, and finally the velocities are scaled such that the temperature, Eqn. :eq:`tempmd`, is exactly the requested one. There is no thermostat, the simulation conserves the total energy, which can be used to validate the forces. The energy file contains the potential energy terms, the kinetic energy :math:`E_{kin} = \frac{1}{2}\sum_i m_i{\bf v}_i^2`, the total energy and the temperature
+With *-temp* larger than zero, the initial velocities are generated from a Maxwell distribution at that temperature, using the random number seed *-seed*. The motion of the center of mass is removed (see below), the velocity components along the constraints are removed, and finally the velocities are scaled such that the temperature, Eqn. :eq:`tempmd`, is exactly the requested one. There is no thermostat, the simulation conserves the total energy, which can be used to validate the forces. The energy file contains the potential energy terms, the kinetic energy :math:`E_{kin} = \frac{1}{2}\sum_i m_i{\bf v}_i^2`, the total energy and the temperature
 
 .. math:: T ~=~ \frac{2E_{kin}}{N_{df}\,k_B},
    :label: tempmd
 
 which are written every *-nstener* steps before the step is taken. The number of degrees of freedom is
 
-.. math:: N_{df} ~=~ 3N - 3 - N_c,
+.. math:: N_{df} ~=~ 3N - N_{com} - N_c,
    :label: ndf
 
-for :math:`N` atoms with a mass and :math:`N_c` constraints, see :ref:`sec-constraints`. Shells and virtual sites do not contribute, since they have no mass. Three degrees of freedom are subtracted for the center of mass, which does not move, since there are no external forces and the initial velocities are either zero or have the center of mass motion removed. Since the potential energy takes up part of the initial kinetic energy, the temperature during the simulation is lower than the initial one, about half of it if the starting structure is close to the minimum of the energy. The time step is set with *-deltat* (ps) and the number of steps with *-nsteps*.
+for :math:`N` atoms with a mass, :math:`N_{com}` degrees of freedom of the motion of the center of mass that is removed and :math:`N_c` constraints, see :ref:`sec-constraints`. Shells and virtual sites do not contribute, since they have no mass.
+
+The option *-comm* sets which motion of the center of mass is removed, from the initial velocities and every *-nstcomm* steps (default 100) after the velocities are updated, or only from the initial velocities if *-nstcomm* is 0. The choices are:
+
+* *angular*: the translation of and the rotation around the center of mass (the default). This is needed for stable simulations of clusters in vacuum, since the rotation of the cluster otherwise takes up part of the kinetic energy. The velocity :math:`{\bf v}_{cm}` of the center of mass and the rigid rotation :math:`\boldsymbol\omega\times({\bf r}_i - {\bf r}_{cm})` are subtracted from the velocities, where the angular velocity :math:`\boldsymbol\omega = {\bf I}^{-1}{\bf L}` follows from the inertia tensor :math:`{\bf I}` and the angular momentum :math:`{\bf L}` around the center of mass :math:`{\bf r}_{cm}`. For a molecule that is linear in the starting coordinates, the rotation around the axis, with the smallest moment of inertia, is not removed. This removes :math:`N_{com} = 6` degrees of freedom, or 5 for a linear molecule.
+* *linear*: only the translation of the center of mass, :math:`N_{com} = 3`.
+* *none*: nothing, :math:`N_{com} = 0`.
+
+Since this is a rigid body motion, the constraints are still satisfied afterwards. Without external forces, the linear and angular momentum are conserved, apart from numerical errors, such as those of the shell relaxation and the constraints, which are removed every *-nstcomm* steps. With the flat-bottom position restraints of *-kfbpr*, which act around the origin, the center of mass does move. Since the potential energy takes up part of the initial kinetic energy, the temperature during the simulation is lower than the initial one, about half of it if the starting structure is close to the minimum of the energy. The time step is set with *-deltat* (ps) and the number of steps with *-nsteps*.
 
 .. _sec-constraints:
 

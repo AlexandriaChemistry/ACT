@@ -1479,11 +1479,12 @@ void MolHandler::simulate(MsgHandler                    *msghandler,
     Constrainer constrainer(simConfig.constraintMaxIter(),
                             simConfig.constraintTolerance(),
                             1.0/deltat);
-    // The center of mass does not move, since the initial velocities
-    // are either zero or have the center of mass motion removed and
-    // there are no external forces. Each constraint removes one more
-    // degree of freedom.
-    int nDOF           = DIM*(mol->nRealAtoms() - 1);
+    // The motion of the center of mass that is removed from the initial
+    // velocities, and every nstcomm steps, removes three degrees of
+    // freedom for the translation and two or three for the rotation.
+    // Without external forces the center of mass does not move in
+    // between. Each constraint removes one more degree of freedom.
+    int nDOF           = DIM*mol->nRealAtoms();
     // The particles that move, for counting the floating point operations
     double nmoving     = std::count_if(inv2mass.begin(), inv2mass.end(),
                                        [](double m) { return m > 0; });
@@ -1506,12 +1507,21 @@ void MolHandler::simulate(MsgHandler                    *msghandler,
             msghandler->fatal("Could not constrain the starting coordinates. The reference bond lengths and angles may be inconsistent, for instance in rings. Try -constrain bonds.");
         }
     }
+    COMMRemover commRemover(simConfig.commRemoval(), mol->atomsConst(), coordinates);
+    nDOF -= commRemover.nDOF();
+    if (COMMRemoval::None != commRemover.mode())
+    {
+        msghandler->write(gmx::formatString("Removing the %s the center of mass %s, which removes %d degrees of freedom.",
+                                            COMMRemoval::Angular == commRemover.mode() ? "translation of and rotation around" : "translation of",
+                                            simConfig.nstcomm() > 0 ? gmx::formatString("every %d steps", simConfig.nstcomm()).c_str() : "from the initial velocities",
+                                            commRemover.nDOF()));
+    }
     // Generate velocities
     if (simConfig.temperature() > 0)
     {
         maxwell_speed(simConfig.temperature(), simConfig.seed(),
                       mol->atomsConst(), &velocities, msghandler->tw());
-        stop_cm(mol->atomsConst(), coordinates, &velocities);
+        commRemover.remove(coordinates, &velocities);
         if (simConfig.constrain())
         {
             constrainer.rattle(msghandler, coordinates, &velocities);
@@ -1669,6 +1679,14 @@ void MolHandler::simulate(MsgHandler                    *msghandler,
                 msghandler->msg(ACTStatus::Warning,
                                 gmx::formatString("RATTLE did not converge at step %d.", step));
             }
+        }
+        // Remove the motion of the center of mass, which leaves the
+        // constraints satisfied, since it is a rigid body motion.
+        if (simConfig.nstcomm() > 0 && (step + 1) % simConfig.nstcomm() == 0)
+        {
+            ScopedTimer timer(integrationTimer);
+            commRemover.remove(coordinates, &velocities);
+            timings.addFlops(60*nmoving);
         }
         // Write output if needed
         if (simConfig.nstxout() > 0 && step % simConfig.nstxout() == 0)

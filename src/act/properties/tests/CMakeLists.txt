@@ -44,6 +44,7 @@ gmx_add_unit_test(
     simulateTest.cpp
     nmaTest.cpp
     symmetrynumberTest.cpp
+    velocityhandlerTest.cpp
     # pseudo-library for code for properties
     $<TARGET_OBJECTS:actLib>
     )

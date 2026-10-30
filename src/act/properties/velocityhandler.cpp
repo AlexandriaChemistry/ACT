@@ -29,15 +29,21 @@
 
 #include "velocityhandler.h"
 
+#include <algorithm>
 #include <cmath>
+#include <map>
 
 #include "act/topology/topology.h"
+#include "gromacs/math/nrjac.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/random/tabulatednormaldistribution.h"
 #include "gromacs/random/threefry.h"
+#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/fatalerror.h"
+#include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/textwriter.h"
 
 namespace alexandria
@@ -108,75 +114,228 @@ void maxwell_speed(real                        tempi,
     low_mspeed(tempi, atoms, v, &rng);
 }
 
-//! \brief Compute center of mass
-static real calc_cm(const std::vector<ActAtom>   &atoms,
-                    const std::vector<gmx::RVec> &x,
-                    std::vector<gmx::RVec>       *v,
-                    rvec                          xcm,
-                    rvec                          vcm,
-                    rvec                          acm,
-                    matrix                        L)
-{
-    rvec dx, a0;
+//! \brief Map from center of mass motion removal to string
+static const std::map<COMMRemoval, std::string> cr2str = {
+    { COMMRemoval::None,    "none"    },
+    { COMMRemoval::Linear,  "linear"  },
+    { COMMRemoval::Angular, "angular" }
+};
 
-    clear_rvec(xcm);
-    clear_rvec(vcm);
-    clear_rvec(acm);
-    real tm = 0.0;
-    for (size_t i = 0; (i < atoms.size()); i++)
+const std::string &commRemovalToString(COMMRemoval cr)
+{
+    return cr2str.find(cr)->second;
+}
+
+COMMRemoval stringToCOMMRemoval(const std::string &str)
+{
+    for(const auto &c : cr2str)
     {
-        real m0 = atoms[i].mass();
-        tm += m0;
-        cprod(x[i], (*v)[i], a0);
-        for (int m = 0; (m < DIM); m++)
+        if (c.second == str)
         {
-            xcm[m] += m0 * x[i][m]; /* c.o.m. position */
-            vcm[m] += m0 * (*v)[i][m]; /* c.o.m. velocity */
-            acm[m] += m0 * a0[m];   /* rotational velocity around c.o.m. */
+            return c.first;
         }
     }
-    cprod(xcm, vcm, a0);
-    for (int m = 0; (m < DIM); m++)
+    GMX_THROW(gmx::InvalidInputError(gmx::formatString("Unknown center of mass motion removal '%s'", str.c_str())));
+}
+
+/*! \brief Compute the center of mass and the inertia tensor around it
+ * \param[in]  mass The masses
+ * \param[in]  x    The coordinates
+ * \param[out] xcm  The center of mass
+ * \param[out] I    The inertia tensor
+ * \return the total mass
+ */
+static double centerOfMassInertia(const std::vector<double>    &mass,
+                                  const std::vector<gmx::RVec> &x,
+                                  dvec                          xcm,
+                                  double                        I[DIM][DIM])
+{
+    double tm = 0;
+    clear_dvec(xcm);
+    for (size_t i = 0; i < mass.size(); i++)
+    {
+        tm += mass[i];
+        for (int m = 0; m < DIM; m++)
+        {
+            xcm[m] += mass[i]*x[i][m];
+        }
+    }
+    for (int m = 0; m < DIM; m++)
     {
         xcm[m] /= tm;
-        vcm[m] /= tm;
-        acm[m] -= a0[m] / tm;
+        for (int n = 0; n < DIM; n++)
+        {
+            I[m][n] = 0;
+        }
     }
-
-    clear_mat(L);
-    for (size_t i = 0; (i < atoms.size()); i++)
+    for (size_t i = 0; i < mass.size(); i++)
     {
-        real m0 = atoms[i].mass();
-        for (int m = 0; (m < DIM); m++)
+        dvec dx;
+        for (int m = 0; m < DIM; m++)
         {
             dx[m] = x[i][m] - xcm[m];
         }
-        L[XX][XX] += dx[XX] * dx[XX] * m0;
-        L[XX][YY] += dx[XX] * dx[YY] * m0;
-        L[XX][ZZ] += dx[XX] * dx[ZZ] * m0;
-        L[YY][YY] += dx[YY] * dx[YY] * m0;
-        L[YY][ZZ] += dx[YY] * dx[ZZ] * m0;
-        L[ZZ][ZZ] += dx[ZZ] * dx[ZZ] * m0;
+        double dx2 = dx[XX]*dx[XX] + dx[YY]*dx[YY] + dx[ZZ]*dx[ZZ];
+        for (int m = 0; m < DIM; m++)
+        {
+            for (int n = 0; n < DIM; n++)
+            {
+                I[m][n] += mass[i]*((m == n ? dx2 : 0) - dx[m]*dx[n]);
+            }
+        }
     }
-
     return tm;
 }
 
-void stop_cm(const std::vector<ActAtom>   &atoms,
-             const std::vector<gmx::RVec> &x,
-             std::vector<gmx::RVec>       *v)
+/*! \brief Diagonalize a symmetric 3x3 matrix
+ * \param[in]  A    The matrix
+ * \param[out] eval The eigenvalues, in increasing order
+ * \param[out] evec The eigenvectors, evec[k] belongs to eval[k]
+ */
+static void diagonalize(const double A[DIM][DIM], double eval[DIM], double evec[DIM][DIM])
 {
-    rvec   xcm, vcm, acm;
-    tensor L;
-
-    (void)calc_cm(atoms, x, v, xcm, vcm, acm, L);
-
-    /* Subtract translational center of mass velocity */
-    for (size_t i = 0; (i < atoms.size()); i++)
+    double  a[DIM][DIM], v[DIM][DIM], d[DIM];
+    double *ap[DIM], *vp[DIM];
+    for (int m = 0; m < DIM; m++)
     {
-        for (int m = 0; (m < DIM); m++)
+        for (int n = 0; n < DIM; n++)
         {
-            (*v)[i][m] -= vcm[m];
+            a[m][n] = A[m][n];
+        }
+        ap[m] = a[m];
+        vp[m] = v[m];
+    }
+    int nrot;
+    jacobi(ap, DIM, d, vp, &nrot);
+    int order[DIM] = { 0, 1, 2 };
+    std::sort(order, order + DIM, [&d](int k, int l) { return d[k] < d[l]; });
+    for (int k = 0; k < DIM; k++)
+    {
+        eval[k] = d[order[k]];
+        for (int m = 0; m < DIM; m++)
+        {
+            evec[k][m] = v[m][order[k]];
+        }
+    }
+}
+
+COMMRemover::COMMRemover(COMMRemoval                   mode,
+                         const std::vector<ActAtom>   &atoms,
+                         const std::vector<gmx::RVec> &x) : mode_(mode)
+{
+    int nMass = 0;
+    for (const auto &a : atoms)
+    {
+        mass_.push_back(a.mass() > 0 ? a.mass() : 0);
+        nMass += a.mass() > 0 ? 1 : 0;
+    }
+    if (nMass <= 1)
+    {
+        nRotation_ = 0;
+    }
+    else
+    {
+        dvec   xcm;
+        double I[DIM][DIM], eval[DIM], evec[DIM][DIM];
+        centerOfMassInertia(mass_, x, xcm, I);
+        diagonalize(I, eval, evec);
+        // A linear molecule has a vanishing moment of inertia around its axis
+        nRotation_ = (eval[0] < 1e-6*eval[DIM-1]) ? 2 : 3;
+    }
+}
+
+int COMMRemover::nDOF() const
+{
+    switch (mode_)
+    {
+    case COMMRemoval::None:
+        return 0;
+    case COMMRemoval::Linear:
+        return DIM;
+    case COMMRemoval::Angular:
+        return DIM + nRotation_;
+    }
+    return 0;
+}
+
+void COMMRemover::remove(const std::vector<gmx::RVec> &x,
+                         std::vector<gmx::RVec>       *v) const
+{
+    if (COMMRemoval::None == mode_)
+    {
+        return;
+    }
+    GMX_RELEASE_ASSERT(x.size() == mass_.size() && v->size() == mass_.size(),
+                       "Number of particles does not match");
+    double tm = 0;
+    dvec   vcm = { 0, 0, 0 };
+    for (size_t i = 0; i < mass_.size(); i++)
+    {
+        tm += mass_[i];
+        for (int m = 0; m < DIM; m++)
+        {
+            vcm[m] += mass_[i]*(*v)[i][m];
+        }
+    }
+    if (tm == 0)
+    {
+        return;
+    }
+    for (int m = 0; m < DIM; m++)
+    {
+        vcm[m] /= tm;
+    }
+    dvec omega = { 0, 0, 0 };
+    dvec xcm   = { 0, 0, 0 };
+    if (COMMRemoval::Angular == mode_ && nRotation_ > 0)
+    {
+        double I[DIM][DIM], eval[DIM], evec[DIM][DIM];
+        centerOfMassInertia(mass_, x, xcm, I);
+        // Angular momentum around the center of mass
+        dvec L = { 0, 0, 0 };
+        for (size_t i = 0; i < mass_.size(); i++)
+        {
+            dvec dx, dv, a;
+            for (int m = 0; m < DIM; m++)
+            {
+                dx[m] = x[i][m] - xcm[m];
+                dv[m] = (*v)[i][m] - vcm[m];
+            }
+            dcprod(dx, dv, a);
+            for (int m = 0; m < DIM; m++)
+            {
+                L[m] += mass_[i]*a[m];
+            }
+        }
+        // Solve I omega = L for the rotations that are removed, those
+        // with the largest moments of inertia.
+        diagonalize(I, eval, evec);
+        for (int k = DIM - nRotation_; k < DIM; k++)
+        {
+            if (eval[k] > 0)
+            {
+                double c = diprod(evec[k], L)/eval[k];
+                for (int m = 0; m < DIM; m++)
+                {
+                    omega[m] += c*evec[k][m];
+                }
+            }
+        }
+    }
+    for (size_t i = 0; i < mass_.size(); i++)
+    {
+        if (mass_[i] > 0)
+        {
+            dvec dx, w;
+            for (int m = 0; m < DIM; m++)
+            {
+                dx[m] = x[i][m] - xcm[m];
+            }
+            dcprod(omega, dx, w);
+            for (int m = 0; m < DIM; m++)
+            {
+                (*v)[i][m] -= vcm[m] + w[m];
+            }
         }
     }
 }

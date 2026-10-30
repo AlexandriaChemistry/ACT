@@ -376,6 +376,9 @@ static const char *eminAlgs[5] = {nullptr, "LBFGS", "Newton", "Steep", nullptr};
 //! \brief Strings to use in the cmdline option for constraints
 static const char *constrainStr[5] = {nullptr, "no", "bonds", "angles", nullptr};
 
+//! \brief Strings to use in the cmdline option for removing the center of mass motion
+static const char *commStr[5] = {nullptr, "angular", "linear", "none", nullptr};
+
 //! \brief Map from enum to string
 std::map<eMinimizeAlgorithm, std::string> eMinAlg2String = {
     { eMinimizeAlgorithm::LBFGS,  "LBFGS"  },
@@ -463,6 +466,7 @@ void SimulationConfigHandler::add_minimize_options(std::vector<t_pargs> *pargs,
 
 void SimulationConfigHandler::add_MD_options(std::vector<t_pargs> *pargs)
 {
+    commStr[0] = nullptr;
     std::vector<t_pargs> MDextra = {
         { "-nsteps", FALSE, etINT, {&nsteps_},
           "Number of integration steps." },
@@ -479,7 +483,11 @@ void SimulationConfigHandler::add_MD_options(std::vector<t_pargs> *pargs)
         { "-nstvout", FALSE, etINT, {&nstvout_},
           "Number of steps between writing velocities." },
         { "-nstener", FALSE, etINT, {&nstener_},
-          "Number of steps between writing energies. With shells, the induction energy that is written needs one more energy calculation, with the shells on their parent particles, in the steps in which the energies are written." }
+          "Number of steps between writing energies. With shells, the induction energy that is written needs one more energy calculation, with the shells on their parent particles, in the steps in which the energies are written." },
+        { "-comm",    FALSE, etENUM, {commStr},
+          "Motion of the center of mass to remove: angular removes the translation of and the rotation around the center of mass, linear only the translation." },
+        { "-nstcomm", FALSE, etINT, {&nstcomm_},
+          "Number of steps between removing the motion of the center of mass. It is always removed from the initial velocities, 0 means only then." }
     };
     for(auto &i : MDextra)
     {
@@ -494,6 +502,11 @@ void SimulationConfigHandler::check_pargs(MsgHandler *)
     GMX_RELEASE_ASSERT(deltat_ > 0, "Integration time step must be larger than zero");
     minAlg_    = stringToEMinimizeAlgorithm(eminAlgs[0]);
     constrain_ = stringToConstraintType(constrainStr[0]);
+    if (commStr[0])
+    {
+        commRemoval_ = stringToCOMMRemoval(commStr[0]);
+    }
+    GMX_RELEASE_ASSERT(nstcomm_ >= 0, "Number of steps between removing the center of mass motion must not be negative");
 }
 
 /* * * * * * * * * * * * * * * * * * * * * *

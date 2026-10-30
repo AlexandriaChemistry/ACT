@@ -39,6 +39,7 @@
 
 #include "act/alexandria/loss_function.h"
 #include "act/constraints/shake.h"
+#include "act/properties/velocityhandler.h"
 #include "gromacs/commandline/pargs.h"
 
 namespace alexandria
@@ -504,6 +505,10 @@ private:
     int                constraintMaxIter_    = 1000;
     //! Relative tolerance for constraining bond lengths
     double             constraintTolerance_  = 1e-6;
+    //! What motion of the center of mass to remove
+    COMMRemoval        commRemoval_          = COMMRemoval::Angular;
+    //! Number of steps between removing the motion of the center of mass
+    int                nstcomm_              = 100;
 public:
     /*!
      * \brief Add command-line arguments to a vector
@@ -579,6 +584,10 @@ public:
 
     //! \return The relative tolerance for SHAKE/RATTLE
     double constraintTolerance() const { return constraintTolerance_; }
+    //! \return what motion of the center of mass to remove
+    COMMRemoval commRemoval() const { return commRemoval_; }
+    //! \return number of steps between removing the motion of the center of mass, 0 is only at the start
+    int nstcomm() const { return nstcomm_; }
 
     /*! \brief Set the minimize option
      * \param[in] minimize Whether or not to minimize
