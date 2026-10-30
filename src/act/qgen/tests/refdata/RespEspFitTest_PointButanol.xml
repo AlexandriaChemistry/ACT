@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Sequence Name="Charges">
+    <Int Name="Length">15</Int>
+    <Real>-0.16295590988598457</Real>
+    <Real>0.036511457095573983</Real>
+    <Real>0.036509358955589058</Real>
+    <Real>0.036509359725390669</Real>
+    <Real>0.079014896095159104</Real>
+    <Real>-0.014436621685700094</Real>
+    <Real>-0.014424752673791664</Real>
+    <Real>-0.0088429335057585365</Real>
+    <Real>0.030847138111389952</Real>
+    <Real>0.03085241913065756</Real>
+    <Real>0.29285507964786522</Real>
+    <Real>-0.036264662550639412</Real>
+    <Real>-0.036282788027487224</Real>
+    <Real>-0.66205199916472235</Real>
+    <Real>0.39215995873245824</Real>
+  </Sequence>
+  <Real Name="RMS">0.0018787220670391706</Real>
+  <Real Name="RRMS">0.16980144122625493</Real>
+  <Real Name="CosAngle">0.98547829538888876</Real>
+</ReferenceData>

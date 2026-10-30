@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Sequence Name="Charges">
+    <Int Name="Length">3</Int>
+    <Real>0.64468279183695543</Real>
+    <Real>-0.28936558367391102</Real>
+    <Real>0.64468279183695554</Real>
+  </Sequence>
+</ReferenceData>
