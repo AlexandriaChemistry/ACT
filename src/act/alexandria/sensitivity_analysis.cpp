@@ -79,9 +79,10 @@ bool SensitivityAnalysis::run(MsgHandler           *msghandler,
         tw->writeStringFormatted("\nStarting sensitivity analysis. chi2_0 = %g nParam = %zu\n",
                                  chi2_0, param->size());
     }
-    // Each parameter is changed to three values, the chi2 of all of them
-    // is computed first. Each value is computed on its own, by the master
-    // or by one of the middlemen, which only compute the training set.
+    // The chi2 of each parameter is known for its value, and computed
+    // for two other values, all of them first. Each value is computed on
+    // its own, by the master or by one of the middlemen, which only
+    // compute the training set.
     auto                cr       = sii->commRec();
     std::vector<int>    workers;
     if (useMiddlemen && iMolSelect::Train == ims && cr->isMaster())
@@ -89,15 +90,30 @@ bool SensitivityAnalysis::run(MsgHandler           *msghandler,
         workers = cr->middlemen();
     }
     size_t              np       = param->size();
-    std::vector<double> pvalue(3*np), chi2(3*np);
+    std::vector<double> pvalue(2*np), chi2(2*np);
     for (size_t i = 0; i < np; ++i)
     {
+        // Half a percent of the range below and above the parameter, or
+        // twice that on one side when the other one is beyond a bound.
+        // The values stay apart, also at a bound, and are in increasing
+        // order.
+        double p        = (*param)[i];
         double deltap   = (upperBound[i]-lowerBound[i])/200;
-        double pmin     = std::max((*param)[i]-deltap, lowerBound[i]);
-        double pmax     = std::min((*param)[i]+deltap, upperBound[i]);
-        pvalue[3*i]     = pmin;
-        pvalue[3*i + 1] = 0.5*(pmin+pmax);
-        pvalue[3*i + 2] = pmax;
+        if (p - deltap < lowerBound[i])
+        {
+            pvalue[2*i]     = p + deltap;
+            pvalue[2*i + 1] = p + 2*deltap;
+        }
+        else if (p + deltap > upperBound[i])
+        {
+            pvalue[2*i]     = p - 2*deltap;
+            pvalue[2*i + 1] = p - deltap;
+        }
+        else
+        {
+            pvalue[2*i]     = p - deltap;
+            pvalue[2*i + 1] = p + deltap;
+        }
     }
     for (size_t first = 0; first < pvalue.size(); first += workers.size() + 1)
     {
@@ -107,13 +123,13 @@ bool SensitivityAnalysis::run(MsgHandler           *msghandler,
         {
             size_t     k = first + 1 + w;
             ga::Genome g = *genome;
-            (*g.basesPtr())[k/3] = pvalue[k];
+            (*g.basesPtr())[k/2] = pvalue[k];
             cr->send_data(workers[w]);
             g.Send(cr, workers[w]);
             cr->send(workers[w], TrainFFMiddlemanMode::FITNESS);
         }
         // The master computes the first one
-        size_t        i      = first/3;
+        size_t        i      = first/2;
         double        pstore = (*param)[i];
         std::set<int> changed = { static_cast<int>(i) };
         (*param)[i] = pvalue[first];
@@ -134,11 +150,22 @@ bool SensitivityAnalysis::run(MsgHandler           *msghandler,
     for (size_t i = 0; i < np; ++i)
     {
         Sensitivity s;
-        for (size_t k = 3*i; k < 3*i + 3; k++)
+        double      pstore = (*param)[i];
+        // The points in increasing order of the parameter
+        if (pvalue[2*i] > pstore)
         {
-            s.add(pvalue[k], chi2[k]);
+            s.add(pstore, chi2_0, true);
         }
-        double pstore = (*param)[i];
+        s.add(pvalue[2*i], chi2[2*i]);
+        if (pvalue[2*i] < pstore && pvalue[2*i + 1] > pstore)
+        {
+            s.add(pstore, chi2_0, true);
+        }
+        s.add(pvalue[2*i + 1], chi2[2*i + 1]);
+        if (pvalue[2*i + 1] < pstore)
+        {
+            s.add(pstore, chi2_0, true);
+        }
         s.computeForceConstants(tw);
         minimum = minimum && s.a() >= 0;
         // Compute dimensionless force constant, or zero if undefined

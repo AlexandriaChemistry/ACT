@@ -186,6 +186,81 @@ protected:
         delete sii_;
     }
 
+    /*! \brief Run the analysis and compare it to the parabolas through the chi-squared
+     * The chi-squared is computed for each parameter and two values
+     * half a percent of its range apart, below and above it, or on one
+     * side of it if the other one is beyond a bound.
+     * \param[in] param The parameters to start from
+     */
+    void checkAnalysis(const std::vector<double> &param)
+    {
+        size_t np = sii_->nParam();
+        ASSERT_EQ(np, param.size());
+        *genome_.basesPtr() = param;
+        double chi2_0 = chi2(param);
+        EXPECT_GT(chi2_0, 0);
+
+        JsonTree            jtree("SensitivityAnalysisTest");
+        SensitivityAnalysis sens;
+        bool                minimum = sens.run(&msghandler_, sii_, &fitComp_, &genome_,
+                                               iMolSelect::Train, &jtree, true);
+        EXPECT_TRUE(msghandler_.ok());
+        EXPECT_EQ(param, genome_.bases());
+        ASSERT_EQ(np, sens.forceConstants().size());
+        ASSERT_EQ(1u, jtree.objects().size());
+        const auto &sensTree = jtree.objects()[0];
+        EXPECT_EQ("sensitivity", sensTree.key());
+        ASSERT_EQ(np, sensTree.objects().size());
+
+        bool allConvex = true;
+        for(size_t i = 0; i < np; i++)
+        {
+            double lower = sii_->lowerBound()[i];
+            double upper = sii_->upperBound()[i];
+            double delta = (upper - lower)/200;
+            // The three parameter values in increasing order
+            std::vector<double> x = { param[i] - delta, param[i], param[i] + delta };
+            if (x[0] < lower)
+            {
+                x = { param[i], param[i] + delta, param[i] + 2*delta };
+            }
+            else if (x[2] > upper)
+            {
+                x = { param[i] - 2*delta, param[i] - delta, param[i] };
+            }
+            std::vector<double> y;
+            for(double xx : x)
+            {
+                EXPECT_GE(xx, lower);
+                EXPECT_LE(xx, upper);
+                auto p = param;
+                p[i]   = xx;
+                y.push_back(chi2(p));
+            }
+            // The parabola chi2 = a x^2 + b x + c through the points
+            double s01  = (y[1] - y[0])/(x[1] - x[0]);
+            double s12  = (y[2] - y[1])/(x[2] - x[1]);
+            double a    = (s12 - s01)/(x[2] - x[0]);
+            double b    = s01 - a*(x[0] + x[1]);
+            double pmin = -b/(2*a);
+            // The force constant is a divided by the parameter squared
+            double fc   = sens.forceConstants()[i];
+            EXPECT_NEAR(a, fc*param[i]*param[i], 1e-5*std::abs(a)) << sii_->paramNames()[i];
+            allConvex   = allConvex && a >= 0;
+
+            const auto &entry = sensTree.objects()[i];
+            EXPECT_EQ(std::to_string(i), entry.key());
+            EXPECT_EQ(sii_->paramNames()[i],
+                      findObject(entry, "particle")->value() + " " + findObject(entry, "parameter")->value());
+            EXPECT_NEAR(param[i], findNumber(entry, "p_orig"), 1e-6) << sii_->paramNames()[i];
+            EXPECT_NEAR(chi2_0, findNumber(entry, "chi2_orig"), 1e-6*chi2_0 + 1e-6);
+            EXPECT_NEAR(pmin, findNumber(entry, "p_min"), 1e-5*std::abs(pmin) + 1e-6)
+                << sii_->paramNames()[i];
+        }
+        // The genome is a minimum if all parabolas curve upwards
+        EXPECT_EQ(allConvex, minimum);
+    }
+
     /*! \brief Compute the chi-squared for some parameters
      * \param[in] param The parameters
      * \return the chi-squared of the training set
@@ -204,58 +279,22 @@ protected:
 TEST_F(SensitivityAnalysisTrainTest, ParabolaThroughChi2)
 {
     // The atom types c2, c3, h, o2 and o3
-    size_t np = sii_->nParam();
-    ASSERT_EQ(5u, np);
-    ASSERT_EQ(np, genome_.nBase());
-    auto   param = genome_.bases();
-    double chi2_0 = chi2(param);
-    EXPECT_GT(chi2_0, 0);
+    ASSERT_EQ(5u, sii_->nParam());
+    checkAnalysis(genome_.bases());
+}
 
-    JsonTree            jtree("SensitivityAnalysisTest");
-    SensitivityAnalysis sens;
-    bool                minimum = sens.run(&msghandler_, sii_, &fitComp_, &genome_,
-                                           iMolSelect::Train, &jtree, true);
-    EXPECT_TRUE(msghandler_.ok());
-    ASSERT_EQ(np, sens.forceConstants().size());
-    ASSERT_EQ(1u, jtree.objects().size());
-    const auto &sensTree = jtree.objects()[0];
-    EXPECT_EQ("sensitivity", sensTree.key());
-    ASSERT_EQ(np, sensTree.objects().size());
-
-    bool allConvex = true;
-    for(size_t i = 0; i < np; i++)
-    {
-        // The chi-squared at the parameter and half a percent of its
-        // range below and above it, as SensitivityAnalysis does.
-        double delta = (sii_->upperBound()[i] - sii_->lowerBound()[i])/200;
-        ASSERT_GE(param[i] - delta, sii_->lowerBound()[i]);
-        ASSERT_LE(param[i] + delta, sii_->upperBound()[i]);
-        auto   p      = param;
-        p[i]          = param[i] - delta;
-        double chi2m  = chi2(p);
-        p[i]          = param[i] + delta;
-        double chi2p  = chi2(p);
-        // The parabola chi2 = a x^2 + b x + c through these
-        double a      = (chi2p - 2*chi2_0 + chi2m)/(2*delta*delta);
-        double slope  = (chi2p - chi2m)/(2*delta);
-        double b      = slope - 2*a*param[i];
-        double pmin   = -b/(2*a);
-        // The force constant is a divided by the parameter squared
-        double fc     = sens.forceConstants()[i];
-        EXPECT_NEAR(a, fc*param[i]*param[i], 1e-5*std::abs(a)) << sii_->paramNames()[i];
-        allConvex     = allConvex && a >= 0;
-
-        const auto &entry = sensTree.objects()[i];
-        EXPECT_EQ(std::to_string(i), entry.key());
-        EXPECT_EQ(sii_->paramNames()[i],
-                  findObject(entry, "particle")->value() + " " + findObject(entry, "parameter")->value());
-        EXPECT_NEAR(param[i], findNumber(entry, "p_orig"), 1e-6);
-        EXPECT_NEAR(chi2_0, findNumber(entry, "chi2_orig"), 1e-6*chi2_0 + 1e-6);
-        EXPECT_NEAR(pmin, findNumber(entry, "p_min"), 1e-5*std::abs(pmin) + 1e-6)
-            << sii_->paramNames()[i];
-    }
-    // The genome is a minimum if all parabolas curve upwards
-    EXPECT_EQ(allConvex, minimum);
+// Test: Parameters at or close to a bound are analysed with two values on
+// the other side, and the output has the parameters themselves.
+TEST_F(SensitivityAnalysisTrainTest, ParametersAtBounds)
+{
+    ASSERT_EQ(5u, sii_->nParam());
+    auto param  = genome_.bases();
+    auto delta  = [this](size_t i) { return (sii_->upperBound()[i] - sii_->lowerBound()[i])/200; };
+    param[0]    = sii_->lowerBound()[0];
+    param[1]    = sii_->upperBound()[1];
+    param[2]    = sii_->lowerBound()[2] + 0.5*delta(2);
+    param[3]    = sii_->upperBound()[3] - 0.5*delta(3);
+    checkAnalysis(param);
 }
 
 // Test: After the analysis the genome and the force field are as before

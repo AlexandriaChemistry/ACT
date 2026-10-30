@@ -127,8 +127,8 @@ void Sensitivity::print(gmx::TextWriter      *tw,
         abc.addObject("a", a_);
         abc.addObject("b", b_);
         abc.addObject("c", c_);
-        abc.addObject("p_orig", p_[1]);
-        abc.addObject("chi2_orig", chi2_[1]);
+        abc.addObject("p_orig", p_[original_]);
+        abc.addObject("chi2_orig", chi2_[original_]);
         if (a_ != 0)
         {
             abc.addObject("p_min", p_min);
