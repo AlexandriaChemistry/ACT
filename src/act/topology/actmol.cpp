@@ -205,7 +205,8 @@ void ACTMol::checkAtoms(MsgHandler       *msghandler,
     }
 }
 
-std::vector<gmx::RVec> ACTMol::experCoords(const std::vector<gmx::RVec> &xxx) const
+std::vector<gmx::RVec> ACTMol::experCoords(const std::vector<gmx::RVec> &xxx,
+                                           bool                          vsites) const
 {
     auto topol   = topology();
     auto myatoms = topol->atoms();
@@ -251,8 +252,11 @@ std::vector<gmx::RVec> ACTMol::experCoords(const std::vector<gmx::RVec> &xxx) co
             break;
         }
     }
-    ForceComputer fcomp;
-    fcomp.generateVsites(topol, &coords);
+    if (vsites)
+    {
+        ForceComputer fcomp;
+        fcomp.generateVsites(topol, &coords);
+    }
     return coords;
 }
 
@@ -825,8 +829,13 @@ void ACTMol::GenerateTopology(MsgHandler        *msghandler,
         isLinear_ = isLinearMolecule(msghandler, topology_.atoms(), coords);
         // Symmetrize the atoms
         get_symmetrized_charges(&topology_, pd, nullptr, &symmetric_charges_);
-        // Finally collect data for fast force calculations
-        collectCoordsEnergy(msghandler);
+        // Finally collect data for fast force calculations. Without
+        // parameters there is nothing to compute, and the positions of
+        // virtual sites cannot be constructed.
+        if (missing != missingParameters::Generate)
+        {
+            collectCoordsEnergy(msghandler);
+        }
     }
     else
     {

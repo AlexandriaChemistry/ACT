@@ -251,10 +251,14 @@ public:
     /*! \brief
      * Return a modified coordinate vector of the molecule based on the input.
      * The output array includes shells and/or vsites.
-     * \param[in] xxx Input coordinates
+     * \param[in] xxx    Input coordinates
+     * \param[in] vsites Whether to construct the positions of the virtual
+     *                   sites, which needs their parameters. Otherwise they
+     *                   are at their first parent atom, like the shells.
      * \return Modified coordinate array.
      */
-    std::vector<gmx::RVec> experCoords(const std::vector<gmx::RVec> &xxx) const;
+    std::vector<gmx::RVec> experCoords(const std::vector<gmx::RVec> &xxx,
+                                       bool                          vsites = true) const;
 
     /*! \brief
      * Constructor

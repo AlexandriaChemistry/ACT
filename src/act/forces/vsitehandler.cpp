@@ -835,8 +835,7 @@ void VsiteHandler::constructPositions(const Topology         *top,
             auto &params      = vs->params();
             if (params.empty())
             {
-                continue;
-                //GMX_THROW(gmx::InternalError("No parameters to generate virtual sites in topology. constructPositions should not be called before parameters are assigned."));
+                GMX_THROW(gmx::InternalError("No parameters to generate virtual sites in topology. constructPositions should not be called before parameters are assigned."));
             }
             int ai = atomIndices[0];
             int aj = atomIndices[1];
