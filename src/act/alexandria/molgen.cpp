@@ -795,13 +795,21 @@ size_t MolGen::Read(MsgHandler                          *msghandler,
         for (auto mpi = mp.begin(); mpi < mp.end(); )
         {
             mpi->generateComposition();
-            mpi->validate(msghandler);
-            if (!mpi->hasAllAtomTypes())
+            // An inconsistent compound, for instance with the atoms of
+            // the fragments of a dimer swapped, would give nonsensical
+            // coordinates.
+            bool valid = mpi->validate(msghandler);
+            if (!valid || !mpi->hasAllAtomTypes())
             {
                 /*
                  * Here we remove a compound if we cannot generate it's
-                 * composition.
+                 * composition, or if it is inconsistent.
                  */
+                if (!valid)
+                {
+                    msghandler->msg(ACTStatus::Warning,
+                                    gmx::formatString("Removing inconsistent compound %s", mpi->getMolname().c_str()));
+                }
                 mpi = mp.erase(mpi);
             }
             else

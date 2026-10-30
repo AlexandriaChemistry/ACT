@@ -34,6 +34,7 @@
 
 #include "act/molprop/molprop.h"
 
+#include <cctype>
 #include <cmath>
 
 #include <map>
@@ -108,12 +109,57 @@ void MolProp::generateComposition()
 }
 
 
-void MolProp::validate(MsgHandler *msghandler)
+// Defined below
+static std::string comp2formula(std::map<std::string, int> &comp);
+
+/*! \brief Whether a name looks like an element symbol, such as C or Cl
+ * \param[in] name The name
+ * \return the result
+ */
+static bool isElementSymbol(const std::string &name)
+{
+    return ((name.size() == 1 && std::isupper(name[0])) ||
+            (name.size() == 2 && std::isupper(name[0]) && std::islower(name[1])));
+}
+
+/*! \brief Turn a chemical formula into the number of atoms of each element
+ * The charge at the end of the formula of an ion, such as Na+, is ignored.
+ * \param[in]  formula The formula, such as CH4O
+ * \param[out] comp    The elements and counts
+ * \return whether the formula could be interpreted
+ */
+static bool formula2comp(const std::string &formula, std::map<std::string, int> *comp)
+{
+    comp->clear();
+    size_t i = 0;
+    while (i < formula.size() && formula[i] != '+' && formula[i] != '-')
+    {
+        if (!std::isupper(formula[i]))
+        {
+            return false;
+        }
+        std::string elem(1, formula[i++]);
+        while (i < formula.size() && std::islower(formula[i]))
+        {
+            elem += formula[i++];
+        }
+        int n = 0;
+        while (i < formula.size() && std::isdigit(formula[i]))
+        {
+            n = 10*n + (formula[i++] - '0');
+        }
+        (*comp)[elem] += std::max(1, n);
+    }
+    return !comp->empty();
+}
+
+bool MolProp::validate(MsgHandler *msghandler)
 {
     if (!msghandler)
     {
-        return;
+        return true;
     }
+    bool valid = true;
 
     // Count and report experiments
     msghandler->msg(ACTStatus::Info,
@@ -139,6 +185,7 @@ void MolProp::validate(MsgHandler *msghandler)
             const auto &atoms = expWithAtoms[ei]->calcAtomConst();
             if (atoms.size() != refAtoms.size())
             {
+                valid = false;
                 msghandler->msg(ACTStatus::Error,
                                 ACTMessage::InconsistentAtomOrder,
                                 gmx::formatString("Molecule %s: experiment %zu has %zu atoms but "
@@ -154,7 +201,8 @@ void MolProp::validate(MsgHandler *msghandler)
                 bool idOk     = (atoms[ai].getAtomid()  == refAtoms[ai].getAtomid());
                 if (!nameOk || !obtypeOk || !idOk)
                 {
-                    msghandler->msg(ACTStatus::Error,
+                    valid = false;
+                msghandler->msg(ACTStatus::Error,
                                     ACTMessage::InconsistentAtomOrder,
                                     gmx::formatString("Molecule %s: atom %zu differs between "
                                                       "experiment 0 and experiment %zu "
@@ -169,6 +217,53 @@ void MolProp::validate(MsgHandler *msghandler)
                                                       refAtoms[ai].getAtomid(),
                                                       atoms[ai].getAtomid()));
                 }
+            }
+        }
+    }
+
+    // Check that the atoms of each fragment match its formula, such that a
+    // dimer A#B with the atoms in the order of B#A is detected. The
+    // atom names are the elements, as in generateComposition.
+    if (!expWithAtoms.empty())
+    {
+        const auto &refAtoms = expWithAtoms[0]->calcAtomConst();
+        for (const auto &frag : fragment_)
+        {
+            std::map<std::string, int> expected;
+            if (!formula2comp(frag.formula(), &expected))
+            {
+                continue;
+            }
+            std::map<std::string, int> comp;
+            bool                       inRange  = true;
+            bool                       elements = true;
+            for (int atomIdx : frag.atoms())
+            {
+                if (atomIdx < 0 || static_cast<size_t>(atomIdx) >= refAtoms.size())
+                {
+                    inRange = false;
+                    break;
+                }
+                const auto &name = refAtoms[atomIdx].getName();
+                // Some files have atom types rather than elements as names
+                elements = elements && isElementSymbol(name);
+                comp[name] += 1;
+            }
+            if (!elements)
+            {
+                continue;
+            }
+            if (!inRange || comp != expected)
+            {
+                valid = false;
+                msghandler->msg(ACTStatus::Error,
+                                ACTMessage::InconsistentAtomOrder,
+                                gmx::formatString("Molecule %s: the atoms of fragment %s are %s, "
+                                                  "but its formula is %s.",
+                                                  getMolname().c_str(),
+                                                  frag.iupac().empty() ? frag.inchi().c_str() : frag.iupac().c_str(),
+                                                  inRange ? comp2formula(comp).c_str() : "out of range",
+                                                  frag.formula().c_str()));
             }
         }
     }
@@ -192,6 +287,7 @@ void MolProp::validate(MsgHandler *msghandler)
             if (itI != atomToFrag.end() && itJ != atomToFrag.end() &&
                 itI->second != itJ->second)
             {
+                valid = false;
                 msghandler->msg(ACTStatus::Error,
                                 ACTMessage::InterFragmentBond,
                                 gmx::formatString("Molecule %s (dimer): bond between atom %d "
@@ -202,6 +298,7 @@ void MolProp::validate(MsgHandler *msghandler)
             }
         }
     }
+    return valid;
 }
 
 bool MolProp::SearchCategory(const std::string &catname) const

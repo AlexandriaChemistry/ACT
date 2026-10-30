@@ -97,12 +97,15 @@ public:
      * Reports the number of experiments via msghandler at Info level.
      * Reports errors if experiments with atoms have inconsistent atom order
      * (name, obtype or atomid differ between experiments).
+     * Reports errors if the atoms of a fragment do not match its formula,
+     * for instance in a dimer A#B with the atoms in the order of B#A.
      * For dimers (molecules with exactly two fragments) reports errors if
      * any bond connects atoms belonging to different fragments.
      *
      * \param[in] msghandler Handler for logging and error reporting
+     * \return whether the molecule is consistent
      */
-    void validate(MsgHandler *msghandler);
+    bool validate(MsgHandler *msghandler);
 
     //! \return myself
     MolProp *self() { return this; }
