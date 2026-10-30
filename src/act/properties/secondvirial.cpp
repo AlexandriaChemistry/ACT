@@ -50,6 +50,7 @@
 #include "act/properties/princ.h"
 #include "act/topology/actmol.h"
 #include "act/utility/jsontree.h"
+#include "act/utility/timings.h"
 #include "act/utility/memory_check.h"
 #include "act/utility/stringutil.h"
 #include "gromacs/commandline/filenm.h"
@@ -405,6 +406,8 @@ void ReRunner::runB2(CommunicationRecord         *cr,
     std::vector<std::vector<double>> allRand;
     if (cr->isMaster())
     {
+        static const size_t timer = Timings::instance().index("Random numbers");
+        ScopedTimer         scoped(timer);
         gendimers_.generateRandomNumbers(maxdimer);
         allRand = gendimers_.allRandom();
         gendimers_.clearAllRandom();
@@ -416,6 +419,8 @@ void ReRunner::runB2(CommunicationRecord         *cr,
      */
     auto distribute = [&](int start, int end)
     {
+        static const size_t timer = Timings::instance().index("Distributing orientations");
+        ScopedTimer         scoped(timer);
         int nper  = (end - start) / cr->size();
         int nrest = (end - start) % cr->size();
         int nmine = 0;
@@ -471,8 +476,19 @@ void ReRunner::runB2(CommunicationRecord         *cr,
     std::vector<gmx::RVec> inertia    = { rvnul, rvnul };
     std::vector<gmx::RVec> inertiaSum = { rvnul, rvnul };
     size_t                 nInertia   = 0;
+    // The other parts are timed where they are done
+    auto               &timings      = Timings::instance();
+    static const size_t prepareTimer = timings.index("Dimer generation");
+    static const size_t energyTimer  = timings.index("Interaction energies");
+    static const size_t torqueTimer  = timings.index("Forces and torques");
+    static const size_t addTimer     = timings.index("B2 accumulation");
+    static const size_t sumTimer     = timings.index("B2 aggregation");
+    static const size_t b2Timer      = timings.index("B2 integration");
+    static const size_t outputTimer  = timings.index("B2 output");
     // First time around before generating
+    timings.start(prepareTimer);
     gendimers_.prepare(msghandler, pd, actmol);
+    timings.stop(prepareTimer);
     // Collect all generated dimer coordinates for -ox output (only when requested)
     std::vector<std::vector<gmx::RVec>> allCoords;
     // The data of all nodes of all rounds so far, on the master
@@ -489,6 +505,7 @@ void ReRunner::runB2(CommunicationRecord         *cr,
             // Generate a new set of dimers for all distances
             if (!gendimers_.hasTrajectory())
             {
+                ScopedTimer scoped(prepareTimer);
                 dimers = gendimers_.generateDimers(msghandler);
                 if (gendimers_.outCoords())
                 {
@@ -512,6 +529,7 @@ void ReRunner::runB2(CommunicationRecord         *cr,
             }
 
             // Coordinates of all particles of the dimers
+            timings.start(energyTimer);
             const auto &atoms = actmol->atomsConst();
             std::vector<std::vector<gmx::RVec>> allCoordsShells;
             for (const auto &d : dimers)
@@ -524,7 +542,9 @@ void ReRunner::runB2(CommunicationRecord         *cr,
             std::vector<std::vector<gmx::RVec>>            allForces;
             forceComp_->computeInteraction(msghandler, pd, actmol, &allCoordsShells, true,
                                            &allEinter, &allEpot, &allForces);
+            timings.stop(energyTimer);
             // Loop over dimers
+            timings.start(torqueTimer);
             for (size_t idim = 0; idim < dimers.size(); idim++)
             {
                 const auto &coords = allCoordsShells[idim];
@@ -652,8 +672,10 @@ void ReRunner::runB2(CommunicationRecord         *cr,
             {
                 msghandler->write("");
             }
+            timings.stop(torqueTimer);
             // Now we have computed energies, forces and torques for one dimer.
             // Time to update the intermediate structure
+            ScopedTimer scoped(addTimer);
             auto &x = edist.getX();
             auto &y = edist.getY();
             for(size_t iTemp = 0; iTemp < Temperature.size(); iTemp++)
@@ -707,11 +729,14 @@ void ReRunner::runB2(CommunicationRecord         *cr,
         }
         // Sum b2data over processors, keeping the sums of this node
         // for the next rounds
+        timings.start(sumTimer);
         b2total = b2data;
         b2total.aggregate(cr);
+        timings.stop(sumTimer);
 
         if (cr->isMaster())
         {
+            ScopedTimer scoped(b2Timer);
             msghandler->write(gmx::formatString("\nSecond virial coefficient (cm^3/mol) from %d dimer orientations", nround));
             auto header = gmx::formatString("Temperature");
             for(const auto &b2b : b2Type2str)
@@ -755,6 +780,7 @@ void ReRunner::runB2(CommunicationRecord         *cr,
         }
     }
 
+    ScopedTimer scoped(outputTimer);
     // Gather generated dimer coordinates from all nodes and write to -ox file
     if (gendimers_.outCoords() && !gendimers_.hasTrajectory())
     {
@@ -821,6 +847,8 @@ void ReRunner::runB2(CommunicationRecord         *cr,
  */
 int b2(int argc, char *argv[])
 {
+    // Time the phases of the program, see printTimings.
+    PhaseTimer phase("Startup");
     std::vector<const char *> desc = {
         "alexandria b2 will generate conformations of dimers. The",
         "corresponding charges (molprop) file, used for generating the topology",
@@ -915,17 +943,24 @@ int b2(int argc, char *argv[])
         {
             actmol.topology()->dump(msghandler.twDebug());
         }
+        phase.next("Second virial");
         rerun.setFunctions(&forceComp, oenv);
         rerun.runB2(&cr, &msghandler, &pd, &actmol, maxdimers, fnm);
     }
-    if (json && cr.isMaster())
-    {
-        jtree.write("simulate.json", json);
-    }
-    else 
+    phase.next("Output");
+    bool writeJson = json && cr.isMaster();
+    if (!writeJson)
     {
         int indent = 0;
         msghandler.write(jtree.writeString(json, &indent));
+    }
+    phase.stop();
+    // The timings go into the json file, or else only into the log file
+    printTimings(&cr, cr.isMaster() ? msghandler.tw() : nullptr, phase.wallTime(),
+                 writeJson ? &jtree : nullptr);
+    if (writeJson)
+    {
+        jtree.write("simulate.json", json);
     }
     return status;
 }

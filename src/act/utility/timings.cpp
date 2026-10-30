@@ -38,6 +38,7 @@
 #include <numeric>
 
 #include "act/utility/communicationrecord.h"
+#include "act/utility/jsontree.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/stringutil.h"
@@ -88,6 +89,64 @@ void Timings::stop(size_t id)
     }
 }
 
+void Timings::reset()
+{
+    if (!active_.empty())
+    {
+        GMX_THROW(gmx::InternalError("Cannot reset the timings while a region is active"));
+    }
+    std::fill(seconds_.begin(), seconds_.end(), 0.0);
+    std::fill(calls_.begin(), calls_.end(), 0.0);
+}
+
+PhaseTimer::PhaseTimer(const std::string &name)
+    : wallStart_(std::chrono::steady_clock::now())
+{
+    auto &timings = Timings::instance();
+    if (Timings::none == timings.parent())
+    {
+        timings.reset();
+    }
+    id_ = timings.index(name);
+    timings.start(id_);
+}
+
+PhaseTimer::~PhaseTimer()
+{
+    // Only stop if that is possible, a destructor should not throw
+    if (running_ && Timings::instance().parent() == id_)
+    {
+        Timings::instance().stop(id_);
+    }
+}
+
+void PhaseTimer::next(const std::string &name)
+{
+    auto id = Timings::instance().index(name);
+    if (running_ && id == id_)
+    {
+        return;
+    }
+    stop();
+    id_      = id;
+    Timings::instance().start(id_);
+    running_ = true;
+}
+
+void PhaseTimer::stop()
+{
+    if (running_)
+    {
+        Timings::instance().stop(id_);
+        running_ = false;
+    }
+}
+
+double PhaseTimer::wallTime() const
+{
+    return std::chrono::duration<double>(std::chrono::steady_clock::now() - wallStart_).count();
+}
+
 namespace
 {
 
@@ -113,7 +172,8 @@ const char nameSeparator = '\n';
 
 void printTimings(const CommunicationRecord *cr,
                   gmx::TextWriter           *tw,
-                  double                     wallTime)
+                  double                     wallTime,
+                  JsonTree                  *jtree)
 {
     auto          &timings = Timings::instance();
     ProcessTimings mine    = { cr->nodeType(), wallTime, timings.names(),
@@ -189,7 +249,7 @@ void printTimings(const CommunicationRecord *cr,
             all.push_back(std::move(pt));
         }
     }
-    if (nullptr == tw)
+    if (nullptr == tw && nullptr == jtree)
     {
         return;
     }
@@ -213,6 +273,11 @@ void printTimings(const CommunicationRecord *cr,
         double timed    = 0;
         for (size_t i = 0; i < pt.names.size() && i < pt.seconds.size() && i < pt.calls.size(); i++)
         {
+            if (0 == pt.calls[i])
+            {
+                // Not used since the timings were reset
+                continue;
+            }
             auto &s = sums[pt.names[i]];
             s.seconds           += pt.seconds[i];
             s.calls             += pt.calls[i];
@@ -227,8 +292,6 @@ void printTimings(const CommunicationRecord *cr,
     std::sort(rows.begin(), rows.end(),
               [](const auto &a, const auto &b) { return a.second.seconds > b.second.seconds; });
 
-    tw->writeStringFormatted("\nTime spent in the different parts of the program, summed over %zu process(es)",
-                             all.size());
     std::string counts;
     for (size_t r = 0; r < roles.size(); r++)
     {
@@ -238,39 +301,57 @@ void printTimings(const CommunicationRecord *cr,
                                         nproc[roles[r]], roleNames[r].c_str());
         }
     }
-    tw->writeStringFormatted(" (%s).\n", counts.c_str());
-    tw->writeStringFormatted("The time of each part excludes the parts that it calls. MPI times are given per\n");
-    tw->writeStringFormatted("part of the program they are called from. 'MPI waiting' is waiting for a message\n");
-    tw->writeStringFormatted("to arrive, 'MPI collectives' includes waiting for the other processes. The\n");
-    tw->writeStringFormatted("columns per role are averages per process in seconds.\n");
-    tw->writeStringFormatted("Wall time of the master %.2f s.\n\n", mine.wallTime);
-    std::string header = gmx::formatString("%-48s %10s %6s", "Part", "Seconds", "%");
-    for (size_t r = 0; r < roles.size(); r++)
+    if (tw)
     {
-        if (nproc[roles[r]] > 0)
-        {
-            header += gmx::formatString(" %10s", roleNames[r].c_str());
-        }
-    }
-    header += gmx::formatString(" %12s", "Calls");
-    tw->writeStringFormatted("%s\n", header.c_str());
-    auto printRow = [&](const std::string &name, const Sum &s)
-    {
-        std::string line = gmx::formatString("%-48s %10.2f %6.2f", name.c_str(), s.seconds,
-                                             totalWall > 0 ? 100*s.seconds/totalWall : 0.0);
+        tw->writeStringFormatted("\nTime spent in the different parts of the program, summed over %zu process(es)",
+                                 all.size());
+        tw->writeStringFormatted(" (%s).\n", counts.c_str());
+        tw->writeStringFormatted("The time of each part excludes the parts that it calls. MPI times are given per\n");
+        tw->writeStringFormatted("part of the program they are called from. 'MPI waiting' is waiting for a message\n");
+        tw->writeStringFormatted("to arrive, 'MPI collectives' includes waiting for the other processes. The\n");
+        tw->writeStringFormatted("columns per role are averages per process in seconds.\n");
+        tw->writeStringFormatted("Wall time of the master %.2f s.\n\n", mine.wallTime);
+        std::string header = gmx::formatString("%-48s %10s %6s", "Part", "Seconds", "%");
         for (size_t r = 0; r < roles.size(); r++)
         {
             if (nproc[roles[r]] > 0)
             {
-                auto pr = s.perRole.find(roles[r]);
-                line += gmx::formatString(" %10.3f", (pr == s.perRole.end() ? 0.0 : pr->second)/nproc[roles[r]]);
+                header += gmx::formatString(" %10s", roleNames[r].c_str());
+            }
+        }
+        header += gmx::formatString(" %12s", "Calls");
+        tw->writeStringFormatted("%s\n", header.c_str());
+    }
+    // The same table in JSON, with the per role columns as averages
+    // per process in seconds
+    JsonTree jparts("Parts");
+    auto printRow = [&](const std::string &name, const Sum &s)
+    {
+        double      percent = totalWall > 0 ? 100*s.seconds/totalWall : 0.0;
+        std::string line    = gmx::formatString("%-48s %10.2f %6.2f", name.c_str(), s.seconds, percent);
+        JsonTree    jrow(name);
+        jrow.addObject("Seconds", gmx::formatString("%.3f", s.seconds));
+        jrow.addObject("Percent", gmx::formatString("%.2f", percent));
+        for (size_t r = 0; r < roles.size(); r++)
+        {
+            if (nproc[roles[r]] > 0)
+            {
+                auto   pr      = s.perRole.find(roles[r]);
+                double average = (pr == s.perRole.end() ? 0.0 : pr->second)/nproc[roles[r]];
+                line += gmx::formatString(" %10.3f", average);
+                jrow.addObject(roleNames[r], gmx::formatString("%.3f", average));
             }
         }
         if (s.calls > 0)
         {
             line += gmx::formatString(" %12.0f", s.calls);
+            jrow.addObject("Calls", gmx::formatString("%.0f", s.calls));
         }
-        tw->writeStringFormatted("%s\n", line.c_str());
+        if (tw)
+        {
+            tw->writeStringFormatted("%s\n", line.c_str());
+        }
+        jparts.addObject(jrow);
     };
     for (const auto &row : rows)
     {
@@ -306,7 +387,18 @@ void printTimings(const CommunicationRecord *cr,
         total.perRole[pt.role] += pt.wallTime;
     }
     printRow("Total", total);
-    tw->writeStringFormatted("\n");
+    if (tw)
+    {
+        tw->writeStringFormatted("\n");
+    }
+    if (jtree)
+    {
+        JsonTree jtimings("Timings");
+        jtimings.addObject("Processes", counts);
+        jtimings.addValueUnit("Wall time of the master", gmx::formatString("%.3f", mine.wallTime), "s");
+        jtimings.addObject(jparts);
+        jtree->addObject(jtimings);
+    }
 }
 
 } // namespace alexandria

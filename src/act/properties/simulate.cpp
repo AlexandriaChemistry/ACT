@@ -48,6 +48,7 @@
 #include "act/topology/fragmenthandler.h"
 #include "act/utility/jsontree.h"
 #include "act/utility/stringutil.h"
+#include "act/utility/timings.h"
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/confio.h"
@@ -66,6 +67,8 @@ namespace alexandria
  */
 int simulate(int argc, char *argv[])
 {
+    // Time the phases of the program, see printTimings.
+    PhaseTimer phase("Startup");
     std::vector<const char *> desc = {
         "alexandria simulate performs a proof-of-principle MD simulation, using",
         "a force field derived by the Alexandria Chemistry Toolkit.", 
@@ -189,6 +192,7 @@ int simulate(int argc, char *argv[])
 
     if (pd.polarizable())
     {
+        phase.next("Polarizability");
         // Make a copy since it maybe changed
         auto xx     = actmol.xOriginal();
         auto qprops = actmol.qProps();
@@ -218,6 +222,7 @@ int simulate(int argc, char *argv[])
     /* Generate output file for debugging if requested */
     if (rerun.gendimers()->hasTrajectory())
     {
+        phase.next("Rerun");
         rerun.setFunctions(&forceComp, oenv);
         rerun.setEInteraction(actmol.fragmentHandler()->topologies().size() > 1);
         rerun.rerun(&msghandler, &pd, &actmol, msghandler.verbose());
@@ -231,6 +236,7 @@ int simulate(int argc, char *argv[])
         msghandler.msg(ACTStatus::Info, gmx::formatString("There are %lu fragments.", nfrag));
         if (sch.singlePoint())
         {
+            phase.next("Single point");
             std::map<InteractionType, double> energies;
             std::vector<gmx::RVec> forces(actmol.atomsConst().size());
             forceComp.compute(&msghandler, &pd, actmol.topology(), &xmin, &forces, &energies);
@@ -267,18 +273,21 @@ int simulate(int argc, char *argv[])
         }
         else if (sch.minimize())
         {
+            phase.next("Energy minimization");
             eMin = minimizeMolecule(&msghandler, &pd, &forceComp, sch,
                                     opt2fn_null("-freeze", fnm.size(),fnm.data()),
                                     &actmol, &xmin, &jtree);
         }
         if (eMinimizeStatus::OK == eMin && sch.nsteps() > 0)
         {
+            phase.next("Molecular dynamics");
             // Start from the minimized coordinates, if we minimized
             molhandler.simulate(&msghandler, &pd, &actmol, xmin, &forceComp, sch,
                                 opt2fn("-o", fnm.size(),fnm.data()),
                                 opt2fn("-e", fnm.size(),fnm.data()),
                                 oenv);
         }
+        phase.next("Output");
         auto confout = opt2fn_null("-c", fnm.size(),fnm.data());
         if (confout && eMinimizeStatus::OK == eMin)
         {
@@ -286,6 +295,7 @@ int simulate(int argc, char *argv[])
             actmol.PrintConformation(confout, xmin, sch.writeShells(), box);
         }
     }
+    phase.next("Output");
     auto omp = opt2fn_null("-omp", fnm.size(),fnm.data());
     if (omp)
     {
@@ -310,14 +320,17 @@ int simulate(int argc, char *argv[])
                                          msghandler.filename().c_str()));
         status = 1;
     }
-    if (json)
-    {
-        jtree.write("simulate.json", json);
-    }
-    else
+    if (!json)
     {
         int indent = 0;
         msghandler.write(jtree.writeString(json, &indent));
+    }
+    phase.stop();
+    // The timings go into the json file, or else only into the log file
+    printTimings(&cr, msghandler.tw(), phase.wallTime(), json ? &jtree : nullptr);
+    if (json)
+    {
+        jtree.write("simulate.json", json);
     }
     if (!msghandler.ok())
     {
