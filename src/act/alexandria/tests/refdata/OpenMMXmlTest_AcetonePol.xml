@@ -140,6 +140,7 @@
     <Atom type="o2_s_1" sigma="0" epsilon="0"/>
   </NonbondedForce>
   <DrudeForce>
+    <Particle type1="o2_s_1" type2="o2_1" polarizability="0.00145" charge="-1.2" thole="0"/>
     <Particle type1="c2_s_1" type2="c2_1" polarizability="0.00145" charge="-1.2" thole="0"/>
     <Particle type1="c3_s_1" type2="c3_1" polarizability="0.00145" charge="-1.2" thole="0"/>
     <Particle type1="c3_s_2" type2="c3_2" polarizability="0.00145" charge="-1.2" thole="0"/>
@@ -149,7 +150,6 @@
     <Particle type1="h_s_4" type2="h_4" polarizability="0.00055" charge="-0.8" thole="0"/>
     <Particle type1="h_s_5" type2="h_5" polarizability="0.00055" charge="-0.8" thole="0"/>
     <Particle type1="h_s_6" type2="h_6" polarizability="0.00055" charge="-0.8" thole="0"/>
-    <Particle type1="o2_s_1" type2="o2_1" polarizability="0.00145" charge="-1.2" thole="0"/>
   </DrudeForce>
 </ForceField>
 ]]></String>

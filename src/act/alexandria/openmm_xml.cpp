@@ -295,6 +295,17 @@ typedef struct {
     double      rhyper;
 } t_hyper_stuff;
 
+//! \brief A shell and its parent particle, with their ACT and OpenMM types
+struct DrudeParticle
+{
+    //! Force field type of the parent
+    std::string parentType;
+    //! OpenMM type of the parent
+    std::string parentOpenMMType;
+    //! OpenMM type of the shell
+    std::string shellOpenMMType;
+};
+
 /*! Put code in class for easier structuring
  */
 class OpenMMWriter
@@ -341,11 +352,16 @@ private:
                     const std::vector<double>       &params);
     void addXmlHyper(xmlNodePtr                        parent,
                      const std::vector<t_hyper_stuff> &stuff);
-    //! Add the Drude particle interaction energy parameters
-    void addXmlPolarization(xmlNodePtr                        parent,
-                            const ForceField                 *pd,
-                            const std::map<std::string, int> &ffTypeMap,
-                            double                            epsr_fac);
+    /*! \brief Add the Drude particle interaction energy parameters
+     * \param[in] parent    The xml node to add to
+     * \param[in] pd        The force field
+     * \param[in] particles The shells and their parents
+     * \param[in] epsr_fac  Scaling factor for the charges
+     */
+    void addXmlPolarization(xmlNodePtr                         parent,
+                            const ForceField                  *pd,
+                            const std::vector<DrudeParticle>  &particles,
+                            double                             epsr_fac);
     //! Add a complete force field for the molecules
     void addXmlForceField(MsgHandler                *msghandler,
                           xmlNodePtr                 parent,
@@ -956,56 +972,52 @@ void OpenMMWriter::addXmlNonbonded(MsgHandler                      *msghandler,
     }    
 }
 
-void OpenMMWriter::addXmlPolarization(xmlNodePtr                        parent,
-                                      const ForceField                 *pd,
-                                      const std::map<std::string, int> &ffTypeMap,
-                                      double                            epsr_fac)
+void OpenMMWriter::addXmlPolarization(xmlNodePtr                         parent,
+                                      const ForceField                  *pd,
+                                      const std::vector<DrudeParticle>  &particles,
+                                      double                             epsr_fac)
 {
     if (!pd->polarizable())
     {
         return;
     }
     // !!! Shell particle has to be type1, core particle has to be type2 !!!
+    // OpenMM finds the parent of a shell from its type, hence each shell
+    // type has one parent type, see addXmlForceField.
     auto fs             = pd->findForcesConst(InteractionType::POLARIZATION);
     auto pol_name       = potentialToParameterName(fs.potential());
     auto polPtr         = add_xml_child(parent, exml_names(xmlEntryOpenMM::DRUDEFORCE));
     std::vector<t_hyper_stuff> stuff;
-    for(const auto &fft: ffTypeMap)
+    for(const auto &dp : particles)
     {
-        auto aType = pd->findParticleType(fft.first);
-        for(int i = 1; i <= fft.second; i++)
+        auto aType = pd->findParticleType(dp.parentType);
+        if (!aType->hasOption("poltype"))
         {
-            if (ActParticle::Shell != aType->apType() && aType->hasOption("poltype"))
-            {
-                std::string type1 = aType->optionValue("poltype");
-                auto param        = fs.findParameterMapConst(Identifier(type1));
-                if (minTrain(param) >= ntrain_)
-                {
-                    auto idType1 = Identifier({type1});
-                    auto alpha   = fs.findParameterTypeConst(idType1, pol_name[polALPHA]);
-                    // Now check for hyper polarizability, before changing type1 and type2
-                    auto fchyper = fs.findParameterTypeConst(idType1, pol_name[polFCHYPER]);
-                    auto rhyper  = fs.findParameterTypeConst(idType1, pol_name[polRHYPER]);
-                    auto shelltp = pd->findParticleType(type1);
+            continue;
+        }
+        std::string poltype = aType->optionValue("poltype");
+        auto param          = fs.findParameterMapConst(Identifier(poltype));
+        if (minTrain(param) >= ntrain_)
+        {
+            auto idType1 = Identifier({poltype});
+            auto alpha   = fs.findParameterTypeConst(idType1, pol_name[polALPHA]);
+            // Now check for hyper polarizability
+            auto fchyper = fs.findParameterTypeConst(idType1, pol_name[polFCHYPER]);
+            auto rhyper  = fs.findParameterTypeConst(idType1, pol_name[polRHYPER]);
+            auto shelltp = pd->findParticleType(poltype);
 
-                    std::string type2 = fft.first;
-                    if (addNumbersToAtomTypes_)
-                    {
-                        type1 = nameIndex(type1, i);
-                        type2 = nameIndex(type2, i);
-                    }
-                    auto grandchild2 = add_xml_child(polPtr, exml_names(xmlEntryOpenMM::PARTICLE));
-                    add_xml_char(grandchild2, exml_names(xmlEntryOpenMM::TYPE1), type1.c_str());
-                    add_xml_char(grandchild2, exml_names(xmlEntryOpenMM::TYPE2), type2.c_str());
-                    add_xml_double(grandchild2, "polarizability", alpha.internalValue());
-                    add_xml_double(grandchild2, exml_names(xmlEntryOpenMM::CHARGE_RES), shelltp->charge()*epsr_fac);
-                    add_xml_double(grandchild2, "thole", 0);
-                    if (fchyper.value() > 0)
-                    {
-                        // Now add a pair
-                        stuff.push_back( { type1, type2, fchyper.value(), rhyper.value() } );
-                    }
-                }
+            const std::string &type1 = dp.shellOpenMMType;
+            const std::string &type2 = dp.parentOpenMMType;
+            auto grandchild2 = add_xml_child(polPtr, exml_names(xmlEntryOpenMM::PARTICLE));
+            add_xml_char(grandchild2, exml_names(xmlEntryOpenMM::TYPE1), type1.c_str());
+            add_xml_char(grandchild2, exml_names(xmlEntryOpenMM::TYPE2), type2.c_str());
+            add_xml_double(grandchild2, "polarizability", alpha.internalValue());
+            add_xml_double(grandchild2, exml_names(xmlEntryOpenMM::CHARGE_RES), shelltp->charge()*epsr_fac);
+            add_xml_double(grandchild2, "thole", 0);
+            if (fchyper.value() > 0)
+            {
+                // Now add a pair
+                stuff.push_back( { type1, type2, fchyper.value(), rhyper.value() } );
             }
         }
     }
@@ -1271,6 +1283,18 @@ void OpenMMWriter::addXmlForceField(MsgHandler                *msghandler,
     AlexandriaMols amols;    
     // See comment below about fftypeLocalMap.
     std::map<std::string, int> fftypeGlobalMap;
+    // The OpenMM type of the shells, for the OpenMM type of their parent and
+    // their rank among its shells. OpenMM finds the parent of a shell from
+    // the types in the DrudeForce, hence each shell type should have a single
+    // parent type. Since different particle types can have the same shell
+    // type in ACT, the shell types are numbered over all molecules.
+    std::map<std::string, std::string> shellOpenMMType;
+    // The number of OpenMM types of each shell type
+    std::map<std::string, int>         shellTypeCount;
+    // Without numbering, the force field type of the parent of each shell type
+    std::map<std::string, std::string> shellParentType;
+    // The shells and their parents for the DrudeForce
+    std::vector<DrudeParticle>         drudeParticles;
     // List of compounds that we have encountered
     std::set<std::string> InchiUsed;
     // The bond types used.
@@ -1332,6 +1356,11 @@ void OpenMMWriter::addXmlForceField(MsgHandler                *msghandler,
             }
             for (size_t i = 0; i < myatoms.size(); i++)
             {
+                // Shells are treated with their parent below
+                if (ActParticle::Shell == myatoms[i].pType())
+                {
+                    continue;
+                }
                 // First do atom type stuff
                 auto ffType            = myatoms[i].ffType();
                 // Local index, default 1
@@ -1411,11 +1440,55 @@ void OpenMMWriter::addXmlForceField(MsgHandler                *msghandler,
                             shellExt   = gmx::formatString("%c", static_cast<char>('a'+ishell));
                             shellName += shellExt;
                         }
-                        auto shellType = myatoms[shell].ffType();
-                        if (addNumbersToAtomTypes_)
+                        // The same OpenMM type for all shells with the same
+                        // OpenMM type of their parent
+                        auto shellFfType = myatoms[shell].ffType();
+                        auto key         = openMMtype + shellExt;
+                        auto known       = shellOpenMMType.find(key);
+                        if (shellOpenMMType.end() == known)
                         {
-                            shellType += gmx::formatString("_%d%s", localIndex, shellExt.c_str());
+                            std::string shellType = shellFfType;
+                            if (addNumbersToAtomTypes_)
+                            {
+                                shellTypeCount[shellFfType] += 1;
+                                shellType = nameIndex(shellFfType, shellTypeCount[shellFfType]);
+                                // The other forces need the number of shell types
+                                fftypeGlobalMap[shellFfType] = shellTypeCount[shellFfType];
+                            }
+                            else
+                            {
+                                auto pt = shellParentType.find(shellFfType);
+                                if (shellParentType.end() != pt && pt->second != ffType)
+                                {
+                                    msghandler->msg(ACTStatus::Error,
+                                                    gmx::formatString("Shell type %s belongs to particle types %s and %s, which OpenMM cannot distinguish without numbering the atom types, please use -numberAtypes.",
+                                                                      shellFfType.c_str(), pt->second.c_str(), ffType.c_str()));
+                                }
+                                shellParentType.insert({ shellFfType, ffType });
+                                fftypeGlobalMap.insert({ shellFfType, 1 });
+                            }
+                            known = shellOpenMMType.insert({ key, shellType }).first;
+                            // Each OpenMM atom type is added once
+                            bool newType = std::none_of(drudeParticles.begin(), drudeParticles.end(),
+                                                        [&shellType](const DrudeParticle &dp)
+                                                        { return dp.shellOpenMMType == shellType; });
+                            if (newType)
+                            {
+                                auto shellAType = pd->findParticleType(shellFfType);
+                                std::string openMMclass = shellFfType;
+                                std::string btype("bondtype");
+                                if (shellAType->hasOption(btype))
+                                {
+                                    openMMclass = shellAType->optionValue(btype);
+                                }
+                                auto newAtype = add_xml_child(xmlAtomTypePtr, exml_names(xmlEntryOpenMM::TYPE));
+                                add_xml_char(newAtype, exml_names(xmlEntryOpenMM::NAME), shellType.c_str());
+                                add_xml_char(newAtype, exml_names(xmlEntryOpenMM::CLASS), openMMclass.c_str());
+                                addXmlElemMass(newAtype, pd, shellAType);
+                            }
+                            drudeParticles.push_back({ ffType, openMMtype, shellType });
                         }
+                        const auto &shellType = known->second;
                         add_xml_char(baby, exml_names(xmlEntryOpenMM::NAME), shellName.c_str());
                         add_xml_char(baby, exml_names(xmlEntryOpenMM::TYPE_RES), shellType.c_str());
                         add_xml_double(baby, exml_names(xmlEntryOpenMM::CHARGE_RES), myatoms[shell].charge()*epsr_fac);
@@ -1564,7 +1637,7 @@ void OpenMMWriter::addXmlForceField(MsgHandler                *msghandler,
     if (msghandler->ok())
     {
         addXmlSpecial(parent, pd, fftypeGlobalMap);
-        addXmlPolarization(parent, pd, fftypeGlobalMap, epsr_fac);
+        addXmlPolarization(parent, pd, drudeParticles, epsr_fac);
     }
 }
 
