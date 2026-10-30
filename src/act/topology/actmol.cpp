@@ -1078,7 +1078,10 @@ void ACTMol::generateCharges(MsgHandler                *msghandler,
     {
     case ChargeGenerationAlgorithm::ESP:
         {
-            int    maxiter = 5;
+            // With shells, the charges change by a factor of 5 to 10
+            // less in each iteration, molecules such as butanol need
+            // about ten iterations.
+            int    maxiter = 25;
             int    iter    = 0;
             // Only fit charges to the first ESP dataset.
             bool   foundESP = false;
