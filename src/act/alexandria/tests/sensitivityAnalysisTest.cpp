@@ -27,25 +27,40 @@
  */
 
 /*! \internal \brief
- * Tests for the Sensitivity class and the SensitivityAnalysis() routine.
+ * Tests for the Sensitivity class and the SensitivityAnalysis routine.
+ * The analysis is done for the electronegativities of the atom types in
+ * a training set of butanol, acetone and water, with the electrostatic
+ * potential as the fitting target.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
 #include "actpre.h"
 
+#include <cmath>
+#include <cstdio>
+#include <set>
 #include <string>
+#include <vector>
 
 #include <gtest/gtest.h>
 
 #include "act/alexandria/acmfitnesscomputer.h"
+#include "act/alexandria/acmindividual.h"
+#include "act/alexandria/acminitializer.h"
+#include "act/alexandria/molgen.h"
+#include "act/alexandria/molselect.h"
 #include "act/alexandria/sensitivity_analysis.h"
 #include "act/alexandria/staticindividualinfo.h"
-#include "act/forcefield/forcefield_utils.h"
-#include "act/ga/genome.h"
 #include "act/basics/msg_handler.h"
+#include "act/forces/forcecomputer.h"
+#include "act/ga/genome.h"
+#include "act/import/compound_reader.h"
 #include "act/utility/communicationrecord.h"
 #include "act/utility/jsontree.h"
+#include "gromacs/commandline/filenm.h"
+#include "gromacs/fileio/filetypes.h"
 
+#include "testutils/cmdlinetest.h"
 #include "testutils/testfilemanager.h"
 
 namespace alexandria
@@ -54,45 +69,208 @@ namespace alexandria
 namespace
 {
 
-// ============================================================================
-// SensitivityAnalysis() -- the public entry point
-// ============================================================================
-
-/*! \brief With an empty genome there is nothing to analyse: the routine must
- * short-circuit, report a local minimum and leave the output JsonTree empty.
+/*! \brief Find an object in a JsonTree
+ * \param[in] tree The tree
+ * \param[in] key  The key of the object
+ * \return the object or nullptr if not found
  */
-TEST(SensitivityAnalysisTest, RunOne)
+const JsonTree *findObject(const JsonTree &tree, const std::string &key)
 {
-    MsgHandler msghandler;
-    msghandler.setPrintLevel(ACTStatus::Warning);
-    CommunicationRecord cr(&msghandler);
+    for(const auto &obj : tree.objects())
+    {
+        if (obj.key() == key)
+        {
+            return &obj;
+        }
+    }
+    return nullptr;
+}
+
+/*! \brief The value of a number in a JsonTree
+ * \param[in] tree The tree
+ * \param[in] key  The key of the number
+ * \return the number
+ */
+double findNumber(const JsonTree &tree, const std::string &key)
+{
+    auto obj = findObject(tree, key);
+    EXPECT_NE(nullptr, obj) << key;
+    return obj ? std::stod(obj->value()) : 0;
+}
+
+// Test: With an empty genome there is nothing to analyse, the routine
+// reports a minimum and adds nothing to the output.
+TEST(SensitivityAnalysisTest, EmptyGenome)
+{
+    MsgHandler           msghandler;
+    CommunicationRecord  cr;
+    cr.init(cr.size());
     StaticIndividualInfo sii(&cr);
-    std::string baseName("ACS-g.xml");
-    std::string dataName = gmx::test::TestFileManager::getInputFilePath(baseName);
-    sii.fillForceField(&msghandler, dataName.c_str());
-    MolGen molgen(&cr);
-    molgen.addFitOption("sigma");
-    molgen.fillIopt(sii.forcefield(), &msghandler);
-    sii.generateOptimizationIndex(&msghandler, &molgen, &cr);
-    sii.fillVectors(1, 0.02);
-    ForceComputer forceComp;
-    ACMFitnessComputer fitComp;
-    fitComp.init(&msghandler, &sii, &molgen, false,
-                 &forceComp, ChargeGenerationAlgorithm::SQE,
-                 LossFunction::MSE);
-    ga::Genome genome;
-    genome.addBase(2.0);
-    genome.addBase(3.0);
-    genome.addBase(-1.0);
-    
-    JsonTree   jtree("SensitivityAnalysisTest");
-    // TODO: MsgHandler, StaticIndividualInfo, ga::Genome (empty), JsonTree
-    // TODO: EXPECT_TRUE(SensitivityAnalysis(...));
-    // TODO: EXPECT_TRUE(jtree.objects().empty());
-    bool result = true;
-    //SensitivityAnalysis(&msghandler, &sii, &fitComp,
-    //                  &genome, iMolSelect::Train, &jtree);
-    EXPECT_TRUE(result);
+    ga::Genome           genome;
+    JsonTree             jtree("SensitivityAnalysisTest");
+    SensitivityAnalysis  sens;
+    EXPECT_TRUE(sens.run(&msghandler, &sii, nullptr, &genome, iMolSelect::Train, &jtree, true));
+    EXPECT_TRUE(jtree.objects().empty());
+    EXPECT_TRUE(sens.forceConstants().empty());
+}
+
+/*! \brief Sensitivity analysis of a small training set
+ * The electronegativities of the atom types of butanol, acetone and water
+ * are the parameters, the deviation from the electrostatic potentials of
+ * these molecules is the chi-squared.
+ */
+class SensitivityAnalysisTrainTest : public gmx::test::CommandLineTestBase
+{
+protected:
+    //! Messages
+    MsgHandler                     msghandler_;
+    //! Communication, a single process
+    CommunicationRecord            cr_;
+    //! The parameters and the force field
+    StaticIndividualInfo          *sii_    = nullptr;
+    //! The molecules
+    MolGen                        *molgen_ = nullptr;
+    //! Computes energies and forces
+    ForceComputer                  forceComp_;
+    //! Computes the chi-squared
+    ACMFitnessComputer             fitComp_;
+    //! The parameters of the force field
+    ga::Genome                     genome_;
+
+    //! Set up the training set
+    SensitivityAnalysisTrainTest()
+    {
+        msghandler_.setPrintLevel(ACTStatus::Warning);
+        cr_.init(cr_.size());
+        sii_ = new StaticIndividualInfo(&cr_);
+        auto ffName = fileManager().getInputFilePath("ACS-g.xml");
+        sii_->fillForceField(&msghandler_, ffName.c_str());
+        // All molecules are in the training set
+        auto  selName = fileManager().getTemporaryFilePath("selection.dat");
+        FILE *fp      = fopen(selName.c_str(), "w");
+        for(const char *mol : { "1-butanol", "acetone", "water" })
+        {
+            fprintf(fp, "%s|Train\n", mol);
+        }
+        fclose(fp);
+        MolSelect gms;
+        gms.read(selName.c_str());
+        // Fit the electronegativities to the electrostatic potential
+        sii_->target(iMolSelect::Train, eRMS::ESP)->setWeight(1);
+        sii_->propagateWeightFittingTargets();
+        molgen_ = new MolGen(&cr_);
+        molgen_->addFitOption("chi");
+        auto mpName = fileManager().getInputFilePath("../../molprop/tests/molprop.xml");
+        std::vector<t_filenm> fnms = { { efXML, "-mp", nullptr, ffREAD, { mpName } } };
+        CompoundReader        compR;
+        EXPECT_EQ(3u, molgen_->Read(&msghandler_, fnms, sii_->forcefield(), gms,
+                                    sii_->fittingTargetsConst(iMolSelect::Train),
+                                    &compR, &forceComp_));
+        sii_->generateOptimizationIndex(&msghandler_, molgen_, &cr_);
+        sii_->fillVectors(molgen_->mindata(), 0.1);
+        sii_->computeWeightedTemperature(true);
+        fitComp_.init(&msghandler_, sii_, molgen_, false, &forceComp_,
+                      sii_->forcefield()->chargeGenerationAlgorithm(), LossFunction::MSE);
+        // Start from the parameters in the force field
+        ACMInitializer initializer(sii_, false, 0);
+        auto           ind = initializer.initialize();
+        genome_ = ind->genome();
+        delete ind;
+        EXPECT_TRUE(msghandler_.ok());
+    }
+
+    //! Clean up
+    ~SensitivityAnalysisTrainTest()
+    {
+        delete molgen_;
+        delete sii_;
+    }
+
+    /*! \brief Compute the chi-squared for some parameters
+     * \param[in] param The parameters
+     * \return the chi-squared of the training set
+     */
+    double chi2(const std::vector<double> &param)
+    {
+        sii_->updateForceField(&msghandler_, {}, param);
+        auto cdc = CalcDev::Compute;
+        fitComp_.distributeTasks(cdc);
+        return fitComp_.calcDeviation(&msghandler_, cdc, iMolSelect::Train);
+    }
+};
+
+// Test: The force constants and the output are those of the parabolas
+// through the chi-squared of each parameter and the two values around it.
+TEST_F(SensitivityAnalysisTrainTest, ParabolaThroughChi2)
+{
+    // The atom types c2, c3, h, o2 and o3
+    size_t np = sii_->nParam();
+    ASSERT_EQ(5u, np);
+    ASSERT_EQ(np, genome_.nBase());
+    auto   param = genome_.bases();
+    double chi2_0 = chi2(param);
+    EXPECT_GT(chi2_0, 0);
+
+    JsonTree            jtree("SensitivityAnalysisTest");
+    SensitivityAnalysis sens;
+    bool                minimum = sens.run(&msghandler_, sii_, &fitComp_, &genome_,
+                                           iMolSelect::Train, &jtree, true);
+    EXPECT_TRUE(msghandler_.ok());
+    ASSERT_EQ(np, sens.forceConstants().size());
+    ASSERT_EQ(1u, jtree.objects().size());
+    const auto &sensTree = jtree.objects()[0];
+    EXPECT_EQ("sensitivity", sensTree.key());
+    ASSERT_EQ(np, sensTree.objects().size());
+
+    bool allConvex = true;
+    for(size_t i = 0; i < np; i++)
+    {
+        // The chi-squared at the parameter and half a percent of its
+        // range below and above it, as SensitivityAnalysis does.
+        double delta = (sii_->upperBound()[i] - sii_->lowerBound()[i])/200;
+        ASSERT_GE(param[i] - delta, sii_->lowerBound()[i]);
+        ASSERT_LE(param[i] + delta, sii_->upperBound()[i]);
+        auto   p      = param;
+        p[i]          = param[i] - delta;
+        double chi2m  = chi2(p);
+        p[i]          = param[i] + delta;
+        double chi2p  = chi2(p);
+        // The parabola chi2 = a x^2 + b x + c through these
+        double a      = (chi2p - 2*chi2_0 + chi2m)/(2*delta*delta);
+        double slope  = (chi2p - chi2m)/(2*delta);
+        double b      = slope - 2*a*param[i];
+        double pmin   = -b/(2*a);
+        // The force constant is a divided by the parameter squared
+        double fc     = sens.forceConstants()[i];
+        EXPECT_NEAR(a, fc*param[i]*param[i], 1e-5*std::abs(a)) << sii_->paramNames()[i];
+        allConvex     = allConvex && a >= 0;
+
+        const auto &entry = sensTree.objects()[i];
+        EXPECT_EQ(std::to_string(i), entry.key());
+        EXPECT_EQ(sii_->paramNames()[i],
+                  findObject(entry, "particle")->value() + " " + findObject(entry, "parameter")->value());
+        EXPECT_NEAR(param[i], findNumber(entry, "p_orig"), 1e-6);
+        EXPECT_NEAR(chi2_0, findNumber(entry, "chi2_orig"), 1e-6*chi2_0 + 1e-6);
+        EXPECT_NEAR(pmin, findNumber(entry, "p_min"), 1e-5*std::abs(pmin) + 1e-6)
+            << sii_->paramNames()[i];
+    }
+    // The genome is a minimum if all parabolas curve upwards
+    EXPECT_EQ(allConvex, minimum);
+}
+
+// Test: After the analysis the genome and the force field are as before
+TEST_F(SensitivityAnalysisTrainTest, RestoresParameters)
+{
+    auto   param  = genome_.bases();
+    double chi2_0 = chi2(param);
+    SensitivityAnalysis sens;
+    (void) sens.run(&msghandler_, sii_, &fitComp_, &genome_, iMolSelect::Train, nullptr, true);
+    EXPECT_TRUE(msghandler_.ok());
+    EXPECT_EQ(param, genome_.bases());
+    // Without updating the force field, the chi-squared is the same
+    auto cdc = CalcDev::Compute;
+    fitComp_.distributeTasks(cdc);
+    EXPECT_EQ(chi2_0, fitComp_.calcDeviation(&msghandler_, cdc, iMolSelect::Train));
 }
 
 } // namespace
