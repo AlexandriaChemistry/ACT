@@ -58,7 +58,7 @@ target_sources(actLib
            train_utility.cpp          
 	)
 	
-add_executable(alexandria alexandria.cpp ${actLib})
+add_executable(alexandria alexandria.cpp)
 
 target_link_libraries(alexandria actLib libactgromacs 
                       ${GMX_EXTRA_LIBRARIES}

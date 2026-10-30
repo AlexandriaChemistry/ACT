@@ -35,7 +35,8 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-cmake_minimum_required(VERSION 3.18)
+# 3.20 for cmake_path and 3.24 for CMAKE_COMPILE_WARNING_AS_ERROR
+cmake_minimum_required(VERSION 3.24)
 
 # CMake modules/macros are in a subdirectory to keep this file cleaner
 # This needs to be set before project() in order to pick up toolchain files
@@ -77,9 +78,9 @@ include(gmxBuildTypeMSAN)
 include(gmxBuildTypeReleaseWithAssert)
 
 if(NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the type of build, options are: Debug Release Gperf RelWithDebInfo MinSizeRel Reference RelWithAssert Profile TSAN ASAN MSAN." FORCE)
+    set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the type of build, options are: Debug Release RelWithDebInfo MinSizeRel Reference RelWithAssert Profile TSAN ASAN MSAN." FORCE)
     # Set the possible values of build type for cmake-gui
-    set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release" "Gperf"
+    set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release"
         "MinSizeRel" "RelWithDebInfo" "Reference" "RelWithAssert" "Profile" "TSAN" "ASAN" "MSAN")
 endif()
 if(CMAKE_CONFIGURATION_TYPES)
@@ -92,7 +93,7 @@ if(CMAKE_CONFIGURATION_TYPES)
         "List of configuration types"
         FORCE)
 endif()
-set(build_types_with_explicit_flags RELEASE DEBUG RELWITHDEBINFO RELWITHASSERT MINSIZEREL PROFILE GPERF)
+set(build_types_with_explicit_flags RELEASE DEBUG RELWITHDEBINFO RELWITHASSERT MINSIZEREL PROFILE)
 
 set_property(GLOBAL PROPERTY FIND_LIBRARY_USE_LIB64_PATHS ON)
 
@@ -252,8 +253,6 @@ option(GMX_COMPILER_WARNINGS
     "Enable a default set of compiler warnings"
     ${GMX_COMPILER_WARNINGS_DEFAULT})
 mark_as_advanced(GMX_COMPILER_WARNINGS)
-# Always turn on compiler warnings with a developer build.
-gmx_add_cache_dependency(GMX_COMPILER_WARNINGS BOOL "NOT GMX_DEVELOPER_BUILD" ON)
 
 option(GMX_BUILD_SHARED_EXE
     "Build exectuables as shared binaries. If not set, this disables rpath and dynamic linker flags in an attempt to build a static binary, but this may require setting up the toolchain properly and making appropriate libraries available."
@@ -484,12 +483,15 @@ include_directories(${Boost_INCLUDE_DIRS})
 # These are the necessary RDKit libraries
 set(rdkitlibs RDGeneral SmilesParse FileParsers GraphMol Inchi RDInchiLib SubstructMatch SubstructLibrary GeneralizedSubstruct  FilterCatalog DetermineBonds Descriptors )
 
-# Because RDKit did not yet updated their cmake config for this
-cmake_policy(SET CMP0167 NEW)
+# RDKit looks for Boost in its configuration, for which the FindBoost
+# module is removed (policy CMP0167 of CMake 3.30), for this call only.
+cmake_policy(PUSH)
+if(POLICY CMP0167)
+    cmake_policy(SET CMP0167 NEW)
+endif()
 find_package(RDKit REQUIRED COMPONENTS ${rdkitlibs} )
+cmake_policy(POP)
 message("RDKit_FOUND : ${RDKit_FOUND}")
-# Reset the policy
-cmake_policy(SET CMP0167 OLD)
 if(RDKit_FOUND)
   find_path(RDKit_INCLUDE_DIR rdkit/GraphMol/FilterCatalog/FilterMatchers.h)
   if(NOT RDKit_INCLUDE_DIR)
@@ -746,27 +748,16 @@ endif()
 #Simpler to always install.
 install(FILES COPYING DESTINATION ${ACT_INSTALL_ACTDATADIR} COMPONENT data)
 
-if (GMX_BUILD_FOR_COVERAGE)
-    # Code heavy with asserts makes conditional coverage close to useless metric,
-    # as by design most of the false branches are impossible to trigger in
-    # correctly functioning code.  And the benefit of testing those that could
-    # be triggered by using an API against its specification isn't usually
-    # worth the effort.
-    add_definitions(-DNDEBUG -DGMX_DISABLE_ASSERTS)
-endif()
-
 if (BUILD_TESTING)
     include(tests/CheckTarget.cmake)
 endif()
 
-if (NOT GMX_BUILD_MDRUN_ONLY)
-    find_package(ImageMagick QUIET COMPONENTS convert)
-    include(gmxTestImageMagick)
-    GMX_TEST_IMAGEMAGICK(IMAGE_CONVERT_POSSIBLE)
-    add_subdirectory(docs)
-    add_subdirectory(share)
-    add_subdirectory(scripts)
-endif()
+find_package(ImageMagick QUIET COMPONENTS convert)
+include(gmxTestImageMagick)
+GMX_TEST_IMAGEMAGICK(IMAGE_CONVERT_POSSIBLE)
+add_subdirectory(docs)
+add_subdirectory(share)
+add_subdirectory(scripts)
 add_subdirectory(src)
 
 if (BUILD_TESTING)
