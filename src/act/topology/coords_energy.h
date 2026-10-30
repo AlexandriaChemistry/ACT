@@ -166,6 +166,11 @@ typedef struct
     double                 shellStep[2];
     //! Mean square shell force of each fragment in the previous relaxation step
     double                 shellForce[2];
+    //! Displacements of the shells in the previous relaxation step, indexed as x
+    std::vector<gmx::RVec> shellDx;
+    //! For each fragment the sum over the shells of their displacement in the
+    //! previous relaxation step times the force before it, zero if there was none
+    double                 shellDxForce[2];
 } CoordsEnergy;
 
 } // namespace
