@@ -277,6 +277,94 @@ TEST(ProbabilityComputerTest, Rank)
     }
 }
 
+//! Make a pool with distinct genomes
+GenePool makePool(size_t popSize)
+{
+    GenePool pool;
+    for (size_t i = 0; i < popSize; i++)
+    {
+        pool.addGenome({ static_cast<double>(i), 2.0*i }, i);
+    }
+    return pool;
+}
+
+//! Terminator and penalizer that count how often they were asked
+class CountingOperator : public Terminator, public Penalizer
+{
+public:
+    //! Whether to answer yes
+    bool answer_;
+    //! The number of calls
+    int  calls_ = 0;
+
+    CountingOperator(bool answer) : answer_(answer) {}
+
+    bool terminate(gmx::TextWriter *, const GenePool *, const int, bool) override
+    {
+        calls_ += 1;
+        return answer_;
+    }
+
+    bool penalize(gmx::TextWriter *, GenePool *, const int) override
+    {
+        calls_ += 1;
+        return answer_;
+    }
+};
+
+//! A genetic algorithm that does not evolve
+class StaticGA : public GeneticAlgorithm
+{
+public:
+    StaticGA(std::vector<Terminator*> *terminators,
+             std::vector<Penalizer*>  *penalizers)
+    : GeneticAlgorithm(nullptr, nullptr, nullptr, nullptr, nullptr, nullptr,
+                       terminators, penalizers, 4) {}
+
+    bool evolve(alexandria::MsgHandler *, std::map<iMolSelect, Genome> *) override
+    {
+        return false;
+    }
+};
+
+// Test: The genetic algorithm asks all terminators and penalizers,
+// also after one of them said yes
+TEST(GeneticAlgorithmTest, AskAll)
+{
+    CountingOperator yes(true), no(false);
+    std::vector<Terminator*> terminators = { &yes, &no };
+    std::vector<Penalizer*>  penalizers  = { &yes, &no };
+    StaticGA ga(&terminators, &penalizers);
+    auto pool = makePool(4);
+    EXPECT_TRUE(ga.terminate(nullptr, &pool, 0, false));
+    EXPECT_TRUE(ga.penalize(nullptr, &pool, 0));
+    EXPECT_EQ(2, yes.calls_);
+    EXPECT_EQ(2, no.calls_);
+    std::vector<Terminator*> onlyNo = { &no };
+    std::vector<Penalizer*>  noPen  = { &no };
+    StaticGA ga2(&onlyNo, &noPen);
+    EXPECT_FALSE(ga2.terminate(nullptr, &pool, 0, false));
+    EXPECT_FALSE(ga2.penalize(nullptr, &pool, 0));
+}
+
+// Test: The gene pool can be updated with one of the same genome size only
+TEST(GeneticAlgorithmTest, UpdateGenePool)
+{
+    CountingOperator         no(false);
+    std::vector<Terminator*> terminators = { &no };
+    std::vector<Penalizer*>  penalizers;
+    StaticGA ga(&terminators, &penalizers);
+    EXPECT_THROW(ga.updateGenePool(GenePool()), gmx::InvalidInputError);
+    auto pool = makePool(4);
+    ga.updateGenePool(pool);
+    EXPECT_EQ(4u, ga.getLastPop().popSize());
+    ga.updateGenePool(makePool(6));
+    EXPECT_EQ(6u, ga.getLastPop().popSize());
+    GenePool other;
+    other.addGenome({ 1.0, 2.0, 3.0 }, 0);
+    EXPECT_THROW(ga.updateGenePool(other), gmx::InvalidInputError);
+}
+
 } // namespace
 
 } // namespace ga
