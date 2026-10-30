@@ -208,6 +208,9 @@ public:
     //! Return the number of distancea
     int ndist() const { return ndist_; }
 
+    //! \return the shortest distance between the centers of mass
+    double mindist() const { return mindist_; }
+
     //! Return trajectory name
     const char *trajname() const { return trajname_; }
 

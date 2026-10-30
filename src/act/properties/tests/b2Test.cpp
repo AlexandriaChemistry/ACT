@@ -421,6 +421,33 @@ TEST(B2DataTest, AddOrientationPermuted)
     testAddOrientation(false);
 }
 
+// Test: The Mayer function at the shortest distance, which has to be -1
+// since it is taken as -1 below that distance
+TEST(B2DataTest, MayerAtShortestDistance)
+{
+    double    beta = 1.0/(BOLTZ*300);
+    gmx::RVec zero = { 0, 0, 0 };
+    std::vector<double>    mass    = { 18, 18 };
+    std::vector<gmx::RVec> inertia = { { 1, 1, 1 }, { 1, 1, 1 } };
+    int    nbins = 11;
+    B2Data hard(nbins, { 300 }), soft(nbins, { 300 });
+    EXPECT_EQ(-1, hard.mayerAtShortestDistance(0));
+    for(int i = 0; i < nbins; i++)
+    {
+        double r = 0.2 + 0.01*i;
+        hard.addData(0, i, r, i < 5 ? -1 : 0, 0, 0, zero, zero);
+        soft.addData(0, i, r, i < 5 ? -0.5 : 0, 0, 0, zero, zero);
+    }
+    MsgHandler msghandler;
+    double     b[4];
+    hard.integrate(&msghandler, 0, beta, mass, inertia, &b[0], &b[1], &b[2], &b[3]);
+    soft.integrate(&msghandler, 0, beta, mass, inertia, &b[0], &b[1], &b[2], &b[3]);
+    EXPECT_EQ(-1, hard.mayerAtShortestDistance(0));
+    EXPECT_EQ(-0.5, soft.mayerAtShortestDistance(0));
+    // Not computed for other temperatures
+    EXPECT_EQ(-1, soft.mayerAtShortestDistance(1));
+}
+
 // Test: The grid of orientations as in the program Orient. Gauss-Legendre
 // integration over cos(beta) with n points is exact for polynomials up
 // to order 2n-1, and the equally spaced angles average cosines to zero.

@@ -150,6 +150,16 @@ public:
                    double                       *BqmTorque1,
                    double                       *BqmTorque2);
 
+    /*! \brief The Mayer function at the shortest distance, see integrate
+     * Below that distance it is taken as -1.
+     * \param[in] iTemp Temperature index
+     * \return the Mayer function, -1 if it has not been computed
+     */
+    double mayerAtShortestDistance(size_t iTemp) const
+    {
+        return (iTemp < mayer_.size() && !mayer_[iTemp].empty()) ? mayer_[iTemp][0] : -1.0;
+    }
+
     /*! \brief Generate plot with Mayer functions for all temperatures
      * \param[in] fmayer The output file name
      * \param[in] oenv   GROMACS output environment
