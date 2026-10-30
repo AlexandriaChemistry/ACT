@@ -44,6 +44,7 @@ gmx_add_unit_test(
     memorycheckTest.cpp
     portablerandomTest.cpp
     regressionTest.cpp
+    rotationTest.cpp
     simpsonTest.cpp
     stringutilTest.cpp
     timingsTest.cpp

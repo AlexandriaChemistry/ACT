@@ -58,11 +58,11 @@
 #include "act/properties/velocityhandler.h"
 #include "act/molprop/molpropobservable.h"
 #include "act/topology/actmol.h"
+#include "act/utility/rotation.h"
 #include "act/utility/timings.h"
 #include "act/utility/units.h"
 #include "external/stlbfgs/stlbfgs.h"
 #include "gromacs/fileio/xvgr.h"
-#include "gromacs/math/do_fit.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
@@ -1342,9 +1342,7 @@ double MolHandler::coordinateRmsd(const std::vector<ActAtom>   &myatoms,
         rvec_sub(xref[i], ref_com, xref_com[i]);
         rvec_dec((*xfit)[i], fit_com);
     }
-    do_fit(myatoms.size(), myMass.data(),
-           as_rvec_array(xref_com.data()),
-           as_rvec_array(xfit->data()));
+    do_fit(myMass, xref_com, xfit);
     
     double msd  = 0;
     for (size_t i = 0; i < myMass.size(); i++)
