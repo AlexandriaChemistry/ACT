@@ -1,0 +1,20 @@
+COMPND    methanol_water
+HETATM    1  O   UNK     1      -0.669   0.265  -1.242  1.00  0.00           O  
+HETATM    2  H1  UNK     1      -1.435   0.424  -1.816  1.00  0.00           H  
+HETATM    3  C   UNK     1       0.547  -0.010  -2.006  1.00  0.00           C  
+HETATM    4  H2  UNK     1       0.405  -0.841  -2.700  1.00  0.00           H  
+HETATM    5  H3  UNK     1       0.880   0.877  -2.547  1.00  0.00           H  
+HETATM    6  H4  UNK     1       1.287  -0.287  -1.262  1.00  0.00           H  
+HETATM    7  O   HOH     2       3.000   0.000   1.494  1.00  0.00           O  
+HETATM    8  H   HOH     2       3.883   0.000   1.866  1.00  0.00           H  
+HETATM    9  H   HOH     2       3.136   0.000   0.539  1.00  0.00           H  
+CONECT    1    2    3
+CONECT    2    1
+CONECT    3    1    4    5    6
+CONECT    4    3
+CONECT    5    3
+CONECT    6    3
+CONECT    7    8    9
+CONECT    8    7
+CONECT    9    7
+END

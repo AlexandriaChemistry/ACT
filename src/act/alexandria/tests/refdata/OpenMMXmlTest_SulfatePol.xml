@@ -88,11 +88,11 @@
     <Atom type="s3_s_1" sigma="0" epsilon="0"/>
   </NonbondedForce>
   <DrudeForce>
+    <Particle type1="s3_s_1" type2="s3_1" polarizability="0.002" charge="-1.2" thole="0"/>
     <Particle type1="o2_s_1" type2="o2_1" polarizability="0.00145" charge="-1.2" thole="0"/>
     <Particle type1="o2_s_2" type2="o2_2" polarizability="0.00145" charge="-1.2" thole="0"/>
     <Particle type1="o2_s_3" type2="o2_3" polarizability="0.00145" charge="-1.2" thole="0"/>
     <Particle type1="o2_s_4" type2="o2_4" polarizability="0.00145" charge="-1.2" thole="0"/>
-    <Particle type1="s3_s_1" type2="s3_1" polarizability="0.002" charge="-1.2" thole="0"/>
   </DrudeForce>
 </ForceField>
 ]]></String>

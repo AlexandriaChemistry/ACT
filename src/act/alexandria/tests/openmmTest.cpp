@@ -32,7 +32,11 @@
  */
 #include <cmath>
 
+#include <cstring>
+#include <fstream>
 #include <map>
+#include <set>
+#include <string>
 
 #include <gtest/gtest.h>
 
@@ -79,8 +83,26 @@ class OpenMMXmlTest : public gmx::test::CommandLineTestBase
         initACTMol(&msghandler, dataName, ff, &fcomp, &mps);
 
         auto tmpFile  = tfm.getTemporaryFilePath("xml");
-        writeOpenMM(&msghandler, tmpFile, ff, mps, mDrude, numberAtypes);
+        int  ntrain   = 1;
+        writeOpenMM(&msghandler, tmpFile, ff, mps, mDrude, ntrain, numberAtypes);
+        EXPECT_TRUE(msghandler.ok());
         ifm->checkFile(tmpFile, &checker);
+        // OpenMM finds the parent of a shell from its type, hence each
+        // shell type can have only one parent type, see
+        // https://github.com/AlexandriaChemistry/ACT/issues/747
+        std::ifstream         xml(tmpFile);
+        std::string           line;
+        std::set<std::string> shellTypes;
+        while (std::getline(xml, line))
+        {
+            auto pos = line.find("<Particle type1=\"");
+            if (pos != std::string::npos)
+            {
+                auto begin = pos + std::strlen("<Particle type1=\"");
+                auto type1 = line.substr(begin, line.find('"', begin) - begin);
+                EXPECT_TRUE(shellTypes.insert(type1).second) << "Shell type " << type1 << " has more than one parent type";
+            }
+        }
     }
 };
 
@@ -127,6 +149,29 @@ TEST_F(OpenMMXmlTest, AcetonePol)
 TEST_F(OpenMMXmlTest, Merged)
 {
     testOpenMM("ACS-g", "merged.pdb", true);
+}
+
+// Test: Water and methanol have the same shell type on their oxygens,
+// which needs different OpenMM shell types for the two parents
+TEST_F(OpenMMXmlTest, MethanolWaterPol)
+{
+    testOpenMM("ACS-pg", "methanol#water.pdb", true);
+}
+
+// Test: Without numbering the atom types this cannot be written
+TEST(OpenMMXmlNoNumberTest, MethanolWaterPol)
+{
+    MsgHandler msghandler;
+    msghandler.setPrintLevel(ACTStatus::Fatal);
+    auto          ff = getForceField("ACS-pg");
+    ForceComputer fcomp(1e-7, 25, 1.0);
+    std::vector<ACTMol> mps;
+    auto dataName = gmx::test::TestFileManager::getInputFilePath("mols/methanol#water.pdb");
+    initACTMol(&msghandler, dataName, ff, &fcomp, &mps);
+    ASSERT_TRUE(msghandler.ok());
+    gmx::test::TestFileManager tfm;
+    writeOpenMM(&msghandler, tfm.getTemporaryFilePath("xml"), ff, mps, 0.1, 1, false);
+    EXPECT_FALSE(msghandler.ok());
 }
 
 TEST_F(OpenMMXmlTest, WaterHyperPol)
