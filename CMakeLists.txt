@@ -156,17 +156,6 @@ mark_as_advanced(GMX_STDLIB_LIBRARIES)
 ########################################################################
 # Detect CXX20 support and flags
 ########################################################################
-# The cmake/Check{C,CXX}CompilerFlag.cmake files in the ACT distribution
-# are used with permission from CMake v3.0.0 so that ACT can detect
-# invalid options with the Intel Compilers.
-# CMake-3.0 also has a bug where the FAIL_REGEX pattern for AIX contains
-# a semicolon. Since this is also used as a separator in lists inside CMake,
-# that string ends up being split into two separate patterns, and the last
-# part is just a single word that also matches other messages. We solved this
-# by replacing the semicolon with a period that matches any character.
-#
-# These files should be removed from the source tree when a CMake version that
-# includes the features in question becomes required for building ACT.
 include(CheckCCompilerFlag)
 include(CheckCXXCompilerFlag)
 
@@ -178,15 +167,6 @@ gmx_test_cxx20(GMX_CXX20_FLAGS GMX_STDLIB_CXX_FLAGS GMX_STDLIB_LIBRARIES)
 # Make sure all C++ code will be compiled in C++20 mode, with the
 # expected standard library.
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${GMX_CXX20_FLAGS} ${GMX_STDLIB_CXX_FLAGS}")
-
-# Check for a local version of the C++ standard library that may be needed for RDKit
-# Without specifying the exact version, it will go to /usr/lib64, it should be possible
-# to work around that.
-#if (DEFINED ENV{CONDA_PREFIX})
-#  find_library(LIBSTDCXX_LIBRARY NAMES libstdc++.so.6.0.34 PATH $ENV{CONDA_PREFIX}/lib REQUIRED)
-#  message("Found LIBSTDCXX_LIBRARY ${LIBSTDCXX_LIBRARY}")
-#  list(APPEND GMX_EXTRA_LIBRARIES ${LIBSTDCXX_LIBRARY})
-#endif()
 
 ########################################################################
 # User input options                                                   #
@@ -206,47 +186,18 @@ gmx_dependent_option(
     GMX_MPI)
 mark_as_advanced(GMX_MPI_IN_PLACE)
 
-#option(GMX_COOL_QUOTES "Enable GROMACS cool quotes" ON)
-#mark_as_advanced(GMX_COOL_QUOTES)
-#gmx_add_cache_dependency(GMX_COOL_QUOTES BOOL "NOT GMX_FAHCORE" OFF)
-
-set(GMX_USE_OPENCL OFF)
+# There is no GPU support, but the code tests for it
 set(GMX_GPU_ACCELERATION_FRAMEWORK "GMX_GPU_NONE")
-set(GMX_GPU "GMX_GPU_NONE")
-set(GMX_USE_CUDA OFF)
-
-#gmx_option_multichoice(
-#    GMX_QMMM_PROGRAM
-#    "QM package for QM/MM"
-#    None
-#    none gaussian mopac gamess orca)
 
 include(actManageSimd)
-
-# This should be moved to a separate NBNXN cmake module when that code is cleaned up and modularized
 
 option(GMX_BROKEN_CALLOC "Work around broken calloc()" OFF)
 mark_as_advanced(GMX_BROKEN_CALLOC)
 
 option(GMX_OPENMP "Enable OpenMP-based multithreading" OFF)
 
-#option(GMX_BUILD_MDRUN_ONLY "Build and install only the mdrun binary" OFF)
-
-#option(GMX_CYCLE_SUBCOUNTERS "Enable cycle subcounters to get a more detailed cycle timings" OFF)
-#mark_as_advanced(GMX_CYCLE_SUBCOUNTERS)
-
 option(GMX_SKIP_DEFAULT_CFLAGS "Don't automatically add suggested/required Compiler flags." OFF)
 mark_as_advanced(GMX_SKIP_DEFAULT_CFLAGS)
-
-#option(GMX_BUILD_FOR_COVERAGE
-#       "Tune build for better code coverage metrics (e.g., disable asserts)"
-#       OFF)
-#mark_as_advanced(GMX_BUILD_FOR_COVERAGE)
-
-#option(GMX_DEVELOPER_BUILD
-#    "Enable Developer convenience features: always build unit-tests"
-#    OFF)
-#mark_as_advanced(GMX_DEVELOPER_BUILD)
 
 gmx_set_boolean(GMX_COMPILER_WARNINGS_DEFAULT "NOT SOURCE_IS_SOURCE_DISTRIBUTION")
 option(GMX_COMPILER_WARNINGS
@@ -258,12 +209,6 @@ option(GMX_BUILD_SHARED_EXE
     "Build exectuables as shared binaries. If not set, this disables rpath and dynamic linker flags in an attempt to build a static binary, but this may require setting up the toolchain properly and making appropriate libraries available."
     ON)
 mark_as_advanced(GMX_BUILD_SHARED_EXE)
-
-#option(GMX_PHYSICAL_VALIDATION
-#       "Include physical validation tests in ctest environment. These can then be called using 'make check-phys' or
-#       'make check-all'. Warning: Running the physical validation tests takes significantly more time than other tests!"
-#       OFF)
-#mark_as_advanced(GMX_PHYSICAL_VALIDATION)
 
 ######################################################################
 # Detect OpenMP support
@@ -325,7 +270,6 @@ include(CheckIncludeFileCXX)
 check_include_files(unistd.h     HAVE_UNISTD_H)
 check_include_files(pwd.h        HAVE_PWD_H)
 check_include_files(dirent.h     HAVE_DIRENT_H)
-check_include_files(time.h       HAVE_TIME_H)
 check_include_files(sys/time.h   HAVE_SYS_TIME_H)
 check_include_files(io.h         HAVE_IO_H)
 check_include_files(sched.h      HAVE_SCHED_H)
@@ -335,35 +279,22 @@ check_include_files(regex.h      HAVE_POSIX_REGEX)
 # as selections won't be fully functional.
 
 include(CheckCXXSymbolExists)
-check_cxx_symbol_exists(gettimeofday      sys/time.h   HAVE_GETTIMEOFDAY)
 check_cxx_symbol_exists(sysconf           unistd.h     HAVE_SYSCONF)
 check_cxx_symbol_exists(nice              unistd.h     HAVE_NICE)
 check_cxx_symbol_exists(fsync             unistd.h     HAVE_FSYNC)
 check_cxx_symbol_exists(_fileno           stdio.h      HAVE__FILENO)
 check_cxx_symbol_exists(fileno            stdio.h      HAVE_FILENO)
 check_cxx_symbol_exists(_commit           io.h         HAVE__COMMIT)
-check_cxx_symbol_exists(sigaction         signal.h     HAVE_SIGACTION)
 
 # We cannot check for the __builtins as symbols, but check if code compiles
 check_cxx_source_compiles("int main(){ return __builtin_clz(1);}"   HAVE_BUILTIN_CLZ)
 check_cxx_source_compiles("int main(){ return __builtin_clzll(1);}" HAVE_BUILTIN_CLZLL)
-if(MSVC)
-    check_cxx_source_compiles("#include <intrin.h>\n int main(){unsigned long r;unsigned long i=1;_BitScanReverse(&r,i);return r;}" HAVE_BITSCANREVERSE)
-    check_cxx_source_compiles("#include <intrin.h>\n int main(){unsigned long r;unsigned __int64 i=1;_BitScanReverse(&r,i);return r;}" HAVE_BITSCANREVERSE64)
-elseif(CMAKE_CXX_COMPILER_ID MATCHES "XL")
-    check_cxx_source_compiles("int main(){ return __cntlz4(1);}" HAVE_CNTLZ4)
-    check_cxx_source_compiles("int main(){ return __cntlz8(1);}" HAVE_CNTLZ8)
-endif()
 
 include(CheckLibraryExists)
 find_library(HAVE_LIBM m)
 mark_as_advanced(HAVE_LIBM)
-check_library_exists(rt clock_gettime "" HAVE_CLOCK_GETTIME)
 check_library_exists(m feenableexcept "" HAVE_FEENABLEEXCEPT)
 check_library_exists(m fedisableexcept "" HAVE_FEDISABLEEXCEPT)
-
-find_library(HAVE_LIBDL dl)
-mark_as_advanced(HAVE_LIBDL)
 
 include(TestSchedAffinity)
 test_sched_affinity(HAVE_SCHED_AFFINITY)
@@ -374,10 +305,6 @@ include(gmxTestMMMalloc)
 gmx_test_mm_malloc(HAVE__MM_MALLOC)
 check_cxx_symbol_exists(posix_memalign    stdlib.h     HAVE_POSIX_MEMALIGN)
 check_cxx_symbol_exists(memalign          stdlib.h     HAVE_MEMALIGN)
-if(MSVC)
-    # No need to waste time on this test on platforms where it will never be true
-    check_cxx_symbol_exists(_aligned_malloc   stdlib.h     HAVE__ALIGNED_MALLOC)
-endif()
 
 include(TestBigEndian)
 test_big_endian(GMX_INTEGER_BIG_ENDIAN)
@@ -388,11 +315,6 @@ gmx_set_boolean(GMX_USE_NICE "HAVE_UNISTD_H AND HAVE_NICE")
 #Process MPI settings
 ########################################################################
 include(gmxManageMPI)
-
-########################################################################
-#Process MiMiC settings
-########################################################################
-include(gmxManageMimic)
 
 ########################################################################
 #Process shared/static library settings
@@ -414,18 +336,13 @@ endif()
 find_package(LibXml2 REQUIRED)
 include(gmxTestLibXml2)
 gmx_test_libxml2(HAVE_LIBXML2)
-option(GMX_LIBXML2 "Use libxml2 to parse xml files" ${HAVE_LIBXML2})
-set(PKG_LIBXML2 "")
-mark_as_advanced(GMX_LIBXML2)
-# Crash if not found.
-if(GMX_LIBXML2 AND NOT HAVE_LIBXML2)
+if(NOT HAVE_LIBXML2)
     message(FATAL_ERROR "libxml2 not found.")
 endif()
 
 if(LibXml2_FOUND)
     include_directories(${LIBXML2_INCLUDE_DIR})
     include_directories(${LIBXML2_INCLUDE_DIRS})
-    set(PKG_LIBXML2 libxml-2.0)
     list(APPEND GMX_EXTRA_LIBRARIES ${LIBXML2_LIBRARIES})
 endif(LibXml2_FOUND)
 
@@ -448,10 +365,8 @@ endif()
 option(ACT_CLN "Use CLN library to compute Slater integrals" OFF)
 if(ACT_CLN)
     find_package(cln REQUIRED)
-    set(PKG_CLN "")
     if(CLN_FOUND)
       include_directories(${CLN_INCLUDE_DIR})
-      set(PKG_CLN cln)
       set(HAVE_LIBCLN 1)
       list(APPEND	GMX_EXTRA_LIBRARIES ${CLN_LIBRARIES})
     else(CLN_FOUND)
@@ -462,10 +377,8 @@ else()
 endif()
 
 find_package(sqlite3)
-set(PKG_SQLITE3 "")
 if(SQLITE3_FOUND)
     include_directories(${SQLITE3_INCLUDE_DIR})
-    set(PKG_SQLITE3 sqlite3)
     set(HAVE_LIBSQLITE3 1)
     list(APPEND	GMX_EXTRA_LIBRARIES ${SQLITE3_LIBRARIES})
 endif(SQLITE3_FOUND)
@@ -515,17 +428,6 @@ if(RDKit_FOUND)
      endif()
      unset(RDKit${lib})
   endforeach(lib)
-endif()
-
-option(GMX_EXTERNAL_TINYXML2 "Use external TinyXML-2 instead of compiling the version bundled with GROMACS." OFF)
-mark_as_advanced(GMX_EXTERNAL_TINYXML2)
-if(GMX_EXTERNAL_TINYXML2)
-    # Find an external TinyXML-2 library.
-    find_package(TinyXML-2 3.0.0)
-    set(HAVE_TINYXML2 ${TinyXML2_FOUND})
-    if(NOT HAVE_TINYXML2)
-        message(FATAL_ERROR "External TinyXML-2 could not be found, please adjust your search paths")
-    endif()
 endif()
 
 if(CYGWIN)
@@ -595,8 +497,6 @@ endif()
 include(gmxTestPipes)
 gmx_test_pipes(HAVE_PIPES)
 
-check_include_file_cxx(regex     HAVE_CXX20_REGEX)
-
 include(gmxTestXDR)
 gmx_test_xdr(GMX_SYSTEM_XDR)
 # Darwin has system XDR, but it uses a three-argument flavour of
@@ -615,46 +515,9 @@ endif()
 include(gmxManageCycleCounters)
 gmx_manage_cycle_counters()
 
-# Process QM/MM Settings
-#if(${GMX_QMMM_PROGRAM} STREQUAL "GAUSSIAN")
-#    set(GMX_QMMM_GAUSSIAN 1)
-#elseif(${GMX_QMMM_PROGRAM} STREQUAL "MOPAC")
-#    set(GMX_QMMM_MOPAC 1)
-#elseif(${GMX_QMMM_PROGRAM} STREQUAL "GAMESS")
-#    set(GMX_QMMM_GAMESS 1)
-#elseif(${GMX_QMMM_PROGRAM} STREQUAL "ORCA")
-#    set(GMX_QMMM_ORCA 1)
-#elseif(${GMX_QMMM_PROGRAM} STREQUAL "NONE")
-#    # nothing to do
-#else()
-#    gmx_invalid_option_value(GMX_QMMM_PROGRAM)
-#endif()
-
-# Link real-time library for POSIX timers. The check for clock_gettime
-# confirms the linkability of rt.
-if(HAVE_TIME_H AND HAVE_UNISTD_H AND HAVE_CLOCK_GETTIME)
-    list(APPEND GMX_EXTRA_LIBRARIES rt)
-endif()
-
 # Math and thread libraries must often come after all others when linking...
 if (HAVE_LIBM)
     list(APPEND GMX_PUBLIC_LIBRARIES m)
-endif()
-
-option(GMX_NACL "Configure for Native Client builds" OFF)
-if (GMX_NACL)
-  list(APPEND GMX_EXTRA_LIBRARIES nosys)
-  set(GMX_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -lnosys")
-  # TODO: Is this still necessary with the check for its presence?
-  set(GMX_USE_NICE 0)
-  set(GMX_NO_RENAME 1)
-endif()
-mark_as_advanced(GMX_NACL)
-
-if(GMX_FAHCORE)
-  set(COREWRAP_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/../corewrap" CACHE STRING
-      "Path to swindirect.h")
-  include_directories(${COREWRAP_INCLUDE_DIR})
 endif()
 
 # # # # # # # # # # NO MORE TESTS AFTER THIS LINE! # # # # # # # # # # #
@@ -662,8 +525,8 @@ endif()
 if (NOT GMX_SKIP_DEFAULT_CFLAGS)
     set(CMAKE_C_FLAGS "${GMX_SIMD_VECTORIZATION_C_FLAGS} ${MPI_COMPILE_FLAGS} ${EXTRA_C_FLAGS} ${CMAKE_C_FLAGS}")
     set(CMAKE_CXX_FLAGS "${GMX_SIMD_VECTORIZATION_CXX_FLAGS} ${MPI_COMPILE_FLAGS} ${EXTRA_CXX_FLAGS} ${CMAKE_CXX_FLAGS}")
-    set(CMAKE_EXE_LINKER_FLAGS "${FFT_LINKER_FLAGS} ${MPI_LINKER_FLAGS} ${GMX_SIMD_VECTORIZATION_LINKER_FLAGS} ${CMAKE_EXE_LINKER_FLAGS}")
-    set(CMAKE_SHARED_LINKER_FLAGS "${FFT_LINKER_FLAGS} ${MPI_LINKER_FLAGS} ${GMX_SIMD_VECTORIZATION_LINKER_FLAGS} ${CMAKE_SHARED_LINKER_FLAGS}")
+    set(CMAKE_EXE_LINKER_FLAGS "${MPI_LINKER_FLAGS} ${GMX_SIMD_VECTORIZATION_LINKER_FLAGS} ${CMAKE_EXE_LINKER_FLAGS}")
+    set(CMAKE_SHARED_LINKER_FLAGS "${MPI_LINKER_FLAGS} ${GMX_SIMD_VECTORIZATION_LINKER_FLAGS} ${CMAKE_SHARED_LINKER_FLAGS}")
 else()
     message("Recommended flags which are not added because GMX_SKIP_DEFAULT_CFLAGS=yes:")
     message("CMAKE_C_FLAGS: ${GMX_SIMD_VECTORIZATION_C_FLAGS} ${MPI_COMPILE_FLAGS} ${EXTRA_C_FLAGS} ${GMXC_CFLAGS}")
@@ -672,8 +535,8 @@ else()
     message("CMAKE_CXX_FLAGS: ${GMX_SIMD_VECTORIZATION_CXX_FLAGS} ${MPI_COMPILE_FLAGS} ${EXTRA_CXX_FLAGS} ${GMXC_CXXFLAGS}")
     message("CMAKE_CXX_FLAGS_RELEASE: ${GMXC_CXXFLAGS_RELEASE}")
     message("CMAKE_CXX_FLAGS_DEBUG: ${GMXC_CXXFLAGS_DEBUG}")
-    message("CMAKE_EXE_LINKER_FLAGS: ${FFT_LINKER_FLAGS} ${MPI_LINKER_FLAGS} ${GMX_SIMD_VECTORIZATION_LINKER_FLAGS}")
-    message("CMAKE_SHARED_LINKER_FLAGS: ${FFT_LINKER_FLAGS} ${MPI_LINKER_FLAGS} ${GMX_SIMD_VECTORIZATION_LINKER_FLAGS}")
+    message("CMAKE_EXE_LINKER_FLAGS: ${MPI_LINKER_FLAGS} ${GMX_SIMD_VECTORIZATION_LINKER_FLAGS}")
+    message("CMAKE_SHARED_LINKER_FLAGS: ${MPI_LINKER_FLAGS} ${GMX_SIMD_VECTORIZATION_LINKER_FLAGS}")
 endif()
 
 if(NOT GMX_OPENMP)
@@ -705,12 +568,8 @@ set(GMX_INSTALL_CMAKEDIR  ${CMAKE_INSTALL_DATAROOTDIR}/cmake)
 
 # TODO: Make GMXRC adapt if this is changed
 set(GMX_INSTALL_PKGCONFIGDIR ${CMAKE_INSTALL_LIBDIR}/pkgconfig)
-set(GMX_INSTALL_OCLDIR       ${ACT_INSTALL_ACTDATADIR}/opencl)
 
 list(APPEND INSTALLED_HEADER_INCLUDE_DIRS ${CMAKE_INSTALL_INCLUDEDIR})
-
-# Binary and library suffix options
-#include(gmxManageSuffixes)
 
 ################################################################
 # Shared library load path settings
@@ -759,10 +618,6 @@ add_subdirectory(docs)
 add_subdirectory(share)
 add_subdirectory(scripts)
 add_subdirectory(src)
-
-if (BUILD_TESTING)
-    add_subdirectory(tests)
-endif()
 
 gmx_cpack_write_config()
 

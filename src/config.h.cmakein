@@ -197,8 +197,6 @@
 #define CMAKE_BUILD_TYPE_MSAN 10
 #cmakedefine CMAKE_BUILD_TYPE CMAKE_BUILD_TYPE_@CMAKE_BUILD_TYPE_UPPER@
 
-/* Define relative path to OpenCL kernels */
-#define GMX_INSTALL_OCLDIR "@GMX_INSTALL_OCLDIR@"
 
 /* Define to 1 if fseeko (and presumably ftello) exists and is declared. */
 #cmakedefine01 HAVE_FSEEKO
@@ -221,8 +219,6 @@
 /* Define to 1 if you have the openbabel3 library (-lopenbabel3). */
 #cmakedefine01 HAVE_LIBOPENBABEL3
 
-/* Define to 1 if you have the dl library (-ldl). */
-#cmakedefine HAVE_LIBDL
 
 /* Have io.h (windows)*/
 #cmakedefine01 HAVE_IO_H
@@ -236,11 +232,6 @@
 /* Define to 1 if you have the MSVC _aligned_malloc() function. */
 #cmakedefine01 HAVE__ALIGNED_MALLOC
 
-/* Define to 1 if you have the clock_gettime() function. */
-#cmakedefine01 HAVE_CLOCK_GETTIME
-
-/* Define to 1 if you have the gettimeofday() function. */
-#cmakedefine01 HAVE_GETTIMEOFDAY
 
 /* Define to 1 if you have the rdtscp instruction. */
 #cmakedefine01 HAVE_RDTSCP
@@ -257,8 +248,6 @@
 /* Define to 1 if you have the _fileno() function. */
 #cmakedefine01 HAVE__FILENO
 
-/* Define to 1 if you have the sigaction() function. */
-#cmakedefine01 HAVE_SIGACTION
 
 /* Define for the GNU __builtin_clz() function. */
 #cmakedefine01 HAVE_BUILTIN_CLZ
@@ -348,8 +337,6 @@
 /* Build using clang analyzer */
 #cmakedefine01 GMX_CLANG_ANALYZER
 
-/* Use MiMiC QM/MM interface */
-#cmakedefine01 GMX_MIMIC
 
 /*! \endcond */
 
