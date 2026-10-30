@@ -61,16 +61,9 @@ void GeneticAlgorithm::updateGenePool(const GenePool &gpin)
     {
         GMX_THROW(gmx::InvalidInputError("Trying to update the gene pool with an empty gene pool"));
     }
-    if (0 == lastPop_.genomeSize())
+    if (0 != lastPop_.genomeSize() && lastPop_.genomeSize() != gpin.genomeSize())
     {
-        if (lastPop_.genomeSize() != gpin.genomeSize())
-        {
-            GMX_THROW(gmx::InvalidInputError(gmx::formatString("Existing gene pool has different size (%zu genes) than input gene pool (%zu genes)", lastPop_.genomeSize(), gpin.genomeSize()).c_str()));
-        }
-        if (lastPop_.genome(0).nBase() != gpin.genome(0).nBase())
-        {
-            GMX_THROW(gmx::InvalidInputError(gmx::formatString("Existing gene pool has different number of bases (%zu) than input gene pool (%zu)", lastPop_.genome(0).nBase(), gpin.genome(0).nBase()).c_str()));
-        } 
+        GMX_THROW(gmx::InvalidInputError(gmx::formatString("Existing gene pool has different size (%zu genes) than input gene pool (%zu genes)", lastPop_.genomeSize(), gpin.genomeSize()).c_str()));
     }
     lastPop_ = gpin;
 }
