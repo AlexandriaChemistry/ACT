@@ -31,7 +31,7 @@ jobs:
         shell: bash -el {0}
         run: |
           conda info
-          conda install conda-forge::librdkit-dev=2025.09.4 conda-forge::libboost-devel eigen conda-forge::nlohmann_json
+          conda install conda-forge::librdkit-dev=2025.09.4 conda-forge::libboost-devel eigen conda-forge::nlohmann_json conda-forge::openmm
       - name: Install ACT
         run: |
           cd ${{ github.workspace }}
@@ -61,3 +61,9 @@ jobs:
           ./bin/qgen-test
           ./bin/sobol-test
           ./bin/statistics-test
+      - name: Test the OpenMM interface
+        shell: bash -el {0}
+        run: |
+          source ${{ github.workspace }}/../tools/bin/ACTRC
+          cd ${{ github.workspace }}/src/act/python/tests
+          ACT_REQUIRE_OPENMM=1 ACT_ALEXANDRIA=${{ github.workspace }}/build/bin/alexandria python -m unittest -v test_act_openmm
