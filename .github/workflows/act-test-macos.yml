@@ -61,6 +61,13 @@ jobs:
           ./bin/qgen-test
           ./bin/sobol-test
           ./bin/statistics-test
+      - name: Test train_ff in parallel
+        timeout-minutes: 15
+        shell: bash -el {0}
+        run: |
+          source ${{ github.workspace }}/../tools/bin/ACTRC
+          cd ${{ github.workspace }}/build
+          mpirun --oversubscribe -np 4 ./bin/alexandria-mpi-test
       - name: Test the OpenMM interface
         shell: bash -el {0}
         run: |
