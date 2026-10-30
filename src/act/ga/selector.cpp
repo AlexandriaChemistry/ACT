@@ -33,7 +33,10 @@
 
 #include "selector.h"
 
+#include <algorithm>
 #include <random>
+
+#include "gromacs/utility/gmxassert.h"
 
 
 namespace ga
@@ -46,6 +49,7 @@ namespace ga
 
 int RouletteSelector::select(const std::vector<Genome> *pop)
 {
+    GMX_RELEASE_ASSERT(!pop->empty(), "Cannot select from an empty population");
     double num = dis(gen);
     size_t i = 0;
     while (num > 0 and i < pop->size())
@@ -53,7 +57,8 @@ int RouletteSelector::select(const std::vector<Genome> *pop)
         num -= (*pop)[i].probability();
         i++;
     }
-    return i - 1;
+    // A draw of exactly zero selects the first genome
+    return std::max(i, static_cast<size_t>(1)) - 1;
 }
 
 /* * * * * * * * * * * * * * * * * * * * * *

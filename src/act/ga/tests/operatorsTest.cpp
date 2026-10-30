@@ -77,6 +77,47 @@ double sumOfProbabilities(const std::vector<Genome> &pop)
     return sum;
 }
 
+// Test: The genomes are selected as often as their probability
+TEST(RouletteSelectorTest, FrequencyMatchesProbability)
+{
+    std::vector<double> prob = { 0.1, 0.2, 0.3, 0.4 };
+    auto pop = makePopulation({ 1, 2, 3, 4 });
+    for (size_t i = 0; i < pop.size(); i++)
+    {
+        pop[i].setProbability(prob[i]);
+    }
+    RouletteSelector selector(1332);
+    std::vector<int> count(pop.size(), 0);
+    const int        ndraw = 100000;
+    for (int k = 0; k < ndraw; k++)
+    {
+        int i = selector.select(&pop);
+        ASSERT_GE(i, 0);
+        ASSERT_LT(i, static_cast<int>(pop.size()));
+        count[i] += 1;
+    }
+    for (size_t i = 0; i < pop.size(); i++)
+    {
+        EXPECT_NEAR(prob[i], static_cast<double>(count[i])/ndraw, 0.01) << i;
+    }
+}
+
+// Test: The selected index is valid if the probabilities do not add up
+// to one, and genomes with zero probability are not selected
+TEST(RouletteSelectorTest, ValidIndex)
+{
+    auto pop = makePopulation({ 1, 2, 3 });
+    pop[0].setProbability(0);
+    pop[1].setProbability(0.2);
+    pop[2].setProbability(0.3);
+    RouletteSelector selector(506);
+    for (int k = 0; k < 10000; k++)
+    {
+        int i = selector.select(&pop);
+        EXPECT_TRUE(i == 1 || i == 2) << i;
+    }
+}
+
 /*! \brief Check that the probabilities are normalized and decrease with the fitness
  * \param[in] pop    The population
  * \param[in] strict Whether a worse fitness gives a smaller probability,
