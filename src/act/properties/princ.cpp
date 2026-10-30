@@ -44,11 +44,9 @@
 #include <cmath>
 
 #include "act/topology/actatom.h"
+#include "act/utility/rotation.h"
 #include "gromacs/math/functions.h"
-#include "gromacs/math/nrjac.h"
 #include "gromacs/math/vec.h"
-
-#define NDIM 3
 
 namespace alexandria
 {
@@ -59,41 +57,15 @@ void principal_comp(const std::vector<int>       &index,
                     matrix                       *trans,
                     gmx::RVec                    *inertia)
 {
-    int      i, j, ai, m, nrot;
-    real     mm, rx, ry, rz;
-    double   dd[NDIM], tvec[NDIM];
-    double **inten, **ev;
-#ifdef DEBUG
-    real e[NDIM];
-#endif
-    real temp;
-
-    inten = new double *[NDIM];
-    ev    = new double *[NDIM];
-    for (int i = 0; (i < NDIM); i++)
-    {
-        inten[i] = new double[NDIM];
-        ev[i]    = new double[NDIM];
-        dd[i] = 0.0;
-#ifdef DEBUG
-        e[i] = 0.0;
-#endif
-    }
-
-    for (int i = 0; (i < NDIM); i++)
-    {
-        for (int m = 0; (m < NDIM); m++)
-        {
-            inten[i][m] = 0;
-        }
-    }
+    // The inertia tensor
+    double inten[DIM][DIM] = { { 0 } };
     for (size_t i = 0; (i < index.size()); i++)
     {
-        ai = index[i];
-        mm = mass[ai];
-        rx = x[ai][XX];
-        ry = x[ai][YY];
-        rz = x[ai][ZZ];
+        int  ai = index[i];
+        real mm = mass[ai];
+        real rx = x[ai][XX];
+        real ry = x[ai][YY];
+        real rz = x[ai][ZZ];
         inten[0][0] += mm * (gmx::square(ry) + gmx::square(rz));
         inten[1][1] += mm * (gmx::square(rx) + gmx::square(rz));
         inten[2][2] += mm * (gmx::square(rx) + gmx::square(ry));
@@ -101,71 +73,18 @@ void principal_comp(const std::vector<int>       &index,
         inten[2][0] -= mm * (rx * rz);
         inten[2][1] -= mm * (rz * ry);
     }
-    inten[0][1] = inten[1][0];
-    inten[0][2] = inten[2][0];
-    inten[1][2] = inten[2][1];
-#ifdef DEBUG
-    ptrans("initial", inten, dd, e);
-#endif
-
-    for (i = 0; (i < DIM); i++)
-    {
-        for (m = 0; (m < DIM); m++)
-        {
-            (*trans)[i][m] = inten[i][m];
-        }
-    }
-
-    /* Call numerical recipe routines */
-    jacobi(inten, 3, dd, ev, &nrot);
-#ifdef DEBUG
-    ptrans("jacobi", ev, dd, e);
-#endif
-
-    /* Sort eigenvalues in ascending order */
-#define SWAPPER(i)                               \
-    if (std::abs(dd[(i) + 1]) < std::abs(dd[i])) \
-    {                                            \
-        temp = dd[i];                            \
-        for (j = 0; (j < NDIM); j++)             \
-        {                                        \
-            tvec[j] = ev[j][i];                  \
-        }                                        \
-        dd[i] = dd[(i) + 1];                     \
-        for (j = 0; (j < NDIM); j++)             \
-        {                                        \
-            ev[j][i] = ev[j][(i) + 1];           \
-        }                                        \
-        dd[(i) + 1] = temp;                      \
-        for (j = 0; (j < NDIM); j++)             \
-        {                                        \
-            ev[j][(i) + 1] = tvec[j];            \
-        }                                        \
-    }
-    SWAPPER(0)
-    SWAPPER(1)
-    SWAPPER(0)
-#ifdef DEBUG
-    ptrans("swap", ev, dd, e);
-    t_trans(*trans, dd, ev);
-#endif
-
-    for (i = 0; (i < DIM); i++)
+    // The moments of inertia in increasing order and the principal axes,
+    // which form a rotation.
+    double dd[DIM], ev[DIM][DIM];
+    diagonalizeSymmetric(inten, dd, ev);
+    for (int i = 0; (i < DIM); i++)
     {
         (*inertia)[i] = dd[i];
-        for (m = 0; (m < DIM); m++)
+        for (int m = 0; (m < DIM); m++)
         {
-            (*trans)[i][m] = ev[m][i];
+            (*trans)[i][m] = ev[i][m];
         }
     }
-
-    for (i = 0; (i < NDIM); i++)
-    {
-      delete[] inten[i];
-      delete[] ev[i];
-    }
-    delete[] inten;
-    delete[] ev;
 }
 
 void rotate_atoms(const std::vector<int> &index,

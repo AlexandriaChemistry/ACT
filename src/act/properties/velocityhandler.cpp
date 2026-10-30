@@ -34,7 +34,7 @@
 #include <map>
 
 #include "act/topology/topology.h"
-#include "gromacs/math/nrjac.h"
+#include "act/utility/rotation.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/vectypes.h"
@@ -187,38 +187,6 @@ static double centerOfMassInertia(const std::vector<double>    &mass,
     return tm;
 }
 
-/*! \brief Diagonalize a symmetric 3x3 matrix
- * \param[in]  A    The matrix
- * \param[out] eval The eigenvalues, in increasing order
- * \param[out] evec The eigenvectors, evec[k] belongs to eval[k]
- */
-static void diagonalize(const double A[DIM][DIM], double eval[DIM], double evec[DIM][DIM])
-{
-    double  a[DIM][DIM], v[DIM][DIM], d[DIM];
-    double *ap[DIM], *vp[DIM];
-    for (int m = 0; m < DIM; m++)
-    {
-        for (int n = 0; n < DIM; n++)
-        {
-            a[m][n] = A[m][n];
-        }
-        ap[m] = a[m];
-        vp[m] = v[m];
-    }
-    int nrot;
-    jacobi(ap, DIM, d, vp, &nrot);
-    int order[DIM] = { 0, 1, 2 };
-    std::sort(order, order + DIM, [&d](int k, int l) { return d[k] < d[l]; });
-    for (int k = 0; k < DIM; k++)
-    {
-        eval[k] = d[order[k]];
-        for (int m = 0; m < DIM; m++)
-        {
-            evec[k][m] = v[m][order[k]];
-        }
-    }
-}
-
 COMMRemover::COMMRemover(COMMRemoval                   mode,
                          const std::vector<ActAtom>   &atoms,
                          const std::vector<gmx::RVec> &x) : mode_(mode)
@@ -238,7 +206,7 @@ COMMRemover::COMMRemover(COMMRemoval                   mode,
         dvec   xcm;
         double I[DIM][DIM], eval[DIM], evec[DIM][DIM];
         centerOfMassInertia(mass_, x, xcm, I);
-        diagonalize(I, eval, evec);
+        diagonalizeSymmetric(I, eval, evec);
         // A linear molecule has a vanishing moment of inertia around its axis
         nRotation_ = (eval[0] < 1e-6*eval[DIM-1]) ? 2 : 3;
     }
@@ -309,7 +277,7 @@ void COMMRemover::remove(const std::vector<gmx::RVec> &x,
         }
         // Solve I omega = L for the rotations that are removed, those
         // with the largest moments of inertia.
-        diagonalize(I, eval, evec);
+        diagonalizeSymmetric(I, eval, evec);
         for (int k = DIM - nRotation_; k < DIM; k++)
         {
             if (eval[k] > 0)
