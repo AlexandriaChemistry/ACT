@@ -35,6 +35,7 @@
 
 #include <algorithm>
 #include <limits>
+#include <numeric>
 
 namespace ga
 {
@@ -118,9 +119,20 @@ void BoltzmannProbabilityComputer::compute(      std::vector<Genome> *pop,
 void RankProbabilityComputer::compute(                 std::vector<Genome> *pop,
                                       gmx_unused const int                  generation)
 {
-    for (size_t i = 0; i < pop->size(); i++)
+    // Rank the genomes by their fitness, lowest first. The sort is stable,
+    // such that the ranks of a sorted population are its order.
+    order_.resize(pop->size());
+    std::iota(order_.begin(), order_.end(), 0);
+    std::stable_sort(order_.begin(), order_.end(),
+                     [pop](size_t a, size_t b)
+                     {
+                         return ((*pop)[a].fitness(iMolSelect::Train) <
+                                 (*pop)[b].fitness(iMolSelect::Train));
+                     });
+    const double sumOfRanks = pop->size() * (pop->size() + 1) / 2;
+    for (size_t i = 0; i < order_.size(); i++)
     {
-        (*pop)[i].setProbability((pop->size() - i) / sumOfRanks_);
+        (*pop)[order_[i]].setProbability((pop->size() - i) / sumOfRanks);
     }
 }
 
