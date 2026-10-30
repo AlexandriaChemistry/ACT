@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <!DOCTYPE alexandria_chemistry.dtd PUBLIC "alexandria_chemistry.dtd" "alexandria_chemistry.dtd">
 <alexandria_chemistry>
-  <version checksum="4e2305275cadaefb162aa7ce9c2896c5" timestamp="2025-12-16 14:05:14"/>
+  <version checksum="a16d81df45eede425a0aa821e4480c7c" timestamp="2025-12-16 14:05:14"/>
   <particletypes>
     <particletype identifier="Be2+" type="Atom" description="beryllium ion">
       <option key="atomnumber" value="4"/>
@@ -274,7 +274,7 @@
       <option key="row" value="0"/>
       <option key="vdwtype" value="br_s"/>
       <option key="zetatype" value="br_s_z"/>
-      <parameter type="charge" unit="e" value="-0.8" uncertainty="0" minimum="-0.96" maximum="-0.64" ntrain="0" mutability="Free" nonnegative="no"/>
+      <parameter type="charge" unit="e" value="-0.8" uncertainty="0" minimum="-0.96" maximum="-0.64" ntrain="0" mutability="Bounded" nonnegative="no"/>
       <parameter type="mass" unit="Da" value="0" uncertainty="0" minimum="0" maximum="1" ntrain="0" mutability="Fixed" nonnegative="yes"/>
       <parameter type="ref_enthalpy" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="1" ntrain="0" mutability="Fixed" nonnegative="yes"/>
     </particletype>
@@ -297,7 +297,7 @@
       <option key="row" value="0"/>
       <option key="vdwtype" value="c1_s"/>
       <option key="zetatype" value="c1_s_z"/>
-      <parameter type="charge" unit="e" value="-0.6" uncertainty="0" minimum="-0.72" maximum="-0.48" ntrain="0" mutability="Free" nonnegative="no"/>
+      <parameter type="charge" unit="e" value="-0.6" uncertainty="0" minimum="-0.72" maximum="-0.48" ntrain="0" mutability="Bounded" nonnegative="no"/>
       <parameter type="mass" unit="Da" value="0" uncertainty="0" minimum="0" maximum="1" ntrain="0" mutability="Fixed" nonnegative="yes"/>
       <parameter type="ref_enthalpy" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="1" ntrain="0" mutability="Fixed" nonnegative="yes"/>
     </particletype>
@@ -320,7 +320,7 @@
       <option key="row" value="0"/>
       <option key="vdwtype" value="c2_s"/>
       <option key="zetatype" value="c2_s_z"/>
-      <parameter type="charge" unit="e" value="-0.6" uncertainty="0" minimum="-0.72" maximum="-0.48" ntrain="0" mutability="Free" nonnegative="no"/>
+      <parameter type="charge" unit="e" value="-0.6" uncertainty="0" minimum="-0.72" maximum="-0.48" ntrain="0" mutability="Bounded" nonnegative="no"/>
       <parameter type="mass" unit="Da" value="0" uncertainty="0" minimum="0" maximum="1" ntrain="0" mutability="Fixed" nonnegative="yes"/>
       <parameter type="ref_enthalpy" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="1" ntrain="0" mutability="Fixed" nonnegative="yes"/>
     </particletype>
@@ -343,7 +343,7 @@
       <option key="row" value="0"/>
       <option key="vdwtype" value="c3_s"/>
       <option key="zetatype" value="c3_s_z"/>
-      <parameter type="charge" unit="e" value="-0.6" uncertainty="0" minimum="-0.72" maximum="-0.48" ntrain="0" mutability="Free" nonnegative="no"/>
+      <parameter type="charge" unit="e" value="-0.6" uncertainty="0" minimum="-0.72" maximum="-0.48" ntrain="0" mutability="Bounded" nonnegative="no"/>
       <parameter type="mass" unit="Da" value="0" uncertainty="0" minimum="0" maximum="1" ntrain="0" mutability="Fixed" nonnegative="yes"/>
       <parameter type="ref_enthalpy" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="1" ntrain="0" mutability="Fixed" nonnegative="yes"/>
     </particletype>
@@ -366,7 +366,7 @@
       <option key="row" value="0"/>
       <option key="vdwtype" value="cl_s"/>
       <option key="zetatype" value="cl_s_z"/>
-      <parameter type="charge" unit="e" value="-0.8" uncertainty="0" minimum="-0.96" maximum="-0.64" ntrain="0" mutability="Free" nonnegative="no"/>
+      <parameter type="charge" unit="e" value="-0.8" uncertainty="0" minimum="-0.96" maximum="-0.64" ntrain="0" mutability="Bounded" nonnegative="no"/>
       <parameter type="mass" unit="Da" value="0" uncertainty="0" minimum="0" maximum="1" ntrain="0" mutability="Fixed" nonnegative="yes"/>
       <parameter type="ref_enthalpy" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="1" ntrain="0" mutability="Fixed" nonnegative="yes"/>
     </particletype>
@@ -389,7 +389,7 @@
       <option key="row" value="0"/>
       <option key="vdwtype" value="f_s"/>
       <option key="zetatype" value="f_s_z"/>
-      <parameter type="charge" unit="e" value="-0.8" uncertainty="0" minimum="-0.96" maximum="-0.64" ntrain="0" mutability="Free" nonnegative="no"/>
+      <parameter type="charge" unit="e" value="-0.8" uncertainty="0" minimum="-0.96" maximum="-0.64" ntrain="0" mutability="Bounded" nonnegative="no"/>
       <parameter type="mass" unit="Da" value="0" uncertainty="0" minimum="0" maximum="1" ntrain="0" mutability="Fixed" nonnegative="yes"/>
       <parameter type="ref_enthalpy" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="1" ntrain="0" mutability="Fixed" nonnegative="yes"/>
     </particletype>
@@ -412,7 +412,7 @@
       <option key="row" value="0"/>
       <option key="vdwtype" value="h_s"/>
       <option key="zetatype" value="h_s_z"/>
-      <parameter type="charge" unit="e" value="-0.6" uncertainty="0" minimum="-0.72" maximum="-0.48" ntrain="0" mutability="Free" nonnegative="no"/>
+      <parameter type="charge" unit="e" value="-0.6" uncertainty="0" minimum="-0.72" maximum="-0.48" ntrain="0" mutability="Bounded" nonnegative="no"/>
       <parameter type="mass" unit="Da" value="0" uncertainty="0" minimum="0" maximum="1" ntrain="0" mutability="Fixed" nonnegative="yes"/>
       <parameter type="ref_enthalpy" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="1" ntrain="0" mutability="Fixed" nonnegative="yes"/>
     </particletype>
@@ -435,7 +435,7 @@
       <option key="row" value="0"/>
       <option key="vdwtype" value="i_s"/>
       <option key="zetatype" value="i_s_z"/>
-      <parameter type="charge" unit="e" value="-0.8" uncertainty="0" minimum="-0.96" maximum="-0.64" ntrain="0" mutability="Free" nonnegative="no"/>
+      <parameter type="charge" unit="e" value="-0.8" uncertainty="0" minimum="-0.96" maximum="-0.64" ntrain="0" mutability="Bounded" nonnegative="no"/>
       <parameter type="mass" unit="Da" value="0" uncertainty="0" minimum="0" maximum="1" ntrain="0" mutability="Fixed" nonnegative="yes"/>
       <parameter type="ref_enthalpy" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="1" ntrain="0" mutability="Fixed" nonnegative="yes"/>
     </particletype>
@@ -458,7 +458,7 @@
       <option key="row" value="0"/>
       <option key="vdwtype" value="n1_s"/>
       <option key="zetatype" value="n1_s_z"/>
-      <parameter type="charge" unit="e" value="-0.6" uncertainty="0" minimum="-0.72" maximum="-0.48" ntrain="0" mutability="Free" nonnegative="no"/>
+      <parameter type="charge" unit="e" value="-0.6" uncertainty="0" minimum="-0.72" maximum="-0.48" ntrain="0" mutability="Bounded" nonnegative="no"/>
       <parameter type="mass" unit="Da" value="0" uncertainty="0" minimum="0" maximum="1" ntrain="0" mutability="Fixed" nonnegative="yes"/>
       <parameter type="ref_enthalpy" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="1" ntrain="0" mutability="Fixed" nonnegative="yes"/>
     </particletype>
@@ -481,7 +481,7 @@
       <option key="row" value="0"/>
       <option key="vdwtype" value="n2_s"/>
       <option key="zetatype" value="n2_s_z"/>
-      <parameter type="charge" unit="e" value="-0.6" uncertainty="0" minimum="-0.72" maximum="-0.48" ntrain="0" mutability="Free" nonnegative="no"/>
+      <parameter type="charge" unit="e" value="-0.6" uncertainty="0" minimum="-0.72" maximum="-0.48" ntrain="0" mutability="Bounded" nonnegative="no"/>
       <parameter type="mass" unit="Da" value="0" uncertainty="0" minimum="0" maximum="1" ntrain="0" mutability="Fixed" nonnegative="yes"/>
       <parameter type="ref_enthalpy" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="1" ntrain="0" mutability="Fixed" nonnegative="yes"/>
     </particletype>
@@ -504,7 +504,7 @@
       <option key="row" value="0"/>
       <option key="vdwtype" value="n3_s"/>
       <option key="zetatype" value="n3_s_z"/>
-      <parameter type="charge" unit="e" value="-0.6" uncertainty="0" minimum="-0.72" maximum="-0.48" ntrain="0" mutability="Free" nonnegative="no"/>
+      <parameter type="charge" unit="e" value="-0.6" uncertainty="0" minimum="-0.72" maximum="-0.48" ntrain="0" mutability="Bounded" nonnegative="no"/>
       <parameter type="mass" unit="Da" value="0" uncertainty="0" minimum="0" maximum="1" ntrain="0" mutability="Fixed" nonnegative="yes"/>
       <parameter type="ref_enthalpy" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="1" ntrain="0" mutability="Fixed" nonnegative="yes"/>
     </particletype>
@@ -527,7 +527,7 @@
       <option key="row" value="0"/>
       <option key="vdwtype" value="n4_s"/>
       <option key="zetatype" value="n4_s_z"/>
-      <parameter type="charge" unit="e" value="-0.6" uncertainty="0" minimum="-0.72" maximum="-0.48" ntrain="0" mutability="Free" nonnegative="no"/>
+      <parameter type="charge" unit="e" value="-0.6" uncertainty="0" minimum="-0.72" maximum="-0.48" ntrain="0" mutability="Bounded" nonnegative="no"/>
       <parameter type="mass" unit="Da" value="0" uncertainty="0" minimum="0" maximum="1" ntrain="0" mutability="Fixed" nonnegative="yes"/>
       <parameter type="ref_enthalpy" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="1" ntrain="0" mutability="Fixed" nonnegative="yes"/>
     </particletype>
@@ -550,7 +550,7 @@
       <option key="row" value="0"/>
       <option key="vdwtype" value="o1_s"/>
       <option key="zetatype" value="o1_s_z"/>
-      <parameter type="charge" unit="e" value="-0.6" uncertainty="0" minimum="-0.72" maximum="-0.48" ntrain="0" mutability="Free" nonnegative="no"/>
+      <parameter type="charge" unit="e" value="-0.6" uncertainty="0" minimum="-0.72" maximum="-0.48" ntrain="0" mutability="Bounded" nonnegative="no"/>
       <parameter type="mass" unit="Da" value="0" uncertainty="0" minimum="0" maximum="1" ntrain="0" mutability="Fixed" nonnegative="yes"/>
       <parameter type="ref_enthalpy" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="1" ntrain="0" mutability="Fixed" nonnegative="yes"/>
     </particletype>
@@ -573,7 +573,7 @@
       <option key="row" value="0"/>
       <option key="vdwtype" value="o2_s"/>
       <option key="zetatype" value="o2_s_z"/>
-      <parameter type="charge" unit="e" value="-0.6" uncertainty="0" minimum="-0.72" maximum="-0.48" ntrain="0" mutability="Free" nonnegative="no"/>
+      <parameter type="charge" unit="e" value="-0.6" uncertainty="0" minimum="-0.72" maximum="-0.48" ntrain="0" mutability="Bounded" nonnegative="no"/>
       <parameter type="mass" unit="Da" value="0" uncertainty="0" minimum="0" maximum="1" ntrain="0" mutability="Fixed" nonnegative="yes"/>
       <parameter type="ref_enthalpy" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="1" ntrain="0" mutability="Fixed" nonnegative="yes"/>
     </particletype>
@@ -596,7 +596,7 @@
       <option key="row" value="0"/>
       <option key="vdwtype" value="o3_s"/>
       <option key="zetatype" value="o3_s_z"/>
-      <parameter type="charge" unit="e" value="-0.6" uncertainty="0" minimum="-0.72" maximum="-0.48" ntrain="0" mutability="Free" nonnegative="no"/>
+      <parameter type="charge" unit="e" value="-0.6" uncertainty="0" minimum="-0.72" maximum="-0.48" ntrain="0" mutability="Bounded" nonnegative="no"/>
       <parameter type="mass" unit="Da" value="0" uncertainty="0" minimum="0" maximum="1" ntrain="0" mutability="Fixed" nonnegative="yes"/>
       <parameter type="ref_enthalpy" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="1" ntrain="0" mutability="Fixed" nonnegative="yes"/>
     </particletype>
@@ -619,7 +619,7 @@
       <option key="row" value="0"/>
       <option key="vdwtype" value="p1_s"/>
       <option key="zetatype" value="p1_s_z"/>
-      <parameter type="charge" unit="e" value="-0.6" uncertainty="0" minimum="-0.72" maximum="-0.48" ntrain="0" mutability="Free" nonnegative="no"/>
+      <parameter type="charge" unit="e" value="-0.6" uncertainty="0" minimum="-0.72" maximum="-0.48" ntrain="0" mutability="Bounded" nonnegative="no"/>
       <parameter type="mass" unit="Da" value="0" uncertainty="0" minimum="0" maximum="1" ntrain="0" mutability="Fixed" nonnegative="yes"/>
       <parameter type="ref_enthalpy" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="1" ntrain="0" mutability="Fixed" nonnegative="yes"/>
     </particletype>
@@ -642,7 +642,7 @@
       <option key="row" value="0"/>
       <option key="vdwtype" value="p2_s"/>
       <option key="zetatype" value="p2_s_z"/>
-      <parameter type="charge" unit="e" value="-0.6" uncertainty="0" minimum="-0.72" maximum="-0.48" ntrain="0" mutability="Free" nonnegative="no"/>
+      <parameter type="charge" unit="e" value="-0.6" uncertainty="0" minimum="-0.72" maximum="-0.48" ntrain="0" mutability="Bounded" nonnegative="no"/>
       <parameter type="mass" unit="Da" value="0" uncertainty="0" minimum="0" maximum="1" ntrain="0" mutability="Fixed" nonnegative="yes"/>
       <parameter type="ref_enthalpy" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="1" ntrain="0" mutability="Fixed" nonnegative="yes"/>
     </particletype>
@@ -665,7 +665,7 @@
       <option key="row" value="0"/>
       <option key="vdwtype" value="p3_s"/>
       <option key="zetatype" value="p3_s_z"/>
-      <parameter type="charge" unit="e" value="-0.6" uncertainty="0" minimum="-0.72" maximum="-0.48" ntrain="0" mutability="Free" nonnegative="no"/>
+      <parameter type="charge" unit="e" value="-0.6" uncertainty="0" minimum="-0.72" maximum="-0.48" ntrain="0" mutability="Bounded" nonnegative="no"/>
       <parameter type="mass" unit="Da" value="0" uncertainty="0" minimum="0" maximum="1" ntrain="0" mutability="Fixed" nonnegative="yes"/>
       <parameter type="ref_enthalpy" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="1" ntrain="0" mutability="Fixed" nonnegative="yes"/>
     </particletype>
@@ -688,7 +688,7 @@
       <option key="row" value="0"/>
       <option key="vdwtype" value="s1_s"/>
       <option key="zetatype" value="s1_s_z"/>
-      <parameter type="charge" unit="e" value="-0.6" uncertainty="0" minimum="-0.72" maximum="-0.48" ntrain="0" mutability="Free" nonnegative="no"/>
+      <parameter type="charge" unit="e" value="-0.6" uncertainty="0" minimum="-0.72" maximum="-0.48" ntrain="0" mutability="Bounded" nonnegative="no"/>
       <parameter type="mass" unit="Da" value="0" uncertainty="0" minimum="0" maximum="1" ntrain="0" mutability="Fixed" nonnegative="yes"/>
       <parameter type="ref_enthalpy" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="1" ntrain="0" mutability="Fixed" nonnegative="yes"/>
     </particletype>
@@ -711,7 +711,7 @@
       <option key="row" value="0"/>
       <option key="vdwtype" value="s2_s"/>
       <option key="zetatype" value="s2_s_z"/>
-      <parameter type="charge" unit="e" value="-0.6" uncertainty="0" minimum="-0.72" maximum="-0.48" ntrain="0" mutability="Free" nonnegative="no"/>
+      <parameter type="charge" unit="e" value="-0.6" uncertainty="0" minimum="-0.72" maximum="-0.48" ntrain="0" mutability="Bounded" nonnegative="no"/>
       <parameter type="mass" unit="Da" value="0" uncertainty="0" minimum="0" maximum="1" ntrain="0" mutability="Fixed" nonnegative="yes"/>
       <parameter type="ref_enthalpy" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="1" ntrain="0" mutability="Fixed" nonnegative="yes"/>
     </particletype>
@@ -734,7 +734,7 @@
       <option key="row" value="0"/>
       <option key="vdwtype" value="s3_s"/>
       <option key="zetatype" value="s3_s_z"/>
-      <parameter type="charge" unit="e" value="-0.6" uncertainty="0" minimum="-0.72" maximum="-0.48" ntrain="0" mutability="Free" nonnegative="no"/>
+      <parameter type="charge" unit="e" value="-0.6" uncertainty="0" minimum="-0.72" maximum="-0.48" ntrain="0" mutability="Bounded" nonnegative="no"/>
       <parameter type="mass" unit="Da" value="0" uncertainty="0" minimum="0" maximum="1" ntrain="0" mutability="Fixed" nonnegative="yes"/>
       <parameter type="ref_enthalpy" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="1" ntrain="0" mutability="Fixed" nonnegative="yes"/>
     </particletype>
@@ -755,7 +755,7 @@
       <option key="row" value="0"/>
       <option key="vdwtype" value="v2_s"/>
       <option key="zetatype" value="v2_s_z"/>
-      <parameter type="charge" unit="e" value="-0.4" uncertainty="0" minimum="-0.48" maximum="-0.32" ntrain="0" mutability="Free" nonnegative="no"/>
+      <parameter type="charge" unit="e" value="-0.4" uncertainty="0" minimum="-0.48" maximum="-0.32" ntrain="0" mutability="Bounded" nonnegative="no"/>
       <parameter type="mass" unit="Da" value="0" uncertainty="0" minimum="0" maximum="1" ntrain="0" mutability="Fixed" nonnegative="yes"/>
       <parameter type="ref_enthalpy" unit="kJ/mol" value="0" uncertainty="0" minimum="0" maximum="1" ntrain="0" mutability="Fixed" nonnegative="yes"/>
     </particletype>

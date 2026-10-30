@@ -15,5 +15,5 @@ This directory contains fundamental data types and infrastructure used throughou
 - **interactiontype.h / interactiontype.cpp** — Central `InteractionType` enum listing all bonded and non-bonded interaction types (`BONDS`, `ANGLES`, `VDW`, `ELECTROSTATICS`, …) together with utility functions.
 - **libraryfile.h / libraryfile.cpp** — Locates ACT data files (force-field XMLs, CSV tables) at runtime via the install path or `ACTDATA` environment variable.
 - **msg_handler.h / msg_handler.cpp** — `MsgHandler` class for unified logging, warnings, and fatal-error reporting with configurable verbosity levels.
-- **mutability.h / mutability.cpp** — `Mutability` enum (`Fixed`, `Bounded`, `Free`) that controls whether a force-field parameter may be modified during optimisation.
+- **mutability.h / mutability.cpp** — `Mutability` enum (`Fixed`, `Dependent`, `ACM`, `Bounded`) that controls whether a force-field parameter may be modified during optimisation.
 - **version.h / version.cpp** — Compile-time version string for the ACT library.

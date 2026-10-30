@@ -49,9 +49,7 @@ enum class Mutability
     //! ForceFieldParameter (charge) that should be changed by the Alexandria Charge Method algorithms only
     ACM,
     //! ForceFieldParameter that can be modified within bounds
-    Bounded,
-    //! ForceFieldParameter that can be modified without restrictions
-    Free
+    Bounded
 };
 
 /*! \brief Return a string corresponding to the mutability

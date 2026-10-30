@@ -48,7 +48,6 @@ TEST(MutabilityTest, mutabilityName)
     EXPECT_EQ("Dependent", mutabilityName(Mutability::Dependent));
     EXPECT_EQ("ACM",       mutabilityName(Mutability::ACM));
     EXPECT_EQ("Bounded",   mutabilityName(Mutability::Bounded));
-    EXPECT_EQ("Free",      mutabilityName(Mutability::Free));
 }
 
 TEST(MutabilityTest, nameToMutabilityValid)
@@ -66,9 +65,6 @@ TEST(MutabilityTest, nameToMutabilityValid)
 
     EXPECT_TRUE(nameToMutability("Bounded", &mut));
     EXPECT_EQ(Mutability::Bounded, mut);
-
-    EXPECT_TRUE(nameToMutability("Free", &mut));
-    EXPECT_EQ(Mutability::Free, mut);
 }
 
 TEST(MutabilityTest, nameToMutabilityInvalid)
@@ -79,6 +75,8 @@ TEST(MutabilityTest, nameToMutabilityInvalid)
     EXPECT_FALSE(nameToMutability("fixed",             &mut));
     EXPECT_FALSE(nameToMutability("acm",               &mut));
     EXPECT_FALSE(nameToMutability("",                  &mut));
+    // Free is no longer supported
+    EXPECT_FALSE(nameToMutability("Free",              &mut));
 }
 
 TEST(MutabilityTest, roundTrip)
@@ -86,8 +84,7 @@ TEST(MutabilityTest, roundTrip)
     for (auto m : { Mutability::Fixed,
                     Mutability::Dependent,
                     Mutability::ACM,
-                    Mutability::Bounded,
-                    Mutability::Free })
+                    Mutability::Bounded })
     {
         Mutability out;
         EXPECT_TRUE(nameToMutability(mutabilityName(m), &out));

@@ -61,9 +61,6 @@ void ForceFieldParameter::setValue(double value)
 {
     switch (mutability_)
     {
-    case Mutability::Free:
-        value_ = value;
-        break;
     case Mutability::ACM:
         // Setting this value will not affect anything but it is needed for edit_ff
         value_ = value;
@@ -100,7 +97,7 @@ void ForceFieldParameter::setValue(double value)
 
 void ForceFieldParameter::setUncertainty(double uncertainty)
 { 
-    if (mutability_ == Mutability::Free || mutability_ == Mutability::Bounded)
+    if (mutability_ == Mutability::Bounded)
     {
         uncertainty_ = std::max(0.0, uncertainty);
     }

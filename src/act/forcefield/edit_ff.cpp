@@ -53,6 +53,8 @@
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/oenv.h"
 #include "gromacs/utility/arraysize.h"
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/stringutil.h"
 
 namespace alexandria
 {
@@ -152,10 +154,11 @@ static void setMinMaxMut(FILE *fp,
     if (bSetMut)
     {
         Mutability mut;
-        if (nameToMutability(mutability, &mut))
+        if (!nameToMutability(mutability, &mut))
         {
-            pp->setMutability(mut);
+            GMX_THROW(gmx::InvalidInputError(gmx::formatString("Unknown mutability '%s'", mutability.c_str()).c_str()));
         }
+        pp->setMutability(mut);
     }
     if (stretch)
     {
@@ -839,7 +842,7 @@ int edit_ff(int argc, char*argv[])
         { "-max",    FALSE, etREAL,  {&pmax},
           "Maximum value of parameter." },
         { "-mut",    FALSE, etSTR,  {&mutability},
-          "Set the mutability for the given parameters to the value. The following values are supported: Free, Fixed, Bounded" },
+          "Set the mutability for the given parameters to the value. The following values are supported: Fixed, Bounded" },
         { "-del",    FALSE, etBOOL,  {&remove},
           "Together with the -a flag, will remove all interactions containing this particle" },
         { "-force",  FALSE, etBOOL, {&force},
