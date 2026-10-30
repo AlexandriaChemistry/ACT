@@ -25,6 +25,7 @@
 #include "act/alexandria/percentmutator.h"
 #include "act/alexandria/staticindividualinfo.h"
 #include "act/forces/forcecomputerstatistics.h"
+#include "act/utility/portable_random.h"
 #include "act/utility/communicationrecord.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/textwriter.h"
@@ -56,10 +57,8 @@ ACTMiddleMan::ACTMiddleMan(MsgHandler                *msghandler,
     sii->commRec()->recv(sii->commRec()->superior(), &seed);
     // Standard mersenne_twister_engine seeded with what we received
     std::mt19937 gen(seed);
-    // Default constructor to cover all available (positive) range
-    std::uniform_int_distribution<int> dis(0);
     
-    ACMInitializer initializer(sii, gach->randomInit(), dis(gen));
+    ACMInitializer initializer(sii, gach->randomInit(), portableSeed(&gen));
     
     // Create and initialize the individual
     ind_.reset(std::move(initializer.initialize()));
@@ -78,12 +77,12 @@ ACTMiddleMan::ACTMiddleMan(MsgHandler                *msghandler,
     
     if (gach->optimizer() == OptimizerAlg::GA)
     {
-        mutator_ = new alexandria::PercentMutator(sii, dis(gen), algorithm, gach->percent());
+        mutator_ = new alexandria::PercentMutator(sii, portableSeed(&gen), algorithm, gach->percent());
     }
     else
     {
         //! \todo we need to make some logfiles for the middlemen, because they apparently cannot write to the global logfile
-        auto mut = new alexandria::MCMCMutator(dis(gen),
+        auto mut = new alexandria::MCMCMutator(portableSeed(&gen),
                                                bch, &fitComp_, sii,
                                                bch->evaluateTestset(),
                                                algorithm, 

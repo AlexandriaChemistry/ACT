@@ -63,6 +63,7 @@
 #include "act/topology/actmol_low.h"
 #include "act/utility/jsontree.h"
 #include "act/utility/memory_check.h"
+#include "act/utility/portable_random.h"
 #include "act/utility/units.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/gmxfio.h"
@@ -278,28 +279,27 @@ int OptACM::initMaster(const std::vector<t_filenm> &fnm,
         seed = rd();
     }
     
-    // Standard mersenne_twister_engine seeded with seed
+    // Standard mersenne_twister_engine seeded with seed, from which the
+    // seeds of the components are drawn in the same way on all platforms
     std::mt19937 gen(seed);
-    // Default constructor to cover all available (positive) range
-    std::uniform_int_distribution<int> dis(0);
     // Distribute different random number seeds to the middlemen
     for(const auto mman : sii_->commRec()->middlemen())
     {
         // Generate new seed for each of the middlemen
         // and send it over.
-        sii_->commRec()->send(mman, dis(gen));
+        sii_->commRec()->send(mman, portableSeed(&gen));
     }
 
     // Initializer
-    initializer_ = new ACMInitializer(sii_, gach_.randomInit(), dis(gen));
+    initializer_ = new ACMInitializer(sii_, gach_.randomInit(), portableSeed(&gen));
 
     if (gach_.optimizer() == OptimizerAlg::GA)
     {
-        mutator_ = new alexandria::PercentMutator(sii_, dis(gen), algorithm, gach_.percent());
+        mutator_ = new alexandria::PercentMutator(sii_, portableSeed(&gen), algorithm, gach_.percent());
     }
     else
     {
-        auto mut = new alexandria::MCMCMutator(dis(gen), &bch_, fitComp_, sii_, bch_.evaluateTestset(),
+        auto mut = new alexandria::MCMCMutator(portableSeed(&gen), &bch_, fitComp_, sii_, bch_.evaluateTestset(),
                                                algorithm, gach_.maxGenerations());
         mut->setNstFitness(gach_.nstFitness());
         //! \todo Only open these files when we are optimizing in verbose mode.
@@ -314,7 +314,7 @@ int OptACM::initMaster(const std::vector<t_filenm> &fnm,
     }
 
     // Selector
-    selector_ = new ga::RouletteSelector(dis(gen));
+    selector_ = new ga::RouletteSelector(portableSeed(&gen));
 
     auto tw = msghandler_.tw();
     // VolumeFractionPenalizer
@@ -345,7 +345,7 @@ int OptACM::initMaster(const std::vector<t_filenm> &fnm,
             tw->writeStringFormatted("Appending a CatastrophePenalizer to the list of penalizers...\n");
         }
         penalizers_.push_back(
-            new ga::CatastrophePenalizer(dis(gen),
+            new ga::CatastrophePenalizer(portableSeed(&gen),
                                          gach_.cpGenInterval(),
                                          gach_.cpPopFrac(),
                                          initializer_, gach_.popSize()
@@ -397,7 +397,7 @@ int OptACM::initMaster(const std::vector<t_filenm> &fnm,
 
         crossover_ = new ga::NPointCrossover(sii_->nParam(),
                                              gach_.nCrossovers(),
-                                             dis(gen));
+                                             portableSeed(&gen));
 
         // We pass the global seed to the optimizer
         ga_ = new ga::HybridGAMC(initializer_, fitComp_, probComputer_,
@@ -407,7 +407,7 @@ int OptACM::initMaster(const std::vector<t_filenm> &fnm,
                                  opt2fn("-fitness", fnm.size(), fnm.data()),
                                  opt2fn_null("-gpin", fnm.size(), fnm.data()),
                                  opt2fn("-gpout", fnm.size(), fnm.data()),
-                                 dis(gen), bch_.adaptiveStep());
+                                 portableSeed(&gen), bch_.adaptiveStep());
     }
     if (tw)
     {

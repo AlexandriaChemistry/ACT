@@ -33,6 +33,8 @@
 
 #include "npointcrossover.h"
 
+#include "act/utility/portable_random.h"
+
 namespace ga
 {
 
@@ -49,7 +51,7 @@ void NPointCrossover::offspring(const ga::Genome  *parent1,
 
     // Fill in the crossover points
     // We start by shuffling the available indices
-    std::shuffle(availableIndices_.begin(), availableIndices_.end(), gen);
+    alexandria::portableShuffle(&availableIndices_, &gen);
     // Now we copy the first order_ elements to crossoverPoints_
     for (i = 0; i < order_; i++)
     {

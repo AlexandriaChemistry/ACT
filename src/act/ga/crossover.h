@@ -40,6 +40,7 @@
 #include <vector>
 
 #include "genome.h"
+#include "act/utility/portable_random.h"
 
 namespace ga
 {
@@ -55,7 +56,8 @@ private:
     // Random number stuff
     std::random_device                     rd_base;
     std::mt19937                           gen_base;
-    std::uniform_int_distribution<size_t>  dis_base;
+    //! Length of the chromosome
+    size_t                                 chromosomeLength_;
 
 protected:
 
@@ -66,7 +68,7 @@ protected:
      */
     Crossover(const size_t chromosomeLength,
               const int seed)
-    : gen_base(rd_base()), dis_base(std::uniform_int_distribution<size_t>(1, chromosomeLength - 1))
+    : gen_base(rd_base()), chromosomeLength_(chromosomeLength)
     {
         gen_base.seed(seed);
     }
@@ -77,7 +79,7 @@ protected:
     /*! \brief Pick a random gene index
      * \return the selected index
      */
-    size_t randIndex() { return dis_base(gen_base); }
+    size_t randIndex() { return 1 + alexandria::portableIndex(&gen_base, chromosomeLength_ - 1); }
 
 public:
 

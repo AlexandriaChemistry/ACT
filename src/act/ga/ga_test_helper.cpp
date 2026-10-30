@@ -108,12 +108,7 @@ GaTestHelper::GaTestHelper(int                                  nmiddlemen,
     }
     sii->computeWeightedTemperature(true);
     sii->propagateWeightFittingTargets();
-    // Random number stuff
-    // Adjust the seed that gets passed around to components of the optimizer
-    // Create random number generator and feed it the global seed
-    std::random_device rd;  // Will be used to obtain a seed for the random number engine
-    std::mt19937 gen(rd()); // Standard mersenne_twister_engine seeded with rd()
-    std::uniform_int_distribution<int> dis(0); // Default constructor to cover all available (positive) range
+    // A fixed seed for the components of the optimizer
     int seed = 1993;
     
     // Initializer
