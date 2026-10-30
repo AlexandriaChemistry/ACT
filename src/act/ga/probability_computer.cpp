@@ -33,6 +33,9 @@
 
 #include <math.h>
 
+#include <algorithm>
+#include <limits>
+
 namespace ga
 {
 
@@ -84,9 +87,18 @@ void BoltzmannProbabilityComputer::compute(      std::vector<Genome> *pop,
     double       total   = 0;
     const double epsilon = 1e-4;
     const double temp    = boltzAnneal_ < 1 ? computeTemperature(generation) : temperature_;
+    exponentials_.resize(pop->size());
+    // Store the exponents first, and subtract the largest one before taking
+    // the exponential, such that it does not overflow at low temperature.
+    double maxExponent = -std::numeric_limits<double>::max();
     for (size_t i = 0; i < pop->size(); i++)
     {
-        exponentials_[i] = exp(( 1 / ( epsilon + (*pop)[i].fitness(iMolSelect::Train) ) ) / temp);
+        exponentials_[i] = ( 1 / ( epsilon + (*pop)[i].fitness(iMolSelect::Train) ) ) / temp;
+        maxExponent      = std::max(maxExponent, exponentials_[i]);
+    }
+    for (size_t i = 0; i < pop->size(); i++)
+    {
+        exponentials_[i] = exp(exponentials_[i] - maxExponent);
         total += exponentials_[i];
     }
     for (size_t i = 0; i < pop->size(); i++)

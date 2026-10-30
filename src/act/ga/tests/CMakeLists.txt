@@ -41,6 +41,7 @@ gmx_add_mpi_unit_test(
     # files with code for tests
 #    genetic_algorithmtest.cpp
     genepoolTest.cpp
+    operatorsTest.cpp
     penalizerTest.cpp
     # pseudo-library for code for alexandria
     )
