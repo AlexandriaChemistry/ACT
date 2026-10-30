@@ -129,8 +129,6 @@ A force field consists many parameters and typically only a subset is trained at
    |                | maximum values are given in the force field and the        |
    |                | *-fc_bound* flag is used, a bounds penalty will be applied.|
    +----------------+------------------------------------------------------------+
-   | Free           | Parameter can adopt any value.                             |
-   +----------------+------------------------------------------------------------+
    
 
 

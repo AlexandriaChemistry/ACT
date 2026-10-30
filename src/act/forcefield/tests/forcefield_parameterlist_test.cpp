@@ -90,18 +90,10 @@ class ForceFieldParameterListTest : public gmx::test::CommandLineTestBase
                             auto p = pp.second;
                             switch (p.mutability()) 
                             {
-                            case Mutability::Free:
-                                {
-                                    checker_.checkDouble(p.value(), "Before");
-                                    p.setValue(2*p.value());
-                                    checker_.checkDouble(p.value(), "After");
-                                    checker_.checkDouble(p.originalValue(), "Original");  
-                                    break;
-                                }
                             case Mutability::Bounded:
                                 {
                                     p.setValue(0.5*(p.minimum()+p.maximum()));
-                                    checker_.checkDouble(p.value(), "IntermediateValue");
+                                    checker_.checkDouble(p.value(), (pp.first + "_IntermediateValue").c_str());
                                     if (p.strict())
                                     {
                                         EXPECT_THROW(p.setValue(2*p.maximum()), gmx::InvalidInputError);
@@ -110,7 +102,7 @@ class ForceFieldParameterListTest : public gmx::test::CommandLineTestBase
                                     else
                                     {
                                         p.setValue(2*p.maximum());
-                                        checker_.checkDouble(p.value(), "MaxValue");
+                                        checker_.checkDouble(p.value(), (pp.first + "_MaxValue").c_str());
                                     }
                                     break;
                                 }
@@ -125,9 +117,9 @@ class ForceFieldParameterListTest : public gmx::test::CommandLineTestBase
                                     }
                                     else
                                     {
-                                        checker_.checkDouble(p.originalValue(), "OriginalValue");
+                                        checker_.checkDouble(p.originalValue(), (pp.first + "_OriginalValue").c_str());
                                         p.setValue(2*p.maximum());
-                                        checker_.checkDouble(p.value(), "UnchangedValue");
+                                        checker_.checkDouble(p.value(), (pp.first + "_UnchangedValue").c_str());
                                     }
                                     break;
                                 }
@@ -180,7 +172,7 @@ TEST (ForceFieldParameterListSimpleTest, EmptyFunctionOK) {
 TEST_F (ForceFieldParameterListTest, AddParameter) {
     ForceFieldParameterList ff("PDIHS", CanSwap::Yes);
     ff.addParameter(Identifier("h3"), "sigma",
-                    ForceFieldParameter("nm", 12.0, 0.3, 13, 10.0, 18.0, Mutability::Free, false, false) );
+                    ForceFieldParameter("nm", 12.0, 0.3, 13, 10.0, 18.0, Mutability::Bounded, false, false) );
     ff.addParameter(Identifier("c2"), "gamma",
                     ForceFieldParameter("", 11.0, 0.25, 17, 8.0, 15.0, Mutability::Fixed, true, false) );
     ff.addParameter(Identifier("h3"), "epsilon", 
@@ -191,7 +183,7 @@ TEST_F (ForceFieldParameterListTest, AddParameter) {
 TEST_F (ForceFieldParameterListTest, ModifyParameter) {
     ForceFieldParameterList ff("IDIHS", CanSwap::No);
     ff.addParameter(Identifier("h3"), "sigma", 
-                    ForceFieldParameter("nm", 12.0, 0.3, 3, 10.0, 18.0, Mutability::Free, false, false));
+                    ForceFieldParameter("nm", 12.0, 0.3, 3, 10.0, 18.0, Mutability::Bounded, false, false));
     ff.addParameter(Identifier("c2"), "gamma",
                     ForceFieldParameter("", 11.0, 0.25, 12, 8.0, 15.0, Mutability::Fixed, true, true));
     ff.addParameter(Identifier("h3"), "epsilon",
@@ -204,7 +196,7 @@ TEST_F (ForceFieldParameterListTest, ModifyParameter) {
 TEST_F (ForceFieldParameterListTest, FindParameter) {
     ForceFieldParameterList ff("COUL_SR", CanSwap::Yes);
     ff.addParameter(Identifier("h3~o3"), "zeta", 
-                    ForceFieldParameter("nm", 12.0, 0.3, 3, 10.0, 18.0, Mutability::Free, false, false));
+                    ForceFieldParameter("nm", 12.0, 0.3, 3, 10.0, 18.0, Mutability::Bounded, false, false));
     ff.addParameter(Identifier("h3~h3"), "zeta",
                     ForceFieldParameter("", 11.0, 0.25, 12, 8.0, 15.0, Mutability::Bounded, true, true));
     ff.addParameter(Identifier("o3~o3"), "zeta",

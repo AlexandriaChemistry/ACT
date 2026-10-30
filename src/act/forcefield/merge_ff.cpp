@@ -129,8 +129,7 @@ static void merge_parameter(const std::vector<alexandria::ForceField> &pds,
             {
                 if (parameter == pp.first)
                 {
-                    if (pp.second.mutability() == alexandria::Mutability::Free ||
-                        pp.second.mutability() == alexandria::Mutability::Bounded)
+                    if (pp.second.mutability() == alexandria::Mutability::Bounded)
                     {
                         real   average = 0;
                         real   sigma   = 0;
@@ -162,8 +161,7 @@ static void merge_parameter(const std::vector<alexandria::ForceField> &pds,
             {
                 if (parameter == ppar.first)
                 {
-                    if (ppar.second.mutability() == alexandria::Mutability::Free ||
-                        ppar.second.mutability() == alexandria::Mutability::Bounded)
+                    if (ppar.second.mutability() == alexandria::Mutability::Bounded)
                     {
                         real average = 0;
                         real sigma   = 0;

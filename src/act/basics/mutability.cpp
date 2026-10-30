@@ -45,8 +45,7 @@ static std::map<Mutability, const std::string> mut2string =
         { Mutability::Fixed,     "Fixed"     },
         { Mutability::Dependent, "Dependent" },
         { Mutability::ACM,       "ACM"       },
-        { Mutability::Bounded,   "Bounded"   },
-        { Mutability::Free,      "Free"      }
+        { Mutability::Bounded,   "Bounded"   }
     };
 
 //! Map to convert std::string to Mutability

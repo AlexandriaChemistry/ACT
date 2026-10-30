@@ -88,12 +88,6 @@ class ForceFieldParameterTest : public gmx::test::CommandLineTestBase
 
 };
 
-TEST_F (ForceFieldParameterTest, FreeNotStrict) {
-    ForceFieldParameter    fp("nm", 12.0, 0.3, 13, 10.0, 18.0, Mutability::Free, false, false);
-    ForceFieldParameterMap ff = { { "sigma", fp } } ;
-    runTest(ff);
-}
-
 TEST_F (ForceFieldParameterTest, BoundedStrict) {
     ForceFieldParameter    fp("kJ/mol", 11.0, 0.25, 24, 8.0, 15.0, Mutability::Bounded, true, false);
     ForceFieldParameterMap ff = { { "epsilon", fp } };
@@ -143,7 +137,7 @@ TEST_F (ForceFieldParameterTest, UncertaintyNotStrict) {
 }
 
 TEST_F (ForceFieldParameterTest, UncertaintyNotStrictOriginal) {
-    ForceFieldParameter    fp("fs", 11.0, 0.25, 123957, 8.0, 15.0, Mutability::Free, false, false);
+    ForceFieldParameter    fp("fs", 11.0, 0.25, 123957, 8.0, 15.0, Mutability::Bounded, false, false);
     ForceFieldParameterMap ff = { { "ypsilon", fp } };
     fp.setUncertainty(1.0);
     runTest(ff);
@@ -175,7 +169,7 @@ TEST(ForceFieldParameterSimpleTest, MinEqualsMaxSetMutabilityFixed) {
 
 TEST(ForceFieldParameterSimpleTest, NameToMutability) {
     Mutability m;
-    EXPECT_TRUE(nameToMutability("Free", &m));
+    EXPECT_FALSE(nameToMutability("Free", &m));
     EXPECT_TRUE(nameToMutability("Fixed", &m));
     EXPECT_TRUE(nameToMutability("Bounded", &m));
     EXPECT_FALSE(nameToMutability("BounDed", &m));

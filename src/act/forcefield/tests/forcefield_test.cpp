@@ -33,7 +33,9 @@
  */
 #include <math.h>
 
+#include <fstream>
 #include <map>
+#include <sstream>
 
 #include <gtest/gtest.h>
 
@@ -93,9 +95,9 @@ class ForceFieldTest : public gmx::test::CommandLineTestBase
             atp.setOption("acmtype", "z_U");
             atp.setOption("element", elem);
             atp.setOption("atomnumber", "92");
-            ForceFieldParameter mm("Da", 238.29, 0.0,  1, 230, 240, Mutability::Free, true, false);
+            ForceFieldParameter mm("Da", 238.29, 0.0,  1, 230, 240, Mutability::Bounded, true, false);
             atp.addForceFieldParameter("mass", mm);
-            ForceFieldParameter rr("kJ/mol", 1000.0, 0.0,  1, 990, 1010, Mutability::Free, true, true);
+            ForceFieldParameter rr("kJ/mol", 1000.0, 0.0,  1, 990, 1010, Mutability::Bounded, true, true);
             atp.addForceFieldParameter("ref_enthalpy", rr);
             pd->addParticleType(atp);
         }
@@ -222,6 +224,28 @@ TEST_F (ForceFieldTest, zeta)
         }
     }
     checker_.checkSequence(zetas.begin(), zetas.end(), "zeta");
+}
+
+// Test: A force field with a mutability that is not supported, such as
+// the former Free, cannot be read
+TEST(ForceFieldSimpleTest, unknownMutabilityThrows)
+{
+    std::string dataName = gmx::test::TestFileManager::getInputFilePath("ACM-g.xml");
+    std::ifstream in(dataName);
+    std::stringstream buffer;
+    buffer << in.rdbuf();
+    std::string xml = buffer.str();
+    auto pos = xml.find("mutability=\"Bounded\"");
+    ASSERT_NE(std::string::npos, pos);
+    xml.replace(pos, std::string("mutability=\"Bounded\"").size(), "mutability=\"Free\"");
+    gmx::test::TestFileManager fileManager;
+    std::string freeName = fileManager.getTemporaryFilePath("ACM-g-free.xml");
+    {
+        std::ofstream out(freeName);
+        out << xml;
+    }
+    ForceField pd;
+    EXPECT_THROW(readForceField(freeName, &pd), gmx::InvalidInputError);
 }
 
 TEST(ForceFieldSimpleTest, changeChargeMinMaxForFixedParticle)

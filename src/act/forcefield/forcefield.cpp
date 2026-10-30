@@ -1030,9 +1030,7 @@ void ForceField::sendParticles(const CommunicationRecord *cr, int dest,
         {
             for(auto &p : ax.second.parametersConst())
             {
-                auto mut = p.second.mutability();
-                if (Mutability::Free    == mut ||
-                    Mutability::Bounded == mut)
+                if (Mutability::Bounded == p.second.mutability())
                 {
                     cr->send(dest, 1);
                     cr->send(dest, ax.second.id().id());
