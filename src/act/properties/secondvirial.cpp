@@ -881,7 +881,7 @@ int b2(int argc, char *argv[])
         { "-shellMaxIter", FALSE, etINT, {&shellMaxIter},
           "Max number of iterations for minimizing shell positions" },
         { "-json", FALSE, etBOOL, {&json},
-          "Print part of the output in json format." }
+          "Print part of the output in json format to b2.json." }
     };
     CommunicationRecord cr;
     cr.init(cr.size());
@@ -960,7 +960,7 @@ int b2(int argc, char *argv[])
                  writeJson ? &jtree : nullptr);
     if (writeJson)
     {
-        jtree.write("simulate.json", json);
+        jtree.write("b2.json", json);
     }
     return status;
 }
