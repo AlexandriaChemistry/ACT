@@ -1366,29 +1366,42 @@ static void dump_xyz(const std::string &label,
     }
 }
 
-//! \brief Low-level printing of energies
-static int printLow(gmx::TextWriter   *tw,
-                    JsonTree          *jtree,
-                    const ACTMol      *mol,
-                    const ACTEnergy   &ener,
-                    const std::string &label,
-                    double             sigma,
-                    double             dumpOutliers)
+//! \brief An energy that deviates much from the reference
+struct Outlier
 {
-    int    noutlier = 0;
+    //! The name of the compound
+    std::string molname;
+    //! The data file of the structure
+    std::string datafile;
+    //! The reference energy
+    double      eqm;
+    //! The ACT energy
+    double      eact;
+};
+
+/*! \brief Collect an energy if it is an outlier
+ * \param[out] outliers     The outliers
+ * \param[in]  mol          The compound
+ * \param[in]  ener         The energy
+ * \param[in]  label        Label for the file names of the dumped structures
+ * \param[in]  sigma        The root mean square deviation
+ * \param[in]  dumpOutliers Dump the structure if the deviation is larger
+ *                          than this times sigma, if not negative
+ */
+static void collectOutlier(std::vector<Outlier> *outliers,
+                           const ACTMol         *mol,
+                           const ACTEnergy      &ener,
+                           const std::string    &label,
+                           double                sigma,
+                           double                dumpOutliers)
+{
     double epotMax  = 1.5*sigma;
     if (ener.haveQM() && ener.haveACT() && mol)
     {
         double deltaE = std::abs(ener.eqm()-ener.eact());
         if (deltaE > epotMax)
         {
-            tw->writeStringFormatted("%-40s  %12g  %12g  %12g\n", mol->getMolname().c_str(),
-                    ener.eqm(), ener.eact(), ener.eact()-ener.eqm());
-            JsonTree jout(ener.datafile());
-            jout.addObject("QM", ener.eqm());
-            jout.addObject("ACT", ener.eact());
-            jtree->addObject(jout);
-            noutlier++;
+            outliers->push_back({ mol->getMolname(), ener.datafile(), ener.eqm(), ener.eact() });
         }
         if (dumpOutliers >= 0 && deltaE >= dumpOutliers*sigma)
         {
@@ -1399,7 +1412,6 @@ static int printLow(gmx::TextWriter   *tw,
             dump_xyz(myfnm, mol, ener);
         }
     }
-    return noutlier;
 }
 
 void TrainForceFieldPrinter::printOutliers(gmx::TextWriter                       *tw,
@@ -1416,10 +1428,9 @@ void TrainForceFieldPrinter::printOutliers(gmx::TextWriter                      
     tw->writeStringFormatted("\nOverview of %s outliers for %s (Diff > %.3f)\n",
             label.c_str(), qPropertyTypeName(qPropertyType::ACM).c_str(), epotMax);
     tw->writeStringFormatted("----------------------------------\n");
-    tw->writeStringFormatted("%-40s  %12s  %12s  %12s\n", "Name",
+    tw->writeStringFormatted("%-40s  %10s  %12s  %12s  %12s\n", "Name", "Structure",
             "Reference", qPropertyTypeName(qPropertyType::ACM).c_str(), "ACT-Ref.");
-    int noutlier = 0;
-    JsonTree jout(intName);
+    std::vector<Outlier> outliers;
     if (bIntermolecular)
     {
         for (const auto &miem : molInteractionEnergyMap_)
@@ -1436,8 +1447,8 @@ void TrainForceFieldPrinter::printOutliers(gmx::TextWriter                      
                     {
                         continue;
                     }
-                    noutlier += printLow(tw, &jout, &(*actmolptr),
-                                         emmptr->second, label, sigma, dumpOutliers_);
+                    collectOutlier(&outliers, &(*actmolptr),
+                                   emmptr->second, label, sigma, dumpOutliers_);
                 }
             }
         }
@@ -1453,13 +1464,28 @@ void TrainForceFieldPrinter::printOutliers(gmx::TextWriter                      
             {
                 for(const auto &emm : miem.second)
                 {
-                    noutlier += printLow(tw, &jout, &(*actmolptr), emm,
-                                         label, sigma, dumpOutliers_);
+                    collectOutlier(&outliers, &(*actmolptr), emm,
+                                   label, sigma, dumpOutliers_);
                 }
             }
         }
     }
-    
+    // From the largest to the smallest deviation
+    std::stable_sort(outliers.begin(), outliers.end(),
+                     [](const Outlier &a, const Outlier &b)
+                     { return std::abs(a.eact-a.eqm) > std::abs(b.eact-b.eqm); });
+    JsonTree jout(intName);
+    for (const auto &o : outliers)
+    {
+        tw->writeStringFormatted("%-40s  %10s  %12g  %12g  %12g\n", o.molname.c_str(),
+                                 o.datafile.c_str(), o.eqm, o.eact, o.eact-o.eqm);
+        JsonTree jo(o.datafile);
+        jo.addObject("molecule", o.molname);
+        jo.addObject("QM", o.eqm);
+        jo.addObject("ACT", o.eact);
+        jout.addObject(jo);
+    }
+    int noutlier = outliers.size();
     if (noutlier)
     {
         jtree->addObject(jout);

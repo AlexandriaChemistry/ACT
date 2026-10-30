@@ -36,6 +36,9 @@
 
 #include "actpre.h"
 
+#include <cmath>
+#include <limits>
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -174,6 +177,43 @@ TEST_F(TrainFFTest, CompoundFilePrefix)
     {
         EXPECT_TRUE(std::filesystem::exists(prefix + term + ".xvg")) << prefix + term + ".xvg";
     }
+}
+
+// Test: The outliers are listed with their structure, from the largest
+// to the smallest deviation
+TEST_F(TrainFFTest, OutlierOverview)
+{
+    auto output = trainfftest::runTrainFF(&fileManager(), "outliers", "lj-pc.xml", "booze-inter",
+                                          combine(mcmcOptions(1), interOptions()));
+    ASSERT_EQ(0, output.status);
+    int  noutlier = 0;
+    bool inTable  = false;
+    double previous = 0;
+    for (const auto &line : output.log)
+    {
+        if (line.find("Name") == 0 && line.find("Structure") != std::string::npos)
+        {
+            inTable  = true;
+            previous = std::numeric_limits<double>::max();
+            continue;
+        }
+        if (inTable)
+        {
+            std::istringstream iss(line);
+            std::string        name, structure;
+            double             ref, act, diff;
+            if (!(iss >> name >> structure >> ref >> act >> diff))
+            {
+                inTable = false;
+                continue;
+            }
+            EXPECT_NEAR(act - ref, diff, 1e-3*std::abs(diff) + 1e-3) << line;
+            EXPECT_LE(std::abs(diff), previous) << line;
+            previous  = std::abs(diff);
+            noutlier += 1;
+        }
+    }
+    EXPECT_GT(noutlier, 1);
 }
 
 // Test: The same seed gives the same parameters, a different one does not
