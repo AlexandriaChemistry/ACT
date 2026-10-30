@@ -38,6 +38,7 @@
 #ifndef ACT_VELOCITY_HANDLER
 #define ACT_VELOCITY_HANDLER
 
+#include <string>
 #include <vector>
 
 #include "gromacs/math/vec.h"
@@ -66,16 +67,70 @@ void maxwell_speed(real                        tempi,
                    std::vector<gmx::RVec>     *v,
                    gmx::TextWriter            *tw);
 
-/*! \brief
- * Remove the center of mass motion in a set of coordinates.
- *
- * \param[in]  atoms  The atoms
- * \param[in]  x      Coordinates
- * \param[out] v      Velocities
+//! \brief Which motion of the center of mass to remove
+enum class COMMRemoval {
+    //! Nothing
+    None,
+    //! The translation of the center of mass
+    Linear,
+    //! The translation of and the rotation around the center of mass
+    Angular
+};
+
+/*! \brief Map center of mass motion removal to string
+ * \param[in] cr The type of removal
+ * \return the string
  */
-void stop_cm(const std::vector<ActAtom>   &atoms,
-             const std::vector<gmx::RVec> &x,
-             std::vector<gmx::RVec>       *v);
+const std::string &commRemovalToString(COMMRemoval cr);
+
+/*! \brief Map string to center of mass motion removal
+ * \param[in] str The string
+ * \return the type of removal
+ * \throws if the string is not known
+ */
+COMMRemoval stringToCOMMRemoval(const std::string &str);
+
+/*! \brief Removes the motion of the center of mass
+ * The translation is removed by subtracting the velocity of the center
+ * of mass, the rotation by subtracting the rigid rotation with the
+ * angular momentum around the center of mass. Only particles with a mass
+ * take part. For a molecule that is linear in the starting coordinates,
+ * the rotation around its axis is not removed, such that the number of
+ * degrees of freedom stays the same during the simulation.
+ */
+class COMMRemover
+{
+private:
+    //! What to remove
+    COMMRemoval         mode_;
+    //! The masses of the particles
+    std::vector<double> mass_;
+    //! The number of rotations to remove, 2 for a linear molecule
+    int                 nRotation_ = 3;
+public:
+    /*! \brief Constructor
+     * \param[in] mode  What to remove
+     * \param[in] atoms The atoms
+     * \param[in] x     The starting coordinates, to find out whether
+     *                  the molecule is linear
+     */
+    COMMRemover(COMMRemoval                   mode,
+                const std::vector<ActAtom>   &atoms,
+                const std::vector<gmx::RVec> &x);
+
+    //! \return the number of degrees of freedom that are removed
+    int nDOF() const;
+
+    //! \return what is removed
+    COMMRemoval mode() const { return mode_; }
+
+    /*! \brief Remove the motion of the center of mass
+     * \param[in]    x The coordinates
+     * \param[inout] v The velocities
+     */
+    void remove(const std::vector<gmx::RVec> &x,
+                std::vector<gmx::RVec>       *v) const;
+};
 
 } // namespace alexandria
 

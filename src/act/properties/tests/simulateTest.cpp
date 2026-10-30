@@ -342,7 +342,8 @@ TEST_F(SimulateTest, Reproducibility)
 }
 
 // Test: The initial temperature is the requested one, computed for
-// the degrees of freedom without center of mass motion and constraints
+// the degrees of freedom without the translation of and rotation around
+// the center of mass and without constraints
 TEST_F(SimulateTest, InitialTemperature)
 {
     // Acetone has 10 atoms and 9 bonds. Of the 3 angles around the
@@ -350,9 +351,9 @@ TEST_F(SimulateTest, InitialTemperature)
     // each methyl carbon five, leaving the methyl rotations and the
     // out of plane motion of the planar carbon.
     std::map<std::string, double> nDOF = {
-        { "no",     3*9 },
-        { "bonds",  3*9-9 },
-        { "angles", 3*9-9-12 }
+        { "no",     3*10-6 },
+        { "bonds",  3*10-6-9 },
+        { "angles", 3*10-6-9-12 }
     };
     for(const auto &nd : nDOF)
     {
@@ -371,6 +372,71 @@ TEST_F(SimulateTest, InitialTemperature)
         auto temp  = xvg.rows[0][cTemp];
         EXPECT_NEAR(300, temp, 1e-4) << nd.first;
         EXPECT_NEAR(nd.second, 2*ekin/(BOLTZ*temp), 1e-3) << nd.first;
+    }
+}
+
+// Test: The number of degrees of freedom depends on the motion of the
+// center of mass that is removed, with two rotations for a linear molecule
+TEST_F(SimulateTest, CenterOfMassDegreesOfFreedom)
+{
+    // Number of atoms and whether the molecule is linear
+    std::map<std::string, std::pair<int, bool>> mols = {
+        { "acetone.sdf",           { 10, false } },
+        { "carbon-dioxide.sdf",    { 3, true } },
+        { "hydrogen-chloride.sdf", { 2, true } }
+    };
+    for (const auto &mol : mols)
+    {
+        int natom = mol.second.first;
+        std::map<std::string, int> nDOF = {
+            { "none",    3*natom },
+            { "linear",  3*natom-3 },
+            { "angular", 3*natom-3-(mol.second.second ? 2 : 3) }
+        };
+        for (const auto &nd : nDOF)
+        {
+            SCOPED_TRACE(mol.first + " " + nd.first);
+            SimulateFiles files;
+            auto cmd = baseCommand(mol.first, "comm" + nd.first + mol.first, &files);
+            addMD(&cmd, 300, 1993);
+            cmd.addOption("-comm", nd.first);
+            cmd.addOption("-nstcomm", 10);
+            ASSERT_EQ(0, run(&cmd));
+            auto xvg   = readXvg(files.energy);
+            ASSERT_FALSE(xvg.rows.empty());
+            int  cEkin = xvg.column("EKIN");
+            int  cTemp = xvg.column("TEMPERATURE");
+            EXPECT_NEAR(300, xvg.rows[0][cTemp], 1e-4);
+            EXPECT_NEAR(nd.second, 2*xvg.rows[0][cEkin]/(BOLTZ*xvg.rows[0][cTemp]), 1e-3);
+            checkConservation(xvg);
+        }
+    }
+}
+
+// Test: Removing the motion of the center of mass often in a cluster
+// does not affect the energy conservation, since the momenta are
+// conserved anyway
+TEST_F(SimulateTest, CenterOfMassRemovalWaterDimer)
+{
+    std::vector<XvgData> xvg;
+    for (int nstcomm : { 0, 1 })
+    {
+        SimulateFiles files;
+        auto cmd = baseCommand("water_dimer.pdb", gmx::formatString("nstcomm%d", nstcomm), &files);
+        addMD(&cmd, 300, 1993);
+        cmd.addOption("-nstcomm", nstcomm);
+        ASSERT_EQ(0, run(&cmd));
+        xvg.push_back(readXvg(files.energy));
+        checkConservation(xvg.back());
+    }
+    // The angular momentum is only changed by numerical errors, so the
+    // trajectories are nearly the same
+    int cEpot = xvg[0].column("EPOT");
+    ASSERT_GT(cEpot, 0);
+    ASSERT_EQ(xvg[0].rows.size(), xvg[1].rows.size());
+    for (size_t i = 0; i < xvg[0].rows.size(); i++)
+    {
+        EXPECT_NEAR(xvg[0].rows[i][cEpot], xvg[1].rows[i][cEpot], 1e-3) << i;
     }
 }
 
@@ -424,7 +490,7 @@ TEST_F(SimulateTest, AngleConstraintsUracil)
     int  cTemp = xvg.column("TEMPERATURE");
     int  cEtot = xvg.column("ETOT");
     ASSERT_GT(cEtot, 0);
-    EXPECT_NEAR(3*11-12-9, 2*xvg.rows[0][cEkin]/(BOLTZ*xvg.rows[0][cTemp]), 1e-3);
+    EXPECT_NEAR(3*12-6-12-9, 2*xvg.rows[0][cEkin]/(BOLTZ*xvg.rows[0][cTemp]), 1e-3);
     EXPECT_NEAR(xvg.rows[0][cEtot], xvg.rows.back()[cEtot], 0.01);
 }
 
@@ -435,6 +501,8 @@ TEST_F(SimulateTest, AngleConstraintsWater)
     auto cmd = baseCommand("water-3-oep.log.pdb", "waterangles", &files);
     addMD(&cmd, 300, 1993);
     cmd.addOption("-constrain", "angles");
+    // Keep the rotation, which is all there is to a rigid molecule
+    cmd.addOption("-comm", "linear");
     ASSERT_EQ(0, run(&cmd));
     auto xvg = readXvg(files.energy);
     ASSERT_FALSE(xvg.rows.empty());
