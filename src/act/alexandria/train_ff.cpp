@@ -37,7 +37,6 @@
 
 #include "train_ff.h"
 
-#include <chrono>
 #include <cctype>
 #include <cmath>
 #include <cstdio>
@@ -775,16 +774,7 @@ int train_ff(int argc, char *argv[])
 {
     // Time the phases of the program, the parts of the training are
     // timed where they are done, see printTimings.
-    auto    wallStart  = std::chrono::steady_clock::now();
-    auto   &timings    = Timings::instance();
-    size_t  phaseTimer = timings.index("Startup");
-    timings.start(phaseTimer);
-    auto    nextPhase  = [&timings, &phaseTimer](const char *name)
-    {
-        timings.stop(phaseTimer);
-        phaseTimer = timings.index(name);
-        timings.start(phaseTimer);
-    };
+    PhaseTimer phase("Startup");
     std::vector<const char *> desc = {
         "train_ff reads a series of molecules and corresponding physico-chemical",
         "properties from a file. The properties can either originate from",
@@ -1046,8 +1036,10 @@ int train_ff(int argc, char *argv[])
         opt.initChargeGeneration(iMolSelect::Ignore);
     }
 
-    nextPhase("Training (other)");
+    phase.next("Training (other)");
     int initOK   = 0;
+    // Written at the end, after the timings have been added.
+    JsonTree jtree("train_ff");
     if (opt.commRec()->isMaster())
     {
         if (opt.sii()->nParam() > 0)
@@ -1059,7 +1051,6 @@ int train_ff(int argc, char *argv[])
         {
             opt.commRec()->bcast(&initOK, opt.commRec()->comm_world());
         }
-        JsonTree jtree("train_ff");
         bool bMinimum = false;
         if (initOK)
         {
@@ -1070,7 +1061,7 @@ int train_ff(int argc, char *argv[])
                 opt.msgHandler()->msg(ACTStatus::Info, msg);
             }
         }
-        nextPhase("Output");
+        phase.next("Output");
         if (bMinimum || bForceOutput || !bOptimize)
         {
             if (bForceOutput && !bMinimum)
@@ -1090,11 +1081,6 @@ int train_ff(int argc, char *argv[])
         else if (!bMinimum)
         {
             printf("No improved parameters found. Please try again with more iterations.\n");
-        }
-        auto json_file = opt2fn_null("-json", filenms.size(), filenms.data());
-        if (json_file)
-        {
-            jtree.write(json_file, true);
         }
     }
     else
@@ -1129,9 +1115,14 @@ int train_ff(int argc, char *argv[])
             }
         }
     }
-    timings.stop(phaseTimer);
-    double wallTime = std::chrono::duration<double>(std::chrono::steady_clock::now() - wallStart).count();
-    printTimings(opt.commRec(), opt.commRec()->isMaster() ? opt.msgHandler()->tw() : nullptr, wallTime);
+    phase.stop();
+    auto json_file = opt.commRec()->isMaster() ? opt2fn_null("-json", filenms.size(), filenms.data()) : nullptr;
+    printTimings(opt.commRec(), opt.commRec()->isMaster() ? opt.msgHandler()->tw() : nullptr,
+                 phase.wallTime(), json_file ? &jtree : nullptr);
+    if (json_file)
+    {
+        jtree.write(json_file, true);
+    }
     return 0;
 }
 

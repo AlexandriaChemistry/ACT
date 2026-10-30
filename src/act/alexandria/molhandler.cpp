@@ -57,6 +57,7 @@
 #include "act/properties/velocityhandler.h"
 #include "act/molprop/molpropobservable.h"
 #include "act/topology/actmol.h"
+#include "act/utility/timings.h"
 #include "act/utility/units.h"
 #include "external/stlbfgs/stlbfgs.h"
 #include "gromacs/fileio/xvgr.h"
@@ -1544,6 +1545,12 @@ void MolHandler::simulate(MsgHandler                    *msghandler,
         }
     }
     msghandler->write("\nWill start simulation.\n");
+    // The forces are timed where they are computed
+    auto               &timings          = Timings::instance();
+    static const size_t integrationTimer = timings.index("MD integration");
+    static const size_t constraintTimer  = timings.index("MD constraints");
+    static const size_t energyTimer      = timings.index("MD energy output");
+    static const size_t trajectoryTimer  = timings.index("MD trajectory output");
     // Compute forces and energies for the starting coordinates
     forceComp->compute(msghandler, pd, mol->topology(), &coordinates,
                        &forces[prev], &energies);
@@ -1552,6 +1559,7 @@ void MolHandler::simulate(MsgHandler                    *msghandler,
         // Print the energies at the current time, i.e. before integrating
         if (simConfig.nstener() > 0 && step % simConfig.nstener() == 0)
         {
+            ScopedTimer timer(energyTimer);
             double ekin = 0;
             for(size_t i = 0; i < xmol.size(); i++)
             {
@@ -1560,6 +1568,7 @@ void MolHandler::simulate(MsgHandler                    *msghandler,
             printEnergies(exvg, step, deltat, energies, ekin, nDOF, oenv);
         }
         // Integrate positions using velocity Verlet
+        timings.start(integrationTimer);
         if (simConfig.constrain())
         {
             xprev = coordinates;
@@ -1576,8 +1585,10 @@ void MolHandler::simulate(MsgHandler                    *msghandler,
                 }
             }
         }
+        timings.stop(integrationTimer);
         if (simConfig.constrain())
         {
+            ScopedTimer timer(constraintTimer);
             // First part of rattle, constrain the positions along the
             // previous bonds and correct the velocities accordingly.
             if (constrainer.shake(msghandler, xprev, &coordinates, &velocities) != 0)
@@ -1590,6 +1601,7 @@ void MolHandler::simulate(MsgHandler                    *msghandler,
         forceComp->compute(msghandler, pd, mol->topology(), &coordinates,
                            &forces[cur], &energies);
         // Integrate velocities using velocity Verlet
+        timings.start(integrationTimer);
         for(size_t i = 0; i < xmol.size(); i++)
         {
             if (inv2mass[i] > 0)
@@ -1601,8 +1613,10 @@ void MolHandler::simulate(MsgHandler                    *msghandler,
                 }
             }
         }
+        timings.stop(integrationTimer);
         if (simConfig.constrain())
         {
+            ScopedTimer timer(constraintTimer);
             if (constrainer.rattle(msghandler, coordinates, &velocities) != 0)
             {
                 msghandler->msg(ACTStatus::Warning,
@@ -1612,6 +1626,7 @@ void MolHandler::simulate(MsgHandler                    *msghandler,
         // Write output if needed
         if (simConfig.nstxout() > 0 && step % simConfig.nstxout() == 0)
         {
+            ScopedTimer timer(trajectoryTimer);
             //! \todo rewrite without gromacs fluff.
             pdbWriter(traj, title, mol->atomsConst(),
                       coordinates, mol->topology()->residueNames(),

@@ -57,6 +57,7 @@ namespace alexandria
 {
 
 class CommunicationRecord;
+class JsonTree;
 
 //! \brief Exclusive times of named regions of the code in this process
 class Timings
@@ -105,6 +106,12 @@ public:
      */
     void stop(size_t id);
 
+    /*! \brief Set the times and numbers of calls of all regions to zero
+     * The regions are kept, since their indices are stored where they
+     * are used. No region may be active.
+     */
+    void reset();
+
     //! Returned by parent if no region is active
     static constexpr size_t none = static_cast<size_t>(-1);
 
@@ -142,15 +149,66 @@ public:
     ScopedTimer &operator=(const ScopedTimer &) = delete;
 };
 
+/*! \brief Times the consecutive phases of a program and its wall time
+ * \code
+ *     PhaseTimer phase("Startup");
+ *     ...
+ *     phase.next("Output");
+ *     ...
+ *     phase.stop();
+ *     printTimings(cr, tw, phase.wallTime());
+ * \endcode
+ */
+class PhaseTimer
+{
+private:
+    //! When the program started
+    std::chrono::steady_clock::time_point wallStart_;
+    //! Index of the current phase
+    size_t                                id_;
+    //! Whether a phase is being timed
+    bool                                  running_ = true;
+public:
+    /*! \brief Start the wall time and the first phase
+     * If no region is active, the timings are reset first, such that they
+     * are those of this program only, even if it is called more than once
+     * in the same process.
+     * \param[in] name Name of the first phase
+     */
+    explicit PhaseTimer(const std::string &name);
+
+    //! \brief Stop the current phase if it is still running, e.g. after an early return
+    ~PhaseTimer();
+
+    //! Copying would stop the phase twice
+    PhaseTimer(const PhaseTimer &) = delete;
+    //! Copying would stop the phase twice
+    PhaseTimer &operator=(const PhaseTimer &) = delete;
+
+    /*! \brief Stop the current phase and start the next one
+     * \param[in] name Name of the next phase, the current phase
+     *                 continues if it has this name
+     */
+    void next(const std::string &name);
+
+    //! \brief Stop the current phase, all regions it contains must have been stopped
+    void stop();
+
+    //! \return the wall time since construction in seconds
+    double wallTime() const;
+};
+
 /*! \brief Collect the timings of all processes and print them on the master
  * All processes in the world communicator have to call this.
- * \param[in] cr       The communication record
- * \param[in] tw       Where to print, only used on the master and may be nullptr
- * \param[in] wallTime Wall time of this process in seconds
+ * \param[in]  cr       The communication record
+ * \param[in]  tw       Where to print, only used on the master and may be nullptr
+ * \param[in]  wallTime Wall time of this process in seconds
+ * \param[out] jtree    If not nullptr, the same table is added to it on the master
  */
 void printTimings(const CommunicationRecord *cr,
                   gmx::TextWriter           *tw,
-                  double                     wallTime);
+                  double                     wallTime,
+                  JsonTree                  *jtree = nullptr);
 
 } // namespace alexandria
 
