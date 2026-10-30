@@ -360,12 +360,13 @@ static void modifyForceField(ForceField *pd,
     {
         if (pd->interactionPresent(itype))
         {
-            // A true interaction
-            auto fs = pd->findForces(itype);
+            // A true interaction, of which one or more identifiers may be given
+            auto ids = gmx::splitString(particle);
+            auto fs  = pd->findForces(itype);
             for (auto &ffp : fs->parametersConst())
             {
                 auto id = ffp.first;
-                if (particle.empty() || id.id() == particle)
+                if (ids.empty() || std::find(ids.begin(), ids.end(), id.id()) != ids.end())
                 {
                     modifyInteraction(pd, itype, paramType, id,
                                       bSetMin, pmin,
