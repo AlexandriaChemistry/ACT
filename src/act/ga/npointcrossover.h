@@ -83,6 +83,10 @@ public:
             chromosomeLength >= 2,
             "There is 1 or less parameters to optimize, cannot crossover..."
         );
+        GMX_RELEASE_ASSERT(
+            order >= 1 && order < chromosomeLength,
+            "The order of the crossover should be at least 1 and smaller than the number of parameters"
+        );
         availableIndices_.resize(chromosomeLength - 1);
         for (size_t i = 1; i < chromosomeLength; i++)
         {

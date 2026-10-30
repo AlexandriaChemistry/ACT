@@ -77,6 +77,79 @@ double sumOfProbabilities(const std::vector<Genome> &pop)
     return sum;
 }
 
+/*! \brief Check that the children are a crossover of the parents
+ * Each gene of the children comes from either parent, the children are
+ * complementary, and the first child switches parent \p order times.
+ */
+void checkCrossover(const Genome &parent1, const Genome &parent2,
+                    const Genome &child1,  const Genome &child2,
+                    size_t        order)
+{
+    size_t switches = 0;
+    bool   fromOne  = true;
+    for (size_t j = 0; j < parent1.nBase(); j++)
+    {
+        bool one = child1.base(j) == parent1.base(j);
+        if (one)
+        {
+            EXPECT_EQ(parent2.base(j), child2.base(j)) << j;
+        }
+        else
+        {
+            EXPECT_EQ(parent2.base(j), child1.base(j)) << j;
+            EXPECT_EQ(parent1.base(j), child2.base(j)) << j;
+        }
+        if (one != fromOne)
+        {
+            switches += 1;
+            fromOne   = one;
+        }
+    }
+    // The first gene is never swapped
+    EXPECT_EQ(child1.base(0), parent1.base(0));
+    EXPECT_EQ(order, switches);
+}
+
+// Test: The children of an N-point crossover switch parent N times,
+// for any number of crossover points
+TEST(NPointCrossoverTest, SwitchesParentOrderTimes)
+{
+    const size_t length = 7;
+    std::vector<double> bases1, bases2;
+    for (size_t j = 0; j < length; j++)
+    {
+        bases1.push_back(j);
+        bases2.push_back(-1.0 - j);
+    }
+    Genome parent1(bases1, {}), parent2(bases2, {});
+    for (size_t order = 1; order < length; order++)
+    {
+        NPointCrossover crossover(length, order, 1993 + order);
+        for (int k = 0; k < 20; k++)
+        {
+            Genome child1(std::vector<double>(length, 0), {});
+            Genome child2(std::vector<double>(length, 0), {});
+            crossover.offspring(&parent1, &parent2, &child1, &child2);
+            checkCrossover(parent1, parent2, child1, child2, order);
+        }
+    }
+}
+
+// Test: The same seed gives the same children
+TEST(NPointCrossoverTest, Reproducible)
+{
+    Genome parent1({ 1, 2, 3, 4, 5 }, {}), parent2({ 6, 7, 8, 9, 10 }, {});
+    NPointCrossover a(5, 2, 42), b(5, 2, 42);
+    for (int k = 0; k < 10; k++)
+    {
+        Genome a1(std::vector<double>(5, 0), {}), a2 = a1, b1 = a1, b2 = a1;
+        a.offspring(&parent1, &parent2, &a1, &a2);
+        b.offspring(&parent1, &parent2, &b1, &b2);
+        EXPECT_EQ(a1.bases(), b1.bases());
+        EXPECT_EQ(a2.bases(), b2.bases());
+    }
+}
+
 // Test: The genomes are selected as often as their probability
 TEST(RouletteSelectorTest, FrequencyMatchesProbability)
 {
