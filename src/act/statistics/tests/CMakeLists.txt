@@ -41,4 +41,4 @@ gmx_add_unit_test(
     # files with code for tests
     statisticsTest.cpp
     )
-target_link_libraries(${exename} actLib libactgromacs ${GMX_EXTRA_LIBRARIES} ${XML_LIBRARIES} ${GMX_EXE_LINKER_FLAGS})
+target_link_libraries(${exename} actLib ${GMX_EXE_LINKER_FLAGS})
