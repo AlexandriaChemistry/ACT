@@ -87,9 +87,6 @@ function (gmx_add_gtest_executable EXENAME)
             set_target_properties(${EXENAME} PROPERTIES CXX_CLANG_TIDY
                 "${CLANG_TIDY_EXE};-warnings-as-errors=*;-header-filter=.*")
         endif()
-        if (CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND CMAKE_CXX_COMPILER_VERSION MATCHES "^6\.0")
-            target_compile_options(${EXENAME} PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-Weverything ${IGNORED_CLANG_ALL_WARNINGS} -Wno-gnu-zero-variadic-macro-arguments -Wno-zero-as-null-pointer-constant -Wno-missing-variable-declarations>)
-        endif()
     endif()
 endfunction()
 
@@ -115,12 +112,9 @@ function (gmx_register_gtest_test NAME EXENAME)
         if (ARG_INTEGRATION_TEST)
             list(APPEND _labels IntegrationTest)
             # Slow build configurations should have longer timeouts.
-            # Both OpenCL (from JIT) and ThreadSanitizer (from how it
-            # checks) can take signficantly more time than other
-            # configurations.
-            if (GMX_USE_OPENCL)
-                set(_timeout 240)
-            elseif (${CMAKE_BUILD_TYPE} STREQUAL TSAN)
+            # ThreadSanitizer (from how it checks) can take signficantly
+            # more time than other configurations.
+            if (${CMAKE_BUILD_TYPE} STREQUAL TSAN)
                 set(_timeout 300)
             else()
                 set(_timeout 120)

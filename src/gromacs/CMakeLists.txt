@@ -89,35 +89,11 @@ list(APPEND LIBGROMACS_SOURCES ${GENERATED_VERSION_FILE}
 
 add_library(libactgromacs ${LIBGROMACS_SOURCES})
 
-# Recent versions of gcc and clang give warnings on scanner.cpp, which
-# is a generated source file. These are awkward to suppress inline, so
-# we do it in the compilation command (after testing that the compiler
-# supports the suppressions). Same issue exists for nonbonded kernels
-# so we supress them for all generated files.
-include(CheckCXXCompilerFlag)
-check_cxx_compiler_flag("-Wno-unused -Wno-unused-parameter" HAS_NO_UNUSED)
-check_cxx_compiler_flag(-Wno-missing-declarations HAS_NO_MISSING_DECL)
-check_cxx_compiler_flag(-Wno-missing-prototypes HAS_NO_MISSING_PROTO)
-check_cxx_compiler_flag(/wd4101 HAS_NO_MSVC_UNUSED)
-if (NOT MSVC)
-    check_cxx_compiler_flag(-wd1419 HAS_DECL_IN_SOURCE)
-endif()
-# TODO The group scheme kernels don't use proper function prototype
-# declarations, and clang warns about such use, which we suppress
-# rather than fix. We would prefer to use no suppressions. However
-# other compilers do not support such a warning suppression for C++
-# source files, and issue warnings about that. Remove the use of
-# -Wno-missing-prototypes here and above when the group scheme is
-# removed.
-
 target_link_libraries(libactgromacs
                       PRIVATE
-                      ${EXTRAE_LIBRARIES}
                       ${GMX_EXTRA_LIBRARIES}
                       ${GMX_COMMON_LIBRARIES}
-                      ${FFT_LIBRARIES} ${LINEAR_ALGEBRA_LIBRARIES}
-                      ${THREAD_LIB} ${GMX_SHARED_LINKER_FLAGS}
-                      ${OpenCL_LIBRARIES}
+                      ${GMX_SHARED_LINKER_FLAGS}
                       ${GMX_STDLIB_LIBRARIES}
                       PUBLIC
                       ${GMX_PUBLIC_LIBRARIES}
@@ -127,38 +103,6 @@ set_target_properties(libactgromacs PROPERTIES
                       SOVERSION ${LIBRARY_SOVERSION_MAJOR}
                       VERSION ${LIBRARY_VERSION}
                       COMPILE_FLAGS "${OpenMP_C_FLAGS}")
-
-if (CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND CMAKE_CXX_COMPILER_VERSION MATCHES "^6\.0")
-   target_compile_options(libactgromacs PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-Weverything ${IGNORED_CLANG_ALL_WARNINGS}>)
-endif()
-if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-   target_compile_options(libactgromacs PRIVATE $<$<COMPILE_LANGUAGE:CXX>:/analyze /analyze:stacksize 70000
-     #Control flow warnings are disabled because the commond line output is insufficient. There is no tool
-     #to convert the xml report to e.g. HTML and even in Visual Studio the viewer doesn't work with cmake support.
-     /wd6001  #unitialized memory
-     /wd6011  #derefencing NULL
-     /wd6053  #prior call not zero-terminate
-     /wd6054  #might not be zero-terminated
-     /wd6385  #reading invalid data
-     /wd6386  #buffer overrun
-     /wd6387  #could be '0'
-     /wd28199 #uninitialized memory
-     # For compile time constant (e.g. templates) the following warnings have flase postives
-     /wd6239  #(<non-zero> && <expr>)
-     /wd6240  #(<expr> && <non-zero>)
-     /wd6294  #Ill-defined for-loop
-     /wd6326  #comparison of constant with other constant
-     /wd28020 #expression involving paramter is not true
-     # Misc
-     /wd6330  #incorrect type to function (warns for char (instead of unsigned) for isspace/isalpha/isdigit/..))
-     /wd6993  #OpenMP ignored
-     #TODO
-     /wd6031  #return value ignored (important - mostly warnigns about sscanf)
-     /wd6244  #hides declaration (known issue - we ingore similar warnings for other compilers)
-     /wd6246  #hides declaration
-     >
-   )
-endif()
 
 if (GMX_CLANG_TIDY)
    set_target_properties(libactgromacs PROPERTIES CXX_CLANG_TIDY
