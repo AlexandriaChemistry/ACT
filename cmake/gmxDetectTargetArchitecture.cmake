@@ -44,8 +44,4 @@ function(gmx_detect_target_architecture)
         try_compile(GMX_TARGET_X86 ${CMAKE_BINARY_DIR}
             "${CMAKE_SOURCE_DIR}/cmake/TestX86.c")
     endif()
-    if (NOT DEFINED GMX_TARGET_ARMV7)
-        try_compile(GMX_TARGET_ARMV7 ${CMAKE_BINARY_DIR}
-            "${CMAKE_SOURCE_DIR}/cmake/TestARMv7.cpp")
-    endif()
 endfunction()

@@ -453,8 +453,6 @@ if(NOT GMX_SYSTEM_XDR OR CMAKE_SYSTEM_NAME STREQUAL "Darwin")
 endif()
 
 
-include(gmxManageCycleCounters)
-gmx_manage_cycle_counters()
 
 # Math and thread libraries must often come after all others when linking...
 if (HAVE_LIBM)

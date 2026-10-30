@@ -42,20 +42,6 @@
  * \see actpre.h
  */
 
-/* Define to 1 to make fseeko visible on some hosts (e.g. glibc
- * 2.2). This symbol affects non-GROMACS code, so is not subject to
- * our no-undefined-preprocessor-symbols policy. */
-#cmakedefine _LARGEFILE_SOURCE
-
-/* Define for large files, on AIX-style hosts. This symbol affects
- * non-GROMACS code, so is not subject to our
- * no-undefined-preprocessor-symbols policy. */
-#cmakedefine _LARGE_FILES
-
-/* Some systems requires this to be set to 64 for large file support.
- * This symbol affects non-GROMACS code, so is not subject to our
- * no-undefined-preprocessor-symbols policy. */
-#cmakedefine _FILE_OFFSET_BITS @_FILE_OFFSET_BITS@
 
 /* Build special-purpose mdrun library */
 #cmakedefine01 GMX_FAHCORE

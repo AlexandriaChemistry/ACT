@@ -60,8 +60,6 @@
 /** Directory for test input files */
 #define GMX_TESTSIMULATIONDATABASE_DIR  "@CMAKE_SOURCE_DIR@/src/testutils/simulationdatabase"
 
-/** Directory for ACT test input files */
-#define ACT_TESTDATABASE_DIR  "@CMAKE_SOURCE_DIR@/src/act/testdatabase"
 
 /** Binary directory for the build */
 #define CMAKE_BINARY_DIR        "@CMAKE_BINARY_DIR@"
@@ -69,8 +67,6 @@
 /** Location of ACT-specific data files */
 #define ACT_INSTALL_ACTDATADIR  "@ACT_INSTALL_ACTDATADIR@"
 
-/** HWLOC version information */
-#define HWLOC_VERSION "@HWLOC_VERSION@"
 
 /** CUDA compiler version information */
 #define CUDA_COMPILER_INFO "@CUDA_COMPILER_INFO@"
