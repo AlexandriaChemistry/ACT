@@ -201,19 +201,19 @@ and the adventure has begun! This part will train the van der Waals parameters :
 showing the genetic algorithm is using 16 individuals and the code is being run on 16 threads in parallel.
 Then, at the end you will see something like::
 
-  There were 39 EPOT-Train outliers for Train.
-  There were 29 EPOT-Test outliers for Test.
+  There were 39 INTERACTION-Train outliers for Train.
+  There were 29 INTERACTION-Test outliers for Test.
 
   Please check output in file train_inter.log.
 
 encouraging you to inspect the log file. It can be very helpful to check outliers that can help you to find inconsistencies in both the data and the model you are trying to train.
-After this training instance, a correlation plot *EPOT.xvg* will be produced (:numref:`fig-epot`); you can use the::
+After this training instance, a correlation plot *INTERACTION.xvg* of the interaction energies will be produced (:numref:`fig-epot`); you can use the::
 
     ./plot-epot.sh
 
 script to make the plot yourself as well.
 
-.. figure:: ../images/example-EPOT.pdf
+.. figure:: ../images/example-INTERACTION.pdf
    :name: fig-epot
    :width: 65%
    :align: center
