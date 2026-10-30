@@ -799,18 +799,19 @@ eMinimizeStatus MolHandler::minimizeCoordinates(MsgHandler                      
 {
     bool      converged    = false;
     int       myIter       = 0;
-    // Check for meaningful convergence tolerance
-    double    shellToler2  = gmx::square(forceComp->forceTolerance());
+    // Check for meaningful convergence tolerance, both are on the mean
+    // square force
+    double    shellToler   = forceComp->forceTolerance();
     double    msForceToler = simConfig.forceTolerance();
-    if (msForceToler < shellToler2)
+    if (msForceToler < shellToler)
     {
         if (msForceToler != 0)
         {
             msghandler->msg(ACTStatus::Warning,
-                            gmx::formatString("Atom mean square force tolerance (%g) more strict than shell force tolerance (%g). Increasing atom mean square force tolerance to hundred times that for shells.",
-                                              msForceToler, shellToler2));
+                            gmx::formatString("Atom mean square force tolerance (%g) more strict than shell mean square force tolerance (%g). Increasing atom mean square force tolerance to hundred times that for shells.",
+                                              msForceToler, shellToler));
         }
-        msForceToler = 100*shellToler2;
+        msForceToler = 100*shellToler;
     }
     // List of atoms (not shells) and weighting factors
     auto              myatoms = topology->atoms();
