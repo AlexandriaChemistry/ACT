@@ -1221,7 +1221,7 @@ void TrainForceFieldPrinter::printEnergyForces(MsgHandler                       
         {
             for(const auto &fxyz : *ff)
             {
-                if (fxyz.first != 0 || fxyz.second != 0)
+                if (fxyz.first != 0)
                 {
                     msghandler->write(gmx::formatString("Force ref: %8.2f  act: %8.2f", fxyz.first, fxyz.second));
                     ccc++;
@@ -1250,7 +1250,10 @@ void TrainForceFieldPrinter::printEnergyForces(MsgHandler                       
         {
             for(auto &ff : fstruct)
             {
-                if (ff.first != 0 || ff.second != 0)
+                // Leave out components without a reference force, for
+                // instance by symmetry, independent of the rounding of
+                // the computed force.
+                if (ff.first != 0)
                 {
                     lsq_rmsf_[ims].add_point(ff.first, ff.second, 0, 0);
                     myforce.add_point(ff.first, ff.second, 0, 0);
