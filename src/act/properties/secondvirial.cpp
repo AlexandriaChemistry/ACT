@@ -426,14 +426,22 @@ void ReRunner::runB2(CommunicationRecord         *cr,
         int nmine = 0;
         if (cr->isMaster())
         {
+            // The random numbers of each node in one message, with
+            // the number of them for each orientation.
+            std::vector<int>    counts;
+            std::vector<double> numbers;
             for(int dst = 1; dst < cr->size(); dst++)
             {
-                cr->send(dst, nper);
+                counts.clear();
+                numbers.clear();
                 int nn = start + nrest + dst*nper;
                 for(int j = 0; j < nper; j++)
                 {
-                    cr->send(dst, allRand[nn + j]);
+                    counts.push_back(allRand[nn + j].size());
+                    numbers.insert(numbers.end(), allRand[nn + j].begin(), allRand[nn + j].end());
                 }
+                cr->send(dst, counts);
+                cr->send(dst, numbers);
             }
             nmine = nper + nrest;
             for(int j = 0; j < nmine; j++)
@@ -444,13 +452,17 @@ void ReRunner::runB2(CommunicationRecord         *cr,
         }
         else
         {
-            int src = cr->superior();
-            cr->recv(src, &nmine);
-            for(int i = 0; i < nmine; i++)
+            int                 src = cr->superior();
+            std::vector<int>    counts;
+            std::vector<double> numbers;
+            cr->recv(src, &counts);
+            cr->recv(src, &numbers);
+            nmine = counts.size();
+            auto q = numbers.begin();
+            for(int count : counts)
             {
-                std::vector<double> q;
-                cr->recv(src, &q);
-                gendimers_.addRandomNumbers(q);
+                gendimers_.addRandomNumbers(std::vector<double>(q, q + count));
+                q += count;
             }
         }
         return nmine;
@@ -756,27 +768,32 @@ void ReRunner::runB2(CommunicationRecord         *cr,
     // Gather generated dimer coordinates from all nodes and write to -ox file
     if (gendimers_.outCoords() && !gendimers_.hasTrajectory())
     {
+        // The coordinates of each node in one message, with the number
+        // of them for each dimer
+        std::vector<int>       counts;
+        std::vector<gmx::RVec> coords;
         if (!cr->isMaster())
         {
             int dest = cr->superior();
-            int n    = static_cast<int>(allCoords.size());
-            cr->send(dest, n);
             for (auto &d : allCoords)
             {
-                cr->send(dest, d);
+                counts.push_back(d.size());
+                coords.insert(coords.end(), d.begin(), d.end());
             }
+            cr->send(dest, counts);
+            cr->send(dest, coords);
         }
         else
         {
             for (int src = 1; src < cr->size(); src++)
             {
-                int n = 0;
-                cr->recv(src, &n);
-                for (int i = 0; i < n; i++)
+                cr->recv(src, &counts);
+                cr->recv(src, &coords);
+                auto x = coords.begin();
+                for (int count : counts)
                 {
-                    std::vector<gmx::RVec> d;
-                    cr->recv(src, &d);
-                    allCoords.push_back(std::move(d));
+                    allCoords.emplace_back(x, x + count);
+                    x += count;
                 }
             }
             gendimers_.writeCoords(actmol, allCoords);

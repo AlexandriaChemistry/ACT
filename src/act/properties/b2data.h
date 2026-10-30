@@ -63,6 +63,12 @@ private:
     std::vector<double>                 dist_;
     //! Copy of temperature array
     std::vector<double>                 temperatures_;
+
+    /*! \brief Apply a function to all sums, always in the same order
+     * \param[in] func Function that takes a reference to a sum
+     */
+    template<typename Func>
+    void forEachSum(Func func);
 public:
     /*! \brief Constructor
      * \param[in] nbins        Number of bins
