@@ -101,6 +101,8 @@ struct TrainOutput
     std::vector<std::string> fitness;
     //! The output force field
     std::string              forceField;
+    //! The lines of the log file
+    std::vector<std::string> log;
 };
 
 //! \return a number that is written as a number or a string in json
@@ -214,7 +216,8 @@ inline TrainOutput runTrainFF(gmx::test::TestFileManager                        
         {
             output.json = nlohmann::json::parse(in);
         }
-        readChi2(readLines(out["-g"]), &output);
+        output.log = readLines(out["-g"]);
+        readChi2(output.log, &output);
         // The fitness files are named after the data set
         auto fitness = out["-fitness"];
         output.fitness = readLines(fitness.substr(0, fitness.rfind(".")) + "_Train.dat");
