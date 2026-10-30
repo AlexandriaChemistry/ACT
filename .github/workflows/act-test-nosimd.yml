@@ -63,3 +63,11 @@ jobs:
           ./bin/qgen-test
           ./bin/sobol-test
           ./bin/statistics-test
+      - name: Test train_ff in parallel without explicit SIMD
+        timeout-minutes: 15
+        env:
+          ACT_NO_EXPLICIT_SIMD: "1"
+        run: |
+          source ${{ github.workspace }}/../tools/bin/ACTRC
+          cd ${{ github.workspace }}/build
+          mpirun --oversubscribe -np 4 ./bin/alexandria-mpi-test
