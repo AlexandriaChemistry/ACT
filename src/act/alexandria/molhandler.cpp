@@ -47,6 +47,7 @@
 
 #include "molhandler.h"
 
+#include <algorithm>
 #include <array>
 #include <limits>
 #include <numeric>
@@ -1483,6 +1484,9 @@ void MolHandler::simulate(MsgHandler                    *msghandler,
     // there are no external forces. Each constraint removes one more
     // degree of freedom.
     int nDOF           = DIM*(mol->nRealAtoms() - 1);
+    // The particles that move, for counting the floating point operations
+    double nmoving     = std::count_if(inv2mass.begin(), inv2mass.end(),
+                                       [](double m) { return m > 0; });
     if (simConfig.constrain())
     {
         constrainer.makeConstraints(msghandler, simConfig.constraintType(),
@@ -1585,6 +1589,7 @@ void MolHandler::simulate(MsgHandler                    *msghandler,
                 }
             }
         }
+        timings.addFlops(13*nmoving);
         timings.stop(integrationTimer);
         if (simConfig.constrain())
         {
@@ -1613,6 +1618,7 @@ void MolHandler::simulate(MsgHandler                    *msghandler,
                 }
             }
         }
+        timings.addFlops(12*nmoving);
         timings.stop(integrationTimer);
         if (simConfig.constrain())
         {

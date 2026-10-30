@@ -48,6 +48,7 @@
 #include "act/topology/fragmenthandler.h"
 #include "act/utility/jsontree.h"
 #include "act/utility/stringutil.h"
+#include "act/forces/simd_information.h"
 #include "act/utility/timings.h"
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/commandline/pargs.h"
@@ -327,7 +328,8 @@ int simulate(int argc, char *argv[])
     }
     phase.stop();
     // The timings go into the json file, or else only into the log file
-    printTimings(&cr, msghandler.tw(), phase.wallTime(), json ? &jtree : nullptr);
+    auto peak = theoreticalPeakPerCore();
+    printTimings(&cr, msghandler.tw(), phase.wallTime(), json ? &jtree : nullptr, &peak);
     if (json)
     {
         jtree.write("simulate.json", json);

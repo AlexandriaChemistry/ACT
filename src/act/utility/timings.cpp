@@ -63,6 +63,7 @@ size_t Timings::index(const std::string &name)
     names_.push_back(name);
     seconds_.push_back(0);
     calls_.push_back(0);
+    flops_.push_back(0);
     return names_.size() - 1;
 }
 
@@ -97,6 +98,8 @@ void Timings::reset()
     }
     std::fill(seconds_.begin(), seconds_.end(), 0.0);
     std::fill(calls_.begin(), calls_.end(), 0.0);
+    std::fill(flops_.begin(), flops_.end(), 0.0);
+    untimedFlops_ = 0;
 }
 
 PhaseTimer::PhaseTimer(const std::string &name)
@@ -163,6 +166,10 @@ struct ProcessTimings
     std::vector<double>      seconds;
     //! Number of calls of each region
     std::vector<double>      calls;
+    //! Floating point operations of each region
+    std::vector<double>      flops;
+    //! Floating point operations outside of all regions
+    double                   untimedFlops = 0;
 };
 
 //! Separates the names of the regions when they are sent
@@ -173,11 +180,13 @@ const char nameSeparator = '\n';
 void printTimings(const CommunicationRecord *cr,
                   gmx::TextWriter           *tw,
                   double                     wallTime,
-                  JsonTree                  *jtree)
+                  JsonTree                  *jtree,
+                  const PeakPerformance     *peak)
 {
     auto          &timings = Timings::instance();
     ProcessTimings mine    = { cr->nodeType(), wallTime, timings.names(),
-                               timings.seconds(), timings.calls() };
+                               timings.seconds(), timings.calls(), timings.flops(),
+                               timings.untimedFlops() };
     std::vector<ProcessTimings> all;
     if (!cr->isParallel())
     {
@@ -190,10 +199,11 @@ void printTimings(const CommunicationRecord *cr,
         MPI_Comm comm  = cr->comm_world();
         int      nproc = cr->size();
         bool     root  = cr->isMaster();
-        // Role and wall time
-        double              info[2] = { static_cast<double>(mine.role), mine.wallTime };
-        std::vector<double> infos(root ? 2*nproc : 0);
-        MPI_Gather(info, 2, MPI_DOUBLE, infos.data(), 2, MPI_DOUBLE, 0, comm);
+        // Role, wall time and floating point operations outside of regions
+        const int           ninfo       = 3;
+        double              info[ninfo] = { static_cast<double>(mine.role), mine.wallTime, mine.untimedFlops };
+        std::vector<double> infos(root ? ninfo*nproc : 0);
+        MPI_Gather(info, ninfo, MPI_DOUBLE, infos.data(), ninfo, MPI_DOUBLE, 0, comm);
         // Gather a vector of variable length per process
         auto gather = [comm, nproc, root](const auto &mydata, MPI_Datatype type,
                                           std::vector<int> *counts, auto *alldata)
@@ -218,12 +228,13 @@ void printTimings(const CommunicationRecord *cr,
         {
             names += name + nameSeparator;
         }
-        std::vector<int>    nameCounts, secondCounts, callCounts;
+        std::vector<int>    nameCounts, secondCounts, callCounts, flopCounts;
         std::string         allNames;
-        std::vector<double> allSeconds, allCalls;
+        std::vector<double> allSeconds, allCalls, allFlops;
         gather(names, MPI_CHAR, &nameCounts, &allNames);
         gather(mine.seconds, MPI_DOUBLE, &secondCounts, &allSeconds);
         gather(mine.calls, MPI_DOUBLE, &callCounts, &allCalls);
+        gather(mine.flops, MPI_DOUBLE, &flopCounts, &allFlops);
         if (!root)
         {
             return;
@@ -232,8 +243,9 @@ void printTimings(const CommunicationRecord *cr,
         for (int p = 0; p < nproc; p++)
         {
             ProcessTimings pt;
-            pt.role     = static_cast<NodeType>(static_cast<int>(infos[2*p]));
-            pt.wallTime = infos[2*p+1];
+            pt.role         = static_cast<NodeType>(static_cast<int>(infos[ninfo*p]));
+            pt.wallTime     = infos[ninfo*p+1];
+            pt.untimedFlops = infos[ninfo*p+2];
             std::string pnames = allNames.substr(nameOffset, nameCounts[p]);
             size_t      begin  = 0;
             for (size_t end = pnames.find(nameSeparator); end != std::string::npos;
@@ -244,6 +256,7 @@ void printTimings(const CommunicationRecord *cr,
             }
             pt.seconds.assign(allSeconds.begin() + valueOffset, allSeconds.begin() + valueOffset + secondCounts[p]);
             pt.calls.assign(allCalls.begin() + valueOffset, allCalls.begin() + valueOffset + callCounts[p]);
+            pt.flops.assign(allFlops.begin() + valueOffset, allFlops.begin() + valueOffset + flopCounts[p]);
             nameOffset  += nameCounts[p];
             valueOffset += secondCounts[p];
             all.push_back(std::move(pt));
@@ -261,6 +274,7 @@ void printTimings(const CommunicationRecord *cr,
     {
         double                     seconds = 0;
         double                     calls   = 0;
+        double                     flops   = 0;
         std::map<NodeType, double> perRole;
     };
     std::map<std::string, Sum> sums;
@@ -281,16 +295,31 @@ void printTimings(const CommunicationRecord *cr,
             auto &s = sums[pt.names[i]];
             s.seconds           += pt.seconds[i];
             s.calls             += pt.calls[i];
+            s.flops             += i < pt.flops.size() ? pt.flops[i] : 0.0;
             s.perRole[pt.role]  += pt.seconds[i];
             timed               += pt.seconds[i];
         }
         auto &s = sums[notTimed];
         s.seconds          += pt.wallTime - timed;
+        s.flops            += pt.untimedFlops;
         s.perRole[pt.role] += pt.wallTime - timed;
     }
     std::vector<std::pair<std::string, Sum>> rows(sums.begin(), sums.end());
     std::sort(rows.begin(), rows.end(),
               [](const auto &a, const auto &b) { return a.second.seconds > b.second.seconds; });
+    // The floating point operations, those outside of all regions are only
+    // part of the total
+    double totalFlops = 0, countedFlops = 0, countedSeconds = 0;
+    for (const auto &row : rows)
+    {
+        totalFlops += row.second.flops;
+        if (row.first != notTimed && row.second.flops > 0)
+        {
+            countedFlops   += row.second.flops;
+            countedSeconds += row.second.seconds;
+        }
+    }
+    bool haveFlops = totalFlops > 0;
 
     std::string counts;
     for (size_t r = 0; r < roles.size(); r++)
@@ -309,7 +338,8 @@ void printTimings(const CommunicationRecord *cr,
         tw->writeStringFormatted("The time of each part excludes the parts that it calls. MPI times are given per\n");
         tw->writeStringFormatted("part of the program they are called from. 'MPI waiting' is waiting for a message\n");
         tw->writeStringFormatted("to arrive, 'MPI collectives' includes waiting for the other processes. The\n");
-        tw->writeStringFormatted("columns per role are averages per process in seconds.\n");
+        tw->writeStringFormatted("columns per role are averages per process in seconds.%s\n",
+                                 haveFlops ? " GFlop/s is per core in that\npart, see below." : "");
         tw->writeStringFormatted("Wall time of the master %.2f s.\n\n", mine.wallTime);
         std::string header = gmx::formatString("%-48s %10s %6s", "Part", "Seconds", "%");
         for (size_t r = 0; r < roles.size(); r++)
@@ -318,6 +348,10 @@ void printTimings(const CommunicationRecord *cr,
             {
                 header += gmx::formatString(" %10s", roleNames[r].c_str());
             }
+        }
+        if (haveFlops)
+        {
+            header += gmx::formatString(" %9s", "GFlop/s");
         }
         header += gmx::formatString(" %12s", "Calls");
         tw->writeStringFormatted("%s\n", header.c_str());
@@ -340,6 +374,19 @@ void printTimings(const CommunicationRecord *cr,
                 double average = (pr == s.perRole.end() ? 0.0 : pr->second)/nproc[roles[r]];
                 line += gmx::formatString(" %10.3f", average);
                 jrow.addObject(roleNames[r], gmx::formatString("%.3f", average));
+            }
+        }
+        if (haveFlops)
+        {
+            if (s.flops > 0 && s.seconds > 0)
+            {
+                double gflops = 1e-9*s.flops/s.seconds;
+                line += gmx::formatString(" %9.3f", gflops);
+                jrow.addObject("GFlop/s", gmx::formatString("%.4f", gflops));
+            }
+            else
+            {
+                line += gmx::formatString(" %9s", "");
             }
         }
         if (s.calls > 0)
@@ -367,6 +414,7 @@ void printTimings(const CommunicationRecord *cr,
             {
                 sum.seconds += row.second.seconds;
                 sum.calls   += row.second.calls;
+                sum.flops   += row.second.flops;
                 for (const auto &pr : row.second.perRole)
                 {
                     sum.perRole[pr.first] += pr.second;
@@ -382,6 +430,7 @@ void printTimings(const CommunicationRecord *cr,
     subtotal("MPI ", "All MPI");
     Sum total;
     total.seconds = totalWall;
+    total.flops   = totalFlops;
     for (const auto &pt : all)
     {
         total.perRole[pt.role] += pt.wallTime;
@@ -391,12 +440,63 @@ void printTimings(const CommunicationRecord *cr,
     {
         tw->writeStringFormatted("\n");
     }
+    // The floating point performance per core, on average over the wall
+    // time of all processes and in the parts where operations were counted
+    JsonTree jperf("Performance");
+    if (haveFlops)
+    {
+        double average   = totalWall > 0 ? 1e-9*totalFlops/totalWall : 0.0;
+        double inCounted = countedSeconds > 0 ? 1e-9*countedFlops/countedSeconds : 0.0;
+        bool   havePeak  = peak && peak->gflops > 0;
+        if (tw)
+        {
+            tw->writeStringFormatted("Floating point performance per core, double precision. Counted are the\n");
+            tw->writeStringFormatted("operations of the potentials, of the second virial, of the integration in\n");
+            tw->writeStringFormatted("molecular dynamics and of the electrostatic potential for charge fitting. Not\n");
+            tw->writeStringFormatted("counted are Slater integrals, charge generation, shell positions, constraints\n");
+            tw->writeStringFormatted("and the rest of the program. Each addition, multiplication, division and square\n");
+            tw->writeStringFormatted("root counts as one operation, functions like exp and erf as the operations of\n");
+            tw->writeStringFormatted("their SIMD implementation in ACT.\n");
+            tw->writeStringFormatted("%-48s %10.4g\n", "Floating point operations", totalFlops);
+            tw->writeStringFormatted("%-48s %10.3f GFlop/s\n", "Average over the wall time", average);
+            tw->writeStringFormatted("%-48s %10.3f GFlop/s\n", "In the parts where operations were counted", inCounted);
+            if (havePeak)
+            {
+                tw->writeStringFormatted("%-48s %10.3f GFlop/s\n", "Theoretical peak", peak->gflops);
+                tw->writeStringFormatted("%-48s %s\n", "", peak->basis.c_str());
+                tw->writeStringFormatted("%-48s %10.2f %%\n", "Fraction of the peak on average", 100*average/peak->gflops);
+                tw->writeStringFormatted("%-48s %10.2f %%\n", "Fraction of the peak in the counted parts", 100*inCounted/peak->gflops);
+            }
+            else
+            {
+                tw->writeStringFormatted("The theoretical peak of this processor is not known%s%s. It can be given as\n",
+                                         peak && !peak->basis.empty() ? ": " : "",
+                                         peak ? peak->basis.c_str() : "");
+                tw->writeStringFormatted("the GFlop/s of one core in the environment variable ACT_PEAK_GFLOPS.\n");
+            }
+            tw->writeStringFormatted("\n");
+        }
+        jperf.addObject("Floating point operations", gmx::formatString("%.6g", totalFlops));
+        jperf.addValueUnit("Average per core", gmx::formatString("%.4f", average), "GFlop/s");
+        jperf.addValueUnit("Per core in the counted parts", gmx::formatString("%.4f", inCounted), "GFlop/s");
+        if (havePeak)
+        {
+            jperf.addValueUnit("Theoretical peak per core", gmx::formatString("%.4f", peak->gflops), "GFlop/s");
+            jperf.addObject("Theoretical peak basis", peak->basis);
+            jperf.addValueUnit("Fraction of the peak on average", gmx::formatString("%.3f", 100*average/peak->gflops), "%");
+            jperf.addValueUnit("Fraction of the peak in the counted parts", gmx::formatString("%.3f", 100*inCounted/peak->gflops), "%");
+        }
+    }
     if (jtree)
     {
         JsonTree jtimings("Timings");
         jtimings.addObject("Processes", counts);
         jtimings.addValueUnit("Wall time of the master", gmx::formatString("%.3f", mine.wallTime), "s");
         jtimings.addObject(jparts);
+        if (haveFlops)
+        {
+            jtimings.addObject(jperf);
+        }
         jtree->addObject(jtimings);
     }
 }

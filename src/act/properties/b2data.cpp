@@ -37,6 +37,7 @@
 #include <sstream>
 
 #include "act/utility/simpson.h"
+#include "act/utility/timings.h"
 #include "gromacs/fileio/oenv.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/math/units.h"
@@ -211,6 +212,7 @@ void B2Data::addOrientation(const std::vector<size_t>    &index,
     }
     // The Boltzmann factors of the dimers at one temperature
     std::vector<double> g0_12(ndimer);
+    size_t              ntemp = 0;
     for(size_t iTemp = 0; iTemp < temperatures_.size(); iTemp++)
     {
         auto T = temperatures_[iTemp];
@@ -220,6 +222,7 @@ void B2Data::addOrientation(const std::vector<size_t>    &index,
             continue;
         }
         double beta = 1.0/(BOLTZ*T);
+        ntemp      += 1;
         auto  &eU12 = exp_U12_[iTemp];
         auto  &eF0  = exp_F2_[0][iTemp];
         auto  &eF1  = exp_F2_[1][iTemp];
@@ -271,6 +274,10 @@ void B2Data::addOrientation(const std::vector<size_t>    &index,
             }
         }
     }
+    // Per dimer and temperature: the Boltzmann factor with the exponential
+    // 27, the Mayer function 3, the forces 6, the torques 24 and the weight 1,
+    // see Timings::addFlops
+    Timings::instance().addFlops(61.0*ndimer*ntemp);
 }
 
 void B2Data::integrate(MsgHandler *msghandler,

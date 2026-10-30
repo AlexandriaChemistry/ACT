@@ -49,6 +49,7 @@
 #include "act/statistics/statistics.h"
 #include "act/topology/topology.h"
 #include "act/utility/regression.h"
+#include "act/utility/timings.h"
 #include "act/utility/units.h"
 #include "gromacs/fileio/xvgr.h"
 #include "gromacs/math/vec.h"
@@ -409,9 +410,35 @@ static double calcJ(MsgHandler            *msg_handler,
     return ONE_4PI_EPS0*eTot;
 }
 
+/*! \brief Floating point operations of calcJ, see Timings::addFlops
+ * The distance 9 and the potential of a point charge 2, or of a Gaussian
+ * one 85 with the error function. Slater distributions are not counted.
+ * \param[in] chargeType The charge distribution type
+ * \param[in] zeta       The distribution width of the charge
+ */
+static double calcJFlops(ChargeDistributionType chargeType, double zeta)
+{
+    if (zeta <= 0 || ChargeDistributionType::Point == chargeType)
+    {
+        return 11;
+    }
+    return ChargeDistributionType::Gaussian == chargeType ? 94 : 0;
+}
+
 void QgenResp::calcPot(MsgHandler *msg_handler,
                        double      epsilonr)
 {
+    // The operations for one ESP point
+    double flops = 0;
+    for (size_t j = 0; j < nAtom_; j++)
+    {
+        flops += calcJFlops(ChargeDistributionType_, zeta_[j]) + 4;
+        if (qVS_[j] != 0)
+        {
+            flops += calcJFlops(ChargeDistributionType_, zetaVS_[j]) + 4;
+        }
+    }
+    Timings::instance().addFlops(flops*nEsp());
     double scale_factor = 1.0/epsilonr;
     
     // Loop over ESP points
@@ -470,6 +497,18 @@ void QgenResp::optimizeCharges(MsgHandler *msg_handler,
         msg_handler->fatal(gmx::formatString("Only %zu ESP points for %zu atoms. Cannot generate charges.", nEsp(), nAtom_));
     }
     
+    // The operations of the matrix for one ESP point, those of solving it
+    // are not counted, see Timings::addFlops
+    double flops = 0;
+    for (size_t ii = 0; ii < nAtom_; ii++)
+    {
+        flops += calcJFlops(ChargeDistributionType_, zeta_[ii]) + 2;
+        if (qVS_[ii] != 0)
+        {
+            flops += calcJFlops(ChargeDistributionType_, zetaVS_[ii]) + 3;
+        }
+    }
+    Timings::instance().addFlops(flops*nEsp());
     // Algorithm as described in Ghahremanpour et al., JCTC 14 (2018)
     // pp. 5553-5566.
     for (size_t j = 0; j < nEsp(); j++)
