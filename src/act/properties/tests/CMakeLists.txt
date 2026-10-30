@@ -45,10 +45,8 @@ gmx_add_unit_test(
     nmaTest.cpp
     symmetrynumberTest.cpp
     velocityhandlerTest.cpp
-    # pseudo-library for code for properties
-    $<TARGET_OBJECTS:actLib>
     )
-target_link_libraries(${exename} libactgromacs ${GMX_EXTRA_LIBRARIES} ${GMX_EXE_LINKER_FLAGS})
+target_link_libraries(${exename} actLib ${GMX_EXE_LINKER_FLAGS})
 
 # The second virial tests for water run on four MPI ranks
 gmx_add_mpi_unit_test(
@@ -56,9 +54,7 @@ gmx_add_mpi_unit_test(
     properties-mpi-test 4
     # files with code for tests
     b2MpiTest.cpp
-    # pseudo-library for code for properties
-    $<TARGET_OBJECTS:actLib>
     )
 if (TARGET properties-mpi-test)
-    target_link_libraries(properties-mpi-test libactgromacs ${GMX_EXTRA_LIBRARIES} ${GMX_EXE_LINKER_FLAGS})
+    target_link_libraries(properties-mpi-test actLib ${GMX_EXE_LINKER_FLAGS})
 endif()

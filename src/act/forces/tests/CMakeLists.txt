@@ -51,4 +51,4 @@ gmx_add_unit_test(
 if(ACT_SIMD_FLAGS)
     set_source_files_properties(simdMathTest.cpp PROPERTIES COMPILE_OPTIONS "${ACT_SIMD_FLAGS}")
 endif()
-target_link_libraries(${exename} actLib libactgromacs ${GMX_EXTRA_LIBRARIES} ${XML_LIBRARIES} ${GMX_EXE_LINKER_FLAGS})
+target_link_libraries(${exename} actLib ${GMX_EXE_LINKER_FLAGS})

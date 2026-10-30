@@ -48,12 +48,11 @@ if(GMX_MPI)
 
   # If CMAKE_C_COMPILER is not a MPI wrapper. Try to find MPI using cmake module as fall-back.
   if(NOT MPI_FOUND)
-      find_package(MPI)
+      find_package(MPI COMPONENTS C)
       if(MPI_C_FOUND)
-        set(MPI_COMPILE_FLAGS ${MPI_C_COMPILE_FLAGS})
-        set(MPI_LINKER_FLAGS ${MPI_C_LINK_FLAGS})
-        include_directories(SYSTEM ${MPI_C_INCLUDE_PATH})
-        list(APPEND GMX_COMMON_LIBRARIES ${MPI_C_LIBRARIES})
+        # The imported target provides the flags and include directories
+        list(APPEND GMX_COMMON_LIBRARIES MPI::MPI_C)
+        set(MPIEXEC ${MPIEXEC_EXECUTABLE})
       endif()
       set(MPI_FOUND ${MPI_C_FOUND})
   else()
@@ -132,38 +131,6 @@ if(GMX_MPI)
     endif()
     unset(MPI_INFO_BIN CACHE)
 
-    # Execute the mpiname binary with the full path of the compiler wrapper
-    # found, otherwise we run the risk of false positives.
-    find_file(MPINAME_BIN mpiname
-              HINTS ${_mpi_c_compiler_path}
-                    ${_cmake_c_compiler_path} ${_cmake_cxx_compiler_path}
-              NO_DEFAULT_PATH
-              NO_SYSTEM_ENVIRONMENT_PATH
-              NO_CMAKE_SYSTEM_PATH)
-    if (MPINAME_BIN)
-      exec_program(${MPINAME_BIN}
-        ARGS -n -v
-        OUTPUT_VARIABLE MVAPICH2_TYPE
-        RETURN_VALUE MVAPICH2_EXEC_RETURN)
-      if(MVAPICH2_EXEC_RETURN EQUAL 0)
-        string(REGEX MATCH "MVAPICH2" MVAPICH2_NAME ${MVAPICH2_TYPE})
-        # Want to check for MVAPICH2 in case some other library supplies mpiname
-        string(REGEX REPLACE "MVAPICH2 \([0-9]+\\.[0-9]*[a-z]?\\.?[0-9]*\)" "\\1" MVAPICH2_VERSION ${MVAPICH2_TYPE})
-        if(${MVAPICH2_NAME} STREQUAL "MVAPICH2" AND MVAPICH2_VERSION VERSION_LESS "1.5")
-          # This test works correctly even with 1.5a1
-          MESSAGE(WARNING
-             "CMake found MVAPICH2 version ${MVAPICH2_VERSION} on your system. "
-             "There are known problems with GROMACS and MVAPICH2 version < 1.5. "
-             "Please consider updating your MVAPICH2 if your MPI wrapper compilers "
-             "are using the above MVAPICH2 version.")
-       endif()
-       unset(MVAPICH2_VERSION)
-       unset(MVAPICH2_NAME)
-       unset(MVAPICH2_TYPE)
-       unset(MVAPICH2_EXEC_RETURN)
-      endif()
-    endif()
-    unset(MPINAME_BIN CACHE)
   else()
       message(FATAL_ERROR
         "MPI support requested, but no MPI compiler found. Either set the "

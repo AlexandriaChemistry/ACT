@@ -35,8 +35,10 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-# 3.20 for cmake_path and 3.24 for CMAKE_COMPILE_WARNING_AS_ERROR
-cmake_minimum_required(VERSION 3.24)
+# 3.20 for cmake_path and 3.24 for CMAKE_COMPILE_WARNING_AS_ERROR. With
+# newer versions the policies up to 3.31 are used, such that, e.g.,
+# duplicate libraries are removed from the link lines (CMP0156).
+cmake_minimum_required(VERSION 3.24...3.31)
 
 # CMake modules/macros are in a subdirectory to keep this file cleaner
 # This needs to be set before project() in order to pick up toolchain files
@@ -159,14 +161,12 @@ mark_as_advanced(GMX_STDLIB_LIBRARIES)
 include(CheckCCompilerFlag)
 include(CheckCXXCompilerFlag)
 
-# This must come early, since some of our configuration flag tests
-# depend on being able to compile C++20 source files.
-include(gmxTestCXX20)
-gmx_test_cxx20(GMX_CXX20_FLAGS GMX_STDLIB_CXX_FLAGS GMX_STDLIB_LIBRARIES)
-
-# Make sure all C++ code will be compiled in C++20 mode, with the
-# expected standard library.
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${GMX_CXX20_FLAGS} ${GMX_STDLIB_CXX_FLAGS}")
+# All C++ code is compiled as C++20, which also applies to the
+# configuration tests, with the expected standard library.
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${GMX_STDLIB_CXX_FLAGS}")
 
 ########################################################################
 # User input options                                                   #
@@ -252,12 +252,12 @@ if(GMX_DOUBLE)
 else()
     set(GMX_DOUBLE_VALUE 0)
 endif()
-add_definitions(-DGMX_DOUBLE=${GMX_DOUBLE_VALUE})
+add_compile_definitions(GMX_DOUBLE=${GMX_DOUBLE_VALUE})
 list(APPEND INSTALLED_HEADER_DEFINITIONS "-DGMX_DOUBLE=${GMX_DOUBLE_VALUE}")
 
 if(WIN32)
     list(APPEND GMX_EXTRA_LIBRARIES "wsock32")
-    add_definitions(-DGMX_HAVE_WINSOCK)
+    add_compile_definitions(GMX_HAVE_WINSOCK)
 endif()
 
 
@@ -326,39 +326,13 @@ include(gmxManageSharedLibraries)
 # Find external packages                                               #
 ########################################################################
 
-# Unconditionally find the package, as it is also required for unit
-# tests. This exports LIBXML2_FOUND, which we should not use because
-# it does not tell us that linking will succeed. Instead, we test that
-# next.
-if(DEFINED LIBXML2_LIBRARIES)
-  set(LibXml2_FIND_QUIETLY TRUE)
-endif()
+# The libraries are linked as imported targets, which also provide the
+# include directories.
 find_package(LibXml2 REQUIRED)
-include(gmxTestLibXml2)
-gmx_test_libxml2(HAVE_LIBXML2)
-if(NOT HAVE_LIBXML2)
-    message(FATAL_ERROR "libxml2 not found.")
-endif()
-
-if(LibXml2_FOUND)
-    include_directories(${LIBXML2_INCLUDE_DIR})
-    include_directories(${LIBXML2_INCLUDE_DIRS})
-    list(APPEND GMX_EXTRA_LIBRARIES ${LIBXML2_LIBRARIES})
-endif(LibXml2_FOUND)
+list(APPEND GMX_EXTRA_LIBRARIES LibXml2::LibXml2)
 
 find_package(Eigen3 5 REQUIRED NO_MODULE)
-message("Eigen3_FOUND : ${Eigen3_FOUND}")
-if(Eigen3_FOUND)
-  find_path(Eigen3_INCLUDE_DIR eigen3/Eigen/Dense)
-  if(NOT Eigen3_INCLUDE_DIR)
-    message(FATAL_ERROR "Could not find Eigen3_INCLUDE_DIR")
-  endif()
-  #message("Eigen3_INCLUDE_DIR : ${Eigen3_INCLUDE_DIR}")
-  include_directories( ${Eigen3_INCLUDE_DIR}/eigen3 )
-
-  add_definitions(-DHAVE_EIGEN -DHAVE_EIGEN3)
-  list(APPEND GMX_EXTRA_LIBRARIES Eigen3::Eigen)
-endif()
+list(APPEND GMX_EXTRA_LIBRARIES Eigen3::Eigen)
 
 # When compiling alexandria some extra libraries become optional
 # CLN, sqlite3
@@ -376,59 +350,26 @@ else()
     set(HAVE_LIBCLN 0)
 endif()
 
-find_package(sqlite3)
-if(SQLITE3_FOUND)
-    include_directories(${SQLITE3_INCLUDE_DIR})
+find_package(SQLite3)
+if(SQLite3_FOUND)
     set(HAVE_LIBSQLITE3 1)
-    list(APPEND	GMX_EXTRA_LIBRARIES ${SQLITE3_LIBRARIES})
-endif(SQLITE3_FOUND)
+    list(APPEND GMX_EXTRA_LIBRARIES SQLite::SQLite3)
+endif()
 
 # nlohmann/json for JSON reading/writing (header-only library)
 find_package(nlohmann_json REQUIRED)
-message("nlohmann_json_FOUND : ${nlohmann_json_FOUND}")
 list(APPEND GMX_EXTRA_LIBRARIES nlohmann_json::nlohmann_json)
 
 # We need Boost since RDKit needs it
 find_package(Boost CONFIG REQUIRED)
-message("Boost_FOUND : ${Boost_FOUND}")
-include_directories(${Boost_INCLUDE_DIRS})
+list(APPEND GMX_EXTRA_LIBRARIES Boost::headers)
 
 # These are the necessary RDKit libraries
 set(rdkitlibs RDGeneral SmilesParse FileParsers GraphMol Inchi RDInchiLib SubstructMatch SubstructLibrary GeneralizedSubstruct  FilterCatalog DetermineBonds Descriptors )
-
-# RDKit looks for Boost in its configuration, for which the FindBoost
-# module is removed (policy CMP0167 of CMake 3.30), for this call only.
-cmake_policy(PUSH)
-if(POLICY CMP0167)
-    cmake_policy(SET CMP0167 NEW)
-endif()
 find_package(RDKit REQUIRED COMPONENTS ${rdkitlibs} )
-cmake_policy(POP)
-message("RDKit_FOUND : ${RDKit_FOUND}")
-if(RDKit_FOUND)
-  find_path(RDKit_INCLUDE_DIR rdkit/GraphMol/FilterCatalog/FilterMatchers.h)
-  if(NOT RDKit_INCLUDE_DIR)
-    message(FATAL_ERROR "Could not find RDKit_INCLUDE_DIR")
-  endif()
-  include_directories(${RDKit_INCLUDE_DIR}/rdkit)
-  #message("RDKit_INCLUDE_DIR : ${RDKit_INCLUDE_DIR}")
-  set(RDKit_LIB_DIR "")
-  cmake_path(SET RDKit_LIB_DIR NORMALIZE  ${RDKit_INCLUDE_DIR}/../lib)
-  #message("RDKit_LIB_DIR : ${RDKit_LIB_DIR}")
-
-  foreach(lib IN ITEMS ${rdkitlibs})
-     #message("Looking for library ${lib}")
-     find_library(RDKit${lib} NAMES RDKit${lib} PATHS ${RDKit_LIB_DIR} )
-     if(RDKit${lib})
-         #message("Found ${lib} in ${RDKit${lib}}")
-         list(APPEND GMX_EXTRA_LIBRARIES ${RDKit${lib}})
-         add_definitions(-DHAVE_${lib})
-     else()
-        message(FATAL_ERROR "Didn't find ${lib} library in ${RDKit_LIB_DIR}.")
-     endif()
-     unset(RDKit${lib})
-  endforeach(lib)
-endif()
+foreach(lib IN ITEMS ${rdkitlibs})
+    list(APPEND GMX_EXTRA_LIBRARIES RDKit::${lib})
+endforeach()
 
 if(CYGWIN)
     set(GMX_CYGWIN 1)
@@ -438,7 +379,7 @@ if(WIN32)
     set(GMX_NATIVE_WINDOWS 1)
     # This makes windows.h not declare min/max as macros that would break
     # C++ code using std::min/std::max.
-    add_definitions(-DNOMINMAX)
+    add_compile_definitions(NOMINMAX)
 endif()
 
 option(GMX_BUILD_UNITTESTS "Build unit tests with BUILD_TESTING" ON)
@@ -449,7 +390,7 @@ gmx_add_cache_dependency(GMX_BUILD_UNITTESTS BOOL BUILD_TESTING OFF)
 # Our own GROMACS tests
 ########################################################################
 
-add_definitions( -DHAVE_CONFIG_H )
+add_compile_definitions(HAVE_CONFIG_H)
 include_directories(BEFORE ${CMAKE_SOURCE_DIR}/src)
 # TODO required at high level because both libactgromacs and progs/mdrun
 # require it, both for thread-MPI and its atomics and mutexes.
@@ -586,10 +527,7 @@ else()
     # RPATHs), and makes the binaries in the build tree relocatable.
     if(CMAKE_INSTALL_LIBDIR STREQUAL "lib")
         set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
-        if(POLICY CMP0068)
-            cmake_policy(SET CMP0068 NEW) # From CMake-3.9
-            set(CMAKE_BUILD_WITH_INSTALL_NAME_DIR TRUE)
-        endif()
+        set(CMAKE_BUILD_WITH_INSTALL_NAME_DIR TRUE)
     endif()
     # Set the RPATH as relative to the executable location to make the
     # binaries relocatable.
@@ -624,13 +562,11 @@ gmx_cpack_write_config()
 #######################
 ## uninstall target
 #######################
-CONFIGURE_FILE(   "${CMAKE_CURRENT_SOURCE_DIR}/cmake/cmake_uninstall.cmake.in"
-                  "${CMAKE_CURRENT_BINARY_DIR}/cmake/cmake_uninstall.cmake"
-                  IMMEDIATE @ONLY)
-###########################
-ADD_CUSTOM_TARGET(uninstall
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/cmake/cmake_uninstall.cmake.in"
+               "${CMAKE_CURRENT_BINARY_DIR}/cmake/cmake_uninstall.cmake"
+               @ONLY)
+add_custom_target(uninstall
                   "${CMAKE_COMMAND}" -P
                   "${CMAKE_CURRENT_BINARY_DIR}/cmake/cmake_uninstall.cmake")
-###########################
 set_directory_properties(PROPERTIES
-            ADDITIONAL_MAKE_CLEAN_FILES "install_manifest.txt")
+            ADDITIONAL_CLEAN_FILES "install_manifest.txt")

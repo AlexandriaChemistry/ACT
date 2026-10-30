@@ -41,7 +41,5 @@ gmx_add_unit_test(
     # files with code for tests
     compound_readerTest.cpp
     importTest.cpp
-    # pseudo-library for code for alexandria
-    $<TARGET_OBJECTS:actLib>
     )
-target_link_libraries(${exename} libactgromacs ${GMX_EXTRA_LIBRARIES} ${GMX_EXE_LINKER_FLAGS})
+target_link_libraries(${exename} actLib ${GMX_EXE_LINKER_FLAGS})

@@ -40,7 +40,5 @@ gmx_add_unit_test(
     ${exename}
     # files with code for tests
     constraintsTest.cpp
-    # pseudo-library for code for properties
-    $<TARGET_OBJECTS:actLib>
     )
-target_link_libraries(${exename} libactgromacs ${GMX_EXTRA_LIBRARIES} ${GMX_EXE_LINKER_FLAGS})
+target_link_libraries(${exename} actLib ${GMX_EXE_LINKER_FLAGS})
