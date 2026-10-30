@@ -85,56 +85,65 @@ void B2Data::dump(MsgHandler *msghandler) const
     }
 }
 
+template<typename Func>
+void B2Data::forEachSum(Func func)
+{
+    for(auto &t : exp_U12_)
+    {
+        for(auto &x : t)
+        {
+            func(x);
+        }
+    }
+    for(auto &t : n_U12_)
+    {
+        for(auto &x : t)
+        {
+            func(x);
+        }
+    }
+    for(int kk = 0; kk < 2; kk++)
+    {
+        for(auto &t : exp_F2_[kk])
+        {
+            for(auto &x : t)
+            {
+                func(x);
+            }
+        }
+        for(auto &t : exp_tau_[kk])
+        {
+            for(auto &x : t)
+            {
+                for(int m = 0; m < DIM; m++)
+                {
+                    func(x[m]);
+                }
+            }
+        }
+    }
+}
+
 void B2Data::aggregate(CommunicationRecord *cr)
 {
+    // All sums are sent in one message per process, the master adds them
+    // in the order of the processes.
+    size_t nsum = 0;
+    forEachSum([&nsum](double &) { nsum += 1; });
+    std::vector<double> buf;
     if (cr->isMaster())
     {
         for(int src = 1; src < cr->size(); src++)
         {
             if (CommunicationStatus::RECV_DATA == cr->recv_data(src))
             {
-                for(size_t i = 0; i < exp_U12_.size(); i++)
+                cr->recv(src, &buf);
+                if (buf.size() != nsum)
                 {
-                    std::vector<double> d;
-                    cr->recv(src, &d);
-                    for(size_t j = 0; j < d.size(); j++)
-                    {
-                        exp_U12_[i][j] += d[j];
-                    }
+                    GMX_THROW(gmx::InternalError(gmx::formatString("Received %zu sums from process %d, expected %zu", buf.size(), src, nsum).c_str()));
                 }
-                for(size_t i = 0; i < n_U12_.size(); i++)
-                {
-                    std::vector<double> d;
-                    cr->recv(src, &d);
-                    for(size_t j = 0; j < d.size(); j++)
-                    {
-                        n_U12_[i][j] += d[j];
-                    }
-                }
-                for(int kk = 0; kk < 2; kk++)
-                {
-                    for(size_t i = 0; i < exp_F2_[kk].size(); i++)
-                    {
-                        std::vector<double> d;
-                        cr->recv(src, &d);
-                        for(size_t j = 0; j < d.size(); j++)
-                        {
-                            exp_F2_[kk][i][j] += d[j];
-                        }
-                    }
-                    for(size_t i = 0; i < exp_tau_[kk].size(); i++)
-                    {
-                        for(size_t j = 0; j < exp_tau_[kk][i].size(); j++)
-                        {
-                            std::vector<double> d;
-                            cr->recv(src, &d);
-                            for(size_t m = 0; m < d.size(); m++)
-                            {
-                                exp_tau_[kk][i][j][m] += d[m];
-                            }
-                        }
-                    }
-                }
+                size_t k = 0;
+                forEachSum([&buf, &k](double &x) { x += buf[k++]; });
             }
         }
     }
@@ -143,39 +152,13 @@ void B2Data::aggregate(CommunicationRecord *cr)
         int dest = cr->superior();
         if (CommunicationStatus::SEND_DATA == cr->send_data(dest))
         {
-            for(size_t i = 0; i < exp_U12_.size(); i++)
-            {
-                std::vector<double> d = exp_U12_[i];
-                cr->send(dest, d);
-            }
-            for(size_t i = 0; i < n_U12_.size(); i++)
-            {
-                cr->send(dest, n_U12_[i]);
-            }
-            for(int kk = 0; kk < 2; kk++)
-            {
-                for(size_t i = 0; i < exp_F2_[kk].size(); i++)
-                {
-                    std::vector<double> d = exp_F2_[kk][i];
-                    cr->send(dest, d);
-                }
-                for(size_t i = 0; i < exp_tau_[kk].size(); i++)
-                {
-                    for(size_t j = 0; j < exp_tau_[kk][i].size(); j++)
-                    {
-                        std::vector<double> d(DIM);
-                        for(int m = 0; m < DIM; m++)
-                        {
-                            d[m] = exp_tau_[kk][i][j][m];
-                        }
-                        cr->send(dest, d);
-                    }
-                }
-            }
+            buf.reserve(nsum);
+            forEachSum([&buf](double &x) { buf.push_back(x); });
+            cr->send(dest, buf);
         }
     }
 }
-    
+
 void B2Data::addData(size_t iTemp, size_t index, double dist,
                      double exp_U12, double exp_F0, double exp_F1,
                      const gmx::RVec exp_tau0, const gmx::RVec exp_tau1,
