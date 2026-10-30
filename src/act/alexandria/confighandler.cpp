@@ -479,7 +479,7 @@ void SimulationConfigHandler::add_MD_options(std::vector<t_pargs> *pargs)
         { "-nstvout", FALSE, etINT, {&nstvout_},
           "Number of steps between writing velocities." },
         { "-nstener", FALSE, etINT, {&nstener_},
-          "Number of steps between writing energies." }
+          "Number of steps between writing energies. With shells, the induction energy that is written needs one more energy calculation, with the shells on their parent particles, in the steps in which the energies are written." }
     };
     for(auto &i : MDextra)
     {

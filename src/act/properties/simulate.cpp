@@ -48,6 +48,7 @@
 #include "act/topology/fragmenthandler.h"
 #include "act/utility/jsontree.h"
 #include "act/utility/stringutil.h"
+#include "act/forces/forcecomputerstatistics.h"
 #include "act/forces/simd_information.h"
 #include "act/utility/timings.h"
 #include "gromacs/commandline/filenm.h"
@@ -320,6 +321,12 @@ int simulate(int argc, char *argv[])
                        gmx::formatString("Please check the log file %s for error messages.\n",
                                          msghandler.filename().c_str()));
         status = 1;
+    }
+    if (pd.polarizable())
+    {
+        // The number of shell iterations per force calculation
+        ForceComputerStatistics fcStats;
+        msghandler.write(fcStats.statistics(&cr, &forceComp, 0, true));
     }
     if (!json)
     {

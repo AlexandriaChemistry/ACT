@@ -430,6 +430,35 @@ TEST_F(ComputeTotalTest, NoReset)
     testTotal("ACS-pg-vs3", "water", 2, options);
 }
 
+// Test: Starting the relaxation from relaxed shells gives the same energies,
+// with the induction from the shells on their parents, in fewer iterations
+TEST_F(ComputeTotalTest, ShellsFromInput)
+{
+    for (const std::string molName : { "water", "hbr-hf" })
+    {
+        auto pd = getForceField("ACS-pg-vs3");
+        ASSERT_NE(nullptr, pd);
+        ACTMol mol;
+        ASSERT_TRUE(readMolecule(&msghandler_, pd, molName, &mol));
+        auto top = mol.topology();
+        auto x   = mol.xOriginal();
+        std::vector<gmx::RVec>            fref(x.size()), f(x.size());
+        std::map<InteractionType, double> eref, e;
+        forceComp_.resetStatistics();
+        forceComp_.compute(&msghandler_, pd, top, &x, &fref, &eref);
+        auto fromParents = forceComp_.numShellIterations();
+        ASSERT_GT(fromParents, 2u) << molName;
+        // The shells in x are relaxed now
+        forceComp_.resetStatistics();
+        forceComp_.compute(&msghandler_, pd, top, &x, &f, &e, { 0, 0, 0 }, true, {}, true);
+        EXPECT_TRUE(msghandler_.ok());
+        EXPECT_LE(forceComp_.numShellIterations(), 2u) << molName;
+        ASSERT_NE(eref.end(), eref.find(InteractionType::INDUCTION));
+        compareEnergies(eref, e, 1e-8, molName + " shells from input");
+        compareForces(fref, f, 1e-5, molName + " shells from input");
+    }
+}
+
 TEST_F(ComputeTotalTest, NoRelaxation)
 {
     // Compare with computeOnce, which does not relax the shells

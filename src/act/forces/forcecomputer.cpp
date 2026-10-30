@@ -276,7 +276,8 @@ void ForceComputer::compute(MsgHandler                        *msg_handler,
                             std::map<InteractionType, double> *energies,
                             const gmx::RVec                   &field,
                             bool                               resetShells,
-                            std::set<int>                      relax) const
+                            std::set<int>                      relax,
+                            bool                               shellsFromInput) const
 {
     // One conformation, computed with the SIMD routines
     ConformationSet set;
@@ -284,8 +285,9 @@ void ForceComputer::compute(MsgHandler                        *msg_handler,
     set.setCoordinates({ *coordinates });
     ShellOptions options;
     options.field       = field;
-    options.resetShells = resetShells;
-    options.relaxShells = relax;
+    options.resetShells     = resetShells;
+    options.relaxShells     = relax;
+    options.shellsFromInput = shellsFromInput;
     std::vector<std::map<InteractionType, double>> emaps;
     computeTotal(msg_handler, pd, &set, options, &emaps);
     *coordinates = set.confs[0].x;
@@ -1240,12 +1242,22 @@ void ForceComputer::computeTotal(MsgHandler                                     
     {
         shells = shellParents(atoms);
     }
+    // The input positions of the shells, to start the relaxation from
+    std::vector<std::vector<gmx::RVec>> inputShells;
     for(auto &conf : confs)
     {
         nEval_ += 1;
         if (vsites)
         {
             constructVsiteCoordinates(top, &conf.x);
+        }
+        if (options.shellsFromInput && !shells.empty())
+        {
+            inputShells.emplace_back();
+            for(const auto &sp : shells)
+            {
+                inputShells.back().push_back(conf.x[sp.first]);
+            }
         }
         resetShells(shells, &conf.x);
     }
@@ -1273,6 +1285,24 @@ void ForceComputer::computeTotal(MsgHandler                                     
             }
         }
         resetShellSteps(&confs);
+        if (!inputShells.empty())
+        {
+            // Start from the input positions of the shells to relax, which
+            // takes an energy calculation like an iteration
+            for(size_t c = 0; c < confs.size(); c++)
+            {
+                for(size_t k = 0; k < shells.size(); k++)
+                {
+                    if (isShell[shells[k].first])
+                    {
+                        confs[c].x[shells[k].first] = inputShells[c][k];
+                    }
+                }
+                nShellIter_ += 1;
+            }
+            computeConformations(msghandler, pd, top, &confs, cdata, true, true);
+            addFieldForces(atoms, options.field, &confs);
+        }
         // We have already done one energy calculation
         int  iter    = 1;
         bool allDone = false;
