@@ -326,6 +326,11 @@ static void resetShells(const std::vector<std::pair<size_t, size_t>> &shells,
     }
 }
 
+//! Smallest scaling of the step of the shells, see updateShells
+static const double minShellStep = 0.1;
+//! Largest scaling of the step of the shells, see updateShells
+static const double maxShellStep = 1.0;
+
 size_t ForceComputer::updateShells(const Topology            *top,
                                    size_t                     offset,
                                    size_t                     nShell,
@@ -358,14 +363,38 @@ size_t ForceComputer::updateShells(const Topology            *top,
         }
         else
         {
-            // Coupled shells can overshoot, then the step is reduced, see compute
-            if (msForce > dim.shellForce[fragment])
-            {
-                dim.shellStep[fragment] = 0.5;
-            }
-            dim.shellForce[fragment] = msForce;
             auto &pols  = top->entry(itype);
             auto &atoms = top->atoms();
+            // The step is scaled by the fraction of the previous step at
+            // which the force along it would have been zero, from the
+            // forces before and after it. For an isolated harmonic shell
+            // this is one, since the step is a Newton step, coupled shells
+            // can overshoot or undershoot.
+            if (dim.shellDxForce[fragment] > 0 && dim.shellDx.size() == dim.x.size())
+            {
+                double before = dim.shellDxForce[fragment];
+                double after  = 0;
+                for(const auto &p : pols)
+                {
+                    int shellLocal = p->atomIndex(1);
+                    if (isShell[shellLocal])
+                    {
+                        int shellGlobal = shellLocal + static_cast<int>(offset);
+                        after += iprod(dim.shellDx[shellGlobal], dim.fcalc[shellGlobal]);
+                    }
+                }
+                double scale = (before > after) ? before/(before - after) : 1.0;
+                dim.shellStep[fragment] = std::clamp(dim.shellStep[fragment]*scale,
+                                                     minShellStep, maxShellStep);
+            }
+            // If the force increased anyway, the step is reduced, see compute
+            if (msForce > dim.shellForce[fragment])
+            {
+                dim.shellStep[fragment] = std::min(dim.shellStep[fragment], 0.5);
+            }
+            dim.shellForce[fragment] = msForce;
+            dim.shellDx.resize(dim.x.size());
+            double dxForce = 0;
             // Loop over polarizabilities
             for(const auto &p : pols)
             {
@@ -396,10 +425,12 @@ size_t ForceComputer::updateShells(const Topology            *top,
                 {
                     fc1 = (qshell*qshell*ONE_4PI_EPS0)/alpha;
                 }
+                gmx::RVec xold = dim.x[shellGlobal];
                 update_shell_positions(coreGlobal, shellGlobal,
                                        &dim.x, dim.fcalc,
                                        fc1, params[polFCHYPER], params[polRHYPER],
                                        dim.shellStep[fragment]);
+                bool clipped = false;
                 // Check distance from parent, if there is only one
                 if (maxShellDistance2 > 0 && atoms[shellLocal].parents().size() == 1)
                 {
@@ -416,9 +447,21 @@ size_t ForceComputer::updateShells(const Topology            *top,
                         {
                             dim.x[shellGlobal][m] = dim.x[coreParentGlobal][m] + scale*dx[m];
                         }
+                        clipped = true;
                     }
                 }
+                // Shells held at the maximum distance do not tell how far to step
+                if (clipped)
+                {
+                    clear_rvec(dim.shellDx[shellGlobal]);
+                }
+                else
+                {
+                    rvec_sub(dim.x[shellGlobal], xold, dim.shellDx[shellGlobal]);
+                    dxForce += iprod(dim.shellDx[shellGlobal], dim.fcalc[shellGlobal]);
+                }
             }
+            dim.shellDxForce[fragment] = dxForce;
         }
     }
     return numberDone;
@@ -732,8 +775,9 @@ static void resetShellSteps(std::vector<CoordsEnergy> *coords)
     {
         for(size_t i = 0; i < 2; i++)
         {
-            ce.shellStep[i]  = 1;
-            ce.shellForce[i] = std::numeric_limits<double>::max();
+            ce.shellStep[i]    = 1;
+            ce.shellForce[i]   = std::numeric_limits<double>::max();
+            ce.shellDxForce[i] = 0;
         }
     }
 }
