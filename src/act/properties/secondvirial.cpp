@@ -150,7 +150,9 @@ void ReRunner::addOptions(std::vector<t_pargs>      *pargs,
         { "-dT",     FALSE, etREAL, {&deltaT_},
           "Temperature increment for calculation of second virial." },
         { "-totalOnly", FALSE, etBOOL, {&totalOnly_},
-          "Plot the total B2(T) only and not the components" }
+          "Plot the total B2(T) only and not the components" },
+        { "-emin", FALSE, etREAL, {&eMin_},
+          "Dimers with a lower interaction energy (kJ/mol) are treated as overlapping atoms, with a Mayer function of -1. In models without repulsion on all charged sites, such as TIP5P, a charge can come arbitrarily close to an opposite charge of the other compound, with an energy that goes to minus infinity, and the second virial would diverge. The number of these dimers is reported." }
     };
     pargs->push_back(pa[0]);
     if (computeB2_)
@@ -483,7 +485,7 @@ void ReRunner::runB2(CommunicationRecord         *cr,
         b2t_[b2b.first].resize(Temperature.size());
     }
     // Temporary arrays for weighted properties.
-    B2Data b2data(gendimers_.ndist(), Temperature);
+    B2Data b2data(gendimers_.ndist(), Temperature, eMin_);
     
     gmx::RVec rvnul = { 0, 0, 0 };
     // Moments of inertia, averaged over all dimers.
@@ -506,7 +508,7 @@ void ReRunner::runB2(CommunicationRecord         *cr,
     // Collect all generated dimer coordinates for -ox output (only when requested)
     std::vector<std::vector<gmx::RVec>> allCoords;
     // The data of all nodes of all rounds so far, on the master
-    B2Data b2total(gendimers_.ndist(), Temperature);
+    B2Data b2total(gendimers_.ndist(), Temperature, eMin_);
     // The total B2 of each round, for the convergence table
     std::vector<std::vector<double>> b2rounds;
     // The molecules of the dimers, the same in all dimers
@@ -730,6 +732,12 @@ void ReRunner::runB2(CommunicationRecord         *cr,
         {
             ScopedTimer scoped(b2Timer);
             msghandler->write(gmx::formatString("\nSecond virial coefficient (cm^3/mol) from %d dimer orientations", nround));
+            if (b2total.nOverlap() > 0)
+            {
+                msghandler->msg(ACTStatus::Warning,
+                                gmx::formatString("%.0f of %.0f dimers have an energy below %g kJ/mol and are treated as overlapping atoms, see -emin.",
+                                                  b2total.nOverlap(), b2total.nDimer(), eMin_));
+            }
             auto header = gmx::formatString("Temperature");
             for(const auto &b2b : b2Type2str)
             {

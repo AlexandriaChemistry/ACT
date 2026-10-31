@@ -33,6 +33,7 @@
 #ifndef ACT_ALEXANDRIA_B2DATA_H
 #define ACT_ALEXANDRIA_B2DATA_H
 
+#include <limits>
 #include <vector>
 
 #include "act/basics/msg_handler.h"
@@ -63,6 +64,12 @@ private:
     std::vector<double>                 dist_;
     //! Copy of temperature array
     std::vector<double>                 temperatures_;
+    //! Dimers with a lower energy are treated as overlapping atoms
+    double                              eMin_;
+    //! Number of dimers added
+    double                              nDimer_   = 0;
+    //! Number of dimers with an energy below eMin_
+    double                              nOverlap_ = 0;
 
     /*! \brief Apply a function to all sums, always in the same order
      * \param[in] func Function that takes a reference to a sum
@@ -73,9 +80,18 @@ public:
     /*! \brief Constructor
      * \param[in] nbins        Number of bins
      * \param[in] temperatures Ts at which to compute the second virial
+     * \param[in] eMin         Dimers with a lower energy are treated as
+     *                         overlapping atoms, see addOrientation
      */
     B2Data(int                        nbins,
-           const std::vector<double> &temperatures);
+           const std::vector<double> &temperatures,
+           double                     eMin = -std::numeric_limits<double>::infinity());
+
+    //! \return the number of dimers added with addOrientation
+    double nDimer() const { return nDimer_; }
+
+    //! \return the number of dimers with an energy below eMin
+    double nOverlap() const { return nOverlap_; }
 
     /*! \brief Dump some info using a MsgHandler
      * \param[in] msghandler The message handler
@@ -110,7 +126,10 @@ public:
      * the Boltzmann factor g = exp(-beta U) of the energy U of each dimer,
      * g-1 as Mayer function, g times the squared forces and g times the
      * squared torque components, see Gray and Gubbins Eqns. 3.261, 3.272
-     * and 3.282. Temperatures of zero are skipped.
+     * and 3.282. Temperatures of zero are skipped. Dimers with an energy
+     * below eMin are treated as overlapping atoms, with g = 0 as for a
+     * strong repulsion, since their energy is not physical. Otherwise the
+     * Boltzmann factor can overflow and make the second virial infinite.
      * \param[in] index  Distance index of each dimer
      * \param[in] dist   Distance between the molecules of each dimer
      * \param[in] energy Energy of each dimer

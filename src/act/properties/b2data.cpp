@@ -49,7 +49,8 @@ namespace alexandria
 {
 
 B2Data::B2Data(int                        nbins,
-               const std::vector<double> &temperatures)
+               const std::vector<double> &temperatures,
+               double                     eMin) : eMin_(eMin)
 {
     temperatures_ = temperatures;
     exp_U12_.resize(temperatures.size());
@@ -123,6 +124,8 @@ void B2Data::forEachSum(Func func)
             }
         }
     }
+    func(nDimer_);
+    func(nOverlap_);
 }
 
 void B2Data::aggregate(CommunicationRecord *cr)
@@ -210,6 +213,17 @@ void B2Data::addOrientation(const std::vector<size_t>    &index,
         dist_[index[ii]] = dist[ii];
         inOrder          = inOrder && index[ii] == ii;
     }
+    // Dimers with an energy below eMin_ are overlapping atoms
+    std::vector<bool> overlap(ndimer);
+    for(size_t ii = 0; ii < ndimer; ii++)
+    {
+        overlap[ii] = energy[ii] < eMin_;
+        if (overlap[ii])
+        {
+            nOverlap_ += 1;
+        }
+    }
+    nDimer_ += ndimer;
     // The Boltzmann factors of the dimers at one temperature
     std::vector<double> g0_12(ndimer);
     size_t              ntemp = 0;
@@ -233,7 +247,7 @@ void B2Data::addOrientation(const std::vector<size_t>    &index,
         {
             // Gray and Gubbins Eqn. 3.261
             double yb = energy[ii]*beta;
-            g0_12[ii] = yb < 700 ? std::exp(-yb) : 0;
+            g0_12[ii] = (!overlap[ii] && yb < 700) ? std::exp(-yb) : 0;
         }
         // Terms with a Boltzmann factor of zero add zero, the sums are
         // never negative zero, so adding zero does not change them.
