@@ -66,15 +66,20 @@ private:
         //! Number of sums
         nSum
     };
-    /*! All sums. Those of a distance are contiguous, the temperatures of
-     * a sum in the inner loop, such that adding the dimers of a range of
-     * distances at all temperatures accesses a contiguous range of memory.
+    /*! All sums. Those of a distance are contiguous, with the temperatures
+     * of each sum in the inner loop, such that adding the dimers of a range
+     * of distances accesses a contiguous range of memory, and the loops over
+     * the temperatures can be vectorized.
      */
     std::vector<double>                 sums_;
     //! Number of distances
     size_t                              nbins_;
     //! 1/(kB T) of each temperature, zero for a temperature of zero
     std::vector<double>                 beta_;
+    //! Whether all temperatures are larger than zero
+    bool                                allFinite_ = true;
+    //! Boltzmann factors of one dimer at all temperatures, kept to use the memory again
+    std::vector<double>                 g_;
 
     /*! \brief A sum
      * \param[in] j     Distance index
@@ -84,7 +89,7 @@ private:
      */
     double &sum(size_t j, size_t iTemp, int k)
     {
-        return sums_[(j*temperatures_.size() + iTemp)*nSum + k];
+        return sums_[(j*nSum + k)*temperatures_.size() + iTemp];
     }
     //! Mayer functions
     std::vector<std::vector<double>>    mayer_;
@@ -126,6 +131,18 @@ private:
      * \param[in] i1    One past the last dimer
      */
     void addRange(const Orientation &o, const size_t *index, size_t i0, size_t i1);
+
+    /*! \brief Add the terms of one dimer to the sums of its distance
+     * \param[in]    o      The orientation
+     * \param[in]    ii     The dimer
+     * \param[in]    w      Its weight
+     * \param[in]    g      Its Boltzmann factors, one for each temperature
+     * \param[inout] s      The first sum of its distance, see sum
+     * \param[in]    stride Distance between the sums of a temperature
+     * \param[in]    nT     Number of temperatures
+     */
+    void addTerms(const Orientation &o, size_t ii, double w, const double *g,
+                  double *s, size_t stride, size_t nT);
 
     /*! \brief Add the pending orientations to the sums
      * In blocks of distances, see the implementation, with the same

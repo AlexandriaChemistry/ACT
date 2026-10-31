@@ -60,7 +60,9 @@ B2Data::B2Data(int                        nbins,
     for(auto T : temperatures)
     {
         beta_.push_back(T == 0 ? 0.0 : 1.0/(BOLTZ*T));
+        allFinite_ = allFinite_ && T != 0;
     }
+    g_.resize(temperatures.size());
     dist_.resize(nbins, -1);
     for(auto T : temperatures)
     {
@@ -220,6 +222,51 @@ void B2Data::addOrientation(const std::vector<size_t>    &index,
     }
 }
 
+void B2Data::addTerms(const Orientation &o,
+                      size_t             ii,
+                      double             w,
+                      const double      *g,
+                      double            *s,
+                      size_t             stride,
+                      size_t             nT)
+{
+    // Terms with a Boltzmann factor of zero add zero, the sums are
+    // never negative zero, so adding zero does not change them.
+    // The loops over the temperatures can be vectorized.
+    double f0 = o.force2[0][ii];
+    double f1 = o.force2[1][ii];
+    for(size_t t = 0; t < nT; t++)
+    {
+        s[sumU12*stride + t] += w*(g[t]-1);
+    }
+    // Gray and Gubbins Eqn. 3.272
+    for(size_t t = 0; t < nT; t++)
+    {
+        s[sumF0*stride + t] += w*(g[t] > 0 ? g[t]*f0 : 0.0);
+    }
+    for(size_t t = 0; t < nT; t++)
+    {
+        s[sumF1*stride + t] += w*(g[t] > 0 ? g[t]*f1 : 0.0);
+    }
+    // Gray and Gubbins Eqn. 3.282
+    for(int kk = 0; kk < 2; kk++)
+    {
+        for(int m = 0; m < DIM; m++)
+        {
+            double  tau = o.torque[kk][ii][m];
+            double *st  = s + ((kk == 0 ? sumT0 : sumT1) + m)*stride;
+            for(size_t t = 0; t < nT; t++)
+            {
+                st[t] += w*(g[t] > 0 ? g[t]*tau*tau : 0.0);
+            }
+        }
+    }
+    for(size_t t = 0; t < nT; t++)
+    {
+        s[sumN*stride + t] += w;
+    }
+}
+
 void B2Data::addRange(const Orientation &o,
                       const size_t      *index,
                       size_t             i0,
@@ -232,45 +279,40 @@ void B2Data::addRange(const Orientation &o,
     }
     // The dimers in the outer loop, such that the sums of a distance, of
     // all temperatures, are contiguous. Each sum gets one term.
+    size_t  nT = beta_.size();
+    double *g  = g_.data();
     for(size_t ii = i0; ii < i1; ii++)
     {
         size_t  j       = index ? index[ii] : ii;
         double  w       = o.weight[ii];
         double  energy  = o.energy[ii];
         bool    overlap = energy < eMin_;
-        double *s       = &sum(j, 0, 0);
-        // Not vectorized, since a vector exp is not faster here, but can
-        // differ from exp in the last bit
+        // The Boltzmann factors at all temperatures. Not vectorized, since
+        // a vector exp is not faster here, but can differ from exp in the
+        // last bit. Gray and Gubbins Eqn. 3.261
 #if defined(__clang__)
 #pragma clang loop vectorize(disable)
 #endif
-        for(size_t iTemp = 0; iTemp < beta_.size(); iTemp++, s += nSum)
+        for(size_t iTemp = 0; iTemp < nT; iTemp++)
         {
-            if (beta_[iTemp] == 0)
+            double yb = energy*beta_[iTemp];
+            g[iTemp]  = (!overlap && yb < 700) ? std::exp(-yb) : 0;
+        }
+        double *s = &sum(j, 0, 0);
+        if (!allFinite_)
+        {
+            // Temperatures of zero are left out
+            for(size_t iTemp = 0; iTemp < nT; iTemp++)
             {
-                continue;
+                if (beta_[iTemp] != 0)
+                {
+                    addTerms(o, ii, w, g + iTemp, s + iTemp, nT, 1);
+                }
             }
-            // Gray and Gubbins Eqn. 3.261
-            double yb   = energy*beta_[iTemp];
-            double g    = (!overlap && yb < 700) ? std::exp(-yb) : 0;
-            // Terms with a Boltzmann factor of zero add zero, the sums are
-            // never negative zero, so adding zero does not change them.
-            bool   some = g > 0;
-            s[sumU12] += w*(g-1);
-            // Gray and Gubbins Eqn. 3.272
-            double ipf0 = some ? g*o.force2[0][ii] : 0.0;
-            double ipf1 = some ? g*o.force2[1][ii] : 0.0;
-            s[sumF0] += w*ipf0;
-            s[sumF1] += w*ipf1;
-            for(int m = 0; m < DIM; m++)
-            {
-                // Gray and Gubbins Eqn. 3.282
-                double tau0 = some ? g*o.torque[0][ii][m]*o.torque[0][ii][m] : 0.0;
-                double tau1 = some ? g*o.torque[1][ii][m]*o.torque[1][ii][m] : 0.0;
-                s[sumT0+m] += w*tau0;
-                s[sumT1+m] += w*tau1;
-            }
-            s[sumN] += w;
+        }
+        else
+        {
+            addTerms(o, ii, w, g, s, nT, nT);
         }
     }
     // Per dimer and temperature: the Boltzmann factor with the exponential
