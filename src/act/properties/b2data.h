@@ -50,14 +50,42 @@ namespace alexandria
 class B2Data
 {
 private:
-    //! Mayer-weighted energy.
-    std::vector<std::vector<double>>    exp_U12_;
-    //! Forces on two compounds
-    std::vector<std::vector<double>>    exp_F2_[2];
-    //! Torque on two compounds
-    std::vector<std::vector<gmx::RVec>> exp_tau_[2];
-    //! Sum of the weights of the entries per bin
-    std::vector<std::vector<double>>    n_U12_;
+    //! The sums of each distance and temperature, see sum
+    enum Sum
+    {
+        //! Mayer function
+        sumU12,
+        //! Squared forces on the two compounds
+        sumF0, sumF1,
+        //! Squared torque components on the first compound
+        sumT0,
+        //! Squared torque components on the second compound
+        sumT1 = sumT0 + DIM,
+        //! The weights
+        sumN  = sumT1 + DIM,
+        //! Number of sums
+        nSum
+    };
+    /*! All sums. Those of a distance are contiguous, the temperatures of
+     * a sum in the inner loop, such that adding the dimers of a range of
+     * distances at all temperatures accesses a contiguous range of memory.
+     */
+    std::vector<double>                 sums_;
+    //! Number of distances
+    size_t                              nbins_;
+    //! 1/(kB T) of each temperature, zero for a temperature of zero
+    std::vector<double>                 beta_;
+
+    /*! \brief A sum
+     * \param[in] j     Distance index
+     * \param[in] iTemp Temperature index
+     * \param[in] k     The sum, see Sum
+     * \return the sum
+     */
+    double &sum(size_t j, size_t iTemp, int k)
+    {
+        return sums_[(j*temperatures_.size() + iTemp)*nSum + k];
+    }
     //! Mayer functions
     std::vector<std::vector<double>>    mayer_;
     //! Distance scale
@@ -88,8 +116,6 @@ private:
     std::vector<Orientation>            pending_;
     //! Number of orientations not yet in the sums
     size_t                              npending_ = 0;
-    //! The Boltzmann factors of a range of dimers, kept to use the memory again
-    std::vector<double>                 g0_12_;
 
     /*! \brief Add a range of the dimers of one orientation to the sums
      * At all temperatures, see addOrientation.
