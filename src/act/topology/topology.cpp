@@ -536,65 +536,6 @@ void Topology::makePairs(MsgHandler                          *msghandler,
     }
 }
 
-void  Topology::addShellPairs()
-{
-    if (hasEntry(InteractionType::POLARIZATION))
-    {
-        auto &pol = entries_.find(InteractionType::POLARIZATION)->second;
-        for (const auto &itype : { InteractionType::VDW,
-                                   InteractionType::ELECTROSTATICS } )
-        {
-            if (!hasEntry(itype))
-            {
-                continue;
-            }
-            auto &ffpl = entries_.find(itype)->second;
-            std::set<AtomPair> newf;
-            for(auto &f : ffpl)
-            {
-                auto core_i = f->atomIndex(0);
-                auto core_j = f->atomIndex(1);
-                int shell_i = -1;
-                int shell_j = -1;
-                for(const auto &p_i : pol)
-
-                {
-                    if (core_i == p_i->atomIndex(0))
-                    {
-                        shell_i = p_i->atomIndex(1);
-                        break;
-                    }
-                }
-                for(const auto &p_j : pol)
-                {
-                    if (core_j == p_j->atomIndex(0))
-                    {
-                        shell_j = p_j->atomIndex(1);
-                        break;
-                    }
-                }
-                if (shell_i != -1)
-                {
-                    newf.emplace(AtomPair(shell_i, core_j));
-                }
-                if (shell_j != -1)
-                {
-                    newf.emplace(AtomPair(core_i, shell_j));
-                }
-                if (shell_i != -1 && shell_j != -1)
-                {
-                    newf.emplace(AtomPair(shell_i, shell_j));
-                }
-            }
-            for(const auto &n : newf)
-            {
-                AtomPair ap(n);
-                ffpl.push_back(std::move(ap));
-            }
-        }
-    }
-}
-
 void Topology::makePropers(MsgHandler       *msghandler,
                            const ForceField *pd)
 {

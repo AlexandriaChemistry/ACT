@@ -367,14 +367,6 @@ private:
                    InteractionType                      itype,
                    const std::vector<std::set<size_t>> &exclusions);
 
-    /*! Add shell pairs
-     * Based on the atom pair list, add interaction between atoms and shell
-     * and between pairs of shells. This should be called after makePairs and
-     * generateExclusions have been called (and in that order) and after shells
-     * have been added.
-     */
-    void addShellPairs();
-
     //! @copydoc Bond::renumberAtoms
     void renumberAtoms(const std::vector<int> &renumber);
 
