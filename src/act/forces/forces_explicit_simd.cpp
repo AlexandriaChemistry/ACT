@@ -491,18 +491,23 @@ struct Coulomb
             {
                 double *pk = p + 2*(2*a + c);
                 pk[0] = ONE_4PI_EPS0*qi[a]*qj[c]/epsilonr;
-                // Width of the combined Gaussian, as in Coulomb_GG, zero for point charges
-                if (zi[a] == 0 || zj[c] == 0)
-                {
-                    pk[1] = zi[a] + zj[c];
-                }
-                else
-                {
-                    pk[1] = zi[a]*zj[c]/std::sqrt(zi[a]*zi[a] + zj[c]*zj[c]);
-                }
+                pk[1] = combinedWidth(zi[a], zj[c]);
             }
         }
         return true;
+    }
+    /*! \brief Width of the combined Gaussian, as in Coulomb_GG, zero for point charges
+     * \param[in] zi Width of the first charge, zero for a point charge
+     * \param[in] zj Width of the second charge, zero for a point charge
+     * \return The combined width
+     */
+    static double combinedWidth(double zi, double zj)
+    {
+        if (zi == 0 || zj == 0)
+        {
+            return zi + zj;
+        }
+        return zi*zj/std::sqrt(zi*zi + zj*zj);
     }
     /*! \brief The number of variants of compute, see pairVariants
      * Variant 0 is any pair, 1 a pair with one point charge each and 2 a
@@ -1345,6 +1350,66 @@ bool computeExplicitSimd(Potential                   mypot,
     }
 }
 
+bool coulombKernelsExplicitSimd(TopologyEntryRange          entries,
+                                const std::vector<ActAtom> &atoms,
+                                size_t                      stride,
+                                const double               *x,
+                                const unsigned char        *terms,
+                                double                     *kernel)
+{
+    size_t e = 0;
+    for (const auto &b : entries)
+    {
+        const TopologyEntry &entry  = *b.operator->();
+        const auto          &params = entry.params();
+        const auto          &ind    = entry.atomIndices();
+        const double zi[2] = { params[coulZETA], atoms[ind[0]].zetaVS() };
+        const double zj[2] = { params[coulZETA2], atoms[ind[1]].zetaVS() };
+        // The widths of the terms in the order of Coulomb::prepare
+        double zeta[4];
+        for(int a = 0; a < 2; a++)
+        {
+            for(int c = 0; c < 2; c++)
+            {
+                zeta[2*a + c] = Coulomb::combinedWidth(zi[a], zj[c]);
+            }
+        }
+        const double *xi = x + DIM*ind[0]*stride;
+        const double *xj = x + DIM*ind[1]*stride;
+        for (size_t c = 0; c < stride; c += simd::simdWidth)
+        {
+            SimdDouble rsq = 0.0;
+            for (int m = 0; m < DIM; m++)
+            {
+                SimdDouble dx = simd::load(xi + m*stride + c) - simd::load(xj + m*stride + c);
+                rsq = simd::fma(dx, dx, rsq);
+            }
+            for (int k = 0; k < 4; k++)
+            {
+                if (!(terms[e] & (1 << k)))
+                {
+                    continue;
+                }
+                // A charge product of one, the energy is the kernel
+                const double p[2] = { 1.0, zeta[k] };
+                SimdDouble   ek   = 0.0;
+                SimdDouble   fscal;
+                if (zeta[k] == 0)
+                {
+                    Coulomb::compute<1>(p, rsq, &ek, &fscal);
+                }
+                else
+                {
+                    Coulomb::compute<2>(p, rsq, &ek, &fscal);
+                }
+                simd::store(kernel + (4*e + k)*stride + c, ek);
+            }
+        }
+        e++;
+    }
+    return true;
+}
+
 bool addB2TermsExplicitSimd(size_t        nT,
                             const double *beta,
                             double        energy,
@@ -1416,6 +1481,12 @@ bool computeExplicitSimd(Potential, TopologyEntryRange, const std::vector<ActAto
 
 bool addB2TermsExplicitSimd(size_t, const double *, double, bool, double, const double[8],
                             double *, size_t)
+{
+    return false;
+}
+
+bool coulombKernelsExplicitSimd(TopologyEntryRange, const std::vector<ActAtom> &, size_t,
+                                const double *, const unsigned char *, double *)
 {
     return false;
 }

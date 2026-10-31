@@ -2410,6 +2410,164 @@ static bool calcConformations(Potential                        mypot,
     return true;
 }
 
+//! Largest number of values of CachedEnergies::kernel, 32 MB
+static const size_t maxCoulombKernel = 4*1024*1024;
+
+/*! \brief Compute Coulomb energies from those of the interactions for charges of one
+ * In training, often only the charges change. The energy of each
+ * interaction for charges of one is computed once and kept in cached,
+ * see CachedEnergies::kernel, then the energies for any charges are a
+ * sum of the products of these with the charges. This needs explicit SIMD.
+ * \param[in]    mypot      The potential
+ * \param[in]    topentries The interactions
+ * \param[in]    atoms      The atoms
+ * \param[inout] ca         Coordinates of the conformations, all in the slots
+ * \param[inout] cener      The energies of all conformations
+ * \param[in]    epsilonr   Relative dielectric constant
+ * \param[in]    parameterVersion  Topology::parameterVersion of the interactions
+ * \param[in]    coordinateVersion ConformationData::coordinates
+ * \param[inout] cached     The kernel, and the energies are kept here
+ * \return false if this is not possible for the potential
+ */
+static bool calcCoulombKernel(Potential                   mypot,
+                              TopologyEntryRange          topentries,
+                              const std::vector<ActAtom> &atoms,
+                              ConformationArrays         *ca,
+                              ConformationEnergies       *cener,
+                              double                      epsilonr,
+                              size_t                      parameterVersion,
+                              size_t                      coordinateVersion,
+                              CachedEnergies             *cached)
+{
+    if (!(Potential::COULOMB_POINT == mypot || Potential::COULOMB_GAUSSIAN == mypot) ||
+        !cached || topentries.empty() || !useExplicitSimd())
+    {
+        return false;
+    }
+    size_t ne = topentries.size();
+    size_t st = ca->stride;
+    if (4*ne*st > maxCoulombKernel)
+    {
+        return false;
+    }
+    ScopedTimer timer(potentialTimer(mypot));
+    auto &kernel = cached->kernel;
+    auto &terms  = cached->kernelTerms;
+    // The widths of the second charges are properties of the atoms
+    bool sameWidths = (cached->kernelZetaVS.size() == atoms.size());
+    for(size_t i = 0; i < atoms.size() && sameWidths; i++)
+    {
+        sameWidths = (cached->kernelZetaVS[i] == atoms[i].zetaVS());
+    }
+    // The terms with a second charge are only needed if the atoms have one
+    std::vector<unsigned char> needed(ne);
+    bool haveTerms = (terms.size() == ne);
+    for(size_t e = 0; e < ne; e++)
+    {
+        const auto &ind = topentries[e]->atomIndices();
+        bool vsi = atoms[ind[0]].chargeVS() != 0;
+        bool vsj = atoms[ind[1]].chargeVS() != 0;
+        needed[e] = 1 | (vsj ? 2 : 0) | (vsi ? 4 : 0) | (vsi && vsj ? 8 : 0);
+        haveTerms = haveTerms && (terms[e] & needed[e]) == needed[e];
+    }
+    // Whether the kernel holds these interactions with these parameters
+    bool sameSetup = (cached->kernelValid && sameWidths && haveTerms &&
+                      cached->kernelParameterVersion == parameterVersion &&
+                      cached->kernelEntries == ne && cached->kernelConformations == ca->nconf &&
+                      cached->kernelStride == st);
+    if (!sameSetup || cached->kernelCoordinateVersion != coordinateVersion)
+    {
+        // The interactions to compute, with the terms of each
+        std::vector<unsigned char> todo;
+        size_t                     ntodo = ne;
+        const auto                &x     = ca->x;
+        auto                      &xk    = cached->kernelX;
+        if (sameSetup && xk.size() == x.size())
+        {
+            // Only the interactions of particles that moved, such as
+            // virtual sites when their parameters change
+            size_t            natom = x.size()/(DIM*st);
+            std::vector<char> moved(natom);
+            for(size_t a = 0; a < natom; a++)
+            {
+                moved[a] = !std::equal(x.begin() + DIM*a*st, x.begin() + DIM*(a+1)*st,
+                                       xk.begin() + DIM*a*st);
+            }
+            todo  = terms;
+            ntodo = 0;
+            for(size_t e = 0; e < ne; e++)
+            {
+                const auto &ind = topentries[e]->atomIndices();
+                if (moved[ind[0]] || moved[ind[1]])
+                {
+                    ntodo += 1;
+                }
+                else
+                {
+                    todo[e] = 0;
+                }
+            }
+        }
+        else
+        {
+            kernel.resize(4*ne*st);
+            terms = needed;
+            todo  = terms;
+        }
+        cached->kernelValid = coulombKernelsExplicitSimd(topentries, atoms, st, x.data(),
+                                                         todo.data(), kernel.data());
+        if (!cached->kernelValid)
+        {
+            return false;
+        }
+        xk.assign(x.begin(), x.end());
+        cached->kernelParameterVersion  = parameterVersion;
+        cached->kernelCoordinateVersion = coordinateVersion;
+        cached->kernelEntries           = ne;
+        cached->kernelConformations     = ca->nconf;
+        cached->kernelStride            = st;
+        cached->kernelZetaVS.resize(atoms.size());
+        for(size_t i = 0; i < atoms.size(); i++)
+        {
+            cached->kernelZetaVS[i] = atoms[i].zetaVS();
+        }
+        // As computing the potential, where terms without charge are left
+        // out, for the interactions computed
+        Timings::instance().addFlops(ca->nconf*interactionFlops(mypot, topentries, atoms, false)*ntodo/ne);
+    }
+    // The energies for the charges of the atoms, each term as in the
+    // explicit SIMD routine of the potential
+    auto &energies = ca->energies;
+    energies.assign(MAX_ENER*st, 0.0);
+    double *en    = energies.data();
+    double  flops = 0;
+    for(size_t e = 0; e < ne; e++)
+    {
+        const auto   &ind  = topentries[e]->atomIndices();
+        const auto   &ai   = atoms[ind[0]];
+        const auto   &aj   = atoms[ind[1]];
+        const double  qi[2] = { ai.charge(), ai.chargeVS() };
+        const double  qj[2] = { aj.charge(), aj.chargeVS() };
+        for(int k = 0; k < 4; k++)
+        {
+            double qq = ONE_4PI_EPS0*qi[k/2]*qj[k%2]/epsilonr;
+            if (qq != 0 && (terms[e] & (1 << k)))
+            {
+                const double *kk = kernel.data() + (4*e + k)*st;
+                for(size_t c = 0; c < st; c++)
+                {
+                    en[c] += qq*kk[c];
+                }
+                flops += 2*ca->nconf;
+            }
+        }
+    }
+    storeEnergies(mypot, ca->nconf, ca->conformations().data(), cener, energies.data(), 1, st);
+    keepEnergies(energies.data(), energies.size(), 1, st, cached);
+    Timings::instance().addFlops(flops);
+    return true;
+}
+
 /*! \brief Compute all potentials for all conformations of a topology
  * \param[in]    msghandler    For warnings and errors
  * \param[in]    pd            The force field
@@ -2682,6 +2840,14 @@ static inline void lowComputeEnergies(MsgHandler                *msghandler,
                 {
                     ca.loadForces(*coords);
                     forcesInArrays = true;
+                }
+                // Without forces, only the charges may have changed
+                if (cached && ca.nconf == coords->size() &&
+                    calcCoulombKernel(mypot, entries, top->atoms(), &ca, &cener, epsilonr,
+                                      top->parameterVersion(entry.first),
+                                      cdata->coordinates.value(), cached))
+                {
+                    continue;
                 }
                 if (calcConformations(mypot, entries, top->atoms(),
                                       &ca, &cener, epsilonr, forces, cached))
