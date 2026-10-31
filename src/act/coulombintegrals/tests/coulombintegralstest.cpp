@@ -419,7 +419,9 @@ TEST_P (SlaterPhysicsTest, All)
         double de   = DCoulomb_SS(r, irow, jrow, xi, xj);
         double dnum = (Coulomb_SS(r+h, irow, jrow, xi, xj) - Coulomb_SS(r-h, irow, jrow, xi, xj))/(2*h);
         EXPECT_NEAR(dnum, de, 1e-5*std::max(1.0, std::abs(de))) << "derivative at r = " << r;
-        EXPECT_NEAR(e, Coulomb_SS(r, jrow, irow, xj, xi), 1e-10*std::max(1.0, std::abs(e)))
+        // The integrals are accurate to about 1e-9 close to the widths
+        // from which they are computed as for equal widths, see Slater_1S_1S
+        EXPECT_NEAR(e, Coulomb_SS(r, jrow, irow, xj, xi), 2e-9*std::max(1.0, std::abs(e)))
             << "symmetry at r = " << r;
         EXPECT_TRUE(std::isfinite(e) && std::isfinite(de)) << "r = " << r;
         // Between a Slater and a point charge
