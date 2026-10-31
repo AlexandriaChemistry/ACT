@@ -152,7 +152,7 @@ void ReRunner::addOptions(std::vector<t_pargs>      *pargs,
         { "-totalOnly", FALSE, etBOOL, {&totalOnly_},
           "Plot the total B2(T) only and not the components" },
         { "-block", FALSE, etINT, {&blockSize_},
-          "Number of distances of an orientation that are computed together, 0 means all of them. Smaller blocks use less memory, which may be faster when many processes share the caches of a processor." },
+          "Largest number of distances of an orientation that are computed together, the distances are divided into blocks of equal size. 0 means all of them. Blocks of a few hundred distances fit in the cache of a core, which is faster than computing all distances at once, in particular when many processes share a processor." },
         { "-emin", FALSE, etREAL, {&eMin_},
           "Dimers with a lower interaction energy (kJ/mol) are treated as overlapping atoms, with a Mayer function of -1. In models without repulsion on all charged sites, such as TIP5P, a charge can come arbitrarily close to an opposite charge of the other compound, with an energy that goes to minus infinity, and the second virial would diverge. The number of these dimers is reported." }
     };
@@ -606,8 +606,14 @@ void ReRunner::runB2(CommunicationRecord         *cr,
             dimDist.resize(ndimAll);
             dimEnergy.resize(ndimAll);
             dimWeight.resize(ndimAll);
-            // The dimers are computed in blocks of distances, see -block
-            size_t block = (blockSize_ > 0) ? static_cast<size_t>(blockSize_) : std::max<size_t>(ndimAll, 1);
+            // The dimers are computed in blocks of distances of equal size, see -block
+            size_t block = std::max<size_t>(ndimAll, 1);
+            if (blockSize_ > 0)
+            {
+                size_t bmax   = static_cast<size_t>(blockSize_);
+                size_t nblock = std::max<size_t>((ndimAll + bmax - 1)/bmax, 1);
+                block         = std::max<size_t>((ndimAll + nblock - 1)/nblock, 1);
+            }
             for(size_t b0 = 0; b0 < ndimAll; b0 += block)
             {
                 size_t ndim = std::min(block, ndimAll - b0);

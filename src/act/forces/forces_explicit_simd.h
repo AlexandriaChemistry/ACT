@@ -109,6 +109,33 @@ bool computeExplicitSimd(Potential                   mypot,
                          double                     *energies,
                          bool                        forces);
 
+/*! \brief Add the terms of one dimer to the sums of the second virial with explicit SIMD
+ * The Boltzmann factor at temperature t is g = exp(-energy*beta[t]), zero
+ * for overlapping atoms or if energy*beta[t] is 700 or more. Row k of the
+ * sums is s[k*stride ...]: row 0 gets weight*(g - 1), rows 1 to 8 get
+ * g*wx[k-1] and row 9 gets weight. Temperatures with a beta of zero get no
+ * terms.
+ * \param[in]    nT       Number of temperatures, a multiple of explicitSimdWidth()
+ * \param[in]    beta     1/(kB T) of each temperature
+ * \param[in]    energy   The energy of the dimer
+ * \param[in]    overlap  Whether the atoms overlap, then g is zero
+ * \param[in]    weight   The weight of the dimer
+ * \param[in]    wx       The weight times the squared forces and torque
+ *                         components, all finite
+ * \param[inout] s        The sums
+ * \param[in]    stride   Distance between the rows of the sums
+ * Only call this if useExplicitSimd() returns true.
+ * \return false if there is no explicit SIMD
+ */
+bool addB2TermsExplicitSimd(size_t        nT,
+                            const double *beta,
+                            double        energy,
+                            bool          overlap,
+                            double        weight,
+                            const double  wx[8],
+                            double       *s,
+                            size_t        stride);
+
 } // namespace alexandria
 
 #endif
