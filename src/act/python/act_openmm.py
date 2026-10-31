@@ -33,8 +33,14 @@ def loadResidueBonds(xmlfile:str):
     """
     import io
     import xml.etree.ElementTree as ET
+    # OpenMM renames some residues when reading a PDB file, such as SPC
+    # to HOH since OpenMM 8.6, then the bonds below are not used.
+    PDBFile._loadNameReplacementTables()
     definitions = ET.Element("Residues")
     for residue in ET.parse(xmlfile).getroot().iter("Residue"):
+        if residue.get("name") in PDBFile._residueNameReplacements:
+            sys.stderr.write("WARNING: OpenMM knows residue %s in %s, therefore it cannot find its bonds from the atom names. Please choose another name with alexandria gentop -resnames.\n" %
+                             ( residue.get("name"), xmlfile ))
         rdef = ET.SubElement(definitions, "Residue", name=residue.get("name"))
         for bond in residue.iter("Bond"):
             ET.SubElement(rdef, "Bond", { "from": bond.get("atomName1"),

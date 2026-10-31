@@ -339,8 +339,8 @@ class ResidueBondsTest(unittest.TestCase):
 
     def test_user_polarizable(self):
         """ The residue names given by the user, with shells """
-        self.assertEqual([ "MOH" ] + 4*[ "SPC" ],
-                         self.check("ACS-pg", [ "-resnames", "water=SPC methanol=MOH" ]))
+        self.assertEqual([ "MOH" ] + 4*[ "WTR" ],
+                         self.check("ACS-pg", [ "-resnames", "water=WTR methanol=MOH" ]))
 
 if __name__ == "__main__":
     unittest.main()

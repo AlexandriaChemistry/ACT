@@ -215,13 +215,13 @@ TEST(OpenMMResidueNamesTest, Generated)
 
 TEST(OpenMMResidueNamesTest, User)
 {
-    for (const auto &userNames : { "water=SPC methanol=MOH", "MOH,SPC", "water=SPC MOH" })
+    for (const auto &userNames : { "water=WTR methanol=MOH", "MOH,WTR", "water=WTR MOH" })
     {
         MsgHandler msghandler;
         msghandler.setPrintLevel(ACTStatus::Fatal);
         auto names = methanolWaterNames(&msghandler, userNames);
         EXPECT_TRUE(msghandler.ok()) << userNames;
-        std::map<std::string, std::string> expected = { { "methanol", "MOH" }, { "water", "SPC" } };
+        std::map<std::string, std::string> expected = { { "methanol", "MOH" }, { "water", "WTR" } };
         EXPECT_EQ(expected, names) << userNames;
     }
     MsgHandler msghandler;
@@ -233,8 +233,9 @@ TEST(OpenMMResidueNamesTest, User)
 
 TEST(OpenMMResidueNamesTest, Errors)
 {
-    for (const auto &userNames : { "HOH", "wat", "MOLECULE", "M-1", "MOH,MOH", "MOH SPC TIP",
-                                   "methane=MOH", "water=SPC water=TIP" })
+    // SPC is water in OpenMM 8.6
+    for (const auto &userNames : { "HOH", "wat", "SPC", "MOLECULE", "M-1", "MOH,MOH", "MOH WTR TIP",
+                                   "methane=MOH", "water=WTR water=TIP" })
     {
         MsgHandler msghandler;
         msghandler.setPrintLevel(ACTStatus::Fatal);
