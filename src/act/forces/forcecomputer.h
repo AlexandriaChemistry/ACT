@@ -102,6 +102,26 @@ struct ConformationSet
     void invalidate() { data.invalidate(); }
 };
 
+/*! \brief Interaction energies and forces of the conformations of a dimer
+ * The coordinates and forces are stored as in ConformationArrays: component
+ * m of particle a of conformation c is at (DIM*a+m)*stride + c.
+ */
+struct DimerInteractions
+{
+    //! Number of conformations
+    size_t              nconf  = 0;
+    //! Distance between the rows of x and f, at least nconf
+    size_t              stride = 0;
+    //! Coordinates of all particles, with the relaxed shells and the virtual sites
+    std::vector<double> x;
+    //! Interaction forces, the forces in the dimer minus those in the monomers
+    std::vector<double> f;
+    //! Interaction energy of each conformation
+    std::vector<double> einter;
+    //! Potential energy of each conformation, the interaction energy plus the energies of the monomers
+    std::vector<double> epot;
+};
+
 //! Name of the option of the polarization for the maximum distance between a shell and its core
 const char shellMaxDistanceName[] = "shellmaxdistance";
 
@@ -194,6 +214,23 @@ private:
                     bool                         fixMonomer[2],
                     const std::vector<ACTMol *> &allmols,
                     bool                         allForces) const;
+    /*! \brief Replace the conformations of a dimer and compute their energies and forces
+     * See computeInteraction.
+     * \param[in]    msghandler                  For debugging, may be nullptr
+     * \param[in]    pd                          The force field
+     * \param[inout] mol                         The dimer, the conformations are stored in it
+     * \param[in]    coords                      Coordinates of all particles of each conformation
+     * \param[in]    separateInductionCorrection Whether to store InductionCorrection separately
+     * \param[in]    forcesInArrays              Whether the forces may be left in the arrays
+     *                                           of the conformation data, see
+     *                                           ConformationData::keepForcesInArrays
+     */
+    void computeDimerConformations(MsgHandler                                *msghandler,
+                                   const ForceField                          *pd,
+                                   ACTMol                                    *mol,
+                                   const std::vector<std::vector<gmx::RVec>> &coords,
+                                   bool                                       separateInductionCorrection,
+                                   bool                                       forcesInArrays) const;
 
  public:
     //! \brief Default constructor
@@ -298,6 +335,29 @@ private:
                             std::vector<std::map<InteractionType, double>> *einter,
                             std::vector<double>                            *epot,
                             std::vector<std::vector<gmx::RVec>>            *forces) const;
+
+    /*! \brief Compute interaction energies and forces of many dimer conformations
+     *
+     * As the other computeInteraction, but only the total interaction energy
+     * is returned, and the coordinates and forces are returned with the
+     * conformations in the inner loop. Without shells the forces are taken
+     * from the arrays of the energy calculation directly, rather than from
+     * the conformations stored in the molecule.
+     * \param[in]    msghandler                  For debugging, may be nullptr
+     * \param[in]    pd                          The force field
+     * \param[inout] mol                         The dimer, the conformations are stored in it
+     * \param[in]    coords                      Coordinates of all particles of each conformation
+     * \param[in]    separateInductionCorrection Whether to store InductionCorrection separately
+     *                                           or add it to Induction
+     * \param[out]   result                      The energies, coordinates and forces, the memory
+     *                                           of a previous call is used again
+     */
+    void computeInteraction(MsgHandler                                *msghandler,
+                            const ForceField                          *pd,
+                            ACTMol                                    *mol,
+                            const std::vector<std::vector<gmx::RVec>> &coords,
+                            bool                                       separateInductionCorrection,
+                            DimerInteractions                         *result) const;
 
     /*! Do complete energy/force computation.
      * If shells are present their positions will be minimized.
