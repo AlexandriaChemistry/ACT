@@ -25,6 +25,22 @@ from enum import Enum
 # Should correspond to both ACT and OpenMM
 ONE_4PI_EPS0 = 138.93545758
 
+def loadResidueBonds(xmlfile:str):
+    """
+    Tell OpenMM the bonds of the residues in an OpenMM force field file
+    made by alexandria gentop, such that it finds the bonds in a PDB file
+    from the residue and atom names, also without CONECT records.
+    """
+    import io
+    import xml.etree.ElementTree as ET
+    definitions = ET.Element("Residues")
+    for residue in ET.parse(xmlfile).getroot().iter("Residue"):
+        rdef = ET.SubElement(definitions, "Residue", name=residue.get("name"))
+        for bond in residue.iter("Bond"):
+            ET.SubElement(rdef, "Bond", { "from": bond.get("atomName1"),
+                                          "to":   bond.get("atomName2") })
+    Topology.loadBondDefinitions(io.BytesIO(ET.tostring(definitions)))
+
 # To distinguish
 class VdW(Enum):
     LJ8_6  = 1
@@ -452,7 +468,6 @@ class ActOpenMMSim:
                 self.xmlfile = xmlfile
         else:
             sys.exit("Please pass an ACT (actfile) or OpenMM force field file (xmlfile) using the optional arguments")
-        self.pdb         = PDBFile(self.pdbfile)
         self.sim_params  = SimParams(self.datfile)
         # Open log file and pass it on.
         self.txt = open(self.txtfile, "w")
@@ -500,6 +515,7 @@ class ActOpenMMSim:
     def gen_ff(self):
         if None != self.xmlfile:
             self.forcefield  = ForceField(self.xmlfile)
+            loadResidueBonds(self.xmlfile)
             self.txt.write("force field            %s\n" % self.xmlfile)
         elif None != self.actfile:
             # Run alexandria gentop, but first check whether we have alexandria
@@ -518,6 +534,9 @@ class ActOpenMMSim:
                 sys.exit("Failed running '%s'" % mycmd)
             self.txt.write("Succesfully generated an OpenMM force field file %s from ACT force field %s\n" % (self.xmloutfile, self.actfile))
             self.forcefield = ForceField(self.xmloutfile)
+            loadResidueBonds(self.xmloutfile)
+        # The PDB file is read after the bonds of the residues are known
+        self.pdb         = PDBFile(self.pdbfile)
         self.polarizable = any(isinstance(generator, openmm.app.forcefield.DrudeGenerator) for generator in self.forcefield.getGenerators())
         self.txt.write("polarizable:           %s\n" % self.polarizable)
 

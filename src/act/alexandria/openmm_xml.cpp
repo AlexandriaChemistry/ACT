@@ -47,6 +47,7 @@
 #include <libxml/parser.h>
 #include <libxml/tree.h>
 
+#include "act/alexandria/pdbwriter.h"
 #include "act/basics/allmols.h"
 #include "act/basics/msg_handler.h"
 #include "act/forcefield/forcefield.h"
@@ -319,6 +320,8 @@ private:
     int    ntrain_                = 1;
     //! Number of exclusions, should be the same for all forces
     int    nexcl_                 = -1;
+    //! The residue name for the InChi of each compound
+    std::map<std::string, std::string> residueNames_;
     //! Mapping from InteractionType to xml branch
     std::map<InteractionType, xmlNodePtr> xmlMap_;
     //! Add a mass to a parent
@@ -385,10 +388,14 @@ public:
      * \param[in] mDrude            Drude mass
      * \param[in] addNumbersToAtoms Whether or not to add numbers to atom names
      * \param[in] ntrain            Minimum number of training data allowed per parameter to use it
+     * \param[in] residueNames      The residue name for the InChi of each compound
      */
-    OpenMMWriter(double mDrude,
-                 bool   addNumbersToAtoms,
-                 int    ntrain) : mDrude_(mDrude), addNumbersToAtomTypes_(addNumbersToAtoms), ntrain_(ntrain)
+    OpenMMWriter(double                                    mDrude,
+                 bool                                      addNumbersToAtoms,
+                 int                                       ntrain,
+                 const std::map<std::string, std::string> &residueNames)
+        : mDrude_(mDrude), addNumbersToAtomTypes_(addNumbersToAtoms), ntrain_(ntrain),
+          residueNames_(residueNames)
     {
     }
     
@@ -490,20 +497,12 @@ void OpenMMWriter::addXmlResidueBonds(xmlNodePtr        residuePtr,
         
         if (topol->hasEntry(itbonds))
         {
-            auto myatoms = topol->atoms();
+            auto names = particleNames(topol->atoms());
             for(const auto &topentry : topol->entry(itbonds))
             {
-                int ai = topentry->atomIndex(0);
-                int aj = topentry->atomIndex(1);
-
-                int reali = tellme_RealAtom(ai, myatoms);
-                int realj = tellme_RealAtom(aj, myatoms);
-                //here also myatoms[i].ffType(); but for ai aj
-                auto name_ai = myatoms[ai].name();
-                auto name_aj = myatoms[aj].name();
                 addXmlResidueBond(residuePtr,
-                                  nameIndex(name_ai, reali).c_str(),
-                                  nameIndex(name_aj, realj).c_str());
+                                  names[topentry->atomIndex(0)],
+                                  names[topentry->atomIndex(1)]);
             }
         }
     }
@@ -1279,8 +1278,6 @@ void OpenMMWriter::addXmlForceField(MsgHandler                *msghandler,
         }
     }
 
-    // For looking up InChi codes
-    AlexandriaMols amols;    
     // See comment below about fftypeLocalMap.
     std::map<std::string, int> fftypeGlobalMap;
     // The OpenMM type of the shells, for the OpenMM type of their parent and
@@ -1330,30 +1327,20 @@ void OpenMMWriter::addXmlForceField(MsgHandler                *msghandler,
                     
             // Check whether we have to terminate the residue by defining bonds
             residuePtr = add_xml_child(xmlResiduePtr, exml_names(xmlEntryOpenMM::RESIDUE));
-            auto amol  = amols.findInChi(fragIds[fff]);
-            if (nullptr != amol)
+            auto resname = residueNames_.find(fragIds[fff]);
+            if (residueNames_.end() == resname)
             {
-                add_xml_char(residuePtr, exml_names(xmlEntryOpenMM::NAME), amol->iupac.c_str());
+                GMX_THROW(gmx::InternalError(gmx::formatString("No residue name for %s", fragIds[fff].c_str()).c_str()));
             }
-            else
-            {
-                add_xml_char(residuePtr, exml_names(xmlEntryOpenMM::NAME), fragIds[fff].c_str());
-            }
+            add_xml_char(residuePtr, exml_names(xmlEntryOpenMM::NAME), resname->second.c_str());
             InchiUsed.insert(fragIds[fff]);
             // If we need to add numbers to types to distinguish types within a compound,
             // then we need to store what we have used. The map is from force field type
             // to a number index. It restarts from 1 for every molecule, then if we add a
             // new copy of the same force field type we increase the number.
             std::map<std::string, int> fftypeLocalMap;
-            // We need to keep track of the atom names within the molecule as well
-            std::vector<std::string> inames;
-            
-            for (size_t i = 0; i < myatoms.size(); i++)
-            {
-                int reali = tellme_RealAtom(i, myatoms);
-                auto iname = nameIndex(myatoms[i].name(), reali);
-                inames.push_back(iname);
-            }
+            // The atom names within the molecule, the same as in the PDB file
+            auto inames = particleNames(myatoms);
             for (size_t i = 0; i < myatoms.size(); i++)
             {
                 // Shells are treated with their parent below
@@ -1422,7 +1409,7 @@ void OpenMMWriter::addXmlForceField(MsgHandler                *msghandler,
                 if (myatoms[i].pType() == ActParticle::Atom || myatoms[i].pType() == ActParticle::Vsite)
                 {
                     auto baby = add_xml_child(residuePtr, exml_names(xmlEntryOpenMM::ATOM_RES));
-                    auto iname = nameIndex(myatoms[i].name(), reali);
+                    const auto &iname = inames[i];
                     add_xml_char(baby, exml_names(xmlEntryOpenMM::NAME), iname.c_str());
                     
                     add_xml_char(baby, exml_names(xmlEntryOpenMM::TYPE_RES), openMMtype.c_str());
@@ -1695,17 +1682,183 @@ void OpenMMWriter::writeXml(MsgHandler                *msghandler,
     xmlFreeDoc(doc);
 }
 
-void writeOpenMM(MsgHandler                *msghandler,
-                 const std::string         &fileName,
-                 const ForceField          *pd,
-                 const std::vector<ACTMol> &actmols,
-                 double                     mDrude,
-                 int                        ntrain,
-                 bool                       addNumbersToAtoms)
+//! Residue names that OpenMM renames or makes bonds for, from its pdbNames.xml and residues.xml
+static const std::set<std::string> openMMResidues = {
+    "A", "A3", "A5", "ACE", "ADE", "AIB", "ALA", "ALL", "ARG", "ASH", "ASN", "ASP",
+    "C", "C3", "C5", "CYS", "CYT", "CYX", "DA", "DA3", "DA5", "DAD", "DC", "DC3",
+    "DC5", "DCY", "DG", "DG3", "DG5", "DGU", "DI", "DT", "DT3", "DT5", "FOR", "G",
+    "G3", "G5", "GLH", "GLN", "GLU", "GLY", "GUA", "H20", "HID", "HIE", "HIH", "HIP",
+    "HIS", "HOH", "HSD", "HSH", "HSP", "I", "ILE", "LEU", "LYS", "MET", "NH2", "NHE",
+    "NMA", "NME", "NUCLEIC", "ORN", "PCA", "PHE", "PRO", "PROTEIN", "SER", "SOL",
+    "THR", "THY", "TIP", "TIP3", "TP3", "TRP", "TYR", "U", "U3", "U5", "UNK", "URA",
+    "VAL", "WAT"
+};
+
+//! \return whether name can be used as a residue name for OpenMM
+static bool validResidueName(const std::string &name)
+{
+    if (name.empty() || name.size() > 4 ||
+        !std::all_of(name.begin(), name.end(), [](char c) { return std::isalnum(c); }))
+    {
+        return false;
+    }
+    std::string upper(name);
+    std::transform(upper.begin(), upper.end(), upper.begin(), ::toupper);
+    return openMMResidues.find(upper) == openMMResidues.end();
+}
+
+//! \return a residue name made from the IUPAC name that is not in used
+static std::string generateResidueName(const std::string           &iupac,
+                                       const std::set<std::string> &used)
+{
+    std::string letters;
+    for (char c : iupac)
+    {
+        if (std::isalpha(c))
+        {
+            letters += std::toupper(c);
+        }
+    }
+    std::vector<std::string> candidates;
+    if (letters.size() >= 3)
+    {
+        candidates.push_back(letters.substr(0, 3));
+    }
+    if (letters.size() >= 2)
+    {
+        for (int i = 1; i <= 9; i++)
+        {
+            candidates.push_back(letters.substr(0, 2) + std::to_string(i));
+        }
+    }
+    for (int i = 1; i <= 999; i++)
+    {
+        candidates.push_back(gmx::formatString("R%02d", i));
+    }
+    for (const auto &c : candidates)
+    {
+        if (validResidueName(c) && used.find(c) == used.end())
+        {
+            return c;
+        }
+    }
+    GMX_THROW(gmx::InvalidInputError("Ran out of residue names"));
+}
+
+std::map<std::string, std::string> openMMResidueNames(MsgHandler                *msghandler,
+                                                      const std::vector<ACTMol> &actmols,
+                                                      const std::string         &userNames)
+{
+    // The compounds in order of appearance
+    std::vector<std::string> compounds;
+    for (const auto &actmol : actmols)
+    {
+        for (const auto &id : actmol.fragmentHandler()->ids())
+        {
+            if (std::find(compounds.begin(), compounds.end(), id) == compounds.end())
+            {
+                compounds.push_back(id);
+            }
+        }
+    }
+    AlexandriaMols                     amols;
+    std::map<std::string, std::string> names;
+    std::set<std::string>              used;
+    auto addName = [&](const std::string &compound, const std::string &name)
+    {
+        if (!validResidueName(name))
+        {
+            msghandler->msg(ACTStatus::Error,
+                            gmx::formatString("Residue name '%s' should have one to four letters or digits and cannot be a residue known to OpenMM, such as HOH.", name.c_str()));
+        }
+        else if (names.find(compound) != names.end())
+        {
+            msghandler->msg(ACTStatus::Error,
+                            gmx::formatString("More than one residue name for %s", compound.c_str()));
+        }
+        else if (!used.insert(name).second)
+        {
+            msghandler->msg(ACTStatus::Error,
+                            gmx::formatString("Residue name %s is used for more than one compound", name.c_str()));
+        }
+        else
+        {
+            names.insert({ compound, name });
+        }
+    };
+    std::string entries(userNames);
+    std::replace(entries.begin(), entries.end(), ',', ' ');
+    std::vector<std::string> unnamed;
+    for (const auto &entry : gmx::splitString(entries))
+    {
+        auto eq = entry.find('=');
+        if (eq == std::string::npos)
+        {
+            unnamed.push_back(entry);
+            continue;
+        }
+        auto key  = entry.substr(0, eq);
+        auto amol = amols.findMol(key);
+        auto cptr = std::find_if(compounds.begin(), compounds.end(),
+                                 [&](const std::string &id)
+                                 {
+                                     auto known = amols.findInChi(id);
+                                     return (id == key ||
+                                             (amol && amol->inchi == id) ||
+                                             (known && known->iupac == key));
+                                 });
+        if (cptr == compounds.end())
+        {
+            msghandler->msg(ACTStatus::Error,
+                            gmx::formatString("No compound %s for residue name %s",
+                                              key.c_str(), entry.substr(eq+1).c_str()));
+        }
+        else
+        {
+            addName(*cptr, entry.substr(eq+1));
+        }
+    }
+    // The names without compound are for the remaining compounds in order
+    size_t next = 0;
+    for (const auto &compound : compounds)
+    {
+        if (next < unnamed.size() && names.find(compound) == names.end())
+        {
+            addName(compound, unnamed[next++]);
+        }
+    }
+    if (next < unnamed.size())
+    {
+        msghandler->msg(ACTStatus::Error,
+                        gmx::formatString("There are %zu residue names but only %zu compounds",
+                                          unnamed.size() + names.size() - next, compounds.size()));
+    }
+    for (const auto &compound : compounds)
+    {
+        if (names.find(compound) == names.end())
+        {
+            auto        amol = amols.findInChi(compound);
+            std::string name = generateResidueName(amol ? amol->iupac : "", used);
+            used.insert(name);
+            names.insert({ compound, name });
+        }
+    }
+    return names;
+}
+
+void writeOpenMM(MsgHandler                               *msghandler,
+                 const std::string                        &fileName,
+                 const ForceField                         *pd,
+                 const std::vector<ACTMol>                &actmols,
+                 double                                    mDrude,
+                 int                                       ntrain,
+                 bool                                      addNumbersToAtoms,
+                 const std::map<std::string, std::string> &residueNames)
 {
     rmapyyyOpenMM.clear();
-    
-    OpenMMWriter writer(mDrude, addNumbersToAtoms, ntrain);
+
+    OpenMMWriter writer(mDrude, addNumbersToAtoms, ntrain,
+                        residueNames.empty() ? openMMResidueNames(msghandler, actmols, "") : residueNames);
     writer.writeXml(msghandler, fileName, pd, actmols);
 }
 

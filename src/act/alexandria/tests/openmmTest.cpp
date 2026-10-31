@@ -41,6 +41,7 @@
 #include <gtest/gtest.h>
 
 #include "act/alexandria/openmm_xml.h"
+#include "act/alexandria/pdbwriter.h"
 #include "act/basics/msg_handler.h"
 #include "act/forcefield/forcefield.h"
 #include "act/forcefield/forcefield_utils.h"
@@ -177,6 +178,86 @@ TEST(OpenMMXmlNoNumberTest, MethanolWaterPol)
 TEST_F(OpenMMXmlTest, WaterHyperPol)
 {
     testOpenMM("water_hyperpol", "water_dimer.pdb", true);
+}
+
+//! \return the residue names for methanol and water, with userNames
+static std::map<std::string, std::string> methanolWaterNames(MsgHandler        *msghandler,
+                                                             const std::string &userNames)
+{
+    auto          ff = getForceField("ACS-g");
+    ForceComputer fcomp(1e-7, 25, 1.0);
+    std::vector<ACTMol> mps;
+    auto dataName = gmx::test::TestFileManager::getInputFilePath("mols/methanol#water.pdb");
+    initACTMol(msghandler, dataName, ff, &fcomp, &mps);
+    EXPECT_TRUE(msghandler->ok());
+    auto names = openMMResidueNames(msghandler, mps, userNames);
+    // The order of the compounds in the input
+    std::map<std::string, std::string> byMolecule;
+    const auto &ids = mps[0].fragmentHandler()->ids();
+    if (ids.size() == 2 && names.size() == 2)
+    {
+        byMolecule.insert({ "methanol", names[ids[0]] });
+        byMolecule.insert({ "water", names[ids[1]] });
+    }
+    return byMolecule;
+}
+
+TEST(OpenMMResidueNamesTest, Generated)
+{
+    MsgHandler msghandler;
+    msghandler.setPrintLevel(ACTStatus::Fatal);
+    auto names = methanolWaterNames(&msghandler, "");
+    EXPECT_TRUE(msghandler.ok());
+    // MET is methionine in OpenMM
+    std::map<std::string, std::string> expected = { { "methanol", "ME1" }, { "water", "OXI" } };
+    EXPECT_EQ(expected, names);
+}
+
+TEST(OpenMMResidueNamesTest, User)
+{
+    for (const auto &userNames : { "water=SPC methanol=MOH", "MOH,SPC", "water=SPC MOH" })
+    {
+        MsgHandler msghandler;
+        msghandler.setPrintLevel(ACTStatus::Fatal);
+        auto names = methanolWaterNames(&msghandler, userNames);
+        EXPECT_TRUE(msghandler.ok()) << userNames;
+        std::map<std::string, std::string> expected = { { "methanol", "MOH" }, { "water", "SPC" } };
+        EXPECT_EQ(expected, names) << userNames;
+    }
+    MsgHandler msghandler;
+    msghandler.setPrintLevel(ACTStatus::Fatal);
+    auto names = methanolWaterNames(&msghandler, "MOH");
+    std::map<std::string, std::string> expected = { { "methanol", "MOH" }, { "water", "OXI" } };
+    EXPECT_EQ(expected, names);
+}
+
+TEST(OpenMMResidueNamesTest, Errors)
+{
+    for (const auto &userNames : { "HOH", "wat", "MOLECULE", "M-1", "MOH,MOH", "MOH SPC TIP",
+                                   "methane=MOH", "water=SPC water=TIP" })
+    {
+        MsgHandler msghandler;
+        msghandler.setPrintLevel(ACTStatus::Fatal);
+        methanolWaterNames(&msghandler, userNames);
+        EXPECT_FALSE(msghandler.ok()) << userNames;
+    }
+}
+
+TEST(ParticleNamesTest, NumberedInResidue)
+{
+    MsgHandler msghandler;
+    msghandler.setPrintLevel(ACTStatus::Fatal);
+    auto          ff = getForceField("ACS-pg");
+    ForceComputer fcomp(1e-7, 25, 1.0);
+    std::vector<ACTMol> mps;
+    auto dataName = gmx::test::TestFileManager::getInputFilePath("mols/methanol#water.pdb");
+    initACTMol(&msghandler, dataName, ff, &fcomp, &mps);
+    ASSERT_TRUE(msghandler.ok());
+    // The shells get the number of their atom, the water starts at one again
+    std::vector<std::string> expected = { "O1", "Os1", "H2", "Hs2", "C3", "Cs3", "H4", "Hs4",
+                                          "H5", "Hs5", "H6", "Hs6",
+                                          "O1", "Os1", "H2", "Hs2", "H3", "Hs3" };
+    EXPECT_EQ(expected, particleNames(mps[0].atomsConst()));
 }
 
 

@@ -287,5 +287,60 @@ class LongRangeCorrectionTest(unittest.TestCase):
         self.assertFalse(vdw["longRange"])
         self.assertTrue("WARNING: useLongRangeCorrection" in log, "No warning in the log file")
 
+@unittest.skipUnless(available, "OpenMM or alexandria not available")
+class ResidueBondsTest(unittest.TestCase):
+    """
+    OpenMM finds the bonds in a PDB file without CONECT records from the
+    residue and atom names that gentop writes, such as in a box made by
+    another program, see https://github.com/AlexandriaChemistry/ACT/issues/978
+    """
+
+    def setUp(self):
+        self.workDir = tempfile.mkdtemp()
+
+    def tearDown(self):
+        shutil.rmtree(self.workDir, ignore_errors=True)
+
+    def check(self, ff:str, resnames:list):
+        """ Make a box of methanol and four waters with force field ff """
+        from act_openmm import loadResidueBonds
+        mols    = os.path.join(testDir, "..", "..", "alexandria", "tests")
+        xmlFile = os.path.join(self.workDir, ff + "_openmm.xml")
+        pdbFile = os.path.join(self.workDir, ff + ".pdb")
+        result  = subprocess.run([ alexandria, "gentop", "-ff", os.path.join(mols, ff + ".xml"),
+                                   "-f", os.path.join(mols, "mols", "methanol#water.pdb"),
+                                   "-openmm", xmlFile, "-c", pdbFile ] + resnames,
+                                 cwd=self.workDir, capture_output=True, text=True)
+        self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+        atoms = [ line for line in open(pdbFile) if line.startswith("ATOM") ]
+        # Without CONECT, the waters shifted by 4 Angstrom along x
+        boxFile = os.path.join(self.workDir, ff + "_box.pdb")
+        with open(boxFile, "w") as box:
+            number = 1
+            for copy, resnr in [ ( 0, 1 ) ] + [ ( k, 2 ) for k in range(1, 5) ]:
+                for line in atoms:
+                    if int(line[22:26]) == resnr:
+                        box.write("ATOM  %5d%s%4d    %8.3f%s" % ( number, line[11:22], copy + 1,
+                                                                 float(line[30:38]) + 4*copy, line[38:] ))
+                        number += 1
+            box.write("END\n")
+        loadResidueBonds(xmlFile)
+        pdb = openmm.app.PDBFile(boxFile)
+        self.assertEqual(5 + 4*2, pdb.topology.getNumBonds())
+        forcefield = openmm.app.ForceField(xmlFile)
+        modeller   = openmm.app.Modeller(pdb.topology, pdb.positions)
+        modeller.addExtraParticles(forcefield)
+        forcefield.createSystem(modeller.topology, nonbondedMethod=openmm.app.NoCutoff)
+        return [ residue.name for residue in pdb.topology.residues() ]
+
+    def test_generated(self):
+        """ The residue names are made from the IUPAC names """
+        self.assertEqual([ "ME1" ] + 4*[ "OXI" ], self.check("ACS-g", []))
+
+    def test_user_polarizable(self):
+        """ The residue names given by the user, with shells """
+        self.assertEqual([ "MOH" ] + 4*[ "SPC" ],
+                         self.check("ACS-pg", [ "-resnames", "water=SPC methanol=MOH" ]))
+
 if __name__ == "__main__":
     unittest.main()

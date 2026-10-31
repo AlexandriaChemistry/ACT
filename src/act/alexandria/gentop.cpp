@@ -70,7 +70,13 @@ int gentop(int argc, char *argv[])
         "uses polarizable or non-polarizable charges or virtual sites.[PAR]",
         "When the [TT]-openmm[tt] flag is passed, an XML file will be created",
         "that can be used to run a simulation of the system using the OpenMM",
-        "software."
+        "software.[PAR]",
+        "The residue names in the [TT]-openmm[tt] file and the [TT]-c[tt] file",
+        "are the same, as are the atom names, such that OpenMM can find the bonds",
+        "in a PDB file without CONECT records, for instance one with many molecules",
+        "made by another program, from the residue and atom names. The residue names",
+        "can be given with [TT]-resnames[tt], otherwise they are made from the",
+        "IUPAC names of the compounds."
     };
     gmx_output_env_t *oenv;
     gmx_atomprop_t    aps;
@@ -101,6 +107,7 @@ int gentop(int argc, char *argv[])
     static char                     *symm_string    = (char *)"";
     static char                     *conf           = (char *)"minimum";
     static char                     *jobtype        = (char *)"Opt";
+    static char                     *resnames       = (char *)"";
     //! Write shells to trajectory and coordinates
     bool                             writeShells    = false;
     static gmx_bool                  bITP           = false;
@@ -133,7 +140,9 @@ int gentop(int argc, char *argv[])
         { "-numberAtypes", FALSE, etBOOL, {&addNumbersToAtoms},
           "Add a number index to OpenMM atomtypes when generating output for that software." },
          { "-jobtype",  FALSE, etSTR, {&jobtype},
-          "The job type used in the Gaussian calculation: Opt, Polar, SP, and etc." }
+          "The job type used in the Gaussian calculation: Opt, Polar, SP, and etc." },
+        { "-resnames", FALSE, etSTR, {&resnames},
+          "Residue names for the compounds, at most four letters or digits each, separated by spaces or commas. An entry [TT]methanol=MOH[tt] names the compound methanol, which can be given as its name or its InChi, an entry [TT]MOH[tt] names the next compound without a name, in the order of the input. Residues known to OpenMM, such as HOH, cannot be used. Compounds without a name get one made from their IUPAC name." }
     };
     MsgHandler          msghandler;
     CompoundReader      compR;
@@ -204,6 +213,28 @@ int gentop(int argc, char *argv[])
         msghandler.write(ii);
     }
 
+    // The same residue names in the OpenMM and the PDB file
+    auto residueNames = openMMResidueNames(&msghandler, actmols, resnames);
+    if (!msghandler.ok())
+    {
+        return 1;
+    }
+    for (auto &actmol : actmols)
+    {
+        const auto &fragIds    = actmol.fragmentHandler()->ids();
+        const auto &topologies = actmol.fragmentHandler()->topologies();
+        for (size_t fff = 0; fff < topologies.size(); fff++)
+        {
+            for (const auto &atom : topologies[fff].atoms())
+            {
+                if (atom.residueNumber() >= 0)
+                {
+                    actmol.topologyPtr()->setResidueName(atom.residueNumber(),
+                                                         residueNames[fragIds[fff]]);
+                }
+            }
+        }
+    }
     int mp_index   = 1;
     for(auto actmol = actmols.begin(); actmol < actmols.end(); ++actmol)
     {
@@ -262,7 +293,8 @@ int gentop(int argc, char *argv[])
         {
             writeOpenMM(&msghandler,
                         opt2fn("-openmm", fnm.size(), fnm.data()),
-                        &pd, actmols, mDrude, ntrain, addNumbersToAtoms);
+                        &pd, actmols, mDrude, ntrain, addNumbersToAtoms,
+                        residueNames);
         }
     }
     if (!msghandler.ok())

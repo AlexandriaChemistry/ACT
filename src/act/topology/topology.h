@@ -289,6 +289,13 @@ private:
     void addResidue(int                residueNumber,
                     const std::string &residueName);
 
+    /*! \brief Change the name of a residue
+     * \param[in] residueNumber The residue number
+     * \param[in] residueName   The new name
+     */
+    void setResidueName(int                residueNumber,
+                        const std::string &residueName);
+
     //! \return the vector of atoms for editing
     std::vector<ActAtom> *atomsPtr() { return &atoms_; }
 
