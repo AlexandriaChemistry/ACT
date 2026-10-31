@@ -4,15 +4,15 @@
   <Int Name="qtotSize">10</Int>
   <Sequence Name="qtotValuesEqdAlgorithm_SQE">
     <Int Name="Length">10</Int>
-    <Real>-0.40792737589046457</Real>
-    <Real>-0.40792506919132088</Real>
-    <Real>-0.40795345372086156</Real>
-    <Real>0.36241503401963271</Real>
-    <Real>0.31022400227907621</Real>
-    <Real>0.31022400227907621</Real>
-    <Real>0.3102271562645923</Real>
-    <Real>0.3102271562645923</Real>
-    <Real>0.3102442738478387</Real>
-    <Real>0.3102442738478387</Real>
+    <Real>-0.40792744005346682</Real>
+    <Real>-0.40792513335308234</Real>
+    <Real>-0.40795351788702761</Real>
+    <Real>0.36241510090994267</Real>
+    <Real>0.31022402321095777</Real>
+    <Real>0.31022402321095777</Real>
+    <Real>0.31022717719677884</Real>
+    <Real>0.31022717719677884</Real>
+    <Real>0.3102442947840805</Real>
+    <Real>0.3102442947840805</Real>
   </Sequence>
 </ReferenceData>

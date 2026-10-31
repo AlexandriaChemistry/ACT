@@ -64,7 +64,7 @@ protected:
     
     SecondVirialTest () : checker_(this->rootChecker())
     {
-        auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, 5e-2);
+        auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, GMX_DOUBLE ? 1e-10 : 5e-2);
         checker_.setDefaultTolerance(tolerance);
     }
     
@@ -446,6 +446,137 @@ TEST(B2DataTest, MayerAtShortestDistance)
     EXPECT_EQ(-0.5, soft.mayerAtShortestDistance(0));
     // Not computed for other temperatures
     EXPECT_EQ(-1, soft.mayerAtShortestDistance(1));
+}
+
+// Test: Many orientations, which B2Data keeps and adds in blocks, give
+// exactly the same sums as adding each orientation when it is given. Some
+// are permuted, which are added at once, some have fewer dimers, some
+// dimers are below eMin or have large Boltzmann factors, and a copy made
+// halfway, with orientations kept, gets the same results. Future optimizations of the sums
+// should not change the results.
+TEST(B2DataTest, ManyOrientations)
+{
+    std::vector<double>    temperatures = { 250, 400, 600 };
+    std::vector<double>    mass         = { 18, 18 };
+    gmx::RVec              I            = { 0.006, 0.012, 0.018 };
+    std::vector<gmx::RVec> inertia      = { I, I };
+    int    nbins = 101;
+    double bw    = 0.01;
+    double eMin  = -40;
+    B2Data blocks(nbins, temperatures, eMin), each(nbins, temperatures, eMin);
+    B2Data byDimer(nbins, temperatures, eMin);
+    B2Data copy(1, temperatures, eMin), copyEach(1, temperatures, eMin);
+    unsigned int seed = 1993;
+    auto random = [&seed]()
+    {
+        seed = 1103515245*seed + 12345;
+        return ((seed >> 8) % 2001)/1000.0 - 1.0;
+    };
+    const int norient = 70;
+    for(int orient = 0; orient < norient; orient++)
+    {
+        bool permuted = (orient % 7 == 3);
+        int  ndimer   = (orient % 5 == 1) ? nbins - 17 : nbins;
+        std::vector<size_t>    index;
+        std::vector<double>    dist, energy, weight;
+        std::vector<double>    force2[2];
+        std::vector<gmx::RVec> torque[2];
+        for(int ii = 0; ii < ndimer; ii++)
+        {
+            int    i  = permuted ? ndimer-1-ii : ii;
+            double r  = 0.2 + i*bw;
+            double sr = 0.3/r;
+            index.push_back(i);
+            dist.push_back(r);
+            double e = 4*(1 + 0.3*random())*(std::pow(sr, 12) - std::pow(sr, 6));
+            // Some below eMin, some with a large Boltzmann factor
+            if (ii % 31 == 7)
+            {
+                e = 2*eMin;
+            }
+            else if (ii % 37 == 11)
+            {
+                e = -0.9*std::abs(eMin);
+            }
+            energy.push_back(e);
+            weight.push_back(1 + 0.5*random());
+            for(int kk = 0; kk < 2; kk++)
+            {
+                force2[kk].push_back((1 + kk + random())*std::pow(sr, 14));
+                torque[kk].push_back({ (1.0+kk)*sr*random(), -0.5*sr*sr, sr*random() });
+            }
+        }
+        blocks.addOrientation(index, dist, energy, force2, torque, weight);
+        // Without a message handler, dump only adds the kept orientations
+        each.addOrientation(index, dist, energy, force2, torque, weight);
+        each.dump(nullptr);
+        if (orient == norient/2)
+        {
+            copy     = blocks;
+            copyEach = each;
+        }
+        else if (orient > norient/2)
+        {
+            copy.addOrientation(index, dist, energy, force2, torque, weight);
+            copyEach.addOrientation(index, dist, energy, force2, torque, weight);
+            copyEach.dump(nullptr);
+        }
+        for(size_t iTemp = 0; iTemp < temperatures.size(); iTemp++)
+        {
+            double beta = 1.0/(BOLTZ*temperatures[iTemp]);
+            for(size_t ii = 0; ii < index.size(); ii++)
+            {
+                double    yb = energy[ii]*beta;
+                double    g  = (energy[ii] >= eMin && yb < 700) ? std::exp(-yb) : 0;
+                gmx::RVec tau[2];
+                for(int kk = 0; kk < 2; kk++)
+                {
+                    for(int m = 0; m < DIM; m++)
+                    {
+                        tau[kk][m] = g*torque[kk][ii][m]*torque[kk][ii][m];
+                    }
+                }
+                byDimer.addData(iTemp, index[ii], dist[ii], g-1, g*force2[0][ii], g*force2[1][ii],
+                                tau[0], tau[1], weight[ii]);
+            }
+        }
+    }
+    EXPECT_EQ(each.nDimer(), blocks.nDimer());
+    EXPECT_EQ(each.nOverlap(), blocks.nOverlap());
+    EXPECT_GT(blocks.nOverlap(), 0);
+    MsgHandler msghandler;
+    for(size_t iTemp = 0; iTemp < temperatures.size(); iTemp++)
+    {
+        SCOPED_TRACE(gmx::formatString("T = %g", temperatures[iTemp]));
+        double   beta = 1.0/(BOLTZ*temperatures[iTemp]);
+        B2Result rb, re, rd, rc, rce;
+        blocks.integrate(&msghandler, iTemp, beta, mass, inertia, &rb.classical, &rb.force, &rb.torque1, &rb.torque2);
+        each.integrate(&msghandler, iTemp, beta, mass, inertia, &re.classical, &re.force, &re.torque1, &re.torque2);
+        byDimer.integrate(&msghandler, iTemp, beta, mass, inertia, &rd.classical, &rd.force, &rd.torque1, &rd.torque2);
+        copy.integrate(&msghandler, iTemp, beta, mass, inertia, &rc.classical, &rc.force, &rc.torque1, &rc.torque2);
+        copyEach.integrate(&msghandler, iTemp, beta, mass, inertia, &rce.classical, &rce.force, &rce.torque1, &rce.torque2);
+        EXPECT_TRUE(msghandler.ok());
+        // The same operations in the same order
+        EXPECT_EQ(re.classical, rb.classical);
+        EXPECT_EQ(re.force, rb.force);
+        EXPECT_EQ(re.torque1, rb.torque1);
+        EXPECT_EQ(re.torque2, rb.torque2);
+        EXPECT_EQ(each.mayerAtShortestDistance(iTemp), blocks.mayerAtShortestDistance(iTemp));
+        EXPECT_EQ(rce.classical, rc.classical);
+        EXPECT_EQ(rce.force, rc.force);
+        EXPECT_EQ(rce.torque1, rc.torque1);
+        EXPECT_EQ(rce.torque2, rc.torque2);
+        // The copy, made with orientations kept, got the same ones after it
+        EXPECT_EQ(rb.classical, rc.classical);
+        EXPECT_EQ(rb.force, rc.force);
+        EXPECT_EQ(rb.torque1, rc.torque1);
+        EXPECT_EQ(rb.torque2, rc.torque2);
+        // Independently computed, the compiler may contract operations differently
+        EXPECT_NEAR(rd.classical, rb.classical, 1e-12*std::abs(rd.classical));
+        EXPECT_NEAR(rd.force, rb.force, 1e-12*std::abs(rd.force));
+        EXPECT_NEAR(rd.torque1, rb.torque1, 1e-12*std::abs(rd.torque1));
+        EXPECT_NEAR(rd.torque2, rb.torque2, 1e-12*std::abs(rd.torque2));
+    }
 }
 
 // Test: A dimer with an energy far below any physical one, as when a charge

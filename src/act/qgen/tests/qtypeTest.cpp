@@ -75,7 +75,7 @@ class QtypeTest : public gmx::test::CommandLineTestBase
         //! Init set tolerance
         QtypeTest () : checker_(this->rootChecker())
         {
-            auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, 1e-5);
+            auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, GMX_DOUBLE ? 1e-10 : 1e-5);
             checker_.setDefaultTolerance(tolerance);
         }
 

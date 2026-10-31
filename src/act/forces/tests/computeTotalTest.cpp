@@ -207,6 +207,94 @@ protected:
         }
     }
 
+    /*! \brief Compare computeInteraction for many dimers with subsets of them
+     * Each dimer is computed independently, also when the shells of some
+     * converge earlier than those of others, such that computing the
+     * dimers together, in two subsets or in another order gives the same
+     * energies, forces and shell positions. The second monomer is moved by
+     * a different distance in each dimer, such that the shells converge
+     * after different numbers of iterations.
+     * \param[in] ffName  The force field
+     * \param[in] molName The dimer
+     * \param[in] nconf   The number of dimers
+     */
+    void testInteractionSubsets(const std::string &ffName,
+                                const std::string &molName,
+                                size_t             nconf)
+    {
+        auto pd = getForceField(ffName);
+        ASSERT_NE(nullptr, pd);
+        ACTMol mol;
+        ASSERT_TRUE(readMolecule(&msghandler_, pd, molName, &mol));
+        ASSERT_TRUE(mol.isDimer());
+        size_t natom1 = mol.fragmentHandler()->atomStart()[1];
+        std::vector<std::vector<gmx::RVec>> x;
+        for(size_t c = 0; c < nconf; c++)
+        {
+            auto y = displaced(mol.xOriginal(), c);
+            for(size_t i = natom1; i < y.size(); i++)
+            {
+                y[i][XX] += 0.03*c;
+            }
+            x.push_back(y);
+        }
+        struct Result
+        {
+            std::vector<std::map<InteractionType, double>> einter;
+            std::vector<double>                            epot;
+            std::vector<std::vector<gmx::RVec>>            finter;
+            std::vector<std::vector<gmx::RVec>>            x;
+        };
+        auto run = [&](const std::vector<size_t> &confs)
+        {
+            Result r;
+            for(auto c : confs)
+            {
+                r.x.push_back(x[c]);
+            }
+            forceComp_.computeInteraction(&msghandler_, pd, &mol, &r.x, true,
+                                          &r.einter, &r.epot, &r.finter);
+            EXPECT_TRUE(msghandler_.ok());
+            return r;
+        };
+        std::vector<size_t> all(nconf), even, oddReversed;
+        for(size_t c = 0; c < nconf; c++)
+        {
+            all[c] = c;
+            if (c % 2 == 0)
+            {
+                even.push_back(c);
+            }
+            else
+            {
+                oddReversed.insert(oddReversed.begin(), c);
+            }
+        }
+        auto together = run(all);
+        ASSERT_EQ(nconf, together.einter.size());
+        for(const auto &subset : { even, oddReversed })
+        {
+            auto part = run(subset);
+            ASSERT_EQ(subset.size(), part.einter.size());
+            for(size_t k = 0; k < subset.size(); k++)
+            {
+                size_t c = subset[k];
+                SCOPED_TRACE(gmx::formatString("%s %s dimer %zu", ffName.c_str(), molName.c_str(), c));
+                EXPECT_EQ(together.einter[c], part.einter[k]);
+                EXPECT_EQ(together.epot[c], part.epot[k]);
+                ASSERT_EQ(together.finter[c].size(), part.finter[k].size());
+                for(size_t i = 0; i < part.finter[k].size(); i++)
+                {
+                    for(int m = 0; m < DIM; m++)
+                    {
+                        EXPECT_EQ(together.finter[c][i][m], part.finter[k][i][m]) << "force on " << i;
+                        EXPECT_EQ(together.x[c][i][m], part.x[k][i][m]) << "position of " << i;
+                    }
+                }
+            }
+        }
+    }
+
     /*! \brief Compare computeInteraction with the energies of the dimer and the monomers
      * The interaction energy is the energy of the relaxed dimer minus those
      * of the relaxed monomers, each computed with compute, and the
@@ -605,6 +693,25 @@ TEST_F(ComputeTotalTest, InteractionCorrectionPotential)
 TEST_F(ComputeTotalTest, InteractionCorrectionPotentialNotSeparated)
 {
     testInteraction("ACS-pol", "water_dimer", 3, false, { 2000.0, 1000.0, 20.0 });
+}
+
+// Test: Dimers computed together or in subsets give the same results, with
+// virtual sites and without shells
+TEST_F(ComputeTotalTest, InteractionSubsetsVsites)
+{
+    testInteractionSubsets("ACS-v3fds", "water_dimer", 13);
+}
+
+// Test: The same with shells and virtual sites
+TEST_F(ComputeTotalTest, InteractionSubsetsPolarizable)
+{
+    testInteractionSubsets("ACS-pg-vs2", "hbr-hf", 13);
+}
+
+// Test: The same with hyperpolarizable shells
+TEST_F(ComputeTotalTest, InteractionSubsetsHyperpolarizable)
+{
+    testInteractionSubsets("water_hyperpol", "water_dimer", 13);
 }
 
 } // namespace

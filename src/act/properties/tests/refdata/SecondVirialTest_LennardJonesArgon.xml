@@ -3,19 +3,19 @@
 <ReferenceData>
   <Sequence Name="B2(Classical)">
     <Int Name="Length">5</Int>
-    <Real>-254.79445484237704</Real>
-    <Real>-207.31671345387215</Real>
-    <Real>-172.77120368290412</Real>
-    <Real>-146.55356140916928</Real>
-    <Real>-126.36888969059733</Real>
+    <Real>-254.79445454095978</Real>
+    <Real>-207.31671355678284</Real>
+    <Real>-172.77120407455647</Real>
+    <Real>-146.55356201640473</Real>
+    <Real>-126.36889046144969</Real>
   </Sequence>
   <Sequence Name="B2(Force)">
     <Int Name="Length">5</Int>
-    <Real>2.0779852563471346</Real>
-    <Real>1.4859632300992434</Real>
-    <Real>1.1202821652269908</Real>
-    <Real>0.87897469962604946</Real>
-    <Real>0.71418635516367757</Real>
+    <Real>2.0779849270944952</Real>
+    <Real>1.4859629943474786</Real>
+    <Real>1.120281987281261</Real>
+    <Real>0.87897455985806128</Real>
+    <Real>0.71418624148736487</Real>
   </Sequence>
   <Sequence Name="B2(Torque1)">
     <Int Name="Length">5</Int>
@@ -35,10 +35,10 @@
   </Sequence>
   <Sequence Name="B2(Total)">
     <Int Name="Length">5</Int>
-    <Real>-252.71646958602989</Real>
-    <Real>-205.83075022377292</Real>
-    <Real>-171.65092151767715</Real>
-    <Real>-145.67458670954323</Real>
-    <Real>-125.65470333543365</Real>
+    <Real>-252.71646961386529</Real>
+    <Real>-205.83075056243536</Real>
+    <Real>-171.65092208727518</Real>
+    <Real>-145.67458745654667</Real>
+    <Real>-125.65470421996233</Real>
   </Sequence>
 </ReferenceData>

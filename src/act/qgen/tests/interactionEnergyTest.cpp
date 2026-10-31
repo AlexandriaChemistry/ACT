@@ -75,7 +75,7 @@ protected:
     //! Init set tolerance
     InteractionEnergyTest () : checker_(this->rootChecker())
     {
-        auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, 1e-5);
+        auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, GMX_DOUBLE ? 1e-10 : 1e-5);
         checker_.setDefaultTolerance(tolerance);
     }
     
@@ -147,9 +147,11 @@ protected:
                 return;
             }
             
-            // Needed for GenerateCharges
-            double shellTolerance = 1e-6;
-            int    shellMaxIter   = 100;
+            // Needed for GenerateCharges. The shells are converged tightly,
+            // such that the energies do not depend on the convergence and
+            // can be compared with a tight tolerance.
+            double shellTolerance = 1e-12;
+            int    shellMaxIter   = 500;
             auto forceComp = new ForceComputer(shellTolerance, shellMaxIter, epsilonr);
             std::vector<gmx::RVec> forces(mp_.atomsConst().size());
             std::vector<gmx::RVec> coords = mp_.xOriginal();

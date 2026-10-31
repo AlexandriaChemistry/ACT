@@ -54,7 +54,7 @@ class UnitsTest : public gmx::test::CommandLineTestBase
         "1/nm", "degree", "kJ/mol/rad2", "kJ/mol/nm2" };
     UnitsTest () : checker_(this->rootChecker())
     {
-        auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, 5e-2);
+        auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, GMX_DOUBLE ? 1e-10 : 5e-2);
         checker_.setDefaultTolerance(tolerance);
     }
     

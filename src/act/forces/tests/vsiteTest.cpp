@@ -49,6 +49,7 @@
 #include "act/forcefield/forcefield_utils.h"
 #include "act/forces/forcecomputer.h"
 #include "act/topology/actmol.h"
+#include "act/topology/topology.h"
 
 #include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"
@@ -121,7 +122,7 @@ protected:
             vh.constructPositions(mp_.topology(), &coords);
 
             gmx::test::TestReferenceChecker checker_(this->rootChecker());
-            auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, 5e-2);
+            auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, GMX_DOUBLE ? 1e-10 : 5e-2);
             checker_.setDefaultTolerance(tolerance);
             auto  myatoms = mp_.topology()->atoms();
             const char *xyz[DIM] = { "X", "Y", "Z" };
@@ -163,7 +164,7 @@ protected:
             }
             vh.distributeForces(mp_.topology(), coords, &forces);
             gmx::test::TestReferenceChecker checker_(this->rootChecker());
-            auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, 5e-2);
+            auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, GMX_DOUBLE ? 1e-10 : 5e-2);
             checker_.setDefaultTolerance(tolerance);
             const char *xyz[DIM] = { "X", "Y", "Z" };
 
@@ -558,6 +559,148 @@ TEST(VSite4S3, nh3CanSwapNo)
     EXPECT_TRUE(fs.parameterExists(nh3));
     auto vsite4_name = potentialToParameterName(Potential::VSITE4S3);
     EXPECT_TRUE(fs.findParameterType(nh3, vsite4_name[vsite4s3A])->internalValue() == -0.2);
+}
+
+/*! \brief A topology with one virtual site of each type that can be constructed
+ * Five atoms and the virtual sites, each constructed from some of the
+ * atoms. VSITE3FAD is left out, since it cannot be constructed yet.
+ * \return the topology
+ */
+static Topology allVsiteTypes()
+{
+    Topology top;
+    const int natom = 5;
+    for(int i = 0; i < natom; i++)
+    {
+        top.addAtom(ActAtom("A", "C", "c", ActParticle::Atom, 6, 12.0, 0.0, 1));
+    }
+    struct Type
+    {
+        InteractionType     itype;
+        int                 nparent;
+        std::vector<double> params;
+        int                 sign;
+    };
+    std::vector<Type> types = {
+        { InteractionType::VSITE1,     1, { 1.0 },             0 },
+        { InteractionType::VSITE2,     2, { 0.3 },             0 },
+        { InteractionType::VSITE2FD,   2, { 0.05 },            0 },
+        { InteractionType::VSITE3,     3, { 0.2, 0.3 },        0 },
+        { InteractionType::VSITE3S,    3, { 0.25 },            0 },
+        { InteractionType::VSITE3FD,   3, { 0.4, 0.07 },       0 },
+        { InteractionType::VSITE3OUT,  3, { 0.1, 0.2, 2.0 },   1 },
+        { InteractionType::VSITE3OUTS, 3, { 0.15, -1.5 },     -1 },
+        { InteractionType::VSITE4,     4, { 0.1, 0.2, 0.3 },   0 },
+        { InteractionType::VSITE4S,    4, { 0.15, 0.25 },      0 },
+        { InteractionType::VSITE4S3,   4, { 0.2 },             0 }
+    };
+    int vs = natom;
+    for(const auto &t : types)
+    {
+        top.addAtom(ActAtom("V", "X", "v", ActParticle::Vsite, 0, 0.0, 0.0, 1));
+        // The parents in an order that differs per type
+        std::vector<int> parents;
+        for(int k = 0; k < t.nparent; k++)
+        {
+            parents.push_back((vs + 2*k) % natom);
+        }
+        TopologyEntryVector entries;
+        if (t.sign != 0)
+        {
+            Vsite3OUT v3(parents[0], parents[1], parents[2], vs, t.sign);
+            v3.setParams(t.params);
+            entries.push_back(BaseContainer<TopologyEntry>(std::move(v3)));
+        }
+        else
+        {
+            TopologyEntry te;
+            for(auto p : parents)
+            {
+                te.addAtom(p);
+            }
+            te.addAtom(vs);
+            te.setParams(t.params);
+            entries.push_back(BaseContainer<TopologyEntry>(std::move(te)));
+        }
+        top.addEntry(t.itype, entries);
+        vs += 1;
+    }
+    return top;
+}
+
+// Test: The virtual sites of many conformations at once, in the layout of
+// ConformationArrays, are the same as one conformation at a time, for all
+// types, such that optimizing one of the routines does not change results
+TEST(VsiteHandlerArrays, AllTypes)
+{
+    auto   top    = allVsiteTypes();
+    size_t natom  = top.atoms().size();
+    // More than four times the widest SIMD, and padding slots
+    size_t nconf  = 37;
+    size_t stride = 40;
+    std::vector<std::vector<gmx::RVec>> x(nconf), f(nconf);
+    unsigned int seed = 1993;
+    auto random = [&seed]()
+    {
+        seed = 1103515245*seed + 12345;
+        return ((seed >> 8) % 2001)/1000.0 - 1.0;
+    };
+    for(size_t c = 0; c < nconf; c++)
+    {
+        x[c].resize(natom);
+        f[c].resize(natom);
+        for(size_t a = 0; a < natom; a++)
+        {
+            for(int m = 0; m < DIM; m++)
+            {
+                // Atoms about 0.1 nm apart, the virtual sites are constructed
+                x[c][a][m] = 0.1*random() + (m == 0 ? 0.1*a : 0.0);
+                f[c][a][m] = 100*random();
+            }
+        }
+    }
+    std::vector<double> xa(DIM*natom*stride), fa(DIM*natom*stride);
+    for(size_t c = 0; c < stride; c++)
+    {
+        size_t cc = std::min(c, nconf-1);
+        for(size_t a = 0; a < natom; a++)
+        {
+            for(int m = 0; m < DIM; m++)
+            {
+                xa[(DIM*a+m)*stride + c] = x[cc][a][m];
+                fa[(DIM*a+m)*stride + c] = f[cc][a][m];
+            }
+        }
+    }
+    // All types are there
+    size_t ntype = 0;
+    for(const auto &entry : top.entries())
+    {
+        ntype += isVsite(entry.first) ? 1 : 0;
+    }
+    EXPECT_EQ(11u, ntype);
+    auto         xstart = x;
+    VsiteHandler vsiteHandler;
+    vsiteHandler.constructPositions(&top, xa.data(), stride, stride, nconf);
+    vsiteHandler.distributeForces(&top, xa.data(), fa.data(), stride, stride, nconf);
+    for(size_t c = 0; c < nconf; c++)
+    {
+        vsiteHandler.constructPositions(&top, &x[c]);
+        vsiteHandler.distributeForces(&top, x[c], &f[c]);
+        for(size_t a = 0; a < natom; a++)
+        {
+            for(int m = 0; m < DIM; m++)
+            {
+                EXPECT_EQ(x[c][a][m], xa[(DIM*a+m)*stride + c]) << "conformation " << c << " particle " << a;
+                EXPECT_EQ(f[c][a][m], fa[(DIM*a+m)*stride + c]) << "conformation " << c << " particle " << a;
+                if (top.atoms()[a].pType() == ActParticle::Vsite)
+                {
+                    EXPECT_EQ(0, f[c][a][m]) << "the force on virtual site " << a << " is spread";
+                    EXPECT_NE(xstart[c][a][m], x[c][a][m]) << "virtual site " << a << " is constructed";
+                }
+            }
+        }
+    }
 }
 
 }  // namespace

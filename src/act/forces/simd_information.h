@@ -55,6 +55,21 @@ namespace alexandria
  */
 bool useExplicitSimd();
 
+/*! \brief Turn explicit SIMD on or off, for tests comparing the routines
+ * Explicit SIMD is only turned on if useExplicitSimd would return true
+ * without ACT_NO_EXPLICIT_SIMD, that is if it was compiled in and the
+ * processor supports it.
+ * \param[in] use Whether to use explicit SIMD
+ * \return whether explicit SIMD was used before
+ */
+bool setUseExplicitSimd(bool use);
+
+/*! \brief Whether explicit SIMD can be used on this processor
+ * \return true if it was compiled in and the processor supports it,
+ *         regardless of ACT_NO_EXPLICIT_SIMD
+ */
+bool explicitSimdAvailable();
+
 /*! \brief The theoretical double precision floating point performance of one core
  * It is the maximum clock frequency times the floating point operations
  * per cycle of the widest SIMD instructions of the processor with fused
