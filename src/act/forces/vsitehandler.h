@@ -28,6 +28,7 @@
 #ifndef ACT_VSITEHANDLER_H
 #define ACT_VSITEHANDLER_H
     
+#include <cstddef>
 #include <vector>
 
 #include "gromacs/math/vectypes.h"
@@ -60,7 +61,43 @@ class VsiteHandler
     void distributeForces(const Topology               *top,
                           const std::vector<gmx::RVec> &coords,
                           std::vector<gmx::RVec>       *forces) const;
-   
+
+    /*! \brief Construct the virtual sites of many conformations at once
+     * The coordinates are in the layout of ConformationArrays, component
+     * m of particle a in slot c is at (3*a+m)*stride + c. The positions
+     * are the same as those of constructPositions.
+     * \param[in]    top    The molecular topology
+     * \param[inout] x      The coordinates, the virtual site positions are set
+     * \param[in]    stride The stride
+     * \param[in]    nslot  The number of slots to construct, at most stride
+     * \param[in]    nconf  The number of slots that hold conformations, the
+     *                      others are padding, of which the floating point
+     *                      operations are not counted
+     */
+    void constructPositions(const Topology *top,
+                            double         *x,
+                            size_t          stride,
+                            size_t          nslot,
+                            size_t          nconf) const;
+
+    /*! \brief Distribute the forces of many conformations back to atoms
+     * The layout is that of constructPositions with many conformations,
+     * and the forces are the same as those of distributeForces.
+     * \param[in]    top    The molecular topology
+     * \param[in]    x      The coordinates
+     * \param[inout] f      The forces, those on the virtual sites are set to zero
+     * \param[in]    stride The stride
+     * \param[in]    nslot  The number of slots to distribute, at most stride
+     * \param[in]    nconf  The number of slots that hold conformations, see
+     *                      constructPositions
+     */
+    void distributeForces(const Topology *top,
+                          const double   *x,
+                          double         *f,
+                          size_t          stride,
+                          size_t          nslot,
+                          size_t          nconf) const;
+
 };
 
 } // namespace alexandria

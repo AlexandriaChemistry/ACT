@@ -47,6 +47,7 @@
 
 #include "act/basics/interactiontype.h"
 #include "act/basics/msg_handler.h"
+#include "act/forcefield/forcefield_parametername.h"
 #include "act/forcefield/forcefield_utils.h"
 #include "act/forcefield/potential.h"
 #include "act/import/import.h"
@@ -633,20 +634,98 @@ TEST_F(ForceComputerIntegrationTest, CountsFlops)
     fc.computeOnce(&msghandler_, pd, top, &coords, &forces, &energies, { 0, 0, 0 });
     EXPECT_TRUE(msghandler_.ok());
     // Per pair the distance 9 and the forces on the atoms 12, the kernel
-    // for the energy and its force
+    // for the energy and its force. The pairs without van der Waals
+    // interaction, such as those of hydrogens, are not computed.
     const std::vector<std::tuple<std::string, InteractionType, double>> expected = {
-        { "Potential HARMONIC_BONDS",  InteractionType::BONDS,  9 + 12 + 8 + 2   },
-        { "Potential HARMONIC_ANGLES", InteractionType::ANGLES, 67 + 47          },
-        { "Potential LJ14_7",          InteractionType::VDW,    9 + 12 + 23 + 12 }
+        { "Potential HARMONIC_BONDS",  InteractionType::BONDS,  9 + 12 + 16 + 2  },
+        { "Potential HARMONIC_ANGLES", InteractionType::ANGLES, 83 + 71          },
+        { "Potential LJ14_7",          InteractionType::VDW,    9 + 12 + 39 + 12 }
     };
     for (const auto &e : expected)
     {
         auto itype = std::get<1>(e);
         ASSERT_TRUE(top->hasEntry(itype)) << std::get<0>(e);
-        double n = top->entry(itype).size();
+        double n = 0;
+        for (const auto &b : top->entry(itype))
+        {
+            auto &params = b->params();
+            n += (InteractionType::VDW != itype ||
+                  (params[lj14_7EPSILON] > 0 && params[lj14_7SIGMA] > 0)) ? 1 : 0;
+        }
         EXPECT_GT(n, 0);
         EXPECT_EQ(std::get<2>(e)*n, timings.flops()[timings.index(std::get<0>(e))]) << std::get<0>(e);
     }
+    timings.reset();
+}
+
+// Test: The virtual sites of many conformations at once, in the layout of
+// ConformationArrays, are the same as one conformation at a time, and their
+// floating point operations are counted, but not those of the padding
+TEST_F(ForceComputerIntegrationTest, VsitesOfManyConformations)
+{
+    std::string ffName("ACS-v3fds");
+    auto        pd = getForceField(ffName);
+    ASSERT_NE(nullptr, pd);
+    ACTMol mol;
+    ASSERT_TRUE(setupMolecule(&msghandler_, ffName, "water_dimer", &mol));
+    const auto *top   = mol.topology();
+    auto        itype = InteractionType::VSITE3FD;
+    ASSERT_TRUE(top->hasEntry(itype));
+    double nvsite = top->entry(itype).size();
+    EXPECT_GT(nvsite, 0);
+    // Three different conformations and forces, in four slots
+    size_t nconf  = 3;
+    size_t stride = 4;
+    auto   x0     = mol.xOriginal();
+    size_t natom  = x0.size();
+    std::vector<std::vector<gmx::RVec>> x(nconf, x0), f(nconf, x0);
+    for(size_t c = 0; c < nconf; c++)
+    {
+        for(size_t a = 0; a < natom; a++)
+        {
+            for(int m = 0; m < DIM; m++)
+            {
+                x[c][a][m] += 0.01*(c + 1)*(a + m);
+                f[c][a][m]  = 0.1*a - 0.2*c + 0.3*m;
+            }
+        }
+    }
+    std::vector<double> xa(DIM*natom*stride), fa(DIM*natom*stride);
+    for(size_t c = 0; c < stride; c++)
+    {
+        size_t cc = std::min(c, nconf-1);
+        for(size_t a = 0; a < natom; a++)
+        {
+            for(int m = 0; m < DIM; m++)
+            {
+                xa[(DIM*a+m)*stride + c] = x[cc][a][m];
+                fa[(DIM*a+m)*stride + c] = f[cc][a][m];
+            }
+        }
+    }
+    VsiteHandler vsiteHandler;
+    auto        &timings = Timings::instance();
+    timings.reset();
+    vsiteHandler.constructPositions(top, xa.data(), stride, stride, nconf);
+    EXPECT_EQ(34*nvsite*nconf, timings.flops()[timings.index("Virtual sites")]);
+    vsiteHandler.distributeForces(top, xa.data(), fa.data(), stride, stride, nconf);
+    EXPECT_EQ((34 + 65)*nvsite*nconf, timings.flops()[timings.index("Virtual sites")]);
+    // One conformation at a time the operations are counted in the region
+    // that is active, here none
+    for(size_t c = 0; c < nconf; c++)
+    {
+        vsiteHandler.constructPositions(top, &x[c]);
+        vsiteHandler.distributeForces(top, x[c], &f[c]);
+        for(size_t a = 0; a < natom; a++)
+        {
+            for(int m = 0; m < DIM; m++)
+            {
+                EXPECT_EQ(x[c][a][m], xa[(DIM*a+m)*stride + c]) << "conformation " << c << " particle " << a;
+                EXPECT_EQ(f[c][a][m], fa[(DIM*a+m)*stride + c]) << "conformation " << c << " particle " << a;
+            }
+        }
+    }
+    EXPECT_EQ((34 + 65)*nvsite*nconf, timings.untimedFlops());
     timings.reset();
 }
 

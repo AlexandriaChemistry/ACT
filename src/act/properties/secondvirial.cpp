@@ -150,7 +150,9 @@ void ReRunner::addOptions(std::vector<t_pargs>      *pargs,
         { "-dT",     FALSE, etREAL, {&deltaT_},
           "Temperature increment for calculation of second virial." },
         { "-totalOnly", FALSE, etBOOL, {&totalOnly_},
-          "Plot the total B2(T) only and not the components" }
+          "Plot the total B2(T) only and not the components" },
+        { "-emin", FALSE, etREAL, {&eMin_},
+          "Dimers with a lower interaction energy (kJ/mol) are treated as overlapping atoms, with a Mayer function of -1. In models without repulsion on all charged sites, such as TIP5P, a charge can come arbitrarily close to an opposite charge of the other compound, with an energy that goes to minus infinity, and the second virial would diverge. The number of these dimers is reported." }
     };
     pargs->push_back(pa[0]);
     if (computeB2_)
@@ -239,18 +241,20 @@ void ReRunner::plotB2temp(const char *b2file)
  * If there are as many input coordinates as particles, they are used as
  * they are. Otherwise the input has the atoms only, and the other particles
  * get the coordinates of their parent atom.
- * \param[in] atoms The particles
- * \param[in] x     The input coordinates
- * \return the coordinates of all particles
+ * \param[in]  atoms  The particles
+ * \param[in]  x      The input coordinates
+ * \param[out] coords The coordinates of all particles, its memory is used again
  */
-static std::vector<gmx::RVec> allParticleCoords(const std::vector<ActAtom>   &atoms,
-                                                const std::vector<gmx::RVec> &x)
+static void allParticleCoords(const std::vector<ActAtom>   &atoms,
+                              const std::vector<gmx::RVec> &x,
+                              std::vector<gmx::RVec>       *coords)
 {
     if (x.size() == atoms.size())
     {
-        return x;
+        coords->assign(x.begin(), x.end());
+        return;
     }
-    std::vector<gmx::RVec> coords;
+    coords->clear();
     size_t index = 0;
     for(size_t i = 0; i < atoms.size(); i++)
     {
@@ -260,23 +264,22 @@ static std::vector<gmx::RVec> allParticleCoords(const std::vector<ActAtom>   &at
             {
                 GMX_THROW(gmx::InvalidInputError(gmx::formatString("Number of (generated) coordinates in trajectory (%zu) does not match molecule file (%zu)", x.size(), atoms.size()).c_str()));
             }
-            coords.push_back(x[index++]);
+            coords->push_back(x[index++]);
         }
         else if (!atoms[i].parents().empty() && atoms[i].parents()[0] < static_cast<int>(i))
         {
-            coords.push_back(coords[atoms[i].parents()[0]]);
+            coords->push_back((*coords)[atoms[i].parents()[0]]);
         }
         else
         {
             // Will be constructed, e.g. a virtual site
-            coords.push_back({ 0, 0, 0 });
+            coords->push_back({ 0, 0, 0 });
         }
     }
     if (index != x.size())
     {
         GMX_THROW(gmx::InvalidInputError(gmx::formatString("Number of (generated) coordinates in trajectory (%zu) does not match molecule file (%zu)", x.size(), atoms.size()).c_str()));
     }
-    return coords;
 }
 
 void ReRunner::rerun(MsgHandler       *msghandler,
@@ -296,10 +299,10 @@ void ReRunner::rerun(MsgHandler       *msghandler,
     gmx_stats edist;
     // Coordinates of all particles of each structure
     const auto &atoms = actmol->atomsConst();
-    std::vector<std::vector<gmx::RVec>> allCoords;
-    for (const auto &x : dimers)
+    std::vector<std::vector<gmx::RVec>> allCoords(dimers.size());
+    for (size_t i = 0; i < dimers.size(); i++)
     {
-        allCoords.push_back(allParticleCoords(atoms, x));
+        allParticleCoords(atoms, dimers[i], &allCoords[i]);
     }
     // Compute the energies of all structures at once
     std::vector<std::map<InteractionType, double>> allEnergies;
@@ -483,7 +486,7 @@ void ReRunner::runB2(CommunicationRecord         *cr,
         b2t_[b2b.first].resize(Temperature.size());
     }
     // Temporary arrays for weighted properties.
-    B2Data b2data(gendimers_.ndist(), Temperature);
+    B2Data b2data(gendimers_.ndist(), Temperature, eMin_);
     
     gmx::RVec rvnul = { 0, 0, 0 };
     // Moments of inertia, averaged over all dimers.
@@ -506,7 +509,7 @@ void ReRunner::runB2(CommunicationRecord         *cr,
     // Collect all generated dimer coordinates for -ox output (only when requested)
     std::vector<std::vector<gmx::RVec>> allCoords;
     // The data of all nodes of all rounds so far, on the master
-    B2Data b2total(gendimers_.ndist(), Temperature);
+    B2Data b2total(gendimers_.ndist(), Temperature, eMin_);
     // The total B2 of each round, for the convergence table
     std::vector<std::vector<double>> b2rounds;
     // The molecules of the dimers, the same in all dimers
@@ -540,6 +543,12 @@ void ReRunner::runB2(CommunicationRecord         *cr,
     std::vector<gmx::RVec> torqueMol[2];
     std::vector<double>    dimEnergy, dimDist, dimWeight;
     std::vector<size_t>    dimIndex;
+    // Coordinates of all particles, interaction energies and forces of the
+    // dimers of an orientation, kept such that their memory is used again
+    std::vector<std::vector<gmx::RVec>>            allCoordsShells;
+    std::vector<std::map<InteractionType, double>> allEinter;
+    std::vector<double>                            allEpot;
+    std::vector<std::vector<gmx::RVec>>            allForces;
     int ndone = 0;
     for(auto nround : rounds)
     {
@@ -562,15 +571,12 @@ void ReRunner::runB2(CommunicationRecord         *cr,
             }
             // Coordinates of all particles of the dimers
             timings.start(energyTimer);
-            std::vector<std::vector<gmx::RVec>> allCoordsShells;
-            for (const auto &d : dimers)
+            allCoordsShells.resize(dimers.size());
+            for (size_t i = 0; i < dimers.size(); i++)
             {
-                allCoordsShells.push_back(allParticleCoords(atoms, d.coords));
+                allParticleCoords(atoms, dimers[i].coords, &allCoordsShells[i]);
             }
             // Compute the interaction energies and forces of all dimers at once
-            std::vector<std::map<InteractionType, double>> allEinter;
-            std::vector<double>                            allEpot;
-            std::vector<std::vector<gmx::RVec>>            allForces;
             forceComp_->computeInteraction(msghandler, pd, actmol, &allCoordsShells, true,
                                            &allEinter, &allEpot, &allForces);
             timings.stop(energyTimer);
@@ -700,11 +706,11 @@ void ReRunner::runB2(CommunicationRecord         *cr,
                 msghandler->write("");
             }
             // Per particle the center of mass and the force 10, the coordinates
-            // relative to it 3 and the torques 54, per molecule the normalization,
-            // the moments of inertia and the squared force 11, and the
-            // distance between the centers of mass 9. The principal axes
-            // are not counted.
-            timings.addFlops(ndim*(67.0*(natom[0] + natom[1]) + 2*11 + 9));
+            // relative to it 3 and the torques 54, per molecule the normalization
+            // with three divisions, the moments of inertia and the squared
+            // force 23, and the distance between the centers of mass with its
+            // square root 13. The principal axes are not counted.
+            timings.addFlops(ndim*(67.0*(natom[0] + natom[1]) + 2*23 + 13));
             timings.stop(torqueTimer);
             // Now we have computed energies, forces and torques for all
             // dimers of this orientation. Time to update the intermediate structure
@@ -730,6 +736,12 @@ void ReRunner::runB2(CommunicationRecord         *cr,
         {
             ScopedTimer scoped(b2Timer);
             msghandler->write(gmx::formatString("\nSecond virial coefficient (cm^3/mol) from %d dimer orientations", nround));
+            if (b2total.nOverlap() > 0)
+            {
+                msghandler->msg(ACTStatus::Warning,
+                                gmx::formatString("%.0f of %.0f dimers have an energy below %g kJ/mol and are treated as overlapping atoms, see -emin.",
+                                                  b2total.nOverlap(), b2total.nDimer(), eMin_));
+            }
             auto header = gmx::formatString("Temperature");
             for(const auto &b2b : b2Type2str)
             {

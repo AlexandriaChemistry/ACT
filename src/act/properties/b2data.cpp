@@ -32,6 +32,7 @@
  */
 #include "b2data.h"
 
+#include <algorithm>
 #include <cmath>
 #include <cstdio>
 #include <sstream>
@@ -49,7 +50,8 @@ namespace alexandria
 {
 
 B2Data::B2Data(int                        nbins,
-               const std::vector<double> &temperatures)
+               const std::vector<double> &temperatures,
+               double                     eMin) : eMin_(eMin)
 {
     temperatures_ = temperatures;
     exp_U12_.resize(temperatures.size());
@@ -71,10 +73,18 @@ B2Data::B2Data(int                        nbins,
         n_U12_[i].resize(nbins, 0);
     }
     dist_.resize(nbins, -1);
+    for(auto T : temperatures)
+    {
+        if (T == 0)
+        {
+            fprintf(stderr, "Please provide a finite temperature to compute second virial.\n");
+        }
+    }
 }
 
-void B2Data::dump(MsgHandler *msghandler) const
+void B2Data::dump(MsgHandler *msghandler)
 {
+    flush();
     if (msghandler)
     {
         std::ostringstream oss;
@@ -89,6 +99,7 @@ void B2Data::dump(MsgHandler *msghandler) const
 template<typename Func>
 void B2Data::forEachSum(Func func)
 {
+    flush();
     for(auto &t : exp_U12_)
     {
         for(auto &x : t)
@@ -123,6 +134,8 @@ void B2Data::forEachSum(Func func)
             }
         }
     }
+    func(nDimer_);
+    func(nOverlap_);
 }
 
 void B2Data::aggregate(CommunicationRecord *cr)
@@ -165,6 +178,8 @@ void B2Data::addData(size_t iTemp, size_t index, double dist,
                      const gmx::RVec exp_tau0, const gmx::RVec exp_tau1,
                      double weight)
 {
+    // After the orientations added before
+    flush();
     if (iTemp >= exp_U12_.size())
     {
         GMX_THROW(gmx::InternalError(gmx::formatString("iTemp = %zu, should be less than %zu", iTemp, exp_U12_.size()).c_str()));
@@ -210,15 +225,53 @@ void B2Data::addOrientation(const std::vector<size_t>    &index,
         dist_[index[ii]] = dist[ii];
         inOrder          = inOrder && index[ii] == ii;
     }
-    // The Boltzmann factors of the dimers at one temperature
-    std::vector<double> g0_12(ndimer);
-    size_t              ntemp = 0;
+    // Dimers with an energy below eMin_ are overlapping atoms
+    for(size_t ii = 0; ii < ndimer; ii++)
+    {
+        if (energy[ii] < eMin_)
+        {
+            nOverlap_ += 1;
+        }
+    }
+    nDimer_ += ndimer;
+    if (!inOrder)
+    {
+        // Added at once, after the orientations before it
+        flush();
+        Orientation one = { energy, weight, { force2[0], force2[1] }, { torque[0], torque[1] } };
+        addRange(one, index.data(), 0, ndimer);
+        return;
+    }
+    // Kept until maxPending_ orientations are there, see flush
+    if (pending_.size() <= npending_)
+    {
+        pending_.resize(npending_ + 1);
+    }
+    auto &o = pending_[npending_++];
+    o.energy.assign(energy.begin(), energy.end());
+    o.weight.assign(weight.begin(), weight.end());
+    for(int kk = 0; kk < 2; kk++)
+    {
+        o.force2[kk].assign(force2[kk].begin(), force2[kk].end());
+        o.torque[kk].assign(torque[kk].begin(), torque[kk].end());
+    }
+    if (npending_ == maxPending_)
+    {
+        flush();
+    }
+}
+
+void B2Data::addRange(const Orientation &o,
+                      const size_t      *index,
+                      size_t             i0,
+                      size_t             i1)
+{
+    size_t ntemp = 0;
     for(size_t iTemp = 0; iTemp < temperatures_.size(); iTemp++)
     {
         auto T = temperatures_[iTemp];
         if (T == 0)
         {
-            fprintf(stderr, "Please provide a finite temperature to compute second virial.\n");
             continue;
         }
         double beta = 1.0/(BOLTZ*T);
@@ -229,55 +282,83 @@ void B2Data::addOrientation(const std::vector<size_t>    &index,
         auto  &eT0  = exp_tau_[0][iTemp];
         auto  &eT1  = exp_tau_[1][iTemp];
         auto  &nU12 = n_U12_[iTemp];
-        for(size_t ii = 0; ii < ndimer; ii++)
+        // The Boltzmann factors of the dimers. The loop is not vectorized,
+        // since a vector exp is not faster here, but can differ from exp
+        // in the last bit.
+        g0_12_.resize(i1 - i0);
+        double *g0 = g0_12_.data();
+#if defined(__clang__)
+#pragma clang loop vectorize(disable)
+#endif
+        for(size_t ii = i0; ii < i1; ii++)
         {
             // Gray and Gubbins Eqn. 3.261
-            double yb = energy[ii]*beta;
-            g0_12[ii] = yb < 700 ? std::exp(-yb) : 0;
+            double yb = o.energy[ii]*beta;
+            g0[ii-i0] = (!(o.energy[ii] < eMin_) && yb < 700) ? std::exp(-yb) : 0;
         }
         // Terms with a Boltzmann factor of zero add zero, the sums are
         // never negative zero, so adding zero does not change them.
-        auto add = [&](size_t ii, size_t j)
+        for(size_t ii = i0; ii < i1; ii++)
         {
-            double g    = g0_12[ii];
+            size_t j    = index ? index[ii] : ii;
+            double g    = g0[ii-i0];
             bool   some = g > 0;
-            double w    = weight[ii];
+            double w    = o.weight[ii];
             eU12[j] += w*(g-1);
             // Gray and Gubbins Eqn. 3.272
-            double ipf0 = some ? g*force2[0][ii] : 0.0;
-            double ipf1 = some ? g*force2[1][ii] : 0.0;
+            double ipf0 = some ? g*o.force2[0][ii] : 0.0;
+            double ipf1 = some ? g*o.force2[1][ii] : 0.0;
             eF0[j] += w*ipf0;
             eF1[j] += w*ipf1;
             for(int m = 0; m < DIM; m++)
             {
                 // Gray and Gubbins Eqn. 3.282
-                double tau0 = some ? g*torque[0][ii][m]*torque[0][ii][m] : 0.0;
-                double tau1 = some ? g*torque[1][ii][m]*torque[1][ii][m] : 0.0;
+                double tau0 = some ? g*o.torque[0][ii][m]*o.torque[0][ii][m] : 0.0;
+                double tau1 = some ? g*o.torque[1][ii][m]*o.torque[1][ii][m] : 0.0;
                 eT0[j][m] += w*tau0;
                 eT1[j][m] += w*tau1;
             }
             nU12[j] += w;
-        };
-        if (inOrder)
-        {
-            // Without indirect indexing the loop can be vectorized
-            for(size_t ii = 0; ii < ndimer; ii++)
-            {
-                add(ii, ii);
-            }
-        }
-        else
-        {
-            for(size_t ii = 0; ii < ndimer; ii++)
-            {
-                add(ii, index[ii]);
-            }
         }
     }
     // Per dimer and temperature: the Boltzmann factor with the exponential
-    // 27, the Mayer function 3, the forces 6, the torques 24 and the weight 1,
+    // 31, the Mayer function 3, the forces 6, the torques 24 and the weight 1,
     // see Timings::addFlops
-    Timings::instance().addFlops(61.0*ndimer*ntemp);
+    Timings::instance().addFlops(65.0*(i1 - i0)*ntemp);
+}
+
+void B2Data::flush()
+{
+    if (npending_ == 0)
+    {
+        return;
+    }
+    // A block of distances of all pending orientations at all temperatures,
+    // such that the sums of the block stay in the cache while the terms of
+    // all orientations are added. Each sum gets the terms in the order of
+    // the orientations, as without the blocks, such that the sums are the
+    // same. Without the blocks, the sums of all distances and temperatures
+    // are read and written for each orientation, which is limited by the
+    // memory bandwidth.
+    constexpr size_t block = 16;
+    size_t nmax = 0;
+    for(size_t b = 0; b < npending_; b++)
+    {
+        nmax = std::max(nmax, pending_[b].energy.size());
+    }
+    for(size_t i0 = 0; i0 < nmax; i0 += block)
+    {
+        for(size_t b = 0; b < npending_; b++)
+        {
+            const auto &o  = pending_[b];
+            size_t      i1 = std::min(i0 + block, o.energy.size());
+            if (i0 < i1)
+            {
+                addRange(o, nullptr, i0, i1);
+            }
+        }
+    }
+    npending_ = 0;
 }
 
 void B2Data::integrate(MsgHandler *msghandler,
@@ -287,6 +368,7 @@ void B2Data::integrate(MsgHandler *msghandler,
                        double *Bclass, double *BqmForce,
                        double *BqmTorque1, double *BqmTorque2)
 {
+    flush();
     // Constant for quantum corrections
     double    hbarfac  = beta*gmx::square(beta*PLANCK/(2*M_PI))/24;
     // Initiate arrays

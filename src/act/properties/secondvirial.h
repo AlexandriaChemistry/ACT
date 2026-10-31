@@ -90,6 +90,8 @@ private:
     bool                computeB2_   = false;
     //! Plot only the total B2
     bool                totalOnly_   = false;
+    //! Dimers with a lower energy (kJ/mol) are treated as overlapping atoms
+    double              eMin_        = -1000;
     //! The temperature array
     std::vector<double> Temperatures_;
     //! Second virial as a function of T for all components (see function temperatures)

@@ -411,8 +411,9 @@ static double calcJ(MsgHandler            *msg_handler,
 }
 
 /*! \brief Floating point operations of calcJ, see Timings::addFlops
- * The distance 9 and the potential of a point charge 2, or of a Gaussian
- * one 85 with the error function. Slater distributions are not counted.
+ * The distance 13 with its square root and the potential of a point
+ * charge 6 with its division, or of a Gaussian one 97 with the error
+ * function. Slater distributions are not counted.
  * \param[in] chargeType The charge distribution type
  * \param[in] zeta       The distribution width of the charge
  */
@@ -420,9 +421,9 @@ static double calcJFlops(ChargeDistributionType chargeType, double zeta)
 {
     if (zeta <= 0 || ChargeDistributionType::Point == chargeType)
     {
-        return 11;
+        return 19;
     }
-    return ChargeDistributionType::Gaussian == chargeType ? 94 : 0;
+    return ChargeDistributionType::Gaussian == chargeType ? 110 : 0;
 }
 
 void QgenResp::calcPot(MsgHandler *msg_handler,

@@ -161,6 +161,18 @@ where *Value* can be *ON* or *OFF* or something more option specific.
    +----------------------+------------------------------------------------------------+
    |                      | processors with less SIMD.                                 |
    +----------------------+------------------------------------------------------------+
+   | ACT_PAIR_UNROLL      | Unroll factor, 1 to 16, of the loops over conformations    |
+   +----------------------+------------------------------------------------------------+
+   |                      | of the explicit SIMD routines for pair interactions, such  |
+   +----------------------+------------------------------------------------------------+
+   |                      | as Coulomb, van der Waals and bonds. Empty (default) uses  |
+   +----------------------+------------------------------------------------------------+
+   |                      | 4 for each SIMD. Changing it compiles only one file again  |
+   +----------------------+------------------------------------------------------------+
+   |                      | and is meant for finding the fastest value on a computer,  |
+   +----------------------+------------------------------------------------------------+
+   |                      | see below.                                                 |
+   +----------------------+------------------------------------------------------------+
    | GMX_OPENMP_SIMD      | Let the compiler vectorize the loops over conformations    |
    +----------------------+------------------------------------------------------------+
    |                      | marked with OpenMP SIMD directives, using -fopenmp-simd.   |
@@ -181,12 +193,20 @@ where *Value* can be *ON* or *OFF* or something more option specific.
 The SIMD (single instruction, multiple data) instructions of the processor are used to compute the energies and forces of several conformations of a molecule at once, which speeds up training considerably.
 At the start of each program the log file reports the SIMD of the processor, the SIMD the compiler could use for the rest of the code and whether explicit SIMD is used, for instance::
 
-  Explicit SIMD:      AVX2, 4 conformations at once, in use
+  Explicit SIMD:      AVX2, 4 conformations at once, pair loops unrolled 4 times, in use
 
 For most users the defaults are best. To build for a cluster with processors different from the one where you compile, set *ACT_SIMD* to the SIMD of the compute nodes. Since the explicit SIMD routines are only used if the processor supports them, a program built with AVX_512 still runs correctly on a processor with only AVX2, albeit more slowly. The rest of the code is vectorized by the compiler for the instructions given in *CMAKE_CXX_FLAGS*, for instance *-march=native* to use all instructions of the processor where you compile.
 Setting the environment variable *ACT_NO_EXPLICIT_SIMD* when running a program turns off the explicit SIMD routines, which can be used to check the results or the speed of the different routines::
 
   ACT_NO_EXPLICIT_SIMD=1 alexandria train_ff ...
+
+The loops over conformations of the explicit SIMD routines for pair interactions are unrolled, such that the processor has the instructions for several SIMD vectors of conformations at once. Which unroll factor is fastest depends on the processor, since a larger factor helps when the loop overhead matters, but helps less with wide SIMD such as AVX-512 and not when only few conformations are computed, as in the last iterations of relaxing shells. To find the best value on your computer, build with several values of *ACT_PAIR_UNROLL* in the same build directory and compare the GFlop/s of the potentials, such as *Potential COULOMB_POINT*, in the timings at the end of the log file of, for instance, a calculation of the second virial coefficient::
+
+  cmake -DACT_PAIR_UNROLL=2 . && make -j 8 install
+  cmake -DACT_PAIR_UNROLL=8 . && make -j 8 install
+  cmake -DACT_PAIR_UNROLL= . && make -j 8 install
+
+The last command returns to the default. The results do not depend on the unroll factor.
 
 ============================
 Troubleshooting Installation

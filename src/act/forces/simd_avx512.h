@@ -50,6 +50,12 @@ namespace simd
 //! Number of doubles in a SimdDouble
 constexpr size_t simdWidth = 8;
 
+/*! \brief Default unroll factor of the loops over conformations of pair interactions
+ * See computePairConformations, it can be changed with the CMake option
+ * ACT_PAIR_UNROLL for benchmarking.
+ */
+constexpr size_t pairUnrollDefault = 4;
+
 //! Eight doubles
 class SimdDouble
 {

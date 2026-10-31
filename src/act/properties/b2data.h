@@ -33,6 +33,7 @@
 #ifndef ACT_ALEXANDRIA_B2DATA_H
 #define ACT_ALEXANDRIA_B2DATA_H
 
+#include <limits>
 #include <vector>
 
 #include "act/basics/msg_handler.h"
@@ -63,6 +64,49 @@ private:
     std::vector<double>                 dist_;
     //! Copy of temperature array
     std::vector<double>                 temperatures_;
+    //! Dimers with a lower energy are treated as overlapping atoms
+    double                              eMin_;
+    //! Number of dimers added
+    double                              nDimer_   = 0;
+    //! Number of dimers with an energy below eMin_
+    double                              nOverlap_ = 0;
+    //! The data of the dimers of one orientation, see addOrientation
+    struct Orientation
+    {
+        //! Energy of each dimer
+        std::vector<double>    energy;
+        //! Weight of each dimer
+        std::vector<double>    weight;
+        //! Squared force on each molecule of each dimer
+        std::vector<double>    force2[2];
+        //! Torque on each molecule of each dimer
+        std::vector<gmx::RVec> torque[2];
+    };
+    //! Number of orientations kept before they are added to the sums, see flush
+    static constexpr size_t             maxPending_ = 32;
+    //! Orientations not yet in the sums, the first npending_, kept to use the memory again
+    std::vector<Orientation>            pending_;
+    //! Number of orientations not yet in the sums
+    size_t                              npending_ = 0;
+    //! The Boltzmann factors of a range of dimers, kept to use the memory again
+    std::vector<double>                 g0_12_;
+
+    /*! \brief Add a range of the dimers of one orientation to the sums
+     * At all temperatures, see addOrientation.
+     * \param[in] o     The orientation
+     * \param[in] index Distance index of each dimer, if nullptr the index
+     *                  of the dimer
+     * \param[in] i0    The first dimer
+     * \param[in] i1    One past the last dimer
+     */
+    void addRange(const Orientation &o, const size_t *index, size_t i0, size_t i1);
+
+    /*! \brief Add the pending orientations to the sums
+     * In blocks of distances, see the implementation, with the same
+     * sums as adding each orientation when it is given. Called before
+     * the sums are used.
+     */
+    void flush();
 
     /*! \brief Apply a function to all sums, always in the same order
      * \param[in] func Function that takes a reference to a sum
@@ -73,14 +117,23 @@ public:
     /*! \brief Constructor
      * \param[in] nbins        Number of bins
      * \param[in] temperatures Ts at which to compute the second virial
+     * \param[in] eMin         Dimers with a lower energy are treated as
+     *                         overlapping atoms, see addOrientation
      */
     B2Data(int                        nbins,
-           const std::vector<double> &temperatures);
+           const std::vector<double> &temperatures,
+           double                     eMin = -std::numeric_limits<double>::infinity());
+
+    //! \return the number of dimers added with addOrientation
+    double nDimer() const { return nDimer_; }
+
+    //! \return the number of dimers with an energy below eMin
+    double nOverlap() const { return nOverlap_; }
 
     /*! \brief Dump some info using a MsgHandler
      * \param[in] msghandler The message handler
      */
-    void dump(MsgHandler *msghandler) const;
+    void dump(MsgHandler *msghandler);
 
     /*! \brief Aggregate information from helpers to tha main node
      * \param[in] cr Communication information 
@@ -110,7 +163,13 @@ public:
      * the Boltzmann factor g = exp(-beta U) of the energy U of each dimer,
      * g-1 as Mayer function, g times the squared forces and g times the
      * squared torque components, see Gray and Gubbins Eqns. 3.261, 3.272
-     * and 3.282. Temperatures of zero are skipped.
+     * and 3.282. Temperatures of zero are skipped. Dimers with an energy
+     * below eMin are treated as overlapping atoms, with g = 0 as for a
+     * strong repulsion, since their energy is not physical. Otherwise the
+     * Boltzmann factor can overflow and make the second virial infinite.
+     * If the dimers are in the order of their distance indices, the
+     * orientation is kept and added to the sums together with the next
+     * ones, which is faster, see flush.
      * \param[in] index  Distance index of each dimer
      * \param[in] dist   Distance between the molecules of each dimer
      * \param[in] energy Energy of each dimer

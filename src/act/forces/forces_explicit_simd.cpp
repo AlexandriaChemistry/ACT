@@ -52,6 +52,10 @@
 
 #ifdef ACT_HAVE_SIMD
 
+#include <utility>
+
+#include "pairunroll.h"
+
 #include "act/coulombintegrals/gaussian_integrals.h"
 #include "act/forcefield/forcefield_parametername.h"
 #include "gromacs/math/functions.h"
@@ -78,6 +82,8 @@ struct PairParams
     size_t j;
     //! The parameters
     double p[maxPairParams];
+    //! The variant of the kernel, see pairVariants
+    int    variant;
 };
 
 //! Lennard-Jones 12-6
@@ -498,12 +504,54 @@ struct Coulomb
         }
         return true;
     }
-    //! \copydoc LJ12_6::compute
+    /*! \brief The number of variants of compute, see pairVariants
+     * Variant 0 is any pair, 1 a pair with one point charge each and 2 a
+     * pair with one Gaussian charge each. Without second charges, the
+     * common case, the variants 1 and 2 do not test the charges in the
+     * loop over conformations.
+     */
+    static constexpr int nvariant = 3;
+    /*! \brief The variant for an interaction
+     * \param[in] p The parameters, see prepare
+     * \return the variant
+     */
+    static int variant(const double *p)
+    {
+        if (p[2] != 0 || p[4] != 0 || p[6] != 0)
+        {
+            return 0;
+        }
+        return (p[1] == 0) ? 1 : 2;
+    }
+    /*! \copydoc LJ12_6::compute
+     * \tparam V The variant, see nvariant. The variants 1 and 2 do the
+     *           same operations as variant 0 does for them.
+     */
+    template <int V>
     static void compute(const double *p, SimdDouble rsq, SimdDouble *e, SimdDouble *fscal)
     {
         // Particles on top of each other only have an energy with Gaussian charges
         auto       overlap = !(rsq > 0.0);
         SimdDouble rinv    = simd::invsqrt(rsq);
+        if constexpr (V == 1)
+        {
+            auto qq = p[0];
+            e[0]  += simd::select(overlap, 0.0, qq*rinv);
+            *fscal = simd::select(overlap, 0.0, qq*rinv*rinv*rinv);
+            return;
+        }
+        else if constexpr (V == 2)
+        {
+            auto       qq   = p[0];
+            auto       zeta = p[1];
+            SimdDouble rz   = zeta*rsq*rinv;
+            SimdDouble exprz2;
+            SimdDouble erfrz = simd::erfAndExp(rz, &exprz2);
+            e[0]  += simd::select(overlap, qq*2*zeta*invsqrt_pi, qq*erfrz*rinv);
+            *fscal = simd::select(overlap, 0.0,
+                                  qq*(erfrz*rinv - 2*invsqrt_pi*zeta*exprz2)*rinv*rinv);
+            return;
+        }
         for(int k = 0; k < 4; k++)
         {
             auto qq   = p[2*k];
@@ -679,6 +727,147 @@ struct HuaBond
     }
 };
 
+/*! \brief The number of variants of the compute function of a pair kernel
+ * A kernel can have variants of compute for different kinds of
+ * interactions, such that the loop over conformations does not test the
+ * parameters, see Coulomb. It then has a constant nvariant, a function
+ * variant giving the variant for the parameters and compute is a template
+ * on the variant.
+ * \tparam Kernel The potential
+ * \return the number of variants, 1 if there are none
+ */
+template <typename Kernel>
+static constexpr int pairVariants()
+{
+    if constexpr (requires { Kernel::nvariant; })
+    {
+        return Kernel::nvariant;
+    }
+    else
+    {
+        return 1;
+    }
+}
+
+/*! \brief Compute one pair interaction for conformations c to c + simdWidth - 1
+ * \tparam       Kernel   The potential
+ * \tparam       Forces   Whether to compute forces
+ * \tparam       V        The variant of the kernel, see pairVariants
+ * \param[in]    pp       The interaction
+ * \param[in]    stride   Number of conformations
+ * \param[in]    c        The first conformation
+ * \param[in]    x        Coordinates
+ * \param[inout] f        Forces, not used if Forces is false
+ * \param[inout] energies Energies
+ */
+template <typename Kernel, bool Forces, int V>
+static inline void computePair(const PairParams &pp,
+                               size_t            stride,
+                               size_t            c,
+                               const double     *x,
+                               double           *f,
+                               double           *energies)
+{
+    SimdDouble dx[DIM];
+    SimdDouble rsq = 0.0;
+    for (int m = 0; m < DIM; m++)
+    {
+        dx[m] = simd::load(x + pp.i + m*stride + c) - simd::load(x + pp.j + m*stride + c);
+        rsq   = simd::fma(dx[m], dx[m], rsq);
+    }
+    SimdDouble e[explicitSimdEnergyTerms];
+    for (int k = 0; k < explicitSimdEnergyTerms; k++)
+    {
+        e[k] = simd::load(energies + k*stride + c);
+    }
+    SimdDouble fscal;
+    if constexpr (pairVariants<Kernel>() > 1)
+    {
+        Kernel::template compute<V>(pp.p, rsq, e, &fscal);
+    }
+    else
+    {
+        Kernel::compute(pp.p, rsq, e, &fscal);
+    }
+    for (int k = 0; k < explicitSimdEnergyTerms; k++)
+    {
+        simd::store(energies + k*stride + c, e[k]);
+    }
+    if constexpr (Forces)
+    {
+        for (int m = 0; m < DIM; m++)
+        {
+            double *fi = f + pp.i + m*stride + c;
+            double *fj = f + pp.j + m*stride + c;
+            simd::store(fi, simd::fma(fscal, dx[m], simd::load(fi)));
+            simd::store(fj, simd::load(fj) - fscal*dx[m]);
+        }
+    }
+}
+
+/*! \brief Compute one pair interaction for all conformations
+ * The loop over conformations is unrolled pairUnroll times, such that the
+ * instructions of that many SIMD vectors of conformations are available to
+ * the execution units at once and the loop overhead is shared. Each
+ * conformation is computed as without unrolling. The remaining SIMD
+ * vectors, fewer than pairUnroll, are computed one at a time.
+ * \tparam V The variant of the kernel, see pairVariants
+ * The other parameters are those of computePair.
+ */
+#ifdef ACT_PAIR_UNROLL
+//! The unroll factor of the pair loops, from the CMake option ACT_PAIR_UNROLL
+constexpr size_t pairUnroll = ACT_PAIR_UNROLL;
+#else
+//! The unroll factor of the pair loops, the default of the SIMD type
+constexpr size_t pairUnroll = simd::pairUnrollDefault;
+#endif
+static_assert(pairUnroll >= 1 && pairUnroll <= 16, "The unroll factor of the pair loops should be 1 to 16");
+
+template <typename Kernel, bool Forces, int V>
+static void computePairConformations(const PairParams &pp,
+                                     size_t            stride,
+                                     const double     *x,
+                                     double           *f,
+                                     double           *energies)
+{
+    constexpr size_t width = simd::simdWidth;
+    size_t           c     = 0;
+    for (; c + pairUnroll*width <= stride; c += pairUnroll*width)
+    {
+        // The vectors in increasing order
+        [&]<size_t... u>(std::index_sequence<u...>)
+        {
+            (computePair<Kernel, Forces, V>(pp, stride, c + u*width, x, f, energies), ...);
+        }(std::make_index_sequence<pairUnroll>{});
+    }
+    for (; c < stride; c += width)
+    {
+        computePair<Kernel, Forces, V>(pp, stride, c, x, f, energies);
+    }
+}
+
+/*! \brief Compute one pair interaction with the variant of its kernel
+ * \tparam V The first variant to test, see pairVariants
+ * The other parameters are those of computePair.
+ */
+template <typename Kernel, bool Forces, int V = 0>
+static void dispatchPairVariant(const PairParams &pp,
+                                size_t            stride,
+                                const double     *x,
+                                double           *f,
+                                double           *energies)
+{
+    if constexpr (V + 1 < pairVariants<Kernel>())
+    {
+        if (pp.variant != V)
+        {
+            dispatchPairVariant<Kernel, Forces, V + 1>(pp, stride, x, f, energies);
+            return;
+        }
+    }
+    computePairConformations<Kernel, Forces, V>(pp, stride, x, f, energies);
+}
+
 /*! \brief Compute a pair potential for all conformations
  * \tparam       Kernel   The potential
  * \param[in]    entries  The interactions
@@ -711,42 +900,22 @@ void computePairs(TopologyEntryRange          entries,
         pp.j = DIM*entry.atomIndices()[1]*stride;
         if (Kernel::prepare(entry, atoms, epsilonr, pp.p))
         {
+            if constexpr (pairVariants<Kernel>() > 1)
+            {
+                pp.variant = Kernel::variant(pp.p);
+            }
+            else
+            {
+                pp.variant = 0;
+            }
             pairs.push_back(pp);
         }
     }
+    // The interactions in the same order as without variants, such that
+    // the forces and energies are summed in the same order
     for (const auto &pp : pairs)
     {
-        for (size_t c = 0; c < stride; c += simd::simdWidth)
-        {
-            SimdDouble dx[DIM];
-            SimdDouble rsq = 0.0;
-            for (int m = 0; m < DIM; m++)
-            {
-                dx[m] = simd::load(x + pp.i + m*stride + c) - simd::load(x + pp.j + m*stride + c);
-                rsq   = simd::fma(dx[m], dx[m], rsq);
-            }
-            SimdDouble e[explicitSimdEnergyTerms];
-            for (int k = 0; k < explicitSimdEnergyTerms; k++)
-            {
-                e[k] = simd::load(energies + k*stride + c);
-            }
-            SimdDouble fscal;
-            Kernel::compute(pp.p, rsq, e, &fscal);
-            for (int k = 0; k < explicitSimdEnergyTerms; k++)
-            {
-                simd::store(energies + k*stride + c, e[k]);
-            }
-            if constexpr (Forces)
-            {
-                for (int m = 0; m < DIM; m++)
-                {
-                    double *fi = f + pp.i + m*stride + c;
-                    double *fj = f + pp.j + m*stride + c;
-                    simd::store(fi, simd::fma(fscal, dx[m], simd::load(fi)));
-                    simd::store(fj, simd::load(fj) - fscal*dx[m]);
-                }
-            }
-        }
+        dispatchPairVariant<Kernel, Forces>(pp, stride, x, f, energies);
     }
 }
 
@@ -1082,6 +1251,11 @@ size_t explicitSimdWidth()
     return simd::simdWidth;
 }
 
+size_t explicitSimdPairUnroll()
+{
+    return pairUnroll;
+}
+
 ExplicitSimd explicitSimdType()
 {
 #if ACT_SIMD_AVX_512
@@ -1179,6 +1353,11 @@ namespace alexandria
 {
 
 size_t explicitSimdWidth()
+{
+    return 1;
+}
+
+size_t explicitSimdPairUnroll()
 {
     return 1;
 }

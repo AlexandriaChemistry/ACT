@@ -149,6 +149,11 @@ TEST(TimingsTest, PerformanceInJson)
     EXPECT_NEAR(inKernel, findNumber(*jperf, "Per core in the counted parts"), 1e-3*inKernel);
     EXPECT_NEAR(100, findNumber(*jperf, "Theoretical peak per core"), 1e-4);
     EXPECT_EQ("test processor", findObject(*jperf, "Theoretical peak basis")->value());
+    // The peak is for double precision, as are all calculations in a double build
+    EXPECT_EQ("double", findObject(*jperf, "Theoretical peak precision")->value());
+#if GMX_DOUBLE
+    EXPECT_EQ("double", findObject(*jperf, "Precision")->value());
+#endif
     EXPECT_NEAR(1.5, findNumber(*jperf, "Fraction of the peak on average"), 1e-3);
     EXPECT_NEAR(inKernel, findNumber(*jperf, "Fraction of the peak in the counted parts"), 1e-3*inKernel);
     // The rate of each part

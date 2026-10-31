@@ -448,6 +448,60 @@ TEST(B2DataTest, MayerAtShortestDistance)
     EXPECT_EQ(-1, soft.mayerAtShortestDistance(1));
 }
 
+// Test: A dimer with an energy far below any physical one, as when a charge
+// sits on an opposite charge in TIP5P, would make the Boltzmann factor
+// overflow. Below eMin it is treated as overlapping atoms, the same as a
+// dimer with a strong repulsion.
+TEST(B2DataTest, EnergyBelowEMin)
+{
+    double    T    = 300;
+    double    beta = 1.0/(BOLTZ*T);
+    std::vector<double>    mass    = { 18, 18 };
+    std::vector<gmx::RVec> inertia = { { 1, 1, 1 }, { 1, 1, 1 } };
+    size_t nbins = 11;
+    std::vector<size_t>    index(nbins);
+    std::vector<double>    dist(nbins), weight(nbins, 1);
+    std::vector<double>    force2[2] = { std::vector<double>(nbins, 1), std::vector<double>(nbins, 1) };
+    std::vector<gmx::RVec> torque[2] = { std::vector<gmx::RVec>(nbins, { 1, 1, 1 }),
+                                         std::vector<gmx::RVec>(nbins, { 1, 1, 1 }) };
+    for (size_t i = 0; i < nbins; i++)
+    {
+        index[i] = i;
+        dist[i]  = 0.2 + 0.01*i;
+    }
+    // Two orientations, the first one has an extreme energy at the
+    // shortest distance
+    auto add = [&](B2Data *b2data, double e0)
+    {
+        std::vector<double> energy(nbins, -1);
+        b2data->addOrientation(index, dist, energy, force2, torque, weight);
+        energy[0] = e0;
+        b2data->addOrientation(index, dist, energy, force2, torque, weight);
+    };
+    B2Data plain(nbins, { T }), cut(nbins, { T }, -1000), repulsive(nbins, { T }, -1000);
+    add(&plain, -1e4);
+    add(&cut, -1e4);
+    add(&repulsive, 1e4);
+    MsgHandler msghandler;
+    double     bp[4], bc[4], br[4];
+    plain.integrate(&msghandler, 0, beta, mass, inertia, &bp[0], &bp[1], &bp[2], &bp[3]);
+    cut.integrate(&msghandler, 0, beta, mass, inertia, &bc[0], &bc[1], &bc[2], &bc[3]);
+    repulsive.integrate(&msghandler, 0, beta, mass, inertia, &br[0], &br[1], &br[2], &br[3]);
+    // Without a limit the second virial is infinite
+    EXPECT_TRUE(std::isinf(plain.mayerAtShortestDistance(0)));
+    EXPECT_FALSE(std::isfinite(bp[0]));
+    // With it the dimer counts as overlapping
+    EXPECT_EQ(2*nbins, cut.nDimer());
+    EXPECT_EQ(1, cut.nOverlap());
+    EXPECT_EQ(0, repulsive.nOverlap());
+    EXPECT_DOUBLE_EQ((-1 + (std::exp(beta) - 1))/2, cut.mayerAtShortestDistance(0));
+    for (int k = 0; k < 4; k++)
+    {
+        EXPECT_TRUE(std::isfinite(bc[k])) << k;
+        EXPECT_DOUBLE_EQ(br[k], bc[k]) << k;
+    }
+}
+
 // Test: The grid of orientations as in the program Orient. Gauss-Legendre
 // integration over cos(beta) with n points is exact for polynomials up
 // to order 2n-1, and the equally spaced angles average cosines to zero.

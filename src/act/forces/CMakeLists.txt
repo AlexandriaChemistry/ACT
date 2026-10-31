@@ -31,6 +31,15 @@ if(ACT_SIMD_FLAGS)
     set_source_files_properties(forces_explicit_simd.cpp TARGET_DIRECTORY actLib
                                 PROPERTIES COMPILE_OPTIONS "${ACT_SIMD_FLAGS}")
 endif()
+# For benchmarking. The value is in a generated header that only the file
+# with the explicit SIMD includes, such that only that file is compiled again
+# when it changes.
+set(ACT_PAIR_UNROLL "" CACHE STRING
+    "Unroll factor of the loops over conformations of pair interactions with explicit SIMD, 1 to 16, empty for the default of the instruction set")
+if(ACT_PAIR_UNROLL AND NOT ACT_PAIR_UNROLL MATCHES "^([1-9]|1[0-6])$")
+    message(FATAL_ERROR "ACT_PAIR_UNROLL should be 1 to 16, not ${ACT_PAIR_UNROLL}")
+endif()
+configure_file(pairunroll.h.cmakein ${CMAKE_BINARY_DIR}/src/pairunroll.h)
 	
 if (BUILD_TESTING)
     add_subdirectory(tests)
