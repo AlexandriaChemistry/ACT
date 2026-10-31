@@ -40,6 +40,7 @@
 #include "act/forces/forces_explicit_simd.h"
 #include "act/forces/simd_information.h"
 #include "act/forces/forcecomputerutils.h"
+#include "act/forces/vsitehandler.h"
 #include "act/molprop/topologyentry.h"
 #include "act/topology/actmol.h"
 #include "act/topology/coords_energy.h"
@@ -2014,11 +2015,12 @@ static size_t potentialTimer(Potential mypot)
 /*! \brief Floating point operations of a potential for one conformation
  * The operations are counted in the explicit SIMD kernels in
  * forces_explicit_simd.cpp, the other potentials in the functions above.
- * Each addition, subtraction, multiplication, division and square root
- * counts as one operation and a fused multiply-add as two. Functions
- * count as the operations of their SIMD implementation in simd_math.h:
- * exp 26, erf with exp 82, acos 35 and atan2 32, and sin, cos and log
- * as exp. Operations on parameters only, which the compiler moves out of
+ * Each addition, subtraction and multiplication counts as one operation,
+ * a fused multiply-add as two and, as in GROMACS, a division and a square
+ * root as five, since they take many cycles, such that 1/sqrt(x) counts
+ * as ten. Functions count as the operations of their SIMD implementation
+ * in simd_math.h: exp 30, erf with exp 90, acos 43 and atan2 40, and sin,
+ * cos and log as exp. Operations on parameters only, which the compiler moves out of
  * the loop over conformations, and comparisons and selections are not
  * counted. The Slater integrals are not counted.
  * \param[in] mypot   The potential
@@ -2039,40 +2041,69 @@ static double interactionFlops(Potential                   mypot,
     };
     // The distance of a pair, and spreading its force over the atoms
     const Cost pair     = { 9, 12 };
-    auto       constant = [&](Cost kernel, bool isPair)
+    // Some potentials leave out the interactions with parameters for which
+    // they are zero, as the kernels do, these are not counted
+    auto computed = [mypot](const TopologyEntry &entry)
+    {
+        auto &params = entry.params();
+        switch (mypot)
+        {
+        case Potential::LJ14_7:
+            return params[lj14_7EPSILON] > 0 && params[lj14_7SIGMA] > 0;
+        case Potential::WANG_BUCKINGHAM:
+            return params[wbhEPSILON] > 0 && params[wbhGAMMA] > 0 && params[wbhSIGMA] > 0;
+        case Potential::BUCKINGHAM:
+            return params[bhA] > 0 && params[bhB] > 0 && params[bhC6] > 0;
+        case Potential::POLARIZATION:
+            return params[polALPHA] != 0;
+        default:
+            return true;
+        }
+    };
+    auto constant = [&](Cost kernel, bool isPair)
     {
         double n = kernel.energy + (forces ? kernel.force : 0);
         if (isPair)
         {
             n += pair.energy + (forces ? pair.force : 0);
         }
-        return n*entries.size();
+        double ncomputed = entries.size();
+        if (Potential::LJ14_7 == mypot || Potential::WANG_BUCKINGHAM == mypot ||
+            Potential::BUCKINGHAM == mypot)
+        {
+            ncomputed = 0;
+            for (const auto &b : entries)
+            {
+                ncomputed += computed(*b.operator->()) ? 1 : 0;
+            }
+        }
+        return n*ncomputed;
     };
     switch (mypot)
     {
-    case Potential::LJ12_6:                 return constant({ 8, 4 }, true);
-    case Potential::LJ12_6_4:               return constant({ 10, 6 }, true);
-    case Potential::LJ8_6:                  return constant({ 8, 4 }, true);
-    case Potential::LJ14_7:                 return constant({ 23, 12 }, true);
-    case Potential::BORN_MAYER:             return constant({ 32, 3 }, true);
-    case Potential::SLATER_ISA:             return constant({ 37, 8 }, true);
-    case Potential::MACDANIEL_SCHMIDT:      return constant({ 32, 3 }, true);
-    case Potential::WANG_BUCKINGHAM:        return constant({ 42, 10 }, true);
-    case Potential::BUCKINGHAM:             return constant({ 37, 5 }, true);
-    case Potential::TANG_TOENNIES:          return constant({ 111, 29 }, true);
-    case Potential::TT2b:                   return constant({ 111, 29 }, true);
-    case Potential::SLATER_ISA_TT:          return constant({ 116, 34 }, true);
-    case Potential::GENERALIZED_BUCKINGHAM: return constant({ 100, 19 }, true);
-    case Potential::HARMONIC_BONDS:         return constant({ 8, 2 }, true);
-    case Potential::CUBIC_BONDS:            return constant({ 10, 6 }, true);
-    case Potential::MORSE_BONDS:            return constant({ 35, 4 }, true);
-    case Potential::HUA_BONDS:              return constant({ 37, 9 }, true);
-    case Potential::HARMONIC_ANGLES:        return constant({ 67, 47 }, false);
+    case Potential::LJ12_6:                 return constant({ 12, 4 }, true);
+    case Potential::LJ12_6_4:               return constant({ 14, 6 }, true);
+    case Potential::LJ8_6:                  return constant({ 12, 4 }, true);
+    case Potential::LJ14_7:                 return constant({ 39, 12 }, true);
+    case Potential::BORN_MAYER:             return constant({ 44, 3 }, true);
+    case Potential::SLATER_ISA:             return constant({ 49, 8 }, true);
+    case Potential::MACDANIEL_SCHMIDT:      return constant({ 44, 3 }, true);
+    case Potential::WANG_BUCKINGHAM:        return constant({ 58, 10 }, true);
+    case Potential::BUCKINGHAM:             return constant({ 49, 5 }, true);
+    case Potential::TANG_TOENNIES:          return constant({ 127, 29 }, true);
+    case Potential::TT2b:                   return constant({ 127, 29 }, true);
+    case Potential::SLATER_ISA_TT:          return constant({ 132, 34 }, true);
+    case Potential::GENERALIZED_BUCKINGHAM: return constant({ 132, 35 }, true);
+    case Potential::HARMONIC_BONDS:         return constant({ 16, 2 }, true);
+    case Potential::CUBIC_BONDS:            return constant({ 18, 6 }, true);
+    case Potential::MORSE_BONDS:            return constant({ 43, 8 }, true);
+    case Potential::HUA_BONDS:              return constant({ 49, 13 }, true);
+    case Potential::HARMONIC_ANGLES:        return constant({ 83, 71 }, false);
     case Potential::LINEAR_ANGLES:          return constant({ 23, 18 }, false);
-    case Potential::UREY_BRADLEY_ANGLES:    return constant({ 77, 70 }, false);
-    case Potential::HARMONIC_DIHEDRALS:     return constant({ 94, 59 }, false);
-    case Potential::PROPER_DIHEDRALS:       return constant({ 116, 98 }, false);
-    case Potential::POSITION_RESTRAINT:     return constant({ 10, 8 }, false);
+    case Potential::UREY_BRADLEY_ANGLES:    return constant({ 97, 102 }, false);
+    case Potential::HARMONIC_DIHEDRALS:     return constant({ 106, 71 }, false);
+    case Potential::PROPER_DIHEDRALS:       return constant({ 132, 118 }, false);
+    case Potential::POSITION_RESTRAINT:     return constant({ 14, 12 }, false);
     case Potential::COULOMB_POINT:
     case Potential::COULOMB_GAUSSIAN:
         {
@@ -2089,7 +2120,7 @@ static double interactionFlops(Potential                   mypot,
                 const double         qj[2]   = { atomj.charge(), atomj.chargeVS() };
                 const double         zi[2]   = { params[coulZETA], atomi.zetaVS() };
                 const double         zj[2]   = { params[coulZETA2], atomj.zetaVS() };
-                n += pair.energy + 2 + (forces ? pair.force : 0);
+                n += pair.energy + 10 + (forces ? pair.force : 0);
                 for (int a = 0; a < 2; a++)
                 {
                     for (int c = 0; c < 2; c++)
@@ -2099,7 +2130,7 @@ static double interactionFlops(Potential                   mypot,
                             continue;
                         }
                         bool gaussian = zi[a] != 0 || zj[c] != 0;
-                        n += gaussian ? 87 : 2;
+                        n += gaussian ? 95 : 2;
                         if (forces)
                         {
                             n += (gaussian ? 6 : 3) + (a + c > 0 ? 1 : 0);
@@ -2116,11 +2147,15 @@ static double interactionFlops(Potential                   mypot,
             for (const auto &b : entries)
             {
                 const TopologyEntry &entry = *b.operator->();
+                if (!computed(entry))
+                {
+                    continue;
+                }
                 bool hyper = entry.params()[polFCHYPER] > 0;
-                n += pair.energy + 2 + (hyper ? 6 : 0);
+                n += pair.energy + 2 + (hyper ? 10 : 0);
                 if (forces)
                 {
-                    n += pair.force + (hyper ? 4 : 0);
+                    n += pair.force + (hyper ? 8 : 0);
                 }
             }
             return n;
@@ -2134,7 +2169,7 @@ static double interactionFlops(Potential                   mypot,
                 const TopologyEntry &entry = *b.operator->();
                 double nterm = std::min(entry.params().size(), static_cast<size_t>(fdihNR));
                 double extra = std::max(nterm - 1, 0.0);
-                n += 63 + 3*extra + (forces ? 59 + 2*extra : 0);
+                n += 71 + 3*extra + (forces ? 67 + 2*extra : 0);
             }
             return n;
         }
@@ -2418,17 +2453,42 @@ static inline void lowComputeEnergies(MsgHandler                *msghandler,
     ScopedTimer         scoped(timer);
     auto &cener = cdata->energies;
     cener.setNumberOfConformations(coords->size());
-    size_t ndone = 0;
-    for(auto &ce : *coords)
+    // The conformations to compute, found once such that the loops below
+    // do not visit those for which the shells converged. When few shells
+    // are left to relax, visiting all conformations takes longer than
+    // computing the others.
+    auto &active = cdata->active;
+    active.clear();
+    for(size_t c = 0; c < coords->size(); c++)
     {
+        auto &ce = (*coords)[c];
         if (!skipDone)
         {
             ce.done = false;
         }
-        ndone += ce.done ? 1 : 0;
+        if (!ce.done)
+        {
+            active.push_back(c);
+        }
     }
+    size_t ndone = coords->size() - active.size();
+    // The virtual sites requested by ConformationData::constructVsites
+    VsiteHandler vsiteHandler;
+    bool         constructVsites = cdata->constructVsites;
+    cdata->constructVsites       = false;
+    auto constructEach = [&]()
+    {
+        for(auto &ce : *coords)
+        {
+            vsiteHandler.constructPositions(top, &ce.x);
+        }
+    };
     if (ndone == coords->size() && ndone > 0)
     {
+        if (constructVsites)
+        {
+            constructEach();
+        }
         return;
     }
     // Energies of only some conformations cannot be used again
@@ -2439,13 +2499,19 @@ static inline void lowComputeEnergies(MsgHandler                *msghandler,
     // while training with the MCMC mutator) keep adding onto the value left by
     // the previous call, so the total grows without bound instead of being
     // recomputed from scratch each time.
-    auto eEpot = cener.add(InteractionType::EPOT);
-    // As eEpot.set(c, 0.0), without branches
-    for(size_t c = 0; c < coords->size(); c++)
+    // The conformations that are done keep their energy, they only get
+    // one if there was none, which is zero.
+    bool newEpot = !cener.find(InteractionType::EPOT).have;
+    auto eEpot   = cener.add(InteractionType::EPOT);
+    if (newEpot)
     {
-        bool keep       = (*coords)[c].done;
+        std::fill(eEpot.have, eEpot.have + coords->size(), 1);
+    }
+    // As eEpot.set(c, 0.0), without branches
+    for(auto c : active)
+    {
         eEpot.before[c] = eEpot.have[c] ? eEpot.before[c] : 0.0;
-        eEpot.act[c]    = keep ? eEpot.act[c] : 0.0;
+        eEpot.act[c]    = 0.0;
         eEpot.have[c]   = 1;
     }
     // With shells, the entries without shells do not change while the shells
@@ -2466,14 +2532,11 @@ static inline void lowComputeEnergies(MsgHandler                *msghandler,
         for(size_t k = 0; k < fixed.types.size(); k++)
         {
             auto t = cener.add(fixed.types[k]);
-            for(size_t c = 0; c < coords->size(); c++)
+            for(auto c : active)
             {
-                if (!(*coords)[c].done)
-                {
-                    t.before[c] = t.have[c] ? t.before[c] : 0.0;
-                    t.have[c]   = fixed.have[k][c];
-                    t.act[c]    = fixed.energies[k][c];
-                }
+                t.before[c] = t.have[c] ? t.before[c] : 0.0;
+                t.have[c]   = fixed.have[k][c];
+                t.act[c]    = fixed.energies[k][c];
             }
         }
     }
@@ -2485,7 +2548,26 @@ static inline void lowComputeEnergies(MsgHandler                *msghandler,
     // clearing the forces.
     auto &ca = cdata->arrays;
     bool haveArrays = (useArrays &&
-                       ca.setCoordinates(*coords, top->atoms(), forces && !useFixed, skipDone));
+                       ca.setCoordinates(*coords, top->atoms(), forces && !useFixed, active));
+    // The virtual sites are constructed in the arrays if these hold all
+    // conformations, and copied to the conformations.
+    if (constructVsites)
+    {
+        if (haveArrays && ndone == 0 && ca.knowsParticles())
+        {
+            vsiteHandler.constructPositions(top, ca.x.data(), ca.stride, ca.stride, ca.nconf);
+            ca.storeVsites(coords);
+        }
+        else
+        {
+            constructEach();
+            if (haveArrays)
+            {
+                ca.invalidateVsites();
+                ca.setCoordinates(*coords, top->atoms(), forces && !useFixed, active);
+            }
+        }
+    }
     GMX_RELEASE_ASSERT(haveArrays || !(useFixed && fixed.inArrays),
                        "The forces of the entries without shells were kept in arrays");
     if (haveArrays && useFixed)
@@ -2494,13 +2576,9 @@ static inline void lowComputeEnergies(MsgHandler                *msghandler,
     }
     // Whether the current forces are in ca rather than in coords
     bool forcesInArrays = haveArrays;
-    for(size_t c = 0; c < coords->size(); c++)
+    for(auto c : active)
     {
         auto &ce = (*coords)[c];
-        if (ce.done)
-        {
-            continue;
-        }
         // With arrays all forces are copied back to the conformations.
         // Otherwise calcSome adds the forces of each potential to them,
         // starting from zero or the forces of the entries without shells.
@@ -2676,19 +2754,27 @@ static inline void lowComputeEnergies(MsgHandler                *msghandler,
     if (vdwCorr.have)
     {
         auto exchange = cener.add(InteractionType::EXCHANGE);
-        for(size_t c = 0; c < coords->size(); c++)
+        for(auto c : active)
         {
-            if (!(*coords)[c].done && vdwCorr.has(c))
+            if (vdwCorr.has(c))
             {
                 exchange.set(c, (exchange.has(c) ? exchange.act[c] : 0.0) + vdwCorr.act[c]);
                 vdwCorr.act[c] = 0;
             }
         }
     }
+    // Spreading the forces on the virtual sites in the arrays does not
+    // change those on the shells, see ConformationData::spreadVsites
+    bool spread = (forces && forcesInArrays && allForces && cdata->spreadVsites &&
+                   ca.knowsParticles());
     if (forces && forcesInArrays)
     {
         if (allForces)
         {
+            if (spread)
+            {
+                vsiteHandler.distributeForces(top, ca.x.data(), ca.f.data(), ca.stride, ca.stride, ca.nconf);
+            }
             ca.storeForces(coords);
         }
         else
@@ -2696,6 +2782,8 @@ static inline void lowComputeEnergies(MsgHandler                *msghandler,
             ca.storeShellForces(coords);
         }
     }
+    // The conformations left out keep the forces of the previous calculation
+    cdata->vsiteForcesSpread = spread && (ndone == 0 || cdata->vsiteForcesSpread);
 }
 
 /*! \brief The relative dielectric constant of a force field

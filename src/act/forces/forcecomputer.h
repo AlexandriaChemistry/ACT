@@ -151,15 +151,19 @@ private:
      * \param[in]    maxShellDistance The maximum distance between a shell and
      *                         its core, see shellMaxDistance
      * \param[inout] myCoords The coordinates and energy array
-     * \return The number of shells that converged
+     * \param[in]    active   If not nullptr, the conformations to update, the
+     *                         others are not visited and not counted
+     * \return The number of conformations that are done, of those in active
+     *         if it is given
      */
     size_t updateShells(const Topology            *top,
                         size_t                     offset,
                         size_t                     nShell,
-                        const std::vector<bool>    isShell,
+                        const std::vector<bool>   &isShell,
                         size_t                     fragment,
                         double                     maxShellDistance,
-                        std::vector<CoordsEnergy> *myCoords) const;
+                        std::vector<CoordsEnergy> *myCoords,
+                        const std::vector<size_t> *active = nullptr) const;
     /*! \brief Relax the shells of one monomer in all conformations of all molecules
      * Iterates shell updates and energy computations until all shells
      * converged or the max number of iterations is reached.
@@ -271,7 +275,9 @@ private:
      *
      * The conformations are computed together with the SIMD routines, see
      * computeRelaxedEnergies. This replaces the conformations stored in the
-     * molecule.
+     * molecule, their energy maps are left empty, see ACTMol::storeEnergies.
+     * The output vectors may hold the results of a previous call, their
+     * memory is used again.
      * \param[in]    msghandler                  For debugging, may be nullptr
      * \param[in]    pd                          The force field
      * \param[inout] mol                         The dimer, the conformations are stored in it

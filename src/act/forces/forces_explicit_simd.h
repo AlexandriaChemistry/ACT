@@ -76,6 +76,12 @@ ExplicitSimd explicitSimdType();
  */
 size_t explicitSimdWidth();
 
+/*! \brief How often the loops over conformations of pair interactions are unrolled
+ * \return the unroll factor, the default of the instruction set or that of
+ *         the CMake option ACT_PAIR_UNROLL
+ */
+size_t explicitSimdPairUnroll();
+
 /*! \brief Compute a potential for all conformations with explicit SIMD
  * Coordinate m of atom a in conformation c is stored at
  * x[(DIM*a+m)*stride + c], the forces likewise and energy term k at

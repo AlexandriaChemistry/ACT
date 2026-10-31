@@ -419,7 +419,8 @@ void writeSimdInformation(gmx::TextWriter *writer)
     }
     else
     {
-        status = gmx::formatString("%s, %zu conformations at once, in use", simdName(type), explicitSimdWidth());
+        status = gmx::formatString("%s, %zu conformations at once, pair loops unrolled %zu times, in use",
+                                   simdName(type), explicitSimdWidth(), explicitSimdPairUnroll());
     }
     writer->writeLine(gmx::formatString("Explicit SIMD:      %s", status.c_str()));
     auto peak = theoreticalPeakPerCore();

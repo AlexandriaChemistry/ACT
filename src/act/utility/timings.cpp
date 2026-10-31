@@ -47,6 +47,18 @@
 namespace alexandria
 {
 
+namespace
+{
+
+//! The precision of the calculations, see printTimings
+#if GMX_DOUBLE
+const char *const calculationPrecision = "double";
+#else
+const char *const calculationPrecision = "double for the potentials with explicit SIMD, single otherwise";
+#endif
+
+} // namespace
+
 Timings &Timings::instance()
 {
     static Timings timings;
@@ -450,19 +462,29 @@ void printTimings(const CommunicationRecord *cr,
         bool   havePeak  = peak && peak->gflops > 0;
         if (tw)
         {
-            tw->writeStringFormatted("Floating point performance per core, double precision. Counted are the\n");
-            tw->writeStringFormatted("operations of the potentials, of the second virial, of the integration in\n");
-            tw->writeStringFormatted("molecular dynamics and of the electrostatic potential for charge fitting. Not\n");
-            tw->writeStringFormatted("counted are Slater integrals, charge generation, shell positions, constraints\n");
-            tw->writeStringFormatted("and the rest of the program. Each addition, multiplication, division and square\n");
-            tw->writeStringFormatted("root counts as one operation, functions like exp and erf as the operations of\n");
-            tw->writeStringFormatted("their SIMD implementation in ACT.\n");
+            tw->writeStringFormatted("Floating point performance per core. Counted are the operations of the\n");
+            tw->writeStringFormatted("potentials, of virtual sites, of moving the shells, of interaction energies\n");
+            tw->writeStringFormatted("and forces from those of the monomers, of the second virial, of the\n");
+            tw->writeStringFormatted("integration in molecular dynamics and of the electrostatic potential for\n");
+            tw->writeStringFormatted("charge fitting. Not counted are Slater integrals, charge generation,\n");
+            tw->writeStringFormatted("constraints and the rest of the program, which mainly copies data. Virtual\n");
+            tw->writeStringFormatted("sites of single conformations are counted in the part they are used in.\n");
+            tw->writeStringFormatted("Each addition and multiplication counts as one operation and, as in GROMACS,\n");
+            tw->writeStringFormatted("each division and square root as five, functions like exp and erf as the\n");
+            tw->writeStringFormatted("operations of their SIMD implementation in ACT.\n");
+#if GMX_DOUBLE
+            tw->writeStringFormatted("All calculations are in double precision, as the theoretical peak.\n");
+#else
+            tw->writeStringFormatted("The potentials with explicit SIMD are computed in double precision, as the\n");
+            tw->writeStringFormatted("theoretical peak, the rest in single precision, for which the peak is twice\n");
+            tw->writeStringFormatted("as high.\n");
+#endif
             tw->writeStringFormatted("%-48s %10.4g\n", "Floating point operations", totalFlops);
             tw->writeStringFormatted("%-48s %10.3f GFlop/s\n", "Average over the wall time", average);
             tw->writeStringFormatted("%-48s %10.3f GFlop/s\n", "In the parts where operations were counted", inCounted);
             if (havePeak)
             {
-                tw->writeStringFormatted("%-48s %10.3f GFlop/s\n", "Theoretical peak", peak->gflops);
+                tw->writeStringFormatted("%-48s %10.3f GFlop/s\n", "Theoretical peak, double precision", peak->gflops);
                 tw->writeStringFormatted("%-48s %s\n", "", peak->basis.c_str());
                 tw->writeStringFormatted("%-48s %10.2f %%\n", "Fraction of the peak on average", 100*average/peak->gflops);
                 tw->writeStringFormatted("%-48s %10.2f %%\n", "Fraction of the peak in the counted parts", 100*inCounted/peak->gflops);
@@ -477,11 +499,13 @@ void printTimings(const CommunicationRecord *cr,
             tw->writeStringFormatted("\n");
         }
         jperf.addObject("Floating point operations", gmx::formatString("%.6g", totalFlops));
+        jperf.addObject("Precision", calculationPrecision);
         jperf.addValueUnit("Average per core", gmx::formatString("%.4f", average), "GFlop/s");
         jperf.addValueUnit("Per core in the counted parts", gmx::formatString("%.4f", inCounted), "GFlop/s");
         if (havePeak)
         {
             jperf.addValueUnit("Theoretical peak per core", gmx::formatString("%.4f", peak->gflops), "GFlop/s");
+            jperf.addObject("Theoretical peak precision", "double");
             jperf.addObject("Theoretical peak basis", peak->basis);
             jperf.addValueUnit("Fraction of the peak on average", gmx::formatString("%.3f", 100*average/peak->gflops), "%");
             jperf.addValueUnit("Fraction of the peak in the counted parts", gmx::formatString("%.3f", 100*inCounted/peak->gflops), "%");

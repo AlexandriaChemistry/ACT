@@ -240,7 +240,9 @@ struct PeakPerformance
  * point operations were counted, see Timings::addFlops, the floating point
  * performance is printed as well, per core on average over the wall time
  * of all processes and in the parts in which they were counted, and as a
- * fraction of the theoretical performance if that is given.
+ * fraction of the theoretical performance if that is given. The peak is
+ * for double precision, which all calculations use if GMX_DOUBLE is set,
+ * otherwise only the potentials with explicit SIMD, as is printed.
  * \param[in]  cr       The communication record
  * \param[in]  tw       Where to print, only used on the master and may be nullptr
  * \param[in]  wallTime Wall time of this process in seconds

@@ -45,11 +45,13 @@
 #include <cstdio>
 
 #include <algorithm>
+#include <array>
 #include <set>
 #include <vector>
 
 #include "act/forcefield/forcefield_parametername.h"
 #include "act/topology/topology.h"
+#include "act/utility/timings.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/topology/topology.h"
@@ -291,7 +293,8 @@ static gmx_unused int constr_vsiten(const std::vector<int> &ia,
     return n3;
 }
 
-static void spread_vsite1(const std::vector<int> &ia, rvec f[])
+template <class Indices>
+static void spread_vsite1(const Indices &ia, rvec f[])
 {
     int ai = ia[0];
     int av = ia[1];
@@ -299,7 +302,8 @@ static void spread_vsite1(const std::vector<int> &ia, rvec f[])
     clear_rvec(f[av]);
 }
 
-static void spread_vsite2(const std::vector<int> &ia, real a,
+template <class Indices>
+static void spread_vsite2(const Indices &ia, real a,
                           rvec f[])
 {
     rvec fi, fj;
@@ -406,7 +410,8 @@ static void spread_vsite4(rvec ffi,
     /* TOTAL: 30 flops */
 }
 
-static void spread_vsite3FD(const std::vector<int> &ia, real a, real b,
+template <class Indices>
+static void spread_vsite3FD(const Indices &ia, real a, real b,
                             const rvec x[], rvec f[],
                             gmx_bool VirCorr, gmx_unused matrix dxdf)
 {
@@ -448,7 +453,8 @@ static void spread_vsite3FD(const std::vector<int> &ia, real a, real b,
     }
 }
 
-static void spread_vsite3FAD(const std::vector<int> &ia, real a, real b,
+template <class Indices>
+static void spread_vsite3FAD(const Indices &ia, real a, real b,
                              const rvec x[],
                              rvec f[],
                              gmx_bool VirCorr, matrix dxdf)
@@ -534,7 +540,8 @@ static void spread_vsite3FAD(const std::vector<int> &ia, real a, real b,
     /* TOTAL: 113 flops */
 }
 
-static void spread_vsite3OUT(const std::vector<int> &ia, real a, real b, real c,
+template <class Indices>
+static void spread_vsite3OUT(const Indices &ia, real a, real b, real c,
                              const rvec x[],
                              rvec f[],
                              gmx_bool VirCorr, matrix dxdf)
@@ -817,9 +824,70 @@ static gmx_unused int spread_vsiten(const std::vector<int> &ia,
 namespace alexandria
 {
 
+/*! \brief Floating point operations of one virtual site, see Timings::addFlops
+ * Counted from the routines above, each addition, subtraction and
+ * multiplication as one operation and each division and square root as
+ * five, such that 1/sqrt(x) counts as ten. The multiplication of a
+ * parameter by the sign of VSITE3OUT is not counted.
+ * \param[in] itype  The type of virtual site
+ * \param[in] spread Whether to count distributing the force rather
+ *                   than constructing the position
+ * \return the number of operations
+ */
+static double vsiteFlops(InteractionType itype, bool spread)
+{
+    switch(itype)
+    {
+    case InteractionType::VSITE1:
+        return spread ? 3 : 0;
+    case InteractionType::VSITE2:
+        return spread ? 13 : 9;
+    case InteractionType::VSITE2FD:
+        // Spreading checks the distance with a square root
+        return spread ? 55 : 25;
+    case InteractionType::VSITE3:
+    case InteractionType::VSITE3S:
+        return spread ? 20 : 17;
+    case InteractionType::VSITE3FD:
+        return spread ? 65 : 34;
+    case InteractionType::VSITE3FAD:
+        return spread ? 117 : 63;
+    case InteractionType::VSITE3OUT:
+    case InteractionType::VSITE3OUTS:
+        return spread ? 54 : 33;
+    case InteractionType::VSITE4:
+    case InteractionType::VSITE4S:
+    case InteractionType::VSITE4S3:
+        return spread ? 27 : 24;
+    default:
+        return 0;
+    }
+}
+
+/*! \brief Floating point operations of all virtual sites of a topology
+ * \param[in] top    The topology
+ * \param[in] spread Whether to count distributing the forces, see vsiteFlops
+ * \return the number of operations for one conformation
+ */
+static double topologyVsiteFlops(const Topology *top, bool spread)
+{
+    double flops = 0;
+    for (const auto &entry: top->entries())
+    {
+        if (isVsite(entry.first))
+        {
+            flops += vsiteFlops(entry.first, spread)*entry.second.size();
+        }
+    }
+    return flops;
+}
+
 void VsiteHandler::constructPositions(const Topology         *top,
                                       std::vector<gmx::RVec> *coordinates) const
 {
+    // The operations are counted in the region that is active, since
+    // timing a single conformation would take longer than the work
+    Timings::instance().addFlops(topologyVsiteFlops(top, false));
     // Ugly shortcut...
     std::vector<gmx::RVec>    &x      = *coordinates;
     for (const auto &entry: top->entries())
@@ -942,6 +1010,8 @@ void VsiteHandler::distributeForces(const Topology               *top,
                                     const std::vector<gmx::RVec> &coords,
                                     std::vector<gmx::RVec>       *forces) const
 {
+    // As in constructPositions for one conformation
+    Timings::instance().addFlops(topologyVsiteFlops(top, true));
     bool     VirCorr = false;
     matrix   dxdf    = { { 0 } };
     // Some shortcuts
@@ -1014,6 +1084,302 @@ void VsiteHandler::distributeForces(const Topology               *top,
             case InteractionType::VSITE4S3:
                 spread_vsite4(f[atomIndices[0]], f[atomIndices[1]], f[atomIndices[2]], f[atomIndices[3]], f[atomIndices[4]],
                               params[vsite4s3A], params[vsite4s3A], params[vsite4s3A]);
+                break;
+            default: // Constructing throws, so that is sufficient
+                break;
+            }
+        }
+    }
+}
+
+//! The particles of a virtual site in the local arrays of spreadSlots
+static constexpr std::array<int, 5> localIndices = { 0, 1, 2, 3, 4 };
+
+/*! \brief Construct one virtual site in many conformations
+ * The coordinates of the parents in each slot are copied to a local array,
+ * the site is constructed by the same routine as for one conformation and
+ * its position, the last particle, is copied back.
+ * \tparam       n         The number of particles, known at compile time such
+ *                         that the loops over them are unrolled
+ * \param[in]    ai        The particles, the virtual site last
+ * \param[inout] x         The coordinates, see VsiteHandler::constructPositions
+ * \param[in]    stride    The stride
+ * \param[in]    nslot     The number of slots
+ * \param[in]    construct Constructs the site from the local coordinates
+ */
+template <size_t n, class Construct>
+static void constructSlots(const std::vector<int> &ai,
+                           double                 *x,
+                           size_t                  stride,
+                           size_t                  nslot,
+                           Construct               construct)
+{
+    GMX_RELEASE_ASSERT(ai.size() == n, "Unexpected number of particles of a virtual site");
+    double *row[n][DIM];
+    for(size_t k = 0; k < n; k++)
+    {
+        for(int m = 0; m < DIM; m++)
+        {
+            row[k][m] = x + (DIM*ai[k] + m)*stride;
+        }
+    }
+    rvec xl[n];
+    for(size_t c = 0; c < nslot; c++)
+    {
+        for(size_t k = 0; k+1 < n; k++)
+        {
+            for(int m = 0; m < DIM; m++)
+            {
+                xl[k][m] = row[k][m][c];
+            }
+        }
+        construct(xl);
+        for(int m = 0; m < DIM; m++)
+        {
+            row[n-1][m][c] = xl[n-1][m];
+        }
+    }
+}
+
+/*! \brief Distribute the force on one virtual site in many conformations
+ * As constructSlots, the coordinates and forces of the particles in each
+ * slot are copied to local arrays, the force is distributed by the same
+ * routine as for one conformation and the forces are copied back.
+ * \tparam       n      The number of particles, as for constructSlots
+ * \param[in]    ai     The particles, the virtual site last
+ * \param[in]    x      The coordinates, see VsiteHandler::constructPositions
+ * \param[inout] f      The forces
+ * \param[in]    stride The stride
+ * \param[in]    nslot  The number of slots
+ * \param[in]    spread Distributes the force with the local coordinates
+ *                      and forces, the particles are numbered from zero,
+ *                      see localIndices
+ */
+template <size_t n, class Spread>
+static void spreadSlots(const std::vector<int> &ai,
+                        const double           *x,
+                        double                 *f,
+                        size_t                  stride,
+                        size_t                  nslot,
+                        Spread                  spread)
+{
+    GMX_RELEASE_ASSERT(ai.size() == n, "Unexpected number of particles of a virtual site");
+    const double *xrow[n][DIM];
+    double       *frow[n][DIM];
+    for(size_t k = 0; k < n; k++)
+    {
+        for(int m = 0; m < DIM; m++)
+        {
+            xrow[k][m] = x + (DIM*ai[k] + m)*stride;
+            frow[k][m] = f + (DIM*ai[k] + m)*stride;
+        }
+    }
+    rvec xl[n], fl[n];
+    for(size_t c = 0; c < nslot; c++)
+    {
+        for(size_t k = 0; k < n; k++)
+        {
+            for(int m = 0; m < DIM; m++)
+            {
+                xl[k][m] = xrow[k][m][c];
+                fl[k][m] = frow[k][m][c];
+            }
+        }
+        spread(xl, fl);
+        for(size_t k = 0; k < n; k++)
+        {
+            for(int m = 0; m < DIM; m++)
+            {
+                frow[k][m][c] = fl[k][m];
+            }
+        }
+    }
+}
+
+void VsiteHandler::constructPositions(const Topology *top,
+                                      double         *x,
+                                      size_t          stride,
+                                      size_t          nslot,
+                                      size_t          nconf) const
+{
+    static const size_t timer = Timings::instance().index("Virtual sites");
+    ScopedTimer         scoped(timer);
+    Timings::instance().addFlops(nconf*topologyVsiteFlops(top, false));
+    for (const auto &entry: top->entries())
+    {
+        if (!isVsite(entry.first))
+        {
+            continue;
+        }
+        for (const auto &vs : entry.second)
+        {
+            auto &ai     = vs->atomIndices();
+            auto &params = vs->params();
+            if (params.empty())
+            {
+                GMX_THROW(gmx::InternalError("No parameters to generate virtual sites in topology. constructPositions should not be called before parameters are assigned."));
+            }
+            // The same routines and arguments as for one conformation
+            switch(entry.first)
+            {
+            case InteractionType::VSITE1:
+                constructSlots<2>(ai, x, stride, nslot, [](rvec *xl)
+                               { constr_vsite1(xl[0], xl[1]); });
+                break;
+            case InteractionType::VSITE2:
+                constructSlots<3>(ai, x, stride, nslot, [&params](rvec *xl)
+                               { constr_vsite2(xl[0], xl[1], xl[2], params[vsite2A]); });
+                break;
+            case InteractionType::VSITE2FD:
+                constructSlots<3>(ai, x, stride, nslot, [&params](rvec *xl)
+                               { constr_vsite2fd(xl[0], xl[1], xl[2], params[vsite2fdA]); });
+                break;
+            case InteractionType::VSITE3:
+                constructSlots<4>(ai, x, stride, nslot, [&params](rvec *xl)
+                               { constr_vsite3(xl[0], xl[1], xl[2], xl[3],
+                                               params[vsite3A], params[vsite3B]); });
+                break;
+            case InteractionType::VSITE3S:
+                constructSlots<4>(ai, x, stride, nslot, [&params](rvec *xl)
+                               { constr_vsite3(xl[0], xl[1], xl[2], xl[3],
+                                               params[vsite3sA], params[vsite3sA]); });
+                break;
+            case InteractionType::VSITE3FD:
+                constructSlots<4>(ai, x, stride, nslot, [&params](rvec *xl)
+                               { constr_vsite3FD(xl[0], xl[1], xl[2], xl[3],
+                                                 params[vsite3fdA], params[vsite3fdB]); });
+                break;
+            case InteractionType::VSITE3FAD:
+                constructSlots<4>(ai, x, stride, nslot, [&params](rvec *xl)
+                               { constr_vsite3FAD(xl[0], xl[1], xl[2], xl[3],
+                                                  params[vsite3fadA], params[vsite3fadB]); });
+                break;
+            case InteractionType::VSITE3OUT:
+                {
+                    double sc = static_cast<const Vsite3OUT*>(vs->self())->sign()*params[vsite3outC];
+                    constructSlots<4>(ai, x, stride, nslot, [&params, sc](rvec *xl)
+                                   { constr_vsite3OUT(xl[1], xl[0], xl[2], xl[3],
+                                                      params[vsite3outA], params[vsite3outB], sc); });
+                }
+                break;
+            case InteractionType::VSITE3OUTS:
+                {
+                    double sc = static_cast<const Vsite3OUT*>(vs->self())->sign()*params[vsite3outsC];
+                    constructSlots<4>(ai, x, stride, nslot, [&params, sc](rvec *xl)
+                                   { constr_vsite3OUT(xl[1], xl[0], xl[2], xl[3],
+                                                      params[vsite3outsA], params[vsite3outsA], sc); });
+                }
+                break;
+            case InteractionType::VSITE4:
+                constructSlots<5>(ai, x, stride, nslot, [&params](rvec *xl)
+                               { constr_vsite4(xl[0], xl[1], xl[2], xl[3], xl[4],
+                                               params[vsite4A], params[vsite4B], params[vsite4C]); });
+                break;
+            case InteractionType::VSITE4S:
+                constructSlots<5>(ai, x, stride, nslot, [&params](rvec *xl)
+                               { constr_vsite4(xl[0], xl[1], xl[2], xl[3], xl[4],
+                                               params[vsite4sA], params[vsite4sB], params[vsite4sB]); });
+                break;
+            case InteractionType::VSITE4S3:
+                constructSlots<5>(ai, x, stride, nslot, [&params](rvec *xl)
+                               { constr_vsite4(xl[0], xl[1], xl[2], xl[3], xl[4],
+                                               params[vsite4s3A], params[vsite4s3A], params[vsite4s3A]); });
+                break;
+            default: // throws
+                GMX_THROW(gmx::InternalError(gmx::formatString("Virtual site type %s not implemented yet.", interactionTypeToString(entry.first).c_str()).c_str()));
+            }
+        }
+    }
+}
+
+void VsiteHandler::distributeForces(const Topology *top,
+                                    const double   *x,
+                                    double         *f,
+                                    size_t          stride,
+                                    size_t          nslot,
+                                    size_t          nconf) const
+{
+    static const size_t timer = Timings::instance().index("Virtual sites");
+    ScopedTimer         scoped(timer);
+    Timings::instance().addFlops(nconf*topologyVsiteFlops(top, true));
+    bool   VirCorr = false;
+    matrix dxdf    = { { 0 } };
+    for (const auto &entry: top->entries())
+    {
+        if (!isVsite(entry.first))
+        {
+            continue;
+        }
+        for (const auto &vs : entry.second)
+        {
+            auto &ai     = vs->atomIndices();
+            auto &params = vs->params();
+            const auto &ia = localIndices;
+            // The same routines and arguments as for one conformation
+            switch(entry.first)
+            {
+            case InteractionType::VSITE1:
+                spreadSlots<2>(ai, x, f, stride, nslot, [&](rvec *, rvec *fl)
+                            { spread_vsite1(ia, fl); });
+                break;
+            case InteractionType::VSITE2:
+                spreadSlots<3>(ai, x, f, stride, nslot, [&](rvec *, rvec *fl)
+                            { spread_vsite2(ia, params[vsite2A], fl); });
+                break;
+            case InteractionType::VSITE2FD:
+                spreadSlots<3>(ai, x, f, stride, nslot, [&](rvec *xl, rvec *fl)
+                            { spread_vsite2fd(xl[0], xl[1], params[vsite2fdA], fl[0], fl[1], fl[2]); });
+                break;
+            case InteractionType::VSITE3:
+                spreadSlots<4>(ai, x, f, stride, nslot, [&](rvec *, rvec *fl)
+                            { spread_vsite3(fl[0], fl[1], fl[2], fl[3],
+                                            params[vsite3A], params[vsite3B]); });
+                break;
+            case InteractionType::VSITE3S:
+                spreadSlots<4>(ai, x, f, stride, nslot, [&](rvec *, rvec *fl)
+                            { spread_vsite3(fl[0], fl[1], fl[2], fl[3],
+                                            params[vsite3sA], params[vsite3sA]); });
+                break;
+            case InteractionType::VSITE3FD:
+                spreadSlots<4>(ai, x, f, stride, nslot, [&](rvec *xl, rvec *fl)
+                            { spread_vsite3FD(ia, params[vsite3fdA], params[vsite3fdB], xl, fl,
+                                              VirCorr, dxdf); });
+                break;
+            case InteractionType::VSITE3FAD:
+                spreadSlots<4>(ai, x, f, stride, nslot, [&](rvec *xl, rvec *fl)
+                            { spread_vsite3FAD(ia, params[vsite3fadA], params[vsite3fadB], xl, fl,
+                                               VirCorr, dxdf); });
+                break;
+            case InteractionType::VSITE3OUT:
+                {
+                    double sc = static_cast<const Vsite3OUT*>(vs->self())->sign()*params[vsite3outC];
+                    spreadSlots<4>(ai, x, f, stride, nslot, [&](rvec *xl, rvec *fl)
+                                { spread_vsite3OUT(ia, params[vsite3outA], params[vsite3outB], sc,
+                                                   xl, fl, VirCorr, dxdf); });
+                }
+                break;
+            case InteractionType::VSITE3OUTS:
+                {
+                    double sc = static_cast<const Vsite3OUT*>(vs->self())->sign()*params[vsite3outsC];
+                    spreadSlots<4>(ai, x, f, stride, nslot, [&](rvec *xl, rvec *fl)
+                                { spread_vsite3OUT(ia, params[vsite3outsA], params[vsite3outsA], sc,
+                                                   xl, fl, VirCorr, dxdf); });
+                }
+                break;
+            case InteractionType::VSITE4:
+                spreadSlots<5>(ai, x, f, stride, nslot, [&](rvec *, rvec *fl)
+                            { spread_vsite4(fl[0], fl[1], fl[2], fl[3], fl[4],
+                                            params[vsite4A], params[vsite4B], params[vsite4C]); });
+                break;
+            case InteractionType::VSITE4S:
+                spreadSlots<5>(ai, x, f, stride, nslot, [&](rvec *, rvec *fl)
+                            { spread_vsite4(fl[0], fl[1], fl[2], fl[3], fl[4],
+                                            params[vsite4sA], params[vsite4sB], params[vsite4sB]); });
+                break;
+            case InteractionType::VSITE4S3:
+                spreadSlots<5>(ai, x, f, stride, nslot, [&](rvec *, rvec *fl)
+                            { spread_vsite4(fl[0], fl[1], fl[2], fl[3], fl[4],
+                                            params[vsite4s3A], params[vsite4s3A], params[vsite4s3A]); });
                 break;
             default: // Constructing throws, so that is sufficient
                 break;
