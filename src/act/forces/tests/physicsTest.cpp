@@ -38,6 +38,7 @@
 
 #include <cmath>
 #include <fstream>
+#include <list>
 #include <map>
 #include <sstream>
 #include <string>
@@ -45,6 +46,7 @@
 
 #include <gtest/gtest.h>
 
+#include "act/basics/chargemodel.h"
 #include "act/basics/msg_handler.h"
 #include "act/forcefield/forcefield_utils.h"
 #include "act/forces/conformationdata.h"
@@ -227,6 +229,58 @@ protected:
     gmx::test::TestFileManager  fileManager_;
     //! Tight convergence, such that the shells are at their minimum
     ForceComputer forceComp_ = ForceComputer(1e-12, 500, 1);
+    //! Modified copies of force fields, see forceField
+    std::list<ForceField>       copies_;
+
+    /*! \brief A force field, possibly modified
+     * \param[in] ffName The force field
+     * \param[in] nexcl  If not negative, the number of excluded bonds for
+     *                   the non-bonded interactions
+     * \param[in] alg    If not NONE, the charge generation algorithm
+     * \return the force field, a copy if it is modified
+     */
+    ForceField *forceField(const std::string        &ffName,
+                           int                       nexcl = -1,
+                           ChargeGenerationAlgorithm alg   = ChargeGenerationAlgorithm::NONE)
+    {
+        auto pd = getForceField(ffName);
+        if (nullptr == pd || (nexcl < 0 && ChargeGenerationAlgorithm::NONE == alg))
+        {
+            return pd;
+        }
+        copies_.push_back(*pd);
+        auto copy = &copies_.back();
+        if (nexcl >= 0)
+        {
+            std::string exclstr("nexcl");
+            for (auto &ffpl : *copy->forces())
+            {
+                if (ffpl.second.optionExists(exclstr))
+                {
+                    ffpl.second.removeOption(exclstr);
+                    ffpl.second.addOption(exclstr, gmx::formatString("%d", nexcl));
+                }
+            }
+        }
+        if (ChargeGenerationAlgorithm::NONE != alg)
+        {
+            copy->setChargeGenerationAlgorithm(alg);
+        }
+        return copy;
+    }
+
+    /*! \brief Check that the topology has the interaction types
+     * Such that a test of them is not empty without notice.
+     * \param[in] mol    The molecule
+     * \param[in] itypes The interaction types
+     */
+    static void expectEntries(const ACTMol &mol, const std::vector<InteractionType> &itypes)
+    {
+        for (auto itype : itypes)
+        {
+            EXPECT_TRUE(mol.topology()->hasEntry(itype)) << "no " << interactionTypeToString(itype);
+        }
+    }
 
     PhysicsTest()
     {
@@ -329,13 +383,17 @@ protected:
      * torque on the molecule are zero.
      * \param[in] ffName  The force field
      * \param[in] sdfFile The molecule
+     * \param[in] itypes  Interaction types the topology should have
      */
-    void testForces(const std::string &ffName, const std::string &sdfFile)
+    void testForces(const std::string                  &ffName,
+                    const std::string                  &sdfFile,
+                    const std::vector<InteractionType> &itypes = {})
     {
         auto pd = getForceField(ffName);
         ASSERT_NE(nullptr, pd);
         ACTMol mol;
         ASSERT_TRUE(readMolecule(pd, sdfFile, {}, {}, &mol));
+        expectEntries(mol, itypes);
         auto                   x0 = mol.xOriginal();
         auto                   x  = x0;
         std::vector<gmx::RVec> f;
@@ -375,11 +433,14 @@ protected:
     }
 
     /*! \brief Rotating and translating the molecule changes nothing
-     * The energy is the same and the forces rotate with the molecule.
+     * The energy is the same and the forces rotate with the molecule. A
+     * mirror image has the same energy as well, which also checks the
+     * virtual sites out of a plane, which change places.
      * \param[in] ffName  The force field
      * \param[in] sdfFile The molecule
+     * \param[in] reflect Whether to make a mirror image as well
      */
-    void testRotation(const std::string &ffName, const std::string &sdfFile)
+    void testRotation(const std::string &ffName, const std::string &sdfFile, bool reflect = false)
     {
         auto pd = getForceField(ffName);
         ASSERT_NE(nullptr, pd);
@@ -391,11 +452,21 @@ protected:
         double                 fmax = maxForce(f);
         matrix                 R;
         rotationMatrix({ 0.3, -0.5, 0.8 }, 1.1, R);
+        if (reflect)
+        {
+            // A mirror image in the plane x = 0, then the rotation
+            for (int m = 0; m < DIM; m++)
+            {
+                R[m][XX] = -R[m][XX];
+            }
+        }
         gmx::RVec              shift = { 1.7, -0.6, 2.3 };
         auto                   y     = transformed(R, shift, mol.xOriginal());
         std::vector<gmx::RVec> g;
         double                 er = energy(pd, mol, &y, &g);
         EXPECT_NEAR(e, er, 1e-10*std::max(1.0, std::abs(e))) << ffName << " " << sdfFile;
+        // The forces on the virtual sites are zero after spreading, also
+        // when a mirror image makes them change places
         for (size_t i = 0; i < f.size(); i++)
         {
             gmx::RVec fr;
@@ -415,15 +486,20 @@ protected:
      * \param[in] ffName  The force field
      * \param[in] sdfFile The molecule
      * \param[in] qfrag   The charge of each compound, if empty all are neutral
+     * \param[in] itypes  Interaction types the topology should have
+     * \param[in] nexcl   If not negative, the number of excluded bonds
      */
-    void testRenumbered(const std::string         &ffName,
-                        const std::string         &sdfFile,
-                        const std::vector<double> &qfrag = {})
+    void testRenumbered(const std::string                  &ffName,
+                        const std::string                  &sdfFile,
+                        const std::vector<double>          &qfrag  = {},
+                        const std::vector<InteractionType> &itypes = {},
+                        int                                 nexcl  = -1)
     {
-        auto pd = getForceField(ffName);
+        auto pd = forceField(ffName, nexcl);
         ASSERT_NE(nullptr, pd);
         ACTMol mol;
         ASSERT_TRUE(readMolecule(pd, sdfFile, qfrag, {}, &mol));
+        expectEntries(mol, itypes);
         auto label    = sdfFile.substr(sdfFile.find_last_of('/') + 1);
         auto reversed = fileManager_.getTemporaryFilePath(label);
         ASSERT_TRUE(writeReversedSdf(gmx::test::TestFileManager::getInputFilePath(sdfFile), reversed));
@@ -431,6 +507,14 @@ protected:
         std::vector<double> qrev(qfrag.rbegin(), qfrag.rend());
         ACTMol rmol;
         ASSERT_TRUE(readMolecule(pd, reversed, qrev, {}, &rmol));
+        expectEntries(rmol, itypes);
+        // The same interactions
+        for (const auto &entry : mol.topology()->entries())
+        {
+            ASSERT_TRUE(rmol.topology()->hasEntry(entry.first)) << interactionTypeToString(entry.first);
+            EXPECT_EQ(entry.second.size(), rmol.topology()->entry(entry.first).size())
+                << interactionTypeToString(entry.first);
+        }
         auto atoms  = atomIndices(mol);
         auto ratoms = atomIndices(rmol);
         ASSERT_EQ(atoms.size(), ratoms.size());
@@ -463,12 +547,14 @@ protected:
      * \param[in] ffName  The force field
      * \param[in] sdfFile The molecule
      * \param[in] qfrag   The charge of each compound
+     * \param[in] alg     If not NONE, the charge generation algorithm
      */
     void testCharges(const std::string         &ffName,
                      const std::string         &sdfFile,
-                     const std::vector<double> &qfrag)
+                     const std::vector<double> &qfrag,
+                     ChargeGenerationAlgorithm  alg = ChargeGenerationAlgorithm::NONE)
     {
-        auto pd = getForceField(ffName);
+        auto pd = forceField(ffName, -1, alg);
         ASSERT_NE(nullptr, pd);
         double qtot = 0;
         for (auto qf : qfrag)
@@ -490,6 +576,15 @@ protected:
         for (size_t k = 0; k < q.size(); k++)
         {
             EXPECT_NEAR(q[k], tq[k], 1e-10) << ffName << " " << sdfFile << " rotated, charge of atom " << k;
+        }
+        // A mirror image
+        matrix M = { { -1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 } };
+        ACTMol mmol;
+        ASSERT_TRUE(readMolecule(pd, sdfFile, qfrag, transformed(M, { 0, 0, 0 }, mol.xOriginal()), &mmol));
+        auto mq = atomCharges(mmol);
+        for (size_t k = 0; k < q.size(); k++)
+        {
+            EXPECT_NEAR(q[k], mq[k], 1e-10) << ffName << " " << sdfFile << " mirror image, charge of atom " << k;
         }
     }
 };
@@ -606,6 +701,68 @@ TEST_F(PhysicsTest, RenumberedAcetateWater)
 TEST_F(PhysicsTest, RenumberedMethanolWater)
 {
     testRenumbered("../../qgen/tests/ACS-g", "../../qgen/tests/methanol-water.sdf", { 0, 0 });
+}
+
+// The molecules of the topology tests
+const std::string diamine = "../../alexandria/tests/mols/ethane-12-diamine.sdf";
+const std::string water   = "water.sdf";
+const std::string acsG    = "../../alexandria/tests/ACS-g";
+
+// Test: Forces with the virtual sites VSITE3 and VSITE3OUT of water
+TEST_F(PhysicsTest, ForcesVsite3Water)
+{
+    testForces("ACS-pg-vs3", water, { InteractionType::VSITE3, InteractionType::VSITE3OUT });
+}
+
+// Test: Mirror images, with the lone pairs of TIP5P changing places
+TEST_F(PhysicsTest, ReflectionVsite3OUT)
+{
+    testRotation(tip5p, waterDimer, true);
+}
+
+// Test: Mirror images with shells and virtual sites
+TEST_F(PhysicsTest, ReflectionShellsVsites)
+{
+    testRotation("ACS-pg-vs2", hbrHf, true);
+}
+
+// Test: Reverse numbering with VSITE3 and VSITE3OUT
+TEST_F(PhysicsTest, RenumberedVsite3Water)
+{
+    testRenumbered("ACS-pg-vs3", water, {}, { InteractionType::VSITE3, InteractionType::VSITE3OUT });
+}
+
+// Test: Reverse numbering with all exclusions settings, nexcl 0 to 3
+TEST_F(PhysicsTest, RenumberedExclusions)
+{
+    for (int nexcl = 0; nexcl <= 3; nexcl++)
+    {
+        SCOPED_TRACE(gmx::formatString("nexcl %d", nexcl));
+        testRenumbered(acsG, diamine, {},
+                       { InteractionType::BONDS, InteractionType::ANGLES, InteractionType::PROPER_DIHEDRALS },
+                       nexcl);
+    }
+}
+
+// Test: Charges with EEM rather than SQE
+TEST_F(PhysicsTest, ChargesEEM)
+{
+    testCharges("../../qgen/tests/ACS-g", "../../qgen/tests/methanol-water.sdf", { 0, 0 },
+                ChargeGenerationAlgorithm::EEM);
+}
+
+// Test: Charges of a charged dimer with EEM, Gaussian charges and shells
+TEST_F(PhysicsTest, ChargesEEMPolarizable)
+{
+    testCharges("../../qgen/tests/ACS-pg", "../../qgen/tests/acetate-water.sdf", { -1, 0 },
+                ChargeGenerationAlgorithm::EEM);
+}
+
+// Test: Charges of the ACM force fields
+TEST_F(PhysicsTest, ChargesACM)
+{
+    testCharges("../../qgen/tests/ACM-g", "../../qgen/tests/acetate-water.sdf", { -1, 0 });
+    testCharges("../../qgen/tests/ACM-pg", "../../qgen/tests/methanol-water.sdf", { 0, 0 });
 }
 
 // Test: Energies are used again when nothing changed since the previous
