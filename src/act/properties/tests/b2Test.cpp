@@ -32,6 +32,7 @@
  */
 #include <cmath>
 
+#include <limits>
 #include <map>
 #include <string>
 #include <vector>
@@ -39,6 +40,7 @@
 #include <gtest/gtest.h>
 
 #include "act/basics/msg_handler.h"
+#include "act/forces/simd_information.h"
 #include "act/properties/b2data.h"
 #include "act/properties/dimergenerator.h"
 #include "act/properties/secondvirial.h"
@@ -576,6 +578,79 @@ TEST(B2DataTest, ManyOrientations)
         EXPECT_NEAR(rd.force, rb.force, 1e-12*std::abs(rd.force));
         EXPECT_NEAR(rd.torque1, rb.torque1, 1e-12*std::abs(rd.torque1));
         EXPECT_NEAR(rd.torque2, rb.torque2, 1e-12*std::abs(rd.torque2));
+    }
+}
+
+// Test: The sums of the second virial added with explicit SIMD are those of
+// the scalar code, also with a number of temperatures that is not a multiple
+// of the SIMD width, a temperature of zero that gets no terms, overlapping
+// atoms, and an infinite force, for which the scalar code is used.
+TEST(B2DataTest, ExplicitSimdSameAsScalar)
+{
+    std::vector<double>    temperatures = { 250, 0, 300, 400, 500, 600, 700 };
+    std::vector<double>    mass         = { 18, 18 };
+    gmx::RVec              I            = { 0.006, 0.012, 0.018 };
+    std::vector<gmx::RVec> inertia      = { I, I };
+    int    nbins = 53;
+    double eMin  = -40;
+    B2Data scalar(nbins, temperatures, eMin), simd(nbins, temperatures, eMin);
+    unsigned int seed = 2026;
+    auto random = [&seed]()
+    {
+        seed = 1103515245*seed + 12345;
+        return ((seed >> 8) % 2001)/1000.0 - 1.0;
+    };
+    bool explicitSimd = setUseExplicitSimd(true);
+    for(int orient = 0; orient < 40; orient++)
+    {
+        std::vector<size_t>    index;
+        std::vector<double>    dist, energy, weight;
+        std::vector<double>    force2[2];
+        std::vector<gmx::RVec> torque[2];
+        for(int i = 0; i < nbins; i++)
+        {
+            double r  = 0.2 + i*0.01;
+            double sr = 0.3/r;
+            index.push_back(i);
+            dist.push_back(r);
+            double e = 4*(1 + 0.3*random())*(std::pow(sr, 12) - std::pow(sr, 6));
+            energy.push_back((i % 17 == 5) ? 2*eMin : e);
+            weight.push_back(1 + 0.5*random());
+            for(int kk = 0; kk < 2; kk++)
+            {
+                force2[kk].push_back((1 + kk + random())*std::pow(sr, 14));
+                torque[kk].push_back({ (1.0+kk)*sr*random(), -0.5*sr*sr, sr*random() });
+            }
+        }
+        // Overlapping atoms with an infinite force add no force term
+        force2[0][5] = std::numeric_limits<double>::infinity();
+        for(auto use : { false, true })
+        {
+            setUseExplicitSimd(use);
+            (use ? simd : scalar).addOrientation(index, dist, energy, force2, torque, weight);
+        }
+    }
+    setUseExplicitSimd(explicitSimd);
+    MsgHandler msghandler;
+    for(size_t iTemp = 0; iTemp < temperatures.size(); iTemp++)
+    {
+        if (temperatures[iTemp] == 0)
+        {
+            continue;
+        }
+        SCOPED_TRACE(gmx::formatString("T = %g", temperatures[iTemp]));
+        double   beta = 1.0/(BOLTZ*temperatures[iTemp]);
+        B2Result rs, rv;
+        scalar.integrate(&msghandler, iTemp, beta, mass, inertia, &rs.classical, &rs.force, &rs.torque1, &rs.torque2);
+        simd.integrate(&msghandler, iTemp, beta, mass, inertia, &rv.classical, &rv.force, &rv.torque1, &rv.torque2);
+        EXPECT_TRUE(msghandler.ok());
+        EXPECT_TRUE(std::isfinite(rs.force));
+        // The exponential of the explicit SIMD can differ in the last bits
+        EXPECT_NEAR(rs.classical, rv.classical, 1e-12*std::abs(rs.classical));
+        EXPECT_NEAR(rs.force, rv.force, 1e-12*std::abs(rs.force));
+        EXPECT_NEAR(rs.torque1, rv.torque1, 1e-12*std::abs(rs.torque1));
+        EXPECT_NEAR(rs.torque2, rv.torque2, 1e-12*std::abs(rs.torque2));
+        EXPECT_EQ(scalar.mayerAtShortestDistance(iTemp), simd.mayerAtShortestDistance(iTemp));
     }
 }
 

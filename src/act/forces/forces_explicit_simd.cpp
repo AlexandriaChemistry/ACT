@@ -1345,6 +1345,47 @@ bool computeExplicitSimd(Potential                   mypot,
     }
 }
 
+bool addB2TermsExplicitSimd(size_t        nT,
+                            const double *beta,
+                            double        energy,
+                            bool          overlap,
+                            double        weight,
+                            const double  wx[8],
+                            double       *s,
+                            size_t        stride)
+{
+    using simd::SimdBool;
+    using simd::SimdDouble;
+    SimdDouble e(energy);
+    SimdDouble w(weight);
+    SimdDouble zero(0.0);
+    SimdDouble one(1.0);
+    SimdDouble ybMax(overlap ? -HUGE_VAL : 700.0);
+    SimdDouble wxs[8];
+    for(int k = 0; k < 8; k++)
+    {
+        wxs[k] = SimdDouble(wx[k]);
+    }
+    for(size_t t = 0; t < nT; t += simd::simdWidth)
+    {
+        SimdDouble b     = simd::load(beta + t);
+        SimdBool   valid = b > zero;
+        SimdDouble yb    = e*b;
+        SimdDouble g     = simd::select(valid && yb < ybMax, simd::exp(-yb), zero);
+        double    *st    = s + t;
+        simd::store(st, simd::load(st) + simd::select(valid, w*(g - one), zero));
+        // With g zero the terms are zero, since the wx are finite
+        for(int k = 0; k < 8; k++)
+        {
+            double *sk = st + (k + 1)*stride;
+            simd::store(sk, simd::fma(g, wxs[k], simd::load(sk)));
+        }
+        double *sn = st + 9*stride;
+        simd::store(sn, simd::load(sn) + simd::select(valid, w, zero));
+    }
+    return true;
+}
+
 } // namespace alexandria
 
 #else
@@ -1369,6 +1410,12 @@ ExplicitSimd explicitSimdType()
 
 bool computeExplicitSimd(Potential, TopologyEntryRange, const std::vector<ActAtom> &,
                          double, size_t, const double *, double *, double *, bool)
+{
+    return false;
+}
+
+bool addB2TermsExplicitSimd(size_t, const double *, double, bool, double, const double[8],
+                            double *, size_t)
 {
     return false;
 }

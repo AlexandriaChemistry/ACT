@@ -78,6 +78,13 @@ private:
     std::vector<double>                 beta_;
     //! Whether all temperatures are larger than zero
     bool                                allFinite_ = true;
+    /*! Distance between the sums of consecutive terms of a distance, the
+     * number of temperatures rounded up to a multiple of the explicit SIMD
+     * width, such that the sums of all temperatures can be added to with it
+     */
+    size_t                              tstride_   = 0;
+    //! beta_ followed by zeros up to tstride_, for the explicit SIMD
+    std::vector<double>                 betaPadded_;
     //! Boltzmann factors of one dimer at all temperatures, kept to use the memory again
     std::vector<double>                 g_;
 
@@ -89,7 +96,7 @@ private:
      */
     double &sum(size_t j, size_t iTemp, int k)
     {
-        return sums_[(j*nSum + k)*temperatures_.size() + iTemp];
+        return sums_[(j*nSum + k)*tstride_ + iTemp];
     }
     //! Mayer functions
     std::vector<std::vector<double>>    mayer_;
