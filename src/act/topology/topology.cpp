@@ -1607,6 +1607,16 @@ void Topology::addResidue(int                residueNumber,
     }
 }
 
+void Topology::setResidueName(int                residueNumber,
+                              const std::string &residueName)
+{
+    if (residueNumber >= static_cast<int>(residueNames_.size()))
+    {
+        residueNames_.resize(residueNumber+1);
+    }
+    residueNames_[residueNumber] = residueName;
+}
+
 void Topology::addEntry(InteractionType            itype,
                         const TopologyEntryVector &entry)
 {

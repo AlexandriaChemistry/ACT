@@ -39,6 +39,7 @@
 
 #include "pdbwriter.h"
 
+#include <algorithm>
 #include <cctype>
 #include <cmath>
 #include <cstdlib>
@@ -124,6 +125,28 @@ static void gmx_write_pdb_box2(FILE *out, int ePBC, const matrix box)
 namespace alexandria
 {
 
+std::vector<std::string> particleNames(const std::vector<ActAtom> &atoms)
+{
+    std::vector<std::string> names;
+    int number  = 0;
+    int residue = -1;
+    for (size_t i = 0; i < atoms.size(); i++)
+    {
+        if (i == 0 || atoms[i].residueNumber() != residue)
+        {
+            residue = atoms[i].residueNumber();
+            number  = 0;
+        }
+        if (atoms[i].pType() != ActParticle::Shell)
+        {
+            number += 1;
+        }
+        names.push_back(gmx::formatString("%s%d", atoms[i].name().c_str(),
+                                          std::max(number, 1)));
+    }
+    return names;
+}
+
 void pdbWriter(FILE                           *out, 
                const char                     *title,
                const std::vector<ActAtom>     &atoms,
@@ -186,7 +209,8 @@ void pdbWriter(FILE                           *out,
         }
         minres = std::min(minres, atoms[i].residueNumber());
     }
-    int elemNum = 0;
+    // The names are made from all particles, also those that are not written
+    auto anames = particleNames(atoms);
     for (size_t ii = 0; ii < natoms; ii++)
     {
         size_t i = ii;
@@ -195,13 +219,6 @@ void pdbWriter(FILE                           *out,
             i = index[ii];
         }
         resind        = atoms[i].residueNumber();
-        // Check whether we have a new residue
-        if (resnr > 0 && 
-            ( (minres == 0 && resnr != resind+1) ||
-              (minres != 0 && resnr == resind) ))
-        {
-            elemNum = 0;
-        }
         resnr         = resind;
         if (minres == 0)
         {
@@ -229,15 +246,10 @@ void pdbWriter(FILE                           *out,
         {
             atomnr = ii+1;
         }
-        // This might break if the atom has a full name already
-        // Not sure how to handle atomnames that are longer than 4
-        // bytes.
-        auto aname = gmx::formatString("%s%d", atoms[i].name().c_str(),
-                                       ++elemNum);
         gmx_fprintf_pdb_atomline(out,
                                  type,
                                  atomnr,
-                                 aname.c_str(),
+                                 anames[i].c_str(),
                                  altloc,
                                  residueNames[resind].c_str(),
                                  chain,

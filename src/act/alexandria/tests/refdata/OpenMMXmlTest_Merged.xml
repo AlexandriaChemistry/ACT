@@ -16,25 +16,25 @@
     <Type name="i_1" class="i_b" element="I" mass="126.904"/>
   </AtomTypes>
   <Residues>
-    <Residue name="fluorane">
-      <Atom name="H_1" type="hf_1" charge="0.1303404180675"/>
-      <Atom name="F_2" type="f_1" charge="-0.1303404180675"/>
-      <Bond atomName1="H_1" atomName2="F_2"/>
+    <Residue name="FLU">
+      <Atom name="H1" type="hf_1" charge="0.1303404180675"/>
+      <Atom name="F2" type="f_1" charge="-0.1303404180675"/>
+      <Bond atomName1="H1" atomName2="F2"/>
     </Residue>
-    <Residue name="chlorane">
-      <Atom name="H_1" type="hcl_1" charge="0.120660314586"/>
-      <Atom name="Cl_2" type="cl_1" charge="-0.120660314586"/>
-      <Bond atomName1="H_1" atomName2="Cl_2"/>
+    <Residue name="CHL">
+      <Atom name="H1" type="hcl_1" charge="0.120660314586"/>
+      <Atom name="Cl2" type="cl_1" charge="-0.120660314586"/>
+      <Bond atomName1="H1" atomName2="Cl2"/>
     </Residue>
-    <Residue name="bromane">
-      <Atom name="H_1" type="hbr_1" charge="0.1167832329729"/>
-      <Atom name="Br_2" type="br_1" charge="-0.1167832329729"/>
-      <Bond atomName1="H_1" atomName2="Br_2"/>
+    <Residue name="BRO">
+      <Atom name="H1" type="hbr_1" charge="0.1167832329729"/>
+      <Atom name="Br2" type="br_1" charge="-0.1167832329729"/>
+      <Bond atomName1="H1" atomName2="Br2"/>
     </Residue>
-    <Residue name="iodane">
-      <Atom name="H_1" type="hi_1" charge="0.1132852256263"/>
-      <Atom name="I_2" type="i_1" charge="-0.1132852256263"/>
-      <Bond atomName1="H_1" atomName2="I_2"/>
+    <Residue name="IOD">
+      <Atom name="H1" type="hi_1" charge="0.1132852256263"/>
+      <Atom name="I2" type="i_1" charge="-0.1132852256263"/>
+      <Bond atomName1="H1" atomName2="I2"/>
     </Residue>
   </Residues>
   <HarmonicBondForce>
