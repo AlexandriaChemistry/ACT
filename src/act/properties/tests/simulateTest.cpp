@@ -142,6 +142,33 @@ std::vector<std::vector<double>> readPdbCoordinates(const std::string &filename)
     return x;
 }
 
+//! Read all frames of a pdb trajectory, the coordinates in Angstrom
+std::vector<std::vector<std::vector<double>>> readPdbFrames(const std::string &filename)
+{
+    std::vector<std::vector<std::vector<double>>> frames(1);
+    std::ifstream in(filename);
+    EXPECT_TRUE(in.good()) << "Cannot open " << filename;
+    std::string   line;
+    while (std::getline(in, line))
+    {
+        if (line.compare(0, 4, "ATOM") == 0 || line.compare(0, 6, "HETATM") == 0)
+        {
+            frames.back().push_back({ std::stod(line.substr(30, 8)),
+                                      std::stod(line.substr(38, 8)),
+                                      std::stod(line.substr(46, 8)) });
+        }
+        else if (line.compare(0, 6, "ENDMDL") == 0 && !frames.back().empty())
+        {
+            frames.emplace_back();
+        }
+    }
+    if (frames.back().empty())
+    {
+        frames.pop_back();
+    }
+    return frames;
+}
+
 //! \return whether a file exists and is not empty
 bool fileNotEmpty(const std::string &filename)
 {
@@ -214,7 +241,9 @@ protected:
     void checkEnergies(const XvgData &xvg)
     {
         gmx::test::TestReferenceChecker checker(this->rootChecker());
-        checker.setDefaultTolerance(gmx::test::relativeToleranceAsFloatingPoint(1.0, GMX_DOUBLE ? 1e-10 : 1e-6));
+        // The energies are written with five decimals, a tighter
+        // tolerance would not make a difference
+        checker.setDefaultTolerance(gmx::test::relativeToleranceAsFloatingPoint(1.0, 1e-6));
         checker.checkSequence(xvg.legends.begin(), xvg.legends.end(), "Legends");
         auto time = xvg.values(0);
         checker.checkSequence(time.begin(), time.end(), "Time");
@@ -466,6 +495,109 @@ TEST_F(SimulateTest, ConstrainedEnergyConservation)
             last  += xvg.rows[xvg.rows.size()-1-i][cEtot];
         }
         EXPECT_NEAR(first/nav, last/nav, 0.01) << constrain;
+    }
+}
+
+// Test: The constrained distances stay the same along an MD trajectory,
+// the bond lengths with bond constraints and also the distances between
+// the outer atoms of the angles with angle constraints. At a planar atom
+// with three neighbours two angles are constrained, the third can change
+// when the atom moves out of the plane. Without constraints the bonds
+// vibrate, which shows that the test can tell.
+TEST_F(SimulateTest, ConstraintsKeepDistances)
+{
+    auto distance = [](const std::vector<double> &a, const std::vector<double> &b)
+    {
+        double d2 = 0;
+        for(int m = 0; m < DIM; m++)
+        {
+            d2 += (a[m] - b[m])*(a[m] - b[m]);
+        }
+        return std::sqrt(d2);
+    };
+    for(const std::string constrain : { "no", "bonds", "angles" })
+    {
+        SimulateFiles files;
+        auto cmd = baseCommand("acetone.sdf", "keep" + constrain, &files);
+        cmd.addOption("-nsteps", 1000);
+        cmd.addOption("-deltat", 0.0002);
+        cmd.addOption("-temp", 300);
+        cmd.addOption("-seed", 1993);
+        cmd.addOption("-nstxout", 50);
+        cmd.addOption("-constrain", constrain);
+        ASSERT_EQ(0, run(&cmd)) << constrain;
+        auto frames = readPdbFrames(files.trajectory);
+        ASSERT_GT(frames.size(), 10u) << constrain;
+        const auto &x0    = frames[0];
+        size_t      natom = x0.size();
+        // The bonds from the first frame, all bonds are shorter than 1.65 A
+        // and the other distances longer
+        std::vector<std::pair<size_t, size_t>> bonds;
+        std::vector<std::vector<size_t>>       neighbours(natom);
+        for(size_t i = 0; i < natom; i++)
+        {
+            for(size_t j = i+1; j < natom; j++)
+            {
+                if (distance(x0[i], x0[j]) < 1.65)
+                {
+                    bonds.push_back({ i, j });
+                    neighbours[i].push_back(j);
+                    neighbours[j].push_back(i);
+                }
+            }
+        }
+        ASSERT_EQ(9u, bonds.size()) << "acetone has nine bonds";
+        // The largest change of a distance along the trajectory
+        auto maxChange = [&](const std::vector<std::pair<size_t, size_t>> &pairs)
+        {
+            double dmax = 0;
+            for(const auto &x : frames)
+            {
+                EXPECT_EQ(natom, x.size());
+                for(const auto &p : pairs)
+                {
+                    dmax = std::max(dmax, std::abs(distance(x[p.first], x[p.second]) -
+                                                   distance(x0[p.first], x0[p.second])));
+                }
+            }
+            return dmax;
+        };
+        // The coordinates are written with three decimals
+        double toler = 2e-3;
+        if (constrain == "no")
+        {
+            EXPECT_GT(maxChange(bonds), 0.01);
+        }
+        else
+        {
+            EXPECT_LT(maxChange(bonds), toler) << constrain;
+            // The number of angles of each atom that stay the same
+            size_t nangle = 0, nfixed = 0;
+            for(size_t c = 0; c < natom; c++)
+            {
+                const auto &nb     = neighbours[c];
+                size_t      nc     = nb.size()*(nb.size() - 1)/2;
+                size_t      nfixc  = 0;
+                for(size_t k = 0; k < nb.size(); k++)
+                {
+                    for(size_t l = k+1; l < nb.size(); l++)
+                    {
+                        nfixc += maxChange({ { nb[k], nb[l] } }) < toler ? 1 : 0;
+                    }
+                }
+                if (constrain == "angles")
+                {
+                    EXPECT_GE(nfixc, nb.size() == 3 ? 2 : nc) << "atom " << c;
+                }
+                nangle += nc;
+                nfixed += nfixc;
+            }
+            if (constrain == "bonds")
+            {
+                // The angles are free
+                EXPECT_LT(nfixed, nangle/2);
+            }
+        }
     }
 }
 

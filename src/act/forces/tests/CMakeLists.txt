@@ -44,6 +44,7 @@ gmx_add_unit_test(
     computeTotalTest.cpp
     forceComputerTest.cpp
     forcesSimdTest.cpp
+    physicsTest.cpp
     simdMathTest.cpp
     vsiteTest.cpp
     # pseudo-library for code for alexandria
