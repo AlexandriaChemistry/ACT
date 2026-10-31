@@ -54,23 +54,12 @@ B2Data::B2Data(int                        nbins,
                double                     eMin) : eMin_(eMin)
 {
     temperatures_ = temperatures;
-    exp_U12_.resize(temperatures.size());
-    for(int kk = 0; kk < 2; kk++)
-    {
-        exp_F2_[kk].resize(temperatures.size());
-        exp_tau_[kk].resize(temperatures.size());
-    }
-    n_U12_.resize(temperatures.size());
+    nbins_        = nbins;
+    sums_.resize(nbins_*temperatures.size()*nSum, 0.0);
     mayer_.resize(temperatures.size());
-    for(size_t i = 0; i < temperatures.size(); i++)
+    for(auto T : temperatures)
     {
-        exp_U12_[i].resize(nbins, 0);
-        for(int kk = 0; kk < 2; kk++)
-        {
-            exp_F2_[kk][i].resize(nbins, 0);
-            exp_tau_[kk][i].resize(nbins, { 0.0, 0.0, 0.0 });
-        }
-        n_U12_[i].resize(nbins, 0);
+        beta_.push_back(T == 0 ? 0.0 : 1.0/(BOLTZ*T));
     }
     dist_.resize(nbins, -1);
     for(auto T : temperatures)
@@ -88,9 +77,9 @@ void B2Data::dump(MsgHandler *msghandler)
     if (msghandler)
     {
         std::ostringstream oss;
-        for(size_t i = 0; i < n_U12_[0].size(); i++)
+        for(size_t i = 0; i < nbins_; i++)
         {
-            oss << " " << n_U12_[0][i];
+            oss << " " << sum(i, 0, sumN);
         }
         msghandler->writeDebug(oss.str());
     }
@@ -100,39 +89,9 @@ template<typename Func>
 void B2Data::forEachSum(Func func)
 {
     flush();
-    for(auto &t : exp_U12_)
+    for(auto &x : sums_)
     {
-        for(auto &x : t)
-        {
-            func(x);
-        }
-    }
-    for(auto &t : n_U12_)
-    {
-        for(auto &x : t)
-        {
-            func(x);
-        }
-    }
-    for(int kk = 0; kk < 2; kk++)
-    {
-        for(auto &t : exp_F2_[kk])
-        {
-            for(auto &x : t)
-            {
-                func(x);
-            }
-        }
-        for(auto &t : exp_tau_[kk])
-        {
-            for(auto &x : t)
-            {
-                for(int m = 0; m < DIM; m++)
-                {
-                    func(x[m]);
-                }
-            }
-        }
+        func(x);
     }
     func(nDimer_);
     func(nOverlap_);
@@ -180,24 +139,24 @@ void B2Data::addData(size_t iTemp, size_t index, double dist,
 {
     // After the orientations added before
     flush();
-    if (iTemp >= exp_U12_.size())
+    if (iTemp >= temperatures_.size())
     {
-        GMX_THROW(gmx::InternalError(gmx::formatString("iTemp = %zu, should be less than %zu", iTemp, exp_U12_.size()).c_str()));
+        GMX_THROW(gmx::InternalError(gmx::formatString("iTemp = %zu, should be less than %zu", iTemp, temperatures_.size()).c_str()));
     }
-    if (index >= exp_U12_[iTemp].size())
+    if (index >= nbins_)
     {
-        GMX_THROW(gmx::InternalError(gmx::formatString("index = %zu, should be less than %zu", index, exp_U12_[iTemp].size()).c_str()));
+        GMX_THROW(gmx::InternalError(gmx::formatString("index = %zu, should be less than %zu", index, nbins_).c_str()));
     }
     dist_[index]               = dist;
-    exp_U12_[iTemp][index]    += weight*exp_U12;
-    exp_F2_[0][iTemp][index]  += weight*exp_F0;
-    exp_F2_[1][iTemp][index]  += weight*exp_F1;
+    sum(index, iTemp, sumU12) += weight*exp_U12;
+    sum(index, iTemp, sumF0)  += weight*exp_F0;
+    sum(index, iTemp, sumF1)  += weight*exp_F1;
     for(int m = 0; m < DIM; m++)
     {
-        exp_tau_[0][iTemp][index][m] += weight*exp_tau0[m];
-        exp_tau_[1][iTemp][index][m] += weight*exp_tau1[m];
+        sum(index, iTemp, sumT0+m) += weight*exp_tau0[m];
+        sum(index, iTemp, sumT1+m) += weight*exp_tau1[m];
     }
-    n_U12_[iTemp][index]      += weight;
+    sum(index, iTemp, sumN)   += weight;
 }
 
 void B2Data::addOrientation(const std::vector<size_t>    &index,
@@ -267,58 +226,51 @@ void B2Data::addRange(const Orientation &o,
                       size_t             i1)
 {
     size_t ntemp = 0;
-    for(size_t iTemp = 0; iTemp < temperatures_.size(); iTemp++)
+    for(auto beta : beta_)
     {
-        auto T = temperatures_[iTemp];
-        if (T == 0)
-        {
-            continue;
-        }
-        double beta = 1.0/(BOLTZ*T);
-        ntemp      += 1;
-        auto  &eU12 = exp_U12_[iTemp];
-        auto  &eF0  = exp_F2_[0][iTemp];
-        auto  &eF1  = exp_F2_[1][iTemp];
-        auto  &eT0  = exp_tau_[0][iTemp];
-        auto  &eT1  = exp_tau_[1][iTemp];
-        auto  &nU12 = n_U12_[iTemp];
-        // The Boltzmann factors of the dimers. The loop is not vectorized,
-        // since a vector exp is not faster here, but can differ from exp
-        // in the last bit.
-        g0_12_.resize(i1 - i0);
-        double *g0 = g0_12_.data();
+        ntemp += (beta > 0) ? 1 : 0;
+    }
+    // The dimers in the outer loop, such that the sums of a distance, of
+    // all temperatures, are contiguous. Each sum gets one term.
+    for(size_t ii = i0; ii < i1; ii++)
+    {
+        size_t  j       = index ? index[ii] : ii;
+        double  w       = o.weight[ii];
+        double  energy  = o.energy[ii];
+        bool    overlap = energy < eMin_;
+        double *s       = &sum(j, 0, 0);
+        // Not vectorized, since a vector exp is not faster here, but can
+        // differ from exp in the last bit
 #if defined(__clang__)
 #pragma clang loop vectorize(disable)
 #endif
-        for(size_t ii = i0; ii < i1; ii++)
+        for(size_t iTemp = 0; iTemp < beta_.size(); iTemp++, s += nSum)
         {
+            if (beta_[iTemp] == 0)
+            {
+                continue;
+            }
             // Gray and Gubbins Eqn. 3.261
-            double yb = o.energy[ii]*beta;
-            g0[ii-i0] = (!(o.energy[ii] < eMin_) && yb < 700) ? std::exp(-yb) : 0;
-        }
-        // Terms with a Boltzmann factor of zero add zero, the sums are
-        // never negative zero, so adding zero does not change them.
-        for(size_t ii = i0; ii < i1; ii++)
-        {
-            size_t j    = index ? index[ii] : ii;
-            double g    = g0[ii-i0];
+            double yb   = energy*beta_[iTemp];
+            double g    = (!overlap && yb < 700) ? std::exp(-yb) : 0;
+            // Terms with a Boltzmann factor of zero add zero, the sums are
+            // never negative zero, so adding zero does not change them.
             bool   some = g > 0;
-            double w    = o.weight[ii];
-            eU12[j] += w*(g-1);
+            s[sumU12] += w*(g-1);
             // Gray and Gubbins Eqn. 3.272
             double ipf0 = some ? g*o.force2[0][ii] : 0.0;
             double ipf1 = some ? g*o.force2[1][ii] : 0.0;
-            eF0[j] += w*ipf0;
-            eF1[j] += w*ipf1;
+            s[sumF0] += w*ipf0;
+            s[sumF1] += w*ipf1;
             for(int m = 0; m < DIM; m++)
             {
                 // Gray and Gubbins Eqn. 3.282
                 double tau0 = some ? g*o.torque[0][ii][m]*o.torque[0][ii][m] : 0.0;
                 double tau1 = some ? g*o.torque[1][ii][m]*o.torque[1][ii][m] : 0.0;
-                eT0[j][m] += w*tau0;
-                eT1[j][m] += w*tau1;
+                s[sumT0+m] += w*tau0;
+                s[sumT1+m] += w*tau1;
             }
-            nU12[j] += w;
+            s[sumN] += w;
         }
     }
     // Per dimer and temperature: the Boltzmann factor with the exponential
@@ -372,31 +324,31 @@ void B2Data::integrate(MsgHandler *msghandler,
     // Constant for quantum corrections
     double    hbarfac  = beta*gmx::square(beta*PLANCK/(2*M_PI))/24;
     // Initiate arrays
-    mayer_[iTemp].resize(n_U12_[iTemp].size(), -1);
-    std::vector<double> myBforce(n_U12_[iTemp].size(), 0);
+    mayer_[iTemp].resize(nbins_, -1);
+    std::vector<double> myBforce(nbins_, 0);
     std::vector<double> myBtorq[2];
     for(int kk = 0; kk < 2; kk++)
     {
-        myBtorq[kk].resize(n_U12_[iTemp].size(), 0);
+        myBtorq[kk].resize(nbins_, 0);
     }
-    std::vector<double> myBtorq2(n_U12_[iTemp].size(), 0);
-    for(size_t ii = 0; ii < n_U12_[iTemp].size(); ii++)
+    for(size_t ii = 0; ii < nbins_; ii++)
     {
-        if (n_U12_[iTemp][ii] > 0)
+        double n = sum(ii, iTemp, sumN);
+        if (n > 0)
         {
-            double Unew = exp_U12_[iTemp][ii]/n_U12_[iTemp][ii];
+            double Unew = sum(ii, iTemp, sumU12)/n;
             mayer_[iTemp][ii] = Unew;
             for(int kk = 0; kk < 2; kk++)
             {
                 // Weighted square force
                 // We follow Eqn. 9 in Schenter, JCP 117 (2002) 6573
-                myBforce[ii] += exp_F2_[kk][iTemp][ii]/(mass[kk]*n_U12_[iTemp][ii]);
+                myBforce[ii] += sum(ii, iTemp, sumF0+kk)/(mass[kk]*n);
                 // Contributions from torque
                 for(int m = 0; m < DIM; m++)
                 {
                     if (inertia[kk][m] > 0)
                     {
-                        myBtorq[kk][ii] += exp_tau_[kk][iTemp][ii][m]/(n_U12_[iTemp][ii]*inertia[kk][m]);
+                        myBtorq[kk][ii] += sum(ii, iTemp, (kk == 0 ? sumT0 : sumT1)+m)/(n*inertia[kk][m]);
                     }
                 }
             }
