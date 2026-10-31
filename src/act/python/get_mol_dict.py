@@ -71,6 +71,44 @@ def get_atom_bond_xml()->list:
             abe.append(ab)
     return abe
 
+# Elements that form monatomic ions, which are not bonded to other atoms
+ionElements = { "Li", "Na", "K", "Rb", "Cs", "Be", "Mg", "Ca", "Sr", "Ba",
+                "F", "Cl", "Br", "I" }
+
+def determineBondsWithoutIons(m, charge:int):
+    """
+    Determine the bonds of molecule m with total charge, except for
+    monatomic ions, that is atoms of the ionElements with a formal charge,
+    for instance from columns 79-80 of a pdb file. RDKit would bond the
+    ions to atoms nearby, and cannot determine bond orders for all of
+    them. Returns the molecule with the bonds, the atoms are in the same
+    order.
+    """
+    ions = [ atom.GetIdx() for atom in m.GetAtoms()
+             if atom.GetFormalCharge() != 0 and atom.GetSymbol() in ionElements ]
+    if len(ions) == 0:
+        rdDetermineBonds.DetermineBonds(m, useHueckel=False, charge=charge)
+        return m
+    # Determine the bonds of the other atoms
+    others = [ i for i in range(m.GetNumAtoms()) if i not in ions ]
+    rest   = Chem.RWMol(m)
+    for i in reversed(ions):
+        rest.RemoveAtom(i)
+    if rest.GetNumAtoms() > 0:
+        ionCharge = sum(m.GetAtomWithIdx(i).GetFormalCharge() for i in ions)
+        rdDetermineBonds.DetermineBonds(rest, useHueckel=False, charge=charge - ionCharge)
+    # and copy them to the whole molecule
+    whole = Chem.RWMol(m)
+    for k, atom in enumerate(rest.GetAtoms()):
+        wa = whole.GetAtomWithIdx(others[k])
+        wa.SetFormalCharge(atom.GetFormalCharge())
+        wa.SetIsAromatic(atom.GetIsAromatic())
+        wa.SetNoImplicit(atom.GetNoImplicit())
+        wa.SetNumExplicitHs(atom.GetNumExplicitHs())
+    for bond in rest.GetBonds():
+        whole.AddBond(others[bond.GetBeginAtomIdx()], others[bond.GetEndAtomIdx()], bond.GetBondType())
+    return whole.GetMol()
+
 class MoleculeDict:
     '''Class to hold and extract molecule information'''
     def __init__(self, verbose=False):
@@ -165,6 +203,10 @@ class MoleculeDict:
             self.atoms.append( { "atomic_number": atom.GetAtomicNum(), "obtype": fftype,
                                  "atomtype": fftype, "mass": atom.GetMass(), "element": atom.GetSymbol(),
                                  "X": coords[ii][0], "Y": coords[ii][1], "Z": coords[ii][2] } )
+            # The residue number, only from pdb files
+            resinfo = atom.GetPDBResidueInfo()
+            if resinfo:
+                self.atoms[-1]["resnr"] = resinfo.GetResidueNumber()
             mw += atom.GetMass()
             ii += 1
         if not self.numb_atoms == ii:
@@ -244,7 +286,7 @@ class MoleculeDict:
                     if not (len(matoms) == 2 and
                             matoms[0].GetFormalCharge() != 0 and
                             matoms[1].GetFormalCharge() != 0):
-                        rdDetermineBonds.DetermineBonds(m, useHueckel=False, charge=mycharge)
+                        m = determineBondsWithoutIons(m, mycharge)
                 try:
                     m.UpdatePropertyCache(strict=True)
                 except Chem.AtomValenceException:

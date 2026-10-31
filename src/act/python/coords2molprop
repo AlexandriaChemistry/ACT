@@ -19,7 +19,8 @@ def parseArguments():
 
     that is, the third word on the line will be considered as the energe
     and the fourth one as the unit. Finally, the compounds A and B should be
-    designated by the residue numbers 1 and 2.
+    designated by the residue numbers 1 and 2. In xyz files, the compounds
+    are found from the bonds and there should be exactly two.
     
     For xyz files the second word on the 2nd line should contain the energy, e.g.
     
@@ -81,26 +82,35 @@ def generateFragments(md:MoleculeDict):
             maxBond     += 1
     return fragIndex
 
-def generateFormulae(md:MoleculeDict, fragIndex:list, charge:list)->list:
-    formula = []
-    nfrag = 0
-    for i in fragIndex:
-        nfrag = max(nfrag, i)
-    nfrag += 1
-    for i in range(nfrag):
-        elements = []
-        coords = []
-        j = 0
-        for aaa in range(len(md.atoms)):
-            atom = md.atoms[aaa]
-            if fragIndex[j] == i:
-                elements.append(atom["element"])
-                coords.append((atom["X"], atom["Y"], atom["Z"]))
-            j += 1
-        mdX = MoleculeDict()
-        mdX.from_coords_elements("fragment-"+str(i), elements, coords, charge[i])
-        formula.append(mdX.formula)
+def residueFragments(md:MoleculeDict):
+    """
+    Return the fragment index of each atom from the residue numbers in a
+    pdb file, the lowest residue number is fragment 0, or None if the
+    atoms have no residue numbers.
+    """
+    resnr = "resnr"
+    if len(md.atoms) == 0 or not all(resnr in atom for atom in md.atoms):
+        return None
+    residues = sorted(set(atom[resnr] for atom in md.atoms))
+    return [ residues.index(atom[resnr]) for atom in md.atoms ]
 
+def generateFormulae(md:MoleculeDict, fragIndex:list)->list:
+    """
+    Return the formula of each fragment, from the molecule that was read
+    with only the atoms of that fragment, such that the bonds do not have
+    to be determined again. All atoms are in the input, hence RDKit should
+    not add hydrogens, for instance to ions without a formal charge.
+    """
+    formula = []
+    for i in range(max(fragIndex) + 1):
+        frag = Chem.RWMol(md.mol)
+        for j in reversed(range(len(fragIndex))):
+            if fragIndex[j] != i:
+                frag.RemoveAtom(j)
+        for atom in frag.GetAtoms():
+            atom.SetNoImplicit(True)
+        frag.UpdatePropertyCache(strict=False)
+        formula.append(rdMolDescriptors.CalcMolFormula(frag))
     return formula
 
 def pdb2energy(infile:str)->float:
@@ -148,19 +158,19 @@ def read_xyz(args, infile:str, filetype:str, mp:Molprop, addBasics:bool, md:Mole
     if epot and unit:
         exper.add_energy("DeltaE0", unit, 0.0, "gas", epot)
 
-    ### Generate fragments 
+    ### Generate fragments, from the residues if there are any
     ######################
-    fragIndex = generateFragments(md)
-    # Start counting from 1
-    i    =  1
-    # Residue number
-    res0 = -1
+    fragIndex = residueFragments(md)
+    if fragIndex is None:
+        fragIndex = generateFragments(md)
+    nfrag = max(fragIndex) + 1
+    if nfrag != 2:
+        sys.exit("Found %d compounds instead of two in %s. In pdb files the compounds A and B should have the residue numbers 1 and 2." % ( nfrag, infile ))
     rangeA = []
     rangeB = []
     weightA = 0
     weightB = 0
     mass  = "mass"
-    resnr = "resnr"
     for atom in range(len(md.atoms)):
         alextype = md.atoms[atom]["obtype"]
         exper.add_atom(md.atoms[atom]["atomtype"],
@@ -169,33 +179,19 @@ def read_xyz(args, infile:str, filetype:str, mp:Molprop, addBasics:bool, md:Mole
                        100*md.atoms[atom]["Y"],
                        100*md.atoms[atom]["Z"],
                        "Hartree/Bohr", 0, 0, 0, None)
-        if res0 == -1:
-            res0 = fragIndex[i-1]
-        if fragIndex[i-1] == res0:
-            rangeA.append(i)
+        # Atoms are counted from 1
+        if fragIndex[atom] == 0:
+            rangeA.append(atom+1)
             weightA += md.atoms[atom][mass]
         else:
-            rangeB.append(i)
+            rangeB.append(atom+1)
             weightB += md.atoms[atom][mass]
-        i += 1
     mp.add_experiment(exper)
 
     if addBasics:
-        # Assume we have a homodimer
-        if len(rangeA) + len(rangeB) != len(md.atoms):
-            j = 0
-            for atom in md.atoms:
-                if j < len(md.atoms)/2:
-                    rangeA.append(j+1)
-                    weightA += md.atoms[atom][mass]
-                else:
-                    rangeB.append(j+1)
-                    weightB += md.atoms[atom][mass]
-                j += 1
-
         if args.verbose:
             print("rangeA: %s rangeB: %s" % ( str(rangeA), str(rangeB) ))
-        fff = generateFormulae(md, fragIndex, [args.charge_a, args.charge_b])
+        fff = generateFormulae(md, fragIndex)
         # TODO: add proper formulae and inchi's
         Afrag = Fragment(args.nameA, args.charge_a, 1, 1, rangeA, weightA, fff[0])
         mp.add_fragment(Afrag)
@@ -215,7 +211,7 @@ def read_file(args, mp:Molprop, infile:str, addBasics:bool):
     # Create a molecule reader
     md = MoleculeDict()
     filetype = infile[-3:]
-    if not md.read(infile, filetype):
+    if not md.read(infile, infile, filetype, args.charge_a + args.charge_b):
         print("Could not read file %s" % infile)
         return
     #if filetype == "pdb":
