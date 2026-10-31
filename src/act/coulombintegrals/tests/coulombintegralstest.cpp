@@ -43,6 +43,7 @@
 #include "act/basics/chargemodel.h"
 #include "act/coulombintegrals/gaussian_integrals.h"
 #include "act/coulombintegrals/slater_integrals.h"
+#include "gromacs/utility/stringutil.h"
 
 #include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"
@@ -385,6 +386,115 @@ const std::vector<std::tuple<double, double> > make_xiIdentical()
 static auto c_xiIdentical = make_xiIdentical();
 
 INSTANTIATE_TEST_CASE_P(IdenticalXi, SlaterTest, ::testing::Combine(::testing::ValuesIn(c_rows), ::testing::ValuesIn(c_xiIdentical)));
+
+/*! \brief Checks of the Slater integrals for all rows without reference data
+ * The derivatives are compared with finite differences of the integrals,
+ * the integrals have to be symmetric in the two charges and become those
+ * of point charges at large distances. Without the CLN library only the
+ * first row is tested, which is the one used then.
+ *
+ * For close widths, the formulas for different widths lose their
+ * precision, since they divide by powers of the difference of the
+ * widths. For the first row this is avoided in double precision, see
+ * NearlyEqualWidths, and with the CLN library for all rows.
+ */
+class SlaterPhysicsTest : public ::testing::TestWithParam<std::tuple<std::tuple<int, int>, std::tuple<double, double> > >
+{
+};
+
+TEST_P (SlaterPhysicsTest, All)
+{
+    int    irow = std::get<0>(std::get<0>(GetParam()));
+    int    jrow = std::get<1>(std::get<0>(GetParam()));
+    double xi   = std::get<0>(std::get<1>(GetParam()));
+    double xj   = std::get<1>(std::get<1>(GetParam()));
+    SCOPED_TRACE(gmx::formatString("rows %d %d, xi %g xj %g", irow, jrow, xi, xj));
+    // Distances in nm, from overlapping to separated charges
+    for (double r : { 0.02, 0.05, 0.08, 0.1, 0.15, 0.2, 0.3, 0.5 })
+    {
+        // The integrals are accurate to about 1e-10, which a smaller step
+        // would amplify in the finite differences
+        double h    = 1e-4;
+        double e    = Coulomb_SS(r, irow, jrow, xi, xj);
+        double de   = DCoulomb_SS(r, irow, jrow, xi, xj);
+        double dnum = (Coulomb_SS(r+h, irow, jrow, xi, xj) - Coulomb_SS(r-h, irow, jrow, xi, xj))/(2*h);
+        EXPECT_NEAR(dnum, de, 1e-5*std::max(1.0, std::abs(de))) << "derivative at r = " << r;
+        EXPECT_NEAR(e, Coulomb_SS(r, jrow, irow, xj, xi), 1e-10*std::max(1.0, std::abs(e)))
+            << "symmetry at r = " << r;
+        EXPECT_TRUE(std::isfinite(e) && std::isfinite(de)) << "r = " << r;
+        // Between a Slater and a point charge
+        double n    = Nuclear_SS(r, irow, xi);
+        double dn   = DNuclear_SS(r, irow, xi);
+        double nnum = (Nuclear_SS(r+h, irow, xi) - Nuclear_SS(r-h, irow, xi))/(2*h);
+        EXPECT_NEAR(nnum, dn, 1e-5*std::max(1.0, std::abs(dn))) << "nuclear derivative at r = " << r;
+        // The overlap can only reduce the interaction of two positive charges
+        EXPECT_LE(e, 1/r*(1 + 1e-10)) << "r = " << r;
+        EXPECT_LE(n, 1/r*(1 + 1e-10)) << "nuclear, r = " << r;
+    }
+    // Far apart the charges interact as point charges
+    double rfar = 40/std::min(xi, xj);
+    EXPECT_NEAR(1/rfar, Coulomb_SS(rfar, irow, jrow, xi, xj), 1e-8/rfar) << "r = " << rfar;
+    EXPECT_NEAR(1/rfar, Nuclear_SS(rfar, irow, xi), 1e-8/rfar) << "nuclear, r = " << rfar;
+}
+
+/*! \brief The Slater integrals are continuous when the widths become equal
+ * Other formulas are used for equal widths. In double precision the error
+ * of the formulas for different widths grows without bound when the widths
+ * become equal, for the first row from a relative difference of about 1e-3,
+ * for the second and third row, which are only used with the CLN library,
+ * from 0.3% and 3%. For the first row, close widths are therefore computed
+ * from the formula for equal widths and a term of second order in their
+ * difference, see Slater_1S_1S. With CLN the precision is arbitrary.
+ */
+TEST (SlaterIntegrals, NearlyEqualWidths)
+{
+#if HAVE_LIBCLN
+    const int maxRow = 3;
+#else
+    const int maxRow = 1;
+#endif
+    for (int irow = 1; irow <= maxRow; irow++)
+    {
+        for (int jrow = 1; jrow <= maxRow; jrow++)
+        {
+            for (double xi : { 6.0, 20.0 })
+            {
+                for (double d : { 3e-2, 1e-2, 1e-3, 1e-6 })
+                {
+                    for (double r : { 0.05, 0.1, 0.3 })
+                    {
+                        // Symmetric in the two widths, such that the
+                        // difference is of order d squared
+                        double eq   = Coulomb_SS(r, irow, jrow, xi, xi);
+                        double near = Coulomb_SS(r, irow, jrow, xi*(1 - d/2), xi*(1 + d/2));
+                        EXPECT_NEAR(eq, near, 10*d*d*std::abs(eq))
+                            << "rows " << irow << " " << jrow << " xi " << xi << " d " << d << " r " << r;
+                        double deq   = DCoulomb_SS(r, irow, jrow, xi, xi);
+                        double dnear = DCoulomb_SS(r, irow, jrow, xi*(1 - d/2), xi*(1 + d/2));
+                        EXPECT_NEAR(deq, dnear, 10*d*d*std::max(1.0, std::abs(deq)))
+                            << "derivative, rows " << irow << " " << jrow << " xi " << xi << " d " << d << " r " << r;
+                    }
+                }
+            }
+        }
+    }
+}
+
+//! The rows to test, all combinations with the CLN library, otherwise the first row
+static const std::vector<std::tuple<int, int> > c_allRows = {
+    { 1, 1 },
+#if HAVE_LIBCLN
+    { 1, 2 }, { 2, 2 }, { 1, 3 }, { 2, 3 }, { 3, 3 }, { 2, 1 }, { 3, 1 }, { 3, 2 }
+#endif
+};
+
+//! Widths in 1/nm of the charges, from nearly the same to a factor of five apart
+static const std::vector<std::tuple<double, double> > c_physicsXi = {
+    { 9.0, 18.0 }, { 6.0, 15.0 }, { 30.0, 12.0 }, { 5.0, 25.0 },
+    { 5.6, 5.7 }, { 15.8, 16.0 }, { 22.3, 22.4 }, { 34.6, 34.5 }, { 10.0, 10.000001 }
+};
+
+INSTANTIATE_TEST_CASE_P(Rows, SlaterPhysicsTest, ::testing::Combine(::testing::ValuesIn(c_allRows), ::testing::ValuesIn(c_physicsXi)));
 
 } // namespace
 
