@@ -178,8 +178,10 @@ public:
      */
     void dump(MsgHandler *msghandler);
 
-    /*! \brief Aggregate information from helpers to tha main node
-     * \param[in] cr Communication information 
+    /*! \brief Add the sums of all processes on the master
+     * All processes have to call this. The sums are added with a
+     * reduction, the order of the additions depends on the MPI library.
+     * \param[in] cr Communication information
      */
     void aggregate(CommunicationRecord *cr);
 

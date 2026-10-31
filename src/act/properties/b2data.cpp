@@ -101,36 +101,16 @@ void B2Data::forEachSum(Func func)
 
 void B2Data::aggregate(CommunicationRecord *cr)
 {
-    // All sums are sent in one message per process, the master adds them
-    // in the order of the processes.
-    size_t nsum = 0;
-    forEachSum([&nsum](double &) { nsum += 1; });
+    // All sums of all processes are added with a reduction on the master,
+    // in parallel on the processes rather than by the master alone, which
+    // took most of the time with many processes.
     std::vector<double> buf;
+    forEachSum([&buf](double &x) { buf.push_back(x); });
+    cr->sumd_master(static_cast<int>(buf.size()), buf.data());
     if (cr->isMaster())
     {
-        for(int src = 1; src < cr->size(); src++)
-        {
-            if (CommunicationStatus::RECV_DATA == cr->recv_data(src))
-            {
-                cr->recv(src, &buf);
-                if (buf.size() != nsum)
-                {
-                    GMX_THROW(gmx::InternalError(gmx::formatString("Received %zu sums from process %d, expected %zu", buf.size(), src, nsum).c_str()));
-                }
-                size_t k = 0;
-                forEachSum([&buf, &k](double &x) { x += buf[k++]; });
-            }
-        }
-    }
-    else
-    {
-        int dest = cr->superior();
-        if (CommunicationStatus::SEND_DATA == cr->send_data(dest))
-        {
-            buf.reserve(nsum);
-            forEachSum([&buf](double &x) { buf.push_back(x); });
-            cr->send(dest, buf);
-        }
+        size_t k = 0;
+        forEachSum([&buf, &k](double &x) { x = buf[k++]; });
     }
 }
 
