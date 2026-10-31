@@ -52,6 +52,7 @@
 #include "act/forces/conformationdata.h"
 #include "act/forces/forcecomputer.h"
 #include "act/forces/forces_simd.h"
+#include "act/forces/simd_information.h"
 #include "act/import/import.h"
 #include "act/topology/actmol.h"
 #include "act/utility/timings.h"
@@ -869,6 +870,88 @@ TEST_F(PhysicsTest, EnergyCache)
     EXPECT_NE(e4, e5);
 }
 
+
+// Test: Without forces, the Coulomb energies of all conformations are
+// computed from those for charges of one when only the charges changed.
+// They are the same as computed directly, also with second charges, after
+// their widths change and after some particles moved.
+TEST_F(PhysicsTest, CoulombKernel)
+{
+    auto pd = getForceField("ACS-v3fds");
+    ASSERT_NE(nullptr, pd);
+    ASSERT_FALSE(pd->polarizable());
+    ACTMol mol;
+    ASSERT_TRUE(readMolecule(pd, waterDimer, {}, {}, &mol));
+    auto                      x0 = mol.xOriginal();
+    std::vector<CoordsEnergy> coords(7);
+    for (size_t c = 0; c < coords.size(); c++)
+    {
+        coords[c].x = x0;
+        for (size_t i = 0; i < x0.size(); i++)
+        {
+            for (int m = 0; m < DIM; m++)
+            {
+                coords[c].x[i][m] += 0.005*std::sin(1.0 + c + 3*i + m);
+            }
+        }
+    }
+    // The potential energies without forces, as in training, with the
+    // energies kept in cdata, or computed directly without explicit SIMD
+    auto epot = [&](ConformationData *cdata, bool explicitSimd)
+    {
+        bool before = setUseExplicitSimd(explicitSimd);
+        computeConformations(&msghandler_, pd, mol.topology(), &coords, cdata, false, false);
+        setUseExplicitSimd(before);
+        EXPECT_TRUE(msghandler_.ok());
+        auto                e = cdata->energies.find(InteractionType::EPOT);
+        std::vector<double> ep;
+        for (size_t c = 0; c < coords.size(); c++)
+        {
+            ep.push_back(e.has(c) ? e.act[c] : 0.0);
+        }
+        return ep;
+    };
+    ConformationData cdata;
+    auto compare = [&](const char *what)
+    {
+        SCOPED_TRACE(what);
+        ConformationData direct;
+        auto             e  = epot(&cdata, true);
+        auto             ed = epot(&direct, false);
+        ASSERT_EQ(ed.size(), e.size());
+        for (size_t c = 0; c < e.size(); c++)
+        {
+            EXPECT_NEAR(ed[c], e[c], 1e-12*std::abs(ed[c])) << "conformation " << c;
+        }
+    };
+    compare("initial charges");
+    auto &atoms = *mol.topologyPtr()->atomsPtr();
+    for (size_t i = 0; i < atoms.size(); i++)
+    {
+        atoms[i].setCharge(atoms[i].charge() + 0.01*std::sin(1.0 + i));
+    }
+    compare("other charges");
+    // Second charges on two atoms, also on one of an interaction only
+    atoms[0].setChargeVS(-0.3, 12.0, 1);
+    atoms[atoms.size()-1].setChargeVS(0.2, 9.0, 1);
+    compare("second charges");
+    atoms[0].setChargeVS(-0.2, 14.0, 1);
+    compare("widths of second charges");
+    // Only the interactions of a particle that moved are computed again
+    for (auto &ce : coords)
+    {
+        ce.x[1][YY] += 0.01;
+    }
+    cdata.invalidate();
+    compare("one particle moved");
+    for (auto &ce : coords)
+    {
+        ce.x[1][YY] -= 0.01;
+        ce.x[4][ZZ] += 0.02;
+    }
+    cdata.invalidate();
+    compare("two particles moved");
+}
 } // namespace
 
 } // namespace alexandria

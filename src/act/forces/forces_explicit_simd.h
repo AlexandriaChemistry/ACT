@@ -109,6 +109,29 @@ bool computeExplicitSimd(Potential                   mypot,
                          double                     *energies,
                          bool                        forces);
 
+/*! \brief The Coulomb energies of interactions for charges of one with explicit SIMD
+ * The interaction between two particles, each with a charge and possibly a
+ * second one at the same position, has four terms, see ActAtom::chargeVS.
+ * Term k = 2*a + b is the energy between charge a of the first particle
+ * and charge b of the second one, both one, without ONE_4PI_EPS0 and the
+ * dielectric constant, as COULOMB_POINT and COULOMB_GAUSSIAN compute it.
+ * \param[in]  entries The interactions
+ * \param[in]  atoms   The atoms, for the widths of the second charges
+ * \param[in]  stride  Number of conformations, a multiple of explicitSimdWidth()
+ * \param[in]  x       Coordinates, as in computeExplicitSimd
+ * \param[in]  terms   For each interaction, bit k tells whether to compute term k
+ * \param[out] kernel  Term k of interaction e of conformation c at (4*e + k)*stride + c,
+ *                     the terms that are not computed are not changed
+ * Only call this if useExplicitSimd() returns true.
+ * \return false if there is no explicit SIMD
+ */
+bool coulombKernelsExplicitSimd(TopologyEntryRange          entries,
+                                const std::vector<ActAtom> &atoms,
+                                size_t                      stride,
+                                const double               *x,
+                                const unsigned char        *terms,
+                                double                     *kernel);
+
 /*! \brief Add the terms of one dimer to the sums of the second virial with explicit SIMD
  * The Boltzmann factor at temperature t is g = exp(-energy*beta[t]), zero
  * for overlapping atoms or if energy*beta[t] is 700 or more. Row k of the
