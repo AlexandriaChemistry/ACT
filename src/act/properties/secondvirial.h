@@ -180,6 +180,14 @@ public:
     //! \return the second virial as a function of T.
     const std::vector<double> &b2Temp(b2Type b2t) const { return b2t_.find(b2t)->second; }
 
+    /*! \brief Add the second virial coefficients to a JSON tree
+     * For each temperature the components and the total in cm^3/mol, with
+     * all digits, such that results can be compared exactly, as in the
+     * tests. Nothing is added if the second virial was not computed.
+     * \param[inout] jtree The tree
+     */
+    void addB2(JsonTree *jtree);
+
 };
 
 } // namespace alexandria

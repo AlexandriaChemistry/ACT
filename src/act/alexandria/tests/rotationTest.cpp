@@ -57,7 +57,7 @@ class RotationTest : public gmx::test::CommandLineTestBase
         //! Init set tolecrance
         RotationTest () : checker_(this->rootChecker())
         {
-            auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, 5e-2);
+            auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, GMX_DOUBLE ? 1e-10 : 5e-2);
             checker_.setDefaultTolerance(tolerance);
         }
 

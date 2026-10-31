@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Real Name="T = 300 K B2(Classical)">-1474.7332971405651</Real>
+  <Real Name="T = 300 K B2(Force)">34.650062278686455</Real>
+  <Real Name="T = 300 K B2(Torque1)">237.63076362693923</Real>
+  <Real Name="T = 300 K B2(Torque2)">304.2117969070581</Real>
+  <Real Name="T = 300 K B2(Total)">-1169.1619545948799</Real>
+  <Real Name="T = 400 K B2(Classical)">-314.76056009490139</Real>
+  <Real Name="T = 400 K B2(Force)">4.0779560912526058</Real>
+  <Real Name="T = 400 K B2(Torque1)">41.621860831736996</Real>
+  <Real Name="T = 400 K B2(Torque2)">47.841216947181778</Real>
+  <Real Name="T = 400 K B2(Total)">-265.95106511418942</Real>
+  <Real Name="T = 500 K B2(Classical)">-122.5372176396537</Real>
+  <Real Name="T = 500 K B2(Force)">1.1494905026437792</Real>
+  <Real Name="T = 500 K B2(Torque1)">13.844393128739819</Real>
+  <Real Name="T = 500 K B2(Torque2)">15.065555203489525</Real>
+  <Real Name="T = 500 K B2(Total)">-106.93275297089527</Real>
+</ReferenceData>

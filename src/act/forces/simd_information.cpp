@@ -342,10 +342,29 @@ bool explicitSimdTurnedOff()
 
 } // namespace
 
+//! Whether explicit SIMD is used, see useExplicitSimd and setUseExplicitSimd
+static bool &explicitSimdInUse()
+{
+    static bool use = (explicitSimdAvailable() && !explicitSimdTurnedOff());
+    return use;
+}
+
+bool explicitSimdAvailable()
+{
+    static const bool available = processorSupports(explicitSimdType());
+    return available;
+}
+
 bool useExplicitSimd()
 {
-    static const bool use = (processorSupports(explicitSimdType()) && !explicitSimdTurnedOff());
-    return use;
+    return explicitSimdInUse();
+}
+
+bool setUseExplicitSimd(bool use)
+{
+    bool before         = explicitSimdInUse();
+    explicitSimdInUse() = use && explicitSimdAvailable();
+    return before;
 }
 
 PeakPerformance theoreticalPeakPerCore()

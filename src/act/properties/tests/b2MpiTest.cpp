@@ -30,6 +30,7 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 #include <cmath>
+#include <cstdio>
 #include <fstream>
 #include <sstream>
 #include <string>
@@ -42,6 +43,8 @@
 #include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/stringutil.h"
+
+#include <nlohmann/json.hpp>
 
 #include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"
@@ -183,6 +186,73 @@ protected:
         barrier();
     }
 
+    /*! \brief Compare the second virial coefficients with reference data
+     * A short calculation, with all digits of the results from the JSON
+     * output. With a tight tolerance, any change of the energies, forces,
+     * torques, virtual sites, shells or sums of the second virial is
+     * found, such that optimizations do not change the results unnoticed.
+     * \param[in] ffName  Force field file in this directory
+     * \param[in] molFile Dimer structure, relative to this directory
+     * \param[in] nDimer  Number of dimer orientations
+     */
+    void testReference(const std::string &ffName, const std::string &molFile, int nDimer)
+    {
+        gmx::test::CommandLine cmd;
+        cmd.append("b2");
+        cmd.addOption("-ff", fileManager().getInputFilePath(ffName));
+        cmd.addOption("-f", fileManager().getInputFilePath(molFile));
+        cmd.addOption("-mindist", 0.15);
+        cmd.addOption("-maxdist", 1.2);
+        cmd.addOption("-ndist", 106);
+        cmd.addOption("-maxdimer", nDimer);
+        cmd.addOption("-randalg", "Sobol");
+        cmd.addOption("-T1", 300.0);
+        cmd.addOption("-T2", 500.0);
+        cmd.addOption("-dT", 100.0);
+        cmd.addOption("-shelltoler", 1e-8);
+        cmd.addOption("-shellMaxIter", 100);
+        cmd.append("-json");
+        auto label = gmx::formatString("%s-%d", ffName.c_str(), nDimer);
+        cmd.addOption("-b2", fileManager().getTemporaryFilePath(label + "-B2T.xvg"));
+        cmd.addOption("-eh", fileManager().getTemporaryFilePath(label + "-mayer.xvg"));
+        cmd.addOption("-g", fileManager().getTemporaryFilePath(label + "-b2.log"));
+        EXPECT_EQ(0, b2(cmd.argc(), cmd.argv()));
+        if (gmx_node_rank() == 0)
+        {
+            // The b2 tool writes b2.json in the working directory
+            const char    *jsonFile = "b2.json";
+            std::ifstream  in(jsonFile);
+            ASSERT_TRUE(in.good()) << "Cannot open " << jsonFile;
+            auto json = nlohmann::json::parse(in);
+            in.close();
+            std::remove(jsonFile);
+            auto &b2json = json["SecondVirialCoefficient"]["Second virial coefficients"];
+            ASSERT_TRUE(b2json.is_object());
+            EXPECT_EQ("cm^3/mol", b2json["Unit"]);
+            auto checker = rootChecker();
+#if GMX_DOUBLE
+            checker.setDefaultTolerance(gmx::test::relativeToleranceAsFloatingPoint(1.0, 1e-10));
+#else
+            checker.setDefaultTolerance(gmx::test::relativeToleranceAsFloatingPoint(1.0, 1e-4));
+#endif
+            size_t ntemp = 0;
+            for(const auto &t : b2json.items())
+            {
+                if (t.key() == "Unit")
+                {
+                    continue;
+                }
+                ntemp += 1;
+                for(const auto &b : t.value().items())
+                {
+                    checker.checkReal(std::stod(b.value().get<std::string>()),
+                                      gmx::formatString("%s %s", t.key().c_str(), b.key().c_str()).c_str());
+                }
+            }
+            EXPECT_EQ(3u, ntemp);
+        }
+        barrier();
+    }
     //! Check the results of the b2 tool
     void checkWater(const std::vector<B2Row>               &rows,
                     const std::vector<std::vector<double>> &mayer,
@@ -265,6 +335,41 @@ TEST_F(WaterB2Test, SWM4NDP)
     // For a polarizable model this also checks that the forces of the
     // fully relaxed dimer are used for the torques.
     testWater("SWM4-NDP.xml", 3200, true);
+}
+
+// Test: Second virial coefficients compared with reference data, for
+// water models with virtual sites, shells, point and Gaussian charges and
+// for hydrogen fluoride with a 14-7 potential. These cover the energies,
+// forces and torques of the dimers, the virtual sites, the relaxation of
+// the shells and the sums over the orientations, also over MPI processes.
+TEST_F(WaterB2Test, ReferenceTIP5P)
+{
+    testReference("TIP5P.xml", "../../alexandria/tests/mols/water_dimer.pdb", 64);
+}
+
+TEST_F(WaterB2Test, ReferenceSWM3)
+{
+    testReference("SWM3.xml", "../../alexandria/tests/mols/water_dimer.pdb", 64);
+}
+
+TEST_F(WaterB2Test, ReferenceSWM4NDP)
+{
+    testReference("SWM4-NDP.xml", "../../alexandria/tests/mols/water_dimer.pdb", 64);
+}
+
+TEST_F(WaterB2Test, ReferenceBK3)
+{
+    testReference("BK3.xml", "../../alexandria/tests/mols/water_dimer.pdb", 64);
+}
+
+TEST_F(WaterB2Test, ReferenceSPCE)
+{
+    testReference("SPCE.xml", "../../alexandria/tests/mols/water_dimer.pdb", 64);
+}
+
+TEST_F(WaterB2Test, ReferenceHF14_7)
+{
+    testReference("HF-LJ14-7.xml", "hydrogen-fluoride#hydrogen-fluoride.pdb", 64);
 }
 
 } // namespace

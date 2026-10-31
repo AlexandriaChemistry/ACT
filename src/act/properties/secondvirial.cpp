@@ -197,6 +197,27 @@ const std::vector<double> &ReRunner::temperatures()
 }
 
 
+void ReRunner::addB2(JsonTree *jtree)
+{
+    auto &T = temperatures();
+    if (b2t_.empty() || b2t_[b2Type::Total].size() != T.size())
+    {
+        return;
+    }
+    JsonTree b2tree("Second virial coefficients");
+    b2tree.addObject(JsonTree("Unit", "cm^3/mol"));
+    for(size_t ii = 0; ii < T.size(); ii++)
+    {
+        JsonTree ttree(gmx::formatString("T = %g K", T[ii]));
+        for(const auto &b2b : b2Type2str)
+        {
+            ttree.addObject(JsonTree(b2b.second, gmx::formatString("%.17g", b2t_[b2b.first][ii])));
+        }
+        b2tree.addObject(ttree);
+    }
+    jtree->addObject(b2tree);
+}
+
 void ReRunner::plotB2temp(const char *b2file)
 {
     if (!b2file || strlen(b2file) == 0)
@@ -913,7 +934,7 @@ int b2(int argc, char *argv[])
         { "-shellMaxIter", FALSE, etINT, {&shellMaxIter},
           "Max number of iterations for minimizing shell positions" },
         { "-json", FALSE, etBOOL, {&json},
-          "Print part of the output in json format to b2.json." }
+          "Print part of the output in json format to b2.json, including the second virial coefficients with all digits." }
     };
     CommunicationRecord cr;
     cr.init(cr.size());
@@ -978,6 +999,10 @@ int b2(int argc, char *argv[])
         phase.next("Second virial");
         rerun.setFunctions(&forceComp, oenv);
         rerun.runB2(&cr, &msghandler, &pd, &actmol, maxdimers, fnm);
+        if (json && cr.isMaster())
+        {
+            rerun.addB2(&jtree);
+        }
     }
     if (pd.polarizable())
     {

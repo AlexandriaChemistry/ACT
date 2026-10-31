@@ -177,7 +177,7 @@ protected:
         refData_(fcStrippedRefDataFilename()),
         checker_(refData_.rootChecker())
     {
-        gmx::test::FloatingPointTolerance tolerance(gmx::test::relativeToleranceAsFloatingPoint(1.0, 1e-6));
+        gmx::test::FloatingPointTolerance tolerance(gmx::test::relativeToleranceAsFloatingPoint(1.0, GMX_DOUBLE ? 1e-10 : 1e-6));
         checker_.setDefaultTolerance(tolerance);
         std::vector<double> q = { 1, 1, -1, -2 };
         for (int i = 0; i < 4; i++)

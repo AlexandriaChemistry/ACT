@@ -49,6 +49,7 @@
 #include "act/basics/act_particle.h"
 #include "act/forcefield/forcefield_parametername.h"
 #include "act/forcefield/potential.h"
+#include "act/forces/simd_information.h"
 #include "act/topology/actatom.h"
 #include "act/topology/coords_energy.h"
 
@@ -79,6 +80,10 @@ protected:
     std::vector<ActAtom>            atoms_;
     //! The conformations
     std::vector<std::vector<gmx::RVec>> x_;
+    //! More conformations, to test the unrolled loops for all SIMD widths
+    std::vector<std::vector<gmx::RVec>> xMany_;
+    //! Number of conformations in xMany_, more than four times the widest SIMD plus a remainder
+    const size_t                        nMany_ = 37;
 
     ForcesSimdTest() : checker_(refData_.rootChecker())
     {
@@ -108,7 +113,7 @@ protected:
         }
         // Deterministic perturbations of up to 0.01 nm
         unsigned int seed = 1993;
-        for (size_t c = 0; c < nconf_; c++)
+        for (size_t c = 0; c < nconf_ + nMany_; c++)
         {
             auto x = x0;
             for (auto &xi : x)
@@ -119,7 +124,14 @@ protected:
                     xi[m] += 0.01*(((seed >> 8) % 2001)/1000.0 - 1.0);
                 }
             }
-            x_.push_back(x);
+            if (c < nconf_)
+            {
+                x_.push_back(x);
+            }
+            else
+            {
+                xMany_.push_back(x);
+            }
         }
     }
 
@@ -243,6 +255,54 @@ protected:
         }
     }
 
+    /*! \brief Compare the routines for many conformations
+     * With explicit SIMD, if available, with the loops vectorized by the
+     * compiler and one conformation at a time. The energies and forces
+     * have to be the same, except for the last bits from vector math
+     * libraries. Future optimizations of one of the routines should not
+     * change the results.
+     * \param[in] mypot    The potential
+     * \param[in] entries  The interactions
+     * \param[in] epsilonr The relative dielectric constant
+     * \param[in] tolSame  The tolerance
+     */
+    void compareRoutines(Potential                              mypot,
+                         const TopologyEntryVector             &entries,
+                         double                                 epsilonr,
+                         const gmx::test::FloatingPointTolerance &tolSame)
+    {
+        auto cOne      = makeCoords(xMany_);
+        computePotential(nullptr, mypot, entries, atoms_, &cOne, epsilonr, false);
+        bool explicitSimd = setUseExplicitSimd(false);
+        auto cCompiler = makeCoords(xMany_);
+        computePotential(nullptr, mypot, entries, atoms_, &cCompiler, epsilonr, true);
+        setUseExplicitSimd(true);
+        auto cExplicit = makeCoords(xMany_);
+        computePotential(nullptr, mypot, entries, atoms_, &cExplicit, epsilonr, true);
+        setUseExplicitSimd(explicitSimd);
+        for (const auto *other : { &cCompiler, &cExplicit })
+        {
+            for (size_t c = 0; c < nMany_; c++)
+            {
+                SCOPED_TRACE(gmx::formatString("conformation %zu, %s", c,
+                                               other == &cCompiler ? "vectorized by the compiler" : "explicit SIMD"));
+                ASSERT_EQ(cOne[c].eMap.size(), (*other)[c].eMap.size());
+                for (const auto &e : cOne[c].eMap)
+                {
+                    auto ei = (*other)[c].eMap.find(e.first);
+                    ASSERT_TRUE(ei != (*other)[c].eMap.end());
+                    EXPECT_REAL_EQ_TOL(e.second.eact(), ei->second.eact(), tolSame);
+                }
+                for (size_t a = 0; a < atoms_.size(); a++)
+                {
+                    for (int m = 0; m < DIM; m++)
+                    {
+                        EXPECT_REAL_EQ_TOL(cOne[c].fcalc[a][m], (*other)[c].fcalc[a][m], tolSame);
+                    }
+                }
+            }
+        }
+    }
     void test(Potential mypot, const std::vector<Interaction> &inter)
     {
         auto   entries  = makeEntries(inter);
@@ -263,6 +323,7 @@ protected:
         double h        = 1e-3;
         double tolFD    = 1e-2;
 #endif
+        compareRoutines(mypot, entries, epsilonr, tolSame);
         for (size_t c = 0; c < nconf_; c++)
         {
             ASSERT_EQ(cOuter[c].eMap.size(), cInner[c].eMap.size());

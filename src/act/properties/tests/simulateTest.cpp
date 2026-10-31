@@ -214,7 +214,7 @@ protected:
     void checkEnergies(const XvgData &xvg)
     {
         gmx::test::TestReferenceChecker checker(this->rootChecker());
-        checker.setDefaultTolerance(gmx::test::relativeToleranceAsFloatingPoint(1.0, 1e-6));
+        checker.setDefaultTolerance(gmx::test::relativeToleranceAsFloatingPoint(1.0, GMX_DOUBLE ? 1e-10 : 1e-6));
         checker.checkSequence(xvg.legends.begin(), xvg.legends.end(), "Legends");
         auto time = xvg.values(0);
         checker.checkSequence(time.begin(), time.end(), "Time");
