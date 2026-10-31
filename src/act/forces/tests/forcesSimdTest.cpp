@@ -279,8 +279,11 @@ protected:
         setUseExplicitSimd(true);
         auto cExplicit = makeCoords(xMany_);
         computePotential(nullptr, mypot, entries, atoms_, &cExplicit, epsilonr, true);
-        // Without forces, as in training, the energies are exactly the same,
-        // with explicit SIMD and with the loops vectorized by the compiler
+        // Without forces, as in training, the energies are the same, with
+        // explicit SIMD and with the loops vectorized by the compiler. They
+        // can differ in the last bits, since compilers may combine a
+        // multiplication and an addition to a fused multiply-add
+        // differently without the operations for the forces.
         for (bool useExplicit : { false, true })
         {
             setUseExplicitSimd(useExplicit);
@@ -294,7 +297,7 @@ protected:
                 {
                     auto ei = cNoForces[c].eMap.find(e.first);
                     ASSERT_TRUE(ei != cNoForces[c].eMap.end());
-                    EXPECT_EQ(e.second.eact(), ei->second.eact())
+                    EXPECT_REAL_EQ_TOL(e.second.eact(), ei->second.eact(), tolSame)
                         << interactionTypeToString(e.first) << " without forces, conformation " << c
                         << (useExplicit ? ", explicit SIMD" : ", vectorized by the compiler");
                 }
