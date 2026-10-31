@@ -47,9 +47,12 @@
 
 #include "act/basics/msg_handler.h"
 #include "act/forcefield/forcefield_utils.h"
+#include "act/forces/conformationdata.h"
 #include "act/forces/forcecomputer.h"
+#include "act/forces/forces_simd.h"
 #include "act/import/import.h"
 #include "act/topology/actmol.h"
+#include "act/utility/timings.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/utility/stringutil.h"
 
@@ -603,6 +606,110 @@ TEST_F(PhysicsTest, RenumberedAcetateWater)
 TEST_F(PhysicsTest, RenumberedMethanolWater)
 {
     testRenumbered("../../qgen/tests/ACS-g", "../../qgen/tests/methanol-water.sdf", { 0, 0 });
+}
+
+// Test: Energies are used again when nothing changed since the previous
+// calculation, and computed again, the same as without them, after the
+// coordinates, the charges or the parameters change
+TEST_F(PhysicsTest, EnergyCache)
+{
+    // Energies are only used again without polarization
+    auto pd0 = getForceField("ACS-v3fds");
+    ASSERT_NE(nullptr, pd0);
+    ASSERT_FALSE(pd0->polarizable());
+    // A copy, of which a parameter is changed
+    ForceField pd = *pd0;
+    ACTMol     mol;
+    ASSERT_TRUE(readMolecule(&pd, waterDimer, {}, {}, &mol));
+    auto                      x0 = mol.xOriginal();
+    std::vector<CoordsEnergy> coords(5);
+    for (size_t c = 0; c < coords.size(); c++)
+    {
+        coords[c].x = x0;
+        for (size_t i = 0; i < x0.size(); i++)
+        {
+            for (int m = 0; m < DIM; m++)
+            {
+                coords[c].x[i][m] += 0.005*std::sin(1.0 + c + 3*i + m);
+            }
+        }
+    }
+    // The potential energies without forces, as in training
+    auto epot = [&](ConformationData *cdata)
+    {
+        computeConformations(&msghandler_, &pd, mol.topology(), &coords, cdata, false, false);
+        EXPECT_TRUE(msghandler_.ok());
+        auto                e = cdata->energies.find(InteractionType::EPOT);
+        std::vector<double> ep;
+        for (size_t c = 0; c < coords.size(); c++)
+        {
+            ep.push_back(e.has(c) ? e.act[c] : 0.0);
+        }
+        return ep;
+    };
+    auto fresh = [&]()
+    {
+        ConformationData cdata;
+        return epot(&cdata);
+    };
+    auto  &timings  = Timings::instance();
+    size_t reusedId = timings.index("Energies used again");
+    auto   reused   = [&timings, reusedId]() { return timings.calls()[reusedId]; };
+
+    ConformationData cdata;
+    auto             e1 = epot(&cdata);
+    double           n0 = reused();
+    auto             e2 = epot(&cdata);
+    EXPECT_GT(reused(), n0) << "energies used again";
+    EXPECT_EQ(e1, e2);
+    EXPECT_EQ(fresh(), e2);
+
+    // Coordinates, the change is made known to the conformation data
+    for (auto &ce : coords)
+    {
+        ce.x[0][XX] += 0.01;
+    }
+    cdata.invalidate();
+    n0      = reused();
+    auto e3 = epot(&cdata);
+    EXPECT_EQ(n0, reused()) << "nothing used again after the coordinates changed";
+    EXPECT_EQ(fresh(), e3);
+    EXPECT_NE(e1, e3);
+
+    // Charges, keeping the total charge
+    auto  &atoms = *mol.topologyPtr()->atomsPtr();
+    size_t qi = atoms.size(), qj = atoms.size();
+    for (size_t i = 0; i < atoms.size(); i++)
+    {
+        if (atoms[i].charge() != 0)
+        {
+            (qi == atoms.size() ? qi : qj) = i;
+            if (qj < atoms.size())
+            {
+                break;
+            }
+        }
+    }
+    ASSERT_LT(qj, atoms.size());
+    atoms[qi].setCharge(atoms[qi].charge() + 0.05);
+    atoms[qj].setCharge(atoms[qj].charge() - 0.05);
+    auto e4 = epot(&cdata);
+    EXPECT_EQ(fresh(), e4);
+    EXPECT_NE(e3, e4);
+
+    // A bond length, filled in the topology
+    auto  itype  = InteractionType::BONDS;
+    ASSERT_TRUE(mol.topology()->hasEntry(itype));
+    auto  id     = mol.topology()->entry(itype)[0]->id();
+    auto *params = pd.findForces(itype)->findParameters(id);
+    ASSERT_NE(nullptr, params);
+    ASSERT_FALSE(params->empty());
+    auto &param  = params->begin()->second;
+    param.forceSetValue(1.1*param.value());
+    mol.topologyPtr()->fillParameters(&msghandler_, &pd, missingParameters::Ignore);
+    auto e5 = epot(&cdata);
+    EXPECT_EQ(fresh(), e5);
+    EXPECT_NE(e4, e5);
 }
 
 } // namespace

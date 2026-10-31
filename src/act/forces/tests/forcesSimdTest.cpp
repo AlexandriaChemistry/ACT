@@ -279,6 +279,27 @@ protected:
         setUseExplicitSimd(true);
         auto cExplicit = makeCoords(xMany_);
         computePotential(nullptr, mypot, entries, atoms_, &cExplicit, epsilonr, true);
+        // Without forces, as in training, the energies are exactly the same,
+        // with explicit SIMD and with the loops vectorized by the compiler
+        for (bool useExplicit : { false, true })
+        {
+            setUseExplicitSimd(useExplicit);
+            auto        cNoForces = makeCoords(xMany_);
+            computePotential(nullptr, mypot, entries, atoms_, &cNoForces, epsilonr, true, false);
+            const auto &withForces = useExplicit ? cExplicit : cCompiler;
+            for (size_t c = 0; c < nMany_; c++)
+            {
+                ASSERT_EQ(withForces[c].eMap.size(), cNoForces[c].eMap.size());
+                for (const auto &e : withForces[c].eMap)
+                {
+                    auto ei = cNoForces[c].eMap.find(e.first);
+                    ASSERT_TRUE(ei != cNoForces[c].eMap.end());
+                    EXPECT_EQ(e.second.eact(), ei->second.eact())
+                        << interactionTypeToString(e.first) << " without forces, conformation " << c
+                        << (useExplicit ? ", explicit SIMD" : ", vectorized by the compiler");
+                }
+            }
+        }
         setUseExplicitSimd(explicitSimd);
         for (const auto *other : { &cCompiler, &cExplicit })
         {
