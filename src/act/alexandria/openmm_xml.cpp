@@ -1682,16 +1682,20 @@ void OpenMMWriter::writeXml(MsgHandler                *msghandler,
     xmlFreeDoc(doc);
 }
 
-//! Residue names that OpenMM renames or makes bonds for, from its pdbNames.xml and residues.xml
+/*! Residue names that OpenMM renames or makes bonds for, from its
+ * pdbNames.xml and residues.xml up to OpenMM 8.6, which added SPC, T4P
+ * and H2O for water. Other names of water models are added as well, since
+ * later versions of OpenMM may treat them as water too.
+ */
 static const std::set<std::string> openMMResidues = {
     "A", "A3", "A5", "ACE", "ADE", "AIB", "ALA", "ALL", "ARG", "ASH", "ASN", "ASP",
     "C", "C3", "C5", "CYS", "CYT", "CYX", "DA", "DA3", "DA5", "DAD", "DC", "DC3",
     "DC5", "DCY", "DG", "DG3", "DG5", "DGU", "DI", "DT", "DT3", "DT5", "FOR", "G",
-    "G3", "G5", "GLH", "GLN", "GLU", "GLY", "GUA", "H20", "HID", "HIE", "HIH", "HIP",
-    "HIS", "HOH", "HSD", "HSH", "HSP", "I", "ILE", "LEU", "LYS", "MET", "NH2", "NHE",
-    "NMA", "NME", "NUCLEIC", "ORN", "PCA", "PHE", "PRO", "PROTEIN", "SER", "SOL",
-    "THR", "THY", "TIP", "TIP3", "TP3", "TRP", "TYR", "U", "U3", "U5", "UNK", "URA",
-    "VAL", "WAT"
+    "G3", "G5", "GLH", "GLN", "GLU", "GLY", "GUA", "H20", "H2O", "HID", "HIE", "HIH",
+    "HIP", "HIS", "HOH", "HSD", "HSH", "HSP", "I", "ILE", "LEU", "LYS", "MET", "NH2",
+    "NHE", "NMA", "NME", "NUCLEIC", "ORN", "PCA", "PHE", "PRO", "PROTEIN", "SER", "SOL",
+    "SPC", "SPCE", "T3P", "T4P", "T5P", "THR", "THY", "TIP", "TIP3", "TIP4", "TIP5",
+    "TP3", "TP4", "TP5", "TRP", "TYR", "U", "U3", "U5", "UNK", "URA", "VAL", "WAT"
 };
 
 //! \return whether name can be used as a residue name for OpenMM
