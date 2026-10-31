@@ -93,6 +93,8 @@ cl_R Slater_1S_1S(cl_R r, cl_R xi, cl_R xj)
 }
 
 #else
+#include <cmath>
+
 static double pow3(double x)
 {
     return x*x*x;
@@ -102,7 +104,13 @@ static double pow4(double x)
     return x*x*x*x;
 }
 
-double Slater_1S_1S(double r, double xi, double xj)
+/*! \brief The integral with the formulas for equal and different widths
+ * \param[in] r  The distance
+ * \param[in] xi The width of the first charge
+ * \param[in] xj The width of the second charge
+ * \return the integral
+ */
+static double Slater_1S_1SFormula(double r, double xi, double xj)
 {
     double S, rxi, rxj;
 
@@ -156,4 +164,28 @@ double Slater_1S_1S(double r, double xi, double xj)
     }
     return S;
 }
+
+//! Relative difference of the widths below which the formula for different widths is not used
+static const double closeWidths = 1e-2;
+
+double Slater_1S_1S(double r, double xi, double xj)
+{
+    // For close widths the formula for different widths loses its precision,
+    // since it divides by the cube of the difference of the widths. As the
+    // integral is symmetric in the widths, it differs from that of the mean width
+    // by a term of second order in their difference, which is scaled from
+    // the formula for different widths at a relative difference closeWidths.
+    // This is accurate to about 1e-9 and continuous at closeWidths.
+    double xm = 0.5*(xi + xj);
+    double d  = (xm > 0) ? std::abs(xi - xj)/xm : 0;
+    if (r == 0 || xi == xj || d >= closeWidths)
+    {
+        return Slater_1S_1SFormula(r, xi, xj);
+    }
+    double s0 = Slater_1S_1SFormula(r, xm, xm);
+    double s1 = Slater_1S_1SFormula(r, xm*(1 - closeWidths/2), xm*(1 + closeWidths/2));
+    double f  = d/closeWidths;
+    return s0 + (s1 - s0)*f*f;
+}
+
 #endif
