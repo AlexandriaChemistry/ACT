@@ -4,22 +4,22 @@
   <Sequence Name="Frequencies">
     <Int Name="Length">30</Int>
     <Real>201.53700000000001</Real>
-    <Real>217.28999999999999</Real>
+    <Real>217.304</Real>
     <Real>277.60899999999998</Real>
-    <Real>352.51999999999998</Real>
+    <Real>352.54199999999997</Real>
     <Real>374.23899999999998</Real>
     <Real>402.33999999999997</Real>
     <Real>410.98099999999999</Real>
     <Real>466.30200000000002</Real>
     <Real>553.89400000000001</Real>
     <Real>576.72699999999998</Real>
-    <Real>698.44299999999998</Real>
+    <Real>698.53899999999999</Real>
     <Real>763.95000000000005</Real>
     <Real>787.49300000000005</Real>
-    <Real>882.53899999999999</Real>
+    <Real>882.71699999999998</Real>
     <Real>927.73199999999997</Real>
     <Real>930.69000000000005</Real>
-    <Real>990.24699999999996</Real>
+    <Real>990.274</Real>
     <Real>1073.74</Real>
     <Real>1179.78</Real>
     <Real>1252.4300000000001</Real>
@@ -89,12 +89,12 @@
     <Real Name="Delta H formation">5490.2399999999998</Real>
     <Real Name="Standard entropy Translation">167.71299999999999</Real>
     <Real Name="Standard entropy Rotation">115.673</Real>
-    <Real Name="Standard entropy Vibration">54.490000000000002</Real>
+    <Real Name="Standard entropy Vibration">54.488</Real>
     <Real Name="Standard entropy Total">337.875</Real>
     <Real Name="Heat capacity cV Translation">12.472</Real>
     <Real Name="Heat capacity cV Rotation">12.472</Real>
-    <Real Name="Heat capacity cV Vibration">84.626999999999995</Real>
-    <Real Name="Heat capacity cV Total">109.571</Real>
+    <Real Name="Heat capacity cV Vibration">84.625</Real>
+    <Real Name="Heat capacity cV Total">109.568</Real>
     <Real Name="Internal energy Translation">3.718</Real>
     <Real Name="Internal energy Rotation">3.718</Real>
     <Real Name="Internal energy Vibration">214.53999999999999</Real>
