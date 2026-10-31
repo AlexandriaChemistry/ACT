@@ -37,6 +37,8 @@
 #include <cstdio>
 #include <sstream>
 
+#include "act/forces/forces_explicit_simd.h"
+#include "act/forces/simd_information.h"
 #include "act/utility/simpson.h"
 #include "act/utility/timings.h"
 #include "gromacs/fileio/oenv.h"
@@ -55,7 +57,9 @@ B2Data::B2Data(int                        nbins,
 {
     temperatures_ = temperatures;
     nbins_        = nbins;
-    sums_.resize(nbins_*temperatures.size()*nSum, 0.0);
+    size_t width  = explicitSimdWidth();
+    tstride_      = ((temperatures.size() + width - 1)/width)*width;
+    sums_.resize(nbins_*tstride_*nSum, 0.0);
     mayer_.resize(temperatures.size());
     for(auto T : temperatures)
     {
@@ -63,6 +67,8 @@ B2Data::B2Data(int                        nbins,
         allFinite_ = allFinite_ && T != 0;
     }
     g_.resize(temperatures.size());
+    betaPadded_ = beta_;
+    betaPadded_.resize(tstride_, 0.0);
     dist_.resize(nbins, -1);
     for(auto T : temperatures)
     {
@@ -259,14 +265,41 @@ void B2Data::addRange(const Orientation &o,
     }
     // The dimers in the outer loop, such that the sums of a distance, of
     // all temperatures, are contiguous. Each sum gets one term.
-    size_t  nT = beta_.size();
-    double *g  = g_.data();
+    size_t  nT       = beta_.size();
+    double *g        = g_.data();
+    bool    simd     = useExplicitSimd();
+    size_t  nsimd    = 0;
     for(size_t ii = i0; ii < i1; ii++)
     {
         size_t  j       = index ? index[ii] : ii;
         double  w       = o.weight[ii];
         double  energy  = o.energy[ii];
         bool    overlap = energy < eMin_;
+        if (simd)
+        {
+            // The weighted squared forces and torques, as the sums
+            // sumF0 to sumT1+ZZ, which follow each other
+            double wx[8] = { w*o.force2[0][ii], w*o.force2[1][ii] };
+            bool   finite = std::isfinite(wx[0]) && std::isfinite(wx[1]);
+            for(int kk = 0; kk < 2; kk++)
+            {
+                for(int m = 0; m < DIM; m++)
+                {
+                    double tau       = o.torque[kk][ii][m];
+                    wx[2 + DIM*kk + m] = w*(tau*tau);
+                    finite           = finite && std::isfinite(wx[2 + DIM*kk + m]);
+                }
+            }
+            // Otherwise the terms at temperatures with a Boltzmann factor
+            // of zero would not be zero
+            if (finite &&
+                addB2TermsExplicitSimd(tstride_, betaPadded_.data(), energy, overlap, w, wx,
+                                       &sum(j, 0, 0), tstride_))
+            {
+                nsimd += 1;
+                continue;
+            }
+        }
         // The Boltzmann factors at all temperatures. Not vectorized, since
         // a vector exp is not faster here, but can differ from exp in the
         // last bit. Gray and Gubbins Eqn. 3.261
@@ -286,19 +319,21 @@ void B2Data::addRange(const Orientation &o,
             {
                 if (beta_[iTemp] != 0)
                 {
-                    addTerms(o, ii, w, g + iTemp, s + iTemp, nT, 1);
+                    addTerms(o, ii, w, g + iTemp, s + iTemp, tstride_, 1);
                 }
             }
         }
         else
         {
-            addTerms(o, ii, w, g, s, nT, nT);
+            addTerms(o, ii, w, g, s, tstride_, nT);
         }
     }
     // Per dimer and temperature: the Boltzmann factor with the exponential
     // 31, the Mayer function 3, the forces 6, the torques 24 and the weight 1,
-    // see Timings::addFlops
-    Timings::instance().addFlops(65.0*(i1 - i0)*ntemp);
+    // see Timings::addFlops. With explicit SIMD the forces and torques are
+    // multiplied by the weight once per dimer, 14, and added with 2 per
+    // temperature.
+    Timings::instance().addFlops(65.0*(i1 - i0 - nsimd)*ntemp + nsimd*(14.0 + 51.0*ntemp));
 }
 
 void B2Data::flush()
