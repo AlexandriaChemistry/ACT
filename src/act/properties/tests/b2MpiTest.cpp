@@ -194,8 +194,10 @@ protected:
      * \param[in] ffName  Force field file in this directory
      * \param[in] molFile Dimer structure, relative to this directory
      * \param[in] nDimer  Number of dimer orientations
+     * \param[in] block   Number of distances computed together, see b2 -block
      */
-    void testReference(const std::string &ffName, const std::string &molFile, int nDimer)
+    void testReference(const std::string &ffName, const std::string &molFile, int nDimer,
+                       int block = 0)
     {
         gmx::test::CommandLine cmd;
         cmd.append("b2");
@@ -211,6 +213,7 @@ protected:
         cmd.addOption("-dT", 100.0);
         cmd.addOption("-shelltoler", 1e-8);
         cmd.addOption("-shellMaxIter", 100);
+        cmd.addOption("-block", block);
         cmd.append("-json");
         auto label = gmx::formatString("%s-%d", ffName.c_str(), nDimer);
         cmd.addOption("-b2", fileManager().getTemporaryFilePath(label + "-B2T.xvg"));
@@ -365,6 +368,18 @@ TEST_F(WaterB2Test, ReferenceBK3)
 TEST_F(WaterB2Test, ReferenceSPCE)
 {
     testReference("SPCE.xml", "../../alexandria/tests/mols/water_dimer.pdb", 64);
+}
+
+// Test: Computing the distances of an orientation in blocks, the last one
+// smaller, gives the same results, the reference data are those above
+TEST_F(WaterB2Test, ReferenceTIP5PBlocks)
+{
+    testReference("TIP5P.xml", "../../alexandria/tests/mols/water_dimer.pdb", 64, 25);
+}
+
+TEST_F(WaterB2Test, ReferenceBK3Blocks)
+{
+    testReference("BK3.xml", "../../alexandria/tests/mols/water_dimer.pdb", 64, 25);
 }
 
 TEST_F(WaterB2Test, ReferenceHF14_7)

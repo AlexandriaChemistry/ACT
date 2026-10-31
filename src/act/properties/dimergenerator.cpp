@@ -441,7 +441,8 @@ void DimerGenerator::prepare(MsgHandler       *msghandler,
     }
 }
 
-std::vector<dimer_coords> DimerGenerator::generateDimers(MsgHandler *msghandler)
+void DimerGenerator::generateDimers(MsgHandler                *msghandler,
+                                    std::vector<dimer_coords> *coords)
 {
     msghandler_ = msghandler;
 
@@ -483,7 +484,7 @@ std::vector<dimer_coords> DimerGenerator::generateDimers(MsgHandler *msghandler)
     double weight = allRandom_[randIndex_].size() > 2*DIM ? allRandom_[randIndex_][2*DIM] : 1.0;
     randIndex_ += 1;
     // Initiate the big array
-    std::vector<dimer_coords> coords(ndist_);
+    coords->resize(ndist_);
     // Loop over distances from mindist to maxdist
     size_t nAtoms = atoms_[0].size() + atoms_[1].size();
     for(int idist = 0; idist < ndist_; idist++)
@@ -493,29 +494,29 @@ std::vector<dimer_coords> DimerGenerator::generateDimers(MsgHandler *msghandler)
         {
             dist += idist*binWidth_;
         }
-        coords[idist].dist   = dist;
-        coords[idist].index  = idist;
-        coords[idist].weight = weight;
+        auto &dc  = (*coords)[idist];
+        dc.dist   = dist;
+        dc.index  = idist;
+        dc.weight = weight;
         for(int kk = 0; kk < 2; kk++)
         {
-            coords[idist].natom[kk] = atoms_[kk].size();
+            dc.natom[kk] = atoms_[kk].size();
         }
-        coords[idist].coords.resize(nAtoms);
+        dc.coords.resize(nAtoms);
         size_t i = 0;
         for(int j = 0; j < 2; j++)
         {
             for(size_t k = 0; k < atoms_[j].size(); k++, i++)
             {
-                copy_rvec(xrand[j][k], coords[idist].coords[i]);
+                copy_rvec(xrand[j][k], dc.coords[i]);
                 // Translate molecule 1, leave 0 at the origin
                 if (j == 1)
                 {
-                    coords[idist].coords[i][ZZ] += dist;
+                    dc.coords[i][ZZ] += dist;
                 }
             }
         }
     }
-    return coords;
 }
 
 } // namespace alexandria

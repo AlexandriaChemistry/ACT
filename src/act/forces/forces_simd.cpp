@@ -2451,6 +2451,7 @@ static inline void lowComputeEnergies(MsgHandler                *msghandler,
 {
     static const size_t timer = Timings::instance().index("Energy calculation overhead");
     ScopedTimer         scoped(timer);
+    cdata->forcesInArrays = false;
     auto &cener = cdata->energies;
     cener.setNumberOfConformations(coords->size());
     // The conformations to compute, found once such that the loops below
@@ -2775,7 +2776,12 @@ static inline void lowComputeEnergies(MsgHandler                *msghandler,
             {
                 vsiteHandler.distributeForces(top, ca.x.data(), ca.f.data(), ca.stride, ca.stride, ca.nconf);
             }
-            ca.storeForces(coords);
+            // The forces of all conformations may stay in the arrays
+            cdata->forcesInArrays = cdata->keepForcesInArrays && spread && ndone == 0;
+            if (!cdata->forcesInArrays)
+            {
+                ca.storeForces(coords);
+            }
         }
         else
         {
