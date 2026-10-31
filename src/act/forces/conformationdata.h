@@ -600,6 +600,33 @@ struct CachedEnergies
     size_t              confStride        = 0;
     //! Distance between the energy terms of a conformation
     size_t              termStride        = 0;
+    /*! For Coulomb, the energy of each term of each interaction in each
+     * slot of the arrays for charges of one, see coulombKernelsExplicitSimd.
+     * The energies for other charges follow from it as long as the
+     * parameters, the coordinates and the widths of the second charges do
+     * not change.
+     */
+    std::vector<double> kernel;
+    //! Whether kernel has been computed
+    bool                kernelValid             = false;
+    //! Topology::parameterVersion of the interaction type of kernel
+    size_t              kernelParameterVersion  = 0;
+    //! ConformationData::coordinates of kernel
+    size_t              kernelCoordinateVersion = 0;
+    //! Number of interactions in kernel
+    size_t              kernelEntries           = 0;
+    //! Number of conformations in kernel
+    size_t              kernelConformations     = 0;
+    //! Distance between the interactions in kernel
+    size_t              kernelStride            = 0;
+    //! ActAtom::zetaVS of each atom of kernel
+    std::vector<double> kernelZetaVS;
+    //! For each interaction, bit k tells whether term k is in kernel
+    std::vector<unsigned char> kernelTerms;
+    /*! The coordinates of kernel, as ConformationArrays::x, such that only
+     * the interactions of particles that moved are computed again
+     */
+    std::vector<double> kernelX;
 };
 
 /*! \brief Energies and forces of the entries without shells in all conformations
