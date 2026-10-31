@@ -81,6 +81,10 @@ void computeConformations(MsgHandler                *msghandler,
  * \param[in]    epsilonr      Relative dielectric constant
  * \param[in]    conformations Whether to loop over the conformations in the
  *                             inner loop (vectorized) or the outer loop
+ * \param[in]    forces        Whether to compute forces when looping over the
+ *                             conformations in the inner loop, otherwise the
+ *                             forces are zero. In the outer loop the forces
+ *                             are always computed.
  */
 void computePotential(MsgHandler                 *msghandler,
                       Potential                   mypot,
@@ -88,7 +92,8 @@ void computePotential(MsgHandler                 *msghandler,
                       const std::vector<ActAtom> &atoms,
                       std::vector<CoordsEnergy>  *coords,
                       double                      epsilonr,
-                      bool                        conformations);
+                      bool                        conformations,
+                      bool                        forces = true);
 
 } // namespace
 

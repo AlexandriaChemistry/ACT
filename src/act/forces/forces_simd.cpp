@@ -2873,7 +2873,8 @@ void computePotential(MsgHandler                 *msghandler,
                       const std::vector<ActAtom> &atoms,
                       std::vector<CoordsEnergy>  *coords,
                       double                      epsilonr,
-                      bool                        conformations)
+                      bool                        conformations,
+                      bool                        forces)
 {
     for(auto &ce : *coords)
     {
@@ -2885,9 +2886,12 @@ void computePotential(MsgHandler                 *msghandler,
     ConformationData cdata;
     cdata.energies.setNumberOfConformations(coords->size());
     if (conformations && coords->size() > 1 && cdata.arrays.setCoordinates(*coords, atoms) &&
-        calcConformations(mypot, topentries, atoms, &cdata.arrays, &cdata.energies, epsilonr, true))
+        calcConformations(mypot, topentries, atoms, &cdata.arrays, &cdata.energies, epsilonr, forces))
     {
-        cdata.arrays.storeForces(coords);
+        if (forces)
+        {
+            cdata.arrays.storeForces(coords);
+        }
     }
     else
     {
