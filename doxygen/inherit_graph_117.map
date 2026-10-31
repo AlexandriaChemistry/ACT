@@ -1,0 +1,17 @@
+<map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
+<area shape="rect" id="Node000000" href="$classga_1_1Penalizer.xhtml" title="Penalizes a population." alt="" coords="10,57,116,85"/>
+<area shape="rect" id="Node000001" href="$classga_1_1CatastrophePenalizer.xhtml" title="A catastrophe happens and a fraction of the population (at random) is randomized." alt="" coords="186,5,370,33"/>
+<area shape="poly" id="edge36_Node000000_Node000001" title=" " alt="" coords="129,53,219,32,216,36,132,57"/>
+<area shape="rect" id="Node000002" href="$classga_1_1VolumeFractionPenalizer.xhtml" title="Penalizer that punishes the population if its volume is not large enough." alt="" coords="175,57,381,85"/>
+<area shape="poly" id="edge37_Node000000_Node000002" title=" " alt="" coords="130,69,176,70,172,73,132,74"/>
+<area shape="rect" id="Node000003" href="$classga_1_1anonymous__namespace_02operatorsTest_8cpp_03_1_1CountingOperator.xhtml" title="Terminator and penalizer that count how often they were asked." alt="" coords="169,110,387,171"/>
+<area shape="poly" id="edge38_Node000000_Node000003" title=" " alt="" coords="122,88,182,108,178,110,123,93"/>
+<area shape="rect" id="Node000004" href="$classga_1_1Terminator.xhtml" title="Abstract class to check for evolution termination conditions." alt="" coords="5,221,121,249"/>
+<area shape="poly" id="edge42_Node000004_Node000003" title=" " alt="" coords="105,212,168,182,200,170,196,173,170,187,108,216"/>
+<area shape="rect" id="Node000005" href="$classga_1_1CurvatureTerminator.xhtml" title="Terminator which stops when evolution is stuck in a local minimum Evaluates whether the best genome s..." alt="" coords="188,196,368,224"/>
+<area shape="poly" id="edge39_Node000004_Node000005" title=" " alt="" coords="135,224,190,219,186,222,137,229"/>
+<area shape="rect" id="Node000006" href="$classga_1_1GenerationTerminator.xhtml" title="Terminator which stops evolution after a given amount of generations." alt="" coords="184,248,372,276"/>
+<area shape="poly" id="edge40_Node000004_Node000006" title=" " alt="" coords="136,242,186,249,181,251,136,247"/>
+<area shape="rect" id="Node000007" href="$classga_1_1TestGenTerminator.xhtml" title="Terminator which stops evolution after the best test fitness has not improved in a given number of ge..." alt="" coords="194,300,362,328"/>
+<area shape="poly" id="edge41_Node000004_Node000007" title=" " alt="" coords="103,254,170,285,211,299,206,300,168,290,102,259"/>
+</map>

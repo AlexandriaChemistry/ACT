@@ -1,0 +1,25 @@
+<map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
+<area shape="rect" id="Node000000" href="$classalexandria_1_1TopologyEntry.xhtml" title="Base class for topology components." alt="" coords="5,265,196,293"/>
+<area shape="rect" id="Node000001" href="$classalexandria_1_1Angle.xhtml" title="Angle between two bonds i&#45;j and j&#45;k in a molecule. Atom j of the first bond should be identical to at..." alt="" coords="263,5,398,33"/>
+<area shape="poly" id="edge17_Node000000_Node000001" title=" " alt="" coords="109,250,127,205,155,150,194,93,217,67,242,44,267,32,263,35,245,48,220,70,198,96,160,152,132,207,114,252"/>
+<area shape="rect" id="Node000002" href="$classalexandria_1_1AtomPair.xhtml" title="Atom pair in a molecule." alt="" coords="252,57,409,85"/>
+<area shape="poly" id="edge18_Node000000_Node000002" title=" " alt="" coords="114,250,135,215,164,173,200,132,242,96,269,84,265,87,245,100,204,135,168,177,139,218,119,253"/>
+<area shape="rect" id="Node000003" href="$classalexandria_1_1Bond.xhtml" title="Chemical bond in a molecule with associated bond order." alt="" coords="265,109,396,137"/>
+<area shape="poly" id="edge19_Node000000_Node000003" title=" " alt="" coords="121,252,173,199,206,172,242,148,273,136,269,139,245,152,210,176,177,203,126,255"/>
+<area shape="rect" id="Node000004" href="$classalexandria_1_1Improper.xhtml" title="Improper dihedral defined by one central atom i and three bonds bij, bik, bil in a molecule in a plan..." alt="" coords="252,161,409,189"/>
+<area shape="poly" id="edge20_Node000000_Node000004" title=" " alt="" coords="136,255,186,227,243,199,279,188,275,191,245,204,189,231,140,259"/>
+<area shape="rect" id="Node000005" href="$classalexandria_1_1Proper.xhtml" title="Proper dihedral defined by three bonds in a row bij, bjk, bkl in a molecule." alt="" coords="260,213,400,241"/>
+<area shape="poly" id="edge21_Node000000_Node000005" title=" " alt="" coords="179,259,268,240,264,243,181,264"/>
+<area shape="rect" id="Node000006" href="$classalexandria_1_1SingleAtom.xhtml" title="Single atom." alt="" coords="244,265,417,293"/>
+<area shape="poly" id="edge22_Node000000_Node000006" title=" " alt="" coords="210,277,246,278,241,280,212,282"/>
+<area shape="rect" id="Node000007" href="$classalexandria_1_1Vsite1.xhtml" title="Virtual site on an atom." alt="" coords="261,317,400,345"/>
+<area shape="poly" id="edge23_Node000000_Node000007" title=" " alt="" coords="179,294,268,315,263,318,180,300"/>
+<area shape="rect" id="Node000008" href="$classalexandria_1_1Vsite2.xhtml" title="Virtual site on a linear bond." alt="" coords="261,369,400,397"/>
+<area shape="poly" id="edge24_Node000000_Node000008" title=" " alt="" coords="138,299,189,327,245,354,280,368,274,369,243,359,186,332,138,304"/>
+<area shape="rect" id="Node000009" href="$classalexandria_1_1Vsite3.xhtml" title="Virtual site based on 3 particles." alt="" coords="261,421,400,449"/>
+<area shape="poly" id="edge25_Node000000_Node000009" title=" " alt="" coords="124,302,177,355,210,382,245,406,273,420,268,421,242,411,206,387,173,359,123,307"/>
+<area shape="rect" id="Node000010" href="$classalexandria_1_1Vsite3OUT.xhtml" title="Virtual site based on 3 particles, out of the plane of these particles. The sign determines on which ..." alt="" coords="247,473,414,501"/>
+<area shape="poly" id="edge26_Node000000_Node000010" title=" " alt="" coords="116,304,139,340,168,382,204,423,245,458,270,473,265,473,242,463,200,427,164,385,135,343,116,309"/>
+<area shape="rect" id="Node000011" href="$classalexandria_1_1Vsite4.xhtml" title="Virtual site based on 4 particles." alt="" coords="261,525,400,553"/>
+<area shape="poly" id="edge27_Node000000_Node000011" title=" " alt="" coords="112,304,132,351,160,406,198,462,220,488,245,510,268,525,262,524,242,515,217,492,194,466,155,409,127,353,111,310"/>
+</map>

@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>3.2. Shell Relaxation and Integration &#8212; ACT 1.2b documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=fa44fd50" />
+    <link rel="stylesheet" type="text/css" href="../_static/classic.css?v=2bf1fcf8" />
+    <link rel="stylesheet" type="text/css" href="../_static/mystnb.11b39860a7a0cbfd473a3ad8a317855267ff0bd372690045ca344a6b62be495e.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../_static/togglebutton.css?v=9c3e77be" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx_lesson.css?v=e9df6548" />
+    <link rel="stylesheet" type="text/css" href="../_static/term_role_formatting.css?v=4194e21c" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx_rtd_theme_ext_color_contrast.css?v=01954304" />
+    
+    <script src="../_static/documentation_options.js?v=00cc29cc"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../_static/copybutton.js?v=6dbb43f8"></script>
+    <script src="../_static/minipres.js?v=a0d29692"></script>
+    <script>let toggleHintShow = 'Click to show';</script>
+    <script>let toggleHintHide = 'Click to hide';</script>
+    <script>let toggleOpenOnPrint = 'true';</script>
+    <script src="../_static/togglebutton.js?v=b8b12719"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script>window.MathJax = {"options": {"processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="3.3. Force Field Training Algorithms" href="training.html" />
+    <link rel="prev" title="3.1. Energy Function" href="energy.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="training.html" title="3.3. Force Field Training Algorithms"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="energy.html" title="3.1. Energy Function"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">ACT 1.2b documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="header.html" accesskey="U"><span class="section-number">3. </span>Reference Manual</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href=""><span class="section-number">3.2. </span>Shell Relaxation and Integration</a></li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="shell-relaxation-and-integration">
+<span id="sec-integration"></span><h1><span class="section-number">3.2. </span>Shell Relaxation and Integration<a class="headerlink" href="#shell-relaxation-and-integration" title="Link to this heading">¶</a></h1>
+<p>In polarizable force fields the positions of the shells (or Drude particles) are not determined by the input structure, they have to be computed for each structure. This is done by minimizing the energy with respect to the shell positions, keeping the atoms fixed, as described in this section. The second part of the section describes the integration of the equations of motion in <em>alexandria simulate</em>.</p>
+<section id="relaxation-of-shells">
+<span id="sec-shellrelax"></span><h2><span class="section-number">3.2.1. </span>Relaxation of shells<a class="headerlink" href="#relaxation-of-shells" title="Link to this heading">¶</a></h2>
+<p>The shells have no mass. In the adiabatic approximation they follow the atoms instantaneously, that is, for each configuration of the atoms they are at the minimum of the potential energy. The shells are moved to this minimum iteratively, using the forces on them, as follows.</p>
+<ol class="arabic">
+<li><p>The shells are put on top of their core particle and the energy and forces are computed.</p></li>
+<li><p>The mean square force on the <span class="math notranslate nohighlight">\(N_s\)</span> shells is computed</p>
+<div class="math notranslate nohighlight" id="equation-fmsshell">
+<span class="eqno">(3.49)<a class="headerlink" href="#equation-fmsshell" title="Link to this equation">¶</a></span>\[F_{ms} ~=~ \frac{1}{N_s}\sum_{s=1}^{N_s} \left|{\bf F}_s\right|^2.\]</div>
+<p>If <span class="math notranslate nohighlight">\(F_{ms}\)</span> is at most the tolerance, the shells are converged. The tolerance is given in (kJ/mol nm)<sup>2</sup>, see below.</p>
+</li>
+<li><p>Otherwise each shell is displaced along the force on it,</p>
+<div class="math notranslate nohighlight" id="equation-shellstep">
+<span class="eqno">(3.50)<a class="headerlink" href="#equation-shellstep" title="Link to this equation">¶</a></span>\[\Delta{\bf r}_s ~=~ \lambda\,\frac{{\bf F}_s}{k_s},\qquad k_s ~=~ \frac{1}{4\pi\varepsilon_0}\frac{q_s^2}{\alpha_c},\]</div>
+<p>where <span class="math notranslate nohighlight">\(k_s\)</span> is the force constant of the core-shell spring, see Eqn. <a class="reference internal" href="energy.html#equation-vpol">(3.8)</a>. With <span class="math notranslate nohighlight">\(\lambda = 1\)</span> this step would bring an isolated shell to its minimum, since the force of the spring then cancels the force <span class="math notranslate nohighlight">\({\bf F}_s\)</span> from the other particles. With hyperpolarization, the potential of the core-shell pair has an additional term <span class="math notranslate nohighlight">\(k_h\,(r_{cs}-r_h)^4\)</span> for distances <span class="math notranslate nohighlight">\(r_{cs}\)</span> larger than <span class="math notranslate nohighlight">\(r_h\)</span>. The stiffness of the spring then depends on the direction. For a shell away from its core, the component of <span class="math notranslate nohighlight">\({\bf F}_s\)</span> perpendicular to the core-shell vector is divided by the ratio of the core-shell force and the distance</p>
+</li>
+</ol>
+<div class="math notranslate nohighlight" id="equation-kshyper">
+<span class="eqno">(3.51)<a class="headerlink" href="#equation-kshyper" title="Link to this equation">¶</a></span>\[k_s + 4k_h\,\frac{(r_{cs}-r_h)^3}{r_{cs}}\qquad\mbox{if}\quad r_{cs} &gt; r_h,\]</div>
+<p>and the component along the core-shell vector by the second derivative of the potential</p>
+<div class="math notranslate nohighlight" id="equation-kshyperpar">
+<span class="eqno">(3.52)<a class="headerlink" href="#equation-kshyperpar" title="Link to this equation">¶</a></span>\[k_s + 12k_h\,(r_{cs}-r_h)^2\qquad\mbox{if}\quad r_{cs} &gt; r_h.\]</div>
+<p>This is a Newton step for an isolated shell. For a shell on top of its core, the quartic term only contributes if <span class="math notranslate nohighlight">\(r_h = 0\)</span>, and then the displacement <span class="math notranslate nohighlight">\(\Delta r\)</span> is the solution of <span class="math notranslate nohighlight">\(\left|{\bf F}_s\right| = k_s\,\Delta r + 4k_h\,\Delta r^3\)</span>. The force constants are computed from the current polarizabilities and shell charges, such that they are correct during training as well.
+#. Since the shells interact with each other, a full step (<span class="math notranslate nohighlight">\(\lambda = 1\)</span>) can overshoot. If <span class="math notranslate nohighlight">\(F_{ms}\)</span> increases, the step is reduced to <span class="math notranslate nohighlight">\(\lambda = 1/2\)</span> for the rest of the relaxation. Smaller steps are not used, since they can freeze the shells far from their minimum.
+#. A shell with one core is not allowed to move further away from it than a maximum distance <span class="math notranslate nohighlight">\(d_{max}\)</span>. If the step brings a shell further away, it is moved back to the sphere with radius <span class="math notranslate nohighlight">\(d_{max}\)</span> around its core, along the core-shell vector. This prevents the polarization catastrophe, where shells of neighbouring molecules attract each other without limit. With hyperpolarization the quartic term usually prevents it as well, then <span class="math notranslate nohighlight">\(d_{max}\)</span> can be switched off.
+#. The forces are computed again and the procedure is repeated from step 2, until the shells are converged or the maximum number of iterations is reached.</p>
+<p>A shell held at <span class="math notranslate nohighlight">\(d_{max}\)</span> by a force pointing away from its core can never reach a zero force. For such a shell only the component of the force perpendicular to the core-shell vector <span class="math notranslate nohighlight">\({\bf r}_{cs}\)</span> is used in Eqn. <a class="reference internal" href="#equation-fmsshell">(3.49)</a></p>
+<div class="math notranslate nohighlight" id="equation-fperp">
+<span class="eqno">(3.53)<a class="headerlink" href="#equation-fperp" title="Link to this equation">¶</a></span>\[{\bf F}_{s,\perp} ~=~ {\bf F}_s - \frac{{\bf F}_s\cdot{\bf r}_{cs}}{r_{cs}^2}\,{\bf r}_{cs}\qquad\mbox{if}\quad r_{cs} = d_{max}\quad\mbox{and}\quad{\bf F}_s\cdot{\bf r}_{cs} &gt; 0,\]</div>
+<p>which is zero at the minimum of the energy on the sphere.</p>
+<p>The maximum distance <span class="math notranslate nohighlight">\(d_{max}\)</span> is part of the force field, since its parameters are trained with it. It is the option <em>shellmaxdistance</em> (in nm) of the polarization in the force field file,</p>
+<div class="highlight-xml notranslate"><div class="highlight"><pre><span></span><span class="nt">&lt;interaction</span><span class="w"> </span><span class="na">type=</span><span class="s">&quot;POLARIZATION&quot;</span><span class="w"> </span><span class="na">function=</span><span class="s">&quot;POLARIZATION&quot;</span><span class="w"> </span><span class="na">canswap=</span><span class="s">&quot;true&quot;</span><span class="nt">&gt;</span>
+<span class="w">  </span><span class="nt">&lt;option</span><span class="w"> </span><span class="na">key=</span><span class="s">&quot;shellmaxdistance&quot;</span><span class="w"> </span><span class="na">value=</span><span class="s">&quot;0.02&quot;</span><span class="nt">/&gt;</span>
+</pre></div>
+</div>
+<p>where 0 means that there is no maximum. It can be set with <em>alexandria gen_ff -shellmaxdistance</em>, or by editing the file, but not when training or using the force field. Without the option it is 0.02 nm. The other options that control the relaxation are listed in <a class="reference internal" href="#tab-shellrelax"><span class="std std-numref">Table 3.2</span></a>.</p>
+<table class="docutils align-default" id="tab-shellrelax">
+<caption><span class="caption-number">Table 3.2 </span><span class="caption-text">Options for the shell relaxation.</span><a class="headerlink" href="#tab-shellrelax" title="Link to this table">¶</a></caption>
+<thead>
+<tr class="row-odd"><th class="head"><p><strong>Quantity</strong></p></th>
+<th class="head"><p><strong>train_ff</strong></p></th>
+<th class="head"><p><strong>simulate</strong></p></th>
+<th class="head"><p><strong>Default</strong></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Tolerance on
+<span class="math notranslate nohighlight">\(F_{ms}\)</span></p></td>
+<td><p>-shellTolerance</p></td>
+<td><p>-shelltoler</p></td>
+<td><p>0.001 (train_ff), 1e-6 (simulate),
+at most a tenth of -toler in simulate</p></td>
+</tr>
+<tr class="row-odd"><td><p>Maximum number of
+iterations</p></td>
+<td><p>-shell_max_iter</p></td>
+<td><p>-maxiter</p></td>
+<td><p>25 (train_ff), 100 (simulate)</p></td>
+</tr>
+</tbody>
+</table>
+<section id="shell-relaxation-in-training">
+<h3><span class="section-number">3.2.1.1. </span>Shell relaxation in training<a class="headerlink" href="#shell-relaxation-in-training" title="Link to this heading">¶</a></h3>
+<p>During training the energies of all conformations (structures) of a molecule are computed together, see <a class="reference internal" href="training.html#sec-training"><span class="std std-ref">Force Field Training Algorithms</span></a>. The shells of all conformations are relaxed at the same time, and the conformations for which the shells converged are not computed again in the next iterations. For a dimer, the shells of each monomer are relaxed first in the isolated monomer, then all shells in the dimer. The induction energy is the change of the electrostatic energy upon relaxation of the shells. If the induction correction is trained separately (see <a class="reference internal" href="energy.html#sec-indcorr"><span class="std std-ref">Induction correction</span></a>), the second order induction is computed by relaxing the shells of one monomer in the field of the other one, of which the shells stay at their positions in the isolated monomer, and the other way around. The rest of the induction is the induction correction.</p>
+<p>Without polarization the interaction energy of a dimer is computed from the intermolecular interactions only, unless forces are needed, since the intramolecular energies of the dimer and the monomers cancel.</p>
+</section>
+</section>
+<section id="integration-in-simulate">
+<span id="sec-integrator"></span><h2><span class="section-number">3.2.2. </span>Integration in simulate<a class="headerlink" href="#integration-in-simulate" title="Link to this heading">¶</a></h2>
+<p>The command <em>alexandria simulate</em> integrates the equations of motion in the gas phase (see <a class="reference internal" href="../userman/simulation.html#sec-simulations"><span class="std std-ref">MD Simulations with Alexandria Force Fields</span></a>) using the velocity Verlet algorithm <span class="bibtex-citation" id="id1">[<a class="reference internal" href="../references.html#id190" title="W C Swope, H C Andersen, P H Berens, and K R Wilson. A computer simulation method for the calculation of equilibrium constants for the formation of physical clusters of molecules: Application to small water clusters. J. Chem. Phys., 76:637–649, 1982. doi:10.1063/1.442716.">96</a>]</span>. For each atom <span class="math notranslate nohighlight">\(i\)</span> with mass <span class="math notranslate nohighlight">\(m_i\)</span>, coordinates <span class="math notranslate nohighlight">\({\bf r}_i\)</span> and velocity <span class="math notranslate nohighlight">\({\bf v}_i\)</span>, a step of length <span class="math notranslate nohighlight">\(\Delta t\)</span> is</p>
+<div class="math notranslate nohighlight" id="equation-vvpos">
+<span class="eqno">(3.54)<a class="headerlink" href="#equation-vvpos" title="Link to this equation">¶</a></span>\[{\bf r}_i(t+\Delta t) ~=~ {\bf r}_i(t) + \Delta t\,{\bf v}_i(t) + \frac{\Delta t^2}{2m_i}{\bf F}_i(t),\]</div>
+<p>after which the forces <span class="math notranslate nohighlight">\({\bf F}_i(t+\Delta t)\)</span> are computed for the new coordinates and the velocities are updated</p>
+<div class="math notranslate nohighlight" id="equation-vvvel">
+<span class="eqno">(3.55)<a class="headerlink" href="#equation-vvvel" title="Link to this equation">¶</a></span>\[{\bf v}_i(t+\Delta t) ~=~ {\bf v}_i(t) + \frac{\Delta t}{2m_i}\left[{\bf F}_i(t) + {\bf F}_i(t+\Delta t)\right].\]</div>
+<p>Only particles with a mass are integrated. Virtual sites are constructed from the atoms before the forces are computed, and the forces on them are distributed over the atoms they are constructed from. The shells are relaxed for each new configuration of the atoms as described in <a class="reference internal" href="#sec-shellrelax"><span class="std std-ref">Relaxation of shells</span></a>, starting from their cores. Bond lengths and angles can be constrained, as described in <a class="reference internal" href="#sec-constraints"><span class="std std-ref">Constraints</span></a>.</p>
+<p>With <em>-temp</em> larger than zero, the initial velocities are generated from a Maxwell distribution at that temperature, using the random number seed <em>-seed</em>. The motion of the center of mass is removed (see below), the velocity components along the constraints are removed, and finally the velocities are scaled such that the temperature, Eqn. <a class="reference internal" href="#equation-tempmd">(3.56)</a>, is exactly the requested one. There is no thermostat, the simulation conserves the total energy, which can be used to validate the forces. The energy file contains the potential energy terms, the kinetic energy <span class="math notranslate nohighlight">\(E_{kin} = \frac{1}{2}\sum_i m_i{\bf v}_i^2\)</span>, the total energy and the temperature</p>
+<div class="math notranslate nohighlight" id="equation-tempmd">
+<span class="eqno">(3.56)<a class="headerlink" href="#equation-tempmd" title="Link to this equation">¶</a></span>\[T ~=~ \frac{2E_{kin}}{N_{df}\,k_B},\]</div>
+<p>which are written every <em>-nstener</em> steps before the step is taken. The number of degrees of freedom is</p>
+<div class="math notranslate nohighlight" id="equation-ndf">
+<span class="eqno">(3.57)<a class="headerlink" href="#equation-ndf" title="Link to this equation">¶</a></span>\[N_{df} ~=~ 3N - N_{com} - N_c,\]</div>
+<p>for <span class="math notranslate nohighlight">\(N\)</span> atoms with a mass, <span class="math notranslate nohighlight">\(N_{com}\)</span> degrees of freedom of the motion of the center of mass that is removed and <span class="math notranslate nohighlight">\(N_c\)</span> constraints, see <a class="reference internal" href="#sec-constraints"><span class="std std-ref">Constraints</span></a>. Shells and virtual sites do not contribute, since they have no mass.</p>
+<p>The option <em>-comm</em> sets which motion of the center of mass is removed, from the initial velocities and every <em>-nstcomm</em> steps (default 100) after the velocities are updated, or only from the initial velocities if <em>-nstcomm</em> is 0. The choices are:</p>
+<ul class="simple">
+<li><p><em>angular</em>: the translation of and the rotation around the center of mass (the default). This is needed for stable simulations of clusters in vacuum, since the rotation of the cluster otherwise takes up part of the kinetic energy. The velocity <span class="math notranslate nohighlight">\({\bf v}_{cm}\)</span> of the center of mass and the rigid rotation <span class="math notranslate nohighlight">\(\boldsymbol\omega\times({\bf r}_i - {\bf r}_{cm})\)</span> are subtracted from the velocities, where the angular velocity <span class="math notranslate nohighlight">\(\boldsymbol\omega = {\bf I}^{-1}{\bf L}\)</span> follows from the inertia tensor <span class="math notranslate nohighlight">\({\bf I}\)</span> and the angular momentum <span class="math notranslate nohighlight">\({\bf L}\)</span> around the center of mass <span class="math notranslate nohighlight">\({\bf r}_{cm}\)</span>. For a molecule that is linear in the starting coordinates, the rotation around the axis, with the smallest moment of inertia, is not removed. This removes <span class="math notranslate nohighlight">\(N_{com} = 6\)</span> degrees of freedom, or 5 for a linear molecule.</p></li>
+<li><p><em>linear</em>: only the translation of the center of mass, <span class="math notranslate nohighlight">\(N_{com} = 3\)</span>.</p></li>
+<li><p><em>none</em>: nothing, <span class="math notranslate nohighlight">\(N_{com} = 0\)</span>.</p></li>
+</ul>
+<p>Since this is a rigid body motion, the constraints are still satisfied afterwards. Without external forces, the linear and angular momentum are conserved, apart from numerical errors, such as those of the shell relaxation and the constraints, which are removed every <em>-nstcomm</em> steps. With the flat-bottom position restraints of <em>-kfbpr</em>, which act around the origin, the center of mass does move. Since the potential energy takes up part of the initial kinetic energy, the temperature during the simulation is lower than the initial one, about half of it if the starting structure is close to the minimum of the energy. The time step is set with <em>-deltat</em> (ps) and the number of steps with <em>-nsteps</em>.</p>
+<section id="constraints">
+<span id="sec-constraints"></span><h3><span class="section-number">3.2.2.1. </span>Constraints<a class="headerlink" href="#constraints" title="Link to this heading">¶</a></h3>
+<p>With the option <em>-constrain</em> the fastest motions can be removed from the simulation, using the RATTLE algorithm <span class="bibtex-citation" id="id2">[<a class="reference internal" href="../references.html#id191" title="J-P Ryckaert, G Ciccotti, and H J C Berendsen. Numerical integration of the cartesian equations of motion of a system with constraints: molecular dynamics of n-alkanes. J. Comput. Phys., 23:327–341, 1977. doi:10.1016/0021-9991(77)90098-5.">97</a>, <a class="reference internal" href="../references.html#id193" title="H C Andersen. Rattle: A “velocity” version of the Shake algorithm for molecular dynamics calculations. J. Comput. Phys., 52:24–34, 1983. doi:10.1016/0021-9991(83)90014-1.">98</a>]</span>. Each constraint keeps the distance <span class="math notranslate nohighlight">\(d_c\)</span> between two atoms constant. The option has three choices:</p>
+<ul>
+<li><p><em>no</em>: there are no constraints (the default).</p></li>
+<li><p><em>bonds</em>: the length of each bond is kept at the reference bond length <span class="math notranslate nohighlight">\(b_0\)</span> of the force field.</p></li>
+<li><p><em>angles</em>: in addition to the bonds, for each angle <span class="math notranslate nohighlight">\(i-j-k\)</span> the distance between the outer atoms <span class="math notranslate nohighlight">\(i\)</span> and <span class="math notranslate nohighlight">\(k\)</span> is kept constant. Together with the constrained bonds <span class="math notranslate nohighlight">\(i-j\)</span> and <span class="math notranslate nohighlight">\(j-k\)</span> this keeps the angle at its reference value <span class="math notranslate nohighlight">\(\theta_0\)</span>, since</p>
+<div class="math notranslate nohighlight" id="equation-dik">
+<span class="eqno">(3.58)<a class="headerlink" href="#equation-dik" title="Link to this equation">¶</a></span>\[d_{ik} ~=~ \sqrt{b_{ij}^2 + b_{jk}^2 - 2\,b_{ij}\,b_{jk}\cos\theta_0}.\]</div>
+</li>
+</ul>
+<p>Not all angles can be constrained independently. The positions of <span class="math notranslate nohighlight">\(n\)</span> atoms bonded to the same atom, relative to each other, are determined by <span class="math notranslate nohighlight">\(2n-3\)</span> angles, for instance five of the six angles around a tetrahedral carbon. Around an atom with three neighbours of which the reference angles add up to more than 355<span class="math notranslate nohighlight">\(^{\circ}\)</span>, only two angles are constrained, since the third one follows from the other two in a planar group. Angles larger than 175<span class="math notranslate nohighlight">\(^{\circ}\)</span> are not constrained, since the distance <span class="math notranslate nohighlight">\(d_{ik}\)</span> does not determine a (nearly) linear angle. Finally, an angle constraint that depends linearly on the other constraints in the starting coordinates is left out as well. This is the case in rings, where the angles also have to close the ring. The log file lists the number of bond and angle constraints and the number of angles that were left out. The angles that are not constrained still contribute to the potential energy. Note that when the reference values of the angles in a ring are not consistent with a planar ring, the ring has to pucker to satisfy the constraints, which may not be possible from a planar starting structure. In that case the simulation stops with an error, and <em>-constrain bonds</em> can be used instead.</p>
+<p>In the first part of RATTLE, the coordinates <span class="math notranslate nohighlight">\({\bf r}_i'\)</span> from Eqn. <a class="reference internal" href="#equation-vvpos">(3.54)</a> are corrected by constraint forces along the distance vectors <span class="math notranslate nohighlight">\({\bf r}_c(t)\)</span> of the constrained pairs at time <span class="math notranslate nohighlight">\(t\)</span></p>
+<div class="math notranslate nohighlight" id="equation-shake">
+<span class="eqno">(3.59)<a class="headerlink" href="#equation-shake" title="Link to this equation">¶</a></span>\[{\bf r}_i(t+\Delta t) ~=~ {\bf r}_i' + \frac{1}{m_i}\sum_c g_c\,\sigma_{ic}\,{\bf r}_c(t),\]</div>
+<p>where <span class="math notranslate nohighlight">\(\sigma_{ic}\)</span> is 1 if atom <span class="math notranslate nohighlight">\(i\)</span> is the first atom of constraint <span class="math notranslate nohighlight">\(c\)</span>, -1 if it is the second and 0 otherwise. The multipliers <span class="math notranslate nohighlight">\(g_c\)</span> follow from the conditions <span class="math notranslate nohighlight">\(|{\bf r}_c(t+\Delta t)|^2 = d_c^2\)</span>. Since angle constraints are strongly coupled to the bond constraints, these non-linear equations are solved for all constraints together by Newton iterations, as in the matrix SHAKE algorithm <span class="bibtex-citation" id="id3">[<a class="reference internal" href="../references.html#id192" title="V Kräutler, W F van Gunsteren, and P H Hünenberger. A fast SHAKE algorithm to solve distance constraint equations for small molecules in molecular dynamics simulations. J. Comput. Chem., 22:501–508, 2001. doi:10.1002/1096-987X(20010415)22:5&lt;501::AID-JCC1021&gt;3.0.CO;2-V.">99</a>]</span>, rather than one constraint at a time as in the original SHAKE algorithm, which converges very slowly for coupled constraints. The step is halved when it does not reduce the deviations from the constraints. The displacements due to the constraints, divided by <span class="math notranslate nohighlight">\(\Delta t\)</span>, are added to the velocities. In the second part of RATTLE, after Eqn. <a class="reference internal" href="#equation-vvvel">(3.55)</a>, the velocity components along the constraints are removed by solving the linear equations</p>
+<div class="math notranslate nohighlight" id="equation-rattle">
+<span class="eqno">(3.60)<a class="headerlink" href="#equation-rattle" title="Link to this equation">¶</a></span>\[{\bf r}_c\cdot\left({\bf v}_{c_1} - {\bf v}_{c_2}\right) ~=~ 0\]</div>
+<p>for all constraints together, where <span class="math notranslate nohighlight">\(c_1\)</span> and <span class="math notranslate nohighlight">\(c_2\)</span> are the atoms of constraint <span class="math notranslate nohighlight">\(c\)</span>. The starting coordinates are constrained as well. The relative tolerance on the constrained distances and the maximum number of iterations are set with <em>-constr_toler</em> and <em>-constr_maxiter</em>. Each constraint removes one degree of freedom, such that <span class="math notranslate nohighlight">\(N_c\)</span> in Eqn. <a class="reference internal" href="#equation-ndf">(3.57)</a> is the number of constraints. For acetone, for instance, there are 9 bond constraints and 12 angle constraints, leaving 6 degrees of freedom: the rotation of the molecule, the rotation of the two methyl groups and the out of plane motion of the carbonyl carbon.</p>
+<p>The constraints are applied in energy minimization (<em>alexandria minimize</em> or <em>alexandria simulate -minimize</em>) as well, with all three algorithms that can be selected with <em>-minalg</em>. The starting coordinates are constrained first. After each computation of the forces, the components of the forces along the constraints are removed in the same way as the velocity components in RATTLE, Eqn. <a class="reference internal" href="#equation-rattle">(3.60)</a>, such that the forces vanish at a minimum of the energy under the constraints. These are the forces used by the minimization algorithms and for the convergence criterion <em>-toler</em>. After each step the coordinates are constrained with SHAKE, using the distance vectors before the step. With the Newton algorithm the step follows from the equations</p>
+<div class="math notranslate nohighlight" id="equation-newtoncons">
+<span class="eqno">(3.61)<a class="headerlink" href="#equation-newtoncons" title="Link to this equation">¶</a></span>\[{\bf H}\,\Delta{\bf x} + {\bf J}^T\boldsymbol{\mu} ~=~ {\bf F},\qquad {\bf J}\,\Delta{\bf x} ~=~ 0,\]</div>
+<p>where <span class="math notranslate nohighlight">\({\bf H}\)</span> is the second derivative matrix of the energy, <span class="math notranslate nohighlight">\({\bf F}\)</span> the forces, the rows of <span class="math notranslate nohighlight">\({\bf J}\)</span> are the derivatives of the constraints with respect to the coordinates and <span class="math notranslate nohighlight">\(\boldsymbol{\mu}\)</span> are Lagrange multipliers. Since the steps close to the minimum are small, the constraints are satisfied to a relative tolerance of <span class="math notranslate nohighlight">\(10^3\)</span> times the machine precision in minimization, rather than <em>-constr_toler</em>. Frozen atoms (option <em>-freeze</em>) are not moved by the constraints. A planar ring of which the angle constraints are not consistent with a planar ring, as discussed above, has to pucker during the minimization, which the L-BFGS and Newton algorithms may not achieve from an exactly planar starting structure. The steepest descent algorithm, or <em>-constrain bonds</em>, can be used instead.</p>
+</section>
+</section>
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/AClogo.png" alt="Logo of ACT"/>
+            </a></p>
+<h3><a href="../index.html">Table of Contents</a></h3>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../preface/preface.html">1. Preface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../userman/header.html">2. User Manual</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="header.html">3. Reference Manual</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="energy.html">3.1. Energy Function</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">3.2. Shell Relaxation and Integration</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#relaxation-of-shells">3.2.1. Relaxation of shells</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#shell-relaxation-in-training">3.2.1.1. Shell relaxation in training</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#integration-in-simulate">3.2.2. Integration in simulate</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#constraints">3.2.2.1. Constraints</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="training.html">3.3. Force Field Training Algorithms</a></li>
+<li class="toctree-l2"><a class="reference internal" href="fitness.html">3.4. Fitness function</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sensitivity.html">3.5. Sensitivity Analysis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ffdesign.html">3.6. Force field design</a></li>
+<li class="toctree-l2"><a class="reference internal" href="targets.html">3.7. Force Field Training Targets</a></li>
+<li class="toctree-l2"><a class="reference internal" href="targets.html#parameters-for-force-field-training">3.8. Parameters for Force Field Training</a></li>
+<li class="toctree-l2"><a class="reference internal" href="data.html">3.9. Training Data</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../jupyter/header.html">4. Interactive Notebooks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../devman/header.html">5. Developer Manual</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../references.html">6. References</a></li>
+</ul>
+
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/refman/integration.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<search id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="Related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="training.html" title="3.3. Force Field Training Algorithms"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="energy.html" title="3.1. Energy Function"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">ACT 1.2b documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="header.html" ><span class="section-number">3. </span>Reference Manual</a> &#187;</li>
+        <li class="nav-item nav-item-this"><a href=""><span class="section-number">3.2. </span>Shell Relaxation and Integration</a></li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+    &#169; Copyright 2026, ACT development team.
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.2.3.
+    </div>
+  </body>
+</html>

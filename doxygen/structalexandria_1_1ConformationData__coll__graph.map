@@ -1,0 +1,13 @@
+<map id="alexandria::ConformationData" name="alexandria::ConformationData">
+<area shape="rect" id="Node000001" title="Coordinates, forces and energies of all conformations of a topology." alt="" coords="383,162,601,190"/>
+<area shape="rect" id="Node000002" href="$classalexandria_1_1ConformationArrays.xhtml" title="Coordinates and forces of the conformations of a topology." alt="" coords="25,5,213,50"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="227,38,294,53,360,76,395,95,428,118,478,162,473,161,425,122,392,100,358,81,293,58,228,43"/>
+<area shape="rect" id="Node000003" href="$classalexandria_1_1ConformationEnergies.xhtml" title="The ACT energies of all conformations, per interaction type This holds the same information as the AC..." alt="" coords="25,75,213,119"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="227,102,293,111,359,124,413,140,461,161,456,161,411,145,358,129,292,116,228,107"/>
+<area shape="rect" id="Node000004" href="$classalexandria_1_1StructureVersion.xhtml" title="Number identifying the structure of a parameter map The number changes whenever pointers into the map..." alt="" coords="16,162,222,190"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="237,173,385,174,380,177,237,178"/>
+<area shape="rect" id="Node000005" href="$structalexandria_1_1DeviationReference.xhtml" title="Reference data of all conformations for computing deviations The quantum chemistry energies and the B..." alt="" coords="5,218,233,246"/>
+<area shape="poly" id="edge4_Node000001_Node000005" title=" " alt="" coords="248,218,358,203,437,189,432,191,359,209,249,223"/>
+<area shape="rect" id="Node000006" href="$structalexandria_1_1FixedEnergies.xhtml" title="Energies and forces of the entries without shells in all conformations While relaxing the shells,..." alt="" coords="25,274,213,302"/>
+<area shape="poly" id="edge5_Node000001_Node000006" title=" " alt="" coords="228,276,293,265,358,247,420,218,468,191,473,189,422,223,360,253,294,270,229,281"/>
+</map>
