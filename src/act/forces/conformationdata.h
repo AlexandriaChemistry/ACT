@@ -65,8 +65,9 @@ namespace alexandria
  * vectorized. The slots hold all conformations, or only those for which the
  * shells did not converge yet, see CoordsEnergy::done, and conformation(c)
  * is the conformation in slot c. The stride is the number of slots rounded
- * up to a multiple of the explicit SIMD width. The extra slots are copies of
- * the last one, they are computed but not used.
+ * up to a multiple of the explicit SIMD width, and one width more if that
+ * is a multiple of 256. The extra slots are copies of the last one, they
+ * are computed but not used.
  */
 class ConformationArrays
 {
@@ -161,6 +162,12 @@ public:
         }
         size_t width = explicitSimdWidth();
         size_t st    = ((nc + width - 1)/width)*width;
+        // Rows a multiple of 2 kB apart map to the same sets of the caches,
+        // which then hold few of them
+        if (st % 256 == 0)
+        {
+            st += width;
+        }
         bool   reuse = sameSlots && nc == nconf && st == stride && x.size() == DIM*natom*st;
         nconf  = nc;
         stride = st;
@@ -672,6 +679,14 @@ struct ConformationData
     bool                 spreadVsites      = false;
     //! Whether the forces of all conformations were spread, see spreadVsites
     bool                 vsiteForcesSpread = false;
+    /*! Whether the next energy calculations may leave the forces in the
+     * arrays without copying them to the conformations. They do so only if
+     * the arrays hold all conformations and the forces on the virtual sites
+     * were spread there, see forcesInArrays.
+     */
+    bool                 keepForcesInArrays = false;
+    //! Whether the forces of all conformations are only in the arrays, see keepForcesInArrays
+    bool                 forcesInArrays     = false;
     //! Changes when the coordinates of the conformations change
     StructureVersion     coordinates;
     /*! Changes when the conformations are made anew, but not when only

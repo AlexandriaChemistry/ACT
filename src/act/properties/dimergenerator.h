@@ -245,10 +245,13 @@ public:
 
     /*! \brief Do the actual generation for one pair. Two molecules
      * will be oriented and a distance series will be generated.
-     * \param[in] msghandler MsgHandler for output and debugging, may be nullptr
-     * \return The coordinate sets
+     * The memory of the coordinate sets of the previous call is used
+     * again, such that it does not have to be allocated for every orientation.
+     * \param[in]  msghandler MsgHandler for output and debugging, may be nullptr
+     * \param[out] coords     The coordinate sets
      */
-    std::vector<dimer_coords> generateDimers(MsgHandler *msghandler);
+    void generateDimers(MsgHandler                *msghandler,
+                        std::vector<dimer_coords> *coords);
 
     /*! \brief Read all the dimers at once from a file. 
      * \param[out]   coords   The coordinates. If empty reading failed or the variable was empty
