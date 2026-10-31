@@ -309,6 +309,17 @@ public:
     void sumd_helpers(int    nr, 
                       double r[]) const;
     
+    /*! \brief Sum an array of doubles of all processes on the master
+     * All processes have to call this. The sum is computed with a
+     * reduction, in parallel on the processes, rather than by the master
+     * alone.
+     * \param[in]    nr The number of doubles
+     * \param[inout] r  The doubles, on the master the sum on return,
+     *                  on the other processes unchanged
+     */
+    void sumd_master(int    nr,
+                     double r[]) const;
+
     /*! \brief Calculate the global sum of an array of ints 
      * but only on my act helper group
      * \param[in] nr The number of ints

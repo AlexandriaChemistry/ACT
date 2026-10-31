@@ -832,6 +832,26 @@ void CommunicationRecord::sumd_helpers(int    nr,
     }
 }
 
+void CommunicationRecord::sumd_master(int    nr,
+                                      double r[]) const
+{
+    ScopedTimer scoped(mpiTimer(MpiTime::Collective));
+    if (size_ <= 1)
+    {
+        return;
+    }
+    if (isMaster())
+    {
+        check_return("MPI_Reduce", MPI_Reduce(MPI_IN_PLACE, r, nr, MPI_DOUBLE, MPI_SUM,
+                                              0, mpi_act_world_));
+    }
+    else
+    {
+        check_return("MPI_Reduce", MPI_Reduce(r, nullptr, nr, MPI_DOUBLE, MPI_SUM,
+                                              0, mpi_act_world_));
+    }
+}
+
 void CommunicationRecord::sumi_helpers(int nr, 
                                        int r[]) const
 {
