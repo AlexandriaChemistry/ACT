@@ -71,7 +71,8 @@ gmx_fprintf_pdb_atomline(FILE *            fp,
                          real              z,
                          real              occupancy,
                          real              b_factor,
-                         const char *      element);
+                         const char *      element,
+                         const char *      charge = nullptr);
 
 /* Enumerated value for indexing an uij entry (anisotropic temperature factors) */
 enum {

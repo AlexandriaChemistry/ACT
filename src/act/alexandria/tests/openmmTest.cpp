@@ -261,6 +261,31 @@ TEST(ParticleNamesTest, NumberedInResidue)
     EXPECT_EQ(expected, particleNames(mps[0].atomsConst()));
 }
 
+TEST(IonChargesTest, SodiumWater)
+{
+    // The charge of the polarizable sodium is split over the core, the shell
+    // and a virtual site, but only the atom gets the formal charge
+    for (const auto &ffName : { "ACS-g", "PG-pol-ions" })
+    {
+        MsgHandler msghandler;
+        msghandler.setPrintLevel(ACTStatus::Fatal);
+        auto          ff = getForceField(ffName);
+        ForceComputer fcomp(1e-7, 25, 1.0);
+        std::vector<ACTMol> mps;
+        auto dataName = gmx::test::TestFileManager::getInputFilePath("mols/sodium#water.pdb");
+        initACTMol(&msghandler, dataName, ff, &fcomp, &mps);
+        ASSERT_TRUE(msghandler.ok()) << ffName;
+        const auto &atoms   = mps[0].atomsConst();
+        auto        charges = ionCharges(atoms);
+        ASSERT_EQ(atoms.size(), charges.size()) << ffName;
+        for (size_t i = 0; i < atoms.size(); i++)
+        {
+            bool sodium = (atoms[i].pType() == ActParticle::Atom && atoms[i].element() == "Na");
+            EXPECT_EQ(sodium ? "1+" : "", charges[i]) << ffName << " particle " << i;
+        }
+    }
+}
+
 
 
 }
