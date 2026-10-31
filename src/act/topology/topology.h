@@ -315,6 +315,17 @@ private:
                     const std::vector<gmx::RVec> &x,
                     double                        LinearAngleMin);
 
+    /*! \brief Order the neighbours of the central atom of an improper
+     * The identifier of an improper depends on the order of the three
+     * neighbours, which would then depend on the numbering of the atoms.
+     * They are sorted by bond order and bond type, and the first order
+     * that the force field has parameters for is used.
+     * \param[in]    pd    The force field, nothing is done if nullptr
+     * \param[inout] bonds The bonds from the central atom to the neighbours
+     */
+    void orderImproper(const ForceField  *pd,
+                       std::vector<Bond> *bonds) const;
+
     /*! Generate the impropers
      * To generate impropers we need the coordinates to check whether
      * there is a planar geometry.

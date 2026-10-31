@@ -57,7 +57,7 @@
     <Proper class1="c3_b" class2="c2_b" class3="c3_b" class4="h_b" phi0="0" kp="5" mult="3"/>
   </PeriodicTorsionForce>
   <PeriodicTorsionForce energy="0">
-    <Improper class1="c2_b" class2="o2_b" class3="c3_b" class4="c3_b" kimp="1"/>
+    <Improper class1="c2_b" class2="c3_b" class3="c3_b" class4="o2_b" kimp="1"/>
   </PeriodicTorsionForce>
   <CustomNonbondedForce energy="4*epsilon*((sigma/r)^12 - (sigma/r)^6)" bondCutoff="0">
     <GlobalParameter name="pot-LJ12_6" defaultValue="1"/>

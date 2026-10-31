@@ -3,7 +3,7 @@
 <ReferenceData>
   <Real Name="BONDS_act">-3599.6247237692273</Real>
   <Real Name="ANGLES_act">1.6108282518232031</Real>
-  <Real Name="IMPROPER_DIHEDRALS_act">0.0018181936337405302</Real>
+  <Real Name="IMPROPER_DIHEDRALS_act">0.0012404790097456507</Real>
   <Real Name="DISPERSION_act">-11.27732594870268</Real>
   <Real Name="EXCHANGE_act">47.49694889571726</Real>
   <Real Name="COULOMB_act">-186.93088212592289</Real>
@@ -12,17 +12,17 @@
   <Real Name="ALLELEC_act">-195.50726528557971</Real>
   <Real Name="EXCHIND_act">38.920565736060432</Real>
   <Real Name="EPOT_act">-3757.2997196623355</Real>
-  <Real Name="o2-1_act fX">-31.722969717013534</Real>
-  <Real Name="o2-1_act fY">-288.65730172869013</Real>
-  <Real Name="o2-1_act fZ">0.026620808275122882</Real>
-  <Real Name="c2-3_act fX">49.66084478667193</Real>
-  <Real Name="c2-3_act fY">60.750714682717671</Real>
-  <Real Name="c2-3_act fZ">-0.046578073272328664</Real>
-  <Real Name="c3-5_act fX">-22.509106511852909</Real>
-  <Real Name="c3-5_act fY">-106.80926790933057</Real>
-  <Real Name="c3-5_act fZ">-958.83771235955896</Real>
-  <Real Name="c3-7_act fX">-22.511173344793718</Real>
-  <Real Name="c3-7_act fY">-106.82197891333112</Real>
+  <Real Name="o2-1_act fX">-31.610234829075374</Real>
+  <Real Name="o2-1_act fY">-288.68001836912174</Real>
+  <Real Name="o2-1_act fZ">-2.6531622347582608e-13</Real>
+  <Real Name="c2-3_act fX">49.373525551870763</Real>
+  <Real Name="c2-3_act fY">60.826148704621119</Real>
+  <Real Name="c2-3_act fZ">1.4703685420497229e-12</Real>
+  <Real Name="c3-5_act fX">-22.422847684991179</Real>
+  <Real Name="c3-5_act fY">-106.84199337772213</Real>
+  <Real Name="c3-5_act fZ">-958.85765887895423</Real>
+  <Real Name="c3-7_act fX">-22.422847684988554</Real>
+  <Real Name="c3-7_act fY">-106.8419933777198</Real>
   <Real Name="c3-7_act fZ">958.8576696245525</Real>
   <Real Name="h-9_act fX">4.2509268447022048</Real>
   <Real Name="h-9_act fY">627.26383268899099</Real>

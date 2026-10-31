@@ -380,6 +380,62 @@ void Topology::makeAngles(MsgHandler                   *msghandler,
     }
 }
 
+void Topology::orderImproper(const ForceField  *pd,
+                             std::vector<Bond> *bonds) const
+{
+    auto itype = InteractionType::IMPROPER_DIHEDRALS;
+    if (!pd || atoms_.empty() || !pd->interactionPresent(itype) || bonds->size() != 3)
+    {
+        return;
+    }
+    // The bond type of a particle, as in setEntryIdentifiers
+    auto ib       = InteractionType::BONDS;
+    auto bondType = [this, pd, ib](int a)
+    {
+        auto atype = pd->findParticleType(atoms_[a].ffType());
+        return atype->hasInteractionType(ib) ? atype->interactionTypeToIdentifier(ib).id() : std::string();
+    };
+    std::string center = bondType((*bonds)[0].atomIndex(0));
+    // The neighbours ordered by bond order and bond type, which do not
+    // depend on the numbering of the atoms. Neighbours that are the same
+    // stay in their order, which does not change the identifier.
+    auto key = [&bondType](const Bond &b)
+    {
+        return std::make_pair(b.bondOrders()[0], bondType(b.atomIndex(1)));
+    };
+    auto less = [&key](const Bond &a, const Bond &b) { return key(a) < key(b); };
+    std::stable_sort(bonds->begin(), bonds->end(), less);
+    if (center.empty())
+    {
+        return;
+    }
+    // The force fields have the identifiers of impropers in different orders
+    // of the neighbours, all with the same parameters. The first order that
+    // the force field has is used, the sorted one if it has none.
+    auto  &fs     = pd->findForcesConst(itype);
+    auto   sorted = *bonds;
+    do
+    {
+        Improper                 imp((*bonds)[0], (*bonds)[1], (*bonds)[2]);
+        std::vector<std::string> btype = { center };
+        for(const auto &b : *bonds)
+        {
+            btype.push_back(bondType(b.atomIndex(1)));
+            if (btype.back().empty())
+            {
+                *bonds = sorted;
+                return;
+            }
+        }
+        if (fs.parameterExists(Identifier(btype, imp.bondOrders(), fs.canSwap())))
+        {
+            return;
+        }
+    }
+    while (std::next_permutation(bonds->begin(), bonds->end(), less));
+    *bonds = sorted;
+}
+
 void Topology::makeImpropers(MsgHandler                   *msghandler,
                              const ForceField             *pd,
                              const std::vector<gmx::RVec> &x,
@@ -425,7 +481,7 @@ void Topology::makeImpropers(MsgHandler                   *msghandler,
                 is_planar(myx[i], myx[jkl[0]], myx[jkl[1]], myx[jkl[2]],
                           PlanarAngleMax))
             {
-                Bond bjkl[3];
+                std::vector<Bond> bjkl(3);
                 for(int m = 0; m < 3; m++)
                 {
                     auto bbb = findBond(i, jkl[m]);
@@ -438,6 +494,7 @@ void Topology::makeImpropers(MsgHandler                   *msghandler,
                         bjkl[m] = bbb;
                     }
                 }
+                orderImproper(pd, &bjkl);
                 impropers.push_back(Improper(bjkl[0], bjkl[1], bjkl[2]));
             }
         }

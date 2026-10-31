@@ -4,15 +4,15 @@
   <Sequence Name="Frequencies">
     <Int Name="Length">24</Int>
     <Real>298.541</Real>
-    <Real>365.17899999999997</Real>
-    <Real>401.37900000000002</Real>
+    <Real>365.077</Real>
+    <Real>401.267</Real>
     <Real>464.54700000000003</Real>
-    <Real>505.67399999999998</Real>
+    <Real>505.62200000000001</Real>
     <Real>718.87699999999995</Real>
     <Real>873.20799999999997</Real>
     <Real>875.673</Real>
     <Real>882.20600000000002</Real>
-    <Real>962.63300000000004</Real>
+    <Real>962.58900000000006</Real>
     <Real>1177.49</Real>
     <Real>1275</Real>
     <Real>1453.25</Real>
@@ -31,8 +31,8 @@
   <Sequence Name="Intensities">
     <Int Name="Length">24</Int>
     <Real>0.0030258199999999998</Real>
-    <Real>0.00190402</Real>
-    <Real>0.0027485500000000002</Real>
+    <Real>0.00191778</Real>
+    <Real>0.0027357599999999998</Real>
     <Real>3.8155599999999999e-08</Real>
     <Real>0.00052433500000000001</Real>
     <Real>0.0017194199999999999</Real>
@@ -77,12 +77,12 @@
     <Real Name="Delta H formation">3998.8499999999999</Real>
     <Real Name="Standard entropy Translation">159.51300000000001</Real>
     <Real Name="Standard entropy Rotation">95.120000000000005</Real>
-    <Real Name="Standard entropy Vibration">24.646000000000001</Real>
-    <Real Name="Standard entropy Total">279.279</Real>
+    <Real Name="Standard entropy Vibration">24.649999999999999</Real>
+    <Real Name="Standard entropy Total">279.28300000000002</Real>
     <Real Name="Heat capacity cV Translation">12.472</Real>
     <Real Name="Heat capacity cV Rotation">12.472</Real>
-    <Real Name="Heat capacity cV Vibration">45.859000000000002</Real>
-    <Real Name="Heat capacity cV Total">70.802999999999997</Real>
+    <Real Name="Heat capacity cV Vibration">45.862000000000002</Real>
+    <Real Name="Heat capacity cV Total">70.805000000000007</Real>
     <Real Name="Internal energy Translation">3.718</Real>
     <Real Name="Internal energy Rotation">3.718</Real>
     <Real Name="Internal energy Vibration">205.27500000000001</Real>
