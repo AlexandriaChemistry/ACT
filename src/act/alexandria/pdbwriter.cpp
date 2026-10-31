@@ -147,6 +147,36 @@ std::vector<std::string> particleNames(const std::vector<ActAtom> &atoms)
     return names;
 }
 
+std::vector<std::string> ionCharges(const std::vector<ActAtom> &atoms)
+{
+    // The number of atoms and the total charge of each residue
+    std::map<int, int>    natom;
+    std::map<int, double> qtot;
+    for (const auto &atom : atoms)
+    {
+        if (atom.pType() == ActParticle::Atom)
+        {
+            natom[atom.residueNumber()] += 1;
+        }
+        // The second charge is on the atom unless it is a virtual site
+        qtot[atom.residueNumber()] += atom.charge() + atom.chargeVS();
+    }
+    std::vector<std::string> charges;
+    for (const auto &atom : atoms)
+    {
+        std::string q;
+        auto        res = atom.residueNumber();
+        long        iq  = std::lround(qtot[res]);
+        if (atom.pType() == ActParticle::Atom && natom[res] == 1 &&
+            iq != 0 && std::abs(qtot[res] - iq) < 1e-3)
+        {
+            q = gmx::formatString("%ld%c", std::abs(iq), iq > 0 ? '+' : '-');
+        }
+        charges.push_back(q);
+    }
+    return charges;
+}
+
 void pdbWriter(FILE                           *out, 
                const char                     *title,
                const std::vector<ActAtom>     &atoms,
@@ -211,6 +241,7 @@ void pdbWriter(FILE                           *out,
     }
     // The names are made from all particles, also those that are not written
     auto anames = particleNames(atoms);
+    auto qions  = ionCharges(atoms);
     for (size_t ii = 0; ii < natoms; ii++)
     {
         size_t i = ii;
@@ -258,7 +289,8 @@ void pdbWriter(FILE                           *out,
                                  10*x[i][XX], 10*x[i][YY], 10*x[i][ZZ],
                                  occup,
                                  bfac,
-                                 atoms[i].element().c_str());
+                                 atoms[i].element().c_str(),
+                                 qions[i].empty() ? nullptr : qions[i].c_str());
     }
 
     if (nullptr != gc)

@@ -61,6 +61,7 @@
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
 #include "gromacs/utility/snprintf.h"
+#include "gromacs/utility/stringutil.h"
 
 typedef struct {
     int ai, aj;
@@ -1145,7 +1146,8 @@ gmx_fprintf_pdb_atomline(FILE *            fp,
                          real              z,
                          real              occupancy,
                          real              b_factor,
-                         const char *      element)
+                         const char *      element,
+                         const char *      charge)
 {
     char     tmp_atomname[6], tmp_resname[6];
     gmx_bool start_name_in_col13;
@@ -1194,7 +1196,7 @@ gmx_fprintf_pdb_atomline(FILE *            fp,
     res_seq_number  = res_seq_number % 10000;
 
     n = fprintf(fp,
-                "%-6s%5d %-4.4s%c%4.4s%c%4d%c   %8.3f%8.3f%8.3f%6.2f%6.2f          %2s\n",
+                "%-6s%5d %-4.4s%c%4.4s%c%4d%c   %8.3f%8.3f%8.3f%6.2f%6.2f          %2s%s\n",
                 pdbtp[record],
                 atom_seq_number,
                 tmp_atomname,
@@ -1206,7 +1208,9 @@ gmx_fprintf_pdb_atomline(FILE *            fp,
                 x, y, z,
                 occupancy,
                 b_factor,
-                (element != nullptr) ? element : "");
+                (element != nullptr) ? element : "",
+                // The formal charge in columns 79-80, such as 1+
+                (charge != nullptr) ? gmx::formatString("%2.2s", charge).c_str() : "");
 
     return n;
 }

@@ -20,6 +20,18 @@ class ActAtom;
  */
 std::vector<std::string> particleNames(const std::vector<ActAtom> &atoms);
 
+/*! \brief Determine the formal charges of monatomic ions
+ * A residue with one atom is an ion if the charges of its particles,
+ * that is the atom, its shells and virtual sites and its second charge,
+ * add up to a nonzero integer. Then
+ * the atom gets that formal charge, such as 1+ or 2-, as in columns
+ * 79-80 of a PDB file. Other particles get an empty string, since
+ * ACT does not know their formal charges.
+ * \param[in] atoms The particles
+ * \return The formal charges
+ */
+std::vector<std::string> ionCharges(const std::vector<ActAtom> &atoms);
+
 //! Function to write a pdb file.
 void pdbWriter(FILE                           *out, 
                const char                     *title,

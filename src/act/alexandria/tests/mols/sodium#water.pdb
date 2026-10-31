@@ -1,0 +1,7 @@
+COMPND    sodium_water
+HETATM    1 NA   NA      1       0.000   0.000   0.000  1.00  0.00          NA1+
+HETATM    2  O   HOH     2      -2.300   0.000   0.000  1.00  0.00           O
+HETATM    3  H   HOH     2      -2.900   0.760   0.000  1.00  0.00           H
+HETATM    4  H   HOH     2      -2.900  -0.760   0.000  1.00  0.00           H
+CONECT    2    3    4
+END
