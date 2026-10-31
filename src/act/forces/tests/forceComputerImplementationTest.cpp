@@ -273,7 +273,11 @@ protected:
         double fz = -(ener[1]-ener[0])/(norm(dxvector[0])+norm(dxvector[1]));
         double toler = 3e-5;
         // It should be identical to the forces computed at the central point
+        // A difference of two energies, in which the last bits of the
+        // energies, that can differ between platforms, are amplified
+        checker_.setDefaultTolerance(gmx::test::relativeToleranceAsFloatingPoint(1.0, GMX_DOUBLE ? 1e-7 : 1e-4));
         checker_.checkReal(fz, "fz");
+        checker_.setDefaultTolerance(gmx::test::relativeToleranceAsFloatingPoint(1.0, GMX_DOUBLE ? 1e-10 : 1e-6));
         double diff = abs(fz - forces[1][ZZ]);
         double f2   = std::abs(fz + forces[1][ZZ]);
         if ((f2 > 0) && (diff >= toler))
