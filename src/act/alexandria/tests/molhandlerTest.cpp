@@ -250,6 +250,49 @@ protected:
     }
 };
 
+// Test: All minimizers reach the same minimum of acetone with a tolerance on
+// the mean square force that they can reach
+TEST_F (MolHandlerTest, MinimizersAgree)
+{
+    auto pd = getForceField("ACS-g");
+    MsgHandler msghandler;
+    msghandler.setPrintLevel(ACTStatus::Warning);
+    std::vector<alexandria::MolProp> molprops;
+    double qtot = 0;
+    importFile(&msghandler, pd, gmx::test::TestFileManager::getInputFilePath("mols/acetone.sdf").c_str(),
+               &molprops, "minimum", JobType::OPT, false, &qtot, true);
+    ASSERT_TRUE(msghandler.ok());
+    ASSERT_EQ(1u, molprops.size());
+    ACTMol mol;
+    mol.Merge(&molprops[0]);
+    mol.GenerateTopology(&msghandler, pd, missingParameters::Ignore);
+    ASSERT_TRUE(msghandler.ok());
+    ForceComputer          forceComp(1e-10, 100, 1);
+    std::vector<gmx::RVec> x0 = mol.xOriginal();
+    std::vector<gmx::RVec> forces(x0.size());
+    mol.generateCharges(&msghandler, pd, &forceComp, pd->chargeGenerationAlgorithm(), &x0, &forces);
+    ASSERT_TRUE(msghandler.ok());
+    MolHandler          mh;
+    std::vector<double> epot;
+    for (auto alg : { eMinimizeAlgorithm::LBFGS, eMinimizeAlgorithm::Newton, eMinimizeAlgorithm::Steep })
+    {
+        SCOPED_TRACE(eMinimizeAlgorithmToString(alg));
+        SimulationConfigHandler simConfig;
+        simConfig.setMinimizeAlgorithm(alg);
+        simConfig.setForceTolerance(1e-6);
+        simConfig.setMaxIter(20000);
+        std::vector<gmx::RVec>            x = x0;
+        std::map<InteractionType, double> energies;
+        EXPECT_EQ(eMinimizeStatus::OK, mh.minimizeCoordinates(&msghandler, pd, mol.topology(), &forceComp,
+                                                              simConfig, &x, &energies, {}));
+        epot.push_back(energies[InteractionType::EPOT]);
+        EXPECT_LT(epot.back(), epot.front() + 1e-3);
+    }
+    // The tolerance of L-BFGS is on the relative decrease of the energy
+    EXPECT_NEAR(epot[1], epot[2], 1e-3);
+    EXPECT_NEAR(epot[0], epot[1], 1e-2);
+}
+
 TEST_F (MolHandlerTest, MethaneThiolNoFreq)
 {
     test("methanethiol.sdf", "ACS-g", false, 1e-13);
