@@ -473,7 +473,6 @@ void MolHandler::nma(const ForceField         *pd,
     std::map<InteractionType, double> energies;
     computeHessian(pd, mol->topology(), forceComp, coords,
                    atomIndex, &hessian, &f0, &energies, &dpdq);
-    //hessian.averageTriangle();
 
     if (output && debugNMA)
     {
@@ -1015,7 +1014,6 @@ eMinimizeStatus MolHandler::minimizeCoordinates(MsgHandler                      
                 // Averaging the Hessian completely messes up the information here
                 // since it is exactly the deviations from symmetry we need to
                 // address. Leave this comment in here for future reference.
-                // Hessian.averageTriangle();
                 MatrixWrapper H2(Hessian);
                 // Solve H delta X = -grad (E) = force(E)
                 int result = 0;
