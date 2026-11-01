@@ -164,14 +164,14 @@ int geometry_ff(int argc, char *argv[])
         { efDAT, "-sel", "molselect",    ffOPTRD }
     };
 
-    static real                      delta_eta    = 5;
-    static int                       compress    = 0;
-    static int                       maxwarn     = 0;
-    static int                       nBootStrap  = 0;
-    static gmx_bool                  bHisto      = false;
-    static gmx_bool                  bBondOrder  = true;
-    static gmx_bool                  genBCC      = true;
-    static gmx_bool                  strict      = true;
+    real                             delta_eta    = 5;
+    int                              compress    = 0;
+    int                              maxwarn     = 0;
+    int                              nBootStrap  = 0;
+    gmx_bool                         bHisto      = false;
+    gmx_bool                         bBondOrder  = true;
+    gmx_bool                         genBCC      = true;
+    gmx_bool                         strict      = true;
     std::vector<t_pargs> pa = {
         { "-strict", FALSE, etBOOL, {&strict},
           "Whether or not to be pedantic about the level of theory" },

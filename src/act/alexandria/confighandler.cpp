@@ -229,7 +229,11 @@ static const char *lossFunctionStr[6] = { nullptr, "MSE", "MAE", "Huber", "Asinh
 void GAConfigHandler::add_options(std::vector<t_pargs>             *pargs,
                                   gmx_unused std::vector<t_filenm> *fnms)
 {
-
+    // The parser stores the choice in the first element of an enum, which
+    // would otherwise become the default when the options are parsed again.
+    optimizerStr[0]    = nullptr;
+    probStr[0]         = nullptr;
+    lossFunctionStr[0] = nullptr;
     t_pargs pa[] = {
         { "-ga_evaltest", FALSE, etBOOL, {&evaluateTestset_},
           "Evaluate the paramters on the test set during GA." },
