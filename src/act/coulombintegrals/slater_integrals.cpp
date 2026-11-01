@@ -617,7 +617,7 @@ double DCoulomb_SS(double r, int i, int j, double xi, double xj)
         }
         else
         {
-            return 1/(r*r);
+            return -1/(r*r);
         }
     }
     return -double_approx(cS);
@@ -657,7 +657,7 @@ double DCoulomb_SS(double r, int i, int j, double xi, double xj)
         }
         else
         {
-            return 1/(r*r);
+            return -1/(r*r);
         }
     }
     return -S;
