@@ -680,6 +680,67 @@ static const DeviationReference &epotReference(ConformationData                *
     return ref;
 }
 
+/*! \brief Add the weighted losses of the conformations that have both energies
+ * Conformations without a reference energy, without a computed one or with
+ * one that is not finite are left out. Without branches, such that the
+ * loop is fast, and in the order of the conformations, such that the sums
+ * are the same as when adding the losses one by one.
+ * \tparam     lf       The loss function
+ * \param[in]  nconf    Number of conformations
+ * \param[in]  w        The weights of the conformations
+ * \param[in]  eqm      The reference energies
+ * \param[in]  have     Whether there is a reference energy
+ * \param[in]  eact     The computed energies
+ * \param[in]  haveAct  Whether there is a computed energy
+ * \param[inout] weight  The sum of the weights
+ * \param[inout] losses  The sum of the weighted losses
+ */
+template<LossFunction lf>
+static void addLosses(size_t        nconf,
+                      const double *w,
+                      const double *eqm,
+                      const char   *have,
+                      const double *eact,
+                      const char   *haveAct,
+                      double       *weight,
+                      double       *losses)
+{
+    double sw = *weight;
+    double sl = *losses;
+    for(size_t i = 0; i < nconf; i++)
+    {
+        bool   use = haveAct[i] && have[i] && std::isfinite(eact[i]);
+        double de  = use ? eqm[i] - eact[i] : 0.0;
+        double wi  = use ? w[i] : 0.0;
+        sl += wi*loss(lf, 1, de);
+        sw += wi;
+    }
+    *weight = sw;
+    *losses = sl;
+}
+
+//! \copydoc addLosses
+static void addLosses(LossFunction lf, size_t nconf, const double *w, const double *eqm,
+                      const char *have, const double *eact, const char *haveAct,
+                      double *weight, double *losses)
+{
+    switch (lf)
+    {
+    case LossFunction::MSE:
+        addLosses<LossFunction::MSE>(nconf, w, eqm, have, eact, haveAct, weight, losses);
+        break;
+    case LossFunction::MAE:
+        addLosses<LossFunction::MAE>(nconf, w, eqm, have, eact, haveAct, weight, losses);
+        break;
+    case LossFunction::Huber:
+        addLosses<LossFunction::Huber>(nconf, w, eqm, have, eact, haveAct, weight, losses);
+        break;
+    case LossFunction::Asinh:
+        addLosses<LossFunction::Asinh>(nconf, w, eqm, have, eact, haveAct, weight, losses);
+        break;
+    }
+}
+
 void ForceEnergyDevComputer::calcDeviation(MsgHandler                     *msghandler,
                                            gmx_unused const ForceComputer *forceComputer,
                                            const std::vector<ACTMol *>    &actmols,
@@ -767,18 +828,13 @@ void ForceEnergyDevComputer::calcDeviation(MsgHandler                     *msgha
                 size_t      nconf = std::min(coords->size(), ener.nconf());
                 for (size_t j = 0; j < rmsE.size(); j++)
                 {
-                    auto        &rms  = rmsE[j];
-                    auto         eact = ener.find(rms.itype);
-                    const auto  &eqm  = ref.energy[j];
-                    const auto  &have = ref.have[j];
-                    const auto  &w    = ref.weight;
-                    for(size_t i = 0; i < nconf; i++)
+                    auto &rms  = rmsE[j];
+                    auto  eact = ener.find(rms.itype);
+                    if (eact.have)
                     {
-                        if (eact.has(i) && have[i] && std::isfinite(eact.act[i]))
-                        {
-                            rms.loss   += w[i] * loss(lossFunction, 1, eqm[i] - eact.act[i]);
-                            rms.weight += w[i];
-                        }
+                        addLosses(lossFunction, nconf, ref.weight.data(), ref.energy[j].data(),
+                                  ref.have[j].data(), eact.act, eact.have,
+                                  &rms.weight, &rms.loss);
                     }
                 }
                 // Collect losses, maybe they need to be per dimer conf to allow SIMD above
