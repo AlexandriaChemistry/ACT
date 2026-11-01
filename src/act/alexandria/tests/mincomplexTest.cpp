@@ -34,6 +34,7 @@
 
 #include <filesystem>
 #include <fstream>
+#include <map>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -122,6 +123,79 @@ TEST_F(MinComplexTest, WaterDimer)
     auto pdb = std::filesystem::path(fileManager().getTemporaryFilePath("x")).parent_path() / "water#water.pdb";
     EXPECT_TRUE(std::filesystem::exists(pdb));
     std::filesystem::remove(pdb);
+}
+
+/*! \brief The results in a log file of min_complex
+ * \param[in] log The contents of the log file
+ * \return for each complex the interaction energy and the RMSD
+ */
+static std::map<std::string, std::pair<double, double>> results(const std::string &log)
+{
+    std::map<std::string, std::pair<double, double>> res;
+    std::istringstream in(log);
+    for (std::string line; std::getline(in, line); )
+    {
+        auto pos = line.find(" final energy:");
+        if (pos == std::string::npos)
+        {
+            continue;
+        }
+        double epot, einter, rmsd;
+        if (3 == std::sscanf(line.c_str() + pos,
+                             " final energy: %lf. Interaction energy: %lf. RMSD wrt original structure %lf",
+                             &epot, &einter, &rmsd))
+        {
+            res[line.substr(0, pos)] = { einter, rmsd };
+        }
+    }
+    return res;
+}
+
+// Test: With a trained force field the complexes of alcohols and water are
+// bound near their structures
+TEST_F(MinComplexTest, TrainedForceField)
+{
+    std::string log;
+    ASSERT_EQ(0, run("trainff/lj-pc-trained.xml",
+                     fileManager().getInputFilePath("trainff/booze-inter.xml"), &log));
+    auto res = results(log);
+    ASSERT_EQ(3u, res.size()) << log;
+    for (const auto &r : res)
+    {
+        EXPECT_LT(r.second.first, 0) << r.first;
+        EXPECT_LT(r.second.second, 0.2) << r.first;
+        auto pdb = std::filesystem::path(fileManager().getTemporaryFilePath("x")).parent_path() / (r.first + ".pdb");
+        EXPECT_TRUE(std::filesystem::exists(pdb)) << pdb;
+        std::filesystem::remove(pdb);
+    }
+}
+
+// Test: A minimizer does not succeed far from the structure. The Newton
+// steps do not lead to a minimum of these complexes with the untrained
+// force field, which is reported rather than accepting steps that increase
+// the energy, which moved atoms to infinity where there are no forces.
+TEST_F(MinComplexTest, NewtonDoesNotDiverge)
+{
+    auto logName = fileManager().getTemporaryFilePath("min_complex.log");
+    gmx::test::CommandLine cmd;
+    cmd.append("min_complex");
+    cmd.addOption("-ff", fileManager().getInputFilePath("trainff/halgren-PG.xml"));
+    cmd.addOption("-mp", fileManager().getInputFilePath("trainff/booze-inter.xml"));
+    cmd.addOption("-g", logName);
+    cmd.addOption("-minalg", "Newton");
+    {
+        trainfftest::ScopedWorkingDirectory cwd(std::filesystem::path(logName).parent_path());
+        (void) min_complex(cmd.argc(), cmd.argv());
+    }
+    std::ifstream     in(logName);
+    std::stringstream text;
+    text << in.rdbuf();
+    for (const auto &r : results(text.str()))
+    {
+        EXPECT_LT(r.second.second, 1.0) << r.first;
+        auto pdb = std::filesystem::path(logName).parent_path() / (r.first + ".pdb");
+        std::filesystem::remove(pdb);
+    }
 }
 
 // Test: Complexes without a topology are skipped, which is reported with
