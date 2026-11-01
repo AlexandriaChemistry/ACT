@@ -945,6 +945,11 @@ void ForceComputer::relaxMonomer(MsgHandler                  *msghandler,
             auto  fh    = mol.fragmentHandler();
             auto &tops  = fh->topologies();
             auto &pols  = fh->polInfo();
+            // A compound with one fragment has no second monomer
+            if (im >= tops.size())
+            {
+                continue;
+            }
             auto &mons  = *mol.monomerCoords(im);
             auto &act   = active[k];
             // Relax monomers first.
@@ -1031,6 +1036,11 @@ void ForceComputer::relaxDimer(MsgHandler                  *msghandler,
             auto  fh    = mol.fragmentHandler();
             auto &tops  = fh->topologies();
             auto &pols  = fh->polInfo();
+            // A compound with one fragment has no dimer conformations
+            if (tops.size() < 2)
+            {
+                continue;
+            }
             // The done flag is per dimer conformation, but convergence
             // has to be checked for each monomer separately. A conformation
             // is done when the shells of all monomers that are relaxed converged.
