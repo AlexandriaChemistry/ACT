@@ -3,6 +3,7 @@
 <ReferenceData>
   <Real Name="BONDS_act">-4778.7134823061315</Real>
   <Real Name="ANGLES_act">29.420709961302659</Real>
+  <Real Name="PROPER_DIHEDRALS_act">0</Real>
   <Real Name="IMPROPER_DIHEDRALS_act">1.4975809736095345e-08</Real>
   <Real Name="DISPERSION_act">-10.095111492816566</Real>
   <Real Name="EXCHANGE_act">160.693764838595</Real>
