@@ -390,8 +390,9 @@ INSTANTIATE_TEST_CASE_P(IdenticalXi, SlaterTest, ::testing::Combine(::testing::V
 /*! \brief Checks of the Slater integrals for all rows without reference data
  * The derivatives are compared with finite differences of the integrals,
  * the integrals have to be symmetric in the two charges and become those
- * of point charges at large distances. Without the CLN library only the
- * first row is tested, which is the one used then.
+ * of point charges at large distances. Without the CLN library the rows
+ * beyond the first are computed in double precision, and tested only for
+ * widths for which that is precise, see HigherRowsDouble.
  *
  * For close widths, the formulas for different widths lose their
  * precision, since they divide by powers of the difference of the
@@ -409,15 +410,21 @@ TEST_P (SlaterPhysicsTest, All)
     double xi   = std::get<0>(std::get<1>(GetParam()));
     double xj   = std::get<1>(std::get<1>(GetParam()));
     SCOPED_TRACE(gmx::formatString("rows %d %d, xi %g xj %g", irow, jrow, xi, xj));
+    // The integrals are accurate to about 1e-10, which a smaller step
+    // would amplify in the finite differences. These are of fourth order,
+    // since the error of second order would be up to 3e-5 for the third
+    // row with large widths at short distances.
+    double h       = 1e-4;
+    auto   numeric = [h](auto f, double r)
+    {
+        return (8*(f(r+h) - f(r-h)) - (f(r+2*h) - f(r-2*h)))/(12*h);
+    };
     // Distances in nm, from overlapping to separated charges
     for (double r : { 0.02, 0.05, 0.08, 0.1, 0.15, 0.2, 0.3, 0.5 })
     {
-        // The integrals are accurate to about 1e-10, which a smaller step
-        // would amplify in the finite differences
-        double h    = 1e-4;
         double e    = Coulomb_SS(r, irow, jrow, xi, xj);
         double de   = DCoulomb_SS(r, irow, jrow, xi, xj);
-        double dnum = (Coulomb_SS(r+h, irow, jrow, xi, xj) - Coulomb_SS(r-h, irow, jrow, xi, xj))/(2*h);
+        double dnum = numeric([&](double s) { return Coulomb_SS(s, irow, jrow, xi, xj); }, r);
         EXPECT_NEAR(dnum, de, 1e-5*std::max(1.0, std::abs(de))) << "derivative at r = " << r;
         // The integrals are accurate to about 1e-9 close to the widths
         // from which they are computed as for equal widths, see Slater_1S_1S
@@ -427,7 +434,7 @@ TEST_P (SlaterPhysicsTest, All)
         // Between a Slater and a point charge
         double n    = Nuclear_SS(r, irow, xi);
         double dn   = DNuclear_SS(r, irow, xi);
-        double nnum = (Nuclear_SS(r+h, irow, xi) - Nuclear_SS(r-h, irow, xi))/(2*h);
+        double nnum = numeric([&](double s) { return Nuclear_SS(s, irow, xi); }, r);
         EXPECT_NEAR(nnum, dn, 1e-5*std::max(1.0, std::abs(dn))) << "nuclear derivative at r = " << r;
         // The overlap can only reduce the interaction of two positive charges
         EXPECT_LE(e, 1/r*(1 + 1e-10)) << "r = " << r;
@@ -437,6 +444,59 @@ TEST_P (SlaterPhysicsTest, All)
     double rfar = 40/std::min(xi, xj);
     EXPECT_NEAR(1/rfar, Coulomb_SS(rfar, irow, jrow, xi, xj), 1e-8/rfar) << "r = " << rfar;
     EXPECT_NEAR(1/rfar, Nuclear_SS(rfar, irow, xi), 1e-8/rfar) << "nuclear, r = " << rfar;
+}
+
+/*! \brief The Slater integrals with point charges, at zero distance and beyond the rows available
+ * A width of zero is a point charge, then the integral is that of a
+ * Slater with a point charge, or 1/r for two point charges, and the
+ * derivative is that of the integral, as for the Slater charges. At zero
+ * distance the integral of a Slater with a point charge is xi/row, the
+ * limit of the nuclear attraction integral. Rows beyond the highest that
+ * is computed are treated as the highest.
+ */
+TEST (SlaterIntegrals, SpecialCases)
+{
+#if HAVE_LIBCLN
+    const int maxRow = 3;
+#else
+    const int maxRow = SLATER_MAX;
+#endif
+    for (int irow = 1; irow <= maxRow; irow++)
+    {
+        for (int jrow = 1; jrow <= maxRow; jrow++)
+        {
+            SCOPED_TRACE(gmx::formatString("rows %d %d", irow, jrow));
+            for (double r : { 0.05, 0.2, 1.0 })
+            {
+                double xj = 12.0;
+                EXPECT_DOUBLE_EQ(Nuclear_SS(r, jrow, xj), Coulomb_SS(r, irow, jrow, 0, xj)) << "r = " << r;
+                EXPECT_DOUBLE_EQ(Nuclear_SS(r, irow, xj), Coulomb_SS(r, irow, jrow, xj, 0)) << "r = " << r;
+                EXPECT_DOUBLE_EQ(DNuclear_SS(r, jrow, xj), DCoulomb_SS(r, irow, jrow, 0, xj)) << "r = " << r;
+                EXPECT_DOUBLE_EQ(DNuclear_SS(r, irow, xj), DCoulomb_SS(r, irow, jrow, xj, 0)) << "r = " << r;
+                EXPECT_DOUBLE_EQ(1/r, Coulomb_SS(r, irow, jrow, 0, 0)) << "r = " << r;
+                EXPECT_DOUBLE_EQ(-1/(r*r), DCoulomb_SS(r, irow, jrow, 0, 0)) << "r = " << r;
+                EXPECT_DOUBLE_EQ(1/r, Nuclear_SS(r, irow, 0)) << "r = " << r;
+                EXPECT_DOUBLE_EQ(-1/(r*r), DNuclear_SS(r, irow, 0)) << "r = " << r;
+            }
+            // At zero distance there is no force
+            EXPECT_DOUBLE_EQ(0, Coulomb_SS(0, irow, jrow, 0, 0));
+            EXPECT_DOUBLE_EQ(0, DCoulomb_SS(0, irow, jrow, 0, 0));
+            EXPECT_DOUBLE_EQ(0, DCoulomb_SS(0, irow, jrow, 0, 12.0));
+            EXPECT_DOUBLE_EQ(0, DNuclear_SS(0, irow, 12.0));
+        }
+        // The limit of the nuclear attraction at zero distance, where the
+        // terms of the formula nearly cancel
+        double xi = 12.0;
+        EXPECT_DOUBLE_EQ(xi/irow, Coulomb_SS(0, irow, irow, 0, xi));
+        EXPECT_DOUBLE_EQ(xi/irow, Coulomb_SS(0, irow, irow, xi, 0));
+        EXPECT_NEAR(xi/irow, Nuclear_SS(1e-6, irow, xi), 1e-4*xi/irow);
+    }
+#if !HAVE_LIBCLN
+    // Beyond the highest row as the highest row
+    EXPECT_DOUBLE_EQ(Coulomb_SS(0.1, SLATER_MAX, 1, 8.0, 9.0), Coulomb_SS(0.1, SLATER_MAX+1, 1, 8.0, 9.0));
+    EXPECT_DOUBLE_EQ(DCoulomb_SS(0.1, 1, SLATER_MAX, 8.0, 9.0), DCoulomb_SS(0.1, 1, SLATER_MAX+2, 8.0, 9.0));
+    EXPECT_DOUBLE_EQ(DNuclear_SS(0.1, SLATER_MAX, 8.0), DNuclear_SS(0.1, SLATER_MAX+1, 8.0));
+#endif
 }
 
 /*! \brief The Slater integrals are continuous when the widths become equal
@@ -497,6 +557,24 @@ static const std::vector<std::tuple<double, double> > c_physicsXi = {
 };
 
 INSTANTIATE_TEST_CASE_P(Rows, SlaterPhysicsTest, ::testing::Combine(::testing::ValuesIn(c_allRows), ::testing::ValuesIn(c_physicsXi)));
+
+#if !HAVE_LIBCLN
+//! The rows beyond the first, which are computed in double precision without the CLN library
+static const std::vector<std::tuple<int, int> > c_higherRows = {
+    { 1, 2 }, { 2, 2 }, { 1, 3 }, { 2, 3 }, { 3, 3 }, { 2, 1 }, { 3, 1 }, { 3, 2 }
+};
+
+/*! Widths in 1/nm for the rows beyond the first in double precision
+ * The formulas for different widths lose their precision when the widths
+ * are within a few percent of each other, see NearlyEqualWidths, so only
+ * widths that differ more, or are the same, are tested.
+ */
+static const std::vector<std::tuple<double, double> > c_higherRowsXi = {
+    { 9.0, 18.0 }, { 6.0, 15.0 }, { 30.0, 12.0 }, { 5.0, 25.0 }, { 10.0, 10.0 }, { 22.3, 22.3 }
+};
+
+INSTANTIATE_TEST_CASE_P(HigherRowsDouble, SlaterPhysicsTest, ::testing::Combine(::testing::ValuesIn(c_higherRows), ::testing::ValuesIn(c_higherRowsXi)));
+#endif
 
 } // namespace
 
