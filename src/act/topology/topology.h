@@ -157,7 +157,7 @@ private:
 
     /*! \brief Generate exclusions 
      * \param[in] msghandler To store information and errors
-     * \param[in] nrexcl     The number of exclusions to generate (max 2)
+     * \param[in] nrexcl     Atoms up to this number of bonds apart are excluded
      * \return list of exclusions
      */
     std::vector<std::set<size_t>> generateExclusions(MsgHandler *msghandler,
