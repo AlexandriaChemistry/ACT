@@ -174,6 +174,12 @@ static void generateParameterPairs(MsgHandler      *msghandler,
         return;
     }
     auto        forcesVdw = pd->findForces(itype);
+    // Without a function the parameters are not used, for instance those
+    // of a correction that gen_ff did not turn on.
+    if (Potential::NONE == forcesVdw->potential())
+    {
+        return;
+    }
     const auto &comb_rule = forcesVdw->combinationRules();
     // The new parameters are added to the same list
     ForceFieldParameterListMap *parm = forcesVdw->parametersNoRemoval();
