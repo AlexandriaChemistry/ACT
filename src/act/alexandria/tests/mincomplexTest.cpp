@@ -170,10 +170,49 @@ TEST_F(MinComplexTest, TrainedForceField)
     }
 }
 
-// Test: A minimizer does not succeed far from the structure. The Newton
-// steps do not lead to a minimum of these complexes with the untrained
-// force field, which is reported rather than accepting steps that increase
-// the energy, which moved atoms to infinity where there are no forces.
+// Test: Newton steps and steepest descent bind the complexes as well, at the
+// same minima, steepest descent needs thousands of steps
+TEST_F(MinComplexTest, NewtonAndSteepestDescent)
+{
+    std::map<std::string, std::map<std::string, std::pair<double, double>>> all;
+    for (const char *alg : { "Newton", "Steep" })
+    {
+        SCOPED_TRACE(alg);
+        auto logName = fileManager().getTemporaryFilePath(std::string(alg) + ".log");
+        gmx::test::CommandLine cmd;
+        cmd.append("min_complex");
+        cmd.addOption("-ff", fileManager().getInputFilePath("trainff/lj-pc-trained.xml"));
+        cmd.addOption("-mp", fileManager().getInputFilePath("trainff/booze-inter.xml"));
+        cmd.addOption("-g", logName);
+        cmd.addOption("-minalg", alg);
+        cmd.addOption("-maxiter", "10000");
+        int status;
+        {
+            trainfftest::ScopedWorkingDirectory cwd(std::filesystem::path(logName).parent_path());
+            status = min_complex(cmd.argc(), cmd.argv());
+        }
+        EXPECT_EQ(0, status);
+        std::ifstream     in(logName);
+        std::stringstream text;
+        text << in.rdbuf();
+        all[alg] = results(text.str());
+        EXPECT_EQ(3u, all[alg].size());
+        for (const auto &r : all[alg])
+        {
+            EXPECT_LT(r.second.first, 0) << r.first;
+            EXPECT_LT(r.second.second, 0.2) << r.first;
+            std::filesystem::remove(std::filesystem::path(logName).parent_path() / (r.first + ".pdb"));
+        }
+    }
+    for (const auto &r : all["Newton"])
+    {
+        EXPECT_NEAR(r.second.first, all["Steep"][r.first].first, 1e-2) << r.first;
+    }
+}
+
+// Test: A minimizer does not succeed far from the structure, where there are
+// no forces, with the untrained force field. Steps that increase the energy
+// moved atoms there before.
 TEST_F(MinComplexTest, NewtonDoesNotDiverge)
 {
     auto logName = fileManager().getTemporaryFilePath("min_complex.log");

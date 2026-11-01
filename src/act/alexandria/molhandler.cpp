@@ -49,6 +49,7 @@
 
 #include <algorithm>
 #include <array>
+#include <deque>
 #include <limits>
 #include <numeric>
 #include <random>
@@ -789,6 +790,210 @@ static void func(const std::vector<double> &x, double &f, std::vector<double> &g
     }
 }
 
+//! \return the largest displacement of a particle in a step of all coordinates
+static double maxDisplacement(const std::vector<double> &dx)
+{
+    double dmax2 = 0;
+    for (size_t i = 0; i + DIM <= dx.size(); i += DIM)
+    {
+        dmax2 = std::max(dmax2, dx[i]*dx[i] + dx[i+1]*dx[i+1] + dx[i+2]*dx[i+2]);
+    }
+    return std::sqrt(dmax2);
+}
+
+/*! \brief Orthonormal directions that a step of the coordinates should not take
+ * These are the translations and rotations of all moving particles, if
+ * they may move freely, and the gradients of the constraints.
+ * \param[in] theAtoms    The moving particles
+ * \param[in] x           The coordinates of all particles
+ * \param[in] rigidBody   Whether to include the translations and rotations
+ * \param[in] constrainer The constraints, or nullptr if there are none
+ * \return the directions, each with the coordinates of the moving particles
+ */
+static std::vector<std::vector<double>> fixedDirections(const std::vector<int>       &theAtoms,
+                                                        const std::vector<gmx::RVec> &x,
+                                                        bool                          rigidBody,
+                                                        const Constrainer            *constrainer)
+{
+    size_t                           n = DIM*theAtoms.size();
+    std::vector<std::vector<double>> raw;
+    if (rigidBody && !theAtoms.empty())
+    {
+        rvec center = { 0, 0, 0 };
+        for (auto a : theAtoms)
+        {
+            rvec_inc(center, x[a]);
+        }
+        svmul(1.0/theAtoms.size(), center, center);
+        for (int m = 0; m < DIM; m++)
+        {
+            std::vector<double> translation(n, 0.0), rotation(n, 0.0);
+            for (size_t i = 0; i < theAtoms.size(); i++)
+            {
+                translation[DIM*i+m] = 1;
+                // The axis m crossed with the position from the center
+                rvec axis = { 0, 0, 0 }, r, v;
+                axis[m] = 1;
+                rvec_sub(x[theAtoms[i]], center, r);
+                cprod(axis, r, v);
+                for (int k = 0; k < DIM; k++)
+                {
+                    rotation[DIM*i+k] = v[k];
+                }
+            }
+            raw.push_back(translation);
+            raw.push_back(rotation);
+        }
+    }
+    if (constrainer)
+    {
+        std::map<int, size_t> index;
+        for (size_t i = 0; i < theAtoms.size(); i++)
+        {
+            index.insert({ theAtoms[i], i });
+        }
+        for (const auto &pair : constrainer->pairs())
+        {
+            std::vector<double> gradient(n, 0.0);
+            rvec dx;
+            rvec_sub(x[pair[0]], x[pair[1]], dx);
+            for (int k = 0; k < 2; k++)
+            {
+                auto ai = index.find(pair[k]);
+                if (ai == index.end())
+                {
+                    // A frozen particle
+                    continue;
+                }
+                for (int m = 0; m < DIM; m++)
+                {
+                    gradient[DIM*ai->second+m] = (0 == k ? 1 : -1)*dx[m];
+                }
+            }
+            raw.push_back(gradient);
+        }
+    }
+    // Gram-Schmidt, twice for precision, leaving out dependent directions
+    // such as the third rotation of a linear molecule
+    std::vector<std::vector<double>> directions;
+    for (auto &v : raw)
+    {
+        double norm0 = std::sqrt(std::inner_product(v.begin(), v.end(), v.begin(), 0.0));
+        for (int pass = 0; pass < 2; pass++)
+        {
+            for (const auto &d : directions)
+            {
+                double c = std::inner_product(d.begin(), d.end(), v.begin(), 0.0);
+                for (size_t k = 0; k < n; k++)
+                {
+                    v[k] -= c*d[k];
+                }
+            }
+        }
+        double norm = std::sqrt(std::inner_product(v.begin(), v.end(), v.begin(), 0.0));
+        if (norm > 1e-8*norm0)
+        {
+            for (auto &vk : v)
+            {
+                vk /= norm;
+            }
+            directions.push_back(v);
+        }
+    }
+    return directions;
+}
+
+/*! \brief Newton steps from the eigenvectors of the Hessian
+ * The Hessian is symmetrized and the fixed directions are projected out.
+ * Along each eigenvector u with eigenvalue lambda the step is the force
+ * along u divided by |lambda| + mu: the absolute value goes downhill also
+ * where the curvature is negative and mu damps the step, as in the method
+ * of Levenberg and Marquardt. Without damping near a minimum this is the
+ * Newton step. Directions with an eigenvalue that is zero compared to the
+ * largest, such as those of shells, which are relaxed in each energy
+ * calculation, are left out.
+ */
+class NewtonStep
+{
+private:
+    //! The eigenvalues
+    Eigen::VectorXd values_;
+    //! The eigenvectors
+    Eigen::MatrixXd vectors_;
+    //! The force along each eigenvector
+    Eigen::VectorXd force_;
+    //! Whether to use each eigenvector
+    std::vector<bool> use_;
+    //! The largest absolute eigenvalue
+    double            largest_ = 0;
+public:
+    /*! \brief Decompose a Hessian
+     * \param[in] hessian    The Hessian of the moving coordinates
+     * \param[in] force      The forces on them
+     * \param[in] directions The fixed directions, see fixedDirections
+     */
+    void decompose(const MatrixWrapper                    &hessian,
+                   const std::vector<double>              &force,
+                   const std::vector<std::vector<double>> &directions)
+    {
+        Eigen::Index    n = force.size();
+        Eigen::MatrixXd h(n, n);
+        for (Eigen::Index i = 0; i < n; i++)
+        {
+            for (Eigen::Index j = 0; j < n; j++)
+            {
+                h(i, j) = 0.5*(hessian.get(i, j) + hessian.get(j, i));
+            }
+        }
+        Eigen::MatrixXd projection = Eigen::MatrixXd::Identity(n, n);
+        for (const auto &d : directions)
+        {
+            Eigen::Map<const Eigen::VectorXd> dv(d.data(), n);
+            projection -= dv*dv.transpose();
+        }
+        h = projection*h*projection;
+        Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> solver(h);
+        values_  = solver.eigenvalues();
+        vectors_ = solver.eigenvectors();
+        Eigen::Map<const Eigen::VectorXd> fv(force.data(), n);
+        force_   = vectors_.transpose()*(projection*fv);
+        largest_ = values_.cwiseAbs().maxCoeff();
+        use_.assign(n, true);
+        for (Eigen::Index k = 0; k < n; k++)
+        {
+            // The fixed directions are eigenvectors with eigenvalue zero
+            double fixed = 0;
+            for (const auto &d : directions)
+            {
+                Eigen::Map<const Eigen::VectorXd> dv(d.data(), n);
+                fixed += std::pow(dv.dot(vectors_.col(k)), 2);
+            }
+            use_[k] = fixed < 0.5 && std::abs(values_(k)) > 1e-10*largest_;
+        }
+    }
+
+    //! \return the largest absolute eigenvalue
+    double largestEigenvalue() const { return largest_; }
+
+    /*! \brief The step
+     * \param[in] mu    The damping
+     * \param[in] scale Factor for the step, such as an overrelaxation
+     * \return the step of the moving coordinates
+     */
+    std::vector<double> step(double mu, double scale) const
+    {
+        Eigen::VectorXd dx = Eigen::VectorXd::Zero(force_.size());
+        for (Eigen::Index k = 0; k < force_.size(); k++)
+        {
+            if (use_[k])
+            {
+                dx += scale*force_(k)/(std::abs(values_(k)) + mu)*vectors_.col(k);
+            }
+        }
+        return std::vector<double>(dx.data(), dx.data() + dx.size());
+    }
+};
+
 eMinimizeStatus MolHandler::minimizeCoordinates(MsgHandler                        *msghandler,
                                                 const ForceField                  *pd,
                                                 const Topology                    *topology,
@@ -891,19 +1096,12 @@ eMinimizeStatus MolHandler::minimizeCoordinates(MsgHandler                      
             constrainer.shake(msghandler, xref, x, nullptr);
         }
     };
-    bool                firstStep = true;
-    double              epotMin = 1e8;
-    double              msfMin  = 1e16;
     // Two sets of coordinates
     std::vector<gmx::RVec> newCoords[2];
     newCoords[0] = xstart;
     newCoords[1] = xstart;
     std::map<InteractionType, double> newEnergies[2];
-    double gamma_max    = 1e-5;
-    double gamma        = gamma_max;
-    double msShellForce = 0;
     int current = 0;
-#define next (1-current)
     if (simConfig.minAlg() == eMinimizeAlgorithm::LBFGS)
     {
         lbfgs = new StlbfgsHandler(pd, msghandler, topology, forceComp, theAtoms, xstart,
@@ -981,312 +1179,184 @@ eMinimizeStatus MolHandler::minimizeCoordinates(MsgHandler                      
     }
     else
     {
-    // Two sets of forces
-    std::vector<gmx::RVec> forces[2];
-    forces[0].resize(myatoms.size());
-    forces[1].resize(myatoms.size());
-    std::vector<double> deltaX[2];
-    deltaX[0].resize(DIM*theAtoms.size(), 0.0);
-    deltaX[1].resize(DIM*theAtoms.size(), 0.0);
-    do
-    {
-        auto eMin = eMinimizeStatus::OK;
-        switch (simConfig.minAlg())
+        // Newton or steepest descent, from the coordinates that satisfy
+        // the constraints
+        std::vector<gmx::RVec>            x = xstart, xt = xstart;
+        std::vector<gmx::RVec>            f(myatoms.size()), ft(myatoms.size());
+        std::map<InteractionType, double> e, et;
+        auto evaluate = [&](std::vector<gmx::RVec>            *xx,
+                            std::vector<gmx::RVec>            *ff,
+                            std::map<InteractionType, double> *ee)
         {
-        case eMinimizeAlgorithm::LBFGS:
-            // handled above
-            break;
-        case eMinimizeAlgorithm::Newton:
+            forceComp->compute(msghandler, pd, topology, xx, ff, ee);
+            constrainForces(*xx, ff);
+            return (*ee)[InteractionType::EPOT];
+        };
+        // The energy at x plus scale times the step, in xt, ft and et
+        auto tryStep = [&](const std::vector<double> &dx, double scale)
+        {
+            updateCoords(theAtoms, x, &xt, scale, dx);
+            constrainCoords(x, &xt);
+            return evaluate(&xt, &ft, &et);
+        };
+        auto accept = [&]()
+        {
+            std::swap(x, xt);
+            std::swap(f, ft);
+            std::swap(e, et);
+        };
+        double epot = evaluate(&x, &f, &e);
+        double msf  = msForce(theAtoms, f);
+        if (energies)
+        {
+            *energies = e;
+        }
+        printEnergies(msghandler->tw(), myIter, msf, 0, 0, e, 0);
+        converged = msf <= msForceToler;
+        // The largest step of a particle and the starting one, in nm. The
+        // step is limited to the trust radius, which grows after a step that
+        // lowered the energy and shrinks after one that did not.
+        const double maxRadius = 0.1;
+        double       radius    = 0.01;
+        size_t       n         = DIM*theAtoms.size();
+        auto moreIterations = [&]()
+        {
+            return myIter < simConfig.maxIter() || 0 == simConfig.maxIter();
+        };
+        if (simConfig.minAlg() == eMinimizeAlgorithm::Newton)
+        {
+            // Without frozen particles the molecule can move and rotate freely
+            bool        rigidBody = myFreeze.empty();
+            NewtonStep  newton;
+            bool        haveHessian = false;
+            double      mu          = 0;
+            while (!converged && moreIterations())
             {
-                // Below is a Newton-Rhapson algorithm
-                // https://en.wikipedia.org/wiki/Newton%27s_method_in_optimization
-                // Create Hessian, just containings atoms, not shells
-                std::vector<double> f0;
-                MatrixWrapper Hessian(DIM*theAtoms.size(), DIM*theAtoms.size());
-                computeHessian(pd, topology, forceComp, &newCoords[current],
-                               theAtoms, &Hessian, &f0, &newEnergies[current]);
-
-                if (msghandler->verbose() && firstStep)
+                if (!haveHessian)
                 {
-                    msghandler->write("Hessian:\n");
-                    msghandler->write(Hessian.toString());
+                    MatrixWrapper                     hessian(n, n);
+                    std::vector<double>               f0;
+                    std::map<InteractionType, double> e0;
+                    computeHessian(pd, topology, forceComp, &x, theAtoms, &hessian, &f0, &e0);
+                    newton.decompose(hessian, f0,
+                                     fixedDirections(theAtoms, x, rigidBody,
+                                                     constrain ? &constrainer : nullptr));
+                    haveHessian = true;
                 }
-                // Averaging the Hessian completely messes up the information here
-                // since it is exactly the deviations from symmetry we need to
-                // address. Leave this comment in here for future reference.
-                MatrixWrapper H2(Hessian);
-                // Solve H delta X = -grad (E) = force(E)
-                int result = 0;
-                if (constrain && constrainer.numConstraints() > 0)
+                auto   dx    = newton.step(mu, simConfig.overRelax());
+                double dmax  = maxDisplacement(dx);
+                double scale = (dmax > radius) ? radius/dmax : 1.0;
+                double enew  = tryStep(dx, scale);
+                if (std::isfinite(enew) && enew <= epot)
                 {
-                    // With constraints, solve the KKT equations
-                    // H delta X + J^T mu = force(E) and J delta X = 0,
-                    // where the rows of J are the gradients of the constraints.
-                    size_t        n  = DIM*theAtoms.size();
-                    size_t        nc = constrainer.numConstraints();
-                    MatrixWrapper KKT(n+nc, n+nc);
-                    for(size_t ii = 0; ii < n; ii++)
+                    accept();
+                    epot        = enew;
+                    haveHessian = false;
+                    radius      = std::min(maxRadius, 2*radius);
+                    mu         /= 10;
+                    if (mu < 1e-12*newton.largestEigenvalue())
                     {
-                        for(size_t kk = 0; kk < n; kk++)
-                        {
-                            KKT.set(ii, kk, Hessian.get(ii, kk));
-                        }
+                        mu = 0;
                     }
-                    std::map<int, int> atomIndex;
-                    for(size_t ii = 0; ii < theAtoms.size(); ii++)
-                    {
-                        atomIndex.insert({ theAtoms[ii], ii });
-                    }
-                    auto &x = newCoords[current];
-                    for(size_t c = 0; c < nc; c++)
-                    {
-                        auto &pair = constrainer.pairs()[c];
-                        rvec  dx;
-                        rvec_sub(x[pair[0]], x[pair[1]], dx);
-                        for(int k = 0; k < 2; k++)
-                        {
-                            auto ai = atomIndex.find(pair[k]);
-                            if (atomIndex.end() == ai)
-                            {
-                                // A frozen atom
-                                continue;
-                            }
-                            double sign = (0 == k) ? 1 : -1;
-                            for(int m = 0; m < DIM; m++)
-                            {
-                                KKT.set(n+c, DIM*ai->second+m, sign*dx[m]);
-                                KKT.set(DIM*ai->second+m, n+c, sign*dx[m]);
-                            }
-                        }
-                    }
-                    std::vector<double> rhs = f0;
-                    rhs.resize(n+nc, 0.0);
-                    std::vector<double> solution(n+nc, 0.0);
-                    result = KKT.solve(rhs, &solution);
-                    deltaX[current].assign(solution.begin(), solution.begin()+n);
                 }
                 else
                 {
-                    result = Hessian.solve(f0, &deltaX[current]);
+                    // The same Hessian with a shorter, more damped step
+                    radius /= 2;
+                    mu      = std::max(10*mu, 1e-6*newton.largestEigenvalue());
+                    if (radius < 1e-9)
+                    {
+                        return eMinimizeStatus::NoMinimum;
+                    }
                 }
-                if (0 != result)
+                myIter += 1;
+                msf       = msForce(theAtoms, f);
+                converged = msf <= msForceToler;
+                printEnergies(msghandler->tw(), myIter, msf, 0, 0, e, scale);
+            }
+        }
+        else
+        {
+            // Steepest descent with the step sizes of Barzilai and Borwein,
+            // which only work well if the energy may increase in some steps.
+            // A step is accepted if the energy is lower than the highest of
+            // the last ones, with the rule of Grippo, Lampariello and Lucidi,
+            // otherwise the step is halved.
+            const size_t           nlast = 10;
+            std::deque<double>     last  = { epot };
+            std::vector<double>    d(n), dprev(n), xprev(n), xcur(n);
+            double                 gamma = 0;
+            auto flatten = [&](const std::vector<gmx::RVec> &v, std::vector<double> *flat)
+            {
+                size_t k = 0;
+                for (auto atom : theAtoms)
                 {
-                    eMin = eMinimizeStatus::Solver;
+                    for (int m = 0; m < DIM; m++)
+                    {
+                        (*flat)[k++] = v[atom][m];
+                    }
+                }
+            };
+            while (!converged && moreIterations())
+            {
+                flatten(f, &d);
+                flatten(x, &xcur);
+                double dmax = maxDisplacement(d);
+                if (0 == myIter)
+                {
+                    gamma = radius/dmax;
                 }
                 else
                 {
-                    // Copy f0 to forces
-                    size_t jj = 0;
-                    for(auto ii : theAtoms)
+                    double sy = 0, yy = 0;
+                    for (size_t k = 0; k < n; k++)
                     {
-                        for(int m = 0; m < DIM; m++)
-                        {
-                            forces[current][ii][m] = f0[jj++];
-                        }
+                        double y = d[k] - dprev[k];
+                        sy += (xcur[k] - xprev[k])*y;
+                        yy += y*y;
                     }
-                    constrainForces(newCoords[current], &forces[current]);
-                    if (msghandler->debug() && firstStep)
+                    if (yy > 0 && sy != 0)
                     {
-                        msghandler->writeDebug(gmx::formatString("Sum of forces: %g sum of displacement: %g\n",
-                                                                 std::accumulate(f0.begin(), f0.end(), 0.0),
-                                                                 std::accumulate(deltaX[current].begin(), deltaX[current].end(), 0.0)));
-                        msghandler->writeDebug("H deltaX\n");
-                        for(size_t ii = 0; ii < DIM*theAtoms.size(); ii++)
-                        {
-                            double f1 = 0;
-                            for(size_t jj = 0; jj < DIM*theAtoms.size(); jj++)
-                            {
-                                f1 += H2.get(ii, jj) * deltaX[current][jj];
-                            }
-                            msghandler->writeDebug(gmx::formatString("f0[%2zu] = %12g  deltaX = %12g, f0-H.deltaX = %12g\n",
-                                                                     ii, f0[ii], deltaX[current][ii], f0[ii]-f1));
-                        }
+                        gamma = std::abs(sy)/yy;
                     }
                 }
-                gamma = 1;
-                for(size_t ii = 0; ii < theAtoms.size(); ii++)
+                gamma = std::min(gamma, maxRadius/dmax);
+                double eref = *std::max_element(last.begin(), last.end());
+                double dd   = std::inner_product(d.begin(), d.end(), d.begin(), 0.0);
+                bool   ok   = false;
+                for (int halving = 0; !ok && halving < 40; halving++)
                 {
-                    for(int m = 0; m < DIM; m++)
+                    double enew = tryStep(d, gamma);
+                    ok = std::isfinite(enew) && enew <= eref - 1e-4*gamma*dd;
+                    if (ok)
                     {
-                        gamma += gmx::square(deltaX[current][DIM*ii+m]);
+                        epot = enew;
+                    }
+                    else
+                    {
+                        gamma /= 2;
                     }
                 }
-                gamma *= simConfig.overRelax();
-            }
-            break;
-        case eMinimizeAlgorithm::Steep:
-            {
-                // https://en.wikipedia.org/wiki/Gradient_descent
-                forceComp->compute(msghandler, pd, topology,
-                                   &newCoords[current],
-                                   &forces[current], &newEnergies[current]);
-                constrainForces(newCoords[current], &forces[current]);
-                if (!firstStep)
+                if (!ok)
                 {
-                    double teller = 0, noemer = 0;
-                    for(auto atomI : theAtoms)
-                    {
-                        for(int m = 0; m < DIM; m++)
-                        {
-                            double df  = (forces[current][atomI][m]-forces[next][atomI][m]);
-                            //! \todo check which one it should be
-                            teller    += (newCoords[current][atomI][m]-newCoords[next][atomI][m])*df;
-                            //teller    += (deltaX[current][i]-deltaX[next][i])*df;
-                            noemer    += df*df;
-                        }
-                    }
-                    if (noemer > 0)
-                    {
-                        gamma = std::min(gamma_max, std::abs(teller)/noemer);
-                    }
+                    return eMinimizeStatus::NoMinimum;
                 }
-                int i = 0;
-                for(auto atomI : theAtoms)
+                xprev = xcur;
+                dprev = d;
+                accept();
+                last.push_back(epot);
+                if (last.size() > nlast)
                 {
-                    for(int m = 0; m < DIM; m++)
-                    {
-                        deltaX[current][i++] = forces[current][atomI][m];
-                    }
+                    last.pop_front();
                 }
-            }
-            break;
-        }
-        if (firstStep)
-        {
-            // Store energy
-            if (energies)
-            {
-                *energies = newEnergies[current];
-            }
-            epotMin = newEnergies[current][InteractionType::EPOT];
-            msfMin  = msForce(theAtoms, forces[current]);
-            // Write stuff
-            printEnergies(msghandler->tw(), myIter, msfMin, 0, 0, newEnergies[current], gamma);
-            firstStep = false;
-            // A step from a converged structure can only change the
-            // energy by round-off, which may make it fail.
-            if (eMinimizeStatus::OK == eMin && msfMin <= msForceToler)
-            {
-                converged = true;
-                break;
+                myIter += 1;
+                msf       = msForce(theAtoms, f);
+                converged = msf <= msForceToler;
+                printEnergies(msghandler->tw(), myIter, msf, 0, 0, e, gamma);
             }
         }
-        if (eMinimizeStatus::OK != eMin)
-        {
-            return eMin;
-        }
-        bool acceptStep  = false;
-        // Update coordinates and check energy
-        do
-        {
-            updateCoords(theAtoms, newCoords[current], &(newCoords[next]), gamma, deltaX[current]);
-            constrainCoords(newCoords[current], &newCoords[next]);
-            
-            // Do an energy and force calculation with the new coordinates
-            forceComp->compute(msghandler, pd, topology, &newCoords[next],
-                               &forces[next], &newEnergies[next]);
-            constrainForces(newCoords[next], &forces[next]);
-            double epotNew = newEnergies[next][InteractionType::EPOT];
-            double msfNew  = msForce(theAtoms, forces[next]);
-            // Only steps that lower the energy, smaller forces alone may
-            // lead away from the minimum, for instance by separating atoms
-            // until there is no force between them
-            acceptStep     = (epotNew <= epotMin);
-            double gmin    = gamma;
-            if (!acceptStep)
-            {
-                if (msghandler->verbose())
-                {
-                    msghandler->write("Trying line minimization, step 1.");
-                    printEnergies(msghandler->tw(), myIter, msfNew, 0, 0, newEnergies[next], gamma);
-                }
-                updateCoords(theAtoms, newCoords[current], &(newCoords[next]), 0.5*gamma, deltaX[current]);
-                constrainCoords(newCoords[current], &newCoords[next]);
-                forceComp->compute(msghandler, pd, topology, &newCoords[next],
-                                   &forces[next], &newEnergies[next]);
-                constrainForces(newCoords[next], &forces[next]);
-                if (msghandler->verbose())
-                {
-                    msghandler->write("Trying line minimization, step 2.\n");
-                    printEnergies(msghandler->tw(), myIter, msForce(theAtoms, forces[next]), 0, 0, newEnergies[next], gamma);
-                }
-                double epotHalf = newEnergies[next][InteractionType::EPOT];
-                // Solve line minimization. We have x = 0, 0.5, 1.0 and y epotMin, epotHalf, epotNew
-                // We solve M abc = yyy using abc = Minverse yyy
-                // M = { { x0^2, x0, 1.0 }, { x1^2, x1, 1.0 }, { x2^2, x2, 1.0 } }
-                matrix Minverse = { {2., -4., 2.}, {-3., 4., -1.}, {1., 0., 0.} };
-                rvec   abc, yyy = { epotMin, epotHalf, epotNew };
-                mvmul(Minverse, yyy, abc);
-                if (abc[0] > 0)
-                {
-                    gmin = -gamma*abc[1]/(2*abc[0]);
-                    updateCoords(theAtoms, newCoords[current], &(newCoords[next]), gmin, deltaX[current]);
-                    constrainCoords(newCoords[current], &newCoords[next]);
-                    forceComp->compute(msghandler, pd, topology, &newCoords[next],
-                                       &forces[next], &newEnergies[next]);
-                    constrainForces(newCoords[next], &forces[next]);
-                    double epotGmin = newEnergies[next][InteractionType::EPOT];
-                    acceptStep = (epotGmin <= epotMin);
-                }
-                else if (msghandler->verbose())
-                {
-                    msghandler->write(gmx::formatString("Line minimization parameters a = %g b = %g c = %g\n",
-                                                        abc[0], abc[1], abc[2]));
-                    msghandler->write(gmx::formatString("EpotMin = %g, EpotHalf = %g, EpotNew = %g\n",
-                                                        epotMin, epotHalf, epotNew));
-                }
-            }
-            if (acceptStep)
-            {
-                if (epotNew < epotMin)
-                {
-                    epotMin = epotNew;
-                }
-                if (msfNew < msfMin)
-                {
-                    msfMin = msfNew;
-                }
-                gamma   = gmin;
-                current = next;
-            }
-            else
-            {
-                return eMinimizeStatus::NoMinimum;
-            }
-            myIter += 1;
-        } while (!acceptStep && (myIter < simConfig.maxIter() || 0 == simConfig.maxIter()));
-        
-        // Now check force convergence
-        double msAtomForce = msForce(theAtoms, forces[current]);
-        converged = msAtomForce <= msForceToler;
-        double fcurprev = 0;
-        for(size_t ii = 0; ii < theAtoms.size(); ii++)
-        {
-            auto i = theAtoms[ii];
-            for(int m = 0; m < DIM; m++)
-            {
-                fcurprev += forces[current][i][m]*forces[next][i][m];
-            }
-        }
-        printEnergies(msghandler->tw(), myIter, msAtomForce, msShellForce,
-                      fcurprev, newEnergies[current], gamma);
-        if (msghandler->debug())
-        {
-            for(size_t kk = 0; kk < topology->nAtoms(); kk++)
-            {
-                msghandler->writeDebug(gmx::formatString("f[%2zu] =  %10g  %10g  %10g x[%2zu] = %10g  %10g  %10g\n", kk,
-                                                         forces[current][kk][XX], forces[current][kk][YY], forces[current][kk][ZZ], kk,
-                                                         (*coords)[kk][XX], (*coords)[kk][YY], (*coords)[kk][ZZ]));
-            }
-            for(const auto &ee : newEnergies[current])
-            {
-                msghandler->writeDebug(gmx::formatString("%-20s  %10g\n",
-                                                         interactionTypeToString(ee.first).c_str(), 
-                                                         ee.second));
-            }
-        }
-    }
-    while (!converged && (myIter < simConfig.maxIter() || 0 == simConfig.maxIter()));
+        newCoords[current]   = x;
+        newEnergies[current] = e;
     }
     if (converged)
     {
