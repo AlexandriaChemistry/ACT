@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <!DOCTYPE alexandria_chemistry.dtd PUBLIC "alexandria_chemistry.dtd" "alexandria_chemistry.dtd">
 <alexandria_chemistry>
-  <version checksum="e3d412434fa93551d177fcc3b6e04966" timestamp="2024-09-18 12:45:34"/>
+  <version checksum="db2d4f4ac01cb95d30e64f53fda650c6" timestamp="2024-09-18 12:45:34"/>
   <particletypes>
     <particletype identifier="Ar" type="Atom" description="ar">
       <option key="acmtype" value="ar_z"/>
@@ -5189,7 +5189,24 @@
       <parameter type="r13lin" unit="pm" value="285.926" uncertainty="0" minimum="142.963" maximum="571.851" ntrain="5" mutability="Bounded" nonnegative="yes"/>
     </parameterlist>
   </interaction>
-  <interaction type="PROPER_DIHEDRALS" function="FOURIER_DIHEDRALS" canswap="true"/>
+  <interaction type="PROPER_DIHEDRALS" function="FOURIER_DIHEDRALS" canswap="true">
+    <parameterlist identifier="h_b~c3_b~c2_b=o2_b">
+      <parameter type="c0" unit="kJ/mol" value="0.5" uncertainty="0" minimum="-5" maximum="5" ntrain="1" mutability="Bounded" nonnegative="no"/>
+      <parameter type="c1" unit="kJ/mol" value="-1.5" uncertainty="0" minimum="-5" maximum="5" ntrain="1" mutability="Bounded" nonnegative="no"/>
+      <parameter type="c2" unit="kJ/mol" value="0" uncertainty="0" minimum="-5" maximum="5" ntrain="1" mutability="Bounded" nonnegative="no"/>
+      <parameter type="c3" unit="kJ/mol" value="2" uncertainty="0" minimum="-5" maximum="5" ntrain="1" mutability="Bounded" nonnegative="no"/>
+      <parameter type="c4" unit="kJ/mol" value="0" uncertainty="0" minimum="-5" maximum="5" ntrain="1" mutability="Bounded" nonnegative="no"/>
+      <parameter type="c5" unit="kJ/mol" value="0" uncertainty="0" minimum="-5" maximum="5" ntrain="1" mutability="Bounded" nonnegative="no"/>
+    </parameterlist>
+    <parameterlist identifier="h_b~c3_b~o3_b~h_b">
+      <parameter type="c0" unit="kJ/mol" value="0.5" uncertainty="0" minimum="-5" maximum="5" ntrain="1" mutability="Bounded" nonnegative="no"/>
+      <parameter type="c1" unit="kJ/mol" value="1.5" uncertainty="0" minimum="-5" maximum="5" ntrain="1" mutability="Bounded" nonnegative="no"/>
+      <parameter type="c2" unit="kJ/mol" value="0" uncertainty="0" minimum="-5" maximum="5" ntrain="1" mutability="Bounded" nonnegative="no"/>
+      <parameter type="c3" unit="kJ/mol" value="-2" uncertainty="0" minimum="-5" maximum="5" ntrain="1" mutability="Bounded" nonnegative="no"/>
+      <parameter type="c4" unit="kJ/mol" value="0" uncertainty="0" minimum="-5" maximum="5" ntrain="1" mutability="Bounded" nonnegative="no"/>
+      <parameter type="c5" unit="kJ/mol" value="0" uncertainty="0" minimum="-5" maximum="5" ntrain="1" mutability="Bounded" nonnegative="no"/>
+    </parameterlist>
+  </interaction>
   <interaction type="IMPROPER_DIHEDRALS" function="HARMONIC_DIHEDRALS" canswap="true">
     <parameterlist identifier="br_b~c2_b:c2_b:c2_b">
       <parameter type="kimp" unit="kJ/mol" value="1" uncertainty="0" minimum="0.5" maximum="2" ntrain="1" mutability="Bounded" nonnegative="yes"/>

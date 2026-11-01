@@ -3,6 +3,7 @@
 <ReferenceData>
   <Real Name="BONDS before">-3599.7009482935282</Real>
   <Real Name="ANGLES before">1.5504731002237926</Real>
+  <Real Name="PROPER_DIHEDRALS before">0.0041596964632902855</Real>
   <Real Name="IMPROPER_DIHEDRALS before">0</Real>
   <Real Name="DISPERSION before">-11.286153367831064</Real>
   <Real Name="EXCHANGE before">47.503499353137926</Real>
@@ -17,6 +18,7 @@
   <Real Name="Coordinate RMSD after minimizing">0.0031172296019956981</Real>
   <Real Name="BONDS after">-3596.8344969264353</Real>
   <Real Name="ANGLES after">2.2647100493872121</Real>
+  <Real Name="PROPER_DIHEDRALS after">0.00085729805866008313</Real>
   <Real Name="IMPROPER_DIHEDRALS after">2.2215085829112271e-12</Real>
   <Real Name="DISPERSION after">-11.226138021840011</Real>
   <Real Name="EXCHANGE after">38.3304445815223</Real>
