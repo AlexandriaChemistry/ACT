@@ -250,6 +250,33 @@ protected:
     }
 };
 
+/*! \brief A molecule with its topology and charges
+ * \param[in]  pd       The force field
+ * \param[in]  file     The structure in mols
+ * \param[in]  fc       The force computer for the charges
+ * \param[out] mol      The molecule
+ * \param[out] x        Its coordinates
+ */
+static void prepareMolecule(ForceField *pd, const char *file, const ForceComputer &fc,
+                            ACTMol *mol, std::vector<gmx::RVec> *x)
+{
+    MsgHandler msghandler;
+    msghandler.setPrintLevel(ACTStatus::Warning);
+    std::vector<alexandria::MolProp> molprops;
+    double qtot = 0;
+    importFile(&msghandler, pd, gmx::test::TestFileManager::getInputFilePath(std::string("mols/") + file).c_str(),
+               &molprops, "minimum", JobType::OPT, false, &qtot, true);
+    ASSERT_TRUE(msghandler.ok());
+    ASSERT_EQ(1u, molprops.size());
+    mol->Merge(&molprops[0]);
+    mol->GenerateTopology(&msghandler, pd, missingParameters::Ignore);
+    ASSERT_TRUE(msghandler.ok());
+    *x = mol->xOriginal();
+    std::vector<gmx::RVec> forces(x->size());
+    mol->generateCharges(&msghandler, pd, &fc, pd->chargeGenerationAlgorithm(), x, &forces);
+    ASSERT_TRUE(msghandler.ok());
+}
+
 // Test: All minimizers reach the same minimum of acetone with a tolerance on
 // the mean square force that they can reach
 TEST_F (MolHandlerTest, MinimizersAgree)
@@ -257,21 +284,10 @@ TEST_F (MolHandlerTest, MinimizersAgree)
     auto pd = getForceField("ACS-g");
     MsgHandler msghandler;
     msghandler.setPrintLevel(ACTStatus::Warning);
-    std::vector<alexandria::MolProp> molprops;
-    double qtot = 0;
-    importFile(&msghandler, pd, gmx::test::TestFileManager::getInputFilePath("mols/acetone.sdf").c_str(),
-               &molprops, "minimum", JobType::OPT, false, &qtot, true);
-    ASSERT_TRUE(msghandler.ok());
-    ASSERT_EQ(1u, molprops.size());
-    ACTMol mol;
-    mol.Merge(&molprops[0]);
-    mol.GenerateTopology(&msghandler, pd, missingParameters::Ignore);
-    ASSERT_TRUE(msghandler.ok());
     ForceComputer          forceComp(1e-10, 100, 1);
-    std::vector<gmx::RVec> x0 = mol.xOriginal();
-    std::vector<gmx::RVec> forces(x0.size());
-    mol.generateCharges(&msghandler, pd, &forceComp, pd->chargeGenerationAlgorithm(), &x0, &forces);
-    ASSERT_TRUE(msghandler.ok());
+    ACTMol                 mol;
+    std::vector<gmx::RVec> x0;
+    prepareMolecule(pd, "acetone.sdf", forceComp, &mol, &x0);
     MolHandler          mh;
     std::vector<double> epot;
     for (auto alg : { eMinimizeAlgorithm::LBFGS, eMinimizeAlgorithm::Newton, eMinimizeAlgorithm::Steep })
@@ -288,9 +304,61 @@ TEST_F (MolHandlerTest, MinimizersAgree)
         epot.push_back(energies[InteractionType::EPOT]);
         EXPECT_LT(epot.back(), epot.front() + 1e-3);
     }
-    // The tolerance of L-BFGS is on the relative decrease of the energy
+    EXPECT_NEAR(epot[0], epot[1], 1e-3);
     EXPECT_NEAR(epot[1], epot[2], 1e-3);
-    EXPECT_NEAR(epot[0], epot[1], 1e-2);
+}
+
+/*! \brief The vibrations at a minimum are 3N - 6, or 3N - 5 for a linear
+ * molecule, without the translations and rotations, independent of the
+ * orientation and position of the molecule
+ */
+static void testNormalModes(const char *file, size_t nvibration)
+{
+    SCOPED_TRACE(file);
+    auto pd = getForceField("ACS-g");
+    MsgHandler msghandler;
+    msghandler.setPrintLevel(ACTStatus::Warning);
+    ForceComputer          forceComp(1e-12, 100, 1);
+    ACTMol                 mol;
+    std::vector<gmx::RVec> x;
+    prepareMolecule(pd, file, forceComp, &mol, &x);
+    MolHandler              mh;
+    SimulationConfigHandler simConfig;
+    simConfig.setForceTolerance(1e-10);
+    std::map<InteractionType, double> energies;
+    ASSERT_EQ(eMinimizeStatus::OK, mh.minimizeCoordinates(&msghandler, pd, mol.topology(), &forceComp,
+                                                          simConfig, &x, &energies, {}));
+    std::vector<double> freq, intens;
+    mh.nma(pd, &mol, &forceComp, &x, &freq, &intens, nullptr, false);
+    ASSERT_EQ(nvibration, freq.size());
+    for (auto f : freq)
+    {
+        EXPECT_GT(f, 1) << "a translation or rotation";
+    }
+    // Rotated and moved
+    double c = std::cos(0.7), sn = std::sin(0.7);
+    matrix rot = { { c, -sn, 0 }, { sn*0.6, c*0.6, 0.8 }, { -sn*0.8, -c*0.8, 0.6 } };
+    std::vector<gmx::RVec> xr(x.size());
+    for (size_t i = 0; i < x.size(); i++)
+    {
+        mvmul(rot, x[i], xr[i]);
+        rvec shift = { 0.3, -1.2, 2.5 };
+        rvec_inc(xr[i], shift);
+    }
+    std::vector<double> freqr, intensr;
+    mh.nma(pd, &mol, &forceComp, &xr, &freqr, &intensr, nullptr, false);
+    ASSERT_EQ(freq.size(), freqr.size());
+    for (size_t k = 0; k < freq.size(); k++)
+    {
+        EXPECT_NEAR(freq[k], freqr[k], 1e-3*freq[k]) << "mode " << k;
+    }
+}
+
+// Test: The normal modes of acetone and of linear carbon dioxide
+TEST_F (MolHandlerTest, NormalModesWithoutRigidBody)
+{
+    testNormalModes("acetone.sdf", 24);
+    testNormalModes("carbon-dioxide.sdf", 4);
 }
 
 TEST_F (MolHandlerTest, MethaneThiolNoFreq)

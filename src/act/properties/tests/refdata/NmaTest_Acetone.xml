@@ -3,10 +3,10 @@
 <ReferenceData>
   <Sequence Name="Frequencies">
     <Int Name="Length">24</Int>
-    <Real>298.541</Real>
-    <Real>365.077</Real>
-    <Real>401.267</Real>
-    <Real>464.54700000000003</Real>
+    <Real>298.54500000000002</Real>
+    <Real>365.08100000000002</Real>
+    <Real>401.27699999999999</Real>
+    <Real>464.55799999999999</Real>
     <Real>505.62200000000001</Real>
     <Real>718.87699999999995</Real>
     <Real>873.20799999999997</Real>

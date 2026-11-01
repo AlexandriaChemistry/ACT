@@ -205,17 +205,152 @@ void MolHandler::computeHessian(const ForceField                  *pd,
     }
 }
 
-//! \brief Compute frequencies
+/*! \brief Orthonormal directions that a step of the coordinates should not take
+ * These are the translations and rotations of all moving particles, if
+ * they may move freely, and the gradients of the constraints. With
+ * weights, the square roots of the masses, the translations and rotations
+ * are those of mass-weighted coordinates, about the center of mass, as for
+ * a normal mode analysis in the Eckart frame.
+ * \param[in] theAtoms    The moving particles
+ * \param[in] x           The coordinates of all particles
+ * \param[in] rigidBody   Whether to include the translations and rotations
+ * \param[in] constrainer The constraints, or nullptr if there are none
+ * \param[in] weights     A weight for each moving particle, or empty for one
+ * \return the directions, each with the coordinates of the moving particles
+ */
+static std::vector<std::vector<double>> fixedDirections(const std::vector<int>       &theAtoms,
+                                                        const std::vector<gmx::RVec> &x,
+                                                        bool                          rigidBody,
+                                                        const Constrainer            *constrainer,
+                                                        const std::vector<double>    &weights = {})
+{
+    size_t                           n = DIM*theAtoms.size();
+    std::vector<std::vector<double>> raw;
+    auto weight = [&weights](size_t i) { return weights.empty() ? 1.0 : weights[i]; };
+    if (rigidBody && !theAtoms.empty())
+    {
+        rvec   center = { 0, 0, 0 };
+        double wtot   = 0;
+        for (size_t i = 0; i < theAtoms.size(); i++)
+        {
+            double w2 = gmx::square(weight(i));
+            for (int m = 0; m < DIM; m++)
+            {
+                center[m] += w2*x[theAtoms[i]][m];
+            }
+            wtot += w2;
+        }
+        svmul(1.0/wtot, center, center);
+        for (int m = 0; m < DIM; m++)
+        {
+            std::vector<double> translation(n, 0.0), rotation(n, 0.0);
+            for (size_t i = 0; i < theAtoms.size(); i++)
+            {
+                translation[DIM*i+m] = weight(i);
+                // The axis m crossed with the position from the center
+                rvec axis = { 0, 0, 0 }, r, v;
+                axis[m] = 1;
+                rvec_sub(x[theAtoms[i]], center, r);
+                cprod(axis, r, v);
+                for (int k = 0; k < DIM; k++)
+                {
+                    rotation[DIM*i+k] = weight(i)*v[k];
+                }
+            }
+            raw.push_back(translation);
+            raw.push_back(rotation);
+        }
+    }
+    size_t nrigid = raw.size();
+    if (constrainer)
+    {
+        std::map<int, size_t> index;
+        for (size_t i = 0; i < theAtoms.size(); i++)
+        {
+            index.insert({ theAtoms[i], i });
+        }
+        for (const auto &pair : constrainer->pairs())
+        {
+            std::vector<double> gradient(n, 0.0);
+            rvec dx;
+            rvec_sub(x[pair[0]], x[pair[1]], dx);
+            for (int k = 0; k < 2; k++)
+            {
+                auto ai = index.find(pair[k]);
+                if (ai == index.end())
+                {
+                    // A frozen particle
+                    continue;
+                }
+                for (int m = 0; m < DIM; m++)
+                {
+                    gradient[DIM*ai->second+m] = (0 == k ? 1 : -1)*dx[m];
+                }
+            }
+            raw.push_back(gradient);
+        }
+    }
+    // The largest rotation, the rotation about the axis of a linear molecule
+    // is small compared to it, also if the molecule is slightly bent
+    double maxRotation = 0;
+    for (size_t r = 1; r < nrigid; r += 2)
+    {
+        maxRotation = std::max(maxRotation, std::sqrt(std::inner_product(raw[r].begin(), raw[r].end(), raw[r].begin(), 0.0)));
+    }
+    // Gram-Schmidt, twice for precision, leaving out dependent directions
+    // such as the third rotation of a linear molecule
+    std::vector<std::vector<double>> directions;
+    for (size_t r = 0; r < raw.size(); r++)
+    {
+        auto  &v         = raw[r];
+        bool   rotation  = r < nrigid && r % 2 == 1;
+        double threshold = (rotation ? 1e-3*maxRotation :
+                            1e-8*std::sqrt(std::inner_product(v.begin(), v.end(), v.begin(), 0.0)));
+        for (int pass = 0; pass < 2; pass++)
+        {
+            for (const auto &d : directions)
+            {
+                double c = std::inner_product(d.begin(), d.end(), v.begin(), 0.0);
+                for (size_t k = 0; k < n; k++)
+                {
+                    v[k] -= c*d[k];
+                }
+            }
+        }
+        double norm = std::sqrt(std::inner_product(v.begin(), v.end(), v.begin(), 0.0));
+        if (norm > threshold)
+        {
+            for (auto &vk : v)
+            {
+                vk /= norm;
+            }
+            directions.push_back(v);
+        }
+    }
+    return directions;
+}
+
+/*! \brief Compute frequencies
+ * \param[in]  eigenvalues The eigenvalues of the mass-weighted Hessian
+ * \param[in]  vibration   Whether each eigenvector is a vibration rather
+ *                         than a translation or rotation
+ * \param[out] frequencies The frequencies of the vibrations
+ * \param[out] output      Warnings, if not nullptr
+ */
 static void computeFrequencies(const std::vector<double> &eigenvalues,
-                               size_t                     rot_trans,
+                               const std::vector<bool>   &vibration,
                                std::vector<double>       *frequencies,
                                std::vector<std::string>  *output)
 {
     frequencies->clear();
     auto        mpo  = MolPropObservable::FREQUENCY;
     const char *unit = mpo_unit2(mpo);
-    for (size_t i = rot_trans; i < eigenvalues.size(); i++)
+    for (size_t i = 0; i < eigenvalues.size(); i++)
     {
+        if (!vibration[i])
+        {
+            continue;
+        }
         auto val = eigenvalues[i];
         if (val < 0)
         {
@@ -292,7 +427,7 @@ static void solveEigen(const MatrixWrapper          &hessian,
                        const std::vector<int>       &atomIndex,
                        const std::vector<ActAtom>   &atoms,
                        const std::vector<gmx::RVec> &dpdq,
-                       int                           rot_trans,
+                       const std::vector<std::vector<double>> &rigidBody,
                        std::vector<double>          *frequencies,
                        std::vector<double>          *intensities,
                        std::vector<std::string>     *output,
@@ -311,6 +446,16 @@ static void solveEigen(const MatrixWrapper          &hessian,
             mat(col, row) = hessian.get(col, row);
         }
     }
+    // The translations and rotations are projected out, such that they are
+    // eigenvectors with eigenvalue zero, also if the structure is not
+    // exactly at a minimum, and they are not mixed with vibrations.
+    Eigen::MatrixXd projection = Eigen::MatrixXd::Identity(matrixSide, matrixSide);
+    for (const auto &d : rigidBody)
+    {
+        Eigen::Map<const Eigen::VectorXd> dv(d.data(), matrixSide);
+        projection -= dv*dv.transpose();
+    }
+    mat = projection*mat*projection;
     // We need this special solver for hermitian matrices.
     // It will automatically sort the eigenvalues.
     Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> solver(mat);
@@ -347,18 +492,27 @@ static void solveEigen(const MatrixWrapper          &hessian,
     }
 
     auto &evals     = solver.eigenvalues();
+    // The eigenvectors that lie in the space of translations and rotations
+    std::vector<bool> vibration(matrixSide, true);
     int   nnegative = 0;
     for(Eigen::Index i = 0; i < matrixSide; i++)
     {
-        if (evals[i] < 0)
+        double overlap = 0;
+        for (const auto &d : rigidBody)
+        {
+            Eigen::Map<const Eigen::VectorXd> dv(d.data(), matrixSide);
+            overlap += std::pow(dv.dot(evecs.col(i)), 2);
+        }
+        vibration[i] = overlap < 0.5;
+        if (vibration[i] && evals[i] < 0)
         {
             nnegative += 1;
         }
     }
-    if (output && nnegative > rot_trans)
+    if (output && nnegative > 0)
     {
         output->push_back(gmx::formatString("There are %d negative eigenvalues.",
-                                            nnegative-rot_trans));
+                                            nnegative));
     }
 
     // The intensity of a mode is the square of the derivative of the
@@ -397,16 +551,19 @@ static void solveEigen(const MatrixWrapper          &hessian,
         In[col] = iprod(dmudQ, dmudQ);
     }
     intensities->clear();
-    for(int i = rot_trans; i < matrixSide; i++)
+    for(int i = 0; i < matrixSide; i++)
     {
-        intensities->push_back(In[i]);
+        if (vibration[i])
+        {
+            intensities->push_back(In[i]);
+        }
     }
     std::vector<double> eigenvalues;
     for(int i = 0; i < matrixSide; i++)
     {
         eigenvalues.push_back(evals(i));
     }
-    computeFrequencies(eigenvalues, rot_trans, frequencies, output);
+    computeFrequencies(eigenvalues, vibration, frequencies, output);
 }
 
 //! \brief Sort Frequencies and Intensities
@@ -504,18 +661,25 @@ void MolHandler::nma(const ForceField         *pd,
         }
     }
 
-    // Get the vibrational frequencies
-    int rot_trans = 6;
-    if (mol->linearMolecule())
+    // The translations and rotations of the mass-weighted coordinates, five
+    // for a linear molecule, since its rotation about its axis is left out
+    std::vector<double> sqrtMass;
+    for (auto ai : atomIndex)
     {
-        rot_trans = 5;
+        sqrtMass.push_back(std::sqrt(atoms[ai].mass()));
+    }
+    auto rigidBody = fixedDirections(atomIndex, *coords, true, nullptr, sqrtMass);
+    if (output && rigidBody.size() != (mol->linearMolecule() ? 5u : 6u))
+    {
+        output->push_back(gmx::formatString("Warning: %zu translations and rotations for a %slinear molecule",
+                                            rigidBody.size(), mol->linearMolecule() ? "" : "non-"));
     }
     // Call diagonalization routine
     if (output)
     {
         output->push_back("Diagonalizing Hessian to find eigenvectors.");
     }
-    solveEigen(hessian, atomIndex, atoms, dpdq, rot_trans,
+    solveEigen(hessian, atomIndex, atoms, dpdq, rigidBody,
                frequencies, intensities, output, debugNMA);
     // Check whether there are very similar frequencies, then change the sorting 
     // according to intensities.
@@ -801,108 +965,6 @@ static double maxDisplacement(const std::vector<double> &dx)
     return std::sqrt(dmax2);
 }
 
-/*! \brief Orthonormal directions that a step of the coordinates should not take
- * These are the translations and rotations of all moving particles, if
- * they may move freely, and the gradients of the constraints.
- * \param[in] theAtoms    The moving particles
- * \param[in] x           The coordinates of all particles
- * \param[in] rigidBody   Whether to include the translations and rotations
- * \param[in] constrainer The constraints, or nullptr if there are none
- * \return the directions, each with the coordinates of the moving particles
- */
-static std::vector<std::vector<double>> fixedDirections(const std::vector<int>       &theAtoms,
-                                                        const std::vector<gmx::RVec> &x,
-                                                        bool                          rigidBody,
-                                                        const Constrainer            *constrainer)
-{
-    size_t                           n = DIM*theAtoms.size();
-    std::vector<std::vector<double>> raw;
-    if (rigidBody && !theAtoms.empty())
-    {
-        rvec center = { 0, 0, 0 };
-        for (auto a : theAtoms)
-        {
-            rvec_inc(center, x[a]);
-        }
-        svmul(1.0/theAtoms.size(), center, center);
-        for (int m = 0; m < DIM; m++)
-        {
-            std::vector<double> translation(n, 0.0), rotation(n, 0.0);
-            for (size_t i = 0; i < theAtoms.size(); i++)
-            {
-                translation[DIM*i+m] = 1;
-                // The axis m crossed with the position from the center
-                rvec axis = { 0, 0, 0 }, r, v;
-                axis[m] = 1;
-                rvec_sub(x[theAtoms[i]], center, r);
-                cprod(axis, r, v);
-                for (int k = 0; k < DIM; k++)
-                {
-                    rotation[DIM*i+k] = v[k];
-                }
-            }
-            raw.push_back(translation);
-            raw.push_back(rotation);
-        }
-    }
-    if (constrainer)
-    {
-        std::map<int, size_t> index;
-        for (size_t i = 0; i < theAtoms.size(); i++)
-        {
-            index.insert({ theAtoms[i], i });
-        }
-        for (const auto &pair : constrainer->pairs())
-        {
-            std::vector<double> gradient(n, 0.0);
-            rvec dx;
-            rvec_sub(x[pair[0]], x[pair[1]], dx);
-            for (int k = 0; k < 2; k++)
-            {
-                auto ai = index.find(pair[k]);
-                if (ai == index.end())
-                {
-                    // A frozen particle
-                    continue;
-                }
-                for (int m = 0; m < DIM; m++)
-                {
-                    gradient[DIM*ai->second+m] = (0 == k ? 1 : -1)*dx[m];
-                }
-            }
-            raw.push_back(gradient);
-        }
-    }
-    // Gram-Schmidt, twice for precision, leaving out dependent directions
-    // such as the third rotation of a linear molecule
-    std::vector<std::vector<double>> directions;
-    for (auto &v : raw)
-    {
-        double norm0 = std::sqrt(std::inner_product(v.begin(), v.end(), v.begin(), 0.0));
-        for (int pass = 0; pass < 2; pass++)
-        {
-            for (const auto &d : directions)
-            {
-                double c = std::inner_product(d.begin(), d.end(), v.begin(), 0.0);
-                for (size_t k = 0; k < n; k++)
-                {
-                    v[k] -= c*d[k];
-                }
-            }
-        }
-        double norm = std::sqrt(std::inner_product(v.begin(), v.end(), v.begin(), 0.0));
-        if (norm > 1e-8*norm0)
-        {
-            for (auto &vk : v)
-            {
-                vk /= norm;
-            }
-            directions.push_back(v);
-        }
-    }
-    return directions;
-}
-
 /*! \brief Newton steps from the eigenvectors of the Hessian
  * The Hessian is symmetrized and the fixed directions are projected out.
  * Along each eigenvector u with eigenvalue lambda the step is the force
@@ -1108,8 +1170,22 @@ eMinimizeStatus MolHandler::minimizeCoordinates(MsgHandler                      
                                    constrain ? &constrainer : nullptr);
 
         STLBFGS::Optimizer                      opt{func, 1000};
-        opt.ftol    = simConfig.forceTolerance();
-        opt.gtol    = simConfig.forceTolerance();
+        // The optimizer stops when the norm of the gradient divided by that
+        // of the coordinates is below gtol, the norm of the gradient is the
+        // square root of the number of particles times the mean square
+        // force. The tolerance is the one requested, also if it is below
+        // that of the shells, such that a normal mode analysis can get as
+        // close to the minimum as possible. The relative decrease of the
+        // energy only stops it when the energy cannot decrease within the
+        // precision of the energy, a sum of many terms, since the energy
+        // can decrease little while the forces are still large.
+        double xnorm = 0;
+        for (auto a : theAtoms)
+        {
+            xnorm += iprod(xstart[a], xstart[a]);
+        }
+        opt.gtol    = 0.9*std::sqrt(simConfig.forceTolerance()*theAtoms.size())/std::max(1.0, std::sqrt(xnorm));
+        opt.ftol    = 1e-12;
         opt.verbose = msghandler->verbose();
 
         // One-dimensional array
@@ -1139,14 +1215,18 @@ eMinimizeStatus MolHandler::minimizeCoordinates(MsgHandler                      
                     sx[DIM*i+j] = xstart[theAtoms[i]][j] + retry * dis(gen) * displacement;
                 }
             }
-            converged = opt.run(sx);
+            // The line search fails when the energy cannot decrease within
+            // the precision, then the structure is a minimum if the forces
+            // are within the tolerance
+            bool done = opt.run(sx);
+            // Final minimization for shells.
+            lbfgs->forceComp()->compute(msghandler, lbfgs->pd(), topology,
+                                        lbfgs->coordinates(),
+                                        lbfgs->forces(), lbfgs->energies());
+            constrainForces(*lbfgs->coordinates(), lbfgs->forces());
+            converged = done || msForce(theAtoms, *lbfgs->forces()) <= msForceToler;
             if (converged)
             {
-                // Final minimization for shells.
-                lbfgs->forceComp()->compute(msghandler, lbfgs->pd(), topology,
-                                            lbfgs->coordinates(),
-                                            lbfgs->forces(), lbfgs->energies());
-                constrainForces(*lbfgs->coordinates(), lbfgs->forces());
                 double enew = lbfgs->energy(InteractionType::EPOT);
                 if (msghandler->verbose())
                 {
