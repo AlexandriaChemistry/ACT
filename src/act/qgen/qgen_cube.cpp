@@ -34,14 +34,14 @@
 
 #include "qgen_resp.h"
 
+#include <algorithm>
 #include <cctype>
+#include <cmath>
 #include <cstdio>
 #include <cstdlib>
 
 #include <map>
 
-#include "act/coulombintegrals/gaussian_integrals.h"
-#include "act/coulombintegrals/slater_integrals.h"
 #include "act/forcefield/forcefield.h"
 #include "act/forcefield/forcefield_parameter.h"
 #include "act/statistics/statistics.h"
@@ -242,7 +242,9 @@ void QgenResp::writeDiffCube(const QgenResp         *src,
             }
         }
         fclose(fp);
-        fp = xvgropen("diff-pot.xvg", "Correlation between QM and Calc", "Pot (QM)",
+        // The correlation is written next to the histogram
+        auto corrFn = histFn.substr(0, histFn.rfind('.')) + "-corr.xvg";
+        fp = xvgropen(corrFn.c_str(), "Correlation between QM and Calc", "Pot (QM)",
                       "Pot (Calc)", oenv);
         ppcorr.dump_xy(fp);
         fclose(fp);
@@ -294,14 +296,12 @@ void QgenResp::readCube(const std::string &fn, bool bESPonly)
         }
         else if (2 == line)
         {
-            double origin[DIM];
             bOK = (4 == sscanf(tmp.c_str(), "%d%lf%lf%lf",
-                               &natom, &origin[XX], &origin[YY], &origin[ZZ]));
-            if (bOK && !bESPonly)
+                               &natom, &origin_[XX], &origin_[YY], &origin_[ZZ]));
+            if (bOK && static_cast<size_t>(natom) != nAtom_)
             {
-                origin_[XX] = origin[XX];
-                origin_[YY] = origin[YY];
-                origin_[ZZ] = origin[ZZ];
+                gmx_fatal(FARGS, "%s has %d atoms but the molecule %zu",
+                          fn.c_str(), natom, nAtom_);
             }
         }
         else if (3 == line)
@@ -450,33 +450,55 @@ void QgenResp::makeGrid(real                          spacing,
     }
 }
 
+/*! \brief The charge density of a unit charge
+ * \param[in] cdt  The charge distribution
+ * \param[in] r    Distance from the center in nm
+ * \param[in] zeta Width in 1/nm
+ * \param[in] row  Row in the periodic table, for Slater distributions
+ * \return the density in 1/nm^3, of which Nuclear_GG or Nuclear_SS is the
+ *         potential
+ */
+static double chargeDensity(ChargeDistributionType cdt, double r, double zeta, int row)
+{
+    if (zeta == 0)
+    {
+        // A point charge has no density outside the center
+        return 0;
+    }
+    switch (cdt)
+    {
+    case ChargeDistributionType::Gaussian:
+        return std::pow(zeta, 3)/std::pow(M_PI, 1.5)*std::exp(-gmx::square(zeta*r));
+    case ChargeDistributionType::Slater:
+        {
+            int n = std::max(1, row);
+            return std::pow(2*zeta, 2*n+1)/(4*M_PI*std::tgamma(2*n+1))*
+                std::pow(r, 2*n-2)*std::exp(-2*zeta*r);
+        }
+    default:
+        gmx_fatal(FARGS, "Unsupported charge model %s",
+                  chargeDistributionTypeName(cdt).c_str());
+    }
+    return 0;
+}
+
 void QgenResp::calcRho()
 {
     for (size_t i = 0; (i < nEsp()); i++)
     {
-        double V = 0;
+        double rho = 0;
         for (size_t j = 0; j < nAtom_; j++)
         {
-            double               vv = 0;
-            gmx::RVec            dx;
+            gmx::RVec dx;
             rvec_sub(ep_[i].esp(), x_[j], dx);
-            double               r     = norm(dx);
-            if (ChargeDistributionType::Gaussian == ChargeDistributionType_)
+            double    r = norm(dx);
+            rho += q_[j]*chargeDensity(ChargeDistributionType_, r, zeta_[j], row_[j]);
+            if (qVS_[j] != 0)
             {
-                vv = q_[j]*Nuclear_GG(r, zeta_[j]);
+                rho += qVS_[j]*chargeDensity(ChargeDistributionType_, r, zetaVS_[j], rowVS_[j]);
             }
-            else if (ChargeDistributionType::Slater == ChargeDistributionType_)
-            {
-                vv = q_[j]*Nuclear_SS(r, row_[j], zeta_[j]);
-            }
-            else
-            {
-                gmx_fatal(FARGS, "Unsupported charge model %s",
-                          chargeDistributionTypeName(ChargeDistributionType_).c_str());
-            }
-            V  += vv;
         }
-        ep_[i].setRho(V);
+        ep_[i].setRho(rho);
     }
 }
 

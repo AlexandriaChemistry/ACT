@@ -194,6 +194,7 @@ class QgenResp
         void plotLsq(const gmx_output_env_t *oenv,
                      const char             *ESPcorr);
 
+        //! \brief Compute the charge density of the atoms and shells at the grid points
         void calcRho();
 
         /*! \brief Compute the electrostatic potential based on charges.
@@ -205,6 +206,11 @@ class QgenResp
 
         void calcVShell();
 
+        /*! \brief Read the grid and the potential from a cube file
+         * \param[in] fn       The file name, with as many atoms as this
+         * \param[in] bESPonly Only read the coordinates of the atoms, not
+         *                     their atomic numbers and charges
+         */
         void readCube(const std::string &fn,
                       bool               bESPonly);
 
