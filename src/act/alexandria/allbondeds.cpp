@@ -426,9 +426,10 @@ void AllBondeds::updateForceField(gmx::TextWriter *tw,
                                  ForceFieldParameter("pm", av, sig, N, av*bfactor_, av/bfactor_, Mutability::Bounded, false, true));
                 fs->addParameter(bondId, pname[bondKB],
                                  ForceFieldParameter("kJ/mol/nm2", kb_, 0, 1, kb_*factor_, kb_/factor_, Mutability::Bounded, false, true));
+                // The bond energy is negative, as the Morse D0 above
                 double D0 = -200;
                 fs->addParameter(bondId, pname[bondENERGY],
-                                 ForceFieldParameter("kJ/mol", D0, 0, 1, D0*5, D0/5, Mutability::Bounded, false, true));
+                                 ForceFieldParameter("kJ/mol", D0, 0, 1, D0*5, D0/5, Mutability::Bounded, false, false));
             }
             break;
         case Potential::CUBIC_BONDS:
