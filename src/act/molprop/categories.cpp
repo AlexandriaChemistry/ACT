@@ -43,7 +43,6 @@
 #include "gromacs/utility/futil.h"
 
 #include "act/molprop/molprop.h"
-#include "act/molprop/molprop_tables.h"
 #include "act/molprop/molprop_util.h"
 #include "act/forcefield/forcefield.h"
 #include "act/forcefield/forcefield_xml.h"
@@ -121,28 +120,6 @@ void CategoryList::sortCategories()
     {
         i.sortMolecules();
     }
-}
-
-void makeCategoryList(CategoryList               *cList,
-                      const std::vector<MolProp> &mp,
-                      const MolSelect            &gms,
-                      iMolSelect                  ims)
-{
-    for (const auto &mpi : mp)
-    {
-        iMolSelect ims2;
-        
-        if (gms.status(mpi.getIupac(), &ims2) &&
-            ims2 == ims &&
-            mpi.hasAllAtomTypes())
-        {
-            for (auto &si : mpi.categoryConst())
-            {
-                cList->addCategory(si, mpi.getIupac());
-            }
-        }
-    }
-    cList->sortCategories();
 }
 
 }

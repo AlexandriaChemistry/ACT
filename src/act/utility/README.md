@@ -10,5 +10,5 @@ This directory provides general-purpose support infrastructure used across the e
 - **stringutil.h / stringutil.cpp** — String manipulation utilities: trimming, splitting, case conversion, number formatting, and tokenisation.
 - **units.h / units.cpp** — Physical unit definitions and conversion factors; used throughout ACT to convert between internal (kJ mol⁻¹, nm, e) and external units.
 - **regression.h / regression.cpp** — Ordinary least-squares linear regression; used for fitting property data and computing correlation metrics.
-- **latex_util.h / latex_util.cpp** — Helpers for generating LaTeX table markup from numerical data, used by the `analyze` command.
+- **latex_util.h / latex_util.cpp** — Helpers for generating LaTeX table markup from numerical data, used for the force field tables.
 - **memory_check.h / memory_check.cpp** — Lightweight memory-usage reporting utilities for profiling and debugging.

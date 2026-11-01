@@ -122,17 +122,6 @@ class CategoryList
          std::vector<CategoryListElement> *elements() { return &catli_; }
 };
 
-/*! \brief Make the entire category list
- * \param[out] cList The final list
- * \param[in]  mp    The molecule properties
- * \param[in]  gms   The selection structure
- * \param[in]  ims   The data set selected
- */
-void makeCategoryList(CategoryList               *cList,
-                      const std::vector<MolProp> &mp,
-                      const MolSelect            &gms,
-                      iMolSelect                  ims);
-
 }
 
 #endif

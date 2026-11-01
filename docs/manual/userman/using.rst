@@ -18,9 +18,6 @@ the output of which is given in :numref:`tab-act-commands` .
    +-------------+------------------------------------------------------------+
    | **Command** | **Description**                                            |
    +=============+============================================================+
-   | analyze     | Analyze molecular or force field properties from a         |
-   |             | database and generate publication quality tables in LaTeX. |
-   +-------------+------------------------------------------------------------+
    | b2          | Compute second virial coefficient as a function of         |
    |             | temperature.                                               |
    +-------------+------------------------------------------------------------+

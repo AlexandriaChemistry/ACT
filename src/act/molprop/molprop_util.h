@@ -58,81 +58,6 @@ enum MolPropSortAlgorithm {
 
 namespace alexandria
 {
-class QmCalc
-{
-    private:
-        std::string method_, basis_, type_, lot_;
-        int         count_;
-    public:
-        QmCalc(const std::string &method,
-               const std::string &basis,
-               const std::string &type) :
-            method_(method), basis_(basis), type_(type), lot_(method), count_(1)
-        {
-            lot_.append("/");
-            lot_.append(basis);
-        };
-
-        const std::string &method() const { return method_; }
-        const std::string &basis() const { return basis_; }
-        const std::string &type() const { return type_; }
-        const std::string &lot() const { return lot_; }
-        int count() const { return count_; }
-        void increment() { count_++; }
-        void decrement()
-        {
-            GMX_RELEASE_ASSERT(count_ > 0, "Trying to reduce count below zero");
-            count_--;
-        }
-};
-
-class QmCount
-{
-    private:
-        std::vector<QmCalc>      qmc_;
-        std::vector<std::string> conf_;
-
-        std::vector<QmCalc>::const_iterator findCalc(const std::string &method,
-                                                     const std::string &basis,
-                                                     const std::string &type) const
-        {
-            return std::find_if(qmc_.begin(), qmc_.end(),
-                                [method, basis, type](const QmCalc &qmc)
-                                { return (qmc.method().compare(method) == 0 &&
-                                          qmc.basis().compare(basis) == 0 &&
-                                          qmc.type().compare(type) == 0); });
-        }
-        std::vector<QmCalc>::iterator findCalc(const std::string &method,
-                                               const std::string &basis,
-                                               const std::string &type)
-        {
-            return std::find_if(qmc_.begin(), qmc_.end(),
-                                [method, basis, type](const QmCalc &qmc)
-                                { return (qmc.method().compare(method) == 0 &&
-                                          qmc.basis().compare(basis) == 0 &&
-                                          qmc.type().compare(type) == 0); });
-        }
-
-    public:
-        QmCount() {};
-
-        std::vector<QmCalc>::iterator beginCalc() { return qmc_.begin(); }
-        std::vector<QmCalc>::iterator endCalc() { return qmc_.end(); }
-        std::vector<QmCalc>::const_iterator beginCalc() const { return qmc_.begin(); }
-        std::vector<QmCalc>::const_iterator endCalc() const { return qmc_.end(); }
-        size_t nCalc() const { return qmc_.size(); }
-        int qmCalcCount(const std::string &method,
-                        const std::string &basis,
-                        const std::string &type) const;
-
-        void addConf(const std::string &conformation);
-
-        void addCalc(const std::string &method,
-                     const std::string &basis,
-                     const std::string &type);
-
-};
-
 /*! \brief Reset the molprop index number
  * \param[in] mp The molprops
  */
@@ -146,18 +71,6 @@ void generate_index(std::vector<MolProp> *mp);
 void merge_xml(MsgHandler                             *msg_handler,
                const gmx::ArrayRef<const std::string> &infiles,
                std::vector<alexandria::MolProp>       *mp);
-
-/*! \brief Check the available molprops to see what kind of calculations are stored.
- * \param[in]  mp       The molprops
- * \param[in]  mpo      The observable to check
- * \param[in]  fc_types Observable measurement types. Multiple strings may be
- *                      provided, separated by a colon (:). Ignored if nullptr.
- * \param[out] qmc      Overview of the calculations
- */
-void find_calculations(const std::vector<alexandria::MolProp> &mp,
-                       MolPropObservable                       mpo,
-                       const char                             *fc_types,
-                       QmCount                                *qmc);
 
 /*! \brief
  * Sorts a vector of molprops
