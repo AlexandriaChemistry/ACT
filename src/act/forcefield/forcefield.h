@@ -142,19 +142,6 @@ class ForceField
         //! \return the number of particle types
         size_t getNatypes() const { return alexandria_.size(); }
 
-        /*! \brief Compute dependent parameters
-         *
-         * The force field may contain a number of parameters
-         * that depend on othe parameters. For instance, the
-         * distance r_{ik} in an angle triplet r_{ijk} depends
-         * on the distances r_{ij} and r_{kj} as well as the 
-         * angle between the vectors. Those dependent properties
-         * are computed here in order to get the highest accuracy
-         * in the numbers. This is important when computing energies
-         * based on these distances.
-         */
-        void calcDependent();
-
         /*! \brief
          * Return the element name corresponding to the zeta type
          *
@@ -421,46 +408,13 @@ class ForceField
      */
     void expandSecondCharges(MsgHandler *msghandler);
     
-    /*! Spread from master to other nodes
+    /*! Broadcast from master to the helpers of this node
      * \param[in] cr    Communication record
      * \param[in] root  The root of this communication
-     * \param[in] bcast Whether or not to use boradcast functionality
      * \param[in] msgHandler MsgHandler for debug output
      */
-    void sendToHelpers(const CommunicationRecord *cr, int root, bool bcast=true,
+    void sendToHelpers(const CommunicationRecord *cr, int root,
                        MsgHandler *msgHandler=nullptr);
-    
-    /*! Spread eemprop to a helper node
-     * \param[in] cr   Communication record
-     * \param[in] dest Destination node
-     * \param[in] msgHandler MsgHandler for debug output
-     */
-    void sendEemprops(const CommunicationRecord *cr, int dest,
-                      MsgHandler *msgHandler=nullptr);
-    
-    /*! Receive eemprop from someone
-     * \param[in] cr  Communication record
-     * \param[in] src Source node
-     * \param[in] msgHandler MsgHandler for debug output
-     */
-    void receiveEemprops(const CommunicationRecord *cr, int src,
-                         MsgHandler *msgHandler=nullptr);
-    
-    /*! Spread mutable particle properties to a helper node
-     * \param[in] cr   Communication record
-     * \param[in] dest Destination node
-     * \param[in] msgHandler MsgHandler for debug output
-     */
-    void sendParticles(const CommunicationRecord *cr, int dest,
-                       MsgHandler *msgHandler=nullptr);
-    
-    /*! Receive particles from someone
-     * \param[in] cr  Communication record
-     * \param[in] src Source node
-     * \param[in] msgHandler MsgHandler for debug output
-     */
-    void receiveParticles(const CommunicationRecord *cr, int src,
-                          MsgHandler *msgHandler=nullptr);
     
     /*! \brief BroadCast a whole force field
      * \param[in] cr  Communication data structure

@@ -1017,137 +1017,10 @@ CommunicationStatus ForceField::Receive(const CommunicationRecord *cr, int src,
     return cs;
 }
 
-void ForceField::sendParticles(const CommunicationRecord *cr, int dest,
+void ForceField::sendToHelpers(const CommunicationRecord *cr, int root,
                                MsgHandler *msgHandler)
 {
-    if (CommunicationStatus::SEND_DATA == cr->send_data(dest))
-    {
-        if (msgHandler)
-        {
-            msgHandler->writeDebug(gmx::formatString("Going to update ForceField::particles on node %d\n", dest));
-        }
-        for(auto &ax : alexandria_)
-        {
-            for(auto &p : ax.second.parametersConst())
-            {
-                if (Mutability::Bounded == p.second.mutability())
-                {
-                    cr->send(dest, 1);
-                    cr->send(dest, ax.second.id().id());
-                    cr->send(dest, p.first);
-                    cr->send(dest, p.second.value());
-                }
-            }
-        }
-        cr->send(dest, 0);
-    }
-    cr->send_done(dest);
-}
-
-
-void ForceField::receiveParticles(const CommunicationRecord *cr, int src,
-                                  MsgHandler *msgHandler)
-{
-    if (CommunicationStatus::RECV_DATA == cr->recv_data(src))
-    {
-        /* Receive Particle info */
-        int status;
-        cr->recv(src, &status);
-        while (1 == status)
-        {
-            std::string axid, paramname;
-            double value;
-            cr->recv(src, &axid);
-            cr->recv(src, &paramname);
-            cr->recv(src, &value);
-            findParticleType(axid)->parameter(paramname)->setValue(value);
-            cr->recv(src, &status);
-        }
-    }
-    else
-    {
-        if (msgHandler)
-        {
-            msgHandler->writeDebug(gmx::formatString("Could not update eem properties on node %d\n", cr->rank()));
-        }
-    }
-    GMX_RELEASE_ASSERT(CommunicationStatus::DONE == cr->recv_data(src),
-                       "Communication did not end correctly");
-}
-
-//! Force Field Parameter Lists
-static std::vector<InteractionType> eemlist = 
-    { InteractionType::BONDCORRECTIONS,
-      InteractionType::ELECTROSTATICS,
-      InteractionType::POLARIZATION,
-      InteractionType::ELECTRONEGATIVITYEQUALIZATION
-    };
-
-void ForceField::sendEemprops(const CommunicationRecord *cr, int dest,
-                              MsgHandler *msgHandler)
-{
-    if (CommunicationStatus::SEND_DATA == cr->send_data(dest))
-    {
-        if (msgHandler)
-        {
-            msgHandler->writeDebug(gmx::formatString("Going to update ForceField::eemprop on node %d\n", dest));
-        }
-        for(auto myeem : eemlist)
-        {
-            auto fs = forces_.find(myeem);
-            if (fs != forces_.end())
-            {
-                cr->send(dest, 1);
-                //! \todo do not ignore return value
-                (void) fs->second.Send(cr, dest);
-            }
-            else
-            {
-                cr->send(dest, 0);
-            }
-        }
-    }
-    cr->send_done(dest);
-}
-
-void ForceField::receiveEemprops(const CommunicationRecord *cr, int src,
-                                 MsgHandler *msgHandler)
-{
-    if (CommunicationStatus::RECV_DATA == cr->recv_data(src))
-    {
-        /* Receive EEMprops and Bond Corrections */
-        for(auto myeem : eemlist)
-        {
-            int nbc;
-            cr->recv(src, &nbc);
-            if (nbc == 1)
-            {
-                auto fs = forces_.find(myeem);
-                if (fs != forces_.end())
-                {
-                    forces_.erase(fs);
-                }
-                ForceFieldParameterList eem;
-                eem.Receive(cr, src);
-                addForces(myeem, eem);
-            }
-        }
-    }
-    else
-    {
-        if (msgHandler)
-        {
-            msgHandler->writeDebug(gmx::formatString("Could not update eem properties on node %d\n", cr->rank()));
-        }
-    }
-    GMX_RELEASE_ASSERT(CommunicationStatus::DONE == cr->recv_data(src),
-                       "Communication did not end correctly");
-}
-
-void ForceField::sendToHelpers(const CommunicationRecord *cr, int root, bool bcast,
-                               MsgHandler *msgHandler)
-{
-    if (bcast && msgHandler)
+    if (msgHandler)
     {
         std::string msg = gmx::formatString("Will send force field from node %d to helper", cr->rank());
         for(const auto &i: cr->helpers())
@@ -1157,65 +1030,10 @@ void ForceField::sendToHelpers(const CommunicationRecord *cr, int root, bool bca
         msg += "\n";
         msgHandler->writeDebug(msg);
     }
-    if (cr->rank() == root)
-    {
-        if (bcast)
-        {
-            // Packed into a single broadcast, the broadcasts in BroadCast use root 0
-            cr->startPackedBcast(cr->send_helpers(), 0);
-            BroadCast(cr, root, cr->send_helpers(), msgHandler);
-            cr->finishPackedBcast();
-        }
-        else
-        {
-            for (auto &dest : cr->helpers())
-            {
-                if (CommunicationStatus::SEND_DATA == cr->send_data(dest))
-                {
-                    if (msgHandler)
-                    {
-                        msgHandler->writeDebug(gmx::formatString("Going to update ForceField on node %d\n", dest));
-                    }
-                    Send(cr, dest);
-                }
-                cr->send_done(dest);
-            }
-        }
-    }
-    else
-    {
-        if (bcast)
-        {
-            // Packed into a single broadcast, the broadcasts in BroadCast use root 0
-            cr->startPackedBcast(cr->send_helpers(), 0);
-            BroadCast(cr, root, cr->send_helpers(), msgHandler);
-            cr->finishPackedBcast();
-        }
-        else
-        {
-            int src = cr->superior();
-            if (CommunicationStatus::RECV_DATA == cr->recv_data(src))
-            {
-                auto cs = Receive(cr, src, msgHandler);
-                if (CommunicationStatus::OK == cs)
-                {
-                    if (msgHandler)
-                    {
-                        msgHandler->writeDebug(gmx::formatString("ForceField is updated on node %d\n", cr->rank()));
-                    }
-                }
-                else
-                {
-                    if (msgHandler)
-                    {
-                        msgHandler->writeDebug(gmx::formatString("Could not update ForceField on node %d\n", cr->rank()));
-                    }
-                }
-            }
-            GMX_RELEASE_ASSERT(CommunicationStatus::DONE == cr->recv_data(src),
-                               "Communication did not end correctly");
-        }
-    }
+    // Packed into a single broadcast, the broadcasts in BroadCast use root 0
+    cr->startPackedBcast(cr->send_helpers(), 0);
+    BroadCast(cr, root, cr->send_helpers(), msgHandler);
+    cr->finishPackedBcast();
 }
 
 void ForceField::checkConsistency(MsgHandler *msgHandler) const
@@ -1318,38 +1136,6 @@ void ForceField::checkConsistency(MsgHandler *msgHandler) const
     if (nerror > 0)
     {
         GMX_THROW(gmx::InvalidInputError(gmx::formatString("ForceField inconsistency.").c_str()));
-    }
-}
-
-void ForceField::calcDependent()
-{
-    auto btype = InteractionType::BONDS;
-    std::vector<InteractionType> atypes = { InteractionType::LINEAR_ANGLES,
-        InteractionType::ANGLES };
-    GMX_RELEASE_ASSERT(interactionPresent(btype), "No bond information present");
-    auto ffpbonds = findForcesConst(btype);
-    for(auto &atype : atypes)
-    {
-        if (!interactionPresent(atype))
-        {
-            continue;
-        }
-        auto ffpl = findForces(atype)->parameters();
-        for (auto &fp : *ffpl)
-        {
-            for (auto &param : fp.second)
-            {                               
-                if (param.second.mutability() == Mutability::Dependent &&
-                    param.first == "r13")
-                {
-                    const std::vector<std::string> &atoms = fp.first.atoms();
-                    const std::vector<double>       bo    = fp.first.bondOrders();
-                    Identifier b1({atoms[0], atoms[1]}, { bo[0] }, CanSwap::Yes);
-                    Identifier b2({atoms[1], atoms[2]}, { bo[1] }, CanSwap::Yes);
-                        
-                }
-            }
-        }
     }
 }
 
