@@ -468,6 +468,93 @@ TEST_F(GentopTest, Cubes)
     std::filesystem::remove(corr);
 }
 
+//! Runs gentop with a force field from which parameters are removed
+class GentopMissingTest : public GentopTest
+{
+protected:
+    /*! \brief Run gentop for acetone with a force field from which a
+     * torsion or one of its parameters is removed
+     * \param[in]  id        Identifier of the torsion
+     * \param[in]  parameter The parameter to remove, all if empty
+     * \param[out] status    The exit status of gentop
+     * \return the number of messages about missing parameters of each
+     *         torsion, and of the other ones as "other"
+     */
+    std::map<std::string, int> missing(const std::string &id, const std::string &parameter,
+                                       int *status)
+    {
+        ForceField pd;
+        readForceField(fileManager().getInputFilePath("ACS-pg.xml"), &pd);
+        auto propers = pd.findForces(InteractionType::PROPER_DIHEDRALS)->parameters();
+        for (auto p = propers->begin(); p != propers->end(); ++p)
+        {
+            if (p->first.id() == id)
+            {
+                if (parameter.empty())
+                {
+                    propers->erase(p);
+                }
+                else
+                {
+                    p->second.erase(parameter);
+                }
+                break;
+            }
+        }
+        auto ffName = fileManager().getTemporaryFilePath("missing.xml");
+        writeForceField(ffName, &pd, false);
+
+        auto logName = fileManager().getTemporaryFilePath("missing.log");
+        gmx::test::CommandLine cmd;
+        cmd.append("gentop");
+        cmd.addOption("-ff", ffName);
+        cmd.addOption("-f", fileManager().getInputFilePath("mols/acetone.sdf"));
+        cmd.addOption("-c", fileManager().getTemporaryFilePath("missing.pdb"));
+        cmd.addOption("-g", logName);
+        *status = gentop(cmd.argc(), cmd.argv());
+        std::ifstream              in(logName);
+        std::map<std::string, int> torsions;
+        for (std::string line; std::getline(in, line); )
+        {
+            std::string key("Missing parameter in force field: FOURIER_DIHEDRALS ");
+            auto        pos = line.find(key);
+            if (pos != std::string::npos)
+            {
+                std::istringstream iss(line.substr(pos + key.size()));
+                std::string        name;
+                iss >> name;
+                torsions[name] += 1;
+            }
+            else if (line.find("Missing parameter") != std::string::npos)
+            {
+                torsions["other"] += 1;
+            }
+        }
+        return torsions;
+    }
+};
+
+// Test: Each of the six torsions without parameters is reported, and not
+// the torsions after them, which have all their parameters, gentop fails
+TEST_F(GentopMissingTest, Torsion)
+{
+    int status;
+    EXPECT_EQ((std::map<std::string, int>{ { "h_b~c3_b~c2_b=o2_b", 6 } }),
+              missing("h_b~c3_b~c2_b=o2_b", "", &status));
+    EXPECT_NE(0, status);
+}
+
+// Test: A parameter that is missing from a torsion is zero, with a
+// warning about that torsion only
+TEST_F(GentopMissingTest, Parameter)
+{
+    int  status;
+    auto torsions = missing("h_b~c3_b~c2_b=o2_b", "c5", &status);
+    ASSERT_EQ(1u, torsions.size());
+    EXPECT_EQ("h_b~c3_b~c2_b=o2_b", torsions.begin()->first);
+    EXPECT_EQ(0, status);
+}
+
 } // namespace
 
 } // namespace alexandria

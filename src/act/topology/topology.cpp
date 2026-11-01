@@ -1910,8 +1910,7 @@ void Topology::fillParameters(MsgHandler                      *msghandler,
         // Loop over entries, increment of tp handled at end.
         for(auto tp = entry.second.begin(); tp < entry.second.end(); )
         {
-            auto       &topentry = *tp;
-            const auto &topID    = topentry->id();
+            auto &topentry = *tp;
 
             param.clear();
             fillParams(msghandler, fs, topentry->selfPtr(),
@@ -1924,45 +1923,20 @@ void Topology::fillParameters(MsgHandler                      *msghandler,
             {
                 std::swap(param[coulZETA], param[coulZETA2]);
             }
-            if (param.empty() || !msghandler->ok() || param != topentry->params())
+            if (param.empty() || param != topentry->params())
             {
                 changed = true;
             }
+            // Without parameters, which fillParams reports, the entry is
+            // left out. Missing parameters of an entry are zero.
             if (param.empty())
             {
                 tp = entry.second.erase(tp);
             }
             else
             {
-                if (!msghandler->ok())
-                {
-                    auto msg = gmx::formatString("Force field only contains %zu/%zu %s parameters for %s, using zero's.", 
-                                                 param.size(),
-                                                 pp->second.param.size(),
-                                                 potentialToString(fs.potential()).c_str(), topID.id().c_str());
-                    if (missing == missingParameters::Error)
-                    {
-                        msghandler->msg(ACTStatus::Error, ACTMessage::MissingFFParameter, msg);
-                        // The entries may have changed
-                        parameterVersion_[entry.first].update();
-                        vsiteVersion_ += 1;
-                        return;
-                    }
-                    else if (missing == missingParameters::Ignore)
-                    {
-                        msghandler->resetStatus();
-                    }
-                    else
-                    {
-                        msghandler->msg(ACTStatus::Warning, ACTMessage::MissingFFParameter, msg);
-                    }
-                    tp = entry.second.erase(tp);
-                }
-                else
-                {
-                    topentry->setParams(param);
-                    ++tp;
-                }
+                topentry->setParams(param);
+                ++tp;
             }
         }
         if (changed)

@@ -206,6 +206,12 @@ int gentop(int argc, char *argv[])
     auto forceComp = new ForceComputer();
     std::vector<ACTMol> actmols;
     compR.read(&msghandler, pd, forceComp, &actmols);
+    // Compounds without a topology are left out
+    if (actmols.empty())
+    {
+        msghandler.msg(ACTStatus::Error, "No compound with a topology, nothing to write.");
+        return 1;
+    }
     // Write information about force field
     msghandler.write("");
     for (const auto &ii : pd.info())
