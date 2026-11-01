@@ -449,6 +449,8 @@ static const ForceComputerPotParams c_coulGaussPot    { "COULOMB_GAUSSIAN",     
 static const ForceComputerPotParams c_coulSlaterPot   { "COULOMB_SLATER",       Potential::COULOMB_SLATER,       makePairTop };
 //! COULOMB_SLATER with zeta=0 — distinct name to keep separate refdata from the zeta=10 variant
 static const ForceComputerPotParams c_coulSlaterZ0Pot { "COULOMB_SLATER_ZETA0", Potential::COULOMB_SLATER,       makePairTop };
+//! COULOMB_SLATER with both widths zero, two point charges
+static const ForceComputerPotParams c_coulSlaterPointPot { "COULOMB_SLATER_POINT", Potential::COULOMB_SLATER,    makePairTop };
 static const ForceComputerPotParams c_tt2bPot         { "TT2b",                 Potential::TT2b,                 makePairTop };
 static const ForceComputerPotParams c_slaterIsaTtPot  { "SLATER_ISA_TT",        Potential::SLATER_ISA_TT,        makePairTop };
 static const ForceComputerPotParams c_tangToennPot    { "TANG_TOENNIES",        Potential::TANG_TOENNIES,        makePairTop };
@@ -483,6 +485,8 @@ static const ForceComputerParamParams c_genBuckParams   { "", { 0.5, 0.25, 0.5, 
 static const ForceComputerParamParams c_coulZeta10Params { "", { 10, 6 } };
 //! Coulomb parameters: zeta=0, zeta2=6 (for COULOMB_SLATER with zeta=0)
 static const ForceComputerParamParams c_coulZeta0Params  { "", { 0, 6 } };
+//! Coulomb parameters: both widths zero, point charges
+static const ForceComputerParamParams c_coulPointParams  { "", { 0, 0 } };
 //! TT2b: exchange repulsion only
 static const ForceComputerParamParams c_tt2bExchParams   { "Exch",    { 1000, 10, 10, 0, 0, 0 } };
 //! TT2b: dispersion C6 only
@@ -641,6 +645,13 @@ static const std::vector<ForceComputerCoordParams> c_coulSlaterZ0Coords = []() {
 INSTANTIATE_TEST_CASE_P(CoulSlaterZ0, ForceComputerImplementationTest,
                          ::testing::Combine(::testing::Values(c_coulSlaterZ0Pot),
                                             ::testing::Values(c_coulZeta0Params),
+                                            ::testing::ValuesIn(c_coulSlaterZ0Coords)),
+                         fcTestName);
+
+//! COULOMB_SLATER with two point charges, which interact as with COULOMB_POINT
+INSTANTIATE_TEST_CASE_P(CoulSlaterPoint, ForceComputerImplementationTest,
+                         ::testing::Combine(::testing::Values(c_coulSlaterPointPot),
+                                            ::testing::Values(c_coulPointParams),
                                             ::testing::ValuesIn(c_coulSlaterZ0Coords)),
                          fcTestName);
 
