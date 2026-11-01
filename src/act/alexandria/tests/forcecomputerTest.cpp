@@ -407,6 +407,53 @@ TEST_F (ForceComputerTest, UracilPolNexcl3)
     test("uracil.sdf", "ACS-pg", false, 1, 3);
 }
 
+//! \return the energies of the uracil with nexcl 3, optionally without proper dihedrals
+static std::map<InteractionType, double> uracilEnergies(bool propers)
+{
+    ForceField pd = *getForceField("ACS-pg");
+    for (auto &fs : *pd.forces())
+    {
+        if (fs.second.optionExists("nexcl"))
+        {
+            fs.second.removeOption("nexcl");
+            fs.second.addOption("nexcl", "3");
+        }
+    }
+    if (!propers)
+    {
+        pd.findForces(InteractionType::PROPER_DIHEDRALS)->parameters()->clear();
+    }
+    ForceComputer fcomp(1e-12, 25, 1.0);
+    MsgHandler    msghandler;
+    msghandler.setPrintLevel(ACTStatus::Warning);
+    std::vector<ACTMol> mps;
+    initACTMol(&msghandler, gmx::test::TestFileManager::getInputFilePath("mols/uracil.sdf"),
+               &pd, &fcomp, &mps);
+    EXPECT_EQ(1u, mps.size());
+    auto                              xo = mps[0].xOriginal();
+    std::vector<gmx::RVec>            coordinates(xo.begin(), xo.end());
+    std::vector<gmx::RVec>            forces(xo.size(), { 0, 0, 0 });
+    std::map<InteractionType, double> energies;
+    fcomp.compute(&msghandler, &pd, mps[0].topology(), &coordinates, &forces, &energies);
+    return energies;
+}
+
+// Test: The exclusions follow from the bonds, not from the proper
+// dihedrals in the force field
+TEST (ForceComputerExclusionTest, Nexcl3WithoutPropers)
+{
+    auto with    = uracilEnergies(true);
+    auto without = uracilEnergies(false);
+    for (auto itype : { InteractionType::DISPERSION, InteractionType::EXCHANGE,
+                        InteractionType::ELECTROSTATICS, InteractionType::INDUCTION })
+    {
+        ASSERT_TRUE(with.find(itype) != with.end());
+        ASSERT_TRUE(without.find(itype) != without.end());
+        EXPECT_NEAR(with[itype], without[itype], 1e-8*std::max(1.0, std::abs(with[itype])))
+            << interactionTypeToString(itype);
+    }
+}
+
 TEST_F (ForceComputerTest, AcetonePolarizabilityGbhamNexcl3)
 {
     test("acetone-3-oep.log.pdb", "ACS-pg-gbham", true, 1, 3);

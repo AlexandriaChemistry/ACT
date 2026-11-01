@@ -1678,52 +1678,38 @@ std::vector<std::set<size_t>> Topology::generateExclusions(MsgHandler *msghandle
         }
     }
     auto bonds = entries_.find(InteractionType::BONDS);
-    if (bonds != entries_.end())
+    if (bonds != entries_.end() && nrexcl > 0)
     {
-        if (nrexcl > 0)
+        // The bond graph, such that the exclusions do not depend on
+        // which bonded interactions the force field has.
+        std::vector<std::vector<size_t>> neighbors(atoms_.size());
+        for(auto &b : bonds->second)
         {
-            // Add first neighbors, assuming these are atoms only
-            for(auto &b : bonds->second)
-            {
-                auto a = b->atomIndices();
-                exclusions[a[0]].insert(a[1]);
-                exclusions[a[1]].insert(a[0]);
-            }
+            auto a = b->atomIndices();
+            neighbors[a[0]].push_back(a[1]);
+            neighbors[a[1]].push_back(a[0]);
         }
-        if (nrexcl > 1)
+        // Breadth first search from each atom up to nrexcl bonds away
+        for (size_t i = 0; i < atoms_.size(); i++)
         {
-            for(const auto itype : { InteractionType::ANGLES, InteractionType::LINEAR_ANGLES })
+            std::set<size_t>    visited = { i };
+            std::vector<size_t> front   = { i };
+            for (int n = 0; n < nrexcl && !front.empty(); n++)
             {
-                auto angles = entries_.find(itype);
-                if (angles != entries_.end())
+                std::vector<size_t> next;
+                for (const auto j : front)
                 {
-                    // Add first neighbors, assuming these are atoms only
-                    for(auto &b : angles->second)
+                    for (const auto k : neighbors[j])
                     {
-                        auto a = b->atomIndices();
-                        exclusions[a[0]].insert(a[2]);
-                        exclusions[a[2]].insert(a[0]);
+                        if (visited.insert(k).second)
+                        {
+                            next.push_back(k);
+                            exclusions[i].insert(k);
+                        }
                     }
                 }
+                front = std::move(next);
             }
-        }
-        if (nrexcl > 2)
-        {
-            auto dihs = entries_.find(InteractionType::PROPER_DIHEDRALS);
-            if (dihs != entries_.end())
-            {
-                // Add first neighbors, assuming these are atoms only
-                for(auto &b : dihs->second)
-                {
-                    auto a = b->atomIndices();
-                    exclusions[a[0]].insert(a[3]);
-                    exclusions[a[3]].insert(a[0]);
-                }
-            }
-        }
-        if (nrexcl > 3)
-        {
-            msghandler->msg(ACTStatus::Warning, "Cannot handle more than 3 exclusions.");
         }
     }
     // Now replicate the exclusions of atoms to their vsites and shells
