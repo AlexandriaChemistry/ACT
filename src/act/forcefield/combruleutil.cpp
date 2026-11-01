@@ -36,6 +36,7 @@
 #include <cstring>
 
 #include <map>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -126,6 +127,50 @@ int CombRuleUtil::extract(ForceField *pd)
         }
     }
     return changed;
+}
+
+int CombRuleUtil::addDefaults(ForceField *pd)
+{
+    int added = 0;
+    for (auto itype : { InteractionType::VDW, InteractionType::VDWCORRECTION,
+                        InteractionType::INDUCTIONCORRECTION })
+    {
+        if (!pd->interactionPresent(itype))
+        {
+            continue;
+        }
+        auto fs = pd->findForces(itype);
+        // Without a function there is nothing to combine
+        if (Potential::NONE == fs->potential())
+        {
+            continue;
+        }
+        // Those of the potential and those in the parameter lists, which
+        // may be there for other potentials
+        std::set<std::string> params;
+        for (const auto &param : potentialToParameterName(fs->potential()))
+        {
+            params.insert(param);
+        }
+        for (const auto &id : fs->parametersConst())
+        {
+            for (const auto &param : id.second)
+            {
+                params.insert(param.first);
+            }
+        }
+        for (const auto &param : params)
+        {
+            if (!fs->combinationRuleExists(param))
+            {
+                std::string unit;
+                ForceFieldParameter ffp(unit, 0, 0, 0, -10, 10, Mutability::Bounded, true, false);
+                fs->addCombinationRule(param, combinationRuleName(CombRule::Geometric), ffp);
+                added += 1;
+            }
+        }
+    }
+    return added;
 }
 
 int CombRuleUtil::convert(ForceFieldParameterList *vdw)

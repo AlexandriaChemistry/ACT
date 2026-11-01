@@ -503,13 +503,12 @@ int gen_ff(int argc, char*argv[])
                 ptp.setOption(opt, table[entry.first][opt]);
             }
         }
-        int atomnumber = 0;
         auto apropsptr = aprops.find(elem);
-        if (aprops.end() != apropsptr)
+        if (aprops.end() == apropsptr)
         {
-            atomnumber = apropsptr->second.atomnumber();
+            GMX_THROW(gmx::InvalidInputError(gmx::formatString("Unknown element '%s' of atom type %s", elem.c_str(), entry.first.c_str()).c_str()));
         }
-        ptp.setOption("atomnumber", gmx::formatString("%d", atomnumber));
+        ptp.setOption("atomnumber", gmx::formatString("%d", apropsptr->second.atomnumber()));
         ptp.setOption("vdwtype", entry.first);
         ptp.setOption("vdwcorrtype", entry.first);
         ptp.setOption("induccorrtype", entry.first);
@@ -660,7 +659,9 @@ int gen_ff(int argc, char*argv[])
     {
         if (nonbond.find(fp.first) != nonbond.end())
         {
-            fp.second.addOption("nexcl", gmx_itoa(nexclqq));
+            bool vdw = (InteractionType::VDW == fp.first ||
+                        InteractionType::VDWCORRECTION == fp.first);
+            fp.second.addOption("nexcl", gmx_itoa(vdw ? nexclvdw : nexclqq));
             fp.second.setCanSwap(CanSwap::Yes);
         }
         if (fp.first == InteractionType::ELECTROSTATICS)
@@ -712,6 +713,8 @@ int gen_ff(int argc, char*argv[])
     
     // Combination rules after adding the forces and parameters only, since it will look them up.
     crule.extract(&pd);
+    // Otherwise the force field cannot be used
+    crule.addDefaults(&pd);
     // Virtual sites
     add_vsites(opt2fn_null("-vs", fnm.size(), fnm.data()), &pd);
     // Virtual sites on top of atoms that only carry a charge are stored

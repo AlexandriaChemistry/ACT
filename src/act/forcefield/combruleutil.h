@@ -66,6 +66,16 @@ namespace alexandria
          */
         int extract(ForceField *pd);
 
+        /*! \brief Add the default rule for the parameters that have no rule
+         * The parameters of the van der Waals interactions, of their
+         * correction and of the induction correction get the Geometric rule,
+         * as described by addInfo, if they have none. These are those of
+         * the potential and those in the parameter lists.
+         * \param[inout] pd  The force field
+         * \return the number of rules that were added.
+         */
+        int addDefaults(ForceField *pd);
+
         /*! \brief Utility to convert old-style combination rule to new
          * \param[inout] vdw     The parameter list
          * \return the number of rules that were changed.
