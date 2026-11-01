@@ -103,7 +103,10 @@ static void setMinMaxMut(FILE *fp,
     }
     if (bSetMax)
     {
+        // As for the minimum, the bounds are consistent before the value
+        // is moved into them
         pp->setMaximum(pmax);
+        pp->setMinimum(std::min(pmax, pp->minimum()));
         double clampedVal = std::min(pmax, pp->value());
         if (force)
         {
@@ -113,7 +116,6 @@ static void setMinMaxMut(FILE *fp,
         {
             pp->setValue(clampedVal);
         }
-        pp->setMinimum(std::min(pmax, pp->minimum()));
         if (fp)
         {
             fprintf(fp, "Maximum set to %g %s\n", pmax, particleId.c_str());
@@ -807,9 +809,9 @@ int edit_ff(int argc, char*argv[])
         { efDAT, "-dump", "params",  ffOPTWR }
     };
 
-    static char *parameter  = (char *)"";
-    static char *particle   = (char *)"";
-    static char *mutability = (char *)"";
+    char        *parameter  = (char *)"";
+    char        *particle   = (char *)"";
+    char        *mutability = (char *)"";
     real         pmin       = 0;
     real         pmax       = 0;
     real         pval       = 0;
@@ -824,10 +826,10 @@ int edit_ff(int argc, char*argv[])
     gmx_bool     bounds     = false;
     gmx_bool     verbose    = false;
     gmx_bool     remove     = false;
-    static char *missing    = (char *)"";
-    static char *replace    = (char *)"";
-    static char *implant    = (char *)"";
-    static char *analyze    = (char *)"";
+    char        *missing    = (char *)"";
+    char        *replace    = (char *)"";
+    char        *implant    = (char *)"";
+    char        *analyze    = (char *)"";
     std::vector<t_pargs> pa =
     {
         { "-p",      FALSE, etSTR,  {&parameter},
