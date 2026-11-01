@@ -34,6 +34,7 @@
  
 #include "actpre.h"
 
+#include <algorithm>
 #include <cstdio>
 
 #include <set>
@@ -212,11 +213,19 @@ static bool dump_molecule(MsgHandler        *msghandler,
     return true;
 }
 
-//! \brief Check the contents of molprop structures
-static void check_mp(MsgHandler           *msghandler,
-                     const char           *ffname,
-                     std::vector<MolProp> *mp)
+/*! \brief Check the contents of molprop structures
+ * Making the topologies takes the experiments from the compounds, so
+ * they should not be used afterwards.
+ * \param[in]    msghandler For the results
+ * \param[in]    ffname     The force field file
+ * \param[inout] mp         The compounds
+ * \return the names of the compounds for which no topology could be made
+ */
+static std::set<std::string> check_mp(MsgHandler           *msghandler,
+                                      const char           *ffname,
+                                      std::vector<MolProp> *mp)
 {
+    std::set<std::string> failed;
     alexandria::ForceField pd;
     try
     {
@@ -329,13 +338,13 @@ static void check_mp(MsgHandler           *msghandler,
             if (dump_molecule(msghandler, forceComp, &atomTypeCount,
                               &bccTypeCount, pd, &(*m)))
             {
-            numberOk++;
-        }
-        else
-        {
-            numberFailed++;
-            mp->erase(m);
-        }
+                numberOk++;
+            }
+            else
+            {
+                numberFailed++;
+                failed.insert(m->getMolname());
+            }
         }
         tw->writeStringFormatted("Succeed making %d topologies, failed for %d compounds\n",
                                  numberOk, numberFailed);
@@ -349,6 +358,7 @@ static void check_mp(MsgHandler           *msghandler,
             tw->writeStringFormatted("bcc: %-12s  %5d\n", bcc.first.c_str(), bcc.second);
         }
     }
+    return failed;
 }
 
 //! \brief Generate energy histogram.
@@ -594,7 +604,14 @@ int edit_mp(int argc, char *argv[])
     if (ffname)
     {
         printf("Since you provided a force field file and a log file name, I will now check the compounds.\n");
-        check_mp(&msghandler, ffname, &mpt);
+        // The check takes the experiments from the compounds, so it uses a
+        // copy, the compounds for which it fails are not written.
+        std::vector<MolProp> checked;
+        merge_xml(&msghandler, fns, &checked);
+        auto failed = check_mp(&msghandler, ffname, &checked);
+        mpt.erase(std::remove_if(mpt.begin(), mpt.end(),
+                                 [&failed](const MolProp &mp) { return failed.count(mp.getMolname()) > 0; }),
+                  mpt.end());
     }
     if (energyHisto)
     {
