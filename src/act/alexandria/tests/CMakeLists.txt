@@ -46,6 +46,7 @@ gmx_add_unit_test(
     gentopTest.cpp
     forcecomputerTest.cpp
     lossFunctionTest.cpp
+    mincomplexTest.cpp
     molhandlerTest.cpp
     molselectTest.cpp
     openmmTest.cpp
