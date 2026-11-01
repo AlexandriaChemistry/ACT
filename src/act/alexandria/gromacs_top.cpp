@@ -34,6 +34,7 @@
 
 #include "gromacs_top.h"
 
+#include <cmath>
 #include <map>
 
 #include "act/basics/msg_handler.h"
@@ -41,6 +42,7 @@
 #include "act/forcefield/forcefield_parametername.h"
 #include "act/topology/topology.h"
 #include "gromacs/gmxpreprocess/topdirs.h"
+#include "gromacs/math/units.h"
 #include "gromacs/topology/ifunc.h"
 #include "gromacs/utility/fatalerror.h"
 
@@ -82,7 +84,9 @@ static void print_bondeds(MsgHandler                *msg_handler,
         fprintf(out, "  %5c", j+'i');
     }
     fprintf(out, "   type  parameters\n");
-    int subtype = get_subtype(d, ftype);
+    // The Fourier dihedrals of ACT are the Ryckaert-Bellemans dihedrals of
+    // GROMACS, sums of powers of the cosine of phi - 180 degrees
+    int subtype = (F_FOURDIHS == ftype) ? 3 : get_subtype(d, ftype);
     for (auto &entry : entries)
     {
         for (auto &j : entry->atomIndices())
@@ -107,10 +111,39 @@ static void print_bondeds(MsgHandler                *msg_handler,
                     entry->id().id().c_str());
             break;
         case F_ANGLES:
+            // The angles are in radians in ACT and in degrees in GROMACS
             fprintf(out, "  %10g  %10g ; %s\n",
+                    params[angleANGLE]*RAD2DEG,
                     params[angleKT],
-                    params[angleANGLE],
                     entry->id().id().c_str());
+            break;
+        case F_UREY_BRADLEY:
+            fprintf(out, "  %10g  %10g  %10g  %10g ; %s\n",
+                    params[ubANGLE]*RAD2DEG,
+                    params[ubKT],
+                    params[ubR13],
+                    params[ubKUB],
+                    entry->id().id().c_str());
+            break;
+        case F_LINEAR_ANGLES:
+            fprintf(out, "  %10g  %10g ; %s\n",
+                    params[linangA],
+                    params[linangKLIN],
+                    entry->id().id().c_str());
+            break;
+        case F_PDIHS:
+            fprintf(out, "  %10g  %10g  %d ; %s\n",
+                    params[pdihANGLE]*RAD2DEG,
+                    params[pdihKP],
+                    static_cast<int>(std::lround(params[pdihMULT])),
+                    entry->id().id().c_str());
+            break;
+        case F_FOURDIHS:
+            for (int k = fdihC0; k < fdihNR; k++)
+            {
+                fprintf(out, "  %10g", k < static_cast<int>(params.size()) ? params[k] : 0.0);
+            }
+            fprintf(out, " ; %s\n", entry->id().id().c_str());
             break;
         case F_IDIHS:
             fprintf(out, "  0.0 %10g ; %s\n",
@@ -118,6 +151,8 @@ static void print_bondeds(MsgHandler                *msg_handler,
                     entry->id().id().c_str());
             break;
         default: // writes warning
+            fprintf(out, " ; %s, unsupported function %s\n", entry->id().id().c_str(),
+                    interaction_function[ftype].name);
             msg_handler->msg(ACTStatus::Warning,
                              gmx::formatString("Unsupported function type %s for writing GROMACS topology",
                                                interaction_function[ftype].name).c_str());
