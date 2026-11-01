@@ -1188,7 +1188,10 @@ eMinimizeStatus MolHandler::minimizeCoordinates(MsgHandler                      
             constrainForces(newCoords[next], &forces[next]);
             double epotNew = newEnergies[next][InteractionType::EPOT];
             double msfNew  = msForce(theAtoms, forces[next]);
-            acceptStep     = (epotNew <= epotMin) || (msfNew < msfMin);
+            // Only steps that lower the energy, smaller forces alone may
+            // lead away from the minimum, for instance by separating atoms
+            // until there is no force between them
+            acceptStep     = (epotNew <= epotMin);
             double gmin    = gamma;
             if (!acceptStep)
             {
