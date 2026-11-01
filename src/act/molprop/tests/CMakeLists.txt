@@ -42,5 +42,9 @@ gmx_add_unit_test(
     editmpTest.cpp
     molpropTest.cpp
     molpropComponentsTest.cpp
+    sqliteTest.cpp
     )
 target_link_libraries(${exename} actLib ${GMX_EXE_LINKER_FLAGS})
+if(HAVE_LIBSQLITE3)
+    target_link_libraries(${exename} SQLite::SQLite3)
+endif()
