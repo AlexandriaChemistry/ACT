@@ -967,6 +967,63 @@ TEST_F(PhysicsTest, CoulombKernel)
     mol.topologyPtr()->fillParameters(&msghandler_, pd, missingParameters::Ignore);
     compare("width restored");
 }
+
+// Test: The conformations of a dimer whose shells did not converge are
+// counted, and the interactions of a molecule that is not a dimer are empty
+TEST_F(PhysicsTest, ShellConvergenceAndMonomer)
+{
+    auto pd = getForceField("ACS-pol");
+    ASSERT_NE(nullptr, pd);
+    ACTMol mol;
+    ASSERT_TRUE(readMolecule(pd, waterDimer, {}, {}, &mol));
+    ASSERT_TRUE(mol.isDimer());
+    auto                                x0 = mol.xOriginal();
+    std::vector<std::vector<gmx::RVec>> coords(5, x0);
+    // The second molecule moved a little in each conformation
+    size_t natom1 = mol.fragmentHandler()->atomStart()[1];
+    for (size_t c = 0; c < coords.size(); c++)
+    {
+        for (size_t i = natom1; i < x0.size(); i++)
+        {
+            coords[c][i][XX] += 0.02*c;
+        }
+    }
+    // The shells of ACS-pol are so stiff, about 3e12 kJ/mol/nm2, that the
+    // step for a force below about 3e-5 kJ/mol/nm is smaller than the
+    // precision of their coordinates in double precision, so they cannot
+    // converge to a mean square force much below 1e-9.
+    ForceComputer     converged(1e-8, 100, 1);
+    DimerInteractions result;
+    converged.computeInteraction(&msghandler_, pd, &mol, coords, false, &result);
+    EXPECT_TRUE(msghandler_.ok());
+    EXPECT_EQ(coords.size(), result.nconf);
+    EXPECT_EQ(0u, converged.numShellConvergenceFailed()) << "the shells converged";
+    for (size_t c = 0; c < result.nconf; c++)
+    {
+        EXPECT_TRUE(std::isfinite(result.einter[c]));
+    }
+    // One iteration with a tolerance that cannot be reached
+    ForceComputer oneIteration(1e-30, 1, 1);
+    DimerInteractions unconverged;
+    oneIteration.computeInteraction(&msghandler_, pd, &mol, coords, false, &unconverged);
+    EXPECT_GT(oneIteration.numShellConvergenceFailed(), 0u) << "the shells did not converge";
+    EXPECT_EQ(coords.size(), unconverged.nconf);
+
+    // A single molecule has no interactions
+    ACTMol monomer;
+    ASSERT_TRUE(readMolecule(pd, water, {}, {}, &monomer));
+    ASSERT_FALSE(monomer.isDimer());
+    std::vector<std::vector<gmx::RVec>> mcoords(2, monomer.xOriginal());
+    DimerInteractions none = result;
+    forceComp_.computeInteraction(&msghandler_, pd, &monomer, mcoords, false, &none);
+    EXPECT_EQ(0u, none.nconf);
+    EXPECT_TRUE(none.einter.empty() && none.epot.empty() && none.x.empty() && none.f.empty());
+    std::vector<std::map<InteractionType, double>> einter(1);
+    std::vector<double>                            epot(1);
+    std::vector<std::vector<gmx::RVec>>            forces(1);
+    forceComp_.computeInteraction(&msghandler_, pd, &monomer, &mcoords, false, &einter, &epot, &forces);
+    EXPECT_TRUE(einter.empty() && epot.empty() && forces.empty());
+}
 } // namespace
 
 } // namespace alexandria
