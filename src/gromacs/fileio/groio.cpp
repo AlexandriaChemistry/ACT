@@ -210,7 +210,7 @@ static gmx_bool get_w_conf(FILE *in, const char *infile, char *title,
         /* Read fixed format */
         for (m = 0; m < DIM; m++)
         {
-            for (c = 0; (c < ddist && ptr[0]); c++)
+            for (c = 0; (c < ddist && c < static_cast<int>(sizeof(buf)) - 1 && ptr[0]); c++)
             {
                 buf[c] = ptr[0];
                 ptr++;
@@ -232,7 +232,7 @@ static gmx_bool get_w_conf(FILE *in, const char *infile, char *title,
             /* Read fixed format */
             for (m = 0; m < DIM; m++)
             {
-                for (c = 0; (c < ddist && ptr[0]); c++)
+                for (c = 0; (c < ddist && c < static_cast<int>(sizeof(buf)) - 1 && ptr[0]); c++)
                 {
                     buf[c] = ptr[0];
                     ptr++;
