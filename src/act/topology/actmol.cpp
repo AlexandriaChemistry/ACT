@@ -1377,7 +1377,7 @@ void ACTMol::PrintTopology(MsgHandler                   *msg_handler,
     auto commercials = generateCommercials(msg_handler, pd, forceComp, coords);
 
     //! \todo write a replacement for this function
-    print_top_header(fp, pd, haveShells(), commercials, bITP);
+    print_top_header(msg_handler, fp, pd, &topology_, commercials, bITP);
     write_top(msg_handler, fp, printmol.name, &topology_, pd);
     if (!bITP)
     {

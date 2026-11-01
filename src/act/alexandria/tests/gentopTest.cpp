@@ -192,7 +192,9 @@ protected:
 
 // Test: The topology of acetone with harmonic bonds and angles and proper
 // dihedrals, the parameters are those of the force field in the units of
-// GROMACS
+// GROMACS, as are the van der Waals parameters of the pairs of atom types.
+// With GROMACS this gives the energies of ACT, apart from the constant
+// bond energies.
 TEST_F(GentopTest, GromacsTopology)
 {
     std::map<std::string, std::string> files = { { "-p", "acetone.top" }, { "-c", "acetone.pdb" } };
@@ -234,14 +236,46 @@ TEST_F(GentopTest, GromacsTopology)
         EXPECT_NEAR(p.find("kp")->second.value(), std::stod(d.fields[6]), 1e-4) << d.comment;
         EXPECT_EQ(std::lround(p.find("mult")->second.value()), std::stol(d.fields[7])) << d.comment;
     }
-    // The coordinates of all atoms
-    std::ifstream pdb(files["-c"]);
-    int           natom = 0;
+    // Lennard-Jones with sigma and epsilon of the atom types, and those of
+    // the pairs as computed by ACT
+    auto defaults = section(top, "defaults");
+    ASSERT_EQ(1u, defaults.size());
+    std::vector<std::string> expected = { "1", "3", "no", "1", "1" };
+    EXPECT_EQ(expected, defaults[0].fields);
+    for (const auto &a : section(top, "atomtypes"))
+    {
+        ASSERT_EQ(7u, a.fields.size()) << a.fields[0];
+        EXPECT_TRUE(a.fields[4] == "A" || a.fields[4] == "S" || a.fields[4] == "V") << a.fields[0];
+    }
+    auto &vdw   = pd.findForcesConst(InteractionType::VDW);
+    auto  pairs = section(top, "nonbond_params");
+    EXPECT_FALSE(pairs.empty());
+    for (const auto &np : pairs)
+    {
+        ASSERT_EQ(5u, np.fields.size());
+        auto vi = pd.findParticleType(np.fields[0])->interactionTypeToIdentifier(InteractionType::VDW);
+        auto vj = pd.findParticleType(np.fields[1])->interactionTypeToIdentifier(InteractionType::VDW);
+        auto &p = vdw.findParameterMapConst(Identifier({ vi.id(), vj.id() }, { 1 }, CanSwap::Yes));
+        EXPECT_NEAR(p.find("sigma")->second.internalValue(), std::stod(np.fields[3]), 1e-5) << np.fields[0] << " " << np.fields[1];
+        EXPECT_NEAR(p.find("epsilon")->second.internalValue(), std::stod(np.fields[4]), 1e-5) << np.fields[0] << " " << np.fields[1];
+    }
+    // The coordinates of all atoms, with the names in the topology
+    std::ifstream            pdb(files["-c"]);
+    std::vector<std::string> names;
     for (std::string line; std::getline(pdb, line); )
     {
-        natom += (line.rfind("ATOM", 0) == 0 || line.rfind("HETATM", 0) == 0) ? 1 : 0;
+        if (line.rfind("ATOM", 0) == 0 || line.rfind("HETATM", 0) == 0)
+        {
+            std::istringstream name(line.substr(12, 4));
+            names.push_back("");
+            name >> names.back();
+        }
     }
-    EXPECT_EQ(10, natom);
+    ASSERT_EQ(10u, names.size());
+    for (size_t i = 0; i < atoms.size(); i++)
+    {
+        EXPECT_EQ(names[i], atoms[i].fields[4]);
+    }
 }
 
 // Test: Morse bonds, Urey-Bradley angles and Fourier dihedrals, which are
