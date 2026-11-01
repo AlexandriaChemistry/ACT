@@ -37,6 +37,7 @@
 
 #include "../forcecomputer.h"
 
+#include <algorithm>
 #include <cmath>
 #include <map>
 #include <tuple>
@@ -720,8 +721,13 @@ TEST_F(ForceComputerIntegrationTest, VsitesOfManyConformations)
         {
             for(int m = 0; m < DIM; m++)
             {
-                EXPECT_EQ(x[c][a][m], xa[(DIM*a+m)*stride + c]) << "conformation " << c << " particle " << a;
-                EXPECT_EQ(f[c][a][m], fa[(DIM*a+m)*stride + c]) << "conformation " << c << " particle " << a;
+                // The compiler may fuse the multiplications and additions
+                // differently in both loops, which changes the last bits
+                double xs = x[c][a][m], fs = f[c][a][m];
+                EXPECT_NEAR(xs, xa[(DIM*a+m)*stride + c], 1e-13*std::max(1.0, std::abs(xs)))
+                    << "conformation " << c << " particle " << a;
+                EXPECT_NEAR(fs, fa[(DIM*a+m)*stride + c], 1e-13*std::max(1.0, std::abs(fs)))
+                    << "conformation " << c << " particle " << a;
             }
         }
     }

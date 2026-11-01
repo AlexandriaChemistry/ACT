@@ -37,6 +37,7 @@
 
 #include "../vsitehandler.h"
 
+#include <algorithm>
 #include <cmath>
 #include <memory>
 
@@ -630,7 +631,8 @@ static Topology allVsiteTypes()
 
 // Test: The virtual sites of many conformations at once, in the layout of
 // ConformationArrays, are the same as one conformation at a time, for all
-// types, such that optimizing one of the routines does not change results
+// types, to rounding, such that optimizing one of the routines does not
+// change results
 TEST(VsiteHandlerArrays, AllTypes)
 {
     auto   top    = allVsiteTypes();
@@ -691,8 +693,13 @@ TEST(VsiteHandlerArrays, AllTypes)
         {
             for(int m = 0; m < DIM; m++)
             {
-                EXPECT_EQ(x[c][a][m], xa[(DIM*a+m)*stride + c]) << "conformation " << c << " particle " << a;
-                EXPECT_EQ(f[c][a][m], fa[(DIM*a+m)*stride + c]) << "conformation " << c << " particle " << a;
+                // The compiler may fuse the multiplications and additions
+                // differently in both loops, which changes the last bits
+                double xs = x[c][a][m], fs = f[c][a][m];
+                EXPECT_NEAR(xs, xa[(DIM*a+m)*stride + c], 1e-13*std::max(1.0, std::abs(xs)))
+                    << "conformation " << c << " particle " << a;
+                EXPECT_NEAR(fs, fa[(DIM*a+m)*stride + c], 1e-13*std::max(1.0, std::abs(fs)))
+                    << "conformation " << c << " particle " << a;
                 if (top.atoms()[a].pType() == ActParticle::Vsite)
                 {
                     EXPECT_EQ(0, f[c][a][m]) << "the force on virtual site " << a << " is spread";
