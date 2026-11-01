@@ -63,7 +63,9 @@ int min_complex(int argc, char *argv[])
     std::vector<const char *> desc = {
         "alexandria min_complex read a molprop file, and for each complex",
         "(more than 1 fragment) in the file it will take the lowest energy",
-        "structure, minimize the coordinates and store them."
+        "structure, minimize the coordinates and store them.",
+        "The structures are written to files named after the complexes.",
+        "If this fails for any complex, the exit status is nonzero."
     };
     std::vector<t_filenm>     fnm = {
         { efXML, "-ff", "aff",      ffREAD  },
@@ -142,15 +144,23 @@ int min_complex(int argc, char *argv[])
         actmol.Merge(&(*mp));
     
         actmol.GenerateTopology(&msghandler, &pd, missingParameters::Error);
-        std::vector<gmx::RVec> coords = actmol.xOriginal();
+        std::vector<gmx::RVec> coords;
         if (msghandler.ok())
         {
+            coords = actmol.xOriginal();
             std::vector<gmx::RVec> forces(actmol.atomsConst().size());
             //! \todo Not the correct algorithm!
             auto alg   = pd.chargeGenerationAlgorithm();
             actmol.generateCharges(&msghandler, &pd, &forceComp, alg, &coords, &forces);
         }
-        if (msghandler.ok())
+        if (!msghandler.ok())
+        {
+            // The errors are in the log file, continue with the next compound
+            tw->writeStringFormatted("Skipping '%s'\n", mp->getMolname().c_str());
+            msghandler.resetStatus();
+            status = 1;
+        }
+        else
         {
             auto eMin = eMinimizeStatus::OK;
             /* Generate output file for debugging if requested */
@@ -186,6 +196,7 @@ int min_complex(int argc, char *argv[])
             }
             else
             {
+                status = 1;
                 fprintf(stderr, "Minimization failed for %s: %s, check log file %s\n",
                         actmol.getMolname().c_str(),
                         eMinimizeStatusToString(eMin).c_str(),
