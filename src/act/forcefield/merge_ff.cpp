@@ -33,6 +33,7 @@
  */
 #include "actpre.h"
 
+#include <algorithm>
 #include <map>
 #include <set>
 
@@ -57,130 +58,94 @@
 namespace alexandria
 {
 
-//! \brief Merge parameters from multiple force fields into one
+/*! \brief Merge parameters from multiple force fields into one
+ * The parameters are matched by the identifiers of the interactions, or of
+ * the particle types if the parameter is not of an interaction. Each
+ * parameter with mutability Bounded gets the average of its values in the
+ * force fields that have it, and their standard deviation as uncertainty.
+ * \param[in]    pds       The force fields
+ * \param[in]    iType     The interaction type of the parameter
+ * \param[in]    parameter The name of the parameter
+ * \param[inout] pdout     The merged force field, a copy of the first one
+ * \param[in]    limits    If positive, the bounds become the average plus
+ *                         and minus this number of standard deviations
+ */
 static void merge_parameter(const std::vector<alexandria::ForceField> &pds,
                             alexandria::InteractionType                iType,
                             const std::string                         &parameter,
                             alexandria::ForceField                    *pdout,
                             double                                     limits)
 {
-    std::vector<gmx_stats> lsq;
-    std::vector<int>       ntrain;
-    bool                   first = true;
+    // The values and the sum of the training points of each identifier
+    std::map<Identifier, gmx_stats> lsq;
+    std::map<Identifier, int>       ntrain;
+    auto add = [&](const Identifier &id, const ForceFieldParameterMap &params)
+    {
+        auto pp = params.find(parameter);
+        if (pp != params.end())
+        {
+            lsq[id].add_point(0, pp->second.value(), 0, 0);
+            ntrain[id] += pp->second.ntrain();
+        }
+    };
     for (const auto &pd : pds)
     {
-        // Index for lsq vector
-        int  j  = 0;
-        // Loop over forces
         if (pd.interactionPresent(iType))
         {
-            auto fs = pd.findForcesConst(iType);
-            for (const auto &fp : fs.parametersConst())
+            for (const auto &fp : pd.findForcesConst(iType).parametersConst())
             {
-                for (const auto &pp : fp.second)
-                {
-                    if (parameter == pp.first)
-                    {
-                        if (first)
-                        {
-                            gmx_stats newlsq;
-                            lsq.push_back(newlsq);
-                            ntrain.push_back(0);
-                        }
-                        lsq[j].add_point(0, pp.second.value(), 0, 0);
-                        ntrain[j] += pp.second.ntrain();
-                        j++;
-                    }
-                }
+                add(fp.first, fp.second);
             }
         }
         else
         {
-            // Loop over particles
-            for (const auto &pp : pd.particleTypesConst())
+            for (const auto &pt : pd.particleTypesConst())
             {
-                for(const auto &ppar : pp.second.parametersConst())
-                {
-                    if (parameter == ppar.first)
-                    {
-                        if (first)
-                        {
-                            gmx_stats newlsq;
-                            lsq.push_back(newlsq);
-                            ntrain.push_back(0);
-                        }
-                        lsq[j].add_point(0, ppar.second.value(), 0, 0);
-                        ntrain[j] += ppar.second.ntrain();
-                        j++;
-                    }
-                }
+                add(pt.first, pt.second.parametersConst());
             }
         }
-        first = false;
     }
-    int j = 0;
+    auto update = [&](const Identifier &id, ForceFieldParameterMap *params)
+    {
+        auto pp = params->find(parameter);
+        auto st = lsq.find(id);
+        if (pp == params->end() || st == lsq.end() ||
+            pp->second.mutability() != alexandria::Mutability::Bounded)
+        {
+            return;
+        }
+        real average = 0;
+        real sigma   = 0;
+        if ((eStats::OK == st->second.get_average(&average)) &&
+            (eStats::OK == st->second.get_sigma(&sigma)))
+        {
+            auto &p = pp->second;
+            // The average of values within their bounds may be outside the
+            // bounds of the first force field
+            p.setMinimum(std::min(p.minimum(), static_cast<double>(average)));
+            p.setMaximum(std::max(p.maximum(), static_cast<double>(average)));
+            p.setValue(average);
+            p.setUncertainty(sigma);
+            p.setNtrain(ntrain[id]/st->second.get_npoints());
+            if (limits > 0)
+            {
+                p.setMinimum(average-limits*sigma);
+                p.setMaximum(average+limits*sigma);
+            }
+        }
+    };
     if (pdout->interactionPresent(iType))
     {
-        auto forces = pdout->findForces(iType);
-        auto param  = forces->parameters();
-        for (auto &fp : *param)
+        for (auto &fp : *pdout->findForces(iType)->parameters())
         {
-            for (auto &pp : fp.second)
-            {
-                if (parameter == pp.first)
-                {
-                    if (pp.second.mutability() == alexandria::Mutability::Bounded)
-                    {
-                        real   average = 0;
-                        real   sigma   = 0;
-                        if ((eStats::OK == lsq[j].get_average(&average)) &&
-                            (eStats::OK == lsq[j].get_sigma(&sigma)))
-                        {
-                            pp.second.setValue(average);
-                            pp.second.setUncertainty(sigma);
-                            pp.second.setNtrain(ntrain[j]/pds.size());
-                            if (limits > 0)
-                            {
-                                pp.second.setMinimum(average-limits*sigma);
-                                pp.second.setMaximum(average+limits*sigma);
-                            }
-                        }
-                    }
-                    j++;
-                }
-            }
+            update(fp.first, &fp.second);
         }
     }
     else
     {
-        // Loop over particles
-        for (auto &pp : *pdout->particleTypes())
+        for (auto &pt : *pdout->particleTypes())
         {
-            auto mypar = pp.second.parameters();
-            for(auto &ppar : *mypar)
-            {
-                if (parameter == ppar.first)
-                {
-                    if (ppar.second.mutability() == alexandria::Mutability::Bounded)
-                    {
-                        real average = 0;
-                        real sigma   = 0;
-                        if ((eStats::OK == lsq[j].get_average(&average)) &&
-                            (eStats::OK == lsq[j].get_sigma(&sigma)))
-                        {
-                            ppar.second.setValue(average);
-                            ppar.second.setUncertainty(sigma);
-                            ppar.second.setNtrain(ntrain[j]/pds.size());
-                            if (limits > 0)
-                            {
-                                ppar.second.setMinimum(average-limits*sigma);
-                                ppar.second.setMaximum(average+limits*sigma);
-                            }
-                        }
-                    }
-                    j++;
-                }
-            }
+            update(pt.first, pt.second.parameters());
         }
     }
 }

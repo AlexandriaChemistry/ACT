@@ -42,6 +42,7 @@ gmx_add_unit_test(
     checksum_test.cpp
     combinationRuleTest.cpp
     editffTest.cpp
+    mergeffTest.cpp
     forcefield_parameter_test.cpp
     forcefield_parameterlist_test.cpp
     forcefield_test.cpp
