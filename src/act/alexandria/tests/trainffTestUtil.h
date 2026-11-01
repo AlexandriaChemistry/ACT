@@ -163,19 +163,23 @@ inline void readChi2(const std::vector<std::string> &log, TrainOutput *output)
  * \param[in] molName     Base name of the molprop and selection file
  * \param[in] options     Further options and their values, an empty
  *                        value for a boolean option
+ * \param[in] mpFile      Molprop file instead of the one of molName
+ * \param[in] selFile     Selection file instead of the one of molName
  * \return the output
  */
 inline TrainOutput runTrainFF(gmx::test::TestFileManager                           *fileManager,
                               const std::string                                    &label,
                               const std::string                                    &ffName,
                               const std::string                                    &molName,
-                              const std::vector<std::pair<std::string, std::string>> &options)
+                              const std::vector<std::pair<std::string, std::string>> &options,
+                              const std::string                                    &mpFile  = "",
+                              const std::string                                    &selFile = "")
 {
     gmx::test::CommandLine cmd;
     cmd.append("train_ff");
     cmd.addOption("-ff", fileManager->getInputFilePath("trainff/" + ffName));
-    cmd.addOption("-mp", fileManager->getInputFilePath("trainff/" + molName + ".xml"));
-    cmd.addOption("-sel", fileManager->getInputFilePath("trainff/" + molName + ".dat"));
+    cmd.addOption("-mp", mpFile.empty() ? fileManager->getInputFilePath("trainff/" + molName + ".xml") : mpFile);
+    cmd.addOption("-sel", selFile.empty() ? fileManager->getInputFilePath("trainff/" + molName + ".dat") : selFile);
     std::map<std::string, std::string> out = {
         { "-o",       label + "-ff.xml" },
         { "-otest",   label + "-fftest.xml" },

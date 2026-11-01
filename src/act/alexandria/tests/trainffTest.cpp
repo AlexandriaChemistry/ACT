@@ -36,8 +36,12 @@
 
 #include "actpre.h"
 
+#include <algorithm>
 #include <cmath>
+#include <filesystem>
+#include <fstream>
 #include <limits>
+#include <map>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -231,6 +235,103 @@ TEST_F(TrainFFTest, Reproducible)
     }
     EXPECT_EQ(params[0], params[1]);
     EXPECT_NE(params[0], params[2]);
+}
+
+// Test: For a diatomic compound the reference energy minus the
+// electrostatic energy is written as a function of the distance, one
+// point for each structure
+TEST_F(TrainFFTest, Diatomics)
+{
+    auto output = trainfftest::runTrainFF(&fileManager(), "diatomics", "4S-lj14-7-pg-hvdw.xml", "hf-hf",
+                                          { { "-nooptimize", "" }, { "-diatomics", "" },
+                                            { "-fit", "sigma epsilon" }, { "-fc_epot", "1" } });
+    ASSERT_EQ(0, output.status);
+    // The file is named after the compound, in the working directory
+    auto fileName = (std::filesystem::path(fileManager().getTemporaryFilePath("x")).parent_path() /
+                     "hydrogen-fluoride.xvg").string();
+    auto lines    = trainfftest::readLines(fileName);
+    int  npoints  = 0;
+    for (const auto &line : lines)
+    {
+        if (line.empty() || line[0] == '#' || line[0] == '@')
+        {
+            continue;
+        }
+        std::istringstream iss(line);
+        double             r, e;
+        ASSERT_TRUE(static_cast<bool>(iss >> r >> e)) << line;
+        // The bond lengths of the structures, in nm
+        EXPECT_GT(r, 0.07);
+        EXPECT_LT(r, 0.11);
+        EXPECT_TRUE(std::isfinite(e));
+        npoints += 1;
+    }
+    EXPECT_EQ(10, npoints);
+    std::filesystem::remove(fileName);
+}
+
+// Test: The electrostatic potential, multipoles and polarizabilities of
+// molecules with ESP data are analysed, the molecules with the energies
+// written to a molprop file, and the structures of all energies dumped
+// even though their data files include a directory
+TEST_F(TrainFFTest, ChargesEspPolarizability)
+{
+    auto selFile = fileManager().getTemporaryFilePath("acm.dat");
+    {
+        std::ofstream sel(selFile);
+        sel << "1-butanol|Train\nacetone|Train\nwater|Test\n";
+    }
+    std::map<std::string, std::string> files = {
+        { "-alphacorr", "alpha.xvg" }, { "-isopol", "isopol.xvg" }, { "-anisopol", "anisopol.xvg" },
+        { "-espcorr", "esp.xvg" }, { "-qhisto", "qhisto.xvg" }, { "-mpout", "mpout.xml" }
+    };
+    Options options = {
+        { "-nooptimize", "" }, { "-fit", "chi eta" }, { "-fc_esp", "1" }, { "-fc_polar", "1" },
+        { "-fc_mu", "1" }, { "-fc_epot", "1" }, { "-dump_outliers", "0" }
+    };
+    for (auto &f : files)
+    {
+        f.second = fileManager().getTemporaryFilePath(f.second);
+        options.push_back(f);
+    }
+    auto output = trainfftest::runTrainFF(&fileManager(), "acm", "../ACS-pg.xml", "acm", options,
+                                          fileManager().getInputFilePath("../../molprop/tests/molprop.xml"),
+                                          selFile);
+    ASSERT_EQ(0, output.status);
+    for (const auto &f : files)
+    {
+        ASSERT_TRUE(std::filesystem::exists(f.second)) << f.first;
+        EXPECT_GT(std::filesystem::file_size(f.second), 0u) << f.first;
+    }
+    int nesp = 0, nalpha = 0;
+    for (const auto &line : output.log)
+    {
+        nesp   += line.find("ESP rms:") == 0;
+        nalpha += line.find("Isotropic polarizability:") == 0;
+    }
+    // One potential for each compound, the polarizability for each of the
+    // two levels of theory for butanol and water, one for acetone
+    EXPECT_EQ(3, nesp);
+    EXPECT_EQ(5, nalpha);
+    auto mpout = trainfftest::readLines(files["-mpout"]);
+    EXPECT_EQ(3, std::count_if(mpout.begin(), mpout.end(),
+                               [](const std::string &l) { return l.find("<molecule ") != std::string::npos; }));
+    // One structure for each energy, with the atoms
+    auto dir    = std::filesystem::path(files["-mpout"]).parent_path();
+    int  nxyz   = 0;
+    for (const auto &entry : std::filesystem::directory_iterator(dir))
+    {
+        auto name = entry.path().filename().string();
+        if (entry.path().extension() == ".xyz" && name.find("-EPOT-") != std::string::npos)
+        {
+            auto xyz = trainfftest::readLines(entry.path().string());
+            ASSERT_FALSE(xyz.empty());
+            EXPECT_EQ(xyz.size(), 2 + std::stoul(xyz[0])) << name;
+            std::filesystem::remove(entry.path());
+            nxyz += 1;
+        }
+    }
+    EXPECT_EQ(5, nxyz);
 }
 
 } // namespace
