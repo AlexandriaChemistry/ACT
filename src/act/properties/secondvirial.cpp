@@ -1025,7 +1025,7 @@ int b2(int argc, char *argv[])
         { efXML, "-ff",      "aff",     ffREAD  }
     };
     gmx_output_env_t         *oenv;
-    static char              *molnm            = (char *)"";
+    char                     *molnm            = (char *)"";
     double                    shellToler       = 1e-6;
     int                       maxdimers        = 1024;
     int                       shellMaxIter     = 25;

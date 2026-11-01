@@ -360,22 +360,22 @@ int analyze(int argc, char *argv[])
         { efDAT, "-selout", "selout",    ffOPTWR  },
         { efXVG, "-c",      "correl",    ffWRITE  }
     };
-    static int                       catmin            = 1;
-    static int                       maxwarn           = 0;
-    static char                     *fc_str            = (char *)"";
-    static real                      rtoler            = 0.15;
-    static real                      atoler            = 0;
-    static real                      outlier           = 1;
-    static gmx_bool                  bMerge            = true;
-    static gmx_bool                  bAll              = false;
-    static gmx_bool                  bCalcPol          = true;
-    static gmx_bool                  bPrintBasis       = true;
-    static gmx_bool                  bPrintMultQ       = false;
-    static gmx_bool                  bStatsTable       = true;
-    static gmx_bool                  bPropTable        = true;
+    int                              catmin            = 1;
+    int                              maxwarn           = 0;
+    char                            *fc_str            = (char *)"";
+    real                             rtoler            = 0.15;
+    real                             atoler            = 0;
+    real                             outlier           = 1;
+    gmx_bool                         bMerge            = true;
+    gmx_bool                         bAll              = false;
+    gmx_bool                         bCalcPol          = true;
+    gmx_bool                         bPrintBasis       = true;
+    gmx_bool                         bPrintMultQ       = false;
+    gmx_bool                         bStatsTable       = true;
+    gmx_bool                         bPropTable        = true;
 
-    static char                     *sort[]            = {nullptr, (char *)"molname", (char *)"formula", (char *)"composition", (char *)"selection", nullptr};
-    static char                     *prop[]            = {nullptr, (char *)"potential", (char *)"dipole", (char *)"quadrupole", (char *)"polarizability", (char *)"energy", (char *)"entropy", nullptr};
+    char                            *sort[]            = {nullptr, (char *)"molname", (char *)"formula", (char *)"composition", (char *)"selection", nullptr};
+    char                            *prop[]            = {nullptr, (char *)"potential", (char *)"dipole", (char *)"quadrupole", (char *)"polarizability", (char *)"energy", (char *)"entropy", nullptr};
 
     std::vector<t_pargs> pa = {
         { "-sort",   FALSE, etENUM, {sort},

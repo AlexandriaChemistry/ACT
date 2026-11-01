@@ -99,21 +99,21 @@ int gentop(int argc, char *argv[])
         { efPDB, "-pdbdiff",    "pdbdiff",   ffOPTWR }
     };
 
-    static int                       nsymm          = 0;
-    static int                       ntrain         = 1;
-    static real                      spacing        = 0.01;
-    static real                      border         = 0.2;
-    static real                      mDrude         = 0.1;
-    static char                     *symm_string    = (char *)"";
-    static char                     *conf           = (char *)"minimum";
-    static char                     *jobtype        = (char *)"Opt";
-    static char                     *resnames       = (char *)"";
+    int                              nsymm          = 0;
+    int                              ntrain         = 1;
+    real                             spacing        = 0.01;
+    real                             border         = 0.2;
+    real                             mDrude         = 0.1;
+    char                            *symm_string    = (char *)"";
+    char                            *conf           = (char *)"minimum";
+    char                            *jobtype        = (char *)"Opt";
+    char                            *resnames       = (char *)"";
     //! Write shells to trajectory and coordinates
     bool                             writeShells    = false;
-    static gmx_bool                  bITP           = false;
-    static gmx_bool                  bAllowMissing  = false;
-    static gmx_bool                  addNumbersToAtoms = true;
-    static rvec                      mybox           = { 0, 0, 0 };
+    gmx_bool                         bITP           = false;
+    gmx_bool                         bAllowMissing  = false;
+    gmx_bool                         addNumbersToAtoms = true;
+    rvec                             mybox           = { 0, 0, 0 };
 
     std::vector<t_pargs> pa =
     {
