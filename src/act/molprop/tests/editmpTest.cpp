@@ -1,0 +1,177 @@
+/*
+ * This source file is part of the Alexandria program.
+ *
+ * Copyright (C) 2023,2026
+ *
+ * Developers:
+ *             Mohammad Mehdi Ghahremanpour,
+ *             Julian Marrades,
+ *             Marie-Madeleine Walz,
+ *             Paul J. van Maaren,
+ *             David van der Spoel (Project leader)
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor,
+ * Boston, MA  02110-1301, USA.
+ */
+
+/*! \internal \brief
+ * Tests of the edit_mp module.
+ */
+
+#include "actpre.h"
+
+#include <filesystem>
+#include <fstream>
+#include <map>
+#include <sstream>
+#include <string>
+#include <vector>
+
+#include <gtest/gtest.h>
+
+#include "act/alexandria/alex_modules.h"
+#include "act/basics/msg_handler.h"
+#include "act/molprop/molprop.h"
+#include "act/molprop/molprop_xml.h"
+
+#include "testutils/cmdlinetest.h"
+#include "testutils/testfilemanager.h"
+
+namespace alexandria
+{
+
+namespace
+{
+
+class EditMPTest : public gmx::test::CommandLineTestBase
+{
+protected:
+    //! The log file of the last run
+    std::string log_;
+
+    /*! \brief Run edit_mp
+     * \param[in] inputs  The molprop files
+     * \param[in] options The other options
+     * \return the molecules in the output file
+     */
+    std::vector<MolProp> run(const std::vector<std::string>                        &inputs,
+                             const std::vector<std::pair<std::string, std::string>> &options = {})
+    {
+        auto output = fileManager().getTemporaryFilePath("out.xml");
+        log_        = fileManager().getTemporaryFilePath("edit_mp.log");
+        gmx::test::CommandLine cmd;
+        cmd.append("edit_mp");
+        cmd.addOption("-mp");
+        for (const auto &in : inputs)
+        {
+            cmd.append(in);
+        }
+        cmd.addOption("-o", output);
+        cmd.addOption("-g", log_);
+        for (const auto &o : options)
+        {
+            cmd.addOption(o.first.c_str(), o.second);
+        }
+        EXPECT_EQ(0, edit_mp(cmd.argc(), cmd.argv()));
+        std::vector<MolProp> mps;
+        EXPECT_TRUE(std::filesystem::exists(output));
+        MolPropRead(nullptr, output.c_str(), &mps);
+        return mps;
+    }
+
+    //! \return the molecules in a file
+    static std::vector<MolProp> read(const std::string &fileName)
+    {
+        std::vector<MolProp> mps;
+        MolPropRead(nullptr, fileName.c_str(), &mps);
+        return mps;
+    }
+
+    //! \return the number of experiments of each molecule
+    static std::map<std::string, size_t> experiments(const std::vector<MolProp> &mps)
+    {
+        std::map<std::string, size_t> n;
+        for (const auto &mp : mps)
+        {
+            n[mp.getMolname()] += mp.experimentConst().size();
+        }
+        return n;
+    }
+};
+
+// Test: Writing the molecules of a file gives the same molecules
+TEST_F(EditMPTest, RoundTrip)
+{
+    auto input = fileManager().getInputFilePath("molprop.xml");
+    auto ref   = read(input);
+    auto mps   = run({ input });
+    ASSERT_EQ(ref.size(), mps.size());
+    EXPECT_EQ(experiments(ref), experiments(mps));
+    for (size_t i = 0; i < ref.size(); i++)
+    {
+        EXPECT_EQ(ref[i].getMolname(), mps[i].getMolname());
+        EXPECT_EQ(ref[i].NAtom(), mps[i].NAtom());
+        EXPECT_EQ(ref[i].formula(), mps[i].formula());
+    }
+}
+
+// Test: Molecules of different files are combined, sorted by name
+TEST_F(EditMPTest, MergeFiles)
+{
+    auto first  = fileManager().getInputFilePath("molprop.xml");
+    auto second = fileManager().getInputFilePath("../../alexandria/tests/trainff/booze-mono.xml");
+    auto mps    = run({ first, second });
+    std::vector<std::string> names;
+    for (const auto &mp : mps)
+    {
+        names.push_back(mp.getMolname());
+    }
+    std::vector<std::string> expected = { "1-butanol", "acetone", "ethanol", "methanol", "water" };
+    EXPECT_EQ(expected, names);
+}
+
+// Test: The same molecule in two files is one molecule with the
+// experiments of both
+TEST_F(EditMPTest, MergeDuplicates)
+{
+    auto input = fileManager().getInputFilePath("molprop.xml");
+    auto ref   = experiments(read(input));
+    auto mps   = run({ input, input });
+    auto n     = experiments(mps);
+    ASSERT_EQ(ref.size(), mps.size());
+    for (const auto &r : ref)
+    {
+        EXPECT_EQ(2*r.second, n[r.first]) << r.first;
+    }
+}
+
+// Test: With a force field the compounds are checked, the results are in
+// the log file, and the output has all their data
+TEST_F(EditMPTest, CheckWithForceField)
+{
+    auto input = fileManager().getInputFilePath("molprop.xml");
+    auto mps   = run({ input }, { { "-ff", fileManager().getInputFilePath("../../alexandria/tests/ACS-g.xml") } });
+    // Checking does not change the compounds
+    EXPECT_EQ(read(input).size(), mps.size());
+    EXPECT_EQ(experiments(read(input)), experiments(mps));
+    std::ifstream     in(log_);
+    std::stringstream text;
+    text << in.rdbuf();
+    EXPECT_NE(std::string::npos, text.str().find("Force field file")) << text.str();
+}
+
+} // namespace
+
+} // namespace alexandria
