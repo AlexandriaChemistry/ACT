@@ -110,7 +110,7 @@ TEST_F(GenFFTest, Defaults)
     EXPECT_EQ("f", f->optionValue("vdwtype"));
     EXPECT_EQ(Mutability::ACM, f->parameterConst("charge").mutability());
     // The charge starts in the middle of its range
-    auto &qhf = pd.findParticleType("hf")->parameterConst("charge");
+    auto qhf = pd.findParticleType("hf")->parameterConst("charge");
     EXPECT_DOUBLE_EQ(0, qhf.minimum());
     EXPECT_DOUBLE_EQ(0.25, qhf.value());
     EXPECT_DOUBLE_EQ(0.5, qhf.maximum());

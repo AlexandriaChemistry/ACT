@@ -368,9 +368,9 @@ protected:
         double ERot   = cvRot*cRoomT/1000;
         double STrans = sackurTetrode(mass, cRoomT);
         double SRot   = rigidRotor(atoms, mol.linear, mol.sigma, cRoomT);
-        const auto &S  = rt.at("Standard entropy");
-        const auto &cv = rt.at("Heat capacity cV");
-        const auto &E  = rt.at("Internal energy");
+        const auto S   = rt.at("Standard entropy");
+        const auto cv  = rt.at("Heat capacity cV");
+        const auto E   = rt.at("Internal energy");
         EXPECT_NEAR(STrans, jsonValue(S.at("Translation")), relTol(STrans, 1e-4));
         EXPECT_NEAR(SRot, jsonValue(S.at("Rotation")), relTol(SRot, 2e-3));
         EXPECT_NEAR(vib.S, jsonValue(S.at("Vibration")), relTol(vib.S, 1e-4));
@@ -407,7 +407,7 @@ protected:
         NmaOutput out;
         ASSERT_EQ(0, runNma(mol.file, "nma", {}, &out));
         ASSERT_FALSE(out.json.empty());
-        const auto &sim  = out.json.at("simulate");
+        const auto  sim  = out.json.at("simulate");
         auto        freq = jsonSeries(sim.at("Frequencies").at("Alexandria"));
         auto        inte = jsonSeries(sim.at("Intensities").at("Alexandria"));
         EXPECT_EQ(mol.nModes, freq.size());
@@ -424,7 +424,7 @@ protected:
         }
         auto atoms = readPdb(out.confout);
         ASSERT_FALSE(atoms.empty());
-        const auto &thermo = sim.at("Thermochemistry").at("Alexandria");
+        const auto thermo = sim.at("Thermochemistry").at("Alexandria");
         EXPECT_EQ(mol.sigma, std::stoi(thermo.at("Symmetry number").get<std::string>()));
         checkThermochemistry(mol, thermo, freq, atoms);
 
@@ -527,9 +527,9 @@ TEST_F(NmaTest, SymmetryNumber)
         ASSERT_EQ(0, runNma(mol.file, "sigma", {}, &out));
         auto atoms = readPdb(out.confout);
         double SRot = rigidRotor(atoms, mol.linear, mol.sigma, cRoomT);
-        const auto &thermo = out.json.at("simulate").at("Thermochemistry").at("Alexandria");
+        const auto thermo = out.json.at("simulate").at("Thermochemistry").at("Alexandria");
         EXPECT_EQ(mol.sigma, std::stoi(thermo.at("Symmetry number").get<std::string>()));
-        const auto &S = thermo.at(gmx::formatString("T=%g", cRoomT)).at("Standard entropy");
+        const auto S = thermo.at(gmx::formatString("T=%g", cRoomT)).at("Standard entropy");
         EXPECT_NEAR(SRot, jsonValue(S.at("Rotation")), 2e-3*SRot + 6e-4);
     }
 }
@@ -546,7 +546,7 @@ TEST_F(NmaTest, InfraredSpectrum)
             NmaOutput out;
             ASSERT_EQ(0, runNma(molFile, gmx::formatString("ir%g", linewidth),
                                 { "-linewidth", gmx::formatString("%g", linewidth) }, &out));
-            const auto &sim  = out.json.at("simulate");
+            const auto  sim  = out.json.at("simulate");
             auto        freq = jsonSeries(sim.at("Frequencies").at("Alexandria"));
             auto        inte = jsonSeries(sim.at("Intensities").at("Alexandria"));
             auto        spec = readSpectrum(out.spectrum);

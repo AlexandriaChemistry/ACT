@@ -133,7 +133,7 @@ TEST_F(MergeFFTest, Average)
 TEST_F(MergeFFTest, Limits)
 {
     auto pd = merge({ input_, modified("second.xml") }, { { "-merge", "chi" }, { "-limits", "2" } });
-    auto &p = acm(pd, "h_z", "chi");
+    auto p = acm(pd, "h_z", "chi");
     EXPECT_DOUBLE_EQ(3.25, p.minimum());
     EXPECT_DOUBLE_EQ(4.25, p.maximum());
 }
