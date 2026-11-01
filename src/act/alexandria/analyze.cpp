@@ -466,7 +466,7 @@ int analyze(int argc, char *argv[])
         if (!msghandler.ok())
         {
             fprintf(stderr, "Too many warnings. Terminating.\n");
-            return 0;
+            return 1;
         }
     }
     else if (mpname.size() > 0)

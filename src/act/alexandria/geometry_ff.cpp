@@ -269,7 +269,7 @@ int geometry_ff(int argc, char *argv[])
     if (!msghandler.ok())
     {
         fprintf(stderr, "Too many warnings. Terminating.\n");
-        return 0;
+        return 1;
     }
     std::vector<ACTMol> actmols;
     bonds.extractGeometries(&msghandler, &mp, &actmols, &pd, gms);
