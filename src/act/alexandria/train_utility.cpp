@@ -39,6 +39,7 @@
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
+#include <filesystem>
 
 #include "act/alexandria/pdbwriter.h"
 #include "act/basics/interactiontype.h"
@@ -1405,10 +1406,13 @@ static void collectOutlier(std::vector<Outlier> *outliers,
         }
         if (dumpOutliers >= 0 && deltaE >= dumpOutliers*sigma)
         {
-            std::string myfnm = gmx::formatString("%s-%s-%s.xyz", 
-                                                  mol->getMolname().c_str(),
-                                                  label.c_str(),
-                                                  ener.datafile().c_str());
+            // Only the name of the data file, which may include a path,
+            // dump_xyz adds the extension
+            auto        datafile = std::filesystem::path(ener.datafile()).filename().string();
+            std::string myfnm    = gmx::formatString("%s-%s-%s",
+                                                     mol->getMolname().c_str(),
+                                                     label.c_str(),
+                                                     datafile.c_str());
             dump_xyz(myfnm, mol, ener);
         }
     }
