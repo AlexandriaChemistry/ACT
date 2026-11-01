@@ -48,6 +48,7 @@
 #include "act/utility/timings.h"
 #include "gromacs/math/vec.h"
 #include "gromacs/math/units.h"
+#include "gromacs/utility/basedefinitions.h"
 
 namespace alexandria
 {
@@ -1710,17 +1711,6 @@ static const std::vector<InteractionType> &energyTypes(Potential mypot)
     }
 }
 
-/*! \brief Store the energies of one potential and add them to the potential energy
- * \param[in]    mypot      The potential
- * \param[in]    nslot      The number of computed conformations
- * \param[in]    confs      The conformation computed in each slot, if
- *                          nullptr slot i holds conformation i
- * \param[inout] cener      The energies of all conformations
- * \param[in]    energies   The energies, energy k of slot i is stored
- *                          at energies[i*confStride + k*termStride]
- * \param[in]    confStride Stride between slots
- * \param[in]    termStride Stride between energy terms
- */
 /*! \brief The energy terms of a potential used for an interaction type
  * A potential with one term, used for a correction, gives the energy of
  * that correction rather than its usual term, e.g. MACDANIEL_SCHMIDT for
@@ -1748,6 +1738,60 @@ static const std::vector<InteractionType> &energyTypes(Potential mypot, Interact
     return types;
 }
 
+/*! \brief Store the energies of one term, as Term::set but without branches
+ * The pointers are restricted, since otherwise each store to have, which
+ * may alias anything, loads all of them again. Then the loop vectorizes if
+ * the slots hold the conformations in order.
+ * \tparam      nsum       Number of energies summed for the term
+ * \param[in]    nslot      The number of computed conformations
+ * \param[in]    confs      The conformation in each slot, if nullptr slot i
+ *                          holds conformation i
+ * \param[in]    e          The energies to sum, that of slot i at e[k][i*confStride]
+ * \param[in]    confStride Stride between slots
+ * \param[in]    add        Whether to add to the energies there are
+ * \param[inout] act        The energies, see ConformationEnergies::Term
+ * \param[inout] before     The backups
+ * \param[inout] have       Whether there is an energy
+ */
+template<int nsum>
+static void storeTerm(size_t                     nslot,
+                      const size_t *gmx_restrict confs,
+                      const double              *e[nsum],
+                      size_t                     confStride,
+                      bool                       add,
+                      double       *gmx_restrict act,
+                      double       *gmx_restrict before,
+                      char         *gmx_restrict have)
+{
+    const double *gmx_restrict e0 = e[0];
+    const double *gmx_restrict e1 = e[nsum > 1 ? 1 : 0];
+    const double *gmx_restrict e2 = e[nsum > 2 ? 2 : 0];
+    for(size_t i = 0; i < nslot; i++)
+    {
+        size_t c    = confs ? confs[i] : i;
+        double ei   = e0[i*confStride];
+        if (nsum == 3)
+        {
+            ei = ei + e1[i*confStride] + e2[i*confStride];
+        }
+        double prev = (add && have[c]) ? act[c] : 0.0;
+        before[c]   = have[c] ? before[c] : 0.0;
+        have[c]     = 1;
+        act[c]      = prev + ei;
+    }
+}
+
+/*! \brief Store the energies of one potential and add them to the potential energy
+ * \param[in]    mypot      The potential
+ * \param[in]    nslot      The number of computed conformations
+ * \param[in]    confs      The conformation computed in each slot, if
+ *                          nullptr slot i holds conformation i
+ * \param[inout] cener      The energies of all conformations
+ * \param[in]    energies   The energies, energy k of slot i is stored
+ *                          at energies[i*confStride + k*termStride]
+ * \param[in]    confStride Stride between slots
+ * \param[in]    termStride Stride between energy terms
+ */
 static void storeEnergies(Potential             mypot,
                           size_t                nslot,
                           const size_t         *confs,
@@ -1765,31 +1809,15 @@ static void storeEnergies(Potential             mypot,
     auto eEpot = cener->add(InteractionType::EPOT);
     // When the entries are computed in parts, the energies are added
     bool accumulate = cener->accumulate();
-    // As Term::set, but without branches, one term at a time such that the
-    // energies are contiguous.
+    // One term at a time such that the energies are contiguous
     for(size_t k = 0; k < itypes.size(); k++)
     {
-        const double *ek = energies + k*termStride;
-        auto         &t  = terms[k];
-        for(size_t i = 0; i < nslot; i++)
-        {
-            size_t c    = confs ? confs[i] : i;
-            double prev = (accumulate && t.have[c]) ? t.act[c] : 0.0;
-            t.before[c] = t.have[c] ? t.before[c] : 0.0;
-            t.have[c]   = 1;
-            t.act[c]    = prev + ek[i*confStride];
-        }
+        const double *ek[1] = { energies + k*termStride };
+        storeTerm<1>(nslot, confs, ek, confStride, accumulate,
+                     terms[k].act, terms[k].before, terms[k].have);
     }
-    for(size_t i = 0; i < nslot; i++)
-    {
-        size_t        c      = confs ? confs[i] : i;
-        const double *myener = energies + i*confStride;
-        double epot  = myener[0] + myener[termStride] + myener[2*termStride];
-        double prev  = eEpot.have[c] ? eEpot.act[c] : 0.0;
-        eEpot.before[c] = eEpot.have[c] ? eEpot.before[c] : 0.0;
-        eEpot.have[c]   = 1;
-        eEpot.act[c]    = epot + prev;
-    }
+    const double *eall[3] = { energies, energies + termStride, energies + 2*termStride };
+    storeTerm<3>(nslot, confs, eall, confStride, true, eEpot.act, eEpot.before, eEpot.have);
 }
 
 /*! \brief Whether a potential uses the charges of the atoms
@@ -2403,7 +2431,7 @@ static bool calcConformations(Potential                        mypot,
     {
         return false;
     }
-    storeEnergies(mypot, ca->nconf, ca->conformations().data(), cener, energies.data(), 1, ca->stride);
+    storeEnergies(mypot, ca->nconf, ca->slots(), cener, energies.data(), 1, ca->stride);
     keepEnergies(energies.data(), energies.size(), 1, ca->stride, cached);
     // The padding conformations are computed as well, but not counted
     Timings::instance().addFlops(ca->nconf*interactionFlops(mypot, topentries, atoms, forces));
@@ -2424,7 +2452,6 @@ static const size_t maxCoulombKernel = 4*1024*1024;
  * \param[inout] ca         Coordinates of the conformations, all in the slots
  * \param[inout] cener      The energies of all conformations
  * \param[in]    epsilonr   Relative dielectric constant
- * \param[in]    parameterVersion  Topology::parameterVersion of the interactions
  * \param[in]    coordinateVersion ConformationData::coordinates
  * \param[inout] cached     The kernel, and the energies are kept here
  * \return false if this is not possible for the potential
@@ -2435,7 +2462,6 @@ static bool calcCoulombKernel(Potential                   mypot,
                               ConformationArrays         *ca,
                               ConformationEnergies       *cener,
                               double                      epsilonr,
-                              size_t                      parameterVersion,
                               size_t                      coordinateVersion,
                               CachedEnergies             *cached)
 {
@@ -2451,89 +2477,84 @@ static bool calcCoulombKernel(Potential                   mypot,
         return false;
     }
     ScopedTimer timer(potentialTimer(mypot));
-    auto &kernel = cached->kernel;
-    auto &terms  = cached->kernelTerms;
-    // The widths of the second charges are properties of the atoms
-    bool sameWidths = (cached->kernelZetaVS.size() == atoms.size());
-    for(size_t i = 0; i < atoms.size() && sameWidths; i++)
+    auto       &kernel = cached->kernel;
+    auto       &terms  = cached->kernelTerms;
+    auto       &widths = cached->kernelWidths;
+    const auto &x      = ca->x;
+    auto       &xk     = cached->kernelX;
+    // Whether kernel holds these interactions and conformations, otherwise
+    // all are computed
+    bool sameShape = (cached->kernelValid && cached->kernelEntries == ne &&
+                      cached->kernelConformations == ca->nconf && cached->kernelStride == st &&
+                      terms.size() == ne && widths.size() == 4*ne && xk.size() == x.size());
+    if (!sameShape)
     {
-        sameWidths = (cached->kernelZetaVS[i] == atoms[i].zetaVS());
+        kernel.resize(4*ne*st);
+        terms.assign(ne, 0);
+        widths.assign(4*ne, 0.0);
     }
-    // The terms with a second charge are only needed if the atoms have one
-    std::vector<unsigned char> needed(ne);
-    bool haveTerms = (terms.size() == ne);
+    // The particles that moved, such as virtual sites when their
+    // parameters change
+    bool              newCoordinates = (cached->kernelCoordinateVersion != coordinateVersion);
+    std::vector<char> moved;
+    if (sameShape && newCoordinates)
+    {
+        size_t natom = x.size()/(DIM*st);
+        moved.resize(natom);
+        for(size_t a = 0; a < natom; a++)
+        {
+            moved[a] = !std::equal(x.begin() + DIM*a*st, x.begin() + DIM*(a+1)*st,
+                                   xk.begin() + DIM*a*st);
+        }
+    }
+    // The interactions to compute again, with the terms of each: those
+    // whose widths changed, of particles that moved, or that need terms
+    // with second charges that were not computed. When the widths are
+    // trained, only the interactions with the changed widths are computed.
+    std::vector<unsigned char> todo(ne, 0);
+    size_t                     ntodo = 0;
     for(size_t e = 0; e < ne; e++)
     {
-        const auto &ind = topentries[e]->atomIndices();
-        bool vsi = atoms[ind[0]].chargeVS() != 0;
-        bool vsj = atoms[ind[1]].chargeVS() != 0;
-        needed[e] = 1 | (vsj ? 2 : 0) | (vsi ? 4 : 0) | (vsi && vsj ? 8 : 0);
-        haveTerms = haveTerms && (terms[e] & needed[e]) == needed[e];
+        const auto   &params = topentries[e]->params();
+        const auto   &ind    = topentries[e]->atomIndices();
+        const auto   &ai     = atoms[ind[0]];
+        const auto   &aj     = atoms[ind[1]];
+        bool          vsi    = ai.chargeVS() != 0;
+        bool          vsj    = aj.chargeVS() != 0;
+        unsigned char needed = 1 | (vsj ? 2 : 0) | (vsi ? 4 : 0) | (vsi && vsj ? 8 : 0);
+        // The widths the terms are computed from, see coulombKernelsExplicitSimd
+        const double  w[4]   = { params[coulZETA], ai.zetaVS(), params[coulZETA2], aj.zetaVS() };
+        double       *we     = widths.data() + 4*e;
+        bool          same   = (sameShape && (terms[e] & needed) == needed &&
+                                std::equal(w, w + 4, we) &&
+                                !(!moved.empty() && (moved[ind[0]] || moved[ind[1]])));
+        if (!same)
+        {
+            todo[e]  = needed;
+            terms[e] = needed;
+            std::copy(w, w + 4, we);
+            ntodo   += 1;
+        }
     }
-    // Whether the kernel holds these interactions with these parameters
-    bool sameSetup = (cached->kernelValid && sameWidths && haveTerms &&
-                      cached->kernelParameterVersion == parameterVersion &&
-                      cached->kernelEntries == ne && cached->kernelConformations == ca->nconf &&
-                      cached->kernelStride == st);
-    if (!sameSetup || cached->kernelCoordinateVersion != coordinateVersion)
+    if (ntodo > 0)
     {
-        // The interactions to compute, with the terms of each
-        std::vector<unsigned char> todo;
-        size_t                     ntodo = ne;
-        const auto                &x     = ca->x;
-        auto                      &xk    = cached->kernelX;
-        if (sameSetup && xk.size() == x.size())
-        {
-            // Only the interactions of particles that moved, such as
-            // virtual sites when their parameters change
-            size_t            natom = x.size()/(DIM*st);
-            std::vector<char> moved(natom);
-            for(size_t a = 0; a < natom; a++)
-            {
-                moved[a] = !std::equal(x.begin() + DIM*a*st, x.begin() + DIM*(a+1)*st,
-                                       xk.begin() + DIM*a*st);
-            }
-            todo  = terms;
-            ntodo = 0;
-            for(size_t e = 0; e < ne; e++)
-            {
-                const auto &ind = topentries[e]->atomIndices();
-                if (moved[ind[0]] || moved[ind[1]])
-                {
-                    ntodo += 1;
-                }
-                else
-                {
-                    todo[e] = 0;
-                }
-            }
-        }
-        else
-        {
-            kernel.resize(4*ne*st);
-            terms = needed;
-            todo  = terms;
-        }
         cached->kernelValid = coulombKernelsExplicitSimd(topentries, atoms, st, x.data(),
                                                          todo.data(), kernel.data());
         if (!cached->kernelValid)
         {
             return false;
         }
-        xk.assign(x.begin(), x.end());
-        cached->kernelParameterVersion  = parameterVersion;
-        cached->kernelCoordinateVersion = coordinateVersion;
-        cached->kernelEntries           = ne;
-        cached->kernelConformations     = ca->nconf;
-        cached->kernelStride            = st;
-        cached->kernelZetaVS.resize(atoms.size());
-        for(size_t i = 0; i < atoms.size(); i++)
-        {
-            cached->kernelZetaVS[i] = atoms[i].zetaVS();
-        }
+        cached->kernelEntries       = ne;
+        cached->kernelConformations = ca->nconf;
+        cached->kernelStride        = st;
         // As computing the potential, where terms without charge are left
         // out, for the interactions computed
         Timings::instance().addFlops(ca->nconf*interactionFlops(mypot, topentries, atoms, false)*ntodo/ne);
+    }
+    if (newCoordinates || !sameShape)
+    {
+        xk.assign(x.begin(), x.end());
+        cached->kernelCoordinateVersion = coordinateVersion;
     }
     // The energies for the charges of the atoms, each term as in the
     // explicit SIMD routine of the potential
@@ -2562,7 +2583,7 @@ static bool calcCoulombKernel(Potential                   mypot,
             }
         }
     }
-    storeEnergies(mypot, ca->nconf, ca->conformations().data(), cener, energies.data(), 1, st);
+    storeEnergies(mypot, ca->nconf, ca->slots(), cener, energies.data(), 1, st);
     keepEnergies(energies.data(), energies.size(), 1, st, cached);
     Timings::instance().addFlops(flops);
     return true;
@@ -2616,18 +2637,29 @@ static inline void lowComputeEnergies(MsgHandler                *msghandler,
     // do not visit those for which the shells converged. When few shells
     // are left to relax, visiting all conformations takes longer than
     // computing the others.
-    auto &active = cdata->active;
+    // This is the only loop over the conformations themselves, which are
+    // large and spread in memory, without forces: it also checks whether
+    // they have the same number of particles and makes room for forces.
+    auto  &active   = cdata->active;
+    size_t natom    = coords->empty() ? 0 : coords->front().x.size();
+    bool   sameSize = true;
     active.clear();
     for(size_t c = 0; c < coords->size(); c++)
     {
         auto &ce = (*coords)[c];
-        if (!skipDone)
+        if (!skipDone && ce.done)
         {
             ce.done = false;
         }
         if (!ce.done)
         {
             active.push_back(c);
+            sameSize = sameSize && ce.x.size() == natom;
+            // Without forces calcSome still needs the memory, but not the values
+            if (!forces && ce.fcalc.size() != ce.x.size())
+            {
+                ce.fcalc.resize(ce.x.size());
+            }
         }
     }
     size_t ndone = coords->size() - active.size();
@@ -2707,7 +2739,7 @@ static inline void lowComputeEnergies(MsgHandler                *msghandler,
     // clearing the forces.
     auto &ca = cdata->arrays;
     bool haveArrays = (useArrays &&
-                       ca.setCoordinates(*coords, top->atoms(), forces && !useFixed, active));
+                       ca.setCoordinates(*coords, top->atoms(), forces && !useFixed, active, sameSize));
     // The virtual sites are constructed in the arrays if these hold all
     // conformations, and copied to the conformations.
     if (constructVsites)
@@ -2723,7 +2755,7 @@ static inline void lowComputeEnergies(MsgHandler                *msghandler,
             if (haveArrays)
             {
                 ca.invalidateVsites();
-                ca.setCoordinates(*coords, top->atoms(), forces && !useFixed, active);
+                ca.setCoordinates(*coords, top->atoms(), forces && !useFixed, active, sameSize);
             }
         }
     }
@@ -2735,18 +2767,18 @@ static inline void lowComputeEnergies(MsgHandler                *msghandler,
     }
     // Whether the current forces are in ca rather than in coords
     bool forcesInArrays = haveArrays;
-    for(auto c : active)
+    // With arrays all forces are copied back to the conformations.
+    // Otherwise calcSome adds the forces of each potential to them,
+    // starting from zero or the forces of the entries without shells.
+    // Without forces there is room for them, see above.
+    for(size_t k = 0; k < active.size() && forces; k++)
     {
-        auto &ce = (*coords)[c];
-        // With arrays all forces are copied back to the conformations.
-        // Otherwise calcSome adds the forces of each potential to them,
-        // starting from zero or the forces of the entries without shells.
-        // Without forces calcSome still needs the memory, but not the values.
-        if (forces && !haveArrays)
+        auto &ce = (*coords)[active[k]];
+        if (!haveArrays)
         {
             if (useFixed)
             {
-                ce.fcalc = fixed.forces[c];
+                ce.fcalc = fixed.forces[active[k]];
             }
             else
             {
@@ -2844,7 +2876,6 @@ static inline void lowComputeEnergies(MsgHandler                *msghandler,
                 // Without forces, only the charges may have changed
                 if (cached && ca.nconf == coords->size() &&
                     calcCoulombKernel(mypot, entries, top->atoms(), &ca, &cener, epsilonr,
-                                      top->parameterVersion(entry.first),
                                       cdata->coordinates.value(), cached))
                 {
                     continue;

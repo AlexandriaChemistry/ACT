@@ -874,7 +874,8 @@ TEST_F(PhysicsTest, EnergyCache)
 // Test: Without forces, the Coulomb energies of all conformations are
 // computed from those for charges of one when only the charges changed.
 // They are the same as computed directly, also with second charges, after
-// their widths change and after some particles moved.
+// their widths change, after some particles moved and after the width of
+// a particle type changed.
 TEST_F(PhysicsTest, CoulombKernel)
 {
     auto pd = getForceField("ACS-v3fds");
@@ -951,6 +952,20 @@ TEST_F(PhysicsTest, CoulombKernel)
     }
     cdata.invalidate();
     compare("two particles moved");
+    // The width of the charges of one particle type, as when training
+    // zeta, only the interactions with these particles are computed again
+    auto  itype = InteractionType::ELECTROSTATICS;
+    auto  ztype = pd->findParticleType(atoms[1].ffType())->interactionTypeToIdentifier(itype);
+    auto *zeta  = pd->findForces(itype)->findParameterType(ztype, "zeta");
+    ASSERT_NE(nullptr, zeta);
+    ASSERT_NE(0, zeta->value());
+    double zeta0 = zeta->value();
+    zeta->forceSetValue(1.1*zeta0);
+    mol.topologyPtr()->fillParameters(&msghandler_, pd, missingParameters::Ignore);
+    compare("width of one particle type");
+    zeta->forceSetValue(zeta0);
+    mol.topologyPtr()->fillParameters(&msghandler_, pd, missingParameters::Ignore);
+    compare("width restored");
 }
 } // namespace
 
