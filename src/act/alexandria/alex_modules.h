@@ -48,7 +48,6 @@ int train_ff(int argc, char *argv[]);
 int edit_ff(int argc, char *argv[]);
 int gen_ff(int argc, char *argv[]);
 int geometry_ff(int argc, char *argv[]);
-int analyze(int argc, char *argv[]);
 int merge_ff(int argc, char *argv[]);
 int edit_mp(int argc, char *argv[]);
 }

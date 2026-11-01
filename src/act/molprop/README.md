@@ -19,7 +19,6 @@ This directory defines the molecular property data model: the structures used to
 - **molprop_xml.h / molprop_xml.cpp** — Reads and writes `MolProp` collections in the ACT XML format.
 - **molprop_sqlite3.h / molprop_sqlite3.cpp** — Reads and writes `MolProp` collections from/to an SQLite3 database.
 - **molprop_util.h / molprop_util.cpp** — Higher-level helpers: merging property files, filtering by category or phase, computing statistics across a dataset.
-- **molprop_tables.h / molprop_tables.cpp** — Generates formatted (LaTeX/plain-text) tables of molecular properties.
 
 ### CLI command
 - **edit_mp.cpp** — Implementation of the `edit_mp` sub-command: merges, filters, and edits molecular property XML files.

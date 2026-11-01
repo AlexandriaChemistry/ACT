@@ -34,7 +34,6 @@ target_sources(actLib
            actmiddleman.cpp
            alex_modules.cpp
            allbondeds.cpp
-           analyze.cpp
            confighandler.cpp
            devcomputer.cpp
            gentop.cpp

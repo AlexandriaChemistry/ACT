@@ -82,8 +82,6 @@ void registerAlexandriaModules(gmx::CommandLineModuleManager *manager)
                    "Train a force field to reproduce reference data.");
     registerModule(manager, &alexandria::geometry_ff, "geometry_ff",
                    "Deduce bond/angle/dihedral distributions from a set of strucures and add those to a force field file.");
-    registerModule(manager, &alexandria::analyze, "analyze",
-                   "Analyze molecular- or force field properties from a database and generate publication quality tables in LaTeX.");
     registerModule(manager, &alexandria::edit_ff, "edit_ff",
                    "Manipulate and compare force field files in various ways and test whether reading and writing works.");
     registerModule(manager, &alexandria::gen_ff, "gen_ff",
@@ -114,7 +112,6 @@ void registerAlexandriaModules(gmx::CommandLineModuleManager *manager)
         group.addModule("edit_ff");
         group.addModule("merge_ff");
         group.addModule("train_ff");
-        group.addModule("analyze");
         group.addModule("edit_mp");
     }
 }

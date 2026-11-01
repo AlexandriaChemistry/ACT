@@ -29,9 +29,8 @@ This directory contains the high-level application layer of ACT: molecule handli
 
 ### CLI commands
 - **alexandria.cpp** — Entry point; registers and dispatches all `alexandria` sub-commands.
-- **alex_modules.h / alex_modules.cpp** — Registration of sub-commands (`gentop`, `train_ff`, `analyze`, `simulate`, …).
+- **alex_modules.h / alex_modules.cpp** — Registration of sub-commands (`gentop`, `train_ff`, `simulate`, …).
 - **gentop.cpp** — `gentop` command: generates a topology from a structure or Gaussian output file.
-- **analyze.cpp** — `analyze` command: analyses molecular and force-field properties and produces tables.
 - **geometry_ff.cpp** — `geometry_ff` command: derives bond/angle/dihedral equilibrium distributions.
 - **molgen.h / molgen.cpp** — Molecule generator used by several CLI commands.
 - **molhandler.h / molhandler.cpp** — Reads molecule sets and prepares them for training or analysis.
