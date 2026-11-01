@@ -127,24 +127,28 @@ public:
     /*! \brief Copy the coordinates of some conformations and clear the forces
      * As setCoordinates with skipDone, but the conformations to put in the
      * slots are given, such that the others are not visited.
-     * \param[in] coords The conformations
-     * \param[in] atoms  The particles
-     * \param[in] forces Whether forces will be computed, if not they are not cleared
-     * \param[in] confs  The conformations for the slots, in increasing order,
-     *                   all with the same number of particles
+     * \param[in] coords   The conformations
+     * \param[in] atoms    The particles
+     * \param[in] forces   Whether forces will be computed, if not they are not cleared
+     * \param[in] confs    The conformations for the slots, in increasing order,
+     *                     all with the same number of particles
+     * \param[in] sameSize Whether the caller checked that the conformations
+     *                     have the same number of particles, which saves
+     *                     looking up each of them
      * \return false if the conformations do not have the same size or
      *         there is no conformation
      */
     bool setCoordinates(const std::vector<CoordsEnergy> &coords,
                         const std::vector<ActAtom>      &atoms,
                         bool                             forces,
-                        const std::vector<size_t>       &confs)
+                        const std::vector<size_t>       &confs,
+                        bool                             sameSize = false)
     {
         size_t nc    = confs.size();
         size_t natom = (nc == 0) ? 0 : coords[confs[0]].x.size();
-        for(auto c : confs)
+        for(size_t k = 0; k < nc && !sameSize; k++)
         {
-            if (coords[c].x.size() != natom)
+            if (coords[confs[k]].x.size() != natom)
             {
                 valid_ = false;
                 return false;
@@ -155,10 +159,14 @@ public:
             valid_ = false;
             return false;
         }
-        bool sameSlots = (valid_ && confs == confs_);
+        // Increasing conformations end with nc - 1 only if they are in order
+        bool inOrder   = (confs.back() + 1 == nc);
+        bool sameSlots = (valid_ && confs_.size() == nc &&
+                          (inOrder ? inOrder_ : confs == confs_));
         if (!sameSlots)
         {
             confs_.assign(confs.begin(), confs.end());
+            inOrder_ = inOrder;
         }
         size_t width = explicitSimdWidth();
         size_t st    = ((nc + width - 1)/width)*width;
@@ -341,6 +349,11 @@ public:
     //! \return The conformations in the slots
     const std::vector<size_t> &conformations() const { return confs_; }
 
+    /*! \return The conformations in the slots, or nullptr if slot i holds
+     * conformation i, as storeEnergies takes them
+     */
+    const size_t *slots() const { return inOrder_ ? nullptr : confs_.data(); }
+
     //! \return Whether the types of the particles are known, see setCoordinates
     bool knowsParticles() const { return valid_ && typesKnown_; }
 
@@ -353,6 +366,8 @@ private:
     bool                typesKnown_  = false;
     //! The conformation in each slot
     std::vector<size_t> confs_;
+    //! Whether slot i holds conformation i
+    bool                inOrder_     = false;
     //! The shells, or all particles if their types are not known, their coordinates change
     std::vector<size_t> shells_;
     //! The other particles that are not atoms, their coordinates change with their parameters
@@ -602,15 +617,12 @@ struct CachedEnergies
     size_t              termStride        = 0;
     /*! For Coulomb, the energy of each term of each interaction in each
      * slot of the arrays for charges of one, see coulombKernelsExplicitSimd.
-     * The energies for other charges follow from it as long as the
-     * parameters, the coordinates and the widths of the second charges do
-     * not change.
+     * The energies for other charges follow from it for the interactions
+     * whose widths and coordinates do not change.
      */
     std::vector<double> kernel;
     //! Whether kernel has been computed
     bool                kernelValid             = false;
-    //! Topology::parameterVersion of the interaction type of kernel
-    size_t              kernelParameterVersion  = 0;
     //! ConformationData::coordinates of kernel
     size_t              kernelCoordinateVersion = 0;
     //! Number of interactions in kernel
@@ -619,8 +631,11 @@ struct CachedEnergies
     size_t              kernelConformations     = 0;
     //! Distance between the interactions in kernel
     size_t              kernelStride            = 0;
-    //! ActAtom::zetaVS of each atom of kernel
-    std::vector<double> kernelZetaVS;
+    /*! For each interaction, the widths kernel was computed with: those of
+     * the charges of the first particle, then of the second, such that only
+     * the interactions with changed widths are computed again
+     */
+    std::vector<double> kernelWidths;
     //! For each interaction, bit k tells whether term k is in kernel
     std::vector<unsigned char> kernelTerms;
     /*! The coordinates of kernel, as ConformationArrays::x, such that only

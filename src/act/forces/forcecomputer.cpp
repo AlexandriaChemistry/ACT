@@ -544,6 +544,38 @@ static void calcInduction(ConformationEnergies *cener)
     auto induction = cener->find(InteractionType::INDUCTION);
     auto eAllElec  = cener->add(InteractionType::ALLELEC);
     auto eExchInd  = cener->add(InteractionType::EXCHIND);
+    if (!cener->haveBackups())
+    {
+        // Nothing was relaxed, then the sums are those below without
+        // induction from shells, added one term at a time without
+        // branches, in the same order.
+        size_t nconf = cener->nconf();
+        for(auto eSum : { eAllElec, eExchInd })
+        {
+            for(size_t c = 0; c < nconf; c++)
+            {
+                eSum.before[c] = eSum.have[c] ? eSum.before[c] : 0.0;
+                eSum.have[c]   = 1;
+                eSum.act[c]    = 0.0;
+            }
+        }
+        auto addTerm = [nconf](const ConformationEnergies::Term &et, double *sum)
+        {
+            for(size_t c = 0; c < nconf && et.have; c++)
+            {
+                sum[c] += et.have[c] ? et.act[c] : 0.0;
+            }
+        };
+        for(const auto &tt : terms)
+        {
+            addTerm(tt.second, isElecTerm(tt.first) ? eAllElec.act : eExchInd.act);
+        }
+        if (induction.have)
+        {
+            addTerm(induction, eExchInd.act);
+        }
+        return;
+    }
     for(size_t c = 0; c < cener->nconf(); c++)
     {
         bool   haveInduction = false;
