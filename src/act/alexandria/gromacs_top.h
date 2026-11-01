@@ -54,10 +54,22 @@ class MsgHandler;
 void print_top_mols(FILE *out, const char *title,
                     int nmol, const t_mols *mols);
 
-//! \brief Print the topology header including commercials
-void print_top_header(FILE                           *fp,
+/*! \brief Print the topology header including commercials
+ * Without bItp the defaults, the atom types and the van der Waals
+ * parameters of the pairs of particle types in the topology are printed.
+ * GROMACS only supports Lennard-Jones interactions and point charges.
+ * \param[in] msg_handler For warnings about what GROMACS does not support
+ * \param[in] fp          The file to print to
+ * \param[in] pd          The force field
+ * \param[in] topology    The molecule
+ * \param[in] commercials Lines for the comment at the top
+ * \param[in] bItp        Whether this is an include topology, without
+ *                        the force field
+ */
+void print_top_header(MsgHandler                     *msg_handler,
+                      FILE                           *fp,
                       const ForceField               *pd,
-                      bool                            bPol,
+                      const Topology                 *topology,
                       const std::vector<std::string> &commercials,
                       bool                            bItp);
 
