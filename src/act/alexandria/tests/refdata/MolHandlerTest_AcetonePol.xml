@@ -3,6 +3,7 @@
 <ReferenceData>
   <Real Name="BONDS before">-3599.7009482935282</Real>
   <Real Name="ANGLES before">1.5504731002237926</Real>
+  <Real Name="PROPER_DIHEDRALS before">0.0041596964632902855</Real>
   <Real Name="IMPROPER_DIHEDRALS before">0</Real>
   <Real Name="DISPERSION before">-11.286153367831064</Real>
   <Real Name="EXCHANGE before">47.503499353137926</Real>
@@ -17,6 +18,7 @@
   <Real Name="Coordinate RMSD after minimizing">0.0031172296019956981</Real>
   <Real Name="BONDS after">-3596.8344969264353</Real>
   <Real Name="ANGLES after">2.2647100493872121</Real>
+  <Real Name="PROPER_DIHEDRALS after">0.00085729805866008313</Real>
   <Real Name="IMPROPER_DIHEDRALS after">2.2215085829112271e-12</Real>
   <Real Name="DISPERSION after">-11.226138021840011</Real>
   <Real Name="EXCHANGE after">38.3304445815223</Real>
@@ -62,9 +64,9 @@
   </Sequence>
   <Sequence Name="Frequencies">
     <Int Name="Length">24</Int>
-    <Real>0</Real>
-    <Real>14.651956581156627</Real>
-    <Real>90.184278808514563</Real>
+    <Real>57.138089787504221</Real>
+    <Real>107.96034518173067</Real>
+    <Real>177.03637486755795</Real>
     <Real>304.16836589082118</Real>
     <Real>377.07157142351559</Real>
     <Real>746.73475173614736</Real>
@@ -122,8 +124,8 @@
   <Real Name="Standard entropy -       Total  (J/mol K)">315.14294782603076</Real>
   <Real Name="Heat capacity cV - Translation (J/mol K)">12.471693927229859</Real>
   <Real Name="Heat capacity cV -    Rotation (J/mol K)">12.471693927229859</Real>
-  <Real Name="Heat capacity cV -   Vibration (J/mol K)">45.747931622627831</Real>
-  <Real Name="Heat capacity cV -       Total (J/mol K)">70.691319477087546</Real>
+  <Real Name="Heat capacity cV -   Vibration (J/mol K)">53.410190650573085</Real>
+  <Real Name="Heat capacity cV -       Total (J/mol K)">78.3535785050328</Real>
   <Real Name="Internal energy  - Translation (kJ/mol)">3.7184355444035821</Real>
   <Real Name="Internal energy  -    Rotation (kJ/mol)">3.7184355444035821</Real>
   <Real Name="Internal energy  -   Vibration (kJ/mol)">221.85218417068867</Real>
