@@ -32,6 +32,8 @@
 
 #include "actpre.h"
 
+#include <algorithm>
+#include <array>
 #include <cmath>
 #include <filesystem>
 #include <fstream>
@@ -132,6 +134,56 @@ const ForceFieldParameterMap &parameters(const ForceField &pd, InteractionType i
     GMX_THROW(gmx::InvalidInputError("No parameters for " + id));
 }
 
+//! A cube file, the lengths are in Bohr
+struct Cube
+{
+    //! Origin of the grid
+    double                           origin[3];
+    //! Number of grid points in each direction
+    int                              n[3];
+    //! Spacing in each direction
+    double                           space[3];
+    //! Atomic number, charge and coordinates of each atom
+    std::vector<std::array<double, 5>> atoms;
+    //! The values on the grid, with z running fastest
+    std::vector<double>              values;
+};
+
+//! \return the cube in a file
+Cube readCube(const std::string &fileName)
+{
+    Cube          cube;
+    std::ifstream in(fileName);
+    std::string   line;
+    // Title and type
+    std::getline(in, line);
+    std::getline(in, line);
+    int natoms;
+    in >> natoms >> cube.origin[0] >> cube.origin[1] >> cube.origin[2];
+    for (int m = 0; m < 3; m++)
+    {
+        double zero;
+        in >> cube.n[m];
+        for (int k = 0; k < 3; k++)
+        {
+            in >> (k == m ? cube.space[m] : zero);
+        }
+    }
+    cube.atoms.resize(natoms);
+    for (auto &a : cube.atoms)
+    {
+        for (auto &f : a)
+        {
+            in >> f;
+        }
+    }
+    for (double v; in >> v; )
+    {
+        cube.values.push_back(v);
+    }
+    return cube;
+}
+
 class GentopTest : public gmx::test::CommandLineTestBase
 {
 protected:
@@ -144,10 +196,24 @@ protected:
     void run(const std::string &ffName, const std::string &molecule,
              std::map<std::string, std::string> *files)
     {
+        run(ffName, { { "-f", fileManager().getInputFilePath("mols/" + molecule) } }, files);
+    }
+
+    /*! \brief Run gentop
+     * \param[in] ffName  Force field in this directory
+     * \param[in] input   Options that are passed as they are
+     * \param[in] options Output files, the file names are made temporary
+     */
+    void run(const std::string &ffName, const std::vector<std::pair<std::string, std::string>> &input,
+             std::map<std::string, std::string> *files)
+    {
         gmx::test::CommandLine cmd;
         cmd.append("gentop");
         cmd.addOption("-ff", fileManager().getInputFilePath(ffName));
-        cmd.addOption("-f", fileManager().getInputFilePath("mols/" + molecule));
+        for (const auto &i : input)
+        {
+            cmd.addOption(i.first.c_str(), i.second);
+        }
         cmd.addOption("-g", fileManager().getTemporaryFilePath("gentop.log"));
         for (auto &f : *files)
         {
@@ -325,6 +391,81 @@ TEST_F(GentopTest, IncludeTopology)
     EXPECT_TRUE(section(top, "atomtypes").empty());
     EXPECT_EQ(10u, section(top, "atoms").size());
     checkBondeds(top);
+}
+
+// Test: The potential and the density of the charges of water on a grid,
+// the potential far from the atoms is that of point charges and the
+// density integrates to the total charge. Reading the potential as the
+// reference gives no difference.
+TEST_F(GentopTest, Cubes)
+{
+    std::vector<std::pair<std::string, std::string>> water = {
+        { "-charges", fileManager().getInputFilePath("../../molprop/tests/molprop.xml") },
+        { "-db", "water" }, { "-spacing", "0.01" }
+    };
+    std::map<std::string, std::string> files = {
+        { "-c", "water.pdb" }, { "-pot", "pot.cub" }, { "-rho", "rho.cub" },
+        { "-his", "his.xvg" }, { "-pc", "pc.xvg" }, { "-pdbdiff", "diff.pdb" }
+    };
+    run("ACS-g.xml", water, &files);
+    auto pot = readCube(files["-pot"]);
+    ASSERT_EQ(3u, pot.atoms.size());
+    double qtot = 0;
+    for (size_t i = 0; i < 3; i++)
+    {
+        EXPECT_EQ(i == 1 ? 8 : 1, pot.atoms[i][0]);
+        qtot += pot.atoms[i][1];
+    }
+    EXPECT_NEAR(0, qtot, 1e-5);
+    ASSERT_EQ(static_cast<size_t>(pot.n[0]*pot.n[1]*pot.n[2]), pot.values.size());
+    // The first point is the origin, at least 0.2 nm from the atoms
+    double V = 0;
+    for (const auto &a : pot.atoms)
+    {
+        V += a[1]/std::hypot(a[2] - pot.origin[0], a[3] - pot.origin[1], a[4] - pot.origin[2]);
+    }
+    EXPECT_NEAR(V, pot.values[0], 0.01*std::abs(V));
+
+    auto rho = readCube(files["-rho"]);
+    ASSERT_EQ(pot.values.size(), rho.values.size());
+    double sum = 0, sumAbs = 0;
+    for (auto r : rho.values)
+    {
+        sum    += r;
+        sumAbs += std::abs(r);
+    }
+    double dV = rho.space[0]*rho.space[1]*rho.space[2];
+    EXPECT_GT(sumAbs*dV, 0.1);
+    EXPECT_NEAR(0, sum*dV, 1e-2*sumAbs*dV);
+
+    for (const auto &f : { "-his", "-pc" })
+    {
+        EXPECT_GT(std::filesystem::file_size(files[f]), 0u) << f;
+    }
+    auto pdbdiff = std::filesystem::path(files["-pdbdiff"]);
+    pdbdiff.replace_filename("0_" + pdbdiff.filename().string());
+    EXPECT_GT(std::filesystem::file_size(pdbdiff), 0u);
+    std::filesystem::remove(pdbdiff);
+
+    water.push_back({ "-ref", files["-pot"] });
+    std::map<std::string, std::string> diffFiles = {
+        { "-c", "water2.pdb" }, { "-diff", "diff.cub" }, { "-diffhist", "diffhist.xvg" }
+    };
+    run("ACS-g.xml", water, &diffFiles);
+    auto diff = readCube(diffFiles["-diff"]);
+    ASSERT_EQ(pot.values.size(), diff.values.size());
+    // The differences are due to the six digits of the values in the file
+    // and of the origin and spacing of the grid
+    double maxPot = 0, maxDiff = 0;
+    for (size_t i = 0; i < diff.values.size(); i++)
+    {
+        maxPot  = std::max(maxPot, std::abs(pot.values[i]));
+        maxDiff = std::max(maxDiff, std::abs(diff.values[i]));
+    }
+    EXPECT_LT(maxDiff, 1e-5*maxPot);
+    auto corr = std::filesystem::path(diffFiles["-diffhist"]).replace_extension().string() + "-corr.xvg";
+    EXPECT_GT(std::filesystem::file_size(corr), 0u);
+    std::filesystem::remove(corr);
 }
 
 } // namespace

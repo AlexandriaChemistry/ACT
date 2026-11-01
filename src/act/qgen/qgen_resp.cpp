@@ -118,6 +118,7 @@ void QgenResp::setAtomInfo(MsgHandler                   *msg_handler,
         const auto &qparm = atype->parameterConst("charge");
         q_.push_back(qparm.value());
         charge_.push_back(&qparm);
+        atomnumber_.push_back(atoms[i].atomicNumber());
         row_.push_back(atype->row());
         if (haveZeta)
         {
