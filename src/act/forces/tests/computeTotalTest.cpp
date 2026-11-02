@@ -131,7 +131,7 @@ void compareForces(const std::vector<gmx::RVec> &ref,
     {
         for(int m = 0; m < DIM; m++)
         {
-            EXPECT_NEAR(ref[i][m], test[i][m], toler*std::max(1.0, std::abs(ref[i][m])))
+            EXPECT_NEAR(ref[i][m], test[i][m], toler*std::max<double>(1.0, std::abs(ref[i][m])))
                 << label << " particle " << i << " dim " << m;
         }
     }

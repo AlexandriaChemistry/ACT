@@ -262,7 +262,7 @@ protected:
             if (atoms[i].pType() == ActParticle::Vsite)
             {
                 nvsite += 1;
-                fvsite[i] = { 1.0*nvsite, -0.5, 0.25*nvsite };
+                fvsite[i] = { static_cast<real>(1.0*nvsite), -0.5, static_cast<real>(0.25*nvsite) };
             }
         }
         ASSERT_GT(nvsite, 0);
@@ -790,8 +790,8 @@ TEST(VsiteHandlerArrays, AllTypes)
         totals(x[c], f[c], &ftot1, &torque1);
         for(int m = 0; m < DIM; m++)
         {
-            EXPECT_NEAR(ftot0[m], ftot1[m], 1e-10*std::max(1.0, std::abs(ftot0[m]))) << "conformation " << c;
-            EXPECT_NEAR(torque0[m], torque1[m], 1e-10*std::max(1.0, std::abs(torque0[m]))) << "conformation " << c;
+            EXPECT_NEAR(ftot0[m], ftot1[m], 1e-10*std::max<double>(1.0, std::abs(ftot0[m]))) << "conformation " << c;
+            EXPECT_NEAR(torque0[m], torque1[m], 1e-10*std::max<double>(1.0, std::abs(torque0[m]))) << "conformation " << c;
         }
         for(size_t a = 0; a < natom; a++)
         {

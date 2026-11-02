@@ -370,7 +370,7 @@ static void testAddOrientation(bool inOrder)
             for(int kk = 0; kk < 2; kk++)
             {
                 force2[kk].push_back((1 + kk + orient)*std::pow(sr, 14));
-                torque[kk].push_back({ (1.0+kk)*sr, -0.5*sr*sr, orient*sr });
+                torque[kk].push_back({ static_cast<real>((1.0+kk)*sr), static_cast<real>(-0.5*sr*sr), static_cast<real>(orient*sr) });
             }
         }
         byOrientation.addOrientation(index, dist, energy, force2, torque, weight);
@@ -505,7 +505,7 @@ TEST(B2DataTest, ManyOrientations)
             for(int kk = 0; kk < 2; kk++)
             {
                 force2[kk].push_back((1 + kk + random())*std::pow(sr, 14));
-                torque[kk].push_back({ (1.0+kk)*sr*random(), -0.5*sr*sr, sr*random() });
+                torque[kk].push_back({ static_cast<real>((1.0+kk)*sr*random()), static_cast<real>(-0.5*sr*sr), static_cast<real>(sr*random()) });
             }
         }
         blocks.addOrientation(index, dist, energy, force2, torque, weight);
@@ -619,7 +619,7 @@ TEST(B2DataTest, ExplicitSimdSameAsScalar)
             for(int kk = 0; kk < 2; kk++)
             {
                 force2[kk].push_back((1 + kk + random())*std::pow(sr, 14));
-                torque[kk].push_back({ (1.0+kk)*sr*random(), -0.5*sr*sr, sr*random() });
+                torque[kk].push_back({ static_cast<real>((1.0+kk)*sr*random()), static_cast<real>(-0.5*sr*sr), static_cast<real>(sr*random()) });
             }
         }
         // Overlapping atoms with an infinite force add no force term

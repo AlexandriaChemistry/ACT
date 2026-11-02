@@ -371,7 +371,7 @@ protected:
         {
             for (int m = 0; m < DIM; m++)
             {
-                fmax = std::max(fmax, std::abs(fi[m]));
+                fmax = std::max<double>(fmax, std::abs(fi[m]));
             }
         }
         return fmax;

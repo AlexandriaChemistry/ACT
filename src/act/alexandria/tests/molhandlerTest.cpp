@@ -337,7 +337,8 @@ static void testNormalModes(const char *file, size_t nvibration)
     }
     // Rotated and moved
     double c = std::cos(0.7), sn = std::sin(0.7);
-    matrix rot = { { c, -sn, 0 }, { sn*0.6, c*0.6, 0.8 }, { -sn*0.8, -c*0.8, 0.6 } };
+    auto   r   = [](double v) { return static_cast<real>(v); };
+    matrix rot = { { r(c), r(-sn), 0 }, { r(sn*0.6), r(c*0.6), r(0.8) }, { r(-sn*0.8), r(-c*0.8), r(0.6) } };
     std::vector<gmx::RVec> xr(x.size());
     for (size_t i = 0; i < x.size(); i++)
     {
