@@ -149,7 +149,7 @@ void ForceComputer::spreadVsiteForces(const Topology               *top,
     vsiteHandler_.distributeForces(top, *coordinates, forces);
 }
 
-real calc_fscale(real k1, real k2, real F0)
+double calc_fscale(double k1, double k2, double F0)
 {
     if (F0 == 0)
     {
@@ -173,12 +173,13 @@ real calc_fscale(real k1, real k2, real F0)
         // position, which will never be the case.
         // Also, this assumes a 1D problem where the force on the shell is
         // parallel to the core-shell distance vector.
-        static const real third = 1.0/3.0;
-        static const real three = std::pow(3.0, third);
-        static const real sqrt3 = std::sqrt(3.0);
-        real k12    = k1*k2;
-        real F0k22  = F0*k2*k2;
-        real throot = std::pow(-9*F0k22 +
+        // In double precision, since (k1 k2)^3 does not fit in a float
+        static const double third = 1.0/3.0;
+        static const double three = std::pow(3.0, third);
+        static const double sqrt3 = std::sqrt(3.0);
+        double k12    = k1*k2;
+        double F0k22  = F0*k2*k2;
+        double throot = std::pow(-9*F0k22 +
                                sqrt3*std::sqrt(k12*k12*k12 + 27*F0k22*F0k22), third);
         auto k = (-three*three*k12 + three*throot*throot)/(6*k2*throot);
         return k/F0;

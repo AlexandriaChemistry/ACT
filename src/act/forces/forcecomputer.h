@@ -489,7 +489,7 @@ private:
  * \param[in] F  The norm of the force
  * \return Force scaling constant when hyper polarizability is used
  */
-real calc_fscale(real k1, real k2, real F);
+double calc_fscale(double k1, double k2, double F);
 
 /*! \brief Return the ratio of the polarization force and the core-shell distance
  *

@@ -418,6 +418,18 @@ TEST (Fscale, Ones)
     EXPECT_TRUE(std::abs(x + 0.5) < 1e-4);
 }
 
+// Test: The displacement of a shell with the force constants of a force
+// field, of which the cube of their product does not fit in a float, balances
+// the force of the harmonic and quartic spring
+TEST (Fscale, LargeConstants)
+{
+    double k1 = 2e5, k2 = 1e8, F0 = 20;
+    double d  = -F0*calc_fscale(k1, k2, F0);
+    ASSERT_TRUE(std::isfinite(d));
+    EXPECT_GT(d, 0);
+    EXPECT_NEAR(F0, k1*d + 4*k2*d*d*d, 1e-10*F0);
+}
+
 TEST (Fscale, OneZeroOne)
 {
     EXPECT_EQ(calc_fscale(1, 0, 1), -1.0);
