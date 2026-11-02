@@ -1114,6 +1114,42 @@ TEST_F(SimulateTest, MinimizeTool)
     }
 }
 
+// Test: alexandria minimize that does not converge within the maximum
+// number of steps writes the structure with the lowest energy, and the
+// energies before and after, which are lower
+TEST_F(SimulateTest, MinimizeToolNotConverged)
+{
+    for(const std::string alg : { "LBFGS", "Steep", "Newton" })
+    {
+        auto confout = fileManager().getTemporaryFilePath("notconverged" + alg + "-confout.pdb");
+        auto log     = fileManager().getTemporaryFilePath("notconverged" + alg + ".log");
+        auto cmd     = minimizeCommand(alexandriaFile("ACS-g.xml"),
+                                       alexandriaFile("mols/acetone.sdf"), confout, log);
+        cmd.addOption("-minalg", alg);
+        cmd.addOption("-maxiter", 2);
+        EXPECT_EQ(1, minimize(cmd.argc(), cmd.argv())) << alg;
+        EXPECT_EQ(10u, readPdbCoordinates(confout).size()) << alg;
+        // The potential energy before and after minimization
+        std::vector<double> epot;
+        std::ifstream       in(log);
+        std::string         text;
+        for (std::string line; std::getline(in, line); )
+        {
+            text += line + "\n";
+            std::istringstream iss(line);
+            std::string        word, valueWord;
+            double             value;
+            if (iss >> word >> valueWord >> value && word == "EPOT:")
+            {
+                epot.push_back(value);
+            }
+        }
+        EXPECT_NE(std::string::npos, text.find("Minimization did not converge: Too many steps")) << alg;
+        ASSERT_EQ(2u, epot.size()) << alg;
+        EXPECT_LT(epot[1], epot[0]) << alg;
+    }
+}
+
 // Test: alexandria minimize fails for a missing molecule
 TEST_F(SimulateTest, MinimizeToolMissingMolecule)
 {

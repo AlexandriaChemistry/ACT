@@ -222,6 +222,9 @@ TEST_F(MinComplexTest, NewtonDoesNotDiverge)
     cmd.addOption("-mp", fileManager().getInputFilePath("trainff/booze-inter.xml"));
     cmd.addOption("-g", logName);
     cmd.addOption("-minalg", "Newton");
+    // The molecules separate slowly where there are almost no forces,
+    // until convergence that takes thousands of steps
+    cmd.addOption("-maxiter", "100");
     {
         trainfftest::ScopedWorkingDirectory cwd(std::filesystem::path(logName).parent_path());
         (void) min_complex(cmd.argc(), cmd.argv());

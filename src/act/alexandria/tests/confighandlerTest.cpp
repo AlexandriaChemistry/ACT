@@ -275,7 +275,7 @@ TEST(ConfigHandlerTest, SimulationConfigHandlerDefaults)
     EXPECT_EQ(simCfg.nsteps(), 0);
     EXPECT_FALSE(simCfg.minimize());
     EXPECT_FALSE(simCfg.singlePoint());
-    EXPECT_EQ(simCfg.maxIter(), 100);
+    EXPECT_EQ(simCfg.maxIter(), 0);
     EXPECT_GT(simCfg.deltat(), 0.0);
 }
 
