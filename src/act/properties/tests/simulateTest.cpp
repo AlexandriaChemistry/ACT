@@ -1196,6 +1196,34 @@ TEST_F(SimulateTest, MinimizeToolNotConverged)
     }
 }
 
+// Test: alexandria minimize relaxes the shells, the induction energy is
+// negative before and after minimization
+TEST_F(SimulateTest, MinimizeToolShells)
+{
+    auto confout = fileManager().getTemporaryFilePath("shells-confout.pdb");
+    auto log     = fileManager().getTemporaryFilePath("minimize-shells.log");
+    auto cmd     = minimizeCommand(fileManager().getInputFilePath("SWM4-NDP.xml"),
+                                   alexandriaFile("mols/water_dimer.pdb"), confout, log);
+    ASSERT_EQ(0, minimize(cmd.argc(), cmd.argv()));
+    std::vector<double> induction;
+    std::ifstream       in(log);
+    for (std::string line; std::getline(in, line); )
+    {
+        std::istringstream iss(line);
+        std::string        word, valueWord;
+        double             value;
+        if (iss >> word >> valueWord >> value && word == "INDUCTION:")
+        {
+            induction.push_back(value);
+        }
+    }
+    ASSERT_EQ(2u, induction.size());
+    for (auto ind : induction)
+    {
+        EXPECT_LT(ind, 0);
+    }
+}
+
 // Test: alexandria minimize fails for a missing molecule
 TEST_F(SimulateTest, MinimizeToolMissingMolecule)
 {
