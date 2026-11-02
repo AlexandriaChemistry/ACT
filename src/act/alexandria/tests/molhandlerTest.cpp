@@ -308,6 +308,35 @@ TEST_F (MolHandlerTest, MinimizersAgree)
     EXPECT_NEAR(epot[1], epot[2], 1e-3);
 }
 
+/* Test: Newton and steepest descent converge for a water dimer with shells
+ * to a tolerance on the mean square force that single precision allows.
+ * This needs a step of the finite difference Hessian that is not too small
+ * for the precision, and energy changes from the forces close to the minimum.
+ */
+TEST_F (MolHandlerTest, MinimizersConvergeWithShells)
+{
+    auto pd = getForceField("ACS-pg");
+    MsgHandler msghandler;
+    msghandler.setPrintLevel(ACTStatus::Warning);
+    ForceComputer          forceComp(1e-10, 100, 1);
+    ACTMol                 mol;
+    std::vector<gmx::RVec> x0;
+    prepareMolecule(pd, "water_dimer.pdb", forceComp, &mol, &x0);
+    MolHandler mh;
+    for (auto alg : { eMinimizeAlgorithm::Newton, eMinimizeAlgorithm::Steep })
+    {
+        SCOPED_TRACE(eMinimizeAlgorithmToString(alg));
+        SimulationConfigHandler simConfig;
+        simConfig.setMinimizeAlgorithm(alg);
+        simConfig.setForceTolerance(1e-4);
+        simConfig.setMaxIter(20000);
+        std::vector<gmx::RVec>            x = x0;
+        std::map<InteractionType, double> energies;
+        EXPECT_EQ(eMinimizeStatus::OK, mh.minimizeCoordinates(&msghandler, pd, mol.topology(), &forceComp,
+                                                              simConfig, &x, &energies, {}));
+    }
+}
+
 /*! \brief The vibrations at a minimum are 3N - 6, or 3N - 5 for a linear
  * molecule, without the translations and rotations, independent of the
  * orientation and position of the molecule
