@@ -41,6 +41,11 @@
 #include "act/ga/genome.h"
 #include "act/utility/timings.h"
 
+#include <algorithm>
+#include <set>
+#include <utility>
+#include <vector>
+
 namespace alexandria
 {
 
@@ -49,6 +54,109 @@ namespace alexandria
  * Sensitivity::checkConvergence
  */
 static const double convergenceFraction = 0.05;
+
+namespace
+{
+
+//! \brief A set of changed parameters and the resulting chi-squared
+struct EvalPoint
+{
+    //! Index and new value of each changed parameter
+    std::vector<std::pair<size_t, double>> changes;
+    //! The chi-squared with these changes
+    double                                 chi2 = 0;
+};
+
+/*! \brief The two values around a parameter at which to compute the chi-squared
+ * Half a percent of the range below and above the parameter, or twice that
+ * on one side when the other one is beyond a bound. The values stay apart,
+ * also at a bound, and are in increasing order.
+ * \param[in] p     The parameter
+ * \param[in] lower Its lower bound
+ * \param[in] upper Its upper bound
+ * \return the two values
+ */
+std::pair<double, double> perturbedValues(double p, double lower, double upper)
+{
+    double deltap = (upper - lower)/200;
+    if (p - deltap < lower)
+    {
+        return { p + deltap, p + 2*deltap };
+    }
+    else if (p + deltap > upper)
+    {
+        return { p - 2*deltap, p - deltap };
+    }
+    return { p - deltap, p + deltap };
+}
+
+/*! \brief Compute the chi-squared for each set of changed parameters
+ * The points are done in batches of one for the master and one for each
+ * worker. The master computes the first point of a batch itself, the
+ * workers get a copy of the genome with the changes applied and compute
+ * the chi-squared of the training set, see ACTMiddleMan::run. On return
+ * the genome and the force field are as on entry.
+ * \param[in]    msghandler The message and status handler
+ * \param[in]    sii        The force field and parameter information
+ * \param[in]    fitComp    Computes the chi-squared on the master
+ * \param[inout] genome     The parameters, restored after each point
+ * \param[in]    ims        The dataset
+ * \param[in]    workers    The middlemen that compute part of the points
+ * \param[inout] points     The changes, on return with their chi-squared
+ */
+void evaluate(MsgHandler              *msghandler,
+              StaticIndividualInfo    *sii,
+              ACMFitnessComputer      *fitComp,
+              ga::Genome              *genome,
+              iMolSelect               ims,
+              const std::vector<int>  &workers,
+              std::vector<EvalPoint>  *points)
+{
+    auto                 cr    = sii->commRec();
+    auto                 cdc   = CalcDev::Compute;
+    std::vector<double> *param = genome->basesPtr();
+    for (size_t first = 0; first < points->size(); first += workers.size() + 1)
+    {
+        // The middlemen get the points after the first one
+        size_t nsent = std::min(workers.size(), points->size() - first - 1);
+        for (size_t w = 0; w < nsent; w++)
+        {
+            ga::Genome g = *genome;
+            for (const auto &change : (*points)[first + 1 + w].changes)
+            {
+                (*g.basesPtr())[change.first] = change.second;
+            }
+            cr->send_data(workers[w]);
+            g.Send(cr, workers[w]);
+            cr->send(workers[w], TrainFFMiddlemanMode::FITNESS);
+        }
+        // The master computes the first one
+        auto               &point = (*points)[first];
+        std::set<int>       changed;
+        std::vector<double> pstore;
+        for (const auto &change : point.changes)
+        {
+            changed.insert(static_cast<int>(change.first));
+            pstore.push_back((*param)[change.first]);
+            (*param)[change.first] = change.second;
+        }
+        sii->updateForceField(msghandler, changed, *param);
+        fitComp->distributeTasks(cdc);
+        point.chi2 = fitComp->calcDeviation(msghandler, cdc, ims);
+        // Restore in reverse order, should an index occur more than once
+        for (size_t c = point.changes.size(); c > 0; c--)
+        {
+            (*param)[point.changes[c-1].first] = pstore[c-1];
+        }
+        sii->updateForceField(msghandler, changed, *param);
+        for (size_t w = 0; w < nsent; w++)
+        {
+            cr->recv(workers[w], &(*points)[first + 1 + w].chi2);
+        }
+    }
+}
+
+} // namespace
 
 bool SensitivityAnalysis::run(MsgHandler           *msghandler,
                               StaticIndividualInfo *sii,
@@ -95,59 +203,21 @@ bool SensitivityAnalysis::run(MsgHandler           *msghandler,
     {
         workers = cr->middlemen();
     }
-    size_t              np       = param->size();
-    std::vector<double> pvalue(2*np), chi2(2*np);
+    size_t                 np = param->size();
+    std::vector<double>    pvalue(2*np), chi2(2*np);
+    std::vector<EvalPoint> points(2*np);
     for (size_t i = 0; i < np; ++i)
     {
-        // Half a percent of the range below and above the parameter, or
-        // twice that on one side when the other one is beyond a bound.
-        // The values stay apart, also at a bound, and are in increasing
-        // order.
-        double p        = (*param)[i];
-        double deltap   = (upperBound[i]-lowerBound[i])/200;
-        if (p - deltap < lowerBound[i])
-        {
-            pvalue[2*i]     = p + deltap;
-            pvalue[2*i + 1] = p + 2*deltap;
-        }
-        else if (p + deltap > upperBound[i])
-        {
-            pvalue[2*i]     = p - 2*deltap;
-            pvalue[2*i + 1] = p - deltap;
-        }
-        else
-        {
-            pvalue[2*i]     = p - deltap;
-            pvalue[2*i + 1] = p + deltap;
-        }
+        auto pv         = perturbedValues((*param)[i], lowerBound[i], upperBound[i]);
+        pvalue[2*i]     = pv.first;
+        pvalue[2*i + 1] = pv.second;
+        points[2*i].changes     = { { i, pv.first } };
+        points[2*i + 1].changes = { { i, pv.second } };
     }
-    for (size_t first = 0; first < pvalue.size(); first += workers.size() + 1)
+    evaluate(msghandler, sii, fitComp, genome, ims, workers, &points);
+    for (size_t k = 0; k < points.size(); ++k)
     {
-        // The middlemen get the values after the first one
-        size_t nsent = std::min(workers.size(), pvalue.size() - first - 1);
-        for (size_t w = 0; w < nsent; w++)
-        {
-            size_t     k = first + 1 + w;
-            ga::Genome g = *genome;
-            (*g.basesPtr())[k/2] = pvalue[k];
-            cr->send_data(workers[w]);
-            g.Send(cr, workers[w]);
-            cr->send(workers[w], TrainFFMiddlemanMode::FITNESS);
-        }
-        // The master computes the first one
-        size_t        i      = first/2;
-        double        pstore = (*param)[i];
-        std::set<int> changed = { static_cast<int>(i) };
-        (*param)[i] = pvalue[first];
-        sii->updateForceField(msghandler, changed, *param);
-        fitComp->distributeTasks(cdc);
-        chi2[first] = fitComp->calcDeviation(msghandler, cdc, ims);
-        (*param)[i] = pstore;
-        sii->updateForceField(msghandler, changed, *param);
-        for (size_t w = 0; w < nsent; w++)
-        {
-            cr->recv(workers[w], &chi2[first + 1 + w]);
-        }
+        chi2[k] = points[k].chi2;
     }
     JsonTree sens("sensitivity");
     bool minimum = true;
