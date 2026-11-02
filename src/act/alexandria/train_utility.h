@@ -109,7 +109,7 @@ private:
     std::map<iMolSelect, qtStats>      lsq_epot_, lsq_isoPol_, lsq_anisoPol_, lsq_alpha_;
     //! Statistics for RMSF and frequencies.
     std::map<iMolSelect, gmx_stats>    lsq_rmsf_;
-    gmx_stats                          lsq_freq_;
+    std::map<iMolSelect, gmx_stats>    lsq_freq_;
     //! Command line stuff
     std::map<MolPropObservable, std::string> mpoOpt_;
     std::map<MolPropObservable, std::string> mpoFnm_;
