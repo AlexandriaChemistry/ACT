@@ -966,7 +966,8 @@ size_t MolGen::Read(MsgHandler                          *msghandler,
         {
             start = 0;
         }
-        for (int i = start; i < start + 1 + cr_->nhelper_per_middleman(); i++)
+        // The column of the master and those of its helpers
+        for (int i = start; i <= cr_->nhelper_per_middleman(); i++)
         {
             mycomms.insert({ i, cr_->create_column_comm(i) });
         }
@@ -977,10 +978,13 @@ size_t MolGen::Read(MsgHandler                          *msghandler,
         {
             if (cr_->size() > 1)
             {
-                // Send a 0 to signify more is coming
+                // Send a 0 to all to signify that no compounds are coming
                 bcint = 0;
-                cr_->bcast(&bcint, mycomms[0]);
-                GMX_THROW(gmx::InvalidInputError(gmx::formatString("Fewer molecules (%zu) than number of helpers per middle man (%d). Use a larger dataset or fewer helpers.", actmol_.size(), 1+cr_->nhelper_per_middleman()).c_str()));
+                for (auto &mc : mycomms)
+                {
+                    cr_->bcast(&bcint, mc.second);
+                }
+                GMX_THROW(gmx::InvalidInputError(gmx::formatString("Fewer molecules (%zu) than processes per middle man (%d), the middle man and its helpers. Use a larger dataset or fewer helpers.", actmol_.size(), 1+cr_->nhelper_per_middleman()).c_str()));
             }
             else
             {
