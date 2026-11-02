@@ -527,6 +527,21 @@ TEST_F(GentopTest, ChargesCustom)
     EXPECT_NE(0, status("ACS-g.xml", { { "-charges", molpropFile }, { "-db", "water" }, { "-qcustom", " -0.8 0.8" } }, &files));
 }
 
+// Test: The charges of the particle types in the force field
+TEST_F(GentopTest, ChargesNone)
+{
+    std::map<std::string, std::string> files = { { "-p", "water.top" } };
+    run("../../properties/tests/SPCE.xml",
+        { { "-f", fileManager().getInputFilePath("mols/water_dimer.pdb") }, { "-qalg", "None" } }, &files);
+    std::vector<double> expected = { -0.8476, 0.4238, 0.4238, -0.8476, 0.4238, 0.4238 };
+    auto charges = atomCharges(readTopology(files["-p"]));
+    ASSERT_EQ(expected.size(), charges.size());
+    for (size_t i = 0; i < charges.size(); i++)
+    {
+        EXPECT_NEAR(expected[i], charges[i], 1e-6) << "atom " << i;
+    }
+}
+
 // Test: Morse bonds, Urey-Bradley angles and Fourier dihedrals, which are
 // the Ryckaert-Bellemans dihedrals of GROMACS
 TEST_F(GentopTest, OtherFunctions)
