@@ -749,33 +749,6 @@ static void compare_pd(ForceField *pd1,
     }
 }
 
-//! \brief Ass missing BondEnergy to harmonic bonds, maybe obsolete
-static void addBondEnergy(ForceField *pd)
-{
-    auto fs = pd->findForces(InteractionType::BONDS);
-    if (fs->potential() != Potential::HARMONIC_BONDS)
-    {
-        printf("Not using Bonds in force field file %s\n",
-               pd->filename().c_str());
-        return;
-    }
-    auto ppp = fs->parameters();
-    auto bond_name = potentialToParameterName(Potential::HARMONIC_BONDS);
-    for (auto &p : (*ppp))
-    {
-        auto &param = p.second;
-        if (param.find(bond_name[bondLENGTH]) != param.end() && 
-            param.find(bond_name[bondKB]) != param.end() &&
-            param.find(bond_name[bondENERGY]) == param.end())
-        {
-            ForceFieldParameter be("kJ/mol", -200, 0, 1, -1000, -20, 
-                                   Mutability::Bounded, false,
-                                   false, true);
-            param.insert({ bond_name[bondENERGY], be });
-        }
-    }
-}
-
 /*! \brief Tool to manipulate force field files
  * \param[in] argc Number of arguments on the cmd line
  * \param[in] argv The actual arguments
@@ -820,7 +793,6 @@ int edit_ff(int argc, char*argv[])
     gmx_bool     force      = false;
     gmx_bool     stretch    = false;
     gmx_bool     plot       = false;
-    gmx_bool     bondenergy = false;
     gmx_bool     forceWrite = false;
     gmx_bool     bcast      = false;
     gmx_bool     bounds     = false;
@@ -864,8 +836,6 @@ int edit_ff(int argc, char*argv[])
           "Replace either the EEM, the BONDS or OTHER parameters in file one [TT]-f[ff] by those from file two [TT]-f2[tt] and store in another [TT]-o[tt]." },
         { "-implant", FALSE, etSTR, {&implant},
           "Implant (write over) either the EEM, the BONDS or OTHER parameters in file one [TT]-f[ff] by those from file two [TT]-f2[tt] and store in another [TT]-o[tt]. Only parameters with ntrain larger than zero will be copied. This can be used to merge training data from multiple runs." },
-        { "-bondenergy", FALSE, etBOOL, {&bondenergy},
-          "This is a hack to a bondenergy field to the BOND potential" },
         { "-plot",    FALSE, etBOOL, {&plot},
           "Plot many interactions as a function of distance or angle" },
         { "-bcast",   FALSE, etBOOL, {&bcast},
@@ -953,10 +923,6 @@ int edit_ff(int argc, char*argv[])
                 generateDependentParameter(&msghandler, &pd);
                 plotInteractions(&msghandler, &pd, analyze);
             }
-        }
-        else if (bondenergy)
-        {
-            addBondEnergy(&pd);
         }
         else if (remove)
         {
