@@ -234,6 +234,25 @@ TEST_F(TrainFFTest, ConvergenceFiles)
     std::filesystem::remove_all(dir);
 }
 
+// Test: With -checkpoint MCMC writes the force field of each new minimum in
+// the directory of the individual, named after the output file
+TEST_F(TrainFFTest, Checkpoint)
+{
+    auto options = combine(mcmcOptions(3), intraOptions());
+    options.push_back({ "-checkpoint", "" });
+    auto output = trainfftest::runTrainFF(&fileManager(), "checkpoint", "halgren-PG.xml", "booze-mono", options);
+    ASSERT_EQ(0, output.status);
+    auto dir  = std::filesystem::path(fileManager().getTemporaryFilePath("checkpoint.log")).parent_path() / "inds";
+    auto name = std::filesystem::path(fileManager().getTemporaryFilePath("checkpoint-ff.xml")).filename().string();
+    auto file = dir / ("ind0-" + name);
+    std::ifstream in(file);
+    ASSERT_TRUE(in.good()) << file;
+    std::stringstream ff;
+    ff << in.rdbuf();
+    EXPECT_NE(std::string::npos, ff.str().find("</alexandria_chemistry>"));
+    std::filesystem::remove_all(dir);
+}
+
 // Test: The outliers are listed with their structure, from the largest
 // to the smallest deviation
 TEST_F(TrainFFTest, OutlierOverview)
