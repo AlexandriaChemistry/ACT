@@ -34,8 +34,10 @@
 #include "actpre.h"
 
 #include <algorithm>
+#include <cmath>
 #include <filesystem>
 #include <fstream>
+#include <map>
 #include <string>
 
 #include <gtest/gtest.h>
@@ -329,6 +331,93 @@ TEST_F(EditFFTest, AnalyzeAndCompare)
     writeSecondForceField(input_, second);
     EXPECT_FALSE(std::filesystem::exists(run(input_, { { "-ff2", second }, { "-p", "chi" } })));
     EXPECT_FALSE(std::filesystem::exists(run(input_, { { "-bounds", "" } }, "bounds.xml")));
+}
+
+/*! \brief Plot the interactions of a force field
+ * The plots are written in the working directory, hence in a new one.
+ * \param[in]  forceField The force field file
+ * \param[in]  dir        Name of the directory for the plots
+ * \param[out] status     The exit status of edit_ff
+ * \return the directory with the plots
+ */
+static std::filesystem::path plotInteractions(const std::string &forceField,
+                                              const std::string &dir,
+                                              int               *status)
+{
+    std::filesystem::path plots(dir);
+    std::filesystem::create_directories(plots);
+    auto cwd = std::filesystem::current_path();
+    std::filesystem::current_path(plots);
+    gmx::test::CommandLine cmd;
+    cmd.append("edit_ff");
+    cmd.addOption("-ff", forceField);
+    cmd.addOption("-ana", "BONDS");
+    cmd.append("-plot");
+    *status = edit_ff(cmd.argc(), cmd.argv());
+    std::filesystem::current_path(cwd);
+    return plots;
+}
+
+//! \return the point with the lowest energy of a plot
+static std::pair<double, double> minimum(const std::filesystem::path &xvg)
+{
+    std::ifstream in(xvg);
+    std::pair<double, double> lowest = { 0, 0 };
+    bool                      first  = true;
+    for (double x, v; in >> x >> v; )
+    {
+        if (first || v < lowest.second)
+        {
+            lowest = { x, v };
+            first  = false;
+        }
+    }
+    EXPECT_FALSE(first) << xvg;
+    return lowest;
+}
+
+// Test: The bond and van der Waals curves of SPC/E have their minimum
+// at the bond length and at the minimum of the Lennard-Jones potential
+TEST_F(EditFFTest, Plot)
+{
+    int  status;
+    auto plots = plotInteractions(fileManager().getInputFilePath("../../properties/tests/SPCE.xml"),
+                                  fileManager().getTemporaryFilePath("plots"), &status);
+    ASSERT_EQ(0, status);
+    auto bond = minimum(plots / "BONDS_h_b~o3_b.xvg");
+    EXPECT_NEAR(0.1, bond.first, 1e-3);
+    EXPECT_NEAR(0, bond.second, 1e-6);
+    auto vdw = minimum(plots / "VANDERWAALS_o3~o3.xvg");
+    double sigma = 0.3165558, epsilon = 0.65017032;
+    EXPECT_NEAR(std::pow(2.0, 1.0/6.0)*sigma, vdw.first, 1e-3);
+    EXPECT_NEAR(-epsilon, vdw.second, 1e-3);
+    EXPECT_TRUE(std::filesystem::exists(plots / "COULOMB_o3_z~o3_z.xvg"));
+    std::filesystem::remove_all(plots);
+}
+
+// Test: Impropers of which the bonds have no parameters are skipped, and
+// all other interactions are plotted
+TEST_F(EditFFTest, PlotSkipsImpropersWithoutBonds)
+{
+    int  status;
+    auto plots = plotInteractions(fileManager().getInputFilePath("../../alexandria/tests/ACS-g.xml"),
+                                  fileManager().getTemporaryFilePath("plots"), &status);
+    ASSERT_EQ(0, status);
+    std::map<std::string, int> count;
+    for (const auto &entry : std::filesystem::directory_iterator(plots))
+    {
+        auto name = entry.path().filename().string();
+        if (entry.path().extension() == ".xvg")
+        {
+            EXPECT_GT(std::filesystem::file_size(entry.path()), 0u) << name;
+            count[name.substr(0, name.find('_'))] += 1;
+        }
+    }
+    for (const char *itype : { "BONDS", "ANGLES", "LINEAR", "PROPER", "IMPROPER", "VANDERWAALS", "COULOMB" })
+    {
+        EXPECT_GT(count[itype], 0) << itype;
+    }
+    std::filesystem::remove_all(plots);
 }
 
 } // namespace
