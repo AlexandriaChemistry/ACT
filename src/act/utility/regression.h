@@ -52,14 +52,6 @@ class MatrixWrapper
          */
         MatrixWrapper(int ncolumn, int nrow);
 
-        /*! \brief Constructor from a flat version of the matrix
-         *
-         * \param[in] flat   the flattened version of the matrix
-         * \param[in] number number of rows if order='C', number of columns if order='R'
-         * \param[in] order  'C' if flattened vector is column-wise, 'R' if row-wise
-         */
-        MatrixWrapper(const std::vector<double> &flat, const int number, const char order = 'C');
-
         /*! \brief Copy constructor
          * \param[in] source the matrix to copy values from
          */
@@ -121,13 +113,6 @@ class MatrixWrapper
         {
             return a_[col][row];
         }
-
-        /*! \brief Get a flattened version of the matrix
-         * \param[in] order 'R' if row-wise ([row1 - row2 - ...]), or 'C' if column-wise
-         *                  ([col1^T - col2^T - ...]), where T stands for transpose
-         * \return a vector as the flattened version of the matrix
-         */
-        std::vector<double> flatten(const char order = 'C') const;
 
         /*! \brief Solve a matrix equation A solution = rhs
          *

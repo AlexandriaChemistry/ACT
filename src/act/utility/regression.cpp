@@ -96,32 +96,6 @@ MatrixWrapper::MatrixWrapper(int ncolumn, int nrow)
     a_ = alloc_matrix(ncolumn, nrow);
 }
 
-MatrixWrapper::MatrixWrapper(const std::vector<double> &flat, const int number, const char order)
-: MatrixWrapper(order == 'C' ? flat.size()/number : number, order == 'C' ? number : flat.size()/number)
-{
-    GMX_RELEASE_ASSERT(order=='C' || order=='R', "Invalid flattening order. Please use 'C' or 'R'");
-    if (order == 'C')
-    {
-        for (int j = 0; j < ncol_; j++)
-        {
-            for (int i = 0; i < nrow_; i++)
-            {
-                a_[j][i] = flat[j*number + i];
-            }
-        }
-    }
-    else  // order == 'R'
-    {
-        for (int j = 0; j < ncol_; j++)
-        {
-            for (int i = 0; i < nrow_; i++)
-            {
-                a_[j][i] = flat[i*number + j];
-            }
-        }
-    }
-}
-
 MatrixWrapper::MatrixWrapper(const MatrixWrapper &source)
 : MatrixWrapper(source.ncol_, source.nrow_)
 {
@@ -162,32 +136,6 @@ MatrixWrapper::~MatrixWrapper()
     {
         free_matrix(a_);
     }
-}
-
-std::vector<double> MatrixWrapper::flatten(const char order) const
-{
-    GMX_RELEASE_ASSERT(order=='C' || order=='R', "Invalid flattening order. Please use 'C' or 'R'");
-    std::vector<double> vec(ncol_*nrow_);
-    if (order == 'C')
-    {
-        for (int j = 0; j < ncol_; j++)
-        {
-            for (int i = 0; i < nrow_; i++)
-            {
-                vec[j*nrow_+i] = a_[j][i];
-            }
-        }
-    }
-    else {  // order == 'R'
-        for (int i = 0; i < nrow_; i++)
-        {
-            for (int j = 0; j < ncol_; j++)
-            {
-                vec[i*ncol_+j] = a_[j][i];
-            }
-        }
-    }
-    return vec;
 }
 
 int MatrixWrapper::solve(std::vector<double> rhs, std::vector<double> *solution)
