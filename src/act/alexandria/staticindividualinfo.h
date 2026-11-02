@@ -109,8 +109,6 @@ private:
     std::string                                          xvgepot_;
     //! name for best Force field output file
     std::string                                          outputFile_;
-    //! name for last Force field output file
-    std::string                                          outputFileLast_;
     //! Output file prefix
     std::string                                          prefix_;
 
@@ -137,11 +135,6 @@ public:
      * \param[in] outputFile The base force field file name for output
      */
     void setOutputFile(const std::string &outputFile);
-
-    /*! \brief Set the output file name for best output (only at MASTER)
-     * \param[in] outputFile The base force field file name for output
-     */
-    void setFinalOutputFile(const std::string &outputFile);
     
     /*!
      * \brief Set the \f$ \chi^2 \f$ to 0 for a given data set.
@@ -468,23 +461,14 @@ public:
     //! \return the name for best Force Field output files as a const reference
     const std::string &outputFile() const { return outputFile_; }
 
-    //! \return the name for last Force Field output files as a const reference
-    const std::string &outputFileLast() const { return outputFileLast_; }
-
     //! \return the vector of weighted temperatures as a const reference
     const std::vector<double> &weightedTemperature() const { return weightedTemperature_; }
 
     //! \return the fitting targets data structure as a const reference
     const std::map<iMolSelect, std::map<eRMS, FittingTarget>> &targets() const { return targets_; }
-
-    //! \return a pointer to the fitting targets data structure
-    std::map<iMolSelect, std::map<eRMS, FittingTarget>> *targetsPtr() { return &targets_; }
     
     //! \return a pointer to the const ForceField structure (for const objects)
     const ForceField *forcefield() const { return &pd_; }
-
-    //! \return the ForceField structure as a const reference
-    const ForceField &forcefieldConst() const { return pd_; }
     
     //! \return a pointer to the ForceField structure
     ForceField *forcefield() { return &pd_; }
