@@ -104,6 +104,56 @@ TEST(SensitivityTest, InsufficientPointsLeavesConstantsZero)
     EXPECT_TRUE(s.c()==0);
 }
 
+// Test: The parabola is accurate also when the points are close together
+// compared to the parameter value, as for a parameter with narrow bounds.
+// A fit in the parameter itself loses the curvature completely for the
+// larger ratios.
+TEST(SensitivityTest, FitIsAccurateForNarrowBounds)
+{
+    // Parameter value and range, the points are half a percent of the
+    // range apart, as in the sensitivity analysis
+    struct Case { double p0, range; };
+    for (const auto &cs : { Case{ 109, 20 }, Case{ 0.1, 0.02 }, Case{ 3000, 10 },
+                            Case{ -3000, 10 }, Case{ 1.5e5, 1e4 }, Case{ 1e6, 200 } })
+    {
+        double delta = cs.range/200;
+        double pmin  = cs.p0 + 0.3*delta;
+        // The chi2 changes by 1e-4 over one step
+        double a     = 1e-4/(delta*delta);
+        Sensitivity s;
+        for (double x : { cs.p0 - delta, cs.p0, cs.p0 + delta })
+        {
+            s.add(x, a*(x - pmin)*(x - pmin) + 1, x == cs.p0);
+        }
+        s.computeForceConstants(nullptr);
+        EXPECT_NEAR(a, s.a(), 1e-8*a) << "p0 " << cs.p0;
+        EXPECT_NEAR(pmin, s.pMin(), 1e-6*delta) << "p0 " << cs.p0;
+        EXPECT_NEAR(1, s.chi2Min(), 1e-10) << "p0 " << cs.p0;
+        // The coefficients describe the same parabola
+        double chi2 = s.a()*cs.p0*cs.p0 + s.b()*cs.p0 + s.c();
+        EXPECT_NEAR(a*(cs.p0 - pmin)*(cs.p0 - pmin) + 1, chi2, 1e-6) << "p0 " << cs.p0;
+        // Within 5% of the range of the minimum
+        double lower = cs.p0 - cs.range/2;
+        EXPECT_TRUE(s.checkConvergence(lower, lower + cs.range, 0.05*cs.range)) << "p0 " << cs.p0;
+    }
+}
+
+// Test: Points that all have the same parameter value cannot be fitted
+TEST(SensitivityTest, IdenticalPointsLeaveConstantsZero)
+{
+    Sensitivity s;
+    for (double chi2 : { 1.0, 2.0, 3.0 })
+    {
+        s.add(5, chi2);
+    }
+    s.computeForceConstants(nullptr);
+    EXPECT_EQ(0, s.a());
+    EXPECT_EQ(0, s.b());
+    EXPECT_EQ(0, s.c());
+    EXPECT_EQ(0, s.pMin());
+    EXPECT_FALSE(s.checkConvergence(0, 10, 0.5));
+}
+
 // Test: The minimum of the parabola is in the output, also without a text writer
 TEST(SensitivityTest, PrintsMinimumWithoutTextWriter)
 {

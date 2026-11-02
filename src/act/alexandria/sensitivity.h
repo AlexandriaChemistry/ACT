@@ -71,6 +71,16 @@ private:
     std::vector<double> chi2_;
     //! \brief Constants for the parabola fitting
     double a_ = 0, b_ = 0, c_ = 0;
+    /*! \brief The parabola in reduced coordinates u = (p - p0_)/scale_
+     * chi2 = A_ u^2 + B_ u + C_. The fit is done in these coordinates,
+     * since the fit in p is ill-conditioned when the points are close
+     * together compared to their value.
+     */
+    double A_ = 0, B_ = 0, C_ = 0;
+    //! \brief Centre of the reduced coordinates
+    double p0_    = 0;
+    //! \brief Scale of the reduced coordinates
+    double scale_ = 1;
     //! \brief Index of the point with the original parameter value
     size_t original_ = 1;
     //! \brief Whether checkConvergence was called
@@ -99,6 +109,9 @@ public:
     }
     /*! \brief
      * Compute the fit to the curve
+     * The parabola is fitted in reduced coordinates around the original
+     * parameter value, or the mean if there is none, and converted to
+     * a p^2 + b p + c.
      * \param[in] tw A text writer
      */
     void computeForceConstants(gmx::TextWriter *tw);
@@ -120,6 +133,18 @@ public:
     double a() const { return a_; }
     double b() const { return b_; }
     double c() const { return c_; }
+
+    /*! \brief The extremum of the parabola, computed in reduced coordinates
+     * \return the parameter value at the extremum, or zero if the parabola
+     *         is a straight line
+     */
+    double pMin() const;
+
+    /*! \brief The chi-squared at the extremum of the parabola
+     * \return the chi-squared at pMin(), or zero if the parabola is a
+     *         straight line
+     */
+    double chi2Min() const;
 
     /*! \brief Print output
      * \param[in] tw    A text writer
