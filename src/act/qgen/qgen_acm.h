@@ -128,24 +128,6 @@ public:
      */
     void setQtotal(int qtotal) { qtotal_ = qtotal; }
     
-    /*! \brief Return the charge corresponding to the atom
-     * \param[in] atom index of the atom in the compound
-     * \return the charge
-     */
-    double getQ(size_t atom);
-    
-    /*! \brief Return the charge distribution width of the atom
-     * \param[in] atom index of the atom in the compound
-     * \return the charge distribution width
-     */
-    double getZeta(size_t atom);
-    
-    /*! \brief Return the row corresponding to the atom
-     * \param[in] atom index of the atom in the compound
-     * \return the corresponding row in the periodic table
-     */
-    int getRow(size_t atom);
-    
     
 private:
     /*! \brief Write debug information

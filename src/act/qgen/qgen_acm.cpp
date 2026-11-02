@@ -263,34 +263,6 @@ void QgenAcm::updateParameters()
     }
 }
 
-double QgenAcm::getQ(size_t atom)
-{
-    if (atom < natom_)
-    {
-        return q_[atom];
-    }
-    return 0;
-}
-
-int QgenAcm::getRow(size_t atom)
-{
-    if (atom < natom_)
-    {
-        return row_[atom];
-    }
-    return 0;
-
-}
-
-double QgenAcm::getZeta(size_t atom)
-{
-    if (atom < natom_)
-    {
-        return zeta_[atom];
-    }
-    return 0;
-}
-
 //! \return Coulomb for a point charge without units
 static double Coulomb_PP(double r)
 {
