@@ -270,10 +270,13 @@ private:
      * \param[in] msghandler For warnings etc.
      * \param[in] kFBPR      Force constant for position restraints
      * \param[in] r0FBPR     Radius for flat-bottom position restraints
+     * \param[in] x          The coordinates of all particles, the center
+     *                       of the restraints is their center of mass
      */
-    void addFBPR(MsgHandler *msghandler,
-                 double      kFBPR,
-                 double      r0FBPR);
+    void addFBPR(MsgHandler                   *msghandler,
+                 double                        kFBPR,
+                 double                        r0FBPR,
+                 const std::vector<gmx::RVec> &x);
 
     //! \return the vector of atoms
     const std::vector<ActAtom> &atoms() const { return atoms_; }

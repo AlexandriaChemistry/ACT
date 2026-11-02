@@ -184,7 +184,15 @@ int simulate(int argc, char *argv[])
     // Check whether we need to add position restraints
     if (sch.kFBPR() > 0)
     {
-        actmol.topologyPtr()->addFBPR(&msghandler, sch.kFBPR(), sch.r0FBPR());
+        actmol.topologyPtr()->addFBPR(&msghandler, sch.kFBPR(), sch.r0FBPR(), actmol.xOriginal());
+        // The restraints move the center of mass and rotate around it,
+        // removing that motion would counteract them
+        if (COMMRemoval::None != sch.commRemoval())
+        {
+            msghandler.msg(ACTStatus::Warning,
+                           "The motion of the center of mass is not removed, since there are position restraints.");
+            sch.setCommRemoval(COMMRemoval::None);
+        }
     }
     JsonTree jtree("simulate");
     if (msghandler.info())

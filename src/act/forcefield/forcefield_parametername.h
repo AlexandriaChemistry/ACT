@@ -64,7 +64,7 @@ namespace alexandria
 
     enum { coulZETA, coulZETA2, coulNR };
 
-    enum { fbprK, fbprR0, fbprNR };
+    enum { fbprK, fbprR0, fbprX0, fbprY0, fbprZ0, fbprNR };
 
     enum { bondKB, bondLENGTH, bondENERGY, bondNR };
 

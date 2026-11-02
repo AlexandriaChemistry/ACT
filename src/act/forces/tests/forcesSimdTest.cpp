@@ -442,7 +442,16 @@ static std::vector<Interaction> dihedrals(const std::vector<double> &params)
 
 TEST_F(ForcesSimdTest, PositionRestraint)
 {
-    std::vector<double> params = { 5000, 0.2 };
+    // Force constant, radius and the center of the restraints
+    std::vector<double> params = { 5000, 0.2, 0, 0, 0 };
+    test(Potential::POSITION_RESTRAINT,
+         { { { 1 }, params }, { { 2 }, params }, { { 3 }, params }, { { 4 }, params } });
+}
+
+// Test: Position restraints around a center that is not the origin
+TEST_F(ForcesSimdTest, PositionRestraintCenter)
+{
+    std::vector<double> params = { 5000, 0.2, 0.1, -0.05, 0.2 };
     test(Potential::POSITION_RESTRAINT,
          { { { 1 }, params }, { { 2 }, params }, { { 3 }, params }, { { 4 }, params } });
 }

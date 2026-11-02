@@ -129,17 +129,19 @@ static ACT_ALWAYS_INLINE void fbposreOne(gmx_unused MsgHandler *msghandler,
     auto R0      = params[fbprR0];
     // Get the atom indices
     auto ai      = idx[0];
-    auto dr2     = iprod(x[ai], x[ai]);
+    // The distance from the center of the restraints
+    rvec dx      = { x[ai][XX] - params[fbprX0], x[ai][YY] - params[fbprY0], x[ai][ZZ] - params[fbprZ0] };
+    auto dr2     = iprod(dx, dx);
     if (dr2 > R0*R0)
     {
         auto r1   = std::sqrt(dr2);
         auto dr   = r1-R0;
         e[0]     += 0.5*K*dr*dr;
-        // F = -dV/dr x/r
+        // F = -dV/dr dx/r
         auto fpr  = -K*dr/r1;
         for (int m = 0; m < DIM; m++)
         {
-            (*forces)[ai][m] += fpr*x[ai][m];
+            (*forces)[ai][m] += fpr*dx[m];
         }
 #ifdef DEBUG
         if (msghandler && msghandler->debug())
@@ -2131,7 +2133,7 @@ static double interactionFlops(Potential                   mypot,
     case Potential::UREY_BRADLEY_ANGLES:    return constant({ 97, 102 }, false);
     case Potential::HARMONIC_DIHEDRALS:     return constant({ 106, 71 }, false);
     case Potential::PROPER_DIHEDRALS:       return constant({ 132, 118 }, false);
-    case Potential::POSITION_RESTRAINT:     return constant({ 14, 12 }, false);
+    case Potential::POSITION_RESTRAINT:     return constant({ 17, 12 }, false);
     case Potential::COULOMB_POINT:
     case Potential::COULOMB_GAUSSIAN:
         {

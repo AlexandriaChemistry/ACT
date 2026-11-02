@@ -1794,9 +1794,10 @@ void Topology::dump(gmx::TextWriter *tw) const
     }
 }
 
-void Topology::addFBPR(MsgHandler *msghandler,
-                       double      kFBPR,
-                       double      r0FBPR)
+void Topology::addFBPR(MsgHandler                   *msghandler,
+                       double                        kFBPR,
+                       double                        r0FBPR,
+                       const std::vector<gmx::RVec> &x)
 {
     if (atoms_.empty())
     {
@@ -1809,19 +1810,51 @@ void Topology::addFBPR(MsgHandler *msghandler,
         msghandler->msg(ACTStatus::Error, "Position restraints have been added already");
         return;
     }
+    if (x.size() != atoms_.size())
+    {
+        msghandler->msg(ACTStatus::Error,
+                        gmx::formatString("%zu coordinates for %zu particles for position restraints",
+                                          x.size(), atoms_.size()));
+        return;
+    }
+    // The restraints keep the particles within a sphere around the center
+    // of mass of the starting structure
+    dvec   com   = { 0, 0, 0 };
+    double mtot  = 0;
+    for(size_t a = 0; a < atoms_.size(); a++)
+    {
+        double m = atoms_[a].mass();
+        for(int d = 0; d < DIM; d++)
+        {
+            com[d] += m*x[a][d];
+        }
+        mtot += m;
+    }
+    if (mtot <= 0)
+    {
+        msghandler->msg(ACTStatus::Error, "No mass to compute the center of the position restraints");
+        return;
+    }
+    for(int d = 0; d < DIM; d++)
+    {
+        com[d] /= mtot;
+    }
     TopologyEntryVector top{};
     for(size_t a = 0; a < atoms_.size(); a++)
     {
         top.push_back(SingleAtom(a));
-        std::vector<double> params(2);
+        std::vector<double> params(fbprNR);
         params[fbprK]  = kFBPR;
         params[fbprR0] = r0FBPR;
+        params[fbprX0] = com[XX];
+        params[fbprY0] = com[YY];
+        params[fbprZ0] = com[ZZ];
         top[a]->setParams(params);
     }
     addEntry(ipr, std::move(top));
-    msghandler->msg(ACTStatus::Verbose,
-                    gmx::formatString("Succesfully added %zu position restraints with K %g and R0 %g",
-                                      atoms_.size(), kFBPR, r0FBPR));
+    msghandler->msg(ACTStatus::Info,
+                    gmx::formatString("Added %zu flat-bottom position restraints with K %g and R0 %g around the center of mass (%g, %g, %g)",
+                                      atoms_.size(), kFBPR, r0FBPR, com[XX], com[YY], com[ZZ]));
 }
 
 //! \brief Low-level parameter filling

@@ -528,7 +528,7 @@ static const ForceComputerParamParams c_linAngleParams  { "", { 0.5, 10000 } }; 
 static const ForceComputerParamParams c_harmDihParams   { "", { 10 } };           // kPhi
 static const ForceComputerParamParams c_properDihParams { "", { 30, 10, 4 } };    // angle, kP, mult
 static const ForceComputerParamParams c_fourierDihParams{ "", { 1, 2, -3, 4, -5, 6 } };
-static const ForceComputerParamParams c_posResParams    { "", { 100, 1 } };        // k, R0
+static const ForceComputerParamParams c_posResParams    { "", { 100, 1, 0, 0, 0 } }; // k, R0, center
 
 // ============================================================
 // Name printer: pot.name + par.nameSuffix [+ "_" + coord.name]

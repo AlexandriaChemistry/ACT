@@ -594,6 +594,11 @@ public:
     //! \return number of steps between removing the motion of the center of mass, 0 is only at the start
     int nstcomm() const { return nstcomm_; }
 
+    /*! \brief Set what motion of the center of mass to remove
+     * \param[in] commRemoval The motion to remove
+     */
+    void setCommRemoval(COMMRemoval commRemoval) { commRemoval_ = commRemoval; }
+
     /*! \brief Set the minimize option
      * \param[in] minimize Whether or not to minimize
      */
