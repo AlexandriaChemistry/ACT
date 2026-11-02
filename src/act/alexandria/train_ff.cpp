@@ -623,7 +623,6 @@ void OptACM::printGenomeTable(const std::map<iMolSelect, ga::Genome> &genome,
 }
 
 bool OptACM::runMaster(bool      optimize,
-                       bool      sensitivity,
                        JsonTree *jtree)
 {
     GMX_RELEASE_ASSERT(commRec_.nodeType() == NodeType::Master,
@@ -671,8 +670,16 @@ bool OptACM::runMaster(bool      optimize,
             commRec_.send(dest, bestGenome[iMolSelect::Train].bases());
         }
     }
-    if (gach_.optimizer() != OptimizerAlg::GA && sensitivity && msghandler_.ok())
+    auto sensitivity = gach_.sensitivity();
+    if (gach_.optimizer() != OptimizerAlg::GA &&
+        sensitivity != SensitivityMode::No && msghandler_.ok())
     {
+        if (sensitivity == SensitivityMode::TwoD)
+        {
+            //! \todo Implement the two-dimensional analysis
+            msghandler_.msg(ACTStatus::Warning,
+                            "The two-dimensional sensitivity analysis is not implemented yet, doing the one-dimensional one.");
+        }
         // Do sensitivity analysis only on the training set. The middlemen
         // wait for work and compute part of it.
         SensitivityAnalysis sens;
@@ -815,8 +822,10 @@ int train_ff(int argc, char *argv[])
         "added if atoms from row VI or VII in the periodic table have a positive",
         "charge. The penalty is equal to the force constant given on the command line",
         "time the square of the charge.[PAR]",
-        "Following training a sensitivity analysis can be done on the trained",
-        "parameters using the [TT]-sensitivity[tt] flag. It is also possible",
+        "Following training with MCMC or HYBRID a sensitivity analysis is done on",
+        "the trained parameters, selected with [TT]-sensitivity[tt]: [TT]1D[tt]",
+        "(default) changes each parameter on its own, [TT]2D[tt] also changes",
+        "every pair of parameters, and [TT]No[tt] turns the analysis off. It is also possible",
         "to do a sensitivity analysis on an existing force field. In that case",
         "please select either [TT]-fc_inter[tt] (Intermolecular energy) or [TT]-fc_epot[tt]",
         "(Intramolecular energy), set the parameters to be investigated with",
@@ -827,7 +836,6 @@ int train_ff(int argc, char *argv[])
 
     bool                bcompress           = false;
     bool                bOptimize           = true;
-    bool                bSensitivity        = true;
     bool                bForceOutput        = false;
 
     gmx_output_env_t           *oenv;
@@ -839,9 +847,7 @@ int train_ff(int argc, char *argv[])
             { "-compress", FALSE, etBOOL, {&bcompress},
               "Compress output XML file" },
             { "-optimize",     FALSE, etBOOL, {&bOptimize},
-              "Do parameter optimization when true, or a single calculation otherwise." },
-            { "-sensitivity",  FALSE, etBOOL, {&bSensitivity},
-              "Do a sensitivity analysis. See help text." }
+              "Do parameter optimization when true, or a single calculation otherwise." }
         };
 
         for (int i = 0; i < asize(pa); i++)
@@ -1053,7 +1059,7 @@ int train_ff(int argc, char *argv[])
         bool bMinimum = false;
         if (initOK)
         {
-            bMinimum = opt.runMaster(bOptimize, bSensitivity, &jtree);
+            bMinimum = opt.runMaster(bOptimize, &jtree);
             if (bOptimize)
             {
                 auto msg = gmx::formatString("Training finished %s.", bMinimum ? "succesfully" : "without finding a better force field");
@@ -1100,7 +1106,7 @@ int train_ff(int argc, char *argv[])
                     middleman.run(opt.msgHandler());
                 }
             }
-            else if (bOptimize || bSensitivity)
+            else if (bOptimize || opt.gach()->sensitivity() != SensitivityMode::No)
             {
                 if (opt.sii()->nParam() > 0)
                 {

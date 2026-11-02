@@ -81,7 +81,7 @@ Options mcmcOptions(int maxIter, const std::string &seed = "219463979")
         { "-temp", "0.025" },
         { "-anneal_begin", "0.1" },
         { "-anneal_end", "0.9" },
-        { "-sensitivity", "" },
+        { "-sensitivity", "1D" },
         { "-printSP", "" },
         { "-fc_bound", "10000" },
         { "-ener_boltz_temp", "3000" }

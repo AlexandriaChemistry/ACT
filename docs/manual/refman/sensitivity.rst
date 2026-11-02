@@ -9,8 +9,9 @@ individual force field parameter. It helps identify which parameters have the mo
 influence on the fitting quality and whether the optimization has converged to a
 well-defined minimum.
 
-The sensitivity analysis runs automatically after parameter optimization because the
-*-sensitivity* flag defaults to true. It can be disabled with *-nosensitivity*. The
+The sensitivity analysis runs automatically after parameter optimization. The
+*-sensitivity* option selects it: *1D* (the default) changes each parameter on its
+own, *2D* also changes every pair of parameters, and *No* disables the analysis. The
 analysis can also be run on an existing force field without re-training by combining
 it with the *-nooptimize* and *-norandom_init* flags.
 
@@ -24,9 +25,9 @@ Running Sensitivity Analysis
 ============================
 
 The sensitivity analysis runs automatically after training with MCMC or HYBRID. To
-disable it, pass the *-nosensitivity* flag::
+disable it, pass *-sensitivity No*::
 
-   alexandria train_ff -nosensitivity -optimizer MCMC [other flags...]
+   alexandria train_ff -sensitivity No -optimizer MCMC [other flags...]
 
 To analyze an existing force field without re-training, use::
 

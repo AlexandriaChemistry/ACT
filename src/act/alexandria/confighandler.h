@@ -89,6 +89,29 @@ OptimizerAlg stringToOptimizerAlg(const std::string &str);
  */
 const std::string &optimizerAlgToString(OptimizerAlg opt);
 
+//! \brief Which sensitivity analysis to do, see SensitivityAnalysis
+enum class SensitivityMode {
+    //! No sensitivity analysis
+    No,
+    //! Each parameter on its own
+    OneD,
+    //! Each parameter on its own and every pair of parameters
+    TwoD
+};
+
+/*! \brief Convert string into SensitivityMode
+ * \param[in] str The string, No, 1D or 2D
+ * \return the sensitivity mode
+ * \throws if there is no mode matching the string
+ */
+SensitivityMode stringToSensitivityMode(const std::string &str);
+
+/*! \brief Convert SensitivityMode to string
+ * \param[in] mode The sensitivity mode
+ * \return The corresponding string, No, 1D or 2D
+ */
+const std::string &sensitivityModeToString(SensitivityMode mode);
+
 //! \brief Enum for probability computer
 enum class ProbabilityComputerAlg { pcRANK, pcFITNESS, pcBOLTZMANN };
 
@@ -151,6 +174,8 @@ private:
     int maxTestGenerations_ = -1;
     //! Generation limit for the best genome to stay in a local minimum
     int maxLocalMinimumGenerations_ = -1;
+    //! Sensitivity analysis after training and to test for a local minimum
+    SensitivityMode sensitivity_ = SensitivityMode::OneD;
     //! Whether to compute the volume in logarithmic scale
     bool logVolume_ = false;
     //! For VolumeFractionPenalizer, the limit of the volume fraction
@@ -258,6 +283,14 @@ public:
 
     //! \return the generation limit for the best genome to be in locla minimum
     int maxLocalMinimumGenerations() const { return maxLocalMinimumGenerations_; }
+
+    //! \return the sensitivity analysis to do
+    SensitivityMode sensitivity() const { return sensitivity_; }
+
+    /*! \brief Set the sensitivity analysis to do
+     * \param[in] mode The sensitivity mode
+     */
+    void setSensitivity(SensitivityMode mode) { sensitivity_ = mode; }
 
     //! \return true if we must evaluate fitness on test set, false otherwise
     bool evaluateTestset() const { return evaluateTestset_; }

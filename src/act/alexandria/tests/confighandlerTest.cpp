@@ -34,13 +34,17 @@
 #include "actpre.h"
 
 #include <string>
+#include <vector>
 
 #include <gtest/gtest.h>
 
 #include "act/alexandria/confighandler.h"
 #include "act/basics/msg_handler.h"
+#include "gromacs/commandline/pargs.h"
+#include "gromacs/fileio/oenv.h"
 #include "gromacs/utility/exceptions.h"
 
+#include "testutils/cmdlinetest.h"
 #include "testutils/testasserts.h"
 
 namespace alexandria
@@ -74,6 +78,31 @@ TEST(ConfigHandlerTest, OptimizerAlgToStringValues)
 TEST(ConfigHandlerTest, StringToOptimizerAlgInvalid)
 {
     EXPECT_THROW(stringToOptimizerAlg("INVALID"), gmx::InvalidInputError);
+}
+
+// ---- SensitivityMode enum conversion tests ----
+
+TEST(ConfigHandlerTest, SensitivityModeRoundTrip)
+{
+    for (auto mode : { SensitivityMode::No, SensitivityMode::OneD, SensitivityMode::TwoD })
+    {
+        EXPECT_EQ(stringToSensitivityMode(sensitivityModeToString(mode)), mode);
+    }
+}
+
+TEST(ConfigHandlerTest, SensitivityModeToStringValues)
+{
+    EXPECT_EQ(sensitivityModeToString(SensitivityMode::No), "No");
+    EXPECT_EQ(sensitivityModeToString(SensitivityMode::OneD), "1D");
+    EXPECT_EQ(sensitivityModeToString(SensitivityMode::TwoD), "2D");
+}
+
+TEST(ConfigHandlerTest, StringToSensitivityModeInvalid)
+{
+    EXPECT_THROW(stringToSensitivityMode("3D"), gmx::InvalidInputError);
+    // The old boolean values are not accepted
+    EXPECT_THROW(stringToSensitivityMode("yes"), gmx::InvalidInputError);
+    EXPECT_THROW(stringToSensitivityMode(""), gmx::InvalidInputError);
 }
 
 // ---- ProbabilityComputerAlg enum conversion tests ----
@@ -124,6 +153,57 @@ TEST(ConfigHandlerTest, EMinimizeAlgorithmToStringValues)
 }
 
 // ---- GAConfigHandler getters/setters tests ----
+
+/*! \brief Parse the options of a GAConfigHandler from a command line
+ * The MCMC optimizer is selected, since the default GA does not allow
+ * the default population size of one.
+ * \param[in] gach The config handler
+ * \param[in] args The arguments after the MCMC optimizer
+ */
+static void parseGAOptions(GAConfigHandler                  *gach,
+                           const std::vector<const char *> &args)
+{
+    std::vector<t_pargs>      pargs;
+    std::vector<t_filenm>     fnms;
+    gach->add_options(&pargs, &fnms);
+    std::vector<const char *> cmdline = { "test", "-optimizer", "MCMC" };
+    cmdline.insert(cmdline.end(), args.begin(), args.end());
+    gmx::test::CommandLine    cmd(cmdline);
+    gmx_output_env_t         *oenv = nullptr;
+    ASSERT_TRUE(parse_common_args(&cmd.argc(), cmd.argv(), 0, 0, nullptr,
+                                  pargs.size(), pargs.data(), 0, nullptr, 0, nullptr, &oenv));
+    output_env_done(oenv);
+    MsgHandler msghandler;
+    gach->check_pargs(&msghandler);
+}
+
+TEST(ConfigHandlerTest, SensitivityOption)
+{
+    // The default is the one-dimensional analysis
+    GAConfigHandler gaDefault;
+    EXPECT_EQ(gaDefault.sensitivity(), SensitivityMode::OneD);
+    parseGAOptions(&gaDefault, {});
+    EXPECT_EQ(gaDefault.sensitivity(), SensitivityMode::OneD);
+    for (auto mode : { SensitivityMode::No, SensitivityMode::OneD, SensitivityMode::TwoD })
+    {
+        GAConfigHandler gach;
+        parseGAOptions(&gach, { "-sensitivity", sensitivityModeToString(mode).c_str() });
+        EXPECT_EQ(gach.sensitivity(), mode);
+    }
+    // Parsing again without the option gives the default, not the last choice
+    GAConfigHandler gaAgain;
+    parseGAOptions(&gaAgain, {});
+    EXPECT_EQ(gaAgain.sensitivity(), SensitivityMode::OneD);
+}
+
+TEST(ConfigHandlerTest, SensitivitySetter)
+{
+    GAConfigHandler gach;
+    gach.setSensitivity(SensitivityMode::TwoD);
+    EXPECT_EQ(gach.sensitivity(), SensitivityMode::TwoD);
+    gach.setSensitivity(SensitivityMode::No);
+    EXPECT_EQ(gach.sensitivity(), SensitivityMode::No);
+}
 
 TEST(ConfigHandlerTest, GAConfigHandlerDefaults)
 {
