@@ -141,50 +141,6 @@ void Experiment::Dump(gmx::TextWriter *tw) const
     }
 }
 
-int Experiment::Merge(Experiment *src)
-{
-    int nwarn = 0;
-
-    for (auto p = src->property_.begin(); p != src->property_.end(); ++p)
-    {
-        auto mpo = p->first;
-        if (property_.find(mpo) == property_.end())
-        {
-            std::vector<std::unique_ptr<GenericProperty> > gpnew;
-            property_.insert({ mpo, std::move(gpnew) });
-        }
-        //std::move(p->second.begin(), p->second.end(),
-        //        std::back_inserter(property_[mpo]));
-        for (auto gp = p->second.begin(); gp != p->second.end(); ++gp)
-        {
-            property_[mpo].push_back(std::move(*gp));
-        }
-    }
-    std::copy(src->calcAtomConst().begin(), src->calcAtomConst().end(),
-              std::back_inserter(catom_));
-
-    return nwarn;
-}
-
-void Experiment::setCoordinates()
-{
-    if (coordinates_.empty())
-    {
-        gmx::RVec x = { 0, 0, 0 };
-        coordinates_.resize(catom_.size(), x);
-        size_t j = 0;
-        for(auto ca: catom_)
-        {
-            auto cunit      = ca.coordUnit();
-            x[XX]           = convertToGromacs(ca.getX(), cunit);
-            x[YY]           = convertToGromacs(ca.getY(), cunit);
-            x[ZZ]           = convertToGromacs(ca.getZ(), cunit);
-            coordinates_[j] = x;
-            j++;
-        }
-    }
-}
-
 void Experiment::AddAtom(const CalcAtom &ca)
 {
     CalcAtomIterator cai = searchAtom(ca);
@@ -226,45 +182,6 @@ void Experiment::addProperty(MolPropObservable                mpo,
         property_.insert({ mpo, std::move(gpnew) });
     }
     property_.find(mpo)->second.push_back(std::move(gp));
-}
-
-void Experiment::getReferenceLot(std::string *reference,
-                                 std::string *lot) const
-{
-    if (nullptr != reference)
-    {
-        reference->assign(getReference());
-    }
-    if (nullptr != lot)
-    {
-        if (DataSource() == dsExperiment)
-        {
-            lot->assign("Experiment");
-        }
-        else
-        {
-            lot->assign(gmx::formatString("%s/%s", method_.c_str(), basisset_.c_str()));
-        }
-    }
-}
-
-bool Experiment::getCharges(std::vector<double> *q,
-                            const char          *qread,
-                            std::string         *reference,
-                            std::string         *lot) const
-{
-    q->resize(NAtom(), 0.0);
-    int i = 0;
-    for (auto &mai : calcAtomConst())
-    {
-        if (mai.hasCharge(qread))
-        {
-            (*q)[i] = mai.charge(qread);
-            i++;
-        }
-    }
-    getReferenceLot(reference, lot);
-    return i == NAtom();
 }
 
 CommunicationStatus Experiment::BroadCast(const CommunicationRecord *cr,
