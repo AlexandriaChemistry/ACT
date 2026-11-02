@@ -38,6 +38,7 @@
 #include <cstdio>
 #include <cstring>
 #include <iostream>
+#include <utility>
 
 #include <vector>
 
@@ -137,10 +138,11 @@ MatrixWrapper &MatrixWrapper::operator=(const MatrixWrapper &rhs)
 {
     if (&rhs != this)
     {
+        // When tmp goes out of scope it will free the old memory
         MatrixWrapper tmp(rhs);
-        double **d = a_;
-        a_ = tmp.a_;
-        tmp.a_ = d;  // When tmp goes out of scope it will free the memory
+        std::swap(a_, tmp.a_);
+        std::swap(ncol_, tmp.ncol_);
+        std::swap(nrow_, tmp.nrow_);
     }
     return *this;
 }
@@ -148,9 +150,9 @@ MatrixWrapper &MatrixWrapper::operator=(const MatrixWrapper &rhs)
 MatrixWrapper &MatrixWrapper::operator=(MatrixWrapper &&rhs)
 {
     MatrixWrapper tmp(std::move(rhs));
-    double **d = a_;
-    a_ = tmp.a_;
-    tmp.a_ = d;
+    std::swap(a_, tmp.a_);
+    std::swap(ncol_, tmp.ncol_);
+    std::swap(nrow_, tmp.nrow_);
     return *this;
 }
 
