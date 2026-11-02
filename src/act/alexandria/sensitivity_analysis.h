@@ -35,8 +35,12 @@
 #ifndef ALEXANDRIA_SENSITIVITY_H
 #define ALEXANDRIA_SENSITIVITY_H
 
+#include <string>
 #include <vector>
 
+#include <nlohmann/json.hpp>
+
+#include "act/alexandria/sensitivity.h"
 #include "act/basics/dataset.h"
 
 namespace ga
@@ -50,23 +54,49 @@ namespace alexandria
 class MsgHandler;
 class StaticIndividualInfo;
 class ACMFitnessComputer;
-class JsonTree;
-    
+
+//! \brief Summary of a sensitivity analysis
+struct SensitivityResult
+{
+    //! The analysis that was done, No if nothing was done
+    SensitivityMode mode                 = SensitivityMode::No;
+    //! The chi-squared of the parameters themselves
+    double          chi2_0               = 0;
+    //! Number of parameters
+    size_t          nParameters          = 0;
+    //! Number of converged parameters
+    size_t          nParametersConverged = 0;
+    //! Number of chi-squared computations, not counting chi2_0
+    size_t          nEvaluations         = 0;
+    //! Whether the parameters are in a minimum
+    bool            minimum              = true;
+};
+
 class SensitivityAnalysis
 {
 private:
     //! Dimensionless force constants
-    std::vector<double> forceConstant_;
+    std::vector<double>    forceConstant_;
+    //! Summary of the last run
+    SensitivityResult      result_;
+    //! Machine readable output of the last run
+    nlohmann::ordered_json json_;
 public:
     //! Constructor
     SensitivityAnalysis() {}
     /*!
      * \brief Perform a sensitivity analysis by systematically changing all parameters and
      * re-evaluating the \f$ \chi^2 \f$.
+     * The results are stored for json() and write(), the log file gets
+     * a summary only.
      * \param[in] msghandler The message and status handler
+     * \param[in] sii        The force field and parameter information
+     * \param[in] fitComp    Computes the chi-squared
      * \param[in] genome     Pointer to genome
      * \param[in] ims        Dataset to perform sensitivity analysis on
-     * \param[in] jtree      For machine readable output, may be nullptr
+     * \param[in] mode       The analysis to do. The two-dimensional analysis
+     *                       is not implemented yet, the one-dimensional one
+     *                       is done instead. With No nothing is done.
      * \param[in] quiet      Do not print to log file
      * \param[in] useMiddlemen Whether the middlemen compute part of the
      *                       deviations for the training set. They have to
@@ -83,12 +113,25 @@ public:
              ACMFitnessComputer   *fitComp,
              ga::Genome           *genome,
              iMolSelect            ims,
-             JsonTree             *jtree,
+             SensitivityMode       mode,
              bool                  quiet        = false,
              bool                  useMiddlemen = false);
 
     //! \return The force constants
     const std::vector<double> forceConstants() const { return forceConstant_; }
+
+    //! \return The summary of the last run
+    const SensitivityResult &result() const { return result_; }
+
+    /*! \return The output of the last run, an object with the key
+     * "sensitivity", or null if nothing was analysed
+     */
+    const nlohmann::ordered_json &json() const { return json_; }
+
+    /*! \brief Write the output of the last run to a JSON file
+     * \param[in] fileName The file name
+     */
+    void write(const std::string &fileName) const;
 };
 
 } // namespace

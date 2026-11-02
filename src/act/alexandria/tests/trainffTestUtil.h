@@ -103,6 +103,8 @@ struct TrainOutput
     std::string              forceField;
     //! The lines of the log file
     std::vector<std::string> log;
+    //! The sensitivity analysis, null if the file was not written
+    nlohmann::json           sensitivity;
 };
 
 //! \return a number that is written as a number or a string in json
@@ -187,6 +189,7 @@ inline TrainOutput runTrainFF(gmx::test::TestFileManager                        
         { "-otest",   label + "-fftest.xml" },
         { "-g",       label + ".log" },
         { "-json",    label + ".json" },
+        { "-sensout", label + "-sensitivity.json" },
         { "-fitness", label + "-fitness.dat" },
         { "-gpout",   label + "-pool.csv" },
         { "-conv",    label + "-conv.xvg" },
@@ -221,6 +224,11 @@ inline TrainOutput runTrainFF(gmx::test::TestFileManager                        
         if (in.good())
         {
             output.json = nlohmann::json::parse(in);
+        }
+        if (std::filesystem::exists(out["-sensout"]))
+        {
+            std::ifstream sens(out["-sensout"]);
+            output.sensitivity = nlohmann::json::parse(sens);
         }
         output.log = readLines(out["-g"]);
         readChi2(output.log, &output);

@@ -538,7 +538,8 @@ bool HybridGAMC::evolve(alexandria::MsgHandler       *msghandler,
             minimum = sens.run(msghandler, sii_,
                                static_cast<alexandria::ACMFitnessComputer *>(fitnessComputer()),
                                &((*bestGenome)[iMolSelect::Train]),
-                               iMolSelect::Train, nullptr, true, true);
+                               iMolSelect::Train, alexandria::SensitivityMode::OneD,
+                               true, true);
             // ...and put it back.
             msghandler->setPrintLevel(level);
             // Do we need to updata step sizes as well?

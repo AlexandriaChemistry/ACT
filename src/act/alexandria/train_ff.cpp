@@ -622,8 +622,9 @@ void OptACM::printGenomeTable(const std::map<iMolSelect, ga::Genome> &genome,
     }
 }
 
-bool OptACM::runMaster(bool      optimize,
-                       JsonTree *jtree)
+bool OptACM::runMaster(bool               optimize,
+                       const std::string &sensitivityFile,
+                       JsonTree          *jtree)
 {
     GMX_RELEASE_ASSERT(commRec_.nodeType() == NodeType::Master,
                        "I thought I was the master...");
@@ -674,18 +675,30 @@ bool OptACM::runMaster(bool      optimize,
     if (gach_.optimizer() != OptimizerAlg::GA &&
         sensitivity != SensitivityMode::No && msghandler_.ok())
     {
-        if (sensitivity == SensitivityMode::TwoD)
-        {
-            //! \todo Implement the two-dimensional analysis
-            msghandler_.msg(ACTStatus::Warning,
-                            "The two-dimensional sensitivity analysis is not implemented yet, doing the one-dimensional one.");
-        }
         // Do sensitivity analysis only on the training set. The middlemen
         // wait for work and compute part of it.
         SensitivityAnalysis sens;
         (void) sens.run(&msghandler_, sii_, fitComp_,
-                        &bestGenome[iMolSelect::Train], iMolSelect::Train, jtree,
+                        &bestGenome[iMolSelect::Train], iMolSelect::Train, sensitivity,
                         false, true);
+        const auto &res = sens.result();
+        if (res.mode != SensitivityMode::No)
+        {
+            // The details go to their own file, train_ff.json gets a summary
+            sens.write(sensitivityFile);
+            msghandler_.write(gmx::formatString("Details of the sensitivity analysis are in %s",
+                                                sensitivityFile.c_str()));
+            if (jtree)
+            {
+                JsonTree summary("sensitivity");
+                summary.addObject("mode", sensitivityModeToString(res.mode));
+                summary.addObject("file", sensitivityFile);
+                summary.addObject("minimum", res.minimum ? "yes" : "no");
+                summary.addObject("n_parameters", std::to_string(res.nParameters));
+                summary.addObject("n_parameters_converged", std::to_string(res.nParametersConverged));
+                jtree->addObject(summary);
+            }
+        }
     }
     // Stop the middlemen ...
     if (commRec_.nmiddlemen() > 1)
@@ -825,7 +838,9 @@ int train_ff(int argc, char *argv[])
         "Following training with MCMC or HYBRID a sensitivity analysis is done on",
         "the trained parameters, selected with [TT]-sensitivity[tt]: [TT]1D[tt]",
         "(default) changes each parameter on its own, [TT]2D[tt] also changes",
-        "every pair of parameters, and [TT]No[tt] turns the analysis off. It is also possible",
+        "every pair of parameters, and [TT]No[tt] turns the analysis off. The",
+        "results are written to the [TT]-sensout[tt] file, the log file gets a summary.",
+        "It is also possible",
         "to do a sensitivity analysis on an existing force field. In that case",
         "please select either [TT]-fc_inter[tt] (Intermolecular energy) or [TT]-fc_epot[tt]",
         "(Intramolecular energy), set the parameters to be investigated with",
@@ -861,7 +876,8 @@ int train_ff(int argc, char *argv[])
         { efXVG,  "-conv",    "param_conv" , ffWRITE  },
         { efXVG,  "-chi2",    "chi_squared", ffWRITE  },
         { efDAT,  "-fitness", "ga_fitness",  ffWRITE  },
-        { efJSON, "-json",    "train_ff",    ffWRITE  }
+        { efJSON, "-json",    "train_ff",    ffWRITE  },
+        { efJSON, "-sensout", "sensitivity", ffWRITE  }
     };
 
     alexandria::OptACM opt;
@@ -1059,7 +1075,9 @@ int train_ff(int argc, char *argv[])
         bool bMinimum = false;
         if (initOK)
         {
-            bMinimum = opt.runMaster(bOptimize, &jtree);
+            bMinimum = opt.runMaster(bOptimize,
+                                     opt2fn("-sensout", filenms.size(), filenms.data()),
+                                     &jtree);
             if (bOptimize)
             {
                 auto msg = gmx::formatString("Training finished %s.", bMinimum ? "succesfully" : "without finding a better force field");

@@ -37,13 +37,17 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdlib>
+#include <limits>
 #include <map>
 #include <string>
 #include <vector>
 
-#include "act/utility/jsontree.h"
+#include <nlohmann/json.hpp>
+
 #include "act/utility/regression.h"
 #include "act/utility/stringutil.h"
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/textwriter.h"
 
 namespace alexandria
@@ -62,6 +66,34 @@ std::map<CalcDev, const char *> cdMap =
 const char *calcDevName(CalcDev cd)
 {
     return cdMap[cd];
+}
+
+//! \brief Map SensitivityMode to string
+std::map<SensitivityMode, std::string> sens2str =
+    {
+        { SensitivityMode::No,   "No" },
+        { SensitivityMode::OneD, "1D" },
+        { SensitivityMode::TwoD, "2D" }
+    };
+
+SensitivityMode stringToSensitivityMode(const std::string &str)
+{
+    for(auto &s2s : sens2str)
+    {
+        if (str == s2s.second)
+        {
+            return s2s.first;
+        }
+    }
+    GMX_THROW(gmx::InvalidInputError(gmx::formatString("No such sensitivity analysis %s",
+                                                       str.c_str()).c_str()));
+    // To satisfy the compiler
+    return SensitivityMode::OneD;
+}
+
+const std::string &sensitivityModeToString(SensitivityMode mode)
+{
+    return sens2str[mode];
 }
 
 void Sensitivity::computeForceConstants(gmx::TextWriter *tw)
@@ -118,9 +150,21 @@ void Sensitivity::computeForceConstants(gmx::TextWriter *tw)
     auto result = M.solve(chi2_, &solution);
     if (result == 0)
     {
+        fitted_ = true;
         A_ = solution[0];
         B_ = solution[1];
         C_ = solution[2];
+        // A curvature below the rounding errors of the chi2 values is
+        // zero, such that a straight line has no minimum.
+        double chi2max = 0;
+        for (auto chi2 : chi2_)
+        {
+            chi2max = std::max(chi2max, std::abs(chi2));
+        }
+        if (std::abs(A_) <= 16*std::numeric_limits<double>::epsilon()*chi2max)
+        {
+            A_ = 0;
+        }
         // chi2 = A ((p - p0)/s)^2 + B (p - p0)/s + C = a p^2 + b p + c
         a_ = A_/(scale_*scale_);
         b_ = B_/scale_ - 2*a_*p0_;
@@ -150,63 +194,63 @@ bool Sensitivity::checkConvergence(double lower, double upper, double tolerance)
 {
     checked_   = true;
     converged_ = false;
+    lower_     = lower;
+    upper_     = upper;
     if (A_ > 0 && original_ < p_.size())
     {
-        double pmin = std::clamp(pMin(), lower, upper);
-        converged_  = std::abs(p_[original_] - pmin) <= tolerance;
+        converged_ = std::abs(p_[original_] - pMinBounded()) <= tolerance;
     }
     return converged_;
 }
 
-void Sensitivity::print(gmx::TextWriter      *tw,
-                        alexandria::JsonTree *jtree,
-                        const std::string    &index,
-                        const std::string    &label)
+double Sensitivity::pMinBounded() const
 {
-    // The extremum of the parabola, also needed without a text writer
-    double p_min    = pMin();
-    double chi2_min = chi2Min();
-    if (tw)
+    return std::clamp(pMin(), lower_, upper_);
+}
+
+nlohmann::ordered_json Sensitivity::toJson(size_t             index,
+                                           const std::string &label) const
+{
+    nlohmann::ordered_json js;
+    js["index"] = index;
+    js["name"]  = label;
+    // The label contains the particle type and the parameter name
+    auto pn = split(label, ' ');
+    js["particle"]  = pn.size() > 0 ? pn[0] : "";
+    js["parameter"] = pn.size() > 1 ? pn[1] : "";
+    if (checked_)
     {
-        tw->writeStringFormatted("Sensitivity %s Fit to parabola: a %10g b %10g c %10g\n",
-                                 label.c_str(), a_, b_, c_);
-        for(size_t i = 0; i < p_.size(); ++i)
-        {
-            tw->writeStringFormatted("    p[%zu] %g chi2[%zu] %g\n", i, p_[i], i, chi2_[i]);
-        }
-        if (A_ != 0)
-        {
-            tw->writeStringFormatted("    pmin %g chi2min %g (estimate based on parabola)\n",
-                                     p_min, chi2_min);
-        }
-        if (checked_)
-        {
-            tw->writeStringFormatted("    %s\n", converged_ ? "converged" : "not converged");
-        }
+        js["lower"] = lower_;
+        js["upper"] = upper_;
     }
-    if (jtree)
+    if (original_ < p_.size())
     {
-        JsonTree abc(index);
-        // A bit of a hack since the input label contains two pieces of information
-        auto pn = split(label, ' ');
-        abc.addObject("particle", pn[0]);
-        abc.addObject("parameter", pn[1]);
-        abc.addObject("a", a_);
-        abc.addObject("b", b_);
-        abc.addObject("c", c_);
-        abc.addObject("p_orig", p_[original_]);
-        abc.addObject("chi2_orig", chi2_[original_]);
-        if (A_ != 0)
-        {
-            abc.addObject("p_min", p_min);
-            abc.addObject("chi2_min", chi2_min);
-        }
-        if (checked_)
-        {
-            abc.addObject("converged", converged_ ? "yes" : "no");
-        }
-        jtree->addObject(abc);
+        js["p_orig"]    = p_[original_];
+        js["chi2_orig"] = chi2_[original_];
     }
+    auto points = nlohmann::ordered_json::array();
+    for (size_t i = 0; i < p_.size(); ++i)
+    {
+        points.push_back({ { "p", p_[i] }, { "chi2", chi2_[i] } });
+    }
+    js["points"] = points;
+    js["fit_ok"] = fitted_;
+    if (fitted_)
+    {
+        js["a"] = a_;
+        js["b"] = b_;
+        js["c"] = c_;
+    }
+    // The extremum is undefined for a straight line
+    bool extremum = fitted_ && A_ != 0;
+    js["p_min"]    = extremum ? nlohmann::ordered_json(pMin()) : nlohmann::ordered_json();
+    js["chi2_min"] = extremum ? nlohmann::ordered_json(chi2Min()) : nlohmann::ordered_json();
+    if (checked_)
+    {
+        js["p_min_bounded"] = extremum ? nlohmann::ordered_json(pMinBounded()) : nlohmann::ordered_json();
+        js["converged"]     = converged_;
+    }
+    return js;
 }
 
 

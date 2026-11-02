@@ -38,6 +38,8 @@
 #include <string>
 #include <vector>
 
+#include <nlohmann/json_fwd.hpp>
+
 namespace gmx
 {
 class TextWriter;
@@ -46,7 +48,28 @@ class TextWriter;
 namespace alexandria
 {
 
-class JsonTree;
+//! \brief Which sensitivity analysis to do, see SensitivityAnalysis
+enum class SensitivityMode {
+    //! No sensitivity analysis
+    No,
+    //! Each parameter on its own
+    OneD,
+    //! Each parameter on its own and every pair of parameters
+    TwoD
+};
+
+/*! \brief Convert string into SensitivityMode
+ * \param[in] str The string, No, 1D or 2D
+ * \return the sensitivity mode
+ * \throws if there is no mode matching the string
+ */
+SensitivityMode stringToSensitivityMode(const std::string &str);
+
+/*! \brief Convert SensitivityMode to string
+ * \param[in] mode The sensitivity mode
+ * \return The corresponding string, No, 1D or 2D
+ */
+const std::string &sensitivityModeToString(SensitivityMode mode);
 
 //! How to perform the calculation of deviations (chi-squared)
 enum class CalcDev {
@@ -83,8 +106,12 @@ private:
     double scale_ = 1;
     //! \brief Index of the point with the original parameter value
     size_t original_ = 1;
+    //! \brief Whether the fit succeeded
+    bool   fitted_    = false;
     //! \brief Whether checkConvergence was called
     bool   checked_   = false;
+    //! \brief The bounds given to checkConvergence
+    double lower_ = 0, upper_ = 0;
     //! \brief Whether the parameter is converged, see checkConvergence
     bool   converged_ = false;
 public:
@@ -146,16 +173,19 @@ public:
      */
     double chi2Min() const;
 
-    /*! \brief Print output
-     * \param[in] tw    A text writer
-     * \param[in] jtree For machine readable output
-     * \param[in] index Parameter index, must be unique
-     * \param[in] label Label for identifying the parameter
+    //! \return the parameter value of the minimum limited to the bounds of checkConvergence
+    double pMinBounded() const;
+
+    /*! \brief The results in machine readable form
+     * Numbers are JSON numbers and flags are booleans. Values that are
+     * undefined, like the minimum of a straight line, are null.
+     * \param[in] index Parameter index
+     * \param[in] label Label for identifying the parameter, the particle
+     *                  type and the parameter name separated by a space
+     * \return a JSON object
      */
-    void print(gmx::TextWriter      *tw,
-               alexandria::JsonTree *jtree,
-               const std::string    &index,
-               const std::string    &label);
+    nlohmann::ordered_json toJson(size_t             index,
+                                  const std::string &label) const;
 };
 
 }  //namespace alexandria

@@ -129,6 +129,52 @@ Options combine(Options a, const Options &b)
     return a;
 }
 
+/*! \brief Set the value of an option
+ * \param[in] options The options
+ * \param[in] name    The option
+ * \param[in] value   Its value
+ * \return the options with the value replaced, or added if not there
+ */
+Options setOption(Options options, const std::string &name, const std::string &value)
+{
+    for (auto &opt : options)
+    {
+        if (opt.first == name)
+        {
+            opt.second = value;
+            return options;
+        }
+    }
+    options.push_back({ name, value });
+    return options;
+}
+
+/*! \brief Options to analyse the force field of the hydrogen fluoride dimer
+ * without training it
+ * \param[in] mode The sensitivity analysis
+ * \return the options
+ */
+Options analyseOnly(const std::string &mode)
+{
+    auto options = setOption(combine(mcmcOptions(1), hfOptions()), "-sensitivity", mode);
+    options.push_back({ "-nooptimize", "" });
+    options.push_back({ "-norandom_init", "" });
+    return options;
+}
+
+//! \return whether a line of the log file contains a text
+bool logContains(const std::vector<std::string> &log, const std::string &text)
+{
+    for (const auto &line : log)
+    {
+        if (line.find(text) != std::string::npos)
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
 class TrainFFTest : public gmx::test::CommandLineTestBase
 {
 protected:
@@ -843,6 +889,62 @@ TEST_F(TrainFFTest, ChargesEspPolarizability)
         }
     }
     EXPECT_EQ(5, nxyz);
+}
+
+// Test: Without a sensitivity analysis there is no file and no summary
+TEST_F(TrainFFTest, SensitivityNo)
+{
+    auto output = trainfftest::runTrainFF(&fileManager(), "sensno", "4S-lj14-7-pg-hvdw.xml",
+                                          "hf-hf", analyseOnly("No"));
+    ASSERT_EQ(0, output.status);
+    EXPECT_TRUE(output.sensitivity.is_null());
+    EXPECT_FALSE(logContains(output.log, "Sensitivity analysis ("));
+    EXPECT_FALSE(logContains(output.log, "Details of the sensitivity analysis"));
+    EXPECT_FALSE(output.json["train_ff"].contains("sensitivity"));
+}
+
+// Test: The one-dimensional analysis is written to its own file, the
+// log file and train_ff.json get a summary
+TEST_F(TrainFFTest, Sensitivity1DJson)
+{
+    auto output = trainfftest::runTrainFF(&fileManager(), "sens1d", "4S-lj14-7-pg-hvdw.xml",
+                                          "hf-hf", analyseOnly("1D"));
+    ASSERT_EQ(0, output.status);
+    ASSERT_TRUE(output.sensitivity.contains("sensitivity"));
+    const auto &sens = output.sensitivity["sensitivity"];
+    EXPECT_EQ("1D", sens["mode"].get<std::string>());
+    EXPECT_EQ("Train", sens["dataset"].get<std::string>());
+    auto np = sens["n_parameters"].get<size_t>();
+    EXPECT_GT(np, 0u);
+    EXPECT_EQ(2*np, sens["n_evaluations"].get<size_t>());
+    EXPECT_FALSE(sens.contains("pairs"));
+    ASSERT_EQ(np, sens["parameters"].size());
+    size_t nconv = 0;
+    for (const auto &p : sens["parameters"])
+    {
+        auto name = p["name"].get<std::string>();
+        EXPECT_EQ(3u, p["points"].size()) << name;
+        EXPECT_GE(p["p_orig"].get<double>(), p["lower"].get<double>()) << name;
+        EXPECT_LE(p["p_orig"].get<double>(), p["upper"].get<double>()) << name;
+        EXPECT_GT(p["chi2_orig"].get<double>(), 0) << name;
+        if (p["converged"].get<bool>())
+        {
+            nconv += 1;
+        }
+    }
+    EXPECT_EQ(nconv, sens["n_parameters_converged"].get<size_t>());
+    EXPECT_EQ(nconv == np, sens["minimum"].get<bool>());
+    // The log file has the summary, not the parabola of each parameter
+    EXPECT_TRUE(logContains(output.log, "Sensitivity analysis (1D) of " + std::to_string(np) + " parameters"));
+    EXPECT_TRUE(logContains(output.log, "Converged: " + std::to_string(nconv) + "/" + std::to_string(np)));
+    EXPECT_FALSE(logContains(output.log, "Fit to parabola"));
+    // The summary in train_ff.json
+    const auto &summary = output.json["train_ff"]["sensitivity"];
+    EXPECT_EQ("1D", summary["mode"].get<std::string>());
+    EXPECT_NE(std::string::npos, summary["file"].get<std::string>().find("sens1d-sensitivity.json"));
+    EXPECT_EQ(np, trainfftest::jsonNumber(summary["n_parameters"]));
+    EXPECT_EQ(nconv, trainfftest::jsonNumber(summary["n_parameters_converged"]));
+    EXPECT_EQ(nconv == np ? "yes" : "no", summary["minimum"].get<std::string>());
 }
 
 } // namespace

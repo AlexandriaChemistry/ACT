@@ -76,34 +76,6 @@ const std::string &optimizerAlgToString(OptimizerAlg opt)
     return opt2str[opt];
 }
 
-//! \brief Map SensitivityMode to string
-std::map<SensitivityMode, std::string> sens2str =
-    {
-        { SensitivityMode::No,   "No" },
-        { SensitivityMode::OneD, "1D" },
-        { SensitivityMode::TwoD, "2D" }
-    };
-
-SensitivityMode stringToSensitivityMode(const std::string &str)
-{
-    for(auto &s2s : sens2str)
-    {
-        if (str == s2s.second)
-        {
-            return s2s.first;
-        }
-    }
-    GMX_THROW(gmx::InvalidInputError(gmx::formatString("No such sensitivity analysis %s",
-                                                       str.c_str()).c_str()));
-    // To satisfy the compiler
-    return SensitivityMode::OneD;
-}
-
-const std::string &sensitivityModeToString(SensitivityMode mode)
-{
-    return sens2str[mode];
-}
-
 //! \brief Map ProbabilityComputerAlg to string
 std::map<ProbabilityComputerAlg, std::string> prob2str =
     {

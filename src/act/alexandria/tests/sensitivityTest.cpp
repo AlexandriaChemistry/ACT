@@ -37,6 +37,7 @@
 #include <string>
 
 #include <gtest/gtest.h>
+#include <nlohmann/json.hpp>
 
 #include "act/alexandria/sensitivity.h"
 #include "act/alexandria/acmfitnesscomputer.h"
@@ -45,7 +46,6 @@
 #include "act/ga/genome.h"
 #include "act/basics/msg_handler.h"
 #include "act/utility/communicationrecord.h"
-#include "act/utility/jsontree.h"
 
 #include "testutils/testfilemanager.h"
 
@@ -164,19 +164,74 @@ TEST(SensitivityTest, PrintsMinimumWithoutTextWriter)
         s.add(p, 3*p*p - 12*p + 17);
     }
     s.computeForceConstants(nullptr);
-    JsonTree tree("sensitivity");
-    s.print(nullptr, &tree, "0", "c3_z chi");
-    ASSERT_EQ(1u, tree.objects().size());
-    std::map<std::string, std::string> values;
-    for(const auto &obj : tree.objects()[0].objects())
+    auto js = s.toJson(0, "c3_z chi");
+    EXPECT_EQ(0, js["index"].get<int>());
+    EXPECT_EQ("c3_z chi", js["name"].get<std::string>());
+    EXPECT_EQ("c3_z", js["particle"].get<std::string>());
+    EXPECT_EQ("chi", js["parameter"].get<std::string>());
+    EXPECT_NEAR(2.25, js["p_orig"].get<double>(), 1e-12);
+    EXPECT_NEAR(2, js["p_min"].get<double>(), 1e-12);
+    EXPECT_NEAR(5, js["chi2_min"].get<double>(), 1e-12);
+    EXPECT_NEAR(3, js["a"].get<double>(), 1e-12);
+    EXPECT_NEAR(-12, js["b"].get<double>(), 1e-12);
+    EXPECT_NEAR(17, js["c"].get<double>(), 1e-12);
+    EXPECT_TRUE(js["fit_ok"].get<bool>());
+    // The points are in the output
+    ASSERT_EQ(3u, js["points"].size());
+    EXPECT_EQ(1.5, js["points"][0]["p"].get<double>());
+    EXPECT_EQ(3*1.5*1.5 - 12*1.5 + 17, js["points"][0]["chi2"].get<double>());
+    // Without checkConvergence there are no bounds and no convergence
+    EXPECT_FALSE(js.contains("lower"));
+    EXPECT_FALSE(js.contains("converged"));
+}
+
+// Test: Small numbers are written with full precision, not as zero
+TEST(SensitivityTest, JsonKeepsSmallNumbers)
+{
+    // The curvature of a C12 like parameter
+    Sensitivity s;
+    for(double p : { 4.95e4, 5e4, 5.05e4 })
     {
-        values[obj.key()] = obj.value();
+        s.add(p, 4e-12*(p - 5.01e4)*(p - 5.01e4) + 0.482, p == 5e4);
     }
-    EXPECT_EQ("c3_z", values["particle"]);
-    EXPECT_EQ("chi", values["parameter"]);
-    EXPECT_NEAR(2.25, std::stod(values["p_orig"]), 1e-6);
-    EXPECT_NEAR(2, std::stod(values["p_min"]), 1e-6);
-    EXPECT_NEAR(5, std::stod(values["chi2_min"]), 1e-6);
+    s.computeForceConstants(nullptr);
+    auto js = s.toJson(0, "c12 epsilon");
+    EXPECT_NEAR(4e-12, js["a"].get<double>(), 1e-20);
+    // Through a string, as in the file
+    auto again = nlohmann::ordered_json::parse(js.dump());
+    EXPECT_EQ(js["a"].get<double>(), again["a"].get<double>());
+}
+
+// Test: The minimum of a straight line is null, not a number
+TEST(SensitivityTest, JsonStraightLineHasNoMinimum)
+{
+    Sensitivity s;
+    for(double p : { 1.0, 2.0, 3.0 })
+    {
+        s.add(p, 2*p + 1, p == 2.0);
+    }
+    s.computeForceConstants(nullptr);
+    EXPECT_FALSE(s.checkConvergence(0, 10, 0.5));
+    auto js = s.toJson(3, "h chi");
+    EXPECT_TRUE(js["fit_ok"].get<bool>());
+    EXPECT_TRUE(js["p_min"].is_null());
+    EXPECT_TRUE(js["chi2_min"].is_null());
+    EXPECT_TRUE(js["p_min_bounded"].is_null());
+    EXPECT_FALSE(js["converged"].get<bool>());
+    EXPECT_EQ(std::string::npos, js.dump().find("nan"));
+}
+
+// Test: Without enough points there is no fit
+TEST(SensitivityTest, JsonWithoutFit)
+{
+    Sensitivity s;
+    s.add(1, 1);
+    s.add(2, 2, true);
+    s.computeForceConstants(nullptr);
+    auto js = s.toJson(0, "h chi");
+    EXPECT_FALSE(js["fit_ok"].get<bool>());
+    EXPECT_FALSE(js.contains("a"));
+    EXPECT_TRUE(js["p_min"].is_null());
 }
 
 /*! \brief A parabola through three points around a parameter
@@ -243,18 +298,12 @@ TEST(SensitivityTest, PrintsConvergence)
     {
         auto     s = parabola(2, 5, conv ? 5.1 : 6, 0.05);
         EXPECT_EQ(conv, s.checkConvergence(0, 10, 0.5));
-        JsonTree tree("sensitivity");
-        s.print(nullptr, &tree, "0", "c3_z chi");
-        ASSERT_EQ(1u, tree.objects().size());
-        std::string value;
-        for(const auto &obj : tree.objects()[0].objects())
-        {
-            if (obj.key() == "converged")
-            {
-                value = obj.value();
-            }
-        }
-        EXPECT_EQ(conv ? "yes" : "no", value);
+        auto js = s.toJson(0, "c3_z chi");
+        EXPECT_EQ(conv, js["converged"].get<bool>());
+        EXPECT_EQ(0, js["lower"].get<double>());
+        EXPECT_EQ(10, js["upper"].get<double>());
+        // The minimum is within the bounds
+        EXPECT_NEAR(5, js["p_min_bounded"].get<double>(), 1e-10);
     }
 }
 

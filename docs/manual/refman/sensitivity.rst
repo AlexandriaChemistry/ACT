@@ -88,48 +88,81 @@ generations.
 Output Format
 =============
 
-The sensitivity analysis writes its results to the log file. The output has the
-following structure:
+The results are written to a JSON file, set with *-sensout* (default
+*sensitivity.json*). The log file only gets a summary::
 
-.. code-block:: none
+   Sensitivity analysis (1D) of 42 parameters on the Train set, 84 chi2 evaluations, chi2_0 = 0.482
+   Converged: 41/42 parameters, not in a minimum.
+   Details of the sensitivity analysis are in sensitivity.json
 
-   Starting sensitivity analysis. chi2_0 = 0.482  nParam = 42
+and the json output of *train_ff* (*-json*) gets the same summary under the key
+*sensitivity*, with the name of the file. The file has the following structure,
+shown here for one parameter:
 
-   Sensitivity epsilon_OW Fit to parabola: a  1.35e+00 b -1.36e+01 c  3.44e+01
-       p[0] 4.900   chi2[0] 0.496
-       p[1] 5.000   chi2[1] 0.482
-       p[2] 5.100   chi2[2] 0.495
-       pmin 5.002  chi2min 0.482 (estimate based on parabola)
-       converged
+.. code-block:: json
 
-   Sensitivity C12_VDW Fit to parabola: a  4.00e-12 b -4.01e-07 c  4.82e-01
-       p[0] 4.95e+04  chi2[0] 0.4820
-       p[1] 5.00e+04  chi2[1] 0.4820
-       p[2] 5.05e+04  chi2[2] 0.4820
-       pmin 5.01e+04  chi2min 0.4820 (estimate based on parabola)
-       not converged
+   {
+     "sensitivity": {
+       "mode": "1D",
+       "dataset": "Train",
+       "chi2_0": 0.482,
+       "n_parameters": 42,
+       "n_evaluations": 84,
+       "tolerance_fraction": 0.05,
+       "minimum": false,
+       "n_parameters_converged": 41,
+       "parameters": [
+         {
+           "index": 0,
+           "name": "OW epsilon",
+           "particle": "OW",
+           "parameter": "epsilon",
+           "lower": 0.0,
+           "upper": 20.0,
+           "p_orig": 5.0,
+           "chi2_orig": 0.482,
+           "points": [ { "p": 4.9, "chi2": 0.496 },
+                       { "p": 5.0, "chi2": 0.482 },
+                       { "p": 5.1, "chi2": 0.495 } ],
+           "fit_ok": true,
+           "a": 1.35, "b": -13.6, "c": 34.4,
+           "p_min": 5.002,
+           "chi2_min": 0.482,
+           "p_min_bounded": 5.002,
+           "converged": true,
+           "delta": 0.1,
+           "force_constant": 0.054
+         }
+       ]
+     }
+   }
 
-   Sensitivity analysis done.
+The fields are:
 
-The output fields are:
-
+* **mode** — the analysis that was done, *1D* or *2D*.
 * **chi2_0** — the :math:`\chi^2` of the current (trained) parameter set before
   any perturbation.
-* **nParam** — the number of trainable parameters being analyzed.
-* **Parameter name** — the name of the force field parameter (interaction type and
-  atom-type label).
+* **n_evaluations** — the number of :math:`\chi^2` computations, not counting
+  *chi2_0*.
+* **minimum** — whether all parameters are converged, see above.
+* **name**, **particle**, **parameter** — the force field parameter.
+* **lower**, **upper**, **delta** — its bounds and the step
+  :math:`\delta p`.
+* **points** — the parameter values at which :math:`\chi^2` was computed, in
+  increasing order, with their :math:`\chi^2`.
 * **a, b, c** — coefficients of the fitted parabola
-  :math:`\chi^2(p) = a p^2 + b p + c`.
-* **p[0], p[1], p[2]** — the three parameter values at which :math:`\chi^2` was
-  evaluated.
-* **chi2[0], chi2[1], chi2[2]** — the corresponding :math:`\chi^2` values.
-* **pmin** — the parameter value at the estimated parabolic minimum.
-* **chi2min** — the estimated minimum :math:`\chi^2` from the parabola fit.
-* **converged** or **not converged** — whether the parameter is converged, see
-  above.
+  :math:`\chi^2(p) = a p^2 + b p + c`. The fit is done in coordinates
+  centred on the parameter and scaled by the step, such that it stays
+  accurate for parameters with narrow bounds. **fit_ok** is false if the
+  parabola could not be fitted.
+* **p_min**, **chi2_min** — the extremum of the parabola, *null* if the
+  parabola is a straight line. **p_min_bounded** is *p_min* limited to the
+  bounds.
+* **converged** — whether the parameter is converged, see above.
+* **force_constant** — the dimensionless force constant :math:`a/p^2`, used for
+  adaptive step sizes.
 
-The same information, apart from the values of the points, is added to the json
-output file, with *converged* set to *yes* or *no*.
+Numbers are written with full precision and flags as *true* or *false*.
 
 ==============
 Interpretation

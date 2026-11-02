@@ -38,6 +38,7 @@
 #include <vector>
 
 #include "act/alexandria/loss_function.h"
+#include "act/alexandria/sensitivity.h"
 #include "act/constraints/shake.h"
 #include "act/properties/velocityhandler.h"
 #include "gromacs/commandline/pargs.h"
@@ -88,29 +89,6 @@ OptimizerAlg stringToOptimizerAlg(const std::string &str);
  * \return The corresponding string
  */
 const std::string &optimizerAlgToString(OptimizerAlg opt);
-
-//! \brief Which sensitivity analysis to do, see SensitivityAnalysis
-enum class SensitivityMode {
-    //! No sensitivity analysis
-    No,
-    //! Each parameter on its own
-    OneD,
-    //! Each parameter on its own and every pair of parameters
-    TwoD
-};
-
-/*! \brief Convert string into SensitivityMode
- * \param[in] str The string, No, 1D or 2D
- * \return the sensitivity mode
- * \throws if there is no mode matching the string
- */
-SensitivityMode stringToSensitivityMode(const std::string &str);
-
-/*! \brief Convert SensitivityMode to string
- * \param[in] mode The sensitivity mode
- * \return The corresponding string, No, 1D or 2D
- */
-const std::string &sensitivityModeToString(SensitivityMode mode);
 
 //! \brief Enum for probability computer
 enum class ProbabilityComputerAlg { pcRANK, pcFITNESS, pcBOLTZMANN };

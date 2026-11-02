@@ -35,11 +35,12 @@
 
 #include "act/basics/msg_handler.h"
 #include "act/utility/communicationrecord.h"
-#include "act/utility/jsontree.h"
 #include "act/alexandria/acmfitnesscomputer.h"
 #include "act/alexandria/staticindividualinfo.h"
 #include "act/ga/genome.h"
 #include "act/utility/timings.h"
+#include "gromacs/utility/futil.h"
+#include "gromacs/utility/textwriter.h"
 
 #include <algorithm>
 #include <set>
@@ -163,7 +164,7 @@ bool SensitivityAnalysis::run(MsgHandler           *msghandler,
                               ACMFitnessComputer   *fitComp,
                               ga::Genome           *genome,
                               iMolSelect            ims,
-                              JsonTree             *jtree,
+                              SensitivityMode       mode,
                               bool                  quiet,
                               bool                  useMiddlemen)
 {
@@ -174,9 +175,20 @@ bool SensitivityAnalysis::run(MsgHandler           *msghandler,
     const auto lowerBound      = sii->lowerBound();
     const auto paramNames      = sii->paramNames();
 
-    if (param->size() == 0)
+    // Reset the output of a previous run
+    forceConstant_.clear();
+    result_ = SensitivityResult();
+    json_   = nlohmann::ordered_json();
+    if (param->size() == 0 || mode == SensitivityMode::No)
     {
         return true;
+    }
+    if (mode == SensitivityMode::TwoD)
+    {
+        //! \todo Implement the two-dimensional analysis
+        msghandler->msg(ACTStatus::Warning,
+                        "The two-dimensional sensitivity analysis is not implemented yet, doing the one-dimensional one.");
+        mode = SensitivityMode::OneD;
     }
     std::set<int> changed;
     sii->updateForceField(msghandler, changed, genome->bases());
@@ -187,11 +199,6 @@ bool SensitivityAnalysis::run(MsgHandler           *msghandler,
     if (quiet)
     {
         tw = nullptr;
-    }
-    if (tw)
-    {
-        tw->writeStringFormatted("\nStarting sensitivity analysis. chi2_0 = %g nParam = %zu\n",
-                                 chi2_0, param->size());
     }
     // The chi2 of each parameter is known for its value, and computed
     // for two other values, all of them first. Each value is computed on
@@ -219,10 +226,9 @@ bool SensitivityAnalysis::run(MsgHandler           *msghandler,
     {
         chi2[k] = points[k].chi2;
     }
-    JsonTree sens("sensitivity");
-    bool minimum = true;
-    // Reset force constants every run
-    forceConstant_.clear();
+    bool minimum   = true;
+    auto parameters = nlohmann::ordered_json::array();
+    size_t nconv    = 0;
     for (size_t i = 0; i < np; ++i)
     {
         Sensitivity s;
@@ -246,6 +252,10 @@ bool SensitivityAnalysis::run(MsgHandler           *msghandler,
         double range = upperBound[i] - lowerBound[i];
         bool   conv  = s.checkConvergence(lowerBound[i], upperBound[i], convergenceFraction*range);
         minimum      = minimum && conv;
+        if (conv)
+        {
+            nconv += 1;
+        }
         // Compute dimensionless force constant, or zero if undefined
         double fc = 0;
         if (pstore != 0)
@@ -253,17 +263,45 @@ bool SensitivityAnalysis::run(MsgHandler           *msghandler,
             fc = s.a() / (pstore*pstore);
         }
         forceConstant_.push_back(fc);
-        s.print(tw, &sens, std::to_string(i), paramNames[i]);
+        auto js = s.toJson(i, paramNames[i]);
+        js["delta"]          = range/200;
+        js["force_constant"] = fc;
+        parameters.push_back(js);
     }
+    result_.mode                 = mode;
+    result_.chi2_0               = chi2_0;
+    result_.nParameters          = np;
+    result_.nParametersConverged = nconv;
+    result_.nEvaluations         = points.size();
+    result_.minimum              = minimum;
+
+    nlohmann::ordered_json sens;
+    sens["mode"]                   = sensitivityModeToString(mode);
+    sens["dataset"]                = iMolSelectName(ims);
+    sens["chi2_0"]                 = chi2_0;
+    sens["n_parameters"]           = np;
+    sens["n_evaluations"]          = points.size();
+    sens["tolerance_fraction"]     = convergenceFraction;
+    sens["minimum"]                = minimum;
+    sens["n_parameters_converged"] = nconv;
+    sens["parameters"]             = parameters;
+    json_["sensitivity"]           = sens;
     if (tw)
     {
-        tw->writeString("Sensitivity analysis done.");
-    }
-    if (jtree)
-    {
-        jtree->addObject(sens);
+        tw->writeStringFormatted("\nSensitivity analysis (%s) of %zu parameters on the %s set, %zu chi2 evaluations, chi2_0 = %g\n",
+                                 sensitivityModeToString(mode).c_str(), np,
+                                 iMolSelectName(ims).c_str(), points.size(), chi2_0);
+        tw->writeStringFormatted("Converged: %zu/%zu parameters, %s.\n", nconv, np,
+                                 minimum ? "in a minimum" : "not in a minimum");
     }
     return minimum;
-}                                      
+}
+
+void SensitivityAnalysis::write(const std::string &fileName) const
+{
+    FILE *fp = gmx_ffopen(fileName.c_str(), "w");
+    fprintf(fp, "%s\n", json_.dump(2).c_str());
+    gmx_ffclose(fp);
+}
 
 }

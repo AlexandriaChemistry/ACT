@@ -39,11 +39,13 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
+#include <fstream>
 #include <set>
 #include <string>
 #include <vector>
 
 #include <gtest/gtest.h>
+#include <nlohmann/json.hpp>
 
 #include "act/alexandria/acmfitnesscomputer.h"
 #include "act/alexandria/acmindividual.h"
@@ -57,7 +59,6 @@
 #include "act/ga/genome.h"
 #include "act/import/compound_reader.h"
 #include "act/utility/communicationrecord.h"
-#include "act/utility/jsontree.h"
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/fileio/filetypes.h"
 
@@ -70,35 +71,6 @@ namespace alexandria
 namespace
 {
 
-/*! \brief Find an object in a JsonTree
- * \param[in] tree The tree
- * \param[in] key  The key of the object
- * \return the object or nullptr if not found
- */
-const JsonTree *findObject(const JsonTree &tree, const std::string &key)
-{
-    for(const auto &obj : tree.objects())
-    {
-        if (obj.key() == key)
-        {
-            return &obj;
-        }
-    }
-    return nullptr;
-}
-
-/*! \brief The value of a number in a JsonTree
- * \param[in] tree The tree
- * \param[in] key  The key of the number
- * \return the number
- */
-double findNumber(const JsonTree &tree, const std::string &key)
-{
-    auto obj = findObject(tree, key);
-    EXPECT_NE(nullptr, obj) << key;
-    return obj ? std::stod(obj->value()) : 0;
-}
-
 // Test: With an empty genome there is nothing to analyse, the routine
 // reports a minimum and adds nothing to the output.
 TEST(SensitivityAnalysisTest, EmptyGenome)
@@ -108,11 +80,14 @@ TEST(SensitivityAnalysisTest, EmptyGenome)
     cr.init(cr.size());
     StaticIndividualInfo sii(&cr);
     ga::Genome           genome;
-    JsonTree             jtree("SensitivityAnalysisTest");
     SensitivityAnalysis  sens;
-    EXPECT_TRUE(sens.run(&msghandler, &sii, nullptr, &genome, iMolSelect::Train, &jtree, true));
-    EXPECT_TRUE(jtree.objects().empty());
-    EXPECT_TRUE(sens.forceConstants().empty());
+    for (auto mode : { SensitivityMode::No, SensitivityMode::OneD, SensitivityMode::TwoD })
+    {
+        EXPECT_TRUE(sens.run(&msghandler, &sii, nullptr, &genome, iMolSelect::Train, mode, true));
+        EXPECT_TRUE(sens.json().is_null());
+        EXPECT_TRUE(sens.forceConstants().empty());
+        EXPECT_EQ(SensitivityMode::No, sens.result().mode);
+    }
 }
 
 /*! \brief Sensitivity analysis of a small training set
@@ -207,17 +182,33 @@ protected:
         double chi2_0 = chi2(param);
         EXPECT_GT(chi2_0, 0);
 
-        JsonTree            jtree("SensitivityAnalysisTest");
         SensitivityAnalysis sens;
         bool                minimum = sens.run(&msghandler_, sii_, &fitComp_, &genome_,
-                                               iMolSelect::Train, &jtree, true);
+                                               iMolSelect::Train, SensitivityMode::OneD, true);
         EXPECT_TRUE(msghandler_.ok());
         EXPECT_EQ(param, genome_.bases());
         ASSERT_EQ(np, sens.forceConstants().size());
-        ASSERT_EQ(1u, jtree.objects().size());
-        const auto &sensTree = jtree.objects()[0];
-        EXPECT_EQ("sensitivity", sensTree.key());
-        ASSERT_EQ(np, sensTree.objects().size());
+        // The summary
+        const auto &res = sens.result();
+        EXPECT_EQ(SensitivityMode::OneD, res.mode);
+        EXPECT_DOUBLE_EQ(chi2_0, res.chi2_0);
+        EXPECT_EQ(np, res.nParameters);
+        EXPECT_EQ(2*np, res.nEvaluations);
+        EXPECT_EQ(minimum, res.minimum);
+        // The output has the summary and an entry per parameter
+        ASSERT_TRUE(sens.json().contains("sensitivity"));
+        const auto &sensJson = sens.json()["sensitivity"];
+        EXPECT_EQ("1D", sensJson["mode"].get<std::string>());
+        EXPECT_EQ("Train", sensJson["dataset"].get<std::string>());
+        EXPECT_DOUBLE_EQ(chi2_0, sensJson["chi2_0"].get<double>());
+        EXPECT_EQ(np, sensJson["n_parameters"].get<size_t>());
+        EXPECT_EQ(2*np, sensJson["n_evaluations"].get<size_t>());
+        EXPECT_EQ(0.05, sensJson["tolerance_fraction"].get<double>());
+        EXPECT_EQ(minimum, sensJson["minimum"].get<bool>());
+        EXPECT_FALSE(sensJson.contains("pairs"));
+        const auto &entries = sensJson["parameters"];
+        ASSERT_EQ(np, entries.size());
+        size_t nconv = 0;
 
         bool allConverged = true;
         if (pmin)
@@ -262,24 +253,44 @@ protected:
             bool conv = (a > 0 &&
                          std::abs(param[i] - std::clamp(pmin_i, lower, upper)) <= 0.05*(upper - lower));
             allConverged = allConverged && conv;
+            if (conv)
+            {
+                nconv += 1;
+            }
             if (pmin)
             {
                 pmin->push_back(std::clamp(pmin_i, lower, upper));
             }
 
-            const auto &entry = sensTree.objects()[i];
-            EXPECT_EQ(std::to_string(i), entry.key());
-            EXPECT_EQ(sii_->paramNames()[i],
-                      findObject(entry, "particle")->value() + " " + findObject(entry, "parameter")->value());
-            EXPECT_NEAR(param[i], findNumber(entry, "p_orig"), 1e-6) << sii_->paramNames()[i];
-            EXPECT_NEAR(chi2_0, findNumber(entry, "chi2_orig"), 1e-6*chi2_0 + 1e-6);
-            EXPECT_NEAR(pmin_i, findNumber(entry, "p_min"), 1e-5*std::abs(pmin_i) + 1e-6)
-                << sii_->paramNames()[i];
-            EXPECT_EQ(conv ? "yes" : "no", findObject(entry, "converged")->value())
-                << sii_->paramNames()[i];
+            const auto &entry = entries[i];
+            const auto &name  = sii_->paramNames()[i];
+            EXPECT_EQ(i, entry["index"].get<size_t>());
+            EXPECT_EQ(name, entry["name"].get<std::string>());
+            EXPECT_EQ(name, entry["particle"].get<std::string>() + " " + entry["parameter"].get<std::string>());
+            EXPECT_EQ(lower, entry["lower"].get<double>());
+            EXPECT_EQ(upper, entry["upper"].get<double>());
+            EXPECT_EQ((upper - lower)/200, entry["delta"].get<double>());
+            EXPECT_EQ(param[i], entry["p_orig"].get<double>()) << name;
+            EXPECT_DOUBLE_EQ(chi2_0, entry["chi2_orig"].get<double>()) << name;
+            // The three points, in increasing order of the parameter
+            ASSERT_EQ(3u, entry["points"].size()) << name;
+            for(size_t k = 0; k < 3; k++)
+            {
+                EXPECT_DOUBLE_EQ(x[k], entry["points"][k]["p"].get<double>()) << name;
+                EXPECT_NEAR(y[k], entry["points"][k]["chi2"].get<double>(), 1e-12*y[k]) << name;
+            }
+            EXPECT_TRUE(entry["fit_ok"].get<bool>()) << name;
+            EXPECT_NEAR(a, entry["a"].get<double>(), 1e-5*std::abs(a)) << name;
+            EXPECT_EQ(fc, entry["force_constant"].get<double>()) << name;
+            EXPECT_NEAR(pmin_i, entry["p_min"].get<double>(), 1e-5*std::abs(pmin_i) + 1e-6) << name;
+            EXPECT_NEAR(std::clamp(pmin_i, lower, upper), entry["p_min_bounded"].get<double>(),
+                        1e-5*std::abs(pmin_i) + 1e-6) << name;
+            EXPECT_EQ(conv, entry["converged"].get<bool>()) << name;
         }
         // The genome is a minimum if all parameters are converged
         EXPECT_EQ(allConverged, minimum);
+        EXPECT_EQ(nconv, res.nParametersConverged);
+        EXPECT_EQ(nconv, sensJson["n_parameters_converged"].get<size_t>());
         if (converged)
         {
             *converged = minimum;
@@ -346,13 +357,55 @@ TEST_F(SensitivityAnalysisTrainTest, RestoresParameters)
     auto   param  = genome_.bases();
     double chi2_0 = chi2(param);
     SensitivityAnalysis sens;
-    (void) sens.run(&msghandler_, sii_, &fitComp_, &genome_, iMolSelect::Train, nullptr, true);
+    (void) sens.run(&msghandler_, sii_, &fitComp_, &genome_, iMolSelect::Train, SensitivityMode::OneD, true);
     EXPECT_TRUE(msghandler_.ok());
     EXPECT_EQ(param, genome_.bases());
     // Without updating the force field, the chi-squared is the same
     auto cdc = CalcDev::Compute;
     fitComp_.distributeTasks(cdc);
     EXPECT_EQ(chi2_0, fitComp_.calcDeviation(&msghandler_, cdc, iMolSelect::Train));
+}
+
+// Test: With mode No nothing is computed and nothing is in the output
+TEST_F(SensitivityAnalysisTrainTest, ModeNoDoesNothing)
+{
+    SensitivityAnalysis sens;
+    EXPECT_TRUE(sens.run(&msghandler_, sii_, &fitComp_, &genome_, iMolSelect::Train,
+                         SensitivityMode::No, true));
+    EXPECT_TRUE(sens.json().is_null());
+    EXPECT_TRUE(sens.forceConstants().empty());
+    EXPECT_EQ(SensitivityMode::No, sens.result().mode);
+    EXPECT_EQ(0u, sens.result().nEvaluations);
+}
+
+// Test: A second run replaces the output of the first
+TEST_F(SensitivityAnalysisTrainTest, SecondRunReplacesOutput)
+{
+    SensitivityAnalysis sens;
+    (void) sens.run(&msghandler_, sii_, &fitComp_, &genome_, iMolSelect::Train,
+                    SensitivityMode::OneD, true);
+    auto first = sens.json();
+    (void) sens.run(&msghandler_, sii_, &fitComp_, &genome_, iMolSelect::Train,
+                    SensitivityMode::OneD, true);
+    EXPECT_EQ(first, sens.json());
+    EXPECT_EQ(sii_->nParam(), sens.forceConstants().size());
+    (void) sens.run(&msghandler_, sii_, &fitComp_, &genome_, iMolSelect::Train,
+                    SensitivityMode::No, true);
+    EXPECT_TRUE(sens.json().is_null());
+}
+
+// Test: The file has the same content as the output in memory
+TEST_F(SensitivityAnalysisTrainTest, WritesJsonFile)
+{
+    SensitivityAnalysis sens;
+    (void) sens.run(&msghandler_, sii_, &fitComp_, &genome_, iMolSelect::Train,
+                    SensitivityMode::OneD, true);
+    auto fileName = fileManager().getTemporaryFilePath("sensitivity.json");
+    sens.write(fileName);
+    std::ifstream in(fileName);
+    ASSERT_TRUE(in.good());
+    auto fromFile = nlohmann::ordered_json::parse(in);
+    EXPECT_EQ(sens.json(), fromFile);
 }
 
 } // namespace
