@@ -160,6 +160,41 @@ TEST_F(EditFFTest, MutabilityOfSeveralIdentifiers)
     EXPECT_EQ(Mutability::Bounded, chiMutability(pd, "c3_z"));
 }
 
+// Test: A combination rule from the command line replaces that of the
+// force field, the others do not change
+TEST_F(EditFFTest, CombinationRule)
+{
+    auto pd = read(run(input_, { { "-cr", "VANDERWAALS:sigma:Arithmetic" } }));
+    const auto &vdw = pd.findForcesConst(InteractionType::VDW);
+    EXPECT_EQ(CombRule::Arithmetic, vdw.combinationRuleConst("sigma").rule());
+    EXPECT_EQ(CombRule::Geometric, vdw.combinationRuleConst("epsilon").rule());
+}
+
+//! \return the charge parameter of a particle type
+static const ForceFieldParameter &particleCharge(const ForceField &pd, const std::string &id)
+{
+    return pd.findParticleType(id)->parameterConst("charge");
+}
+
+// Test: The fixed charge of a particle type is only changed with -force,
+// the other particle types keep theirs
+TEST_F(EditFFTest, ParticleChargeForced)
+{
+    auto ref = read(input_);
+    auto pd  = read(run(input_, { { "-p", "charge" }, { "-a", "Be2+" }, { "-val", "1.5" }, { "-force", "" } }));
+    EXPECT_DOUBLE_EQ(1.5, particleCharge(pd, "Be2+").value());
+    EXPECT_DOUBLE_EQ(particleCharge(ref, "Mg2+").value(), particleCharge(pd, "Mg2+").value());
+}
+
+// Test: The bounds of a fixed charge can be changed without -force, its
+// value does not change
+TEST_F(EditFFTest, ParticleChargeBounds)
+{
+    auto ref = read(input_);
+    auto pd  = read(run(input_, { { "-p", "charge" }, { "-a", "Be2+" }, { "-min", "1" }, { "-max", "3" } }));
+    expectRange(particleCharge(pd, "Be2+"), 1, particleCharge(ref, "Be2+").value(), 3);
+}
+
 // Test: A new value of one parameter of one identifier, the others do not change
 TEST_F(EditFFTest, Value)
 {
