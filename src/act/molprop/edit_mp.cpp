@@ -398,7 +398,7 @@ static void gen_ehist(MsgHandler                 *msghandler,
                 bool warnHi  = false;
                 for(size_t i = 0; i < x.size(); i++)
                 {
-                    tw->writeStringFormatted("%10g  %10g\n", x[i], y[i]);
+                    fprintf(fp, "%10g  %10g\n", x[i], y[i]);
                     if (x[i] < ewarnLow)
                     {
                         warnLow = true;
