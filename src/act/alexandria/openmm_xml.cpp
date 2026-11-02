@@ -1000,9 +1000,13 @@ void OpenMMWriter::addXmlPolarization(xmlNodePtr                         parent,
         {
             auto idType1 = Identifier({poltype});
             auto alpha   = fs.findParameterTypeConst(idType1, pol_name[polALPHA]);
-            // Now check for hyper polarizability
-            auto fchyper = fs.findParameterTypeConst(idType1, pol_name[polFCHYPER]);
-            auto rhyper  = fs.findParameterTypeConst(idType1, pol_name[polRHYPER]);
+            // Now check for hyper polarizability, which force fields may leave out
+            double fchyper = 0, rhyper = 0;
+            if (param.count(pol_name[polFCHYPER]) > 0 && param.count(pol_name[polRHYPER]) > 0)
+            {
+                fchyper = param.find(pol_name[polFCHYPER])->second.value();
+                rhyper  = param.find(pol_name[polRHYPER])->second.value();
+            }
             auto shelltp = pd->findParticleType(poltype);
 
             const std::string &type1 = dp.shellOpenMMType;
@@ -1013,10 +1017,10 @@ void OpenMMWriter::addXmlPolarization(xmlNodePtr                         parent,
             add_xml_double(grandchild2, "polarizability", alpha.internalValue());
             add_xml_double(grandchild2, exml_names(xmlEntryOpenMM::CHARGE_RES), shelltp->charge()*epsr_fac);
             add_xml_double(grandchild2, "thole", 0);
-            if (fchyper.value() > 0)
+            if (fchyper > 0)
             {
                 // Now add a pair
-                stuff.push_back( { type1, type2, fchyper.value(), rhyper.value() } );
+                stuff.push_back( { type1, type2, fchyper, rhyper } );
             }
         }
     }
@@ -1230,7 +1234,7 @@ void OpenMMWriter::addTopologyEntries(MsgHandler                                
                     break;
                 default:
                     msghandler->msg(ACTStatus::Error,
-                                    gmx::formatString("Warning: no OpenMM support for %s (%s) is present or implemented.",
+                                    gmx::formatString("No OpenMM support for %s (%s) is present or implemented.",
                                                       interactionTypeToString(fs.first).c_str(),
                                                       potentialToString(fs.second.potential()).c_str()));
                 }
