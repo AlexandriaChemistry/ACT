@@ -370,6 +370,57 @@ TEST_F(SimulateTest, Reproducibility)
     EXPECT_NE(xvg[0].rows[last][cEkin], xvg[2].rows[last][cEkin]);
 }
 
+// Test: Rerunning the trajectory of a simulation of the water dimer gives
+// the potential energies of the simulation, for the frames written
+TEST_F(SimulateTest, Rerun)
+{
+    SimulateFiles md;
+    auto cmd = baseCommand("water_dimer.pdb", "md", &md);
+    addMD(&cmd, 300, 1993);
+    ASSERT_EQ(0, run(&cmd));
+    auto xvg   = readXvg(md.energy);
+    int  cEpot = xvg.column("EPOT");
+    ASSERT_GT(cEpot, 0);
+
+    SimulateFiles rerun;
+    auto cmd2 = baseCommand("water_dimer.pdb", "rerun", &rerun);
+    cmd2.addOption("-traj", md.trajectory);
+    ASSERT_EQ(0, run(&cmd2));
+    // Each structure gives a line with its number and the energies
+    std::vector<double> epot;
+    std::ifstream       in(rerun.log);
+    for (std::string line; std::getline(in, line); )
+    {
+        std::istringstream iss(line);
+        std::string        word;
+        int                index;
+        if (!(iss >> index))
+        {
+            continue;
+        }
+        while (iss >> word)
+        {
+            double value;
+            if (word == "EPOT" && iss >> value)
+            {
+                epot.push_back(value);
+            }
+        }
+    }
+    // Frames are written every 50 steps and energies every 10, at steps
+    // 0 and 50 of the 100
+    ASSERT_EQ(2u, epot.size());
+    for (size_t i = 0; i < epot.size(); i++)
+    {
+        auto row = 5*i;
+        ASSERT_LT(row, xvg.rows.size());
+        // The trajectory has the coordinates with three decimals in Angstrom,
+        // as the starting structure. Later in the simulation that changes
+        // the energy of the bonds by up to a few tenths of a kJ/mol.
+        EXPECT_NEAR(xvg.rows[row][cEpot], epot[i], i == 0 ? 1e-4 : 0.5) << "frame " << i;
+    }
+}
+
 // Test: The initial temperature is the requested one, computed for
 // the degrees of freedom without the translation of and rotation around
 // the center of mass and without constraints
