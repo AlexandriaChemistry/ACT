@@ -137,6 +137,40 @@ protected:
             }
         }
     }
+    /*! \brief Construct the four particle virtual sites of a compound
+     * \param[in]  file   Structure file
+     * \param[out] mol    The compound
+     * \param[out] coords The coordinates with the virtual sites
+     */
+    void constructVsite4(const std::string &file, ACTMol *mol, std::vector<gmx::RVec> *coords)
+    {
+        ASSERT_TRUE(setupFile("ACS-pg-vs3", file, mol));
+        *coords = mol->xOriginal();
+        VsiteHandler vh;
+        vh.constructPositions(mol->topology(), coords);
+    }
+
+    //! \return the elements of the constructing atoms of a virtual site
+    template <typename Entry>
+    static std::string elements(const Topology *top, const Entry &entry)
+    {
+        std::string elem;
+        auto        ai = entry->atomIndices();
+        for (size_t i = 0; i + 1 < ai.size(); i++)
+        {
+            elem += top->atoms()[ai[i]].element();
+        }
+        return elem;
+    }
+
+    //! \return the distance between two particles
+    static double distance(const std::vector<gmx::RVec> &x, int i, int j)
+    {
+        gmx::RVec dx;
+        rvec_sub(x[i], x[j], dx);
+        return norm(dx);
+    }
+
     void testF(const std::string &ff,
                const std::string &molName)
     {
@@ -319,6 +353,53 @@ TEST_F (VsiteHandlerTest, VSite2HBrForce)
 TEST_F (VsiteHandlerTest, VSite3H20Force)
 {
     testF("ACS-pg-vs3", "water");
+}
+
+// Test: The virtual site of ammonia with three symmetric hydrogens is at
+// the same distance from each of them
+TEST_F (VsiteHandlerTest, Vsite4S3Ammonia)
+{
+    ACTMol                 mol;
+    std::vector<gmx::RVec> x;
+    constructVsite4(gmx::test::TestFileManager::getInputFilePath("../../alexandria/tests/mols/ammonia.sdf"),
+                    &mol, &x);
+    auto top = mol.topology();
+    ASSERT_TRUE(top->hasEntry(InteractionType::VSITE4S3));
+    EXPECT_FALSE(top->hasEntry(InteractionType::VSITE4));
+    EXPECT_FALSE(top->hasEntry(InteractionType::VSITE4S));
+    auto &vs = top->entry(InteractionType::VSITE4S3);
+    ASSERT_EQ(1u, vs.size());
+    EXPECT_EQ("NHHH", elements(top, vs[0]));
+    auto ai = vs[0]->atomIndices();
+    for (int h = 2; h <= 3; h++)
+    {
+        // The N-H bonds of the structure differ by up to 3e-5 nm, an
+        // asymmetric construction is off by 0.16 nm
+        EXPECT_NEAR(distance(x, ai[4], ai[1]), distance(x, ai[4], ai[h]), 1e-4) << "hydrogen " << h;
+    }
+}
+
+// Test: Methylamine has a virtual site with an amine hydrogen, the other
+// amine hydrogen and the carbon, and one with the carbon and the two
+// symmetric amine hydrogens, which is at the same distance from both
+TEST_F (VsiteHandlerTest, Vsite4Methylamine)
+{
+    ACTMol                 mol;
+    std::vector<gmx::RVec> x;
+    constructVsite4(gmx::test::TestFileManager::getInputFilePath("methylamine.sdf"), &mol, &x);
+    auto top = mol.topology();
+    EXPECT_FALSE(top->hasEntry(InteractionType::VSITE4S3));
+    ASSERT_TRUE(top->hasEntry(InteractionType::VSITE4));
+    ASSERT_EQ(1u, top->entry(InteractionType::VSITE4).size());
+    EXPECT_EQ("NHHC", elements(top, top->entry(InteractionType::VSITE4)[0]));
+    ASSERT_TRUE(top->hasEntry(InteractionType::VSITE4S));
+    auto &vs = top->entry(InteractionType::VSITE4S);
+    ASSERT_EQ(1u, vs.size());
+    EXPECT_EQ("NCHH", elements(top, vs[0]));
+    auto ai = vs[0]->atomIndices();
+    EXPECT_NEAR(distance(x, ai[4], ai[2]), distance(x, ai[4], ai[3]), 1e-8);
+    // In the mirror plane of the molecule
+    EXPECT_NEAR(0, x[ai[4]][YY], 1e-8);
 }
 
 TEST(Vsite1, HF)
@@ -632,7 +713,7 @@ static Topology allVsiteTypes()
 // Test: The virtual sites of many conformations at once, in the layout of
 // ConformationArrays, are the same as one conformation at a time, for all
 // types, to rounding, such that optimizing one of the routines does not
-// change results
+// change results. Spreading the forces keeps the total force and torque.
 TEST(VsiteHandlerArrays, AllTypes)
 {
     auto   top    = allVsiteTypes();
@@ -685,10 +766,33 @@ TEST(VsiteHandlerArrays, AllTypes)
     VsiteHandler vsiteHandler;
     vsiteHandler.constructPositions(&top, xa.data(), stride, stride, nconf);
     vsiteHandler.distributeForces(&top, xa.data(), fa.data(), stride, stride, nconf);
+    // The total force and torque, that spreading the forces of the virtual
+    // sites must not change
+    auto totals = [natom](const std::vector<gmx::RVec> &xc, const std::vector<gmx::RVec> &fc,
+                          gmx::RVec *ftot, gmx::RVec *torque)
+    {
+        clear_rvec(*ftot);
+        clear_rvec(*torque);
+        for(size_t a = 0; a < natom; a++)
+        {
+            gmx::RVec t;
+            cprod(xc[a], fc[a], t);
+            rvec_inc(*ftot, fc[a]);
+            rvec_inc(*torque, t);
+        }
+    };
     for(size_t c = 0; c < nconf; c++)
     {
         vsiteHandler.constructPositions(&top, &x[c]);
+        gmx::RVec ftot0, torque0, ftot1, torque1;
+        totals(x[c], f[c], &ftot0, &torque0);
         vsiteHandler.distributeForces(&top, x[c], &f[c]);
+        totals(x[c], f[c], &ftot1, &torque1);
+        for(int m = 0; m < DIM; m++)
+        {
+            EXPECT_NEAR(ftot0[m], ftot1[m], 1e-10*std::max(1.0, std::abs(ftot0[m]))) << "conformation " << c;
+            EXPECT_NEAR(torque0[m], torque1[m], 1e-10*std::max(1.0, std::abs(torque0[m]))) << "conformation " << c;
+        }
         for(size_t a = 0; a < natom; a++)
         {
             for(int m = 0; m < DIM; m++)
