@@ -47,11 +47,14 @@
 #include <gtest/gtest.h>
 
 #include "act/basics/act_particle.h"
+#include "act/coulombintegrals/gaussian_integrals.h"
 #include "act/forcefield/forcefield_parametername.h"
 #include "act/forcefield/potential.h"
 #include "act/forces/simd_information.h"
 #include "act/topology/actatom.h"
 #include "act/topology/coords_energy.h"
+#include "gromacs/math/functions.h"
+#include "gromacs/math/units.h"
 
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"
@@ -538,6 +541,59 @@ TEST_F(ForcesSimdTest, CoulombPoint)
 TEST_F(ForcesSimdTest, CoulombGaussian)
 {
     test(Potential::COULOMB_GAUSSIAN, pairs({ 12, 9 }));
+}
+
+// Test: The force between Gaussian charges at short distances, where the
+// formula is a difference of nearly equal terms, for each routine. The
+// expected value is from the series of the force divided by the distance,
+// with all the terms needed in double precision.
+TEST_F(ForcesSimdTest, CoulombGaussianShortDistance)
+{
+    // Combined width of 12 and 9 is 7.2/nm
+    const double zeta = 12.0*9.0/std::sqrt(12.0*12.0 + 9.0*9.0);
+    const double qq   = ONE_4PI_EPS0*atoms_[0].charge()*atoms_[1].charge();
+    auto         entries = makeEntries({ { { 0, 1 }, { 12, 9 } } });
+    const std::vector<double> dist = { 1e-5, 1e-4, 1e-3, 1e-2, 0.03, 0.1 };
+    std::vector<std::vector<gmx::RVec>> x;
+    for (auto r : dist)
+    {
+        auto xc = x_[0];
+        xc[0]   = { 0, 0, 0 };
+        xc[1]   = { static_cast<real>(r), 0, 0 };
+        x.push_back(xc);
+    }
+#if GMX_DOUBLE
+    const double toler = 1e-10;
+#else
+    const double toler = 1e-6;
+#endif
+    bool explicitSimd = setUseExplicitSimd(false);
+    for (int routine = 0; routine < 3; routine++)
+    {
+        setUseExplicitSimd(routine == 2);
+        auto coords = makeCoords(x);
+        computePotential(nullptr, Potential::COULOMB_GAUSSIAN, entries, atoms_, &coords, 1, routine > 0);
+        for (size_t c = 0; c < dist.size(); c++)
+        {
+            // The distance as stored
+            double r  = coords[c].x[1][XX];
+            double x2 = gmx::square(zeta*r);
+            // (erf(x)/x - 2 exp(-x^2)/sqrt(pi))/x^2 as a series in x^2
+            double series = 0, term = 1;
+            for (int n = 0; n < 30; n++)
+            {
+                int k   = n + 1;
+                series += ((k % 2) ? -1.0 : 1.0)*(1.0/(std::tgamma(k + 1.0)*(2*k + 1)) - 1.0/std::tgamma(k + 1.0))*term;
+                term   *= x2;
+            }
+            double fOverR = qq*zeta*zeta*zeta*2*invsqrt_pi*series;
+            // The force on the first atom, at the origin, points away from the second
+            double expect = -fOverR*r;
+            EXPECT_NEAR(expect, coords[c].fcalc[0][XX], toler*std::abs(expect)) << "routine " << routine << " r " << r;
+            EXPECT_NEAR(-expect, coords[c].fcalc[1][XX], toler*std::abs(expect)) << "routine " << routine << " r " << r;
+        }
+    }
+    setUseExplicitSimd(explicitSimd);
 }
 
 TEST_F(ForcesSimdTest, CoulombSlater)

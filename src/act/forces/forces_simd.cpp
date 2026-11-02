@@ -787,6 +787,29 @@ static ACT_ALWAYS_INLINE real combinedZeta(real izeta, real jzeta)
     return izeta*jzeta*gmx::invsqrt(izeta*izeta + jzeta*jzeta);
 }
 
+/*! \brief Scalar force divided by r of two Gaussian charges, without charges
+ * This is (erf(x)/r - 2 zeta exp(-x^2)/sqrt(pi))/r^2 with x = zeta r, in
+ * which the terms are nearly equal for small x, such that the difference
+ * loses all digits in single precision. Below x^2 = smallX2 the series
+ * zeta^3 (2/sqrt(pi)) (2/3 - 2x^2/5 + x^4/7 - x^6/27 + x^8/132) is used,
+ * where it is more accurate than the difference.
+ * \param[in] zeta  Width of the combined distribution
+ * \param[in] rinv  Inverse distance
+ * \param[in] x     zeta times the distance
+ * \param[in] erfx  The error function of x
+ * \return the scalar force divided by r
+ */
+static ACT_ALWAYS_INLINE real gaussianForceOverR(real zeta, real rinv, real x, real erfx)
+{
+    constexpr real smallX2 = GMX_DOUBLE ? 0.005 : 0.16;
+    real x2 = x*x;
+    if (x2 < smallX2)
+    {
+        return zeta*zeta*zeta*2*invsqrt_pi*(2.0/3.0 + x2*(-2.0/5.0 + x2*(1.0/7.0 + x2*(-1.0/27.0 + x2/132.0))));
+    }
+    return (erfx*rinv - 2*invsqrt_pi*zeta*std::exp(-x2))*rinv*rinv;
+}
+
 /*! \brief Coulomb between Gaussian charges for one pair
  * Each particle may have a second charge at the same position with its
  * own width, see ActAtom::chargeVS, such that there are up to four terms.
@@ -851,7 +874,7 @@ static ACT_ALWAYS_INLINE void coulombGaussianOne(gmx_unused MsgHandler      *msg
                 auto erfrz  = std::erf(rz);
                 e[0]       += qq*erfrz*rinv;
                 // The scalar force divided by r
-                felec      += qq*(erfrz*rinv - 2*invsqrt_pi*zeta*std::exp(-rz*rz))*rinv*rinv;
+                felec      += qq*gaussianForceOverR(zeta, rinv, rz, erfrz);
             }
             else
             {

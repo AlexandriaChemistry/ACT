@@ -469,6 +469,27 @@ struct SlaterISATT
 //! Coulomb between point or Gaussian charges
 struct Coulomb
 {
+    /*! \brief Scalar force divided by r of two Gaussian charges, without charges
+     * This is (erf(x)/r - 2 zeta exp(-x^2)/sqrt(pi))/r^2 with x = zeta r, in
+     * which the terms are nearly equal for small x. Below x^2 = 0.005 the
+     * series zeta^3 (2/sqrt(pi)) (2/3 - 2x^2/5 + x^4/7 - x^6/27 + x^8/132)
+     * is used, where it is more accurate than the difference.
+     * \param[in] zeta   Width of the combined distribution
+     * \param[in] rinv   Inverse distance
+     * \param[in] rz     zeta times the distance
+     * \param[in] erfrz  The error function of rz
+     * \param[in] exprz2 The exponential of minus rz squared
+     * \return the scalar force divided by r
+     */
+    static SimdDouble gaussianForceOverR(double zeta, SimdDouble rinv, SimdDouble rz,
+                                         SimdDouble erfrz, SimdDouble exprz2)
+    {
+        SimdDouble x2     = rz*rz;
+        SimdDouble series = zeta*zeta*zeta*2*invsqrt_pi*
+            (2.0/3.0 + x2*(-2.0/5.0 + x2*(1.0/7.0 + x2*(-1.0/27.0 + x2*(1.0/132.0)))));
+        return simd::select(x2 < 0.005, series,
+                            (erfrz*rinv - 2*invsqrt_pi*zeta*exprz2)*rinv*rinv);
+    }
     /*! \copydoc LJ12_6::prepare
      * Each particle may have a second charge at the same position with its
      * own width, see ActAtom::chargeVS, such that there are up to four terms,
@@ -554,7 +575,7 @@ struct Coulomb
             SimdDouble erfrz = simd::erfAndExp(rz, &exprz2);
             e[0]  += simd::select(overlap, qq*2*zeta*invsqrt_pi, qq*erfrz*rinv);
             *fscal = simd::select(overlap, 0.0,
-                                  qq*(erfrz*rinv - 2*invsqrt_pi*zeta*exprz2)*rinv*rinv);
+                                  qq*gaussianForceOverR(zeta, rinv, rz, erfrz, exprz2));
             return;
         }
         for(int k = 0; k < 4; k++)
@@ -579,7 +600,7 @@ struct Coulomb
                 SimdDouble erfrz = simd::erfAndExp(rz, &exprz2);
                 ek = simd::select(overlap, qq*2*zeta*invsqrt_pi, qq*erfrz*rinv);
                 fk = simd::select(overlap, 0.0,
-                                  qq*(erfrz*rinv - 2*invsqrt_pi*zeta*exprz2)*rinv*rinv);
+                                  qq*gaussianForceOverR(zeta, rinv, rz, erfrz, exprz2));
             }
             e[0]  += ek;
             *fscal = (k == 0) ? fk : *fscal + fk;
