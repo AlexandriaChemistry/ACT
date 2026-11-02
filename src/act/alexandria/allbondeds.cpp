@@ -371,101 +371,115 @@ static void calc_linear_angle_a(const ForceField    *pd,
 void AllBondeds::updateForceField(gmx::TextWriter *tw,
                                   ForceField      *pd)
 {
-    auto bType = InteractionType::BONDS;
-    auto fs    = pd->findForces(bType);
-    fs->eraseParameter();
-    auto fType = fs->potential();
-    for(auto &i : bondeds_[bType])
+    // Only the interactions found in the compounds are kept, for the
+    // interaction types that the force field has.
+    for (auto itype : { InteractionType::BONDS, InteractionType::ANGLES,
+                        InteractionType::LINEAR_ANGLES, InteractionType::PROPER_DIHEDRALS,
+                        InteractionType::IMPROPER_DIHEDRALS })
     {
-        size_t N = 0;
-        real   av = 0, sig = 0;
-        i.getAverageSigmaN(&av, &sig, &N);
-        auto bondId = i.id();
-        // Note that the order of parameters is important!
-        // Rounding the numbers to 1/10 pm and 1/10 degree
-        round_numbers(&av, &sig, 10);
-        auto pname = potentialToParameterName(fType);
-        switch (fType)
+        if (pd->interactionPresent(itype))
         {
-        case Potential::MORSE_BONDS:
-            {
-                fs->addParameter(bondId, pname[morseLENGTH],
-                                 ForceFieldParameter("pm", av, sig, N, av*bfactor_, av/bfactor_,
-                                                     Mutability::Bounded, false, true));
-                fs->addParameter(bondId, pname[morseDE],
-                                 ForceFieldParameter("kJ/mol", De_, 0, 1, De_*factor_, De_/factor_,
-                                                     Mutability::Bounded, false, true));
-                fs->addParameter(bondId, pname[morseBETA],
-                                 ForceFieldParameter("1/nm", beta_, 0, 1, beta_*factor_, beta_/factor_,
-                                                     Mutability::Bounded, false, true));
-                real D0_ = 0;
-                fs->addParameter(bondId, pname[morseD0],
-                                 ForceFieldParameter("kJ/mol", D0_, 0, 1, -800, 0,
-                                                     Mutability::Bounded, false, false));
-            }
-            break;
-        case Potential::HUA_BONDS:
-            {
-                fs->addParameter(bondId, pname[huaLENGTH],
-                                 ForceFieldParameter("pm", av, sig, N, av*bfactor_, av/bfactor_,
-                                                     Mutability::Bounded, false, true));
-                fs->addParameter(bondId, pname[huaDE],
-                                 ForceFieldParameter("kJ/mol", De_, 0, 1, De_*factor_, De_/factor_,
-                                                     Mutability::Bounded, false, true));
-                fs->addParameter(bondId, pname[huaB],
-                                 ForceFieldParameter("1/nm", beta_, 0, 1, beta_*factor_, beta_/factor_,
-                                                     Mutability::Bounded, false, true));
-                fs->addParameter(bondId, pname[huaC],
-                                 ForceFieldParameter("", 0, 0, 1, -1, 1,
-                                                     Mutability::Bounded, false, false));
-            }
-            break;
-        case Potential::HARMONIC_BONDS:
-            {
-                fs->addParameter(bondId, pname[bondLENGTH],
-                                 ForceFieldParameter("pm", av, sig, N, av*bfactor_, av/bfactor_, Mutability::Bounded, false, true));
-                fs->addParameter(bondId, pname[bondKB],
-                                 ForceFieldParameter("kJ/mol/nm2", kb_, 0, 1, kb_*factor_, kb_/factor_, Mutability::Bounded, false, true));
-                // The bond energy is negative, as the Morse D0 above
-                double D0 = -200;
-                fs->addParameter(bondId, pname[bondENERGY],
-                                 ForceFieldParameter("kJ/mol", D0, 0, 1, D0*5, D0/5, Mutability::Bounded, false, false));
-            }
-            break;
-        case Potential::CUBIC_BONDS:
-            {
-                // Compute the numbers such that they make sense
-                fs->addParameter(bondId, pname[cubicLENGTH],
-                                 ForceFieldParameter("pm", av, 0, N, av*bfactor_, av/bfactor_, Mutability::Bounded, true, true));
-                double rmax = 3*av;
-                fs->addParameter(bondId, pname[cubicRMAX],
-                                 ForceFieldParameter("pm", rmax, 0, 1, rmax*bfactor_, rmax/bfactor_, Mutability::Bounded, true, true));
-                fs->addParameter(bondId, pname[cubicKB],
-                                 ForceFieldParameter("kJ/mol nm2", kb_, 0, 1, kb_*factor_, kb_/factor_, Mutability::Bounded, true, true));
-                fs->addParameter(bondId, pname[cubicDE],
-                                 ForceFieldParameter("kJ/mol", De_, 0, 1, De_*factor_, De_/factor_, Mutability::Bounded, true, true));
-            }
-            break;
-        default: // gmx_fatal called
-            gmx_fatal(FARGS, "Don't know what to do for ftype %s", potentialToString(fType).c_str());
+            pd->findForces(itype)->eraseParameter();
         }
+    }
+    auto bType = InteractionType::BONDS;
+    // The bonds come first, since the other interactions need their lengths
+    if (pd->interactionPresent(bType))
+    {
+        auto fs    = pd->findForces(bType);
+        auto fType = fs->potential();
+        for(auto &i : bondeds_[bType])
+        {
+            size_t N = 0;
+            real   av = 0, sig = 0;
+            i.getAverageSigmaN(&av, &sig, &N);
+            auto bondId = i.id();
+            // Note that the order of parameters is important!
+            // Rounding the numbers to 1/10 pm and 1/10 degree
+            round_numbers(&av, &sig, 10);
+            auto pname = potentialToParameterName(fType);
+            switch (fType)
+            {
+            case Potential::MORSE_BONDS:
+                {
+                    fs->addParameter(bondId, pname[morseLENGTH],
+                                     ForceFieldParameter("pm", av, sig, N, av*bfactor_, av/bfactor_,
+                                                         Mutability::Bounded, false, true));
+                    fs->addParameter(bondId, pname[morseDE],
+                                     ForceFieldParameter("kJ/mol", De_, 0, 1, De_*factor_, De_/factor_,
+                                                         Mutability::Bounded, false, true));
+                    fs->addParameter(bondId, pname[morseBETA],
+                                     ForceFieldParameter("1/nm", beta_, 0, 1, beta_*factor_, beta_/factor_,
+                                                         Mutability::Bounded, false, true));
+                    real D0_ = 0;
+                    fs->addParameter(bondId, pname[morseD0],
+                                     ForceFieldParameter("kJ/mol", D0_, 0, 1, -800, 0,
+                                                         Mutability::Bounded, false, false));
+                }
+                break;
+            case Potential::HUA_BONDS:
+                {
+                    fs->addParameter(bondId, pname[huaLENGTH],
+                                     ForceFieldParameter("pm", av, sig, N, av*bfactor_, av/bfactor_,
+                                                         Mutability::Bounded, false, true));
+                    fs->addParameter(bondId, pname[huaDE],
+                                     ForceFieldParameter("kJ/mol", De_, 0, 1, De_*factor_, De_/factor_,
+                                                         Mutability::Bounded, false, true));
+                    fs->addParameter(bondId, pname[huaB],
+                                     ForceFieldParameter("1/nm", beta_, 0, 1, beta_*factor_, beta_/factor_,
+                                                         Mutability::Bounded, false, true));
+                    fs->addParameter(bondId, pname[huaC],
+                                     ForceFieldParameter("", 0, 0, 1, -1, 1,
+                                                         Mutability::Bounded, false, false));
+                }
+                break;
+            case Potential::HARMONIC_BONDS:
+                {
+                    fs->addParameter(bondId, pname[bondLENGTH],
+                                     ForceFieldParameter("pm", av, sig, N, av*bfactor_, av/bfactor_, Mutability::Bounded, false, true));
+                    fs->addParameter(bondId, pname[bondKB],
+                                     ForceFieldParameter("kJ/mol/nm2", kb_, 0, 1, kb_*factor_, kb_/factor_, Mutability::Bounded, false, true));
+                    // The bond energy is negative, as the Morse D0 above
+                    double D0 = -200;
+                    fs->addParameter(bondId, pname[bondENERGY],
+                                     ForceFieldParameter("kJ/mol", D0, 0, 1, D0*5, D0/5, Mutability::Bounded, false, false));
+                }
+                break;
+            case Potential::CUBIC_BONDS:
+                {
+                    // Compute the numbers such that they make sense
+                    fs->addParameter(bondId, pname[cubicLENGTH],
+                                     ForceFieldParameter("pm", av, 0, N, av*bfactor_, av/bfactor_, Mutability::Bounded, true, true));
+                    double rmax = 3*av;
+                    fs->addParameter(bondId, pname[cubicRMAX],
+                                     ForceFieldParameter("pm", rmax, 0, 1, rmax*bfactor_, rmax/bfactor_, Mutability::Bounded, true, true));
+                    fs->addParameter(bondId, pname[cubicKB],
+                                     ForceFieldParameter("kJ/mol nm2", kb_, 0, 1, kb_*factor_, kb_/factor_, Mutability::Bounded, true, true));
+                    fs->addParameter(bondId, pname[cubicDE],
+                                     ForceFieldParameter("kJ/mol", De_, 0, 1, De_*factor_, De_/factor_, Mutability::Bounded, true, true));
+                }
+                break;
+            default: // gmx_fatal called
+                gmx_fatal(FARGS, "Don't know what to do for ftype %s", potentialToString(fType).c_str());
+            }
 
-        tw->writeStringFormatted("bond-%s len %g sigma %g (pm) N = %d%s\n",
-                i.id().id().c_str(), av, sig, static_cast<int>(N), (sig > bond_tol_) ? " WARNING" : "");
+            tw->writeStringFormatted("bond-%s len %g sigma %g (pm) N = %d%s\n",
+                    i.id().id().c_str(), av, sig, static_cast<int>(N), (sig > bond_tol_) ? " WARNING" : "");
+        }
     }
 
     for(auto &bb : bondeds_)
     {
         auto iType = bb.first;
-        auto fs    = pd->findForces(iType);
-        fType      = fs->potential();
-        auto pname = potentialToParameterName(fType);
-        if (iType != bType &&
-            iType != InteractionType::VDW &&
-            iType != InteractionType::ELECTROSTATICS)
+        if (!pd->interactionPresent(iType))
         {
-            fs->eraseParameter();
+            tw->writeStringFormatted("Ignoring %zu %s, since they are not in the force field\n",
+                                     bb.second.size(), interactionTypeToString(iType).c_str());
+            continue;
         }
+        auto fs    = pd->findForces(iType);
+        auto fType = fs->potential();
+        auto pname = potentialToParameterName(fType);
         for (auto &i : bb.second)
         {
             size_t N = 0;

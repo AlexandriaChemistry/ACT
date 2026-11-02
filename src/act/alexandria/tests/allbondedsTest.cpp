@@ -261,7 +261,8 @@ double value(const ForceFieldParameterMap &params, const std::string &name)
 }
 
 /* Test: Bond parameters for all bond functions. The lengths are the averages
- * of the compounds, the other parameters are the defaults.
+ * of the compounds, the other parameters are the defaults. Interactions that
+ * are not in the compounds are removed.
  */
 TEST(AllBondedsUpdateTest, BondFunctions)
 {
@@ -294,6 +295,8 @@ TEST(AllBondedsUpdateTest, BondFunctions)
             }
             EXPECT_EQ(potentialToParameterName(bonds.potential()).size(), b.second.size()) << fn.first;
         }
+        // None of the compounds is linear, the linear angles of the force field are removed
+        EXPECT_TRUE(pd.findForcesConst(InteractionType::LINEAR_ANGLES).parametersConst().empty()) << fn.first;
     }
 }
 
