@@ -178,7 +178,8 @@ class ForceFieldParameterList
     //! \return the options map
     const std::map<std::string, std::string> &option() const { return options_; }
 
-    /*! \brief Add function specific combination rule
+    /*! \brief Add function specific combination rule, replacing that of
+     * the parameter if there is one
      *
      * \param[in] param    Name of the parameter
      * \param[in] rule     String for the rule
@@ -187,10 +188,11 @@ class ForceFieldParameterList
                             const std::string         &rule)
     {
         ParamCombRule p(rule);
-        combrules_.insert( { param, std::move(p) } );
+        combrules_.insert_or_assign(param, std::move(p));
     }
     
-    /*! \brief Add function specific combination rule
+    /*! \brief Add function specific combination rule, replacing that of
+     * the parameter if there is one
      *
      * \param[in] param Name of the parameter
      * \param[in] rule  String for the rule
@@ -202,7 +204,7 @@ class ForceFieldParameterList
     {
         ParamCombRule p(rule);
         p.addForceFieldParameter(ffpl);
-        combrules_.insert( { param, std::move(p) } );
+        combrules_.insert_or_assign(param, std::move(p));
     }
     
     /*! \brief check whether a combination rule exists
