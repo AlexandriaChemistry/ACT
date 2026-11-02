@@ -50,6 +50,8 @@
 
 #include "trainffTestUtil.h"
 
+#include "gromacs/utility/exceptions.h"
+
 #include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"
@@ -235,6 +237,34 @@ TEST_F(TrainFFTest, Reproducible)
     }
     EXPECT_EQ(params[0], params[1]);
     EXPECT_NE(params[0], params[2]);
+}
+
+// Test: Compounds with parameters that have too little training data are
+// removed. Without methanol#water the water parameters have no data in the
+// training set, after which the support for methanol#methanol is checked
+// again.
+TEST_F(TrainFFTest, MinimumData)
+{
+    auto output = trainfftest::runTrainFF(&fileManager(), "mindata", "lj-pc.xml", "booze-inter",
+                                          combine(combine(mcmcOptions(1), interOptions()),
+                                                  { { "-mindata", "2" } }));
+    ASSERT_EQ(0, output.status);
+    auto hasLine = [&output](const std::string &text)
+    {
+        return std::any_of(output.log.begin(), output.log.end(),
+                           [&text](const std::string &line) { return line.find(text) != std::string::npos; });
+    };
+    EXPECT_TRUE(hasLine("Found 2 molecules without sufficient support"));
+    EXPECT_TRUE(hasLine("There are 1 molecules left to optimize"));
+}
+
+// Test: Without support for any compound the training set is empty
+TEST_F(TrainFFTest, MinimumDataTooLarge)
+{
+    EXPECT_THROW(trainfftest::runTrainFF(&fileManager(), "mindata", "lj-pc.xml", "booze-inter",
+                                         combine(combine(mcmcOptions(1), interOptions()),
+                                                 { { "-mindata", "3" } })),
+                 gmx::InvalidInputError);
 }
 
 // Test: For a diatomic compound the reference energy minus the
