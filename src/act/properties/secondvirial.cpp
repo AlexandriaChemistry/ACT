@@ -1094,6 +1094,11 @@ int b2(int argc, char *argv[])
 
     std::vector<ACTMol> actmols;
     compR.read(&msghandler, pd, &forceComp, &actmols);
+    if (actmols.empty())
+    {
+        fprintf(stderr, "Could not read or process molecules. Please check the log file for more information.\n");
+        return 1;
+    }
     auto &actmol = actmols[0];
 
     if (msghandler.ok() && status == 0)
