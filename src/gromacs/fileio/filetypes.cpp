@@ -128,7 +128,8 @@ static const t_deffile deffile[efNR] =
     { eftASC, ".xml", "data", nullptr, "Generic XML data file" },
     { eftASC, ".csv", "data", nullptr, "Comma-separated-values file" },
     { eftASC, ".sdf", "mol", nullptr, "Mol2 file with extension sdf" },
-    { eftASC, ".json", "output", nullptr, "JavaScript Object Notation" }
+    { eftASC, ".json", "output", nullptr, "JavaScript Object Notation" },
+    { eftASC, ".xyz", "conf", nullptr, "Coordinates in xyz format" }
 };
 
 const char *ftp2ext(int ftp)
