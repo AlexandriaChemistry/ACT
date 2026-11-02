@@ -105,20 +105,14 @@ protected:
         }
         analyze(&gs);
     }
-    void testYDY ()
-    {
-        gmx_stats gs;
-        for(size_t i = 0; i < y.size(); i++)
-        {
-            gs.add_point_ydy(y[i], dy[i]);
-        }
-        analyze(&gs);
-    }
     void testHisto(eHisto ehisto, bool normalized)
     {
         gmx::test::TestReferenceChecker myCheck(this->rootChecker());
         gmx_stats gs;
-        gs.add_points(x.size(), x.data(), y.data(), dx.data(), dy.data());
+        for(size_t i = 0; i < x.size(); i++)
+        {
+            gs.add_point(x[i], y[i], dx[i], dy[i]);
+        }
         int N = gs.get_npoints();
         myCheck.checkInteger(N, "Number of points");
         std::vector<double> xx, yy;
@@ -138,10 +132,6 @@ protected:
 
 TEST_F (StatisticsTest, XYDXDY){
     testXYDXDY();
-}
-
-TEST_F (StatisticsTest, YDY){
-    testYDY();
 }
 
 TEST_F (StatisticsTest, HistoX){

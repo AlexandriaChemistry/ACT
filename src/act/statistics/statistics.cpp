@@ -52,11 +52,6 @@ static int gmx_dnint(double x)
     return gmx::roundToInt(x);
 }
 
-eStats gmx_stats::add_point_ydy(double y, double dy)
-{
-    return add_point(x_.size(), y, 0, dy);
-}
-
 eStats gmx_stats::add_point(double xx, double yy,
                             double dxx, double dyy)
 {
@@ -66,70 +61,6 @@ eStats gmx_stats::add_point(double xx, double yy,
     dy_.push_back(dyy);
     computed_ = false;
 
-    return eStats::OK;
-}
-
-eStats gmx_stats::get_point(real *xx, real *yy,
-                            real *dxx, real *dyy, real level)
-{
-    eStats     ok;
-    int        outlier;
-    real       rmsd, r;
-
-    if ((ok = gmx_stats::get_rmsd(&rmsd)) != eStats::OK)
-    {
-        return ok;
-    }
-    outlier = 0;
-    while ((outlier == 0) && (np_c_ < x_.size()))
-    {
-        r       = std::abs(x_[np_c_] - y_[np_c_]);
-        outlier = static_cast<int>(r > rmsd*level);
-        if (outlier)
-        {
-            if (nullptr != xx)
-            {
-                *xx  = x_[np_c_];
-            }
-            if (nullptr != yy)
-            {
-                *yy  = y_[np_c_];
-            }
-            if (nullptr != dxx)
-            {
-                *dxx = dx_[np_c_];
-            }
-            if (nullptr != dyy)
-            {
-                *dyy = dy_[np_c_];
-            }
-        }
-        np_c_++;
-
-        if (outlier)
-        {
-            return eStats::OK;
-        }
-    }
-
-    np_c_ = 0;
-
-    return eStats::NO_POINTS;
-}
-
-eStats gmx_stats::add_points(int n, real *xx, real *yy,
-                             real *dxx, real *dyy)
-{
-    for (int i = 0; (i < n); i++)
-    {
-        eStats ok = add_point(xx[i], yy[i],
-                              (nullptr != dxx) ? dxx[i] : 0,
-                              (nullptr != dyy) ? dyy[i] : 0);
-        if (ok != eStats::OK)
-        {
-            return ok;
-        }
-    }
     return eStats::OK;
 }
 
@@ -452,20 +383,6 @@ eStats gmx_stats::get_sigma(real *sigmaa)
     return eStats::OK;
 }
 
-eStats gmx_stats::get_error(real *errors)
-{
-    eStats     ok;
-
-    if ((ok = compute(elsqWEIGHT_NONE)) != eStats::OK)
-    {
-        return ok;
-    }
-
-    *errors = error_;
-
-    return eStats::OK;
-}
-
 eStats gmx_stats::get_corr_coeff(real *Ra)
 {
     eStats     ok;
@@ -500,51 +417,6 @@ eStats gmx_stats::dump_xy(FILE *fp)
     {
         fprintf(fp, "%12g  %12g  %12g  %12g\n", x_[i], y_[i],
                 dx_[i], dy_[i]);
-    }
-
-    return eStats::OK;
-}
-
-eStats gmx_stats::remove_outliers(double level)
-{
-    int        iter  = 1, done = 0;
-    eStats     ok;
-    real       rmsd, r;
-
-    while ((x_.size() >= 10) && !done)
-    {
-        if ((ok = get_rmsd(&rmsd)) != eStats::OK)
-        {
-            return ok;
-        }
-        done = 1;
-        size_t i;
-        for (i = 0; (i < x_.size()); )
-        {
-            r = std::abs(x_[i]-y_[i]);
-            if (r > level*rmsd)
-            {
-                fprintf(stderr, "Removing outlier, iter = %d, rmsd = %g, x = %g, y = %g\n",
-                        iter, rmsd, x_[i], y_[i]);
-                if (i < x_.size()-1)
-                {
-                    x_[i]  = x_[x_.size()-1];
-                    y_[i]  = y_[x_.size()-1];
-                    dx_[i] = dx_[x_.size()-1];
-                    dy_[i] = dy_[x_.size()-1];
-                }
-                done = 0;
-            }
-            else
-            {
-                i++;
-            }
-        }
-        x_.resize(i);
-        y_.resize(i);
-        dx_.resize(i);
-        dy_.resize(i);
-        iter++;
     }
 
     return eStats::OK;
@@ -662,82 +534,4 @@ std::map<eStats,  const char *> stats_error =
 const char *gmx_stats_message(eStats estats)
 {
     return stats_error[estats];
-}
-
-/* Old convenience functions, should be merged with the core
-   statistics above. */
-eStats lsq_y_ax(int n, real x[], real y[], real *a)
-{
-    gmx_stats lsq;
-    eStats    ok;
-    real      da, chi2, Rfit;
-
-    lsq.add_points(n, x, y, nullptr, nullptr);
-    ok = lsq.get_a(elsqWEIGHT_NONE, a, &da, &chi2, &Rfit);
-
-    return ok;
-}
-
-static eStats low_lsq_y_ax_b(int n, const real *xr, const double *xd, real yr[],
-                          real *a, real *b, real *r, real *chi2)
-{
-    gmx_stats lsq;
-    eStats    ok;
-
-    for (int i = 0; (i < n); i++)
-    {
-        double pt;
-
-        if (xd != nullptr)
-        {
-            pt = xd[i];
-        }
-        else if (xr != nullptr)
-        {
-            pt = xr[i];
-        }
-        else
-        {
-            gmx_incons("Either xd or xr has to be non-NULL in low_lsq_y_ax_b()");
-        }
-
-        if ((ok = lsq.add_point(pt, yr[i], 0, 0)) != eStats::OK)
-        {
-            return ok;
-        }
-    }
-    ok = lsq.get_ab(elsqWEIGHT_NONE, a, b, nullptr, nullptr, chi2, r);
-
-    return ok;
-}
-
-eStats lsq_y_ax_b(int n, real x[], real y[], real *a, real *b, real *r, real *chi2)
-{
-    return low_lsq_y_ax_b(n, x, nullptr, y, a, b, r, chi2);
-}
-
-eStats lsq_y_ax_b_xdouble(int n, double x[], real y[], real *a, real *b,
-                       real *r, real *chi2)
-{
-    return low_lsq_y_ax_b(n, nullptr, x, y, a, b, r, chi2);
-}
-
-eStats lsq_y_ax_b_error(int n, real x[], real y[], real dy[],
-                     real *a, real *b, real *da, real *db,
-                     real *r, real *chi2)
-{
-    gmx_stats lsq;
-    eStats    ok;
-
-    for (int i = 0; (i < n); i++)
-    {
-        ok = lsq.add_point(x[i], y[i], 0, dy[i]);
-        if (ok != eStats::OK)
-        {
-            return ok;
-        }
-    }
-    ok = lsq.get_ab(elsqWEIGHT_Y, a, b, da, db, chi2, r);
-
-    return ok;
 }

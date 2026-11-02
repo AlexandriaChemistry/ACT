@@ -105,7 +105,6 @@ private:
     double              mse_        = 0;
     double              mae_        = 0;
     bool                computed_   = false;
-    size_t              np_c_       = 0;
 
     eStats compute(int weight);
     
@@ -113,22 +112,6 @@ public:
     //! Constructor
     gmx_stats() {}
     
-    /*! \brief
-     * Remove outliers from a straight line, where level in units of
-     * sigma. Level needs to be larger than one obviously.
-     * \param[in] level The sigma level
-     * \return error code
-     */
-    eStats remove_outliers(double level);
-
-    /*! \brief
-     * Add a point to the data set with just y values.
-     * \param[in] y   The y value
-     * \param[in] dy  The error in the y value
-     * \return error code
-     */
-    eStats add_point_ydy(double y, double dy);
-
     /*! \brief
      * Add a point to the data set
      * \param[in] x   The x value
@@ -155,43 +138,8 @@ public:
      */
     eStats add_point(double y) { return add_point(y_.size(), y, 0, 0); }
 
-    /*! \brief
-     * Add a series of datapoints at once. The arrays dx and dy may
-     * be NULL in that case zero uncertainties will be assumed.
-     *
-     * \param[in] n   Number of points
-     * \param[in] x   The array of x values
-     * \param[in] y   The array of y values
-     * \param[in] dx  The error in the x value
-     * \param[in] dy  The error in the y value
-     * \return error code
-     */
-    eStats add_points(int n, real *x, real *y,
-                      real *dx, real *dy);
-
     const std::vector<double> &getX() const { return x_; }
     const std::vector<double> &getY() const { return y_; }
-    /*! \brief
-     * Delivers data points from the statistics.
-     *
-     * Should be used in a while loop. Variables for either
-     * pointer may be NULL, in which case the routine can be used as an
-     * expensive point counter.
-     * Return the data points one by one. Return eStats::OK while there are
-     * more points, and returns eStats::NOPOINTS when the last point has
-     * been returned.
-     * If level > 0 then the outliers outside level*sigma are reported
-     * only.
-     * \param[out] x    An x value
-     * \param[out] y    An y value
-     * \param[out] dx   The error in the x value
-     * \param[out] dy   The error in the y value
-     * \param[in]  level sigma level (see above)
-     * \return error code
-     */
-    eStats get_point(real *x, real *y,
-                     real *dx, real *dy, real level);
-
     /*! \brief
      * Fit the data to y = ax + b, possibly weighted, if uncertainties
      * have been input. da and db may be NULL.
@@ -256,13 +204,6 @@ public:
     eStats get_sigma(real *sigma);
     
     /*! \brief
-     * Computes and returns the standard error.
-     * \param[out] error Standard error
-     * \return error code
-     */
-    eStats get_error(real *error);
-
-    /*! \brief
      * Pointers may be null, in which case no assignment will be done.
      * \param[out] aver  Average value
      * \param[out] sigma  Standard deviation
@@ -317,57 +258,5 @@ public:
  * \param[in] estats error code
  */
 const char *gmx_stats_message(eStats estats);
-
-/****************************************************
- * Some statistics utilities for convenience: useful when a complete data
- * set is available already from another source, e.g. an xvg file.
- ****************************************************/
-/*! \brief
- * Fit a straight line y=ax thru the n data points x, y, return the
- * slope in *a.
- * \param[in] n number of points
- * \param[in] x data points x
- * \param[in] y data point y
- * \param[out] a slope
- * \return error code
- */
-eStats lsq_y_ax(int n, real x[], real y[], real *a);
-
-/*! \brief
- * Fit a straight line y=ax+b thru the n data points x, y.
- * \param[in] n number of points
- * \param[in] x data points x
- * \param[in] y data point y
- * \param[out] a slope
- * \param[out] b intercept
- * \param[out] r correlation coefficient
- * \param[out] chi2 quality of fit
- * \return error code
- */
-eStats lsq_y_ax_b(int n, real x[], real y[], real *a, real *b, real *r,
-                  real *chi2);
-
-/*! \copydoc lsq_y_ax_b
- */
-eStats lsq_y_ax_b_xdouble(int n, double x[], real y[],
-                          real *a, real *b, real *r, real *chi2);
-
-/*! \brief
- * Fit a straight line y=ax+b thru the n data points x, y.
- * \param[in] n number of points
- * \param[in] x data points x
- * \param[in] y data point y
- * \param[in] dy uncertainty in data point y
- * \param[out] a slope
- * \param[out] b intercept
- * \param[out] da error in slope
- * \param[out] db error in intercept
- * \param[out] r correlation coefficient
- * \param[out] chi2 quality of fit
- * \return error code
- */
-eStats lsq_y_ax_b_error(int n, real x[], real y[], real dy[],
-                        real *a, real *b, real *da, real *db,
-                        real *r, real *chi2);
 
 #endif

@@ -191,9 +191,6 @@ class QgenResp
                            real       *mse,
                            real       *mae);
 
-        void plotLsq(const gmx_output_env_t *oenv,
-                     const char             *ESPcorr);
-
         //! \brief Compute the charge density of the atoms and shells at the grid points
         void calcRho();
 

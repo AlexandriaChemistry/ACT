@@ -250,32 +250,6 @@ void QgenResp::addEspPoint(double x, double y,
     ep_.push_back(EspPoint(rv, V));
 }
 
-void QgenResp::plotLsq(const gmx_output_env_t *oenv,
-                       const char             *ESPcorr)
-{
-    real        x, y;
-    const char *leg = "Alexandria";
-    gmx_stats   lsq;
-    std::string potUnit("Hartree/e");
-    for (size_t i = 0; i < nEsp(); i++)
-    {
-        lsq.add_point(convertFromGromacs(ep_[i].v(), potUnit),
-                      convertFromGromacs(ep_[i].vCalc(), potUnit),
-                      0, 0);
-    }
-    FILE *fp = xvgropen(ESPcorr, "Electrostatic Potential (Hartree/e)", "QM", "Calc", oenv);
-    xvgr_legend(fp, 1, &leg, oenv);
-    xvgr_line_props(fp, 0, elNone, ecBlack, oenv);
-    fprintf(fp, "@ s%d symbol %d\n", 0, 1);
-    fprintf(fp, "@type xy\n");
-    while (lsq.get_point(&x, &y, nullptr, nullptr, 0) == eStats::OK)
-    {
-        fprintf(fp, "%10g  %10g\n", x, y);
-    }
-    fprintf(fp, "&\n");
-    xvgrclose(fp);
-}
-
 void QgenResp::regularizeCharges(MsgHandler *msg_handler)
 {
     double qtot   = 0;
