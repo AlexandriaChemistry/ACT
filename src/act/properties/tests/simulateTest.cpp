@@ -200,15 +200,17 @@ protected:
      * \param[in]  molFile Molecule file in the alexandria/tests/mols directory
      * \param[in]  label   Unique label for the output files of this run
      * \param[out] files   The output file names
+     * \param[in]  ffFile  Force field file, ACS-g.xml from alexandria/tests if empty
      * \return The command line
      */
     gmx::test::CommandLine baseCommand(const std::string &molFile,
                                        const std::string &label,
-                                       SimulateFiles     *files)
+                                       SimulateFiles     *files,
+                                       const std::string &ffFile = "")
     {
         gmx::test::CommandLine cmd;
         cmd.append("simulate");
-        cmd.addOption("-ff", alexandriaFile("ACS-g.xml"));
+        cmd.addOption("-ff", ffFile.empty() ? alexandriaFile("ACS-g.xml") : ffFile);
         cmd.addOption("-f", alexandriaFile("mols/" + molFile));
         files->energy     = fileManager().getTemporaryFilePath(label + "-energy.xvg");
         files->trajectory = fileManager().getTemporaryFilePath(label + "-traj.pdb");
@@ -217,6 +219,50 @@ protected:
         cmd.addOption("-o", files->trajectory);
         cmd.addOption("-g", files->log);
         return cmd;
+    }
+
+    //! \return the potential energy of each frame in the log file of a rerun
+    static std::vector<double> rerunEpot(const std::string &log)
+    {
+        std::vector<double> epot;
+        std::ifstream       in(log);
+        for (std::string line; std::getline(in, line); )
+        {
+            std::istringstream iss(line);
+            std::string        word;
+            int                index;
+            if (!(iss >> index))
+            {
+                continue;
+            }
+            while (iss >> word)
+            {
+                double value;
+                if (word == "EPOT" && iss >> value)
+                {
+                    epot.push_back(value);
+                }
+            }
+        }
+        return epot;
+    }
+
+    //! \return the potential energy of a single point calculation from its log file
+    static double singlePointEpot(const std::string &log)
+    {
+        std::ifstream in(log);
+        for (std::string line; std::getline(in, line); )
+        {
+            std::istringstream iss(line);
+            std::string        word, valueWord;
+            double             value;
+            if (iss >> word >> valueWord >> value && word == "EPOT:")
+            {
+                return value;
+            }
+        }
+        ADD_FAILURE() << "No potential energy in " << log;
+        return 0;
     }
 
     //! Add options for a 100 step MD simulation
@@ -387,26 +433,7 @@ TEST_F(SimulateTest, Rerun)
     cmd2.addOption("-traj", md.trajectory);
     ASSERT_EQ(0, run(&cmd2));
     // Each structure gives a line with its number and the energies
-    std::vector<double> epot;
-    std::ifstream       in(rerun.log);
-    for (std::string line; std::getline(in, line); )
-    {
-        std::istringstream iss(line);
-        std::string        word;
-        int                index;
-        if (!(iss >> index))
-        {
-            continue;
-        }
-        while (iss >> word)
-        {
-            double value;
-            if (word == "EPOT" && iss >> value)
-            {
-                epot.push_back(value);
-            }
-        }
-    }
+    auto epot = rerunEpot(rerun.log);
     // Frames are written every 50 steps and energies every 10, at steps
     // 0 and 50 of the 100
     ASSERT_EQ(2u, epot.size());
@@ -418,6 +445,28 @@ TEST_F(SimulateTest, Rerun)
         // as the starting structure. Later in the simulation that changes
         // the energy of the bonds by up to a few tenths of a kJ/mol.
         EXPECT_NEAR(xvg.rows[row][cEpot], epot[i], i == 0 ? 1e-4 : 0.5) << "frame " << i;
+    }
+}
+
+// Test: Rerunning a trajectory of the atoms only with a model with shells
+// and one with virtual sites gives the energy of a single point calculation
+TEST_F(SimulateTest, RerunShellsVsites)
+{
+    for (const std::string model : { "SWM4-NDP", "TIP5P" })
+    {
+        auto ffFile = fileManager().getInputFilePath(model + ".xml");
+        SimulateFiles sp;
+        auto cmd = baseCommand("water_dimer.pdb", model + "-sp", &sp, ffFile);
+        cmd.append("-sp");
+        ASSERT_EQ(0, run(&cmd)) << model;
+        SimulateFiles rerun;
+        auto cmd2 = baseCommand("water_dimer.pdb", model + "-rerun", &rerun, ffFile);
+        cmd2.addOption("-traj", alexandriaFile("mols/water_dimer.pdb"));
+        ASSERT_EQ(0, run(&cmd2)) << model;
+        auto epot = rerunEpot(rerun.log);
+        ASSERT_EQ(1u, epot.size()) << model;
+        // The single point energy is printed with four decimals
+        EXPECT_NEAR(singlePointEpot(sp.log), epot[0], 1e-3) << model;
     }
 }
 
