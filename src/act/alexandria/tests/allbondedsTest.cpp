@@ -44,6 +44,7 @@
 #include "act/basics/msg_handler.h"
 #include "act/forcefield/forcefield_utils.h"
 #include "act/forcefield/forcefield_xml.h"
+#include "act/import/import.h"
 #include "act/molprop/molprop_xml.h"
 #include "act/topology/actmol.h"
 #include "gromacs/utility/stringstream.h"
@@ -200,11 +201,13 @@ TEST(AllBondedsVsiteTest, ExtractGeometries)
 /*! \brief Make new bonded parameters from the compounds of molprop.xml
  * \param[in]  ffName       Force field in this directory
  * \param[in]  bondFunction Bond function to use instead of that of the force field
+ * \param[in]  structures   Structure files in mols with more compounds
  * \param[out] pd           The force field with the new parameters
  */
-void updateBondeds(const std::string &ffName,
-                   const char        *bondFunction,
-                   ForceField        *pd)
+void updateBondeds(const std::string              &ffName,
+                   const char                     *bondFunction,
+                   const std::vector<std::string> &structures,
+                   ForceField                     *pd)
 {
     MsgHandler msghandler;
     msghandler.setPrintLevel(ACTStatus::Warning);
@@ -216,11 +219,20 @@ void updateBondeds(const std::string &ffName,
     }
     std::vector<MolProp> mps;
     MolPropRead(&msghandler, fileManager.getInputFilePath("../../molprop/tests/molprop.xml").c_str(), &mps);
+    for (const auto &s : structures)
+    {
+        double qtot = 0;
+        importFile(&msghandler, pd, fileManager.getInputFilePath("mols/" + s), &mps, "",
+                   JobType::OPT, false, &qtot, false);
+        ASSERT_TRUE(msghandler.ok()) << s;
+        // The compound is named after its file
+        mps.back().SetMolname(s.substr(0, s.find('.')));
+    }
     auto  selName = fileManager.getTemporaryFilePath("selection.dat");
     FILE *fp      = fopen(selName.c_str(), "w");
-    for(const char *mol : { "1-butanol", "acetone", "water" })
+    for (const auto &mp : mps)
     {
-        fprintf(fp, "%s|Train\n", mol);
+        fprintf(fp, "%s|Train\n", mp.getMolname().c_str());
     }
     fclose(fp);
     MolSelect gms;
@@ -230,7 +242,7 @@ void updateBondeds(const std::string &ffName,
     std::vector<ACTMol> actmols;
     bondeds.extractGeometries(&msghandler, &mps, &actmols, pd, gms);
     ASSERT_TRUE(msghandler.ok());
-    ASSERT_EQ(3u, actmols.size());
+    ASSERT_EQ(mps.size(), actmols.size());
     gmx::StringOutputStream stream;
     gmx::TextWriter         tw(&stream);
     bondeds.updateForceField(&tw, pd);
@@ -262,7 +274,7 @@ TEST(AllBondedsUpdateTest, BondFunctions)
     for (const auto &fn : defaults)
     {
         ForceField pd;
-        updateBondeds("ACS-g.xml", fn.first.c_str(), &pd);
+        updateBondeds("ACS-g.xml", fn.first.c_str(), {}, &pd);
         auto &bonds = pd.findForcesConst(InteractionType::BONDS);
         EXPECT_EQ(fn.first, potentialToString(bonds.potential()));
         ASSERT_FALSE(bonds.parametersConst().empty()) << fn.first;
@@ -291,7 +303,7 @@ TEST(AllBondedsUpdateTest, BondFunctions)
 TEST(AllBondedsUpdateTest, UreyBradleyFourier)
 {
     ForceField pd;
-    updateBondeds("ACS-g-dih.xml", nullptr, &pd);
+    updateBondeds("ACS-g-dih.xml", nullptr, {}, &pd);
     auto &bonds  = pd.findForcesConst(InteractionType::BONDS);
     auto &angles = pd.findForcesConst(InteractionType::ANGLES);
     ASSERT_EQ(Potential::UREY_BRADLEY_ANGLES, angles.potential());
@@ -320,6 +332,35 @@ TEST(AllBondedsUpdateTest, UreyBradleyFourier)
         {
             EXPECT_EQ(1, p.second.value()) << d.first.id() << " " << p.first;
         }
+    }
+}
+
+
+/* Test: The linear angle of acetonitrile, of which the parameter a puts
+ * the middle atom between the outer atoms according to the bond lengths.
+ */
+TEST(AllBondedsUpdateTest, LinearAngles)
+{
+    ForceField pd;
+    updateBondeds("ACS-g.xml", nullptr, { "acetonitrile.sdf" }, &pd);
+    auto &bonds = pd.findForcesConst(InteractionType::BONDS);
+    auto &lin   = pd.findForcesConst(InteractionType::LINEAR_ANGLES);
+    ASSERT_EQ(1u, lin.parametersConst().size());
+    for (const auto &a : lin.parametersConst())
+    {
+        auto atoms = a.first.atoms();
+        auto bo    = a.first.bondOrders();
+        Identifier bij({ atoms[0], atoms[1] }, { bo[0] }, CanSwap::Yes);
+        Identifier bjk({ atoms[1], atoms[2] }, { bo[1] }, CanSwap::Yes);
+        double rij = bonds.findParameterTypeConst(bij, "bondlength").value();
+        double rjk = bonds.findParameterTypeConst(bjk, "bondlength").value();
+        EXPECT_NEAR(rjk/(rij+rjk), value(a.second, "a"), 1e-6) << a.first.id();
+        EXPECT_EQ(20000, value(a.second, "klin")) << a.first.id();
+        EXPECT_EQ(2u, a.second.size()) << a.first.id();
+        auto &alin = a.second.find("a")->second;
+        EXPECT_EQ(1u, alin.ntrain()) << a.first.id();
+        EXPECT_LE(alin.minimum(), alin.value()) << a.first.id();
+        EXPECT_GE(alin.maximum(), alin.value()) << a.first.id();
     }
 }
 
