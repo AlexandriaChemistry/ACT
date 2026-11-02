@@ -192,12 +192,13 @@ void OptACM::optionsFinished(const std::vector<t_filenm> &filenames)
     commRec_.init(nmiddlemen);
     // Set prefix and id in sii_
     sii_->fillIdAndPrefix();
-    // Set output file for FF parameters
+    // Set output file for FF parameters, the middle men need it for
+    // their checkpoints
+    sii_->setOutputFile(opt2fn("-o", filenames.size(), filenames.data()));
     if (commRec_.isMaster())
     {
         outputFileName_.insert({iMolSelect::Train, opt2fn("-o", filenames.size(), filenames.data())});
         outputFileName_.insert({iMolSelect::Test, opt2fn("-otest", filenames.size(), filenames.data())});
-        sii_->setOutputFile(outputFileName_[iMolSelect::Train]);
     }
 }
 

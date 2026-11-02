@@ -67,14 +67,10 @@ void StaticIndividualInfo::setOutputFile(const std::string &outputFile)
 {
     if (cr_->isMasterOrMiddleMan())
     {   
-        outputFile_     = prefix_ + "ind" + std::to_string(id_) + "-" + outputFile;
-        outputFileLast_ = prefix_ + "ind" + std::to_string(id_) + "-last-" + outputFile;
+        // The files of each individual are in its directory
+        auto fileName = std::filesystem::path(outputFile).filename().string();
+        outputFile_   = prefix_ + "ind" + std::to_string(id_) + "-" + fileName;
     }
-}
-
-void StaticIndividualInfo::setFinalOutputFile(const std::string &outputFile)
-{
-    outputFile_ = outputFile;
 }
 
 /* * * * * * * * * * * * * * * * * * * * * *
