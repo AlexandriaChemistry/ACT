@@ -112,67 +112,6 @@ ACTMol::ACTMol()
     }
 }
 
-void ACTMol::findInPlaneAtoms(int ca, std::vector<int> *atoms) const
-{
-    int bca = 0;
-    /*First try to find the atom bound to the central atom (ca).*/
-    for (auto &bi : bondsConst())
-    {
-        if (ca == bi.aJ() ||
-            ca == bi.aI())
-        {
-            if (ca == bi.aI())
-            {
-                bca = bi.aJ();
-                atoms->push_back(bca);
-            }
-            else
-            {
-                bca = bi.aI();
-                atoms->push_back(bca);
-            }
-        }
-    }
-    /* Now try to find atoms bound to bca, except ca. */
-    for (auto bi : bondsConst())
-    {
-        if ((ca != bi.aJ()   &&
-             ca != bi.aI())  &&
-            (bca == bi.aJ()  ||
-             bca == bi.aI()))
-        {
-            if (bca == bi.aI())
-            {
-                atoms->push_back(bi.aJ());
-            }
-            else
-            {
-                atoms->push_back(bi.aI());
-            }
-        }
-    }
-}
-
-void ACTMol::findOutPlaneAtoms(int ca, std::vector<int> *atoms) const
-{
-    for (auto &bi : bondsConst())
-    {
-        if (bi.bondOrder() == 1  &&
-            (ca == bi.aJ() ||
-             ca == bi.aI()))
-        {
-            if (ca == bi.aI())
-            {
-                atoms->push_back(bi.aJ());
-            }
-            else
-            {
-                atoms->push_back(bi.aI());
-            }
-        }
-    }
-}
-
 void ACTMol::checkAtoms(MsgHandler       *msghandler,
                         const ForceField *pd)
 {

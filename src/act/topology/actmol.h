@@ -184,22 +184,6 @@ private:
     void checkAtoms(MsgHandler       *msghandler,
                     const ForceField *pd);
     
-    /*! \brief
-     * Find the atoms inside the molcule needed to construct the inplane virtual sites.
-     *
-     * \param[in]  ca     The index of the central atom
-     * \param[out] atoms  Data structure containing atomic properties
-     */
-    void findInPlaneAtoms(int ca, std::vector<int> *atoms) const;
-    
-    /*! \brief
-     * Find the atoms inside the molcule needed to construct the out of plane virtual sites.
-     *
-     * \param[in]  ca     The index of the central atom
-     * \param[out] atoms  Data structure containing atomic properties
-     */
-    void findOutPlaneAtoms(int ca, std::vector<int> *atoms) const;
-    
     /*! \brief extract frequencies and intensities if present.
      * This will use the optimized structure only.
      */
