@@ -115,25 +115,6 @@ class AtomNum
          */
         void SetNumber(int cnumber) { cnumber_ = cnumber; }
 
-        /*! \brief
-         * Sends this object over an MPI connection
-         *
-         * \param[in] cr   GROMACS data structure for MPI communication
-         * \param[in] dest Destination processor
-         * \return the CommunicationStatus of the operation
-         */
-        CommunicationStatus Send(const CommunicationRecord *cr,
-                                 int                        dest) const;
-
-        /*! \brief
-         * Receives this object over an MPI connection
-         *
-         * \param[in] cr  GROMACS data structure for MPI communication
-         * \param[in] src Source processor
-         * \return the CommunicationStatus of the operation
-         */
-        CommunicationStatus Receive(const CommunicationRecord *cr,
-                                    int                        src);
 };
 
 //! Iterator over a vector of AtomNum
@@ -244,25 +225,6 @@ class MolecularComposition
          */
         int CountAtoms() const;
 
-        /*! \brief
-         * Sends this object over an MPI connection
-         *
-         * \param[in] cr   GROMACS data structure for MPI communication
-         * \param[in] dest Destination processor
-         * \return the CommunicationStatus of the operation
-         */
-        CommunicationStatus Send(const CommunicationRecord *cr,
-                                 int                        dest) const;
-
-        /*! \brief
-         * Receives this object over an MPI connection
-         *
-         * \param[in] cr  GROMACS data structure for MPI communication
-         * \param[in] src Source processor
-         * \return the CommunicationStatus of the operation
-         */
-        CommunicationStatus Receive(const CommunicationRecord *cr,
-                                    int                        src);
 };
 //! Iterator over MolecularComposition items
 using MolecularCompositionIterator      = typename std::vector<MolecularComposition>::iterator;
@@ -420,16 +382,6 @@ public:
     double getZ() const { return z_; }
     
     /*! \brief
-     * Sends this object over an MPI connection
-     *
-     * \param[in] cr   data structure for MPI communication
-     * \param[in] dest Destination processor
-     * \return the CommunicationStatus of the operation
-     */
-    CommunicationStatus Send(const CommunicationRecord *cr,
-                             int                        dest) const;
-    
-    /*! \brief
      * Broadcast this object over an MPI connection
      *
      * \param[in] cr   data structure for MPI communication
@@ -441,15 +393,6 @@ public:
                                   int                        root,
                                   MPI_Comm                   comm);
 
-    /*! \brief
-     * Receives this object over an MPI connection
-     *
-     * \param[in] cr  data structure for MPI communication
-     * \param[in] src Source processor
-     * \return the CommunicationStatus of the operation
-     */
-    CommunicationStatus Receive(const CommunicationRecord *cr,
-                                int                        src);
 };
 
 //! Iterator over CalcAtom items

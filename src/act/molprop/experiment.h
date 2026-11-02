@@ -251,16 +251,6 @@ public:
     int Merge(Experiment *src);
     
     /*! \brief
-     * Sends this object over an MPI connection
-     *
-     * \param[in] cr   data structure for MPI communication
-     * \param[in] dest Destination processor
-     * \return the CommunicationStatus of the operation
-     */
-    CommunicationStatus Send(const CommunicationRecord *cr,
-                             int                        dest) const;
-    
-    /*! \brief
      * Broadcast this object over an MPI connection
      *
      * \param[in] cr   data structure for MPI communication
@@ -272,16 +262,6 @@ public:
                                   int                        root,
                                   MPI_Comm                   comm);
     
-    /*! \brief
-     * Receives this object over an MPI connection
-     *
-     * \param[in] cr  data structure for MPI communication
-     * \param[in] src Source processor
-     * \return the CommunicationStatus of the operation
-     */
-    CommunicationStatus Receive(const CommunicationRecord *cr,
-                                int                        src);
-
     //! \return true if mpo is present in this experiment    
     bool hasMolPropObservable(MolPropObservable mpo) const
     {

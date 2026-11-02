@@ -107,35 +107,4 @@ CommunicationStatus Fragment::BroadCast(const CommunicationRecord *cr,
     return cs;
 }
 
-CommunicationStatus Fragment::Receive(const CommunicationRecord *cr, int src)
-{
-    CommunicationStatus cs = CommunicationStatus::OK;
-    cr->recv(src, &mass_);
-    cr->recv(src, &charge_);
-    cr->recv(src, &multiplicity_);
-    cr->recv(src, &symmetryNumber_);
-    cr->recv(src, &formula_);
-    cr->recv(src, &texform_);
-    cr->recv(src, &inchi_);
-    cr->recv(src, &iupac_);
-    cr->recv(src, &atoms_);
-    makeAtomString();
-    return cs;
-}
-
-CommunicationStatus Fragment::Send(const CommunicationRecord *cr, int dest) const
-{
-    CommunicationStatus cs = CommunicationStatus::OK;
-    cr->send(dest, mass_);
-    cr->send(dest, charge_);
-    cr->send(dest, multiplicity_);
-    cr->send(dest, symmetryNumber_);
-    cr->send(dest, formula_);
-    cr->send(dest, texform_);
-    cr->send(dest, inchi_);
-    cr->send(dest, iupac_);
-    cr->send(dest, atoms_);
-    return cs;
-}
-
 } // namespace alexandria

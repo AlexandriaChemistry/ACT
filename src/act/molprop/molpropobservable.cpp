@@ -177,28 +177,6 @@ void GenericProperty::Dump(gmx::TextWriter *tw) const
                              phase2string(getPhase()).c_str());
 }
 
-CommunicationStatus GenericProperty::Send(const CommunicationRecord *cr, int dest) const
-{
-    CommunicationStatus cs = CommunicationStatus::OK;
-
-    if (CommunicationStatus::SEND_DATA == cr->send_data(dest))
-    {
-        std::string mpo_type(mpo_name(mpo_));
-        cr->send(dest, mpo_type);
-        cr->send(dest, type_);
-        cr->send(dest, inputUnit_);
-        cr->send(dest, unit_);
-        cr->send(dest, T_);
-        cr->send(dest, (int) eP_);
-    }
-    else if (cr->mh())
-    {
-        cr->mh()->msg(ACTStatus::Error,
-                      gmx::formatString("Faile sending GenericProperty, status %s\n", cs_name(cs).c_str()));
-    }
-    return cs;
-}
-
 CommunicationStatus GenericProperty::BroadCast(const CommunicationRecord *cr,
                                                gmx_unused int             root,
                                                MPI_Comm                   comm)
@@ -226,34 +204,6 @@ CommunicationStatus GenericProperty::BroadCast(const CommunicationRecord *cr,
         cr->bcast(&phase, comm);
         eP_ = string2phase(phase);
         
-    }
-    else if (cr->mh())
-    {
-        cr->mh()->msg(ACTStatus::Error,
-                      gmx::formatString("Failed receiving GenericProperty, status %s\n", cs_name(cs).c_str()));
-    }
-    return cs;
-}
-
-CommunicationStatus GenericProperty::Receive(const CommunicationRecord *cr, int src)
-{
-    CommunicationStatus cs = CommunicationStatus::OK;
-
-    if (CommunicationStatus::RECV_DATA == cr->recv_data(src))
-    {
-        std::string mpo_type;
-        cr->recv(src, &mpo_type);
-        if (!stringToMolPropObservable(mpo_type, &mpo_))
-        {
-            gmx_fatal(FARGS, "Unknown observable %s", mpo_type.c_str());
-        }
-        cr->recv(src, &type_);
-        cr->recv(src, &inputUnit_);
-        cr->recv(src, &unit_);
-        cr->recv(src, &T_);
-        int ep;
-        cr->recv(src, &ep);
-        eP_  = static_cast<ePhase>(ep);
     }
     else if (cr->mh())
     {
@@ -320,26 +270,6 @@ void MolecularMultipole::setValue(const std::string &myid, double value)
     }
 }
 
-CommunicationStatus MolecularMultipole::Send(const CommunicationRecord *cr, int dest) const
-{
-    CommunicationStatus cs;
-
-    cs = GenericProperty::Send(cr, dest);
-    if (CommunicationStatus::OK == cs &&
-        CommunicationStatus::SEND_DATA == cr->send_data(dest))
-    {
-        cr->send(dest, values_);
-        cr->send(dest, average_);
-        cr->send(dest, error_);
-    }
-    else if (cr->mh())
-    {
-        cr->mh()->msg(ACTStatus::Error,
-                      gmx::formatString("Failed sending MolecularMultipole, status %s\n", cs_name(cs).c_str()));
-    }
-    return cs;
-}
-
 CommunicationStatus MolecularMultipole::BroadCast(const CommunicationRecord *cr,
                                                   int                        root,
                                                   MPI_Comm                   comm)
@@ -357,26 +287,6 @@ CommunicationStatus MolecularMultipole::BroadCast(const CommunicationRecord *cr,
     {
         cr->mh()->msg(ACTStatus::Error,
                       gmx::formatString("Failed receiving MolecularMultipole, status %s\n", cs_name(cs).c_str()));
-    }
-    return cs;
-}
-
-CommunicationStatus MolecularMultipole::Receive(const CommunicationRecord *cr, int src)
-{
-    CommunicationStatus cs;
-
-    cs = GenericProperty::Receive(cr, src);
-    if (CommunicationStatus::OK == cs &&
-        CommunicationStatus::RECV_DATA == cr->recv_data(src))
-    {
-        cr->recv(src, &values_);
-        cr->recv(src, &average_);
-        cr->recv(src, &error_);
-    }
-    else if (cr->mh())
-    {
-        cr->mh()->msg(ACTStatus::Error,
-                      gmx::formatString("Failed to receive MolecularMultipole, status %s\n", cs_name(cs).c_str()));
     }
     return cs;
 }
@@ -410,24 +320,6 @@ void Harmonics::Dump(gmx::TextWriter *tw) const
     print_values(tw, values_, factor);
 }
 
-CommunicationStatus Harmonics::Send(const CommunicationRecord *cr, int dest) const
-{
-    CommunicationStatus cs;
-
-    cs = GenericProperty::Send(cr, dest);
-    if (CommunicationStatus::OK == cs &&
-        CommunicationStatus::SEND_DATA == cr->send_data(dest))
-    {
-        cr->send(dest, values_);
-    }
-    else if (cr->mh())
-    {
-        cr->mh()->msg(ACTStatus::Error,
-                      gmx::formatString("Failed to send Harmonics, status %s\n", cs_name(cs).c_str()));
-    }
-    return cs;
-}
-
 CommunicationStatus Harmonics::BroadCast(const CommunicationRecord *cr,
                                          int                        root,
                                          MPI_Comm                   comm)
@@ -443,24 +335,6 @@ CommunicationStatus Harmonics::BroadCast(const CommunicationRecord *cr,
     {
         cr->mh()->msg(ACTStatus::Error,
                       gmx::formatString("Failed to broadcast Harmonics, status %s\n", cs_name(cs).c_str()));
-    }
-    return cs;
-}
-
-CommunicationStatus Harmonics::Receive(const CommunicationRecord *cr, int src)
-{
-    CommunicationStatus cs;
-
-    cs = GenericProperty::Receive(cr, src);
-    if (CommunicationStatus::OK == cs &&
-        CommunicationStatus::RECV_DATA == cr->recv_data(src))
-    {
-        cr->recv(src, &values_);
-    }
-    else if (cr->mh())
-    {
-        cr->mh()->msg(ACTStatus::Error,
-                      gmx::formatString("Failed to receive Harmonics, status %s\n", cs_name(cs).c_str()));
     }
     return cs;
 }
@@ -524,36 +398,6 @@ void MolecularPolarizability::Dump(gmx::TextWriter *tw) const
     }
 }
 
-CommunicationStatus MolecularPolarizability::Send(const CommunicationRecord *cr, int dest) const
-{
-    CommunicationStatus cs;
-
-    cs = GenericProperty::Send(cr, dest);
-    if (CommunicationStatus::OK == cs &&
-        CommunicationStatus::SEND_DATA == cr->send_data(dest))
-    {
-        for(int m = 0; m < DIM; m++)
-        {
-            for(int n = 0; n < DIM; n++)
-            {
-                cr->send(dest, alpha_[m][n]);
-            }
-        }
-    }
-    if (CommunicationStatus::OK == cs &&
-        CommunicationStatus::SEND_DATA == cr->send_data(dest))
-    {
-        cr->send(dest, average_);
-        cr->send(dest, error_);
-    }
-    else if (cr->mh())
-    {
-        cr->mh()->msg(ACTStatus::Error,
-                      gmx::formatString("Failed to send Polarizability, status %s\n", cs_name(cs).c_str()));
-    }
-    return cs;
-}
-
 CommunicationStatus MolecularPolarizability::BroadCast(const CommunicationRecord *cr,
                                                        int                        root,
                                                        MPI_Comm                   comm)
@@ -571,36 +415,6 @@ CommunicationStatus MolecularPolarizability::BroadCast(const CommunicationRecord
         }
         cr->bcast(&average_, comm);
         cr->bcast(&error_, comm);
-    }
-    else if (cr->mh())
-    {
-        cr->mh()->msg(ACTStatus::Error,
-                      gmx::formatString("Failed to broadcast Polarizability, status %s\n", cs_name(cs).c_str()));
-    }
-    return cs;
-}
-
-CommunicationStatus MolecularPolarizability::Receive(const CommunicationRecord *cr, int src)
-{
-    CommunicationStatus cs;
-
-    cs = GenericProperty::Receive(cr, src);
-    if (CommunicationStatus::OK == cs &&
-        CommunicationStatus::RECV_DATA == cr->recv_data(src))
-    {
-        for(int m = 0; m < DIM; m++)
-        {
-            for(int n = 0; n < DIM; n++)
-            {
-                cr->recv(src, &alpha_[m][n]);
-            }
-        }
-    }
-    if (CommunicationStatus::OK == cs &&
-        CommunicationStatus::RECV_DATA == cr->recv_data(src))
-    {
-        cr->recv(src, &average_);
-        cr->recv(src, &error_);
     }
     else if (cr->mh())
     {
@@ -652,44 +466,6 @@ CommunicationStatus MolecularEnergy::BroadCast(const CommunicationRecord *cr,
     return cs;
 }
 
-CommunicationStatus MolecularEnergy::Receive(const CommunicationRecord *cr, int src)
-{
-    CommunicationStatus cs;
-
-    cs = GenericProperty::Receive(cr, src);
-    if (CommunicationStatus::OK == cs &&
-        CommunicationStatus::RECV_DATA == cr->recv_data(src))
-    {
-        cr->recv(src, &average_);
-        cr->recv(src, &error_);
-    }
-    else if (cr->mh())
-    {
-        cr->mh()->msg(ACTStatus::Error,
-                      gmx::formatString("Failed to receive MolecularEnergy, status %s\n", cs_name(cs).c_str()));
-    }
-    return cs;
-}
-
-CommunicationStatus MolecularEnergy::Send(const CommunicationRecord *cr, int dest) const
-{
-    CommunicationStatus cs;
-
-    cs = GenericProperty::Send(cr, dest);
-    if (CommunicationStatus::OK == cs &&
-        CommunicationStatus::SEND_DATA == cr->send_data(dest))
-    {
-        cr->send(dest, average_);
-        cr->send(dest, error_);
-    }
-    else if (cr->mh())
-    {
-        cr->mh()->msg(ACTStatus::Error,
-                      gmx::formatString("Failed to send MolecularEnergy, status %s\n", cs_name(cs).c_str()));
-    }
-    return cs;
-}
-
 ElectrostaticPotential::ElectrostaticPotential(const std::string &xyzInputUnit,
                                                const std::string &vInputUnit)
 {
@@ -729,30 +505,6 @@ void ElectrostaticPotential::Dump(gmx::TextWriter *tw) const
     }
 }
 
-CommunicationStatus ElectrostaticPotential::Receive(const CommunicationRecord *cr, int src)
-{
-    CommunicationStatus cs = GenericProperty::Receive(cr, src);
-
-    if (CommunicationStatus::OK == cs &&
-        CommunicationStatus::RECV_DATA == cr->recv_data(src))
-    {
-        cr->recv(src, &xyzInputUnit_);
-        cr->recv(src, &vInputUnit_);
-        cr->recv(src, &xyzUnit_);
-        cr->recv(src, &vUnit_);
-        // The same order as in Send
-        cr->recv(src, &espID_);
-        cr->recv(src, &xyz_);
-        cr->recv(src, &V_);
-    }
-    else if (cr->mh())
-    {
-        cr->mh()->msg(ACTStatus::Error,
-                      gmx::formatString("Failed to receive ElectrostaticPotential, status %s\n", cs_name(cs).c_str()));
-    }
-    return cs;
-}
-
 CommunicationStatus ElectrostaticPotential::BroadCast(const CommunicationRecord *cr,
                                                       int                        root,
                                                       MPI_Comm                   comm)
@@ -787,29 +539,6 @@ CommunicationStatus ElectrostaticPotential::BroadCast(const CommunicationRecord 
     {
         cr->mh()->msg(ACTStatus::Error,
                       gmx::formatString("Failed to receive ElectrostaticPotential, status %s\n", cs_name(cs).c_str()));
-    }
-    return cs;
-}
-
-CommunicationStatus ElectrostaticPotential::Send(const CommunicationRecord *cr, int dest) const
-{
-    CommunicationStatus cs = GenericProperty::Send(cr, dest);
-
-    if (CommunicationStatus::OK == cs &&
-        CommunicationStatus::SEND_DATA == cr->send_data(dest))
-    {
-        cr->send(dest, xyzInputUnit_);
-        cr->send(dest, vInputUnit_);
-        cr->send(dest, xyzUnit_);
-        cr->send(dest, vUnit_);
-        cr->send(dest, espID_);
-        cr->send(dest, xyz_);
-        cr->send(dest, V_);
-    }
-    else if (cr->mh())
-    {
-        cr->mh()->msg(ACTStatus::Error,
-                      gmx::formatString("Failed to send ElectrostaticPotential, status %s\n", cs_name(cs).c_str()));
     }
     return cs;
 }

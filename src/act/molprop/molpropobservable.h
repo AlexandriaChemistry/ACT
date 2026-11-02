@@ -279,16 +279,6 @@ public:
      */
     virtual void Dump(gmx::TextWriter *tw) const;
     /*! \brief
-     * Sends this object over an MPI connection
-     *
-     * \param[in] cr   Data structure for MPI communication
-     * \param[in] dest Destination processor
-     * \return the CommunicationStatus of the operation
-     */
-    virtual CommunicationStatus Send(const CommunicationRecord *cr,
-                                     int                        dest) const;
-    
-    /*! \brief
      * Broadcast this object over an MPI connection
      *
      * \param[in] cr   Data structure for MPI communication
@@ -299,16 +289,6 @@ public:
     virtual CommunicationStatus BroadCast(const CommunicationRecord *cr,
                                           int                        root,
                                           MPI_Comm                   comm);
-
-    /*! \brief
-     * Receives this object over an MPI connection
-     *
-     * \param[in] cr  Data structure for MPI communication
-     * \param[in] src Source processor
-     * \return the CommunicationStatus of the operation
-     */
-    virtual CommunicationStatus Receive(const CommunicationRecord *cr,
-                                        int                        src);
 
     //! \return stored Value
     virtual double getValue() const = 0;
@@ -391,16 +371,6 @@ public:
     const std::vector<double> &getVector() const { return values_; }
     
     /*! \brief
-     * Sends this object over an MPI connection
-     *
-     * \param[in] cr   Data structure for MPI communication
-     * \param[in] dest Destination processor
-     * \return the CommunicationStatus of the operation
-     */
-    CommunicationStatus Send(const CommunicationRecord *cr,
-                             int                        dest) const;
-    
-    /*! \brief
      * Broadcast this object over an MPI connection
      *
      * \param[in] cr   Data structure for MPI communication
@@ -412,15 +382,6 @@ public:
                                           int                        root,
                                           MPI_Comm                   comm);
 
-    /*! \brief
-     * Receives this object over an MPI connection
-     *
-     * \param[in] cr  Data structure for MPI communication
-     * \param[in] src Source processor
-     * \return the CommunicationStatus of the operation
-     */
-    CommunicationStatus Receive(const CommunicationRecord *cr,
-                                int                        src);
 };
 
 /*! \brief
@@ -476,16 +437,6 @@ public:
     
     void Dump(gmx::TextWriter *tw) const;
     /*! \brief
-     * Sends this object over an MPI connection
-     *
-     * \param[in] cr   Data structure for MPI communication
-     * \param[in] dest Destination processor
-     * \return the CommunicationStatus of the operation
-     */
-    CommunicationStatus Send(const CommunicationRecord *cr,
-                             int                        dest) const;
-    
-    /*! \brief
      * Broadcast this object over an MPI connection
      *
      * \param[in] cr  Data structure for MPI communication
@@ -497,15 +448,6 @@ public:
                                   int                        root,
                                   MPI_Comm                   comm);
                                 
-    /*! \brief
-     * Receives this object over an MPI connection
-     *
-     * \param[in] cr  Data structure for MPI communication
-     * \param[in] src Source processor
-     * \return the CommunicationStatus of the operation
-     */
-    CommunicationStatus Receive(const CommunicationRecord *cr,
-                                int                        src);
 };
 
 /*! \brief
@@ -574,16 +516,6 @@ public:
 
     void Dump(gmx::TextWriter *tw) const;
     /*! \brief
-     * Sends this object over an MPI connection
-     *
-     * \param[in] cr   Data structure for MPI communication
-     * \param[in] dest Destination processor
-     * \return the CommunicationStatus of the operation
-     */
-    CommunicationStatus Send(const CommunicationRecord *cr,
-                             int                        dest) const;
-    
-    /*! \brief
      * Broadcast this object over an MPI connection
      *
      * \param[in] cr  Data structure for MPI communication
@@ -595,15 +527,6 @@ public:
                                   int                        root,
                                   MPI_Comm                   comm);
 
-    /*! \brief
-     * Receives this object over an MPI connection
-     *
-     * \param[in] cr  Data structure for MPI communication
-     * \param[in] src Source processor
-     * \return the CommunicationStatus of the operation
-     */
-    CommunicationStatus Receive(const CommunicationRecord *cr,
-                                int                        src);
 };
 
 /*! \brief
@@ -666,16 +589,6 @@ public:
 
     void Dump(gmx::TextWriter *tw) const;
     /*! \brief
-     * Sends this object over an MPI connection
-     *
-     * \param[in] cr   Data structure for MPI communication
-     * \param[in] dest Destination processor
-     * \return the CommunicationStatus of the operation
-     */
-    CommunicationStatus Send(const CommunicationRecord *cr,
-                             int                        dest) const;
-    
-    /*! \brief
      * Broadcast this object over an MPI connection
      *
      * \param[in] cr   Data structure for MPI communication
@@ -687,15 +600,6 @@ public:
                                   int                        root,
                                   MPI_Comm                   comm);
                                 
-    /*! \brief
-     * Receives this object over an MPI connection
-     *
-     * \param[in] cr  Data structure for MPI communication
-     * \param[in] src Source processor
-     * \return the CommunicationStatus of the operation
-     */
-    CommunicationStatus Receive(const CommunicationRecord *cr,
-                                int                        src);
 };
 
 /*! \brief
@@ -774,15 +678,6 @@ public:
 
     void Dump(gmx::TextWriter *tw) const;
     /*! \brief
-     * Sends this object over an MPI connection
-     *
-     * \param[in] cr   Data structure for MPI communication
-     * \param[in] dest Destination processor
-     * \return the CommunicationStatus of the operation
-     */
-    CommunicationStatus Send(const CommunicationRecord *cr, int dest) const;
-    
-    /*! \brief
      * Broadcast this object over an MPI connection
      *
      * \param[in] cr  Data structure for MPI communication
@@ -794,14 +689,6 @@ public:
                                   int                        root,
                                   MPI_Comm                   comm);
 
-    /*! \brief
-     * Receives this object over an MPI connection
-     *
-     * \param[in] cr  Data structure for MPI communication
-     * \param[in] src Source processor
-     * \return the CommunicationStatus of the operation
-     */
-    CommunicationStatus Receive(const CommunicationRecord *cr, int src);
 };
 
 } // namespace alexandria

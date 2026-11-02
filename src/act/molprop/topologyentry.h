@@ -208,17 +208,7 @@ public:
      */
     void check(size_t nAtom) const;
     /*! \brief
-     * Sends this object over an MPI connection
-     *
-     * \param[in] cr   GROMACS data structure for MPI communication
-     * \param[in] dest Destination processor
-     * \return the CommunicationStatus of the operation
-     */
-    CommunicationStatus Send(const CommunicationRecord *cr,
-                             int                        dest) const;
-
-    /*! \brief
-     * Receives this object over an MPI connection
+     * Broadcasts this object over an MPI connection
      *
      * \param[in] cr   Data structure for MPI communication
      * \param[in] root The MPI root
@@ -229,15 +219,6 @@ public:
                                   int                        root,
                                   MPI_Comm                   comm);
 
-    /*! \brief
-     * Receives this object over an MPI connection
-     *
-     * \param[in] cr  GROMACS data structure for MPI communication
-     * \param[in] src Source processor
-     * \return the CommunicationStatus of the operation
-     */
-    CommunicationStatus Receive(const CommunicationRecord *cr,
-                                int                        src);
 };
 
 //! Vector of TopologyEntry items or inherited variants

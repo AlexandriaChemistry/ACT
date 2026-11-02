@@ -97,32 +97,6 @@ protected:
     }
 };
 
-// Test: The molecules the master sends to each rank, with their
-// categories, are the same as the ones read from the file
-TEST_F(MolpropMpiTest, SendReceive)
-{
-    ASSERT_LT(3u, ref_.size());
-    if (cr_.isMaster())
-    {
-        for (int dest = 1; dest < cr_.size(); dest++)
-        {
-            for (const auto &mp : ref_)
-            {
-                EXPECT_EQ(CommunicationStatus::OK, mp.Send(&cr_, dest));
-            }
-        }
-    }
-    else
-    {
-        std::vector<MolProp> mps(ref_.size());
-        for (auto &mp : mps)
-        {
-            EXPECT_EQ(CommunicationStatus::OK, mp.Receive(&cr_, 0));
-        }
-        EXPECT_EQ(written(ref_, "ref"), written(mps, "received"));
-    }
-}
-
 // Test: The molecules the master broadcasts are the same on all ranks
 TEST_F(MolpropMpiTest, BroadCast)
 {
