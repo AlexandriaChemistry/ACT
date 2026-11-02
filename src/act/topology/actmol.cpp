@@ -980,8 +980,8 @@ void ACTMol::setCharges(MsgHandler       *msghandler,
                         const ForceField *pd)
 {
     auto myatoms = atoms();
-    msghandler->msg(ACTStatus::Warning,
-                    gmx::formatString("WARNING! Using charges from force field for %s!\n", getMolname().c_str()));
+    msghandler->msg(ACTStatus::Info,
+                    gmx::formatString("Using charges from force field for %s", getMolname().c_str()));
     for (size_t i = 0; i < myatoms->size(); i++)
     {
         auto atype = (*myatoms)[i].ffType();
