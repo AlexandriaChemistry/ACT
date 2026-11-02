@@ -172,6 +172,41 @@ TEST_F(TrainFFMpiTest, GAInterBooze)
     runAndCheck("lj-pc.xml", "booze-inter", options, 6);
 }
 
+// Test: GA training continued from the gene pool of a previous run starts
+// with the best individual of that run
+TEST_F(TrainFFMpiTest, GAGenePool)
+{
+    auto options = gaOptions("GA", 2);
+    options.push_back({ "-fit", "sigma epsilon" });
+    options.push_back({ "-fc_allelec", "1" });
+    options.push_back({ "-fc_exch", "1" });
+    options.push_back({ "-fc_disp", "1" });
+    auto first = trainfftest::runTrainFF(&fileManager(), "first", "lj-pc.xml", "booze-inter", options);
+    EXPECT_EQ(0, first.status);
+    // The pool is written by the master when there is a new best individual
+    auto pool = fileManager().getTemporaryFilePath("first-pool.csv");
+    auto continued = options;
+    continued.push_back({ "-gpin", pool });
+    auto second = trainfftest::runTrainFF(&fileManager(), "second", "lj-pc.xml", "booze-inter", continued);
+    EXPECT_EQ(0, second.status);
+    if (gmx_node_rank() == 0)
+    {
+        ASSERT_FALSE(second.fitness.empty());
+        std::istringstream iss(second.fitness[0]);
+        double             best = 1e30;
+        int                n    = 0;
+        for (double f; iss >> f; n++)
+        {
+            best = std::min(best, f);
+        }
+        EXPECT_EQ(popSize, n);
+        // The fitness file has six decimals
+        EXPECT_NEAR(first.finalChi2, best, 1e-6*first.finalChi2 + 1e-6);
+        EXPECT_LE(second.finalChi2, first.finalChi2*(1 + 1e-6) + 1e-6);
+    }
+    trainfftest::barrier();
+}
+
 // Test: MCMC training of bonded parameters of alcohols on four cores
 TEST_F(TrainFFMpiTest, MCMCIntraBooze)
 {
