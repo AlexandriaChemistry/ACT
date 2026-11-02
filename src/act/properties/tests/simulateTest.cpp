@@ -197,7 +197,7 @@ protected:
     }
 
     /*! \brief Make a command line for simulate
-     * \param[in]  molFile Molecule file in the alexandria/tests/mols directory
+     * \param[in]  molFile Molecule file in the alexandria/tests/mols directory, or an absolute path
      * \param[in]  label   Unique label for the output files of this run
      * \param[out] files   The output file names
      * \param[in]  ffFile  Force field file, ACS-g.xml from alexandria/tests if empty
@@ -211,7 +211,7 @@ protected:
         gmx::test::CommandLine cmd;
         cmd.append("simulate");
         cmd.addOption("-ff", ffFile.empty() ? alexandriaFile("ACS-g.xml") : ffFile);
-        cmd.addOption("-f", alexandriaFile("mols/" + molFile));
+        cmd.addOption("-f", molFile[0] == '/' ? molFile : alexandriaFile("mols/" + molFile));
         files->energy     = fileManager().getTemporaryFilePath(label + "-energy.xvg");
         files->trajectory = fileManager().getTemporaryFilePath(label + "-traj.pdb");
         files->log        = fileManager().getTemporaryFilePath(label + ".log");
@@ -979,25 +979,61 @@ TEST_F(SimulateTest, MinimizeFreeze)
     EXPECT_GT(maxMove, toler);
 }
 
-// Test: MD with flat-bottomed position restraints
+// Test: MD with flat-bottomed position restraints around the center of
+// mass of a water dimer far from the origin. Within a sphere that holds the
+// dimer they have no energy, the motion of the center of mass is not
+// removed, and with a radius of zero they act.
 TEST_F(SimulateTest, PositionRestraints)
 {
-    SimulateFiles files;
-    auto cmd = baseCommand("acetone.sdf", "fbpr", &files);
-    addMD(&cmd, 300, 1993);
-    cmd.addOption("-kfbpr", 1000.0);
-    cmd.addOption("-r0fbpr", 0.0);
-    ASSERT_EQ(0, run(&cmd));
-    auto xvg = readXvg(files.energy);
-    bool found = false;
-    for(const auto &legend : xvg.legends)
+    // The water dimer moved from the origin
+    auto molFile = fileManager().getTemporaryFilePath("shifted.pdb");
     {
-        if (legend.find("RESTRAINT") != std::string::npos)
+        std::ifstream in(alexandriaFile("mols/water_dimer.pdb"));
+        std::ofstream out(molFile);
+        for (std::string line; std::getline(in, line); )
         {
-            found = true;
+            if (line.compare(0, 6, "HETATM") == 0 || line.compare(0, 4, "ATOM") == 0)
+            {
+                double x[3];
+                for (int m = 0; m < 3; m++)
+                {
+                    x[m] = std::stod(line.substr(30 + 8*m, 8)) + 50 + 10*m;
+                }
+                line = line.substr(0, 30) + gmx::formatString("%8.3f%8.3f%8.3f", x[0], x[1], x[2]) + line.substr(54);
+            }
+            out << line << "\n";
         }
     }
-    EXPECT_TRUE(found);
+    for (double r0 : { 1.0, 0.0 })
+    {
+        SimulateFiles files;
+        auto cmd = baseCommand(molFile, gmx::formatString("fbpr%g", r0), &files);
+        addMD(&cmd, 300, 1993);
+        cmd.addOption("-kfbpr", 1000.0);
+        cmd.addOption("-r0fbpr", r0);
+        ASSERT_EQ(0, run(&cmd)) << r0;
+        auto xvg = readXvg(files.energy);
+        int  cpr = xvg.column("POSITION_RESTRAINT");
+        ASSERT_GT(cpr, 0);
+        ASSERT_FALSE(xvg.rows.empty());
+        double maxPR = 0;
+        for (const auto &row : xvg.rows)
+        {
+            maxPR = std::max(maxPR, row[cpr]);
+        }
+        if (r0 > 0)
+        {
+            EXPECT_EQ(0, maxPR);
+        }
+        else
+        {
+            EXPECT_GT(xvg.rows[0][cpr], 0);
+        }
+        std::ifstream     in(files.log);
+        std::stringstream log;
+        log << in.rdbuf();
+        EXPECT_NE(std::string::npos, log.str().find("The motion of the center of mass is not removed")) << r0;
+    }
 }
 
 // Test: Writing the molprop file
