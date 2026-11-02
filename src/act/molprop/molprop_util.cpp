@@ -34,13 +34,11 @@
 
 #include "act/molprop/molprop_util.h"
 
+#include <algorithm>
 #include <cstdio>
-#include <cstdlib>
-#include <cstring>
 
 #include "act/molprop/molprop_xml.h"
 #include "act/topology/actmol.h"
-#include "gromacs/topology/atomprop.h"
 #include "gromacs/utility/arrayref.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/textwriter.h"
@@ -181,190 +179,11 @@ void merge_xml(MsgHandler                             *msg_handler,
             mpi->Dump(tw);
         }
     }
-    MolSelect gms;
-    MolPropSort(msg_handler, mpout, MPSA_MOLNAME, nullptr, gms);
+    std::sort(mpout->begin(), mpout->end(),
+              [](const MolProp &ma, const MolProp &mb) { return ma.getMolname() < mb.getMolname(); });
     MergeDoubleMolprops(msg_handler, mpout);
     printf("There were %zu molecule entries before merging, %zu after.\n",
            mpBefore, mpout->size());
 }
 
-//! \brief Compare MolProp by molname for sorting
-static bool comp_mp_molname(alexandria::MolProp &ma,
-                            alexandria::MolProp &mb)
-{
-    std::string mma = ma.getMolname();
-    std::string mmb = mb.getMolname();
-
-    return (mma.compare(mmb) < 0);
-}
-
-//! \brief Compare MolProp by formula for sorting
-static bool comp_mp_formula(alexandria::MolProp &ma,
-                            alexandria::MolProp &mb)
-{
-    std::string fma = ma.formula();
-    std::string fmb = mb.formula();
-
-    if (fma.compare(fmb) < 0)
-    {
-        return true;
-    }
-    else
-    {
-        return comp_mp_molname(ma, mb);
-    }
-}
-
-//! \brief Global variable for sorting
-static gmx_atomprop_t my_aps;
-
-//! \brief Count how often a specific element occurs
-static int count_elements(std::map<const char *, int> comp, const char *elem)
-{
-    auto mm = comp.find(elem);
-    if (mm == comp.end())
-    {
-        return 0;
-    }
-    else
-    {
-        return mm->second;
-    }
-}
-
-//! \brief Compare MolProp by elements for sorting
-static bool comp_mp_elem(alexandria::MolProp &ma,
-                         alexandria::MolProp &mb)
-{
-    int         i;
-    auto mcia = ma.composition();
-    auto mcib = mb.composition();
-
-    if (!mcia.empty() && !mcib.empty())
-    {
-        int d = count_elements(mcia, "C") - count_elements(mcib, "C");
-        if (d < 0)
-        {
-            return true;
-        }
-        else if (d > 0)
-        {
-            return false;
-        }
-        else
-        {
-            for (i = 1; (i <= 109); i++)
-            {
-                if (i != 6)
-                {
-                    const char *ee = gmx_atomprop_element(my_aps, i);
-                    if (nullptr != ee)
-                    {
-                        d = count_elements(mcia, ee) - count_elements(mcib, ee);
-                        if (d == 0)
-                        {
-                            continue;
-                        }
-                        else
-                        {
-                            return (d < 0);
-                        }
-                    }
-                }
-            }
-        }
-    }
-    return comp_mp_molname(ma, mb);
-}
-
-//! \brief Compare MolProp by index for sorting
-static bool comp_mp_index(alexandria::MolProp &ma,
-                          alexandria::MolProp &mb)
-{
-    return (ma.getIndex() < mb.getIndex());
-}
-
-void MolPropSort(MsgHandler                                *msg_handler,
-                 std::vector<alexandria::MolProp>          *mp,
-                 MolPropSortAlgorithm mpsa, gmx_atomprop_t  apt,
-                 const MolSelect                           &gms)
-{
-    gmx::TextWriter *tw = nullptr;
-    if (msg_handler && msg_handler->debug())
-    {
-        tw = msg_handler->twDebug();
-    }
-    if (msg_handler)
-    {
-        msg_handler->write(gmx::formatString("There are %d molprops. Will now sort them.\n", (int)mp->size()));
-    }
-    if (tw)
-    {
-        for (auto mpi = mp->begin(); (mpi < mp->end()); mpi++)
-        {
-            mpi->Dump(tw);
-        }
-    }
-    switch (mpsa)
-    {
-        case MPSA_MOLNAME:
-            std::sort(mp->begin(), mp->end(), comp_mp_molname);
-            break;
-        case MPSA_FORMULA:
-            std::sort(mp->begin(), mp->end(), comp_mp_formula);
-            break;
-        case MPSA_COMPOSITION:
-            if (nullptr != apt)
-            {
-                my_aps = apt;
-                std::sort(mp->begin(), mp->end(), comp_mp_elem);
-                my_aps = nullptr;
-            }
-            else
-            {
-                gmx_fatal(FARGS, "Requesting a composition sort but atomprop is nullptr");
-            }
-            break;
-        case MPSA_SELECTION:
-            if (gms.nMol() > 0)
-            {
-                for (auto mpi = mp->begin(); mpi < mp->end(); mpi++)
-                {
-                    int index;
-                    if (!gms.index(mpi->getIupac(), &index))
-                    {
-                        gmx_fatal(FARGS, "Cannot find index for %s", mpi->getIupac().c_str());
-                    }
-                    mpi->setIndex(index);
-                }
-                std::sort(mp->begin(), mp->end(), comp_mp_index);
-            }
-            else
-            {
-                gmx_fatal(FARGS, "Need molecule selection to sort on");
-            }
-            break;
-        default:
-            gmx_incons("Invalid algorithm for MolPropSort");
-    }
-}
-
 } // namespace alexandria
-
-void splitLot(const char  *lot,
-              std::string *method,
-              std::string *basis)
-{
-    method->clear();
-    basis->clear();
-    if (nullptr != lot && strlen(lot) > 0)
-    {
-        std::vector<std::string> ll = split(lot, '/');
-        if (ll.size() == 2)
-        {
-            method->assign(ll[0]);
-            basis->assign(ll[1]);
-        }
-    }
-}
-

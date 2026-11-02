@@ -79,7 +79,6 @@ int gentop(int argc, char *argv[])
         "IUPAC names of the compounds."
     };
     gmx_output_env_t *oenv;
-    gmx_atomprop_t    aps;
 
     std::vector<t_filenm> fnm = {
         { efXML, "-ff",         "aff",       ffREAD  },
@@ -176,12 +175,6 @@ int gentop(int argc, char *argv[])
         return 1;
     }
 
-    /* Read standard atom properties */
-    aps = gmx_atomprop_init();
-    if (!msghandler.verbose())
-    {
-        gmx_atomprop_quiet(aps);
-    }
     try
     {
         readForceField(gentop_fnm, &pd, &msghandler);
