@@ -34,6 +34,7 @@
  */
 #include "mcmcmutator.h"
 
+#include <filesystem>
 #include <sys/types.h>
 #include <sys/stat.h>
 
@@ -397,7 +398,7 @@ void MCMCMutator::printNewMinimum(MsgHandler                         *msghandler
         tw->writeStringFormatted("Middleman %i ", sii_->id());
         if (evaluateTestSet_)
         {
-            tw->writeStringFormatted("iter %10g. Found new minimum at %10g. Corresponding energy on the test set: %g",
+            tw->writeStringFormatted("iter %10g. Found new minimum at %10g. Corresponding energy on the test set: %g\n",
                                      xiter, chi2.find(iMolSelect::Train)->second,
                                      chi2.find(iMolSelect::Test)->second);
         }
@@ -471,10 +472,11 @@ void MCMCMutator::openParamConvFiles(const gmx_output_env_t *oenv)
     const std::vector<std::string> &pClass = sii_->paramClass();
     for (size_t i = 0; i < pClass.size(); i++)
     {
+        // The files of each individual are in its directory
         auto fileName = gmx::formatString("%sind%d-%s-%s",
                                           sii_->prefix().c_str(), sii_->id(),
                                           pClass[i].c_str(),
-                                          sii_->xvgConv().c_str());
+                                          std::filesystem::path(sii_->xvgConv()).filename().c_str());
         gmx::FilePtr fp(xvgropen(fileName.c_str(), "Parameter convergence",
                                  "iteration", "", oenv));
         fpc_.push_back(std::move(fp));
@@ -494,8 +496,8 @@ void MCMCMutator::openParamConvFiles(const gmx_output_env_t *oenv)
 
 void MCMCMutator::openChi2ConvFile(const gmx_output_env_t *oenv)
 {
-    auto fileName = gmx::formatString("%sind%d-%s", sii_->prefix().c_str(),
-                                      sii_->id(), sii_->xvgEpot().c_str());
+    auto fileName = gmx::formatString("%sind%d-%s", sii_->prefix().c_str(), sii_->id(),
+                                      std::filesystem::path(sii_->xvgEpot()).filename().c_str());
     fpe_.reset(xvgropen(fileName.c_str(),
                         "Chi squared",
                         "Iteration",
