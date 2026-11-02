@@ -35,6 +35,7 @@
 #include "molgen.h"
 
 
+#include <algorithm>
 #include <map>
 #include <set>
 #include <vector>
@@ -261,15 +262,22 @@ void MolGen::checkDataSufficiency(MsgHandler *msghandler,
                                   ForceField *pd)
 // Called in Read method
 {
-    size_t nmol = 0;
     if (targetSize_.find(iMolSelect::Train) == targetSize_.end())
     {
         return;
     }
+    auto nTrain = [this]()
+    {
+        return std::count_if(actmol_.begin(), actmol_.end(),
+                             [](const ACTMol &m) { return m.datasetType() == iMolSelect::Train; });
+    };
+    // Removing a compound can take away the support for others, hence
+    // repeat until no more compounds are removed.
+    size_t nremoved = 0;
     do
     {
         // We check data sufficiency only for the training set
-        nmol = targetSize_.find(iMolSelect::Train)->second;
+        size_t nmol = nTrain();
         if (msghandler->verbose())
         {
             msghandler->write(gmx::formatString("Will check data sufficiency for %zu training compounds.\n",
@@ -656,9 +664,12 @@ void MolGen::checkDataSufficiency(MsgHandler *msghandler,
                                               iMolSelectName(moliter->datasetType()).c_str()));
             actmol_.erase(moliter);
         }
+        nremoved = removeMol.size();
     }
-    while (actmol_.size() > 0 && actmol_.size() < nmol);
-    msghandler->write(gmx::formatString("There are %zu molecules left to optimize the parameters for.\n", nmol));
+    while (nremoved > 0 && nTrain() > 0);
+    countTargetSize();
+    msghandler->write(gmx::formatString("There are %zu molecules left to optimize the parameters for.\n",
+                                        nTargetSize(iMolSelect::Train)));
 }
 
 //! \brief Increase warning/error message count
