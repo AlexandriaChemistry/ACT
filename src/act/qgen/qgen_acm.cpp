@@ -214,11 +214,14 @@ QgenAcm::QgenAcm(MsgHandler                 *msghandler,
                         dcf = -1;
                     }
                 }
-                if (fs.parameterExists(bccId))
+                if (!fs.parameterExists(bccId))
                 {
-                    bcc_.push_back(fs.findParametersPtrConst(bccId));
-                    dchi_factor_.push_back(dcf);
+                    // Without it, all bonds would be done without corrections
+                    eQGEN_ = eQgen::NOSUPPORT;
+                    return;
                 }
+                bcc_.push_back(fs.findParametersPtrConst(bccId));
+                dchi_factor_.push_back(dcf);
             }
         }
     }
