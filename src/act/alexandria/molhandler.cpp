@@ -99,9 +99,11 @@ void MolHandler::computeHessian(const ForceField                  *pd,
                                 std::vector<gmx::RVec>            *dpdq) const
 {
     const auto &atoms    = topology->atoms();
-    //double      stepSize = 1e-12; // nm
-#define GMX_DOUBLE_EPS 2.2204460492503131e-16
-    double stepSize = 1.0 * std::sqrt(GMX_DOUBLE_EPS);
+    // The step of the finite differences in nm. The square root of the
+    // machine precision balances the truncation error against the
+    // rounding error of the forces, in single precision a smaller step
+    // makes the Hessian useless.
+    double stepSize = std::sqrt(GMX_REAL_EPS);
 
     // The input structure first, then for each coordinate of each atom
     // the structures with that coordinate shifted down and up. They are
@@ -120,7 +122,9 @@ void MolHandler::computeHessian(const ForceField                  *pd,
             do {
                 for(int delta = 0; delta <= 1; delta++)
                 {
-                    xd[delta] = xyzRef + (2*delta-1)*myStep;
+                    // The coordinates are stored as real, the difference
+                    // is computed from the stored values
+                    xd[delta] = static_cast<real>(xyzRef + (2*delta-1)*myStep);
                 }
                 // Make sure that the coordinate is in fact chenged.
                 // If the delta is too small, numeric issues may kick
@@ -1327,6 +1331,40 @@ eMinimizeStatus MolHandler::minimizeCoordinates(MsgHandler                      
             std::swap(f, ft);
             std::swap(e, et);
         };
+        /* The energy change from x to xt. The energies are sums of many
+         * terms, with a rounding error of the machine precision times the
+         * size of the terms, which in single precision is larger than the
+         * changes close to a minimum. Smaller changes are computed from the
+         * forces with the trapezoidal rule instead, which is accurate to
+         * third order in the step.
+         */
+        auto energyChange = [&](double enew)
+        {
+            double eold  = e[InteractionType::EPOT];
+            double scale = 0;
+            for (const auto &term : e)
+            {
+                if (term.first != InteractionType::EPOT)
+                {
+                    scale += std::abs(term.second);
+                }
+            }
+            if (std::abs(enew - eold) > 10*GMX_REAL_EPS*scale)
+            {
+                return enew - eold;
+            }
+            double work = 0;
+            for (auto atom : theAtoms)
+            {
+                for (int m = 0; m < DIM; m++)
+                {
+                    work += (f[atom][m] + ft[atom][m])*(xt[atom][m] - x[atom][m]);
+                }
+            }
+            return -0.5*work;
+        };
+        // The energy along the path of the minimization, the sum of the
+        // energy changes
         double epot = evaluate(&x, &f, &e);
         double msf  = msForce(theAtoms, f);
         // The structure with the lowest energy, steepest descent may
@@ -1398,10 +1436,11 @@ eMinimizeStatus MolHandler::minimizeCoordinates(MsgHandler                      
                 double dmax  = maxDisplacement(dx);
                 double scale = (dmax > radius) ? radius/dmax : 1.0;
                 double enew  = tryStep(dx, scale);
-                if (std::isfinite(enew) && enew <= epot)
+                double de    = std::isfinite(enew) ? energyChange(enew) : enew;
+                if (std::isfinite(de) && de <= 0)
                 {
+                    epot       += de;
                     accept();
-                    epot        = enew;
                     keepBest();
                     if (noProgress >= maxNoProgress)
                     {
@@ -1485,10 +1524,11 @@ eMinimizeStatus MolHandler::minimizeCoordinates(MsgHandler                      
                 for (int halving = 0; !ok && halving < 40; halving++)
                 {
                     double enew = tryStep(d, gamma);
-                    ok = std::isfinite(enew) && enew <= eref - 1e-4*gamma*dd;
+                    double de   = std::isfinite(enew) ? energyChange(enew) : enew;
+                    ok = std::isfinite(de) && epot + de <= eref - 1e-4*gamma*dd;
                     if (ok)
                     {
-                        epot = enew;
+                        epot += de;
                     }
                     else
                     {
