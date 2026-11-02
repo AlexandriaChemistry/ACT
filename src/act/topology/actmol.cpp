@@ -1124,7 +1124,12 @@ void ACTMol::generateCharges(MsgHandler                *msghandler,
     case ChargeGenerationAlgorithm::EEM:
     case ChargeGenerationAlgorithm::SQE:
         {
-            (void) GenerateAcmCharges(msghandler, pd, forceComp, coords, forces);
+            // Without charges the compound cannot be used
+            auto imm = GenerateAcmCharges(msghandler, pd, forceComp, coords, forces);
+            if (ACTMessage::OK != imm)
+            {
+                msghandler->msg(ACTStatus::Error, imm, getMolname());
+            }
         }
         break;
     default:

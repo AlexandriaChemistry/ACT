@@ -753,6 +753,61 @@ TEST_F(GentopMissingTest, Parameter)
     EXPECT_EQ(0, status);
 }
 
+
+/* Test: Without bond charge corrections for all bonds of water, SQE gives
+ * no charges, and gentop, simulate and b2 leave water out and fail.
+ */
+TEST_F(GentopMissingTest, BondCorrection)
+{
+    ForceField pd;
+    readForceField(fileManager().getInputFilePath("ACS-g.xml"), &pd);
+    ASSERT_EQ(ChargeGenerationAlgorithm::SQE, pd.chargeGenerationAlgorithm());
+    auto   *bcc     = pd.findForces(InteractionType::BONDCORRECTIONS)->parameters();
+    size_t  nerased = 0;
+    for (auto b = bcc->begin(); b != bcc->end(); )
+    {
+        if (b->first.id() == "h_z~o3_z" || b->first.id() == "o3_z~h_z")
+        {
+            b = bcc->erase(b);
+            nerased++;
+        }
+        else
+        {
+            ++b;
+        }
+    }
+    ASSERT_GT(nerased, 0u);
+    auto ffName = fileManager().getTemporaryFilePath("nobcc.xml");
+    writeForceField(ffName, &pd, false);
+
+    std::vector<std::pair<std::string, int (*)(int, char *[])>> programs = {
+        { "gentop", gentop }, { "simulate", simulate }, { "b2", b2 }
+    };
+    for (const auto &program : programs)
+    {
+        auto logName = fileManager().getTemporaryFilePath(program.first + ".log");
+        gmx::test::CommandLine cmd;
+        cmd.append(program.first.c_str());
+        cmd.addOption("-ff", ffName);
+        cmd.addOption("-charges", fileManager().getInputFilePath("../../molprop/tests/molprop.xml"));
+        cmd.addOption("-db", "water");
+        cmd.addOption("-g", logName);
+        if (program.first == "gentop")
+        {
+            cmd.addOption("-p", fileManager().getTemporaryFilePath("water.top"));
+        }
+        else if (program.first == "simulate")
+        {
+            cmd.append("-sp");
+            cmd.addOption("-c", fileManager().getTemporaryFilePath("water.pdb"));
+        }
+        EXPECT_NE(0, program.second(cmd.argc(), cmd.argv())) << program.first;
+        std::ifstream     in(logName);
+        std::stringstream log;
+        log << in.rdbuf();
+        EXPECT_NE(std::string::npos, log.str().find("Parameters for charge generation missing: water")) << program.first;
+    }
+}
 } // namespace
 
 } // namespace alexandria
