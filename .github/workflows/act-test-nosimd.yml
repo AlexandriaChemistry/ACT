@@ -94,3 +94,4 @@ jobs:
           mpirun --oversubscribe -np 4 ./bin/properties-mpi-test
           mpirun --oversubscribe -np 4 ./bin/utility-mpi-test
           mpirun --oversubscribe -np 4 ./bin/forcefield-mpi-test
+          mpirun --oversubscribe -np 4 ./bin/molprop-mpi-test

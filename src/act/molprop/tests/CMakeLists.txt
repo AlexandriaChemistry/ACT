@@ -48,3 +48,12 @@ target_link_libraries(${exename} actLib ${GMX_EXE_LINKER_FLAGS})
 if(HAVE_LIBSQLITE3)
     target_link_libraries(${exename} SQLite::SQLite3)
 endif()
+gmx_add_mpi_unit_test(
+    MolpropMpiTests
+    molprop-mpi-test 2
+    # files with code for tests
+    molpropMpiTest.cpp
+    )
+if (TARGET molprop-mpi-test)
+    target_link_libraries(molprop-mpi-test actLib ${GMX_EXE_LINKER_FLAGS})
+endif()
