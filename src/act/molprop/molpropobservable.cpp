@@ -741,17 +741,19 @@ void ElectrostaticPotential::Dump(gmx::TextWriter *tw) const
 
 CommunicationStatus ElectrostaticPotential::Receive(const CommunicationRecord *cr, int src)
 {
-    CommunicationStatus cs = CommunicationStatus::OK;
+    CommunicationStatus cs = GenericProperty::Receive(cr, src);
 
-    if (CommunicationStatus::RECV_DATA == cr->recv_data(src))
+    if (CommunicationStatus::OK == cs &&
+        CommunicationStatus::RECV_DATA == cr->recv_data(src))
     {
         cr->recv(src, &xyzInputUnit_);
         cr->recv(src, &vInputUnit_);
         cr->recv(src, &xyzUnit_);
         cr->recv(src, &vUnit_);
-        cr->recv(src, &V_);
-        cr->recv(src, &xyz_);
+        // The same order as in Send
         cr->recv(src, &espID_);
+        cr->recv(src, &xyz_);
+        cr->recv(src, &V_);
     }
     else if (cr->mh())
     {
@@ -801,9 +803,10 @@ CommunicationStatus ElectrostaticPotential::BroadCast(const CommunicationRecord 
 
 CommunicationStatus ElectrostaticPotential::Send(const CommunicationRecord *cr, int dest) const
 {
-    CommunicationStatus cs = CommunicationStatus::OK;
+    CommunicationStatus cs = GenericProperty::Send(cr, dest);
 
-    if (CommunicationStatus::SEND_DATA == cr->send_data(dest))
+    if (CommunicationStatus::OK == cs &&
+        CommunicationStatus::SEND_DATA == cr->send_data(dest))
     {
         cr->send(dest, xyzInputUnit_);
         cr->send(dest, vInputUnit_);
