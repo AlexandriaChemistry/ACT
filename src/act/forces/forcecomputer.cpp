@@ -2151,20 +2151,18 @@ void ForceComputer::plot(MsgHandler        *msghandler,
                         vv.push_back(ener);
                         ff.push_back(forces[0][0]);
                     }
-                    // Check whether force is derivative of energy
-                    for(size_t i = 1; i < vv.size()-1; i++)
+                    // Check whether the force is the derivative of the energy.
+                    // The five point difference is accurate enough also where
+                    // the potential is steep, and the absolute tolerance
+                    // keeps the check meaningful where the force is zero.
+                    for(size_t i = 2; i+2 < vv.size(); i++)
                     {
-                        if (std::abs(ff[i]) > 1e-6)
+                        double fnumeric = (8*(vv[i+1]-vv[i-1]) - (vv[i+2]-vv[i-2]))/(12*delta);
+                        if (std::abs(fnumeric-ff[i]) > 1e-2*std::abs(ff[i]) + 1e-6)
                         {
-                            double fnumeric = (vv[i+1]-vv[i-1])/(2*delta);
-                            double relerror = (fnumeric-ff[i])/ff[i];
-                            if (std::abs(relerror) > 1e-1)
-                            {
-                                printf("%s: Force %g, expected %g. Relative error %g, r = %g v+ %g v- %g delta %g\n",
-                                       filename.c_str(),
-                                       ff[i], fnumeric, relerror, rr[i],
-                                       vv[i+1], vv[i-1], 2*delta);
-                            }
+                            msghandler->msg(ACTStatus::Warning,
+                                            gmx::formatString("%s: Force %g at r = %g, the derivative of the energy is %g",
+                                                              filename.c_str(), ff[i], rr[i], fnumeric));
                         }
                     }
                 }
