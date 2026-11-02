@@ -35,7 +35,6 @@
 #ifndef ACT_TOPOLOGY_H
 #define ACT_TOPOLOGY_H
 
-#include <cstdio>
 #include <map>
 #include <set>
 #include <vector>
@@ -472,11 +471,6 @@ private:
      * \throws if itype is not found 
      */
     const std::vector<std::vector<int>> &exclusions(InteractionType itype) const;
-
-    /*! \brief Print structure to a file
-     * \param[in] fp The file pointer
-     */
-    void dump(FILE *fp) const;
 
     /*! \brief Print structure using a TextWriter for debug output
      * \param[in] tw The TextWriter for debug output

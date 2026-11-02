@@ -1773,26 +1773,6 @@ std::vector<std::set<size_t>> Topology::generateExclusions(MsgHandler *msghandle
     return exclusions;
 }
 
-void Topology::dump(FILE *fp) const
-{
-    if (nullptr == fp)
-    {
-        return;
-    }
-    for(auto &myEntry: entries_)
-    {
-        fprintf(fp, "%s\n", interactionTypeToString(myEntry.first).c_str());
-        for (auto &tt : myEntry.second)
-        {
-            for(auto &aa : tt->atomIndices())
-            {
-                fprintf(fp, " %d", aa+1);
-            }
-            fprintf(fp, "\n");
-        }
-    }
-}
-
 void Topology::dump(gmx::TextWriter *tw) const
 {
     if (nullptr == tw)
