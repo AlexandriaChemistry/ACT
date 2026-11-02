@@ -387,6 +387,92 @@ TEST_F(WaterB2Test, ReferenceHF14_7)
     testReference("HF-LJ14-7.xml", "hydrogen-fluoride#hydrogen-fluoride.pdb", 64);
 }
 
+/*! \brief Check the generated dimers written by b2
+ * Each orientation is written at all distances, with the second compound
+ * 0.1 nm further away from the first at each next distance.
+ * \param[in] fileName The xyz file
+ * \param[in] nDimer   Number of orientations
+ * \param[in] nDist    Number of distances
+ */
+void checkDimers(const std::string &fileName, int nDimer, int nDist)
+{
+    // Each structure has the number of atoms, a title with its number
+    // and the atoms with their coordinates in Angstrom
+    std::ifstream                                 in(fileName);
+    std::vector<int>                              number;
+    std::vector<std::vector<std::vector<double>>> x;
+    for (std::string line; std::getline(in, line); )
+    {
+        std::istringstream iss(line);
+        std::string        word;
+        iss >> word;
+        if (word == "Conformation")
+        {
+            int n;
+            iss >> n;
+            number.push_back(n);
+            x.push_back({});
+        }
+        else if (!x.empty())
+        {
+            double xx, yy, zz;
+            if (iss >> xx >> yy >> zz)
+            {
+                x.back().push_back({ xx, yy, zz });
+            }
+        }
+    }
+    ASSERT_EQ(static_cast<size_t>(nDimer*nDist), x.size()) << fileName;
+    for (size_t i = 0; i < x.size(); i++)
+    {
+        EXPECT_EQ(static_cast<int>(i), number[i]);
+        ASSERT_EQ(6u, x[i].size()) << "structure " << i;
+        if (i % nDist == 0)
+        {
+            continue;
+        }
+        for (size_t a = 0; a < 6; a++)
+        {
+            double d2 = 0;
+            for (int m = 0; m < 3; m++)
+            {
+                d2 += std::pow(x[i][a][m] - x[i-1][a][m], 2);
+            }
+            EXPECT_NEAR(a < 3 ? 0 : 1, std::sqrt(d2), 1e-4) << "structure " << i << " atom " << a;
+        }
+    }
+}
+
+// Test: The dimers generated on all ranks are written by the master
+TEST_F(WaterB2Test, OutputDimers)
+{
+    int  nDimer = 12, nDist = 9;
+    // The structures are written in xyz format whatever the extension
+    auto output = fileManager().getTemporaryFilePath("dimers.pdb");
+    gmx::test::CommandLine cmd;
+    cmd.append("b2");
+    cmd.addOption("-ff", fileManager().getInputFilePath("SPCE.xml"));
+    cmd.addOption("-f", fileManager().getInputFilePath("../../alexandria/tests/mols/water_dimer.pdb"));
+    cmd.addOption("-mindist", 0.2);
+    cmd.addOption("-maxdist", 1.0);
+    cmd.addOption("-ndist", nDist);
+    cmd.addOption("-maxdimer", nDimer);
+    cmd.addOption("-randalg", "Sobol");
+    cmd.addOption("-T1", 300.0);
+    cmd.addOption("-T2", 300.0);
+    cmd.addOption("-ox", output);
+    cmd.addOption("-b2", fileManager().getTemporaryFilePath("B2T.xvg"));
+    cmd.addOption("-g", fileManager().getTemporaryFilePath("b2.log"));
+    EXPECT_EQ(0, b2(cmd.argc(), cmd.argv()));
+    if (gmx_node_rank() == 0)
+    {
+        auto xyz = output.substr(0, output.rfind('.')) + ".xyz";
+        checkDimers(xyz, nDimer, nDist);
+        std::remove(xyz.c_str());
+    }
+    barrier();
+}
+
 } // namespace
 
 } // namespace alexandria
