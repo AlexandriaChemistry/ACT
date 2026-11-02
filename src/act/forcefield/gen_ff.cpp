@@ -646,6 +646,14 @@ int gen_ff(int argc, char*argv[])
                     {
                         pname.second.setNonNegative();
                     }
+                    if (bPoint && ap->first == InteractionType::ELECTROSTATICS && pname.first == "zeta")
+                    {
+                        // Point charges have no width
+                        pname.second.setMinimum(0);
+                        pname.second.setMaximum(0);
+                        pname.second.setValue(0);
+                        pname.second.setMutability(Mutability::Fixed);
+                    }
                     ffpl[ap->first].addParameter(key, pname.first, pname.second);
                 }
             }
