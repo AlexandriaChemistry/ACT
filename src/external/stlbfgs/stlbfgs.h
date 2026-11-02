@@ -19,6 +19,7 @@ namespace STLBFGS {
         struct IHessian { // L-BFGS approximates inverse Hessian matrix by storing a limited history of past updates
             void mult(const vector &g, vector &result) const; // matrix-vector multiplication
             void add_correction(const vector &s, const vector &y);
+            void reset() { S.clear(); Y.clear(); } // forget the history
 
             const int history_depth;
             const bool m1qn3_precond;

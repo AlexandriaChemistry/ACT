@@ -33,6 +33,12 @@ namespace STLBFGS {
         assert(static_cast<int>(y.size()) == n);
         assert(!m || n==static_cast<int>(S[0].size()));
 
+        // A pair that violates the curvature condition would make the
+        // approximation indefinite, such that it is skipped
+        if (!(dot(y, s) > 1e-10*norm(y)*norm(s))) {
+            return;
+        }
+
         if (m==history_depth) {
             S.pop_back();
             Y.pop_back();
@@ -134,6 +140,11 @@ namespace STLBFGS {
             }
 
             invH.mult(g, p);
+            if (!(-dot(g, p)<0)) {
+                // Not a descent direction, start again from steepest descent
+                invH.reset();
+                p = g;
+            }
             assert(-dot(g, p)<0);
 
             double fprev = f;
