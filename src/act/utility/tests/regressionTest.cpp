@@ -37,6 +37,7 @@
 
 #include <cmath>
 #include <cstdlib>
+#include <utility>
 
 #include <gtest/gtest.h>
 
@@ -226,3 +227,48 @@ TEST_F (RegressionTest, Fail_A_x_is_B)
 #undef NROW
 }
 
+//! \return a matrix of which the elements are their column and row number
+static MatrixWrapper numbered(int ncol, int nrow)
+{
+    MatrixWrapper m(ncol, nrow);
+    for (int c = 0; c < ncol; c++)
+    {
+        for (int r = 0; r < nrow; r++)
+        {
+            m.set(c, r, 10*c + r);
+        }
+    }
+    return m;
+}
+
+//! Check the dimensions and elements of a numbered matrix
+static void expectNumbered(const MatrixWrapper &m, int ncol, int nrow)
+{
+    ASSERT_EQ(ncol, m.nColumn());
+    ASSERT_EQ(nrow, m.nRow());
+    for (int c = 0; c < ncol; c++)
+    {
+        for (int r = 0; r < nrow; r++)
+        {
+            EXPECT_EQ(10*c + r, m.get(c, r)) << c << " " << r;
+        }
+    }
+}
+
+// Test: Copies and moves of a matrix, also assigned to a matrix of another
+// size, have the dimensions and elements of the original
+TEST(MatrixWrapperTest, CopyAndMove)
+{
+    auto a = numbered(3, 2);
+    MatrixWrapper copy(a);
+    expectNumbered(copy, 3, 2);
+    MatrixWrapper moved(std::move(copy));
+    expectNumbered(moved, 3, 2);
+    MatrixWrapper assigned(1, 4);
+    assigned = a;
+    expectNumbered(assigned, 3, 2);
+    expectNumbered(a, 3, 2);
+    MatrixWrapper moveAssigned(5, 5);
+    moveAssigned = numbered(2, 3);
+    expectNumbered(moveAssigned, 2, 3);
+}
