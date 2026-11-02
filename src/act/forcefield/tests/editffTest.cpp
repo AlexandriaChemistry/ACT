@@ -273,18 +273,27 @@ TEST_F(EditFFTest, Dump)
 
 /*! \brief A second force field, with other values and without some parameters
  * Chi of h_z is 4 and that of f_z 6, within their bounds, the EEM
- * parameters of i_z are missing.
- * \param[in] input  The force field to start from
- * \param[in] output Where to write the result
+ * parameters of i_z are missing unless withIodine, then its chi is 5.
+ * \param[in] input      The force field to start from
+ * \param[in] output     Where to write the result
+ * \param[in] withIodine Whether to keep the EEM parameters of i_z
  */
-static void writeSecondForceField(const std::string &input, const std::string &output)
+static void writeSecondForceField(const std::string &input, const std::string &output,
+                                  bool withIodine = false)
 {
     ForceField pd;
     readForceField(input, &pd);
     auto eem = pd.findForces(InteractionType::ELECTRONEGATIVITYEQUALIZATION);
     eem->findParameterType(Identifier("h_z"), "chi")->setValue(4);
     eem->findParameterType(Identifier("f_z"), "chi")->setValue(6);
-    eem->parameters()->erase(Identifier("i_z"));
+    if (withIodine)
+    {
+        eem->findParameterType(Identifier("i_z"), "chi")->setValue(5);
+    }
+    else
+    {
+        eem->parameters()->erase(Identifier("i_z"));
+    }
     writeForceField(output, &pd, false);
 }
 
@@ -304,11 +313,11 @@ TEST_F(EditFFTest, CopyMissing)
 TEST_F(EditFFTest, Replace)
 {
     auto second = fileManager().getTemporaryFilePath("second.xml");
-    writeSecondForceField(input_, second);
+    writeSecondForceField(input_, second, true);
     auto pd = read(run(input_, { { "-ff2", second }, { "-replace", "EEM" } }));
     EXPECT_DOUBLE_EQ(4, acm(pd, "h_z", "chi").value());
     EXPECT_DOUBLE_EQ(6, acm(pd, "f_z", "chi").value());
-    EXPECT_FALSE(pd.findForcesConst(InteractionType::ELECTRONEGATIVITYEQUALIZATION).parameterExists(Identifier("i_z")));
+    EXPECT_DOUBLE_EQ(5, acm(pd, "i_z", "chi").value());
 }
 
 // Test: Only the given parameter of the given identifier is implanted from a

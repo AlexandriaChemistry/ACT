@@ -1079,30 +1079,19 @@ void ForceField::checkConsistency(MsgHandler *msgHandler) const
         else
         {
             auto acmtype = atp.second.interactionTypeToIdentifier(InteractionType::ELECTRONEGATIVITYEQUALIZATION);
-            // Check whether zeta types are present
+            // Check whether the ACM parameters are present
             if (!eem.parameterExists(acmtype))
             {
                 if (msgHandler)
                 {
-                    msgHandler->msg(ACTStatus::Warning,
-                                    gmx::formatString("ERROR: No eemprops for %s in ForceField::checkConsistency\n",
-                                                      acmtype.id().c_str()));
+                    msgHandler->msg(ACTStatus::Error,
+                                    gmx::formatString("No %s parameters for %s of particletype %s in %s",
+                                                      interactionTypeToString(itype).c_str(),
+                                                      acmtype.id().c_str(),
+                                                      atp.second.id().id().c_str(),
+                                                      filename().c_str()));
                 }
                 nerror += 1;
-            }
-            else
-            {
-                auto eep = eem.findParameterMapConst(acmtype);
-                double chi0 = eep["chi"].value();
-                double J00  = eep["eta"].value();
-                double zeta = 0;
-                int    row  = eep["row"].value();
-                double q    = eep["charge"].value();
-                if (msgHandler)
-                {
-                    msgHandler->write(gmx::formatString("chi0 %g eta %g row %d zeta %g q %g\n",
-                                                        chi0, J00, row, zeta, q));
-                }
             }
         }
     }

@@ -205,15 +205,16 @@ int merge_ff(int argc, char *argv[])
     /* Read all the gentop files. */
     auto filenames = opt2fns("-ff", fnm.size(), fnm.data());
     
+    // The force fields need not be complete, but the merged one has to be
     for (auto &i : filenames)
     {
         alexandria::ForceField pd;
-        readForceField(i.c_str(), &pd);
+        readForceField(i.c_str(), &pd, nullptr, true, false);
         pds.push_back(std::move(pd));
     }    
 
     // Copy the first gentop file into pdout
-    readForceField(filenames[0].c_str(), &pdout);
+    readForceField(filenames[0].c_str(), &pdout, nullptr, true, false);
 
     // Let's see what parameters to handle
     std::vector<std::string> allparams;
@@ -257,6 +258,7 @@ int merge_ff(int argc, char *argv[])
     }
 
     bool printSigma = filenames.size() > 1;
+    pdout.checkConsistency(nullptr);
     writeForceField(opt2fn("-o", fnm.size(), fnm.data()), &pdout, bcompress);
     if (opt2bSet("-latex", fnm.size(), fnm.data()))
     {

@@ -564,7 +564,8 @@ static void processTree(MsgHandler           *msgHandler,
 void readForceField(const std::string &fileName,
                     ForceField        *pd,
                     MsgHandler        *msgHandler,
-                    bool               convert)
+                    bool               convert,
+                    bool               check)
 {
     xmlDocPtr   doc;
     std::string fn, fn2;
@@ -615,8 +616,12 @@ void readForceField(const std::string &fileName,
     }
     // Generate maps
     pd->checkForPolarizability();
-    pd->checkConsistency(msgHandler);
+    // The consistency depends on the charge generation algorithm
     pd->guessChargeGenerationAlgorithm();
+    if (check)
+    {
+        pd->checkConsistency(msgHandler);
+    }
     generateDependentParameter(msgHandler, pd, true);
     if (msgHandler && msgHandler->debug())
     {

@@ -887,11 +887,16 @@ int edit_ff(int argc, char*argv[])
     msghandler.optionsFinished(fnm, &cr);
 
     ForceField pd;
+    // A force field that is repaired with parameters of a second one need
+    // not be consistent before, but it has to be afterwards.
+    bool repair = (opt2bSet("-ff2", fnm.size(), fnm.data()) &&
+                   (strlen(missing) > 0 || strlen(replace) > 0 || strlen(implant) > 0));
     if (cr.isMaster())
     {
         try 
         {
-            alexandria::readForceField(opt2fn("-ff", fnm.size(), fnm.data()), &pd, &msghandler);
+            alexandria::readForceField(opt2fn("-ff", fnm.size(), fnm.data()), &pd, &msghandler,
+                                       true, !repair);
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
         (void) pd.verifyCheckSum(&msghandler, forcefieldCheckSum(&pd));
@@ -900,22 +905,32 @@ int edit_ff(int argc, char*argv[])
             alexandria::ForceField pd2;
             try
             {
-                alexandria::readForceField(opt2fn("-ff2", fnm.size(), fnm.data()), &pd2, &msghandler);
+                // The second force field is only a source of parameters
+                alexandria::readForceField(opt2fn("-ff2", fnm.size(), fnm.data()), &pd2, &msghandler,
+                                           true, false);
             }
             GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
             (void) pd2.verifyCheckSum(&msghandler, forcefieldCheckSum(&pd2));
             
-            if (strlen(missing) > 0)
+            if (repair)
             {
-                copy_missing(&pd2, &pd, missing, false);
-            }
-            else if (strlen(replace) > 0)
-            {
-                copy_missing(&pd2, &pd, replace, true);
-            }
-            else if (strlen(implant) > 0)
-            {
-                implant_values(&pd2, &pd, implant, particle, parameter, verbose);
+                if (strlen(missing) > 0)
+                {
+                    copy_missing(&pd2, &pd, missing, false);
+                }
+                else if (strlen(replace) > 0)
+                {
+                    copy_missing(&pd2, &pd, replace, true);
+                }
+                else
+                {
+                    implant_values(&pd2, &pd, implant, particle, parameter, verbose);
+                }
+                try
+                {
+                    pd.checkConsistency(&msghandler);
+                }
+                GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
             }
             else
             {
