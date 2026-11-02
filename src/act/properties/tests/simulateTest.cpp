@@ -247,8 +247,12 @@ protected:
         return epot;
     }
 
-    //! \return the potential energy of a single point calculation from its log file
-    static double singlePointEpot(const std::string &log)
+    /*! \brief An energy of a single point calculation from its log file
+     * \param[in] log  The log file
+     * \param[in] term The energy term
+     * \return the energy
+     */
+    static double singlePointEnergy(const std::string &log, const std::string &term = "EPOT")
     {
         std::ifstream in(log);
         for (std::string line; std::getline(in, line); )
@@ -256,12 +260,12 @@ protected:
             std::istringstream iss(line);
             std::string        word, valueWord;
             double             value;
-            if (iss >> word >> valueWord >> value && word == "EPOT:")
+            if (iss >> word >> valueWord >> value && word == term + ":")
             {
                 return value;
             }
         }
-        ADD_FAILURE() << "No potential energy in " << log;
+        ADD_FAILURE() << "No energy " << term << " in " << log;
         return 0;
     }
 
@@ -416,6 +420,48 @@ TEST_F(SimulateTest, Reproducibility)
     EXPECT_NE(xvg[0].rows[last][cEkin], xvg[2].rows[last][cEkin]);
 }
 
+// Test: MD of a water dimer with shells and virtual sites. The induction
+// energy at the start is that of a single point calculation, and with rigid
+// molecules, as the model is meant, the energy is conserved. The flexible
+// model needs much shorter time steps.
+TEST_F(SimulateTest, MDShells)
+{
+    auto ffFile = fileManager().getInputFilePath("SWM4-NDP.xml");
+    SimulateFiles sp;
+    auto cmdsp = baseCommand("water_dimer.pdb", "shells-sp", &sp, ffFile);
+    cmdsp.append("-sp");
+    ASSERT_EQ(0, run(&cmdsp));
+
+    SimulateFiles rigid;
+    auto cmdr = baseCommand("water_dimer.pdb", "shells-rigid", &rigid, ffFile);
+    addMD(&cmdr, 300, 1993);
+    cmdr.addOption("-constrain", "angles");
+    ASSERT_EQ(0, run(&cmdr));
+    auto xvgr = readXvg(rigid.energy);
+    checkConservation(xvgr);
+    int  cetot = xvgr.column("ETOT");
+    ASSERT_GT(cetot, 0);
+    for (const auto &row : xvgr.rows)
+    {
+        EXPECT_NEAR(xvgr.rows[0][cetot], row[cetot], 1e-2) << "time " << row[0];
+    }
+
+    SimulateFiles md;
+    auto cmd = baseCommand("water_dimer.pdb", "shells-md", &md, ffFile);
+    addMD(&cmd, 300, 1993);
+    ASSERT_EQ(0, run(&cmd));
+    auto xvg  = readXvg(md.energy);
+    int  cind = xvg.column("INDUCTION");
+    ASSERT_GT(cind, 0);
+    ASSERT_FALSE(xvg.rows.empty());
+    // The single point energy is printed with four decimals
+    EXPECT_NEAR(singlePointEnergy(sp.log, "INDUCTION"), xvg.rows[0][cind], 1e-3);
+    for (const auto &row : xvg.rows)
+    {
+        EXPECT_LT(row[cind], 0) << "time " << row[0];
+    }
+}
+
 // Test: Rerunning the trajectory of a simulation of the water dimer gives
 // the potential energies of the simulation, for the frames written
 TEST_F(SimulateTest, Rerun)
@@ -466,7 +512,7 @@ TEST_F(SimulateTest, RerunShellsVsites)
         auto epot = rerunEpot(rerun.log);
         ASSERT_EQ(1u, epot.size()) << model;
         // The single point energy is printed with four decimals
-        EXPECT_NEAR(singlePointEpot(sp.log), epot[0], 1e-3) << model;
+        EXPECT_NEAR(singlePointEnergy(sp.log), epot[0], 1e-3) << model;
     }
 }
 
