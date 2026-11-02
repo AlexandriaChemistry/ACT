@@ -252,13 +252,17 @@ TEST_F(EditFFTest, Limits)
     }
 }
 
-// Test: Stretching the bounds of a parameter at its minimum
+// Test: Stretching the bounds of a parameter at its minimum or maximum
 TEST_F(EditFFTest, Stretch)
 {
     auto atMinimum = run(input_, { { "-p", "chi" }, { "-a", "h_z" }, { "-min", "3.5" } }, "minimum.xml");
     auto pd        = read(run(atMinimum, { { "-p", "chi" }, { "-a", "h_z" }, { "-stretch", "" } }));
     // The range of 3.5 to 4.375 is extended by a fifth below
     expectRange(acm(pd, "h_z", "chi"), 3.5 - 0.2*0.875, 3.5, 4.375);
+    auto atMaximum = run(input_, { { "-p", "chi" }, { "-a", "h_z" }, { "-val", "7" } }, "maximum.xml");
+    pd             = read(run(atMaximum, { { "-p", "chi" }, { "-a", "h_z" }, { "-stretch", "" } }, "stretched.xml"));
+    // The range of 2.8 to 7 is extended by a fifth above
+    expectRange(acm(pd, "h_z", "chi"), 2.8, 7, 7 + 0.2*4.2);
 }
 
 // Test: A fixed parameter only changes with -force, without changes no file
