@@ -218,6 +218,25 @@ TEST_F(TrainFFMpiTest, MCMCIntraBooze)
     runAndCheck("halgren-PG.xml", "booze-mono", options, 0);
 }
 
+// Test: MCMC with two individuals, on four cores each has a helper that
+// computes part of the compounds. The reference data are from a run on
+// two cores without helpers, such that the helpers give the same result.
+TEST_F(TrainFFMpiTest, MCMCHelpers)
+{
+    auto options = combine(gaOptions("MCMC", 1), mcmcOptions(2));
+    for (auto &o : options)
+    {
+        if (o.first == "-pop_size")
+        {
+            o.second = "2";
+        }
+    }
+    options.push_back({ "-fit", "De b c bondenergy kb bondlength angle kt c1 c2 c3 c4 c5" });
+    options.push_back({ "-fc_epot", "1" });
+    options.push_back({ "-fc_force", "0.1" });
+    runAndCheck("halgren-PG.xml", "booze-mono", options, 0);
+}
+
 } // namespace
 
 } // namespace alexandria
