@@ -114,7 +114,13 @@ eMinimizeStatus minimizeMolecule(MsgHandler                    *msghandler,
     MolHandler molhandler;
     auto eMin = molhandler.minimizeCoordinates(msghandler, pd, actmol->topology(), forceComp, sch,
                                                xmin, &energies, freeze);
-    if (eMinimizeStatus::OK == eMin)
+    if (minimizationDidNotConverge(eMin))
+    {
+        msghandler->msg(ACTStatus::Warning,
+                        gmx::formatString("Minimization did not converge: %s. The results are those of the structure with the lowest energy.",
+                                          eMinimizeStatusToString(eMin).c_str()));
+    }
+    if (eMinimizeStatus::OK == eMin || minimizationDidNotConverge(eMin))
     {
         auto rmsd = molhandler.coordinateRmsd(actmol->atomsConst(), coords, xmin);
         msghandler->msg(ACTStatus::Info,
@@ -282,7 +288,8 @@ int minimize(int argc, char *argv[])
                                  opt2fn_null("-freeze", fnm.size(), fnm.data()),
                                  &actmol, &xmin, &jtree);
     int status = 0;
-    if (eMinimizeStatus::OK == eMin)
+    // Also without convergence the structure with the lowest energy is written
+    if (eMinimizeStatus::OK == eMin || minimizationDidNotConverge(eMin))
     {
         matrix box = { { 2, 0, 0 }, { 0, 2, 0 }, { 0, 0, 2 } };
         actmol.PrintConformation(opt2fn("-c", fnm.size(), fnm.data()), xmin,
@@ -296,7 +303,14 @@ int minimize(int argc, char *argv[])
             MolPropWrite(omp, mpt, false);
         }
     }
-    else
+    if (minimizationDidNotConverge(eMin))
+    {
+        fprintf(stderr, "Minimization did not converge: %s, the structure with the lowest energy is written, check log file %s\n",
+                eMinimizeStatusToString(eMin).c_str(),
+                msghandler.filename().c_str());
+        status = 1;
+    }
+    else if (eMinimizeStatus::OK != eMin)
     {
         fprintf(stderr, "Minimization failed: %s, check log file %s\n",
                 eMinimizeStatusToString(eMin).c_str(),

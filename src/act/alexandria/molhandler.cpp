@@ -781,6 +781,10 @@ private:
     const std::vector<int>             theAtoms_;
     //! Constraints, or nullptr if there are none
     Constrainer                       *constrainer_;
+    //! The lowest energy found
+    double                             bestEnergy_ = std::numeric_limits<double>::max();
+    //! The coordinates with the lowest energy, empty if there are none
+    std::vector<gmx::RVec>             bestCoords_;
 public:
     //! Constructor
     StlbfgsHandler(const ForceField       *pd,
@@ -826,6 +830,21 @@ public:
 
     //! \return the constraints, or nullptr if there are none
     Constrainer *constrainer() const { return constrainer_; }
+
+    /*! \brief Store the current coordinates if their energy is the lowest
+     * \param[in] epot The potential energy of the current coordinates
+     */
+    void storeIfBest(double epot)
+    {
+        if (std::isfinite(epot) && epot < bestEnergy_)
+        {
+            bestEnergy_ = epot;
+            bestCoords_ = coords_;
+        }
+    }
+
+    //! \return the coordinates with the lowest energy, empty if there are none
+    const std::vector<gmx::RVec> &bestCoordinates() const { return bestCoords_; }
 
     //! \brief print force on frozen atom
     void printFrozenForce(gmx::TextWriter *tw, const std::vector<int> &myFreeze)
@@ -924,6 +943,10 @@ static void func(const std::vector<double> &x, double &f, std::vector<double> &g
         lbfgs->constrainer()->projectForces(lbfgs->mh(), *coords, forces);
     }
     f  = lbfgs->energy(InteractionType::EPOT) + penalty;
+    if (0 == penalty)
+    {
+        lbfgs->storeIfBest(f);
+    }
     jj = 0;
     rvec   fsum = { 0, 0, 0 };
     double fmax = 0;
@@ -1164,6 +1187,8 @@ eMinimizeStatus MolHandler::minimizeCoordinates(MsgHandler                      
     newCoords[1] = xstart;
     std::map<InteractionType, double> newEnergies[2];
     int current = 0;
+    // Why the minimization did not converge
+    auto failure = eMinimizeStatus::TooManySteps;
     if (simConfig.minAlg() == eMinimizeAlgorithm::LBFGS)
     {
         lbfgs = new StlbfgsHandler(pd, msghandler, topology, forceComp, theAtoms, xstart,
@@ -1187,6 +1212,9 @@ eMinimizeStatus MolHandler::minimizeCoordinates(MsgHandler                      
         opt.gtol    = 0.9*std::sqrt(simConfig.forceTolerance()*theAtoms.size())/std::max(1.0, std::sqrt(xnorm));
         opt.ftol    = 1e-12;
         opt.verbose = msghandler->verbose();
+        // Zero is until convergence
+        opt.maxiter = simConfig.maxIter() > 0 ? simConfig.maxIter() : std::numeric_limits<int>::max();
+        bool reachedMaxIter = false;
 
         // One-dimensional array
         std::vector<double>                     sx(theAtoms.size()*DIM);
@@ -1219,6 +1247,7 @@ eMinimizeStatus MolHandler::minimizeCoordinates(MsgHandler                      
             // the precision, then the structure is a minimum if the forces
             // are within the tolerance
             bool done = opt.run(sx);
+            reachedMaxIter = reachedMaxIter || opt.niter >= opt.maxiter;
             // Final minimization for shells.
             lbfgs->forceComp()->compute(msghandler, lbfgs->pd(), topology,
                                         lbfgs->coordinates(),
@@ -1252,6 +1281,19 @@ eMinimizeStatus MolHandler::minimizeCoordinates(MsgHandler                      
         }
         // Only a stored structure is a minimum
         converged = haveMinimum;
+        if (!converged)
+        {
+            failure = reachedMaxIter ? eMinimizeStatus::TooManySteps : eMinimizeStatus::NoMinimum;
+            if (!lbfgs->bestCoordinates().empty())
+            {
+                // The structure with the lowest energy, although it is not
+                // a minimum, with relaxed shells
+                newCoords[current] = lbfgs->bestCoordinates();
+                std::vector<gmx::RVec> forces(newCoords[current].size());
+                forceComp->compute(msghandler, pd, topology, &newCoords[current],
+                                   &forces, &newEnergies[current]);
+            }
+        }
         // If applicable, print the force between the frozen two atoms
         lbfgs->printFrozenForce(msghandler->tw(), myFreeze);
 
@@ -1287,6 +1329,35 @@ eMinimizeStatus MolHandler::minimizeCoordinates(MsgHandler                      
         };
         double epot = evaluate(&x, &f, &e);
         double msf  = msForce(theAtoms, f);
+        // The structure with the lowest energy, steepest descent may
+        // accept steps that increase the energy
+        double                            bestEpot     = epot;
+        std::vector<gmx::RVec>            bestX        = x;
+        std::map<InteractionType, double> bestEnergies = e;
+        // Steps since the lowest energy decreased more than the precision
+        // of the energy, a sum of many terms, as with L-BFGS
+        int  noProgress = 0;
+        auto keepBest = [&]()
+        {
+            if (bestEpot - epot > 1e-12*std::max({ std::abs(bestEpot), std::abs(epot), 1.0 }))
+            {
+                noProgress = 0;
+            }
+            else
+            {
+                noProgress += 1;
+            }
+            if (epot < bestEpot)
+            {
+                bestEpot     = epot;
+                bestX        = x;
+                bestEnergies = e;
+            }
+        };
+        // The number of steps without progress after which there is no
+        // minimum. Steepest descent may accept steps that increase the
+        // energy, and needs more of them.
+        const int maxNoProgress = simConfig.minAlg() == eMinimizeAlgorithm::Newton ? 10 : 100;
         if (energies)
         {
             *energies = e;
@@ -1331,6 +1402,12 @@ eMinimizeStatus MolHandler::minimizeCoordinates(MsgHandler                      
                 {
                     accept();
                     epot        = enew;
+                    keepBest();
+                    if (noProgress >= maxNoProgress)
+                    {
+                        failure = eMinimizeStatus::NoMinimum;
+                        break;
+                    }
                     haveHessian = false;
                     radius      = std::min(maxRadius, 2*radius);
                     mu         /= 10;
@@ -1346,7 +1423,8 @@ eMinimizeStatus MolHandler::minimizeCoordinates(MsgHandler                      
                     mu      = std::max(10*mu, 1e-6*newton.largestEigenvalue());
                     if (radius < 1e-9)
                     {
-                        return eMinimizeStatus::NoMinimum;
+                        failure = eMinimizeStatus::NoMinimum;
+                        break;
                     }
                 }
                 myIter += 1;
@@ -1419,11 +1497,18 @@ eMinimizeStatus MolHandler::minimizeCoordinates(MsgHandler                      
                 }
                 if (!ok)
                 {
-                    return eMinimizeStatus::NoMinimum;
+                    failure = eMinimizeStatus::NoMinimum;
+                    break;
                 }
                 xprev = xcur;
                 dprev = d;
                 accept();
+                keepBest();
+                if (noProgress >= maxNoProgress)
+                {
+                    failure = eMinimizeStatus::NoMinimum;
+                    break;
+                }
                 last.push_back(epot);
                 if (last.size() > nlast)
                 {
@@ -1435,25 +1520,18 @@ eMinimizeStatus MolHandler::minimizeCoordinates(MsgHandler                      
                 printEnergies(msghandler->tw(), myIter, msf, 0, 0, e, gamma);
             }
         }
-        newCoords[current]   = x;
-        newEnergies[current] = e;
+        // A converged structure is the last one, which may not have the
+        // lowest energy with steepest descent
+        newCoords[current]   = converged ? x : bestX;
+        newEnergies[current] = converged ? e : bestEnergies;
     }
-    if (converged)
+    // Also if it is not a minimum, the structure with the lowest energy
+    *coords = newCoords[current];
+    if (energies && !newEnergies[current].empty())
     {
-        *coords   = newCoords[current];
-        if (energies && !newEnergies[current].empty())
-        {
-            *energies = newEnergies[current];
-        }
-        // Re-compute the energy one last time.
-        //! \todo: is this really needed?
-        // (void) forceComp->compute(pd, mol->topology(), coords, &forces[current], energies);
-        return eMinimizeStatus::OK;
+        *energies = newEnergies[current];
     }
-    else
-    {
-        return eMinimizeStatus::TooManySteps;
-    }
+    return converged ? eMinimizeStatus::OK : failure;
 }
 
 double MolHandler::coordinateRmsd(const std::vector<ActAtom>   &myatoms,

@@ -419,7 +419,7 @@ void SimulationConfigHandler::add_options(std::vector<t_pargs>             *parg
         { "-sp", FALSE, etBOOL, {&singlePoint_},
           "Do a single point energy calculation and call it a day." },
         { "-minimize", FALSE, etBOOL, {&minimize_},
-          "Minimize the energy with respect to input coordinates." }
+          "Minimize the energy with respect to input coordinates. With simulate, MD only follows if the minimization converges, see -maxiter and -toler." }
     };
     for(auto &i : extra)
     {
@@ -439,7 +439,7 @@ void SimulationConfigHandler::add_minimize_options(std::vector<t_pargs> *pargs,
         { "-minalg",   FALSE, etENUM, {&eminAlgs}, 
           "Algorithm to use for minimization. LBFGS is usually the fastest. Newton uses the Hessian, computed from the forces, and converges in few steps, which are expensive for large molecules. Steep is steepest descent, which needs thousands of steps for molecules with stiff bonds." },
         { "-maxiter",FALSE, etINT,  {&maxIter_},
-          "Maximum number of iterations for the Newton and steepest descent minimizers, 0 is until convergence (see next option)." },
+          "Maximum number of iterations of the minimizers, 0 is until convergence (see -toler). The structure with the lowest energy is written also if the minimization does not converge." },
         { "-maxretries", FALSE, etINT, {&minimizeRetries_},
           "Number of retries for minimizing (LBFGS only)" },
         { "-maxdisplacement", FALSE, etREAL, {&minimizeDisplacement_},

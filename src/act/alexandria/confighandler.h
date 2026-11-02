@@ -499,7 +499,7 @@ private:
     //! Apply overrelaxation (if > 1) to speed up minimization. Can be dangerous for poor energy functions.
     double             overRelax_            = 1.0;
     //! Maximum number of iterations for the energy minimizer, 0 is until convergence.
-    int                maxIter_              = 100;
+    int                maxIter_              = 0;
     //! Force constant for flat-bottom position restraints, zero means no restraints
     double             kFBPR_                = 0;
     //! Radius for flat-bottom position restraints (from origin)

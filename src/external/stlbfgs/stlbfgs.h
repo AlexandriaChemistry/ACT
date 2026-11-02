@@ -42,6 +42,8 @@ namespace STLBFGS {
 //      int lsmaxfev = 16;  // TODO move all line search parameters here
 
         bool verbose = false;
+
+        int niter = 0; // number of iterations of the last run
     };
 }
 

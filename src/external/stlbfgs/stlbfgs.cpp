@@ -122,7 +122,9 @@ namespace STLBFGS {
         vector g(n), p(n);
 
         func_grad(x, f, g);
+        niter = 0;
         for (int i=0; i<maxiter; i++) {
+            niter = i;
             if (norm(g)/std::max(1., norm(x))<=gtol) {
                 if (verbose) std::cerr << "||g||/max(1,||x||) <= " << gtol << std::endl;
                 return true;
@@ -187,6 +189,7 @@ namespace STLBFGS {
             if (i==maxiter-1)
                 if (verbose) std::cerr << "reached maxiter" << std::endl;
         }
+        niter = maxiter;
         return false;
     }
 }

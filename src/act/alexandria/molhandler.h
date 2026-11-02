@@ -58,6 +58,16 @@ enum class eMinimizeStatus {
  */
 const std::string &eMinimizeStatusToString(eMinimizeStatus e);
 
+/*! \brief Whether a minimization stopped without converging, after which
+ * the structure with the lowest energy found can still be used
+ * \param[in] e The minimizer status
+ * \return true for too many steps or no minimum
+ */
+inline bool minimizationDidNotConverge(eMinimizeStatus e)
+{
+    return eMinimizeStatus::TooManySteps == e || eMinimizeStatus::NoMinimum == e;
+}
+
 /*! \brief Handles molecules by performing algorithms on them
  * For example, energy minimization and hessian computation.
  * This class can access private members of ACTMol as it is a friend class
@@ -136,11 +146,15 @@ public:
      * \param[in] topology     The topology
      * \param[in] forceComp    Force Computer utility
      * \param[in] simConfig    Configuration options
-     * \param[inout] coords    The coordinates to be minimized
+     * \param[inout] coords    The coordinates to be minimized, on return
+     *                         those with the lowest energy found, also if
+     *                         the minimization did not converge
      * \param[in] energies     The energies per interaction type
      * \param[in] freeze       List of atoms (not shells) that will not be
      *                         moved during the minimization.
-     * \return Status flag
+     * \return OK if converged, TooManySteps if the maximum number of
+     *         iterations was reached, NoMinimum if the energy could not
+     *         decrease while the forces are larger than the tolerance
      */
     eMinimizeStatus minimizeCoordinates(MsgHandler                        *msghandler,
                                         const ForceField                  *pd,
