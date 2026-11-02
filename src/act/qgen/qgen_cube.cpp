@@ -107,8 +107,8 @@ void QgenResp::writePdbComparison(const std::vector<ActAtom>   &atoms,
             fprintf(fp, "%-6s%5u  %-4.4s%3.3s %c%4d%c   %8.3f%8.3f%8.3f%6.2f%6.2f\n",
                     "HETATM", 1, "HE", "QM", 'B', static_cast<int>(i+1),
                     ' ', xfac*esp[XX], xfac*esp[YY], xfac*esp[ZZ], 0.0, ep_[i].v());
-            ymin = std::min(ymin, esp[YY]);
-            ymax = std::max(ymax, esp[YY]);
+            ymin = std::min<double>(ymin, esp[YY]);
+            ymax = std::max<double>(ymax, esp[YY]);
         }
         double dy = 1.2*(ymax-ymin);
         for (size_t i = 0; (i < nEsp()); i++)

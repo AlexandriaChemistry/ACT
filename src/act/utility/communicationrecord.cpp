@@ -507,6 +507,12 @@ template <> void CommunicationRecord::bcast<double>(double *d, MPI_Comm comm, in
     bcast_low(d, sizeof(*d), comm, root);
 }
 
+//! \brief Broadcast a float
+template <> void CommunicationRecord::bcast<float>(float *d, MPI_Comm comm, int root) const
+{
+    bcast_low(d, sizeof(*d), comm, root);
+}
+
 //! \brief Broadcast a size_t
 template <> void CommunicationRecord::bcast<size_t>(size_t *d, MPI_Comm comm, int root) const
 {

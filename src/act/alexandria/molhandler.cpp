@@ -861,16 +861,16 @@ public:
             rvec frot;
             // If there is a component away from the Z-axis, rotate around
             // Z first, and then Y
-            double xy     = std::sqrt(dx[XX]*dx[XX] + dx[YY]*dx[YY]);
+            real xy     = std::sqrt(dx[XX]*dx[XX] + dx[YY]*dx[YY]);
             if (xy > 0)
             {
-                double sinphi = dx[YY]/xy;
-                double cosphi = dx[XX]/xy;
+                real sinphi = dx[YY]/xy;
+                real cosphi = dx[XX]/xy;
                 // Rotation matrix around Z in negative phi direction
                 matrix m1 = { { cosphi, sinphi, 0 }, { -sinphi, cosphi, 0 }, { 0, 0, 1 } };
-                double xnorm  = norm(dx);
-                double costh  = dx[ZZ]/xnorm;
-                double sinth  = std::sqrt(1 - costh*costh);
+                real xnorm  = norm(dx);
+                real costh  = dx[ZZ]/xnorm;
+                real sinth  = std::sqrt(1 - costh*costh);
                 // Rotation matrix around Y in negative theta direction
                 matrix m2 = { { costh, 0, sinth }, { 0, 1, 0 }, { -sinth, 0, costh } };
                 matrix m12;
@@ -1144,8 +1144,8 @@ eMinimizeStatus MolHandler::minimizeCoordinates(MsgHandler                      
     // change irregularly. The Newton iterations in SHAKE converge
     // quadratically, such that a much smaller tolerance is cheap.
     Constrainer            constrainer(simConfig.constraintMaxIter(),
-                                       std::min(simConfig.constraintTolerance(),
-                                                1000*GMX_REAL_EPS), 1.0);
+                                       std::min<double>(simConfig.constraintTolerance(),
+                                                        1000*GMX_REAL_EPS), 1.0);
     bool                   constrain = simConfig.constrain();
     if (constrain)
     {

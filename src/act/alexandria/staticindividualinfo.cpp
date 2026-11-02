@@ -245,8 +245,8 @@ void StaticIndividualInfo::sumChiSquared(MsgHandler       *msghandler,
     {
         for (auto &ft : targets_[ims])
         {
-            auto chi2 = ft.second.chiSquared();
-            auto tw = ft.second.totalWeight();
+            double chi2 = ft.second.chiSquared();
+            double tw   = ft.second.totalWeight();
             if (tw > 0 && msghandler->debug())
             {
                 msghandler->writeDebug(gmx::formatString("node %d %s before sum chi2 %g tw %g weighted %g\n",

@@ -1310,9 +1310,9 @@ void Topology::GenerateAtoms(MsgHandler             *msghandler,
                 addResidue(nres, cai.residueName());
                 nres += 1;
             }
-            gmx::RVec xxx = { convertToGromacs(xx, myunit),
-                              convertToGromacs(yy, myunit),
-                              convertToGromacs(zz, myunit) };
+            gmx::RVec xxx = { static_cast<real>(convertToGromacs(xx, myunit)),
+                              static_cast<real>(convertToGromacs(yy, myunit)),
+                              static_cast<real>(convertToGromacs(zz, myunit)) };
             x->push_back(xxx);
 
             if (pd->hasParticleType(cai.getObtype()))

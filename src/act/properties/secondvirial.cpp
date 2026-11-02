@@ -732,23 +732,22 @@ void ReRunner::runB2(CommunicationRecord         *cr,
                         const double *f  = fs + DIM*(atomStart[kk]+j)*st;
                         for(size_t c = 0; c < ndim; c++)
                         {
-                            rvec   xi = { xc[c], xc[st+c], xc[2*st+c] };
-                            rvec   fc = { f[c], f[st+c], f[2*st+c] };
-                            matrix tc;
+                            dvec xi = { xc[c], xc[st+c], xc[2*st+c] };
+                            dvec fc = { f[c], f[st+c], f[2*st+c] };
+                            // Rotate coordinates and force vector, in
+                            // double precision as the input
+                            dvec ri = { 0, 0, 0 }, fi = { 0, 0, 0 }, ti;
                             for(int a = 0; a < DIM; a++)
                             {
                                 for(int b = 0; b < DIM; b++)
                                 {
-                                    tc[a][b] = transk[(DIM*a+b)*st + c];
+                                    double tab = transk[(DIM*a+b)*st + c];
+                                    ri[a] += tab*xi[b];
+                                    fi[a] += tab*fc[b];
                                 }
                             }
-                            rvec ri, fi, ti;
-                            // Rotate coordinates
-                            mvmul(tc, xi, ri);
-                            // Rotate force vector
-                            mvmul(tc, fc, fi);
                             // Compute torque on this atom
-                            cprod(ri, fi, ti);
+                            dcprod(ri, fi, ti);
                             // Update total torque
                             for(int m = 0; m < DIM; m++)
                             {
@@ -767,10 +766,10 @@ void ReRunner::runB2(CommunicationRecord         *cr,
                             const double *f  = fs + DIM*(atomStart[kk]+j)*st;
                             for(size_t c = 0; c < ndim; c++)
                             {
-                                rvec xi = { xc[c], xc[st+c], xc[2*st+c] };
-                                rvec fc = { f[c], f[st+c], f[2*st+c] };
-                                rvec ti;
-                                cprod(xi, fc, ti);
+                                dvec xi = { xc[c], xc[st+c], xc[2*st+c] };
+                                dvec fc = { f[c], f[st+c], f[2*st+c] };
+                                dvec ti;
+                                dcprod(xi, fc, ti);
                                 for(int m = 0; m < DIM; m++)
                                 {
                                     tq[m*st + c] += ti[m];

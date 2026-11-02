@@ -130,7 +130,9 @@ static ACT_ALWAYS_INLINE void fbposreOne(gmx_unused MsgHandler *msghandler,
     // Get the atom indices
     auto ai      = idx[0];
     // The distance from the center of the restraints
-    rvec dx      = { x[ai][XX] - params[fbprX0], x[ai][YY] - params[fbprY0], x[ai][ZZ] - params[fbprZ0] };
+    rvec dx      = { static_cast<real>(x[ai][XX] - params[fbprX0]),
+                     static_cast<real>(x[ai][YY] - params[fbprY0]),
+                     static_cast<real>(x[ai][ZZ] - params[fbprZ0]) };
     auto dr2     = iprod(dx, dx);
     if (dr2 > R0*R0)
     {
@@ -811,10 +813,10 @@ static ACT_ALWAYS_INLINE void coulombGaussianOne(gmx_unused MsgHandler      *msg
     // The charges and widths of both particles. These depend only on the
     // parameters, which allows the compiler to compute them once for all
     // conformations.
-    const real qi[2] = { atomi.charge(), atomi.chargeVS() };
-    const real qj[2] = { atomj.charge(), atomj.chargeVS() };
-    const real zi[2] = { params[coulZETA], atomi.zetaVS() };
-    const real zj[2] = { params[coulZETA2], atomj.zetaVS() };
+    const real qi[2] = { static_cast<real>(atomi.charge()), static_cast<real>(atomi.chargeVS()) };
+    const real qj[2] = { static_cast<real>(atomj.charge()), static_cast<real>(atomj.chargeVS()) };
+    const real zi[2] = { static_cast<real>(params[coulZETA]), static_cast<real>(atomi.zetaVS()) };
+    const real zj[2] = { static_cast<real>(params[coulZETA2]), static_cast<real>(atomj.zetaVS()) };
     rvec dx;
     rvec_sub(x[ai], x[aj], dx);
     auto dr2        = iprod(dx, dx);
@@ -918,10 +920,10 @@ static ACT_ALWAYS_INLINE void coulombSlaterOne(gmx_unused MsgHandler      *msgha
     auto &params= b.params();
     const auto &atomi = atoms[gindices[0]];
     const auto &atomj = atoms[gindices[1]];
-    const real qi[2]   = { atomi.charge(), atomi.chargeVS() };
-    const real qj[2]   = { atomj.charge(), atomj.chargeVS() };
-    const real zi[2]   = { params[coulZETA], atomi.zetaVS() };
-    const real zj[2]   = { params[coulZETA2], atomj.zetaVS() };
+    const real qi[2]   = { static_cast<real>(atomi.charge()), static_cast<real>(atomi.chargeVS()) };
+    const real qj[2]   = { static_cast<real>(atomj.charge()), static_cast<real>(atomj.chargeVS()) };
+    const real zi[2]   = { static_cast<real>(params[coulZETA]), static_cast<real>(atomi.zetaVS()) };
+    const real zj[2]   = { static_cast<real>(params[coulZETA2]), static_cast<real>(atomj.zetaVS()) };
     const int  rowi[2] = { atomi.row(), atomi.rowVS() };
     const int  rowj[2] = { atomj.row(), atomj.rowVS() };
     rvec dx;
@@ -1022,7 +1024,7 @@ static ACT_ALWAYS_INLINE void cubicOne(gmx_unused MsgHandler *msghandler,
     double r_1, r1 = rhi;
     {
         // Do not allow the potential to go to -infinity
-        auto r2 = std::min(rhi*rhi, iprod(dx, dx));
+        auto r2 = std::min<double>(rhi*rhi, iprod(dx, dx));
         r_1     = gmx::invsqrt(r2);
         r1      = r2*r_1;
     }
@@ -1167,7 +1169,7 @@ static ACT_ALWAYS_INLINE void angleOne(gmx_unused MsgHandler *msghandler,
                             F                     *forces,
                             double                *e)
 {
-    double costh = 0;
+    real   costh = 0;
     auto   &f    = *forces;
     // Get the parameters. We have to know their names to do this.
     auto &params    = a.params();
@@ -1230,7 +1232,7 @@ static ACT_ALWAYS_INLINE void ureyBradleyOne(gmx_unused MsgHandler *msghandler,
                                   F                     *forces,
                                   double                *e)
 {
-    double costh = 0;
+    real   costh = 0;
     auto   &f    = *forces;
     const  real half = 0.5;
     // Get the parameters. We have to know their names to do this.

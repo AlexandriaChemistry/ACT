@@ -156,10 +156,11 @@ void Experiment::AddAtom(const CalcAtom &ca)
         auto      funit = ca.forceUnit();
         if (!funit.empty())
         {
-            ca.forces(&f[XX], &f[YY], &f[ZZ]);
+            double fd[DIM];
+            ca.forces(&fd[XX], &fd[YY], &fd[ZZ]);
             for (int m = 0; m < DIM; m++)
             {
-                f[m] = convertToGromacs(f[m], funit);
+                f[m] = convertToGromacs(fd[m], funit);
             }
             forces_.push_back(f);
         }

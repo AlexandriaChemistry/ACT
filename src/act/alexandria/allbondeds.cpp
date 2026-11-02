@@ -496,7 +496,7 @@ void AllBondeds::updateForceField(gmx::TextWriter *tw,
                     round_numbers(&av, &sig, 10);
                     fs->addParameter(bondId, pname[angleANGLE],
                                      ForceFieldParameter("degree", av, sig, N, av*afactor_,
-                                                         std::min(180.0, av/afactor_), Mutability::Bounded, false, true));
+                                                         std::min<double>(180.0, av/afactor_), Mutability::Bounded, false, true));
                     fs->addParameter(bondId, pname[angleKT],
                                      ForceFieldParameter("kJ/mol/rad2", kt_, 0, 1, kt_*factor_, kt_/factor_, Mutability::Bounded, false, true));
                     tw->writeStringFormatted("angle-%s angle %g sigma %g (deg) N = %d%s\n",

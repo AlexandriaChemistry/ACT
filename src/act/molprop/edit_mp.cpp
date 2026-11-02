@@ -284,7 +284,7 @@ static std::set<std::string> check_mp(MsgHandler           *msghandler,
                     if (gp)
                     {
                         std::vector<double> mu = gp->getVector();
-                        name_mu nmu = { ci.getDatafile(), { mu[XX], mu[YY], mu[ZZ] } };
+                        name_mu nmu = { ci.getDatafile(), { static_cast<real>(mu[XX]), static_cast<real>(mu[YY]), static_cast<real>(mu[ZZ]) } };
                         mus.push_back(nmu);
                     }
                 }
