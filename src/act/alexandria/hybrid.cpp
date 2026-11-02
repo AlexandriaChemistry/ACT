@@ -223,6 +223,21 @@ bool HybridGAMC::evolve(alexandria::MsgHandler       *msghandler,
             pool[pnew]->addGenome(genome);
         }
     }
+    else
+    {
+        // The genomes read have their fitness computed now, by the
+        // same processor that they were sent to
+        pool[pold]->replaceGenome(0, individual->genome());
+        pool[pnew]->replaceGenome(0, individual->genome());
+        for(auto &src : cr->middlemen())
+        {
+            ga::Genome genome;
+            genome.Receive(cr, src);
+            int genome_index = src/(1+cr->nhelper_per_middleman());
+            pool[pold]->replaceGenome(genome_index, genome);
+            pool[pnew]->replaceGenome(genome_index, genome);
+        }
+    }
     // Now we have filled the gene pool and initial fitness values
     if (msghandler->verbose())
     {
@@ -234,6 +249,11 @@ bool HybridGAMC::evolve(alexandria::MsgHandler       *msghandler,
     {
         // All genomes have the fitness of the test set as well
         (*bestGenome)[iMolSelect::Test] = pool[pold]->getBest(iMolSelect::Test);
+    }
+    // The pool with the best genome so far, also if no better one is found
+    if (gpout_)
+    {
+        pool[pold]->write(gpout_);
     }
     // Open surveillance files for fitness, after initialization of bestGenome
     for(const auto &bg : *bestGenome)
