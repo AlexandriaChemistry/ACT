@@ -447,8 +447,7 @@ void checkDimers(const std::string &fileName, int nDimer, int nDist)
 TEST_F(WaterB2Test, OutputDimers)
 {
     int  nDimer = 12, nDist = 9;
-    // The structures are written in xyz format whatever the extension
-    auto output = fileManager().getTemporaryFilePath("dimers.pdb");
+    auto output = fileManager().getTemporaryFilePath("dimers.xyz");
     gmx::test::CommandLine cmd;
     cmd.append("b2");
     cmd.addOption("-ff", fileManager().getInputFilePath("SPCE.xml"));
@@ -466,9 +465,7 @@ TEST_F(WaterB2Test, OutputDimers)
     EXPECT_EQ(0, b2(cmd.argc(), cmd.argv()));
     if (gmx_node_rank() == 0)
     {
-        auto xyz = output.substr(0, output.rfind('.')) + ".xyz";
-        checkDimers(xyz, nDimer, nDist);
-        std::remove(xyz.c_str());
+        checkDimers(output, nDimer, nDist);
     }
     barrier();
 }
