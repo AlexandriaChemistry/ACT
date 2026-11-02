@@ -1755,6 +1755,17 @@ void MolHandler::simulate(MsgHandler                    *msghandler,
             }
             printEnergies(exvg, step, deltat, energies, ekin, nDOF, oenv);
         }
+        // Write the coordinates of the same time, numbering the frames from 1
+        if (simConfig.nstxout() > 0 && step % simConfig.nstxout() == 0)
+        {
+            ScopedTimer timer(trajectoryTimer);
+            //! \todo rewrite without gromacs fluff.
+            pdbWriter(traj, title, mol->atomsConst(),
+                      coordinates, mol->topology()->residueNames(),
+                      epbcNONE,
+                      box, chain, step/simConfig.nstxout()+1, trajIndex,
+                      nullptr, true);
+        }
         // Integrate positions using velocity Verlet
         timings.start(integrationTimer);
         if (simConfig.constrain())
@@ -1836,17 +1847,6 @@ void MolHandler::simulate(MsgHandler                    *msghandler,
             ScopedTimer timer(integrationTimer);
             commRemover.remove(coordinates, &velocities);
             timings.addFlops(60*nmoving);
-        }
-        // Write output if needed
-        if (simConfig.nstxout() > 0 && step % simConfig.nstxout() == 0)
-        {
-            ScopedTimer timer(trajectoryTimer);
-            //! \todo rewrite without gromacs fluff.
-            pdbWriter(traj, title, mol->atomsConst(),
-                      coordinates, mol->topology()->residueNames(),
-                      epbcNONE,
-                      box, chain, step+1, trajIndex,
-                      nullptr, true);
         }
         // Swap force arrays
         cur = prev;
