@@ -1,0 +1,53 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="Contents"><![CDATA[
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE ForceField.dtd PUBLIC "ForceField.dtd" "ForceField.dtd">
+<ForceField>
+  <AtomTypes>
+    <Type name="ow_1" class="o3_b" element="O" mass="15.9994"/>
+    <Type name="hw_1" class="h_b" element="H" mass="1.0079"/>
+    <Type name="hw_2" class="h_b" element="H" mass="1.0079"/>
+    <Type name="v3Ow_1" class="v3Ow" mass="0"/>
+    <Type name="v3Ow_2" class="v3Ow" mass="0"/>
+  </AtomTypes>
+  <Residues>
+    <Residue name="OXI">
+      <Atom name="O1" type="ow_1" charge="0"/>
+      <Atom name="H2" type="hw_1" charge="0.241"/>
+      <Atom name="H3" type="hw_2" charge="0.241"/>
+      <Atom name="v3Ow4" type="v3Ow_1" charge="-0.241"/>
+      <VirtualSite type="outOfPlane" siteName="v3Ow4" atomName1="O1" atomName2="H3" atomName3="H2" weight12="-0.34490826" weight13="-0.34490826" weightCross="6.44379035"/>
+      <Bond atomName1="v3Ow4" atomName2="O1"/>
+      <Bond atomName1="v3Ow4" atomName2="H3"/>
+      <Bond atomName1="v3Ow4" atomName2="H2"/>
+      <Atom name="v3Ow5" type="v3Ow_2" charge="-0.241"/>
+      <VirtualSite type="outOfPlane" siteName="v3Ow5" atomName1="O1" atomName2="H3" atomName3="H2" weight12="-0.34490826" weight13="-0.34490826" weightCross="-6.44379035"/>
+      <Bond atomName1="v3Ow5" atomName2="O1"/>
+      <Bond atomName1="v3Ow5" atomName2="H3"/>
+      <Bond atomName1="v3Ow5" atomName2="H2"/>
+      <Bond atomName1="O1" atomName2="H3"/>
+      <Bond atomName1="O1" atomName2="H2"/>
+    </Residue>
+  </Residues>
+  <HarmonicBondForce>
+    <Bond class1="h_b" class2="o3_b" k="502416" length="0.09572"/>
+  </HarmonicBondForce>
+  <HarmonicAngleForce energy="0">
+    <Angle class1="h_b" class2="o3_b" class3="h_b" k="628.02" angle="1.824218134184"/>
+  </HarmonicAngleForce>
+  <CustomAngleForce energy="0"/>
+  <RBTorsionForce energy="0"/>
+  <PeriodicTorsionForce energy="0"/>
+  <NonbondedForce coulomb14scale="1" lj14scale="1">
+    <UseAttributeFromResidue name="charge"/>
+    <Atom type="hw_1" sigma="0" epsilon="0"/>
+    <Atom type="hw_2" sigma="0" epsilon="0"/>
+    <Atom type="ow_1" sigma="0.312" epsilon="0.6694"/>
+    <Atom type="v3Ow_1" sigma="0" epsilon="0"/>
+    <Atom type="v3Ow_2" sigma="0" epsilon="0"/>
+  </NonbondedForce>
+</ForceField>
+]]></String>
+</ReferenceData>

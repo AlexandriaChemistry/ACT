@@ -1,0 +1,66 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="Contents"><![CDATA[
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE ForceField.dtd PUBLIC "ForceField.dtd" "ForceField.dtd">
+<ForceField>
+  <AtomTypes>
+    <Type name="f_1" class="f_b" element="F" mass="18.9984"/>
+    <Type name="hf_1" class="hf_b" element="H" mass="1.0079"/>
+    <Type name="v2f2_1" class="v2f2" mass="0"/>
+    <Type name="v2f1_1" class="v2f1" mass="0"/>
+  </AtomTypes>
+  <Residues>
+    <Residue name="FLU">
+      <Atom name="F1" type="f_1" charge="1.010952204969"/>
+      <Atom name="H2" type="hf_1" charge="0.7091840942703"/>
+      <Atom name="v2f23" type="v2f2_1" charge="3.279863700761"/>
+      <VirtualSite type="average2" siteName="v2f23" atomName1="F1" atomName2="H2" weight1="1.02553048" weight2="-0.02553048"/>
+      <Bond atomName1="v2f23" atomName2="F1"/>
+      <Bond atomName1="v2f23" atomName2="H2"/>
+      <Atom name="v2f14" type="v2f1_1" charge="0"/>
+      <VirtualSite type="average2" siteName="v2f14" atomName1="F1" atomName2="H2" weight1="0.86921167" weight2="0.13078833"/>
+      <Bond atomName1="v2f14" atomName2="F1"/>
+      <Bond atomName1="v2f14" atomName2="H2"/>
+      <Bond atomName1="H2" atomName2="F1"/>
+    </Residue>
+  </Residues>
+  <HarmonicBondForce>
+    <Bond class1="f_b" class2="hf_b" k="300000" length="0.0937"/>
+  </HarmonicBondForce>
+  <HarmonicAngleForce energy="0"/>
+  <CustomAngleForce energy="0"/>
+  <RBTorsionForce energy="0"/>
+  <PeriodicTorsionForce energy="0"/>
+  <CustomNonbondedForce energy="select(epsilon*sigma,( epsilon*( ( (1+ delta)/((r/sigma)+ delta))^7 ) * ( ( (1+ gamma)/(((r/sigma)^7) +gamma )  ) -2 ) ),0)" bondCutoff="0">
+    <GlobalParameter name="pot-LJ14_7" defaultValue="1"/>
+    <GlobalParameter name="pot-COULOMB_GAUSSIAN" defaultValue="1"/>
+    <GlobalParameter name="cr-delta_Arithmetic" defaultValue="1"/>
+    <GlobalParameter name="cr-epsilon_Geometric" defaultValue="1"/>
+    <GlobalParameter name="cr-gamma_Arithmetic" defaultValue="1"/>
+    <GlobalParameter name="cr-sigma_Volumetric" defaultValue="1"/>
+    <GlobalParameter name="nexcl" defaultValue="2"/>
+    <GlobalParameter name="prefactor-" defaultValue="1"/>
+    <UseAttributeFromResidue name="charge"/>
+    <PerParticleParameter name="sigma"/>
+    <PerParticleParameter name="epsilon"/>
+    <PerParticleParameter name="gamma"/>
+    <PerParticleParameter name="delta"/>
+    <PerParticleParameter name="charge"/>
+    <PerParticleParameter name="zeta"/>
+    <Atom type="f_1" sigma="0.3625027994285" epsilon="0.07954896132852" gamma="0.05073852482308" delta="0.2067121318839" zeta="0"/>
+    <Atom type="hf_1" sigma="0.09384739108763" epsilon="0.1720703542802" gamma="0.1161612264701" delta="0.4716824869701" zeta="0"/>
+    <Atom type="v2f1_1" sigma="0.3625027994285" epsilon="0.07954896132852" gamma="0.05073852482308" delta="0.2067121318839" zeta="0"/>
+    <Atom type="v2f2_1" sigma="0" epsilon="0" gamma="0" delta="0" zeta="0"/>
+  </CustomNonbondedForce>
+  <NonbondedForce coulomb14scale="1" lj14scale="1">
+    <UseAttributeFromResidue name="charge"/>
+    <Atom type="f_1" sigma="0.3229532793331" epsilon="0.07954896132852"/>
+    <Atom type="hf_1" sigma="0.08360852042078" epsilon="0.1720703542802"/>
+    <Atom type="v2f1_1" sigma="0.3229532793331" epsilon="0.07954896132852"/>
+    <Atom type="v2f2_1" sigma="0" epsilon="0"/>
+  </NonbondedForce>
+</ForceField>
+]]></String>
+</ReferenceData>
