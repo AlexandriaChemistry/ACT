@@ -32,10 +32,10 @@
     </Residue>
   </Residues>
   <HarmonicBondForce>
-    <Bond class1="h_b" class2="ow_b" k="462750000.4" length="0.0975"/>
+    <Bond class1="h_b" class2="ow_b" k="462750.4" length="0.0975"/>
   </HarmonicBondForce>
   <HarmonicAngleForce energy="0">
-    <Angle class1="h_b" class2="ow_b" class3="h_b" k="83600.8" angle="1.824218134184"/>
+    <Angle class1="h_b" class2="ow_b" class3="h_b" k="836.8" angle="1.824218134184"/>
   </HarmonicAngleForce>
   <CustomAngleForce energy="0"/>
   <RBTorsionForce energy="0"/>
