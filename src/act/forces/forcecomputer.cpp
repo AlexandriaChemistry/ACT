@@ -33,6 +33,7 @@
 #include <utility>
 #include <vector>
 
+#include <cstdio>
 #include <cstdlib>
 
 #include "act/basics/chargemodel.h"
@@ -2061,6 +2062,18 @@ void ForceComputer::plot(MsgHandler        *msghandler,
             gmx::RVec rvnul = { 0, 0, 0 };
             FILE *fp = gmx_ffopen(filename.c_str(), "w");
             std::map<InteractionType, double> energies;
+            // Not every parameter makes a topology, e.g. when bonds are
+            // missing for the atoms of an angle, these are skipped.
+            bool built = false;
+            auto buildTopology = [&](std::vector<gmx::RVec> *coordinates)
+            {
+                MsgHandler buildHandler;
+                buildHandler.setPrintLevel(ACTStatus::Fatal);
+                top.build(&buildHandler, pd, coordinates, 175.0, 5.0, missingParameters::Error);
+                built = buildHandler.ok() && top.hasEntry(itype);
+                forces.resize(top.nAtoms(), rvnul);
+                return built;
+            };
             switch (itype)
             {
             case InteractionType::BONDS:
@@ -2069,9 +2082,10 @@ void ForceComputer::plot(MsgHandler        *msghandler,
                 {
                     std::vector<gmx::RVec> coordinates = { { 0, 0, 0 }, { 1, 0, 0 } };
                     // top.build will resize coordinates array.
-                    top.build(msghandler,
-                              pd, &coordinates, 175.0, 5.0, missingParameters::Error);
-                    forces.resize(top.nAtoms(), rvnul);
+                    if (!buildTopology(&coordinates))
+                    {
+                        break;
+                    }
                     // First atom is zero, second must be the other particle
                     size_t jatom = 1+top.atoms()[0].shells().size()+top.atoms()[0].vsites().size();
                     if (jatom == 0)
@@ -2160,10 +2174,7 @@ void ForceComputer::plot(MsgHandler        *msghandler,
                     std::vector<gmx::RVec> acoords     = { { 0, 0, 0 }, { 1, 0, 0 }, { 1, 1, 0 } };
                     std::vector<gmx::RVec> coordinates = acoords;
                     // top.build will resize coordinates array.
-                    top.build(msghandler,
-                              pd, &coordinates, 175.0, 5.0, missingParameters::Error);
-                    forces.resize(top.nAtoms(), rvnul);
-                    if (!top.hasEntry(itype))
+                    if (!buildTopology(&coordinates))
                     {
                         break;
                     }
@@ -2196,9 +2207,10 @@ void ForceComputer::plot(MsgHandler        *msghandler,
                 {
                     //! \todo take a into account
                     std::vector<gmx::RVec> coordinates = { { 0, 0, 0 }, { 1, 0, 0 }, { 2, 0, 0 } };
-                    top.build(msghandler,
-                              pd, &coordinates, 175.0, 5.0, missingParameters::Error);
-                    forces.resize(top.nAtoms(), rvnul);
+                    if (!buildTopology(&coordinates))
+                    {
+                        break;
+                    }
                     double r0 = 0.0, r1 = 0.1, delta = 0.001;
                     int    nsteps = (r1-r0)/delta+1;
                     for(int i = 0; i < nsteps; i++)
@@ -2215,9 +2227,10 @@ void ForceComputer::plot(MsgHandler        *msghandler,
             case InteractionType::PROPER_DIHEDRALS:
                 {
                     std::vector<gmx::RVec> coordinates = { { 0, 0, 0 }, { 1, 0, 0 }, { 1, 1, 0 }, { 1, 1, 1 } };
-                    top.build(msghandler,
-                              pd, &coordinates, 175.0, 5.0, missingParameters::Error);
-                    forces.resize(top.nAtoms(), rvnul);
+                    if (!buildTopology(&coordinates))
+                    {
+                        break;
+                    }
                     double th0 = 0, th1 = 360, delta = 2;
                     int    nsteps = (th1-th0)/delta+1;
                     for(int i = 0; i < nsteps; i++)
@@ -2234,9 +2247,10 @@ void ForceComputer::plot(MsgHandler        *msghandler,
             case InteractionType::IMPROPER_DIHEDRALS:
                 {
                     std::vector<gmx::RVec> coordinates = { { 1, 0.5, 0 }, { 0, 0, 0 }, { 2, 0, 0 }, { 1, 1.5, 0 } };
-                    top.build(msghandler,
-                              pd, &coordinates, 175.0, 5.0, missingParameters::Error);
-                    forces.resize(top.nAtoms(), rvnul);
+                    if (!buildTopology(&coordinates))
+                    {
+                        break;
+                    }
                     double th0 = -0.02, th1 = 0.02, delta = 0.001;
                     int    nsteps = (th1-th0)/delta+1;
                     for(int i = 0; i < nsteps; i++)
@@ -2253,6 +2267,14 @@ void ForceComputer::plot(MsgHandler        *msghandler,
                 break;
             }
             gmx_ffclose(fp);
+            if (!built)
+            {
+                std::remove(filename.c_str());
+                msghandler->msg(ACTStatus::Warning,
+                                gmx::formatString("Cannot plot %s %s, there is no topology for it",
+                                                  interactionTypeToString(itype).c_str(),
+                                                  f.first.id().c_str()));
+            }
         }
     }
 }
