@@ -69,6 +69,12 @@ protected:
         MsgHandler msghandler;
         auto       fileName = fileManager_.getInputFilePath("molprop.xml");
         MolPropRead(&msghandler, fileName.c_str(), &ref_);
+        // The molecules in the file have no categories
+        for (auto &mp : ref_)
+        {
+            mp.AddCategory("Test");
+            mp.AddCategory(mp.getMolname() + " category");
+        }
     }
 
     //! \return the contents of the molecules written to a file of this rank
@@ -83,8 +89,8 @@ protected:
     }
 };
 
-// Test: The molecules the master sends to each rank are the same as
-// the ones read from the file
+// Test: The molecules the master sends to each rank, with their
+// categories, are the same as the ones read from the file
 TEST_F(MolpropMpiTest, SendReceive)
 {
     ASSERT_EQ(3u, ref_.size());
