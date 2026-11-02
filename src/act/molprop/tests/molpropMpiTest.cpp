@@ -69,6 +69,14 @@ protected:
         MsgHandler msghandler;
         auto       fileName = fileManager_.getInputFilePath("molprop.xml");
         MolPropRead(&msghandler, fileName.c_str(), &ref_);
+        // Alcohols with frequencies and intensities
+        std::vector<MolProp> booze;
+        auto       boozeName = fileManager_.getInputFilePath("../../alexandria/tests/trainff/booze-mono.xml");
+        MolPropRead(&msghandler, boozeName.c_str(), &booze);
+        for (auto &mp : booze)
+        {
+            ref_.push_back(std::move(mp));
+        }
         // The molecules in the file have no categories
         for (auto &mp : ref_)
         {
@@ -93,7 +101,7 @@ protected:
 // categories, are the same as the ones read from the file
 TEST_F(MolpropMpiTest, SendReceive)
 {
-    ASSERT_EQ(3u, ref_.size());
+    ASSERT_LT(3u, ref_.size());
     if (cr_.isMaster())
     {
         for (int dest = 1; dest < cr_.size(); dest++)
