@@ -46,6 +46,7 @@
 
 #include "act/utility/regression.h"
 #include "act/utility/stringutil.h"
+#include "gromacs/math/functions.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/textwriter.h"
@@ -208,6 +209,26 @@ double Sensitivity::pMinBounded() const
     return std::clamp(pMin(), lower_, upper_);
 }
 
+double Sensitivity::value(double p) const
+{
+    if (!fitted_)
+    {
+        return 0;
+    }
+    double u = (p - p0_)/scale_;
+    return (A_*u + B_)*u + C_;
+}
+
+double Sensitivity::derivative(double p) const
+{
+    if (!fitted_)
+    {
+        return 0;
+    }
+    double u = (p - p0_)/scale_;
+    return (2*A_*u + B_)/scale_;
+}
+
 nlohmann::ordered_json Sensitivity::toJson(size_t             index,
                                            const std::string &label) const
 {
@@ -253,5 +274,258 @@ nlohmann::ordered_json Sensitivity::toJson(size_t             index,
     return js;
 }
 
+
+//! \brief Map from PairShape to string
+static const std::map<PairShape, std::string> shapeNames =
+    {
+        { PairShape::Minimum,    "minimum"    },
+        { PairShape::Saddle,     "saddle"     },
+        { PairShape::Maximum,    "maximum"    },
+        { PairShape::Degenerate, "degenerate" }
+    };
+
+const std::string &pairShapeName(PairShape shape)
+{
+    return shapeNames.at(shape);
+}
+
+/*! \brief Relative precision of the determinant of the Hessian
+ * A determinant smaller than this times its terms is zero.
+ */
+static const double determinantPrecision = 1e-8;
+
+void Sensitivity2D::computeCrossTerm()
+{
+    computed_  = false;
+    aij_       = 0;
+    cornerRms_ = 0;
+    if (!si_.fitted() || !sj_.fitted() || corners_.empty() ||
+        si_.original() >= si_.pValues().size() || sj_.original() >= sj_.pValues().size())
+    {
+        return;
+    }
+    double pi     = si_.pValues()[si_.original()];
+    double pj     = sj_.pValues()[sj_.original()];
+    double chi2_0 = si_.chi2Values()[si_.original()];
+    // Least squares fit of r = a_ij dx dy, where r is what the
+    // one-dimensional parabolas do not describe
+    double num = 0, den = 0;
+    std::vector<double> r, dxdy;
+    for (const auto &corner : corners_)
+    {
+        double xy = (corner[0] - pi)*(corner[1] - pj);
+        r.push_back(corner[2] - (si_.value(corner[0]) + sj_.value(corner[1]) - chi2_0));
+        dxdy.push_back(xy);
+        num += r.back()*xy;
+        den += xy*xy;
+    }
+    if (den == 0)
+    {
+        return;
+    }
+    aij_ = num/den;
+    double rms = 0;
+    for (size_t k = 0; k < r.size(); k++)
+    {
+        rms += gmx::square(r[k] - aij_*dxdy[k]);
+    }
+    cornerRms_ = std::sqrt(rms/r.size());
+    computed_  = true;
+}
+
+std::optional<double> Sensitivity2D::rho() const
+{
+    if (!computed_ || si_.a() <= 0 || sj_.a() <= 0)
+    {
+        return std::nullopt;
+    }
+    return aij_/(2*std::sqrt(si_.a()*sj_.a()));
+}
+
+std::array<std::array<double, 2>, 2> Sensitivity2D::hessian() const
+{
+    return { { { 2*si_.a(), aij_ }, { aij_, 2*sj_.a() } } };
+}
+
+std::array<double, 2> Sensitivity2D::gradient() const
+{
+    if (si_.original() >= si_.pValues().size() || sj_.original() >= sj_.pValues().size())
+    {
+        return { 0, 0 };
+    }
+    return { si_.derivative(si_.pValues()[si_.original()]),
+             sj_.derivative(sj_.pValues()[sj_.original()]) };
+}
+
+PairShape Sensitivity2D::shape() const
+{
+    if (!computed_)
+    {
+        return PairShape::Degenerate;
+    }
+    auto   H     = hessian();
+    double det   = H[0][0]*H[1][1] - H[0][1]*H[1][0];
+    double scale = std::abs(H[0][0]*H[1][1]) + H[0][1]*H[1][0];
+    if (H[0][0] == 0 || H[1][1] == 0 || std::abs(det) <= determinantPrecision*scale)
+    {
+        return PairShape::Degenerate;
+    }
+    else if (det < 0)
+    {
+        return PairShape::Saddle;
+    }
+    else if (H[0][0] > 0)
+    {
+        return PairShape::Minimum;
+    }
+    return PairShape::Maximum;
+}
+
+std::optional<std::array<double, 2>> Sensitivity2D::stationaryPoint() const
+{
+    if (shape() == PairShape::Degenerate)
+    {
+        return std::nullopt;
+    }
+    auto   H   = hessian();
+    auto   g   = gradient();
+    double det = H[0][0]*H[1][1] - H[0][1]*H[1][0];
+    // Solve H d = -g
+    double di  = -(H[1][1]*g[0] - H[0][1]*g[1])/det;
+    double dj  = -(H[0][0]*g[1] - H[1][0]*g[0])/det;
+    return std::array<double, 2>{ si_.pValues()[si_.original()] + di,
+                                  sj_.pValues()[sj_.original()] + dj };
+}
+
+double Sensitivity2D::value(double x, double y) const
+{
+    double pi     = si_.pValues()[si_.original()];
+    double pj     = sj_.pValues()[sj_.original()];
+    double chi2_0 = si_.chi2Values()[si_.original()];
+    return si_.value(x) + sj_.value(y) - chi2_0 + aij_*(x - pi)*(y - pj);
+}
+
+std::optional<std::array<double, 2>> Sensitivity2D::boxMinimum(const std::array<double, 4> &bounds) const
+{
+    if (shape() != PairShape::Minimum)
+    {
+        return std::nullopt;
+    }
+    auto sp = stationaryPoint();
+    if (sp.has_value() &&
+        (*sp)[0] >= bounds[0] && (*sp)[0] <= bounds[1] &&
+        (*sp)[1] >= bounds[2] && (*sp)[1] <= bounds[3])
+    {
+        return sp;
+    }
+    // The minimum of a convex surface outside the bounds is on an edge.
+    // Along an edge the surface is a parabola in the other parameter.
+    double pi = si_.pValues()[si_.original()];
+    double pj = sj_.pValues()[sj_.original()];
+    auto   H  = hessian();
+    auto   g  = gradient();
+    std::vector<std::array<double, 2>> candidates;
+    for (double x : { bounds[0], bounds[1] })
+    {
+        double dy = -(g[1] + H[0][1]*(x - pi))/H[1][1];
+        candidates.push_back({ x, std::clamp(pj + dy, bounds[2], bounds[3]) });
+    }
+    for (double y : { bounds[2], bounds[3] })
+    {
+        double dx = -(g[0] + H[0][1]*(y - pj))/H[0][0];
+        candidates.push_back({ std::clamp(pi + dx, bounds[0], bounds[1]), y });
+    }
+    auto best = candidates[0];
+    for (const auto &cand : candidates)
+    {
+        if (value(cand[0], cand[1]) < value(best[0], best[1]))
+        {
+            best = cand;
+        }
+    }
+    return best;
+}
+
+bool Sensitivity2D::checkConvergence(const std::array<double, 4> &bounds,
+                                     const std::array<double, 2> &tolerances)
+{
+    checked_   = true;
+    bounds_    = bounds;
+    converged_ = false;
+    auto pmin  = boxMinimum(bounds);
+    if (pmin.has_value())
+    {
+        converged_ = (std::abs(si_.pValues()[si_.original()] - (*pmin)[0]) <= tolerances[0] &&
+                      std::abs(sj_.pValues()[sj_.original()] - (*pmin)[1]) <= tolerances[1]);
+    }
+    return converged_;
+}
+
+nlohmann::ordered_json Sensitivity2D::toJson(size_t             i,
+                                             size_t             j,
+                                             const std::string &namei,
+                                             const std::string &namej) const
+{
+    using json = nlohmann::ordered_json;
+    json js;
+    js["i"]     = i;
+    js["j"]     = j;
+    js["names"] = { namei, namej };
+    // The grid of parameter values and the chi-squared at each point,
+    // chi2[k][l] is at p_i[k], p_j[l]
+    const auto &pvi = si_.pValues();
+    const auto &pvj = sj_.pValues();
+    auto chi2 = json::array();
+    for (size_t k = 0; k < pvi.size(); k++)
+    {
+        auto row = json::array();
+        for (size_t l = 0; l < pvj.size(); l++)
+        {
+            json value;
+            if (k == si_.original())
+            {
+                value = sj_.chi2Values()[l];
+            }
+            else if (l == sj_.original())
+            {
+                value = si_.chi2Values()[k];
+            }
+            else
+            {
+                for (const auto &corner : corners_)
+                {
+                    if (corner[0] == pvi[k] && corner[1] == pvj[l])
+                    {
+                        value = corner[2];
+                    }
+                }
+            }
+            row.push_back(value);
+        }
+        chi2.push_back(row);
+    }
+    js["grid"] = { { "p_i", pvi }, { "p_j", pvj }, { "chi2", chi2 } };
+    js["a_ij"]       = computed_ ? json(aij_) : json();
+    auto r           = rho();
+    js["rho"]        = r.has_value() ? json(*r) : json();
+    js["corner_rms"] = computed_ ? json(cornerRms_) : json();
+    auto H           = hessian();
+    js["hessian"]    = { { H[0][0], H[0][1] }, { H[1][0], H[1][1] } };
+    auto g           = gradient();
+    js["gradient"]   = { g[0], g[1] };
+    auto sh          = shape();
+    js["shape"]      = pairShapeName(sh);
+    auto sp          = stationaryPoint();
+    bool minimum     = sh == PairShape::Minimum && sp.has_value();
+    js["p_min"]      = minimum ? json({ (*sp)[0], (*sp)[1] }) : json();
+    js["chi2_min"]   = minimum ? json(value((*sp)[0], (*sp)[1])) : json();
+    if (checked_)
+    {
+        auto bm             = boxMinimum(bounds_);
+        js["p_min_bounded"] = bm.has_value() ? json({ (*bm)[0], (*bm)[1] }) : json();
+        js["converged"]     = converged_;
+    }
+    return js;
+}
 
 }
