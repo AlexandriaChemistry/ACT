@@ -99,7 +99,7 @@ int simulate(int argc, char *argv[])
         { efXML, "-omp",     "molprop",    ffOPTWR }
     };
     gmx_output_env_t         *oenv;
-    double                    shellToler = 1e-6;
+    real                      shellToler = 1e-6;
     bool                      json       = false;
     std::vector<t_pargs>      pa = {
         { "-shelltoler", FALSE, etREAL, {&shellToler},

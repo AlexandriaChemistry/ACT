@@ -1026,7 +1026,7 @@ int b2(int argc, char *argv[])
     };
     gmx_output_env_t         *oenv;
     char                     *molnm            = (char *)"";
-    double                    shellToler       = 1e-6;
+    real                      shellToler       = 1e-6;
     int                       maxdimers        = 1024;
     int                       shellMaxIter     = 25;
     bool                      json             = false;

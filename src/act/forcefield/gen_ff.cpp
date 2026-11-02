@@ -279,8 +279,8 @@ int gen_ff(int argc, char*argv[])
     gmx_output_env_t *oenv;
     int               nexclqq  = 2;
     int               nexclvdw = 2;
-    double            epsilonr = 1;
-    double            shellMaxDistance = 0.02;
+    real              epsilonr = 1;
+    real              shellMaxDistance = 0.02;
     bool              qsymm    = true;
     std::vector<const char *>qdn2    = { nullptr, "GAUSSIAN", "POINT", "SLATER", nullptr };
     std::vector<const char *>bondfn  = { nullptr };

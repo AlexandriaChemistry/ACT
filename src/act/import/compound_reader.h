@@ -51,7 +51,7 @@ namespace alexandria
     {
     private:
         //! Total charge of all compounds
-        double  qtot_       = 0;
+        real    qtot_       = 0;
         //! Charge method to select from QM methods available in the molprop file
         char   *qqm_        = (char *)"";
         //! String of custom charges

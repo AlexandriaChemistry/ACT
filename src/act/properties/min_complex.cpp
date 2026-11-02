@@ -72,9 +72,9 @@ int min_complex(int argc, char *argv[])
         { efXML, "-mp", "molprop",  ffREAD  }
     };
     gmx_output_env_t *oenv;
-    double shellToler = 1e-6;
-    double minfrac    = 0.9;
-    double maxfrac    = 1.5;
+    real   shellToler = 1e-6;
+    real   minfrac    = 0.9;
+    real   maxfrac    = 1.5;
     int    nfrac      = 5;
     std::vector<t_pargs>      pa = {
         { "-minfrac",   FALSE, etREAL, {&minfrac},

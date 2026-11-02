@@ -74,10 +74,10 @@ int nma(int argc, char *argv[])
         { efXVG, "-ir",      "IRspectrum", ffOPTWR }
     };
     gmx_output_env_t         *oenv;
-    double                    shellToler = 1e-6;
+    real                      shellToler = 1e-6;
     bool                      json       = false;
     //! Line width (cm^-1) for a Lorentzian when computing infrared intensities and plotting an IR spectrum
-    double                    linewidth  = 24;
+    real                      linewidth  = 24;
     std::vector<t_pargs>      pa = {
         { "-linewidth", FALSE, etREAL, {&linewidth},
           "Line width (cm^-1) for a Lorentzian when computing infrared intensities and plotting an IR spectrum" },

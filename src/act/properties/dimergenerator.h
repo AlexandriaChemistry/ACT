@@ -85,9 +85,9 @@ private:
     //! The bin width (nm)
     double binWidth_    =  0.0025;
     //! Minimum com-com distance (nm)
-    double mindist_     =  0.1;
+    real   mindist_     =  0.1;
     //! Maximum com-com distance (nm)
-    double maxdist_     =  4.0;
+    real   maxdist_     =  4.0;
     //! Random number seed, not applied to the Sobol algorithm
     int    dimerseed_   =  1993;
     //! Whether to use flexible monomers
