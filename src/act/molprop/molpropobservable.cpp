@@ -348,12 +348,7 @@ CommunicationStatus MolecularMultipole::BroadCast(const CommunicationRecord *cr,
 
     if (CommunicationStatus::OK == cs)
     {
-        int nvalue = values_.size();
-        cr->bcast(&nvalue, comm);
-        if (cr->rank() != root)
-        {
-            values_.resize(nvalue);
-        }
+        // The broadcast includes the number of values
         cr->bcast(&values_, comm);
         cr->bcast(&average_, comm);
         cr->bcast(&error_, comm);
@@ -441,18 +436,13 @@ CommunicationStatus Harmonics::BroadCast(const CommunicationRecord *cr,
 
     if (CommunicationStatus::OK == cs)
     {
-        int nvalue = values_.size();
-        cr->bcast(&nvalue, comm);
-        if (cr->rank() != root)
-        {
-            values_.clear();
-        }
+        // The broadcast includes the number of values
         cr->bcast(&values_, comm);
     }
     else if (cr->mh())
     {
         cr->mh()->msg(ACTStatus::Error,
-                      gmx::formatString("Failed to receive MolecularMultipole, status %s\n", cs_name(cs).c_str()));
+                      gmx::formatString("Failed to broadcast Harmonics, status %s\n", cs_name(cs).c_str()));
     }
     return cs;
 }
@@ -470,7 +460,7 @@ CommunicationStatus Harmonics::Receive(const CommunicationRecord *cr, int src)
     else if (cr->mh())
     {
         cr->mh()->msg(ACTStatus::Error,
-                      gmx::formatString("Failed to receive MolecularMultipole, status %s\n", cs_name(cs).c_str()));
+                      gmx::formatString("Failed to receive Harmonics, status %s\n", cs_name(cs).c_str()));
     }
     return cs;
 }
