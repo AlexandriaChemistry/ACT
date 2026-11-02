@@ -118,41 +118,6 @@ void Genome::Send(const alexandria::CommunicationRecord *cr, int dest) const
     cr->send(dest, probability_);
 }
     
-void Genome::BroadCast(const alexandria::CommunicationRecord *cr, int root, MPI_Comm comm)
-{
-    cr->bcast(&genome_, comm);
-    size_t nfmap = fitness_.size();
-    cr->bcast(&nfmap, comm);
-    if (cr->rank() == root)
-    {
-        for(auto &f : fitness_)
-        {
-            std::string imsName(iMolSelectName(f.first));
-            cr->bcast(&imsName, comm);
-            cr->bcast(&f.second, comm);
-        }
-    }
-    else
-    {
-        fitness_.clear();
-        for (size_t i = 0; i < nfmap; i++)
-        {
-            std::string imsName;
-            cr->bcast(&imsName, comm);
-            iMolSelect ims;
-            if (!name2molselect(imsName, &ims))
-            {
-                GMX_THROW(gmx::InternalError(gmx::formatString("Invalid iMolSelect name %s",
-                                                               imsName.c_str()).c_str()));
-            }
-            double fitness = 0;
-            cr->bcast(&fitness, comm);
-            fitness_.insert({ims, fitness});
-        }
-    }
-    cr->bcast(&probability_, comm);
-}
-
 void Genome::Receive(const alexandria::CommunicationRecord *cr, int src)
 {
     cr->recv(src, &genome_);
