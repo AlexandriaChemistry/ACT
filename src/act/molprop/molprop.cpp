@@ -1058,7 +1058,15 @@ CommunicationStatus MolProp::BroadCast(const CommunicationRecord *cr,
             if (CommunicationStatus::OK == cr->bcast_data(comm))
             {
                 std::string str;
+                if (cr->rank() == root)
+                {
+                    str = category_[n];
+                }
                 cr->bcast(&str, comm);
+                if (cr->rank() == root)
+                {
+                    continue;
+                }
                 if (!str.empty())
                 {
                     AddCategory(str);
