@@ -285,6 +285,26 @@ TEST(ForceFieldSimpleTest, missingAcmParametersThrows)
     EXPECT_FALSE(incomplete.findForcesConst(InteractionType::ELECTRONEGATIVITYEQUALIZATION).parameterExists(Identifier("i_z")));
 }
 
+// Test: A particle type with a charge from ACM but without ACM type cannot be read
+TEST(ForceFieldSimpleTest, missingAcmTypeThrows)
+{
+    gmx::test::TestFileManager fileManager;
+    auto fileName = modifiedForceField(&fileManager, "no-acmtype.xml", [](std::string *xml)
+    {
+        auto        ptype  = xml->find("<particletype identifier=\"i\"");
+        std::string option("      <option key=\"acmtype\" value=\"i_z\"/>\n");
+        auto        pos    = xml->find(option, ptype);
+        ASSERT_NE(std::string::npos, ptype);
+        ASSERT_NE(std::string::npos, pos);
+        xml->erase(pos, option.size());
+    });
+    ForceField pd;
+    EXPECT_THROW(readForceField(fileName, &pd), gmx::InvalidInputError);
+    ForceField incomplete;
+    readForceField(fileName, &incomplete, nullptr, true, false);
+    EXPECT_FALSE(incomplete.findParticleType("i")->hasInteractionType(InteractionType::ELECTRONEGATIVITYEQUALIZATION));
+}
+
 // Test: Point charges with a width cannot be read
 TEST(ForceFieldSimpleTest, pointChargesWithZetaThrow)
 {
