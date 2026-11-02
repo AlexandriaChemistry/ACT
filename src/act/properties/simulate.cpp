@@ -161,7 +161,7 @@ int simulate(int argc, char *argv[])
     {
         epsilonr = 1;
     }
-    forceComp.init(shellToler, sch.maxIter(), epsilonr);
+    forceComp.init(shellToler, sch.shellMaxIter(), epsilonr);
 
     std::vector<ACTMol> actmols;
     try

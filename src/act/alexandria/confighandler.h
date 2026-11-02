@@ -500,6 +500,8 @@ private:
     double             overRelax_            = 1.0;
     //! Maximum number of iterations for the energy minimizer, 0 is until convergence.
     int                maxIter_              = 0;
+    //! Maximum number of iterations for relaxing the shells
+    int                shellMaxIter_         = 100;
     //! Force constant for flat-bottom position restraints, zero means no restraints
     double             kFBPR_                = 0;
     //! Radius for flat-bottom position restraints (from origin)
@@ -639,6 +641,9 @@ public:
     
     //! \return the max number of iterations for the minimizer. 0 is until convergence.
     int maxIter() const { return maxIter_; }
+
+    //! \return the maximum number of iterations for relaxing the shells
+    int shellMaxIter() const { return shellMaxIter_; }
     
     /*! Set the value of maxIter
      * \param[in] maxIter The new max number of em iterations
