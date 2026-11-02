@@ -49,6 +49,7 @@
 #include "act/basics/interactiontype.h"
 #include "act/forcefield/forcefield.h"
 #include "act/forcefield/forcefield_xml.h"
+#include "act/molprop/molprop_xml.h"
 
 #include "testutils/cmdlinetest.h"
 #include "testutils/testfilemanager.h"
@@ -284,6 +285,18 @@ protected:
     void run(const std::string &ffName, const std::vector<std::pair<std::string, std::string>> &input,
              std::map<std::string, std::string> *files)
     {
+        ASSERT_EQ(0, status(ffName, input, files));
+    }
+
+    /*! \brief Run gentop
+     * \param[in] ffName  Force field in this directory
+     * \param[in] input   Options that are passed as they are
+     * \param[in] options Output files, the file names are made temporary
+     * \return the exit status of gentop
+     */
+    int status(const std::string &ffName, const std::vector<std::pair<std::string, std::string>> &input,
+               std::map<std::string, std::string> *files)
+    {
         gmx::test::CommandLine cmd;
         cmd.append("gentop");
         cmd.addOption("-ff", fileManager().getInputFilePath(ffName));
@@ -297,7 +310,7 @@ protected:
             f.second = fileManager().getTemporaryFilePath(f.second);
             cmd.addOption(f.first.c_str(), f.second);
         }
-        ASSERT_EQ(0, gentop(cmd.argc(), cmd.argv()));
+        return gentop(cmd.argc(), cmd.argv());
     }
 
     /*! \brief Check the bonded sections of a topology
@@ -434,6 +447,84 @@ TEST_F(GentopTest, GromacsTopologyShells)
     ASSERT_EQ(20u, section(top, "atoms").size());
     ASSERT_EQ(10u, section(top, "polarization").size());
     EXPECT_EQ(expectedExclusionPairs(top), exclusionPairs(top));
+}
+
+//! \return the total charge of each atom with its shells, in the order of the atoms
+static std::vector<double> atomCharges(const Topology &top)
+{
+    auto atoms = section(top, "atoms");
+    std::vector<int> core(atoms.size() + 1);
+    for (size_t i = 0; i <= atoms.size(); i++)
+    {
+        core[i] = i;
+    }
+    for (const auto &p : section(top, "polarization"))
+    {
+        core[std::stoi(p.fields[1])] = std::stoi(p.fields[0]);
+    }
+    std::map<int, double> q;
+    for (const auto &a : atoms)
+    {
+        q[core[std::stoi(a.fields[0])]] += std::stod(a.fields[6]);
+    }
+    std::vector<double> charges;
+    for (const auto &qq : q)
+    {
+        charges.push_back(qq.second);
+    }
+    return charges;
+}
+
+// Test: The charges of quantum chemistry from the input, with and without
+// shells, which take their charge from their core
+TEST_F(GentopTest, ChargesRead)
+{
+    MsgHandler           msghandler;
+    std::vector<MolProp> mps;
+    auto molpropFile = fileManager().getInputFilePath("../../molprop/tests/molprop.xml");
+    MolPropRead(&msghandler, molpropFile.c_str(), &mps);
+    std::vector<double> mulliken;
+    for (const auto &mp : mps)
+    {
+        if (mp.getMolname() == "water")
+        {
+            for (const auto &ca : mp.findExperimentConst(JobType::OPT)->calcAtomConst())
+            {
+                EXPECT_TRUE(ca.hasCharge("qMulliken"));
+                mulliken.push_back(ca.charge("qMulliken"));
+            }
+        }
+    }
+    ASSERT_EQ(3u, mulliken.size());
+    for (const char *ffName : { "ACS-g.xml", "ACS-pg.xml" })
+    {
+        std::map<std::string, std::string> files = { { "-p", "water.top" } };
+        run(ffName, { { "-charges", molpropFile }, { "-db", "water" }, { "-qqm", "qMulliken" } }, &files);
+        auto charges = atomCharges(readTopology(files["-p"]));
+        ASSERT_EQ(mulliken.size(), charges.size()) << ffName;
+        for (size_t i = 0; i < charges.size(); i++)
+        {
+            EXPECT_NEAR(mulliken[i], charges[i], 1e-5) << ffName << " atom " << i;
+        }
+    }
+}
+
+// Test: Custom charges, of which there must be one for each particle.
+// The space keeps the command line parser from taking the charges for an option.
+TEST_F(GentopTest, ChargesCustom)
+{
+    auto molpropFile = fileManager().getInputFilePath("../../molprop/tests/molprop.xml");
+    std::map<std::string, std::string> files = { { "-p", "water.top" } };
+    run("ACS-g.xml", { { "-charges", molpropFile }, { "-db", "water" }, { "-qcustom", " -0.8 0.4 0.4" } }, &files);
+    std::vector<double> expected = { -0.8, 0.4, 0.4 };
+    auto charges = atomCharges(readTopology(files["-p"]));
+    ASSERT_EQ(expected.size(), charges.size());
+    for (size_t i = 0; i < charges.size(); i++)
+    {
+        EXPECT_NEAR(expected[i], charges[i], 1e-6) << "atom " << i;
+    }
+    files = { { "-p", "water2.top" } };
+    EXPECT_NE(0, status("ACS-g.xml", { { "-charges", molpropFile }, { "-db", "water" }, { "-qcustom", " -0.8 0.8" } }, &files));
 }
 
 // Test: Morse bonds, Urey-Bradley angles and Fourier dihedrals, which are
