@@ -1698,16 +1698,6 @@ void ACTMol::getExpProps(MsgHandler                                 *msghandler,
     }
 }
 
-CommunicationStatus ACTMol::Send(const CommunicationRecord *cr, int dest) const
-{
-    auto cs = MolProp::Send(cr, dest);
-    if (CommunicationStatus::OK == cs)
-    {
-        cr->send(dest, dataset_type_);
-    }
-    return cs;
-}
-
 CommunicationStatus ACTMol::BroadCast(const CommunicationRecord *cr, int root, MPI_Comm comm)
 {
     auto cs = MolProp::BroadCast(cr, root, comm);
@@ -1716,18 +1706,6 @@ CommunicationStatus ACTMol::BroadCast(const CommunicationRecord *cr, int root, M
         int ims = static_cast<int>(dataset_type_);
         cr->bcast(&ims, comm);
         set_datasetType(static_cast<iMolSelect>(ims));
-    }
-    return cs;
-}
-
-CommunicationStatus ACTMol::Receive(const CommunicationRecord *cr, int src)
-{
-    auto cs = MolProp::Receive(cr, src);
-    if (CommunicationStatus::OK == cs)
-    {
-        iMolSelect ims;
-        cr->recv(src, &ims);
-        set_datasetType(ims);
     }
     return cs;
 }
