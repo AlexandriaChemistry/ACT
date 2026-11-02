@@ -980,6 +980,15 @@ void ACTMol::setCharges(MsgHandler        *msghandler,
     {
         exper  = findExperimentConst(JobType::TOPOLOGY);
     }
+    auto myatoms = atoms();
+    size_t nRealAtoms = 0;
+    for (const auto &atom : *myatoms)
+    {
+        if (atom.pType() == ActParticle::Atom)
+        {
+            nRealAtoms += 1;
+        }
+    }
     if (nullptr != exper)
     {
         for (auto &ca : exper->calcAtomConst())
@@ -988,27 +997,29 @@ void ACTMol::setCharges(MsgHandler        *msghandler,
             {
                 break;
             }
-            else
-            {
-                qnew.push_back(ca.charge(qread));
-            }
+            qnew.push_back(ca.charge(qread));
         }
     }
-    if (qnew.empty())
+    // All atoms need a charge
+    if (qnew.size() != nRealAtoms)
     {
         msghandler->msg(ACTStatus::Error, ACTMessage::NoMolpropCharges,
                         getMolname());
         return;
     }
     size_t j = 0;
-    auto myatoms = atoms();
     for(size_t i = 0; i < myatoms->size(); i++)
     {
         if ((*myatoms)[i].pType() == ActParticle::Atom)
         {
             (*myatoms)[i].setCharge(qnew[j++]);
         }
-        else if ((*myatoms)[i].pType() == ActParticle::Shell)
+    }
+    // The charge of a shell is subtracted from its core, the atoms
+    // have their charges by now
+    for(size_t i = 0; i < myatoms->size(); i++)
+    {
+        if ((*myatoms)[i].pType() == ActParticle::Shell)
         {
             const auto &pId = (*myatoms)[i].ffType();
             if (!pd->hasParticleType(pId))
@@ -1017,11 +1028,10 @@ void ACTMol::setCharges(MsgHandler        *msghandler,
                                 getMolname());
                 return;
             }
-            auto piter = pd->findParticleType(pId);
-            auto q = piter->charge();
+            auto q    = pd->findParticleType(pId)->charge();
+            auto core = (*myatoms)[i].parents()[0];
             (*myatoms)[i].setCharge(q);
-            //! \todo Do not use -1 here, but particle.core()
-            (*myatoms)[i-1].setCharge(qnew[j-1]-q);
+            (*myatoms)[core].setCharge((*myatoms)[core].charge()-q);
         }
     }
     fraghandler_.setCharges(*myatoms);
@@ -1046,6 +1056,10 @@ void ACTMol::setCharges(MsgHandler       *msghandler,
 void ACTMol::setCharges(const std::vector<double> &qcustom)
 {
     auto myatoms = atoms();
+    if (qcustom.size() != myatoms->size())
+    {
+        GMX_THROW(gmx::InvalidInputError(gmx::formatString("%zu charges for %zu particles of %s", qcustom.size(), myatoms->size(), getMolname().c_str()).c_str()));
+    }
     for (size_t i = 0; i < myatoms->size(); i++)
     {
         (*myatoms)[i].setCharge(qcustom[i]);

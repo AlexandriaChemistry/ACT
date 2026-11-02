@@ -43,6 +43,8 @@
 
 #include "act/utility/communicationrecord.h"
 #include "gromacs/math/vectypes.h"
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/stringutil.h"
 
 namespace alexandria
 {
@@ -322,11 +324,17 @@ public:
     
     /*! \brief Return charge of a certain type
      * \param[in] type Charge type
-     * \return charge if found, or crash otherwise
+     * \return charge if found
+     * \throws if not found
      */
     double charge(const std::string &type) const
     {
-        return q_.find(type)->second;
+        auto qq = q_.find(type);
+        if (q_.end() == qq)
+        {
+            GMX_THROW(gmx::InvalidInputError(gmx::formatString("No charge of type %s", type.c_str()).c_str()));
+        }
+        return qq->second;
     }
     
     //! \brief Return the whole charge map

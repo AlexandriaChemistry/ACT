@@ -187,7 +187,17 @@ void CompoundReader::setCharges(MsgHandler          *msghandler,
             {
                 qcustom.push_back(my_atof(q.c_str(), "custom q"));
             }
-            mol->setCharges(qcustom);
+            if (qcustom.size() == mol->atomsConst().size())
+            {
+                mol->setCharges(qcustom);
+            }
+            else
+            {
+                msghandler->msg(ACTStatus::Error,
+                                gmx::formatString("%zu custom charges for %zu particles of %s",
+                                                  qcustom.size(), mol->atomsConst().size(),
+                                                  mol->getMolname().c_str()));
+            }
         }
         else if (qAlgorithm_ == ChargeGenerationAlgorithm::NONE)
         {
