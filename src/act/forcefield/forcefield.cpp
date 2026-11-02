@@ -706,18 +706,6 @@ bool ForceField::atypeToBtype(const std::string &atype,
     return false;
 }
 
-bool ForceField::atypeToZtype(const std::string &atype,
-                           std::string       *ztype) const
-{
-    auto ai = findParticleType(atype);
-    if (ai)
-    {
-        ztype->assign(ai->interactionTypeToIdentifier(InteractionType::ELECTRONEGATIVITYEQUALIZATION).id());
-        return true;
-    }
-    return false;
-}
-
 /*
  *-+-+-+-+-+-+-+-+
  * COULOMB STUFF

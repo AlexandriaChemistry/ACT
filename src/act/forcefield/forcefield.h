@@ -242,16 +242,6 @@ class ForceField
                       std::string       *btype) const;
     
     /*! \brief
-     * Return the zeta type corresponding to atom type and true if successful
-     *
-     * \param[in]  atype  Atom type
-     * \param[out] ztype  Zeta type.
-     * \return true if successful
-     */
-    bool atypeToZtype(const std::string &atype,
-                      std::string       *ztype) const;
-    
-    /*! \brief
      * Add a new force list. The routine checks for duplicate itypes
      * and will not add a second block of a certain type is one is
      * present already.
@@ -260,9 +250,6 @@ class ForceField
      */
     void addForces(InteractionType                iType,
                    const ForceFieldParameterList &forces);
-    
-    //! \return the number of interaction types with parameters
-    size_t nforces() const { return forces_.size(); }
     
     //! \return pointer to the map of parameter lists per interaction type
     std::map<InteractionType, ForceFieldParameterList> *forces() { return &forces_; }
@@ -326,9 +313,6 @@ class ForceField
     void addSymcharges(const std::string &central,
                        const std::string &attached,
                        int                numattach);
-    
-    //! \return a constant reference of \p symcharges_
-    const std::vector<Symcharges> &getSymcharges() const { return symcharges_; }
     
     //! \return iterator to the start of \p symcharges_
     SymchargesIterator getSymchargesBegin() { return symcharges_.begin(); }
@@ -431,9 +415,6 @@ class ForceField
      */
     void checkConsistency(MsgHandler *msgHandler) const;
     
-    //! \return a constant \p type2Itype_ reference
-    const std::map<InteractionType, std::set<std::string>> &type2Itype() const { return type2Itype_; }
-    
 private:
     //! The force field checksum
     std::string                           checkSum_;
@@ -453,17 +434,6 @@ private:
     bool                                  polarizable_ = false;
     //! The charge generation algorithm
     ChargeGenerationAlgorithm             ChargeGenerationAlgorithm_ = ChargeGenerationAlgorithm::NONE;
-    
-    /*! \brief Compute the index of an element in a vector
-     * \param[in] pointer Pointer to an element of \p vector
-     * \param[in] vector  The vector
-     * \return the index of \p pointer in \p vector
-     */
-    template<class Type>
-    int indexOfPointInVector(const Type *pointer, const std::vector<Type> &vector)
-    {
-        return (pointer - &(vector[0]));
-    }
 };
 
 template<typename T>
