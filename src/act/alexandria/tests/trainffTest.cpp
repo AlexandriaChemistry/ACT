@@ -185,6 +185,55 @@ TEST_F(TrainFFTest, CompoundFilePrefix)
     }
 }
 
+// Test: In verbose mode MCMC writes the convergence of each class of
+// parameters and of the chi-squared, one line per iteration
+TEST_F(TrainFFTest, ConvergenceFiles)
+{
+    auto options = combine(mcmcOptions(3), intraOptions());
+    for (auto &o : options)
+    {
+        if (o.first == "-v")
+        {
+            o.second = "4";
+        }
+    }
+    auto output = trainfftest::runTrainFF(&fileManager(), "conv", "halgren-PG.xml", "booze-mono", options);
+    ASSERT_EQ(0, output.status);
+    // The files are in the directory of the individual, named after the
+    // file names given
+    auto dir = std::filesystem::path(fileManager().getTemporaryFilePath("conv.log")).parent_path() / "inds";
+    auto convName = std::filesystem::path(fileManager().getTemporaryFilePath("conv-conv.xvg")).filename().string();
+    auto chi2Name = std::filesystem::path(fileManager().getTemporaryFilePath("conv-chi2.xvg")).filename().string();
+    // The parameters of halgren-PG.xml that are trained
+    std::vector<std::string> files = { "ind0-" + chi2Name };
+    for (const char *pclass : { "De", "b", "c", "bondlength", "angle", "kt", "c1", "c2", "c3", "c4", "c5" })
+    {
+        files.push_back("ind0-" + std::string(pclass) + "-" + convName);
+    }
+    int nlines = -1;
+    for (const auto &f : files)
+    {
+        std::ifstream in(dir / f);
+        ASSERT_TRUE(in.good()) << f;
+        int n = 0;
+        for (std::string line; std::getline(in, line); )
+        {
+            if (!line.empty() && line[0] != '#' && line[0] != '@')
+            {
+                n++;
+            }
+        }
+        // The same steps in each file
+        EXPECT_GT(n, 0) << f;
+        if (nlines >= 0)
+        {
+            EXPECT_EQ(nlines, n) << f;
+        }
+        nlines = n;
+    }
+    std::filesystem::remove_all(dir);
+}
+
 // Test: The outliers are listed with their structure, from the largest
 // to the smallest deviation
 TEST_F(TrainFFTest, OutlierOverview)
