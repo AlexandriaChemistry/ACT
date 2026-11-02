@@ -147,28 +147,6 @@ void ForceField::setFilename(const std::string &fn2)
  *-+-+-+-+-+-+-+-+-+-+-+
  */
 
-gmx_bool ForceField::strcasestrStart(const std::string &needle, const std::string &haystack)
-{
-    std::string ptr;
-    ptr = strcasestr(haystack.c_str(), needle.c_str());
-    return (ptr == haystack);
-}
-
-const std::string ForceField::ztype2elem(const std::string &ztype) const
-{
-    if (ztype.size() != 0)
-    {
-        for (auto i : alexandria_)
-        {
-            if (i.second.interactionTypeToIdentifier(InteractionType::ELECTROSTATICS).id() == ztype)
-            {
-                return i.second.element();
-            }
-        }
-    }
-    gmx_fatal(FARGS, "No such zeta type %s", ztype.c_str());
-}
-
 bool ForceField::typeToInteractionType(const std::string &type, 
                                        InteractionType   *itype) const
 {
@@ -258,18 +236,6 @@ void ForceField::guessChargeGenerationAlgorithm()
  * Polarizability STUFF
  *-+-+-+-+-+-+-+-+-+-+-+
  */
-
-bool ForceField::atypeToPtype(const std::string &atype,
-                           std::string       *ptype) const
-{
-    auto ai = findParticleType(atype);
-    if (ai)
-    {
-        ptype->assign(ai->interactionTypeToIdentifier(InteractionType::POLARIZATION).id());
-        return true;
-    }
-    return false;
-}
 
 void ForceField::checkForPolarizability()
 {

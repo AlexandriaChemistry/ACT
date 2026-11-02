@@ -142,14 +142,6 @@ class ForceField
         //! \return the number of particle types
         size_t getNatypes() const { return alexandria_.size(); }
 
-        /*! \brief
-         * Return the element name corresponding to the zeta type
-         *
-         * \param[in] ztype  zeta Type
-         * \return the element name, fatal error if not found
-         */
-        const std::string ztype2elem(const std::string &ztype) const;
-
     /*! \brief Check whether particle type exists
      * \param[in] id The identifier of the particle type
      * \return true if ptype exists
@@ -237,16 +229,6 @@ class ForceField
      * \return the map of particle types
      */
     const std::map<Identifier, ParticleType> &particleTypesConst() const { return alexandria_; }
-    
-    /*! \brief
-     * Return the poltype corresponding to atype and true if successful
-     *
-     * \param[in]  atype  Atom type
-     * \param[out] ptype  Polarizability type.
-     * \return true if successful
-     */
-    bool atypeToPtype(const std::string &atype,
-                      std::string       *ptype) const;
     
     
     /*! \brief
@@ -472,13 +454,6 @@ private:
     //! The charge generation algorithm
     ChargeGenerationAlgorithm             ChargeGenerationAlgorithm_ = ChargeGenerationAlgorithm::NONE;
     
-    /*! \brief Check whether a string starts with another, ignoring case
-     * \param[in] needle   The string to look for
-     * \param[in] haystack The string to search in
-     * \return true if \p needle is found at the start of \p haystack
-     */
-    gmx_bool strcasestrStart(const std::string &needle, const std::string &haystack);
-
     /*! \brief Compute the index of an element in a vector
      * \param[in] pointer Pointer to an element of \p vector
      * \param[in] vector  The vector
