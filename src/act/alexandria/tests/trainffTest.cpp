@@ -239,6 +239,71 @@ TEST_F(TrainFFTest, Reproducible)
     EXPECT_NE(params[0], params[2]);
 }
 
+//! \return the number of points and the legends of the sets in an xvg file
+static std::pair<int, std::vector<std::string>> xvgSets(const std::string &fileName)
+{
+    std::pair<int, std::vector<std::string>> sets = { 0, {} };
+    for (const auto &line : trainfftest::readLines(fileName))
+    {
+        auto legend = line.find("legend \"");
+        if (legend != std::string::npos)
+        {
+            auto begin = legend + std::string("legend \"").size();
+            sets.second.push_back(line.substr(begin, line.rfind('"') - begin));
+        }
+        else if (!line.empty() && line[0] != '@' && line[0] != '#' && line[0] != '&')
+        {
+            sets.first += 1;
+        }
+    }
+    return sets;
+}
+
+// Test: The frequencies of the optimized methanol in the training set are
+// compared with the reference, and the forces of both sets, without
+// optimizing. The minimized structures are written in a directory that
+// is made for optimizing.
+TEST_F(TrainFFTest, FrequenciesAndForces)
+{
+    auto freq   = fileManager().getTemporaryFilePath("freq.xvg");
+    auto force  = fileManager().getTemporaryFilePath("force.xvg");
+    auto output = trainfftest::runTrainFF(&fileManager(), "freq", "lj-pc-trained.xml", "booze-mono",
+                                          { { "-nooptimize", "" }, { "-calc_frequencies", "" },
+                                            { "-fit", "kb" }, { "-fc_epot", "1" }, { "-fc_force", "1" },
+                                            { "-freqcorr", freq }, { "-forcecorr", force } });
+    ASSERT_EQ(0, output.status);
+    // The 12 vibrations of methanol
+    auto freqSets = xvgSets(freq);
+    EXPECT_EQ(12, freqSets.first);
+    EXPECT_EQ(std::vector<std::string>({ "Train" }), freqSets.second);
+    auto forceSets = xvgSets(force);
+    EXPECT_GT(forceSets.first, 0);
+    EXPECT_EQ(std::vector<std::string>({ "Train", "Test" }), forceSets.second);
+    // Each molecule has a frequency analysis
+    const auto &molecules = output.json["train_ff"]["molecules"];
+    EXPECT_EQ(2u, molecules.size());
+    for (const auto &mol : molecules)
+    {
+        EXPECT_TRUE(mol.contains("FrequencyAnalysis")) << mol["name"];
+    }
+}
+
+// Test: Without optimizing, structures that change much in the minimization
+// are written as well. With the crude starting force field methanol falls
+// apart.
+TEST_F(TrainFFTest, MinimizedStructures)
+{
+    auto output = trainfftest::runTrainFF(&fileManager(), "minimized", "halgren-PG.xml", "booze-mono",
+                                          { { "-nooptimize", "" }, { "-calc_frequencies", "" },
+                                            { "-fit", "kb" }, { "-fc_epot", "1" } });
+    ASSERT_EQ(0, output.status);
+    // The structures are written in the working directory of train_ff
+    auto dir = std::filesystem::path(fileManager().getTemporaryFilePath("minimized.log")).parent_path() / "inds";
+    auto pdb = dir / "methanol-original-minimized.pdb";
+    EXPECT_TRUE(std::filesystem::exists(pdb)) << pdb;
+    std::filesystem::remove_all(dir);
+}
+
 // Test: Compounds with parameters that have too little training data are
 // removed. Without methanol#water the water parameters have no data in the
 // training set, after which the support for methanol#methanol is checked
