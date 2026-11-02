@@ -34,6 +34,7 @@
 #include <math.h>
 
 #include <fstream>
+#include <functional>
 #include <map>
 #include <sstream>
 
@@ -246,6 +247,57 @@ TEST(ForceFieldSimpleTest, unknownMutabilityThrows)
     }
     ForceField pd;
     EXPECT_THROW(readForceField(freeName, &pd), gmx::InvalidInputError);
+}
+
+//! \return the file name of ACM-g.xml with a change made by edit
+static std::string modifiedForceField(gmx::test::TestFileManager       *fileManager,
+                                      const std::string                &name,
+                                      std::function<void(std::string *)> edit)
+{
+    std::ifstream     in(gmx::test::TestFileManager::getInputFilePath("ACM-g.xml"));
+    std::stringstream buffer;
+    buffer << in.rdbuf();
+    std::string xml = buffer.str();
+    edit(&xml);
+    auto fileName = fileManager->getTemporaryFilePath(name);
+    std::ofstream out(fileName);
+    out << xml;
+    return fileName;
+}
+
+// Test: A particle type of which the ACM type has no parameters cannot be
+// read, unless without the check of consistency
+TEST(ForceFieldSimpleTest, missingAcmParametersThrows)
+{
+    gmx::test::TestFileManager fileManager;
+    auto fileName = modifiedForceField(&fileManager, "no-iodine.xml", [](std::string *xml)
+    {
+        auto eem   = xml->find("interaction type=\"ELECTRONEGATIVITYEQUALIZATION\"");
+        auto begin = xml->find("    <parameterlist identifier=\"i_z\">", eem);
+        auto end   = xml->find("</parameterlist>", begin);
+        ASSERT_NE(std::string::npos, begin);
+        xml->erase(begin, end + std::string("</parameterlist>\n").size() - begin);
+    });
+    ForceField pd;
+    EXPECT_THROW(readForceField(fileName, &pd), gmx::InvalidInputError);
+    ForceField incomplete;
+    readForceField(fileName, &incomplete, nullptr, true, false);
+    EXPECT_FALSE(incomplete.findForcesConst(InteractionType::ELECTRONEGATIVITYEQUALIZATION).parameterExists(Identifier("i_z")));
+}
+
+// Test: Point charges with a width cannot be read
+TEST(ForceFieldSimpleTest, pointChargesWithZetaThrow)
+{
+    gmx::test::TestFileManager fileManager;
+    auto fileName = modifiedForceField(&fileManager, "point.xml", [](std::string *xml)
+    {
+        std::string gaussian("<interaction type=\"COULOMB\" function=\"COULOMB_GAUSSIAN\"");
+        auto        pos = xml->find(gaussian);
+        ASSERT_NE(std::string::npos, pos);
+        xml->replace(pos, gaussian.size(), "<interaction type=\"COULOMB\" function=\"COULOMB_POINT\"");
+    });
+    ForceField pd;
+    EXPECT_THROW(readForceField(fileName, &pd), gmx::InvalidInputError);
 }
 
 TEST(ForceFieldSimpleTest, changeChargeMinMaxForFixedParticle)

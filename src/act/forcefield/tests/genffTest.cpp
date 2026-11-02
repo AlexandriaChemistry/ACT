@@ -159,6 +159,11 @@ TEST_F(GenFFTest, Options)
     EXPECT_DOUBLE_EQ(1.7, std::stod(option(pd, InteractionType::ELECTROSTATICS, "epsilonr")));
     EXPECT_EQ("3", option(pd, InteractionType::ELECTROSTATICS, "nexcl"));
     EXPECT_EQ("1", option(pd, InteractionType::VDW, "nexcl"));
+    // Point charges have no width
+    for (const auto &p : pd.findForcesConst(InteractionType::ELECTROSTATICS).parametersConst())
+    {
+        EXPECT_EQ(0, p.second.find("zeta")->second.value()) << p.first.id();
+    }
 }
 
 // Test: Without the file of virtual sites there are none
