@@ -1501,6 +1501,20 @@ void Topology::build(MsgHandler             *msghandler,
                                             interactionTypeToString(myItype).c_str(), nexcl, 
         pd->filename().c_str()));
     }
+    // Keep the exclusions for writing topologies for other codes
+    std::vector<std::vector<int>> exclusionList(exclusions.size());
+    for (size_t i = 0; i < exclusions.size(); i++)
+    {
+        for (const auto j : exclusions[i])
+        {
+            if (j != i)
+            {
+                exclusionList[i].push_back(j);
+            }
+        }
+    }
+    exclusions_[InteractionType::VDW]            = exclusionList;
+    exclusions_[InteractionType::ELECTROSTATICS] = exclusionList;
     makePairs(msghandler, pd, InteractionType::VDW, exclusions);
     makePairs(msghandler, pd, InteractionType::ELECTROSTATICS, exclusions);
     auto itqt = InteractionType::VDWCORRECTION;

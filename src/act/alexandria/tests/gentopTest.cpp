@@ -38,6 +38,7 @@
 #include <filesystem>
 #include <fstream>
 #include <map>
+#include <set>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -119,6 +120,82 @@ std::vector<TopLine> section(const Topology &top, const std::string &name)
         }
     }
     return lines;
+}
+
+//! \return the excluded pairs of particles, each with the lowest index first
+std::set<std::pair<int, int>> exclusionPairs(const Topology &top)
+{
+    std::set<std::pair<int, int>> pairs;
+    for (const auto &e : section(top, "exclusions"))
+    {
+        int i = std::stoi(e.fields[0]);
+        for (size_t k = 1; k < e.fields.size(); k++)
+        {
+            int j = std::stoi(e.fields[k]);
+            pairs.insert({ std::min(i, j), std::max(i, j) });
+        }
+    }
+    return pairs;
+}
+
+/*! \brief The pairs that GROMACS excludes for nrexcl, extended to the shells
+ * \return the pairs of particles at most nrexcl bonds apart, where a
+ *         shell has the place of its core, each with the lowest index first
+ */
+std::set<std::pair<int, int>> expectedExclusionPairs(const Topology &top)
+{
+    int  nrexcl = std::stoi(section(top, "moleculetype")[0].fields[1]);
+    auto natoms = section(top, "atoms").size();
+    // The core of each particle, starting at 1 as in the topology
+    std::vector<int> core(natoms + 1);
+    for (size_t i = 0; i <= natoms; i++)
+    {
+        core[i] = i;
+    }
+    for (const auto &p : section(top, "polarization"))
+    {
+        core[std::stoi(p.fields[1])] = std::stoi(p.fields[0]);
+    }
+    std::vector<std::vector<int>> neighbors(natoms + 1);
+    for (const auto &b : section(top, "bonds"))
+    {
+        int i = std::stoi(b.fields[0]);
+        int j = std::stoi(b.fields[1]);
+        neighbors[i].push_back(j);
+        neighbors[j].push_back(i);
+    }
+    std::set<std::pair<int, int>> pairs;
+    for (size_t i = 1; i <= natoms; i++)
+    {
+        // The particles at most nrexcl bonds from the core of i
+        std::vector<int> distance(natoms + 1, -1);
+        std::vector<int> front = { core[i] };
+        distance[core[i]] = 0;
+        for (int n = 1; n <= nrexcl; n++)
+        {
+            std::vector<int> next;
+            for (const auto j : front)
+            {
+                for (const auto k : neighbors[j])
+                {
+                    if (distance[k] < 0)
+                    {
+                        distance[k] = n;
+                        next.push_back(k);
+                    }
+                }
+            }
+            front = next;
+        }
+        for (size_t j = i + 1; j <= natoms; j++)
+        {
+            if (distance[core[j]] >= 0)
+            {
+                pairs.insert({ i, j });
+            }
+        }
+    }
+    return pairs;
 }
 
 //! \return the parameters of an identifier, given as text
@@ -281,6 +358,9 @@ TEST_F(GentopTest, GromacsTopology)
     // The charges have six significant digits
     EXPECT_NEAR(0, qtot, 1e-5);
     EXPECT_EQ(9u, section(top, "bonds").size());
+    // The same exclusions as GROMACS generates from the bonds
+    EXPECT_FALSE(exclusionPairs(top).empty());
+    EXPECT_EQ(expectedExclusionPairs(top), exclusionPairs(top));
     ForceField pd;
     readForceField(fileManager().getInputFilePath("ACS-g.xml"), &pd);
     auto angles = section(top, "angles");
@@ -342,6 +422,18 @@ TEST_F(GentopTest, GromacsTopology)
     {
         EXPECT_EQ(names[i], atoms[i].fields[4]);
     }
+}
+
+// Test: The shells are excluded from their core and have the same
+// exclusions as their core
+TEST_F(GentopTest, GromacsTopologyShells)
+{
+    std::map<std::string, std::string> files = { { "-p", "acetone.top" } };
+    run("ACS-pg.xml", "acetone.sdf", &files);
+    auto top = readTopology(files["-p"]);
+    ASSERT_EQ(20u, section(top, "atoms").size());
+    ASSERT_EQ(10u, section(top, "polarization").size());
+    EXPECT_EQ(expectedExclusionPairs(top), exclusionPairs(top));
 }
 
 // Test: Morse bonds, Urey-Bradley angles and Fourier dihedrals, which are

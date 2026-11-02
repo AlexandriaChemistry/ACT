@@ -37,6 +37,7 @@
 #include <cmath>
 #include <map>
 #include <set>
+#include <vector>
 
 #include "act/alexandria/pdbwriter.h"
 #include "act/basics/msg_handler.h"
@@ -181,12 +182,21 @@ static void print_excl(FILE *out, const Topology *top)
     fprintf (out, "; %4s    %s\n", "i", "excluded from i");
     for (size_t i = 0; i < excls.size(); i++)
     {
-        if (!excls[i].empty())
+        // Each pair once
+        std::vector<int> later;
+        for (const auto j : excls[i])
+        {
+            if (j > static_cast<int>(i))
+            {
+                later.push_back(j);
+            }
+        }
+        if (!later.empty())
         {
             fprintf (out, "%6lu", i+1);
-            for (size_t j = 0; j < excls[i].size(); j++)
+            for (const auto j : later)
             {
-                fprintf (out, " %5d", excls[i][j]+1);
+                fprintf (out, " %5d", j+1);
             }
             fprintf (out, "\n");
         }
