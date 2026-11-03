@@ -151,6 +151,42 @@ TEST(ReferenceDataTest, HandlesStringBlockData)
 }
 
 
+TEST(ReferenceDataTest, HandlesStringBlockWithNumbers)
+{
+    const char *reference = "<Atom name=\"C2\" type=\"c2_1\" charge=\"-0.09165268173125\" index=\"12\"/>\n"
+        "<Bond k=\"4.62750e+05\" length=\"0.1229\"/>\n";
+    {
+        TestReferenceData    data(gmx::test::erefdataUpdateAll);
+        TestReferenceChecker checker(data.rootChecker());
+        checker.checkTextBlockWithNumbers(reference, "block");
+    }
+    {
+        TestReferenceData    data(gmx::test::erefdataCompare);
+        TestReferenceChecker checker(data.rootChecker());
+        checker.setDefaultTolerance(gmx::test::relativeToleranceAsFloatingPoint(1.0, 1e-5));
+        // Written as a text block, the same as with checkTextBlock
+        checker.checkTextBlock(reference, "block");
+        // Decimal numbers within the tolerance, also when written differently
+        checker.checkTextBlockWithNumbers("<Atom name=\"C2\" type=\"c2_1\" charge=\"-0.0916527\" index=\"12\"/>\n"
+                                          "<Bond k=\"462750.0\" length=\"1.229e-1\"/>\n", "block");
+        // A decimal number beyond the tolerance
+        EXPECT_NONFATAL_FAILURE(checker.checkTextBlockWithNumbers("<Atom name=\"C2\" type=\"c2_1\" charge=\"-0.0917\" index=\"12\"/>\n"
+                                                                  "<Bond k=\"4.62750e+05\" length=\"0.1229\"/>\n", "block"), "");
+        // Integers are compared exactly
+        EXPECT_NONFATAL_FAILURE(checker.checkTextBlockWithNumbers("<Atom name=\"C2\" type=\"c2_1\" charge=\"-0.09165268173125\" index=\"13\"/>\n"
+                                                                  "<Bond k=\"4.62750e+05\" length=\"0.1229\"/>\n", "block"), "");
+        // Other tokens are compared exactly
+        EXPECT_NONFATAL_FAILURE(checker.checkTextBlockWithNumbers("<Atom name=\"C2\" type=\"c2_2\" charge=\"-0.09165268173125\" index=\"12\"/>\n"
+                                                                  "<Bond k=\"4.62750e+05\" length=\"0.1229\"/>\n", "block"), "");
+        // A number where the reference has a number
+        EXPECT_NONFATAL_FAILURE(checker.checkTextBlockWithNumbers("<Atom name=\"C2\" type=\"c2_1\" charge=\"-0.09165268173125x\" index=\"12\"/>\n"
+                                                                  "<Bond k=\"4.62750e+05\" length=\"0.1229\"/>\n", "block"), "");
+        // The structure, including the white space, is compared exactly
+        EXPECT_NONFATAL_FAILURE(checker.checkTextBlockWithNumbers("<Atom name=\"C2\"  type=\"c2_1\" charge=\"-0.09165268173125\" index=\"12\"/>\n"
+                                                                  "<Bond k=\"4.62750e+05\" length=\"0.1229\"/>\n", "block"), "");
+    }
+}
+
 TEST(ReferenceDataTest, HandlesVectorData)
 {
     int    veci[3] = { -1, 3, 5 };

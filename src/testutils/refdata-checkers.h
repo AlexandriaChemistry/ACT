@@ -43,10 +43,14 @@
 #ifndef GMX_TESTUTILS_REFDATA_CHECKERS_H
 #define GMX_TESTUTILS_REFDATA_CHECKERS_H
 
+#include <algorithm>
+#include <cctype>
 #include <cstdlib>
+#include <cstring>
 
 #include <limits>
 #include <string>
+#include <vector>
 
 #include <gtest/gtest.h>
 
@@ -144,6 +148,173 @@ class ExactStringBlockChecker : public IReferenceDataEntryChecker
         std::string  value_;
 };
 
+
+/*! \brief Checks a text block with numbers compared within a tolerance
+ *
+ * The texts are split at white space and the punctuation of XML and
+ * similar formats into tokens, which have to be the same, except tokens
+ * that are decimal numbers, with a decimal point or an exponent, in both
+ * texts. These are compared with the tolerance. Integers are compared
+ * exactly, since they are often counts or indices. The reference data are
+ * written as with ExactStringBlockChecker.
+ */
+class NumericStringBlockChecker : public IReferenceDataEntryChecker
+{
+    public:
+        NumericStringBlockChecker(const std::string &value, const FloatingPointTolerance &tolerance)
+            : value_(value), tolerance_(tolerance)
+        {
+        }
+
+        void fillEntry(ReferenceDataEntry *entry) const override
+        {
+            entry->setTextBlockValue(value_);
+        }
+        ::testing::AssertionResult
+        checkEntry(const ReferenceDataEntry &entry, const std::string &fullId) const override
+        {
+            if (entry.value() == value_)
+            {
+                return ::testing::AssertionSuccess();
+            }
+            auto actual    = tokens(value_);
+            auto reference = tokens(entry.value());
+            if (actual.size() != reference.size())
+            {
+                return ::testing::AssertionFailure()
+                       << "  In item: " << fullId << std::endl
+                       << "The number of tokens differs, actual " << actual.size()
+                       << ", reference " << reference.size() << std::endl
+                       << "   Actual: '" << value_ << "'" << std::endl
+                       << "Reference: '" << entry.value() << "'";
+            }
+            // The differences that are not within the tolerance
+            const size_t      maxReported = 10;
+            size_t            nDiffer     = 0;
+            std::string       report;
+            for (size_t i = 0; i < actual.size(); i++)
+            {
+                const auto &a = actual[i];
+                const auto &r = reference[i];
+                if (a.text == r.text)
+                {
+                    continue;
+                }
+                bool        within = false;
+                std::string difference;
+                if (isDecimal(a.text) && isDecimal(r.text))
+                {
+                    FloatingPointDifference diff(std::strtod(r.text.c_str(), nullptr),
+                                                 std::strtod(a.text.c_str(), nullptr));
+                    within     = tolerance_.isWithin(diff);
+                    difference = formatString(" (%s, tolerance %s)", diff.toString().c_str(),
+                                              tolerance_.toString(diff).c_str());
+                }
+                if (!within)
+                {
+                    if (nDiffer < maxReported)
+                    {
+                        report += formatString("  Line %zu: actual '%s', reference '%s'%s\n",
+                                               a.line, a.text.c_str(), r.text.c_str(), difference.c_str());
+                    }
+                    nDiffer += 1;
+                }
+            }
+            if (0 == nDiffer)
+            {
+                return ::testing::AssertionSuccess();
+            }
+            return ::testing::AssertionFailure()
+                   << "  In item: " << fullId << std::endl
+                   << nDiffer << " tokens differ" << (nDiffer > maxReported ? ", the first ones:" : ":")
+                   << std::endl << report;
+        }
+
+    private:
+        //! A token of the text and the line it starts in, counting from 1
+        struct Token
+        {
+            //! The token
+            std::string text;
+            //! The line
+            size_t      line;
+        };
+
+        //! \return whether a character separates tokens, then it is a token itself
+        static bool isSeparator(char c)
+        {
+            return std::isspace(static_cast<unsigned char>(c)) || std::strchr("\"'<>=,;()[]{}", c) != nullptr;
+        }
+
+        //! \return the tokens of a text, separators are tokens of one character
+        static std::vector<Token> tokens(const std::string &text)
+        {
+            std::vector<Token> result;
+            size_t             line = 1;
+            for (size_t i = 0; i < text.size(); )
+            {
+                size_t j = i + 1;
+                if (!isSeparator(text[i]))
+                {
+                    while (j < text.size() && !isSeparator(text[j]))
+                    {
+                        j++;
+                    }
+                }
+                result.push_back({ text.substr(i, j-i), line });
+                line += std::count(text.begin() + i, text.begin() + j, '\n');
+                i     = j;
+            }
+            return result;
+        }
+
+        /*! \brief Whether a token is a decimal number
+         * An optional sign, digits with a decimal point or an exponent or
+         * both, and nothing else.
+         */
+        static bool isDecimal(const std::string &token)
+        {
+            size_t i = 0;
+            if (i < token.size() && (token[i] == '-' || token[i] == '+'))
+            {
+                i++;
+            }
+            size_t ndigit = 0;
+            bool   point  = false;
+            for (; i < token.size() && (std::isdigit(static_cast<unsigned char>(token[i])) || (token[i] == '.' && !point)); i++)
+            {
+                point   = point || token[i] == '.';
+                ndigit += token[i] == '.' ? 0 : 1;
+            }
+            if (0 == ndigit)
+            {
+                return false;
+            }
+            bool exponent = false;
+            if (i < token.size() && (token[i] == 'e' || token[i] == 'E'))
+            {
+                i++;
+                if (i < token.size() && (token[i] == '-' || token[i] == '+'))
+                {
+                    i++;
+                }
+                size_t nexp = 0;
+                for (; i < token.size() && std::isdigit(static_cast<unsigned char>(token[i])); i++)
+                {
+                    nexp++;
+                }
+                if (0 == nexp)
+                {
+                    return false;
+                }
+                exponent = true;
+            }
+            return i == token.size() && (point || exponent);
+        }
+
+        std::string             value_;
+        FloatingPointTolerance  tolerance_;
+};
 
 //! Helper function to parse a floating-point reference data value.
 static inline double convertDoubleReferenceValue(const std::string &value)

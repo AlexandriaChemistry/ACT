@@ -133,6 +133,21 @@ class ExactTextMatch : public ITextBlockMatcherSettings
 };
 
 /*! \libinternal \brief
+ * Match the text, with the decimal numbers in it within the tolerance.
+ *
+ * See TestReferenceChecker::checkTextBlockWithNumbers(), the tolerance
+ * is the default tolerance of the checker.
+ *
+ * \inlibraryapi
+ * \ingroup module_testutils
+ */
+class NumericTextMatch : public ITextBlockMatcherSettings
+{
+    public:
+        TextBlockMatcherPointer createMatcher() const override;
+};
+
+/*! \libinternal \brief
  * Do not match the text (the contents are ignored).
  *
  * \inlibraryapi

@@ -70,6 +70,17 @@ class ExactTextMatcher : public ITextBlockMatcher
         }
 };
 
+class NumericTextMatcher : public ITextBlockMatcher
+{
+    public:
+        void checkStream(TextInputStream      *stream,
+                         TestReferenceChecker *checker) override
+        {
+            TextReader reader(stream);
+            checker->checkTextBlockWithNumbers(reader.readAll(), "Contents");
+        }
+};
+
 class NoTextMatcher : public ITextBlockMatcher
 {
     public:
@@ -135,6 +146,11 @@ ITextBlockMatcherSettings::~ITextBlockMatcherSettings()
 TextBlockMatcherPointer ExactTextMatch::createMatcher() const
 {
     return TextBlockMatcherPointer(compat::make_unique<ExactTextMatcher>());
+}
+
+TextBlockMatcherPointer NumericTextMatch::createMatcher() const
+{
+    return TextBlockMatcherPointer(compat::make_unique<NumericTextMatcher>());
 }
 
 TextBlockMatcherPointer NoTextMatch::createMatcher() const
