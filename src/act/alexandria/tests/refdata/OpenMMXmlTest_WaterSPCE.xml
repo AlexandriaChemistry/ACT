@@ -20,10 +20,10 @@
     </Residue>
   </Residues>
   <HarmonicBondForce>
-    <Bond class1="h_b" class2="o3_b" k="450000000" length="0.1"/>
+    <Bond class1="h_b" class2="o3_b" k="450000" length="0.1"/>
   </HarmonicBondForce>
   <HarmonicAngleForce energy="0">
-    <Angle class1="h_b" class2="o3_b" class3="h_b" k="400000" angle="1.910611932158"/>
+    <Angle class1="h_b" class2="o3_b" class3="h_b" k="400" angle="1.910611932158"/>
   </HarmonicAngleForce>
   <CustomAngleForce energy="0"/>
   <RBTorsionForce energy="0"/>
