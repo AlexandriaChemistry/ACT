@@ -246,7 +246,7 @@ protected:
         {
             ASSERT_EQ(0u, second.count(a));
         }
-        std::vector<double> eSum(nconf_, 0.0);
+        std::vector<double> eSum(nconf_, 0.0), eAbs(nconf_, 0.0);
         for (int a = 0; a < 2; a++)
         {
             for (int c = 0; c < 2; c++)
@@ -265,12 +265,16 @@ protected:
                 for (size_t conf = 0; conf < nconf_; conf++)
                 {
                     eSum[conf] += e[conf];
+                    eAbs[conf] += std::abs(e[conf]);
                 }
             }
         }
+        // In double precision, as the explicit SIMD routines compute, otherwise
+        // relative to the terms, which may cancel
+        double toler = (GMX_DOUBLE || useExplicitSimd()) ? 1e-10 : 1e-6;
         for (size_t conf = 0; conf < nconf_; conf++)
         {
-            EXPECT_NEAR(eSum[conf], eSecond[conf], 1e-10*(1 + std::abs(eSum[conf]))) << "conformation " << conf;
+            EXPECT_NEAR(eSum[conf], eSecond[conf], toler*(1 + eAbs[conf])) << "conformation " << conf;
         }
     }
 

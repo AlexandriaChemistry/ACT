@@ -688,11 +688,13 @@ TEST_F(ComputeTotalTest, Statistics)
     set.top = mol.topology();
     set.setCoordinates({ mol.xOriginal(), displaced(mol.xOriginal(), 1) });
     std::vector<std::map<InteractionType, double>> energies;
-    forceComp_.resetStatistics();
-    forceComp_.computeTotal(&msghandler_, pd, &set, ShellOptions(), &energies);
-    EXPECT_EQ(2u, forceComp_.numEvaluations());
-    EXPECT_GE(forceComp_.numShellIterations(), 2u);
-    EXPECT_EQ(0u, forceComp_.numShellConvergenceFailed());
+    // Within the precision of the forces, which in single precision without
+    // explicit SIMD are computed from single precision coordinates
+    ForceComputer forceComp(gmx::test::precisionTolerance(1e-12, 1e-4), 200, 1);
+    forceComp.computeTotal(&msghandler_, pd, &set, ShellOptions(), &energies);
+    EXPECT_EQ(2u, forceComp.numEvaluations());
+    EXPECT_GE(forceComp.numShellIterations(), 2u);
+    EXPECT_EQ(0u, forceComp.numShellConvergenceFailed());
 }
 
 TEST_F(ComputeTotalTest, InteractionPolarizable)

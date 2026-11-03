@@ -48,6 +48,7 @@
 #include "act/qgen/qgen_resp.h"
 #include "act/qgen/qtype.h"
 #include "act/utility/timings.h"
+#include "act/forces/simd_information.h"
 #include "act/molprop/molprop_xml.h"
 #include "act/topology/actmol.h"
 
@@ -1998,13 +1999,24 @@ protected:
     }
 };
 
+/*! \brief Tolerance for comparing second charges with virtual sites
+ * Without explicit SIMD, single precision computes the energies in single
+ * precision, then the Coulomb sums of dimers, whose terms cancel, have
+ * errors of about 1e-3 kJ/mol.
+ * \return the relative tolerance
+ */
+static double secondChargesTolerance()
+{
+    return gmx::test::precisionTolerance(1e-10, useExplicitSimd() ? 1e-6 : 1e-3);
+}
+
 
 // Test: Virtual sites on top of atoms give the same charges, energies and
 // forces as the second charges that replace them, see ForceField::convertVsite1
 TEST_F(PropertyDevComputerTest, SecondChargesAsVsites)
 {
     compareSecondChargesToVsites("../../constraints/tests/PC+GV-elec.xml", "mpdimer.xml",
-                                 "v1ow", "ow", false, gmx::test::precisionTolerance(1e-10, 1e-6));
+                                 "v1ow", "ow", false, secondChargesTolerance());
 }
 
 // Test: The same for a polarizable force field, with shells on the ions,
@@ -2012,7 +2024,7 @@ TEST_F(PropertyDevComputerTest, SecondChargesAsVsites)
 TEST_F(PropertyDevComputerTest, SecondChargesAsVsitesPolarizable)
 {
     compareSecondChargesToVsites("PG-pol-ions.xml", "ion-water.xml",
-                                 "v1Na+", "Na+", true, gmx::test::precisionTolerance(1e-10, 1e-6));
+                                 "v1Na+", "Na+", true, secondChargesTolerance());
 }
 
 // Test: The same with polarizable ions, the ion shells have a negligible
@@ -2020,7 +2032,7 @@ TEST_F(PropertyDevComputerTest, SecondChargesAsVsitesPolarizable)
 TEST_F(PropertyDevComputerTest, SecondChargesAsVsitesPolarizableIons)
 {
     compareSecondChargesToVsites("PG-pol-ions.xml", "ion-water.xml",
-                                 "v1Na+", "Na+", true, gmx::test::precisionTolerance(1e-10, 1e-6),
+                                 "v1Na+", "Na+", true, secondChargesTolerance(),
                                  { { "Na+_s", 0.18 }, { "Cl-_s", 3.4 } });
 }
 
