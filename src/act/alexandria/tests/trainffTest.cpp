@@ -390,6 +390,27 @@ TEST_F(TrainFFTest, LossFunctions)
     }
 }
 
+// Test: The Morse bonds of the hydrogen halides are trained on their
+// harmonic frequencies and intensities
+TEST_F(TrainFFTest, FrequenciesAndIntensities)
+{
+    auto output = trainfftest::runTrainFF(&fileManager(), "hhfreq", "hh-intra.xml", "hh-freq",
+                                          combine(mcmcOptions(10),
+                                                  { { "-fit", "De bondlength b c" },
+                                                    { "-fc_freq", "1" }, { "-fc_inten", "1" } }));
+    std::set<std::pair<std::string, std::string>> expected;
+    for (const char *bond : { "br_b~hbr_b", "cl_b~hcl_b", "f_b~hf_b", "hi_b~i_b" })
+    {
+        for (const char *ptype : { "De", "bondlength", "b", "c" })
+        {
+            expected.insert({ bond, ptype });
+        }
+    }
+    expectTrained(&fileManager(), output, fileManager().getInputFilePath("trainff/hh-intra.xml"), expected);
+    EXPECT_TRUE(hasInitialComponent(output, "FREQUENCY"));
+    EXPECT_TRUE(hasInitialComponent(output, "INTENSITY"));
+}
+
 // Test: The second charges of particles, which replace virtual sites on top
 // of atoms when reading the force field, and the widths of their
 // distributions are trained, see ForceField::convertVsite1 and
