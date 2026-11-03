@@ -156,7 +156,7 @@ void MolHandler::computeHessian(const ForceField                  *pd,
     set.setCoordinates(xs);
     std::vector<std::map<InteractionType, double>> energies;
     forceComp->computeTotal(nullptr, pd, &set, ShellOptions(), &energies);
-    const auto &confs = set.confs;
+    const auto &confs = set.data.confs;
     // The input structure with the relaxed shells and the virtual sites
     *coords     = confs[0].x;
     *energyZero = energies[0];

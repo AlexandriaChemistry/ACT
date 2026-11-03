@@ -821,7 +821,8 @@ TEST_F(PhysicsTest, EnergyCache)
     // The potential energies without forces, as in training
     auto epot = [&](ConformationData *cdata)
     {
-        computeConformations(&msghandler_, &pd, mol.topology(), &coords, cdata, false, false);
+        cdata->confs = coords;
+        computeConformations(&msghandler_, &pd, mol.topology(), cdata, false, false);
         EXPECT_TRUE(msghandler_.ok());
         auto                e = cdata->energies.find(InteractionType::EPOT);
         std::vector<double> ep;
@@ -927,7 +928,8 @@ TEST_F(PhysicsTest, CoulombKernel)
     auto epot = [&](ConformationData *cdata, bool explicitSimd)
     {
         bool before = setUseExplicitSimd(explicitSimd);
-        computeConformations(&msghandler_, pd, mol.topology(), &coords, cdata, false, false);
+        cdata->confs = coords;
+        computeConformations(&msghandler_, pd, mol.topology(), cdata, false, false);
         setUseExplicitSimd(before);
         EXPECT_TRUE(msghandler_.ok());
         auto                e = cdata->energies.find(InteractionType::EPOT);

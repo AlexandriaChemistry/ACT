@@ -143,11 +143,8 @@ private:
     PolInfo                          polinfo_;
     //! Is this a linear molecule? Will be checked first when generating a topology.
     bool                             isLinear_ = false;
-    //! Coordinates and energies from all experiments
-    std::vector<CoordsEnergy>        dimerCoords_;
-    //! The same for each of the two monomers
-    std::vector<CoordsEnergy>        monomerCoords_[2];
-    //! The same for computing all conformations at once, monomers first, then the dimer
+    //! The conformations from all experiments, with the data for computing
+    //! them, of the two monomers first, then of the dimer
     ConformationData                 conformationData_[3];
     //! \brief Routine to gather the CoordsEnergy
     
@@ -299,11 +296,11 @@ public:
     bool isDimer() const { return fragments().size() == 2; };
 
     //! \return the dimerCoords
-    std::vector<CoordsEnergy> *dimerCoords() { return &dimerCoords_; }
+    std::vector<CoordsEnergy> *dimerCoords() { return &conformationData_[2].confs; }
     /*! \return the monomerCoords
      * \param[in] index Must be zero or one, otherwise bad things will happen.
      */
-    std::vector<CoordsEnergy> *monomerCoords(size_t index) { return &monomerCoords_[index]; }
+    std::vector<CoordsEnergy> *monomerCoords(size_t index) { return &conformationData_[index].confs; }
     /*! \brief Data for computing all conformations at once
      * \param[in] what 0 or 1 for the monomers, 2 for the dimer
      * \return The data

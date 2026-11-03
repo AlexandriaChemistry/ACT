@@ -2703,13 +2703,13 @@ static bool calcCoulombKernel(Potential                   mypot,
  * \param[in]    msghandler    For warnings and errors
  * \param[in]    pd            The force field
  * \param[in]    top           The topology
- * \param[inout] coords        The conformations, the forces are stored here
- * \param[inout] cdata         Coordinates, forces and energies of all
- *                             conformations, the energies are stored here
+ * \param[inout] cdata         The conformations, with their coordinates,
+ *                             forces and energies, the forces are stored in
+ *                             the conformations
  * \param[in]    epsilonr      Relative dielectric constant
  * \param[in]    conformations Whether to loop over the conformations in the inner loop
  * \param[in]    forces        Whether to compute forces, if not the forces
- *                             in coords are not meaningful
+ *                             in the conformations are not meaningful
  * \param[in]    reuse         Whether the energies of an interaction type can
  *                             be taken from the previous call, if its
  *                             parameters, the coordinates and the charges
@@ -2728,7 +2728,6 @@ static bool calcCoulombKernel(Potential                   mypot,
 static inline void lowComputeEnergies(MsgHandler                *msghandler,
                                       const ForceField          *pd,
                                       const Topology            *top,
-                                      std::vector<CoordsEnergy> *coords,
                                       ConformationData          *cdata,
                                       double                     epsilonr,
                                       bool                       conformations,
@@ -2740,6 +2739,7 @@ static inline void lowComputeEnergies(MsgHandler                *msghandler,
 {
     static const size_t timer = Timings::instance().index("Energy calculation overhead");
     ScopedTimer         scoped(timer);
+    auto *coords          = &cdata->confs;
     cdata->forcesInArrays = false;
     auto &cener = cdata->energies;
     cener.setNumberOfConformations(coords->size());
@@ -3096,7 +3096,6 @@ static inline void lowComputeEnergies(MsgHandler                *msghandler,
 void computeConformations(MsgHandler                *msghandler,
                           const ForceField          *pd,
                           const Topology            *top,
-                          std::vector<CoordsEnergy> *coords,
                           ConformationData          *cdata,
                           bool                       forces,
                           bool                       skipDone)
@@ -3104,7 +3103,7 @@ void computeConformations(MsgHandler                *msghandler,
     // The conformations only change if virtual sites are constructed
     // again, which ConformationData knows, or if shells move.
     bool reuse = !pd->polarizable();
-    lowComputeEnergies(msghandler, pd, top, coords, cdata, pd->epsilonr(),
+    lowComputeEnergies(msghandler, pd, top, cdata, pd->epsilonr(),
                        true, forces, reuse, skipDone);
 }
 
@@ -3141,15 +3140,13 @@ void computeEnergies(MsgHandler                  *msghandler,
         }
         if (what >= 2)
         {
-            lowComputeEnergies(msghandler, pd, mol.topology(), mol.dimerCoords(),
-                               mol.conformationData(2), epsilonr, true, forces, reuse, skipDone, inter,
-                               allForces);
+            lowComputeEnergies(msghandler, pd, mol.topology(), mol.conformationData(2),
+                               epsilonr, true, forces, reuse, skipDone, inter, allForces);
         }
         else
         {
-            lowComputeEnergies(msghandler, pd, &tops[what], mol.monomerCoords(what),
-                               mol.conformationData(what), epsilonr, true, forces, reuse, skipDone,
-                               false, allForces);
+            lowComputeEnergies(msghandler, pd, &tops[what], mol.conformationData(what),
+                               epsilonr, true, forces, reuse, skipDone, false, allForces);
         }
     }
 }

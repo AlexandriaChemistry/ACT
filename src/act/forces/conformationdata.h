@@ -715,6 +715,8 @@ struct DeviationReference
 //! Coordinates, forces and energies of all conformations of a topology
 struct ConformationData
 {
+    //! The conformations
+    std::vector<CoordsEnergy> confs;
     //! Coordinates and forces
     ConformationArrays   arrays;
     //! Energies

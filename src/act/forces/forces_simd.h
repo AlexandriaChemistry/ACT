@@ -50,14 +50,13 @@ void computeEnergies(MsgHandler                  *msghandler,
                      bool                         allForces      = true);
 
 /*! \brief Compute the energies and forces of the conformations of one topology
- * The energies are stored in the conformation data, the forces in the
+ * The energies are stored in the conformation data, the forces in its
  * conformations. The shells are not relaxed and the forces on virtual
  * sites are not spread, see ForceComputer::computeTotal.
  * \param[in]    msghandler For warnings and errors
  * \param[in]    pd         An ACT force field
  * \param[in]    top        The topology
- * \param[inout] coords     The conformations
- * \param[inout] cdata      The data of the conformations
+ * \param[inout] cdata      The conformations and their data
  * \param[in]    forces     Whether to compute forces
  * \param[in]    skipDone   Whether to leave out the conformations for which the
  *                          shells converged, see computeEnergies
@@ -65,7 +64,6 @@ void computeEnergies(MsgHandler                  *msghandler,
 void computeConformations(MsgHandler                *msghandler,
                           const ForceField          *pd,
                           const Topology            *top,
-                          std::vector<CoordsEnergy> *coords,
                           ConformationData          *cdata,
                           bool                       forces,
                           bool                       skipDone);

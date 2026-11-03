@@ -591,20 +591,19 @@ static bool referenceValid(const DeviationReference         &ref,
 /*! \brief The reference interaction energies and Boltzmann weights of dimers
  * They are computed once for the conformations, since they only depend on
  * the quantum chemistry data, not on the positions of virtual sites.
- * \param[inout] cdata  The conformation data of the dimer
- * \param[in]    coords The conformations
+ * \param[inout] cdata  The conformations of the dimer with their data
  * \param[in]    itypes The interaction types
  * \param[in]    beta   The inverse Boltzmann temperature, no weighting if zero
  * \param[in]    sep    Whether the induction correction is separate
  * \return The reference data
  */
 static const DeviationReference &interactionReference(ConformationData                   *cdata,
-                                                      const std::vector<CoordsEnergy>    &coords,
                                                       const std::vector<InteractionType> &itypes,
                                                       double                              beta,
                                                       bool                                sep)
 {
-    auto &ref = cdata->deviation;
+    const auto &coords = cdata->confs;
+    auto       &ref    = cdata->deviation;
     if (referenceValid(ref, *cdata, coords.size(), itypes, beta, sep))
     {
         return ref;
@@ -636,17 +635,16 @@ static const DeviationReference &interactionReference(ConformationData          
 }
 
 /*! \brief The reference potential energies and Boltzmann weights of monomers
- * \param[inout] cdata  The conformation data of the monomer
- * \param[in]    coords The conformations
+ * \param[inout] cdata  The conformations of the monomer with their data
  * \param[in]    beta   The inverse Boltzmann temperature, no weighting if zero
  * \return The reference data, with only EPOT
  */
-static const DeviationReference &epotReference(ConformationData                *cdata,
-                                               const std::vector<CoordsEnergy> &coords,
-                                               double                           beta)
+static const DeviationReference &epotReference(ConformationData *cdata,
+                                               double            beta)
 {
     const std::vector<InteractionType> itypes = { InteractionType::EPOT };
-    auto &ref = cdata->deviation;
+    const auto &coords = cdata->confs;
+    auto       &ref    = cdata->deviation;
     if (referenceValid(ref, *cdata, coords.size(), itypes, beta, false))
     {
         return ref;
@@ -811,7 +809,6 @@ void ForceEnergyDevComputer::calcDeviation(MsgHandler                     *msgha
                     iter->loss   = 0;
                 }
                 double     beta   = computeBeta(eRMS::Interaction);
-                const auto coords = actmol->dimerCoords();
                 // The ACT energies are taken from the conformation data,
                 // the QM energies and weights from the reference data.
                 auto      *cdata  = actmol->conformationData(2);
@@ -821,8 +818,8 @@ void ForceEnergyDevComputer::calcDeviation(MsgHandler                     *msgha
                 {
                     itypes.push_back(r.itype);
                 }
-                const auto &ref   = interactionReference(cdata, *coords, itypes, beta, sepInductionTerms);
-                size_t      nconf = std::min(coords->size(), ener.nconf());
+                const auto &ref   = interactionReference(cdata, itypes, beta, sepInductionTerms);
+                size_t      nconf = std::min(cdata->confs.size(), ener.nconf());
                 for (size_t j = 0; j < rmsE.size(); j++)
                 {
                     auto &rms  = rmsE[j];
@@ -843,15 +840,14 @@ void ForceEnergyDevComputer::calcDeviation(MsgHandler                     *msgha
             if (doEpot)
             {
                 double     beta   = computeBeta(eRMS::EPOT);
-                const auto coords = actmol->monomerCoords(0);
                 auto      *cdata  = actmol->conformationData(0);
                 auto      &ener   = cdata->energies;
                 auto       epot   = ener.find(InteractionType::EPOT);
-                const auto &ref   = epotReference(cdata, *coords, beta);
+                const auto &ref   = epotReference(cdata, beta);
                 const auto &eqm   = ref.energy[0];
                 const auto &have  = ref.have[0];
                 const auto &w     = ref.weight;
-                size_t      nconf = std::min(coords->size(), ener.nconf());
+                size_t      nconf = std::min(cdata->confs.size(), ener.nconf());
                 for(size_t i = 0; i < nconf; i++)
                 {
                     // std::isfinite checks for both Inf and NaN values.

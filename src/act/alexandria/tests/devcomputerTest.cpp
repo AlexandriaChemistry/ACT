@@ -283,6 +283,40 @@ protected:
         return results;
     }
 
+    /*! \brief Check that conformations kept their coordinates and reference data
+     * \param[in] before The conformations before
+     * \param[in] after  The conformations after
+     */
+    static void checkConformationsKept(const std::vector<CoordsEnergy> &before,
+                                       const std::vector<CoordsEnergy> &after)
+    {
+        ASSERT_EQ(before.size(), after.size());
+        for(size_t c = 0; c < before.size(); c++)
+        {
+            EXPECT_EQ(before[c].dataFile, after[c].dataFile) << "conformation " << c;
+            EXPECT_EQ(before[c].eMin, after[c].eMin) << "conformation " << c;
+            ASSERT_EQ(before[c].x.size(), after[c].x.size()) << "conformation " << c;
+            for(size_t i = 0; i < before[c].x.size(); i++)
+            {
+                for(int m = 0; m < DIM; m++)
+                {
+                    EXPECT_EQ(before[c].x[i][m], after[c].x[i][m]) << "conformation " << c;
+                }
+            }
+            ASSERT_EQ(before[c].eMap.size(), after[c].eMap.size()) << "conformation " << c;
+            for(const auto &e : before[c].eMap)
+            {
+                auto a = after[c].eMap.find(e.first);
+                ASSERT_TRUE(a != after[c].eMap.end()) << "conformation " << c;
+                EXPECT_EQ(e.second.haveQM(), a->second.haveQM()) << "conformation " << c;
+                if (e.second.haveQM())
+                {
+                    EXPECT_EQ(e.second.eqm(), a->second.eqm()) << "conformation " << c;
+                }
+            }
+        }
+    }
+
     /*! \brief Check the QM reference for induction against the molprop data
      * \param[in] mpFile  Molprop file with dimers
      * \param[in] sepIndCorr Whether to separate the induction correction
@@ -328,8 +362,12 @@ protected:
             std::vector<ACTEnergy>                                            energyMap;
             ACTEnergyMapVector                                                interactionEnergyMap;
             std::vector<std::pair<double, std::map<InteractionType, double>>> energyComponentMap;
+            // The conformations hold the reference data for training
+            auto before = *actmol.dimerCoords();
+            EXPECT_FALSE(before.empty());
             actmol.forceEnergyMaps(&msghandler, pd, &forceComputer, &forceMap, &energyMap,
                                    &interactionEnergyMap, &energyComponentMap, sepIndCorr);
+            checkConformationsKept(before, *actmol.dimerCoords());
             EXPECT_EQ(qmInduction.size(), interactionEnergyMap.size());
             for(const auto &iem : interactionEnergyMap)
             {

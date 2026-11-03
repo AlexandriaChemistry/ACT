@@ -79,21 +79,19 @@ struct ShellOptions
 struct ConformationSet
 {
     //! The topology
-    const Topology           *top = nullptr;
-    //! The conformations
-    std::vector<CoordsEnergy> confs;
-    //! The data for computing them
-    ConformationData          data;
+    const Topology   *top = nullptr;
+    //! The conformations, with the data for computing them
+    ConformationData  data;
 
     /*! \brief Replace the conformations
      * \param[in] x The coordinates of all particles of each conformation
      */
     void setCoordinates(const std::vector<std::vector<gmx::RVec>> &x)
     {
-        confs.resize(x.size());
+        data.confs.resize(x.size());
         for(size_t c = 0; c < x.size(); c++)
         {
-            confs[c].x = x[c];
+            data.confs[c].x = x[c];
         }
         data.invalidate();
     }

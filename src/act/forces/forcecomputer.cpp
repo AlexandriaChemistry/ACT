@@ -327,8 +327,8 @@ void ForceComputer::compute(MsgHandler                        *msg_handler,
     options.shellsFromInput = shellsFromInput;
     std::vector<std::map<InteractionType, double>> emaps;
     computeTotal(msg_handler, pd, &set, options, &emaps);
-    *coordinates = set.confs[0].x;
-    *forces      = set.confs[0].fcalc;
+    *coordinates = set.data.confs[0].x;
+    *forces      = set.data.confs[0].fcalc;
     *energies    = emaps[0];
 }
 
@@ -1455,7 +1455,7 @@ void ForceComputer::computeTotal(MsgHandler                                     
 {
     double maxShellDistance = shellMaxDistance(pd);
     auto  top   = set->top;
-    auto &confs = set->confs;
+    auto &confs = set->data.confs;
     auto  cdata = &set->data;
     auto &atoms = top->atoms();
     // Construct the virtual sites and reset the shells. The energy
@@ -1490,7 +1490,7 @@ void ForceComputer::computeTotal(MsgHandler                                     
         }
         resetShells(shells, &conf.x);
     }
-    computeConformations(msghandler, pd, top, &confs, cdata, true, false);
+    computeConformations(msghandler, pd, top, cdata, true, false);
     addFieldForces(atoms, options.field, &confs);
     // The energies before relaxing the shells give the induction energy
     auto &cener = cdata->energies;
@@ -1529,7 +1529,7 @@ void ForceComputer::computeTotal(MsgHandler                                     
                 }
                 nShellIter_ += 1;
             }
-            computeConformations(msghandler, pd, top, &confs, cdata, true, true);
+            computeConformations(msghandler, pd, top, cdata, true, true);
             addFieldForces(atoms, options.field, &confs);
         }
         // We have already done one energy calculation
@@ -1545,7 +1545,7 @@ void ForceComputer::computeTotal(MsgHandler                                     
                 {
                     nShellIter_ += conf.done ? 0 : 1;
                 }
-                computeConformations(msghandler, pd, top, &confs, cdata, true, true);
+                computeConformations(msghandler, pd, top, cdata, true, true);
                 addFieldForces(atoms, options.field, &confs);
             }
             iter++;
@@ -1932,7 +1932,7 @@ void ForceComputer::computeOnce(MsgHandler                        *msg_handler,
     computeTotal(msg_handler, pd, &set, options, &emaps);
     // The evaluations are counted by the callers of computeOnce
     nEval_      -= 1;
-    *forces      = set.confs[0].fcalc;
+    *forces      = set.data.confs[0].fcalc;
     *energies    = emaps[0];
 }
 
