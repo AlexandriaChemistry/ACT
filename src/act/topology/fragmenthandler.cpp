@@ -235,7 +235,6 @@ eQgen FragmentHandler::generateCharges(MsgHandler                   *msg_handler
                     auto       &ca = (*atoms)[atomStart_[ff]+a];
                     ca.setCharge(fa.charge());
                     ca.setChargeVS(fa.chargeVS(), fa.zetaVS(), fa.rowVS());
-                    ca.setZeta(fa.zeta());
                 }
             }
         }
@@ -267,9 +266,6 @@ eQgen FragmentHandler::generateCharges(MsgHandler                   *msg_handler
                 // The second charge, if any, is part of the total too
                 (*ta)[a].setChargeVS(ptype->chargeVS(), ptype->zetaVS(), ptype->rowVS());
                 (*atoms)[atomStart_[ff]+a].setChargeVS(ptype->chargeVS(), ptype->zetaVS(), ptype->rowVS());
-                // The width of the charge distribution may have been trained
-                (*ta)[a].setZeta(ptype->zeta());
-                (*atoms)[atomStart_[ff]+a].setZeta(ptype->zeta());
                 qtot += qnew + ptype->chargeVS();
             }
             // Make sure that the total charge is integer.
@@ -287,6 +283,21 @@ eQgen FragmentHandler::generateCharges(MsgHandler                   *msg_handler
     default: // throws
         GMX_THROW(gmx::InvalidInputError(gmx::formatString("No support for %s algorithm for fragments", 
                                                            chargeGenerationAlgorithmName(algorithm_).c_str()).c_str()));
+    }
+    // The widths of the charge distributions are those of the particle
+    // types, which may have been trained, whatever the charges are
+    for(size_t ff = 0; ff < topologies_.size(); ++ff)
+    {
+        auto ta = topologies_[ff].atomsPtr();
+        for(size_t a = 0; a < ta->size(); a++)
+        {
+            if (pd->hasParticleType((*ta)[a].ffType()))
+            {
+                double zeta = pd->findParticleType((*ta)[a].ffType())->zeta();
+                (*ta)[a].setZeta(zeta);
+                (*atoms)[atomStart_[ff]+a].setZeta(zeta);
+            }
+        }
     }
     return eqgen;
 }
