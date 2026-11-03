@@ -48,6 +48,7 @@
 #include "molhandler.h"
 
 #include <algorithm>
+#include <functional>
 #include <array>
 #include <deque>
 #include <limits>
@@ -759,6 +760,7 @@ static double msForce(const std::vector<int>       &theAtoms,
  * \param[in] enew     The potential energy at xt
  * \param[in] xt       The new coordinates
  * \param[in] ft       The forces at xt
+ * \param[in] noise    The rounding error of the energy, see energyNoise
  * \return the change of the potential energy
  */
 static double energyChange(const std::vector<int>                  &theAtoms,
@@ -767,7 +769,8 @@ static double energyChange(const std::vector<int>                  &theAtoms,
                            const std::vector<gmx::RVec>            &f,
                            double                                   enew,
                            const std::vector<gmx::RVec>            &xt,
-                           const std::vector<gmx::RVec>            &ft)
+                           const std::vector<gmx::RVec>            &ft,
+                           double                                   noise)
 {
     double eold  = e.find(InteractionType::EPOT)->second;
     double scale = 0;
@@ -779,7 +782,7 @@ static double energyChange(const std::vector<int>                  &theAtoms,
         }
     }
     double de       = enew - eold;
-    double rounding = 10*GMX_REAL_EPS*scale;
+    double rounding = std::max(10*GMX_REAL_EPS*scale, noise);
     if (std::abs(de) > rounding)
     {
         return de;
@@ -794,6 +797,57 @@ static double energyChange(const std::vector<int>                  &theAtoms,
     }
     double trapezoid = -0.5*work;
     return std::abs(trapezoid - de) <= rounding ? trapezoid : de;
+}
+
+/*! \brief Estimate the rounding error of the energy
+ * The energy terms are sums of terms that cancel, such that the rounding
+ * error can be much larger than the machine precision times the terms,
+ * in particular with shells with large charges. It is estimated from
+ * small displacements of the particles, for which the trapezoidal rule
+ * gives the energy change to well within the rounding error, the
+ * estimate is four times the largest of a few samples.
+ * \param[in] theAtoms The particles that move
+ * \param[in] x        The coordinates
+ * \param[in] evaluate Computes the energy and forces as the minimizer does
+ * \return the largest rounding error found
+ */
+static double energyNoise(const std::vector<int>       &theAtoms,
+                          const std::vector<gmx::RVec> &x,
+                          const std::function<double(std::vector<gmx::RVec> *,
+                                                     std::vector<gmx::RVec> *)> &evaluate)
+{
+    const double           step = 1e-5;
+    std::vector<gmx::RVec> x0   = x, f0(x.size());
+    double                 e0   = evaluate(&x0, &f0);
+    double                 noise = 0;
+    unsigned int           seed  = 1993;
+    for (int probe = 0; probe < 5; probe++)
+    {
+        std::vector<gmx::RVec> xt = x0, ft(x.size());
+        for (auto a : theAtoms)
+        {
+            for (int m = 0; m < DIM; m++)
+            {
+                seed      = seed*1103515245u + 12345u;
+                xt[a][m] += ((seed >> 16) & 1) ? step : -step;
+            }
+        }
+        double et   = evaluate(&xt, &ft);
+        double work = 0;
+        for (auto a : theAtoms)
+        {
+            for (int m = 0; m < DIM; m++)
+            {
+                work += (f0[a][m] + ft[a][m])*(xt[a][m] - x0[a][m]);
+            }
+        }
+        if (std::isfinite(et) && std::isfinite(e0))
+        {
+            noise = std::max(noise, std::abs(et - e0 + 0.5*work));
+        }
+    }
+    // The maximum of a few samples underestimates the largest errors
+    return 4*noise;
 }
 
 //! \brief Increment the coordinates with a delta
@@ -851,6 +905,8 @@ private:
     std::map<InteractionType, double>  prevEnergies_;
     //! The energy along the path of the evaluations
     double                             pathEnergy_ = 0;
+    //! The rounding error of the energy, see energyNoise
+    double                             energyNoise_ = 0;
 public:
     //! Constructor
     StlbfgsHandler(const ForceField       *pd,
@@ -929,7 +985,7 @@ public:
         if (havePrevious_)
         {
             pathEnergy_ += energyChange(theAtoms_, prevEnergies_, prevCoords_, prevForces_,
-                                        enew, coords_, forces_);
+                                        enew, coords_, forces_, energyNoise_);
         }
         else
         {
@@ -944,6 +1000,9 @@ public:
 
     //! \return the energy along the path at the previous evaluation
     double previousPathEnergy() const { return pathEnergy_; }
+
+    //! \brief Set the rounding error of the energy
+    void setEnergyNoise(double noise) { energyNoise_ = noise; }
 
     //! \brief print force on frozen atom
     void printFrozenForce(gmx::TextWriter *tw, const std::vector<int> &myFreeze)
@@ -1324,6 +1383,19 @@ eMinimizeStatus MolHandler::minimizeCoordinates(MsgHandler                      
     {
         lbfgs = new StlbfgsHandler(pd, msghandler, topology, forceComp, theAtoms, xstart,
                                    constrain ? &constrainer : nullptr);
+        // The energies and forces as in func, the shells are minimized
+        // with the atoms
+        lbfgs->setEnergyNoise(energyNoise(theAtoms, xstart,
+                                          [&](std::vector<gmx::RVec> *xx, std::vector<gmx::RVec> *ff)
+                                          {
+                                              std::map<InteractionType, double> ee;
+                                              gmx::RVec field = { 0, 0, 0 };
+                                              forceComp->constructVsiteCoordinates(topology, xx);
+                                              forceComp->computeOnce(msghandler, pd, topology, xx, ff, &ee, field);
+                                              forceComp->spreadVsiteForces(topology, xx, ff);
+                                              constrainForces(*xx, ff);
+                                              return ee[InteractionType::EPOT];
+                                          }));
 
         STLBFGS::Optimizer                      opt{func, 1000};
         // The optimizer stops when the norm of the gradient divided by that
@@ -1460,6 +1532,13 @@ eMinimizeStatus MolHandler::minimizeCoordinates(MsgHandler                      
             constrainCoords(x, &xt);
             return evaluate(&xt, &ft, &et);
         };
+        // The rounding error of the energy, the shells are relaxed
+        double noise = energyNoise(theAtoms, x,
+                                   [&](std::vector<gmx::RVec> *xx, std::vector<gmx::RVec> *ff)
+                                   {
+                                       std::map<InteractionType, double> ee;
+                                       return evaluate(xx, ff, &ee);
+                                   });
         auto accept = [&]()
         {
             std::swap(x, xt);
@@ -1469,7 +1548,7 @@ eMinimizeStatus MolHandler::minimizeCoordinates(MsgHandler                      
         // The energy change from x to xt
         auto energyChange = [&](double enew)
         {
-            return alexandria::energyChange(theAtoms, e, x, f, enew, xt, ft);
+            return alexandria::energyChange(theAtoms, e, x, f, enew, xt, ft, noise);
         };
         // The energy along the path of the minimization, the sum of the
         // energy changes
