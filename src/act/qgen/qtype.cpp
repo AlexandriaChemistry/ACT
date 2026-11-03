@@ -198,13 +198,15 @@ void QtypeProps::setQandX(const std::vector<ActAtom>   &atoms,
 void QtypeProps::setPolarizabilityTensor(const tensor &alpha)
 {
     copy_mat(alpha, alpha_);
-    auto a = gmx::square(alpha_[XX][XX] - alpha_[YY][YY]);
-    auto b = gmx::square(alpha_[XX][XX] - alpha_[ZZ][ZZ]);
-    auto c = gmx::square(alpha_[ZZ][ZZ] - alpha_[YY][YY]);
-    auto d = 6 * (gmx::square(alpha_[XX][YY]) + gmx::square(alpha_[XX][ZZ]) + gmx::square(alpha_[ZZ][YY]));
+    // In double precision, as the results are stored
+    auto element = [this](int m, int n) { return static_cast<double>(alpha_[m][n]); };
+    double a = gmx::square(element(XX, XX) - element(YY, YY));
+    double b = gmx::square(element(XX, XX) - element(ZZ, ZZ));
+    double c = gmx::square(element(ZZ, ZZ) - element(YY, YY));
+    double d = 6 * (gmx::square(element(XX, YY)) + gmx::square(element(XX, ZZ)) + gmx::square(element(ZZ, YY)));
 
     anisotropy_ = sqrt(1/2.0) * sqrt(a + b + c + d);
-    isotropy_   = (alpha_[XX][XX]+alpha_[YY][YY]+alpha_[ZZ][ZZ])/3;
+    isotropy_   = (element(XX, XX) + element(YY, YY) + element(ZZ, ZZ))/3;
     hasAlpha_   = true;
 }
 
