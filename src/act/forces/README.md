@@ -10,7 +10,7 @@ This directory implements the computation of energies and forces from a `Topolog
   - `computeRelaxedEnergies` computes the energies of the dimers and monomers of molecules for training.
   - `compute` and `computeOnce` are convenience functions for a single structure, with and without relaxing the shells.
 - **forces_simd.h / forces_simd.cpp** — The implementation of all potentials, for one conformation at a time or with the conformations in the inner loop, which is vectorized.
-- **forces_explicit_simd.h / forces_explicit_simd.cpp** — Explicit SIMD versions of the most expensive potentials, see `simd_avx2.h`, `simd_avx512.h`, `simd_neon.h` and `simd_math.h`. `simd_information.h` reports which instruction set is used.
+- **forces_explicit_simd.h / forces_explicit_simd.cpp** — Explicit SIMD versions of the most expensive potentials, in double and single precision in every build, see `simd_avx2.h`, `simd_avx512.h`, `simd_neon.h` and `simd_math.h`. `simd_information.h` reports which instruction set is used.
 - **conformationdata.h** — `ConformationData`: the coordinates, forces and energies of the conformations of one topology, stored such that they can be vectorized, and the energies that are reused if nothing changed.
 - **forcecomputerstatistics.h** — Statistics of the number of evaluations and of shell relaxation.
 - **forcecomputerutils.h / forcecomputerutils.cpp** — Shared mathematical helpers (distance and angle calculations, potential-energy derivatives, etc.).

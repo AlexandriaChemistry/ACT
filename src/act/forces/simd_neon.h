@@ -26,9 +26,9 @@
  * Boston, MA  02110-1301, USA.
  */
 /*! \internal \brief
- * SIMD primitives in double precision for ARM NEON (aarch64).
+ * SIMD primitives in double and single precision for ARM NEON (aarch64).
  *
- * A SimdDouble holds two doubles. Only the operations that map directly
+ * A SimdDouble holds two doubles, a SimdFloat four floats. Only the operations that map directly
  * onto instructions are here, the math functions built from them are in
  * simd_math.h. Do not include this file directly, but simd_math.h.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
@@ -142,6 +142,98 @@ static inline SimdDouble pow2(SimdDouble n)
 {
     int64x2_t bits = vshlq_n_s64(vaddq_s64(vcvtq_s64_f64(n.v), vdupq_n_s64(1023)), 52);
     return SimdDouble(vreinterpretq_f64_s64(bits));
+}
+
+//! Number of floats in a SimdFloat
+constexpr size_t simdFloatWidth = 4;
+
+//! Four floats
+class SimdFloat
+{
+public:
+    //! The data
+    float32x4_t v;
+    //! Uninitialized
+    SimdFloat() = default;
+    /*! \brief Set all elements to a
+     * \param[in] a The value
+     */
+    SimdFloat(float a) : v(vdupq_n_f32(a)) {}
+    /*! \brief From NEON type
+     * \param[in] a The NEON vector
+     */
+    explicit SimdFloat(float32x4_t a) : v(a) {}
+};
+
+//! Four booleans, the result of comparing SimdFloats
+class SimdFloatBool
+{
+public:
+    //! The data, all bits set for true
+    uint32x4_t v;
+    /*! \brief From NEON type
+     * \param[in] a The NEON vector
+     */
+    explicit SimdFloatBool(uint32x4_t a) : v(a) {}
+};
+
+//! Load four floats from memory
+static inline SimdFloat load(const float *p) { return SimdFloat(vld1q_f32(p)); }
+
+//! Store four floats to memory
+static inline void store(float *p, SimdFloat a) { vst1q_f32(p, a.v); }
+
+//! \return a + b, element-wise
+static inline SimdFloat operator+(SimdFloat a, SimdFloat b) { return SimdFloat(vaddq_f32(a.v, b.v)); }
+//! \return a - b, element-wise
+static inline SimdFloat operator-(SimdFloat a, SimdFloat b) { return SimdFloat(vsubq_f32(a.v, b.v)); }
+//! \return a * b, element-wise
+static inline SimdFloat operator*(SimdFloat a, SimdFloat b) { return SimdFloat(vmulq_f32(a.v, b.v)); }
+//! \return a / b, element-wise
+static inline SimdFloat operator/(SimdFloat a, SimdFloat b) { return SimdFloat(vdivq_f32(a.v, b.v)); }
+//! \return -a, element-wise
+static inline SimdFloat operator-(SimdFloat a) { return SimdFloat(vnegq_f32(a.v)); }
+//! Add b to a element-wise, \return a
+static inline SimdFloat &operator+=(SimdFloat &a, SimdFloat b) { a = a + b; return a; }
+//! Subtract b from a element-wise, \return a
+static inline SimdFloat &operator-=(SimdFloat &a, SimdFloat b) { a = a - b; return a; }
+//! Multiply a by b element-wise, \return a
+static inline SimdFloat &operator*=(SimdFloat &a, SimdFloat b) { a = a * b; return a; }
+
+//! \return a < b, element-wise
+static inline SimdFloatBool operator<(SimdFloat a, SimdFloat b) { return SimdFloatBool(vcltq_f32(a.v, b.v)); }
+//! \return a > b, element-wise
+static inline SimdFloatBool operator>(SimdFloat a, SimdFloat b) { return SimdFloatBool(vcgtq_f32(a.v, b.v)); }
+//! \return Logical and of a and b, element-wise
+static inline SimdFloatBool operator&&(SimdFloatBool a, SimdFloatBool b) { return SimdFloatBool(vandq_u32(a.v, b.v)); }
+//! \return Logical not of a, element-wise
+static inline SimdFloatBool operator!(SimdFloatBool a) { return SimdFloatBool(vmvnq_u32(a.v)); }
+
+//! \return a*b + c
+static inline SimdFloat fma(SimdFloat a, SimdFloat b, SimdFloat c) { return SimdFloat(vfmaq_f32(c.v, a.v, b.v)); }
+
+//! \return a where m is true, b otherwise
+static inline SimdFloat select(SimdFloatBool m, SimdFloat a, SimdFloat b) { return SimdFloat(vbslq_f32(m.v, a.v, b.v)); }
+
+//! \return Element-wise minimum of a and b
+static inline SimdFloat min(SimdFloat a, SimdFloat b) { return SimdFloat(vminq_f32(a.v, b.v)); }
+//! \return Element-wise maximum of a and b
+static inline SimdFloat max(SimdFloat a, SimdFloat b) { return SimdFloat(vmaxq_f32(a.v, b.v)); }
+//! \return Element-wise absolute value of a
+static inline SimdFloat abs(SimdFloat a) { return SimdFloat(vabsq_f32(a.v)); }
+//! \return Element-wise a rounded down to an integer value
+static inline SimdFloat floor(SimdFloat a) { return SimdFloat(vrndmq_f32(a.v)); }
+//! \return Element-wise square root of a
+static inline SimdFloat sqrt(SimdFloat a) { return SimdFloat(vsqrtq_f32(a.v)); }
+
+/*! \brief Power of two
+ * \param[in] n Integer values from -126 to 127
+ * \return 2^n, made by putting n in the exponent bits
+ */
+static inline SimdFloat pow2(SimdFloat n)
+{
+    int32x4_t bits = vshlq_n_s32(vaddq_s32(vcvtq_s32_f32(n.v), vdupq_n_s32(127)), 23);
+    return SimdFloat(vreinterpretq_f32_s32(bits));
 }
 
 } // namespace simd

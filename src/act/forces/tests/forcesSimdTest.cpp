@@ -51,6 +51,7 @@
 #include "act/coulombintegrals/gaussian_integrals.h"
 #include "act/forcefield/forcefield_parametername.h"
 #include "act/forcefield/potential.h"
+#include "act/forces/forces_explicit_simd.h"
 #include "act/forces/simd_information.h"
 #include "act/topology/actatom.h"
 #include "act/topology/coords_energy.h"
@@ -314,6 +315,137 @@ protected:
         return gmx::test::relativeToleranceAsFloatingPoint(fmax, 1e-5);
     }
 
+    /*! \brief The coordinates of xMany_ in the layout of explicit SIMD
+     * \tparam    T      The floating point type
+     * \param[out] stride The number of conformations, including the padding
+     *                    to a multiple of the SIMD width
+     * \return the coordinates, see computeExplicitSimd
+     */
+    template <typename T>
+    std::vector<T> manyArrays(size_t *stride)
+    {
+        size_t width = explicitSimdWidth<T>();
+        *stride      = ((nMany_ + width - 1)/width)*width;
+        std::vector<T> x(DIM*atoms_.size()*(*stride), 0);
+        for (size_t c = 0; c < *stride; c++)
+        {
+            // The padding repeats the last conformation
+            const auto &xc = xMany_[std::min(c, nMany_-1)];
+            for (size_t a = 0; a < atoms_.size(); a++)
+            {
+                for (int m = 0; m < DIM; m++)
+                {
+                    x[(DIM*a+m)*(*stride) + c] = xc[a][m];
+                }
+            }
+        }
+        return x;
+    }
+
+    /*! \brief Compute one potential for xMany_ with explicit SIMD
+     * \tparam    T        The floating point type of the kernel
+     * \param[in]  mypot    The potential
+     * \param[in]  entries  The interactions
+     * \param[in]  epsilonr Relative dielectric constant
+     * \param[out] stride   The stride of the arrays, see computeExplicitSimd
+     * \param[out] f        The forces
+     * \param[out] energies The energy terms
+     * \return false if the potential is not available
+     */
+    template <typename T>
+    bool explicitSimd(Potential                  mypot,
+                      const TopologyEntryVector &entries,
+                      double                     epsilonr,
+                      size_t                    *stride,
+                      std::vector<T>            *f,
+                      std::vector<T>            *energies)
+    {
+        auto x = manyArrays<T>(stride);
+        f->assign(x.size(), 0);
+        energies->assign(explicitSimdEnergyTerms*(*stride), 0);
+        return computeExplicitSimd(mypot, entries, atoms_, epsilonr, *stride,
+                                   x.data(), f->data(), energies->data(), true);
+    }
+
+    /*! \brief Compare explicit SIMD in single precision with double precision
+     * \param[in] mypot    The potential
+     * \param[in] entries  The interactions
+     * \param[in] epsilonr Relative dielectric constant
+     */
+    void compareSinglePrecision(Potential                  mypot,
+                                const TopologyEntryVector &entries,
+                                double                     epsilonr)
+    {
+        if (!useExplicitSimd())
+        {
+            return;
+        }
+        size_t              sd, sf;
+        std::vector<double> fd, ed;
+        std::vector<float>  ff, ef;
+        bool                haveDouble = explicitSimd(mypot, entries, epsilonr, &sd, &fd, &ed);
+        ASSERT_EQ(haveDouble, explicitSimd(mypot, entries, epsilonr, &sf, &ff, &ef));
+        if (!haveDouble)
+        {
+            return;
+        }
+        // Within the precision of floats, the forces relative to the largest
+        for (size_t c = 0; c < nMany_; c++)
+        {
+            double fmax = 0;
+            for (size_t i = 0; i < DIM*atoms_.size(); i++)
+            {
+                fmax = std::max(fmax, std::abs(fd[i*sd + c]));
+            }
+            for (size_t i = 0; i < DIM*atoms_.size(); i++)
+            {
+                EXPECT_NEAR(fd[i*sd + c], ff[i*sf + c], 1e-4*(1 + fmax))
+                    << potentialToString(mypot) << " conformation " << c << " force " << i;
+            }
+            for (int k = 0; k < explicitSimdEnergyTerms; k++)
+            {
+                EXPECT_NEAR(ed[k*sd + c], ef[k*sf + c], 2e-5*(1 + std::abs(ed[k*sd + c])))
+                    << potentialToString(mypot) << " conformation " << c << " energy term " << k;
+            }
+        }
+        if (Potential::COULOMB_POINT == mypot || Potential::COULOMB_GAUSSIAN == mypot)
+        {
+            // The energies for charges of one, all four terms of each interaction
+            std::vector<double>        kd;
+            std::vector<float>         kf;
+            std::vector<unsigned char> terms(entries.size(), 0xf);
+            coulombKernels(entries, terms, &sd, &kd);
+            coulombKernels(entries, terms, &sf, &kf);
+            for (size_t row = 0; row < 4*entries.size(); row++)
+            {
+                for (size_t c = 0; c < nMany_; c++)
+                {
+                    EXPECT_NEAR(kd[row*sd + c], kf[row*sf + c], 2e-5*(1 + std::abs(kd[row*sd + c])))
+                        << "Coulomb kernel " << row << " conformation " << c;
+                }
+            }
+        }
+    }
+
+    /*! \brief The Coulomb energies for charges of one of xMany_ with explicit SIMD
+     * \tparam    T       The floating point type of the kernel
+     * \param[in]  entries The interactions
+     * \param[in]  terms   The terms to compute, see coulombKernelsExplicitSimd
+     * \param[out] stride  The stride of the arrays
+     * \param[out] kernel  The energies
+     */
+    template <typename T>
+    void coulombKernels(const TopologyEntryVector        &entries,
+                        const std::vector<unsigned char> &terms,
+                        size_t                           *stride,
+                        std::vector<T>                   *kernel)
+    {
+        auto x = manyArrays<T>(stride);
+        kernel->assign(4*entries.size()*(*stride), 0);
+        ASSERT_TRUE(coulombKernelsExplicitSimd(entries, atoms_, *stride, x.data(), terms.data(),
+                                               kernel->data()));
+    }
+
     void compareRoutines(Potential                              mypot,
                          const TopologyEntryVector             &entries,
                          double                                 epsilonr,
@@ -397,6 +529,7 @@ protected:
         double tolFD    = 1e-2;
 #endif
         compareRoutines(mypot, entries, epsilonr, tolSame);
+        compareSinglePrecision(mypot, entries, epsilonr);
         for (size_t c = 0; c < nconf_; c++)
         {
             ASSERT_EQ(cOuter.confs[c].eMap.size(), cInner.confs[c].eMap.size());

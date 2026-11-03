@@ -30,7 +30,9 @@
  *
  * The SIMD lanes hold different conformations. The implementation depends
  * on the processor, at present there are ones for ARM NEON, AVX2 and AVX-512,
- * see simd_math.h. Where no
+ * see simd_math.h. All functions are available in double and single
+ * precision, in every build, such that code can use double precision
+ * where it needs it. Where no
  * implementation is available, the functions here report that, and the
  * code in forces_simd.cpp is used instead. Whether the explicit SIMD can
  * and should be used on the processor at hand is decided by
@@ -106,8 +108,10 @@ ExplicitSimd explicitSimdType();
 /*! \brief The number of conformations computed at once
  * The arrays passed to computeExplicitSimd have to hold a multiple of
  * this number of conformations.
+ * \tparam T The floating point type of the arrays, float or double
  * \return the number of conformations computed at once
  */
+template <typename T>
 size_t explicitSimdWidth();
 
 /*! \brief How often the loops over conformations of pair interactions are unrolled
@@ -124,7 +128,7 @@ size_t explicitSimdPairUnroll();
  * \param[in]    entries  The interactions
  * \param[in]    atoms    The atoms
  * \param[in]    epsilonr Relative dielectric constant
- * \param[in]    stride   Number of conformations, a multiple of explicitSimdWidth()
+ * \param[in]    stride   Number of conformations, a multiple of explicitSimdWidth<double>()
  * \param[in]    x        Coordinates
  * \param[inout] f        Forces, not used if forces is false
  * \param[inout] energies Energies
@@ -143,6 +147,21 @@ bool computeExplicitSimd(Potential                   mypot,
                          double                     *energies,
                          bool                        forces);
 
+/*! \brief Compute a potential for all conformations with explicit SIMD in single precision
+ * As the double precision version, with a stride that is a multiple of
+ * explicitSimdWidth<float>(). The parameters of the interactions are
+ * prepared in double precision and rounded when they are used.
+ */
+bool computeExplicitSimd(Potential                   mypot,
+                         TopologyEntryRange          entries,
+                         const std::vector<ActAtom> &atoms,
+                         double                      epsilonr,
+                         size_t                      stride,
+                         const float                *x,
+                         float                      *f,
+                         float                      *energies,
+                         bool                        forces);
+
 /*! \brief The Coulomb energies of interactions for charges of one with explicit SIMD
  * The interaction between two particles, each with a charge and possibly a
  * second one at the same position, has four terms, see ActAtom::chargeVS.
@@ -151,7 +170,7 @@ bool computeExplicitSimd(Potential                   mypot,
  * dielectric constant, as COULOMB_POINT and COULOMB_GAUSSIAN compute it.
  * \param[in]  entries The interactions
  * \param[in]  atoms   The atoms, for the widths of the second charges
- * \param[in]  stride  Number of conformations, a multiple of explicitSimdWidth()
+ * \param[in]  stride  Number of conformations, a multiple of explicitSimdWidth<double>()
  * \param[in]  x       Coordinates, as in computeExplicitSimd
  * \param[in]  terms   For each interaction, bit k tells whether to compute term k
  * \param[out] kernel  Term k of interaction e of conformation c at (4*e + k)*stride + c,
@@ -166,13 +185,24 @@ bool coulombKernelsExplicitSimd(TopologyEntryRange          entries,
                                 const unsigned char        *terms,
                                 double                     *kernel);
 
+/*! \brief The Coulomb energies for charges of one with explicit SIMD in single precision
+ * As the double precision version, with a stride that is a multiple of
+ * explicitSimdWidth<float>().
+ */
+bool coulombKernelsExplicitSimd(TopologyEntryRange          entries,
+                                const std::vector<ActAtom> &atoms,
+                                size_t                      stride,
+                                const float                *x,
+                                const unsigned char        *terms,
+                                float                      *kernel);
+
 /*! \brief Add the terms of one dimer to the sums of the second virial with explicit SIMD
  * The Boltzmann factor at temperature t is g = exp(-energy*beta[t]), zero
  * for overlapping atoms or if energy*beta[t] is 700 or more. Row k of the
  * sums is s[k*stride ...]: row 0 gets weight*(g - 1), rows 1 to 8 get
  * g*wx[k-1] and row 9 gets weight. Temperatures with a beta of zero get no
  * terms.
- * \param[in]    nT       Number of temperatures, a multiple of explicitSimdWidth()
+ * \param[in]    nT       Number of temperatures, a multiple of explicitSimdWidth<double>()
  * \param[in]    beta     1/(kB T) of each temperature
  * \param[in]    energy   The energy of the dimer
  * \param[in]    overlap  Whether the atoms overlap, then g is zero

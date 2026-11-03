@@ -171,7 +171,7 @@ public:
             confs_.assign(confs.begin(), confs.end());
             inOrder_ = inOrder;
         }
-        size_t width = explicitSimdWidth();
+        size_t width = explicitSimdWidth<double>();
         size_t st    = ((nc + width - 1)/width)*width;
         // Rows a multiple of 2 kB apart map to the same sets of the caches,
         // which then hold few of them

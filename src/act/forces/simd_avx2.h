@@ -26,9 +26,9 @@
  * Boston, MA  02110-1301, USA.
  */
 /*! \internal \brief
- * SIMD primitives in double precision for x86 AVX2 with FMA.
+ * SIMD primitives in double and single precision for x86 AVX2 with FMA.
  *
- * A SimdDouble holds four doubles. This is the best choice for processors
+ * A SimdDouble holds four doubles, a SimdFloat eight floats. This is the best choice for processors
  * that have AVX2 but not AVX-512, like AMD Zen 2 and Zen 3 (for instance
  * EPYC 7xx2 and 7xx3) and Intel processors before Skylake-X. The
  * interface is the same as in simd_neon.h. Do not include this file
@@ -150,6 +150,101 @@ static inline SimdDouble pow2(SimdDouble n)
     __m256i n64  = _mm256_cvtepi32_epi64(_mm256_cvtpd_epi32(n.v));
     __m256i bits = _mm256_slli_epi64(_mm256_add_epi64(n64, _mm256_set1_epi64x(1023)), 52);
     return SimdDouble(_mm256_castsi256_pd(bits));
+}
+
+//! Number of floats in a SimdFloat
+constexpr size_t simdFloatWidth = 8;
+
+//! Eight floats
+class SimdFloat
+{
+public:
+    //! The data
+    __m256 v;
+    //! Uninitialized
+    SimdFloat() = default;
+    /*! \brief Set all elements to a
+     * \param[in] a The value
+     */
+    SimdFloat(float a) : v(_mm256_set1_ps(a)) {}
+    /*! \brief From AVX type
+     * \param[in] a The AVX vector
+     */
+    explicit SimdFloat(__m256 a) : v(a) {}
+};
+
+//! Eight booleans, the result of comparing SimdFloats
+class SimdFloatBool
+{
+public:
+    //! The data, all bits set for true
+    __m256 v;
+    /*! \brief From AVX type
+     * \param[in] a The AVX vector
+     */
+    explicit SimdFloatBool(__m256 a) : v(a) {}
+};
+
+//! Load eight floats from memory
+static inline SimdFloat load(const float *p) { return SimdFloat(_mm256_loadu_ps(p)); }
+
+//! Store eight floats to memory
+static inline void store(float *p, SimdFloat a) { _mm256_storeu_ps(p, a.v); }
+
+//! \return a + b, element-wise
+static inline SimdFloat operator+(SimdFloat a, SimdFloat b) { return SimdFloat(_mm256_add_ps(a.v, b.v)); }
+//! \return a - b, element-wise
+static inline SimdFloat operator-(SimdFloat a, SimdFloat b) { return SimdFloat(_mm256_sub_ps(a.v, b.v)); }
+//! \return a * b, element-wise
+static inline SimdFloat operator*(SimdFloat a, SimdFloat b) { return SimdFloat(_mm256_mul_ps(a.v, b.v)); }
+//! \return a / b, element-wise
+static inline SimdFloat operator/(SimdFloat a, SimdFloat b) { return SimdFloat(_mm256_div_ps(a.v, b.v)); }
+//! \return -a, element-wise
+static inline SimdFloat operator-(SimdFloat a) { return SimdFloat(_mm256_xor_ps(a.v, _mm256_set1_ps(-0.0f))); }
+//! Add b to a element-wise, \return a
+static inline SimdFloat &operator+=(SimdFloat &a, SimdFloat b) { a = a + b; return a; }
+//! Subtract b from a element-wise, \return a
+static inline SimdFloat &operator-=(SimdFloat &a, SimdFloat b) { a = a - b; return a; }
+//! Multiply a by b element-wise, \return a
+static inline SimdFloat &operator*=(SimdFloat &a, SimdFloat b) { a = a * b; return a; }
+
+//! \return a < b, element-wise
+static inline SimdFloatBool operator<(SimdFloat a, SimdFloat b) { return SimdFloatBool(_mm256_cmp_ps(a.v, b.v, _CMP_LT_OQ)); }
+//! \return a > b, element-wise
+static inline SimdFloatBool operator>(SimdFloat a, SimdFloat b) { return SimdFloatBool(_mm256_cmp_ps(a.v, b.v, _CMP_GT_OQ)); }
+//! \return Logical and of a and b, element-wise
+static inline SimdFloatBool operator&&(SimdFloatBool a, SimdFloatBool b) { return SimdFloatBool(_mm256_and_ps(a.v, b.v)); }
+//! \return Logical not of a, element-wise
+static inline SimdFloatBool operator!(SimdFloatBool a)
+{
+    return SimdFloatBool(_mm256_xor_ps(a.v, _mm256_castsi256_ps(_mm256_set1_epi32(-1))));
+}
+
+//! \return a*b + c
+static inline SimdFloat fma(SimdFloat a, SimdFloat b, SimdFloat c) { return SimdFloat(_mm256_fmadd_ps(a.v, b.v, c.v)); }
+
+//! \return a where m is true, b otherwise
+static inline SimdFloat select(SimdFloatBool m, SimdFloat a, SimdFloat b) { return SimdFloat(_mm256_blendv_ps(b.v, a.v, m.v)); }
+
+//! \return Element-wise minimum of a and b
+static inline SimdFloat min(SimdFloat a, SimdFloat b) { return SimdFloat(_mm256_min_ps(a.v, b.v)); }
+//! \return Element-wise maximum of a and b
+static inline SimdFloat max(SimdFloat a, SimdFloat b) { return SimdFloat(_mm256_max_ps(a.v, b.v)); }
+//! \return Element-wise absolute value of a
+static inline SimdFloat abs(SimdFloat a) { return SimdFloat(_mm256_andnot_ps(_mm256_set1_ps(-0.0f), a.v)); }
+//! \return Element-wise a rounded down to an integer value
+static inline SimdFloat floor(SimdFloat a) { return SimdFloat(_mm256_floor_ps(a.v)); }
+//! \return Element-wise square root of a
+static inline SimdFloat sqrt(SimdFloat a) { return SimdFloat(_mm256_sqrt_ps(a.v)); }
+
+/*! \brief Power of two
+ * \param[in] n Integer values from -126 to 127
+ * \return 2^n, made by putting n in the exponent bits
+ */
+static inline SimdFloat pow2(SimdFloat n)
+{
+    __m256i bits = _mm256_slli_epi32(_mm256_add_epi32(_mm256_cvtps_epi32(n.v), _mm256_set1_epi32(127)), 23);
+    return SimdFloat(_mm256_castsi256_ps(bits));
 }
 
 } // namespace simd

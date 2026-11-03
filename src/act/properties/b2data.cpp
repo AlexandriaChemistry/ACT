@@ -57,7 +57,7 @@ B2Data::B2Data(int                        nbins,
 {
     temperatures_ = temperatures;
     nbins_        = nbins;
-    size_t width  = explicitSimdWidth();
+    size_t width  = explicitSimdWidth<double>();
     tstride_      = ((temperatures.size() + width - 1)/width)*width;
     sums_.resize(nbins_*tstride_*nSum, 0.0);
     mayer_.resize(temperatures.size());
