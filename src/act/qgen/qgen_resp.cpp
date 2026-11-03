@@ -323,11 +323,11 @@ void QgenResp::calcStatistics(MsgHandler *msg_handler)
     }
 }
 
-real QgenResp::getStatistics(MsgHandler *msg_handler,
-                             real       *rrms,
-                             real       *cosangle,
-                             real       *mae,
-                             real       *mse)
+double QgenResp::getStatistics(MsgHandler *msg_handler,
+                               double     *rrms,
+                               double     *cosangle,
+                               double     *mae,
+                               double     *mse)
 {
     calcStatistics(msg_handler);
     *rrms     = rrms_;

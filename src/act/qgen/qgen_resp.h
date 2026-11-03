@@ -185,11 +185,11 @@ class QgenResp
 
         void calcStatistics(MsgHandler *msg_handler);
 
-        real getStatistics(MsgHandler *msg_handler,
-                           real       *rrms,
-                           real       *cosangle,
-                           real       *mse,
-                           real       *mae);
+        double getStatistics(MsgHandler *msg_handler,
+                             double     *rrms,
+                             double     *cosangle,
+                             double     *mae,
+                             double     *mse);
 
         //! \brief Compute the charge density of the atoms and shells at the grid points
         void calcRho();

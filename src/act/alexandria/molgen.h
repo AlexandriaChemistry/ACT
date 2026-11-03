@@ -110,9 +110,9 @@ private:
     //! The weighting factor in the total chi squared
     real       weight_             = 0;
     //! The total weight corresponding to all data points
-    real       totalWeight_ = 0;
-    //! The unweighted chi squared for this property
-    real       chiSquared_         = 0;
+    double     totalWeight_ = 0;
+    //! The unweighted chi squared for this property, a sum of many terms
+    double     chiSquared_         = 0;
 
 public:
 
@@ -142,21 +142,21 @@ public:
     /*! \brief Set number of data points
      * \param[in] n The new number of data points
      */
-    void setTotalWeight(real n) { totalWeight_ = n; }
+    void setTotalWeight(double n) { totalWeight_ = n; }
     
     //! \return the number of data points
-    real totalWeight() const { return totalWeight_; }
+    double totalWeight() const { return totalWeight_; }
     
     /*! \brief Set new value for chi squared
      * \param[in] chi2 The new chi squared
      */
-    void setChiSquared(real chi2) { chiSquared_ = chi2; }
+    void setChiSquared(double chi2) { chiSquared_ = chi2; }
     
     //! \return the present chi squared
-    real chiSquared() const { return chiSquared_; }
+    double chiSquared() const { return chiSquared_; }
     
     //! \return the weighted chi squared
-    real chiSquaredWeighted() const 
+    double chiSquaredWeighted() const 
     { 
         if (chiSquared_ > 0 && totalWeight_ > 0)
         { 
@@ -173,7 +173,7 @@ public:
      * \param[in] weight Weight to add to totalWeight_
      * \param[in] delta  Change in chiSquared
      */
-    void increase(real weight, real delta)
+    void increase(double weight, double delta)
     {
         totalWeight_ += weight;
         chiSquared_  += delta;

@@ -1640,7 +1640,7 @@ void TrainForceFieldPrinter::print(MsgHandler                  *msghandler,
                     auto qresp = qp->qgenResp();
                     if (qresp->nEsp() > 0 && qp->qPactConst().qtype() == qi)
                     {
-                        real rms, rrms, cosesp, mae, mse;
+                        double rms, rrms, cosesp, mae, mse;
                         // Fetch coordinates and optimize shells if polarizable
                         auto myx = qresp->coords();
                         std::map<InteractionType, double> energies;
@@ -1852,7 +1852,7 @@ void TrainForceFieldPrinter::print(MsgHandler                  *msghandler,
         {
             for(auto qp = mol->qProps()->begin(); qp < mol->qProps()->end(); ++qp)
             {
-                real rms, rrms, cosesp, mae, mse;
+                double rms, rrms, cosesp, mae, mse;
                 auto qresp = qp->qgenResp();
                 rms        = convertToGromacs(qresp->getStatistics(msghandler, &rrms, &cosesp, &mae, &mse), "Hartree/e");
                 if ((mol->support() != eSupport::No) && (rms > espMax))

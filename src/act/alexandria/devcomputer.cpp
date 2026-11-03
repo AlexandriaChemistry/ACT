@@ -126,8 +126,8 @@ void EspDevComputer::calcDeviation(MsgHandler                    *msghandler,
 {
     for(auto actmol : actmols)
     {
-        real rrms     = 0;
-        real cosangle = 0;
+        double rrms     = 0;
+        double cosangle = 0;
         auto qProps   = actmol->qProps();
         auto topology = actmol->topology();
         std::vector<gmx::RVec> forces(topology->atoms().size());
@@ -164,8 +164,8 @@ void EspDevComputer::calcDeviation(MsgHandler                    *msghandler,
                 epsilonr = 1;
             }
             qgr->calcPot(msghandler, epsilonr);
-            real   mae, mse;
-            real   rms   = qgr->getStatistics(msghandler, &rrms, &cosangle, &mae, &mse);
+            double mae, mse;
+            double rms   = qgr->getStatistics(msghandler, &rrms, &cosangle, &mae, &mse);
             double myRms = convertToGromacs(rms, "Hartree/e");
             size_t nEsp  = qgr->nEsp();
             (*targets).find(eRMS::ESP)->second.increase(nEsp, gmx::square(myRms)*nEsp);

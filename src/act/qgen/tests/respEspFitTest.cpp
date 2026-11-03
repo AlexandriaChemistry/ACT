@@ -178,7 +178,7 @@ protected:
         }
         trial.updateAtomCharges(&msghandler, atoms);
         trial.calcPot(&msghandler, fit.epsilonr);
-        real rrms, cosangle, mae, mse;
+        double rrms, cosangle, mae, mse;
         return trial.getStatistics(&msghandler, &rrms, &cosangle, &mae, &mse);
     }
 
@@ -217,7 +217,7 @@ protected:
         }
         // The potential of the fitted charges is close to the quantum chemical one
         MsgHandler msghandler;
-        real       rrms, cosangle, mae, mse;
+        double       rrms, cosangle, mae, mse;
         double     rms = fit.qresp->getStatistics(&msghandler, &rrms, &cosangle, &mae, &mse);
         EXPECT_GT(cosangle, 0.95);
         EXPECT_LT(rrms, 0.3);
@@ -315,7 +315,7 @@ protected:
         }
         EXPECT_NEAR(qtotal, qsum, 1e-10);
         checker_.checkSequence(charges.begin(), charges.end(), "Charges");
-        real   rrms, cosangle, mae, mse;
+        double   rrms, cosangle, mae, mse;
         double rms = refit.getStatistics(&msghandler, &rrms, &cosangle, &mae, &mse);
         if (fit.actmol.totalCharge() == qtotal)
         {
