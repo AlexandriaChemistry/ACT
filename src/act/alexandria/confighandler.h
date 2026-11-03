@@ -527,6 +527,8 @@ private:
     COMMRemoval        commRemoval_          = COMMRemoval::Angular;
     //! Number of steps between removing the motion of the center of mass
     int                nstcomm_              = 100;
+    //! Whether the warning that the force tolerance is too strict was given, see toleranceWarning
+    mutable bool       toleranceWarned_      = false;
 public:
     /*!
      * \brief Add command-line arguments to a vector
@@ -641,6 +643,18 @@ public:
      * \param[in] toler The new value
      */
     void setForceTolerance(double toler) { forceToler_ = toler; }
+
+    /*! \brief Whether to warn that the force tolerance is too strict
+     * This is only the case the first time, such that repeated
+     * minimizations with the same configuration warn once.
+     * \return true the first time
+     */
+    bool toleranceWarning() const
+    {
+        bool first       = !toleranceWarned_;
+        toleranceWarned_ = true;
+        return first;
+    }
 
     //! \return overrelaxation factor for  minimization.
     double overRelax() const { return overRelax_; }

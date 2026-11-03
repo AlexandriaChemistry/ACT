@@ -72,7 +72,7 @@ class TrainForceFieldPrinter
 private:
     //! Can make computations for molecules, such as the Hessian and energy minimization (for now).
     MolHandler molHandler_;
-    //! The configuration of the minimizations, see MolHandler::adjustForceTolerance
+    //! The configuration of the minimizations, see SimulationConfigHandler::toleranceWarning
     SimulationConfigHandler simConfig_;
     //! Tolerance (kJ/mol e) for marking ESP as an outlier in the log file
     real esp_toler_           = 30;

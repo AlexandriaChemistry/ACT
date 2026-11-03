@@ -134,21 +134,6 @@ public:
              std::vector<std::string> *output = nullptr,
              bool                      debugNMA = false) const;
 
-    /*! \brief Make the force tolerance of a minimization consistent with the shells
-     * The mean square force on the atoms cannot be made smaller than that
-     * on the shells, so if it is, it is set to hundred times that for the
-     * shells, with a warning. A caller that minimizes repeatedly with the
-     * same configuration calls this once, minimizeCoordinates does the
-     * same for a configuration that is not consistent.
-     * \param[in]    msghandler For the warning, may be nullptr
-     * \param[in]    forceComp  The force computer, with the tolerance for the shells
-     * \param[inout] simConfig  The configuration of the minimization
-     * \return whether the tolerance was changed
-     */
-    static bool adjustForceTolerance(MsgHandler              *msghandler,
-                                     const ForceComputer     *forceComp,
-                                     SimulationConfigHandler *simConfig);
-
     /*! \brief
      * The routine will energy minimize the atomic coordinates of a molecule while
      * relaxing the shells. The minimized coordinates will be stored in the 

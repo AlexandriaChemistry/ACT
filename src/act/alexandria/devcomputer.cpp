@@ -345,8 +345,6 @@ void HarmonicsDevComputer::calcDeviation(MsgHandler                    *msghandl
                                          const ForceField              *forcefield,
                                          LossFunction                   lossFunction)
 {
-    // Once, such that the tolerance is consistent for all minimizations
-    MolHandler::adjustForceTolerance(msghandler, forceComputer, &simConfig_);
     for(auto actmol : actmols)
     {
         // Only compute frequencies for structures that have an optimize reference

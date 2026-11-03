@@ -1292,8 +1292,8 @@ void TrainForceFieldPrinter::printEnergyForces(MsgHandler                       
         if (mol->jobType() == JobType::OPT && calcFrequencies_)
         {
             // Now get the minimized structure RMSD and Energy
-            // The same configuration for all compounds, made consistent once
-            MolHandler::adjustForceTolerance(msghandler, forceComp, &simConfig_);
+            // The same configuration for all compounds, which warns once
+            // if its force tolerance is too strict
             std::vector<gmx::RVec>  xmin   = coords;
             std::map<InteractionType, double> eAfter;
             molHandler_.minimizeCoordinates(msghandler, pd, mol->topology(), forceComp, simConfig_,
