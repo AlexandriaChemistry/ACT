@@ -100,47 +100,53 @@ void MolHandler::computeHessian(const ForceField                  *pd,
                                 std::vector<gmx::RVec>            *dpdq) const
 {
     const auto &atoms    = topology->atoms();
-    // The step of the finite differences in nm. The square root of the
-    // machine precision balances the truncation error against the
-    // rounding error of the forces, in single precision a smaller step
-    // makes the Hessian useless.
-    double stepSize = std::sqrt(GMX_REAL_EPS);
+    /* The derivatives of the forces are central differences. In double
+     * precision of second order, with a step in nm of the square root of
+     * the machine precision, which balances the truncation error against
+     * the rounding error of the forces. In single precision these rounding
+     * errors would change the squares of the frequencies by about 100
+     * cm^-2, so they are of fourth order there, with a larger step that is
+     * a power of two.
+     */
+    const std::vector<int> offsets  = GMX_DOUBLE ? std::vector<int>{ -1, 1 } : std::vector<int>{ -2, -1, 1, 2 };
+    const size_t           noffset  = offsets.size();
+    double                 stepSize = GMX_DOUBLE ? std::sqrt(GMX_REAL_EPS) : 1.0/512;
 
     // The input structure first, then for each coordinate of each atom
-    // the structures with that coordinate shifted down and up. They are
-    // all computed together.
+    // the structures with that coordinate shifted. They are all computed
+    // together.
     std::vector<std::vector<gmx::RVec>> xs = { *coords };
-    std::vector<std::array<double, 2>>  xxx;
+    std::vector<std::vector<double>>    xxx;
     for(size_t ai = 0; ai < atomIndex.size(); ai++)
     {
         auto atomI = atomIndex[ai];
         for(int atomXYZ = 0; atomXYZ < DIM; atomXYZ++)
         {
-            double                xyzRef    = (*coords)[atomI][atomXYZ];
-            std::array<double, 2> xd;
-            bool                  stepsDone = false;
-            double                myStep    = stepSize;
+            double              xyzRef    = (*coords)[atomI][atomXYZ];
+            std::vector<double> xd(noffset);
+            bool                stepsDone = false;
+            double              myStep    = stepSize;
             do {
-                for(int delta = 0; delta <= 1; delta++)
+                for(size_t k = 0; k < noffset; k++)
                 {
                     // The coordinates are stored as real, the difference
                     // is computed from the stored values
-                    xd[delta] = static_cast<real>(xyzRef + (2*delta-1)*myStep);
+                    xd[k] = static_cast<real>(xyzRef + offsets[k]*myStep);
                 }
                 // Make sure that the coordinate is in fact chenged.
                 // If the delta is too small, numeric issues may kick
                 // in.
-                stepsDone = (xd[0] < xyzRef && xd[1] > xyzRef);
+                stepsDone = (xd[noffset/2-1] < xyzRef && xd[noffset/2] > xyzRef);
                 if (!stepsDone)
                 {
                     myStep *= 2;
                 }
             }
             while (!stepsDone);
-            for(int delta = 0; delta <= 1; delta++)
+            for(size_t k = 0; k < noffset; k++)
             {
                 xs.push_back(*coords);
-                xs.back()[atomI][atomXYZ] = xd[delta];
+                xs.back()[atomI][atomXYZ] = xd[k];
             }
             xxx.push_back(xd);
         }
@@ -167,21 +173,30 @@ void MolHandler::computeHessian(const ForceField                  *pd,
         gmx::RVec zero = { 0, 0, 0 };
         dpdq->resize(DIM*atomIndex.size(), zero);
     }
+    // The derivative from the values at the shifted coordinates xd
+    auto derivative = [noffset](const std::vector<double> &xd, auto value)
+    {
+        if (noffset == 2)
+        {
+            return (value(1) - value(0))/(xd[1] - xd[0]);
+        }
+        double h = (xd[2] - xd[1])/2;
+        return (8*(value(2) - value(1)) - (value(3) - value(0)))/(12*h);
+    };
     for(size_t ai = 0; ai < atomIndex.size(); ai++)
     {
         for(int atomXYZ = 0; atomXYZ < DIM; atomXYZ++)
         {
             int         column = ai*DIM+atomXYZ;
             const auto &xd     = xxx[column];
-            const auto &f0     = confs[1+2*column].fcalc;
-            const auto &f1     = confs[2+2*column].fcalc;
+            auto        conf   = [&](size_t k) -> const CoordsEnergy & { return confs[1+noffset*column+k]; };
             for(size_t aj = 0; aj < atomIndex.size(); aj++)
             {
                 int    atomJ = atomIndex[aj];
                 for(int d = 0; d < DIM; d++)
                 {
                     int    row   = aj*DIM+d;
-                    double value = -(f1[atomJ][d]-f0[atomJ][d])/(xd[1]-xd[0]);
+                    double value = -derivative(xd, [&](size_t k) { return static_cast<double>(conf(k).fcalc[atomJ][d]); });
                     hessian->set(column, row, value);
                 }
             }
@@ -189,21 +204,21 @@ void MolHandler::computeHessian(const ForceField                  *pd,
             {
                 // To compute dipole we need to take shells into account as well!
                 // The same goes for virtual sites.
-                gmx::RVec mu[2] = { { 0, 0, 0 }, { 0, 0, 0 } };
-                for(int delta = 0; delta <= 1; delta++)
+                std::vector<gmx::DVec> mu(noffset, { 0, 0, 0 });
+                for(size_t k = 0; k < noffset; k++)
                 {
-                    const auto &x = confs[1+2*column+delta].x;
+                    const auto &x = conf(k).x;
                     for(size_t ii = 0; ii < atoms.size(); ii++)
                     {
                         for(int m = 0; m < DIM; m++)
                         {
-                            mu[delta][m] += atoms[ii].totalCharge()*x[ii][m];
+                            mu[k][m] += atoms[ii].totalCharge()*x[ii][m];
                         }
                     }
                 }
                 for(int d = 0; d < DIM; d++)
                 {
-                    (*dpdq)[column][d] = (mu[1][d]-mu[0][d])/(xd[1]-xd[0]);
+                    (*dpdq)[column][d] = derivative(xd, [&](size_t k) { return mu[k][d]; });
                 }
             }
         }
