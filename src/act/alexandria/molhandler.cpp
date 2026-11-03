@@ -156,16 +156,16 @@ void MolHandler::computeHessian(const ForceField                  *pd,
     set.setCoordinates(xs);
     std::vector<std::map<InteractionType, double>> energies;
     forceComp->computeTotal(nullptr, pd, &set, ShellOptions(), &energies);
-    const auto &confs = set.data.confs;
+    const auto &cdata = set.data;
     // The input structure with the relaxed shells and the virtual sites
-    *coords     = confs[0].x;
+    *coords     = cdata.x(0).toRVec();
     *energyZero = energies[0];
     forceZero->clear();
     for(auto &atom : atomIndex)
     {
         for(int m = 0; m < DIM; m++)
         {
-            forceZero->push_back(confs[0].fcalc[atom][m]);
+            forceZero->push_back(cdata.f(0)[atom][m]);
         }
     }
     if (dpdq)
@@ -189,14 +189,14 @@ void MolHandler::computeHessian(const ForceField                  *pd,
         {
             int         column = ai*DIM+atomXYZ;
             const auto &xd     = xxx[column];
-            auto        conf   = [&](size_t k) -> const CoordsEnergy & { return confs[1+noffset*column+k]; };
+            auto        conf   = [&](size_t k) { return 1+noffset*column+k; };
             for(size_t aj = 0; aj < atomIndex.size(); aj++)
             {
                 int    atomJ = atomIndex[aj];
                 for(int d = 0; d < DIM; d++)
                 {
                     int    row   = aj*DIM+d;
-                    double value = -derivative(xd, [&](size_t k) { return static_cast<double>(conf(k).fcalc[atomJ][d]); });
+                    double value = -derivative(xd, [&](size_t k) { return cdata.f(conf(k))[atomJ][d]; });
                     hessian->set(column, row, value);
                 }
             }
@@ -207,7 +207,7 @@ void MolHandler::computeHessian(const ForceField                  *pd,
                 std::vector<gmx::DVec> mu(noffset, { 0, 0, 0 });
                 for(size_t k = 0; k < noffset; k++)
                 {
-                    const auto &x = conf(k).x;
+                    auto x = cdata.x(conf(k));
                     for(size_t ii = 0; ii < atoms.size(); ii++)
                     {
                         for(int m = 0; m < DIM; m++)

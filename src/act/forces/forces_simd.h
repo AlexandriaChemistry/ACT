@@ -75,7 +75,8 @@ void computeConformations(MsgHandler                *msghandler,
  * \param[in]    mypot         The potential
  * \param[in]    topentries    The interactions
  * \param[in]    atoms         The atoms
- * \param[inout] coords        The conformations
+ * \param[inout] cdata         The conformations, only these are kept, the rest
+ *                             of the data for computing them is made anew
  * \param[in]    epsilonr      Relative dielectric constant
  * \param[in]    conformations Whether to loop over the conformations in the
  *                             inner loop (vectorized) or the outer loop
@@ -88,7 +89,7 @@ void computePotential(MsgHandler                 *msghandler,
                       Potential                   mypot,
                       const TopologyEntryVector  &topentries,
                       const std::vector<ActAtom> &atoms,
-                      std::vector<CoordsEnergy>  *coords,
+                      ConformationData           *cdata,
                       double                      epsilonr,
                       bool                        conformations,
                       bool                        forces = true);

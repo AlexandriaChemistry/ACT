@@ -33,8 +33,119 @@
 #ifndef ACT_COORDS_ENERGY_H
 #define ACT_COORDS_ENERGY_H
 
+#include <map>
+#include <string>
+#include <vector>
+
+#include "act/basics/interactiontype.h"
+#include "gromacs/math/vectypes.h"
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/gmxassert.h"
+
 namespace alexandria
 {
+
+/*! \brief Vectors of the particles of one conformation, such as its
+ * coordinates or forces, without owning them
+ * Component m of particle a is at data[(DIM*a+m)*stride], such that the
+ * vectors can be those of one conformation in arrays of many (see
+ * ConformationArrays) or contiguous, with a stride of one. Particle a
+ * is indexed as v[a][m], like a std::vector<gmx::RVec>.
+ * \tparam T The type of the components, const for read-only access
+ */
+template <typename T>
+class ParticleVectors
+{
+public:
+    //! The vector of one particle
+    class Vector
+    {
+    public:
+        /*! \brief Constructor
+         * \param[in] p      The first component
+         * \param[in] stride Distance between the components
+         */
+        Vector(T *p, size_t stride) : p_(p), stride_(stride) {}
+        /*! \brief Return a component
+         * \param[in] m The dimension
+         * \return the component
+         */
+        T &operator[](int m) const { return p_[m*stride_]; }
+        //! \return the vector, for vector functions
+        gmx::RVec rvec() const { return { static_cast<real>(p_[0]), static_cast<real>(p_[stride_]), static_cast<real>(p_[2*stride_]) }; }
+    private:
+        //! The first component
+        T     *p_;
+        //! Distance between the components
+        size_t stride_;
+    };
+
+    //! Constructor for no particles
+    ParticleVectors() {}
+
+    /*! \brief Constructor
+     * \param[in] data   The first component of the first particle
+     * \param[in] stride Distance between components
+     * \param[in] natom  Number of particles
+     */
+    ParticleVectors(T *data, size_t stride, size_t natom) : data_(data), stride_(stride), natom_(natom) {}
+
+    //! Read-only access to the same vectors
+    operator ParticleVectors<const T>() const { return { data_, stride_, natom_ }; }
+
+    //! \return the number of particles
+    size_t size() const { return natom_; }
+
+    //! \return whether there are no particles
+    bool empty() const { return natom_ == 0; }
+
+    //! \return the distance between components
+    size_t stride() const { return stride_; }
+
+    //! \return the first component of the first particle
+    T *data() const { return data_; }
+
+    /*! \brief Return the vector of a particle
+     * \param[in] a The particle
+     * \return the vector
+     */
+    Vector operator[](size_t a) const { return Vector(data_ + DIM*a*stride_, stride_); }
+
+    /*! \brief Set the vectors of all particles
+     * \param[in] v The vectors, as many as there are particles
+     */
+    void assign(const std::vector<gmx::RVec> &v) const
+    {
+        GMX_RELEASE_ASSERT(v.size() == natom_, "Wrong number of particles");
+        for(size_t a = 0; a < natom_; a++)
+        {
+            for(int m = 0; m < DIM; m++)
+            {
+                (*this)[a][m] = v[a][m];
+            }
+        }
+    }
+
+    //! \return the vectors of all particles
+    std::vector<gmx::RVec> toRVec() const
+    {
+        std::vector<gmx::RVec> v(natom_);
+        for(size_t a = 0; a < natom_; a++)
+        {
+            v[a] = (*this)[a].rvec();
+        }
+        return v;
+    }
+
+private:
+    //! The first component of the first particle
+    T     *data_   = nullptr;
+    //! Distance between components
+    size_t stride_ = 1;
+    //! Number of particles
+    size_t natom_  = 0;
+};
+
 /*! \brief Class to hold corresponding QM (reference) and ACT energies
  */
 class ACTEnergy
@@ -148,12 +259,12 @@ typedef struct
     bool                   done;
     //! Pointer to datafile copied from Experiment
     std::string            dataFile;
-    //! Coordinates
-    std::vector<gmx::RVec> x;
-    //! Relaxed coordinates
-    std::vector<gmx::RVec> xrelax;
-    //! Computed forces
-    std::vector<gmx::RVec> fcalc;
+    //! Coordinates, component m of particle a at DIM*a+m, see ConformationData::x
+    std::vector<real>      xflat;
+    //! Relaxed coordinates, as xflat
+    std::vector<real>      xrelax;
+    //! Computed forces, as xflat, see ConformationData::f
+    std::vector<real>      fflat;
     //! Observed forces
     std::vector<gmx::RVec> fobs;
     //! Energy map comparing QM to ACT energies

@@ -224,7 +224,7 @@ protected:
             forceComp_.compute(&msghandler_, pd, top, &xref, &fref, &eref,
                                options.field, options.resetShells, options.relaxShells);
             compareEnergies(eref, energies[c], gmx::test::precisionTolerance(1e-8, 1e-6), label);
-            compareForces(fref, set.data.confs[c].fcalc, gmx::test::precisionTolerance(1e-6, 1e-5), label);
+            compareForces(fref, set.data.f(c).toRVec(), gmx::test::precisionTolerance(1e-6, 1e-5), label);
         }
     }
 
@@ -527,7 +527,7 @@ TEST_F(ComputeTotalTest, InductionCorrectionPotential)
         ASSERT_TRUE(eref.end() != eref.find(itype));
         EXPECT_NE(0, eref[itype]) << label;
         compareEnergies(eref, energies[c], gmx::test::precisionTolerance(1e-8, 1e-6), label);
-        compareForces(fref, set.data.confs[c].fcalc, gmx::test::precisionTolerance(1e-6, 1e-5), label);
+        compareForces(fref, set.data.f(c).toRVec(), gmx::test::precisionTolerance(1e-6, 1e-5), label);
     }
 }
 
@@ -620,13 +620,13 @@ TEST_F(ComputeTotalTest, NoRelaxation)
             EXPECT_NEAR(e.second, t->second, gmx::test::precisionTolerance(1e-10, 1e-6)*std::max(1.0, std::abs(e.second)))
                 << label << " " << interactionTypeToString(e.first);
         }
-        compareForces(fref, set.data.confs[c].fcalc, gmx::test::precisionTolerance(1e-10, 1e-5), label);
+        compareForces(fref, set.data.f(c).toRVec(), gmx::test::precisionTolerance(1e-10, 1e-5), label);
         // The shells did not move
         for(size_t i = 0; i < x[c].size(); i++)
         {
             for(int m = 0; m < DIM; m++)
             {
-                EXPECT_EQ(x[c][i][m], set.data.confs[c].x[i][m]) << label;
+                EXPECT_EQ(x[c][i][m], set.data.x(c)[i][m]) << label;
             }
         }
     }
@@ -665,7 +665,7 @@ TEST_F(ComputeTotalTest, RelaxSomeShells)
             auto core = atoms[i].parents()[0];
             for(int m = 0; m < DIM; m++)
             {
-                EXPECT_EQ(set.data.confs[0].x[core][m], set.data.confs[0].x[i][m]);
+                EXPECT_EQ(set.data.x(0)[core][m], set.data.x(0)[i][m]);
             }
         }
     }

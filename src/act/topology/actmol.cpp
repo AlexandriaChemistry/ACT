@@ -293,14 +293,18 @@ void ACTMol::collectCoordsEnergy(MsgHandler *msghandler)
                 }
                 auto x = experCoords(exp_x);
                 ++nDimer;
-                conformationData_[2].confs.resize(nDimer);
-                conformationData_[2].confs.back().x = x;
-                conformationData_[0].confs.resize(nDimer);
-                conformationData_[1].confs.resize(nDimer);
-                std::copy(x.begin(), x.begin()+natom1, std::back_inserter(conformationData_[0].confs.back().x));
-                std::copy(x.begin()+natom1, x.end(),   std::back_inserter(conformationData_[1].confs.back().x));
-                std::copy(x.begin(), x.begin()+natom1, std::back_inserter(conformationData_[0].confs.back().xrelax));
-                std::copy(x.begin()+natom1, x.end(),   std::back_inserter(conformationData_[1].confs.back().xrelax));
+                for(auto &cd : conformationData_)
+                {
+                    cd.confs.resize(nDimer);
+                }
+                conformationData_[2].setX(nDimer-1, x);
+                conformationData_[0].setX(nDimer-1, x.begin(), x.begin()+natom1);
+                conformationData_[1].setX(nDimer-1, x.begin()+natom1, x.end());
+                for(size_t k = 0; k < 2; k++)
+                {
+                    auto &mon  = conformationData_[k].confs.back();
+                    mon.xrelax = mon.xflat;
+                }
                 // Lowest energy for Boltzmann weighting
                 double eMin = 1e8;
                 // Copy energies for the correct QM observables
@@ -335,7 +339,7 @@ void ACTMol::collectCoordsEnergy(MsgHandler *msghandler)
             auto x = experCoords(exp_x);
             ++nMonomer;
             conformationData_[0].confs.resize(nMonomer);
-            std::copy(x.begin(), x.end(), std::back_inserter(conformationData_[0].confs.back().x));
+            conformationData_[0].setX(nMonomer-1, x);
             // Lowest energy for Boltzmann weighting
             double eMin = 1e8;
             // Copy energies for the correct QM observables
@@ -562,7 +566,7 @@ void ACTMol::forceEnergyMaps(MsgHandler                                         
         {
             const auto &exper    = *energyExper[k];
             auto       &energies = allEnergies[k];
-            const auto &forces   = set.data.confs[k].fcalc;
+            auto        forces   = set.data.f(k);
             auto &eprops = exper.propertyConst(MolPropObservable::DELTAE0);
             if (eprops.size() > 1)
             {

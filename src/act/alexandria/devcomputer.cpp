@@ -449,7 +449,7 @@ double ForceEnergyDevComputer::computeBeta(eRMS ermsi)
  * \param[in]  msghandler   For error messages
  * \param[in]  molname      Name of the molecule, for error messages
  * \param[in]  atoms        The particles of the topology of the conformations
- * \param[in]  coords       The data including fcalc and fobs
+ * \param[in]  cdata        The conformations, with the computed and reference forces
  * \param[in]  lossFunction The loss function to use
  * \param[out] weight       The total weight corresponding to the loss
  * \param[out] loss2        The aggregate loss
@@ -457,7 +457,7 @@ double ForceEnergyDevComputer::computeBeta(eRMS ermsi)
 static void calc_force_loss(MsgHandler                      *msghandler,
                             const std::string               &molname,
                             const std::vector<ActAtom>      &atoms,
-                            const std::vector<CoordsEnergy> *coords,
+                            const ConformationData          *cdata,
                             LossFunction                     lossFunction,
                             double                          *weight,
                             double                          *loss2)
@@ -470,29 +470,30 @@ static void calc_force_loss(MsgHandler                      *msghandler,
             atomIndex.push_back(i);
         }
     }
-    std::vector<double> weights(coords->size(), 0);
-    std::vector<double> losses(coords->size(), 0);
-    for(size_t ix = 0; ix < coords->size(); ix++)
+    std::vector<double> weights(cdata->nconf(), 0);
+    std::vector<double> losses(cdata->nconf(), 0);
+    for(size_t ix = 0; ix < cdata->nconf(); ix++)
     {
-        auto &x = (*coords)[ix];
+        auto &x  = cdata->confs[ix];
+        auto  fx = cdata->f(ix);
         // Not all conformations need to have reference forces
         if (x.fobs.empty())
         {
             continue;
         }
-        if (x.fobs.size() != atomIndex.size() || x.fcalc.size() != atoms.size())
+        if (x.fobs.size() != atomIndex.size() || fx.size() != atoms.size())
         {
             msghandler->msg(ACTStatus::Fatal,
                             gmx::formatString("Inconsistency for %s: there are %zu atoms and %zu particles, but %zu reference and %zu computed forces",
                                               molname.c_str(), atomIndex.size(), atoms.size(),
-                                              x.fobs.size(), x.fcalc.size()));
+                                              x.fobs.size(), fx.size()));
             return;
         }
         double www = 0;
         double lss = 0;
         for(size_t i = 0; i < atomIndex.size(); i++)
         {
-            auto &fc = x.fcalc[atomIndex[i]];
+            auto  fc = fx[atomIndex[i]];
 #pragma unroll
             for(int m = 0; m < DIM; m++)
             {
@@ -790,13 +791,13 @@ void ForceEnergyDevComputer::calcDeviation(MsgHandler                     *msgha
                 if (actmol->isDimer())
                 {
                     calc_force_loss(msghandler, actmol->getMolname(), actmol->topology()->atoms(),
-                                    actmol->dimerCoords(), lossFunction, &weight, &loss);
+                                    actmol->conformationData(2), lossFunction, &weight, &loss);
                 }
                 else
                 {
                     calc_force_loss(msghandler, actmol->getMolname(),
                                     actmol->fragmentHandler()->topologies()[0].atoms(),
-                                    actmol->monomerCoords(0), lossFunction, &weight, &loss);
+                                    actmol->conformationData(0), lossFunction, &weight, &loss);
                 }
                 tf->second.increase(weight, loss);
             }

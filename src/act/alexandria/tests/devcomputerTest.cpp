@@ -287,27 +287,31 @@ protected:
      * \param[in] before The conformations before
      * \param[in] after  The conformations after
      */
-    static void checkConformationsKept(const std::vector<CoordsEnergy> &before,
-                                       const std::vector<CoordsEnergy> &after)
+    static void checkConformationsKept(const ConformationData &before,
+                                       const ConformationData &after)
     {
-        ASSERT_EQ(before.size(), after.size());
-        for(size_t c = 0; c < before.size(); c++)
+        ASSERT_EQ(before.nconf(), after.nconf());
+        for(size_t c = 0; c < before.nconf(); c++)
         {
-            EXPECT_EQ(before[c].dataFile, after[c].dataFile) << "conformation " << c;
-            EXPECT_EQ(before[c].eMin, after[c].eMin) << "conformation " << c;
-            ASSERT_EQ(before[c].x.size(), after[c].x.size()) << "conformation " << c;
-            for(size_t i = 0; i < before[c].x.size(); i++)
+            const auto &cb = before.confs[c];
+            const auto &ca = after.confs[c];
+            EXPECT_EQ(cb.dataFile, ca.dataFile) << "conformation " << c;
+            EXPECT_EQ(cb.eMin, ca.eMin) << "conformation " << c;
+            auto xb = before.x(c);
+            auto xa = after.x(c);
+            ASSERT_EQ(xb.size(), xa.size()) << "conformation " << c;
+            for(size_t i = 0; i < xb.size(); i++)
             {
                 for(int m = 0; m < DIM; m++)
                 {
-                    EXPECT_EQ(before[c].x[i][m], after[c].x[i][m]) << "conformation " << c;
+                    EXPECT_EQ(xb[i][m], xa[i][m]) << "conformation " << c;
                 }
             }
-            ASSERT_EQ(before[c].eMap.size(), after[c].eMap.size()) << "conformation " << c;
-            for(const auto &e : before[c].eMap)
+            ASSERT_EQ(cb.eMap.size(), ca.eMap.size()) << "conformation " << c;
+            for(const auto &e : cb.eMap)
             {
-                auto a = after[c].eMap.find(e.first);
-                ASSERT_TRUE(a != after[c].eMap.end()) << "conformation " << c;
+                auto a = ca.eMap.find(e.first);
+                ASSERT_TRUE(a != ca.eMap.end()) << "conformation " << c;
                 EXPECT_EQ(e.second.haveQM(), a->second.haveQM()) << "conformation " << c;
                 if (e.second.haveQM())
                 {
@@ -363,11 +367,11 @@ protected:
             ACTEnergyMapVector                                                interactionEnergyMap;
             std::vector<std::pair<double, std::map<InteractionType, double>>> energyComponentMap;
             // The conformations hold the reference data for training
-            auto before = *actmol.dimerCoords();
-            EXPECT_FALSE(before.empty());
+            auto before = *actmol.conformationData(2);
+            EXPECT_GT(before.nconf(), 0u);
             actmol.forceEnergyMaps(&msghandler, pd, &forceComputer, &forceMap, &energyMap,
                                    &interactionEnergyMap, &energyComponentMap, sepIndCorr);
-            checkConformationsKept(before, *actmol.dimerCoords());
+            checkConformationsKept(before, *actmol.conformationData(2));
             EXPECT_EQ(qmInduction.size(), interactionEnergyMap.size());
             for(const auto &iem : interactionEnergyMap)
             {
@@ -443,11 +447,11 @@ protected:
     static void checkConformations(ACTMol                          &actmol,
                                    gmx::test::TestReferenceChecker *checker)
     {
-        const auto *coords = actmol.isDimer() ? actmol.dimerCoords() : actmol.monomerCoords(0);
-        EXPECT_FALSE(coords->empty()) << actmol.getMolname();
-        for(size_t i = 0; i < coords->size(); i++)
+        const auto *cdata = actmol.conformationData(actmol.isDimer() ? 2 : 0);
+        EXPECT_GT(cdata->nconf(), 0u) << actmol.getMolname();
+        for(size_t i = 0; i < cdata->nconf(); i++)
         {
-            const auto &ce    = (*coords)[i];
+            const auto &ce    = cdata->confs[i];
             auto        label = gmx::formatString("%s-conf%zu", actmol.getMolname().c_str(), i);
             // In single precision relative to the largest energy and force
             double emax = 0;
@@ -477,7 +481,7 @@ protected:
             EXPECT_GT(ce.eMap.find(InteractionType::EXCHANGE)->second.eact(), 0) << label;
             EXPECT_LT(ce.eMap.find(InteractionType::DISPERSION)->second.eact(), 0) << label;
             std::vector<double> f;
-            for(const auto &fi : ce.fcalc)
+            for(const auto &fi : cdata->f(i).toRVec())
             {
                 for(int m = 0; m < DIM; m++)
                 {
@@ -1337,17 +1341,19 @@ protected:
         };
         // Compare forces of the other particles only, the forces on virtual
         // sites have been spread over the atoms.
-        auto compareForces = [&replaced, tolerance](const std::vector<ActAtom>       &atomsV,
-                                const std::vector<CoordsEnergy>  &coordsV,
-                                const std::vector<CoordsEnergy>  &coordsC)
+        auto compareForces = [&replaced, tolerance](const std::vector<ActAtom> &atomsV,
+                                const ConformationData     &coordsV,
+                                const ConformationData     &coordsC)
         {
-            ASSERT_EQ(coordsV.size(), coordsC.size());
-            for(size_t c = 0; c < coordsV.size(); c++)
+            ASSERT_EQ(coordsV.nconf(), coordsC.nconf());
+            for(size_t c = 0; c < coordsV.nconf(); c++)
             {
+                auto fV = coordsV.f(c);
+                auto fC = coordsC.f(c);
                 // In single precision the errors are relative to the
                 // largest force, since the terms of the forces cancel
                 double fmax = 0;
-                for(const auto &f : coordsV[c].fcalc)
+                for(const auto &f : fV.toRVec())
                 {
                     for(int m = 0; m < DIM; m++)
                     {
@@ -1361,16 +1367,15 @@ protected:
                     {
                         continue;
                     }
-                    ASSERT_LT(k, coordsC[c].fcalc.size());
+                    ASSERT_LT(k, fC.size());
                     for(int m = 0; m < DIM; m++)
                     {
-                        double fmag = GMX_DOUBLE ? 1 + std::abs(coordsV[c].fcalc[i][m]) : fmax;
-                        EXPECT_NEAR(coordsV[c].fcalc[i][m], coordsC[c].fcalc[k][m],
-                                    100*tolerance*fmag);
+                        double fmag = GMX_DOUBLE ? 1 + std::abs(fV[i][m]) : fmax;
+                        EXPECT_NEAR(fV[i][m], fC[k][m], 100*tolerance*fmag);
                     }
                     k++;
                 }
-                EXPECT_EQ(k, coordsC[c].fcalc.size());
+                EXPECT_EQ(k, fC.size());
             }
         };
         for(size_t m = 0; m < molsV.size(); m++)
@@ -1426,11 +1431,11 @@ protected:
                 }
             }
             // Forces
-            compareForces(atomsV, *molV.dimerCoords(), *molC.dimerCoords());
+            compareForces(atomsV, *molV.conformationData(2), *molC.conformationData(2));
             auto &fragV = molV.fragmentHandler()->topologies();
             for(size_t f = 0; f < fragV.size(); f++)
             {
-                compareForces(fragV[f].atoms(), *molV.monomerCoords(f), *molC.monomerCoords(f));
+                compareForces(fragV[f].atoms(), *molV.conformationData(f), *molC.conformationData(f));
             }
             // The coordinates, with the virtual sites on their atoms
             const auto         &xC = molC.xOriginal();
@@ -1843,14 +1848,16 @@ protected:
         {
             ASSERT_TRUE(mol.isDimer());
             const auto &atoms = mol.topology()->atoms();
-            for(auto &dim : *mol.dimerCoords())
+            auto *cdata = mol.conformationData(2);
+            for(size_t c = 0; c < cdata->nconf(); c++)
             {
+                auto &dim = cdata->confs[c];
                 dim.fobs.clear();
                 for(size_t i = 0; i < atoms.size(); i++)
                 {
                     if (atoms[i].pType() == ActParticle::Atom)
                     {
-                        gmx::RVec f = dim.fcalc[i];
+                        gmx::RVec f = cdata->f(c)[i].rvec();
                         f[XX] += 1;
                         f[YY] -= 1;
                         f[ZZ] += 1;

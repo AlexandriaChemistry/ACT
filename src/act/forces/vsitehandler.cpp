@@ -642,15 +642,15 @@ static constexpr std::array<int, 5> localIndices = { 0, 1, 2, 3, 4 };
  * \param[in]    nslot     The number of slots
  * \param[in]    construct Constructs the site from the local coordinates
  */
-template <size_t n, class Construct>
+template <size_t n, typename T, class Construct>
 static void constructSlots(const std::vector<int> &ai,
-                           double                 *x,
+                           T                      *x,
                            size_t                  stride,
                            size_t                  nslot,
                            Construct               construct)
 {
     GMX_RELEASE_ASSERT(ai.size() == n, "Unexpected number of particles of a virtual site");
-    double *row[n][DIM];
+    T *row[n][DIM];
     for(size_t k = 0; k < n; k++)
     {
         for(int m = 0; m < DIM; m++)
@@ -690,17 +690,17 @@ static void constructSlots(const std::vector<int> &ai,
  *                      and forces, the particles are numbered from zero,
  *                      see localIndices
  */
-template <size_t n, class Spread>
+template <size_t n, typename T, class Spread>
 static void spreadSlots(const std::vector<int> &ai,
-                        const double           *x,
-                        double                 *f,
+                        const T                *x,
+                        T                      *f,
                         size_t                  stride,
                         size_t                  nslot,
                         Spread                  spread)
 {
     GMX_RELEASE_ASSERT(ai.size() == n, "Unexpected number of particles of a virtual site");
-    const double *xrow[n][DIM];
-    double       *frow[n][DIM];
+    const T *xrow[n][DIM];
+    T       *frow[n][DIM];
     for(size_t k = 0; k < n; k++)
     {
         for(int m = 0; m < DIM; m++)
@@ -731,11 +731,16 @@ static void spreadSlots(const std::vector<int> &ai,
     }
 }
 
-void VsiteHandler::constructPositions(const Topology *top,
-                                      double         *x,
-                                      size_t          stride,
-                                      size_t          nslot,
-                                      size_t          nconf) const
+/*! \brief Construct the virtual sites of many conformations at once
+ * \tparam T The type of the coordinates
+ * See VsiteHandler::constructPositions for the arguments.
+ */
+template <typename T>
+static void constructStrided(const Topology *top,
+                             T              *x,
+                             size_t          stride,
+                             size_t          nslot,
+                             size_t          nconf)
 {
     static const size_t timer = Timings::instance().index("Virtual sites");
     ScopedTimer         scoped(timer);
@@ -824,12 +829,17 @@ void VsiteHandler::constructPositions(const Topology *top,
     }
 }
 
-void VsiteHandler::distributeForces(const Topology *top,
-                                    const double   *x,
-                                    double         *f,
-                                    size_t          stride,
-                                    size_t          nslot,
-                                    size_t          nconf) const
+/*! \brief Distribute the forces of many conformations back to atoms
+ * \tparam T The type of the coordinates and forces
+ * See VsiteHandler::distributeForces for the arguments.
+ */
+template <typename T>
+static void distributeStrided(const Topology *top,
+                              const T        *x,
+                              T              *f,
+                              size_t          stride,
+                              size_t          nslot,
+                              size_t          nconf)
 {
     static const size_t timer = Timings::instance().index("Virtual sites");
     ScopedTimer         scoped(timer);
@@ -911,6 +921,44 @@ void VsiteHandler::distributeForces(const Topology *top,
             }
         }
     }
+}
+
+void VsiteHandler::constructPositions(const Topology *top,
+                                      double         *x,
+                                      size_t          stride,
+                                      size_t          nslot,
+                                      size_t          nconf) const
+{
+    constructStrided(top, x, stride, nslot, nconf);
+}
+
+void VsiteHandler::constructPositions(const Topology *top,
+                                      float          *x,
+                                      size_t          stride,
+                                      size_t          nslot,
+                                      size_t          nconf) const
+{
+    constructStrided(top, x, stride, nslot, nconf);
+}
+
+void VsiteHandler::distributeForces(const Topology *top,
+                                    const double   *x,
+                                    double         *f,
+                                    size_t          stride,
+                                    size_t          nslot,
+                                    size_t          nconf) const
+{
+    distributeStrided(top, x, f, stride, nslot, nconf);
+}
+
+void VsiteHandler::distributeForces(const Topology *top,
+                                    const float    *x,
+                                    float          *f,
+                                    size_t          stride,
+                                    size_t          nslot,
+                                    size_t          nconf) const
+{
+    distributeStrided(top, x, f, stride, nslot, nconf);
 }
 
 } // namespace

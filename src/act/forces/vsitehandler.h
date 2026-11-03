@@ -80,6 +80,13 @@ class VsiteHandler
                             size_t          nslot,
                             size_t          nconf) const;
 
+    //! \copydoc constructPositions(const Topology *, double *, size_t, size_t, size_t) const
+    void constructPositions(const Topology *top,
+                            float          *x,
+                            size_t          stride,
+                            size_t          nslot,
+                            size_t          nconf) const;
+
     /*! \brief Distribute the forces of many conformations back to atoms
      * The layout is that of constructPositions with many conformations,
      * and the forces are the same as those of distributeForces.
@@ -94,6 +101,14 @@ class VsiteHandler
     void distributeForces(const Topology *top,
                           const double   *x,
                           double         *f,
+                          size_t          stride,
+                          size_t          nslot,
+                          size_t          nconf) const;
+
+    //! \copydoc distributeForces(const Topology *, const double *, double *, size_t, size_t, size_t) const
+    void distributeForces(const Topology *top,
+                          const float    *x,
+                          float          *f,
                           size_t          stride,
                           size_t          nslot,
                           size_t          nconf) const;

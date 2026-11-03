@@ -806,22 +806,26 @@ TEST_F(PhysicsTest, EnergyCache)
     ACTMol     mol;
     ASSERT_TRUE(readMolecule(&pd, waterDimer, {}, {}, &mol));
     auto                      x0 = mol.xOriginal();
-    std::vector<CoordsEnergy> coords(5);
+    std::vector<std::vector<gmx::RVec>> coords(5);
     for (size_t c = 0; c < coords.size(); c++)
     {
-        coords[c].x = x0;
+        coords[c] = x0;
         for (size_t i = 0; i < x0.size(); i++)
         {
             for (int m = 0; m < DIM; m++)
             {
-                coords[c].x[i][m] += 0.005*std::sin(1.0 + c + 3*i + m);
+                coords[c][i][m] += 0.005*std::sin(1.0 + c + 3*i + m);
             }
         }
     }
     // The potential energies without forces, as in training
     auto epot = [&](ConformationData *cdata)
     {
-        cdata->confs = coords;
+        cdata->confs.resize(coords.size());
+        for (size_t c = 0; c < coords.size(); c++)
+        {
+            cdata->setX(c, coords[c]);
+        }
         computeConformations(&msghandler_, &pd, mol.topology(), cdata, false, false);
         EXPECT_TRUE(msghandler_.ok());
         auto                e = cdata->energies.find(InteractionType::EPOT);
@@ -852,7 +856,7 @@ TEST_F(PhysicsTest, EnergyCache)
     // Coordinates, the change is made known to the conformation data
     for (auto &ce : coords)
     {
-        ce.x[0][XX] += 0.01;
+        ce[0][XX] += 0.01;
     }
     cdata.invalidate();
     n0      = reused();
@@ -911,15 +915,15 @@ TEST_F(PhysicsTest, CoulombKernel)
     ACTMol mol;
     ASSERT_TRUE(readMolecule(pd, waterDimer, {}, {}, &mol));
     auto                      x0 = mol.xOriginal();
-    std::vector<CoordsEnergy> coords(7);
+    std::vector<std::vector<gmx::RVec>> coords(7);
     for (size_t c = 0; c < coords.size(); c++)
     {
-        coords[c].x = x0;
+        coords[c] = x0;
         for (size_t i = 0; i < x0.size(); i++)
         {
             for (int m = 0; m < DIM; m++)
             {
-                coords[c].x[i][m] += 0.005*std::sin(1.0 + c + 3*i + m);
+                coords[c][i][m] += 0.005*std::sin(1.0 + c + 3*i + m);
             }
         }
     }
@@ -928,7 +932,11 @@ TEST_F(PhysicsTest, CoulombKernel)
     auto epot = [&](ConformationData *cdata, bool explicitSimd)
     {
         bool before = setUseExplicitSimd(explicitSimd);
-        cdata->confs = coords;
+        cdata->confs.resize(coords.size());
+        for (size_t c = 0; c < coords.size(); c++)
+        {
+            cdata->setX(c, coords[c]);
+        }
         computeConformations(&msghandler_, pd, mol.topology(), cdata, false, false);
         setUseExplicitSimd(before);
         EXPECT_TRUE(msghandler_.ok());
@@ -969,14 +977,14 @@ TEST_F(PhysicsTest, CoulombKernel)
     // Only the interactions of a particle that moved are computed again
     for (auto &ce : coords)
     {
-        ce.x[1][YY] += 0.01;
+        ce[1][YY] += 0.01;
     }
     cdata.invalidate();
     compare("one particle moved");
     for (auto &ce : coords)
     {
-        ce.x[1][YY] -= 0.01;
-        ce.x[4][ZZ] += 0.02;
+        ce[1][YY] -= 0.01;
+        ce[4][ZZ] += 0.02;
     }
     cdata.invalidate();
     compare("two particles moved");

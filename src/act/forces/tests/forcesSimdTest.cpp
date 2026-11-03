@@ -182,20 +182,21 @@ protected:
     }
 
     //! Make the conformations from coordinates
-    std::vector<CoordsEnergy> makeCoords(const std::vector<std::vector<gmx::RVec>> &x)
+    ConformationData makeCoords(const std::vector<std::vector<gmx::RVec>> &x)
     {
-        std::vector<CoordsEnergy> coords(x.size());
+        ConformationData coords;
+        coords.confs.resize(x.size());
         for (size_t c = 0; c < x.size(); c++)
         {
-            coords[c].x = x[c];
+            coords.setX(c, x[c]);
         }
         return coords;
     }
 
     //! \return the potential energy of conformation c
-    double epot(const std::vector<CoordsEnergy> &coords, size_t c)
+    double epot(const ConformationData &coords, size_t c)
     {
-        return coords[c].eMap.find(InteractionType::EPOT)->second.eact();
+        return coords.confs[c].eMap.find(InteractionType::EPOT)->second.eact();
     }
 
     //! \return the potential energy of all conformations with the given atoms
@@ -335,11 +336,11 @@ protected:
             const auto &withForces = useExplicit ? cExplicit : cCompiler;
             for (size_t c = 0; c < nMany_; c++)
             {
-                ASSERT_EQ(withForces[c].eMap.size(), cNoForces[c].eMap.size());
-                for (const auto &e : withForces[c].eMap)
+                ASSERT_EQ(withForces.confs[c].eMap.size(), cNoForces.confs[c].eMap.size());
+                for (const auto &e : withForces.confs[c].eMap)
                 {
-                    auto ei = cNoForces[c].eMap.find(e.first);
-                    ASSERT_TRUE(ei != cNoForces[c].eMap.end());
+                    auto ei = cNoForces.confs[c].eMap.find(e.first);
+                    ASSERT_TRUE(ei != cNoForces.confs[c].eMap.end());
                     EXPECT_REAL_EQ_TOL(e.second.eact(), ei->second.eact(), tolSame)
                         << interactionTypeToString(e.first) << " without forces, conformation " << c
                         << (useExplicit ? ", explicit SIMD" : ", vectorized by the compiler");
@@ -353,19 +354,19 @@ protected:
             {
                 SCOPED_TRACE(gmx::formatString("conformation %zu, %s", c,
                                                other == &cCompiler ? "vectorized by the compiler" : "explicit SIMD"));
-                ASSERT_EQ(cOne[c].eMap.size(), (*other)[c].eMap.size());
-                for (const auto &e : cOne[c].eMap)
+                ASSERT_EQ(cOne.confs[c].eMap.size(), other->confs[c].eMap.size());
+                for (const auto &e : cOne.confs[c].eMap)
                 {
-                    auto ei = (*other)[c].eMap.find(e.first);
-                    ASSERT_TRUE(ei != (*other)[c].eMap.end());
+                    auto ei = other->confs[c].eMap.find(e.first);
+                    ASSERT_TRUE(ei != other->confs[c].eMap.end());
                     EXPECT_REAL_EQ_TOL(e.second.eact(), ei->second.eact(), tolSame);
                 }
-                auto tolForce = forceTolerance(cOne[c].fcalc, tolSame);
+                auto tolForce = forceTolerance(cOne.f(c).toRVec(), tolSame);
                 for (size_t a = 0; a < atoms_.size(); a++)
                 {
                     for (int m = 0; m < DIM; m++)
                     {
-                        EXPECT_REAL_EQ_TOL(cOne[c].fcalc[a][m], (*other)[c].fcalc[a][m], tolForce);
+                        EXPECT_REAL_EQ_TOL(cOne.f(c)[a][m], other->f(c)[a][m], tolForce);
                     }
                 }
             }
@@ -394,28 +395,28 @@ protected:
         compareRoutines(mypot, entries, epsilonr, tolSame);
         for (size_t c = 0; c < nconf_; c++)
         {
-            ASSERT_EQ(cOuter[c].eMap.size(), cInner[c].eMap.size());
-            for (const auto &e : cOuter[c].eMap)
+            ASSERT_EQ(cOuter.confs[c].eMap.size(), cInner.confs[c].eMap.size());
+            for (const auto &e : cOuter.confs[c].eMap)
             {
-                auto ei = cInner[c].eMap.find(e.first);
-                ASSERT_TRUE(ei != cInner[c].eMap.end());
+                auto ei = cInner.confs[c].eMap.find(e.first);
+                ASSERT_TRUE(ei != cInner.confs[c].eMap.end());
                 EXPECT_REAL_EQ_TOL(e.second.eact(), ei->second.eact(), tolSame);
             }
-            auto tolForce = forceTolerance(cOuter[c].fcalc, tolSame);
+            auto tolForce = forceTolerance(cOuter.f(c).toRVec(), tolSame);
             for (size_t a = 0; a < atoms_.size(); a++)
             {
                 for (int m = 0; m < DIM; m++)
                 {
-                    EXPECT_REAL_EQ_TOL(cOuter[c].fcalc[a][m], cInner[c].fcalc[a][m], tolForce);
+                    EXPECT_REAL_EQ_TOL(cOuter.f(c)[a][m], cInner.f(c)[a][m], tolForce);
                 }
             }
         }
         // Check the forces against finite differences of the energy,
         // using all conformations at once.
         double fmax = 0;
-        for (const auto &ce : cInner)
+        for (size_t c = 0; c < cInner.nconf(); c++)
         {
-            for (const auto &f : ce.fcalc)
+            for (const auto &f : cInner.f(c).toRVec())
             {
                 for (int m = 0; m < DIM; m++)
                 {
@@ -441,7 +442,7 @@ protected:
                 for (size_t c = 0; c < nconf_; c++)
                 {
                     double fnum = -(epot(cPlus, c) - epot(cMinus, c))/(2*h);
-                    EXPECT_NEAR(fnum, cInner[c].fcalc[a][m], tolFD*std::max(1.0, fmax))
+                    EXPECT_NEAR(fnum, cInner.f(c)[a][m], tolFD*std::max(1.0, fmax))
                         << "conformation " << c << " atom " << a << " dim " << m;
                 }
             }
@@ -449,7 +450,7 @@ protected:
         // Store the energies
         for (size_t c = 0; c < nconf_; c++)
         {
-            for (const auto &e : cInner[c].eMap)
+            for (const auto &e : cInner.confs[c].eMap)
             {
                 std::string label = gmx::formatString("%s-%zu",
                                                       interactionTypeToString(e.first).c_str(), c);
@@ -629,7 +630,7 @@ TEST_F(ForcesSimdTest, CoulombGaussianShortDistance)
         for (size_t c = 0; c < dist.size(); c++)
         {
             // The distance as stored
-            double r  = coords[c].x[1][XX];
+            double r  = coords.x(c)[1][XX];
             double x2 = gmx::square(zeta*r);
             // (erf(x)/x - 2 exp(-x^2)/sqrt(pi))/x^2 as a series in x^2
             double series = 0, term = 1;
@@ -642,8 +643,8 @@ TEST_F(ForcesSimdTest, CoulombGaussianShortDistance)
             double fOverR = qq*zeta*zeta*zeta*2*invsqrt_pi*series;
             // The force on the first atom, at the origin, points away from the second
             double expect = -fOverR*r;
-            EXPECT_NEAR(expect, coords[c].fcalc[0][XX], toler*std::abs(expect)) << "routine " << routine << " r " << r;
-            EXPECT_NEAR(-expect, coords[c].fcalc[1][XX], toler*std::abs(expect)) << "routine " << routine << " r " << r;
+            EXPECT_NEAR(expect, coords.f(c)[0][XX], toler*std::abs(expect)) << "routine " << routine << " r " << r;
+            EXPECT_NEAR(-expect, coords.f(c)[1][XX], toler*std::abs(expect)) << "routine " << routine << " r " << r;
         }
     }
     setUseExplicitSimd(explicitSimd);

@@ -91,7 +91,7 @@ struct ConformationSet
         data.confs.resize(x.size());
         for(size_t c = 0; c < x.size(); c++)
         {
-            data.confs[c].x = x[c];
+            data.setX(c, x[c]);
         }
         data.invalidate();
     }
@@ -168,7 +168,7 @@ private:
      *                         the step of the shells of each fragment
      * \param[in]    maxShellDistance The maximum distance between a shell and
      *                         its core, see shellMaxDistance
-     * \param[inout] myCoords The coordinates and energy array
+     * \param[inout] cdata    The conformations
      * \param[in]    active   If not nullptr, the conformations to update, the
      *                         others are not visited and not counted
      * \return The number of conformations that are done, of those in active
@@ -180,7 +180,7 @@ private:
                         const std::vector<bool>   &isShell,
                         size_t                     fragment,
                         double                     maxShellDistance,
-                        std::vector<CoordsEnergy> *myCoords,
+                        ConformationData          *cdata,
                         const std::vector<size_t> *active = nullptr) const;
     /*! \brief Relax the shells of one monomer in all conformations of all molecules
      * Iterates shell updates and energy computations until all shells

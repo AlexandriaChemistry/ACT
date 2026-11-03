@@ -1018,7 +1018,7 @@ static ACT_ALWAYS_INLINE void distanceVector(const V &xi, const V &xj, dvec dx)
 
 //! Add a vector in double precision to a force
 template <typename V>
-static ACT_ALWAYS_INLINE void forceInc(V &f, const dvec df)
+static ACT_ALWAYS_INLINE void forceInc(V &&f, const dvec df)
 {
 #pragma unroll
     for (int m = 0; m < DIM; m++)
@@ -1029,7 +1029,7 @@ static ACT_ALWAYS_INLINE void forceInc(V &f, const dvec df)
 
 //! Subtract a vector in double precision from a force
 template <typename V>
-static ACT_ALWAYS_INLINE void forceDec(V &f, const dvec df)
+static ACT_ALWAYS_INLINE void forceDec(V &&f, const dvec df)
 {
 #pragma unroll
     for (int m = 0; m < DIM; m++)
@@ -1703,13 +1703,13 @@ static ACT_ALWAYS_INLINE void withOne(const One           &one,
  * \param[out]   energies    The energy per type
  * \param[in]    one         Function computing one interaction
  */
-template <typename One>
-static inline void computeConformation(MsgHandler                   *msghandler,
-                                       TopologyEntryRange            entries,
-                                       const std::vector<gmx::RVec> &x,
-                                       std::vector<gmx::RVec>       *forces,
-                                       double                        energies[MAX_ENER],
-                                       One                           one)
+template <typename One, typename X, typename F>
+static inline void computeConformation(MsgHandler         *msghandler,
+                                       TopologyEntryRange  entries,
+                                       const X            &x,
+                                       F                  *forces,
+                                       double              energies[MAX_ENER],
+                                       One                 one)
 {
     double e[MAX_ENER] = { 0, 0, 0 };
     for (const auto &b : entries)
@@ -2328,6 +2328,21 @@ static void keepEnergies(const double   *energies,
     }
 }
 
+/*! \brief The coordinates of one conformation for the interaction functions
+ * These use the coordinates of a particle as an rvec, as in the local arrays
+ * of computeConformations.
+ */
+struct ConformationCoordinates
+{
+    //! The coordinates
+    ParticleVectors<const real> x;
+    /*! \brief Return the coordinates of a particle
+     * \param[in] a The particle
+     * \return the coordinates
+     */
+    gmx::RVec operator[](size_t a) const { return x[a].rvec(); }
+};
+
 /*! \brief Compute a potential one conformation at a time, with forces
  * Only the conformations for which the shells are not converged yet are
  * computed, the energies are stored and summed into the potential energy.
@@ -2335,7 +2350,7 @@ static void keepEnergies(const double   *energies,
  * \param[in]    mypot      The potential
  * \param[in]    topentries The interactions
  * \param[in]    atoms      The atoms
- * \param[inout] coords     The conformations, the forces are added to fcalc
+ * \param[inout] cdata      The conformations, the forces are added to theirs
  * \param[inout] cener      The energies of all conformations
  * \param[in]    epsilonr   Relative dielectric constant
  * \param[out]   cached     If not nullptr, the energies are kept here
@@ -2344,7 +2359,7 @@ static inline void calcSome(MsgHandler                 *msghandler,
                             Potential                   mypot,
                             TopologyEntryRange          topentries,
                             const std::vector<ActAtom> &atoms,
-                            std::vector<CoordsEnergy>  *coords,
+                            ConformationData           *cdata,
                             ConformationEnergies       *cener,
                             double                      epsilonr,
                             CachedEnergies             *cached = nullptr)
@@ -2353,9 +2368,9 @@ static inline void calcSome(MsgHandler                 *msghandler,
     // The conformations for which the shells are not converged, see
     // lowComputeEnergies, the others keep their energies and forces.
     std::vector<size_t> confs;
-    for(size_t i = 0; i < coords->size(); i++)
+    for(size_t i = 0; i < cdata->nconf(); i++)
     {
-        if (!(*coords)[i].done)
+        if (!cdata->confs[i].done)
         {
             confs.push_back(i);
         }
@@ -2364,12 +2379,13 @@ static inline void calcSome(MsgHandler                 *msghandler,
     std::vector<double> energies(confs.size()*MAX_ENER, 0.0);
     for(size_t slot = 0; slot < confs.size(); slot++)
     {
-        auto &ce = (*coords)[confs[slot]];
+        ConformationCoordinates x = { cdata->x(confs[slot]) };
+        auto                    f = cdata->f(confs[slot]);
         // The forces are cleared in lowComputeEnergies, since all potentials add to them
         dispatchPotential(mypot, atoms, epsilonr,
                           [&]<int NATOM, bool Vectorize>(auto one)
                           {
-                              computeConformation(msghandler, topentries, ce.x, &ce.fcalc,
+                              computeConformation(msghandler, topentries, x, &f,
                                                   energies.data() + slot*MAX_ENER, one);
                           });
     }
@@ -2751,7 +2767,7 @@ static inline void lowComputeEnergies(MsgHandler                *msghandler,
     // large and spread in memory, without forces: it also checks whether
     // they have the same number of particles and makes room for forces.
     auto  &active   = cdata->active;
-    size_t natom    = coords->empty() ? 0 : coords->front().x.size();
+    size_t natom    = coords->empty() ? 0 : coords->front().xflat.size()/DIM;
     bool   sameSize = true;
     active.clear();
     for(size_t c = 0; c < coords->size(); c++)
@@ -2764,11 +2780,11 @@ static inline void lowComputeEnergies(MsgHandler                *msghandler,
         if (!ce.done)
         {
             active.push_back(c);
-            sameSize = sameSize && ce.x.size() == natom;
+            sameSize = sameSize && ce.xflat.size() == DIM*natom;
             // Without forces calcSome still needs the memory, but not the values
-            if (!forces && ce.fcalc.size() != ce.x.size())
+            if (!forces && ce.fflat.size() != ce.xflat.size())
             {
-                ce.fcalc.resize(ce.x.size());
+                ce.fflat.resize(ce.xflat.size());
             }
         }
     }
@@ -2781,7 +2797,7 @@ static inline void lowComputeEnergies(MsgHandler                *msghandler,
     {
         for(auto &ce : *coords)
         {
-            vsiteHandler.constructPositions(top, &ce.x);
+            vsiteHandler.constructPositions(top, ce.xflat.data(), 1, 1, 1);
         }
     };
     if (ndone == coords->size() && ndone > 0)
@@ -2888,17 +2904,16 @@ static inline void lowComputeEnergies(MsgHandler                *msghandler,
         {
             if (useFixed)
             {
-                ce.fcalc = fixed.forces[active[k]];
+                ce.fflat = fixed.forces[active[k]];
             }
             else
             {
-                gmx::RVec fzero = { 0, 0, 0 };
-                ce.fcalc.assign(ce.x.size(), fzero);
+                ce.fflat.assign(ce.xflat.size(), 0.0);
             }
         }
-        else if (ce.fcalc.size() != ce.x.size())
+        else if (ce.fflat.size() != ce.xflat.size())
         {
-            ce.fcalc.resize(ce.x.size());
+            ce.fflat.resize(ce.xflat.size());
         }
     }
     // Which entries to compute
@@ -2995,7 +3010,7 @@ static inline void lowComputeEnergies(MsgHandler                *msghandler,
                 }
                 forcesInArrays = false;
             }
-            calcSome(msghandler, mypot, entries, top->atoms(), coords, &cener, epsilonr, cached);
+            calcSome(msghandler, mypot, entries, top->atoms(), cdata, &cener, epsilonr, cached);
         }
     };
     if (useFixed)
@@ -3027,7 +3042,7 @@ static inline void lowComputeEnergies(MsgHandler                *msghandler,
             fixed.forces.resize(coords->size());
             for(size_t c = 0; c < coords->size(); c++)
             {
-                fixed.forces[c] = (*coords)[c].fcalc;
+                fixed.forces[c] = (*coords)[c].fflat;
             }
         }
         fixed.nconf = coords->size();
@@ -3155,33 +3170,36 @@ void computePotential(MsgHandler                 *msghandler,
                       Potential                   mypot,
                       const TopologyEntryVector  &topentries,
                       const std::vector<ActAtom> &atoms,
-                      std::vector<CoordsEnergy>  *coords,
+                      ConformationData           *cdata,
                       double                      epsilonr,
                       bool                        conformations,
                       bool                        forces)
 {
+    // Only the conformations are kept, the data for computing them is new
+    ConformationData fresh;
+    fresh.confs = std::move(cdata->confs);
+    *cdata      = std::move(fresh);
+    auto *coords = &cdata->confs;
     for(auto &ce : *coords)
     {
         ce.eMap.clear();
         ce.done = false;
-        gmx::RVec fzero = { 0, 0, 0 };
-        ce.fcalc.assign(ce.x.size(), fzero);
+        ce.fflat.assign(ce.xflat.size(), 0.0);
     }
-    ConformationData cdata;
-    cdata.energies.setNumberOfConformations(coords->size());
-    if (conformations && coords->size() > 1 && cdata.arrays.setCoordinates(*coords, atoms) &&
-        calcConformations(mypot, topentries, atoms, &cdata.arrays, &cdata.energies, epsilonr, forces))
+    cdata->energies.setNumberOfConformations(coords->size());
+    if (conformations && coords->size() > 1 && cdata->arrays.setCoordinates(*coords, atoms) &&
+        calcConformations(mypot, topentries, atoms, &cdata->arrays, &cdata->energies, epsilonr, forces))
     {
         if (forces)
         {
-            cdata.arrays.storeForces(coords);
+            cdata->arrays.storeForces(coords);
         }
     }
     else
     {
-        calcSome(msghandler, mypot, topentries, atoms, coords, &cdata.energies, epsilonr);
+        calcSome(msghandler, mypot, topentries, atoms, cdata, &cdata->energies, epsilonr);
     }
-    cdata.energies.store(coords);
+    cdata->energies.store(coords);
 }
 
 } // namespace

@@ -148,10 +148,10 @@ public:
         static const size_t timer = Timings::instance().index("Copy coordinates to arrays");
         ScopedTimer         scoped(timer);
         size_t nc    = confs.size();
-        size_t natom = (nc == 0) ? 0 : coords[confs[0]].x.size();
+        size_t natom = (nc == 0) ? 0 : coords[confs[0]].xflat.size()/DIM;
         for(size_t k = 0; k < nc && !sameSize; k++)
         {
-            if (coords[confs[k]].x.size() != natom)
+            if (coords[confs[k]].xflat.size() != DIM*natom)
             {
                 valid_ = false;
                 return false;
@@ -232,13 +232,13 @@ public:
         // each are read contiguously, see copyParticles
         for(size_t c = 0; c < nconf; c++)
         {
-            const auto &fc = coords[confs_[c]].fcalc;
+            const auto &fc = coords[confs_[c]].fflat;
             double     *fs = f.data() + c;
             for(size_t a = 0; a < natom; a++)
             {
                 for(int m = 0; m < DIM; m++)
                 {
-                    fs[(DIM*a+m)*stride] = fc[a][m];
+                    fs[(DIM*a+m)*stride] = fc[DIM*a+m];
                 }
             }
         }
@@ -254,13 +254,13 @@ public:
         size_t natom = f.size()/(DIM*stride);
         for(size_t c = 0; c < nconf; c++)
         {
-            auto         &fc = (*coords)[confs_[c]].fcalc;
+            auto         &fc = (*coords)[confs_[c]].fflat;
             const double *fs = f.data() + c;
             for(size_t a = 0; a < natom; a++)
             {
                 for(int m = 0; m < DIM; m++)
                 {
-                    fc[a][m] = fs[(DIM*a+m)*stride];
+                    fc[DIM*a+m] = fs[(DIM*a+m)*stride];
                 }
             }
         }
@@ -276,13 +276,13 @@ public:
         ScopedTimer         scoped(timer);
         for(size_t c = 0; c < nconf; c++)
         {
-            auto         &fc = (*coords)[confs_[c]].fcalc;
+            auto         &fc = (*coords)[confs_[c]].fflat;
             const double *fs = f.data() + c;
             for(auto a : shells_)
             {
                 for(int m = 0; m < DIM; m++)
                 {
-                    fc[a][m] = fs[(DIM*a+m)*stride];
+                    fc[DIM*a+m] = fs[(DIM*a+m)*stride];
                 }
             }
         }
@@ -300,13 +300,13 @@ public:
         ScopedTimer         scoped(timer);
         for(size_t c = 0; c < nconf; c++)
         {
-            auto         &xc = (*coords)[confs_[c]].x;
+            auto         &xc = (*coords)[confs_[c]].xflat;
             const double *xs = x.data() + c;
             for(auto a : vsites_)
             {
                 for(int m = 0; m < DIM; m++)
                 {
-                    xc[a][m] = xs[(DIM*a+m)*stride];
+                    xc[DIM*a+m] = xs[(DIM*a+m)*stride];
                 }
             }
         }
@@ -400,13 +400,13 @@ private:
     {
         for(size_t c = 0; c < stride; c++)
         {
-            const auto &xc = coords[confs_[std::min(c, nconf-1)]].x;
+            const auto &xc = coords[confs_[std::min(c, nconf-1)]].xflat;
             double     *xs = x.data() + c;
             for(auto a : particles)
             {
                 for(int m = 0; m < DIM; m++)
                 {
-                    xs[(DIM*a+m)*stride] = xc[a][m];
+                    xs[(DIM*a+m)*stride] = xc[DIM*a+m];
                 }
             }
         }
@@ -685,8 +685,8 @@ struct FixedEnergies
     std::vector<std::vector<double>>    energies;
     //! For each type whether each conformation has an energy
     std::vector<std::vector<char>>      have;
-    //! The forces of each conformation, unless inArrays
-    std::vector<std::vector<gmx::RVec>> forces;
+    //! The forces of each conformation, as CoordsEnergy::fflat, unless inArrays
+    std::vector<std::vector<real>>      forces;
 };
 
 /*! \brief Reference data of all conformations for computing deviations
@@ -715,8 +715,67 @@ struct DeviationReference
 //! Coordinates, forces and energies of all conformations of a topology
 struct ConformationData
 {
-    //! The conformations
+    //! The conformations, see x and f for their coordinates and forces
     std::vector<CoordsEnergy> confs;
+
+    //! \return the number of conformations
+    size_t nconf() const { return confs.size(); }
+
+    /*! \brief Return the coordinates of a conformation
+     * \param[in] c The conformation
+     * \return the coordinates
+     */
+    ParticleVectors<real> x(size_t c)
+    {
+        auto &v = confs[c].xflat;
+        return { v.data(), 1, v.size()/DIM };
+    }
+
+    //! \copydoc x
+    ParticleVectors<const real> x(size_t c) const
+    {
+        auto &v = confs[c].xflat;
+        return { v.data(), 1, v.size()/DIM };
+    }
+
+    /*! \brief Return the computed forces of a conformation
+     * \param[in] c The conformation
+     * \return the forces, as many as there are particles
+     */
+    ParticleVectors<real> f(size_t c)
+    {
+        auto &v = confs[c].fflat;
+        return { v.data(), 1, v.size()/DIM };
+    }
+
+    //! \copydoc f
+    ParticleVectors<const real> f(size_t c) const
+    {
+        auto &v = confs[c].fflat;
+        return { v.data(), 1, v.size()/DIM };
+    }
+
+    /*! \brief Set the coordinates of a conformation, with zero forces
+     * \param[in] c     The conformation
+     * \param[in] begin The coordinates of the first particle
+     * \param[in] end   Past the coordinates of the last particle
+     */
+    void setX(size_t                                 c,
+              std::vector<gmx::RVec>::const_iterator begin,
+              std::vector<gmx::RVec>::const_iterator end)
+    {
+        auto &ce = confs[c];
+        ce.xflat.resize(DIM*(end - begin));
+        ce.fflat.assign(ce.xflat.size(), 0.0);
+        x(c).assign(std::vector<gmx::RVec>(begin, end));
+    }
+
+    /*! \brief Set the coordinates of a conformation, with zero forces
+     * \param[in] c The conformation
+     * \param[in] x The coordinates of all particles
+     */
+    void setX(size_t c, const std::vector<gmx::RVec> &x) { setX(c, x.begin(), x.end()); }
+
     //! Coordinates and forces
     ConformationArrays   arrays;
     //! Energies
