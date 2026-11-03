@@ -75,12 +75,6 @@ public:
                         ga::Genome *bestGenome,
                         double      prMut);
 
-    //! \copydoc ga::Mutator::sensitivityAnalysis
-    virtual void sensitivityAnalysis(gmx_unused MsgHandler *msghandler,
-                                     gmx_unused ga::Genome *bestGenome,
-                                     gmx_unused iMolSelect  ims,
-                                     gmx_unused JsonTree   *jtree) {}
-    
     //! \return whether a minimum was found
     bool foundMinimum() { return false; }
 };

@@ -349,13 +349,6 @@ public:
         residueNumber_ = residueNumber;
     }
     
-    //! Set the chain information (from pdb files)
-    void SetChain(int chainId, char chain)
-    {
-        chainId_ = chainId;
-        chain_   = chain;
-    }
-    
     //! Return chain
     char chain() const { return chain_; }
     

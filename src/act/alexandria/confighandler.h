@@ -623,11 +623,6 @@ public:
     //! \return maximum number of retries for minimization
     int minimizeRetries() const { return minimizeRetries_; }
 
-    /*! \brief Set number of retries
-     * \param[in] maxretries The number number
-     */
-    void setRetries(int maxretries) { minimizeRetries_ = maxretries; }
-
     //! \return max displacement when retrying to minimize
     double minimizeDisplacement() const { return minimizeDisplacement_; }
 

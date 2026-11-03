@@ -70,13 +70,6 @@ public:
      */
     double fitness(iMolSelect ims) const;
 
-    /*! Return a pointer to the fitness in the data set
-     * \param[in] ims The data set
-     * \return the fitness
-     * \throws if not found
-     */
-    double *fitnessPtr(iMolSelect ims) { return &(fitness_.find(ims)->second); }
-
     /*! \brief Set a fitness
      * \param[in] ims     The data set
      * \param[in] fitness The fitness term

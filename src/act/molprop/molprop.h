@@ -216,16 +216,6 @@ public:
                                                        double             T,
                                                        JobType            jt) const;
 
-    /*! \brief Find an Experimental property
-     * \param[in] mpo The property of interest
-     * \param[in] T   The temperature at which the property
-     *                should have been measured. If -1 any T
-     *                may be returned.
-     * \return the property of interest or nullptr if not found
-     */
-    const std::unique_ptr<GenericProperty> &expProperty(MolPropObservable  mpo, 
-                                                        double             T) const;
-
     //! Add a classification category for this molecule
     void AddCategory(const std::string &category)
     {
@@ -267,9 +257,6 @@ public:
 
     //! Return the fragments of this molecule
     const std::vector<Fragment> &fragments() const { return fragment_; }
-    
-    //! Return the fragments of this molecule
-    const std::vector<Fragment> *fragmentPtrConst() const { return &fragment_; }
     
     //! Return editable fragments of this molecule
     std::vector<Fragment> *fragmentPtr() { return &fragment_; }
@@ -326,9 +313,6 @@ public:
 
     //! Return mutable vector of experiments
     std::vector<Experiment> *experiment() { return &exper_; }
-    
-    //! Return end of experiment vector
-    ExperimentConstIterator EndExperiment()  const { return exper_.end(); }
     
     //! Return pointer to the last inserted experiment or nullptr if the number of experiments is zero
     Experiment *LastExperiment()

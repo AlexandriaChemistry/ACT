@@ -194,9 +194,6 @@ public:
     //! Empty random number array
     void clearAllRandom() { allRandom_.clear(); }
 
-    //! Empty random number array
-    void resetAllRandom(size_t ndimer) { allRandom_.resize(ndimer); }
-
     /*! \brief Set the random numbers
      * \param[in] newRand The new random numbers
      */

@@ -199,8 +199,6 @@ class QgenResp
         void calcPot(MsgHandler *msg_handler,
                      double      epsilonr);
 
-        void calcVShell();
-
         /*! \brief Read the grid and the potential from a cube file
          * \param[in] fn       The file name, with as many atoms as this
          * \param[in] bESPonly Only read the coordinates of the atoms, not
@@ -261,8 +259,6 @@ class QgenResp
         void writePdbComparison(const std::vector<ActAtom>   &atoms,
                                 const std::string            &pdbdiff);
 
-        real myWeight(int iatom) const;
-    
         /*! \brief Update the internal copies of zeta
          * \param[in] atoms The atom info
          * \param[in] pd    The force field
@@ -272,8 +268,6 @@ class QgenResp
                         
         //! Return the charge for one particle
         double getCharge(int atom) const { return q_[atom]; }
-
-        double getZeta(int atom) const { return zeta_[atom]; }
 
 
     private:

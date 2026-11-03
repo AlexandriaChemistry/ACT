@@ -264,13 +264,6 @@ public:
      */
     void setTemperature(double T) { T_ = T; }
     
-    /*! \brief
-     * Set the phase of the property
-     *
-     **\param[in] ep Phase of the property
-     */
-    void setPhase(ePhase ep) { eP_ = ep; }
-    
     //! Return my type of property
     MolPropObservable mpo() const { return mpo_; }
 

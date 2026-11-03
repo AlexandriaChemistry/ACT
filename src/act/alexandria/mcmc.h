@@ -73,7 +73,7 @@ public:
          alexandria::StaticIndividualInfo    *sii,
          alexandria::GAConfigHandler         *gach)
     : GeneticAlgorithm(initializer, fitnessComputer, nullptr, nullptr, nullptr,
-                       mutator, nullptr, nullptr, gach->popSize()),
+                       mutator, nullptr, nullptr),
       sii_(sii), gach_(gach)
     {}
 

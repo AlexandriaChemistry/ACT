@@ -102,11 +102,6 @@ public:
      */
     QgenResp *qgenResp() { return &QgenResp_; }
     
-    /*! \brief Return internal structure
-     * \return the QgenResp_ data structure
-     */
-    const QgenResp &qgenRespConst() const { return QgenResp_; }
-
     //! Copy the charges from Resp to the QtypeProps
     void copyRespQ();
 };
@@ -251,12 +246,6 @@ public:
      * \throws if not suitable experiment is present.
      */
     std::vector<gmx::RVec> xOriginal() const;
-
-    /*! \brief Hack the original coordinates
-     * This is useful when subsequent calls to xOriginal should return e.g. minimized coords
-     * \param[in] x The new coords, that should include shells, vsites etc.
-     */
-    void setXOriginal(const std::vector<gmx::RVec> &x) { xOriginal_ = x; }
 
     /*! \brief
      * Return a modified coordinate vector of the molecule based on the input.
@@ -565,20 +554,6 @@ public:
                        const ForceComputer          *forceComp,
                        const std::vector<gmx::RVec> &coords,
                        bool                          bITP = false);
-    
-    //! \brief Update GROMACS data structures
-    void updateMDAtoms();
-    
-    /*! \brief
-     * Update internal structures for bondtype due to changes in pd
-     *
-     * \param[in] pd     Data structure containing atomic properties
-     * \param[in] iTypes Interaction types
-     * \param[in] updateZeta Whether to update the atomic zeta as well
-     */
-    void UpdateIdef(const ForceField                   *pd,
-                    const std::vector<InteractionType> &iTypes,
-                    bool                                updateZeta);
     
     /*! \brief
      * Generate cube

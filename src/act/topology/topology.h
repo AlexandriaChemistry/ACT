@@ -209,9 +209,6 @@ private:
      */
     void init(const std::vector<Bond> &bonds);
 
-    //! \return the molecule (compound) name
-    const std::string &moleculeName() const { return moleculeName_; }
-
     /*! Find a bond between two atoms
      * \param[in] ai The first atom
      * \param[in] aj The second atom

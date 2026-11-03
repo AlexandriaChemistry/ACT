@@ -134,8 +134,6 @@ public:
         eact_       = eactBefore_;
         eactBefore_ = 0;
     }
-    //! \return backup energy
-    double eactBefore() const { return eactBefore_; }
 };
 
 //! \brief Map to match interaction type to energies

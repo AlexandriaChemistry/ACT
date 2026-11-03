@@ -290,9 +290,6 @@ class MsgHandler
         //! \return whether we are in a verbose mode
         bool verbose() const { return printLevel_ >= ACTStatus::Verbose; }
 
-        //! \return whether we are in a very verbose mode
-        bool veryVerbose() const { return printLevel_ >= ACTStatus::VeryVerbose; }
-
         //! \return whether we are in debug mode
         bool debug() const { return printLevel_ == ACTStatus::Debug; }
 

@@ -107,7 +107,7 @@ public:
                int                                  seed,
                bool                                 adaptiveSteps)
     : GeneticAlgorithm(initializer, fitnessComputer, probComputer, selector, crossover,
-                       mutator, terminators, penalizers, gach->popSize()),
+                       mutator, terminators, penalizers),
       sii_(sii), gach_(gach), adaptiveSteps_(adaptiveSteps), fitnessFile_(fitnessFileName),
       gpin_(genePoolIn), gpout_(genePoolOut), seed_(seed)
     {}

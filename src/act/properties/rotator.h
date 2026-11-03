@@ -100,8 +100,6 @@ public:
                                         double                        r3,
                                         const std::vector<gmx::RVec> &coords);
 
-    void checkMatrix(MsgHandler *msghandler);
-
     void printAverageMatrix(MsgHandler *msghandler);
 
     void printAngleHisto();
