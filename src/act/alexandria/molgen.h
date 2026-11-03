@@ -36,6 +36,8 @@
 #define MOLGEN_H
 
 #include <map>
+#include <string>
+#include <vector>
 
 #include "act/alexandria/molselect.h"
 #include "act/import/compound_reader.h"
@@ -381,6 +383,14 @@ public:
     
     //! Return all the parameter types to fit
     std::map<std::string, bool> typesToFit() const { return fit_; }
+
+    /*! \brief The parameters of particle types to fit
+     * These are the charge and the second charge and the width of its
+     * distribution, see ParticleType::chargeVS, all of the interaction
+     * type CHARGE.
+     * \return the names of those that are fitted
+     */
+    std::vector<std::string> particleParametersToFit() const;
 
     //! Boltzmann weighting temperature for energies
     double enerBoltzTemp() const { return ener_boltz_temp_; }

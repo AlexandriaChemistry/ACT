@@ -152,7 +152,8 @@ bool ForceField::typeToInteractionType(const std::string &type,
 {
     if (type2Itype_.empty())
     {
-        type2Itype_.insert({InteractionType::CHARGE, { "charge" } });
+        // The parameters of particle types, see ParticleType::chargeVS
+        type2Itype_.insert({InteractionType::CHARGE, { "charge", chargeVSName, zetaVSName } });
         for(const auto &fs : forcesConst())
         {
             auto iType = fs.first;

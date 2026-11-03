@@ -258,6 +258,19 @@ void MolGen::fillIopt(const ForceField *pd,
     }
 }
 
+std::vector<std::string> MolGen::particleParametersToFit() const
+{
+    std::vector<std::string> names;
+    for(const char *name : { "charge", chargeVSName, zetaVSName })
+    {
+        if (fit(name))
+        {
+            names.push_back(name);
+        }
+    }
+    return names;
+}
+
 void MolGen::checkDataSufficiency(MsgHandler *msghandler,
                                   ForceField *pd)
 // Called in Read method
@@ -321,15 +334,17 @@ void MolGen::checkDataSufficiency(MsgHandler *msghandler,
                                        "Death Horror Programming Error.");
                     // Loop over particles to find mutable charges
                     auto pv = pd->particleTypes();
-                    std::string ccc("charge");
                     for (auto &pt : *pv)
                     {
-                        if (pt.second.hasParameter(ccc))
+                        for(const auto &ccc : particleParametersToFit())
                         {
-                            auto p = pt.second.parameter(ccc);
-                            if (p->isMutable())
+                            if (pt.second.hasParameter(ccc))
                             {
-                                p->setNtrain(0);
+                                auto p = pt.second.parameter(ccc);
+                                if (p->isMutable())
+                                {
+                                    p->setNtrain(0);
+                                }
                             }
                         }
                     }
@@ -398,13 +413,15 @@ void MolGen::checkDataSufficiency(MsgHandler *msghandler,
                         }
                         else if (itype == InteractionType::CHARGE)
                         {
-                            std::string ccc("charge");
-                            if (atype->hasParameter(ccc))
+                            for(const auto &ccc : particleParametersToFit())
                             {
-                                auto p = atype->parameter(ccc);
-                                if (p->isMutable())
+                                if (atype->hasParameter(ccc))
                                 {
-                                    p->incrementNtrain();
+                                    auto p = atype->parameter(ccc);
+                                    if (p->isMutable())
+                                    {
+                                        p->incrementNtrain();
+                                    }
                                 }
                             }
                         }
@@ -605,9 +622,12 @@ void MolGen::checkDataSufficiency(MsgHandler *msghandler,
                             }
                             else if (itype == InteractionType::CHARGE)
                             {
-                                std::string ccc("charge");
-                                if (atype->hasParameter(ccc))
+                                for(const auto &ccc : particleParametersToFit())
                                 {
+                                    if (!atype->hasParameter(ccc))
+                                    {
+                                        continue;
+                                    }
                                     auto p = atype->parameter(ccc);
                                     if (p->isMutable() && p->ntrain() < mindata_)
                                     {
@@ -624,6 +644,10 @@ void MolGen::checkDataSufficiency(MsgHandler *msghandler,
                                         keep = false;
                                         break;
                                     }
+                                }
+                                if (!keep)
+                                {
+                                    break;
                                 }
                             }
                         }
