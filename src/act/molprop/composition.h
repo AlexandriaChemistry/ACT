@@ -249,6 +249,10 @@ private:
     int                     atomID_ = 0, residueNumber_ = 0, chainId_ = 0;
     char                    chain_ = ' ';
     std::map<std::string, double> q_;
+
+    //! Return chain ID
+    int chainId() const { return chainId_; }
+
 public:
     //! Default constructor
     CalcAtom() {}
@@ -351,9 +355,6 @@ public:
         chainId_ = chainId;
         chain_   = chain;
     }
-    
-    //! Return chain ID
-    int chainId() const { return chainId_; }
     
     //! Return chain
     char chain() const { return chain_; }

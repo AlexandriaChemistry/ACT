@@ -164,6 +164,41 @@ private:
     //! \brief Add vsite identifiers to the cores such that they can be used for exclusions
     void addVsitesToCores();
 
+    /*! \brief Write the first two atom indices of each entry of an interaction type
+     * \param[in] tw    The text writer, nothing is written if nullptr
+     * \param[in] itype The interaction type
+     */
+    void dumpPairlist(gmx::TextWriter *tw, InteractionType itype) const;
+
+    /*! \brief Add residue information
+     * \param[in] residueNumber The original number
+     * \param[in] residueName   The new number
+     */
+    void addResidue(int                residueNumber,
+                    const std::string &residueName);
+
+    /*! \brief Order the neighbours of the central atom of an improper
+     * The identifier of an improper depends on the order of the three
+     * neighbours, which would then depend on the numbering of the atoms.
+     * They are sorted by bond order and bond type, and the first order
+     * that the force field has parameters for is used.
+     * \param[in]    pd    The force field, nothing is done if nullptr
+     * \param[inout] bonds The bonds from the central atom to the neighbours
+     */
+    void orderImproper(const ForceField  *pd,
+                       std::vector<Bond> *bonds) const;
+
+    /*! Generate the non-bonded pair list based on just the atoms
+     * \param[in] msghandler Message handler
+     * \param[in] pd         Force field needed to set identifiers.
+     * \param[in] itype      The interaction type
+     * \param[in] exclusions The excluded particle pairs
+     */
+    void makePairs(MsgHandler                          *msghandler,
+                   const ForceField                    *pd,
+                   InteractionType                      itype,
+                   const std::vector<std::set<size_t>> &exclusions);
+
  public:
     Topology()
     {
@@ -194,12 +229,6 @@ private:
      * \param[in] atom The atom to add
      */
     void addAtom(const ActAtom &atom) { atoms_.push_back(atom); }
-
-    /*! \brief Write the first two atom indices of each entry of an interaction type
-     * \param[in] tw    The text writer, nothing is written if nullptr
-     * \param[in] itype The interaction type
-     */
-    void dumpPairlist(gmx::TextWriter *tw, InteractionType itype) const;
 
     //! \return the array of real atoms
     const std::vector<int> &realAtoms() const { return realAtoms_; }
@@ -284,13 +313,6 @@ private:
     //! \return the residue names
     const std::vector<std::string> residueNames() const { return residueNames_; }
 
-    /*! \brief Add residue information
-     * \param[in] residueNumber The original number
-     * \param[in] residueName   The new number
-     */
-    void addResidue(int                residueNumber,
-                    const std::string &residueName);
-
     /*! \brief Change the name of a residue
      * \param[in] residueNumber The residue number
      * \param[in] residueName   The new name
@@ -316,17 +338,6 @@ private:
                     const ForceField             *pd,
                     const std::vector<gmx::RVec> &x,
                     double                        LinearAngleMin);
-
-    /*! \brief Order the neighbours of the central atom of an improper
-     * The identifier of an improper depends on the order of the three
-     * neighbours, which would then depend on the numbering of the atoms.
-     * They are sorted by bond order and bond type, and the first order
-     * that the force field has parameters for is used.
-     * \param[in]    pd    The force field, nothing is done if nullptr
-     * \param[inout] bonds The bonds from the central atom to the neighbours
-     */
-    void orderImproper(const ForceField  *pd,
-                       std::vector<Bond> *bonds) const;
 
     /*! Generate the impropers
      * To generate impropers we need the coordinates to check whether
@@ -357,17 +368,6 @@ private:
 
     //! \return the number of atoms
     size_t nAtoms() const { return atoms_.size(); }
-
-    /*! Generate the non-bonded pair list based on just the atoms
-     * \param[in] msghandler Message handler
-     * \param[in] pd         Force field needed to set identifiers.
-     * \param[in] itype      The interaction type
-     * \param[in] exclusions The excluded particle pairs
-     */
-    void makePairs(MsgHandler                          *msghandler,
-                   const ForceField                    *pd,
-                   InteractionType                      itype,
-                   const std::vector<std::set<size_t>> &exclusions);
 
     //! @copydoc Bond::renumberAtoms
     void renumberAtoms(const std::vector<int> &renumber);

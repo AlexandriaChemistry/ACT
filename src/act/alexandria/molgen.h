@@ -292,8 +292,22 @@ private:
         }
         return 0;
     }
-    
-    
+
+    /*! \brief Fill the  iOpt_ map
+     * \param[in] pd         Pointer to forcefield
+     * \param[in] msghandler For information
+     */
+    void fillIopt(const ForceField *pd,
+                  MsgHandler       *msghandler);
+
+    /*! \brief The parameters of particle types to fit
+     * These are the charge and the width of its distribution, and the
+     * second charge and the width of its distribution, see
+     * ParticleType::chargeVS, all of the interaction type CHARGE.
+     * \return the names of those that are fitted
+     */
+    std::vector<std::string> particleParametersToFit() const;
+
 public:
     
     //! Default constructor
@@ -342,13 +356,6 @@ public:
      */
     bool hasMolPropObservable(MolPropObservable mpo) const;
 
-    /*! \brief Fill the  iOpt_ map
-     * \param[in] pd         Pointer to forcefield
-     * \param[in] msghandler For information
-     */
-    void fillIopt(const ForceField *pd,
-                  MsgHandler       *msghandler);
-    
     //! \brief Return the const vector of molecules
     const std::vector<ACTMol> &actmols() const { return actmol_; }
 
@@ -383,14 +390,6 @@ public:
     
     //! Return all the parameter types to fit
     std::map<std::string, bool> typesToFit() const { return fit_; }
-
-    /*! \brief The parameters of particle types to fit
-     * These are the charge and the width of its distribution, and the
-     * second charge and the width of its distribution, see
-     * ParticleType::chargeVS, all of the interaction type CHARGE.
-     * \return the names of those that are fitted
-     */
-    std::vector<std::string> particleParametersToFit() const;
 
     //! Boltzmann weighting temperature for energies
     double enerBoltzTemp() const { return ener_boltz_temp_; }

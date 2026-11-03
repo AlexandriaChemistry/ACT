@@ -184,13 +184,6 @@ class ParticleType
     {
         return parameterMap_.find(type) != parameterMap_.end();
     }
-    /*! \brief Return parameter value
-     * \param[in] type The parameter name
-     * \return the value
-     * \throws if not present
-     */
-    double paramValue(const std::string &type) const;
-    
     /*! \brief Return force field parameter corresponding to type
      * \param[in] type The parameter name
      * \return the parameter
@@ -274,6 +267,13 @@ class ParticleType
     CommunicationStatus Receive(const CommunicationRecord *cr, int src);
 
  private:
+    /*! \brief Return parameter value
+     * \param[in] type The parameter name
+     * \return the value
+     * \throws if not present
+     */
+    double paramValue(const std::string &type) const;
+
     //! My identifier
     Identifier                         id_;
     //! String with particle type description

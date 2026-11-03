@@ -87,6 +87,12 @@ private:
     std::vector<Experiment>           exper_;
     std::vector<Bond>                 bond_;
 
+    /*! \brief Return the first calculation that matches the specification
+     * \param[in] job The JobType, typically JobType::Opt
+     * \return the Experiment or nullptr
+     */
+    Experiment *findExperiment(JobType job);
+
 public:
     //! Constructor for a MolProp object
     MolProp() {}
@@ -307,12 +313,6 @@ public:
      * \return the Experiment or nullptr
      */
     const Experiment *findExperimentConst(JobType job) const;
-    
-    /*! \brief Return the first calculation that matches the specification
-     * \param[in] job The JobType, typically JobType::Opt
-     * \return the Experiment or nullptr
-     */
-    Experiment *findExperiment(JobType job);
     
     //! Add an experiment
     void AddExperiment(Experiment myexp)
