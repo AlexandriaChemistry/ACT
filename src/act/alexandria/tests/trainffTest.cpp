@@ -50,6 +50,9 @@
 
 #include "trainffTestUtil.h"
 
+#include "act/forcefield/forcefield.h"
+#include "act/forcefield/forcefield_xml.h"
+#include "act/forcefield/particletype.h"
 #include "gromacs/utility/exceptions.h"
 
 #include "testutils/cmdlinetest.h"
@@ -168,6 +171,53 @@ TEST_F(TrainFFTest, MCMCIntraBooze)
 TEST_F(TrainFFTest, MCMCHydrogenFluoride)
 {
     runAndCheck("4S-lj14-7-pg-hvdw.xml", "hf-hf", combine(mcmcOptions(3), hfOptions()));
+}
+
+// Test: The second charges of particles, which replace virtual sites on top
+// of atoms when reading the force field, and the widths of their
+// distributions are trained, see ForceField::convertVsite1 and
+// https://github.com/AlexandriaChemistry/ACT/issues/870
+TEST_F(TrainFFTest, SecondCharges)
+{
+    auto output = trainfftest::runTrainFF(&fileManager(), "chargevs", "4S-lj14-7-pg-hvdw.xml", "hf-hf",
+                                          combine(mcmcOptions(20),
+                                                  { { "-fit", "chargeVS zetaVS" },
+                                                    { "-fc_allelec", "1" }, { "-fc_mu", "1" } }));
+    ASSERT_EQ(0, output.status);
+    ASSERT_FALSE(output.forceField.empty()) << "No force field written";
+    // The input force field has virtual sites, which become second charges
+    ForceField input, trained;
+    readForceField(fileManager().getInputFilePath("trainff/4S-lj14-7-pg-hvdw.xml"), &input);
+    auto trainedFile = fileManager().getTemporaryFilePath("chargevs-trained.xml");
+    {
+        std::ofstream out(trainedFile);
+        out << output.forceField;
+    }
+    readForceField(trainedFile, &trained);
+    int nchanged = 0;
+    for(const char *atype : { "f", "hf" })
+    {
+        ASSERT_TRUE(input.findParticleType(atype)->hasChargeVS()) << atype;
+        for(const char *pname : { chargeVSName, zetaVSName })
+        {
+            // The parameter is listed with those that are trained
+            EXPECT_TRUE(std::any_of(output.log.begin(), output.log.end(),
+                                    [atype, pname](const std::string &line)
+                                    {
+                                        std::istringstream iss(line);
+                                        std::string        id, type;
+                                        return (iss >> id >> type) && id == atype && type == pname;
+                                    })) << atype << " " << pname;
+            const auto &p0 = input.findParticleType(atype)->parameterConst(pname);
+            const auto &p1 = trained.findParticleType(atype)->parameterConst(pname);
+            EXPECT_EQ(Mutability::Bounded, p1.mutability()) << atype << " " << pname;
+            EXPECT_LT(0, p1.ntrain()) << atype << " " << pname;
+            EXPECT_LE(p1.minimum(), p1.value()) << atype << " " << pname;
+            EXPECT_GE(p1.maximum(), p1.value()) << atype << " " << pname;
+            nchanged += (p0.value() != p1.value()) ? 1 : 0;
+        }
+    }
+    EXPECT_LT(0, nchanged);
 }
 
 // Test: The files with the correlation of the energy components get the
