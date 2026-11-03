@@ -37,7 +37,9 @@
 
 #include "../forces_simd.h"
 
+#include <algorithm>
 #include <cmath>
+#include <cstdint>
 
 #include <functional>
 #include <map>
@@ -205,8 +207,69 @@ protected:
             epsilonr = 1;
         }
         auto epot = computeOne(p, top, atoms_, coordinates, &forces, &energies, epsilonr);
+        // In single precision the coordinates are rounded, by up to
+        // GMX_FLOAT_EPS times their magnitude. That changes the forces by
+        // the stiffness times this, also where the reference force is zero,
+        // and the energies by the forces times this. For two atoms the
+        // stiffness along z is estimated from the forces at displaced
+        // coordinates.
+        double xround    = 0;
+        double stiffness = 0;
+        if (!GMX_DOUBLE)
+        {
+            for (const auto &xi : *coordinates)
+            {
+                for (int m = 0; m < DIM; m++)
+                {
+                    xround += GMX_FLOAT_EPS*std::abs(xi[m]);
+                }
+            }
+            if (coordinates->size() == 2)
+            {
+                double h = 1.0/1024;
+                double fz[2];
+                for (int k = 0; k < 2; k++)
+                {
+                    std::vector<gmx::RVec>            fk(coordinates->size(), fzero);
+                    std::map<InteractionType, double> ek;
+                    auto                              newx = *coordinates;
+                    newx[1][ZZ] += (2*k-1)*h;
+                    (void) computeOne(p, top, atoms_, &newx, &fk, &ek, epsilonr);
+                    fz[k] = fk[1][ZZ];
+                }
+                stiffness = std::abs(fz[1] - fz[0])/(2*h);
+            }
+        }
+        double fmax = 0;
+        for (const auto &f : forces)
+        {
+            for (int m = 0; m < DIM; m++)
+            {
+                fmax = std::max(fmax, static_cast<double>(std::abs(f[m])));
+            }
+        }
+        // Tolerance with an absolute part for the rounded coordinates in
+        // single precision, for values of both float and double type
+        auto roundedTolerance = [](double absolute)
+        {
+            return gmx::test::FloatingPointTolerance(absolute, absolute, 1e-5, 1e-5,
+                                                     UINT64_MAX, UINT64_MAX, false);
+        };
+        if (!GMX_DOUBLE)
+        {
+            checker_.setDefaultTolerance(roundedTolerance(2*fmax*xround));
+        }
         checker_.checkReal(epot, "Epot");
+        if (!GMX_DOUBLE)
+        {
+            // Components that cancel have errors relative to the largest force
+            checker_.setDefaultTolerance(roundedTolerance(2*stiffness*xround + 1e-6*fmax));
+        }
         checker_.checkSequence(forces.begin(), forces.end(), "Forces");
+        if (!GMX_DOUBLE)
+        {
+            checker_.setDefaultTolerance(roundedTolerance(2*fmax*xround));
+        }
         for (const auto &e : energies)
         {
             checker_.checkReal(e.second, interactionTypeToString(e.first).c_str());
@@ -255,6 +318,7 @@ protected:
                 EXPECT_TRUE(std::abs(forces2[i][m] + forces[i][m]) < fdiff);
             }
         }
+#if GMX_DOUBLE
         double dx = 1e-6;
         double ener[2];
         rvec   dxvector[2];
@@ -271,15 +335,57 @@ protected:
         }
         // Compute numerical derivative
         double fz = -(ener[1]-ener[0])/(norm(dxvector[0])+norm(dxvector[1]));
+#else
+        // Central differences of fourth order, with a larger step, since the
+        // rounding error of the energies is divided by it, and a power of
+        // two, such that the displaced coordinates are exact
+        double h    = 1.0/1024;
+        double emax = std::abs(epot);
+        auto shifted = [&](double dz)
+        {
+            std::vector<gmx::RVec>            forces(coordinates->size(), fzero);
+            std::map<InteractionType, double> energies;
+            auto                              newx = *coordinates;
+            newx[1][ZZ] += dz;
+            double e = computeOne(p, top, atoms_, &newx, &forces, &energies, epsilonr);
+            emax     = std::max(emax, std::abs(e));
+            return e;
+        };
+        double e1 = shifted(h) - shifted(-h);
+        double e2 = shifted(2*h) - shifted(-2*h);
+        double e4 = shifted(4*h) - shifted(-4*h);
+        double fz = -(8*e1 - e2)/(12*h);
+        // The truncation error, of order h^4, follows from the same
+        // stencil with step 2h (Richardson).
+        double fz2h  = -(8*e2 - e4)/(24*h);
+        double trunc = std::abs(fz2h - fz)/15;
+        // The rounding errors of the energies enter fz with the sum of the
+        // absolute weights 18/(12h). They are up to about 8 GMX_FLOAT_EPS
+        // each, from exp and pow and from terms that partly cancel. The
+        // reference force has the error from the rounded coordinates.
+        double fzround = trunc + 12*GMX_FLOAT_EPS*emax/h + 2*stiffness*xround;
+#endif
         double toler = 3e-5;
         // It should be identical to the forces computed at the central point
         // A difference of two energies, in which the last bits of the
         // energies, that can differ between platforms, are amplified
-        checker_.setDefaultTolerance(gmx::test::relativeToleranceAsFloatingPoint(1.0, GMX_DOUBLE ? 1e-7 : 1e-4));
+#if GMX_DOUBLE
+        checker_.setDefaultTolerance(gmx::test::relativeToleranceAsFloatingPoint(1.0, 1e-7));
+#else
+        checker_.setDefaultTolerance(gmx::test::FloatingPointTolerance(fzround, fzround, 1e-4, 1e-4,
+                                                                       UINT64_MAX, UINT64_MAX, false));
+#endif
         checker_.checkReal(fz, "fz");
         checker_.setDefaultTolerance(gmx::test::relativeToleranceAsFloatingPoint(1.0, GMX_DOUBLE ? 1e-10 : 1e-6));
         double diff = abs(fz - forces[1][ZZ]);
         double f2   = std::abs(fz + forces[1][ZZ]);
+#if !GMX_DOUBLE
+        // Differences within the rounding errors are accepted
+        if (diff < fzround)
+        {
+            diff = 0;
+        }
+#endif
         if ((f2 > 0) && (diff >= toler))
         {
             // Make it relative

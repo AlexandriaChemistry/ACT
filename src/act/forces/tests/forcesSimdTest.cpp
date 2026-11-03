@@ -269,6 +269,31 @@ protected:
      * \param[in] epsilonr The relative dielectric constant
      * \param[in] tolSame  The tolerance
      */
+    /*! \brief The tolerance for comparing forces
+     * In single precision a force is accurate relative to the largest
+     * force, since the terms of the forces cancel.
+     * \param[in] f       The forces
+     * \param[in] tolSame The tolerance in double precision
+     * \return The tolerance
+     */
+    gmx::test::FloatingPointTolerance forceTolerance(const std::vector<gmx::RVec>           &f,
+                                                     const gmx::test::FloatingPointTolerance &tolSame)
+    {
+        if (GMX_DOUBLE)
+        {
+            return tolSame;
+        }
+        double fmax = 1;
+        for (const auto &fi : f)
+        {
+            for (int m = 0; m < DIM; m++)
+            {
+                fmax = std::max<double>(fmax, std::abs(fi[m]));
+            }
+        }
+        return gmx::test::relativeToleranceAsFloatingPoint(fmax, 1e-5);
+    }
+
     void compareRoutines(Potential                              mypot,
                          const TopologyEntryVector             &entries,
                          double                                 epsilonr,
@@ -320,11 +345,12 @@ protected:
                     ASSERT_TRUE(ei != (*other)[c].eMap.end());
                     EXPECT_REAL_EQ_TOL(e.second.eact(), ei->second.eact(), tolSame);
                 }
+                auto tolForce = forceTolerance(cOne[c].fcalc, tolSame);
                 for (size_t a = 0; a < atoms_.size(); a++)
                 {
                     for (int m = 0; m < DIM; m++)
                     {
-                        EXPECT_REAL_EQ_TOL(cOne[c].fcalc[a][m], (*other)[c].fcalc[a][m], tolSame);
+                        EXPECT_REAL_EQ_TOL(cOne[c].fcalc[a][m], (*other)[c].fcalc[a][m], tolForce);
                     }
                 }
             }
@@ -360,11 +386,12 @@ protected:
                 ASSERT_TRUE(ei != cInner[c].eMap.end());
                 EXPECT_REAL_EQ_TOL(e.second.eact(), ei->second.eact(), tolSame);
             }
+            auto tolForce = forceTolerance(cOuter[c].fcalc, tolSame);
             for (size_t a = 0; a < atoms_.size(); a++)
             {
                 for (int m = 0; m < DIM; m++)
                 {
-                    EXPECT_REAL_EQ_TOL(cOuter[c].fcalc[a][m], cInner[c].fcalc[a][m], tolSame);
+                    EXPECT_REAL_EQ_TOL(cOuter[c].fcalc[a][m], cInner[c].fcalc[a][m], tolForce);
                 }
             }
         }

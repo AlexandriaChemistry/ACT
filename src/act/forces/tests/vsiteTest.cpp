@@ -279,7 +279,11 @@ protected:
             }
             return e;
         };
-        double h = 1e-6;
+        // Central differences of fourth order. In single precision the step
+        // is larger, since the rounding error of the energy is divided by
+        // it, and a power of two, such that the displaced coordinates are
+        // exact.
+        double h = GMX_DOUBLE ? 1e-6 : 1.0/256;
         for (size_t i = 0; i < atoms.size(); i++)
         {
             for (int m = 0; m < DIM; m++)
@@ -290,12 +294,15 @@ protected:
                     EXPECT_EQ(0, forces[i][m]) << "vsite " << i;
                     continue;
                 }
-                auto xp = coords;
-                auto xm = coords;
-                xp[i][m] += h;
-                xm[i][m] -= h;
-                double fnum = -(energy(xp) - energy(xm))/(2*h);
-                EXPECT_NEAR(fnum, forces[i][m], 1e-5) << "atom " << i << " " << atoms[i].name() << " dim " << m;
+                auto shifted = [&](double dx)
+                {
+                    auto xs = coords;
+                    xs[i][m] += dx;
+                    return energy(xs);
+                };
+                double fnum = -(8*(shifted(h) - shifted(-h)) - (shifted(2*h) - shifted(-2*h)))/(12*h);
+                EXPECT_NEAR(fnum, forces[i][m], gmx::test::precisionTolerance(1e-5, 1e-4))
+                    << "atom " << i << " " << atoms[i].name() << " dim " << m;
             }
         }
     }
@@ -767,31 +774,39 @@ TEST(VsiteHandlerArrays, AllTypes)
     vsiteHandler.constructPositions(&top, xa.data(), stride, stride, nconf);
     vsiteHandler.distributeForces(&top, xa.data(), fa.data(), stride, stride, nconf);
     // The total force and torque, that spreading the forces of the virtual
-    // sites must not change
+    // sites must not change, and the sums of the absolute values of their
+    // terms, which give their rounding error
     auto totals = [natom](const std::vector<gmx::RVec> &xc, const std::vector<gmx::RVec> &fc,
-                          gmx::RVec *ftot, gmx::RVec *torque)
+                          gmx::RVec *ftot, gmx::RVec *torque, double *fabs, double *tabs)
     {
         clear_rvec(*ftot);
         clear_rvec(*torque);
+        *fabs = 0;
+        *tabs = 0;
         for(size_t a = 0; a < natom; a++)
         {
             gmx::RVec t;
             cprod(xc[a], fc[a], t);
             rvec_inc(*ftot, fc[a]);
             rvec_inc(*torque, t);
+            *fabs += norm(fc[a]);
+            *tabs += norm(xc[a])*norm(fc[a]);
         }
     };
     for(size_t c = 0; c < nconf; c++)
     {
         vsiteHandler.constructPositions(&top, &x[c]);
         gmx::RVec ftot0, torque0, ftot1, torque1;
-        totals(x[c], f[c], &ftot0, &torque0);
+        double    fabs0, tabs0, fabs1, tabs1;
+        totals(x[c], f[c], &ftot0, &torque0, &fabs0, &tabs0);
         vsiteHandler.distributeForces(&top, x[c], &f[c]);
-        totals(x[c], f[c], &ftot1, &torque1);
+        totals(x[c], f[c], &ftot1, &torque1, &fabs1, &tabs1);
         for(int m = 0; m < DIM; m++)
         {
-            EXPECT_NEAR(ftot0[m], ftot1[m], 1e-10*std::max<double>(1.0, std::abs(ftot0[m]))) << "conformation " << c;
-            EXPECT_NEAR(torque0[m], torque1[m], 1e-10*std::max<double>(1.0, std::abs(torque0[m]))) << "conformation " << c;
+            double ftoler = GMX_DOUBLE ? 1e-10*std::max<double>(1.0, std::abs(ftot0[m])) : 1e-6*std::max({ 1.0, fabs0, fabs1 });
+            double ttoler = GMX_DOUBLE ? 1e-10*std::max<double>(1.0, std::abs(torque0[m])) : 1e-6*std::max({ 1.0, tabs0, tabs1 });
+            EXPECT_NEAR(ftot0[m], ftot1[m], ftoler) << "conformation " << c;
+            EXPECT_NEAR(torque0[m], torque1[m], ttoler) << "conformation " << c;
         }
         for(size_t a = 0; a < natom; a++)
         {

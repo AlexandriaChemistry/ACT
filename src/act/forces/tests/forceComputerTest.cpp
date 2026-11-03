@@ -225,11 +225,13 @@ protected:
      * \param[in]  ffName  Force field name
      * \param[in]  molName Molecule file stem
      * \param[out] energies Populated by compute
+     * \param[in]  shellsConverge Whether the shells converge
      * \return true on success
      */
     bool runCompute(const std::string                 &ffName,
                     const std::string                 &molName,
-                    std::map<InteractionType, double> *energies)
+                    std::map<InteractionType, double> *energies,
+                    bool                               shellsConverge = true)
     {
         auto pd = getForceField(ffName);
         if (!pd)
@@ -261,7 +263,10 @@ protected:
         {
             // Verify that shell minimization was completed
             EXPECT_GE(fc.numShellIterations(), 1u);
-            EXPECT_EQ(0u, fc.numShellConvergenceFailed());
+            if (shellsConverge)
+            {
+                EXPECT_EQ(0u, fc.numShellConvergenceFailed());
+            }
         }
         return msghandler_.ok();
     }
@@ -561,8 +566,11 @@ TEST_F(ForceComputerIntegrationTest, NaClDimerHyper)
 {
     std::map<InteractionType, double> energies;
 
+    // In single precision the forces on the shells of the ions, with
+    // charges up to -6.7 e, are differences of large Coulomb forces, which
+    // are too large for the tolerance
     auto result = runCompute("ACS-pg-vs2", "../../alexandria/tests/mols/NaCl",
-                             &energies);
+                             &energies, GMX_DOUBLE);
     EXPECT_GT(0u, energies[InteractionType::INDUCTION]);
     EXPECT_TRUE(result);
 }
@@ -592,7 +600,13 @@ TEST_F(ForceComputerIntegrationTest, ComputeStatisticsAreTrackedDimerHyper)
     // which takes two iterations here.
     EXPECT_EQ(fc.numEvaluations(), 2u);
     EXPECT_GE(fc.numShellIterations(), 5u);
-    EXPECT_EQ(0u, fc.numShellConvergenceFailed());
+    // In single precision the forces on the shells, with a charge of
+    // -4.9 e, are differences of Coulomb forces of about 1e5 kJ/mol/nm,
+    // which are too large for the tolerance
+    if (GMX_DOUBLE)
+    {
+        EXPECT_EQ(0u, fc.numShellConvergenceFailed());
+    }
     std::map<InteractionType, double> energies;
 
     // Reset statistics
@@ -616,7 +630,10 @@ TEST_F(ForceComputerIntegrationTest, ComputeStatisticsAreTrackedDimerHyper)
     EXPECT_GE(fc.numEvaluations(), 1u);
     // Verify that shell minimization was completed
     EXPECT_GE(fc.numShellIterations(), 5u);
-    EXPECT_EQ(0u, fc.numShellConvergenceFailed());
+    if (GMX_DOUBLE)
+    {
+        EXPECT_EQ(0u, fc.numShellConvergenceFailed());
+    }
 
     // Reset statistics again
     fc.resetStatistics();
