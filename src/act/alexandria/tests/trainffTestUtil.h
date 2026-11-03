@@ -165,6 +165,7 @@ inline void readChi2(const std::vector<std::string> &log, TrainOutput *output)
  *                        value for a boolean option
  * \param[in] mpFile      Molprop file instead of the one of molName
  * \param[in] selFile     Selection file instead of the one of molName
+ * \param[in] ffFile      Force field file instead of ffName in trainff
  * \return the output
  */
 inline TrainOutput runTrainFF(gmx::test::TestFileManager                           *fileManager,
@@ -173,11 +174,12 @@ inline TrainOutput runTrainFF(gmx::test::TestFileManager                        
                               const std::string                                    &molName,
                               const std::vector<std::pair<std::string, std::string>> &options,
                               const std::string                                    &mpFile  = "",
-                              const std::string                                    &selFile = "")
+                              const std::string                                    &selFile = "",
+                              const std::string                                    &ffFile  = "")
 {
     gmx::test::CommandLine cmd;
     cmd.append("train_ff");
-    cmd.addOption("-ff", fileManager->getInputFilePath("trainff/" + ffName));
+    cmd.addOption("-ff", ffFile.empty() ? fileManager->getInputFilePath("trainff/" + ffName) : ffFile);
     cmd.addOption("-mp", mpFile.empty() ? fileManager->getInputFilePath("trainff/" + molName + ".xml") : mpFile);
     cmd.addOption("-sel", selFile.empty() ? fileManager->getInputFilePath("trainff/" + molName + ".dat") : selFile);
     std::map<std::string, std::string> out = {

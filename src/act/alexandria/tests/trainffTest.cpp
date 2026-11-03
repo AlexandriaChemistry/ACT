@@ -42,6 +42,7 @@
 #include <fstream>
 #include <limits>
 #include <map>
+#include <set>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -171,6 +172,222 @@ TEST_F(TrainFFTest, MCMCIntraBooze)
 TEST_F(TrainFFTest, MCMCHydrogenFluoride)
 {
     runAndCheck("4S-lj14-7-pg-hvdw.xml", "hf-hf", combine(mcmcOptions(3), hfOptions()));
+}
+
+//! \return the parameters listed as trained in the log, as identifier and type
+static std::set<std::pair<std::string, std::string>> trainedParameters(const TrainOutput &output)
+{
+    std::set<std::pair<std::string, std::string>> trained;
+    const auto &log = output.log;
+    for (size_t i = 0; i < log.size(); i++)
+    {
+        if (log[i].find("parameters to train.") == std::string::npos)
+        {
+            continue;
+        }
+        // After the header, a line per parameter with its bounds
+        for (size_t j = i + 2; j < log.size(); j++)
+        {
+            std::istringstream iss(log[j]);
+            std::string        id, type;
+            double             minimum, maximum;
+            if (!(iss >> id >> type >> minimum >> maximum))
+            {
+                break;
+            }
+            trained.insert({ id, type });
+        }
+        break;
+    }
+    return trained;
+}
+
+/*! \brief A parameter of a particle type or of an interaction
+ * \param[in] pd   The force field
+ * \param[in] id   The identifier
+ * \param[in] type The parameter type
+ * \return the parameter, nullptr if there is none
+ */
+static const ForceFieldParameter *findParameter(const ForceField  &pd,
+                                                const std::string &id,
+                                                const std::string &type)
+{
+    if (pd.hasParticleType(id) && pd.findParticleType(id)->hasParameter(type))
+    {
+        return &pd.findParticleType(id)->parameterConst(type);
+    }
+    for (const auto &fs : pd.forcesConst())
+    {
+        for (const auto &p : fs.second.parametersConst())
+        {
+            auto pp = p.second.find(type);
+            if (p.first.id() == id && p.second.end() != pp)
+            {
+                return &pp->second;
+            }
+        }
+    }
+    return nullptr;
+}
+
+/*! \brief Check that the trained parameters have data, stay within their
+ * bounds and that some changed, and that the chi squared decreased
+ * \param[in] fileManager For temporary files
+ * \param[in] output      The output of train_ff
+ * \param[in] ffFile      The force field that was trained
+ * \param[in] expected    The parameters that are trained
+ */
+static void expectTrained(gmx::test::TestFileManager                          *fileManager,
+                          const TrainOutput                                   &output,
+                          const std::string                                   &ffFile,
+                          const std::set<std::pair<std::string, std::string>> &expected)
+{
+    ASSERT_EQ(0, output.status);
+    ASSERT_FALSE(output.forceField.empty()) << "No force field written";
+    EXPECT_EQ(expected, trainedParameters(output));
+    ForceField input, trained;
+    readForceField(ffFile, &input);
+    auto trainedFile = fileManager->getTemporaryFilePath("trained.xml");
+    {
+        std::ofstream out(trainedFile);
+        out << output.forceField;
+    }
+    readForceField(trainedFile, &trained);
+    int nchanged = 0;
+    for (const auto &e : expected)
+    {
+        auto p0 = findParameter(input, e.first, e.second);
+        auto p1 = findParameter(trained, e.first, e.second);
+        ASSERT_TRUE(p0 && p1) << e.first << " " << e.second;
+        EXPECT_EQ(Mutability::Bounded, p1->mutability()) << e.first << " " << e.second;
+        EXPECT_LT(0u, p1->ntrain()) << e.first << " " << e.second;
+        EXPECT_LE(p1->minimum(), p1->value()) << e.first << " " << e.second;
+        EXPECT_GE(p1->maximum(), p1->value()) << e.first << " " << e.second;
+        nchanged += (p0->value() != p1->value()) ? 1 : 0;
+    }
+    EXPECT_LT(0, nchanged);
+    ASSERT_GT(output.initialChi2, 0);
+    EXPECT_LT(output.finalChi2, output.initialChi2);
+}
+
+//! \return a selection file with these compounds in the training set
+static std::string trainSelection(gmx::test::TestFileManager *fileManager, const std::string &label,
+                                  const std::vector<std::string> &compounds)
+{
+    auto selFile = fileManager->getTemporaryFilePath(label + ".dat");
+    std::ofstream sel(selFile);
+    for (const auto &c : compounds)
+    {
+        sel << c << "|Train\n";
+    }
+    return selFile;
+}
+
+//! \return whether a chi squared component is in the log of the initial parameters
+static bool hasInitialComponent(const TrainOutput &output, const std::string &component)
+{
+    bool initial = false;
+    for (const auto &line : output.log)
+    {
+        if (line.find("initial parameter vector chi2 components") != std::string::npos)
+        {
+            initial = true;
+        }
+        else if (initial && line.rfind(component + " ", 0) == 0)
+        {
+            return true;
+        }
+        else if (initial && line.rfind("TOT", 0) == 0)
+        {
+            break;
+        }
+    }
+    return false;
+}
+
+// Test: The widths of the charge distributions, which are parameters of the
+// particle types, are trained, also those of shells, and reach the atoms
+TEST_F(TrainFFTest, ParticleZeta)
+{
+    auto ffFile = fileManager().getInputFilePath("ACS-pol.xml");
+    auto output = trainfftest::runTrainFF(&fileManager(), "zeta", "", "booze-inter",
+                                          combine(mcmcOptions(10),
+                                                  { { "-fit", "zeta" }, { "-fc_allelec", "1" },
+                                                    { "-fc_exch", "1" }, { "-fc_disp", "1" } }),
+                                          "", "", ffFile);
+    expectTrained(&fileManager(), output, ffFile,
+                  { { "c3_s", "zeta" }, { "h1", "zeta" }, { "ho", "zeta" },
+                    { "hw", "zeta" }, { "o3_s", "zeta" }, { "ow_s", "zeta" } });
+}
+
+// Test: Polarizabilities and the parameters of the induction correction are
+// trained on the induction and its correction
+TEST_F(TrainFFTest, PolarizabilityAndInductionCorrection)
+{
+    auto ffFile = fileManager().getInputFilePath("ACS-pol.xml");
+    auto output = trainfftest::runTrainFF(&fileManager(), "induction", "", "",
+                                          combine(mcmcOptions(10),
+                                                  { { "-fit", "alpha a1dexp a2dexp bdexp" },
+                                                    { "-fc_induc", "1" }, { "-fc_deltahf", "1" } }),
+                                          fileManager().getInputFilePath("methanol-ethane-deltaHF.xml"),
+                                          trainSelection(&fileManager(), "induction", { "methanol#ethane" }),
+                                          ffFile);
+    std::set<std::pair<std::string, std::string>> expected = { { "c3_s", "alpha" }, { "o3_s", "alpha" } };
+    for (const char *atype : { "c3", "h1", "hc", "ho", "o3" })
+    {
+        for (const char *ptype : { "a1dexp", "a2dexp", "bdexp" })
+        {
+            expected.insert({ atype, ptype });
+        }
+    }
+    expectTrained(&fileManager(), output, ffFile, expected);
+    EXPECT_TRUE(hasInitialComponent(output, "Induction"));
+    EXPECT_TRUE(hasInitialComponent(output, "DeltaHF"));
+}
+
+// Test: The components of the interaction energy, electrostatics, exchange
+// and induction together, and the total are training targets
+TEST_F(TrainFFTest, InteractionComponents)
+{
+    auto ffFile = fileManager().getInputFilePath("ACS-pol.xml");
+    auto output = trainfftest::runTrainFF(&fileManager(), "components", "", "",
+                                          combine(mcmcOptions(5),
+                                                  { { "-fit", "zeta" }, { "-fc_elec", "1" },
+                                                    { "-fc_exchind", "1" }, { "-fc_inter", "1" } }),
+                                          fileManager().getInputFilePath("mpdimer.xml"),
+                                          trainSelection(&fileManager(), "components",
+                                                         { "1-propanol#ethane", "water#1-butanol", "guanidinium#water" }),
+                                          ffFile);
+    ASSERT_EQ(0, output.status);
+    for (const char *component : { "Electrostatics", "ExchInd", "Interaction" })
+    {
+        EXPECT_TRUE(hasInitialComponent(output, component)) << component;
+    }
+    EXPECT_LT(0u, trainedParameters(output).size());
+    ASSERT_GT(output.initialChi2, 0);
+    EXPECT_LT(output.finalChi2, output.initialChi2);
+}
+
+// Test: With another loss function the chi squared of the same parameters
+// differs, and training works with each of them
+TEST_F(TrainFFTest, LossFunctions)
+{
+    std::map<std::string, double> initial;
+    for (const char *lf : { "MSE", "MAE", "Huber", "Asinh" })
+    {
+        SCOPED_TRACE(lf);
+        auto output = trainfftest::runTrainFF(&fileManager(), std::string("loss") + lf, "lj-pc.xml", "booze-inter",
+                                              combine(combine(mcmcOptions(5), interOptions()),
+                                                      { { "-loss_function", lf } }));
+        ASSERT_EQ(0, output.status);
+        ASSERT_GT(output.initialChi2, 0);
+        EXPECT_LE(output.finalChi2, output.initialChi2);
+        initial[lf] = output.initialChi2;
+    }
+    for (const char *lf : { "MAE", "Huber", "Asinh" })
+    {
+        EXPECT_NE(initial["MSE"], initial[lf]) << lf;
+    }
 }
 
 // Test: The second charges of particles, which replace virtual sites on top
