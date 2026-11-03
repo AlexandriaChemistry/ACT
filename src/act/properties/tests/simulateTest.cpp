@@ -25,7 +25,9 @@
  * Tests for the alexandria simulate tool.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
+#include <algorithm>
 #include <cmath>
+#include <cstdint>
 #include <fstream>
 #include <map>
 #include <sstream>
@@ -300,6 +302,20 @@ protected:
         for(size_t i = 0; i < xvg.legends.size(); i++)
         {
             auto vals = xvg.values(i+1);
+            if (!GMX_DOUBLE)
+            {
+                // In single precision the errors of the forces, relative to
+                // the largest terms, accumulate along the trajectory, and
+                // the energies differ by at least one in the last decimal
+                double vmax = 0;
+                for(auto v : vals)
+                {
+                    vmax = std::max(vmax, std::abs(v));
+                }
+                double absolute = 2e-5 + 1e-5*vmax;
+                checker.setDefaultTolerance(gmx::test::FloatingPointTolerance(absolute, absolute, 1e-6, 1e-6,
+                                                                              UINT64_MAX, UINT64_MAX, false));
+            }
             checker.checkSequence(vals.begin(), vals.end(), xvg.legends[i].c_str());
         }
     }

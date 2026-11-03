@@ -77,7 +77,8 @@ TEST_F(PrincTest, CalcXcmMassWeighted)
     gmx::RVec xcm;
     real tm = calc_xcm(coords_, index_, atoms_, &xcm, false);
     // Total mass = 16.0 + 1.008 + 1.008 = 18.016
-    EXPECT_NEAR(tm, 18.016, 1e-6);
+    // In single precision the masses and their sum have about 7 digits
+    EXPECT_NEAR(tm, 18.016, gmx::test::precisionTolerance(1e-6, 4e-6));
     // Center of mass should be close to the oxygen atom (heaviest)
     // xcm_x = (16*0 + 1.008*0.1 + 1.008*(-0.03))/18.016
     double expected_x = (16.0*0.0 + 1.008*0.1 + 1.008*(-0.03)) / 18.016;
@@ -113,9 +114,9 @@ TEST_F(PrincTest, SubXcmAndAddXcmRoundTrip)
     // After subtracting, center of mass should be at origin
     gmx::RVec xcm_check;
     calc_xcm(coords_, index_, atoms_, &xcm_check, false);
-    EXPECT_NEAR(xcm_check[XX], 0.0, 1e-10);
-    EXPECT_NEAR(xcm_check[YY], 0.0, 1e-10);
-    EXPECT_NEAR(xcm_check[ZZ], 0.0, 1e-10);
+    EXPECT_NEAR(xcm_check[XX], 0.0, gmx::test::precisionTolerance(1e-10, 1e-8));
+    EXPECT_NEAR(xcm_check[YY], 0.0, gmx::test::precisionTolerance(1e-10, 1e-8));
+    EXPECT_NEAR(xcm_check[ZZ], 0.0, gmx::test::precisionTolerance(1e-10, 1e-8));
 
     // Add it back
     add_xcm(&coords_, index_, xcm);

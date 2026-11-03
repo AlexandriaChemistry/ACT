@@ -405,8 +405,8 @@ static void testAddOrientation(bool inOrder)
         // The exponential may be vectorized, which can change the last digit
         EXPECT_NEAR(rd.classical, ro.classical, 1e-12*std::abs(rd.classical));
         EXPECT_NEAR(rd.force, ro.force, 1e-12*std::abs(rd.force));
-        EXPECT_NEAR(rd.torque1, ro.torque1, 1e-12*std::abs(rd.torque1));
-        EXPECT_NEAR(rd.torque2, ro.torque2, 1e-12*std::abs(rd.torque2));
+        EXPECT_NEAR(rd.torque1, ro.torque1, gmx::test::precisionTolerance(1e-12, 1e-5)*std::abs(rd.torque1));
+        EXPECT_NEAR(rd.torque2, ro.torque2, gmx::test::precisionTolerance(1e-12, 1e-5)*std::abs(rd.torque2));
         EXPECT_NE(0, rd.torque1);
     }
 }
@@ -576,8 +576,8 @@ TEST(B2DataTest, ManyOrientations)
         // Independently computed, the compiler may contract operations differently
         EXPECT_NEAR(rd.classical, rb.classical, 1e-12*std::abs(rd.classical));
         EXPECT_NEAR(rd.force, rb.force, 1e-12*std::abs(rd.force));
-        EXPECT_NEAR(rd.torque1, rb.torque1, 1e-12*std::abs(rd.torque1));
-        EXPECT_NEAR(rd.torque2, rb.torque2, 1e-12*std::abs(rd.torque2));
+        EXPECT_NEAR(rd.torque1, rb.torque1, gmx::test::precisionTolerance(1e-12, 1e-5)*std::abs(rd.torque1));
+        EXPECT_NEAR(rd.torque2, rb.torque2, gmx::test::precisionTolerance(1e-12, 1e-5)*std::abs(rd.torque2));
     }
 }
 

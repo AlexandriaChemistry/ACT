@@ -25,7 +25,9 @@
  * Tests for the alexandria nma tool and the thermochemistry.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
+#include <algorithm>
 #include <cmath>
+#include <cstdint>
 #include <filesystem>
 #include <fstream>
 #include <map>
@@ -431,18 +433,78 @@ protected:
         // Reference data
         gmx::test::TestReferenceChecker checker(this->rootChecker());
         // The JSON contains about six significant digits
-        checker.setDefaultTolerance(gmx::test::relativeToleranceAsFloatingPoint(1.0, 1e-5));
-        checker.checkSequence(freq.begin(), freq.end(), "Frequencies");
-        checker.checkSequence(inte.begin(), inte.end(), "Intensities");
+        auto defaultTolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, 1e-5);
+        checker.setDefaultTolerance(defaultTolerance);
+        /* In single precision the Hessian, from differences of the forces,
+         * has errors that change the squares of all frequencies by up to
+         * about the same amount, about 1 cm^-2, such that the soft modes
+         * have the largest relative errors. The tolerances of the other
+         * properties follow from those of the frequencies. In double
+         * precision they are zero.
+         */
+        const double        dnu2 = 2; // cm^-2
+        std::vector<double> dnu(freq.size(), 0.0);
+        double              sumDnu = 0, sumRelDnu = 0;
+        for(size_t i = 0; i < freq.size() && !GMX_DOUBLE; i++)
+        {
+            dnu[i]     = dnu2/(2*freq[i]);
+            sumDnu    += dnu[i];
+            sumRelDnu += dnu[i]/freq[i];
+        }
+        auto singleTolerance = [&defaultTolerance](double absolute, double relative)
+        {
+            return GMX_DOUBLE ? defaultTolerance :
+                gmx::test::FloatingPointTolerance(absolute, absolute, relative, relative,
+                                                  UINT64_MAX, UINT64_MAX, false);
+        };
+        {
+            auto fchecker = checker.checkSequenceCompound("Frequencies", freq.size());
+            for(size_t i = 0; i < freq.size(); i++)
+            {
+                fchecker.setDefaultTolerance(singleTolerance(dnu[i], 1e-4));
+                fchecker.checkValue(freq[i], nullptr);
+            }
+            // Soft modes that are almost degenerate mix, and the intensities
+            // are differences of the dipoles, with errors relative to the
+            // largest intensity
+            double imax = 0;
+            for(auto in : inte)
+            {
+                imax = std::max(imax, std::abs(in));
+            }
+            auto ichecker = checker.checkSequenceCompound("Intensities", inte.size());
+            for(size_t i = 0; i < inte.size(); i++)
+            {
+                ichecker.setDefaultTolerance(singleTolerance(2e-4*imax, std::max(2e-3, 10*dnu[i]/freq[i])));
+                ichecker.checkValue(inte[i], nullptr);
+            }
+        }
         checker.checkDouble(jsonValue(thermo.at("Epot")), "Epot");
+        // The vibrational entropy and heat capacity change by at most R
+        // times the relative change of each frequency, the energies by at
+        // most N_A h c times the change of each frequency
+        const double hc = PLANCK*SPEED_OF_LIGHT*1e-7; // kJ/mol cm
+        auto         thermoTolerance = [&](const char *prop)
+        {
+            if (std::string("Internal energy") == prop || std::string("Zero point energy") == prop ||
+                std::string("Delta H formation") == prop)
+            {
+                return singleTolerance(hc*sumDnu, 1e-4);
+            }
+            return singleTolerance(RGAS*sumRelDnu, 1e-4);
+        };
         for(const auto *temp : { "T=0", "T=298.15" })
         {
             const auto &tt = thermo.at(temp);
             auto tchecker  = checker.checkCompound("Thermochemistry", temp);
-            tchecker.checkDouble(jsonValue(tt.at("Zero point energy")), "Zero point energy");
-            tchecker.checkDouble(jsonValue(tt.at("Delta H formation")), "Delta H formation");
+            for(const auto *prop : { "Zero point energy", "Delta H formation" })
+            {
+                tchecker.setDefaultTolerance(thermoTolerance(prop));
+                tchecker.checkDouble(jsonValue(tt.at(prop)), prop);
+            }
             for(const auto *prop : { "Standard entropy", "Heat capacity cV", "Internal energy" })
             {
+                tchecker.setDefaultTolerance(thermoTolerance(prop));
                 for(const auto *comp : { "Translation", "Rotation", "Vibration", "Total" })
                 {
                     tchecker.checkDouble(jsonValue(tt.at(prop).at(comp)),
