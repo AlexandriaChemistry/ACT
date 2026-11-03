@@ -744,6 +744,58 @@ static double msForce(const std::vector<int>       &theAtoms,
     }
 }
 
+/*! \brief The energy change from x to xt
+ * The energies are sums of many terms, with a rounding error of the
+ * machine precision times the size of the terms, which in single
+ * precision is larger than the changes close to a minimum. Smaller
+ * changes are computed from the forces with the trapezoidal rule
+ * instead, which is accurate to third order in the step. For large steps
+ * it is not, which shows when it differs from the energy change by more
+ * than the rounding error, then the energy change is used.
+ * \param[in] theAtoms The atoms that move
+ * \param[in] e        The energies at x
+ * \param[in] x        The old coordinates
+ * \param[in] f        The forces at x
+ * \param[in] enew     The potential energy at xt
+ * \param[in] xt       The new coordinates
+ * \param[in] ft       The forces at xt
+ * \return the change of the potential energy
+ */
+static double energyChange(const std::vector<int>                  &theAtoms,
+                           const std::map<InteractionType, double> &e,
+                           const std::vector<gmx::RVec>            &x,
+                           const std::vector<gmx::RVec>            &f,
+                           double                                   enew,
+                           const std::vector<gmx::RVec>            &xt,
+                           const std::vector<gmx::RVec>            &ft)
+{
+    double eold  = e.find(InteractionType::EPOT)->second;
+    double scale = 0;
+    for (const auto &term : e)
+    {
+        if (term.first != InteractionType::EPOT)
+        {
+            scale += std::abs(term.second);
+        }
+    }
+    double de       = enew - eold;
+    double rounding = 10*GMX_REAL_EPS*scale;
+    if (std::abs(de) > rounding)
+    {
+        return de;
+    }
+    double work = 0;
+    for (auto atom : theAtoms)
+    {
+        for (int m = 0; m < DIM; m++)
+        {
+            work += (f[atom][m] + ft[atom][m])*(xt[atom][m] - x[atom][m]);
+        }
+    }
+    double trapezoid = -0.5*work;
+    return std::abs(trapezoid - de) <= rounding ? trapezoid : de;
+}
+
 //! \brief Increment the coordinates with a delta
 static void updateCoords(const std::vector<int>       &theAtoms,
                          const std::vector<gmx::RVec> &xold,
@@ -789,6 +841,16 @@ private:
     double                             bestEnergy_ = std::numeric_limits<double>::max();
     //! The coordinates with the lowest energy, empty if there are none
     std::vector<gmx::RVec>             bestCoords_;
+    //! Whether there is a previous evaluation with a finite energy
+    bool                               havePrevious_ = false;
+    //! The coordinates of the previous evaluation
+    std::vector<gmx::RVec>             prevCoords_;
+    //! The forces of the previous evaluation
+    std::vector<gmx::RVec>             prevForces_;
+    //! The energies of the previous evaluation
+    std::map<InteractionType, double>  prevEnergies_;
+    //! The energy along the path of the evaluations
+    double                             pathEnergy_ = 0;
 public:
     //! Constructor
     StlbfgsHandler(const ForceField       *pd,
@@ -849,6 +911,39 @@ public:
 
     //! \return the coordinates with the lowest energy, empty if there are none
     const std::vector<gmx::RVec> &bestCoordinates() const { return bestCoords_; }
+
+    /*! \brief The energy along the path of the evaluations
+     * The energy of the current coordinates is that of the previous
+     * evaluation plus the change, which close to a minimum is computed
+     * from the forces, see energyChange. The line search then also finds
+     * decreases of the energy that are smaller than its rounding error.
+     * \return the energy at the current coordinates
+     */
+    double pathEnergy()
+    {
+        double enew = energies_[InteractionType::EPOT];
+        if (!std::isfinite(enew))
+        {
+            return enew;
+        }
+        if (havePrevious_)
+        {
+            pathEnergy_ += energyChange(theAtoms_, prevEnergies_, prevCoords_, prevForces_,
+                                        enew, coords_, forces_);
+        }
+        else
+        {
+            pathEnergy_ = enew;
+        }
+        havePrevious_ = true;
+        prevCoords_   = coords_;
+        prevForces_   = forces_;
+        prevEnergies_ = energies_;
+        return pathEnergy_;
+    }
+
+    //! \return the energy along the path at the previous evaluation
+    double previousPathEnergy() const { return pathEnergy_; }
 
     //! \brief print force on frozen atom
     void printFrozenForce(gmx::TextWriter *tw, const std::vector<int> &myFreeze)
@@ -946,7 +1041,8 @@ static void func(const std::vector<double> &x, double &f, std::vector<double> &g
     {
         lbfgs->constrainer()->projectForces(lbfgs->mh(), *coords, forces);
     }
-    f  = lbfgs->energy(InteractionType::EPOT) + penalty;
+    // With a penalty the coordinates are those of the previous evaluation
+    f  = 0 == penalty ? lbfgs->pathEnergy() : lbfgs->previousPathEnergy() + penalty;
     if (0 == penalty)
     {
         lbfgs->storeIfBest(f);
@@ -1176,6 +1272,37 @@ eMinimizeStatus MolHandler::minimizeCoordinates(MsgHandler                      
             constrainer.projectForces(msghandler, x, f);
         }
     };
+    /* The mean square change of the forces when each coordinate of the
+     * atoms changes by one unit in the last place, in directions that
+     * differ between the coordinates. Since the coordinates are rounded,
+     * the forces at a minimum are not smaller than this, which in single
+     * precision is much larger than in double precision.
+     */
+    auto roundingMsForce = [&](const std::vector<gmx::RVec> &x,
+                               const std::vector<gmx::RVec> &f)
+    {
+        auto         xr   = x;
+        unsigned int seed = 1993;
+        for (auto a : theAtoms)
+        {
+            for (int m = 0; m < DIM; m++)
+            {
+                seed     = seed*1103515245u + 12345u;
+                real to  = ((seed >> 16) & 1) ? std::numeric_limits<real>::max() : std::numeric_limits<real>::lowest();
+                xr[a][m] = std::nextafter(xr[a][m], to);
+            }
+        }
+        std::vector<gmx::RVec>            fr(f.size());
+        std::map<InteractionType, double> er;
+        forceComp->compute(msghandler, pd, topology, &xr, &fr, &er);
+        constrainForces(xr, &fr);
+        std::vector<gmx::RVec> df(f.size(), { 0, 0, 0 });
+        for (auto a : theAtoms)
+        {
+            rvec_sub(fr[a], f[a], df[a]);
+        }
+        return msForce(theAtoms, df);
+    };
     // Constrain coordinates, using the reference coordinates for the directions
     auto constrainCoords = [&](const std::vector<gmx::RVec> &xref,
                                std::vector<gmx::RVec>       *x)
@@ -1258,6 +1385,14 @@ eMinimizeStatus MolHandler::minimizeCoordinates(MsgHandler                      
                                         lbfgs->forces(), lbfgs->energies());
             constrainForces(*lbfgs->coordinates(), lbfgs->forces());
             converged = done || msForce(theAtoms, *lbfgs->forces()) <= msForceToler;
+            // The line search also fails when the energy cannot decrease
+            // within the precision of the coordinates, then the forces are
+            // as small as their change for one unit in the last place
+            if (!converged && opt.niter < opt.maxiter)
+            {
+                converged = (msForce(theAtoms, *lbfgs->forces()) <=
+                             4*roundingMsForce(*lbfgs->coordinates(), *lbfgs->forces()));
+            }
             if (converged)
             {
                 double enew = lbfgs->energy(InteractionType::EPOT);
@@ -1331,37 +1466,10 @@ eMinimizeStatus MolHandler::minimizeCoordinates(MsgHandler                      
             std::swap(f, ft);
             std::swap(e, et);
         };
-        /* The energy change from x to xt. The energies are sums of many
-         * terms, with a rounding error of the machine precision times the
-         * size of the terms, which in single precision is larger than the
-         * changes close to a minimum. Smaller changes are computed from the
-         * forces with the trapezoidal rule instead, which is accurate to
-         * third order in the step.
-         */
+        // The energy change from x to xt
         auto energyChange = [&](double enew)
         {
-            double eold  = e[InteractionType::EPOT];
-            double scale = 0;
-            for (const auto &term : e)
-            {
-                if (term.first != InteractionType::EPOT)
-                {
-                    scale += std::abs(term.second);
-                }
-            }
-            if (std::abs(enew - eold) > 10*GMX_REAL_EPS*scale)
-            {
-                return enew - eold;
-            }
-            double work = 0;
-            for (auto atom : theAtoms)
-            {
-                for (int m = 0; m < DIM; m++)
-                {
-                    work += (f[atom][m] + ft[atom][m])*(xt[atom][m] - x[atom][m]);
-                }
-            }
-            return -0.5*work;
+            return alexandria::energyChange(theAtoms, e, x, f, enew, xt, ft);
         };
         // The energy along the path of the minimization, the sum of the
         // energy changes
@@ -1401,7 +1509,25 @@ eMinimizeStatus MolHandler::minimizeCoordinates(MsgHandler                      
             *energies = e;
         }
         printEnergies(msghandler->tw(), myIter, msf, 0, 0, e, 0);
-        converged = msf <= msForceToler;
+        // The forces do not become smaller than their change for one unit
+        // in the last place of the coordinates, which in single precision
+        // is larger than the tolerance. It is estimated at the start and
+        // computed again when the forces are that small.
+        double floorMsf    = roundingMsForce(x, f);
+        auto   isConverged = [&]()
+        {
+            if (msf <= msForceToler)
+            {
+                return true;
+            }
+            if (msf <= 4*floorMsf)
+            {
+                floorMsf = roundingMsForce(x, f);
+                return msf <= 4*floorMsf;
+            }
+            return false;
+        };
+        converged = isConverged();
         // The largest step of a particle and the starting one, in nm. The
         // step is limited to the trust radius, which grows after a step that
         // lowered the energy and shrinks after one that did not.
@@ -1468,7 +1594,7 @@ eMinimizeStatus MolHandler::minimizeCoordinates(MsgHandler                      
                 }
                 myIter += 1;
                 msf       = msForce(theAtoms, f);
-                converged = msf <= msForceToler;
+                converged = isConverged();
                 printEnergies(msghandler->tw(), myIter, msf, 0, 0, e, scale);
             }
         }
@@ -1556,9 +1682,18 @@ eMinimizeStatus MolHandler::minimizeCoordinates(MsgHandler                      
                 }
                 myIter += 1;
                 msf       = msForce(theAtoms, f);
-                converged = msf <= msForceToler;
+                converged = isConverged();
                 printEnergies(msghandler->tw(), myIter, msf, 0, 0, e, gamma);
             }
+        }
+        // Without progress the energy may not decrease within the precision
+        // of the coordinates, then the forces are as small as their change
+        // for one unit in the last place
+        if (!converged && eMinimizeStatus::NoMinimum == failure)
+        {
+            msf       = msForce(theAtoms, f);
+            floorMsf  = roundingMsForce(x, f);
+            converged = msf <= 4*floorMsf;
         }
         // A converged structure is the last one, which may not have the
         // lowest energy with steepest descent
