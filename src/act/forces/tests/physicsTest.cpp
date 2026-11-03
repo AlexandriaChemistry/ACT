@@ -255,15 +255,7 @@ protected:
         auto copy = &copies_.back();
         if (nexcl >= 0)
         {
-            std::string exclstr("nexcl");
-            for (auto &ffpl : *copy->forces())
-            {
-                if (ffpl.second.optionExists(exclstr))
-                {
-                    ffpl.second.removeOption(exclstr);
-                    ffpl.second.addOption(exclstr, gmx::formatString("%d", nexcl));
-                }
-            }
+            copy->setNexcl(nexcl);
         }
         if (ChargeGenerationAlgorithm::NONE != alg)
         {
@@ -987,18 +979,27 @@ TEST_F(PhysicsTest, CoulombKernel)
     cdata.invalidate();
     compare("two particles moved");
     // The width of the charges of one particle type, as when training
-    // zeta, only the interactions with these particles are computed again
-    auto  itype = InteractionType::ELECTROSTATICS;
-    auto  ztype = pd->findParticleType(atoms[1].ffType())->interactionTypeToIdentifier(itype);
-    auto *zeta  = pd->findForces(itype)->findParameterType(ztype, "zeta");
-    ASSERT_NE(nullptr, zeta);
+    // zeta, only the interactions with these particles are computed again.
+    // The atoms get it from their particle type, as when generating charges.
+    auto *ptype = pd->findParticleType(atoms[1].ffType());
+    ASSERT_TRUE(ptype->hasParameter(zetaName));
+    auto *zeta  = &ptype->parameters()->find(zetaName)->second;
     ASSERT_NE(0, zeta->value());
-    double zeta0 = zeta->value();
-    zeta->forceSetValue(1.1*zeta0);
-    mol.topologyPtr()->fillParameters(&msghandler_, pd, missingParameters::Ignore);
+    double zeta0   = zeta->value();
+    auto   setZeta = [&](double value)
+    {
+        zeta->forceSetValue(value);
+        for (auto &atom : atoms)
+        {
+            if (atom.ffType() == ptype->id().id())
+            {
+                atom.setZeta(ptype->zeta());
+            }
+        }
+    };
+    setZeta(1.1*zeta0);
     compare("width of one particle type");
-    zeta->forceSetValue(zeta0);
-    mol.topologyPtr()->fillParameters(&msghandler_, pd, missingParameters::Ignore);
+    setZeta(zeta0);
     compare("width restored");
 }
 

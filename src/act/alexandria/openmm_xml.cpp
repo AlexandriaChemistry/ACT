@@ -730,21 +730,16 @@ void OpenMMWriter::addXmlNonbonded(MsgHandler                      *msghandler,
 {
     // Fetch number of exclusions. 3 is the default in OpenMM.
     auto fs     = pd->findForcesConst(InteractionType::VDW);
-    std::string nnn("nexcl");
-    if (fs.optionExists(nnn))
+    if (pd->nexcl() >= 0)
     {
-        setNexcl(std::stoi(fs.optionValue(nnn)));
+        setNexcl(pd->nexcl());
     }
     // Now for Coulomb.
-    auto fsCoul = pd->findForcesConst(InteractionType::ELECTROSTATICS);
-    if (fsCoul.optionExists(nnn))
-    {
-        setNexcl(std::stoi(fsCoul.optionValue(nnn)));
-    }
+    auto coulombPotential = pd->potential(InteractionType::ELECTROSTATICS);
 
     xmlNodePtr customNBPtr = nullptr;
     // Custom non-bonded force is needed if we do not use LJ and Point charges.
-    if (fs.potential() == Potential::LJ12_6 && fsCoul.potential() == Potential::COULOMB_POINT)
+    if (fs.potential() == Potential::LJ12_6 && coulombPotential == Potential::COULOMB_POINT)
     {
         // Need to check the combination rules somewhere
         auto cr = fs.combinationRules();
@@ -776,7 +771,7 @@ void OpenMMWriter::addXmlNonbonded(MsgHandler                      *msghandler,
         add_xml_int(customNBPtr, "bondCutoff", 0);
 
         add_potential(customNBPtr, fs.potential());
-        add_potential(customNBPtr, fsCoul.potential());
+        add_potential(customNBPtr, coulombPotential);
         add_combrules(customNBPtr, fs);
         add_global(customNBPtr, "nexcl", nexcl());
         std::string prefactor("prefactor-");
@@ -942,16 +937,9 @@ void OpenMMWriter::addXmlNonbonded(MsgHandler                      *msghandler,
             }
             if (nullptr != customNBPtr)
             {
-                auto ztype = "zetatype";
-                if (aType->hasOption(ztype))
+                if (aType->hasParameter(zetaName))
                 {
-                    auto   ztp  = aType->optionValue(ztype);
-                    double zeta = 0;
-                    if (fsCoul.parameterExists(ztp))
-                    {
-                        zeta = fsCoul.findParameterTypeConst(ztp, "zeta").internalValue();
-                    }
-                    add_xml_double(nbParamPtr, "zeta", zeta); 
+                    add_xml_double(nbParamPtr, "zeta", aType->zeta());
                 }
                 // Normal Lennard Jones is always needed
                 {
@@ -1264,16 +1252,12 @@ void OpenMMWriter::addXmlForceField(MsgHandler                *msghandler,
     auto xmlResiduePtr      = add_xml_child(parent, exml_names(xmlEntryOpenMM::RESIDUES));
     makeXmlMap(parent, pd);
     // Compute epsilon r if relevant
-    auto coul       = pd->findForcesConst(InteractionType::ELECTROSTATICS);
     double epsr_fac = 1;
-    std::string epsr("epsilonr");
-    if (coul.optionExists(epsr))
     {
-        auto epsval   = coul.optionValue(epsr);
-        auto epsilonr = my_atof(epsval.c_str(), "EpsilonR");
+        auto epsilonr = pd->epsilonr();
         if (epsilonr <= 0)
         {
-            GMX_THROW(gmx::InvalidInputError(gmx::formatString("Incorrect epsilonr '%s'", epsval.c_str()).c_str()));
+            GMX_THROW(gmx::InvalidInputError(gmx::formatString("Incorrect epsilonr '%g'", epsilonr).c_str()));
         }
         epsr_fac = std::sqrt(1.0/epsilonr);
         if (epsilonr != 1)

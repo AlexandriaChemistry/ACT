@@ -157,10 +157,7 @@ int simulate(int argc, char *argv[])
 
     ForceComputer forceComp;
     double epsilonr;
-    if (!ffOption(pd, InteractionType::ELECTROSTATICS, "epsilonr", &epsilonr))
-    {
-        epsilonr = 1;
-    }
+    epsilonr = pd.epsilonr();
     forceComp.init(shellToler, sch.shellMaxIter(), epsilonr);
 
     std::vector<ACTMol> actmols;

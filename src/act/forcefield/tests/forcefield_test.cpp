@@ -217,11 +217,9 @@ TEST_F (ForceFieldTest, zeta)
         for (auto &model : eqd)
         {
             auto pd  = getForceField(model);
+            // The width of the charge distribution of the particle type
             auto fa  = pd->findParticleType(atom);
-            auto ztp = fa->interactionTypeToIdentifier(InteractionType::ELECTROSTATICS);
-            auto eep = pd->findForcesConst(InteractionType::ELECTROSTATICS);
-            auto p   = eep.findParameterTypeConst(ztp, "zeta");
-            zetas.push_back(p.value());
+            zetas.push_back(fa->parameterConst(zetaName).value());
         }
     }
     checker_.checkSequence(zetas.begin(), zetas.end(), "zeta");
@@ -252,9 +250,10 @@ TEST(ForceFieldSimpleTest, unknownMutabilityThrows)
 //! \return the file name of ACM-g.xml with a change made by edit
 static std::string modifiedForceField(gmx::test::TestFileManager       *fileManager,
                                       const std::string                &name,
-                                      std::function<void(std::string *)> edit)
+                                      std::function<void(std::string *)> edit,
+                                      const std::string                &base = "ACM-g.xml")
 {
-    std::ifstream     in(gmx::test::TestFileManager::getInputFilePath("ACM-g.xml"));
+    std::ifstream     in(gmx::test::TestFileManager::getInputFilePath(base));
     std::stringstream buffer;
     buffer << in.rdbuf();
     std::string xml = buffer.str();
@@ -311,10 +310,10 @@ TEST(ForceFieldSimpleTest, pointChargesWithZetaThrow)
     gmx::test::TestFileManager fileManager;
     auto fileName = modifiedForceField(&fileManager, "point.xml", [](std::string *xml)
     {
-        std::string gaussian("<interaction type=\"COULOMB\" function=\"COULOMB_GAUSSIAN\"");
+        std::string gaussian("<option key=\"chargedistribution\" value=\"Gaussian\"/>");
         auto        pos = xml->find(gaussian);
         ASSERT_NE(std::string::npos, pos);
-        xml->replace(pos, gaussian.size(), "<interaction type=\"COULOMB\" function=\"COULOMB_POINT\"");
+        xml->replace(pos, gaussian.size(), "<option key=\"chargedistribution\" value=\"Point\"/>");
     });
     ForceField pd;
     EXPECT_THROW(readForceField(fileName, &pd), gmx::InvalidInputError);

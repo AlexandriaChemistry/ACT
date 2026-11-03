@@ -90,9 +90,10 @@ std::map<Potential, PotentialProperties> potprops = {
     { Potential::GENERALIZED_BUCKINGHAM,
       { "GENERALIZED_BUCKINGHAM", F_GBHAM, { "rmin", "epsilon", "gamma", "delta" },
         "select(epsilon*rmin*gamma,( epsilon*((delta + 2*gamma + 6)/(2*gamma)) * (1/(1+((r/rmin)^6))) * (  ((6+delta)/(delta + 2*gamma + 6)) * exp(gamma*(1-(r/rmin))) -1 ) - (epsilon/(1+(r/rmin)^delta)) ),0)", "" } },
-    { Potential::COULOMB_GAUSSIAN, { "COULOMB_GAUSSIAN", -1, { "zeta", "zeta2" }, "0", "" } },
-    { Potential::COULOMB_POINT, { "COULOMB_POINT", F_COUL_SR, { "zeta", "zeta2" }, "0", "" } },
-    { Potential::COULOMB_SLATER, { "COULOMB_SLATER", -1, { "zeta", "zeta2" }, "0", "" } },
+    // The widths of the charge distributions are those of the atoms
+    { Potential::COULOMB_GAUSSIAN, { "COULOMB_GAUSSIAN", -1, {}, "0", "" } },
+    { Potential::COULOMB_POINT, { "COULOMB_POINT", F_COUL_SR, {}, "0", "" } },
+    { Potential::COULOMB_SLATER, { "COULOMB_SLATER", -1, {}, "0", "" } },
     { Potential::HARMONIC_BONDS, { "HARMONIC_BONDS", F_BONDS, { "kb", "bondlength", "bondenergy" }, "0", "" } },
     { Potential::CUBIC_BONDS,
       { "CUBIC_BONDS", F_CUBICBONDS, { "bondlength", "rmax", "kb", "De" },

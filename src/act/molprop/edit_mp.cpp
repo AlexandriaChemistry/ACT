@@ -116,7 +116,6 @@ static bool dump_molecule(MsgHandler        *msghandler,
         // Atoms!
         auto &atoms = actmol.topology()->atoms();
         std::vector<Identifier> atomId;
-        auto ztype = InteractionType::ELECTROSTATICS;
         for (size_t i = 0; i < atoms.size(); i++)
         {
             const auto &atype = atoms[i].ffType();
@@ -127,9 +126,10 @@ static bool dump_molecule(MsgHandler        *msghandler,
             if (pd.hasParticleType(pid))
             {
                 auto pIter = pd.findParticleType(pid);
-                if (pIter->hasInteractionType(ztype))
+                // Each particle type has its own charge distribution
+                if (pIter->hasParameter(zetaName))
                 {
-                    auto zid = pIter->interactionTypeToIdentifier(ztype);
+                    auto zid = pIter->id();
                     tw->writeStringFormatted("  %s", zid.id().c_str());
                     auto atypeMap = atomTypeCount->find(zid.id());
                     if (atypeMap == atomTypeCount->end())
@@ -165,10 +165,12 @@ static bool dump_molecule(MsgHandler        *msghandler,
             {
                 auto pidI = pd.findParticleType(atomId[ai]);
                 auto pidJ = pd.findParticleType(atomId[aj]);
-                if (pidI->hasInteractionType(ztype) && pidJ->hasInteractionType(ztype))
+                // The bond corrections are identified by the ACM types, see MolGen
+                auto acmtype = InteractionType::ELECTRONEGATIVITYEQUALIZATION;
+                if (pidI->hasInteractionType(acmtype) && pidJ->hasInteractionType(acmtype))
                 {
-                    auto zidI = pidI->interactionTypeToIdentifier(ztype);
-                    auto zidJ = pidJ->interactionTypeToIdentifier(ztype);
+                    auto zidI = pidI->interactionTypeToIdentifier(acmtype);
+                    auto zidJ = pidJ->interactionTypeToIdentifier(acmtype);
                     Identifier mybond({ zidI.id(), zidJ.id()}, { bo }, CanSwap::No);
                     auto btypeMap   = bccTypeCount->find(mybond.id());
                     bool bondExists = false;

@@ -207,11 +207,7 @@ void OptACM::initForceComputer()
     // Force computer may be needed even with nooptimize
     forceComp_ = new ForceComputer();
     double epsilonr;
-    if (!ffOption(*sii_->forcefield(), InteractionType::ELECTROSTATICS,
-                  "epsilonr", &epsilonr))
-    {
-        epsilonr = 1;
-    }
+    epsilonr = sii_->forcefield()->epsilonr();
     forceComp_->init(bch_.shellToler(), bch_.shellMaxIter(), epsilonr);
 }
 

@@ -44,6 +44,8 @@
 #include <chrono>
 #include <map>
 #include <set>
+#include <stdexcept>
+#include <string>
 #include <vector>
 
 #include "gromacs/fileio/md5.h"
@@ -153,7 +155,7 @@ bool ForceField::typeToInteractionType(const std::string &type,
     if (type2Itype_.empty())
     {
         // The parameters of particle types, see ParticleType::chargeVS
-        type2Itype_.insert({InteractionType::CHARGE, { "charge", chargeVSName, zetaVSName } });
+        type2Itype_.insert({InteractionType::CHARGE, { "charge", zetaName, chargeVSName, zetaVSName } });
         for(const auto &fs : forcesConst())
         {
             auto iType = fs.first;
@@ -340,6 +342,162 @@ static bool vanishes(Potential pot, const ForceFieldParameterMap &params)
     return true;
 }
 
+void ForceField::setParticleTypesOption(const std::string &key, const std::string &value)
+{
+    try
+    {
+        if (key == "nexcl")
+        {
+            nexcl_ = std::stoi(value);
+        }
+        else if (key == "chargedistribution")
+        {
+            chargeDistribution_ = name2ChargeDistributionType(value);
+        }
+        else if (key == "epsilonr")
+        {
+            epsilonr_ = std::stod(value);
+        }
+        else
+        {
+            GMX_THROW(gmx::InvalidInputError(gmx::formatString("Unknown option '%s' of the particle types", key.c_str()).c_str()));
+        }
+    }
+    catch (const std::logic_error &)
+    {
+        GMX_THROW(gmx::InvalidInputError(gmx::formatString("Invalid value '%s' of option '%s' of the particle types",
+                                                           value.c_str(), key.c_str()).c_str()));
+    }
+}
+
+std::map<std::string, std::string> ForceField::particleTypesOptions() const
+{
+    std::map<std::string, std::string> options;
+    if (nexcl_)
+    {
+        options.insert({ "nexcl", std::to_string(*nexcl_) });
+    }
+    if (chargeDistribution_)
+    {
+        options.insert({ "chargedistribution", chargeDistributionTypeName(*chargeDistribution_) });
+    }
+    if (epsilonr_)
+    {
+        options.insert({ "epsilonr", gmx::formatString("%g", *epsilonr_) });
+    }
+    return options;
+}
+
+void ForceField::convertCoulomb(MsgHandler *msghandler)
+{
+    auto conflict = [this](const std::string &what)
+    {
+        GMX_THROW(gmx::InvalidInputError(gmx::formatString("%s in %s", what.c_str(), filename_.c_str()).c_str()));
+    };
+    // The number of exclusions of the corrections is not used
+    for(auto itype : { InteractionType::VDWCORRECTION, InteractionType::INDUCTIONCORRECTION })
+    {
+        auto fs = forces_.find(itype);
+        if (forces_.end() != fs)
+        {
+            fs->second.removeOption("nexcl");
+        }
+    }
+    // The number of exclusions of both COULOMB and VANDERWAALS
+    for(auto itype : { InteractionType::ELECTROSTATICS, InteractionType::VDW })
+    {
+        auto fs = forces_.find(itype);
+        if (forces_.end() == fs || !fs->second.optionExists("nexcl"))
+        {
+            continue;
+        }
+        int nexcl = std::stoi(fs->second.optionValue("nexcl"));
+        if (nexcl_ && *nexcl_ != nexcl)
+        {
+            conflict(gmx::formatString("The number of exclusions of %s (%d) differs from that of the particle types or of another interaction (%d)",
+                                       interactionTypeToString(itype).c_str(), nexcl, *nexcl_));
+        }
+        nexcl_ = nexcl;
+        fs->second.removeOption("nexcl");
+    }
+    auto fq = forces_.find(InteractionType::ELECTROSTATICS);
+    if (forces_.end() == fq)
+    {
+        return;
+    }
+    const auto &fsCoul = fq->second;
+    auto        cd     = potentialToChargeDistributionType(fsCoul.potential());
+    if (chargeDistribution_ && *chargeDistribution_ != cd)
+    {
+        conflict(gmx::formatString("The charge distribution of %s (%s) differs from that of the particle types (%s)",
+                                   interactionTypeToString(InteractionType::ELECTROSTATICS).c_str(),
+                                   chargeDistributionTypeName(cd).c_str(),
+                                   chargeDistributionTypeName(*chargeDistribution_).c_str()));
+    }
+    chargeDistribution_ = cd;
+    if (fsCoul.optionExists("epsilonr"))
+    {
+        double epsilonr = std::stod(fsCoul.optionValue("epsilonr"));
+        if (epsilonr_ && *epsilonr_ != epsilonr)
+        {
+            conflict(gmx::formatString("The relative dielectric constant of %s (%g) differs from that of the particle types (%g)",
+                                       interactionTypeToString(InteractionType::ELECTROSTATICS).c_str(),
+                                       epsilonr, *epsilonr_));
+        }
+        epsilonr_ = epsilonr;
+    }
+    // The widths of the charge distributions, a copy for each particle type
+    const auto &zetatype = interactionTypeToParticleSubtype(InteractionType::ELECTROSTATICS);
+    for(auto &pt : alexandria_)
+    {
+        if (!pt.second.hasOption(zetatype))
+        {
+            continue;
+        }
+        auto ztype = pt.second.interactionTypeToIdentifier(InteractionType::ELECTROSTATICS);
+        if (!fsCoul.parameterExists(ztype))
+        {
+            continue;
+        }
+        const auto &zeta = fsCoul.findParameterTypeConst(ztype, zetaName);
+        if (pt.second.hasParameter(zetaName))
+        {
+            if (pt.second.parameterConst(zetaName).value() != zeta.value())
+            {
+                conflict(gmx::formatString("The zeta of particle type %s (%g) differs from that of %s %s (%g)",
+                                           pt.first.id().c_str(), pt.second.parameterConst(zetaName).value(),
+                                           zetatype.c_str(), ztype.id().c_str(), zeta.value()));
+            }
+            continue;
+        }
+        pt.second.addForceFieldParameter(zetaName, zeta);
+        if (msghandler)
+        {
+            msghandler->msg(ACTStatus::Debug,
+                            gmx::formatString("Particle type %s gets zeta %g of %s %s",
+                                              pt.first.id().c_str(), zeta.value(),
+                                              zetatype.c_str(), ztype.id().c_str()));
+        }
+    }
+    // The option zetatype can only be read, and COULOMB is not needed
+    for(auto &pt : alexandria_)
+    {
+        pt.second.removeOption(zetatype);
+    }
+    forces_.erase(fq);
+    type2Itype_.clear();
+}
+
+Potential ForceField::potential(InteractionType itype) const
+{
+    if (InteractionType::ELECTROSTATICS == itype)
+    {
+        return chargeDistributionTypeToPotential(chargeDistribution());
+    }
+    auto fs = forces_.find(itype);
+    return forces_.end() == fs ? Potential::NONE : fs->second.potential();
+}
+
 void ForceField::convertVsite1(MsgHandler *msghandler)
 {
     auto fv = forces_.find(InteractionType::VSITE1);
@@ -481,8 +639,6 @@ void ForceField::convertVsite1(MsgHandler *msghandler)
         }
     }
     // Now convert
-    const auto *fsCoul = forces_.count(InteractionType::ELECTROSTATICS) ?
-        &forces_.find(InteractionType::ELECTROSTATICS)->second : nullptr;
     std::set<std::string> removeNames;
     std::set<std::string> converted;
     if (msghandler)
@@ -503,13 +659,9 @@ void ForceField::convertVsite1(MsgHandler *msghandler)
         const auto *pv = findParticleType(av.second);
         pa->addForceFieldParameter(chargeVSName, pv->parameterConst("charge"));
         ForceFieldParameter zeta("1/nm", 0, 0, 0, 0, 0, Mutability::Fixed, true, true);
-        if (fsCoul && pv->hasInteractionType(InteractionType::ELECTROSTATICS))
+        if (pv->hasParameter(zetaName))
         {
-            auto ztype = pv->interactionTypeToIdentifier(InteractionType::ELECTROSTATICS);
-            if (fsCoul->parameterExists(ztype))
-            {
-                zeta = fsCoul->findParameterTypeConst(ztype, "zeta");
-            }
+            zeta = pv->parameterConst(zetaName);
         }
         pa->addForceFieldParameter(zetaVSName, zeta);
         pa->setOption(rowVSName, std::to_string(pv->row()));
@@ -616,20 +768,8 @@ void ForceField::expandSecondCharges(MsgHandler *msghandler)
         pv.setOption(interactionTypeToParticleSubtype(InteractionType::BONDS), vs);
         pv.addForceFieldParameter("charge", pa->parameterConst(chargeVSName));
         pv.addForceFieldParameter("mass", ForceFieldParameter("Da", 0, 0, 0, 0, 0, Mutability::Fixed, true, true));
-        if (forces_.count(InteractionType::ELECTROSTATICS) > 0)
-        {
-            // The distribution of the second charge, the other parameters
-            // are those of the atom.
-            auto &fs   = forces_.find(InteractionType::ELECTROSTATICS)->second;
-            auto  ztype = vs + "_z";
-            auto  pmap  = fs.findParameterMapConst(pa->interactionTypeToIdentifier(InteractionType::ELECTROSTATICS));
-            pmap.find("zeta")->second = pa->parameterConst(zetaVSName);
-            for(const auto &p : pmap)
-            {
-                fs.addParameter(Identifier(ztype), p.first, p.second);
-            }
-            pv.setOption(interactionTypeToParticleSubtype(InteractionType::ELECTROSTATICS), ztype);
-        }
+        // The distribution of the second charge
+        pv.addForceFieldParameter(zetaName, pa->parameterConst(zetaVSName));
         // Interactions that the virtual site does not have, its parameters
         // are those of the atom with the energy scaled to zero.
         for(auto itype : { InteractionType::VDW, InteractionType::VDWCORRECTION,
@@ -746,6 +886,13 @@ CommunicationStatus ForceField::Send(const CommunicationRecord *cr, int dest)
         cr->send(dest, timeStamp_);
         cr->send(dest, static_cast<int>(ChargeGenerationAlgorithm_));
         cr->send(dest, polarizable_ ? 1 : 0);
+        auto ptOptions = particleTypesOptions();
+        cr->send(dest, ptOptions.size());
+        for(const auto &opt : ptOptions)
+        {
+            cr->send(dest, opt.first);
+            cr->send(dest, opt.second);
+        }
         /* Send Ffatype */
         cr->send(dest, alexandria_.size());
         for (auto &alexandria : alexandria_)
@@ -807,6 +954,28 @@ CommunicationStatus ForceField::BroadCast(const CommunicationRecord *cr,
         int pol = polarizable_ ? 1 : 0;
         cr->bcast(&pol, comm);
         polarizable_ = pol == 1;
+        {
+            auto   ptOptions = particleTypesOptions();
+            size_t nopt      = ptOptions.size();
+            cr->bcast(&nopt, comm);
+            auto   opt       = ptOptions.begin();
+            for(size_t i = 0; i < nopt; i++)
+            {
+                std::string key, value;
+                if (cr->rank() == root)
+                {
+                    key   = opt->first;
+                    value = opt->second;
+                    ++opt;
+                }
+                cr->bcast(&key, comm);
+                cr->bcast(&value, comm);
+                if (cr->rank() != root)
+                {
+                    setParticleTypesOption(key, value);
+                }
+            }
+        }
         /* Bcast Ffatype */
         size_t asize = alexandria_.size();
         cr->bcast(&asize, comm);
@@ -906,6 +1075,18 @@ CommunicationStatus ForceField::Receive(const CommunicationRecord *cr, int src,
         cr->recv(src, &cga);
         ChargeGenerationAlgorithm_ = static_cast<ChargeGenerationAlgorithm>(cga);
         cr->recv(src, &polarizable_);
+        size_t nopt;
+        cr->recv(src, &nopt);
+        nexcl_.reset();
+        chargeDistribution_.reset();
+        epsilonr_.reset();
+        for(size_t i = 0; i < nopt; i++)
+        {
+            std::string key, value;
+            cr->recv(src, &key);
+            cr->recv(src, &value);
+            setParticleTypesOption(key, value);
+        }
         /* Rceive Ffatype */
         size_t nalexandria;
         cr->recv(src, &nalexandria);
@@ -1050,29 +1231,23 @@ void ForceField::checkConsistency(MsgHandler *msgHandler) const
             }
         }
     }
-    const auto itq = InteractionType::ELECTROSTATICS;
-    if (interactionPresent(itq))
+    if (chargeDistribution() == ChargeDistributionType::Point)
     {
-        auto fs  = findForcesConst(itq);
-        if (fs.potential() == Potential::COULOMB_POINT)
+        // Check for non-zero zeta
+        for(const auto &pt : alexandria_)
         {
-            // Check for non-zero zeta
-            std::string zeta("zeta");
-            for(const auto &myparam : fs.parametersConst())
+            for(const char *zname : { zetaName, zetaVSName })
             {
-                for(const auto &param : myparam.second)
+                if (pt.second.hasParameter(zname) && pt.second.parameterConst(zname).internalValue() != 0)
                 {
-                    auto myval = param.second.internalValue();
-                    if (param.first == zeta && myval != 0)
+                    if (msgHandler)
                     {
-                        if (msgHandler)
-                        {
-                            msgHandler->msg(ACTStatus::Warning,
-                                            gmx::formatString("Force field specifies Point charges but %s = %g for %s",
-                                                              zeta.c_str(), myval, myparam.first.id().c_str()));
-                        }
-                        nerror += 1;
+                        msgHandler->msg(ACTStatus::Warning,
+                                        gmx::formatString("Force field specifies Point charges but %s = %g for %s",
+                                                          zname, pt.second.parameterConst(zname).internalValue(),
+                                                          pt.first.id().c_str()));
                     }
+                    nerror += 1;
                 }
             }
         }

@@ -200,7 +200,9 @@ void MolGen::checkOptions(MsgHandler                *msghandler,
         {
             std::set<InteractionType> elec = { InteractionType::ELECTROSTATICS, InteractionType::POLARIZATION,
                                                InteractionType::ELECTRONEGATIVITYEQUALIZATION, InteractionType::BONDCORRECTIONS };
-            if (alg == ChargeGenerationAlgorithm::ESP && (elec.find(itype) != elec.end() || isVsite(itype)))
+            // The width of the charge distributions is that of the particle types
+            bool zeta = (toFit->first == zetaName);
+            if (alg == ChargeGenerationAlgorithm::ESP && (elec.find(itype) != elec.end() || isVsite(itype) || zeta))
             {
                 msghandler->msg(ACTStatus::Warning,
                                 gmx::formatString("Cannot train parameter '%s' in conjunction with using the ESP algorithm for charge generation.",
@@ -261,7 +263,7 @@ void MolGen::fillIopt(const ForceField *pd,
 std::vector<std::string> MolGen::particleParametersToFit() const
 {
     std::vector<std::string> names;
-    for(const char *name : { "charge", chargeVSName, zetaVSName })
+    for(const char *name : { "charge", zetaName, chargeVSName, zetaVSName })
     {
         if (fit(name))
         {

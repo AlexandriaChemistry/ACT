@@ -184,13 +184,12 @@ int gentop(int argc, char *argv[])
     // GROMACS and OpenMM do not support second charges, use virtual sites instead
     pd.expandSecondCharges(&msghandler);
 
-    auto &fs = pd.findForcesConst(InteractionType::ELECTROSTATICS);
     std::string my_pol;
     if (pd.polarizable())
     {
         my_pol.assign(" polarizable");
     }
-    auto qType = potentialToChargeDistributionType(fs.potential());
+    auto qType = pd.chargeDistribution();
     printf("Using%s force field file %s and charge distribution model %s\n",
            my_pol.c_str(), gentop_fnm, chargeDistributionTypeName(qType).c_str());
     msghandler.write(gmx::formatString("Read force field information. There are %zu atomtypes.\n",

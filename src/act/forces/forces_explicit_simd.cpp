@@ -516,14 +516,13 @@ struct Coulomb
      */
     static bool prepare(const TopologyEntry &b, const std::vector<ActAtom> &atoms, double epsilonr, double *p)
     {
-        auto &params   = b.params();
         auto &gindices = b.atomIndices();
         const auto &atomi = atoms[gindices[0]];
         const auto &atomj = atoms[gindices[1]];
         const double qi[2] = { atomi.charge(), atomi.chargeVS() };
         const double qj[2] = { atomj.charge(), atomj.chargeVS() };
-        const double zi[2] = { params[coulZETA], atomi.zetaVS() };
-        const double zj[2] = { params[coulZETA2], atomj.zetaVS() };
+        const double zi[2] = { atomi.zeta(), atomi.zetaVS() };
+        const double zj[2] = { atomj.zeta(), atomj.zetaVS() };
         for(int a = 0; a < 2; a++)
         {
             for(int c = 0; c < 2; c++)
@@ -1400,10 +1399,9 @@ bool coulombKernelsExplicitSimd(TopologyEntryRange          entries,
     for (const auto &b : entries)
     {
         const TopologyEntry &entry  = *b.operator->();
-        const auto          &params = entry.params();
         const auto          &ind    = entry.atomIndices();
-        const double zi[2] = { params[coulZETA], atoms[ind[0]].zetaVS() };
-        const double zj[2] = { params[coulZETA2], atoms[ind[1]].zetaVS() };
+        const double zi[2] = { atoms[ind[0]].zeta(), atoms[ind[0]].zetaVS() };
+        const double zj[2] = { atoms[ind[1]].zeta(), atoms[ind[1]].zetaVS() };
         // The widths of the terms in the order of Coulomb::prepare
         double zeta[4];
         for(int a = 0; a < 2; a++)

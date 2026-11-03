@@ -852,17 +852,15 @@ static ACT_ALWAYS_INLINE void coulombGaussianOne(gmx_unused MsgHandler      *msg
     auto &gindices = b.atomIndices();
     auto ai       = indices[0];
     auto aj       = indices[1];
-    // Get the parameters.
-    auto &params= b.params();
     const auto &atomi = atoms[gindices[0]];
     const auto &atomj = atoms[gindices[1]];
     // The charges and widths of both particles. These depend only on the
-    // parameters, which allows the compiler to compute them once for all
+    // atoms, which allows the compiler to compute them once for all
     // conformations.
     const real qi[2] = { static_cast<real>(atomi.charge()), static_cast<real>(atomi.chargeVS()) };
     const real qj[2] = { static_cast<real>(atomj.charge()), static_cast<real>(atomj.chargeVS()) };
-    const real zi[2] = { static_cast<real>(params[coulZETA]), static_cast<real>(atomi.zetaVS()) };
-    const real zj[2] = { static_cast<real>(params[coulZETA2]), static_cast<real>(atomj.zetaVS()) };
+    const real zi[2] = { static_cast<real>(atomi.zeta()), static_cast<real>(atomi.zetaVS()) };
+    const real zj[2] = { static_cast<real>(atomj.zeta()), static_cast<real>(atomj.zetaVS()) };
     rvec dx;
     rvec_sub(x[ai], x[aj], dx);
     auto dr2        = iprod(dx, dx);
@@ -962,14 +960,12 @@ static ACT_ALWAYS_INLINE void coulombSlaterOne(gmx_unused MsgHandler      *msgha
     auto &gindices = b.atomIndices();
     auto ai       = indices[0];
     auto aj       = indices[1];
-    // Get the parameters. We have to know their names to do this.
-    auto &params= b.params();
     const auto &atomi = atoms[gindices[0]];
     const auto &atomj = atoms[gindices[1]];
     const real qi[2]   = { static_cast<real>(atomi.charge()), static_cast<real>(atomi.chargeVS()) };
     const real qj[2]   = { static_cast<real>(atomj.charge()), static_cast<real>(atomj.chargeVS()) };
-    const real zi[2]   = { static_cast<real>(params[coulZETA]), static_cast<real>(atomi.zetaVS()) };
-    const real zj[2]   = { static_cast<real>(params[coulZETA2]), static_cast<real>(atomj.zetaVS()) };
+    const real zi[2]   = { static_cast<real>(atomi.zeta()), static_cast<real>(atomi.zetaVS()) };
+    const real zj[2]   = { static_cast<real>(atomj.zeta()), static_cast<real>(atomj.zetaVS()) };
     const int  rowi[2] = { atomi.row(), atomi.rowVS() };
     const int  rowj[2] = { atomj.row(), atomj.rowVS() };
     rvec dx;
@@ -1942,18 +1938,19 @@ static bool usesCharges(Potential mypot)
 }
 
 //! Number of values per atom kept by keepCharges
-static const size_t chargeValues = 4;
+static const size_t chargeValues = 5;
 
-/*! \brief The charge and the second charge of an atom with its distribution
+/*! \brief The charge and the second charge of an atom with their distributions
  * \param[in]  atom The atom
  * \param[out] q    The values
  */
 static void chargeOf(const ActAtom &atom, double q[chargeValues])
 {
     q[0] = atom.charge();
-    q[1] = atom.chargeVS();
-    q[2] = atom.zetaVS();
-    q[3] = atom.rowVS();
+    q[1] = atom.zeta();
+    q[2] = atom.chargeVS();
+    q[3] = atom.zetaVS();
+    q[4] = atom.rowVS();
 }
 
 /*! \brief Keep the charges of the atoms, if the potential uses them
@@ -2090,7 +2087,8 @@ static bool dispatchPotential(Potential                   mypot,
     case Potential::COULOMB_GAUSSIAN:
         // Point charges are cheaper, in particular when vectorized
         func.template operator()<2, true>(OneSelect { [&atoms](const TopologyEntry &b)
-                                                      { return (b.params()[coulZETA] == 0 && b.params()[coulZETA2] == 0 &&
+                                                      { return (atoms[b.atomIndices()[0]].zeta() == 0 &&
+                                                                atoms[b.atomIndices()[1]].zeta() == 0 &&
                                                                 atoms[b.atomIndices()[0]].chargeVS() == 0 &&
                                                                 atoms[b.atomIndices()[1]].chargeVS() == 0); },
                                                       ONE_INTERACTION_ATOMS_EPSR(coulombPointOne),
@@ -2243,13 +2241,12 @@ static double interactionFlops(Potential                   mypot,
             for (const auto &b : entries)
             {
                 const TopologyEntry &entry   = *b.operator->();
-                auto                &params  = entry.params();
                 const auto          &atomi   = atoms[entry.atomIndices()[0]];
                 const auto          &atomj   = atoms[entry.atomIndices()[1]];
                 const double         qi[2]   = { atomi.charge(), atomi.chargeVS() };
                 const double         qj[2]   = { atomj.charge(), atomj.chargeVS() };
-                const double         zi[2]   = { params[coulZETA], atomi.zetaVS() };
-                const double         zj[2]   = { params[coulZETA2], atomj.zetaVS() };
+                const double         zi[2]   = { atomi.zeta(), atomi.zetaVS() };
+                const double         zj[2]   = { atomj.zeta(), atomj.zetaVS() };
                 n += pair.energy + 10 + (forces ? pair.force : 0);
                 for (int a = 0; a < 2; a++)
                 {
@@ -2617,7 +2614,6 @@ static bool calcCoulombKernel(Potential                   mypot,
     size_t                     ntodo = 0;
     for(size_t e = 0; e < ne; e++)
     {
-        const auto   &params = topentries[e]->params();
         const auto   &ind    = topentries[e]->atomIndices();
         const auto   &ai     = atoms[ind[0]];
         const auto   &aj     = atoms[ind[1]];
@@ -2625,7 +2621,7 @@ static bool calcCoulombKernel(Potential                   mypot,
         bool          vsj    = aj.chargeVS() != 0;
         unsigned char needed = 1 | (vsj ? 2 : 0) | (vsi ? 4 : 0) | (vsi && vsj ? 8 : 0);
         // The widths the terms are computed from, see coulombKernelsExplicitSimd
-        const double  w[4]   = { params[coulZETA], ai.zetaVS(), params[coulZETA2], aj.zetaVS() };
+        const double  w[4]   = { ai.zeta(), ai.zetaVS(), aj.zeta(), aj.zetaVS() };
         double       *we     = widths.data() + 4*e;
         bool          same   = (sameShape && (terms[e] & needed) == needed &&
                                 std::equal(w, w + 4, we) &&
@@ -2906,15 +2902,9 @@ static inline void lowComputeEnergies(MsgHandler                *msghandler,
             }
             // Not all potentials are available in the force field,
             // in particular restraint potentials.
-            gmx_unused Potential mypot;
-            if (pd->interactionPresent(entry.first))
-            {
-                // Force field parameter list
-                auto &ffpl = pd->findForcesConst(entry.first);
-                // The function we need to do the math
-                mypot = ffpl.potential();
-            }
-            else
+            // The function we need to do the math
+            gmx_unused Potential mypot = pd->potential(entry.first);
+            if (Potential::NONE == mypot)
             {
                 mypot = defaultPotential(entry.first);
             }
@@ -3091,26 +3081,6 @@ static inline void lowComputeEnergies(MsgHandler                *msghandler,
     cdata->vsiteForcesSpread = spread && (ndone == 0 || cdata->vsiteForcesSpread);
 }
 
-/*! \brief The relative dielectric constant of a force field
- * \param[in] pd The force field
- * \return The epsilonr option of the electrostatics, or 1
- */
-static double relativeDielectric(const ForceField *pd)
-{
-    double epsilonr = 1;
-    auto iCoul = InteractionType::ELECTROSTATICS;
-    if (pd->interactionPresent(iCoul))
-    {
-        auto &ffpl = pd->findForcesConst(iCoul);
-        std::string epsr = "epsilonr";
-        if (ffpl.optionExists(epsr))
-        {
-            epsilonr = std::atof(ffpl.optionValue(epsr).c_str());
-        }
-    }
-    return epsilonr;
-}
-
 void computeConformations(MsgHandler                *msghandler,
                           const ForceField          *pd,
                           const Topology            *top,
@@ -3122,7 +3092,7 @@ void computeConformations(MsgHandler                *msghandler,
     // The conformations only change if virtual sites are constructed
     // again, which ConformationData knows, or if shells move.
     bool reuse = !pd->polarizable();
-    lowComputeEnergies(msghandler, pd, top, coords, cdata, relativeDielectric(pd),
+    lowComputeEnergies(msghandler, pd, top, coords, cdata, pd->epsilonr(),
                        true, forces, reuse, skipDone);
 }
 
@@ -3135,7 +3105,7 @@ void computeEnergies(MsgHandler                  *msghandler,
                      bool                         intermolecular,
                      bool                         allForces)
 {
-    double epsilonr = relativeDielectric(pd);
+    double epsilonr = pd->epsilonr();
     // The conformations of the molecules only change if virtual sites are
     // constructed again, which ConformationData knows, or if shells move.
     bool reuse = !pd->polarizable();

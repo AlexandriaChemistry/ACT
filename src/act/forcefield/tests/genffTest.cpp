@@ -135,7 +135,6 @@ TEST_F(GenFFTest, Defaults)
         { InteractionType::ANGLES,           Potential::HARMONIC_ANGLES },
         { InteractionType::PROPER_DIHEDRALS, Potential::FOURIER_DIHEDRALS },
         { InteractionType::VDW,              Potential::LJ12_6 },
-        { InteractionType::ELECTROSTATICS,   Potential::COULOMB_GAUSSIAN },
         { InteractionType::VSITE2,           Potential::VSITE2 }
     };
     for (const auto &fn : functions)
@@ -143,9 +142,15 @@ TEST_F(GenFFTest, Defaults)
         ASSERT_TRUE(pd.interactionPresent(fn.first)) << interactionTypeToString(fn.first);
         EXPECT_EQ(fn.second, pd.findForcesConst(fn.first).potential()) << interactionTypeToString(fn.first);
     }
-    EXPECT_DOUBLE_EQ(1, std::stod(option(pd, InteractionType::ELECTROSTATICS, "epsilonr")));
-    EXPECT_EQ("2", option(pd, InteractionType::ELECTROSTATICS, "nexcl"));
-    EXPECT_EQ("2", option(pd, InteractionType::VDW, "nexcl"));
+    // The charge distribution, the relative dielectric constant and the
+    // number of exclusions are options of the particle types
+    EXPECT_FALSE(pd.interactionPresent(InteractionType::ELECTROSTATICS));
+    EXPECT_EQ(ChargeDistributionType::Gaussian, pd.chargeDistribution());
+    EXPECT_EQ(Potential::COULOMB_GAUSSIAN, pd.potential(InteractionType::ELECTROSTATICS));
+    EXPECT_DOUBLE_EQ(1, pd.epsilonr());
+    EXPECT_EQ(2, pd.nexcl());
+    EXPECT_FALSE(f->hasOption("zetatype"));
+    EXPECT_TRUE(f->hasParameter("zeta"));
     // The parameter of a virtual site starts in the middle of its range
     const ForceFieldParameterMap *vsite = nullptr;
     for (const auto &p : pd.findForcesConst(InteractionType::VSITE2).parametersConst())
@@ -167,19 +172,27 @@ TEST_F(GenFFTest, Options)
 {
     auto pd = generate({ { "-qdist", "POINT" }, { "-bondfn", "MORSE_BONDS" },
                          { "-anglefn", "UREY_BRADLEY_ANGLES" }, { "-vdwfn", "WANG_BUCKINGHAM" },
-                         { "-epsilonr", "1.7" }, { "-nexclqq", "3" }, { "-nexclvdw", "1" } });
-    EXPECT_EQ(Potential::COULOMB_POINT, pd.findForcesConst(InteractionType::ELECTROSTATICS).potential());
+                         { "-epsilonr", "1.7" }, { "-nexcl", "3" } });
+    EXPECT_EQ(ChargeDistributionType::Point, pd.chargeDistribution());
     EXPECT_EQ(Potential::MORSE_BONDS, pd.findForcesConst(InteractionType::BONDS).potential());
     EXPECT_EQ(Potential::UREY_BRADLEY_ANGLES, pd.findForcesConst(InteractionType::ANGLES).potential());
     EXPECT_EQ(Potential::WANG_BUCKINGHAM, pd.findForcesConst(InteractionType::VDW).potential());
-    EXPECT_DOUBLE_EQ(1.7, std::stod(option(pd, InteractionType::ELECTROSTATICS, "epsilonr")));
-    EXPECT_EQ("3", option(pd, InteractionType::ELECTROSTATICS, "nexcl"));
-    EXPECT_EQ("1", option(pd, InteractionType::VDW, "nexcl"));
+    EXPECT_DOUBLE_EQ(1.7, pd.epsilonr());
+    EXPECT_EQ(3, pd.nexcl());
     // Point charges have no width
-    for (const auto &p : pd.findForcesConst(InteractionType::ELECTROSTATICS).parametersConst())
+    for (const auto &pt : pd.particleTypesConst())
     {
-        EXPECT_EQ(0, p.second.find("zeta")->second.value()) << p.first.id();
+        EXPECT_EQ(0, pt.second.zeta()) << pt.first.id();
     }
+}
+
+// Test: The obsolete options for the exclusions are accepted if they are
+// the same, otherwise the force field is not generated
+TEST_F(GenFFTest, ObsoleteExclusions)
+{
+    auto pd = generate({ { "-nexclqq", "3" }, { "-nexclvdw", "3" } });
+    EXPECT_EQ(3, pd.nexcl());
+    EXPECT_THROW(generate({ { "-nexclqq", "3" }, { "-nexclvdw", "1" } }), gmx::InvalidInputError);
 }
 
 // Test: Without the file of virtual sites there are none

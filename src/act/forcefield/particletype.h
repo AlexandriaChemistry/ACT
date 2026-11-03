@@ -50,6 +50,8 @@ namespace alexandria
 const char chargeVSName[] = "chargeVS";
 //! Name of the parameter for the width of the second charge
 const char zetaVSName[]   = "zetaVS";
+//! Name of the parameter for the width of the charge distribution, see ParticleType::zeta
+const char zetaName[]     = "zeta";
 //! Name of the option for the row of the second charge
 const char rowVSName[]    = "rowVS";
 
@@ -225,6 +227,9 @@ class ParticleType
 
     //! \return The width of the distribution of the second charge, 0 for a point charge
     double zetaVS() const;
+
+    //! \return The width of the charge distribution, 0 for a point charge, see ForceField::convertCoulomb
+    double zeta() const;
 
     //! \return The row of the second charge, for Slater distributions
     int rowVS() const;

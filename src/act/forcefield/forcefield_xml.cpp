@@ -374,6 +374,10 @@ static void processAttr(MsgHandler           *msgHandler,
             {
                 pd->findParticleType(myIdentifier)->setOption(xbufString(xmlEntry::KEY), xbufString(xmlEntry::VALUE));
             }
+            else if (xmlEntry::PARTICLETYPES == parentEntry)
+            {
+                pd->setParticleTypesOption(xbufString(xmlEntry::KEY), xbufString(xmlEntry::VALUE));
+            }
         }
         break;
     case xmlEntry::COMBINATIONRULE:
@@ -609,6 +613,8 @@ void readForceField(const std::string &fileName,
 
     xmlFreeDoc(doc);
 
+    // The charge distributions of older files are stored in the particle types
+    pd->convertCoulomb(msgHandler);
     // Virtual sites on top of atoms are read, but stored as second charges
     if (convert)
     {
@@ -687,7 +693,11 @@ static void addXmlForceField(xmlNodePtr parent, const ForceField *pd)
     }
     
     child = add_xml_child(parent, exml_names(xmlEntry::PARTICLETYPES));
-                 
+    // The options common to all particle types
+    for(const auto &opt : pd->particleTypesOptions())
+    {
+        addOption(child, opt.first, opt.second);
+    }
     for (const auto &aType : pd->particleTypesConst())
     {
         auto grandchild = add_xml_child(child, exml_names(xmlEntry::PARTICLETYPE));

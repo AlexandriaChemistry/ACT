@@ -65,11 +65,7 @@ ACTMiddleMan::ACTMiddleMan(MsgHandler                *msghandler,
 
     // Create force computer
     double epsilonr;
-    if (!ffOption(*sii->forcefield(), InteractionType::ELECTROSTATICS,
-                  "epsilonr", &epsilonr))
-    {
-        epsilonr = 1;
-    }
+    epsilonr = sii->forcefield()->epsilonr();
     forceComp_.init(bch->shellToler(), bch->shellMaxIter(), epsilonr);
 
     //! \todo Fitness computer. What about those false flags?

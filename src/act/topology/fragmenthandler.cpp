@@ -235,6 +235,7 @@ eQgen FragmentHandler::generateCharges(MsgHandler                   *msg_handler
                     auto       &ca = (*atoms)[atomStart_[ff]+a];
                     ca.setCharge(fa.charge());
                     ca.setChargeVS(fa.chargeVS(), fa.zetaVS(), fa.rowVS());
+                    ca.setZeta(fa.zeta());
                 }
             }
         }
@@ -266,6 +267,9 @@ eQgen FragmentHandler::generateCharges(MsgHandler                   *msg_handler
                 // The second charge, if any, is part of the total too
                 (*ta)[a].setChargeVS(ptype->chargeVS(), ptype->zetaVS(), ptype->rowVS());
                 (*atoms)[atomStart_[ff]+a].setChargeVS(ptype->chargeVS(), ptype->zetaVS(), ptype->rowVS());
+                // The width of the charge distribution may have been trained
+                (*ta)[a].setZeta(ptype->zeta());
+                (*atoms)[atomStart_[ff]+a].setZeta(ptype->zeta());
                 qtot += qnew + ptype->chargeVS();
             }
             // Make sure that the total charge is integer.
@@ -300,6 +304,7 @@ bool FragmentHandler::fetchCharges(std::vector<ActAtom> *atoms)
         for(size_t j = 0; j < ats.size(); j++)
         {
             (*atoms)[k].setCharge(ats[j].charge());
+            (*atoms)[k].setZeta(ats[j].zeta());
             (*atoms)[k++].setChargeVS(ats[j].chargeVS(), ats[j].zetaVS(), ats[j].rowVS());
         }
     }

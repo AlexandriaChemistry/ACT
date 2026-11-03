@@ -277,8 +277,9 @@ int gen_ff(int argc, char*argv[])
     CombRuleUtil crule;
     crule.addInfo(&desc);
     gmx_output_env_t *oenv;
-    int               nexclqq  = 2;
-    int               nexclvdw = 2;
+    int               nexcl    = 2;
+    int               nexclqq  = -1;
+    int               nexclvdw = -1;
     real              epsilonr = 1;
     real              shellMaxDistance = 0.02;
     bool              qsymm    = true;
@@ -332,10 +333,12 @@ int gen_ff(int argc, char*argv[])
     gmx_bool useVdwCorr = false;
     std::vector<t_pargs> pa =
     {
+        { "-nexcl", FALSE, etINT,  {&nexcl},
+          "Number of bonds within which nonbonded interactions are excluded, the same for all of them." },
         { "-nexclqq", FALSE, etINT,  {&nexclqq},
-          "Number of exclusions for Coulomb and InductionCorrection interactions." },
+          "HIDDENObsolete, use -nexcl. Accepted if it is the same as -nexclvdw." },
         { "-nexclvdw", FALSE, etINT,  {&nexclvdw},
-          "Number of exclusions for Van der Waals interactions and Van der Waals corrections." },
+          "HIDDENObsolete, use -nexcl. Accepted if it is the same as -nexclqq." },
         { "-epsilonr", FALSE, etREAL, {&epsilonr},
           "Relative dielectric constant. 1 is recommended for polarizable force fields, but maybe 1.7 might work for non-polarizable force fields instead of charge scaling." },
         { "-shellmaxdistance", FALSE, etREAL, {&shellMaxDistance},
@@ -364,6 +367,16 @@ int gen_ff(int argc, char*argv[])
                            desc.size(), desc.data(), 0, nullptr, &oenv))
     {
         return 0;
+    }
+    // The obsolete options for the exclusions of Coulomb and van der Waals
+    if (nexclqq >= 0 || nexclvdw >= 0)
+    {
+        if (nexclqq >= 0 && nexclvdw >= 0 && nexclqq != nexclvdw)
+        {
+            GMX_THROW(gmx::InvalidInputError(gmx::formatString("The number of exclusions has to be the same for Coulomb (%d) and van der Waals (%d), use -nexcl",
+                                                               nexclqq, nexclvdw).c_str()));
+        }
+        nexcl = std::max(nexclqq, nexclvdw);
     }
 
     auto table = read_atomtypes(opt2fn("-f", fnm.size(), fnm.data()));
@@ -576,9 +589,7 @@ int gen_ff(int argc, char*argv[])
     {
         if (nonbond.find(fp.first) != nonbond.end())
         {
-            bool vdw = (InteractionType::VDW == fp.first ||
-                        InteractionType::VDWCORRECTION == fp.first);
-            fp.second.addOption("nexcl", gmx_itoa(vdw ? nexclvdw : nexclqq));
+            fp.second.addOption("nexcl", gmx_itoa(nexcl));
             fp.second.setCanSwap(CanSwap::Yes);
         }
         if (fp.first == InteractionType::ELECTROSTATICS)
@@ -634,8 +645,10 @@ int gen_ff(int argc, char*argv[])
     crule.addDefaults(&pd);
     // Virtual sites
     add_vsites(opt2fn_null("-vs", fnm.size(), fnm.data()), &pd);
-    // Virtual sites on top of atoms that only carry a charge are stored
-    // as second charges, as when reading a force field.
+    // The charge distributions and the options of COULOMB are those of the
+    // particle types, and virtual sites on top of atoms that only carry a
+    // charge are stored as second charges, as when reading a force field.
+    pd.convertCoulomb(nullptr);
     pd.convertVsite1(nullptr);
     if (qsymm)
     {

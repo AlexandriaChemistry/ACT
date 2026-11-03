@@ -37,6 +37,7 @@
 
 #include <algorithm>
 #include <map>
+#include <optional>
 #include <set>
 #include <vector>
 
@@ -340,6 +341,68 @@ class ForceField
     //! \brief Guess the algorithm based on force field content
     void guessChargeGenerationAlgorithm();
 
+    /*! \name Options of the particle types
+     * The number of bonds within which nonbonded interactions are excluded,
+     * the distribution of the charges and the relative dielectric constant
+     * are options of the particle types. In older force field files they
+     * are options of the interaction COULOMB, see convertCoulomb.
+     * \{
+     */
+    //! \return the number of bonds within which nonbonded interactions are excluded, or -1 if it is not specified
+    int nexcl() const { return nexcl_.value_or(-1); }
+
+    //! \brief Set the number of bonds within which nonbonded interactions are excluded
+    void setNexcl(int nexcl) { nexcl_ = nexcl; }
+
+    //! \return the distribution of the charges, point charges if it is not specified
+    ChargeDistributionType chargeDistribution() const
+    {
+        return chargeDistribution_.value_or(ChargeDistributionType::Point);
+    }
+
+    //! \brief Set the distribution of the charges
+    void setChargeDistribution(ChargeDistributionType cd) { chargeDistribution_ = cd; }
+
+    //! \return the relative dielectric constant, one if it is not specified
+    double epsilonr() const { return epsilonr_.value_or(1.0); }
+
+    //! \brief Set the relative dielectric constant
+    void setEpsilonr(double epsilonr) { epsilonr_ = epsilonr; }
+
+    /*! \brief Set an option of the particle types from a force field file
+     * \param[in] key   One of nexcl, chargedistribution or epsilonr
+     * \param[in] value The value
+     * \throws gmx::InvalidInputError for an unknown key or value
+     */
+    void setParticleTypesOption(const std::string &key, const std::string &value);
+
+    //! \return the options of the particle types that are specified, with their values as written
+    std::map<std::string, std::string> particleTypesOptions() const;
+
+    /*! \brief Take the charge distributions from the interaction COULOMB
+     * In older force field files the width of the charge distribution of
+     * a particle type, zeta, is a parameter of the interaction COULOMB, to
+     * which the option zetatype of the particle type refers. Particle types
+     * that share a zetatype get a copy each. The number of exclusions, which
+     * has to be the same for COULOMB and VANDERWAALS, the distribution of
+     * the charges, the function of COULOMB, and the relative dielectric
+     * constant are options of COULOMB there. They become a parameter of the
+     * particle types and options of the particle types.
+     * \param[in] msghandler For messages, may be nullptr
+     * \throws gmx::InvalidInputError if both forms are present with
+     *         different values
+     */
+    void convertCoulomb(MsgHandler *msghandler);
+
+    /*! \brief The potential of an interaction type
+     * For ELECTROSTATICS it follows from the charge distribution, for the
+     * other interaction types it is that of their parameters.
+     * \param[in] itype The interaction type
+     * \return the potential, NONE if the interaction is not present
+     */
+    Potential potential(InteractionType itype) const;
+    //! \}
+
     //! \return whether the model used is polarizable.     
     bool polarizable() const { return polarizable_; }
     
@@ -434,6 +497,12 @@ private:
     bool                                  polarizable_ = false;
     //! The charge generation algorithm
     ChargeGenerationAlgorithm             ChargeGenerationAlgorithm_ = ChargeGenerationAlgorithm::NONE;
+    //! Number of bonds within which nonbonded interactions are excluded, see nexcl
+    std::optional<int>                    nexcl_;
+    //! The distribution of the charges, see chargeDistribution
+    std::optional<ChargeDistributionType> chargeDistribution_;
+    //! The relative dielectric constant, see epsilonr
+    std::optional<double>                 epsilonr_;
 };
 
 template<typename T>

@@ -385,9 +385,9 @@ public:
     std::map<std::string, bool> typesToFit() const { return fit_; }
 
     /*! \brief The parameters of particle types to fit
-     * These are the charge and the second charge and the width of its
-     * distribution, see ParticleType::chargeVS, all of the interaction
-     * type CHARGE.
+     * These are the charge and the width of its distribution, and the
+     * second charge and the width of its distribution, see
+     * ParticleType::chargeVS, all of the interaction type CHARGE.
      * \return the names of those that are fitted
      */
     std::vector<std::string> particleParametersToFit() const;

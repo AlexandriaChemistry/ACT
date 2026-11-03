@@ -102,11 +102,10 @@ protected:
 TEST_F(Vsite1ConversionTest, ChargeOnlyVsitesConverted)
 {
     double q    = pd_.findParticleType("v1Na+")->charge();
-    double zeta = parameter(InteractionType::ELECTROSTATICS, "v1Na+_z", "zeta")->value();
+    double zeta = pd_.findParticleType("v1Na+")->zeta();
     convert();
     expectConverted("Na+", "v1Na+", q, zeta);
     EXPECT_TRUE(pd_.findParticleType("K+")->hasChargeVS());
-    EXPECT_FALSE(pd_.findForces(InteractionType::ELECTROSTATICS)->parameterExists(Identifier("v1Na+_z")));
     EXPECT_FALSE(pd_.findForces(InteractionType::VDW)->parameterExists(Identifier("v1Na+")));
     EXPECT_FALSE(pd_.interactionPresent(InteractionType::VSITE1));
 }
@@ -161,7 +160,7 @@ TEST_F(Vsite1ConversionTest, SharedVsiteConverted)
     // Li+ has its own virtual site, which cannot be on it as well
     pd_.findForces(InteractionType::VSITE1)->parametersNoRemoval()->erase(Identifier(InteractionType::VSITE1, "Li+!v1Li+", CanSwap::Yes));
     double q    = pd_.findParticleType("v1Na+")->charge();
-    double zeta = parameter(InteractionType::ELECTROSTATICS, "v1Na+_z", "zeta")->value();
+    double zeta = pd_.findParticleType("v1Na+")->zeta();
     convert();
     expectConverted("Na+", "v1Na+", q, zeta);
     expectConverted("Li+", "v1Na+", q, zeta);

@@ -107,14 +107,11 @@ void QgenResp::setAtomInfo(MsgHandler                   *msg_handler,
     nAtom_   = atoms.size();
     qtot_    = qtotal;
     qshell_  = 0;
-    auto qt       = pd->findForcesConst(InteractionType::ELECTROSTATICS);
-    auto eqtModel = potentialToChargeDistributionType(qt.potential());
-    bool haveZeta = eqtModel != ChargeDistributionType::Point;
+    bool haveZeta = pd->chargeDistribution() != ChargeDistributionType::Point;
     nFixed_ = 0;
     for (size_t i = 0; i < atoms.size(); i++)
     {
         auto atype = pd->findParticleType(atoms[i].ffType());
-        auto ztype = atype->interactionTypeToIdentifier(InteractionType::ELECTROSTATICS);
         const auto &qparm = atype->parameterConst("charge");
         q_.push_back(qparm.value());
         charge_.push_back(&qparm);
@@ -122,7 +119,7 @@ void QgenResp::setAtomInfo(MsgHandler                   *msg_handler,
         row_.push_back(atype->row());
         if (haveZeta)
         {
-            zeta_.push_back(qt.findParameterTypeConst(ztype, "zeta").value());
+            zeta_.push_back(atype->hasParameter(zetaName) ? atype->parameterConst(zetaName).value() : 0.0);
         }
         else
         {
@@ -617,13 +614,10 @@ void QgenResp::optimizeCharges(MsgHandler *msg_handler,
 void QgenResp::updateZeta(const std::vector<ActAtom> &atoms,
                           const ForceField              *pd)
 {
-    auto    fs   = pd->findForcesConst(InteractionType::ELECTROSTATICS);
     for (size_t i = 0; i < nAtom_; i++)
     {
         auto atype = pd->findParticleType(atoms[i].ffType());
-        auto myid  = atype->interactionTypeToIdentifier(InteractionType::ELECTROSTATICS);
-        auto eep   = fs.findParameterMapConst(myid);
-        zeta_[i]   = eep.find("zeta")->second.value();
+        zeta_[i]   = atype->hasParameter(zetaName) ? atype->parameterConst(zetaName).value() : 0.0;
         zetaVS_[i] = atoms[i].zetaVS();
     }
 }

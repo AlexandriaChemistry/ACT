@@ -537,6 +537,20 @@ static void dumpForceField(ForceField        *pd,
             }
         }
     }
+    // The widths of the charge distributions are those of the particle types
+    if (myset.find(InteractionType::ELECTROSTATICS) != myset.end())
+    {
+        for(const auto &pt : pd->particleTypesConst())
+        {
+            if (pt.second.hasParameter(zetaName) &&
+                std::find(particles.begin(), particles.end(), pt.first.id()) != particles.end())
+            {
+                fprintf(fp, "%s|%s|%g\n", zetaName, pt.first.id().c_str(),
+                        pt.second.parameterConst(zetaName).value());
+                nparm++;
+            }
+        }
+    }
     fclose(fp);
     printf("Stored %d parameters in %s\n", nparm, filenm.c_str());
 }
@@ -869,7 +883,10 @@ int edit_ff(int argc, char*argv[])
                                    true, !repair);
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-    (void) pd.verifyCheckSum(&msghandler, forcefieldCheckSum(&pd));
+    // The checksum of the force field as it was read, which differs from
+    // that in the file if it was converted, see ForceField::convertCoulomb
+    std::string readCheckSum = forcefieldCheckSum(&pd);
+    (void) pd.verifyCheckSum(&msghandler, readCheckSum);
     if (opt2bSet("-ff2", fnm.size(), fnm.data()))
     {
         alexandria::ForceField pd2;
@@ -982,7 +999,7 @@ int edit_ff(int argc, char*argv[])
     if (opt2bSet("-o", fnm.size(), fnm.data()))
     {
         std::string checkSum = forcefieldCheckSum(&pd);
-        if (checkSum == pd.checkSum() && !forceWrite && nRuleChanged == 0)
+        if (checkSum == readCheckSum && !forceWrite && nRuleChanged == 0)
         {
             printf("No changes to forcefield structure, not writing a new file.");
         }

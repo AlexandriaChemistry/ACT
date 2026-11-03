@@ -159,10 +159,7 @@ void EspDevComputer::calcDeviation(MsgHandler                    *msghandler,
                 dumpQX(msghandler->tw(), &(*actmol), "ESP");
             }
             double epsilonr;
-            if (!ffOption(*forcefield, InteractionType::ELECTROSTATICS, "epsilonr", &epsilonr))
-            {
-                epsilonr = 1;
-            }
+            epsilonr = forcefield->epsilonr();
             qgr->calcPot(msghandler, epsilonr);
             double mae, mse;
             double rms   = qgr->getStatistics(msghandler, &rrms, &cosangle, &mae, &mse);

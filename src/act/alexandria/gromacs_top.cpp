@@ -303,11 +303,7 @@ void write_top(MsgHandler       *msg_handler,
         }
         fprintf(out, "[ %s ]\n", dir2str(d_moleculetype));
         fprintf(out, "; %-15s %5s\n", "Name", "nrexcl");
-        int nexcl;
-        if (!ffOption(*pd, InteractionType::VDW, "nexcl", &nexcl))
-        {
-            nexcl = 0;
-        }
+        int nexcl = std::max(0, pd->nexcl());
         fprintf(out, "%-15s %5d\n\n", molname ? molname : "Protein", nexcl);
         print_atoms(out, myAtoms, topology->residueNames());
         for (auto &fs : pd->forcesConst())
@@ -373,12 +369,11 @@ void print_top_header(MsgHandler                     *msg_handler,
     {
         return;
     }
-    auto qt = pd->findForcesConst(InteractionType::ELECTROSTATICS);
-    if (potentialToChargeDistributionType(qt.potential()) != ChargeDistributionType::Point)
+    if (pd->chargeDistribution() != ChargeDistributionType::Point)
     {
         msg_handler->msg(ACTStatus::Warning,
                          gmx::formatString("GROMACS does not support %s, the charges are point charges in the topology",
-                                           potentialToString(qt.potential()).c_str()));
+                                           potentialToString(pd->potential(InteractionType::ELECTROSTATICS)).c_str()));
     }
     // Lennard-Jones with sigma and epsilon, the parameters of the pairs of
     // particle types are given explicitly below, such that any combination

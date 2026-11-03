@@ -282,10 +282,11 @@ TEST_F(EditFFTest, Stretch)
 // is written
 TEST_F(EditFFTest, FixedParameter)
 {
-    auto unchanged = run(input_, { { "-p", "zeta" }, { "-a", "h_z" }, { "-val", "25" } });
+    // The width of the charge distribution is a parameter of the particle type
+    auto unchanged = run(input_, { { "-p", "zeta" }, { "-a", "h" }, { "-val", "25" } });
     EXPECT_FALSE(std::filesystem::exists(unchanged));
-    auto pd   = read(run(input_, { { "-p", "zeta" }, { "-a", "h_z" }, { "-val", "25" }, { "-force", "" } }));
-    auto zeta = pd.findForcesConst(InteractionType::ELECTROSTATICS).findParameterTypeConst(Identifier("h_z"), "zeta");
+    auto pd   = read(run(input_, { { "-p", "zeta" }, { "-a", "h" }, { "-val", "25" }, { "-force", "" } }));
+    auto zeta = pd.findParticleType("h")->parameterConst(zetaName);
     EXPECT_DOUBLE_EQ(25, zeta.value());
     EXPECT_EQ(Mutability::Fixed, zeta.mutability());
     // A file is written with -write even without changes
@@ -310,7 +311,7 @@ TEST_F(EditFFTest, Remove)
 TEST_F(EditFFTest, Dump)
 {
     auto dump = fileManager().getTemporaryFilePath("params.dat");
-    run(input_, { { "-ana", "EEM" }, { "-a", "h_z" }, { "-dump", dump } }, "");
+    run(input_, { { "-ana", "EEM" }, { "-a", "h_z h" }, { "-dump", dump } }, "");
     std::ifstream            in(dump);
     std::vector<std::string> lines;
     for (std::string line; std::getline(in, line); )
@@ -318,8 +319,9 @@ TEST_F(EditFFTest, Dump)
         lines.push_back(line);
     }
     std::sort(lines.begin(), lines.end());
-    // The EEM group includes the widths of the charges
-    std::vector<std::string> expected = { "chi|h_z|3.5", "eta|h_z|14", "zeta|h_z|30" };
+    // The EEM group includes the widths of the charges, which are those of
+    // the particle types
+    std::vector<std::string> expected = { "chi|h_z|3.5", "eta|h_z|14", "zeta|h|30" };
     EXPECT_EQ(expected, lines);
 }
 
@@ -452,7 +454,7 @@ TEST_F(EditFFTest, Plot)
     double sigma = 0.3165558, epsilon = 0.65017032;
     EXPECT_NEAR(std::pow(2.0, 1.0/6.0)*sigma, vdw.first, 1e-3);
     EXPECT_NEAR(-epsilon, vdw.second, 1e-3);
-    EXPECT_TRUE(std::filesystem::exists(plots / "COULOMB_o3_z~o3_z.xvg"));
+    EXPECT_TRUE(std::filesystem::exists(plots / "COULOMB_ow~ow.xvg"));
     std::filesystem::remove_all(plots);
 }
 

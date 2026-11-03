@@ -90,26 +90,12 @@ void forceFieldSummary(JsonTree      *jtree,
     jtree->addObject(JsonTree("Polarizable", yesno_names[pd->polarizable()]));
     jtree->addObject(JsonTree("Charge generation", 
                               chargeGenerationAlgorithmName(pd->chargeGenerationAlgorithm()).c_str()));
-    int nexclvdw;
-    if (!ffOption(*pd, InteractionType::VDW, 
-                  "nexcl", &nexclvdw))
-    {
-        nexclvdw = 0;
-    }
-    jtree->addObject(JsonTree("# vanderwaals exclusions", gmx_itoa(nexclvdw)));
-    int nexclqq;
-    if (!ffOption(*pd, InteractionType::ELECTROSTATICS, 
-                  "nexcl", &nexclqq))
-    {
-        nexclqq = 0;
-    }
-    jtree->addObject(JsonTree("# coulomb exclusions", gmx_itoa(nexclqq)));
+    // The same for van der Waals and Coulomb
+    int nexcl = std::max(0, pd->nexcl());
+    jtree->addObject(JsonTree("# vanderwaals exclusions", gmx_itoa(nexcl)));
+    jtree->addObject(JsonTree("# coulomb exclusions", gmx_itoa(nexcl)));
     double epsilonr;
-    if (!ffOption(*pd, InteractionType::ELECTROSTATICS, 
-                  "epsilonr", &epsilonr))
-    {
-        epsilonr = 1;
-    }
+    epsilonr = pd->epsilonr();
     jtree->addObject(JsonTree("Relative dielectric constant epsilon_r",
                               gmx_ftoa(epsilonr)));
     jtree->addObject(JsonTree("# particle types", gmx_itoa(pd->getNatypes())));
@@ -1081,11 +1067,7 @@ int b2(int argc, char *argv[])
     
     (void) pd.verifyCheckSum(&msghandler);
     double epsilonr = 1;
-    if (!ffOption(pd, InteractionType::ELECTROSTATICS, 
-                  "epsilonr", &epsilonr))
-    {
-        epsilonr = 1;
-    }
+    epsilonr = pd.epsilonr();
 
     ForceComputer forceComp(shellToler, shellMaxIter, epsilonr);
     

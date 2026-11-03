@@ -207,16 +207,7 @@ protected:
         ForceField *pd = &qqd;
         if (nexcl > 2)
         {
-            auto fff = pd->forces();
-            for (auto ffpl = fff->begin(); ffpl != fff->end(); ++ffpl)
-            {
-                std::string exclstr("nexcl");
-                if (ffpl->second.optionExists(exclstr))
-                {
-                    ffpl->second.removeOption(exclstr);
-                    ffpl->second.addOption(exclstr, gmx::formatString("%d", nexcl));
-                }
-            }
+            pd->setNexcl(nexcl);
         }
         
         double rmsToler = 1e-12;

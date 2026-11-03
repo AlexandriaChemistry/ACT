@@ -156,6 +156,7 @@ void Topology::addShells(MsgHandler       *msghandler,
                     auto shellName = iter->atom().name() + "s";
                     ActAtom newshell(shellName, "EP", ptype.id(), ActParticle::Shell,
                                      0, 0, charge, fa->row());
+                    newshell.setZeta(fp->zeta());
                     newshell.setResidueNumber(iter->atom().residueNumber());
                     auto olditer = iter;
                     iter = atomList->insert(std::next(iter), ActAtomListItem(newshell, shell, olditer->x()));
@@ -641,6 +642,7 @@ std::map<InteractionType, size_t> Topology::makeVsite1s(MsgHandler       *msghan
                                 ptype->apType(),
                                 0, ptype->mass(), ptype->charge(),
                                 ptype->row());
+                newatom.setZeta(ptype->zeta());
                 // Put virtual site straight after the last atom.
                 int vs1 = atomList->size();
                 newatom.addCore(atom->index());
@@ -798,6 +800,7 @@ std::map<InteractionType, size_t> Topology::makeVsite2s(MsgHandler       *msghan
                                         ptype->apType(),
                                         0, ptype->mass(), ptype->charge(),
                                         ptype->row());
+                        newatom.setZeta(ptype->zeta());
                         // Put virtual site straight after the last atom.
                         int vs2 = atomList->size();
                         newatom.addCore(ai);
@@ -958,6 +961,7 @@ std::map<InteractionType, size_t> Topology::makeVsite3s(MsgHandler       *msghan
                         ActAtom newatom(ptype->id().id(), vstype, ptype->id().id(),
                                         ptype->apType(),
                                         0, ptype->mass(), ptype->charge(), ptype->row());
+                        newatom.setZeta(ptype->zeta());
 
                         int vs3 = atomList->size();
                         newatom.addCore(ai);
@@ -1178,6 +1182,7 @@ std::map<InteractionType, size_t> Topology::makeVsite4s(MsgHandler       *msghan
                         ActAtom newatom(ptype->id().id(), vstype, ptype->id().id(),
                                         ptype->apType(),
                                         0, ptype->mass(), ptype->charge(), ptype->row());
+                        newatom.setZeta(ptype->zeta());
 
                         int vs4 = atomList->size();
                         
@@ -1322,6 +1327,7 @@ void Topology::GenerateAtoms(MsgHandler             *msghandler,
                 ActAtom newatom(cai.getName(), atype->element(), cai.getObtype(), ActParticle::Atom,
                                 atype->atomnumber(), atype->mass(), atype->charge(), atype->row());
                 newatom.setChargeVS(atype->chargeVS(), atype->zetaVS(), atype->rowVS());
+                newatom.setZeta(atype->zeta());
                 newatom.setResidueNumber(nres-1);
                 addAtom(newatom);
                 realAtoms_.push_back(natom++);
@@ -1484,23 +1490,14 @@ void Topology::build(MsgHandler             *msghandler,
             makePropers(msghandler, pd);
         }
     }
-    int nexcl;
-    auto myItype = InteractionType::ELECTROSTATICS;
-    if (!ffOption(*pd, myItype, "nexcl", &nexcl))
+    // The number of exclusions is the same for all nonbonded interactions
+    int nexcl = pd->nexcl();
+    if (nexcl < 0)
     {
-        msghandler->fatal(gmx::formatString("The number of exclusions is not specified for %s in %s", interactionTypeToString(myItype).c_str(), pd->filename().c_str()));
+        msghandler->fatal(gmx::formatString("The number of exclusions (nexcl) is not specified for the particle types in %s",
+                                            pd->filename().c_str()));
     }
     auto exclusions = generateExclusions(msghandler, nexcl);
-    // Check for consistency
-    auto myItype2 = InteractionType::VDW;
-    int nexcl_vdw;
-    if (ffOption(*pd, myItype2, "nexcl", &nexcl_vdw) && nexcl != nexcl_vdw)
-    {
-        msghandler->fatal(gmx::formatString("The number of %s exclusions (%d) is not the same as for %s (%d) in %s",
-                                            interactionTypeToString(myItype2).c_str(), nexcl_vdw,
-                                            interactionTypeToString(myItype).c_str(), nexcl, 
-        pd->filename().c_str()));
-    }
     // Keep the exclusions for writing topologies for other codes
     std::vector<std::vector<int>> exclusionList(exclusions.size());
     for (size_t i = 0; i < exclusions.size(); i++)
@@ -1943,13 +1940,6 @@ void Topology::fillParameters(MsgHandler                      *msghandler,
             fillParams(msghandler, fs, topentry->selfPtr(),
                        pp->second.param.size(), pp->second.param, &param,
                        missing);
-            // The widths of the charge distributions belong to the atoms,
-            // in the order of the atoms of the entry.
-            if (InteractionType::ELECTROSTATICS == entry.first && param.size() > coulZETA2 &&
-                topentry->swapped())
-            {
-                std::swap(param[coulZETA], param[coulZETA2]);
-            }
             if (param.empty() || param != topentry->params())
             {
                 changed = true;
@@ -2016,9 +2006,8 @@ void Topology::setEntryIdentifiers(MsgHandler       *msghandler,
             case InteractionType::INDUCTIONCORRECTION:
             case InteractionType::VDWCORRECTION:
             case InteractionType::POLARIZATION:
-            case InteractionType::ELECTROSTATICS:
                 {
-                    // For COULOMB there are two particles,
+                    // For VDW there are two particles,
                     // but for POLARIZATION or VDWCORRECTION just one.
                     if (atype->hasInteractionType(itype))
                     {

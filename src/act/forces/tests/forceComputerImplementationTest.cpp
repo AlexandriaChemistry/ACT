@@ -202,12 +202,7 @@ protected:
         // Energy map
         std::map<InteractionType, double> energies;
 
-        double epsilonr = 1;
-        if (pd && !ffOption(*pd, InteractionType::ELECTROSTATICS, 
-                      "epsilonr", &epsilonr))
-        {
-            epsilonr = 1;
-        }
+        double epsilonr = pd ? pd->epsilonr() : 1;
         auto epot = computeOne(p, top, atoms_, coordinates, &forces, &energies, epsilonr);
         // In single precision the coordinates are rounded, by up to
         // GMX_FLOAT_EPS times their magnitude. That changes the forces by
@@ -409,7 +404,16 @@ TEST_P(ForceComputerImplementationTest, All)
     atoms_[1].setCharge(coord.charge1);
     auto x   = coord.coordsBuilder();
     auto top = pot.topBuilder();
-    if (!top.empty())
+    if (Potential::COULOMB_POINT == pot.potential || Potential::COULOMB_GAUSSIAN == pot.potential ||
+        Potential::COULOMB_SLATER == pot.potential)
+    {
+        // The widths of the charge distributions belong to the atoms
+        for(size_t i = 0; i < par.params.size(); i++)
+        {
+            atoms_[i].setZeta(par.params[i]);
+        }
+    }
+    else if (!top.empty())
     {
         top[0]->setParams(par.params);
     }
@@ -962,23 +966,17 @@ TEST_F(ForceComputerImplementationTest, GaussianEpsilonR)
     // Get forcefield
     auto pd  = getForceField("ACS-pg-vs2");
     ForceField mypd = *pd;
-    auto ielec = InteractionType::ELECTROSTATICS;
-    auto ffpl  = mypd.findForces(ielec);
-    std::string epsopt("epsilonr");
-    if (ffpl->optionExists(epsopt))
-    {
-        ffpl->removeOption(epsopt);
-    }
-    ffpl->addOption(epsopt, "2.0");
+    mypd.setEpsilonr(2.0);
     const auto &pot   = c_coulGaussPot;
     const auto &par   = c_coulZeta10Params;
     const auto &coord = c_stdPairCoords[0];
     atoms_[1].setCharge(coord.charge1);
     auto x   = coord.coordsBuilder();
     auto top = pot.topBuilder();
-    if (!top.empty())
+    // The widths of the charge distributions belong to the atoms
+    for(size_t i = 0; i < par.params.size(); i++)
     {
-        top[0]->setParams(par.params);
+        atoms_[i].setZeta(par.params[i]);
     }
     testPot(pot.potential, top, &x, &mypd);
 }

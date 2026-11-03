@@ -42,6 +42,7 @@
 #include "../forces_simd.h"
 
 #include <cmath>
+#include <map>
 #include <set>
 
 #include <gtest/gtest.h>
@@ -155,6 +156,31 @@ protected:
         return entries;
     }
 
+    /*! \brief Give the atoms the widths of their charge distributions
+     * The Coulomb interactions list the widths of their first and second
+     * atom, which have to be the same in all interactions of an atom.
+     * \param[in] inter The interactions
+     */
+    void setWidths(const std::vector<Interaction> &inter)
+    {
+        std::map<int, double> zeta;
+        for (const auto &i : inter)
+        {
+            ASSERT_EQ(2u, i.atoms.size());
+            ASSERT_EQ(2u, i.params.size());
+            for (int k = 0; k < 2; k++)
+            {
+                auto z = zeta.find(i.atoms[k]);
+                if (zeta.end() != z)
+                {
+                    ASSERT_EQ(z->second, i.params[k]) << "atom " << i.atoms[k];
+                }
+                zeta[i.atoms[k]] = i.params[k];
+                atoms_[i.atoms[k]].setZeta(i.params[k]);
+            }
+        }
+    }
+
     //! Make the conformations from coordinates
     std::vector<CoordsEnergy> makeCoords(const std::vector<std::vector<gmx::RVec>> &x)
     {
@@ -232,20 +258,9 @@ protected:
                     bool        vs  = (first.count(k) && a == 1) || (second.count(k) && c == 1);
                     atoms.push_back(ActAtom(o.name(), o.element(), o.ffType(), o.pType(), o.atomicNumber(),
                                             o.mass(), vs ? qvs[k] : o.charge(), vs ? rowvs[k] : o.row()));
+                    atoms.back().setZeta(vs ? zvs[k] : o.zeta());
                 }
-                auto myinter = inter;
-                for (auto &i : myinter)
-                {
-                    if (a == 1)
-                    {
-                        i.params[0] = zvs[i.atoms[0]];
-                    }
-                    if (c == 1)
-                    {
-                        i.params[1] = zvs[i.atoms[1]];
-                    }
-                }
-                auto e = energies(mypot, myinter, atoms);
+                auto e = energies(mypot, inter, atoms);
                 for (size_t conf = 0; conf < nconf_; conf++)
                 {
                     eSum[conf] += e[conf];
@@ -570,11 +585,13 @@ TEST_F(ForcesSimdTest, GeneralizedBuckingham)
 
 TEST_F(ForcesSimdTest, CoulombPoint)
 {
+    setWidths(pairs({ 0, 0 }));
     test(Potential::COULOMB_POINT, pairs({ 0, 0 }));
 }
 
 TEST_F(ForcesSimdTest, CoulombGaussian)
 {
+    setWidths(pairs({ 12, 9 }));
     test(Potential::COULOMB_GAUSSIAN, pairs({ 12, 9 }));
 }
 
@@ -587,6 +604,7 @@ TEST_F(ForcesSimdTest, CoulombGaussianShortDistance)
     // Combined width of 12 and 9 is 7.2/nm
     const double zeta = 12.0*9.0/std::sqrt(12.0*12.0 + 9.0*9.0);
     const double qq   = ONE_4PI_EPS0*atoms_[0].charge()*atoms_[1].charge();
+    setWidths({ { { 0, 1 }, { 12, 9 } } });
     auto         entries = makeEntries({ { { 0, 1 }, { 12, 9 } } });
     const std::vector<double> dist = { 1e-5, 1e-4, 1e-3, 1e-2, 0.03, 0.1 };
     std::vector<std::vector<gmx::RVec>> x;
@@ -633,21 +651,25 @@ TEST_F(ForcesSimdTest, CoulombGaussianShortDistance)
 
 TEST_F(ForcesSimdTest, CoulombSlater)
 {
+    setWidths(pairs({ 25, 20 }));
     test(Potential::COULOMB_SLATER, pairs({ 25, 20 }));
 }
 
 TEST_F(ForcesSimdTest, CoulombPointSecondCharges)
 {
+    setWidths(pairs({ 0, 0 }));
     testSecondCharges(Potential::COULOMB_POINT, pairs({ 0, 0 }));
 }
 
 TEST_F(ForcesSimdTest, CoulombGaussianSecondCharges)
 {
+    setWidths(pairs({ 12, 9 }));
     testSecondCharges(Potential::COULOMB_GAUSSIAN, pairs({ 12, 9 }));
 }
 
 TEST_F(ForcesSimdTest, CoulombSlaterSecondCharges)
 {
+    setWidths(pairs({ 25, 20 }));
     testSecondCharges(Potential::COULOMB_SLATER, pairs({ 25, 20 }));
 }
 

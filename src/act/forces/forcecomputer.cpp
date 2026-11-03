@@ -1939,12 +1939,7 @@ void ForceComputer::computeOnce(MsgHandler                        *msg_handler,
 Potential ForceComputer::ftype(const ForceField *pd,
                                InteractionType   itype) const
 {
-    Potential ftype = Potential::NONE;
-    if (pd->interactionPresent(itype))
-    {
-        ftype = pd->findForcesConst(itype).potential();
-    }
-    return ftype;
+    return pd->potential(itype);
 }
 
 /*! \brief Compute the energy of one potential for one structure
@@ -1974,7 +1969,9 @@ void ForceComputer::plot(MsgHandler        *msghandler,
                          const ForceField  *pd,
                          InteractionType    itype) const
 {
-    if (!pd->interactionPresent(itype))
+    // The widths of the charge distributions are those of the particle types
+    bool coulomb = (InteractionType::ELECTROSTATICS == itype);
+    if (!coulomb && !pd->interactionPresent(itype))
     {
         fprintf(stderr, "No such interaction %s in the force field.\n",
                 interactionTypeToString(itype).c_str());
@@ -1991,7 +1988,43 @@ void ForceComputer::plot(MsgHandler        *msghandler,
         { InteractionType::VDW,                "vdwtype" },
         { InteractionType::ELECTROSTATICS,     "acmtype" }
     };
-    auto &fs   = pd->findForcesConst(itype);
+    // The interactions to plot, of trained parameters, or for COULOMB of
+    // all pairs of particle types with a charge distribution
+    std::vector<Identifier> ids;
+    if (coulomb)
+    {
+        std::vector<std::string> ptypes;
+        for (const auto &pt : pd->particleTypesConst())
+        {
+            if (pt.second.apType() == ActParticle::Atom && pt.second.hasParameter(zetaName))
+            {
+                ptypes.push_back(pt.first.id());
+            }
+        }
+        for (size_t i = 0; i < ptypes.size(); i++)
+        {
+            for (size_t j = i; j < ptypes.size(); j++)
+            {
+                ids.push_back(Identifier({ ptypes[i], ptypes[j] }, { 1 }, CanSwap::Yes));
+            }
+        }
+    }
+    else
+    {
+        for(const auto &f : pd->findForcesConst(itype).parametersConst())
+        {
+            unsigned int ntrain  = 0;
+            for(const auto &pp : f.second)
+            {
+                ntrain = std::max(ntrain, pp.second.ntrain());
+            }
+            if (ntrain > 0)
+            {
+                ids.push_back(f.first);
+            }
+        }
+    }
+    auto potential = pd->potential(itype);
     {
         std::vector<std::pair<int, int>> linear_bonds = {
             { 0, 1}, {1, 2}, {2, 3}
@@ -1999,18 +2032,9 @@ void ForceComputer::plot(MsgHandler        *msghandler,
         std::vector<std::pair<int, int>> idih_bonds = {
             { 0, 1}, {0, 2}, {0, 3}
         };
-        for(const auto &f : fs.parametersConst())
+        for(const auto &id : ids)
         {
-            unsigned int ntrain  = 0;
-            for(const auto &pp : f.second)
-            {
-                ntrain = std::max(ntrain, pp.second.ntrain());
-            }
-            if (ntrain == 0)
-            {
-                continue;
-            }
-            auto bos   = f.first.bondOrders();
+            auto bos   = id.bondOrders();
             std::vector<Bond> bbb;
             for(size_t i = 0; i < bos.size(); i++)
             {
@@ -2036,12 +2060,13 @@ void ForceComputer::plot(MsgHandler        *msghandler,
             {
                 auto ptypes = pd->particleTypesConst();
                 // Loop over subtypes (depending on the InteractionType)
-                for(const auto &atomsub : f.first.atoms())
+                for(const auto &atomsub : id.atoms())
                 {
                     for (const auto &pt : ptypes)
                     {
-                        if (pt.second.hasOption(subtype->second) &&
-                            pt.second.optionValue(subtype->second) == atomsub)
+                        if ((coulomb && pt.first.id() == atomsub) ||
+                            (pt.second.hasOption(subtype->second) &&
+                             pt.second.optionValue(subtype->second) == atomsub))
                         {
                             ActAtom a(pt.second);
                             a.setCharge(1);
@@ -2058,7 +2083,7 @@ void ForceComputer::plot(MsgHandler        *msghandler,
             // Open outfile
             std::string filename = gmx::formatString("%s_%s.xvg",
                                                      interactionTypeToString(itype).c_str(),
-                                                     f.first.id().c_str());
+                                                     id.id().c_str());
             std::vector<gmx::RVec> forces;
             gmx::RVec rvnul = { 0, 0, 0 };
             FILE *fp = gmx_ffopen(filename.c_str(), "w");
@@ -2091,7 +2116,7 @@ void ForceComputer::plot(MsgHandler        *msghandler,
                     size_t jatom = 1+top.atoms()[0].shells().size()+top.atoms()[0].vsites().size();
                     if (jatom == 0)
                     {
-                        GMX_THROW(gmx::InternalError(gmx::formatString("Could not find a second atom to make a plot, there are %zu atoms, interactionType %s, id %s", top.nAtoms(), interactionTypeToString(itype).c_str(), f.first.id().c_str()).c_str()));
+                        GMX_THROW(gmx::InternalError(gmx::formatString("Could not find a second atom to make a plot, there are %zu atoms, interactionType %s, id %s", top.nAtoms(), interactionTypeToString(itype).c_str(), id.id().c_str()).c_str()));
                     }
                     {
                         // Now remove everything except what we want to compute.
@@ -2196,7 +2221,7 @@ void ForceComputer::plot(MsgHandler        *msghandler,
                         double theta = (th0+i*delta);
                         coordinates[ak][0] = 1+std::cos(theta*DEG2RAD);
                         coordinates[ak][1] = std::sin(theta*DEG2RAD);
-                        double ener = potentialEnergy(msghandler, fs.potential(), top.entry(itype),
+                        double ener = potentialEnergy(msghandler, potential, top.entry(itype),
                                                       top.atoms(), coordinates, epsilonr_);
                         fprintf(fp, "%10g  %10g\n", theta, ener);
                     }
@@ -2216,7 +2241,7 @@ void ForceComputer::plot(MsgHandler        *msghandler,
                     {
                         double xx = (r0+i*delta);
                         coordinates[1][1] = xx;
-                        double ener = potentialEnergy(msghandler, fs.potential(), top.entry(itype),
+                        double ener = potentialEnergy(msghandler, potential, top.entry(itype),
                                                       top.atoms(), coordinates, epsilonr_);
                         fprintf(fp, "%10g  %10g\n", xx, ener);
                     }
@@ -2237,7 +2262,7 @@ void ForceComputer::plot(MsgHandler        *msghandler,
                         double theta = (th0+i*delta);
                         coordinates[3][0] = 1+std::cos(theta*DEG2RAD);
                         coordinates[3][1] = 1+std::sin(theta*DEG2RAD);
-                        double ener = potentialEnergy(msghandler, fs.potential(), top.entry(itype),
+                        double ener = potentialEnergy(msghandler, potential, top.entry(itype),
                                                       top.atoms(), coordinates, epsilonr_);
                         fprintf(fp, "%10g  %10g\n", theta, ener);
                     }
@@ -2256,7 +2281,7 @@ void ForceComputer::plot(MsgHandler        *msghandler,
                     {
                         double theta = (th0+i*delta);
                         coordinates[3][2] = theta;
-                        double ener = potentialEnergy(msghandler, fs.potential(), top.entry(itype),
+                        double ener = potentialEnergy(msghandler, potential, top.entry(itype),
                                                       top.atoms(), coordinates, epsilonr_);
                         fprintf(fp, "%10g  %10g\n", theta, ener);
                     }
@@ -2272,7 +2297,7 @@ void ForceComputer::plot(MsgHandler        *msghandler,
                 msghandler->msg(ACTStatus::Warning,
                                 gmx::formatString("Cannot plot %s %s, there is no topology for it",
                                                   interactionTypeToString(itype).c_str(),
-                                                  f.first.id().c_str()));
+                                                  id.id().c_str()));
             }
         }
     }

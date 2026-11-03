@@ -1060,10 +1060,7 @@ void ACTMol::generateCharges(MsgHandler                *msghandler,
                 foundESP = true;
                 qresp->setAtomSymmetry(symmetric_charges_);
                 double epsilonr;
-                if (!ffOption(*pd, InteractionType::ELECTROSTATICS, "epsilonr", &epsilonr))
-                {
-                    epsilonr = 1;
-                }
+                epsilonr = pd->epsilonr();
                 // Use the coordinate belonging to this RESP data
                 auto myx = qresp->coords();
                 forceComp->compute(msghandler, pd, &topology_, &myx,
@@ -1381,18 +1378,13 @@ void ACTMol::GenerateCube(MsgHandler                   *msghandler,
                           const char                   *diffhistfn,
                           const gmx_output_env_t       *oenv)
 {
-    auto &qt          = pd->findForcesConst(InteractionType::ELECTROSTATICS);
-    auto  iChargeDistributionType = potentialToChargeDistributionType(qt.potential());
+    auto  iChargeDistributionType = pd->chargeDistribution();
     
     if (potfn || hisfn || rhofn || difffn || pdbdifffn)
     {
         char   *act_version = (char *)"act v0.99b";
         double  epsilonr;
-        if (!ffOption(*pd, InteractionType::ELECTROSTATICS, 
-                      "epsilonr", &epsilonr))
-        {
-            epsilonr = 1;
-        }
+        epsilonr = pd->epsilonr();
         int index = 0;
         for(auto qc = qProps_.begin(); qc < qProps_.end(); ++qc)
         {
@@ -1570,8 +1562,7 @@ void ACTMol::getExpProps(MsgHandler                                 *msghandler,
             case MolPropObservable::POTENTIAL:
                 {
                     auto qgr = actq.qgenResp();
-                    auto &qt = pd->findForcesConst(InteractionType::ELECTROSTATICS);
-                    qgr->setChargeDistributionType(potentialToChargeDistributionType(qt.potential()));
+                    qgr->setChargeDistributionType(pd->chargeDistribution());
                     qgr->setAtomInfo(msghandler, atomsConst(), pd, totalCharge());
                     qgr->updateAtomCoords(xatom);
                     qgr->setAtomSymmetry(symmetric_charges_);

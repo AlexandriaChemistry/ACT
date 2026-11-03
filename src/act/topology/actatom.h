@@ -79,6 +79,8 @@ private:
     double           invmass_ = 0;
     //! The charge
     double           charge_;
+    //! Width of the charge distribution, see ParticleType::zeta
+    double           zeta_     = 0;
     //! Second charge at the same position, see ParticleType::chargeVS
     double           chargeVS_ = 0;
     //! Width of the distribution of the second charge
@@ -120,7 +122,7 @@ public:
     ActAtom(const ParticleType &pt) :
         id_({ pt.id() }), name_(pt.id().id() ), elem_(pt.element()), ffType_( pt.id().id() ),
         apType_( pt.apType()), atomicNumber_(pt.atomnumber()), mass_(pt.mass()), charge_(pt.charge()),
-        chargeVS_(pt.chargeVS()), zetaVS_(pt.zetaVS()), rowVS_(pt.rowVS())
+        zeta_(pt.zeta()), chargeVS_(pt.chargeVS()), zetaVS_(pt.zetaVS()), rowVS_(pt.rowVS())
     {
         if (pt.mass() > 0)
         {
@@ -222,6 +224,12 @@ public:
         zetaVS_   = zetaVS;
         rowVS_    = rowVS;
     }
+
+    //! \return the width of the charge distribution, 0 for a point charge, see ParticleType::zeta
+    double zeta() const { return zeta_; }
+
+    //! \brief Set the width of the charge distribution
+    void setZeta(double zeta) { zeta_ = zeta; }
 
     //! \return the residue number, -1 if not set
     int residueNumber() const { return residueNumber_; }

@@ -1543,7 +1543,7 @@ protected:
                     double                        tolerance)
     {
         MsgHandler msghandler;
-        auto pot = pdA->findForcesConst(InteractionType::ELECTROSTATICS).potential();
+        auto pot = pdA->potential(InteractionType::ELECTROSTATICS);
         std::vector<QgenResp> resp(2);
         std::vector<const ForceField *>             pds   = { pdA, pdB };
         std::vector<const ACTMol *>                 mols  = { &molA, &molB };
