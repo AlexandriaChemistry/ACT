@@ -74,8 +74,8 @@ class GaTestHelper
 
     /*! \brief Constructor
      * \param[in] nmiddlemen The number of individuals
-     * \param[in] fitstring  Info for fitting
-     * \param[in] erms       Stuff to fit
+     * \param[in] fitstrings Names of the parameters to fit
+     * \param[in] erms       The fitting targets
      */
     GaTestHelper(int                                  nmiddlemen,
                  const std::vector<std::string>      &fitstrings,

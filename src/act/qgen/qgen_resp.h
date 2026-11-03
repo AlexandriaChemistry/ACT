@@ -389,7 +389,7 @@ class QgenResp
         //! Number of atoms with a fixed charge
         size_t                    nFixed_      = 0;
 
-        //! Total number of parameters
+        //! The charge of each atom (e)
         std::vector<double>      q_;
         //! The force field charge parameter of each atom
         std::vector<const ForceFieldParameter *> charge_;
