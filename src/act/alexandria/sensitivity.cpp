@@ -42,6 +42,7 @@
 #include <string>
 #include <vector>
 
+#include <Eigen/Eigenvalues>
 #include <nlohmann/json.hpp>
 
 #include "act/utility/regression.h"
@@ -526,6 +527,57 @@ nlohmann::ordered_json Sensitivity2D::toJson(size_t             i,
         js["converged"]     = converged_;
     }
     return js;
+}
+
+nlohmann::ordered_json HessianDiagnostic::toJson() const
+{
+    using json = nlohmann::ordered_json;
+    json js;
+    js["positive_definite"]        = positiveDefinite;
+    js["eigenvalue_min"]           = eigenvalueMin;
+    js["eigenvalue_max"]           = eigenvalueMax;
+    js["max_newton_step_fraction"] = maxNewtonStepFraction.has_value() ? json(*maxNewtonStepFraction) : json();
+    return js;
+}
+
+HessianDiagnostic diagnoseHessian(const std::vector<std::vector<double>> &hessian,
+                                  const std::vector<double>              &gradient,
+                                  const std::vector<double>              &range)
+{
+    HessianDiagnostic hd;
+    auto n = static_cast<Eigen::Index>(hessian.size());
+    GMX_RELEASE_ASSERT(gradient.size() == hessian.size() && range.size() == hessian.size(),
+                       "Hessian, gradient and range should have the same size");
+    if (n == 0)
+    {
+        return hd;
+    }
+    // In coordinates scaled by the range, y_i = x_i/r_i
+    Eigen::MatrixXd S(n, n);
+    Eigen::VectorXd sg(n);
+    for (Eigen::Index i = 0; i < n; i++)
+    {
+        GMX_RELEASE_ASSERT(hessian[i].size() == hessian.size(), "The Hessian should be square");
+        for (Eigen::Index j = 0; j < n; j++)
+        {
+            S(i, j) = hessian[i][j]*range[i]*range[j];
+        }
+        sg(i) = gradient[i]*range[i];
+    }
+    Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> solver(S);
+    const auto &eval = solver.eigenvalues();
+    hd.eigenvalueMin = eval.minCoeff();
+    hd.eigenvalueMax = eval.maxCoeff();
+    double scale     = std::max(std::abs(hd.eigenvalueMin), std::abs(hd.eigenvalueMax));
+    hd.positiveDefinite = hd.eigenvalueMin > determinantPrecision*scale;
+    if (hd.positiveDefinite)
+    {
+        // The Newton step in scaled coordinates, -S^-1 g
+        const auto     &evec = solver.eigenvectors();
+        Eigen::VectorXd step = -evec*((evec.transpose()*sg).cwiseQuotient(eval));
+        hd.maxNewtonStepFraction = step.cwiseAbs().maxCoeff();
+    }
+    return hd;
 }
 
 }

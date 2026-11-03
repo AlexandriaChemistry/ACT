@@ -183,13 +183,9 @@ bool SensitivityAnalysis::run(MsgHandler           *msghandler,
     {
         return true;
     }
-    if (mode == SensitivityMode::TwoD)
-    {
-        //! \todo Implement the two-dimensional analysis
-        msghandler->msg(ACTStatus::Warning,
-                        "The two-dimensional sensitivity analysis is not implemented yet, doing the one-dimensional one.");
-        mode = SensitivityMode::OneD;
-    }
+    bool   twoD   = mode == SensitivityMode::TwoD;
+    size_t np     = param->size();
+    size_t npairs = twoD ? np*(np - 1)/2 : 0;
     std::set<int> changed;
     sii->updateForceField(msghandler, changed, genome->bases());
     auto cdc    = CalcDev::Compute;
@@ -201,18 +197,18 @@ bool SensitivityAnalysis::run(MsgHandler           *msghandler,
         tw = nullptr;
     }
     // The chi2 of each parameter is known for its value, and computed
-    // for two other values, all of them first. Each value is computed on
-    // its own, by the master or by one of the middlemen, which only
-    // compute the training set.
+    // for two other values. In 2D, the chi2 is computed for the four
+    // combinations of these values of each pair of parameters as well.
+    // Each value is computed on its own, by the master or by one of the
+    // middlemen, which only compute the training set.
     auto                cr       = sii->commRec();
     std::vector<int>    workers;
     if (useMiddlemen && iMolSelect::Train == ims && cr->isMaster())
     {
         workers = cr->middlemen();
     }
-    size_t                 np = param->size();
-    std::vector<double>    pvalue(2*np), chi2(2*np);
-    std::vector<EvalPoint> points(2*np);
+    std::vector<double>    pvalue(2*np);
+    std::vector<EvalPoint> points(2*np + 4*npairs);
     for (size_t i = 0; i < np; ++i)
     {
         auto pv         = perturbedValues((*param)[i], lowerBound[i], upperBound[i]);
@@ -221,14 +217,28 @@ bool SensitivityAnalysis::run(MsgHandler           *msghandler,
         points[2*i].changes     = { { i, pv.first } };
         points[2*i + 1].changes = { { i, pv.second } };
     }
-    evaluate(msghandler, sii, fitComp, genome, ims, workers, &points);
-    for (size_t k = 0; k < points.size(); ++k)
+    // The corners of each pair follow the points of the parameters
+    size_t k = 2*np;
+    for (size_t i = 0; twoD && i < np; ++i)
     {
-        chi2[k] = points[k].chi2;
+        for (size_t j = i + 1; j < np; ++j)
+        {
+            for (size_t a = 0; a < 2; a++)
+            {
+                for (size_t b = 0; b < 2; b++)
+                {
+                    points[k++].changes = { { i, pvalue[2*i + a] }, { j, pvalue[2*j + b] } };
+                }
+            }
+        }
     }
-    bool minimum   = true;
-    auto parameters = nlohmann::ordered_json::array();
-    size_t nconv    = 0;
+    evaluate(msghandler, sii, fitComp, genome, ims, workers, &points);
+
+    bool   minimum    = true;
+    auto   parameters = nlohmann::ordered_json::array();
+    size_t nconv      = 0;
+    std::vector<Sensitivity> sens1d;
+    std::vector<double>      range(np);
     for (size_t i = 0; i < np; ++i)
     {
         Sensitivity s;
@@ -238,19 +248,19 @@ bool SensitivityAnalysis::run(MsgHandler           *msghandler,
         {
             s.add(pstore, chi2_0, true);
         }
-        s.add(pvalue[2*i], chi2[2*i]);
+        s.add(pvalue[2*i], points[2*i].chi2);
         if (pvalue[2*i] < pstore && pvalue[2*i + 1] > pstore)
         {
             s.add(pstore, chi2_0, true);
         }
-        s.add(pvalue[2*i + 1], chi2[2*i + 1]);
+        s.add(pvalue[2*i + 1], points[2*i + 1].chi2);
         if (pvalue[2*i + 1] < pstore)
         {
             s.add(pstore, chi2_0, true);
         }
         s.computeForceConstants(tw);
-        double range = upperBound[i] - lowerBound[i];
-        bool   conv  = s.checkConvergence(lowerBound[i], upperBound[i], convergenceFraction*range);
+        range[i]     = upperBound[i] - lowerBound[i];
+        bool   conv  = s.checkConvergence(lowerBound[i], upperBound[i], convergenceFraction*range[i]);
         minimum      = minimum && conv;
         if (conv)
         {
@@ -264,35 +274,118 @@ bool SensitivityAnalysis::run(MsgHandler           *msghandler,
         }
         forceConstant_.push_back(fc);
         auto js = s.toJson(i, paramNames[i]);
-        js["delta"]          = range/200;
+        js["delta"]          = range[i]/200;
         js["force_constant"] = fc;
         parameters.push_back(js);
+        sens1d.push_back(s);
+    }
+
+    // The pairs, and the full Hessian from all of them
+    auto   pairs       = nlohmann::ordered_json::array();
+    size_t npairsConv  = 0;
+    std::array<size_t, 4> nshape = { 0, 0, 0, 0 };
+    std::vector<std::vector<double>> hessian(np, std::vector<double>(np, 0.0));
+    std::vector<double>              gradient(np);
+    for (size_t i = 0; twoD && i < np; ++i)
+    {
+        hessian[i][i] = 2*sens1d[i].a();
+        gradient[i]   = sens1d[i].derivative((*param)[i]);
+    }
+    k = 2*np;
+    for (size_t i = 0; twoD && i < np; ++i)
+    {
+        for (size_t j = i + 1; j < np; ++j)
+        {
+            Sensitivity2D s2(sens1d[i], sens1d[j]);
+            for (size_t a = 0; a < 2; a++)
+            {
+                for (size_t b = 0; b < 2; b++)
+                {
+                    s2.addCorner(pvalue[2*i + a], pvalue[2*j + b], points[k++].chi2);
+                }
+            }
+            s2.computeCrossTerm();
+            bool conv = s2.checkConvergence({ lowerBound[i], upperBound[i], lowerBound[j], upperBound[j] },
+                                            { convergenceFraction*range[i], convergenceFraction*range[j] });
+            minimum = minimum && conv;
+            if (conv)
+            {
+                npairsConv += 1;
+            }
+            nshape[static_cast<size_t>(s2.shape())] += 1;
+            hessian[i][j] = hessian[j][i] = s2.aij();
+            pairs.push_back(s2.toJson(i, j, paramNames[i], paramNames[j]));
+        }
     }
     result_.mode                 = mode;
     result_.chi2_0               = chi2_0;
     result_.nParameters          = np;
     result_.nParametersConverged = nconv;
+    result_.nPairs               = npairs;
+    result_.nPairsConverged      = npairsConv;
+    result_.nPairShape           = nshape;
     result_.nEvaluations         = points.size();
     result_.minimum              = minimum;
+    if (twoD)
+    {
+        result_.hessian = diagnoseHessian(hessian, gradient, range);
+    }
 
     nlohmann::ordered_json sens;
     sens["mode"]                   = sensitivityModeToString(mode);
     sens["dataset"]                = iMolSelectName(ims);
     sens["chi2_0"]                 = chi2_0;
     sens["n_parameters"]           = np;
+    if (twoD)
+    {
+        sens["n_pairs"]            = npairs;
+    }
     sens["n_evaluations"]          = points.size();
     sens["tolerance_fraction"]     = convergenceFraction;
     sens["minimum"]                = minimum;
     sens["n_parameters_converged"] = nconv;
+    if (twoD)
+    {
+        sens["n_pairs_converged"]  = npairsConv;
+        nlohmann::ordered_json shapes;
+        for (auto shape : { PairShape::Minimum, PairShape::Saddle, PairShape::Maximum, PairShape::Degenerate })
+        {
+            shapes[pairShapeName(shape)] = nshape[static_cast<size_t>(shape)];
+        }
+        sens["pair_shapes"]        = shapes;
+    }
     sens["parameters"]             = parameters;
+    if (twoD)
+    {
+        sens["pairs"]              = pairs;
+        sens["hessian_diagnostic"] = result_.hessian->toJson();
+    }
     json_["sensitivity"]           = sens;
     if (tw)
     {
-        tw->writeStringFormatted("\nSensitivity analysis (%s) of %zu parameters on the %s set, %zu chi2 evaluations, chi2_0 = %g\n",
-                                 sensitivityModeToString(mode).c_str(), np,
-                                 iMolSelectName(ims).c_str(), points.size(), chi2_0);
-        tw->writeStringFormatted("Converged: %zu/%zu parameters, %s.\n", nconv, np,
-                                 minimum ? "in a minimum" : "not in a minimum");
+        if (twoD)
+        {
+            tw->writeStringFormatted("\nSensitivity analysis (%s) of %zu parameters and %zu pairs on the %s set, %zu chi2 evaluations, chi2_0 = %g\n",
+                                     sensitivityModeToString(mode).c_str(), np, npairs,
+                                     iMolSelectName(ims).c_str(), points.size(), chi2_0);
+            tw->writeStringFormatted("Converged: %zu/%zu parameters, %zu/%zu pairs (%zu minimum, %zu saddle, %zu maximum, %zu degenerate), %s.\n",
+                                     nconv, np, npairsConv, npairs,
+                                     nshape[static_cast<size_t>(PairShape::Minimum)],
+                                     nshape[static_cast<size_t>(PairShape::Saddle)],
+                                     nshape[static_cast<size_t>(PairShape::Maximum)],
+                                     nshape[static_cast<size_t>(PairShape::Degenerate)],
+                                     minimum ? "in a minimum" : "not in a minimum");
+            tw->writeStringFormatted("The Hessian of all parameters is %spositive definite.\n",
+                                     result_.hessian->positiveDefinite ? "" : "not ");
+        }
+        else
+        {
+            tw->writeStringFormatted("\nSensitivity analysis (%s) of %zu parameters on the %s set, %zu chi2 evaluations, chi2_0 = %g\n",
+                                     sensitivityModeToString(mode).c_str(), np,
+                                     iMolSelectName(ims).c_str(), points.size(), chi2_0);
+            tw->writeStringFormatted("Converged: %zu/%zu parameters, %s.\n", nconv, np,
+                                     minimum ? "in a minimum" : "not in a minimum");
+        }
     }
     return minimum;
 }

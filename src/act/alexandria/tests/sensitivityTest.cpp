@@ -633,6 +633,69 @@ TEST(Sensitivity2DTest, Json)
     EXPECT_EQ("degenerate", pairShapeName(PairShape::Degenerate));
 }
 
+// ============================================================================
+// HessianDiagnostic -- the full Hessian of all parameters
+// ============================================================================
+
+// Test: A positive definite Hessian, scaled by the ranges, and the Newton
+// step to its minimum relative to the ranges
+TEST(HessianDiagnosticTest, PositiveDefinite)
+{
+    // chi2 = (x - 1)^2 + 4 (y + 1)^2 around (0, 0)
+    auto hd = diagnoseHessian({ { 2, 0 }, { 0, 8 } }, { -2, 8 }, { 1, 0.5 });
+    EXPECT_TRUE(hd.positiveDefinite);
+    // Scaled by the ranges the Hessian is twice the unit matrix
+    EXPECT_NEAR(2, hd.eigenvalueMin, 1e-12);
+    EXPECT_NEAR(2, hd.eigenvalueMax, 1e-12);
+    // The step is (1, -1), twice the range of y
+    ASSERT_TRUE(hd.maxNewtonStepFraction.has_value());
+    EXPECT_NEAR(2, *hd.maxNewtonStepFraction, 1e-12);
+    auto js = hd.toJson();
+    EXPECT_TRUE(js["positive_definite"].get<bool>());
+    EXPECT_NEAR(2, js["max_newton_step_fraction"].get<double>(), 1e-12);
+}
+
+// Test: With a coupling the Newton step goes to the joint minimum
+TEST(HessianDiagnosticTest, NewtonStepWithCoupling)
+{
+    // chi2 = 3x^2 + 2y^2 - 1.5xy + 0.7x - 0.2y around (0, 0)
+    auto   hd  = diagnoseHessian({ { 6, -1.5 }, { -1.5, 4 } }, { 0.7, -0.2 }, { 10, 10 });
+    double det = 6*4 - 1.5*1.5;
+    double xm  = (-0.7*4 + 1.5*0.2)/det;
+    double ym  = (6*0.2 - 1.5*0.7)/det;
+    ASSERT_TRUE(hd.maxNewtonStepFraction.has_value());
+    EXPECT_NEAR(std::max(std::abs(xm), std::abs(ym))/10, *hd.maxNewtonStepFraction, 1e-12);
+}
+
+// Test: An indefinite Hessian has no Newton step
+TEST(HessianDiagnosticTest, Indefinite)
+{
+    auto hd = diagnoseHessian({ { 2, 3 }, { 3, 2 } }, { 0, 0 }, { 1, 1 });
+    EXPECT_FALSE(hd.positiveDefinite);
+    EXPECT_NEAR(-1, hd.eigenvalueMin, 1e-12);
+    EXPECT_NEAR(5, hd.eigenvalueMax, 1e-12);
+    EXPECT_FALSE(hd.maxNewtonStepFraction.has_value());
+    EXPECT_TRUE(hd.toJson()["max_newton_step_fraction"].is_null());
+}
+
+// Test: Each pair of three parameters is positive definite, all three are not
+TEST(HessianDiagnosticTest, PairsPositiveDefiniteButNotAll)
+{
+    std::vector<std::vector<double>> H = { { 1, -0.6, -0.6 }, { -0.6, 1, -0.6 }, { -0.6, -0.6, 1 } };
+    // Each 2x2 block has determinant 1 - 0.36 > 0
+    auto hd = diagnoseHessian(H, { 0, 0, 0 }, { 1, 1, 1 });
+    EXPECT_FALSE(hd.positiveDefinite);
+    EXPECT_NEAR(1 - 2*0.6, hd.eigenvalueMin, 1e-12);
+    EXPECT_NEAR(1 + 0.6, hd.eigenvalueMax, 1e-12);
+}
+
+// Test: A singular Hessian is not positive definite
+TEST(HessianDiagnosticTest, Singular)
+{
+    auto hd = diagnoseHessian({ { 2, -2 }, { -2, 2 } }, { 0, 0 }, { 1, 1 });
+    EXPECT_FALSE(hd.positiveDefinite);
+}
+
 } // namespace
 
 } // namespace alexandria

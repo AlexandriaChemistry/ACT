@@ -237,6 +237,41 @@ TEST_F(TrainFFMpiTest, MCMCHelpers)
     runAndCheck("halgren-PG.xml", "booze-mono", options, 0);
 }
 
+// Test: The two-dimensional sensitivity analysis of a force field, with
+// the chi-squared divided over the master and the middlemen. The reference
+// data are a copy of those of TrainFFTest.Sensitivity2DJson, such that the
+// distributed analysis has to give the same result as on a single core.
+TEST_F(TrainFFMpiTest, Sensitivity2DMiddlemen)
+{
+    Options options = {
+        { "-seed", "219463979" },
+        { "-v", "3" },
+        { "-optimizer", "MCMC" },
+        { "-pop_size", std::to_string(popSize) },
+        { "-max_iter", "1" },
+        { "-nooptimize", "" },
+        { "-norandom_init", "" },
+        { "-sensitivity", "2D" },
+        { "-fc_bound", "10000" },
+        { "-ener_boltz_temp", "3000" },
+        { "-fit", "charge eta chi zeta vs2a sigma epsilon gamma delta" },
+        { "-fc_allelec", "1" },
+        { "-fc_exch", "1" },
+        { "-fc_disp", "1" },
+        { "-fc_mu", "1" },
+        { "-fc_quad", "1" }
+    };
+    auto output = trainfftest::runTrainFF(&fileManager(), "sens2d", "4S-lj14-7-pg-hvdw.xml",
+                                          "hf-hf", options);
+    EXPECT_EQ(0, output.status);
+    if (gmx_node_rank() == 0)
+    {
+        gmx::test::TestReferenceChecker checker(rootChecker());
+        trainfftest::checkSensitivity2D(&checker, output);
+    }
+    trainfftest::barrier();
+}
+
 } // namespace
 
 } // namespace alexandria

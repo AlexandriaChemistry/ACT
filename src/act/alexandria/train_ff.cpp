@@ -462,6 +462,23 @@ void OptACM::printNumCalcDevEstimate()
     nCalcDevIgnore *= gach_.popSize();
 
     // Add extra ones just in master
+    if (gach_.optimizer() != OptimizerAlg::GA)
+    {
+        // The sensitivity analysis after training, two per parameter and
+        // in 2D four per pair of parameters
+        long np = sii_->nParam();
+        switch (gach_.sensitivity())
+        {
+        case SensitivityMode::OneD:
+            nCalcDevTrain += 2*np;
+            break;
+        case SensitivityMode::TwoD:
+            nCalcDevTrain += 2*np*np;
+            break;
+        case SensitivityMode::No:
+            break;
+        }
+    }
     nCalcDevTest += 1;  // Always done in master to print the components of the initial vector
     nCalcDevTrain += 1;  // At the end, for the best
     nCalcDevTest += 1;  // At the end, for the best
@@ -696,6 +713,11 @@ bool OptACM::runMaster(bool               optimize,
                 summary.addObject("minimum", res.minimum ? "yes" : "no");
                 summary.addObject("n_parameters", std::to_string(res.nParameters));
                 summary.addObject("n_parameters_converged", std::to_string(res.nParametersConverged));
+                if (res.mode == SensitivityMode::TwoD)
+                {
+                    summary.addObject("n_pairs", std::to_string(res.nPairs));
+                    summary.addObject("n_pairs_converged", std::to_string(res.nPairsConverged));
+                }
                 jtree->addObject(summary);
             }
         }

@@ -339,6 +339,40 @@ public:
                                   const std::string &namej) const;
 };
 
+/*! \brief Properties of the full Hessian of the chi-squared
+ * The Hessian is scaled by the ranges of the parameters, H_ij r_i r_j,
+ * such that its eigenvalues do not depend on the units of the parameters.
+ * Positive definite pairs do not make a positive definite Hessian, so this
+ * is a stricter test for a minimum than that of all pairs.
+ */
+struct HessianDiagnostic
+{
+    //! Whether the Hessian is positive definite
+    bool                  positiveDefinite = false;
+    //! Smallest eigenvalue of the scaled Hessian
+    double                eigenvalueMin    = 0;
+    //! Largest eigenvalue of the scaled Hessian
+    double                eigenvalueMax    = 0;
+    /*! The largest component of the Newton step to the minimum, relative
+     * to the range of the parameter, only for a positive definite Hessian.
+     * The bounds are not taken into account.
+     */
+    std::optional<double> maxNewtonStepFraction;
+
+    //! \return the diagnostic in machine readable form
+    nlohmann::ordered_json toJson() const;
+};
+
+/*! \brief Diagnose the full Hessian of the chi-squared
+ * \param[in] hessian  The symmetric Hessian, N x N
+ * \param[in] gradient The gradient, N
+ * \param[in] range    The range of each parameter, N, all positive
+ * \return the diagnostic
+ */
+HessianDiagnostic diagnoseHessian(const std::vector<std::vector<double>> &hessian,
+                                  const std::vector<double>              &gradient,
+                                  const std::vector<double>              &range);
+
 }  //namespace alexandria
 
 #endif //ALEXANDRIA_BAYES_H

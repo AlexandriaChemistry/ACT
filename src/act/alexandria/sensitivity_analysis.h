@@ -35,6 +35,8 @@
 #ifndef ALEXANDRIA_SENSITIVITY_H
 #define ALEXANDRIA_SENSITIVITY_H
 
+#include <array>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -66,10 +68,18 @@ struct SensitivityResult
     size_t          nParameters          = 0;
     //! Number of converged parameters
     size_t          nParametersConverged = 0;
+    //! Number of pairs of parameters, zero in 1D
+    size_t          nPairs               = 0;
+    //! Number of converged pairs
+    size_t          nPairsConverged      = 0;
+    //! Number of pairs of each shape, indexed by PairShape
+    std::array<size_t, 4> nPairShape     = { 0, 0, 0, 0 };
     //! Number of chi-squared computations, not counting chi2_0
     size_t          nEvaluations         = 0;
     //! Whether the parameters are in a minimum
     bool            minimum              = true;
+    //! The full Hessian, only in 2D
+    std::optional<HessianDiagnostic> hessian;
 };
 
 class SensitivityAnalysis
@@ -94,9 +104,9 @@ public:
      * \param[in] fitComp    Computes the chi-squared
      * \param[in] genome     Pointer to genome
      * \param[in] ims        Dataset to perform sensitivity analysis on
-     * \param[in] mode       The analysis to do. The two-dimensional analysis
-     *                       is not implemented yet, the one-dimensional one
-     *                       is done instead. With No nothing is done.
+     * \param[in] mode       The analysis to do: 1D changes each parameter
+     *                       on its own, 2D also each pair of parameters,
+     *                       see Sensitivity2D. With No nothing is done.
      * \param[in] quiet      Do not print to log file
      * \param[in] useMiddlemen Whether the middlemen compute part of the
      *                       deviations for the training set. They have to
@@ -106,7 +116,8 @@ public:
      *         through the chi2 of each of them curves upwards, and the
      *         parameter is within 5% of its range of the minimum of the
      *         parabola, limited to the bounds of the parameter. See
-     *         Sensitivity::checkConvergence.
+     *         Sensitivity::checkConvergence. In 2D all pairs have to be
+     *         converged as well, see Sensitivity2D::checkConvergence.
      */
     bool run(MsgHandler           *msghandler,
              StaticIndividualInfo *sii,

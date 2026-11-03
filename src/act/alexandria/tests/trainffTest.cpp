@@ -947,6 +947,28 @@ TEST_F(TrainFFTest, Sensitivity1DJson)
     EXPECT_EQ(nconv == np ? "yes" : "no", summary["minimum"].get<std::string>());
 }
 
+// Test: The two-dimensional analysis has every pair of parameters, the log
+// file and train_ff.json the numbers of pairs. The reference data are the
+// same as those of TrainFFMpiTest.Sensitivity2DMiddlemen.
+TEST_F(TrainFFTest, Sensitivity2DJson)
+{
+    auto output = trainfftest::runTrainFF(&fileManager(), "sens2d", "4S-lj14-7-pg-hvdw.xml",
+                                          "hf-hf", analyseOnly("2D"));
+    ASSERT_EQ(0, output.status);
+    gmx::test::TestReferenceChecker checker(rootChecker());
+    trainfftest::checkSensitivity2D(&checker, output);
+    const auto &sens   = output.sensitivity["sensitivity"];
+    auto        np     = sens["n_parameters"].get<size_t>();
+    auto        npairs = sens["n_pairs"].get<size_t>();
+    EXPECT_TRUE(logContains(output.log, "Sensitivity analysis (2D) of " + std::to_string(np) +
+                            " parameters and " + std::to_string(npairs) + " pairs"));
+    EXPECT_TRUE(logContains(output.log, "The Hessian of all parameters is"));
+    const auto &summary = output.json["train_ff"]["sensitivity"];
+    EXPECT_EQ("2D", summary["mode"].get<std::string>());
+    EXPECT_EQ(npairs, trainfftest::jsonNumber(summary["n_pairs"]));
+    EXPECT_EQ(sens["n_pairs_converged"].get<size_t>(), trainfftest::jsonNumber(summary["n_pairs_converged"]));
+}
+
 } // namespace
 
 } // namespace alexandria
