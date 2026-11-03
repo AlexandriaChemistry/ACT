@@ -179,9 +179,6 @@ class QgenResp
         void updateAtomCharges(MsgHandler                 *msghandler,
                                const std::vector<ActAtom> &atoms);
 
-        //! \return the stoichiometry string (currently never set, hence empty)
-        const std::string &getStoichiometry() const { return stoichiometry_; }
-
         /*! \brief Set the charge symmetry of the atoms
          * Also counts the number of charges to fit and the number of unique ones.
          * Must be called after setAtomInfo.
@@ -389,8 +386,6 @@ class QgenResp
         size_t                    fitQ_        = 0;
         //! Number of atoms
         size_t                    nAtom_       = 0;
-        //! Number of particles (currently unused)
-        size_t                    nParticle_   = 0;
         //! Number of atoms with a fixed charge
         size_t                    nFixed_      = 0;
 
@@ -414,10 +409,6 @@ class QgenResp
         std::vector<int>         rowVS_;
         //! The atomic coordinates (nm)
         std::vector<gmx::RVec>   x_;
-        //! Unused
-        std::vector<std::string> dzatoms_;
-        //! The stoichiometry (currently never set)
-        std::string              stoichiometry_;
         //! The ESP grid points
         std::vector<EspPoint>    ep_;
         //! For each atom the index of the atom whose charge it must equal

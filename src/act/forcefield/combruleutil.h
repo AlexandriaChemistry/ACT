@@ -49,8 +49,6 @@ namespace alexandria
     class CombRuleUtil
     {
     private:
-        //! Storage for the command line options
-        std::vector<const char *> cr_flag_;
         //! Storage for the combination rules string given with -cr
         char *rules_ = nullptr;
     public:

@@ -145,7 +145,6 @@ TEST(QgenRespTest, DefaultConstruction)
     EXPECT_EQ(0u, resp.nEsp());
     EXPECT_EQ(0u, resp.natoms());
     EXPECT_TRUE(resp.espPoints().empty());
-    EXPECT_TRUE(resp.getStoichiometry().empty());
 }
 
 TEST(QgenRespTest, SetChargeDistributionType)

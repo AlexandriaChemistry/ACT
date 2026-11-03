@@ -606,10 +606,4 @@ void importFile(MsgHandler             *msg_handler,
     importFile(msg_handler, pd, filenm, mps, conf, jobtype, userqtot, qtot, oneH, abe);
 }
 
-bool SetMolpropAtomTypesAndBonds(alexandria::MolProp *mmm)
-{
-    printf("Will set AtomTypesAndBonds for %s\n", mmm->getMolname().c_str());
-    return false;
-}
-
 } // namespace alexandria

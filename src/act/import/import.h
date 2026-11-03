@@ -68,16 +68,6 @@ void importFile(MsgHandler           *msg_handler,
                 double               *qtot,
                 bool                  oneH);
 
-/*! \brief Add atomtype to a Molprop object
- *
- * The atom names and coordinates in the first Experiment
- * (calculation) are used to determine atom types using
- * routines from either OpenBabel or RDKit.
- * \param[inout] mmm Molprop object
- * \return true if successful, false otherwise
- */
-bool SetMolpropAtomTypesAndBonds(MolProp *mmm);
-
 }
 
 #endif
