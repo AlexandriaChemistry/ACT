@@ -36,7 +36,11 @@
 
 #include "act/forces/forcecomputer.h"
 
+#include <algorithm>
 #include <cmath>
+#include <cstdint>
+#include <limits>
+#include <map>
 
 #include <memory>
 
@@ -70,7 +74,129 @@ protected:
         gmx::test::FloatingPointTolerance tolerance(gmx::test::relativeToleranceAsFloatingPoint(1.0, 1e-6));
         checker_.setDefaultTolerance(tolerance);
     }
-    
+
+    /*! \brief Set an absolute tolerance in single precision
+     * The relative tolerance is the same as in double precision.
+     * \param[in] absolute The absolute tolerance
+     */
+    void setSingleTolerance(double absolute)
+    {
+        if (!GMX_DOUBLE)
+        {
+            checker_.setDefaultTolerance(gmx::test::FloatingPointTolerance(absolute, absolute, 1e-6, 1e-6,
+                                                                           UINT64_MAX, UINT64_MAX, false));
+        }
+    }
+
+    //! The largest absolute energy term
+    static double largestEnergy(const std::map<InteractionType, double> &energies)
+    {
+        double emax = 0;
+        for (const auto &e : energies)
+        {
+            emax = std::max(emax, std::abs(e.second));
+        }
+        return emax;
+    }
+
+    //! The largest absolute force component on an atom that is not a shell
+    static double largestForce(const std::vector<gmx::RVec> &forces,
+                               const std::vector<ActAtom>   &atoms)
+    {
+        double fmax = 0;
+        for (size_t i = 0; i < forces.size(); i++)
+        {
+            if (atoms[i].pType() != ActParticle::Shell)
+            {
+                for (int m = 0; m < DIM; m++)
+                {
+                    fmax = std::max(fmax, static_cast<double>(std::abs(forces[i][m])));
+                }
+            }
+        }
+        return fmax;
+    }
+
+    /*! \brief Estimate the errors due to single precision
+     * The coordinates are rounded to single precision, by up to half a
+     * unit in the last place. The resulting errors of the energies and
+     * forces are estimated from displacements of each coordinate of the
+     * atoms by one unit in the last place. The other errors are relative
+     * to the largest energy term or force, since the terms cancel, like in
+     * the induction or the forces on atoms with shells. In double
+     * precision the estimates are zero.
+     * \param[in]  msghandler  For messages
+     * \param[in]  pd          The force field
+     * \param[in]  fcomp       The force computer
+     * \param[in]  mp          The molecule
+     * \param[in]  coordinates The coordinates, with relaxed shells
+     * \param[in]  energies    The energies at the coordinates
+     * \param[in]  forces      The forces at the coordinates
+     * \param[out] eerror      Estimated error of each energy term
+     * \param[out] ferror      Estimated error of each force component
+     */
+    static void singleErrors(MsgHandler                              *msghandler,
+                             const ForceField                        *pd,
+                             ForceComputer                           *fcomp,
+                             const ACTMol                            &mp,
+                             const std::vector<gmx::RVec>            &coordinates,
+                             const std::map<InteractionType, double> &energies,
+                             const std::vector<gmx::RVec>            &forces,
+                             std::map<InteractionType, double>       *eerror,
+                             std::vector<gmx::DVec>                  *ferror)
+    {
+        ferror->assign(forces.size(), { 0, 0, 0 });
+        eerror->clear();
+        for (const auto &e : energies)
+        {
+            (*eerror)[e.first] = 0;
+        }
+        if (GMX_DOUBLE)
+        {
+            return;
+        }
+        auto atoms = mp.atomsConst();
+        for (size_t i = 0; i < coordinates.size(); i++)
+        {
+            if (atoms[i].pType() == ActParticle::Shell)
+            {
+                continue;
+            }
+            for (int m = 0; m < DIM; m++)
+            {
+                auto xd = coordinates;
+                xd[i][m] = std::nextafter(xd[i][m], std::numeric_limits<real>::max());
+                std::vector<gmx::RVec>            fd(forces.size(), { 0, 0, 0 });
+                std::map<InteractionType, double> ed;
+                fcomp->compute(msghandler, pd, mp.topology(), &xd, &fd, &ed);
+                for (auto &e : *eerror)
+                {
+                    e.second += 0.5*std::abs(ed[e.first] - energies.find(e.first)->second);
+                }
+                for (size_t k = 0; k < forces.size(); k++)
+                {
+                    for (int n = 0; n < DIM; n++)
+                    {
+                        (*ferror)[k][n] += 0.5*std::abs(fd[k][n] - forces[k][n]);
+                    }
+                }
+            }
+        }
+        double emax = largestEnergy(energies);
+        for (auto &e : *eerror)
+        {
+            e.second += 1e-5*emax;
+        }
+        double fmax = largestForce(forces, atoms);
+        for (auto &f : *ferror)
+        {
+            for (int n = 0; n < DIM; n++)
+            {
+                f[n] += 1e-5*fmax;
+            }
+        }
+    }
+
     void test(const char *molname, const char *forcefield, 
               bool testPolarizability, double stretch = 1, int nexcl = 0)
     {
@@ -129,6 +255,18 @@ protected:
                     qCalc->calcPolarizability(&msghandler, pd, mp.topology(), fcomp);
                     auto alpha = qCalc->polarizabilityTensor();
                     const char *xyz[DIM] = { "X", "Y", "Z" };
+                    // In single precision the errors are relative to the
+                    // largest element, due to the resolution of the shell
+                    // coordinates compared to their displacements.
+                    double amax = 0;
+                    for(int m = 0; m < DIM; m++)
+                    {
+                        for(int n = 0; n < DIM; n++)
+                        {
+                            amax = std::max(amax, std::abs(convertFromGromacs(alpha[m][n], "A^3")));
+                        }
+                    }
+                    setSingleTolerance(1e-5*amax);
                 
                     for(int m = 0; m < DIM; m++)
                     {
@@ -145,6 +283,9 @@ protected:
             {
                 std::map<InteractionType, double> actEnergies;
                 fcomp->compute(&msghandler, pd, mp.topology(), &coordinates, &forces, &actEnergies);
+                std::map<InteractionType, double> eerror;
+                std::vector<gmx::DVec>            ferror;
+                singleErrors(&msghandler, pd, fcomp, mp, coordinates, actEnergies, forces, &eerror, &ferror);
                 for(auto &ifm : actEnergies)
                 {
                     std::string label = interactionTypeToString(ifm.first);
@@ -154,6 +295,7 @@ protected:
                     }
                     auto actlabel = label+"_act";
                     double actEner  = actEnergies[ifm.first];
+                    setSingleTolerance(eerror[ifm.first]);
                     checker_.checkReal(actEner, actlabel.c_str());
                 }
                 auto atoms = mp.atomsConst();
@@ -170,6 +312,7 @@ protected:
                             {
                                 stretchName += gmx::formatString("%g", stretch);
                             }
+                            setSingleTolerance(ferror[i][m]);
                             checker_.checkReal(forces[i][m], gmx::formatString("%s-%zu_act%s f%s", 
                                                                                atoms[i].ffType().c_str(),
                                                                                i+1, stretchName.c_str(),
@@ -211,9 +354,13 @@ protected:
             std::map<InteractionType, double> actEnergies;
             auto fsc = pd->forcesConst();
             fcomp->compute(&msghandler, pd, mp.topology(), &coordinates, &forces, &actEnergies);
+            std::map<InteractionType, double> eerror;
+            std::vector<gmx::DVec>            ferror;
+            singleErrors(&msghandler, pd, fcomp, mp, coordinates, actEnergies, forces, &eerror, &ferror);
             for(auto &ifm : actEnergies)
             {
                 auto actEner  = actEnergies[ifm.first];
+                setSingleTolerance(eerror[ifm.first]);
                 checker_.checkReal(actEner, interactionTypeToString(ifm.first).c_str());
                 auto atoms = mp.atomsConst();
                 const char *xyz[DIM] = { "X", "Y", "Z" };
@@ -224,6 +371,7 @@ protected:
                     {
                         if (!shell)
                         {
+                            setSingleTolerance(ferror[i][m]);
                             checker_.checkReal(forces[i][m], gmx::formatString("%s-%zu f%s", 
                                                                                atoms[i].ffType().c_str(),
                                                                                i+1, xyz[m]).c_str());
