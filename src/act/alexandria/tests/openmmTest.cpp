@@ -70,7 +70,13 @@ class OpenMMXmlTest : public gmx::test::CommandLineTestBase
                     double             mDrude = 0.1)
     {
         gmx::test::TestReferenceChecker checker(this->rootChecker());
-        auto ifm = gmx::test::TextFileMatch(gmx::test::ExactTextMatch()).createFileMatcher();
+        // In single precision the charges, which are generated, differ in
+        // the last digits written, the numbers are compared within a
+        // tolerance then
+        auto ifm = GMX_DOUBLE ?
+            gmx::test::TextFileMatch(gmx::test::ExactTextMatch()).createFileMatcher() :
+            gmx::test::TextFileMatch(gmx::test::NumericTextMatch()).createFileMatcher();
+        checker.setDefaultTolerance(gmx::test::relativeToleranceAsFloatingPoint(1.0, 1e-5));
         gmx::test::TestFileManager tfm;
         MsgHandler                 msghandler; 
         msghandler.setPrintLevel(ACTStatus::Warning);
