@@ -273,26 +273,43 @@ void QtypeProps::calcPolarizability(MsgHandler          *msghandler,
     {
         msghandler->fatal("No dipole present to compute polarizablity.");
     }
-    auto mu_ref = getMultipole(msghandler, mpo);
     // Convert from e nm2/V to cubic nm
     double enm2_V = E_CHARGE*1e6*1e-18/(4*M_PI*EPSILON0_SI)*1e21;
 
     tensor alpha;
     clear_mat(alpha);
-    // Units are not relevant since they drop out!
-    // However, a field that is too large may lead to strange shell displacements.
-    double efield = 0.1;
+    // The field in V/nm. It is weak compared to the atomic unit of 514 V/nm,
+    // but large enough that the displacements of the shells are much
+    // larger than the resolution of their coordinates in single precision.
+    // With central differences the error due to the second
+    // hyperpolarizability is about 1e-6 relative. A field that is too
+    // large may lead to strange shell displacements.
+    double efield = 1.0;
+    // The induced dipole is the sum of the charges times the displacements
+    // of the particles between fields of opposite sign. The displacements
+    // are differences of coordinates, which are exact in double precision,
+    // whereas the dipoles themselves are much larger than the induced
+    // dipole. The central difference removes the contribution of the
+    // first hyperpolarizability.
+    const auto &atoms = top->atoms();
     for (int m = 0; m < DIM; m++)
     {
-        field[m] = efield;
-        forceComp->compute(nullptr, pd, top, &coords, &forces, &energies, field);
-        setX(coords);
+        std::vector<gmx::RVec> xfield[2];
+        for (int s = 0; s < 2; s++)
+        {
+            xfield[s] = coords;
+            field[m]  = (2*s-1)*efield;
+            forceComp->compute(nullptr, pd, top, &xfield[s], &forces, &energies, field);
+        }
         field[m] = 0;
-        calcMoments();
-        auto qmu = getMultipole(msghandler, mpo);
         for (int n = 0; n < DIM; n++)
         {
-            alpha[n][m] = enm2_V*((qmu[n]-mu_ref[n])/efield);
+            double dmu = 0;
+            for (size_t i = 0; i < atoms.size(); i++)
+            {
+                dmu += atoms[i].charge()*(static_cast<double>(xfield[1][i][n]) - xfield[0][i][n]);
+            }
+            alpha[n][m] = enm2_V*dmu/(2*efield);
         }
     }
     setPolarizabilityTensor(alpha);

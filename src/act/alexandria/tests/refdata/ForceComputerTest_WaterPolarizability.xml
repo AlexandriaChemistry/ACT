@@ -7,7 +7,7 @@
   <Real Name="alpha[Y][X]">3.9967044934864602e-14</Real>
   <Real Name="alpha[Y][Y]">2.3805375253597192</Real>
   <Real Name="alpha[Y][Z]">-3.9966874132496106e-14</Real>
-  <Real Name="alpha[Z][X]">-6.1241721677719029e-06</Real>
-  <Real Name="alpha[Z][Y]">-5.2626851134028482e-06</Real>
-  <Real Name="alpha[Z][Z]">2.3577681405427455</Real>
+  <Real Name="alpha[Z][X]">0</Real>
+  <Real Name="alpha[Z][Y]">-1.933874603496118e-19</Real>
+  <Real Name="alpha[Z][Z]">2.3577871881942212</Real>
 </ReferenceData>

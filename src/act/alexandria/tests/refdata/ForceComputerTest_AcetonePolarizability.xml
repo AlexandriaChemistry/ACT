@@ -4,9 +4,9 @@
   <Real Name="alpha[X][X]">7.2728920877482022</Real>
   <Real Name="alpha[X][Y]">1.1303621154188439e-05</Real>
   <Real Name="alpha[X][Z]">-1.3236685201023693e-09</Real>
-  <Real Name="alpha[Y][X]">-1.9981165979289738e-05</Real>
-  <Real Name="alpha[Y][Y]">7.60671451042451</Real>
-  <Real Name="alpha[Y][Z]">-1.7073427976532454e-06</Real>
+  <Real Name="alpha[Y][X]">1.132322283693592e-05</Real>
+  <Real Name="alpha[Y][Y]">7.6068287099237386</Real>
+  <Real Name="alpha[Y][Z]">1.9452405745517137e-05</Real>
   <Real Name="alpha[Z][X]">1.12053605356815e-08</Real>
   <Real Name="alpha[Z][Y]">1.9454349769558278e-05</Real>
   <Real Name="alpha[Z][Z]">7.9798517974554395</Real>
