@@ -36,6 +36,7 @@
 #include "actpre.h"
 
 #include "../forces_simd.h"
+#include "../forces_explicit_simd.h"
 
 #include <algorithm>
 #include <cmath>
@@ -57,6 +58,7 @@
 #include "act/topology/topology.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/utility/stringutil.h"
 
 #include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"
@@ -537,6 +539,85 @@ static TopologyEntryVector makeSingleAtomTop()
     TopologyEntryVector top;
     top.push_back(SingleAtom(0));
     return top;
+}
+
+/*! \brief Tang-Toennies damping function f_n(x) = 1 - exp(-x) sum_k=0^n x^k/k!
+ * Summed to convergence from the terms beyond n for small x, independent
+ * of the implementation in the force computer.
+ */
+static double ttDamping(int n, double x)
+{
+    double term = 1;
+    for (int k = 1; k <= n; k++)
+    {
+        term *= x/k;
+    }
+    if (x > 20)
+    {
+        double sum = 1, t = 1;
+        for (int k = 1; k <= n; k++)
+        {
+            t   *= x/k;
+            sum += t;
+        }
+        return 1 - std::exp(-x)*sum;
+    }
+    double tail = 0;
+    for (int k = n+1; term > 1e-20*tail; k++)
+    {
+        term *= x/k;
+        tail += term;
+    }
+    return std::exp(-x)*tail;
+}
+
+/* The damping functions for small br are differences of nearly equal
+ * numbers, which lost up to 1e-5 relative in double precision for br = 0.5.
+ * The energies and forces are compared to the damping functions summed to
+ * convergence, for each of C6, C8 and C10 and for br on both sides of the
+ * switch to the sum of the terms beyond 2m.
+ */
+TEST(TangToenniesDampingTest, ShortDistances)
+{
+    std::vector<ActAtom> atoms;
+    for (int i = 0; i < 2; i++)
+    {
+        atoms.push_back({ "C", "C", "C", ActParticle::Atom, 6, 12, 0, 2 });
+    }
+    // Exact in single precision
+    double r = 0.25;
+    std::vector<gmx::RVec> x = { { 0, 0, 0 }, { 0, 0, static_cast<real>(r) } };
+    // In single precision, the direct formula for br >= ttTailMax has an
+    // error of a few GMX_FLOAT_EPS divided by the damping function there.
+    double toler = gmx::test::precisionTolerance(1e-13, 3*GMX_FLOAT_EPS/ttDamping(10, ttTailMax));
+    for (int m = 3; m <= 5; m++)
+    {
+        int n = 2*m;
+        for (double br : { 0.5, 1.0, 2.0, 3.0, 4.0, 5.0, 5.9, 6.1, 8.0, 12.0 })
+        {
+            double b = br/r;
+            // Parameter order: tt2bA, tt2bBexch, tt2bBdisp, tt2bC6, tt2bC8, tt2bC10
+            std::vector<double> params = { 0, 10, b, 0, 0, 0 };
+            double              cn     = 1e-3;
+            params[m] = cn;
+            auto top = makePairTop();
+            top[0]->setParams(params);
+            std::vector<gmx::RVec>            forces(2, { 0, 0, 0 });
+            std::map<InteractionType, double> energies;
+            double epot = computeOne(Potential::TT2b, top, atoms, &x, &forces, &energies, 1);
+            double fn   = ttDamping(n, br);
+            double eref = -cn*fn/std::pow(r, n);
+            // dE/dr with dfn/dx = exp(-x) x^n/n!
+            double dfn  = std::exp(-br)*std::pow(br, n)/std::tgamma(n+1);
+            double fref = cn*(b*dfn - n*fn/r)/std::pow(r, n);
+            // The two terms of the force cancel for small br
+            double fmag = cn*(b*dfn + n*fn/r)/std::pow(r, n);
+            SCOPED_TRACE(gmx::formatString("n %d br %g", n, br));
+            EXPECT_NEAR(epot, eref, toler*std::abs(eref));
+            EXPECT_NEAR(forces[1][ZZ], fref, toler*fmag);
+            EXPECT_NEAR(forces[0][ZZ], -fref, toler*fmag);
+        }
+    }
 }
 
 // ============================================================

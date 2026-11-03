@@ -548,6 +548,14 @@ TEST_F(ForcesSimdTest, TT2b)
     test(Potential::TT2b, pairs({ 20000, 30, 25, 0.002, 0.0002, 0.00002 }));
 }
 
+TEST_F(ForcesSimdTest, TT2bShortDistances)
+{
+    // With this exponent of the damping, br is between 4.2 and 7.4, such
+    // that the damping functions are computed both from the terms beyond
+    // 2m (br < ttTailMax) and as 1 - exp(-br) sum_k=0^2m (br)^k/k!
+    test(Potential::TT2b, pairs({ 20000, 30, 15, 0.002, 0.0002, 0.00002 }));
+}
+
 TEST_F(ForcesSimdTest, SlaterISATT)
 {
     test(Potential::SLATER_ISA_TT, pairs({ 20000, 30, 25, 0.002, 0.0002, 0.00002 }));
