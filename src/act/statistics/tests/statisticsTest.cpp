@@ -67,7 +67,8 @@ protected:
     void analyze(gmx_stats *gs)
     {
         gmx::test::TestReferenceChecker myCheck(this->rootChecker());
-        auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, 1e-12);
+        // In single precision the data are stored as real
+        auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, gmx::test::precisionTolerance(1e-12, 1e-7));
         myCheck.setDefaultTolerance(tolerance);
 
         real a, b, da, db, chi2, Rfit;

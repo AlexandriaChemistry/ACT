@@ -222,7 +222,8 @@ TEST(ConstrainerTest, ProjectForces)
     loadMolecule(pd, "acetate.sdf", &mps);
     ASSERT_EQ(1u, mps.size());
     auto               &mol = mps[0];
-    Constrainer         ccc(100, 1e-8, 1);
+    // Bond lengths within a relative tolerance that single precision allows
+    Constrainer         ccc(100, gmx::test::precisionTolerance(1e-8, 1e-6), 1);
     auto        coords = mol.xOriginal();
     ccc.makeConstraints(nullptr, ConstraintType::Angles, pd, mol.topology(), coords);
     ASSERT_EQ(0, ccc.shake(nullptr, &coords));
@@ -245,7 +246,9 @@ TEST(ConstrainerTest, ProjectForces)
         svmul(atoms[p[0]].invmass(), forces[p[0]], ai);
         svmul(atoms[p[1]].invmass(), forces[p[1]], aj);
         rvec_sub(ai, aj, da);
-        EXPECT_NEAR(0, iprod(dx, da), 1e-10) << "constraint " << c;
+        // In single precision relative to the products of the vectors
+        EXPECT_NEAR(0, iprod(dx, da),
+                    gmx::test::precisionTolerance(1e-10, 1e-6*norm(dx)*(norm(ai) + norm(aj)))) << "constraint " << c;
     }
     // Projecting again does not change anything
     auto forces2 = forces;
@@ -254,7 +257,7 @@ TEST(ConstrainerTest, ProjectForces)
     {
         for(int m = 0; m < DIM; m++)
         {
-            EXPECT_NEAR(forces[i][m], forces2[i][m], 1e-10);
+            EXPECT_NEAR(forces[i][m], forces2[i][m], gmx::test::precisionTolerance(1e-10, 1e-6));
         }
     }
 }
@@ -266,7 +269,8 @@ TEST(ConstrainerTest, Frozen)
     loadMolecule(pd, "acetate.sdf", &mps);
     ASSERT_EQ(1u, mps.size());
     auto               &mol = mps[0];
-    Constrainer         ccc(100, 1e-8, 1);
+    // Bond lengths within a relative tolerance that single precision allows
+    Constrainer         ccc(100, gmx::test::precisionTolerance(1e-8, 1e-6), 1);
     auto        coords = mol.xOriginal();
     ccc.makeConstraints(nullptr, ConstraintType::Bonds, pd, mol.topology(), coords);
     // Freeze the two carbons, the bond between them is not constrained anymore

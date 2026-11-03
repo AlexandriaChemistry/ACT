@@ -128,12 +128,25 @@ protected:
         return pd;
     }
 
+    //! Expect a parameter value, which is stored as real
+    static void expectRealEq(double expected, double actual)
+    {
+        if (GMX_DOUBLE)
+        {
+            EXPECT_DOUBLE_EQ(expected, actual);
+        }
+        else
+        {
+            EXPECT_FLOAT_EQ(expected, actual);
+        }
+    }
+
     //! Expect the minimum, value and maximum of a parameter
     static void expectRange(const ForceFieldParameter &p, double minimum, double value, double maximum)
     {
-        EXPECT_DOUBLE_EQ(minimum, p.minimum());
-        EXPECT_DOUBLE_EQ(value, p.value());
-        EXPECT_DOUBLE_EQ(maximum, p.maximum());
+        expectRealEq(minimum, p.minimum());
+        expectRealEq(value, p.value());
+        expectRealEq(maximum, p.maximum());
     }
 };
 
@@ -219,8 +232,8 @@ TEST_F(EditFFTest, Scale)
 {
     auto pd  = read(run(input_, { { "-p", "eta" }, { "-a", "h_z f_z" }, { "-scale", "1.1" } }));
     auto ref = read(input_);
-    EXPECT_DOUBLE_EQ(1.1*14, acm(pd, "h_z", "eta").value());
-    EXPECT_DOUBLE_EQ(1.1*acm(ref, "f_z", "eta").value(), acm(pd, "f_z", "eta").value());
+    expectRealEq(1.1*14, acm(pd, "h_z", "eta").value());
+    expectRealEq(1.1*acm(ref, "f_z", "eta").value(), acm(pd, "f_z", "eta").value());
 }
 
 // Test: A new minimum moves the value into the bounds, also beyond the maximum

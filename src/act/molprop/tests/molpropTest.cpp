@@ -110,6 +110,11 @@ protected:
     {
         int mol = 1;
         gmx::test::TestReferenceChecker myCheck(this->rootChecker());
+        if (!GMX_DOUBLE)
+        {
+            // The polarizability tensors are stored as real
+            myCheck.setDefaultTolerance(gmx::test::relativeToleranceAsFloatingPoint(1.0, 1e-7));
+        }
         std::map<const char *,std::pair<int, int> > t_elem = {
             { "XX", { XX, XX } },
             { "YY", { YY, YY } },
