@@ -512,9 +512,10 @@ void ReRunner::runB2(CommunicationRecord         *cr,
     B2Data b2data(gendimers_.ndist(), Temperature, eMin_);
     
     gmx::RVec rvnul = { 0, 0, 0 };
-    // Moments of inertia, averaged over all dimers.
+    // Moments of inertia, averaged over all dimers. The sum is over many
+    // dimers, in double precision.
     std::vector<gmx::RVec> inertia    = { rvnul, rvnul };
-    std::vector<gmx::RVec> inertiaSum = { rvnul, rvnul };
+    std::vector<gmx::DVec> inertiaSum = { { 0, 0, 0 }, { 0, 0, 0 } };
     size_t                 nInertia   = 0;
     // The other parts are timed where they are done
     auto               &timings      = Timings::instance();
@@ -706,7 +707,10 @@ void ReRunner::runB2(CommunicationRecord         *cr,
                             clear_mat(trans[kk]);
                             principal_comp(molIndex[kk], molMass[kk], xc, &trans[kk], &inertia1[kk]);
                         }
-                        rvec_inc(inertiaSum[kk], inertia1[kk]);
+                        for(int m = 0; m < DIM; m++)
+                        {
+                            inertiaSum[kk][m] += inertia1[kk][m];
+                        }
                         for(int a = 0; a < DIM; a++)
                         {
                             for(int b = 0; b < DIM; b++)
