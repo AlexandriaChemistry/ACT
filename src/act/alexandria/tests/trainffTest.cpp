@@ -283,26 +283,42 @@ static std::string trainSelection(gmx::test::TestFileManager *fileManager, const
     return selFile;
 }
 
-//! \return whether a chi squared component is in the log of the initial parameters
-static bool hasInitialComponent(const TrainOutput &output, const std::string &component)
+/*! \brief A chi squared component of the training set from the log
+ * \param[in] output    The output of train_ff
+ * \param[in] component The name of the component, as in the log
+ * \param[in] best      Of the best parameters, otherwise of the initial ones
+ * \return the chi squared, -1 if it is not in the log
+ */
+static double componentChi2(const TrainOutput &output, const std::string &component, bool best)
 {
-    bool initial = false;
+    const char *header = best ? "Chi2 components of the best parameter vector found (for Train)" :
+        "initial parameter vector chi2 components";
+    bool found = false;
     for (const auto &line : output.log)
     {
-        if (line.find("initial parameter vector chi2 components") != std::string::npos)
+        if (line.find(header) != std::string::npos)
         {
-            initial = true;
+            found = true;
         }
-        else if (initial && line.rfind(component + " ", 0) == 0)
+        else if (found && line.rfind(component + " ", 0) == 0)
         {
-            return true;
+            std::istringstream iss(line);
+            std::string        name;
+            double             chi2;
+            return (iss >> name >> chi2) ? chi2 : -1;
         }
-        else if (initial && line.rfind("TOT", 0) == 0)
+        else if (found && line.rfind("TOT", 0) == 0)
         {
             break;
         }
     }
-    return false;
+    return -1;
+}
+
+//! \return whether a chi squared component is in the log of the initial parameters
+static bool hasInitialComponent(const TrainOutput &output, const std::string &component)
+{
+    return componentChi2(output, component, false) >= 0;
 }
 
 // Test: The widths of the charge distributions, which are parameters of the
@@ -409,6 +425,50 @@ TEST_F(TrainFFTest, FrequenciesAndIntensities)
     expectTrained(&fileManager(), output, fileManager().getInputFilePath("trainff/hh-intra.xml"), expected);
     EXPECT_TRUE(hasInitialComponent(output, "FREQUENCY"));
     EXPECT_TRUE(hasInitialComponent(output, "INTENSITY"));
+}
+
+// Test: The Morse bonds, the ACM parameters, the charges and widths of the
+// virtual sites and their positions of the hydrogen halides are trained on
+// the dipoles, quadrupoles, harmonic frequencies and intensities, which all
+// decrease
+TEST_F(TrainFFTest, ElectrostaticsAndFrequencies)
+{
+    auto output = trainfftest::runTrainFF(&fileManager(), "hhelec", "hh-intra.xml", "hh-freq",
+                                          combine(mcmcOptions(10),
+                                                  { { "-fit", "De bondlength b c eta chi chargeVS zeta zetaVS charge vs2a" },
+                                                    { "-fc_mu", "1" }, { "-fc_quad", "5" },
+                                                    { "-fc_freq", "1" }, { "-fc_inten", "1" } }));
+    std::set<std::pair<std::string, std::string>> expected;
+    for (const char *bond : { "br_b~hbr_b", "cl_b~hcl_b", "f_b~hf_b", "hi_b~i_b" })
+    {
+        for (const char *ptype : { "De", "bondlength", "b", "c" })
+        {
+            expected.insert({ bond, ptype });
+        }
+    }
+    for (const char *vsite : { "br_b~hbr_b!v2br1", "cl_b~hcl_b!v2cl1", "f_b~hf_b!v2f1", "i_b~hi_b!v2i1" })
+    {
+        expected.insert({ vsite, "vs2a" });
+    }
+    for (const char *atom : { "br", "cl", "f", "i", "hbr", "hcl", "hf", "hi" })
+    {
+        expected.insert({ std::string(atom) + "_z", "chi" });
+        expected.insert({ std::string(atom) + "_z", "eta" });
+        // The virtual sites on top of the atoms
+        expected.insert({ std::string("v1") + atom, "charge" });
+        expected.insert({ std::string("v1") + atom, "zeta" });
+    }
+    for (const char *vsite : { "v2br1", "v2cl1", "v2f1", "v2i1" })
+    {
+        expected.insert({ vsite, "charge" });
+    }
+    expectTrained(&fileManager(), output, fileManager().getInputFilePath("trainff/hh-intra.xml"), expected);
+    for (const char *component : { "MU", "QUAD", "FREQUENCY", "INTENSITY" })
+    {
+        double initial = componentChi2(output, component, false);
+        ASSERT_GT(initial, 0) << component;
+        EXPECT_LT(componentChi2(output, component, true), initial) << component;
+    }
 }
 
 // Test: The second charges of particles, which replace virtual sites on top
