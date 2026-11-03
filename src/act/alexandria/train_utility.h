@@ -111,9 +111,11 @@ private:
     std::map<iMolSelect, qtStats>      lsq_epot_, lsq_isoPol_, lsq_anisoPol_, lsq_alpha_;
     //! Statistics for RMSF and frequencies.
     std::map<iMolSelect, gmx_stats>    lsq_rmsf_;
+    //! Statistics for vibrational frequencies per data set
     std::map<iMolSelect, gmx_stats>    lsq_freq_;
     //! Command line stuff
     std::map<MolPropObservable, std::string> mpoOpt_;
+    //! Default file names for the multipole correlation plots
     std::map<MolPropObservable, std::string> mpoFnm_;
     //! Statistics for multipoles
     std::map<MolPropObservable, std::map<iMolSelect, qtStats> > lsq_multi_;
@@ -173,6 +175,7 @@ private:
                        InteractionType                        itype,
                        const std::vector<alexandria::ACTMol> *actmol);
 public:
+    //! Constructor, sets the interaction energy terms to analyse
     TrainForceFieldPrinter();
     
     /*! \brief Add my options to the list of command line arguments

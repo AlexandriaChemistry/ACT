@@ -58,15 +58,27 @@
 #include "gromacs/utility/futil.h"
 
 typedef struct {
+    //! Indices of the two atoms in a CONECT record
     int ai, aj;
 } gmx_conection_t;
 
+//! \brief List of atom pairs to write as CONECT records to a pdb file
 typedef struct gmx_conect_t {
+    //! Number of connections
     int              nconect;
+    //! Whether the connections are sorted
     gmx_bool         bSorted;
+    //! Array of connections
     gmx_conection_t *conect;
 } gmx_conect_t;
 
+/*! \brief Write the simulation box as a CRYST1 record to a pdb file,
+ * nothing is written if there is no periodicity
+ * \param[in] out  The file to write to
+ * \param[in] ePBC The type of periodic boundary conditions, if -1 it is
+ *                 guessed from the box
+ * \param[in] box  The box vectors (nm), written in Angstrom
+ */
 static void gmx_write_pdb_box2(FILE *out, int ePBC, const matrix box)
 {
     real alpha, beta, gamma;

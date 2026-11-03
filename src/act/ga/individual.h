@@ -62,6 +62,7 @@ public:
      */
     virtual void copyGenome(const Genome &other) = 0;
 
+    //! Destructor
     virtual ~Individual() = default;
     /* * * * * * * * * * * * * * * * * * * * * *
     * END: Cloning                             *

@@ -56,6 +56,10 @@ namespace ga
 
 class MsgHandler;
 
+/*! \brief Genetic algorithm with selection, crossover and mutation,
+ * used for both the GA and the HYBRID optimizer. In the HYBRID case
+ * the mutation consists of MCMC steps on each individual.
+ */
 class HybridGAMC : public GeneticAlgorithm
 {
 private:

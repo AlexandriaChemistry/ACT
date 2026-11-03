@@ -44,6 +44,9 @@
 namespace alexandria
 {
 
+/*! \brief Rotate coordinates around the origin by Euler angles derived
+ * from (quasi) random numbers, optionally collecting statistics
+ */
 class Rotator
 {
 private:
@@ -100,8 +103,14 @@ public:
                                         double                        r3,
                                         const std::vector<gmx::RVec> &coords);
 
+    /*! \brief Print the average rotation matrix as debug output
+     * \param[in] msghandler For debug output, may be nullptr
+     */
     void printAverageMatrix(MsgHandler *msghandler);
 
+    /*! \brief Print histograms of the three angles to alpha.xvg,
+     * beta.xvg and gamma.xvg
+     */
     void printAngleHisto();
 };
 

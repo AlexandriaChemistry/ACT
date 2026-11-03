@@ -166,6 +166,16 @@ void BayesConfigHandler::check_pargs(MsgHandler *)
     GMX_RELEASE_ASSERT(anneal_global_begin_ >= 0, "-anneal_global_begin_ must be >= 0.");
 }
 
+/*! \brief Compute an annealed temperature that decreases linearly
+ * from T0 at iteration begin*maxiter to zero at end*maxiter, clamped
+ * to the range [1e-6, T0].
+ * \param[in] begin   Fraction of maxiter at which annealing starts
+ * \param[in] end     Fraction of maxiter at which annealing ends
+ * \param[in] iter    Current iteration
+ * \param[in] maxiter Maximum number of iterations
+ * \param[in] T0      Initial temperature
+ * \return the temperature at this iteration
+ */
 static double TTT(double begin,
                   double end,
                   int    iter,

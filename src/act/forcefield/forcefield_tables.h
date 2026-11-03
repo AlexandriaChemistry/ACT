@@ -42,6 +42,8 @@
 namespace alexandria
 {
 
+/*! \brief Writes LaTeX tables with force field data to a file
+ */
 class ForceFieldTable
 {
  private:

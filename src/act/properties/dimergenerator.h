@@ -77,6 +77,10 @@ struct dimer_coords
     double                 weight = 1;
 };
 
+/*! \brief Generate dimer coordinates from two monomers by sampling
+ * relative orientations (see RandAlg) and series of center of mass
+ * distances, or read them from a trajectory
+ */
 class DimerGenerator
 {
 private:

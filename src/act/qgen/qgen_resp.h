@@ -105,11 +105,19 @@ private:
     double    rho_   = 0;
 };
 
+/*! \brief Class to fit and evaluate charges against an electrostatic potential
+ * Holds the atoms (charges, distribution widths, coordinates) and a set of
+ * grid points with reference and calculated electrostatic potential. It
+ * can fit charges to the potential (RESP-like, with total charge and
+ * symmetry constraints), compute statistics and write cube files.
+ */
 class QgenResp
 {
     public:
+        //! Default constructor
         QgenResp() {}
 
+        //! \return the charge distribution type
         ChargeDistributionType chargeType() const { return ChargeDistributionType_; }
 
         /*! \brief Set option for ESP charge generation
@@ -119,14 +127,24 @@ class QgenResp
         void setChargeDistributionType(ChargeDistributionType qd)
         { ChargeDistributionType_ = qd; }
 
+        //! \return the total charge of the compound (e)
         real getMolecularCharge() const { return qtot_; }
 
+        //! \return the number of ESP grid points
         size_t nEsp() const { return ep_.size(); }
 
+        //! \return all the ESP grid points
         const std::vector<EspPoint> &espPoints() const {return ep_; }
 
+        /*! \brief Return one ESP grid point
+         * \param[in] index The index of the point
+         * \return the point
+         */
         const EspPoint &espPoint(size_t index) const {return ep_[index]; }
 
+        /*! \brief Print the number of ESP points and atoms and the symmetric atoms
+         * \param[in] msg_handler For writing the information, nothing is done if nullptr
+         */
         void summary(MsgHandler *msg_handler);
         
         /*! \brief Set the inforamtion about atoms
@@ -143,6 +161,7 @@ class QgenResp
                          const ForceField             *pd,
                          const int                     qtotal);
 
+        //! \return the number of atoms
         size_t natoms() const { return nAtom_; }
         
         /*! \brief Copy input coordinates to internal ones
@@ -160,10 +179,23 @@ class QgenResp
         void updateAtomCharges(MsgHandler                 *msghandler,
                                const std::vector<ActAtom> &atoms);
 
+        //! \return the stoichiometry string (currently never set, hence empty)
         const std::string &getStoichiometry() const { return stoichiometry_; }
 
+        /*! \brief Set the charge symmetry of the atoms
+         * Also counts the number of charges to fit and the number of unique ones.
+         * Must be called after setAtomInfo.
+         * \param[in] symmetricAtoms For each atom the index of the atom whose
+         *                           charge it must equal, or empty for no symmetry
+         */
         void setAtomSymmetry(const std::vector<int> &symmetricAtoms);
 
+        /*! \brief Add a grid point with a reference potential
+         * \param[in] x Coordinate X (nm)
+         * \param[in] y Coordinate Y (nm)
+         * \param[in] z Coordinate Z (nm)
+         * \param[in] V Reference electrostatic potential (kJ/mol e)
+         */
         void addEspPoint(double x,
                          double y,
                          double z,
@@ -181,8 +213,20 @@ class QgenResp
                       real                          border,
                       const std::vector<gmx::RVec> &x);
 
+        /*! \brief Copy the grid definition and the ESP points from another object
+         * \param[in] src The object to copy from
+         */
         void copyGrid(const QgenResp &src);
 
+        /*! \brief Compute and return statistics of calculated versus reference potential
+         * \param[in]  msg_handler For debug output
+         * \param[out] rrms        Relative RMS deviation
+         * \param[out] cosangle    Cosine of the angle between the reference and
+         *                         calculated potential vectors
+         * \param[out] mae         Mean absolute error (kJ/mol e)
+         * \param[out] mse         Mean signed error, reference minus calculated (kJ/mol e)
+         * \return the RMS deviation (Hartree/e)
+         */
         double getStatistics(MsgHandler *msg_handler,
                              double     *rrms,
                              double     *cosangle,
@@ -225,6 +269,20 @@ class QgenResp
                       const std::string      &title,
                       const gmx_output_env_t *oenv);
 
+        /*! \brief Write a cube file of the calculated potential minus a reference
+         * Optionally also writes the deviation as a function of distance to
+         * the nearest atom and, next to it, a file correlating reference and
+         * calculated potential.
+         * \param[in] src    Object with the reference potential, the reference is
+         *                   not subtracted if it has no ESP points
+         * \param[in] cubeFn The cube file name, nothing is written if empty
+         * \param[in] histFn The xvg file name for the deviation as a function
+         *                   of distance, nothing is written if empty
+         * \param[in] title  Title to add in the files
+         * \param[in] oenv   Gromacs output environment
+         * \param[in] rho    If non-zero, write the charge density instead of
+         *                   the potential
+         */
         void writeDiffCube(const QgenResp             *src,
                            const std::string          &cubeFn,
                            const std::string          &histFn,
@@ -232,6 +290,11 @@ class QgenResp
                            const gmx_output_env_t     *oenv,
                            int                         rho);
 
+        /*! \brief Write a histogram of the calculated potential to an xvg file
+         * \param[in] fn    The file name, nothing is written if empty
+         * \param[in] title Title to add in the file
+         * \param[in] oenv  Gromacs output environment
+         */
         void writeHisto(const std::string      &fn,
                         const std::string      &title,
                         const gmx_output_env_t *oenv);
@@ -246,6 +309,11 @@ class QgenResp
         void optimizeCharges(MsgHandler *msg_handler,
                              double      epsilonr);
 
+        /*! \brief Write reference versus calculated potential to an xvg file
+         * Values are in Hartree/e, the first natoms points are a separate data set.
+         * \param[in] potcomp The file name, nothing is written if nullptr
+         * \param[in] oenv    Gromacs output environment
+         */
         void potcomp(const char             *potcomp,
                      const gmx_output_env_t *oenv);
 
@@ -271,6 +339,9 @@ class QgenResp
 
 
     private:
+        /*! \brief Compute RMS, relative RMS, MAE, MSE and cosine of the potentials
+         * \param[in] msg_handler For debug output
+         */
         void calcStatistics(MsgHandler *msg_handler);
 
         /*! \brief Make sure the total charge is correct and that symmetry is obeyed
@@ -278,33 +349,62 @@ class QgenResp
          */
         void regularizeCharges(MsgHandler *msg_handler);
 
+        /*! \brief Set the charge of one atom
+         * \param[in] atom The atom index
+         * \param[in] q    The charge (e)
+         */
         void setCharge(int atom, double q) { q_[atom] = q; }
 
+        /*! \brief Set the charge distribution width of one atom
+         * \param[in] atom The atom index
+         * \param[in] zeta The distribution width (1/nm)
+         */
         void setZeta(int atom, double zeta) { zeta_[atom] = zeta; }
 
+        //! The charge distribution type
         ChargeDistributionType    ChargeDistributionType_  = ChargeDistributionType::Point;
+        //! Total charge of the compound (e)
         int                       qtot_        = 0;
+        //! Sum of the fixed charges, i.e. non-fitted atom charges and second charges (e)
         double                    qshell_      = 0;
+        //! RMS deviation of calculated from reference potential (Hartree/e)
         double                    rms_         = 0;
+        //! Relative RMS deviation of the potential
         double                    rrms_        = 0;
+        //! Mean signed error, reference minus calculated potential (kJ/mol e)
         double                    mse_         = 0;
+        //! Mean absolute error of the potential (kJ/mol e)
         double                    mae_         = 0;
+        //! Cosine of the angle between reference and calculated potential vectors
         double                    cosangle_    = 0;
+        //! Origin of the grid (nm)
         dvec                      origin_      = { 0, 0, 0 };
+        //! Grid spacing in each dimension (nm)
         dvec                      space_       = { 0, 0, 0 };
+        //! Number of grid points in each dimension
         ivec                      nxyz_        = { 0, 0, 0 };
+        //! Number of unique fitted charges, taking symmetry into account
         int                       uniqueQ_     = 0;
+        //! Number of charges to fit
         size_t                    fitQ_        = 0;
+        //! Number of atoms
         size_t                    nAtom_       = 0;
+        //! Number of particles (currently unused)
         size_t                    nParticle_   = 0;
+        //! Number of atoms with a fixed charge
         size_t                    nFixed_      = 0;
 
         //! Total number of parameters
         std::vector<double>      q_;
+        //! The force field charge parameter of each atom
         std::vector<const ForceFieldParameter *> charge_;
+        //! The charge distribution width of each atom (1/nm)
         std::vector<double>      zeta_;
+        //! The atomic number of each atom
         std::vector<int>         atomnumber_;
+        //! The row in the periodic table of each atom, for Slater distributions
         std::vector<int>         row_;
+        //! Whether the charge of each atom is fitted
         std::vector<bool>        mutable_;
         //! The second charge of each atom, at its position, see ActAtom::chargeVS
         std::vector<double>      qVS_;
@@ -312,10 +412,15 @@ class QgenResp
         std::vector<double>      zetaVS_;
         //! The row of the second charges, for Slater distributions
         std::vector<int>         rowVS_;
+        //! The atomic coordinates (nm)
         std::vector<gmx::RVec>   x_;
+        //! Unused
         std::vector<std::string> dzatoms_;
+        //! The stoichiometry (currently never set)
         std::string              stoichiometry_;
+        //! The ESP grid points
         std::vector<EspPoint>    ep_;
+        //! For each atom the index of the atom whose charge it must equal
         std::vector<size_t>      symmetricAtoms_;
 };
 

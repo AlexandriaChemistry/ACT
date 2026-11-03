@@ -90,8 +90,9 @@ class QtypeProps
     qPropertyType          qtype_      = qPropertyType::ACM;
     //! Electrostatic moments
     std::map<MolPropObservable, std::vector<double> > multipoles_;
-    //! Polarizability tensor
+    //! Whether the polarizability tensor has been set
     bool                   hasAlpha_   = false;
+    //! Polarizability tensor
     tensor                 alpha_      = { { 0 } };
     //! Polarizability anisotropy
     double                 anisotropy_ = 0;

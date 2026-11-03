@@ -87,6 +87,9 @@ class EmptySorter : public Sorter
 
 public:
 
+      /*! \brief Does nothing
+       * \param[in] pop The population, not used
+       */
       virtual void sort(gmx_unused std::vector<Genome> *pop) {};
 
 };
@@ -198,6 +201,9 @@ public:
       QuickSorter(const bool descending)
       : Sorter(descending) {}
 
+      /*! \brief Sort the population by fitness with quick-sort
+       * \param[inout] pop The population
+       */
       virtual void sort(std::vector<Genome> *pop);
 
 };

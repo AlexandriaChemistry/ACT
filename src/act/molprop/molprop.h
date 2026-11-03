@@ -74,17 +74,31 @@ class MsgHandler;
 class MolProp
 {
 private:
+    //! Index number for sorting
     int                               index_        = -1;
     //! Total number of atoms in this compound
     int                               natom_        = 0;
     //! Whether or not all atoms have proper atom types
     bool                              hasAllAtomTypes_ = false;
-    std::string                       molname_, iupac_, cas_, cid_, inchi_;
+    //! Molecule name
+    std::string                       molname_;
+    //! IUPAC name
+    std::string                       iupac_;
+    //! CAS registry number
+    std::string                       cas_;
+    //! PubChem compound ID
+    std::string                       cid_;
+    //! InChI identifier
+    std::string                       inchi_;
+    //! Categories this compound belongs to
     std::vector<std::string>          category_;
     //! Elemental composition of the compound
     std::map<const char *,int>        composition_;
+    //! Fragments (molecules) making up this compound
     std::vector<Fragment>             fragment_;
+    //! Experiments and calculations for this compound
     std::vector<Experiment>           exper_;
+    //! Bonds in this compound
     std::vector<Bond>                 bond_;
 
     /*! \brief Return the first calculation that matches the specification

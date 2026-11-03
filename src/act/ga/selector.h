@@ -70,9 +70,11 @@ class RouletteSelector : public Selector
 
 private:
 
-    // Random number stuff
+    //! Random device, only used to initialize gen before it is seeded
     std::random_device                      rd;
+    //! Random number generator
     std::mt19937                            gen;
+    //! Uniform distribution on [0, 1)
     std::uniform_real_distribution<double>  dis;
 
 public:
@@ -89,6 +91,10 @@ public:
     //! Default destructor
     virtual ~RouletteSelector() = default;
 
+    /*! \brief Select a genome with a probability equal to its selection probability
+     * \param[in] pop The population, with the probabilities set
+     * \return the index of the selected genome
+     */
     virtual int select(const std::vector<Genome> *pop);
 
 };

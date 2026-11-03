@@ -49,6 +49,9 @@
 namespace alexandria
 {
 
+/*! \brief One entry from the atomization energy library files: a
+ * thermochemical property of an atom or ion from a given source
+ */
 class AtomizationEnergyTerm
 {
  private:
@@ -84,22 +87,31 @@ class AtomizationEnergyTerm
     elem_(elem), charge_(charge), source_(source), prop_(prop),
         T_(T), value_(value), mult_(mult), unit_(unit), ref_(ref) {}
     
+    //! \return the element / atom
     const std::string &elem() const { return elem_; }
 
+    //! \return the charge of the particle
     int charge() const { return charge_; }
 
+    //! \return the data source
     const std::string &source() const { return source_; }
 
+    //! \return the property
     const std::string &prop() const { return prop_; }
 
+    //! \return the temperature
     double T() const { return T_; }
 
+    //! \return the value of the property
     double value() const { return value_; }
 
+    //! \return the spin multiplicity
     int mult() const { return mult_; }
 
+    //! \return the unit of the value
     const std::string &unit() const { return unit_; }
 
+    //! \return the reference
     const std::string &ref() const { return ref_; }
 };
 

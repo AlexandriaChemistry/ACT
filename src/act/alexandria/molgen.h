@@ -196,7 +196,7 @@ public:
 //! Map from RMS type to FittingTarget structure
 // using RmsFittingTarget       = typename std::map<eRMS, FittingTarget>;
 
-/* \brief Class to manage the molecules in a force field optimization
+/*! \brief Class to manage the molecules in a force field optimization
  */
 class MolGen
 {
@@ -239,6 +239,10 @@ private:
     //! Compute amount of compounds in each group
     void countTargetSize();
     
+    /*! \brief Return the number of compounds in a data set
+     * \param[in] ims The data set
+     * \return the number of compounds, or 0 if the data set is not present
+     */
     size_t nTargetSize(iMolSelect ims) const
     {
         auto ts = targetSize_.find(ims);

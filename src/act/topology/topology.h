@@ -200,6 +200,7 @@ private:
                    const std::vector<std::set<size_t>> &exclusions);
 
  public:
+    //! Empty constructor, see init to fill it
     Topology()
     {
     }

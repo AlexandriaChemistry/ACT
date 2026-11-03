@@ -45,11 +45,17 @@
 namespace alexandria
 {
 
+/*! \brief One entry in a molecule selection: a compound name,
+ * the data set it belongs to and its index in the selection
+ */
 class IMolSelect 
 {
     private:
+        //! The molecule name
         std::string iupac_;
+        //! The data set this molecule belongs to
         iMolSelect  status_;
+        //! Sequence number of the molecule in the selection
         int         index_;
         
     public:
@@ -61,16 +67,22 @@ class IMolSelect
                 index_(index) 
             {}
 
+        //! \return the molecule name
         const std::string &iupac() const { return iupac_; }
         
+        //! \return the data set this molecule belongs to
         iMolSelect status() const { return status_; }
         
+        //! \return the sequence number of the molecule in the selection
         int index() const { return index_; }
 
         //! \return true if this is in fact a dimer
         bool isDimer() const { return iupac_.find("#") != std::string::npos; };
 };
 
+/*! \brief Selection of molecules, each assigned to a data set
+ * (e.g. training or test), typically read from a selection file
+ */
 class MolSelect
 {
 private:
@@ -80,6 +92,7 @@ private:
     const IMolSelect *findIupac(const std::string &iupac) const;
 public:
     
+    //! Constructor
     MolSelect() {};
     /*! \brief Add one entry
      * \param[in] iupac The molecule name
@@ -94,6 +107,7 @@ public:
      */
     void read(const char *filename);
     
+    //! \return the number of molecules in the selection
     size_t nMol() const { return ims_.size(); }
 
     /*! \brief Get data set for iupac
@@ -112,6 +126,10 @@ public:
      */    
     bool index(const std::string &iupac, int *index) const;
     
+    /*! \brief Count the molecules in a data set
+     * \param[in] ims The data set
+     * \return the number of molecules in that data set
+     */
     int count(iMolSelect ims) const
     {
         return std::count_if(ims_.begin(), ims_.end(),

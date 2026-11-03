@@ -848,15 +848,6 @@ static inline void computePair(const PairParams &pp,
     }
 }
 
-/*! \brief Compute one pair interaction for all conformations
- * The loop over conformations is unrolled pairUnroll times, such that the
- * instructions of that many SIMD vectors of conformations are available to
- * the execution units at once and the loop overhead is shared. Each
- * conformation is computed as without unrolling. The remaining SIMD
- * vectors, fewer than pairUnroll, are computed one at a time.
- * \tparam V The variant of the kernel, see pairVariants
- * The other parameters are those of computePair.
- */
 #ifdef ACT_PAIR_UNROLL
 //! The unroll factor of the pair loops, from the CMake option ACT_PAIR_UNROLL
 constexpr size_t pairUnroll = ACT_PAIR_UNROLL;
@@ -866,6 +857,15 @@ constexpr size_t pairUnroll = simd::pairUnrollDefault;
 #endif
 static_assert(pairUnroll >= 1 && pairUnroll <= 16, "The unroll factor of the pair loops should be 1 to 16");
 
+/*! \brief Compute one pair interaction for all conformations
+ * The loop over conformations is unrolled pairUnroll times, such that the
+ * instructions of that many SIMD vectors of conformations are available to
+ * the execution units at once and the loop overhead is shared. Each
+ * conformation is computed as without unrolling. The remaining SIMD
+ * vectors, fewer than pairUnroll, are computed one at a time.
+ * \tparam V The variant of the kernel, see pairVariants
+ * The other parameters are those of computePair.
+ */
 template <typename Kernel, bool Forces, int V>
 static void computePairConformations(const PairParams &pp,
                                      size_t            stride,

@@ -47,6 +47,10 @@
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/real.h"
 
+/*! \brief Round to the nearest integer
+ * \param[in] x The number to round
+ * \return the nearest integer
+ */
 static int gmx_dnint(double x)
 {
     return gmx::roundToInt(x);

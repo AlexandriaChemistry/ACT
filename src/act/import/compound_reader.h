@@ -74,7 +74,7 @@ namespace alexandria
         MolSelect   molselect_;
 
     public:
-        // Constructor
+        //! Constructor
         CompoundReader() {}
 
         /*! \brief Add command-line options

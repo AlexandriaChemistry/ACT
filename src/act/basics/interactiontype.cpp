@@ -45,6 +45,7 @@ namespace alexandria
 
 typedef struct
 {
+    //! Name and description of an interaction type
     std::string name, description;
 } NameDescr;
 

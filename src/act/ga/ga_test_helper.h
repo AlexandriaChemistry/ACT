@@ -48,17 +48,28 @@ namespace alexandria
     class MolGen;
     class MsgHandler;
 
+/*! \brief Set up the components of a genetic algorithm for the tests
+ * Reads the ACS-g force field and the alcohol test molecules and creates
+ * the initializer and fitness computer.
+ */
 class GaTestHelper
 {
  public:
+    //! The communication record
     CommunicationRecord   cr;
+    //! Initializer of individuals
     ACMInitializer       *initializer;
+    //! Computes the fitness of individuals
     ACMFitnessComputer   *fitnessComputer;
+    //! Computes energies and forces
     ForceComputer        *forceComputer;
+    //! Information shared by all individuals, including the force field
     StaticIndividualInfo *sii;
+    //! The molecules for training
     MolGen               *molgen;
+    //! Reader of the molecule input
     CompoundReader        compR;
-    // Message Handler
+    //! Message handler
     MsgHandler           *msghandler;
 
     /*! \brief Constructor

@@ -2328,6 +2328,18 @@ static void keepEnergies(const double   *energies,
     }
 }
 
+/*! \brief Compute a potential one conformation at a time, with forces
+ * Only the conformations for which the shells are not converged yet are
+ * computed, the energies are stored and summed into the potential energy.
+ * \param[in]    msghandler The message handler, for debug output
+ * \param[in]    mypot      The potential
+ * \param[in]    topentries The interactions
+ * \param[in]    atoms      The atoms
+ * \param[inout] coords     The conformations, the forces are added to fcalc
+ * \param[inout] cener      The energies of all conformations
+ * \param[in]    epsilonr   Relative dielectric constant
+ * \param[out]   cached     If not nullptr, the energies are kept here
+ */
 static inline void calcSome(MsgHandler                 *msghandler,
                             Potential                   mypot,
                             TopologyEntryRange          topentries,

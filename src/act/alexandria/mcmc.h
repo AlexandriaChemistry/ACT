@@ -56,6 +56,9 @@ namespace ga
 
 class MsgHandler;
 
+/*! \brief Optimizer that evolves force field parameters by a
+ * Markov chain Monte Carlo (MCMC) algorithm, without crossover or selection.
+ */
 class MCMC : public GeneticAlgorithm
 {
 private:

@@ -51,11 +51,11 @@ namespace alexandria
 class JsonTree
 {
 private:
-    // The key
+    //! The key
     std::string           key_;
-    // The value
+    //! The value
     std::string           value_;
-    // More objects;
+    //! Child objects
     std::vector<JsonTree> objects_;
     
     
@@ -78,12 +78,20 @@ public:
         value_ = value;
     }
 
+    /*! \brief Constructor that sets the key and a numerical value
+     * \param[in] key   The key
+     * \param[in] value The value, stored as a string
+     */
     JsonTree(const std::string &key, double value)
     {
         key_ = key;
         value_ = std::to_string(value);
     }
 
+    /*! \brief Constructor that sets the key and an integer value
+     * \param[in] key   The key
+     * \param[in] value The value, stored as a string
+     */
     JsonTree(const std::string &key, int value)
     {
         key_ = key;

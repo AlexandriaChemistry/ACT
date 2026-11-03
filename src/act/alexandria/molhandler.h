@@ -134,28 +134,6 @@ public:
              std::vector<std::string> *output = nullptr,
              bool                      debugNMA = false) const;
 
-    /*! \brief
-     * The routine will energy minimize the atomic coordinates of a molecule while
-     * relaxing the shells. The minimized coordinates will be stored in the 
-     * actmol object. If the msForceToler = 0, the value will be derived from the
-     * tolerance inside the forceComp, accoring to:
-     * toler = 10*forceComp->rmsForce()^2
-     *
-     * \param[in] msghandler   For output and debugging
-     * \param[in] pd           Pointer to force field structure
-     * \param[in] topology     The topology
-     * \param[in] forceComp    Force Computer utility
-     * \param[in] simConfig    Configuration options
-     * \param[inout] coords    The coordinates to be minimized, on return
-     *                         those with the lowest energy found, also if
-     *                         the minimization did not converge
-     * \param[in] energies     The energies per interaction type
-     * \param[in] freeze       List of atoms (not shells) that will not be
-     *                         moved during the minimization.
-     * \return OK if converged, TooManySteps if the maximum number of
-     *         iterations was reached, NoMinimum if the energy could not
-     *         decrease while the forces are larger than the tolerance
-     */
     /*! \brief Make the force tolerance of a minimization consistent with the shells
      * The mean square force on the atoms cannot be made smaller than that
      * on the shells, so if it is, it is set to hundred times that for the
@@ -171,6 +149,28 @@ public:
                                      const ForceComputer     *forceComp,
                                      SimulationConfigHandler *simConfig);
 
+    /*! \brief
+     * The routine will energy minimize the atomic coordinates of a molecule while
+     * relaxing the shells. The minimized coordinates will be stored in the 
+     * actmol object. If the msForceToler = 0, the value will be derived from the
+     * tolerance inside the forceComp, accoring to:
+     * toler = 10*forceComp->rmsForce()^2
+     *
+     * \param[in] msghandler   For output and debugging
+     * \param[in] pd           Pointer to force field structure
+     * \param[in] topology     The topology
+     * \param[in] forceComp    Force Computer utility
+     * \param[in] simConfig    Configuration options
+     * \param[inout] coords    The coordinates to be minimized, on return
+     *                         those with the lowest energy found, also if
+     *                         the minimization did not converge
+     * \param[out] energies    The energies per interaction type, may be nullptr
+     * \param[in] freeze       List of atoms (not shells) that will not be
+     *                         moved during the minimization.
+     * \return OK if converged, TooManySteps if the maximum number of
+     *         iterations was reached, NoMinimum if the energy could not
+     *         decrease while the forces are larger than the tolerance
+     */
     eMinimizeStatus minimizeCoordinates(MsgHandler                        *msghandler,
                                         const ForceField                  *pd,
                                         const Topology                    *topology,

@@ -290,9 +290,13 @@ static int tellme_RealAtom(int                         index,
 }
 
 typedef struct {
+    //! OpenMM type of the Drude particle (shell)
     std::string drude;
+    //! OpenMM type of the parent atom
     std::string atom;
+    //! Force constant of the quartic hyperpolarization term
     double      fchyper;
+    //! Shell-atom distance beyond which the hyperpolarization term acts
     double      rhyper;
 } t_hyper_stuff;
 
@@ -348,11 +352,25 @@ private:
                        const ForceField                *pd,
                        const std::map<std::string, int> &ffTypeMap);
 
+    /*! \brief Add an xml entry for a bonded interaction
+     * \param[in] parent      The xml node to add to
+     * \param[in] xmlEntry    The type of entry to add
+     * \param[in] atoms       The atom names or classes of the interaction
+     * \param[in] param_names Names of the parameters, entries that are
+     *                        nullptr are not written
+     * \param[in] params      Values of the parameters
+     */
     void addXmlBond(xmlNodePtr                       parent,
                     xmlEntryOpenMM                   xmlEntry,
                     const std::vector<std::string>  &atoms,
                     const std::vector<const char *> &param_names,
                     const std::vector<double>       &params);
+    /*! \brief Add a python script that adds a quartic hyperpolarization
+     * force step(r-rhyper)*fchyper*(r-rhyper)^4 between Drude particles
+     * and their parents to the OpenMM system
+     * \param[in] parent The xml node to add to
+     * \param[in] stuff  The hyperpolarization parameters per Drude-atom type pair
+     */
     void addXmlHyper(xmlNodePtr                        parent,
                      const std::vector<t_hyper_stuff> &stuff);
     /*! \brief Add the Drude particle interaction energy parameters

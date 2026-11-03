@@ -68,6 +68,10 @@ extern const std::map<b2Type, std::string> b2Type2str;
  */
 const std::string &b2TypeToString(b2Type b2t);
 
+/*! \brief Recompute energies and forces for (generated or read) dimer
+ * structures, and optionally compute the second virial coefficient
+ * as a function of temperature
+ */
 class ReRunner
 {
 private:

@@ -92,22 +92,33 @@ static inline SimdDouble load(const double *p) { return SimdDouble(_mm512_loadu_
 //! Store eight doubles to memory
 static inline void store(double *p, SimdDouble a) { _mm512_storeu_pd(p, a.v); }
 
+//! \return a + b, element-wise
 static inline SimdDouble operator+(SimdDouble a, SimdDouble b) { return SimdDouble(_mm512_add_pd(a.v, b.v)); }
+//! \return a - b, element-wise
 static inline SimdDouble operator-(SimdDouble a, SimdDouble b) { return SimdDouble(_mm512_sub_pd(a.v, b.v)); }
+//! \return a * b, element-wise
 static inline SimdDouble operator*(SimdDouble a, SimdDouble b) { return SimdDouble(_mm512_mul_pd(a.v, b.v)); }
+//! \return a / b, element-wise
 static inline SimdDouble operator/(SimdDouble a, SimdDouble b) { return SimdDouble(_mm512_div_pd(a.v, b.v)); }
 //! Flip the sign bit, such that -0 is correct as well
 static inline SimdDouble operator-(SimdDouble a)
 {
     return SimdDouble(_mm512_castsi512_pd(_mm512_xor_si512(_mm512_castpd_si512(a.v), _mm512_set1_epi64(INT64_MIN))));
 }
+//! Add b to a element-wise, \return a
 static inline SimdDouble &operator+=(SimdDouble &a, SimdDouble b) { a = a + b; return a; }
+//! Subtract b from a element-wise, \return a
 static inline SimdDouble &operator-=(SimdDouble &a, SimdDouble b) { a = a - b; return a; }
+//! Multiply a by b element-wise, \return a
 static inline SimdDouble &operator*=(SimdDouble &a, SimdDouble b) { a = a * b; return a; }
 
+//! \return a < b, element-wise
 static inline SimdBool operator<(SimdDouble a, SimdDouble b) { return SimdBool(_mm512_cmp_pd_mask(a.v, b.v, _CMP_LT_OQ)); }
+//! \return a > b, element-wise
 static inline SimdBool operator>(SimdDouble a, SimdDouble b) { return SimdBool(_mm512_cmp_pd_mask(a.v, b.v, _CMP_GT_OQ)); }
+//! \return Logical and of a and b, element-wise
 static inline SimdBool operator&&(SimdBool a, SimdBool b) { return SimdBool(static_cast<__mmask8>(a.v & b.v)); }
+//! \return Logical not of a, element-wise
 static inline SimdBool operator!(SimdBool a) { return SimdBool(static_cast<__mmask8>(~a.v)); }
 
 //! \return a*b + c
@@ -116,10 +127,15 @@ static inline SimdDouble fma(SimdDouble a, SimdDouble b, SimdDouble c) { return 
 //! \return a where m is true, b otherwise
 static inline SimdDouble select(SimdBool m, SimdDouble a, SimdDouble b) { return SimdDouble(_mm512_mask_blend_pd(m.v, b.v, a.v)); }
 
+//! \return Element-wise minimum of a and b
 static inline SimdDouble min(SimdDouble a, SimdDouble b) { return SimdDouble(_mm512_min_pd(a.v, b.v)); }
+//! \return Element-wise maximum of a and b
 static inline SimdDouble max(SimdDouble a, SimdDouble b) { return SimdDouble(_mm512_max_pd(a.v, b.v)); }
+//! \return Element-wise absolute value of a
 static inline SimdDouble abs(SimdDouble a) { return SimdDouble(_mm512_abs_pd(a.v)); }
+//! \return Element-wise a rounded down to an integer value
 static inline SimdDouble floor(SimdDouble a) { return SimdDouble(_mm512_roundscale_pd(a.v, _MM_FROUND_TO_NEG_INF | _MM_FROUND_NO_EXC)); }
+//! \return Element-wise square root of a
 static inline SimdDouble sqrt(SimdDouble a) { return SimdDouble(_mm512_sqrt_pd(a.v)); }
 
 /*! \brief Power of two

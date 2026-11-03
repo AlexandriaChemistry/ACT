@@ -84,6 +84,9 @@ struct SensitivityResult
     std::optional<HessianDiagnostic> hessian;
 };
 
+/*! \brief Sensitivity analysis of the chi-squared with respect to all
+ * force field parameters, using a Sensitivity object for each parameter
+ */
 class SensitivityAnalysis
 {
 private:

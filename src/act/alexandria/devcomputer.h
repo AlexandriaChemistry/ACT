@@ -117,6 +117,15 @@ public:
         optIndex_ = optIndex;
     }
 
+    /*! \brief Add the penalty for total atomic charges (including shells and vsites)
+     * outside the bounds of their ACM charge parameter to the eRMS::BOUNDS target
+     * \param[in]    msghandler    Not used
+     * \param[in]    forceComputer Not used
+     * \param[in]    actmols       The molecules to compute the deviation for
+     * \param[inout] targets       Map of fitting targets, the eRMS::BOUNDS entry is increased if present
+     * \param[in]    forcefield    The force field containing the newest parameters
+     * \param[in]    lossFunction  Functional form of the loss function
+     */
     virtual void calcDeviation(MsgHandler                    *msghandler,
                                const ForceComputer           *forceComputer,
                                const std::vector<ACTMol *>   &actmols,
@@ -146,6 +155,17 @@ public:
      */
     HarmonicsDevComputer(MolPropObservable  mpo);
 
+    /*! \brief Minimize each molecule with an optimized reference structure,
+     * perform a normal mode analysis and add the deviation of the
+     * frequencies or intensities from the reference values to
+     * the eRMS::FREQUENCY or eRMS::INTENSITY target
+     * \param[in]    msghandler    For status and output
+     * \param[in]    forceComputer The utility to compute forces and energies
+     * \param[in]    actmols       The molecules to compute the deviation for
+     * \param[inout] targets       Map of fitting targets, the frequency or intensity entry is increased
+     * \param[in]    forcefield    The force field containing the newest parameters
+     * \param[in]    lossFunction  Functional form of the loss function
+     */
     virtual void calcDeviation(MsgHandler                    *msghandler,
                                const ForceComputer           *forceComputer,
                                const std::vector<ACTMol *>   &actmols,
@@ -181,6 +201,15 @@ public:
     {
     }
 
+    /*! \brief Compute the electrostatic potential for all molecules and add
+     * the squared RMS deviation from the reference ESP to the eRMS::ESP target
+     * \param[in]    msghandler    For status and debug output
+     * \param[in]    forceComputer The utility to compute forces and energies, used to relax shells and vsites
+     * \param[in]    actmols       The molecules to compute the deviation for
+     * \param[inout] targets       Map of fitting targets, the eRMS::ESP entry is increased
+     * \param[in]    forcefield    The force field containing the newest parameters
+     * \param[in]    lossFunction  Not used
+     */
     virtual void calcDeviation(MsgHandler                    *msghandler,
                                const ForceComputer           *forceComputer,
                                const std::vector<ACTMol *>   &actmols,
@@ -205,6 +234,15 @@ public:
      */
     PolarDevComputer();
 
+    /*! \brief Compute the polarizability tensor for all molecules and add
+     * the deviation from the reference tensor to the eRMS::Polar target
+     * \param[in]    msghandler    For status and output
+     * \param[in]    forceComputer The utility to compute forces and energies
+     * \param[in]    actmols       The molecules to compute the deviation for
+     * \param[inout] targets       Map of fitting targets, the eRMS::Polar entry is increased
+     * \param[in]    forcefield    The force field containing the newest parameters
+     * \param[in]    lossFunction  Functional form of the loss function
+     */
     virtual void calcDeviation(MsgHandler                    *msghandler,
                                const ForceComputer           *forceComputer,
                                const std::vector<ACTMol *>   &actmols,
@@ -233,6 +271,16 @@ public:
     {
     }
 
+    /*! \brief Compute the multipole moment for all molecules and add the
+     * deviation from the reference to the corresponding target
+     * (eRMS::MU, eRMS::QUAD, eRMS::OCT or eRMS::HEXADEC)
+     * \param[in]    msghandler    For status and output
+     * \param[in]    forceComputer The utility to compute forces and energies, used to relax shells and vsites
+     * \param[in]    actmols       The molecules to compute the deviation for
+     * \param[inout] targets       Map of fitting targets, the multipole entry is increased
+     * \param[in]    forcefield    The force field containing the newest parameters
+     * \param[in]    lossFunction  Functional form of the loss function
+     */
     virtual void calcDeviation(MsgHandler                    *msghandler,
                                const ForceComputer           *forceComputer,
                                const std::vector<ACTMol *>   &actmols,
@@ -277,6 +325,17 @@ public:
      */
     ForceEnergyDevComputer(std::map<eRMS, double>  boltzmannTemperature);
 
+    /*! \brief Compute the relaxed energies, and forces if needed, for all
+     * molecules and add the deviation from the reference to the
+     * eRMS::EPOT, eRMS::Force2 and interaction energy component targets
+     * that have a non-zero weight
+     * \param[in]    msghandler    For status and output
+     * \param[in]    forceComputer The utility to compute forces and energies
+     * \param[in]    actmols       The molecules to compute the deviation for
+     * \param[inout] targets       Map of fitting targets, entries with non-zero weight are increased
+     * \param[in]    forcefield    The force field containing the newest parameters
+     * \param[in]    lossFunction  Functional form of the loss function
+     */
     virtual void calcDeviation(MsgHandler                    *msghandler,
                                const ForceComputer           *forceComputer,
                                const std::vector<ACTMol *>   &actmols,

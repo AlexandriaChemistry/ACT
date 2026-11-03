@@ -81,31 +81,60 @@ enum class eHisto {
     Y
 };
 
+/*! \brief Class for simple statistics on a set of (x, y) data points
+ * Computes averages, deviations between x and y, correlation coefficients
+ * and linear regression, and can make histograms.
+ */
 class gmx_stats
 {
 private:
+    //! The x values
     std::vector<double> x_;
+    //! The y values
     std::vector<double> y_;
+    //! The uncertainties in the x values
     std::vector<double> dx_;
+    //! The uncertainties in the y values
     std::vector<double> dy_;
+    //! Slope of the fit to y = aa x
     double              aa_         = 0;
+    //! Slope of the fit to y = a x + b
     double              a_          = 0;
+    //! Intercept of the fit to y = a x + b
     double              b_          = 0;
+    //! Uncertainty in the slope a
     double              sigma_a_    = 0;
+    //! Uncertainty in the intercept b
     double              sigma_b_    = 0;
+    //! Average of the y values
     double              aver_       = 0;
+    //! Standard deviation of the y values
     double              sigma_aver_ = 0;
+    //! Standard error of the average of the y values
     double              error_      = 0;
+    //! Root mean square deviation between y and x
     double              rmsd_       = 0;
+    //! Correlation coefficient between x and y
     double              Rdata_      = 0;
+    //! Correlation coefficient for the fit to y = a x + b
     double              Rfit_       = 0;
+    //! Correlation coefficient for the fit to y = aa x (currently equal to Rfit_)
     double              Rfitaa_     = 0;
+    //! Square root of chi-squared per degree of freedom for y = a x + b
     double              chi2_       = 0;
+    //! Square root of chi-squared per degree of freedom for y = aa x
     double              chi2aa_     = 0;
+    //! Mean signed error, y minus x
     double              mse_        = 0;
+    //! Mean absolute error between y and x
     double              mae_        = 0;
+    //! Whether the statistics are up to date with the data
     bool                computed_   = false;
 
+    /*! \brief Compute all statistics, unless they are up to date
+     * \param[in] weight Type of weighting, see elsqWEIGHT_NONE etc.
+     * \return error code
+     */
     eStats compute(int weight);
     
 public:    
@@ -138,7 +167,9 @@ public:
      */
     eStats add_point(double y) { return add_point(y_.size(), y, 0, 0); }
 
+    //! \return the x values
     const std::vector<double> &getX() const { return x_; }
+    //! \return the y values
     const std::vector<double> &getY() const { return y_; }
     /*! \brief
      * Fit the data to y = ax + b, possibly weighted, if uncertainties

@@ -54,9 +54,11 @@ class ACMInitializer : public ga::Initializer
 
 private:
 
-    // Random number generation
+    //! Random device used to seed the random number generator
     std::random_device                       rd_;
+    //! Mersenne twister random number generator
     std::mt19937                             gen_;
+    //! Uniform distribution on [0, 1) used to draw random parameters
     std::uniform_real_distribution<double>   dis_;
     //! StaticIndividualInfo pointer
     StaticIndividualInfo                    *sii_;
@@ -76,8 +78,19 @@ public:
                    bool                    randInit,
                    int                     seed);
 
+    /*! \brief Create a new ACMIndividual and fill its genome
+     * The parameters are drawn uniformly between the lower and upper
+     * bounds if random initialization is requested, otherwise the
+     * default parameter values are used. The best genome is set
+     * to the initial genome.
+     * \return pointer to a new individual
+     */
     ACMIndividual *initialize() override;
 
+    /*! \brief Set all bases of a genome to random values drawn
+     * uniformly between the lower and upper bounds of each parameter
+     * \param[inout] genome The Genome to randomize
+     */
     void randomizeGenome(ga::Genome *genome) override;
 
 };

@@ -212,6 +212,9 @@ void MsgHandler::addOptions(std::vector<t_pargs>      *pargs,
     filenm->push_back( { efLOG, "-g", defaultLogName_.c_str(), ffWRITE }); 
 }
 
+/*! \brief Print information about the program binary, build and SIMD support
+ * \param[in] tw The text writer to print to
+ */
 static void printBinInfo(gmx::TextWriter *tw)
 {
     gmx::BinaryInformationSettings settings;

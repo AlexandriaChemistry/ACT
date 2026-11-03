@@ -54,6 +54,7 @@ public:
     virtual void compute(      std::vector<Genome> *pop,
                          const int                  generation) = 0;
 
+    //! Destructor
     virtual ~ProbabilityComputer() = default;
 
 };
@@ -83,6 +84,10 @@ public:
     FitnessProbabilityComputer(const size_t popSize)
         : inverses_(popSize) {}
 
+    /*! \brief Set the probability of each genome from its training fitness
+     * \param[inout] pop        The population
+     * \param[in]    generation The current generation number, not used
+     */
     virtual void compute(      std::vector<Genome> *pop,
                          const int                  generation);
 
@@ -139,6 +144,10 @@ public:
         : temperature_(temperature), maxGenerations_(maxGenerations),
           boltzAnneal_(boltzAnneal), exponentials_(popSize) {}
 
+    /*! \brief Set the Boltzmann probability of each genome from its training fitness
+     * \param[inout] pop        The population
+     * \param[in]    generation The current generation number, determines the annealed temperature
+     */
     virtual void compute(      std::vector<Genome> *pop,
                          const int                  generation);
 

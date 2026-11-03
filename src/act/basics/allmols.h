@@ -42,6 +42,9 @@
 
 namespace alexandria
 {
+    /*! \brief Identifying and chemical information for one compound
+     * from the Alexandria library file alexandria.csv
+     */
     class AlexandriaMol
     {
     public:
@@ -80,6 +83,9 @@ namespace alexandria
         AlexandriaMol(const std::vector<std::string> &line);
     };
     
+    /*! \brief Database of all compounds in alexandria.csv, which
+     * can be looked up by InChi or by name
+     */
     class AlexandriaMols
     {
     private:

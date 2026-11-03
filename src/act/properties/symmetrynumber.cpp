@@ -145,6 +145,15 @@ private:
     }
 
 public:
+    /*! \brief Constructor, computes the coordinates relative to the
+     * center of mass, the interatomic distances, the candidate images
+     * of each atom and the order in which atoms are assigned
+     * \param[in] atomicNumbers The atomic number of each atom
+     * \param[in] masses        The mass of each atom, for the center of mass
+     * \param[in] coords        The coordinates (nm)
+     * \param[in] tolerance     Tolerance for distances (nm)
+     * \param[in] maxNodes      Maximum number of steps in the search
+     */
     SymmetrySearch(const std::vector<int>       &atomicNumbers,
                    const std::vector<double>    &masses,
                    const std::vector<gmx::RVec> &coords,

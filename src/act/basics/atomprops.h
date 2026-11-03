@@ -39,6 +39,8 @@
 namespace alexandria
 {
 
+/*! \brief Properties of an element or ion, as read from atomprops.csv
+ */
 class AtomProp
 {
 private:

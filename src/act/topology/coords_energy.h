@@ -55,7 +55,7 @@ private:
     //! ACT present
     bool haveACT_      = false;
 public:
-    // Empty Constructor
+    //! Empty constructor
     ACTEnergy() {}
     /*! \brief Constructor
      * \param[in] experiment The id

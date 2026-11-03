@@ -448,6 +448,7 @@ public:
         }
     };
 
+    //! Constructor, without conformations or interaction types
     ConformationEnergies() { index_.fill(-1); }
 
     /*! \brief Set the number of conformations

@@ -52,8 +52,9 @@ class NPointCrossover : public Crossover
 
 private:
 
-    // Random number stuff (for shuffling)
+    //! Random device, only used to initialize gen before it is seeded
     std::random_device  rd;
+    //! Random number generator for shuffling
     std::mt19937        gen;
 
     //! Amount of crossover cutting points
@@ -96,6 +97,14 @@ public:
         crossoverPoints_[crossoverPoints_.size() - 1] = chromosomeLength;
     }
 
+    /*! \brief Make two children by swapping the genes of two parents
+     * The genome is cut at order random points, and every second segment
+     * is swapped between the parents. Only the genes of the children are set.
+     * \param[in]  parent1 The first parent
+     * \param[in]  parent2 The second parent
+     * \param[out] child1  The first child
+     * \param[out] child2  The second child
+     */
     virtual void offspring(const ga::Genome *parent1,
                            const ga::Genome *parent2,
                            ga::Genome       *child1,
