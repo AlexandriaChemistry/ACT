@@ -29,7 +29,9 @@
  * rank and the test is registered to run on four ranks.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
+#include <algorithm>
 #include <cmath>
+#include <cstdint>
 #include <cstdio>
 #include <fstream>
 #include <sstream>
@@ -246,6 +248,19 @@ protected:
                     continue;
                 }
                 ntemp += 1;
+                if (!GMX_DOUBLE)
+                {
+                    // The total is the sum of the classical value and the
+                    // corrections, which can cancel, its errors are
+                    // relative to the largest of them
+                    double bmax = 0;
+                    for(const auto &b : t.value().items())
+                    {
+                        bmax = std::max(bmax, std::abs(std::stod(b.value().get<std::string>())));
+                    }
+                    checker.setDefaultTolerance(gmx::test::FloatingPointTolerance(1e-4*bmax, 1e-4*bmax, 1e-4, 1e-4,
+                                                                                  UINT64_MAX, UINT64_MAX, false));
+                }
                 for(const auto &b : t.value().items())
                 {
                     checker.checkReal(std::stod(b.value().get<std::string>()),
