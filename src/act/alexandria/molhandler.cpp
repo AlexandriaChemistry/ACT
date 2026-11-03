@@ -1253,6 +1253,27 @@ public:
     }
 };
 
+bool MolHandler::adjustForceTolerance(MsgHandler              *msghandler,
+                                      const ForceComputer     *forceComp,
+                                      SimulationConfigHandler *simConfig)
+{
+    // Both are on the mean square force
+    double shellToler   = forceComp->forceTolerance();
+    double msForceToler = simConfig->forceTolerance();
+    if (msForceToler >= shellToler)
+    {
+        return false;
+    }
+    if (msForceToler != 0 && msghandler)
+    {
+        msghandler->msg(ACTStatus::Warning,
+                        gmx::formatString("Atom mean square force tolerance (%g) more strict than shell mean square force tolerance (%g). Increasing atom mean square force tolerance to hundred times that for shells.",
+                                          msForceToler, shellToler));
+    }
+    simConfig->setForceTolerance(100*shellToler);
+    return true;
+}
+
 eMinimizeStatus MolHandler::minimizeCoordinates(MsgHandler                        *msghandler,
                                                 const ForceField                  *pd,
                                                 const Topology                    *topology,
@@ -1264,19 +1285,14 @@ eMinimizeStatus MolHandler::minimizeCoordinates(MsgHandler                      
 {
     bool      converged    = false;
     int       myIter       = 0;
-    // Check for meaningful convergence tolerance, both are on the mean
-    // square force
-    double    shellToler   = forceComp->forceTolerance();
+    // Check for meaningful convergence tolerance, see adjustForceTolerance
     double    msForceToler = simConfig.forceTolerance();
-    if (msForceToler < shellToler)
     {
-        if (msForceToler != 0)
+        SimulationConfigHandler consistent = simConfig;
+        if (adjustForceTolerance(msghandler, forceComp, &consistent))
         {
-            msghandler->msg(ACTStatus::Warning,
-                            gmx::formatString("Atom mean square force tolerance (%g) more strict than shell mean square force tolerance (%g). Increasing atom mean square force tolerance to hundred times that for shells.",
-                                              msForceToler, shellToler));
+            msForceToler = consistent.forceTolerance();
         }
-        msForceToler = 100*shellToler;
     }
     // List of atoms (not shells) and weighting factors
     auto              myatoms = topology->atoms();
