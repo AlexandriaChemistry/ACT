@@ -246,24 +246,42 @@ static SimdDouble ttDispersion(double bDisp, const double *ctt, SimdDouble r, Si
     SimdDouble edisp  = 0.0;
     SimdDouble fdisp  = 0.0;
     // The damping function for C_2m is f_2m = 1 - exp(-br) sum_k=0^2m (br)^k/k!
-    // The sum is accumulated in fk, with term holding (br)^k/k!
-    SimdDouble fk     = 1.0;
-    SimdDouble term   = 1.0;
-    int        k      = 0;
+    // The sum is accumulated in fk, with terms[k] holding (br)^k/k!
+    SimdDouble terms[ttTerms+1];
+    terms[0] = 1.0;
+    for (int k = 0; k < ttTerms; k++)
+    {
+        terms[k+1] = terms[k]*bDispr*(1.0/(k+1));
+    }
+    // For small br, as in TT_Dispersion in forces_simd.cpp
+    SimdDouble tail = ttTailCoefficients.back();
+    for (int j = ttTailTerms-ttTerms-2; j >= 0; j--)
+    {
+        tail = simd::fma(tail, bDispr, SimdDouble(ttTailCoefficients[j]));
+    }
+    tail = tail*terms[ttTerms]*bDispr*(1.0/(ttTerms+1));
+    auto       useTail = bDispr < ttTailMax;
+    SimdDouble fk      = 1.0;
+    int        k       = 0;
     for (int m = 3; m <= 5; m++)
     {
         int nn = 2*m;
         for (; k < nn; k++)
         {
-            term *= bDispr*(1.0/(k+1));
-            fk   += term;
+            fk += terms[k+1];
         }
-        SimdDouble ed = -(1.0 - ebr*fk)*ctt[m-3]*rinvn;
+        SimdDouble tk = tail;
+        for (int j = ttTerms; j > nn; j--)
+        {
+            tk += terms[j];
+        }
+        SimdDouble damp = simd::select(useTail, ebr*tk, 1.0 - ebr*fk);
+        SimdDouble ed   = -damp*ctt[m-3]*rinvn;
         edisp += ed;
         fdisp += ed*static_cast<double>(nn)*rinv;
         // The derivative of the sum is b times the sum up to 2m-1,
         // the terms up to 2m-1 cancel against the derivative of exp(-br).
-        fdisp += ctt[m-3]*rinvn*bDisp*ebr*term;
+        fdisp += ctt[m-3]*rinvn*bDisp*ebr*terms[nn];
         rinvn *= rinv2;
     }
     *fscal += fdisp*rinv;

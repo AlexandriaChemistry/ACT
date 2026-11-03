@@ -40,6 +40,7 @@
 #ifndef ACT_FORCES_EXPLICIT_SIMD_H
 #define ACT_FORCES_EXPLICIT_SIMD_H
 
+#include <array>
 #include <cstddef>
 #include <vector>
 
@@ -61,6 +62,39 @@ enum class ExplicitSimd
     Avx2,
     Avx512
 };
+
+/*! \brief Terms of the Tang-Toennies damping functions
+ * The damping functions for C6, C8 and C10 use the terms (br)^k/k! up to
+ * ttTerms. For br < ttTailMax, they are computed from the terms beyond,
+ * up to ttTailTerms, which then have a relative error below 1e-17. For
+ * br >= ttTailMax, the relative error of the difference 1 - exp(-br)
+ * sum_k (br)^k/k! is below 1e-14 in double precision.
+ */
+constexpr int    ttTerms     = 10;
+//! \copydoc ttTerms
+constexpr int    ttTailTerms = 38;
+//! \copydoc ttTerms
+constexpr double ttTailMax   = 6;
+
+/*! \brief Coefficients of the terms beyond ttTerms of the damping functions
+ * The sum of (br)^k/k! for k = ttTerms+1 ... ttTailTerms is
+ * (br)^(ttTerms+1)/(ttTerms+1)! times the polynomial in br with these
+ * coefficients, (ttTerms+1)!/k!.
+ */
+constexpr std::array<double, ttTailTerms-ttTerms> ttTailCoefficients = []()
+{
+    std::array<double, ttTailTerms-ttTerms> c{};
+    double                                  f = 1;
+    for (int j = 0; j < ttTailTerms-ttTerms; j++)
+    {
+        if (j > 0)
+        {
+            f /= ttTerms+1+j;
+        }
+        c[j] = f;
+    }
+    return c;
+}();
 
 /*! \brief The instruction set the explicit SIMD was compiled for
  * Since the code is compiled for this instruction set, this function is

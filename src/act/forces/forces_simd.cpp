@@ -631,9 +631,26 @@ static ACT_ALWAYS_INLINE double TT_Dispersion(gmx_unused MsgHandler *msghandler,
     real fdisp   = 0;
     real rinvn   = rinv2*rinv2*rinv2;
     // The damping function for C_2m is f_2m = 1 - exp(-br) sum_k=0^2m (br)^k/k!
-    // The sum is accumulated in fk, with term holding (br)^k/k!
+    // The sum is accumulated in fk, with terms[k] holding (br)^k/k!
+    real terms[ttTerms+1];
+    terms[0] = 1;
+#pragma unroll
+    for (int k = 0; k < ttTerms; k++)
+    {
+        terms[k+1] = terms[k]*bDispr/(k+1);
+    }
+    // For small br, 1 - exp(-br) sum_k=0^2m is the difference of nearly
+    // equal numbers. There f_2m = exp(-br) sum_k>2m (br)^k/k! is used,
+    // with the terms beyond ttTerms summed by Horner's rule in tail.
+    real tail = ttTailCoefficients.back();
+#pragma unroll
+    for (int j = ttTailTerms-ttTerms-2; j >= 0; j--)
+    {
+        tail = tail*bDispr + ttTailCoefficients[j];
+    }
+    tail *= terms[ttTerms]*bDispr/(ttTerms+1);
+    bool useTail = bDispr < ttTailMax;
     real fk      = 1;
-    real term    = 1;
     int  k       = 0;
 #pragma unroll
     for (int m = 3; m <= 5; m++)
@@ -642,15 +659,21 @@ static ACT_ALWAYS_INLINE double TT_Dispersion(gmx_unused MsgHandler *msghandler,
 #pragma unroll
         for (; k < nn; k++)
         {
-            term *= bDispr/(k+1);
-            fk   += term;
+            fk += terms[k+1];
         }
-        real ed = -(1-ebrDisp*fk)*ctt[m-3]*rinvn;
+        real tk = tail;
+#pragma unroll
+        for (int j = ttTerms; j > nn; j--)
+        {
+            tk += terms[j];
+        }
+        real damp = useTail ? ebrDisp*tk : 1-ebrDisp*fk;
+        real ed   = -damp*ctt[m-3]*rinvn;
         eedisp += ed;
         fdisp  += ed*nn*rinv1;
         // The derivative of the sum is b times the sum up to 2m-1,
         // the terms up to 2m-1 cancel against the derivative of exp(-br).
-        fdisp  += ctt[m-3]*rinvn*bDisp*ebrDisp*term;
+        fdisp  += ctt[m-3]*rinvn*bDisp*ebrDisp*terms[nn];
         rinvn  *= rinv2;
     }
 #ifdef DEBUG
@@ -2197,9 +2220,9 @@ static double interactionFlops(Potential                   mypot,
     case Potential::MACDANIEL_SCHMIDT:      return constant({ 44, 3 }, true);
     case Potential::WANG_BUCKINGHAM:        return constant({ 58, 10 }, true);
     case Potential::BUCKINGHAM:             return constant({ 49, 5 }, true);
-    case Potential::TANG_TOENNIES:          return constant({ 127, 29 }, true);
-    case Potential::TT2b:                   return constant({ 127, 29 }, true);
-    case Potential::SLATER_ISA_TT:          return constant({ 132, 34 }, true);
+    case Potential::TANG_TOENNIES:          return constant({ 193, 29 }, true);
+    case Potential::TT2b:                   return constant({ 193, 29 }, true);
+    case Potential::SLATER_ISA_TT:          return constant({ 198, 34 }, true);
     case Potential::GENERALIZED_BUCKINGHAM: return constant({ 132, 35 }, true);
     case Potential::HARMONIC_BONDS:         return constant({ 16, 2 }, true);
     case Potential::CUBIC_BONDS:            return constant({ 18, 6 }, true);
