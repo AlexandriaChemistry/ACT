@@ -137,12 +137,12 @@ void AtomizationEnergy::read(MsgHandler *msg_handler)
                 if (line.find("#") == std::string::npos)
                 {
                     auto words = gmx::splitDelimitedString(line, '|');
-                    if (words.size() >= 8)
+                    if (words.size() >= 9)
                     {
                         int    charge      = my_atoi(words[1].c_str(), "charge");
                         double temperature = my_atof(words[4].c_str(), "temperature");
                         double value       = my_atof(words[5].c_str(), "value");
-                        int    mult        = my_atoi(words[1].c_str(), "multiplicity");
+                        int    mult        = my_atoi(words[6].c_str(), "multiplicity");
                         terms_.push_back(new AtomizationEnergyTerm(words[0], charge, words[2], words[3], temperature,
                                                                    value, mult, words[7], words[8]));
                     }
@@ -213,7 +213,7 @@ void AtomizationEnergy::dump(const std::string &filenm)
     gmx::TextWriter tw(filenm);
     for(const auto &t : terms_)
     {
-        tw.writeStringFormatted("%s|%d|%s|%s|%g|%g|%d|%s|%s|",
+        tw.writeStringFormatted("%s|%d|%s|%s|%g|%g|%d|%s|%s|\n",
                                 t->elem().c_str(), 
                                 t->charge(),
                                 t->source().c_str(),

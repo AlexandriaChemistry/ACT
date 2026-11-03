@@ -37,6 +37,10 @@
 
 #include <gtest/gtest.h>
 
+#include "act/basics/libraryfile.h"
+#include "gromacs/utility/stringutil.h"
+#include "gromacs/utility/textreader.h"
+
 #include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"
@@ -60,11 +64,6 @@ protected:
         auto tolerance = gmx::test::relativeToleranceAsFloatingPoint(1.0, GMX_DOUBLE ? 1e-10 : 5e-2);
         checker_.setDefaultTolerance(tolerance);
         atomenergy_.read();
-    }
-    //! Dump the database to a csv file
-    void dump()
-    {
-        atomenergy_.dump("test.csv");
     }
     /*! \brief test the atomization energies
      * RMSD after rotating.
@@ -108,10 +107,46 @@ protected:
     }
 };
 
-//TEST_F (AtomizationEnergyTest, Dump)
-//{
-//    dump();
-//}
+//! \return the data lines of a file, split into fields
+static std::vector<std::vector<std::string>> readFields(const std::string &filenm)
+{
+    std::vector<std::vector<std::string>> fields;
+    gmx::TextReader tr(filenm);
+    std::string     line;
+    while (tr.readLine(&line))
+    {
+        if (line.find("#") == std::string::npos)
+        {
+            fields.push_back(gmx::splitDelimitedString(line, '|'));
+        }
+    }
+    return fields;
+}
+
+TEST(AtomizationEnergyDump, SameAsLibrary)
+{
+    gmx::test::TestFileManager    fileManager;
+    alexandria::AtomizationEnergy atomenergy;
+    atomenergy.read();
+    auto dumpName = fileManager.getTemporaryFilePath("dump.csv");
+    atomenergy.dump(dumpName);
+    auto dumped = readFields(dumpName);
+    std::vector<std::vector<std::string>> library;
+    for (const auto &fn : { "atomization-energies.csv", "atomization-energies-dft.csv" })
+    {
+        auto fields = readFields(alexandria::findLibrary(fn, false));
+        library.insert(library.end(), fields.begin(), fields.end());
+    }
+    ASSERT_EQ(library.size(), dumped.size());
+    // The fields that are not reformatted are written as they were read
+    for (size_t i = 0; i < library.size(); i++)
+    {
+        for (int f : { 0, 1, 2, 3, 6, 7, 8 })
+        {
+            EXPECT_EQ(library[i][f], dumped[i][f]) << "line " << i << " field " << f;
+        }
+    }
+}
 
 TEST_F (AtomizationEnergyTest, OxygenRT)
 {
