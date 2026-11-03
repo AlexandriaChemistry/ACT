@@ -291,7 +291,9 @@ TEST(AllBondedsUpdateTest, BondFunctions)
             }
             if (fn.first == "CUBIC_BONDS")
             {
-                EXPECT_NEAR(3*length.value(), value(b.second, "rmax"), 1e-6) << b.first.id();
+                // The parameters are stored with the precision of real
+                EXPECT_NEAR(3*length.value(), value(b.second, "rmax"),
+                            gmx::test::precisionTolerance(1e-6, 1e-7*3*length.value())) << b.first.id();
             }
             EXPECT_EQ(potentialToParameterName(bonds.potential()).size(), b.second.size()) << fn.first;
         }

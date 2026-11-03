@@ -27,7 +27,9 @@
  */
 
 #include <gtest/gtest.h>
+#include <algorithm>
 #include <cmath>
+#include <cstdint>
 #include <functional>
 #include <limits>
 #include <memory>
@@ -246,6 +248,7 @@ protected:
             {
                 std::string label(actmols[0].getMolname());
                 label += "-charge";
+                setSingleTolerance(checker, 1e-6, 1e-6);
                 checker->checkSequence(qq.begin(), qq.end(), label.c_str());
             }
             computer.calcDeviation(&msghandler,
@@ -270,6 +273,9 @@ protected:
                     checker->checkDouble(t.second.totalWeight(), weight.c_str());
                     std::string chi2 = gmx::formatString("%s-%s-chi2",
                                                          actmols[0].getMolname().c_str(), rmsName(t.first));
+                    // The deviations are differences of energies or forces
+                    // that are much larger, with errors relative to those
+                    setSingleTolerance(checker, 0, 1e-4);
                     checker->checkDouble(t.second.chiSquared(), chi2.c_str());
                 }
             }
@@ -379,6 +385,23 @@ protected:
      * \param[in] actmol  The molecule after calcDeviation
      * \param[in] checker Reference data checker
      */
+    /*! \brief Set a tolerance in single precision only
+     * In double precision the default tolerance of the checker is kept.
+     * \param[inout] checker  The checker
+     * \param[in]    absolute Absolute tolerance
+     * \param[in]    relative Relative tolerance
+     */
+    static void setSingleTolerance(gmx::test::TestReferenceChecker *checker,
+                                   double                           absolute,
+                                   double                           relative)
+    {
+        if (!GMX_DOUBLE)
+        {
+            checker->setDefaultTolerance(gmx::test::FloatingPointTolerance(absolute, absolute, relative, relative,
+                                                                           UINT64_MAX, UINT64_MAX, false));
+        }
+    }
+
     static void checkConformations(ACTMol                          &actmol,
                                    gmx::test::TestReferenceChecker *checker)
     {
@@ -388,6 +411,19 @@ protected:
         {
             const auto &ce    = (*coords)[i];
             auto        label = gmx::formatString("%s-conf%zu", actmol.getMolname().c_str(), i);
+            // In single precision relative to the largest energy and force
+            double emax = 0;
+            for(const auto itype : { InteractionType::EXCHANGE,
+                                     InteractionType::DISPERSION,
+                                     InteractionType::EPOT })
+            {
+                auto ee = ce.eMap.find(itype);
+                if (ce.eMap.end() != ee && ee->second.haveACT())
+                {
+                    emax = std::max(emax, std::abs(ee->second.eact()));
+                }
+            }
+            setSingleTolerance(checker, 1e-5*emax, 1e-6);
             for(const auto itype : { InteractionType::EXCHANGE,
                                      InteractionType::DISPERSION,
                                      InteractionType::EPOT })
@@ -411,6 +447,14 @@ protected:
                     f.push_back(fi[m]);
                 }
             }
+            // The coordinates are rounded, which changes the forces by up
+            // to the stiffness of the bonds times about 3e-8 nm
+            double fmax = 0;
+            for(auto fm : f)
+            {
+                fmax = std::max(fmax, std::abs(fm));
+            }
+            setSingleTolerance(checker, 5e-5*fmax, 1e-6);
             checker->checkSequence(f.begin(), f.end(), (label + "-forces").c_str());
         }
     }
@@ -1262,6 +1306,16 @@ protected:
             ASSERT_EQ(coordsV.size(), coordsC.size());
             for(size_t c = 0; c < coordsV.size(); c++)
             {
+                // In single precision the errors are relative to the
+                // largest force, since the terms of the forces cancel
+                double fmax = 0;
+                for(const auto &f : coordsV[c].fcalc)
+                {
+                    for(int m = 0; m < DIM; m++)
+                    {
+                        fmax = std::max(fmax, static_cast<double>(std::abs(f[m])));
+                    }
+                }
                 size_t k = 0;
                 for(size_t i = 0; i < atomsV.size(); i++)
                 {
@@ -1272,8 +1326,9 @@ protected:
                     ASSERT_LT(k, coordsC[c].fcalc.size());
                     for(int m = 0; m < DIM; m++)
                     {
+                        double fmag = GMX_DOUBLE ? 1 + std::abs(coordsV[c].fcalc[i][m]) : fmax;
                         EXPECT_NEAR(coordsV[c].fcalc[i][m], coordsC[c].fcalc[k][m],
-                                    100*tolerance*(1 + std::abs(coordsV[c].fcalc[i][m])));
+                                    100*tolerance*fmag);
                     }
                     k++;
                 }
@@ -1904,7 +1959,7 @@ protected:
 TEST_F(PropertyDevComputerTest, SecondChargesAsVsites)
 {
     compareSecondChargesToVsites("../../constraints/tests/PC+GV-elec.xml", "mpdimer.xml",
-                                 "v1ow", "ow", false, 1e-10);
+                                 "v1ow", "ow", false, gmx::test::precisionTolerance(1e-10, 1e-6));
 }
 
 // Test: The same for a polarizable force field, with shells on the ions,
@@ -1912,7 +1967,7 @@ TEST_F(PropertyDevComputerTest, SecondChargesAsVsites)
 TEST_F(PropertyDevComputerTest, SecondChargesAsVsitesPolarizable)
 {
     compareSecondChargesToVsites("PG-pol-ions.xml", "ion-water.xml",
-                                 "v1Na+", "Na+", true, 1e-10);
+                                 "v1Na+", "Na+", true, gmx::test::precisionTolerance(1e-10, 1e-6));
 }
 
 // Test: The same with polarizable ions, the ion shells have a negligible
@@ -1920,7 +1975,7 @@ TEST_F(PropertyDevComputerTest, SecondChargesAsVsitesPolarizable)
 TEST_F(PropertyDevComputerTest, SecondChargesAsVsitesPolarizableIons)
 {
     compareSecondChargesToVsites("PG-pol-ions.xml", "ion-water.xml",
-                                 "v1Na+", "Na+", true, 1e-10,
+                                 "v1Na+", "Na+", true, gmx::test::precisionTolerance(1e-10, 1e-6),
                                  { { "Na+_s", 0.18 }, { "Cl-_s", 3.4 } });
 }
 
