@@ -52,6 +52,7 @@
 #include "act/forces/forces_explicit_simd.h"
 #include "act/topology/actatom.h"
 #include "act/topology/coords_energy.h"
+#include "act/utility/timings.h"
 #include "gromacs/math/vectypes.h"
 #include "gromacs/utility/gmxassert.h"
 
@@ -144,6 +145,8 @@ public:
                         const std::vector<size_t>       &confs,
                         bool                             sameSize = false)
     {
+        static const size_t timer = Timings::instance().index("Copy coordinates to arrays");
+        ScopedTimer         scoped(timer);
         size_t nc    = confs.size();
         size_t natom = (nc == 0) ? 0 : coords[confs[0]].x.size();
         for(size_t k = 0; k < nc && !sameSize; k++)
@@ -222,6 +225,8 @@ public:
      */
     void loadForces(const std::vector<CoordsEnergy> &coords)
     {
+        static const size_t timer = Timings::instance().index("Copy forces to arrays");
+        ScopedTimer         scoped(timer);
         size_t natom = f.size()/(DIM*stride);
         // The conformations in the outer loop, such that the forces of
         // each are read contiguously, see copyParticles
@@ -244,6 +249,8 @@ public:
      */
     void storeForces(std::vector<CoordsEnergy> *coords) const
     {
+        static const size_t timer = Timings::instance().index("Copy forces from arrays");
+        ScopedTimer         scoped(timer);
         size_t natom = f.size()/(DIM*stride);
         for(size_t c = 0; c < nconf; c++)
         {
@@ -265,6 +272,8 @@ public:
      */
     void storeShellForces(std::vector<CoordsEnergy> *coords) const
     {
+        static const size_t timer = Timings::instance().index("Copy forces from arrays");
+        ScopedTimer         scoped(timer);
         for(size_t c = 0; c < nconf; c++)
         {
             auto         &fc = (*coords)[confs_[c]].fcalc;
@@ -287,6 +296,8 @@ public:
      */
     void storeVsites(std::vector<CoordsEnergy> *coords)
     {
+        static const size_t timer = Timings::instance().index("Copy vsites from arrays");
+        ScopedTimer         scoped(timer);
         for(size_t c = 0; c < nconf; c++)
         {
             auto         &xc = (*coords)[confs_[c]].x;
@@ -314,6 +325,8 @@ public:
                     size_t                     srcStride,
                     const std::vector<size_t> &srcConfs)
     {
+        static const size_t timer = Timings::instance().index("Copy fixed forces to arrays");
+        ScopedTimer         scoped(timer);
         size_t nrow = x.size()/stride;
         f.resize(nrow*stride);
         if (srcConfs == confs_ && srcStride == stride)
@@ -534,6 +547,8 @@ public:
      */
     void store(std::vector<CoordsEnergy> *coords) const
     {
+        static const size_t timer = Timings::instance().index("Copy energies to maps");
+        ScopedTimer         scoped(timer);
         for(size_t c = 0; c < coords->size() && c < nconf_; c++)
         {
             auto &eMap = (*coords)[c].eMap;
