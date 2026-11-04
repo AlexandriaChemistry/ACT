@@ -270,9 +270,8 @@ protected:
                 }
             }
         }
-        // In double precision, as the explicit SIMD routines compute, otherwise
-        // relative to the terms, which may cancel
-        double toler = (GMX_DOUBLE || useExplicitSimd()) ? 1e-10 : 1e-6;
+        // In single precision relative to the terms, which may cancel
+        double toler = gmx::test::precisionTolerance(1e-10, 1e-6);
         for (size_t conf = 0; conf < nconf_; conf++)
         {
             EXPECT_NEAR(eSum[conf], eSecond[conf], toler*(1 + eAbs[conf])) << "conformation " << conf;
@@ -292,7 +291,9 @@ protected:
      */
     /*! \brief The tolerance for comparing forces
      * In single precision a force is accurate relative to the largest
-     * force, since the terms of the forces cancel.
+     * force, since the terms of the forces cancel. The explicit SIMD
+     * computes them in single precision as well, with other roundings and
+     * math functions, as in compareSinglePrecision.
      * \param[in] f       The forces
      * \param[in] tolSame The tolerance in double precision
      * \return The tolerance
@@ -312,7 +313,7 @@ protected:
                 fmax = std::max<double>(fmax, std::abs(fi[m]));
             }
         }
-        return gmx::test::relativeToleranceAsFloatingPoint(fmax, 1e-5);
+        return gmx::test::relativeToleranceAsFloatingPoint(fmax, 1e-4);
     }
 
     /*! \brief The coordinates of xMany_ in the layout of explicit SIMD
@@ -753,15 +754,13 @@ TEST_F(ForcesSimdTest, CoulombGaussianShortDistance)
         xc[1]   = { static_cast<real>(r), 0, 0 };
         x.push_back(xc);
     }
-#if GMX_DOUBLE
-    const double toler = 1e-10;
-#else
-    const double toler = 1e-6;
-#endif
     bool explicitSimd = setUseExplicitSimd(false);
     for (int routine = 0; routine < 3; routine++)
     {
         setUseExplicitSimd(routine == 2);
+        // In single precision the explicit SIMD computes the difference of
+        // the terms in single precision as well
+        const double toler = gmx::test::precisionTolerance(1e-10, routine == 2 ? 1e-5 : 1e-6);
         auto coords = makeCoords(x);
         computePotential(nullptr, Potential::COULOMB_GAUSSIAN, entries, atoms_, &coords, 1, routine > 0);
         for (size_t c = 0; c < dist.size(); c++)

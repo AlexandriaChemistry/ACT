@@ -2000,14 +2000,16 @@ protected:
 };
 
 /*! \brief Tolerance for comparing second charges with virtual sites
- * Without explicit SIMD, single precision computes the energies in single
- * precision, then the Coulomb sums of dimers, whose terms cancel, have
- * errors of about 1e-3 kJ/mol.
- * \return the relative tolerance
+ * In single precision the energy of each interaction is computed in single
+ * precision, the virtual sites and the second charges round them
+ * differently. That changes the Coulomb energies by about 1e-6 relative,
+ * and the interaction energies of dimers, differences of sums of hundreds
+ * of terms, by up to 1e-3 kJ/mol.
+ * \return the tolerance relative to one plus the energy
  */
 static double secondChargesTolerance()
 {
-    return gmx::test::precisionTolerance(1e-10, useExplicitSimd() ? 1e-6 : 1e-3);
+    return gmx::test::precisionTolerance(1e-10, 1e-3);
 }
 
 
@@ -2118,7 +2120,13 @@ static void compareIntermolecular(const ForceField *pd, std::vector<ACTMol> *mol
             ASSERT_EQ(f.second.size(), i->second.size());
             for(size_t c = 0; c < f.second.size(); c++)
             {
-                EXPECT_NEAR(f.second[c], i->second[c], 1e-8*(1 + std::abs(f.second[c])))
+                // In single precision the energy of each interaction is
+                // rounded differently with and without forces, see
+                // calcCoulombKernel, which changes the sums of hundreds of
+                // Coulomb interactions by up to about 1e-3 kJ/mol
+                double tolerance = (GMX_DOUBLE ? 1e-8*(1 + std::abs(f.second[c])) :
+                                    5e-3 + 1e-5*std::abs(f.second[c]));
+                EXPECT_NEAR(f.second[c], i->second[c], tolerance)
                     << interactionTypeToString(f.first) << " conformation " << c;
             }
         }
