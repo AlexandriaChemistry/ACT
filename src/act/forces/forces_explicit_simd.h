@@ -150,7 +150,10 @@ bool computeExplicitSimd(Potential                   mypot,
 /*! \brief Compute a potential for all conformations with explicit SIMD in single precision
  * As the double precision version, with a stride that is a multiple of
  * explicitSimdWidth<float>(). The parameters of the interactions are
- * prepared in double precision and rounded when they are used.
+ * prepared in double precision and rounded when they are used. The energy
+ * of each interaction is computed in single precision and added to the
+ * energies in double precision, such that sums of many interactions, and
+ * differences of such sums, keep the accuracy of each interaction.
  */
 bool computeExplicitSimd(Potential                   mypot,
                          TopologyEntryRange          entries,
@@ -159,7 +162,7 @@ bool computeExplicitSimd(Potential                   mypot,
                          size_t                      stride,
                          const float                *x,
                          float                      *f,
-                         float                      *energies,
+                         double                     *energies,
                          bool                        forces);
 
 /*! \brief The Coulomb energies of interactions for charges of one with explicit SIMD

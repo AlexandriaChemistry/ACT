@@ -191,6 +191,16 @@ static inline SimdFloat load(const float *p) { return SimdFloat(_mm256_loadu_ps(
 //! Store eight floats to memory
 static inline void store(float *p, SimdFloat a) { _mm256_storeu_ps(p, a.v); }
 
+/*! \brief Add eight floats to eight doubles in memory
+ * \param[inout] p The doubles, two SimdDouble
+ * \param[in]    a The floats
+ */
+static inline void addToDouble(double *p, SimdFloat a)
+{
+    _mm256_storeu_pd(p, _mm256_add_pd(_mm256_loadu_pd(p), _mm256_cvtps_pd(_mm256_castps256_ps128(a.v))));
+    _mm256_storeu_pd(p + 4, _mm256_add_pd(_mm256_loadu_pd(p + 4), _mm256_cvtps_pd(_mm256_extractf128_ps(a.v, 1))));
+}
+
 //! \return a + b, element-wise
 static inline SimdFloat operator+(SimdFloat a, SimdFloat b) { return SimdFloat(_mm256_add_ps(a.v, b.v)); }
 //! \return a - b, element-wise

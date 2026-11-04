@@ -189,6 +189,18 @@ static inline SimdFloat load(const float *p) { return SimdFloat(_mm512_loadu_ps(
 //! Store sixteen floats to memory
 static inline void store(float *p, SimdFloat a) { _mm512_storeu_ps(p, a.v); }
 
+/*! \brief Add sixteen floats to sixteen doubles in memory
+ * \param[inout] p The doubles, two SimdDouble
+ * \param[in]    a The floats
+ */
+static inline void addToDouble(double *p, SimdFloat a)
+{
+    // The upper half through doubles, since AVX512F has no extract of eight floats
+    __m256 hi = _mm256_castpd_ps(_mm512_extractf64x4_pd(_mm512_castps_pd(a.v), 1));
+    _mm512_storeu_pd(p, _mm512_add_pd(_mm512_loadu_pd(p), _mm512_cvtps_pd(_mm512_castps512_ps256(a.v))));
+    _mm512_storeu_pd(p + 8, _mm512_add_pd(_mm512_loadu_pd(p + 8), _mm512_cvtps_pd(hi)));
+}
+
 //! \return a + b, element-wise
 static inline SimdFloat operator+(SimdFloat a, SimdFloat b) { return SimdFloat(_mm512_add_ps(a.v, b.v)); }
 //! \return a - b, element-wise

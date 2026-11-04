@@ -183,6 +183,16 @@ static inline SimdFloat load(const float *p) { return SimdFloat(vld1q_f32(p)); }
 //! Store four floats to memory
 static inline void store(float *p, SimdFloat a) { vst1q_f32(p, a.v); }
 
+/*! \brief Add four floats to four doubles in memory
+ * \param[inout] p The doubles, two SimdDouble
+ * \param[in]    a The floats
+ */
+static inline void addToDouble(double *p, SimdFloat a)
+{
+    vst1q_f64(p, vaddq_f64(vld1q_f64(p), vcvt_f64_f32(vget_low_f32(a.v))));
+    vst1q_f64(p + 2, vaddq_f64(vld1q_f64(p + 2), vcvt_high_f64_f32(a.v)));
+}
+
 //! \return a + b, element-wise
 static inline SimdFloat operator+(SimdFloat a, SimdFloat b) { return SimdFloat(vaddq_f32(a.v, b.v)); }
 //! \return a - b, element-wise

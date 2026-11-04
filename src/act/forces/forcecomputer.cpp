@@ -1923,7 +1923,7 @@ void ForceComputer::computeInteraction(MsgHandler                               
         result->f.assign(arrays[2]->f.begin(), arrays[2]->f.begin() + DIM*natom*stride);
         for(size_t k = 0; k < 2; k++)
         {
-            const double *fm = arrays[k]->f.data();
+            const real   *fm = arrays[k]->f.data();
             double       *fd = result->f.data() + DIM*astart[k]*stride;
             for(size_t i = 0; i < DIM*nmon[k]*stride; i++)
             {

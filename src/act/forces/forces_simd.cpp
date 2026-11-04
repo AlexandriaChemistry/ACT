@@ -2436,8 +2436,8 @@ static void computeConformations(TopologyEntryRange         entries,
     {
         const TopologyEntry &entry = *b.operator->();
         auto  &indices = entry.atomIndices();
-        const double *xa[NATOM];
-        double       *fa[NATOM];
+        const real *xa[NATOM];
+        real       *fa[NATOM];
         for (int a = 0; a < NATOM; a++)
         {
             xa[a] = ca->x.data() + DIM*indices[a]*nconf;
@@ -2700,7 +2700,7 @@ static bool calcCoulombKernel(Potential                   mypot,
             double qq = ONE_4PI_EPS0*qi[k/2]*qj[k%2]/epsilonr;
             if (qq != 0 && (terms[e] & (1 << k)))
             {
-                const double *kk = kernel.data() + (4*e + k)*st;
+                const real *kk = kernel.data() + (4*e + k)*st;
                 for(size_t c = 0; c < st; c++)
                 {
                     en[c] += qq*kk[c];

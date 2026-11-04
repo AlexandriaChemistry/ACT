@@ -349,7 +349,7 @@ protected:
      * \param[in]  epsilonr Relative dielectric constant
      * \param[out] stride   The stride of the arrays, see computeExplicitSimd
      * \param[out] f        The forces
-     * \param[out] energies The energy terms
+     * \param[out] energies The energy terms, in double precision for both types
      * \return false if the potential is not available
      */
     template <typename T>
@@ -358,7 +358,7 @@ protected:
                       double                     epsilonr,
                       size_t                    *stride,
                       std::vector<T>            *f,
-                      std::vector<T>            *energies)
+                      std::vector<double>       *energies)
     {
         auto x = manyArrays<T>(stride);
         f->assign(x.size(), 0);
@@ -381,8 +381,8 @@ protected:
             return;
         }
         size_t              sd, sf;
-        std::vector<double> fd, ed;
-        std::vector<float>  ff, ef;
+        std::vector<double> fd, ed, ef;
+        std::vector<float>  ff;
         bool                haveDouble = explicitSimd(mypot, entries, epsilonr, &sd, &fd, &ed);
         ASSERT_EQ(haveDouble, explicitSimd(mypot, entries, epsilonr, &sf, &ff, &ef));
         if (!haveDouble)

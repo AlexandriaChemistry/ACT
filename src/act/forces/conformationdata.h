@@ -78,10 +78,12 @@ public:
     //! Number of slots including the padding
     size_t              stride = 0;
     //! Coordinates
-    std::vector<double> x;
+    std::vector<real>   x;
     //! Forces
-    std::vector<double> f;
-    //! Energies of one potential, kept here to reuse the memory
+    std::vector<real>   f;
+    /*! Energies of one potential, kept here to reuse the memory, in double
+     * precision since sums of many interactions are taken
+     */
     std::vector<double> energies;
 
     /*! \brief Mark the coordinates as outdated
@@ -171,7 +173,7 @@ public:
             confs_.assign(confs.begin(), confs.end());
             inOrder_ = inOrder;
         }
-        size_t width = explicitSimdWidth<double>();
+        size_t width = explicitSimdWidth<real>();
         size_t st    = ((nc + width - 1)/width)*width;
         // Rows a multiple of 2 kB apart map to the same sets of the caches,
         // which then hold few of them
@@ -233,7 +235,7 @@ public:
         for(size_t c = 0; c < nconf; c++)
         {
             const auto &fc = coords[confs_[c]].fflat;
-            double     *fs = f.data() + c;
+            real       *fs = f.data() + c;
             for(size_t a = 0; a < natom; a++)
             {
                 for(int m = 0; m < DIM; m++)
@@ -255,7 +257,7 @@ public:
         for(size_t c = 0; c < nconf; c++)
         {
             auto         &fc = (*coords)[confs_[c]].fflat;
-            const double *fs = f.data() + c;
+            const real   *fs = f.data() + c;
             for(size_t a = 0; a < natom; a++)
             {
                 for(int m = 0; m < DIM; m++)
@@ -277,7 +279,7 @@ public:
         for(size_t c = 0; c < nconf; c++)
         {
             auto         &fc = (*coords)[confs_[c]].fflat;
-            const double *fs = f.data() + c;
+            const real   *fs = f.data() + c;
             for(auto a : shells_)
             {
                 for(int m = 0; m < DIM; m++)
@@ -301,7 +303,7 @@ public:
         for(size_t c = 0; c < nconf; c++)
         {
             auto         &xc = (*coords)[confs_[c]].xflat;
-            const double *xs = x.data() + c;
+            const real   *xs = x.data() + c;
             for(auto a : vsites_)
             {
                 for(int m = 0; m < DIM; m++)
@@ -321,7 +323,7 @@ public:
      * \param[in] srcConfs  The conformation in each slot of src, it has to
      *                      contain all conformations in the slots now
      */
-    void loadForces(const std::vector<double> &src,
+    void loadForces(const std::vector<real>   &src,
                     size_t                     srcStride,
                     const std::vector<size_t> &srcConfs)
     {
@@ -350,8 +352,8 @@ public:
         }
         for(size_t row = 0; row < nrow; row++)
         {
-            const double *s = src.data() + row*srcStride;
-            double       *d = f.data() + row*stride;
+            const real   *s = src.data() + row*srcStride;
+            real         *d = f.data() + row*stride;
             for(size_t c = 0; c < stride; c++)
             {
                 d[c] = s[srcSlot[c]];
@@ -401,7 +403,7 @@ private:
         for(size_t c = 0; c < stride; c++)
         {
             const auto &xc = coords[confs_[std::min(c, nconf-1)]].xflat;
-            double     *xs = x.data() + c;
+            real       *xs = x.data() + c;
             for(auto a : particles)
             {
                 for(int m = 0; m < DIM; m++)
@@ -636,7 +638,7 @@ struct CachedEnergies
      * The energies for other charges follow from it for the interactions
      * whose widths and coordinates do not change.
      */
-    std::vector<double> kernel;
+    std::vector<real>   kernel;
     //! Whether kernel has been computed
     bool                kernelValid             = false;
     //! ConformationData::coordinates of kernel
@@ -657,7 +659,7 @@ struct CachedEnergies
     /*! The coordinates of kernel, as ConformationArrays::x, such that only
      * the interactions of particles that moved are computed again
      */
-    std::vector<double> kernelX;
+    std::vector<real>   kernelX;
 };
 
 /*! \brief Energies and forces of the entries without shells in all conformations
@@ -674,7 +676,7 @@ struct FixedEnergies
     //! Whether the forces are in arrayForces rather than forces
     bool                                inArrays = false;
     //! The forces in the layout of ConformationArrays
-    std::vector<double>                 arrayForces;
+    std::vector<real>                   arrayForces;
     //! The stride of arrayForces
     size_t                              stride = 0;
     //! The conformation in each slot of arrayForces
