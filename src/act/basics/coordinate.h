@@ -65,20 +65,31 @@ constexpr double coordinateUnit  = 1/coordinateScale;
 //! The largest magnitude of a coordinate in nm, 2^7
 constexpr double coordinateMax   = 128.0;
 
+/*! \brief Report a coordinate beyond the range, kept out of line
+ * \param[in] x The coordinate in nm
+ * \throws gmx::RangeError always
+ */
+[[noreturn, gnu::cold, gnu::noinline]] inline void coordinateRangeError(double x)
+{
+    GMX_THROW(gmx::RangeError(gmx::formatString("Coordinate %g nm is not within %g nm from the origin",
+                                                x, coordinateMax)));
+}
+
 /*! \brief Convert a coordinate in nm to integer units
- * The coordinate is rounded to the nearest unit, halfway cases to even.
+ * The coordinate is rounded to the nearest unit, halfway cases to even,
+ * with the default rounding mode, which std::rint uses without the cost
+ * of std::nearbyint.
  * \param[in] x The coordinate in nm
  * \return the coordinate in units of coordinateUnit
  * \throws gmx::RangeError if the coordinate is not finite or too far from the origin
  */
 inline Coordinate toCoordinate(double x)
 {
-    double units = std::nearbyint(x*coordinateScale);
+    double units = std::rint(x*coordinateScale);
     // Below 2^63, the largest magnitude of the integers
-    if (!(std::abs(units) < coordinateMax*coordinateScale))
+    if (!(std::abs(units) < coordinateMax*coordinateScale)) [[unlikely]]
     {
-        GMX_THROW(gmx::RangeError(gmx::formatString("Coordinate %g nm is not within %g nm from the origin",
-                                                    x, coordinateMax)));
+        coordinateRangeError(x);
     }
     return static_cast<Coordinate>(units);
 }
@@ -126,6 +137,26 @@ inline Coordinate coordinateDifference(Coordinate a, Coordinate b)
 inline Coordinate coordinateSum(Coordinate a, Coordinate b)
 {
     return static_cast<Coordinate>(static_cast<std::uint64_t>(a) + static_cast<std::uint64_t>(b));
+}
+
+/*! \brief Move a coordinate, limited to the range
+ * The displacement is rounded and added to the integer, which gives the
+ * same as rounding the moved coordinate, without converting the
+ * coordinate. A move beyond the range ends at the range, for particles
+ * that may run away, such as shells.
+ * \param[in] c The coordinate
+ * \param[in] d The displacement in nm
+ * \return the moved coordinate
+ * \throws gmx::RangeError if the displacement is not a number
+ */
+inline Coordinate moveCoordinate(Coordinate c, double d)
+{
+    Coordinate moved;
+    if (__builtin_add_overflow(c, toCoordinateClamped(d), &moved))
+    {
+        moved = (d > 0) ? toCoordinate(0.999*coordinateMax) : toCoordinate(-0.999*coordinateMax);
+    }
+    return moved;
 }
 
 } // namespace alexandria

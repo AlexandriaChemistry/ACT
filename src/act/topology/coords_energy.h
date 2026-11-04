@@ -191,16 +191,16 @@ public:
         const Component &operator=(const O &o) const { *p_ = o.units(); return *this; }
         /*! \brief Move the component
          * A move beyond the range of the coordinates ends at the range, see
-         * toCoordinateClamped, since particles such as shells may run away.
+         * moveCoordinate, since particles such as shells may run away.
          * \param[in] v The displacement in nm
          * \return this component
          */
-        const Component &operator+=(double v) const { *p_ = toCoordinateClamped(fromCoordinate(*p_) + v); return *this; }
+        const Component &operator+=(double v) const { *p_ = moveCoordinate(*p_, v); return *this; }
         /*! \brief Move the component the other way, see operator+=
          * \param[in] v The displacement in nm
          * \return this component
          */
-        const Component &operator-=(double v) const { *p_ = toCoordinateClamped(fromCoordinate(*p_) - v); return *this; }
+        const Component &operator-=(double v) const { *p_ = moveCoordinate(*p_, -v); return *this; }
     private:
         //! The component
         C *p_;
