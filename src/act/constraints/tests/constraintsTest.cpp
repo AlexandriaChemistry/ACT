@@ -30,6 +30,7 @@
  * Implements part of the alexandria program.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
+#include <algorithm>
 #include <cmath>
 
 #include <map>
@@ -250,14 +251,25 @@ TEST(ConstrainerTest, ProjectForces)
         EXPECT_NEAR(0, iprod(dx, da),
                     gmx::test::precisionTolerance(1e-10, 1e-6*norm(dx)*(norm(ai) + norm(aj)))) << "constraint " << c;
     }
-    // Projecting again does not change anything
+    // Projecting again does not change anything. In single precision it
+    // removes what the rounding of the forces left along the constraints,
+    // which the coupling of the angle constraints amplifies, relative to
+    // the largest force.
     auto forces2 = forces;
     ASSERT_EQ(0, ccc.projectForces(nullptr, coords, &forces2));
+    double fmax = 0;
+    for(const auto &f : forces)
+    {
+        for(int m = 0; m < DIM; m++)
+        {
+            fmax = std::max(fmax, std::abs(static_cast<double>(f[m])));
+        }
+    }
     for(size_t i = 0; i < forces.size(); i++)
     {
         for(int m = 0; m < DIM; m++)
         {
-            EXPECT_NEAR(forces[i][m], forces2[i][m], gmx::test::precisionTolerance(1e-10, 1e-6));
+            EXPECT_NEAR(forces[i][m], forces2[i][m], gmx::test::precisionTolerance(1e-10, 1e-5*fmax));
         }
     }
 }
