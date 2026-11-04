@@ -81,13 +81,22 @@ std::map<eMinimizeStatus, std::string> eMinStat2String = {
     { eMinimizeStatus::OK,           "OK"             },
     { eMinimizeStatus::TooManySteps, "Too many steps" },
     { eMinimizeStatus::Solver,       "Solver failed"  },
-    { eMinimizeStatus::NoMinimum,    "There is no minimum"  },
+    { eMinimizeStatus::NoMinimum,    "Could not find a lower minimum"  },
     { eMinimizeStatus::Constraints,  "Could not satisfy the constraints"  }
 };
 
 const std::string &eMinimizeStatusToString(eMinimizeStatus e)
 {
     return eMinStat2String[e];
+}
+
+std::string minimizeStatusMessage(eMinimizeStatus e, double energy)
+{
+    if (eMinimizeStatus::NoMinimum == e)
+    {
+        return gmx::formatString("%s than %g kJ/mol", eMinimizeStatusToString(e).c_str(), energy);
+    }
+    return eMinimizeStatusToString(e);
 }
 
 void MolHandler::computeHessian(const ForceField                  *pd,
