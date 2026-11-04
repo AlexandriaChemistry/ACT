@@ -69,9 +69,9 @@ namespace alexandria
  * \param[in] maxShellDistance2 Square of the maximum core-shell distance, 0 if there is none
  * \return The sum of the squared shell forces
  */
-static double shellForce2(const std::vector<ActAtom>          &atoms,
-                          const std::vector<bool>             &isShell,
-                          const ParticleVectors<const real> &x,
+static double shellForce2(const std::vector<ActAtom>               &atoms,
+                          const std::vector<bool>                  &isShell,
+                          const CoordinateVectors<const Coordinate> &x,
                           const ParticleVectors<const real> &f,
                           size_t                               offset,
                           double                               maxShellDistance2)
@@ -93,10 +93,9 @@ static double shellForce2(const std::vector<ActAtom>          &atoms,
         flops += 6;
         if (maxShellDistance2 > 0 && atoms[i].parents().size() == 1)
         {
-            rvec dx;
-            rvec_sub(x[i+offset].rvec(), x[atoms[i].parents()[0]+offset].rvec(), dx);
-            double dx2 = iprod(dx, dx);
-            double fdx = iprod(fi, dx);
+            gmx::RVec dx  = x[i+offset] - x[atoms[i].parents()[0]+offset];
+            double    dx2 = iprod(dx, dx);
+            double    fdx = iprod(fi, dx);
             flops += 13;
             if (dx2 >= atWall && fdx > 0)
             {
@@ -215,7 +214,7 @@ static double calcFscaleFlops(real k2, real F)
  * \return the number of floating point operations, see Timings::addFlops
  */
 static inline double update_shell_pos(int                                  shell,
-                                      const ParticleVectors<real>       &coordinates,
+                                      const CoordinateVectors<Coordinate> &coordinates,
                                       const ParticleVectors<const real> &forces,
                                       double                               fcShell,
                                       double                               fcHyper,
@@ -246,7 +245,7 @@ static inline double update_shell_pos(int                                  shell
  */
 static double update_shell_positions(int                                  core,
                                    int                                  shell,
-                                   const ParticleVectors<real>       &coordinates,
+                                   const CoordinateVectors<Coordinate> &coordinates,
                                    const ParticleVectors<const real> &forces,
                                    double                               fcShell,
                                    double                               fcHyper,
@@ -254,8 +253,7 @@ static double update_shell_positions(int                                  core,
                                    double                               step)
 {
     // Core shell vector
-    gmx::RVec r_core_shell;
-    rvec_sub(coordinates[shell].rvec(), coordinates[core].rvec(), r_core_shell);
+    gmx::RVec r_core_shell = coordinates[shell] - coordinates[core];
     double rcs    = norm(r_core_shell);
     // The vector and its norm with the square root
     double flops  = 13;
@@ -357,7 +355,7 @@ static std::vector<std::pair<size_t, size_t>> shellParents(const std::vector<Act
  * \param[inout] coords The coordinates
  */
 static void resetShells(const std::vector<std::pair<size_t, size_t>> &shells,
-                        const ParticleVectors<real>                &coords)
+                        const CoordinateVectors<Coordinate>          &coords)
 {
     for(const auto &sp : shells)
     {
@@ -373,9 +371,9 @@ static void resetShells(const std::vector<std::pair<size_t, size_t>> &shells,
  * \param[in]    top          The topology
  * \param[inout] x            The coordinates
  */
-static void constructVsites(const VsiteHandler            &vsiteHandler,
-                            const Topology                *top,
-                            const ParticleVectors<real> &x)
+static void constructVsites(const VsiteHandler                  &vsiteHandler,
+                            const Topology                      *top,
+                            const CoordinateVectors<Coordinate> &x)
 {
     vsiteHandler.constructPositions(top, x.data(), x.stride(), 1, 1);
 }
@@ -386,9 +384,9 @@ static void constructVsites(const VsiteHandler            &vsiteHandler,
  * \param[in]    x            The coordinates
  * \param[inout] f            The forces, those on the virtual sites become zero
  */
-static void spreadVsites(const VsiteHandler                  &vsiteHandler,
-                         const Topology                      *top,
-                         const ParticleVectors<const real> &x,
+static void spreadVsites(const VsiteHandler                        &vsiteHandler,
+                         const Topology                            *top,
+                         const CoordinateVectors<const Coordinate> &x,
                          const ParticleVectors<real>       &f)
 {
     GMX_RELEASE_ASSERT(x.stride() == f.stride(), "Coordinates and forces have different layouts");
@@ -443,10 +441,9 @@ static void shellForces2(const std::vector<ActAtom>  &atoms,
             flops += 6;
             if (wall)
             {
-                rvec dx;
-                rvec_sub(x[i+offset].rvec(), x[atoms[i].parents()[0]+offset].rvec(), dx);
-                double dx2 = iprod(dx, dx);
-                double fdx = iprod(fi, dx);
+                gmx::RVec dx  = x[i+offset] - x[atoms[i].parents()[0]+offset];
+                double    dx2 = iprod(dx, dx);
+                double    fdx = iprod(fi, dx);
                 flops += 13;
                 if (dx2 >= atWall && fdx > 0)
                 {
@@ -611,7 +608,9 @@ size_t ForceComputer::updateShells(const Topology            *top,
             auto                       &dim = (*myCoords)[c];
             auto                        x   = cdata->x(c);
             ParticleVectors<const real> f   = cdata->f(c);
-            gmx::RVec xold = x[shellGlobal].rvec();
+            // The displacement is computed from the integers
+            Coordinate xold[DIM] = { x[shellGlobal].units(XX), x[shellGlobal].units(YY),
+                                     x[shellGlobal].units(ZZ) };
             flops += update_shell_positions(coreGlobal, shellGlobal,
                                             x, f,
                                             fc1, params[polFCHYPER], params[polRHYPER],
@@ -620,9 +619,8 @@ size_t ForceComputer::updateShells(const Topology            *top,
             // Check distance from parent, if there is only one
             if (wall)
             {
-                rvec dx;
-                rvec_sub(x[shellGlobal].rvec(), x[coreParentGlobal].rvec(), dx);
-                real dx2 = iprod(dx, dx);
+                gmx::RVec dx  = x[shellGlobal] - x[coreParentGlobal];
+                real      dx2 = iprod(dx, dx);
                 flops   += 8;
                 if (dx2 > maxShellDistance2)
                 {
@@ -643,7 +641,10 @@ size_t ForceComputer::updateShells(const Topology            *top,
             }
             else
             {
-                rvec_sub(x[shellGlobal].rvec(), xold, dim.shellDx[shellGlobal]);
+                for(int m = 0; m < DIM; m++)
+                {
+                    dim.shellDx[shellGlobal][m] = fromCoordinate(coordinateDifference(x[shellGlobal].units(m), xold[m]));
+                }
                 dxForce[r] += iprod(dim.shellDx[shellGlobal], f[shellGlobal].rvec());
                 flops      += 9;
             }
@@ -2014,7 +2015,10 @@ void ForceComputer::computeInteraction(MsgHandler                               
         // particles in the dimer
         size_t stride  = arrays[2]->stride;
         result->stride = stride;
-        result->x.assign(arrays[2]->x.begin(), arrays[2]->x.begin() + DIM*natom*stride);
+        // The integer coordinates in nm, see coordinate.h
+        result->x.resize(DIM*natom*stride);
+        std::transform(arrays[2]->x.begin(), arrays[2]->x.begin() + DIM*natom*stride, result->x.begin(),
+                       [](Coordinate c) { return fromCoordinate(c); });
         result->f.assign(arrays[2]->f.begin(), arrays[2]->f.begin() + DIM*natom*stride);
         for(size_t k = 0; k < 2; k++)
         {

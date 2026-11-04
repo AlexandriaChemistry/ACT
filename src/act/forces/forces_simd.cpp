@@ -1696,6 +1696,9 @@ static ACT_ALWAYS_INLINE void withOne(const One           &one,
 }
 
 /*! \brief Compute one potential for one conformation
+ * The coordinates of the particles of an interaction are relative to its
+ * first particle, which is exact, see ConformationCoordinates, except for
+ * interactions of one particle, such as position restraints.
  * \param[in]    msghandler  For warnings and errors
  * \param[in]    entries     The atom identifiers and parameters
  * \param[in]    x           The coordinates of all particles
@@ -1712,12 +1715,15 @@ static inline void computeConformation(MsgHandler         *msghandler,
                                        One                 one)
 {
     double e[MAX_ENER] = { 0, 0, 0 };
+    X      xe          = x;
     for (const auto &b : entries)
     {
-        const TopologyEntry &entry = *b.operator->();
+        const TopologyEntry &entry   = *b.operator->();
+        const auto          &indices = entry.atomIndices();
+        xe.setOrigin(indices.size() > 1 ? indices[0] : -1);
         withOne(one, entry, [&](const auto &o)
                 {
-                    o(msghandler, entry, entry.atomIndices(), x, forces, e);
+                    o(msghandler, entry, indices, xe, forces, e);
                 });
     }
     for (int k = 0; k < MAX_ENER; k++)
@@ -2334,17 +2340,28 @@ static void keepEnergies(const double   *energies,
 
 /*! \brief The coordinates of one conformation for the interaction functions
  * These use the coordinates of a particle as an rvec, as in the local arrays
- * of computeConformations.
+ * of computeConformations. They are relative to an origin particle, from
+ * the integers, such that they are exact, see coordinate.h, or absolute
+ * without an origin.
  */
 struct ConformationCoordinates
 {
     //! The coordinates
-    ParticleVectors<const real> x;
+    CoordinateVectors<const Coordinate> x;
+    //! The origin particle, or -1 for absolute coordinates
+    int                                 origin = -1;
+    /*! \brief Set the origin
+     * \param[in] o The origin particle, or -1 for absolute coordinates
+     */
+    void setOrigin(int o) { origin = o; }
     /*! \brief Return the coordinates of a particle
      * \param[in] a The particle
      * \return the coordinates
      */
-    gmx::RVec operator[](size_t a) const { return x[a].rvec(); }
+    gmx::RVec operator[](size_t a) const
+    {
+        return origin < 0 ? x[a].rvec() : x[a] - x[origin];
+    }
 };
 
 /*! \brief Compute a potential one conformation at a time, with forces
@@ -2456,8 +2473,8 @@ static void computeConformations(TopologyEntryRange         entries,
     {
         const TopologyEntry &entry = *b.operator->();
         auto  &indices = entry.atomIndices();
-        const T *xa[NATOM];
-        T       *fa[NATOM];
+        const Coordinate *xa[NATOM];
+        T                *fa[NATOM];
         for (int a = 0; a < NATOM; a++)
         {
             xa[a] = ca->x.data() + DIM*indices[a]*stride;
@@ -2472,7 +2489,11 @@ static void computeConformations(TopologyEntryRange         entries,
                 {
                     for (int m = 0; m < DIM; m++)
                     {
-                        xl[a][m] = xa[a][m*stride+c];
+                        // Relative to the first atom, which is exact, see
+                        // coordinate.h, except for interactions of one
+                        // atom, such as position restraints
+                        Coordinate x0 = (NATOM > 1) ? xa[0][m*stride+c] : 0;
+                        xl[a][m] = fromCoordinate(coordinateDifference(xa[a][m*stride+c], x0));
                         fl[a][m] = Forces ? fa[a][m*stride+c] : 0.0;
                     }
                 }
