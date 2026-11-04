@@ -175,14 +175,18 @@ public:
     void initChargeGeneration(iMolSelect ims);
 
     /*! \brief Do the actual optimization.
-     * \param[in] optimize    If true an optimization will be done
-     * \param[in] sensitivity If true, a sensitivity analysis will be done
-     * \param[in] jtree       for machine readable output
+     * Afterwards, a sensitivity analysis is done as selected with
+     * the -sensitivity option, see GAConfigHandler::sensitivity.
+     * \param[in] optimize        If true an optimization will be done
+     * \param[in] sensitivityFile JSON file for the results of the
+     *                            sensitivity analysis
+     * \param[in] jtree           for machine readable output, gets a
+     *                            summary of the sensitivity analysis
      * \return true if better parameters were found.
      */
-    bool runMaster(bool      optimize,
-                   bool      sensitivity,
-                   JsonTree *jtree);
+    bool runMaster(bool               optimize,
+                   const std::string &sensitivityFile,
+                   JsonTree          *jtree);
 
     /* * * * * * * * * * * * * * * * * * * * * *
     * BEGIN: Initializing stuff                *

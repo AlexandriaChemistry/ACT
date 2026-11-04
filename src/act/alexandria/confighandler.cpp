@@ -225,6 +225,8 @@ static const char *optimizerStr[5] = {nullptr, "MCMC", "GA", "HYBRID", nullptr};
 //! \brief Couple of string to use in cmdline option for the probabilityComputer
 static const char *probStr[5] = {nullptr, "RANK", "FITNESS", "BOLTZMANN", nullptr};
 static const char *lossFunctionStr[6] = { nullptr, "MSE", "MAE", "Huber", "Asinh", nullptr };
+//! \brief Strings for the cmdline option for the sensitivity analysis, the first is the default
+static const char *sensitivityStr[5] = { nullptr, "1D", "No", "2D", nullptr };
 
 void GAConfigHandler::add_options(std::vector<t_pargs>             *pargs,
                                   gmx_unused std::vector<t_filenm> *fnms)
@@ -234,6 +236,7 @@ void GAConfigHandler::add_options(std::vector<t_pargs>             *pargs,
     optimizerStr[0]    = nullptr;
     probStr[0]         = nullptr;
     lossFunctionStr[0] = nullptr;
+    sensitivityStr[0]  = nullptr;
     t_pargs pa[] = {
         { "-ga_evaltest", FALSE, etBOOL, {&evaluateTestset_},
           "Evaluate the paramters on the test set during GA." },
@@ -268,7 +271,9 @@ void GAConfigHandler::add_options(std::vector<t_pargs>             *pargs,
         { "-max_test_generations", FALSE, etINT, {&maxTestGenerations_},
           "Generation limit for the test fitness to improve in Genetic Algorithm. -1 stands for disabled, otherwise if the test fitness does not improve within this number of generations, the optimization will stop to prevent over-fitting." },
         { "-max_local_minimum_generations", FALSE, etINT, {&maxLocalMinimumGenerations_},
-          "Generation limit for the best genome to stay in a local minimum. If the genome remains more than this number of generation in a local minimum, the evolution is assumed to be converged. The genome is in a local minimum if, according to the sensitivity analysis, the chi2 of each parameter curves upwards and the parameter is within 5% of its range of the minimum." },
+          "Generation limit for the best genome to stay in a local minimum. If the genome remains more than this number of generation in a local minimum, the evolution is assumed to be converged. The genome is in a local minimum if, according to the sensitivity analysis, the chi2 of each parameter curves upwards and the parameter is within 5% of its range of the minimum. With -sensitivity 2D every pair of parameters has to be in a minimum as well." },
+        { "-sensitivity", FALSE, etENUM, {sensitivityStr},
+          "Sensitivity analysis of the parameters after training (only MCMC and HYBRID): No, 1D for each parameter on its own or 2D for each parameter and every pair of parameters. The choice of 1D or 2D also applies to the local minimum test of -max_local_minimum_generations, which uses 1D if this is No. See the help text." },
         { "-log_volume", FALSE, etBOOL, {&logVolume_},
           "Compute the (hyper)volume in logarithmic scale." },
         { "-vfp_vol_frac_limit", FALSE, etREAL, {&vfpVolFracLimit_},
@@ -294,6 +299,7 @@ void GAConfigHandler::check_pargs(MsgHandler *msghandler)
     optAlg_       = stringToOptimizerAlg(optimizerStr[0]);
     pcAlg_        = stringToProbabilityComputerAlg(probStr[0]);
     lossFunction_ = stringToLossFunction(lossFunctionStr[0]);
+    sensitivity_  = stringToSensitivityMode(sensitivityStr[0]);
 
     GMX_RELEASE_ASSERT(popSize_ > 0, "-pop_size must be positive.");
     if (popSize_ % 2 != 0)  // If popSize is odd

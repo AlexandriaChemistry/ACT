@@ -462,6 +462,32 @@ void OptACM::printNumCalcDevEstimate()
     nCalcDevIgnore *= gach_.popSize();
 
     // Add extra ones just in master
+    if (gach_.optimizer() != OptimizerAlg::GA)
+    {
+        // The sensitivity analysis after training, two per parameter and
+        // in 2D four per pair of parameters
+        long np = sii_->nParam();
+        switch (gach_.sensitivity())
+        {
+        case SensitivityMode::OneD:
+            nCalcDevTrain += 2*np;
+            break;
+        case SensitivityMode::TwoD:
+            nCalcDevTrain += 2*np*np;
+            break;
+        case SensitivityMode::No:
+            break;
+        }
+    }
+    if (gach_.optimizer() == OptimizerAlg::HYBRID &&
+        (gach_.maxLocalMinimumGenerations() > 0 || bch_.adaptiveStep()))
+    {
+        // The curvature analysis of the best genome in each generation,
+        // two-dimensional only if the analysis after training is
+        long np = sii_->nParam();
+        long perGeneration = (gach_.sensitivity() == SensitivityMode::TwoD) ? 2*np*np : 2*np;
+        nCalcDevTrain += perGeneration*gach_.maxGenerations();
+    }
     nCalcDevTest += 1;  // Always done in master to print the components of the initial vector
     nCalcDevTrain += 1;  // At the end, for the best
     nCalcDevTest += 1;  // At the end, for the best
@@ -622,9 +648,9 @@ void OptACM::printGenomeTable(const std::map<iMolSelect, ga::Genome> &genome,
     }
 }
 
-bool OptACM::runMaster(bool      optimize,
-                       bool      sensitivity,
-                       JsonTree *jtree)
+bool OptACM::runMaster(bool               optimize,
+                       const std::string &sensitivityFile,
+                       JsonTree          *jtree)
 {
     GMX_RELEASE_ASSERT(commRec_.nodeType() == NodeType::Master,
                        "I thought I was the master...");
@@ -670,15 +696,49 @@ bool OptACM::runMaster(bool      optimize,
             commRec_.send(dest, read);
             commRec_.send(dest, bestGenome[iMolSelect::Train].bases());
         }
+        // They compute its fitness and send it back, see ACTMiddleMan::run.
+        // Nothing is done with it, but it has to be received before the
+        // middlemen are given work.
+        for(auto &src : commRec_.middlemen())
+        {
+            ga::Genome genome;
+            genome.Receive(&commRec_, src);
+        }
     }
-    if (gach_.optimizer() != OptimizerAlg::GA && sensitivity && msghandler_.ok())
+    auto sensitivity = gach_.sensitivity();
+    if (gach_.optimizer() != OptimizerAlg::GA &&
+        sensitivity != SensitivityMode::No && msghandler_.ok())
     {
         // Do sensitivity analysis only on the training set. The middlemen
         // wait for work and compute part of it.
         SensitivityAnalysis sens;
         (void) sens.run(&msghandler_, sii_, fitComp_,
-                        &bestGenome[iMolSelect::Train], iMolSelect::Train, jtree,
+                        &bestGenome[iMolSelect::Train], iMolSelect::Train, sensitivity,
                         false, true);
+        const auto &res = sens.result();
+        if (res.mode != SensitivityMode::No)
+        {
+            // The details go to their own file, train_ff.json gets a summary
+            sens.write(sensitivityFile);
+            msghandler_.write(gmx::formatString("Details of the sensitivity analysis are in %s",
+                                                sensitivityFile.c_str()));
+            if (jtree)
+            {
+                JsonTree summary("sensitivity");
+                summary.addObject("mode", sensitivityModeToString(res.mode));
+                summary.addObject("file", sensitivityFile);
+                summary.addObject("minimum", res.minimum ? "yes" : "no");
+                summary.addObject("n_parameters", std::to_string(res.nParameters));
+                summary.addObject("n_parameters_converged", std::to_string(res.nParametersConverged));
+                summary.addObject("n_parameters_flat", std::to_string(res.nParametersFlat));
+                if (res.mode == SensitivityMode::TwoD)
+                {
+                    summary.addObject("n_pairs", std::to_string(res.nPairs));
+                    summary.addObject("n_pairs_converged", std::to_string(res.nPairsConverged));
+                }
+                jtree->addObject(summary);
+            }
+        }
     }
     // Stop the middlemen ...
     if (commRec_.nmiddlemen() > 1)
@@ -815,8 +875,12 @@ int train_ff(int argc, char *argv[])
         "added if atoms from row VI or VII in the periodic table have a positive",
         "charge. The penalty is equal to the force constant given on the command line",
         "time the square of the charge.[PAR]",
-        "Following training a sensitivity analysis can be done on the trained",
-        "parameters using the [TT]-sensitivity[tt] flag. It is also possible",
+        "Following training with MCMC or HYBRID a sensitivity analysis is done on",
+        "the trained parameters, selected with [TT]-sensitivity[tt]: [TT]1D[tt]",
+        "(default) changes each parameter on its own, [TT]2D[tt] also changes",
+        "every pair of parameters, and [TT]No[tt] turns the analysis off. The",
+        "results are written to the [TT]-sensout[tt] file, the log file gets a summary.",
+        "It is also possible",
         "to do a sensitivity analysis on an existing force field. In that case",
         "please select either [TT]-fc_inter[tt] (Intermolecular energy) or [TT]-fc_epot[tt]",
         "(Intramolecular energy), set the parameters to be investigated with",
@@ -827,7 +891,6 @@ int train_ff(int argc, char *argv[])
 
     bool                bcompress           = false;
     bool                bOptimize           = true;
-    bool                bSensitivity        = true;
     bool                bForceOutput        = false;
 
     gmx_output_env_t           *oenv;
@@ -839,9 +902,7 @@ int train_ff(int argc, char *argv[])
             { "-compress", FALSE, etBOOL, {&bcompress},
               "Compress output XML file" },
             { "-optimize",     FALSE, etBOOL, {&bOptimize},
-              "Do parameter optimization when true, or a single calculation otherwise." },
-            { "-sensitivity",  FALSE, etBOOL, {&bSensitivity},
-              "Do a sensitivity analysis. See help text." }
+              "Do parameter optimization when true, or a single calculation otherwise." }
         };
 
         for (int i = 0; i < asize(pa); i++)
@@ -855,7 +916,8 @@ int train_ff(int argc, char *argv[])
         { efXVG,  "-conv",    "param_conv" , ffWRITE  },
         { efXVG,  "-chi2",    "chi_squared", ffWRITE  },
         { efDAT,  "-fitness", "ga_fitness",  ffWRITE  },
-        { efJSON, "-json",    "train_ff",    ffWRITE  }
+        { efJSON, "-json",    "train_ff",    ffWRITE  },
+        { efJSON, "-sensout", "sensitivity", ffWRITE  }
     };
 
     alexandria::OptACM opt;
@@ -1053,7 +1115,9 @@ int train_ff(int argc, char *argv[])
         bool bMinimum = false;
         if (initOK)
         {
-            bMinimum = opt.runMaster(bOptimize, bSensitivity, &jtree);
+            bMinimum = opt.runMaster(bOptimize,
+                                     opt2fn("-sensout", filenms.size(), filenms.data()),
+                                     &jtree);
             if (bOptimize)
             {
                 auto msg = gmx::formatString("Training finished %s.", bMinimum ? "succesfully" : "without finding a better force field");
@@ -1100,7 +1164,7 @@ int train_ff(int argc, char *argv[])
                     middleman.run(opt.msgHandler());
                 }
             }
-            else if (bOptimize || bSensitivity)
+            else if (bOptimize || opt.gach()->sensitivity() != SensitivityMode::No)
             {
                 if (opt.sii()->nParam() > 0)
                 {

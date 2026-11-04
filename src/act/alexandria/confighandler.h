@@ -38,6 +38,7 @@
 #include <vector>
 
 #include "act/alexandria/loss_function.h"
+#include "act/alexandria/sensitivity.h"
 #include "act/constraints/shake.h"
 #include "act/properties/velocityhandler.h"
 #include "gromacs/commandline/pargs.h"
@@ -151,6 +152,8 @@ private:
     int maxTestGenerations_ = -1;
     //! Generation limit for the best genome to stay in a local minimum
     int maxLocalMinimumGenerations_ = -1;
+    //! Sensitivity analysis after training and to test for a local minimum
+    SensitivityMode sensitivity_ = SensitivityMode::OneD;
     //! Whether to compute the volume in logarithmic scale
     bool logVolume_ = false;
     //! For VolumeFractionPenalizer, the limit of the volume fraction
@@ -258,6 +261,14 @@ public:
 
     //! \return the generation limit for the best genome to be in locla minimum
     int maxLocalMinimumGenerations() const { return maxLocalMinimumGenerations_; }
+
+    //! \return the sensitivity analysis to do
+    SensitivityMode sensitivity() const { return sensitivity_; }
+
+    /*! \brief Set the sensitivity analysis to do
+     * \param[in] mode The sensitivity mode
+     */
+    void setSensitivity(SensitivityMode mode) { sensitivity_ = mode; }
 
     //! \return true if we must evaluate fitness on test set, false otherwise
     bool evaluateTestset() const { return evaluateTestset_; }

@@ -39,11 +39,14 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
+#include <fstream>
 #include <set>
 #include <string>
 #include <vector>
 
+#include <Eigen/Eigenvalues>
 #include <gtest/gtest.h>
+#include <nlohmann/json.hpp>
 
 #include "act/alexandria/acmfitnesscomputer.h"
 #include "act/alexandria/acmindividual.h"
@@ -57,7 +60,6 @@
 #include "act/ga/genome.h"
 #include "act/import/compound_reader.h"
 #include "act/utility/communicationrecord.h"
-#include "act/utility/jsontree.h"
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/fileio/filetypes.h"
 
@@ -70,35 +72,6 @@ namespace alexandria
 namespace
 {
 
-/*! \brief Find an object in a JsonTree
- * \param[in] tree The tree
- * \param[in] key  The key of the object
- * \return the object or nullptr if not found
- */
-const JsonTree *findObject(const JsonTree &tree, const std::string &key)
-{
-    for(const auto &obj : tree.objects())
-    {
-        if (obj.key() == key)
-        {
-            return &obj;
-        }
-    }
-    return nullptr;
-}
-
-/*! \brief The value of a number in a JsonTree
- * \param[in] tree The tree
- * \param[in] key  The key of the number
- * \return the number
- */
-double findNumber(const JsonTree &tree, const std::string &key)
-{
-    auto obj = findObject(tree, key);
-    EXPECT_NE(nullptr, obj) << key;
-    return obj ? std::stod(obj->value()) : 0;
-}
-
 // Test: With an empty genome there is nothing to analyse, the routine
 // reports a minimum and adds nothing to the output.
 TEST(SensitivityAnalysisTest, EmptyGenome)
@@ -108,11 +81,14 @@ TEST(SensitivityAnalysisTest, EmptyGenome)
     cr.init(cr.size());
     StaticIndividualInfo sii(&cr);
     ga::Genome           genome;
-    JsonTree             jtree("SensitivityAnalysisTest");
     SensitivityAnalysis  sens;
-    EXPECT_TRUE(sens.run(&msghandler, &sii, nullptr, &genome, iMolSelect::Train, &jtree, true));
-    EXPECT_TRUE(jtree.objects().empty());
-    EXPECT_TRUE(sens.forceConstants().empty());
+    for (auto mode : { SensitivityMode::No, SensitivityMode::OneD, SensitivityMode::TwoD })
+    {
+        EXPECT_TRUE(sens.run(&msghandler, &sii, nullptr, &genome, iMolSelect::Train, mode, true));
+        EXPECT_TRUE(sens.json().is_null());
+        EXPECT_TRUE(sens.forceConstants().empty());
+        EXPECT_EQ(SensitivityMode::No, sens.result().mode);
+    }
 }
 
 /*! \brief Sensitivity analysis of a small training set
@@ -207,17 +183,33 @@ protected:
         double chi2_0 = chi2(param);
         EXPECT_GT(chi2_0, 0);
 
-        JsonTree            jtree("SensitivityAnalysisTest");
         SensitivityAnalysis sens;
         bool                minimum = sens.run(&msghandler_, sii_, &fitComp_, &genome_,
-                                               iMolSelect::Train, &jtree, true);
+                                               iMolSelect::Train, SensitivityMode::OneD, true);
         EXPECT_TRUE(msghandler_.ok());
         EXPECT_EQ(param, genome_.bases());
         ASSERT_EQ(np, sens.forceConstants().size());
-        ASSERT_EQ(1u, jtree.objects().size());
-        const auto &sensTree = jtree.objects()[0];
-        EXPECT_EQ("sensitivity", sensTree.key());
-        ASSERT_EQ(np, sensTree.objects().size());
+        // The summary
+        const auto &res = sens.result();
+        EXPECT_EQ(SensitivityMode::OneD, res.mode);
+        EXPECT_DOUBLE_EQ(chi2_0, res.chi2_0);
+        EXPECT_EQ(np, res.nParameters);
+        EXPECT_EQ(2*np, res.nEvaluations);
+        EXPECT_EQ(minimum, res.minimum);
+        // The output has the summary and an entry per parameter
+        ASSERT_TRUE(sens.json().contains("sensitivity"));
+        const auto &sensJson = sens.json()["sensitivity"];
+        EXPECT_EQ("1D", sensJson["mode"].get<std::string>());
+        EXPECT_EQ("Train", sensJson["dataset"].get<std::string>());
+        EXPECT_DOUBLE_EQ(chi2_0, sensJson["chi2_0"].get<double>());
+        EXPECT_EQ(np, sensJson["n_parameters"].get<size_t>());
+        EXPECT_EQ(2*np, sensJson["n_evaluations"].get<size_t>());
+        EXPECT_EQ(0.05, sensJson["tolerance_fraction"].get<double>());
+        EXPECT_EQ(minimum, sensJson["minimum"].get<bool>());
+        EXPECT_FALSE(sensJson.contains("pairs"));
+        const auto &entries = sensJson["parameters"];
+        ASSERT_EQ(np, entries.size());
+        size_t nconv = 0;
 
         bool allConverged = true;
         if (pmin)
@@ -262,28 +254,345 @@ protected:
             bool conv = (a > 0 &&
                          std::abs(param[i] - std::clamp(pmin_i, lower, upper)) <= 0.05*(upper - lower));
             allConverged = allConverged && conv;
+            if (conv)
+            {
+                nconv += 1;
+            }
             if (pmin)
             {
                 pmin->push_back(std::clamp(pmin_i, lower, upper));
             }
 
-            const auto &entry = sensTree.objects()[i];
-            EXPECT_EQ(std::to_string(i), entry.key());
-            EXPECT_EQ(sii_->paramNames()[i],
-                      findObject(entry, "particle")->value() + " " + findObject(entry, "parameter")->value());
-            EXPECT_NEAR(param[i], findNumber(entry, "p_orig"), 1e-6) << sii_->paramNames()[i];
-            EXPECT_NEAR(chi2_0, findNumber(entry, "chi2_orig"), 1e-6*chi2_0 + 1e-6);
-            EXPECT_NEAR(pmin_i, findNumber(entry, "p_min"), 1e-5*std::abs(pmin_i) + 1e-6)
-                << sii_->paramNames()[i];
-            EXPECT_EQ(conv ? "yes" : "no", findObject(entry, "converged")->value())
-                << sii_->paramNames()[i];
+            const auto &entry = entries[i];
+            const auto &name  = sii_->paramNames()[i];
+            EXPECT_EQ(i, entry["index"].get<size_t>());
+            EXPECT_EQ(name, entry["name"].get<std::string>());
+            EXPECT_EQ(name, entry["particle"].get<std::string>() + " " + entry["parameter"].get<std::string>());
+            EXPECT_EQ(lower, entry["lower"].get<double>());
+            EXPECT_EQ(upper, entry["upper"].get<double>());
+            EXPECT_EQ((upper - lower)/200, entry["delta"].get<double>());
+            EXPECT_EQ(param[i], entry["p_orig"].get<double>()) << name;
+            EXPECT_DOUBLE_EQ(chi2_0, entry["chi2_orig"].get<double>()) << name;
+            // The three points, in increasing order of the parameter
+            ASSERT_EQ(3u, entry["points"].size()) << name;
+            for(size_t k = 0; k < 3; k++)
+            {
+                EXPECT_DOUBLE_EQ(x[k], entry["points"][k]["p"].get<double>()) << name;
+                EXPECT_NEAR(y[k], entry["points"][k]["chi2"].get<double>(), 1e-12*y[k]) << name;
+            }
+            EXPECT_TRUE(entry["fit_ok"].get<bool>()) << name;
+            EXPECT_NEAR(a, entry["a"].get<double>(), 1e-5*std::abs(a)) << name;
+            EXPECT_EQ(fc, entry["force_constant"].get<double>()) << name;
+            EXPECT_NEAR(pmin_i, entry["p_min"].get<double>(), 1e-5*std::abs(pmin_i) + 1e-6) << name;
+            EXPECT_NEAR(std::clamp(pmin_i, lower, upper), entry["p_min_bounded"].get<double>(),
+                        1e-5*std::abs(pmin_i) + 1e-6) << name;
+            EXPECT_EQ(conv, entry["converged"].get<bool>()) << name;
+            // The electronegativities all change the chi2
+            EXPECT_FALSE(entry["flat"].get<bool>()) << name;
         }
         // The genome is a minimum if all parameters are converged
         EXPECT_EQ(allConverged, minimum);
+        EXPECT_EQ(nconv, res.nParametersConverged);
+        EXPECT_EQ(nconv, sensJson["n_parameters_converged"].get<size_t>());
+        EXPECT_EQ(0u, res.nParametersFlat);
+        EXPECT_EQ(0u, sensJson["n_parameters_flat"].get<size_t>());
         if (converged)
         {
             *converged = minimum;
         }
+    }
+
+    /*! \brief The three values of a parameter in the analysis
+     * Half a percent of the range apart, on one side of the parameter
+     * at a bound.
+     * \param[in] param The parameters
+     * \param[in] i     The parameter
+     * \return the values in increasing order
+     */
+    std::vector<double> gridOf(const std::vector<double> &param, size_t i)
+    {
+        double lower = sii_->lowerBound()[i];
+        double upper = sii_->upperBound()[i];
+        double delta = (upper - lower)/200;
+        if (param[i] - delta < lower)
+        {
+            return { param[i], param[i] + delta, param[i] + 2*delta };
+        }
+        else if (param[i] + delta > upper)
+        {
+            return { param[i] - 2*delta, param[i] - delta, param[i] };
+        }
+        return { param[i] - delta, param[i], param[i] + delta };
+    }
+
+    /*! \brief The parabola through three points
+     * \param[in] x The abscissae
+     * \param[in] y The ordinates
+     * \param[in] t Where to evaluate it
+     * \return the value of the parabola at t
+     */
+    static double lagrange(const std::vector<double> &x, const std::vector<double> &y, double t)
+    {
+        return (y[0]*(t - x[1])*(t - x[2])/((x[0] - x[1])*(x[0] - x[2])) +
+                y[1]*(t - x[0])*(t - x[2])/((x[1] - x[0])*(x[1] - x[2])) +
+                y[2]*(t - x[0])*(t - x[1])/((x[2] - x[0])*(x[2] - x[1])));
+    }
+
+    //! \return the curvature a of the parabola a x^2 + b x + c through three points
+    static double curvature(const std::vector<double> &x, const std::vector<double> &y)
+    {
+        double s01 = (y[1] - y[0])/(x[1] - x[0]);
+        double s12 = (y[2] - y[1])/(x[2] - x[1]);
+        return (s12 - s01)/(x[2] - x[0]);
+    }
+
+    /*! \brief Run the two-dimensional analysis and compare it to the chi-squared
+     * The chi-squared of each corner of each pair is computed here, the
+     * coupling is fitted to what the parabolas through the points of each
+     * parameter do not describe.
+     * \param[in]  param     The parameters to start from
+     * \param[out] converged Whether the analysis found the parameters and
+     *                       all pairs converged, may be nullptr
+     * \param[out] newton    The parameters after a projected Newton step,
+     *                       may be nullptr. Parameters at a bound with the
+     *                       gradient pointing out of the bounds stay there,
+     *                       the step of the others uses the pseudo-inverse
+     *                       of their Hessian, and is limited to the bounds.
+     * \param[out] output    The output of the analysis, may be nullptr
+     */
+    void checkPairs(const std::vector<double> &param,
+                    bool                      *converged = nullptr,
+                    std::vector<double>       *newton    = nullptr,
+                    nlohmann::ordered_json    *output    = nullptr)
+    {
+        size_t np     = sii_->nParam();
+        size_t npairs = np*(np - 1)/2;
+        ASSERT_EQ(np, param.size());
+        *genome_.basesPtr() = param;
+        double chi2_0 = chi2(param);
+
+        SensitivityAnalysis sens;
+        bool                minimum = sens.run(&msghandler_, sii_, &fitComp_, &genome_,
+                                               iMolSelect::Train, SensitivityMode::TwoD, true);
+        EXPECT_TRUE(msghandler_.ok());
+        EXPECT_EQ(param, genome_.bases());
+        const auto &res = sens.result();
+        EXPECT_EQ(SensitivityMode::TwoD, res.mode);
+        EXPECT_EQ(npairs, res.nPairs);
+        EXPECT_EQ(2*np*np, res.nEvaluations);
+        EXPECT_EQ(minimum, res.minimum);
+        ASSERT_TRUE(res.hessian.has_value());
+
+        const auto &sj = sens.json()["sensitivity"];
+        EXPECT_EQ("2D", sj["mode"].get<std::string>());
+        EXPECT_EQ(npairs, sj["n_pairs"].get<size_t>());
+        EXPECT_EQ(2*np*np, sj["n_evaluations"].get<size_t>());
+        EXPECT_EQ(minimum, sj["minimum"].get<bool>());
+        ASSERT_EQ(np, sj["parameters"].size());
+        ASSERT_EQ(npairs, sj["pairs"].size());
+        ASSERT_TRUE(sj.contains("hessian_diagnostic"));
+        EXPECT_EQ(res.hessian->positiveDefinite, sj["hessian_diagnostic"]["positive_definite"].get<bool>());
+
+        // The points of each parameter
+        std::vector<std::vector<double>> xs(np), ys(np);
+        bool allConverged = true;
+        for (size_t i = 0; i < np; i++)
+        {
+            xs[i] = gridOf(param, i);
+            for (double x : xs[i])
+            {
+                auto p = param;
+                p[i]   = x;
+                ys[i].push_back(chi2(p));
+            }
+            allConverged = allConverged && sj["parameters"][i]["converged"].get<bool>();
+        }
+        // The Hessian and the gradient from the analysis, for the Newton step
+        Eigen::MatrixXd H = Eigen::MatrixXd::Zero(np, np);
+        Eigen::VectorXd g = Eigen::VectorXd::Zero(np);
+        for (size_t i = 0; i < np; i++)
+        {
+            H(i, i) = 2*sj["parameters"][i]["a"].get<double>();
+        }
+        size_t k = 0, nconv = 0, nminimum = 0;
+        for (size_t i = 0; i < np; i++)
+        {
+            for (size_t j = i + 1; j < np; j++)
+            {
+                const auto &pair  = sj["pairs"][k++];
+                std::string label = sii_->paramNames()[i] + " / " + sii_->paramNames()[j];
+                EXPECT_EQ(i, pair["i"].get<size_t>());
+                EXPECT_EQ(j, pair["j"].get<size_t>());
+                EXPECT_EQ(sii_->paramNames()[i], pair["names"][0].get<std::string>());
+                EXPECT_EQ(sii_->paramNames()[j], pair["names"][1].get<std::string>());
+                double num = 0, den = 0;
+                for (size_t a = 0; a < 3; a++)
+                {
+                    double x = xs[i][a];
+                    EXPECT_GE(x, sii_->lowerBound()[i]);
+                    EXPECT_LE(x, sii_->upperBound()[i]);
+                    EXPECT_DOUBLE_EQ(x, pair["grid"]["p_i"][a].get<double>()) << label;
+                    for (size_t b = 0; b < 3; b++)
+                    {
+                        double y = xs[j][b];
+                        EXPECT_DOUBLE_EQ(y, pair["grid"]["p_j"][b].get<double>()) << label;
+                        double f;
+                        if (x == param[i])
+                        {
+                            f = ys[j][b];
+                        }
+                        else if (y == param[j])
+                        {
+                            f = ys[i][a];
+                        }
+                        else
+                        {
+                            auto p = param;
+                            p[i]   = x;
+                            p[j]   = y;
+                            f      = chi2(p);
+                            double xy = (x - param[i])*(y - param[j]);
+                            double r  = f - (lagrange(xs[i], ys[i], x) + lagrange(xs[j], ys[j], y) - chi2_0);
+                            num += r*xy;
+                            den += xy*xy;
+                        }
+                        EXPECT_NEAR(f, pair["grid"]["chi2"][a][b].get<double>(), 1e-12*std::abs(f))
+                            << label << " " << a << " " << b;
+                    }
+                }
+                double aij   = num/den;
+                double di    = (sii_->upperBound()[i] - sii_->lowerBound()[i])/200;
+                double dj    = (sii_->upperBound()[j] - sii_->lowerBound()[j])/200;
+                EXPECT_NEAR(aij, pair["a_ij"].get<double>(), 1e-6*std::abs(aij) + 1e-9*chi2_0/(di*dj)) << label;
+                // The shape from the curvatures computed here, unless the
+                // determinant is too close to zero to tell
+                double hi    = 2*curvature(xs[i], ys[i]);
+                double hj    = 2*curvature(xs[j], ys[j]);
+                double det   = hi*hj - aij*aij;
+                auto   shape = pair["shape"].get<std::string>();
+                if (std::abs(det) > 1e-4*(std::abs(hi*hj) + aij*aij))
+                {
+                    std::string expected = det < 0 ? "saddle" : (hi > 0 ? "minimum" : "maximum");
+                    EXPECT_EQ(expected, shape) << label;
+                }
+                bool conv = pair["converged"].get<bool>();
+                if (shape != "minimum")
+                {
+                    EXPECT_FALSE(conv) << label;
+                    EXPECT_TRUE(pair["p_min"].is_null()) << label;
+                }
+                else
+                {
+                    nminimum += 1;
+                }
+                allConverged = allConverged && conv;
+                nconv       += conv ? 1 : 0;
+                H(i, j) = H(j, i) = pair["a_ij"].get<double>();
+                g(i)    = pair["gradient"][0].get<double>();
+                g(j)    = pair["gradient"][1].get<double>();
+            }
+        }
+        // The genome is a minimum if all parameters and pairs are converged
+        EXPECT_EQ(allConverged, minimum);
+        EXPECT_EQ(nconv, res.nPairsConverged);
+        EXPECT_EQ(nconv, sj["n_pairs_converged"].get<size_t>());
+        EXPECT_EQ(nminimum, sj["pair_shapes"]["minimum"].get<size_t>());
+        size_t nshapes = 0;
+        for (const auto &s : sj["pair_shapes"].items())
+        {
+            nshapes += s.value().get<size_t>();
+        }
+        EXPECT_EQ(npairs, nshapes);
+        if (converged)
+        {
+            *converged = minimum;
+        }
+        if (output)
+        {
+            *output = sens.json();
+        }
+        if (newton)
+        {
+            // The parameters that are free to move
+            std::vector<Eigen::Index> free;
+            for (size_t i = 0; i < np; i++)
+            {
+                bool outLower = param[i] <= sii_->lowerBound()[i] && g(i) > 0;
+                bool outUpper = param[i] >= sii_->upperBound()[i] && g(i) < 0;
+                if (!outLower && !outUpper)
+                {
+                    free.push_back(i);
+                }
+            }
+            auto            nf = static_cast<Eigen::Index>(free.size());
+            Eigen::MatrixXd Hf(nf, nf);
+            Eigen::VectorXd gf(nf);
+            for (Eigen::Index m = 0; m < nf; m++)
+            {
+                gf(m) = g(free[m]);
+                for (Eigen::Index n = 0; n < nf; n++)
+                {
+                    Hf(m, n) = H(free[m], free[n]);
+                }
+            }
+            // Pseudo-inverse, since a shift of all electronegativities
+            // may not change the charges
+            Eigen::VectorXd step = Eigen::VectorXd::Zero(nf);
+            if (nf > 0)
+            {
+                Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> solver(Hf);
+                const auto &eval = solver.eigenvalues();
+                const auto &evec = solver.eigenvectors();
+                double      emax = eval.cwiseAbs().maxCoeff();
+                for (Eigen::Index m = 0; m < eval.size(); m++)
+                {
+                    if (std::abs(eval(m)) > 1e-6*emax)
+                    {
+                        step -= evec.col(m)*(evec.col(m).dot(gf)/eval(m));
+                    }
+                }
+            }
+            *newton = param;
+            for (Eigen::Index m = 0; m < nf; m++)
+            {
+                size_t i     = free[m];
+                (*newton)[i] = std::clamp(param[i] + step(m), sii_->lowerBound()[i], sii_->upperBound()[i]);
+            }
+        }
+    }
+
+    /*! \brief Describe the state of an analysis, for when a test fails
+     * \param[in] js The output of the analysis
+     * \return the chi-squared, and for each parameter its value relative
+     *         to its bounds, its gradient and whether it is converged, and
+     *         the pairs that are not converged
+     */
+    std::string describe(const nlohmann::ordered_json &js)
+    {
+        const auto &sj  = js["sensitivity"];
+        std::string str = "chi2_0 " + std::to_string(sj["chi2_0"].get<double>()) +
+            " pairs converged " + std::to_string(sj["n_pairs_converged"].get<size_t>()) +
+            " Hessian " + sj["hessian_diagnostic"].dump() + "\n";
+        for (const auto &p : sj["parameters"])
+        {
+            double lower = p["lower"].get<double>();
+            double upper = p["upper"].get<double>();
+            str += "  " + p["name"].get<std::string>() +
+                " p " + std::to_string(p["p_orig"].get<double>()) +
+                " in [" + std::to_string(lower) + ", " + std::to_string(upper) + "]" +
+                " p_min_bounded " + p["p_min_bounded"].dump() +
+                " converged " + p["converged"].dump() + "\n";
+        }
+        for (const auto &pair : sj["pairs"])
+        {
+            if (!pair["converged"].get<bool>())
+            {
+                str += "  not converged: " + pair["names"].dump() + " " + pair["shape"].get<std::string>() +
+                    " rho " + pair["rho"].dump() + " gradient " + pair["gradient"].dump() +
+                    " p_min_bounded " + pair["p_min_bounded"].dump() + "\n";
+            }
+        }
+        return str;
     }
 
     /*! \brief Compute the chi-squared for some parameters
@@ -346,10 +655,130 @@ TEST_F(SensitivityAnalysisTrainTest, RestoresParameters)
     auto   param  = genome_.bases();
     double chi2_0 = chi2(param);
     SensitivityAnalysis sens;
-    (void) sens.run(&msghandler_, sii_, &fitComp_, &genome_, iMolSelect::Train, nullptr, true);
+    (void) sens.run(&msghandler_, sii_, &fitComp_, &genome_, iMolSelect::Train, SensitivityMode::OneD, true);
     EXPECT_TRUE(msghandler_.ok());
     EXPECT_EQ(param, genome_.bases());
     // Without updating the force field, the chi-squared is the same
+    auto cdc = CalcDev::Compute;
+    fitComp_.distributeTasks(cdc);
+    EXPECT_EQ(chi2_0, fitComp_.calcDeviation(&msghandler_, cdc, iMolSelect::Train));
+}
+
+// Test: With mode No nothing is computed and nothing is in the output
+TEST_F(SensitivityAnalysisTrainTest, ModeNoDoesNothing)
+{
+    SensitivityAnalysis sens;
+    EXPECT_TRUE(sens.run(&msghandler_, sii_, &fitComp_, &genome_, iMolSelect::Train,
+                         SensitivityMode::No, true));
+    EXPECT_TRUE(sens.json().is_null());
+    EXPECT_TRUE(sens.forceConstants().empty());
+    EXPECT_EQ(SensitivityMode::No, sens.result().mode);
+    EXPECT_EQ(0u, sens.result().nEvaluations);
+}
+
+// Test: A second run replaces the output of the first
+TEST_F(SensitivityAnalysisTrainTest, SecondRunReplacesOutput)
+{
+    SensitivityAnalysis sens;
+    (void) sens.run(&msghandler_, sii_, &fitComp_, &genome_, iMolSelect::Train,
+                    SensitivityMode::OneD, true);
+    auto first = sens.json();
+    (void) sens.run(&msghandler_, sii_, &fitComp_, &genome_, iMolSelect::Train,
+                    SensitivityMode::OneD, true);
+    EXPECT_EQ(first, sens.json());
+    EXPECT_EQ(sii_->nParam(), sens.forceConstants().size());
+    (void) sens.run(&msghandler_, sii_, &fitComp_, &genome_, iMolSelect::Train,
+                    SensitivityMode::No, true);
+    EXPECT_TRUE(sens.json().is_null());
+}
+
+// Test: The file has the same content as the output in memory
+TEST_F(SensitivityAnalysisTrainTest, WritesJsonFile)
+{
+    SensitivityAnalysis sens;
+    (void) sens.run(&msghandler_, sii_, &fitComp_, &genome_, iMolSelect::Train,
+                    SensitivityMode::OneD, true);
+    auto fileName = fileManager().getTemporaryFilePath("sensitivity.json");
+    sens.write(fileName);
+    std::ifstream in(fileName);
+    ASSERT_TRUE(in.good());
+    auto fromFile = nlohmann::ordered_json::parse(in);
+    EXPECT_EQ(sens.json(), fromFile);
+}
+
+// Test: The coupling of each pair of parameters is fitted to the chi-squared
+// of the corners, the output has the grid, the shape and the convergence
+TEST_F(SensitivityAnalysisTrainTest, TwoDCrossTerms)
+{
+    ASSERT_EQ(5u, sii_->nParam());
+    checkPairs(genome_.bases());
+}
+
+// Test: The same for parameters at or close to bounds, where the grids are
+// on one side of the parameters
+TEST_F(SensitivityAnalysisTrainTest, TwoDParametersAtBounds)
+{
+    ASSERT_EQ(5u, sii_->nParam());
+    auto param  = genome_.bases();
+    auto delta  = [this](size_t i) { return (sii_->upperBound()[i] - sii_->lowerBound()[i])/200; };
+    param[0]    = sii_->lowerBound()[0];
+    param[1]    = sii_->upperBound()[1];
+    param[2]    = sii_->lowerBound()[2] + 0.5*delta(2);
+    param[3]    = sii_->upperBound()[3] - 0.5*delta(3);
+    checkPairs(param);
+}
+
+// Test: The one-dimensional part of the two-dimensional analysis is the
+// one-dimensional analysis
+TEST_F(SensitivityAnalysisTrainTest, TwoDContainsOneD)
+{
+    SensitivityAnalysis sens1, sens2;
+    (void) sens1.run(&msghandler_, sii_, &fitComp_, &genome_, iMolSelect::Train,
+                     SensitivityMode::OneD, true);
+    (void) sens2.run(&msghandler_, sii_, &fitComp_, &genome_, iMolSelect::Train,
+                     SensitivityMode::TwoD, true);
+    EXPECT_EQ(sens1.json()["sensitivity"]["parameters"], sens2.json()["sensitivity"]["parameters"]);
+    EXPECT_EQ(sens1.forceConstants(), sens2.forceConstants());
+    EXPECT_EQ(sens1.result().nParametersConverged, sens2.result().nParametersConverged);
+    // In 2D the pairs have to be converged as well
+    if (!sens1.result().minimum)
+    {
+        EXPECT_FALSE(sens2.result().minimum);
+    }
+}
+
+// Test: Stepping to the minimum of the surface given by the analysis,
+// the analysis finds the parameters and all pairs converged
+TEST_F(SensitivityAnalysisTrainTest, TwoDConvergedAfterNewtonSteps)
+{
+    auto                   param     = genome_.bases();
+    bool                   converged = false;
+    std::vector<double>    next;
+    nlohmann::ordered_json js;
+    checkPairs(param, &converged, &next, &js);
+    // At the parameters of the force field they are not converged
+    EXPECT_FALSE(converged);
+    std::string history = "Step 0: " + describe(js);
+    for (int step = 1; step <= 20 && !converged; step++)
+    {
+        param = next;
+        checkPairs(param, &converged, &next, &js);
+        history += "Step " + std::to_string(step) + ": " + describe(js);
+    }
+    EXPECT_TRUE(converged) << history;
+}
+
+// Test: After the two-dimensional analysis the genome and the force field
+// are as before
+TEST_F(SensitivityAnalysisTrainTest, TwoDRestoresParameters)
+{
+    auto   param  = genome_.bases();
+    double chi2_0 = chi2(param);
+    SensitivityAnalysis sens;
+    (void) sens.run(&msghandler_, sii_, &fitComp_, &genome_, iMolSelect::Train,
+                    SensitivityMode::TwoD, true);
+    EXPECT_TRUE(msghandler_.ok());
+    EXPECT_EQ(param, genome_.bases());
     auto cdc = CalcDev::Compute;
     fitComp_.distributeTasks(cdc);
     EXPECT_EQ(chi2_0, fitComp_.calcDeviation(&msghandler_, cdc, iMolSelect::Train));

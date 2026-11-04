@@ -81,7 +81,7 @@ Options mcmcOptions(int maxIter, const std::string &seed = "219463979")
         { "-temp", "0.025" },
         { "-anneal_begin", "0.1" },
         { "-anneal_end", "0.9" },
-        { "-sensitivity", "" },
+        { "-sensitivity", "1D" },
         { "-printSP", "" },
         { "-fc_bound", "10000" },
         { "-ener_boltz_temp", "3000" }
@@ -127,6 +127,60 @@ Options combine(Options a, const Options &b)
 {
     a.insert(a.end(), b.begin(), b.end());
     return a;
+}
+
+/*! \brief Set the value of an option
+ * \param[in] options The options
+ * \param[in] name    The option
+ * \param[in] value   Its value
+ * \return the options with the value replaced, or added if not there
+ */
+Options setOption(Options options, const std::string &name, const std::string &value)
+{
+    for (auto &opt : options)
+    {
+        if (opt.first == name)
+        {
+            opt.second = value;
+            return options;
+        }
+    }
+    options.push_back({ name, value });
+    return options;
+}
+
+/*! \brief Options to analyse a force field without training it
+ * The Lennard-Jones parameters of the trained force field are analysed on
+ * the alcohol and water dimers, see analysedForceField. These are sigma
+ * and epsilon of c3, o3 and ow, the ones of the hydrogens are fixed.
+ * \param[in] mode The sensitivity analysis
+ * \return the options
+ */
+Options analyseOnly(const std::string &mode)
+{
+    auto options = setOption(combine(mcmcOptions(1), interOptions()), "-sensitivity", mode);
+    options.push_back({ "-nooptimize", "" });
+    options.push_back({ "-norandom_init", "" });
+    return options;
+}
+
+//! The trained force field that is analysed with analyseOnly
+const char *analysedForceField = "lj-pc-trained.xml";
+
+//! The compounds it is analysed on
+const char *analysedCompounds  = "booze-inter";
+
+//! \return whether a line of the log file contains a text
+bool logContains(const std::vector<std::string> &log, const std::string &text)
+{
+    for (const auto &line : log)
+    {
+        if (line.find(text) != std::string::npos)
+        {
+            return true;
+        }
+    }
+    return false;
 }
 
 class TrainFFTest : public gmx::test::CommandLineTestBase
@@ -843,6 +897,134 @@ TEST_F(TrainFFTest, ChargesEspPolarizability)
         }
     }
     EXPECT_EQ(5, nxyz);
+}
+
+// Test: Without a sensitivity analysis there is no file and no summary
+TEST_F(TrainFFTest, SensitivityNo)
+{
+    auto output = trainfftest::runTrainFF(&fileManager(), "sensno", analysedForceField,
+                                          analysedCompounds, analyseOnly("No"));
+    ASSERT_EQ(0, output.status);
+    EXPECT_TRUE(output.sensitivity.is_null());
+    EXPECT_FALSE(logContains(output.log, "Sensitivity analysis ("));
+    EXPECT_FALSE(logContains(output.log, "Details of the sensitivity analysis"));
+    EXPECT_FALSE(output.json["train_ff"].contains("sensitivity"));
+}
+
+// Test: The one-dimensional analysis is written to its own file, the
+// log file and train_ff.json get a summary
+TEST_F(TrainFFTest, Sensitivity1DJson)
+{
+    auto output = trainfftest::runTrainFF(&fileManager(), "sens1d", analysedForceField,
+                                          analysedCompounds, analyseOnly("1D"));
+    ASSERT_EQ(0, output.status);
+    ASSERT_TRUE(output.sensitivity.contains("sensitivity"));
+    const auto &sens = output.sensitivity["sensitivity"];
+    EXPECT_EQ("1D", sens["mode"].get<std::string>());
+    EXPECT_EQ("Train", sens["dataset"].get<std::string>());
+    auto np = sens["n_parameters"].get<size_t>();
+    EXPECT_GT(np, 0u);
+    EXPECT_EQ(2*np, sens["n_evaluations"].get<size_t>());
+    EXPECT_FALSE(sens.contains("pairs"));
+    ASSERT_EQ(np, sens["parameters"].size());
+    size_t nconv = 0;
+    for (const auto &p : sens["parameters"])
+    {
+        auto name = p["name"].get<std::string>();
+        EXPECT_EQ(3u, p["points"].size()) << name;
+        EXPECT_GE(p["p_orig"].get<double>(), p["lower"].get<double>()) << name;
+        EXPECT_LE(p["p_orig"].get<double>(), p["upper"].get<double>()) << name;
+        EXPECT_GT(p["chi2_orig"].get<double>(), 0) << name;
+        // The force field is trained, all parameters change the chi2
+        EXPECT_NE(0, p.value("a", 0.0)) << name;
+        if (p["converged"].get<bool>())
+        {
+            nconv += 1;
+        }
+    }
+    EXPECT_EQ(nconv, sens["n_parameters_converged"].get<size_t>());
+    EXPECT_EQ(nconv == np, sens["minimum"].get<bool>());
+    // The log file has the summary, not the parabola of each parameter
+    EXPECT_TRUE(logContains(output.log, "Sensitivity analysis (1D) of " + std::to_string(np) + " parameters"));
+    EXPECT_TRUE(logContains(output.log, "Converged: " + std::to_string(nconv) + "/" + std::to_string(np)));
+    EXPECT_FALSE(logContains(output.log, "Fit to parabola"));
+    // The summary in train_ff.json
+    const auto &summary = output.json["train_ff"]["sensitivity"];
+    EXPECT_EQ("1D", summary["mode"].get<std::string>());
+    EXPECT_NE(std::string::npos, summary["file"].get<std::string>().find("sens1d-sensitivity.json"));
+    EXPECT_EQ(np, trainfftest::jsonNumber(summary["n_parameters"]));
+    EXPECT_EQ(nconv, trainfftest::jsonNumber(summary["n_parameters_converged"]));
+    EXPECT_EQ(nconv == np ? "yes" : "no", summary["minimum"].get<std::string>());
+}
+
+// Test: The two-dimensional analysis has every pair of parameters, the log
+// file and train_ff.json the numbers of pairs. The reference data are the
+// same as those of TrainFFMpiTest.Sensitivity2DMiddlemen.
+TEST_F(TrainFFTest, Sensitivity2DJson)
+{
+    auto output = trainfftest::runTrainFF(&fileManager(), "sens2d", analysedForceField,
+                                          analysedCompounds, analyseOnly("2D"));
+    ASSERT_EQ(0, output.status);
+    gmx::test::TestReferenceChecker checker(rootChecker());
+    trainfftest::checkSensitivity2D(&checker, output);
+    const auto &sens   = output.sensitivity["sensitivity"];
+    auto        np     = sens["n_parameters"].get<size_t>();
+    auto        npairs = sens["n_pairs"].get<size_t>();
+    EXPECT_TRUE(logContains(output.log, "Sensitivity analysis (2D) of " + std::to_string(np) +
+                            " parameters and " + std::to_string(npairs) + " pairs"));
+    EXPECT_TRUE(logContains(output.log, "The Hessian of all parameters is"));
+    const auto &summary = output.json["train_ff"]["sensitivity"];
+    EXPECT_EQ("2D", summary["mode"].get<std::string>());
+    EXPECT_EQ(npairs, trainfftest::jsonNumber(summary["n_pairs"]));
+    EXPECT_EQ(sens["n_pairs_converged"].get<size_t>(), trainfftest::jsonNumber(summary["n_pairs_converged"]));
+}
+
+// Test: In the force field of hydrogen fluoride that training starts from,
+// the Lennard-Jones parameters are zero and the virtual sites have no
+// charge, such that the chi2 does not depend on them. The analysis reports
+// them as flat, their pairs as degenerate, and says so in the log file.
+TEST_F(TrainFFTest, SensitivityFlatParameters)
+{
+    auto options = setOption(combine(mcmcOptions(1), hfOptions()), "-sensitivity", "2D");
+    options.push_back({ "-nooptimize", "" });
+    options.push_back({ "-norandom_init", "" });
+    auto output = trainfftest::runTrainFF(&fileManager(), "sensflat", "4S-lj14-7-pg-hvdw.xml",
+                                          "hf-hf", options);
+    ASSERT_EQ(0, output.status);
+    ASSERT_TRUE(output.sensitivity.contains("sensitivity"));
+    const auto &sens = output.sensitivity["sensitivity"];
+    std::set<std::string> expected = {
+        "f delta", "f epsilon", "f gamma", "f sigma",
+        "hf delta", "hf epsilon", "hf gamma", "hf sigma",
+        "f_b~hf_b!v2f1 vs2a", "f_b~hf_b!v2f2 vs2a"
+    };
+    std::set<std::string> flat;
+    for (const auto &p : sens["parameters"])
+    {
+        if (p["flat"].get<bool>())
+        {
+            flat.insert(p["name"].get<std::string>());
+            EXPECT_FALSE(p["converged"].get<bool>()) << p["name"].get<std::string>();
+        }
+    }
+    EXPECT_EQ(expected, flat);
+    auto np = sens["n_parameters"].get<size_t>();
+    EXPECT_EQ(expected.size(), sens["n_parameters_flat"].get<size_t>());
+    EXPECT_FALSE(sens["minimum"].get<bool>());
+    // Every pair with a flat parameter is degenerate
+    for (const auto &pair : sens["pairs"])
+    {
+        if (flat.count(pair["names"][0].get<std::string>()) > 0 ||
+            flat.count(pair["names"][1].get<std::string>()) > 0)
+        {
+            EXPECT_EQ("degenerate", pair["shape"].get<std::string>()) << pair["names"].dump();
+            EXPECT_FALSE(pair["converged"].get<bool>()) << pair["names"].dump();
+        }
+    }
+    EXPECT_TRUE(logContains(output.log, std::to_string(expected.size()) + " of the " + std::to_string(np) +
+                            " parameters do not change the chi2 (flat)"));
+    EXPECT_TRUE(logContains(output.log, "Their pairs are degenerate."));
+    EXPECT_EQ(expected.size(), trainfftest::jsonNumber(output.json["train_ff"]["sensitivity"]["n_parameters_flat"]));
 }
 
 } // namespace

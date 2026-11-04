@@ -50,6 +50,7 @@
 
 #include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"
+#include "testutils/testasserts.h"
 #include "testutils/testfilemanager.h"
 
 namespace alexandria
@@ -103,6 +104,8 @@ struct TrainOutput
     std::string              forceField;
     //! The lines of the log file
     std::vector<std::string> log;
+    //! The sensitivity analysis, null if the file was not written
+    nlohmann::json           sensitivity;
 };
 
 //! \return a number that is written as a number or a string in json
@@ -187,6 +190,7 @@ inline TrainOutput runTrainFF(gmx::test::TestFileManager                        
         { "-otest",   label + "-fftest.xml" },
         { "-g",       label + ".log" },
         { "-json",    label + ".json" },
+        { "-sensout", label + "-sensitivity.json" },
         { "-fitness", label + "-fitness.dat" },
         { "-gpout",   label + "-pool.csv" },
         { "-conv",    label + "-conv.xvg" },
@@ -221,6 +225,11 @@ inline TrainOutput runTrainFF(gmx::test::TestFileManager                        
         if (in.good())
         {
             output.json = nlohmann::json::parse(in);
+        }
+        if (std::filesystem::exists(out["-sensout"]))
+        {
+            std::ifstream sens(out["-sensout"]);
+            output.sensitivity = nlohmann::json::parse(sens);
         }
         output.log = readLines(out["-g"]);
         readChi2(output.log, &output);
@@ -259,6 +268,85 @@ inline void checkOutput(gmx::test::TestReferenceChecker *checker,
         stats.checkReal(jsonNumber(s.value()["RMSD"]), (s.key() + " RMSD").c_str());
     }
     checker->checkReal(output.finalChi2, "Train chi2");
+}
+
+/*! \brief Check a two-dimensional sensitivity analysis
+ * The structure is checked for consistency, and the curvatures against
+ * reference data. A curvature is checked as the change of the chi-squared
+ * over one step of the parameters, a delta^2 and a_ij delta_i delta_j,
+ * with a tolerance relative to the chi-squared, since that sets the
+ * precision of the differences.
+ * \param[in] checker The checker
+ * \param[in] output  The output of train_ff
+ */
+inline void checkSensitivity2D(gmx::test::TestReferenceChecker *checker,
+                               const TrainOutput               &output)
+{
+    ASSERT_TRUE(output.sensitivity.contains("sensitivity"));
+    const auto &sens = output.sensitivity["sensitivity"];
+    EXPECT_EQ("2D", sens["mode"].get<std::string>());
+    auto np     = sens["n_parameters"].get<size_t>();
+    auto npairs = np*(np - 1)/2;
+    EXPECT_GT(np, 1u);
+    EXPECT_EQ(npairs, sens["n_pairs"].get<size_t>());
+    EXPECT_EQ(2*np*np, sens["n_evaluations"].get<size_t>());
+    ASSERT_EQ(np, sens["parameters"].size());
+    ASSERT_EQ(npairs, sens["pairs"].size());
+    double chi2_0 = sens["chi2_0"].get<double>();
+    EXPECT_GT(chi2_0, 0);
+    bool   allConverged = true;
+    size_t nconv        = 0;
+    std::vector<double> delta;
+    for (const auto &p : sens["parameters"])
+    {
+        allConverged = allConverged && p["converged"].get<bool>();
+        delta.push_back(p["delta"].get<double>());
+        // A trained force field is analysed, every parameter changes the
+        // chi2, otherwise the analysis has little to check
+        EXPECT_NE(0, p.value("a", 0.0)) << p["name"].get<std::string>();
+    }
+    for (const auto &pair : sens["pairs"])
+    {
+        auto label = pair["names"][0].get<std::string>() + " / " + pair["names"][1].get<std::string>();
+        ASSERT_EQ(3u, pair["grid"]["chi2"].size()) << label;
+        for (const auto &row : pair["grid"]["chi2"])
+        {
+            ASSERT_EQ(3u, row.size()) << label;
+            for (const auto &value : row)
+            {
+                EXPECT_TRUE(value.is_number()) << label;
+            }
+        }
+        auto shape = pair["shape"].get<std::string>();
+        EXPECT_TRUE(shape == "minimum" || shape == "saddle" || shape == "maximum" ||
+                    shape == "degenerate") << label;
+        bool conv = pair["converged"].get<bool>();
+        if (shape != "minimum")
+        {
+            EXPECT_FALSE(conv) << label;
+        }
+        allConverged = allConverged && conv;
+        nconv       += conv ? 1 : 0;
+    }
+    EXPECT_EQ(allConverged, sens["minimum"].get<bool>());
+    EXPECT_EQ(nconv, sens["n_pairs_converged"].get<size_t>());
+    EXPECT_TRUE(sens["hessian_diagnostic"]["positive_definite"].is_boolean());
+
+    gmx::test::TestReferenceChecker compound(checker->checkCompound("Sensitivity", "2D"));
+    compound.setDefaultTolerance(gmx::test::relativeToleranceAsFloatingPoint(chi2_0, 1e-8));
+    compound.checkReal(chi2_0, "chi2_0");
+    for (size_t i = 0; i < np; i++)
+    {
+        const auto &p = sens["parameters"][i];
+        compound.checkReal(p["a"].get<double>()*delta[i]*delta[i], p["name"].get<std::string>().c_str());
+    }
+    for (const auto &pair : sens["pairs"])
+    {
+        auto i     = pair["i"].get<size_t>();
+        auto j     = pair["j"].get<size_t>();
+        auto label = pair["names"][0].get<std::string>() + " / " + pair["names"][1].get<std::string>();
+        compound.checkReal(pair["a_ij"].get<double>()*delta[i]*delta[j], label.c_str());
+    }
 }
 
 } // namespace trainfftest
