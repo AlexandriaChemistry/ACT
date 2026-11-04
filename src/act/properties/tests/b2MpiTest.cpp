@@ -41,7 +41,6 @@
 #include <gtest/gtest.h>
 
 #include "act/alexandria/alex_modules.h"
-#include "act/forces/simd_information.h"
 #include "act/properties/secondvirial.h"
 #include "gromacs/utility/basenetwork.h"
 #include "gromacs/utility/gmxmpi.h"
@@ -241,10 +240,10 @@ protected:
 #else
             checker.setDefaultTolerance(gmx::test::relativeToleranceAsFloatingPoint(1.0, 1e-4));
 #endif
-            // Without explicit SIMD, single precision computes the energies in
+            // Single precision computes the energies of the interactions in
             // single precision, which the exponential of the Boltzmann factor
             // amplifies, by up to 3e-4 relative at room temperature
-            double singleToler = useExplicitSimd() ? 1e-4 : 1e-3;
+            double singleToler = 1e-3;
             size_t ntemp = 0;
             for(const auto &t : b2json.items())
             {
