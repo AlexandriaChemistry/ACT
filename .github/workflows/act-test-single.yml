@@ -1,0 +1,99 @@
+name: Alexandria Chemistry Toolkit code submission test in single precision
+run-name: ${{ github.actor }} build and test ACT in single precision with explicit SIMD
+on: [push]
+jobs:
+  Build:
+    runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+    steps:
+      - run: echo "🎉 The job was automatically triggered by a ${{ github.event_name }} event."
+      - run: echo "🐧 This job is now running on a ${{ runner.os }} server hosted by GitHub!"
+      - run: echo "🔎 The name of your branch is ${{ github.ref }} and your repository is ${{ github.repository }}."
+      - name: Check out repository code
+        uses: actions/checkout@v6
+      - run: echo "💡 The ${{ github.repository }} repository has been cloned to the runner."
+      - run: echo "🖥️ The workflow is now ready to test your code on the runner."
+      - name: List files in the repository
+        run: |
+          ls ${{ github.workspace }}
+      - name: Install system dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt update
+          sudo apt-get update
+          sudo apt-get -y install gcc cmake libopenmpi-dev openmpi-bin libxml2-dev
+      - uses: conda-incubator/setup-miniconda@v3
+        with:
+          auto-update-conda: true
+          python-version: ${{ matrix.python-version }}
+      - name: Conda info
+        shell: bash -el {0}
+        run: |
+          conda info
+          conda install conda-forge::librdkit-dev=2025.09.4 conda-forge::libboost-devel eigen conda-forge::nlohmann_json
+          # The location of the environment differs between runner images
+          echo "ACT_CONDA_PREFIX=${CONDA_PREFIX}" >> ${GITHUB_ENV}
+      - name: Install ACT
+        run: |
+          cd ${{ github.workspace }}
+          mkdir build; cd build
+          export MPICXX=/usr/bin/g++
+          export MPICC=/usr/bin/gcc
+          export CXXFLAGS='-std=c++20'
+          # Single precision with the explicit SIMD of the runner
+          cmake -DGMX_DOUBLE=OFF -DACT_SIMD=AUTO -DCMAKE_PREFIX_PATH=${ACT_CONDA_PREFIX} -DBUILD_SHARED_LIBS=OFF -DGMX_OPENMP=OFF -DGMX_MPI=ON -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/../tools -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=${MPICXX} -DCMAKE_C_COMPILER=${MPICC} .. | tee cmake.log
+          # The test is about the explicit SIMD of the runner, not about the
+          # code without it, which the compiler may fall back to
+          if ! grep -q "Using .* for the explicit SIMD force routines" cmake.log; then
+            echo "::error::The build has no explicit SIMD"
+            exit 1
+          fi
+          grep "for the explicit SIMD force routines" cmake.log
+          make -j 4 install tests
+      - name: Test the ACT in single precision
+        run: |
+          source ${{ github.workspace }}/../tools/bin/ACTRC
+          cd ${{ github.workspace }}/build
+          # Run all test programs, also after one fails, such that one run
+          # shows all failures
+          failed=""
+          for t in basics-test \
+                   act-forces-test \
+                   alexandria-test \
+                   act-utility-test \
+                   constraints-test \
+                   coulombIntegrals-test \
+                   fileio-test \
+                   forcefield-test \
+                   ga-test \
+                   import-test \
+                   molprop-test \
+                   topology-test \
+                   properties-test \
+                   qgen-test \
+                   sobol-test \
+                   statistics-test; do
+            echo "::group::${t}"
+            ./bin/${t} || failed="${failed} ${t}"
+            echo "::endgroup::"
+          done
+          if [ -n "${failed}" ]; then
+            echo "::error::Failed test programs:${failed}"
+            exit 1
+          fi
+      - name: Test train_ff in parallel in single precision
+        timeout-minutes: 15
+        run: |
+          source ${{ github.workspace }}/../tools/bin/ACTRC
+          cd ${{ github.workspace }}/build
+          mpirun --oversubscribe -np 4 ./bin/alexandria-mpi-test
+      - name: Test the second virial and the utilities in parallel in single precision
+        timeout-minutes: 15
+        run: |
+          source ${{ github.workspace }}/../tools/bin/ACTRC
+          cd ${{ github.workspace }}/build
+          mpirun --oversubscribe -np 4 ./bin/properties-mpi-test
+          mpirun --oversubscribe -np 4 ./bin/utility-mpi-test
+          mpirun --oversubscribe -np 4 ./bin/forcefield-mpi-test
+          mpirun --oversubscribe -np 4 ./bin/molprop-mpi-test
