@@ -274,8 +274,11 @@ protected:
                     std::string chi2 = gmx::formatString("%s-%s-chi2",
                                                          actmols[0].getMolname().c_str(), rmsName(t.first));
                     // The deviations are differences of energies or forces
-                    // that are much larger, with errors relative to those
-                    setSingleTolerance(checker, 0, 1e-4);
+                    // that are much larger, with errors relative to those.
+                    // The interaction energies of dimers have errors of up
+                    // to about 1e-3 kJ/mol, which change a chi2 by twice the
+                    // deviations times that, also when the chi2 is small.
+                    setSingleTolerance(checker, 1e-4, 1e-3);
                     checker->checkDouble(t.second.chiSquared(), chi2.c_str());
                 }
             }

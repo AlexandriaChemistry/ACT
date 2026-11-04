@@ -438,11 +438,13 @@ protected:
         /* In single precision the Hessian, from differences of the forces,
          * has errors that change the squares of all frequencies by up to
          * about the same amount, about 1 cm^-2, such that the soft modes
-         * have the largest relative errors. The tolerances of the other
-         * properties follow from those of the frequencies. In double
-         * precision they are zero.
+         * have the largest relative errors. The minimized structure, of
+         * which the differences of the coordinates are rounded to floats,
+         * see coordinate.h, changes them by up to about 5 cm^-2 more. The
+         * tolerances of the other properties follow from those of the
+         * frequencies. In double precision they are zero.
          */
-        const double        dnu2 = 2; // cm^-2
+        const double        dnu2 = 6; // cm^-2
         std::vector<double> dnu(freq.size(), 0.0);
         double              sumDnu = 0, sumRelDnu = 0;
         for(size_t i = 0; i < freq.size() && !GMX_DOUBLE; i++)

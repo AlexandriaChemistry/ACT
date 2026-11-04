@@ -317,7 +317,9 @@ protected:
             }
         }
 #if GMX_DOUBLE
-        double dx = 1e-6;
+        // A power of two, such that the displaced coordinates are exact on
+        // the grid of the integer coordinates, see coordinate.h
+        double dx = 1.0/1048576;
         double ener[2];
         rvec   dxvector[2];
         for (int k = 0; k < 2; k++)
