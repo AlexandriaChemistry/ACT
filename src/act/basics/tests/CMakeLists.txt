@@ -45,6 +45,7 @@ gmx_add_unit_test(
     atompropTest.cpp
     basecontainerTest.cpp
     chargeModelTest.cpp
+    coordinateTest.cpp
     datasetTest.cpp
     identifierTest.cpp
     identifierMapTest.cpp

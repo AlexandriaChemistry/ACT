@@ -570,7 +570,12 @@ TEST_F(ComputeTotalTest, ShellsFromInput)
         EXPECT_LE(forceComp_.numShellIterations(), 2u) << molName;
         ASSERT_NE(eref.end(), eref.find(InteractionType::INDUCTION));
         compareEnergies(eref, e, gmx::test::precisionTolerance(1e-8, 1e-6), molName + " shells from input");
-        compareForces(fref, f, 1e-5, molName + " shells from input");
+        // In single precision the relaxed shells are returned in x as
+        // floats, which rounds the integer coordinates, see coordinate.h.
+        // The relaxation from these shells then stops elsewhere within the
+        // shell tolerance, which changes the forces by about 3e-5 of the
+        // largest one.
+        compareForces(fref, f, gmx::test::precisionTolerance(1e-5, 1e-4), molName + " shells from input");
     }
 }
 
@@ -621,12 +626,19 @@ TEST_F(ComputeTotalTest, NoRelaxation)
                 << label << " " << interactionTypeToString(e.first);
         }
         compareForces(fref, set.data.f(c).toRVec(), gmx::test::precisionTolerance(1e-10, 1e-5), label);
-        // The shells did not move
+        // The shells did not move, the coordinates are rounded to the
+        // unit of the integer coordinates, see coordinate.h. The virtual
+        // sites are constructed again from the rounded coordinates, in
+        // single precision from those relative to their first parent.
         for(size_t i = 0; i < x[c].size(); i++)
         {
+            bool vsite = top->atoms()[i].pType() == ActParticle::Vsite;
             for(int m = 0; m < DIM; m++)
             {
-                EXPECT_EQ(x[c][i][m], set.data.x(c)[i][m]) << label;
+                double xr = fromCoordinate(toCoordinate(x[c][i][m]));
+                EXPECT_NEAR(xr, static_cast<double>(set.data.x(c)[i][m]),
+                            vsite ? gmx::test::precisionTolerance(1e-15, 1e-6)*std::max(1.0, std::abs(xr)) : 0)
+                    << label << " particle " << i;
             }
         }
     }
