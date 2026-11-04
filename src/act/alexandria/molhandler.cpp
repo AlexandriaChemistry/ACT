@@ -100,6 +100,21 @@ void MolHandler::computeHessian(const ForceField                  *pd,
                                 std::map<InteractionType, double> *energyZero,
                                 std::vector<gmx::RVec>            *dpdq) const
 {
+    Coordinates x(*coords);
+    computeHessian(pd, topology, forceComp, &x, atomIndex, hessian, forceZero, energyZero, dpdq);
+    *coords = x.toRVec();
+}
+
+void MolHandler::computeHessian(const ForceField                  *pd,
+                                const Topology                    *topology,
+                                const ForceComputer               *forceComp,
+                                Coordinates                       *coords,
+                                const std::vector<int>            &atomIndex,
+                                MatrixWrapper                     *hessian,
+                                std::vector<double>               *forceZero,
+                                std::map<InteractionType, double> *energyZero,
+                                std::vector<gmx::RVec>            *dpdq) const
+{
     const auto &atoms    = topology->atoms();
     /* The derivatives of the forces are central differences. In double
      * precision of second order, with a step in nm of the square root of
@@ -116,38 +131,22 @@ void MolHandler::computeHessian(const ForceField                  *pd,
     // The input structure first, then for each coordinate of each atom
     // the structures with that coordinate shifted. They are all computed
     // together.
-    std::vector<std::vector<gmx::RVec>> xs = { *coords };
-    std::vector<std::vector<double>>    xxx;
+    std::vector<Coordinates>         xs = { *coords };
+    std::vector<std::vector<double>> xxx;
     for(size_t ai = 0; ai < atomIndex.size(); ai++)
     {
         auto atomI = atomIndex[ai];
         for(int atomXYZ = 0; atomXYZ < DIM; atomXYZ++)
         {
-            double              xyzRef    = (*coords)[atomI][atomXYZ];
+            // The displacements, rounded to the unit of the integer
+            // coordinates, such that the displaced coordinates are exact,
+            // see coordinate.h
             std::vector<double> xd(noffset);
-            bool                stepsDone = false;
-            double              myStep    = stepSize;
-            do {
-                for(size_t k = 0; k < noffset; k++)
-                {
-                    // The coordinates are stored as real, the difference
-                    // is computed from the stored values
-                    xd[k] = static_cast<real>(xyzRef + offsets[k]*myStep);
-                }
-                // Make sure that the coordinate is in fact chenged.
-                // If the delta is too small, numeric issues may kick
-                // in.
-                stepsDone = (xd[noffset/2-1] < xyzRef && xd[noffset/2] > xyzRef);
-                if (!stepsDone)
-                {
-                    myStep *= 2;
-                }
-            }
-            while (!stepsDone);
             for(size_t k = 0; k < noffset; k++)
             {
+                xd[k] = fromCoordinate(toCoordinate(offsets[k]*stepSize));
                 xs.push_back(*coords);
-                xs.back()[atomI][atomXYZ] = xd[k];
+                xs.back()[atomI][atomXYZ] += xd[k];
             }
             xxx.push_back(xd);
         }
@@ -162,7 +161,7 @@ void MolHandler::computeHessian(const ForceField                  *pd,
     forceComp->computeTotal(nullptr, pd, &set, ShellOptions(), &energies);
     const auto &cdata = set.data;
     // The input structure with the relaxed shells and the virtual sites
-    *coords     = cdata.x(0).toRVec();
+    *coords     = Coordinates(cdata.x(0));
     *energyZero = energies[0];
     forceZero->clear();
     for(auto &atom : atomIndex)
@@ -772,6 +771,8 @@ static double msForce(const std::vector<int>       &theAtoms,
  * instead, which is accurate to third order in the step. For large steps
  * it is not, which shows when it differs from the energy change by more
  * than the rounding error, then the energy change is used.
+ * The displacements are computed from the integers, which is exact, see
+ * coordinate.h.
  * \param[in] theAtoms The atoms that move
  * \param[in] e        The energies at x
  * \param[in] x        The old coordinates
@@ -784,10 +785,10 @@ static double msForce(const std::vector<int>       &theAtoms,
  */
 static double energyChange(const std::vector<int>                  &theAtoms,
                            const std::map<InteractionType, double> &e,
-                           const std::vector<gmx::RVec>            &x,
+                           const Coordinates                       &x,
                            const std::vector<gmx::RVec>            &f,
                            double                                   enew,
-                           const std::vector<gmx::RVec>            &xt,
+                           const Coordinates                       &xt,
                            const std::vector<gmx::RVec>            &ft,
                            double                                   noise)
 {
@@ -811,7 +812,7 @@ static double energyChange(const std::vector<int>                  &theAtoms,
     {
         for (int m = 0; m < DIM; m++)
         {
-            work += (f[atom][m] + ft[atom][m])*(xt[atom][m] - x[atom][m]);
+            work += (f[atom][m] + ft[atom][m])*fromCoordinate(coordinateDifference(xt[atom].units(m), x[atom].units(m)));
         }
     }
     double trapezoid = -0.5*work;
@@ -869,23 +870,6 @@ static double energyNoise(const std::vector<int>       &theAtoms,
     return 4*noise;
 }
 
-//! \brief Increment the coordinates with a delta
-static void updateCoords(const std::vector<int>       &theAtoms,
-                         const std::vector<gmx::RVec> &xold,
-                         std::vector<gmx::RVec>       *xnew,
-                         double                        factor,
-                         const std::vector<double>    &deltaX)
-{
-    int i = 0;
-    for (auto &atomI : theAtoms)
-    {
-        for (int m = 0; m < DIM; m++)
-        {
-            (*xnew)[atomI][m] = xold[atomI][m] + factor*deltaX[i++];
-        }
-    }
-}
-
 /*! \brief Local class to provide data to the L-BFGS algorithm
  * Content is just a copy of inputs, respectively working variables.
  */
@@ -900,8 +884,8 @@ private:
     const Topology                    *topology_;
     //! Pointer to force computer
     const ForceComputer               *forceComp_;
-    //! Atomic corrdinates
-    std::vector<gmx::RVec>             coords_;
+    //! Atomic coordinates, integers such that steps are exact, see coordinate.h
+    Coordinates                        coords_;
     //! Atomic forces
     std::vector<gmx::RVec>             forces_;
     //! Energies per interaction type
@@ -913,11 +897,11 @@ private:
     //! The lowest energy found
     double                             bestEnergy_ = std::numeric_limits<double>::max();
     //! The coordinates with the lowest energy, empty if there are none
-    std::vector<gmx::RVec>             bestCoords_;
+    Coordinates                        bestCoords_;
     //! Whether there is a previous evaluation with a finite energy
     bool                               havePrevious_ = false;
     //! The coordinates of the previous evaluation
-    std::vector<gmx::RVec>             prevCoords_;
+    Coordinates                        prevCoords_;
     //! The forces of the previous evaluation
     std::vector<gmx::RVec>             prevForces_;
     //! The energies of the previous evaluation
@@ -955,7 +939,7 @@ public:
     const ForceComputer *forceComp() const { return forceComp_; }
 
     //! \return the coordinates
-    std::vector<gmx::RVec> *coordinates() { return &coords_; }
+    Coordinates *coordinates() { return &coords_; }
 
     //! \return the forces
     std::vector<gmx::RVec> *forces() { return &forces_; }
@@ -985,7 +969,7 @@ public:
     }
 
     //! \return the coordinates with the lowest energy, empty if there are none
-    const std::vector<gmx::RVec> &bestCoordinates() const { return bestCoords_; }
+    const Coordinates &bestCoordinates() const { return bestCoords_; }
 
     /*! \brief The energy along the path of the evaluations
      * The energy of the current coordinates is that of the previous
@@ -1028,11 +1012,10 @@ public:
     {
         if (tw && myFreeze.size() == 2)
         {
-            rvec dx;
             // If minimization with constraints worked well, the resulting
             // force should be along the vector between the two frozen atoms.
             // Compute this vector first:
-            rvec_sub(coords_[myFreeze[0]], coords_[myFreeze[1]], dx);
+            gmx::RVec dx = coords_[myFreeze[0]] - coords_[myFreeze[1]];
             copy_rvec(forces_[myFreeze[0]], dx);
             // Now determine the rotation of the force vector to the Z axis
             rvec frot;
@@ -1081,15 +1064,19 @@ static void func(const std::vector<double> &x, double &f, std::vector<double> &g
     auto forces = lbfgs->forces();
     // The previous coordinates, that satisfy the constraints and are
     // within the range of the integer coordinates, see coordinate.h
-    std::vector<gmx::RVec> reference = *coords;
-    bool                   inRange   = true;
+    Coordinates            reference = *coords;
+    bool                   inRange   = std::all_of(x.begin(), x.end(),
+                                                   [](double xi) { return std::abs(xi) < 0.5*coordinateMax; });
     size_t jj   = 0;
     for (auto i : theAtoms)
     {
-        for(int j = 0; j < DIM; j++)
+        for(int j = 0; j < DIM && inRange; j++)
         {
-            inRange         = inRange && std::abs(x[jj]) < 0.5*coordinateMax;
-            (*coords)[i][j] = x[jj++];
+            // Rounded to real, as before the coordinates were integers.
+            // With the energies rounded to single precision, the line
+            // search only converges if small steps can leave the
+            // coordinates and the energy unchanged.
+            (*coords)[i][j] = static_cast<real>(x[jj++]);
         }
     }
     // Energy penalty to make the line search back off
@@ -1106,11 +1093,17 @@ static void func(const std::vector<double> &x, double &f, std::vector<double> &g
         // the constraints, and the gradient is along the constraints.
         // The constraint directions are taken from x itself, such that
         // the energy only depends on x, as the line search requires.
-        if (lbfgs->constrainer()->shake(lbfgs->mh(), coords) != 0)
+        // The constraints work with coordinates in nm.
+        auto xc = coords->toRVec();
+        if (lbfgs->constrainer()->shake(lbfgs->mh(), &xc) != 0)
         {
             // A step that is too large for the constraints
             *coords = reference;
             penalty = 1e6;
+        }
+        else
+        {
+            coords->assign(xc);
         }
     }
     gmx::RVec field = { 0, 0, 0 };
@@ -1122,7 +1115,7 @@ static void func(const std::vector<double> &x, double &f, std::vector<double> &g
                                           forces);
     if (lbfgs->constrainer())
     {
-        lbfgs->constrainer()->projectForces(lbfgs->mh(), *coords, forces);
+        lbfgs->constrainer()->projectForces(lbfgs->mh(), coords->toRVec(), forces);
     }
     // With a penalty the coordinates are those of the previous evaluation
     f  = 0 == penalty ? lbfgs->pathEnergy() : lbfgs->previousPathEnergy() + penalty;
@@ -1493,7 +1486,7 @@ eMinimizeStatus MolHandler::minimizeCoordinates(MsgHandler                      
             lbfgs->forceComp()->compute(msghandler, lbfgs->pd(), topology,
                                         lbfgs->coordinates(),
                                         lbfgs->forces(), lbfgs->energies());
-            constrainForces(*lbfgs->coordinates(), lbfgs->forces());
+            constrainForces(lbfgs->coordinates()->toRVec(), lbfgs->forces());
             converged = done || msForce(theAtoms, *lbfgs->forces()) <= msForceToler;
             // The line search also fails when the energy cannot decrease
             // within the precision of the coordinates, then the forces are
@@ -1501,7 +1494,7 @@ eMinimizeStatus MolHandler::minimizeCoordinates(MsgHandler                      
             if (!converged && opt.niter < opt.maxiter)
             {
                 converged = (msForce(theAtoms, *lbfgs->forces()) <=
-                             4*roundingMsForce(*lbfgs->coordinates(), *lbfgs->forces()));
+                             4*roundingMsForce(lbfgs->coordinates()->toRVec(), *lbfgs->forces()));
             }
             if (converged)
             {
@@ -1520,7 +1513,7 @@ eMinimizeStatus MolHandler::minimizeCoordinates(MsgHandler                      
                 if (enew < eMin)
                 {
                     // Store new structure only when it has lower energy.
-                    newCoords[current]   = *lbfgs->coordinates();
+                    newCoords[current]   = lbfgs->coordinates()->toRVec();
                     newEnergies[current] = *lbfgs->energies();
                     eMin                 = enew;
                     haveMinimum          = true;
@@ -1537,7 +1530,7 @@ eMinimizeStatus MolHandler::minimizeCoordinates(MsgHandler                      
             {
                 // The structure with the lowest energy, although it is not
                 // a minimum, with relaxed shells
-                newCoords[current] = lbfgs->bestCoordinates();
+                newCoords[current] = lbfgs->bestCoordinates().toRVec();
                 std::vector<gmx::RVec> forces(newCoords[current].size());
                 forceComp->compute(msghandler, pd, topology, &newCoords[current],
                                    &forces, &newEnergies[current]);
@@ -1552,30 +1545,47 @@ eMinimizeStatus MolHandler::minimizeCoordinates(MsgHandler                      
     {
         // Newton or steepest descent, from the coordinates that satisfy
         // the constraints
-        std::vector<gmx::RVec>            x = xstart, xt = xstart;
+        // The coordinates are integers, such that the steps are exact, see
+        // coordinate.h, the constraints work with coordinates in nm
+        Coordinates                       x(xstart), xt(xstart);
         std::vector<gmx::RVec>            f(myatoms.size()), ft(myatoms.size());
         std::map<InteractionType, double> e, et;
-        auto evaluate = [&](std::vector<gmx::RVec>            *xx,
+        auto evaluate = [&](Coordinates                       *xx,
                             std::vector<gmx::RVec>            *ff,
                             std::map<InteractionType, double> *ee)
         {
             forceComp->compute(msghandler, pd, topology, xx, ff, ee);
-            constrainForces(*xx, ff);
+            constrainForces(xx->toRVec(), ff);
             return (*ee)[InteractionType::EPOT];
         };
         // The energy at x plus scale times the step, in xt, ft and et
         auto tryStep = [&](const std::vector<double> &dx, double scale)
         {
-            updateCoords(theAtoms, x, &xt, scale, dx);
-            constrainCoords(x, &xt);
+            xt = x;
+            size_t k = 0;
+            for (auto atom : theAtoms)
+            {
+                for (int m = 0; m < DIM; m++)
+                {
+                    xt[atom][m] += scale*dx[k++];
+                }
+            }
+            if (constrain)
+            {
+                auto xr = xt.toRVec();
+                constrainCoords(x.toRVec(), &xr);
+                xt.assign(xr);
+            }
             return evaluate(&xt, &ft, &et);
         };
         // The rounding error of the energy, the shells are relaxed
-        double noise = energyNoise(theAtoms, x,
+        double noise = energyNoise(theAtoms, x.toRVec(),
                                    [&](std::vector<gmx::RVec> *xx, std::vector<gmx::RVec> *ff)
                                    {
                                        std::map<InteractionType, double> ee;
-                                       return evaluate(xx, ff, &ee);
+                                       forceComp->compute(msghandler, pd, topology, xx, ff, &ee);
+                                       constrainForces(*xx, ff);
+                                       return ee[InteractionType::EPOT];
                                    });
         auto accept = [&]()
         {
@@ -1595,7 +1605,7 @@ eMinimizeStatus MolHandler::minimizeCoordinates(MsgHandler                      
         // The structure with the lowest energy, steepest descent may
         // accept steps that increase the energy
         double                            bestEpot     = epot;
-        std::vector<gmx::RVec>            bestX        = x;
+        Coordinates                       bestX        = x;
         std::map<InteractionType, double> bestEnergies = e;
         // Steps since the lowest energy decreased more than the precision
         // of the energy, a sum of many terms, as with L-BFGS
@@ -1630,7 +1640,7 @@ eMinimizeStatus MolHandler::minimizeCoordinates(MsgHandler                      
         // in the last place of the coordinates, which in single precision
         // is larger than the tolerance. It is estimated at the start and
         // computed again when the forces are that small.
-        double floorMsf    = roundingMsForce(x, f);
+        double floorMsf    = roundingMsForce(x.toRVec(), f);
         auto   isConverged = [&]()
         {
             if (msf <= msForceToler)
@@ -1639,7 +1649,7 @@ eMinimizeStatus MolHandler::minimizeCoordinates(MsgHandler                      
             }
             if (msf <= 4*floorMsf)
             {
-                floorMsf = roundingMsForce(x, f);
+                floorMsf = roundingMsForce(x.toRVec(), f);
                 return msf <= 4*floorMsf;
             }
             return false;
@@ -1671,7 +1681,7 @@ eMinimizeStatus MolHandler::minimizeCoordinates(MsgHandler                      
                     std::map<InteractionType, double> e0;
                     computeHessian(pd, topology, forceComp, &x, theAtoms, &hessian, &f0, &e0);
                     newton.decompose(hessian, f0,
-                                     fixedDirections(theAtoms, x, rigidBody,
+                                     fixedDirections(theAtoms, x.toRVec(), rigidBody,
                                                      constrain ? &constrainer : nullptr));
                     haveHessian = true;
                 }
@@ -1726,7 +1736,7 @@ eMinimizeStatus MolHandler::minimizeCoordinates(MsgHandler                      
             std::deque<double>     last  = { epot };
             std::vector<double>    d(n), dprev(n), xprev(n), xcur(n);
             double                 gamma = 0;
-            auto flatten = [&](const std::vector<gmx::RVec> &v, std::vector<double> *flat)
+            auto flatten = [&](const auto &v, std::vector<double> *flat)
             {
                 size_t k = 0;
                 for (auto atom : theAtoms)
@@ -1809,12 +1819,12 @@ eMinimizeStatus MolHandler::minimizeCoordinates(MsgHandler                      
         if (!converged && eMinimizeStatus::NoMinimum == failure)
         {
             msf       = msForce(theAtoms, f);
-            floorMsf  = roundingMsForce(x, f);
+            floorMsf  = roundingMsForce(x.toRVec(), f);
             converged = msf <= 4*floorMsf;
         }
         // A converged structure is the last one, which may not have the
         // lowest energy with steepest descent
-        newCoords[current]   = converged ? x : bestX;
+        newCoords[current]   = (converged ? x : bestX).toRVec();
         newEnergies[current] = converged ? e : bestEnergies;
     }
     // Also if it is not a minimum, the structure with the lowest energy
