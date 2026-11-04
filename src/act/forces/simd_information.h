@@ -84,6 +84,14 @@ PeakPerformance theoreticalPeakPerCore();
  */
 void writeSimdInformation(gmx::TextWriter *writer);
 
+/*! \brief Write which code computes the energies and forces
+ * For the calculations of several structures at once and of single
+ * structures, the precision and the SIMD, and the precision of the
+ * coordinates, the energy sums and the constraints.
+ * \param[in] writer Where to write
+ */
+void writeCodeInformation(gmx::TextWriter *writer);
+
 } // namespace alexandria
 
 #endif

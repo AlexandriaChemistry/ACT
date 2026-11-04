@@ -475,9 +475,8 @@ void printTimings(const CommunicationRecord *cr,
 #if GMX_DOUBLE
             tw->writeStringFormatted("All calculations are in double precision, as the theoretical peak.\n");
 #else
-            tw->writeStringFormatted("The potentials with explicit SIMD are computed in double precision, as the\n");
-            tw->writeStringFormatted("theoretical peak, the rest in single precision, for which the peak is twice\n");
-            tw->writeStringFormatted("as high.\n");
+            tw->writeStringFormatted("The calculations are in single precision, for which the peak is twice as\n");
+            tw->writeStringFormatted("high as the theoretical peak in double precision.\n");
 #endif
             tw->writeStringFormatted("%-48s %10.4g\n", "Floating point operations", totalFlops);
             tw->writeStringFormatted("%-48s %10.3f GFlop/s\n", "Average over the wall time", average);
