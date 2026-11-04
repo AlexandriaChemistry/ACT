@@ -260,8 +260,22 @@ protected:
         checker_.checkReal(epot, "Epot");
         if (!GMX_DOUBLE)
         {
-            // Components that cancel have errors relative to the largest force
-            checker_.setDefaultTolerance(roundedTolerance(2*stiffness*xround + 1e-6*fmax));
+            // Components that cancel have errors relative to the largest
+            // force. Forces that cancel to zero, as beyond the turning point
+            // of a cubic bond, have errors relative to the energy over the
+            // distance between the particles, while the reference is the
+            // rounding error of double precision.
+            double extent = 0;
+            for (const auto &xi : *coordinates)
+            {
+                for (const auto &xj : *coordinates)
+                {
+                    gmx::RVec dx = xi - xj;
+                    extent = std::max(extent, static_cast<double>(norm(dx)));
+                }
+            }
+            double cancel = extent > 0 ? 4*GMX_FLOAT_EPS*std::abs(epot)/extent : 0;
+            checker_.setDefaultTolerance(roundedTolerance(2*stiffness*xround + 1e-6*fmax + cancel));
         }
         checker_.checkSequence(forces.begin(), forces.end(), "Forces");
         if (!GMX_DOUBLE)
