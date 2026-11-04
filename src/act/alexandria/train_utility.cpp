@@ -1649,6 +1649,7 @@ void TrainForceFieldPrinter::print(MsgHandler                  *msghandler,
                                            &forces, &energies);
                         qresp->updateAtomCoords(myx);
                         qresp->updateAtomCharges(msghandler, mol->atomsConst());
+                        qresp->updateZeta(mol->atomsConst(), pd);
                         qresp->calcPot(msghandler, 1.0);
                         rms = qresp->getStatistics(msghandler, &rrms, &cosesp, &mae, &mse);
                         rms = convertToGromacs(rms, "Hartree/e");

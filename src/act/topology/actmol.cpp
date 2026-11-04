@@ -1406,6 +1406,7 @@ void ACTMol::GenerateCube(MsgHandler                   *msghandler,
                                    &myx, &forces, &energies);
                 qresp->updateAtomCoords(myx);
                 qresp->updateAtomCharges(msghandler, atomsConst());
+                qresp->updateZeta(atomsConst(), pd);
                 qresp->calcPot(msghandler, epsilonr);
                 qresp->potcomp(pcfn, oenv);
                 if (pdbdifffn)

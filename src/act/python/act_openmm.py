@@ -938,6 +938,10 @@ class ActOpenMMSim:
             elif dforce == fname:
                 self.add_force_group(force, False)
                 self.find_shells_cores(force)
+        if qdistDict[self.qdist] == qDist.Slater:
+            raise NotImplementedError(
+                "Slater screening is not implemented in the ACT OpenMM backend; "
+                "using point-charge screening would change the force field.")
         if len(self.customnbs) == 0:
             self.useOpenMMForce = True
         # Check whether the user wants us to use OpenMM forces or ACT forces

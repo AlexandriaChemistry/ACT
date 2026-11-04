@@ -141,10 +141,6 @@ void EspDevComputer::calcDeviation(MsgHandler                    *msghandler,
             {
                 continue;
             }
-            if (fitZeta_)
-            {
-                qgr->updateZeta(actmol->atomsConst(), forcefield);
-            }
             auto coords = qgr->coords();
             qgr->updateAtomCharges(msghandler, actmol->atomsConst());
             // Need to call the force routine to update shells and/or vsites
@@ -160,6 +156,8 @@ void EspDevComputer::calcDeviation(MsgHandler                    *msghandler,
             }
             double epsilonr;
             epsilonr = forcefield->epsilonr();
+            // Refresh both ordinary and second-charge widths, independently of the fit selection.
+            qgr->updateZeta(actmol->atomsConst(), forcefield);
             qgr->calcPot(msghandler, epsilonr);
             double mae, mse;
             double rms   = qgr->getStatistics(msghandler, &rrms, &cosangle, &mae, &mse);
