@@ -162,25 +162,32 @@ def gen_pdb_system(dimername: str, dist: float, dimer: bool, atom1_s: int, atom2
     return output_pdb
 
 
+# Columns written to the xvg and csv files, in this order.
+ENERGY_TERMS = [ "DISPERSION", "EXCHANGE", "COULOMB", "INDUCTION", "INTERACTION", "EPOT" ]
+
 def get_final_energies(mylog: str) -> dict:
+    """Read the interaction energy components and the total potential
+    energy after minimization from an alexandria minimize log file.
+    Only the components present in the force field are printed by
+    alexandria, e.g. there is no INDUCTION term without polarization."""
     ener     = {}
-    energies = [ "DISPERSION:", "EXCHANGE:", "COULOMB:", "INDUCTION:", "EPOT:" ]
+    energies = [ "DISPERSION", "EXCHANGE", "COULOMB", "INDUCTION", "EPOT" ]
     with open(mylog, "r") as inf:
         for line in inf:
             words = line.split()
-            for e in energies:
-                if e in line and "Interaction energy" in line:
-                    try:
-                        ename = e
-                        if "EPOT" == e:
-                            ename = "INTERACTION"
-                        ener[ename] = float(words[4])
-                    except ValueError:
-                        print(f"Funny line '{line.strip()}' in {os.getcwd()}/{mylog}")
-            if "EPOT:" in line and "value" in line:
+            if "Interaction energy" in line:
+                for e in energies:
+                    if f"{e}:" in line:
+                        ename = "INTERACTION" if "EPOT" == e else e
+                        try:
+                            ener[ename] = float(words[4])
+                        except (ValueError, IndexError):
+                            print(f"Funny line '{line.strip()}' in {os.getcwd()}/{mylog}")
+            elif "EPOT:" in line and "value" in line:
+                # The last one, from "Energies after", is kept
                 try:
-                    ener["EPOT"] = float(words[2][:-1])
-                except ValueError:
+                    ener["EPOT"] = float(words[2].rstrip(","))
+                except (ValueError, IndexError):
                     print(f"Funny line '{line.strip()}' in {os.getcwd()}/{mylog}")
     return ener
 
@@ -257,27 +264,32 @@ def fetch_energy(c1: str, c2: str, pol: bool, vs: bool, rmin: float, distances: 
 
     if Debug:
         print(f"distances in fetch_energy:{distances}")
-    for dd, dstr in enumerate(map(str, range(len(distances)))):
+    for dd in range(len(distances)):
         ddstr = ("%04d" % dd)
         mylog = os.path.join(ddstr, "simulation.log")
-        if os.path.exists(mylog):
-            edimer = get_final_energies(mylog)
-            if len(edimer) == 6:
-                if ener is None:
-                    ener = open(efn, "w")
-                    ener.write("@ yaxis label \"Energy (kJ/mol)\"\n")
-                    ener.write("@ xaxis label \"Distance (nm)\"\n")
-                    iset = 0
-                    for e in edimer.keys():
-                        ener.write("@ s%d legend \"%s\"\n" % ( iset, e ) )
-                        iset += 1
-                ener.write(f"{0.1 * distances[dd]:10g}")
-                for e in edimer:
-                    ener.write(f"  {edimer[e]:10g}")
-                ener.write("\n")
+        if not os.path.exists(mylog):
+            print(f"Warning: no {mylog} in {os.getcwd()}, skipping this distance")
+            continue
+        edimer = get_final_energies(mylog)
+        if "INTERACTION" not in edimer or "EPOT" not in edimer:
+            print(f"Warning: no interaction energy in {os.getcwd()}/{mylog}, skipping this distance")
+            continue
+        if ener is None:
+            ener = open(efn, "w")
+            ener.write("@ yaxis label \"Energy (kJ/mol)\"\n")
+            ener.write("@ xaxis label \"Distance (nm)\"\n")
+            for iset, e in enumerate(ENERGY_TERMS):
+                ener.write("@ s%d legend \"%s\"\n" % ( iset, e ) )
+        ener.write(f"{0.1 * distances[dd]:10g}")
+        # Components missing from the log are not in the force field and hence zero
+        for e in ENERGY_TERMS:
+            ener.write(f"  {edimer.get(e, 0.0):10g}")
+        ener.write("\n")
 
     if ener:
         ener.close()
+    else:
+        print(f"Warning: no energies found in {os.getcwd()}, {efn} not written")
 
 def analyze_ff(ff: str) -> (bool, bool):
     vs = False
@@ -360,8 +372,7 @@ def plot_curves(xmls: dict, columns:list):
                 csvp = os.path.join(os.getcwd(), csvf)
                 with open(csvp, 'w', newline='') as csvfile:
                     csv_writer = csv.writer(csvfile)
-                    csv_writer.writerow(['Distance', "DISPERSION", "EXCHANGE",
-                                         "COULOMB", "INDUCTION", "INTERACTION", "EPOT"])
+                    csv_writer.writerow(['Distance'] + ENERGY_TERMS)
                     csv_writer.writerows(data)
                 plots[dimer][-1]["csv"] = csvp
                 print(f"Saved data to {csvp}")
@@ -381,6 +392,7 @@ def plot_curves(xmls: dict, columns:list):
                      legend_x=0.7, datasetlegends=legends, coly=columns, debug=True)
 
 def parse_args():
+    global Debug
     parser = argparse.ArgumentParser(description="""
     This script computes dimer potentials for dimers.
     Structures must be provided with filenames mol1#mol2.pdb and one
@@ -407,7 +419,7 @@ def parse_args():
     args = parser.parse_args()
     if args.debug:
         Debug = True
-    return parser.parse_args()
+    return args
 
 if __name__ == "__main__":
     args = parse_args()
