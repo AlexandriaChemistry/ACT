@@ -90,13 +90,15 @@ static_assert(MAX_ENER == explicitSimdEnergyTerms);
  */
 
 /*! \brief Spread scalar force over two atoms
+ * The force is computed in the precision of the scalar force, such that
+ * potentials in single precision do not convert to double precision.
  * \param[in]    fscalar The scalar force
  * \param[in]    dx      The distance vector
  * \param[in]    indices The atom indices
  * \param[inout] forces  The forces to be updated
  */
-template <typename I, typename F, typename D>
-static ACT_ALWAYS_INLINE void pairforces(double           fscalar,
+template <typename I, typename F, typename D, typename S>
+static ACT_ALWAYS_INLINE void pairforces(S                fscalar,
                               const D         &dx,
                               const I         &indices,
                               F               *forces)
@@ -281,8 +283,9 @@ static ACT_ALWAYS_INLINE void lj8_6One(gmx_unused MsgHandler *msghandler,
     pairforces(flj, dx, indices, forces);
 }
 
-//! Return x^7
-static ACT_ALWAYS_INLINE double power7(double x)
+//! Return x^7, in the precision of x
+template <typename T>
+static ACT_ALWAYS_INLINE T power7(T x)
 {
     return x*gmx::power6(x);
 }
@@ -296,10 +299,12 @@ static ACT_ALWAYS_INLINE void lj14_7One(gmx_unused MsgHandler *msghandler,
                              F                     *forces,
                              double                *e)
 {
-    // Get the parameters. We have to know their names to do this.
+    // Get the parameters. We have to know their names to do this. They are
+    // converted to real, such that single precision computes in single
+    // precision only.
     auto &params    = b.params();
-    auto sigma      = params[lj14_7SIGMA];
-    auto epsilon    = params[lj14_7EPSILON];
+    real sigma      = params[lj14_7SIGMA];
+    real epsilon    = params[lj14_7EPSILON];
     real f147       = 0;
     // Get the atom indices
     auto ai         = indices[0];
@@ -311,8 +316,8 @@ static ACT_ALWAYS_INLINE void lj14_7One(gmx_unused MsgHandler *msghandler,
     real eerep = 0, eedisp = 0;
     if (epsilon > 0 && sigma > 0)
     {
-        auto gamma      = params[lj14_7GAMMA];
-        auto delta      = params[lj14_7DELTA];
+        real gamma      = params[lj14_7GAMMA];
+        real delta      = params[lj14_7DELTA];
         // Integer powers are written out, std::pow is much slower
         real rstar      = dr2*rinv/sigma;
         real rstar6     = gmx::power6(rstar);
@@ -873,7 +878,9 @@ static ACT_ALWAYS_INLINE void coulombGaussianOne(gmx_unused MsgHandler      *msg
             {
                 continue;
             }
-            real qq   = ONE_4PI_EPS0*qi[a]*qj[c]/epsilonr;
+            // In real, such that single precision computes in single
+            // precision only
+            real qq   = static_cast<real>(ONE_4PI_EPS0)*qi[a]*qj[c]/static_cast<real>(epsilonr);
             // Width of the combined Gaussian, as in Coulomb_GG
             real zeta = combinedZeta(zi[a], zj[c]);
             if (zeta == 0)
@@ -2358,7 +2365,7 @@ struct ConformationCoordinates
      * \param[in] a The particle
      * \return the coordinates
      */
-    gmx::RVec operator[](size_t a) const
+    ACT_ALWAYS_INLINE gmx::RVec operator[](size_t a) const
     {
         return origin < 0 ? x[a].rvec() : x[a] - x[origin];
     }
