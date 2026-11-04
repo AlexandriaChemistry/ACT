@@ -178,7 +178,8 @@ class ForceFieldParameterList
     //! \return the options map
     const std::map<std::string, std::string> &option() const { return options_; }
 
-    /*! \brief Add function specific combination rule
+    /*! \brief Add function specific combination rule, replacing that of
+     * the parameter if there is one
      *
      * \param[in] param    Name of the parameter
      * \param[in] rule     String for the rule
@@ -187,10 +188,11 @@ class ForceFieldParameterList
                             const std::string         &rule)
     {
         ParamCombRule p(rule);
-        combrules_.insert( { param, std::move(p) } );
+        combrules_.insert_or_assign(param, std::move(p));
     }
     
-    /*! \brief Add function specific combination rule
+    /*! \brief Add function specific combination rule, replacing that of
+     * the parameter if there is one
      *
      * \param[in] param Name of the parameter
      * \param[in] rule  String for the rule
@@ -202,7 +204,7 @@ class ForceFieldParameterList
     {
         ParamCombRule p(rule);
         p.addForceFieldParameter(ffpl);
-        combrules_.insert( { param, std::move(p) } );
+        combrules_.insert_or_assign(param, std::move(p));
     }
     
     /*! \brief check whether a combination rule exists
@@ -314,13 +316,6 @@ class ForceFieldParameterList
     //! \return whether or not the parameter map is empty
     bool empty() const { return parameters_.size() == 0; }
     
-    /*! \brief check whether any parameter exists for identifier
-     *
-     * \param[in] identifier  Name of the bond or atomtype
-     * \return Parameter index
-     */
-    size_t parameterId(const Identifier &identifier) const;
-
     /*! \brief Look up map of parameters
      * \param[in] identifier Name of the atomtype or bond
      * \return map of parameters that maybe empty if not found
@@ -371,11 +366,6 @@ class ForceFieldParameterList
         counter_ = 0;
     }
 
-    /*! \brief Dump contents to a file
-     * \param[in] fp File pointer
-     */
-    void dump(FILE *fp) const;
-    
     /*! \brief Send the contents to another processor
      * \param[in] cr   Communication data structure
      * \param[in] dest Processor id to send the data to

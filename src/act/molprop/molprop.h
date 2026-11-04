@@ -87,6 +87,12 @@ private:
     std::vector<Experiment>           exper_;
     std::vector<Bond>                 bond_;
 
+    /*! \brief Return the first calculation that matches the specification
+     * \param[in] job The JobType, typically JobType::Opt
+     * \return the Experiment or nullptr
+     */
+    Experiment *findExperiment(JobType job);
+
 public:
     //! Constructor for a MolProp object
     MolProp() {}
@@ -308,12 +314,6 @@ public:
      */
     const Experiment *findExperimentConst(JobType job) const;
     
-    /*! \brief Return the first calculation that matches the specification
-     * \param[in] job The JobType, typically JobType::Opt
-     * \return the Experiment or nullptr
-     */
-    Experiment *findExperiment(JobType job);
-    
     //! Add an experiment
     void AddExperiment(Experiment myexp)
     {
@@ -344,17 +344,7 @@ public:
     }
     
     /*! \brief
-     * Sends this object over an MPI connection
-     *
-     * \param[in] cr   Data structure for MPI communication
-     * \param[in] dest Destination processor
-     * \return the CommunicationStatus of the operation
-     */
-    CommunicationStatus Send(const CommunicationRecord *cr,
-                             int                        dest) const;
-    
-    /*! \brief
-     * Receives this object over an MPI connection
+     * Broadcasts this object over an MPI connection
      *
      * \param[in] cr   Data structure for MPI communication
      * \param[in] root The MPI root
@@ -365,15 +355,6 @@ public:
                                   int                        root,
                                   MPI_Comm                   comm);
 
-    /*! \brief
-     * Receives this object over an MPI connection
-     *
-     * \param[in] cr  Data structure for MPI communication
-     * \param[in] src Source processor
-     * \return the CommunicationStatus of the operation
-     */
-    CommunicationStatus Receive(const CommunicationRecord *cr,
-                                int                        src);
 };
 
 //! Iterator over MolProp items

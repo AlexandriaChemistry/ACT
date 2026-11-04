@@ -44,6 +44,7 @@
 #include "act/basics/msg_handler.h"
 #include "act/forcefield/forcefield_utils.h"
 #include "act/forcefield/forcefield_xml.h"
+#include "act/import/import.h"
 #include "act/molprop/molprop_xml.h"
 #include "act/topology/actmol.h"
 #include "gromacs/utility/stringstream.h"
@@ -195,6 +196,177 @@ TEST(AllBondedsVsiteTest, ExtractGeometries)
     auto summary = stream.toString();
     EXPECT_NE(std::string::npos, summary.find("BONDS")) << summary;
     EXPECT_NE(std::string::npos, summary.find("ANGLES")) << summary;
+}
+
+/*! \brief Make new bonded parameters from the compounds of molprop.xml
+ * \param[in]  ffName       Force field in this directory
+ * \param[in]  bondFunction Bond function to use instead of that of the force field
+ * \param[in]  structures   Structure files in mols with more compounds
+ * \param[out] pd           The force field with the new parameters
+ */
+void updateBondeds(const std::string              &ffName,
+                   const char                     *bondFunction,
+                   const std::vector<std::string> &structures,
+                   ForceField                     *pd)
+{
+    MsgHandler msghandler;
+    msghandler.setPrintLevel(ACTStatus::Warning);
+    gmx::test::TestFileManager fileManager;
+    readForceField(fileManager.getInputFilePath(ffName), pd);
+    if (bondFunction)
+    {
+        pd->findForces(InteractionType::BONDS)->setFunction(bondFunction);
+    }
+    std::vector<MolProp> mps;
+    MolPropRead(&msghandler, fileManager.getInputFilePath("../../molprop/tests/molprop.xml").c_str(), &mps);
+    for (const auto &s : structures)
+    {
+        double qtot = 0;
+        importFile(&msghandler, pd, fileManager.getInputFilePath("mols/" + s), &mps, "",
+                   JobType::OPT, false, &qtot, false);
+        ASSERT_TRUE(msghandler.ok()) << s;
+        // The compound is named after its file
+        mps.back().SetMolname(s.substr(0, s.find('.')));
+    }
+    auto  selName = fileManager.getTemporaryFilePath("selection.dat");
+    FILE *fp      = fopen(selName.c_str(), "w");
+    for (const auto &mp : mps)
+    {
+        fprintf(fp, "%s|Train\n", mp.getMolname().c_str());
+    }
+    fclose(fp);
+    MolSelect gms;
+    gms.read(selName.c_str());
+
+    AllBondeds          bondeds;
+    std::vector<ACTMol> actmols;
+    bondeds.extractGeometries(&msghandler, &mps, &actmols, pd, gms);
+    ASSERT_TRUE(msghandler.ok());
+    ASSERT_EQ(mps.size(), actmols.size());
+    gmx::StringOutputStream stream;
+    gmx::TextWriter         tw(&stream);
+    bondeds.updateForceField(&tw, pd);
+}
+
+//! \return The value of a parameter
+double value(const ForceFieldParameterMap &params, const std::string &name)
+{
+    auto p = params.find(name);
+    if (p == params.end())
+    {
+        ADD_FAILURE() << "No parameter " << name;
+        return 0;
+    }
+    return p->second.value();
+}
+
+/* Test: Bond parameters for all bond functions. The lengths are the averages
+ * of the compounds, the other parameters are the defaults. Interactions that
+ * are not in the compounds are removed.
+ */
+TEST(AllBondedsUpdateTest, BondFunctions)
+{
+    std::map<std::string, std::map<std::string, double>> defaults = {
+        { "MORSE_BONDS",    { { "De", 400 }, { "beta", 20 }, { "D0", 0 } } },
+        { "HUA_BONDS",      { { "De", 400 }, { "b", 20 }, { "c", 0 } } },
+        { "HARMONIC_BONDS", { { "kb", 300000 }, { "bondenergy", -200 } } },
+        { "CUBIC_BONDS",    { { "kb", 300000 }, { "De", 400 } } }
+    };
+    for (const auto &fn : defaults)
+    {
+        ForceField pd;
+        updateBondeds("ACS-g.xml", fn.first.c_str(), {}, &pd);
+        auto &bonds = pd.findForcesConst(InteractionType::BONDS);
+        EXPECT_EQ(fn.first, potentialToString(bonds.potential()));
+        ASSERT_FALSE(bonds.parametersConst().empty()) << fn.first;
+        for (const auto &b : bonds.parametersConst())
+        {
+            auto &length = b.second.find("bondlength")->second;
+            EXPECT_GT(length.ntrain(), 0u) << b.first.id();
+            EXPECT_LT(80, length.value()) << b.first.id();
+            EXPECT_GT(160, length.value()) << b.first.id();
+            for (const auto &d : fn.second)
+            {
+                EXPECT_EQ(d.second, value(b.second, d.first)) << fn.first << " " << b.first.id() << " " << d.first;
+            }
+            if (fn.first == "CUBIC_BONDS")
+            {
+                // The parameters are stored with the precision of real
+                EXPECT_NEAR(3*length.value(), value(b.second, "rmax"),
+                            gmx::test::precisionTolerance(1e-6, 1e-7*3*length.value())) << b.first.id();
+            }
+            EXPECT_EQ(potentialToParameterName(bonds.potential()).size(), b.second.size()) << fn.first;
+        }
+        // None of the compounds is linear, the linear angles of the force field are removed
+        EXPECT_TRUE(pd.findForcesConst(InteractionType::LINEAR_ANGLES).parametersConst().empty()) << fn.first;
+    }
+}
+
+/* Test: The Urey-Bradley distance is the 1-3 distance from the new bond
+ * lengths and the angle, and the Fourier dihedral parameters are one.
+ */
+TEST(AllBondedsUpdateTest, UreyBradleyFourier)
+{
+    ForceField pd;
+    updateBondeds("ACS-g-dih.xml", nullptr, {}, &pd);
+    auto &bonds  = pd.findForcesConst(InteractionType::BONDS);
+    auto &angles = pd.findForcesConst(InteractionType::ANGLES);
+    ASSERT_EQ(Potential::UREY_BRADLEY_ANGLES, angles.potential());
+    ASSERT_FALSE(angles.parametersConst().empty());
+    for (const auto &a : angles.parametersConst())
+    {
+        auto atoms = a.first.atoms();
+        auto bo    = a.first.bondOrders();
+        Identifier bij({ atoms[0], atoms[1] }, { bo[0] }, CanSwap::Yes);
+        Identifier bkj({ atoms[2], atoms[1] }, { bo[1] }, CanSwap::Yes);
+        double r12   = bonds.findParameterTypeConst(bij, "bondlength").value();
+        double r23   = bonds.findParameterTypeConst(bkj, "bondlength").value();
+        double theta = value(a.second, "ub_angle")*M_PI/180;
+        double r13   = std::sqrt(r12*r12 + r23*r23 - 2*r12*r23*std::cos(theta));
+        EXPECT_NEAR(r13, value(a.second, "r13"), 1e-3*r13) << a.first.id();
+        EXPECT_EQ(30000, value(a.second, "kub")) << a.first.id();
+        EXPECT_EQ(300, value(a.second, "kt")) << a.first.id();
+    }
+    auto &dihs = pd.findForcesConst(InteractionType::PROPER_DIHEDRALS);
+    ASSERT_EQ(Potential::FOURIER_DIHEDRALS, dihs.potential());
+    ASSERT_FALSE(dihs.parametersConst().empty());
+    for (const auto &d : dihs.parametersConst())
+    {
+        EXPECT_EQ(potentialToParameterName(dihs.potential()).size(), d.second.size()) << d.first.id();
+        for (const auto &p : d.second)
+        {
+            EXPECT_EQ(1, p.second.value()) << d.first.id() << " " << p.first;
+        }
+    }
+}
+
+
+/* Test: The linear angle of acetonitrile, of which the parameter a puts
+ * the middle atom between the outer atoms according to the bond lengths.
+ */
+TEST(AllBondedsUpdateTest, LinearAngles)
+{
+    ForceField pd;
+    updateBondeds("ACS-g.xml", nullptr, { "acetonitrile.sdf" }, &pd);
+    auto &bonds = pd.findForcesConst(InteractionType::BONDS);
+    auto &lin   = pd.findForcesConst(InteractionType::LINEAR_ANGLES);
+    ASSERT_EQ(1u, lin.parametersConst().size());
+    for (const auto &a : lin.parametersConst())
+    {
+        auto atoms = a.first.atoms();
+        auto bo    = a.first.bondOrders();
+        Identifier bij({ atoms[0], atoms[1] }, { bo[0] }, CanSwap::Yes);
+        Identifier bjk({ atoms[1], atoms[2] }, { bo[1] }, CanSwap::Yes);
+        double rij = bonds.findParameterTypeConst(bij, "bondlength").value();
+        double rjk = bonds.findParameterTypeConst(bjk, "bondlength").value();
+        EXPECT_NEAR(rjk/(rij+rjk), value(a.second, "a"), 1e-6) << a.first.id();
+        EXPECT_EQ(20000, value(a.second, "klin")) << a.first.id();
+        EXPECT_EQ(2u, a.second.size()) << a.first.id();
+        auto &alin = a.second.find("a")->second;
+        EXPECT_EQ(1u, alin.ntrain()) << a.first.id();
+        EXPECT_LE(alin.minimum(), alin.value()) << a.first.id();
+        EXPECT_GE(alin.maximum(), alin.value()) << a.first.id();
+    }
 }
 
 }

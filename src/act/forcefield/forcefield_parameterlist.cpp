@@ -104,29 +104,6 @@ void ForceFieldParameterList::addParameter(const Identifier          &identifier
     }
 }
 
-size_t ForceFieldParameterList::parameterId(const Identifier &identifier) const
-{
-    auto p = parameters_.find(identifier);
-
-    if (p == parameters_.end())
-    {
-        GMX_THROW(gmx::InternalError(gmx::formatString("Cannot find parameter %s for %s",
-                                                       identifier.id().c_str(), 
-                                                       potentialToString(pot_).c_str()).c_str()));
-    }
-    auto ffp = p->second.find("unit");
-    if (ffp != p->second.end())
-    {
-        return ffp->second.index();
-    }
-    else
-    {
-        GMX_THROW(gmx::InternalError(gmx::formatString("Empty parameter list for %s in %s",
-                                                       identifier.id().c_str(), 
-                                                       potentialToString(pot_).c_str()).c_str()));
-    }
-}
-
 const ForceFieldParameterMap &ForceFieldParameterList::findParameterMapConst(const Identifier &identifier) const
 {
     auto iter = parameters_.find(identifier);
@@ -201,31 +178,6 @@ const ForceFieldParameterMap *ForceFieldParameterList::findParametersPtrConst(co
 bool ForceFieldParameterList::parameterExists(const Identifier &identifier) const
 {
     return parameters_.end() != parameters_.find(identifier);
-}
-
-void ForceFieldParameterList::dump(FILE *fp) const
-{
-    if (!fp)
-    {
-        return;
-    }
-    fprintf(fp, "Function: %s\n", potentialToString(pot_).c_str());
-    fprintf(fp, "CanSwap: %s\n", canSwapToString(canSwap_).c_str());
-    for(const auto &opt : options_)
-    {
-        fprintf(fp, "Option: type='%s' value='%s'\n", opt.first.c_str(),
-                opt.second.c_str());
-    }
-    for(const auto &param : parameters_)
-    {
-        fprintf(fp, "Identifier: %s\n", param.first.id().c_str());
-        for(const auto &key: param.second)
-        {
-            fprintf(fp, "  Type: %s Value %g\n",
-                    key.first.c_str(),
-                    key.second.value());
-        }
-    }
 }
 
 CommunicationStatus ForceFieldParameterList::Send(const CommunicationRecord *cr, int dest) const

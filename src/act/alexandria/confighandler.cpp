@@ -419,7 +419,7 @@ void SimulationConfigHandler::add_options(std::vector<t_pargs>             *parg
         { "-sp", FALSE, etBOOL, {&singlePoint_},
           "Do a single point energy calculation and call it a day." },
         { "-minimize", FALSE, etBOOL, {&minimize_},
-          "Minimize the energy with respect to input coordinates." }
+          "Minimize the energy with respect to input coordinates. With simulate, MD only follows if the minimization converges, see -maxiter and -toler." }
     };
     for(auto &i : extra)
     {
@@ -439,7 +439,9 @@ void SimulationConfigHandler::add_minimize_options(std::vector<t_pargs> *pargs,
         { "-minalg",   FALSE, etENUM, {&eminAlgs}, 
           "Algorithm to use for minimization. LBFGS is usually the fastest. Newton uses the Hessian, computed from the forces, and converges in few steps, which are expensive for large molecules. Steep is steepest descent, which needs thousands of steps for molecules with stiff bonds." },
         { "-maxiter",FALSE, etINT,  {&maxIter_},
-          "Maximum number of iterations for the Newton and steepest descent minimizers, 0 is until convergence (see next option)." },
+          "Maximum number of iterations of the minimizers, 0 is until convergence (see -toler). The structure with the lowest energy is written also if the minimization does not converge." },
+        { "-shell_max_iter", FALSE, etINT, {&shellMaxIter_},
+          "Maximum number of iterations for relaxing the shells in each energy calculation." },
         { "-maxretries", FALSE, etINT, {&minimizeRetries_},
           "Number of retries for minimizing (LBFGS only)" },
         { "-maxdisplacement", FALSE, etREAL, {&minimizeDisplacement_},
@@ -451,9 +453,9 @@ void SimulationConfigHandler::add_minimize_options(std::vector<t_pargs> *pargs,
         { "-overrelax", FALSE, etREAL, {&overRelax_},
           "Factor for the Newton steps. Larger than one may speed up minimization, but the steps are limited to a trust radius." },
         { "-kfbpr", FALSE, etREAL, {&kFBPR_},
-          "Force constant (kJ/mol nm) for flat-bottom position restraints, zero means no restraints" },
+          "Force constant (kJ/mol/nm2) for flat-bottom position restraints, zero means no restraints" },
         { "-r0fbpr", FALSE, etREAL, {&r0FBPR_},
-          "Radius (nm) for flat-bottom position restraints (from origin)" },
+          "Radius (nm) for flat-bottom position restraints, around the center of mass of the starting structure. The motion of the center of mass is not removed with position restraints." },
         { "-constrain", FALSE, etENUM, {constrainStr},
           "Constrain bond lengths, or bond lengths and angles, in energy minimization and MD simulations. Angle constraints keep the distance between the outer atoms of each angle constant." },
         { "-constr_maxiter", FALSE, etINT, {&constraintMaxIter_},

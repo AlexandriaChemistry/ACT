@@ -48,6 +48,7 @@
 #include "molhandler.h"
 
 #include <algorithm>
+#include <functional>
 #include <array>
 #include <deque>
 #include <limits>
@@ -99,43 +100,53 @@ void MolHandler::computeHessian(const ForceField                  *pd,
                                 std::vector<gmx::RVec>            *dpdq) const
 {
     const auto &atoms    = topology->atoms();
-    //double      stepSize = 1e-12; // nm
-#define GMX_DOUBLE_EPS 2.2204460492503131e-16
-    double stepSize = 1.0 * std::sqrt(GMX_DOUBLE_EPS);
+    /* The derivatives of the forces are central differences. In double
+     * precision of second order, with a step in nm of the square root of
+     * the machine precision, which balances the truncation error against
+     * the rounding error of the forces. In single precision these rounding
+     * errors would change the squares of the frequencies by about 100
+     * cm^-2, so they are of fourth order there, with a larger step that is
+     * a power of two.
+     */
+    const std::vector<int> offsets  = GMX_DOUBLE ? std::vector<int>{ -1, 1 } : std::vector<int>{ -2, -1, 1, 2 };
+    const size_t           noffset  = offsets.size();
+    double                 stepSize = GMX_DOUBLE ? std::sqrt(GMX_REAL_EPS) : 1.0/512;
 
     // The input structure first, then for each coordinate of each atom
-    // the structures with that coordinate shifted down and up. They are
-    // all computed together.
+    // the structures with that coordinate shifted. They are all computed
+    // together.
     std::vector<std::vector<gmx::RVec>> xs = { *coords };
-    std::vector<std::array<double, 2>>  xxx;
+    std::vector<std::vector<double>>    xxx;
     for(size_t ai = 0; ai < atomIndex.size(); ai++)
     {
         auto atomI = atomIndex[ai];
         for(int atomXYZ = 0; atomXYZ < DIM; atomXYZ++)
         {
-            double                xyzRef    = (*coords)[atomI][atomXYZ];
-            std::array<double, 2> xd;
-            bool                  stepsDone = false;
-            double                myStep    = stepSize;
+            double              xyzRef    = (*coords)[atomI][atomXYZ];
+            std::vector<double> xd(noffset);
+            bool                stepsDone = false;
+            double              myStep    = stepSize;
             do {
-                for(int delta = 0; delta <= 1; delta++)
+                for(size_t k = 0; k < noffset; k++)
                 {
-                    xd[delta] = xyzRef + (2*delta-1)*myStep;
+                    // The coordinates are stored as real, the difference
+                    // is computed from the stored values
+                    xd[k] = static_cast<real>(xyzRef + offsets[k]*myStep);
                 }
                 // Make sure that the coordinate is in fact chenged.
                 // If the delta is too small, numeric issues may kick
                 // in.
-                stepsDone = (xd[0] < xyzRef && xd[1] > xyzRef);
+                stepsDone = (xd[noffset/2-1] < xyzRef && xd[noffset/2] > xyzRef);
                 if (!stepsDone)
                 {
                     myStep *= 2;
                 }
             }
             while (!stepsDone);
-            for(int delta = 0; delta <= 1; delta++)
+            for(size_t k = 0; k < noffset; k++)
             {
                 xs.push_back(*coords);
-                xs.back()[atomI][atomXYZ] = xd[delta];
+                xs.back()[atomI][atomXYZ] = xd[k];
             }
             xxx.push_back(xd);
         }
@@ -162,21 +173,30 @@ void MolHandler::computeHessian(const ForceField                  *pd,
         gmx::RVec zero = { 0, 0, 0 };
         dpdq->resize(DIM*atomIndex.size(), zero);
     }
+    // The derivative from the values at the shifted coordinates xd
+    auto derivative = [noffset](const std::vector<double> &xd, auto value)
+    {
+        if (noffset == 2)
+        {
+            return (value(1) - value(0))/(xd[1] - xd[0]);
+        }
+        double h = (xd[2] - xd[1])/2;
+        return (8*(value(2) - value(1)) - (value(3) - value(0)))/(12*h);
+    };
     for(size_t ai = 0; ai < atomIndex.size(); ai++)
     {
         for(int atomXYZ = 0; atomXYZ < DIM; atomXYZ++)
         {
             int         column = ai*DIM+atomXYZ;
             const auto &xd     = xxx[column];
-            const auto &f0     = confs[1+2*column].fcalc;
-            const auto &f1     = confs[2+2*column].fcalc;
+            auto        conf   = [&](size_t k) -> const CoordsEnergy & { return confs[1+noffset*column+k]; };
             for(size_t aj = 0; aj < atomIndex.size(); aj++)
             {
                 int    atomJ = atomIndex[aj];
                 for(int d = 0; d < DIM; d++)
                 {
                     int    row   = aj*DIM+d;
-                    double value = -(f1[atomJ][d]-f0[atomJ][d])/(xd[1]-xd[0]);
+                    double value = -derivative(xd, [&](size_t k) { return static_cast<double>(conf(k).fcalc[atomJ][d]); });
                     hessian->set(column, row, value);
                 }
             }
@@ -184,21 +204,21 @@ void MolHandler::computeHessian(const ForceField                  *pd,
             {
                 // To compute dipole we need to take shells into account as well!
                 // The same goes for virtual sites.
-                gmx::RVec mu[2] = { { 0, 0, 0 }, { 0, 0, 0 } };
-                for(int delta = 0; delta <= 1; delta++)
+                std::vector<gmx::DVec> mu(noffset, { 0, 0, 0 });
+                for(size_t k = 0; k < noffset; k++)
                 {
-                    const auto &x = confs[1+2*column+delta].x;
+                    const auto &x = conf(k).x;
                     for(size_t ii = 0; ii < atoms.size(); ii++)
                     {
                         for(int m = 0; m < DIM; m++)
                         {
-                            mu[delta][m] += atoms[ii].totalCharge()*x[ii][m];
+                            mu[k][m] += atoms[ii].totalCharge()*x[ii][m];
                         }
                     }
                 }
                 for(int d = 0; d < DIM; d++)
                 {
-                    (*dpdq)[column][d] = (mu[1][d]-mu[0][d])/(xd[1]-xd[0]);
+                    (*dpdq)[column][d] = derivative(xd, [&](size_t k) { return mu[k][d]; });
                 }
             }
         }
@@ -740,6 +760,111 @@ static double msForce(const std::vector<int>       &theAtoms,
     }
 }
 
+/*! \brief The energy change from x to xt
+ * The energies are sums of many terms, with a rounding error of the
+ * machine precision times the size of the terms, which in single
+ * precision is larger than the changes close to a minimum. Smaller
+ * changes are computed from the forces with the trapezoidal rule
+ * instead, which is accurate to third order in the step. For large steps
+ * it is not, which shows when it differs from the energy change by more
+ * than the rounding error, then the energy change is used.
+ * \param[in] theAtoms The atoms that move
+ * \param[in] e        The energies at x
+ * \param[in] x        The old coordinates
+ * \param[in] f        The forces at x
+ * \param[in] enew     The potential energy at xt
+ * \param[in] xt       The new coordinates
+ * \param[in] ft       The forces at xt
+ * \param[in] noise    The rounding error of the energy, see energyNoise
+ * \return the change of the potential energy
+ */
+static double energyChange(const std::vector<int>                  &theAtoms,
+                           const std::map<InteractionType, double> &e,
+                           const std::vector<gmx::RVec>            &x,
+                           const std::vector<gmx::RVec>            &f,
+                           double                                   enew,
+                           const std::vector<gmx::RVec>            &xt,
+                           const std::vector<gmx::RVec>            &ft,
+                           double                                   noise)
+{
+    double eold  = e.find(InteractionType::EPOT)->second;
+    double scale = 0;
+    for (const auto &term : e)
+    {
+        if (term.first != InteractionType::EPOT)
+        {
+            scale += std::abs(term.second);
+        }
+    }
+    double de       = enew - eold;
+    double rounding = std::max(10*GMX_REAL_EPS*scale, noise);
+    if (std::abs(de) > rounding)
+    {
+        return de;
+    }
+    double work = 0;
+    for (auto atom : theAtoms)
+    {
+        for (int m = 0; m < DIM; m++)
+        {
+            work += (f[atom][m] + ft[atom][m])*(xt[atom][m] - x[atom][m]);
+        }
+    }
+    double trapezoid = -0.5*work;
+    return std::abs(trapezoid - de) <= rounding ? trapezoid : de;
+}
+
+/*! \brief Estimate the rounding error of the energy
+ * The energy terms are sums of terms that cancel, such that the rounding
+ * error can be much larger than the machine precision times the terms,
+ * in particular with shells with large charges. It is estimated from
+ * small displacements of the particles, for which the trapezoidal rule
+ * gives the energy change to well within the rounding error, the
+ * estimate is four times the largest of a few samples.
+ * \param[in] theAtoms The particles that move
+ * \param[in] x        The coordinates
+ * \param[in] evaluate Computes the energy and forces as the minimizer does
+ * \return the largest rounding error found
+ */
+static double energyNoise(const std::vector<int>       &theAtoms,
+                          const std::vector<gmx::RVec> &x,
+                          const std::function<double(std::vector<gmx::RVec> *,
+                                                     std::vector<gmx::RVec> *)> &evaluate)
+{
+    const double           step = 1e-5;
+    std::vector<gmx::RVec> x0   = x, f0(x.size());
+    double                 e0   = evaluate(&x0, &f0);
+    double                 noise = 0;
+    unsigned int           seed  = 1993;
+    for (int probe = 0; probe < 5; probe++)
+    {
+        std::vector<gmx::RVec> xt = x0, ft(x.size());
+        for (auto a : theAtoms)
+        {
+            for (int m = 0; m < DIM; m++)
+            {
+                seed      = seed*1103515245u + 12345u;
+                xt[a][m] += ((seed >> 16) & 1) ? step : -step;
+            }
+        }
+        double et   = evaluate(&xt, &ft);
+        double work = 0;
+        for (auto a : theAtoms)
+        {
+            for (int m = 0; m < DIM; m++)
+            {
+                work += (f0[a][m] + ft[a][m])*(xt[a][m] - x0[a][m]);
+            }
+        }
+        if (std::isfinite(et) && std::isfinite(e0))
+        {
+            noise = std::max(noise, std::abs(et - e0 + 0.5*work));
+        }
+    }
+    // The maximum of a few samples underestimates the largest errors
+    return 4*noise;
+}
+
 //! \brief Increment the coordinates with a delta
 static void updateCoords(const std::vector<int>       &theAtoms,
                          const std::vector<gmx::RVec> &xold,
@@ -781,6 +906,22 @@ private:
     const std::vector<int>             theAtoms_;
     //! Constraints, or nullptr if there are none
     Constrainer                       *constrainer_;
+    //! The lowest energy found
+    double                             bestEnergy_ = std::numeric_limits<double>::max();
+    //! The coordinates with the lowest energy, empty if there are none
+    std::vector<gmx::RVec>             bestCoords_;
+    //! Whether there is a previous evaluation with a finite energy
+    bool                               havePrevious_ = false;
+    //! The coordinates of the previous evaluation
+    std::vector<gmx::RVec>             prevCoords_;
+    //! The forces of the previous evaluation
+    std::vector<gmx::RVec>             prevForces_;
+    //! The energies of the previous evaluation
+    std::map<InteractionType, double>  prevEnergies_;
+    //! The energy along the path of the evaluations
+    double                             pathEnergy_ = 0;
+    //! The rounding error of the energy, see energyNoise
+    double                             energyNoise_ = 0;
 public:
     //! Constructor
     StlbfgsHandler(const ForceField       *pd,
@@ -827,6 +968,57 @@ public:
     //! \return the constraints, or nullptr if there are none
     Constrainer *constrainer() const { return constrainer_; }
 
+    /*! \brief Store the current coordinates if their energy is the lowest
+     * \param[in] epot The potential energy of the current coordinates
+     */
+    void storeIfBest(double epot)
+    {
+        if (std::isfinite(epot) && epot < bestEnergy_)
+        {
+            bestEnergy_ = epot;
+            bestCoords_ = coords_;
+        }
+    }
+
+    //! \return the coordinates with the lowest energy, empty if there are none
+    const std::vector<gmx::RVec> &bestCoordinates() const { return bestCoords_; }
+
+    /*! \brief The energy along the path of the evaluations
+     * The energy of the current coordinates is that of the previous
+     * evaluation plus the change, which close to a minimum is computed
+     * from the forces, see energyChange. The line search then also finds
+     * decreases of the energy that are smaller than its rounding error.
+     * \return the energy at the current coordinates
+     */
+    double pathEnergy()
+    {
+        double enew = energies_[InteractionType::EPOT];
+        if (!std::isfinite(enew))
+        {
+            return enew;
+        }
+        if (havePrevious_)
+        {
+            pathEnergy_ += energyChange(theAtoms_, prevEnergies_, prevCoords_, prevForces_,
+                                        enew, coords_, forces_, energyNoise_);
+        }
+        else
+        {
+            pathEnergy_ = enew;
+        }
+        havePrevious_ = true;
+        prevCoords_   = coords_;
+        prevForces_   = forces_;
+        prevEnergies_ = energies_;
+        return pathEnergy_;
+    }
+
+    //! \return the energy along the path at the previous evaluation
+    double previousPathEnergy() const { return pathEnergy_; }
+
+    //! \brief Set the rounding error of the energy
+    void setEnergyNoise(double noise) { energyNoise_ = noise; }
+
     //! \brief print force on frozen atom
     void printFrozenForce(gmx::TextWriter *tw, const std::vector<int> &myFreeze)
     {
@@ -842,16 +1034,16 @@ public:
             rvec frot;
             // If there is a component away from the Z-axis, rotate around
             // Z first, and then Y
-            double xy     = std::sqrt(dx[XX]*dx[XX] + dx[YY]*dx[YY]);
+            real xy     = std::sqrt(dx[XX]*dx[XX] + dx[YY]*dx[YY]);
             if (xy > 0)
             {
-                double sinphi = dx[YY]/xy;
-                double cosphi = dx[XX]/xy;
+                real sinphi = dx[YY]/xy;
+                real cosphi = dx[XX]/xy;
                 // Rotation matrix around Z in negative phi direction
                 matrix m1 = { { cosphi, sinphi, 0 }, { -sinphi, cosphi, 0 }, { 0, 0, 1 } };
-                double xnorm  = norm(dx);
-                double costh  = dx[ZZ]/xnorm;
-                double sinth  = std::sqrt(1 - costh*costh);
+                real xnorm  = norm(dx);
+                real costh  = dx[ZZ]/xnorm;
+                real sinth  = std::sqrt(1 - costh*costh);
                 // Rotation matrix around Y in negative theta direction
                 matrix m2 = { { costh, 0, sinth }, { 0, 1, 0 }, { -sinth, 0, costh } };
                 matrix m12;
@@ -923,7 +1115,12 @@ static void func(const std::vector<double> &x, double &f, std::vector<double> &g
     {
         lbfgs->constrainer()->projectForces(lbfgs->mh(), *coords, forces);
     }
-    f  = lbfgs->energy(InteractionType::EPOT) + penalty;
+    // With a penalty the coordinates are those of the previous evaluation
+    f  = 0 == penalty ? lbfgs->pathEnergy() : lbfgs->previousPathEnergy() + penalty;
+    if (0 == penalty)
+    {
+        lbfgs->storeIfBest(f);
+    }
     jj = 0;
     rvec   fsum = { 0, 0, 0 };
     double fmax = 0;
@@ -1056,6 +1253,27 @@ public:
     }
 };
 
+bool MolHandler::adjustForceTolerance(MsgHandler              *msghandler,
+                                      const ForceComputer     *forceComp,
+                                      SimulationConfigHandler *simConfig)
+{
+    // Both are on the mean square force
+    double shellToler   = forceComp->forceTolerance();
+    double msForceToler = simConfig->forceTolerance();
+    if (msForceToler >= shellToler)
+    {
+        return false;
+    }
+    if (msForceToler != 0 && msghandler)
+    {
+        msghandler->msg(ACTStatus::Warning,
+                        gmx::formatString("Atom mean square force tolerance (%g) more strict than shell mean square force tolerance (%g). Increasing atom mean square force tolerance to hundred times that for shells.",
+                                          msForceToler, shellToler));
+    }
+    simConfig->setForceTolerance(100*shellToler);
+    return true;
+}
+
 eMinimizeStatus MolHandler::minimizeCoordinates(MsgHandler                        *msghandler,
                                                 const ForceField                  *pd,
                                                 const Topology                    *topology,
@@ -1067,19 +1285,14 @@ eMinimizeStatus MolHandler::minimizeCoordinates(MsgHandler                      
 {
     bool      converged    = false;
     int       myIter       = 0;
-    // Check for meaningful convergence tolerance, both are on the mean
-    // square force
-    double    shellToler   = forceComp->forceTolerance();
+    // Check for meaningful convergence tolerance, see adjustForceTolerance
     double    msForceToler = simConfig.forceTolerance();
-    if (msForceToler < shellToler)
     {
-        if (msForceToler != 0)
+        SimulationConfigHandler consistent = simConfig;
+        if (adjustForceTolerance(msghandler, forceComp, &consistent))
         {
-            msghandler->msg(ACTStatus::Warning,
-                            gmx::formatString("Atom mean square force tolerance (%g) more strict than shell mean square force tolerance (%g). Increasing atom mean square force tolerance to hundred times that for shells.",
-                                              msForceToler, shellToler));
+            msForceToler = consistent.forceTolerance();
         }
-        msForceToler = 100*shellToler;
     }
     // List of atoms (not shells) and weighting factors
     auto              myatoms = topology->atoms();
@@ -1121,8 +1334,8 @@ eMinimizeStatus MolHandler::minimizeCoordinates(MsgHandler                      
     // change irregularly. The Newton iterations in SHAKE converge
     // quadratically, such that a much smaller tolerance is cheap.
     Constrainer            constrainer(simConfig.constraintMaxIter(),
-                                       std::min(simConfig.constraintTolerance(),
-                                                1000*GMX_REAL_EPS), 1.0);
+                                       std::min<double>(simConfig.constraintTolerance(),
+                                                        1000*GMX_REAL_EPS), 1.0);
     bool                   constrain = simConfig.constrain();
     if (constrain)
     {
@@ -1149,6 +1362,37 @@ eMinimizeStatus MolHandler::minimizeCoordinates(MsgHandler                      
             constrainer.projectForces(msghandler, x, f);
         }
     };
+    /* The mean square change of the forces when each coordinate of the
+     * atoms changes by one unit in the last place, in directions that
+     * differ between the coordinates. Since the coordinates are rounded,
+     * the forces at a minimum are not smaller than this, which in single
+     * precision is much larger than in double precision.
+     */
+    auto roundingMsForce = [&](const std::vector<gmx::RVec> &x,
+                               const std::vector<gmx::RVec> &f)
+    {
+        auto         xr   = x;
+        unsigned int seed = 1993;
+        for (auto a : theAtoms)
+        {
+            for (int m = 0; m < DIM; m++)
+            {
+                seed     = seed*1103515245u + 12345u;
+                real to  = ((seed >> 16) & 1) ? std::numeric_limits<real>::max() : std::numeric_limits<real>::lowest();
+                xr[a][m] = std::nextafter(xr[a][m], to);
+            }
+        }
+        std::vector<gmx::RVec>            fr(f.size());
+        std::map<InteractionType, double> er;
+        forceComp->compute(msghandler, pd, topology, &xr, &fr, &er);
+        constrainForces(xr, &fr);
+        std::vector<gmx::RVec> df(f.size(), { 0, 0, 0 });
+        for (auto a : theAtoms)
+        {
+            rvec_sub(fr[a], f[a], df[a]);
+        }
+        return msForce(theAtoms, df);
+    };
     // Constrain coordinates, using the reference coordinates for the directions
     auto constrainCoords = [&](const std::vector<gmx::RVec> &xref,
                                std::vector<gmx::RVec>       *x)
@@ -1164,10 +1408,25 @@ eMinimizeStatus MolHandler::minimizeCoordinates(MsgHandler                      
     newCoords[1] = xstart;
     std::map<InteractionType, double> newEnergies[2];
     int current = 0;
+    // Why the minimization did not converge
+    auto failure = eMinimizeStatus::TooManySteps;
     if (simConfig.minAlg() == eMinimizeAlgorithm::LBFGS)
     {
         lbfgs = new StlbfgsHandler(pd, msghandler, topology, forceComp, theAtoms, xstart,
                                    constrain ? &constrainer : nullptr);
+        // The energies and forces as in func, the shells are minimized
+        // with the atoms
+        lbfgs->setEnergyNoise(energyNoise(theAtoms, xstart,
+                                          [&](std::vector<gmx::RVec> *xx, std::vector<gmx::RVec> *ff)
+                                          {
+                                              std::map<InteractionType, double> ee;
+                                              gmx::RVec field = { 0, 0, 0 };
+                                              forceComp->constructVsiteCoordinates(topology, xx);
+                                              forceComp->computeOnce(msghandler, pd, topology, xx, ff, &ee, field);
+                                              forceComp->spreadVsiteForces(topology, xx, ff);
+                                              constrainForces(*xx, ff);
+                                              return ee[InteractionType::EPOT];
+                                          }));
 
         STLBFGS::Optimizer                      opt{func, 1000};
         // The optimizer stops when the norm of the gradient divided by that
@@ -1187,6 +1446,9 @@ eMinimizeStatus MolHandler::minimizeCoordinates(MsgHandler                      
         opt.gtol    = 0.9*std::sqrt(simConfig.forceTolerance()*theAtoms.size())/std::max(1.0, std::sqrt(xnorm));
         opt.ftol    = 1e-12;
         opt.verbose = msghandler->verbose();
+        // Zero is until convergence
+        opt.maxiter = simConfig.maxIter() > 0 ? simConfig.maxIter() : std::numeric_limits<int>::max();
+        bool reachedMaxIter = false;
 
         // One-dimensional array
         std::vector<double>                     sx(theAtoms.size()*DIM);
@@ -1219,12 +1481,21 @@ eMinimizeStatus MolHandler::minimizeCoordinates(MsgHandler                      
             // the precision, then the structure is a minimum if the forces
             // are within the tolerance
             bool done = opt.run(sx);
+            reachedMaxIter = reachedMaxIter || opt.niter >= opt.maxiter;
             // Final minimization for shells.
             lbfgs->forceComp()->compute(msghandler, lbfgs->pd(), topology,
                                         lbfgs->coordinates(),
                                         lbfgs->forces(), lbfgs->energies());
             constrainForces(*lbfgs->coordinates(), lbfgs->forces());
             converged = done || msForce(theAtoms, *lbfgs->forces()) <= msForceToler;
+            // The line search also fails when the energy cannot decrease
+            // within the precision of the coordinates, then the forces are
+            // as small as their change for one unit in the last place
+            if (!converged && opt.niter < opt.maxiter)
+            {
+                converged = (msForce(theAtoms, *lbfgs->forces()) <=
+                             4*roundingMsForce(*lbfgs->coordinates(), *lbfgs->forces()));
+            }
             if (converged)
             {
                 double enew = lbfgs->energy(InteractionType::EPOT);
@@ -1252,6 +1523,19 @@ eMinimizeStatus MolHandler::minimizeCoordinates(MsgHandler                      
         }
         // Only a stored structure is a minimum
         converged = haveMinimum;
+        if (!converged)
+        {
+            failure = reachedMaxIter ? eMinimizeStatus::TooManySteps : eMinimizeStatus::NoMinimum;
+            if (!lbfgs->bestCoordinates().empty())
+            {
+                // The structure with the lowest energy, although it is not
+                // a minimum, with relaxed shells
+                newCoords[current] = lbfgs->bestCoordinates();
+                std::vector<gmx::RVec> forces(newCoords[current].size());
+                forceComp->compute(msghandler, pd, topology, &newCoords[current],
+                                   &forces, &newEnergies[current]);
+            }
+        }
         // If applicable, print the force between the frozen two atoms
         lbfgs->printFrozenForce(msghandler->tw(), myFreeze);
 
@@ -1279,20 +1563,81 @@ eMinimizeStatus MolHandler::minimizeCoordinates(MsgHandler                      
             constrainCoords(x, &xt);
             return evaluate(&xt, &ft, &et);
         };
+        // The rounding error of the energy, the shells are relaxed
+        double noise = energyNoise(theAtoms, x,
+                                   [&](std::vector<gmx::RVec> *xx, std::vector<gmx::RVec> *ff)
+                                   {
+                                       std::map<InteractionType, double> ee;
+                                       return evaluate(xx, ff, &ee);
+                                   });
         auto accept = [&]()
         {
             std::swap(x, xt);
             std::swap(f, ft);
             std::swap(e, et);
         };
+        // The energy change from x to xt
+        auto energyChange = [&](double enew)
+        {
+            return alexandria::energyChange(theAtoms, e, x, f, enew, xt, ft, noise);
+        };
+        // The energy along the path of the minimization, the sum of the
+        // energy changes
         double epot = evaluate(&x, &f, &e);
         double msf  = msForce(theAtoms, f);
+        // The structure with the lowest energy, steepest descent may
+        // accept steps that increase the energy
+        double                            bestEpot     = epot;
+        std::vector<gmx::RVec>            bestX        = x;
+        std::map<InteractionType, double> bestEnergies = e;
+        // Steps since the lowest energy decreased more than the precision
+        // of the energy, a sum of many terms, as with L-BFGS
+        int  noProgress = 0;
+        auto keepBest = [&]()
+        {
+            if (bestEpot - epot > 1e-12*std::max({ std::abs(bestEpot), std::abs(epot), 1.0 }))
+            {
+                noProgress = 0;
+            }
+            else
+            {
+                noProgress += 1;
+            }
+            if (epot < bestEpot)
+            {
+                bestEpot     = epot;
+                bestX        = x;
+                bestEnergies = e;
+            }
+        };
+        // The number of steps without progress after which there is no
+        // minimum. Steepest descent may accept steps that increase the
+        // energy, and needs more of them.
+        const int maxNoProgress = simConfig.minAlg() == eMinimizeAlgorithm::Newton ? 10 : 100;
         if (energies)
         {
             *energies = e;
         }
         printEnergies(msghandler->tw(), myIter, msf, 0, 0, e, 0);
-        converged = msf <= msForceToler;
+        // The forces do not become smaller than their change for one unit
+        // in the last place of the coordinates, which in single precision
+        // is larger than the tolerance. It is estimated at the start and
+        // computed again when the forces are that small.
+        double floorMsf    = roundingMsForce(x, f);
+        auto   isConverged = [&]()
+        {
+            if (msf <= msForceToler)
+            {
+                return true;
+            }
+            if (msf <= 4*floorMsf)
+            {
+                floorMsf = roundingMsForce(x, f);
+                return msf <= 4*floorMsf;
+            }
+            return false;
+        };
+        converged = isConverged();
         // The largest step of a particle and the starting one, in nm. The
         // step is limited to the trust radius, which grows after a step that
         // lowered the energy and shrinks after one that did not.
@@ -1327,10 +1672,17 @@ eMinimizeStatus MolHandler::minimizeCoordinates(MsgHandler                      
                 double dmax  = maxDisplacement(dx);
                 double scale = (dmax > radius) ? radius/dmax : 1.0;
                 double enew  = tryStep(dx, scale);
-                if (std::isfinite(enew) && enew <= epot)
+                double de    = std::isfinite(enew) ? energyChange(enew) : enew;
+                if (std::isfinite(de) && de <= 0)
                 {
+                    epot       += de;
                     accept();
-                    epot        = enew;
+                    keepBest();
+                    if (noProgress >= maxNoProgress)
+                    {
+                        failure = eMinimizeStatus::NoMinimum;
+                        break;
+                    }
                     haveHessian = false;
                     radius      = std::min(maxRadius, 2*radius);
                     mu         /= 10;
@@ -1346,12 +1698,13 @@ eMinimizeStatus MolHandler::minimizeCoordinates(MsgHandler                      
                     mu      = std::max(10*mu, 1e-6*newton.largestEigenvalue());
                     if (radius < 1e-9)
                     {
-                        return eMinimizeStatus::NoMinimum;
+                        failure = eMinimizeStatus::NoMinimum;
+                        break;
                     }
                 }
                 myIter += 1;
                 msf       = msForce(theAtoms, f);
-                converged = msf <= msForceToler;
+                converged = isConverged();
                 printEnergies(msghandler->tw(), myIter, msf, 0, 0, e, scale);
             }
         }
@@ -1407,10 +1760,11 @@ eMinimizeStatus MolHandler::minimizeCoordinates(MsgHandler                      
                 for (int halving = 0; !ok && halving < 40; halving++)
                 {
                     double enew = tryStep(d, gamma);
-                    ok = std::isfinite(enew) && enew <= eref - 1e-4*gamma*dd;
+                    double de   = std::isfinite(enew) ? energyChange(enew) : enew;
+                    ok = std::isfinite(de) && epot + de <= eref - 1e-4*gamma*dd;
                     if (ok)
                     {
-                        epot = enew;
+                        epot += de;
                     }
                     else
                     {
@@ -1419,11 +1773,18 @@ eMinimizeStatus MolHandler::minimizeCoordinates(MsgHandler                      
                 }
                 if (!ok)
                 {
-                    return eMinimizeStatus::NoMinimum;
+                    failure = eMinimizeStatus::NoMinimum;
+                    break;
                 }
                 xprev = xcur;
                 dprev = d;
                 accept();
+                keepBest();
+                if (noProgress >= maxNoProgress)
+                {
+                    failure = eMinimizeStatus::NoMinimum;
+                    break;
+                }
                 last.push_back(epot);
                 if (last.size() > nlast)
                 {
@@ -1431,29 +1792,31 @@ eMinimizeStatus MolHandler::minimizeCoordinates(MsgHandler                      
                 }
                 myIter += 1;
                 msf       = msForce(theAtoms, f);
-                converged = msf <= msForceToler;
+                converged = isConverged();
                 printEnergies(msghandler->tw(), myIter, msf, 0, 0, e, gamma);
             }
         }
-        newCoords[current]   = x;
-        newEnergies[current] = e;
-    }
-    if (converged)
-    {
-        *coords   = newCoords[current];
-        if (energies && !newEnergies[current].empty())
+        // Without progress the energy may not decrease within the precision
+        // of the coordinates, then the forces are as small as their change
+        // for one unit in the last place
+        if (!converged && eMinimizeStatus::NoMinimum == failure)
         {
-            *energies = newEnergies[current];
+            msf       = msForce(theAtoms, f);
+            floorMsf  = roundingMsForce(x, f);
+            converged = msf <= 4*floorMsf;
         }
-        // Re-compute the energy one last time.
-        //! \todo: is this really needed?
-        // (void) forceComp->compute(pd, mol->topology(), coords, &forces[current], energies);
-        return eMinimizeStatus::OK;
+        // A converged structure is the last one, which may not have the
+        // lowest energy with steepest descent
+        newCoords[current]   = converged ? x : bestX;
+        newEnergies[current] = converged ? e : bestEnergies;
     }
-    else
+    // Also if it is not a minimum, the structure with the lowest energy
+    *coords = newCoords[current];
+    if (energies && !newEnergies[current].empty())
     {
-        return eMinimizeStatus::TooManySteps;
+        *energies = newEnergies[current];
     }
+    return converged ? eMinimizeStatus::OK : failure;
 }
 
 double MolHandler::coordinateRmsd(const std::vector<ActAtom>   &myatoms,
@@ -1755,6 +2118,17 @@ void MolHandler::simulate(MsgHandler                    *msghandler,
             }
             printEnergies(exvg, step, deltat, energies, ekin, nDOF, oenv);
         }
+        // Write the coordinates of the same time, numbering the frames from 1
+        if (simConfig.nstxout() > 0 && step % simConfig.nstxout() == 0)
+        {
+            ScopedTimer timer(trajectoryTimer);
+            //! \todo rewrite without gromacs fluff.
+            pdbWriter(traj, title, mol->atomsConst(),
+                      coordinates, mol->topology()->residueNames(),
+                      epbcNONE,
+                      box, chain, step/simConfig.nstxout()+1, trajIndex,
+                      nullptr, true);
+        }
         // Integrate positions using velocity Verlet
         timings.start(integrationTimer);
         if (simConfig.constrain())
@@ -1836,17 +2210,6 @@ void MolHandler::simulate(MsgHandler                    *msghandler,
             ScopedTimer timer(integrationTimer);
             commRemover.remove(coordinates, &velocities);
             timings.addFlops(60*nmoving);
-        }
-        // Write output if needed
-        if (simConfig.nstxout() > 0 && step % simConfig.nstxout() == 0)
-        {
-            ScopedTimer timer(trajectoryTimer);
-            //! \todo rewrite without gromacs fluff.
-            pdbWriter(traj, title, mol->atomsConst(),
-                      coordinates, mol->topology()->residueNames(),
-                      epbcNONE,
-                      box, chain, step+1, trajIndex,
-                      nullptr, true);
         }
         // Swap force arrays
         cur = prev;

@@ -37,6 +37,7 @@
 
 #include <algorithm>
 #include <map>
+#include <optional>
 #include <set>
 #include <vector>
 
@@ -142,27 +143,6 @@ class ForceField
         //! \return the number of particle types
         size_t getNatypes() const { return alexandria_.size(); }
 
-        /*! \brief Compute dependent parameters
-         *
-         * The force field may contain a number of parameters
-         * that depend on othe parameters. For instance, the
-         * distance r_{ik} in an angle triplet r_{ijk} depends
-         * on the distances r_{ij} and r_{kj} as well as the 
-         * angle between the vectors. Those dependent properties
-         * are computed here in order to get the highest accuracy
-         * in the numbers. This is important when computing energies
-         * based on these distances.
-         */
-        void calcDependent();
-
-        /*! \brief
-         * Return the element name corresponding to the zeta type
-         *
-         * \param[in] ztype  zeta Type
-         * \return the element name, fatal error if not found
-         */
-        const std::string ztype2elem(const std::string &ztype) const;
-
     /*! \brief Check whether particle type exists
      * \param[in] id The identifier of the particle type
      * \return true if ptype exists
@@ -251,16 +231,6 @@ class ForceField
      */
     const std::map<Identifier, ParticleType> &particleTypesConst() const { return alexandria_; }
     
-    /*! \brief
-     * Return the poltype corresponding to atype and true if successful
-     *
-     * \param[in]  atype  Atom type
-     * \param[out] ptype  Polarizability type.
-     * \return true if successful
-     */
-    bool atypeToPtype(const std::string &atype,
-                      std::string       *ptype) const;
-    
     
     /*! \brief
      * Return the bond type corresponding to atom type and true if successful
@@ -273,16 +243,6 @@ class ForceField
                       std::string       *btype) const;
     
     /*! \brief
-     * Return the zeta type corresponding to atom type and true if successful
-     *
-     * \param[in]  atype  Atom type
-     * \param[out] ztype  Zeta type.
-     * \return true if successful
-     */
-    bool atypeToZtype(const std::string &atype,
-                      std::string       *ztype) const;
-    
-    /*! \brief
      * Add a new force list. The routine checks for duplicate itypes
      * and will not add a second block of a certain type is one is
      * present already.
@@ -291,9 +251,6 @@ class ForceField
      */
     void addForces(InteractionType                iType,
                    const ForceFieldParameterList &forces);
-    
-    //! \return the number of interaction types with parameters
-    size_t nforces() const { return forces_.size(); }
     
     //! \return pointer to the map of parameter lists per interaction type
     std::map<InteractionType, ForceFieldParameterList> *forces() { return &forces_; }
@@ -358,9 +315,6 @@ class ForceField
                        const std::string &attached,
                        int                numattach);
     
-    //! \return a constant reference of \p symcharges_
-    const std::vector<Symcharges> &getSymcharges() const { return symcharges_; }
-    
     //! \return iterator to the start of \p symcharges_
     SymchargesIterator getSymchargesBegin() { return symcharges_.begin(); }
     
@@ -386,6 +340,68 @@ class ForceField
 
     //! \brief Guess the algorithm based on force field content
     void guessChargeGenerationAlgorithm();
+
+    /*! \name Options of the particle types
+     * The number of bonds within which nonbonded interactions are excluded,
+     * the distribution of the charges and the relative dielectric constant
+     * are options of the particle types. In older force field files they
+     * are options of the interaction COULOMB, see convertCoulomb.
+     * \{
+     */
+    //! \return the number of bonds within which nonbonded interactions are excluded, or -1 if it is not specified
+    int nexcl() const { return nexcl_.value_or(-1); }
+
+    //! \brief Set the number of bonds within which nonbonded interactions are excluded
+    void setNexcl(int nexcl) { nexcl_ = nexcl; }
+
+    //! \return the distribution of the charges, point charges if it is not specified
+    ChargeDistributionType chargeDistribution() const
+    {
+        return chargeDistribution_.value_or(ChargeDistributionType::Point);
+    }
+
+    //! \brief Set the distribution of the charges
+    void setChargeDistribution(ChargeDistributionType cd) { chargeDistribution_ = cd; }
+
+    //! \return the relative dielectric constant, one if it is not specified
+    double epsilonr() const { return epsilonr_.value_or(1.0); }
+
+    //! \brief Set the relative dielectric constant
+    void setEpsilonr(double epsilonr) { epsilonr_ = epsilonr; }
+
+    /*! \brief Set an option of the particle types from a force field file
+     * \param[in] key   One of nexcl, chargedistribution or epsilonr
+     * \param[in] value The value
+     * \throws gmx::InvalidInputError for an unknown key or value
+     */
+    void setParticleTypesOption(const std::string &key, const std::string &value);
+
+    //! \return the options of the particle types that are specified, with their values as written
+    std::map<std::string, std::string> particleTypesOptions() const;
+
+    /*! \brief Take the charge distributions from the interaction COULOMB
+     * In older force field files the width of the charge distribution of
+     * a particle type, zeta, is a parameter of the interaction COULOMB, to
+     * which the option zetatype of the particle type refers. Particle types
+     * that share a zetatype get a copy each. The number of exclusions, which
+     * has to be the same for COULOMB and VANDERWAALS, the distribution of
+     * the charges, the function of COULOMB, and the relative dielectric
+     * constant are options of COULOMB there. They become a parameter of the
+     * particle types and options of the particle types.
+     * \param[in] msghandler For messages, may be nullptr
+     * \throws gmx::InvalidInputError if both forms are present with
+     *         different values
+     */
+    void convertCoulomb(MsgHandler *msghandler);
+
+    /*! \brief The potential of an interaction type
+     * For ELECTROSTATICS it follows from the charge distribution, for the
+     * other interaction types it is that of their parameters.
+     * \param[in] itype The interaction type
+     * \return the potential, NONE if the interaction is not present
+     */
+    Potential potential(InteractionType itype) const;
+    //! \}
 
     //! \return whether the model used is polarizable.     
     bool polarizable() const { return polarizable_; }
@@ -421,46 +437,13 @@ class ForceField
      */
     void expandSecondCharges(MsgHandler *msghandler);
     
-    /*! Spread from master to other nodes
+    /*! Broadcast from master to the helpers of this node
      * \param[in] cr    Communication record
      * \param[in] root  The root of this communication
-     * \param[in] bcast Whether or not to use boradcast functionality
      * \param[in] msgHandler MsgHandler for debug output
      */
-    void sendToHelpers(const CommunicationRecord *cr, int root, bool bcast=true,
+    void sendToHelpers(const CommunicationRecord *cr, int root,
                        MsgHandler *msgHandler=nullptr);
-    
-    /*! Spread eemprop to a helper node
-     * \param[in] cr   Communication record
-     * \param[in] dest Destination node
-     * \param[in] msgHandler MsgHandler for debug output
-     */
-    void sendEemprops(const CommunicationRecord *cr, int dest,
-                      MsgHandler *msgHandler=nullptr);
-    
-    /*! Receive eemprop from someone
-     * \param[in] cr  Communication record
-     * \param[in] src Source node
-     * \param[in] msgHandler MsgHandler for debug output
-     */
-    void receiveEemprops(const CommunicationRecord *cr, int src,
-                         MsgHandler *msgHandler=nullptr);
-    
-    /*! Spread mutable particle properties to a helper node
-     * \param[in] cr   Communication record
-     * \param[in] dest Destination node
-     * \param[in] msgHandler MsgHandler for debug output
-     */
-    void sendParticles(const CommunicationRecord *cr, int dest,
-                       MsgHandler *msgHandler=nullptr);
-    
-    /*! Receive particles from someone
-     * \param[in] cr  Communication record
-     * \param[in] src Source node
-     * \param[in] msgHandler MsgHandler for debug output
-     */
-    void receiveParticles(const CommunicationRecord *cr, int src,
-                          MsgHandler *msgHandler=nullptr);
     
     /*! \brief BroadCast a whole force field
      * \param[in] cr  Communication data structure
@@ -495,9 +478,6 @@ class ForceField
      */
     void checkConsistency(MsgHandler *msgHandler) const;
     
-    //! \return a constant \p type2Itype_ reference
-    const std::map<InteractionType, std::set<std::string>> &type2Itype() const { return type2Itype_; }
-    
 private:
     //! The force field checksum
     std::string                           checkSum_;
@@ -517,24 +497,12 @@ private:
     bool                                  polarizable_ = false;
     //! The charge generation algorithm
     ChargeGenerationAlgorithm             ChargeGenerationAlgorithm_ = ChargeGenerationAlgorithm::NONE;
-    
-    /*! \brief Check whether a string starts with another, ignoring case
-     * \param[in] needle   The string to look for
-     * \param[in] haystack The string to search in
-     * \return true if \p needle is found at the start of \p haystack
-     */
-    gmx_bool strcasestrStart(const std::string &needle, const std::string &haystack);
-
-    /*! \brief Compute the index of an element in a vector
-     * \param[in] pointer Pointer to an element of \p vector
-     * \param[in] vector  The vector
-     * \return the index of \p pointer in \p vector
-     */
-    template<class Type>
-    int indexOfPointInVector(const Type *pointer, const std::vector<Type> &vector)
-    {
-        return (pointer - &(vector[0]));
-    }
+    //! Number of bonds within which nonbonded interactions are excluded, see nexcl
+    std::optional<int>                    nexcl_;
+    //! The distribution of the charges, see chargeDistribution
+    std::optional<ChargeDistributionType> chargeDistribution_;
+    //! The relative dielectric constant, see epsilonr
+    std::optional<double>                 epsilonr_;
 };
 
 template<typename T>

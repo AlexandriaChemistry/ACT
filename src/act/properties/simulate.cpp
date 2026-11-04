@@ -99,7 +99,7 @@ int simulate(int argc, char *argv[])
         { efXML, "-omp",     "molprop",    ffOPTWR }
     };
     gmx_output_env_t         *oenv;
-    double                    shellToler = 1e-6;
+    real                      shellToler = 1e-6;
     bool                      json       = false;
     std::vector<t_pargs>      pa = {
         { "-shelltoler", FALSE, etREAL, {&shellToler},
@@ -157,11 +157,8 @@ int simulate(int argc, char *argv[])
 
     ForceComputer forceComp;
     double epsilonr;
-    if (!ffOption(pd, InteractionType::ELECTROSTATICS, "epsilonr", &epsilonr))
-    {
-        epsilonr = 1;
-    }
-    forceComp.init(shellToler, sch.maxIter(), epsilonr);
+    epsilonr = pd.epsilonr();
+    forceComp.init(shellToler, sch.shellMaxIter(), epsilonr);
 
     std::vector<ACTMol> actmols;
     try
@@ -184,7 +181,15 @@ int simulate(int argc, char *argv[])
     // Check whether we need to add position restraints
     if (sch.kFBPR() > 0)
     {
-        actmol.topologyPtr()->addFBPR(&msghandler, sch.kFBPR(), sch.r0FBPR());
+        actmol.topologyPtr()->addFBPR(&msghandler, sch.kFBPR(), sch.r0FBPR(), actmol.xOriginal());
+        // The restraints move the center of mass and rotate around it,
+        // removing that motion would counteract them
+        if (COMMRemoval::None != sch.commRemoval())
+        {
+            msghandler.msg(ACTStatus::Warning,
+                           "The motion of the center of mass is not removed, since there are position restraints.");
+            sch.setCommRemoval(COMMRemoval::None);
+        }
     }
     JsonTree jtree("simulate");
     if (msghandler.info())

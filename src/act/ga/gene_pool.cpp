@@ -285,8 +285,8 @@ void GenePool::write(const std::string &fileName) const
         std::string line;
         for(const auto &b : g.bases())
         {
-            line += " ";
-            line += std::to_string(b);
+            // All digits, such that the genomes read back are the same
+            line += gmx::formatString(" %.17g", b);
         }
         tw.writeString(line);
         tw.ensureLineBreak();

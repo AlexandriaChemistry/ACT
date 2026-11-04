@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Real Name="POSITION_RESTRAINT-0">135.33215171553499</Real>
+  <Real Name="EPOT-0">135.33215171553499</Real>
+  <Real Name="POSITION_RESTRAINT-1">125.62179427987529</Real>
+  <Real Name="EPOT-1">125.62179427987529</Real>
+  <Real Name="POSITION_RESTRAINT-2">128.23224615086619</Real>
+  <Real Name="EPOT-2">128.23224615086619</Real>
+  <Real Name="POSITION_RESTRAINT-3">113.86234356006091</Real>
+  <Real Name="EPOT-3">113.86234356006091</Real>
+  <Real Name="POSITION_RESTRAINT-4">130.88865033757739</Real>
+  <Real Name="EPOT-4">130.88865033757739</Real>
+  <Real Name="POSITION_RESTRAINT-5">122.14793236746503</Real>
+  <Real Name="EPOT-5">122.14793236746503</Real>
+  <Real Name="POSITION_RESTRAINT-6">124.70264851633213</Real>
+  <Real Name="EPOT-6">124.70264851633213</Real>
+</ReferenceData>

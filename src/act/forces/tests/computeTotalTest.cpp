@@ -35,6 +35,7 @@
 
 #include "../forcecomputer.h"
 
+#include <algorithm>
 #include <cmath>
 #include <map>
 #include <set>
@@ -50,6 +51,7 @@
 #include "act/topology/actmol.h"
 #include "act/topology/fragmenthandler.h"
 #include "gromacs/math/vectypes.h"
+#include "testutils/testasserts.h"
 #include "testutils/testfilemanager.h"
 
 namespace alexandria
@@ -86,6 +88,8 @@ bool readMolecule(MsgHandler        *msghandler,
 }
 
 /*! \brief Compare two energy maps
+ * In single precision the energies are compared relative to the largest
+ * one, since some terms, like the induction, are differences of others.
  * \param[in] ref   The reference energies
  * \param[in] test  The energies to test
  * \param[in] toler Relative tolerance, also used as absolute tolerance
@@ -96,6 +100,11 @@ void compareEnergies(const std::map<InteractionType, double> &ref,
                      double                                   toler,
                      const std::string                       &label)
 {
+    double emax = 1;
+    for(const auto &e : ref)
+    {
+        emax = std::max(emax, std::abs(e.second));
+    }
     for(const auto &e : ref)
     {
         auto t = test.find(e.first);
@@ -105,7 +114,7 @@ void compareEnergies(const std::map<InteractionType, double> &ref,
             EXPECT_EQ(0, e.second) << label << " missing " << interactionTypeToString(e.first);
             continue;
         }
-        EXPECT_NEAR(e.second, t->second, toler*std::max(1.0, std::abs(e.second)))
+        EXPECT_NEAR(e.second, t->second, toler*(GMX_DOUBLE ? std::max(1.0, std::abs(e.second)) : emax))
             << label << " " << interactionTypeToString(e.first);
     }
     for(const auto &t : test)
@@ -116,6 +125,8 @@ void compareEnergies(const std::map<InteractionType, double> &ref,
 }
 
 /*! \brief Compare two sets of forces
+ * In single precision the forces are compared relative to the largest
+ * one, since the terms of the forces cancel.
  * \param[in] ref   The reference forces
  * \param[in] test  The forces to test
  * \param[in] toler Relative tolerance, also used as absolute tolerance
@@ -127,11 +138,19 @@ void compareForces(const std::vector<gmx::RVec> &ref,
                    const std::string            &label)
 {
     ASSERT_EQ(ref.size(), test.size()) << label;
+    double fmax = 1;
+    for(const auto &f : ref)
+    {
+        for(int m = 0; m < DIM; m++)
+        {
+            fmax = std::max<double>(fmax, std::abs(f[m]));
+        }
+    }
     for(size_t i = 0; i < ref.size(); i++)
     {
         for(int m = 0; m < DIM; m++)
         {
-            EXPECT_NEAR(ref[i][m], test[i][m], toler*std::max(1.0, std::abs(ref[i][m])))
+            EXPECT_NEAR(ref[i][m], test[i][m], toler*(GMX_DOUBLE ? std::max<double>(1.0, std::abs(ref[i][m])) : fmax))
                 << label << " particle " << i << " dim " << m;
         }
     }
@@ -159,8 +178,10 @@ class ComputeTotalTest : public ::testing::Test
 {
 protected:
     MsgHandler    msghandler_;
-    //! Tight convergence, such that both methods find the same minimum
-    ForceComputer forceComp_ = ForceComputer(1e-12, 200, 1);
+    /*! Tight convergence, such that both methods find the same minimum, in
+     * single precision as far as the precision of the forces allows
+     */
+    ForceComputer forceComp_ = ForceComputer(gmx::test::precisionTolerance(1e-12, 1e-6), 200, 1);
 
     ComputeTotalTest()
     {
@@ -202,8 +223,8 @@ protected:
             std::map<InteractionType, double> eref;
             forceComp_.compute(&msghandler_, pd, top, &xref, &fref, &eref,
                                options.field, options.resetShells, options.relaxShells);
-            compareEnergies(eref, energies[c], 1e-8, label);
-            compareForces(fref, set.confs[c].fcalc, 1e-6, label);
+            compareEnergies(eref, energies[c], gmx::test::precisionTolerance(1e-8, 1e-6), label);
+            compareForces(fref, set.confs[c].fcalc, gmx::test::precisionTolerance(1e-6, 1e-5), label);
         }
     }
 
@@ -361,7 +382,7 @@ protected:
             std::map<InteractionType, double> edimer;
             forceComp_.compute(&msghandler_, pd, mol.topology(), &xdimer, &fref, &edimer);
             double eref = edimer[InteractionType::EPOT];
-            EXPECT_NEAR(eref, epot[c], 1e-7*std::max(1.0, std::abs(eref))) << label;
+            EXPECT_NEAR(eref, epot[c], gmx::test::precisionTolerance(1e-7, 1e-5)*std::max(1.0, std::abs(eref))) << label;
             // Minus the monomers
             for(size_t ff = 0; ff < tops.size(); ff++)
             {
@@ -377,7 +398,7 @@ protected:
                 }
             }
             double einterPot = einter[c][InteractionType::EPOT];
-            EXPECT_NEAR(eref, einterPot, 1e-7*std::max(1.0, std::abs(eref))) << label;
+            EXPECT_NEAR(eref, einterPot, gmx::test::precisionTolerance(1e-7, 1e-5)*std::max(1.0, std::abs(eref))) << label;
             compareForces(fref, finter[c], 1e-5, label);
             // The terms add up to the interaction energy, except those that
             // are sums of other terms.
@@ -391,7 +412,7 @@ protected:
                     esum += e.second;
                 }
             }
-            EXPECT_NEAR(einterPot, esum, 1e-7*std::max(1.0, std::abs(einterPot))) << label;
+            EXPECT_NEAR(einterPot, esum, gmx::test::precisionTolerance(1e-7, 1e-5)*std::max(1.0, std::abs(einterPot))) << label;
             // The polarization is part of the induction
             EXPECT_TRUE(einter[c].end() == einter[c].find(InteractionType::POLARIZATION)) << label;
             if (!separate)
@@ -456,8 +477,14 @@ TEST_F(ComputeTotalTest, HyperpolarizableConvergence)
     set.setCoordinates({ mol.xOriginal() });
     std::vector<std::map<InteractionType, double>> energies;
     forceComp.computeTotal(&msghandler_, &pd, &set, ShellOptions(), &energies);
-    EXPECT_EQ(0u, forceComp.numShellConvergenceFailed());
-    EXPECT_LE(forceComp.numShellIterations(), 8u);
+    // In single precision the forces on the shells, with a charge of
+    // -4.9 e, are differences of Coulomb forces of about 1e5 kJ/mol/nm,
+    // which are too large for the tolerance
+    if (GMX_DOUBLE)
+    {
+        EXPECT_EQ(0u, forceComp.numShellConvergenceFailed());
+        EXPECT_LE(forceComp.numShellIterations(), 8u);
+    }
 }
 
 TEST_F(ComputeTotalTest, PolarizableDimer)
@@ -499,8 +526,8 @@ TEST_F(ComputeTotalTest, InductionCorrectionPotential)
         // The correction is booked as such, not as exchange
         ASSERT_TRUE(eref.end() != eref.find(itype));
         EXPECT_NE(0, eref[itype]) << label;
-        compareEnergies(eref, energies[c], 1e-8, label);
-        compareForces(fref, set.confs[c].fcalc, 1e-6, label);
+        compareEnergies(eref, energies[c], gmx::test::precisionTolerance(1e-8, 1e-6), label);
+        compareForces(fref, set.confs[c].fcalc, gmx::test::precisionTolerance(1e-6, 1e-5), label);
     }
 }
 
@@ -542,7 +569,7 @@ TEST_F(ComputeTotalTest, ShellsFromInput)
         EXPECT_TRUE(msghandler_.ok());
         EXPECT_LE(forceComp_.numShellIterations(), 2u) << molName;
         ASSERT_NE(eref.end(), eref.find(InteractionType::INDUCTION));
-        compareEnergies(eref, e, 1e-8, molName + " shells from input");
+        compareEnergies(eref, e, gmx::test::precisionTolerance(1e-8, 1e-6), molName + " shells from input");
         compareForces(fref, f, 1e-5, molName + " shells from input");
     }
 }
@@ -590,10 +617,10 @@ TEST_F(ComputeTotalTest, NoRelaxation)
         {
             auto t = energies[c].find(e.first);
             ASSERT_TRUE(energies[c].end() != t) << label << " " << interactionTypeToString(e.first);
-            EXPECT_NEAR(e.second, t->second, 1e-10*std::max(1.0, std::abs(e.second)))
+            EXPECT_NEAR(e.second, t->second, gmx::test::precisionTolerance(1e-10, 1e-6)*std::max(1.0, std::abs(e.second)))
                 << label << " " << interactionTypeToString(e.first);
         }
-        compareForces(fref, set.confs[c].fcalc, 1e-10, label);
+        compareForces(fref, set.confs[c].fcalc, gmx::test::precisionTolerance(1e-10, 1e-5), label);
         // The shells did not move
         for(size_t i = 0; i < x[c].size(); i++)
         {
@@ -648,7 +675,7 @@ TEST_F(ComputeTotalTest, RelaxSomeShells)
     std::map<InteractionType, double> eref;
     forceComp_.compute(&msghandler_, pd, top, &xref, &fref, &eref,
                        options.field, options.resetShells, options.relaxShells);
-    compareEnergies(eref, energies[0], 1e-8, "relax some");
+    compareEnergies(eref, energies[0], gmx::test::precisionTolerance(1e-8, 1e-6), "relax some");
 }
 
 TEST_F(ComputeTotalTest, Statistics)

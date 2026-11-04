@@ -58,6 +58,16 @@ enum class eMinimizeStatus {
  */
 const std::string &eMinimizeStatusToString(eMinimizeStatus e);
 
+/*! \brief Whether a minimization stopped without converging, after which
+ * the structure with the lowest energy found can still be used
+ * \param[in] e The minimizer status
+ * \return true for too many steps or no minimum
+ */
+inline bool minimizationDidNotConverge(eMinimizeStatus e)
+{
+    return eMinimizeStatus::TooManySteps == e || eMinimizeStatus::NoMinimum == e;
+}
+
 /*! \brief Handles molecules by performing algorithms on them
  * For example, energy minimization and hessian computation.
  * This class can access private members of ACTMol as it is a friend class
@@ -136,12 +146,31 @@ public:
      * \param[in] topology     The topology
      * \param[in] forceComp    Force Computer utility
      * \param[in] simConfig    Configuration options
-     * \param[inout] coords    The coordinates to be minimized
+     * \param[inout] coords    The coordinates to be minimized, on return
+     *                         those with the lowest energy found, also if
+     *                         the minimization did not converge
      * \param[in] energies     The energies per interaction type
      * \param[in] freeze       List of atoms (not shells) that will not be
      *                         moved during the minimization.
-     * \return Status flag
+     * \return OK if converged, TooManySteps if the maximum number of
+     *         iterations was reached, NoMinimum if the energy could not
+     *         decrease while the forces are larger than the tolerance
      */
+    /*! \brief Make the force tolerance of a minimization consistent with the shells
+     * The mean square force on the atoms cannot be made smaller than that
+     * on the shells, so if it is, it is set to hundred times that for the
+     * shells, with a warning. A caller that minimizes repeatedly with the
+     * same configuration calls this once, minimizeCoordinates does the
+     * same for a configuration that is not consistent.
+     * \param[in]    msghandler For the warning, may be nullptr
+     * \param[in]    forceComp  The force computer, with the tolerance for the shells
+     * \param[inout] simConfig  The configuration of the minimization
+     * \return whether the tolerance was changed
+     */
+    static bool adjustForceTolerance(MsgHandler              *msghandler,
+                                     const ForceComputer     *forceComp,
+                                     SimulationConfigHandler *simConfig);
+
     eMinimizeStatus minimizeCoordinates(MsgHandler                        *msghandler,
                                         const ForceField                  *pd,
                                         const Topology                    *topology,

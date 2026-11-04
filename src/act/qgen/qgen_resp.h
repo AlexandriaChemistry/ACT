@@ -183,16 +183,11 @@ class QgenResp
 
         void copyGrid(const QgenResp &src);
 
-        void calcStatistics(MsgHandler *msg_handler);
-
-        real getStatistics(MsgHandler *msg_handler,
-                           real       *rrms,
-                           real       *cosangle,
-                           real       *mse,
-                           real       *mae);
-
-        void plotLsq(const gmx_output_env_t *oenv,
-                     const char             *ESPcorr);
+        double getStatistics(MsgHandler *msg_handler,
+                             double     *rrms,
+                             double     *cosangle,
+                             double     *mae,
+                             double     *mse);
 
         //! \brief Compute the charge density of the atoms and shells at the grid points
         void calcRho();
@@ -253,11 +248,6 @@ class QgenResp
         void optimizeCharges(MsgHandler *msg_handler,
                              double      epsilonr);
 
-        /*! \brief Make sure the total charge is correct and that symmetry is obeyed
-         * \param[in] msg_handler For debugging and info
-         */
-        void regularizeCharges(MsgHandler *msg_handler);
-
         void potcomp(const char             *potcomp,
                      const gmx_output_env_t *oenv);
 
@@ -287,6 +277,13 @@ class QgenResp
 
 
     private:
+        void calcStatistics(MsgHandler *msg_handler);
+
+        /*! \brief Make sure the total charge is correct and that symmetry is obeyed
+         * \param[in] msg_handler For debugging and info
+         */
+        void regularizeCharges(MsgHandler *msg_handler);
+
         void setCharge(int atom, double q) { q_[atom] = q; }
 
         void setZeta(int atom, double zeta) { zeta_[atom] = zeta; }

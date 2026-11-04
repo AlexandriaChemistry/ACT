@@ -201,9 +201,6 @@ public:
     //! Return a complete coordinate array
     const std::vector<gmx::RVec> &getCoordinates() const { return coordinates_; }
     
-    //! Copy the CalcAtom data to a separate array that can be extracted as above
-    void setCoordinates();
-    
     //! Return a complete forces array
     const std::vector<gmx::RVec> &getForces() const { return forces_; }
 
@@ -235,32 +232,6 @@ public:
     void setReference(const std::string &ref) { reference_ = ref; }
     
     /*! \brief
-     * Function that fetches charges from this QM
-     * \param[out] q         The charges
-     * \param[in]  qread     The charge type
-     * \param[out] reference The literature reference (if nullptr this is ignored)
-     * \param[out] lot       The level of theory (if nullptr this is ignored)
-     * \return true if successful
-     */
-    bool getCharges(std::vector<double> *q,
-                    const char          *qread,
-                    std::string         *reference,
-                    std::string         *lot) const;
-
-    //! Merge in another object. Return number of warnings.
-    int Merge(Experiment *src);
-    
-    /*! \brief
-     * Sends this object over an MPI connection
-     *
-     * \param[in] cr   data structure for MPI communication
-     * \param[in] dest Destination processor
-     * \return the CommunicationStatus of the operation
-     */
-    CommunicationStatus Send(const CommunicationRecord *cr,
-                             int                        dest) const;
-    
-    /*! \brief
      * Broadcast this object over an MPI connection
      *
      * \param[in] cr   data structure for MPI communication
@@ -272,16 +243,6 @@ public:
                                   int                        root,
                                   MPI_Comm                   comm);
     
-    /*! \brief
-     * Receives this object over an MPI connection
-     *
-     * \param[in] cr  data structure for MPI communication
-     * \param[in] src Source processor
-     * \return the CommunicationStatus of the operation
-     */
-    CommunicationStatus Receive(const CommunicationRecord *cr,
-                                int                        src);
-
     //! \return true if mpo is present in this experiment    
     bool hasMolPropObservable(MolPropObservable mpo) const
     {
@@ -293,12 +254,6 @@ public:
     //  return property_.find(mpo)->second;
     //}
 private:
-    /*! \brief Utility to get reference and lot
-     * \param[out] reference Reference to literature, if not nullptr
-     * \param[out] lot       Level of theory, if not nullptr
-     */
-    void getReferenceLot(std::string *reference,
-                         std::string *lot) const;
     DataSource                           dataSource_ = dsExperiment;
     std::string                          reference_;
     std::string                          conformation_;

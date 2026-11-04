@@ -112,67 +112,6 @@ ACTMol::ACTMol()
     }
 }
 
-void ACTMol::findInPlaneAtoms(int ca, std::vector<int> *atoms) const
-{
-    int bca = 0;
-    /*First try to find the atom bound to the central atom (ca).*/
-    for (auto &bi : bondsConst())
-    {
-        if (ca == bi.aJ() ||
-            ca == bi.aI())
-        {
-            if (ca == bi.aI())
-            {
-                bca = bi.aJ();
-                atoms->push_back(bca);
-            }
-            else
-            {
-                bca = bi.aI();
-                atoms->push_back(bca);
-            }
-        }
-    }
-    /* Now try to find atoms bound to bca, except ca. */
-    for (auto bi : bondsConst())
-    {
-        if ((ca != bi.aJ()   &&
-             ca != bi.aI())  &&
-            (bca == bi.aJ()  ||
-             bca == bi.aI()))
-        {
-            if (bca == bi.aI())
-            {
-                atoms->push_back(bi.aJ());
-            }
-            else
-            {
-                atoms->push_back(bi.aI());
-            }
-        }
-    }
-}
-
-void ACTMol::findOutPlaneAtoms(int ca, std::vector<int> *atoms) const
-{
-    for (auto &bi : bondsConst())
-    {
-        if (bi.bondOrder() == 1  &&
-            (ca == bi.aJ() ||
-             ca == bi.aI()))
-        {
-            if (ca == bi.aI())
-            {
-                atoms->push_back(bi.aJ());
-            }
-            else
-            {
-                atoms->push_back(bi.aI());
-            }
-        }
-    }
-}
-
 void ACTMol::checkAtoms(MsgHandler       *msghandler,
                         const ForceField *pd)
 {
@@ -980,6 +919,15 @@ void ACTMol::setCharges(MsgHandler        *msghandler,
     {
         exper  = findExperimentConst(JobType::TOPOLOGY);
     }
+    auto myatoms = atoms();
+    size_t nRealAtoms = 0;
+    for (const auto &atom : *myatoms)
+    {
+        if (atom.pType() == ActParticle::Atom)
+        {
+            nRealAtoms += 1;
+        }
+    }
     if (nullptr != exper)
     {
         for (auto &ca : exper->calcAtomConst())
@@ -988,27 +936,29 @@ void ACTMol::setCharges(MsgHandler        *msghandler,
             {
                 break;
             }
-            else
-            {
-                qnew.push_back(ca.charge(qread));
-            }
+            qnew.push_back(ca.charge(qread));
         }
     }
-    if (qnew.empty())
+    // All atoms need a charge
+    if (qnew.size() != nRealAtoms)
     {
         msghandler->msg(ACTStatus::Error, ACTMessage::NoMolpropCharges,
                         getMolname());
         return;
     }
     size_t j = 0;
-    auto myatoms = atoms();
     for(size_t i = 0; i < myatoms->size(); i++)
     {
         if ((*myatoms)[i].pType() == ActParticle::Atom)
         {
             (*myatoms)[i].setCharge(qnew[j++]);
         }
-        else if ((*myatoms)[i].pType() == ActParticle::Shell)
+    }
+    // The charge of a shell is subtracted from its core, the atoms
+    // have their charges by now
+    for(size_t i = 0; i < myatoms->size(); i++)
+    {
+        if ((*myatoms)[i].pType() == ActParticle::Shell)
         {
             const auto &pId = (*myatoms)[i].ffType();
             if (!pd->hasParticleType(pId))
@@ -1017,11 +967,10 @@ void ACTMol::setCharges(MsgHandler        *msghandler,
                                 getMolname());
                 return;
             }
-            auto piter = pd->findParticleType(pId);
-            auto q = piter->charge();
+            auto q    = pd->findParticleType(pId)->charge();
+            auto core = (*myatoms)[i].parents()[0];
             (*myatoms)[i].setCharge(q);
-            //! \todo Do not use -1 here, but particle.core()
-            (*myatoms)[i-1].setCharge(qnew[j-1]-q);
+            (*myatoms)[core].setCharge((*myatoms)[core].charge()-q);
         }
     }
     fraghandler_.setCharges(*myatoms);
@@ -1031,8 +980,8 @@ void ACTMol::setCharges(MsgHandler       *msghandler,
                         const ForceField *pd)
 {
     auto myatoms = atoms();
-    msghandler->msg(ACTStatus::Warning,
-                    gmx::formatString("WARNING! Using charges from force field for %s!\n", getMolname().c_str()));
+    msghandler->msg(ACTStatus::Info,
+                    gmx::formatString("Using charges from force field for %s", getMolname().c_str()));
     for (size_t i = 0; i < myatoms->size(); i++)
     {
         auto atype = (*myatoms)[i].ffType();
@@ -1046,6 +995,10 @@ void ACTMol::setCharges(MsgHandler       *msghandler,
 void ACTMol::setCharges(const std::vector<double> &qcustom)
 {
     auto myatoms = atoms();
+    if (qcustom.size() != myatoms->size())
+    {
+        GMX_THROW(gmx::InvalidInputError(gmx::formatString("%zu charges for %zu particles of %s", qcustom.size(), myatoms->size(), getMolname().c_str()).c_str()));
+    }
     for (size_t i = 0; i < myatoms->size(); i++)
     {
         (*myatoms)[i].setCharge(qcustom[i]);
@@ -1107,10 +1060,7 @@ void ACTMol::generateCharges(MsgHandler                *msghandler,
                 foundESP = true;
                 qresp->setAtomSymmetry(symmetric_charges_);
                 double epsilonr;
-                if (!ffOption(*pd, InteractionType::ELECTROSTATICS, "epsilonr", &epsilonr))
-                {
-                    epsilonr = 1;
-                }
+                epsilonr = pd->epsilonr();
                 // Use the coordinate belonging to this RESP data
                 auto myx = qresp->coords();
                 forceComp->compute(msghandler, pd, &topology_, &myx,
@@ -1171,7 +1121,12 @@ void ACTMol::generateCharges(MsgHandler                *msghandler,
     case ChargeGenerationAlgorithm::EEM:
     case ChargeGenerationAlgorithm::SQE:
         {
-            (void) GenerateAcmCharges(msghandler, pd, forceComp, coords, forces);
+            // Without charges the compound cannot be used
+            auto imm = GenerateAcmCharges(msghandler, pd, forceComp, coords, forces);
+            if (ACTMessage::OK != imm)
+            {
+                msghandler->msg(ACTStatus::Error, imm, getMolname());
+            }
         }
         break;
     default:
@@ -1423,18 +1378,13 @@ void ACTMol::GenerateCube(MsgHandler                   *msghandler,
                           const char                   *diffhistfn,
                           const gmx_output_env_t       *oenv)
 {
-    auto &qt          = pd->findForcesConst(InteractionType::ELECTROSTATICS);
-    auto  iChargeDistributionType = potentialToChargeDistributionType(qt.potential());
+    auto  iChargeDistributionType = pd->chargeDistribution();
     
     if (potfn || hisfn || rhofn || difffn || pdbdifffn)
     {
         char   *act_version = (char *)"act v0.99b";
         double  epsilonr;
-        if (!ffOption(*pd, InteractionType::ELECTROSTATICS, 
-                      "epsilonr", &epsilonr))
-        {
-            epsilonr = 1;
-        }
+        epsilonr = pd->epsilonr();
         int index = 0;
         for(auto qc = qProps_.begin(); qc < qProps_.end(); ++qc)
         {
@@ -1456,6 +1406,7 @@ void ACTMol::GenerateCube(MsgHandler                   *msghandler,
                                    &myx, &forces, &energies);
                 qresp->updateAtomCoords(myx);
                 qresp->updateAtomCharges(msghandler, atomsConst());
+                qresp->updateZeta(atomsConst(), pd);
                 qresp->calcPot(msghandler, epsilonr);
                 qresp->potcomp(pcfn, oenv);
                 if (pdbdifffn)
@@ -1612,8 +1563,7 @@ void ACTMol::getExpProps(MsgHandler                                 *msghandler,
             case MolPropObservable::POTENTIAL:
                 {
                     auto qgr = actq.qgenResp();
-                    auto &qt = pd->findForcesConst(InteractionType::ELECTROSTATICS);
-                    qgr->setChargeDistributionType(potentialToChargeDistributionType(qt.potential()));
+                    qgr->setChargeDistributionType(pd->chargeDistribution());
                     qgr->setAtomInfo(msghandler, atomsConst(), pd, totalCharge());
                     qgr->updateAtomCoords(xatom);
                     qgr->setAtomSymmetry(symmetric_charges_);
@@ -1740,16 +1690,6 @@ void ACTMol::getExpProps(MsgHandler                                 *msghandler,
     }
 }
 
-CommunicationStatus ACTMol::Send(const CommunicationRecord *cr, int dest) const
-{
-    auto cs = MolProp::Send(cr, dest);
-    if (CommunicationStatus::OK == cs)
-    {
-        cr->send(dest, dataset_type_);
-    }
-    return cs;
-}
-
 CommunicationStatus ACTMol::BroadCast(const CommunicationRecord *cr, int root, MPI_Comm comm)
 {
     auto cs = MolProp::BroadCast(cr, root, comm);
@@ -1758,18 +1698,6 @@ CommunicationStatus ACTMol::BroadCast(const CommunicationRecord *cr, int root, M
         int ims = static_cast<int>(dataset_type_);
         cr->bcast(&ims, comm);
         set_datasetType(static_cast<iMolSelect>(ims));
-    }
-    return cs;
-}
-
-CommunicationStatus ACTMol::Receive(const CommunicationRecord *cr, int src)
-{
-    auto cs = MolProp::Receive(cr, src);
-    if (CommunicationStatus::OK == cs)
-    {
-        iMolSelect ims;
-        cr->recv(src, &ims);
-        set_datasetType(ims);
     }
     return cs;
 }

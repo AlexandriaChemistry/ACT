@@ -156,6 +156,7 @@ void Topology::addShells(MsgHandler       *msghandler,
                     auto shellName = iter->atom().name() + "s";
                     ActAtom newshell(shellName, "EP", ptype.id(), ActParticle::Shell,
                                      0, 0, charge, fa->row());
+                    newshell.setZeta(fp->zeta());
                     newshell.setResidueNumber(iter->atom().residueNumber());
                     auto olditer = iter;
                     iter = atomList->insert(std::next(iter), ActAtomListItem(newshell, shell, olditer->x()));
@@ -641,6 +642,7 @@ std::map<InteractionType, size_t> Topology::makeVsite1s(MsgHandler       *msghan
                                 ptype->apType(),
                                 0, ptype->mass(), ptype->charge(),
                                 ptype->row());
+                newatom.setZeta(ptype->zeta());
                 // Put virtual site straight after the last atom.
                 int vs1 = atomList->size();
                 newatom.addCore(atom->index());
@@ -798,6 +800,7 @@ std::map<InteractionType, size_t> Topology::makeVsite2s(MsgHandler       *msghan
                                         ptype->apType(),
                                         0, ptype->mass(), ptype->charge(),
                                         ptype->row());
+                        newatom.setZeta(ptype->zeta());
                         // Put virtual site straight after the last atom.
                         int vs2 = atomList->size();
                         newatom.addCore(ai);
@@ -958,6 +961,7 @@ std::map<InteractionType, size_t> Topology::makeVsite3s(MsgHandler       *msghan
                         ActAtom newatom(ptype->id().id(), vstype, ptype->id().id(),
                                         ptype->apType(),
                                         0, ptype->mass(), ptype->charge(), ptype->row());
+                        newatom.setZeta(ptype->zeta());
 
                         int vs3 = atomList->size();
                         newatom.addCore(ai);
@@ -1178,6 +1182,7 @@ std::map<InteractionType, size_t> Topology::makeVsite4s(MsgHandler       *msghan
                         ActAtom newatom(ptype->id().id(), vstype, ptype->id().id(),
                                         ptype->apType(),
                                         0, ptype->mass(), ptype->charge(), ptype->row());
+                        newatom.setZeta(ptype->zeta());
 
                         int vs4 = atomList->size();
                         
@@ -1310,9 +1315,9 @@ void Topology::GenerateAtoms(MsgHandler             *msghandler,
                 addResidue(nres, cai.residueName());
                 nres += 1;
             }
-            gmx::RVec xxx = { convertToGromacs(xx, myunit),
-                              convertToGromacs(yy, myunit),
-                              convertToGromacs(zz, myunit) };
+            gmx::RVec xxx = { static_cast<real>(convertToGromacs(xx, myunit)),
+                              static_cast<real>(convertToGromacs(yy, myunit)),
+                              static_cast<real>(convertToGromacs(zz, myunit)) };
             x->push_back(xxx);
 
             if (pd->hasParticleType(cai.getObtype()))
@@ -1322,6 +1327,7 @@ void Topology::GenerateAtoms(MsgHandler             *msghandler,
                 ActAtom newatom(cai.getName(), atype->element(), cai.getObtype(), ActParticle::Atom,
                                 atype->atomnumber(), atype->mass(), atype->charge(), atype->row());
                 newatom.setChargeVS(atype->chargeVS(), atype->zetaVS(), atype->rowVS());
+                newatom.setZeta(atype->zeta());
                 newatom.setResidueNumber(nres-1);
                 addAtom(newatom);
                 realAtoms_.push_back(natom++);
@@ -1484,23 +1490,28 @@ void Topology::build(MsgHandler             *msghandler,
             makePropers(msghandler, pd);
         }
     }
-    int nexcl;
-    auto myItype = InteractionType::ELECTROSTATICS;
-    if (!ffOption(*pd, myItype, "nexcl", &nexcl))
+    // The number of exclusions is the same for all nonbonded interactions
+    int nexcl = pd->nexcl();
+    if (nexcl < 0)
     {
-        msghandler->fatal(gmx::formatString("The number of exclusions is not specified for %s in %s", interactionTypeToString(myItype).c_str(), pd->filename().c_str()));
+        msghandler->fatal(gmx::formatString("The number of exclusions (nexcl) is not specified for the particle types in %s",
+                                            pd->filename().c_str()));
     }
     auto exclusions = generateExclusions(msghandler, nexcl);
-    // Check for consistency
-    auto myItype2 = InteractionType::VDW;
-    int nexcl_vdw;
-    if (ffOption(*pd, myItype2, "nexcl", &nexcl_vdw) && nexcl != nexcl_vdw)
+    // Keep the exclusions for writing topologies for other codes
+    std::vector<std::vector<int>> exclusionList(exclusions.size());
+    for (size_t i = 0; i < exclusions.size(); i++)
     {
-        msghandler->fatal(gmx::formatString("The number of %s exclusions (%d) is not the same as for %s (%d) in %s",
-                                            interactionTypeToString(myItype2).c_str(), nexcl_vdw,
-                                            interactionTypeToString(myItype).c_str(), nexcl, 
-        pd->filename().c_str()));
+        for (const auto j : exclusions[i])
+        {
+            if (j != i)
+            {
+                exclusionList[i].push_back(j);
+            }
+        }
     }
+    exclusions_[InteractionType::VDW]            = exclusionList;
+    exclusions_[InteractionType::ELECTROSTATICS] = exclusionList;
     makePairs(msghandler, pd, InteractionType::VDW, exclusions);
     makePairs(msghandler, pd, InteractionType::ELECTROSTATICS, exclusions);
     auto itqt = InteractionType::VDWCORRECTION;
@@ -1759,26 +1770,6 @@ std::vector<std::set<size_t>> Topology::generateExclusions(MsgHandler *msghandle
     return exclusions;
 }
 
-void Topology::dump(FILE *fp) const
-{
-    if (nullptr == fp)
-    {
-        return;
-    }
-    for(auto &myEntry: entries_)
-    {
-        fprintf(fp, "%s\n", interactionTypeToString(myEntry.first).c_str());
-        for (auto &tt : myEntry.second)
-        {
-            for(auto &aa : tt->atomIndices())
-            {
-                fprintf(fp, " %d", aa+1);
-            }
-            fprintf(fp, "\n");
-        }
-    }
-}
-
 void Topology::dump(gmx::TextWriter *tw) const
 {
     if (nullptr == tw)
@@ -1800,9 +1791,10 @@ void Topology::dump(gmx::TextWriter *tw) const
     }
 }
 
-void Topology::addFBPR(MsgHandler *msghandler,
-                       double      kFBPR,
-                       double      r0FBPR)
+void Topology::addFBPR(MsgHandler                   *msghandler,
+                       double                        kFBPR,
+                       double                        r0FBPR,
+                       const std::vector<gmx::RVec> &x)
 {
     if (atoms_.empty())
     {
@@ -1815,19 +1807,51 @@ void Topology::addFBPR(MsgHandler *msghandler,
         msghandler->msg(ACTStatus::Error, "Position restraints have been added already");
         return;
     }
+    if (x.size() != atoms_.size())
+    {
+        msghandler->msg(ACTStatus::Error,
+                        gmx::formatString("%zu coordinates for %zu particles for position restraints",
+                                          x.size(), atoms_.size()));
+        return;
+    }
+    // The restraints keep the particles within a sphere around the center
+    // of mass of the starting structure
+    dvec   com   = { 0, 0, 0 };
+    double mtot  = 0;
+    for(size_t a = 0; a < atoms_.size(); a++)
+    {
+        double m = atoms_[a].mass();
+        for(int d = 0; d < DIM; d++)
+        {
+            com[d] += m*x[a][d];
+        }
+        mtot += m;
+    }
+    if (mtot <= 0)
+    {
+        msghandler->msg(ACTStatus::Error, "No mass to compute the center of the position restraints");
+        return;
+    }
+    for(int d = 0; d < DIM; d++)
+    {
+        com[d] /= mtot;
+    }
     TopologyEntryVector top{};
     for(size_t a = 0; a < atoms_.size(); a++)
     {
         top.push_back(SingleAtom(a));
-        std::vector<double> params(2);
+        std::vector<double> params(fbprNR);
         params[fbprK]  = kFBPR;
         params[fbprR0] = r0FBPR;
+        params[fbprX0] = com[XX];
+        params[fbprY0] = com[YY];
+        params[fbprZ0] = com[ZZ];
         top[a]->setParams(params);
     }
     addEntry(ipr, std::move(top));
-    msghandler->msg(ACTStatus::Verbose,
-                    gmx::formatString("Succesfully added %zu position restraints with K %g and R0 %g",
-                                      atoms_.size(), kFBPR, r0FBPR));
+    msghandler->msg(ACTStatus::Info,
+                    gmx::formatString("Added %zu flat-bottom position restraints with K %g and R0 %g around the center of mass (%g, %g, %g)",
+                                      atoms_.size(), kFBPR, r0FBPR, com[XX], com[YY], com[ZZ]));
 }
 
 //! \brief Low-level parameter filling
@@ -1910,59 +1934,26 @@ void Topology::fillParameters(MsgHandler                      *msghandler,
         // Loop over entries, increment of tp handled at end.
         for(auto tp = entry.second.begin(); tp < entry.second.end(); )
         {
-            auto       &topentry = *tp;
-            const auto &topID    = topentry->id();
+            auto &topentry = *tp;
 
             param.clear();
             fillParams(msghandler, fs, topentry->selfPtr(),
                        pp->second.param.size(), pp->second.param, &param,
                        missing);
-            // The widths of the charge distributions belong to the atoms,
-            // in the order of the atoms of the entry.
-            if (InteractionType::ELECTROSTATICS == entry.first && param.size() > coulZETA2 &&
-                topentry->swapped())
-            {
-                std::swap(param[coulZETA], param[coulZETA2]);
-            }
-            if (param.empty() || !msghandler->ok() || param != topentry->params())
+            if (param.empty() || param != topentry->params())
             {
                 changed = true;
             }
+            // Without parameters, which fillParams reports, the entry is
+            // left out. Missing parameters of an entry are zero.
             if (param.empty())
             {
                 tp = entry.second.erase(tp);
             }
             else
             {
-                if (!msghandler->ok())
-                {
-                    auto msg = gmx::formatString("Force field only contains %zu/%zu %s parameters for %s, using zero's.", 
-                                                 param.size(),
-                                                 pp->second.param.size(),
-                                                 potentialToString(fs.potential()).c_str(), topID.id().c_str());
-                    if (missing == missingParameters::Error)
-                    {
-                        msghandler->msg(ACTStatus::Error, ACTMessage::MissingFFParameter, msg);
-                        // The entries may have changed
-                        parameterVersion_[entry.first].update();
-                        vsiteVersion_ += 1;
-                        return;
-                    }
-                    else if (missing == missingParameters::Ignore)
-                    {
-                        msghandler->resetStatus();
-                    }
-                    else
-                    {
-                        msghandler->msg(ACTStatus::Warning, ACTMessage::MissingFFParameter, msg);
-                    }
-                    tp = entry.second.erase(tp);
-                }
-                else
-                {
-                    topentry->setParams(param);
-                    ++tp;
-                }
+                topentry->setParams(param);
+                ++tp;
             }
         }
         if (changed)
@@ -2015,9 +2006,8 @@ void Topology::setEntryIdentifiers(MsgHandler       *msghandler,
             case InteractionType::INDUCTIONCORRECTION:
             case InteractionType::VDWCORRECTION:
             case InteractionType::POLARIZATION:
-            case InteractionType::ELECTROSTATICS:
                 {
-                    // For COULOMB there are two particles,
+                    // For VDW there are two particles,
                     // but for POLARIZATION or VDWCORRECTION just one.
                     if (atype->hasInteractionType(itype))
                     {

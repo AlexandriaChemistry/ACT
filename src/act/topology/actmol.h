@@ -184,22 +184,6 @@ private:
     void checkAtoms(MsgHandler       *msghandler,
                     const ForceField *pd);
     
-    /*! \brief
-     * Find the atoms inside the molcule needed to construct the inplane virtual sites.
-     *
-     * \param[in]  ca     The index of the central atom
-     * \param[out] atoms  Data structure containing atomic properties
-     */
-    void findInPlaneAtoms(int ca, std::vector<int> *atoms) const;
-    
-    /*! \brief
-     * Find the atoms inside the molcule needed to construct the out of plane virtual sites.
-     *
-     * \param[in]  ca     The index of the central atom
-     * \param[out] atoms  Data structure containing atomic properties
-     */
-    void findOutPlaneAtoms(int ca, std::vector<int> *atoms) const;
-    
     /*! \brief extract frequencies and intensities if present.
      * This will use the optimized structure only.
      */
@@ -229,6 +213,32 @@ private:
     iMolSelect                     dataset_type_  = iMolSelect::Ignore;
     //! Internal storage for original coords
     mutable std::vector<gmx::RVec> xOriginal_;
+
+    /*! Extract the coordinates and observables in easy to digest chunks
+     * \param[in] msghandler For reporting. May be nullptr.
+     */
+    void collectCoordsEnergy(MsgHandler *msghandler);
+
+    //! \return the level of theory used for data
+    std::string levelOfTheory();
+
+    /*! \brief
+     * Generate atomic partial charges using EEM or SQE.
+     * If shells are present they will be minimized.
+     *
+     * \param[in]  msg_handler Message and status handler 
+     * \param[in]  pd          Data structure containing atomic properties
+     * \param[in]  forceComp   The force computer
+     * \param[out] coords      The coordinates, will be updated for shells
+     * \param[out] forces      The forces
+     * \return ACTMessage::OK if successful, an error code otherwise
+     */
+    ACTMessage GenerateAcmCharges(MsgHandler             *msg_handler,
+                                  ForceField             *pd,
+                                  const ForceComputer    *forceComp,
+                                  std::vector<gmx::RVec> *coords,
+                                  std::vector<gmx::RVec> *forces);
+
 public:
 
     //! \return a GROMACS style array with energy terms
@@ -299,10 +309,6 @@ public:
     //! \return whether an actmol really is a dimer     
     bool isDimer() const { return fragments().size() == 2; };
 
-    /*! Extract the coordinates and observables in easy to digest chunks
-     * \param[in] msghandler For reporting. May be nullptr.
-     */
-    void collectCoordsEnergy(MsgHandler *msghandler);
     //! \return the dimerCoords
     std::vector<CoordsEnergy> *dimerCoords() { return &dimerCoords_; }
     /*! \return the monomerCoords
@@ -396,9 +402,6 @@ public:
 
     //! \return the QtypeProps vector for reading
     const std::vector<ACTQprop> &qPropsConst() const { return qProps_; }
-
-    //! \return the level of theory used for data
-    std::string levelOfTheory();
 
     /*! \brief Set QM basis set 
      * \param[in] basis Will be new basis set if not empty
@@ -515,23 +518,6 @@ public:
                          std::vector<gmx::RVec>    *coords,
                          std::vector<gmx::RVec>    *forces,
                          bool                       updateQProps = false);
-    /*! \brief
-     * Generate atomic partial charges using EEM or SQE.
-     * If shells are present they will be minimized.
-     *
-     * \param[in]  msg_handler Message and status handler 
-     * \param[in]  pd          Data structure containing atomic properties
-     * \param[in]  forceComp   The force computer
-     * \param[out] coords      The coordinates, will be updated for shells
-     * \param[out] forces      The forces
-     * \return ACTMessage::OK if successful, an error code otherwise
-     */
-    ACTMessage GenerateAcmCharges(MsgHandler             *msg_handler,
-                                  ForceField             *pd,
-                                  const ForceComputer    *forceComp,
-                                  std::vector<gmx::RVec> *coords,
-                                  std::vector<gmx::RVec> *forces);
-    
     /*! \brief
      * Collect the properties from QM (Optimized structure) or
      * from experiment.
@@ -653,15 +639,6 @@ public:
     }
     
     /*! \brief
-     * Sends this object over an MPI connection
-     *
-     * \param[in] cr   data structure for MPI communication
-     * \param[in] dest Destination processor
-     * \return the CommunicationStatus of the operation
-     */
-    CommunicationStatus Send(const CommunicationRecord *cr, int dest) const;
-    
-    /*! \brief
      * Receives this object over an MPI connection
      *
      * \param[in] cr   data structure for MPI communication
@@ -672,15 +649,6 @@ public:
     CommunicationStatus BroadCast(const CommunicationRecord *cr,
                                   int                        root, 
                                   MPI_Comm                   comm);
-    
-    /*! \brief
-     * Receives this object over an MPI connection
-     *
-     * \param[in] cr  data structure for MPI communication
-     * \param[in] src Source processor
-     * \return the CommunicationStatus of the operation
-     */
-    CommunicationStatus Receive(const CommunicationRecord *cr, int src);
     
 };
 

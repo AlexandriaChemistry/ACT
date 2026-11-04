@@ -67,14 +67,10 @@ void StaticIndividualInfo::setOutputFile(const std::string &outputFile)
 {
     if (cr_->isMasterOrMiddleMan())
     {   
-        outputFile_     = prefix_ + "ind" + std::to_string(id_) + "-" + outputFile;
-        outputFileLast_ = prefix_ + "ind" + std::to_string(id_) + "-last-" + outputFile;
+        // The files of each individual are in its directory
+        auto fileName = std::filesystem::path(outputFile).filename().string();
+        outputFile_   = prefix_ + "ind" + std::to_string(id_) + "-" + fileName;
     }
-}
-
-void StaticIndividualInfo::setFinalOutputFile(const std::string &outputFile)
-{
-    outputFile_ = outputFile;
 }
 
 /* * * * * * * * * * * * * * * * * * * * * *
@@ -249,8 +245,8 @@ void StaticIndividualInfo::sumChiSquared(MsgHandler       *msghandler,
     {
         for (auto &ft : targets_[ims])
         {
-            auto chi2 = ft.second.chiSquared();
-            auto tw = ft.second.totalWeight();
+            double chi2 = ft.second.chiSquared();
+            double tw   = ft.second.totalWeight();
             if (tw > 0 && msghandler->debug())
             {
                 msghandler->writeDebug(gmx::formatString("node %d %s before sum chi2 %g tw %g weighted %g\n",

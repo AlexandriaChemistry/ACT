@@ -34,6 +34,7 @@
 
 #include "import.h"
 
+#include <limits>
 #include <vector>
 
 #pragma GCC diagnostic push
@@ -327,7 +328,11 @@ static void lookUpSpecial(MsgHandler                           *msg_handler,
             if (abeSupported(msg_handler, pd, abe[i], oneH))
             {
                 const int NOTSET = -666;
-                std::vector<RDKit::MatchVectType> matchVect = RDKit::SubstructMatch(*mol2, *qmol);
+                // All matches, RDKit returns at most 1000 by default, which
+                // is not enough for a box with many compounds
+                RDKit::SubstructMatchParameters params;
+                params.maxMatches = std::numeric_limits<unsigned int>::max();
+                std::vector<RDKit::MatchVectType> matchVect = RDKit::SubstructMatch(*mol2, *qmol, params);
                 if (matchVect.empty())
                 {
                     msg_handler->msg(ACTStatus::Warning,

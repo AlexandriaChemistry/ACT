@@ -284,6 +284,21 @@ eQgen FragmentHandler::generateCharges(MsgHandler                   *msg_handler
         GMX_THROW(gmx::InvalidInputError(gmx::formatString("No support for %s algorithm for fragments", 
                                                            chargeGenerationAlgorithmName(algorithm_).c_str()).c_str()));
     }
+    // The widths of the charge distributions are those of the particle
+    // types, which may have been trained, whatever the charges are
+    for(size_t ff = 0; ff < topologies_.size(); ++ff)
+    {
+        auto ta = topologies_[ff].atomsPtr();
+        for(size_t a = 0; a < ta->size(); a++)
+        {
+            if (pd->hasParticleType((*ta)[a].ffType()))
+            {
+                double zeta = pd->findParticleType((*ta)[a].ffType())->zeta();
+                (*ta)[a].setZeta(zeta);
+                (*atoms)[atomStart_[ff]+a].setZeta(zeta);
+            }
+        }
+    }
     return eqgen;
 }
 
@@ -300,6 +315,7 @@ bool FragmentHandler::fetchCharges(std::vector<ActAtom> *atoms)
         for(size_t j = 0; j < ats.size(); j++)
         {
             (*atoms)[k].setCharge(ats[j].charge());
+            (*atoms)[k].setZeta(ats[j].zeta());
             (*atoms)[k++].setChargeVS(ats[j].chargeVS(), ats[j].zetaVS(), ats[j].rowVS());
         }
     }

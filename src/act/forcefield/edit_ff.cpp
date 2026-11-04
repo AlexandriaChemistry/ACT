@@ -537,6 +537,20 @@ static void dumpForceField(ForceField        *pd,
             }
         }
     }
+    // The widths of the charge distributions are those of the particle types
+    if (myset.find(InteractionType::ELECTROSTATICS) != myset.end())
+    {
+        for(const auto &pt : pd->particleTypesConst())
+        {
+            if (pt.second.hasParameter(zetaName) &&
+                std::find(particles.begin(), particles.end(), pt.first.id()) != particles.end())
+            {
+                fprintf(fp, "%s|%s|%g\n", zetaName, pt.first.id().c_str(),
+                        pt.second.parameterConst(zetaName).value());
+                nparm++;
+            }
+        }
+    }
     fclose(fp);
     printf("Stored %d parameters in %s\n", nparm, filenm.c_str());
 }
@@ -749,33 +763,6 @@ static void compare_pd(ForceField *pd1,
     }
 }
 
-//! \brief Ass missing BondEnergy to harmonic bonds, maybe obsolete
-static void addBondEnergy(ForceField *pd)
-{
-    auto fs = pd->findForces(InteractionType::BONDS);
-    if (fs->potential() != Potential::HARMONIC_BONDS)
-    {
-        printf("Not using Bonds in force field file %s\n",
-               pd->filename().c_str());
-        return;
-    }
-    auto ppp = fs->parameters();
-    auto bond_name = potentialToParameterName(Potential::HARMONIC_BONDS);
-    for (auto &p : (*ppp))
-    {
-        auto &param = p.second;
-        if (param.find(bond_name[bondLENGTH]) != param.end() && 
-            param.find(bond_name[bondKB]) != param.end() &&
-            param.find(bond_name[bondENERGY]) == param.end())
-        {
-            ForceFieldParameter be("kJ/mol", -200, 0, 1, -1000, -20, 
-                                   Mutability::Bounded, false,
-                                   false, true);
-            param.insert({ bond_name[bondENERGY], be });
-        }
-    }
-}
-
 /*! \brief Tool to manipulate force field files
  * \param[in] argc Number of arguments on the cmd line
  * \param[in] argv The actual arguments
@@ -820,9 +807,7 @@ int edit_ff(int argc, char*argv[])
     gmx_bool     force      = false;
     gmx_bool     stretch    = false;
     gmx_bool     plot       = false;
-    gmx_bool     bondenergy = false;
     gmx_bool     forceWrite = false;
-    gmx_bool     bcast      = false;
     gmx_bool     bounds     = false;
     gmx_bool     verbose    = false;
     gmx_bool     remove     = false;
@@ -864,12 +849,8 @@ int edit_ff(int argc, char*argv[])
           "Replace either the EEM, the BONDS or OTHER parameters in file one [TT]-f[ff] by those from file two [TT]-f2[tt] and store in another [TT]-o[tt]." },
         { "-implant", FALSE, etSTR, {&implant},
           "Implant (write over) either the EEM, the BONDS or OTHER parameters in file one [TT]-f[ff] by those from file two [TT]-f2[tt] and store in another [TT]-o[tt]. Only parameters with ntrain larger than zero will be copied. This can be used to merge training data from multiple runs." },
-        { "-bondenergy", FALSE, etBOOL, {&bondenergy},
-          "This is a hack to a bondenergy field to the BOND potential" },
         { "-plot",    FALSE, etBOOL, {&plot},
           "Plot many interactions as a function of distance or angle" },
-        { "-bcast",   FALSE, etBOOL, {&bcast},
-          "Use broadcast rather than send/receive to communicate force field" },
         { "-write",   FALSE, etBOOL, {&forceWrite},
           "Write out a force field file even if there were no changes" }
     };
@@ -885,26 +866,41 @@ int edit_ff(int argc, char*argv[])
     CommunicationRecord cr;
     cr.init(cr.size());
     msghandler.optionsFinished(fnm, &cr);
+    // Only the master edits the force field
+    if (!cr.isMaster())
+    {
+        return 0;
+    }
 
     ForceField pd;
-    if (cr.isMaster())
+    // A force field that is repaired with parameters of a second one need
+    // not be consistent before, but it has to be afterwards.
+    bool repair = (opt2bSet("-ff2", fnm.size(), fnm.data()) &&
+                   (strlen(missing) > 0 || strlen(replace) > 0 || strlen(implant) > 0));
+    try 
     {
-        try 
+        alexandria::readForceField(opt2fn("-ff", fnm.size(), fnm.data()), &pd, &msghandler,
+                                   true, !repair);
+    }
+    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
+    // The checksum of the force field as it was read, which differs from
+    // that in the file if it was converted, see ForceField::convertCoulomb
+    std::string readCheckSum = forcefieldCheckSum(&pd);
+    (void) pd.verifyCheckSum(&msghandler, readCheckSum);
+    if (opt2bSet("-ff2", fnm.size(), fnm.data()))
+    {
+        alexandria::ForceField pd2;
+        try
         {
-            alexandria::readForceField(opt2fn("-ff", fnm.size(), fnm.data()), &pd, &msghandler);
+            // The second force field is only a source of parameters
+            alexandria::readForceField(opt2fn("-ff2", fnm.size(), fnm.data()), &pd2, &msghandler,
+                                       true, false);
         }
         GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-        (void) pd.verifyCheckSum(&msghandler, forcefieldCheckSum(&pd));
-        if (opt2bSet("-ff2", fnm.size(), fnm.data()))
+        (void) pd2.verifyCheckSum(&msghandler, forcefieldCheckSum(&pd2));
+        
+        if (repair)
         {
-            alexandria::ForceField pd2;
-            try
-            {
-                alexandria::readForceField(opt2fn("-ff2", fnm.size(), fnm.data()), &pd2, &msghandler);
-            }
-            GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-            (void) pd2.verifyCheckSum(&msghandler, forcefieldCheckSum(&pd2));
-            
             if (strlen(missing) > 0)
             {
                 copy_missing(&pd2, &pd, missing, false);
@@ -913,61 +909,62 @@ int edit_ff(int argc, char*argv[])
             {
                 copy_missing(&pd2, &pd, replace, true);
             }
-            else if (strlen(implant) > 0)
+            else
             {
                 implant_values(&pd2, &pd, implant, particle, parameter, verbose);
             }
-            else
+            try
             {
-                compare_pd(&pd, &pd2, parameter);
+                pd.checkConsistency(&msghandler);
             }
-        }
-        else if (bounds)
-        {
-            analyzeForceField(&pd);
-        }
-        else if (strlen(analyze) > 0)
-        {
-            auto dumpfn = opt2fn_null("-dump", fnm.size(), fnm.data());
-            if (strlen(particle) > 0 && dumpfn)
-            {
-                dumpForceField(&pd, analyze, particle, dumpfn);
-            }
-            else if (plot)
-            {
-                generateDependentParameter(&msghandler, &pd);
-                plotInteractions(&msghandler, &pd, analyze);
-            }
-        }
-        else if (bondenergy)
-        {
-            addBondEnergy(&pd);
-        }
-        else if (remove)
-        {
-            removeParticles(&pd, particle);
+            GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
         }
         else
         {
-            bool bLimits = opt2parg_bSet("-limits", pa.size(), pa.data());
-            if (limits <= 0)
-            {
-                fprintf(stderr, "%g is an inappropriate value for the limits option\n", limits);
-                limits  = 1;
-                bLimits = false;
-            }
-            else if (limits > 1)
-            {
-                limits = 1.0/limits;
-            }
-            modifyForceField(&pd, parameter, particle,
-                             opt2parg_bSet("-min", pa.size(), pa.data()), pmin,
-                             opt2parg_bSet("-val", pa.size(), pa.data()), pval,
-                             opt2parg_bSet("-max", pa.size(), pa.data()), pmax,
-                             opt2parg_bSet("-mut", pa.size(), pa.data()), mutability,
-                             opt2parg_bSet("-scale", pa.size(), pa.data()), scale,
-                             force, stretch, bLimits, limits);
+            compare_pd(&pd, &pd2, parameter);
         }
+    }
+    else if (bounds)
+    {
+        analyzeForceField(&pd);
+    }
+    else if (strlen(analyze) > 0)
+    {
+        auto dumpfn = opt2fn_null("-dump", fnm.size(), fnm.data());
+        if (strlen(particle) > 0 && dumpfn)
+        {
+            dumpForceField(&pd, analyze, particle, dumpfn);
+        }
+        else if (plot)
+        {
+            generateDependentParameter(&msghandler, &pd);
+            plotInteractions(&msghandler, &pd, analyze);
+        }
+    }
+    else if (remove)
+    {
+        removeParticles(&pd, particle);
+    }
+    else
+    {
+        bool bLimits = opt2parg_bSet("-limits", pa.size(), pa.data());
+        if (limits <= 0)
+        {
+            fprintf(stderr, "%g is an inappropriate value for the limits option\n", limits);
+            limits  = 1;
+            bLimits = false;
+        }
+        else if (limits > 1)
+        {
+            limits = 1.0/limits;
+        }
+        modifyForceField(&pd, parameter, particle,
+                         opt2parg_bSet("-min", pa.size(), pa.data()), pmin,
+                         opt2parg_bSet("-val", pa.size(), pa.data()), pval,
+                         opt2parg_bSet("-max", pa.size(), pa.data()), pmax,
+                         opt2parg_bSet("-mut", pa.size(), pa.data()), mutability,
+                         opt2parg_bSet("-scale", pa.size(), pa.data()), scale,
+                         force, stretch, bLimits, limits);
     }
     // Fetch new combination rules if necessary
     std::map<InteractionType, ForceFieldParameterList *> its =
@@ -1001,61 +998,16 @@ int edit_ff(int argc, char*argv[])
     }
     if (opt2bSet("-o", fnm.size(), fnm.data()))
     {
-        if (cr.isParallel())
+        std::string checkSum = forcefieldCheckSum(&pd);
+        if (checkSum == readCheckSum && !forceWrite && nRuleChanged == 0)
         {
-            int root = 0;
-            CommunicationStatus cs;
-            if (cr.isMaster())
-            {
-            
-                std::string outfile(opt2fn("-o", fnm.size(), fnm.data()));
-                printf("Will send force field to my helpers to write %s\n", outfile.c_str());
-                if (bcast)
-                {
-                    cs = pd.BroadCast(&cr, root, cr.comm_world());
-                    cr.bcast(&outfile, cr.comm_world());
-                }
-                else
-                {
-                    for(int dest = 1; dest < cr.size(); dest++)
-                    {
-                        cs = pd.Send(&cr, dest);
-                        cr.send(dest, outfile);
-                    }
-                }
-            }
-            else
-            {
-                std::string outfile;
-                if (bcast)
-                {
-                    cs = pd.BroadCast(&cr, root, cr.comm_world());
-                    cr.bcast(&outfile, cr.comm_world());
-                }
-                else
-                {
-                    cs = pd.Receive(&cr, 0);
-                    cr.recv(0, &outfile);
-                }
-                if (CommunicationStatus::OK == cs && cr.rank() == 1)
-                {
-                    alexandria::writeForceField(outfile, &pd, 0);
-                }
-            }
+            printf("No changes to forcefield structure, not writing a new file.");
         }
         else
         {
-            std::string checkSum = forcefieldCheckSum(&pd);
-            if (checkSum == pd.checkSum() && !forceWrite && nRuleChanged == 0)
-            {
-                printf("No changes to forcefield structure, not writing a new file.");
-            }
-            else
-            {
-                pd.updateTimeStamp();
-                pd.setCheckSum(checkSum);
-                writeForceField(opt2fn("-o", fnm.size(), fnm.data()), &pd, 0);
-            }
+            pd.updateTimeStamp();
+            pd.setCheckSum(checkSum);
+            writeForceField(opt2fn("-o", fnm.size(), fnm.data()), &pd, 0);
         }
     }
     return 0;

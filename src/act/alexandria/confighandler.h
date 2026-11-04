@@ -324,7 +324,7 @@ private:
     //! Checkpointing on or not?
     bool checkPoint_         = false;
     //! Tolerance for shell
-    double shellToler_       = 1e-3;
+    real   shellToler_       = 1e-3;
     //! Maxiter for shell optimization
     int shellMaxIter_        = 25;
 
@@ -469,9 +469,9 @@ private:
     //! Number of integration steps
     int                nsteps_               = 0;
     //! The integration time step
-    double             deltat_               = 0.0002;
+    real               deltat_               = 0.0002;
     //! Initial simulation temperature
-    double             temperature_          = 0;
+    real               temperature_          = 0;
     //! Random number seed for generating velocities
     int                seed_                 = 0;
     //! How often to write coordinates
@@ -489,27 +489,29 @@ private:
     //! Minimization algorithm
     eMinimizeAlgorithm minAlg_               = eMinimizeAlgorithm::LBFGS;
     //! Tolerance on mean square force for minimizer.
-    double             forceToler_           = 1e-6;
+    real               forceToler_           = 1e-6;
     //! Number of retries for minimizing
     int                minimizeRetries_      = 1;
     //! Max random displacement (nm) before re-trying to minize a structure
-    double             minimizeDisplacement_ = 0.002;
+    real               minimizeDisplacement_ = 0.002;
     //! Whether to force using displacement and reminimize even if converged
     bool               forceReminimize_      = false;
     //! Apply overrelaxation (if > 1) to speed up minimization. Can be dangerous for poor energy functions.
-    double             overRelax_            = 1.0;
+    real               overRelax_            = 1.0;
     //! Maximum number of iterations for the energy minimizer, 0 is until convergence.
-    int                maxIter_              = 100;
+    int                maxIter_              = 0;
+    //! Maximum number of iterations for relaxing the shells
+    int                shellMaxIter_         = 100;
     //! Force constant for flat-bottom position restraints, zero means no restraints
-    double             kFBPR_                = 0;
+    real               kFBPR_                = 0;
     //! Radius for flat-bottom position restraints (from origin)
-    double             r0FBPR_               = 0;
+    real               r0FBPR_               = 0;
     //! What to constrain in simulations
     ConstraintType     constrain_            = ConstraintType::No;
     //! Maxiter for SHAKE and RATTLE
     int                constraintMaxIter_    = 1000;
     //! Relative tolerance for constraining bond lengths
-    double             constraintTolerance_  = 1e-6;
+    real               constraintTolerance_  = 1e-6;
     //! What motion of the center of mass to remove
     COMMRemoval        commRemoval_          = COMMRemoval::Angular;
     //! Number of steps between removing the motion of the center of mass
@@ -594,6 +596,11 @@ public:
     //! \return number of steps between removing the motion of the center of mass, 0 is only at the start
     int nstcomm() const { return nstcomm_; }
 
+    /*! \brief Set what motion of the center of mass to remove
+     * \param[in] commRemoval The motion to remove
+     */
+    void setCommRemoval(COMMRemoval commRemoval) { commRemoval_ = commRemoval; }
+
     /*! \brief Set the minimize option
      * \param[in] minimize Whether or not to minimize
      */
@@ -634,6 +641,9 @@ public:
     
     //! \return the max number of iterations for the minimizer. 0 is until convergence.
     int maxIter() const { return maxIter_; }
+
+    //! \return the maximum number of iterations for relaxing the shells
+    int shellMaxIter() const { return shellMaxIter_; }
     
     /*! Set the value of maxIter
      * \param[in] maxIter The new max number of em iterations

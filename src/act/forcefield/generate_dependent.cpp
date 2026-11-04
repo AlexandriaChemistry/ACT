@@ -270,77 +270,6 @@ static void generateParameterPairs(MsgHandler      *msghandler,
     // Phew, we're done!
 }
 
-/*! \brief Generate coulomb pair parameters
- * \param[in] pd    The force field
- * \param[in] force If set, all interaction parameters will be recomputed, if not only the ones for which 
- *                  at least one of the two constituting parameters changed will be reset.
- */
-static void generateCoulombParameterPairs(ForceField *pd, bool force)
-{
-    auto forcesCoul = pd->findForces(InteractionType::ELECTROSTATICS);
-    
-    // Fudge unit
-    std::string unit("kJ/mol");
-    
-    // We use dependent mutability to show these are not independent params
-    auto mutd = Mutability::Dependent;
-    auto cname = potentialToParameterName(Potential::COULOMB_GAUSSIAN);
-    auto zeta = cname[coulZETA];
-    // Finally add the new parameters to the exisiting list
-    auto fold = forcesCoul->parametersNoRemoval();
-    // The zeta of each particle type and whether it was updated
-    auto        cache   = singleParameterCache(pd, forcesCoul, false);
-    const auto &singles = cache->singles;
-    std::vector<double> zetas;
-    std::vector<bool>   updated;
-    for(const auto &single : singles)
-    {
-        const auto &p = (*single.params)[zeta];
-        zetas.push_back(p.internalValue());
-        updated.push_back(p.updated());
-    }
-    // Now do the double loop
-    int nid = 0;
-    for (size_t i = 0; i < singles.size(); i++)
-    {
-        double izeta = zetas[i];
-        for (size_t j = i; j < singles.size(); j++)
-        {
-            if (!updated[i] && !updated[j] && !force)
-            {
-                continue;
-            }
-            double jzeta = zetas[j];
-            nid += 1;
-            auto   pair  = cache->pairs[i*singles.size()+j];
-            if (nullptr == pair)
-            {
-                Identifier pairID({ singles[i].id->id(), singles[j].id->id() }, { 1 }, CanSwap::Yes);
-                ForceFieldParameterMap ffpm = {
-                    { cname[coulZETA], 
-                      ForceFieldParameter(unit, izeta, 0, 1, izeta, izeta, mutd, false, true) },
-                    { cname[coulZETA2],
-                      ForceFieldParameter(unit, jzeta, 0, 1, jzeta, jzeta, mutd, false, true) }
-                };
-                fold->insert({pairID, ffpm});
-            }
-            else
-            {
-                auto &pi = pair->find(cname[coulZETA])->second;
-                pi.forceSetValue(izeta);
-                auto &pj = pair->find(cname[coulZETA2])->second;
-                pj.forceSetValue(jzeta);
-            }
-        }
-    }
-    if (debug)
-    {
-        int np = forcesCoul->numberOfParameters();
-        fprintf(debug, "Made %d/%d identifiers in generateCoulombParameterPairs\n", nid, np);
-    }
-    // Phew, we're done!
-}
-    
 void generateDependentParameter(MsgHandler                      *msghandler,
                                 ForceField                      *pd,
                                 bool                             force,
@@ -357,10 +286,6 @@ void generateDependentParameter(MsgHandler                      *msghandler,
         {
             generateParameterPairs(msghandler, pd, itype, force);
         }
-    }
-    if (todo(InteractionType::ELECTROSTATICS))
-    {
-        generateCoulombParameterPairs(pd, force);
     }
 }
 

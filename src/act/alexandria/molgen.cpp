@@ -35,6 +35,7 @@
 #include "molgen.h"
 
 
+#include <algorithm>
 #include <map>
 #include <set>
 #include <vector>
@@ -199,7 +200,9 @@ void MolGen::checkOptions(MsgHandler                *msghandler,
         {
             std::set<InteractionType> elec = { InteractionType::ELECTROSTATICS, InteractionType::POLARIZATION,
                                                InteractionType::ELECTRONEGATIVITYEQUALIZATION, InteractionType::BONDCORRECTIONS };
-            if (alg == ChargeGenerationAlgorithm::ESP && (elec.find(itype) != elec.end() || isVsite(itype)))
+            // The width of the charge distributions is that of the particle types
+            bool zeta = (toFit->first == zetaName);
+            if (alg == ChargeGenerationAlgorithm::ESP && (elec.find(itype) != elec.end() || isVsite(itype) || zeta))
             {
                 msghandler->msg(ACTStatus::Warning,
                                 gmx::formatString("Cannot train parameter '%s' in conjunction with using the ESP algorithm for charge generation.",
@@ -257,19 +260,39 @@ void MolGen::fillIopt(const ForceField *pd,
     }
 }
 
+std::vector<std::string> MolGen::particleParametersToFit() const
+{
+    std::vector<std::string> names;
+    for(const char *name : { "charge", zetaName, chargeVSName, zetaVSName })
+    {
+        if (fit(name))
+        {
+            names.push_back(name);
+        }
+    }
+    return names;
+}
+
 void MolGen::checkDataSufficiency(MsgHandler *msghandler,
                                   ForceField *pd)
 // Called in Read method
 {
-    size_t nmol = 0;
     if (targetSize_.find(iMolSelect::Train) == targetSize_.end())
     {
         return;
     }
+    auto nTrain = [this]()
+    {
+        return std::count_if(actmol_.begin(), actmol_.end(),
+                             [](const ACTMol &m) { return m.datasetType() == iMolSelect::Train; });
+    };
+    // Removing a compound can take away the support for others, hence
+    // repeat until no more compounds are removed.
+    size_t nremoved = 0;
     do
     {
         // We check data sufficiency only for the training set
-        nmol = targetSize_.find(iMolSelect::Train)->second;
+        size_t nmol = nTrain();
         if (msghandler->verbose())
         {
             msghandler->write(gmx::formatString("Will check data sufficiency for %zu training compounds.\n",
@@ -313,15 +336,17 @@ void MolGen::checkDataSufficiency(MsgHandler *msghandler,
                                        "Death Horror Programming Error.");
                     // Loop over particles to find mutable charges
                     auto pv = pd->particleTypes();
-                    std::string ccc("charge");
                     for (auto &pt : *pv)
                     {
-                        if (pt.second.hasParameter(ccc))
+                        for(const auto &ccc : particleParametersToFit())
                         {
-                            auto p = pt.second.parameter(ccc);
-                            if (p->isMutable())
+                            if (pt.second.hasParameter(ccc))
                             {
-                                p->setNtrain(0);
+                                auto p = pt.second.parameter(ccc);
+                                if (p->isMutable())
+                                {
+                                    p->setNtrain(0);
+                                }
                             }
                         }
                     }
@@ -390,13 +415,15 @@ void MolGen::checkDataSufficiency(MsgHandler *msghandler,
                         }
                         else if (itype == InteractionType::CHARGE)
                         {
-                            std::string ccc("charge");
-                            if (atype->hasParameter(ccc))
+                            for(const auto &ccc : particleParametersToFit())
                             {
-                                auto p = atype->parameter(ccc);
-                                if (p->isMutable())
+                                if (atype->hasParameter(ccc))
                                 {
-                                    p->incrementNtrain();
+                                    auto p = atype->parameter(ccc);
+                                    if (p->isMutable())
+                                    {
+                                        p->incrementNtrain();
+                                    }
                                 }
                             }
                         }
@@ -597,9 +624,12 @@ void MolGen::checkDataSufficiency(MsgHandler *msghandler,
                             }
                             else if (itype == InteractionType::CHARGE)
                             {
-                                std::string ccc("charge");
-                                if (atype->hasParameter(ccc))
+                                for(const auto &ccc : particleParametersToFit())
                                 {
+                                    if (!atype->hasParameter(ccc))
+                                    {
+                                        continue;
+                                    }
                                     auto p = atype->parameter(ccc);
                                     if (p->isMutable() && p->ntrain() < mindata_)
                                     {
@@ -616,6 +646,10 @@ void MolGen::checkDataSufficiency(MsgHandler *msghandler,
                                         keep = false;
                                         break;
                                     }
+                                }
+                                if (!keep)
+                                {
+                                    break;
                                 }
                             }
                         }
@@ -656,9 +690,12 @@ void MolGen::checkDataSufficiency(MsgHandler *msghandler,
                                               iMolSelectName(moliter->datasetType()).c_str()));
             actmol_.erase(moliter);
         }
+        nremoved = removeMol.size();
     }
-    while (actmol_.size() > 0 && actmol_.size() < nmol);
-    msghandler->write(gmx::formatString("There are %zu molecules left to optimize the parameters for.\n", nmol));
+    while (nremoved > 0 && nTrain() > 0);
+    countTargetSize();
+    msghandler->write(gmx::formatString("There are %zu molecules left to optimize the parameters for.\n",
+                                        nTargetSize(iMolSelect::Train)));
 }
 
 //! \brief Increase warning/error message count
@@ -955,7 +992,8 @@ size_t MolGen::Read(MsgHandler                          *msghandler,
         {
             start = 0;
         }
-        for (int i = start; i < start + 1 + cr_->nhelper_per_middleman(); i++)
+        // The column of the master and those of its helpers
+        for (int i = start; i <= cr_->nhelper_per_middleman(); i++)
         {
             mycomms.insert({ i, cr_->create_column_comm(i) });
         }
@@ -966,10 +1004,13 @@ size_t MolGen::Read(MsgHandler                          *msghandler,
         {
             if (cr_->size() > 1)
             {
-                // Send a 0 to signify more is coming
+                // Send a 0 to all to signify that no compounds are coming
                 bcint = 0;
-                cr_->bcast(&bcint, mycomms[0]);
-                GMX_THROW(gmx::InvalidInputError(gmx::formatString("Fewer molecules (%zu) than number of helpers per middle man (%d). Use a larger dataset or fewer helpers.", actmol_.size(), 1+cr_->nhelper_per_middleman()).c_str()));
+                for (auto &mc : mycomms)
+                {
+                    cr_->bcast(&bcint, mc.second);
+                }
+                GMX_THROW(gmx::InvalidInputError(gmx::formatString("Fewer molecules (%zu) than processes per middle man (%d), the middle man and its helpers. Use a larger dataset or fewer helpers.", actmol_.size(), 1+cr_->nhelper_per_middleman()).c_str()));
             }
             else
             {

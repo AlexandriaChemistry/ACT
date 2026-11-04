@@ -65,11 +65,7 @@ ACTMiddleMan::ACTMiddleMan(MsgHandler                *msghandler,
 
     // Create force computer
     double epsilonr;
-    if (!ffOption(*sii->forcefield(), InteractionType::ELECTROSTATICS,
-                  "epsilonr", &epsilonr))
-    {
-        epsilonr = 1;
-    }
+    epsilonr = sii->forcefield()->epsilonr();
     forceComp_.init(bch->shellToler(), bch->shellMaxIter(), epsilonr);
 
     //! \todo Fitness computer. What about those false flags?
@@ -123,11 +119,8 @@ void ACTMiddleMan::run(MsgHandler *msghandler)
     // Copy initial genome to bestgenome
     ind_->setBestGenome(ind_->genome());
     // I.
-    // Send my initial genome and fitness to the master if needed
-    if (read == 0)
-    {
-        ind_->genome().Send(cr, master);
-    }
+    // Send my initial genome and fitness to the master
+    ind_->genome().Send(cr, master);
     if (msghandler->debug())
     {
         msghandler->writeDebug(ind_->bestGenomePtr()->print("Initial genome"));

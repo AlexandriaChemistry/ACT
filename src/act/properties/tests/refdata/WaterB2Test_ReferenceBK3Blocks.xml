@@ -1,19 +1,19 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
-  <Real Name="T = 300 K B2(Classical)">-1474.7331426867361</Real>
-  <Real Name="T = 300 K B2(Force)">34.650057723506677</Real>
-  <Real Name="T = 300 K B2(Torque1)">237.63078613155088</Real>
-  <Real Name="T = 300 K B2(Torque2)">304.21181043726591</Real>
-  <Real Name="T = 300 K B2(Total)">-1169.1617866788208</Real>
-  <Real Name="T = 400 K B2(Classical)">-314.76054991700499</Real>
-  <Real Name="T = 400 K B2(Force)">4.0779558765409814</Real>
-  <Real Name="T = 400 K B2(Torque1)">41.621863749339965</Real>
-  <Real Name="T = 400 K B2(Torque2)">47.841218862175708</Real>
-  <Real Name="T = 400 K B2(Total)">-265.9510527347062</Real>
-  <Real Name="T = 500 K B2(Classical)">-122.53721713589341</Real>
-  <Real Name="T = 500 K B2(Force)">1.1494904818044656</Real>
-  <Real Name="T = 500 K B2(Torque1)">13.844393906335862</Real>
-  <Real Name="T = 500 K B2(Torque2)">15.065555716366626</Real>
-  <Real Name="T = 500 K B2(Total)">-106.9327518427377</Real>
+  <Real Name="T = 300 K B2(Classical)">-1474.7332966404438</Real>
+  <Real Name="T = 300 K B2(Force)">34.650061978594728</Real>
+  <Real Name="T = 300 K B2(Torque1)">237.63080252440733</Real>
+  <Real Name="T = 300 K B2(Torque2)">304.21183031863376</Real>
+  <Real Name="T = 300 K B2(Total)">-1169.1619182403283</Real>
+  <Real Name="T = 400 K B2(Classical)">-314.76057196674435</Real>
+  <Real Name="T = 400 K B2(Force)">4.0779562160178502</Real>
+  <Real Name="T = 400 K B2(Torque1)">41.621865332694021</Real>
+  <Real Name="T = 400 K B2(Torque2)">47.841221418758337</Real>
+  <Real Name="T = 400 K B2(Total)">-265.95107237500036</Real>
+  <Real Name="T = 500 K B2(Classical)">-122.53722428847927</Real>
+  <Real Name="T = 500 K B2(Force)">1.1494905527947157</Real>
+  <Real Name="T = 500 K B2(Torque1)">13.844394268818075</Real>
+  <Real Name="T = 500 K B2(Torque2)">15.065556446361493</Real>
+  <Real Name="T = 500 K B2(Total)">-106.93275837809476</Real>
 </ReferenceData>

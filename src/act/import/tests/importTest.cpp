@@ -33,7 +33,9 @@
  */
 #include <cmath>
 
+#include <fstream>
 #include <map>
+#include <sstream>
 
 #include <gtest/gtest.h>
 
@@ -266,6 +268,96 @@ auto my_oneH  = get_ba();
 
 INSTANTIATE_TEST_CASE_P(IT, ImportTest, ::testing::Combine(::testing::ValuesIn(my_files), ::testing::ValuesIn(my_oneH),  ::testing::ValuesIn(my_btest)));
 
+//! \return the atom types of the first experiment of each compound in a file
+static std::vector<std::string> importTypes(const ForceField *pd, const std::string &fileName)
+{
+    std::vector<MolProp> molprops;
+    MsgHandler           msghandler;
+    msghandler.setPrintLevel(ACTStatus::Warning);
+    double qtot = 0;
+    importFile(&msghandler, pd, fileName.c_str(), &molprops, "minimum",
+               JobType::OPT, false, &qtot, false);
+    EXPECT_TRUE(msghandler.ok());
+    std::vector<std::string> atypes;
+    for (const auto &mp : molprops)
+    {
+        for (const auto &ca : mp.experimentConst()[0].calcAtomConst())
+        {
+            atypes.push_back(ca.getObtype());
+        }
+    }
+    return atypes;
+}
+
+// Test: In a box with many copies of a compound, a pattern can match more
+// than 1000 times, the default maximum of RDKit. Each copy gets the atom
+// types of the single compound.
+TEST(ImportBoxTest, ManyMatches)
+{
+    auto pd      = getForceField("../../alexandria/tests/gaff_hydrogen_types");
+    auto single  = gmx::test::TestFileManager::getInputFilePath("../../alexandria/tests/mols/acetone-3-oep.log.pdb");
+    auto ref     = importTypes(pd, single);
+    ASSERT_EQ(10u, ref.size());
+    // Six hydrogens of the methyl groups in each copy
+    const int ncopy = 180;
+    std::vector<std::string> atoms, conect;
+    {
+        std::ifstream in(single);
+        for (std::string line; std::getline(in, line); )
+        {
+            if (line.compare(0, 6, "HETATM") == 0)
+            {
+                atoms.push_back(line);
+            }
+            else if (line.compare(0, 6, "CONECT") == 0)
+            {
+                conect.push_back(line);
+            }
+        }
+    }
+    gmx::test::TestFileManager fileManager;
+    auto boxName = fileManager.getTemporaryFilePath("acetone-box.pdb");
+    {
+        std::ofstream out(boxName);
+        int natom = atoms.size();
+        for (int c = 0; c < ncopy; c++)
+        {
+            // On a grid with 8 Angstrom between the copies
+            double shift[3] = { 8.0*(c % 6), 8.0*((c/6) % 6), 8.0*(c/36) };
+            for (int a = 0; a < natom; a++)
+            {
+                const auto &line = atoms[a];
+                std::string coords;
+                for (int m = 0; m < 3; m++)
+                {
+                    coords += gmx::formatString("%8.3f", std::stod(line.substr(30 + 8*m, 8)) + shift[m]);
+                }
+                out << gmx::formatString("HETATM%5d", c*natom + a + 1) << line.substr(11, 11)
+                    << gmx::formatString("%4d", c + 1) << line.substr(26, 4) << coords << line.substr(54) << "\n";
+            }
+        }
+        for (int c = 0; c < ncopy; c++)
+        {
+            for (const auto &line : conect)
+            {
+                std::istringstream iss(line.substr(6));
+                std::string        rec = "CONECT";
+                for (int i; iss >> i; )
+                {
+                    rec += gmx::formatString("%5d", c*natom + i);
+                }
+                out << rec << "\n";
+            }
+        }
+        out << "END\n";
+    }
+    auto types = importTypes(pd, boxName);
+    ASSERT_EQ(ncopy*ref.size(), types.size());
+    for (size_t i = 0; i < types.size(); i++)
+    {
+        EXPECT_EQ(ref[i % ref.size()], types[i]) << "atom " << i+1;
+    }
+}
 }
 
 }

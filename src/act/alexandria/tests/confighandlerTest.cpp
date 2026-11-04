@@ -156,7 +156,7 @@ TEST(ConfigHandlerTest, GAConfigHandlerSetters)
     EXPECT_EQ(gaCfg.probabilityComputerAlg(), ProbabilityComputerAlg::pcBOLTZMANN);
 
     gaCfg.setPrMut(0.5);
-    EXPECT_NEAR(gaCfg.prMut(), 0.5, 1e-10);
+    EXPECT_NEAR(gaCfg.prMut(), 0.5, gmx::test::precisionTolerance(1e-10, 1e-7));
 
     gaCfg.setEvaluateTestset(true);
     EXPECT_TRUE(gaCfg.evaluateTestset());
@@ -169,8 +169,8 @@ TEST(ConfigHandlerTest, BayesConfigHandlerDefaults)
     BayesConfigHandler bayesCfg;
     EXPECT_EQ(bayesCfg.maxIter(), 100);
     EXPECT_EQ(bayesCfg.seed(), 0);
-    EXPECT_NEAR(bayesCfg.step(), 0.02, 1e-10);
-    EXPECT_NEAR(bayesCfg.temperature(), 5.0, 1e-10);
+    EXPECT_NEAR(bayesCfg.step(), 0.02, gmx::test::precisionTolerance(1e-10, 1e-7));
+    EXPECT_NEAR(bayesCfg.temperature(), 5.0, gmx::test::precisionTolerance(1e-10, 1e-7));
     EXPECT_FALSE(bayesCfg.temperatureWeighting());
     EXPECT_FALSE(bayesCfg.checkPoint());
 }
@@ -185,10 +185,10 @@ TEST(ConfigHandlerTest, BayesConfigHandlerSetters)
     EXPECT_EQ(bayesCfg.seed(), 42);
 
     bayesCfg.setStep(0.05);
-    EXPECT_NEAR(bayesCfg.step(), 0.05, 1e-10);
+    EXPECT_NEAR(bayesCfg.step(), 0.05, gmx::test::precisionTolerance(1e-10, 1e-7));
 
     bayesCfg.setTemperature(10.0);
-    EXPECT_NEAR(bayesCfg.temperature(), 10.0, 1e-10);
+    EXPECT_NEAR(bayesCfg.temperature(), 10.0, gmx::test::precisionTolerance(1e-10, 1e-7));
 }
 
 TEST(ConfigHandlerTest, BayesTemperatureWithGlobalAnnealing)
@@ -199,7 +199,7 @@ TEST(ConfigHandlerTest, BayesTemperatureWithGlobalAnnealing)
 
     // Without global annealing, temperature at generation 0 should be base temp
     real t0 = bayesCfg.temperature();
-    EXPECT_NEAR(t0, T0, 1e-10);
+    EXPECT_NEAR(t0, T0, gmx::test::precisionTolerance(1e-10, 1e-7));
 }
 
 TEST(ConfigHandlerTest, BayesAnnealBehavior)
@@ -235,36 +235,36 @@ TEST(ConfigHandlerTest, BayesComputeBeta)
     // Test anneal ending
     bayesCfg.setAnneal(0.5, 0.8);
     beta = bayesCfg.computeBeta(0, maxgeneration, 90);
-    EXPECT_NEAR(beta, betaMax, 1e-8);
+    EXPECT_NEAR(beta, betaMax, gmx::test::precisionTolerance(1e-8, 1e-6));
     beta = bayesCfg.computeBeta(0, maxgeneration, 65);
-    EXPECT_NEAR(beta, 0.2, 1e-8);
+    EXPECT_NEAR(beta, 0.2, gmx::test::precisionTolerance(1e-8, 1e-6));
 
     // Test global annealing
     bayesCfg.setGlobalAnneal(0.0, 1.0);
     beta = bayesCfg.computeBeta(0, maxgeneration, 65);
     // At generation 0 annealing should be off, so starting T.
-    EXPECT_NEAR(beta, 2/T0, 1e-8);
+    EXPECT_NEAR(beta, 2/T0, gmx::test::precisionTolerance(1e-8, 1e-6));
 
     // Test global annealing more
     bayesCfg.setGlobalAnneal(0.2, 0.8);
     beta = bayesCfg.computeBeta(0, maxgeneration, 65);
     // At generation 0 annealing should be off, so starting T.
-    EXPECT_NEAR(beta, 1/T0, 1e-8);
+    EXPECT_NEAR(beta, 1/T0, gmx::test::precisionTolerance(1e-8, 1e-6));
     beta = bayesCfg.computeBeta(9, maxgeneration, 65);
     // At generation 9 annealing should be off, so final T
-    EXPECT_NEAR(beta, betaMax, 1e-8);
+    EXPECT_NEAR(beta, betaMax, gmx::test::precisionTolerance(1e-8, 1e-6));
 
     // Now in between, before local annealing
     beta = bayesCfg.computeBeta(5, maxgeneration, 25);
-    EXPECT_NEAR(beta, 0.2, 1e-8);
+    EXPECT_NEAR(beta, 0.2, gmx::test::precisionTolerance(1e-8, 1e-6));
 
     // Now in between, after local annealing
     beta = bayesCfg.computeBeta(5, maxgeneration, 85);
-    EXPECT_NEAR(beta, betaMax, 1e-8);
+    EXPECT_NEAR(beta, betaMax, gmx::test::precisionTolerance(1e-8, 1e-6));
 
     // Now in between, during local annealing
     beta = bayesCfg.computeBeta(5, maxgeneration, 65);
-    EXPECT_NEAR(beta, 0.4, 1e-8);
+    EXPECT_NEAR(beta, 0.4, gmx::test::precisionTolerance(1e-8, 1e-6));
 }
 
 // ---- SimulationConfigHandler tests ----
@@ -275,7 +275,7 @@ TEST(ConfigHandlerTest, SimulationConfigHandlerDefaults)
     EXPECT_EQ(simCfg.nsteps(), 0);
     EXPECT_FALSE(simCfg.minimize());
     EXPECT_FALSE(simCfg.singlePoint());
-    EXPECT_EQ(simCfg.maxIter(), 100);
+    EXPECT_EQ(simCfg.maxIter(), 0);
     EXPECT_GT(simCfg.deltat(), 0.0);
 }
 

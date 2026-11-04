@@ -43,6 +43,8 @@
 
 #include "act/utility/communicationrecord.h"
 #include "gromacs/math/vectypes.h"
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/stringutil.h"
 
 namespace alexandria
 {
@@ -113,25 +115,6 @@ class AtomNum
          */
         void SetNumber(int cnumber) { cnumber_ = cnumber; }
 
-        /*! \brief
-         * Sends this object over an MPI connection
-         *
-         * \param[in] cr   GROMACS data structure for MPI communication
-         * \param[in] dest Destination processor
-         * \return the CommunicationStatus of the operation
-         */
-        CommunicationStatus Send(const CommunicationRecord *cr,
-                                 int                        dest) const;
-
-        /*! \brief
-         * Receives this object over an MPI connection
-         *
-         * \param[in] cr  GROMACS data structure for MPI communication
-         * \param[in] src Source processor
-         * \return the CommunicationStatus of the operation
-         */
-        CommunicationStatus Receive(const CommunicationRecord *cr,
-                                    int                        src);
 };
 
 //! Iterator over a vector of AtomNum
@@ -242,25 +225,6 @@ class MolecularComposition
          */
         int CountAtoms() const;
 
-        /*! \brief
-         * Sends this object over an MPI connection
-         *
-         * \param[in] cr   GROMACS data structure for MPI communication
-         * \param[in] dest Destination processor
-         * \return the CommunicationStatus of the operation
-         */
-        CommunicationStatus Send(const CommunicationRecord *cr,
-                                 int                        dest) const;
-
-        /*! \brief
-         * Receives this object over an MPI connection
-         *
-         * \param[in] cr  GROMACS data structure for MPI communication
-         * \param[in] src Source processor
-         * \return the CommunicationStatus of the operation
-         */
-        CommunicationStatus Receive(const CommunicationRecord *cr,
-                                    int                        src);
 };
 //! Iterator over MolecularComposition items
 using MolecularCompositionIterator      = typename std::vector<MolecularComposition>::iterator;
@@ -285,6 +249,10 @@ private:
     int                     atomID_ = 0, residueNumber_ = 0, chainId_ = 0;
     char                    chain_ = ' ';
     std::map<std::string, double> q_;
+
+    //! Return chain ID
+    int chainId() const { return chainId_; }
+
 public:
     //! Default constructor
     CalcAtom() {}
@@ -322,11 +290,17 @@ public:
     
     /*! \brief Return charge of a certain type
      * \param[in] type Charge type
-     * \return charge if found, or crash otherwise
+     * \return charge if found
+     * \throws if not found
      */
     double charge(const std::string &type) const
     {
-        return q_.find(type)->second;
+        auto qq = q_.find(type);
+        if (q_.end() == qq)
+        {
+            GMX_THROW(gmx::InvalidInputError(gmx::formatString("No charge of type %s", type.c_str()).c_str()));
+        }
+        return qq->second;
     }
     
     //! \brief Return the whole charge map
@@ -382,9 +356,6 @@ public:
         chain_   = chain;
     }
     
-    //! Return chain ID
-    int chainId() const { return chainId_; }
-    
     //! Return chain
     char chain() const { return chain_; }
     
@@ -412,16 +383,6 @@ public:
     double getZ() const { return z_; }
     
     /*! \brief
-     * Sends this object over an MPI connection
-     *
-     * \param[in] cr   data structure for MPI communication
-     * \param[in] dest Destination processor
-     * \return the CommunicationStatus of the operation
-     */
-    CommunicationStatus Send(const CommunicationRecord *cr,
-                             int                        dest) const;
-    
-    /*! \brief
      * Broadcast this object over an MPI connection
      *
      * \param[in] cr   data structure for MPI communication
@@ -433,15 +394,6 @@ public:
                                   int                        root,
                                   MPI_Comm                   comm);
 
-    /*! \brief
-     * Receives this object over an MPI connection
-     *
-     * \param[in] cr  data structure for MPI communication
-     * \param[in] src Source processor
-     * \return the CommunicationStatus of the operation
-     */
-    CommunicationStatus Receive(const CommunicationRecord *cr,
-                                int                        src);
 };
 
 //! Iterator over CalcAtom items

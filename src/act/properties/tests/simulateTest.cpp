@@ -25,7 +25,9 @@
  * Tests for the alexandria simulate tool.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
+#include <algorithm>
 #include <cmath>
+#include <cstdint>
 #include <fstream>
 #include <map>
 #include <sstream>
@@ -197,19 +199,21 @@ protected:
     }
 
     /*! \brief Make a command line for simulate
-     * \param[in]  molFile Molecule file in the alexandria/tests/mols directory
+     * \param[in]  molFile Molecule file in the alexandria/tests/mols directory, or an absolute path
      * \param[in]  label   Unique label for the output files of this run
      * \param[out] files   The output file names
+     * \param[in]  ffFile  Force field file, ACS-g.xml from alexandria/tests if empty
      * \return The command line
      */
     gmx::test::CommandLine baseCommand(const std::string &molFile,
                                        const std::string &label,
-                                       SimulateFiles     *files)
+                                       SimulateFiles     *files,
+                                       const std::string &ffFile = "")
     {
         gmx::test::CommandLine cmd;
         cmd.append("simulate");
-        cmd.addOption("-ff", alexandriaFile("ACS-g.xml"));
-        cmd.addOption("-f", alexandriaFile("mols/" + molFile));
+        cmd.addOption("-ff", ffFile.empty() ? alexandriaFile("ACS-g.xml") : ffFile);
+        cmd.addOption("-f", molFile[0] == '/' ? molFile : alexandriaFile("mols/" + molFile));
         files->energy     = fileManager().getTemporaryFilePath(label + "-energy.xvg");
         files->trajectory = fileManager().getTemporaryFilePath(label + "-traj.pdb");
         files->log        = fileManager().getTemporaryFilePath(label + ".log");
@@ -217,6 +221,54 @@ protected:
         cmd.addOption("-o", files->trajectory);
         cmd.addOption("-g", files->log);
         return cmd;
+    }
+
+    //! \return the potential energy of each frame in the log file of a rerun
+    static std::vector<double> rerunEpot(const std::string &log)
+    {
+        std::vector<double> epot;
+        std::ifstream       in(log);
+        for (std::string line; std::getline(in, line); )
+        {
+            std::istringstream iss(line);
+            std::string        word;
+            int                index;
+            if (!(iss >> index))
+            {
+                continue;
+            }
+            while (iss >> word)
+            {
+                double value;
+                if (word == "EPOT" && iss >> value)
+                {
+                    epot.push_back(value);
+                }
+            }
+        }
+        return epot;
+    }
+
+    /*! \brief An energy of a single point calculation from its log file
+     * \param[in] log  The log file
+     * \param[in] term The energy term
+     * \return the energy
+     */
+    static double singlePointEnergy(const std::string &log, const std::string &term = "EPOT")
+    {
+        std::ifstream in(log);
+        for (std::string line; std::getline(in, line); )
+        {
+            std::istringstream iss(line);
+            std::string        word, valueWord;
+            double             value;
+            if (iss >> word >> valueWord >> value && word == term + ":")
+            {
+                return value;
+            }
+        }
+        ADD_FAILURE() << "No energy " << term << " in " << log;
+        return 0;
     }
 
     //! Add options for a 100 step MD simulation
@@ -250,6 +302,20 @@ protected:
         for(size_t i = 0; i < xvg.legends.size(); i++)
         {
             auto vals = xvg.values(i+1);
+            if (!GMX_DOUBLE)
+            {
+                // In single precision the errors of the forces, relative to
+                // the largest terms, accumulate along the trajectory, and
+                // the energies differ by at least one in the last decimal
+                double vmax = 0;
+                for(auto v : vals)
+                {
+                    vmax = std::max(vmax, std::abs(v));
+                }
+                double absolute = 2e-5 + 1e-5*vmax;
+                checker.setDefaultTolerance(gmx::test::FloatingPointTolerance(absolute, absolute, 1e-6, 1e-6,
+                                                                              UINT64_MAX, UINT64_MAX, false));
+            }
             checker.checkSequence(vals.begin(), vals.end(), xvg.legends[i].c_str());
         }
     }
@@ -368,6 +434,102 @@ TEST_F(SimulateTest, Reproducibility)
     auto last = xvg[0].rows.size() - 1;
     EXPECT_EQ(xvg[0].rows[0][cEkin], xvg[2].rows[0][cEkin]);
     EXPECT_NE(xvg[0].rows[last][cEkin], xvg[2].rows[last][cEkin]);
+}
+
+// Test: MD of a water dimer with shells and virtual sites. The induction
+// energy at the start is that of a single point calculation, and with rigid
+// molecules, as the model is meant, the energy is conserved. The flexible
+// model needs much shorter time steps.
+TEST_F(SimulateTest, MDShells)
+{
+    auto ffFile = fileManager().getInputFilePath("SWM4-NDP.xml");
+    SimulateFiles sp;
+    auto cmdsp = baseCommand("water_dimer.pdb", "shells-sp", &sp, ffFile);
+    cmdsp.append("-sp");
+    ASSERT_EQ(0, run(&cmdsp));
+
+    SimulateFiles rigid;
+    auto cmdr = baseCommand("water_dimer.pdb", "shells-rigid", &rigid, ffFile);
+    addMD(&cmdr, 300, 1993);
+    cmdr.addOption("-constrain", "angles");
+    ASSERT_EQ(0, run(&cmdr));
+    auto xvgr = readXvg(rigid.energy);
+    checkConservation(xvgr);
+    int  cetot = xvgr.column("ETOT");
+    ASSERT_GT(cetot, 0);
+    for (const auto &row : xvgr.rows)
+    {
+        EXPECT_NEAR(xvgr.rows[0][cetot], row[cetot], 1e-2) << "time " << row[0];
+    }
+
+    SimulateFiles md;
+    auto cmd = baseCommand("water_dimer.pdb", "shells-md", &md, ffFile);
+    addMD(&cmd, 300, 1993);
+    ASSERT_EQ(0, run(&cmd));
+    auto xvg  = readXvg(md.energy);
+    int  cind = xvg.column("INDUCTION");
+    ASSERT_GT(cind, 0);
+    ASSERT_FALSE(xvg.rows.empty());
+    // The single point energy is printed with four decimals
+    EXPECT_NEAR(singlePointEnergy(sp.log, "INDUCTION"), xvg.rows[0][cind], 1e-3);
+    for (const auto &row : xvg.rows)
+    {
+        EXPECT_LT(row[cind], 0) << "time " << row[0];
+    }
+}
+
+// Test: Rerunning the trajectory of a simulation of the water dimer gives
+// the potential energies of the simulation, for the frames written
+TEST_F(SimulateTest, Rerun)
+{
+    SimulateFiles md;
+    auto cmd = baseCommand("water_dimer.pdb", "md", &md);
+    addMD(&cmd, 300, 1993);
+    ASSERT_EQ(0, run(&cmd));
+    auto xvg   = readXvg(md.energy);
+    int  cEpot = xvg.column("EPOT");
+    ASSERT_GT(cEpot, 0);
+
+    SimulateFiles rerun;
+    auto cmd2 = baseCommand("water_dimer.pdb", "rerun", &rerun);
+    cmd2.addOption("-traj", md.trajectory);
+    ASSERT_EQ(0, run(&cmd2));
+    // Each structure gives a line with its number and the energies
+    auto epot = rerunEpot(rerun.log);
+    // Frames are written every 50 steps and energies every 10, at steps
+    // 0 and 50 of the 100
+    ASSERT_EQ(2u, epot.size());
+    for (size_t i = 0; i < epot.size(); i++)
+    {
+        auto row = 5*i;
+        ASSERT_LT(row, xvg.rows.size());
+        // The trajectory has the coordinates with three decimals in Angstrom,
+        // as the starting structure. Later in the simulation that changes
+        // the energy of the bonds by up to a few tenths of a kJ/mol.
+        EXPECT_NEAR(xvg.rows[row][cEpot], epot[i], i == 0 ? 1e-4 : 0.5) << "frame " << i;
+    }
+}
+
+// Test: Rerunning a trajectory of the atoms only with a model with shells
+// and one with virtual sites gives the energy of a single point calculation
+TEST_F(SimulateTest, RerunShellsVsites)
+{
+    for (const std::string model : { "SWM4-NDP", "TIP5P" })
+    {
+        auto ffFile = fileManager().getInputFilePath(model + ".xml");
+        SimulateFiles sp;
+        auto cmd = baseCommand("water_dimer.pdb", model + "-sp", &sp, ffFile);
+        cmd.append("-sp");
+        ASSERT_EQ(0, run(&cmd)) << model;
+        SimulateFiles rerun;
+        auto cmd2 = baseCommand("water_dimer.pdb", model + "-rerun", &rerun, ffFile);
+        cmd2.addOption("-traj", alexandriaFile("mols/water_dimer.pdb"));
+        ASSERT_EQ(0, run(&cmd2)) << model;
+        auto epot = rerunEpot(rerun.log);
+        ASSERT_EQ(1u, epot.size()) << model;
+        // The single point energy is printed with four decimals
+        EXPECT_NEAR(singlePointEnergy(sp.log), epot[0], 1e-3) << model;
+    }
 }
 
 // Test: The initial temperature is the requested one, computed for
@@ -879,25 +1041,61 @@ TEST_F(SimulateTest, MinimizeFreeze)
     EXPECT_GT(maxMove, toler);
 }
 
-// Test: MD with flat-bottomed position restraints
+// Test: MD with flat-bottomed position restraints around the center of
+// mass of a water dimer far from the origin. Within a sphere that holds the
+// dimer they have no energy, the motion of the center of mass is not
+// removed, and with a radius of zero they act.
 TEST_F(SimulateTest, PositionRestraints)
 {
-    SimulateFiles files;
-    auto cmd = baseCommand("acetone.sdf", "fbpr", &files);
-    addMD(&cmd, 300, 1993);
-    cmd.addOption("-kfbpr", 1000.0);
-    cmd.addOption("-r0fbpr", 0.0);
-    ASSERT_EQ(0, run(&cmd));
-    auto xvg = readXvg(files.energy);
-    bool found = false;
-    for(const auto &legend : xvg.legends)
+    // The water dimer moved from the origin
+    auto molFile = fileManager().getTemporaryFilePath("shifted.pdb");
     {
-        if (legend.find("RESTRAINT") != std::string::npos)
+        std::ifstream in(alexandriaFile("mols/water_dimer.pdb"));
+        std::ofstream out(molFile);
+        for (std::string line; std::getline(in, line); )
         {
-            found = true;
+            if (line.compare(0, 6, "HETATM") == 0 || line.compare(0, 4, "ATOM") == 0)
+            {
+                double x[3];
+                for (int m = 0; m < 3; m++)
+                {
+                    x[m] = std::stod(line.substr(30 + 8*m, 8)) + 50 + 10*m;
+                }
+                line = line.substr(0, 30) + gmx::formatString("%8.3f%8.3f%8.3f", x[0], x[1], x[2]) + line.substr(54);
+            }
+            out << line << "\n";
         }
     }
-    EXPECT_TRUE(found);
+    for (double r0 : { 1.0, 0.0 })
+    {
+        SimulateFiles files;
+        auto cmd = baseCommand(molFile, gmx::formatString("fbpr%g", r0), &files);
+        addMD(&cmd, 300, 1993);
+        cmd.addOption("-kfbpr", 1000.0);
+        cmd.addOption("-r0fbpr", r0);
+        ASSERT_EQ(0, run(&cmd)) << r0;
+        auto xvg = readXvg(files.energy);
+        int  cpr = xvg.column("POSITION_RESTRAINT");
+        ASSERT_GT(cpr, 0);
+        ASSERT_FALSE(xvg.rows.empty());
+        double maxPR = 0;
+        for (const auto &row : xvg.rows)
+        {
+            maxPR = std::max(maxPR, row[cpr]);
+        }
+        if (r0 > 0)
+        {
+            EXPECT_EQ(0, maxPR);
+        }
+        else
+        {
+            EXPECT_GT(xvg.rows[0][cpr], 0);
+        }
+        std::ifstream     in(files.log);
+        std::stringstream log;
+        log << in.rdbuf();
+        EXPECT_NE(std::string::npos, log.str().find("The motion of the center of mass is not removed")) << r0;
+    }
 }
 
 // Test: Writing the molprop file
@@ -975,6 +1173,70 @@ TEST_F(SimulateTest, MinimizeTool)
                 EXPECT_EQ(xsim[i][m], xmin[i][m]) << constrain << " atom " << i+1;
             }
         }
+    }
+}
+
+// Test: alexandria minimize that does not converge within the maximum
+// number of steps writes the structure with the lowest energy, and the
+// energies before and after, which are lower
+TEST_F(SimulateTest, MinimizeToolNotConverged)
+{
+    for(const std::string alg : { "LBFGS", "Steep", "Newton" })
+    {
+        auto confout = fileManager().getTemporaryFilePath("notconverged" + alg + "-confout.pdb");
+        auto log     = fileManager().getTemporaryFilePath("notconverged" + alg + ".log");
+        auto cmd     = minimizeCommand(alexandriaFile("ACS-g.xml"),
+                                       alexandriaFile("mols/acetone.sdf"), confout, log);
+        cmd.addOption("-minalg", alg);
+        cmd.addOption("-maxiter", 2);
+        EXPECT_EQ(1, minimize(cmd.argc(), cmd.argv())) << alg;
+        EXPECT_EQ(10u, readPdbCoordinates(confout).size()) << alg;
+        // The potential energy before and after minimization
+        std::vector<double> epot;
+        std::ifstream       in(log);
+        std::string         text;
+        for (std::string line; std::getline(in, line); )
+        {
+            text += line + "\n";
+            std::istringstream iss(line);
+            std::string        word, valueWord;
+            double             value;
+            if (iss >> word >> valueWord >> value && word == "EPOT:")
+            {
+                epot.push_back(value);
+            }
+        }
+        EXPECT_NE(std::string::npos, text.find("Minimization did not converge: Too many steps")) << alg;
+        ASSERT_EQ(2u, epot.size()) << alg;
+        EXPECT_LT(epot[1], epot[0]) << alg;
+    }
+}
+
+// Test: alexandria minimize relaxes the shells, the induction energy is
+// negative before and after minimization
+TEST_F(SimulateTest, MinimizeToolShells)
+{
+    auto confout = fileManager().getTemporaryFilePath("shells-confout.pdb");
+    auto log     = fileManager().getTemporaryFilePath("minimize-shells.log");
+    auto cmd     = minimizeCommand(fileManager().getInputFilePath("SWM4-NDP.xml"),
+                                   alexandriaFile("mols/water_dimer.pdb"), confout, log);
+    ASSERT_EQ(0, minimize(cmd.argc(), cmd.argv()));
+    std::vector<double> induction;
+    std::ifstream       in(log);
+    for (std::string line; std::getline(in, line); )
+    {
+        std::istringstream iss(line);
+        std::string        word, valueWord;
+        double             value;
+        if (iss >> word >> valueWord >> value && word == "INDUCTION:")
+        {
+            induction.push_back(value);
+        }
+    }
+    ASSERT_EQ(2u, induction.size());
+    for (auto ind : induction)
+    {
+        EXPECT_LT(ind, 0);
     }
 }
 

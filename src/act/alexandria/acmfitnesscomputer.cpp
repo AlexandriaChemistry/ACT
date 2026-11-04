@@ -390,7 +390,7 @@ void ACMFitnessComputer::fillDevComputers(MsgHandler *msghandler,
     }
     if (sii_->target(iMolSelect::Train, eRMS::ESP)->weight() > 0)
     {
-        devComputers_.push_back(new EspDevComputer(molgen_->fit("zeta")));
+        devComputers_.push_back(new EspDevComputer());
     }
     if (sii_->target(iMolSelect::Train, eRMS::Polar)->weight() > 0)
     {

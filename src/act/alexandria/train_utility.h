@@ -72,6 +72,8 @@ class TrainForceFieldPrinter
 private:
     //! Can make computations for molecules, such as the Hessian and energy minimization (for now).
     MolHandler molHandler_;
+    //! The configuration of the minimizations, see MolHandler::adjustForceTolerance
+    SimulationConfigHandler simConfig_;
     //! Tolerance (kJ/mol e) for marking ESP as an outlier in the log file
     real esp_toler_           = 30;
     //! Tolerance (Debye) for marking dipole as an outlier in the log file
@@ -109,7 +111,7 @@ private:
     std::map<iMolSelect, qtStats>      lsq_epot_, lsq_isoPol_, lsq_anisoPol_, lsq_alpha_;
     //! Statistics for RMSF and frequencies.
     std::map<iMolSelect, gmx_stats>    lsq_rmsf_;
-    gmx_stats                          lsq_freq_;
+    std::map<iMolSelect, gmx_stats>    lsq_freq_;
     //! Command line stuff
     std::map<MolPropObservable, std::string> mpoOpt_;
     std::map<MolPropObservable, std::string> mpoFnm_;

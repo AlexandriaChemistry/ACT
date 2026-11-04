@@ -76,44 +76,6 @@ bool CalcAtom::Equal(const CalcAtom &ca)
              (atomID_ != ca.getAtomid()));
 }
 
-CommunicationStatus CalcAtom::Receive(const CommunicationRecord *cr, int src)
-{
-    CommunicationStatus cs       = CommunicationStatus::OK;
-    size_t              Ncharge;
-
-    if (CommunicationStatus::RECV_DATA == cr->recv_data(src))
-    {
-        cr->recv(src, &name_);
-        cr->recv(src, &obType_);
-        cr->recv(src, &residueName_);
-        cr->recv(src, &residueNumber_);
-        cr->recv(src, &atomID_);
-        cr->recv(src, &coord_unit_);
-        cr->recv(src, &x_);
-        cr->recv(src, &y_);
-        cr->recv(src, &z_);
-        cr->recv(src, &force_unit_);
-        cr->recv(src, &fx_);
-        cr->recv(src, &fy_);
-        cr->recv(src, &fz_);
-        cr->recv(src, &Ncharge);
-
-        for (size_t n = 0; (CommunicationStatus::OK == cs) && (n < Ncharge); n++)
-        {
-            std::string type;
-            cr->recv(src, &type);
-            double q;
-            cr->recv(src, &q);
-            AddCharge(type, q);
-        }
-    }
-    if (cr->mh())
-    {
-        cr->mh()->writeDebug(gmx::formatString("Received CalcAtom, status %s\n", cs_name(cs).c_str()));
-    }
-    return cs;
-}
-
 CommunicationStatus CalcAtom::BroadCast(const CommunicationRecord *cr,
                                         int                        root,
                                         MPI_Comm                   comm)
@@ -161,75 +123,6 @@ CommunicationStatus CalcAtom::BroadCast(const CommunicationRecord *cr,
     if (cr->mh())
     {
         cr->mh()->writeDebug(gmx::formatString("Received CalcAtom, status %s\n", cs_name(cs).c_str()));
-    }
-    return cs;
-}
-
-CommunicationStatus CalcAtom::Send(const CommunicationRecord *cr, int dest) const
-{
-    CommunicationStatus  cs = CommunicationStatus::OK;
-
-    if (CommunicationStatus::SEND_DATA == cr->send_data(dest))
-    {
-        cr->send(dest, name_);
-        cr->send(dest, obType_);
-        cr->send(dest, residueName_);
-        cr->send(dest, residueNumber_);
-        cr->send(dest, atomID_);
-        cr->send(dest, coord_unit_);
-        cr->send(dest, x_);
-        cr->send(dest, y_);
-        cr->send(dest, z_);
-        cr->send(dest, force_unit_);
-        cr->send(dest, fx_);
-        cr->send(dest, fy_);
-        cr->send(dest, fz_);
-        cr->send(dest, q_.size());
-
-        for (const auto &qi : q_)
-        {
-            std::string type(qi.first);
-            cr->send(dest, type);
-            cr->send(dest, qi.second);
-        }
-    }
-    if (cr->mh())
-    {
-        cr->mh()->writeDebug(gmx::formatString("Sent CalcAtom, status %s\n", cs_name(cs).c_str()));
-    }
-    return cs;
-}
-
-CommunicationStatus AtomNum::Send(const CommunicationRecord *cr, int dest) const
-{
-    CommunicationStatus cs = CommunicationStatus::OK;
-
-    if (CommunicationStatus::SEND_DATA == cr->send_data(dest))
-    {
-        cr->send(dest, catom_);
-        cr->send(dest, cnumber_);
-        if (cr->mh())
-        {
-            cr->mh()->writeDebug(gmx::formatString("Sent AtomNum %s %d, status %s\n",
-                                                   catom_.c_str(), cnumber_, cs_name(cs).c_str()));
-        }
-    }
-    return cs;
-}
-
-CommunicationStatus AtomNum::Receive(const CommunicationRecord *cr, int src)
-{
-    CommunicationStatus cs = CommunicationStatus::OK;
-
-    if (CommunicationStatus::RECV_DATA == cr->recv_data(src))
-    {
-        cr->recv(src, &catom_);
-        cr->recv(src, &cnumber_);
-        if (cr->mh())
-        {
-            cr->mh()->writeDebug(gmx::formatString("Received AtomNum %s %d, status %s\n",
-                                                   catom_.c_str(), cnumber_, cs_name(cs).c_str()));
-        }
     }
     return cs;
 }
@@ -317,57 +210,5 @@ int MolecularComposition::CountAtoms() const
     }
     return nat;
 }
-
-CommunicationStatus MolecularComposition::Send(const CommunicationRecord *cr, int dest) const
-{
-    CommunicationStatus cs = CommunicationStatus::OK;
-    if (CommunicationStatus::SEND_DATA == cr->send_data(dest))
-    {
-        cr->send(dest, atomnum_.size());
-        cr->send(dest, compname_);
-        for (auto &ani : atomnum_)
-        {
-            cs = ani.Send(cr, dest);
-            if (CommunicationStatus::OK != cs)
-            {
-                break;
-            }
-        }
-        if (cr->mh())
-        {
-            cr->mh()->writeDebug(gmx::formatString("Sent MolecularComposition %s, status %s\n",
-                                                   compname_.c_str(), cs_name(cs).c_str()));
-        }
-    }
-    return cs;
-}
-
-CommunicationStatus MolecularComposition::Receive(const CommunicationRecord *cr, int src)
-{
-    size_t              Natomnum;
-    CommunicationStatus cs = CommunicationStatus::OK;
-    if (CommunicationStatus::RECV_DATA == cr->recv_data(src))
-    {
-        cr->recv(src, &Natomnum);
-        cr->recv(src, &compname_);
-        CommunicationStatus cs2;
-        for (size_t n = 0; n < Natomnum; n++)
-        {
-            AtomNum an;
-            cs2 = an.Receive(cr, src);
-            if (CommunicationStatus::OK == cs2)
-            {
-                AddAtom(an);
-            }
-        }
-        if (cr->mh())
-        {
-            cr->mh()->writeDebug(gmx::formatString("Received MolecularComposition %s, status %s\n",
-                                                   compname_.c_str(), cs_name(cs).c_str()));
-        }
-    }
-    return cs;
-}
-
 
 } // namespace alexandria

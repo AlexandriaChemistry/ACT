@@ -138,13 +138,6 @@ public:
      */
     void Send(const alexandria::CommunicationRecord *cr, int dest) const;
     
-    /*! \brief BroadCast to and from other processors
-     * \param[in] cr   The communication record
-     * \param[in] root The communication root
-     * \param[in] com  The MPI communicator
-     */
-    void BroadCast(const alexandria::CommunicationRecord *cr, int root, MPI_Comm com);
-
     /*! \brief Receive from another processor
      * \param[in] cr  The communication record
      * \param[in] src The source processor

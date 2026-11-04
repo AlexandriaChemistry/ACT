@@ -141,50 +141,6 @@ void Experiment::Dump(gmx::TextWriter *tw) const
     }
 }
 
-int Experiment::Merge(Experiment *src)
-{
-    int nwarn = 0;
-
-    for (auto p = src->property_.begin(); p != src->property_.end(); ++p)
-    {
-        auto mpo = p->first;
-        if (property_.find(mpo) == property_.end())
-        {
-            std::vector<std::unique_ptr<GenericProperty> > gpnew;
-            property_.insert({ mpo, std::move(gpnew) });
-        }
-        //std::move(p->second.begin(), p->second.end(),
-        //        std::back_inserter(property_[mpo]));
-        for (auto gp = p->second.begin(); gp != p->second.end(); ++gp)
-        {
-            property_[mpo].push_back(std::move(*gp));
-        }
-    }
-    std::copy(src->calcAtomConst().begin(), src->calcAtomConst().end(),
-              std::back_inserter(catom_));
-
-    return nwarn;
-}
-
-void Experiment::setCoordinates()
-{
-    if (coordinates_.empty())
-    {
-        gmx::RVec x = { 0, 0, 0 };
-        coordinates_.resize(catom_.size(), x);
-        size_t j = 0;
-        for(auto ca: catom_)
-        {
-            auto cunit      = ca.coordUnit();
-            x[XX]           = convertToGromacs(ca.getX(), cunit);
-            x[YY]           = convertToGromacs(ca.getY(), cunit);
-            x[ZZ]           = convertToGromacs(ca.getZ(), cunit);
-            coordinates_[j] = x;
-            j++;
-        }
-    }
-}
-
 void Experiment::AddAtom(const CalcAtom &ca)
 {
     CalcAtomIterator cai = searchAtom(ca);
@@ -200,10 +156,11 @@ void Experiment::AddAtom(const CalcAtom &ca)
         auto      funit = ca.forceUnit();
         if (!funit.empty())
         {
-            ca.forces(&f[XX], &f[YY], &f[ZZ]);
+            double fd[DIM];
+            ca.forces(&fd[XX], &fd[YY], &fd[ZZ]);
             for (int m = 0; m < DIM; m++)
             {
-                f[m] = convertToGromacs(f[m], funit);
+                f[m] = convertToGromacs(fd[m], funit);
             }
             forces_.push_back(f);
         }
@@ -226,95 +183,6 @@ void Experiment::addProperty(MolPropObservable                mpo,
         property_.insert({ mpo, std::move(gpnew) });
     }
     property_.find(mpo)->second.push_back(std::move(gp));
-}
-
-void Experiment::getReferenceLot(std::string *reference,
-                                 std::string *lot) const
-{
-    if (nullptr != reference)
-    {
-        reference->assign(getReference());
-    }
-    if (nullptr != lot)
-    {
-        if (DataSource() == dsExperiment)
-        {
-            lot->assign("Experiment");
-        }
-        else
-        {
-            lot->assign(gmx::formatString("%s/%s", method_.c_str(), basisset_.c_str()));
-        }
-    }
-}
-
-bool Experiment::getCharges(std::vector<double> *q,
-                            const char          *qread,
-                            std::string         *reference,
-                            std::string         *lot) const
-{
-    q->resize(NAtom(), 0.0);
-    int i = 0;
-    for (auto &mai : calcAtomConst())
-    {
-        if (mai.hasCharge(qread))
-        {
-            (*q)[i] = mai.charge(qread);
-            i++;
-        }
-    }
-    getReferenceLot(reference, lot);
-    return i == NAtom();
-}
-
-CommunicationStatus Experiment::Send(const CommunicationRecord *cr, int dest) const
-{
-    CommunicationStatus cs = CommunicationStatus::OK;
-    std::string         jobtype;
-
-    if (CommunicationStatus::SEND_DATA == cr->send_data(dest))
-    {
-        cr->send(dest, static_cast<int>(dataSource_));
-        cr->send(dest, reference_);
-        cr->send(dest, conformation_);
-        cr->send(dest, program_);
-        cr->send(dest, method_);
-        cr->send(dest, basisset_);
-        cr->send(dest, datafile_);
-        jobtype.assign(jobType2string(jobtype_));
-        cr->send(dest, jobtype);
-        cr->send(dest, property_.size());
-        for(const auto &prop : property_)
-        {
-            std::string mpo_str(mpo_name(prop.first));
-            cr->send(dest, mpo_str);
-            cr->send(dest, prop.second.size());
-            for (const auto &p : prop.second)
-            {
-                p->Send(cr, dest);
-            }
-        }
-        
-        //! Send Atoms
-        if (CommunicationStatus::OK == cs)
-        {
-            cr->send(dest, calcAtomConst().size());
-            for (auto &cai : calcAtomConst())
-            {
-                cs = cai.Send(cr, dest);
-                if (CommunicationStatus::OK != cs)
-                {
-                    break;
-                }
-            }
-        }
-    }
-
-    if (CommunicationStatus::OK != cs && cr->mh() && cr->mh()->debug())
-    {
-        cr->mh()->writeDebug(gmx::formatString("Failed to send Experiment, status %s\n", cs_name(cs).c_str()));
-    }
-    return cs;
 }
 
 CommunicationStatus Experiment::BroadCast(const CommunicationRecord *cr,
@@ -490,133 +358,6 @@ CommunicationStatus Experiment::BroadCast(const CommunicationRecord *cr,
                 {
                     AddAtom(ca);
                 }
-            }
-        }
-    }
-
-    if ((CommunicationStatus::OK != cs) && cr->mh() && cr->mh()->debug())
-    {
-        cr->mh()->writeDebug(gmx::formatString("Failed to receive Experiment, status %s\n", cs_name(cs).c_str()));
-    }
-    return cs;
-}
-
-CommunicationStatus Experiment::Receive(const CommunicationRecord *cr, int src)
-{
-    CommunicationStatus cs = CommunicationStatus::OK;
-    std::string         jobtype;
-
-    if (CommunicationStatus::RECV_DATA == cr->recv_data(src))
-    {
-        int i;
-        cr->recv(src, &i);
-        dataSource_ = static_cast<DataSource>(i);
-        cr->recv(src, &reference_);
-        cr->recv(src, &conformation_);
-        cr->recv(src, &program_);
-        cr->recv(src, &method_);
-        cr->recv(src, &basisset_);
-        cr->recv(src, &datafile_);
-        cr->recv(src, &jobtype);
-        jobtype_    = string2jobType(jobtype);
-        size_t nmpo;
-        cr->recv(src, &nmpo);
-        
-        //! Receive Properties
-        for (size_t i = 0; i < nmpo; i++)
-        {
-            MolPropObservable mpo;
-            std::string       mpo_str;
-            cr->recv(src, &mpo_str);
-            if (!stringToMolPropObservable(mpo_str, &mpo))
-            {
-                gmx_fatal(FARGS, "Unknown observable %s", mpo_str.c_str());
-            }
-            size_t  ngp;
-            cr->recv(src, &ngp);
-            for (size_t n = 0; n < ngp; n++)
-            {
-                switch (mpo)
-                {
-                case MolPropObservable::DIPOLE:
-                case MolPropObservable::QUADRUPOLE:
-                case MolPropObservable::OCTUPOLE:
-                case MolPropObservable::HEXADECAPOLE:
-                    {
-                        auto gp = std::make_unique<MolecularMultipole>();
-                        addProperty(mpo, std::move(gp));
-                        break;
-                    }
-                case MolPropObservable::POLARIZABILITY:
-                    {
-                        auto gp = std::make_unique<MolecularPolarizability>();
-                        addProperty(mpo, std::move(gp));
-                        break;
-                    }
-                case MolPropObservable::FREQUENCY:
-                case MolPropObservable::INTENSITY:
-                    {
-                        auto gp = std::make_unique<Harmonics>();
-                        addProperty(mpo, std::move(gp));
-                        break;
-                    }
-                case MolPropObservable::HF:
-                case MolPropObservable::DELTAE0:
-                case MolPropObservable::INTERACTIONENERGY:
-                case MolPropObservable::ELECTROSTATICS:
-                case MolPropObservable::EXCHANGE:
-                case MolPropObservable::VDWCORRECTION:
-                case MolPropObservable::DISPERSION:
-                case MolPropObservable::INDUCTION:
-                case MolPropObservable::INDUCTIONCORRECTION:
-                case MolPropObservable::CHARGETRANSFER:
-                case MolPropObservable::DHFORM:
-                case MolPropObservable::DGFORM:
-                case MolPropObservable::DSFORM:
-                case MolPropObservable::ENTROPY:
-                case MolPropObservable::STRANS:
-                case MolPropObservable::SROT:
-                case MolPropObservable::SVIB:
-                case MolPropObservable::SELEC:
-                case MolPropObservable::CP:
-                case MolPropObservable::CV:
-                case MolPropObservable::CVROT:
-                case MolPropObservable::CVTRANS:
-                case MolPropObservable::CVVIB:
-                case MolPropObservable::CVELEC:
-                case MolPropObservable::ZPE:
-                    {
-                        auto gp = std::make_unique<MolecularEnergy>();
-                        addProperty(mpo, std::move(gp));
-                       break;
-                    }
-                case MolPropObservable::POTENTIAL:
-                    {
-                        auto gp = std::make_unique<ElectrostaticPotential>();
-                        addProperty(mpo, std::move(gp));
-                        break;
-                    }
-                case MolPropObservable::CHARGE:
-                case MolPropObservable::COORDINATES:
-                    {
-                        gmx_fatal(FARGS, "Don't know what to do...");
-                    }
-                }
-                // Now fetch content
-                property_.find(mpo)->second.back()->Receive(cr, src);
-            }
-        } 
-        
-        //! Receive Atoms
-        size_t Natom;
-        cr->recv(src, &Natom);
-        for (size_t n = 0; (CommunicationStatus::OK == cs) && (n < Natom); n++)
-        {
-            CalcAtom ca;
-            cs = ca.Receive(cr, src);
-            if (CommunicationStatus::OK == cs)
-            {
-                AddAtom(ca);
             }
         }
     }

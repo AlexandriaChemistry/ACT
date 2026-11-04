@@ -116,7 +116,6 @@ static bool dump_molecule(MsgHandler        *msghandler,
         // Atoms!
         auto &atoms = actmol.topology()->atoms();
         std::vector<Identifier> atomId;
-        auto ztype = InteractionType::ELECTROSTATICS;
         for (size_t i = 0; i < atoms.size(); i++)
         {
             const auto &atype = atoms[i].ffType();
@@ -127,9 +126,10 @@ static bool dump_molecule(MsgHandler        *msghandler,
             if (pd.hasParticleType(pid))
             {
                 auto pIter = pd.findParticleType(pid);
-                if (pIter->hasInteractionType(ztype))
+                // Each particle type has its own charge distribution
+                if (pIter->hasParameter(zetaName))
                 {
-                    auto zid = pIter->interactionTypeToIdentifier(ztype);
+                    auto zid = pIter->id();
                     tw->writeStringFormatted("  %s", zid.id().c_str());
                     auto atypeMap = atomTypeCount->find(zid.id());
                     if (atypeMap == atomTypeCount->end())
@@ -165,10 +165,12 @@ static bool dump_molecule(MsgHandler        *msghandler,
             {
                 auto pidI = pd.findParticleType(atomId[ai]);
                 auto pidJ = pd.findParticleType(atomId[aj]);
-                if (pidI->hasInteractionType(ztype) && pidJ->hasInteractionType(ztype))
+                // The bond corrections are identified by the ACM types, see MolGen
+                auto acmtype = InteractionType::ELECTRONEGATIVITYEQUALIZATION;
+                if (pidI->hasInteractionType(acmtype) && pidJ->hasInteractionType(acmtype))
                 {
-                    auto zidI = pidI->interactionTypeToIdentifier(ztype);
-                    auto zidJ = pidJ->interactionTypeToIdentifier(ztype);
+                    auto zidI = pidI->interactionTypeToIdentifier(acmtype);
+                    auto zidJ = pidJ->interactionTypeToIdentifier(acmtype);
                     Identifier mybond({ zidI.id(), zidJ.id()}, { bo }, CanSwap::No);
                     auto btypeMap   = bccTypeCount->find(mybond.id());
                     bool bondExists = false;
@@ -284,7 +286,7 @@ static std::set<std::string> check_mp(MsgHandler           *msghandler,
                     if (gp)
                     {
                         std::vector<double> mu = gp->getVector();
-                        name_mu nmu = { ci.getDatafile(), { mu[XX], mu[YY], mu[ZZ] } };
+                        name_mu nmu = { ci.getDatafile(), { static_cast<real>(mu[XX]), static_cast<real>(mu[YY]), static_cast<real>(mu[ZZ]) } };
                         mus.push_back(nmu);
                     }
                 }
@@ -398,7 +400,7 @@ static void gen_ehist(MsgHandler                 *msghandler,
                 bool warnHi  = false;
                 for(size_t i = 0; i < x.size(); i++)
                 {
-                    tw->writeStringFormatted("%10g  %10g\n", x[i], y[i]);
+                    fprintf(fp, "%10g  %10g\n", x[i], y[i]);
                     if (x[i] < ewarnLow)
                     {
                         warnLow = true;
@@ -483,13 +485,11 @@ int edit_mp(int argc, char *argv[])
     };
     bool     compress    = false;
     real     temperature = 298.15;
-    bool     bcast       = false;
     bool     energyHisto = false;
     bool     molinfo     = true;
     int      maxwarn     = 0;
     real     ewarnLow    = -20;
     real     ewarnHi     = 100;
-    int      writeNode   = 0;
     std::vector<t_pargs> pa =
     {
         { "-compress", FALSE, etBOOL, {&compress},
@@ -498,12 +498,8 @@ int edit_mp(int argc, char *argv[])
           "Will only write output if number of warnings is at most this." },
         { "-temperature", FALSE, etREAL, {&temperature},
           "Temperature for properties to extract from the SQLite database" },
-        { "-bcast", FALSE, etBOOL, {&bcast},
-          "Use broadcast instead of send/receive when running in parallel" },
         { "-molinfo", FALSE, etBOOL, {&molinfo},
           "Update iupac, cas etc. using the Alexandria Molecule Database" },
-        { "-wn", FALSE, etINT, {&writeNode},
-          "Processor ID to write from if in parallel." },
         { "-ehisto", FALSE, etBOOL, {&energyHisto},
           "Make a histogram of the energy distribution per molecule or complex." },
         { "-ewarnLow", FALSE, etREAL, {&ewarnLow},
@@ -527,71 +523,25 @@ int edit_mp(int argc, char *argv[])
     cr.init(cr.size());
     msghandler.optionsFinished(fnm, &cr);
 
-    auto fns = opt2fns("-mp", fnm.size(), fnm.data());
-
-    auto comm = MPI_COMM_WORLD;
-    int root  = 0;
-    if (cr.isMaster())
+    // Only the master edits the compounds
+    if (!cr.isMaster())
     {
-        merge_xml(&msghandler, fns, &mpt);
-        int mptsize = mpt.size();
-        if (msghandler.ok())
-        {
-            ReadSqlite3(&msghandler, opt2fn_null("-db", fnm.size(), fnm.data()),
-                        &mpt, temperature);
+        return 0;
+    }
+    auto fns = opt2fns("-mp", fnm.size(), fnm.data());
+    merge_xml(&msghandler, fns, &mpt);
+    int mptsize = mpt.size();
+    if (msghandler.ok())
+    {
+        ReadSqlite3(&msghandler, opt2fn_null("-db", fnm.size(), fnm.data()),
+                    &mpt, temperature);
 
-            printf("Read %d molecules\n", mptsize);
-        }
-        else
-        {
-            fprintf(stderr, "Too many warnings, not generating output\n");
-            mpt.clear();
-        }
-            
-        if (bcast)
-        {
-            cr.bcast(&mptsize, comm);
-            for(auto &mm : mpt)
-            {
-                mm.BroadCast(&cr, root, comm);
-            }
-        }
-        else
-        {
-            for(int dest = 1; dest < cr.size(); dest++)
-            {
-                cr.send(dest, mptsize);
-                for(const auto &mm : mpt)
-                {
-                    mm.Send(&cr, dest);
-                }
-            }
-        }
+        printf("Read %d molecules\n", mptsize);
     }
     else
     {
-        if (bcast)
-        {
-            int nmpt;
-            cr.bcast(&nmpt, comm);
-            for(int i = 0; i < nmpt; i++)
-            {
-                MolProp mp;
-                mp.BroadCast(&cr, root, comm);
-                mpt.push_back(std::move(mp));
-            }
-        }
-        else
-        {
-            int nmpt;
-            cr.recv(cr.superior(), &nmpt);
-            for(int i = 0; i < nmpt; i++)
-            {
-                MolProp mp;
-                mp.Receive(&cr, cr.superior());
-                mpt.push_back(std::move(mp));
-            }
-        }
+        fprintf(stderr, "Too many warnings, not generating output\n");
+        mpt.clear();
     }
     auto ffname  = opt2fn_null("-ff", fnm.size(), fnm.data());
 
@@ -621,11 +571,8 @@ int edit_mp(int argc, char *argv[])
     {
         printf("Please check %s for analyses.\n", msghandler.filename().c_str());
     }
-    if (writeNode == cr.rank())
-    {
-        printf("Will store %zu molprops in output file %s\n", mpt.size(), molpropout);
-        MolPropWrite(molpropout, mpt, compress);
-    }
+    printf("Will store %zu molprops in output file %s\n", mpt.size(), molpropout);
+    MolPropWrite(molpropout, mpt, compress);
     return 0;
 }
 

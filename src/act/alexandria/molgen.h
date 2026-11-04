@@ -36,6 +36,8 @@
 #define MOLGEN_H
 
 #include <map>
+#include <string>
+#include <vector>
 
 #include "act/alexandria/molselect.h"
 #include "act/import/compound_reader.h"
@@ -110,9 +112,9 @@ private:
     //! The weighting factor in the total chi squared
     real       weight_             = 0;
     //! The total weight corresponding to all data points
-    real       totalWeight_ = 0;
-    //! The unweighted chi squared for this property
-    real       chiSquared_         = 0;
+    double     totalWeight_ = 0;
+    //! The unweighted chi squared for this property, a sum of many terms
+    double     chiSquared_         = 0;
 
 public:
 
@@ -142,21 +144,21 @@ public:
     /*! \brief Set number of data points
      * \param[in] n The new number of data points
      */
-    void setTotalWeight(real n) { totalWeight_ = n; }
+    void setTotalWeight(double n) { totalWeight_ = n; }
     
     //! \return the number of data points
-    real totalWeight() const { return totalWeight_; }
+    double totalWeight() const { return totalWeight_; }
     
     /*! \brief Set new value for chi squared
      * \param[in] chi2 The new chi squared
      */
-    void setChiSquared(real chi2) { chiSquared_ = chi2; }
+    void setChiSquared(double chi2) { chiSquared_ = chi2; }
     
     //! \return the present chi squared
-    real chiSquared() const { return chiSquared_; }
+    double chiSquared() const { return chiSquared_; }
     
     //! \return the weighted chi squared
-    real chiSquaredWeighted() const 
+    double chiSquaredWeighted() const 
     { 
         if (chiSquared_ > 0 && totalWeight_ > 0)
         { 
@@ -173,7 +175,7 @@ public:
      * \param[in] weight Weight to add to totalWeight_
      * \param[in] delta  Change in chiSquared
      */
-    void increase(real weight, real delta)
+    void increase(double weight, double delta)
     {
         totalWeight_ += weight;
         chiSquared_  += delta;
@@ -264,11 +266,11 @@ private:
     //! Whether or not to load balance the inputs
     bool                            loadBalance_ = true;
     //! Boltzmann weighting temperature of energies, if larger than zero
-    double                          ener_boltz_temp_ = 0;
+    real                            ener_boltz_temp_ = 0;
     //! Fraction of ESP points to read (in percent)
     int                             maxpot_ = 100;
     //! Weight for the potential on the atoms in training on ESP. Should be 0 in most cases.
-    double                          watoms_ = 0;
+    real                            watoms_ = 0;
     /*! \brief Check that we have enough data 
      * Check that we have enough data for all parameters to optimize
      * in this molecule.
@@ -290,8 +292,22 @@ private:
         }
         return 0;
     }
-    
-    
+
+    /*! \brief Fill the  iOpt_ map
+     * \param[in] pd         Pointer to forcefield
+     * \param[in] msghandler For information
+     */
+    void fillIopt(const ForceField *pd,
+                  MsgHandler       *msghandler);
+
+    /*! \brief The parameters of particle types to fit
+     * These are the charge and the width of its distribution, and the
+     * second charge and the width of its distribution, see
+     * ParticleType::chargeVS, all of the interaction type CHARGE.
+     * \return the names of those that are fitted
+     */
+    std::vector<std::string> particleParametersToFit() const;
+
 public:
     
     //! Default constructor
@@ -340,13 +356,6 @@ public:
      */
     bool hasMolPropObservable(MolPropObservable mpo) const;
 
-    /*! \brief Fill the  iOpt_ map
-     * \param[in] pd         Pointer to forcefield
-     * \param[in] msghandler For information
-     */
-    void fillIopt(const ForceField *pd,
-                  MsgHandler       *msghandler);
-    
     //! \brief Return the const vector of molecules
     const std::vector<ACTMol> &actmols() const { return actmol_; }
 

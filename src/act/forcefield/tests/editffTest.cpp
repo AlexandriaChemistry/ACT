@@ -34,8 +34,10 @@
 #include "actpre.h"
 
 #include <algorithm>
+#include <cmath>
 #include <filesystem>
 #include <fstream>
+#include <map>
 #include <string>
 
 #include <gtest/gtest.h>
@@ -126,12 +128,25 @@ protected:
         return pd;
     }
 
+    //! Expect a parameter value, which is stored as real
+    static void expectRealEq(double expected, double actual)
+    {
+        if (GMX_DOUBLE)
+        {
+            EXPECT_DOUBLE_EQ(expected, actual);
+        }
+        else
+        {
+            EXPECT_FLOAT_EQ(expected, actual);
+        }
+    }
+
     //! Expect the minimum, value and maximum of a parameter
     static void expectRange(const ForceFieldParameter &p, double minimum, double value, double maximum)
     {
-        EXPECT_DOUBLE_EQ(minimum, p.minimum());
-        EXPECT_DOUBLE_EQ(value, p.value());
-        EXPECT_DOUBLE_EQ(maximum, p.maximum());
+        expectRealEq(minimum, p.minimum());
+        expectRealEq(value, p.value());
+        expectRealEq(maximum, p.maximum());
     }
 };
 
@@ -158,6 +173,41 @@ TEST_F(EditFFTest, MutabilityOfSeveralIdentifiers)
     EXPECT_EQ(Mutability::Bounded, chiMutability(pd, "c3_z"));
 }
 
+// Test: A combination rule from the command line replaces that of the
+// force field, the others do not change
+TEST_F(EditFFTest, CombinationRule)
+{
+    auto pd = read(run(input_, { { "-cr", "VANDERWAALS:sigma:Arithmetic" } }));
+    const auto &vdw = pd.findForcesConst(InteractionType::VDW);
+    EXPECT_EQ(CombRule::Arithmetic, vdw.combinationRuleConst("sigma").rule());
+    EXPECT_EQ(CombRule::Geometric, vdw.combinationRuleConst("epsilon").rule());
+}
+
+//! \return the charge parameter of a particle type
+static const ForceFieldParameter &particleCharge(const ForceField &pd, const std::string &id)
+{
+    return pd.findParticleType(id)->parameterConst("charge");
+}
+
+// Test: The fixed charge of a particle type is only changed with -force,
+// the other particle types keep theirs
+TEST_F(EditFFTest, ParticleChargeForced)
+{
+    auto ref = read(input_);
+    auto pd  = read(run(input_, { { "-p", "charge" }, { "-a", "Be2+" }, { "-val", "1.5" }, { "-force", "" } }));
+    EXPECT_DOUBLE_EQ(1.5, particleCharge(pd, "Be2+").value());
+    EXPECT_DOUBLE_EQ(particleCharge(ref, "Mg2+").value(), particleCharge(pd, "Mg2+").value());
+}
+
+// Test: The bounds of a fixed charge can be changed without -force, its
+// value does not change
+TEST_F(EditFFTest, ParticleChargeBounds)
+{
+    auto ref = read(input_);
+    auto pd  = read(run(input_, { { "-p", "charge" }, { "-a", "Be2+" }, { "-min", "1" }, { "-max", "3" } }));
+    expectRange(particleCharge(pd, "Be2+"), 1, particleCharge(ref, "Be2+").value(), 3);
+}
+
 // Test: A new value of one parameter of one identifier, the others do not change
 TEST_F(EditFFTest, Value)
 {
@@ -182,8 +232,8 @@ TEST_F(EditFFTest, Scale)
 {
     auto pd  = read(run(input_, { { "-p", "eta" }, { "-a", "h_z f_z" }, { "-scale", "1.1" } }));
     auto ref = read(input_);
-    EXPECT_DOUBLE_EQ(1.1*14, acm(pd, "h_z", "eta").value());
-    EXPECT_DOUBLE_EQ(1.1*acm(ref, "f_z", "eta").value(), acm(pd, "f_z", "eta").value());
+    expectRealEq(1.1*14, acm(pd, "h_z", "eta").value());
+    expectRealEq(1.1*acm(ref, "f_z", "eta").value(), acm(pd, "f_z", "eta").value());
 }
 
 // Test: A new minimum moves the value into the bounds, also beyond the maximum
@@ -215,23 +265,28 @@ TEST_F(EditFFTest, Limits)
     }
 }
 
-// Test: Stretching the bounds of a parameter at its minimum
+// Test: Stretching the bounds of a parameter at its minimum or maximum
 TEST_F(EditFFTest, Stretch)
 {
     auto atMinimum = run(input_, { { "-p", "chi" }, { "-a", "h_z" }, { "-min", "3.5" } }, "minimum.xml");
     auto pd        = read(run(atMinimum, { { "-p", "chi" }, { "-a", "h_z" }, { "-stretch", "" } }));
     // The range of 3.5 to 4.375 is extended by a fifth below
     expectRange(acm(pd, "h_z", "chi"), 3.5 - 0.2*0.875, 3.5, 4.375);
+    auto atMaximum = run(input_, { { "-p", "chi" }, { "-a", "h_z" }, { "-val", "7" } }, "maximum.xml");
+    pd             = read(run(atMaximum, { { "-p", "chi" }, { "-a", "h_z" }, { "-stretch", "" } }, "stretched.xml"));
+    // The range of 2.8 to 7 is extended by a fifth above
+    expectRange(acm(pd, "h_z", "chi"), 2.8, 7, 7 + 0.2*4.2);
 }
 
 // Test: A fixed parameter only changes with -force, without changes no file
 // is written
 TEST_F(EditFFTest, FixedParameter)
 {
-    auto unchanged = run(input_, { { "-p", "zeta" }, { "-a", "h_z" }, { "-val", "25" } });
+    // The width of the charge distribution is a parameter of the particle type
+    auto unchanged = run(input_, { { "-p", "zeta" }, { "-a", "h" }, { "-val", "25" } });
     EXPECT_FALSE(std::filesystem::exists(unchanged));
-    auto pd   = read(run(input_, { { "-p", "zeta" }, { "-a", "h_z" }, { "-val", "25" }, { "-force", "" } }));
-    auto zeta = pd.findForcesConst(InteractionType::ELECTROSTATICS).findParameterTypeConst(Identifier("h_z"), "zeta");
+    auto pd   = read(run(input_, { { "-p", "zeta" }, { "-a", "h" }, { "-val", "25" }, { "-force", "" } }));
+    auto zeta = pd.findParticleType("h")->parameterConst(zetaName);
     EXPECT_DOUBLE_EQ(25, zeta.value());
     EXPECT_EQ(Mutability::Fixed, zeta.mutability());
     // A file is written with -write even without changes
@@ -256,7 +311,7 @@ TEST_F(EditFFTest, Remove)
 TEST_F(EditFFTest, Dump)
 {
     auto dump = fileManager().getTemporaryFilePath("params.dat");
-    run(input_, { { "-ana", "EEM" }, { "-a", "h_z" }, { "-dump", dump } }, "");
+    run(input_, { { "-ana", "EEM" }, { "-a", "h_z h" }, { "-dump", dump } }, "");
     std::ifstream            in(dump);
     std::vector<std::string> lines;
     for (std::string line; std::getline(in, line); )
@@ -264,25 +319,35 @@ TEST_F(EditFFTest, Dump)
         lines.push_back(line);
     }
     std::sort(lines.begin(), lines.end());
-    // The EEM group includes the widths of the charges
-    std::vector<std::string> expected = { "chi|h_z|3.5", "eta|h_z|14", "zeta|h_z|30" };
+    // The EEM group includes the widths of the charges, which are those of
+    // the particle types
+    std::vector<std::string> expected = { "chi|h_z|3.5", "eta|h_z|14", "zeta|h|30" };
     EXPECT_EQ(expected, lines);
 }
 
 /*! \brief A second force field, with other values and without some parameters
  * Chi of h_z is 4 and that of f_z 6, within their bounds, the EEM
- * parameters of i_z are missing.
- * \param[in] input  The force field to start from
- * \param[in] output Where to write the result
+ * parameters of i_z are missing unless withIodine, then its chi is 5.
+ * \param[in] input      The force field to start from
+ * \param[in] output     Where to write the result
+ * \param[in] withIodine Whether to keep the EEM parameters of i_z
  */
-static void writeSecondForceField(const std::string &input, const std::string &output)
+static void writeSecondForceField(const std::string &input, const std::string &output,
+                                  bool withIodine = false)
 {
     ForceField pd;
     readForceField(input, &pd);
     auto eem = pd.findForces(InteractionType::ELECTRONEGATIVITYEQUALIZATION);
     eem->findParameterType(Identifier("h_z"), "chi")->setValue(4);
     eem->findParameterType(Identifier("f_z"), "chi")->setValue(6);
-    eem->parameters()->erase(Identifier("i_z"));
+    if (withIodine)
+    {
+        eem->findParameterType(Identifier("i_z"), "chi")->setValue(5);
+    }
+    else
+    {
+        eem->parameters()->erase(Identifier("i_z"));
+    }
     writeForceField(output, &pd, false);
 }
 
@@ -302,11 +367,11 @@ TEST_F(EditFFTest, CopyMissing)
 TEST_F(EditFFTest, Replace)
 {
     auto second = fileManager().getTemporaryFilePath("second.xml");
-    writeSecondForceField(input_, second);
+    writeSecondForceField(input_, second, true);
     auto pd = read(run(input_, { { "-ff2", second }, { "-replace", "EEM" } }));
     EXPECT_DOUBLE_EQ(4, acm(pd, "h_z", "chi").value());
     EXPECT_DOUBLE_EQ(6, acm(pd, "f_z", "chi").value());
-    EXPECT_FALSE(pd.findForcesConst(InteractionType::ELECTRONEGATIVITYEQUALIZATION).parameterExists(Identifier("i_z")));
+    EXPECT_DOUBLE_EQ(5, acm(pd, "i_z", "chi").value());
 }
 
 // Test: Only the given parameter of the given identifier is implanted from a
@@ -329,6 +394,93 @@ TEST_F(EditFFTest, AnalyzeAndCompare)
     writeSecondForceField(input_, second);
     EXPECT_FALSE(std::filesystem::exists(run(input_, { { "-ff2", second }, { "-p", "chi" } })));
     EXPECT_FALSE(std::filesystem::exists(run(input_, { { "-bounds", "" } }, "bounds.xml")));
+}
+
+/*! \brief Plot the interactions of a force field
+ * The plots are written in the working directory, hence in a new one.
+ * \param[in]  forceField The force field file
+ * \param[in]  dir        Name of the directory for the plots
+ * \param[out] status     The exit status of edit_ff
+ * \return the directory with the plots
+ */
+static std::filesystem::path plotInteractions(const std::string &forceField,
+                                              const std::string &dir,
+                                              int               *status)
+{
+    std::filesystem::path plots(dir);
+    std::filesystem::create_directories(plots);
+    auto cwd = std::filesystem::current_path();
+    std::filesystem::current_path(plots);
+    gmx::test::CommandLine cmd;
+    cmd.append("edit_ff");
+    cmd.addOption("-ff", forceField);
+    cmd.addOption("-ana", "BONDS");
+    cmd.append("-plot");
+    *status = edit_ff(cmd.argc(), cmd.argv());
+    std::filesystem::current_path(cwd);
+    return plots;
+}
+
+//! \return the point with the lowest energy of a plot
+static std::pair<double, double> minimum(const std::filesystem::path &xvg)
+{
+    std::ifstream in(xvg);
+    std::pair<double, double> lowest = { 0, 0 };
+    bool                      first  = true;
+    for (double x, v; in >> x >> v; )
+    {
+        if (first || v < lowest.second)
+        {
+            lowest = { x, v };
+            first  = false;
+        }
+    }
+    EXPECT_FALSE(first) << xvg;
+    return lowest;
+}
+
+// Test: The bond and van der Waals curves of SPC/E have their minimum
+// at the bond length and at the minimum of the Lennard-Jones potential
+TEST_F(EditFFTest, Plot)
+{
+    int  status;
+    auto plots = plotInteractions(fileManager().getInputFilePath("../../properties/tests/SPCE.xml"),
+                                  fileManager().getTemporaryFilePath("plots"), &status);
+    ASSERT_EQ(0, status);
+    auto bond = minimum(plots / "BONDS_h_b~o3_b.xvg");
+    EXPECT_NEAR(0.1, bond.first, 1e-3);
+    EXPECT_NEAR(0, bond.second, 1e-6);
+    auto vdw = minimum(plots / "VANDERWAALS_o3~o3.xvg");
+    double sigma = 0.3165558, epsilon = 0.65017032;
+    EXPECT_NEAR(std::pow(2.0, 1.0/6.0)*sigma, vdw.first, 1e-3);
+    EXPECT_NEAR(-epsilon, vdw.second, 1e-3);
+    EXPECT_TRUE(std::filesystem::exists(plots / "COULOMB_ow~ow.xvg"));
+    std::filesystem::remove_all(plots);
+}
+
+// Test: Impropers of which the bonds have no parameters are skipped, and
+// all other interactions are plotted
+TEST_F(EditFFTest, PlotSkipsImpropersWithoutBonds)
+{
+    int  status;
+    auto plots = plotInteractions(fileManager().getInputFilePath("../../alexandria/tests/ACS-g.xml"),
+                                  fileManager().getTemporaryFilePath("plots"), &status);
+    ASSERT_EQ(0, status);
+    std::map<std::string, int> count;
+    for (const auto &entry : std::filesystem::directory_iterator(plots))
+    {
+        auto name = entry.path().filename().string();
+        if (entry.path().extension() == ".xvg")
+        {
+            EXPECT_GT(std::filesystem::file_size(entry.path()), 0u) << name;
+            count[name.substr(0, name.find('_'))] += 1;
+        }
+    }
+    for (const char *itype : { "BONDS", "ANGLES", "LINEAR", "PROPER", "IMPROPER", "VANDERWAALS", "COULOMB" })
+    {
+        EXPECT_GT(count[itype], 0) << itype;
+    }
+    std::filesystem::remove_all(plots);
 }
 
 } // namespace

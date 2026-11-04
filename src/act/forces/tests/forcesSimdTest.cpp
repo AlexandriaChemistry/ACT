@@ -42,16 +42,20 @@
 #include "../forces_simd.h"
 
 #include <cmath>
+#include <map>
 #include <set>
 
 #include <gtest/gtest.h>
 
 #include "act/basics/act_particle.h"
+#include "act/coulombintegrals/gaussian_integrals.h"
 #include "act/forcefield/forcefield_parametername.h"
 #include "act/forcefield/potential.h"
 #include "act/forces/simd_information.h"
 #include "act/topology/actatom.h"
 #include "act/topology/coords_energy.h"
+#include "gromacs/math/functions.h"
+#include "gromacs/math/units.h"
 
 #include "testutils/refdata.h"
 #include "testutils/testasserts.h"
@@ -152,6 +156,31 @@ protected:
         return entries;
     }
 
+    /*! \brief Give the atoms the widths of their charge distributions
+     * The Coulomb interactions list the widths of their first and second
+     * atom, which have to be the same in all interactions of an atom.
+     * \param[in] inter The interactions
+     */
+    void setWidths(const std::vector<Interaction> &inter)
+    {
+        std::map<int, double> zeta;
+        for (const auto &i : inter)
+        {
+            ASSERT_EQ(2u, i.atoms.size());
+            ASSERT_EQ(2u, i.params.size());
+            for (int k = 0; k < 2; k++)
+            {
+                auto z = zeta.find(i.atoms[k]);
+                if (zeta.end() != z)
+                {
+                    ASSERT_EQ(z->second, i.params[k]) << "atom " << i.atoms[k];
+                }
+                zeta[i.atoms[k]] = i.params[k];
+                atoms_[i.atoms[k]].setZeta(i.params[k]);
+            }
+        }
+    }
+
     //! Make the conformations from coordinates
     std::vector<CoordsEnergy> makeCoords(const std::vector<std::vector<gmx::RVec>> &x)
     {
@@ -229,20 +258,9 @@ protected:
                     bool        vs  = (first.count(k) && a == 1) || (second.count(k) && c == 1);
                     atoms.push_back(ActAtom(o.name(), o.element(), o.ffType(), o.pType(), o.atomicNumber(),
                                             o.mass(), vs ? qvs[k] : o.charge(), vs ? rowvs[k] : o.row()));
+                    atoms.back().setZeta(vs ? zvs[k] : o.zeta());
                 }
-                auto myinter = inter;
-                for (auto &i : myinter)
-                {
-                    if (a == 1)
-                    {
-                        i.params[0] = zvs[i.atoms[0]];
-                    }
-                    if (c == 1)
-                    {
-                        i.params[1] = zvs[i.atoms[1]];
-                    }
-                }
-                auto e = energies(mypot, myinter, atoms);
+                auto e = energies(mypot, inter, atoms);
                 for (size_t conf = 0; conf < nconf_; conf++)
                 {
                     eSum[conf] += e[conf];
@@ -266,6 +284,31 @@ protected:
      * \param[in] epsilonr The relative dielectric constant
      * \param[in] tolSame  The tolerance
      */
+    /*! \brief The tolerance for comparing forces
+     * In single precision a force is accurate relative to the largest
+     * force, since the terms of the forces cancel.
+     * \param[in] f       The forces
+     * \param[in] tolSame The tolerance in double precision
+     * \return The tolerance
+     */
+    gmx::test::FloatingPointTolerance forceTolerance(const std::vector<gmx::RVec>           &f,
+                                                     const gmx::test::FloatingPointTolerance &tolSame)
+    {
+        if (GMX_DOUBLE)
+        {
+            return tolSame;
+        }
+        double fmax = 1;
+        for (const auto &fi : f)
+        {
+            for (int m = 0; m < DIM; m++)
+            {
+                fmax = std::max<double>(fmax, std::abs(fi[m]));
+            }
+        }
+        return gmx::test::relativeToleranceAsFloatingPoint(fmax, 1e-5);
+    }
+
     void compareRoutines(Potential                              mypot,
                          const TopologyEntryVector             &entries,
                          double                                 epsilonr,
@@ -317,11 +360,12 @@ protected:
                     ASSERT_TRUE(ei != (*other)[c].eMap.end());
                     EXPECT_REAL_EQ_TOL(e.second.eact(), ei->second.eact(), tolSame);
                 }
+                auto tolForce = forceTolerance(cOne[c].fcalc, tolSame);
                 for (size_t a = 0; a < atoms_.size(); a++)
                 {
                     for (int m = 0; m < DIM; m++)
                     {
-                        EXPECT_REAL_EQ_TOL(cOne[c].fcalc[a][m], (*other)[c].fcalc[a][m], tolSame);
+                        EXPECT_REAL_EQ_TOL(cOne[c].fcalc[a][m], (*other)[c].fcalc[a][m], tolForce);
                     }
                 }
             }
@@ -357,11 +401,12 @@ protected:
                 ASSERT_TRUE(ei != cInner[c].eMap.end());
                 EXPECT_REAL_EQ_TOL(e.second.eact(), ei->second.eact(), tolSame);
             }
+            auto tolForce = forceTolerance(cOuter[c].fcalc, tolSame);
             for (size_t a = 0; a < atoms_.size(); a++)
             {
                 for (int m = 0; m < DIM; m++)
                 {
-                    EXPECT_REAL_EQ_TOL(cOuter[c].fcalc[a][m], cInner[c].fcalc[a][m], tolSame);
+                    EXPECT_REAL_EQ_TOL(cOuter[c].fcalc[a][m], cInner[c].fcalc[a][m], tolForce);
                 }
             }
         }
@@ -374,7 +419,7 @@ protected:
             {
                 for (int m = 0; m < DIM; m++)
                 {
-                    fmax = std::max(fmax, std::abs(f[m]));
+                    fmax = std::max<double>(fmax, std::abs(f[m]));
                 }
             }
         }
@@ -442,7 +487,16 @@ static std::vector<Interaction> dihedrals(const std::vector<double> &params)
 
 TEST_F(ForcesSimdTest, PositionRestraint)
 {
-    std::vector<double> params = { 5000, 0.2 };
+    // Force constant, radius and the center of the restraints
+    std::vector<double> params = { 5000, 0.2, 0, 0, 0 };
+    test(Potential::POSITION_RESTRAINT,
+         { { { 1 }, params }, { { 2 }, params }, { { 3 }, params }, { { 4 }, params } });
+}
+
+// Test: Position restraints around a center that is not the origin
+TEST_F(ForcesSimdTest, PositionRestraintCenter)
+{
+    std::vector<double> params = { 5000, 0.2, 0.1, -0.05, 0.2 };
     test(Potential::POSITION_RESTRAINT,
          { { { 1 }, params }, { { 2 }, params }, { { 3 }, params }, { { 4 }, params } });
 }
@@ -509,6 +563,14 @@ TEST_F(ForcesSimdTest, TT2b)
     test(Potential::TT2b, pairs({ 20000, 30, 25, 0.002, 0.0002, 0.00002 }));
 }
 
+TEST_F(ForcesSimdTest, TT2bShortDistances)
+{
+    // With this exponent of the damping, br is between 4.2 and 7.4, such
+    // that the damping functions are computed both from the terms beyond
+    // 2m (br < ttTailMax) and as 1 - exp(-br) sum_k=0^2m (br)^k/k!
+    test(Potential::TT2b, pairs({ 20000, 30, 15, 0.002, 0.0002, 0.00002 }));
+}
+
 TEST_F(ForcesSimdTest, SlaterISATT)
 {
     test(Potential::SLATER_ISA_TT, pairs({ 20000, 30, 25, 0.002, 0.0002, 0.00002 }));
@@ -523,31 +585,91 @@ TEST_F(ForcesSimdTest, GeneralizedBuckingham)
 
 TEST_F(ForcesSimdTest, CoulombPoint)
 {
+    setWidths(pairs({ 0, 0 }));
     test(Potential::COULOMB_POINT, pairs({ 0, 0 }));
 }
 
 TEST_F(ForcesSimdTest, CoulombGaussian)
 {
+    setWidths(pairs({ 12, 9 }));
     test(Potential::COULOMB_GAUSSIAN, pairs({ 12, 9 }));
+}
+
+// Test: The force between Gaussian charges at short distances, where the
+// formula is a difference of nearly equal terms, for each routine. The
+// expected value is from the series of the force divided by the distance,
+// with all the terms needed in double precision.
+TEST_F(ForcesSimdTest, CoulombGaussianShortDistance)
+{
+    // Combined width of 12 and 9 is 7.2/nm
+    const double zeta = 12.0*9.0/std::sqrt(12.0*12.0 + 9.0*9.0);
+    const double qq   = ONE_4PI_EPS0*atoms_[0].charge()*atoms_[1].charge();
+    setWidths({ { { 0, 1 }, { 12, 9 } } });
+    auto         entries = makeEntries({ { { 0, 1 }, { 12, 9 } } });
+    const std::vector<double> dist = { 1e-5, 1e-4, 1e-3, 1e-2, 0.03, 0.1 };
+    std::vector<std::vector<gmx::RVec>> x;
+    for (auto r : dist)
+    {
+        auto xc = x_[0];
+        xc[0]   = { 0, 0, 0 };
+        xc[1]   = { static_cast<real>(r), 0, 0 };
+        x.push_back(xc);
+    }
+#if GMX_DOUBLE
+    const double toler = 1e-10;
+#else
+    const double toler = 1e-6;
+#endif
+    bool explicitSimd = setUseExplicitSimd(false);
+    for (int routine = 0; routine < 3; routine++)
+    {
+        setUseExplicitSimd(routine == 2);
+        auto coords = makeCoords(x);
+        computePotential(nullptr, Potential::COULOMB_GAUSSIAN, entries, atoms_, &coords, 1, routine > 0);
+        for (size_t c = 0; c < dist.size(); c++)
+        {
+            // The distance as stored
+            double r  = coords[c].x[1][XX];
+            double x2 = gmx::square(zeta*r);
+            // (erf(x)/x - 2 exp(-x^2)/sqrt(pi))/x^2 as a series in x^2
+            double series = 0, term = 1;
+            for (int n = 0; n < 30; n++)
+            {
+                int k   = n + 1;
+                series += ((k % 2) ? -1.0 : 1.0)*(1.0/(std::tgamma(k + 1.0)*(2*k + 1)) - 1.0/std::tgamma(k + 1.0))*term;
+                term   *= x2;
+            }
+            double fOverR = qq*zeta*zeta*zeta*2*invsqrt_pi*series;
+            // The force on the first atom, at the origin, points away from the second
+            double expect = -fOverR*r;
+            EXPECT_NEAR(expect, coords[c].fcalc[0][XX], toler*std::abs(expect)) << "routine " << routine << " r " << r;
+            EXPECT_NEAR(-expect, coords[c].fcalc[1][XX], toler*std::abs(expect)) << "routine " << routine << " r " << r;
+        }
+    }
+    setUseExplicitSimd(explicitSimd);
 }
 
 TEST_F(ForcesSimdTest, CoulombSlater)
 {
+    setWidths(pairs({ 25, 20 }));
     test(Potential::COULOMB_SLATER, pairs({ 25, 20 }));
 }
 
 TEST_F(ForcesSimdTest, CoulombPointSecondCharges)
 {
+    setWidths(pairs({ 0, 0 }));
     testSecondCharges(Potential::COULOMB_POINT, pairs({ 0, 0 }));
 }
 
 TEST_F(ForcesSimdTest, CoulombGaussianSecondCharges)
 {
+    setWidths(pairs({ 12, 9 }));
     testSecondCharges(Potential::COULOMB_GAUSSIAN, pairs({ 12, 9 }));
 }
 
 TEST_F(ForcesSimdTest, CoulombSlaterSecondCharges)
 {
+    setWidths(pairs({ 25, 20 }));
     testSecondCharges(Potential::COULOMB_SLATER, pairs({ 25, 20 }));
 }
 

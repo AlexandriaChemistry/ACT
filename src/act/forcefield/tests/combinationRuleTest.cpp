@@ -36,6 +36,10 @@
 #include <gtest/gtest.h>
 
 #include "act/forcefield/combinationrules.h"
+#include "act/forcefield/combruleutil.h"
+#include "act/forcefield/forcefield.h"
+#include "act/forcefield/forcefield_xml.h"
+#include "gromacs/commandline/pargs.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "testutils/cmdlinetest.h"
@@ -282,6 +286,28 @@ TEST_F (CombinationRuleTest, GeneralizedMean_1_4_VerySmall)
 TEST_F (CombinationRuleTest, GeneralizedMean_1_4_QuiteSmall)
 {
     testGM(1.0, 4.0, 0.11);
+}
+
+// Test: The number of combination rules from the command line that change
+// those of the force field
+TEST(CombRuleUtilTest, Extract)
+{
+    ForceField pd;
+    readForceField(gmx::test::TestFileManager::getInputFilePath("ACM-g.xml"), &pd);
+    auto count = [&pd](const char *rules)
+    {
+        CombRuleUtil         crule;
+        std::vector<t_pargs> pa;
+        crule.addPargs(&pa);
+        *pa[0].u.c = rules;
+        return crule.extract(&pd);
+    };
+    // Sigma is Geometric in ACM-g
+    EXPECT_EQ(0, count("VANDERWAALS:sigma:Geometric"));
+    EXPECT_EQ(1, count("VANDERWAALS:sigma:Arithmetic"));
+    EXPECT_EQ(CombRule::Arithmetic, pd.findForcesConst(InteractionType::VDW).combinationRuleConst("sigma").rule());
+    EXPECT_EQ(0, count("VANDERWAALS:sigma:Arithmetic"));
+    EXPECT_EQ(2, count("VANDERWAALS:epsilon:Arithmetic VANDERWAALS:gamma:Arithmetic"));
 }
 
 } // namespace

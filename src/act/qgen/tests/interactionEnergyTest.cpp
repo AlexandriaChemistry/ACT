@@ -31,7 +31,9 @@
  * \author Mohammad Mehdi Ghahremanpour <mohammad.ghahremanpour@icm.uu.se>
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
+#include <algorithm>
 #include <cmath>
+#include <cstdint>
 
 #include <map>
 #include <numeric>
@@ -210,6 +212,22 @@ protected:
                 fcomp.computeInteraction(&msghandler, pd, &mp_, &coords, true, &einters, &epots, &forces);
                 ASSERT_EQ(1u, einters.size());
                 auto &einter = einters[0];
+                if (!GMX_DOUBLE)
+                {
+                    // In single precision the errors of the interaction
+                    // energies, differences of the energies of the dimer and
+                    // the monomers, are relative to the largest energy term
+                    std::vector<gmx::RVec>            xd = mp_.xOriginal(), fd(xd.size());
+                    std::map<InteractionType, double> edimer;
+                    fcomp.compute(&msghandler, pd, mp_.topology(), &xd, &fd, &edimer);
+                    double emax = 0;
+                    for(const auto &e : edimer)
+                    {
+                        emax = std::max(emax, std::abs(e.second));
+                    }
+                    checker_.setDefaultTolerance(gmx::test::FloatingPointTolerance(1e-5*emax, 1e-5*emax, 1e-5, 1e-5,
+                                                                                   UINT64_MAX, UINT64_MAX, false));
+                }
                 for(const auto &e : einter)
                 {
                     checker_.checkReal(e.second, interactionTypeToString(e.first).c_str());

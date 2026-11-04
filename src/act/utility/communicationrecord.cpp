@@ -507,6 +507,12 @@ template <> void CommunicationRecord::bcast<double>(double *d, MPI_Comm comm, in
     bcast_low(d, sizeof(*d), comm, root);
 }
 
+//! \brief Broadcast a float
+template <> void CommunicationRecord::bcast<float>(float *d, MPI_Comm comm, int root) const
+{
+    bcast_low(d, sizeof(*d), comm, root);
+}
+
 //! \brief Broadcast a size_t
 template <> void CommunicationRecord::bcast<size_t>(size_t *d, MPI_Comm comm, int root) const
 {
@@ -852,23 +858,6 @@ void CommunicationRecord::sumd_master(int    nr,
     }
 }
 
-void CommunicationRecord::sumi_helpers(int nr, 
-                                       int r[]) const
-{
-    ScopedTimer scoped(mpiTimer(MpiTime::Collective));
-    if (nhelper_per_middleman_ == 0)
-    {
-        return;
-    }
-    int size = 0;
-    check_return("MPI_Comm_size", MPI_Comm_size(mpi_act_helpers_, &size));
-    if (size > 1)
-    {
-        check_return("MPI_Allreduce", MPI_Allreduce(MPI_IN_PLACE, r, nr, MPI_INT, MPI_SUM,
-                                                    mpi_act_helpers_));
-    }
-}
-
 #define ACT_SEND_DATA 19823
 #define ACT_SEND_DONE -666
 CommunicationStatus CommunicationRecord::bcast_data(MPI_Comm comm, int root) const
@@ -898,21 +887,6 @@ CommunicationStatus CommunicationRecord::send_done(int dest) const
     send(dest, ACT_SEND_DONE);
 
     return CommunicationStatus::OK;
-}
-
-CommunicationStatus CommunicationRecord::bcast_done(MPI_Comm comm, int root) const
-{
-    int acd = ACT_SEND_DONE;
-    bcast(&acd, comm, root);
-
-    if (ACT_SEND_DONE == acd)
-    {
-        return CommunicationStatus::OK;
-    }
-    else
-    {
-        return CommunicationStatus::ERROR;
-    }
 }
 
 CommunicationStatus CommunicationRecord::recv_data(int src) const

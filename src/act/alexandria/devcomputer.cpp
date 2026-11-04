@@ -126,8 +126,8 @@ void EspDevComputer::calcDeviation(MsgHandler                    *msghandler,
 {
     for(auto actmol : actmols)
     {
-        real rrms     = 0;
-        real cosangle = 0;
+        double rrms     = 0;
+        double cosangle = 0;
         auto qProps   = actmol->qProps();
         auto topology = actmol->topology();
         std::vector<gmx::RVec> forces(topology->atoms().size());
@@ -140,10 +140,6 @@ void EspDevComputer::calcDeviation(MsgHandler                    *msghandler,
             if (qgr->nEsp() == 0)
             {
                 continue;
-            }
-            if (fitZeta_)
-            {
-                qgr->updateZeta(actmol->atomsConst(), forcefield);
             }
             auto coords = qgr->coords();
             qgr->updateAtomCharges(msghandler, actmol->atomsConst());
@@ -159,13 +155,12 @@ void EspDevComputer::calcDeviation(MsgHandler                    *msghandler,
                 dumpQX(msghandler->tw(), &(*actmol), "ESP");
             }
             double epsilonr;
-            if (!ffOption(*forcefield, InteractionType::ELECTROSTATICS, "epsilonr", &epsilonr))
-            {
-                epsilonr = 1;
-            }
+            epsilonr = forcefield->epsilonr();
+            // Refresh both ordinary and second-charge widths, independently of the fit selection.
+            qgr->updateZeta(actmol->atomsConst(), forcefield);
             qgr->calcPot(msghandler, epsilonr);
-            real   mae, mse;
-            real   rms   = qgr->getStatistics(msghandler, &rrms, &cosangle, &mae, &mse);
+            double mae, mse;
+            double rms   = qgr->getStatistics(msghandler, &rrms, &cosangle, &mae, &mse);
             double myRms = convertToGromacs(rms, "Hartree/e");
             size_t nEsp  = qgr->nEsp();
             (*targets).find(eRMS::ESP)->second.increase(nEsp, gmx::square(myRms)*nEsp);
@@ -350,6 +345,8 @@ void HarmonicsDevComputer::calcDeviation(MsgHandler                    *msghandl
                                          const ForceField              *forcefield,
                                          LossFunction                   lossFunction)
 {
+    // Once, such that the tolerance is consistent for all minimizations
+    MolHandler::adjustForceTolerance(msghandler, forceComputer, &simConfig_);
     for(auto actmol : actmols)
     {
         // Only compute frequencies for structures that have an optimize reference

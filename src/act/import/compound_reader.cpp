@@ -90,7 +90,7 @@ void CompoundReader::addOptions(std::vector<t_pargs>      *pargs,
         { "-qtot",   FALSE, etREAL, {&qtot_},
           "Combined charge of the molecule(s). This will be taken from the input file by default, but that is not always reliable. If the -qcustom flag is supplied, that will be used instead." },
         { "-qalg",   FALSE, etSTR,  {&qalgorithm_},
-          "Algorithm to generate charges. Can be either of NONE (read from force field), EEM or SQE (depending on force field parameter availability), ESP (fit to electrostatic potential which then must be present in the molprop file, -charges option). Flag can be Custom (see flag -qcustom below) or Read (see flag -qqm below). When fitting parameters to the ESP, do not provide this flag and not the charges file either. Sorry for the confusion." },
+          "Algorithm to generate charges. Can be either of None (read from force field), EEM or SQE (depending on force field parameter availability), ESP (fit to electrostatic potential which then must be present in the molprop file, -charges option). Flag can be Custom (see flag -qcustom below) or Read (see flag -qqm below). When fitting parameters to the ESP, do not provide this flag and not the charges file either. Sorry for the confusion." },
         { "-qqm",    FALSE, etSTR,  {&qqm_},
           "Use a method from quantum mechanics that needs to be present in the input file. For instance, qESP, qHirshfeld, qCM5 or qMulliken may be available but check your input." },
         { "-qcustom", FALSE, etSTR, {&qcustom_}, 
@@ -155,7 +155,7 @@ void CompoundReader::optionsFinished(MsgHandler                  *msghandler,
     }
     else if (strlen(qalgorithm_) > 0 && 
              ((strlen(qcustom_) > 0 && qAlgorithm_ != ChargeGenerationAlgorithm::Custom) || 
-              (strlen(qqm_) > 0 && qAlgorithm_ != ChargeGenerationAlgorithm::Custom)))
+              (strlen(qqm_) > 0 && qAlgorithm_ != ChargeGenerationAlgorithm::Read)))
     {
         msghandler->msg(ACTStatus::Warning,
                         "Please do not provide both a charge algorithm and either custom charges or the QM charge type to read.");
@@ -187,7 +187,17 @@ void CompoundReader::setCharges(MsgHandler          *msghandler,
             {
                 qcustom.push_back(my_atof(q.c_str(), "custom q"));
             }
-            mol->setCharges(qcustom);
+            if (qcustom.size() == mol->atomsConst().size())
+            {
+                mol->setCharges(qcustom);
+            }
+            else
+            {
+                msghandler->msg(ACTStatus::Error,
+                                gmx::formatString("%zu custom charges for %zu particles of %s",
+                                                  qcustom.size(), mol->atomsConst().size(),
+                                                  mol->getMolname().c_str()));
+            }
         }
         else if (qAlgorithm_ == ChargeGenerationAlgorithm::NONE)
         {

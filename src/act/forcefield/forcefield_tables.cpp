@@ -62,7 +62,8 @@ void ForceFieldTable::subtype_table(const std::string &info)
     auto header = gmx::formatString("Atom type & ACM & Beta & Bond & Pol");
     lt.addHeadLine(header.c_str());
     lt.printHeader();
-    std::vector<std::string> subtypes = { "acmtype", "zetatype", "bondtype", "poltype" };
+    // The width of the charge distribution, zeta, is a parameter
+    std::vector<std::string> subtypes = { "acmtype", zetaName, "bondtype", "poltype" };
     for (const auto &pt : pd_->particleTypesConst())
     {
         if (pt.second.mass() == 0)
@@ -72,7 +73,11 @@ void ForceFieldTable::subtype_table(const std::string &info)
         auto line = pt.second.id().id();
         for(const auto &st : subtypes)
         {
-            if (pt.second.hasOption(st))
+            if (st == zetaName && pt.second.hasParameter(zetaName))
+            {
+                line.append(gmx::formatString(" & %g", pt.second.parameterConst(zetaName).value()));
+            }
+            else if (pt.second.hasOption(st))
             {
                 line.append(gmx::formatString(" & %s",
                                               pt.second.optionValue(st).c_str()));

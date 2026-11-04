@@ -200,6 +200,11 @@ double ParticleType::chargeVS() const
     return hasParameter(chargeVSName) ? paramValue(chargeVSName) : 0.0;
 }
 
+double ParticleType::zeta() const
+{
+    return hasParameter(zetaName) ? parameterConst(zetaName).internalValue() : 0.0;
+}
+
 double ParticleType::zetaVS() const
 {
     return hasParameter(zetaVSName) ? parameterConst(zetaVSName).internalValue() : 0.0;

@@ -125,6 +125,21 @@ TEST_F (GenePoolTest, Read)
     read();
 }
 
+// Test: Genomes read back from a file are the same, also for parameters
+// that need many digits
+TEST_F (GenePoolTest, WritePrecision)
+{
+    std::vector<double> bases = { 1.2345678901234567e-7, 0.12345678901234567, -98765.432109876543, 1e-300 };
+    GenePool gp;
+    gp.addGenome(Genome(bases, { { iMolSelect::Train, 0.1 } }));
+    auto fileName = fileManager().getTemporaryFilePath(gmx::formatString("precision%d.csv", gmx_node_rank()));
+    gp.write(fileName);
+    GenePool gp2;
+    gp2.read(fileName);
+    ASSERT_EQ(1u, gp2.popSize());
+    EXPECT_EQ(bases, gp2.genome(0).bases());
+}
+
 TEST_F (GenePoolTest, WrongInput)
 {
     GenePool gp;

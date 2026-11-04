@@ -74,10 +74,10 @@ int nma(int argc, char *argv[])
         { efXVG, "-ir",      "IRspectrum", ffOPTWR }
     };
     gmx_output_env_t         *oenv;
-    double                    shellToler = 1e-6;
+    real                      shellToler = 1e-6;
     bool                      json       = false;
     //! Line width (cm^-1) for a Lorentzian when computing infrared intensities and plotting an IR spectrum
-    double                    linewidth  = 24;
+    real                      linewidth  = 24;
     std::vector<t_pargs>      pa = {
         { "-linewidth", FALSE, etREAL, {&linewidth},
           "Line width (cm^-1) for a Lorentzian when computing infrared intensities and plotting an IR spectrum" },
@@ -128,11 +128,8 @@ int nma(int argc, char *argv[])
     }
     ForceComputer forceComp;
     double epsilonr;
-    if (!ffOption(pd, InteractionType::ELECTROSTATICS, "epsilonr", &epsilonr))
-    {
-        epsilonr = 1;
-    }
-    forceComp.init(shellToler, sch.maxIter(), epsilonr);
+    epsilonr = pd.epsilonr();
+    forceComp.init(shellToler, sch.shellMaxIter(), epsilonr);
     print_header(msghandler.tw(), pa, fnm);
     
     JsonTree jtree("simulate");

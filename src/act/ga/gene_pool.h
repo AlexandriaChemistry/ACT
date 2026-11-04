@@ -51,6 +51,12 @@ private:
     size_t              genomeSize_ = 0;
     //! The gene pool is just a vector of Genomes
     std::vector<Genome> genomes_;
+
+    /*! \return the index of the genome with the lowest fitness.
+     * \param[in] ims the dataset to grab the fitness from
+     */
+    size_t findBestIndex(const iMolSelect ims) const;
+
 public:
     //! Constructor
     GenePool(size_t genomeSize) : genomeSize_(genomeSize) {}
@@ -118,11 +124,6 @@ public:
      */
     void sort(iMolSelect ims);
     
-    /*! \return the index of the genome with the lowest fitness.
-     * \param[in] ims the dataset to grab the fitness from
-     */
-    size_t findBestIndex(const iMolSelect ims) const;
-
     /*! \return a const referene of the genome with the lowest fitness.
      * \param[in] ims the dataset to grab the fitness from
      */

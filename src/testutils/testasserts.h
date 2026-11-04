@@ -504,6 +504,23 @@ static inline FloatingPointTolerance defaultRealTolerance()
 
 
 /*! \brief
+ * Returns a tolerance that depends on the precision of the build.
+ *
+ * A FloatingPointTolerance depends on the type of the compared values,
+ * this depends on GMX_DOUBLE, such that values of type double computed
+ * in single precision, like the energies, have the tolerance of single
+ * precision.
+ *
+ * \param[in] doubleTolerance Tolerance in double precision
+ * \param[in] singleTolerance Tolerance in single precision
+ * \return The tolerance for the precision of the build
+ */
+static inline double precisionTolerance(double doubleTolerance, double singleTolerance)
+{
+    return GMX_DOUBLE ? doubleTolerance : singleTolerance;
+}
+
+/*! \brief
  * Returns the default tolerance for comparing single-precision numbers when
  * compared by \Gromacs built in either precision mode.
  *

@@ -107,14 +107,11 @@ void QgenResp::setAtomInfo(MsgHandler                   *msg_handler,
     nAtom_   = atoms.size();
     qtot_    = qtotal;
     qshell_  = 0;
-    auto qt       = pd->findForcesConst(InteractionType::ELECTROSTATICS);
-    auto eqtModel = potentialToChargeDistributionType(qt.potential());
-    bool haveZeta = eqtModel != ChargeDistributionType::Point;
+    bool haveZeta = pd->chargeDistribution() != ChargeDistributionType::Point;
     nFixed_ = 0;
     for (size_t i = 0; i < atoms.size(); i++)
     {
         auto atype = pd->findParticleType(atoms[i].ffType());
-        auto ztype = atype->interactionTypeToIdentifier(InteractionType::ELECTROSTATICS);
         const auto &qparm = atype->parameterConst("charge");
         q_.push_back(qparm.value());
         charge_.push_back(&qparm);
@@ -122,7 +119,7 @@ void QgenResp::setAtomInfo(MsgHandler                   *msg_handler,
         row_.push_back(atype->row());
         if (haveZeta)
         {
-            zeta_.push_back(qt.findParameterTypeConst(ztype, "zeta").value());
+            zeta_.push_back(atype->hasParameter(zetaName) ? atype->parameterConst(zetaName).value() : 0.0);
         }
         else
         {
@@ -250,32 +247,6 @@ void QgenResp::addEspPoint(double x, double y,
     ep_.push_back(EspPoint(rv, V));
 }
 
-void QgenResp::plotLsq(const gmx_output_env_t *oenv,
-                       const char             *ESPcorr)
-{
-    real        x, y;
-    const char *leg = "Alexandria";
-    gmx_stats   lsq;
-    std::string potUnit("Hartree/e");
-    for (size_t i = 0; i < nEsp(); i++)
-    {
-        lsq.add_point(convertFromGromacs(ep_[i].v(), potUnit),
-                      convertFromGromacs(ep_[i].vCalc(), potUnit),
-                      0, 0);
-    }
-    FILE *fp = xvgropen(ESPcorr, "Electrostatic Potential (Hartree/e)", "QM", "Calc", oenv);
-    xvgr_legend(fp, 1, &leg, oenv);
-    xvgr_line_props(fp, 0, elNone, ecBlack, oenv);
-    fprintf(fp, "@ s%d symbol %d\n", 0, 1);
-    fprintf(fp, "@type xy\n");
-    while (lsq.get_point(&x, &y, nullptr, nullptr, 0) == eStats::OK)
-    {
-        fprintf(fp, "%10g  %10g\n", x, y);
-    }
-    fprintf(fp, "&\n");
-    xvgrclose(fp);
-}
-
 void QgenResp::regularizeCharges(MsgHandler *msg_handler)
 {
     double qtot   = 0;
@@ -349,11 +320,11 @@ void QgenResp::calcStatistics(MsgHandler *msg_handler)
     }
 }
 
-real QgenResp::getStatistics(MsgHandler *msg_handler,
-                             real       *rrms,
-                             real       *cosangle,
-                             real       *mae,
-                             real       *mse)
+double QgenResp::getStatistics(MsgHandler *msg_handler,
+                               double     *rrms,
+                               double     *cosangle,
+                               double     *mae,
+                               double     *mse)
 {
     calcStatistics(msg_handler);
     *rrms     = rrms_;
@@ -643,13 +614,10 @@ void QgenResp::optimizeCharges(MsgHandler *msg_handler,
 void QgenResp::updateZeta(const std::vector<ActAtom> &atoms,
                           const ForceField              *pd)
 {
-    auto    fs   = pd->findForcesConst(InteractionType::ELECTROSTATICS);
     for (size_t i = 0; i < nAtom_; i++)
     {
         auto atype = pd->findParticleType(atoms[i].ffType());
-        auto myid  = atype->interactionTypeToIdentifier(InteractionType::ELECTROSTATICS);
-        auto eep   = fs.findParameterMapConst(myid);
-        zeta_[i]   = eep.find("zeta")->second.value();
+        zeta_[i]   = atype->hasParameter(zetaName) ? atype->parameterConst(zetaName).value() : 0.0;
         zetaVS_[i] = atoms[i].zetaVS();
     }
 }

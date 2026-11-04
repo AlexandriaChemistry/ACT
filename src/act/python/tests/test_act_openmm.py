@@ -19,6 +19,7 @@ correction.
 """
 
 import os, re, shutil, subprocess, sys, tempfile, unittest
+from types import SimpleNamespace
 
 try:
     import openmm
@@ -341,6 +342,27 @@ class ResidueBondsTest(unittest.TestCase):
         """ The residue names given by the user, with shells """
         self.assertEqual([ "MOH" ] + 4*[ "WTR" ],
                          self.check("ACS-pg", [ "-resnames", "water=WTR methanol=MOH" ]))
+
+@unittest.skipUnless(haveOpenMM, "OpenMM not available")
+class SlaterScreeningTest(unittest.TestCase):
+    def test_recognized_slater_is_rejected(self):
+        """Reading Slater metadata must not silently select point screening."""
+        from act_openmm import ActOpenMMSim, CombinationRules
+        system = openmm.System()
+        native = openmm.NonbondedForce()
+        system.addForce(native)
+        coulomb = openmm.CustomNonbondedForce("0")
+        coulomb.addGlobalParameter("pot-COULOMB_SLATER", 1)
+        system.addForce(coulomb)
+        sim = SimpleNamespace(system=system, verbose=False, qdist="POINT", vdw="LJ12_6",
+                              comb=CombinationRules("POINT", "LJ12_6"), nexcl=0)
+        sim.add_customnb = lambda force: ActOpenMMSim.add_customnb(sim, force)
+        sim.add_force_group = lambda *args: None
+        with self.assertRaisesRegex(NotImplementedError, "Slater screening is not implemented"):
+            ActOpenMMSim.init_forces(sim)
+        self.assertEqual("SLATER", sim.qdist)
+        self.assertTrue(native.getIncludeDirectSpace())
+
 
 if __name__ == "__main__":
     unittest.main()

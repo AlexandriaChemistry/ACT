@@ -114,7 +114,13 @@ eMinimizeStatus minimizeMolecule(MsgHandler                    *msghandler,
     MolHandler molhandler;
     auto eMin = molhandler.minimizeCoordinates(msghandler, pd, actmol->topology(), forceComp, sch,
                                                xmin, &energies, freeze);
-    if (eMinimizeStatus::OK == eMin)
+    if (minimizationDidNotConverge(eMin))
+    {
+        msghandler->msg(ACTStatus::Warning,
+                        gmx::formatString("Minimization did not converge: %s. The results are those of the structure with the lowest energy.",
+                                          eMinimizeStatusToString(eMin).c_str()));
+    }
+    if (eMinimizeStatus::OK == eMin || minimizationDidNotConverge(eMin))
     {
         auto rmsd = molhandler.coordinateRmsd(actmol->atomsConst(), coords, xmin);
         msghandler->msg(ACTStatus::Info,
@@ -183,7 +189,7 @@ int minimize(int argc, char *argv[])
         { efXML, "-omp",     "molprop",    ffOPTWR }
     };
     gmx_output_env_t         *oenv;
-    double                    shellToler = 1e-6;
+    real                      shellToler = 1e-6;
     bool                      json       = false;
     std::vector<t_pargs>      pa = {
         { "-shelltoler", FALSE, etREAL, {&shellToler},
@@ -236,11 +242,8 @@ int minimize(int argc, char *argv[])
 
     ForceComputer forceComp;
     double epsilonr;
-    if (!ffOption(pd, InteractionType::ELECTROSTATICS, "epsilonr", &epsilonr))
-    {
-        epsilonr = 1;
-    }
-    forceComp.init(shellToler, sch.maxIter(), epsilonr);
+    epsilonr = pd.epsilonr();
+    forceComp.init(shellToler, sch.shellMaxIter(), epsilonr);
 
     std::vector<ACTMol> actmols;
     try
@@ -263,7 +266,7 @@ int minimize(int argc, char *argv[])
     // Check whether we need to add position restraints
     if (sch.kFBPR() > 0)
     {
-        actmol.topologyPtr()->addFBPR(&msghandler, sch.kFBPR(), sch.r0FBPR());
+        actmol.topologyPtr()->addFBPR(&msghandler, sch.kFBPR(), sch.r0FBPR(), actmol.xOriginal());
     }
     JsonTree jtree("minimize");
     if (msghandler.info())
@@ -282,7 +285,8 @@ int minimize(int argc, char *argv[])
                                  opt2fn_null("-freeze", fnm.size(), fnm.data()),
                                  &actmol, &xmin, &jtree);
     int status = 0;
-    if (eMinimizeStatus::OK == eMin)
+    // Also without convergence the structure with the lowest energy is written
+    if (eMinimizeStatus::OK == eMin || minimizationDidNotConverge(eMin))
     {
         matrix box = { { 2, 0, 0 }, { 0, 2, 0 }, { 0, 0, 2 } };
         actmol.PrintConformation(opt2fn("-c", fnm.size(), fnm.data()), xmin,
@@ -296,7 +300,14 @@ int minimize(int argc, char *argv[])
             MolPropWrite(omp, mpt, false);
         }
     }
-    else
+    if (minimizationDidNotConverge(eMin))
+    {
+        fprintf(stderr, "Minimization did not converge: %s, the structure with the lowest energy is written, check log file %s\n",
+                eMinimizeStatusToString(eMin).c_str(),
+                msghandler.filename().c_str());
+        status = 1;
+    }
+    else if (eMinimizeStatus::OK != eMin)
     {
         fprintf(stderr, "Minimization failed: %s, check log file %s\n",
                 eMinimizeStatusToString(eMin).c_str(),

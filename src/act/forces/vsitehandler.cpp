@@ -534,7 +534,9 @@ void VsiteHandler::constructPositions(const Topology         *top,
                               x[atomIndices[4]], params[vsite4sA], params[vsite4sB], params[vsite4sB]);
                 break;
             case InteractionType::VSITE4S3:
-                constr_vsite4(x[atomIndices[0]], x[atomIndices[1]], x[atomIndices[2]], x[atomIndices[3]], 
+                // The three symmetric atoms have the same weight, the
+                // rest is on the central atom, which comes first
+                constr_vsite4(x[atomIndices[1]], x[atomIndices[0]], x[atomIndices[2]], x[atomIndices[3]], 
                               x[atomIndices[4]], params[vsite4s3A], params[vsite4s3A], params[vsite4s3A]);
                 break;
             default: // throws
@@ -614,7 +616,8 @@ void VsiteHandler::distributeForces(const Topology               *top,
                               params[vsite4sA], params[vsite4sB], params[vsite4sB]);
                 break;
             case InteractionType::VSITE4S3:
-                spread_vsite4(f[atomIndices[0]], f[atomIndices[1]], f[atomIndices[2]], f[atomIndices[3]], f[atomIndices[4]],
+                // The same weights as in constructing
+                spread_vsite4(f[atomIndices[1]], f[atomIndices[0]], f[atomIndices[2]], f[atomIndices[3]], f[atomIndices[4]],
                               params[vsite4s3A], params[vsite4s3A], params[vsite4s3A]);
                 break;
             default: // Constructing throws, so that is sufficient
@@ -808,8 +811,10 @@ void VsiteHandler::constructPositions(const Topology *top,
                                                params[vsite4sA], params[vsite4sB], params[vsite4sB]); });
                 break;
             case InteractionType::VSITE4S3:
+                // The three symmetric atoms have the same weight, the
+                // rest is on the central atom, which comes first
                 constructSlots<5>(ai, x, stride, nslot, [&params](rvec *xl)
-                               { constr_vsite4(xl[0], xl[1], xl[2], xl[3], xl[4],
+                               { constr_vsite4(xl[1], xl[0], xl[2], xl[3], xl[4],
                                                params[vsite4s3A], params[vsite4s3A], params[vsite4s3A]); });
                 break;
             default: // throws
@@ -896,8 +901,9 @@ void VsiteHandler::distributeForces(const Topology *top,
                                             params[vsite4sA], params[vsite4sB], params[vsite4sB]); });
                 break;
             case InteractionType::VSITE4S3:
+                // The same weights as in constructing
                 spreadSlots<5>(ai, x, f, stride, nslot, [&](rvec *, rvec *fl)
-                            { spread_vsite4(fl[0], fl[1], fl[2], fl[3], fl[4],
+                            { spread_vsite4(fl[1], fl[0], fl[2], fl[3], fl[4],
                                             params[vsite4s3A], params[vsite4s3A], params[vsite4s3A]); });
                 break;
             default: // Constructing throws, so that is sufficient

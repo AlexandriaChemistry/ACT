@@ -124,7 +124,7 @@ void DimerGenerator::addOptions(std::vector<t_pargs>      *pa,
         pa->push_back(pp);
     }
     std::vector<t_filenm>  myfnm = {
-        { efSTX, "-ox",   "dimers",  ffOPTWR },
+        { efXYZ, "-ox",   "dimers",  ffOPTWR },
         { efTRX, "-traj", "dimers",  ffOPTRD }
     };
     for(auto &ff : myfnm)
@@ -180,10 +180,7 @@ static void dump_coords(const char                                *outcoords,
                         const ACTMol                              *actmol,
                         const std::vector<std::vector<gmx::RVec>> &coords)
 {
-    std::string outxyz(outcoords);
-    auto pos = outxyz.rfind(".");
-    outxyz = outxyz.substr(0, pos) + ".xyz";
-    FILE *fp = gmx_ffopen(outxyz.c_str(), "w");
+    FILE *fp = gmx_ffopen(outcoords, "w");
     auto atoms = actmol->atomsConst();
     for(size_t ix = 0; ix < coords.size(); ix++)
     {

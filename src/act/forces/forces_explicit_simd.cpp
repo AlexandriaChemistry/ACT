@@ -246,24 +246,42 @@ static SimdDouble ttDispersion(double bDisp, const double *ctt, SimdDouble r, Si
     SimdDouble edisp  = 0.0;
     SimdDouble fdisp  = 0.0;
     // The damping function for C_2m is f_2m = 1 - exp(-br) sum_k=0^2m (br)^k/k!
-    // The sum is accumulated in fk, with term holding (br)^k/k!
-    SimdDouble fk     = 1.0;
-    SimdDouble term   = 1.0;
-    int        k      = 0;
+    // The sum is accumulated in fk, with terms[k] holding (br)^k/k!
+    SimdDouble terms[ttTerms+1];
+    terms[0] = 1.0;
+    for (int k = 0; k < ttTerms; k++)
+    {
+        terms[k+1] = terms[k]*bDispr*(1.0/(k+1));
+    }
+    // For small br, as in TT_Dispersion in forces_simd.cpp
+    SimdDouble tail = ttTailCoefficients.back();
+    for (int j = ttTailTerms-ttTerms-2; j >= 0; j--)
+    {
+        tail = simd::fma(tail, bDispr, SimdDouble(ttTailCoefficients[j]));
+    }
+    tail = tail*terms[ttTerms]*bDispr*(1.0/(ttTerms+1));
+    auto       useTail = bDispr < ttTailMax;
+    SimdDouble fk      = 1.0;
+    int        k       = 0;
     for (int m = 3; m <= 5; m++)
     {
         int nn = 2*m;
         for (; k < nn; k++)
         {
-            term *= bDispr*(1.0/(k+1));
-            fk   += term;
+            fk += terms[k+1];
         }
-        SimdDouble ed = -(1.0 - ebr*fk)*ctt[m-3]*rinvn;
+        SimdDouble tk = tail;
+        for (int j = ttTerms; j > nn; j--)
+        {
+            tk += terms[j];
+        }
+        SimdDouble damp = simd::select(useTail, ebr*tk, 1.0 - ebr*fk);
+        SimdDouble ed   = -damp*ctt[m-3]*rinvn;
         edisp += ed;
         fdisp += ed*static_cast<double>(nn)*rinv;
         // The derivative of the sum is b times the sum up to 2m-1,
         // the terms up to 2m-1 cancel against the derivative of exp(-br).
-        fdisp += ctt[m-3]*rinvn*bDisp*ebr*term;
+        fdisp += ctt[m-3]*rinvn*bDisp*ebr*terms[nn];
         rinvn *= rinv2;
     }
     *fscal += fdisp*rinv;
@@ -469,6 +487,27 @@ struct SlaterISATT
 //! Coulomb between point or Gaussian charges
 struct Coulomb
 {
+    /*! \brief Scalar force divided by r of two Gaussian charges, without charges
+     * This is (erf(x)/r - 2 zeta exp(-x^2)/sqrt(pi))/r^2 with x = zeta r, in
+     * which the terms are nearly equal for small x. Below x^2 = 0.005 the
+     * series zeta^3 (2/sqrt(pi)) (2/3 - 2x^2/5 + x^4/7 - x^6/27 + x^8/132)
+     * is used, where it is more accurate than the difference.
+     * \param[in] zeta   Width of the combined distribution
+     * \param[in] rinv   Inverse distance
+     * \param[in] rz     zeta times the distance
+     * \param[in] erfrz  The error function of rz
+     * \param[in] exprz2 The exponential of minus rz squared
+     * \return the scalar force divided by r
+     */
+    static SimdDouble gaussianForceOverR(double zeta, SimdDouble rinv, SimdDouble rz,
+                                         SimdDouble erfrz, SimdDouble exprz2)
+    {
+        SimdDouble x2     = rz*rz;
+        SimdDouble series = zeta*zeta*zeta*2*invsqrt_pi*
+            (2.0/3.0 + x2*(-2.0/5.0 + x2*(1.0/7.0 + x2*(-1.0/27.0 + x2*(1.0/132.0)))));
+        return simd::select(x2 < 0.005, series,
+                            (erfrz*rinv - 2*invsqrt_pi*zeta*exprz2)*rinv*rinv);
+    }
     /*! \copydoc LJ12_6::prepare
      * Each particle may have a second charge at the same position with its
      * own width, see ActAtom::chargeVS, such that there are up to four terms,
@@ -477,14 +516,13 @@ struct Coulomb
      */
     static bool prepare(const TopologyEntry &b, const std::vector<ActAtom> &atoms, double epsilonr, double *p)
     {
-        auto &params   = b.params();
         auto &gindices = b.atomIndices();
         const auto &atomi = atoms[gindices[0]];
         const auto &atomj = atoms[gindices[1]];
         const double qi[2] = { atomi.charge(), atomi.chargeVS() };
         const double qj[2] = { atomj.charge(), atomj.chargeVS() };
-        const double zi[2] = { params[coulZETA], atomi.zetaVS() };
-        const double zj[2] = { params[coulZETA2], atomj.zetaVS() };
+        const double zi[2] = { atomi.zeta(), atomi.zetaVS() };
+        const double zj[2] = { atomj.zeta(), atomj.zetaVS() };
         for(int a = 0; a < 2; a++)
         {
             for(int c = 0; c < 2; c++)
@@ -554,7 +592,7 @@ struct Coulomb
             SimdDouble erfrz = simd::erfAndExp(rz, &exprz2);
             e[0]  += simd::select(overlap, qq*2*zeta*invsqrt_pi, qq*erfrz*rinv);
             *fscal = simd::select(overlap, 0.0,
-                                  qq*(erfrz*rinv - 2*invsqrt_pi*zeta*exprz2)*rinv*rinv);
+                                  qq*gaussianForceOverR(zeta, rinv, rz, erfrz, exprz2));
             return;
         }
         for(int k = 0; k < 4; k++)
@@ -579,7 +617,7 @@ struct Coulomb
                 SimdDouble erfrz = simd::erfAndExp(rz, &exprz2);
                 ek = simd::select(overlap, qq*2*zeta*invsqrt_pi, qq*erfrz*rinv);
                 fk = simd::select(overlap, 0.0,
-                                  qq*(erfrz*rinv - 2*invsqrt_pi*zeta*exprz2)*rinv*rinv);
+                                  qq*gaussianForceOverR(zeta, rinv, rz, erfrz, exprz2));
             }
             e[0]  += ek;
             *fscal = (k == 0) ? fk : *fscal + fk;
@@ -1361,10 +1399,9 @@ bool coulombKernelsExplicitSimd(TopologyEntryRange          entries,
     for (const auto &b : entries)
     {
         const TopologyEntry &entry  = *b.operator->();
-        const auto          &params = entry.params();
         const auto          &ind    = entry.atomIndices();
-        const double zi[2] = { params[coulZETA], atoms[ind[0]].zetaVS() };
-        const double zj[2] = { params[coulZETA2], atoms[ind[1]].zetaVS() };
+        const double zi[2] = { atoms[ind[0]].zeta(), atoms[ind[0]].zetaVS() };
+        const double zj[2] = { atoms[ind[1]].zeta(), atoms[ind[1]].zetaVS() };
         // The widths of the terms in the order of Coulomb::prepare
         double zeta[4];
         for(int a = 0; a < 2; a++)

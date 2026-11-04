@@ -51,3 +51,13 @@ gmx_add_unit_test(
     vsite1ConversionTest.cpp
     )
 target_link_libraries(${exename} actLib ${GMX_EXE_LINKER_FLAGS})
+
+gmx_add_mpi_unit_test(
+    ForceFieldMpiTests
+    forcefield-mpi-test 2
+    # files with code for tests
+    forcefieldMpiTest.cpp
+    )
+if (TARGET forcefield-mpi-test)
+    target_link_libraries(forcefield-mpi-test actLib ${GMX_EXE_LINKER_FLAGS})
+endif()

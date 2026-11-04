@@ -45,11 +45,7 @@ ACTHelper::ACTHelper(MsgHandler                *msghandler,
                      LossFunction               lossFunction)
 {
     double epsilonr;
-    if (!ffOption(*sii->forcefield(), InteractionType::ELECTROSTATICS,
-                  "epsilonr", &epsilonr))
-    {
-        epsilonr = 1;
-    }
+    epsilonr = sii->forcefield()->epsilonr();
     forceComp_.init(shellToler, shellMaxIter, epsilonr);
     fitComp_.init(msghandler, sii, mg, false, &forceComp_, algorithm, lossFunction);
 }

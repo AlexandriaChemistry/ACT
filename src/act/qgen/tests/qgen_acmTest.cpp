@@ -318,6 +318,65 @@ TEST_F (AcmTest, AcetateWaterACSpg)
     testAcm("ACS-pg", inputFormat::SDF, "acetate-water", {-1,0}, qcustom);
 }
 
+
+//! \return The charges of SQE for butanol, which must be supported if ok is true
+static std::vector<double> butanolSQE(ForceField *pd, bool ok)
+{
+    MsgHandler msghandler;
+    msghandler.setPrintLevel(ACTStatus::Warning);
+    std::vector<MolProp> molprops;
+    double qtot = 0;
+    importFile(&msghandler, pd, gmx::test::TestFileManager::getInputFilePath("1-butanol.pdb"),
+               &molprops, "minimum", JobType::OPT, false, &qtot, true);
+    EXPECT_TRUE(msghandler.ok());
+    ACTMol mol;
+    mol.Merge(&molprops[0]);
+    mol.GenerateTopology(&msghandler, pd, missingParameters::Ignore);
+    EXPECT_TRUE(msghandler.ok());
+    auto    atoms = mol.atomsConst();
+    auto    x     = mol.xOriginal();
+    QgenAcm qgen(&msghandler, pd, atoms, mol.bondsConst(), 0);
+    auto    eqgen = qgen.generateCharges(&msghandler, "1-butanol", pd, &atoms, x, mol.bondsConst());
+    EXPECT_EQ(ok ? eQgen::OK : eQgen::NOSUPPORT, eqgen) << qgen.status();
+    std::vector<double> q;
+    for (const auto &a : atoms)
+    {
+        q.push_back(a.charge());
+    }
+    return q;
+}
+
+/* Test: SQE for a compound with a bond that has no bond charge correction,
+ * which cannot be swapped, is not supported, rather than done with zero
+ * corrections for all bonds.
+ */
+TEST(AcmBondCorrectionTest, MissingBondCorrection)
+{
+    ForceField pd;
+    readForceField(gmx::test::TestFileManager::getInputFilePath("ACS-g.xml"), &pd);
+    ASSERT_EQ(ChargeGenerationAlgorithm::SQE, pd.chargeGenerationAlgorithm());
+    auto &bcc = pd.findForcesConst(InteractionType::BONDCORRECTIONS);
+    ASSERT_EQ(CanSwap::No, bcc.canSwap());
+    butanolSQE(&pd, true);
+    // Remove the corrections of the O-H bond in either order
+    auto   *params  = pd.findForces(InteractionType::BONDCORRECTIONS)->parameters();
+    size_t  nerased = 0;
+    for (auto it = params->begin(); it != params->end(); )
+    {
+        auto atoms = it->first.atoms();
+        if ((atoms[0] == "h_z" && atoms[1] == "o3_z") || (atoms[0] == "o3_z" && atoms[1] == "h_z"))
+        {
+            it = params->erase(it);
+            nerased++;
+        }
+        else
+        {
+            ++it;
+        }
+    }
+    ASSERT_GT(nerased, 0u);
+    butanolSQE(&pd, false);
+}
 }
 
 }

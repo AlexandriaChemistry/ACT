@@ -70,7 +70,13 @@ class OpenMMXmlTest : public gmx::test::CommandLineTestBase
                     double             mDrude = 0.1)
     {
         gmx::test::TestReferenceChecker checker(this->rootChecker());
-        auto ifm = gmx::test::TextFileMatch(gmx::test::ExactTextMatch()).createFileMatcher();
+        // In single precision the charges, which are generated, differ in
+        // the last digits written, the numbers are compared within a
+        // tolerance then
+        auto ifm = GMX_DOUBLE ?
+            gmx::test::TextFileMatch(gmx::test::ExactTextMatch()).createFileMatcher() :
+            gmx::test::TextFileMatch(gmx::test::NumericTextMatch()).createFileMatcher();
+        checker.setDefaultTolerance(gmx::test::relativeToleranceAsFloatingPoint(1.0, 1e-5));
         gmx::test::TestFileManager tfm;
         MsgHandler                 msghandler; 
         msghandler.setPrintLevel(ACTStatus::Warning);
@@ -178,6 +184,83 @@ TEST(OpenMMXmlNoNumberTest, MethanolWaterPol)
 TEST_F(OpenMMXmlTest, WaterHyperPol)
 {
     testOpenMM("water_hyperpol", "water_dimer.pdb", true);
+}
+
+// Test: Lennard-Jones and point charges, the NonbondedForce of OpenMM only
+TEST_F(OpenMMXmlTest, WaterSPCE)
+{
+    testOpenMM("../../properties/tests/SPCE", "water_dimer.pdb", true);
+}
+
+// Test: The lone pairs of TIP5P, VSITE3OUT
+TEST_F(OpenMMXmlTest, WaterTIP5P)
+{
+    testOpenMM("../../properties/tests/TIP5P", "water_dimer.pdb", true);
+}
+
+// Test: The Buckingham potential and VSITE3S of BK3
+TEST_F(OpenMMXmlTest, WaterBK3)
+{
+    testOpenMM("../../properties/tests/BK3", "water_dimer.pdb", true);
+}
+
+// Test: The generalized Buckingham potential
+TEST_F(OpenMMXmlTest, AcetoneGBHam)
+{
+    testOpenMM("ACS-pg-gbham", "acetone.sdf", true);
+}
+
+// Test: The buffered 14-7 potential
+TEST_F(OpenMMXmlTest, HydrogenFluorideLJ147)
+{
+    testOpenMM("../../properties/tests/HF-LJ14-7", "../../../properties/tests/hydrogen-fluoride#hydrogen-fluoride.pdb", true);
+}
+
+// Test: Urey-Bradley angles
+TEST_F(OpenMMXmlTest, AcetoneUreyBradley)
+{
+    testOpenMM("ACS-g-dih", "acetone.sdf", true);
+}
+
+// Test: The induction correction
+TEST_F(OpenMMXmlTest, WaterInductionCorrection)
+{
+    testOpenMM("ACS-pol", "water_dimer.pdb", true);
+}
+
+// Test: VSITE1 on the polarizable sodium
+TEST_F(OpenMMXmlTest, SodiumWaterVsite1)
+{
+    testOpenMM("PG-pol-ions", "sodium#water.pdb", true);
+}
+
+// Test: Hua bonds
+TEST_F(OpenMMXmlTest, AcetateHua)
+{
+    testOpenMM("../../constraints/tests/PC+GV-elec", "acetate.sdf", true);
+}
+
+// Test: VSITE3 on water
+TEST_F(OpenMMXmlTest, WaterVsite3)
+{
+    testOpenMM("../../forces/tests/ACS-pg-vs3", "water_dimer.pdb", true);
+}
+
+// Test: OpenMM has no four particle virtual sites, hence the amine of
+// methylamine cannot be written
+TEST(OpenMMXmlVsite4Test, Methylamine)
+{
+    MsgHandler msghandler;
+    msghandler.setPrintLevel(ACTStatus::Fatal);
+    auto          ff = getForceField("../../forces/tests/ACS-pg-vs3");
+    ForceComputer fcomp(1e-7, 25, 1.0);
+    std::vector<ACTMol> mps;
+    auto dataName = gmx::test::TestFileManager::getInputFilePath("../../forces/tests/methylamine.sdf");
+    initACTMol(&msghandler, dataName, ff, &fcomp, &mps);
+    ASSERT_TRUE(msghandler.ok());
+    gmx::test::TestFileManager tfm;
+    writeOpenMM(&msghandler, tfm.getTemporaryFilePath("xml"), ff, mps, 0.1, 1, true);
+    EXPECT_FALSE(msghandler.ok());
 }
 
 //! \return the residue names for methanol and water, with userNames

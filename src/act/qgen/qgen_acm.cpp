@@ -63,8 +63,9 @@ QgenAcm::QgenAcm(MsgHandler                 *msghandler,
     {
         return;
     }
-    const auto &qt = pd->findForcesConst(InteractionType::ELECTROSTATICS);
-    ChargeDistributionType_ = potentialToChargeDistributionType(qt.potential());
+    ChargeDistributionType_ = pd->chargeDistribution();
+    // The width of the charge distribution of particle types without it
+    static const ForceFieldParameter pointCharge("1/nm", 0, 0, 0, 0, 0, Mutability::Fixed, true, true);
     bHaveShell_ = pd->polarizable();
     eQGEN_      = eQgen::OK;
     natom_      = atoms.size();
@@ -117,10 +118,9 @@ QgenAcm::QgenAcm(MsgHandler                 *msghandler,
             chi0_.push_back(0.0);
             row_.push_back(0);
         }
-        if (qt.potential() != Potential::COULOMB_POINT)
+        if (ChargeDistributionType_ != ChargeDistributionType::Point)
         {
-            auto qtype = atype->interactionTypeToIdentifier(InteractionType::ELECTROSTATICS);
-            const auto *qdist = &(qt.findParametersPtrConst(qtype)->find("zeta")->second);
+            const auto *qdist = atype->hasParameter(zetaName) ? &atype->parameterConst(zetaName) : &pointCharge;
             zeta_.push_back(qdist->value());
             qdist_id_.push_back(qdist);
         }
@@ -160,7 +160,7 @@ QgenAcm::QgenAcm(MsgHandler                 *msghandler,
         chi0_.push_back(0.0);
         row_.push_back(0);
         acm_id_.push_back(nullptr);
-        if (qt.potential() != Potential::COULOMB_POINT)
+        if (ChargeDistributionType_ != ChargeDistributionType::Point)
         {
             const auto *qdist = &atype->parameterConst(zetaVSName);
             zeta_.push_back(qdist->value());
@@ -214,11 +214,14 @@ QgenAcm::QgenAcm(MsgHandler                 *msghandler,
                         dcf = -1;
                     }
                 }
-                if (fs.parameterExists(bccId))
+                if (!fs.parameterExists(bccId))
                 {
-                    bcc_.push_back(fs.findParametersPtrConst(bccId));
-                    dchi_factor_.push_back(dcf);
+                    // Without it, all bonds would be done without corrections
+                    eQGEN_ = eQgen::NOSUPPORT;
+                    return;
                 }
+                bcc_.push_back(fs.findParametersPtrConst(bccId));
+                dchi_factor_.push_back(dcf);
             }
         }
     }
@@ -258,34 +261,6 @@ void QgenAcm::updateParameters()
         //! \todo if fixed charges are in the atoms struct we do not need to look them up
         q_[fixed_[i]] = charge_[i]->value();
     }
-}
-
-double QgenAcm::getQ(size_t atom)
-{
-    if (atom < natom_)
-    {
-        return q_[atom];
-    }
-    return 0;
-}
-
-int QgenAcm::getRow(size_t atom)
-{
-    if (atom < natom_)
-    {
-        return row_[atom];
-    }
-    return 0;
-
-}
-
-double QgenAcm::getZeta(size_t atom)
-{
-    if (atom < natom_)
-    {
-        return zeta_[atom];
-    }
-    return 0;
 }
 
 //! \return Coulomb for a point charge without units

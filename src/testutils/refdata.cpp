@@ -928,6 +928,14 @@ void TestReferenceChecker::checkTextBlock(const std::string &value,
 }
 
 
+void TestReferenceChecker::checkTextBlockWithNumbers(const std::string &value,
+                                                     const char        *id)
+{
+    EXPECT_PLAIN(impl_->processItem(Impl::cStringNodeName, id,
+                                    NumericStringBlockChecker(value, impl_->defaultTolerance_)));
+}
+
+
 void TestReferenceChecker::checkUChar(unsigned char value, const char *id)
 {
     EXPECT_PLAIN(impl_->processItem(Impl::cUCharNodeName, id,

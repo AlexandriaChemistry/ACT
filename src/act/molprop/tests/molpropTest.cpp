@@ -37,6 +37,7 @@
 
 #include <math.h>
 
+#include <algorithm>
 #include <cstdlib>
 
 #include <gtest/gtest.h>
@@ -44,6 +45,7 @@
 #include "gromacs/utility/snprintf.h"
 #include "act/basics/msg_handler.h"
 #include "act/molprop/molprop.h"
+#include "act/molprop/molprop_util.h"
 #include "act/molprop/molpropobservable.h"
 #include "act/molprop/molprop_xml.h"
 #include "act/molprop/multipole_names.h"
@@ -108,6 +110,11 @@ protected:
     {
         int mol = 1;
         gmx::test::TestReferenceChecker myCheck(this->rootChecker());
+        if (!GMX_DOUBLE)
+        {
+            // The polarizability tensors are stored as real
+            myCheck.setDefaultTolerance(gmx::test::relativeToleranceAsFloatingPoint(1.0, 1e-7));
+        }
         std::map<const char *,std::pair<int, int> > t_elem = {
             { "XX", { XX, XX } },
             { "YY", { YY, YY } },
@@ -232,6 +239,36 @@ TEST_F (MolpropTest, Calculations){
 
 TEST_F (MolpropTest, Validate){
     testValidate();
+}
+
+/* Test: The entries of the same compound in several files are merged into
+ * one, with the experiments of both, and the compounds are sorted by name.
+ */
+TEST(MergeXmlTest, DoubleEntries)
+{
+    gmx::test::TestFileManager fileManager;
+    auto fileName = fileManager.getInputFilePath("molprop.xml");
+    MsgHandler msghandler;
+    msghandler.setPrintLevel(ACTStatus::Warning);
+    std::vector<MolProp> once;
+    MolPropRead(&msghandler, fileName.c_str(), &once);
+    ASSERT_EQ(3u, once.size());
+    std::vector<std::string> fileNames(3, fileName);
+    std::vector<MolProp>     merged;
+    merge_xml(&msghandler, fileNames, &merged);
+    ASSERT_EQ(once.size(), merged.size());
+    for (size_t i = 0; i + 1 < merged.size(); i++)
+    {
+        EXPECT_LT(merged[i].getMolname(), merged[i+1].getMolname());
+    }
+    for (const auto &mp : merged)
+    {
+        auto orig = std::find_if(once.begin(), once.end(),
+                                 [&mp](const MolProp &o) { return o.getMolname() == mp.getMolname(); });
+        ASSERT_TRUE(orig != once.end()) << mp.getMolname();
+        EXPECT_EQ(3*orig->experimentConst().size(), mp.experimentConst().size()) << mp.getMolname();
+        EXPECT_EQ(orig->formula(), mp.formula()) << mp.getMolname();
+    }
 }
 
 }

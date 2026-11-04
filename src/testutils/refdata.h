@@ -363,6 +363,15 @@ class TestReferenceChecker
          * is easier to edit by hand to set the desired output formatting.
          */
         void checkTextBlock(const std::string &value, const char *id);
+        /*! \brief
+         * Check a multi-line string value with numbers in it.
+         *
+         * As checkTextBlock(), but the tokens of the text that are decimal
+         * numbers, with a decimal point or an exponent, are compared with
+         * the default tolerance, see setDefaultTolerance(). The text is
+         * split into tokens at white space and the punctuation of XML.
+         */
+        void checkTextBlockWithNumbers(const std::string &value, const char *id);
         //! Check a single unsigned char value.
         void checkUChar(unsigned char value, const char *id);
         //! Check a single integer value.

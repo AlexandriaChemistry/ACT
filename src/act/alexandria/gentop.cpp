@@ -79,7 +79,6 @@ int gentop(int argc, char *argv[])
         "IUPAC names of the compounds."
     };
     gmx_output_env_t *oenv;
-    gmx_atomprop_t    aps;
 
     std::vector<t_filenm> fnm = {
         { efXML, "-ff",         "aff",       ffREAD  },
@@ -176,12 +175,6 @@ int gentop(int argc, char *argv[])
         return 1;
     }
 
-    /* Read standard atom properties */
-    aps = gmx_atomprop_init();
-    if (!msghandler.verbose())
-    {
-        gmx_atomprop_quiet(aps);
-    }
     try
     {
         readForceField(gentop_fnm, &pd, &msghandler);
@@ -191,13 +184,12 @@ int gentop(int argc, char *argv[])
     // GROMACS and OpenMM do not support second charges, use virtual sites instead
     pd.expandSecondCharges(&msghandler);
 
-    auto &fs = pd.findForcesConst(InteractionType::ELECTROSTATICS);
     std::string my_pol;
     if (pd.polarizable())
     {
         my_pol.assign(" polarizable");
     }
-    auto qType = potentialToChargeDistributionType(fs.potential());
+    auto qType = pd.chargeDistribution();
     printf("Using%s force field file %s and charge distribution model %s\n",
            my_pol.c_str(), gentop_fnm, chargeDistributionTypeName(qType).c_str());
     msghandler.write(gmx::formatString("Read force field information. There are %zu atomtypes.\n",
@@ -206,6 +198,12 @@ int gentop(int argc, char *argv[])
     auto forceComp = new ForceComputer();
     std::vector<ACTMol> actmols;
     compR.read(&msghandler, pd, forceComp, &actmols);
+    // Compounds without a topology are left out
+    if (actmols.empty())
+    {
+        msghandler.msg(ACTStatus::Error, "No compound with a topology, nothing to write.");
+        return 1;
+    }
     // Write information about force field
     msghandler.write("");
     for (const auto &ii : pd.info())

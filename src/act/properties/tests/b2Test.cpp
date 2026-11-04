@@ -370,7 +370,7 @@ static void testAddOrientation(bool inOrder)
             for(int kk = 0; kk < 2; kk++)
             {
                 force2[kk].push_back((1 + kk + orient)*std::pow(sr, 14));
-                torque[kk].push_back({ (1.0+kk)*sr, -0.5*sr*sr, orient*sr });
+                torque[kk].push_back({ static_cast<real>((1.0+kk)*sr), static_cast<real>(-0.5*sr*sr), static_cast<real>(orient*sr) });
             }
         }
         byOrientation.addOrientation(index, dist, energy, force2, torque, weight);
@@ -405,8 +405,8 @@ static void testAddOrientation(bool inOrder)
         // The exponential may be vectorized, which can change the last digit
         EXPECT_NEAR(rd.classical, ro.classical, 1e-12*std::abs(rd.classical));
         EXPECT_NEAR(rd.force, ro.force, 1e-12*std::abs(rd.force));
-        EXPECT_NEAR(rd.torque1, ro.torque1, 1e-12*std::abs(rd.torque1));
-        EXPECT_NEAR(rd.torque2, ro.torque2, 1e-12*std::abs(rd.torque2));
+        EXPECT_NEAR(rd.torque1, ro.torque1, gmx::test::precisionTolerance(1e-12, 1e-5)*std::abs(rd.torque1));
+        EXPECT_NEAR(rd.torque2, ro.torque2, gmx::test::precisionTolerance(1e-12, 1e-5)*std::abs(rd.torque2));
         EXPECT_NE(0, rd.torque1);
     }
 }
@@ -505,7 +505,7 @@ TEST(B2DataTest, ManyOrientations)
             for(int kk = 0; kk < 2; kk++)
             {
                 force2[kk].push_back((1 + kk + random())*std::pow(sr, 14));
-                torque[kk].push_back({ (1.0+kk)*sr*random(), -0.5*sr*sr, sr*random() });
+                torque[kk].push_back({ static_cast<real>((1.0+kk)*sr*random()), static_cast<real>(-0.5*sr*sr), static_cast<real>(sr*random()) });
             }
         }
         blocks.addOrientation(index, dist, energy, force2, torque, weight);
@@ -576,8 +576,8 @@ TEST(B2DataTest, ManyOrientations)
         // Independently computed, the compiler may contract operations differently
         EXPECT_NEAR(rd.classical, rb.classical, 1e-12*std::abs(rd.classical));
         EXPECT_NEAR(rd.force, rb.force, 1e-12*std::abs(rd.force));
-        EXPECT_NEAR(rd.torque1, rb.torque1, 1e-12*std::abs(rd.torque1));
-        EXPECT_NEAR(rd.torque2, rb.torque2, 1e-12*std::abs(rd.torque2));
+        EXPECT_NEAR(rd.torque1, rb.torque1, gmx::test::precisionTolerance(1e-12, 1e-5)*std::abs(rd.torque1));
+        EXPECT_NEAR(rd.torque2, rb.torque2, gmx::test::precisionTolerance(1e-12, 1e-5)*std::abs(rd.torque2));
     }
 }
 
@@ -619,7 +619,7 @@ TEST(B2DataTest, ExplicitSimdSameAsScalar)
             for(int kk = 0; kk < 2; kk++)
             {
                 force2[kk].push_back((1 + kk + random())*std::pow(sr, 14));
-                torque[kk].push_back({ (1.0+kk)*sr*random(), -0.5*sr*sr, sr*random() });
+                torque[kk].push_back({ static_cast<real>((1.0+kk)*sr*random()), static_cast<real>(-0.5*sr*sr), static_cast<real>(sr*random()) });
             }
         }
         // Overlapping atoms with an infinite force add no force term

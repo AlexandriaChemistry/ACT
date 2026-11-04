@@ -95,9 +95,9 @@ static_assert(MAX_ENER == explicitSimdEnergyTerms);
  * \param[in]    indices The atom indices
  * \param[inout] forces  The forces to be updated
  */
-template <typename I, typename F>
+template <typename I, typename F, typename D>
 static ACT_ALWAYS_INLINE void pairforces(double           fscalar,
-                              const gmx::RVec &dx,
+                              const D         &dx,
                               const I         &indices,
                               F               *forces)
 {
@@ -129,17 +129,21 @@ static ACT_ALWAYS_INLINE void fbposreOne(gmx_unused MsgHandler *msghandler,
     auto R0      = params[fbprR0];
     // Get the atom indices
     auto ai      = idx[0];
-    auto dr2     = iprod(x[ai], x[ai]);
+    // The distance from the center of the restraints
+    rvec dx      = { static_cast<real>(x[ai][XX] - params[fbprX0]),
+                     static_cast<real>(x[ai][YY] - params[fbprY0]),
+                     static_cast<real>(x[ai][ZZ] - params[fbprZ0]) };
+    auto dr2     = iprod(dx, dx);
     if (dr2 > R0*R0)
     {
         auto r1   = std::sqrt(dr2);
         auto dr   = r1-R0;
         e[0]     += 0.5*K*dr*dr;
-        // F = -dV/dr x/r
+        // F = -dV/dr dx/r
         auto fpr  = -K*dr/r1;
         for (int m = 0; m < DIM; m++)
         {
-            (*forces)[ai][m] += fpr*x[ai][m];
+            (*forces)[ai][m] += fpr*dx[m];
         }
 #ifdef DEBUG
         if (msghandler && msghandler->debug())
@@ -627,9 +631,26 @@ static ACT_ALWAYS_INLINE double TT_Dispersion(gmx_unused MsgHandler *msghandler,
     real fdisp   = 0;
     real rinvn   = rinv2*rinv2*rinv2;
     // The damping function for C_2m is f_2m = 1 - exp(-br) sum_k=0^2m (br)^k/k!
-    // The sum is accumulated in fk, with term holding (br)^k/k!
+    // The sum is accumulated in fk, with terms[k] holding (br)^k/k!
+    real terms[ttTerms+1];
+    terms[0] = 1;
+#pragma unroll
+    for (int k = 0; k < ttTerms; k++)
+    {
+        terms[k+1] = terms[k]*bDispr/(k+1);
+    }
+    // For small br, 1 - exp(-br) sum_k=0^2m is the difference of nearly
+    // equal numbers. There f_2m = exp(-br) sum_k>2m (br)^k/k! is used,
+    // with the terms beyond ttTerms summed by Horner's rule in tail.
+    real tail = ttTailCoefficients.back();
+#pragma unroll
+    for (int j = ttTailTerms-ttTerms-2; j >= 0; j--)
+    {
+        tail = tail*bDispr + ttTailCoefficients[j];
+    }
+    tail *= terms[ttTerms]*bDispr/(ttTerms+1);
+    bool useTail = bDispr < ttTailMax;
     real fk      = 1;
-    real term    = 1;
     int  k       = 0;
 #pragma unroll
     for (int m = 3; m <= 5; m++)
@@ -638,15 +659,21 @@ static ACT_ALWAYS_INLINE double TT_Dispersion(gmx_unused MsgHandler *msghandler,
 #pragma unroll
         for (; k < nn; k++)
         {
-            term *= bDispr/(k+1);
-            fk   += term;
+            fk += terms[k+1];
         }
-        real ed = -(1-ebrDisp*fk)*ctt[m-3]*rinvn;
+        real tk = tail;
+#pragma unroll
+        for (int j = ttTerms; j > nn; j--)
+        {
+            tk += terms[j];
+        }
+        real damp = useTail ? ebrDisp*tk : 1-ebrDisp*fk;
+        real ed   = -damp*ctt[m-3]*rinvn;
         eedisp += ed;
         fdisp  += ed*nn*rinv1;
         // The derivative of the sum is b times the sum up to 2m-1,
         // the terms up to 2m-1 cancel against the derivative of exp(-br).
-        fdisp  += ctt[m-3]*rinvn*bDisp*ebrDisp*term;
+        fdisp  += ctt[m-3]*rinvn*bDisp*ebrDisp*terms[nn];
         rinvn  *= rinv2;
     }
 #ifdef DEBUG
@@ -783,6 +810,29 @@ static ACT_ALWAYS_INLINE real combinedZeta(real izeta, real jzeta)
     return izeta*jzeta*gmx::invsqrt(izeta*izeta + jzeta*jzeta);
 }
 
+/*! \brief Scalar force divided by r of two Gaussian charges, without charges
+ * This is (erf(x)/r - 2 zeta exp(-x^2)/sqrt(pi))/r^2 with x = zeta r, in
+ * which the terms are nearly equal for small x, such that the difference
+ * loses all digits in single precision. Below x^2 = smallX2 the series
+ * zeta^3 (2/sqrt(pi)) (2/3 - 2x^2/5 + x^4/7 - x^6/27 + x^8/132) is used,
+ * where it is more accurate than the difference.
+ * \param[in] zeta  Width of the combined distribution
+ * \param[in] rinv  Inverse distance
+ * \param[in] x     zeta times the distance
+ * \param[in] erfx  The error function of x
+ * \return the scalar force divided by r
+ */
+static ACT_ALWAYS_INLINE real gaussianForceOverR(real zeta, real rinv, real x, real erfx)
+{
+    constexpr real smallX2 = GMX_DOUBLE ? 0.005 : 0.16;
+    real x2 = x*x;
+    if (x2 < smallX2)
+    {
+        return zeta*zeta*zeta*2*invsqrt_pi*(2.0/3.0 + x2*(-2.0/5.0 + x2*(1.0/7.0 + x2*(-1.0/27.0 + x2/132.0))));
+    }
+    return (erfx*rinv - 2*invsqrt_pi*zeta*std::exp(-x2))*rinv*rinv;
+}
+
 /*! \brief Coulomb between Gaussian charges for one pair
  * Each particle may have a second charge at the same position with its
  * own width, see ActAtom::chargeVS, such that there are up to four terms.
@@ -802,17 +852,15 @@ static ACT_ALWAYS_INLINE void coulombGaussianOne(gmx_unused MsgHandler      *msg
     auto &gindices = b.atomIndices();
     auto ai       = indices[0];
     auto aj       = indices[1];
-    // Get the parameters.
-    auto &params= b.params();
     const auto &atomi = atoms[gindices[0]];
     const auto &atomj = atoms[gindices[1]];
     // The charges and widths of both particles. These depend only on the
-    // parameters, which allows the compiler to compute them once for all
+    // atoms, which allows the compiler to compute them once for all
     // conformations.
-    const real qi[2] = { atomi.charge(), atomi.chargeVS() };
-    const real qj[2] = { atomj.charge(), atomj.chargeVS() };
-    const real zi[2] = { params[coulZETA], atomi.zetaVS() };
-    const real zj[2] = { params[coulZETA2], atomj.zetaVS() };
+    const real qi[2] = { static_cast<real>(atomi.charge()), static_cast<real>(atomi.chargeVS()) };
+    const real qj[2] = { static_cast<real>(atomj.charge()), static_cast<real>(atomj.chargeVS()) };
+    const real zi[2] = { static_cast<real>(atomi.zeta()), static_cast<real>(atomi.zetaVS()) };
+    const real zj[2] = { static_cast<real>(atomj.zeta()), static_cast<real>(atomj.zetaVS()) };
     rvec dx;
     rvec_sub(x[ai], x[aj], dx);
     auto dr2        = iprod(dx, dx);
@@ -847,7 +895,7 @@ static ACT_ALWAYS_INLINE void coulombGaussianOne(gmx_unused MsgHandler      *msg
                 auto erfrz  = std::erf(rz);
                 e[0]       += qq*erfrz*rinv;
                 // The scalar force divided by r
-                felec      += qq*(erfrz*rinv - 2*invsqrt_pi*zeta*std::exp(-rz*rz))*rinv*rinv;
+                felec      += qq*gaussianForceOverR(zeta, rinv, rz, erfrz);
             }
             else
             {
@@ -912,14 +960,12 @@ static ACT_ALWAYS_INLINE void coulombSlaterOne(gmx_unused MsgHandler      *msgha
     auto &gindices = b.atomIndices();
     auto ai       = indices[0];
     auto aj       = indices[1];
-    // Get the parameters. We have to know their names to do this.
-    auto &params= b.params();
     const auto &atomi = atoms[gindices[0]];
     const auto &atomj = atoms[gindices[1]];
-    const real qi[2]   = { atomi.charge(), atomi.chargeVS() };
-    const real qj[2]   = { atomj.charge(), atomj.chargeVS() };
-    const real zi[2]   = { params[coulZETA], atomi.zetaVS() };
-    const real zj[2]   = { params[coulZETA2], atomj.zetaVS() };
+    const real qi[2]   = { static_cast<real>(atomi.charge()), static_cast<real>(atomi.chargeVS()) };
+    const real qj[2]   = { static_cast<real>(atomj.charge()), static_cast<real>(atomj.chargeVS()) };
+    const real zi[2]   = { static_cast<real>(atomi.zeta()), static_cast<real>(atomi.zetaVS()) };
+    const real zj[2]   = { static_cast<real>(atomj.zeta()), static_cast<real>(atomj.zetaVS()) };
     const int  rowi[2] = { atomi.row(), atomi.rowVS() };
     const int  rowj[2] = { atomj.row(), atomj.rowVS() };
     rvec dx;
@@ -950,6 +996,57 @@ static ACT_ALWAYS_INLINE void coulombSlaterOne(gmx_unused MsgHandler      *msgha
     }
 }
 
+/* The bonded potentials are computed in double precision, also when
+ * the coordinates and forces are stored in single precision. They
+ * depend on differences between nearly equal numbers, such as r - r0,
+ * which in single precision have an error of about GMX_FLOAT_EPS*r0,
+ * giving a force error of about k*GMX_FLOAT_EPS*r0 even at the minimum.
+ * The difference of two single precision coordinates is exact in double
+ * precision. The explicit SIMD kernels compute in double precision too.
+ */
+
+//! Distance vector xi - xj in double precision
+template <typename V>
+static ACT_ALWAYS_INLINE void distanceVector(const V &xi, const V &xj, dvec dx)
+{
+#pragma unroll
+    for (int m = 0; m < DIM; m++)
+    {
+        dx[m] = static_cast<double>(xi[m]) - static_cast<double>(xj[m]);
+    }
+}
+
+//! Add a vector in double precision to a force
+template <typename V>
+static ACT_ALWAYS_INLINE void forceInc(V &f, const dvec df)
+{
+#pragma unroll
+    for (int m = 0; m < DIM; m++)
+    {
+        f[m] += df[m];
+    }
+}
+
+//! Subtract a vector in double precision from a force
+template <typename V>
+static ACT_ALWAYS_INLINE void forceDec(V &f, const dvec df)
+{
+#pragma unroll
+    for (int m = 0; m < DIM; m++)
+    {
+        f[m] -= df[m];
+    }
+}
+
+//! The cosine of the angle between two vectors, as cos_angle
+static ACT_ALWAYS_INLINE double cosAngle(const dvec a, const dvec b)
+{
+    double ipab   = diprod(a, a)*diprod(b, b);
+    double cosval = ipab > 0 ? diprod(a, b)*gmx::invsqrt(ipab) : 1;
+
+    return std::max(-1.0, std::min(1.0, cosval));
+}
+
 /*! \brief Compute harmonic force and energy
  * \param[in]  k  The force constant
  * \param[in]  x0 The reference position/angle
@@ -957,12 +1054,12 @@ static ACT_ALWAYS_INLINE void coulombSlaterOne(gmx_unused MsgHandler      *msgha
  * \param[out] V  The energy
  * \param[out] F  The scalar force
  */
-static ACT_ALWAYS_INLINE void harmonic(real k, real x0, real x, real *V, real *F)
+static ACT_ALWAYS_INLINE void harmonic(double k, double x0, double x, double *V, double *F)
 {
-    const real half = 0.5;
+    const double half = 0.5;
 
-    real dx  = x-x0;
-    real dx2 = dx*dx;
+    double dx  = x-x0;
+    double dx2 = dx*dx;
 
     *F  = -k*dx;
     *V  = half*k*dx2;
@@ -983,13 +1080,13 @@ static ACT_ALWAYS_INLINE void bondOne(gmx_unused MsgHandler *msghandler,
     auto kb         = params[bondKB];
     auto D0         = params[bondENERGY];
 
-    rvec dx;
-    rvec_sub(x[indices[0]], x[indices[1]], dx);
-    auto dr2        = iprod(dx, dx);
+    dvec dx;
+    distanceVector(x[indices[0]], x[indices[1]], dx);
+    auto dr2        = diprod(dx, dx);
     auto r_1        = gmx::invsqrt(dr2);
     auto r1         = dr2*r_1;
 
-    real vB, fbond;
+    double vB, fbond;
     harmonic(kb, bondlength, r1, &vB, &fbond);
 
     fbond *= r_1;
@@ -1014,17 +1111,17 @@ static ACT_ALWAYS_INLINE void cubicOne(gmx_unused MsgHandler *msghandler,
     auto kb         = params[cubicKB];
     auto De         = params[cubicDE];
 
-    rvec dx;
-    rvec_sub(x[indices[0]], x[indices[1]], dx);
+    dvec dx;
+    distanceVector(x[indices[0]], x[indices[1]], dx);
     double rhi     = (2*rmax+bondlength)/3;
     double r_1, r1 = rhi;
     {
         // Do not allow the potential to go to -infinity
-        auto r2 = std::min(rhi*rhi, iprod(dx, dx));
+        auto r2 = std::min<double>(rhi*rhi, diprod(dx, dx));
         r_1     = gmx::invsqrt(r2);
         r1      = r2*r_1;
     }
-    real vB, fbond;
+    double vB, fbond;
     vB    = kb*gmx::square(r1-bondlength)*(rmax-r1) - De;
     fbond = r_1*kb*(bondlength+2*rmax-3*r1)*(bondlength-r1);
 
@@ -1048,9 +1145,9 @@ static ACT_ALWAYS_INLINE void morseOne(gmx_unused MsgHandler *msghandler,
     auto beta       = params[morseBETA];
     auto De         = params[morseDE];
     auto D0         = params[morseD0];
-    rvec dx;
-    rvec_sub(x[indices[0]], x[indices[1]], dx);
-    auto dr         = norm(dx);
+    dvec dx;
+    distanceVector(x[indices[0]], x[indices[1]], dx);
+    auto dr         = dnorm(dx);
     auto expterm    = std::exp(-beta*(dr-bondlength));
     auto expterm_1  = 1-expterm;
     //        auto vbond      = De*expterm*(expterm - 2) + D0;
@@ -1082,9 +1179,9 @@ static ACT_ALWAYS_INLINE void huaOne(gmx_unused MsgHandler *msghandler,
     auto hb      = params[huaB];
     auto De      = params[huaDE];
     auto c       = params[huaC];
-    rvec dx;
-    rvec_sub(x[indices[0]], x[indices[1]], dx);
-    auto dr2        = iprod(dx, dx);
+    dvec dx;
+    distanceVector(x[indices[0]], x[indices[1]], dx);
+    auto dr2        = diprod(dx, dx);
     auto dr         = std::sqrt(dr2);
     auto expterm    = std::exp(-hb*(dr-re));
     auto exp2       = (1-expterm)/(1-c*expterm);
@@ -1111,22 +1208,21 @@ static ACT_ALWAYS_INLINE void linearAngleOne(gmx_unused MsgHandler *msghandler,
     auto a      = params[linangA];
     auto klin   = params[linangKLIN];
 
-    rvec r_ij, r_kj, r_ik;
-    rvec_sub(x[indices[0]], x[indices[1]], r_ij);
-    rvec_sub(x[indices[2]], x[indices[1]], r_kj);
-    rvec_sub(r_ij, r_kj, r_ik);
+    dvec r_ij, r_kj;
+    distanceVector(x[indices[0]], x[indices[1]], r_ij);
+    distanceVector(x[indices[2]], x[indices[1]], r_kj);
 
-    real dr2 = 0;
-    real b   = 1-a;
+    double dr2 = 0;
+    double b   = 1-a;
 #pragma unroll
     for (int m = 0; (m < DIM); m++)
     {
         // Minus sign due to F = -dV/dr
-        real dr   = -a * r_ij[m] - b * r_kj[m];
-        dr2      += dr*dr;
-        real f_i  = a*klin*dr;
-        real f_k  = b*klin*dr;
-        real f_j  = -(f_i+f_k);
+        double dr   = -a * r_ij[m] - b * r_kj[m];
+        dr2        += dr*dr;
+        double f_i  = a*klin*dr;
+        double f_k  = b*klin*dr;
+        double f_j  = -(f_i+f_k);
         f[indices[0]][m] += f_i;
         f[indices[1]][m] += f_j;
         f[indices[2]][m] += f_k;
@@ -1138,19 +1234,20 @@ static ACT_ALWAYS_INLINE void linearAngleOne(gmx_unused MsgHandler *msghandler,
  * This is the same as bond_angle in forcecomputerutils, but can be
  * inlined here.
  */
-static ACT_ALWAYS_INLINE real bondAngle(const rvec xi,
-                             const rvec xj,
-                             const rvec xk,
-                             rvec       r_ij,
-                             rvec       r_kj,
-                             real      *costh)
+template <typename V>
+static ACT_ALWAYS_INLINE double bondAngle(const V &xi,
+                                          const V &xj,
+                                          const V &xk,
+                                          dvec     r_ij,
+                                          dvec     r_kj,
+                                          double  *costh)
 {
-    real th;
+    double th;
 
-    rvec_sub(xi, xj, r_ij);
-    rvec_sub(xk, xj, r_kj);
+    distanceVector(xi, xj, r_ij);
+    distanceVector(xk, xj, r_kj);
 
-    *costh = cos_angle(r_ij, r_kj);
+    *costh = cosAngle(r_ij, r_kj);
     th     = std::acos(*costh);
 
     return th;
@@ -1172,11 +1269,11 @@ static ACT_ALWAYS_INLINE void angleOne(gmx_unused MsgHandler *msghandler,
     auto theta0     = params[angleANGLE];
     auto ka         = params[angleKT];
 
-    rvec r_ij, r_kj;
+    dvec r_ij, r_kj;
     auto theta = bondAngle(x[indices[0]], x[indices[1]], x[indices[2]],
                            r_ij, r_kj, &costh);
 
-    real vA, fangle;
+    double vA, fangle;
     harmonic(ka, theta0, theta, &vA, &fangle);
 #ifdef DEBUG
     if (msghandler && msghandler->debug())
@@ -1189,16 +1286,16 @@ static ACT_ALWAYS_INLINE void angleOne(gmx_unused MsgHandler *msghandler,
     auto costh2 = gmx::square(costh);
     if (costh2 < 1)
     {
-        real st, sth;
-        real cik, cii, ckk;
-        real nrkj2, nrij2;
-        real nrkj_1, nrij_1;
+        double st, sth;
+        double cik, cii, ckk;
+        double nrkj2, nrij2;
+        double nrkj_1, nrij_1;
 
         st    = fangle*gmx::invsqrt(1 - costh2);
         sth   = st*costh;
 
-        nrij2 = iprod(r_ij, r_ij);
-        nrkj2 = iprod(r_kj, r_kj);
+        nrij2 = diprod(r_ij, r_ij);
+        nrkj2 = diprod(r_kj, r_kj);
 
         nrij_1 = gmx::invsqrt(nrij2);
         nrkj_1 = gmx::invsqrt(nrkj2);
@@ -1230,7 +1327,7 @@ static ACT_ALWAYS_INLINE void ureyBradleyOne(gmx_unused MsgHandler *msghandler,
 {
     double costh = 0;
     auto   &f    = *forces;
-    const  real half = 0.5;
+    const  double half = 0.5;
     // Get the parameters. We have to know their names to do this.
     auto &params    = a.params();
     auto theta0     = params[ubANGLE];
@@ -1242,7 +1339,7 @@ static ACT_ALWAYS_INLINE void ureyBradleyOne(gmx_unused MsgHandler *msghandler,
     auto aj = indices[1];
     auto ak = indices[2];
 
-    rvec r_ij, r_kj;
+    dvec r_ij, r_kj;
     auto theta = bondAngle(x[ai], x[aj], x[ak], r_ij, r_kj, &costh);
 
     // Compute deviation from the reference angle
@@ -1253,12 +1350,12 @@ static ACT_ALWAYS_INLINE void ureyBradleyOne(gmx_unused MsgHandler *msghandler,
     e[0]            += half*ka*da2;
 
     // Now UB part
-    rvec r_ik;
-    rvec_sub(x[ai], x[ak], r_ik);
-    auto rik2        = iprod(r_ik, r_ik);
+    dvec r_ik;
+    distanceVector(x[ai], x[ak], r_ik);
+    auto rik2        = diprod(r_ik, r_ik);
     auto norm_rik    = std::sqrt(rik2);
 
-    real vUB, fUB;
+    double vUB, fUB;
     harmonic(kUB, r13, norm_rik, &vUB, &fUB);
 
     e[0]   += vUB;
@@ -1267,16 +1364,16 @@ static ACT_ALWAYS_INLINE void ureyBradleyOne(gmx_unused MsgHandler *msghandler,
     auto costh2 = gmx::square(costh);
     if (costh2 < 1)
     {
-        real st, sth;
-        real cik, cii, ckk;
-        real nrkj2, nrij2;
-        real nrkj_1, nrij_1;
+        double st, sth;
+        double cik, cii, ckk;
+        double nrkj2, nrij2;
+        double nrkj_1, nrij_1;
 
         st    = fangle*gmx::invsqrt(1 - costh2);
         sth   = st*costh;
 
-        nrij2 = iprod(r_ij, r_ij);
-        nrkj2 = iprod(r_kj, r_kj);
+        nrij2 = diprod(r_ij, r_ij);
+        nrkj2 = diprod(r_kj, r_kj);
 
         nrij_1 = gmx::invsqrt(nrij2);
         nrkj_1 = gmx::invsqrt(nrkj2);
@@ -1287,9 +1384,9 @@ static ACT_ALWAYS_INLINE void ureyBradleyOne(gmx_unused MsgHandler *msghandler,
 #pragma unroll
         for (auto m = 0; m < DIM; m++)
         {
-            real f_i = -(cik*r_kj[m] - cii*r_ij[m]);
-            real f_k = -(cik*r_ij[m] - ckk*r_kj[m]);
-            real f_j = -f_i - f_k;
+            double f_i = -(cik*r_kj[m] - cii*r_ij[m]);
+            double f_k = -(cik*r_ij[m] - ckk*r_kj[m]);
+            double f_j = -f_i - f_k;
             f[ai][m] += f_i + fUB*r_ik[m];
             f[aj][m] += f_j;
             f[ak][m] += f_k - fUB*r_ik[m];
@@ -1307,7 +1404,7 @@ static ACT_ALWAYS_INLINE void polarizationOne(gmx_unused MsgHandler      *msghan
                                    double                     *e,
                                    const std::vector<ActAtom> &atoms)
 {
-    const real half = 0.5;
+    const double half = 0.5;
     // Get the parameters. We have to know their names to do this.
     auto &params   = b.params();
     // Get polarizability
@@ -1321,9 +1418,9 @@ static ACT_ALWAYS_INLINE void polarizationOne(gmx_unused MsgHandler      *msghan
     // Get shell charge
     auto q         = atoms[b.atomIndices()[1]].charge();
     double ksh     = ONE_4PI_EPS0*q*q/alpha;
-    rvec dx;
-    rvec_sub(x[indices[0]], x[indices[1]], dx);
-    auto dr2  = iprod(dx, dx);
+    dvec dx;
+    distanceVector(x[indices[0]], x[indices[1]], dx);
+    auto dr2  = diprod(dx, dx);
 
     if (dr2 == 0.0)
     {
@@ -1362,19 +1459,19 @@ static ACT_ALWAYS_INLINE void polarizationOne(gmx_unused MsgHandler      *msghan
 
 //! \brief Low-level routine to update forces from dihedrals
 template <typename F>
-static ACT_ALWAYS_INLINE void do_dih_fup_noshiftf(int i, int j, int k, int l, real ddphi,
-                                       rvec r_ij, rvec r_kj, rvec r_kl,
-                                       rvec m, rvec n,
+static ACT_ALWAYS_INLINE void do_dih_fup_noshiftf(int i, int j, int k, int l, double ddphi,
+                                       const dvec r_ij, const dvec r_kj, const dvec r_kl,
+                                       const dvec m, const dvec n,
                                        F *forces)
 {
-    rvec f_i, f_j, f_k, f_l;
-    rvec uvec, vvec, svec;
-    real iprm, iprn, nrkj, nrkj2, nrkj_1, nrkj_2;
-    real a, b, p, q, toler;
+    dvec   f_i, f_j, f_k, f_l;
+    dvec   uvec, vvec, svec;
+    double iprm, iprn, nrkj, nrkj2, nrkj_1, nrkj_2;
+    double a, b, p, q, toler;
 
-    iprm  = iprod(m, m);       /*  5    */
-    iprn  = iprod(n, n);       /*  5	*/
-    nrkj2 = iprod(r_kj, r_kj); /*  5	*/
+    iprm  = diprod(m, m);       /*  5    */
+    iprn  = diprod(n, n);       /*  5	*/
+    nrkj2 = diprod(r_kj, r_kj); /*  5	*/
     toler = nrkj2*GMX_REAL_EPS;
     if ((iprm > toler) && (iprn > toler))
     {
@@ -1382,38 +1479,39 @@ static ACT_ALWAYS_INLINE void do_dih_fup_noshiftf(int i, int j, int k, int l, re
         nrkj_2 = nrkj_1*nrkj_1;       /*  1	*/
         nrkj   = nrkj2*nrkj_1;        /*  1	*/
         a      = -ddphi*nrkj/iprm;    /* 11	*/
-        svmul(a, m, f_i);             /*  3	*/
+        dsvmul(a, m, f_i);            /*  3	*/
         b     = ddphi*nrkj/iprn;      /* 11	*/
-        svmul(b, n, f_l);             /*  3  */
-        p     = iprod(r_ij, r_kj);    /*  5	*/
+        dsvmul(b, n, f_l);            /*  3  */
+        p     = diprod(r_ij, r_kj);   /*  5	*/
         p    *= nrkj_2;               /*  1	*/
-        q     = iprod(r_kl, r_kj);    /*  5	*/
+        q     = diprod(r_kl, r_kj);   /*  5	*/
         q    *= nrkj_2;               /*  1	*/
-        svmul(p, f_i, uvec);          /*  3	*/
-        svmul(q, f_l, vvec);          /*  3	*/
-        rvec_sub(uvec, vvec, svec);   /*  3	*/
-        rvec_sub(f_i, svec, f_j);     /*  3	*/
-        rvec_add(f_l, svec, f_k);     /*  3	*/
-        rvec_inc((*forces)[i], f_i);          /*  3	*/
-        rvec_dec((*forces)[j], f_j);          /*  3	*/
-        rvec_dec((*forces)[k], f_k);          /*  3	*/
-        rvec_inc((*forces)[l], f_l);          /*  3	*/
+        dsvmul(p, f_i, uvec);         /*  3	*/
+        dsvmul(q, f_l, vvec);         /*  3	*/
+        dvec_sub(uvec, vvec, svec);   /*  3	*/
+        dvec_sub(f_i, svec, f_j);     /*  3	*/
+        dvec_add(f_l, svec, f_k);     /*  3	*/
+        forceInc((*forces)[i], f_i);  /*  3	*/
+        forceDec((*forces)[j], f_j);  /*  3	*/
+        forceDec((*forces)[k], f_k);  /*  3	*/
+        forceInc((*forces)[l], f_l);  /*  3	*/
     }
 }
 
 //! \brief Low-level code to compute dihedral angles
-static ACT_ALWAYS_INLINE real dih_angle(const rvec xi, const rvec xj, const rvec xk, const rvec xl,
-                             rvec r_ij, rvec r_kj, rvec r_kl, rvec m, rvec n)
+template <typename V>
+static ACT_ALWAYS_INLINE double dih_angle(const V &xi, const V &xj, const V &xk, const V &xl,
+                                          dvec r_ij, dvec r_kj, dvec r_kl, dvec m, dvec n)
 {
-    rvec_sub(xi, xj, r_ij); /*  3        */
-    rvec_sub(xk, xj, r_kj); /*  3		*/
-    rvec_sub(xk, xl, r_kl); /*  3		*/
+    distanceVector(xi, xj, r_ij); /*  3        */
+    distanceVector(xk, xj, r_kj); /*  3		*/
+    distanceVector(xk, xl, r_kl); /*  3		*/
 
-    cprod(r_ij, r_kj, m);                  /*  9        */
-    cprod(r_kj, r_kl, n);                  /*  9		*/
-    real phi  = gmx_angle(m, n);           /* 49 (assuming 25 for atan2) */
-    real ipr  = iprod(r_ij, n);            /*  5        */
-    real sign = (ipr < 0.0) ? -1.0 : 1.0;
+    dcprod(r_ij, r_kj, m);                       /*  9        */
+    dcprod(r_kj, r_kl, n);                       /*  9		*/
+    double phi  = gmx_angle_between_dvecs(m, n); /* 49 (assuming 25 for atan2) */
+    double ipr  = diprod(r_ij, n);               /*  5        */
+    double sign = (ipr < 0.0) ? -1.0 : 1.0;
     phi       = sign*phi;                  /*  1		*/
     /* 82 TOTAL	*/
     return phi;
@@ -1438,19 +1536,19 @@ static ACT_ALWAYS_INLINE void fourDihOne(gmx_unused MsgHandler *msghandler,
     auto ak       = indices[2];
     auto al       = indices[3];
 
-    rvec r_ij, r_kj, r_kl, m, n;
+    dvec r_ij, r_kj, r_kl, m, n;
     auto phi = M_PI + dih_angle(x[ai], x[aj], x[ak], x[al],
                                 r_ij, r_kj, r_kl, m, n);
 
-    real cos_phi = std::cos(phi);
+    double cos_phi = std::cos(phi);
 
     // Energy is
     // \sum_{j=0}^{nparam} params[j] cos^j(phi)
     // Force then becomes
     // - \sum_{j=1}^{nparam} j * params[j] cos^{j-1}(phi) sin(phi)
-    real cosfac = 1;
-    real v      = params[0];
-    real dvdphi = 0;
+    double cosfac = 1;
+    double v      = params[0];
+    double dvdphi = 0;
     // The loop has a fixed length, such that it can be unrolled
     // and the loop over conformations can be vectorized. The potential
     // has fdihNR parameters, see potential.cpp.
@@ -1482,7 +1580,7 @@ static ACT_ALWAYS_INLINE void improperOne(gmx_unused MsgHandler *msghandler,
                                F                     *forces,
                                double                *e)
 {
-    const  real half = 0.5;
+    const  double half = 0.5;
     // Get the parameters. We have to know their names to do this.
     auto &params  = a.params();
     auto kA       = params[idihKPHI];
@@ -1492,7 +1590,7 @@ static ACT_ALWAYS_INLINE void improperOne(gmx_unused MsgHandler *msghandler,
     auto ak       = indices[2];
     auto al       = indices[3];
 
-    rvec r_ij, r_kj, r_kl, m, n;
+    dvec r_ij, r_kj, r_kl, m, n;
     auto phi = dih_angle(x[ai], x[aj], x[ak], x[al],
                          r_ij, r_kj, r_kl, m, n);
 
@@ -1525,7 +1623,7 @@ static ACT_ALWAYS_INLINE void properOne(gmx_unused MsgHandler *msghandler,
     auto ak       = indices[2];
     auto al       = indices[3];
 
-    rvec r_ij, r_kj, r_kl, m, n;
+    dvec r_ij, r_kj, r_kl, m, n;
     auto phi = dih_angle(x[ai], x[aj], x[ak], x[al],
                          r_ij, r_kj, r_kl, m, n);
 
@@ -1840,18 +1938,19 @@ static bool usesCharges(Potential mypot)
 }
 
 //! Number of values per atom kept by keepCharges
-static const size_t chargeValues = 4;
+static const size_t chargeValues = 5;
 
-/*! \brief The charge and the second charge of an atom with its distribution
+/*! \brief The charge and the second charge of an atom with their distributions
  * \param[in]  atom The atom
  * \param[out] q    The values
  */
 static void chargeOf(const ActAtom &atom, double q[chargeValues])
 {
     q[0] = atom.charge();
-    q[1] = atom.chargeVS();
-    q[2] = atom.zetaVS();
-    q[3] = atom.rowVS();
+    q[1] = atom.zeta();
+    q[2] = atom.chargeVS();
+    q[3] = atom.zetaVS();
+    q[4] = atom.rowVS();
 }
 
 /*! \brief Keep the charges of the atoms, if the potential uses them
@@ -1988,7 +2087,8 @@ static bool dispatchPotential(Potential                   mypot,
     case Potential::COULOMB_GAUSSIAN:
         // Point charges are cheaper, in particular when vectorized
         func.template operator()<2, true>(OneSelect { [&atoms](const TopologyEntry &b)
-                                                      { return (b.params()[coulZETA] == 0 && b.params()[coulZETA2] == 0 &&
+                                                      { return (atoms[b.atomIndices()[0]].zeta() == 0 &&
+                                                                atoms[b.atomIndices()[1]].zeta() == 0 &&
                                                                 atoms[b.atomIndices()[0]].chargeVS() == 0 &&
                                                                 atoms[b.atomIndices()[1]].chargeVS() == 0); },
                                                       ONE_INTERACTION_ATOMS_EPSR(coulombPointOne),
@@ -2118,9 +2218,9 @@ static double interactionFlops(Potential                   mypot,
     case Potential::MACDANIEL_SCHMIDT:      return constant({ 44, 3 }, true);
     case Potential::WANG_BUCKINGHAM:        return constant({ 58, 10 }, true);
     case Potential::BUCKINGHAM:             return constant({ 49, 5 }, true);
-    case Potential::TANG_TOENNIES:          return constant({ 127, 29 }, true);
-    case Potential::TT2b:                   return constant({ 127, 29 }, true);
-    case Potential::SLATER_ISA_TT:          return constant({ 132, 34 }, true);
+    case Potential::TANG_TOENNIES:          return constant({ 193, 29 }, true);
+    case Potential::TT2b:                   return constant({ 193, 29 }, true);
+    case Potential::SLATER_ISA_TT:          return constant({ 198, 34 }, true);
     case Potential::GENERALIZED_BUCKINGHAM: return constant({ 132, 35 }, true);
     case Potential::HARMONIC_BONDS:         return constant({ 16, 2 }, true);
     case Potential::CUBIC_BONDS:            return constant({ 18, 6 }, true);
@@ -2131,7 +2231,7 @@ static double interactionFlops(Potential                   mypot,
     case Potential::UREY_BRADLEY_ANGLES:    return constant({ 97, 102 }, false);
     case Potential::HARMONIC_DIHEDRALS:     return constant({ 106, 71 }, false);
     case Potential::PROPER_DIHEDRALS:       return constant({ 132, 118 }, false);
-    case Potential::POSITION_RESTRAINT:     return constant({ 14, 12 }, false);
+    case Potential::POSITION_RESTRAINT:     return constant({ 17, 12 }, false);
     case Potential::COULOMB_POINT:
     case Potential::COULOMB_GAUSSIAN:
         {
@@ -2141,13 +2241,12 @@ static double interactionFlops(Potential                   mypot,
             for (const auto &b : entries)
             {
                 const TopologyEntry &entry   = *b.operator->();
-                auto                &params  = entry.params();
                 const auto          &atomi   = atoms[entry.atomIndices()[0]];
                 const auto          &atomj   = atoms[entry.atomIndices()[1]];
                 const double         qi[2]   = { atomi.charge(), atomi.chargeVS() };
                 const double         qj[2]   = { atomj.charge(), atomj.chargeVS() };
-                const double         zi[2]   = { params[coulZETA], atomi.zetaVS() };
-                const double         zj[2]   = { params[coulZETA2], atomj.zetaVS() };
+                const double         zi[2]   = { atomi.zeta(), atomi.zetaVS() };
+                const double         zj[2]   = { atomj.zeta(), atomj.zetaVS() };
                 n += pair.energy + 10 + (forces ? pair.force : 0);
                 for (int a = 0; a < 2; a++)
                 {
@@ -2515,7 +2614,6 @@ static bool calcCoulombKernel(Potential                   mypot,
     size_t                     ntodo = 0;
     for(size_t e = 0; e < ne; e++)
     {
-        const auto   &params = topentries[e]->params();
         const auto   &ind    = topentries[e]->atomIndices();
         const auto   &ai     = atoms[ind[0]];
         const auto   &aj     = atoms[ind[1]];
@@ -2523,7 +2621,7 @@ static bool calcCoulombKernel(Potential                   mypot,
         bool          vsj    = aj.chargeVS() != 0;
         unsigned char needed = 1 | (vsj ? 2 : 0) | (vsi ? 4 : 0) | (vsi && vsj ? 8 : 0);
         // The widths the terms are computed from, see coulombKernelsExplicitSimd
-        const double  w[4]   = { params[coulZETA], ai.zetaVS(), params[coulZETA2], aj.zetaVS() };
+        const double  w[4]   = { ai.zeta(), ai.zetaVS(), aj.zeta(), aj.zetaVS() };
         double       *we     = widths.data() + 4*e;
         bool          same   = (sameShape && (terms[e] & needed) == needed &&
                                 std::equal(w, w + 4, we) &&
@@ -2804,15 +2902,9 @@ static inline void lowComputeEnergies(MsgHandler                *msghandler,
             }
             // Not all potentials are available in the force field,
             // in particular restraint potentials.
-            gmx_unused Potential mypot;
-            if (pd->interactionPresent(entry.first))
-            {
-                // Force field parameter list
-                auto &ffpl = pd->findForcesConst(entry.first);
-                // The function we need to do the math
-                mypot = ffpl.potential();
-            }
-            else
+            // The function we need to do the math
+            gmx_unused Potential mypot = pd->potential(entry.first);
+            if (Potential::NONE == mypot)
             {
                 mypot = defaultPotential(entry.first);
             }
@@ -2989,26 +3081,6 @@ static inline void lowComputeEnergies(MsgHandler                *msghandler,
     cdata->vsiteForcesSpread = spread && (ndone == 0 || cdata->vsiteForcesSpread);
 }
 
-/*! \brief The relative dielectric constant of a force field
- * \param[in] pd The force field
- * \return The epsilonr option of the electrostatics, or 1
- */
-static double relativeDielectric(const ForceField *pd)
-{
-    double epsilonr = 1;
-    auto iCoul = InteractionType::ELECTROSTATICS;
-    if (pd->interactionPresent(iCoul))
-    {
-        auto &ffpl = pd->findForcesConst(iCoul);
-        std::string epsr = "epsilonr";
-        if (ffpl.optionExists(epsr))
-        {
-            epsilonr = std::atof(ffpl.optionValue(epsr).c_str());
-        }
-    }
-    return epsilonr;
-}
-
 void computeConformations(MsgHandler                *msghandler,
                           const ForceField          *pd,
                           const Topology            *top,
@@ -3020,7 +3092,7 @@ void computeConformations(MsgHandler                *msghandler,
     // The conformations only change if virtual sites are constructed
     // again, which ConformationData knows, or if shells move.
     bool reuse = !pd->polarizable();
-    lowComputeEnergies(msghandler, pd, top, coords, cdata, relativeDielectric(pd),
+    lowComputeEnergies(msghandler, pd, top, coords, cdata, pd->epsilonr(),
                        true, forces, reuse, skipDone);
 }
 
@@ -3033,7 +3105,7 @@ void computeEnergies(MsgHandler                  *msghandler,
                      bool                         intermolecular,
                      bool                         allForces)
 {
-    double epsilonr = relativeDielectric(pd);
+    double epsilonr = pd->epsilonr();
     // The conformations of the molecules only change if virtual sites are
     // constructed again, which ConformationData knows, or if shells move.
     bool reuse = !pd->polarizable();

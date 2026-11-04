@@ -162,9 +162,6 @@ class EspDevComputer : public DevComputer
 
 private:
 
-    //! Whether we fit zeta parameters
-    bool fitZeta_;
-
     /*! \brief Dump charges to a file
      * Debugging routine
      * \todo move to cpp file
@@ -178,13 +175,10 @@ private:
    
 public:
 
-    /*! \brief Create a new DevComputer
-     * @param fitZeta whether we fit zeta parameters
-     */
-    EspDevComputer(const bool       fitZeta)
+    //! Create an ESP deviation computer with current charge-distribution widths.
+    EspDevComputer()
         : DevComputer("ESP")
     {
-        fitZeta_ = fitZeta;
     }
 
     virtual void calcDeviation(MsgHandler                    *msghandler,

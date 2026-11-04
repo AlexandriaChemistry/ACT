@@ -90,26 +90,12 @@ void forceFieldSummary(JsonTree      *jtree,
     jtree->addObject(JsonTree("Polarizable", yesno_names[pd->polarizable()]));
     jtree->addObject(JsonTree("Charge generation", 
                               chargeGenerationAlgorithmName(pd->chargeGenerationAlgorithm()).c_str()));
-    int nexclvdw;
-    if (!ffOption(*pd, InteractionType::VDW, 
-                  "nexcl", &nexclvdw))
-    {
-        nexclvdw = 0;
-    }
-    jtree->addObject(JsonTree("# vanderwaals exclusions", gmx_itoa(nexclvdw)));
-    int nexclqq;
-    if (!ffOption(*pd, InteractionType::ELECTROSTATICS, 
-                  "nexcl", &nexclqq))
-    {
-        nexclqq = 0;
-    }
-    jtree->addObject(JsonTree("# coulomb exclusions", gmx_itoa(nexclqq)));
+    // The same for van der Waals and Coulomb
+    int nexcl = std::max(0, pd->nexcl());
+    jtree->addObject(JsonTree("# vanderwaals exclusions", gmx_itoa(nexcl)));
+    jtree->addObject(JsonTree("# coulomb exclusions", gmx_itoa(nexcl)));
     double epsilonr;
-    if (!ffOption(*pd, InteractionType::ELECTROSTATICS, 
-                  "epsilonr", &epsilonr))
-    {
-        epsilonr = 1;
-    }
+    epsilonr = pd->epsilonr();
     jtree->addObject(JsonTree("Relative dielectric constant epsilon_r",
                               gmx_ftoa(epsilonr)));
     jtree->addObject(JsonTree("# particle types", gmx_itoa(pd->getNatypes())));
@@ -512,9 +498,10 @@ void ReRunner::runB2(CommunicationRecord         *cr,
     B2Data b2data(gendimers_.ndist(), Temperature, eMin_);
     
     gmx::RVec rvnul = { 0, 0, 0 };
-    // Moments of inertia, averaged over all dimers.
+    // Moments of inertia, averaged over all dimers. The sum is over many
+    // dimers, in double precision.
     std::vector<gmx::RVec> inertia    = { rvnul, rvnul };
-    std::vector<gmx::RVec> inertiaSum = { rvnul, rvnul };
+    std::vector<gmx::DVec> inertiaSum = { { 0, 0, 0 }, { 0, 0, 0 } };
     size_t                 nInertia   = 0;
     // The other parts are timed where they are done
     auto               &timings      = Timings::instance();
@@ -706,7 +693,10 @@ void ReRunner::runB2(CommunicationRecord         *cr,
                             clear_mat(trans[kk]);
                             principal_comp(molIndex[kk], molMass[kk], xc, &trans[kk], &inertia1[kk]);
                         }
-                        rvec_inc(inertiaSum[kk], inertia1[kk]);
+                        for(int m = 0; m < DIM; m++)
+                        {
+                            inertiaSum[kk][m] += inertia1[kk][m];
+                        }
                         for(int a = 0; a < DIM; a++)
                         {
                             for(int b = 0; b < DIM; b++)
@@ -732,23 +722,22 @@ void ReRunner::runB2(CommunicationRecord         *cr,
                         const double *f  = fs + DIM*(atomStart[kk]+j)*st;
                         for(size_t c = 0; c < ndim; c++)
                         {
-                            rvec   xi = { xc[c], xc[st+c], xc[2*st+c] };
-                            rvec   fc = { f[c], f[st+c], f[2*st+c] };
-                            matrix tc;
+                            dvec xi = { xc[c], xc[st+c], xc[2*st+c] };
+                            dvec fc = { f[c], f[st+c], f[2*st+c] };
+                            // Rotate coordinates and force vector, in
+                            // double precision as the input
+                            dvec ri = { 0, 0, 0 }, fi = { 0, 0, 0 }, ti;
                             for(int a = 0; a < DIM; a++)
                             {
                                 for(int b = 0; b < DIM; b++)
                                 {
-                                    tc[a][b] = transk[(DIM*a+b)*st + c];
+                                    double tab = transk[(DIM*a+b)*st + c];
+                                    ri[a] += tab*xi[b];
+                                    fi[a] += tab*fc[b];
                                 }
                             }
-                            rvec ri, fi, ti;
-                            // Rotate coordinates
-                            mvmul(tc, xi, ri);
-                            // Rotate force vector
-                            mvmul(tc, fc, fi);
                             // Compute torque on this atom
-                            cprod(ri, fi, ti);
+                            dcprod(ri, fi, ti);
                             // Update total torque
                             for(int m = 0; m < DIM; m++)
                             {
@@ -767,10 +756,10 @@ void ReRunner::runB2(CommunicationRecord         *cr,
                             const double *f  = fs + DIM*(atomStart[kk]+j)*st;
                             for(size_t c = 0; c < ndim; c++)
                             {
-                                rvec xi = { xc[c], xc[st+c], xc[2*st+c] };
-                                rvec fc = { f[c], f[st+c], f[2*st+c] };
-                                rvec ti;
-                                cprod(xi, fc, ti);
+                                dvec xi = { xc[c], xc[st+c], xc[2*st+c] };
+                                dvec fc = { f[c], f[st+c], f[2*st+c] };
+                                dvec ti;
+                                dcprod(xi, fc, ti);
                                 for(int m = 0; m < DIM; m++)
                                 {
                                     tq[m*st + c] += ti[m];
@@ -1026,7 +1015,7 @@ int b2(int argc, char *argv[])
     };
     gmx_output_env_t         *oenv;
     char                     *molnm            = (char *)"";
-    double                    shellToler       = 1e-6;
+    real                      shellToler       = 1e-6;
     int                       maxdimers        = 1024;
     int                       shellMaxIter     = 25;
     bool                      json             = false;
@@ -1078,11 +1067,7 @@ int b2(int argc, char *argv[])
     
     (void) pd.verifyCheckSum(&msghandler);
     double epsilonr = 1;
-    if (!ffOption(pd, InteractionType::ELECTROSTATICS, 
-                  "epsilonr", &epsilonr))
-    {
-        epsilonr = 1;
-    }
+    epsilonr = pd.epsilonr();
 
     ForceComputer forceComp(shellToler, shellMaxIter, epsilonr);
     
@@ -1094,6 +1079,11 @@ int b2(int argc, char *argv[])
 
     std::vector<ACTMol> actmols;
     compR.read(&msghandler, pd, &forceComp, &actmols);
+    if (actmols.empty())
+    {
+        fprintf(stderr, "Could not read or process molecules. Please check the log file for more information.\n");
+        return 1;
+    }
     auto &actmol = actmols[0];
 
     if (msghandler.ok() && status == 0)

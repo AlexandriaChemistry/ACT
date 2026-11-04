@@ -27,7 +27,9 @@
  */
 
 #include <gtest/gtest.h>
+#include <algorithm>
 #include <cmath>
+#include <cstdint>
 #include <functional>
 #include <limits>
 #include <memory>
@@ -246,6 +248,7 @@ protected:
             {
                 std::string label(actmols[0].getMolname());
                 label += "-charge";
+                setSingleTolerance(checker, 1e-6, 1e-6);
                 checker->checkSequence(qq.begin(), qq.end(), label.c_str());
             }
             computer.calcDeviation(&msghandler,
@@ -270,6 +273,9 @@ protected:
                     checker->checkDouble(t.second.totalWeight(), weight.c_str());
                     std::string chi2 = gmx::formatString("%s-%s-chi2",
                                                          actmols[0].getMolname().c_str(), rmsName(t.first));
+                    // The deviations are differences of energies or forces
+                    // that are much larger, with errors relative to those
+                    setSingleTolerance(checker, 0, 1e-4);
                     checker->checkDouble(t.second.chiSquared(), chi2.c_str());
                 }
             }
@@ -379,6 +385,23 @@ protected:
      * \param[in] actmol  The molecule after calcDeviation
      * \param[in] checker Reference data checker
      */
+    /*! \brief Set a tolerance in single precision only
+     * In double precision the default tolerance of the checker is kept.
+     * \param[inout] checker  The checker
+     * \param[in]    absolute Absolute tolerance
+     * \param[in]    relative Relative tolerance
+     */
+    static void setSingleTolerance(gmx::test::TestReferenceChecker *checker,
+                                   double                           absolute,
+                                   double                           relative)
+    {
+        if (!GMX_DOUBLE)
+        {
+            checker->setDefaultTolerance(gmx::test::FloatingPointTolerance(absolute, absolute, relative, relative,
+                                                                           UINT64_MAX, UINT64_MAX, false));
+        }
+    }
+
     static void checkConformations(ACTMol                          &actmol,
                                    gmx::test::TestReferenceChecker *checker)
     {
@@ -388,6 +411,19 @@ protected:
         {
             const auto &ce    = (*coords)[i];
             auto        label = gmx::formatString("%s-conf%zu", actmol.getMolname().c_str(), i);
+            // In single precision relative to the largest energy and force
+            double emax = 0;
+            for(const auto itype : { InteractionType::EXCHANGE,
+                                     InteractionType::DISPERSION,
+                                     InteractionType::EPOT })
+            {
+                auto ee = ce.eMap.find(itype);
+                if (ce.eMap.end() != ee && ee->second.haveACT())
+                {
+                    emax = std::max(emax, std::abs(ee->second.eact()));
+                }
+            }
+            setSingleTolerance(checker, 1e-5*emax, 1e-6);
             for(const auto itype : { InteractionType::EXCHANGE,
                                      InteractionType::DISPERSION,
                                      InteractionType::EPOT })
@@ -411,6 +447,14 @@ protected:
                     f.push_back(fi[m]);
                 }
             }
+            // The coordinates are rounded, which changes the forces by up
+            // to the stiffness of the bonds times about 3e-8 nm
+            double fmax = 0;
+            for(auto fm : f)
+            {
+                fmax = std::max(fmax, std::abs(fm));
+            }
+            setSingleTolerance(checker, 5e-5*fmax, 1e-6);
             checker->checkSequence(f.begin(), f.end(), (label + "-forces").c_str());
         }
     }
@@ -1262,6 +1306,16 @@ protected:
             ASSERT_EQ(coordsV.size(), coordsC.size());
             for(size_t c = 0; c < coordsV.size(); c++)
             {
+                // In single precision the errors are relative to the
+                // largest force, since the terms of the forces cancel
+                double fmax = 0;
+                for(const auto &f : coordsV[c].fcalc)
+                {
+                    for(int m = 0; m < DIM; m++)
+                    {
+                        fmax = std::max(fmax, static_cast<double>(std::abs(f[m])));
+                    }
+                }
                 size_t k = 0;
                 for(size_t i = 0; i < atomsV.size(); i++)
                 {
@@ -1272,8 +1326,9 @@ protected:
                     ASSERT_LT(k, coordsC[c].fcalc.size());
                     for(int m = 0; m < DIM; m++)
                     {
+                        double fmag = GMX_DOUBLE ? 1 + std::abs(coordsV[c].fcalc[i][m]) : fmax;
                         EXPECT_NEAR(coordsV[c].fcalc[i][m], coordsC[c].fcalc[k][m],
-                                    100*tolerance*(1 + std::abs(coordsV[c].fcalc[i][m])));
+                                    100*tolerance*fmag);
                     }
                     k++;
                 }
@@ -1488,7 +1543,7 @@ protected:
                     double                        tolerance)
     {
         MsgHandler msghandler;
-        auto pot = pdA->findForcesConst(InteractionType::ELECTROSTATICS).potential();
+        auto pot = pdA->potential(InteractionType::ELECTROSTATICS);
         std::vector<QgenResp> resp(2);
         std::vector<const ForceField *>             pds   = { pdA, pdB };
         std::vector<const ACTMol *>                 mols  = { &molA, &molB };
@@ -1798,7 +1853,7 @@ protected:
         MsgHandler    msghandler;
         auto          pd   = getForceField(ffFile);
         auto          mols = prepareMolecules(&msghandler, pd, &forceComputer);
-        EspDevComputer computer(false);
+        EspDevComputer computer;
         double weightSum = 0, chi2Sum = 0;
         for(auto &mol : mols)
         {
@@ -1904,7 +1959,7 @@ protected:
 TEST_F(PropertyDevComputerTest, SecondChargesAsVsites)
 {
     compareSecondChargesToVsites("../../constraints/tests/PC+GV-elec.xml", "mpdimer.xml",
-                                 "v1ow", "ow", false, 1e-10);
+                                 "v1ow", "ow", false, gmx::test::precisionTolerance(1e-10, 1e-6));
 }
 
 // Test: The same for a polarizable force field, with shells on the ions,
@@ -1912,7 +1967,7 @@ TEST_F(PropertyDevComputerTest, SecondChargesAsVsites)
 TEST_F(PropertyDevComputerTest, SecondChargesAsVsitesPolarizable)
 {
     compareSecondChargesToVsites("PG-pol-ions.xml", "ion-water.xml",
-                                 "v1Na+", "Na+", true, 1e-10);
+                                 "v1Na+", "Na+", true, gmx::test::precisionTolerance(1e-10, 1e-6));
 }
 
 // Test: The same with polarizable ions, the ion shells have a negligible
@@ -1920,7 +1975,7 @@ TEST_F(PropertyDevComputerTest, SecondChargesAsVsitesPolarizable)
 TEST_F(PropertyDevComputerTest, SecondChargesAsVsitesPolarizableIons)
 {
     compareSecondChargesToVsites("PG-pol-ions.xml", "ion-water.xml",
-                                 "v1Na+", "Na+", true, 1e-10,
+                                 "v1Na+", "Na+", true, gmx::test::precisionTolerance(1e-10, 1e-6),
                                  { { "Na+_s", 0.18 }, { "Cl-_s", 3.4 } });
 }
 
@@ -2285,6 +2340,138 @@ TEST_F(PropertyDevComputerTest, NonFiniteEnergiesIgnored)
 TEST_F(PropertyDevComputerTest, EspNonPolarizable)
 {
     testEsp("ACS-g2");
+}
+
+// Changing a cloud width on an existing molecule must give the same ESP
+// as a newly initialized RESP object. No parameter-selection flag is needed.
+// Exercise both retained virtual sites and converted second charges.
+TEST_F(PropertyDevComputerTest, EspCloudWidthsStayCurrent)
+{
+    for(auto distribution : { ChargeDistributionType::Gaussian, ChargeDistributionType::Slater })
+    {
+        for(int row : { 1, 2 })
+        {
+            for(bool converted : { false, true })
+            {
+                SCOPED_TRACE(::testing::Message() << "distribution " << static_cast<int>(distribution)
+                                                   << " row " << row << " converted " << converted);
+                ForceField pd;
+                readForceField(fileManager().getInputFilePath("../../constraints/tests/PC+GV-elec.xml"),
+                                 &pd, nullptr, converted);
+                pd.setChargeDistribution(distribution);
+                auto cloud = pd.findParticleType(converted ? "ow" : "v1ow");
+                cloud->removeOption(converted ? "rowVS" : "row");
+                cloud->setOption(converted ? "rowVS" : "row", std::to_string(row));
+                ASSERT_EQ(row, converted ? cloud->rowVS() : cloud->row());
+                const char *widthName = converted ? "zetaVS" : "zeta";
+                auto width = cloud->parameter(widthName);
+                width->forceSetValue(10);
+                ForceComputer forceComputer;
+                MsgHandler msghandler;
+                auto waterTypes = [](MolProp *mp)
+                {
+                    for(auto &experiment : *mp->experiment())
+                    {
+                        for(auto &atom : *experiment.calcAtom())
+                        {
+                            atom.setObtype(atom.getObtype() == "o3" ? "ow" : "hw");
+                        }
+                    }
+                };
+                auto mols = prepareMolecules(&msghandler, &pd, &forceComputer, { "water" }, "", waterTypes);
+                ASSERT_EQ(1u, mols.size());
+                auto &mol = mols.front();
+                ACTQprop grid(mol.atomsConst(), mol.xOriginal());
+                auto resp = grid.qgenResp();
+                resp->setChargeDistributionType(distribution);
+                resp->setAtomInfo(&msghandler, mol.atomsConst(), &pd, mol.totalCharge());
+                resp->updateAtomCoords(mol.xOriginal());
+                resp->makeGrid(0.15, 0.25, mol.xOriginal());
+                ASSERT_GT(resp->nEsp(), 0u);
+                mol.qProps()->clear();
+                mol.qProps()->push_back(std::move(grid));
+                EspDevComputer computer;
+                std::vector<double> initial;
+                auto initialAtoms = mol.atomsConst();
+                for(double value : { 10.0, 20.0, 10.0 })
+                {
+                    width->forceSetValue(value);
+                    auto coords = mol.xOriginal();
+                    std::vector<gmx::RVec> forces(mol.atomsConst().size());
+                    mol.generateCharges(&msghandler, &pd, &forceComputer,
+                                          pd.chargeGenerationAlgorithm(), &coords, &forces);
+                    std::map<eRMS, FittingTarget> targets;
+                    targets.insert({eRMS::ESP, FittingTarget(eRMS::ESP, iMolSelect::Train)});
+                    targets.find(eRMS::ESP)->second.setWeight(1);
+                    computer.calcDeviation(&msghandler, &forceComputer, { &mol }, &targets, &pd,
+                                             LossFunction::MSE);
+                    auto cached = mol.qProps()->front().qgenResp();
+                    QgenResp fresh;
+                    fresh.setChargeDistributionType(distribution);
+                    fresh.setAtomInfo(&msghandler, mol.atomsConst(), &pd, mol.totalCharge());
+                    fresh.updateAtomCoords(cached->coords());
+                    fresh.updateAtomCharges(&msghandler, mol.atomsConst());
+                    for(const auto &point : cached->espPoints())
+                    {
+                        auto x = point.esp();
+                        fresh.addEspPoint(x[XX], x[YY], x[ZZ], point.v());
+                    }
+                    fresh.calcPot(&msghandler, pd.epsilonr());
+                    double difference = 0;
+                    for(size_t i = 0; i < cached->nEsp(); i++)
+                    {
+                        double potential = cached->espPoint(i).vCalc();
+                        EXPECT_NEAR(potential, fresh.espPoint(i).vCalc(),
+                                    gmx::test::precisionTolerance(1e-10, 1e-6)*(1 + std::abs(potential))) << i;
+                        if (initial.size() == cached->nEsp())
+                        {
+                            difference += std::abs(potential - initial[i]);
+                        }
+                    }
+                    if (initial.empty())
+                    {
+                        for(const auto &point : cached->espPoints())
+                        {
+                            initial.push_back(point.vCalc());
+                        }
+                    }
+                    else if (value == 20)
+                    {
+                        EXPECT_GT(difference, 1e-5);
+                        // Reintroduce a stale RESP width deliberately. Cube
+                        // output must refresh it even without an ESP objective.
+                        width->forceSetValue(10);
+                        cached->updateZeta(initialAtoms, &pd);
+                        width->forceSetValue(value);
+                        auto cubeFile = fileManager().getTemporaryFilePath(
+                            "width-" + std::to_string(static_cast<int>(distribution)) + "-" +
+                            std::to_string(row) + "-" + std::to_string(converted) + ".cube");
+                        mol.GenerateCube(&msghandler, &pd, mol.xOriginal(), &forceComputer,
+                                           0.15, 0.25, nullptr, nullptr, nullptr, cubeFile.c_str(),
+                                           nullptr, nullptr, nullptr, nullptr, nullptr);
+                        QgenResp cube;
+                        cube.setChargeDistributionType(distribution);
+                        cube.setAtomInfo(&msghandler, mol.atomsConst(), &pd, mol.totalCharge());
+                        cube.updateAtomCoords(mol.xOriginal());
+                        cube.readCube(cubeFile, true);
+                        cube.updateAtomCharges(&msghandler, mol.atomsConst());
+                        cube.calcPot(&msghandler, pd.epsilonr());
+                        ASSERT_GT(cube.nEsp(), 0u);
+                        for(const auto &point : cube.espPoints())
+                        {
+                            // Cube coordinates and potentials are rounded.
+                            EXPECT_NEAR(point.v(), point.vCalc(), 1e-4*(1 + std::abs(point.vCalc())));
+                        }
+                    }
+                    else
+                    {
+                        EXPECT_NEAR(0, difference, gmx::test::precisionTolerance(1e-8, 1e-4));
+                    }
+                    EXPECT_TRUE(msghandler.ok());
+                }
+            }
+        }
+    }
 }
 
 // Test: ESP deviation, polarizable, shells are relaxed first

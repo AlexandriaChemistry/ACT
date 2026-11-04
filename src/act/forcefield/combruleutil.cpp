@@ -100,9 +100,9 @@ int CombRuleUtil::extract(ForceField *pd)
                     }
                     else
                     {
-                        //! \todo Check this logic
-                        if (fs->combinationRuleExists(elements[1]) &&
-                            (fs->combinationRuleConst(elements[1]).rule() == cr))
+                        // A rule that is new or different is a change
+                        if (!fs->combinationRuleExists(elements[1]) ||
+                            fs->combinationRuleConst(elements[1]).rule() != cr)
                         {
                             changed += 1;
                         }

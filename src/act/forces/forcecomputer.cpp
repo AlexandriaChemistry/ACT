@@ -33,6 +33,7 @@
 #include <utility>
 #include <vector>
 
+#include <cstdio>
 #include <cstdlib>
 
 #include "act/basics/chargemodel.h"
@@ -148,7 +149,7 @@ void ForceComputer::spreadVsiteForces(const Topology               *top,
     vsiteHandler_.distributeForces(top, *coordinates, forces);
 }
 
-real calc_fscale(real k1, real k2, real F0)
+double calc_fscale(double k1, double k2, double F0)
 {
     if (F0 == 0)
     {
@@ -172,12 +173,13 @@ real calc_fscale(real k1, real k2, real F0)
         // position, which will never be the case.
         // Also, this assumes a 1D problem where the force on the shell is
         // parallel to the core-shell distance vector.
-        static const real third = 1.0/3.0;
-        static const real three = std::pow(3.0, third);
-        static const real sqrt3 = std::sqrt(3.0);
-        real k12    = k1*k2;
-        real F0k22  = F0*k2*k2;
-        real throot = std::pow(-9*F0k22 +
+        // In double precision, since (k1 k2)^3 does not fit in a float
+        static const double third = 1.0/3.0;
+        static const double three = std::pow(3.0, third);
+        static const double sqrt3 = std::sqrt(3.0);
+        double k12    = k1*k2;
+        double F0k22  = F0*k2*k2;
+        double throot = std::pow(-9*F0k22 +
                                sqrt3*std::sqrt(k12*k12*k12 + 27*F0k22*F0k22), third);
         auto k = (-three*three*k12 + three*throot*throot)/(6*k2*throot);
         return k/F0;
@@ -945,6 +947,11 @@ void ForceComputer::relaxMonomer(MsgHandler                  *msghandler,
             auto  fh    = mol.fragmentHandler();
             auto &tops  = fh->topologies();
             auto &pols  = fh->polInfo();
+            // A compound with one fragment has no second monomer
+            if (im >= tops.size())
+            {
+                continue;
+            }
             auto &mons  = *mol.monomerCoords(im);
             auto &act   = active[k];
             // Relax monomers first.
@@ -1031,6 +1038,11 @@ void ForceComputer::relaxDimer(MsgHandler                  *msghandler,
             auto  fh    = mol.fragmentHandler();
             auto &tops  = fh->topologies();
             auto &pols  = fh->polInfo();
+            // A compound with one fragment has no dimer conformations
+            if (tops.size() < 2)
+            {
+                continue;
+            }
             // The done flag is per dimer conformation, but convergence
             // has to be checked for each monomer separately. A conformation
             // is done when the shells of all monomers that are relaxed converged.
@@ -1927,12 +1939,7 @@ void ForceComputer::computeOnce(MsgHandler                        *msg_handler,
 Potential ForceComputer::ftype(const ForceField *pd,
                                InteractionType   itype) const
 {
-    Potential ftype = Potential::NONE;
-    if (pd->interactionPresent(itype))
-    {
-        ftype = pd->findForcesConst(itype).potential();
-    }
-    return ftype;
+    return pd->potential(itype);
 }
 
 /*! \brief Compute the energy of one potential for one structure
@@ -1962,7 +1969,9 @@ void ForceComputer::plot(MsgHandler        *msghandler,
                          const ForceField  *pd,
                          InteractionType    itype) const
 {
-    if (!pd->interactionPresent(itype))
+    // The widths of the charge distributions are those of the particle types
+    bool coulomb = (InteractionType::ELECTROSTATICS == itype);
+    if (!coulomb && !pd->interactionPresent(itype))
     {
         fprintf(stderr, "No such interaction %s in the force field.\n",
                 interactionTypeToString(itype).c_str());
@@ -1979,7 +1988,43 @@ void ForceComputer::plot(MsgHandler        *msghandler,
         { InteractionType::VDW,                "vdwtype" },
         { InteractionType::ELECTROSTATICS,     "acmtype" }
     };
-    auto &fs   = pd->findForcesConst(itype);
+    // The interactions to plot, of trained parameters, or for COULOMB of
+    // all pairs of particle types with a charge distribution
+    std::vector<Identifier> ids;
+    if (coulomb)
+    {
+        std::vector<std::string> ptypes;
+        for (const auto &pt : pd->particleTypesConst())
+        {
+            if (pt.second.apType() == ActParticle::Atom && pt.second.hasParameter(zetaName))
+            {
+                ptypes.push_back(pt.first.id());
+            }
+        }
+        for (size_t i = 0; i < ptypes.size(); i++)
+        {
+            for (size_t j = i; j < ptypes.size(); j++)
+            {
+                ids.push_back(Identifier({ ptypes[i], ptypes[j] }, { 1 }, CanSwap::Yes));
+            }
+        }
+    }
+    else
+    {
+        for(const auto &f : pd->findForcesConst(itype).parametersConst())
+        {
+            unsigned int ntrain  = 0;
+            for(const auto &pp : f.second)
+            {
+                ntrain = std::max(ntrain, pp.second.ntrain());
+            }
+            if (ntrain > 0)
+            {
+                ids.push_back(f.first);
+            }
+        }
+    }
+    auto potential = pd->potential(itype);
     {
         std::vector<std::pair<int, int>> linear_bonds = {
             { 0, 1}, {1, 2}, {2, 3}
@@ -1987,18 +2032,9 @@ void ForceComputer::plot(MsgHandler        *msghandler,
         std::vector<std::pair<int, int>> idih_bonds = {
             { 0, 1}, {0, 2}, {0, 3}
         };
-        for(const auto &f : fs.parametersConst())
+        for(const auto &id : ids)
         {
-            unsigned int ntrain  = 0;
-            for(const auto &pp : f.second)
-            {
-                ntrain = std::max(ntrain, pp.second.ntrain());
-            }
-            if (ntrain == 0)
-            {
-                continue;
-            }
-            auto bos   = f.first.bondOrders();
+            auto bos   = id.bondOrders();
             std::vector<Bond> bbb;
             for(size_t i = 0; i < bos.size(); i++)
             {
@@ -2024,12 +2060,13 @@ void ForceComputer::plot(MsgHandler        *msghandler,
             {
                 auto ptypes = pd->particleTypesConst();
                 // Loop over subtypes (depending on the InteractionType)
-                for(const auto &atomsub : f.first.atoms())
+                for(const auto &atomsub : id.atoms())
                 {
                     for (const auto &pt : ptypes)
                     {
-                        if (pt.second.hasOption(subtype->second) &&
-                            pt.second.optionValue(subtype->second) == atomsub)
+                        if ((coulomb && pt.first.id() == atomsub) ||
+                            (pt.second.hasOption(subtype->second) &&
+                             pt.second.optionValue(subtype->second) == atomsub))
                         {
                             ActAtom a(pt.second);
                             a.setCharge(1);
@@ -2046,11 +2083,23 @@ void ForceComputer::plot(MsgHandler        *msghandler,
             // Open outfile
             std::string filename = gmx::formatString("%s_%s.xvg",
                                                      interactionTypeToString(itype).c_str(),
-                                                     f.first.id().c_str());
+                                                     id.id().c_str());
             std::vector<gmx::RVec> forces;
             gmx::RVec rvnul = { 0, 0, 0 };
             FILE *fp = gmx_ffopen(filename.c_str(), "w");
             std::map<InteractionType, double> energies;
+            // Not every parameter makes a topology, e.g. when bonds are
+            // missing for the atoms of an angle, these are skipped.
+            bool built = false;
+            auto buildTopology = [&](std::vector<gmx::RVec> *coordinates)
+            {
+                MsgHandler buildHandler;
+                buildHandler.setPrintLevel(ACTStatus::Fatal);
+                top.build(&buildHandler, pd, coordinates, 175.0, 5.0, missingParameters::Error);
+                built = buildHandler.ok() && top.hasEntry(itype);
+                forces.resize(top.nAtoms(), rvnul);
+                return built;
+            };
             switch (itype)
             {
             case InteractionType::BONDS:
@@ -2059,14 +2108,15 @@ void ForceComputer::plot(MsgHandler        *msghandler,
                 {
                     std::vector<gmx::RVec> coordinates = { { 0, 0, 0 }, { 1, 0, 0 } };
                     // top.build will resize coordinates array.
-                    top.build(msghandler,
-                              pd, &coordinates, 175.0, 5.0, missingParameters::Error);
-                    forces.resize(top.nAtoms(), rvnul);
+                    if (!buildTopology(&coordinates))
+                    {
+                        break;
+                    }
                     // First atom is zero, second must be the other particle
                     size_t jatom = 1+top.atoms()[0].shells().size()+top.atoms()[0].vsites().size();
                     if (jatom == 0)
                     {
-                        GMX_THROW(gmx::InternalError(gmx::formatString("Could not find a second atom to make a plot, there are %zu atoms, interactionType %s, id %s", top.nAtoms(), interactionTypeToString(itype).c_str(), f.first.id().c_str()).c_str()));
+                        GMX_THROW(gmx::InternalError(gmx::formatString("Could not find a second atom to make a plot, there are %zu atoms, interactionType %s, id %s", top.nAtoms(), interactionTypeToString(itype).c_str(), id.id().c_str()).c_str()));
                     }
                     {
                         // Now remove everything except what we want to compute.
@@ -2127,20 +2177,18 @@ void ForceComputer::plot(MsgHandler        *msghandler,
                         vv.push_back(ener);
                         ff.push_back(forces[0][0]);
                     }
-                    // Check whether force is derivative of energy
-                    for(size_t i = 1; i < vv.size()-1; i++)
+                    // Check whether the force is the derivative of the energy.
+                    // The five point difference is accurate enough also where
+                    // the potential is steep, and the absolute tolerance
+                    // keeps the check meaningful where the force is zero.
+                    for(size_t i = 2; i+2 < vv.size(); i++)
                     {
-                        if (std::abs(ff[i]) > 1e-6)
+                        double fnumeric = (8*(vv[i+1]-vv[i-1]) - (vv[i+2]-vv[i-2]))/(12*delta);
+                        if (std::abs(fnumeric-ff[i]) > 1e-2*std::abs(ff[i]) + 1e-6)
                         {
-                            double fnumeric = (vv[i+1]-vv[i-1])/(2*delta);
-                            double relerror = (fnumeric-ff[i])/ff[i];
-                            if (std::abs(relerror) > 1e-1)
-                            {
-                                printf("%s: Force %g, expected %g. Relative error %g, r = %g v+ %g v- %g delta %g\n",
-                                       filename.c_str(),
-                                       ff[i], fnumeric, relerror, rr[i],
-                                       vv[i+1], vv[i-1], 2*delta);
-                            }
+                            msghandler->msg(ACTStatus::Warning,
+                                            gmx::formatString("%s: Force %g at r = %g, the derivative of the energy is %g",
+                                                              filename.c_str(), ff[i], rr[i], fnumeric));
                         }
                     }
                 }
@@ -2150,10 +2198,7 @@ void ForceComputer::plot(MsgHandler        *msghandler,
                     std::vector<gmx::RVec> acoords     = { { 0, 0, 0 }, { 1, 0, 0 }, { 1, 1, 0 } };
                     std::vector<gmx::RVec> coordinates = acoords;
                     // top.build will resize coordinates array.
-                    top.build(msghandler,
-                              pd, &coordinates, 175.0, 5.0, missingParameters::Error);
-                    forces.resize(top.nAtoms(), rvnul);
-                    if (!top.hasEntry(itype))
+                    if (!buildTopology(&coordinates))
                     {
                         break;
                     }
@@ -2176,7 +2221,7 @@ void ForceComputer::plot(MsgHandler        *msghandler,
                         double theta = (th0+i*delta);
                         coordinates[ak][0] = 1+std::cos(theta*DEG2RAD);
                         coordinates[ak][1] = std::sin(theta*DEG2RAD);
-                        double ener = potentialEnergy(msghandler, fs.potential(), top.entry(itype),
+                        double ener = potentialEnergy(msghandler, potential, top.entry(itype),
                                                       top.atoms(), coordinates, epsilonr_);
                         fprintf(fp, "%10g  %10g\n", theta, ener);
                     }
@@ -2186,16 +2231,17 @@ void ForceComputer::plot(MsgHandler        *msghandler,
                 {
                     //! \todo take a into account
                     std::vector<gmx::RVec> coordinates = { { 0, 0, 0 }, { 1, 0, 0 }, { 2, 0, 0 } };
-                    top.build(msghandler,
-                              pd, &coordinates, 175.0, 5.0, missingParameters::Error);
-                    forces.resize(top.nAtoms(), rvnul);
+                    if (!buildTopology(&coordinates))
+                    {
+                        break;
+                    }
                     double r0 = 0.0, r1 = 0.1, delta = 0.001;
                     int    nsteps = (r1-r0)/delta+1;
                     for(int i = 0; i < nsteps; i++)
                     {
                         double xx = (r0+i*delta);
                         coordinates[1][1] = xx;
-                        double ener = potentialEnergy(msghandler, fs.potential(), top.entry(itype),
+                        double ener = potentialEnergy(msghandler, potential, top.entry(itype),
                                                       top.atoms(), coordinates, epsilonr_);
                         fprintf(fp, "%10g  %10g\n", xx, ener);
                     }
@@ -2205,9 +2251,10 @@ void ForceComputer::plot(MsgHandler        *msghandler,
             case InteractionType::PROPER_DIHEDRALS:
                 {
                     std::vector<gmx::RVec> coordinates = { { 0, 0, 0 }, { 1, 0, 0 }, { 1, 1, 0 }, { 1, 1, 1 } };
-                    top.build(msghandler,
-                              pd, &coordinates, 175.0, 5.0, missingParameters::Error);
-                    forces.resize(top.nAtoms(), rvnul);
+                    if (!buildTopology(&coordinates))
+                    {
+                        break;
+                    }
                     double th0 = 0, th1 = 360, delta = 2;
                     int    nsteps = (th1-th0)/delta+1;
                     for(int i = 0; i < nsteps; i++)
@@ -2215,7 +2262,7 @@ void ForceComputer::plot(MsgHandler        *msghandler,
                         double theta = (th0+i*delta);
                         coordinates[3][0] = 1+std::cos(theta*DEG2RAD);
                         coordinates[3][1] = 1+std::sin(theta*DEG2RAD);
-                        double ener = potentialEnergy(msghandler, fs.potential(), top.entry(itype),
+                        double ener = potentialEnergy(msghandler, potential, top.entry(itype),
                                                       top.atoms(), coordinates, epsilonr_);
                         fprintf(fp, "%10g  %10g\n", theta, ener);
                     }
@@ -2224,16 +2271,17 @@ void ForceComputer::plot(MsgHandler        *msghandler,
             case InteractionType::IMPROPER_DIHEDRALS:
                 {
                     std::vector<gmx::RVec> coordinates = { { 1, 0.5, 0 }, { 0, 0, 0 }, { 2, 0, 0 }, { 1, 1.5, 0 } };
-                    top.build(msghandler,
-                              pd, &coordinates, 175.0, 5.0, missingParameters::Error);
-                    forces.resize(top.nAtoms(), rvnul);
+                    if (!buildTopology(&coordinates))
+                    {
+                        break;
+                    }
                     double th0 = -0.02, th1 = 0.02, delta = 0.001;
                     int    nsteps = (th1-th0)/delta+1;
                     for(int i = 0; i < nsteps; i++)
                     {
                         double theta = (th0+i*delta);
                         coordinates[3][2] = theta;
-                        double ener = potentialEnergy(msghandler, fs.potential(), top.entry(itype),
+                        double ener = potentialEnergy(msghandler, potential, top.entry(itype),
                                                       top.atoms(), coordinates, epsilonr_);
                         fprintf(fp, "%10g  %10g\n", theta, ener);
                     }
@@ -2243,6 +2291,14 @@ void ForceComputer::plot(MsgHandler        *msghandler,
                 break;
             }
             gmx_ffclose(fp);
+            if (!built)
+            {
+                std::remove(filename.c_str());
+                msghandler->msg(ACTStatus::Warning,
+                                gmx::formatString("Cannot plot %s %s, there is no topology for it",
+                                                  interactionTypeToString(itype).c_str(),
+                                                  id.id().c_str()));
+            }
         }
     }
 }

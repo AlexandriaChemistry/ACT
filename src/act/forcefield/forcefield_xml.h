@@ -60,11 +60,17 @@ namespace alexandria
      * \param[in]  convert    Whether to replace virtual sites on top of atoms
      *                        by second charges, see ForceField::convertVsite1.
      *                        Only for testing should this be false.
+     * \param[in]  check      Whether to check the consistency of the
+     *                        force field, see ForceField::checkConsistency.
+     *                        Only for repairing a force field should this
+     *                        be false.
+     * \throws if the force field is not consistent
      */
     void readForceField(const std::string &fileName,
                         ForceField        *pd,
                         MsgHandler        *msgHandler = nullptr,
-                        bool               convert    = true);
+                        bool               convert    = true,
+                        bool               check      = true);
 
 } // namespace alexandria
 

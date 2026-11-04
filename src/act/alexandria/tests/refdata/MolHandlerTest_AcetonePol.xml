@@ -120,8 +120,8 @@
   <Real Name="Delta H form (kJ/mol)">290.27539364333416</Real>
   <Real Name="Standard entropy - Translation  (J/mol K)">159.51286689767051</Real>
   <Real Name="Standard entropy -    Rotation  (J/mol K)">95.222207567050788</Real>
-  <Real Name="Standard entropy -   Vibration  (J/mol K)">60.407873361309484</Real>
-  <Real Name="Standard entropy -       Total  (J/mol K)">315.14294782603076</Real>
+  <Real Name="Standard entropy -   Vibration  (J/mol K)">57.399820654899216</Real>
+  <Real Name="Standard entropy -       Total  (J/mol K)">312.13489511962052</Real>
   <Real Name="Heat capacity cV - Translation (J/mol K)">12.471693927229859</Real>
   <Real Name="Heat capacity cV -    Rotation (J/mol K)">12.471693927229859</Real>
   <Real Name="Heat capacity cV -   Vibration (J/mol K)">53.410190650573085</Real>

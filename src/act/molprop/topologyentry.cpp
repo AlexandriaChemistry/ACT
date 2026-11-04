@@ -120,23 +120,6 @@ void Angle::setBonds(const Bond &bij, const Bond &bjk)
     addBondOrder(bjk.bondOrder());
 }
 
-CommunicationStatus TopologyEntry::Send(const CommunicationRecord *cr, int dest) const
-{
-    CommunicationStatus cs = CommunicationStatus::OK;
-
-    if (CommunicationStatus::SEND_DATA == cr->send_data(dest))
-    {
-        cr->send(dest, indices_);
-        cr->send(dest, bondOrder_);
-    }
-    else if (cr->mh())
-    {
-        cr->mh()->msg(ACTStatus::Error,
-                      gmx::formatString("Failed sending TopologyEntry, status %s\n", cs_name(cs).c_str()));
-    }
-    return cs;
-}
-
 CommunicationStatus TopologyEntry::BroadCast(const CommunicationRecord *cr,
                                              int                        root,
                                              MPI_Comm                   comm)
@@ -169,33 +152,6 @@ CommunicationStatus TopologyEntry::BroadCast(const CommunicationRecord *cr,
             bondOrder_.resize(nbo);
         }
         cr->bcast(&bondOrder_, comm);
-    }
-    else if (cr->mh())
-    {
-        cr->mh()->msg(ACTStatus::Error,
-                      gmx::formatString("Failed receiving TopologyEntry, status %s\n", cs_name(cs).c_str()));
-    }
-    return cs;
-}
-
-CommunicationStatus TopologyEntry::Receive(const CommunicationRecord *cr, int src)
-{
-    CommunicationStatus cs = CommunicationStatus::OK;
-
-    if (CommunicationStatus::RECV_DATA == cr->recv_data(src))
-    {
-        std::vector<int> atomIndices;
-        cr->recv(src, &atomIndices);
-        for (auto a : atomIndices)
-        {
-            addAtom(a);
-        }
-        std::vector<double> bondOrders;
-        cr->recv(src, &bondOrders);
-        for (auto b : bondOrders)
-        {
-            addBondOrder(b);
-        }
     }
     else if (cr->mh())
     {

@@ -1,0 +1,39 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="Contents"><![CDATA[
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE ForceField.dtd PUBLIC "ForceField.dtd" "ForceField.dtd">
+<ForceField>
+  <AtomTypes>
+    <Type name="ow_1" class="o3_b" element="O" mass="15.9994"/>
+    <Type name="hw_1" class="h_b" element="H" mass="1.0079"/>
+    <Type name="hw_2" class="h_b" element="H" mass="1.0079"/>
+  </AtomTypes>
+  <Residues>
+    <Residue name="OXI">
+      <Atom name="O1" type="ow_1" charge="-0.8476"/>
+      <Atom name="H2" type="hw_1" charge="0.4238"/>
+      <Atom name="H3" type="hw_2" charge="0.4238"/>
+      <Bond atomName1="O1" atomName2="H3"/>
+      <Bond atomName1="O1" atomName2="H2"/>
+    </Residue>
+  </Residues>
+  <HarmonicBondForce>
+    <Bond class1="h_b" class2="o3_b" k="450000" length="0.1"/>
+  </HarmonicBondForce>
+  <HarmonicAngleForce energy="0">
+    <Angle class1="h_b" class2="o3_b" class3="h_b" k="400" angle="1.910611932158"/>
+  </HarmonicAngleForce>
+  <CustomAngleForce energy="0"/>
+  <RBTorsionForce energy="0"/>
+  <PeriodicTorsionForce energy="0"/>
+  <NonbondedForce coulomb14scale="1" lj14scale="1">
+    <UseAttributeFromResidue name="charge"/>
+    <Atom type="hw_1" sigma="0.225" epsilon="0"/>
+    <Atom type="hw_2" sigma="0.225" epsilon="0"/>
+    <Atom type="ow_1" sigma="0.3165558" epsilon="0.65017032"/>
+  </NonbondedForce>
+</ForceField>
+]]></String>
+</ReferenceData>

@@ -1,19 +1,19 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
-  <Real Name="T = 300 K B2(Classical)">-16710.369026267053</Real>
-  <Real Name="T = 300 K B2(Force)">839.42128985689942</Real>
-  <Real Name="T = 300 K B2(Torque1)">1295.8233061447443</Real>
-  <Real Name="T = 300 K B2(Torque2)">3103.3462727957408</Real>
-  <Real Name="T = 300 K B2(Total)">-13671.362946939911</Real>
-  <Real Name="T = 400 K B2(Classical)">-1462.2504864353232</Real>
-  <Real Name="T = 400 K B2(Force)">35.40718739309257</Real>
-  <Real Name="T = 400 K B2(Torque1)">130.13563268890343</Real>
-  <Real Name="T = 400 K B2(Torque2)">193.71936403971665</Real>
-  <Real Name="T = 400 K B2(Total)">-1264.9158006779205</Real>
-  <Real Name="T = 500 K B2(Classical)">-378.65252138847472</Real>
-  <Real Name="T = 500 K B2(Force)">5.4744410814137066</Real>
-  <Real Name="T = 500 K B2(Torque1)">33.098846294801973</Real>
-  <Real Name="T = 500 K B2(Torque2)">39.854841521189329</Real>
-  <Real Name="T = 500 K B2(Total)">-336.70123639906535</Real>
+  <Real Name="T = 300 K B2(Classical)">-16710.368828963401</Real>
+  <Real Name="T = 300 K B2(Force)">839.42126614240078</Real>
+  <Real Name="T = 300 K B2(Torque1)">1295.8232666944516</Real>
+  <Real Name="T = 300 K B2(Torque2)">3103.3459432040172</Real>
+  <Real Name="T = 300 K B2(Total)">-13671.362957871765</Real>
+  <Real Name="T = 400 K B2(Classical)">-1462.2504768952097</Real>
+  <Real Name="T = 400 K B2(Force)">35.407186528514536</Real>
+  <Real Name="T = 400 K B2(Torque1)">130.13563216027126</Real>
+  <Real Name="T = 400 K B2(Torque2)">193.71935037868704</Real>
+  <Real Name="T = 400 K B2(Total)">-1264.9157990972162</Real>
+  <Real Name="T = 500 K B2(Classical)">-378.65252128806264</Real>
+  <Real Name="T = 500 K B2(Force)">5.4744409704860715</Real>
+  <Real Name="T = 500 K B2(Torque1)">33.0988465131678</Real>
+  <Real Name="T = 500 K B2(Torque2)">39.854839703701003</Real>
+  <Real Name="T = 500 K B2(Total)">-336.70123720914222</Real>
 </ReferenceData>

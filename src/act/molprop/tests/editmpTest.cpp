@@ -82,9 +82,22 @@ protected:
         cmd.addOption("-g", log_);
         for (const auto &o : options)
         {
-            cmd.addOption(o.first.c_str(), o.second);
+            if (o.second.empty())
+            {
+                cmd.append(o.first);
+            }
+            else
+            {
+                cmd.addOption(o.first.c_str(), o.second);
+            }
         }
-        EXPECT_EQ(0, edit_mp(cmd.argc(), cmd.argv()));
+        {
+            // Some output is written in the working directory
+            auto old = std::filesystem::current_path();
+            std::filesystem::current_path(std::filesystem::path(output).parent_path());
+            EXPECT_EQ(0, edit_mp(cmd.argc(), cmd.argv()));
+            std::filesystem::current_path(old);
+        }
         std::vector<MolProp> mps;
         EXPECT_TRUE(std::filesystem::exists(output));
         MolPropRead(nullptr, output.c_str(), &mps);
@@ -170,6 +183,40 @@ TEST_F(EditMPTest, CheckWithForceField)
     std::stringstream text;
     text << in.rdbuf();
     EXPECT_NE(std::string::npos, text.str().find("Force field file")) << text.str();
+}
+
+// Test: The histograms of the interaction energies are written for each
+// compound that has them, the range is reported in the log file
+TEST_F(EditMPTest, EnergyHistogram)
+{
+    auto input = fileManager().getInputFilePath("../../alexandria/tests/trainff/hf-hf.xml");
+    run({ input }, { { "-ehisto", "" } });
+    auto histo = std::filesystem::path(fileManager().getTemporaryFilePath("out.xml")).parent_path() /
+        "hydrogen-fluoride#hydrogen-fluoride-InteractionEnergy.xvg";
+    std::ifstream in(histo);
+    ASSERT_TRUE(in.good()) << histo;
+    int    npoints = 0;
+    double total   = 0;
+    for (std::string line; std::getline(in, line); )
+    {
+        if (line.empty() || line[0] == '#' || line[0] == '@')
+        {
+            continue;
+        }
+        std::istringstream iss(line);
+        double x, y;
+        ASSERT_TRUE(static_cast<bool>(iss >> x >> y)) << line;
+        npoints++;
+        total += y;
+    }
+    // Each energy is counted in one bin
+    EXPECT_GT(npoints, 0);
+    EXPECT_GT(total, 0);
+    std::ifstream     logIn(log_);
+    std::stringstream text;
+    text << logIn.rdbuf();
+    EXPECT_NE(std::string::npos, text.str().find("Range of energies for hydrogen-fluoride#hydrogen-fluoride")) << text.str();
+    std::filesystem::remove(histo);
 }
 
 } // namespace

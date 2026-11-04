@@ -320,14 +320,6 @@ public:
     void sumd_master(int    nr,
                      double r[]) const;
 
-    /*! \brief Calculate the global sum of an array of ints 
-     * but only on my act helper group
-     * \param[in] nr The number of ints
-     * \param[in] r  The ints.
-     */
-    void sumi_helpers(int nr, 
-                      int r[]) const;
-
     /*********************************************************
      * Routines to initiate and finalize data transmissions
      *********************************************************/
@@ -343,13 +335,6 @@ public:
      * \return CommunicationStatus::SEND_DATA, if OK
      */
     CommunicationStatus send_data(int dest) const;
-    
-    /*! \brief Finish broadcasting data to a processor
-     * \param[in] comm The MPI communicator
-     * \param[in] root Who is the root for this communication
-     * \return CommunicationStatus::OK, if OK
-     */
-    CommunicationStatus  bcast_done(MPI_Comm comm, int root=0) const;
     
     /*! \brief Finalize sending data to a processor
      * \param[in] dest The destination processor

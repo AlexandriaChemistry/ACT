@@ -72,9 +72,9 @@ int min_complex(int argc, char *argv[])
         { efXML, "-mp", "molprop",  ffREAD  }
     };
     gmx_output_env_t *oenv;
-    double shellToler = 1e-6;
-    double minfrac    = 0.9;
-    double maxfrac    = 1.5;
+    real   shellToler = 1e-6;
+    real   minfrac    = 0.9;
+    real   maxfrac    = 1.5;
     int    nfrac      = 5;
     std::vector<t_pargs>      pa = {
         { "-minfrac",   FALSE, etREAL, {&minfrac},
@@ -121,11 +121,8 @@ int min_complex(int argc, char *argv[])
     }
     ForceComputer forceComp;
     double epsilonr;
-    if (!ffOption(pd, InteractionType::ELECTROSTATICS, "epsilonr", &epsilonr))
-    {
-        epsilonr = 1;
-    }
-    forceComp.init(shellToler, sch.maxIter(), epsilonr);
+    epsilonr = pd.epsilonr();
+    forceComp.init(shellToler, sch.shellMaxIter(), epsilonr);
     print_header(tw, pa, fnm);
     
     std::vector<MolProp> mps;

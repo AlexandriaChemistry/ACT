@@ -53,6 +53,7 @@
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/gmxpreprocess/grompp-impl.h"
 #include "gromacs/mdtypes/md_enums.h"
+#include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/textreader.h"
 
 namespace alexandria
@@ -163,9 +164,35 @@ static void add_vsites(const char *vsfile,
         { InteractionType::VSITE4S3,
           ForceFieldParameterList(potentialToString(Potential::VSITE4S3),   CanSwap::No) }
     };
+    // How the atoms in the identifiers of the virtual sites can be swapped
+    std::map<InteractionType, CanSwap> vsiteSwap = {
+        { InteractionType::VSITE1,     CanSwap::Yes },
+        { InteractionType::VSITE2,     CanSwap::Vsite2 },
+        { InteractionType::VSITE2FD,   CanSwap::Vsite2 },
+        { InteractionType::VSITE3,     CanSwap::Vsite3 },
+        { InteractionType::VSITE3S,    CanSwap::Vsite3 },
+        { InteractionType::VSITE3FD,   CanSwap::Vsite3 },
+        { InteractionType::VSITE3FAD,  CanSwap::No },
+        { InteractionType::VSITE3OUT,  CanSwap::No },
+        { InteractionType::VSITE3OUTS, CanSwap::No },
+        { InteractionType::VSITE4,     CanSwap::No },
+        { InteractionType::VSITE4S,    CanSwap::No },
+        { InteractionType::VSITE4S3,   CanSwap::No }
+    };
     while (tr.readLine(&tmp))
     {
-        auto ptr = split(tmp, '|');
+        auto ptr = split(gmx::stripString(tmp), '|');
+        // Empty lines and comments
+        if (ptr.empty() || ptr[0].empty() || ptr[0][0] == '#')
+        {
+            lineno += 1;
+            continue;
+        }
+        if (ptr.size() < 3)
+        {
+            GMX_THROW(gmx::InvalidInputError(gmx::formatString("Found %zu items on line %d in file %s, expected at least 3",
+                                                               ptr.size(), lineno, vsfile).c_str()));
+        }
         Identifier vsid(ptr[0]);
         if (!pd->hasParticleType(vsid))
         {
@@ -178,158 +205,40 @@ static void add_vsites(const char *vsfile,
             GMX_THROW(gmx::InvalidInputError(gmx::formatString("Invalid InteractionType '%s' on line %d in file %s",
                                                                ptr[1].c_str(), lineno, vsfile).c_str()));
         }
-
-        switch (itype)
+        if (i2f.find(itype) == i2f.end())
         {
-        case InteractionType::VSITE1:
-            {
-                std::string myId = ptr[2] + "!" + ptr[0];
-                Identifier vs(itype, myId, CanSwap::Yes);
-                // Not a lot of information here, but we need something for downstream processing.
-                ForceFieldParameter vs1param("", 1, 0, 0, 1, 1, Mutability::Fixed, false, false);
-                auto vsite1_name = potentialToParameterName(Potential::VSITE1);
-                i2f[itype].addParameter(vs, vsite1_name[vsite1A], vs1param);
-            }
-            break;
-        case InteractionType::VSITE2:
-        case InteractionType::VSITE2FD:
-            {
-                std::string myId = ptr[2] + "!" + ptr[0];
-                Identifier vs(itype, myId, CanSwap::Vsite2);
-                double amin = my_atof(ptr[3], "vsite_parameter_min");
-                double amax = my_atof(ptr[4], "vsite_parameter_max");
-                ForceFieldParameter vs2param("", (amin+amax)/2, 0, 0, amin, amax,
-                                             Mutability::Bounded, false, false);
-                if (InteractionType::VSITE2 == itype)
-                {
-                    auto vsite2_name = potentialToParameterName(Potential::VSITE2);
-                    i2f[itype].addParameter(vs, vsite2_name[vsite2A], vs2param);
-                }
-                else
-                {
-                    auto vsite2fd_name = potentialToParameterName(Potential::VSITE2FD);
-                    i2f[itype].addParameter(vs, vsite2fd_name[vsite2fdA], vs2param);
-                }
-            }
-            break;
-        case InteractionType::VSITE3:
-        case InteractionType::VSITE3S:
-        case InteractionType::VSITE3FD:
-            {
-                std::string myId = ptr[2] + "!" + ptr[0];
-                
-                Identifier vs(itype, myId, CanSwap::Vsite3);
-                double amin = my_atof(ptr[3], "vsite_parameter_min");
-                double amax = my_atof(ptr[4], "vsite_parameter_max");
-                double bmin = my_atof(ptr[5], "vsite_parameter_min");
-                double bmax = my_atof(ptr[6], "vsite_parameter_max");
-                ForceFieldParameter vs3param_a("", (amin+amax)/2, 0, 0, amin, amax,
-                                               Mutability::Bounded, false, false);
-                ForceFieldParameter vs3param_b("", (bmin+bmax)/2, 0, 0, bmin, bmax,
-                                               Mutability::Bounded, false, false);
-                if (itype == InteractionType::VSITE3)
-                {
-                    auto vsite3_name = potentialToParameterName(Potential::VSITE3);
-                    i2f[itype].addParameter(vs, vsite3_name[vsite3A], vs3param_a);
-                    i2f[itype].addParameter(vs, vsite3_name[vsite3B], vs3param_b);
-                }
-                else if (itype == InteractionType::VSITE3S)
-                {
-                    auto vsite3s_name = potentialToParameterName(Potential::VSITE3S);
-                    i2f[itype].addParameter(vs, vsite3s_name[vsite3sA], vs3param_a);
-                }
-                else
-                {
-                    auto vsite3fd_name = potentialToParameterName(Potential::VSITE3FD);
-                    i2f[itype].addParameter(vs, vsite3fd_name[vsite3fdA], vs3param_a);
-                    i2f[itype].addParameter(vs, vsite3fd_name[vsite3fdB], vs3param_b);
-                }
-            }
-            break;
-        case InteractionType::VSITE3OUT:
-        case InteractionType::VSITE3OUTS:
-            {
-                std::string myId = ptr[2] + "!" + ptr[0];
-                Identifier vs(itype, myId, CanSwap::No);
-
-                double amin = my_atof(ptr[3], "vsite_parameter_min");
-                double amax = my_atof(ptr[4], "vsite_parameter_max");
-                double bmin = my_atof(ptr[5], "vsite_parameter_min");
-                double bmax = my_atof(ptr[6], "vsite_parameter_max");
-                ForceFieldParameter vs3outparam_a("", (amin+amax)/2, 0, 0, amin, amax,
-                                                  Mutability::Bounded, false, false);
-                if (InteractionType::VSITE3OUT == itype)
-                {
-                    double cmin = my_atof(ptr[7], "vsite_parameter_min");
-                    double cmax = my_atof(ptr[8], "vsite_parameter_max");
-                    ForceFieldParameter vs3outparam_b("", (bmin+bmax)/2, 0, 0, bmin, bmax,
-                                                      Mutability::Bounded, false, false);
-                    ForceFieldParameter vs3outparam_c("", (cmin+cmax)/2, 0, 0, cmin, cmax,
-                                                      Mutability::Bounded, false, false);
-                    auto vsite3out_name = potentialToParameterName(Potential::VSITE3OUT);
-                    i2f[itype].addParameter(vs, vsite3out_name[vsite3outA], vs3outparam_a);
-                    i2f[itype].addParameter(vs, vsite3out_name[vsite3outB], vs3outparam_b);
-                    i2f[itype].addParameter(vs, vsite3out_name[vsite3outC], vs3outparam_c);
-                }
-                else
-                {
-                    double cmin = my_atof(ptr[5], "vsite_parameter_min");
-                    double cmax = my_atof(ptr[6], "vsite_parameter_max");
-                    ForceFieldParameter vs3outparam_c("", (cmin+cmax)/2, 0, 0, cmin, cmax,
-                                                      Mutability::Bounded, false, false);
-                    auto vsite3outs_name = potentialToParameterName(Potential::VSITE3OUTS);
-                    i2f[itype].addParameter(vs, vsite3outs_name[vsite3outsA], vs3outparam_a);
-                    i2f[itype].addParameter(vs, vsite3outs_name[vsite3outsC], vs3outparam_c);
-                }
-            }
-            break;
-        case InteractionType::VSITE4:
-        case InteractionType::VSITE4S:
-        case InteractionType::VSITE4S3:
-            {
-                std::string myId = ptr[2] + "!" + ptr[0];
-                
-                Identifier vs(itype, myId, CanSwap::No);
-                double amin = my_atof(ptr[3], "vsite_parameter_min");
-                double amax = my_atof(ptr[4], "vsite_parameter_max");
-                ForceFieldParameter vs4param_a("", (amin+amax)/2, 0, 0, amin, amax,
-                                               Mutability::Bounded, false, false);
-                if (itype == InteractionType::VSITE4S3)
-                {
-                    auto vsite4s_name = potentialToParameterName(Potential::VSITE4S3);
-                    i2f[itype].addParameter(vs, vsite4s_name[vsite4s3A], vs4param_a);
-                }
-                else
-                {
-                    double bmin = my_atof(ptr[5], "vsite_parameter_min");
-                    double bmax = my_atof(ptr[6], "vsite_parameter_max");
-                    ForceFieldParameter vs4param_b("", (bmin+bmax)/2, 0, 0, bmin, bmax,
-                                                   Mutability::Bounded, false, false);
-                    if (itype == InteractionType::VSITE4S)
-                    {
-                        auto vsite4s_name = potentialToParameterName(Potential::VSITE4S);
-                        i2f[itype].addParameter(vs, vsite4s_name[vsite4sA], vs4param_a);
-                        i2f[itype].addParameter(vs, vsite4s_name[vsite4sB], vs4param_b);
-                    }
-                    else
-                    {
-                        double cmin = my_atof(ptr[7], "vsite_parameter_min");
-                        double cmax = my_atof(ptr[8], "vsite_parameter_max");
-                        ForceFieldParameter vs4param_c("", (cmin+cmax)/2, 0, 0, cmin, cmax,
-                                                       Mutability::Bounded, false, false);
-                        auto vsite4_name = potentialToParameterName(Potential::VSITE4);
-                        i2f[itype].addParameter(vs, vsite4_name[vsite4A], vs4param_a);
-                        i2f[itype].addParameter(vs, vsite4_name[vsite4B], vs4param_b);
-                        i2f[itype].addParameter(vs, vsite4_name[vsite4C], vs4param_c);
-                    }
-                }
-            }
-            break;
-        default: // prints message
             fprintf(stderr, "Ignoring non-vsite interaction type %s\n", ptr[1].c_str());
-            break;
+            lineno += 1;
+            continue;
         }
-
+        auto       &fs = i2f[itype];
+        Identifier  vs(itype, ptr[2] + "!" + ptr[0], vsiteSwap[itype]);
+        auto        names = potentialToParameterName(fs.potential());
+        if (InteractionType::VSITE1 == itype)
+        {
+            // Not a lot of information here, but we need something for downstream processing.
+            fs.addParameter(vs, names[vsite1A],
+                            ForceFieldParameter("", 1, 0, 0, 1, 1, Mutability::Fixed, false, false));
+        }
+        else
+        {
+            // A minimum and a maximum for each parameter, the parameter
+            // starts in the middle
+            size_t nitems = 3 + 2*names.size();
+            if (ptr.size() < nitems)
+            {
+                GMX_THROW(gmx::InvalidInputError(gmx::formatString("Found %zu items on line %d in file %s, expected at least %zu for %s",
+                                                                   ptr.size(), lineno, vsfile, nitems, ptr[1].c_str()).c_str()));
+            }
+            for (size_t i = 0; i < names.size(); i++)
+            {
+                double pmin = my_atof(ptr[3+2*i], "vsite_parameter_min");
+                double pmax = my_atof(ptr[4+2*i], "vsite_parameter_max");
+                fs.addParameter(vs, names[i],
+                                ForceFieldParameter("", (pmin+pmax)/2, 0, 0, pmin, pmax,
+                                                    Mutability::Bounded, false, false));
+            }
+        }
         lineno += 1;
     }
     for(const auto &iii: i2f)
@@ -368,10 +277,11 @@ int gen_ff(int argc, char*argv[])
     CombRuleUtil crule;
     crule.addInfo(&desc);
     gmx_output_env_t *oenv;
-    int               nexclqq  = 2;
-    int               nexclvdw = 2;
-    double            epsilonr = 1;
-    double            shellMaxDistance = 0.02;
+    int               nexcl    = 2;
+    int               nexclqq  = -1;
+    int               nexclvdw = -1;
+    real              epsilonr = 1;
+    real              shellMaxDistance = 0.02;
     bool              qsymm    = true;
     std::vector<const char *>qdn2    = { nullptr, "GAUSSIAN", "POINT", "SLATER", nullptr };
     std::vector<const char *>bondfn  = { nullptr };
@@ -423,10 +333,12 @@ int gen_ff(int argc, char*argv[])
     gmx_bool useVdwCorr = false;
     std::vector<t_pargs> pa =
     {
+        { "-nexcl", FALSE, etINT,  {&nexcl},
+          "Number of bonds within which nonbonded interactions are excluded, the same for all of them." },
         { "-nexclqq", FALSE, etINT,  {&nexclqq},
-          "Number of exclusions for Coulomb and InductionCorrection interactions." },
+          "HIDDENObsolete, use -nexcl. Accepted if it is the same as -nexclvdw." },
         { "-nexclvdw", FALSE, etINT,  {&nexclvdw},
-          "Number of exclusions for Van der Waals interactions and Van der Waals corrections." },
+          "HIDDENObsolete, use -nexcl. Accepted if it is the same as -nexclqq." },
         { "-epsilonr", FALSE, etREAL, {&epsilonr},
           "Relative dielectric constant. 1 is recommended for polarizable force fields, but maybe 1.7 might work for non-polarizable force fields instead of charge scaling." },
         { "-shellmaxdistance", FALSE, etREAL, {&shellMaxDistance},
@@ -455,6 +367,16 @@ int gen_ff(int argc, char*argv[])
                            desc.size(), desc.data(), 0, nullptr, &oenv))
     {
         return 0;
+    }
+    // The obsolete options for the exclusions of Coulomb and van der Waals
+    if (nexclqq >= 0 || nexclvdw >= 0)
+    {
+        if (nexclqq >= 0 && nexclvdw >= 0 && nexclqq != nexclvdw)
+        {
+            GMX_THROW(gmx::InvalidInputError(gmx::formatString("The number of exclusions has to be the same for Coulomb (%d) and van der Waals (%d), use -nexcl",
+                                                               nexclqq, nexclvdw).c_str()));
+        }
+        nexcl = std::max(nexclqq, nexclvdw);
     }
 
     auto table = read_atomtypes(opt2fn("-f", fnm.size(), fnm.data()));
@@ -646,6 +568,14 @@ int gen_ff(int argc, char*argv[])
                     {
                         pname.second.setNonNegative();
                     }
+                    if (bPoint && ap->first == InteractionType::ELECTROSTATICS && pname.first == "zeta")
+                    {
+                        // Point charges have no width
+                        pname.second.setMinimum(0);
+                        pname.second.setMaximum(0);
+                        pname.second.setValue(0);
+                        pname.second.setMutability(Mutability::Fixed);
+                    }
                     ffpl[ap->first].addParameter(key, pname.first, pname.second);
                 }
             }
@@ -659,9 +589,7 @@ int gen_ff(int argc, char*argv[])
     {
         if (nonbond.find(fp.first) != nonbond.end())
         {
-            bool vdw = (InteractionType::VDW == fp.first ||
-                        InteractionType::VDWCORRECTION == fp.first);
-            fp.second.addOption("nexcl", gmx_itoa(vdw ? nexclvdw : nexclqq));
+            fp.second.addOption("nexcl", gmx_itoa(nexcl));
             fp.second.setCanSwap(CanSwap::Yes);
         }
         if (fp.first == InteractionType::ELECTROSTATICS)
@@ -717,8 +645,10 @@ int gen_ff(int argc, char*argv[])
     crule.addDefaults(&pd);
     // Virtual sites
     add_vsites(opt2fn_null("-vs", fnm.size(), fnm.data()), &pd);
-    // Virtual sites on top of atoms that only carry a charge are stored
-    // as second charges, as when reading a force field.
+    // The charge distributions and the options of COULOMB are those of the
+    // particle types, and virtual sites on top of atoms that only carry a
+    // charge are stored as second charges, as when reading a force field.
+    pd.convertCoulomb(nullptr);
     pd.convertVsite1(nullptr);
     if (qsymm)
     {

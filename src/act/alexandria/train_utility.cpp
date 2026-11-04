@@ -39,6 +39,7 @@
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
+#include <filesystem>
 
 #include "act/alexandria/pdbwriter.h"
 #include "act/basics/interactiontype.h"
@@ -632,6 +633,12 @@ static void writeCoordinates(const std::vector<ActAtom>  &atoms,
                              const std::vector<gmx::RVec> &xorig,
                              const std::vector<gmx::RVec> &xmin)
 {
+    // The directory exists only if parameters are optimized
+    auto dir = std::filesystem::path(pdb).parent_path();
+    if (!dir.empty())
+    {
+        std::filesystem::create_directories(dir);
+    }
     FILE *out = gmx_fio_fopen(pdb.c_str(), "w");
     matrix box = { { 4, 0, 0 }, { 0, 4, 0 }, { 0, 0, 4 } };
     std::vector<std::string> resnames = { "A", "B" };
@@ -1285,10 +1292,11 @@ void TrainForceFieldPrinter::printEnergyForces(MsgHandler                       
         if (mol->jobType() == JobType::OPT && calcFrequencies_)
         {
             // Now get the minimized structure RMSD and Energy
-            SimulationConfigHandler simConfig;
+            // The same configuration for all compounds, made consistent once
+            MolHandler::adjustForceTolerance(msghandler, forceComp, &simConfig_);
             std::vector<gmx::RVec>  xmin   = coords;
             std::map<InteractionType, double> eAfter;
-            molHandler_.minimizeCoordinates(msghandler, pd, mol->topology(), forceComp, simConfig,
+            molHandler_.minimizeCoordinates(msghandler, pd, mol->topology(), forceComp, simConfig_,
                                             &xmin, &eAfter, {});
             double rmsd = molHandler_.coordinateRmsd(mol->atomsConst(), coords, &xmin);
 
@@ -1313,7 +1321,7 @@ void TrainForceFieldPrinter::printEnergyForces(MsgHandler                       
             // Do normal-mode analysis etc.
             JsonTree jfreq("FrequencyAnalysis");
             doFrequencyAnalysis(msghandler, pd, mol, molHandler_, forceComp, &coords,
-                                atomenergy, &lsq_freq_, &jfreq,
+                                atomenergy, &lsq_freq_[ims], &jfreq,
                                 nullptr, 24, nullptr, false);
             jtree->addObject(jfreq);
         }
@@ -1405,10 +1413,13 @@ static void collectOutlier(std::vector<Outlier> *outliers,
         }
         if (dumpOutliers >= 0 && deltaE >= dumpOutliers*sigma)
         {
-            std::string myfnm = gmx::formatString("%s-%s-%s.xyz", 
-                                                  mol->getMolname().c_str(),
-                                                  label.c_str(),
-                                                  ener.datafile().c_str());
+            // Only the name of the data file, which may include a path,
+            // dump_xyz adds the extension
+            auto        datafile = std::filesystem::path(ener.datafile()).filename().string();
+            std::string myfnm    = gmx::formatString("%s-%s-%s",
+                                                     mol->getMolname().c_str(),
+                                                     label.c_str(),
+                                                     datafile.c_str());
             dump_xyz(myfnm, mol, ener);
         }
     }
@@ -1511,7 +1522,6 @@ void TrainForceFieldPrinter::print(MsgHandler                  *msghandler,
     int        n  = 0;
     std::map<iMolSelect, qtStats>                               lsq_charge, lsq_esp;
     std::map<iMolSelect, std::map<std::string, gmx_stats> >     lsqt;
-    std::map<iMolSelect, gmx_stats>                             lsq_rmsf, lsq_freq;
     for (auto &mpo : mpoMultiPoles)
     {
         std::map<iMolSelect, qtStats> mq_multi;
@@ -1529,12 +1539,6 @@ void TrainForceFieldPrinter::print(MsgHandler                  *msghandler,
     }
     for(auto &ims : iMolSelectNames())
     {
-        {
-            gmx_stats rmsf;
-            lsq_rmsf.insert({ ims.first, std::move(rmsf) });
-            gmx_stats freq;
-            lsq_freq.insert({ ims.first, std::move(freq) });
-        }
         qtStats qesp, qepot;
         for (auto &i : qPropertyTypes())
         {
@@ -1637,7 +1641,7 @@ void TrainForceFieldPrinter::print(MsgHandler                  *msghandler,
                     auto qresp = qp->qgenResp();
                     if (qresp->nEsp() > 0 && qp->qPactConst().qtype() == qi)
                     {
-                        real rms, rrms, cosesp, mae, mse;
+                        double rms, rrms, cosesp, mae, mse;
                         // Fetch coordinates and optimize shells if polarizable
                         auto myx = qresp->coords();
                         std::map<InteractionType, double> energies;
@@ -1645,6 +1649,7 @@ void TrainForceFieldPrinter::print(MsgHandler                  *msghandler,
                                            &forces, &energies);
                         qresp->updateAtomCoords(myx);
                         qresp->updateAtomCharges(msghandler, mol->atomsConst());
+                        qresp->updateZeta(mol->atomsConst(), pd);
                         qresp->calcPot(msghandler, 1.0);
                         rms = qresp->getStatistics(msghandler, &rrms, &cosesp, &mae, &mse);
                         rms = convertToGromacs(rms, "Hartree/e");
@@ -1759,10 +1764,10 @@ void TrainForceFieldPrinter::print(MsgHandler                  *msghandler,
                             header, "QM/DFT", name.c_str(), useOffset_, &jstats);
                 header = false;
             }
-            if (lsq_freq_.get_npoints() > 0 && qt == qPropertyType::ACM)
+            if (lsq_freq_[ims.first].get_npoints() > 0 && qt == qPropertyType::ACM)
             {
                 print_stats(tw, "Frequencies", mpo_unit2(MolPropObservable::FREQUENCY),
-                            1.0, &lsq_freq_, header, "QM/DFT", name.c_str(), useOffset_, &jstats);
+                            1.0, &lsq_freq_[ims.first], header, "QM/DFT", name.c_str(), useOffset_, &jstats);
                 header = false;
             }
             print_stats(tw, "ESP", "kJ/mol e", 1.0, &lsq_esp[ims.first][qt],
@@ -1813,10 +1818,10 @@ void TrainForceFieldPrinter::print(MsgHandler                  *msghandler,
     }
     print_corr(opt2fn_null("-forcecorr", filenm.size(), filenm.data()),
                nullptr, "Forces (kJ/mol nm)", alex,
-               lsq_rmsf, oenv);
+               lsq_rmsf_, oenv);
     print_corr(opt2fn_null("-freqcorr", filenm.size(), filenm.data()),
                nullptr, "Frequencies (cm^-1)", alex,
-               lsq_freq, oenv);
+               lsq_freq_, oenv);
     print_corr(opt2fn_null("-espcorr", filenm.size(), filenm.data()),
                nullptr, "Electrostatic Potential (kJ/mol e)", alex,
                lsq_esp, oenv);
@@ -1849,7 +1854,7 @@ void TrainForceFieldPrinter::print(MsgHandler                  *msghandler,
         {
             for(auto qp = mol->qProps()->begin(); qp < mol->qProps()->end(); ++qp)
             {
-                real rms, rrms, cosesp, mae, mse;
+                double rms, rrms, cosesp, mae, mse;
                 auto qresp = qp->qgenResp();
                 rms        = convertToGromacs(qresp->getStatistics(msghandler, &rrms, &cosesp, &mae, &mse), "Hartree/e");
                 if ((mol->support() != eSupport::No) && (rms > espMax))

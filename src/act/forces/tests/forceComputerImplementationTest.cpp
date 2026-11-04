@@ -36,8 +36,11 @@
 #include "actpre.h"
 
 #include "../forces_simd.h"
+#include "../forces_explicit_simd.h"
 
+#include <algorithm>
 #include <cmath>
+#include <cstdint>
 
 #include <functional>
 #include <map>
@@ -55,6 +58,7 @@
 #include "act/topology/topology.h"
 #include "gromacs/math/units.h"
 #include "gromacs/math/vec.h"
+#include "gromacs/utility/stringutil.h"
 
 #include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"
@@ -198,15 +202,71 @@ protected:
         // Energy map
         std::map<InteractionType, double> energies;
 
-        double epsilonr = 1;
-        if (pd && !ffOption(*pd, InteractionType::ELECTROSTATICS, 
-                      "epsilonr", &epsilonr))
-        {
-            epsilonr = 1;
-        }
+        double epsilonr = pd ? pd->epsilonr() : 1;
         auto epot = computeOne(p, top, atoms_, coordinates, &forces, &energies, epsilonr);
+        // In single precision the coordinates are rounded, by up to
+        // GMX_FLOAT_EPS times their magnitude. That changes the forces by
+        // the stiffness times this, also where the reference force is zero,
+        // and the energies by the forces times this. For two atoms the
+        // stiffness along z is estimated from the forces at displaced
+        // coordinates.
+        double xround    = 0;
+        double stiffness = 0;
+        if (!GMX_DOUBLE)
+        {
+            for (const auto &xi : *coordinates)
+            {
+                for (int m = 0; m < DIM; m++)
+                {
+                    xround += GMX_FLOAT_EPS*std::abs(xi[m]);
+                }
+            }
+            if (coordinates->size() == 2)
+            {
+                double h = 1.0/1024;
+                double fz[2];
+                for (int k = 0; k < 2; k++)
+                {
+                    std::vector<gmx::RVec>            fk(coordinates->size(), fzero);
+                    std::map<InteractionType, double> ek;
+                    auto                              newx = *coordinates;
+                    newx[1][ZZ] += (2*k-1)*h;
+                    (void) computeOne(p, top, atoms_, &newx, &fk, &ek, epsilonr);
+                    fz[k] = fk[1][ZZ];
+                }
+                stiffness = std::abs(fz[1] - fz[0])/(2*h);
+            }
+        }
+        double fmax = 0;
+        for (const auto &f : forces)
+        {
+            for (int m = 0; m < DIM; m++)
+            {
+                fmax = std::max(fmax, static_cast<double>(std::abs(f[m])));
+            }
+        }
+        // Tolerance with an absolute part for the rounded coordinates in
+        // single precision, for values of both float and double type
+        auto roundedTolerance = [](double absolute)
+        {
+            return gmx::test::FloatingPointTolerance(absolute, absolute, 1e-5, 1e-5,
+                                                     UINT64_MAX, UINT64_MAX, false);
+        };
+        if (!GMX_DOUBLE)
+        {
+            checker_.setDefaultTolerance(roundedTolerance(2*fmax*xround));
+        }
         checker_.checkReal(epot, "Epot");
+        if (!GMX_DOUBLE)
+        {
+            // Components that cancel have errors relative to the largest force
+            checker_.setDefaultTolerance(roundedTolerance(2*stiffness*xround + 1e-6*fmax));
+        }
         checker_.checkSequence(forces.begin(), forces.end(), "Forces");
+        if (!GMX_DOUBLE)
+        {
+            checker_.setDefaultTolerance(roundedTolerance(2*fmax*xround));
+        }
         for (const auto &e : energies)
         {
             checker_.checkReal(e.second, interactionTypeToString(e.first).c_str());
@@ -255,6 +315,7 @@ protected:
                 EXPECT_TRUE(std::abs(forces2[i][m] + forces[i][m]) < fdiff);
             }
         }
+#if GMX_DOUBLE
         double dx = 1e-6;
         double ener[2];
         rvec   dxvector[2];
@@ -271,15 +332,57 @@ protected:
         }
         // Compute numerical derivative
         double fz = -(ener[1]-ener[0])/(norm(dxvector[0])+norm(dxvector[1]));
+#else
+        // Central differences of fourth order, with a larger step, since the
+        // rounding error of the energies is divided by it, and a power of
+        // two, such that the displaced coordinates are exact
+        double h    = 1.0/1024;
+        double emax = std::abs(epot);
+        auto shifted = [&](double dz)
+        {
+            std::vector<gmx::RVec>            forces(coordinates->size(), fzero);
+            std::map<InteractionType, double> energies;
+            auto                              newx = *coordinates;
+            newx[1][ZZ] += dz;
+            double e = computeOne(p, top, atoms_, &newx, &forces, &energies, epsilonr);
+            emax     = std::max(emax, std::abs(e));
+            return e;
+        };
+        double e1 = shifted(h) - shifted(-h);
+        double e2 = shifted(2*h) - shifted(-2*h);
+        double e4 = shifted(4*h) - shifted(-4*h);
+        double fz = -(8*e1 - e2)/(12*h);
+        // The truncation error, of order h^4, follows from the same
+        // stencil with step 2h (Richardson).
+        double fz2h  = -(8*e2 - e4)/(24*h);
+        double trunc = std::abs(fz2h - fz)/15;
+        // The rounding errors of the energies enter fz with the sum of the
+        // absolute weights 18/(12h). They are up to about 8 GMX_FLOAT_EPS
+        // each, from exp and pow and from terms that partly cancel. The
+        // reference force has the error from the rounded coordinates.
+        double fzround = trunc + 12*GMX_FLOAT_EPS*emax/h + 2*stiffness*xround;
+#endif
         double toler = 3e-5;
         // It should be identical to the forces computed at the central point
         // A difference of two energies, in which the last bits of the
         // energies, that can differ between platforms, are amplified
-        checker_.setDefaultTolerance(gmx::test::relativeToleranceAsFloatingPoint(1.0, GMX_DOUBLE ? 1e-7 : 1e-4));
+#if GMX_DOUBLE
+        checker_.setDefaultTolerance(gmx::test::relativeToleranceAsFloatingPoint(1.0, 1e-7));
+#else
+        checker_.setDefaultTolerance(gmx::test::FloatingPointTolerance(fzround, fzround, 1e-4, 1e-4,
+                                                                       UINT64_MAX, UINT64_MAX, false));
+#endif
         checker_.checkReal(fz, "fz");
         checker_.setDefaultTolerance(gmx::test::relativeToleranceAsFloatingPoint(1.0, GMX_DOUBLE ? 1e-10 : 1e-6));
         double diff = abs(fz - forces[1][ZZ]);
         double f2   = std::abs(fz + forces[1][ZZ]);
+#if !GMX_DOUBLE
+        // Differences within the rounding errors are accepted
+        if (diff < fzround)
+        {
+            diff = 0;
+        }
+#endif
         if ((f2 > 0) && (diff >= toler))
         {
             // Make it relative
@@ -301,7 +404,16 @@ TEST_P(ForceComputerImplementationTest, All)
     atoms_[1].setCharge(coord.charge1);
     auto x   = coord.coordsBuilder();
     auto top = pot.topBuilder();
-    if (!top.empty())
+    if (Potential::COULOMB_POINT == pot.potential || Potential::COULOMB_GAUSSIAN == pot.potential ||
+        Potential::COULOMB_SLATER == pot.potential)
+    {
+        // The widths of the charge distributions belong to the atoms
+        for(size_t i = 0; i < par.params.size(); i++)
+        {
+            atoms_[i].setZeta(par.params[i]);
+        }
+    }
+    else if (!top.empty())
     {
         top[0]->setParams(par.params);
     }
@@ -433,6 +545,85 @@ static TopologyEntryVector makeSingleAtomTop()
     return top;
 }
 
+/*! \brief Tang-Toennies damping function f_n(x) = 1 - exp(-x) sum_k=0^n x^k/k!
+ * Summed to convergence from the terms beyond n for small x, independent
+ * of the implementation in the force computer.
+ */
+static double ttDamping(int n, double x)
+{
+    double term = 1;
+    for (int k = 1; k <= n; k++)
+    {
+        term *= x/k;
+    }
+    if (x > 20)
+    {
+        double sum = 1, t = 1;
+        for (int k = 1; k <= n; k++)
+        {
+            t   *= x/k;
+            sum += t;
+        }
+        return 1 - std::exp(-x)*sum;
+    }
+    double tail = 0;
+    for (int k = n+1; term > 1e-20*tail; k++)
+    {
+        term *= x/k;
+        tail += term;
+    }
+    return std::exp(-x)*tail;
+}
+
+/* The damping functions for small br are differences of nearly equal
+ * numbers, which lost up to 1e-5 relative in double precision for br = 0.5.
+ * The energies and forces are compared to the damping functions summed to
+ * convergence, for each of C6, C8 and C10 and for br on both sides of the
+ * switch to the sum of the terms beyond 2m.
+ */
+TEST(TangToenniesDampingTest, ShortDistances)
+{
+    std::vector<ActAtom> atoms;
+    for (int i = 0; i < 2; i++)
+    {
+        atoms.push_back({ "C", "C", "C", ActParticle::Atom, 6, 12, 0, 2 });
+    }
+    // Exact in single precision
+    double r = 0.25;
+    std::vector<gmx::RVec> x = { { 0, 0, 0 }, { 0, 0, static_cast<real>(r) } };
+    // In single precision, the direct formula for br >= ttTailMax has an
+    // error of a few GMX_FLOAT_EPS divided by the damping function there.
+    double toler = gmx::test::precisionTolerance(1e-13, 3*GMX_FLOAT_EPS/ttDamping(10, ttTailMax));
+    for (int m = 3; m <= 5; m++)
+    {
+        int n = 2*m;
+        for (double br : { 0.5, 1.0, 2.0, 3.0, 4.0, 5.0, 5.9, 6.1, 8.0, 12.0 })
+        {
+            double b = br/r;
+            // Parameter order: tt2bA, tt2bBexch, tt2bBdisp, tt2bC6, tt2bC8, tt2bC10
+            std::vector<double> params = { 0, 10, b, 0, 0, 0 };
+            double              cn     = 1e-3;
+            params[m] = cn;
+            auto top = makePairTop();
+            top[0]->setParams(params);
+            std::vector<gmx::RVec>            forces(2, { 0, 0, 0 });
+            std::map<InteractionType, double> energies;
+            double epot = computeOne(Potential::TT2b, top, atoms, &x, &forces, &energies, 1);
+            double fn   = ttDamping(n, br);
+            double eref = -cn*fn/std::pow(r, n);
+            // dE/dr with dfn/dx = exp(-x) x^n/n!
+            double dfn  = std::exp(-br)*std::pow(br, n)/std::tgamma(n+1);
+            double fref = cn*(b*dfn - n*fn/r)/std::pow(r, n);
+            // The two terms of the force cancel for small br
+            double fmag = cn*(b*dfn + n*fn/r)/std::pow(r, n);
+            SCOPED_TRACE(gmx::formatString("n %d br %g", n, br));
+            EXPECT_NEAR(epot, eref, toler*std::abs(eref));
+            EXPECT_NEAR(forces[1][ZZ], fref, toler*fmag);
+            EXPECT_NEAR(forces[0][ZZ], -fref, toler*fmag);
+        }
+    }
+}
+
 // ============================================================
 // Potential descriptors (topology structure only, no params)
 // ============================================================
@@ -528,7 +719,7 @@ static const ForceComputerParamParams c_linAngleParams  { "", { 0.5, 10000 } }; 
 static const ForceComputerParamParams c_harmDihParams   { "", { 10 } };           // kPhi
 static const ForceComputerParamParams c_properDihParams { "", { 30, 10, 4 } };    // angle, kP, mult
 static const ForceComputerParamParams c_fourierDihParams{ "", { 1, 2, -3, 4, -5, 6 } };
-static const ForceComputerParamParams c_posResParams    { "", { 100, 1 } };        // k, R0
+static const ForceComputerParamParams c_posResParams    { "", { 100, 1, 0, 0, 0 } }; // k, R0, center
 
 // ============================================================
 // Name printer: pot.name + par.nameSuffix [+ "_" + coord.name]
@@ -775,23 +966,17 @@ TEST_F(ForceComputerImplementationTest, GaussianEpsilonR)
     // Get forcefield
     auto pd  = getForceField("ACS-pg-vs2");
     ForceField mypd = *pd;
-    auto ielec = InteractionType::ELECTROSTATICS;
-    auto ffpl  = mypd.findForces(ielec);
-    std::string epsopt("epsilonr");
-    if (ffpl->optionExists(epsopt))
-    {
-        ffpl->removeOption(epsopt);
-    }
-    ffpl->addOption(epsopt, "2.0");
+    mypd.setEpsilonr(2.0);
     const auto &pot   = c_coulGaussPot;
     const auto &par   = c_coulZeta10Params;
     const auto &coord = c_stdPairCoords[0];
     atoms_[1].setCharge(coord.charge1);
     auto x   = coord.coordsBuilder();
     auto top = pot.topBuilder();
-    if (!top.empty())
+    // The widths of the charge distributions belong to the atoms
+    for(size_t i = 0; i < par.params.size(); i++)
     {
-        top[0]->setParams(par.params);
+        atoms_[i].setZeta(par.params[i]);
     }
     testPot(pot.potential, top, &x, &mypd);
 }

@@ -79,11 +79,11 @@ private:
     gmx_output_env_t   *oenv_        = nullptr;
                
     //! Temperature to start
-    double              T1_          = 300;
+    real                T1_          = 300;
     //! Final temperature
-    double              T2_          = 400;
+    real                T2_          = 400;
     //! Temperature step
-    double              deltaT_      = 10;
+    real                deltaT_      = 10;
     //! Whether to compute interaction energies and potentially B2
     bool                eInter_      = true;
     //! Whether to compute the second virial
@@ -91,7 +91,7 @@ private:
     //! Plot only the total B2
     bool                totalOnly_   = false;
     //! Dimers with a lower energy (kJ/mol) are treated as overlapping atoms
-    double              eMin_        = -1000;
+    real                eMin_        = -1000;
     //! Largest number of distances of an orientation computed together, 0 means all
     int                 blockSize_   = 264;
     //! The temperature array

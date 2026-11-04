@@ -38,6 +38,7 @@
 #include <filesystem>
 #include <fstream>
 #include <map>
+#include <set>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -48,6 +49,7 @@
 #include "act/basics/interactiontype.h"
 #include "act/forcefield/forcefield.h"
 #include "act/forcefield/forcefield_xml.h"
+#include "act/molprop/molprop_xml.h"
 
 #include "testutils/cmdlinetest.h"
 #include "testutils/testfilemanager.h"
@@ -119,6 +121,82 @@ std::vector<TopLine> section(const Topology &top, const std::string &name)
         }
     }
     return lines;
+}
+
+//! \return the excluded pairs of particles, each with the lowest index first
+std::set<std::pair<int, int>> exclusionPairs(const Topology &top)
+{
+    std::set<std::pair<int, int>> pairs;
+    for (const auto &e : section(top, "exclusions"))
+    {
+        int i = std::stoi(e.fields[0]);
+        for (size_t k = 1; k < e.fields.size(); k++)
+        {
+            int j = std::stoi(e.fields[k]);
+            pairs.insert({ std::min(i, j), std::max(i, j) });
+        }
+    }
+    return pairs;
+}
+
+/*! \brief The pairs that GROMACS excludes for nrexcl, extended to the shells
+ * \return the pairs of particles at most nrexcl bonds apart, where a
+ *         shell has the place of its core, each with the lowest index first
+ */
+std::set<std::pair<int, int>> expectedExclusionPairs(const Topology &top)
+{
+    int  nrexcl = std::stoi(section(top, "moleculetype")[0].fields[1]);
+    auto natoms = section(top, "atoms").size();
+    // The core of each particle, starting at 1 as in the topology
+    std::vector<int> core(natoms + 1);
+    for (size_t i = 0; i <= natoms; i++)
+    {
+        core[i] = i;
+    }
+    for (const auto &p : section(top, "polarization"))
+    {
+        core[std::stoi(p.fields[1])] = std::stoi(p.fields[0]);
+    }
+    std::vector<std::vector<int>> neighbors(natoms + 1);
+    for (const auto &b : section(top, "bonds"))
+    {
+        int i = std::stoi(b.fields[0]);
+        int j = std::stoi(b.fields[1]);
+        neighbors[i].push_back(j);
+        neighbors[j].push_back(i);
+    }
+    std::set<std::pair<int, int>> pairs;
+    for (size_t i = 1; i <= natoms; i++)
+    {
+        // The particles at most nrexcl bonds from the core of i
+        std::vector<int> distance(natoms + 1, -1);
+        std::vector<int> front = { core[i] };
+        distance[core[i]] = 0;
+        for (int n = 1; n <= nrexcl; n++)
+        {
+            std::vector<int> next;
+            for (const auto j : front)
+            {
+                for (const auto k : neighbors[j])
+                {
+                    if (distance[k] < 0)
+                    {
+                        distance[k] = n;
+                        next.push_back(k);
+                    }
+                }
+            }
+            front = next;
+        }
+        for (size_t j = i + 1; j <= natoms; j++)
+        {
+            if (distance[core[j]] >= 0)
+            {
+                pairs.insert({ i, j });
+            }
+        }
+    }
+    return pairs;
 }
 
 //! \return the parameters of an identifier, given as text
@@ -207,6 +285,18 @@ protected:
     void run(const std::string &ffName, const std::vector<std::pair<std::string, std::string>> &input,
              std::map<std::string, std::string> *files)
     {
+        ASSERT_EQ(0, status(ffName, input, files));
+    }
+
+    /*! \brief Run gentop
+     * \param[in] ffName  Force field in this directory
+     * \param[in] input   Options that are passed as they are
+     * \param[in] options Output files, the file names are made temporary
+     * \return the exit status of gentop
+     */
+    int status(const std::string &ffName, const std::vector<std::pair<std::string, std::string>> &input,
+               std::map<std::string, std::string> *files)
+    {
         gmx::test::CommandLine cmd;
         cmd.append("gentop");
         cmd.addOption("-ff", fileManager().getInputFilePath(ffName));
@@ -220,7 +310,7 @@ protected:
             f.second = fileManager().getTemporaryFilePath(f.second);
             cmd.addOption(f.first.c_str(), f.second);
         }
-        ASSERT_EQ(0, gentop(cmd.argc(), cmd.argv()));
+        return gentop(cmd.argc(), cmd.argv());
     }
 
     /*! \brief Check the bonded sections of a topology
@@ -281,6 +371,9 @@ TEST_F(GentopTest, GromacsTopology)
     // The charges have six significant digits
     EXPECT_NEAR(0, qtot, 1e-5);
     EXPECT_EQ(9u, section(top, "bonds").size());
+    // The same exclusions as GROMACS generates from the bonds
+    EXPECT_FALSE(exclusionPairs(top).empty());
+    EXPECT_EQ(expectedExclusionPairs(top), exclusionPairs(top));
     ForceField pd;
     readForceField(fileManager().getInputFilePath("ACS-g.xml"), &pd);
     auto angles = section(top, "angles");
@@ -341,6 +434,111 @@ TEST_F(GentopTest, GromacsTopology)
     for (size_t i = 0; i < atoms.size(); i++)
     {
         EXPECT_EQ(names[i], atoms[i].fields[4]);
+    }
+}
+
+// Test: The shells are excluded from their core and have the same
+// exclusions as their core
+TEST_F(GentopTest, GromacsTopologyShells)
+{
+    std::map<std::string, std::string> files = { { "-p", "acetone.top" } };
+    run("ACS-pg.xml", "acetone.sdf", &files);
+    auto top = readTopology(files["-p"]);
+    ASSERT_EQ(20u, section(top, "atoms").size());
+    ASSERT_EQ(10u, section(top, "polarization").size());
+    EXPECT_EQ(expectedExclusionPairs(top), exclusionPairs(top));
+}
+
+//! \return the total charge of each atom with its shells, in the order of the atoms
+static std::vector<double> atomCharges(const Topology &top)
+{
+    auto atoms = section(top, "atoms");
+    std::vector<int> core(atoms.size() + 1);
+    for (size_t i = 0; i <= atoms.size(); i++)
+    {
+        core[i] = i;
+    }
+    for (const auto &p : section(top, "polarization"))
+    {
+        core[std::stoi(p.fields[1])] = std::stoi(p.fields[0]);
+    }
+    std::map<int, double> q;
+    for (const auto &a : atoms)
+    {
+        q[core[std::stoi(a.fields[0])]] += std::stod(a.fields[6]);
+    }
+    std::vector<double> charges;
+    for (const auto &qq : q)
+    {
+        charges.push_back(qq.second);
+    }
+    return charges;
+}
+
+// Test: The charges of quantum chemistry from the input, with and without
+// shells, which take their charge from their core
+TEST_F(GentopTest, ChargesRead)
+{
+    MsgHandler           msghandler;
+    std::vector<MolProp> mps;
+    auto molpropFile = fileManager().getInputFilePath("../../molprop/tests/molprop.xml");
+    MolPropRead(&msghandler, molpropFile.c_str(), &mps);
+    std::vector<double> mulliken;
+    for (const auto &mp : mps)
+    {
+        if (mp.getMolname() == "water")
+        {
+            for (const auto &ca : mp.findExperimentConst(JobType::OPT)->calcAtomConst())
+            {
+                EXPECT_TRUE(ca.hasCharge("qMulliken"));
+                mulliken.push_back(ca.charge("qMulliken"));
+            }
+        }
+    }
+    ASSERT_EQ(3u, mulliken.size());
+    for (const char *ffName : { "ACS-g.xml", "ACS-pg.xml" })
+    {
+        std::map<std::string, std::string> files = { { "-p", "water.top" } };
+        run(ffName, { { "-charges", molpropFile }, { "-db", "water" }, { "-qqm", "qMulliken" } }, &files);
+        auto charges = atomCharges(readTopology(files["-p"]));
+        ASSERT_EQ(mulliken.size(), charges.size()) << ffName;
+        for (size_t i = 0; i < charges.size(); i++)
+        {
+            EXPECT_NEAR(mulliken[i], charges[i], 1e-5) << ffName << " atom " << i;
+        }
+    }
+}
+
+// Test: Custom charges, of which there must be one for each particle.
+// The space keeps the command line parser from taking the charges for an option.
+TEST_F(GentopTest, ChargesCustom)
+{
+    auto molpropFile = fileManager().getInputFilePath("../../molprop/tests/molprop.xml");
+    std::map<std::string, std::string> files = { { "-p", "water.top" } };
+    run("ACS-g.xml", { { "-charges", molpropFile }, { "-db", "water" }, { "-qcustom", " -0.8 0.4 0.4" } }, &files);
+    std::vector<double> expected = { -0.8, 0.4, 0.4 };
+    auto charges = atomCharges(readTopology(files["-p"]));
+    ASSERT_EQ(expected.size(), charges.size());
+    for (size_t i = 0; i < charges.size(); i++)
+    {
+        EXPECT_NEAR(expected[i], charges[i], 1e-6) << "atom " << i;
+    }
+    files = { { "-p", "water2.top" } };
+    EXPECT_NE(0, status("ACS-g.xml", { { "-charges", molpropFile }, { "-db", "water" }, { "-qcustom", " -0.8 0.8" } }, &files));
+}
+
+// Test: The charges of the particle types in the force field
+TEST_F(GentopTest, ChargesNone)
+{
+    std::map<std::string, std::string> files = { { "-p", "water.top" } };
+    run("../../properties/tests/SPCE.xml",
+        { { "-f", fileManager().getInputFilePath("mols/water_dimer.pdb") }, { "-qalg", "None" } }, &files);
+    std::vector<double> expected = { -0.8476, 0.4238, 0.4238, -0.8476, 0.4238, 0.4238 };
+    auto charges = atomCharges(readTopology(files["-p"]));
+    ASSERT_EQ(expected.size(), charges.size());
+    for (size_t i = 0; i < charges.size(); i++)
+    {
+        EXPECT_NEAR(expected[i], charges[i], 1e-6) << "atom " << i;
     }
 }
 
@@ -468,6 +666,148 @@ TEST_F(GentopTest, Cubes)
     std::filesystem::remove(corr);
 }
 
+//! Runs gentop with a force field from which parameters are removed
+class GentopMissingTest : public GentopTest
+{
+protected:
+    /*! \brief Run gentop for acetone with a force field from which a
+     * torsion or one of its parameters is removed
+     * \param[in]  id        Identifier of the torsion
+     * \param[in]  parameter The parameter to remove, all if empty
+     * \param[out] status    The exit status of gentop
+     * \return the number of messages about missing parameters of each
+     *         torsion, and of the other ones as "other"
+     */
+    std::map<std::string, int> missing(const std::string &id, const std::string &parameter,
+                                       int *status)
+    {
+        ForceField pd;
+        readForceField(fileManager().getInputFilePath("ACS-pg.xml"), &pd);
+        auto propers = pd.findForces(InteractionType::PROPER_DIHEDRALS)->parameters();
+        for (auto p = propers->begin(); p != propers->end(); ++p)
+        {
+            if (p->first.id() == id)
+            {
+                if (parameter.empty())
+                {
+                    propers->erase(p);
+                }
+                else
+                {
+                    p->second.erase(parameter);
+                }
+                break;
+            }
+        }
+        auto ffName = fileManager().getTemporaryFilePath("missing.xml");
+        writeForceField(ffName, &pd, false);
+
+        auto logName = fileManager().getTemporaryFilePath("missing.log");
+        gmx::test::CommandLine cmd;
+        cmd.append("gentop");
+        cmd.addOption("-ff", ffName);
+        cmd.addOption("-f", fileManager().getInputFilePath("mols/acetone.sdf"));
+        cmd.addOption("-c", fileManager().getTemporaryFilePath("missing.pdb"));
+        cmd.addOption("-g", logName);
+        *status = gentop(cmd.argc(), cmd.argv());
+        std::ifstream              in(logName);
+        std::map<std::string, int> torsions;
+        for (std::string line; std::getline(in, line); )
+        {
+            std::string key("Missing parameter in force field: FOURIER_DIHEDRALS ");
+            auto        pos = line.find(key);
+            if (pos != std::string::npos)
+            {
+                std::istringstream iss(line.substr(pos + key.size()));
+                std::string        name;
+                iss >> name;
+                torsions[name] += 1;
+            }
+            else if (line.find("Missing parameter") != std::string::npos)
+            {
+                torsions["other"] += 1;
+            }
+        }
+        return torsions;
+    }
+};
+
+// Test: Each of the six torsions without parameters is reported, and not
+// the torsions after them, which have all their parameters, gentop fails
+TEST_F(GentopMissingTest, Torsion)
+{
+    int status;
+    EXPECT_EQ((std::map<std::string, int>{ { "h_b~c3_b~c2_b=o2_b", 6 } }),
+              missing("h_b~c3_b~c2_b=o2_b", "", &status));
+    EXPECT_NE(0, status);
+}
+
+// Test: A parameter that is missing from a torsion is zero, with a
+// warning about that torsion only
+TEST_F(GentopMissingTest, Parameter)
+{
+    int  status;
+    auto torsions = missing("h_b~c3_b~c2_b=o2_b", "c5", &status);
+    ASSERT_EQ(1u, torsions.size());
+    EXPECT_EQ("h_b~c3_b~c2_b=o2_b", torsions.begin()->first);
+    EXPECT_EQ(0, status);
+}
+
+
+/* Test: Without bond charge corrections for all bonds of water, SQE gives
+ * no charges, and gentop, simulate and b2 leave water out and fail.
+ */
+TEST_F(GentopMissingTest, BondCorrection)
+{
+    ForceField pd;
+    readForceField(fileManager().getInputFilePath("ACS-g.xml"), &pd);
+    ASSERT_EQ(ChargeGenerationAlgorithm::SQE, pd.chargeGenerationAlgorithm());
+    auto   *bcc     = pd.findForces(InteractionType::BONDCORRECTIONS)->parameters();
+    size_t  nerased = 0;
+    for (auto b = bcc->begin(); b != bcc->end(); )
+    {
+        if (b->first.id() == "h_z~o3_z" || b->first.id() == "o3_z~h_z")
+        {
+            b = bcc->erase(b);
+            nerased++;
+        }
+        else
+        {
+            ++b;
+        }
+    }
+    ASSERT_GT(nerased, 0u);
+    auto ffName = fileManager().getTemporaryFilePath("nobcc.xml");
+    writeForceField(ffName, &pd, false);
+
+    std::vector<std::pair<std::string, int (*)(int, char *[])>> programs = {
+        { "gentop", gentop }, { "simulate", simulate }, { "b2", b2 }
+    };
+    for (const auto &program : programs)
+    {
+        auto logName = fileManager().getTemporaryFilePath(program.first + ".log");
+        gmx::test::CommandLine cmd;
+        cmd.append(program.first.c_str());
+        cmd.addOption("-ff", ffName);
+        cmd.addOption("-charges", fileManager().getInputFilePath("../../molprop/tests/molprop.xml"));
+        cmd.addOption("-db", "water");
+        cmd.addOption("-g", logName);
+        if (program.first == "gentop")
+        {
+            cmd.addOption("-p", fileManager().getTemporaryFilePath("water.top"));
+        }
+        else if (program.first == "simulate")
+        {
+            cmd.append("-sp");
+            cmd.addOption("-c", fileManager().getTemporaryFilePath("water.pdb"));
+        }
+        EXPECT_NE(0, program.second(cmd.argc(), cmd.argv())) << program.first;
+        std::ifstream     in(logName);
+        std::stringstream log;
+        log << in.rdbuf();
+        EXPECT_NE(std::string::npos, log.str().find("Parameters for charge generation missing: water")) << program.first;
+    }
+}
 } // namespace
 
 } // namespace alexandria
