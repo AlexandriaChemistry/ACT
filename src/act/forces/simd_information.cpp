@@ -446,7 +446,15 @@ void writeSimdInformation(gmx::TextWriter *writer)
     auto peak = theoreticalPeakPerCore();
     if (peak.gflops > 0)
     {
-        writer->writeLine(gmx::formatString("Peak per core:      %.2f GFlop/s double precision, %s", peak.gflops, peak.basis.c_str()));
+        if (GMX_DOUBLE)
+        {
+            writer->writeLine(gmx::formatString("Peak per core:      %.2f GFlop/s double precision, %s", peak.gflops, peak.basis.c_str()));
+        }
+        else
+        {
+            writer->writeLine(gmx::formatString("Peak per core:      %.2f GFlop/s single precision (%.2f double), %s",
+                                                peak.gflopsOfBuild(), peak.gflops, peak.basis.c_str()));
+        }
     }
     else
     {

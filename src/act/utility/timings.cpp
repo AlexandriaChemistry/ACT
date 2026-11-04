@@ -473,27 +473,32 @@ void printTimings(const CommunicationRecord *cr,
             tw->writeStringFormatted("each division and square root as five, functions like exp and erf as the\n");
             tw->writeStringFormatted("operations of their SIMD implementation in ACT.\n");
 #if GMX_DOUBLE
-            tw->writeStringFormatted("All calculations are in double precision, as the theoretical peak.\n");
+            tw->writeStringFormatted("The calculations are in double precision, as the theoretical peak.\n");
 #else
-            tw->writeStringFormatted("The calculations are in single precision, for which the peak is twice as\n");
-            tw->writeStringFormatted("high as the theoretical peak in double precision.\n");
+            tw->writeStringFormatted("The calculations are in single precision, as the theoretical peak, which is\n");
+            tw->writeStringFormatted("twice that in double precision.\n");
 #endif
             tw->writeStringFormatted("%-48s %10.4g\n", "Floating point operations", totalFlops);
             tw->writeStringFormatted("%-48s %10.3f GFlop/s\n", "Average over the wall time", average);
             tw->writeStringFormatted("%-48s %10.3f GFlop/s\n", "In the parts where operations were counted", inCounted);
             if (havePeak)
             {
-                tw->writeStringFormatted("%-48s %10.3f GFlop/s\n", "Theoretical peak, double precision", peak->gflops);
-                tw->writeStringFormatted("%-48s %s\n", "", peak->basis.c_str());
-                tw->writeStringFormatted("%-48s %10.2f %%\n", "Fraction of the peak on average", 100*average/peak->gflops);
-                tw->writeStringFormatted("%-48s %10.2f %%\n", "Fraction of the peak in the counted parts", 100*inCounted/peak->gflops);
+                tw->writeStringFormatted("%-48s %10.3f GFlop/s\n",
+                                         GMX_DOUBLE ? "Theoretical peak, double precision" : "Theoretical peak, single precision",
+                                         peak->gflopsOfBuild());
+                // The basis gives the operations per cycle in double precision
+                tw->writeStringFormatted("%-48s %s%s\n", "", peak->basis.c_str(),
+                                         GMX_DOUBLE ? "" : ", in double precision");
+                tw->writeStringFormatted("%-48s %10.2f %%\n", "Fraction of the peak on average", 100*average/peak->gflopsOfBuild());
+                tw->writeStringFormatted("%-48s %10.2f %%\n", "Fraction of the peak in the counted parts", 100*inCounted/peak->gflopsOfBuild());
             }
             else
             {
                 tw->writeStringFormatted("The theoretical peak of this processor is not known%s%s. It can be given as\n",
                                          peak && !peak->basis.empty() ? ": " : "",
                                          peak ? peak->basis.c_str() : "");
-                tw->writeStringFormatted("the GFlop/s of one core in the environment variable ACT_PEAK_GFLOPS.\n");
+                tw->writeStringFormatted("the double precision GFlop/s of one core in the environment variable\n");
+                tw->writeStringFormatted("ACT_PEAK_GFLOPS.\n");
             }
             tw->writeStringFormatted("\n");
         }
@@ -503,11 +508,11 @@ void printTimings(const CommunicationRecord *cr,
         jperf.addValueUnit("Per core in the counted parts", gmx::formatString("%.4f", inCounted), "GFlop/s");
         if (havePeak)
         {
-            jperf.addValueUnit("Theoretical peak per core", gmx::formatString("%.4f", peak->gflops), "GFlop/s");
-            jperf.addObject("Theoretical peak precision", "double");
+            jperf.addValueUnit("Theoretical peak per core", gmx::formatString("%.4f", peak->gflopsOfBuild()), "GFlop/s");
+            jperf.addObject("Theoretical peak precision", GMX_DOUBLE ? "double" : "single");
             jperf.addObject("Theoretical peak basis", peak->basis);
-            jperf.addValueUnit("Fraction of the peak on average", gmx::formatString("%.3f", 100*average/peak->gflops), "%");
-            jperf.addValueUnit("Fraction of the peak in the counted parts", gmx::formatString("%.3f", 100*inCounted/peak->gflops), "%");
+            jperf.addValueUnit("Fraction of the peak on average", gmx::formatString("%.3f", 100*average/peak->gflopsOfBuild()), "%");
+            jperf.addValueUnit("Fraction of the peak in the counted parts", gmx::formatString("%.3f", 100*inCounted/peak->gflopsOfBuild()), "%");
         }
     }
     if (jtree)
