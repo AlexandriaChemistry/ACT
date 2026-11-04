@@ -43,6 +43,7 @@
 #include <array>
 #include <cstddef>
 #include <initializer_list>
+#include <limits>
 #include <map>
 #include <type_traits>
 #include <utility>
@@ -716,6 +717,40 @@ struct DeviationReference
     std::vector<std::vector<char>>   have;
 };
 
+/*! \brief State of the shell relaxation of the conformations, see ForceComputer::updateShells
+ * In the layout of ConformationArrays and with the slots of the arrays, such
+ * that the loops over the conformations access it in order. Row i of step,
+ * force and dxForce holds the values of the shells of fragment i of a dimer.
+ */
+struct ShellRelaxation
+{
+    //! Distance between the rows
+    size_t              stride = 0;
+    //! Fraction of the Newton step by which the shells move
+    std::vector<double> step;
+    //! Mean square shell force in the previous relaxation step
+    std::vector<double> force;
+    /*! The sum over the shells of their displacement in the previous
+     * relaxation step times the force before it, zero if there was none
+     */
+    std::vector<double> dxForce;
+    //! Displacements of the shells in the previous step, component m of particle a in row DIM*a+m
+    std::vector<real>   dx;
+
+    /*! \brief Start the shell relaxation with full steps
+     * \param[in] st    The stride of the arrays
+     * \param[in] natom The number of particles
+     */
+    void reset(size_t st, size_t natom)
+    {
+        stride = st;
+        step.assign(2*st, 1.0);
+        force.assign(2*st, std::numeric_limits<double>::max());
+        dxForce.assign(2*st, 0.0);
+        dx.assign(DIM*natom*st, 0);
+    }
+};
+
 //! Coordinates, forces and energies of all conformations of a topology
 struct ConformationData
 {
@@ -845,14 +880,20 @@ struct ConformationData
     }
 
     /*! \brief Put the conformations to compute in the first slots of the arrays
-     * The forces of the entries without shells are kept in the same order.
+     * The forces of the entries without shells and the state of the shell
+     * relaxation are kept in the same order.
      * With all conformations, slot c holds conformation c again.
      * \param[in] active The conformations to compute, in increasing order
      */
     void arrangeSlots(const std::vector<size_t> &active)
     {
-        arrays.template arrange<real, double>(active, { { &fixed.arrayForces, arrays.stride } },
-                                              { { &fixed.arrayForcesDouble, arraysDouble.stride } });
+        arrays.template arrange<real, double>(active,
+                                              { { &fixed.arrayForces, arrays.stride },
+                                                { &shells.dx, shells.stride } },
+                                              { { &fixed.arrayForcesDouble, arraysDouble.stride },
+                                                { &shells.step, shells.stride },
+                                                { &shells.force, shells.stride },
+                                                { &shells.dxForce, shells.stride } });
     }
 
     //! \return Whether arraysDouble is used, see doublePrecision
@@ -887,6 +928,8 @@ struct ConformationData
     DeviationReference   deviation;
     //! Energies and forces of the entries without shells
     FixedEnergies        fixed;
+    //! State of the shell relaxation, in the order of the slots
+    ShellRelaxation      shells;
     //! The conformations computed in the last energy calculation, kept to use the memory again
     std::vector<size_t>  active;
 

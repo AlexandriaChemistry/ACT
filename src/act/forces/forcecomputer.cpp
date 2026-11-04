@@ -230,60 +230,69 @@ static double calcFscaleFlops(real k2, real F)
 }
 
 /*! \brief Move a shell on top of its core along the force
+ * \param[inout] xs      Component XX of the coordinates of the shell, the others stride apart
+ * \param[in]    fs      Likewise of the force on the shell
+ * \param[in]    stride  The distance between the components
+ * \param[in]    fcShell The harmonic force constant of the shell
+ * \param[in]    fcHyper The quartic force constant of the shell
+ * \param[in]    step    Fraction of the displacement to the minimum
  * \return the number of floating point operations, see Timings::addFlops
  */
-static inline double update_shell_pos(int                                  shell,
-                                      const CoordinateVectors<Coordinate> &coordinates,
-                                      const ParticleVectors<const real> &forces,
-                                      double                               fcShell,
-                                      double                               fcHyper,
-                                      double                               step)
+static inline double update_shell_pos(Coordinate *xs,
+                                      const real *fs,
+                                      size_t      stride,
+                                      double      fcShell,
+                                      double      fcHyper,
+                                      double      step)
 {
-    gmx::RVec fshell = forces[shell].rvec();
+    gmx::RVec fshell = { fs[0], fs[stride], fs[2*stride] };
     auto      Fnorm  = norm(fshell);
     auto      fscale = step*calc_fscale(fcShell, fcHyper, Fnorm);
     for(int m = 0; m < DIM; m++)
     {
-        coordinates[shell][m] -= fshell[m] * fscale;
+        xs[m*stride] = moveCoordinate(xs[m*stride], -(fshell[m] * fscale));
     }
     // The norm with its square root, the step and the displacement
     return 10 + calcFscaleFlops(fcHyper, Fnorm) + 1 + 6;
 }
 
 /*! \brief Move a shell towards the minimum of its potential
- * \param[in]    core        The core of the shell
- * \param[in]    shell       The shell
- * \param[inout] coordinates The coordinates
- * \param[in]    forces      The forces
- * \param[in]    fcShell     The harmonic force constant of the shell
- * \param[in]    fcHyper     The quartic force constant of the shell
- * \param[in]    rHyper      The distance beyond which the quartic term acts
- * \param[in]    step        Fraction of the displacement that would bring
- *                            an isolated shell to its minimum
+ * The coordinates and forces are those of one slot of the arrays, see
+ * ConformationArrays, with the components stride apart.
+ * \param[inout] xs      Component XX of the coordinates of the shell
+ * \param[in]    xc      Likewise of the core of the shell
+ * \param[in]    fs      Likewise of the force on the shell
+ * \param[in]    stride  The distance between the components
+ * \param[in]    fcShell The harmonic force constant of the shell
+ * \param[in]    fcHyper The quartic force constant of the shell
+ * \param[in]    rHyper  The distance beyond which the quartic term acts
+ * \param[in]    step    Fraction of the displacement that would bring
+ *                       an isolated shell to its minimum
  * \return the number of floating point operations, see Timings::addFlops
  */
-static double update_shell_positions(int                                  core,
-                                   int                                  shell,
-                                   const CoordinateVectors<Coordinate> &coordinates,
-                                   const ParticleVectors<const real> &forces,
-                                   double                               fcShell,
-                                   double                               fcHyper,
-                                   double                               rHyper,
-                                   double                               step)
+static inline double update_shell_positions(Coordinate       *xs,
+                                            const Coordinate *xc,
+                                            const real       *fs,
+                                            size_t            stride,
+                                            double            fcShell,
+                                            double            fcHyper,
+                                            double            rHyper,
+                                            double            step)
 {
-    // Core shell vector
-    gmx::RVec r_core_shell = coordinates[shell] - coordinates[core];
+    // Core shell vector, from the integers
+    gmx::RVec r_core_shell;
+    for(int m = 0; m < DIM; m++)
+    {
+        r_core_shell[m] = fromCoordinate(coordinateDifference(xs[m*stride], xc[m*stride]));
+    }
     double rcs    = norm(r_core_shell);
     // The vector and its norm with the square root
     double flops  = 13;
-    //double toler  = 1e-2;
-    // Check for co-linearity of shell displacement and the force
-    //double cosang = cos_angle(r_core_shell, forces[shell]);
     if (rcs == 0)
     {
         // On top of the core the quartic term only contributes if
         // it starts at zero distance.
-        flops += update_shell_pos(shell, coordinates, forces, fcShell,
+        flops += update_shell_pos(xs, fs, stride, fcShell,
                                   rHyper > 0 ? 0 : fcHyper, step);
     }
     else
@@ -310,12 +319,12 @@ static double update_shell_positions(int                                  core,
             // Both force constants, with the division in kperp
             flops     += 11 + 5;
         }
-        gmx::RVec fshell = forces[shell].rvec();
+        gmx::RVec fshell = { fs[0], fs[stride], fs[2*stride] };
         double    fpar   = iprod(fshell, r_core_shell)/rcs;
         for(int m = 0; m < DIM; m++)
         {
             double fparm = fpar*r_core_shell[m]/rcs;
-            coordinates[shell][m] += step*(fparm/kpar + (fshell[m] - fparm)/kperp);
+            xs[m*stride] = moveCoordinate(xs[m*stride], step*(fparm/kpar + (fshell[m] - fparm)/kperp));
         }
         // The parallel force with its division, and per dimension three
         // divisions and five other operations
@@ -433,60 +442,90 @@ static const double minShellStep = 0.1;
 //! Largest scaling of the step of the shells, see updateShells
 static const double maxShellStep = 1.0;
 
-/*! \brief The squared shell forces of many conformations, see shellForce2
- * The loop over the conformations is the inner loop, such that the
- * coordinates and forces of the conformations in consecutive slots are
- * accessed together. Each conformation is computed as by shellForce2.
+/*! \brief Pointer to a row of arrays in the layout of ConformationArrays
+ * \param[in] p      The first slot of the arrays to use
+ * \param[in] stride The distance between the rows
+ * \param[in] a      The particle
+ * \param[in] m      The dimension
+ * \return the address of component m of particle a in the first slot
+ */
+template <typename T>
+static inline T *slotRow(T *p, size_t stride, size_t a, int m)
+{
+    return p + (DIM*a + m)*stride;
+}
+
+/*! \brief The squared shell forces of consecutive slots, see shellForce2
+ * The loop over the slots is the inner loop, such that it accesses the
+ * arrays contiguously. Each slot is computed as by shellForce2.
  * \param[in]  atoms             The particles
  * \param[in]  isShell           Whether or not the particles are shells
- * \param[in]  cdata             The conformations
- * \param[in]  confs             The conformations to compute
+ * \param[in]  x                 The coordinates in the first slot, see ConformationArrays
+ * \param[in]  f                 The forces in the first slot
+ * \param[in]  stride            The distance between the rows of x and f
+ * \param[in]  ns                The number of slots
  * \param[in]  offset            Index of the first particle in the conformations
  * \param[in]  maxShellDistance2 Square of the maximum core-shell distance, 0 if there is none
- * \param[out] f2sum             The sum of the squared shell forces of each conformation
+ * \param[out] f2sum             The sum of the squared shell forces in each slot
  */
-static void shellForces2(const std::vector<ActAtom>  &atoms,
-                         const std::vector<bool>     &isShell,
-                         const ConformationData      *cdata,
-                         const std::vector<size_t>   &confs,
-                         size_t                       offset,
-                         double                       maxShellDistance2,
-                         std::vector<double>         *f2sum)
+static void shellForces2(const std::vector<ActAtom> &atoms,
+                         const std::vector<bool>    &isShell,
+                         const Coordinate           *x,
+                         const real                 *f,
+                         size_t                      stride,
+                         size_t                      ns,
+                         size_t                      offset,
+                         double                      maxShellDistance2,
+                         std::vector<double>        *f2sum)
 {
     // Shells are put on the wall by scaling, allow for rounding
     const double atWall = 0.9999*maxShellDistance2;
-    size_t       n      = confs.size();
-    f2sum->assign(n, 0.0);
+    f2sum->assign(ns, 0.0);
+    double      *sum    = f2sum->data();
     // Floating point operations, see Timings::addFlops
-    double       flops  = n;
+    double       flops  = ns;
     for(size_t i = 0; i < isShell.size(); i++)
     {
         if (!isShell[i])
         {
             continue;
         }
-        bool wall = maxShellDistance2 > 0 && atoms[i].parents().size() == 1;
-        for(size_t k = 0; k < n; k++)
+        bool        wall = maxShellDistance2 > 0 && atoms[i].parents().size() == 1;
+        const real *fx   = slotRow(f, stride, i+offset, XX);
+        const real *fy   = slotRow(f, stride, i+offset, YY);
+        const real *fz   = slotRow(f, stride, i+offset, ZZ);
+        // The square and the sum
+        flops += 6*ns;
+        if (!wall)
         {
-            auto      x  = cdata->x(confs[k]);
-            auto      f  = cdata->f(confs[k]);
-            gmx::RVec fi = f[i+offset].rvec();
-            double    f2 = iprod(fi, fi);
-            // The square and the sum
-            flops += 6;
-            if (wall)
+            for(size_t j = 0; j < ns; j++)
             {
-                gmx::RVec dx  = x[i+offset] - x[atoms[i].parents()[0]+offset];
-                double    dx2 = iprod(dx, dx);
-                double    fdx = iprod(fi, dx);
-                flops += 13;
-                if (dx2 >= atWall && fdx > 0)
-                {
-                    f2    -= fdx*fdx/dx2;
-                    flops += 7;
-                }
+                real f2 = fx[j]*fx[j] + fy[j]*fy[j] + fz[j]*fz[j];
+                sum[j] += f2;
             }
-            (*f2sum)[k] += f2;
+            continue;
+        }
+        size_t            parent = atoms[i].parents()[0] + offset;
+        const Coordinate *xs     = slotRow(x, stride, i+offset, XX);
+        const Coordinate *xp     = slotRow(x, stride, parent, XX);
+        flops += 13*ns;
+        for(size_t j = 0; j < ns; j++)
+        {
+            gmx::RVec fi = { fx[j], fy[j], fz[j] };
+            gmx::RVec dx;
+            for(int m = 0; m < DIM; m++)
+            {
+                dx[m] = fromCoordinate(coordinateDifference(xs[j + m*stride], xp[j + m*stride]));
+            }
+            double f2  = iprod(fi, fi);
+            double dx2 = iprod(dx, dx);
+            double fdx = iprod(fi, dx);
+            if (dx2 >= atWall && fdx > 0)
+            {
+                f2    -= fdx*fdx/dx2;
+                flops += 7;
+            }
+            sum[j] += f2;
         }
     }
     Timings::instance().addFlops(flops);
@@ -510,16 +549,19 @@ size_t ForceComputer::updateShells(const Topology            *top,
     // Floating point operations, see Timings::addFlops, those of shellForces2
     // are counted there
     double flops      = 1;
-    // The conformations that are not done, in the order of their slots,
-    // such that the loops over them access the arrays in order. Each
-    // conformation is computed independently of the others. The vectors
-    // are kept between calls, such that the memory is used again.
-    static thread_local std::vector<size_t> confs, relax;
-    static thread_local std::vector<double> msForce, after, dxForce;
-    static thread_local std::vector<char>   scaled;
-    confs.clear();
-    relax.clear();
+    auto  &ca         = cdata->arrays;
+    auto  &state      = cdata->shells;
+    // The slots from s0 up to s1 hold the conformations that are not done.
+    // All slots in between are computed, those of conformations that are
+    // done or not to update are masked, such that the loops over the slots
+    // access the arrays contiguously, as on a vector unit or a GPU. Each
+    // slot is computed independently of the others. The vectors are kept
+    // between calls, such that the memory is used again.
+    static thread_local std::vector<double> msForce, fmax, after, dxForce;
+    static thread_local std::vector<char>   relax;
     size_t nconf      = active ? active->size() : myCoords->size();
+    size_t s0         = ca.nconf;
+    size_t s1         = 0;
     for(size_t i = 0; i < nconf; i++)
     {
         size_t c = active ? (*active)[i] : i;
@@ -529,67 +571,91 @@ size_t ForceComputer::updateShells(const Topology            *top,
         }
         else
         {
-            confs.push_back(c);
+            s0 = std::min(s0, ca.slot(c));
+            s1 = std::max(s1, ca.slot(c) + 1);
         }
     }
-    const auto &ca = cdata->arrays;
-    auto bySlot = [&ca](size_t a, size_t b) { return ca.slot(a) < ca.slot(b); };
-    if (!std::is_sorted(confs.begin(), confs.end(), bySlot))
+    if (s1 <= s0)
     {
-        std::sort(confs.begin(), confs.end(), bySlot);
+        return numberDone;
     }
+    size_t ns     = s1 - s0;
+    relax.assign(ns, 0);
+    for(size_t i = 0; i < nconf; i++)
+    {
+        size_t c = active ? (*active)[i] : i;
+        if (!(*myCoords)[c].done)
+        {
+            relax[ca.slot(c) - s0] = 1;
+        }
+    }
+    GMX_RELEASE_ASSERT(state.stride == ca.stride && state.dx.size() == ca.x.size(),
+                       "The shell relaxation was not started");
+    size_t      stride  = ca.stride;
+    Coordinate *x       = ca.x.data() + s0;
+    const real *f       = ca.f.data() + s0;
+    double     *step    = state.step.data() + fragment*stride + s0;
+    double     *msPrev  = state.force.data() + fragment*stride + s0;
+    double     *dxfPrev = state.dxForce.data() + fragment*stride + s0;
+    real       *dx      = state.dx.data() + s0;
     // Mean square shell force
-    shellForces2(atoms, isShell, cdata, confs, offset, maxShellDistance2, &msForce);
-    // The conformations of which the shells are moved
-    for(size_t k = 0; k < confs.size(); k++)
+    shellForces2(atoms, isShell, x, f, stride, ns, offset, maxShellDistance2, &msForce);
+    if (nShell > 0)
     {
-        if (nShell > 0)
+        for(size_t j = 0; j < ns; j++)
         {
-            msForce[k] /= nShell;
-            flops      += 5;
+            msForce[j] /= nShell;
         }
-        // The forces on the shells do not get below their rounding error,
-        // which in single precision may be above the tolerance. When the
-        // mean square force is within it and no longer decreases, moving
-        // the shells does not reduce it.
-        const auto &dim     = (*myCoords)[confs[k]];
-        bool        atFloor = false;
-        if (msForce[k] > msForceToler_)
+        flops += 5*ns;
+    }
+    // The forces on the shells do not get below their rounding error,
+    // which in single precision may be above the tolerance. When the
+    // mean square force is within it and no longer decreases, moving
+    // the shells does not reduce it.
+    bool needMax = false;
+    for(size_t j = 0; j < ns; j++)
+    {
+        needMax = needMax || (relax[j] && msForce[j] > msForceToler_);
+    }
+    if (needMax)
+    {
+        fmax.assign(ns, 0.0);
+        for(size_t i = 0; i < atoms.size(); i++)
         {
-            auto   f    = cdata->f(confs[k]);
-            double fmax = 0;
-            for(size_t i = 0; i < atoms.size(); i++)
+            for(int m = 0; m < DIM; m++)
             {
-                for(int m = 0; m < DIM; m++)
+                const real *fm = slotRow(f, stride, i+offset, m);
+                for(size_t j = 0; j < ns; j++)
                 {
-                    fmax = std::max(fmax, std::abs(static_cast<double>(f[i+offset][m])));
+                    fmax[j] = std::max(fmax[j], std::abs(static_cast<double>(fm[j])));
                 }
             }
-            double floor = gmx::square(32*GMX_REAL_EPS*fmax);
-            atFloor      = msForce[k] <= floor && msForce[k] >= 0.5*dim.shellForce[fragment];
-        }
-        if (msForce[k] <= msForceToler_ || atFloor)
-        {
-            (*myCoords)[confs[k]].done = true;
-            numberDone                += 1;
-        }
-        else
-        {
-            relax.push_back(k);
         }
     }
-    size_t natom = cdata->x(0).size();
+    for(size_t j = 0; j < ns; j++)
+    {
+        if (!relax[j])
+        {
+            continue;
+        }
+        bool atFloor = false;
+        if (msForce[j] > msForceToler_)
+        {
+            double floor = gmx::square(32*GMX_REAL_EPS*fmax[j]);
+            atFloor      = msForce[j] <= floor && msForce[j] >= 0.5*msPrev[j];
+        }
+        if (msForce[j] <= msForceToler_ || atFloor)
+        {
+            (*myCoords)[ca.conformation(s0 + j)].done = true;
+            numberDone += 1;
+            relax[j]    = 0;
+        }
+    }
     // The step is scaled by the fraction of the previous step at which
     // the force along it would have been zero, from the forces before and
     // after it. For an isolated harmonic shell this is one, since the step
     // is a Newton step, coupled shells can overshoot or undershoot.
-    after.assign(relax.size(), 0.0);
-    scaled.assign(relax.size(), 0);
-    for(size_t r = 0; r < relax.size(); r++)
-    {
-        const auto &dim = (*myCoords)[confs[relax[r]]];
-        scaled[r] = dim.shellDxForce[fragment] > 0 && dim.shellDx.size() == natom;
-    }
+    after.assign(ns, 0.0);
     for(const auto &p : pols)
     {
         int shellLocal = p->atomIndex(1);
@@ -597,38 +663,38 @@ size_t ForceComputer::updateShells(const Topology            *top,
         {
             continue;
         }
-        int shellGlobal = shellLocal + static_cast<int>(offset);
-        for(size_t r = 0; r < relax.size(); r++)
+        size_t      shellGlobal = shellLocal + offset;
+        const real *dxs         = slotRow(dx, stride, shellGlobal, XX);
+        const real *fs          = slotRow(f, stride, shellGlobal, XX);
+        for(size_t j = 0; j < ns; j++)
         {
-            if (scaled[r])
-            {
-                size_t c = confs[relax[r]];
-                after[r] += iprod((*myCoords)[c].shellDx[shellGlobal], cdata->f(c)[shellGlobal].rvec());
-                flops    += 6;
-            }
+            gmx::RVec d  = { dxs[j], dxs[j + stride], dxs[j + 2*stride] };
+            gmx::RVec fj = { fs[j], fs[j + stride], fs[j + 2*stride] };
+            after[j] += iprod(d, fj);
         }
+        flops += 6*ns;
     }
-    for(size_t r = 0; r < relax.size(); r++)
+    for(size_t j = 0; j < ns; j++)
     {
-        size_t k   = relax[r];
-        auto  &dim = (*myCoords)[confs[k]];
-        if (scaled[r])
+        if (!relax[j])
         {
-            double before = dim.shellDxForce[fragment];
-            double scale  = (before > after[r]) ? before/(before - after[r]) : 1.0;
-            dim.shellStep[fragment] = std::clamp(dim.shellStep[fragment]*scale,
-                                                 minShellStep, maxShellStep);
-            flops += (before > after[r]) ? 7 : 1;
+            continue;
+        }
+        if (dxfPrev[j] > 0)
+        {
+            double before = dxfPrev[j];
+            double scale  = (before > after[j]) ? before/(before - after[j]) : 1.0;
+            step[j] = std::clamp(step[j]*scale, minShellStep, maxShellStep);
+            flops  += (before > after[j]) ? 7 : 1;
         }
         // If the force increased anyway, the step is reduced, see compute
-        if (msForce[k] > dim.shellForce[fragment])
+        if (msForce[j] > msPrev[j])
         {
-            dim.shellStep[fragment] = std::min(dim.shellStep[fragment], 0.5);
+            step[j] = std::min(step[j], 0.5);
         }
-        dim.shellForce[fragment] = msForce[k];
-        dim.shellDx.resize(natom);
+        msPrev[j] = msForce[j];
     }
-    dxForce.assign(relax.size(), 0.0);
+    dxForce.assign(ns, 0.0);
     // Loop over polarizabilities
     for(const auto &p : pols)
     {
@@ -647,8 +713,8 @@ size_t ForceComputer::updateShells(const Topology            *top,
         {
             continue;
         }
-        int shellGlobal  = shellLocal + static_cast<int>(offset);
-        int coreGlobal   = coreLocal + static_cast<int>(offset);
+        size_t shellGlobal = shellLocal + offset;
+        size_t coreGlobal  = coreLocal + offset;
         // The force constant from the current polarizability and
         // shell charge, since both may be trained, as in compute.
         auto   &params = p->params();
@@ -658,30 +724,37 @@ size_t ForceComputer::updateShells(const Topology            *top,
         if (alpha > 0 && qshell != 0)
         {
             fc1    = (qshell*qshell*ONE_4PI_EPS0)/alpha;
-            flops += 7*relax.size();
+            flops += 7*ns;
         }
         // The parent of the shell, to check the distance from it
-        bool wall             = maxShellDistance2 > 0 && atoms[shellLocal].parents().size() == 1;
-        int  coreParentGlobal = wall ? atoms[shellLocal].parents()[0] + static_cast<int>(offset) : 0;
-        for(size_t r = 0; r < relax.size(); r++)
+        bool        wall        = maxShellDistance2 > 0 && atoms[shellLocal].parents().size() == 1;
+        size_t      coreParent  = wall ? atoms[shellLocal].parents()[0] + offset : 0;
+        Coordinate *xs          = slotRow(x, stride, shellGlobal, XX);
+        Coordinate *xc          = slotRow(x, stride, coreGlobal, XX);
+        Coordinate *xp          = slotRow(x, stride, coreParent, XX);
+        const real *fs          = slotRow(f, stride, shellGlobal, XX);
+        real       *dxs         = slotRow(dx, stride, shellGlobal, XX);
+        for(size_t j = 0; j < ns; j++)
         {
-            size_t                      c   = confs[relax[r]];
-            auto                       &dim = (*myCoords)[c];
-            auto                        x   = cdata->x(c);
-            ParticleVectors<const real> f   = cdata->f(c);
+            if (!relax[j])
+            {
+                continue;
+            }
             // The displacement is computed from the integers
-            Coordinate xold[DIM] = { x[shellGlobal].units(XX), x[shellGlobal].units(YY),
-                                     x[shellGlobal].units(ZZ) };
-            flops += update_shell_positions(coreGlobal, shellGlobal,
-                                            x, f,
+            Coordinate xold[DIM] = { xs[j], xs[j + stride], xs[j + 2*stride] };
+            flops += update_shell_positions(xs + j, xc + j, fs + j, stride,
                                             fc1, params[polFCHYPER], params[polRHYPER],
-                                            dim.shellStep[fragment]);
+                                            step[j]);
             bool clipped = false;
             // Check distance from parent, if there is only one
             if (wall)
             {
-                gmx::RVec dx  = x[shellGlobal] - x[coreParentGlobal];
-                real      dx2 = iprod(dx, dx);
+                gmx::RVec d;
+                for(int m = 0; m < DIM; m++)
+                {
+                    d[m] = fromCoordinate(coordinateDifference(xs[j + m*stride], xp[j + m*stride]));
+                }
+                real dx2 = iprod(d, d);
                 flops   += 8;
                 if (dx2 > maxShellDistance2)
                 {
@@ -689,31 +762,36 @@ size_t ForceComputer::updateShells(const Topology            *top,
                     real scale = std::sqrt(maxShellDistance2/dx2);
                     for (int m = 0; m < DIM; m++)
                     {
-                        x[shellGlobal][m] = x[coreParentGlobal][m] + scale*dx[m];
+                        xs[j + m*stride] = toCoordinate(fromCoordinate(xp[j + m*stride]) + scale*d[m]);
                     }
                     clipped = true;
                     flops  += 16;
                 }
             }
             // Shells held at the maximum distance do not tell how far to step
-            if (clipped)
-            {
-                clear_rvec(dim.shellDx[shellGlobal]);
-            }
-            else
+            gmx::RVec dxj = { 0, 0, 0 };
+            if (!clipped)
             {
                 for(int m = 0; m < DIM; m++)
                 {
-                    dim.shellDx[shellGlobal][m] = fromCoordinate(coordinateDifference(x[shellGlobal].units(m), xold[m]));
+                    dxj[m] = fromCoordinate(coordinateDifference(xs[j + m*stride], xold[m]));
                 }
-                dxForce[r] += iprod(dim.shellDx[shellGlobal], f[shellGlobal].rvec());
+                gmx::RVec fj = { fs[j], fs[j + stride], fs[j + 2*stride] };
+                dxForce[j] += iprod(dxj, fj);
                 flops      += 9;
+            }
+            for(int m = 0; m < DIM; m++)
+            {
+                dxs[j + m*stride] = dxj[m];
             }
         }
     }
-    for(size_t r = 0; r < relax.size(); r++)
+    for(size_t j = 0; j < ns; j++)
     {
-        (*myCoords)[confs[relax[r]]].shellDxForce[fragment] = dxForce[r];
+        if (relax[j])
+        {
+            dxfPrev[j] = dxForce[j];
+        }
     }
     Timings::instance().addFlops(flops);
     return numberDone;
@@ -1098,19 +1176,11 @@ static void copyRelaxedMonomerShells(const std::vector<ACTMol *> &allmols)
 }
 
 /*! \brief Start the shell relaxation with full steps
- * \param[inout] coords The conformations
+ * \param[inout] cdata The conformations
  */
-static void resetShellSteps(std::vector<CoordsEnergy> *coords)
+static void resetShellSteps(ConformationData *cdata)
 {
-    for(auto &ce : *coords)
-    {
-        for(size_t i = 0; i < 2; i++)
-        {
-            ce.shellStep[i]    = 1;
-            ce.shellForce[i]   = std::numeric_limits<double>::max();
-            ce.shellDxForce[i] = 0;
-        }
-    }
+    cdata->shells.reset(cdata->arrays.stride, cdata->arrays.natom);
 }
 
 void ForceComputer::relaxMonomer(MsgHandler                  *msghandler,
@@ -1128,7 +1198,7 @@ void ForceComputer::relaxMonomer(MsgHandler                  *msghandler,
     for(size_t k = 0; k < allmols.size(); k++)
     {
         auto &mons = *allmols[k]->monomerCoords(im);
-        resetShellSteps(&mons);
+        resetShellSteps(allmols[k]->conformationData(im));
         for(size_t c = 0; c < mons.size(); c++)
         {
             if (!mons[c].done)
@@ -1218,7 +1288,7 @@ void ForceComputer::relaxDimer(MsgHandler                  *msghandler,
     for(size_t k = 0; k < allmols.size(); k++)
     {
         auto &dims = *allmols[k]->dimerCoords();
-        resetShellSteps(&dims);
+        resetShellSteps(allmols[k]->conformationData(2));
         for(size_t c = 0; c < dims.size(); c++)
         {
             if (!dims[c].done)
@@ -1726,7 +1796,7 @@ void ForceComputer::computeTotal(MsgHandler                                     
                 nShell    += 1;
             }
         }
-        resetShellSteps(&confs);
+        resetShellSteps(cdata);
         if (!inputShells.empty())
         {
             // Start from the input positions of the shells to relax, which
@@ -1889,13 +1959,6 @@ void ForceComputer::computeDimerConformations(MsgHandler                        
         ce->fobs.clear();
         ce->eMap.clear();
         ce->eMin = 0;
-        ce->shellDx.clear();
-        for(size_t i = 0; i < 2; i++)
-        {
-            ce->shellStep[i]    = 0;
-            ce->shellForce[i]   = 0;
-            ce->shellDxForce[i] = 0;
-        }
     };
     for(size_t what = 0; what < 3; what++)
     {
