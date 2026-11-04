@@ -532,14 +532,21 @@ bool HybridGAMC::evolve(alexandria::MsgHandler       *msghandler,
         if ((gach_->maxLocalMinimumGenerations() > 0) || adaptiveSteps_)
         {
             alexandria::SensitivityAnalysis sens;
+            // The local minimum test is two-dimensional if the analysis
+            // after training is, and one-dimensional otherwise, also
+            // without an analysis after training.
+            auto mode = alexandria::SensitivityMode::OneD;
+            if (gach_->sensitivity() == alexandria::SensitivityMode::TwoD)
+            {
+                mode = alexandria::SensitivityMode::TwoD;
+            }
             // Temporarily update the output level...
             auto level = msghandler->printLevel();
             msghandler->setPrintLevel(alexandria::ACTStatus::Warning);
             minimum = sens.run(msghandler, sii_,
                                static_cast<alexandria::ACMFitnessComputer *>(fitnessComputer()),
                                &((*bestGenome)[iMolSelect::Train]),
-                               iMolSelect::Train, alexandria::SensitivityMode::OneD,
-                               true, true);
+                               iMolSelect::Train, mode, true, true);
             // ...and put it back.
             msghandler->setPrintLevel(level);
             // Do we need to updata step sizes as well?
@@ -557,7 +564,17 @@ bool HybridGAMC::evolve(alexandria::MsgHandler       *msghandler,
             }
             if (msghandler->info())
             {
-                auto msg = gmx::formatString("Generation %d/%d. Curvature analysis demonstrated parameters are %sin a local minimimum", generation, gach_->maxGenerations(), minimum ? "" : "not ");
+                const auto &res = sens.result();
+                std::string pairs;
+                if (mode == alexandria::SensitivityMode::TwoD)
+                {
+                    pairs = gmx::formatString(" and %zu/%zu pairs", res.nPairsConverged, res.nPairs);
+                }
+                auto msg = gmx::formatString("Generation %d/%d. Curvature analysis (%s): %zu/%zu parameters%s converged, %sin a local minimum",
+                                             generation, gach_->maxGenerations(),
+                                             alexandria::sensitivityModeToString(mode).c_str(),
+                                             res.nParametersConverged, res.nParameters,
+                                             pairs.c_str(), minimum ? "" : "not ");
                 msghandler->write(msg);
             }
         }

@@ -181,6 +181,13 @@ public:
     //! \return whether the parabola was fitted
     bool fitted() const { return fitted_; }
 
+    /*! \return whether the chi-squared is the same at all points, within
+     * its rounding errors, such that it does not depend on the parameter
+     * here. This is the case for instance for a Lennard-Jones sigma when
+     * epsilon is zero, as in a force field that is not trained yet.
+     */
+    bool flat() const;
+
     //! \return the parameter values, in the order they were added
     const std::vector<double> &pValues() const { return p_; }
 

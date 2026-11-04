@@ -237,6 +237,7 @@ bool SensitivityAnalysis::run(MsgHandler           *msghandler,
     bool   minimum    = true;
     auto   parameters = nlohmann::ordered_json::array();
     size_t nconv      = 0;
+    size_t nflat      = 0;
     std::vector<Sensitivity> sens1d;
     std::vector<double>      range(np);
     for (size_t i = 0; i < np; ++i)
@@ -265,6 +266,10 @@ bool SensitivityAnalysis::run(MsgHandler           *msghandler,
         if (conv)
         {
             nconv += 1;
+        }
+        if (s.flat())
+        {
+            nflat += 1;
         }
         // Compute dimensionless force constant, or zero if undefined
         double fc = 0;
@@ -321,6 +326,7 @@ bool SensitivityAnalysis::run(MsgHandler           *msghandler,
     result_.chi2_0               = chi2_0;
     result_.nParameters          = np;
     result_.nParametersConverged = nconv;
+    result_.nParametersFlat      = nflat;
     result_.nPairs               = npairs;
     result_.nPairsConverged      = npairsConv;
     result_.nPairShape           = nshape;
@@ -344,6 +350,7 @@ bool SensitivityAnalysis::run(MsgHandler           *msghandler,
     sens["tolerance_fraction"]     = convergenceFraction;
     sens["minimum"]                = minimum;
     sens["n_parameters_converged"] = nconv;
+    sens["n_parameters_flat"]      = nflat;
     if (twoD)
     {
         sens["n_pairs_converged"]  = npairsConv;
@@ -385,6 +392,11 @@ bool SensitivityAnalysis::run(MsgHandler           *msghandler,
                                      iMolSelectName(ims).c_str(), points.size(), chi2_0);
             tw->writeStringFormatted("Converged: %zu/%zu parameters, %s.\n", nconv, np,
                                      minimum ? "in a minimum" : "not in a minimum");
+        }
+        if (nflat > 0)
+        {
+            tw->writeStringFormatted("%zu of the %zu parameters do not change the chi2 (flat), for instance since they are zero in a force field that is not trained yet.%s\n",
+                                     nflat, np, twoD ? " Their pairs are degenerate." : "");
         }
     }
     return minimum;

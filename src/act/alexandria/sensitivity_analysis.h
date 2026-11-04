@@ -68,6 +68,8 @@ struct SensitivityResult
     size_t          nParameters          = 0;
     //! Number of converged parameters
     size_t          nParametersConverged = 0;
+    //! Number of parameters that do not change the chi-squared, see Sensitivity::flat
+    size_t          nParametersFlat      = 0;
     //! Number of pairs of parameters, zero in 1D
     size_t          nPairs               = 0;
     //! Number of converged pairs

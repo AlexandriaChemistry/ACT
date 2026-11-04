@@ -167,6 +167,12 @@ void Sensitivity::computeForceConstants(gmx::TextWriter *tw)
         {
             A_ = 0;
         }
+        // Without any change of the chi2 there is no slope either
+        if (flat())
+        {
+            A_ = 0;
+            B_ = 0;
+        }
         // chi2 = A ((p - p0)/s)^2 + B (p - p0)/s + C = a p^2 + b p + c
         a_ = A_/(scale_*scale_);
         b_ = B_/scale_ - 2*a_*p0_;
@@ -208,6 +214,17 @@ bool Sensitivity::checkConvergence(double lower, double upper, double tolerance)
 double Sensitivity::pMinBounded() const
 {
     return std::clamp(pMin(), lower_, upper_);
+}
+
+bool Sensitivity::flat() const
+{
+    if (chi2_.size() < 2)
+    {
+        return false;
+    }
+    auto   minmax  = std::minmax_element(chi2_.begin(), chi2_.end());
+    double chi2max = std::max(std::abs(*minmax.first), std::abs(*minmax.second));
+    return *minmax.second - *minmax.first <= 16*std::numeric_limits<double>::epsilon()*chi2max;
 }
 
 double Sensitivity::value(double p) const
@@ -257,6 +274,7 @@ nlohmann::ordered_json Sensitivity::toJson(size_t             index,
     }
     js["points"] = points;
     js["fit_ok"] = fitted_;
+    js["flat"]   = flat();
     if (fitted_)
     {
         js["a"] = a_;

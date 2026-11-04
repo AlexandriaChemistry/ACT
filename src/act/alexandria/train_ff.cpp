@@ -479,6 +479,15 @@ void OptACM::printNumCalcDevEstimate()
             break;
         }
     }
+    if (gach_.optimizer() == OptimizerAlg::HYBRID &&
+        (gach_.maxLocalMinimumGenerations() > 0 || bch_.adaptiveStep()))
+    {
+        // The curvature analysis of the best genome in each generation,
+        // two-dimensional only if the analysis after training is
+        long np = sii_->nParam();
+        long perGeneration = (gach_.sensitivity() == SensitivityMode::TwoD) ? 2*np*np : 2*np;
+        nCalcDevTrain += perGeneration*gach_.maxGenerations();
+    }
     nCalcDevTest += 1;  // Always done in master to print the components of the initial vector
     nCalcDevTrain += 1;  // At the end, for the best
     nCalcDevTest += 1;  // At the end, for the best
@@ -721,6 +730,7 @@ bool OptACM::runMaster(bool               optimize,
                 summary.addObject("minimum", res.minimum ? "yes" : "no");
                 summary.addObject("n_parameters", std::to_string(res.nParameters));
                 summary.addObject("n_parameters_converged", std::to_string(res.nParametersConverged));
+                summary.addObject("n_parameters_flat", std::to_string(res.nParametersFlat));
                 if (res.mode == SensitivityMode::TwoD)
                 {
                     summary.addObject("n_pairs", std::to_string(res.nPairs));

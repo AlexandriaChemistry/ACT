@@ -36,6 +36,7 @@
 #include <array>
 #include <cmath>
 #include <functional>
+#include <limits>
 #include <map>
 #include <string>
 #include <vector>
@@ -140,6 +141,75 @@ TEST(SensitivityTest, FitIsAccurateForNarrowBounds)
         double lower = cs.p0 - cs.range/2;
         EXPECT_TRUE(s.checkConvergence(lower, lower + cs.range, 0.05*cs.range)) << "p0 " << cs.p0;
     }
+}
+
+// Test: A parameter that does not change the chi2 is flat, with neither
+// curvature nor slope, also with differences at the level of rounding
+// errors. A straight line and a parabola are not flat.
+TEST(SensitivityTest, FlatParameter)
+{
+    double chi2 = 564174.9941317956;
+    double eps  = std::numeric_limits<double>::epsilon();
+    for (const auto &values : { std::vector<double>{ chi2, chi2, chi2 },
+                                std::vector<double>{ chi2*(1 + eps), chi2, chi2*(1 - 2*eps) } })
+    {
+        Sensitivity s;
+        std::vector<double> p = { 0, 0.01, 0.02 };
+        for (size_t k = 0; k < 3; k++)
+        {
+            s.add(p[k], values[k], k == 0);
+        }
+        s.computeForceConstants(nullptr);
+        EXPECT_TRUE(s.flat());
+        EXPECT_EQ(0, s.a());
+        EXPECT_EQ(0, s.b());
+        EXPECT_FALSE(s.checkConvergence(0, 2, 0.1));
+        auto js = s.toJson(0, "f sigma");
+        EXPECT_TRUE(js["flat"].get<bool>());
+        EXPECT_TRUE(js["p_min"].is_null());
+    }
+    Sensitivity line, parabola;
+    for (double p : { 1.0, 2.0, 3.0 })
+    {
+        line.add(p, 2*p + 1, p == 2.0);
+        parabola.add(p, (p - 2)*(p - 2) + 1, p == 2.0);
+    }
+    line.computeForceConstants(nullptr);
+    parabola.computeForceConstants(nullptr);
+    EXPECT_FALSE(line.flat());
+    EXPECT_NE(0, line.b());
+    EXPECT_FALSE(parabola.flat());
+    EXPECT_FALSE(parabola.toJson(0, "h chi")["flat"].get<bool>());
+}
+
+// Test: A pair with a flat parameter is degenerate
+TEST(SensitivityTest, FlatParameterMakesDegeneratePair)
+{
+    // chi2 = 5 + y^2 does not depend on x, which is at its lower bound
+    auto        g = [](double y) { return 5 + y*y; };
+    Sensitivity si, sj;
+    for (double x : { 0.0, 0.01, 0.02 })
+    {
+        si.add(x, g(0), x == 0);
+    }
+    for (double y : { -0.1, 0.0, 0.1 })
+    {
+        sj.add(y, g(y), y == 0);
+    }
+    si.computeForceConstants(nullptr);
+    sj.computeForceConstants(nullptr);
+    ASSERT_TRUE(si.flat());
+    Sensitivity2D s2(si, sj);
+    for (double x : { 0.01, 0.02 })
+    {
+        for (double y : { -0.1, 0.1 })
+        {
+            s2.addCorner(x, y, g(y));
+        }
+    }
+    s2.computeCrossTerm();
+    EXPECT_EQ(PairShape::Degenerate, s2.shape());
+    EXPECT_FALSE(s2.checkConvergence({ 0, 2, -1, 1 }, { 0.1, 0.1 }));
 }
 
 // Test: Points that all have the same parameter value cannot be fitted

@@ -270,6 +270,44 @@ TEST_F(TrainFFMpiTest, Sensitivity2DMiddlemen)
     trainfftest::barrier();
 }
 
+// Test: HYBRID with the two-dimensional analysis as the test for a local
+// minimum in each generation, the middlemen compute part of it
+TEST_F(TrainFFMpiTest, HybridCurvature2D)
+{
+    auto options = combine(gaOptions("HYBRID", 3), mcmcOptions(2));
+    options.push_back({ "-fit", "charge eta chi zeta vs2a sigma epsilon gamma delta" });
+    options.push_back({ "-fc_allelec", "1" });
+    options.push_back({ "-fc_exch", "1" });
+    options.push_back({ "-fc_disp", "1" });
+    options.push_back({ "-fc_mu", "1" });
+    options.push_back({ "-fc_quad", "1" });
+    options.push_back({ "-sensitivity", "2D" });
+    options.push_back({ "-max_local_minimum_generations", "1" });
+    auto output = trainfftest::runTrainFF(&fileManager(), "curv2d", "4S-lj14-7-pg-hvdw.xml",
+                                          "hf-hf", options);
+    EXPECT_EQ(0, output.status);
+    if (gmx_node_rank() == 0)
+    {
+        // The test in each generation is two-dimensional
+        int ngen = 0;
+        for (const auto &line : output.log)
+        {
+            if (line.find("Curvature analysis (2D)") != std::string::npos)
+            {
+                EXPECT_NE(std::string::npos, line.find("pairs converged")) << line;
+                ngen += 1;
+            }
+            EXPECT_EQ(std::string::npos, line.find("Curvature analysis (1D)")) << line;
+        }
+        EXPECT_GT(ngen, 0);
+        // And so is the analysis after training
+        ASSERT_TRUE(output.sensitivity.contains("sensitivity"));
+        EXPECT_EQ("2D", output.sensitivity["sensitivity"]["mode"].get<std::string>());
+        EXPECT_TRUE(output.sensitivity["sensitivity"].contains("pairs"));
+    }
+    trainfftest::barrier();
+}
+
 } // namespace
 
 } // namespace alexandria

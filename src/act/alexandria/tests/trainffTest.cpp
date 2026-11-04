@@ -979,6 +979,54 @@ TEST_F(TrainFFTest, Sensitivity2DJson)
     EXPECT_EQ(sens["n_pairs_converged"].get<size_t>(), trainfftest::jsonNumber(summary["n_pairs_converged"]));
 }
 
+// Test: In the force field of hydrogen fluoride that training starts from,
+// the Lennard-Jones parameters are zero and the virtual sites have no
+// charge, such that the chi2 does not depend on them. The analysis reports
+// them as flat, their pairs as degenerate, and says so in the log file.
+TEST_F(TrainFFTest, SensitivityFlatParameters)
+{
+    auto options = setOption(combine(mcmcOptions(1), hfOptions()), "-sensitivity", "2D");
+    options.push_back({ "-nooptimize", "" });
+    options.push_back({ "-norandom_init", "" });
+    auto output = trainfftest::runTrainFF(&fileManager(), "sensflat", "4S-lj14-7-pg-hvdw.xml",
+                                          "hf-hf", options);
+    ASSERT_EQ(0, output.status);
+    ASSERT_TRUE(output.sensitivity.contains("sensitivity"));
+    const auto &sens = output.sensitivity["sensitivity"];
+    std::set<std::string> expected = {
+        "f delta", "f epsilon", "f gamma", "f sigma",
+        "hf delta", "hf epsilon", "hf gamma", "hf sigma",
+        "f_b~hf_b!v2f1 vs2a", "f_b~hf_b!v2f2 vs2a"
+    };
+    std::set<std::string> flat;
+    for (const auto &p : sens["parameters"])
+    {
+        if (p["flat"].get<bool>())
+        {
+            flat.insert(p["name"].get<std::string>());
+            EXPECT_FALSE(p["converged"].get<bool>()) << p["name"].get<std::string>();
+        }
+    }
+    EXPECT_EQ(expected, flat);
+    auto np = sens["n_parameters"].get<size_t>();
+    EXPECT_EQ(expected.size(), sens["n_parameters_flat"].get<size_t>());
+    EXPECT_FALSE(sens["minimum"].get<bool>());
+    // Every pair with a flat parameter is degenerate
+    for (const auto &pair : sens["pairs"])
+    {
+        if (flat.count(pair["names"][0].get<std::string>()) > 0 ||
+            flat.count(pair["names"][1].get<std::string>()) > 0)
+        {
+            EXPECT_EQ("degenerate", pair["shape"].get<std::string>()) << pair["names"].dump();
+            EXPECT_FALSE(pair["converged"].get<bool>()) << pair["names"].dump();
+        }
+    }
+    EXPECT_TRUE(logContains(output.log, std::to_string(expected.size()) + " of the " + std::to_string(np) +
+                            " parameters do not change the chi2 (flat)"));
+    EXPECT_TRUE(logContains(output.log, "Their pairs are degenerate."));
+    EXPECT_EQ(expected.size(), trainfftest::jsonNumber(output.json["train_ff"]["sensitivity"]["n_parameters_flat"]));
+}
+
 } // namespace
 
 } // namespace alexandria

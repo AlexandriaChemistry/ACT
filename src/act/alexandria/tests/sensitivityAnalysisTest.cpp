@@ -287,11 +287,15 @@ protected:
             EXPECT_NEAR(std::clamp(pmin_i, lower, upper), entry["p_min_bounded"].get<double>(),
                         1e-5*std::abs(pmin_i) + 1e-6) << name;
             EXPECT_EQ(conv, entry["converged"].get<bool>()) << name;
+            // The electronegativities all change the chi2
+            EXPECT_FALSE(entry["flat"].get<bool>()) << name;
         }
         // The genome is a minimum if all parameters are converged
         EXPECT_EQ(allConverged, minimum);
         EXPECT_EQ(nconv, res.nParametersConverged);
         EXPECT_EQ(nconv, sensJson["n_parameters_converged"].get<size_t>());
+        EXPECT_EQ(0u, res.nParametersFlat);
+        EXPECT_EQ(0u, sensJson["n_parameters_flat"].get<size_t>());
         if (converged)
         {
             *converged = minimum;
