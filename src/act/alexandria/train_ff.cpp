@@ -687,6 +687,14 @@ bool OptACM::runMaster(bool               optimize,
             commRec_.send(dest, read);
             commRec_.send(dest, bestGenome[iMolSelect::Train].bases());
         }
+        // They compute its fitness and send it back, see ACTMiddleMan::run.
+        // Nothing is done with it, but it has to be received before the
+        // middlemen are given work.
+        for(auto &src : commRec_.middlemen())
+        {
+            ga::Genome genome;
+            genome.Receive(&commRec_, src);
+        }
     }
     auto sensitivity = gach_.sensitivity();
     if (gach_.optimizer() != OptimizerAlg::GA &&
