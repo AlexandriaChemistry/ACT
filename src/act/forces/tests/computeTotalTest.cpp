@@ -755,6 +755,38 @@ TEST_F(ComputeTotalTest, InteractionSubsetsHyperpolarizable)
     testInteractionSubsets("water_hyperpol", "water_dimer", 13);
 }
 
+// Test: Computing with integer coordinates gives the same as with
+// coordinates in nm, which are rounded to the integers, and returns the
+// relaxed shells as integers
+TEST_F(ComputeTotalTest, IntegerCoordinates)
+{
+    auto pd = getForceField("ACS-pg-vs2");
+    ASSERT_NE(nullptr, pd);
+    ACTMol mol;
+    ASSERT_TRUE(readMolecule(&msghandler_, pd, "hbr-hf", &mol));
+    auto top  = mol.topology();
+    auto xr   = mol.xOriginal();
+    Coordinates xi(xr);
+    std::vector<gmx::RVec>            fr(xr.size()), fi(xr.size());
+    std::map<InteractionType, double> er, ei;
+    forceComp_.compute(&msghandler_, pd, top, &xr, &fr, &er);
+    forceComp_.compute(&msghandler_, pd, top, &xi, &fi, &ei);
+    compareEnergies(er, ei, 0, "integer coordinates");
+    compareForces(fr, fi, 0, "integer coordinates");
+    ASSERT_EQ(xr.size(), xi.size());
+    for(size_t i = 0; i < xr.size(); i++)
+    {
+        for(int m = 0; m < DIM; m++)
+        {
+            EXPECT_EQ(xr[i][m], static_cast<real>(xi[i][m])) << "particle " << i;
+        }
+    }
+    // Without relaxation, as computeOnce
+    std::map<InteractionType, double> eo;
+    forceComp_.computeOnce(&msghandler_, pd, top, &xi, &fi, &eo, { 0, 0, 0 });
+    EXPECT_TRUE(eo.end() != eo.find(InteractionType::EPOT));
+}
+
 // Test: Conformations computed in double precision, see
 // ConformationData::doublePrecision, have the same energies and forces
 // within the precision of real, with shells and virtual sites and without.
