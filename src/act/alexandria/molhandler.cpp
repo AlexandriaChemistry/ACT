@@ -971,6 +971,18 @@ public:
     //! \return the coordinates with the lowest energy, empty if there are none
     const Coordinates &bestCoordinates() const { return bestCoords_; }
 
+    //! \return the lowest energy found
+    double bestEnergy() const { return bestEnergy_; }
+
+    /*! \brief Continue from the coordinates with the lowest energy
+     * The energy along the path starts anew, see pathEnergy.
+     */
+    void restartFromBest()
+    {
+        coords_       = bestCoords_;
+        havePrevious_ = false;
+    }
+
     /*! \brief The energy along the path of the evaluations
      * The energy of the current coordinates is that of the previous
      * evaluation plus the change, which close to a minimum is computed
@@ -1006,6 +1018,9 @@ public:
 
     //! \brief Set the rounding error of the energy
     void setEnergyNoise(double noise) { energyNoise_ = noise; }
+
+    //! \return the rounding error of the energy, see energyNoise
+    double energyNoise() const { return energyNoise_; }
 
     //! \brief print force on frozen atom
     void printFrozenForce(gmx::TextWriter *tw, const std::vector<int> &myFreeze)
@@ -1479,9 +1494,58 @@ eMinimizeStatus MolHandler::minimizeCoordinates(MsgHandler                      
             }
             // The line search fails when the energy cannot decrease within
             // the precision, then the structure is a minimum if the forces
-            // are within the tolerance
-            bool done = opt.run(sx);
-            reachedMaxIter = reachedMaxIter || opt.niter >= opt.maxiter;
+            // are within the tolerance. It also fails along very soft
+            // directions, for instance near a saddle point, where the
+            // energy decreases by about its rounding error while the
+            // forces are large. Then the minimization continues from the
+            // structure with the lowest energy, with steepest descent, as
+            // long as that lowers the energy by more than its rounding
+            // error, a limited number of times.
+            const int maxRestart = 10;
+            int    maxIter  = opt.maxiter;
+            bool   done     = opt.run(sx);
+            int    niter    = opt.niter;
+            double eRestart = std::numeric_limits<double>::max();
+            for (int restart = 0;
+                 !done && restart < maxRestart && niter < maxIter &&
+                 lbfgs->bestEnergy() < eRestart - lbfgs->energyNoise();
+                 restart++)
+            {
+                eRestart = lbfgs->bestEnergy();
+                lbfgs->restartFromBest();
+                lbfgs->forceComp()->compute(msghandler, lbfgs->pd(), topology,
+                                            lbfgs->coordinates(),
+                                            lbfgs->forces(), lbfgs->energies());
+                constrainForces(lbfgs->coordinates()->toRVec(), lbfgs->forces());
+                double msf = msForce(theAtoms, *lbfgs->forces());
+                if (msf <= msForceToler ||
+                    msf <= 4*roundingMsForce(lbfgs->coordinates()->toRVec(), *lbfgs->forces()))
+                {
+                    break;
+                }
+                msghandler->msg(ACTStatus::Verbose,
+                                gmx::formatString("Line search failed after %d iterations with mean square force %g, continuing from the lowest energy %g\n",
+                                                  niter, msf, eRestart));
+                for(size_t i = 0; i < theAtoms.size(); i++)
+                {
+                    for(int j = 0; j < DIM; j++)
+                    {
+                        sx[DIM*i+j] = (*lbfgs->coordinates())[theAtoms[i]][j];
+                    }
+                }
+                opt.invH.reset();
+                opt.maxiter = maxIter - niter;
+                done        = opt.run(sx);
+                niter      += opt.niter;
+            }
+            opt.maxiter    = maxIter;
+            reachedMaxIter = reachedMaxIter || niter >= maxIter;
+            if (!done && !lbfgs->bestCoordinates().empty())
+            {
+                // The last evaluation of a failed line search is not the
+                // structure with the lowest energy
+                lbfgs->restartFromBest();
+            }
             // Final minimization for shells.
             lbfgs->forceComp()->compute(msghandler, lbfgs->pd(), topology,
                                         lbfgs->coordinates(),
@@ -1491,7 +1555,7 @@ eMinimizeStatus MolHandler::minimizeCoordinates(MsgHandler                      
             // The line search also fails when the energy cannot decrease
             // within the precision of the coordinates, then the forces are
             // as small as their change for one unit in the last place
-            if (!converged && opt.niter < opt.maxiter)
+            if (!converged && niter < maxIter)
             {
                 converged = (msForce(theAtoms, *lbfgs->forces()) <=
                              4*roundingMsForce(lbfgs->coordinates()->toRVec(), *lbfgs->forces()));
