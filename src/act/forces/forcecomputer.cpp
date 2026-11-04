@@ -269,9 +269,15 @@ static inline double update_shell_pos(Coordinate *xs,
  *  Core    <-------- Shell ---> r_core_shell
  *
  * For a spring potential V(r) the stiffness along the core-shell vector
- * is V''(r), perpendicular to it V'(r)/r. These differ for a quartic
- * spring. A shell on top of its core has no core-shell vector, it is
- * moved by update_shell_pos instead.
+ * is V''(r), perpendicular to it V'(r)/r. With u the unit vector along the
+ * core-shell vector, the displacement is
+ *
+ *   step*(f/kperp + (f.u) u (1/kpar - 1/kperp))
+ *
+ * which takes three divisions. For a harmonic spring both stiffnesses
+ * are the force constant, then the displacement is step*f/k without the
+ * core-shell vector. For a quartic spring a shell on top of its core has
+ * no core-shell vector, it is moved by update_shell_pos instead.
  * \param[in]  xs      Component XX of the coordinates of the shell in the first slot
  * \param[in]  xc      Likewise of the core of the shell
  * \param[in]  fs      Likewise of the force on the shell
@@ -283,20 +289,36 @@ static inline double update_shell_pos(Coordinate *xs,
  * \param[in]  step    Per slot the fraction of the displacement that would
  *                     bring an isolated shell to its minimum
  * \param[out] disp    The displacements, component m of slot j at m*ns + j
- * \param[out] rcs     The core-shell distance of each slot
+ * \param[out] rcs     The core-shell distance of each slot, only with a
+ *                     quartic spring
+ * \return the number of floating point operations, see Timings::addFlops
  */
-static void shellDisplacements(const Coordinate *xs,
-                               const Coordinate *xc,
-                               const real       *fs,
-                               size_t            stride,
-                               size_t            ns,
-                               double            fcShell,
-                               double            fcHyper,
-                               double            rHyper,
-                               const double     *step,
-                               double           *disp,
-                               double           *rcs)
+static double shellDisplacements(const Coordinate *xs,
+                                 const Coordinate *xc,
+                                 const real       *fs,
+                                 size_t            stride,
+                                 size_t            ns,
+                                 double            fcShell,
+                                 double            fcHyper,
+                                 double            rHyper,
+                                 const double     *step,
+                                 double           *disp,
+                                 double           *rcs)
 {
+    if (fcHyper == 0)
+    {
+        double invk = 1/fcShell;
+        for(size_t j = 0; j < ns; j++)
+        {
+            double scale = step[j]*invk;
+            for(int m = 0; m < DIM; m++)
+            {
+                disp[m*ns + j] = scale*fs[j + m*stride];
+            }
+        }
+        return 5 + ns*(1 + DIM);
+    }
+    double flops = 0;
     for(size_t j = 0; j < ns; j++)
     {
         // Core shell vector, from the integers
@@ -307,21 +329,26 @@ static void shellDisplacements(const Coordinate *xs,
             r[m]      = fromCoordinate(coordinateDifference(xs[j + m*stride], xc[j + m*stride]));
             fshell[m] = fs[j + m*stride];
         }
-        double d     = norm(r);
-        rcs[j]       = d;
+        double d      = norm(r);
+        rcs[j]        = d;
         // On top of the core the displacement is not used
-        d            = (d == 0) ? 1 : d;
-        double drh   = d - rHyper;
-        bool   hyper = fcHyper > 0 && d > rHyper;
-        double kperp = hyper ? fcShell + 4*fcHyper*drh*drh*drh/d : fcShell;
-        double kpar  = hyper ? fcShell + 12*fcHyper*drh*drh : fcShell;
-        double fpar  = iprod(fshell, r)/d;
+        double invd   = 1/((d == 0) ? 1 : d);
+        double drh    = d - rHyper;
+        bool   hyper  = d > rHyper;
+        double kperp  = hyper ? fcShell + 4*fcHyper*drh*drh*drh*invd : fcShell;
+        double kpar   = hyper ? fcShell + 12*fcHyper*drh*drh : fcShell;
+        double ikperp = 1/kperp;
+        double fpar   = iprod(fshell, r)*invd*invd*(1/kpar - ikperp);
         for(int m = 0; m < DIM; m++)
         {
-            double fparm   = fpar*r[m]/d;
-            disp[m*ns + j] = step[j]*(fparm/kpar + (fshell[m] - fparm)/kperp);
+            disp[m*ns + j] = step[j]*(fshell[m]*ikperp + fpar*r[m]);
         }
+        // The vector and its norm with the square root, both force
+        // constants, three divisions, the parallel force and the
+        // displacement
+        flops += 13 + 16 + 3*5 + 9 + DIM*4;
     }
+    return flops;
 }
 
 void ForceComputer::compute(MsgHandler                        *msg_handler,
@@ -739,8 +766,9 @@ size_t ForceComputer::updateShells(const Topology            *top,
         real       *dxs         = slotRow(dx, stride, shellGlobal, XX);
         double      fcHyper     = params[polFCHYPER];
         double      rHyper      = params[polRHYPER];
-        shellDisplacements(xs, xc, fs, stride, ns, fc1, fcHyper, rHyper, step,
-                           disp.data(), rcs.data());
+        bool        quartic     = fcHyper > 0;
+        flops += shellDisplacements(xs, xc, fs, stride, ns, fc1, fcHyper, rHyper, step,
+                                    disp.data(), rcs.data());
         for(size_t j = 0; j < ns; j++)
         {
             if (!relax[j])
@@ -749,9 +777,7 @@ size_t ForceComputer::updateShells(const Topology            *top,
             }
             // The displacement is computed from the integers
             Coordinate xold[DIM] = { xs[j], xs[j + stride], xs[j + 2*stride] };
-            // The vector and its norm with the square root
-            flops += 13;
-            if (rcs[j] == 0)
+            if (quartic && rcs[j] == 0)
             {
                 // On top of the core the quartic term only contributes if
                 // it starts at zero distance.
@@ -764,10 +790,6 @@ size_t ForceComputer::updateShells(const Topology            *top,
                 {
                     xs[j + m*stride] = moveCoordinate(xs[j + m*stride], disp[m*ns + j]);
                 }
-                // Both force constants with the division in kperp, the
-                // parallel force with its division, and per dimension three
-                // divisions and five other operations
-                flops += ((fcHyper > 0 && rcs[j] > rHyper) ? 11 + 5 : 0) + 10 + DIM*(3*5 + 5);
             }
             bool clipped = false;
             // Check distance from parent, if there is only one
