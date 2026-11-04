@@ -58,7 +58,7 @@ namespace alexandria
  * Used to compute the mean square force on shell particles when
  * minimizing the energy with respect to the shell positions.
  * A shell at the maximum distance from its core with a force pointing
- * away from the core is held there, see update_shell_positions. For such
+ * away from the core is held there, see ForceComputer::updateShells. For such
  * a shell only the force perpendicular to the core-shell vector counts,
  * since that is the only force that can still be relaxed.
  * \param[in] atoms             The particles
@@ -256,81 +256,72 @@ static inline double update_shell_pos(Coordinate *xs,
     return 10 + calcFscaleFlops(fcHyper, Fnorm) + 1 + 6;
 }
 
-/*! \brief Move a shell towards the minimum of its potential
- * The coordinates and forces are those of one slot of the arrays, see
- * ConformationArrays, with the components stride apart.
- * \param[inout] xs      Component XX of the coordinates of the shell
- * \param[in]    xc      Likewise of the core of the shell
- * \param[in]    fs      Likewise of the force on the shell
- * \param[in]    stride  The distance between the components
- * \param[in]    fcShell The harmonic force constant of the shell
- * \param[in]    fcHyper The quartic force constant of the shell
- * \param[in]    rHyper  The distance beyond which the quartic term acts
- * \param[in]    step    Fraction of the displacement that would bring
- *                       an isolated shell to its minimum
- * \return the number of floating point operations, see Timings::addFlops
+/*! \brief The displacements that move shells towards the minimum of their potential
+ * For consecutive slots, see ConformationArrays, in a loop without
+ * branches that the compiler can vectorize. We want to determine the
+ * displacement of the shell that cancels the total force, assuming the
+ * other forces do not change, that is a Newton step for the spring:
+ *
+ *                 Ftotal
+ *                   ^
+ *                    ^
+ *          Fspring    ^
+ *  Core    <-------- Shell ---> r_core_shell
+ *
+ * For a spring potential V(r) the stiffness along the core-shell vector
+ * is V''(r), perpendicular to it V'(r)/r. These differ for a quartic
+ * spring. A shell on top of its core has no core-shell vector, it is
+ * moved by update_shell_pos instead.
+ * \param[in]  xs      Component XX of the coordinates of the shell in the first slot
+ * \param[in]  xc      Likewise of the core of the shell
+ * \param[in]  fs      Likewise of the force on the shell
+ * \param[in]  stride  The distance between the components
+ * \param[in]  ns      The number of slots
+ * \param[in]  fcShell The harmonic force constant of the shell
+ * \param[in]  fcHyper The quartic force constant of the shell
+ * \param[in]  rHyper  The distance beyond which the quartic term acts
+ * \param[in]  step    Per slot the fraction of the displacement that would
+ *                     bring an isolated shell to its minimum
+ * \param[out] disp    The displacements, component m of slot j at m*ns + j
+ * \param[out] rcs     The core-shell distance of each slot
  */
-static inline double update_shell_positions(Coordinate       *xs,
-                                            const Coordinate *xc,
-                                            const real       *fs,
-                                            size_t            stride,
-                                            double            fcShell,
-                                            double            fcHyper,
-                                            double            rHyper,
-                                            double            step)
+static void shellDisplacements(const Coordinate *xs,
+                               const Coordinate *xc,
+                               const real       *fs,
+                               size_t            stride,
+                               size_t            ns,
+                               double            fcShell,
+                               double            fcHyper,
+                               double            rHyper,
+                               const double     *step,
+                               double           *disp,
+                               double           *rcs)
 {
-    // Core shell vector, from the integers
-    gmx::RVec r_core_shell;
-    for(int m = 0; m < DIM; m++)
+    for(size_t j = 0; j < ns; j++)
     {
-        r_core_shell[m] = fromCoordinate(coordinateDifference(xs[m*stride], xc[m*stride]));
-    }
-    double rcs    = norm(r_core_shell);
-    // The vector and its norm with the square root
-    double flops  = 13;
-    if (rcs == 0)
-    {
-        // On top of the core the quartic term only contributes if
-        // it starts at zero distance.
-        flops += update_shell_pos(xs, fs, stride, fcShell,
-                                  rHyper > 0 ? 0 : fcHyper, step);
-    }
-    else
-    {
-        // Now we have the following geometry:
-        //
-        //                 Ftotal
-        //                   ^
-        //                    ^
-        //          Fspring    ^
-        //  Core    <-------- Shell ---> r_core_shell
-        //
-        // We want to determine the displacement of the shell that cancels
-        // the total force, assuming the other forces do not change, that is
-        // a Newton step for the spring. For a spring potential V(r) the
-        // stiffness along the core-shell vector is V''(r), perpendicular
-        // to it V'(r)/r. These differ for a quartic spring.
-        double kperp = shellForceConstant(fcShell, fcHyper, rHyper, rcs);
-        double kpar  = fcShell;
-        if (fcHyper > 0 && rcs > rHyper)
-        {
-            double drh = rcs - rHyper;
-            kpar      += 12*fcHyper*drh*drh;
-            // Both force constants, with the division in kperp
-            flops     += 11 + 5;
-        }
-        gmx::RVec fshell = { fs[0], fs[stride], fs[2*stride] };
-        double    fpar   = iprod(fshell, r_core_shell)/rcs;
+        // Core shell vector, from the integers
+        gmx::RVec r;
+        gmx::RVec fshell;
         for(int m = 0; m < DIM; m++)
         {
-            double fparm = fpar*r_core_shell[m]/rcs;
-            xs[m*stride] = moveCoordinate(xs[m*stride], step*(fparm/kpar + (fshell[m] - fparm)/kperp));
+            r[m]      = fromCoordinate(coordinateDifference(xs[j + m*stride], xc[j + m*stride]));
+            fshell[m] = fs[j + m*stride];
         }
-        // The parallel force with its division, and per dimension three
-        // divisions and five other operations
-        flops += 10 + DIM*(3*5 + 5);
+        double d     = norm(r);
+        rcs[j]       = d;
+        // On top of the core the displacement is not used
+        d            = (d == 0) ? 1 : d;
+        double drh   = d - rHyper;
+        bool   hyper = fcHyper > 0 && d > rHyper;
+        double kperp = hyper ? fcShell + 4*fcHyper*drh*drh*drh/d : fcShell;
+        double kpar  = hyper ? fcShell + 12*fcHyper*drh*drh : fcShell;
+        double fpar  = iprod(fshell, r)/d;
+        for(int m = 0; m < DIM; m++)
+        {
+            double fparm   = fpar*r[m]/d;
+            disp[m*ns + j] = step[j]*(fparm/kpar + (fshell[m] - fparm)/kperp);
+        }
     }
-    return flops;
 }
 
 void ForceComputer::compute(MsgHandler                        *msg_handler,
@@ -555,10 +546,15 @@ size_t ForceComputer::updateShells(const Topology            *top,
     // All slots in between are computed, those of conformations that are
     // done or not to update are masked, such that the loops over the slots
     // access the arrays contiguously, as on a vector unit or a GPU. Each
-    // slot is computed independently of the others. The vectors are kept
-    // between calls, such that the memory is used again.
-    static thread_local std::vector<double> msForce, fmax, after, dxForce;
-    static thread_local std::vector<char>   relax;
+    // slot is computed independently of the others. The work vectors are
+    // kept between calls, such that the memory is used again.
+    auto  &msForce    = state.msForce;
+    auto  &fmax       = state.fmax;
+    auto  &after      = state.after;
+    auto  &dxForce    = state.dxStep;
+    auto  &disp       = state.disp;
+    auto  &rcs        = state.rcs;
+    auto  &relax      = state.relax;
     size_t nconf      = active ? active->size() : myCoords->size();
     size_t s0         = ca.nconf;
     size_t s1         = 0;
@@ -612,10 +608,16 @@ size_t ForceComputer::updateShells(const Topology            *top,
     // which in single precision may be above the tolerance. When the
     // mean square force is within it and no longer decreases, moving
     // the shells does not reduce it.
+    // That is only tested if it no longer decreases, then the largest
+    // force is needed.
+    auto stalled = [&](size_t j)
+    {
+        return msForce[j] > msForceToler_ && msForce[j] >= 0.5*msPrev[j];
+    };
     bool needMax = false;
     for(size_t j = 0; j < ns; j++)
     {
-        needMax = needMax || (relax[j] && msForce[j] > msForceToler_);
+        needMax = needMax || (relax[j] && stalled(j));
     }
     if (needMax)
     {
@@ -639,10 +641,9 @@ size_t ForceComputer::updateShells(const Topology            *top,
             continue;
         }
         bool atFloor = false;
-        if (msForce[j] > msForceToler_)
+        if (stalled(j))
         {
-            double floor = gmx::square(32*GMX_REAL_EPS*fmax[j]);
-            atFloor      = msForce[j] <= floor && msForce[j] >= 0.5*msPrev[j];
+            atFloor = msForce[j] <= gmx::square(32*GMX_REAL_EPS*fmax[j]);
         }
         if (msForce[j] <= msForceToler_ || atFloor)
         {
@@ -695,6 +696,8 @@ size_t ForceComputer::updateShells(const Topology            *top,
         msPrev[j] = msForce[j];
     }
     dxForce.assign(ns, 0.0);
+    disp.resize(DIM*ns);
+    rcs.resize(ns);
     // Loop over polarizabilities
     for(const auto &p : pols)
     {
@@ -734,6 +737,10 @@ size_t ForceComputer::updateShells(const Topology            *top,
         Coordinate *xp          = slotRow(x, stride, coreParent, XX);
         const real *fs          = slotRow(f, stride, shellGlobal, XX);
         real       *dxs         = slotRow(dx, stride, shellGlobal, XX);
+        double      fcHyper     = params[polFCHYPER];
+        double      rHyper      = params[polRHYPER];
+        shellDisplacements(xs, xc, fs, stride, ns, fc1, fcHyper, rHyper, step,
+                           disp.data(), rcs.data());
         for(size_t j = 0; j < ns; j++)
         {
             if (!relax[j])
@@ -742,9 +749,26 @@ size_t ForceComputer::updateShells(const Topology            *top,
             }
             // The displacement is computed from the integers
             Coordinate xold[DIM] = { xs[j], xs[j + stride], xs[j + 2*stride] };
-            flops += update_shell_positions(xs + j, xc + j, fs + j, stride,
-                                            fc1, params[polFCHYPER], params[polRHYPER],
-                                            step[j]);
+            // The vector and its norm with the square root
+            flops += 13;
+            if (rcs[j] == 0)
+            {
+                // On top of the core the quartic term only contributes if
+                // it starts at zero distance.
+                flops += update_shell_pos(xs + j, fs + j, stride, fc1,
+                                          rHyper > 0 ? 0 : fcHyper, step[j]);
+            }
+            else
+            {
+                for(int m = 0; m < DIM; m++)
+                {
+                    xs[j + m*stride] = moveCoordinate(xs[j + m*stride], disp[m*ns + j]);
+                }
+                // Both force constants with the division in kperp, the
+                // parallel force with its division, and per dimension three
+                // divisions and five other operations
+                flops += ((fcHyper > 0 && rcs[j] > rHyper) ? 11 + 5 : 0) + 10 + DIM*(3*5 + 5);
+            }
             bool clipped = false;
             // Check distance from parent, if there is only one
             if (wall)
