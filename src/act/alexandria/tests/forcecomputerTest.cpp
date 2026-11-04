@@ -156,6 +156,19 @@ protected:
             return;
         }
         auto atoms = mp.atomsConst();
+        // The differences of the coordinates, from the integer coordinates,
+        // are rounded to float, see coordinate.h, by up to the rounding of
+        // the largest difference. The change of the energies and forces
+        // when a coordinate moves by that much is their rounding error.
+        double extent = 0;
+        for (const auto &xi : coordinates)
+        {
+            for (int m = 0; m < DIM; m++)
+            {
+                extent = std::max(extent, 2*std::abs(static_cast<double>(xi[m])));
+            }
+        }
+        double step = 0.5*GMX_FLOAT_EPS*extent;
         for (size_t i = 0; i < coordinates.size(); i++)
         {
             if (atoms[i].pType() == ActParticle::Shell)
@@ -165,7 +178,7 @@ protected:
             for (int m = 0; m < DIM; m++)
             {
                 auto xd = coordinates;
-                xd[i][m] = std::nextafter(xd[i][m], std::numeric_limits<real>::max());
+                xd[i][m] = std::nextafter(static_cast<real>(xd[i][m] + step), std::numeric_limits<real>::max());
                 std::vector<gmx::RVec>            fd(forces.size(), { 0, 0, 0 });
                 std::map<InteractionType, double> ed;
                 fcomp->compute(msghandler, pd, mp.topology(), &xd, &fd, &ed);

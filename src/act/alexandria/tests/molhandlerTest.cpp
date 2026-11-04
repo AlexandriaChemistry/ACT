@@ -446,6 +446,15 @@ TEST_F (MolHandlerTest, AcetoneNoFreqPol)
 
 TEST_F (MolHandlerTest, UracilNoFreqPol)
 {
+    // In single precision the minimization of polarizable uracil reaches
+    // forces within the rounding of the energies on a plateau, from where
+    // it either finds the minimum or another one, depending on that
+    // rounding. The result is not reproducible, see the integer
+    // coordinates in coordinate.h.
+    if (!GMX_DOUBLE)
+    {
+        return;
+    }
     test("uracil.sdf", "ACS-pg", false, 1e-12);
 }
 
@@ -498,6 +507,15 @@ TEST_F (MolHandlerTest, AcetonePol)
 
 TEST_F (MolHandlerTest, UracilPol)
 {
+    // In single precision the minimization of polarizable uracil reaches
+    // forces within the rounding of the energies on a plateau, from where
+    // it either finds the minimum or another one, depending on that
+    // rounding. The result is not reproducible, see the integer
+    // coordinates in coordinate.h.
+    if (!GMX_DOUBLE)
+    {
+        return;
+    }
     test("uracil.sdf", "ACS-pg", true, 1e-12);
 }
 

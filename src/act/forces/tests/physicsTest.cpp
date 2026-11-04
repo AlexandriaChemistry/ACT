@@ -411,7 +411,10 @@ protected:
                     return energy(pd, mol, &xs);
                 };
                 double fnum = -(8*(shifted(h) - shifted(-h)) - (shifted(2*h) - shifted(-2*h)))/(12*h);
-                EXPECT_NEAR(fnum, f[a][m], gmx::test::precisionTolerance(1e-5, 1e-4)*std::max(1.0, fmax))
+                // In single precision the rounding of the energies
+                // dominates, about 2e-4 of the largest force with the
+                // integer coordinates, see coordinate.h
+                EXPECT_NEAR(fnum, f[a][m], gmx::test::precisionTolerance(1e-5, 3e-4)*std::max(1.0, fmax))
                     << ffName << " " << sdfFile << " atom " << a << " dim " << m << " fmax " << fmax;
             }
         }
