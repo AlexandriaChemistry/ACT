@@ -548,7 +548,27 @@ size_t ForceComputer::updateShells(const Topology            *top,
             msForce[k] /= nShell;
             flops      += 5;
         }
-        if (msForce[k] <= msForceToler_)
+        // The forces on the shells do not get below their rounding error,
+        // which in single precision may be above the tolerance. When the
+        // mean square force is within it and no longer decreases, moving
+        // the shells does not reduce it.
+        const auto &dim     = (*myCoords)[confs[k]];
+        bool        atFloor = false;
+        if (msForce[k] > msForceToler_)
+        {
+            auto   f    = cdata->f(confs[k]);
+            double fmax = 0;
+            for(size_t i = 0; i < atoms.size(); i++)
+            {
+                for(int m = 0; m < DIM; m++)
+                {
+                    fmax = std::max(fmax, std::abs(static_cast<double>(f[i+offset][m])));
+                }
+            }
+            double floor = gmx::square(32*GMX_REAL_EPS*fmax);
+            atFloor      = msForce[k] <= floor && msForce[k] >= 0.5*dim.shellForce[fragment];
+        }
+        if (msForce[k] <= msForceToler_ || atFloor)
         {
             (*myCoords)[confs[k]].done = true;
             numberDone                += 1;
