@@ -282,7 +282,8 @@ TEST(ConstrainerTest, Frozen)
     ASSERT_EQ(1u, mps.size());
     auto               &mol = mps[0];
     // Bond lengths within a relative tolerance that single precision allows
-    Constrainer         ccc(100, gmx::test::precisionTolerance(1e-8, 1e-6), 1);
+    double              toler = gmx::test::precisionTolerance(1e-8, 1e-6);
+    Constrainer         ccc(100, toler, 1);
     auto        coords = mol.xOriginal();
     ccc.makeConstraints(nullptr, ConstraintType::Bonds, pd, mol.topology(), coords);
     // Freeze the two carbons, the bond between them is not constrained anymore
@@ -302,7 +303,7 @@ TEST(ConstrainerTest, Frozen)
         auto &p = ccc.pairs()[c];
         rvec  dx;
         rvec_sub(coords[p[0]], coords[p[1]], dx);
-        EXPECT_NEAR(ccc.length(c), norm(dx), 1e-8);
+        EXPECT_NEAR(ccc.length(c), norm(dx), toler*ccc.length(c));
     }
 }
 
