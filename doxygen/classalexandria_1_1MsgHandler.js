@@ -1,0 +1,28 @@
+var classalexandria_1_1MsgHandler =
+[
+    [ "MsgHandler", "classalexandria_1_1MsgHandler.xhtml#a0e4440d4b8c5cb22c2deb7b230049213", null ],
+    [ "~MsgHandler", "classalexandria_1_1MsgHandler.xhtml#a59158ee765431f45ecc647617e1d27c5", null ],
+    [ "addOptions", "classalexandria_1_1MsgHandler.xhtml#a6caf8fcd290600dda1bb0285bda30288", null ],
+    [ "debug", "classalexandria_1_1MsgHandler.xhtml#a5713df06fbd088e999b90f606206a3f2", null ],
+    [ "fatal", "classalexandria_1_1MsgHandler.xhtml#a1e85c726345d38f72342a3f30a903243", null ],
+    [ "fatal", "classalexandria_1_1MsgHandler.xhtml#aa1e44a48941765953af236950a637df8", null ],
+    [ "filename", "classalexandria_1_1MsgHandler.xhtml#a06b60525019ca11eea891e3764fa98d5", null ],
+    [ "flush", "classalexandria_1_1MsgHandler.xhtml#aee04e5ca33f9ab57aff92fd422c3d226", null ],
+    [ "info", "classalexandria_1_1MsgHandler.xhtml#a7fb7fd9b80137b09424372c7ff07fa13", null ],
+    [ "last", "classalexandria_1_1MsgHandler.xhtml#afc64faeff70eac70b403ee1f3d95a8a7", null ],
+    [ "msg", "classalexandria_1_1MsgHandler.xhtml#a6f484d0708bb61eabd26f537d60a6ba9", null ],
+    [ "msg", "classalexandria_1_1MsgHandler.xhtml#aa60cdba3eee2dee74b75c1f606ddb7d5", null ],
+    [ "ok", "classalexandria_1_1MsgHandler.xhtml#a73a67741fbd17a064fe4790742b299fc", null ],
+    [ "optionsFinished", "classalexandria_1_1MsgHandler.xhtml#a5c85f15b0796a03cea50f7f89ddd6ebd", null ],
+    [ "printLevel", "classalexandria_1_1MsgHandler.xhtml#a0ac19e061e06abff377fbc4101ab0b27", null ],
+    [ "resetStatus", "classalexandria_1_1MsgHandler.xhtml#a1aa90546d49d24f60b32ab4b043bec15", null ],
+    [ "setPrintLevel", "classalexandria_1_1MsgHandler.xhtml#a8fef3ccc6fe14b30570d524d34d5e288", null ],
+    [ "status", "classalexandria_1_1MsgHandler.xhtml#a5fd439005fd2d9b8f2ceea48a4b351a6", null ],
+    [ "summary", "classalexandria_1_1MsgHandler.xhtml#a5b3967e3e340cbdd87ee0ef4a0b69781", null ],
+    [ "tw", "classalexandria_1_1MsgHandler.xhtml#acc3ec781870d73a9c1f3a7da532eac0a", null ],
+    [ "twDebug", "classalexandria_1_1MsgHandler.xhtml#aa17d69b4deb0e1bbde18ef242acfc6db", null ],
+    [ "verbose", "classalexandria_1_1MsgHandler.xhtml#a618345c8b1b0b52c1674327ebe7177dd", null ],
+    [ "warningCount", "classalexandria_1_1MsgHandler.xhtml#a0455752a5212a41666064c55b75e0a8f", null ],
+    [ "write", "classalexandria_1_1MsgHandler.xhtml#ac0c9b20c60cd92390a5daa5044ddbc8f", null ],
+    [ "writeDebug", "classalexandria_1_1MsgHandler.xhtml#ac8000633a7b472b641d92b001682e975", null ]
+];

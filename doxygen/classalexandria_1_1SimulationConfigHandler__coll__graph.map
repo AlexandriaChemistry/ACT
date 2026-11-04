@@ -1,0 +1,5 @@
+<map id="alexandria::SimulationConfigHandler" name="alexandria::SimulationConfigHandler">
+<area shape="rect" id="Node000001" title="Class to handle command line options for MD simulations and energy minimization." alt="" coords="5,81,215,126"/>
+<area shape="rect" id="Node000002" href="$classalexandria_1_1ConfigHandler.xhtml" title=" " alt="" coords="15,5,205,33"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="112,47,112,81,108,79,108,51"/>
+</map>

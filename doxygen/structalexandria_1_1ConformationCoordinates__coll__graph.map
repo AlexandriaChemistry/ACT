@@ -1,0 +1,5 @@
+<map id="alexandria::ConformationCoordinates" name="alexandria::ConformationCoordinates">
+<area shape="rect" id="Node000001" title="The coordinates of one conformation for the interaction functions These use the coordinates of a part..." alt="" coords="9,123,196,168"/>
+<area shape="rect" id="Node000002" href="$classalexandria_1_1ParticleVectors.xhtml" title=" " alt="" coords="5,5,200,50"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="104,64,105,123,100,122,101,68"/>
+</map>

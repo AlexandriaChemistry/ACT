@@ -1,0 +1,5 @@
+<map id="alexandria::MolecularPolarizability" name="alexandria::MolecularPolarizability">
+<area shape="rect" id="Node000001" title="Contains the elements of the molecular polarizability tensor." alt="" coords="5,81,253,109"/>
+<area shape="rect" id="Node000002" href="$classalexandria_1_1GenericProperty.xhtml" title="Generic molecular property base clase." alt="" coords="27,5,231,33"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="131,47,131,82,127,79,127,51"/>
+</map>

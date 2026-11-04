@@ -1,0 +1,5 @@
+<map id="ga::EmptySorter" name="ga::EmptySorter">
+<area shape="rect" id="Node000001" title="Sorter which does nothing. Will be used when sorting is not required." alt="" coords="5,81,132,109"/>
+<area shape="rect" id="Node000002" href="$classga_1_1Sorter.xhtml" title="Abstract class for sorting the population based on the fitness of each Individual." alt="" coords="26,5,111,33"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="70,47,71,81,66,80,67,51"/>
+</map>
