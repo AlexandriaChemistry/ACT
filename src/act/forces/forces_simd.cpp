@@ -2837,20 +2837,32 @@ static void lowComputeEnergiesT(MsgHandler                *msghandler,
     // do not visit those for which the shells converged. When few shells
     // are left to relax, visiting all conformations takes longer than
     // computing the others.
+    // Conformations only become done while the shells are relaxed, then
+    // those of the previous call that are not done are left.
     auto &active = cdata->active;
-    active.clear();
-    for(size_t c = 0; c < coords->size(); c++)
+    if (skipDone && cdata->activeKnown == coords->size())
     {
-        auto &ce = (*coords)[c];
-        if (!skipDone && ce.done)
+        active.erase(std::remove_if(active.begin(), active.end(),
+                                    [coords](size_t c) { return (*coords)[c].done; }),
+                     active.end());
+    }
+    else
+    {
+        active.clear();
+        for(size_t c = 0; c < coords->size(); c++)
         {
-            ce.done = false;
-        }
-        if (!ce.done)
-        {
-            active.push_back(c);
+            auto &ce = (*coords)[c];
+            if (!skipDone && ce.done)
+            {
+                ce.done = false;
+            }
+            if (!ce.done)
+            {
+                active.push_back(c);
+            }
         }
     }
+    cdata->activeKnown = coords->size();
     size_t ndone = coords->size() - active.size();
     // The virtual sites requested by ConformationData::constructVsites
     VsiteHandler vsiteHandler;
@@ -2928,12 +2940,18 @@ static void lowComputeEnergiesT(MsgHandler                *msghandler,
         // Start from the energies of the entries without shells
         for(size_t k = 0; k < fixed.types.size(); k++)
         {
-            auto t = cener.add(fixed.types[k]);
+            // Through pointers that the stores cannot change
+            auto                       t      = cener.add(fixed.types[k]);
+            const char   *gmx_restrict haveK  = fixed.have[k].data();
+            const double *gmx_restrict eK     = fixed.energies[k].data();
+            double       *gmx_restrict before = t.before;
+            double       *gmx_restrict act    = t.act;
+            char         *gmx_restrict have   = t.have;
             for(auto c : active)
             {
-                t.before[c] = t.have[c] ? t.before[c] : 0.0;
-                t.have[c]   = fixed.have[k][c];
-                t.act[c]    = fixed.energies[k][c];
+                before[c] = have[c] ? before[c] : 0.0;
+                have[c]   = haveK[c];
+                act[c]    = eK[c];
             }
         }
     }

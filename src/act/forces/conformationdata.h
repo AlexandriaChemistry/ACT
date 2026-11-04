@@ -946,11 +946,18 @@ struct ConformationData
     ShellRelaxation      shells;
     //! The conformations computed in the last energy calculation, kept to use the memory again
     std::vector<size_t>  active;
+    /*! The number of conformations if all that are not in active are done,
+     * such that the next calculation leaving out those that are done only
+     * has to visit the conformations in active, see CoordsEnergy::done.
+     * Zero if that is not known.
+     */
+    size_t               activeKnown = 0;
 
     //! Mark the coordinates and virtual sites as outdated
     void invalidate()
     {
         fixed.valid = false;
+        activeKnown = 0;
         haveVsites = false;
         constructVsites   = false;
         vsiteForcesSpread = false;
