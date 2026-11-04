@@ -57,6 +57,11 @@ gmx_add_unit_test(
     trainffTest.cpp
     )
 target_link_libraries(${exename} actLib ${GMX_EXE_LINKER_FLAGS})
+# The tests take about 40 s on some machines, more than the default
+# timeout of unit tests, see gmx_register_gtest_test
+if (TEST ${testname})
+    set_tests_properties(${testname} PROPERTIES TIMEOUT 120)
+endif()
 
 gmx_add_mpi_unit_test(
     AlexandriaMpiTests
