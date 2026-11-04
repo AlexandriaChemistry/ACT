@@ -147,15 +147,17 @@ TEST(TimingsTest, PerformanceInJson)
     EXPECT_NEAR(1.5, findNumber(*jperf, "Average per core"), 1e-4);
     double inKernel = 3/seconds;
     EXPECT_NEAR(inKernel, findNumber(*jperf, "Per core in the counted parts"), 1e-3*inKernel);
-    EXPECT_NEAR(100, findNumber(*jperf, "Theoretical peak per core"), 1e-4);
+    // The peak is in the precision of the build, in single precision twice
+    // the double precision peak that is given
+    double peakOfBuild = GMX_DOUBLE ? 100 : 200;
+    EXPECT_NEAR(peakOfBuild, findNumber(*jperf, "Theoretical peak per core"), 1e-4);
     EXPECT_EQ("test processor", findObject(*jperf, "Theoretical peak basis")->value());
-    // The peak is for double precision, as are all calculations in a double build
-    EXPECT_EQ("double", findObject(*jperf, "Theoretical peak precision")->value());
+    EXPECT_EQ(GMX_DOUBLE ? "double" : "single", findObject(*jperf, "Theoretical peak precision")->value());
 #if GMX_DOUBLE
     EXPECT_EQ("double", findObject(*jperf, "Precision")->value());
 #endif
-    EXPECT_NEAR(1.5, findNumber(*jperf, "Fraction of the peak on average"), 1e-3);
-    EXPECT_NEAR(inKernel, findNumber(*jperf, "Fraction of the peak in the counted parts"), 1e-3*inKernel);
+    EXPECT_NEAR(150/peakOfBuild, findNumber(*jperf, "Fraction of the peak on average"), 1e-3);
+    EXPECT_NEAR(100*inKernel/peakOfBuild, findNumber(*jperf, "Fraction of the peak in the counted parts"), 1e-3*inKernel);
     // The rate of each part
     auto jparts = findObject(*jtimings, "Parts");
     ASSERT_NE(nullptr, jparts);
