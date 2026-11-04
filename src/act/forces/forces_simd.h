@@ -15,8 +15,8 @@ class MsgHandler;
 
 /*! \brief Compute energies and forces for monomers and/or dimers.
  * The energies are stored in the conformation data of the molecules, see
- * ACTMol::conformationData, not in the energy maps of the conformations.
- * ConformationEnergies::store copies them there.
+ * ACTMol::conformationData, the energy maps of the conformations hold the
+ * QM energies.
  * Unless forces are computed or the force field is polarizable, the energies
  * of an interaction type are taken from the previous call if its parameters
  * (see Topology::parameterVersion), the coordinates (see ConformationData)
@@ -50,14 +50,13 @@ void computeEnergies(MsgHandler                  *msghandler,
                      bool                         allForces      = true);
 
 /*! \brief Compute the energies and forces of the conformations of one topology
- * The energies are stored in the conformation data, the forces in the
+ * The energies are stored in the conformation data, the forces in its
  * conformations. The shells are not relaxed and the forces on virtual
  * sites are not spread, see ForceComputer::computeTotal.
  * \param[in]    msghandler For warnings and errors
  * \param[in]    pd         An ACT force field
  * \param[in]    top        The topology
- * \param[inout] coords     The conformations
- * \param[inout] cdata      The data of the conformations
+ * \param[inout] cdata      The conformations and their data
  * \param[in]    forces     Whether to compute forces
  * \param[in]    skipDone   Whether to leave out the conformations for which the
  *                          shells converged, see computeEnergies
@@ -65,19 +64,19 @@ void computeEnergies(MsgHandler                  *msghandler,
 void computeConformations(MsgHandler                *msghandler,
                           const ForceField          *pd,
                           const Topology            *top,
-                          std::vector<CoordsEnergy> *coords,
                           ConformationData          *cdata,
                           bool                       forces,
                           bool                       skipDone);
 
 /*! \brief Compute the energies and forces of one potential for all conformations
- * The energy maps and forces of the conformations are cleared first.
- * This is mainly intended for testing.
+ * The energies, in ConformationData::energies, and the forces are made
+ * anew. This is mainly intended for testing.
  * \param[in]    msghandler    For warnings and errors
  * \param[in]    mypot         The potential
  * \param[in]    topentries    The interactions
  * \param[in]    atoms         The atoms
- * \param[inout] coords        The conformations
+ * \param[inout] cdata         The conformations, only these are kept, the rest
+ *                             of the data for computing them is made anew
  * \param[in]    epsilonr      Relative dielectric constant
  * \param[in]    conformations Whether to loop over the conformations in the
  *                             inner loop (vectorized) or the outer loop
@@ -90,7 +89,7 @@ void computePotential(MsgHandler                 *msghandler,
                       Potential                   mypot,
                       const TopologyEntryVector  &topentries,
                       const std::vector<ActAtom> &atoms,
-                      std::vector<CoordsEnergy>  *coords,
+                      ConformationData           *cdata,
                       double                      epsilonr,
                       bool                        conformations,
                       bool                        forces = true);

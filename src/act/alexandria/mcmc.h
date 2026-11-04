@@ -56,6 +56,9 @@ namespace ga
 
 class MsgHandler;
 
+/*! \brief Optimizer that evolves force field parameters by a
+ * Markov chain Monte Carlo (MCMC) algorithm, without crossover or selection.
+ */
 class MCMC : public GeneticAlgorithm
 {
 private:
@@ -73,7 +76,7 @@ public:
          alexandria::StaticIndividualInfo    *sii,
          alexandria::GAConfigHandler         *gach)
     : GeneticAlgorithm(initializer, fitnessComputer, nullptr, nullptr, nullptr,
-                       mutator, nullptr, nullptr, gach->popSize()),
+                       mutator, nullptr, nullptr),
       sii_(sii), gach_(gach)
     {}
 

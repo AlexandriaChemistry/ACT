@@ -42,6 +42,10 @@ typedef std::map<iMolSelect, double> FitnessMap;
 namespace ga
 {
 
+/*! \brief A set of force field parameter values (the genes) with its fitness
+ * The fitness is stored per data set, together with the probability
+ * of being selected for reproduction.
+ */
 class Genome
 {
 private:
@@ -69,13 +73,6 @@ public:
      * \throws if not found
      */
     double fitness(iMolSelect ims) const;
-
-    /*! Return a pointer to the fitness in the data set
-     * \param[in] ims The data set
-     * \return the fitness
-     * \throws if not found
-     */
-    double *fitnessPtr(iMolSelect ims) { return &(fitness_.find(ims)->second); }
 
     /*! \brief Set a fitness
      * \param[in] ims     The data set

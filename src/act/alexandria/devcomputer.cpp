@@ -345,8 +345,6 @@ void HarmonicsDevComputer::calcDeviation(MsgHandler                    *msghandl
                                          const ForceField              *forcefield,
                                          LossFunction                   lossFunction)
 {
-    // Once, such that the tolerance is consistent for all minimizations
-    MolHandler::adjustForceTolerance(msghandler, forceComputer, &simConfig_);
     for(auto actmol : actmols)
     {
         // Only compute frequencies for structures that have an optimize reference
@@ -449,7 +447,7 @@ double ForceEnergyDevComputer::computeBeta(eRMS ermsi)
  * \param[in]  msghandler   For error messages
  * \param[in]  molname      Name of the molecule, for error messages
  * \param[in]  atoms        The particles of the topology of the conformations
- * \param[in]  coords       The data including fcalc and fobs
+ * \param[in]  cdata        The conformations, with the computed and reference forces
  * \param[in]  lossFunction The loss function to use
  * \param[out] weight       The total weight corresponding to the loss
  * \param[out] loss2        The aggregate loss
@@ -457,7 +455,7 @@ double ForceEnergyDevComputer::computeBeta(eRMS ermsi)
 static void calc_force_loss(MsgHandler                      *msghandler,
                             const std::string               &molname,
                             const std::vector<ActAtom>      &atoms,
-                            const std::vector<CoordsEnergy> *coords,
+                            const ConformationData          *cdata,
                             LossFunction                     lossFunction,
                             double                          *weight,
                             double                          *loss2)
@@ -470,29 +468,30 @@ static void calc_force_loss(MsgHandler                      *msghandler,
             atomIndex.push_back(i);
         }
     }
-    std::vector<double> weights(coords->size(), 0);
-    std::vector<double> losses(coords->size(), 0);
-    for(size_t ix = 0; ix < coords->size(); ix++)
+    std::vector<double> weights(cdata->nconf(), 0);
+    std::vector<double> losses(cdata->nconf(), 0);
+    for(size_t ix = 0; ix < cdata->nconf(); ix++)
     {
-        auto &x = (*coords)[ix];
+        auto &x  = cdata->confs[ix];
+        auto  fx = cdata->f(ix);
         // Not all conformations need to have reference forces
         if (x.fobs.empty())
         {
             continue;
         }
-        if (x.fobs.size() != atomIndex.size() || x.fcalc.size() != atoms.size())
+        if (x.fobs.size() != atomIndex.size() || fx.size() != atoms.size())
         {
             msghandler->msg(ACTStatus::Fatal,
                             gmx::formatString("Inconsistency for %s: there are %zu atoms and %zu particles, but %zu reference and %zu computed forces",
                                               molname.c_str(), atomIndex.size(), atoms.size(),
-                                              x.fobs.size(), x.fcalc.size()));
+                                              x.fobs.size(), fx.size()));
             return;
         }
         double www = 0;
         double lss = 0;
         for(size_t i = 0; i < atomIndex.size(); i++)
         {
-            auto &fc = x.fcalc[atomIndex[i]];
+            auto  fc = fx[atomIndex[i]];
 #pragma unroll
             for(int m = 0; m < DIM; m++)
             {
@@ -591,20 +590,19 @@ static bool referenceValid(const DeviationReference         &ref,
 /*! \brief The reference interaction energies and Boltzmann weights of dimers
  * They are computed once for the conformations, since they only depend on
  * the quantum chemistry data, not on the positions of virtual sites.
- * \param[inout] cdata  The conformation data of the dimer
- * \param[in]    coords The conformations
+ * \param[inout] cdata  The conformations of the dimer with their data
  * \param[in]    itypes The interaction types
  * \param[in]    beta   The inverse Boltzmann temperature, no weighting if zero
  * \param[in]    sep    Whether the induction correction is separate
  * \return The reference data
  */
 static const DeviationReference &interactionReference(ConformationData                   *cdata,
-                                                      const std::vector<CoordsEnergy>    &coords,
                                                       const std::vector<InteractionType> &itypes,
                                                       double                              beta,
                                                       bool                                sep)
 {
-    auto &ref = cdata->deviation;
+    const auto &coords = cdata->confs;
+    auto       &ref    = cdata->deviation;
     if (referenceValid(ref, *cdata, coords.size(), itypes, beta, sep))
     {
         return ref;
@@ -636,17 +634,16 @@ static const DeviationReference &interactionReference(ConformationData          
 }
 
 /*! \brief The reference potential energies and Boltzmann weights of monomers
- * \param[inout] cdata  The conformation data of the monomer
- * \param[in]    coords The conformations
+ * \param[inout] cdata  The conformations of the monomer with their data
  * \param[in]    beta   The inverse Boltzmann temperature, no weighting if zero
  * \return The reference data, with only EPOT
  */
-static const DeviationReference &epotReference(ConformationData                *cdata,
-                                               const std::vector<CoordsEnergy> &coords,
-                                               double                           beta)
+static const DeviationReference &epotReference(ConformationData *cdata,
+                                               double            beta)
 {
     const std::vector<InteractionType> itypes = { InteractionType::EPOT };
-    auto &ref = cdata->deviation;
+    const auto &coords = cdata->confs;
+    auto       &ref    = cdata->deviation;
     if (referenceValid(ref, *cdata, coords.size(), itypes, beta, false))
     {
         return ref;
@@ -792,13 +789,13 @@ void ForceEnergyDevComputer::calcDeviation(MsgHandler                     *msgha
                 if (actmol->isDimer())
                 {
                     calc_force_loss(msghandler, actmol->getMolname(), actmol->topology()->atoms(),
-                                    actmol->dimerCoords(), lossFunction, &weight, &loss);
+                                    actmol->conformationData(2), lossFunction, &weight, &loss);
                 }
                 else
                 {
                     calc_force_loss(msghandler, actmol->getMolname(),
                                     actmol->fragmentHandler()->topologies()[0].atoms(),
-                                    actmol->monomerCoords(0), lossFunction, &weight, &loss);
+                                    actmol->conformationData(0), lossFunction, &weight, &loss);
                 }
                 tf->second.increase(weight, loss);
             }
@@ -811,7 +808,6 @@ void ForceEnergyDevComputer::calcDeviation(MsgHandler                     *msgha
                     iter->loss   = 0;
                 }
                 double     beta   = computeBeta(eRMS::Interaction);
-                const auto coords = actmol->dimerCoords();
                 // The ACT energies are taken from the conformation data,
                 // the QM energies and weights from the reference data.
                 auto      *cdata  = actmol->conformationData(2);
@@ -821,8 +817,8 @@ void ForceEnergyDevComputer::calcDeviation(MsgHandler                     *msgha
                 {
                     itypes.push_back(r.itype);
                 }
-                const auto &ref   = interactionReference(cdata, *coords, itypes, beta, sepInductionTerms);
-                size_t      nconf = std::min(coords->size(), ener.nconf());
+                const auto &ref   = interactionReference(cdata, itypes, beta, sepInductionTerms);
+                size_t      nconf = std::min(cdata->confs.size(), ener.nconf());
                 for (size_t j = 0; j < rmsE.size(); j++)
                 {
                     auto &rms  = rmsE[j];
@@ -843,15 +839,14 @@ void ForceEnergyDevComputer::calcDeviation(MsgHandler                     *msgha
             if (doEpot)
             {
                 double     beta   = computeBeta(eRMS::EPOT);
-                const auto coords = actmol->monomerCoords(0);
                 auto      *cdata  = actmol->conformationData(0);
                 auto      &ener   = cdata->energies;
                 auto       epot   = ener.find(InteractionType::EPOT);
-                const auto &ref   = epotReference(cdata, *coords, beta);
+                const auto &ref   = epotReference(cdata, beta);
                 const auto &eqm   = ref.energy[0];
                 const auto &have  = ref.have[0];
                 const auto &w     = ref.weight;
-                size_t      nconf = std::min(coords->size(), ener.nconf());
+                size_t      nconf = std::min(cdata->confs.size(), ener.nconf());
                 for(size_t i = 0; i < nconf; i++)
                 {
                     // std::isfinite checks for both Inf and NaN values.

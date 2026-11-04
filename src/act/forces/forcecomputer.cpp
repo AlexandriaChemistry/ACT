@@ -69,12 +69,12 @@ namespace alexandria
  * \param[in] maxShellDistance2 Square of the maximum core-shell distance, 0 if there is none
  * \return The sum of the squared shell forces
  */
-static double shellForce2(const std::vector<ActAtom>   &atoms,
-                          const std::vector<bool>      &isShell,
-                          const std::vector<gmx::RVec> &x,
-                          const std::vector<gmx::RVec> &f,
-                          size_t                        offset,
-                          double                        maxShellDistance2)
+static double shellForce2(const std::vector<ActAtom>          &atoms,
+                          const std::vector<bool>             &isShell,
+                          const ParticleVectors<const real> &x,
+                          const ParticleVectors<const real> &f,
+                          size_t                               offset,
+                          double                               maxShellDistance2)
 {
     // Shells are put on the wall by scaling, allow for rounding
     const double atWall = 0.9999*maxShellDistance2;
@@ -87,14 +87,14 @@ static double shellForce2(const std::vector<ActAtom>   &atoms,
         {
             continue;
         }
-        const auto &fi = f[i+offset];
-        double      f2 = iprod(fi, fi);
+        gmx::RVec fi = f[i+offset].rvec();
+        double    f2 = iprod(fi, fi);
         // The square and the sum
         flops += 6;
         if (maxShellDistance2 > 0 && atoms[i].parents().size() == 1)
         {
             rvec dx;
-            rvec_sub(x[i+offset], x[atoms[i].parents()[0]+offset], dx);
+            rvec_sub(x[i+offset].rvec(), x[atoms[i].parents()[0]+offset].rvec(), dx);
             double dx2 = iprod(dx, dx);
             double fdx = iprod(fi, dx);
             flops += 13;
@@ -214,18 +214,19 @@ static double calcFscaleFlops(real k2, real F)
 /*! \brief Move a shell on top of its core along the force
  * \return the number of floating point operations, see Timings::addFlops
  */
-static inline double update_shell_pos(int                           shell,
-                                      std::vector<gmx::RVec>       *coordinates,
-                                      const std::vector<gmx::RVec> &forces,
-                                      double                        fcShell,
-                                      double                        fcHyper,
-                                      double                        step)
+static inline double update_shell_pos(int                                  shell,
+                                      const ParticleVectors<real>       &coordinates,
+                                      const ParticleVectors<const real> &forces,
+                                      double                               fcShell,
+                                      double                               fcHyper,
+                                      double                               step)
 {
-    auto Fnorm  = norm(forces[shell]);
-    auto fscale = step*calc_fscale(fcShell, fcHyper, Fnorm);
+    gmx::RVec fshell = forces[shell].rvec();
+    auto      Fnorm  = norm(fshell);
+    auto      fscale = step*calc_fscale(fcShell, fcHyper, Fnorm);
     for(int m = 0; m < DIM; m++)
     {
-        (*coordinates)[shell][m] -= forces[shell][m] * fscale;
+        coordinates[shell][m] -= fshell[m] * fscale;
     }
     // The norm with its square root, the step and the displacement
     return 10 + calcFscaleFlops(fcHyper, Fnorm) + 1 + 6;
@@ -243,18 +244,18 @@ static inline double update_shell_pos(int                           shell,
  *                            an isolated shell to its minimum
  * \return the number of floating point operations, see Timings::addFlops
  */
-static double update_shell_positions(int                           core,
-                                   int                           shell,
-                                   std::vector<gmx::RVec>       *coordinates,
-                                   const std::vector<gmx::RVec> &forces,
-                                   double                        fcShell,
-                                   double                        fcHyper,
-                                   double                        rHyper,
-                                   double                        step)
+static double update_shell_positions(int                                  core,
+                                   int                                  shell,
+                                   const ParticleVectors<real>       &coordinates,
+                                   const ParticleVectors<const real> &forces,
+                                   double                               fcShell,
+                                   double                               fcHyper,
+                                   double                               rHyper,
+                                   double                               step)
 {
     // Core shell vector
     gmx::RVec r_core_shell;
-    rvec_sub((*coordinates)[shell], (*coordinates)[core], r_core_shell);
+    rvec_sub(coordinates[shell].rvec(), coordinates[core].rvec(), r_core_shell);
     double rcs    = norm(r_core_shell);
     // The vector and its norm with the square root
     double flops  = 13;
@@ -292,11 +293,12 @@ static double update_shell_positions(int                           core,
             // Both force constants, with the division in kperp
             flops     += 11 + 5;
         }
-        double fpar = iprod(forces[shell], r_core_shell)/rcs;
+        gmx::RVec fshell = forces[shell].rvec();
+        double    fpar   = iprod(fshell, r_core_shell)/rcs;
         for(int m = 0; m < DIM; m++)
         {
             double fparm = fpar*r_core_shell[m]/rcs;
-            (*coordinates)[shell][m] += step*(fparm/kpar + (forces[shell][m] - fparm)/kperp);
+            coordinates[shell][m] += step*(fparm/kpar + (fshell[m] - fparm)/kperp);
         }
         // The parallel force with its division, and per dimension three
         // divisions and five other operations
@@ -327,8 +329,8 @@ void ForceComputer::compute(MsgHandler                        *msg_handler,
     options.shellsFromInput = shellsFromInput;
     std::vector<std::map<InteractionType, double>> emaps;
     computeTotal(msg_handler, pd, &set, options, &emaps);
-    *coordinates = set.confs[0].x;
-    *forces      = set.confs[0].fcalc;
+    *coordinates = set.data.x(0).toRVec();
+    *forces      = set.data.f(0).toRVec();
     *energies    = emaps[0];
 }
 
@@ -355,12 +357,42 @@ static std::vector<std::pair<size_t, size_t>> shellParents(const std::vector<Act
  * \param[inout] coords The coordinates
  */
 static void resetShells(const std::vector<std::pair<size_t, size_t>> &shells,
-                        std::vector<gmx::RVec>                       *coords)
+                        const ParticleVectors<real>                &coords)
 {
     for(const auto &sp : shells)
     {
-        copy_rvec((*coords)[sp.second], (*coords)[sp.first]);
+        for(int m = 0; m < DIM; m++)
+        {
+            coords[sp.first][m] = coords[sp.second][m];
+        }
     }
+}
+
+/*! \brief Construct the virtual sites of one conformation
+ * \param[in]    vsiteHandler The virtual site routines
+ * \param[in]    top          The topology
+ * \param[inout] x            The coordinates
+ */
+static void constructVsites(const VsiteHandler            &vsiteHandler,
+                            const Topology                *top,
+                            const ParticleVectors<real> &x)
+{
+    vsiteHandler.constructPositions(top, x.data(), x.stride(), 1, 1);
+}
+
+/*! \brief Distribute the forces on the virtual sites of one conformation
+ * \param[in]    vsiteHandler The virtual site routines
+ * \param[in]    top          The topology
+ * \param[in]    x            The coordinates
+ * \param[inout] f            The forces, those on the virtual sites become zero
+ */
+static void spreadVsites(const VsiteHandler                  &vsiteHandler,
+                         const Topology                      *top,
+                         const ParticleVectors<const real> &x,
+                         const ParticleVectors<real>       &f)
+{
+    GMX_RELEASE_ASSERT(x.stride() == f.stride(), "Coordinates and forces have different layouts");
+    vsiteHandler.distributeForces(top, x.data(), f.data(), x.stride(), 1, 1);
 }
 
 //! Smallest scaling of the step of the shells, see updateShells
@@ -368,151 +400,258 @@ static const double minShellStep = 0.1;
 //! Largest scaling of the step of the shells, see updateShells
 static const double maxShellStep = 1.0;
 
+/*! \brief The squared shell forces of many conformations, see shellForce2
+ * The loop over the conformations is the inner loop, such that the
+ * coordinates and forces of the conformations in consecutive slots are
+ * accessed together. Each conformation is computed as by shellForce2.
+ * \param[in]  atoms             The particles
+ * \param[in]  isShell           Whether or not the particles are shells
+ * \param[in]  cdata             The conformations
+ * \param[in]  confs             The conformations to compute
+ * \param[in]  offset            Index of the first particle in the conformations
+ * \param[in]  maxShellDistance2 Square of the maximum core-shell distance, 0 if there is none
+ * \param[out] f2sum             The sum of the squared shell forces of each conformation
+ */
+static void shellForces2(const std::vector<ActAtom>  &atoms,
+                         const std::vector<bool>     &isShell,
+                         const ConformationData      *cdata,
+                         const std::vector<size_t>   &confs,
+                         size_t                       offset,
+                         double                       maxShellDistance2,
+                         std::vector<double>         *f2sum)
+{
+    // Shells are put on the wall by scaling, allow for rounding
+    const double atWall = 0.9999*maxShellDistance2;
+    size_t       n      = confs.size();
+    f2sum->assign(n, 0.0);
+    // Floating point operations, see Timings::addFlops
+    double       flops  = n;
+    for(size_t i = 0; i < isShell.size(); i++)
+    {
+        if (!isShell[i])
+        {
+            continue;
+        }
+        bool wall = maxShellDistance2 > 0 && atoms[i].parents().size() == 1;
+        for(size_t k = 0; k < n; k++)
+        {
+            auto      x  = cdata->x(confs[k]);
+            auto      f  = cdata->f(confs[k]);
+            gmx::RVec fi = f[i+offset].rvec();
+            double    f2 = iprod(fi, fi);
+            // The square and the sum
+            flops += 6;
+            if (wall)
+            {
+                rvec dx;
+                rvec_sub(x[i+offset].rvec(), x[atoms[i].parents()[0]+offset].rvec(), dx);
+                double dx2 = iprod(dx, dx);
+                double fdx = iprod(fi, dx);
+                flops += 13;
+                if (dx2 >= atWall && fdx > 0)
+                {
+                    f2    -= fdx*fdx/dx2;
+                    flops += 7;
+                }
+            }
+            (*f2sum)[k] += f2;
+        }
+    }
+    Timings::instance().addFlops(flops);
+}
+
 size_t ForceComputer::updateShells(const Topology            *top,
                                    size_t                     offset,
                                    size_t                     nShell,
                                    const std::vector<bool>   &isShell,
                                    size_t                     fragment,
                                    double                     maxShellDistance,
-                                   std::vector<CoordsEnergy> *myCoords,
+                                   ConformationData          *cdata,
                                    const std::vector<size_t> *active) const
 {
+    auto  *myCoords   = &cdata->confs;
     auto   itype      = InteractionType::POLARIZATION;
+    auto  &pols       = top->entry(itype);
+    auto  &atoms      = top->atoms();
     size_t numberDone = 0;
     double maxShellDistance2 = maxShellDistance*maxShellDistance;
-    // Floating point operations, see Timings::addFlops, those of shellForce2
+    // Floating point operations, see Timings::addFlops, those of shellForces2
     // are counted there
     double flops      = 1;
+    // The conformations that are not done, in the order of their slots,
+    // such that the loops over them access the arrays in order. Each
+    // conformation is computed independently of the others.
+    std::vector<size_t> confs;
     size_t nconf      = active ? active->size() : myCoords->size();
     for(size_t i = 0; i < nconf; i++)
     {
-        auto &dim = (*myCoords)[active ? (*active)[i] : i];
-        if (dim.done)
+        size_t c = active ? (*active)[i] : i;
+        if ((*myCoords)[c].done)
         {
-            numberDone += 1;
-            continue;
-        }
-        // Mean square shell force
-        double msForce = shellForce2(top->atoms(), isShell, dim.x, dim.fcalc,
-                                     offset, maxShellDistance2);
-        if (nShell > 0)
-        {
-            msForce /= nShell;
-            flops   += 5;
-        }
-        if (msForce <= msForceToler_)
-        {
-            dim.done    = true;
             numberDone += 1;
         }
         else
         {
-            auto &pols  = top->entry(itype);
-            auto &atoms = top->atoms();
-            // The step is scaled by the fraction of the previous step at
-            // which the force along it would have been zero, from the
-            // forces before and after it. For an isolated harmonic shell
-            // this is one, since the step is a Newton step, coupled shells
-            // can overshoot or undershoot.
-            if (dim.shellDxForce[fragment] > 0 && dim.shellDx.size() == dim.x.size())
-            {
-                double before = dim.shellDxForce[fragment];
-                double after  = 0;
-                for(const auto &p : pols)
-                {
-                    int shellLocal = p->atomIndex(1);
-                    if (isShell[shellLocal])
-                    {
-                        int shellGlobal = shellLocal + static_cast<int>(offset);
-                        after += iprod(dim.shellDx[shellGlobal], dim.fcalc[shellGlobal]);
-                        flops += 6;
-                    }
-                }
-                double scale = (before > after) ? before/(before - after) : 1.0;
-                dim.shellStep[fragment] = std::clamp(dim.shellStep[fragment]*scale,
-                                                     minShellStep, maxShellStep);
-                flops += (before > after) ? 7 : 1;
-            }
-            // If the force increased anyway, the step is reduced, see compute
-            if (msForce > dim.shellForce[fragment])
-            {
-                dim.shellStep[fragment] = std::min(dim.shellStep[fragment], 0.5);
-            }
-            dim.shellForce[fragment] = msForce;
-            dim.shellDx.resize(dim.x.size());
-            double dxForce = 0;
-            // Loop over polarizabilities
-            for(const auto &p : pols)
-            {
-                // Displace the shells according to the force
-                // Since the potential is harmonic we use Hooke's law
-                // F = k dx -> dx = F / k
-                // Note that this only works for purely harmonic potentials,
-                // see function calc_fscale for quartic potentials.
-                // The atom indices stored in the fragment topology are local,
-                // whereas the coordinates/forces of the dimer are global, so
-                // we add the offset to map local -> global indices.
-                int shellLocal   = p->atomIndex(1);
-                int coreLocal    = p->atomIndex(0);
-                // Only the shells in the mask are relaxed
-                if (!isShell[shellLocal])
-                {
-                    continue;
-                }
-                int shellGlobal  = shellLocal + static_cast<int>(offset);
-                int coreGlobal   = coreLocal + static_cast<int>(offset);
-                // The force constant from the current polarizability and
-                // shell charge, since both may be trained, as in compute.
-                auto   &params = p->params();
-                double  alpha  = params[polALPHA];
-                double  qshell = atoms[shellLocal].charge();
-                double  fc1    = 0;
-                if (alpha > 0 && qshell != 0)
-                {
-                    fc1    = (qshell*qshell*ONE_4PI_EPS0)/alpha;
-                    flops += 7;
-                }
-                gmx::RVec xold = dim.x[shellGlobal];
-                flops += update_shell_positions(coreGlobal, shellGlobal,
-                                                &dim.x, dim.fcalc,
-                                                fc1, params[polFCHYPER], params[polRHYPER],
-                                                dim.shellStep[fragment]);
-                bool clipped = false;
-                // Check distance from parent, if there is only one
-                if (maxShellDistance2 > 0 && atoms[shellLocal].parents().size() == 1)
-                {
-                    int coreParentLocal  = atoms[shellLocal].parents()[0];
-                    int coreParentGlobal = coreParentLocal + static_cast<int>(offset);
-                    rvec dx;
-                    rvec_sub(dim.x[shellGlobal], dim.x[coreParentGlobal], dx);
-                    real dx2 = iprod(dx, dx);
-                    flops   += 8;
-                    if (dx2 > maxShellDistance2)
-                    {
-                        // Move back the shell/drude to the wall distance
-                        real scale = std::sqrt(maxShellDistance2/dx2);
-                        for (int m = 0; m < DIM; m++)
-                        {
-                            dim.x[shellGlobal][m] = dim.x[coreParentGlobal][m] + scale*dx[m];
-                        }
-                        clipped = true;
-                        flops  += 16;
-                    }
-                }
-                // Shells held at the maximum distance do not tell how far to step
-                if (clipped)
-                {
-                    clear_rvec(dim.shellDx[shellGlobal]);
-                }
-                else
-                {
-                    rvec_sub(dim.x[shellGlobal], xold, dim.shellDx[shellGlobal]);
-                    dxForce += iprod(dim.shellDx[shellGlobal], dim.fcalc[shellGlobal]);
-                    flops   += 9;
-                }
-            }
-            dim.shellDxForce[fragment] = dxForce;
+            confs.push_back(c);
         }
+    }
+    const auto &ca = cdata->arrays;
+    std::sort(confs.begin(), confs.end(),
+              [&ca](size_t a, size_t b) { return ca.slot(a) < ca.slot(b); });
+    // Mean square shell force
+    std::vector<double> msForce;
+    shellForces2(atoms, isShell, cdata, confs, offset, maxShellDistance2, &msForce);
+    // The conformations of which the shells are moved
+    std::vector<size_t> relax;
+    for(size_t k = 0; k < confs.size(); k++)
+    {
+        if (nShell > 0)
+        {
+            msForce[k] /= nShell;
+            flops      += 5;
+        }
+        if (msForce[k] <= msForceToler_)
+        {
+            (*myCoords)[confs[k]].done = true;
+            numberDone                += 1;
+        }
+        else
+        {
+            relax.push_back(k);
+        }
+    }
+    size_t natom = cdata->x(0).size();
+    // The step is scaled by the fraction of the previous step at which
+    // the force along it would have been zero, from the forces before and
+    // after it. For an isolated harmonic shell this is one, since the step
+    // is a Newton step, coupled shells can overshoot or undershoot.
+    std::vector<double> after(relax.size(), 0.0);
+    std::vector<char>   scaled(relax.size(), 0);
+    for(size_t r = 0; r < relax.size(); r++)
+    {
+        const auto &dim = (*myCoords)[confs[relax[r]]];
+        scaled[r] = dim.shellDxForce[fragment] > 0 && dim.shellDx.size() == natom;
+    }
+    for(const auto &p : pols)
+    {
+        int shellLocal = p->atomIndex(1);
+        if (!isShell[shellLocal])
+        {
+            continue;
+        }
+        int shellGlobal = shellLocal + static_cast<int>(offset);
+        for(size_t r = 0; r < relax.size(); r++)
+        {
+            if (scaled[r])
+            {
+                size_t c = confs[relax[r]];
+                after[r] += iprod((*myCoords)[c].shellDx[shellGlobal], cdata->f(c)[shellGlobal].rvec());
+                flops    += 6;
+            }
+        }
+    }
+    for(size_t r = 0; r < relax.size(); r++)
+    {
+        size_t k   = relax[r];
+        auto  &dim = (*myCoords)[confs[k]];
+        if (scaled[r])
+        {
+            double before = dim.shellDxForce[fragment];
+            double scale  = (before > after[r]) ? before/(before - after[r]) : 1.0;
+            dim.shellStep[fragment] = std::clamp(dim.shellStep[fragment]*scale,
+                                                 minShellStep, maxShellStep);
+            flops += (before > after[r]) ? 7 : 1;
+        }
+        // If the force increased anyway, the step is reduced, see compute
+        if (msForce[k] > dim.shellForce[fragment])
+        {
+            dim.shellStep[fragment] = std::min(dim.shellStep[fragment], 0.5);
+        }
+        dim.shellForce[fragment] = msForce[k];
+        dim.shellDx.resize(natom);
+    }
+    std::vector<double> dxForce(relax.size(), 0.0);
+    // Loop over polarizabilities
+    for(const auto &p : pols)
+    {
+        // Displace the shells according to the force
+        // Since the potential is harmonic we use Hooke's law
+        // F = k dx -> dx = F / k
+        // Note that this only works for purely harmonic potentials,
+        // see function calc_fscale for quartic potentials.
+        // The atom indices stored in the fragment topology are local,
+        // whereas the coordinates/forces of the dimer are global, so
+        // we add the offset to map local -> global indices.
+        int shellLocal   = p->atomIndex(1);
+        int coreLocal    = p->atomIndex(0);
+        // Only the shells in the mask are relaxed
+        if (!isShell[shellLocal])
+        {
+            continue;
+        }
+        int shellGlobal  = shellLocal + static_cast<int>(offset);
+        int coreGlobal   = coreLocal + static_cast<int>(offset);
+        // The force constant from the current polarizability and
+        // shell charge, since both may be trained, as in compute.
+        auto   &params = p->params();
+        double  alpha  = params[polALPHA];
+        double  qshell = atoms[shellLocal].charge();
+        double  fc1    = 0;
+        if (alpha > 0 && qshell != 0)
+        {
+            fc1    = (qshell*qshell*ONE_4PI_EPS0)/alpha;
+            flops += 7*relax.size();
+        }
+        // The parent of the shell, to check the distance from it
+        bool wall             = maxShellDistance2 > 0 && atoms[shellLocal].parents().size() == 1;
+        int  coreParentGlobal = wall ? atoms[shellLocal].parents()[0] + static_cast<int>(offset) : 0;
+        for(size_t r = 0; r < relax.size(); r++)
+        {
+            size_t                      c   = confs[relax[r]];
+            auto                       &dim = (*myCoords)[c];
+            auto                        x   = cdata->x(c);
+            ParticleVectors<const real> f   = cdata->f(c);
+            gmx::RVec xold = x[shellGlobal].rvec();
+            flops += update_shell_positions(coreGlobal, shellGlobal,
+                                            x, f,
+                                            fc1, params[polFCHYPER], params[polRHYPER],
+                                            dim.shellStep[fragment]);
+            bool clipped = false;
+            // Check distance from parent, if there is only one
+            if (wall)
+            {
+                rvec dx;
+                rvec_sub(x[shellGlobal].rvec(), x[coreParentGlobal].rvec(), dx);
+                real dx2 = iprod(dx, dx);
+                flops   += 8;
+                if (dx2 > maxShellDistance2)
+                {
+                    // Move back the shell/drude to the wall distance
+                    real scale = std::sqrt(maxShellDistance2/dx2);
+                    for (int m = 0; m < DIM; m++)
+                    {
+                        x[shellGlobal][m] = x[coreParentGlobal][m] + scale*dx[m];
+                    }
+                    clipped = true;
+                    flops  += 16;
+                }
+            }
+            // Shells held at the maximum distance do not tell how far to step
+            if (clipped)
+            {
+                clear_rvec(dim.shellDx[shellGlobal]);
+            }
+            else
+            {
+                rvec_sub(x[shellGlobal].rvec(), xold, dim.shellDx[shellGlobal]);
+                dxForce[r] += iprod(dim.shellDx[shellGlobal], f[shellGlobal].rvec());
+                flops      += 9;
+            }
+        }
+    }
+    for(size_t r = 0; r < relax.size(); r++)
+    {
+        (*myCoords)[confs[relax[r]]].shellDxForce[fragment] = dxForce[r];
     }
     Timings::instance().addFlops(flops);
     return numberDone;
@@ -809,7 +948,6 @@ static bool vsitesOutdated(const Topology *top, ConformationData *cdata)
     {
         cdata->haveVsites   = true;
         cdata->vsiteVersion = top->vsiteVersion();
-        cdata->arrays.invalidateVsites();
         cdata->coordinates.update();
     }
     return outdated;
@@ -873,18 +1011,23 @@ static void copyRelaxedMonomerShells(const std::vector<ACTMol *> &allmols)
         auto  fh     = mol.fragmentHandler();
         auto &tops   = fh->topologies();
         auto &astart = fh->atomStart();
-        auto &dimers = *mol.dimerCoords();
+        auto *dimers = mol.conformationData(2);
         for(size_t im = 0; im < tops.size(); im++)
         {
             auto &atoms = tops[im].atoms();
             auto &mons  = *mol.monomerCoords(im);
-            for(size_t i = 0; i < dimers.size(); i++)
+            for(size_t i = 0; i < dimers->nconf(); i++)
             {
+                auto        xd = dimers->x(i);
+                const auto &xr = mons[i].xrelax;
                 for(size_t j = 0; j < atoms.size(); j++)
                 {
                     if (atoms[j].pType() == ActParticle::Shell)
                     {
-                        copy_rvec(mons[i].xrelax[j], dimers[i].x[astart[im]+j]);
+                        for(int m = 0; m < DIM; m++)
+                        {
+                            xd[astart[im]+j][m] = xr[j][m];
+                        }
                     }
                 }
             }
@@ -956,7 +1099,7 @@ void ForceComputer::relaxMonomer(MsgHandler                  *msghandler,
             auto &act   = active[k];
             // Relax monomers first.
             updateShells(&tops[im], 0, pols[im].nShell(), pols[im].isShell(),
-                         0, maxShellDistance, &mons, &act);
+                         0, maxShellDistance, mol.conformationData(im), &act);
             act.erase(std::remove_if(act.begin(), act.end(),
                                      [&mons](size_t c) { return mons[c].done; }),
                       act.end());
@@ -985,10 +1128,11 @@ void ForceComputer::relaxMonomer(MsgHandler                  *msghandler,
         {
             continue;
         }
-        for(const auto &mon : *molptr->monomerCoords(im))
+        const auto *cdata = molptr->conformationData(im);
+        for(size_t c = 0; c < cdata->nconf(); c++)
         {
-            if (!mon.done &&
-                shellForce2(tops[im].atoms(), pols[im].isShell(), mon.x, mon.fcalc,
+            if (!cdata->confs[c].done &&
+                shellForce2(tops[im].atoms(), pols[im].isShell(), cdata->x(c), cdata->f(c),
                             0, maxShellDistance2)/pols[im].nShell() > msForceToler_)
             {
                 nShellConvergeFailed_ += 1;
@@ -1060,7 +1204,7 @@ void ForceComputer::relaxDimer(MsgHandler                  *msghandler,
                     }
                     updateShells(&tops[im], fh->atomStart()[im],
                                  pols[im].nShell(), pols[im].isShell(),
-                                 im, maxShellDistance, &dims, &act);
+                                 im, maxShellDistance, mol.conformationData(2), &act);
                     for(size_t i = 0; i < act.size(); i++)
                     {
                         done[i] = done[i] && dims[act[i]].done;
@@ -1098,9 +1242,10 @@ void ForceComputer::relaxDimer(MsgHandler                  *msghandler,
         auto  fh   = molptr->fragmentHandler();
         auto &tops = fh->topologies();
         auto &pols = fh->polInfo();
-        for(const auto &dim : *molptr->dimerCoords())
+        const auto *cdata = molptr->conformationData(2);
+        for(size_t c = 0; c < cdata->nconf(); c++)
         {
-            if (dim.done)
+            if (cdata->confs[c].done)
             {
                 continue;
             }
@@ -1108,7 +1253,7 @@ void ForceComputer::relaxDimer(MsgHandler                  *msghandler,
             for(size_t im = 0; im < tops.size() && im < 2; im++)
             {
                 if (!fixMonomer[im] && pols[im].nShell() > 0 &&
-                    shellForce2(tops[im].atoms(), pols[im].isShell(), dim.x, dim.fcalc,
+                    shellForce2(tops[im].atoms(), pols[im].isShell(), cdata->x(c), cdata->f(c),
                                 fh->atomStart()[im], maxShellDistance2)/pols[im].nShell() > msForceToler_)
                 {
                     failed = true;
@@ -1157,15 +1302,15 @@ void ForceComputer::computeRelaxedEnergies(MsgHandler                  *msghandl
                 shells = shellParents(top->atoms());
             }
             // Virtual sites for dimer
-            for(auto &dim : *mol.dimerCoords())
+            for(size_t c = 0; c < cdata->nconf(); c++)
             {
                 nEval_ += 1;
                 if (vsites)
                 {
-                    constructVsiteCoordinates(top, &dim.x);
+                    constructVsites(vsiteHandler_, top, cdata->x(c));
                 }
                 // Reset shells if needed and if possible
-                resetShells(shells, &dim.x);
+                resetShells(shells, cdata->x(c));
             }
         }
         // Shortcuts...
@@ -1184,15 +1329,15 @@ void ForceComputer::computeRelaxedEnergies(MsgHandler                  *msghandl
             {
                 shells = shellParents(top.atoms());
             }
-            for(auto &mon : *mol.monomerCoords(index))
+            for(size_t c = 0; c < cdata->nconf(); c++)
             {
                 nEval_ += 1;
                 if (vsites)
                 {
-                    constructVsiteCoordinates(&top, &mon.x);
+                    constructVsites(vsiteHandler_, &top, cdata->x(c));
                 }
                 // Reset shells if needed and if possible
-                resetShells(shells, &mon.x);
+                resetShells(shells, cdata->x(c));
             }
         }
     }
@@ -1237,9 +1382,10 @@ void ForceComputer::computeRelaxedEnergies(MsgHandler                  *msghandl
             auto &tops  = mol.fragmentHandler()->topologies();
             for(size_t index = 0; index < tops.size(); index++)
             {
-                for(auto &mon : *mol.monomerCoords(index))
+                auto *cdata = mol.conformationData(index);
+                for(size_t c = 0; c < cdata->nconf(); c++)
                 {
-                    mon.xrelax = mon.x;
+                    cdata->confs[c].xrelax = cdata->x(c).toRVec();
                 }
             }
         }
@@ -1261,9 +1407,10 @@ void ForceComputer::computeRelaxedEnergies(MsgHandler                  *msghandl
                 auto &mol = (*allmols[k]);
                 if (mol.isDimer())
                 {
-                    for(auto &dim : *mol.dimerCoords())
+                    auto *cdata = mol.conformationData(2);
+                    for(size_t c = 0; c < cdata->nconf(); c++)
                     {
-                        xdimer[k].push_back(dim.x);
+                        xdimer[k].push_back(cdata->x(c).toRVec());
                     }
                     eInduc2[k].resize(mol.dimerCoords()->size(), 0.0);
                 }
@@ -1302,10 +1449,10 @@ void ForceComputer::computeRelaxedEnergies(MsgHandler                  *msghandl
             // Restore the original dimer coordinates and energies
             for(size_t k = 0; k < allmols.size(); k++)
             {
-                auto &dimers = *(*allmols[k]).dimerCoords();
-                for(size_t i = 0; i < dimers.size(); i++)
+                auto *cdata = (*allmols[k]).conformationData(2);
+                for(size_t i = 0; i < xdimer[k].size(); i++)
                 {
-                    dimers[i].x = xdimer[k][i];
+                    cdata->x(i).assign(xdimer[k][i]);
                 }
             }
             computeEnergies(msghandler, pd, allmols, 2, true, false, false, allForces);
@@ -1391,11 +1538,11 @@ void ForceComputer::computeRelaxedEnergies(MsgHandler                  *msghandl
             auto top    = mol.topology();
             auto cdata  = mol.conformationData(2);
             // Virtual sites for dimer
-            for(auto &dim : *mol.dimerCoords())
+            for(size_t c = 0; c < cdata->nconf(); c++)
             {
                 if (!cdata->vsiteForcesSpread)
                 {
-                    spreadVsiteForces(top, &dim.x, &dim.fcalc);
+                    spreadVsites(vsiteHandler_, top, cdata->x(c), cdata->f(c));
                 }
             }
             cdata->spreadVsites = false;
@@ -1405,11 +1552,11 @@ void ForceComputer::computeRelaxedEnergies(MsgHandler                  *msghandl
         {
             auto &top   = tops[index];
             auto  cdata = mol.conformationData(index);
-            for(auto &mon : *mol.monomerCoords(index))
+            for(size_t c = 0; c < cdata->nconf(); c++)
             {
                 if (!cdata->vsiteForcesSpread)
                 {
-                    spreadVsiteForces(&top, &mon.x, &mon.fcalc);
+                    spreadVsites(vsiteHandler_, &top, cdata->x(c), cdata->f(c));
                 }
             }
             cdata->spreadVsites = false;
@@ -1420,28 +1567,31 @@ void ForceComputer::computeRelaxedEnergies(MsgHandler                  *msghandl
 /*! \brief Add the forces of an electric field on the charges
  * \param[in]    atoms  The particles
  * \param[in]    field  The electric field
- * \param[inout] coords The conformations, only those not done are changed
+ * \param[inout] cdata  The conformations, only those of which the last
+ *                      calculation computed the forces are changed, see
+ *                      ConformationArrays::computed
  */
 static void addFieldForces(const std::vector<ActAtom>  &atoms,
                            const gmx::RVec             &field,
-                           std::vector<CoordsEnergy>   *coords)
+                           ConformationData            *cdata)
 {
     if (0 == field[XX] && 0 == field[YY] && 0 == field[ZZ])
     {
         return;
     }
-    for(auto &ce : *coords)
+    for(size_t c = 0; c < cdata->nconf(); c++)
     {
-        if (ce.done)
+        if (!cdata->arrays.computed(c))
         {
             continue;
         }
-        for(size_t i = 0; i < atoms.size() && i < ce.fcalc.size(); i++)
+        auto f = cdata->f(c);
+        for(size_t i = 0; i < atoms.size() && i < f.size(); i++)
         {
             real fac = FIELDFAC*atoms[i].charge();
             for(int m = 0; m < DIM; m++)
             {
-                ce.fcalc[i][m] += fac*field[m];
+                f[i][m] += fac*field[m];
             }
         }
     }
@@ -1455,7 +1605,7 @@ void ForceComputer::computeTotal(MsgHandler                                     
 {
     double maxShellDistance = shellMaxDistance(pd);
     auto  top   = set->top;
-    auto &confs = set->confs;
+    auto &confs = set->data.confs;
     auto  cdata = &set->data;
     auto &atoms = top->atoms();
     // Construct the virtual sites and reset the shells. The energy
@@ -1473,25 +1623,26 @@ void ForceComputer::computeTotal(MsgHandler                                     
     }
     // The input positions of the shells, to start the relaxation from
     std::vector<std::vector<gmx::RVec>> inputShells;
-    for(auto &conf : confs)
+    for(size_t c = 0; c < cdata->nconf(); c++)
     {
+        auto x  = cdata->x(c);
         nEval_ += 1;
         if (vsites)
         {
-            constructVsiteCoordinates(top, &conf.x);
+            constructVsites(vsiteHandler_, top, x);
         }
         if (options.shellsFromInput && !shells.empty())
         {
             inputShells.emplace_back();
             for(const auto &sp : shells)
             {
-                inputShells.back().push_back(conf.x[sp.first]);
+                inputShells.back().push_back(x[sp.first].rvec());
             }
         }
-        resetShells(shells, &conf.x);
+        resetShells(shells, x);
     }
-    computeConformations(msghandler, pd, top, &confs, cdata, true, false);
-    addFieldForces(atoms, options.field, &confs);
+    computeConformations(msghandler, pd, top, cdata, true, false);
+    addFieldForces(atoms, options.field, cdata);
     // The energies before relaxing the shells give the induction energy
     auto &cener = cdata->energies;
     auto  itype = InteractionType::POLARIZATION;
@@ -1524,20 +1675,23 @@ void ForceComputer::computeTotal(MsgHandler                                     
                 {
                     if (isShell[shells[k].first])
                     {
-                        confs[c].x[shells[k].first] = inputShells[c][k];
+                        for(int m = 0; m < DIM; m++)
+                        {
+                            cdata->x(c)[shells[k].first][m] = inputShells[c][k][m];
+                        }
                     }
                 }
                 nShellIter_ += 1;
             }
-            computeConformations(msghandler, pd, top, &confs, cdata, true, true);
-            addFieldForces(atoms, options.field, &confs);
+            computeConformations(msghandler, pd, top, cdata, true, true);
+            addFieldForces(atoms, options.field, cdata);
         }
         // We have already done one energy calculation
         int  iter    = 1;
         bool allDone = false;
         while (iter < maxiter_ && !allDone)
         {
-            allDone = (updateShells(top, 0, nShell, isShell, 0, maxShellDistance, &confs) == confs.size());
+            allDone = (updateShells(top, 0, nShell, isShell, 0, maxShellDistance, cdata) == confs.size());
             if (!allDone)
             {
                 // Only for the conformations that did not converge
@@ -1545,20 +1699,21 @@ void ForceComputer::computeTotal(MsgHandler                                     
                 {
                     nShellIter_ += conf.done ? 0 : 1;
                 }
-                computeConformations(msghandler, pd, top, &confs, cdata, true, true);
-                addFieldForces(atoms, options.field, &confs);
+                computeConformations(msghandler, pd, top, cdata, true, true);
+                addFieldForces(atoms, options.field, cdata);
             }
             iter++;
         }
         // Check the conformations computed last
         double maxShellDistance2 = maxShellDistance*maxShellDistance;
-        for(auto &conf : confs)
+        for(size_t c = 0; c < confs.size(); c++)
         {
+            auto &conf = confs[c];
             if (conf.done)
             {
                 continue;
             }
-            double msForce = shellForce2(atoms, isShell, conf.x, conf.fcalc, 0, maxShellDistance2);
+            double msForce = shellForce2(atoms, isShell, cdata->x(c), cdata->f(c), 0, maxShellDistance2);
             if (nShell > 0)
             {
                 msForce /= nShell;
@@ -1634,11 +1789,11 @@ void ForceComputer::computeTotal(MsgHandler                                     
         energies->push_back(emap);
     }
     // Spread forces to atoms, unless the energy calculations did
-    for(auto &conf : confs)
+    for(size_t c = 0; c < confs.size(); c++)
     {
         if (options.virtualSites && !(cdata->spreadVsites && cdata->vsiteForcesSpread))
         {
-            spreadVsiteForces(top, &conf.x, &conf.fcalc);
+            spreadVsites(vsiteHandler_, top, cdata->x(c), cdata->f(c));
         }
     }
     cdata->spreadVsites = false;
@@ -1648,32 +1803,27 @@ void ForceComputer::computeDimerConformations(MsgHandler                        
                                               const ForceField                          *pd,
                                               ACTMol                                    *mol,
                                               const std::vector<std::vector<gmx::RVec>> &coords,
-                                              bool                                       separateInductionCorrection,
-                                              bool                                       forcesInArrays) const
+                                              bool                                       separateInductionCorrection) const
 {
     // Replace the conformations of the dimer and its monomers
     for(size_t what = 0; what < 3; what++)
     {
-        auto cdata = mol->conformationData(what);
-        cdata->invalidate();
-        cdata->keepForcesInArrays = forcesInArrays;
+        mol->conformationData(what)->invalidate();
     }
-    auto  &dimers = *mol->dimerCoords();
-    auto  &mons0  = *mol->monomerCoords(0);
-    auto  &mons1  = *mol->monomerCoords(1);
     size_t natom1 = mol->fragmentHandler()->atomStart()[1];
     size_t nconf  = coords.size();
     // The conformations of the previous call are used again, such that their
     // memory does not have to be allocated anew, but they are reset as new ones.
-    auto reset = [](CoordsEnergy                           *ce,
+    auto reset = [](ConformationData                       *cdata,
+                    size_t                                  c,
                     std::vector<gmx::RVec>::const_iterator  begin,
                     std::vector<gmx::RVec>::const_iterator  end)
     {
+        auto *ce = &cdata->confs[c];
         ce->done = false;
         ce->dataFile.clear();
-        ce->x.assign(begin, end);
+        cdata->setX(c, begin, end);
         ce->xrelax.clear();
-        ce->fcalc.clear();
         ce->fobs.clear();
         ce->eMap.clear();
         ce->eMin = 0;
@@ -1685,23 +1835,23 @@ void ForceComputer::computeDimerConformations(MsgHandler                        
             ce->shellDxForce[i] = 0;
         }
     };
-    dimers.resize(nconf);
-    mons0.resize(nconf);
-    mons1.resize(nconf);
+    for(size_t what = 0; what < 3; what++)
+    {
+        mol->conformationData(what)->confs.resize(nconf);
+    }
     for(size_t c = 0; c < nconf; c++)
     {
         const auto &x = coords[c];
-        reset(&dimers[c], x.begin(), x.end());
-        reset(&mons0[c], x.begin(), x.begin()+natom1);
-        reset(&mons1[c], x.begin()+natom1, x.end());
-        mons0[c].xrelax = mons0[c].x;
-        mons1[c].xrelax = mons1[c].x;
+        reset(mol->conformationData(2), c, x.begin(), x.end());
+        reset(mol->conformationData(0), c, x.begin(), x.begin()+natom1);
+        reset(mol->conformationData(1), c, x.begin()+natom1, x.end());
+        for(size_t k = 0; k < 2; k++)
+        {
+            auto *cdata = mol->conformationData(k);
+            cdata->confs[c].xrelax = cdata->x(c).toRVec();
+        }
     }
     computeRelaxedEnergies(msghandler, pd, { mol }, true, separateInductionCorrection, true);
-    for(size_t what = 0; what < 3; what++)
-    {
-        mol->conformationData(what)->keepForcesInArrays = false;
-    }
 }
 
 void ForceComputer::computeInteraction(MsgHandler                                     *msghandler,
@@ -1720,14 +1870,12 @@ void ForceComputer::computeInteraction(MsgHandler                               
         forces->clear();
         return;
     }
-    computeDimerConformations(msghandler, pd, mol, *coords, separateInductionCorrection, false);
-    auto  &dimers = *mol->dimerCoords();
-    auto  &mons0  = *mol->monomerCoords(0);
-    auto  &mons1  = *mol->monomerCoords(1);
+    computeDimerConformations(msghandler, pd, mol, *coords, separateInductionCorrection);
+    const ConformationData *cdatas[3] = { mol->conformationData(0), mol->conformationData(1),
+                                          mol->conformationData(2) };
     size_t natom1 = mol->fragmentHandler()->atomStart()[1];
     size_t nconf  = coords->size();
-    // The energies are taken from the conformation data, rather than from the
-    // energy maps of the conformations, see ACTMol::storeEnergies.
+    // The energies are taken from the conformation data, see ConformationData::energies
     auto &dimerEnergies = mol->conformationData(2)->energies;
     auto  dimerEpot     = dimerEnergies.find(InteractionType::EPOT);
     ConformationEnergies::Term monomerEpot[2] = {
@@ -1779,26 +1927,29 @@ void ForceComputer::computeInteraction(MsgHandler                               
         // forces minus the forces in the monomers.
         double e = (inDimer && dimerEpot.has(c)) ? dimerEpot.act[c] : 0;
         auto  &f = (*forces)[c];
-        f.assign(dimers[c].fcalc.begin(), dimers[c].fcalc.end());
+        f = cdatas[2]->f(c).toRVec();
         for(size_t k = 0; k < 2; k++)
         {
-            auto &mon = (*mol->monomerCoords(k))[c];
+            auto fmon = cdatas[k]->f(c);
             if (c < nmonomer[k] && monomerEpot[k].has(c))
             {
                 e += monomerEpot[k].act[c];
             }
             size_t offset = (k == 0) ? 0 : natom1;
-            for(size_t i = 0; i < mon.fcalc.size(); i++)
+            for(size_t i = 0; i < fmon.size(); i++)
             {
-                rvec_dec(f[offset+i], mon.fcalc[i]);
+                for(int m = 0; m < DIM; m++)
+                {
+                    f[offset+i][m] -= fmon[i][m];
+                }
             }
         }
-        (*coords)[c] = dimers[c].x;
+        (*coords)[c] = cdatas[2]->x(c).toRVec();
         (*epot)[c]   = e;
     }
     // The monomer energies and the monomer forces subtracted, see Timings::addFlops
-    Timings::instance().addFlops(nconf*(2 + DIM*(mons0.empty() ? 0 : mons0[0].fcalc.size() +
-                                                  mons1[0].fcalc.size())));
+    Timings::instance().addFlops(nconf*(2 + DIM*(cdatas[0]->nconf() == 0 ? 0 : cdatas[0]->f(0).size() +
+                                                  cdatas[1]->f(0).size())));
 }
 
 void ForceComputer::computeInteraction(MsgHandler                                *msghandler,
@@ -1819,10 +1970,7 @@ void ForceComputer::computeInteraction(MsgHandler                               
         result->f.clear();
         return;
     }
-    // Without shells, each conformation is computed once with all others,
-    // then the forces can stay in the arrays.
-    computeDimerConformations(msghandler, pd, mol, coords, separateInductionCorrection,
-                              !pd->polarizable());
+    computeDimerConformations(msghandler, pd, mol, coords, separateInductionCorrection);
     // The energies are taken from the conformation data, see the other computeInteraction
     auto  dimerEnergies = &mol->conformationData(2)->energies;
     auto  dimerEpot     = dimerEnergies->find(InteractionType::EPOT);
@@ -1846,18 +1994,19 @@ void ForceComputer::computeInteraction(MsgHandler                               
         result->epot[c] = e;
     }
     // The interaction forces are the dimer forces minus the forces in the monomers
-    auto  &dimers  = *mol->dimerCoords();
+    const ConformationData *cdatas[3] = { mol->conformationData(0), mol->conformationData(1),
+                                          mol->conformationData(2) };
     auto  &astart  = mol->fragmentHandler()->atomStart();
-    size_t natom   = dimers[0].x.size();
-    size_t nmon[2] = { (*mol->monomerCoords(0))[0].x.size(), (*mol->monomerCoords(1))[0].x.size() };
-    const ConformationArrays *arrays[3] = { &mol->conformationData(0)->arrays,
-                                            &mol->conformationData(1)->arrays,
-                                            &mol->conformationData(2)->arrays };
+    size_t natom   = cdatas[2]->x(0).size();
+    size_t nmon[2] = { cdatas[0]->x(0).size(), cdatas[1]->x(0).size() };
+    const ConformationArrays<real> *arrays[3] = { &mol->conformationData(0)->arrays,
+                                                  &mol->conformationData(1)->arrays,
+                                                  &mol->conformationData(2)->arrays };
     bool inArrays = true;
     for(size_t what = 0; what < 3; what++)
     {
-        inArrays = (inArrays && mol->conformationData(what)->forcesInArrays &&
-                    arrays[what]->nconf == nconf && arrays[what]->stride == arrays[2]->stride);
+        inArrays = (inArrays && arrays[what]->nconf == nconf && arrays[what]->stride == arrays[2]->stride &&
+                    arrays[what]->inOrder());
     }
     if (inArrays)
     {
@@ -1869,7 +2018,7 @@ void ForceComputer::computeInteraction(MsgHandler                               
         result->f.assign(arrays[2]->f.begin(), arrays[2]->f.begin() + DIM*natom*stride);
         for(size_t k = 0; k < 2; k++)
         {
-            const double *fm = arrays[k]->f.data();
+            const real   *fm = arrays[k]->f.data();
             double       *fd = result->f.data() + DIM*astart[k]*stride;
             for(size_t i = 0; i < DIM*nmon[k]*stride; i++)
             {
@@ -1883,18 +2032,19 @@ void ForceComputer::computeInteraction(MsgHandler                               
         result->f.resize(DIM*natom*nconf);
         for(size_t c = 0; c < nconf; c++)
         {
-            const auto &dim = dimers[c];
+            auto xdim = cdatas[2]->x(c);
+            auto fdim = cdatas[2]->f(c);
             for(size_t a = 0; a < natom; a++)
             {
                 for(int m = 0; m < DIM; m++)
                 {
-                    result->x[(DIM*a+m)*nconf + c] = dim.x[a][m];
-                    result->f[(DIM*a+m)*nconf + c] = dim.fcalc[a][m];
+                    result->x[(DIM*a+m)*nconf + c] = xdim[a][m];
+                    result->f[(DIM*a+m)*nconf + c] = fdim[a][m];
                 }
             }
             for(size_t k = 0; k < 2; k++)
             {
-                const auto &fm = (*mol->monomerCoords(k))[c].fcalc;
+                auto fm = cdatas[k]->f(c);
                 for(size_t a = 0; a < fm.size(); a++)
                 {
                     for(int m = 0; m < DIM; m++)
@@ -1932,7 +2082,7 @@ void ForceComputer::computeOnce(MsgHandler                        *msg_handler,
     computeTotal(msg_handler, pd, &set, options, &emaps);
     // The evaluations are counted by the callers of computeOnce
     nEval_      -= 1;
-    *forces      = set.confs[0].fcalc;
+    *forces      = set.data.f(0).toRVec();
     *energies    = emaps[0];
 }
 
@@ -1958,11 +2108,12 @@ static double potentialEnergy(MsgHandler                   *msghandler,
                               const std::vector<gmx::RVec> &x,
                               double                        epsilonr)
 {
-    std::vector<CoordsEnergy> ce(1);
-    ce[0].x = x;
-    computePotential(msghandler, pot, entries, atoms, &ce, epsilonr, false);
-    auto ep = ce[0].eMap.find(InteractionType::EPOT);
-    return (ce[0].eMap.end() != ep && ep->second.haveACT()) ? ep->second.eact() : 0;
+    ConformationData cdata;
+    cdata.confs.resize(1);
+    cdata.setX(0, x);
+    computePotential(msghandler, pot, entries, atoms, &cdata, epsilonr, false);
+    auto epot = cdata.energies.find(InteractionType::EPOT);
+    return epot.has(0) ? epot.act[0] : 0;
 }
 
 void ForceComputer::plot(MsgHandler        *msghandler,

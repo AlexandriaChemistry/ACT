@@ -64,6 +64,7 @@ class StructureVersion
  public:
     // None of these can throw, which allows containers to move the
     // objects that contain a StructureVersion.
+    //! Default constructor, takes a new number
     StructureVersion() noexcept : value_(next()) {}
     //! Copy constructor, takes a new number rather than copying it
     StructureVersion(const StructureVersion &) noexcept : value_(next()) {}

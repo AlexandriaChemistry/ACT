@@ -56,6 +56,10 @@ namespace ga
 
 class MsgHandler;
 
+/*! \brief Genetic algorithm with selection, crossover and mutation,
+ * used for both the GA and the HYBRID optimizer. In the HYBRID case
+ * the mutation consists of MCMC steps on each individual.
+ */
 class HybridGAMC : public GeneticAlgorithm
 {
 private:
@@ -107,7 +111,7 @@ public:
                int                                  seed,
                bool                                 adaptiveSteps)
     : GeneticAlgorithm(initializer, fitnessComputer, probComputer, selector, crossover,
-                       mutator, terminators, penalizers, gach->popSize()),
+                       mutator, terminators, penalizers),
       sii_(sii), gach_(gach), adaptiveSteps_(adaptiveSteps), fitnessFile_(fitnessFileName),
       gpin_(genePoolIn), gpout_(genePoolOut), seed_(seed)
     {}

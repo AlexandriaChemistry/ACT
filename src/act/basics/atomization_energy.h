@@ -44,6 +44,10 @@ namespace alexandria
 
     class AtomizationEnergyTerm;
     class MsgHandler;
+    /*! \brief Library of atomic thermochemical data, read from
+     * atomization-energies.csv and atomization-energies-dft.csv,
+     * used to compute atomization energies and heats of formation
+     */
     class AtomizationEnergy
     {
     public:

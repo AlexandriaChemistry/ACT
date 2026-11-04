@@ -87,6 +87,10 @@ enum class CalcDev {
 
 const char *calcDevName(CalcDev cd);
 
+/*! \brief Sensitivity of the chi-squared to one force field parameter,
+ * determined by fitting a parabola chi2 = a p^2 + b p + c through
+ * chi-squared values computed for different values p of the parameter
+ */
 class Sensitivity
 {
 private:
@@ -158,9 +162,11 @@ public:
      */
     bool checkConvergence(double lower, double upper, double tolerance);
 
-    //! Return the constants after computation
+    //! \return the quadratic coefficient a of the parabola after computation
     double a() const { return a_; }
+    //! \return the linear coefficient b of the parabola after computation
     double b() const { return b_; }
+    //! \return the constant c of the parabola after computation
     double c() const { return c_; }
 
     /*! \brief The extremum of the parabola, computed in reduced coordinates

@@ -200,6 +200,7 @@ private:
                    const std::vector<std::set<size_t>> &exclusions);
 
  public:
+    //! Empty constructor, see init to fill it
     Topology()
     {
     }
@@ -208,9 +209,6 @@ private:
      * \param[in] bonds The bonds connecting this molecule.
      */
     void init(const std::vector<Bond> &bonds);
-
-    //! \return the molecule (compound) name
-    const std::string &moleculeName() const { return moleculeName_; }
 
     /*! Find a bond between two atoms
      * \param[in] ai The first atom

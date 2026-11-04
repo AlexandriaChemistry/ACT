@@ -46,19 +46,6 @@ namespace alexandria
  * BEGIN: Output stuff                     *
  * * * * * * * * * * * * * * * * * * * * * */
 
-void ACMIndividual::printParameters(FILE *fp) const
-{
-    if (nullptr == fp)
-    {
-        return;
-    }
-    for(size_t i = 0; i < genome_.nBase(); i++)
-    {
-        fprintf(fp, "  %s  %e,", sii_->paramNames()[i].c_str(), genome_.base(i));
-    }
-    fprintf(fp, "\n");
-}
-
 /* * * * * * * * * * * * * * * * * * * * * *
  * END: Output stuff                       *
  * * * * * * * * * * * * * * * * * * * * * */

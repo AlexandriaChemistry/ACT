@@ -318,7 +318,8 @@ TEST_F (MolHandlerTest, MinimizersConvergeWithShells)
     auto pd = getForceField("ACS-pg");
     MsgHandler msghandler;
     msghandler.setPrintLevel(ACTStatus::Warning);
-    ForceComputer          forceComp(1e-10, 100, 1);
+    // The shells converge within the precision of the forces
+    ForceComputer          forceComp(gmx::test::precisionTolerance(1e-10, 1e-6), 100, 1);
     ACTMol                 mol;
     std::vector<gmx::RVec> x0;
     prepareMolecule(pd, "water_dimer.pdb", forceComp, &mol, &x0);

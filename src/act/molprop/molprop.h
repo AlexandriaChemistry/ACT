@@ -74,17 +74,31 @@ class MsgHandler;
 class MolProp
 {
 private:
+    //! Index number for sorting
     int                               index_        = -1;
     //! Total number of atoms in this compound
     int                               natom_        = 0;
     //! Whether or not all atoms have proper atom types
     bool                              hasAllAtomTypes_ = false;
-    std::string                       molname_, iupac_, cas_, cid_, inchi_;
+    //! Molecule name
+    std::string                       molname_;
+    //! IUPAC name
+    std::string                       iupac_;
+    //! CAS registry number
+    std::string                       cas_;
+    //! PubChem compound ID
+    std::string                       cid_;
+    //! InChI identifier
+    std::string                       inchi_;
+    //! Categories this compound belongs to
     std::vector<std::string>          category_;
     //! Elemental composition of the compound
     std::map<const char *,int>        composition_;
+    //! Fragments (molecules) making up this compound
     std::vector<Fragment>             fragment_;
+    //! Experiments and calculations for this compound
     std::vector<Experiment>           exper_;
+    //! Bonds in this compound
     std::vector<Bond>                 bond_;
 
     /*! \brief Return the first calculation that matches the specification
@@ -216,16 +230,6 @@ public:
                                                        double             T,
                                                        JobType            jt) const;
 
-    /*! \brief Find an Experimental property
-     * \param[in] mpo The property of interest
-     * \param[in] T   The temperature at which the property
-     *                should have been measured. If -1 any T
-     *                may be returned.
-     * \return the property of interest or nullptr if not found
-     */
-    const std::unique_ptr<GenericProperty> &expProperty(MolPropObservable  mpo, 
-                                                        double             T) const;
-
     //! Add a classification category for this molecule
     void AddCategory(const std::string &category)
     {
@@ -267,9 +271,6 @@ public:
 
     //! Return the fragments of this molecule
     const std::vector<Fragment> &fragments() const { return fragment_; }
-    
-    //! Return the fragments of this molecule
-    const std::vector<Fragment> *fragmentPtrConst() const { return &fragment_; }
     
     //! Return editable fragments of this molecule
     std::vector<Fragment> *fragmentPtr() { return &fragment_; }
@@ -326,9 +327,6 @@ public:
 
     //! Return mutable vector of experiments
     std::vector<Experiment> *experiment() { return &exper_; }
-    
-    //! Return end of experiment vector
-    ExperimentConstIterator EndExperiment()  const { return exper_.end(); }
     
     //! Return pointer to the last inserted experiment or nullptr if the number of experiments is zero
     Experiment *LastExperiment()

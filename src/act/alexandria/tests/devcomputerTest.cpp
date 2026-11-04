@@ -48,6 +48,7 @@
 #include "act/qgen/qgen_resp.h"
 #include "act/qgen/qtype.h"
 #include "act/utility/timings.h"
+#include "act/forces/simd_information.h"
 #include "act/molprop/molprop_xml.h"
 #include "act/topology/actmol.h"
 
@@ -259,7 +260,6 @@ protected:
                                    opts.lossFunction);
             if (checker && opts.checkConformations)
             {
-                actmols[0].storeEnergies();
                 checkConformations(actmols[0], checker);
             }
             for(const auto &t : targets)
@@ -281,6 +281,44 @@ protected:
             }
         }
         return results;
+    }
+
+    /*! \brief Check that conformations kept their coordinates and reference data
+     * \param[in] before The conformations before
+     * \param[in] after  The conformations after
+     */
+    static void checkConformationsKept(const ConformationData &before,
+                                       const ConformationData &after)
+    {
+        ASSERT_EQ(before.nconf(), after.nconf());
+        for(size_t c = 0; c < before.nconf(); c++)
+        {
+            const auto &cb = before.confs[c];
+            const auto &ca = after.confs[c];
+            EXPECT_EQ(cb.dataFile, ca.dataFile) << "conformation " << c;
+            EXPECT_EQ(cb.eMin, ca.eMin) << "conformation " << c;
+            auto xb = before.x(c);
+            auto xa = after.x(c);
+            ASSERT_EQ(xb.size(), xa.size()) << "conformation " << c;
+            for(size_t i = 0; i < xb.size(); i++)
+            {
+                for(int m = 0; m < DIM; m++)
+                {
+                    EXPECT_EQ(xb[i][m], xa[i][m]) << "conformation " << c;
+                }
+            }
+            ASSERT_EQ(cb.eMap.size(), ca.eMap.size()) << "conformation " << c;
+            for(const auto &e : cb.eMap)
+            {
+                auto a = ca.eMap.find(e.first);
+                ASSERT_TRUE(a != ca.eMap.end()) << "conformation " << c;
+                EXPECT_EQ(e.second.haveQM(), a->second.haveQM()) << "conformation " << c;
+                if (e.second.haveQM())
+                {
+                    EXPECT_EQ(e.second.eqm(), a->second.eqm()) << "conformation " << c;
+                }
+            }
+        }
     }
 
     /*! \brief Check the QM reference for induction against the molprop data
@@ -328,8 +366,12 @@ protected:
             std::vector<ACTEnergy>                                            energyMap;
             ACTEnergyMapVector                                                interactionEnergyMap;
             std::vector<std::pair<double, std::map<InteractionType, double>>> energyComponentMap;
+            // The conformations hold the reference data for training
+            auto before = *actmol.conformationData(2);
+            EXPECT_GT(before.nconf(), 0u);
             actmol.forceEnergyMaps(&msghandler, pd, &forceComputer, &forceMap, &energyMap,
                                    &interactionEnergyMap, &energyComponentMap, sepIndCorr);
+            checkConformationsKept(before, *actmol.conformationData(2));
             EXPECT_EQ(qmInduction.size(), interactionEnergyMap.size());
             for(const auto &iem : interactionEnergyMap)
             {
@@ -405,11 +447,11 @@ protected:
     static void checkConformations(ACTMol                          &actmol,
                                    gmx::test::TestReferenceChecker *checker)
     {
-        const auto *coords = actmol.isDimer() ? actmol.dimerCoords() : actmol.monomerCoords(0);
-        EXPECT_FALSE(coords->empty()) << actmol.getMolname();
-        for(size_t i = 0; i < coords->size(); i++)
+        const auto *cdata = actmol.conformationData(actmol.isDimer() ? 2 : 0);
+        EXPECT_GT(cdata->nconf(), 0u) << actmol.getMolname();
+        for(size_t i = 0; i < cdata->nconf(); i++)
         {
-            const auto &ce    = (*coords)[i];
+            auto        ener  = cdata->energies.energies(i);
             auto        label = gmx::formatString("%s-conf%zu", actmol.getMolname().c_str(), i);
             // In single precision relative to the largest energy and force
             double emax = 0;
@@ -417,10 +459,10 @@ protected:
                                      InteractionType::DISPERSION,
                                      InteractionType::EPOT })
             {
-                auto ee = ce.eMap.find(itype);
-                if (ce.eMap.end() != ee && ee->second.haveACT())
+                auto ee = ener.find(itype);
+                if (ener.end() != ee)
                 {
-                    emax = std::max(emax, std::abs(ee->second.eact()));
+                    emax = std::max(emax, std::abs(ee->second));
                 }
             }
             setSingleTolerance(checker, 1e-5*emax, 1e-6);
@@ -428,18 +470,18 @@ protected:
                                      InteractionType::DISPERSION,
                                      InteractionType::EPOT })
             {
-                auto ee = ce.eMap.find(itype);
-                ASSERT_TRUE(ce.eMap.end() != ee && ee->second.haveACT())
+                auto ee = ener.find(itype);
+                ASSERT_TRUE(ener.end() != ee)
                     << label << " " << interactionTypeToString(itype);
-                checker->checkDouble(ee->second.eact(),
+                checker->checkDouble(ee->second,
                                      gmx::formatString("%s-%s", label.c_str(),
                                                        interactionTypeToString(itype).c_str()).c_str());
             }
             // Repulsion and attraction
-            EXPECT_GT(ce.eMap.find(InteractionType::EXCHANGE)->second.eact(), 0) << label;
-            EXPECT_LT(ce.eMap.find(InteractionType::DISPERSION)->second.eact(), 0) << label;
+            EXPECT_GT(ener[InteractionType::EXCHANGE], 0) << label;
+            EXPECT_LT(ener[InteractionType::DISPERSION], 0) << label;
             std::vector<double> f;
-            for(const auto &fi : ce.fcalc)
+            for(const auto &fi : cdata->f(i).toRVec())
             {
                 for(int m = 0; m < DIM; m++)
                 {
@@ -1299,17 +1341,19 @@ protected:
         };
         // Compare forces of the other particles only, the forces on virtual
         // sites have been spread over the atoms.
-        auto compareForces = [&replaced, tolerance](const std::vector<ActAtom>       &atomsV,
-                                const std::vector<CoordsEnergy>  &coordsV,
-                                const std::vector<CoordsEnergy>  &coordsC)
+        auto compareForces = [&replaced, tolerance](const std::vector<ActAtom> &atomsV,
+                                const ConformationData     &coordsV,
+                                const ConformationData     &coordsC)
         {
-            ASSERT_EQ(coordsV.size(), coordsC.size());
-            for(size_t c = 0; c < coordsV.size(); c++)
+            ASSERT_EQ(coordsV.nconf(), coordsC.nconf());
+            for(size_t c = 0; c < coordsV.nconf(); c++)
             {
+                auto fV = coordsV.f(c);
+                auto fC = coordsC.f(c);
                 // In single precision the errors are relative to the
                 // largest force, since the terms of the forces cancel
                 double fmax = 0;
-                for(const auto &f : coordsV[c].fcalc)
+                for(const auto &f : fV.toRVec())
                 {
                     for(int m = 0; m < DIM; m++)
                     {
@@ -1323,16 +1367,15 @@ protected:
                     {
                         continue;
                     }
-                    ASSERT_LT(k, coordsC[c].fcalc.size());
+                    ASSERT_LT(k, fC.size());
                     for(int m = 0; m < DIM; m++)
                     {
-                        double fmag = GMX_DOUBLE ? 1 + std::abs(coordsV[c].fcalc[i][m]) : fmax;
-                        EXPECT_NEAR(coordsV[c].fcalc[i][m], coordsC[c].fcalc[k][m],
-                                    100*tolerance*fmag);
+                        double fmag = GMX_DOUBLE ? 1 + std::abs(fV[i][m]) : fmax;
+                        EXPECT_NEAR(fV[i][m], fC[k][m], 100*tolerance*fmag);
                     }
                     k++;
                 }
-                EXPECT_EQ(k, coordsC[c].fcalc.size());
+                EXPECT_EQ(k, fC.size());
             }
         };
         for(size_t m = 0; m < molsV.size(); m++)
@@ -1388,11 +1431,11 @@ protected:
                 }
             }
             // Forces
-            compareForces(atomsV, *molV.dimerCoords(), *molC.dimerCoords());
+            compareForces(atomsV, *molV.conformationData(2), *molC.conformationData(2));
             auto &fragV = molV.fragmentHandler()->topologies();
             for(size_t f = 0; f < fragV.size(); f++)
             {
-                compareForces(fragV[f].atoms(), *molV.monomerCoords(f), *molC.monomerCoords(f));
+                compareForces(fragV[f].atoms(), *molV.conformationData(f), *molC.conformationData(f));
             }
             // The coordinates, with the virtual sites on their atoms
             const auto         &xC = molC.xOriginal();
@@ -1805,14 +1848,16 @@ protected:
         {
             ASSERT_TRUE(mol.isDimer());
             const auto &atoms = mol.topology()->atoms();
-            for(auto &dim : *mol.dimerCoords())
+            auto *cdata = mol.conformationData(2);
+            for(size_t c = 0; c < cdata->nconf(); c++)
             {
+                auto &dim = cdata->confs[c];
                 dim.fobs.clear();
                 for(size_t i = 0; i < atoms.size(); i++)
                 {
                     if (atoms[i].pType() == ActParticle::Atom)
                     {
-                        gmx::RVec f = dim.fcalc[i];
+                        gmx::RVec f = cdata->f(c)[i].rvec();
                         f[XX] += 1;
                         f[YY] -= 1;
                         f[ZZ] += 1;
@@ -1953,13 +1998,26 @@ protected:
     }
 };
 
+/*! \brief Tolerance for comparing second charges with virtual sites
+ * In single precision the energy of each interaction is computed in single
+ * precision, the virtual sites and the second charges round them
+ * differently. That changes the Coulomb energies by about 1e-6 relative,
+ * and the interaction energies of dimers, differences of sums of hundreds
+ * of terms, by up to 1e-3 kJ/mol.
+ * \return the tolerance relative to one plus the energy
+ */
+static double secondChargesTolerance()
+{
+    return gmx::test::precisionTolerance(1e-10, 1e-3);
+}
+
 
 // Test: Virtual sites on top of atoms give the same charges, energies and
 // forces as the second charges that replace them, see ForceField::convertVsite1
 TEST_F(PropertyDevComputerTest, SecondChargesAsVsites)
 {
     compareSecondChargesToVsites("../../constraints/tests/PC+GV-elec.xml", "mpdimer.xml",
-                                 "v1ow", "ow", false, gmx::test::precisionTolerance(1e-10, 1e-6));
+                                 "v1ow", "ow", false, secondChargesTolerance());
 }
 
 // Test: The same for a polarizable force field, with shells on the ions,
@@ -1967,7 +2025,7 @@ TEST_F(PropertyDevComputerTest, SecondChargesAsVsites)
 TEST_F(PropertyDevComputerTest, SecondChargesAsVsitesPolarizable)
 {
     compareSecondChargesToVsites("PG-pol-ions.xml", "ion-water.xml",
-                                 "v1Na+", "Na+", true, gmx::test::precisionTolerance(1e-10, 1e-6));
+                                 "v1Na+", "Na+", true, secondChargesTolerance());
 }
 
 // Test: The same with polarizable ions, the ion shells have a negligible
@@ -1975,7 +2033,7 @@ TEST_F(PropertyDevComputerTest, SecondChargesAsVsitesPolarizable)
 TEST_F(PropertyDevComputerTest, SecondChargesAsVsitesPolarizableIons)
 {
     compareSecondChargesToVsites("PG-pol-ions.xml", "ion-water.xml",
-                                 "v1Na+", "Na+", true, gmx::test::precisionTolerance(1e-10, 1e-6),
+                                 "v1Na+", "Na+", true, secondChargesTolerance(),
                                  { { "Na+_s", 0.18 }, { "Cl-_s", 3.4 } });
 }
 
@@ -2061,7 +2119,13 @@ static void compareIntermolecular(const ForceField *pd, std::vector<ACTMol> *mol
             ASSERT_EQ(f.second.size(), i->second.size());
             for(size_t c = 0; c < f.second.size(); c++)
             {
-                EXPECT_NEAR(f.second[c], i->second[c], 1e-8*(1 + std::abs(f.second[c])))
+                // In single precision the energy of each interaction is
+                // rounded differently with and without forces, see
+                // calcCoulombKernel, which changes the sums of hundreds of
+                // Coulomb interactions by up to about 1e-3 kJ/mol
+                double tolerance = (GMX_DOUBLE ? 1e-8*(1 + std::abs(f.second[c])) :
+                                    5e-3 + 1e-5*std::abs(f.second[c]));
+                EXPECT_NEAR(f.second[c], i->second[c], tolerance)
                     << interactionTypeToString(f.first) << " conformation " << c;
             }
         }

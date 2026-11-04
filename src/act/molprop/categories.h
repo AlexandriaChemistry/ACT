@@ -50,6 +50,8 @@ namespace alexandria
 {
 class MolProp;
 
+/*! \brief A category with the names of the molecules belonging to it
+ */
 class CategoryListElement
 {
     private:

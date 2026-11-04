@@ -26,9 +26,9 @@
  * Boston, MA  02110-1301, USA.
  */
 /*! \internal \brief
- * SIMD primitives in double precision for x86 AVX-512.
+ * SIMD primitives in double and single precision for x86 AVX-512.
  *
- * A SimdDouble holds eight doubles. Only the AVX512F instructions are
+ * A SimdDouble holds eight doubles, a SimdFloat sixteen floats. Only the AVX512F instructions are
  * used, which all processors with AVX-512 have. The interface is the same
  * as in simd_neon.h. Do not include this file directly, but simd_math.h.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
@@ -92,22 +92,33 @@ static inline SimdDouble load(const double *p) { return SimdDouble(_mm512_loadu_
 //! Store eight doubles to memory
 static inline void store(double *p, SimdDouble a) { _mm512_storeu_pd(p, a.v); }
 
+//! \return a + b, element-wise
 static inline SimdDouble operator+(SimdDouble a, SimdDouble b) { return SimdDouble(_mm512_add_pd(a.v, b.v)); }
+//! \return a - b, element-wise
 static inline SimdDouble operator-(SimdDouble a, SimdDouble b) { return SimdDouble(_mm512_sub_pd(a.v, b.v)); }
+//! \return a * b, element-wise
 static inline SimdDouble operator*(SimdDouble a, SimdDouble b) { return SimdDouble(_mm512_mul_pd(a.v, b.v)); }
+//! \return a / b, element-wise
 static inline SimdDouble operator/(SimdDouble a, SimdDouble b) { return SimdDouble(_mm512_div_pd(a.v, b.v)); }
 //! Flip the sign bit, such that -0 is correct as well
 static inline SimdDouble operator-(SimdDouble a)
 {
     return SimdDouble(_mm512_castsi512_pd(_mm512_xor_si512(_mm512_castpd_si512(a.v), _mm512_set1_epi64(INT64_MIN))));
 }
+//! Add b to a element-wise, \return a
 static inline SimdDouble &operator+=(SimdDouble &a, SimdDouble b) { a = a + b; return a; }
+//! Subtract b from a element-wise, \return a
 static inline SimdDouble &operator-=(SimdDouble &a, SimdDouble b) { a = a - b; return a; }
+//! Multiply a by b element-wise, \return a
 static inline SimdDouble &operator*=(SimdDouble &a, SimdDouble b) { a = a * b; return a; }
 
+//! \return a < b, element-wise
 static inline SimdBool operator<(SimdDouble a, SimdDouble b) { return SimdBool(_mm512_cmp_pd_mask(a.v, b.v, _CMP_LT_OQ)); }
+//! \return a > b, element-wise
 static inline SimdBool operator>(SimdDouble a, SimdDouble b) { return SimdBool(_mm512_cmp_pd_mask(a.v, b.v, _CMP_GT_OQ)); }
+//! \return Logical and of a and b, element-wise
 static inline SimdBool operator&&(SimdBool a, SimdBool b) { return SimdBool(static_cast<__mmask8>(a.v & b.v)); }
+//! \return Logical not of a, element-wise
 static inline SimdBool operator!(SimdBool a) { return SimdBool(static_cast<__mmask8>(~a.v)); }
 
 //! \return a*b + c
@@ -116,10 +127,15 @@ static inline SimdDouble fma(SimdDouble a, SimdDouble b, SimdDouble c) { return 
 //! \return a where m is true, b otherwise
 static inline SimdDouble select(SimdBool m, SimdDouble a, SimdDouble b) { return SimdDouble(_mm512_mask_blend_pd(m.v, b.v, a.v)); }
 
+//! \return Element-wise minimum of a and b
 static inline SimdDouble min(SimdDouble a, SimdDouble b) { return SimdDouble(_mm512_min_pd(a.v, b.v)); }
+//! \return Element-wise maximum of a and b
 static inline SimdDouble max(SimdDouble a, SimdDouble b) { return SimdDouble(_mm512_max_pd(a.v, b.v)); }
+//! \return Element-wise absolute value of a
 static inline SimdDouble abs(SimdDouble a) { return SimdDouble(_mm512_abs_pd(a.v)); }
+//! \return Element-wise a rounded down to an integer value
 static inline SimdDouble floor(SimdDouble a) { return SimdDouble(_mm512_roundscale_pd(a.v, _MM_FROUND_TO_NEG_INF | _MM_FROUND_NO_EXC)); }
+//! \return Element-wise square root of a
 static inline SimdDouble sqrt(SimdDouble a) { return SimdDouble(_mm512_sqrt_pd(a.v)); }
 
 /*! \brief Power of two
@@ -132,6 +148,113 @@ static inline SimdDouble pow2(SimdDouble n)
     __m512i n64  = _mm512_cvtepi32_epi64(_mm512_cvtpd_epi32(n.v));
     __m512i bits = _mm512_slli_epi64(_mm512_add_epi64(n64, _mm512_set1_epi64(1023)), 52);
     return SimdDouble(_mm512_castsi512_pd(bits));
+}
+
+//! Number of floats in a SimdFloat
+constexpr size_t simdFloatWidth = 16;
+
+//! Sixteen floats
+class SimdFloat
+{
+public:
+    //! The data
+    __m512 v;
+    //! Uninitialized
+    SimdFloat() = default;
+    /*! \brief Set all elements to a
+     * \param[in] a The value
+     */
+    SimdFloat(float a) : v(_mm512_set1_ps(a)) {}
+    /*! \brief From AVX-512 type
+     * \param[in] a The AVX-512 vector
+     */
+    explicit SimdFloat(__m512 a) : v(a) {}
+};
+
+//! Sixteen booleans, the result of comparing SimdFloats
+class SimdFloatBool
+{
+public:
+    //! The data, one bit per element
+    __mmask16 v;
+    /*! \brief From AVX-512 type
+     * \param[in] a The mask
+     */
+    explicit SimdFloatBool(__mmask16 a) : v(a) {}
+};
+
+//! Load sixteen floats from memory
+static inline SimdFloat load(const float *p) { return SimdFloat(_mm512_loadu_ps(p)); }
+
+//! Store sixteen floats to memory
+static inline void store(float *p, SimdFloat a) { _mm512_storeu_ps(p, a.v); }
+
+/*! \brief Add sixteen floats to sixteen doubles in memory
+ * \param[inout] p The doubles, two SimdDouble
+ * \param[in]    a The floats
+ */
+static inline void addToDouble(double *p, SimdFloat a)
+{
+    // The upper half through doubles, since AVX512F has no extract of eight floats
+    __m256 hi = _mm256_castpd_ps(_mm512_extractf64x4_pd(_mm512_castps_pd(a.v), 1));
+    _mm512_storeu_pd(p, _mm512_add_pd(_mm512_loadu_pd(p), _mm512_cvtps_pd(_mm512_castps512_ps256(a.v))));
+    _mm512_storeu_pd(p + 8, _mm512_add_pd(_mm512_loadu_pd(p + 8), _mm512_cvtps_pd(hi)));
+}
+
+//! \return a + b, element-wise
+static inline SimdFloat operator+(SimdFloat a, SimdFloat b) { return SimdFloat(_mm512_add_ps(a.v, b.v)); }
+//! \return a - b, element-wise
+static inline SimdFloat operator-(SimdFloat a, SimdFloat b) { return SimdFloat(_mm512_sub_ps(a.v, b.v)); }
+//! \return a * b, element-wise
+static inline SimdFloat operator*(SimdFloat a, SimdFloat b) { return SimdFloat(_mm512_mul_ps(a.v, b.v)); }
+//! \return a / b, element-wise
+static inline SimdFloat operator/(SimdFloat a, SimdFloat b) { return SimdFloat(_mm512_div_ps(a.v, b.v)); }
+//! \return -a, element-wise
+static inline SimdFloat operator-(SimdFloat a)
+{
+    return SimdFloat(_mm512_castsi512_ps(_mm512_xor_si512(_mm512_castps_si512(a.v), _mm512_set1_epi32(INT32_MIN))));
+}
+//! Add b to a element-wise, \return a
+static inline SimdFloat &operator+=(SimdFloat &a, SimdFloat b) { a = a + b; return a; }
+//! Subtract b from a element-wise, \return a
+static inline SimdFloat &operator-=(SimdFloat &a, SimdFloat b) { a = a - b; return a; }
+//! Multiply a by b element-wise, \return a
+static inline SimdFloat &operator*=(SimdFloat &a, SimdFloat b) { a = a * b; return a; }
+
+//! \return a < b, element-wise
+static inline SimdFloatBool operator<(SimdFloat a, SimdFloat b) { return SimdFloatBool(_mm512_cmp_ps_mask(a.v, b.v, _CMP_LT_OQ)); }
+//! \return a > b, element-wise
+static inline SimdFloatBool operator>(SimdFloat a, SimdFloat b) { return SimdFloatBool(_mm512_cmp_ps_mask(a.v, b.v, _CMP_GT_OQ)); }
+//! \return Logical and of a and b, element-wise
+static inline SimdFloatBool operator&&(SimdFloatBool a, SimdFloatBool b) { return SimdFloatBool(static_cast<__mmask16>(a.v & b.v)); }
+//! \return Logical not of a, element-wise
+static inline SimdFloatBool operator!(SimdFloatBool a) { return SimdFloatBool(static_cast<__mmask16>(~a.v)); }
+
+//! \return a*b + c
+static inline SimdFloat fma(SimdFloat a, SimdFloat b, SimdFloat c) { return SimdFloat(_mm512_fmadd_ps(a.v, b.v, c.v)); }
+
+//! \return a where m is true, b otherwise
+static inline SimdFloat select(SimdFloatBool m, SimdFloat a, SimdFloat b) { return SimdFloat(_mm512_mask_blend_ps(m.v, b.v, a.v)); }
+
+//! \return Element-wise minimum of a and b
+static inline SimdFloat min(SimdFloat a, SimdFloat b) { return SimdFloat(_mm512_min_ps(a.v, b.v)); }
+//! \return Element-wise maximum of a and b
+static inline SimdFloat max(SimdFloat a, SimdFloat b) { return SimdFloat(_mm512_max_ps(a.v, b.v)); }
+//! \return Element-wise absolute value of a
+static inline SimdFloat abs(SimdFloat a) { return SimdFloat(_mm512_abs_ps(a.v)); }
+//! \return Element-wise a rounded down to an integer value
+static inline SimdFloat floor(SimdFloat a) { return SimdFloat(_mm512_roundscale_ps(a.v, _MM_FROUND_TO_NEG_INF | _MM_FROUND_NO_EXC)); }
+//! \return Element-wise square root of a
+static inline SimdFloat sqrt(SimdFloat a) { return SimdFloat(_mm512_sqrt_ps(a.v)); }
+
+/*! \brief Power of two
+ * \param[in] n Integer values from -126 to 127
+ * \return 2^n, made by putting n in the exponent bits
+ */
+static inline SimdFloat pow2(SimdFloat n)
+{
+    __m512i bits = _mm512_slli_epi32(_mm512_add_epi32(_mm512_cvtps_epi32(n.v), _mm512_set1_epi32(127)), 23);
+    return SimdFloat(_mm512_castsi512_ps(bits));
 }
 
 } // namespace simd

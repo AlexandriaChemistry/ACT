@@ -150,21 +150,22 @@ static double computeOne(Potential                          p,
                          std::map<InteractionType, double> *energies,
                          double                             epsilonr)
 {
-    std::vector<CoordsEnergy> coords(1);
-    coords[0].x = *coordinates;
-    computePotential(nullptr, p, top, atoms, &coords, epsilonr, false);
-    *forces = coords[0].fcalc;
+    ConformationData cdata;
+    cdata.confs.resize(1);
+    cdata.setX(0, *coordinates);
+    computePotential(nullptr, p, top, atoms, &cdata, epsilonr, false);
+    *forces = cdata.f(0).toRVec();
     energies->clear();
     double epot = 0;
-    for(const auto &e : coords[0].eMap)
+    for(const auto &e : cdata.energies.energies(0))
     {
         if (InteractionType::EPOT == e.first)
         {
-            epot = e.second.eact();
+            epot = e.second;
         }
         else
         {
-            energies->insert({ e.first, e.second.eact() });
+            energies->insert({ e.first, e.second });
         }
     }
     return epot;

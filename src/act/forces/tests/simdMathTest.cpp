@@ -188,6 +188,138 @@ TEST(SimdMathTest, Atan2)
     }
 }
 
+using simd::SimdFloat;
+
+/*! \brief The largest error of a single precision SIMD function
+ * The reference is computed in double precision, the relative errors
+ * are in units of the last place of the reference rounded to float.
+ * \param[in] func     The SIMD function
+ * \param[in] ref      The reference function
+ * \param[in] xmin     Smallest argument
+ * \param[in] xmax     Largest argument
+ * \param[in] relative Whether the error is relative, in units in the
+ *                     last place, or absolute
+ * \return the largest error
+ */
+template <typename Func, typename Ref>
+double maxErrorFloat(Func func, Ref ref, double xmin, double xmax, bool relative)
+{
+    constexpr size_t width  = simd::simdFloatWidth;
+    const int        n      = 200000;
+    double           maxErr = 0;
+    for (int i = 0; i < n; i += width)
+    {
+        float x[width], y[width];
+        for (size_t k = 0; k < width; k++)
+        {
+            x[k] = xmin + (xmax-xmin)*(i+k)/n;
+        }
+        simd::store(y, func(simd::load(x)));
+        for (size_t k = 0; k < width; k++)
+        {
+            double yref = ref(static_cast<double>(x[k]));
+            double err  = std::abs(y[k] - yref);
+            if (relative)
+            {
+                float fref = std::abs(static_cast<float>(yref));
+                err /= std::nextafter(fref, INFINITY) - fref;
+            }
+            maxErr = std::max(maxErr, err);
+        }
+    }
+    return maxErr;
+}
+
+TEST(SimdMathFloatTest, Exp)
+{
+    auto func = [](SimdFloat x) { return simd::exp(x); };
+    auto ref  = [](double x) { return std::exp(x); };
+    EXPECT_LE(maxErrorFloat(func, ref, -87, 88.7, true), 2);
+    EXPECT_LE(maxErrorFloat(func, ref, -50, 5, true), 2);
+}
+
+TEST(SimdMathFloatTest, ExpLimits)
+{
+    constexpr size_t width = simd::simdFloatWidth;
+    float            x[width], y[width];
+    for (size_t k = 0; k < width; k++)
+    {
+        x[k] = (k % 2 == 0) ? -100 : 100;
+    }
+    simd::store(y, simd::exp(simd::load(x)));
+    for (size_t k = 0; k < width; k++)
+    {
+        if (k % 2 == 0)
+        {
+            EXPECT_EQ(0, y[k]);
+        }
+        else
+        {
+            EXPECT_TRUE(std::isinf(y[k]));
+        }
+    }
+}
+
+TEST(SimdMathFloatTest, Erf)
+{
+    auto func = [](SimdFloat x) { return simd::erf(x); };
+    auto ref  = [](double x) { return std::erf(x); };
+    EXPECT_LE(maxErrorFloat(func, ref, -10, 10, false), 2e-7);
+    EXPECT_LE(maxErrorFloat(func, ref, -1, 1, true), 3);
+}
+
+TEST(SimdMathFloatTest, ErfAndExp)
+{
+    // The exponential of -x^2 with x^2 in single precision, as computed
+    auto fexp = [](SimdFloat x) { SimdFloat e; simd::erfAndExp(x, &e); return e; };
+    auto rexp = [](double x) { return std::exp(-static_cast<double>(static_cast<float>(x*x))); };
+    EXPECT_LE(maxErrorFloat(fexp, rexp, -8, 8, true), 2);
+}
+
+TEST(SimdMathFloatTest, Asin)
+{
+    auto func = [](SimdFloat x) { return simd::asin(x); };
+    auto ref  = [](double x) { return std::asin(x); };
+    EXPECT_LE(maxErrorFloat(func, ref, -1, 1, true), 2);
+    EXPECT_LE(maxErrorFloat(func, ref, -1e-3, 1e-3, true), 2);
+}
+
+TEST(SimdMathFloatTest, Acos)
+{
+    auto func = [](SimdFloat x) { return simd::acos(x); };
+    auto ref  = [](double x) { return std::acos(x); };
+    EXPECT_LE(maxErrorFloat(func, ref, -1, 1, true), 2);
+    EXPECT_LE(maxErrorFloat(func, ref, 1-1e-3, 1, false), 1e-8);
+}
+
+TEST(SimdMathFloatTest, Atan2)
+{
+    // Points on circles of different radius around the origin, the
+    // reference from the coordinates rounded to float
+    for (double radius : { 1e-5, 0.3, 1.0, 70.0 })
+    {
+        auto func = [radius](SimdFloat phi)
+        {
+            constexpr size_t width = simd::simdFloatWidth;
+            float            p[width], x[width], y[width];
+            simd::store(p, phi);
+            for (size_t k = 0; k < width; k++)
+            {
+                x[k] = radius*std::cos(p[k]);
+                y[k] = radius*std::sin(p[k]);
+            }
+            return simd::atan2(simd::load(y), simd::load(x));
+        };
+        auto ref = [radius](double phi)
+        {
+            float x = radius*std::cos(static_cast<float>(phi));
+            float y = radius*std::sin(static_cast<float>(phi));
+            return std::atan2(static_cast<double>(y), static_cast<double>(x));
+        };
+        EXPECT_LE(maxErrorFloat(func, ref, -M_PI, M_PI, true), 2) << "radius " << radius;
+    }
+}
+
 } // namespace
 
 } // namespace alexandria

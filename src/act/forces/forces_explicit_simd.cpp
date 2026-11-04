@@ -52,6 +52,7 @@
 
 #ifdef ACT_HAVE_SIMD
 
+#include <type_traits>
 #include <utility>
 
 #include "pairunroll.h"
@@ -68,8 +69,6 @@ namespace alexandria
 namespace
 {
 
-using simd::SimdDouble;
-
 //! Maximum number of prepared parameters per interaction
 constexpr int maxPairParams = 8;
 
@@ -85,6 +84,41 @@ struct PairParams
     //! The variant of the kernel, see pairVariants
     int    variant;
 };
+
+/*! \brief Add energies of conformations c to c + width - 1 to those in double precision
+ * In single precision each energy is rounded once, then summed in double
+ * precision, such that the sums of many interactions and their differences
+ * are as accurate as in double precision.
+ * \param[inout] p The energies of the conformations
+ * \param[in]    e The energies to add
+ */
+static inline void addEnergy(double *p, simd::SimdDouble e)
+{
+    simd::store(p, simd::load(p) + e);
+}
+
+//! \copydoc addEnergy(double *, simd::SimdDouble)
+static inline void addEnergy(double *p, simd::SimdFloat e)
+{
+    simd::addToDouble(p, e);
+}
+
+/*! \brief Add a*b to energies, see addEnergy
+ * In double precision with a fused multiply-add.
+ * \param[inout] p The energies of the conformations
+ * \param[in]    a The first factor
+ * \param[in]    b The second factor
+ */
+static inline void fmaEnergy(double *p, simd::SimdDouble a, simd::SimdDouble b)
+{
+    simd::store(p, simd::fma(a, b, simd::load(p)));
+}
+
+//! \copydoc fmaEnergy(double *, simd::SimdDouble, simd::SimdDouble)
+static inline void fmaEnergy(double *p, simd::SimdFloat a, simd::SimdFloat b)
+{
+    simd::addToDouble(p, a*b);
+}
 
 //! Lennard-Jones 12-6
 struct LJ12_6
@@ -109,12 +143,13 @@ struct LJ12_6
      * \param[inout] e     The energy terms to add to
      * \param[out]   fscal The scalar force divided by the distance
      */
-    static void compute(const double *p, SimdDouble rsq, SimdDouble *e, SimdDouble *fscal)
+    template <typename S>
+    static void compute(const double *p, S rsq, S *e, S *fscal)
     {
-        SimdDouble rinv2 = 1.0/rsq;
-        SimdDouble rinv6 = rinv2*rinv2*rinv2;
-        SimdDouble disp  = -p[0]*rinv6;
-        SimdDouble rep   = p[1]*rinv6*rinv6;
+        S rinv2 = 1.0/rsq;
+        S rinv6 = rinv2*rinv2*rinv2;
+        S disp  = -p[0]*rinv6;
+        S rep   = p[1]*rinv6*rinv6;
         e[0]  += rep;
         e[1]  += disp;
         *fscal = (12.0*rep + 6.0*disp)*rinv2;
@@ -134,14 +169,15 @@ struct LJ12_6_4
         return true;
     }
     //! \copydoc LJ12_6::compute
-    static void compute(const double *p, SimdDouble rsq, SimdDouble *e, SimdDouble *fscal)
+    template <typename S>
+    static void compute(const double *p, S rsq, S *e, S *fscal)
     {
-        SimdDouble rinv2 = 1.0/rsq;
-        SimdDouble rinv4 = rinv2*rinv2;
-        SimdDouble rinv6 = rinv4*rinv2;
-        SimdDouble mid   = -p[2]*rinv4;
-        SimdDouble disp  = -p[0]*rinv6;
-        SimdDouble rep   = p[1]*rinv6*rinv6;
+        S rinv2 = 1.0/rsq;
+        S rinv4 = rinv2*rinv2;
+        S rinv6 = rinv4*rinv2;
+        S mid   = -p[2]*rinv4;
+        S disp  = -p[0]*rinv6;
+        S rep   = p[1]*rinv6*rinv6;
         e[0]  += rep;
         e[1]  += disp;
         e[2]  += mid;
@@ -161,12 +197,13 @@ struct LJ8_6
         return true;
     }
     //! \copydoc LJ12_6::compute
-    static void compute(const double *p, SimdDouble rsq, SimdDouble *e, SimdDouble *fscal)
+    template <typename S>
+    static void compute(const double *p, S rsq, S *e, S *fscal)
     {
-        SimdDouble rinv2 = 1.0/rsq;
-        SimdDouble rinv6 = rinv2*rinv2*rinv2;
-        SimdDouble disp  = -p[0]*rinv6;
-        SimdDouble rep   = p[1]*rinv6*rinv2;
+        S rinv2 = 1.0/rsq;
+        S rinv6 = rinv2*rinv2*rinv2;
+        S disp  = -p[0]*rinv6;
+        S rep   = p[1]*rinv6*rinv2;
         e[0]  += rep;
         e[1]  += disp;
         *fscal = (8.0*rep + 6.0*disp)*rinv2;
@@ -189,42 +226,45 @@ struct LJ14_7
         return epsilon > 0 && sigma > 0;
     }
     //! \copydoc LJ12_6::compute
-    static void compute(const double *p, SimdDouble rsq, SimdDouble *e, SimdDouble *fscal)
+    template <typename S>
+    static void compute(const double *p, S rsq, S *e, S *fscal)
     {
         double     gamma1    = p[2] + 1;
-        SimdDouble rinv      = simd::invsqrt(rsq);
-        SimdDouble rstar     = rsq*rinv*p[0];
-        SimdDouble rstar2    = rstar*rstar;
-        SimdDouble rstar6    = rstar2*rstar2*rstar2;
-        SimdDouble deltars   = p[3] + rstar;
-        SimdDouble invdrs    = 1.0/deltars;
-        SimdDouble t         = (p[3] + 1)*invdrs;
-        SimdDouble t2        = t*t;
-        SimdDouble repfac    = p[1]*t2*t2*t2*t;
-        SimdDouble invgr7    = 1.0/(p[2] + rstar6*rstar);
+        S rinv      = simd::invsqrt(rsq);
+        S rstar     = rsq*rinv*p[0];
+        S rstar2    = rstar*rstar;
+        S rstar6    = rstar2*rstar2*rstar2;
+        S deltars   = p[3] + rstar;
+        S invdrs    = 1.0/deltars;
+        S t         = (p[3] + 1)*invdrs;
+        S t2        = t*t;
+        S repfac    = p[1]*t2*t2*t2*t;
+        S invgr7    = 1.0/(p[2] + rstar6*rstar);
         e[0]  += repfac*gamma1*invgr7;
         e[1]  += -2.0*repfac;
         // Since epsilon*delta1^7/deltars^8 = repfac/deltars
-        SimdDouble f147      = 7.0*repfac*(gamma1*rstar6*deltars*invgr7*invgr7 + gamma1*invgr7 - 2.0)*p[0]*invdrs;
+        S f147      = 7.0*repfac*(gamma1*rstar6*deltars*invgr7*invgr7 + gamma1*invgr7 - 2.0)*p[0]*invdrs;
         *fscal = f147*rinv;
     }
 };
 
 //! Born-Mayer, used also in Tang-Toennies
-static SimdDouble bornMayer(double aexp, double bexp, SimdDouble r, SimdDouble rinv, SimdDouble *fscal)
+template <typename S>
+static S bornMayer(double aexp, double bexp, S r, S rinv, S *fscal)
 {
-    SimdDouble eexp = aexp*simd::exp(-bexp*r);
+    S eexp = aexp*simd::exp(-bexp*r);
     *fscal += bexp*eexp*rinv;
     return eexp;
 }
 
 //! Slater-ISA, used also in Slater-ISA-Tang-Toennies
-static SimdDouble slaterISA(double aexp, double bexp, SimdDouble r, SimdDouble rinv, SimdDouble *fscal)
+template <typename S>
+static S slaterISA(double aexp, double bexp, S r, S rinv, S *fscal)
 {
     const double third = 1.0/3.0;
-    SimdDouble   br    = bexp*r;
-    SimdDouble   aterm = aexp*simd::exp(-br);
-    SimdDouble   eexp  = aterm*(br*br*third + br + 1.0);
+    S   br    = bexp*r;
+    S   aterm = aexp*simd::exp(-br);
+    S   eexp  = aterm*(br*br*third + br + 1.0);
     *fscal += (bexp*eexp - bexp*aterm*(2.0*third*br + 1.0))*rinv;
     return eexp;
 }
@@ -237,31 +277,32 @@ static SimdDouble slaterISA(double aexp, double bexp, SimdDouble r, SimdDouble r
  * \param[inout] fscal Scalar force divided by the distance to add to
  * \return The dispersion energy
  */
-static SimdDouble ttDispersion(double bDisp, const double *ctt, SimdDouble r, SimdDouble rinv, SimdDouble *fscal)
+template <typename S>
+static S ttDispersion(double bDisp, const double *ctt, S r, S rinv, S *fscal)
 {
-    SimdDouble rinv2  = rinv*rinv;
-    SimdDouble bDispr = bDisp*r;
-    SimdDouble ebr    = simd::exp(-bDispr);
-    SimdDouble rinvn  = rinv2*rinv2*rinv2;
-    SimdDouble edisp  = 0.0;
-    SimdDouble fdisp  = 0.0;
+    S rinv2  = rinv*rinv;
+    S bDispr = bDisp*r;
+    S ebr    = simd::exp(-bDispr);
+    S rinvn  = rinv2*rinv2*rinv2;
+    S edisp  = 0.0;
+    S fdisp  = 0.0;
     // The damping function for C_2m is f_2m = 1 - exp(-br) sum_k=0^2m (br)^k/k!
     // The sum is accumulated in fk, with terms[k] holding (br)^k/k!
-    SimdDouble terms[ttTerms+1];
+    S terms[ttTerms+1];
     terms[0] = 1.0;
     for (int k = 0; k < ttTerms; k++)
     {
         terms[k+1] = terms[k]*bDispr*(1.0/(k+1));
     }
     // For small br, as in TT_Dispersion in forces_simd.cpp
-    SimdDouble tail = ttTailCoefficients.back();
+    S tail = ttTailCoefficients.back();
     for (int j = ttTailTerms-ttTerms-2; j >= 0; j--)
     {
-        tail = simd::fma(tail, bDispr, SimdDouble(ttTailCoefficients[j]));
+        tail = simd::fma(tail, bDispr, S(ttTailCoefficients[j]));
     }
     tail = tail*terms[ttTerms]*bDispr*(1.0/(ttTerms+1));
     auto       useTail = bDispr < ttTailMax;
-    SimdDouble fk      = 1.0;
+    S fk      = 1.0;
     int        k       = 0;
     for (int m = 3; m <= 5; m++)
     {
@@ -270,13 +311,13 @@ static SimdDouble ttDispersion(double bDisp, const double *ctt, SimdDouble r, Si
         {
             fk += terms[k+1];
         }
-        SimdDouble tk = tail;
+        S tk = tail;
         for (int j = ttTerms; j > nn; j--)
         {
             tk += terms[j];
         }
-        SimdDouble damp = simd::select(useTail, ebr*tk, 1.0 - ebr*fk);
-        SimdDouble ed   = -damp*ctt[m-3]*rinvn;
+        S damp = simd::select(useTail, ebr*tk, 1.0 - ebr*fk);
+        S ed   = -damp*ctt[m-3]*rinvn;
         edisp += ed;
         fdisp += ed*static_cast<double>(nn)*rinv;
         // The derivative of the sum is b times the sum up to 2m-1,
@@ -301,9 +342,10 @@ struct BornMayer
         return true;
     }
     //! \copydoc LJ12_6::compute
-    static void compute(const double *p, SimdDouble rsq, SimdDouble *e, SimdDouble *fscal)
+    template <typename S>
+    static void compute(const double *p, S rsq, S *e, S *fscal)
     {
-        SimdDouble rinv = simd::invsqrt(rsq);
+        S rinv = simd::invsqrt(rsq);
         *fscal = 0.0;
         e[0]  += bornMayer(p[0], p[1], rsq*rinv, rinv, fscal);
     }
@@ -320,9 +362,10 @@ struct SlaterISA
         return true;
     }
     //! \copydoc LJ12_6::compute
-    static void compute(const double *p, SimdDouble rsq, SimdDouble *e, SimdDouble *fscal)
+    template <typename S>
+    static void compute(const double *p, S rsq, S *e, S *fscal)
     {
-        SimdDouble rinv = simd::invsqrt(rsq);
+        S rinv = simd::invsqrt(rsq);
         *fscal = 0.0;
         e[0]  += slaterISA(p[0], p[1], rsq*rinv, rinv, fscal);
     }
@@ -339,9 +382,10 @@ struct DoubleExponential
         return true;
     }
     //! \copydoc LJ12_6::compute
-    static void compute(const double *p, SimdDouble rsq, SimdDouble *e, SimdDouble *fscal)
+    template <typename S>
+    static void compute(const double *p, S rsq, S *e, S *fscal)
     {
-        SimdDouble rinv = simd::invsqrt(rsq);
+        S rinv = simd::invsqrt(rsq);
         *fscal = 0.0;
         e[0]  += bornMayer(p[0], p[1], rsq*rinv, rinv, fscal);
     }
@@ -367,16 +411,17 @@ struct WangBuckingham
         return epsilon > 0 && gamma > 0 && sigma > 0;
     }
     //! \copydoc LJ12_6::compute
-    static void compute(const double *p, SimdDouble rsq, SimdDouble *e, SimdDouble *fscal)
+    template <typename S>
+    static void compute(const double *p, S rsq, S *e, S *fscal)
     {
         // Modified Buckingham: JCTC  Volume: 9  Page: 452  Year: 2012
-        SimdDouble rinv     = simd::invsqrt(rsq);
-        SimdDouble r        = rsq*rinv;
-        SimdDouble r5       = rsq*rsq*r;
-        SimdDouble inv6     = 1.0/(p[0] + r5*r);
-        SimdDouble erep_exp = p[1]*simd::exp(p[3]*(1.0 - r*p[4]));
-        SimdDouble vdisp    = -p[2]*p[0]*inv6;
-        SimdDouble fdisp    = vdisp*6.0*r5*inv6;
+        S rinv     = simd::invsqrt(rsq);
+        S r        = rsq*rinv;
+        S r5       = rsq*rsq*r;
+        S inv6     = 1.0/(p[0] + r5*r);
+        S erep_exp = p[1]*simd::exp(p[3]*(1.0 - r*p[4]));
+        S vdisp    = -p[2]*p[0]*inv6;
+        S fdisp    = vdisp*6.0*r5*inv6;
         e[0]  += -vdisp*erep_exp;
         e[1]  += vdisp;
         *fscal = (-fdisp*erep_exp - vdisp*erep_exp*p[3]*p[4] + fdisp)*rinv;
@@ -395,12 +440,13 @@ struct Buckingham
         return p[0] > 0 && p[1] > 0 && p[2] > 0;
     }
     //! \copydoc LJ12_6::compute
-    static void compute(const double *p, SimdDouble rsq, SimdDouble *e, SimdDouble *fscal)
+    template <typename S>
+    static void compute(const double *p, S rsq, S *e, S *fscal)
     {
-        SimdDouble rinv  = simd::invsqrt(rsq);
-        SimdDouble rinv2 = rinv*rinv;
-        SimdDouble erep  = p[0]*simd::exp(-p[1]*rsq*rinv);
-        SimdDouble edisp = -p[2]*rinv2*rinv2*rinv2;
+        S rinv  = simd::invsqrt(rsq);
+        S rinv2 = rinv*rinv;
+        S erep  = p[0]*simd::exp(-p[1]*rsq*rinv);
+        S edisp = -p[2]*rinv2*rinv2*rinv2;
         e[0]  += erep;
         e[1]  += edisp;
         *fscal = (p[1]*erep + 6.0*edisp*rinv)*rinv;
@@ -422,10 +468,11 @@ struct TangToennies
         return true;
     }
     //! \copydoc LJ12_6::compute
-    static void compute(const double *p, SimdDouble rsq, SimdDouble *e, SimdDouble *fscal)
+    template <typename S>
+    static void compute(const double *p, S rsq, S *e, S *fscal)
     {
-        SimdDouble rinv = simd::invsqrt(rsq);
-        SimdDouble r    = rsq*rinv;
+        S rinv = simd::invsqrt(rsq);
+        S r    = rsq*rinv;
         *fscal = 0.0;
         e[0]  += bornMayer(p[0], p[1], r, rinv, fscal);
         e[1]  += ttDispersion(p[1], p+2, r, rinv, fscal);
@@ -448,10 +495,11 @@ struct TT2b
         return true;
     }
     //! \copydoc LJ12_6::compute
-    static void compute(const double *p, SimdDouble rsq, SimdDouble *e, SimdDouble *fscal)
+    template <typename S>
+    static void compute(const double *p, S rsq, S *e, S *fscal)
     {
-        SimdDouble rinv = simd::invsqrt(rsq);
-        SimdDouble r    = rsq*rinv;
+        S rinv = simd::invsqrt(rsq);
+        S r    = rsq*rinv;
         *fscal = 0.0;
         e[0]  += bornMayer(p[0], p[1], r, rinv, fscal);
         e[1]  += ttDispersion(p[2], p+3, r, rinv, fscal);
@@ -474,10 +522,11 @@ struct SlaterISATT
         return true;
     }
     //! \copydoc LJ12_6::compute
-    static void compute(const double *p, SimdDouble rsq, SimdDouble *e, SimdDouble *fscal)
+    template <typename S>
+    static void compute(const double *p, S rsq, S *e, S *fscal)
     {
-        SimdDouble rinv = simd::invsqrt(rsq);
-        SimdDouble r    = rsq*rinv;
+        S rinv = simd::invsqrt(rsq);
+        S r    = rsq*rinv;
         *fscal = 0.0;
         e[0]  += slaterISA(p[0], p[1], r, rinv, fscal);
         e[1]  += ttDispersion(p[2], p+3, r, rinv, fscal);
@@ -499,11 +548,11 @@ struct Coulomb
      * \param[in] exprz2 The exponential of minus rz squared
      * \return the scalar force divided by r
      */
-    static SimdDouble gaussianForceOverR(double zeta, SimdDouble rinv, SimdDouble rz,
-                                         SimdDouble erfrz, SimdDouble exprz2)
+    template <typename S>
+    static S gaussianForceOverR(double zeta, S rinv, S rz, S erfrz, S exprz2)
     {
-        SimdDouble x2     = rz*rz;
-        SimdDouble series = zeta*zeta*zeta*2*invsqrt_pi*
+        S x2     = rz*rz;
+        S series = zeta*zeta*zeta*2*invsqrt_pi*
             (2.0/3.0 + x2*(-2.0/5.0 + x2*(1.0/7.0 + x2*(-1.0/27.0 + x2*(1.0/132.0)))));
         return simd::select(x2 < 0.005, series,
                             (erfrz*rinv - 2*invsqrt_pi*zeta*exprz2)*rinv*rinv);
@@ -570,12 +619,12 @@ struct Coulomb
      * \tparam V The variant, see nvariant. The variants 1 and 2 do the
      *           same operations as variant 0 does for them.
      */
-    template <int V>
-    static void compute(const double *p, SimdDouble rsq, SimdDouble *e, SimdDouble *fscal)
+    template <int V, typename S>
+    static void compute(const double *p, S rsq, S *e, S *fscal)
     {
         // Particles on top of each other only have an energy with Gaussian charges
         auto       overlap = !(rsq > 0.0);
-        SimdDouble rinv    = simd::invsqrt(rsq);
+        S rinv    = simd::invsqrt(rsq);
         if constexpr (V == 1)
         {
             auto qq = p[0];
@@ -587,9 +636,9 @@ struct Coulomb
         {
             auto       qq   = p[0];
             auto       zeta = p[1];
-            SimdDouble rz   = zeta*rsq*rinv;
-            SimdDouble exprz2;
-            SimdDouble erfrz = simd::erfAndExp(rz, &exprz2);
+            S rz   = zeta*rsq*rinv;
+            S exprz2;
+            S erfrz = simd::erfAndExp(rz, &exprz2);
             e[0]  += simd::select(overlap, qq*2*zeta*invsqrt_pi, qq*erfrz*rinv);
             *fscal = simd::select(overlap, 0.0,
                                   qq*gaussianForceOverR(zeta, rinv, rz, erfrz, exprz2));
@@ -603,7 +652,7 @@ struct Coulomb
             {
                 continue;
             }
-            SimdDouble ek, fk;
+            S ek, fk;
             if (zeta == 0)
             {
                 ek = simd::select(overlap, 0.0, qq*rinv);
@@ -611,10 +660,10 @@ struct Coulomb
             }
             else
             {
-                SimdDouble rz    = zeta*rsq*rinv;
+                S rz    = zeta*rsq*rinv;
                 // The exponential for the force comes with the error function
-                SimdDouble exprz2;
-                SimdDouble erfrz = simd::erfAndExp(rz, &exprz2);
+                S exprz2;
+                S erfrz = simd::erfAndExp(rz, &exprz2);
                 ek = simd::select(overlap, qq*2*zeta*invsqrt_pi, qq*erfrz*rinv);
                 fk = simd::select(overlap, 0.0,
                                   qq*gaussianForceOverR(zeta, rinv, rz, erfrz, exprz2));
@@ -645,7 +694,8 @@ struct Polarization
         return true;
     }
     //! \copydoc LJ12_6::compute
-    static void compute(const double *p, SimdDouble rsq, SimdDouble *e, SimdDouble *fscal)
+    template <typename S>
+    static void compute(const double *p, S rsq, S *e, S *fscal)
     {
         auto ksh = p[0];
         auto fch = p[2];
@@ -656,9 +706,9 @@ struct Polarization
         if (fch > 0)
         {
             // Hyperpolarization beyond rhyper
-            SimdDouble dr   = simd::sqrt(rsq);
-            SimdDouble ddr  = simd::max(dr - p[1], 0.0);
-            SimdDouble ddr2 = ddr*ddr;
+            S dr   = simd::sqrt(rsq);
+            S ddr  = simd::max(dr - p[1], 0.0);
+            S ddr2 = ddr*ddr;
             e[0]   += simd::select(overlap, 0.0, fch*ddr2*ddr2);
             *fscal -= simd::select(overlap, 0.0, 4.0*fch*ddr2*ddr/dr);
         }
@@ -677,10 +727,11 @@ struct HarmonicBond
         return true;
     }
     //! \copydoc LJ12_6::compute
-    static void compute(const double *p, SimdDouble rsq, SimdDouble *e, SimdDouble *fscal)
+    template <typename S>
+    static void compute(const double *p, S rsq, S *e, S *fscal)
     {
-        SimdDouble rinv = simd::invsqrt(rsq);
-        SimdDouble dr   = rsq*rinv - p[0];
+        S rinv = simd::invsqrt(rsq);
+        S dr   = rsq*rinv - p[0];
         e[0]  += 0.5*p[1]*dr*dr + p[2];
         *fscal = -p[1]*dr*rinv;
     }
@@ -703,14 +754,15 @@ struct CubicBond
         return true;
     }
     //! \copydoc LJ12_6::compute
-    static void compute(const double *p, SimdDouble rsq, SimdDouble *e, SimdDouble *fscal)
+    template <typename S>
+    static void compute(const double *p, S rsq, S *e, S *fscal)
     {
         auto       b0   = p[0];
         auto       rmax = p[1];
         auto       kb   = p[2];
-        SimdDouble r2   = simd::min(rsq, p[4]);
-        SimdDouble rinv = simd::invsqrt(r2);
-        SimdDouble r    = r2*rinv;
+        S r2   = simd::min(rsq, p[4]);
+        S rinv = simd::invsqrt(r2);
+        S r    = r2*rinv;
         e[0]  += kb*(r - b0)*(r - b0)*(rmax - r) - p[3];
         *fscal = rinv*kb*(b0 + 2*rmax - 3.0*r)*(b0 - r);
     }
@@ -730,13 +782,14 @@ struct MorseBond
         return true;
     }
     //! \copydoc LJ12_6::compute
-    static void compute(const double *p, SimdDouble rsq, SimdDouble *e, SimdDouble *fscal)
+    template <typename S>
+    static void compute(const double *p, S rsq, S *e, S *fscal)
     {
         auto       beta    = p[1];
         auto       De      = p[2];
-        SimdDouble dr      = simd::sqrt(rsq);
-        SimdDouble expterm = simd::exp(-beta*(dr - p[0]));
-        SimdDouble one_exp = 1.0 - expterm;
+        S dr      = simd::sqrt(rsq);
+        S expterm = simd::exp(-beta*(dr - p[0]));
+        S one_exp = 1.0 - expterm;
         e[0]  += De*(one_exp*one_exp - 1.0) + p[3];
         *fscal = 2*De*beta*expterm*(expterm - 1.0)/dr;
     }
@@ -756,15 +809,16 @@ struct HuaBond
         return true;
     }
     //! \copydoc LJ12_6::compute
-    static void compute(const double *p, SimdDouble rsq, SimdDouble *e, SimdDouble *fscal)
+    template <typename S>
+    static void compute(const double *p, S rsq, S *e, S *fscal)
     {
         auto       hb      = p[1];
         auto       De      = p[2];
         auto       c       = p[3];
-        SimdDouble dr      = simd::sqrt(rsq);
-        SimdDouble expterm = simd::exp(-hb*(dr - p[0]));
-        SimdDouble exp2    = (1.0 - expterm)/(1.0 - c*expterm);
-        SimdDouble denom   = c*expterm - 1.0;
+        S dr      = simd::sqrt(rsq);
+        S expterm = simd::exp(-hb*(dr - p[0]));
+        S exp2    = (1.0 - expterm)/(1.0 - c*expterm);
+        S denom   = c*expterm - 1.0;
         e[0]  += De*(exp2*exp2 - 1.0);
         *fscal = 2*De*hb*expterm*(expterm - 1.0)*(c - 1)/(dr*denom*denom*denom);
     }
@@ -792,38 +846,49 @@ static constexpr int pairVariants()
     }
 }
 
-/*! \brief Compute one pair interaction for conformations c to c + simdWidth - 1
+/*! \brief Compute one pair interaction for conformations c to c + width - 1, the width of the SIMD type
  * \tparam       Kernel   The potential
  * \tparam       Forces   Whether to compute forces
  * \tparam       V        The variant of the kernel, see pairVariants
  * \param[in]    pp       The interaction
- * \param[in]    stride   Number of conformations
+ * \param[in]    stride   Distance between the rows of the arrays
  * \param[in]    c        The first conformation
  * \param[in]    x        Coordinates
  * \param[inout] f        Forces, not used if Forces is false
  * \param[inout] energies Energies
  */
-template <typename Kernel, bool Forces, int V>
+template <typename Kernel, bool Forces, int V, typename T>
 static inline void computePair(const PairParams &pp,
                                size_t            stride,
                                size_t            c,
-                               const double     *x,
-                               double           *f,
+                               const T          *x,
+                               T                *f,
                                double           *energies)
 {
-    SimdDouble dx[DIM];
-    SimdDouble rsq = 0.0;
+    using S = simd::Simd<T>;
+    S dx[DIM];
+    S rsq = 0.0;
     for (int m = 0; m < DIM; m++)
     {
         dx[m] = simd::load(x + pp.i + m*stride + c) - simd::load(x + pp.j + m*stride + c);
         rsq   = simd::fma(dx[m], dx[m], rsq);
     }
-    SimdDouble e[explicitSimdEnergyTerms];
+    // In double precision the energies are added to directly, in single
+    // precision they are summed in double precision, see addEnergy
+    constexpr bool  inPlace = std::is_same_v<T, double>;
+    S e[explicitSimdEnergyTerms];
     for (int k = 0; k < explicitSimdEnergyTerms; k++)
     {
-        e[k] = simd::load(energies + k*stride + c);
+        if constexpr (inPlace)
+        {
+            e[k] = simd::load(energies + k*stride + c);
+        }
+        else
+        {
+            e[k] = 0.0;
+        }
     }
-    SimdDouble fscal;
+    S fscal;
     if constexpr (pairVariants<Kernel>() > 1)
     {
         Kernel::template compute<V>(pp.p, rsq, e, &fscal);
@@ -834,19 +899,35 @@ static inline void computePair(const PairParams &pp,
     }
     for (int k = 0; k < explicitSimdEnergyTerms; k++)
     {
-        simd::store(energies + k*stride + c, e[k]);
+        if constexpr (inPlace)
+        {
+            simd::store(energies + k*stride + c, e[k]);
+        }
+        else
+        {
+            addEnergy(energies + k*stride + c, e[k]);
+        }
     }
     if constexpr (Forces)
     {
         for (int m = 0; m < DIM; m++)
         {
-            double *fi = f + pp.i + m*stride + c;
-            double *fj = f + pp.j + m*stride + c;
+            T      *fi = f + pp.i + m*stride + c;
+            T      *fj = f + pp.j + m*stride + c;
             simd::store(fi, simd::fma(fscal, dx[m], simd::load(fi)));
             simd::store(fj, simd::load(fj) - fscal*dx[m]);
         }
     }
 }
+
+#ifdef ACT_PAIR_UNROLL
+//! The unroll factor of the pair loops, from the CMake option ACT_PAIR_UNROLL
+constexpr size_t pairUnroll = ACT_PAIR_UNROLL;
+#else
+//! The unroll factor of the pair loops, the default of the SIMD type
+constexpr size_t pairUnroll = simd::pairUnrollDefault;
+#endif
+static_assert(pairUnroll >= 1 && pairUnroll <= 16, "The unroll factor of the pair loops should be 1 to 16");
 
 /*! \brief Compute one pair interaction for all conformations
  * The loop over conformations is unrolled pairUnroll times, such that the
@@ -857,25 +938,17 @@ static inline void computePair(const PairParams &pp,
  * \tparam V The variant of the kernel, see pairVariants
  * The other parameters are those of computePair.
  */
-#ifdef ACT_PAIR_UNROLL
-//! The unroll factor of the pair loops, from the CMake option ACT_PAIR_UNROLL
-constexpr size_t pairUnroll = ACT_PAIR_UNROLL;
-#else
-//! The unroll factor of the pair loops, the default of the SIMD type
-constexpr size_t pairUnroll = simd::pairUnrollDefault;
-#endif
-static_assert(pairUnroll >= 1 && pairUnroll <= 16, "The unroll factor of the pair loops should be 1 to 16");
-
-template <typename Kernel, bool Forces, int V>
+template <typename Kernel, bool Forces, int V, typename T>
 static void computePairConformations(const PairParams &pp,
                                      size_t            stride,
-                                     const double     *x,
-                                     double           *f,
+                                     size_t            nslot,
+                                     const T          *x,
+                                     T                *f,
                                      double           *energies)
 {
-    constexpr size_t width = simd::simdWidth;
+    constexpr size_t width = simd::SimdTraits<T>::width;
     size_t           c     = 0;
-    for (; c + pairUnroll*width <= stride; c += pairUnroll*width)
+    for (; c + pairUnroll*width <= nslot; c += pairUnroll*width)
     {
         // The vectors in increasing order
         [&]<size_t... u>(std::index_sequence<u...>)
@@ -883,7 +956,7 @@ static void computePairConformations(const PairParams &pp,
             (computePair<Kernel, Forces, V>(pp, stride, c + u*width, x, f, energies), ...);
         }(std::make_index_sequence<pairUnroll>{});
     }
-    for (; c < stride; c += width)
+    for (; c < nslot; c += width)
     {
         computePair<Kernel, Forces, V>(pp, stride, c, x, f, energies);
     }
@@ -893,22 +966,23 @@ static void computePairConformations(const PairParams &pp,
  * \tparam V The first variant to test, see pairVariants
  * The other parameters are those of computePair.
  */
-template <typename Kernel, bool Forces, int V = 0>
+template <typename Kernel, bool Forces, int V = 0, typename T>
 static void dispatchPairVariant(const PairParams &pp,
                                 size_t            stride,
-                                const double     *x,
-                                double           *f,
+                                size_t            nslot,
+                                const T          *x,
+                                T                *f,
                                 double           *energies)
 {
     if constexpr (V + 1 < pairVariants<Kernel>())
     {
         if (pp.variant != V)
         {
-            dispatchPairVariant<Kernel, Forces, V + 1>(pp, stride, x, f, energies);
+            dispatchPairVariant<Kernel, Forces, V + 1>(pp, stride, nslot, x, f, energies);
             return;
         }
     }
-    computePairConformations<Kernel, Forces, V>(pp, stride, x, f, energies);
+    computePairConformations<Kernel, Forces, V>(pp, stride, nslot, x, f, energies);
 }
 
 /*! \brief Compute a pair potential for all conformations
@@ -916,7 +990,8 @@ static void dispatchPairVariant(const PairParams &pp,
  * \param[in]    entries  The interactions
  * \param[in]    atoms    The atoms
  * \param[in]    epsilonr Relative dielectric constant
- * \param[in]    stride   Number of conformations, a multiple of simdWidth
+ * \param[in]    stride   Distance between the rows of the arrays
+ * \param[in]    nslot    Number of slots to compute, a multiple of the SIMD width, at most stride
  * Without forces the compiler removes their computation from the kernel,
  * since the force is not used.
  * \tparam       Forces   Whether to compute forces
@@ -924,13 +999,14 @@ static void dispatchPairVariant(const PairParams &pp,
  * \param[inout] f        Forces, not used if Forces is false
  * \param[inout] energies Energies
  */
-template <typename Kernel, bool Forces>
+template <typename Kernel, bool Forces, typename T>
 void computePairs(TopologyEntryRange          entries,
                   const std::vector<ActAtom> &atoms,
                   double                      epsilonr,
                   size_t                      stride,
-                  const double               *x,
-                  double                     *f,
+                  size_t                      nslot,
+                  const T                    *x,
+                  T                          *f,
                   double                     *energies)
 {
     std::vector<PairParams> pairs;
@@ -958,7 +1034,7 @@ void computePairs(TopologyEntryRange          entries,
     // the forces and energies are summed in the same order
     for (const auto &pp : pairs)
     {
-        dispatchPairVariant<Kernel, Forces>(pp, stride, x, f, energies);
+        dispatchPairVariant<Kernel, Forces>(pp, stride, nslot, x, f, energies);
     }
 }
 
@@ -979,18 +1055,21 @@ struct AngleParams
  * angleOne in forces_simd.cpp.
  * \tparam       Forces   Whether to compute forces
  * \param[in]    entries  The interactions
- * \param[in]    stride   Number of conformations, a multiple of simdWidth
+ * \param[in]    stride   Distance between the rows of the arrays
+ * \param[in]    nslot    Number of slots to compute, a multiple of the SIMD width, at most stride
  * \param[in]    x        Coordinates
  * \param[inout] f        Forces, not used if Forces is false
  * \param[inout] energies Energies
  */
-template <bool Forces>
+template <bool Forces, typename T>
 void computeAngles(TopologyEntryRange         entries,
                    size_t                     stride,
-                   const double              *x,
-                   double                    *f,
+                   size_t                     nslot,
+                   const T                   *x,
+                   T                         *f,
                    double                    *energies)
 {
+    using S = simd::Simd<T>;
     std::vector<AngleParams> angles;
     angles.reserve(entries.size());
     for (const auto &b : entries)
@@ -1003,13 +1082,13 @@ void computeAngles(TopologyEntryRange         entries,
     for (const auto &a : angles)
     {
         double halfk = 0.5*a.kt;
-        for (size_t c = 0; c < stride; c += simd::simdWidth)
+        for (size_t c = 0; c < nslot; c += simd::SimdTraits<T>::width)
         {
-            SimdDouble rij[DIM], rkj[DIM];
-            SimdDouble ip = 0.0, ipa = 0.0, ipb = 0.0;
+            S rij[DIM], rkj[DIM];
+            S ip = 0.0, ipa = 0.0, ipb = 0.0;
             for (int m = 0; m < DIM; m++)
             {
-                SimdDouble xj = simd::load(x + a.j + m*stride + c);
+                S xj = simd::load(x + a.j + m*stride + c);
                 rij[m] = simd::load(x + a.i + m*stride + c) - xj;
                 rkj[m] = simd::load(x + a.k + m*stride + c) - xj;
                 ip     = simd::fma(rij[m], rkj[m], ip);
@@ -1017,32 +1096,31 @@ void computeAngles(TopologyEntryRange         entries,
                 ipb    = simd::fma(rkj[m], rkj[m], ipb);
             }
             // As cos_angle, limited to [-1, 1]
-            SimdDouble ipab  = ipa*ipb;
-            SimdDouble costh = simd::select(ipab > 0.0, ip*simd::invsqrt(ipab), 1.0);
+            S ipab  = ipa*ipb;
+            S costh = simd::select(ipab > 0.0, ip*simd::invsqrt(ipab), 1.0);
             costh            = simd::min(simd::max(costh, -1.0), 1.0);
-            SimdDouble dth   = simd::acos(costh) - a.theta0;
-            SimdDouble e     = simd::load(energies + c);
-            simd::store(energies + c, simd::fma(halfk, dth*dth, e));
+            S dth   = simd::acos(costh) - a.theta0;
+            fmaEnergy(energies + c, S(halfk), dth*dth);
             if constexpr (Forces)
             {
                 // There is no force for angles of 0 and 180 degrees
-                SimdDouble costh2 = costh*costh;
-                SimdDouble st     = simd::select(costh2 < 1.0,
+                S costh2 = costh*costh;
+                S st     = simd::select(costh2 < 1.0,
                                                  (-a.kt*dth)*simd::invsqrt(1.0 - costh2), 0.0);
-                SimdDouble sth    = st*costh;
-                SimdDouble nrij_1 = simd::invsqrt(ipa);
-                SimdDouble nrkj_1 = simd::invsqrt(ipb);
-                SimdDouble cik    = st*nrij_1*nrkj_1;
-                SimdDouble cii    = sth*nrij_1*nrij_1;
-                SimdDouble ckk    = sth*nrkj_1*nrkj_1;
+                S sth    = st*costh;
+                S nrij_1 = simd::invsqrt(ipa);
+                S nrkj_1 = simd::invsqrt(ipb);
+                S cik    = st*nrij_1*nrkj_1;
+                S cii    = sth*nrij_1*nrij_1;
+                S ckk    = sth*nrkj_1*nrkj_1;
                 for (int m = 0; m < DIM; m++)
                 {
-                    SimdDouble f_im = -(cik*rkj[m] - cii*rij[m]);
-                    SimdDouble f_km = -(cik*rij[m] - ckk*rkj[m]);
-                    SimdDouble f_jm = -f_im - f_km;
-                    double    *fi   = f + a.i + m*stride + c;
-                    double    *fj   = f + a.j + m*stride + c;
-                    double    *fk   = f + a.k + m*stride + c;
+                    S f_im = -(cik*rkj[m] - cii*rij[m]);
+                    S f_km = -(cik*rij[m] - ckk*rkj[m]);
+                    S f_jm = -f_im - f_km;
+                    T         *fi   = f + a.i + m*stride + c;
+                    T         *fj   = f + a.j + m*stride + c;
+                    T         *fk   = f + a.k + m*stride + c;
                     simd::store(fi, simd::load(fi) + f_im);
                     simd::store(fj, simd::load(fj) + f_jm);
                     simd::store(fk, simd::load(fk) + f_km);
@@ -1087,34 +1165,37 @@ static std::vector<DihedralParams> prepareDihedrals(TopologyEntryRange         e
 }
 
 //! The vectors of a dihedral, as in dih_angle in forces_simd.cpp
+template <typename S>
 struct DihedralVectors
 {
     //! Vectors between the atoms
-    SimdDouble r_ij[DIM], r_kj[DIM], r_kl[DIM];
+    S r_ij[DIM], r_kj[DIM], r_kl[DIM];
     //! Normals of the planes, m = r_ij x r_kj and n = r_kj x r_kl
-    SimdDouble m[DIM], n[DIM];
+    S m[DIM], n[DIM];
     //! Squared lengths of m, n and r_kj
-    SimdDouble iprm, iprn, nrkj2;
+    S iprm, iprn, nrkj2;
     //! Inner products m.n and r_ij.n
-    SimdDouble mn, ipr;
+    S mn, ipr;
 };
 
-//! Compute the vectors of dihedral d for conformations c to c + simdWidth - 1
-static inline void dihedralVectors(const DihedralParams &d,
-                                   size_t                stride,
-                                   size_t                c,
-                                   const double         *x,
-                                   DihedralVectors      *v)
+//! Compute the vectors of dihedral d for conformations c to c + width - 1, the width of the SIMD type
+template <typename T>
+static inline void dihedralVectors(const DihedralParams          &d,
+                                   size_t                         stride,
+                                   size_t                         c,
+                                   const T                       *x,
+                                   DihedralVectors<simd::Simd<T>> *v)
 {
+    using S = simd::Simd<T>;
     for (int m = 0; m < DIM; m++)
     {
-        SimdDouble xj = simd::load(x + d.j + m*stride + c);
-        SimdDouble xk = simd::load(x + d.k + m*stride + c);
+        S xj = simd::load(x + d.j + m*stride + c);
+        S xk = simd::load(x + d.k + m*stride + c);
         v->r_ij[m] = simd::load(x + d.i + m*stride + c) - xj;
         v->r_kj[m] = xk - xj;
         v->r_kl[m] = xk - simd::load(x + d.l + m*stride + c);
     }
-    auto cprod = [](const SimdDouble *a, const SimdDouble *b, SimdDouble *axb)
+    auto cprod = [](const S *a, const S *b, S *axb)
     {
         axb[XX] = a[YY]*b[ZZ] - a[ZZ]*b[YY];
         axb[YY] = a[ZZ]*b[XX] - a[XX]*b[ZZ];
@@ -1147,25 +1228,36 @@ static inline void dihedralVectors(const DihedralParams &d,
  * \param[in]    ddphi  Derivative of the energy with respect to the angle
  * \param[inout] f      The forces
  */
-static inline void dihedralForces(const DihedralParams  &d,
-                                  size_t                 stride,
-                                  size_t                 c,
-                                  const DihedralVectors &v,
-                                  SimdDouble             nrkj,
-                                  SimdDouble             s,
-                                  SimdDouble             ddphi,
-                                  double                *f)
+/*! \brief The relative precision for the planes of dihedrals
+ * For doubles as in the scalar code, which uses the precision of real.
+ * \tparam T The floating point type of the kernel
+ */
+template <typename T>
+static constexpr double dihedralEpsilon()
+{
+    return std::is_same_v<T, double> ? GMX_REAL_EPS : GMX_FLOAT_EPS;
+}
+
+template <typename T, typename S = simd::Simd<T>>
+static inline void dihedralForces(const DihedralParams     &d,
+                                  size_t                    stride,
+                                  size_t                    c,
+                                  const DihedralVectors<S> &v,
+                                  S                         nrkj,
+                                  S                         s,
+                                  S                         ddphi,
+                                  T                        *f)
 {
     // There is no force if one of the planes is not defined
-    SimdDouble toler  = v.nrkj2*GMX_REAL_EPS;
-    simd::SimdBool ok = v.iprm > toler && v.iprn > toler;
-    SimdDouble dd     = simd::select(ok, ddphi, 0.0)*nrkj;
+    S    toler  = v.nrkj2*dihedralEpsilon<T>();
+    auto ok     = v.iprm > toler && v.iprn > toler;
+    S dd     = simd::select(ok, ddphi, 0.0)*nrkj;
     // 1/iprm and 1/iprn from s, such that there is no division
-    SimdDouble s2     = s*s;
-    SimdDouble a      = -dd*(s2*v.iprn);
-    SimdDouble b      = dd*(s2*v.iprm);
-    SimdDouble nrkj_2 = 1.0/simd::select(ok, v.nrkj2, 1.0);
-    SimdDouble p      = 0.0, q = 0.0;
+    S s2     = s*s;
+    S a      = -dd*(s2*v.iprn);
+    S b      = dd*(s2*v.iprm);
+    S nrkj_2 = 1.0/simd::select(ok, v.nrkj2, 1.0);
+    S p      = 0.0, q = 0.0;
     for (int m = 0; m < DIM; m++)
     {
         p = simd::fma(v.r_ij[m], v.r_kj[m], p);
@@ -1175,13 +1267,13 @@ static inline void dihedralForces(const DihedralParams  &d,
     q *= nrkj_2;
     for (int m = 0; m < DIM; m++)
     {
-        SimdDouble f_i  = a*v.m[m];
-        SimdDouble f_l  = b*v.n[m];
-        SimdDouble svec = p*f_i - q*f_l;
-        double    *fi   = f + d.i + m*stride + c;
-        double    *fj   = f + d.j + m*stride + c;
-        double    *fk   = f + d.k + m*stride + c;
-        double    *fl   = f + d.l + m*stride + c;
+        S f_i  = a*v.m[m];
+        S f_l  = b*v.n[m];
+        S svec = p*f_i - q*f_l;
+        T         *fi   = f + d.i + m*stride + c;
+        T         *fj   = f + d.j + m*stride + c;
+        T         *fk   = f + d.k + m*stride + c;
+        T         *fl   = f + d.l + m*stride + c;
         simd::store(fi, simd::load(fi) + f_i);
         simd::store(fj, simd::load(fj) - (f_i - svec));
         simd::store(fk, simd::load(fk) - (f_l + svec));
@@ -1192,9 +1284,10 @@ static inline void dihedralForces(const DihedralParams  &d,
 /*! \brief 1/(|m| |n|) of a dihedral, 1 if one of the planes is not defined
  * \param[in] v The vectors of the dihedral
  */
-static inline SimdDouble invNormProduct(const DihedralVectors &v)
+template <typename S>
+static inline S invNormProduct(const DihedralVectors<S> &v)
 {
-    SimdDouble mn2 = v.iprm*v.iprn;
+    S mn2 = v.iprm*v.iprn;
     return simd::invsqrt(simd::select(mn2 > 0.0, mn2, 1.0));
 }
 
@@ -1207,42 +1300,45 @@ static inline SimdDouble invNormProduct(const DihedralVectors &v)
  * the planes is not defined psi is zero, as with atan2(0, 0).
  * \tparam       Forces   Whether to compute forces
  * \param[in]    entries  The interactions
- * \param[in]    stride   Number of conformations, a multiple of simdWidth
+ * \param[in]    stride   Distance between the rows of the arrays
+ * \param[in]    nslot    Number of slots to compute, a multiple of the SIMD width, at most stride
  * \param[in]    x        Coordinates
  * \param[inout] f        Forces, not used if Forces is false
  * \param[inout] energies Energies
  */
-template <bool Forces>
+template <bool Forces, typename T>
 void computeFourierDihedrals(TopologyEntryRange         entries,
                              size_t                     stride,
-                             const double              *x,
-                             double                    *f,
+                             size_t                     nslot,
+                             const T                   *x,
+                             T                         *f,
                              double                    *energies)
 {
+    using S = simd::Simd<T>;
     for (const auto &d : prepareDihedrals(entries, stride))
     {
-        for (size_t c = 0; c < stride; c += simd::simdWidth)
+        for (size_t c = 0; c < nslot; c += simd::SimdTraits<T>::width)
         {
-            DihedralVectors v;
+            DihedralVectors<S> v;
             dihedralVectors(d, stride, c, x, &v);
-            SimdDouble s       = invNormProduct(v);
-            SimdDouble defined = v.iprm*v.iprn;
-            SimdDouble cos_phi = -simd::select(defined > 0.0, v.mn*s, 1.0);
+            S s       = invNormProduct(v);
+            S defined = v.iprm*v.iprn;
+            S cos_phi = -simd::select(defined > 0.0, v.mn*s, 1.0);
             // As in fourDihOne, energy sum_j c_j cos^j(phi) and its derivative
-            SimdDouble cosfac  = 1.0;
-            SimdDouble ener    = d.c[0];
-            SimdDouble dvdphi  = 0.0;
+            S cosfac  = 1.0;
+            S ener    = d.c[0];
+            S dvdphi  = 0.0;
             for (size_t j = 1; j < d.nparam; j++)
             {
                 dvdphi  = simd::fma(static_cast<double>(j)*d.c[j], cosfac, dvdphi);
                 cosfac *= cos_phi;
                 ener    = simd::fma(d.c[j], cosfac, ener);
             }
-            simd::store(energies + c, simd::load(energies + c) + ener);
+            addEnergy(energies + c, ener);
             if constexpr (Forces)
             {
                 // -sin(phi) = sin(psi)
-                SimdDouble nrkj = simd::sqrt(v.nrkj2);
+                S nrkj = simd::sqrt(v.nrkj2);
                 dvdphi *= nrkj*v.ipr*s;
                 dihedralForces(d, stride, c, v, nrkj, s, dvdphi, f);
             }
@@ -1256,29 +1352,32 @@ void computeFourierDihedrals(TopologyEntryRange         entries,
  * the sign of r_ij.n that dih_angle in forces_simd.cpp computes.
  * \tparam       Forces   Whether to compute forces
  * \param[in]    entries  The interactions
- * \param[in]    stride   Number of conformations, a multiple of simdWidth
+ * \param[in]    stride   Distance between the rows of the arrays
+ * \param[in]    nslot    Number of slots to compute, a multiple of the SIMD width, at most stride
  * \param[in]    x        Coordinates
  * \param[inout] f        Forces, not used if Forces is false
  * \param[inout] energies Energies
  */
-template <bool Forces>
+template <bool Forces, typename T>
 void computeImproperDihedrals(TopologyEntryRange         entries,
                               size_t                     stride,
-                              const double              *x,
-                              double                    *f,
+                              size_t                     nslot,
+                              const T                   *x,
+                              T                         *f,
                               double                    *energies)
 {
+    using S = simd::Simd<T>;
     for (const auto &d : prepareDihedrals(entries, stride))
     {
         double kA    = d.c[idihKPHI];
         double halfk = 0.5*kA;
-        for (size_t c = 0; c < stride; c += simd::simdWidth)
+        for (size_t c = 0; c < nslot; c += simd::SimdTraits<T>::width)
         {
-            DihedralVectors v;
+            DihedralVectors<S> v;
             dihedralVectors(d, stride, c, x, &v);
-            SimdDouble nrkj = simd::sqrt(v.nrkj2);
-            SimdDouble phi  = simd::atan2(nrkj*v.ipr, v.mn);
-            simd::store(energies + c, simd::fma(halfk*phi, phi, simd::load(energies + c)));
+            S nrkj = simd::sqrt(v.nrkj2);
+            S phi  = simd::atan2(nrkj*v.ipr, v.mn);
+            fmaEnergy(energies + c, halfk*phi, phi);
             if constexpr (Forces)
             {
                 dihedralForces(d, stride, c, v, nrkj, invNormProduct(v), kA*phi, f);
@@ -1287,48 +1386,30 @@ void computeImproperDihedrals(TopologyEntryRange         entries,
     }
 }
 
-} // namespace
-
-size_t explicitSimdWidth()
-{
-    return simd::simdWidth;
-}
-
-size_t explicitSimdPairUnroll()
-{
-    return pairUnroll;
-}
-
-ExplicitSimd explicitSimdType()
-{
-#if ACT_SIMD_AVX_512
-    return ExplicitSimd::Avx512;
-#elif ACT_SIMD_AVX2
-    return ExplicitSimd::Avx2;
-#else
-    return ExplicitSimd::ArmNeon;
-#endif
-}
-
-bool computeExplicitSimd(Potential                   mypot,
-                         TopologyEntryRange          entries,
-                         const std::vector<ActAtom> &atoms,
-                         double                      epsilonr,
-                         size_t                      stride,
-                         const double               *x,
-                         double                     *f,
-                         double                     *energies,
-                         bool                        forces)
+/*! \brief Compute one potential for all conformations, see computeExplicitSimd
+ * \tparam T The floating point type of the coordinates and forces, the energies are double
+ */
+template <typename T>
+bool computeExplicitSimdT(Potential                   mypot,
+                          TopologyEntryRange          entries,
+                          const std::vector<ActAtom> &atoms,
+                          double                      epsilonr,
+                          size_t                      stride,
+                          size_t                      nslot,
+                          const T                    *x,
+                          T                          *f,
+                          double                     *energies,
+                          bool                        forces)
 {
     auto pairs = [&](auto kernel)
     {
         if (forces)
         {
-            computePairs<decltype(kernel), true>(entries, atoms, epsilonr, stride, x, f, energies);
+            computePairs<decltype(kernel), true>(entries, atoms, epsilonr, stride, nslot, x, f, energies);
         }
         else
         {
-            computePairs<decltype(kernel), false>(entries, atoms, epsilonr, stride, x, f, energies);
+            computePairs<decltype(kernel), false>(entries, atoms, epsilonr, stride, nslot, x, f, energies);
         }
         return true;
     };
@@ -1356,45 +1437,50 @@ bool computeExplicitSimd(Potential                   mypot,
     case Potential::HARMONIC_ANGLES:
         if (forces)
         {
-            computeAngles<true>(entries, stride, x, f, energies);
+            computeAngles<true>(entries, stride, nslot, x, f, energies);
         }
         else
         {
-            computeAngles<false>(entries, stride, x, f, energies);
+            computeAngles<false>(entries, stride, nslot, x, f, energies);
         }
         return true;
     case Potential::FOURIER_DIHEDRALS:
         if (forces)
         {
-            computeFourierDihedrals<true>(entries, stride, x, f, energies);
+            computeFourierDihedrals<true>(entries, stride, nslot, x, f, energies);
         }
         else
         {
-            computeFourierDihedrals<false>(entries, stride, x, f, energies);
+            computeFourierDihedrals<false>(entries, stride, nslot, x, f, energies);
         }
         return true;
     case Potential::HARMONIC_DIHEDRALS:
         if (forces)
         {
-            computeImproperDihedrals<true>(entries, stride, x, f, energies);
+            computeImproperDihedrals<true>(entries, stride, nslot, x, f, energies);
         }
         else
         {
-            computeImproperDihedrals<false>(entries, stride, x, f, energies);
+            computeImproperDihedrals<false>(entries, stride, nslot, x, f, energies);
         }
         return true;
     default:
         return false;
-    }
-}
+    }}
 
-bool coulombKernelsExplicitSimd(TopologyEntryRange          entries,
-                                const std::vector<ActAtom> &atoms,
-                                size_t                      stride,
-                                const double               *x,
-                                const unsigned char        *terms,
-                                double                     *kernel)
+/*! \brief The Coulomb energies for charges of one, see coulombKernelsExplicitSimd
+ * \tparam T The floating point type of the coordinates and the energies
+ */
+template <typename T>
+bool coulombKernelsExplicitSimdT(TopologyEntryRange          entries,
+                                 const std::vector<ActAtom> &atoms,
+                                 size_t                      stride,
+                                 size_t                      nslot,
+                                 const T                    *x,
+                                 const unsigned char        *terms,
+                                 T                          *kernel)
 {
+    using S = simd::Simd<T>;
     size_t e = 0;
     for (const auto &b : entries)
     {
@@ -1411,14 +1497,14 @@ bool coulombKernelsExplicitSimd(TopologyEntryRange          entries,
                 zeta[2*a + c] = Coulomb::combinedWidth(zi[a], zj[c]);
             }
         }
-        const double *xi = x + DIM*ind[0]*stride;
-        const double *xj = x + DIM*ind[1]*stride;
-        for (size_t c = 0; c < stride; c += simd::simdWidth)
+        const T *xi = x + DIM*ind[0]*stride;
+        const T *xj = x + DIM*ind[1]*stride;
+        for (size_t c = 0; c < nslot; c += simd::SimdTraits<T>::width)
         {
-            SimdDouble rsq = 0.0;
+            S rsq = 0.0;
             for (int m = 0; m < DIM; m++)
             {
-                SimdDouble dx = simd::load(xi + m*stride + c) - simd::load(xj + m*stride + c);
+                S dx = simd::load(xi + m*stride + c) - simd::load(xj + m*stride + c);
                 rsq = simd::fma(dx, dx, rsq);
             }
             for (int k = 0; k < 4; k++)
@@ -1429,8 +1515,8 @@ bool coulombKernelsExplicitSimd(TopologyEntryRange          entries,
                 }
                 // A charge product of one, the energy is the kernel
                 const double p[2] = { 1.0, zeta[k] };
-                SimdDouble   ek   = 0.0;
-                SimdDouble   fscal;
+                S            ek   = 0.0;
+                S            fscal;
                 if (zeta[k] == 0)
                 {
                     Coulomb::compute<1>(p, rsq, &ek, &fscal);
@@ -1444,7 +1530,86 @@ bool coulombKernelsExplicitSimd(TopologyEntryRange          entries,
         }
         e++;
     }
-    return true;
+    return true;}
+
+} // namespace
+
+template <>
+size_t explicitSimdWidth<double>()
+{
+    return simd::SimdTraits<double>::width;
+}
+
+template <>
+size_t explicitSimdWidth<float>()
+{
+    return simd::SimdTraits<float>::width;
+}
+
+size_t explicitSimdPairUnroll()
+{
+    return pairUnroll;
+}
+
+ExplicitSimd explicitSimdType()
+{
+#if ACT_SIMD_AVX_512
+    return ExplicitSimd::Avx512;
+#elif ACT_SIMD_AVX2
+    return ExplicitSimd::Avx2;
+#else
+    return ExplicitSimd::ArmNeon;
+#endif
+}
+
+bool computeExplicitSimd(Potential                   mypot,
+                         TopologyEntryRange          entries,
+                         const std::vector<ActAtom> &atoms,
+                         double                      epsilonr,
+                         size_t                      stride,
+                         size_t                      nslot,
+                         const double               *x,
+                         double                     *f,
+                         double                     *energies,
+                         bool                        forces)
+{
+    return computeExplicitSimdT(mypot, entries, atoms, epsilonr, stride, nslot, x, f, energies, forces);
+}
+
+bool computeExplicitSimd(Potential                   mypot,
+                         TopologyEntryRange          entries,
+                         const std::vector<ActAtom> &atoms,
+                         double                      epsilonr,
+                         size_t                      stride,
+                         size_t                      nslot,
+                         const float                *x,
+                         float                      *f,
+                         double                     *energies,
+                         bool                        forces)
+{
+    return computeExplicitSimdT(mypot, entries, atoms, epsilonr, stride, nslot, x, f, energies, forces);
+}
+
+bool coulombKernelsExplicitSimd(TopologyEntryRange          entries,
+                                const std::vector<ActAtom> &atoms,
+                                size_t                      stride,
+                                size_t                      nslot,
+                                const double               *x,
+                                const unsigned char        *terms,
+                                double                     *kernel)
+{
+    return coulombKernelsExplicitSimdT(entries, atoms, stride, nslot, x, terms, kernel);
+}
+
+bool coulombKernelsExplicitSimd(TopologyEntryRange          entries,
+                                const std::vector<ActAtom> &atoms,
+                                size_t                      stride,
+                                size_t                      nslot,
+                                const float                *x,
+                                const unsigned char        *terms,
+                                float                      *kernel)
+{
+    return coulombKernelsExplicitSimdT(entries, atoms, stride, nslot, x, terms, kernel);
 }
 
 bool addB2TermsExplicitSimd(size_t        nT,
@@ -1495,7 +1660,14 @@ bool addB2TermsExplicitSimd(size_t        nT,
 namespace alexandria
 {
 
-size_t explicitSimdWidth()
+template <>
+size_t explicitSimdWidth<double>()
+{
+    return 1;
+}
+
+template <>
+size_t explicitSimdWidth<float>()
 {
     return 1;
 }
@@ -1511,7 +1683,13 @@ ExplicitSimd explicitSimdType()
 }
 
 bool computeExplicitSimd(Potential, TopologyEntryRange, const std::vector<ActAtom> &,
-                         double, size_t, const double *, double *, double *, bool)
+                         double, size_t, size_t, const double *, double *, double *, bool)
+{
+    return false;
+}
+
+bool computeExplicitSimd(Potential, TopologyEntryRange, const std::vector<ActAtom> &,
+                         double, size_t, size_t, const float *, float *, double *, bool)
 {
     return false;
 }
@@ -1522,8 +1700,14 @@ bool addB2TermsExplicitSimd(size_t, const double *, double, bool, double, const 
     return false;
 }
 
-bool coulombKernelsExplicitSimd(TopologyEntryRange, const std::vector<ActAtom> &, size_t,
+bool coulombKernelsExplicitSimd(TopologyEntryRange, const std::vector<ActAtom> &, size_t, size_t,
                                 const double *, const unsigned char *, double *)
+{
+    return false;
+}
+
+bool coulombKernelsExplicitSimd(TopologyEntryRange, const std::vector<ActAtom> &, size_t, size_t,
+                                const float *, const unsigned char *, float *)
 {
     return false;
 }

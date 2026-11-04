@@ -53,8 +53,9 @@ class Crossover
 
 private:
 
-    // Random number stuff
+    //! Random device, only used to initialize gen_base before it is seeded
     std::random_device                     rd_base;
+    //! Random number generator for picking gene indices
     std::mt19937                           gen_base;
     //! Length of the chromosome
     size_t                                 chromosomeLength_;

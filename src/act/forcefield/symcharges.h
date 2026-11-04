@@ -41,31 +41,64 @@
 namespace alexandria
 {
 
+/*! \brief Rule for symmetrizing charges
+ * Atoms of element attached_ bonded to an atom of element central_
+ * get equal charges if there are exactly numattach_ of them,
+ * e.g. the hydrogens in a methyl group.
+ */
 class Symcharges
 {
     public:
 
+        //! Default constructor
         Symcharges () {}
 
+        /*! \brief Constructor
+         * \param[in] central   Element of the central atom
+         * \param[in] attached  Element of the attached atoms
+         * \param[in] numattach Number of attached atoms
+         */
         Symcharges(const std::string &central,
                    const std::string &attached,
                    int                numattach);
 
+        //! \return the element of the central atom
         const std::string &getCentral() const { return central_; }
 
+        //! \return the element of the attached atoms
         const std::string &getAttached() const { return attached_; }
 
+        //! \return the number of attached atoms
         int getNumattach() const { return numattach_; }
 
+        /*! \brief Send the contents to another processor
+         * \param[in] cr   Communication record
+         * \param[in] dest Destination processor
+         * \return the communication status
+         */
         CommunicationStatus Send(const CommunicationRecord *cr, int dest);
 
+        /*! \brief Broadcast the contents to other processors
+         * \param[in] cr   Communication record
+         * \param[in] root Root processor of the broadcast (unused)
+         * \param[in] comm MPI communicator
+         * \return the communication status
+         */
         CommunicationStatus BroadCast(const CommunicationRecord *cr, int root, MPI_Comm comm);
 
+        /*! \brief Receive the contents from another processor
+         * \param[in] cr  Communication record
+         * \param[in] src Source processor
+         * \return the communication status
+         */
         CommunicationStatus Receive(const CommunicationRecord *cr, int src);
 
     private:
+        //! Element of the central atom
         std::string central_;
+        //! Element of the attached atoms
         std::string attached_;
+        //! Number of attached atoms
         int         numattach_;
 };
 

@@ -224,7 +224,7 @@ protected:
             forceComp_.compute(&msghandler_, pd, top, &xref, &fref, &eref,
                                options.field, options.resetShells, options.relaxShells);
             compareEnergies(eref, energies[c], gmx::test::precisionTolerance(1e-8, 1e-6), label);
-            compareForces(fref, set.confs[c].fcalc, gmx::test::precisionTolerance(1e-6, 1e-5), label);
+            compareForces(fref, set.data.f(c).toRVec(), gmx::test::precisionTolerance(1e-6, 1e-5), label);
         }
     }
 
@@ -527,7 +527,7 @@ TEST_F(ComputeTotalTest, InductionCorrectionPotential)
         ASSERT_TRUE(eref.end() != eref.find(itype));
         EXPECT_NE(0, eref[itype]) << label;
         compareEnergies(eref, energies[c], gmx::test::precisionTolerance(1e-8, 1e-6), label);
-        compareForces(fref, set.confs[c].fcalc, gmx::test::precisionTolerance(1e-6, 1e-5), label);
+        compareForces(fref, set.data.f(c).toRVec(), gmx::test::precisionTolerance(1e-6, 1e-5), label);
     }
 }
 
@@ -620,13 +620,13 @@ TEST_F(ComputeTotalTest, NoRelaxation)
             EXPECT_NEAR(e.second, t->second, gmx::test::precisionTolerance(1e-10, 1e-6)*std::max(1.0, std::abs(e.second)))
                 << label << " " << interactionTypeToString(e.first);
         }
-        compareForces(fref, set.confs[c].fcalc, gmx::test::precisionTolerance(1e-10, 1e-5), label);
+        compareForces(fref, set.data.f(c).toRVec(), gmx::test::precisionTolerance(1e-10, 1e-5), label);
         // The shells did not move
         for(size_t i = 0; i < x[c].size(); i++)
         {
             for(int m = 0; m < DIM; m++)
             {
-                EXPECT_EQ(x[c][i][m], set.confs[c].x[i][m]) << label;
+                EXPECT_EQ(x[c][i][m], set.data.x(c)[i][m]) << label;
             }
         }
     }
@@ -665,7 +665,7 @@ TEST_F(ComputeTotalTest, RelaxSomeShells)
             auto core = atoms[i].parents()[0];
             for(int m = 0; m < DIM; m++)
             {
-                EXPECT_EQ(set.confs[0].x[core][m], set.confs[0].x[i][m]);
+                EXPECT_EQ(set.data.x(0)[core][m], set.data.x(0)[i][m]);
             }
         }
     }
@@ -688,11 +688,13 @@ TEST_F(ComputeTotalTest, Statistics)
     set.top = mol.topology();
     set.setCoordinates({ mol.xOriginal(), displaced(mol.xOriginal(), 1) });
     std::vector<std::map<InteractionType, double>> energies;
-    forceComp_.resetStatistics();
-    forceComp_.computeTotal(&msghandler_, pd, &set, ShellOptions(), &energies);
-    EXPECT_EQ(2u, forceComp_.numEvaluations());
-    EXPECT_GE(forceComp_.numShellIterations(), 2u);
-    EXPECT_EQ(0u, forceComp_.numShellConvergenceFailed());
+    // Within the precision of the forces, which in single precision without
+    // explicit SIMD are computed from single precision coordinates
+    ForceComputer forceComp(gmx::test::precisionTolerance(1e-12, 1e-4), 200, 1);
+    forceComp.computeTotal(&msghandler_, pd, &set, ShellOptions(), &energies);
+    EXPECT_EQ(2u, forceComp.numEvaluations());
+    EXPECT_GE(forceComp.numShellIterations(), 2u);
+    EXPECT_EQ(0u, forceComp.numShellConvergenceFailed());
 }
 
 TEST_F(ComputeTotalTest, InteractionPolarizable)
@@ -739,6 +741,48 @@ TEST_F(ComputeTotalTest, InteractionSubsetsPolarizable)
 TEST_F(ComputeTotalTest, InteractionSubsetsHyperpolarizable)
 {
     testInteractionSubsets("water_hyperpol", "water_dimer", 13);
+}
+
+// Test: Conformations computed in double precision, see
+// ConformationData::doublePrecision, have the same energies and forces
+// within the precision of real, with shells and virtual sites and without.
+// In a double precision build they are the same arrays.
+TEST_F(ComputeTotalTest, DoublePrecisionArrays)
+{
+    for (const auto &ffMol : { std::pair<std::string, std::string>{ "ACS-pg-vs2", "hbr-hf" },
+                               std::pair<std::string, std::string>{ "ACS-v3fds", "water_dimer" } })
+    {
+        auto pd = getForceField(ffMol.first);
+        ASSERT_NE(nullptr, pd);
+        ACTMol mol;
+        ASSERT_TRUE(readMolecule(&msghandler_, pd, ffMol.second, &mol));
+        std::vector<std::vector<gmx::RVec>> x;
+        for(size_t c = 0; c < 9; c++)
+        {
+            x.push_back(displaced(mol.xOriginal(), c));
+        }
+        ConformationSet set[2];
+        std::vector<std::map<InteractionType, double>> energies[2];
+        for(int k = 0; k < 2; k++)
+        {
+            set[k].top = mol.topology();
+            set[k].setCoordinates(x);
+            set[k].data.doublePrecision = (k == 1);
+            forceComp_.computeTotal(&msghandler_, pd, &set[k], ShellOptions(), &energies[k]);
+            ASSERT_EQ(x.size(), energies[k].size());
+        }
+        // The arrays hold the conformations of the last shell iteration
+        EXPECT_EQ(!GMX_DOUBLE, set[1].data.arraysDouble.nconf > 0);
+        for(size_t c = 0; c < x.size(); c++)
+        {
+            auto label = gmx::formatString("%s %s conformation %zu", ffMol.first.c_str(),
+                                           ffMol.second.c_str(), c);
+            compareEnergies(energies[0][c], energies[1][c], gmx::test::precisionTolerance(1e-14, 1e-6), label);
+            // As in the comparison of the explicit SIMD in single and double precision
+            compareForces(set[0].data.f(c).toRVec(), set[1].data.f(c).toRVec(),
+                          gmx::test::precisionTolerance(1e-14, 1e-4), label);
+        }
+    }
 }
 
 } // namespace

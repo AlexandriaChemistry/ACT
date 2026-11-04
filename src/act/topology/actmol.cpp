@@ -232,18 +232,6 @@ std::vector<gmx::RVec> ACTMol::xOriginal() const
     return xOriginal_;
 }
 
-void ACTMol::storeEnergies()
-{
-    if (isDimer())
-    {
-        conformationData_[2].energies.store(&dimerCoords_);
-    }
-    for(size_t i = 0; i < fragmentHandler()->topologies().size() && i < 2; i++)
-    {
-        conformationData_[i].energies.store(&monomerCoords_[i]);
-    }
-}
-
 void ACTMol::collectCoordsEnergy(MsgHandler *msghandler)
 {
     // The conformations are made anew
@@ -293,14 +281,18 @@ void ACTMol::collectCoordsEnergy(MsgHandler *msghandler)
                 }
                 auto x = experCoords(exp_x);
                 ++nDimer;
-                dimerCoords_.resize(nDimer);
-                dimerCoords_.back().x = x;
-                monomerCoords_[0].resize(nDimer);
-                monomerCoords_[1].resize(nDimer);
-                std::copy(x.begin(), x.begin()+natom1, std::back_inserter(monomerCoords_[0].back().x));
-                std::copy(x.begin()+natom1, x.end(),   std::back_inserter(monomerCoords_[1].back().x));
-                std::copy(x.begin(), x.begin()+natom1, std::back_inserter(monomerCoords_[0].back().xrelax));
-                std::copy(x.begin()+natom1, x.end(),   std::back_inserter(monomerCoords_[1].back().xrelax));
+                for(auto &cd : conformationData_)
+                {
+                    cd.confs.resize(nDimer);
+                }
+                conformationData_[2].setX(nDimer-1, x);
+                conformationData_[0].setX(nDimer-1, x.begin(), x.begin()+natom1);
+                conformationData_[1].setX(nDimer-1, x.begin()+natom1, x.end());
+                for(size_t k = 0; k < 2; k++)
+                {
+                    auto &cd = conformationData_[k];
+                    cd.confs.back().xrelax = cd.x(nDimer-1).toRVec();
+                }
                 // Lowest energy for Boltzmann weighting
                 double eMin = 1e8;
                 // Copy energies for the correct QM observables
@@ -314,14 +306,14 @@ void ACTMol::collectCoordsEnergy(MsgHandler *msghandler)
                             msghandler->fatal(gmx::formatString("Expected just one QM value per experiment for %s iso %zu", mpo_name(ie.first), propvec.size()).c_str());
                         }
                         double eqm = propvec[0]->getValue();
-                        dimerCoords_.back().eMap[ie.second].setQM(eqm);
+                        conformationData_[2].confs.back().eMap[ie.second].setQM(eqm);
                         if (ie.second == InteractionType::EPOT)
                         {
                             eMin = std::min(eMin, eqm);
                         }
                     }
                 }
-                dimerCoords_.back().eMin = eMin;
+                conformationData_[2].confs.back().eMin = eMin;
             }
         }
         else
@@ -334,8 +326,8 @@ void ACTMol::collectCoordsEnergy(MsgHandler *msghandler)
             }
             auto x = experCoords(exp_x);
             ++nMonomer;
-            monomerCoords_[0].resize(nMonomer);
-            std::copy(x.begin(), x.end(), std::back_inserter(monomerCoords_[0].back().x));
+            conformationData_[0].confs.resize(nMonomer);
+            conformationData_[0].setX(nMonomer-1, x);
             // Lowest energy for Boltzmann weighting
             double eMin = 1e8;
             // Copy energies for the correct QM observables
@@ -349,7 +341,7 @@ void ACTMol::collectCoordsEnergy(MsgHandler *msghandler)
                         msghandler->fatal(gmx::formatString("Expected just one QM value per experiment for %s iso %zu", mpo_name(ie.first), propvec.size()).c_str());
                     }
                     double eqm = propvec[0]->getValue();
-                    monomerCoords_[0].back().eMap[ie.second].setQM(propvec[0]->getValue());
+                    conformationData_[0].confs.back().eMap[ie.second].setQM(propvec[0]->getValue());
                     // For monomers this corresponds to the eRMS::DeltaE0
                     if (ie.second == InteractionType::EPOT)
                     {
@@ -358,8 +350,8 @@ void ACTMol::collectCoordsEnergy(MsgHandler *msghandler)
                 }
             }
             // Check for forces
-            monomerCoords_[0].back().fobs = exper.getForces();
-            monomerCoords_[0].back().eMin = eMin;
+            conformationData_[0].confs.back().fobs = exper.getForces();
+            conformationData_[0].confs.back().eMin = eMin;
         }
     }
     // Boltzmann weighting uses a single reference energy shared by all
@@ -369,7 +361,7 @@ void ACTMol::collectCoordsEnergy(MsgHandler *msghandler)
     // above holds each conformation's own energy, which would make every weight
     // exactly one, so here we overwrite it with the global minimum.
     {
-        std::vector<CoordsEnergy> *allConf = isDimer() ? &dimerCoords_ : &monomerCoords_[0];
+        std::vector<CoordsEnergy> *allConf = isDimer() ? &conformationData_[2].confs : &conformationData_[0].confs;
         double                    globalMin = 1e8;
         for (auto &ce : *allConf)
         {
@@ -481,8 +473,6 @@ void ACTMol::forceEnergyMaps(MsgHandler                                         
         // The conformations of the molecule, which hold the reference data
         // for training, are replaced by computeInteraction. Hence they are
         // restored afterwards.
-        auto                      dimers      = dimerCoords_;
-        std::vector<CoordsEnergy> monomers[2] = { monomerCoords_[0], monomerCoords_[1] };
         std::vector<ConformationData> cdata(std::begin(conformationData_), std::end(conformationData_));
         std::vector<std::map<InteractionType, double>> einters;
         std::vector<double>                            epots;
@@ -490,11 +480,6 @@ void ACTMol::forceEnergyMaps(MsgHandler                                         
         forceComp->computeInteraction(msghandler, pd, this, &interCoords,
                                       separateInductionCorrection,
                                       &einters, &epots, &interactionForces);
-        dimerCoords_ = std::move(dimers);
-        for(size_t k = 0; k < 2; k++)
-        {
-            monomerCoords_[k] = std::move(monomers[k]);
-        }
         std::move(cdata.begin(), cdata.end(), std::begin(conformationData_));
         for(size_t k = 0; k < interExper.size(); k++)
         {
@@ -569,7 +554,7 @@ void ACTMol::forceEnergyMaps(MsgHandler                                         
         {
             const auto &exper    = *energyExper[k];
             auto       &energies = allEnergies[k];
-            const auto &forces   = set.confs[k].fcalc;
+            auto        forces   = set.data.f(k);
             auto &eprops = exper.propertyConst(MolPropObservable::DELTAE0);
             if (eprops.size() > 1)
             {

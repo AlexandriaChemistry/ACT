@@ -38,16 +38,31 @@
 namespace alexandria
 {
 
+/*! \brief Tool to generate a topology for a molecule from a database or coordinate file
+ * \param[in] argc Number of arguments on the cmd line
+ * \param[in] argv The actual arguments
+ * \return 0 if ok, 1 otherwise
+ */
 int gentop(int argc, char *argv[]);
 int simulate(int argc, char *argv[]);
 int minimize(int argc, char *argv[]);
 int min_complex(int argc, char *argv[]);
 int b2(int argc, char *argv[]);
+/*! \brief Tool to perform an energy minimization, normal mode analysis and thermochemistry calculation
+ * \param[in] argc Number of arguments on the cmd line
+ * \param[in] argv The actual arguments
+ * \return 0 if ok, 1 otherwise
+ */
 int nma(int argc, char *argv[]);
 int train_ff(int argc, char *argv[]);
 int edit_ff(int argc, char *argv[]);
 int gen_ff(int argc, char *argv[]);
 int geometry_ff(int argc, char *argv[]);
+/*! \brief Tool to merge multiple force field files into one with average values and standard deviations
+ * \param[in] argc Number of arguments on the cmd line
+ * \param[in] argv The actual arguments
+ * \return 0
+ */
 int merge_ff(int argc, char *argv[]);
 int edit_mp(int argc, char *argv[]);
 }

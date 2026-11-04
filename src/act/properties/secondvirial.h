@@ -68,6 +68,10 @@ extern const std::map<b2Type, std::string> b2Type2str;
  */
 const std::string &b2TypeToString(b2Type b2t);
 
+/*! \brief Recompute energies and forces for (generated or read) dimer
+ * structures, and optionally compute the second virial coefficient
+ * as a function of temperature
+ */
 class ReRunner
 {
 private:
@@ -134,18 +138,6 @@ public:
                     std::vector<t_filenm>     *filenm,
                     std::vector<const char *> *desc);
     
-    //! \return whether or not we will compute interaction energies                
-    bool eInteraction() const { return eInter_; }
-
-    //! \brief Manually set the temperatures
-    void setTemperatures(double T1, double T2, double deltaT) { T1_ = T1; T2_ = T2; deltaT_ = deltaT; }
-    
-    //! \brief Manually set a temperature array
-    void setTemperatures(const std::vector<double> &T) { Temperatures_ = T; }
-    
-    //! \brief Reset temperatures
-    void resetTemperatures() { Temperatures_.clear(); }
-    
     /*! \brief Set the interaction energy flag
      * \param[in] eInter The value
      */
@@ -178,9 +170,6 @@ public:
                ACTMol                      *actmol,
                int                          maxdimer,
                const std::vector<t_filenm> &fnm);
-
-    //! \return the second virial as a function of T.
-    const std::vector<double> &b2Temp(b2Type b2t) const { return b2t_.find(b2t)->second; }
 
     /*! \brief Add the second virial coefficients to a JSON tree
      * For each temperature the components and the total in cm^3/mol, with

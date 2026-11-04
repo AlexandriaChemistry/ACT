@@ -35,6 +35,13 @@
 namespace alexandria
 {
 
+/*! \brief Format the statistics of a ForceComputer
+ * \param[in]  totalEval        Number of force evaluations
+ * \param[in]  totalShellIter   Number of shell iterations
+ * \param[in]  totalShellFailed Number of failed shell convergences
+ * \param[in]  aggregate        Whether the numbers are totals
+ * \param[out] stats            The formatted string
+ */
 static void makeTheString(size_t       totalEval,
                           size_t       totalShellIter,
                           size_t       totalShellFailed,

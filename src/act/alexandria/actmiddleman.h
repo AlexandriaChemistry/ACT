@@ -102,9 +102,6 @@ namespace alexandria
          */
         void run(MsgHandler *msghandler);
 
-        //! Print the MCMC statistics if appropriate
-        void printStatistics(gmx::TextWriter *tw);
-
     };
     
 } // namespace alexandria

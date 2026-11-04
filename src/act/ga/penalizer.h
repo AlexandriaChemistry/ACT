@@ -154,8 +154,9 @@ class CatastrophePenalizer : public Penalizer
 
 private:
 
-    // Random number stuff (for shuffling)
+    //! Random device, only used to initialize gen before it is seeded
     std::random_device  rd;
+    //! Random number generator for shuffling
     std::mt19937        gen;
 
     //! Interval of generations between the penalizer triggers
@@ -183,6 +184,12 @@ public:
                                Initializer *initializer,
                          const size_t       popSize);
 
+    /*! \brief Randomize a random fraction of the population every genInterval generations
+     * \param[in]    tw         A text writer to print the cause, may be nullptr
+     * \param[inout] pool       The gene pool to be penalized
+     * \param[in]    generation The GA generation
+     * \return true if the population has been penalized
+     */
     bool penalize(gmx::TextWriter *tw,
                   GenePool        *pool,
                   const int        generation) override;

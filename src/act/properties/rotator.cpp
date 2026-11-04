@@ -137,19 +137,6 @@ std::vector<gmx::RVec> Rotator::randomRotate(double                        r1,
     return doRotate(coords);
 }
     
-void Rotator::checkMatrix(MsgHandler *msghandler)
-{
-    if (msghandler)
-    {
-        msghandler->writeDebug(gmx::formatString("Norms of rows: %g %g %g",
-                                                  norm(A_[XX]), norm(A_[YY]), norm(A_[ZZ])));
-        matrix B;
-        transpose(A_, B);
-        msghandler->writeDebug(gmx::formatString("Norms of columns: %g %g %g",
-                                                  norm(B[XX]), norm(B[YY]), norm(B[ZZ])));
-    }
-}
-        
 void Rotator::printAverageMatrix(MsgHandler *msghandler)
 {
     if (msghandler && naver_ > 0)

@@ -432,7 +432,7 @@ public:
     StaticGA(std::vector<Terminator*> *terminators,
              std::vector<Penalizer*>  *penalizers)
     : GeneticAlgorithm(nullptr, nullptr, nullptr, nullptr, nullptr, nullptr,
-                       terminators, penalizers, 4) {}
+                       terminators, penalizers) {}
 
     bool evolve(alexandria::MsgHandler *, std::map<iMolSelect, Genome> *) override
     {

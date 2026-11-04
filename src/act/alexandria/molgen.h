@@ -193,54 +193,10 @@ public:
     
 };
 
-class AtomIndex
-{
-private:
-    //! Atom type name
-    std::string  name_;
-    //! Atom type count
-    int          count_;
-    //! Whether or not this atom type can be changed
-    bool         const_;
-public:
-    /*! \brief Constructor
-     * \param[in] name   The atom type name
-     * \param[in] bConst Whether or not this can be changed
-     */
-    AtomIndex(const std::string &name, bool bConst) :
-        name_(name), count_(0), const_(bConst) {}
-
-    //! \return the atom type name
-    const std::string name() const { return name_; }
-
-    //! \return the number of copies
-    int count() const { return count_; }
-
-    //! \return whether or not this is constant
-    bool isConst() const { return const_; }
-        
-    //! Increment the count
-    void increment() { count_++; }
-
-    //! Reduced count if larger than zero
-    void decrement()
-    {
-        if (count_ > 0)
-        {
-            count_--;
-        }
-        else
-        {
-            fprintf(stderr, "Trying to decrease number of atoms %s below zero\n",
-                    name().c_str());
-        }
-    }
-};
-
 //! Map from RMS type to FittingTarget structure
 // using RmsFittingTarget       = typename std::map<eRMS, FittingTarget>;
 
-/* \brief Class to manage the molecules in a force field optimization
+/*! \brief Class to manage the molecules in a force field optimization
  */
 class MolGen
 {
@@ -283,6 +239,10 @@ private:
     //! Compute amount of compounds in each group
     void countTargetSize();
     
+    /*! \brief Return the number of compounds in a data set
+     * \param[in] ims The data set
+     * \return the number of compounds, or 0 if the data set is not present
+     */
     size_t nTargetSize(iMolSelect ims) const
     {
         auto ts = targetSize_.find(ims);
@@ -400,12 +360,6 @@ public:
         return iOpt_.find(itype) !=  iOpt_.end(); 
     }
     
-    //! Return the whole optimization map
-    const std::map<InteractionType, bool> iopt() const { return iOpt_; }
-    
-    //! Whether or not to use charge symmetry
-    gmx_bool bQsym() const { return qsymm_;}
-        
     //! \brief Return minimum amount of data needed
     unsigned int mindata() const { return mindata_; }
   

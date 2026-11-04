@@ -107,6 +107,14 @@ static bool updateFragmentFromInchi(MsgHandler           *msg_handler,
     }
 }
 
+/*! \brief Fill a fragment from an RDKit molecule, for fragments not in the database
+ * The mass, formal charge and formula are computed by RDKit, the symmetry
+ * number and multiplicity are set to 1.
+ * \param[in]  mol       RDKit structure of the fragment
+ * \param[in]  inchi     The InChi of the fragment
+ * \param[out] fptr      The fragment to fill
+ * \param[in]  fragIndex Indices of the atoms of the fragment in the whole molecule
+ */
 static void updateFragmentsFromRDKit(const RDKit::RWMol     &mol,
                                      const std::string      &inchi,
                                      Fragment               *fptr,
@@ -426,6 +434,20 @@ static void lookUpSpecial(MsgHandler                           *msg_handler,
     }
 }
 
+/*! \brief Read an sdf, pdb or xyz file using RDKit and add the molecule to a vector
+ * For xyz files, and pdb files without bonds, the bonds are determined
+ * by RDKit. Atom types are assigned from the atom and bond type database.
+ * \param[in]    msg_handler For debugging, info and errors
+ * \param[in]    pd          Alexandria force field
+ * \param[in]    filenm      The file to read
+ * \param[inout] mps         The molecule read is added here
+ * \param[in]    conf        Conformation the molecule is in
+ * \param[in]    jobtype     Calculation type for reading QM output
+ * \param[in]    userqtot    Whether the user explicitly set the total charge
+ * \param[in]    qtot        Total charge, used for determining bonds if userqtot or non-zero
+ * \param[in]    oneH        Remap all hydrogen atom types to "h"
+ * \param[in]    abdb        The atom and bond type database
+ */
 static void importFile(MsgHandler                           *msg_handler,
                        const ForceField                     *pd,
                        const std::string                    &filenm,
@@ -582,12 +604,6 @@ void importFile(MsgHandler             *msg_handler,
         }
     }
     importFile(msg_handler, pd, filenm, mps, conf, jobtype, userqtot, qtot, oneH, abe);
-}
-
-bool SetMolpropAtomTypesAndBonds(alexandria::MolProp *mmm)
-{
-    printf("Will set AtomTypesAndBonds for %s\n", mmm->getMolname().c_str());
-    return false;
 }
 
 } // namespace alexandria

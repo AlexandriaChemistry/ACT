@@ -65,9 +65,6 @@ class GeneticAlgorithm
 {
 
 private:
-    //! The population size
-    int popSize_          = 0;
-
     //! Files for fitness output
     std::map<iMolSelect, FILE *>  fileFitness_;
     //! Initializes each individual in the population
@@ -109,9 +106,8 @@ public:
                      Crossover                           *crossover,
                      Mutator                             *mutator,
                      std::vector<Terminator*>            *terminators,
-                     std::vector<Penalizer*>             *penalizers,
-                     int                                  popSize) :
-        popSize_(popSize), initializer_(initializer),
+                     std::vector<Penalizer*>             *penalizers) :
+        initializer_(initializer),
         fitComputer_(fitnessComputer), probComputer_(probComputer),
         selector_(selector), crossover_(crossover), mutator_(mutator),
         terminators_(terminators), penalizers_(penalizers)
@@ -146,8 +142,6 @@ public:
     /* * * * * * * * * * * * * * * * * * * * * *
     * BEGIN: Getters and Setters               *
     * * * * * * * * * * * * * * * * * * * * * */
-    //! \return the population size
-    int populationSize() const { return popSize_; }
 
     /*! Open fitness output
      * \param[in] filename Name for output files (data set will be inserted in file name)
@@ -197,12 +191,6 @@ public:
     * BEGIN: Output routines                   *
     * * * * * * * * * * * * * * * * * * * * * */
 
-    /*! Return a FILE pointer for a data set
-     * \param[in] ims The corresponding data set
-     * \return fitness file for training
-     */
-    FILE *fitnessFile(iMolSelect ims) { return fileFitness_[ims]; }
-    
     /*!
      * \brief Print the fitness of each genome in a pool
      * \param[in] pool the genome pool

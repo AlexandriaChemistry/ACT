@@ -154,18 +154,21 @@ void MolHandler::computeHessian(const ForceField                  *pd,
     ConformationSet set;
     set.top = topology;
     set.setCoordinates(xs);
+    // The derivatives are differences of nearly equal forces, which are
+    // computed in double precision also in a single precision build
+    set.data.doublePrecision = true;
     std::vector<std::map<InteractionType, double>> energies;
     forceComp->computeTotal(nullptr, pd, &set, ShellOptions(), &energies);
-    const auto &confs = set.confs;
+    const auto &cdata = set.data;
     // The input structure with the relaxed shells and the virtual sites
-    *coords     = confs[0].x;
+    *coords     = cdata.x(0).toRVec();
     *energyZero = energies[0];
     forceZero->clear();
     for(auto &atom : atomIndex)
     {
         for(int m = 0; m < DIM; m++)
         {
-            forceZero->push_back(confs[0].fcalc[atom][m]);
+            forceZero->push_back(cdata.f(0)[atom][m]);
         }
     }
     if (dpdq)
@@ -189,14 +192,14 @@ void MolHandler::computeHessian(const ForceField                  *pd,
         {
             int         column = ai*DIM+atomXYZ;
             const auto &xd     = xxx[column];
-            auto        conf   = [&](size_t k) -> const CoordsEnergy & { return confs[1+noffset*column+k]; };
+            auto        conf   = [&](size_t k) { return 1+noffset*column+k; };
             for(size_t aj = 0; aj < atomIndex.size(); aj++)
             {
                 int    atomJ = atomIndex[aj];
                 for(int d = 0; d < DIM; d++)
                 {
                     int    row   = aj*DIM+d;
-                    double value = -derivative(xd, [&](size_t k) { return static_cast<double>(conf(k).fcalc[atomJ][d]); });
+                    double value = -derivative(xd, [&](size_t k) { return cdata.f(conf(k))[atomJ][d]; });
                     hessian->set(column, row, value);
                 }
             }
@@ -207,7 +210,7 @@ void MolHandler::computeHessian(const ForceField                  *pd,
                 std::vector<gmx::DVec> mu(noffset, { 0, 0, 0 });
                 for(size_t k = 0; k < noffset; k++)
                 {
-                    const auto &x = conf(k).x;
+                    auto x = cdata.x(conf(k));
                     for(size_t ii = 0; ii < atoms.size(); ii++)
                     {
                         for(int m = 0; m < DIM; m++)
@@ -1253,27 +1256,6 @@ public:
     }
 };
 
-bool MolHandler::adjustForceTolerance(MsgHandler              *msghandler,
-                                      const ForceComputer     *forceComp,
-                                      SimulationConfigHandler *simConfig)
-{
-    // Both are on the mean square force
-    double shellToler   = forceComp->forceTolerance();
-    double msForceToler = simConfig->forceTolerance();
-    if (msForceToler >= shellToler)
-    {
-        return false;
-    }
-    if (msForceToler != 0 && msghandler)
-    {
-        msghandler->msg(ACTStatus::Warning,
-                        gmx::formatString("Atom mean square force tolerance (%g) more strict than shell mean square force tolerance (%g). Increasing atom mean square force tolerance to hundred times that for shells.",
-                                          msForceToler, shellToler));
-    }
-    simConfig->setForceTolerance(100*shellToler);
-    return true;
-}
-
 eMinimizeStatus MolHandler::minimizeCoordinates(MsgHandler                        *msghandler,
                                                 const ForceField                  *pd,
                                                 const Topology                    *topology,
@@ -1285,14 +1267,19 @@ eMinimizeStatus MolHandler::minimizeCoordinates(MsgHandler                      
 {
     bool      converged    = false;
     int       myIter       = 0;
-    // Check for meaningful convergence tolerance, see adjustForceTolerance
+    // Check for meaningful convergence tolerance, both are on the mean
+    // square force. The warning is given once per configuration.
+    double    shellToler   = forceComp->forceTolerance();
     double    msForceToler = simConfig.forceTolerance();
+    if (msForceToler < shellToler)
     {
-        SimulationConfigHandler consistent = simConfig;
-        if (adjustForceTolerance(msghandler, forceComp, &consistent))
+        if (msForceToler != 0 && msghandler && simConfig.toleranceWarning())
         {
-            msForceToler = consistent.forceTolerance();
+            msghandler->msg(ACTStatus::Warning,
+                            gmx::formatString("Atom mean square force tolerance (%g) more strict than shell mean square force tolerance (%g). Increasing atom mean square force tolerance to hundred times that for shells.",
+                                              msForceToler, shellToler));
         }
+        msForceToler = 100*shellToler;
     }
     // List of atoms (not shells) and weighting factors
     auto              myatoms = topology->atoms();

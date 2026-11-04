@@ -87,6 +87,9 @@ class EmptySorter : public Sorter
 
 public:
 
+      /*! \brief Does nothing
+       * \param[in] pop The population, not used
+       */
       virtual void sort(gmx_unused std::vector<Genome> *pop) {};
 
 };
@@ -148,59 +151,6 @@ public:
 };
 #endif
 
-/*!
- * \brief Class for Quick-sort
- */
-class QuickSorter : public Sorter
-{
-
-private:
-
-      //! Temporal storage for an individual
-    Genome tmpInd_;
-
-      /*!
-       * \brief Split the population into 2 parts, one left of the pivot element and one to the right of it, and sort both.
-       * \param[in] pop     pointer to the population
-       * \param[in] low     the left-most point of the part of the population vector in this recursive run
-       * \param[in] high    the right-most point of the part of the population vector in this recursive run
-       */
-      void quickSort(      std::vector<Genome>  *pop,
-                     const int                        low,
-                     const int                        high);
-
-      /*!
-       * \brief Find the pivot element and sort everything by comparing with it in an ascending order.
-       * \param[in] pop       pointer to the population
-       * \param[in] low       the left-most point of the part of the population vector in this recursive run
-       * \param[in] high      the right-most point of the part of the population vector in this recursive run
-       */
-      int ascendingPartition(      std::vector<Genome>      *pop,
-                             const int                            low,
-                             const int                            high);
-
-      /*!
-       * \brief Find the pivot element and sort everything by comparing with it in a descending order.
-       * \param[in] pop       pointer to the population
-       * \param[in] low       the left-most point of the part of the population vector in this recursive run
-       * \param[in] high      the right-most point of the part of the population vector in this recursive run
-       */
-      int descendingPartition(      std::vector<Genome>     *pop,
-                              const int                           low,
-                              const int                           high);
-
-public:
-
-      /*!
-       * \brief Constructor
-       * \param[in] descending whether we sort in descending order
-       */
-      QuickSorter(const bool descending)
-      : Sorter(descending) {}
-
-      virtual void sort(std::vector<Genome> *pop);
-
-};
 
 
 } //namespace ga

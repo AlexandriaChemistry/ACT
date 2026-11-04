@@ -42,12 +42,14 @@
 namespace alexandria
 {
 
+    /*! \brief Handles combination rules specified on the command line
+     * Provides the -cr option, its help text, and applies the rules
+     * to the force field.
+     */
     class CombRuleUtil
     {
     private:
-        // Storage for the command line options
-        std::vector<const char *> cr_flag_;
-        // Storage the the combination rule
+        //! Storage for the combination rules string given with -cr
         char *rules_ = nullptr;
     public:
         /*! \brief Utility to make command line information about combrules

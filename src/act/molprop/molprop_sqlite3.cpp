@@ -104,6 +104,13 @@ class Classes
 };
 
 #if HAVE_LIBSQLITE3
+/*! \brief Check for an sqlite3 error and exit with a fatal error if so
+ * If db is not null the error code of the database is checked,
+ * otherwise the return code rc.
+ * \param[in] db    The database, may be nullptr
+ * \param[in] extra Text to print with the error message
+ * \param[in] rc    Return code of an sqlite3 call
+ */
 static void check_sqlite3(sqlite3 *db, const char *extra, int rc)
 {
     const char *msg;
@@ -124,6 +131,12 @@ static void check_sqlite3(sqlite3 *db, const char *extra, int rc)
     }
 }
 
+/*! \brief Read the synonyms of molecule names from the database
+ * \param[in]  msg_handler Message handler for debug output, may be nullptr
+ * \param[in]  db          The database
+ * \param[out] syn         The synonyms (name and IUPAC name) are appended here
+ * \param[in]  nMol        Number of molecules, only used for printing
+ */
 static void getSynonyms(MsgHandler           *msg_handler,
                         sqlite3              *db,
                         std::vector<Synonym> &syn,
@@ -169,6 +182,12 @@ static void getSynonyms(MsgHandler           *msg_handler,
                   sqlite3_finalize(stmt2));
 }
 
+/*! \brief Read the compound classes of molecules from the database
+ * \param[in]  msg_handler Message handler for debug output, may be nullptr
+ * \param[in]  db          The database
+ * \param[out] classes     The classes, per IUPAC name, are appended here
+ * \param[in]  nMol        Number of molecules, only used for printing
+ */
 static void getClasses(MsgHandler           *msg_handler,
                        sqlite3              *db,
                        std::vector<Classes> &classes,

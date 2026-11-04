@@ -322,7 +322,7 @@ void ReRunner::rerun(MsgHandler       *msghandler,
         forceComp_->computeTotal(msghandler, pd, &set, ShellOptions(), &allEnergies);
         for(size_t c = 0; c < allCoords.size(); c++)
         {
-            allCoords[c] = set.confs[c].x;
+            allCoords[c] = set.data.x(c).toRVec();
         }
     }
     for (size_t idim = 0; idim < allCoords.size(); idim++)

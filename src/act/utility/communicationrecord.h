@@ -229,9 +229,6 @@ public:
     //! \return my superior node, or -1 if none
     int superior() const { return superior_; }
 
-    //! \return my superior node, or -1 if none
-    int superiorOrMeIfMiddleman() const { return 0; } //if (isMiddleMan()) { return rank_; } else { return superior_; } }
-
     //! \return number of middlemen
     int nmiddlemen() const { return nmiddlemen_; }
     

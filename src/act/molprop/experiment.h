@@ -254,22 +254,34 @@ public:
     //  return property_.find(mpo)->second;
     //}
 private:
+    //! Whether the data come from experiment or calculation
     DataSource                           dataSource_ = dsExperiment;
+    //! Literature reference
     std::string                          reference_;
+    //! Name of the conformation
     std::string                          conformation_;
+    //! Program used for the calculation
     std::string                          program_;
+    //! Method used for the calculation
     std::string                          method_;
+    //! Basis set used for the calculation
     std::string                          basisset_;
+    //! Name of the file the data were read from
     std::string                          datafile_;
+    //! Type of calculation
     JobType                              jobtype_ = JobType::UNKNOWN;
+    //! Atoms from the calculation
     std::vector<CalcAtom>                catom_;
     
     //! Experiment ID
     int                                  id_ = 0;
+    //! Properties, indexed by observable type
     std::map<MolPropObservable, std::vector<std::unique_ptr<GenericProperty > > > property_;
     
     // std::vector<ElectrostaticPotential>  potential_;
+    //! Atomic coordinates, converted to GROMACS units (nm)
     std::vector<gmx::RVec>               coordinates_;
+    //! Atomic forces, converted to GROMACS units (kJ/mol nm)
     std::vector<gmx::RVec>               forces_;
 };
 

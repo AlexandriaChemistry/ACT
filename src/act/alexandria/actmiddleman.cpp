@@ -194,16 +194,6 @@ void ACTMiddleMan::run(MsgHandler *msghandler)
     stopHelpers();
 }
 
-void ACTMiddleMan::printStatistics(gmx::TextWriter *tw)
-{
-   if (gach_->optimizer() == OptimizerAlg::MCMC && tw)
-   {       
-       tw->writeStringFormatted("Middle man %i\n", id_);
-       static_cast<MCMCMutator *>(mutator_)->printMonteCarloStatistics(tw, ind_->initialGenome(),
-                                                                       ind_->bestGenome());
-   }
-}
-
 void ACTMiddleMan::stopHelpers()
 {
     (void) fitComp_.distributeTasks(CalcDev::Stop);

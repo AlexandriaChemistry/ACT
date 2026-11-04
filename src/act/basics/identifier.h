@@ -222,6 +222,9 @@ class Identifier
     //! Correct the order of atoms and created permuted ids
     void orderAtoms();
 
+    /*! \brief Rebuild the primary id from the atoms and bond orders,
+     * then reorder the atoms and generate the permuted ids
+     */
     void update();
 };
 

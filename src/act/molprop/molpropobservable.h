@@ -264,13 +264,6 @@ public:
      */
     void setTemperature(double T) { T_ = T; }
     
-    /*! \brief
-     * Set the phase of the property
-     *
-     **\param[in] ep Phase of the property
-     */
-    void setPhase(ePhase ep) { eP_ = ep; }
-    
     //! Return my type of property
     MolPropObservable mpo() const { return mpo_; }
 
@@ -353,6 +346,7 @@ public:
      */
     void setValue(const std::string &id, double value);
 
+    //! \copydoc alexandria::GenericProperty::Dump
     void Dump(gmx::TextWriter *tw) const;
 
     //! \copydoc alexandria::GenericProperty::getValue
@@ -435,6 +429,7 @@ public:
         crash();
     }
     
+    //! \copydoc alexandria::GenericProperty::Dump
     void Dump(gmx::TextWriter *tw) const;
     /*! \brief
      * Broadcast this object over an MPI connection
@@ -462,7 +457,10 @@ public:
 class MolecularPolarizability : public GenericProperty
 {
 private:
-    double average_, error_;
+    //! The average polarizability, converted to GROMACS units
+    double average_;
+    //! The error in the polarizability, converted to GROMACS units
+    double error_;
     //! The polarizability tensor
     tensor alpha_ = {{ 0 }};
 public:
@@ -514,6 +512,7 @@ public:
         return alpha_;
     }
 
+    //! \copydoc alexandria::GenericProperty::Dump
     void Dump(gmx::TextWriter *tw) const;
     /*! \brief
      * Broadcast this object over an MPI connection
@@ -541,7 +540,9 @@ public:
 class MolecularEnergy : public GenericProperty
 {
 private: 
+    //! The value, converted to GROMACS units (e.g. kJ/mol)
     double average_ = 0;
+    //! The error, converted to GROMACS units (e.g. kJ/mol)
     double error_  = 0;
 public:
     //! Default constructor needed for receiving over a network
@@ -587,6 +588,7 @@ public:
     //! \copydoc alexandria::GenericProperty::getVector
     const std::vector<double> &getVector() const { crash(); }
 
+    //! \copydoc alexandria::GenericProperty::Dump
     void Dump(gmx::TextWriter *tw) const;
     /*! \brief
      * Broadcast this object over an MPI connection
@@ -676,6 +678,7 @@ public:
     //! Return the electrostatic potential at this point in space
     const std::vector<double> V() const { return V_; }
 
+    //! \copydoc alexandria::GenericProperty::Dump
     void Dump(gmx::TextWriter *tw) const;
     /*! \brief
      * Broadcast this object over an MPI connection

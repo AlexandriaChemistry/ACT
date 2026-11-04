@@ -12,6 +12,8 @@
 #                     vectorization by the compiler, in DIR with _NOVEC
 #   --asan            Also build and test the address sanitizer build
 #                     build_ASAN_DOUBLE
+#   --single          Also build and test the single precision build
+#                     build_Release_SINGLE, with and without explicit SIMD
 #   --save-reference  Run the regression set and keep it as the reference
 #   --regression      Run the regression set and compare it with the reference
 #   --tolerance T     Largest relative difference accepted by --regression,
@@ -33,6 +35,7 @@ build=build_Release_DOUBLE
 jobs=8
 novec=0
 asan=0
+single=0
 regression=""
 tolerance=0
 tests=1
@@ -42,6 +45,7 @@ while [ $# -gt 0 ]; do
         -j) jobs=$2; shift ;;
         --novec) novec=1 ;;
         --asan) asan=1 ;;
+        --single) single=1 ;;
         --save-reference) regression=save ;;
         --regression) regression=compare ;;
         --tolerance) tolerance=$2; shift ;;
@@ -197,6 +201,10 @@ fi
 
 if [ $asan -eq 1 ]; then
     testBuild "$root/build_ASAN_DOUBLE" "build_ASAN_DOUBLE"
+fi
+
+if [ $single -eq 1 ]; then
+    testBuild "$root/build_Release_SINGLE" "build_Release_SINGLE"
 fi
 
 if [ -n "$regression" ]; then

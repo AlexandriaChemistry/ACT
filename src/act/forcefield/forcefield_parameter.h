@@ -176,9 +176,6 @@ class ForceFieldParameter
     //! \brief Return the number of training points used
     unsigned int ntrain() const { return ntrain_; }
 
-    //! \brief \return the value of \p originalNtrain_
-    unsigned int originalNtrain() const { return originalNtrain_; }
-    
     /*!\brief Set the number of training point used for this value if not fixed
      * \param[in] ntrain  The number of data points
      * \throws an exception if the strict flag is true and the
@@ -190,11 +187,6 @@ class ForceFieldParameter
      * \throws when the parameter is not mutable and strict flag is true
      */
     void incrementNtrain() { setNtrain(ntrain_+1); }
-
-    /*! \brief Subtract one from the number of training points
-     * \throws when the parameter is not mutable and strict flag is true
-     */
-    void decrementNtrain() { setNtrain(ntrain_-1); }
 
     /*! \brief Set the uncertainty in this value if not fixed
      * \param[in] uncertainty  The new uncertainty

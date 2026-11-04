@@ -911,26 +911,6 @@ const std::unique_ptr<GenericProperty> &MolProp::qmProperty(MolPropObservable  m
     GMX_THROW(gmx::InvalidInputError(gmx::formatString("No such QM property %s", mpo_name(mpo))));
 }
 
-const std::unique_ptr<GenericProperty> &MolProp::expProperty(MolPropObservable  mpo, 
-                                                             double             T) const
-{
-    for(auto ei = exper_.begin(); ei < exper_.end(); ++ei)
-    {
-        if (ei->hasProperty(mpo))
-        {
-            for (const auto &pp : ei->propertyConst(mpo))
-            { 
-                if (ei->dataSource() == dsExperiment &&
-                    bCheckTemperature(T, pp->getTemperature()))
-                {
-                    return pp;
-                }
-            }
-        }
-    }
-    GMX_THROW(gmx::InvalidInputError(gmx::formatString("No such Experimental property %s", mpo_name(mpo))));
-}
-
 CommunicationStatus MolProp::BroadCast(const CommunicationRecord *cr,
                                        int                        root,
                                        MPI_Comm                   comm)

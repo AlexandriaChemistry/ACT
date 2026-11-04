@@ -79,21 +79,19 @@ struct ShellOptions
 struct ConformationSet
 {
     //! The topology
-    const Topology           *top = nullptr;
-    //! The conformations
-    std::vector<CoordsEnergy> confs;
-    //! The data for computing them
-    ConformationData          data;
+    const Topology   *top = nullptr;
+    //! The conformations, with the data for computing them
+    ConformationData  data;
 
     /*! \brief Replace the conformations
      * \param[in] x The coordinates of all particles of each conformation
      */
     void setCoordinates(const std::vector<std::vector<gmx::RVec>> &x)
     {
-        confs.resize(x.size());
+        data.confs.resize(x.size());
         for(size_t c = 0; c < x.size(); c++)
         {
-            confs[c].x = x[c];
+            data.setX(c, x[c]);
         }
         data.invalidate();
     }
@@ -170,7 +168,7 @@ private:
      *                         the step of the shells of each fragment
      * \param[in]    maxShellDistance The maximum distance between a shell and
      *                         its core, see shellMaxDistance
-     * \param[inout] myCoords The coordinates and energy array
+     * \param[inout] cdata    The conformations
      * \param[in]    active   If not nullptr, the conformations to update, the
      *                         others are not visited and not counted
      * \return The number of conformations that are done, of those in active
@@ -182,7 +180,7 @@ private:
                         const std::vector<bool>   &isShell,
                         size_t                     fragment,
                         double                     maxShellDistance,
-                        std::vector<CoordsEnergy> *myCoords,
+                        ConformationData          *cdata,
                         const std::vector<size_t> *active = nullptr) const;
     /*! \brief Relax the shells of one monomer in all conformations of all molecules
      * Iterates shell updates and energy computations until all shells
@@ -221,16 +219,12 @@ private:
      * \param[inout] mol                         The dimer, the conformations are stored in it
      * \param[in]    coords                      Coordinates of all particles of each conformation
      * \param[in]    separateInductionCorrection Whether to store InductionCorrection separately
-     * \param[in]    forcesInArrays              Whether the forces may be left in the arrays
-     *                                           of the conformation data, see
-     *                                           ConformationData::keepForcesInArrays
      */
     void computeDimerConformations(MsgHandler                                *msghandler,
                                    const ForceField                          *pd,
                                    ACTMol                                    *mol,
                                    const std::vector<std::vector<gmx::RVec>> &coords,
-                                   bool                                       separateInductionCorrection,
-                                   bool                                       forcesInArrays) const;
+                                   bool                                       separateInductionCorrection) const;
 
  public:
     //! \brief Default constructor
@@ -312,7 +306,7 @@ private:
      *
      * The conformations are computed together with the SIMD routines, see
      * computeRelaxedEnergies. This replaces the conformations stored in the
-     * molecule, their energy maps are left empty, see ACTMol::storeEnergies.
+     * molecule, their energies are in ConformationData::energies.
      * The output vectors may hold the results of a previous call, their
      * memory is used again.
      * \param[in]    msghandler                  For debugging, may be nullptr
@@ -340,9 +334,8 @@ private:
      *
      * As the other computeInteraction, but only the total interaction energy
      * is returned, and the coordinates and forces are returned with the
-     * conformations in the inner loop. Without shells the forces are taken
-     * from the arrays of the energy calculation directly, rather than from
-     * the conformations stored in the molecule.
+     * conformations in the inner loop, taken from the arrays of the
+     * conformations stored in the molecule.
      * \param[in]    msghandler                  For debugging, may be nullptr
      * \param[in]    pd                          The force field
      * \param[inout] mol                         The dimer, the conformations are stored in it
@@ -396,8 +389,8 @@ private:
      * the position of the selected shells have been minimized, or maxiter has been
      * reached.
      * The ACT energies are stored in the conformation data of the molecules,
-     * see ACTMol::conformationData, not in the energy maps of the conformations.
-     * ACTMol::storeEnergies copies them to the energy maps.
+     * see ACTMol::conformationData, the energy maps of the conformations hold
+     * the QM energies.
      * \param[in] msghandler     For debugging and messages
      * \param[in] pd             An ACT force field
      * \param[in] allmols        The molecules to compute

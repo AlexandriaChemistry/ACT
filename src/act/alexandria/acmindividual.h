@@ -109,12 +109,6 @@ public:
     * BEGIN: Output stuff                      *
     * * * * * * * * * * * * * * * * * * * * * */
 
-    /*!
-     * \brief Print the Force Field parameters to a file
-     * \param[in] fp File pointer to open file
-     */
-    void printParameters(FILE *fp) const;
-
     /* * * * * * * * * * * * * * * * * * * * * *
     * END: Output stuff                        *
     * * * * * * * * * * * * * * * * * * * * * */
@@ -128,9 +122,6 @@ public:
 
     //! \return a pointer to the StaticIndividualInfo instance
     StaticIndividualInfo *sii() { return sii_; }
-
-    //! \return a pointer to the StaticIndividualInfo instance (for const objects)
-    StaticIndividualInfo *siiConst() const { return sii_; }
 
     //! \return the initial vector of parameters as a const reference
     const ga::Genome &initialGenome() const { return initialGenome_; }

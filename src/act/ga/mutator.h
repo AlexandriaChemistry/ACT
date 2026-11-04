@@ -52,9 +52,11 @@ namespace ga
 class Mutator
 {
 private:
-    //! Ranom number generation
+    //! Random device, only used to initialize gen_base before it is seeded
     std::random_device                      rd_base;
+    //! Random number generator
     std::mt19937                            gen_base;
+    //! Uniform distribution on [0, 1)
     std::uniform_real_distribution<double>  dis_base;
     //! Charge generation
     alexandria::ChargeGenerationAlgorithm   algorithm_;
@@ -84,6 +86,7 @@ protected:
 
 public:
 
+    //! Destructor
     virtual ~Mutator() = default;
 
     /*!

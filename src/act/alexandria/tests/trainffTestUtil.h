@@ -333,7 +333,10 @@ inline void checkSensitivity2D(gmx::test::TestReferenceChecker *checker,
     EXPECT_TRUE(sens["hessian_diagnostic"]["positive_definite"].is_boolean());
 
     gmx::test::TestReferenceChecker compound(checker->checkCompound("Sensitivity", "2D"));
-    compound.setDefaultTolerance(gmx::test::relativeToleranceAsFloatingPoint(chi2_0, 1e-8));
+    // The terms are differences of chi2 values, with errors relative to
+    // chi2_0. In single precision the energies of the interactions are
+    // rounded to floats, which changes the chi2 by about 3e-7 relative.
+    compound.setDefaultTolerance(gmx::test::relativeToleranceAsFloatingPoint(chi2_0, gmx::test::precisionTolerance(1e-8, 1e-5)));
     compound.checkReal(chi2_0, "chi2_0");
     for (size_t i = 0; i < np; i++)
     {

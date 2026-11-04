@@ -102,11 +102,6 @@ public:
      */
     QgenResp *qgenResp() { return &QgenResp_; }
     
-    /*! \brief Return internal structure
-     * \return the QgenResp_ data structure
-     */
-    const QgenResp &qgenRespConst() const { return QgenResp_; }
-
     //! Copy the charges from Resp to the QtypeProps
     void copyRespQ();
 };
@@ -148,11 +143,8 @@ private:
     PolInfo                          polinfo_;
     //! Is this a linear molecule? Will be checked first when generating a topology.
     bool                             isLinear_ = false;
-    //! Coordinates and energies from all experiments
-    std::vector<CoordsEnergy>        dimerCoords_;
-    //! The same for each of the two monomers
-    std::vector<CoordsEnergy>        monomerCoords_[2];
-    //! The same for computing all conformations at once, monomers first, then the dimer
+    //! The conformations from all experiments, with the data for computing
+    //! them, of the two monomers first, then of the dimer
     ConformationData                 conformationData_[3];
     //! \brief Routine to gather the CoordsEnergy
     
@@ -252,12 +244,6 @@ public:
      */
     std::vector<gmx::RVec> xOriginal() const;
 
-    /*! \brief Hack the original coordinates
-     * This is useful when subsequent calls to xOriginal should return e.g. minimized coords
-     * \param[in] x The new coords, that should include shells, vsites etc.
-     */
-    void setXOriginal(const std::vector<gmx::RVec> &x) { xOriginal_ = x; }
-
     /*! \brief
      * Return a modified coordinate vector of the molecule based on the input.
      * The output array includes shells and/or vsites.
@@ -310,20 +296,16 @@ public:
     bool isDimer() const { return fragments().size() == 2; };
 
     //! \return the dimerCoords
-    std::vector<CoordsEnergy> *dimerCoords() { return &dimerCoords_; }
+    std::vector<CoordsEnergy> *dimerCoords() { return &conformationData_[2].confs; }
     /*! \return the monomerCoords
      * \param[in] index Must be zero or one, otherwise bad things will happen.
      */
-    std::vector<CoordsEnergy> *monomerCoords(size_t index) { return &monomerCoords_[index]; }
+    std::vector<CoordsEnergy> *monomerCoords(size_t index) { return &conformationData_[index].confs; }
     /*! \brief Data for computing all conformations at once
      * \param[in] what 0 or 1 for the monomers, 2 for the dimer
      * \return The data
      */
     ConformationData *conformationData(size_t what) { return &conformationData_[what]; }
-    /*! \brief Copy the ACT energies from the conformation data to the energy
-     * maps of the dimer and monomer conformations
-     */
-    void storeEnergies();
     //! \return the number of real atoms, i.e. not shells or vsites
     int nRealAtoms() const { return realAtoms_.size(); }
     
@@ -565,20 +547,6 @@ public:
                        const ForceComputer          *forceComp,
                        const std::vector<gmx::RVec> &coords,
                        bool                          bITP = false);
-    
-    //! \brief Update GROMACS data structures
-    void updateMDAtoms();
-    
-    /*! \brief
-     * Update internal structures for bondtype due to changes in pd
-     *
-     * \param[in] pd     Data structure containing atomic properties
-     * \param[in] iTypes Interaction types
-     * \param[in] updateZeta Whether to update the atomic zeta as well
-     */
-    void UpdateIdef(const ForceField                   *pd,
-                    const std::vector<InteractionType> &iTypes,
-                    bool                                updateZeta);
     
     /*! \brief
      * Generate cube

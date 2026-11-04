@@ -70,14 +70,24 @@ const std::string &tcComponentName(TCComponent tc);
  */
 const std::map<TCComponent, std::string> &tccmap();
 
+/*! \brief Thermochemical properties of a molecule in the ideal gas
+ * and harmonic approximation, computed from its structure and
+ * vibrational frequencies
+ */
 class ThermoChemistry
 {
 private:
+    //! Zero point energy (kJ/mol)
     double zpe_             = 0;
+    //! Enthalpy of formation (kJ/mol)
     double dhForm_          = 0;
+    //! Rotational symmetry number used for the rotational entropy
     int    symmetryNumber_  = 1;
+    //! Heat capacity at constant volume per component (J/mol K)
     std::map<TCComponent, double> cv_;
+    //! Standard entropy per component (J/mol K)
     std::map<TCComponent, double> S0_;
+    //! Internal energy per component (kJ/mol)
     std::map<TCComponent, double> E_;
 
     /*! \brief Compute zero point energy from an array of eigenvalues.

@@ -243,11 +243,37 @@ using MolecularCompositionConstIterator = typename std::vector<MolecularComposit
 class CalcAtom
 {
 private:
-    std::string             name_, obType_, coord_unit_, force_unit_, residueName_;
-    double                  x_ = 0, y_ = 0, z_ = 0;
-    double                  fx_ = 0, fy_ = 0, fz_ = 0;
-    int                     atomID_ = 0, residueNumber_ = 0, chainId_ = 0;
+    //! Atom name
+    std::string             name_;
+    //! OpenBabel atom type
+    std::string             obType_;
+    //! Unit of the coordinates
+    std::string             coord_unit_;
+    //! Unit of the forces
+    std::string             force_unit_;
+    //! Residue name
+    std::string             residueName_;
+    //! X coordinate, in coord_unit_
+    double                  x_ = 0;
+    //! Y coordinate, in coord_unit_
+    double                  y_ = 0;
+    //! Z coordinate, in coord_unit_
+    double                  z_ = 0;
+    //! X component of the force, in force_unit_
+    double                  fx_ = 0;
+    //! Y component of the force, in force_unit_
+    double                  fy_ = 0;
+    //! Z component of the force, in force_unit_
+    double                  fz_ = 0;
+    //! Atom id
+    int                     atomID_ = 0;
+    //! Residue number
+    int                     residueNumber_ = 0;
+    //! Chain id
+    int                     chainId_ = 0;
+    //! Chain identifier
     char                    chain_ = ' ';
+    //! Atomic charges (e) indexed by charge type
     std::map<std::string, double> q_;
 
     //! Return chain ID
@@ -347,13 +373,6 @@ public:
     {
         residueName_   = residueName;
         residueNumber_ = residueNumber;
-    }
-    
-    //! Set the chain information (from pdb files)
-    void SetChain(int chainId, char chain)
-    {
-        chainId_ = chainId;
-        chain_   = chain;
     }
     
     //! Return chain
