@@ -43,6 +43,7 @@
 #include <array>
 #include <cstddef>
 #include <map>
+#include <type_traits>
 #include <vector>
 
 #include "act/basics/act_particle.h"
@@ -69,7 +70,12 @@ namespace alexandria
  * up to a multiple of the explicit SIMD width, and one width more if that
  * is a multiple of 256. The extra slots are copies of the last one, they
  * are computed but not used.
+ * The coordinates and forces are stored in the precision T, such that the
+ * explicit SIMD of that precision computes them, see computeExplicitSimd.
+ * The conformations keep theirs in real precision.
+ * \tparam T The floating point type, float or double
  */
+template <typename T>
 class ConformationArrays
 {
 public:
@@ -78,9 +84,9 @@ public:
     //! Number of slots including the padding
     size_t              stride = 0;
     //! Coordinates
-    std::vector<real>   x;
+    std::vector<T>      x;
     //! Forces
-    std::vector<real>   f;
+    std::vector<T>      f;
     /*! Energies of one potential, kept here to reuse the memory, in double
      * precision since sums of many interactions are taken
      */
@@ -173,7 +179,7 @@ public:
             confs_.assign(confs.begin(), confs.end());
             inOrder_ = inOrder;
         }
-        size_t width = explicitSimdWidth<real>();
+        size_t width = explicitSimdWidth<T>();
         size_t st    = ((nc + width - 1)/width)*width;
         // Rows a multiple of 2 kB apart map to the same sets of the caches,
         // which then hold few of them
@@ -235,7 +241,7 @@ public:
         for(size_t c = 0; c < nconf; c++)
         {
             const auto &fc = coords[confs_[c]].fflat;
-            real       *fs = f.data() + c;
+            T          *fs = f.data() + c;
             for(size_t a = 0; a < natom; a++)
             {
                 for(int m = 0; m < DIM; m++)
@@ -257,7 +263,7 @@ public:
         for(size_t c = 0; c < nconf; c++)
         {
             auto         &fc = (*coords)[confs_[c]].fflat;
-            const real   *fs = f.data() + c;
+            const T      *fs = f.data() + c;
             for(size_t a = 0; a < natom; a++)
             {
                 for(int m = 0; m < DIM; m++)
@@ -279,7 +285,7 @@ public:
         for(size_t c = 0; c < nconf; c++)
         {
             auto         &fc = (*coords)[confs_[c]].fflat;
-            const real   *fs = f.data() + c;
+            const T      *fs = f.data() + c;
             for(auto a : shells_)
             {
                 for(int m = 0; m < DIM; m++)
@@ -303,7 +309,7 @@ public:
         for(size_t c = 0; c < nconf; c++)
         {
             auto         &xc = (*coords)[confs_[c]].xflat;
-            const real   *xs = x.data() + c;
+            const T      *xs = x.data() + c;
             for(auto a : vsites_)
             {
                 for(int m = 0; m < DIM; m++)
@@ -323,7 +329,7 @@ public:
      * \param[in] srcConfs  The conformation in each slot of src, it has to
      *                      contain all conformations in the slots now
      */
-    void loadForces(const std::vector<real>   &src,
+    void loadForces(const std::vector<T>      &src,
                     size_t                     srcStride,
                     const std::vector<size_t> &srcConfs)
     {
@@ -352,8 +358,8 @@ public:
         }
         for(size_t row = 0; row < nrow; row++)
         {
-            const real   *s = src.data() + row*srcStride;
-            real         *d = f.data() + row*stride;
+            const T      *s = src.data() + row*srcStride;
+            T            *d = f.data() + row*stride;
             for(size_t c = 0; c < stride; c++)
             {
                 d[c] = s[srcSlot[c]];
@@ -403,7 +409,7 @@ private:
         for(size_t c = 0; c < stride; c++)
         {
             const auto &xc = coords[confs_[std::min(c, nconf-1)]].xflat;
-            real       *xs = x.data() + c;
+            T          *xs = x.data() + c;
             for(auto a : particles)
             {
                 for(int m = 0; m < DIM; m++)
@@ -656,7 +662,7 @@ struct CachedEnergies
     std::vector<double> kernelWidths;
     //! For each interaction, bit k tells whether term k is in kernel
     std::vector<unsigned char> kernelTerms;
-    /*! The coordinates of kernel, as ConformationArrays::x, such that only
+    /*! The coordinates of kernel, as ConformationArrays<real>::x, such that only
      * the interactions of particles that moved are computed again
      */
     std::vector<real>   kernelX;
@@ -675,8 +681,10 @@ struct FixedEnergies
     size_t                              nconf = 0;
     //! Whether the forces are in arrayForces rather than forces
     bool                                inArrays = false;
-    //! The forces in the layout of ConformationArrays
+    //! The forces in the layout of ConformationArrays<real>
     std::vector<real>                   arrayForces;
+    //! The same for ConformationArrays<double>, in a single precision build
+    std::vector<double>                 arrayForcesDouble;
     //! The stride of arrayForces
     size_t                              stride = 0;
     //! The conformation in each slot of arrayForces
@@ -689,6 +697,23 @@ struct FixedEnergies
     std::vector<std::vector<char>>      have;
     //! The forces of each conformation, as CoordsEnergy::fflat, unless inArrays
     std::vector<std::vector<real>>      forces;
+
+    /*! \brief The forces in the layout of ConformationArrays<T>
+     * \tparam T The floating point type of the arrays
+     * \return arrayForces or arrayForcesDouble
+     */
+    template <typename T>
+    std::vector<T> &forcesOfArrays()
+    {
+        if constexpr (std::is_same_v<T, real>)
+        {
+            return arrayForces;
+        }
+        else
+        {
+            return arrayForcesDouble;
+        }
+    }
 };
 
 /*! \brief Reference data of all conformations for computing deviations
@@ -779,7 +804,37 @@ struct ConformationData
     void setX(size_t c, const std::vector<gmx::RVec> &x) { setX(c, x.begin(), x.end()); }
 
     //! Coordinates and forces
-    ConformationArrays   arrays;
+    ConformationArrays<real>   arrays;
+    //! Coordinates and forces in double precision, used instead of arrays if doublePrecision is set
+    ConformationArrays<double> arraysDouble;
+    /*! Whether to compute the potentials in double precision in a single
+     * precision build, for methods that need it such as the normal mode
+     * analysis. The arrays are then in double precision, the coordinates
+     * and forces of the conformations stay in real precision. Potentials
+     * without explicit SIMD, and single conformations, are still computed
+     * in real precision.
+     */
+    bool                 doublePrecision = false;
+
+    /*! \brief The arrays of precision T
+     * \tparam T The floating point type
+     * \return arrays or arraysDouble
+     */
+    template <typename T>
+    ConformationArrays<T> &arraysOf()
+    {
+        if constexpr (std::is_same_v<T, real>)
+        {
+            return arrays;
+        }
+        else
+        {
+            return arraysDouble;
+        }
+    }
+
+    //! \return Whether arraysDouble is used, see doublePrecision
+    bool useArraysDouble() const { return doublePrecision && !std::is_same_v<real, double>; }
     //! Energies
     ConformationEnergies energies;
     //! Whether the virtual sites in the conformations were constructed
@@ -827,6 +882,7 @@ struct ConformationData
     void invalidate()
     {
         arrays.invalidate();
+        arraysDouble.invalidate();
         fixed.valid = false;
         haveVsites = false;
         constructVsites   = false;

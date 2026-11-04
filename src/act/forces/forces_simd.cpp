@@ -2414,9 +2414,9 @@ static inline void calcSome(MsgHandler                 *msghandler,
  * \param[inout] energies  Energies, term k of conformation c at energies[k*stride + c]
  * \param[in]    one       Function computing one interaction
  */
-template <int NATOM, bool Vectorize, bool Forces, typename One>
+template <int NATOM, bool Vectorize, bool Forces, typename One, typename T>
 static void computeConformations(TopologyEntryRange         entries,
-                                 ConformationArrays        *ca,
+                                 ConformationArrays<T>     *ca,
                                  double                    *energies,
                                  One                        one)
 {
@@ -2436,8 +2436,8 @@ static void computeConformations(TopologyEntryRange         entries,
     {
         const TopologyEntry &entry = *b.operator->();
         auto  &indices = entry.atomIndices();
-        const real *xa[NATOM];
-        real       *fa[NATOM];
+        const T *xa[NATOM];
+        T       *fa[NATOM];
         for (int a = 0; a < NATOM; a++)
         {
             xa[a] = ca->x.data() + DIM*indices[a]*nconf;
@@ -2504,16 +2504,17 @@ static void computeConformations(TopologyEntryRange         entries,
  * \param[in]    mypot      The potential
  * \param[in]    topentries The interactions
  * \param[in]    atoms      The atoms
- * \param[inout] ca         Coordinates and forces of all conformations
+ * \param[inout] ca         Coordinates and forces of all conformations, the
+ *                          interactions compute them in real precision
  * \param[inout] energies   Energies, term k of conformation c at energies[k*stride + c]
  * \param[in]    epsilonr   Relative dielectric constant
  * \return false if the potential is not implemented
  */
-template <bool Forces>
+template <bool Forces, typename T>
 static ACT_NOINLINE bool dispatchConformations(Potential                   mypot,
                                                TopologyEntryRange          topentries,
                                                const std::vector<ActAtom> &atoms,
-                                               ConformationArrays         *ca,
+                                               ConformationArrays<T>      *ca,
                                                double                     *energies,
                                                double                      epsilonr)
 {
@@ -2535,10 +2536,11 @@ static ACT_NOINLINE bool dispatchConformations(Potential                   mypot
  * \param[out]   cached     If not nullptr, the energies are kept here
  * \return false if this potential is not implemented this way
  */
+template <typename T>
 static bool calcConformations(Potential                        mypot,
                               TopologyEntryRange               topentries,
                               const std::vector<ActAtom>      &atoms,
-                              ConformationArrays              *ca,
+                              ConformationArrays<T>           *ca,
                               ConformationEnergies            *cener,
                               double                           epsilonr,
                               bool                             forces,
@@ -2572,7 +2574,8 @@ static const size_t maxCoulombKernel = 4*1024*1024;
  * In training, often only the charges change. The energy of each
  * interaction for charges of one is computed once and kept in cached,
  * see CachedEnergies::kernel, then the energies for any charges are a
- * sum of the products of these with the charges. This needs explicit SIMD.
+ * sum of the products of these with the charges. This needs explicit SIMD
+ * and arrays in real precision, in which the kernel is kept.
  * \param[in]    mypot      The potential
  * \param[in]    topentries The interactions
  * \param[in]    atoms      The atoms
@@ -2586,7 +2589,7 @@ static const size_t maxCoulombKernel = 4*1024*1024;
 static bool calcCoulombKernel(Potential                   mypot,
                               TopologyEntryRange          topentries,
                               const std::vector<ActAtom> &atoms,
-                              ConformationArrays         *ca,
+                              ConformationArrays<real>   *ca,
                               ConformationEnergies       *cener,
                               double                      epsilonr,
                               size_t                      coordinateVersion,
@@ -2715,6 +2718,18 @@ static bool calcCoulombKernel(Potential                   mypot,
     return true;
 }
 
+/*! \brief Without arrays in real precision there is no kernel, see calcCoulombKernel
+ * \return false
+ */
+template <typename T>
+requires (!std::is_same_v<T, real>)
+static bool calcCoulombKernel(Potential, TopologyEntryRange, const std::vector<ActAtom> &,
+                              ConformationArrays<T> *, ConformationEnergies *, double, size_t,
+                              CachedEnergies *)
+{
+    return false;
+}
+
 /*! \brief Compute all potentials for all conformations of a topology
  * \param[in]    msghandler    For warnings and errors
  * \param[in]    pd            The force field
@@ -2740,18 +2755,21 @@ static bool calcCoulombKernel(Potential                   mypot,
  * \param[in]    intermolecular Whether to compute only the intermolecular
  *                             interactions, see Topology::separateIntermolecular.
  *                             The energies of the other interaction types are zero.
+ * \tparam       T             The floating point type of the arrays, see
+ *                             ConformationData::doublePrecision
  */
-static inline void lowComputeEnergies(MsgHandler                *msghandler,
-                                      const ForceField          *pd,
-                                      const Topology            *top,
-                                      ConformationData          *cdata,
-                                      double                     epsilonr,
-                                      bool                       conformations,
-                                      bool                       forces,
-                                      bool                       reuse          = false,
-                                      bool                       skipDone       = false,
-                                      bool                       intermolecular = false,
-                                      bool                       allForces      = true)
+template <typename T>
+static void lowComputeEnergiesT(MsgHandler                *msghandler,
+                                const ForceField          *pd,
+                                const Topology            *top,
+                                ConformationData          *cdata,
+                                double                     epsilonr,
+                                bool                       conformations,
+                                bool                       forces,
+                                bool                       reuse          = false,
+                                bool                       skipDone       = false,
+                                bool                       intermolecular = false,
+                                bool                       allForces      = true)
 {
     static const size_t timer = Timings::instance().index("Energy calculation overhead");
     ScopedTimer         scoped(timer);
@@ -2840,8 +2858,10 @@ static inline void lowComputeEnergies(MsgHandler                *msghandler,
     // Whether the conformations are computed in arrays, see below. The
     // forces of the entries without shells are kept in the same layout.
     bool  useArrays  = conformations && coords->size() > 1;
+    auto &fixedForces = fixed.template forcesOfArrays<T>();
     bool  useFixed   = (splitShell && skipDone && fixed.valid &&
-                        fixed.nconf == coords->size() && fixed.inArrays == useArrays);
+                        fixed.nconf == coords->size() && fixed.inArrays == useArrays &&
+                        !(fixed.inArrays && fixedForces.empty()));
     bool  keepFixed  = splitShell && !useFixed;
     if (useFixed)
     {
@@ -2863,7 +2883,7 @@ static inline void lowComputeEnergies(MsgHandler                *msghandler,
     // conformation there is nothing to vectorize. When starting from the
     // forces of the entries without shells, these are copied in instead of
     // clearing the forces.
-    auto &ca = cdata->arrays;
+    auto &ca = cdata->template arraysOf<T>();
     bool haveArrays = (useArrays &&
                        ca.setCoordinates(*coords, top->atoms(), forces && !useFixed, active, sameSize));
     // The virtual sites are constructed in the arrays if these hold all
@@ -2889,7 +2909,7 @@ static inline void lowComputeEnergies(MsgHandler                *msghandler,
                        "The forces of the entries without shells were kept in arrays");
     if (haveArrays && useFixed)
     {
-        ca.loadForces(fixed.arrayForces, fixed.stride, fixed.slots);
+        ca.loadForces(fixedForces, fixed.stride, fixed.slots);
     }
     // Whether the current forces are in ca rather than in coords
     bool forcesInArrays = haveArrays;
@@ -3032,7 +3052,10 @@ static inline void lowComputeEnergies(MsgHandler                *msghandler,
                 ca.loadForces(*coords);
                 forcesInArrays = true;
             }
-            fixed.arrayForces = ca.f;
+            // Only the forces of this precision are kept
+            fixed.arrayForces.clear();
+            fixed.arrayForcesDouble.clear();
+            fixedForces       = ca.f;
             fixed.stride      = ca.stride;
             fixed.slots       = ca.conformations();
             fixed.forces.clear();
@@ -3092,8 +3115,10 @@ static inline void lowComputeEnergies(MsgHandler                *msghandler,
             {
                 vsiteHandler.distributeForces(top, ca.x.data(), ca.f.data(), ca.stride, ca.stride, ca.nconf);
             }
-            // The forces of all conformations may stay in the arrays
-            cdata->forcesInArrays = cdata->keepForcesInArrays && spread && ndone == 0;
+            // The forces of all conformations may stay in the arrays,
+            // ConformationData::forcesInArrays only refers to those in real precision
+            cdata->forcesInArrays = (std::is_same_v<T, real> && cdata->keepForcesInArrays &&
+                                     spread && ndone == 0);
             if (!cdata->forcesInArrays)
             {
                 ca.storeForces(coords);
@@ -3106,6 +3131,34 @@ static inline void lowComputeEnergies(MsgHandler                *msghandler,
     }
     // The conformations left out keep the forces of the previous calculation
     cdata->vsiteForcesSpread = spread && (ndone == 0 || cdata->vsiteForcesSpread);
+}
+
+/*! \brief Compute all potentials for all conformations of a topology
+ * As lowComputeEnergiesT, with the arrays of the precision that cdata asks
+ * for, see ConformationData::doublePrecision.
+ */
+static void lowComputeEnergies(MsgHandler                *msghandler,
+                               const ForceField          *pd,
+                               const Topology            *top,
+                               ConformationData          *cdata,
+                               double                     epsilonr,
+                               bool                       conformations,
+                               bool                       forces,
+                               bool                       reuse          = false,
+                               bool                       skipDone       = false,
+                               bool                       intermolecular = false,
+                               bool                       allForces      = true)
+{
+    if (cdata->useArraysDouble())
+    {
+        lowComputeEnergiesT<double>(msghandler, pd, top, cdata, epsilonr, conformations, forces,
+                                    reuse, skipDone, intermolecular, allForces);
+    }
+    else
+    {
+        lowComputeEnergiesT<real>(msghandler, pd, top, cdata, epsilonr, conformations, forces,
+                                  reuse, skipDone, intermolecular, allForces);
+    }
 }
 
 void computeConformations(MsgHandler                *msghandler,

@@ -846,6 +846,7 @@ static bool vsitesOutdated(const Topology *top, ConformationData *cdata)
         cdata->haveVsites   = true;
         cdata->vsiteVersion = top->vsiteVersion();
         cdata->arrays.invalidateVsites();
+        cdata->arraysDouble.invalidateVsites();
         cdata->coordinates.update();
     }
     return outdated;
@@ -1904,9 +1905,9 @@ void ForceComputer::computeInteraction(MsgHandler                               
     auto  &astart  = mol->fragmentHandler()->atomStart();
     size_t natom   = cdatas[2]->x(0).size();
     size_t nmon[2] = { cdatas[0]->x(0).size(), cdatas[1]->x(0).size() };
-    const ConformationArrays *arrays[3] = { &mol->conformationData(0)->arrays,
-                                            &mol->conformationData(1)->arrays,
-                                            &mol->conformationData(2)->arrays };
+    const ConformationArrays<real> *arrays[3] = { &mol->conformationData(0)->arrays,
+                                                  &mol->conformationData(1)->arrays,
+                                                  &mol->conformationData(2)->arrays };
     bool inArrays = true;
     for(size_t what = 0; what < 3; what++)
     {

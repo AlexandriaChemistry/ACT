@@ -743,6 +743,48 @@ TEST_F(ComputeTotalTest, InteractionSubsetsHyperpolarizable)
     testInteractionSubsets("water_hyperpol", "water_dimer", 13);
 }
 
+// Test: Conformations computed in double precision, see
+// ConformationData::doublePrecision, have the same energies and forces
+// within the precision of real, with shells and virtual sites and without.
+// In a double precision build they are the same arrays.
+TEST_F(ComputeTotalTest, DoublePrecisionArrays)
+{
+    for (const auto &ffMol : { std::pair<std::string, std::string>{ "ACS-pg-vs2", "hbr-hf" },
+                               std::pair<std::string, std::string>{ "ACS-v3fds", "water_dimer" } })
+    {
+        auto pd = getForceField(ffMol.first);
+        ASSERT_NE(nullptr, pd);
+        ACTMol mol;
+        ASSERT_TRUE(readMolecule(&msghandler_, pd, ffMol.second, &mol));
+        std::vector<std::vector<gmx::RVec>> x;
+        for(size_t c = 0; c < 9; c++)
+        {
+            x.push_back(displaced(mol.xOriginal(), c));
+        }
+        ConformationSet set[2];
+        std::vector<std::map<InteractionType, double>> energies[2];
+        for(int k = 0; k < 2; k++)
+        {
+            set[k].top = mol.topology();
+            set[k].setCoordinates(x);
+            set[k].data.doublePrecision = (k == 1);
+            forceComp_.computeTotal(&msghandler_, pd, &set[k], ShellOptions(), &energies[k]);
+            ASSERT_EQ(x.size(), energies[k].size());
+        }
+        // The arrays hold the conformations of the last shell iteration
+        EXPECT_EQ(!GMX_DOUBLE, set[1].data.arraysDouble.nconf > 0);
+        for(size_t c = 0; c < x.size(); c++)
+        {
+            auto label = gmx::formatString("%s %s conformation %zu", ffMol.first.c_str(),
+                                           ffMol.second.c_str(), c);
+            compareEnergies(energies[0][c], energies[1][c], gmx::test::precisionTolerance(1e-14, 1e-6), label);
+            // As in the comparison of the explicit SIMD in single and double precision
+            compareForces(set[0].data.f(c).toRVec(), set[1].data.f(c).toRVec(),
+                          gmx::test::precisionTolerance(1e-14, 1e-4), label);
+        }
+    }
+}
+
 } // namespace
 
 } // namespace alexandria

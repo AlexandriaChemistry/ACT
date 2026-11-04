@@ -154,6 +154,9 @@ void MolHandler::computeHessian(const ForceField                  *pd,
     ConformationSet set;
     set.top = topology;
     set.setCoordinates(xs);
+    // The derivatives are differences of nearly equal forces, which are
+    // computed in double precision also in a single precision build
+    set.data.doublePrecision = true;
     std::vector<std::map<InteractionType, double>> energies;
     forceComp->computeTotal(nullptr, pd, &set, ShellOptions(), &energies);
     const auto &cdata = set.data;
