@@ -791,6 +791,30 @@ struct ConformationData
      */
     void setX(size_t c, const std::vector<gmx::RVec> &x) { setX(c, x.begin(), x.end()); }
 
+    /*! \brief Set the coordinates of a conformation from integers, with zero forces
+     * As the other setX, the integers are copied, without rounding.
+     * \param[in] c The conformation
+     * \param[in] x The coordinates of all particles
+     */
+    void setX(size_t c, const CoordinateVectors<const Coordinate> &x)
+    {
+        size_t natom = x.size();
+        if (arrays.nconf != confs.size() || arrays.natom != natom)
+        {
+            arrays.resize(confs.size(), natom);
+        }
+        auto xc = this->x(c);
+        auto fc = f(c);
+        for(size_t a = 0; a < natom; a++)
+        {
+            for(int m = 0; m < DIM; m++)
+            {
+                xc[a][m] = x[a][m];
+                fc[a][m] = 0;
+            }
+        }
+    }
+
     //! Coordinates and forces of the conformations, see x and f
     ConformationArrays<real>   arrays;
     //! Copies of the coordinates and forces in double precision, used if doublePrecision is set

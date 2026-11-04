@@ -318,6 +318,80 @@ private:
     size_t natom_  = 0;
 };
 
+/*! \brief Integer coordinates of the particles of one structure, owning them
+ * The components are stored contiguously, as CoordinateVectors with a
+ * stride of one, in units of coordinateUnit, see coordinate.h. Particle a
+ * is indexed as x[a][m], like a std::vector<gmx::RVec>, a component reads
+ * as a value in nm and the difference of two vectors is exact.
+ */
+class Coordinates
+{
+public:
+    //! Constructor for no particles
+    Coordinates() {}
+
+    /*! \brief Constructor for particles at the origin
+     * \param[in] natom The number of particles
+     */
+    explicit Coordinates(size_t natom) : x_(DIM*natom, 0) {}
+
+    /*! \brief Constructor from coordinates in nm
+     * \param[in] v The coordinates, rounded to the unit
+     */
+    explicit Coordinates(const std::vector<gmx::RVec> &v) : x_(DIM*v.size(), 0) { view().assign(v); }
+
+    /*! \brief Constructor copying the integers of a view
+     * \param[in] v The coordinates
+     */
+    explicit Coordinates(const CoordinateVectors<const Coordinate> &v) : x_(DIM*v.size(), 0)
+    {
+        for(size_t a = 0; a < v.size(); a++)
+        {
+            for(int m = 0; m < DIM; m++)
+            {
+                x_[DIM*a+m] = v[a].units(m);
+            }
+        }
+    }
+
+    //! \return the number of particles
+    size_t size() const { return x_.size()/DIM; }
+
+    //! \return whether there are no particles
+    bool empty() const { return x_.empty(); }
+
+    //! \return a view of the coordinates
+    CoordinateVectors<Coordinate> view() { return { x_.data(), 1, size() }; }
+
+    //! \return a read-only view of the coordinates
+    CoordinateVectors<const Coordinate> view() const { return { x_.data(), 1, size() }; }
+
+    /*! \brief Return the vector of a particle
+     * \param[in] a The particle
+     * \return the vector
+     */
+    CoordinateVectors<Coordinate>::Vector operator[](size_t a) { return view()[a]; }
+
+    //! \copydoc operator[](size_t)
+    CoordinateVectors<const Coordinate>::Vector operator[](size_t a) const { return view()[a]; }
+
+    /*! \brief Set the coordinates of all particles
+     * \param[in] v The coordinates in nm, the number of particles changes to theirs
+     */
+    void assign(const std::vector<gmx::RVec> &v)
+    {
+        x_.resize(DIM*v.size());
+        view().assign(v);
+    }
+
+    //! \return the coordinates of all particles in nm
+    std::vector<gmx::RVec> toRVec() const { return view().toRVec(); }
+
+private:
+    //! The components, that of particle a in dimension m at DIM*a+m
+    std::vector<Coordinate> x_;
+};
+
 /*! \brief Class to hold corresponding QM (reference) and ACT energies
  */
 class ACTEnergy
