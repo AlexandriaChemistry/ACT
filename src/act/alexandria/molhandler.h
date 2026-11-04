@@ -109,6 +109,29 @@ public:
                         std::map<InteractionType, double> *energyZero,
                         std::vector<gmx::RVec>            *dpdq = nullptr) const;
 
+    /*! \brief Compute the Hessian matrix with integer coordinates
+     * As the other computeHessian, the displaced coordinates are exact, see
+     * coordinate.h, and the coordinates on return are not rounded to real.
+     * \param[in]    pd         The force field
+     * \param[in]    topology   The topology
+     * \param[in]    forceComp  The force computer
+     * \param[inout] coords     The coordinates, the shells are relaxed on return
+     * \param[in]    atomIndex  The indices of the real atoms
+     * \param[out]   hessian    The Hessian, NxN with N = 3*atomIndex.size()
+     * \param[out]   forceZero  The forces on the atoms in the input structure
+     * \param[out]   energyZero The energies of the input structure
+     * \param[out]   dpdq       Derivative of the dipole moment, if not nullptr
+     */
+    void computeHessian(const ForceField                  *pd,
+                        const Topology                    *topology,
+                        const ForceComputer               *forceComp,
+                        Coordinates                       *coords,
+                        const std::vector<int>            &atomIndex,
+                        MatrixWrapper                     *hessian,
+                        std::vector<double>               *forceZero,
+                        std::map<InteractionType, double> *energyZero,
+                        std::vector<gmx::RVec>            *dpdq = nullptr) const;
+
     /*! \brief Perform normal-mode analysis on a molecule.
      * Computes vibrational frequencies and intensities and 
      * optionally prints them.
