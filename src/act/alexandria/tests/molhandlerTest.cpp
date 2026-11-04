@@ -198,7 +198,14 @@ protected:
                         msf2 += f*f;
                     }
                     checker_.checkReal(std::sqrt(msf2/forceZero.size()), "RMS force");
+                    // In single precision the forces at the minimum are the
+                    // rounding errors of the forces, after relaxing the
+                    // shells to within them, of about 0.1 kJ/mol/nm
+                    double feq = gmx::test::precisionTolerance(5e-2, 0.2);
+                    checker_.setDefaultTolerance(gmx::test::FloatingPointTolerance(feq, feq, 5e-2, 5e-2,
+                                                                                    UINT64_MAX, UINT64_MAX, false));
                     checker_.checkSequence(forceZero.begin(), forceZero.end(), "Equilibrium force");
+                    checker_.setDefaultTolerance(tolerance);
                     // Now test the solver used in minimization
                     std::vector<double> deltaX(DIM*atomIndex.size(), 0.0);
                     int result = hessian.solve(forceZero, &deltaX);
