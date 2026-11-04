@@ -572,6 +572,32 @@ TEST_F(TrainFFTest, SecondCharges)
     EXPECT_LT(0, nchanged);
 }
 
+// Test: The second charges of particles and the widths of their
+// distributions are trained with the charges and widths, see
+// MolGen::fillIopt and https://github.com/AlexandriaChemistry/ACT/issues/1491
+TEST_F(TrainFFTest, SecondChargesWithCharges)
+{
+    auto output = trainfftest::runTrainFF(&fileManager(), "chargeall", "4S-lj14-7-pg-hvdw.xml", "hf-hf",
+                                          combine(mcmcOptions(1),
+                                                  { { "-fit", "charge zeta" },
+                                                    { "-fc_allelec", "1" }, { "-fc_mu", "1" } }));
+    ASSERT_EQ(0, output.status);
+    for(const char *atype : { "f", "hf" })
+    {
+        for(const char *pname : { chargeVSName, zetaVSName })
+        {
+            // The parameter is listed with those that are trained
+            EXPECT_TRUE(std::any_of(output.log.begin(), output.log.end(),
+                                    [atype, pname](const std::string &line)
+                                    {
+                                        std::istringstream iss(line);
+                                        std::string        id, type;
+                                        return (iss >> id >> type) && id == atype && type == pname;
+                                    })) << atype << " " << pname;
+        }
+    }
+}
+
 // Test: The files with the correlation of the energy components get the
 // prefix given with -compound_file
 TEST_F(TrainFFTest, CompoundFilePrefix)

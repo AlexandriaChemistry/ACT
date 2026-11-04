@@ -123,7 +123,7 @@ void MolGen::addOptions(std::vector<t_pargs>          *pargs,
         { "-lb",  FALSE, etBOOL, {&loadBalance_},
           "Try to divide the computational load evenly over helpers." },
         { "-fit", FALSE, etSTR, {&fitString_},
-          "Quoted list of parameters to fit,  e.g. 'alpha zeta'." },
+          "Quoted list of parameters to fit,  e.g. 'alpha zeta'. The charges and widths of the second charges of particles, chargeVS and zetaVS, are fitted with charge and zeta, or on their own." },
         { "-fc_bound",    FALSE, etREAL, {targets->find(eRMS::BOUNDS)->second.weightPtr()},
           "Force constant in the penalty function for going outside the borders given with the fitting options. In particular this parameter penalizes 'unchemical' charges as determined by the bounds set in the force field file. This is applied to charges that are determined using the Alexandria Charge Model only." },
         { "-fc_epot",    FALSE, etREAL, {targets->find(eRMS::EPOT)->second.weightPtr()},
@@ -243,6 +243,23 @@ void MolGen::fillIopt(const ForceField *pd,
                       MsgHandler       *msghandler)
 // This is called in the read method, the filled structure is used for the optimize() method
 {
+    // The second charges and their widths, see ParticleType::chargeVS, are
+    // trained with the charges and the widths, if particle types have them
+    for(const auto &names : { std::pair<std::string, std::string>{ "charge", chargeVSName },
+                              std::pair<std::string, std::string>{ zetaName, zetaVSName } })
+    {
+        const auto &particleTypes = pd->particleTypesConst();
+        bool        haveVS        = std::any_of(particleTypes.begin(), particleTypes.end(),
+                                                [&names](const auto &pt)
+                                                { return pt.second.hasParameter(names.second); });
+        if (fit(names.first) && !fit(names.second) && haveVS)
+        {
+            fit_.insert({ names.second, true });
+            msghandler->msg(ACTStatus::Verbose,
+                            gmx::formatString("Parameter %s is trained with %s\n",
+                                              names.second.c_str(), names.first.c_str()));
+        }
+    }
     for(const auto &fit : fit_)
     {
         InteractionType itype;

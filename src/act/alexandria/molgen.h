@@ -254,6 +254,9 @@ private:
     }
 
     /*! \brief Fill the  iOpt_ map
+     * The second charges and their widths, chargeVS and zetaVS, are added
+     * to the parameters to fit if charge and zeta are, and particle types
+     * have them.
      * \param[in] pd         Pointer to forcefield
      * \param[in] msghandler For information
      */
