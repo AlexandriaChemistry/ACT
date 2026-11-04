@@ -33,6 +33,8 @@
 
 #include "shake.h"
 
+#include <algorithm>
+#include <cmath>
 #include <map>
 #include <set>
 
@@ -409,6 +411,26 @@ int Constrainer::shake(gmx_unused MsgHandler        *msghandler,
     Eigen::VectorXd        diff(nc);
     std::vector<gmx::RVec> dx(nc);
     std::vector<gmx::RVec> start;
+    // The distances are not more precise than the coordinates, which are
+    // rounded to the precision of real, by up to that times their
+    // magnitude. Far from the origin that is more than the tolerance in
+    // single precision, then the tolerance of a constraint is a few times
+    // the rounding of the coordinates of its atoms relative to its length.
+    std::vector<double> tolerance(distance_squared_tolerance_);
+    for (size_t a = 0; a < nc; a++)
+    {
+        double xmax = 0;
+        for (auto i : pairs_[a])
+        {
+            for (int m = 0; m < DIM; m++)
+            {
+                xmax = std::max(xmax, std::abs(static_cast<double>((*positions)[i][m])));
+            }
+        }
+        double length2  = constraint_distance_squared_[a];
+        double rounding = 4*GMX_REAL_EPS*xmax/std::sqrt(length2);
+        tolerance[a]    = std::min(tolerance[a], 0.5/(rounding*length2));
+    }
     // Compute the deviations, return the sum of the squared relative deviations
     auto deviations = [&]()
     {
@@ -417,7 +439,7 @@ int Constrainer::shake(gmx_unused MsgHandler        *msghandler,
         {
             rvec_sub((*positions)[pairs_[a][0]], (*positions)[pairs_[a][1]], dx[a]);
             diff[a]    = constraint_distance_squared_[a] - norm2(dx[a]);
-            double rel = diff[a] * distance_squared_tolerance_[a];
+            double rel = diff[a] * tolerance[a];
             sum       += rel*rel;
         }
         return sum;
@@ -430,7 +452,7 @@ int Constrainer::shake(gmx_unused MsgHandler        *msghandler,
         bool converged = true;
         for (size_t a = 0; a < nc && converged; a++)
         {
-            converged = (std::abs(diff[a]) * distance_squared_tolerance_[a] <= 1.0);
+            converged = (std::abs(diff[a]) * tolerance[a] <= 1.0);
         }
         if (converged)
         {
