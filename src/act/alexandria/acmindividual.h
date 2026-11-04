@@ -99,7 +99,7 @@ public:
      * \brief Add a force field parameter
      * \param[in] val the value of the parameter
      */
-    void addParam(const real val);
+    void addParam(double val);
 
     /* * * * * * * * * * * * * * * * * * * * * *
     * END: Adding parameters                   *
