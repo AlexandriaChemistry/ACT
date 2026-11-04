@@ -608,7 +608,19 @@ protected:
     }
 };
 
+// Test: The genome keeps the parameters exactly, also in single precision,
+// such that parameters at their bounds stay within them
+TEST_F(SensitivityAnalysisTrainTest, GenomeKeepsParameters)
+{
+    EXPECT_EQ(sii_->defaultParam(), genome_.bases());
+    ACMIndividual ind(0, sii_);
+    ind.addParam(0.1);
+    ASSERT_EQ(1u, ind.genome().bases().size());
+    EXPECT_EQ(0.1, ind.genome().bases()[0]);
+}
+
 // Test: The force constants and the output are those of the parabolas
+
 // through the chi-squared of each parameter and the two values around it.
 TEST_F(SensitivityAnalysisTrainTest, ParabolaThroughChi2)
 {
