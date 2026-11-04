@@ -2012,17 +2012,117 @@ static void printEnergies(FILE                                    *exvg,
     fprintf(exvg, " %.5f %.5f %.5f\n", ekin, ekin+epot, temp);
 }
 
+/*! \brief Positions relative to an atom of each group of constrained atoms
+ * The constraints are computed with coordinates in double precision in
+ * nm, the differences of the integer coordinates, see coordinate.h,
+ * relative to one atom of the atoms that constraints connect. They are
+ * as precise as double allows for the size of a molecule, in either
+ * precision. The constrained particles are put at their anchors plus
+ * their relative positions.
+ */
+class ConstraintFrame
+{
+public:
+    /*! \brief Constructor
+     * \param[in] pairs The constrained atom pairs
+     * \param[in] natom The number of particles
+     */
+    ConstraintFrame(const std::vector<std::array<int, 2>> &pairs, size_t natom) : anchor_(natom)
+    {
+        // The atom with the lowest index of each group of connected atoms
+        for (size_t i = 0; i < natom; i++)
+        {
+            anchor_[i] = i;
+        }
+        auto root = [this](size_t i)
+        {
+            while (anchor_[i] != i)
+            {
+                i = anchor_[i];
+            }
+            return i;
+        };
+        for (const auto &p : pairs)
+        {
+            size_t a = root(p[0]);
+            size_t b = root(p[1]);
+            anchor_[std::max(a, b)] = std::min(a, b);
+        }
+        for (size_t i = 0; i < natom; i++)
+        {
+            anchor_[i] = root(i);
+        }
+    }
+
+    /*! \brief The positions relative to their anchors
+     * \param[in] x The coordinates
+     * \return the positions in nm
+     */
+    std::vector<gmx::DVec> relative(const Coordinates &x) const
+    {
+        std::vector<gmx::DVec> r(x.size());
+        for (size_t i = 0; i < x.size(); i++)
+        {
+            for (int m = 0; m < DIM; m++)
+            {
+                r[i][m] = fromCoordinate(coordinateDifference(x[i].units(m), x[anchor_[i]].units(m)));
+            }
+        }
+        return r;
+    }
+
+    /*! \brief Set the coordinates from relative positions
+     * The particles that are their own anchors keep their coordinates,
+     * the others are put at the anchors plus their relative positions.
+     * The anchors move by their relative positions as well.
+     * \param[in]    r          The relative positions
+     * \param[inout] x          The coordinates
+     * \param[inout] velocities If not nullptr, these change by the displacements over dt
+     * \param[in]    invdt      The inverse time step
+     */
+    void apply(const std::vector<gmx::DVec> &r,
+               Coordinates                  *x,
+               std::vector<gmx::RVec>       *velocities = nullptr,
+               double                        invdt      = 0) const
+    {
+        Coordinates x0 = *x;
+        for (size_t i = 0; i < x->size(); i++)
+        {
+            for (int m = 0; m < DIM; m++)
+            {
+                (*x)[i][m]  = x0[anchor_[i]][m];
+                (*x)[i][m] += r[i][m];
+            }
+        }
+        if (velocities)
+        {
+            for (size_t i = 0; i < x->size(); i++)
+            {
+                gmx::RVec dx = (*x)[i] - x0[i];
+                for (int m = 0; m < DIM; m++)
+                {
+                    (*velocities)[i][m] += dx[m]*invdt;
+                }
+            }
+        }
+    }
+
+private:
+    //! The anchor of each particle
+    std::vector<size_t> anchor_;
+};
+
 //! \brief Make arrays the length of the number of atoms
 static void initArrays(const ACTMol                 *mol,
                        const std::vector<gmx::RVec> &xmol,
-                       std::vector<gmx::RVec>       *coordinates,
+                       Coordinates                  *coordinates,
                        std::vector<gmx::RVec>       *velocities,
                        std::vector<gmx::RVec>       *forcesCur,
                        std::vector<gmx::RVec>       *forcesPrev,
                        std::vector<double>          *inv2mass,
                        std::vector<double>          *mass_2)
 {
-    coordinates->resize(xmol.size());
+    *coordinates = Coordinates(xmol);
     velocities->resize(xmol.size());
     forcesPrev->resize(xmol.size());
     forcesCur->resize(xmol.size());
@@ -2030,7 +2130,6 @@ static void initArrays(const ACTMol                 *mol,
     auto &atoms = mol->atomsConst();
     for (size_t i = 0; i < xmol.size(); i++)
     {
-        copy_rvec(xmol[i], (*coordinates)[i]);
         copy_rvec(zero, (*velocities)[i]);
         copy_rvec(zero, (*forcesPrev)[i]);
         copy_rvec(zero, (*forcesCur)[i]);
@@ -2064,7 +2163,10 @@ void MolHandler::simulate(MsgHandler                    *msghandler,
     FILE                              *traj = gmx_ffopen(trajectoryFile, "w");
     FILE                              *exvg = xvgropen(energyFile, "ACT Energies",
                                                        "Time (ps)", "Energy (kJ/mol)", oenv);
-    std::vector<gmx::RVec>             coordinates, velocities, forces[2], xprev;
+    // The coordinates are integers, such that the steps are exact, see
+    // coordinate.h
+    Coordinates                        coordinates, xprev;
+    std::vector<gmx::RVec>             velocities, forces[2];
     std::map<InteractionType, double>  energies;
     std::vector<double>                inv2mass;
     std::vector<double>                mass_2;
@@ -2093,7 +2195,7 @@ void MolHandler::simulate(MsgHandler                    *msghandler,
     if (simConfig.constrain())
     {
         constrainer.makeConstraints(msghandler, simConfig.constraintType(),
-                                    pd, mol->topology(), coordinates);
+                                    pd, mol->topology(), coordinates.toRVec());
         msghandler->write(gmx::formatString("Constraining %zu bonds and %zu angles.",
                                             constrainer.numBondConstraints(),
                                             constrainer.numAngleConstraints()));
@@ -2103,8 +2205,15 @@ void MolHandler::simulate(MsgHandler                    *msghandler,
                                                 constrainer.numRedundantAngles()));
         }
         nDOF -= constrainer.numConstraints();
+    }
+    ConstraintFrame frame(constrainer.pairs(), coordinates.size());
+    if (simConfig.constrain())
+    {
         // Start from coordinates that satisfy the constraints
-        if (constrainer.shake(msghandler, &coordinates) != 0)
+        auto r     = frame.relative(coordinates);
+        int  error = constrainer.shakeDouble(msghandler, r, &r);
+        frame.apply(r, &coordinates);
+        if (error != 0)
         {
             // With angles the reference geometry may not be possible,
             // otherwise the tolerance may be smaller than the precision
@@ -2118,7 +2227,7 @@ void MolHandler::simulate(MsgHandler                    *msghandler,
                                                 simConfig.constraintTolerance(), reason.c_str()));
         }
     }
-    COMMRemover commRemover(simConfig.commRemoval(), mol->atomsConst(), coordinates);
+    COMMRemover commRemover(simConfig.commRemoval(), mol->atomsConst(), coordinates.toRVec());
     nDOF -= commRemover.nDOF();
     if (COMMRemoval::None != commRemover.mode())
     {
@@ -2132,10 +2241,10 @@ void MolHandler::simulate(MsgHandler                    *msghandler,
     {
         maxwell_speed(simConfig.temperature(), simConfig.seed(),
                       mol->atomsConst(), &velocities, msghandler->tw());
-        commRemover.remove(coordinates, &velocities);
+        commRemover.remove(coordinates.toRVec(), &velocities);
         if (simConfig.constrain())
         {
-            constrainer.rattle(msghandler, coordinates, &velocities);
+            constrainer.rattleDouble(msghandler, frame.relative(coordinates), &velocities);
         }
         // Scale the velocities to the requested temperature for the
         // remaining degrees of freedom.
@@ -2204,7 +2313,7 @@ void MolHandler::simulate(MsgHandler                    *msghandler,
         for (size_t k = 0; k < shellParent.size(); k++)
         {
             shellOffsetPrev[k] = shellOffset[k];
-            rvec_sub(coordinates[shellParent[k].first], coordinates[shellParent[k].second], shellOffset[k]);
+            shellOffset[k] = coordinates[shellParent[k].first] - coordinates[shellParent[k].second];
         }
         // Print the energies at the current time, i.e. before integrating
         if (simConfig.nstener() > 0 && step % simConfig.nstener() == 0)
@@ -2223,7 +2332,7 @@ void MolHandler::simulate(MsgHandler                    *msghandler,
             ScopedTimer timer(trajectoryTimer);
             //! \todo rewrite without gromacs fluff.
             pdbWriter(traj, title, mol->atomsConst(),
-                      coordinates, mol->topology()->residueNames(),
+                      coordinates.toRVec(), mol->topology()->residueNames(),
                       epbcNONE,
                       box, chain, step/simConfig.nstxout()+1, trajIndex,
                       nullptr, true);
@@ -2253,7 +2362,12 @@ void MolHandler::simulate(MsgHandler                    *msghandler,
             ScopedTimer timer(constraintTimer);
             // First part of rattle, constrain the positions along the
             // previous bonds and correct the velocities accordingly.
-            if (constrainer.shake(msghandler, xprev, &coordinates, &velocities) != 0)
+            // The velocities change by the displacements of the integer
+            // coordinates, such that they stay consistent
+            auto r     = frame.relative(coordinates);
+            int  error = constrainer.shakeDouble(msghandler, frame.relative(xprev), &r);
+            frame.apply(r, &coordinates, &velocities, 1.0/deltat);
+            if (error != 0)
             {
                 msghandler->msg(ACTStatus::Warning,
                                 gmx::formatString("SHAKE did not converge at step %d.", step));
@@ -2270,7 +2384,11 @@ void MolHandler::simulate(MsgHandler                    *msghandler,
                     offset[m] = 2*shellOffset[k][m] - shellOffsetPrev[k][m];
                 }
             }
-            rvec_add(coordinates[shellParent[k].second], offset, coordinates[shellParent[k].first]);
+            for (int m = 0; m < DIM; m++)
+            {
+                coordinates[shellParent[k].first][m]  = coordinates[shellParent[k].second][m];
+                coordinates[shellParent[k].first][m] += offset[m];
+            }
         }
         haveOffsetPrev = true;
         // Compute forces and energies, for the induction energy also with
@@ -2296,7 +2414,7 @@ void MolHandler::simulate(MsgHandler                    *msghandler,
         if (simConfig.constrain())
         {
             ScopedTimer timer(constraintTimer);
-            if (constrainer.rattle(msghandler, coordinates, &velocities) != 0)
+            if (constrainer.rattleDouble(msghandler, frame.relative(coordinates), &velocities) != 0)
             {
                 msghandler->msg(ACTStatus::Warning,
                                 gmx::formatString("RATTLE did not converge at step %d.", step));
@@ -2307,7 +2425,7 @@ void MolHandler::simulate(MsgHandler                    *msghandler,
         if (simConfig.nstcomm() > 0 && (step + 1) % simConfig.nstcomm() == 0)
         {
             ScopedTimer timer(integrationTimer);
-            commRemover.remove(coordinates, &velocities);
+            commRemover.remove(coordinates.toRVec(), &velocities);
             timings.addFlops(60*nmoving);
         }
         // Swap force arrays
