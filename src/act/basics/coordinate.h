@@ -151,8 +151,11 @@ inline Coordinate coordinateSum(Coordinate a, Coordinate b)
  */
 inline Coordinate moveCoordinate(Coordinate c, double d)
 {
+    // Displacements of less than a nm, as when relaxing shells, fit in the
+    // integers without checking the range
+    Coordinate step = (std::abs(d) < 1) ? static_cast<Coordinate>(std::rint(d*coordinateScale)) : toCoordinateClamped(d);
     Coordinate moved;
-    if (__builtin_add_overflow(c, toCoordinateClamped(d), &moved))
+    if (__builtin_add_overflow(c, step, &moved))
     {
         moved = (d > 0) ? toCoordinate(0.999*coordinateMax) : toCoordinate(-0.999*coordinateMax);
     }
