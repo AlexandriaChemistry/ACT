@@ -98,7 +98,7 @@ private:
     //! Inverse tolerances on the squared distances
     std::vector<double>    distance_squared_tolerance_;
     //! Distance vectors of the constrained pairs in the reference coordinates
-    std::vector<gmx::RVec> initial_displacements_;
+    std::vector<gmx::DVec> initial_displacements_;
     //! Inverse masses of all particles
     std::vector<double>    invmass_;
     //! Two constraints that share an atom
@@ -133,7 +133,21 @@ private:
     /*! \brief Prepare for shaking or rattling by computing the initial displacements
      * \param[in] positions  The coordinates of all particles
      */
-    void computeInitialDisplacements(const std::vector<gmx::RVec> &positions);
+    template <typename X>
+    void computeInitialDisplacements(const std::vector<X> &positions);
+
+    /*! \brief Execute the Shake algorithm, see shake
+     * \param[in]    reference  The coordinates before the integration step
+     * \param[inout] positions  The coordinates of all particles
+     * \param[inout] velocities The velocities for all particles, may be nullptr
+     * \tparam       X          The vector type of the coordinates, the
+     *                          tolerance is at least their rounding
+     * \return error code
+     */
+    template <typename X>
+    int shakeT(const std::vector<X>   &reference,
+               std::vector<X>         *positions,
+               std::vector<gmx::RVec> *velocities);
 
     /*! \brief Add a constraint
      * \param[in] ai     The first atom
@@ -255,6 +269,29 @@ public:
     int rattle(MsgHandler                   *msghandler,
                const std::vector<gmx::RVec> &positions,
                std::vector<gmx::RVec>       *velocities);
+
+    /*! \brief Execute the Shake algorithm with coordinates in double precision
+     * As shake, the coordinates are constrained to within the tolerance
+     * also if that is below the precision of real. The velocities are not
+     * changed, they can be changed by the displacements.
+     * \param[in]    msghandler For warnings and errors
+     * \param[in]    reference  The coordinates before the integration step
+     * \param[inout] positions  The coordinates of all particles
+     * \return error code corresponding the (n+1)th constraint or zero if fine
+     */
+    int shakeDouble(MsgHandler                   *msghandler,
+                    const std::vector<gmx::DVec> &reference,
+                    std::vector<gmx::DVec>       *positions);
+
+    /*! \brief Execute the second part of rattle with coordinates in double precision
+     * \param[in]    msghandler For warnings and errors
+     * \param[in]    positions  The coordinates of all particles
+     * \param[inout] velocities The velocities for all particles
+     * \return zero if fine, 1 if the equations could not be solved
+     */
+    int rattleDouble(MsgHandler                   *msghandler,
+                     const std::vector<gmx::DVec> &positions,
+                     std::vector<gmx::RVec>       *velocities);
 
     /*! \brief Remove the force components along the constraints
      *

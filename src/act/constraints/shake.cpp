@@ -35,8 +35,10 @@
 
 #include <algorithm>
 #include <cmath>
+#include <limits>
 #include <map>
 #include <set>
+#include <type_traits>
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpragmas"
@@ -302,14 +304,26 @@ void Constrainer::makeConstraintList(MsgHandler                   *msghandler,
     }
 }
 
-void Constrainer::computeInitialDisplacements(const std::vector<gmx::RVec> &positions)
+/*! \brief The difference of two vectors in double precision
+ * \param[in] a The first vector
+ * \param[in] b The second vector
+ * \return a - b
+ */
+template <typename X>
+static gmx::DVec differenceDouble(const X &a, const X &b)
+{
+    return { static_cast<double>(a[XX]) - static_cast<double>(b[XX]),
+             static_cast<double>(a[YY]) - static_cast<double>(b[YY]),
+             static_cast<double>(a[ZZ]) - static_cast<double>(b[ZZ]) };
+}
+
+template <typename X>
+void Constrainer::computeInitialDisplacements(const std::vector<X> &positions)
 {
     initial_displacements_.clear();
     for (const auto &p : pairs_)
     {
-        rvec dx;
-        rvec_sub(positions[p[0]], positions[p[1]], dx);
-        initial_displacements_.push_back(dx);
+        initial_displacements_.push_back(differenceDouble(positions[p[0]], positions[p[1]]));
     }
 }
 
@@ -367,11 +381,12 @@ void Constrainer::makeCoupledPairs()
  * \param[in]    factor  The factor per constraint
  * \param[inout] x       The coordinates or velocities to change
  */
+template <typename X>
 static void displace(const std::vector<std::array<int, 2>> &pairs,
                      const std::vector<double>             &invmass,
-                     const std::vector<gmx::RVec>          &vecs,
+                     const std::vector<gmx::DVec>          &vecs,
                      const Eigen::VectorXd                 &factor,
-                     std::vector<gmx::RVec>                *x)
+                     std::vector<X>                        *x)
 {
     for (size_t b = 0; b < pairs.size(); b++)
     {
@@ -390,13 +405,28 @@ int Constrainer::shake(gmx_unused MsgHandler        *msghandler,
                        std::vector<gmx::RVec>       *positions,
                        std::vector<gmx::RVec>       *velocities)
 {
+    return shakeT(reference, positions, velocities);
+}
+
+int Constrainer::shakeDouble(gmx_unused MsgHandler        *msghandler,
+                             const std::vector<gmx::DVec> &reference,
+                             std::vector<gmx::DVec>       *positions)
+{
+    return shakeT(reference, positions, nullptr);
+}
+
+template <typename X>
+int Constrainer::shakeT(const std::vector<X>   &reference,
+                        std::vector<X>         *positions,
+                        std::vector<gmx::RVec> *velocities)
+{
     if (pairs_.empty())
     {
         return 0;
     }
     computeInitialDisplacements(reference);
     // Keep the unconstrained positions to correct the velocities
-    std::vector<gmx::RVec> unconstrained;
+    std::vector<X>         unconstrained;
     if (velocities)
     {
         unconstrained = *positions;
@@ -409,13 +439,14 @@ int Constrainer::shake(gmx_unused MsgHandler        *msghandler,
     auto                   nc = pairs_.size();
     Eigen::MatrixXd        A(nc, nc);
     Eigen::VectorXd        diff(nc);
-    std::vector<gmx::RVec> dx(nc);
-    std::vector<gmx::RVec> start;
+    std::vector<gmx::DVec> dx(nc);
+    std::vector<X>         start;
     // The distances are not more precise than the coordinates, which are
     // rounded to the precision of real, by up to that times their
     // magnitude. Far from the origin that is more than the tolerance in
     // single precision, then the tolerance of a constraint is a few times
     // the rounding of the coordinates of its atoms relative to its length.
+    const double        eps = std::numeric_limits<typename std::remove_reference_t<decltype((*positions)[0][0])>>::epsilon();
     std::vector<double> tolerance(distance_squared_tolerance_);
     for (size_t a = 0; a < nc; a++)
     {
@@ -428,7 +459,7 @@ int Constrainer::shake(gmx_unused MsgHandler        *msghandler,
             }
         }
         double length2  = constraint_distance_squared_[a];
-        double rounding = 4*GMX_REAL_EPS*xmax/std::sqrt(length2);
+        double rounding = 4*eps*xmax/std::sqrt(length2);
         tolerance[a]    = std::min(tolerance[a], 0.5/(rounding*length2));
     }
     // Compute the deviations, return the sum of the squared relative deviations
@@ -437,8 +468,8 @@ int Constrainer::shake(gmx_unused MsgHandler        *msghandler,
         double sum = 0;
         for (size_t a = 0; a < nc; a++)
         {
-            rvec_sub((*positions)[pairs_[a][0]], (*positions)[pairs_[a][1]], dx[a]);
-            diff[a]    = constraint_distance_squared_[a] - norm2(dx[a]);
+            dx[a]      = differenceDouble((*positions)[pairs_[a][0]], (*positions)[pairs_[a][1]]);
+            diff[a]    = constraint_distance_squared_[a] - dx[a].norm2();
             double rel = diff[a] * tolerance[a];
             sum       += rel*rel;
         }
@@ -463,7 +494,7 @@ int Constrainer::shake(gmx_unused MsgHandler        *msghandler,
         A.setZero();
         for (const auto &c : coupled_)
         {
-            A(c.a, c.b) = 2*c.coupling*iprod(dx[c.a], initial_displacements_[c.b]);
+            A(c.a, c.b) = 2*c.coupling*dx[c.a].dot(initial_displacements_[c.b]);
         }
         Eigen::VectorXd g = A.partialPivLu().solve(diff);
         if (!g.allFinite())
@@ -550,7 +581,7 @@ void Constrainer::setFrozen(const std::vector<int> &frozen)
 template <typename CoupledPair>
 static bool solveProjection(const std::vector<std::array<int, 2>> &pairs,
                             const std::vector<CoupledPair>        &coupled,
-                            const std::vector<gmx::RVec>          &r,
+                            const std::vector<gmx::DVec>          &r,
                             const std::vector<gmx::RVec>          &u,
                             Eigen::VectorXd                       *h)
 {
@@ -559,13 +590,11 @@ static bool solveProjection(const std::vector<std::array<int, 2>> &pairs,
     Eigen::VectorXd uproj(nc);
     for (size_t a = 0; a < nc; a++)
     {
-        rvec du;
-        rvec_sub(u[pairs[a][0]], u[pairs[a][1]], du);
-        uproj[a] = -iprod(du, r[a]);
+        uproj[a] = -differenceDouble(u[pairs[a][0]], u[pairs[a][1]]).dot(r[a]);
     }
     for (const auto &c : coupled)
     {
-        A(c.a, c.b) = c.coupling*iprod(r[c.a], r[c.b]);
+        A(c.a, c.b) = c.coupling*r[c.a].dot(r[c.b]);
     }
     *h = A.partialPivLu().solve(uproj);
     return h->allFinite();
@@ -597,6 +626,28 @@ int Constrainer::rattle(MsgHandler                   *msghandler,
         msghandler->writeDebug(gmx::formatString("Rattled with error code %d", error));
     }
     return error;
+}
+
+int Constrainer::rattleDouble(MsgHandler                   *msghandler,
+                              const std::vector<gmx::DVec> &positions,
+                              std::vector<gmx::RVec>       *velocities)
+{
+    if (pairs_.empty())
+    {
+        return 0;
+    }
+    computeInitialDisplacements(positions);
+    Eigen::VectorXd h;
+    if (!solveProjection(pairs_, coupled_, initial_displacements_, *velocities, &h))
+    {
+        return 1;
+    }
+    displace(pairs_, invmass_, initial_displacements_, h, velocities);
+    if (msghandler && msghandler->debug())
+    {
+        msghandler->writeDebug("Rattled with error code 0");
+    }
+    return 0;
 }
 
 int Constrainer::projectForces(gmx_unused MsgHandler        *msghandler,
