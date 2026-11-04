@@ -2106,7 +2106,16 @@ void MolHandler::simulate(MsgHandler                    *msghandler,
         // Start from coordinates that satisfy the constraints
         if (constrainer.shake(msghandler, &coordinates) != 0)
         {
-            msghandler->fatal("Could not constrain the starting coordinates. The reference bond lengths and angles may be inconsistent, for instance in rings. Try -constrain bonds.");
+            // With angles the reference geometry may not be possible,
+            // otherwise the tolerance may be smaller than the precision
+            // allows
+            std::string reason;
+            if (constrainer.numAngleConstraints() > 0)
+            {
+                reason = " The reference bond lengths and angles may be inconsistent, for instance in rings, then try -constrain bonds.";
+            }
+            msghandler->fatal(gmx::formatString("Could not constrain the starting coordinates within the relative tolerance %g.%s Try a larger tolerance with -constr_toler.",
+                                                simConfig.constraintTolerance(), reason.c_str()));
         }
     }
     COMMRemover commRemover(simConfig.commRemoval(), mol->atomsConst(), coordinates);
