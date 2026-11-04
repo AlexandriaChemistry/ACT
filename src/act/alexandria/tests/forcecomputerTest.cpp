@@ -261,7 +261,8 @@ protected:
                     const char *xyz[DIM] = { "X", "Y", "Z" };
                     // In single precision the errors are relative to the
                     // largest element, due to the resolution of the shell
-                    // coordinates compared to their displacements.
+                    // coordinates compared to their displacements, and of
+                    // the forces in single precision on them.
                     double amax = 0;
                     for(int m = 0; m < DIM; m++)
                     {
@@ -270,7 +271,7 @@ protected:
                             amax = std::max(amax, std::abs(convertFromGromacs(alpha[m][n], "A^3")));
                         }
                     }
-                    setSingleTolerance(1e-5*amax);
+                    setSingleTolerance(2e-5*amax);
                 
                     for(int m = 0; m < DIM; m++)
                     {
