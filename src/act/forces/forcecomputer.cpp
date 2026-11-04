@@ -148,6 +148,25 @@ void ForceComputer::spreadVsiteForces(const Topology               *top,
     vsiteHandler_.distributeForces(top, *coordinates, forces);
 }
 
+void ForceComputer::constructVsiteCoordinates(const Topology *top,
+                                              Coordinates    *coordinates) const
+{
+    // As one slot of the arrays, relative to the parents
+    vsiteHandler_.constructPositions(top, coordinates->view().data(), 1, 1, 1);
+}
+
+void ForceComputer::spreadVsiteForces(const Topology         *top,
+                                      const Coordinates      *coordinates,
+                                      std::vector<gmx::RVec> *forces) const
+{
+    GMX_RELEASE_ASSERT(coordinates->size() == forces->size(), "Coordinates and forces of different particles");
+    if (forces->empty())
+    {
+        return;
+    }
+    vsiteHandler_.distributeForces(top, coordinates->view().data(), (*forces)[0].as_vec(), 1, 1, 1);
+}
+
 double calc_fscale(double k1, double k2, double F0)
 {
     if (F0 == 0)
@@ -316,10 +335,26 @@ void ForceComputer::compute(MsgHandler                        *msg_handler,
                             std::set<int>                      relax,
                             bool                               shellsFromInput) const
 {
+    Coordinates x(*coordinates);
+    compute(msg_handler, pd, top, &x, forces, energies, field, resetShells, relax, shellsFromInput);
+    *coordinates = x.toRVec();
+}
+
+void ForceComputer::compute(MsgHandler                        *msg_handler,
+                            const ForceField                  *pd,
+                            const Topology                    *top,
+                            Coordinates                       *coordinates,
+                            std::vector<gmx::RVec>            *forces,
+                            std::map<InteractionType, double> *energies,
+                            const gmx::RVec                   &field,
+                            bool                               resetShells,
+                            std::set<int>                      relax,
+                            bool                               shellsFromInput) const
+{
     // One conformation, computed with the SIMD routines
     ConformationSet set;
     set.top = top;
-    set.setCoordinates({ *coordinates });
+    set.setCoordinates(std::vector<Coordinates>{ *coordinates });
     ShellOptions options;
     options.field       = field;
     options.resetShells     = resetShells;
@@ -327,7 +362,7 @@ void ForceComputer::compute(MsgHandler                        *msg_handler,
     options.shellsFromInput = shellsFromInput;
     std::vector<std::map<InteractionType, double>> emaps;
     computeTotal(msg_handler, pd, &set, options, &emaps);
-    *coordinates = set.data.x(0).toRVec();
+    *coordinates = Coordinates(set.data.x(0));
     *forces      = set.data.f(0).toRVec();
     *energies    = emaps[0];
 }
@@ -2071,11 +2106,23 @@ void ForceComputer::computeOnce(MsgHandler                        *msg_handler,
                                 std::map<InteractionType, double> *energies,
                                 const gmx::RVec                   &field) const
 {
+    Coordinates x(*coordinates);
+    computeOnce(msg_handler, pd, top, &x, forces, energies, field);
+}
+
+void ForceComputer::computeOnce(MsgHandler                        *msg_handler,
+                                const ForceField                  *pd,
+                                const Topology                    *top,
+                                const Coordinates                 *coordinates,
+                                std::vector<gmx::RVec>            *forces,
+                                std::map<InteractionType, double> *energies,
+                                const gmx::RVec                   &field) const
+{
     // One conformation, computed with the SIMD routines, the shells
     // and the virtual sites stay where they are
     ConformationSet set;
     set.top = top;
-    set.setCoordinates({ *coordinates });
+    set.setCoordinates(std::vector<Coordinates>{ *coordinates });
     ShellOptions options;
     options.relax        = false;
     options.resetShells  = false;

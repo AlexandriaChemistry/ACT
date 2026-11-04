@@ -96,6 +96,17 @@ struct ConformationSet
         data.invalidate();
     }
 
+    //! \copydoc setCoordinates(const std::vector<std::vector<gmx::RVec>> &)
+    void setCoordinates(const std::vector<Coordinates> &x)
+    {
+        data.confs.resize(x.size());
+        for(size_t c = 0; c < x.size(); c++)
+        {
+            data.setX(c, x[c].view());
+        }
+        data.invalidate();
+    }
+
     //! \brief Mark the coordinates as changed
     void invalidate() { data.invalidate(); }
 };
@@ -264,6 +275,24 @@ private:
                            const std::vector<gmx::RVec> *coordinates,
                            std::vector<gmx::RVec>       *forces) const;
 
+    /*! \brief Construct virtual site coordinates from integer coordinates
+     * As the other constructVsiteCoordinates, from the coordinates relative
+     * to the parents, which are exact, see coordinate.h.
+     * \param[in]    top         Molecular topology containing vsite information
+     * \param[inout] coordinates The coordinates, the virtual sites are set
+     */
+    void constructVsiteCoordinates(const Topology *top,
+                                   Coordinates    *coordinates) const;
+
+    /*! \brief Distribute forces on virtual sites to atoms with integer coordinates
+     * \param[in]    top         Molecular topology containing vsite information
+     * \param[in]    coordinates The coordinates
+     * \param[inout] forces      The forces will be updated and vsite forces set to zero
+     */
+    void spreadVsiteForces(const Topology         *top,
+                           const Coordinates      *coordinates,
+                           std::vector<gmx::RVec> *forces) const;
+
     /*! Do one actual computations.
      * Will do one force/energy computation.
      * \param[in]  msg_handler For debugging, may be nullptr
@@ -279,6 +308,24 @@ private:
                      const ForceField                  *pd,
                      const Topology                    *top,
                      std::vector<gmx::RVec>            *coordinates,
+                     std::vector<gmx::RVec>            *forces,
+                     std::map<InteractionType, double> *energies,
+                     const gmx::RVec                   &field) const;
+
+    /*! \brief Do one computation with integer coordinates
+     * As the other computeOnce, without rounding the coordinates to real.
+     * \param[in]  msg_handler For debugging, may be nullptr
+     * \param[in]  pd          The force field structure
+     * \param[in]  top         The molecular topology
+     * \param[in]  coordinates The coordinates
+     * \param[out] forces      The atomic forces
+     * \param[out] energies    The energy components
+     * \param[in]  field       Optional electric field to be applied
+     */
+    void computeOnce(MsgHandler                        *msg_handler,
+                     const ForceField                  *pd,
+                     const Topology                    *top,
+                     const Coordinates                 *coordinates,
                      std::vector<gmx::RVec>            *forces,
                      std::map<InteractionType, double> *energies,
                      const gmx::RVec                   &field) const;
@@ -373,6 +420,32 @@ private:
                  const ForceField                  *pd,
                  const Topology                    *top,
                  std::vector<gmx::RVec>            *coordinates,
+                 std::vector<gmx::RVec>            *forces,
+                 std::map<InteractionType, double> *energies,
+                 const gmx::RVec                   &field = { 0.0, 0.0, 0.0 },
+                 bool                               resetShells = true,
+                 std::set<int>                      relax = {},
+                 bool                               shellsFromInput = false) const;
+
+    /*! \brief Do complete energy/force computation with integer coordinates
+     * As the other compute, without rounding the coordinates to real.
+     * \param[in]  msg_handler For debugging, may be nullptr
+     * \param[in]  pd          Pointer to force field structure
+     * \param[in]  top         The molecular topology
+     * \param[in]  coordinates The coordinates. Coordinates of shell
+     *                         particles may be changed.
+     * \param[out] forces      The atomic forces
+     * \param[out] energies    The energy components
+     * \param[in]  field       Optional electric field to be applied
+     * \param[in]  resetShells Set the position of the shells to that of the connecting atoms
+     * \param[in]  relax       Indices of the shells to relax, if empty all shells are relaxed
+     * \param[in]  shellsFromInput With resetShells, start the relaxation from the
+     *                         input positions of the shells, see ShellOptions
+     */
+    void compute(MsgHandler                        *msg_handler,
+                 const ForceField                  *pd,
+                 const Topology                    *top,
+                 Coordinates                       *coordinates,
                  std::vector<gmx::RVec>            *forces,
                  std::map<InteractionType, double> *energies,
                  const gmx::RVec                   &field = { 0.0, 0.0, 0.0 },
