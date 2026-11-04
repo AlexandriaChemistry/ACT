@@ -400,6 +400,66 @@ static const double minShellStep = 0.1;
 //! Largest scaling of the step of the shells, see updateShells
 static const double maxShellStep = 1.0;
 
+/*! \brief The squared shell forces of many conformations, see shellForce2
+ * The loop over the conformations is the inner loop, such that the
+ * coordinates and forces of the conformations in consecutive slots are
+ * accessed together. Each conformation is computed as by shellForce2.
+ * \param[in]  atoms             The particles
+ * \param[in]  isShell           Whether or not the particles are shells
+ * \param[in]  cdata             The conformations
+ * \param[in]  confs             The conformations to compute
+ * \param[in]  offset            Index of the first particle in the conformations
+ * \param[in]  maxShellDistance2 Square of the maximum core-shell distance, 0 if there is none
+ * \param[out] f2sum             The sum of the squared shell forces of each conformation
+ */
+static void shellForces2(const std::vector<ActAtom>  &atoms,
+                         const std::vector<bool>     &isShell,
+                         const ConformationData      *cdata,
+                         const std::vector<size_t>   &confs,
+                         size_t                       offset,
+                         double                       maxShellDistance2,
+                         std::vector<double>         *f2sum)
+{
+    // Shells are put on the wall by scaling, allow for rounding
+    const double atWall = 0.9999*maxShellDistance2;
+    size_t       n      = confs.size();
+    f2sum->assign(n, 0.0);
+    // Floating point operations, see Timings::addFlops
+    double       flops  = n;
+    for(size_t i = 0; i < isShell.size(); i++)
+    {
+        if (!isShell[i])
+        {
+            continue;
+        }
+        bool wall = maxShellDistance2 > 0 && atoms[i].parents().size() == 1;
+        for(size_t k = 0; k < n; k++)
+        {
+            auto      x  = cdata->x(confs[k]);
+            auto      f  = cdata->f(confs[k]);
+            gmx::RVec fi = f[i+offset].rvec();
+            double    f2 = iprod(fi, fi);
+            // The square and the sum
+            flops += 6;
+            if (wall)
+            {
+                rvec dx;
+                rvec_sub(x[i+offset].rvec(), x[atoms[i].parents()[0]+offset].rvec(), dx);
+                double dx2 = iprod(dx, dx);
+                double fdx = iprod(fi, dx);
+                flops += 13;
+                if (dx2 >= atWall && fdx > 0)
+                {
+                    f2    -= fdx*fdx/dx2;
+                    flops += 7;
+                }
+            }
+            (*f2sum)[k] += f2;
+        }
+    }
+    Timings::instance().addFlops(flops);
+}
+
 size_t ForceComputer::updateShells(const Topology            *top,
                                    size_t                     offset,
                                    size_t                     nShell,
@@ -409,146 +469,189 @@ size_t ForceComputer::updateShells(const Topology            *top,
                                    ConformationData          *cdata,
                                    const std::vector<size_t> *active) const
 {
-    auto *myCoords = &cdata->confs;
+    auto  *myCoords   = &cdata->confs;
     auto   itype      = InteractionType::POLARIZATION;
+    auto  &pols       = top->entry(itype);
+    auto  &atoms      = top->atoms();
     size_t numberDone = 0;
     double maxShellDistance2 = maxShellDistance*maxShellDistance;
-    // Floating point operations, see Timings::addFlops, those of shellForce2
+    // Floating point operations, see Timings::addFlops, those of shellForces2
     // are counted there
     double flops      = 1;
+    // The conformations that are not done, in the order of their slots,
+    // such that the loops over them access the arrays in order. Each
+    // conformation is computed independently of the others.
+    std::vector<size_t> confs;
     size_t nconf      = active ? active->size() : myCoords->size();
     for(size_t i = 0; i < nconf; i++)
     {
-        size_t c   = active ? (*active)[i] : i;
-        auto  &dim = (*myCoords)[c];
-        auto   x   = cdata->x(c);
-        ParticleVectors<const real> f = cdata->f(c);
-        if (dim.done)
+        size_t c = active ? (*active)[i] : i;
+        if ((*myCoords)[c].done)
         {
-            numberDone += 1;
-            continue;
-        }
-        // Mean square shell force
-        double msForce = shellForce2(top->atoms(), isShell, x, f,
-                                     offset, maxShellDistance2);
-        if (nShell > 0)
-        {
-            msForce /= nShell;
-            flops   += 5;
-        }
-        if (msForce <= msForceToler_)
-        {
-            dim.done    = true;
             numberDone += 1;
         }
         else
         {
-            auto &pols  = top->entry(itype);
-            auto &atoms = top->atoms();
-            // The step is scaled by the fraction of the previous step at
-            // which the force along it would have been zero, from the
-            // forces before and after it. For an isolated harmonic shell
-            // this is one, since the step is a Newton step, coupled shells
-            // can overshoot or undershoot.
-            if (dim.shellDxForce[fragment] > 0 && dim.shellDx.size() == x.size())
-            {
-                double before = dim.shellDxForce[fragment];
-                double after  = 0;
-                for(const auto &p : pols)
-                {
-                    int shellLocal = p->atomIndex(1);
-                    if (isShell[shellLocal])
-                    {
-                        int shellGlobal = shellLocal + static_cast<int>(offset);
-                        after += iprod(dim.shellDx[shellGlobal], f[shellGlobal].rvec());
-                        flops += 6;
-                    }
-                }
-                double scale = (before > after) ? before/(before - after) : 1.0;
-                dim.shellStep[fragment] = std::clamp(dim.shellStep[fragment]*scale,
-                                                     minShellStep, maxShellStep);
-                flops += (before > after) ? 7 : 1;
-            }
-            // If the force increased anyway, the step is reduced, see compute
-            if (msForce > dim.shellForce[fragment])
-            {
-                dim.shellStep[fragment] = std::min(dim.shellStep[fragment], 0.5);
-            }
-            dim.shellForce[fragment] = msForce;
-            dim.shellDx.resize(x.size());
-            double dxForce = 0;
-            // Loop over polarizabilities
-            for(const auto &p : pols)
-            {
-                // Displace the shells according to the force
-                // Since the potential is harmonic we use Hooke's law
-                // F = k dx -> dx = F / k
-                // Note that this only works for purely harmonic potentials,
-                // see function calc_fscale for quartic potentials.
-                // The atom indices stored in the fragment topology are local,
-                // whereas the coordinates/forces of the dimer are global, so
-                // we add the offset to map local -> global indices.
-                int shellLocal   = p->atomIndex(1);
-                int coreLocal    = p->atomIndex(0);
-                // Only the shells in the mask are relaxed
-                if (!isShell[shellLocal])
-                {
-                    continue;
-                }
-                int shellGlobal  = shellLocal + static_cast<int>(offset);
-                int coreGlobal   = coreLocal + static_cast<int>(offset);
-                // The force constant from the current polarizability and
-                // shell charge, since both may be trained, as in compute.
-                auto   &params = p->params();
-                double  alpha  = params[polALPHA];
-                double  qshell = atoms[shellLocal].charge();
-                double  fc1    = 0;
-                if (alpha > 0 && qshell != 0)
-                {
-                    fc1    = (qshell*qshell*ONE_4PI_EPS0)/alpha;
-                    flops += 7;
-                }
-                gmx::RVec xold = x[shellGlobal].rvec();
-                flops += update_shell_positions(coreGlobal, shellGlobal,
-                                                x, f,
-                                                fc1, params[polFCHYPER], params[polRHYPER],
-                                                dim.shellStep[fragment]);
-                bool clipped = false;
-                // Check distance from parent, if there is only one
-                if (maxShellDistance2 > 0 && atoms[shellLocal].parents().size() == 1)
-                {
-                    int coreParentLocal  = atoms[shellLocal].parents()[0];
-                    int coreParentGlobal = coreParentLocal + static_cast<int>(offset);
-                    rvec dx;
-                    rvec_sub(x[shellGlobal].rvec(), x[coreParentGlobal].rvec(), dx);
-                    real dx2 = iprod(dx, dx);
-                    flops   += 8;
-                    if (dx2 > maxShellDistance2)
-                    {
-                        // Move back the shell/drude to the wall distance
-                        real scale = std::sqrt(maxShellDistance2/dx2);
-                        for (int m = 0; m < DIM; m++)
-                        {
-                            x[shellGlobal][m] = x[coreParentGlobal][m] + scale*dx[m];
-                        }
-                        clipped = true;
-                        flops  += 16;
-                    }
-                }
-                // Shells held at the maximum distance do not tell how far to step
-                if (clipped)
-                {
-                    clear_rvec(dim.shellDx[shellGlobal]);
-                }
-                else
-                {
-                    rvec_sub(x[shellGlobal].rvec(), xold, dim.shellDx[shellGlobal]);
-                    dxForce += iprod(dim.shellDx[shellGlobal], f[shellGlobal].rvec());
-                    flops   += 9;
-                }
-            }
-            dim.shellDxForce[fragment] = dxForce;
+            confs.push_back(c);
         }
+    }
+    const auto &ca = cdata->arrays;
+    std::sort(confs.begin(), confs.end(),
+              [&ca](size_t a, size_t b) { return ca.slot(a) < ca.slot(b); });
+    // Mean square shell force
+    std::vector<double> msForce;
+    shellForces2(atoms, isShell, cdata, confs, offset, maxShellDistance2, &msForce);
+    // The conformations of which the shells are moved
+    std::vector<size_t> relax;
+    for(size_t k = 0; k < confs.size(); k++)
+    {
+        if (nShell > 0)
+        {
+            msForce[k] /= nShell;
+            flops      += 5;
+        }
+        if (msForce[k] <= msForceToler_)
+        {
+            (*myCoords)[confs[k]].done = true;
+            numberDone                += 1;
+        }
+        else
+        {
+            relax.push_back(k);
+        }
+    }
+    size_t natom = cdata->x(0).size();
+    // The step is scaled by the fraction of the previous step at which
+    // the force along it would have been zero, from the forces before and
+    // after it. For an isolated harmonic shell this is one, since the step
+    // is a Newton step, coupled shells can overshoot or undershoot.
+    std::vector<double> after(relax.size(), 0.0);
+    std::vector<char>   scaled(relax.size(), 0);
+    for(size_t r = 0; r < relax.size(); r++)
+    {
+        const auto &dim = (*myCoords)[confs[relax[r]]];
+        scaled[r] = dim.shellDxForce[fragment] > 0 && dim.shellDx.size() == natom;
+    }
+    for(const auto &p : pols)
+    {
+        int shellLocal = p->atomIndex(1);
+        if (!isShell[shellLocal])
+        {
+            continue;
+        }
+        int shellGlobal = shellLocal + static_cast<int>(offset);
+        for(size_t r = 0; r < relax.size(); r++)
+        {
+            if (scaled[r])
+            {
+                size_t c = confs[relax[r]];
+                after[r] += iprod((*myCoords)[c].shellDx[shellGlobal], cdata->f(c)[shellGlobal].rvec());
+                flops    += 6;
+            }
+        }
+    }
+    for(size_t r = 0; r < relax.size(); r++)
+    {
+        size_t k   = relax[r];
+        auto  &dim = (*myCoords)[confs[k]];
+        if (scaled[r])
+        {
+            double before = dim.shellDxForce[fragment];
+            double scale  = (before > after[r]) ? before/(before - after[r]) : 1.0;
+            dim.shellStep[fragment] = std::clamp(dim.shellStep[fragment]*scale,
+                                                 minShellStep, maxShellStep);
+            flops += (before > after[r]) ? 7 : 1;
+        }
+        // If the force increased anyway, the step is reduced, see compute
+        if (msForce[k] > dim.shellForce[fragment])
+        {
+            dim.shellStep[fragment] = std::min(dim.shellStep[fragment], 0.5);
+        }
+        dim.shellForce[fragment] = msForce[k];
+        dim.shellDx.resize(natom);
+    }
+    std::vector<double> dxForce(relax.size(), 0.0);
+    // Loop over polarizabilities
+    for(const auto &p : pols)
+    {
+        // Displace the shells according to the force
+        // Since the potential is harmonic we use Hooke's law
+        // F = k dx -> dx = F / k
+        // Note that this only works for purely harmonic potentials,
+        // see function calc_fscale for quartic potentials.
+        // The atom indices stored in the fragment topology are local,
+        // whereas the coordinates/forces of the dimer are global, so
+        // we add the offset to map local -> global indices.
+        int shellLocal   = p->atomIndex(1);
+        int coreLocal    = p->atomIndex(0);
+        // Only the shells in the mask are relaxed
+        if (!isShell[shellLocal])
+        {
+            continue;
+        }
+        int shellGlobal  = shellLocal + static_cast<int>(offset);
+        int coreGlobal   = coreLocal + static_cast<int>(offset);
+        // The force constant from the current polarizability and
+        // shell charge, since both may be trained, as in compute.
+        auto   &params = p->params();
+        double  alpha  = params[polALPHA];
+        double  qshell = atoms[shellLocal].charge();
+        double  fc1    = 0;
+        if (alpha > 0 && qshell != 0)
+        {
+            fc1    = (qshell*qshell*ONE_4PI_EPS0)/alpha;
+            flops += 7*relax.size();
+        }
+        // The parent of the shell, to check the distance from it
+        bool wall             = maxShellDistance2 > 0 && atoms[shellLocal].parents().size() == 1;
+        int  coreParentGlobal = wall ? atoms[shellLocal].parents()[0] + static_cast<int>(offset) : 0;
+        for(size_t r = 0; r < relax.size(); r++)
+        {
+            size_t                      c   = confs[relax[r]];
+            auto                       &dim = (*myCoords)[c];
+            auto                        x   = cdata->x(c);
+            ParticleVectors<const real> f   = cdata->f(c);
+            gmx::RVec xold = x[shellGlobal].rvec();
+            flops += update_shell_positions(coreGlobal, shellGlobal,
+                                            x, f,
+                                            fc1, params[polFCHYPER], params[polRHYPER],
+                                            dim.shellStep[fragment]);
+            bool clipped = false;
+            // Check distance from parent, if there is only one
+            if (wall)
+            {
+                rvec dx;
+                rvec_sub(x[shellGlobal].rvec(), x[coreParentGlobal].rvec(), dx);
+                real dx2 = iprod(dx, dx);
+                flops   += 8;
+                if (dx2 > maxShellDistance2)
+                {
+                    // Move back the shell/drude to the wall distance
+                    real scale = std::sqrt(maxShellDistance2/dx2);
+                    for (int m = 0; m < DIM; m++)
+                    {
+                        x[shellGlobal][m] = x[coreParentGlobal][m] + scale*dx[m];
+                    }
+                    clipped = true;
+                    flops  += 16;
+                }
+            }
+            // Shells held at the maximum distance do not tell how far to step
+            if (clipped)
+            {
+                clear_rvec(dim.shellDx[shellGlobal]);
+            }
+            else
+            {
+                rvec_sub(x[shellGlobal].rvec(), xold, dim.shellDx[shellGlobal]);
+                dxForce[r] += iprod(dim.shellDx[shellGlobal], f[shellGlobal].rvec());
+                flops      += 9;
+            }
+        }
+    }
+    for(size_t r = 0; r < relax.size(); r++)
+    {
+        (*myCoords)[confs[relax[r]]].shellDxForce[fragment] = dxForce[r];
     }
     Timings::instance().addFlops(flops);
     return numberDone;
