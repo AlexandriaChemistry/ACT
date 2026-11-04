@@ -746,6 +746,10 @@ struct ShellRelaxation
     std::vector<double> dxForce;
     //! Displacements of the shells in the previous step, component m of particle a in row DIM*a+m
     std::vector<real>   dx;
+    //! Work vectors of ForceComputer::updateShells, kept to use the memory again
+    std::vector<double> msForce, fmax, after, dxStep, disp, rcs;
+    //! Likewise, whether the shells in each slot are relaxed
+    std::vector<char>   relax;
 
     /*! \brief Start the shell relaxation with full steps
      * \param[in] st    The stride of the arrays
