@@ -189,6 +189,48 @@ static inline SimdFloat load(const float *p) { return SimdFloat(_mm512_loadu_ps(
 //! Store sixteen floats to memory
 static inline void store(float *p, SimdFloat a) { _mm512_storeu_ps(p, a.v); }
 
+/*! \brief Convert eight 64-bit integers to doubles, rounded once
+ * The conversion of 64-bit integers needs AVX512DQ, the parts are
+ * converted as in simd_avx2.h instead.
+ * \param[in] v The integers
+ * \return the doubles
+ */
+static inline __m512d int64ToDouble(__m512i v)
+{
+    const __m512i magicLo  = _mm512_set1_epi64(0x4330000000000000LL); // 2^52
+    const __m512i magicHi  = _mm512_set1_epi64(0x4530000080000000LL); // 2^84 + 2^63
+    const __m512d magicAll = _mm512_set1_pd(19342822341709703277445120.0); // 2^84 + 2^63 + 2^52
+    __m512i       lo       = _mm512_mask_blend_epi32(0x5555, magicLo, v);
+    __m512i       hi       = _mm512_xor_si512(_mm512_srli_epi64(v, 32), magicHi);
+    __m512d       hiD      = _mm512_sub_pd(_mm512_castsi512_pd(hi), magicAll);
+    return _mm512_add_pd(hiD, _mm512_castsi512_pd(lo));
+}
+
+/*! \brief The differences of two times eight integers, as doubles
+ * \param[in] a The first integers
+ * \param[in] b The second integers
+ * \return a - b, computed with wrap-around in 64 bits
+ */
+static inline SimdDouble integerDifferenceDouble(const std::int64_t *a, const std::int64_t *b)
+{
+    __m512i d = _mm512_sub_epi64(_mm512_loadu_si512(a), _mm512_loadu_si512(b));
+    return SimdDouble(int64ToDouble(d));
+}
+
+/*! \brief The differences of two times sixteen integers, as floats
+ * Converted to double first, then rounded once to float.
+ * \param[in] a The first integers
+ * \param[in] b The second integers
+ * \return a - b, computed with wrap-around in 64 bits
+ */
+static inline SimdFloat integerDifferenceFloat(const std::int64_t *a, const std::int64_t *b)
+{
+    __m256 lo = _mm512_cvtpd_ps(integerDifferenceDouble(a, b).v);
+    __m256 hi = _mm512_cvtpd_ps(integerDifferenceDouble(a + 8, b + 8).v);
+    return SimdFloat(_mm512_castpd_ps(_mm512_insertf64x4(_mm512_castps_pd(_mm512_castps256_ps512(lo)),
+                                                         _mm256_castps_pd(hi), 1)));
+}
+
 /*! \brief Add sixteen floats to sixteen doubles in memory
  * \param[inout] p The doubles, two SimdDouble
  * \param[in]    a The floats
