@@ -86,8 +86,8 @@ void swapColumns(std::vector<U> *v, size_t stride, size_t a, size_t b)
  * such that loops over conformations access memory contiguously and can be
  * vectorized. Each conformation has its own slot, see slot. While the
  * shells are relaxed, the conformations for which they did not converge
- * yet are put in the first slots, see arrange, such that only those are
- * computed. Otherwise slot c holds conformation c.
+ * yet are put in the first nslot slots, see arrange, such that only those
+ * are computed. Otherwise slot c holds conformation c.
  * The computations use nslot slots, a multiple of the explicit SIMD
  * width. Those beyond the conformations are copies of the last one, see
  * pad, they are computed but not used. The stride, the distance between
@@ -106,7 +106,7 @@ class ConformationArrays
 public:
     //! Number of conformations
     size_t              nconf   = 0;
-    //! Number of conformations to compute, in the first slots
+    //! Number of conformations to compute, in the first nslot slots
     size_t              nactive = 0;
     //! Number of slots that are computed, nactive rounded up to the width
     size_t              nslot   = 0;
@@ -190,7 +190,12 @@ public:
     }
 
     /*! \brief Put the conformations to compute in the first slots
-     * The slots of other conformations are swapped with theirs, together
+     * These are the nslot computed slots, the active conformations rounded
+     * up to the explicit SIMD width, the conformations that are not active
+     * in them are computed as well. Active conformations in other slots
+     * are swapped with those that are not active in the computed slots,
+     * which saves swaps when few of them converged. The slots of other
+     * conformations are swapped with theirs, together
      * with the columns of other arrays in the same order, such as the forces
      * of the entries without shells.
      * \param[in]    active The conformations to compute, in increasing order
@@ -218,7 +223,10 @@ public:
                     conf_[c] = c;
                 }
             }
-            size_t na = active.size();
+            // The computed slots, those of conformations that are not
+            // active are computed as well, with the same result as before
+            size_t width = explicitSimdWidth<T>();
+            size_t na    = ((active.size() + width - 1)/width)*width;
             // The active conformations in slots from na on swap with the
             // conformations that are not active in slots below na. Active
             // conformations below na stay where they are.
@@ -320,7 +328,9 @@ public:
         conf_ = src.conf_;
         size_t width = explicitSimdWidth<T>();
         nactive      = src.nactive;
-        nslot        = ((nactive + width - 1)/width)*width;
+        // The conformations to compute may be in any of the computed slots
+        // of src, which may be more than this precision has
+        nslot        = ((std::min(src.nslot, nconf) + width - 1)/width)*width;
         for(size_t row = 0; row < DIM*natom; row++)
         {
             const Coordinate *s = src.x.data() + row*src.stride;
