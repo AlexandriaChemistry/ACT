@@ -149,18 +149,26 @@ Options setOption(Options options, const std::string &name, const std::string &v
     return options;
 }
 
-/*! \brief Options to analyse the force field of the hydrogen fluoride dimer
- * without training it
+/*! \brief Options to analyse a force field without training it
+ * The Lennard-Jones parameters of the trained force field are analysed on
+ * the alcohol and water dimers, see analysedForceField. These are sigma
+ * and epsilon of c3, o3 and ow, the ones of the hydrogens are fixed.
  * \param[in] mode The sensitivity analysis
  * \return the options
  */
 Options analyseOnly(const std::string &mode)
 {
-    auto options = setOption(combine(mcmcOptions(1), hfOptions()), "-sensitivity", mode);
+    auto options = setOption(combine(mcmcOptions(1), interOptions()), "-sensitivity", mode);
     options.push_back({ "-nooptimize", "" });
     options.push_back({ "-norandom_init", "" });
     return options;
 }
+
+//! The trained force field that is analysed with analyseOnly
+const char *analysedForceField = "lj-pc-trained.xml";
+
+//! The compounds it is analysed on
+const char *analysedCompounds  = "booze-inter";
 
 //! \return whether a line of the log file contains a text
 bool logContains(const std::vector<std::string> &log, const std::string &text)
@@ -894,8 +902,8 @@ TEST_F(TrainFFTest, ChargesEspPolarizability)
 // Test: Without a sensitivity analysis there is no file and no summary
 TEST_F(TrainFFTest, SensitivityNo)
 {
-    auto output = trainfftest::runTrainFF(&fileManager(), "sensno", "4S-lj14-7-pg-hvdw.xml",
-                                          "hf-hf", analyseOnly("No"));
+    auto output = trainfftest::runTrainFF(&fileManager(), "sensno", analysedForceField,
+                                          analysedCompounds, analyseOnly("No"));
     ASSERT_EQ(0, output.status);
     EXPECT_TRUE(output.sensitivity.is_null());
     EXPECT_FALSE(logContains(output.log, "Sensitivity analysis ("));
@@ -907,8 +915,8 @@ TEST_F(TrainFFTest, SensitivityNo)
 // log file and train_ff.json get a summary
 TEST_F(TrainFFTest, Sensitivity1DJson)
 {
-    auto output = trainfftest::runTrainFF(&fileManager(), "sens1d", "4S-lj14-7-pg-hvdw.xml",
-                                          "hf-hf", analyseOnly("1D"));
+    auto output = trainfftest::runTrainFF(&fileManager(), "sens1d", analysedForceField,
+                                          analysedCompounds, analyseOnly("1D"));
     ASSERT_EQ(0, output.status);
     ASSERT_TRUE(output.sensitivity.contains("sensitivity"));
     const auto &sens = output.sensitivity["sensitivity"];
@@ -927,6 +935,8 @@ TEST_F(TrainFFTest, Sensitivity1DJson)
         EXPECT_GE(p["p_orig"].get<double>(), p["lower"].get<double>()) << name;
         EXPECT_LE(p["p_orig"].get<double>(), p["upper"].get<double>()) << name;
         EXPECT_GT(p["chi2_orig"].get<double>(), 0) << name;
+        // The force field is trained, all parameters change the chi2
+        EXPECT_NE(0, p.value("a", 0.0)) << name;
         if (p["converged"].get<bool>())
         {
             nconv += 1;
@@ -952,8 +962,8 @@ TEST_F(TrainFFTest, Sensitivity1DJson)
 // same as those of TrainFFMpiTest.Sensitivity2DMiddlemen.
 TEST_F(TrainFFTest, Sensitivity2DJson)
 {
-    auto output = trainfftest::runTrainFF(&fileManager(), "sens2d", "4S-lj14-7-pg-hvdw.xml",
-                                          "hf-hf", analyseOnly("2D"));
+    auto output = trainfftest::runTrainFF(&fileManager(), "sens2d", analysedForceField,
+                                          analysedCompounds, analyseOnly("2D"));
     ASSERT_EQ(0, output.status);
     gmx::test::TestReferenceChecker checker(rootChecker());
     trainfftest::checkSensitivity2D(&checker, output);

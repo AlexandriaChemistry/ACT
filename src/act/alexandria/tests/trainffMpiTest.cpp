@@ -254,15 +254,13 @@ TEST_F(TrainFFMpiTest, Sensitivity2DMiddlemen)
         { "-sensitivity", "2D" },
         { "-fc_bound", "10000" },
         { "-ener_boltz_temp", "3000" },
-        { "-fit", "charge eta chi zeta vs2a sigma epsilon gamma delta" },
+        { "-fit", "sigma epsilon" },
         { "-fc_allelec", "1" },
         { "-fc_exch", "1" },
-        { "-fc_disp", "1" },
-        { "-fc_mu", "1" },
-        { "-fc_quad", "1" }
+        { "-fc_disp", "1" }
     };
-    auto output = trainfftest::runTrainFF(&fileManager(), "sens2d", "4S-lj14-7-pg-hvdw.xml",
-                                          "hf-hf", options);
+    auto output = trainfftest::runTrainFF(&fileManager(), "sens2d", "lj-pc-trained.xml",
+                                          "booze-inter", options);
     EXPECT_EQ(0, output.status);
     if (gmx_node_rank() == 0)
     {

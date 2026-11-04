@@ -301,6 +301,9 @@ inline void checkSensitivity2D(gmx::test::TestReferenceChecker *checker,
     {
         allConverged = allConverged && p["converged"].get<bool>();
         delta.push_back(p["delta"].get<double>());
+        // A trained force field is analysed, every parameter changes the
+        // chi2, otherwise the analysis has little to check
+        EXPECT_NE(0, p.value("a", 0.0)) << p["name"].get<std::string>();
     }
     for (const auto &pair : sens["pairs"])
     {
