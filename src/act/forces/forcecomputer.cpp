@@ -512,8 +512,13 @@ size_t ForceComputer::updateShells(const Topology            *top,
     double flops      = 1;
     // The conformations that are not done, in the order of their slots,
     // such that the loops over them access the arrays in order. Each
-    // conformation is computed independently of the others.
-    std::vector<size_t> confs;
+    // conformation is computed independently of the others. The vectors
+    // are kept between calls, such that the memory is used again.
+    static thread_local std::vector<size_t> confs, relax;
+    static thread_local std::vector<double> msForce, after, dxForce;
+    static thread_local std::vector<char>   scaled;
+    confs.clear();
+    relax.clear();
     size_t nconf      = active ? active->size() : myCoords->size();
     for(size_t i = 0; i < nconf; i++)
     {
@@ -528,13 +533,14 @@ size_t ForceComputer::updateShells(const Topology            *top,
         }
     }
     const auto &ca = cdata->arrays;
-    std::sort(confs.begin(), confs.end(),
-              [&ca](size_t a, size_t b) { return ca.slot(a) < ca.slot(b); });
+    auto bySlot = [&ca](size_t a, size_t b) { return ca.slot(a) < ca.slot(b); };
+    if (!std::is_sorted(confs.begin(), confs.end(), bySlot))
+    {
+        std::sort(confs.begin(), confs.end(), bySlot);
+    }
     // Mean square shell force
-    std::vector<double> msForce;
     shellForces2(atoms, isShell, cdata, confs, offset, maxShellDistance2, &msForce);
     // The conformations of which the shells are moved
-    std::vector<size_t> relax;
     for(size_t k = 0; k < confs.size(); k++)
     {
         if (nShell > 0)
@@ -557,8 +563,8 @@ size_t ForceComputer::updateShells(const Topology            *top,
     // the force along it would have been zero, from the forces before and
     // after it. For an isolated harmonic shell this is one, since the step
     // is a Newton step, coupled shells can overshoot or undershoot.
-    std::vector<double> after(relax.size(), 0.0);
-    std::vector<char>   scaled(relax.size(), 0);
+    after.assign(relax.size(), 0.0);
+    scaled.assign(relax.size(), 0);
     for(size_t r = 0; r < relax.size(); r++)
     {
         const auto &dim = (*myCoords)[confs[relax[r]]];
@@ -602,7 +608,7 @@ size_t ForceComputer::updateShells(const Topology            *top,
         dim.shellForce[fragment] = msForce[k];
         dim.shellDx.resize(natom);
     }
-    std::vector<double> dxForce(relax.size(), 0.0);
+    dxForce.assign(relax.size(), 0.0);
     // Loop over polarizabilities
     for(const auto &p : pols)
     {
