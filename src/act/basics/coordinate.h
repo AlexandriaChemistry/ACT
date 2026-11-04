@@ -115,6 +115,19 @@ inline double fromCoordinate(Coordinate c)
     return c*coordinateUnit;
 }
 
+/*! \brief Convert an integer coordinate to nm in the precision of T
+ * The integer is converted to T once, the unit is a power of two, such
+ * that the result is that of fromCoordinate rounded to T. In single
+ * precision this saves converting to double first.
+ * \param[in] c The coordinate in units of coordinateUnit
+ * \return the coordinate in nm
+ */
+template <typename T>
+inline T fromCoordinateAs(Coordinate c)
+{
+    return static_cast<T>(c)*static_cast<T>(coordinateUnit);
+}
+
 /*! \brief The difference of two coordinates
  * Computed with wrap-around, such that it is correct if the coordinates
  * are less than 2^63 units apart, wherever they are.

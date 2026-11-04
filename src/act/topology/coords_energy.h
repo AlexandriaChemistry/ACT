@@ -223,8 +223,8 @@ public:
         //! \return the vector in nm, for vector functions
         gmx::RVec rvec() const
         {
-            return { static_cast<real>(fromCoordinate(p_[0])), static_cast<real>(fromCoordinate(p_[stride_])),
-                     static_cast<real>(fromCoordinate(p_[2*stride_])) };
+            return { fromCoordinateAs<real>(p_[0]), fromCoordinateAs<real>(p_[stride_]),
+                     fromCoordinateAs<real>(p_[2*stride_]) };
         }
         /*! \brief The difference with another vector, from the integers
          * \param[in] o The other vector
@@ -237,7 +237,7 @@ public:
             gmx::RVec d;
             for(int m = 0; m < DIM; m++)
             {
-                d[m] = fromCoordinate(coordinateDifference(p_[m*stride_], o.units(m)));
+                d[m] = fromCoordinateAs<real>(coordinateDifference(p_[m*stride_], o.units(m)));
             }
             return d;
         }
