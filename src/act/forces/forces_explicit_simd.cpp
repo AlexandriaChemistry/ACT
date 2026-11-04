@@ -1030,8 +1030,9 @@ void computePairs(TopologyEntryRange          entries,
                   T                          *f,
                   double                     *energies)
 {
-    std::vector<PairParams> pairs;
-    pairs.reserve(entries.size());
+    // Kept between calls, such that the memory is used again
+    static thread_local std::vector<PairParams> pairs;
+    pairs.clear();
     for (const auto &b : entries)
     {
         const TopologyEntry &entry = *b.operator->();
@@ -1091,8 +1092,9 @@ void computeAngles(TopologyEntryRange         entries,
                    double                    *energies)
 {
     using S = simd::Simd<T>;
-    std::vector<AngleParams> angles;
-    angles.reserve(entries.size());
+    // Kept between calls, such that the memory is used again
+    static thread_local std::vector<AngleParams> angles;
+    angles.clear();
     for (const auto &b : entries)
     {
         const TopologyEntry &entry   = *b.operator->();
@@ -1161,12 +1163,14 @@ struct DihedralParams
     double c[fdihNR];
 };
 
-//! Prepare the dihedrals, with at most fdihNR parameters
-static std::vector<DihedralParams> prepareDihedrals(TopologyEntryRange         entries,
-                                                    size_t                     stride)
+/*! \brief Prepare the dihedrals, with at most fdihNR parameters
+ * \return the dihedrals, kept until the next call such that the memory is used again
+ */
+static const std::vector<DihedralParams> &prepareDihedrals(TopologyEntryRange         entries,
+                                                           size_t                     stride)
 {
-    std::vector<DihedralParams> dihedrals;
-    dihedrals.reserve(entries.size());
+    static thread_local std::vector<DihedralParams> dihedrals;
+    dihedrals.clear();
     for (const auto &b : entries)
     {
         const TopologyEntry &entry   = *b.operator->();
