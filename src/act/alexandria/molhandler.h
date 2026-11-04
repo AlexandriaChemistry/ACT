@@ -68,6 +68,25 @@ inline bool minimizationDidNotConverge(eMinimizeStatus e)
     return eMinimizeStatus::TooManySteps == e || eMinimizeStatus::NoMinimum == e;
 }
 
+/*! \brief Whether the structure of a minimization can be used as a minimum
+ * Without convergence the minimizer may not find a lower energy, close to
+ * a minimum because the energy cannot decrease within its precision,
+ * which for practical purposes is usually good enough.
+ * \param[in] e The minimizer status
+ * \return true for OK or no lower minimum
+ */
+inline bool minimumUsable(eMinimizeStatus e)
+{
+    return eMinimizeStatus::OK == e || eMinimizeStatus::NoMinimum == e;
+}
+
+/*! \brief Describe the result of a minimization
+ * \param[in] e      The minimizer status
+ * \param[in] energy The potential energy of the structure found
+ * \return the status, with the energy if no lower minimum was found
+ */
+std::string minimizeStatusMessage(eMinimizeStatus e, double energy);
+
 /*! \brief Handles molecules by performing algorithms on them
  * For example, energy minimization and hessian computation.
  * This class can access private members of ACTMol as it is a friend class
@@ -176,8 +195,9 @@ public:
      * \param[in] freeze       List of atoms (not shells) that will not be
      *                         moved during the minimization.
      * \return OK if converged, TooManySteps if the maximum number of
-     *         iterations was reached, NoMinimum if the energy could not
-     *         decrease while the forces are larger than the tolerance
+     *         iterations was reached, NoMinimum if no lower energy
+     *         could be found while the forces are larger than the
+     *         tolerance, see minimumUsable
      */
     eMinimizeStatus minimizeCoordinates(MsgHandler                        *msghandler,
                                         const ForceField                  *pd,

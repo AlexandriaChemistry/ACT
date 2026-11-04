@@ -435,7 +435,7 @@ void SimulationConfigHandler::add_options(std::vector<t_pargs>             *parg
         { "-sp", FALSE, etBOOL, {&singlePoint_},
           "Do a single point energy calculation and call it a day." },
         { "-minimize", FALSE, etBOOL, {&minimize_},
-          "Minimize the energy with respect to input coordinates. With simulate, MD only follows if the minimization converges, see -maxiter and -toler." }
+          "Minimize the energy with respect to input coordinates. With simulate, MD only follows if the minimization converges or no lower minimum can be found, see -maxiter and -toler." }
     };
     for(auto &i : extra)
     {

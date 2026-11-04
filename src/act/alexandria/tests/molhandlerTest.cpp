@@ -526,6 +526,19 @@ TEST_F (MolHandlerTest, UracilPol)
     test("uracil.sdf", "ACS-pg", true, 1e-12);
 }
 
+// Test: Without a lower minimum the structure is usable and the message
+// gives its energy, without convergence in the steps it is not usable
+TEST(MinimizeStatusTest, NoLowerMinimum)
+{
+    EXPECT_TRUE(minimumUsable(eMinimizeStatus::OK));
+    EXPECT_TRUE(minimumUsable(eMinimizeStatus::NoMinimum));
+    EXPECT_FALSE(minimumUsable(eMinimizeStatus::TooManySteps));
+    EXPECT_FALSE(minimumUsable(eMinimizeStatus::Solver));
+    EXPECT_EQ("Could not find a lower minimum than -1982.11 kJ/mol",
+              minimizeStatusMessage(eMinimizeStatus::NoMinimum, -1982.11));
+    EXPECT_EQ("Too many steps", minimizeStatusMessage(eMinimizeStatus::TooManySteps, -1982.11));
+}
+
 } // namespace
 
 } // namespace alexandria

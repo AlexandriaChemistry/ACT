@@ -63,7 +63,8 @@ class SimulationConfigHandler;
  * \param[inout] actmol     The molecule
  * \param[inout] xmin       The starting coordinates, on return the minimized ones
  * \param[inout] jtree      The energies before and after are added here
- * \return the status of the minimization
+ * \param[out]   epot       The potential energy after the minimization, if not nullptr
+ * \return the status of the minimization, see minimumUsable
  */
 eMinimizeStatus minimizeMolecule(MsgHandler                    *msghandler,
                                  const ForceField              *pd,
@@ -72,7 +73,8 @@ eMinimizeStatus minimizeMolecule(MsgHandler                    *msghandler,
                                  const char                    *freezeFile,
                                  ACTMol                        *actmol,
                                  std::vector<gmx::RVec>        *xmin,
-                                 JsonTree                      *jtree);
+                                 JsonTree                      *jtree,
+                                 double                        *epot = nullptr);
 
 } // namespace alexandria
 

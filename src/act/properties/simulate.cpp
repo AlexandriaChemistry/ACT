@@ -228,7 +228,9 @@ int simulate(int argc, char *argv[])
     {
         actmol.topology()->dump(msghandler.twDebug());
     }
-    auto eMin = eMinimizeStatus::OK;
+    auto   eMin = eMinimizeStatus::OK;
+    // The potential energy after minimizing
+    double epot = 0;
     /* Generate output file for debugging if requested */
     if (rerun.gendimers()->hasTrajectory())
     {
@@ -286,9 +288,10 @@ int simulate(int argc, char *argv[])
             phase.next("Energy minimization");
             eMin = minimizeMolecule(&msghandler, &pd, &forceComp, sch,
                                     opt2fn_null("-freeze", fnm.size(),fnm.data()),
-                                    &actmol, &xmin, &jtree);
+                                    &actmol, &xmin, &jtree, &epot);
         }
-        if (eMinimizeStatus::OK == eMin && sch.nsteps() > 0)
+        // Without a lower minimum the structure is usable, see minimumUsable
+        if (minimumUsable(eMin) && sch.nsteps() > 0)
         {
             phase.next("Molecular dynamics");
             // Start from the minimized coordinates, if we minimized
@@ -299,7 +302,7 @@ int simulate(int argc, char *argv[])
         }
         phase.next("Output");
         auto confout = opt2fn_null("-c", fnm.size(),fnm.data());
-        if (confout && eMinimizeStatus::OK == eMin)
+        if (confout && minimumUsable(eMin))
         {
             matrix box = { { 2, 0, 0 }, { 0, 2, 0 }, { 0, 0, 2 } };
             actmol.PrintConformation(confout, xmin, sch.writeShells(), box);
@@ -316,10 +319,16 @@ int simulate(int argc, char *argv[])
     }
 
     auto imm = ACTMessage::OK;
-    if (eMinimizeStatus::OK != eMin)
+    if (eMinimizeStatus::NoMinimum == eMin)
+    {
+        fprintf(stderr, "Minimization did not converge: %s, check log file %s\n",
+                minimizeStatusMessage(eMin, epot).c_str(),
+                msghandler.filename().c_str());
+    }
+    else if (eMinimizeStatus::OK != eMin)
     {
         fprintf(stderr, "Minimization failed: %s, check log file %s\n",
-                eMinimizeStatusToString(eMin).c_str(),
+                minimizeStatusMessage(eMin, epot).c_str(),
                 msghandler.filename().c_str());
         status = 1;
     }
