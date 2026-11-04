@@ -56,6 +56,7 @@
 #include <random>
 
 #include "act/alexandria/pdbwriter.h"
+#include "act/basics/coordinate.h"
 #include "act/constraints/shake.h"
 #include "act/properties/velocityhandler.h"
 #include "act/molprop/molpropobservable.h"
@@ -1078,23 +1079,28 @@ static void func(const std::vector<double> &x, double &f, std::vector<double> &g
     }
     auto coords = lbfgs->coordinates();
     auto forces = lbfgs->forces();
-    // The previous coordinates, that satisfy the constraints
-    std::vector<gmx::RVec> reference;
-    if (lbfgs->constrainer())
-    {
-        reference = *coords;
-    }
+    // The previous coordinates, that satisfy the constraints and are
+    // within the range of the integer coordinates, see coordinate.h
+    std::vector<gmx::RVec> reference = *coords;
+    bool                   inRange   = true;
     size_t jj   = 0;
     for (auto i : theAtoms)
     {
         for(int j = 0; j < DIM; j++)
         {
+            inRange         = inRange && std::abs(x[jj]) < 0.5*coordinateMax;
             (*coords)[i][j] = x[jj++];
         }
     }
     // Energy penalty to make the line search back off
     double penalty = 0;
-    if (lbfgs->constrainer())
+    if (!inRange)
+    {
+        // A step that takes atoms too far from the origin
+        *coords = reference;
+        penalty = 1e6;
+    }
+    else if (lbfgs->constrainer())
     {
         // The energy is that of the closest coordinates that satisfy
         // the constraints, and the gradient is along the constraints.
@@ -1358,6 +1364,19 @@ eMinimizeStatus MolHandler::minimizeCoordinates(MsgHandler                      
     auto roundingMsForce = [&](const std::vector<gmx::RVec> &x,
                                const std::vector<gmx::RVec> &f)
     {
+        // The differences of the coordinates are computed from the integer
+        // coordinates and rounded to real, see coordinate.h, by up to the
+        // rounding of the largest difference. Each coordinate is moved by
+        // that much and one unit in the last place.
+        double extent = 0;
+        for (auto a : theAtoms)
+        {
+            for (int m = 0; m < DIM; m++)
+            {
+                extent = std::max(extent, 2*std::abs(static_cast<double>(x[a][m])));
+            }
+        }
+        double       step = 0.5*std::numeric_limits<real>::epsilon()*extent;
         auto         xr   = x;
         unsigned int seed = 1993;
         for (auto a : theAtoms)
@@ -1365,8 +1384,9 @@ eMinimizeStatus MolHandler::minimizeCoordinates(MsgHandler                      
             for (int m = 0; m < DIM; m++)
             {
                 seed     = seed*1103515245u + 12345u;
-                real to  = ((seed >> 16) & 1) ? std::numeric_limits<real>::max() : std::numeric_limits<real>::lowest();
-                xr[a][m] = std::nextafter(xr[a][m], to);
+                bool up  = (seed >> 16) & 1;
+                real to  = up ? std::numeric_limits<real>::max() : std::numeric_limits<real>::lowest();
+                xr[a][m] = std::nextafter(static_cast<real>(xr[a][m] + (up ? step : -step)), to);
             }
         }
         std::vector<gmx::RVec>            fr(f.size());

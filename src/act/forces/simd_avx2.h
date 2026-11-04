@@ -191,6 +191,50 @@ static inline SimdFloat load(const float *p) { return SimdFloat(_mm256_loadu_ps(
 //! Store eight floats to memory
 static inline void store(float *p, SimdFloat a) { _mm256_storeu_ps(p, a.v); }
 
+/*! \brief Convert four 64-bit integers to doubles, rounded once
+ * AVX2 has no conversion of 64-bit integers. The upper and lower 32 bits
+ * are put in the mantissas of doubles with exponents of 2^84 and 2^52,
+ * the offsets are subtracted and the parts added, which is exact up to
+ * the rounding of the sum.
+ * \param[in] v The integers
+ * \return the doubles
+ */
+static inline __m256d int64ToDouble(__m256i v)
+{
+    const __m256i magicLo  = _mm256_set1_epi64x(0x4330000000000000LL); // 2^52
+    const __m256i magicHi  = _mm256_set1_epi64x(0x4530000080000000LL); // 2^84 + 2^63
+    const __m256d magicAll = _mm256_set1_pd(19342822341709703277445120.0); // 2^84 + 2^63 + 2^52
+    __m256i       lo       = _mm256_blend_epi32(magicLo, v, 0x55);
+    __m256i       hi       = _mm256_xor_si256(_mm256_srli_epi64(v, 32), magicHi);
+    __m256d       hiD      = _mm256_sub_pd(_mm256_castsi256_pd(hi), magicAll);
+    return _mm256_add_pd(hiD, _mm256_castsi256_pd(lo));
+}
+
+/*! \brief The differences of two times four integers, as doubles
+ * \param[in] a The first integers
+ * \param[in] b The second integers
+ * \return a - b, computed with wrap-around in 64 bits
+ */
+static inline SimdDouble integerDifferenceDouble(const std::int64_t *a, const std::int64_t *b)
+{
+    __m256i d = _mm256_sub_epi64(_mm256_loadu_si256(reinterpret_cast<const __m256i *>(a)),
+                                 _mm256_loadu_si256(reinterpret_cast<const __m256i *>(b)));
+    return SimdDouble(int64ToDouble(d));
+}
+
+/*! \brief The differences of two times eight integers, as floats
+ * Converted to double first, then rounded once to float.
+ * \param[in] a The first integers
+ * \param[in] b The second integers
+ * \return a - b, computed with wrap-around in 64 bits
+ */
+static inline SimdFloat integerDifferenceFloat(const std::int64_t *a, const std::int64_t *b)
+{
+    __m128 lo = _mm256_cvtpd_ps(integerDifferenceDouble(a, b).v);
+    __m128 hi = _mm256_cvtpd_ps(integerDifferenceDouble(a + 4, b + 4).v);
+    return SimdFloat(_mm256_insertf128_ps(_mm256_castps128_ps256(lo), hi, 1));
+}
+
 /*! \brief Add eight floats to eight doubles in memory
  * \param[inout] p The doubles, two SimdDouble
  * \param[in]    a The floats

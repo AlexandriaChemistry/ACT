@@ -31,6 +31,7 @@
 #include <cstddef>
 #include <vector>
 
+#include "act/basics/coordinate.h"
 #include "gromacs/math/vectypes.h"
 
 namespace alexandria
@@ -64,8 +65,9 @@ class VsiteHandler
 
     /*! \brief Construct the virtual sites of many conformations at once
      * The coordinates are in the layout of ConformationArrays, component
-     * m of particle a in slot c is at (3*a+m)*stride + c. The positions
-     * are the same as those of constructPositions.
+     * m of particle a in slot c is at (3*a+m)*stride + c, in units of
+     * coordinateUnit, see coordinate.h. The positions are those of
+     * constructPositions, rounded to the unit.
      * \param[in]    top    The molecular topology
      * \param[inout] x      The coordinates, the virtual site positions are set
      * \param[in]    stride The stride
@@ -75,14 +77,7 @@ class VsiteHandler
      *                      operations are not counted
      */
     void constructPositions(const Topology *top,
-                            double         *x,
-                            size_t          stride,
-                            size_t          nslot,
-                            size_t          nconf) const;
-
-    //! \copydoc constructPositions(const Topology *, double *, size_t, size_t, size_t) const
-    void constructPositions(const Topology *top,
-                            float          *x,
+                            Coordinate     *x,
                             size_t          stride,
                             size_t          nslot,
                             size_t          nconf) const;
@@ -98,17 +93,17 @@ class VsiteHandler
      * \param[in]    nconf  The number of slots that hold conformations, see
      *                      constructPositions
      */
-    void distributeForces(const Topology *top,
-                          const double   *x,
-                          double         *f,
-                          size_t          stride,
-                          size_t          nslot,
-                          size_t          nconf) const;
+    void distributeForces(const Topology   *top,
+                          const Coordinate *x,
+                          double           *f,
+                          size_t            stride,
+                          size_t            nslot,
+                          size_t            nconf) const;
 
-    //! \copydoc distributeForces(const Topology *, const double *, double *, size_t, size_t, size_t) const
-    void distributeForces(const Topology *top,
-                          const float    *x,
-                          float          *f,
+    //! \copydoc distributeForces(const Topology *, const Coordinate *, double *, size_t, size_t, size_t) const
+    void distributeForces(const Topology   *top,
+                          const Coordinate *x,
+                          float            *f,
                           size_t          stride,
                           size_t          nslot,
                           size_t          nconf) const;

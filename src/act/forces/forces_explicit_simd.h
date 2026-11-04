@@ -46,6 +46,7 @@
 #include <cstddef>
 #include <vector>
 
+#include "act/basics/coordinate.h"
 #include "act/forcefield/potential.h"
 #include "act/molprop/topologyentry.h"
 #include "act/topology/actatom.h"
@@ -122,6 +123,7 @@ size_t explicitSimdPairUnroll();
 
 /*! \brief Compute a potential for all conformations with explicit SIMD
  * Coordinate m of atom a in slot c is stored at x[(DIM*a+m)*stride + c],
+ * in units of coordinateUnit, see coordinate.h,
  * the forces likewise and energy term k at energies[k*stride + c]. Forces
  * and energies are added to. Slots 0 to nslot - 1 are computed.
  * \param[in]    mypot    The potential
@@ -145,7 +147,7 @@ bool computeExplicitSimd(Potential                   mypot,
                          double                      epsilonr,
                          size_t                      stride,
                          size_t                      nslot,
-                         const double               *x,
+                         const Coordinate           *x,
                          double                     *f,
                          double                     *energies,
                          bool                        forces);
@@ -164,7 +166,7 @@ bool computeExplicitSimd(Potential                   mypot,
                          double                      epsilonr,
                          size_t                      stride,
                          size_t                      nslot,
-                         const float                *x,
+                         const Coordinate           *x,
                          float                      *f,
                          double                     *energies,
                          bool                        forces);
@@ -191,7 +193,7 @@ bool coulombKernelsExplicitSimd(TopologyEntryRange          entries,
                                 const std::vector<ActAtom> &atoms,
                                 size_t                      stride,
                                 size_t                      nslot,
-                                const double               *x,
+                                const Coordinate           *x,
                                 const unsigned char        *terms,
                                 double                     *kernel);
 
@@ -203,7 +205,7 @@ bool coulombKernelsExplicitSimd(TopologyEntryRange          entries,
                                 const std::vector<ActAtom> &atoms,
                                 size_t                      stride,
                                 size_t                      nslot,
-                                const float                *x,
+                                const Coordinate           *x,
                                 const unsigned char        *terms,
                                 float                      *kernel);
 

@@ -85,6 +85,27 @@ struct PairParams
     int    variant;
 };
 
+/*! \brief The differences of the coordinates of two particles in conformations c to c + width - 1
+ * The differences are computed from the integers, see coordinate.h, then
+ * converted to nm, such that they are exact up to the rounding to T.
+ * \tparam    T The floating point type of the result
+ * \param[in] a The coordinates of the first particle in conformation c
+ * \param[in] b The coordinates of the second particle in conformation c
+ * \return a - b in nm
+ */
+template <typename T>
+static inline simd::Simd<T> loadDifference(const Coordinate *a, const Coordinate *b)
+{
+    if constexpr (std::is_same_v<T, double>)
+    {
+        return simd::integerDifferenceDouble(a, b)*simd::SimdDouble(coordinateUnit);
+    }
+    else
+    {
+        return simd::integerDifferenceFloat(a, b)*simd::SimdFloat(static_cast<float>(coordinateUnit));
+    }
+}
+
 /*! \brief Add energies of conformations c to c + width - 1 to those in double precision
  * In single precision each energy is rounded once, then summed in double
  * precision, such that the sums of many interactions and their differences
@@ -861,7 +882,7 @@ template <typename Kernel, bool Forces, int V, typename T>
 static inline void computePair(const PairParams &pp,
                                size_t            stride,
                                size_t            c,
-                               const T          *x,
+                               const Coordinate *x,
                                T                *f,
                                double           *energies)
 {
@@ -870,7 +891,7 @@ static inline void computePair(const PairParams &pp,
     S rsq = 0.0;
     for (int m = 0; m < DIM; m++)
     {
-        dx[m] = simd::load(x + pp.i + m*stride + c) - simd::load(x + pp.j + m*stride + c);
+        dx[m] = loadDifference<T>(x + pp.i + m*stride + c, x + pp.j + m*stride + c);
         rsq   = simd::fma(dx[m], dx[m], rsq);
     }
     // In double precision the energies are added to directly, in single
@@ -942,7 +963,7 @@ template <typename Kernel, bool Forces, int V, typename T>
 static void computePairConformations(const PairParams &pp,
                                      size_t            stride,
                                      size_t            nslot,
-                                     const T          *x,
+                                     const Coordinate *x,
                                      T                *f,
                                      double           *energies)
 {
@@ -970,7 +991,7 @@ template <typename Kernel, bool Forces, int V = 0, typename T>
 static void dispatchPairVariant(const PairParams &pp,
                                 size_t            stride,
                                 size_t            nslot,
-                                const T          *x,
+                                const Coordinate *x,
                                 T                *f,
                                 double           *energies)
 {
@@ -1005,7 +1026,7 @@ void computePairs(TopologyEntryRange          entries,
                   double                      epsilonr,
                   size_t                      stride,
                   size_t                      nslot,
-                  const T                    *x,
+                  const Coordinate           *x,
                   T                          *f,
                   double                     *energies)
 {
@@ -1065,7 +1086,7 @@ template <bool Forces, typename T>
 void computeAngles(TopologyEntryRange         entries,
                    size_t                     stride,
                    size_t                     nslot,
-                   const T                   *x,
+                   const Coordinate          *x,
                    T                         *f,
                    double                    *energies)
 {
@@ -1088,9 +1109,8 @@ void computeAngles(TopologyEntryRange         entries,
             S ip = 0.0, ipa = 0.0, ipb = 0.0;
             for (int m = 0; m < DIM; m++)
             {
-                S xj = simd::load(x + a.j + m*stride + c);
-                rij[m] = simd::load(x + a.i + m*stride + c) - xj;
-                rkj[m] = simd::load(x + a.k + m*stride + c) - xj;
+                rij[m] = loadDifference<T>(x + a.i + m*stride + c, x + a.j + m*stride + c);
+                rkj[m] = loadDifference<T>(x + a.k + m*stride + c, x + a.j + m*stride + c);
                 ip     = simd::fma(rij[m], rkj[m], ip);
                 ipa    = simd::fma(rij[m], rij[m], ipa);
                 ipb    = simd::fma(rkj[m], rkj[m], ipb);
@@ -1183,17 +1203,15 @@ template <typename T>
 static inline void dihedralVectors(const DihedralParams          &d,
                                    size_t                         stride,
                                    size_t                         c,
-                                   const T                       *x,
+                                   const Coordinate              *x,
                                    DihedralVectors<simd::Simd<T>> *v)
 {
     using S = simd::Simd<T>;
     for (int m = 0; m < DIM; m++)
     {
-        S xj = simd::load(x + d.j + m*stride + c);
-        S xk = simd::load(x + d.k + m*stride + c);
-        v->r_ij[m] = simd::load(x + d.i + m*stride + c) - xj;
-        v->r_kj[m] = xk - xj;
-        v->r_kl[m] = xk - simd::load(x + d.l + m*stride + c);
+        v->r_ij[m] = loadDifference<T>(x + d.i + m*stride + c, x + d.j + m*stride + c);
+        v->r_kj[m] = loadDifference<T>(x + d.k + m*stride + c, x + d.j + m*stride + c);
+        v->r_kl[m] = loadDifference<T>(x + d.k + m*stride + c, x + d.l + m*stride + c);
     }
     auto cprod = [](const S *a, const S *b, S *axb)
     {
@@ -1310,7 +1328,7 @@ template <bool Forces, typename T>
 void computeFourierDihedrals(TopologyEntryRange         entries,
                              size_t                     stride,
                              size_t                     nslot,
-                             const T                   *x,
+                             const Coordinate          *x,
                              T                         *f,
                              double                    *energies)
 {
@@ -1320,7 +1338,7 @@ void computeFourierDihedrals(TopologyEntryRange         entries,
         for (size_t c = 0; c < nslot; c += simd::SimdTraits<T>::width)
         {
             DihedralVectors<S> v;
-            dihedralVectors(d, stride, c, x, &v);
+            dihedralVectors<T>(d, stride, c, x, &v);
             S s       = invNormProduct(v);
             S defined = v.iprm*v.iprn;
             S cos_phi = -simd::select(defined > 0.0, v.mn*s, 1.0);
@@ -1362,7 +1380,7 @@ template <bool Forces, typename T>
 void computeImproperDihedrals(TopologyEntryRange         entries,
                               size_t                     stride,
                               size_t                     nslot,
-                              const T                   *x,
+                              const Coordinate          *x,
                               T                         *f,
                               double                    *energies)
 {
@@ -1374,7 +1392,7 @@ void computeImproperDihedrals(TopologyEntryRange         entries,
         for (size_t c = 0; c < nslot; c += simd::SimdTraits<T>::width)
         {
             DihedralVectors<S> v;
-            dihedralVectors(d, stride, c, x, &v);
+            dihedralVectors<T>(d, stride, c, x, &v);
             S nrkj = simd::sqrt(v.nrkj2);
             S phi  = simd::atan2(nrkj*v.ipr, v.mn);
             fmaEnergy(energies + c, halfk*phi, phi);
@@ -1396,7 +1414,7 @@ bool computeExplicitSimdT(Potential                   mypot,
                           double                      epsilonr,
                           size_t                      stride,
                           size_t                      nslot,
-                          const T                    *x,
+                          const Coordinate           *x,
                           T                          *f,
                           double                     *energies,
                           bool                        forces)
@@ -1476,7 +1494,7 @@ bool coulombKernelsExplicitSimdT(TopologyEntryRange          entries,
                                  const std::vector<ActAtom> &atoms,
                                  size_t                      stride,
                                  size_t                      nslot,
-                                 const T                    *x,
+                                 const Coordinate           *x,
                                  const unsigned char        *terms,
                                  T                          *kernel)
 {
@@ -1497,14 +1515,14 @@ bool coulombKernelsExplicitSimdT(TopologyEntryRange          entries,
                 zeta[2*a + c] = Coulomb::combinedWidth(zi[a], zj[c]);
             }
         }
-        const T *xi = x + DIM*ind[0]*stride;
-        const T *xj = x + DIM*ind[1]*stride;
+        const Coordinate *xi = x + DIM*ind[0]*stride;
+        const Coordinate *xj = x + DIM*ind[1]*stride;
         for (size_t c = 0; c < nslot; c += simd::SimdTraits<T>::width)
         {
             S rsq = 0.0;
             for (int m = 0; m < DIM; m++)
             {
-                S dx = simd::load(xi + m*stride + c) - simd::load(xj + m*stride + c);
+                S dx = loadDifference<T>(xi + m*stride + c, xj + m*stride + c);
                 rsq = simd::fma(dx, dx, rsq);
             }
             for (int k = 0; k < 4; k++)
@@ -1568,7 +1586,7 @@ bool computeExplicitSimd(Potential                   mypot,
                          double                      epsilonr,
                          size_t                      stride,
                          size_t                      nslot,
-                         const double               *x,
+                         const Coordinate           *x,
                          double                     *f,
                          double                     *energies,
                          bool                        forces)
@@ -1582,7 +1600,7 @@ bool computeExplicitSimd(Potential                   mypot,
                          double                      epsilonr,
                          size_t                      stride,
                          size_t                      nslot,
-                         const float                *x,
+                         const Coordinate           *x,
                          float                      *f,
                          double                     *energies,
                          bool                        forces)
@@ -1594,7 +1612,7 @@ bool coulombKernelsExplicitSimd(TopologyEntryRange          entries,
                                 const std::vector<ActAtom> &atoms,
                                 size_t                      stride,
                                 size_t                      nslot,
-                                const double               *x,
+                                const Coordinate           *x,
                                 const unsigned char        *terms,
                                 double                     *kernel)
 {
@@ -1605,7 +1623,7 @@ bool coulombKernelsExplicitSimd(TopologyEntryRange          entries,
                                 const std::vector<ActAtom> &atoms,
                                 size_t                      stride,
                                 size_t                      nslot,
-                                const float                *x,
+                                const Coordinate           *x,
                                 const unsigned char        *terms,
                                 float                      *kernel)
 {
@@ -1683,13 +1701,13 @@ ExplicitSimd explicitSimdType()
 }
 
 bool computeExplicitSimd(Potential, TopologyEntryRange, const std::vector<ActAtom> &,
-                         double, size_t, size_t, const double *, double *, double *, bool)
+                         double, size_t, size_t, const Coordinate *, double *, double *, bool)
 {
     return false;
 }
 
 bool computeExplicitSimd(Potential, TopologyEntryRange, const std::vector<ActAtom> &,
-                         double, size_t, size_t, const float *, float *, double *, bool)
+                         double, size_t, size_t, const Coordinate *, float *, double *, bool)
 {
     return false;
 }
@@ -1701,13 +1719,13 @@ bool addB2TermsExplicitSimd(size_t, const double *, double, bool, double, const 
 }
 
 bool coulombKernelsExplicitSimd(TopologyEntryRange, const std::vector<ActAtom> &, size_t, size_t,
-                                const double *, const unsigned char *, double *)
+                                const Coordinate *, const unsigned char *, double *)
 {
     return false;
 }
 
 bool coulombKernelsExplicitSimd(TopologyEntryRange, const std::vector<ActAtom> &, size_t, size_t,
-                                const float *, const unsigned char *, float *)
+                                const Coordinate *, const unsigned char *, float *)
 {
     return false;
 }

@@ -320,14 +320,14 @@ protected:
      * \tparam    T      The floating point type
      * \param[out] stride The number of conformations, including the padding
      *                    to a multiple of the SIMD width
-     * \return the coordinates, see computeExplicitSimd
+     * \return the coordinates in units of coordinateUnit, see computeExplicitSimd
      */
     template <typename T>
-    std::vector<T> manyArrays(size_t *stride)
+    std::vector<Coordinate> manyArrays(size_t *stride)
     {
         size_t width = explicitSimdWidth<T>();
         *stride      = ((nMany_ + width - 1)/width)*width;
-        std::vector<T> x(DIM*atoms_.size()*(*stride), 0);
+        std::vector<Coordinate> x(DIM*atoms_.size()*(*stride), 0);
         for (size_t c = 0; c < *stride; c++)
         {
             // The padding repeats the last conformation
@@ -336,7 +336,7 @@ protected:
             {
                 for (int m = 0; m < DIM; m++)
                 {
-                    x[(DIM*a+m)*(*stride) + c] = xc[a][m];
+                    x[(DIM*a+m)*(*stride) + c] = toCoordinate(xc[a][m]);
                 }
             }
         }

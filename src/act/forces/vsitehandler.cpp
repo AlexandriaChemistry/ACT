@@ -631,9 +631,11 @@ void VsiteHandler::distributeForces(const Topology               *top,
 static constexpr std::array<int, 5> localIndices = { 0, 1, 2, 3, 4 };
 
 /*! \brief Construct one virtual site in many conformations
- * The coordinates of the parents in each slot are copied to a local array,
- * the site is constructed by the same routine as for one conformation and
- * its position, the last particle, is copied back.
+ * The coordinates of the parents in each slot, relative to the first one,
+ * are copied to a local array, the site is constructed by the same routine
+ * as for one conformation and its position, the last particle, is copied
+ * back. The constructions do not depend on the origin, and the relative
+ * coordinates are exact, see coordinate.h.
  * \tparam       n         The number of particles, known at compile time such
  *                         that the loops over them are unrolled
  * \param[in]    ai        The particles, the virtual site last
@@ -642,15 +644,15 @@ static constexpr std::array<int, 5> localIndices = { 0, 1, 2, 3, 4 };
  * \param[in]    nslot     The number of slots
  * \param[in]    construct Constructs the site from the local coordinates
  */
-template <size_t n, typename T, class Construct>
+template <size_t n, class Construct>
 static void constructSlots(const std::vector<int> &ai,
-                           T                      *x,
+                           Coordinate             *x,
                            size_t                  stride,
                            size_t                  nslot,
                            Construct               construct)
 {
     GMX_RELEASE_ASSERT(ai.size() == n, "Unexpected number of particles of a virtual site");
-    T *row[n][DIM];
+    Coordinate *row[n][DIM];
     for(size_t k = 0; k < n; k++)
     {
         for(int m = 0; m < DIM; m++)
@@ -665,20 +667,21 @@ static void constructSlots(const std::vector<int> &ai,
         {
             for(int m = 0; m < DIM; m++)
             {
-                xl[k][m] = row[k][m][c];
+                xl[k][m] = fromCoordinate(coordinateDifference(row[k][m][c], row[0][m][c]));
             }
         }
         construct(xl);
         for(int m = 0; m < DIM; m++)
         {
-            row[n-1][m][c] = xl[n-1][m];
+            row[n-1][m][c] = coordinateSum(row[0][m][c], toCoordinate(xl[n-1][m]));
         }
     }
 }
 
 /*! \brief Distribute the force on one virtual site in many conformations
- * As constructSlots, the coordinates and forces of the particles in each
- * slot are copied to local arrays, the force is distributed by the same
+ * As constructSlots, the coordinates relative to the first particle and
+ * the forces of the particles in each slot are copied to local arrays,
+ * the force is distributed by the same
  * routine as for one conformation and the forces are copied back.
  * \tparam       n      The number of particles, as for constructSlots
  * \param[in]    ai     The particles, the virtual site last
@@ -692,15 +695,15 @@ static void constructSlots(const std::vector<int> &ai,
  */
 template <size_t n, typename T, class Spread>
 static void spreadSlots(const std::vector<int> &ai,
-                        const T                *x,
+                        const Coordinate       *x,
                         T                      *f,
                         size_t                  stride,
                         size_t                  nslot,
                         Spread                  spread)
 {
     GMX_RELEASE_ASSERT(ai.size() == n, "Unexpected number of particles of a virtual site");
-    const T *xrow[n][DIM];
-    T       *frow[n][DIM];
+    const Coordinate *xrow[n][DIM];
+    T                *frow[n][DIM];
     for(size_t k = 0; k < n; k++)
     {
         for(int m = 0; m < DIM; m++)
@@ -716,7 +719,7 @@ static void spreadSlots(const std::vector<int> &ai,
         {
             for(int m = 0; m < DIM; m++)
             {
-                xl[k][m] = xrow[k][m][c];
+                xl[k][m] = fromCoordinate(coordinateDifference(xrow[k][m][c], xrow[0][m][c]));
                 fl[k][m] = frow[k][m][c];
             }
         }
@@ -732,12 +735,10 @@ static void spreadSlots(const std::vector<int> &ai,
 }
 
 /*! \brief Construct the virtual sites of many conformations at once
- * \tparam T The type of the coordinates
  * See VsiteHandler::constructPositions for the arguments.
  */
-template <typename T>
 static void constructStrided(const Topology *top,
-                             T              *x,
+                             Coordinate     *x,
                              size_t          stride,
                              size_t          nslot,
                              size_t          nconf)
@@ -835,7 +836,7 @@ static void constructStrided(const Topology *top,
  */
 template <typename T>
 static void distributeStrided(const Topology *top,
-                              const T        *x,
+                              const Coordinate *x,
                               T              *f,
                               size_t          stride,
                               size_t          nslot,
@@ -924,7 +925,7 @@ static void distributeStrided(const Topology *top,
 }
 
 void VsiteHandler::constructPositions(const Topology *top,
-                                      double         *x,
+                                      Coordinate     *x,
                                       size_t          stride,
                                       size_t          nslot,
                                       size_t          nconf) const
@@ -932,18 +933,9 @@ void VsiteHandler::constructPositions(const Topology *top,
     constructStrided(top, x, stride, nslot, nconf);
 }
 
-void VsiteHandler::constructPositions(const Topology *top,
-                                      float          *x,
-                                      size_t          stride,
-                                      size_t          nslot,
-                                      size_t          nconf) const
-{
-    constructStrided(top, x, stride, nslot, nconf);
-}
-
-void VsiteHandler::distributeForces(const Topology *top,
-                                    const double   *x,
-                                    double         *f,
+void VsiteHandler::distributeForces(const Topology   *top,
+                                    const Coordinate *x,
+                                    double           *f,
                                     size_t          stride,
                                     size_t          nslot,
                                     size_t          nconf) const
@@ -951,9 +943,9 @@ void VsiteHandler::distributeForces(const Topology *top,
     distributeStrided(top, x, f, stride, nslot, nconf);
 }
 
-void VsiteHandler::distributeForces(const Topology *top,
-                                    const float    *x,
-                                    float          *f,
+void VsiteHandler::distributeForces(const Topology   *top,
+                                    const Coordinate *x,
+                                    float            *f,
                                     size_t          stride,
                                     size_t          nslot,
                                     size_t          nconf) const

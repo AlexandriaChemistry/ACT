@@ -743,13 +743,16 @@ TEST(VsiteHandlerArrays, AllTypes)
         {
             for(int m = 0; m < DIM; m++)
             {
-                // Atoms about 0.1 nm apart, the virtual sites are constructed
-                x[c][a][m] = 0.1*random() + (m == 0 ? 0.1*a : 0.0);
+                // Atoms about 0.1 nm apart, the virtual sites are constructed.
+                // On the integer grid, such that both routines start from
+                // the same parents.
+                x[c][a][m] = fromCoordinate(toCoordinate(0.1*random() + (m == 0 ? 0.1*a : 0.0)));
                 f[c][a][m] = 100*random();
             }
         }
     }
-    std::vector<double> xa(DIM*natom*stride), fa(DIM*natom*stride);
+    std::vector<Coordinate> xa(DIM*natom*stride);
+    std::vector<double>     fa(DIM*natom*stride);
     for(size_t c = 0; c < stride; c++)
     {
         size_t cc = std::min(c, nconf-1);
@@ -757,7 +760,7 @@ TEST(VsiteHandlerArrays, AllTypes)
         {
             for(int m = 0; m < DIM; m++)
             {
-                xa[(DIM*a+m)*stride + c] = x[cc][a][m];
+                xa[(DIM*a+m)*stride + c] = toCoordinate(x[cc][a][m]);
                 fa[(DIM*a+m)*stride + c] = f[cc][a][m];
             }
         }
@@ -812,12 +815,18 @@ TEST(VsiteHandlerArrays, AllTypes)
         {
             for(int m = 0; m < DIM; m++)
             {
-                // The compiler may fuse the multiplications and additions
-                // differently in both loops, which changes the last bits
-                double xs = x[c][a][m], fs = f[c][a][m];
-                EXPECT_NEAR(xs, xa[(DIM*a+m)*stride + c], 1e-13*std::max(1.0, std::abs(xs)))
+                // The positions of the virtual sites are rounded to the
+                // unit of the coordinates. The compiler may fuse the
+                // multiplications and additions differently in both loops,
+                // which changes the last bits. In single precision the
+                // sites are constructed from coordinates relative to their
+                // first parent here, which rounds them differently.
+                double xs    = x[c][a][m], fs = f[c][a][m];
+                double toler = gmx::test::precisionTolerance(1e-13, 1e-6);
+                EXPECT_NEAR(xs, fromCoordinate(xa[(DIM*a+m)*stride + c]), 0.5*coordinateUnit + toler*std::max(1.0, std::abs(xs)))
                     << "conformation " << c << " particle " << a;
-                EXPECT_NEAR(fs, fa[(DIM*a+m)*stride + c], 1e-13*std::max(1.0, std::abs(fs)))
+                // The spread forces are sums of the random forces, up to 100
+                EXPECT_NEAR(fs, fa[(DIM*a+m)*stride + c], toler*std::max(100.0, std::abs(fs)))
                     << "conformation " << c << " particle " << a;
                 if (top.atoms()[a].pType() == ActParticle::Vsite)
                 {

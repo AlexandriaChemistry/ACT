@@ -94,8 +94,9 @@ void swapColumns(std::vector<U> *v, size_t stride, size_t a, size_t b)
  * width, and one width more if that is a multiple of 256. It is larger
  * when conformations were added one at a time, such that the rows do not
  * have to be moved each time.
- * \tparam T The floating point type, float or double, such that the
- *           explicit SIMD of that precision computes them, see
+ * The coordinates are integers, see coordinate.h, in both precisions.
+ * \tparam T The floating point type of the forces, float or double, such
+ *           that the explicit SIMD of that precision computes them, see
  *           computeExplicitSimd
  */
 template <typename T>
@@ -112,8 +113,8 @@ public:
     size_t              stride  = 0;
     //! Number of particles
     size_t              natom   = 0;
-    //! Coordinates
-    std::vector<T>      x;
+    //! Coordinates in units of coordinateUnit, see coordinate.h
+    std::vector<Coordinate> x;
     //! Forces
     std::vector<T>      f;
     /*! Energies of one potential, kept here to reuse the memory, in double
@@ -168,7 +169,8 @@ public:
         }
         if (st != stride || na != natom)
         {
-            std::vector<T> xn(DIM*na*st, 0), fn(DIM*na*st, 0);
+            std::vector<Coordinate> xn(DIM*na*st, 0);
+            std::vector<T>          fn(DIM*na*st, 0);
             size_t         nrow = DIM*std::min(na, natom);
             size_t         nc0  = std::min(nc, nconf);
             for(size_t row = 0; row < nrow; row++)
@@ -282,7 +284,7 @@ public:
         }
         for(size_t row = 0; row < DIM*natom; row++)
         {
-            T *xr = x.data() + row*stride;
+            Coordinate *xr = x.data() + row*stride;
             std::fill(xr + std::min(nconf, nslot), xr + nslot, xr[nconf - 1]);
         }
     }
@@ -320,7 +322,7 @@ public:
         nslot        = ((nactive + width - 1)/width)*width;
         for(size_t row = 0; row < DIM*natom; row++)
         {
-            const U *s = src.x.data() + row*src.stride;
+            const Coordinate *s = src.x.data() + row*src.stride;
             std::copy(s, s + ncomputed(), x.begin() + row*stride);
         }
         pad();
@@ -648,7 +650,7 @@ struct CachedEnergies
     /*! The coordinates of kernel, as ConformationArrays<real>::x, such that only
      * the interactions of particles that moved are computed again
      */
-    std::vector<real>   kernelX;
+    std::vector<Coordinate> kernelX;
 };
 
 /*! \brief Energies and forces of the entries without shells in all conformations
@@ -727,13 +729,13 @@ struct ConformationData
      * \param[in] c The conformation
      * \return the coordinates
      */
-    ParticleVectors<real> x(size_t c)
+    CoordinateVectors<Coordinate> x(size_t c)
     {
         return { arrays.x.data() + arrays.slot(c), arrays.stride, arrays.natom };
     }
 
     //! \copydoc x
-    ParticleVectors<const real> x(size_t c) const
+    CoordinateVectors<const Coordinate> x(size_t c) const
     {
         return { arrays.x.data() + arrays.slot(c), arrays.stride, arrays.natom };
     }

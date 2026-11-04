@@ -39,6 +39,7 @@
 #include <arm_neon.h>
 
 #include <cstddef>
+#include <cstdint>
 
 namespace alexandria
 {
@@ -182,6 +183,29 @@ static inline SimdFloat load(const float *p) { return SimdFloat(vld1q_f32(p)); }
 
 //! Store four floats to memory
 static inline void store(float *p, SimdFloat a) { vst1q_f32(p, a.v); }
+
+/*! \brief The differences of two times two integers, as doubles
+ * \param[in] a The first integers
+ * \param[in] b The second integers
+ * \return a - b, computed with wrap-around in 64 bits
+ */
+static inline SimdDouble integerDifferenceDouble(const std::int64_t *a, const std::int64_t *b)
+{
+    return SimdDouble(vcvtq_f64_s64(vsubq_s64(vld1q_s64(a), vld1q_s64(b))));
+}
+
+/*! \brief The differences of two times four integers, as floats
+ * Converted to double first, then rounded once to float.
+ * \param[in] a The first integers
+ * \param[in] b The second integers
+ * \return a - b, computed with wrap-around in 64 bits
+ */
+static inline SimdFloat integerDifferenceFloat(const std::int64_t *a, const std::int64_t *b)
+{
+    float64x2_t lo = vcvtq_f64_s64(vsubq_s64(vld1q_s64(a), vld1q_s64(b)));
+    float64x2_t hi = vcvtq_f64_s64(vsubq_s64(vld1q_s64(a + 2), vld1q_s64(b + 2)));
+    return SimdFloat(vcvt_high_f32_f64(vcvt_f32_f64(lo), hi));
+}
 
 /*! \brief Add four floats to four doubles in memory
  * \param[inout] p The doubles, two SimdDouble
