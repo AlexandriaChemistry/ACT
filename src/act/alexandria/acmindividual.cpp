@@ -63,7 +63,7 @@ void ACMIndividual::copyGenome(const ga::Genome &genome)
 * END: ForceField stuff                       *
 * * * * * * * * * * * * * * * * * * * * * */
 
-void ACMIndividual::addParam(const real val)
+void ACMIndividual::addParam(double val)
 {
     initialGenome_.addBase(val);
     genome_.addBase(val);
