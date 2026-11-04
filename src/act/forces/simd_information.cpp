@@ -438,7 +438,7 @@ void writeSimdInformation(gmx::TextWriter *writer)
     }
     else
     {
-        status = gmx::formatString("%s, %zu conformations at once in double and %zu in single precision, pair loops unrolled %zu times, in use",
+        status = gmx::formatString("%s, %zu conformations at once in double and %zu in single precision, pair loops unrolled %zu times, see Code used",
                                    simdName(type), explicitSimdWidth<double>(), explicitSimdWidth<float>(),
                                    explicitSimdPairUnroll());
     }
@@ -452,6 +452,39 @@ void writeSimdInformation(gmx::TextWriter *writer)
     {
         writer->writeLine(gmx::formatString("Peak per core:      not known, %s", peak.basis.c_str()));
     }
+    writeCodeInformation(writer);
+}
+
+void writeCodeInformation(gmx::TextWriter *writer)
+{
+    const char  *precision = GMX_DOUBLE ? "double" : "single";
+    ExplicitSimd type      = explicitSimdType();
+    writer->ensureEmptyLine();
+    writer->writeLine("Code used");
+    writer->writeLine("=========");
+    writer->writeLine("Coordinates:        integers in units of 2^-56 nm, such that differences and");
+    writer->writeLine("                    steps are exact, converted to nm for each interaction");
+    if (useExplicitSimd())
+    {
+        writer->writeLine(gmx::formatString("Several structures: %s in %s precision, %zu conformations per vector,",
+                                            simdName(type), precision,
+                                            GMX_DOUBLE ? explicitSimdWidth<double>() : explicitSimdWidth<float>()));
+        writer->writeLine("                    for the potentials with explicit SIMD, as in training and");
+        writer->writeLine("                    the second virial, the other potentials vectorized by the");
+        writer->writeLine(gmx::formatString("                    compiler (%s)", compilerSimd()));
+    }
+    else
+    {
+        writer->writeLine(gmx::formatString("Several structures: vectorized by the compiler (%s) in %s precision",
+                                            compilerSimd(), precision));
+    }
+    writer->writeLine(gmx::formatString("Single structures:  vectorized by the compiler (%s) in %s precision, as in",
+                                        compilerSimd(), precision));
+    writer->writeLine("                    simulate and minimize, the Hessian for normal modes from");
+    writer->writeLine(gmx::formatString("                    several structures in double precision%s",
+                                        GMX_DOUBLE ? "" : " also in this build"));
+    writer->writeLine("Energies:           summed in double precision");
+    writer->writeLine("Constraints:        in double precision");
 }
 
 } // namespace alexandria
