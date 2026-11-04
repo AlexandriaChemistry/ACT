@@ -164,11 +164,31 @@ int min_complex(int argc, char *argv[])
             MolHandler molhandler;
             std::vector<gmx::RVec> xmin   = coords;
             std::map<InteractionType, double> energies;
+            {
+                std::map<InteractionType, double> ebefore;
+                std::vector<gmx::RVec>            fbefore(actmol.atomsConst().size());
+                forceComp.compute(&msghandler, &pd, actmol.topology(), &xmin, &fbefore, &ebefore);
+                tw->writeStringFormatted("%s initial energy: %g.\n", actmol.getMolname().c_str(),
+                                         ebefore[InteractionType::EPOT]);
+            }
             eMin = molhandler.minimizeCoordinates(&msghandler, &pd, actmol.topology(),
                                                   &forceComp, sch, &xmin, &energies, 
                                                   {});
-    
-            if (eMinimizeStatus::OK == eMin)
+            if (eMinimizeStatus::OK != eMin)
+            {
+                auto text = gmx::formatString("Minimization of %s: %s",
+                                              actmol.getMolname().c_str(),
+                                              minimizeStatusMessage(eMin, energies[InteractionType::EPOT]).c_str());
+                tw->writeStringFormatted("%s\n", text.c_str());
+                fprintf(stderr, "%s, check log file %s\n", text.c_str(), msghandler.filename().c_str());
+            }
+            // Without a lower minimum the structure with the lowest energy
+            // is used as the minimum, see minimumUsable
+            if (!minimumUsable(eMin))
+            {
+                status = 1;
+            }
+            else
             {
                 std::vector<std::vector<gmx::RVec>>            xinter = { xmin };
                 std::vector<std::map<InteractionType, double>> einters;
@@ -190,14 +210,6 @@ int min_complex(int argc, char *argv[])
                 std::string confout = gmx::formatString("%s.pdb",
                                                         actmol.getMolname().c_str());
                 actmol.PrintConformation(confout.c_str(), xmin, false, box);
-            }
-            else
-            {
-                status = 1;
-                fprintf(stderr, "Minimization failed for %s: %s, check log file %s\n",
-                        actmol.getMolname().c_str(),
-                        eMinimizeStatusToString(eMin).c_str(),
-                        msghandler.filename().c_str());
             }
         }
     }

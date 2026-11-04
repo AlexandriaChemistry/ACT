@@ -77,7 +77,8 @@ eMinimizeStatus minimizeMolecule(MsgHandler                    *msghandler,
                                  const char                    *freezeFile,
                                  ACTMol                        *actmol,
                                  std::vector<gmx::RVec>        *xmin,
-                                 JsonTree                      *jtree)
+                                 JsonTree                      *jtree,
+                                 double                        *epot)
 {
     std::vector<int> freeze;
     if (nullptr != freezeFile)
@@ -114,11 +115,15 @@ eMinimizeStatus minimizeMolecule(MsgHandler                    *msghandler,
     MolHandler molhandler;
     auto eMin = molhandler.minimizeCoordinates(msghandler, pd, actmol->topology(), forceComp, sch,
                                                xmin, &energies, freeze);
+    if (epot)
+    {
+        *epot = energies[InteractionType::EPOT];
+    }
     if (minimizationDidNotConverge(eMin))
     {
         msghandler->msg(ACTStatus::Warning,
                         gmx::formatString("Minimization did not converge: %s. The results are those of the structure with the lowest energy.",
-                                          eMinimizeStatusToString(eMin).c_str()));
+                                          minimizeStatusMessage(eMin, energies[InteractionType::EPOT]).c_str()));
     }
     if (eMinimizeStatus::OK == eMin || minimizationDidNotConverge(eMin))
     {
@@ -281,9 +286,10 @@ int minimize(int argc, char *argv[])
                    gmx::formatString("There are %lu fragments.",
                                      actmol.fragmentHandler()->topologies().size()));
     auto xmin = actmol.xOriginal();
-    auto eMin = minimizeMolecule(&msghandler, &pd, &forceComp, sch,
-                                 opt2fn_null("-freeze", fnm.size(), fnm.data()),
-                                 &actmol, &xmin, &jtree);
+    double epot = 0;
+    auto   eMin = minimizeMolecule(&msghandler, &pd, &forceComp, sch,
+                                   opt2fn_null("-freeze", fnm.size(), fnm.data()),
+                                   &actmol, &xmin, &jtree, &epot);
     int status = 0;
     // Also without convergence the structure with the lowest energy is written
     if (eMinimizeStatus::OK == eMin || minimizationDidNotConverge(eMin))
@@ -302,10 +308,11 @@ int minimize(int argc, char *argv[])
     }
     if (minimizationDidNotConverge(eMin))
     {
+        // Without a lower minimum the structure is usable, see minimumUsable
         fprintf(stderr, "Minimization did not converge: %s, the structure with the lowest energy is written, check log file %s\n",
-                eMinimizeStatusToString(eMin).c_str(),
+                minimizeStatusMessage(eMin, epot).c_str(),
                 msghandler.filename().c_str());
-        status = 1;
+        status = minimumUsable(eMin) ? 0 : 1;
     }
     else if (eMinimizeStatus::OK != eMin)
     {
