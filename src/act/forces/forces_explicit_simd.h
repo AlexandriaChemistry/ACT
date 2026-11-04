@@ -121,14 +121,16 @@ size_t explicitSimdWidth();
 size_t explicitSimdPairUnroll();
 
 /*! \brief Compute a potential for all conformations with explicit SIMD
- * Coordinate m of atom a in conformation c is stored at
- * x[(DIM*a+m)*stride + c], the forces likewise and energy term k at
- * energies[k*stride + c]. Forces and energies are added to.
+ * Coordinate m of atom a in slot c is stored at x[(DIM*a+m)*stride + c],
+ * the forces likewise and energy term k at energies[k*stride + c]. Forces
+ * and energies are added to. Slots 0 to nslot - 1 are computed.
  * \param[in]    mypot    The potential
  * \param[in]    entries  The interactions
  * \param[in]    atoms    The atoms
  * \param[in]    epsilonr Relative dielectric constant
- * \param[in]    stride   Number of conformations, a multiple of explicitSimdWidth<double>()
+ * \param[in]    stride   Distance between the rows of the arrays
+ * \param[in]    nslot    Number of slots to compute, a multiple of explicitSimdWidth<double>(),
+ *                        at most stride
  * \param[in]    x        Coordinates
  * \param[inout] f        Forces, not used if forces is false
  * \param[inout] energies Energies
@@ -142,14 +144,15 @@ bool computeExplicitSimd(Potential                   mypot,
                          const std::vector<ActAtom> &atoms,
                          double                      epsilonr,
                          size_t                      stride,
+                         size_t                      nslot,
                          const double               *x,
                          double                     *f,
                          double                     *energies,
                          bool                        forces);
 
 /*! \brief Compute a potential for all conformations with explicit SIMD in single precision
- * As the double precision version, with a stride that is a multiple of
- * explicitSimdWidth<float>(). The parameters of the interactions are
+ * As the double precision version, with a number of slots that is a
+ * multiple of explicitSimdWidth<float>(). The parameters of the interactions are
  * prepared in double precision and rounded when they are used. The energy
  * of each interaction is computed in single precision and added to the
  * energies in double precision, such that sums of many interactions, and
@@ -160,6 +163,7 @@ bool computeExplicitSimd(Potential                   mypot,
                          const std::vector<ActAtom> &atoms,
                          double                      epsilonr,
                          size_t                      stride,
+                         size_t                      nslot,
                          const float                *x,
                          float                      *f,
                          double                     *energies,
@@ -173,7 +177,9 @@ bool computeExplicitSimd(Potential                   mypot,
  * dielectric constant, as COULOMB_POINT and COULOMB_GAUSSIAN compute it.
  * \param[in]  entries The interactions
  * \param[in]  atoms   The atoms, for the widths of the second charges
- * \param[in]  stride  Number of conformations, a multiple of explicitSimdWidth<double>()
+ * \param[in]  stride  Distance between the rows of the arrays
+ * \param[in]  nslot   Number of slots to compute, a multiple of explicitSimdWidth<double>(),
+ *                     at most stride
  * \param[in]  x       Coordinates, as in computeExplicitSimd
  * \param[in]  terms   For each interaction, bit k tells whether to compute term k
  * \param[out] kernel  Term k of interaction e of conformation c at (4*e + k)*stride + c,
@@ -184,17 +190,19 @@ bool computeExplicitSimd(Potential                   mypot,
 bool coulombKernelsExplicitSimd(TopologyEntryRange          entries,
                                 const std::vector<ActAtom> &atoms,
                                 size_t                      stride,
+                                size_t                      nslot,
                                 const double               *x,
                                 const unsigned char        *terms,
                                 double                     *kernel);
 
 /*! \brief The Coulomb energies for charges of one with explicit SIMD in single precision
- * As the double precision version, with a stride that is a multiple of
- * explicitSimdWidth<float>().
+ * As the double precision version, with a number of slots that is a
+ * multiple of explicitSimdWidth<float>().
  */
 bool coulombKernelsExplicitSimd(TopologyEntryRange          entries,
                                 const std::vector<ActAtom> &atoms,
                                 size_t                      stride,
+                                size_t                      nslot,
                                 const float                *x,
                                 const unsigned char        *terms,
                                 float                      *kernel);

@@ -845,8 +845,6 @@ static bool vsitesOutdated(const Topology *top, ConformationData *cdata)
     {
         cdata->haveVsites   = true;
         cdata->vsiteVersion = top->vsiteVersion();
-        cdata->arrays.invalidateVsites();
-        cdata->arraysDouble.invalidateVsites();
         cdata->coordinates.update();
     }
     return outdated;
@@ -925,7 +923,7 @@ static void copyRelaxedMonomerShells(const std::vector<ACTMol *> &allmols)
                     {
                         for(int m = 0; m < DIM; m++)
                         {
-                            xd[astart[im]+j][m] = xr[DIM*j+m];
+                            xd[astart[im]+j][m] = xr[j][m];
                         }
                     }
                 }
@@ -1281,9 +1279,10 @@ void ForceComputer::computeRelaxedEnergies(MsgHandler                  *msghandl
             auto &tops  = mol.fragmentHandler()->topologies();
             for(size_t index = 0; index < tops.size(); index++)
             {
-                for(auto &mon : *mol.monomerCoords(index))
+                auto *cdata = mol.conformationData(index);
+                for(size_t c = 0; c < cdata->nconf(); c++)
                 {
-                    mon.xrelax = mon.xflat;
+                    cdata->confs[c].xrelax = cdata->x(c).toRVec();
                 }
             }
         }
@@ -1299,15 +1298,16 @@ void ForceComputer::computeRelaxedEnergies(MsgHandler                  *msghandl
         {
             // Store the original dimer coordinates, such that the final
             // relaxation below does not depend on what we do here.
-            std::vector<std::vector<std::vector<real>>> xdimer(allmols.size());
+            std::vector<std::vector<std::vector<gmx::RVec>>> xdimer(allmols.size());
             for(size_t k = 0; k < allmols.size(); k++)
             {
                 auto &mol = (*allmols[k]);
                 if (mol.isDimer())
                 {
-                    for(auto &dim : *mol.dimerCoords())
+                    auto *cdata = mol.conformationData(2);
+                    for(size_t c = 0; c < cdata->nconf(); c++)
                     {
-                        xdimer[k].push_back(dim.xflat);
+                        xdimer[k].push_back(cdata->x(c).toRVec());
                     }
                     eInduc2[k].resize(mol.dimerCoords()->size(), 0.0);
                 }
@@ -1346,10 +1346,10 @@ void ForceComputer::computeRelaxedEnergies(MsgHandler                  *msghandl
             // Restore the original dimer coordinates and energies
             for(size_t k = 0; k < allmols.size(); k++)
             {
-                auto &dimers = *(*allmols[k]).dimerCoords();
-                for(size_t i = 0; i < dimers.size(); i++)
+                auto *cdata = (*allmols[k]).conformationData(2);
+                for(size_t i = 0; i < xdimer[k].size(); i++)
                 {
-                    dimers[i].xflat = xdimer[k][i];
+                    cdata->x(i).assign(xdimer[k][i]);
                 }
             }
             computeEnergies(msghandler, pd, allmols, 2, true, false, false, allForces);
@@ -1464,7 +1464,9 @@ void ForceComputer::computeRelaxedEnergies(MsgHandler                  *msghandl
 /*! \brief Add the forces of an electric field on the charges
  * \param[in]    atoms  The particles
  * \param[in]    field  The electric field
- * \param[inout] cdata  The conformations, only those not done are changed
+ * \param[inout] cdata  The conformations, only those of which the last
+ *                      calculation computed the forces are changed, see
+ *                      ConformationArrays::computed
  */
 static void addFieldForces(const std::vector<ActAtom>  &atoms,
                            const gmx::RVec             &field,
@@ -1476,7 +1478,7 @@ static void addFieldForces(const std::vector<ActAtom>  &atoms,
     }
     for(size_t c = 0; c < cdata->nconf(); c++)
     {
-        if (cdata->confs[c].done)
+        if (!cdata->arrays.computed(c))
         {
             continue;
         }
@@ -1698,15 +1700,12 @@ void ForceComputer::computeDimerConformations(MsgHandler                        
                                               const ForceField                          *pd,
                                               ACTMol                                    *mol,
                                               const std::vector<std::vector<gmx::RVec>> &coords,
-                                              bool                                       separateInductionCorrection,
-                                              bool                                       forcesInArrays) const
+                                              bool                                       separateInductionCorrection) const
 {
     // Replace the conformations of the dimer and its monomers
     for(size_t what = 0; what < 3; what++)
     {
-        auto cdata = mol->conformationData(what);
-        cdata->invalidate();
-        cdata->keepForcesInArrays = forcesInArrays;
+        mol->conformationData(what)->invalidate();
     }
     size_t natom1 = mol->fragmentHandler()->atomStart()[1];
     size_t nconf  = coords.size();
@@ -1745,15 +1744,11 @@ void ForceComputer::computeDimerConformations(MsgHandler                        
         reset(mol->conformationData(1), c, x.begin()+natom1, x.end());
         for(size_t k = 0; k < 2; k++)
         {
-            auto &mon  = mol->conformationData(k)->confs[c];
-            mon.xrelax = mon.xflat;
+            auto *cdata = mol->conformationData(k);
+            cdata->confs[c].xrelax = cdata->x(c).toRVec();
         }
     }
     computeRelaxedEnergies(msghandler, pd, { mol }, true, separateInductionCorrection, true);
-    for(size_t what = 0; what < 3; what++)
-    {
-        mol->conformationData(what)->keepForcesInArrays = false;
-    }
 }
 
 void ForceComputer::computeInteraction(MsgHandler                                     *msghandler,
@@ -1772,7 +1767,7 @@ void ForceComputer::computeInteraction(MsgHandler                               
         forces->clear();
         return;
     }
-    computeDimerConformations(msghandler, pd, mol, *coords, separateInductionCorrection, false);
+    computeDimerConformations(msghandler, pd, mol, *coords, separateInductionCorrection);
     const ConformationData *cdatas[3] = { mol->conformationData(0), mol->conformationData(1),
                                           mol->conformationData(2) };
     size_t natom1 = mol->fragmentHandler()->atomStart()[1];
@@ -1873,10 +1868,7 @@ void ForceComputer::computeInteraction(MsgHandler                               
         result->f.clear();
         return;
     }
-    // Without shells, each conformation is computed once with all others,
-    // then the forces can stay in the arrays.
-    computeDimerConformations(msghandler, pd, mol, coords, separateInductionCorrection,
-                              !pd->polarizable());
+    computeDimerConformations(msghandler, pd, mol, coords, separateInductionCorrection);
     // The energies are taken from the conformation data, see the other computeInteraction
     auto  dimerEnergies = &mol->conformationData(2)->energies;
     auto  dimerEpot     = dimerEnergies->find(InteractionType::EPOT);
@@ -1911,8 +1903,8 @@ void ForceComputer::computeInteraction(MsgHandler                               
     bool inArrays = true;
     for(size_t what = 0; what < 3; what++)
     {
-        inArrays = (inArrays && mol->conformationData(what)->forcesInArrays &&
-                    arrays[what]->nconf == nconf && arrays[what]->stride == arrays[2]->stride);
+        inArrays = (inArrays && arrays[what]->nconf == nconf && arrays[what]->stride == arrays[2]->stride &&
+                    arrays[what]->inOrder());
     }
     if (inArrays)
     {

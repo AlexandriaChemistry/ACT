@@ -259,12 +259,8 @@ typedef struct
     bool                   done;
     //! Pointer to datafile copied from Experiment
     std::string            dataFile;
-    //! Coordinates, component m of particle a at DIM*a+m, see ConformationData::x
-    std::vector<real>      xflat;
-    //! Relaxed coordinates, as xflat
-    std::vector<real>      xrelax;
-    //! Computed forces, as xflat, see ConformationData::f
-    std::vector<real>      fflat;
+    //! Relaxed coordinates, the coordinates are those of ConformationData::x
+    std::vector<gmx::RVec> xrelax;
     //! Observed forces
     std::vector<gmx::RVec> fobs;
     //! Energy map comparing QM to ACT energies

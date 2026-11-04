@@ -219,16 +219,12 @@ private:
      * \param[inout] mol                         The dimer, the conformations are stored in it
      * \param[in]    coords                      Coordinates of all particles of each conformation
      * \param[in]    separateInductionCorrection Whether to store InductionCorrection separately
-     * \param[in]    forcesInArrays              Whether the forces may be left in the arrays
-     *                                           of the conformation data, see
-     *                                           ConformationData::keepForcesInArrays
      */
     void computeDimerConformations(MsgHandler                                *msghandler,
                                    const ForceField                          *pd,
                                    ACTMol                                    *mol,
                                    const std::vector<std::vector<gmx::RVec>> &coords,
-                                   bool                                       separateInductionCorrection,
-                                   bool                                       forcesInArrays) const;
+                                   bool                                       separateInductionCorrection) const;
 
  public:
     //! \brief Default constructor
@@ -338,9 +334,8 @@ private:
      *
      * As the other computeInteraction, but only the total interaction energy
      * is returned, and the coordinates and forces are returned with the
-     * conformations in the inner loop. Without shells the forces are taken
-     * from the arrays of the energy calculation directly, rather than from
-     * the conformations stored in the molecule.
+     * conformations in the inner loop, taken from the arrays of the
+     * conformations stored in the molecule.
      * \param[in]    msghandler                  For debugging, may be nullptr
      * \param[in]    pd                          The force field
      * \param[inout] mol                         The dimer, the conformations are stored in it

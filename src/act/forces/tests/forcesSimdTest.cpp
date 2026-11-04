@@ -364,7 +364,7 @@ protected:
         auto x = manyArrays<T>(stride);
         f->assign(x.size(), 0);
         energies->assign(explicitSimdEnergyTerms*(*stride), 0);
-        return computeExplicitSimd(mypot, entries, atoms_, epsilonr, *stride,
+        return computeExplicitSimd(mypot, entries, atoms_, epsilonr, *stride, *stride,
                                    x.data(), f->data(), energies->data(), true);
     }
 
@@ -443,7 +443,7 @@ protected:
     {
         auto x = manyArrays<T>(stride);
         kernel->assign(4*entries.size()*(*stride), 0);
-        ASSERT_TRUE(coulombKernelsExplicitSimd(entries, atoms_, *stride, x.data(), terms.data(),
+        ASSERT_TRUE(coulombKernelsExplicitSimd(entries, atoms_, *stride, *stride, x.data(), terms.data(),
                                                kernel->data()));
     }
 

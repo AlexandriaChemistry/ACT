@@ -42,8 +42,10 @@
 #include <algorithm>
 #include <array>
 #include <cstddef>
+#include <initializer_list>
 #include <map>
 #include <type_traits>
+#include <utility>
 #include <vector>
 
 #include "act/basics/act_particle.h"
@@ -60,29 +62,56 @@
 namespace alexandria
 {
 
+/*! \brief Swap two columns of arrays in the layout of ConformationArrays
+ * \param[inout] v      The arrays
+ * \param[in]    stride The distance between the rows
+ * \param[in]    a      The first column
+ * \param[in]    b      The second column
+ */
+template <typename U>
+void swapColumns(std::vector<U> *v, size_t stride, size_t a, size_t b)
+{
+    size_t nrow = stride > 0 ? v->size()/stride : 0;
+    U     *p    = v->data();
+    for(size_t row = 0; row < nrow; row++)
+    {
+        std::swap(p[row*stride + a], p[row*stride + b]);
+    }
+}
+
 /*! \brief Coordinates and forces of the conformations of a topology.
  *
- * Component m of particle a in slot c is stored at (3*a+m)*stride + c,
+ * Component m of particle a in slot s is stored at (3*a+m)*stride + s,
  * such that loops over conformations access memory contiguously and can be
- * vectorized. The slots hold all conformations, or only those for which the
- * shells did not converge yet, see CoordsEnergy::done, and conformation(c)
- * is the conformation in slot c. The stride is the number of slots rounded
- * up to a multiple of the explicit SIMD width, and one width more if that
- * is a multiple of 256. The extra slots are copies of the last one, they
- * are computed but not used.
- * The coordinates and forces are stored in the precision T, such that the
- * explicit SIMD of that precision computes them, see computeExplicitSimd.
- * The conformations keep theirs in real precision.
- * \tparam T The floating point type, float or double
+ * vectorized. Each conformation has its own slot, see slot. While the
+ * shells are relaxed, the conformations for which they did not converge
+ * yet are put in the first slots, see arrange, such that only those are
+ * computed. Otherwise slot c holds conformation c.
+ * The computations use nslot slots, a multiple of the explicit SIMD
+ * width. Those beyond the conformations are copies of the last one, see
+ * pad, they are computed but not used. The stride, the distance between
+ * the rows, is at least the number of conformations rounded up to the
+ * width, and one width more if that is a multiple of 256. It is larger
+ * when conformations were added one at a time, such that the rows do not
+ * have to be moved each time.
+ * \tparam T The floating point type, float or double, such that the
+ *           explicit SIMD of that precision computes them, see
+ *           computeExplicitSimd
  */
 template <typename T>
 class ConformationArrays
 {
 public:
-    //! Number of slots, that is conformations in the arrays
-    size_t              nconf  = 0;
-    //! Number of slots including the padding
-    size_t              stride = 0;
+    //! Number of conformations
+    size_t              nconf   = 0;
+    //! Number of conformations to compute, in the first slots
+    size_t              nactive = 0;
+    //! Number of slots that are computed, nactive rounded up to the width
+    size_t              nslot   = 0;
+    //! Distance between the rows
+    size_t              stride  = 0;
+    //! Number of particles
+    size_t              natom   = 0;
     //! Coordinates
     std::vector<T>      x;
     //! Forces
@@ -92,332 +121,294 @@ public:
      */
     std::vector<double> energies;
 
-    /*! \brief Mark the coordinates as outdated
-     * Has to be called when the coordinates of the atoms in the
-     * conformations change, the next call of setCoordinates then
-     * copies all of them.
+    /*! \return the slot of a conformation
+     * \param[in] c The conformation
      */
-    void invalidate() { valid_ = false; }
+    size_t slot(size_t c) const { return slot_.empty() ? c : slot_[c]; }
 
-    /*! \brief Mark the coordinates of the virtual sites as outdated
-     * Has to be called when the positions of the virtual sites in the
-     * conformations change, the next call of setCoordinates then
-     * copies them.
+    /*! \return the conformation in a slot, of the first nconf
+     * \param[in] s The slot
      */
-    void invalidateVsites() { vsitesValid_ = false; }
+    size_t conformation(size_t s) const { return conf_.empty() ? s : conf_[s]; }
 
-    /*! \brief Copy the coordinates of the conformations and clear the forces
-     * Only the coordinates of shells, and of virtual sites if they changed,
-     * are copied if those of all particles of the same conformations were
-     * copied before, since the atoms do not move.
-     * \param[in] coords   The conformations, all with the same number of particles
-     * \param[in] atoms    The particles
-     * \param[in] forces   Whether forces will be computed, if not they are not cleared
-     * \param[in] skipDone Whether to leave out the conformations that are done
-     * \return false if the conformations do not have the same size or
-     *         there is no conformation left
+    //! \return Whether slot c holds conformation c for all conformations
+    bool inOrder() const { return slot_.empty(); }
+
+    //! \return Whether the last calculation computed conformation c
+    bool computed(size_t c) const { return slot(c) < nslot; }
+
+    //! \return the number of conformations that the last calculation computed
+    size_t ncomputed() const { return std::min(nslot, nconf); }
+
+    /*! \brief Change the number of conformations and particles
+     * The coordinates and forces of the conformations and particles that
+     * are in both the old and the new arrays are kept, the others are zero.
+     * The slots are put in order first.
+     * \param[in] nc The number of conformations
+     * \param[in] na The number of particles
      */
-    bool setCoordinates(const std::vector<CoordsEnergy> &coords,
-                        const std::vector<ActAtom>      &atoms,
-                        bool                             forces   = true,
-                        bool                             skipDone = false)
+    void resize(size_t nc, size_t na)
     {
-        std::vector<size_t> confs;
-        for(size_t c = 0; c < coords.size(); c++)
+        restoreOrder();
+        size_t width = explicitSimdWidth<T>();
+        size_t ns    = ((nc + width - 1)/width)*width;
+        size_t st    = stride;
+        // Grow by half of the stride if conformations are added one at a
+        // time, otherwise use as few slots as possible
+        if (ns > stride || na != natom || 2*ns < stride)
         {
-            if (!skipDone || !coords[c].done)
+            st = (na == natom && ns > stride && stride > 0) ? std::max(ns, stride + stride/2) : ns;
+            st = ((st + width - 1)/width)*width;
+            // Rows a multiple of 2 kB apart map to the same sets of the caches,
+            // which then hold few of them
+            if (st % 256 == 0)
             {
-                confs.push_back(c);
+                st += width;
             }
         }
-        return setCoordinates(coords, atoms, forces, confs);
+        if (st != stride || na != natom)
+        {
+            std::vector<T> xn(DIM*na*st, 0), fn(DIM*na*st, 0);
+            size_t         nrow = DIM*std::min(na, natom);
+            size_t         nc0  = std::min(nc, nconf);
+            for(size_t row = 0; row < nrow; row++)
+            {
+                std::copy(x.begin() + row*stride, x.begin() + row*stride + nc0, xn.begin() + row*st);
+                std::copy(f.begin() + row*stride, f.begin() + row*stride + nc0, fn.begin() + row*st);
+            }
+            x.swap(xn);
+            f.swap(fn);
+        }
+        nconf   = nc;
+        nactive = nc;
+        nslot   = ns;
+        stride  = st;
+        natom   = na;
     }
 
-    /*! \brief Copy the coordinates of some conformations and clear the forces
-     * As setCoordinates with skipDone, but the conformations to put in the
-     * slots are given, such that the others are not visited.
-     * \param[in] coords   The conformations
-     * \param[in] atoms    The particles
-     * \param[in] forces   Whether forces will be computed, if not they are not cleared
-     * \param[in] confs    The conformations for the slots, in increasing order,
-     *                     all with the same number of particles
-     * \param[in] sameSize Whether the caller checked that the conformations
-     *                     have the same number of particles, which saves
-     *                     looking up each of them
-     * \return false if the conformations do not have the same size or
-     *         there is no conformation
+    /*! \brief Put the conformations to compute in the first slots
+     * The slots of other conformations are swapped with theirs, together
+     * with the columns of other arrays in the same order, such as the forces
+     * of the entries without shells.
+     * \param[in]    active The conformations to compute, in increasing order
+     * \param[inout] otherU Arrays in the same order and their strides, may be empty
+     * \param[inout] otherV Likewise, of another type
      */
-    bool setCoordinates(const std::vector<CoordsEnergy> &coords,
-                        const std::vector<ActAtom>      &atoms,
-                        bool                             forces,
-                        const std::vector<size_t>       &confs,
-                        bool                             sameSize = false)
+    template <typename U, typename V>
+    void arrange(const std::vector<size_t>                            &active,
+                 std::initializer_list<std::pair<std::vector<U> *, size_t>> otherU,
+                 std::initializer_list<std::pair<std::vector<V> *, size_t>> otherV)
     {
-        static const size_t timer = Timings::instance().index("Copy coordinates to arrays");
-        ScopedTimer         scoped(timer);
-        size_t nc    = confs.size();
-        size_t natom = (nc == 0) ? 0 : coords[confs[0]].xflat.size()/DIM;
-        for(size_t k = 0; k < nc && !sameSize; k++)
+        if (active.size() == nconf)
         {
-            if (coords[confs[k]].xflat.size() != DIM*natom)
-            {
-                valid_ = false;
-                return false;
-            }
-        }
-        if (nc == 0)
-        {
-            valid_ = false;
-            return false;
-        }
-        // Increasing conformations end with nc - 1 only if they are in order
-        bool inOrder   = (confs.back() + 1 == nc);
-        bool sameSlots = (valid_ && confs_.size() == nc &&
-                          (inOrder ? inOrder_ : confs == confs_));
-        if (!sameSlots)
-        {
-            confs_.assign(confs.begin(), confs.end());
-            inOrder_ = inOrder;
-        }
-        size_t width = explicitSimdWidth<T>();
-        size_t st    = ((nc + width - 1)/width)*width;
-        // Rows a multiple of 2 kB apart map to the same sets of the caches,
-        // which then hold few of them
-        if (st % 256 == 0)
-        {
-            st += width;
-        }
-        bool   reuse = sameSlots && nc == nconf && st == stride && x.size() == DIM*natom*st;
-        nconf  = nc;
-        stride = st;
-        if (forces)
-        {
-            f.assign(DIM*natom*stride, 0.0);
-        }
-        if (reuse)
-        {
-            copyParticles(coords, shells_);
-            if (!vsitesValid_)
-            {
-                copyParticles(coords, vsites_);
-            }
+            restoreOrder(otherU, otherV);
         }
         else
         {
-            x.resize(DIM*natom*stride);
-            shells_.clear();
-            vsites_.clear();
-            all_.resize(natom);
-            for(size_t a = 0; a < natom; a++)
+            if (slot_.empty())
             {
-                all_[a] = a;
-                if (atoms.size() != natom || atoms[a].pType() == ActParticle::Shell)
+                slot_.resize(nconf);
+                conf_.resize(nconf);
+                for(size_t c = 0; c < nconf; c++)
                 {
-                    shells_.push_back(a);
-                }
-                else if (atoms[a].pType() != ActParticle::Atom)
-                {
-                    vsites_.push_back(a);
+                    slot_[c] = c;
+                    conf_[c] = c;
                 }
             }
-            copyParticles(coords, all_);
-            typesKnown_ = atoms.size() == natom;
-            valid_      = true;
+            size_t na = active.size();
+            // The active conformations in slots from na on swap with the
+            // conformations that are not active in slots below na. Active
+            // conformations below na stay where they are.
+            std::vector<char> isActive(nconf, 0);
+            for(auto c : active)
+            {
+                isActive[c] = 1;
+            }
+            size_t free = 0;
+            for(auto c : active)
+            {
+                if (slot_[c] < na)
+                {
+                    continue;
+                }
+                while (isActive[conf_[free]])
+                {
+                    free++;
+                }
+                swapSlots(slot_[c], free, otherU, otherV);
+            }
         }
-        vsitesValid_ = true;
-        return true;
+        size_t width = explicitSimdWidth<T>();
+        nactive      = active.size();
+        nslot        = ((nactive + width - 1)/width)*width;
     }
 
-    /*! \brief Copy the forces of the conformations into this structure
-     * \param[in] coords The conformations
+    /*! \brief Put slot c back to conformation c for all conformations
+     * \param[inout] otherU Arrays in the same order and their strides
+     * \param[inout] otherV Likewise
      */
-    void loadForces(const std::vector<CoordsEnergy> &coords)
+    template <typename U = T, typename V = T>
+    void restoreOrder(std::initializer_list<std::pair<std::vector<U> *, size_t>> otherU = {},
+                      std::initializer_list<std::pair<std::vector<V> *, size_t>> otherV = {})
+    {
+        if (!slot_.empty())
+        {
+            for(size_t s = 0; s < nconf; s++)
+            {
+                // Bring conformation s into slot s
+                if (conf_[s] != s)
+                {
+                    swapSlots(s, slot_[s], otherU, otherV);
+                }
+            }
+            slot_.clear();
+            conf_.clear();
+        }
+        size_t width = explicitSimdWidth<T>();
+        nactive      = nconf;
+        nslot        = ((nconf + width - 1)/width)*width;
+    }
+
+    /*! \brief Copy the coordinates of the last conformation to the padding
+     * Has to be called after changing the coordinates of the conformations
+     * and before computing, such that the computed slots beyond the
+     * conformations hold a meaningful conformation.
+     */
+    void pad()
+    {
+        if (nconf == 0)
+        {
+            return;
+        }
+        for(size_t row = 0; row < DIM*natom; row++)
+        {
+            T *xr = x.data() + row*stride;
+            std::fill(xr + std::min(nconf, nslot), xr + nslot, xr[nconf - 1]);
+        }
+    }
+
+    //! Set the forces of the computed slots to zero
+    void clearForces()
+    {
+        for(size_t row = 0; row < DIM*natom; row++)
+        {
+            std::fill(f.begin() + row*stride, f.begin() + row*stride + nslot, 0);
+        }
+    }
+
+    /*! \brief Copy the coordinates of the computed slots of other arrays
+     * The slots are those of src, the stride and the number of computed
+     * slots are those of this precision, such that the arrays can be
+     * computed in another precision.
+     * \param[in] src The arrays to copy
+     */
+    template <typename U>
+    void copyCoordinates(const ConformationArrays<U> &src)
+    {
+        static const size_t timer = Timings::instance().index("Copy coordinates to arrays");
+        ScopedTimer         scoped(timer);
+        if (src.nconf != nconf || src.natom != natom)
+        {
+            slot_.clear();
+            conf_.clear();
+            resize(src.nconf, src.natom);
+        }
+        slot_ = src.slot_;
+        conf_ = src.conf_;
+        size_t width = explicitSimdWidth<T>();
+        nactive      = src.nactive;
+        nslot        = ((nactive + width - 1)/width)*width;
+        for(size_t row = 0; row < DIM*natom; row++)
+        {
+            const U *s = src.x.data() + row*src.stride;
+            std::copy(s, s + ncomputed(), x.begin() + row*stride);
+        }
+        pad();
+    }
+
+    /*! \brief Copy the forces of the computed slots to other arrays in the same order
+     * \param[inout] dst The arrays
+     */
+    template <typename U>
+    void storeForces(ConformationArrays<U> *dst) const
+    {
+        static const size_t timer = Timings::instance().index("Copy forces from arrays");
+        ScopedTimer         scoped(timer);
+        GMX_RELEASE_ASSERT(dst->nconf == nconf && dst->natom == natom, "Different conformations");
+        for(size_t row = 0; row < DIM*natom; row++)
+        {
+            const T *s = f.data() + row*stride;
+            std::copy(s, s + ncomputed(), dst->f.begin() + row*dst->stride);
+        }
+    }
+
+    /*! \brief Copy the forces of the computed slots of other arrays in the same order
+     * \param[in] src The arrays
+     */
+    template <typename U>
+    void copyForces(const ConformationArrays<U> &src)
     {
         static const size_t timer = Timings::instance().index("Copy forces to arrays");
         ScopedTimer         scoped(timer);
-        size_t natom = f.size()/(DIM*stride);
-        // The conformations in the outer loop, such that the forces of
-        // each are read contiguously, see copyParticles
-        for(size_t c = 0; c < nconf; c++)
+        GMX_RELEASE_ASSERT(src.nconf == nconf && src.natom == natom, "Different conformations");
+        for(size_t row = 0; row < DIM*natom; row++)
         {
-            const auto &fc = coords[confs_[c]].fflat;
-            T          *fs = f.data() + c;
-            for(size_t a = 0; a < natom; a++)
-            {
-                for(int m = 0; m < DIM; m++)
-                {
-                    fs[(DIM*a+m)*stride] = fc[DIM*a+m];
-                }
-            }
+            const U *s = src.f.data() + row*src.stride;
+            std::copy(s, s + ncomputed(), f.begin() + row*stride);
         }
     }
 
-    /*! \brief Copy the forces back to the conformations
-     * \param[inout] coords The conformations
+    /*! \brief Set the forces of the computed slots from forces kept in the same layout
+     * \param[in] src The forces, with the same stride and order
      */
-    void storeForces(std::vector<CoordsEnergy> *coords) const
-    {
-        static const size_t timer = Timings::instance().index("Copy forces from arrays");
-        ScopedTimer         scoped(timer);
-        size_t natom = f.size()/(DIM*stride);
-        for(size_t c = 0; c < nconf; c++)
-        {
-            auto         &fc = (*coords)[confs_[c]].fflat;
-            const T      *fs = f.data() + c;
-            for(size_t a = 0; a < natom; a++)
-            {
-                for(int m = 0; m < DIM; m++)
-                {
-                    fc[DIM*a+m] = fs[(DIM*a+m)*stride];
-                }
-            }
-        }
-    }
-
-    /*! \brief Copy the forces on the shells back to the conformations
-     * The forces on the other particles are not changed.
-     * \param[inout] coords The conformations
-     */
-    void storeShellForces(std::vector<CoordsEnergy> *coords) const
-    {
-        static const size_t timer = Timings::instance().index("Copy forces from arrays");
-        ScopedTimer         scoped(timer);
-        for(size_t c = 0; c < nconf; c++)
-        {
-            auto         &fc = (*coords)[confs_[c]].fflat;
-            const T      *fs = f.data() + c;
-            for(auto a : shells_)
-            {
-                for(int m = 0; m < DIM; m++)
-                {
-                    fc[DIM*a+m] = fs[(DIM*a+m)*stride];
-                }
-            }
-        }
-    }
-
-    /*! rief Copy the coordinates of the virtual sites back to the conformations
-     * For after constructing them in this structure, see
-     * VsiteHandler::constructPositions. The next setCoordinates does not
-     * copy them again.
-     * \param[inout] coords The conformations
-     */
-    void storeVsites(std::vector<CoordsEnergy> *coords)
-    {
-        static const size_t timer = Timings::instance().index("Copy vsites from arrays");
-        ScopedTimer         scoped(timer);
-        for(size_t c = 0; c < nconf; c++)
-        {
-            auto         &xc = (*coords)[confs_[c]].xflat;
-            const T      *xs = x.data() + c;
-            for(auto a : vsites_)
-            {
-                for(int m = 0; m < DIM; m++)
-                {
-                    xc[DIM*a+m] = xs[(DIM*a+m)*stride];
-                }
-            }
-        }
-        vsitesValid_ = true;
-    }
-
-    /*! \brief Set the forces from forces kept in the same layout
-     * The forces may have been kept for more conformations than are in
-     * the slots now, see conformations.
-     * \param[in] src       The forces
-     * \param[in] srcStride The stride of src
-     * \param[in] srcConfs  The conformation in each slot of src, it has to
-     *                      contain all conformations in the slots now
-     */
-    void loadForces(const std::vector<T>      &src,
-                    size_t                     srcStride,
-                    const std::vector<size_t> &srcConfs)
+    void loadForces(const std::vector<T> &src)
     {
         static const size_t timer = Timings::instance().index("Copy fixed forces to arrays");
         ScopedTimer         scoped(timer);
-        size_t nrow = x.size()/stride;
-        f.resize(nrow*stride);
-        if (srcConfs == confs_ && srcStride == stride)
+        GMX_RELEASE_ASSERT(src.size() == f.size(), "Forces kept with another layout");
+        for(size_t row = 0; row < DIM*natom; row++)
         {
-            std::copy(src.begin(), src.begin() + nrow*stride, f.begin());
-            return;
-        }
-        // The slot of each conformation in src
-        std::vector<size_t> srcSlot(stride);
-        size_t              k = 0;
-        for(size_t c = 0; c < stride; c++)
-        {
-            size_t conf = confs_[std::min(c, nconf-1)];
-            while (k < srcConfs.size() && srcConfs[k] < conf)
-            {
-                k++;
-            }
-            GMX_RELEASE_ASSERT(k < srcConfs.size() && srcConfs[k] == conf,
-                               "Forces of a conformation were not kept");
-            srcSlot[c] = k;
-        }
-        for(size_t row = 0; row < nrow; row++)
-        {
-            const T      *s = src.data() + row*srcStride;
-            T            *d = f.data() + row*stride;
-            for(size_t c = 0; c < stride; c++)
-            {
-                d[c] = s[srcSlot[c]];
-            }
+            std::copy(src.begin() + row*stride, src.begin() + row*stride + nslot, f.begin() + row*stride);
         }
     }
 
-    //! \return The conformations in the slots
-    const std::vector<size_t> &conformations() const { return confs_; }
-
-    /*! \return The conformations in the slots, or nullptr if slot i holds
-     * conformation i, as storeEnergies takes them
-     */
-    const size_t *slots() const { return inOrder_ ? nullptr : confs_.data(); }
-
-    //! \return Whether the types of the particles are known, see setCoordinates
-    bool knowsParticles() const { return valid_ && typesKnown_; }
-
 private:
-    //! Whether x holds the coordinates of all particles
-    bool                valid_       = false;
-    //! Whether x holds the current coordinates of the virtual sites
-    bool                vsitesValid_ = false;
-    //! Whether the types of the particles were known, otherwise all are in shells_
-    bool                typesKnown_  = false;
-    //! The conformation in each slot
-    std::vector<size_t> confs_;
-    //! Whether slot i holds conformation i
-    bool                inOrder_     = false;
-    //! The shells, or all particles if their types are not known, their coordinates change
-    std::vector<size_t> shells_;
-    //! The other particles that are not atoms, their coordinates change with their parameters
-    std::vector<size_t> vsites_;
-    //! All particles, for copying all coordinates
-    std::vector<size_t> all_;
+    template <typename U> friend class ConformationArrays;
+    //! The slot of each conformation, empty if slot c holds conformation c
+    std::vector<size_t> slot_;
+    //! The conformation in each slot, empty likewise
+    std::vector<size_t> conf_;
 
-    /*! \brief Copy the coordinates of some particles of all slots, including the padding
-     * The conformations are in the outer loop, such that the coordinates
-     * of each are read contiguously and each is looked up once. The rows
-     * written to are in the cache for consecutive slots.
-     * \param[in] coords    The conformations
-     * \param[in] particles The particle indices
+    /*! \brief Swap the conformations of two slots
+     * \param[in]    a      A slot
+     * \param[in]    b      Another slot
+     * \param[inout] otherU Arrays in the same order and their strides
+     * \param[inout] otherV Likewise
      */
-    void copyParticles(const std::vector<CoordsEnergy> &coords,
-                       const std::vector<size_t>       &particles)
+    template <typename U, typename V>
+    void swapSlots(size_t a, size_t b,
+                   std::initializer_list<std::pair<std::vector<U> *, size_t>> otherU,
+                   std::initializer_list<std::pair<std::vector<V> *, size_t>> otherV)
     {
-        for(size_t c = 0; c < stride; c++)
+        swapColumns(&x, stride, a, b);
+        swapColumns(&f, stride, a, b);
+        for(auto &o : otherU)
         {
-            const auto &xc = coords[confs_[std::min(c, nconf-1)]].xflat;
-            T          *xs = x.data() + c;
-            for(auto a : particles)
+            if (!o.first->empty())
             {
-                for(int m = 0; m < DIM; m++)
-                {
-                    xs[(DIM*a+m)*stride] = xc[DIM*a+m];
-                }
+                swapColumns(o.first, o.second, a, b);
             }
         }
+        for(auto &o : otherV)
+        {
+            if (!o.first->empty())
+            {
+                swapColumns(o.first, o.second, a, b);
+            }
+        }
+        std::swap(conf_[a], conf_[b]);
+        slot_[conf_[a]] = a;
+        slot_[conf_[b]] = b;
     }
 };
 
@@ -679,24 +670,16 @@ struct FixedEnergies
     bool                                valid = false;
     //! The number of conformations
     size_t                              nconf = 0;
-    //! Whether the forces are in arrayForces rather than forces
-    bool                                inArrays = false;
     //! The forces in the layout of ConformationArrays<real>
     std::vector<real>                   arrayForces;
     //! The same for ConformationArrays<double>, in a single precision build
     std::vector<double>                 arrayForcesDouble;
-    //! The stride of arrayForces
-    size_t                              stride = 0;
-    //! The conformation in each slot of arrayForces
-    std::vector<size_t>                 slots;
     //! The interaction types, including EPOT
     std::vector<InteractionType>        types;
     //! For each type the energy of each conformation
     std::vector<std::vector<double>>    energies;
     //! For each type whether each conformation has an energy
     std::vector<std::vector<char>>      have;
-    //! The forces of each conformation, as CoordsEnergy::fflat, unless inArrays
-    std::vector<std::vector<real>>      forces;
 
     /*! \brief The forces in the layout of ConformationArrays<T>
      * \tparam T The floating point type of the arrays
@@ -754,15 +737,13 @@ struct ConformationData
      */
     ParticleVectors<real> x(size_t c)
     {
-        auto &v = confs[c].xflat;
-        return { v.data(), 1, v.size()/DIM };
+        return { arrays.x.data() + arrays.slot(c), arrays.stride, arrays.natom };
     }
 
     //! \copydoc x
     ParticleVectors<const real> x(size_t c) const
     {
-        auto &v = confs[c].xflat;
-        return { v.data(), 1, v.size()/DIM };
+        return { arrays.x.data() + arrays.slot(c), arrays.stride, arrays.natom };
     }
 
     /*! \brief Return the computed forces of a conformation
@@ -771,18 +752,20 @@ struct ConformationData
      */
     ParticleVectors<real> f(size_t c)
     {
-        auto &v = confs[c].fflat;
-        return { v.data(), 1, v.size()/DIM };
+        return { arrays.f.data() + arrays.slot(c), arrays.stride, arrays.natom };
     }
 
     //! \copydoc f
     ParticleVectors<const real> f(size_t c) const
     {
-        auto &v = confs[c].fflat;
-        return { v.data(), 1, v.size()/DIM };
+        return { arrays.f.data() + arrays.slot(c), arrays.stride, arrays.natom };
     }
 
     /*! \brief Set the coordinates of a conformation, with zero forces
+     * The arrays are resized to the conformations in confs, all
+     * conformations have to have the same number of particles. With
+     * another number than before, the other conformations have to be set
+     * again as well.
      * \param[in] c     The conformation
      * \param[in] begin The coordinates of the first particle
      * \param[in] end   Past the coordinates of the last particle
@@ -791,10 +774,21 @@ struct ConformationData
               std::vector<gmx::RVec>::const_iterator begin,
               std::vector<gmx::RVec>::const_iterator end)
     {
-        auto &ce = confs[c];
-        ce.xflat.resize(DIM*(end - begin));
-        ce.fflat.assign(ce.xflat.size(), 0.0);
-        x(c).assign(std::vector<gmx::RVec>(begin, end));
+        size_t natom = end - begin;
+        if (arrays.nconf != confs.size() || arrays.natom != natom)
+        {
+            arrays.resize(confs.size(), natom);
+        }
+        auto xc = x(c);
+        auto fc = f(c);
+        for(size_t a = 0; a < natom; a++)
+        {
+            for(int m = 0; m < DIM; m++)
+            {
+                xc[a][m] = begin[a][m];
+                fc[a][m] = 0;
+            }
+        }
     }
 
     /*! \brief Set the coordinates of a conformation, with zero forces
@@ -803,16 +797,15 @@ struct ConformationData
      */
     void setX(size_t c, const std::vector<gmx::RVec> &x) { setX(c, x.begin(), x.end()); }
 
-    //! Coordinates and forces
+    //! Coordinates and forces of the conformations, see x and f
     ConformationArrays<real>   arrays;
-    //! Coordinates and forces in double precision, used instead of arrays if doublePrecision is set
+    //! Copies of the coordinates and forces in double precision, used if doublePrecision is set
     ConformationArrays<double> arraysDouble;
     /*! Whether to compute the potentials in double precision in a single
      * precision build, for methods that need it such as the normal mode
-     * analysis. The arrays are then in double precision, the coordinates
-     * and forces of the conformations stay in real precision. Potentials
-     * without explicit SIMD, and single conformations, are still computed
-     * in real precision.
+     * analysis. The coordinates are then copied to arraysDouble and the
+     * forces back to arrays. Potentials without explicit SIMD, and single
+     * conformations, are still computed in real precision.
      */
     bool                 doublePrecision = false;
 
@@ -833,6 +826,17 @@ struct ConformationData
         }
     }
 
+    /*! \brief Put the conformations to compute in the first slots of the arrays
+     * The forces of the entries without shells are kept in the same order.
+     * With all conformations, slot c holds conformation c again.
+     * \param[in] active The conformations to compute, in increasing order
+     */
+    void arrangeSlots(const std::vector<size_t> &active)
+    {
+        arrays.template arrange<real, double>(active, { { &fixed.arrayForces, arrays.stride } },
+                                              { { &fixed.arrayForcesDouble, arraysDouble.stride } });
+    }
+
     //! \return Whether arraysDouble is used, see doublePrecision
     bool useArraysDouble() const { return doublePrecision && !std::is_same_v<real, double>; }
     //! Energies
@@ -842,9 +846,7 @@ struct ConformationData
     //! The Topology::vsiteVersion the virtual sites were constructed for
     size_t               vsiteVersion = 0;
     /*! Whether the next energy calculation has to construct the virtual
-     * sites of the conformations first. It does so in the arrays if these
-     * are used, which is faster than constructing them one conformation
-     * at a time.
+     * sites of the conformations first.
      */
     bool                 constructVsites   = false;
     /*! Whether the energy calculations spread the forces on the virtual
@@ -855,14 +857,6 @@ struct ConformationData
     bool                 spreadVsites      = false;
     //! Whether the forces of all conformations were spread, see spreadVsites
     bool                 vsiteForcesSpread = false;
-    /*! Whether the next energy calculations may leave the forces in the
-     * arrays without copying them to the conformations. They do so only if
-     * the arrays hold all conformations and the forces on the virtual sites
-     * were spread there, see forcesInArrays.
-     */
-    bool                 keepForcesInArrays = false;
-    //! Whether the forces of all conformations are only in the arrays, see keepForcesInArrays
-    bool                 forcesInArrays     = false;
     //! Changes when the coordinates of the conformations change
     StructureVersion     coordinates;
     /*! Changes when the conformations are made anew, but not when only
@@ -881,8 +875,6 @@ struct ConformationData
     //! Mark the coordinates and virtual sites as outdated
     void invalidate()
     {
-        arrays.invalidate();
-        arraysDouble.invalidate();
         fixed.valid = false;
         haveVsites = false;
         constructVsites   = false;

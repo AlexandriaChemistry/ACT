@@ -851,7 +851,7 @@ static constexpr int pairVariants()
  * \tparam       Forces   Whether to compute forces
  * \tparam       V        The variant of the kernel, see pairVariants
  * \param[in]    pp       The interaction
- * \param[in]    stride   Number of conformations
+ * \param[in]    stride   Distance between the rows of the arrays
  * \param[in]    c        The first conformation
  * \param[in]    x        Coordinates
  * \param[inout] f        Forces, not used if Forces is false
@@ -941,13 +941,14 @@ static_assert(pairUnroll >= 1 && pairUnroll <= 16, "The unroll factor of the pai
 template <typename Kernel, bool Forces, int V, typename T>
 static void computePairConformations(const PairParams &pp,
                                      size_t            stride,
+                                     size_t            nslot,
                                      const T          *x,
                                      T                *f,
                                      double           *energies)
 {
     constexpr size_t width = simd::SimdTraits<T>::width;
     size_t           c     = 0;
-    for (; c + pairUnroll*width <= stride; c += pairUnroll*width)
+    for (; c + pairUnroll*width <= nslot; c += pairUnroll*width)
     {
         // The vectors in increasing order
         [&]<size_t... u>(std::index_sequence<u...>)
@@ -955,7 +956,7 @@ static void computePairConformations(const PairParams &pp,
             (computePair<Kernel, Forces, V>(pp, stride, c + u*width, x, f, energies), ...);
         }(std::make_index_sequence<pairUnroll>{});
     }
-    for (; c < stride; c += width)
+    for (; c < nslot; c += width)
     {
         computePair<Kernel, Forces, V>(pp, stride, c, x, f, energies);
     }
@@ -968,6 +969,7 @@ static void computePairConformations(const PairParams &pp,
 template <typename Kernel, bool Forces, int V = 0, typename T>
 static void dispatchPairVariant(const PairParams &pp,
                                 size_t            stride,
+                                size_t            nslot,
                                 const T          *x,
                                 T                *f,
                                 double           *energies)
@@ -976,11 +978,11 @@ static void dispatchPairVariant(const PairParams &pp,
     {
         if (pp.variant != V)
         {
-            dispatchPairVariant<Kernel, Forces, V + 1>(pp, stride, x, f, energies);
+            dispatchPairVariant<Kernel, Forces, V + 1>(pp, stride, nslot, x, f, energies);
             return;
         }
     }
-    computePairConformations<Kernel, Forces, V>(pp, stride, x, f, energies);
+    computePairConformations<Kernel, Forces, V>(pp, stride, nslot, x, f, energies);
 }
 
 /*! \brief Compute a pair potential for all conformations
@@ -988,7 +990,8 @@ static void dispatchPairVariant(const PairParams &pp,
  * \param[in]    entries  The interactions
  * \param[in]    atoms    The atoms
  * \param[in]    epsilonr Relative dielectric constant
- * \param[in]    stride   Number of conformations, a multiple of the SIMD width
+ * \param[in]    stride   Distance between the rows of the arrays
+ * \param[in]    nslot    Number of slots to compute, a multiple of the SIMD width, at most stride
  * Without forces the compiler removes their computation from the kernel,
  * since the force is not used.
  * \tparam       Forces   Whether to compute forces
@@ -1001,6 +1004,7 @@ void computePairs(TopologyEntryRange          entries,
                   const std::vector<ActAtom> &atoms,
                   double                      epsilonr,
                   size_t                      stride,
+                  size_t                      nslot,
                   const T                    *x,
                   T                          *f,
                   double                     *energies)
@@ -1030,7 +1034,7 @@ void computePairs(TopologyEntryRange          entries,
     // the forces and energies are summed in the same order
     for (const auto &pp : pairs)
     {
-        dispatchPairVariant<Kernel, Forces>(pp, stride, x, f, energies);
+        dispatchPairVariant<Kernel, Forces>(pp, stride, nslot, x, f, energies);
     }
 }
 
@@ -1051,7 +1055,8 @@ struct AngleParams
  * angleOne in forces_simd.cpp.
  * \tparam       Forces   Whether to compute forces
  * \param[in]    entries  The interactions
- * \param[in]    stride   Number of conformations, a multiple of the SIMD width
+ * \param[in]    stride   Distance between the rows of the arrays
+ * \param[in]    nslot    Number of slots to compute, a multiple of the SIMD width, at most stride
  * \param[in]    x        Coordinates
  * \param[inout] f        Forces, not used if Forces is false
  * \param[inout] energies Energies
@@ -1059,6 +1064,7 @@ struct AngleParams
 template <bool Forces, typename T>
 void computeAngles(TopologyEntryRange         entries,
                    size_t                     stride,
+                   size_t                     nslot,
                    const T                   *x,
                    T                         *f,
                    double                    *energies)
@@ -1076,7 +1082,7 @@ void computeAngles(TopologyEntryRange         entries,
     for (const auto &a : angles)
     {
         double halfk = 0.5*a.kt;
-        for (size_t c = 0; c < stride; c += simd::SimdTraits<T>::width)
+        for (size_t c = 0; c < nslot; c += simd::SimdTraits<T>::width)
         {
             S rij[DIM], rkj[DIM];
             S ip = 0.0, ipa = 0.0, ipb = 0.0;
@@ -1294,7 +1300,8 @@ static inline S invNormProduct(const DihedralVectors<S> &v)
  * the planes is not defined psi is zero, as with atan2(0, 0).
  * \tparam       Forces   Whether to compute forces
  * \param[in]    entries  The interactions
- * \param[in]    stride   Number of conformations, a multiple of the SIMD width
+ * \param[in]    stride   Distance between the rows of the arrays
+ * \param[in]    nslot    Number of slots to compute, a multiple of the SIMD width, at most stride
  * \param[in]    x        Coordinates
  * \param[inout] f        Forces, not used if Forces is false
  * \param[inout] energies Energies
@@ -1302,6 +1309,7 @@ static inline S invNormProduct(const DihedralVectors<S> &v)
 template <bool Forces, typename T>
 void computeFourierDihedrals(TopologyEntryRange         entries,
                              size_t                     stride,
+                             size_t                     nslot,
                              const T                   *x,
                              T                         *f,
                              double                    *energies)
@@ -1309,7 +1317,7 @@ void computeFourierDihedrals(TopologyEntryRange         entries,
     using S = simd::Simd<T>;
     for (const auto &d : prepareDihedrals(entries, stride))
     {
-        for (size_t c = 0; c < stride; c += simd::SimdTraits<T>::width)
+        for (size_t c = 0; c < nslot; c += simd::SimdTraits<T>::width)
         {
             DihedralVectors<S> v;
             dihedralVectors(d, stride, c, x, &v);
@@ -1344,7 +1352,8 @@ void computeFourierDihedrals(TopologyEntryRange         entries,
  * the sign of r_ij.n that dih_angle in forces_simd.cpp computes.
  * \tparam       Forces   Whether to compute forces
  * \param[in]    entries  The interactions
- * \param[in]    stride   Number of conformations, a multiple of the SIMD width
+ * \param[in]    stride   Distance between the rows of the arrays
+ * \param[in]    nslot    Number of slots to compute, a multiple of the SIMD width, at most stride
  * \param[in]    x        Coordinates
  * \param[inout] f        Forces, not used if Forces is false
  * \param[inout] energies Energies
@@ -1352,6 +1361,7 @@ void computeFourierDihedrals(TopologyEntryRange         entries,
 template <bool Forces, typename T>
 void computeImproperDihedrals(TopologyEntryRange         entries,
                               size_t                     stride,
+                              size_t                     nslot,
                               const T                   *x,
                               T                         *f,
                               double                    *energies)
@@ -1361,7 +1371,7 @@ void computeImproperDihedrals(TopologyEntryRange         entries,
     {
         double kA    = d.c[idihKPHI];
         double halfk = 0.5*kA;
-        for (size_t c = 0; c < stride; c += simd::SimdTraits<T>::width)
+        for (size_t c = 0; c < nslot; c += simd::SimdTraits<T>::width)
         {
             DihedralVectors<S> v;
             dihedralVectors(d, stride, c, x, &v);
@@ -1385,6 +1395,7 @@ bool computeExplicitSimdT(Potential                   mypot,
                           const std::vector<ActAtom> &atoms,
                           double                      epsilonr,
                           size_t                      stride,
+                          size_t                      nslot,
                           const T                    *x,
                           T                          *f,
                           double                     *energies,
@@ -1394,11 +1405,11 @@ bool computeExplicitSimdT(Potential                   mypot,
     {
         if (forces)
         {
-            computePairs<decltype(kernel), true>(entries, atoms, epsilonr, stride, x, f, energies);
+            computePairs<decltype(kernel), true>(entries, atoms, epsilonr, stride, nslot, x, f, energies);
         }
         else
         {
-            computePairs<decltype(kernel), false>(entries, atoms, epsilonr, stride, x, f, energies);
+            computePairs<decltype(kernel), false>(entries, atoms, epsilonr, stride, nslot, x, f, energies);
         }
         return true;
     };
@@ -1426,31 +1437,31 @@ bool computeExplicitSimdT(Potential                   mypot,
     case Potential::HARMONIC_ANGLES:
         if (forces)
         {
-            computeAngles<true>(entries, stride, x, f, energies);
+            computeAngles<true>(entries, stride, nslot, x, f, energies);
         }
         else
         {
-            computeAngles<false>(entries, stride, x, f, energies);
+            computeAngles<false>(entries, stride, nslot, x, f, energies);
         }
         return true;
     case Potential::FOURIER_DIHEDRALS:
         if (forces)
         {
-            computeFourierDihedrals<true>(entries, stride, x, f, energies);
+            computeFourierDihedrals<true>(entries, stride, nslot, x, f, energies);
         }
         else
         {
-            computeFourierDihedrals<false>(entries, stride, x, f, energies);
+            computeFourierDihedrals<false>(entries, stride, nslot, x, f, energies);
         }
         return true;
     case Potential::HARMONIC_DIHEDRALS:
         if (forces)
         {
-            computeImproperDihedrals<true>(entries, stride, x, f, energies);
+            computeImproperDihedrals<true>(entries, stride, nslot, x, f, energies);
         }
         else
         {
-            computeImproperDihedrals<false>(entries, stride, x, f, energies);
+            computeImproperDihedrals<false>(entries, stride, nslot, x, f, energies);
         }
         return true;
     default:
@@ -1464,6 +1475,7 @@ template <typename T>
 bool coulombKernelsExplicitSimdT(TopologyEntryRange          entries,
                                  const std::vector<ActAtom> &atoms,
                                  size_t                      stride,
+                                 size_t                      nslot,
                                  const T                    *x,
                                  const unsigned char        *terms,
                                  T                          *kernel)
@@ -1487,7 +1499,7 @@ bool coulombKernelsExplicitSimdT(TopologyEntryRange          entries,
         }
         const T *xi = x + DIM*ind[0]*stride;
         const T *xj = x + DIM*ind[1]*stride;
-        for (size_t c = 0; c < stride; c += simd::SimdTraits<T>::width)
+        for (size_t c = 0; c < nslot; c += simd::SimdTraits<T>::width)
         {
             S rsq = 0.0;
             for (int m = 0; m < DIM; m++)
@@ -1555,12 +1567,13 @@ bool computeExplicitSimd(Potential                   mypot,
                          const std::vector<ActAtom> &atoms,
                          double                      epsilonr,
                          size_t                      stride,
+                         size_t                      nslot,
                          const double               *x,
                          double                     *f,
                          double                     *energies,
                          bool                        forces)
 {
-    return computeExplicitSimdT(mypot, entries, atoms, epsilonr, stride, x, f, energies, forces);
+    return computeExplicitSimdT(mypot, entries, atoms, epsilonr, stride, nslot, x, f, energies, forces);
 }
 
 bool computeExplicitSimd(Potential                   mypot,
@@ -1568,32 +1581,35 @@ bool computeExplicitSimd(Potential                   mypot,
                          const std::vector<ActAtom> &atoms,
                          double                      epsilonr,
                          size_t                      stride,
+                         size_t                      nslot,
                          const float                *x,
                          float                      *f,
                          double                     *energies,
                          bool                        forces)
 {
-    return computeExplicitSimdT(mypot, entries, atoms, epsilonr, stride, x, f, energies, forces);
+    return computeExplicitSimdT(mypot, entries, atoms, epsilonr, stride, nslot, x, f, energies, forces);
 }
 
 bool coulombKernelsExplicitSimd(TopologyEntryRange          entries,
                                 const std::vector<ActAtom> &atoms,
                                 size_t                      stride,
+                                size_t                      nslot,
                                 const double               *x,
                                 const unsigned char        *terms,
                                 double                     *kernel)
 {
-    return coulombKernelsExplicitSimdT(entries, atoms, stride, x, terms, kernel);
+    return coulombKernelsExplicitSimdT(entries, atoms, stride, nslot, x, terms, kernel);
 }
 
 bool coulombKernelsExplicitSimd(TopologyEntryRange          entries,
                                 const std::vector<ActAtom> &atoms,
                                 size_t                      stride,
+                                size_t                      nslot,
                                 const float                *x,
                                 const unsigned char        *terms,
                                 float                      *kernel)
 {
-    return coulombKernelsExplicitSimdT(entries, atoms, stride, x, terms, kernel);
+    return coulombKernelsExplicitSimdT(entries, atoms, stride, nslot, x, terms, kernel);
 }
 
 bool addB2TermsExplicitSimd(size_t        nT,
@@ -1667,13 +1683,13 @@ ExplicitSimd explicitSimdType()
 }
 
 bool computeExplicitSimd(Potential, TopologyEntryRange, const std::vector<ActAtom> &,
-                         double, size_t, const double *, double *, double *, bool)
+                         double, size_t, size_t, const double *, double *, double *, bool)
 {
     return false;
 }
 
 bool computeExplicitSimd(Potential, TopologyEntryRange, const std::vector<ActAtom> &,
-                         double, size_t, const float *, float *, double *, bool)
+                         double, size_t, size_t, const float *, float *, double *, bool)
 {
     return false;
 }
@@ -1684,13 +1700,13 @@ bool addB2TermsExplicitSimd(size_t, const double *, double, bool, double, const 
     return false;
 }
 
-bool coulombKernelsExplicitSimd(TopologyEntryRange, const std::vector<ActAtom> &, size_t,
+bool coulombKernelsExplicitSimd(TopologyEntryRange, const std::vector<ActAtom> &, size_t, size_t,
                                 const double *, const unsigned char *, double *)
 {
     return false;
 }
 
-bool coulombKernelsExplicitSimd(TopologyEntryRange, const std::vector<ActAtom> &, size_t,
+bool coulombKernelsExplicitSimd(TopologyEntryRange, const std::vector<ActAtom> &, size_t, size_t,
                                 const float *, const unsigned char *, float *)
 {
     return false;

@@ -302,8 +302,8 @@ void ACTMol::collectCoordsEnergy(MsgHandler *msghandler)
                 conformationData_[1].setX(nDimer-1, x.begin()+natom1, x.end());
                 for(size_t k = 0; k < 2; k++)
                 {
-                    auto &mon  = conformationData_[k].confs.back();
-                    mon.xrelax = mon.xflat;
+                    auto &cd = conformationData_[k];
+                    cd.confs.back().xrelax = cd.x(nDimer-1).toRVec();
                 }
                 // Lowest energy for Boltzmann weighting
                 double eMin = 1e8;
