@@ -306,7 +306,7 @@ private:
      *
      * The conformations are computed together with the SIMD routines, see
      * computeRelaxedEnergies. This replaces the conformations stored in the
-     * molecule, their energy maps are left empty, see ACTMol::storeEnergies.
+     * molecule, their energies are in ConformationData::energies.
      * The output vectors may hold the results of a previous call, their
      * memory is used again.
      * \param[in]    msghandler                  For debugging, may be nullptr
@@ -389,8 +389,8 @@ private:
      * the position of the selected shells have been minimized, or maxiter has been
      * reached.
      * The ACT energies are stored in the conformation data of the molecules,
-     * see ACTMol::conformationData, not in the energy maps of the conformations.
-     * ACTMol::storeEnergies copies them to the energy maps.
+     * see ACTMol::conformationData, the energy maps of the conformations hold
+     * the QM energies.
      * \param[in] msghandler     For debugging and messages
      * \param[in] pd             An ACT force field
      * \param[in] allmols        The molecules to compute

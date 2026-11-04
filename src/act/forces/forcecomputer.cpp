@@ -1875,8 +1875,7 @@ void ForceComputer::computeInteraction(MsgHandler                               
                                           mol->conformationData(2) };
     size_t natom1 = mol->fragmentHandler()->atomStart()[1];
     size_t nconf  = coords->size();
-    // The energies are taken from the conformation data, rather than from the
-    // energy maps of the conformations, see ACTMol::storeEnergies.
+    // The energies are taken from the conformation data, see ConformationData::energies
     auto &dimerEnergies = mol->conformationData(2)->energies;
     auto  dimerEpot     = dimerEnergies.find(InteractionType::EPOT);
     ConformationEnergies::Term monomerEpot[2] = {
@@ -2113,9 +2112,8 @@ static double potentialEnergy(MsgHandler                   *msghandler,
     cdata.confs.resize(1);
     cdata.setX(0, x);
     computePotential(msghandler, pot, entries, atoms, &cdata, epsilonr, false);
-    const auto &eMap = cdata.confs[0].eMap;
-    auto        ep   = eMap.find(InteractionType::EPOT);
-    return (eMap.end() != ep && ep->second.haveACT()) ? ep->second.eact() : 0;
+    auto epot = cdata.energies.find(InteractionType::EPOT);
+    return epot.has(0) ? epot.act[0] : 0;
 }
 
 void ForceComputer::plot(MsgHandler        *msghandler,

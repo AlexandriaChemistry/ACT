@@ -29,11 +29,11 @@
  * Coordinates, forces and energies of all conformations of a topology,
  * stored such that loops over conformations access memory contiguously.
  *
- * The energies of each conformation are reported in the energy map of its
- * CoordsEnergy, but during a calculation they are kept here, since visiting
- * the energy maps of thousands of conformations repeatedly is limited by
- * memory access. The coordinates are kept between calculations as well,
- * since only those of virtual sites and shells change.
+ * The ACT energies of the conformations are kept here rather than in the
+ * energy maps of their CoordsEnergy, which hold the QM energies, since
+ * visiting the energy maps of thousands of conformations repeatedly is
+ * limited by memory access. The coordinates and forces are kept here as
+ * well, for all conformations together.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 #ifndef ACT_FORCES_CONFORMATIONDATA_H
@@ -413,11 +413,9 @@ private:
 };
 
 /*! \brief The ACT energies of all conformations, per interaction type
- * This holds the same information as the ACT energies in the energy maps
- * of the conformations: for each interaction type and conformation whether
- * there is an energy, the energy and its backup. The energies of one
- * interaction type are stored contiguously, and are copied to the energy
- * maps by store().
+ * For each interaction type and conformation whether there is an energy,
+ * the energy and its backup. The energies of one interaction type are
+ * stored contiguously, see energies() for those of one conformation.
  */
 class ConformationEnergies
 {
@@ -541,28 +539,22 @@ public:
     //! \return The energy terms of the next potential, see setTermTypes
     const std::vector<InteractionType> *termTypes() const { return termTypes_; }
 
-    /*! \brief Copy the energies to the energy maps of the conformations
-     * \param[inout] coords The conformations
+    /*! \brief The energies of one conformation
+     * \param[in] c The conformation
+     * \return The energy of each interaction type that conformation c has
      */
-    void store(std::vector<CoordsEnergy> *coords) const
+    std::map<InteractionType, double> energies(size_t c) const
     {
-        static const size_t timer = Timings::instance().index("Copy energies to maps");
-        ScopedTimer         scoped(timer);
-        for(size_t c = 0; c < coords->size() && c < nconf_; c++)
+        std::map<InteractionType, double> emap;
+        for(auto t : types_)
         {
-            auto &eMap = (*coords)[c].eMap;
-            for(auto t : types_)
+            const auto &d = data_[index_[static_cast<size_t>(t)]];
+            if (c < nconf_ && d.have[c])
             {
-                const auto &d = data_[index_[static_cast<size_t>(t)]];
-                if (d.have[c])
-                {
-                    auto &e = eMap[t];
-                    e.setACT(backups_ ? d.before[c] : d.act[c]);
-                    e.backup();
-                    e.setACT(d.act[c]);
-                }
+                emap.insert({ t, d.act[c] });
             }
         }
+        return emap;
     }
 
 private:

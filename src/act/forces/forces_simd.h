@@ -15,8 +15,8 @@ class MsgHandler;
 
 /*! \brief Compute energies and forces for monomers and/or dimers.
  * The energies are stored in the conformation data of the molecules, see
- * ACTMol::conformationData, not in the energy maps of the conformations.
- * ConformationEnergies::store copies them there.
+ * ACTMol::conformationData, the energy maps of the conformations hold the
+ * QM energies.
  * Unless forces are computed or the force field is polarizable, the energies
  * of an interaction type are taken from the previous call if its parameters
  * (see Topology::parameterVersion), the coordinates (see ConformationData)
@@ -69,8 +69,8 @@ void computeConformations(MsgHandler                *msghandler,
                           bool                       skipDone);
 
 /*! \brief Compute the energies and forces of one potential for all conformations
- * The energy maps and forces of the conformations are cleared first.
- * This is mainly intended for testing.
+ * The energies, in ConformationData::energies, and the forces are made
+ * anew. This is mainly intended for testing.
  * \param[in]    msghandler    For warnings and errors
  * \param[in]    mypot         The potential
  * \param[in]    topentries    The interactions

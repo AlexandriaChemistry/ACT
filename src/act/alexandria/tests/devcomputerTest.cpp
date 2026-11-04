@@ -260,7 +260,6 @@ protected:
                                    opts.lossFunction);
             if (checker && opts.checkConformations)
             {
-                actmols[0].storeEnergies();
                 checkConformations(actmols[0], checker);
             }
             for(const auto &t : targets)
@@ -452,7 +451,7 @@ protected:
         EXPECT_GT(cdata->nconf(), 0u) << actmol.getMolname();
         for(size_t i = 0; i < cdata->nconf(); i++)
         {
-            const auto &ce    = cdata->confs[i];
+            auto        ener  = cdata->energies.energies(i);
             auto        label = gmx::formatString("%s-conf%zu", actmol.getMolname().c_str(), i);
             // In single precision relative to the largest energy and force
             double emax = 0;
@@ -460,10 +459,10 @@ protected:
                                      InteractionType::DISPERSION,
                                      InteractionType::EPOT })
             {
-                auto ee = ce.eMap.find(itype);
-                if (ce.eMap.end() != ee && ee->second.haveACT())
+                auto ee = ener.find(itype);
+                if (ener.end() != ee)
                 {
-                    emax = std::max(emax, std::abs(ee->second.eact()));
+                    emax = std::max(emax, std::abs(ee->second));
                 }
             }
             setSingleTolerance(checker, 1e-5*emax, 1e-6);
@@ -471,16 +470,16 @@ protected:
                                      InteractionType::DISPERSION,
                                      InteractionType::EPOT })
             {
-                auto ee = ce.eMap.find(itype);
-                ASSERT_TRUE(ce.eMap.end() != ee && ee->second.haveACT())
+                auto ee = ener.find(itype);
+                ASSERT_TRUE(ener.end() != ee)
                     << label << " " << interactionTypeToString(itype);
-                checker->checkDouble(ee->second.eact(),
+                checker->checkDouble(ee->second,
                                      gmx::formatString("%s-%s", label.c_str(),
                                                        interactionTypeToString(itype).c_str()).c_str());
             }
             // Repulsion and attraction
-            EXPECT_GT(ce.eMap.find(InteractionType::EXCHANGE)->second.eact(), 0) << label;
-            EXPECT_LT(ce.eMap.find(InteractionType::DISPERSION)->second.eact(), 0) << label;
+            EXPECT_GT(ener[InteractionType::EXCHANGE], 0) << label;
+            EXPECT_LT(ener[InteractionType::DISPERSION], 0) << label;
             std::vector<double> f;
             for(const auto &fi : cdata->f(i).toRVec())
             {

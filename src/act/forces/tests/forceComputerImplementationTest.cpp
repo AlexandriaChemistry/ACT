@@ -157,15 +157,15 @@ static double computeOne(Potential                          p,
     *forces = cdata.f(0).toRVec();
     energies->clear();
     double epot = 0;
-    for(const auto &e : cdata.confs[0].eMap)
+    for(const auto &e : cdata.energies.energies(0))
     {
         if (InteractionType::EPOT == e.first)
         {
-            epot = e.second.eact();
+            epot = e.second;
         }
         else
         {
-            energies->insert({ e.first, e.second.eact() });
+            energies->insert({ e.first, e.second });
         }
     }
     return epot;

@@ -3202,7 +3202,6 @@ void computePotential(MsgHandler                 *msghandler,
     auto *coords = &cdata->confs;
     for(auto &ce : *coords)
     {
-        ce.eMap.clear();
         ce.done = false;
     }
     auto &ca = cdata->arrays;
@@ -3215,7 +3214,6 @@ void computePotential(MsgHandler                 *msghandler,
     {
         calcSome(msghandler, mypot, topentries, atoms, cdata, &cdata->energies, epsilonr, ca.nconf);
     }
-    cdata->energies.store(coords);
 }
 
 } // namespace

@@ -263,7 +263,7 @@ typedef struct
     std::vector<gmx::RVec> xrelax;
     //! Observed forces
     std::vector<gmx::RVec> fobs;
-    //! Energy map comparing QM to ACT energies
+    //! The QM energies, the ACT energies are in ConformationData::energies
     ACTEnergyMap           eMap;
     //! Lowest energy for use in Boltzmann weighting
     double                 eMin;

@@ -197,7 +197,7 @@ protected:
     //! \return the potential energy of conformation c
     double epot(const ConformationData &coords, size_t c)
     {
-        return coords.confs[c].eMap.find(InteractionType::EPOT)->second.eact();
+        return coords.energies.energies(c).at(InteractionType::EPOT);
     }
 
     //! \return the potential energy of all conformations with the given atoms
@@ -473,12 +473,14 @@ protected:
             const auto &withForces = useExplicit ? cExplicit : cCompiler;
             for (size_t c = 0; c < nMany_; c++)
             {
-                ASSERT_EQ(withForces.confs[c].eMap.size(), cNoForces.confs[c].eMap.size());
-                for (const auto &e : withForces.confs[c].eMap)
+                auto eWith = withForces.energies.energies(c);
+                auto eNo   = cNoForces.energies.energies(c);
+                ASSERT_EQ(eWith.size(), eNo.size());
+                for (const auto &e : eWith)
                 {
-                    auto ei = cNoForces.confs[c].eMap.find(e.first);
-                    ASSERT_TRUE(ei != cNoForces.confs[c].eMap.end());
-                    EXPECT_REAL_EQ_TOL(e.second.eact(), ei->second.eact(), tolSame)
+                    auto ei = eNo.find(e.first);
+                    ASSERT_TRUE(ei != eNo.end());
+                    EXPECT_REAL_EQ_TOL(e.second, ei->second, tolSame)
                         << interactionTypeToString(e.first) << " without forces, conformation " << c
                         << (useExplicit ? ", explicit SIMD" : ", vectorized by the compiler");
                 }
@@ -491,12 +493,14 @@ protected:
             {
                 SCOPED_TRACE(gmx::formatString("conformation %zu, %s", c,
                                                other == &cCompiler ? "vectorized by the compiler" : "explicit SIMD"));
-                ASSERT_EQ(cOne.confs[c].eMap.size(), other->confs[c].eMap.size());
-                for (const auto &e : cOne.confs[c].eMap)
+                auto eOne   = cOne.energies.energies(c);
+                auto eOther = other->energies.energies(c);
+                ASSERT_EQ(eOne.size(), eOther.size());
+                for (const auto &e : eOne)
                 {
-                    auto ei = other->confs[c].eMap.find(e.first);
-                    ASSERT_TRUE(ei != other->confs[c].eMap.end());
-                    EXPECT_REAL_EQ_TOL(e.second.eact(), ei->second.eact(), tolSame);
+                    auto ei = eOther.find(e.first);
+                    ASSERT_TRUE(ei != eOther.end());
+                    EXPECT_REAL_EQ_TOL(e.second, ei->second, tolSame);
                 }
                 auto tolForce = forceTolerance(cOne.f(c).toRVec(), tolSame);
                 for (size_t a = 0; a < atoms_.size(); a++)
@@ -533,12 +537,14 @@ protected:
         compareSinglePrecision(mypot, entries, epsilonr);
         for (size_t c = 0; c < nconf_; c++)
         {
-            ASSERT_EQ(cOuter.confs[c].eMap.size(), cInner.confs[c].eMap.size());
-            for (const auto &e : cOuter.confs[c].eMap)
+            auto eOuter = cOuter.energies.energies(c);
+            auto eInner = cInner.energies.energies(c);
+            ASSERT_EQ(eOuter.size(), eInner.size());
+            for (const auto &e : eOuter)
             {
-                auto ei = cInner.confs[c].eMap.find(e.first);
-                ASSERT_TRUE(ei != cInner.confs[c].eMap.end());
-                EXPECT_REAL_EQ_TOL(e.second.eact(), ei->second.eact(), tolSame);
+                auto ei = eInner.find(e.first);
+                ASSERT_TRUE(ei != eInner.end());
+                EXPECT_REAL_EQ_TOL(e.second, ei->second, tolSame);
             }
             auto tolForce = forceTolerance(cOuter.f(c).toRVec(), tolSame);
             for (size_t a = 0; a < atoms_.size(); a++)
@@ -588,11 +594,11 @@ protected:
         // Store the energies
         for (size_t c = 0; c < nconf_; c++)
         {
-            for (const auto &e : cInner.confs[c].eMap)
+            for (const auto &e : cInner.energies.energies(c))
             {
                 std::string label = gmx::formatString("%s-%zu",
                                                       interactionTypeToString(e.first).c_str(), c);
-                checker_.checkReal(e.second.eact(), label.c_str());
+                checker_.checkReal(e.second, label.c_str());
             }
         }
     }
