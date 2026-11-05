@@ -89,6 +89,71 @@ private:
     sycl::queue *queue_ = nullptr;
 };
 
+/*! \brief Pinned host memory that grows when needed, for fast copies
+ * As DeviceArray, never freed at the end of the program.
+ * \tparam T The type of the elements
+ */
+template <typename T>
+class HostArray
+{
+public:
+    HostArray() = default;
+    HostArray(const HostArray &) = delete;
+    HostArray &operator=(const HostArray &) = delete;
+
+    /*! \brief Make room for at least n elements, the contents are lost when it grows
+     * \param[in] queue The queue of the GPU
+     * \param[in] n     Number of elements
+     * \return the host memory
+     */
+    T *reserve(sycl::queue &queue, size_t n)
+    {
+        if (n > size_)
+        {
+            if (data_)
+            {
+                sycl::free(data_, *queue_);
+            }
+            size_  = n + n/2;
+            queue_ = &queue;
+            data_  = sycl::malloc_host<T>(size_, queue);
+        }
+        return data_;
+    }
+
+private:
+    T           *data_  = nullptr;
+    size_t       size_  = 0;
+    sycl::queue *queue_ = nullptr;
+};
+
+/*! \brief Arrays of several types in one buffer, such that they are copied at once
+ * The offset of each array is a multiple of 16 bytes.
+ */
+class PackedArrays
+{
+public:
+    //! Start again, without arrays
+    void clear() { size_ = 0; }
+
+    /*! \brief Room for an array of n elements of type T
+     * \return the offset in bytes
+     */
+    template <typename T>
+    size_t add(size_t n)
+    {
+        size_t offset = size_;
+        size_        += ((n*sizeof(T) + 15)/16)*16;
+        return offset;
+    }
+
+    //! \return the number of bytes of all arrays
+    size_t size() const { return size_; }
+
+private:
+    size_t size_ = 0;
+};
+
 /*! \brief The queue of the GPU used, nullptr without GPU
  * The first GPU found is used, with an in-order queue. It is never
  * deleted, since the order of destruction at the end of the program is

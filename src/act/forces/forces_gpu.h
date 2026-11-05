@@ -41,6 +41,7 @@
 #include <vector>
 
 #include "act/basics/coordinate.h"
+#include "act/gpu/gpu.h"
 #include "act/forcefield/potential.h"
 #include "act/molprop/topologyentry.h"
 #include "act/topology/actatom.h"
@@ -51,9 +52,9 @@ namespace alexandria
 /*! \brief The least work for the GPU
  * Launching kernels on a GPU and copying the data take tens of
  * microseconds, in which the processor computes some ten thousand
- * interactions. Therefore computeGpu only uses the GPU for at least this
- * number of interactions times conformations. The environment variable
- * ACT_GPU_MIN_WORK sets it.
+ * interactions. Therefore computeGpu and GpuBatch only use the GPU for at
+ * least this number of interactions times conformations, of all molecules
+ * of a batch. The environment variable ACT_GPU_MIN_WORK sets it.
  * \return the least number of interactions times conformations
  */
 size_t gpuMinimumWork();
@@ -91,6 +92,86 @@ bool computeGpu(Potential                   mypot,
                 float                      *f,
                 double                     *energies,
                 bool                        forces);
+
+/*! \brief Potentials of several molecules that are computed on the GPU at once
+ * computeEnergies first adds the interactions of all molecules that the GPU
+ * can compute, then computes them together, then uses the results where
+ * each molecule would compute them, see lowComputeEnergiesT. One GPU
+ * calculation for all molecules takes about as long as one for one
+ * molecule, since the time to start it dominates for small molecules.
+ */
+class GpuBatch
+{
+public:
+    /*! \brief Whether the GPU can compute a potential
+     * \param[in] mypot The potential
+     * \return true if it can, for COULOMB_POINT and COULOMB_GAUSSIAN with a GPU in use
+     */
+    static bool canCompute(Potential mypot);
+
+    //! Remove all tasks, but keep the memory
+    void clear();
+
+    /*! \brief Add the interactions of the conformations of a molecule
+     * The arrays have the layout of computeExplicitSimd and have to stay
+     * where they are until the results are used.
+     * \param[in] mypot    The potential, see canCompute
+     * \param[in] entries  The interactions
+     * \param[in] atoms    The atoms
+     * \param[in] epsilonr Relative dielectric constant
+     * \param[in] stride   Distance between the rows of the arrays
+     * \param[in] nslot    Number of slots to compute, at most stride
+     * \param[in] x        The coordinates
+     */
+    void add(Potential                   mypot,
+             TopologyEntryRange          entries,
+             const std::vector<ActAtom> &atoms,
+             double                      epsilonr,
+             size_t                      stride,
+             size_t                      nslot,
+             const Coordinate           *x);
+
+    /*! \brief Compute all tasks on the GPU, if there is enough work, see gpuMinimumWork
+     * \param[in] forces Whether to compute forces
+     * \return whether the results were computed
+     */
+    bool compute(bool forces);
+
+    //! \return whether the results were computed
+    bool computed() const { return computed_; }
+
+    //! \return the number of tasks
+    size_t size() const { return ntask_; }
+
+    /*! \brief Add the results of a task
+     * \param[in]    k        The task, in the order they were added
+     * \param[inout] f        The forces in the layout of the coordinates,
+     *                         added to if they were computed
+     * \param[inout] energies The energy of each slot, added to
+     */
+    void addResults(size_t k, float *f, double *energies) const;
+
+private:
+    //! The interactions of one molecule
+    struct Task
+    {
+        size_t                         natom  = 0;
+        size_t                         stride = 0;
+        size_t                         nslot  = 0;
+        const Coordinate              *x      = nullptr;
+        std::vector<gpu::CoulombPair>  pairs;
+        std::vector<float>             f;
+        std::vector<double>            energies;
+    };
+    //! The tasks, of which the first ntask_ are used
+    std::vector<Task> tasks_;
+    //! Number of tasks in use
+    size_t            ntask_    = 0;
+    //! Whether the results were computed
+    bool              computed_ = false;
+    //! Whether forces were computed
+    bool              forces_   = false;
+};
 
 /*! \brief Without arrays in single precision there are no GPU kernels
  * \return false
