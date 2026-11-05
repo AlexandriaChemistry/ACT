@@ -226,7 +226,7 @@ void gmx_print_version_info(gmx::TextWriter *writer)
 #else
     writer->writeLine("MPI library:        none");
 #endif
-    writer->writeLine(formatString("GPU support:        %s", getGpuImplementationString()));
+    writer->writeLine(formatString("GPU support:        %s", ACT_GPU_DESCRIPTION));
 
 
     /* TODO: The below strings can be quite long, so it would be nice to wrap

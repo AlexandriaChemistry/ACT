@@ -64,6 +64,12 @@
 /* AVX-512 was selected for the explicit SIMD force routines */
 #cmakedefine01 ACT_SIMD_AVX_512
 
+/* SYCL is used for the GPU force routines */
+#cmakedefine01 ACT_GPU_SYCL
+
+/* The GPU support, for the log file */
+#define ACT_GPU_DESCRIPTION "@ACT_GPU_DESCRIPTION@"
+
 /* Target platform is x86 or x86_64 */
 #cmakedefine01 GMX_TARGET_X86
 
