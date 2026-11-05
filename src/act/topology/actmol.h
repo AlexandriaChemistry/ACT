@@ -223,13 +223,16 @@ private:
      * \param[in]  forceComp   The force computer
      * \param[out] coords      The coordinates, will be updated for shells
      * \param[out] forces      The forces
+     * \param[in]  needCoords  Whether the coordinates with relaxed shells and the
+     *                         forces are needed, see generateCharges
      * \return ACTMessage::OK if successful, an error code otherwise
      */
     ACTMessage GenerateAcmCharges(MsgHandler             *msg_handler,
                                   ForceField             *pd,
                                   const ForceComputer    *forceComp,
                                   std::vector<gmx::RVec> *coords,
-                                  std::vector<gmx::RVec> *forces);
+                                  std::vector<gmx::RVec> *forces,
+                                  bool                    needCoords);
 
 public:
 
@@ -492,6 +495,11 @@ public:
      * \param[out] coords       The coordinates, will be updated for shells
      * \param[out] forces       This routine will compute energies and forces.
      * \param[in]  updateQProps Whether or not to update the qprops (dipoles, quadrupoles etc.)
+     * \param[in]  needCoords   Whether the caller needs the coordinates with
+     *                          relaxed shells and the forces. If not, and the
+     *                          charges do not depend on the positions of the
+     *                          shells, as with SQE, the shells are not relaxed
+     *                          and only the virtual sites are constructed.
      */
     void generateCharges(MsgHandler                *msghandler,
                          ForceField                *pd,
@@ -499,7 +507,8 @@ public:
                          ChargeGenerationAlgorithm  algorithm,
                          std::vector<gmx::RVec>    *coords,
                          std::vector<gmx::RVec>    *forces,
-                         bool                       updateQProps = false);
+                         bool                       updateQProps = false,
+                         bool                       needCoords   = true);
     /*! \brief
      * Collect the properties from QM (Optimized structure) or
      * from experiment.
