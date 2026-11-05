@@ -52,9 +52,11 @@
 #include "act/forcefield/forcefield_parametername.h"
 #include "act/forcefield/potential.h"
 #include "act/forces/forces_explicit_simd.h"
+#include "act/forces/forces_gpu.h"
 #include "act/forces/simd_information.h"
 #include "act/topology/actatom.h"
 #include "act/topology/coords_energy.h"
+#include "act/gpu/gpu.h"
 #include "gromacs/math/functions.h"
 #include "gromacs/math/units.h"
 
@@ -428,6 +430,71 @@ protected:
         }
     }
 
+    /*! \brief Compare the GPU with explicit SIMD in double precision for xMany_
+     * Only call this if gpu::useGpu() and useExplicitSimd() return true.
+     * The GPU computes in single precision and sums the energies in double
+     * precision, such that the tolerances are those of compareSinglePrecision.
+     * \param[in] mypot    The potential
+     * \param[in] entries  The interactions
+     * \param[in] epsilonr Relative dielectric constant
+     */
+    void compareGpu(Potential                  mypot,
+                    const TopologyEntryVector &entries,
+                    double                     epsilonr)
+    {
+        size_t              sd, sf;
+        std::vector<double> fd, ed;
+        ASSERT_TRUE(explicitSimd(mypot, entries, epsilonr, &sd, &fd, &ed));
+        // The interactions of the tests are less work than the GPU gets otherwise
+        size_t              minWork = setGpuMinimumWork(0);
+        auto                x = manyArrays<float>(&sf);
+        std::vector<float>  ff(x.size(), 0);
+        std::vector<double> ef(explicitSimdEnergyTerms*sf, 0);
+        ASSERT_TRUE(computeGpu(mypot, entries, atoms_, epsilonr, sf, sf, x.data(), ff.data(), ef.data(), true));
+        // Without forces only the energies are computed
+        std::vector<float>  fNone(x.size(), 0);
+        std::vector<double> eNone(explicitSimdEnergyTerms*sf, 0);
+        ASSERT_TRUE(computeGpu(mypot, entries, atoms_, epsilonr, sf, sf, x.data(), fNone.data(), eNone.data(), false));
+        // The same results in every run, and for fewer conformations
+        std::vector<float>  fAgain(x.size(), 0);
+        std::vector<double> eAgain(explicitSimdEnergyTerms*sf, 0);
+        size_t              nfew = sf/2;
+        ASSERT_TRUE(computeGpu(mypot, entries, atoms_, epsilonr, sf, nfew, x.data(), fAgain.data(), eAgain.data(), true));
+        setGpuMinimumWork(minWork);
+        for (size_t c = 0; c < nfew; c++)
+        {
+            for (size_t i = 0; i < DIM*atoms_.size(); i++)
+            {
+                EXPECT_EQ(ff[i*sf + c], fAgain[i*sf + c]) << "conformation " << c << " force " << i;
+            }
+            EXPECT_EQ(ef[c], eAgain[c]) << "conformation " << c;
+        }
+        for (size_t c = 0; c < nMany_; c++)
+        {
+            double fmax = 0;
+            for (size_t i = 0; i < DIM*atoms_.size(); i++)
+            {
+                fmax = std::max(fmax, std::abs(fd[i*sd + c]));
+            }
+            for (size_t i = 0; i < DIM*atoms_.size(); i++)
+            {
+                EXPECT_NEAR(fd[i*sd + c], ff[i*sf + c], 1e-4*(1 + fmax))
+                    << potentialToString(mypot) << " conformation " << c << " force " << i;
+                EXPECT_EQ(0, fNone[i*sf + c]) << "force " << i << " without forces";
+            }
+            for (int k = 0; k < explicitSimdEnergyTerms; k++)
+            {
+                EXPECT_NEAR(ed[k*sd + c], ef[k*sf + c], 2e-5*(1 + std::abs(ed[k*sd + c])))
+                    << potentialToString(mypot) << " conformation " << c << " energy term " << k;
+                // The energy of an interaction with several terms can differ in
+                // the last bits without forces
+                EXPECT_NEAR(ed[k*sd + c], eNone[k*sf + c], 2e-5*(1 + std::abs(ed[k*sd + c])))
+                    << potentialToString(mypot) << " conformation " << c << " energy term " << k
+                    << " without forces";
+            }
+        }
+    }
+
     /*! \brief The Coulomb energies for charges of one of xMany_ with explicit SIMD
      * \tparam    T       The floating point type of the kernel
      * \param[in]  entries The interactions
@@ -790,6 +857,68 @@ TEST_F(ForcesSimdTest, CoulombGaussianShortDistance)
         }
     }
     setUseExplicitSimd(explicitSimd);
+}
+
+// Test: Coulomb on the GPU, if there is one, against explicit SIMD in
+// double precision. Without a GPU these tests pass without testing.
+TEST_F(ForcesSimdTest, CoulombPointGpu)
+{
+    if (!gpu::useGpu() || !useExplicitSimd())
+    {
+        // Needs a GPU and explicit SIMD
+        return;
+    }
+    setWidths(pairs({ 0, 0 }));
+    compareGpu(Potential::COULOMB_POINT, makeEntries(pairs({ 0, 0 })), 1);
+}
+
+TEST_F(ForcesSimdTest, CoulombGaussianGpu)
+{
+    if (!gpu::useGpu() || !useExplicitSimd())
+    {
+        // Needs a GPU and explicit SIMD
+        return;
+    }
+    setWidths(pairs({ 12, 9 }));
+    compareGpu(Potential::COULOMB_GAUSSIAN, makeEntries(pairs({ 12, 9 })), 1);
+    compareGpu(Potential::COULOMB_GAUSSIAN, makeEntries(pairs({ 12, 9 })), 2.5);
+}
+
+TEST_F(ForcesSimdTest, CoulombGaussianSecondChargesGpu)
+{
+    if (!gpu::useGpu() || !useExplicitSimd())
+    {
+        // Needs a GPU and explicit SIMD
+        return;
+    }
+    const std::vector<double> qvs   = { -0.8, 0.6, 0.0, -0.4, -1.1, 0.9, 0.0 };
+    const std::vector<double> zvs   = { 8.0, 11.0, 0.0, 7.0, 9.0, 10.0, 0.0 };
+    for (size_t i = 0; i < atoms_.size(); i++)
+    {
+        atoms_[i].setChargeVS(qvs[i], zvs[i], 1);
+    }
+    setWidths(pairs({ 12, 9 }));
+    compareGpu(Potential::COULOMB_GAUSSIAN, makeEntries(pairs({ 12, 9 })), 1);
+}
+
+// Test: Gaussian charges on top of each other, as shells on their cores,
+// and nearly so, where the series of the force is used
+TEST_F(ForcesSimdTest, CoulombGaussianOverlapGpu)
+{
+    if (!gpu::useGpu() || !useExplicitSimd())
+    {
+        // Needs a GPU and explicit SIMD
+        return;
+    }
+    for (size_t c = 0; c < nMany_; c++)
+    {
+        // The same position, or at up to 0.03 nm
+        auto &xc = xMany_[c];
+        xc[4]    = xc[0];
+        xc[4][XX] += 0.001*(c % 31);
+    }
+    setWidths(pairs({ 12, 9 }));
+    compareGpu(Potential::COULOMB_GAUSSIAN, makeEntries(pairs({ 12, 9 })), 1);
 }
 
 TEST_F(ForcesSimdTest, CoulombSlater)
