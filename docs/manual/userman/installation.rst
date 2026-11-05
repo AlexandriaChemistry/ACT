@@ -191,9 +191,7 @@ where *Value* can be *ON* or *OFF* or something more option specific.
    +----------------------+------------------------------------------------------------+
    | ACT_GPU              | GPU support: NONE (default) or SYCL, which needs           |
    +----------------------+------------------------------------------------------------+
-   |                      | AdaptiveCpp, see below. The GPU is not used for the        |
-   +----------------------+------------------------------------------------------------+
-   |                      | forces yet.                                                |
+   |                      | AdaptiveCpp, see below.                                    |
    +----------------------+------------------------------------------------------------+
 
 The SIMD (single instruction, multiple data) instructions of the processor are used to compute the energies and forces of several conformations of a molecule at once, which speeds up training considerably.
@@ -221,7 +219,7 @@ GPU support uses SYCL with `AdaptiveCpp <https://adaptivecpp.github.io>`_, which
   conda create -n act-sycl -c conda-forge "adaptivecpp=*=cuda*"
   cmake .. -DACT_GPU=SYCL -DAdaptiveCpp_DIR=$HOME/miniforge3/envs/act-sycl/lib/cmake/AdaptiveCpp
 
-Only the GPU code is compiled with AdaptiveCpp's compiler acpp, the rest of ACT with the C++ compiler, which needs to be GCC 13 or newer, since the libraries of AdaptiveCpp need its C++ library. The section *Code used* at the start of the log file lists the GPUs found. Source the *ACTRC* file before running, which sets *ACPP_DEBUG_LEVEL* such that AdaptiveCpp does not warn about the GPU backends it cannot load.
+Only the GPU code is compiled with AdaptiveCpp's compiler acpp, the rest of ACT with the C++ compiler, which needs to be GCC 13 or newer, since the libraries of AdaptiveCpp need its C++ library. The section *Code used* at the start of the log file lists the GPUs found. At present the first GPU computes the Coulomb interactions of several structures at once, as in training, in single precision builds only. Since starting the GPU takes some tens of microseconds, it is only used for at least 100000 interactions times structures, which the environment variable *ACT_GPU_MIN_WORK* changes. The GPU gives the same results in every run, also for subsets of the structures, as the processor does. Setting the environment variable *ACT_NO_GPU* turns the GPU off. Source the *ACTRC* file before running, which sets *ACPP_DEBUG_LEVEL* such that AdaptiveCpp does not warn about the GPU backends it cannot load.
 
 ============================
 Troubleshooting Installation

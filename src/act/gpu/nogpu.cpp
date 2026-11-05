@@ -47,6 +47,22 @@ std::vector<std::string> devices()
     return {};
 }
 
+bool useGpu()
+{
+    return false;
+}
+
+bool setUseGpu(bool)
+{
+    return false;
+}
+
+bool computeCoulomb(size_t, size_t, size_t, const int64_t *, const CoulombPair *, size_t,
+                    float *, double *, bool)
+{
+    return false;
+}
+
 } // namespace gpu
 
 } // namespace alexandria
