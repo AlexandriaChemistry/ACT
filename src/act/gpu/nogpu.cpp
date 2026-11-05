@@ -57,6 +57,11 @@ bool setUseGpu(bool)
     return false;
 }
 
+bool relaxShells(const RelaxMolecule *, size_t, const RelaxSettings &, size_t *, bool *)
+{
+    return false;
+}
+
 bool computeCoulombBlocks(const CoulombBlock *, size_t, bool)
 {
     return false;

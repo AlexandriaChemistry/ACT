@@ -49,6 +49,42 @@ void computeEnergies(MsgHandler                  *msghandler,
                      bool                         intermolecular = false,
                      bool                         allForces      = true);
 
+/*! \brief Relax the shells of the conformations of all molecules on the GPU
+ * As the loops of ForceComputer::relaxMonomer and relaxDimer, after the
+ * first calculation, which keeps the energies and forces of the entries
+ * without shells, see ConformationData::fixed. Only the entries with
+ * shells are computed on the GPU, for all molecules at once, until all
+ * shells converged or maxIter is reached. The coordinates, forces,
+ * energies and done flags of the conformations are then as those of the
+ * loops on the processor, within rounding. Nothing is changed if the GPU
+ * cannot do this, such as without GPU, without kept energies, for
+ * potentials of entries with shells that the GPU does not have, or with
+ * forces on virtual sites to spread.
+ * \param[in]    pd               The force field
+ * \param[inout] allmols          The molecules
+ * \param[in]    what             0 or 1 for a monomer, 2 for the dimers
+ * \param[in]    relaxMonomer     For dimers, whether the shells of each monomer are relaxed
+ * \param[in]    maxIter          Iterations, including the first calculation
+ * \param[in]    msForceToler     Mean square force on the shells for convergence
+ * \param[in]    maxShellDistance Largest distance of a shell from its parent, 0 for none
+ * \param[in]    minStep          Smallest fraction of the Newton step
+ * \param[in]    maxStep          Largest fraction of the Newton step
+ * \param[in]    allForces        Whether the forces on all particles are needed
+ * \param[out]   nComputed        Number of conformations computed in all iterations
+ * \return whether the GPU relaxed the shells
+ */
+bool relaxShellsGpu(const ForceField            *pd,
+                    const std::vector<ACTMol *> &allmols,
+                    size_t                       what,
+                    const bool                   relaxMonomer[2],
+                    int                          maxIter,
+                    double                       msForceToler,
+                    double                       maxShellDistance,
+                    double                       minStep,
+                    double                       maxStep,
+                    bool                         allForces,
+                    size_t                      *nComputed);
+
 /*! \brief Compute the energies and forces of the conformations of one topology
  * The energies are stored in the conformation data, the forces in its
  * conformations. The shells are not relaxed and the forces on virtual
