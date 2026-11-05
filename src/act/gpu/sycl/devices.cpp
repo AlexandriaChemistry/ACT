@@ -80,6 +80,21 @@ sycl::queue *gpuQueue()
             if (!gpus.empty())
             {
                 q = new sycl::queue(gpus[0], sycl::property::queue::in_order());
+                // A GPU may take only a limited number of processes, as with
+                // the NVIDIA multi-process service, then a kernel fails, and
+                // this process computes without it
+                int *d     = sycl::malloc_device<int>(1, *q);
+                int  value = 0;
+                if (d)
+                {
+                    q->parallel_for(sycl::range<1>(1), [=](sycl::id<1>) { *d = 1993; });
+                    q->memcpy(&value, d, sizeof(int)).wait_and_throw();
+                    sycl::free(d, *q);
+                }
+                if (value != 1993)
+                {
+                    q = nullptr;
+                }
             }
         }
         catch (const sycl::exception &)
@@ -94,7 +109,9 @@ sycl::queue *gpuQueue()
 //! Whether the GPU is used, see useGpu and setUseGpu
 static bool &gpuInUse()
 {
-    static bool use = (gpuQueue() != nullptr && std::getenv("ACT_NO_GPU") == nullptr);
+    // Without starting the GPU when it is turned off, since a GPU may
+    // only take a limited number of processes
+    static bool use = (std::getenv("ACT_NO_GPU") == nullptr && gpuQueue() != nullptr);
     return use;
 }
 
