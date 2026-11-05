@@ -3849,6 +3849,7 @@ bool describeGpuTopology(const ForceField *pd, const Topology *top, Conformation
             il.kernel      = pair ? static_cast<uint32_t>(pk) : static_cast<uint32_t>(bk);
             il.shells      = part == 1;
             il.energyIndex = energyIndex;
+            il.nterm       = energyTypes(mypot, entry.first).size();
             t->pairs.emplace_back();
             t->bonds.emplace_back();
             t->index.emplace_back();
@@ -4031,7 +4032,7 @@ std::pair<double, double> GpuTrainingSystem::chargeDifference() const { return {
 void GpuTrainingSystem::copyChargesToMolecules() {}
 void GpuTrainingSystem::resetShells() {}
 void GpuTrainingSystem::constructVsites() {}
-void GpuTrainingSystem::compute(int) {}
+void GpuTrainingSystem::compute(int, bool) {}
 size_t GpuTrainingSystem::relax(int, const bool[2], const gpu::RelaxSettings &) { return 0; }
 void GpuTrainingSystem::copyRelaxedMonomerShells() {}
 void GpuTrainingSystem::saveDimers() {}
@@ -4600,7 +4601,7 @@ void GpuTrainingSystem::constructVsites()
     gpu::constructVsites(impl_->system);
 }
 
-void GpuTrainingSystem::compute(int what)
+void GpuTrainingSystem::compute(int what, bool forces)
 {
     auto &im = *impl_;
     auto  u  = im.use(what);
@@ -4609,7 +4610,7 @@ void GpuTrainingSystem::compute(int what)
     {
         eptr.push_back(bl.energies.data());
     }
-    gpu::computeBlocks(im.system, u.data(), eptr.data());
+    gpu::computeBlocks(im.system, u.data(), eptr.data(), forces);
     for (size_t b = 0; b < im.blocks.size(); b++)
     {
         if (u[b])

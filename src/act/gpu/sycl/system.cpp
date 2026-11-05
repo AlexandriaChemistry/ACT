@@ -45,6 +45,8 @@
 #include <algorithm>
 #include <cfloat>
 #include <cstdint>
+#include <cstdio>
+#include <cstdlib>
 #include <stdexcept>
 #include <vector>
 
@@ -62,6 +64,9 @@ namespace gpu
 
 namespace
 {
+
+//! The work items of a wavefront on AMD, a multiple of a warp on NVIDIA
+constexpr uint32_t wavefrontSize = 64;
 
 //! A block in the device arrays
 struct DeviceSystemBlock
@@ -97,6 +102,8 @@ struct DeviceSystemBlock
     uint32_t stride;
     //! Number of slots
     uint32_t nslot;
+    //! Number of slots rounded up to a wavefront, for the forces on the shells in relaxBlocks
+    uint32_t nslotPad;
     //! Number of energy arrays
     uint32_t nenergy;
 };
@@ -124,6 +131,8 @@ struct DeviceList
     uint32_t shells;
     //! The energy array
     uint32_t energyIndex;
+    //! Number of energy terms, the others are zero
+    uint32_t nterm;
 };
 
 //! A virtual site in the device arrays
@@ -301,6 +310,43 @@ inline bool entryForce(uint64_t code, const int64_t *x, uint64_t st, const PairE
     return l.shells != 0;
 }
 
+/*! \brief The force of an interaction on one of its particles, as entryForce,
+ * with the coordinates of that particle given
+ *
+ * For pairs only the coordinates of the other particle are loaded. The
+ * difference is exact before it is rounded once, so the result is that
+ * of entryForce.
+ */
+inline void entryForceOn(uint64_t code, const int64_t own[3], const int64_t *x, uint64_t st,
+                         const PairEntry *pairs, const BondedEntry *bonds, const DeviceList *lists,
+                         const uint32_t *pairList, const uint32_t *bondList, float *fa)
+{
+    if (code & bondedFlag)
+    {
+        (void) entryForce(code, x, st, pairs, bonds, lists, pairList, bondList, fa);
+        return;
+    }
+    uint64_t          idx     = code >> indexShift;
+    uint32_t          role    = code & roleMask;
+    const PairEntry  &pe      = pairs[idx];
+    const DeviceList &l       = lists[pairList[idx]];
+    uint32_t          partner = role == 0 ? pe.j : pe.i;
+    float d[3], rsq = 0;
+    for (int m = 0; m < 3; m++)
+    {
+        // The difference from the partner, which is that of entryForce for role 0
+        d[m] = differenceNm(own[m], x[(3*partner+m)*st]);
+        rsq += d[m]*d[m];
+    }
+    float eu[pairEnergyTerms];
+    float fscal = pairInteraction(static_cast<PairKernel>(l.kernel), pe.p, rsq, eu);
+    for (int m = 0; m < 3; m++)
+    {
+        // For role 1, entryForce gives -(fscal*(-d)), which is the same
+        fa[m] = rsq > 0 ? fscal*d[m] : 0.0f;
+    }
+}
+
 } // namespace
 
 class System
@@ -470,6 +516,8 @@ System *createSystem(const SystemBlock *blocks, size_t nblock)
         db.natom          = sb.natom;
         db.stride         = sb.stride;
         db.nslot          = sb.nslot;
+        // Such that the work items of a wavefront have the same shell
+        db.nslotPad       = (sb.nslot + wavefrontSize - 1)/wavefrontSize*wavefrontSize;
         db.nenergy        = sb.nenergy;
         sys->blocksHost_.push_back(db);
         sys->firstList_.push_back(sys->listsHost_.size());
@@ -527,7 +575,7 @@ System *createSystem(const SystemBlock *blocks, size_t nblock)
             isShell.insert(isShell.end(), shellFlag.begin(), shellFlag.end());
         }
         sys->nslotAll_      += sb.nslot;
-        sys->nshellRowWork_ += rows.size()*sb.nslot;
+        sys->nshellRowWork_ += rows.size()*dbr.nslotPad;
         sys->nshellWork_    += (dbr.nforceShell + dbr.nmovingShell)*sb.nslot;
         sys->nforcePart_    += dbr.nforceShell*sb.nslot;
         sys->nmovingPart_   += dbr.nmovingShell*sb.nslot;
@@ -553,6 +601,7 @@ System *createSystem(const SystemBlock *blocks, size_t nblock)
             dl.bonded         = il.bonded ? 1 : 0;
             dl.shells         = il.shells ? 1 : 0;
             dl.energyIndex    = il.energyIndex;
+            dl.nterm          = il.nterm;
             uint32_t listIndex = sys->listsHost_.size();
             sys->listsHost_.push_back(dl);
             sys->nwork_     += il.n*sb.nslot;
@@ -682,6 +731,24 @@ System *createSystem(const SystemBlock *blocks, size_t nblock)
     sys->upload(sys->atomStart_, atomStart.data(), atomStart.size());
     sys->upload(sys->atomEntries_, atomEntries.data(), atomEntries.size());
     queue->wait_and_throw();
+    if (std::getenv("ACT_GPU_SYSTEM_INFO"))
+    {
+        // For developers, the amount of work of the kernels
+        uint64_t shellEntryWork = 0, padded = 0;
+        for (const auto &b : sys->blocksHost_)
+        {
+            for (uint32_t r = 0; r < b.nshellRow; r++)
+            {
+                uint32_t a = shellRows[b.firstShellRow + r];
+                shellEntryWork += (shellStart[b.atomOffset + a + 1] - shellStart[b.atomOffset + a])*b.nslot;
+            }
+            padded += static_cast<uint64_t>(b.nshellRow)*b.nslotPad;
+        }
+        fprintf(stderr, "GPU system: %u blocks, %u lists, %lu slots, %lu pairs, %lu bonded, "
+                "%lu interaction-slots, %lu shell-row-slots (%lu padded), %lu shell interaction-slots\n",
+                sys->nblock_, sys->nlist_, sys->nslotAll_, sys->npair_, sys->nbond_, sys->nwork_,
+                sys->nshellRowWork_ == 0 ? 0 : sys->nshellRowWork_, padded, shellEntryWork);
+    }
     return sys;
 }
 
@@ -1392,7 +1459,7 @@ void computeAll(System *sys, double *const *energies)
     computeBlocks(sys, use.data(), energies);
 }
 
-void computeBlocks(System *sys, const char *use, double *const *energies)
+void computeBlocks(System *sys, const char *use, double *const *energies, bool forces)
 {
     auto *queue = sys->queue_;
     sys->upload(sys->use_, use, sys->nblock_);
@@ -1453,7 +1520,7 @@ void computeBlocks(System *sys, const char *use, double *const *energies)
                 }
                 (void) pairInteraction(static_cast<PairKernel>(l.kernel), pe.p, rsq, en);
             }
-            for (int t = 0; t < pairEnergyTerms; t++)
+            for (uint32_t t = 0; t < l.nterm; t++)
             {
                 dEE[t*nwork + w] = en[t];
             }
@@ -1472,10 +1539,10 @@ void computeBlocks(System *sys, const char *use, double *const *energies)
             {
                 return;
             }
-            for (int t = 0; t < pairEnergyTerms; t++)
+            for (uint32_t t = 0; t < pairEnergyTerms; t++)
             {
                 double sum = 0;
-                for (uint64_t e = 0; e < l.n; e++)
+                for (uint64_t e = 0; t < l.nterm && e < l.n; e++)
                 {
                     sum += dEE[t*nwork + l.workOffset + e*b.nslot + c];
                 }
@@ -1528,7 +1595,7 @@ void computeBlocks(System *sys, const char *use, double *const *energies)
     }
     // The forces on each particle in each slot, from all its interactions
     // in order, those of the interactions without shells also separately
-    if (sys->natomWork_ > 0)
+    if (forces && sys->natomWork_ > 0)
     {
         auto dPL = sys->pairList_;
         auto dBL = sys->bondList_;
@@ -1982,9 +2049,9 @@ void relaxBlocks(System *sys, const char *use, const char *relax,
                 uint32_t                 bi = findRange(dB, nb, w, &DeviceSystemBlock::shellRowWorkOffset);
                 const DeviceSystemBlock &b  = dB[bi];
                 uint64_t local = w - b.shellRowWorkOffset;
-                uint64_t row   = local / b.nslot;
-                uint64_t c     = local % b.nslot;
-                if (dDone[b.slotOffset + c])
+                uint64_t row   = local / b.nslotPad;
+                uint64_t c     = local % b.nslotPad;
+                if (c >= b.nslot || dDone[b.slotOffset + c])
                 {
                     return;
                 }
@@ -1993,14 +2060,16 @@ void relaxBlocks(System *sys, const char *use, const char *relax,
                 uint64_t       base = b.xOffset + 3*a*st + c;
                 const int64_t *x    = dX + b.xOffset + c;
                 float          fa[3];
+                int64_t        own[3];
                 for (int m = 0; m < 3; m++)
                 {
-                    fa[m] = dFF[base + m*st];
+                    fa[m]  = dFF[base + m*st];
+                    own[m] = x[(3*a+m)*st];
                 }
                 for (uint64_t e = dSS[b.atomOffset + a]; e < dSS[b.atomOffset + a + 1]; e++)
                 {
                     float fe[3];
-                    (void) entryForce(dSE[e], x, st, dP, dBo, dL, dPL, dBL, fe);
+                    entryForceOn(dSE[e], own, x, st, dP, dBo, dL, dPL, dBL, fe);
                     for (int m = 0; m < 3; m++)
                     {
                         fa[m] += fe[m];
