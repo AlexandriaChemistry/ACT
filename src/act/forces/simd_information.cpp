@@ -520,8 +520,11 @@ void writeCodeInformation(gmx::TextWriter *writer)
         }
         else if (!names.empty())
         {
-            writer->writeLine("                    the first GPU computes Coulomb of several structures,");
-            writer->writeLine("                    in single precision with energies summed in double");
+            writer->writeLine(gmx::formatString("                    this process uses GPU %d, the processes on a node are",
+                                                gpu::gpuIndex()));
+            writer->writeLine("                    spread over its GPUs, for Coulomb of several structures");
+            writer->writeLine("                    and relaxing shells, in single precision with energies");
+            writer->writeLine("                    summed in double precision");
         }
     }
 }

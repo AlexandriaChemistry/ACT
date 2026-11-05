@@ -47,6 +47,11 @@ std::vector<std::string> devices()
     return {};
 }
 
+int gpuIndex()
+{
+    return -1;
+}
+
 bool useGpu()
 {
     return false;

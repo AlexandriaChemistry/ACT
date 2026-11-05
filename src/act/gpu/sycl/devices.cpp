@@ -67,6 +67,42 @@ std::vector<std::string> devices()
     return names;
 }
 
+/*! \brief The number of this process among those on the same node
+ * From the environment variables that Slurm and the MPI libraries set,
+ * zero if there is none.
+ * \return the local rank
+ */
+static int localRank()
+{
+    for (const char *name : { "SLURM_LOCALID", "OMPI_COMM_WORLD_LOCAL_RANK", "MPI_LOCALRANKID",
+                              "PMI_LOCAL_RANK", "MV2_COMM_WORLD_LOCAL_RANK" })
+    {
+        const char *value = std::getenv(name);
+        if (value && *value)
+        {
+            return std::atoi(value);
+        }
+    }
+    return 0;
+}
+
+int gpuIndex()
+{
+    static const int index = []()
+    {
+        try
+        {
+            auto gpus = sycl::device::get_devices(sycl::info::device_type::gpu);
+            return gpus.empty() ? -1 : static_cast<int>(localRank() % gpus.size());
+        }
+        catch (const sycl::exception &)
+        {
+            return -1;
+        }
+    }();
+    return index;
+}
+
 sycl::queue *gpuQueue()
 {
     // Never deleted, since the order of destruction at the end of the
@@ -79,7 +115,8 @@ sycl::queue *gpuQueue()
             auto gpus = sycl::device::get_devices(sycl::info::device_type::gpu);
             if (!gpus.empty())
             {
-                q = new sycl::queue(gpus[0], sycl::property::queue::in_order());
+                // The processes on a node are spread over its GPUs
+                q = new sycl::queue(gpus[gpuIndex()], sycl::property::queue::in_order());
                 // A GPU may take only a limited number of processes, as with
                 // the NVIDIA multi-process service, then a kernel fails, and
                 // this process computes without it
