@@ -168,6 +168,7 @@ public:
     CalcDev distributeTasks(CalcDev task);
     
     /*! \brief Computes deviation from target
+     * As prepareDeviation, computeEnergies and finishDeviation.
      * \param[in] msghandler   Message Handler
      * \param[in] task         The task at hand
      * \param[in] ims          The dataset to do computations on
@@ -176,6 +177,60 @@ public:
     double calcDeviation(MsgHandler   *msghandler,
                          CalcDev       task,
                          iMolSelect    ims);
+
+    //! The state of a deviation calculation between its steps, see calcDeviation
+    struct DeviationTask
+    {
+        //! The task at hand
+        CalcDev                        task    = CalcDev::Compute;
+        //! The dataset
+        iMolSelect                     ims     = iMolSelect::Train;
+        //! The fitting targets of the dataset
+        std::map<eRMS, FittingTarget> *targets = nullptr;
+        //! The molecules of the dataset that this node computes
+        std::vector<ACTMol *>          selected;
+        //! The number of molecules in the dataset
+        int                            ntrain  = 0;
+        //! The number of these computed here
+        int                            nlocal  = 0;
+    };
+
+    /*! \brief The first step of calcDeviation, before computing energies
+     * Receives or sends the dataset, resets the chi squared, updates the
+     * topologies and charges of the molecules with the newest parameters
+     * and computes their multipoles.
+     * \param[in]  msghandler Message Handler
+     * \param[in]  task       The task at hand
+     * \param[in]  ims        The dataset to do computations on
+     * \param[out] dt         The state for the next steps
+     * \return false if there are no targets for the dataset, the deviation is zero then
+     */
+    bool prepareDeviation(MsgHandler    *msghandler,
+                          CalcDev        task,
+                          iMolSelect     ims,
+                          DeviationTask *dt);
+
+    /*! \brief The energy calculation that finishDeviation needs
+     * \param[in] dt The state of prepareDeviation
+     * \return what to compute for the molecules of dt, nothing without energy targets
+     */
+    ForceEnergyDevComputer::EnergyTask energyTask(const DeviationTask &dt) const;
+
+    /*! \brief The second step of calcDeviation, the energies of the molecules
+     * Energies of the molecules of several calculations can be computed at
+     * once with ForceComputer::computeRelaxedEnergies, as energyTask says,
+     * instead of this.
+     * \param[in] msghandler Message Handler
+     * \param[in] dt         The state of prepareDeviation
+     */
+    void computeEnergies(MsgHandler *msghandler, const DeviationTask &dt);
+
+    /*! \brief The last step of calcDeviation, from the energies computed
+     * \param[in]    msghandler Message Handler
+     * \param[inout] dt         The state of prepareDeviation
+     * \return the deviation
+     */
+    double finishDeviation(MsgHandler *msghandler, DeviationTask *dt);
     
     //! \return the number of devComputers
     size_t numDevComputers() const { return devComputers_.size(); }

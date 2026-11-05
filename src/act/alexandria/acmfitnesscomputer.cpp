@@ -177,6 +177,20 @@ double ACMFitnessComputer::calcDeviation(MsgHandler   *msghandler,
                                          CalcDev       task,
                                          iMolSelect    ims)
 {
+    DeviationTask dt;
+    if (!prepareDeviation(msghandler, task, ims, &dt))
+    {
+        return 0;
+    }
+    computeEnergies(msghandler, dt);
+    return finishDeviation(msghandler, &dt);
+}
+
+bool ACMFitnessComputer::prepareDeviation(MsgHandler    *msghandler,
+                                          CalcDev        task,
+                                          iMolSelect     ims,
+                                          DeviationTask *dt)
+{
     static const size_t timer = Timings::instance().index("Fitness computation overhead");
     ScopedTimer         scoped(timer);
     msghandler->writeDebug("CalcDev starting");
@@ -204,7 +218,7 @@ double ACMFitnessComputer::calcDeviation(MsgHandler   *msghandler,
     if (nullptr == targets)
     {
         msghandler->writeDebug(gmx::formatString("Cannot find targets for %s\n", iMolSelectName(ims).c_str()));
-        return 0;
+        return false;
     }
     // Reset the chi2 in FittingTargets for the given dataset in ims
     sii_->resetChiSquared(ims);
@@ -308,6 +322,48 @@ double ACMFitnessComputer::calcDeviation(MsgHandler   *msghandler,
             nlocal++;
         }
     }
+    dt->task     = task;
+    dt->ims      = ims;
+    dt->targets  = targets;
+    dt->selected = std::move(selected);
+    dt->ntrain   = ntrain;
+    dt->nlocal   = nlocal;
+    return true;
+}
+
+ForceEnergyDevComputer::EnergyTask ACMFitnessComputer::energyTask(const DeviationTask &dt) const
+{
+    for (const auto *mydev : devComputers_)
+    {
+        auto fe = dynamic_cast<const ForceEnergyDevComputer *>(mydev);
+        if (fe && dt.targets)
+        {
+            return fe->energyTask(*dt.targets);
+        }
+    }
+    return ForceEnergyDevComputer::EnergyTask();
+}
+
+void ACMFitnessComputer::computeEnergies(MsgHandler *msghandler, const DeviationTask &dt)
+{
+    auto et = energyTask(dt);
+    if (et.compute)
+    {
+        forceComp_->computeRelaxedEnergies(msghandler, sii_->forcefield(), dt.selected, true,
+                                           et.separateInductionCorrection, et.forces);
+    }
+}
+
+double ACMFitnessComputer::finishDeviation(MsgHandler *msghandler, DeviationTask *dt)
+{
+    static const size_t timer = Timings::instance().index("Fitness computation overhead");
+    ScopedTimer         scoped(timer);
+    auto  task     = dt->task;
+    auto  ims      = dt->ims;
+    auto *targets  = dt->targets;
+    auto &selected = dt->selected;
+    int   ntrain   = dt->ntrain;
+    int   nlocal   = dt->nlocal;
     // The timer of each DevComputer
     if (devTimers_.size() != devComputers_.size())
     {
@@ -321,8 +377,18 @@ double ACMFitnessComputer::calcDeviation(MsgHandler   *msghandler,
     {
         DevComputer *mydev = devComputers_[d];
         ScopedTimer timer(devTimers_[d]);
+        // The energies were computed, see computeEnergies
+        auto fe = dynamic_cast<ForceEnergyDevComputer *>(mydev);
+        if (fe)
+        {
+            fe->setComputeEnergies(false);
+        }
         mydev->calcDeviation(msghandler, forceComp_, selected, targets,
                              sii_->forcefield(), lossFunction_);
+        if (fe)
+        {
+            fe->setComputeEnergies(true);
+        }
     }
     // Sum the terms of the chi-squared once we have done calculations
     // for all the molecules.
