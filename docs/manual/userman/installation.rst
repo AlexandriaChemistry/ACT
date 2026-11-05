@@ -219,7 +219,14 @@ GPU support uses SYCL with `AdaptiveCpp <https://adaptivecpp.github.io>`_, which
   conda create -n act-sycl -c conda-forge "adaptivecpp=*=cuda*"
   cmake .. -DACT_GPU=SYCL -DAdaptiveCpp_DIR=$HOME/miniforge3/envs/act-sycl/lib/cmake/AdaptiveCpp
 
-Only the GPU code is compiled with AdaptiveCpp's compiler acpp, the rest of ACT with the C++ compiler, which needs to be GCC 13 or newer, since the libraries of AdaptiveCpp need its C++ library. The section *Code used* at the start of the log file lists the GPUs found. At present the first GPU computes the Coulomb interactions of several structures at once, as in training, in single precision builds only. Since starting the GPU takes some tens of microseconds, it is only used for at least 100000 interactions times structures, which the environment variable *ACT_GPU_MIN_WORK* changes. The GPU gives the same results in every run, also for subsets of the structures, as the processor does. Setting the environment variable *ACT_NO_GPU* turns the GPU off. Source the *ACTRC* file before running, which sets *ACPP_DEBUG_LEVEL* such that AdaptiveCpp does not warn about the GPU backends it cannot load.
+Only the GPU code is compiled with AdaptiveCpp's compiler acpp, the rest of ACT with the C++ compiler, which needs to be GCC 13 or newer, since the libraries of AdaptiveCpp need its C++ library. The section *Code used* at the start of the log file lists the GPUs found. At present the first GPU computes the Coulomb interactions of several structures of all molecules at once, as in training, in single precision builds only. Since starting the GPU takes some tens of microseconds, it is only used for at least 100000 interactions times structures of all molecules, which the environment variable *ACT_GPU_MIN_WORK* changes. When several MPI ranks share a GPU, start the NVIDIA multi-process service in the job script, otherwise the GPU switches between the processes, which makes each operation on it about twenty times slower::
+
+  export CUDA_MPS_PIPE_DIRECTORY=/tmp/mps-$SLURM_JOB_ID CUDA_MPS_LOG_DIRECTORY=/tmp/mpslog-$SLURM_JOB_ID
+  mkdir -p $CUDA_MPS_PIPE_DIRECTORY $CUDA_MPS_LOG_DIRECTORY
+  nvidia-cuda-mps-control -d
+  mpirun ... alexandria train_ff ...
+  echo quit | nvidia-cuda-mps-control
+ The GPU gives the same results in every run, also for subsets of the structures, as the processor does. Setting the environment variable *ACT_NO_GPU* turns the GPU off. Source the *ACTRC* file before running, which sets *ACPP_DEBUG_LEVEL* such that AdaptiveCpp does not warn about the GPU backends it cannot load.
 
 ============================
 Troubleshooting Installation
