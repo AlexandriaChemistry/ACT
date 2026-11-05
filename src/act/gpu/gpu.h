@@ -90,12 +90,48 @@ struct CoulombPair
     float    zeta[4];
 };
 
-/*! \brief Compute Coulomb interactions for all conformations on the GPU
+/*! \brief The Coulomb interactions of the conformations of a molecule, see computeCoulombBlocks
  * The layout is that of computeExplicitSimd: coordinate m of atom a in
  * slot c is x[(3*a+m)*stride + c], in units of coordinateUnit, see
- * coordinate.h, the forces likewise. The forces and the energies of
- * slots 0 to nslot - 1 are added to. The energy of each interaction is
- * computed in single precision and summed in double precision.
+ * coordinate.h, the forces likewise.
+ */
+struct CoulombBlock
+{
+    //! Number of atoms
+    size_t             natom;
+    //! Distance between the rows of the arrays
+    size_t             stride;
+    //! Number of slots to compute, at most stride
+    size_t             nslot;
+    //! The coordinates
+    const int64_t     *x;
+    //! The interactions
+    const CoulombPair *pairs;
+    //! Number of interactions
+    size_t             npair;
+    //! The forces, added to, not used without forces
+    float             *f;
+    //! The energy of each slot, added to
+    double            *energies;
+};
+
+/*! \brief Compute the Coulomb interactions of several molecules at once on the GPU
+ * All blocks are computed by the same kernels, such that many small
+ * molecules make enough work for a GPU. Blocks with the same coordinate
+ * array share its copy on the GPU. The energy of each interaction is
+ * computed in single precision and summed in double precision. The
+ * results do not depend on the other blocks or slots.
+ * \param[in] blocks The molecules
+ * \param[in] nblock Number of blocks
+ * \param[in] forces Whether to compute forces
+ * \return false if the GPU is not available
+ */
+bool computeCoulombBlocks(const CoulombBlock *blocks,
+                          size_t              nblock,
+                          bool                forces);
+
+/*! \brief Compute Coulomb interactions for all conformations on the GPU
+ * As computeCoulombBlocks for one block.
  * \param[in]    natom    Number of atoms
  * \param[in]    stride   Distance between the rows of the arrays
  * \param[in]    nslot    Number of slots to compute, at most stride

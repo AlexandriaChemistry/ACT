@@ -2793,6 +2793,54 @@ static bool calcCoulombKernel(Potential, TopologyEntryRange, const std::vector<A
     return false;
 }
 
+/*! \brief Use the results of the GPU for a potential, as calcConformations does
+ * \param[in]    mypot    The potential
+ * \param[in]    entries  The interactions
+ * \param[in]    atoms    The atoms
+ * \param[in]    gpuBatch The results
+ * \param[in]    task     The task of gpuBatch
+ * \param[inout] ca       The forces are added to
+ * \param[inout] cener    The energies of all conformations
+ * \param[in]    forces   Whether forces were computed
+ * \param[in]    active   The conformations to store the energies of, all
+ *                         if nullptr
+ * \param[in]    slots    The slot of each of active
+ */
+template <typename T>
+static void applyGpuResults(Potential                   mypot,
+                            TopologyEntryRange          entries,
+                            const std::vector<ActAtom> &atoms,
+                            const GpuBatch             &gpuBatch,
+                            size_t                      task,
+                            ConformationArrays<T>      *ca,
+                            ConformationEnergies       *cener,
+                            bool                        forces,
+                            const std::vector<size_t>  *active,
+                            const std::vector<size_t>  *slots)
+{
+    ScopedTimer timer(potentialTimer(mypot));
+    auto &energies = ca->energies;
+    energies.assign(MAX_ENER*ca->stride, 0.0);
+    if constexpr (std::is_same_v<T, float>)
+    {
+        gpuBatch.addResults(task, ca->f.data(), energies.data());
+    }
+    else
+    {
+        GMX_RELEASE_ASSERT(false, "The GPU only computes in single precision");
+    }
+    if (active)
+    {
+        storeEnergies(mypot, active->size(), active->data(), slots->data(), cener, energies.data(), 1, ca->stride);
+    }
+    else
+    {
+        storeEnergies(mypot, ca->nconf, nullptr, nullptr, cener, energies.data(), 1, ca->stride);
+    }
+    // The padding conformations are computed as well, but not counted
+    Timings::instance().addFlops(ca->ncomputed()*interactionFlops(mypot, entries, atoms, forces));
+}
+
 /*! \brief Compute all potentials for all conformations of a topology
  * \param[in]    msghandler    For warnings and errors
  * \param[in]    pd            The force field
@@ -2819,6 +2867,19 @@ static bool calcCoulombKernel(Potential, TopologyEntryRange, const std::vector<A
  * \param[in]    intermolecular Whether to compute only the intermolecular
  *                             interactions, see Topology::separateIntermolecular.
  *                             The energies of the other interaction types are zero.
+ * \param[in]    allForces     Whether the forces on all particles are needed,
+ *                             otherwise only those on the shells
+ * \param[inout] gpuBatch      If not nullptr, the potentials that the GPU can
+ *                             compute are computed together for all molecules:
+ *                             in the first call, with collect true, they are
+ *                             added to gpuBatch, and nothing else is computed,
+ *                             in the second call the results are used, if
+ *                             gpuBatch computed them, see computeEnergies.
+ *                             Both calls make the same changes to cdata
+ *                             before computing, such that the arrays the
+ *                             tasks point to are the same.
+ * \param[in]    collect       Whether to add the tasks to gpuBatch
+ * \param[inout] gpuNext       The next task of gpuBatch to use
  * \tparam       T             The floating point type of the arrays, see
  *                             ConformationData::doublePrecision
  */
@@ -2833,7 +2894,10 @@ static void lowComputeEnergiesT(MsgHandler                *msghandler,
                                 bool                       reuse          = false,
                                 bool                       skipDone       = false,
                                 bool                       intermolecular = false,
-                                bool                       allForces      = true)
+                                bool                       allForces      = true,
+                                GpuBatch                  *gpuBatch       = nullptr,
+                                bool                       collect        = false,
+                                size_t                    *gpuNext        = nullptr)
 {
     static const size_t timer = Timings::instance().index("Energy calculation overhead");
     ScopedTimer         scoped(timer);
@@ -3022,6 +3086,29 @@ static void lowComputeEnergiesT(MsgHandler                *msghandler,
                     continue;
                 }
             }
+            // On the GPU together with the other molecules, without the
+            // energies of the previous call, see gpuBatch
+            bool onGpu = (std::is_same_v<T, float> && gpuBatch && useArrays && !(reuse && !forces) &&
+                          GpuBatch::canCompute(mypot));
+            if (collect)
+            {
+                if (onGpu)
+                {
+                    gpuBatch->add(mypot, entries, top->atoms(), epsilonr, ca.stride, ca.nslot, ca.x.data());
+                }
+                continue;
+            }
+            if (onGpu && gpuBatch->computed())
+            {
+                if (forces && !forcesInArrays)
+                {
+                    ca.copyForces(ra);
+                    forcesInArrays = true;
+                }
+                applyGpuResults(mypot, entries, top->atoms(), *gpuBatch, (*gpuNext)++, &ca, &cener,
+                                forces, ndone > 0 ? &active : nullptr, &activeSlots);
+                continue;
+            }
             // Use the energies of the previous call if nothing changed. Forces
             // are not kept, so this is only possible if they are not needed.
             CachedEnergies *cached = nullptr;
@@ -3078,6 +3165,25 @@ static void lowComputeEnergiesT(MsgHandler                *msghandler,
                      ca.ncomputed(), cached);
         }
     };
+    if (collect)
+    {
+        // The same parts as below, only to add the tasks
+        if (useFixed)
+        {
+            computePart(Part::Shells);
+        }
+        else if (keepFixed)
+        {
+            computePart(Part::NoShells);
+            computePart(Part::Shells);
+        }
+        else
+        {
+            computePart(Part::All);
+        }
+        cener.setTermTypes(nullptr);
+        return;
+    }
     if (useFixed)
     {
         cener.setAccumulate(true);
@@ -3162,17 +3268,22 @@ static void lowComputeEnergies(MsgHandler                *msghandler,
                                bool                       reuse          = false,
                                bool                       skipDone       = false,
                                bool                       intermolecular = false,
-                               bool                       allForces      = true)
+                               bool                       allForces      = true,
+                               GpuBatch                  *gpuBatch       = nullptr,
+                               bool                       collect        = false,
+                               size_t                    *gpuNext        = nullptr)
 {
     if (cdata->useArraysDouble() && conformations && cdata->nconf() > 1)
     {
         lowComputeEnergiesT<double>(msghandler, pd, top, cdata, epsilonr, conformations, forces,
-                                    reuse, skipDone, intermolecular, allForces);
+                                    reuse, skipDone, intermolecular, allForces,
+                                    gpuBatch, collect, gpuNext);
     }
     else
     {
         lowComputeEnergiesT<real>(msghandler, pd, top, cdata, epsilonr, conformations, forces,
-                                  reuse, skipDone, intermolecular, allForces);
+                                  reuse, skipDone, intermolecular, allForces,
+                                  gpuBatch, collect, gpuNext);
     }
 }
 
@@ -3203,7 +3314,8 @@ void computeEnergies(MsgHandler                  *msghandler,
     // The conformations of the molecules only change if virtual sites are
     // constructed again, which ConformationData knows, or if shells move.
     bool reuse = !pd->polarizable();
-    // Loop over molecules
+    // The molecules and their topologies to compute
+    std::vector<std::pair<ACTMol *, bool>> todo;
     for(auto molptr : allmols)
     {
         auto &mol   = *molptr;
@@ -3221,17 +3333,44 @@ void computeEnergies(MsgHandler                  *msghandler,
         {
             continue;
         }
-        if (what >= 2)
+        todo.push_back({ molptr, inter });
+    }
+    auto compute = [&](GpuBatch *gpuBatch, bool collect, size_t *gpuNext)
+    {
+        for(const auto &mi : todo)
         {
-            lowComputeEnergies(msghandler, pd, mol.topology(), mol.conformationData(2),
-                               epsilonr, true, forces, reuse, skipDone, inter, allForces);
+            auto &mol = *mi.first;
+            if (what >= 2)
+            {
+                lowComputeEnergies(msghandler, pd, mol.topology(), mol.conformationData(2),
+                                   epsilonr, true, forces, reuse, skipDone, mi.second, allForces,
+                                   gpuBatch, collect, gpuNext);
+            }
+            else
+            {
+                lowComputeEnergies(msghandler, pd, &mol.fragmentHandler()->topologies()[what],
+                                   mol.conformationData(what), epsilonr, true, forces, reuse,
+                                   skipDone, false, allForces, gpuBatch, collect, gpuNext);
+            }
         }
-        else
+    };
+    // With a GPU, the potentials it can compute are computed for all
+    // molecules at once, see GpuBatch, in single precision only
+    if (gpu::useGpu() && !GMX_DOUBLE)
+    {
+        // Kept between calls, such that the memory is used again
+        static thread_local GpuBatch gpuBatch;
+        gpuBatch.clear();
+        compute(&gpuBatch, true, nullptr);
+        size_t next = 0;
+        if (gpuBatch.compute(forces))
         {
-            lowComputeEnergies(msghandler, pd, &tops[what], mol.conformationData(what),
-                               epsilonr, true, forces, reuse, skipDone, false, allForces);
+            compute(&gpuBatch, false, &next);
+            GMX_RELEASE_ASSERT(next == gpuBatch.size(), "Not all GPU results were used");
+            return;
         }
     }
+    compute(nullptr, false, nullptr);
 }
 
 void computePotential(MsgHandler                 *msghandler,
