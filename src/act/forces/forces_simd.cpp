@@ -38,7 +38,9 @@
 #include "act/forces/conformationdata.h"
 #include "act/forcefield/forcefield_parametername.h"
 #include "act/forces/forces_explicit_simd.h"
+#include "act/forces/forcecomputer.h"
 #include "act/forces/forces_gpu.h"
+#include "act/forces/gpusystem.h"
 #include "act/forces/simd_information.h"
 #include "act/forces/forcecomputerutils.h"
 #include "act/forces/vsitehandler.h"
@@ -3737,6 +3739,975 @@ bool relaxShellsGpu(const ForceField            *pd,
         }
     }
     return true;
+}
+
+#endif
+
+namespace
+{
+
+//! The description of a topology and its conformations for gpu::createSystem
+struct GpuSystemTopology
+{
+    const Topology                          *top   = nullptr;
+    ConformationData                        *cdata = nullptr;
+    std::vector<gpu::InteractionList>        lists;
+    std::vector<std::vector<gpu::PairEntry>> pairs;
+    std::vector<std::vector<gpu::BondedEntry>> bonds;
+    std::vector<gpu::VsiteEntry>             vsites;
+    //! For each list the row of each interaction in its parameter table, see gpu::updateParameters
+    std::vector<std::vector<uint32_t>>       index;
+    //! For each list an interaction of each row of its parameter table
+    std::vector<std::vector<const TopologyEntry *>> rows;
+    //! The kernel of each list
+    std::vector<gpu::PairKernel>             pairKernels;
+    std::vector<gpu::BondedKernel>           bondedKernels;
+    //! The virtual sites and their types, to update their parameters
+    std::vector<const TopologyEntry *>       vsiteEntries;
+    std::vector<InteractionType>             vsiteTypes;
+    //! The potential and interaction type of each energy array
+    std::vector<Potential>                   potentials;
+    std::vector<InteractionType>             itypes;
+
+    //! Point the lists to their interactions, also after moving
+    void setPointers()
+    {
+        for (size_t l = 0; l < lists.size(); l++)
+        {
+            lists[l].pairs  = pairs[l].data();
+            lists[l].bonds  = bonds[l].data();
+            lists[l].index  = index[l].empty() ? nullptr : index[l].data();
+            lists[l].ntable = rows[l].size();
+        }
+    }
+};
+
+/*! \brief Describe a topology with its conformations for the GPU
+ * \param[in]  pd       The force field
+ * \param[in]  top      The topology
+ * \param[in]  cdata    Its conformations
+ * \param[out] t        The description
+ * \return false if the GPU does not have a potential
+ */
+bool describeGpuTopology(const ForceField *pd, const Topology *top, ConformationData *cdata,
+                         GpuSystemTopology *t)
+{
+    t->top   = top;
+    t->cdata = cdata;
+    double epsilonr = pd->epsilonr();
+    for (const auto &entry : top->entries())
+    {
+        if (entry.second.empty())
+        {
+            continue;
+        }
+        if (isVsite(entry.first))
+        {
+            for (const auto &b : entry.second)
+            {
+                gpu::VsiteEntry ve;
+                if (!gpuVsiteEntry(entry.first, *b.operator->(), &ve))
+                {
+                    return false;
+                }
+                t->vsites.push_back(ve);
+                t->vsiteEntries.push_back(b.operator->());
+                t->vsiteTypes.push_back(entry.first);
+            }
+            continue;
+        }
+        Potential mypot = pd->potential(entry.first);
+        if (Potential::NONE == mypot)
+        {
+            mypot = defaultPotential(entry.first);
+        }
+        if (energyTypes(mypot).empty())
+        {
+            continue;
+        }
+        gpu::PairKernel   pk;
+        gpu::BondedKernel bk;
+        bool              pair   = gpuPairKernel(mypot, &pk);
+        bool              bonded = !pair && gpuBondedKernel(mypot, &bk);
+        if ((!pair && !bonded) ||
+            energyTypes(mypot, entry.first).size() > static_cast<size_t>(gpu::pairEnergyTerms))
+        {
+            return false;
+        }
+        uint32_t energyIndex = t->potentials.size();
+        t->potentials.push_back(mypot);
+        t->itypes.push_back(entry.first);
+        // The entries without and with shells, which are all without if
+        // the topology does not split them
+        for (int part = 0; part < 2; part++)
+        {
+            TopologyEntryRange entries = top->hasShellSplit() ?
+                top->shellEntries(entry.first, entry.second, part == 1) :
+                (part == 0 ? TopologyEntryRange(entry.second) : TopologyEntryRange());
+            gpu::InteractionList il;
+            il.bonded      = bonded;
+            il.kernel      = pair ? static_cast<uint32_t>(pk) : static_cast<uint32_t>(bk);
+            il.shells      = part == 1;
+            il.energyIndex = energyIndex;
+            t->pairs.emplace_back();
+            t->bonds.emplace_back();
+            t->index.emplace_back();
+            t->rows.emplace_back();
+            t->pairKernels.push_back(pk);
+            t->bondedKernels.push_back(bk);
+            // The interactions of the same types have the same parameters,
+            // one row of the table each. Coulomb follows from the charges.
+            std::map<std::string, uint32_t> rowOfKey;
+            for (const auto &b : entries)
+            {
+                if (!(pair && pk == gpu::PairKernel::Coulomb))
+                {
+                    std::string key = b->id().id();
+                    for (auto ai : b->atomIndices())
+                    {
+                        key += "|" + top->atoms()[ai].ffType();
+                    }
+                    auto rk = rowOfKey.find(key);
+                    if (rk == rowOfKey.end())
+                    {
+                        rk = rowOfKey.emplace(key, t->rows.back().size()).first;
+                        t->rows.back().push_back(b.operator->());
+                    }
+                    t->index.back().push_back(rk->second);
+                }
+                if (pair)
+                {
+                    // Interactions without parameters are kept, inactive,
+                    // such that the lists keep their length when the
+                    // parameters change, see gpu::PairEntry
+                    gpu::PairEntry pe;
+                    if (!gpuPairEntry(pk, *b.operator->(), top->atoms(), epsilonr, &pe))
+                    {
+                        pe.p[7] = 1;
+                    }
+                    t->pairs.back().push_back(pe);
+                }
+                else
+                {
+                    gpu::BondedEntry be;
+                    gpuBondedEntry(bk, *b.operator->(), &be);
+                    t->bonds.back().push_back(be);
+                }
+            }
+            il.n = pair ? t->pairs.back().size() : t->bonds.back().size();
+            t->lists.push_back(il);
+        }
+    }
+    t->setPointers();
+    return true;
+}
+
+} // namespace
+
+bool checkGpuSystem(const ForceField *pd, const std::vector<ACTMol *> &allmols)
+{
+    if (!gpu::useGpu() || GMX_DOUBLE)
+    {
+        return false;
+    }
+    std::vector<GpuSystemTopology> tops;
+    for (auto molptr : allmols)
+    {
+        auto &ftops = molptr->fragmentHandler()->topologies();
+        for (size_t what = 0; what < 3; what++)
+        {
+            if ((what < 2 && what >= ftops.size()) || (what == 2 && ftops.size() < 2))
+            {
+                continue;
+            }
+            const Topology *top   = (what < 2) ? &ftops[what] : molptr->topology();
+            auto           *cdata = molptr->conformationData(what);
+            if (cdata->useArraysDouble() || cdata->arrays.nconf != cdata->nconf())
+            {
+                return false;
+            }
+            tops.emplace_back();
+            if (!describeGpuTopology(pd, top, cdata, &tops.back()))
+            {
+                fprintf(stderr, "GPU system check: a potential is not available on the GPU\n");
+                return false;
+            }
+        }
+    }
+    std::vector<gpu::SystemBlock> blocks;
+    for (auto &t : tops)
+    {
+        auto &ca = t.cdata->arrays;
+        gpu::SystemBlock sb;
+        sb.natom   = ca.natom;
+        sb.stride  = ca.stride;
+        sb.nslot   = ca.nconf;
+        sb.x       = ca.x.data();
+        sb.lists   = t.lists.data();
+        sb.nlist   = t.lists.size();
+        sb.nenergy = t.potentials.size();
+        sb.vsites  = t.vsites.data();
+        sb.nvsite  = t.vsites.size();
+        blocks.push_back(sb);
+    }
+    auto *system = gpu::createSystem(blocks.data(), blocks.size());
+    if (!system)
+    {
+        return false;
+    }
+    std::vector<std::vector<double>> energies(tops.size());
+    std::vector<double *>            eptr;
+    for (size_t k = 0; k < tops.size(); k++)
+    {
+        energies[k].assign(tops[k].potentials.size()*gpu::pairEnergyTerms*blocks[k].stride, 0.0);
+        eptr.push_back(energies[k].data());
+    }
+    gpu::computeAll(system, eptr.data());
+    gpu::destroySystem(system);
+    // The energy of each type of each conformation, as storeEnergies sums them
+    std::map<InteractionType, std::pair<double, double>> worst;
+    for (size_t k = 0; k < tops.size(); k++)
+    {
+        auto &t     = tops[k];
+        auto &ca    = t.cdata->arrays;
+        auto &cener = t.cdata->energies;
+        std::map<InteractionType, std::vector<double>> gpuE;
+        for (size_t e = 0; e < t.potentials.size(); e++)
+        {
+            const auto &types = energyTypes(t.potentials[e], t.itypes[e]);
+            for (size_t term = 0; term < types.size(); term++)
+            {
+                auto &v = gpuE[types[term]];
+                v.resize(ca.nconf, 0.0);
+                for (size_t sl = 0; sl < ca.nconf; sl++)
+                {
+                    v[ca.conformation(sl)] += energies[k][(e*gpu::pairEnergyTerms + term)*ca.stride + sl];
+                }
+            }
+        }
+        for (const auto &g : gpuE)
+        {
+            auto cpu = cener.find(g.first);
+            if (!cpu.have)
+            {
+                continue;
+            }
+            for (size_t c = 0; c < ca.nconf; c++)
+            {
+                if (!cpu.has(c))
+                {
+                    continue;
+                }
+                double diff = std::abs(g.second[c] - cpu.act[c]);
+                double rel  = diff/(1 + std::abs(cpu.act[c]));
+                auto  &w    = worst[g.first];
+                if (rel > w.first)
+                {
+                    w = { rel, cpu.act[c] };
+                }
+            }
+        }
+    }
+    for (const auto &w : worst)
+    {
+        fprintf(stderr, "GPU system check: %-22s largest relative difference %.2e (of %.6g)\n",
+                interactionTypeToString(w.first).c_str(), w.second.first, w.second.second);
+    }
+    return true;
+}
+
+#if GMX_DOUBLE
+
+// The GPU computes in single precision only
+class GpuTrainingSystem::Impl
+{
+};
+
+GpuTrainingSystem::GpuTrainingSystem() : impl_(new Impl) {}
+GpuTrainingSystem::~GpuTrainingSystem() = default;
+bool GpuTrainingSystem::prepare(const ForceField *, const std::vector<ACTMol *> &, double, bool, const ForceComputer *) { return false; }
+void GpuTrainingSystem::updateParameters(const ForceField *, const ForceComputer *) {}
+std::pair<double, double> GpuTrainingSystem::chargeDifference() const { return { 0, 0 }; }
+void GpuTrainingSystem::copyChargesToMolecules() {}
+void GpuTrainingSystem::resetShells() {}
+void GpuTrainingSystem::constructVsites() {}
+void GpuTrainingSystem::compute(int) {}
+size_t GpuTrainingSystem::relax(int, const bool[2], const gpu::RelaxSettings &) { return 0; }
+void GpuTrainingSystem::copyRelaxedMonomerShells() {}
+void GpuTrainingSystem::saveDimers() {}
+void GpuTrainingSystem::restoreDimers() {}
+
+#else
+
+class GpuTrainingSystem::Impl
+{
+public:
+    //! A topology with its conformations on the GPU
+    struct Block
+    {
+        //! The molecule and 0, 1 for its monomers or 2 for the dimer
+        size_t              mol  = 0;
+        int                 what = 0;
+        GpuSystemTopology   desc;
+        //! The shells, see relaxShellsGpu
+        GpuRelaxMolecule    shells;
+        //! The shells with one parent and that parent
+        std::vector<uint32_t> resets;
+        //! The conformation of each slot and the slot of each conformation
+        std::vector<size_t> confOfSlot, slotOfConf;
+        //! The energies, see gpu::computeBlocks
+        std::vector<double> energies;
+    };
+    std::vector<Block>    blocks;
+    gpu::System          *system = nullptr;
+    std::vector<ACTMol *> mols;
+    std::vector<size_t>   nconf;
+    double                maxShellDistance2 = 0;
+    //! The molecules whose charges the GPU generates, see gpu::createAcm
+    std::vector<size_t>   acmMols;
+    //! The force field parameters of the charge generation, see gpu::updateAcm
+    std::vector<const ForceFieldParameter *> acmValues;
+    //! Whether the structures of the charge generation have virtual sites
+    bool                  acmVsites = false;
+    //! The values and coordinates last sent, and whether the charges were generated since copied
+    std::vector<double>   acmLastValues, acmLastX;
+    bool                  acmGenerated = false;
+
+    //! The coordinates of the ACM particles, see gpu::AcmSystem::x
+    std::vector<double> acmCoordinates(const ForceComputer *fc) const
+    {
+        std::vector<double> xa;
+        for (auto k : acmMols)
+        {
+            auto  molptr = mols[k];
+            auto  fh     = molptr->fragmentHandler();
+            // The structure the processor generates the charges for, see ACTMol::GenerateAcmCharges
+            std::vector<gmx::RVec> x = molptr->xOriginal();
+            if (molptr->topology()->hasVsites())
+            {
+                Coordinates cx(x);
+                fc->constructVsiteCoordinates(molptr->topology(), &cx);
+                x = cx.toRVec();
+            }
+            for (size_t f = 0; f < fh->topologies().size(); f++)
+            {
+                for (auto a : fh->acmParticles(f))
+                {
+                    for (int d = 0; d < DIM; d++)
+                    {
+                        xa.push_back(x[fh->atomStart()[f] + a][d]);
+                    }
+                }
+            }
+        }
+        return xa;
+    }
+
+    ~Impl()
+    {
+        if (system)
+        {
+            gpu::destroySystem(system);
+        }
+    }
+
+    //! The index of the block of a molecule and topology, -1 if none
+    int find(size_t mol, int what) const
+    {
+        for (size_t b = 0; b < blocks.size(); b++)
+        {
+            if (blocks[b].mol == mol && blocks[b].what == what)
+            {
+                return b;
+            }
+        }
+        return -1;
+    }
+
+    //! Whether to use each block for what, -1 for all, -2 for the monomers
+    std::vector<char> use(int what) const
+    {
+        std::vector<char> u(blocks.size(), 0);
+        for (size_t b = 0; b < blocks.size(); b++)
+        {
+            u[b] = (what == -1 || blocks[b].what == what || (what == -2 && blocks[b].what < 2)) ? 1 : 0;
+        }
+        return u;
+    }
+
+    //! The shells of a block, see addShellFragment
+    void shellsOf(const Block &bl, GpuRelaxMolecule *shells) const
+    {
+        auto  molptr = mols[bl.mol];
+        auto  fh     = molptr->fragmentHandler();
+        auto &tops   = fh->topologies();
+        auto &pols   = fh->polInfo();
+        if (bl.what < 2)
+        {
+            addShellFragment(&tops[bl.what], pols[bl.what], 0, maxShellDistance2, shells);
+        }
+        else
+        {
+            for (size_t f = 0; f < 2; f++)
+            {
+                addShellFragment(&tops[f], pols[f], fh->atomStart()[f], maxShellDistance2, shells);
+            }
+        }
+    }
+
+    //! The energies of a block to its conformation data, as lowComputeEnergiesT stores them
+    void storeBlockEnergies(Block &bl)
+    {
+        auto       *cdata = mols[bl.mol]->conformationData(bl.what);
+        auto       &cener = cdata->energies;
+        size_t      nslot = bl.confOfSlot.size();
+        size_t      st    = cdata->arrays.stride;
+        cener.setNumberOfConformations(cdata->nconf());
+        std::vector<size_t> slots(nslot);
+        for (size_t s = 0; s < nslot; s++)
+        {
+            slots[s] = s;
+        }
+        auto eEpot = cener.add(InteractionType::EPOT);
+        for (auto c : bl.confOfSlot)
+        {
+            eEpot.before[c] = eEpot.have[c] ? eEpot.before[c] : 0.0;
+            eEpot.act[c]    = 0.0;
+            eEpot.have[c]   = 1;
+        }
+        for (size_t e = 0; e < bl.desc.potentials.size(); e++)
+        {
+            cener.setTermTypes(&energyTypes(bl.desc.potentials[e], bl.desc.itypes[e]));
+            storeEnergies(bl.desc.potentials[e], nslot, bl.confOfSlot.data(), slots.data(), &cener,
+                          bl.energies.data() + e*gpu::pairEnergyTerms*st, 1, st);
+        }
+        cener.setTermTypes(nullptr);
+        // The van der Waals correction is part of the exchange, as in lowComputeEnergiesT
+        auto vdwCorr = cener.find(InteractionType::VDWCORRECTION);
+        if (vdwCorr.have)
+        {
+            auto exchange = cener.add(InteractionType::EXCHANGE);
+            for (auto c : bl.confOfSlot)
+            {
+                if (vdwCorr.has(c))
+                {
+                    exchange.set(c, (exchange.has(c) ? exchange.act[c] : 0.0) + vdwCorr.act[c]);
+                    vdwCorr.act[c] = 0;
+                }
+            }
+        }
+    }
+};
+
+GpuTrainingSystem::GpuTrainingSystem() : impl_(new Impl) {}
+
+GpuTrainingSystem::~GpuTrainingSystem() = default;
+
+bool GpuTrainingSystem::prepare(const ForceField *pd, const std::vector<ACTMol *> &allmols, double maxShellDistance,
+                                bool charges, const ForceComputer *fc)
+{
+    auto &im = *impl_;
+    bool same = im.system && im.mols == allmols;
+    for (size_t k = 0; same && k < allmols.size(); k++)
+    {
+        same = im.nconf[k] == allmols[k]->conformationData(0)->nconf();
+    }
+    if (same)
+    {
+        return true;
+    }
+    if (im.system)
+    {
+        gpu::destroySystem(im.system);
+        im.system = nullptr;
+    }
+    im.blocks.clear();
+    im.acmMols.clear();
+    im.acmValues.clear();
+    im.acmVsites = false;
+    im.acmLastValues.clear();
+    im.acmLastX.clear();
+    im.acmGenerated = false;
+    im.mols  = allmols;
+    im.nconf.clear();
+    im.maxShellDistance2 = maxShellDistance*maxShellDistance;
+    if (!gpu::useGpu() || !pd->polarizable())
+    {
+        return false;
+    }
+    for (size_t k = 0; k < allmols.size(); k++)
+    {
+        auto  molptr = allmols[k];
+        auto &tops   = molptr->fragmentHandler()->topologies();
+        im.nconf.push_back(molptr->conformationData(0)->nconf());
+        for (int what = 0; what < 3; what++)
+        {
+            if ((what < 2 && what >= static_cast<int>(tops.size())) || (what == 2 && tops.size() < 2))
+            {
+                continue;
+            }
+            const Topology *top   = (what < 2) ? &tops[what] : molptr->topology();
+            auto           *cdata = molptr->conformationData(what);
+            auto           &ca    = cdata->arrays;
+            if (cdata->useArraysDouble() || ca.nconf != cdata->nconf())
+            {
+                return false;
+            }
+            Impl::Block bl;
+            bl.mol  = k;
+            bl.what = what;
+            if (!describeGpuTopology(pd, top, cdata, &bl.desc))
+            {
+                return false;
+            }
+            im.shellsOf(bl, &bl.shells);
+            const auto &atoms = top->atoms();
+            for (size_t i = 0; i < atoms.size(); i++)
+            {
+                if (atoms[i].pType() == ActParticle::Shell && atoms[i].parents().size() == 1)
+                {
+                    bl.resets.push_back(i);
+                    bl.resets.push_back(atoms[i].parents()[0]);
+                }
+            }
+            bl.confOfSlot.resize(ca.nconf);
+            bl.slotOfConf.resize(ca.nconf);
+            for (size_t s = 0; s < ca.nconf; s++)
+            {
+                bl.confOfSlot[s] = ca.conformation(s);
+                bl.slotOfConf[ca.conformation(s)] = s;
+            }
+            bl.energies.assign(bl.desc.potentials.size()*gpu::pairEnergyTerms*ca.stride, 0.0);
+            im.blocks.push_back(std::move(bl));
+        }
+    }
+    std::vector<gpu::SystemBlock> sblocks;
+    for (auto &bl : im.blocks)
+    {
+        // The pointers of the description, after the blocks were moved
+        bl.desc.setPointers();
+        auto &ca = im.mols[bl.mol]->conformationData(bl.what)->arrays;
+        gpu::SystemBlock sb;
+        sb.natom        = ca.natom;
+        sb.stride       = ca.stride;
+        sb.nslot        = ca.nconf;
+        sb.x            = ca.x.data();
+        sb.lists        = bl.desc.lists.data();
+        sb.nlist        = bl.desc.lists.size();
+        sb.nenergy      = bl.desc.potentials.size();
+        sb.vsites       = bl.desc.vsites.data();
+        sb.nvsite       = bl.desc.vsites.size();
+        sb.forceShells  = bl.shells.forceShells.data();
+        sb.movingShells = bl.shells.movingShells.data();
+        sb.fragments    = bl.shells.fragments.data();
+        sb.nfragment    = bl.shells.fragments.size();
+        sb.shellParents = bl.resets.data();
+        sb.nshellParent = bl.resets.size()/2;
+        sblocks.push_back(sb);
+    }
+    im.system = gpu::createSystem(sblocks.data(), sblocks.size());
+    if (im.system && charges)
+    {
+        // The fragments of the molecules, the ACM particles and bonds, and
+        // where their parameters are in the values
+        std::vector<gpu::AcmMolecule> am;
+        std::vector<gpu::AcmFragment> af;
+        std::vector<uint32_t>         ap, ab, pv, bv, fv;
+        std::vector<double>           bfac;
+        std::vector<int32_t>          sym;
+        std::map<const ForceFieldParameter *, uint32_t> valueIndex;
+        auto valueOf = [&valueIndex, &im](const ForceFieldParameter *p)
+        {
+            if (!p)
+            {
+                return gpu::noValue;
+            }
+            auto vi = valueIndex.find(p);
+            if (vi == valueIndex.end())
+            {
+                vi = valueIndex.emplace(p, im.acmValues.size()).first;
+                im.acmValues.push_back(p);
+            }
+            return vi->second;
+        };
+        for (size_t k = 0; k < allmols.size(); k++)
+        {
+            auto        molptr = allmols[k];
+            const auto *fh     = molptr->fragmentHandler();
+            auto       &tops   = fh->topologies();
+            if (!fh->sqeOnGpu(pd) || tops.size() > 2)
+            {
+                continue;
+            }
+            gpu::AcmMolecule m;
+            m.natom         = molptr->atomsConst().size();
+            m.firstAtom     = sym.size();
+            m.firstFragment = af.size();
+            m.nfragment     = tops.size();
+            int dimer       = im.find(k, 2);
+            m.dimerBlock    = dimer >= 0 ? static_cast<uint32_t>(dimer) : gpu::noBlock;
+            for (size_t f = 0; f < tops.size(); f++)
+            {
+                int block = im.find(k, f);
+                if (block < 0)
+                {
+                    return false;
+                }
+                gpu::AcmFragment fr;
+                fr.natom      = tops[f].atoms().size();
+                fr.atomStart  = fh->atomStart()[f];
+                fr.moleculeAtom = m.firstAtom;
+                fr.block      = block;
+                fr.qtotal     = fh->fragmentCharge(f);
+                const auto &acm = fh->acmParticles(f);
+                fr.firstAcm   = ap.size();
+                fr.nacm       = acm.size();
+                fr.firstBond  = ab.size()/2;
+                fr.nbond      = 0;
+                fr.firstFixed = fv.size();
+                fr.nfixed     = 0;
+                if (!acm.empty())
+                {
+                    ap.insert(ap.end(), acm.begin(), acm.end());
+                    QgenAcm::SqeSources src;
+                    fh->sqeSources(f, &src);
+                    for (size_t i = 0; i < acm.size(); i++)
+                    {
+                        pv.push_back(valueOf(src.chi[i]));
+                        pv.push_back(valueOf(src.eta[i]));
+                        pv.push_back(valueOf(src.zeta[i]));
+                    }
+                    const auto &bonds = fh->bonds()[f];
+                    for (size_t b = 0; b < bonds.size(); b++)
+                    {
+                        ab.push_back(bonds[b].aI());
+                        ab.push_back(bonds[b].aJ());
+                        bv.push_back(valueOf(src.dchi[b]));
+                        bv.push_back(valueOf(src.deta[b]));
+                        bfac.push_back(src.dchiFactor[b]);
+                    }
+                    fr.nbond = bonds.size();
+                    for (auto q : src.fixedCharges)
+                    {
+                        fv.push_back(valueOf(q));
+                    }
+                    fr.nfixed = src.fixedCharges.size();
+                }
+                af.push_back(fr);
+            }
+            const auto &sc = molptr->symmetricCharges();
+            for (size_t i = 0; i < m.natom; i++)
+            {
+                // Without symmetry information, each charge is its own
+                sym.push_back(sc.size() == m.natom ? sc[i] : -1 - static_cast<int32_t>(i));
+            }
+            am.push_back(m);
+            im.acmMols.push_back(k);
+            im.acmVsites = im.acmVsites || molptr->topology()->hasVsites();
+        }
+        auto xa = im.acmCoordinates(fc);
+        gpu::AcmSystem acm;
+        acm.molecules      = am.data();
+        acm.nmolecule      = am.size();
+        acm.fragments      = af.data();
+        acm.nfragment      = af.size();
+        acm.acmParticles   = ap.data();
+        acm.nacm           = ap.size();
+        acm.x              = xa.data();
+        acm.particleValues = pv.data();
+        acm.bonds          = ab.data();
+        acm.nbond          = ab.size()/2;
+        acm.bondValues     = bv.data();
+        acm.bondFactors    = bfac.data();
+        acm.fixedValues    = fv.data();
+        acm.nfixed         = fv.size();
+        acm.nvalue         = im.acmValues.size();
+        acm.symmetry       = sym.data();
+        acm.gaussian       = pd->chargeDistribution() == ChargeDistributionType::Gaussian;
+        acm.coulomb        = ONE_4PI_EPS0;
+        acm.electronVolt   = ELECTRONVOLT;
+        gpu::createAcm(im.system, acm);
+    }
+    return im.system != nullptr;
+}
+
+void GpuTrainingSystem::updateParameters(const ForceField *pd, const ForceComputer *fc)
+{
+    // Only the parameter tables, the charges, the shells and the virtual
+    // sites are sent, the parameters of the interactions follow on the GPU
+    auto  &im       = *impl_;
+    double epsilonr = pd->epsilonr();
+    std::vector<float>            tables;
+    std::vector<double>           charges;
+    std::vector<gpu::MovingShell> shells;
+    std::vector<gpu::VsiteEntry>  vsites;
+    for (auto &bl : im.blocks)
+    {
+        auto           molptr = im.mols[bl.mol];
+        auto          &tops   = molptr->fragmentHandler()->topologies();
+        const Topology *top   = (bl.what < 2) ? &tops[bl.what] : molptr->topology();
+        const auto     &atoms = top->atoms();
+        const auto     &d     = bl.desc;
+        for (size_t l = 0; l < d.lists.size(); l++)
+        {
+            for (auto row : d.rows[l])
+            {
+                float p[8];
+                if (d.lists[l].bonded)
+                {
+                    gpu::BondedEntry be;
+                    gpuBondedEntry(d.bondedKernels[l], *row, &be);
+                    std::copy(be.p, be.p + 8, p);
+                }
+                else
+                {
+                    gpu::PairEntry pe;
+                    if (!gpuPairEntry(d.pairKernels[l], *row, atoms, epsilonr, &pe))
+                    {
+                        pe.p[7] = 1;
+                    }
+                    std::copy(pe.p, pe.p + 8, p);
+                }
+                tables.insert(tables.end(), p, p + 8);
+            }
+        }
+        for (const auto &a : atoms)
+        {
+            charges.push_back(a.charge());
+            charges.push_back(a.chargeVS());
+            charges.push_back(a.zeta());
+            charges.push_back(a.zetaVS());
+        }
+        // The force constants of the shells depend on their charges
+        GpuRelaxMolecule sh;
+        im.shellsOf(bl, &sh);
+        shells.insert(shells.end(), sh.movingShells.begin(), sh.movingShells.end());
+        for (size_t v = 0; v < d.vsiteEntries.size(); v++)
+        {
+            gpu::VsiteEntry ve;
+            (void) gpuVsiteEntry(d.vsiteTypes[v], *d.vsiteEntries[v], &ve);
+            vsites.push_back(ve);
+        }
+    }
+    if (!im.acmMols.empty())
+    {
+        // Only the values of the parameters of the charge generation,
+        // and the structures if the virtual sites may have moved
+        // The charges of the molecules are those generated last, see
+        // copyChargesToMolecules, unless the parameters changed
+        std::vector<double> values;
+        for (auto p : im.acmValues)
+        {
+            values.push_back(p->value());
+        }
+        if (values != im.acmLastValues)
+        {
+            gpu::updateAcm(im.system, values.data());
+            im.acmLastValues = std::move(values);
+            im.acmGenerated  = true;
+        }
+        if (im.acmVsites)
+        {
+            auto xa = im.acmCoordinates(fc);
+            if (xa != im.acmLastX)
+            {
+                gpu::updateAcmCoordinates(im.system, xa.data());
+                im.acmLastX     = std::move(xa);
+                im.acmGenerated = true;
+            }
+        }
+    }
+    gpu::updateParameters(im.system, tables.data(), charges.data(), ONE_4PI_EPS0, epsilonr);
+    gpu::updateMovingShells(im.system, shells.data(), shells.size());
+    gpu::updateVsites(im.system, vsites.data(), vsites.size());
+}
+
+void GpuTrainingSystem::copyChargesToMolecules()
+{
+    auto &im = *impl_;
+    if (im.acmMols.empty() || !im.acmGenerated)
+    {
+        return;
+    }
+    im.acmGenerated = false;
+    size_t natom = 0;
+    for (auto k : im.acmMols)
+    {
+        natom += im.mols[k]->atomsConst().size();
+    }
+    std::vector<double> q(natom);
+    gpu::downloadAcmCharges(im.system, q.data());
+    size_t first = 0;
+    for (auto k : im.acmMols)
+    {
+        auto  molptr = im.mols[k];
+        auto  fh     = molptr->fragmentHandler();
+        auto &tops   = fh->topologiesPtr();
+        auto  atoms  = molptr->atoms();
+        for (size_t f = 0; f < tops.size(); f++)
+        {
+            auto   fatoms = tops[f].atomsPtr();
+            size_t start  = fh->atomStart()[f];
+            for (size_t a = 0; a < fatoms->size(); a++)
+            {
+                (*fatoms)[a].setCharge(q[first + start + a]);
+                (*atoms)[start + a].setCharge(q[first + start + a]);
+            }
+        }
+        first += atoms->size();
+    }
+}
+
+std::pair<double, double> GpuTrainingSystem::chargeDifference() const
+{
+    auto  &im = *impl_;
+    size_t n  = 0;
+    for (const auto &bl : im.blocks)
+    {
+        n += im.mols[bl.mol]->conformationData(bl.what)->arrays.natom;
+    }
+    std::vector<double> q(4*n);
+    gpu::downloadCharges(im.system, q.data());
+    std::pair<double, double> worst = { 0, 0 };
+    size_t                    off   = 0;
+    for (const auto &bl : im.blocks)
+    {
+        auto            molptr = im.mols[bl.mol];
+        auto           &tops   = molptr->fragmentHandler()->topologies();
+        const Topology *top    = (bl.what < 2) ? &tops[bl.what] : molptr->topology();
+        const auto     &atoms  = top->atoms();
+        for (size_t i = 0; i < atoms.size(); i++)
+        {
+            double d = std::abs(q[4*(off+i)] - atoms[i].charge());
+            if (d > worst.first)
+            {
+                worst = { d, atoms[i].charge() };
+            }
+        }
+        off += molptr->conformationData(bl.what)->arrays.natom;
+    }
+    return worst;
+}
+
+void GpuTrainingSystem::resetShells()
+{
+    auto u = impl_->use(-1);
+    gpu::resetShells(impl_->system, u.data());
+}
+
+void GpuTrainingSystem::constructVsites()
+{
+    gpu::constructVsites(impl_->system);
+}
+
+void GpuTrainingSystem::compute(int what)
+{
+    auto &im = *impl_;
+    auto  u  = im.use(what);
+    std::vector<double *> eptr;
+    for (auto &bl : im.blocks)
+    {
+        eptr.push_back(bl.energies.data());
+    }
+    gpu::computeBlocks(im.system, u.data(), eptr.data());
+    for (size_t b = 0; b < im.blocks.size(); b++)
+    {
+        if (u[b])
+        {
+            im.storeBlockEnergies(im.blocks[b]);
+        }
+    }
+}
+
+size_t GpuTrainingSystem::relax(int what, const bool relaxMonomer[2], const gpu::RelaxSettings &settings)
+{
+    auto &im = *impl_;
+    auto  u  = im.use(what == 2 ? 2 : -2);
+    std::vector<char> relax(2*im.blocks.size(), 0);
+    for (size_t b = 0; b < im.blocks.size(); b++)
+    {
+        if (im.blocks[b].what < 2)
+        {
+            relax[2*b] = 1;
+        }
+        else
+        {
+            relax[2*b]   = relaxMonomer[0] ? 1 : 0;
+            relax[2*b+1] = relaxMonomer[1] ? 1 : 0;
+        }
+    }
+    size_t nComputed = 0;
+    bool   notFinite = false;
+    gpu::relaxBlocks(im.system, u.data(), relax.data(), settings, &nComputed, &notFinite);
+    if (notFinite)
+    {
+        // As on the processor, see moveCoordinate
+        moveCoordinate(0, std::numeric_limits<double>::quiet_NaN());
+    }
+    return nComputed;
+}
+
+void GpuTrainingSystem::copyRelaxedMonomerShells()
+{
+    auto &im = *impl_;
+    for (size_t b = 0; b < im.blocks.size(); b++)
+    {
+        const auto &bl = im.blocks[b];
+        if (bl.what != 2)
+        {
+            continue;
+        }
+        auto  fh     = im.mols[bl.mol]->fragmentHandler();
+        auto &tops   = fh->topologies();
+        auto &astart = fh->atomStart();
+        for (int f = 0; f < 2; f++)
+        {
+            int mb = im.find(bl.mol, f);
+            if (mb < 0)
+            {
+                continue;
+            }
+            std::vector<uint32_t> pairs;
+            const auto &atoms = tops[f].atoms();
+            for (size_t j = 0; j < atoms.size(); j++)
+            {
+                if (atoms[j].pType() == ActParticle::Shell)
+                {
+                    pairs.push_back(j);
+                    pairs.push_back(astart[f] + j);
+                }
+            }
+            // The same conformation in the slots of the monomer and the dimer
+            std::vector<uint32_t> slots(bl.confOfSlot.size());
+            for (size_t s = 0; s < slots.size(); s++)
+            {
+                slots[s] = im.blocks[mb].slotOfConf[bl.confOfSlot[s]];
+            }
+            gpu::copyCoordinates(im.system, mb, b, pairs.data(), pairs.size()/2, slots.data());
+        }
+    }
+}
+
+void GpuTrainingSystem::saveDimers()
+{
+    for (size_t b = 0; b < impl_->blocks.size(); b++)
+    {
+        if (impl_->blocks[b].what == 2)
+        {
+            gpu::saveCoordinates(impl_->system, b);
+        }
+    }
+}
+
+void GpuTrainingSystem::restoreDimers()
+{
+    for (size_t b = 0; b < impl_->blocks.size(); b++)
+    {
+        if (impl_->blocks[b].what == 2)
+        {
+            gpu::restoreCoordinates(impl_->system, b);
+        }
+    }
 }
 
 #endif

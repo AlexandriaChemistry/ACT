@@ -121,6 +121,12 @@ inline float pairInteraction(PairKernel kernel, const float *p, float rsq, float
     e[1] = 0;
     e[2] = 0;
     float fscal = 0;
+    // An interaction without parameters, kept such that the lists keep their
+    // length, see inactivePair; Coulomb has no such interactions
+    if (kernel != PairKernel::Coulomb && p[7] != 0)
+    {
+        return 0;
+    }
     switch (kernel)
     {
     case PairKernel::Coulomb:

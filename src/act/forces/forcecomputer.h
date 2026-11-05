@@ -28,10 +28,12 @@
 #ifndef ACT_FORCECOMPUTER_H
 #define ACT_FORCECOMPUTER_H
 
+#include <memory>
 #include <set>
 #include <vector>
 
 #include "act/basics/msg_handler.h"
+#include "act/forces/gpusystem.h"
 #include "act/forces/vsitehandler.h"
 #include "act/forcefield/forcefield.h"
 #include "act/forcefield/potential.h"
@@ -167,6 +169,26 @@ private:
     mutable size_t nShellIter_ = 0;
     //! Total number of failed shell-minimizations across all compute() calls
     mutable size_t nShellConvergeFailed_ = 0;
+    //! The molecules on the GPU, see computeRelaxedEnergiesGpu, shared by copies
+    mutable std::shared_ptr<GpuTrainingSystem> gpuSystem_;
+
+    /*! \brief Compute the energies of relaxed shells on the GPU
+     * As computeRelaxedEnergies, with all topologies and conformations on
+     * the GPU, see GpuTrainingSystem: the parameters are copied to the GPU,
+     * the energies of each calculation back. Without forces.
+     * \param[in]    msghandler  For messages
+     * \param[in]    pd          The force field
+     * \param[inout] allmols     The molecules, prepared on the GPU
+     * \param[in]    resetShells Whether to put the shells on their parents first
+     * \param[in]    separateInductionCorrection Whether the induction correction is separate
+     * \param[in]    checkCharges Whether to compare the charges of the GPU with those of the molecules
+     */
+    void computeRelaxedEnergiesGpu(MsgHandler                  *msghandler,
+                                   const ForceField            *pd,
+                                   const std::vector<ACTMol *> &allmols,
+                                   bool                         resetShells,
+                                   bool                         separateInductionCorrection,
+                                   bool                         checkCharges) const;
     /*! \brief Update shell positions if needed.
      * This will work on a whole ACT mol or just one of its monomers.
      * The force constants of the shells are computed from the current
@@ -453,6 +475,22 @@ private:
                  std::set<int>                      relax = {},
                  bool                               shellsFromInput = false) const;
                  
+    /*! \brief Whether the GPU generates the charges in computeRelaxedEnergies
+     * With ACT_GPU_RESIDENT or ACT_GPU_RESIDENT_CHECK, a GPU, a polarizable
+     * force field and SQE with Gaussian or point charges, the GPU generates
+     * the charges of the molecules that FragmentHandler::sqeOnGpu allows,
+     * when the energies are computed without forces.
+     * \param[in] pd The force field
+     */
+    bool gpuCharges(const ForceField *pd) const;
+
+    /*! \brief Whether only the GPU generates the charges, see gpuCharges
+     * Then the processor need not generate them before computeRelaxedEnergies,
+     * except for ACT_GPU_RESIDENT_CHECK, which compares the charges.
+     * \param[in] pd The force field
+     */
+    bool gpuChargesOnly(const ForceField *pd) const;
+
     /*! \brief Compute energies and forces for monomers and/or dimers.
      * Despite the name of the function it is possible to select RelaxShells::None
      * which results in a single energy calculation. This will happen in case of
