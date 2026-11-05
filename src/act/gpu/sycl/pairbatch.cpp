@@ -26,7 +26,8 @@
  * Boston, MA  02110-1301, USA.
  */
 /*! \internal \brief
- * Coulomb interactions of many conformations on the GPU with SYCL.
+ * Pair interactions of many conformations on the GPU with SYCL, see
+ * computePairBlocks in gpu.h.
  * The results are the same in every run and do not depend on which other
  * conformations are computed, as on the processor, such that for instance
  * relaxing shells gives the same structures. Therefore no atomic
@@ -59,7 +60,7 @@ namespace gpu
 namespace
 {
 
-//! Where the data of a block are in the device arrays, see CoulombBlock
+//! Where the data of a block are in the device arrays, see PairBatchBlock
 struct DeviceBlock
 {
     //! Start of the coordinates
@@ -80,14 +81,16 @@ struct DeviceBlock
     uint32_t stride;
     //! Number of slots
     uint32_t nslot;
+    //! The potential
+    PairKernel kernel;
 };
 
-//! The device memory for computeCoulombBlocks and the data on the host to copy
-struct CoulombMemory
+//! The device memory for computePairBlocks and the data on the host to copy
+struct PairBatchMemory
 {
-    //! The input of the kernels, see computeCoulombBlocks
+    //! The input of the kernels, see computePairBlocks
     DeviceArray<char>   in;
-    //! The output of the kernels, see computeCoulombBlocks
+    //! The output of the kernels, see computePairBlocks
     DeviceArray<char>   out;
     //! The input on the host
     HostArray<char>     inHost;
@@ -102,9 +105,9 @@ struct CoulombMemory
 };
 
 //! The device memory, never deleted, see gpuQueue
-CoulombMemory &coulombMemory()
+PairBatchMemory &pairBatchMemory()
 {
-    static CoulombMemory *memory = new CoulombMemory;
+    static PairBatchMemory *memory = new PairBatchMemory;
     return *memory;
 }
 
@@ -134,7 +137,7 @@ inline uint32_t findBlock(const DeviceBlock *blocks, uint32_t nblock, uint64_t i
     return lo;
 }
 
-/*! \brief The kernels for computeCoulombBlocks, see the description of this file
+/*! \brief The kernels for computePairBlocks, see the description of this file
  * \tparam Forces Whether to compute forces
  * \param[in]  queue     The queue
  * \param[in]  blocks    The blocks
@@ -147,20 +150,20 @@ inline uint32_t findBlock(const DeviceBlock *blocks, uint32_t nblock, uint64_t i
  * \param[in]  atomStart Start of the interactions of each atom in atomPairs
  * \param[in]  atomPairs Twice the interactions of each atom, plus one if it is the second
  * \param[out] fpair     The force of each interaction, 3*nwork
- * \param[out] epair     The energy of each interaction, nwork
- * \param[out] eatom     The energy of each atom, natomWork
+ * \param[out] epair     The energy terms of each interaction, pairEnergyTerms*nwork
+ * \param[out] eatom     The energy terms of each atom, pairEnergyTerms*natomWork
  * \param[out] f         The forces, 3*natomWork
- * \param[out] e         The energies, nslotAll
+ * \param[out] e         The energy terms, pairEnergyTerms*nslotAll
  */
 template <bool Forces>
-void coulombKernels(sycl::queue       &queue,
+void pairKernels(sycl::queue       &queue,
                     const DeviceBlock *blocks,
                     uint32_t           nblock,
                     size_t             nwork,
                     size_t             natomWork,
                     size_t             nslotAll,
                     const int64_t     *x,
-                    const CoulombPair *pairs,
+                    const PairEntry *pairs,
                     const uint64_t    *atomStart,
                     const uint32_t    *atomPairs,
                     float             *fpair,
@@ -177,7 +180,7 @@ void coulombKernels(sycl::queue       &queue,
         uint64_t           local = w - b.workOffset;
         uint64_t           p     = local / b.nslot;
         uint64_t           c     = local % b.nslot;
-        const CoulombPair &pair  = pairs[b.pairOffset + p];
+        const PairEntry &pair  = pairs[b.pairOffset + p];
         uint64_t           xi    = b.xOffset + 3*uint64_t(pair.i)*b.stride + c;
         uint64_t           xj    = b.xOffset + 3*uint64_t(pair.j)*b.stride + c;
         float              dx[3];
@@ -189,17 +192,12 @@ void coulombKernels(sycl::queue       &queue,
                 static_cast<float>(coordinateUnitNm);
             rsq  += dx[m]*dx[m];
         }
-        float rinv  = rsq > 0 ? sycl::rsqrt(rsq) : 0.0f;
-        float fscal = 0;
-        float ep    = coulombTerm(pair.qq[0], pair.zeta[0], rsq, rinv, &fscal);
-        for (int k = 1; k < 4; k++)
+        float e[pairEnergyTerms];
+        float fscal = pairInteraction(b.kernel, pair.p, rsq, e);
+        for (int k = 0; k < pairEnergyTerms; k++)
         {
-            if (pair.qq[k] != 0)
-            {
-                ep += coulombTerm(pair.qq[k], pair.zeta[k], rsq, rinv, &fscal);
-            }
+            epair[k*nwork + w] = e[k];
         }
-        epair[w] = ep;
         if constexpr (Forces)
         {
             for (int m = 0; m < 3; m++)
@@ -217,7 +215,7 @@ void coulombKernels(sycl::queue       &queue,
         uint64_t           local = w - b.atomWorkOffset;
         uint64_t           a     = local / b.nslot;
         uint64_t           c     = local % b.nslot;
-        double             ea    = 0;
+        double             ea[pairEnergyTerms] = { 0, 0, 0 };
         float              fa[3] = { 0, 0, 0 };
         for (uint64_t k = atomStart[b.atomOffset + a]; k < atomStart[b.atomOffset + a + 1]; k++)
         {
@@ -226,7 +224,10 @@ void coulombKernels(sycl::queue       &queue,
             uint64_t wp     = b.workOffset + p*b.nslot + c;
             if (!second)
             {
-                ea += epair[wp];
+                for (int t = 0; t < pairEnergyTerms; t++)
+                {
+                    ea[t] += epair[t*nwork + wp];
+                }
             }
             if constexpr (Forces)
             {
@@ -237,7 +238,10 @@ void coulombKernels(sycl::queue       &queue,
                 }
             }
         }
-        eatom[w] = ea;
+        for (int t = 0; t < pairEnergyTerms; t++)
+        {
+            eatom[t*natomWork + w] = ea[t];
+        }
         if constexpr (Forces)
         {
             for (int m = 0; m < 3; m++)
@@ -252,27 +256,30 @@ void coulombKernels(sycl::queue       &queue,
         uint64_t           s  = id[0];
         const DeviceBlock &b  = blocks[findBlock(blocks, nblock, s, &DeviceBlock::slotOffset)];
         uint64_t           c  = s - b.slotOffset;
-        double             ec = 0;
-        for (uint64_t a = 0; a < b.natom; a++)
+        for (int t = 0; t < pairEnergyTerms; t++)
         {
-            ec += eatom[b.atomWorkOffset + a*b.nslot + c];
+            double ec = 0;
+            for (uint64_t a = 0; a < b.natom; a++)
+            {
+                ec += eatom[t*natomWork + b.atomWorkOffset + a*b.nslot + c];
+            }
+            e[t*nslotAll + s] = ec;
         }
-        e[s] = ec;
     });
 }
 
 } // namespace
 
-bool computeCoulombBlocks(const CoulombBlock *blocks,
-                          size_t              nblock,
-                          bool                forces)
+bool computePairBlocks(const PairBatchBlock *blocks,
+                       size_t                nblock,
+                       bool                  forces)
 {
     sycl::queue *queue = gpuQueue();
     if (!queue)
     {
         return false;
     }
-    auto &mem = coulombMemory();
+    auto &mem = pairBatchMemory();
     // The blocks with work, the coordinates of each array once
     std::vector<size_t>      used;
     std::vector<DeviceBlock> dblocks;
@@ -291,6 +298,7 @@ bool computeCoulombBlocks(const CoulombBlock *blocks,
         b.natom  = static_cast<uint32_t>(cb.natom);
         b.stride = static_cast<uint32_t>(cb.stride);
         b.nslot  = static_cast<uint32_t>(cb.nslot);
+        b.kernel = cb.kernel;
         auto xk  = std::find_if(xKnown.begin(), xKnown.end(),
                                 [&cb](const auto &xo) { return xo.first == cb.x; });
         firstX.push_back(xk == xKnown.end());
@@ -325,17 +333,17 @@ bool computeCoulombBlocks(const CoulombBlock *blocks,
     PackedArrays in;
     size_t       oBlocks    = in.add<DeviceBlock>(dblocks.size());
     size_t       oX         = in.add<int64_t>(nx);
-    size_t       oPairs     = in.add<CoulombPair>(npair);
+    size_t       oPairs     = in.add<PairEntry>(npair);
     size_t       oAtomStart = in.add<uint64_t>(natom + 1);
     size_t       oAtomPairs = in.add<uint32_t>(2*npair);
     PackedArrays out;
     size_t       oF         = out.add<float>(forces ? 3*natomWork : 0);
-    size_t       oE         = out.add<double>(nslotAll);
+    size_t       oE         = out.add<double>(pairEnergyTerms*nslotAll);
     char        *hin        = mem.inHost.reserve(*queue, in.size());
     char        *hout       = mem.outHost.reserve(*queue, out.size());
     auto        *hBlocks    = reinterpret_cast<DeviceBlock *>(hin + oBlocks);
     auto        *hX         = reinterpret_cast<int64_t *>(hin + oX);
-    auto        *hPairs     = reinterpret_cast<CoulombPair *>(hin + oPairs);
+    auto        *hPairs     = reinterpret_cast<PairEntry *>(hin + oPairs);
     auto        *hAtomStart = reinterpret_cast<uint64_t *>(hin + oAtomStart);
     auto        *hAtomPairs = reinterpret_cast<uint32_t *>(hin + oAtomPairs);
     std::copy(dblocks.begin(), dblocks.end(), hBlocks);
@@ -374,13 +382,13 @@ bool computeCoulombBlocks(const CoulombBlock *blocks,
     }
     char    *din  = mem.in.reserve(*queue, in.size());
     char    *dout = mem.out.reserve(*queue, out.size());
-    auto     dep  = mem.epair.reserve(*queue, nwork);
-    auto     dea  = mem.eatom.reserve(*queue, natomWork);
+    auto     dep  = mem.epair.reserve(*queue, pairEnergyTerms*nwork);
+    auto     dea  = mem.eatom.reserve(*queue, pairEnergyTerms*natomWork);
     auto     dfp  = forces ? mem.fpair.reserve(*queue, 3*nwork) : nullptr;
     uint32_t nb   = static_cast<uint32_t>(dblocks.size());
     auto     db   = reinterpret_cast<const DeviceBlock *>(din + oBlocks);
     auto     dx   = reinterpret_cast<const int64_t *>(din + oX);
-    auto     dp   = reinterpret_cast<const CoulombPair *>(din + oPairs);
+    auto     dp   = reinterpret_cast<const PairEntry *>(din + oPairs);
     auto     das  = reinterpret_cast<const uint64_t *>(din + oAtomStart);
     auto     dap  = reinterpret_cast<const uint32_t *>(din + oAtomPairs);
     auto     df   = forces ? reinterpret_cast<float *>(dout + oF) : nullptr;
@@ -388,11 +396,11 @@ bool computeCoulombBlocks(const CoulombBlock *blocks,
     queue->memcpy(din, hin, in.size());
     if (forces)
     {
-        coulombKernels<true>(*queue, db, nb, nwork, natomWork, nslotAll, dx, dp, das, dap, dfp, dep, dea, df, de);
+        pairKernels<true>(*queue, db, nb, nwork, natomWork, nslotAll, dx, dp, das, dap, dfp, dep, dea, df, de);
     }
     else
     {
-        coulombKernels<false>(*queue, db, nb, nwork, natomWork, nslotAll, dx, dp, das, dap, dfp, dep, dea, df, de);
+        pairKernels<false>(*queue, db, nb, nwork, natomWork, nslotAll, dx, dp, das, dap, dfp, dep, dea, df, de);
     }
     queue->memcpy(hout, dout, out.size());
     queue->wait_and_throw();
@@ -402,9 +410,12 @@ bool computeCoulombBlocks(const CoulombBlock *blocks,
     {
         const auto &cb = blocks[used[u]];
         const auto &b  = dblocks[u];
-        for (size_t c = 0; c < cb.nslot; c++)
+        for (int t = 0; t < pairEnergyTerms; t++)
         {
-            cb.energies[c] += hE[b.slotOffset + c];
+            for (size_t c = 0; c < cb.nslot; c++)
+            {
+                cb.energies[t*cb.stride + c] += hE[t*nslotAll + b.slotOffset + c];
+            }
         }
         if (forces)
         {
@@ -419,20 +430,6 @@ bool computeCoulombBlocks(const CoulombBlock *blocks,
         }
     }
     return true;
-}
-
-bool computeCoulomb(size_t             natom,
-                    size_t             stride,
-                    size_t             nslot,
-                    const int64_t     *x,
-                    const CoulombPair *pairs,
-                    size_t             npair,
-                    float             *f,
-                    double            *energies,
-                    bool               forces)
-{
-    CoulombBlock block = { natom, stride, nslot, x, pairs, npair, f, energies };
-    return computeCoulombBlocks(&block, 1, forces);
 }
 
 } // namespace gpu

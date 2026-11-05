@@ -66,9 +66,9 @@ size_t gpuMinimumWork();
 size_t setGpuMinimumWork(size_t work);
 
 /*! \brief Compute a potential for all conformations on the GPU
- * As computeExplicitSimd, for the potentials that have a GPU kernel:
- * COULOMB_POINT and COULOMB_GAUSSIAN. The energy of each interaction is
- * computed in single precision and summed in double precision.
+ * As computeExplicitSimd, for the potentials that have a GPU kernel, see
+ * gpuPairKernel. The energy of each interaction is computed in single
+ * precision and summed in double precision.
  * \param[in]    mypot    The potential
  * \param[in]    entries  The interactions
  * \param[in]    atoms    The atoms
@@ -128,7 +128,7 @@ class GpuBatch
 public:
     /*! \brief Whether the GPU can compute a potential
      * \param[in] mypot The potential
-     * \return true if it can, for COULOMB_POINT and COULOMB_GAUSSIAN with a GPU in use
+     * \return true if it can, for Coulomb with a GPU in use
      */
     static bool canCompute(Potential mypot);
 
@@ -170,7 +170,8 @@ public:
      * \param[in]    k        The task, in the order they were added
      * \param[inout] f        The forces in the layout of the coordinates,
      *                         added to if they were computed
-     * \param[inout] energies The energy of each slot, added to
+     * \param[inout] energies The energy terms of the slots, term k of slot c
+     *                         at k*stride + c, added to
      */
     void addResults(size_t k, float *f, double *energies) const;
 
@@ -182,7 +183,8 @@ private:
         size_t                         stride = 0;
         size_t                         nslot  = 0;
         const Coordinate              *x      = nullptr;
-        std::vector<gpu::CoulombPair>  pairs;
+        gpu::PairKernel                kernel = gpu::PairKernel::Coulomb;
+        std::vector<gpu::PairEntry>    pairs;
         std::vector<float>             f;
         std::vector<double>            energies;
     };
