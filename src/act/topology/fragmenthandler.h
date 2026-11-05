@@ -105,6 +105,40 @@ public:
     //! \return the polarization info
     const std::vector<PolInfo> &polInfo() const { return polinfo_; }
 
+    //! \return the bonds of each fragment
+    const std::vector<std::vector<Bond> > &bonds() const { return bonds_; }
+
+    /*! \brief Whether the charges of all fragments can be generated on the GPU
+     * \param[in] pd The force field
+     * \return true for SQE with Gaussian or point charges, or fixed charges
+     */
+    bool sqeOnGpu(const ForceField *pd) const;
+
+    /*! \brief The particles of a fragment whose charges are generated,
+     * none if the charges are fixed
+     * \param[in] ff The fragment
+     */
+    const std::vector<int> &acmParticles(size_t ff) const;
+
+    /*! \brief The force field parameters of the SQE of a fragment, see QgenAcm::sqeSources
+     * \param[in]  ff  The fragment
+     * \param[out] src The parameters
+     */
+    void sqeSources(size_t ff, QgenAcm::SqeSources *src) const
+    {
+        QgenAcm_[ff].sqeSources(src, bonds_[ff].size());
+    }
+
+    //! \return the total charge of a fragment, as an integer as QgenAcm keeps it
+    int fragmentCharge(size_t ff) const { return static_cast<int>(qtotal_[ff]); }
+
+    /*! \brief Set the fixed charges, second charges and widths from the force field
+     * in the fragments and the atoms, but not the charges that the GPU generates
+     * \param[in]    pd    The force field
+     * \param[inout] atoms The atoms of the complete topology
+     */
+    void updateFixedCharges(const ForceField *pd, std::vector<ActAtom> *atoms);
+
     /*! \brief Generate charges for all fragments
      * \param[in]  msg_handler Debug storage, may be nullptr
      * \param[in]  molname Molecule name for printing

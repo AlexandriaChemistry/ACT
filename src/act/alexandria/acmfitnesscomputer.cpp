@@ -240,6 +240,16 @@ bool ACMFitnessComputer::prepareDeviation(MsgHandler    *msghandler,
         auto t = targets->find(erms);
         needQProps = needQProps || (t != targets->end() && t->second.weight() > 0);
     }
+    // With SQE on the GPU, the processor only sets the fixed charges, as
+    // long as the energies are computed there and nothing else needs them
+    bool gpuCharges = false;
+    {
+        DeviationTask tmp;
+        tmp.targets = targets;
+        auto et     = energyTask(tmp);
+        gpuCharges  = (!needQProps && et.compute && !et.forces &&
+                       forceComp_->gpuChargesOnly(sii_->forcefield()));
+    }
     // Loop over molecules
     int ntrain = 0;
     int nlocal = 0;
@@ -248,6 +258,7 @@ bool ACMFitnessComputer::prepareDeviation(MsgHandler    *msghandler,
     const size_t never = std::numeric_limits<size_t>::max();
     filledVersion_.resize(mymols->size());
     chargeVersion_.resize(mymols->size(), never);
+    fixedChargeVersion_.resize(mymols->size(), never);
     // The molecules in this dataset that this node computes
     std::vector<ACTMol *> selected;
     for (auto actmol = mymols->begin(); actmol < mymols->end(); ++actmol)
@@ -300,13 +311,26 @@ bool ACMFitnessComputer::prepareDeviation(MsgHandler    *msghandler,
                 // only if parameters changed that the charges depend on.
                 static const size_t timer = Timings::instance().index("Charge generation");
                 ScopedTimer         scoped(timer);
-                std::vector<gmx::RVec> forces(actmol->atomsConst().size(), { 0, 0, 0 });
-                std::vector<gmx::RVec> coords = actmol->xOriginal();
-                // The coordinates and forces are not used here, and the
-                // charge properties only for the ESP and multipoles
-                actmol->generateCharges(msghandler, sii_->forcefield(), forceComp_,
-                                        algorithm_, &coords, &forces, needQProps, false);
-                chargeVersion_[imol] = sii_->chargeParameterVersion();
+                if (gpuCharges && actmol->fragmentHandler()->sqeOnGpu(sii_->forcefield()))
+                {
+                    // The charges of the processor stay outdated, the next
+                    // evaluation on the processor generates them
+                    if (fixedChargeVersion_[imol] != sii_->chargeParameterVersion())
+                    {
+                        actmol->updateFixedCharges(sii_->forcefield(), algorithm_);
+                        fixedChargeVersion_[imol] = sii_->chargeParameterVersion();
+                    }
+                }
+                else
+                {
+                    // The coordinates and forces are not used here, and the
+                    // charge properties only for the ESP and multipoles
+                    std::vector<gmx::RVec> forces(actmol->atomsConst().size(), { 0, 0, 0 });
+                    std::vector<gmx::RVec> coords = actmol->xOriginal();
+                    actmol->generateCharges(msghandler, sii_->forcefield(), forceComp_,
+                                            algorithm_, &coords, &forces, needQProps, false);
+                    chargeVersion_[imol] = sii_->chargeParameterVersion();
+                }
             }
 
             // Check whether we have to disable this compound

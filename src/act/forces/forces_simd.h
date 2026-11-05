@@ -85,6 +85,18 @@ bool relaxShellsGpu(const ForceField            *pd,
                     bool                         allForces,
                     size_t                      *nComputed);
 
+/*! \brief Compare the first calculation of the GPU with that of the processor
+ * For developers: all topologies of the molecules are copied to the GPU,
+ * see gpu::createSystem, all interactions are computed there with the
+ * current coordinates and charges, and the energies of each interaction
+ * type and conformation are compared with those in the conformation data.
+ * The largest differences are written to standard error.
+ * \param[in] pd      The force field
+ * \param[in] allmols The molecules, after computeEnergies for all their topologies
+ * \return false if the GPU cannot compute all interactions
+ */
+bool checkGpuSystem(const ForceField *pd, const std::vector<ACTMol *> &allmols);
+
 /*! \brief Compute the energies and forces of the conformations of one topology
  * The energies are stored in the conformation data, the forces in its
  * conformations. The shells are not relaxed and the forces on virtual

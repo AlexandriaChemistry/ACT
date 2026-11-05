@@ -1460,6 +1460,198 @@ void ForceComputer::relaxDimer(MsgHandler                  *msghandler,
     }
 }
 
+/*! \brief Extract the induction and electrostatics from the energies of relaxed shells
+ * The last step of ForceComputer::computeRelaxedEnergies, also used when
+ * the GPU computes the energies.
+ * \param[in] allmols        The molecules
+ * \param[in] intermolecular Whether only the intermolecular interactions were computed
+ * \param[in] doInduc2       Whether the second order induction was computed separately
+ * \param[in] separateInductionCorrection Whether the induction correction is separate
+ * \param[in] eInduc2        The second order induction of each conformation of each molecule
+ */
+static void postProcessRelaxedEnergies(const std::vector<ACTMol *>            &allmols,
+                                       bool                                    intermolecular,
+                                       bool                                    doInduc2,
+                                       bool                                    separateInductionCorrection,
+                                       const std::vector<std::vector<double>> &eInduc2)
+{
+    // Now post-process the energies to extract induction and allelec
+    for(const auto &molptr : allmols)
+    {
+        auto &mol = *molptr;
+        auto *dimer = &mol.conformationData(2)->energies;
+        ConformationEnergies *monomers[2] = { &mol.conformationData(0)->energies,
+                                              &mol.conformationData(1)->energies };
+        bool inter = intermolecular && mol.isDimer() && mol.topology()->hasIntermolecular();
+        if (mol.isDimer())
+        {
+            // First, subtract monomer energies from dimer energies,
+            // unless only the intermolecular interactions were computed
+            if (!inter)
+            {
+                subtractMonomers(dimer, monomers);
+            }
+            calcInduction(dimer);
+            // The induction correction from a potential, before the
+            // induction correction from the shells is added
+            auto correction = potentialCorrection(dimer);
+            if (doInduc2)
+            {
+                // Split the total induction into second order induction and
+                // the remaining higher order induction correction.
+                size_t k     = &molptr - allmols.data();
+                auto   eit   = dimer->find(InteractionType::INDUCTION);
+                std::vector<double> eInd(dimer->nconf(), 0.0);
+                for(size_t i = 0; i < dimer->nconf(); i++)
+                {
+                    if (eit.has(i))
+                    {
+                        eInd[i] = eit.act[i];
+                    }
+                }
+                auto induction   = dimer->add(InteractionType::INDUCTION);
+                auto icorrection = dimer->add(InteractionType::INDUCTIONCORRECTION);
+                for(size_t i = 0; i < dimer->nconf() && i < eInduc2[k].size(); i++)
+                {
+                    double ecorr = i < correction.size() ? correction[i] : 0.0;
+                    induction.set(i, eInduc2[k][i]);
+                    icorrection.set(i, ecorr + eInd[i] - eInduc2[k][i]);
+                }
+            }
+            if (!correction.empty())
+            {
+                addCorrection(dimer, correction, !separateInductionCorrection);
+            }
+        }
+        auto &tops = mol.fragmentHandler()->topologies();
+        for(size_t i = 0; i < tops.size() && !inter; i++)
+        {
+            calcInduction(monomers[i]);
+            auto correction = potentialCorrection(monomers[i]);
+            if (!correction.empty())
+            {
+                addCorrection(monomers[i], correction, false);
+            }
+        }
+    }
+}
+
+bool ForceComputer::gpuCharges(const ForceField *pd) const
+{
+    static const bool resident = (std::getenv("ACT_GPU_RESIDENT") != nullptr ||
+                                  std::getenv("ACT_GPU_RESIDENT_CHECK") != nullptr);
+    auto qdist = pd->chargeDistribution();
+    return (resident && !GMX_DOUBLE && gpu::useGpu() && pd->polarizable() &&
+            pd->interactionPresent(InteractionType::BONDCORRECTIONS) &&
+            pd->chargeGenerationAlgorithm() == ChargeGenerationAlgorithm::SQE &&
+            (qdist == ChargeDistributionType::Gaussian || qdist == ChargeDistributionType::Point));
+}
+
+bool ForceComputer::gpuChargesOnly(const ForceField *pd) const
+{
+    static const bool only = (std::getenv("ACT_GPU_RESIDENT") != nullptr &&
+                              std::getenv("ACT_GPU_RESIDENT_CHECK") == nullptr);
+    return only && gpuCharges(pd);
+}
+
+void ForceComputer::computeRelaxedEnergiesGpu(MsgHandler                  *,
+                                              const ForceField            *pd,
+                                              const std::vector<ACTMol *> &allmols,
+                                              bool                         resetTheShells,
+                                              bool                         separateInductionCorrection,
+                                              bool                         checkCharges) const
+{
+    static const size_t timer = Timings::instance().index("GPU resident evaluation");
+    ScopedTimer         scoped(timer);
+    auto &gs = *gpuSystem_;
+    gpu::RelaxSettings settings = { msForceToler_, gmx::square(shellMaxDistance(pd)), minShellStep, maxShellStep, maxiter_ };
+    for (auto molptr : allmols)
+    {
+        auto &tops = molptr->fragmentHandler()->topologies();
+        nEval_ += molptr->conformationData(0)->nconf()*(tops.size() + (tops.size() > 1 ? 1 : 0));
+    }
+    static const size_t upload  = Timings::instance().index("GPU resident parameter upload");
+    static const size_t relaxT  = Timings::instance().index("GPU resident relaxation");
+    static const size_t energyT = Timings::instance().index("GPU resident energies");
+    // As computeRelaxedEnergies, with the coordinates on the GPU
+    {
+        ScopedTimer up(upload);
+        gs.updateParameters(pd, this);
+    }
+    if (resetTheShells)
+    {
+        gs.resetShells();
+    }
+    gs.constructVsites();
+    { ScopedTimer et(energyT); gs.compute(-1); }
+    // The energies before relaxing, to extract the induction
+    for (auto molptr : allmols)
+    {
+        for (size_t what = 0; what < 3; what++)
+        {
+            auto &energies = molptr->conformationData(what)->energies;
+            energies.setBackups(true);
+            backupEnergies(&energies);
+        }
+    }
+    const bool all[2] = { true, true };
+    { ScopedTimer rt(relaxT); nShellIter_ += gs.relax(-1, all, settings); }
+    { ScopedTimer et(energyT); gs.compute(0); }
+    { ScopedTimer et(energyT); gs.compute(1); }
+    std::vector<std::vector<double>> eInduc2(allmols.size());
+    bool doInduc2 = separateInductionCorrection;
+    if (doInduc2)
+    {
+        for (size_t k = 0; k < allmols.size(); k++)
+        {
+            if (allmols[k]->isDimer())
+            {
+                eInduc2[k].resize(allmols[k]->dimerCoords()->size(), 0.0);
+            }
+        }
+        gs.saveDimers();
+        gs.copyRelaxedMonomerShells();
+        { ScopedTimer et(energyT); gs.compute(2); }
+        std::vector<std::vector<double>> eRef(allmols.size());
+        for (size_t k = 0; k < allmols.size(); k++)
+        {
+            eRef[k] = sumElecTerms(&allmols[k]->conformationData(2)->energies);
+        }
+        for (size_t im = 0; im < 2; im++)
+        {
+            if (im > 0)
+            {
+                gs.copyRelaxedMonomerShells();
+                { ScopedTimer et(energyT); gs.compute(2); }
+            }
+            const bool relaxMonomer[2] = { im == 0, im == 1 };
+            { ScopedTimer rt(relaxT); nShellIter_ += gs.relax(2, relaxMonomer, settings); }
+            { ScopedTimer et(energyT); gs.compute(2); }
+            for (size_t k = 0; k < allmols.size(); k++)
+            {
+                auto esum = sumElecTerms(&allmols[k]->conformationData(2)->energies);
+                for (size_t i = 0; i < eInduc2[k].size() && i < esum.size(); i++)
+                {
+                    eInduc2[k][i] += esum[i] - eRef[k][i];
+                }
+            }
+        }
+        gs.restoreDimers();
+        { ScopedTimer et(energyT); gs.compute(2); }
+    }
+    { ScopedTimer rt(relaxT); nShellIter_ += gs.relax(2, all, settings); }
+    { ScopedTimer et(energyT); gs.compute(2); }
+    postProcessRelaxedEnergies(allmols, false, doInduc2, separateInductionCorrection, eInduc2);
+    if (checkCharges)
+    {
+        auto dq = gs.chargeDifference();
+        fprintf(stderr, "GPU resident check: %-22s largest difference %.2e (of %.6g)\n",
+                "charges", dq.first, dq.second);
+    }
+    // The processor needs the charges too, for instance for the bounds
+    gs.copyChargesToMolecules();
+}
+
 void ForceComputer::computeRelaxedEnergies(MsgHandler                  *msghandler,
                                            const ForceField            *pd,
                                            const std::vector<ACTMol *> &allmols,
@@ -1467,6 +1659,86 @@ void ForceComputer::computeRelaxedEnergies(MsgHandler                  *msghandl
                                            bool                         separateInductionCorrection,
                                            bool                         computeForces) const
 {
+    // All on the GPU, if requested and possible, for now without forces.
+    // For developers, ACT_GPU_RESIDENT_CHECK compares the energies of the
+    // first evaluations with those of the processor.
+    static const bool resident = std::getenv("ACT_GPU_RESIDENT") != nullptr;
+    static int        checks   = std::getenv("ACT_GPU_RESIDENT_CHECK") ? 5 : 0;
+    static thread_local bool onProcessor = false;
+    std::vector<ConformationEnergies> gpuEnergies;
+    if ((resident || checks > 0) && !onProcessor && !computeForces && pd->polarizable())
+    {
+        if (!gpuSystem_)
+        {
+            gpuSystem_ = std::make_shared<GpuTrainingSystem>();
+        }
+        if (gpuSystem_->prepare(pd, allmols, shellMaxDistance(pd), gpuCharges(pd), this))
+        {
+            computeRelaxedEnergiesGpu(msghandler, pd, allmols, resetTheShells, separateInductionCorrection,
+                                      checks > 0 && gpuCharges(pd));
+            if (checks == 0)
+            {
+                return;
+            }
+            checks -= 1;
+            for (auto molptr : allmols)
+            {
+                for (size_t what = 0; what < 3; what++)
+                {
+                    gpuEnergies.push_back(molptr->conformationData(what)->energies);
+                }
+            }
+        }
+        else if (gpuChargesOnly(pd))
+        {
+            // The charges were left to the GPU, see ACMFitnessComputer::prepareDeviation
+            msghandler->fatal("The GPU cannot compute these molecules, but was to generate their charges. Unset ACT_GPU_RESIDENT.");
+        }
+    }
+    if (!gpuEnergies.empty())
+    {
+        // Compute on the processor and compare at the end
+        onProcessor = true;
+        computeRelaxedEnergies(msghandler, pd, allmols, resetTheShells, separateInductionCorrection, computeForces);
+        onProcessor = false;
+        std::map<InteractionType, std::pair<double, double>> worst;
+        size_t g = 0;
+        for (auto molptr : allmols)
+        {
+            for (size_t what = 0; what < 3; what++, g++)
+            {
+                auto       &cpu = molptr->conformationData(what)->energies;
+                auto       &gpu = gpuEnergies[g];
+                for (auto itype : cpu.types())
+                {
+                    auto ec = cpu.find(itype);
+                    auto eg = gpu.find(itype);
+                    if (!ec.have || !eg.have)
+                    {
+                        continue;
+                    }
+                    for (size_t c = 0; c < cpu.nconf(); c++)
+                    {
+                        if (ec.has(c) && eg.has(c))
+                        {
+                            double rel = std::abs(ec.act[c] - eg.act[c])/(1 + std::abs(ec.act[c]));
+                            auto  &w   = worst[itype];
+                            if (rel > w.first)
+                            {
+                                w = { rel, ec.act[c] };
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        for (const auto &w : worst)
+        {
+            fprintf(stderr, "GPU resident check: %-22s largest relative difference %.2e (of %.6g)\n",
+                    interactionTypeToString(w.first).c_str(), w.second.first, w.second.second);
+        }
+        return;
+    }
     static const size_t timer = Timings::instance().index("Energy calculation overhead");
     ScopedTimer         scoped(timer);
     // Shells are relaxed using the forces
@@ -1544,6 +1816,13 @@ void ForceComputer::computeRelaxedEnergies(MsgHandler                  *msghandl
     computeEnergies(msghandler, pd, allmols, 0, forces, false, intermolecular, allForces); // Monomer 0
     computeEnergies(msghandler, pd, allmols, 1, forces, false, intermolecular, allForces); // Monomer 1
     computeEnergies(msghandler, pd, allmols, 2, forces, false, intermolecular, allForces); // Complete topology
+    // For developers, compare the first calculation with that of the GPU
+    static int gpuChecks = std::getenv("ACT_GPU_SYSTEM_CHECK") ? 3 : 0;
+    if (gpuChecks > 0)
+    {
+        gpuChecks -= 1;
+        (void) checkGpuSystem(pd, allmols);
+    }
 
     // Store the original (unrelaxed) energies so that we can extract the
     // induction later. Only terms that actually have an ACT energy are backed up.
@@ -1658,65 +1937,7 @@ void ForceComputer::computeRelaxedEnergies(MsgHandler                  *msghandl
         relaxDimer(msghandler, pd, ff, allmols, allForces);
     }
     
-    // Now post-process the energies to extract induction and allelec
-    for(const auto &molptr : allmols)
-    {
-        auto &mol = *molptr;
-        auto *dimer = &mol.conformationData(2)->energies;
-        ConformationEnergies *monomers[2] = { &mol.conformationData(0)->energies,
-                                              &mol.conformationData(1)->energies };
-        bool inter = intermolecular && mol.isDimer() && mol.topology()->hasIntermolecular();
-        if (mol.isDimer())
-        {
-            // First, subtract monomer energies from dimer energies,
-            // unless only the intermolecular interactions were computed
-            if (!inter)
-            {
-                subtractMonomers(dimer, monomers);
-            }
-            calcInduction(dimer);
-            // The induction correction from a potential, before the
-            // induction correction from the shells is added
-            auto correction = potentialCorrection(dimer);
-            if (doInduc2)
-            {
-                // Split the total induction into second order induction and
-                // the remaining higher order induction correction.
-                size_t k     = &molptr - allmols.data();
-                auto   eit   = dimer->find(InteractionType::INDUCTION);
-                std::vector<double> eInd(dimer->nconf(), 0.0);
-                for(size_t i = 0; i < dimer->nconf(); i++)
-                {
-                    if (eit.has(i))
-                    {
-                        eInd[i] = eit.act[i];
-                    }
-                }
-                auto induction   = dimer->add(InteractionType::INDUCTION);
-                auto icorrection = dimer->add(InteractionType::INDUCTIONCORRECTION);
-                for(size_t i = 0; i < dimer->nconf() && i < eInduc2[k].size(); i++)
-                {
-                    double ecorr = i < correction.size() ? correction[i] : 0.0;
-                    induction.set(i, eInduc2[k][i]);
-                    icorrection.set(i, ecorr + eInd[i] - eInduc2[k][i]);
-                }
-            }
-            if (!correction.empty())
-            {
-                addCorrection(dimer, correction, !separateInductionCorrection);
-            }
-        }
-        auto &tops = mol.fragmentHandler()->topologies();
-        for(size_t i = 0; i < tops.size() && !inter; i++)
-        {
-            calcInduction(monomers[i]);
-            auto correction = potentialCorrection(monomers[i]);
-            if (!correction.empty())
-            {
-                addCorrection(monomers[i], correction, false);
-            }
-        }
-    }
+    postProcessRelaxedEnergies(allmols, intermolecular, doInduc2, separateInductionCorrection, eInduc2);
     if (!allForces)
     {
         return;

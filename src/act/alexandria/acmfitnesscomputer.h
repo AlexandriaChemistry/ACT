@@ -83,6 +83,8 @@ private:
     std::vector<std::map<InteractionType, size_t>> filledVersion_;
     //! For each molecule, the parameter version that its charges were generated with
     std::vector<size_t>                            chargeVersion_;
+    //! The parameter version for which only the fixed charges were set, as the GPU generates the others
+    std::vector<size_t>                            fixedChargeVersion_;
     //! The timer of each DevComputer, see Timings
     std::vector<size_t>                            devTimers_;
     //! The loss function
