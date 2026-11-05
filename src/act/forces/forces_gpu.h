@@ -116,6 +116,32 @@ bool gpuPairEntry(gpu::PairKernel             kernel,
                   double                      epsilonr,
                   gpu::PairEntry             *pe);
 
+/*! \brief The GPU kernel of a bonded potential
+ * \param[in]  mypot  The potential
+ * \param[out] kernel The kernel
+ * \return false if the GPU has no kernel for it
+ */
+bool gpuBondedKernel(Potential mypot, gpu::BondedKernel *kernel);
+
+/*! \brief The parameters of a bonded interaction for the GPU
+ * As the explicit SIMD routines in forces_explicit_simd.cpp use them, and
+ * linearAngleOne in forces_simd.cpp. Unused particles are the first one.
+ * \param[in]  kernel The kernel, see gpuBondedKernel
+ * \param[in]  b      The interaction
+ * \param[out] be     The interaction for the GPU
+ */
+void gpuBondedEntry(gpu::BondedKernel kernel, const TopologyEntry &b, gpu::BondedEntry *be);
+
+/*! \brief A virtual site for the GPU
+ * The parents are ordered as the construction routines of vsitehandler.cpp
+ * get them, see constructStrided there.
+ * \param[in]  itype The type of virtual site
+ * \param[in]  b     The virtual site, the site the last particle
+ * \param[out] ve    The virtual site for the GPU
+ * \return false if the GPU cannot construct this type
+ */
+bool gpuVsiteEntry(InteractionType itype, const TopologyEntry &b, gpu::VsiteEntry *ve);
+
 /*! \brief Potentials of several molecules that are computed on the GPU at once
  * computeEnergies first adds the interactions of all molecules that the GPU
  * can compute, then computes them together, then uses the results where

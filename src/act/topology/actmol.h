@@ -409,6 +409,20 @@ public:
     
     //! \return the fragment handler
     const FragmentHandler *fragmentHandler() const { return &fraghandler_; }
+
+    //! \return which charges are equal by symmetry, an index for each particle
+    const std::vector<int> &symmetricCharges() const { return symmetric_charges_; }
+
+    /*! \brief Set only the fixed charges from the force field, when the GPU
+     * generates the others, see FragmentHandler::updateFixedCharges
+     * \param[in] pd        The force field
+     * \param[in] algorithm The charge generation algorithm
+     */
+    void updateFixedCharges(const ForceField *pd, ChargeGenerationAlgorithm algorithm)
+    {
+        fraghandler_.setChargeGenerationAlgorithm(algorithm);
+        fraghandler_.updateFixedCharges(pd, atoms());
+    }
     
     /*! \brief
      * \return atoms data

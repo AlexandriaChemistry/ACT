@@ -1,0 +1,127 @@
+/*
+ * This source file is part of the Alexandria Chemistry Toolkit.
+ *
+ * Copyright (C) 2026
+ *
+ * Developers:
+ *             Mohammad Mehdi Ghahremanpour,
+ *             Julian Marrades,
+ *             Marie-Madeleine Walz,
+ *             Paul J. van Maaren,
+ *             David van der Spoel (Project leader)
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor,
+ * Boston, MA  02110-1301, USA.
+ */
+/*! \internal \brief
+ * The topologies and conformations of all molecules of a process resident
+ * on the GPU, for computing the energies of relaxed shells, see
+ * ForceComputer::computeRelaxedEnergies, with little communication: per
+ * evaluation the parameters go to the GPU and the energies come back.
+ * \author David van der Spoel <david.vanderspoel@icm.uu.se>
+ */
+#ifndef ACT_FORCES_GPUSYSTEM_H
+#define ACT_FORCES_GPUSYSTEM_H
+
+#include <memory>
+#include <vector>
+
+#include "act/gpu/gpu.h"
+
+namespace alexandria
+{
+
+class ACTMol;
+class ForceComputer;
+class ForceField;
+
+/*! \brief All topologies of the molecules of a process on the GPU
+ * There is a block for each topology of each molecule: the monomers and,
+ * for dimers, the dimer, as computeEnergies computes them.
+ */
+class GpuTrainingSystem
+{
+public:
+    GpuTrainingSystem();
+    ~GpuTrainingSystem();
+    GpuTrainingSystem(const GpuTrainingSystem &) = delete;
+    GpuTrainingSystem &operator=(const GpuTrainingSystem &) = delete;
+
+    /*! \brief Make the system for these molecules, unless it was made already
+     * \param[in] pd               The force field
+     * \param[in] allmols          The molecules
+     * \param[in] maxShellDistance Largest distance of a shell from its parent, 0 for none
+     * \param[in] charges          Whether to generate the charges with SQE on the GPU,
+     *                             for the molecules that FragmentHandler::sqeOnGpu allows
+     * \param[in] fc               To construct the virtual sites of the structures the
+     *                             charges are generated for
+     * \return false if the GPU cannot compute these molecules, then nothing
+     *         else may be called
+     */
+    bool prepare(const ForceField *pd, const std::vector<ACTMol *> &allmols, double maxShellDistance,
+                 bool charges, const ForceComputer *fc);
+
+    /*! \brief Copy the parameters of the topologies to the GPU, and generate the charges there
+     * \param[in] pd The force field
+     * \param[in] fc To construct the virtual sites of the structures the charges are generated for
+     */
+    void updateParameters(const ForceField *pd, const ForceComputer *fc);
+
+    /*! \brief The largest difference between the charges on the GPU and those of the molecules
+     * \return the difference and the charge, for ACT_GPU_RESIDENT_CHECK
+     */
+    std::pair<double, double> chargeDifference() const;
+
+    /*! \brief Copy the charges generated on the GPU to the molecules and their fragments,
+     * for the processor, for instance for BoundsDevComputer
+     */
+    void copyChargesToMolecules();
+
+    //! Put the shells on their parents, as ForceComputer::computeRelaxedEnergies
+    void resetShells();
+
+    //! Construct the virtual sites
+    void constructVsites();
+
+    /*! \brief Compute all interactions, the energies go to the conformation data
+     * \param[in] what 0 or 1 for the monomers, 2 for the dimers, -1 for all
+     */
+    void compute(int what);
+
+    /*! \brief Relax the shells
+     * \param[in]  what         -1 for both monomers, 2 for the dimers
+     * \param[in]  relaxMonomer For dimers, whether to relax the shells of each monomer
+     * \param[in]  settings     The settings
+     * \return the number of conformations computed in all iterations
+     */
+    size_t relax(int what, const bool relaxMonomer[2], const gpu::RelaxSettings &settings);
+
+    //! Copy the shells of the relaxed monomers to the dimers, as copyRelaxedMonomerShells
+    void copyRelaxedMonomerShells();
+
+    //! Keep the coordinates of the dimers
+    void saveDimers();
+
+    //! Restore the coordinates of the dimers kept by saveDimers
+    void restoreDimers();
+
+private:
+    class Impl;
+    std::unique_ptr<Impl> impl_;
+};
+
+} // namespace alexandria
+
+#endif

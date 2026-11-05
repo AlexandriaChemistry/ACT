@@ -109,7 +109,10 @@ enum class PairKernel : uint32_t
 //! Number of energy terms of the pair potentials, at most
 constexpr int pairEnergyTerms = 3;
 
-//! A pair interaction with prepared parameters, see PairKernel
+/*! \brief A pair interaction with prepared parameters, see PairKernel
+ * For the potentials other than Coulomb, a nonzero p[7] marks an
+ * interaction without parameters, which has no energy and force.
+ */
 struct PairEntry
 {
     //! The first particle
@@ -301,6 +304,382 @@ bool relaxShells(const RelaxMolecule *mols,
                  const RelaxSettings &settings,
                  size_t              *nComputed,
                  bool                *notFinite);
+
+//! The bonded potentials of the GPU, see bondedInteraction in sycl/bondedkernels.h
+enum class BondedKernel : uint32_t
+{
+    //! Harmonic angle i-j-k: force constant p[0], angle p[1] in radians
+    HarmonicAngle,
+    //! Linear angle i-j-k: a p[0], force constant p[1]
+    LinearAngle,
+    //! Fourier dihedral i-j-k-l: coefficients p[0..5], their number p[6]
+    FourierDihedral,
+    //! Harmonic improper dihedral i-j-k-l: force constant p[0]
+    HarmonicDihedral
+};
+
+//! A bonded interaction with prepared parameters, see BondedKernel
+struct BondedEntry
+{
+    //! The particles, three for angles
+    uint32_t a[4];
+    //! The parameters
+    float    p[8];
+};
+
+//! How a virtual site is constructed from its parents, see vsitePosition in sycl/bondedkernels.h
+enum class VsiteKind : uint32_t
+{
+    //! On the first parent
+    Copy,
+    //! On the line of two parents: a p[0]
+    Linear2,
+    //! At a fixed distance p[0] from the first parent towards the second
+    Fd2,
+    //! In the plane of three parents: a p[0], b p[1]
+    Linear3,
+    //! In the plane of three parents at a fixed distance: a p[0], b p[1]
+    Fd3,
+    //! Out of the plane of three parents: a p[0], b p[1], c p[2] including the sign
+    Out3,
+    //! A combination of four parents: a p[0], b p[1], c p[2]
+    Linear4
+};
+
+/*! \brief A virtual site with prepared parameters
+ * The parents are ordered as the construction routines of vsitehandler.cpp
+ * get them, such that the site is constructed relative to the first.
+ */
+struct VsiteEntry
+{
+    //! The construction
+    VsiteKind kind;
+    //! Number of parents
+    uint32_t  nparent;
+    //! The parents
+    uint32_t  parent[4];
+    //! The site
+    uint32_t  site;
+    //! The parameters
+    float     p[3];
+};
+
+/*! \brief A list of interactions of one potential in a block, see SystemBlock
+ * The interactions without shells are computed once for each calculation,
+ * those with shells also in each iteration of relaxing the shells.
+ */
+struct InteractionList
+{
+    //! Whether the interactions are bonded, otherwise pairs
+    bool               bonded;
+    //! The potential, a PairKernel or a BondedKernel
+    uint32_t           kernel;
+    //! Whether these are interactions with shells
+    bool               shells;
+    //! The energy array of the block that the energies are added to, one per interaction type
+    uint32_t           energyIndex;
+    //! Number of interactions
+    size_t             n;
+    //! The pair interactions, if not bonded
+    const PairEntry   *pairs;
+    //! The bonded interactions, if bonded
+    const BondedEntry *bonds;
+    /*! \brief The row of each interaction in the parameter table of the list, see updateParameters
+     * Not used for Coulomb, of which the parameters follow from the charges.
+     * May be nullptr if the parameters are only given with the interactions.
+     */
+    const uint32_t    *index  = nullptr;
+    //! Number of rows of the parameter table
+    size_t             ntable = 0;
+};
+
+/*! \brief A topology and its conformations, resident on the GPU, see createSystem
+ * The layout is that of computeExplicitSimd, see PairBatchBlock.
+ */
+struct SystemBlock
+{
+    //! Number of particles
+    size_t                 natom;
+    //! Distance between the rows of the coordinates
+    size_t                 stride;
+    //! Number of slots, the conformations
+    size_t                 nslot;
+    //! The coordinates
+    const int64_t         *x;
+    //! The interactions
+    const InteractionList *lists;
+    //! Number of these
+    size_t                 nlist;
+    //! Number of energy arrays, the interaction types with energies
+    size_t                 nenergy;
+    //! The virtual sites, in the order to construct them
+    const VsiteEntry      *vsites;
+    //! Number of these
+    size_t                 nvsite;
+    //! The shells in the convergence criterion of all fragments, see ShellFragment
+    const ForceShell      *forceShells;
+    //! The shells that move of all fragments
+    const MovingShell     *movingShells;
+    //! The fragments whose shells can be relaxed, their shells index the arrays above
+    const ShellFragment   *fragments;
+    //! Number of these
+    size_t                 nfragment;
+    //! The shells with one parent and the parent, to put them on their parents, two per shell
+    const uint32_t        *shellParents;
+    //! Number of these shells
+    size_t                 nshellParent;
+};
+
+//! The data of a system resident on the GPU, see createSystem
+class System;
+
+/*! \brief Copy topologies and their conformations to the GPU
+ * They stay there until destroySystem. The parameters of the interactions
+ * can be changed with updateList, the coordinates of the slots are changed
+ * on the GPU only, by virtual sites and shells.
+ * \param[in] blocks The topologies
+ * \param[in] nblock Number of these
+ * \return the system, or nullptr if the GPU is not available
+ */
+System *createSystem(const SystemBlock *blocks, size_t nblock);
+
+//! Free the memory of a system on the GPU
+void destroySystem(System *system);
+
+/*! \brief Replace the interactions of a list, with new parameters
+ * \param[in] system The system
+ * \param[in] block  The block
+ * \param[in] list   The list of the block
+ * \param[in] pairs  The pair interactions, if the list has pairs
+ * \param[in] bonds  The bonded interactions, if the list has those
+ * \param[in] n      Their number, which has to be that of createSystem
+ */
+void updateList(System *system, size_t block, size_t list,
+                const PairEntry *pairs, const BondedEntry *bonds, size_t n);
+
+/*! \brief Replace the moving shells of a block, with new force constants
+ * \param[in] system The system
+ * \param[in] block  The block
+ * \param[in] shells The moving shells of all fragments, as for createSystem
+ * \param[in] n      Their number, which has to be that of createSystem
+ */
+void updateShells(System *system, size_t block, const MovingShell *shells, size_t n);
+
+/*! \brief Set the parameters of all interactions of a system, with one upload
+ *
+ * The parameters of each interaction are a row of the table of its list,
+ * see InteractionList::index, except for Coulomb, of which they are
+ * computed on the device from the charges and widths of the particles,
+ * as gpuPairEntry does.
+ * \param[in] sys      The system
+ * \param[in] tables   The rows of 8 parameters of the tables of all lists
+ *                     of all blocks, in the order of createSystem
+ * \param[in] charges  For all particles of all blocks in order: the charge,
+ *                     the second charge and the widths of both, 4 per particle
+ * \param[in] coulomb  The Coulomb constant, ONE_4PI_EPS0
+ * \param[in] epsilonr The relative dielectric constant
+ */
+void updateParameters(System *sys, const float *tables, const double *charges,
+                      double coulomb, double epsilonr);
+
+/*! \brief Replace the moving shells of all blocks, in the order of createSystem
+ * \param[in] sys    The system
+ * \param[in] shells The moving shells
+ * \param[in] n      Their number, which must not change
+ */
+void updateMovingShells(System *sys, const MovingShell *shells, size_t n);
+
+/*! \brief Replace the virtual sites of all blocks, in the order of createSystem
+ * \param[in] sys    The system
+ * \param[in] vsites The virtual sites
+ * \param[in] n      Their number, which must not change
+ */
+void updateVsites(System *sys, const VsiteEntry *vsites, size_t n);
+
+//! No block, see AcmMolecule
+constexpr uint32_t noBlock = 0xffffffff;
+
+//! No parameter, zero, see AcmSystem
+constexpr uint32_t noValue = 0xffffffff;
+
+//! A fragment whose charges are generated on the GPU, see QgenAcm::solveSQE
+struct AcmFragment
+{
+    //! Number of particles
+    uint32_t natom;
+    //! Its first particle in the molecule
+    uint32_t atomStart;
+    //! The first particle of its molecule, AcmMolecule::firstAtom
+    uint32_t moleculeAtom;
+    //! The block of the fragment alone
+    uint32_t block;
+    //! The particles whose charges are generated, in AcmSystem::acmParticles
+    uint32_t firstAcm, nacm;
+    //! The bonds, in AcmSystem::bonds
+    uint32_t firstBond, nbond;
+    //! The fixed charges, in AcmSystem::fixedValues
+    uint32_t firstFixed, nfixed;
+    //! The total charge
+    int32_t  qtotal;
+};
+
+//! A molecule whose charges are generated on the GPU
+struct AcmMolecule
+{
+    //! Number of particles
+    uint32_t natom;
+    //! Its first particle in AcmSystem::symmetry
+    uint32_t firstAtom;
+    //! Its fragments, in AcmSystem::fragments
+    uint32_t firstFragment, nfragment;
+    //! The block with all fragments, or noBlock
+    uint32_t dimerBlock;
+};
+
+//! Charge generation with SQE on the GPU, see createAcm
+struct AcmSystem
+{
+    const AcmMolecule *molecules;
+    size_t             nmolecule;
+    const AcmFragment *fragments;
+    size_t             nfragment;
+    //! The particles in their fragment whose charges are generated
+    const uint32_t    *acmParticles;
+    size_t             nacm;
+    //! The coordinates in nm of the ACM particles in the structure the charges are for
+    const double      *x;
+    //! For each ACM particle its electronegativity, hardness and width in the values, see updateAcm
+    const uint32_t    *particleValues;
+    //! The two particles of each bond, as indices in the ACM particles of their fragment
+    const uint32_t    *bonds;
+    size_t             nbond;
+    //! For each bond its electronegativity difference and hardness in the values
+    const uint32_t    *bondValues;
+    //! For each bond the factor of its electronegativity difference
+    const double      *bondFactors;
+    //! The fixed charges of the fragments in the values
+    const uint32_t    *fixedValues;
+    size_t             nfixed;
+    //! Number of values, see updateAcm
+    size_t             nvalue;
+    //! For each particle of each molecule which charges are equal, see apply_symmetrized_charges
+    const int32_t     *symmetry;
+    //! Gaussian charges, otherwise point charges
+    bool               gaussian;
+    //! The Coulomb constant ONE_4PI_EPS0 and the electron volt ELECTRONVOLT, as in QgenAcm::calcJ
+    double             coulomb;
+    double             electronVolt;
+};
+
+/*! \brief Generate the charges with SQE on the GPU from now on
+ *
+ * In updateParameters, after uploading the charges, the charges of the
+ * ACM particles are generated, made symmetric and stored in the blocks
+ * of their fragments and molecule, before the Coulomb parameters follow.
+ * \param[in] sys The system
+ * \param[in] acm The molecules and their fragments
+ */
+void createAcm(System *sys, const AcmSystem &acm);
+
+/*! \brief Set the values of the parameters of the charge generation, used by the next updateParameters
+ * \param[in] sys    The system
+ * \param[in] values The force field parameters that AcmSystem refers to
+ */
+void updateAcm(System *sys, const double *values);
+
+/*! \brief Set the coordinates of the ACM particles, see AcmSystem::x
+ * \param[in] sys The system
+ * \param[in] x   Three per ACM particle
+ */
+void updateAcmCoordinates(System *sys, const double *x);
+
+/*! \brief Download the charges and widths, as updateParameters takes them
+ * \param[in]  sys     The system
+ * \param[out] charges Four per particle of all blocks
+ */
+void downloadCharges(System *sys, double *charges);
+
+/*! \brief Download the generated charges of the molecules of createAcm
+ * \param[in]  sys     The system
+ * \param[out] charges For each molecule from AcmMolecule::firstAtom on, the charge of each particle
+ */
+void downloadAcmCharges(System *sys, double *charges);
+
+/*! \brief Construct the virtual sites of the slots of the blocks
+ * \param[in] system The system
+ */
+void constructVsites(System *system);
+
+/*! \brief Compute all interactions of all slots of all blocks
+ * The forces stay on the GPU. The energies of each energy array of each
+ * block, term t of slot c at (e*pairEnergyTerms + t)*stride + c for energy
+ * array e, are written to energies[b] for block b.
+ * \param[in]  system   The system
+ * \param[out] energies The energies of each block
+ */
+void computeAll(System *system, double *const *energies);
+
+/*! \brief Compute all interactions of the slots of some blocks
+ * As computeAll, for the blocks with use set, the others are not changed.
+ * \param[in]  system   The system
+ * \param[in]  use      Whether to compute each block
+ * \param[out] energies The energies of each block computed
+ */
+void computeBlocks(System *system, const char *use, double *const *energies);
+
+/*! \brief Put the shells on their parents, see SystemBlock::shellParents
+ * \param[in] system The system
+ * \param[in] use    Whether to do this for each block
+ */
+void resetShells(System *system, const char *use);
+
+/*! \brief Relax the shells of some blocks, as relaxShells
+ * The forces and coordinates are those on the GPU, the energies are not
+ * computed, see computeBlocks.
+ * \param[in]  system    The system
+ * \param[in]  use       Whether to relax each block
+ * \param[in]  relax     For each block, whether to relax the shells of each
+ *                        fragment, two per block
+ * \param[in]  settings  The settings
+ * \param[out] nComputed The number of slots computed in all iterations
+ * \param[out] notFinite Whether a displacement was not finite
+ */
+void relaxBlocks(System *system, const char *use, const char *relax,
+                 const RelaxSettings &settings, size_t *nComputed, bool *notFinite);
+
+/*! \brief Copy the coordinates of particles from one block to another, in all slots
+ * As copyRelaxedMonomerShells in forcecomputer.cpp, which copies the shells
+ * of a monomer to the dimer.
+ * \param[in] system The system
+ * \param[in] from   The block to copy from
+ * \param[in] to     The block to copy to
+ * \param[in] pairs  The particle in from and in to of each coordinate to copy, two each
+ * \param[in] n      Number of particles
+ * \param[in] slots  For each slot of to, the slot of from with the same conformation
+ */
+void copyCoordinates(System *system, size_t from, size_t to, const uint32_t *pairs, size_t n,
+                     const uint32_t *slots);
+
+/*! \brief Keep the coordinates of a block, to restore them with restoreCoordinates
+ * \param[in] system The system
+ * \param[in] block  The block
+ */
+void saveCoordinates(System *system, size_t block);
+
+/*! \brief Restore the coordinates of a block that saveCoordinates kept
+ * \param[in] system The system
+ * \param[in] block  The block
+ */
+void restoreCoordinates(System *system, size_t block);
+
+/*! \brief Copy the coordinates and forces of a block to the host
+ * For the slots, in the layout of SystemBlock::x.
+ * \param[in]  system The system
+ * \param[in]  block  The block
+ * \param[out] x      The coordinates
+ * \param[out] f      The forces, if not nullptr
+ */
+void downloadBlock(System *system, size_t block, int64_t *x, float *f);
 
 } // namespace gpu
 

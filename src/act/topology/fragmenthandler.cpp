@@ -190,6 +190,53 @@ void FragmentHandler::fetchCharges(MsgHandler *msg_handler, std::vector<double> 
     }
 }
 
+bool FragmentHandler::sqeOnGpu(const ForceField *pd) const
+{
+    if (fixedQ_ || algorithm_ != ChargeGenerationAlgorithm::SQE)
+    {
+        return fixedQ_;
+    }
+    for (size_t ff = 0; ff < QgenAcm_.size(); ++ff)
+    {
+        if (!QgenAcm_[ff].sqeOnGpu(pd, bonds_[ff]))
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
+const std::vector<int> &FragmentHandler::acmParticles(size_t ff) const
+{
+    static const std::vector<int> none;
+    return fixedQ_ ? none : QgenAcm_[ff].acmParticles();
+}
+
+void FragmentHandler::updateFixedCharges(const ForceField *pd, std::vector<ActAtom> *atoms)
+{
+    for (size_t ff = 0; ff < topologies_.size(); ++ff)
+    {
+        auto ta = topologies_[ff].atomsPtr();
+        if (!fixedQ_)
+        {
+            QgenAcm_[ff].updateFixedCharges(ta);
+        }
+        for (size_t a = 0; a < ta->size(); a++)
+        {
+            auto &fa = (*ta)[a];
+            auto &ca = (*atoms)[atomStart_[ff]+a];
+            ca.setCharge(fa.charge());
+            ca.setChargeVS(fa.chargeVS(), fa.zetaVS(), fa.rowVS());
+            if (pd->hasParticleType(fa.ffType()))
+            {
+                double zeta = pd->findParticleType(fa.ffType())->zeta();
+                fa.setZeta(zeta);
+                ca.setZeta(zeta);
+            }
+        }
+    }
+}
+
 eQgen FragmentHandler::generateCharges(MsgHandler                   *msg_handler,
                                        const std::string            &molname,
                                        const std::vector<gmx::RVec> &x,

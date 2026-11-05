@@ -67,6 +67,82 @@ bool relaxShells(const RelaxMolecule *, size_t, const RelaxSettings &, size_t *,
     return false;
 }
 
+class System
+{
+};
+
+System *createSystem(const SystemBlock *, size_t)
+{
+    return nullptr;
+}
+
+void destroySystem(System *system)
+{
+    delete system;
+}
+
+void updateList(System *, size_t, size_t, const PairEntry *, const BondedEntry *, size_t)
+{
+}
+
+void updateShells(System *, size_t, const MovingShell *, size_t)
+{
+}
+
+void updateParameters(System *, const float *, const double *, double, double) {}
+
+void updateMovingShells(System *, const MovingShell *, size_t) {}
+
+void updateVsites(System *, const VsiteEntry *, size_t) {}
+
+void createAcm(System *, const AcmSystem &) {}
+
+void updateAcm(System *, const double *) {}
+
+void updateAcmCoordinates(System *, const double *) {}
+
+void downloadCharges(System *, double *) {}
+
+void downloadAcmCharges(System *, double *) {}
+
+void constructVsites(System *)
+{
+}
+
+void computeAll(System *, double *const *)
+{
+}
+
+void computeBlocks(System *, const char *, double *const *)
+{
+}
+
+void resetShells(System *, const char *)
+{
+}
+
+void relaxBlocks(System *, const char *, const char *, const RelaxSettings &, size_t *nComputed, bool *notFinite)
+{
+    *nComputed = 0;
+    *notFinite = false;
+}
+
+void copyCoordinates(System *, size_t, size_t, const uint32_t *, size_t, const uint32_t *)
+{
+}
+
+void saveCoordinates(System *, size_t)
+{
+}
+
+void restoreCoordinates(System *, size_t)
+{
+}
+
+void downloadBlock(System *, size_t, int64_t *, float *)
+{
+}
+
 bool computePairBlocks(const PairBatchBlock *, size_t, bool)
 {
     return false;

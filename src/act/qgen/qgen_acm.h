@@ -127,8 +127,43 @@ public:
      * \param[in] qtotal The new total charge
      */
     void setQtotal(int qtotal) { qtotal_ = qtotal; }
-    
-    
+
+    /*! \brief Whether generateCharges would use SQE with bond corrections
+     * and Gaussian or point charges, as the GPU supports it
+     * \param[in] pd    Force field information
+     * \param[in] bonds The bonds of this compound
+     * \return true if so, also for compounds without charges to generate
+     */
+    bool sqeOnGpu(const ForceField *pd, const std::vector<Bond> &bonds) const;
+
+    //! The particles whose charges are generated
+    const std::vector<int> &acmParticles() const { return nonFixed_; }
+
+    //! Where the SQE parameters of a compound come from, see sqeSources
+    struct SqeSources
+    {
+        //! For each ACM particle its electronegativity, hardness and width, nullptr for zero
+        std::vector<const ForceFieldParameter *> chi, eta, zeta;
+        //! For each bond the electronegativity difference and hardness, nullptr for zero
+        std::vector<const ForceFieldParameter *> dchi, deta;
+        //! For each bond the factor of the electronegativity difference
+        std::vector<double>                      dchiFactor;
+        //! The fixed charges, including the second charges, in the order of solveSQE
+        std::vector<const ForceFieldParameter *> fixedCharges;
+    };
+
+    /*! \brief The force field parameters that solveSQE uses
+     * \param[out] src    The parameters
+     * \param[in]  nbonds Number of bonds
+     */
+    void sqeSources(SqeSources *src, size_t nbonds) const;
+
+    /*! \brief Set only the fixed charges and the second charges of the
+     * particles from the force field, when the GPU generates the others
+     * \param[inout] atoms The particles
+     */
+    void updateFixedCharges(std::vector<ActAtom> *atoms);
+
 private:
     /*! \brief Write debug information
      * \param[in] msg_handler To write to

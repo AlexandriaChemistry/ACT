@@ -214,6 +214,137 @@ bool gpuPairEntry(gpu::PairKernel             kernel,
     return false;
 }
 
+bool gpuBondedKernel(Potential mypot, gpu::BondedKernel *kernel)
+{
+    switch (mypot)
+    {
+    case Potential::HARMONIC_ANGLES:    *kernel = gpu::BondedKernel::HarmonicAngle; return true;
+    case Potential::LINEAR_ANGLES:      *kernel = gpu::BondedKernel::LinearAngle; return true;
+    case Potential::FOURIER_DIHEDRALS:  *kernel = gpu::BondedKernel::FourierDihedral; return true;
+    case Potential::HARMONIC_DIHEDRALS: *kernel = gpu::BondedKernel::HarmonicDihedral; return true;
+    default:                            return false;
+    }
+}
+
+void gpuBondedEntry(gpu::BondedKernel kernel, const TopologyEntry &b, gpu::BondedEntry *be)
+{
+    const auto &ind    = b.atomIndices();
+    const auto &params = b.params();
+    for (int k = 0; k < 4; k++)
+    {
+        be->a[k] = static_cast<uint32_t>(k < static_cast<int>(ind.size()) ? ind[k] : ind[0]);
+    }
+    std::fill(be->p, be->p + 8, 0.0f);
+    switch (kernel)
+    {
+    case gpu::BondedKernel::HarmonicAngle:
+        be->p[0] = static_cast<float>(params[angleKT]);
+        be->p[1] = static_cast<float>(params[angleANGLE]);
+        break;
+    case gpu::BondedKernel::LinearAngle:
+        be->p[0] = static_cast<float>(params[linangA]);
+        be->p[1] = static_cast<float>(params[linangKLIN]);
+        break;
+    case gpu::BondedKernel::FourierDihedral:
+    {
+        size_t n = std::min(params.size(), static_cast<size_t>(fdihNR));
+        for (size_t k = 0; k < n; k++)
+        {
+            be->p[k] = static_cast<float>(params[k]);
+        }
+        be->p[6] = static_cast<float>(n);
+        break;
+    }
+    case gpu::BondedKernel::HarmonicDihedral:
+        be->p[0] = static_cast<float>(params[idihKPHI]);
+        break;
+    }
+}
+
+bool gpuVsiteEntry(InteractionType itype, const TopologyEntry &b, gpu::VsiteEntry *ve)
+{
+    const auto &ai     = b.atomIndices();
+    const auto &params = b.params();
+    if (ai.empty() || params.empty())
+    {
+        return false;
+    }
+    std::fill(ve->p, ve->p + 3, 0.0f);
+    std::fill(ve->parent, ve->parent + 4, 0u);
+    ve->site    = static_cast<uint32_t>(ai.back());
+    ve->nparent = static_cast<uint32_t>(ai.size() - 1);
+    for (size_t k = 0; k + 1 < ai.size(); k++)
+    {
+        ve->parent[k] = static_cast<uint32_t>(ai[k]);
+    }
+    // The second parent first, for the routines that get it first
+    auto secondFirst = [ve]() { std::swap(ve->parent[0], ve->parent[1]); };
+    switch (itype)
+    {
+    case InteractionType::VSITE1:
+        ve->kind = gpu::VsiteKind::Copy;
+        return true;
+    case InteractionType::VSITE2:
+        ve->kind = gpu::VsiteKind::Linear2;
+        ve->p[0] = params[vsite2A];
+        return true;
+    case InteractionType::VSITE2FD:
+        ve->kind = gpu::VsiteKind::Fd2;
+        ve->p[0] = params[vsite2fdA];
+        return true;
+    case InteractionType::VSITE3:
+        ve->kind = gpu::VsiteKind::Linear3;
+        ve->p[0] = params[vsite3A];
+        ve->p[1] = params[vsite3B];
+        return true;
+    case InteractionType::VSITE3S:
+        ve->kind = gpu::VsiteKind::Linear3;
+        ve->p[0] = params[vsite3sA];
+        ve->p[1] = params[vsite3sA];
+        return true;
+    case InteractionType::VSITE3FD:
+        ve->kind = gpu::VsiteKind::Fd3;
+        ve->p[0] = params[vsite3fdA];
+        ve->p[1] = params[vsite3fdB];
+        return true;
+    case InteractionType::VSITE3OUT:
+        ve->kind = gpu::VsiteKind::Out3;
+        ve->p[0] = params[vsite3outA];
+        ve->p[1] = params[vsite3outB];
+        ve->p[2] = static_cast<const Vsite3OUT *>(b.self())->sign()*params[vsite3outC];
+        secondFirst();
+        return true;
+    case InteractionType::VSITE3OUTS:
+        ve->kind = gpu::VsiteKind::Out3;
+        ve->p[0] = params[vsite3outsA];
+        ve->p[1] = params[vsite3outsA];
+        ve->p[2] = static_cast<const Vsite3OUT *>(b.self())->sign()*params[vsite3outsC];
+        secondFirst();
+        return true;
+    case InteractionType::VSITE4:
+        ve->kind = gpu::VsiteKind::Linear4;
+        ve->p[0] = params[vsite4A];
+        ve->p[1] = params[vsite4B];
+        ve->p[2] = params[vsite4C];
+        return true;
+    case InteractionType::VSITE4S:
+        ve->kind = gpu::VsiteKind::Linear4;
+        ve->p[0] = params[vsite4sA];
+        ve->p[1] = params[vsite4sB];
+        ve->p[2] = params[vsite4sB];
+        return true;
+    case InteractionType::VSITE4S3:
+        ve->kind = gpu::VsiteKind::Linear4;
+        ve->p[0] = params[vsite4s3A];
+        ve->p[1] = params[vsite4s3A];
+        ve->p[2] = params[vsite4s3A];
+        secondFirst();
+        return true;
+    default:
+        return false;
+    }
+}
+
 /*! \brief The interactions with prepared parameters for the GPU, see gpuPairEntry
  * \param[in]  kernel   The kernel
  * \param[in]  entries  The interactions

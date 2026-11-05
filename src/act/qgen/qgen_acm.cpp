@@ -717,6 +717,57 @@ void QgenAcm::solveSQE(MsgHandler              *msg_handler,
     }
 }
 
+bool QgenAcm::sqeOnGpu(const ForceField *pd, const std::vector<Bond> &bonds) const
+{
+    if (nonFixed_.empty())
+    {
+        return true;
+    }
+    return (eQgen::OK == eQGEN_ &&
+            pd->interactionPresent(InteractionType::BONDCORRECTIONS) &&
+            pd->chargeGenerationAlgorithm() == ChargeGenerationAlgorithm::SQE &&
+            (ChargeDistributionType_ == ChargeDistributionType::Gaussian ||
+             ChargeDistributionType_ == ChargeDistributionType::Point) &&
+            (bcc_.empty() || bcc_.size() == bonds.size()));
+}
+
+void QgenAcm::sqeSources(SqeSources *src, size_t nbonds) const
+{
+    for (auto nfi : nonFixed_)
+    {
+        src->chi.push_back(&acm_id_[nfi]->find("chi")->second);
+        src->eta.push_back(&acm_id_[nfi]->find("eta")->second);
+        src->zeta.push_back(qdist_id_.empty() ? nullptr : qdist_id_[nfi]);
+    }
+    for (size_t b = 0; b < nbonds; b++)
+    {
+        bool bcc = bcc_.size() == nbonds;
+        src->dchi.push_back(bcc ? &bcc_[b]->find("delta_chi")->second : nullptr);
+        src->deta.push_back(bcc ? &bcc_[b]->find("delta_eta")->second : nullptr);
+        src->dchiFactor.push_back(bcc ? dchi_factor_[b] : 0.0);
+    }
+    for (size_t i = 0; i < fixed_.size(); i++)
+    {
+        src->fixedCharges.push_back(charge_[i]);
+    }
+}
+
+void QgenAcm::updateFixedCharges(std::vector<ActAtom> *atoms)
+{
+    updateParameters();
+    for (auto i : fixed_)
+    {
+        if (static_cast<size_t>(i) < natom_)
+        {
+            (*atoms)[i].setCharge(q_[i]);
+        }
+    }
+    for (size_t k = 0; k < parentVS_.size(); k++)
+    {
+        (*atoms)[parentVS_[k]].setChargeVS(q_[natom_+k], typeVS_[k]->zetaVS(), typeVS_[k]->rowVS());
+    }
+}
+
 eQgen QgenAcm::generateCharges(MsgHandler                   *msg_handler,
                                const std::string            &molname,
                                const ForceField             *pd,
