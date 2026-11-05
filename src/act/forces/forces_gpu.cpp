@@ -38,8 +38,9 @@
 #include <cstdlib>
 #include <type_traits>
 
-#include "act/gpu/gpu.h"
+#include "act/utility/timings.h"
 #include "gromacs/math/units.h"
+#include "gromacs/utility/gmxassert.h"
 
 namespace alexandria
 {
@@ -122,6 +123,91 @@ size_t setGpuMinimumWork(size_t work)
     size_t before = minimumWork();
     minimumWork() = work;
     return before;
+}
+
+bool GpuBatch::canCompute(Potential mypot)
+{
+    return (gpu::useGpu() &&
+            (Potential::COULOMB_POINT == mypot || Potential::COULOMB_GAUSSIAN == mypot));
+}
+
+void GpuBatch::clear()
+{
+    ntask_    = 0;
+    computed_ = false;
+}
+
+void GpuBatch::add(Potential                   mypot,
+                   TopologyEntryRange          entries,
+                   const std::vector<ActAtom> &atoms,
+                   double                      epsilonr,
+                   size_t                      stride,
+                   size_t                      nslot,
+                   const Coordinate           *x)
+{
+    GMX_RELEASE_ASSERT(canCompute(mypot), "The GPU cannot compute this potential");
+    if (ntask_ == tasks_.size())
+    {
+        tasks_.emplace_back();
+    }
+    auto &t  = tasks_[ntask_++];
+    t.natom  = atoms.size();
+    t.stride = stride;
+    t.nslot  = nslot;
+    t.x      = x;
+    prepareCoulomb(entries, atoms, epsilonr, &t.pairs);
+    computed_ = false;
+}
+
+bool GpuBatch::compute(bool forces)
+{
+    computed_ = false;
+    forces_   = forces;
+    size_t work = 0;
+    for (size_t k = 0; k < ntask_; k++)
+    {
+        work += tasks_[k].pairs.size()*tasks_[k].nslot;
+    }
+    if (ntask_ == 0 || work < gpuMinimumWork())
+    {
+        return false;
+    }
+    static const size_t timer = Timings::instance().index("GPU pair potentials");
+    ScopedTimer         scoped(timer);
+    std::vector<gpu::CoulombBlock> blocks(ntask_);
+    for (size_t k = 0; k < ntask_; k++)
+    {
+        auto &t = tasks_[k];
+        t.energies.assign(t.nslot, 0.0);
+        if (forces)
+        {
+            t.f.assign(3*t.natom*t.stride, 0.0f);
+        }
+        blocks[k] = { t.natom, t.stride, t.nslot, t.x, t.pairs.data(), t.pairs.size(),
+                      forces ? t.f.data() : nullptr, t.energies.data() };
+    }
+    computed_ = gpu::computeCoulombBlocks(blocks.data(), blocks.size(), forces);
+    return computed_;
+}
+
+void GpuBatch::addResults(size_t k, float *f, double *energies) const
+{
+    GMX_RELEASE_ASSERT(computed_ && k < ntask_, "No results for this task");
+    const auto &t = tasks_[k];
+    for (size_t c = 0; c < t.nslot; c++)
+    {
+        energies[c] += t.energies[c];
+    }
+    if (forces_)
+    {
+        for (size_t i = 0; i < 3*t.natom; i++)
+        {
+            for (size_t c = 0; c < t.nslot; c++)
+            {
+                f[i*t.stride + c] += t.f[i*t.stride + c];
+            }
+        }
+    }
 }
 
 bool computeGpu(Potential                   mypot,

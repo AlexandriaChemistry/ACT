@@ -57,6 +57,11 @@ bool setUseGpu(bool)
     return false;
 }
 
+bool computeCoulombBlocks(const CoulombBlock *, size_t, bool)
+{
+    return false;
+}
+
 bool computeCoulomb(size_t, size_t, size_t, const int64_t *, const CoulombPair *, size_t,
                     float *, double *, bool)
 {
