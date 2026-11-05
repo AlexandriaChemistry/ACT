@@ -901,6 +901,66 @@ TEST_F(ForcesSimdTest, CoulombGaussianSecondChargesGpu)
     compareGpu(Potential::COULOMB_GAUSSIAN, makeEntries(pairs({ 12, 9 })), 1);
 }
 
+// Test: several molecules computed at once on the GPU, with different
+// strides and numbers of slots, give the same results as each alone
+TEST_F(ForcesSimdTest, CoulombGaussianBatchGpu)
+{
+    if (!gpu::useGpu())
+    {
+        // Needs a GPU
+        return;
+    }
+    setWidths(pairs({ 12, 9 }));
+    auto   entries = makeEntries(pairs({ 12, 9 }));
+    size_t stride;
+    auto   x1      = manyArrays<float>(&stride);
+    // The second molecule has a larger stride and its conformations in
+    // the reverse order
+    size_t stride2 = stride + 8;
+    std::vector<Coordinate> x2(DIM*atoms_.size()*stride2, 0);
+    for (size_t row = 0; row < DIM*atoms_.size(); row++)
+    {
+        for (size_t c = 0; c < stride; c++)
+        {
+            x2[row*stride2 + c] = x1[row*stride + stride - 1 - c];
+        }
+    }
+    size_t minWork = setGpuMinimumWork(0);
+    // Each alone
+    std::vector<float>  f1(x1.size(), 0), f2(x2.size(), 0);
+    std::vector<double> e1(stride, 0), e2(stride2, 0);
+    ASSERT_TRUE(computeGpu(Potential::COULOMB_GAUSSIAN, entries, atoms_, 1, stride, stride,
+                           x1.data(), f1.data(), e1.data(), true));
+    ASSERT_TRUE(computeGpu(Potential::COULOMB_GAUSSIAN, entries, atoms_, 1, stride2, stride - 3,
+                           x2.data(), f2.data(), e2.data(), true));
+    // Together, the first molecule twice
+    GpuBatch batch;
+    batch.add(Potential::COULOMB_GAUSSIAN, entries, atoms_, 1, stride, stride, x1.data());
+    batch.add(Potential::COULOMB_GAUSSIAN, entries, atoms_, 1, stride2, stride - 3, x2.data());
+    batch.add(Potential::COULOMB_GAUSSIAN, entries, atoms_, 1, stride, stride, x1.data());
+    ASSERT_TRUE(batch.compute(true));
+    setGpuMinimumWork(minWork);
+    ASSERT_EQ(3u, batch.size());
+    for (size_t k = 0; k < batch.size(); k++)
+    {
+        const auto         &fk = (k == 1) ? f2 : f1;
+        const auto         &ek = (k == 1) ? e2 : e1;
+        size_t              sk = (k == 1) ? stride2 : stride;
+        size_t              nk = (k == 1) ? stride - 3 : stride;
+        std::vector<float>  f(fk.size(), 0);
+        std::vector<double> e(ek.size(), 0);
+        batch.addResults(k, f.data(), e.data());
+        for (size_t c = 0; c < nk; c++)
+        {
+            EXPECT_EQ(ek[c], e[c]) << "molecule " << k << " conformation " << c;
+            for (size_t row = 0; row < DIM*atoms_.size(); row++)
+            {
+                EXPECT_EQ(fk[row*sk + c], f[row*sk + c]) << "molecule " << k << " conformation " << c << " row " << row;
+            }
+        }
+    }
+}
+
 // Test: Gaussian charges on top of each other, as shells on their cores,
 // and nearly so, where the series of the force is used
 TEST_F(ForcesSimdTest, CoulombGaussianOverlapGpu)
