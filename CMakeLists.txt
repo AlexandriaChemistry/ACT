@@ -190,6 +190,7 @@ mark_as_advanced(GMX_MPI_IN_PLACE)
 set(GMX_GPU_ACCELERATION_FRAMEWORK "GMX_GPU_NONE")
 
 include(actManageSimd)
+include(actManageGpu)
 
 option(GMX_BROKEN_CALLOC "Work around broken calloc()" OFF)
 mark_as_advanced(GMX_BROKEN_CALLOC)

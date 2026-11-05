@@ -43,6 +43,7 @@
 #include <vector>
 
 #include "act/forces/forces_explicit_simd.h"
+#include "act/gpu/gpu.h"
 #include "gromacs/utility/stringutil.h"
 #include "gromacs/utility/textwriter.h"
 
@@ -493,6 +494,24 @@ void writeCodeInformation(gmx::TextWriter *writer)
                                         GMX_DOUBLE ? "" : " also in this build"));
     writer->writeLine("Energies:           summed in double precision");
     writer->writeLine("Constraints:        in double precision");
+    auto gpuCode = gpu::implementation();
+    if (gpuCode.empty())
+    {
+        writer->writeLine("GPU:                none, ACT was built without GPU support");
+    }
+    else
+    {
+        auto names = gpu::devices();
+        if (names.empty())
+        {
+            writer->writeLine(gmx::formatString("GPU:                %s, no GPU found", gpuCode.c_str()));
+        }
+        for (const auto &name : names)
+        {
+            writer->writeLine(gmx::formatString("GPU:                %s, %s, not used for the forces yet",
+                                                gpuCode.c_str(), name.c_str()));
+        }
+    }
 }
 
 } // namespace alexandria

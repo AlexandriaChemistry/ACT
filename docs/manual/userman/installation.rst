@@ -189,6 +189,12 @@ where *Value* can be *ON* or *OFF* or something more option specific.
    +----------------------+------------------------------------------------------------+
    |                      | vectorized. Default ON.                                    |
    +----------------------+------------------------------------------------------------+
+   | ACT_GPU              | GPU support: NONE (default) or SYCL, which needs           |
+   +----------------------+------------------------------------------------------------+
+   |                      | AdaptiveCpp, see below. The GPU is not used for the        |
+   +----------------------+------------------------------------------------------------+
+   |                      | forces yet.                                                |
+   +----------------------+------------------------------------------------------------+
 
 The SIMD (single instruction, multiple data) instructions of the processor are used to compute the energies and forces of several conformations of a molecule at once, which speeds up training considerably.
 At the start of each program the log file reports the SIMD of the processor, the SIMD the compiler could use for the rest of the code and whether explicit SIMD is used, for instance::
@@ -207,6 +213,15 @@ The loops over conformations of the explicit SIMD routines for pair interactions
   cmake -DACT_PAIR_UNROLL= . && make -j 8 install
 
 The last command returns to the default. The results do not depend on the unroll factor.
+
+GPU support with SYCL
+~~~~~~~~~~~~~~~~~~~~~
+GPU support uses SYCL with `AdaptiveCpp <https://adaptivecpp.github.io>`_, which compiles the GPU code at run time for the GPU found, such that the same build runs on NVIDIA and AMD GPUs. AdaptiveCpp is available from conda-forge, in its own environment, for instance for NVIDIA GPUs::
+
+  conda create -n act-sycl -c conda-forge "adaptivecpp=*=cuda*"
+  cmake .. -DACT_GPU=SYCL -DAdaptiveCpp_DIR=$HOME/miniforge3/envs/act-sycl/lib/cmake/AdaptiveCpp
+
+Only the GPU code is compiled with AdaptiveCpp's compiler acpp, the rest of ACT with the C++ compiler, which needs to be GCC 13 or newer, since the libraries of AdaptiveCpp need its C++ library. The section *Code used* at the start of the log file lists the GPUs found. Source the *ACTRC* file before running, which sets *ACPP_DEBUG_LEVEL* such that AdaptiveCpp does not warn about the GPU backends it cannot load.
 
 ============================
 Troubleshooting Installation
