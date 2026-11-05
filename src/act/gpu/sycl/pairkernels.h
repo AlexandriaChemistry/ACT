@@ -210,6 +210,39 @@ inline float pairInteraction(PairKernel kernel, const float *p, float rsq, float
         e[0] = eexp;
         return p[1]*eexp*rinv;
     }
+    case PairKernel::HarmonicBond:
+    {
+        float rinv = sycl::rsqrt(rsq);
+        float dr   = rsq*rinv - p[0];
+        e[0] = 0.5f*p[1]*dr*dr + p[2];
+        return -p[1]*dr*rinv;
+    }
+    case PairKernel::CubicBond:
+    {
+        // Not beyond the maximum of the potential
+        float r2   = sycl::fmin(rsq, p[4]);
+        float rinv = sycl::rsqrt(r2);
+        float r    = r2*rinv;
+        e[0] = p[2]*(r - p[0])*(r - p[0])*(p[1] - r) - p[3];
+        return rinv*p[2]*(p[0] + 2*p[1] - 3*r)*(p[0] - r);
+    }
+    case PairKernel::MorseBond:
+    {
+        float dr      = sycl::sqrt(rsq);
+        float expterm = sycl::exp(-p[1]*(dr - p[0]));
+        float one_exp = 1 - expterm;
+        e[0] = p[2]*(one_exp*one_exp - 1) + p[3];
+        return 2*p[2]*p[1]*expterm*(expterm - 1)/dr;
+    }
+    case PairKernel::HuaBond:
+    {
+        float dr      = sycl::sqrt(rsq);
+        float expterm = sycl::exp(-p[1]*(dr - p[0]));
+        float exp2    = (1 - expterm)/(1 - p[3]*expterm);
+        float denom   = p[3]*expterm - 1;
+        e[0] = p[2]*(exp2*exp2 - 1);
+        return 2*p[2]*p[1]*expterm*(expterm - 1)*(p[3] - 1)/(dr*denom*denom*denom);
+    }
     }
     return 0;
 }

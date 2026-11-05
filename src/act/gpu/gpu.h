@@ -81,86 +81,6 @@ bool useGpu();
  */
 bool setUseGpu(bool use);
 
-/*! \brief A Coulomb interaction between two particles
- * Each particle may have a second charge at the same position with its own
- * width, such that there are up to four terms, see ActAtom::chargeVS. Terms
- * after the first one with a zero charge product are skipped.
- */
-struct CoulombPair
-{
-    //! The first atom
-    uint32_t i;
-    //! The second atom
-    uint32_t j;
-    //! The charge products of the terms, including 1/(4 pi eps0 epsilonr)
-    float    qq[4];
-    //! The widths of the combined Gaussian charges, zero for point charges
-    float    zeta[4];
-};
-
-/*! \brief The Coulomb interactions of the conformations of a molecule, see computeCoulombBlocks
- * The layout is that of computeExplicitSimd: coordinate m of atom a in
- * slot c is x[(3*a+m)*stride + c], in units of coordinateUnit, see
- * coordinate.h, the forces likewise.
- */
-struct CoulombBlock
-{
-    //! Number of atoms
-    size_t             natom;
-    //! Distance between the rows of the arrays
-    size_t             stride;
-    //! Number of slots to compute, at most stride
-    size_t             nslot;
-    //! The coordinates
-    const int64_t     *x;
-    //! The interactions
-    const CoulombPair *pairs;
-    //! Number of interactions
-    size_t             npair;
-    //! The forces, added to, not used without forces
-    float             *f;
-    //! The energy of each slot, added to
-    double            *energies;
-};
-
-/*! \brief Compute the Coulomb interactions of several molecules at once on the GPU
- * All blocks are computed by the same kernels, such that many small
- * molecules make enough work for a GPU. Blocks with the same coordinate
- * array share its copy on the GPU. The energy of each interaction is
- * computed in single precision and summed in double precision. The
- * results do not depend on the other blocks or slots.
- * \param[in] blocks The molecules
- * \param[in] nblock Number of blocks
- * \param[in] forces Whether to compute forces
- * \return false if the GPU is not available
- */
-bool computeCoulombBlocks(const CoulombBlock *blocks,
-                          size_t              nblock,
-                          bool                forces);
-
-/*! \brief Compute Coulomb interactions for all conformations on the GPU
- * As computeCoulombBlocks for one block.
- * \param[in]    natom    Number of atoms
- * \param[in]    stride   Distance between the rows of the arrays
- * \param[in]    nslot    Number of slots to compute, at most stride
- * \param[in]    x        The coordinates
- * \param[in]    pairs    The interactions
- * \param[in]    npair    Number of interactions
- * \param[inout] f        The forces, not used if forces is false
- * \param[inout] energies The energy of each slot
- * \param[in]    forces   Whether to compute forces
- * \return false if the GPU is not available
- */
-bool computeCoulomb(size_t             natom,
-                    size_t             stride,
-                    size_t             nslot,
-                    const int64_t     *x,
-                    const CoulombPair *pairs,
-                    size_t             npair,
-                    float             *f,
-                    double            *energies,
-                    bool               forces);
-
 //! The pair potentials of the GPU, see pairInteraction in sycl/pairkernels.h
 enum class PairKernel : uint32_t
 {
@@ -175,7 +95,15 @@ enum class PairKernel : uint32_t
     //! Wang-Buckingham: sigma^6 p[0], 3/(gamma+3) p[1], dispersion prefactor p[2], gamma p[3], 1/sigma p[4]
     WangBuckingham,
     //! MacDaniel-Schmidt, a double exponential: prefactor p[0], exponent p[1]
-    DoubleExponential
+    DoubleExponential,
+    //! Harmonic bond: length p[0], force constant p[1], energy p[2]
+    HarmonicBond,
+    //! Cubic bond: length p[0], largest length p[1], force constant p[2], energy p[3], square of the largest distance p[4]
+    CubicBond,
+    //! Morse bond: length p[0], beta p[1], De p[2], D0 p[3]
+    MorseBond,
+    //! Hua bond: length p[0], b p[1], De p[2], c p[3]
+    HuaBond
 };
 
 //! Number of energy terms of the pair potentials, at most
@@ -258,7 +186,7 @@ struct ShellFragment
 };
 
 /*! \brief The conformations of a molecule whose shells are relaxed, see relaxShells
- * The layout is that of computeExplicitSimd, see CoulombBlock.
+ * The layout is that of computeExplicitSimd, see PairBatchBlock.
  */
 struct RelaxMolecule
 {
@@ -310,6 +238,48 @@ struct RelaxSettings
     //! Iterations, including the first calculation, as ForceComputer::maxiter
     int    maxIter;
 };
+
+/*! \brief The interactions of one potential in the conformations of a molecule, see computePairBlocks
+ * The layout is that of computeExplicitSimd: coordinate m of atom a in
+ * slot c is x[(3*a+m)*stride + c], in units of coordinateUnit, see
+ * coordinate.h, the forces likewise.
+ */
+struct PairBatchBlock
+{
+    //! Number of atoms
+    size_t           natom;
+    //! Distance between the rows of the arrays
+    size_t           stride;
+    //! Number of slots to compute, at most stride
+    size_t           nslot;
+    //! The coordinates
+    const int64_t   *x;
+    //! The potential
+    PairKernel       kernel;
+    //! The interactions
+    const PairEntry *pairs;
+    //! Number of interactions
+    size_t           npair;
+    //! The forces, added to, not used without forces
+    float           *f;
+    //! The energy terms of each slot, term k of slot c at k*stride + c, pairEnergyTerms rows, added to
+    double          *energies;
+};
+
+/*! \brief Compute pair interactions of several molecules and potentials at once on the GPU
+ * All blocks are computed by the same kernels, such that many small
+ * molecules make enough work for a GPU. Blocks with the same coordinate
+ * array share its copy on the GPU. The energy of each interaction is
+ * computed in single precision and summed in double precision. The
+ * results do not depend on the other blocks or slots.
+ * \param[in] blocks The interactions
+ * \param[in] nblock Number of blocks
+ * \param[in] forces Whether to compute forces
+ * \return false if the GPU is not available
+ */
+bool computePairBlocks(const PairBatchBlock *blocks,
+                       size_t                nblock,
+                       bool                  forces);
 
 /*! \brief Relax the shells of the conformations of several molecules on the GPU
  * As ForceComputer::relaxMonomer and relaxDimer: each iteration moves the

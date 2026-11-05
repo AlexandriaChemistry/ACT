@@ -67,13 +67,7 @@ bool relaxShells(const RelaxMolecule *, size_t, const RelaxSettings &, size_t *,
     return false;
 }
 
-bool computeCoulombBlocks(const CoulombBlock *, size_t, bool)
-{
-    return false;
-}
-
-bool computeCoulomb(size_t, size_t, size_t, const int64_t *, const CoulombPair *, size_t,
-                    float *, double *, bool)
+bool computePairBlocks(const PairBatchBlock *, size_t, bool)
 {
     return false;
 }
