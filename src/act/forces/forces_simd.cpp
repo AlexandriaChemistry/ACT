@@ -38,6 +38,7 @@
 #include "act/forces/conformationdata.h"
 #include "act/forcefield/forcefield_parametername.h"
 #include "act/forces/forces_explicit_simd.h"
+#include "act/forces/forces_gpu.h"
 #include "act/forces/simd_information.h"
 #include "act/forces/forcecomputerutils.h"
 #include "act/forces/vsitehandler.h"
@@ -2603,8 +2604,10 @@ static bool calcConformations(Potential                        mypot,
     // Energy term k of conformation c is stored at k*stride + c
     auto &energies = ca->energies;
     energies.assign(MAX_ENER*ca->stride, 0.0);
-    // Use explicit SIMD where available
-    if (!(useExplicitSimd() &&
+    // Use the GPU or explicit SIMD where available
+    if (!computeGpu(mypot, topentries, atoms, epsilonr, ca->stride, ca->nslot,
+                    ca->x.data(), ca->f.data(), energies.data(), forces) &&
+        !(useExplicitSimd() &&
           computeExplicitSimd(mypot, topentries, atoms, epsilonr, ca->stride, ca->nslot,
                               ca->x.data(), ca->f.data(), energies.data(), forces)) &&
         !(forces ?

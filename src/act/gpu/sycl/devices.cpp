@@ -26,13 +26,17 @@
  * Boston, MA  02110-1301, USA.
  */
 /*! \internal \brief
- * The GPUs that SYCL finds. This file is compiled with acpp, see
+ * The GPUs that SYCL finds and the one that is used. This file is compiled with acpp, see
  * cmake/actManageGpu.cmake, and includes no ACT headers but gpu.h.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 #include "gpu.h"
 
+#include <cstdlib>
+
 #include <sycl/sycl.hpp>
+
+#include "sycl/context.h"
 
 namespace alexandria
 {
@@ -61,6 +65,49 @@ std::vector<std::string> devices()
         names.clear();
     }
     return names;
+}
+
+sycl::queue *gpuQueue()
+{
+    // Never deleted, since the order of destruction at the end of the
+    // program is unknown relative to that of the SYCL runtime
+    static sycl::queue *queue = []()
+    {
+        sycl::queue *q = nullptr;
+        try
+        {
+            auto gpus = sycl::device::get_devices(sycl::info::device_type::gpu);
+            if (!gpus.empty())
+            {
+                q = new sycl::queue(gpus[0], sycl::property::queue::in_order());
+            }
+        }
+        catch (const sycl::exception &)
+        {
+            q = nullptr;
+        }
+        return q;
+    }();
+    return queue;
+}
+
+//! Whether the GPU is used, see useGpu and setUseGpu
+static bool &gpuInUse()
+{
+    static bool use = (gpuQueue() != nullptr && std::getenv("ACT_NO_GPU") == nullptr);
+    return use;
+}
+
+bool useGpu()
+{
+    return gpuInUse();
+}
+
+bool setUseGpu(bool use)
+{
+    bool before = gpuInUse();
+    gpuInUse()  = use && gpuQueue() != nullptr;
+    return before;
 }
 
 } // namespace gpu
