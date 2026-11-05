@@ -67,44 +67,6 @@ static double combinedWidth(double zi, double zj)
     return zi*zj/std::sqrt(zi*zi + zj*zj);
 }
 
-/*! \brief The Coulomb interactions for the GPU, as Coulomb::prepare in forces_explicit_simd.cpp
- * \param[in]  entries  The interactions
- * \param[in]  atoms    The atoms
- * \param[in]  epsilonr Relative dielectric constant
- * \param[out] pairs    The interactions for the GPU
- */
-static void prepareCoulomb(TopologyEntryRange              entries,
-                           const std::vector<ActAtom>     &atoms,
-                           double                          epsilonr,
-                           std::vector<gpu::CoulombPair>  *pairs)
-{
-    pairs->clear();
-    pairs->reserve(entries.size());
-    for (const auto &b : entries)
-    {
-        const auto        &ind   = b->atomIndices();
-        const auto        &atomi = atoms[ind[0]];
-        const auto        &atomj = atoms[ind[1]];
-        const double       qi[2] = { atomi.charge(), atomi.chargeVS() };
-        const double       qj[2] = { atomj.charge(), atomj.chargeVS() };
-        const double       zi[2] = { atomi.zeta(), atomi.zetaVS() };
-        const double       zj[2] = { atomj.zeta(), atomj.zetaVS() };
-        gpu::CoulombPair   pair;
-        pair.i = static_cast<uint32_t>(ind[0]);
-        pair.j = static_cast<uint32_t>(ind[1]);
-        for (int a = 0; a < 2; a++)
-        {
-            for (int c = 0; c < 2; c++)
-            {
-                int k        = 2*a + c;
-                pair.qq[k]   = static_cast<float>(ONE_4PI_EPS0*qi[a]*qj[c]/epsilonr);
-                pair.zeta[k] = static_cast<float>(combinedWidth(zi[a], zj[c]));
-            }
-        }
-        pairs->push_back(pair);
-    }
-}
-
 bool gpuPairKernel(Potential mypot, gpu::PairKernel *kernel)
 {
     switch (mypot)
@@ -116,6 +78,10 @@ bool gpuPairKernel(Potential mypot, gpu::PairKernel *kernel)
     case Potential::LJ14_7:           *kernel = gpu::PairKernel::LJ14_7; return true;
     case Potential::WANG_BUCKINGHAM:  *kernel = gpu::PairKernel::WangBuckingham; return true;
     case Potential::MACDANIEL_SCHMIDT: *kernel = gpu::PairKernel::DoubleExponential; return true;
+    case Potential::HARMONIC_BONDS:   *kernel = gpu::PairKernel::HarmonicBond; return true;
+    case Potential::CUBIC_BONDS:      *kernel = gpu::PairKernel::CubicBond; return true;
+    case Potential::MORSE_BONDS:      *kernel = gpu::PairKernel::MorseBond; return true;
+    case Potential::HUA_BONDS:        *kernel = gpu::PairKernel::HuaBond; return true;
     default:                          return false;
     }
 }
@@ -204,8 +170,73 @@ bool gpuPairEntry(gpu::PairKernel             kernel,
         pe->p[1] = static_cast<float>(b.params()[dexpB]);
         return true;
     }
+    case gpu::PairKernel::HarmonicBond:
+    {
+        auto &params = b.params();
+        pe->p[0] = static_cast<float>(params[bondLENGTH]);
+        pe->p[1] = static_cast<float>(params[bondKB]);
+        pe->p[2] = static_cast<float>(params[bondENERGY]);
+        return true;
+    }
+    case gpu::PairKernel::CubicBond:
+    {
+        auto &params = b.params();
+        double b0   = params[cubicLENGTH];
+        double rmax = params[cubicRMAX];
+        // Not beyond the maximum of the potential, as CubicBond::prepare
+        double rhi  = (2*rmax + b0)/3;
+        pe->p[0] = static_cast<float>(b0);
+        pe->p[1] = static_cast<float>(rmax);
+        pe->p[2] = static_cast<float>(params[cubicKB]);
+        pe->p[3] = static_cast<float>(params[cubicDE]);
+        pe->p[4] = static_cast<float>(rhi*rhi);
+        return true;
+    }
+    case gpu::PairKernel::MorseBond:
+    {
+        auto &params = b.params();
+        pe->p[0] = static_cast<float>(params[morseLENGTH]);
+        pe->p[1] = static_cast<float>(params[morseBETA]);
+        pe->p[2] = static_cast<float>(params[morseDE]);
+        pe->p[3] = static_cast<float>(params[morseD0]);
+        return true;
+    }
+    case gpu::PairKernel::HuaBond:
+    {
+        auto &params = b.params();
+        pe->p[0] = static_cast<float>(params[huaLENGTH]);
+        pe->p[1] = static_cast<float>(params[huaB]);
+        pe->p[2] = static_cast<float>(params[huaDE]);
+        pe->p[3] = static_cast<float>(params[huaC]);
+        return true;
+    }
     }
     return false;
+}
+
+/*! \brief The interactions with prepared parameters for the GPU, see gpuPairEntry
+ * \param[in]  kernel   The kernel
+ * \param[in]  entries  The interactions
+ * \param[in]  atoms    The atoms
+ * \param[in]  epsilonr Relative dielectric constant
+ * \param[out] pairs    The interactions for the GPU, without those that have none
+ */
+static void preparePairs(gpu::PairKernel              kernel,
+                         TopologyEntryRange           entries,
+                         const std::vector<ActAtom>  &atoms,
+                         double                       epsilonr,
+                         std::vector<gpu::PairEntry> *pairs)
+{
+    pairs->clear();
+    pairs->reserve(entries.size());
+    for (const auto &b : entries)
+    {
+        gpu::PairEntry e;
+        if (gpuPairEntry(kernel, *b.operator->(), atoms, epsilonr, &e))
+        {
+            pairs->push_back(e);
+        }
+    }
 }
 
 //! The least work for the GPU, see gpuMinimumWork
@@ -233,6 +264,11 @@ size_t setGpuMinimumWork(size_t work)
 
 bool GpuBatch::canCompute(Potential mypot)
 {
+    // The GPU has kernels for more potentials, see gpuPairKernel, but each
+    // potential of each molecule returns its own forces, which are copied
+    // and added on the host. Except for Coulomb, which has the most
+    // interactions, that takes longer than the processor needs to compute
+    // the potentials, as measured for training with 94 compounds.
     return (gpu::useGpu() &&
             (Potential::COULOMB_POINT == mypot || Potential::COULOMB_GAUSSIAN == mypot));
 }
@@ -261,7 +297,8 @@ void GpuBatch::add(Potential                   mypot,
     t.stride = stride;
     t.nslot  = nslot;
     t.x      = x;
-    prepareCoulomb(entries, atoms, epsilonr, &t.pairs);
+    (void) gpuPairKernel(mypot, &t.kernel);
+    preparePairs(t.kernel, entries, atoms, epsilonr, &t.pairs);
     computed_ = false;
 }
 
@@ -280,19 +317,19 @@ bool GpuBatch::compute(bool forces)
     }
     static const size_t timer = Timings::instance().index("GPU pair potentials");
     ScopedTimer         scoped(timer);
-    std::vector<gpu::CoulombBlock> blocks(ntask_);
+    std::vector<gpu::PairBatchBlock> blocks(ntask_);
     for (size_t k = 0; k < ntask_; k++)
     {
         auto &t = tasks_[k];
-        t.energies.assign(t.nslot, 0.0);
+        t.energies.assign(gpu::pairEnergyTerms*t.stride, 0.0);
         if (forces)
         {
             t.f.assign(3*t.natom*t.stride, 0.0f);
         }
-        blocks[k] = { t.natom, t.stride, t.nslot, t.x, t.pairs.data(), t.pairs.size(),
+        blocks[k] = { t.natom, t.stride, t.nslot, t.x, t.kernel, t.pairs.data(), t.pairs.size(),
                       forces ? t.f.data() : nullptr, t.energies.data() };
     }
-    computed_ = gpu::computeCoulombBlocks(blocks.data(), blocks.size(), forces);
+    computed_ = gpu::computePairBlocks(blocks.data(), blocks.size(), forces);
     return computed_;
 }
 
@@ -300,9 +337,12 @@ void GpuBatch::addResults(size_t k, float *f, double *energies) const
 {
     GMX_RELEASE_ASSERT(computed_ && k < ntask_, "No results for this task");
     const auto &t = tasks_[k];
-    for (size_t c = 0; c < t.nslot; c++)
+    for (int term = 0; term < gpu::pairEnergyTerms; term++)
     {
-        energies[c] += t.energies[c];
+        for (size_t c = 0; c < t.nslot; c++)
+        {
+            energies[term*t.stride + c] += t.energies[term*t.stride + c];
+        }
     }
     if (forces_)
     {
@@ -327,17 +367,17 @@ bool computeGpu(Potential                   mypot,
                 double                     *energies,
                 bool                        forces)
 {
-    if (!gpu::useGpu() || entries.size()*nslot < gpuMinimumWork() ||
-        !(Potential::COULOMB_POINT == mypot || Potential::COULOMB_GAUSSIAN == mypot))
+    gpu::PairKernel kernel;
+    if (!gpu::useGpu() || entries.size()*nslot < gpuMinimumWork() || !gpuPairKernel(mypot, &kernel))
     {
         return false;
     }
     // Kept between calls, such that the memory is used again
-    static thread_local std::vector<gpu::CoulombPair> pairs;
-    prepareCoulomb(entries, atoms, epsilonr, &pairs);
-    // The Coulomb energy is the first energy term
-    return gpu::computeCoulomb(atoms.size(), stride, nslot, x, pairs.data(), pairs.size(),
-                               f, energies, forces);
+    static thread_local std::vector<gpu::PairEntry> pairs;
+    preparePairs(kernel, entries, atoms, epsilonr, &pairs);
+    gpu::PairBatchBlock block = { atoms.size(), stride, nslot, x, kernel, pairs.data(), pairs.size(),
+                                  forces ? f : nullptr, energies };
+    return gpu::computePairBlocks(&block, 1, forces);
 }
 
 } // namespace alexandria

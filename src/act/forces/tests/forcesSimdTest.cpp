@@ -901,6 +901,36 @@ TEST_F(ForcesSimdTest, CoulombGaussianSecondChargesGpu)
     compareGpu(Potential::COULOMB_GAUSSIAN, makeEntries(pairs({ 12, 9 })), 1);
 }
 
+// Test: the other pair potentials on the GPU, as CoulombGaussianGpu
+TEST_F(ForcesSimdTest, PairPotentialsGpu)
+{
+    if (!gpu::useGpu() || !useExplicitSimd())
+    {
+        // Needs a GPU and explicit SIMD
+        return;
+    }
+    auto lj147 = pairs({ 0.3, 0.5, 0.12, 0.07 });
+    lj147[1].params = { 0, 0, 0.12, 0.07 };
+    auto wbh   = pairs({ 0.3, 0.5, 10 });
+    wbh[1].params = { 0.3, 0, 10 };
+    const std::vector<std::pair<Potential, std::vector<Interaction>>> tests = {
+        { Potential::LJ12_6,            pairs({ 0.3, 0.5 }) },
+        { Potential::LJ14_7,            lj147 },
+        { Potential::WANG_BUCKINGHAM,   wbh },
+        { Potential::MACDANIEL_SCHMIDT, pairs({ 30000, 10000, 30 }) },
+        { Potential::POLARIZATION,      { { { 4, 6 }, { 0.001, 0.01, 1e8 } }, { { 0, 6 }, { 0, 0.01, 1e8 } } } },
+        { Potential::HARMONIC_BONDS,    bonds({ 200000, 0.15, -400 }) },
+        { Potential::CUBIC_BONDS,       bonds({ 0.15, 0.2, 400000, 400 }) },
+        { Potential::MORSE_BONDS,       bonds({ 20, 400, 10, 0.15 }) },
+        { Potential::HUA_BONDS,         bonds({ 400, 20, 0.15, 0.1 }) }
+    };
+    for (const auto &t : tests)
+    {
+        SCOPED_TRACE(potentialToString(t.first));
+        compareGpu(t.first, makeEntries(t.second), 1);
+    }
+}
+
 // Test: several molecules computed at once on the GPU, with different
 // strides and numbers of slots, give the same results as each alone
 TEST_F(ForcesSimdTest, CoulombGaussianBatchGpu)
@@ -928,7 +958,7 @@ TEST_F(ForcesSimdTest, CoulombGaussianBatchGpu)
     size_t minWork = setGpuMinimumWork(0);
     // Each alone
     std::vector<float>  f1(x1.size(), 0), f2(x2.size(), 0);
-    std::vector<double> e1(stride, 0), e2(stride2, 0);
+    std::vector<double> e1(explicitSimdEnergyTerms*stride, 0), e2(explicitSimdEnergyTerms*stride2, 0);
     ASSERT_TRUE(computeGpu(Potential::COULOMB_GAUSSIAN, entries, atoms_, 1, stride, stride,
                            x1.data(), f1.data(), e1.data(), true));
     ASSERT_TRUE(computeGpu(Potential::COULOMB_GAUSSIAN, entries, atoms_, 1, stride2, stride - 3,
