@@ -190,6 +190,12 @@ void OptACM::optionsFinished(const std::vector<t_filenm> &filenames)
     msghandler_.writeDebug(gmx::formatString("nmiddlemen = %d", nmiddlemen));
     // Update the communication record and do necessary checks.
     commRec_.init(nmiddlemen);
+    if (commRec_.individualsPerRank() > 1)
+    {
+        //! \todo Compute several individuals per rank at once
+        GMX_THROW(gmx::InvalidInputError(gmx::formatString("The population (%d) is larger than the number of cores/threads (%d), which is not supported yet",
+                                                           nmiddlemen, commRec_.size()).c_str()));
+    }
     // Set prefix and id in sii_
     sii_->fillIdAndPrefix();
     // Set output file for FF parameters, the middle men need it for
