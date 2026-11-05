@@ -777,7 +777,8 @@ ACTMessage ACTMol::GenerateAcmCharges(MsgHandler             *msg_handler,
                                       ForceField             *pd,
                                       const ForceComputer    *forceComp,
                                       std::vector<gmx::RVec> *coords,
-                                      std::vector<gmx::RVec> *forces)
+                                      std::vector<gmx::RVec> *forces,
+                                      bool                    needCoords)
 {
     std::vector<double> qold;
     fraghandler_.fetchCharges(msg_handler, &qold);
@@ -797,6 +798,19 @@ ACTMessage ACTMol::GenerateAcmCharges(MsgHandler             *msg_handler,
     double    EemRms    = 0;
     auto      natom     = atomsConst().size();
     std::map<InteractionType, double> energies;
+    // With SQE the charges depend on the positions of the atoms and virtual
+    // sites only, not on those of the shells, see QgenAcm::solveSQE. If the
+    // caller does not need the relaxed shells, only the virtual sites are
+    // constructed, as the force calculation would, and one round suffices.
+    bool shellsMatter = (needCoords ||
+                         !(pd->interactionPresent(InteractionType::BONDCORRECTIONS) &&
+                           pd->chargeGenerationAlgorithm() == ChargeGenerationAlgorithm::SQE));
+    if (!shellsMatter && topology_.hasVsites())
+    {
+        Coordinates x(*coords);
+        forceComp->constructVsiteCoordinates(&topology_, &x);
+        *coords = x.toRVec();
+    }
     do
     {
         EemRms = 0;
@@ -809,7 +823,7 @@ ACTMessage ACTMol::GenerateAcmCharges(MsgHandler             *msg_handler,
             // positions and to place virtual sites. For molecules that have
             // neither it is a no-op and would still incur a full (discarded)
             // energy evaluation, so skip it in that common case.
-            if (haveShells() || topology_.hasVsites())
+            if (shellsMatter && (haveShells() || topology_.hasVsites()))
             {
                 forceComp->compute(msg_handler, pd, &topology_,
                                    coords, forces, &energies);
@@ -823,7 +837,7 @@ ACTMessage ACTMol::GenerateAcmCharges(MsgHandler             *msg_handler,
                 qold[i]  = qnew[i];
             }
             EemRms   /= natom;
-            converged = (EemRms < qTolerance_) || !haveShells();
+            converged = (EemRms < qTolerance_) || !haveShells() || !shellsMatter;
         }
         else if (eQgen::NOSUPPORT == eqgen)
         {
@@ -1008,7 +1022,8 @@ void ACTMol::generateCharges(MsgHandler                *msghandler,
                              ChargeGenerationAlgorithm  algorithm,
                              std::vector<gmx::RVec>    *coords,
                              std::vector<gmx::RVec>    *forces,
-                             bool                       updateQProps)
+                             bool                       updateQProps,
+                             bool                       needCoords)
 {
     if (algorithm == ChargeGenerationAlgorithm::Read ||
         algorithm == ChargeGenerationAlgorithm::Custom ||
@@ -1107,7 +1122,7 @@ void ACTMol::generateCharges(MsgHandler                *msghandler,
     case ChargeGenerationAlgorithm::SQE:
         {
             // Without charges the compound cannot be used
-            auto imm = GenerateAcmCharges(msghandler, pd, forceComp, coords, forces);
+            auto imm = GenerateAcmCharges(msghandler, pd, forceComp, coords, forces, needCoords);
             if (ACTMessage::OK != imm)
             {
                 msghandler->msg(ACTStatus::Error, imm, getMolname());
