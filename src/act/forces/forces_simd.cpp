@@ -3355,8 +3355,28 @@ void computeEnergies(MsgHandler                  *msghandler,
         }
     };
     // With a GPU, the potentials it can compute are computed for all
-    // molecules at once, see GpuBatch, in single precision only
+    // molecules at once, see GpuBatch, in single precision only. Most of
+    // the molecules are only collected if they can be enough work, as
+    // estimated from all their interactions that the GPU could compute.
+    size_t work = 0;
     if (gpu::useGpu() && !GMX_DOUBLE)
+    {
+        for(const auto &mi : todo)
+        {
+            auto       &mol   = *mi.first;
+            const auto *top   = (what >= 2) ? mol.topology() : &mol.fragmentHandler()->topologies()[what];
+            size_t      nconf = mol.conformationData(std::min<size_t>(what, 2))->nconf();
+            for(const auto &entry : top->entries())
+            {
+                Potential mypot = pd->potential(entry.first);
+                if (GpuBatch::canCompute(mypot))
+                {
+                    work += entry.second.size()*nconf;
+                }
+            }
+        }
+    }
+    if (work >= gpuMinimumWork())
     {
         // Kept between calls, such that the memory is used again
         static thread_local GpuBatch gpuBatch;
@@ -3372,6 +3392,354 @@ void computeEnergies(MsgHandler                  *msghandler,
     }
     compute(nullptr, false, nullptr);
 }
+
+#if GMX_DOUBLE
+
+// The GPU computes in single precision only
+bool relaxShellsGpu(const ForceField *, const std::vector<ACTMol *> &, size_t, const bool[2],
+                    int, double, double, double, double, bool, size_t *nComputed)
+{
+    *nComputed = 0;
+    return false;
+}
+
+#else
+
+namespace
+{
+
+//! The data of a molecule for relaxing its shells on the GPU, see relaxShellsGpu
+struct GpuRelaxMolecule
+{
+    const Topology                          *top   = nullptr;
+    ConformationData                        *cdata = nullptr;
+    std::vector<gpu::ForceShell>             forceShells;
+    std::vector<gpu::MovingShell>            movingShells;
+    std::vector<gpu::ShellFragment>          fragments;
+    std::vector<std::vector<gpu::PairEntry>> pairs;
+    std::vector<Potential>                   potentials;
+    std::vector<InteractionType>             itypes;
+    std::vector<std::vector<double>>         energies;
+    std::vector<gpu::PairBlock>              blocks;
+    std::vector<char>                        done;
+    std::vector<char>                        computed;
+};
+
+/*! \brief The shells of a monomer for the GPU, see ForceComputer::updateShells
+ * \param[in]    top               The topology of the monomer
+ * \param[in]    pol               Which particles are shells
+ * \param[in]    offset            The first particle of the monomer
+ * \param[in]    maxShellDistance2 Square of the largest distance from the parent
+ * \param[inout] m                 The fragment is added
+ */
+void addShellFragment(const Topology   *top,
+                      const PolInfo    &pol,
+                      size_t            offset,
+                      double            maxShellDistance2,
+                      GpuRelaxMolecule *m)
+{
+    const auto       &atoms   = top->atoms();
+    auto              isShell = pol.isShell();
+    gpu::ShellFragment fr;
+    fr.firstAtom        = offset;
+    fr.natom            = atoms.size();
+    fr.firstForceShell  = m->forceShells.size();
+    fr.firstMovingShell = m->movingShells.size();
+    fr.nShell           = pol.nShell();
+    auto wallOf = [&](size_t i, uint32_t *parent)
+    {
+        bool wall = maxShellDistance2 > 0 && atoms[i].parents().size() == 1;
+        *parent   = wall ? atoms[i].parents()[0] + offset : 0;
+        return wall;
+    };
+    for (size_t i = 0; i < isShell.size(); i++)
+    {
+        if (isShell[i])
+        {
+            gpu::ForceShell fs;
+            fs.shell = i + offset;
+            fs.wall  = wallOf(i, &fs.parent);
+            m->forceShells.push_back(fs);
+        }
+    }
+    if (top->hasEntry(InteractionType::POLARIZATION))
+    {
+        for (const auto &p : top->entry(InteractionType::POLARIZATION))
+        {
+            size_t shellLocal = p->atomIndex(1);
+            if (!isShell[shellLocal])
+            {
+                continue;
+            }
+            auto  &params = p->params();
+            double alpha  = params[polALPHA];
+            double qshell = atoms[shellLocal].charge();
+            gpu::MovingShell ms;
+            ms.shell   = shellLocal + offset;
+            ms.core    = p->atomIndex(0) + offset;
+            ms.wall    = wallOf(shellLocal, &ms.parent);
+            ms.fcShell = (alpha > 0 && qshell != 0) ? qshell*qshell*ONE_4PI_EPS0/alpha : 0;
+            ms.fcHyper = params[polFCHYPER];
+            ms.rHyper  = params[polRHYPER];
+            m->movingShells.push_back(ms);
+        }
+    }
+    fr.nforceShell  = m->forceShells.size() - fr.firstForceShell;
+    fr.nmovingShell = m->movingShells.size() - fr.firstMovingShell;
+    m->fragments.push_back(fr);
+}
+
+/*! \brief The entries with shells of a topology for the GPU
+ * \param[in]    pd       The force field
+ * \param[in]    epsilonr Relative dielectric constant
+ * \param[inout] m        The interactions are added
+ * \return false if the GPU does not have a potential
+ */
+bool addShellEntries(const ForceField *pd, double epsilonr, GpuRelaxMolecule *m)
+{
+    const auto &top = *m->top;
+    for (const auto &entry : top.entries())
+    {
+        if (entry.second.empty())
+        {
+            continue;
+        }
+        Potential mypot = pd->potential(entry.first);
+        if (Potential::NONE == mypot)
+        {
+            mypot = defaultPotential(entry.first);
+        }
+        if (energyTypes(mypot).empty())
+        {
+            continue;
+        }
+        auto entries = top.shellEntries(entry.first, entry.second, true);
+        if (entries.empty())
+        {
+            continue;
+        }
+        gpu::PairKernel kernel;
+        if (!gpuPairKernel(mypot, &kernel) ||
+            energyTypes(mypot, entry.first).size() > static_cast<size_t>(gpu::pairEnergyTerms))
+        {
+            return false;
+        }
+        std::vector<gpu::PairEntry> pe;
+        pe.reserve(entries.size());
+        for (const auto &b : entries)
+        {
+            gpu::PairEntry e;
+            if (gpuPairEntry(kernel, *b.operator->(), top.atoms(), epsilonr, &e))
+            {
+                pe.push_back(e);
+            }
+        }
+        m->pairs.push_back(std::move(pe));
+        m->potentials.push_back(mypot);
+        m->itypes.push_back(entry.first);
+        gpu::PairBlock blk;
+        blk.kernel = kernel;
+        m->blocks.push_back(blk);
+    }
+    return true;
+}
+
+} // namespace
+
+bool relaxShellsGpu(const ForceField            *pd,
+                    const std::vector<ACTMol *> &allmols,
+                    size_t                       what,
+                    const bool                   relaxMonomer[2],
+                    int                          maxIter,
+                    double                       msForceToler,
+                    double                       maxShellDistance,
+                    double                       minStep,
+                    double                       maxStep,
+                    bool                         allForces,
+                    size_t                      *nComputed)
+{
+    *nComputed = 0;
+    if (!gpu::useGpu())
+    {
+        return false;
+    }
+    double maxShellDistance2 = maxShellDistance*maxShellDistance;
+    double epsilonr          = pd->epsilonr();
+    // Everything is prepared before anything is changed, such that the
+    // processor can relax the shells if the GPU cannot
+    std::vector<GpuRelaxMolecule> mols;
+    size_t                        work = 0;
+    for (auto molptr : allmols)
+    {
+        auto  fh   = molptr->fragmentHandler();
+        auto &tops = fh->topologies();
+        auto &pols = fh->polInfo();
+        if ((what < 2 && what >= tops.size()) || (what == 2 && tops.size() < 2))
+        {
+            continue;
+        }
+        GpuRelaxMolecule m;
+        m.top   = (what < 2) ? &tops[what] : molptr->topology();
+        m.cdata = molptr->conformationData(what);
+        auto &ca    = m.cdata->arrays;
+        auto &fixed = m.cdata->fixed;
+        if (m.cdata->useArraysDouble() || !m.top->hasShellSplit() || !fixed.valid ||
+            fixed.nconf != m.cdata->nconf() || fixed.arrayForces.size() != ca.f.size() ||
+            ca.nconf != m.cdata->nconf() || (allForces && m.cdata->spreadVsites && m.top->hasVsites()))
+        {
+            return false;
+        }
+        if (what < 2)
+        {
+            addShellFragment(m.top, pols[what], 0, maxShellDistance2, &m);
+        }
+        else
+        {
+            for (size_t im = 0; im < 2; im++)
+            {
+                if (relaxMonomer[im])
+                {
+                    addShellFragment(&tops[im], pols[im], fh->atomStart()[im], maxShellDistance2, &m);
+                }
+            }
+        }
+        if (!addShellEntries(pd, epsilonr, &m))
+        {
+            return false;
+        }
+        for (const auto &pe : m.pairs)
+        {
+            work += pe.size()*ca.nconf;
+        }
+        mols.push_back(std::move(m));
+    }
+    // The work of all iterations, which the GPU does without the host
+    if (mols.empty() || work*std::max(maxIter - 1, 1) < gpuMinimumWork())
+    {
+        return false;
+    }
+    static const size_t timer = Timings::instance().index("GPU shell relaxation");
+    ScopedTimer         scoped(timer);
+    std::vector<gpu::RelaxMolecule> rmols;
+    for (auto &m : mols)
+    {
+        auto &ca = m.cdata->arrays;
+        m.done.resize(ca.nconf);
+        m.computed.assign(ca.nconf, 0);
+        for (size_t s = 0; s < ca.nconf; s++)
+        {
+            m.done[s] = m.cdata->confs[ca.conformation(s)].done ? 1 : 0;
+        }
+        m.energies.assign(m.blocks.size(), std::vector<double>(MAX_ENER*ca.stride, 0.0));
+        for (size_t b = 0; b < m.blocks.size(); b++)
+        {
+            m.blocks[b].pairs    = m.pairs[b].data();
+            m.blocks[b].npair    = m.pairs[b].size();
+            m.blocks[b].energies = m.energies[b].data();
+        }
+        gpu::RelaxMolecule rm;
+        rm.natom        = ca.natom;
+        rm.stride       = ca.stride;
+        rm.nslot        = ca.nconf;
+        rm.x            = ca.x.data();
+        rm.f            = ca.f.data();
+        rm.fixedForces  = m.cdata->fixed.arrayForces.data();
+        rm.done         = m.done.data();
+        rm.computed     = m.computed.data();
+        rm.forceShells  = m.forceShells.data();
+        rm.movingShells = m.movingShells.data();
+        rm.fragments    = m.fragments.data();
+        rm.nfragment    = m.fragments.size();
+        rm.blocks       = m.blocks.data();
+        rm.nblock       = m.blocks.size();
+        rm.allForces    = allForces;
+        rmols.push_back(rm);
+    }
+    static_assert(MAX_ENER == gpu::pairEnergyTerms, "The GPU has as many energy terms as MAX_ENER");
+    gpu::RelaxSettings settings = { msForceToler, maxShellDistance2, minStep, maxStep, maxIter };
+    bool notFinite = false;
+    if (!gpu::relaxShells(rmols.data(), rmols.size(), settings, nComputed, &notFinite))
+    {
+        return false;
+    }
+    if (notFinite)
+    {
+        // As on the processor, see moveCoordinate
+        moveCoordinate(0, std::numeric_limits<double>::quiet_NaN());
+    }
+    // The results as computeEnergies leaves them for the entries without
+    // shells kept, see lowComputeEnergiesT
+    for (auto &m : mols)
+    {
+        auto *cdata = m.cdata;
+        auto &ca    = cdata->arrays;
+        auto &cener = cdata->energies;
+        auto &fixed = cdata->fixed;
+        std::vector<size_t> confs, slots;
+        for (size_t s = 0; s < ca.nconf; s++)
+        {
+            size_t c = ca.conformation(s);
+            cdata->confs[c].done = m.done[s] != 0;
+            if (m.computed[s])
+            {
+                confs.push_back(c);
+                slots.push_back(s);
+            }
+        }
+        // The active conformations are found again in the next calculation
+        cdata->activeKnown = 0;
+        if (confs.empty())
+        {
+            continue;
+        }
+        auto eEpot = cener.add(InteractionType::EPOT);
+        for (auto c : confs)
+        {
+            eEpot.before[c] = eEpot.have[c] ? eEpot.before[c] : 0.0;
+            eEpot.act[c]    = 0.0;
+            eEpot.have[c]   = 1;
+        }
+        for (size_t k = 0; k < fixed.types.size(); k++)
+        {
+            auto t = cener.add(fixed.types[k]);
+            for (auto c : confs)
+            {
+                t.before[c] = t.have[c] ? t.before[c] : 0.0;
+                t.have[c]   = fixed.have[k][c];
+                t.act[c]    = fixed.energies[k][c];
+            }
+        }
+        cener.setAccumulate(true);
+        for (size_t b = 0; b < m.blocks.size(); b++)
+        {
+            cener.setTermTypes(&energyTypes(m.potentials[b], m.itypes[b]));
+            storeEnergies(m.potentials[b], confs.size(), confs.data(), slots.data(), &cener,
+                          m.energies[b].data(), 1, ca.stride);
+            Timings::instance().addFlops(confs.size()*interactionFlops(m.potentials[b],
+                                                                       m.top->shellEntries(m.itypes[b], m.top->entry(m.itypes[b]), true),
+                                                                       m.top->atoms(), true));
+        }
+        cener.setAccumulate(false);
+        cener.setTermTypes(nullptr);
+        // The van der Waals correction is part of the exchange, as in lowComputeEnergiesT
+        auto vdwCorr = cener.find(InteractionType::VDWCORRECTION);
+        if (vdwCorr.have)
+        {
+            auto exchange = cener.add(InteractionType::EXCHANGE);
+            for (auto c : confs)
+            {
+                if (vdwCorr.has(c))
+                {
+                    exchange.set(c, (exchange.has(c) ? exchange.act[c] : 0.0) + vdwCorr.act[c]);
+                    vdwCorr.act[c] = 0;
+                }
+            }
+        }
+    }
+    return true;
+}
+
+#endif
 
 void computePotential(MsgHandler                 *msghandler,
                       Potential                   mypot,

@@ -48,6 +48,7 @@
 #include <sycl/sycl.hpp>
 
 #include "sycl/context.h"
+#include "sycl/pairkernels.h"
 
 namespace alexandria
 {
@@ -57,63 +58,6 @@ namespace gpu
 
 namespace
 {
-
-//! The unit of the coordinates in nm, 2^-56, see coordinate.h
-constexpr double coordinateUnitNm = 1.0/72057594037927936.0;
-
-//! 1/sqrt(pi)
-constexpr float invSqrtPi = 0.564189583547756287f;
-
-/*! \brief Scalar force divided by r of two Gaussian charges, without charges
- * As gaussianForceOverR in forces_simd.cpp in single precision: below
- * x^2 = 0.16 the series is more accurate than the difference of the terms.
- * \param[in] zeta Width of the combined distribution
- * \param[in] rinv Inverse distance
- * \param[in] x    zeta times the distance
- * \param[in] erfx The error function of x
- * \return the scalar force divided by r
- */
-inline float gaussianForceOverR(float zeta, float rinv, float x, float erfx)
-{
-    float x2 = x*x;
-    if (x2 < 0.16f)
-    {
-        return zeta*zeta*zeta*2*invSqrtPi*
-            (2.0f/3.0f + x2*(-2.0f/5.0f + x2*(1.0f/7.0f + x2*(-1.0f/27.0f + x2*(1.0f/132.0f)))));
-    }
-    return (erfx*rinv - 2*invSqrtPi*zeta*sycl::exp(-x2))*rinv*rinv;
-}
-
-/*! \brief Energy and scalar force divided by r of one term of a Coulomb interaction
- * As Coulomb::compute in forces_explicit_simd.cpp: particles on top of each
- * other only have an energy with Gaussian charges, and no force.
- * \param[in]  qq    The charge product
- * \param[in]  zeta  The combined width, zero for point charges
- * \param[in]  rsq   The distance squared
- * \param[in]  rinv  The inverse distance, not used if rsq is zero
- * \param[out] fscal The scalar force divided by r, added to
- * \return the energy
- */
-inline float coulombTerm(float qq, float zeta, float rsq, float rinv, float *fscal)
-{
-    if (zeta == 0)
-    {
-        if (rsq > 0)
-        {
-            *fscal += qq*rinv*rinv*rinv;
-            return qq*rinv;
-        }
-        return 0;
-    }
-    if (rsq > 0)
-    {
-        float rz   = zeta*rsq*rinv;
-        float erfz = sycl::erf(rz);
-        *fscal    += qq*gaussianForceOverR(zeta, rinv, rz, erfz);
-        return qq*erfz*rinv;
-    }
-    return qq*2*zeta*invSqrtPi;
-}
 
 //! Where the data of a block are in the device arrays, see CoulombBlock
 struct DeviceBlock
