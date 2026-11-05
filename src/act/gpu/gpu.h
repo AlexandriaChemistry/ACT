@@ -33,6 +33,8 @@
 #ifndef ACT_GPU_GPU_H
 #define ACT_GPU_GPU_H
 
+#include <cstddef>
+#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -56,6 +58,64 @@ std::string implementation();
  * \return the names of the GPUs, empty without GPU support or without GPUs
  */
 std::vector<std::string> devices();
+
+/*! \brief Whether the GPU computes the potentials that it has kernels for
+ * True if ACT was built with GPU support, a GPU was found and neither the
+ * environment variable ACT_NO_GPU nor setUseGpu turned it off.
+ * \return whether the GPU is used
+ */
+bool useGpu();
+
+/*! \brief Turn the GPU on or off, for tests and comparisons
+ * The GPU is only turned on if useGpu would return true without ACT_NO_GPU.
+ * \param[in] use Whether to use the GPU
+ * \return whether the GPU was used before
+ */
+bool setUseGpu(bool use);
+
+/*! \brief A Coulomb interaction between two particles
+ * Each particle may have a second charge at the same position with its own
+ * width, such that there are up to four terms, see ActAtom::chargeVS. Terms
+ * after the first one with a zero charge product are skipped.
+ */
+struct CoulombPair
+{
+    //! The first atom
+    uint32_t i;
+    //! The second atom
+    uint32_t j;
+    //! The charge products of the terms, including 1/(4 pi eps0 epsilonr)
+    float    qq[4];
+    //! The widths of the combined Gaussian charges, zero for point charges
+    float    zeta[4];
+};
+
+/*! \brief Compute Coulomb interactions for all conformations on the GPU
+ * The layout is that of computeExplicitSimd: coordinate m of atom a in
+ * slot c is x[(3*a+m)*stride + c], in units of coordinateUnit, see
+ * coordinate.h, the forces likewise. The forces and the energies of
+ * slots 0 to nslot - 1 are added to. The energy of each interaction is
+ * computed in single precision and summed in double precision.
+ * \param[in]    natom    Number of atoms
+ * \param[in]    stride   Distance between the rows of the arrays
+ * \param[in]    nslot    Number of slots to compute, at most stride
+ * \param[in]    x        The coordinates
+ * \param[in]    pairs    The interactions
+ * \param[in]    npair    Number of interactions
+ * \param[inout] f        The forces, not used if forces is false
+ * \param[inout] energies The energy of each slot
+ * \param[in]    forces   Whether to compute forces
+ * \return false if the GPU is not available
+ */
+bool computeCoulomb(size_t             natom,
+                    size_t             stride,
+                    size_t             nslot,
+                    const int64_t     *x,
+                    const CoulombPair *pairs,
+                    size_t             npair,
+                    float             *f,
+                    double            *energies,
+                    bool               forces);
 
 } // namespace gpu
 

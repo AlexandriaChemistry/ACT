@@ -508,8 +508,20 @@ void writeCodeInformation(gmx::TextWriter *writer)
         }
         for (const auto &name : names)
         {
-            writer->writeLine(gmx::formatString("GPU:                %s, %s, not used for the forces yet",
-                                                gpuCode.c_str(), name.c_str()));
+            writer->writeLine(gmx::formatString("GPU:                %s, %s", gpuCode.c_str(), name.c_str()));
+        }
+        if (!names.empty() && !gpu::useGpu())
+        {
+            writer->writeLine("                    turned off by ACT_NO_GPU");
+        }
+        else if (!names.empty() && GMX_DOUBLE)
+        {
+            writer->writeLine("                    not used in double precision builds");
+        }
+        else if (!names.empty())
+        {
+            writer->writeLine("                    the first GPU computes Coulomb of several structures,");
+            writer->writeLine("                    in single precision with energies summed in double");
         }
     }
 }
