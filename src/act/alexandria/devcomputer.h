@@ -303,6 +303,9 @@ private:
     //! Whether to split off induction correction from induction
     bool        separateInductionCorrection_ = true;
 
+    //! Whether calcDeviation computes the energies, otherwise the caller did, see energyTask
+    bool        computeEnergies_ = true;
+
     /*! \brief Compute Boltzmann weighting factor for this eRMS
      * \param[in] ermsi Which energy or force
      * \return The corresponding beta or zero if no temperature was given
@@ -317,6 +320,31 @@ public:
 
     //! \return Internal variable
     bool separateInductionCorrection() const { return separateInductionCorrection_; }
+
+    //! The energy calculation that calcDeviation needs
+    struct EnergyTask
+    {
+        //! Whether energies are needed at all
+        bool compute                     = false;
+        //! Whether the induction correction is separate, see ForceComputer::computeRelaxedEnergies
+        bool separateInductionCorrection = true;
+        //! Whether forces are needed
+        bool forces                      = false;
+    };
+
+    /*! \brief The energy calculation that calcDeviation needs for these targets
+     * Such that the caller can compute the energies of several sets of
+     * molecules at once, see setComputeEnergies.
+     * \param[in] targets The fitting targets
+     * \return what to compute
+     */
+    EnergyTask energyTask(const std::map<eRMS, FittingTarget> &targets) const;
+
+    /*! \brief Whether calcDeviation computes the energies
+     * \param[in] compute If false, the caller computed them as energyTask
+     *                    says, with ForceComputer::computeRelaxedEnergies
+     */
+    void setComputeEnergies(bool compute) { computeEnergies_ = compute; }
 
     /*! \brief Create a new ForceEnergyDevComputer
      * \param[in] boltzmannTemperature Map from the different eRMS terms to a number

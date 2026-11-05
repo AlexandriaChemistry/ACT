@@ -735,6 +735,25 @@ static void addLosses(LossFunction lf, size_t nconf, const double *w, const doub
     }
 }
 
+ForceEnergyDevComputer::EnergyTask ForceEnergyDevComputer::energyTask(const std::map<eRMS, FittingTarget> &targets) const
+{
+    EnergyTask task;
+    auto       te = targets.find(eRMS::EPOT);
+    auto       tf = targets.find(eRMS::Force2);
+    bool       doEpot = (te != targets.end() && te->second.weight() > 0);
+    task.forces       = (tf != targets.end() && tf->second.weight() > 0);
+    bool       doInter = false;
+    for (auto rms : { eRMS::Interaction, eRMS::Electrostatics, eRMS::Dispersion, eRMS::Exchange,
+                      eRMS::Induction, eRMS::DeltaHF, eRMS::ExchInd, eRMS::AllElec })
+    {
+        auto t = targets.find(rms);
+        doInter = doInter || (t != targets.end() && t->second.weight() > 0);
+    }
+    task.compute                     = doEpot || task.forces || doInter;
+    task.separateInductionCorrection = separateInductionCorrection_;
+    return task;
+}
+
 void ForceEnergyDevComputer::calcDeviation(MsgHandler                     *msghandler,
                                            gmx_unused const ForceComputer *forceComputer,
                                            const std::vector<ACTMol *>    &actmols,
@@ -778,8 +797,12 @@ void ForceEnergyDevComputer::calcDeviation(MsgHandler                     *msgha
     bool sepInductionTerms = separateInductionCorrection_;
     if (doForce2 || doEpot || doInter)
     {
-        // Compute all energies at once, and the forces if needed
-        forceComputer->computeRelaxedEnergies(msghandler, forcefield, actmols, true, sepInductionTerms, doForce2);
+        // Compute all energies at once, and the forces if needed, unless
+        // the caller did, see energyTask
+        if (computeEnergies_)
+        {
+            forceComputer->computeRelaxedEnergies(msghandler, forcefield, actmols, true, sepInductionTerms, doForce2);
+        }
         for(auto actmol : actmols)
         {
             if (doForce2)
