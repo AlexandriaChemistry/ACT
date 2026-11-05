@@ -1257,6 +1257,15 @@ void ForceComputer::relaxMonomer(MsgHandler                  *msghandler,
     int iter     = 1;
     // Prevent shells from flying off.
     bool allDone = false;
+    // On the GPU, if possible, for all molecules at once
+    const bool relaxAll[2] = { true, true };
+    size_t     nComputed   = 0;
+    if (relaxShellsGpu(pd, allmols, im, relaxAll, maxiter_, msForceToler_, maxShellDistance,
+                       minShellStep, maxShellStep, allForces, &nComputed))
+    {
+        nShellIter_ += nComputed;
+        allDone      = true;
+    }
     while (iter < maxiter_ && !allDone)
     {
         // Set loop variable to true
@@ -1349,6 +1358,15 @@ void ForceComputer::relaxDimer(MsgHandler                  *msghandler,
     int iter     = 1;
     // Prevent shells from flying off.
     bool allDone = false;
+    // On the GPU, if possible, for all molecules at once
+    const bool relaxMonomers[2] = { !fixMonomer[0], !fixMonomer[1] };
+    size_t     nComputed        = 0;
+    if (relaxShellsGpu(pd, allmols, 2, relaxMonomers, maxiter_, msForceToler_, maxShellDistance,
+                       minShellStep, maxShellStep, allForces, &nComputed))
+    {
+        nShellIter_ += nComputed;
+        allDone      = true;
+    }
     while (iter < maxiter_ && !allDone)
     {
         // Set loop variable to true

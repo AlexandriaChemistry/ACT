@@ -93,6 +93,29 @@ bool computeGpu(Potential                   mypot,
                 double                     *energies,
                 bool                        forces);
 
+/*! \brief The GPU kernel of a potential
+ * \param[in]  mypot  The potential
+ * \param[out] kernel The kernel
+ * \return false if the GPU has no kernel for it
+ */
+bool gpuPairKernel(Potential mypot, gpu::PairKernel *kernel);
+
+/*! \brief The parameters of a pair interaction for the GPU
+ * As the prepare functions of the explicit SIMD kernels in
+ * forces_explicit_simd.cpp, rounded to single precision.
+ * \param[in]  kernel   The kernel, see gpuPairKernel
+ * \param[in]  b        The interaction
+ * \param[in]  atoms    The atoms
+ * \param[in]  epsilonr Relative dielectric constant
+ * \param[out] pe       The interaction
+ * \return false if there is no interaction, as without polarizability
+ */
+bool gpuPairEntry(gpu::PairKernel             kernel,
+                  const TopologyEntry        &b,
+                  const std::vector<ActAtom> &atoms,
+                  double                      epsilonr,
+                  gpu::PairEntry             *pe);
+
 /*! \brief Potentials of several molecules that are computed on the GPU at once
  * computeEnergies first adds the interactions of all molecules that the GPU
  * can compute, then computes them together, then uses the results where

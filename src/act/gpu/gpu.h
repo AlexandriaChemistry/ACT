@@ -153,6 +153,177 @@ bool computeCoulomb(size_t             natom,
                     double            *energies,
                     bool               forces);
 
+//! The pair potentials of the GPU, see pairInteraction in sycl/pairkernels.h
+enum class PairKernel : uint32_t
+{
+    //! Point and Gaussian charges, with second charges: charge products p[0..3] and widths p[4..7]
+    Coulomb,
+    //! Shell and core: force constant p[0], distance p[1] and force constant p[2] of the quartic term
+    Polarization,
+    //! Lennard-Jones 12-6: 4 epsilon sigma^6 p[0] and 4 epsilon sigma^12 p[1]
+    LJ12_6,
+    //! Buffered 14-7: 1/sigma p[0], epsilon p[1], gamma p[2], delta p[3]
+    LJ14_7,
+    //! Wang-Buckingham: sigma^6 p[0], 3/(gamma+3) p[1], dispersion prefactor p[2], gamma p[3], 1/sigma p[4]
+    WangBuckingham,
+    //! MacDaniel-Schmidt, a double exponential: prefactor p[0], exponent p[1]
+    DoubleExponential
+};
+
+//! Number of energy terms of the pair potentials, at most
+constexpr int pairEnergyTerms = 3;
+
+//! A pair interaction with prepared parameters, see PairKernel
+struct PairEntry
+{
+    //! The first particle
+    uint32_t i;
+    //! The second particle
+    uint32_t j;
+    //! The parameters
+    float    p[8];
+};
+
+//! The interactions of one potential of a molecule, see RelaxMolecule
+struct PairBlock
+{
+    //! The potential
+    PairKernel       kernel;
+    //! The interactions
+    const PairEntry *pairs;
+    //! Number of interactions
+    size_t           npair;
+    /*! The energy terms of the last calculation of each slot, term k of
+     * slot c at k*stride + c, pairEnergyTerms rows, written for the slots
+     * that were computed
+     */
+    double          *energies;
+};
+
+//! A shell that is moved, see ForceComputer::updateShells
+struct MovingShell
+{
+    //! The shell
+    uint32_t shell;
+    //! Its core
+    uint32_t core;
+    //! The parent whose distance is limited, if wall
+    uint32_t parent;
+    //! Whether the distance to the parent is limited
+    uint32_t wall;
+    //! The harmonic force constant
+    double   fcShell;
+    //! The force constant of the quartic term
+    double   fcHyper;
+    //! The distance beyond which the quartic term acts
+    double   rHyper;
+};
+
+//! A shell whose force is part of the convergence criterion, see shellForces2 in forcecomputer.cpp
+struct ForceShell
+{
+    //! The shell
+    uint32_t shell;
+    //! The parent whose distance is limited, if wall
+    uint32_t parent;
+    //! Whether the distance to the parent is limited
+    uint32_t wall;
+};
+
+//! The shells of a monomer, which converge together
+struct ShellFragment
+{
+    //! The first particle of the monomer
+    uint32_t firstAtom;
+    //! Number of particles of the monomer
+    uint32_t natom;
+    //! The first of the shells in RelaxMolecule::forceShells
+    uint32_t firstForceShell;
+    //! Number of these
+    uint32_t nforceShell;
+    //! The first of the shells in RelaxMolecule::movingShells
+    uint32_t firstMovingShell;
+    //! Number of these
+    uint32_t nmovingShell;
+    //! The number of shells that divides the sum of their squared forces
+    double   nShell;
+};
+
+/*! \brief The conformations of a molecule whose shells are relaxed, see relaxShells
+ * The layout is that of computeExplicitSimd, see CoulombBlock.
+ */
+struct RelaxMolecule
+{
+    //! Number of particles
+    size_t               natom;
+    //! Distance between the rows of the arrays
+    size_t               stride;
+    //! Number of slots
+    size_t               nslot;
+    //! The coordinates, the shells are moved, which are the only ones copied back
+    int64_t             *x;
+    //! The forces of the last calculation, those of the slots computed are replaced
+    float               *f;
+    //! The forces of the interactions without shells, which do not change
+    const float         *fixedForces;
+    //! Whether each slot converged, set when it does
+    char                *done;
+    //! Whether each slot was computed again
+    char                *computed;
+    //! The shells in the convergence criterion of all fragments
+    const ForceShell    *forceShells;
+    //! The shells that move of all fragments
+    const MovingShell   *movingShells;
+    //! The monomers whose shells are relaxed
+    const ShellFragment *fragments;
+    //! Number of these, one or two
+    size_t               nfragment;
+    //! The interactions with shells
+    const PairBlock     *blocks;
+    //! Number of these
+    size_t               nblock;
+    /*! Whether the forces on all particles are needed, otherwise only
+     * those on the shells are copied to f
+     */
+    bool                 allForces;
+};
+
+//! Settings of relaxShells, see ForceComputer
+struct RelaxSettings
+{
+    //! The mean square force on the shells below which they converged
+    double msForceToler;
+    //! Square of the largest distance of a shell from its parent, 0 for none
+    double maxShellDistance2;
+    //! The smallest fraction of the Newton step
+    double minStep;
+    //! The largest fraction of the Newton step
+    double maxStep;
+    //! Iterations, including the first calculation, as ForceComputer::maxiter
+    int    maxIter;
+};
+
+/*! \brief Relax the shells of the conformations of several molecules on the GPU
+ * As ForceComputer::relaxMonomer and relaxDimer: each iteration moves the
+ * shells of the slots that did not converge, see ForceComputer::updateShells,
+ * then computes the interactions with shells for these, which with the
+ * forces of the interactions without shells give the forces. All data
+ * stay on the GPU until the shells of all slots converged or maxIter is
+ * reached. The step of each fragment starts at one.
+ * \param[inout] mols       The molecules
+ * \param[in]    nmol       Number of molecules
+ * \param[in]    settings   The settings
+ * \param[out]   nComputed  The number of slots computed in all iterations
+ * \param[out]   notFinite  Whether a shell got a displacement that is not
+ *                          finite, then it was not moved
+ * \return false if the GPU is not available
+ */
+bool relaxShells(const RelaxMolecule *mols,
+                 size_t               nmol,
+                 const RelaxSettings &settings,
+                 size_t              *nComputed,
+                 bool                *notFinite);
+
 } // namespace gpu
 
 } // namespace alexandria
