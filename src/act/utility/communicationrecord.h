@@ -113,6 +113,8 @@ private:
     std::vector<int>  helpers_;
     //! All the middlemen (not including the MASTER), as if anyone should care
     std::vector<int>  middlemen_;
+    //! Number of individuals of each middleman, including the master, see init
+    int               individualsPerRank_   = 1;
     //! Check whether init has been called
     bool              initCalled_            = false;
     //! Check whether done has been called
@@ -205,8 +207,22 @@ public:
     //! \return my helper nodes, or empty vector if none
     const std::vector<int> &helpers() const { return helpers_; }
 
-    //! \return all the middlemen except the master, or empty vector if none
+    /*! \brief The ranks of the individuals that the master does not compute
+     * With several individuals per rank, see individualsPerRank, each rank
+     * is listed once for each of its individuals, in their order, such that
+     * element i - individualsPerRank() is the rank of individual i.
+     * \return the ranks, or an empty vector if none
+     */
     const std::vector<int> &middlemen() const { return middlemen_; }
+
+    /*! \brief The number of individuals of each middleman, the master included
+     * One if there are at least as many ranks as individuals, otherwise the
+     * number of individuals divided by the number of ranks. Individual
+     * i is computed by rank i / individualsPerRank(), the master computes
+     * the first ones.
+     * \return the number of individuals per rank
+     */
+    int individualsPerRank() const { return individualsPerRank_; }
     
     //! \return communicator for sending to helpers
     MPI_Comm send_helpers() const { return mpi_act_helpers_; }
@@ -235,7 +251,9 @@ public:
     //! \return number of helpers per middlemen
     int nhelper_per_middleman() const { return nhelper_per_middleman_; }
     
-    //! \return my ordinal in the rank of middlemen or -1 if I am not one
+    /*! \brief My first individual
+     * \return the ordinal of my first individual, or -1 if I am not a middleman
+     */
     int middleManOrdinal() const { return ordinal_; }
 
     //! \return my NodeType
