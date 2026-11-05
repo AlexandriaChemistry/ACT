@@ -113,7 +113,7 @@ void computeAll(System *, double *const *)
 {
 }
 
-void computeBlocks(System *, const char *, double *const *)
+void computeBlocks(System *, const char *, double *const *, bool)
 {
 }
 

@@ -378,6 +378,8 @@ struct InteractionList
     bool               shells;
     //! The energy array of the block that the energies are added to, one per interaction type
     uint32_t           energyIndex;
+    //! Number of energy terms of the potential, the others are zero
+    uint32_t           nterm = pairEnergyTerms;
     //! Number of interactions
     size_t             n;
     //! The pair interactions, if not bonded
@@ -624,8 +626,9 @@ void computeAll(System *system, double *const *energies);
  * \param[in]  system   The system
  * \param[in]  use      Whether to compute each block
  * \param[out] energies The energies of each block computed
+ * \param[in]  forces   Whether to compute the forces too, which relaxBlocks needs
  */
-void computeBlocks(System *system, const char *use, double *const *energies);
+void computeBlocks(System *system, const char *use, double *const *energies, bool forces = true);
 
 /*! \brief Put the shells on their parents, see SystemBlock::shellParents
  * \param[in] system The system

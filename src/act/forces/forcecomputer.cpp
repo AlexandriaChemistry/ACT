@@ -1596,8 +1596,8 @@ void ForceComputer::computeRelaxedEnergiesGpu(MsgHandler                  *,
     }
     const bool all[2] = { true, true };
     { ScopedTimer rt(relaxT); nShellIter_ += gs.relax(-1, all, settings); }
-    { ScopedTimer et(energyT); gs.compute(0); }
-    { ScopedTimer et(energyT); gs.compute(1); }
+    { ScopedTimer et(energyT); gs.compute(0, false); }
+    { ScopedTimer et(energyT); gs.compute(1, false); }
     std::vector<std::vector<double>> eInduc2(allmols.size());
     bool doInduc2 = separateInductionCorrection;
     if (doInduc2)
@@ -1626,7 +1626,7 @@ void ForceComputer::computeRelaxedEnergiesGpu(MsgHandler                  *,
             }
             const bool relaxMonomer[2] = { im == 0, im == 1 };
             { ScopedTimer rt(relaxT); nShellIter_ += gs.relax(2, relaxMonomer, settings); }
-            { ScopedTimer et(energyT); gs.compute(2); }
+            { ScopedTimer et(energyT); gs.compute(2, false); }
             for (size_t k = 0; k < allmols.size(); k++)
             {
                 auto esum = sumElecTerms(&allmols[k]->conformationData(2)->energies);
@@ -1640,7 +1640,7 @@ void ForceComputer::computeRelaxedEnergiesGpu(MsgHandler                  *,
         { ScopedTimer et(energyT); gs.compute(2); }
     }
     { ScopedTimer rt(relaxT); nShellIter_ += gs.relax(2, all, settings); }
-    { ScopedTimer et(energyT); gs.compute(2); }
+    { ScopedTimer et(energyT); gs.compute(2, false); }
     postProcessRelaxedEnergies(allmols, false, doInduc2, separateInductionCorrection, eInduc2);
     if (checkCharges)
     {
