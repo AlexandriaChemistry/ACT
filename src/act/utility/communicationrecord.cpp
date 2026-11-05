@@ -122,8 +122,8 @@ void CommunicationRecord::print(FILE *fp)
                                                rank_, size_, ntToString[nt_].c_str(), superior_);
     if (isMaster())
     {
-        strToPrint.append(gmx::formatString("nmiddlemen: %d nhelper_per_middleman: %d\n", nmiddlemen_, 
-                                            nhelper_per_middleman_));
+        strToPrint.append(gmx::formatString("nmiddlemen: %d nhelper_per_middleman: %d individuals per rank: %d\n",
+                                            nmiddlemen_, nhelper_per_middleman_, individualsPerRank_));
     }
     if (isMasterOrMiddleMan())
     {
@@ -158,12 +158,40 @@ CommunicationStatus CommunicationRecord::init(int nmiddleman)
         return CommunicationStatus::TWOINIT;
     }
     nmiddlemen_ = nmiddleman;
-    if (nmiddlemen_ > size_ || nmiddlemen_ < 1)
+    if (nmiddlemen_ < 1)
     {
         GMX_THROW(gmx::InvalidInputError(gmx::formatString("Cannot handle %d middlemen (individuals) with %d cores/threads",
                   nmiddlemen_, size_).c_str()));
     }
-    if (nmiddlemen_ == 1)  // Only MASTER + HELPERS
+    if (nmiddlemen_ > size_)
+    {
+        // Several individuals per rank, which are computed together, such
+        // that a GPU gets more work at once. There are no helpers then.
+        if (nmiddlemen_ % size_ != 0)
+        {
+            GMX_THROW(gmx::InvalidInputError(gmx::formatString("With more individuals (%d) than cores/threads (%d), the number of individuals should be a multiple of the number of cores/threads", nmiddlemen_, size_).c_str()));
+        }
+        individualsPerRank_    = nmiddlemen_ / size_;
+        nhelper_per_middleman_ = 0;
+        if (rank_ == 0)
+        {
+            ordinal_ = 0;
+            for (int r = 1; r < size_; r++)
+            {
+                for (int k = 0; k < individualsPerRank_; k++)
+                {
+                    middlemen_.push_back(r);
+                }
+            }
+        }
+        else
+        {
+            nt_       = NodeType::MiddleMan;
+            superior_ = 0;
+            ordinal_  = rank_*individualsPerRank_;
+        }
+    }
+    else if (nmiddlemen_ == 1)  // Only MASTER + HELPERS
     {
         nhelper_per_middleman_ = size_-1;
     }
@@ -178,7 +206,11 @@ CommunicationStatus CommunicationRecord::init(int nmiddleman)
         }
     }
     // Select the node type etc.
-    if (rank_ == 0)  // If I am the MASTER
+    if (individualsPerRank_ > 1)
+    {
+        // Done above
+    }
+    else if (rank_ == 0)  // If I am the MASTER
     {
         // Set ordinal to 0, as the first middleman
         ordinal_ = 0;
@@ -203,7 +235,7 @@ CommunicationStatus CommunicationRecord::init(int nmiddleman)
                 middlemen_.push_back(i);
             }
         }
-        if (nmiddlemen_ - 1 != static_cast<int>(middlemen_.size()))
+        if (nmiddlemen_ - individualsPerRank_ != static_cast<int>(middlemen_.size()))
         {
             GMX_THROW(gmx::InternalError(gmx::formatString("Inconsistency in number of middlemen. Expected %d but found %zu.", nmiddlemen_, middlemen_.size()).c_str()));
         }                   
