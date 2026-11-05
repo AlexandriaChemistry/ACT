@@ -59,6 +59,14 @@ std::string implementation();
  */
 std::vector<std::string> devices();
 
+/*! \brief The GPU that this process uses
+ * The processes on a node are spread over its GPUs: the number of the
+ * process on the node, from the environment variables that Slurm and the
+ * MPI libraries set, modulo the number of GPUs.
+ * \return the index in devices, -1 without GPU
+ */
+int gpuIndex();
+
 /*! \brief Whether the GPU computes the potentials that it has kernels for
  * True if ACT was built with GPU support, a GPU was found and neither the
  * environment variable ACT_NO_GPU nor setUseGpu turned it off.
