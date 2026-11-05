@@ -61,6 +61,14 @@ fi
 #debian/ubuntu needs a : at the end
 MANPATH=${ACTMAN}:${MANPATH}
 
+# AdaptiveCpp, the SYCL implementation of the GPU code, reads its settings
+# before ACT starts and otherwise warns about each GPU backend that it cannot
+# load. Only errors are reported, unless the level is set already.
+if [ "@ACT_GPU_SYCL@" = "1" ] && [ -z "${ACPP_DEBUG_LEVEL}" ]; then
+  ACPP_DEBUG_LEVEL=1
+  export ACPP_DEBUG_LEVEL
+fi
+
 # export should be separate, so /bin/sh understands it
 export ACTBIN ACTLDLIB ACTMAN ACTDATA #LD_LIBRARY_PATH PATH MANPATH
 export PKG_CONFIG_PATH PYTHONPATH
