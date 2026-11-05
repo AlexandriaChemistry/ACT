@@ -233,6 +233,13 @@ bool ACMFitnessComputer::prepareDeviation(MsgHandler    *msghandler,
         itUpdate.insert(oi.iType());
     }
 
+    // The charge properties are only used for the ESP and the multipoles
+    bool needQProps = false;
+    for (auto erms : { eRMS::ESP, eRMS::MU, eRMS::QUAD, eRMS::OCT, eRMS::HEXADEC })
+    {
+        auto t = targets->find(erms);
+        needQProps = needQProps || (t != targets->end() && t->second.weight() > 0);
+    }
     // Loop over molecules
     int ntrain = 0;
     int nlocal = 0;
@@ -295,8 +302,10 @@ bool ACMFitnessComputer::prepareDeviation(MsgHandler    *msghandler,
                 ScopedTimer         scoped(timer);
                 std::vector<gmx::RVec> forces(actmol->atomsConst().size(), { 0, 0, 0 });
                 std::vector<gmx::RVec> coords = actmol->xOriginal();
+                // The coordinates and forces are not used here, and the
+                // charge properties only for the ESP and multipoles
                 actmol->generateCharges(msghandler, sii_->forcefield(), forceComp_,
-                                        algorithm_, &coords, &forces, true);
+                                        algorithm_, &coords, &forces, needQProps, false);
                 chargeVersion_[imol] = sii_->chargeParameterVersion();
             }
 
