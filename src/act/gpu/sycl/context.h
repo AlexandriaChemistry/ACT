@@ -155,7 +155,7 @@ private:
 };
 
 /*! \brief The queue of the GPU used, nullptr without GPU
- * The first GPU found is used, with an in-order queue. It is never
+ * The GPU of gpuIndex is used, with an in-order queue. It is never
  * deleted, since the order of destruction at the end of the program is
  * unknown relative to that of the SYCL runtime.
  * \return the queue
