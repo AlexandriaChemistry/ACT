@@ -68,8 +68,10 @@ enum CommunicationStatus {
  * \ingroup module_alexandria
  */
 enum class TrainFFMiddlemanMode {
-    FITNESS  = 1999,  // Compute fitness and send fitness back
-    MUTATION = 2022   // Mutate, compute fitness, send parameters and fitness back
+    FITNESS    = 1999,  // Compute fitness and send fitness back
+    MUTATION   = 2022,  // Mutate, compute fitness, send parameters and fitness back
+    INITIAL    = 2031,  // Compute the fitness of a new individual, also of the test set, send it back
+    STATISTICS = 2040   // Send the statistics of the force computer, see ForceComputerStatistics
 };
 
 /*! \brief Convert a CommunicationStatus to a string
@@ -113,8 +115,8 @@ private:
     std::vector<int>  helpers_;
     //! All the middlemen (not including the MASTER), as if anyone should care
     std::vector<int>  middlemen_;
-    //! Number of individuals of each middleman, including the master, see init
-    int               individualsPerRank_   = 1;
+    //! Number of individuals, more than the middlemen with a queue, see init
+    int               population_           = 0;
     //! Check whether init has been called
     bool              initCalled_            = false;
     //! Check whether done has been called
@@ -207,22 +209,23 @@ public:
     //! \return my helper nodes, or empty vector if none
     const std::vector<int> &helpers() const { return helpers_; }
 
-    /*! \brief The ranks of the individuals that the master does not compute
-     * With several individuals per rank, see individualsPerRank, each rank
-     * is listed once for each of its individuals, in their order, such that
-     * element i - individualsPerRank() is the rank of individual i.
+    /*! \brief The middlemen, not including the master
      * \return the ranks, or an empty vector if none
      */
     const std::vector<int> &middlemen() const { return middlemen_; }
 
-    /*! \brief The number of individuals of each middleman, the master included
-     * One if there are at least as many ranks as individuals, otherwise the
-     * number of individuals divided by the number of ranks. Individual
-     * i is computed by rank i / individualsPerRank(), the master computes
-     * the first ones.
-     * \return the number of individuals per rank
+    /*! \brief The number of individuals, see init
+     * \return the number of individuals
      */
-    int individualsPerRank() const { return individualsPerRank_; }
+    int population() const { return population_; }
+
+    /*! \brief Whether the master hands out the individuals from a queue
+     * With more individuals than cores/threads, each rank is a middleman
+     * without helpers, and the master gives each middleman the next
+     * individual as soon as it is done with one, see HybridGAMC::evolve.
+     * \return true if so
+     */
+    bool queue() const { return population_ > nmiddlemen_; }
     
     //! \return communicator for sending to helpers
     MPI_Comm send_helpers() const { return mpi_act_helpers_; }
@@ -362,6 +365,12 @@ public:
      * \return CommunicationStatus::RECV_DATA, if OK
      */
     CommunicationStatus recv_data(int src) const;
+
+    /*! \brief Wait for a message from any processor
+     * The message is not received, that is done with recv from the source.
+     * \return the source of the first message
+     */
+    int probeAny() const;
 
 };
 

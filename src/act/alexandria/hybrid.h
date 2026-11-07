@@ -46,6 +46,7 @@
 #include "act/ga/selector.h"
 #include "act/ga/terminator.h"
 
+#include "act/utility/communicationrecord.h"
 #include "confighandler.h"
 #include "staticindividualinfo.h"
 
@@ -77,6 +78,31 @@ private:
     const char                       *gpout_;
     //! seed for random numbers
     int                               seed_;
+
+    //! The work of a middleman for an individual, see runQueue
+    struct QueueTask
+    {
+        //! The individual in the gene pool
+        size_t                           individual;
+        //! What to do with it
+        alexandria::TrainFFMiddlemanMode mode;
+    };
+
+    /*! \brief Hand out the tasks to the middlemen, each gets the next as soon as it is done
+     *
+     * See CommunicationRecord::queue. Each task gets the seed of its
+     * individual, drawn from gen for all individuals in their order, and the
+     * generation, such that the results do not depend on which middleman
+     * does which task, nor on the number of middlemen.
+     * \param[inout] pool       The gene pool, the individuals are updated
+     * \param[in]    tasks      The tasks
+     * \param[in]    generation The generation, from zero
+     * \param[inout] gen        The random number generator
+     */
+    void runQueue(GenePool                     *pool,
+                  const std::vector<QueueTask> &tasks,
+                  int                           generation,
+                  std::mt19937                 &gen);
 
     /*! \brief Routine to manage crossovers
      * \param[in]  msghandler For debugging
