@@ -744,6 +744,12 @@ struct ShellRelaxation
      * relaxation step times the force before it, zero if there was none
      */
     std::vector<double> dxForce;
+    /*! The mean square shell force against which progress is measured,
+     * the last that was at most half the one before, see shellStallIterations
+     */
+    std::vector<double> reference;
+    //! The number of relaxation steps since the mean square force was halved, see reference
+    std::vector<double> stall;
     //! Displacements of the shells in the previous step, component m of particle a in row DIM*a+m
     std::vector<real>   dx;
     //! Work vectors of ForceComputer::updateShells, kept to use the memory again
@@ -761,6 +767,8 @@ struct ShellRelaxation
         step.assign(2*st, 1.0);
         force.assign(2*st, std::numeric_limits<double>::max());
         dxForce.assign(2*st, 0.0);
+        reference.assign(2*st, std::numeric_limits<double>::max());
+        stall.assign(2*st, 0.0);
         dx.assign(DIM*natom*st, 0);
     }
 };
@@ -907,7 +915,9 @@ struct ConformationData
                                               { { &fixed.arrayForcesDouble, arraysDouble.stride },
                                                 { &shells.step, shells.stride },
                                                 { &shells.force, shells.stride },
-                                                { &shells.dxForce, shells.stride } });
+                                                { &shells.dxForce, shells.stride },
+                                                { &shells.reference, shells.stride },
+                                                { &shells.stall, shells.stride } });
     }
 
     //! \return Whether arraysDouble is used, see doublePrecision

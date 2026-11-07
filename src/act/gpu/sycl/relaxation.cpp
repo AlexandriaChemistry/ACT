@@ -255,6 +255,10 @@ struct FragmentState
      * the shells are computed, those on the other particles change little.
      */
     double fmaxRest;
+    //! The mean square force against which progress is measured, see shellStallIterations
+    double reference;
+    //! Steps since the mean square force was halved
+    int    stall;
 };
 
 //! The device memory for relaxShells
@@ -601,7 +605,7 @@ bool relaxShells(const RelaxMolecule *mols,
     queue->memset(dVal, 0, sizeof(int));
     queue->parallel_for(sycl::range<1>(2*nslotAll), [=](sycl::id<1> id)
     {
-        dSt[id[0]] = { 1.0, DBL_MAX, 0.0, 0, 0.0 };
+        dSt[id[0]] = { 1.0, DBL_MAX, 0.0, 0, 0.0, DBL_MAX, 0 };
     });
     // The largest force on the particles that are not shells, from the
     // forces at the start
@@ -629,6 +633,7 @@ bool relaxShells(const RelaxMolecule *mols,
         }
     });
     const double toler    = settings.msForceToler;
+    const int    stallIterations = settings.stallIterations;
     const double maxDist2 = settings.maxShellDistance2;
     const double minStep  = settings.minStep;
     const double maxStep  = settings.maxStep;
@@ -865,6 +870,21 @@ bool relaxShells(const RelaxMolecule *mols,
                     atFloor = msForce <= floor*floor;
                 }
                 if (msForce <= toler || atFloor)
+                {
+                    continue;
+                }
+                // Without halving the mean square force for stallIterations
+                // steps, the shells stop without having converged, see updateShells
+                if (msForce <= 0.5*state.reference)
+                {
+                    state.reference = msForce;
+                    state.stall     = 0;
+                }
+                else
+                {
+                    state.stall += 1;
+                }
+                if (state.stall >= stallIterations)
                 {
                     continue;
                 }
@@ -1111,6 +1131,20 @@ bool relaxShells(const RelaxMolecule *mols,
     {
         queue->memcpy(h + oF, dF, nx*sizeof(float));
     }
+    // The slots whose shells stopped without progress did not converge,
+    // as those left after the last iteration
+    queue->parallel_for(sycl::range<1>(nslotAll), [=](sycl::id<1> id)
+    {
+        uint64_t              s = id[0];
+        const DeviceMolecule &m = dMols[findRange(dMols, nm, s, &DeviceMolecule::slotOffset)];
+        for (uint32_t fi = 0; fi < m.nfragment; fi++)
+        {
+            if (dSt[2*s + fi].stall >= stallIterations)
+            {
+                dDone[s] = 0;
+            }
+        }
+    });
     // The done and computed flags, which are next to each other
     queue->memcpy(h + oDone, dDone, (oComputed - oDone) + nslotAll);
     double *hE = mem.energiesHost.reserve(*queue, std::max<uint64_t>(nenergy, 1));

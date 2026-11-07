@@ -64,7 +64,7 @@ where 0 means that there is no maximum. It can be set with *alexandria gen_ff -s
    | Tolerance on         | -shellTolerance     | -shelltoler        | 0.001 (train_ff), 1e-6 (simulate),   |
    | :math:`F_{ms}`       |                     |                    | at most a tenth of -toler in simulate|
    +----------------------+---------------------+--------------------+--------------------------------------+
-   | Maximum number of    | -shell_max_iter     | -maxiter           | 25 (train_ff), 100 (simulate)        |
+   | Maximum number of    | -shell_max_iter     | -maxiter           | 12 (train_ff), 100 (simulate)        |
    | iterations           |                     |                    |                                      |
    +----------------------+---------------------+--------------------+--------------------------------------+
 
@@ -72,6 +72,8 @@ where 0 means that there is no maximum. It can be set with *alexandria gen_ff -s
 Shell relaxation in training
 ----------------------------
 During training the energies of all conformations (structures) of a molecule are computed together, see :ref:`sec-training`. The shells of all conformations are relaxed at the same time, and the conformations for which the shells converged are not computed again in the next iterations. For a dimer, the shells of each monomer are relaxed first in the isolated monomer, then all shells in the dimer. The induction energy is the change of the electrostatic energy upon relaxation of the shells. If the induction correction is trained separately (see :ref:`sec-indcorr`), the second order induction is computed by relaxing the shells of one monomer in the field of the other one, of which the shells stay at their positions in the isolated monomer, and the other way around. The rest of the induction is the induction correction.
+
+With poor parameters, which are common early in training, a strong field can hold shells at :math:`d_{max}`. The force perpendicular to the core-shell vector, Eqn. :eq:`fperp`, then often does not decrease below the tolerance, but cycles or stays the same. Therefore, in training the shells of a monomer stop when :math:`F_{ms}` has not been halved in three iterations, compared to the last value that was. Such conformations, like those that do not converge within the maximum number of iterations, are counted as failed shell convergence in the statistics of the force computer. Without this, a few of these conformations keep the relaxation of all others going until the maximum number of iterations. In the other programs the shells are relaxed until they converge or the maximum number of iterations is reached.
 
 Without polarization the interaction energy of a dimer is computed from the intermolecular interactions only, unless forces are needed, since the intramolecular energies of the dimer and the monomers cancel.
 

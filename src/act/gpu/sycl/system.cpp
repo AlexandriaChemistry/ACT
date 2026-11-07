@@ -191,6 +191,10 @@ struct FragmentState
     double dxfPrev;
     int    moving;
     double fmaxRest;
+    //! The mean square force against which progress is measured, see shellStallIterations
+    double reference;
+    //! Steps since the mean square force was halved
+    int    stall;
 };
 
 //! The difference of two coordinates with wrap-around, see coordinateDifference
@@ -475,6 +479,8 @@ public:
     float                          *dx_    = nullptr;
     double                         *partF2_ = nullptr, *partAfter_ = nullptr, *partDxF_ = nullptr;
     int                            *valid_ = nullptr;
+    //! The number of slots whose shells did not converge, see relaxBlocks
+    uint64_t                       *nfailed_ = nullptr;
     //! Whether each particle of all blocks is a shell
     char                           *isShell_ = nullptr;
     //! The kept coordinates of each block, see saveCoordinates
@@ -707,6 +713,7 @@ System *createSystem(const SystemBlock *blocks, size_t nblock)
     sys->partAfter_    = sys->allocate<double>(sys->nmovingPart_);
     sys->partDxF_      = sys->allocate<double>(sys->nmovingPart_);
     sys->valid_        = sys->allocate<int>(1);
+    sys->nfailed_      = sys->allocate<uint64_t>(1);
     sys->saved_.assign(nblock, nullptr);
     sys->upload(sys->forceShells_, forceShells.data(), forceShells.size());
     sys->upload(sys->movingShells_, movingShells.data(), movingShells.size());
@@ -1696,10 +1703,12 @@ void resetShells(System *sys, const char *use)
 }
 
 void relaxBlocks(System *sys, const char *use, const char *relax,
-                 const RelaxSettings &settings, size_t *nComputed, bool *notFinite)
+                 const RelaxSettings &settings, size_t *nComputed, bool *notFinite,
+                 size_t *nFailed)
 {
     *nComputed = 0;
     *notFinite = false;
+    *nFailed   = 0;
     auto *queue = sys->queue_;
     uint64_t nslotAll = sys->nslotAll_;
     if (nslotAll == 0)
@@ -1747,6 +1756,7 @@ void relaxBlocks(System *sys, const char *use, const char *relax,
     auto dBL  = sys->bondList_;
     uint32_t nb = sys->nblock_;
     const double toler    = settings.msForceToler;
+    const int    stallIterations = settings.stallIterations;
     const double maxDist2 = settings.maxShellDistance2;
     const double minStep  = settings.minStep;
     const double maxStep  = settings.maxStep;
@@ -1781,7 +1791,7 @@ void relaxBlocks(System *sys, const char *use, const char *relax,
                     }
                 }
             }
-            dSt[2*s + fi] = { 1.0, DBL_MAX, 0.0, 0, fmax };
+            dSt[2*s + fi] = { 1.0, DBL_MAX, 0.0, 0, fmax, DBL_MAX, 0 };
         }
     });
     int  iter       = 1;
@@ -1905,6 +1915,21 @@ void relaxBlocks(System *sys, const char *use, const char *relax,
                     atFloor = msForce <= floor*floor;
                 }
                 if (msForce <= toler || atFloor)
+                {
+                    continue;
+                }
+                // Without halving the mean square force for stallIterations
+                // steps, the shells stop without having converged, see updateShells
+                if (msForce <= 0.5*state.reference)
+                {
+                    state.reference = msForce;
+                    state.stall     = 0;
+                }
+                else
+                {
+                    state.stall += 1;
+                }
+                if (state.stall >= stallIterations)
                 {
                     continue;
                 }
@@ -2108,11 +2133,33 @@ void relaxBlocks(System *sys, const char *use, const char *relax,
             allDone = std::count(hDone, hDone + nslotAll, 0) == 0;
         }
     }
+    // The slots whose shells did not converge: those left after the last
+    // iteration and those that stopped without progress
+    auto dNF = sys->nfailed_;
+    queue->memset(dNF, 0, sizeof(uint64_t));
+    queue->parallel_for(sycl::range<1>(nslotAll), [=](sycl::id<1> id)
+    {
+        uint64_t s      = id[0];
+        bool     failed = !dDone[s];
+        for (uint32_t fi = 0; fi < 2; fi++)
+        {
+            failed = failed || dSt[2*s + fi].stall >= stallIterations;
+        }
+        if (failed)
+        {
+            sycl::atomic_ref<uint64_t, sycl::memory_order::relaxed, sycl::memory_scope::device,
+                             sycl::access::address_space::global_space> count(*dNF);
+            count.fetch_add(1);
+        }
+    });
     // The slots computed in each iteration, those that did not converge
-    int validFlag = 0;
+    int      validFlag = 0;
+    uint64_t failed    = 0;
     queue->memcpy(hDone, dHist, nsubmitted*nslotAll);
     queue->memcpy(&validFlag, dVal, sizeof(int));
+    queue->memcpy(&failed, dNF, sizeof(uint64_t));
     queue->wait_and_throw();
+    *nFailed = failed;
     for (int i = 0; i < nsubmitted; i++)
     {
         *nComputed += std::count(hDone + i*nslotAll, hDone + (i+1)*nslotAll, 0);

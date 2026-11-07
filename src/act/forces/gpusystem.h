@@ -105,9 +105,11 @@ public:
      * \param[in]  what         -1 for both monomers, 2 for the dimers
      * \param[in]  relaxMonomer For dimers, whether to relax the shells of each monomer
      * \param[in]  settings     The settings
+     * \param[out] nFailed      The number of conformations whose shells did not converge
      * \return the number of conformations computed in all iterations
      */
-    size_t relax(int what, const bool relaxMonomer[2], const gpu::RelaxSettings &settings);
+    size_t relax(int what, const bool relaxMonomer[2], const gpu::RelaxSettings &settings,
+                 size_t *nFailed);
 
     //! Copy the shells of the relaxed monomers to the dimers, as copyRelaxedMonomerShells
     void copyRelaxedMonomerShells();

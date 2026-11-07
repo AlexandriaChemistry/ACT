@@ -67,6 +67,8 @@ ACTMiddleMan::ACTMiddleMan(MsgHandler                *msghandler,
     double epsilonr;
     epsilonr = sii->forcefield()->epsilonr();
     forceComp_.init(bch->shellToler(), bch->shellMaxIter(), epsilonr);
+    // As the master, see OptACM::initForceComputer
+    forceComp_.setStallIterations(shellStallIterations);
 
     //! \todo Fitness computer. What about those false flags?
     fitComp_.init(msghandler, sii, mg, false, &forceComp_, algorithm, gach->lossFunction());

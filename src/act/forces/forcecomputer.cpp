@@ -620,6 +620,8 @@ size_t ForceComputer::updateShells(const Topology            *top,
     double     *step    = state.step.data() + fragment*stride + s0;
     double     *msPrev  = state.force.data() + fragment*stride + s0;
     double     *dxfPrev = state.dxForce.data() + fragment*stride + s0;
+    double     *msRef   = state.reference.data() + fragment*stride + s0;
+    double     *nstall  = state.stall.data() + fragment*stride + s0;
     real       *dx      = state.dx.data() + s0;
     // Mean square shell force
     shellForces2(atoms, isShell, x, f, stride, ns, offset, maxShellDistance2, &msForce);
@@ -672,12 +674,27 @@ size_t ForceComputer::updateShells(const Topology            *top,
         {
             atFloor = msForce[j] <= gmx::square(32*GMX_REAL_EPS*fmax[j]);
         }
-        if (msForce[j] <= msForceToler_ || atFloor)
+        if (!(msForce[j] <= msForceToler_ || atFloor))
         {
-            (*myCoords)[ca.conformation(s0 + j)].done = true;
-            numberDone += 1;
-            relax[j]    = 0;
+            // Without halving the mean square force for shellStallIterations
+            // steps, the shells stop without having converged
+            if (msForce[j] <= 0.5*msRef[j])
+            {
+                msRef[j]  = msForce[j];
+                nstall[j] = 0;
+            }
+            else
+            {
+                nstall[j] += 1;
+            }
+            if (stallIterations_ <= 0 || nstall[j] < stallIterations_)
+            {
+                continue;
+            }
         }
+        (*myCoords)[ca.conformation(s0 + j)].done = true;
+        numberDone += 1;
+        relax[j]    = 0;
     }
     // The step is scaled by the fraction of the previous step at which
     // the force along it would have been zero, from the forces before and
@@ -1229,6 +1246,20 @@ static void resetShellSteps(ConformationData *cdata)
     cdata->shells.reset(cdata->arrays.stride, cdata->arrays.natom);
 }
 
+/*! \brief Whether the shells of a fragment of a conformation stopped without progress
+ * \param[in] cdata    The conformations
+ * \param[in] c        The conformation
+ * \param[in] fragment The fragment
+ * \param[in] stallIterations The steps without progress after which shells stop, 0 for never
+ * \return Whether the relaxation stopped, see shellStallIterations
+ */
+static bool shellsStalled(const ConformationData *cdata, size_t c, size_t fragment, int stallIterations)
+{
+    const auto &st = cdata->shells;
+    size_t      i  = fragment*st.stride + cdata->arrays.slot(c);
+    return i < st.stall.size() && st.stall[i] > 0 && st.stall[i] >= stallIterations;
+}
+
 void ForceComputer::relaxMonomer(MsgHandler                  *msghandler,
                                  const ForceField            *pd,
                                  size_t                       im,
@@ -1261,7 +1292,7 @@ void ForceComputer::relaxMonomer(MsgHandler                  *msghandler,
     const bool relaxAll[2] = { true, true };
     size_t     nComputed   = 0;
     if (relaxShellsGpu(pd, allmols, im, relaxAll, maxiter_, msForceToler_, maxShellDistance,
-                       minShellStep, maxShellStep, allForces, &nComputed))
+                       minShellStep, maxShellStep, stallIterations_, allForces, &nComputed))
     {
         nShellIter_ += nComputed;
         allDone      = true;
@@ -1318,9 +1349,9 @@ void ForceComputer::relaxMonomer(MsgHandler                  *msghandler,
         const auto *cdata = molptr->conformationData(im);
         for(size_t c = 0; c < cdata->nconf(); c++)
         {
-            if (!cdata->confs[c].done &&
-                shellForce2(tops[im].atoms(), pols[im].isShell(), cdata->x(c), cdata->f(c),
-                            0, maxShellDistance2)/pols[im].nShell() > msForceToler_)
+            if (cdata->confs[c].done ? shellsStalled(cdata, c, 0, stallIterations_) :
+                (shellForce2(tops[im].atoms(), pols[im].isShell(), cdata->x(c), cdata->f(c),
+                             0, maxShellDistance2)/pols[im].nShell() > msForceToler_))
             {
                 nShellConvergeFailed_ += 1;
             }
@@ -1362,7 +1393,7 @@ void ForceComputer::relaxDimer(MsgHandler                  *msghandler,
     const bool relaxMonomers[2] = { !fixMonomer[0], !fixMonomer[1] };
     size_t     nComputed        = 0;
     if (relaxShellsGpu(pd, allmols, 2, relaxMonomers, maxiter_, msForceToler_, maxShellDistance,
-                       minShellStep, maxShellStep, allForces, &nComputed))
+                       minShellStep, maxShellStep, stallIterations_, allForces, &nComputed))
     {
         nShellIter_ += nComputed;
         allDone      = true;
@@ -1441,16 +1472,17 @@ void ForceComputer::relaxDimer(MsgHandler                  *msghandler,
         const auto *cdata = molptr->conformationData(2);
         for(size_t c = 0; c < cdata->nconf(); c++)
         {
-            if (cdata->confs[c].done)
-            {
-                continue;
-            }
+            bool done   = cdata->confs[c].done;
             bool failed = false;
             for(size_t im = 0; im < tops.size() && im < 2; im++)
             {
-                if (!fixMonomer[im] && pols[im].nShell() > 0 &&
-                    shellForce2(tops[im].atoms(), pols[im].isShell(), cdata->x(c), cdata->f(c),
-                                fh->atomStart()[im], maxShellDistance2)/pols[im].nShell() > msForceToler_)
+                if (fixMonomer[im] || pols[im].nShell() == 0)
+                {
+                    continue;
+                }
+                if (done ? shellsStalled(cdata, c, im, stallIterations_) :
+                    (shellForce2(tops[im].atoms(), pols[im].isShell(), cdata->x(c), cdata->f(c),
+                                 fh->atomStart()[im], maxShellDistance2)/pols[im].nShell() > msForceToler_))
                 {
                     failed = true;
                 }
@@ -1564,7 +1596,8 @@ void ForceComputer::computeRelaxedEnergiesGpu(MsgHandler                  *,
     static const size_t timer = Timings::instance().index("GPU resident evaluation");
     ScopedTimer         scoped(timer);
     auto &gs = *gpuSystem_;
-    gpu::RelaxSettings settings = { msForceToler_, gmx::square(shellMaxDistance(pd)), minShellStep, maxShellStep, maxiter_ };
+    gpu::RelaxSettings settings = { msForceToler_, gmx::square(shellMaxDistance(pd)), minShellStep, maxShellStep, maxiter_,
+                                    stallIterations_ };
     for (auto molptr : allmols)
     {
         auto &tops = molptr->fragmentHandler()->topologies();
@@ -1595,7 +1628,7 @@ void ForceComputer::computeRelaxedEnergiesGpu(MsgHandler                  *,
         }
     }
     const bool all[2] = { true, true };
-    { ScopedTimer rt(relaxT); nShellIter_ += gs.relax(-1, all, settings); }
+    { ScopedTimer rt(relaxT); size_t nf = 0; nShellIter_ += gs.relax(-1, all, settings, &nf); nShellConvergeFailed_ += nf; }
     { ScopedTimer et(energyT); gs.compute(0, false); }
     { ScopedTimer et(energyT); gs.compute(1, false); }
     std::vector<std::vector<double>> eInduc2(allmols.size());
@@ -1625,7 +1658,7 @@ void ForceComputer::computeRelaxedEnergiesGpu(MsgHandler                  *,
                 { ScopedTimer et(energyT); gs.compute(2); }
             }
             const bool relaxMonomer[2] = { im == 0, im == 1 };
-            { ScopedTimer rt(relaxT); nShellIter_ += gs.relax(2, relaxMonomer, settings); }
+            { ScopedTimer rt(relaxT); size_t nf = 0; nShellIter_ += gs.relax(2, relaxMonomer, settings, &nf); nShellConvergeFailed_ += nf; }
             { ScopedTimer et(energyT); gs.compute(2, false); }
             for (size_t k = 0; k < allmols.size(); k++)
             {
@@ -1639,7 +1672,7 @@ void ForceComputer::computeRelaxedEnergiesGpu(MsgHandler                  *,
         gs.restoreDimers();
         { ScopedTimer et(energyT); gs.compute(2); }
     }
-    { ScopedTimer rt(relaxT); nShellIter_ += gs.relax(2, all, settings); }
+    { ScopedTimer rt(relaxT); size_t nf = 0; nShellIter_ += gs.relax(2, all, settings, &nf); nShellConvergeFailed_ += nf; }
     { ScopedTimer et(energyT); gs.compute(2, false); }
     postProcessRelaxedEnergies(allmols, false, doInduc2, separateInductionCorrection, eInduc2);
     if (checkCharges)
@@ -2128,6 +2161,7 @@ void ForceComputer::computeTotal(MsgHandler                                     
             auto &conf = confs[c];
             if (conf.done)
             {
+                nShellConvergeFailed_ += shellsStalled(cdata, c, 0, stallIterations_) ? 1 : 0;
                 continue;
             }
             double msForce = shellForce2(atoms, isShell, cdata->x(c), cdata->f(c), 0, maxShellDistance2);
