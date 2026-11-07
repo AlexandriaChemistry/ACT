@@ -522,9 +522,11 @@ void writeCodeInformation(gmx::TextWriter *writer)
         {
             writer->writeLine(gmx::formatString("                    this process uses GPU %d, the processes on a node are",
                                                 gpu::gpuIndex()));
-            writer->writeLine("                    spread over its GPUs, for Coulomb of several structures");
-            writer->writeLine("                    and relaxing shells, in single precision with energies");
-            writer->writeLine("                    summed in double precision");
+            writer->writeLine("                    spread over its GPUs. It computes the pair potentials of");
+            writer->writeLine("                    many structures at once and relaxes their shells, in single");
+            writer->writeLine("                    precision with energies summed in double precision. With");
+            writer->writeLine("                    ACT_GPU_RESIDENT set, train_ff keeps the molecules on the GPU");
+            writer->writeLine("                    and computes all interactions, the charges and the shells there");
         }
     }
 }

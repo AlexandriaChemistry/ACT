@@ -60,7 +60,8 @@ namespace alexandria
  * A shell at the maximum distance from its core with a force pointing
  * away from the core is held there, see ForceComputer::updateShells. For such
  * a shell only the force perpendicular to the core-shell vector counts,
- * since that is the only force that can still be relaxed.
+ * since that is the only force that can still be relaxed, and only if it is
+ * larger than shellWallAngleTolerance times the force.
  * \param[in] atoms             The particles
  * \param[in] isShell           Whether or not the particles are shells
  * \param[in] x                 The coordinates
@@ -69,6 +70,19 @@ namespace alexandria
  * \param[in] maxShellDistance2 Square of the maximum core-shell distance, 0 if there is none
  * \return The sum of the squared shell forces
  */
+/*! \brief The squared length of the cross product of two vectors, in double precision
+ * \param[in] a The first vector
+ * \param[in] b The second vector
+ * \return |a x b|^2
+ */
+static double perpendicularSquared(const gmx::RVec &a, const gmx::RVec &b)
+{
+    double c0 = static_cast<double>(a[YY])*b[ZZ] - static_cast<double>(a[ZZ])*b[YY];
+    double c1 = static_cast<double>(a[ZZ])*b[XX] - static_cast<double>(a[XX])*b[ZZ];
+    double c2 = static_cast<double>(a[XX])*b[YY] - static_cast<double>(a[YY])*b[XX];
+    return c0*c0 + c1*c1 + c2*c2;
+}
+
 static double shellForce2(const std::vector<ActAtom>               &atoms,
                           const std::vector<bool>                  &isShell,
                           const CoordinateVectors<const Coordinate> &x,
@@ -77,8 +91,9 @@ static double shellForce2(const std::vector<ActAtom>               &atoms,
                           double                               maxShellDistance2)
 {
     // Shells are put on the wall by scaling, allow for rounding
-    const double atWall = 0.9999*maxShellDistance2;
-    double       f2sum  = 0;
+    const double atWall     = 0.9999*maxShellDistance2;
+    const double wallAngle2 = shellWallAngleTolerance*shellWallAngleTolerance;
+    double       f2sum      = 0;
     // Floating point operations, see Timings::addFlops
     double       flops  = 1;
     for(size_t i = 0; i < isShell.size(); i++)
@@ -99,8 +114,13 @@ static double shellForce2(const std::vector<ActAtom>               &atoms,
             flops += 13;
             if (dx2 >= atWall && fdx > 0)
             {
-                f2    -= fdx*fdx/dx2;
-                flops += 7;
+                // Only the force across the core-shell vector can be
+                // relaxed, it converged if small compared to the force.
+                // From the cross product, since f2 - fdx*fdx/dx2 is the
+                // difference of two nearly equal numbers.
+                double fperp2 = perpendicularSquared(fi, dx)/dx2;
+                f2     = (fperp2 <= wallAngle2*f2) ? 0.0 : fperp2;
+                flops += 16;
             }
         }
         f2sum += f2;
@@ -497,7 +517,8 @@ static void shellForces2(const std::vector<ActAtom> &atoms,
                          std::vector<double>        *f2sum)
 {
     // Shells are put on the wall by scaling, allow for rounding
-    const double atWall = 0.9999*maxShellDistance2;
+    const double atWall     = 0.9999*maxShellDistance2;
+    const double wallAngle2 = shellWallAngleTolerance*shellWallAngleTolerance;
     f2sum->assign(ns, 0.0);
     double      *sum    = f2sum->data();
     // Floating point operations, see Timings::addFlops
@@ -540,8 +561,13 @@ static void shellForces2(const std::vector<ActAtom> &atoms,
             double fdx = iprod(fi, dx);
             if (dx2 >= atWall && fdx > 0)
             {
-                f2    -= fdx*fdx/dx2;
-                flops += 7;
+                // Only the force across the core-shell vector can be
+                // relaxed, it converged if small compared to the force.
+                // From the cross product, since f2 - fdx*fdx/dx2 is the
+                // difference of two nearly equal numbers.
+                double fperp2 = perpendicularSquared(fi, dx)/dx2;
+                f2     = (fperp2 <= wallAngle2*f2) ? 0.0 : fperp2;
+                flops += 16;
             }
             sum[j] += f2;
         }
@@ -1597,7 +1623,7 @@ void ForceComputer::computeRelaxedEnergiesGpu(MsgHandler                  *,
     ScopedTimer         scoped(timer);
     auto &gs = *gpuSystem_;
     gpu::RelaxSettings settings = { msForceToler_, gmx::square(shellMaxDistance(pd)), minShellStep, maxShellStep, maxiter_,
-                                    stallIterations_ };
+                                    stallIterations_, shellWallAngleTolerance };
     for (auto molptr : allmols)
     {
         auto &tops = molptr->fragmentHandler()->topologies();
