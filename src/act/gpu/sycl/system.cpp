@@ -1929,7 +1929,7 @@ void relaxBlocks(System *sys, const char *use, const char *relax,
                 {
                     state.stall += 1;
                 }
-                if (state.stall >= stallIterations)
+                if (stallIterations > 0 && state.stall >= stallIterations)
                 {
                     continue;
                 }
@@ -2143,7 +2143,7 @@ void relaxBlocks(System *sys, const char *use, const char *relax,
         bool     failed = !dDone[s];
         for (uint32_t fi = 0; fi < 2; fi++)
         {
-            failed = failed || dSt[2*s + fi].stall >= stallIterations;
+            failed = failed || (stallIterations > 0 && dSt[2*s + fi].stall >= stallIterations);
         }
         if (failed)
         {
