@@ -1655,8 +1655,8 @@ void ForceComputer::computeRelaxedEnergiesGpu(MsgHandler                  *,
     }
     const bool all[2] = { true, true };
     { ScopedTimer rt(relaxT); size_t nf = 0; nShellIter_ += gs.relax(-1, all, settings, &nf); nShellConvergeFailed_ += nf; }
-    { ScopedTimer et(energyT); gs.compute(0, false); }
-    { ScopedTimer et(energyT); gs.compute(1, false); }
+    // Both monomers at once
+    { ScopedTimer et(energyT); gs.compute(-2, false); }
     std::vector<std::vector<double>> eInduc2(allmols.size());
     bool doInduc2 = separateInductionCorrection;
     if (doInduc2)
