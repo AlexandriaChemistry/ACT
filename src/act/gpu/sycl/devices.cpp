@@ -116,7 +116,11 @@ sycl::queue *gpuQueue()
             if (!gpus.empty())
             {
                 // The processes on a node are spread over its GPUs
-                q = new sycl::queue(gpus[gpuIndex()], sycl::property::queue::in_order());
+                // In order, and without a backend event for each operation,
+                // since ACT waits for the queue and never for single events.
+                // This shortens the gaps between the many short kernels.
+                q = new sycl::queue(gpus[gpuIndex()], sycl::property_list{ sycl::property::queue::in_order(),
+                                                                           sycl::property::queue::AdaptiveCpp_coarse_grained_events() });
                 // A GPU may take only a limited number of processes, as with
                 // the NVIDIA multi-process service, then a kernel fails, and
                 // this process computes without it
