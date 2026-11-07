@@ -96,7 +96,7 @@ public:
     void constructVsites();
 
     /*! \brief Compute all interactions, the energies go to the conformation data
-     * \param[in] what   0 or 1 for the monomers, 2 for the dimers, -1 for all
+     * \param[in] what   0 or 1 for a monomer, -2 for both, 2 for the dimers, -1 for all
      * \param[in] forces Whether to compute the forces too, needed before relax
      */
     void compute(int what, bool forces = true);

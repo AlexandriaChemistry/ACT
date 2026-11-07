@@ -77,8 +77,6 @@ struct DeviceSystemBlock
     uint64_t atomOffset;
     //! Start of the particles times slots
     uint64_t atomWorkOffset;
-    //! Start of the energies, in the compact energies of all blocks
-    uint64_t energyOffset;
     //! Start of the slots of all blocks
     uint64_t slotOffset;
     //! Start of the shell rows times slots
@@ -450,8 +448,12 @@ public:
     uint64_t                       *atomEntries_ = nullptr;
     float                          *eEntry_   = nullptr;
     double                         *eList_    = nullptr;
+    //! The energies of the blocks computed last, one after the other, see computeBlocks
     double                         *energies_ = nullptr;
     HostArray<double>               energiesHost_;
+    //! Where the energies of each block computed start in energies_, see computeBlocks
+    uint64_t                       *energyStart_ = nullptr;
+    std::vector<uint64_t>           energyStartHost_;
     //! The shells, see SystemBlock
     ForceShell                     *forceShells_  = nullptr;
     MovingShell                    *movingShells_ = nullptr;
@@ -518,7 +520,6 @@ System *createSystem(const SystemBlock *blocks, size_t nblock)
         db.xOffset        = sys->nx_;
         db.atomOffset     = atomStart.size() - 1;
         db.atomWorkOffset = sys->natomWork_;
-        db.energyOffset   = sys->nenergyAll_;
         db.natom          = sb.natom;
         db.stride         = sb.stride;
         db.nslot          = sb.nslot;
@@ -695,6 +696,7 @@ System *createSystem(const SystemBlock *blocks, size_t nblock)
     sys->eEntry_      = sys->allocate<float>(pairEnergyTerms*sys->nwork_);
     sys->eList_       = sys->allocate<double>(pairEnergyTerms*sys->nlistSlot_);
     sys->energies_    = sys->allocate<double>(sys->nenergyAll_);
+    sys->energyStart_ = sys->allocate<uint64_t>(nblock);
     sys->forceShells_  = sys->allocate<ForceShell>(forceShells.size());
     sys->movingShells_ = sys->allocate<MovingShell>(movingShells.size());
     sys->fragments_    = sys->allocate<ShellFragment>(fragments.size());
@@ -1497,6 +1499,22 @@ void computeBlocks(System *sys, const char *use, double *const *energies, bool f
     auto  dELs  = sys->eList_;
     auto  dE    = sys->energies_;
     uint32_t nb = sys->nblock_, nl = sys->nlist_;
+    // The energies of the blocks computed are stored one after the other,
+    // such that only those are copied to the host
+    auto    &eStart  = sys->energyStartHost_;
+    uint64_t nenergy = 0;
+    eStart.resize(nb);
+    for (uint32_t b = 0; b < nb; b++)
+    {
+        eStart[b] = nenergy;
+        if (use[b])
+        {
+            const auto &db = sys->blocksHost_[b];
+            nenergy += static_cast<uint64_t>(db.nenergy)*pairEnergyTerms*db.stride;
+        }
+    }
+    sys->upload(sys->energyStart_, eStart.data(), nb);
+    auto dES = sys->energyStart_;
     uint64_t nwork = sys->nwork_, nlistSlot = sys->nlistSlot_;
     // The energy of each interaction in each slot
     if (nwork > 0)
@@ -1610,7 +1628,7 @@ void computeBlocks(System *sys, const char *use, double *const *energies, bool f
                     sum += dELs[t*nlistSlot + dL[li].listSlotOffset + c];
                 }
             }
-            dE[b.energyOffset + (eidx*pairEnergyTerms + t)*b.stride + c] = sum;
+            dE[dES[lo] + (eidx*pairEnergyTerms + t)*b.stride + c] = sum;
         });
     }
     // The forces on each particle in each slot, from all its interactions
@@ -1656,14 +1674,17 @@ void computeBlocks(System *sys, const char *use, double *const *energies, bool f
     }
     // The energies to the host
     double *hE = sys->energiesHost_.reserve(*queue, std::max<uint64_t>(sys->nenergyAll_, 1));
-    sys->queue_->memcpy(hE, dE, sys->nenergyAll_*sizeof(double));
+    if (nenergy > 0)
+    {
+        sys->queue_->memcpy(hE, dE, nenergy*sizeof(double));
+    }
     queue->wait_and_throw();
     for (size_t b = 0; b < sys->blocksHost_.size(); b++)
     {
         const auto &db = sys->blocksHost_[b];
         if (use[b] && energies[b])
         {
-            std::copy(hE + db.energyOffset, hE + db.energyOffset + db.nenergy*pairEnergyTerms*db.stride, energies[b]);
+            std::copy(hE + eStart[b], hE + eStart[b] + db.nenergy*pairEnergyTerms*db.stride, energies[b]);
         }
     }
 }
