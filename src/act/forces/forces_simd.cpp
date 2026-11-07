@@ -3399,7 +3399,7 @@ void computeEnergies(MsgHandler                  *msghandler,
 
 // The GPU computes in single precision only
 bool relaxShellsGpu(const ForceField *, const std::vector<ACTMol *> &, size_t, const bool[2],
-                    int, double, double, double, double, bool, size_t *nComputed)
+                    int, double, double, double, double, int, bool, size_t *nComputed)
 {
     *nComputed = 0;
     return false;
@@ -3557,6 +3557,7 @@ bool relaxShellsGpu(const ForceField            *pd,
                     double                       maxShellDistance,
                     double                       minStep,
                     double                       maxStep,
+                    int                          stallIterations,
                     bool                         allForces,
                     size_t                      *nComputed)
 {
@@ -3658,7 +3659,7 @@ bool relaxShellsGpu(const ForceField            *pd,
         rmols.push_back(rm);
     }
     static_assert(MAX_ENER == gpu::pairEnergyTerms, "The GPU has as many energy terms as MAX_ENER");
-    gpu::RelaxSettings settings = { msForceToler, maxShellDistance2, minStep, maxStep, maxIter };
+    gpu::RelaxSettings settings = { msForceToler, maxShellDistance2, minStep, maxStep, maxIter, stallIterations };
     bool notFinite = false;
     if (!gpu::relaxShells(rmols.data(), rmols.size(), settings, nComputed, &notFinite))
     {
@@ -4033,7 +4034,7 @@ void GpuTrainingSystem::copyChargesToMolecules() {}
 void GpuTrainingSystem::resetShells() {}
 void GpuTrainingSystem::constructVsites() {}
 void GpuTrainingSystem::compute(int, bool) {}
-size_t GpuTrainingSystem::relax(int, const bool[2], const gpu::RelaxSettings &) { return 0; }
+size_t GpuTrainingSystem::relax(int, const bool[2], const gpu::RelaxSettings &, size_t *nFailed) { *nFailed = 0; return 0; }
 void GpuTrainingSystem::copyRelaxedMonomerShells() {}
 void GpuTrainingSystem::saveDimers() {}
 void GpuTrainingSystem::restoreDimers() {}
@@ -4620,7 +4621,8 @@ void GpuTrainingSystem::compute(int what, bool forces)
     }
 }
 
-size_t GpuTrainingSystem::relax(int what, const bool relaxMonomer[2], const gpu::RelaxSettings &settings)
+size_t GpuTrainingSystem::relax(int what, const bool relaxMonomer[2], const gpu::RelaxSettings &settings,
+                                size_t *nFailed)
 {
     auto &im = *impl_;
     auto  u  = im.use(what == 2 ? 2 : -2);
@@ -4639,7 +4641,7 @@ size_t GpuTrainingSystem::relax(int what, const bool relaxMonomer[2], const gpu:
     }
     size_t nComputed = 0;
     bool   notFinite = false;
-    gpu::relaxBlocks(im.system, u.data(), relax.data(), settings, &nComputed, &notFinite);
+    gpu::relaxBlocks(im.system, u.data(), relax.data(), settings, &nComputed, &notFinite, nFailed);
     if (notFinite)
     {
         // As on the processor, see moveCoordinate

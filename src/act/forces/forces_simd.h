@@ -69,6 +69,7 @@ void computeEnergies(MsgHandler                  *msghandler,
  * \param[in]    maxShellDistance Largest distance of a shell from its parent, 0 for none
  * \param[in]    minStep          Smallest fraction of the Newton step
  * \param[in]    maxStep          Largest fraction of the Newton step
+ * \param[in]    stallIterations  Steps without progress after which shells stop, 0 for never
  * \param[in]    allForces        Whether the forces on all particles are needed
  * \param[out]   nComputed        Number of conformations computed in all iterations
  * \return whether the GPU relaxed the shells
@@ -82,6 +83,7 @@ bool relaxShellsGpu(const ForceField            *pd,
                     double                       maxShellDistance,
                     double                       minStep,
                     double                       maxStep,
+                    int                          stallIterations,
                     bool                         allForces,
                     size_t                      *nComputed);
 
