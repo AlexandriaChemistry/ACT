@@ -49,6 +49,18 @@ class MsgHandler;
 class QtypeProps;
 class Topology;
 
+/*! \brief Largest ratio of the force across the core-shell vector to the force on a shell at the wall
+ * A shell held at the largest distance from its core by a force F pointing
+ * away from it can only move across the core-shell vector. With the
+ * component of the force in that direction at most this fraction of F, the
+ * energy it can still gain is about F d_max theta^2/2, some 1e-6 kJ/mol for
+ * F = 1e4 kJ/(mol nm) and d_max = 0.02 nm, and its force counts as zero in
+ * the convergence criterion. The force across the core-shell vector is the
+ * difference of two large numbers, so it often cannot be reduced below the
+ * tolerance on the mean square force, see shellForce2 in forcecomputer.cpp.
+ */
+constexpr double shellWallAngleTolerance = 1e-4;
+
 //! \brief How to treat the shells when computing total energies, see ForceComputer::computeTotal
 struct ShellOptions
 {

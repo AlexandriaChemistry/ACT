@@ -749,6 +749,7 @@ bool relaxShells(const RelaxMolecule *mols,
     const int    checkEvery = 4;
     int          nsubmitted = 0;
     const double atWall     = 0.9999*maxDist2;
+    const double wallAngle2 = settings.wallAngleToler*settings.wallAngleToler;
     while (iter < settings.maxIter && !allDone)
     {
         // The squared force of each shell in the convergence criterion and
@@ -791,7 +792,13 @@ bool relaxShells(const RelaxMolecule *mols,
                         double fdx = fv[0]*d[0] + fv[1]*d[1] + fv[2]*d[2];
                         if (dx2 >= atWall && fdx > 0)
                         {
-                            f2 -= fdx*fdx/dx2;
+                            // Converged if small compared to the force, from
+                            // the cross product, see shellForce2
+                            double c0 = static_cast<double>(fv[1])*d[2] - static_cast<double>(fv[2])*d[1];
+                            double c1 = static_cast<double>(fv[2])*d[0] - static_cast<double>(fv[0])*d[2];
+                            double c2 = static_cast<double>(fv[0])*d[1] - static_cast<double>(fv[1])*d[0];
+                            double fperp2 = (c0*c0 + c1*c1 + c2*c2)/dx2;
+                            f2 = (fperp2 <= wallAngle2*f2) ? 0.0 : fperp2;
                         }
                     }
                     dPF2[m.forceShellPartOffset + k*m.nslot + c] = f2;

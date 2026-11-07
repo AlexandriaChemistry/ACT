@@ -242,6 +242,8 @@ struct RelaxSettings
     int    maxIter;
     //! Steps without halving the mean square force after which the shells stop, 0 for never, see ForceComputer::setStallIterations
     int    stallIterations;
+    //! Largest ratio of the force across the core-shell vector to the force for a shell at the wall, see shellWallAngleTolerance
+    double wallAngleToler;
 };
 
 /*! \brief The interactions of one potential in the conformations of a molecule, see computePairBlocks

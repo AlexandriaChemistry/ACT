@@ -3659,7 +3659,8 @@ bool relaxShellsGpu(const ForceField            *pd,
         rmols.push_back(rm);
     }
     static_assert(MAX_ENER == gpu::pairEnergyTerms, "The GPU has as many energy terms as MAX_ENER");
-    gpu::RelaxSettings settings = { msForceToler, maxShellDistance2, minStep, maxStep, maxIter, stallIterations };
+    gpu::RelaxSettings settings = { msForceToler, maxShellDistance2, minStep, maxStep, maxIter, stallIterations,
+                                    shellWallAngleTolerance };
     bool notFinite = false;
     if (!gpu::relaxShells(rmols.data(), rmols.size(), settings, nComputed, &notFinite))
     {
