@@ -102,6 +102,15 @@ if(GMX_OPENMP_SIMD)
         if(CXX_FLAG_WNO_ERROR_PASS_FAILED)
             set(GMX_SIMD_VECTORIZATION_CXX_FLAGS "${GMX_SIMD_VECTORIZATION_CXX_FLAGS} -Wno-error=pass-failed")
         endif()
+        # Math functions that may set errno, the default on Linux, are calls
+        # that cannot be vectorized, not even sqrt. The results are the same,
+        # nothing in ACT reads errno after a math function. On macOS this is
+        # the default already.
+        check_cxx_compiler_flag(-fno-math-errno CXX_FLAG_FNO_MATH_ERRNO)
+        if(CXX_FLAG_FNO_MATH_ERRNO)
+            set(GMX_SIMD_VECTORIZATION_C_FLAGS   "${GMX_SIMD_VECTORIZATION_C_FLAGS} -fno-math-errno")
+            set(GMX_SIMD_VECTORIZATION_CXX_FLAGS "${GMX_SIMD_VECTORIZATION_CXX_FLAGS} -fno-math-errno")
+        endif()
         if(GMX_VECTOR_MATH)
             # Vector math library, the first one that compiles and links a
             # vectorized loop calling exp and erf is used.
