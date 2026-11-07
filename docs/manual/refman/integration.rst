@@ -44,7 +44,12 @@ A shell held at :math:`d_{max}` by a force pointing away from its core can never
 .. math:: {\bf F}_{s,\perp} ~=~ {\bf F}_s - \frac{{\bf F}_s\cdot{\bf r}_{cs}}{r_{cs}^2}\,{\bf r}_{cs}\qquad\mbox{if}\quad r_{cs} = d_{max}\quad\mbox{and}\quad{\bf F}_s\cdot{\bf r}_{cs} > 0,
    :label: fperp
 
-which is zero at the minimum of the energy on the sphere.
+which is zero at the minimum of the energy on the sphere. When a strong field holds the shell there, which is common with the poor parameters early in training, :math:`{\bf F}_{s,\perp}` is the difference of two large force components. It can then stay well above the tolerance on :math:`F_{ms}`, in a cycle or unchanged, even though the shell is practically at the minimum. Moving the shell over a small angle :math:`\theta` on the sphere changes its energy by about
+
+.. math:: \Delta E ~\approx~ \frac{1}{2}\left|{\bf F}_s\right|\,d_{max}\,\theta^2,
+   :label: ewall
+
+since the force away from the core acts as a force constant :math:`\left|{\bf F}_s\right|/d_{max}` across the core-shell vector. Therefore, the force of such a shell counts as zero in Eqn. :eq:`fmsshell` if :math:`\left|{\bf F}_{s,\perp}\right| \le 10^{-4}\left|{\bf F}_s\right|`. For :math:`\left|{\bf F}_s\right| = 10^4` kJ/(mol nm) and :math:`d_{max}` = 0.02 nm the energy can then change by about :math:`10^{-6}` kJ/mol. The perpendicular force is computed as :math:`\left|{\bf F}_s\times{\bf r}_{cs}\right|/r_{cs}`, since the difference in Eqn. :eq:`fperp` loses its precision when the perpendicular force is that small compared to the force, in particular with forces in single precision. Without this, a few conformations with shells held at :math:`d_{max}` keep the relaxation of all the others going until the maximum number of iterations.
 
 The maximum distance :math:`d_{max}` is part of the force field, since its parameters are trained with it. It is the option *shellmaxdistance* (in nm) of the polarization in the force field file,
 
