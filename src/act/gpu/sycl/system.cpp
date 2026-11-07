@@ -164,6 +164,27 @@ inline uint32_t findRange(const T *a, uint32_t n, uint64_t index, uint64_t T::*s
     return lo;
 }
 
+/*! \brief As findRange, starting from the range of the first work item of the wavefront
+ * Most work items of a wavefront are in the same range, so this needs one
+ * or a few loads instead of a binary search, see makeRangeHints.
+ * \param[in] a     The ranges
+ * \param[in] n     Their number
+ * \param[in] index The work item
+ * \param[in] start The start of each range
+ * \param[in] hint  The range of the first work item of each wavefront
+ * \return The last range that starts at or before index
+ */
+template <typename T>
+inline uint32_t findRangeFrom(const T *a, uint32_t n, uint64_t index, uint64_t T::*start, const uint32_t *hint)
+{
+    uint32_t lo = hint[index/wavefrontSize];
+    while (lo + 1 < n && a[lo + 1].*start <= index)
+    {
+        lo++;
+    }
+    return lo;
+}
+
 //! A coordinate difference in nm, the exact difference of the integers rounded once
 inline float differenceNm(int64_t a, int64_t b)
 {
@@ -462,6 +483,10 @@ public:
     uint32_t                       *movingFrag_   = nullptr;
     //! The shells of each block, of which the forces are computed when relaxing
     uint32_t                       *shellRows_    = nullptr;
+    //! The block or list of the first work item of each wavefront of the kernels, see findRangeFrom
+    uint32_t                       *hintListWork_ = nullptr, *hintListSlot_ = nullptr, *hintAtomWork_ = nullptr;
+    uint32_t                       *hintSlot_ = nullptr, *hintShellWork_ = nullptr, *hintMovingPart_ = nullptr;
+    uint32_t                       *hintShellRow_ = nullptr;
     //! The shell-parent pairs
     uint32_t                       *resets_       = nullptr;
     //! The interactions with shells of each particle, as atomStart_ and atomEntries_
@@ -489,6 +514,27 @@ public:
     std::vector<int64_t *>          saved_;
     int                             maxIterAllocated_ = 0;
 };
+
+/*! \brief The range of the first work item of each wavefront, for findRangeFrom
+ * \param[in] sys   The system, which owns the device memory
+ * \param[in] a     The ranges on the host
+ * \param[in] total The number of work items
+ * \param[in] start The start of each range
+ * \return The device array
+ */
+template <typename T>
+static uint32_t *makeRangeHints(System *sys, const std::vector<T> &a, uint64_t total, uint64_t T::*start)
+{
+    std::vector<uint32_t> hint(total/wavefrontSize + 1, 0);
+    for (size_t g = 0; g < hint.size() && !a.empty(); g++)
+    {
+        hint[g] = findRange(a.data(), a.size(), g*wavefrontSize, start);
+    }
+    auto *d = sys->allocate<uint32_t>(hint.size());
+    sys->upload(d, hint.data(), hint.size());
+    sys->queue_->wait_and_throw();
+    return d;
+}
 
 System *createSystem(const SystemBlock *blocks, size_t nblock)
 {
@@ -740,6 +786,13 @@ System *createSystem(const SystemBlock *blocks, size_t nblock)
     sys->upload(sys->atomStart_, atomStart.data(), atomStart.size());
     sys->upload(sys->atomEntries_, atomEntries.data(), atomEntries.size());
     queue->wait_and_throw();
+    sys->hintListWork_   = makeRangeHints(sys, sys->listsHost_, sys->nwork_, &DeviceList::workOffset);
+    sys->hintListSlot_   = makeRangeHints(sys, sys->listsHost_, sys->nlistSlot_, &DeviceList::listSlotOffset);
+    sys->hintAtomWork_   = makeRangeHints(sys, sys->blocksHost_, sys->natomWork_, &DeviceSystemBlock::atomWorkOffset);
+    sys->hintSlot_       = makeRangeHints(sys, sys->blocksHost_, sys->nslotAll_, &DeviceSystemBlock::slotOffset);
+    sys->hintShellWork_  = makeRangeHints(sys, sys->blocksHost_, sys->nshellWork_, &DeviceSystemBlock::shellWorkOffset);
+    sys->hintMovingPart_ = makeRangeHints(sys, sys->blocksHost_, sys->nmovingPart_, &DeviceSystemBlock::movingShellPartOffset);
+    sys->hintShellRow_   = makeRangeHints(sys, sys->blocksHost_, sys->nshellRowWork_, &DeviceSystemBlock::shellRowWorkOffset);
     if (std::getenv("ACT_GPU_SYSTEM_INFO"))
     {
         // For developers, the amount of work of the kernels
@@ -1498,6 +1551,9 @@ void computeBlocks(System *sys, const char *use, double *const *energies, bool f
     auto  dEE   = sys->eEntry_;
     auto  dELs  = sys->eList_;
     auto  dE    = sys->energies_;
+    auto  dHLW  = sys->hintListWork_;
+    auto  dHLS  = sys->hintListSlot_;
+    auto  dHAW  = sys->hintAtomWork_;
     uint32_t nb = sys->nblock_, nl = sys->nlist_;
     // The energies of the blocks computed are stored one after the other,
     // such that only those are copied to the host
@@ -1522,7 +1578,7 @@ void computeBlocks(System *sys, const char *use, double *const *energies, bool f
         queue->parallel_for(sycl::range<1>(nwork), [=](sycl::id<1> id)
         {
             uint64_t                 w  = id[0];
-            const DeviceList        &l  = dL[findRange(dL, nl, w, &DeviceList::workOffset)];
+            const DeviceList        &l  = dL[findRangeFrom(dL, nl, w, &DeviceList::workOffset, dHLW)];
             const DeviceSystemBlock &b  = dB[l.block];
             if (!dU[l.block])
             {
@@ -1570,7 +1626,7 @@ void computeBlocks(System *sys, const char *use, double *const *energies, bool f
         queue->parallel_for(sycl::range<1>(nlistSlot), [=](sycl::id<1> id)
         {
             uint64_t                 s = id[0];
-            const DeviceList        &l = dL[findRange(dL, nl, s, &DeviceList::listSlotOffset)];
+            const DeviceList        &l = dL[findRangeFrom(dL, nl, s, &DeviceList::listSlotOffset, dHLS)];
             const DeviceSystemBlock &b = dB[l.block];
             uint64_t                 c = s - l.listSlotOffset;
             if (!dU[l.block])
@@ -1640,7 +1696,7 @@ void computeBlocks(System *sys, const char *use, double *const *energies, bool f
         queue->parallel_for(sycl::range<1>(sys->natomWork_), [=](sycl::id<1> id)
         {
             uint64_t                 w  = id[0];
-            uint32_t                 bi = findRange(dB, nb, w, &DeviceSystemBlock::atomWorkOffset);
+            uint32_t                 bi = findRangeFrom(dB, nb, w, &DeviceSystemBlock::atomWorkOffset, dHAW);
             const DeviceSystemBlock &b  = dB[bi];
             uint64_t                 local = w - b.atomWorkOffset;
             uint64_t                 a  = local / b.nslot;
@@ -1757,6 +1813,10 @@ void relaxBlocks(System *sys, const char *use, const char *relax,
     auto dDx  = sys->dx_;
     auto dSt  = static_cast<FragmentState *>(sys->state_);
     auto dDone = sys->done_;
+    auto dHS   = sys->hintSlot_;
+    auto dHSW  = sys->hintShellWork_;
+    auto dHMP  = sys->hintMovingPart_;
+    auto dHSR  = sys->hintShellRow_;
     auto dHist = sys->doneHistory_;
     auto dFS  = sys->forceShells_;
     auto dMS  = sys->movingShells_;
@@ -1791,7 +1851,7 @@ void relaxBlocks(System *sys, const char *use, const char *relax,
     queue->parallel_for(sycl::range<1>(nslotAll), [=](sycl::id<1> id)
     {
         uint64_t                 s  = id[0];
-        uint32_t                 bi = findRange(dB, nb, s, &DeviceSystemBlock::slotOffset);
+        uint32_t                 bi = findRangeFrom(dB, nb, s, &DeviceSystemBlock::slotOffset, dHS);
         const DeviceSystemBlock &b  = dB[bi];
         uint64_t                 c  = s - b.slotOffset;
         dDone[s] = dU[bi] ? 0 : 1;
@@ -1829,7 +1889,7 @@ void relaxBlocks(System *sys, const char *use, const char *relax,
             queue->parallel_for(sycl::range<1>(sys->nshellWork_), [=](sycl::id<1> id)
             {
                 uint64_t                 w  = id[0];
-                uint32_t                 bi = findRange(dB, nb, w, &DeviceSystemBlock::shellWorkOffset);
+                uint32_t                 bi = findRangeFrom(dB, nb, w, &DeviceSystemBlock::shellWorkOffset, dHSW);
                 const DeviceSystemBlock &b  = dB[bi];
                 uint64_t local = w - b.shellWorkOffset;
                 uint64_t c     = local % b.nslot;
@@ -1890,7 +1950,7 @@ void relaxBlocks(System *sys, const char *use, const char *relax,
             {
                 return;
             }
-            uint32_t                 bi = findRange(dB, nb, s, &DeviceSystemBlock::slotOffset);
+            uint32_t                 bi = findRangeFrom(dB, nb, s, &DeviceSystemBlock::slotOffset, dHS);
             const DeviceSystemBlock &b  = dB[bi];
             uint64_t                 c  = s - b.slotOffset;
             uint64_t                 st = b.stride;
@@ -1990,7 +2050,7 @@ void relaxBlocks(System *sys, const char *use, const char *relax,
             queue->parallel_for(sycl::range<1>(sys->nmovingPart_), [=](sycl::id<1> id)
             {
                 uint64_t                 w  = id[0];
-                uint32_t                 bi = findRange(dB, nb, w, &DeviceSystemBlock::movingShellPartOffset);
+                uint32_t                 bi = findRangeFrom(dB, nb, w, &DeviceSystemBlock::movingShellPartOffset, dHMP);
                 const DeviceSystemBlock &b  = dB[bi];
                 uint64_t local = w - b.movingShellPartOffset;
                 uint64_t c     = local % b.nslot;
@@ -2118,7 +2178,7 @@ void relaxBlocks(System *sys, const char *use, const char *relax,
                                 [=](sycl::nd_item<1> item)
             {
                 uint64_t                 w0 = item.get_group(0)*static_cast<uint64_t>(wavefrontSize);
-                uint32_t                 bi = findRange(dB, nb, w0, &DeviceSystemBlock::shellRowWorkOffset);
+                uint32_t                 bi = findRangeFrom(dB, nb, w0, &DeviceSystemBlock::shellRowWorkOffset, dHSR);
                 const DeviceSystemBlock &b  = dB[bi];
                 uint64_t local0 = w0 - b.shellRowWorkOffset;
                 uint64_t row    = local0 / b.nslotPad;
