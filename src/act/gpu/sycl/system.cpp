@@ -734,20 +734,33 @@ System *createSystem(const SystemBlock *blocks, size_t nblock)
     if (std::getenv("ACT_GPU_SYSTEM_INFO"))
     {
         // For developers, the amount of work of the kernels
-        uint64_t shellEntryWork = 0, padded = 0;
+        uint64_t shellEntryWork = 0, shellEntryPadded = 0, rowSlots = 0, padded = 0, maxEntries = 0;
+        std::vector<uint64_t> rowEntries;
         for (const auto &b : sys->blocksHost_)
         {
             for (uint32_t r = 0; r < b.nshellRow; r++)
             {
-                uint32_t a = shellRows[b.firstShellRow + r];
-                shellEntryWork += (shellStart[b.atomOffset + a + 1] - shellStart[b.atomOffset + a])*b.nslot;
+                uint32_t a  = shellRows[b.firstShellRow + r];
+                uint64_t ne = shellStart[b.atomOffset + a + 1] - shellStart[b.atomOffset + a];
+                shellEntryWork   += ne*b.nslot;
+                shellEntryPadded += ne*b.nslotPad;
+                maxEntries        = std::max(maxEntries, ne);
+                rowEntries.push_back(ne);
             }
-            padded += static_cast<uint64_t>(b.nshellRow)*b.nslotPad;
+            rowSlots += static_cast<uint64_t>(b.nshellRow)*b.nslot;
+            padded   += static_cast<uint64_t>(b.nshellRow)*b.nslotPad;
         }
         fprintf(stderr, "GPU system: %u blocks, %u lists, %lu slots, %lu pairs, %lu bonded, "
-                "%lu interaction-slots, %lu shell-row-slots (%lu padded), %lu shell interaction-slots\n",
+                "%lu interaction-slots, %lu shell-row-slots (%lu padded), %lu shell interaction-slots (%lu padded)\n",
                 sys->nblock_, sys->nlist_, sys->nslotAll_, sys->npair_, sys->nbond_, sys->nwork_,
-                sys->nshellRowWork_ == 0 ? 0 : sys->nshellRowWork_, padded, shellEntryWork);
+                rowSlots, padded, shellEntryWork, shellEntryPadded);
+        if (!rowEntries.empty())
+        {
+            std::sort(rowEntries.begin(), rowEntries.end());
+            auto q = [&rowEntries](double f) { return rowEntries[static_cast<size_t>(f*(rowEntries.size() - 1))]; };
+            fprintf(stderr, "GPU system: %zu shell rows, interactions per row median %lu, 90%% %lu, 99%% %lu, max %lu\n",
+                    rowEntries.size(), q(0.5), q(0.9), q(0.99), maxEntries);
+        }
     }
     return sys;
 }
@@ -2043,14 +2056,20 @@ void relaxBlocks(System *sys, const char *use, const char *relax,
         // and those of their interactions with shells
         if (sys->nshellRowWork_ > 0)
         {
-            queue->parallel_for(sycl::range<1>(sys->nshellRowWork_), [=](sycl::id<1> id)
+            // A work-group of a wavefront lies in a single shell row, as the
+            // rows are padded to whole wavefronts. The block and the row
+            // follow from the group alone, such that the compiler knows they
+            // are the same for all its work items and can load the data of
+            // the shell and its interactions once for the wavefront.
+            queue->parallel_for(sycl::nd_range<1>(sys->nshellRowWork_, wavefrontSize),
+                                [=](sycl::nd_item<1> item)
             {
-                uint64_t                 w  = id[0];
-                uint32_t                 bi = findRange(dB, nb, w, &DeviceSystemBlock::shellRowWorkOffset);
+                uint64_t                 w0 = item.get_group(0)*static_cast<uint64_t>(wavefrontSize);
+                uint32_t                 bi = findRange(dB, nb, w0, &DeviceSystemBlock::shellRowWorkOffset);
                 const DeviceSystemBlock &b  = dB[bi];
-                uint64_t local = w - b.shellRowWorkOffset;
-                uint64_t row   = local / b.nslotPad;
-                uint64_t c     = local % b.nslotPad;
+                uint64_t local0 = w0 - b.shellRowWorkOffset;
+                uint64_t row    = local0 / b.nslotPad;
+                uint64_t c      = local0 % b.nslotPad + item.get_local_id(0);
                 if (c >= b.nslot || dDone[b.slotOffset + c])
                 {
                     return;
