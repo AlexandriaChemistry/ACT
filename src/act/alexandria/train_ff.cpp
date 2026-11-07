@@ -960,6 +960,11 @@ int train_ff(int argc, char *argv[])
     // Fills id and prefix in sii
     // Calls optionsFinished() for MolGen instance.
     opt.optionsFinished(filenms);
+    if (opt.commRec()->isIdle())
+    {
+        // Left over in the layout of the processes, see CommunicationRecord::init
+        return 0;
+    }
 
     // Check charge reader options
     compR.optionsFinished(opt.msgHandler(), filenms);
@@ -1039,7 +1044,7 @@ int train_ff(int argc, char *argv[])
     {
         opt.mg()->checkOptions(opt.msgHandler(), opt.sii()->forcefield(), compR.algorithm());
     }
-    opt.commRec()->bcast(&optionsOk, MPI_COMM_WORLD);
+    opt.commRec()->bcast(&optionsOk, opt.commRec()->comm_world());
     if (!optionsOk)
     {
         return 0;
