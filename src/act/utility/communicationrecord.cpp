@@ -125,6 +125,10 @@ void CommunicationRecord::print(FILE *fp)
         strToPrint.append(gmx::formatString("nmiddlemen: %d nhelper_per_middleman: %d individuals: %d%s\n",
                                             nmiddlemen_, nhelper_per_middleman_, population_,
                                             queue() ? " from a queue" : ""));
+        if (nidle_ > 0)
+        {
+            strToPrint.append(gmx::formatString("idle cores/threads: %d\n", nidle_));
+        }
     }
     if (isMasterOrMiddleMan())
     {
@@ -178,11 +182,33 @@ CommunicationStatus CommunicationRecord::init(int nmiddleman)
     else
     {
         nhelper_per_middleman_ = size_ / nmiddlemen_ - 1;
-        
-        // We are picky. Each individual needs the same number of helpers
-        if (nmiddlemen_ * (1+nhelper_per_middleman_) != size_)
+
+        // Each individual needs the same number of helpers. The processes
+        // left over are idle: they leave the ACT communicator, such that
+        // the others work as if they were all there is.
+        int nactive = nmiddlemen_ * (1+nhelper_per_middleman_);
+        if (nactive != size_)
         {
-            GMX_THROW(gmx::InvalidInputError(gmx::formatString("The number of cores/threads (%d) should be the product of the number of workers (per individual) (%d) and the number of individuals (%d)", size_, nhelper_per_middleman_ + 1, nmiddlemen_).c_str()));
+            nidle_ = size_ - nactive;
+            idle_  = rank_ >= nactive;
+            if (rank_ == 0)
+            {
+                fprintf(stderr, "\nWARNING: %d of the %d cores/threads will be idle, since each of the %d individuals\n"
+                        "needs the same number of cores/threads (%d). Use a multiple of %d cores/threads,\n"
+                        "or more individuals than cores/threads.\n\n",
+                        nidle_, size_, nmiddlemen_, nhelper_per_middleman_ + 1, nmiddlemen_);
+            }
+            MPI_Comm active = MPI_COMM_NULL;
+            check_return("MPI_Comm_split", MPI_Comm_split(mpi_act_world_, idle_ ? 1 : 0, rank_, &active));
+            check_return("MPI_Comm_free", MPI_Comm_free(&mpi_act_world_));
+            mpi_act_world_ = active;
+            check_return("MPI_Comm_rank", MPI_Comm_rank(mpi_act_world_, &rank_));
+            check_return("MPI_Comm_size", MPI_Comm_size(mpi_act_world_, &size_));
+            if (idle_)
+            {
+                initCalled_ = true;
+                return CommunicationStatus::OK;
+            }
         }
     }
     // Select the node type etc.

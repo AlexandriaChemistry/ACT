@@ -117,6 +117,10 @@ private:
     std::vector<int>  middlemen_;
     //! Number of individuals, more than the middlemen with a queue, see init
     int               population_           = 0;
+    //! Whether I am left over in the layout of the processes, see init
+    bool              idle_                  = false;
+    //! The number of idle processes
+    int               nidle_                 = 0;
     //! Check whether init has been called
     bool              initCalled_            = false;
     //! Check whether done has been called
@@ -267,6 +271,13 @@ public:
 
     //! \return whether I am the master
     bool isMaster() const { return NodeType::Master == nt_; }
+
+    /*! \brief Whether I have no work
+     * With fewer individuals than processes that is not a multiple of
+     * them, the processes left over are idle. They are not part of
+     * comm_world() of the others and should stop after init.
+     */
+    bool isIdle() const { return idle_; }
 
     //! \return whether I am a middleman
     bool isMiddleMan() const { return NodeType::MiddleMan == nt_; }
