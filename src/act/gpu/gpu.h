@@ -240,6 +240,8 @@ struct RelaxSettings
     double maxStep;
     //! Iterations, including the first calculation, as ForceComputer::maxiter
     int    maxIter;
+    //! Steps without halving the mean square force after which the shells stop, see shellStallIterations
+    int    stallIterations;
 };
 
 /*! \brief The interactions of one potential in the conformations of a molecule, see computePairBlocks
@@ -646,9 +648,13 @@ void resetShells(System *system, const char *use);
  * \param[in]  settings  The settings
  * \param[out] nComputed The number of slots computed in all iterations
  * \param[out] notFinite Whether a displacement was not finite
+ * \param[out] nFailed   The number of slots whose shells did not converge,
+ *                       those that stopped without progress and those left
+ *                       after the last iteration
  */
 void relaxBlocks(System *system, const char *use, const char *relax,
-                 const RelaxSettings &settings, size_t *nComputed, bool *notFinite);
+                 const RelaxSettings &settings, size_t *nComputed, bool *notFinite,
+                 size_t *nFailed);
 
 /*! \brief Copy the coordinates of particles from one block to another, in all slots
  * As copyRelaxedMonomerShells in forcecomputer.cpp, which copies the shells

@@ -121,10 +121,12 @@ void resetShells(System *, const char *)
 {
 }
 
-void relaxBlocks(System *, const char *, const char *, const RelaxSettings &, size_t *nComputed, bool *notFinite)
+void relaxBlocks(System *, const char *, const char *, const RelaxSettings &, size_t *nComputed, bool *notFinite,
+                 size_t *nFailed)
 {
     *nComputed = 0;
     *notFinite = false;
+    *nFailed   = 0;
 }
 
 void copyCoordinates(System *, size_t, size_t, const uint32_t *, size_t, const uint32_t *)
