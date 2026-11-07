@@ -130,6 +130,13 @@ void evaluate(MsgHandler              *msghandler,
             cr->send_data(workers[w]);
             g.Send(cr, workers[w]);
             cr->send(workers[w], TrainFFMiddlemanMode::FITNESS);
+            if (cr->queue())
+            {
+                // The random numbers and the generation, not used for a fitness
+                int zero = 0;
+                cr->send(workers[w], zero);
+                cr->send(workers[w], zero);
+            }
         }
         // The master computes the first one
         auto               &point = (*points)[first];

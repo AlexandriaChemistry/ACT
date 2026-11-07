@@ -122,8 +122,9 @@ void CommunicationRecord::print(FILE *fp)
                                                rank_, size_, ntToString[nt_].c_str(), superior_);
     if (isMaster())
     {
-        strToPrint.append(gmx::formatString("nmiddlemen: %d nhelper_per_middleman: %d individuals per rank: %d\n",
-                                            nmiddlemen_, nhelper_per_middleman_, individualsPerRank_));
+        strToPrint.append(gmx::formatString("nmiddlemen: %d nhelper_per_middleman: %d individuals: %d%s\n",
+                                            nmiddlemen_, nhelper_per_middleman_, population_,
+                                            queue() ? " from a queue" : ""));
     }
     if (isMasterOrMiddleMan())
     {
@@ -158,6 +159,7 @@ CommunicationStatus CommunicationRecord::init(int nmiddleman)
         return CommunicationStatus::TWOINIT;
     }
     nmiddlemen_ = nmiddleman;
+    population_ = nmiddleman;
     if (nmiddlemen_ < 1)
     {
         GMX_THROW(gmx::InvalidInputError(gmx::formatString("Cannot handle %d middlemen (individuals) with %d cores/threads",
@@ -165,33 +167,11 @@ CommunicationStatus CommunicationRecord::init(int nmiddleman)
     }
     if (nmiddlemen_ > size_)
     {
-        // Several individuals per rank, which are computed together, such
-        // that a GPU gets more work at once. There are no helpers then.
-        if (nmiddlemen_ % size_ != 0)
-        {
-            GMX_THROW(gmx::InvalidInputError(gmx::formatString("With more individuals (%d) than cores/threads (%d), the number of individuals should be a multiple of the number of cores/threads", nmiddlemen_, size_).c_str()));
-        }
-        individualsPerRank_    = nmiddlemen_ / size_;
-        nhelper_per_middleman_ = 0;
-        if (rank_ == 0)
-        {
-            ordinal_ = 0;
-            for (int r = 1; r < size_; r++)
-            {
-                for (int k = 0; k < individualsPerRank_; k++)
-                {
-                    middlemen_.push_back(r);
-                }
-            }
-        }
-        else
-        {
-            nt_       = NodeType::MiddleMan;
-            superior_ = 0;
-            ordinal_  = rank_*individualsPerRank_;
-        }
+        // More individuals than ranks: each rank is a middleman, without
+        // helpers, and the master hands out the individuals, see queue
+        nmiddlemen_ = size_;
     }
-    else if (nmiddlemen_ == 1)  // Only MASTER + HELPERS
+    if (nmiddlemen_ == 1)  // Only MASTER + HELPERS
     {
         nhelper_per_middleman_ = size_-1;
     }
@@ -206,11 +186,7 @@ CommunicationStatus CommunicationRecord::init(int nmiddleman)
         }
     }
     // Select the node type etc.
-    if (individualsPerRank_ > 1)
-    {
-        // Done above
-    }
-    else if (rank_ == 0)  // If I am the MASTER
+    if (rank_ == 0)  // If I am the MASTER
     {
         // Set ordinal to 0, as the first middleman
         ordinal_ = 0;
@@ -235,7 +211,7 @@ CommunicationStatus CommunicationRecord::init(int nmiddleman)
                 middlemen_.push_back(i);
             }
         }
-        if (nmiddlemen_ - individualsPerRank_ != static_cast<int>(middlemen_.size()))
+        if (nmiddlemen_ - 1 != static_cast<int>(middlemen_.size()))
         {
             GMX_THROW(gmx::InternalError(gmx::formatString("Inconsistency in number of middlemen. Expected %d but found %zu.", nmiddlemen_, middlemen_.size()).c_str()));
         }                   
@@ -420,6 +396,16 @@ void CommunicationRecord::recv_low( int src, void *buf, int bufsize) const
                   MPI_Irecv(buf, bufsize, MPI_BYTE, src, tag,
                             mpi_act_world_, &req));
     check_return("MPI_Wait failed", MPI_Wait(&req, &status));
+}
+
+int CommunicationRecord::probeAny() const
+{
+    int        tag = 0;
+    MPI_Status status;
+    check_init_done();
+    ScopedTimer waiting(mpiTimer(MpiTime::Wait));
+    check_return("MPI_Probe failed", MPI_Probe(MPI_ANY_SOURCE, tag, mpi_act_world_, &status));
+    return status.MPI_SOURCE;
 }
 
 void CommunicationRecord::bcast_low(void *buf, size_t nbytes, MPI_Comm comm, int root) const

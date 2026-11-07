@@ -110,6 +110,17 @@ public:
     //! \return the ChargeGenerationAlgorithm
     alexandria::ChargeGenerationAlgorithm algorithm() const { return algorithm_; }
 
+    /*! \brief Start the random numbers anew, for an individual from a queue
+     * \param[in] seed The seed
+     */
+    void reseed(int seed) { gen_base.seed(seed); }
+
+    /*! \brief Set the generation, for an individual from a queue, where a
+     * middleman mutates several individuals in each generation
+     * \param[in] generation The generation, from zero
+     */
+    virtual void setGeneration(int generation) { (void) generation; }
+
     //! \return all random numbers generated
     const std::vector<double> &allRand() const { return all_rand_; }
 };

@@ -72,7 +72,7 @@ private:
     std::vector<double>        pMean_;
     //! Standard deviation of each parameter
     std::vector<double>        pSigma_;
-    //! Internal counter for generation number
+    //! Internal counter for generation number, see setGeneration
     int                        myGeneration_   = 0;
     //! Number of steps between writing to the convergence files
     int                        nstFitness_     = 1;
@@ -163,6 +163,9 @@ private:
                   double                       *beta0);
 
 public:
+    //! Set the generation, see ga::Mutator::setGeneration
+    void setGeneration(int generation) { myGeneration_ = generation; }
+
 
     /*!
      * \brief Constructor
