@@ -884,7 +884,7 @@ bool relaxShells(const RelaxMolecule *mols,
                 {
                     state.stall += 1;
                 }
-                if (state.stall >= stallIterations)
+                if (stallIterations > 0 && state.stall >= stallIterations)
                 {
                     continue;
                 }
@@ -1139,7 +1139,7 @@ bool relaxShells(const RelaxMolecule *mols,
         const DeviceMolecule &m = dMols[findRange(dMols, nm, s, &DeviceMolecule::slotOffset)];
         for (uint32_t fi = 0; fi < m.nfragment; fi++)
         {
-            if (dSt[2*s + fi].stall >= stallIterations)
+            if (stallIterations > 0 && dSt[2*s + fi].stall >= stallIterations)
             {
                 dDone[s] = 0;
             }

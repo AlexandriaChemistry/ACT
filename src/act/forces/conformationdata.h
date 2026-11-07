@@ -745,7 +745,7 @@ struct ShellRelaxation
      */
     std::vector<double> dxForce;
     /*! The mean square shell force against which progress is measured,
-     * the last that was at most half the one before, see shellStallIterations
+     * the last that was at most half the one before, see ForceComputer::setStallIterations
      */
     std::vector<double> reference;
     //! The number of relaxation steps since the mean square force was halved, see reference
