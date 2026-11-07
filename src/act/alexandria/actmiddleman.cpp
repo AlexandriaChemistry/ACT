@@ -139,11 +139,34 @@ void ACTMiddleMan::run(MsgHandler *msghandler)
         // III. Receive assignment from master.  
         TrainFFMiddlemanMode mode;
         cr->recv(master, &mode);
+        if (cr->queue())
+        {
+            // The individual may be any, its random numbers and the
+            // generation come with it, such that the result does not
+            // depend on which middleman computes it
+            int seed, generation;
+            cr->recv(master, &seed);
+            cr->recv(master, &generation);
+            mutator_->reseed(seed);
+            mutator_->setGeneration(generation);
+        }
         switch (mode)
         {
         case TrainFFMiddlemanMode::FITNESS:
             fitComp_.compute(msghandler, ind_->genomePtr(), iMolSelect::Train);
             cr->send(master, ind_->genome().fitness(iMolSelect::Train));
+            break;
+        case TrainFFMiddlemanMode::INITIAL:
+            // As for my own first individual above
+            fitComp_.compute(msghandler, ind_->genomePtr(), iMolSelect::Train);
+            if (gach_->evaluateTestset())
+            {
+                fitComp_.compute(msghandler, ind_->genomePtr(), iMolSelect::Test);
+            }
+            ind_->genome().Send(cr, master);
+            break;
+        case TrainFFMiddlemanMode::STATISTICS:
+            (void) fcStats.statistics(cr, fitComp_.forceComputer(), 0, false);
             break;
         case TrainFFMiddlemanMode::MUTATION:
             mutator_->mutate(msghandler, ind_->genomePtr(), ind_->bestGenomePtr(), 
@@ -180,7 +203,9 @@ void ACTMiddleMan::run(MsgHandler *msghandler)
                     ind_->genomePtr()->Send(cr, master);
                 }
             }
-            if (msghandler->info())
+            // With a queue, the master asks for the statistics of all
+            // individuals at once, see TrainFFMiddlemanMode::STATISTICS
+            if (msghandler->info() && !cr->queue())
             {
                 (void) fcStats.statistics(cr, fitComp_.forceComputer(), 0, false);
             }

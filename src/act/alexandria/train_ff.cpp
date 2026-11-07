@@ -190,10 +190,9 @@ void OptACM::optionsFinished(const std::vector<t_filenm> &filenames)
     msghandler_.writeDebug(gmx::formatString("nmiddlemen = %d", nmiddlemen));
     // Update the communication record and do necessary checks.
     commRec_.init(nmiddlemen);
-    if (commRec_.individualsPerRank() > 1)
+    if (commRec_.queue() && gach_.optimizer() == OptimizerAlg::MCMC)
     {
-        //! \todo Compute several individuals per rank at once
-        GMX_THROW(gmx::InvalidInputError(gmx::formatString("The population (%d) is larger than the number of cores/threads (%d), which is not supported yet",
+        GMX_THROW(gmx::InvalidInputError(gmx::formatString("The population (%d) is larger than the number of cores/threads (%d), which only the GA and HYBRID optimizers support",
                                                            nmiddlemen, commRec_.size()).c_str()));
     }
     // Set prefix and id in sii_
@@ -285,12 +284,16 @@ int OptACM::initMaster(const std::vector<t_filenm> &fnm,
     // Standard mersenne_twister_engine seeded with seed, from which the
     // seeds of the components are drawn in the same way on all platforms
     std::mt19937 gen(seed);
-    // Distribute different random number seeds to the middlemen
+    // Distribute different random number seeds to the middlemen. With a
+    // queue they do not affect the results, see CommunicationRecord::queue,
+    // and they come from a generator of their own, such that the seeds of
+    // the master do not depend on the number of middlemen.
+    std::mt19937 mmgen(seed + 1);
     for(const auto mman : sii_->commRec()->middlemen())
     {
         // Generate new seed for each of the middlemen
         // and send it over.
-        sii_->commRec()->send(mman, portableSeed(&gen));
+        sii_->commRec()->send(mman, portableSeed(sii_->commRec()->queue() ? &mmgen : &gen));
     }
 
     // Initializer

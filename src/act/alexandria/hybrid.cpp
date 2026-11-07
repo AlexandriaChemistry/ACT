@@ -35,6 +35,7 @@
 #include <regex>
 #pragma GCC diagnostic pop
 
+#include "act/alexandria/acminitializer.h"
 #include "act/alexandria/mcmcmutator.h"
 #include "act/alexandria/sensitivity_analysis.h"
 #include "act/alexandria/train_ff.h"
@@ -42,6 +43,7 @@
 #include "act/forces/forcecomputerstatistics.h"
 #include "act/ga/gene_pool.h"
 #include "act/utility/communicationrecord.h"
+#include "act/utility/portable_random.h"
 #include "act/utility/timings.h"
 
 namespace ga
@@ -121,6 +123,70 @@ void HybridGAMC::doCrossOver(alexandria::MsgHandler                 *msghandler,
     }
 }
 
+void HybridGAMC::runQueue(GenePool                     *pool,
+                          const std::vector<QueueTask> &tasks,
+                          int                           generation,
+                          std::mt19937                 &gen)
+{
+    auto cr = sii_->commRec();
+    // A seed for each individual, also those without a task, such that the
+    // random numbers do not depend on the number of tasks
+    std::vector<int> seeds;
+    for (size_t i = 0; i < pool->popSize(); i++)
+    {
+        seeds.push_back(alexandria::portableSeed(&gen));
+    }
+    // The task of each middleman that has one
+    std::map<int, size_t> busy;
+    size_t                next = 0;
+    auto give = [&](int dest)
+    {
+        const auto &task = tasks[next];
+        // II. Signify the middleman to continue, as in the loop of ACTMiddleMan::run
+        cr->send_data(dest);
+        pool->genomePtr(task.individual)->Send(cr, dest);
+        // III. What to do, with the random numbers and the generation
+        cr->send(dest, task.mode);
+        cr->send(dest, seeds[task.individual]);
+        cr->send(dest, generation);
+        busy[dest] = next++;
+    };
+    for (auto dest : cr->middlemen())
+    {
+        if (next < tasks.size())
+        {
+            give(dest);
+        }
+    }
+    while (!busy.empty())
+    {
+        // IV. The first middleman that is done gets the next task
+        int  src = cr->probeAny();
+        auto bt  = busy.find(src);
+        if (bt == busy.end())
+        {
+            GMX_THROW(gmx::InternalError(gmx::formatString("Message from %d, which has no task", src).c_str()));
+        }
+        const auto &task   = tasks[bt->second];
+        auto        genome = pool->genomePtr(task.individual);
+        if (task.mode == alexandria::TrainFFMiddlemanMode::FITNESS)
+        {
+            double fitness;
+            cr->recv(src, &fitness);
+            genome->setFitness(iMolSelect::Train, fitness);
+        }
+        else
+        {
+            genome->Receive(cr, src);
+        }
+        busy.erase(bt);
+        if (next < tasks.size())
+        {
+            give(src);
+        }
+    }
+}
+
 bool HybridGAMC::evolve(alexandria::MsgHandler       *msghandler,
                         std::map<iMolSelect, Genome> *bestGenome)
 {
@@ -182,17 +248,44 @@ bool HybridGAMC::evolve(alexandria::MsgHandler       *msghandler,
         msghandler->msg(alexandria::ACTStatus::Debug,
                         gmx::formatString("Will send genomes to %zu middlemen\n", cr->middlemen().size()));
     }
-    for(auto &ii : cr->middlemen())
+    if (cr->queue())
     {
-        cr->send(ii, read);
-        if (read == 1)
+        // All individuals start from the master, with seeds in the order of
+        // the individuals, such that they do not depend on the number of
+        // middlemen. The middlemen start with the first ones.
+        if (read == 0)
         {
-            // Genome index is not the same thing as middleman index...
-            // https://github.com/dspoel/ACT/issues/560
-            int genome_index = ii/(1+cr->nhelper_per_middleman());
-            cr->send(ii, pool[pold]->genomePtr(genome_index)->bases());
-            msghandler->msg(alexandria::ACTStatus::Debug,
-                            gmx::formatString("Sent genome to middleman %d\n", ii));
+            pool[pold]->addGenome(individual->genome());
+            for (int k = 1; k < gach_->popSize(); k++)
+            {
+                int seed = std::max(1, alexandria::portableSeed(&gen));
+                alexandria::ACMInitializer init(sii_, gach_->randomInit(), seed);
+                auto *ind = init.initialize();
+                pool[pold]->addGenome(ind->genome());
+                delete ind;
+            }
+        }
+        for (size_t m = 0; m < cr->middlemen().size(); m++)
+        {
+            int one = 1;
+            cr->send(cr->middlemen()[m], one);
+            cr->send(cr->middlemen()[m], pool[pold]->genomePtr(m+1)->bases());
+        }
+    }
+    else
+    {
+        for(auto &ii : cr->middlemen())
+        {
+            cr->send(ii, read);
+            if (read == 1)
+            {
+                // Genome index is not the same thing as middleman index...
+                // https://github.com/dspoel/ACT/issues/560
+                int genome_index = ii/(1+cr->nhelper_per_middleman());
+                cr->send(ii, pool[pold]->genomePtr(genome_index)->bases());
+                msghandler->msg(alexandria::ACTStatus::Debug,
+                                gmx::formatString("Sent genome to middleman %d\n", ii));
+            }
         }
     }
 
@@ -205,7 +298,25 @@ bool HybridGAMC::evolve(alexandria::MsgHandler       *msghandler,
     // Copy current genome to bestgenome
     individual->setBestGenome(individual->genome());
 
-    if (read == 0)
+    if (cr->queue())
+    {
+        // The first individuals from the middlemen, the others from the queue
+        pool[pold]->replaceGenome(0, individual->genome());
+        for (size_t m = 0; m < cr->middlemen().size(); m++)
+        {
+            ga::Genome genome;
+            genome.Receive(cr, cr->middlemen()[m]);
+            pool[pold]->replaceGenome(m+1, genome);
+        }
+        std::vector<QueueTask> tasks;
+        for (size_t k = cr->middlemen().size()+1; k < pool[pold]->popSize(); k++)
+        {
+            tasks.push_back({ k, alexandria::TrainFFMiddlemanMode::INITIAL });
+        }
+        runQueue(pool[pold], tasks, 0, gen);
+        *pool[pnew] = *pool[pold];
+    }
+    else if (read == 0)
     {
         pool[pold]->addGenome(individual->genome());
         pool[pnew]->addGenome(individual->genome());
@@ -296,7 +407,21 @@ bool HybridGAMC::evolve(alexandria::MsgHandler       *msghandler,
             haveToSendGenomes = true;
             penalized = true;
         }
-        if (haveToSendGenomes)
+        if (haveToSendGenomes && cr->queue())
+        {
+            // All individuals from the queue, the master hands them out
+            std::vector<QueueTask> tasks;
+            for (size_t i = 0; i < pool[pold]->popSize(); i++)
+            {
+                tasks.push_back({ i, alexandria::TrainFFMiddlemanMode::FITNESS });
+            }
+            runQueue(pool[pold], tasks, generation, gen);
+            if (gach_->sort())
+            {
+                pool[pold]->sort(iMolSelect::Train);
+            }
+        }
+        else if (haveToSendGenomes)
         {
             // Send to middlemen for fitness recomputation
             for (size_t i = 1; i < pool[pold]->popSize(); i++)
@@ -383,7 +508,18 @@ bool HybridGAMC::evolve(alexandria::MsgHandler       *msghandler,
             msghandler->msg(alexandria::ACTStatus::Debug, "Sending for mutation...");
         }
 
-        for (size_t i = 1; i < pool[pnew]->popSize(); i++)
+        if (cr->queue())
+        {
+            // All but the elites, which keep their fitness, from the queue.
+            // The generation counts from zero, as MCMCMutator counts it.
+            std::vector<QueueTask> tasks;
+            for (size_t i = std::max(0, gach_->nElites()); i < pool[pnew]->popSize(); i++)
+            {
+                tasks.push_back({ i, alexandria::TrainFFMiddlemanMode::MUTATION });
+            }
+            runQueue(pool[pnew], tasks, generation - 1, gen);
+        }
+        for (size_t i = 1; !cr->queue() && i < pool[pnew]->popSize(); i++)
         {
             int dest = cr->middlemen()[i-1];
             // II. Signify the middlemen to continue
@@ -401,7 +537,7 @@ bool HybridGAMC::evolve(alexandria::MsgHandler       *msghandler,
             }
         }
         // Mutate the MASTER's genome if no elitism
-        if (gach_->nElites() == 0)
+        if (gach_->nElites() == 0 && !cr->queue())
         {
             auto g0ptr = pool[pnew]->genomePtr(0);
             individual->setBestGenome(*g0ptr);
@@ -433,7 +569,7 @@ bool HybridGAMC::evolve(alexandria::MsgHandler       *msghandler,
             msghandler->write("Fetching mutated children and fitness from new generation...\n");
         }
         // Receive fitness from elite middlemen
-        for (int i = 1; i < gach_->nElites(); i++)
+        for (int i = 1; !cr->queue() && i < gach_->nElites(); i++)
         {
             int src      = cr->middlemen()[i-1];
             // IV. Receive the new training fitness
@@ -443,7 +579,7 @@ bool HybridGAMC::evolve(alexandria::MsgHandler       *msghandler,
         }
         // Receive the new children (parameters + fitness) from the middlemen for the
         // non elitist.
-        for (size_t i = std::max(1, gach_->nElites()); i < pool[pnew]->popSize(); i++)
+        for (size_t i = std::max(1, gach_->nElites()); !cr->queue() && i < pool[pnew]->popSize(); i++)
         {
             int src      = cr->middlemen()[i-1];
             // IV. Receive the mutated genome
@@ -523,9 +659,24 @@ bool HybridGAMC::evolve(alexandria::MsgHandler       *msghandler,
         // analysis below.
         if (msghandler->info())
         {
+            int nElites = gach_->nElites();
+            if (cr->queue())
+            {
+                // The middlemen send them when asked, as they compute several individuals
+                for (auto dest : cr->middlemen())
+                {
+                    cr->send_data(dest);
+                    pool[pold]->genomePtr(0)->Send(cr, dest);
+                    cr->send(dest, alexandria::TrainFFMiddlemanMode::STATISTICS);
+                    int zero = 0;
+                    cr->send(dest, zero);
+                    cr->send(dest, zero);
+                }
+                nElites = 0;
+            }
             fcStats.collect(cr,
                             static_cast<const alexandria::ACMFitnessComputer *>(fitnessComputer())->forceComputer(),
-                            gach_->nElites());
+                            nElites);
         }
         bool minimum = false;
         // We only do the sensitivity analysis if needed.

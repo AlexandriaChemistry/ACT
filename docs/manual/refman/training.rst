@@ -119,6 +119,17 @@ This stage fills the `params` field in the `Genome` class, generating popSize (f
 
 If we are using flag *-norandom_init*, the genomes will be initialized as specified by the force field file(s) provided. If we are employing flag *-random_init*, each genome will be initialized by setting a random value for each parameter, uniformly distributed over the allowed range.
 
+The population does not have to match the number of processes. With more
+genomes than processes, as can be needed for problems with many parameters,
+each process is a worker that gets the next genome as soon as it is done
+with the previous one, during initialization and for each generation. The
+workers therefore balance the load among themselves: those that get genomes
+that are quicker to evaluate simply compute more of them. Each genome brings
+its own random numbers, so the results do not depend on the number of
+processes. This works with the GA and HYBRID optimizers. With a GPU, a few
+processes per GPU keep it busy, for instance about a dozen on an NVIDIA RTX
+A4500 with MPS, and the population can be much larger than that.
+
 -------------------
 Deviation from data
 -------------------
