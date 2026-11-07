@@ -676,7 +676,7 @@ size_t ForceComputer::updateShells(const Topology            *top,
         }
         if (!(msForce[j] <= msForceToler_ || atFloor))
         {
-            // Without halving the mean square force for shellStallIterations
+            // Without halving the mean square force for stallIterations_
             // steps, the shells stop without having converged
             if (msForce[j] <= 0.5*msRef[j])
             {
@@ -1251,13 +1251,13 @@ static void resetShellSteps(ConformationData *cdata)
  * \param[in] c        The conformation
  * \param[in] fragment The fragment
  * \param[in] stallIterations The steps without progress after which shells stop, 0 for never
- * \return Whether the relaxation stopped, see shellStallIterations
+ * \return Whether the relaxation stopped, see ForceComputer::setStallIterations
  */
 static bool shellsStalled(const ConformationData *cdata, size_t c, size_t fragment, int stallIterations)
 {
     const auto &st = cdata->shells;
     size_t      i  = fragment*st.stride + cdata->arrays.slot(c);
-    return i < st.stall.size() && st.stall[i] > 0 && st.stall[i] >= stallIterations;
+    return stallIterations > 0 && i < st.stall.size() && st.stall[i] >= stallIterations;
 }
 
 void ForceComputer::relaxMonomer(MsgHandler                  *msghandler,

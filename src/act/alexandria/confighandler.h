@@ -337,7 +337,7 @@ private:
     //! Tolerance for shell
     real   shellToler_       = 1e-3;
     //! Maxiter for shell optimization
-    int shellMaxIter_        = 12;
+    int shellMaxIter_        = 25;
 
 public:
     /*!

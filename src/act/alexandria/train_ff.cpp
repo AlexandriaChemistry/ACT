@@ -214,8 +214,6 @@ void OptACM::initForceComputer()
     double epsilonr;
     epsilonr = sii_->forcefield()->epsilonr();
     forceComp_->init(bch_.shellToler(), bch_.shellMaxIter(), epsilonr);
-    // Shells that make no progress stop, which happens with poor parameters
-    forceComp_->setStallIterations(shellStallIterations);
 }
 
 //! \todo rename function and make a coupling between targets from the command line

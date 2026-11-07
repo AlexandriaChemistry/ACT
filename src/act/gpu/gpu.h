@@ -240,7 +240,7 @@ struct RelaxSettings
     double maxStep;
     //! Iterations, including the first calculation, as ForceComputer::maxiter
     int    maxIter;
-    //! Steps without halving the mean square force after which the shells stop, see shellStallIterations
+    //! Steps without halving the mean square force after which the shells stop, 0 for never, see ForceComputer::setStallIterations
     int    stallIterations;
 };
 

@@ -49,15 +49,6 @@ class MsgHandler;
 class QtypeProps;
 class Topology;
 
-/*! \brief Relaxation steps without progress after which train_ff stops the shells of a fragment
- * Progress is a mean square force on the shells of at most half the last
- * one that was. Shells that a strong field holds at the largest distance
- * from their core can keep a force across the core-shell vector well above
- * the tolerance, in a cycle or stuck, for as many steps as there are. Such
- * a conformation counts as not converged, see ForceComputer::setStallIterations.
- */
-constexpr int shellStallIterations = 3;
-
 //! \brief How to treat the shells when computing total energies, see ForceComputer::computeTotal
 struct ShellOptions
 {
@@ -168,7 +159,7 @@ private:
     double         msForceToler_     = 1e-6;
     //! Maximum number of iterations to spend on minimizing shells
     int            maxiter_          = 25;
-    //! Steps without progress after which the shells stop, 0 for never, see shellStallIterations
+    //! Steps without progress after which the shells stop, 0 for never, see setStallIterations
     int            stallIterations_  = 0;
     //! Relative dielectric constant
     double         epsilonr_         = 1.0;
@@ -573,9 +564,17 @@ private:
     int stallIterations() const { return stallIterations_; }
 
     /*! \brief Stop the shells of a fragment that make no progress
+     * Progress is a mean square force on the shells of at most half the
+     * last one that was. Shells that a strong field holds at the largest
+     * distance from their core can keep a force across the core-shell vector
+     * well above the tolerance, in a cycle or stuck, for as many steps as
+     * there are. A conformation that stops counts as not converged. In
+     * training, stopping after 3 steps gave clearly worse force fields, since
+     * many conformations that converge later stopped too, therefore no
+     * program uses this by default.
      * \param[in] n The number of steps without halving the mean square
-     *              force on the shells, 0 to relax until convergence or
-     *              the maximum number of iterations, see shellStallIterations
+     *              force on the shells, 0 (the default) to relax until
+     *              convergence or the maximum number of iterations
      */
     void setStallIterations(int n) { stallIterations_ = n; }
 
