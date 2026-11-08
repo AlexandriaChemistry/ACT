@@ -391,7 +391,7 @@ protected:
 #endif
         checker_.checkReal(fz, "fz");
         checker_.setDefaultTolerance(gmx::test::relativeToleranceAsFloatingPoint(1.0, GMX_DOUBLE ? 1e-10 : 1e-6));
-        double diff = abs(fz - forces[1][ZZ]);
+        double diff = std::abs(fz - forces[1][ZZ]);
         double f2   = std::abs(fz + forces[1][ZZ]);
 #if !GMX_DOUBLE
         // Differences within the rounding errors are accepted

@@ -50,6 +50,7 @@
 #include <algorithm>
 #include <functional>
 #include <array>
+#include <cmath>
 #include <deque>
 #include <limits>
 #include <numeric>
@@ -611,7 +612,7 @@ static void resortFreqIntens(std::vector<double> *frequencies,
     while (i < freq.size())
     {
         if (i < freq.size()-1 &&
-            abs(freq[i] - freq[i+1]) < freq_toler &&
+            std::abs(freq[i] - freq[i+1]) < freq_toler &&
             inten[i+1] > inten[i])
         {
             renumber[i]   = i+1;
