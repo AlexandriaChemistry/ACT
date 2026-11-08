@@ -187,9 +187,9 @@ if [ $novec -eq 1 ]; then
             -DCMAKE_C_COMPILER="$(cacheValue "$build" CMAKE_C_COMPILER)" \
             -DCMAKE_CXX_COMPILER="$cxx" \
             -DCMAKE_PREFIX_PATH="$(cacheValue "$build" CMAKE_PREFIX_PATH)" \
-            -DGMX_DOUBLE="$(cacheValue "$build" GMX_DOUBLE)" \
-            -DGMX_MPI="$(cacheValue "$build" GMX_MPI)" \
-            -DGMX_OPENMP="$(cacheValue "$build" GMX_OPENMP)" \
+            -DACT_DOUBLE="$(cacheValue "$build" ACT_DOUBLE)" \
+            -DACT_MPI="$(cacheValue "$build" ACT_MPI)" \
+            -DACT_OPENMP="$(cacheValue "$build" ACT_OPENMP)" \
             -DACT_SIMD=NONE \
             -DCMAKE_C_FLAGS="$noVecFlags" -DCMAKE_CXX_FLAGS="$noVecFlags" \
             > "$root/verify-configure.log" 2>&1 ||

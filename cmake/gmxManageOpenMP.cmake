@@ -36,7 +36,7 @@
 # versions before trying to detect OpenMP with the standard find-package-module,
 # and then does some additional tests for flags afterwards.
 
-if(GMX_OPENMP)
+if(ACT_OPENMP)
     # We should do OpenMP detection if we get here
     # OpenMP check must come before other CFLAGS!
     find_package(OpenMP)
@@ -64,12 +64,12 @@ if(GMX_OPENMP)
     else()
         message(WARNING
                 "The compiler you are using does not support OpenMP parallelism. This might hurt your performance a lot, in particular with GPUs. Try using a more recent version, or a different compiler. For now, we are proceeding by turning off OpenMP.")
-        set(GMX_OPENMP OFF CACHE STRING "Whether GROMACS will use OpenMP parallelism." FORCE)
+        set(ACT_OPENMP OFF CACHE STRING "Whether GROMACS will use OpenMP parallelism." FORCE)
     endif()
 endif()
 # Compiler vectorization of loops marked with "#pragma omp simd".
 # This only enables the OpenMP SIMD directives, not OpenMP multithreading,
-# so it can be used independently of GMX_OPENMP. The flags are collected in
+# so it can be used independently of ACT_OPENMP. The flags are collected in
 # GMX_SIMD_VECTORIZATION_C_FLAGS, GMX_SIMD_VECTORIZATION_CXX_FLAGS and
 # GMX_SIMD_VECTORIZATION_LINKER_FLAGS and added to the compiler flags in the
 # main CMakeLists.txt.
@@ -161,7 +161,7 @@ endif()
 
 gmx_dependent_cache_variable(GMX_OPENMP_MAX_THREADS
     "Maximum number of OpenMP Threads supported. Has to be 32 or a multiple of 64."
-    STRING 64 GMX_OPENMP)
+    STRING 64 ACT_OPENMP)
 mark_as_advanced(GMX_OPENMP_MAX_THREADS)
 math(EXPR MAX_THREAD_MOD "${GMX_OPENMP_MAX_THREADS} % 64")
 if (NOT GMX_OPENMP_MAX_THREADS EQUAL 32 AND NOT ${MAX_THREAD_MOD} EQUAL 0)

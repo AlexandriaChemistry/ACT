@@ -45,8 +45,8 @@ if [ ! -f "$build/CMakeCache.txt" ]; then
         -DCMAKE_C_COMPILER="$(cacheValue "$ref" CMAKE_C_COMPILER)" \
         -DCMAKE_CXX_COMPILER="$(cacheValue "$ref" CMAKE_CXX_COMPILER)" \
         -DCMAKE_PREFIX_PATH="$(cacheValue "$ref" CMAKE_PREFIX_PATH)" \
-        -DGMX_DOUBLE="$(cacheValue "$ref" GMX_DOUBLE)" \
-        -DGMX_MPI="$(cacheValue "$ref" GMX_MPI)" \
+        -DACT_DOUBLE="$(cacheValue "$ref" ACT_DOUBLE)" \
+        -DACT_MPI="$(cacheValue "$ref" ACT_MPI)" \
         -DCMAKE_C_FLAGS="$flags" -DCMAKE_CXX_FLAGS="$flags" > /dev/null || exit 1
 fi
 echo "=== Building $build"

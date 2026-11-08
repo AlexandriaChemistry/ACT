@@ -78,7 +78,7 @@ else()
 endif()
 
 set(GMX_CAN_RUN_MPI_TESTS 1)
-if (GMX_MPI)
+if (ACT_MPI)
     set(_an_mpi_variable_had_content 0)
     foreach(VARNAME MPIEXEC MPIEXEC_NUMPROC_FLAG MPIEXEC_PREFLAGS MPIEXEC_POSTFLAGS)
         # These variables need a valid value for the test to run

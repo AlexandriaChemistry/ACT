@@ -34,7 +34,7 @@
 
 # Manage the MPI setup, assuming that CMAKE_C_COMPILER is an MPI
 # (wrapper) compiler.
-if(GMX_MPI)
+if(ACT_MPI)
   if(GMX_THREAD_MPI)
     message(STATUS "MPI is not compatible with thread-MPI. Disabling thread-MPI.")
     set(GMX_THREAD_MPI OFF CACHE BOOL
