@@ -173,13 +173,13 @@ where *Value* can be *ON* or *OFF* or something more option specific.
    +----------------------+------------------------------------------------------------+
    |                      | see below.                                                 |
    +----------------------+------------------------------------------------------------+
-   | GMX_OPENMP_SIMD      | Let the compiler vectorize the loops over conformations    |
+   | ACT_OPENMP_SIMD      | Let the compiler vectorize the loops over conformations    |
    +----------------------+------------------------------------------------------------+
    |                      | marked with OpenMP SIMD directives, using -fopenmp-simd.   |
    +----------------------+------------------------------------------------------------+
    |                      | This does not turn on OpenMP multithreading. Default ON.   |
    +----------------------+------------------------------------------------------------+
-   | GMX_VECTOR_MATH      | Use a vector math library for mathematical functions such  |
+   | ACT_VECTOR_MATH      | Use a vector math library for mathematical functions such  |
    +----------------------+------------------------------------------------------------+
    |                      | as exp and erf in the loops vectorized by the compiler:    |
    +----------------------+------------------------------------------------------------+
