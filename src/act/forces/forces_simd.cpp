@@ -4052,6 +4052,8 @@ void GpuTrainingSystem::keepShells() {}
 bool GpuTrainingSystem::restoreShells(int) { return false; }
 void GpuTrainingSystem::constructVsites() {}
 void GpuTrainingSystem::compute(int, bool) {}
+void GpuTrainingSystem::computeForces(int) {}
+bool GpuTrainingSystem::haveKeptShells() const { return false; }
 size_t GpuTrainingSystem::relax(int, const bool[2], const gpu::RelaxSettings &, size_t *nFailed) { *nFailed = 0; return 0; }
 void GpuTrainingSystem::copyRelaxedMonomerShells() {}
 void GpuTrainingSystem::saveDimers() {}
@@ -4649,6 +4651,18 @@ bool GpuTrainingSystem::restoreShells(int what)
 void GpuTrainingSystem::constructVsites()
 {
     gpu::constructVsites(impl_->system);
+}
+
+void GpuTrainingSystem::computeForces(int what)
+{
+    auto &im = *impl_;
+    auto  u  = im.use(what);
+    gpu::computeBlocks(im.system, u.data(), nullptr, true);
+}
+
+bool GpuTrainingSystem::haveKeptShells() const
+{
+    return impl_->shellsKept;
 }
 
 void GpuTrainingSystem::compute(int what, bool forces)

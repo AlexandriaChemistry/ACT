@@ -112,6 +112,15 @@ public:
      */
     void compute(int what, bool forces = true);
 
+    /*! \brief Compute only the forces, for relax, without the energies
+     * Does not wait for the GPU, the energies of the molecules do not change.
+     * \param[in] what As for compute
+     */
+    void computeForces(int what);
+
+    //! \return whether keepShells kept shells that restoreShells can put back
+    bool haveKeptShells() const;
+
     /*! \brief Relax the shells
      * \param[in]  what         -1 for both monomers, 2 for the dimers
      * \param[in]  relaxMonomer For dimers, whether to relax the shells of each monomer
