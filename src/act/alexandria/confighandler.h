@@ -340,6 +340,8 @@ private:
     int shellMaxIter_        = 25;
     //! Whether to relax the shells starting from their previous positions
     bool shellKeep_          = true;
+    //! Whether to compute the energies on the GPU, keeping the molecules there
+    bool gpuResident_        = true;
 
 public:
     /*!
@@ -459,6 +461,9 @@ public:
 
     //! \return whether shells are relaxed from their previous positions, see ForceComputer::setKeepShells
     bool shellKeep() const { return shellKeep_; }
+
+    //! \return whether to compute on the GPU, see ForceComputer::setGpuResident
+    bool gpuResident() const { return gpuResident_; }
 };
 
 //! \brief Enum for selecting the coordinate minimizer in simulate

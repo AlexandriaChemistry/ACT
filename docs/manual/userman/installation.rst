@@ -121,6 +121,24 @@ where *Value* can be *ON* or *OFF* or something more option specific.
    +----------------------+------------------------------------------------------------+
    |                      | -DCMAKE_PREFIX_PATH=${CONDA_PREFIX}/lib                    |
    +----------------------+------------------------------------------------------------+
+   | ACT_DOUBLE           | Double precision, default ON. Single precision (OFF) is    |
+   +----------------------+------------------------------------------------------------+
+   |                      | faster and is needed to use a GPU. Before, this option was |
+   +----------------------+------------------------------------------------------------+
+   |                      | called GMX_DOUBLE; the old names of this and the next two  |
+   +----------------------+------------------------------------------------------------+
+   |                      | options still work, with a warning.                        |
+   +----------------------+------------------------------------------------------------+
+   | ACT_MPI              | Build with MPI, needed to train with several processes,    |
+   +----------------------+------------------------------------------------------------+
+   |                      | default ON.                                                |
+   +----------------------+------------------------------------------------------------+
+   | ACT_OPENMP           | OpenMP multithreading, default OFF. ACT parallelizes with  |
+   +----------------------+------------------------------------------------------------+
+   |                      | MPI processes, see ACT_OPENMP_SIMD for the vectorization   |
+   +----------------------+------------------------------------------------------------+
+   |                      | of loops.                                                  |
+   +----------------------+------------------------------------------------------------+
    | ACT_CLN              | Install ACT using the Class Library for Numbers for high   |
    +----------------------+------------------------------------------------------------+
    |                      | precision calculations, used for Slater integrals.         |
@@ -204,6 +222,8 @@ Setting the environment variable *ACT_NO_EXPLICIT_SIMD* when running a program t
 
   ACT_NO_EXPLICIT_SIMD=1 alexandria train_ff ...
 
+The log file also reports the peak performance of a core, estimated from the SIMD instructions of the processor (floating point operations per cycle) and its maximum clock frequency, which the timings at the end of the log file use to report the efficiency of the potentials. For a processor that ACT does not recognize, the environment variable *ACT_PEAK_GFLOPS* sets the peak of a core in GFlop/s in double precision.
+
 The loops over conformations of the explicit SIMD routines for pair interactions are unrolled, such that the processor has the instructions for several SIMD vectors of conformations at once. Which unroll factor is fastest depends on the processor, since a larger factor helps when the loop overhead matters, but helps less with wide SIMD such as AVX-512 and not when only few conformations are computed, as in the last iterations of relaxing shells. To find the best value on your computer, build with several values of *ACT_PAIR_UNROLL* in the same build directory and compare the GFlop/s of the potentials, such as *Potential COULOMB_POINT*, in the timings at the end of the log file of, for instance, a calculation of the second virial coefficient::
 
   cmake -DACT_PAIR_UNROLL=2 . && make -j 8 install
@@ -219,14 +239,19 @@ GPU support uses SYCL with `AdaptiveCpp <https://adaptivecpp.github.io>`_, which
   conda create -n act-sycl -c conda-forge "adaptivecpp=*=cuda*"
   cmake .. -DACT_GPU=SYCL -DAdaptiveCpp_DIR=$HOME/miniforge3/envs/act-sycl/lib/cmake/AdaptiveCpp
 
-Only the GPU code is compiled with AdaptiveCpp's compiler acpp, the rest of ACT with the C++ compiler, which needs to be GCC 13 or newer, since the libraries of AdaptiveCpp need its C++ library. The section *Code used* at the start of the log file lists the GPUs found. The processes on a node are spread over its GPUs, by their number on the node, which Slurm or the MPI library sets. At present the GPU computes, in single precision builds only, the Coulomb interactions of several structures of all molecules at once, as in training, and relaxes the shells of all molecules at once: the interactions with shells, which may be Coulomb, polarization, Lennard-Jones 12-6, buffered 14-7, Wang-Buckingham and MacDaniel-Schmidt, are computed on the GPU until the shells converged, the other interactions once on the processor. With other potentials for the interactions with shells, the processor relaxes the shells. Since starting the GPU takes some tens of microseconds, it is only used for at least 100000 interactions times structures of all molecules, which the environment variable *ACT_GPU_MIN_WORK* changes. When several MPI ranks share a GPU, start the NVIDIA multi-process service in the job script, otherwise the GPU switches between the processes, which makes each operation on it about twenty times slower. The service takes at most 48 processes per GPU, the ranks beyond that compute without the GPU::
+Only the GPU code is compiled with AdaptiveCpp's compiler acpp, the rest of ACT with the C++ compiler, which needs to be GCC 13 or newer, since the libraries of AdaptiveCpp need its C++ library. The GPU is used in single precision builds only (*-DACT_DOUBLE=OFF*). The section *Code used* at the start of the log file lists the GPUs found, with an estimate of their peak performance in single precision: the number of compute units times the single precision lanes of a compute unit, which depends on the type of GPU, times two operations per fused multiply-add, times the maximum clock frequency. The processes on a node are spread over its GPUs, by their number on the node, which Slurm or the MPI library sets.
+
+In training with a polarizable force field, by default (*train_ff -gpu_resident*), each process keeps the structures of its molecules on the GPU, and computes there in each evaluation the charges, if they are generated with SQE, the virtual sites, all interactions and the relaxation of the shells. Only the parameters go to the GPU and the energies come back. If the GPU does not support the potentials of the force field, the processor computes everything, as with *-nogpu_resident*. Otherwise the GPU computes the Coulomb interactions of several structures of all molecules at once and relaxes the shells of all molecules at once: the interactions with shells, which may be Coulomb, polarization, Lennard-Jones 12-6, buffered 14-7, Wang-Buckingham and MacDaniel-Schmidt, are computed on the GPU until the shells converged, the other interactions once on the processor. Since starting the GPU takes some tens of microseconds, this is only done for at least 100000 interactions times structures of all molecules, which the environment variable *ACT_GPU_MIN_WORK* changes.
+
+Many processes per GPU keep it busy, since each process waits for the GPU part of the time. When several MPI ranks share a GPU, start the NVIDIA multi-process service in the job script, otherwise the GPU switches between the processes, which makes each operation on it about twenty times slower. The service takes at most 48 processes per GPU, the ranks beyond that compute without the GPU::
 
   export CUDA_MPS_PIPE_DIRECTORY=/tmp/mps-$SLURM_JOB_ID CUDA_MPS_LOG_DIRECTORY=/tmp/mpslog-$SLURM_JOB_ID
   mkdir -p $CUDA_MPS_PIPE_DIRECTORY $CUDA_MPS_LOG_DIRECTORY
   nvidia-cuda-mps-control -d
   mpirun ... alexandria train_ff ...
   echo quit | nvidia-cuda-mps-control
- The GPU gives the same results in every run, also for subsets of the structures, as the processor does. Setting the environment variable *ACT_NO_GPU* turns the GPU off. Source the *ACTRC* file before running, which sets *ACPP_DEBUG_LEVEL* such that AdaptiveCpp does not warn about the GPU backends it cannot load.
+
+The GPU gives the same results as the processor, within single precision. Setting the environment variable *ACT_NO_GPU* turns the GPU off. Source the *ACTRC* file before running, which sets *ACPP_DEBUG_LEVEL* such that AdaptiveCpp does not warn about the GPU backends it cannot load.
 
 ============================
 Troubleshooting Installation

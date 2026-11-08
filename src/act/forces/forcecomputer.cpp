@@ -1699,12 +1699,41 @@ static void postProcessRelaxedEnergies(const std::vector<ACTMol *>            &a
     }
 }
 
+//! Whether ACT_GPU_RESIDENT_CHECK is set, see ForceComputer::computeRelaxedEnergies
+static bool gpuResidentCheck()
+{
+    static const bool check = std::getenv("ACT_GPU_RESIDENT_CHECK") != nullptr;
+    return check;
+}
+
+bool ForceComputer::useGpuResident() const
+{
+    return (gpuResident_ || gpuResidentCheck()) && !gpuResidentUnavailable_;
+}
+
+bool ForceComputer::prepareGpuResident(const ForceField *pd, const std::vector<ACTMol *> &allmols) const
+{
+    if (!useGpuResident() || !pd->polarizable())
+    {
+        return false;
+    }
+    if (!gpuSystem_)
+    {
+        gpuSystem_ = std::make_shared<GpuTrainingSystem>();
+    }
+    if (!gpuSystem_->prepare(pd, allmols, shellMaxDistance(pd), gpuCharges(pd), this))
+    {
+        // The processor computes everything from now on
+        gpuResidentUnavailable_ = true;
+        return false;
+    }
+    return true;
+}
+
 bool ForceComputer::gpuCharges(const ForceField *pd) const
 {
-    static const bool resident = (std::getenv("ACT_GPU_RESIDENT") != nullptr ||
-                                  std::getenv("ACT_GPU_RESIDENT_CHECK") != nullptr);
     auto qdist = pd->chargeDistribution();
-    return (resident && !GMX_DOUBLE && gpu::useGpu() && pd->polarizable() &&
+    return (useGpuResident() && !GMX_DOUBLE && gpu::useGpu() && pd->polarizable() &&
             pd->interactionPresent(InteractionType::BONDCORRECTIONS) &&
             pd->chargeGenerationAlgorithm() == ChargeGenerationAlgorithm::SQE &&
             (qdist == ChargeDistributionType::Gaussian || qdist == ChargeDistributionType::Point));
@@ -1712,9 +1741,7 @@ bool ForceComputer::gpuCharges(const ForceField *pd) const
 
 bool ForceComputer::gpuChargesOnly(const ForceField *pd) const
 {
-    static const bool only = (std::getenv("ACT_GPU_RESIDENT") != nullptr &&
-                              std::getenv("ACT_GPU_RESIDENT_CHECK") == nullptr);
-    return only && gpuCharges(pd);
+    return !gpuResidentCheck() && gpuCharges(pd);
 }
 
 void ForceComputer::computeRelaxedEnergiesGpu(MsgHandler                  *,
@@ -1845,20 +1872,16 @@ void ForceComputer::computeRelaxedEnergies(MsgHandler                  *msghandl
                                            bool                         separateInductionCorrection,
                                            bool                         computeForces) const
 {
-    // All on the GPU, if requested and possible, for now without forces.
-    // For developers, ACT_GPU_RESIDENT_CHECK compares the energies of the
-    // first evaluations with those of the processor.
-    static const bool resident = std::getenv("ACT_GPU_RESIDENT") != nullptr;
-    static int        checks   = std::getenv("ACT_GPU_RESIDENT_CHECK") ? 5 : 0;
+    // All on the GPU, if requested and possible, for now without forces,
+    // see setGpuResident. For developers, ACT_GPU_RESIDENT_CHECK compares
+    // the energies of the first evaluations with those of the processor.
+    static int        checks   = gpuResidentCheck() ? 5 : 0;
     static thread_local bool onProcessor = false;
     std::vector<ConformationEnergies> gpuEnergies;
-    if ((resident || checks > 0) && !onProcessor && !computeForces && pd->polarizable())
+    if (useGpuResident() && !onProcessor && !computeForces && pd->polarizable())
     {
-        if (!gpuSystem_)
-        {
-            gpuSystem_ = std::make_shared<GpuTrainingSystem>();
-        }
-        if (gpuSystem_->prepare(pd, allmols, shellMaxDistance(pd), gpuCharges(pd), this))
+        bool chargesOnGpu = gpuChargesOnly(pd);
+        if (prepareGpuResident(pd, allmols))
         {
             computeRelaxedEnergiesGpu(msghandler, pd, allmols, resetTheShells, separateInductionCorrection,
                                       checks > 0 && gpuCharges(pd));
@@ -1875,10 +1898,11 @@ void ForceComputer::computeRelaxedEnergies(MsgHandler                  *msghandl
                 }
             }
         }
-        else if (gpuChargesOnly(pd))
+        else if (chargesOnGpu)
         {
-            // The charges were left to the GPU, see ACMFitnessComputer::prepareDeviation
-            msghandler->fatal("The GPU cannot compute these molecules, but was to generate their charges. Unset ACT_GPU_RESIDENT.");
+            // The charges were left to the GPU, but ACMFitnessComputer::prepareDeviation
+            // calls prepareGpuResident before, so this should not happen
+            msghandler->fatal("The GPU cannot compute these molecules, but was to generate their charges. Use train_ff -nogpu_resident.");
         }
     }
     if (!gpuEnergies.empty())

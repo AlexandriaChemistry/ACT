@@ -173,6 +173,12 @@ private:
     int            maxiter_          = 25;
     //! Whether to start relaxing from the previous shells, see setKeepShells
     bool           keepShells_       = false;
+    //! Whether to compute on the GPU, see setGpuResident
+    bool           gpuResident_      = false;
+    //! Whether the GPU could not compute the molecules, see prepareGpuResident
+    mutable bool   gpuResidentUnavailable_ = false;
+    //! \return whether to try computing on the GPU, see setGpuResident
+    bool useGpuResident() const;
     //! Steps without progress after which the shells stop, 0 for never, see setStallIterations
     int            stallIterations_  = 0;
     //! Relative dielectric constant
@@ -491,8 +497,27 @@ private:
                  std::set<int>                      relax = {},
                  bool                               shellsFromInput = false) const;
                  
+    /*! \brief Whether to compute the relaxed energies of training on the GPU
+     * With a GPU, a single precision build and a polarizable force field
+     * of which the GPU supports the potentials, computeRelaxedEnergies
+     * then keeps the molecules on the GPU, generates their charges and
+     * relaxes their shells there, see GpuTrainingSystem. Otherwise the
+     * processor computes them, as without this.
+     * \param[in] resident Whether to use the GPU like this
+     */
+    void setGpuResident(bool resident) { gpuResident_ = resident; }
+
+    /*! \brief Make the system of these molecules on the GPU, see setGpuResident
+     * If the GPU cannot compute them, the processor computes everything
+     * from then on.
+     * \param[in] pd      The force field
+     * \param[in] allmols The molecules
+     * \return whether the GPU computes these molecules
+     */
+    bool prepareGpuResident(const ForceField *pd, const std::vector<ACTMol *> &allmols) const;
+
     /*! \brief Whether the GPU generates the charges in computeRelaxedEnergies
-     * With ACT_GPU_RESIDENT or ACT_GPU_RESIDENT_CHECK, a GPU, a polarizable
+     * With setGpuResident or ACT_GPU_RESIDENT_CHECK, a GPU, a polarizable
      * force field and SQE with Gaussian or point charges, the GPU generates
      * the charges of the molecules that FragmentHandler::sqeOnGpu allows,
      * when the energies are computed without forces.

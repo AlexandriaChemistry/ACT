@@ -42,6 +42,7 @@ ACTHelper::ACTHelper(MsgHandler                *msghandler,
                      double                     shellToler,
                      int                        shellMaxIter,
                      bool                       shellKeep,
+                     bool                       gpuResident,
                      ChargeGenerationAlgorithm  algorithm,
                      LossFunction               lossFunction)
 {
@@ -49,6 +50,7 @@ ACTHelper::ACTHelper(MsgHandler                *msghandler,
     epsilonr = sii->forcefield()->epsilonr();
     forceComp_.init(shellToler, shellMaxIter, epsilonr);
     forceComp_.setKeepShells(shellKeep);
+    forceComp_.setGpuResident(gpuResident);
     fitComp_.init(msghandler, sii, mg, false, &forceComp_, algorithm, lossFunction);
 }
 

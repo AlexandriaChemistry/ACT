@@ -355,6 +355,37 @@ bool ACMFitnessComputer::prepareDeviation(MsgHandler    *msghandler,
             nlocal++;
         }
     }
+    // If the GPU cannot compute these molecules after all, the processor
+    // generates the charges that were left to it, and computes everything
+    // from now on, see ForceComputer::prepareGpuResident
+    if (gpuCharges && !selected.empty() &&
+        !forceComp_->prepareGpuResident(sii_->forcefield(), selected))
+    {
+        static const size_t timer = Timings::instance().index("Charge generation");
+        ScopedTimer         scoped(timer);
+        std::vector<ACTMol *> kept;
+        for (auto molptr : selected)
+        {
+            size_t imol = molptr - &(*mymols->begin());
+            if (chargeVersion_[imol] != sii_->chargeParameterVersion())
+            {
+                std::vector<gmx::RVec> forces(molptr->atomsConst().size(), { 0, 0, 0 });
+                std::vector<gmx::RVec> coords = molptr->xOriginal();
+                molptr->generateCharges(msghandler, sii_->forcefield(), forceComp_,
+                                        algorithm_, &coords, &forces, needQProps, false);
+                chargeVersion_[imol] = sii_->chargeParameterVersion();
+                if (!msghandler->ok() && removeMol_)
+                {
+                    molptr->setSupport(eSupport::No);
+                    msghandler->resetStatus();
+                    nlocal--;
+                    continue;
+                }
+            }
+            kept.push_back(molptr);
+        }
+        selected = std::move(kept);
+    }
     dt->task     = task;
     dt->ims      = ims;
     dt->targets  = targets;

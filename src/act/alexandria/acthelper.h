@@ -61,6 +61,7 @@ namespace alexandria
          * \param[in] shellToler       Tolerance for minimizing shell positions
          * \param[in] shellMaxIter     Max # iterations for the same
          * \param[in] shellKeep        Whether to start from the previous shells, see ForceComputer::setKeepShells
+         * \param[in] gpuResident      Whether to compute on the GPU, see ForceComputer::setGpuResident
          * \param[in] algorithm        The charge generation algorithm
          * \param[in] lossFunction     The loss function to use
          */
@@ -70,6 +71,7 @@ namespace alexandria
                   double                     shellToler,
                   int                        shellMaxIter,
                   bool                       shellKeep,
+                  bool                       gpuResident,
                   ChargeGenerationAlgorithm  algorithm,
                   LossFunction               lossFunction);
         

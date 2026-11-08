@@ -32,6 +32,7 @@
  */
 #include "gpu.h"
 
+#include <cstdio>
 #include <cstdlib>
 
 #include <sycl/sycl.hpp>
@@ -65,6 +66,70 @@ std::vector<std::string> devices()
         names.clear();
     }
     return names;
+}
+
+/*! \brief The single precision lanes of a compute unit of a GPU
+ * NVIDIA streaming multiprocessors have 128 lanes, those of P100, V100 and
+ * A100 64. AMD compute units have 64 lanes, without packed instructions.
+ * \param[in] vendor The vendor of the GPU
+ * \param[in] name   The name of the GPU
+ * \return the number of lanes, 0 if not known
+ */
+static int lanesPerComputeUnit(const std::string &vendor, const std::string &name)
+{
+    auto has = [](const std::string &s, const char *part) { return s.find(part) != std::string::npos; };
+    if (has(vendor, "NVIDIA") || has(name, "NVIDIA"))
+    {
+        for (const char *model : { "P100", "V100", "A100", "A30" })
+        {
+            if (has(name, model))
+            {
+                return 64;
+            }
+        }
+        return 128;
+    }
+    if (has(vendor, "AMD") || has(name, "AMD") || has(name, "gfx"))
+    {
+        return 64;
+    }
+    return 0;
+}
+
+std::vector<DevicePeak> devicePeaks()
+{
+    std::vector<DevicePeak> peaks;
+    try
+    {
+        for (const auto &d : sycl::device::get_devices(sycl::info::device_type::gpu))
+        {
+            DevicePeak  peak;
+            std::string name   = d.get_info<sycl::info::device::name>();
+            std::string vendor = d.get_info<sycl::info::device::vendor>();
+            unsigned    units  = d.get_info<sycl::info::device::max_compute_units>();
+            double      ghz    = d.get_info<sycl::info::device::max_clock_frequency>()*1e-3;
+            int         lanes  = lanesPerComputeUnit(vendor, name);
+            if (units > 0 && ghz > 0 && lanes > 0)
+            {
+                peak.gflops = 2.0*lanes*units*ghz;
+                peak.basis  = std::to_string(units) + " compute units x " + std::to_string(lanes) +
+                              " lanes x 2 flop (FMA) x ";
+                char buf[32];
+                std::snprintf(buf, sizeof(buf), "%.2f GHz", ghz);
+                peak.basis += buf;
+            }
+            else
+            {
+                peak.basis = "unknown lanes or frequency";
+            }
+            peaks.push_back(peak);
+        }
+    }
+    catch (const sycl::exception &)
+    {
+        peaks.clear();
+    }
+    return peaks;
 }
 
 /*! \brief The number of this process among those on the same node
