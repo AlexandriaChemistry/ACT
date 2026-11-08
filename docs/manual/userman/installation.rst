@@ -207,6 +207,16 @@ where *Value* can be *ON* or *OFF* or something more option specific.
    +----------------------+------------------------------------------------------------+
    |                      | vectorized. Default ON.                                    |
    +----------------------+------------------------------------------------------------+
+   | ACT_COUNT_FLOPS      | Count the floating point operations, such that the timings |
+   +----------------------+------------------------------------------------------------+
+   |                      | at the end of the log file report the GFlop/s of the parts |
+   +----------------------+------------------------------------------------------------+
+   |                      | of the program and the fraction of the peak performance.   |
+   +----------------------+------------------------------------------------------------+
+   |                      | Default OFF, since counting costs up to 10% of the time of |
+   +----------------------+------------------------------------------------------------+
+   |                      | molecular dynamics. Meant for developers.                  |
+   +----------------------+------------------------------------------------------------+
    | ACT_GPU              | GPU support: NONE (default) or SYCL, which needs           |
    +----------------------+------------------------------------------------------------+
    |                      | AdaptiveCpp, see below.                                    |
@@ -222,9 +232,9 @@ Setting the environment variable *ACT_NO_EXPLICIT_SIMD* when running a program t
 
   ACT_NO_EXPLICIT_SIMD=1 alexandria train_ff ...
 
-The log file also reports the peak performance of a core, estimated from the SIMD instructions of the processor (floating point operations per cycle) and its maximum clock frequency, which the timings at the end of the log file use to report the efficiency of the potentials. For a processor that ACT does not recognize, the environment variable *ACT_PEAK_GFLOPS* sets the peak of a core in GFlop/s in double precision.
+The log file also reports the peak performance of a core, estimated from the SIMD instructions of the processor (floating point operations per cycle) and its maximum clock frequency, which the timings at the end of the log file use to report the efficiency of the potentials, if ACT was configured with *-DACT_COUNT_FLOPS=ON*. For a processor that ACT does not recognize, the environment variable *ACT_PEAK_GFLOPS* sets the peak of a core in GFlop/s in double precision.
 
-The loops over conformations of the explicit SIMD routines for pair interactions are unrolled, such that the processor has the instructions for several SIMD vectors of conformations at once. Which unroll factor is fastest depends on the processor, since a larger factor helps when the loop overhead matters, but helps less with wide SIMD such as AVX-512 and not when only few conformations are computed, as in the last iterations of relaxing shells. To find the best value on your computer, build with several values of *ACT_PAIR_UNROLL* in the same build directory and compare the GFlop/s of the potentials, such as *Potential COULOMB_POINT*, in the timings at the end of the log file of, for instance, a calculation of the second virial coefficient::
+The loops over conformations of the explicit SIMD routines for pair interactions are unrolled, such that the processor has the instructions for several SIMD vectors of conformations at once. Which unroll factor is fastest depends on the processor, since a larger factor helps when the loop overhead matters, but helps less with wide SIMD such as AVX-512 and not when only few conformations are computed, as in the last iterations of relaxing shells. To find the best value on your computer, configure with *-DACT_COUNT_FLOPS=ON*, build with several values of *ACT_PAIR_UNROLL* in the same build directory and compare the GFlop/s of the potentials, such as *Potential COULOMB_POINT*, in the timings at the end of the log file of, for instance, a calculation of the second virial coefficient::
 
   cmake -DACT_PAIR_UNROLL=2 . && make -j 8 install
   cmake -DACT_PAIR_UNROLL=8 . && make -j 8 install

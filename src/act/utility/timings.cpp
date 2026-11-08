@@ -515,6 +515,11 @@ void printTimings(const CommunicationRecord *cr,
             jperf.addValueUnit("Fraction of the peak in the counted parts", gmx::formatString("%.3f", 100*inCounted/peak->gflopsOfBuild()), "%");
         }
     }
+    else if (tw && !Timings::instance().countFlops())
+    {
+        tw->writeStringFormatted("Floating point operations are not counted, configure ACT with\n");
+        tw->writeStringFormatted("-DACT_COUNT_FLOPS=ON to report the GFlop/s of the parts of the program.\n\n");
+    }
     if (jtree)
     {
         JsonTree jtimings("Timings");

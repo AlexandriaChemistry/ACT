@@ -48,6 +48,11 @@
 #include <string>
 #include <vector>
 
+//! Whether to count floating point operations, set by cmake, see Timings::countFlops
+#ifndef ACT_COUNT_FLOPS
+#define ACT_COUNT_FLOPS 0
+#endif
+
 namespace gmx
 {
 class TextWriter;
@@ -83,6 +88,8 @@ private:
     std::vector<double>      calls_;
     //! Floating point operations counted in each region, see addFlops
     std::vector<double>      flops_;
+    //! Whether to count them, see countFlops
+    bool                     countFlops_ = ACT_COUNT_FLOPS != 0;
     //! Floating point operations counted outside of all regions
     double                   untimedFlops_ = 0;
     //! The regions that have been started but not stopped, innermost last
@@ -124,6 +131,10 @@ public:
      */
     void addFlops(double flops)
     {
+        if (!countFlops_)
+        {
+            return;
+        }
         if (active_.empty())
         {
             untimedFlops_ += flops;
@@ -133,6 +144,18 @@ public:
             flops_[active_.back().id] += flops;
         }
     }
+
+    /*! \return whether floating point operations are counted, see addFlops
+     * By default if ACT was configured with ACT_COUNT_FLOPS, since counting
+     * costs some time. Counting that takes more than adding a number is
+     * only done if this is true.
+     */
+    bool countFlops() const { return countFlops_; }
+
+    /*! \brief Turn the counting of floating point operations on or off, for tests
+     * \param[in] count Whether to count them
+     */
+    void setCountFlops(bool count) { countFlops_ = count; }
 
     //! Returned by parent if no region is active
     static constexpr size_t none = static_cast<size_t>(-1);
