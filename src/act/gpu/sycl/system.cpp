@@ -47,7 +47,9 @@
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
+#include <map>
 #include <stdexcept>
+#include <string>
 #include <vector>
 
 #include <sycl/sycl.hpp>
@@ -404,6 +406,34 @@ public:
         }
     }
 
+    /*! \brief A copy of a mask on the device, such as which blocks to compute
+     * Each mask is copied once and then used again, since a system has
+     * only a few, such that no copy is needed for each operation, and the
+     * operations need not wait for a copy from host memory.
+     * \param[in] h The mask on the host
+     * \param[in] n Its length
+     * \return the mask on the device
+     */
+    const char *deviceMask(const char *h, size_t n)
+    {
+        std::string key(h, n);
+        auto        found = masks_.find(key);
+        if (found != masks_.end())
+        {
+            return found->second;
+        }
+        char *d = allocate<char>(std::max<size_t>(n, 1));
+        if (n > 0)
+        {
+            queue_->memcpy(d, h, n).wait();
+        }
+        masks_.emplace(key, d);
+        return d;
+    }
+
+    //! The masks on the device, see deviceMask
+    std::map<std::string, char *>   masks_;
+
     sycl::queue                    *queue_;
     std::vector<void *>             allocations_;
     std::vector<DeviceSystemBlock>  blocksHost_;
@@ -494,10 +524,6 @@ public:
     uint64_t                       *shellEntries_ = nullptr;
     uint64_t                        nslotAll_ = 0, nshellRowWork_ = 0, nshellWork_ = 0;
     uint64_t                        nforcePart_ = 0, nmovingPart_ = 0, nresetWork_ = 0;
-    //! Whether each block is used in a call, on the device
-    char                           *use_ = nullptr;
-    //! For each block whether each of its fragments is relaxed, two per block
-    char                           *relax_ = nullptr;
     //! The state of the relaxation of each fragment in each slot, two per slot
     void                           *state_ = nullptr;
     char                           *done_  = nullptr;
@@ -755,10 +781,8 @@ System *createSystem(const SystemBlock *blocks, size_t nblock)
     sys->resets_       = sys->allocate<uint32_t>(resets.size());
     sys->shellStart_   = sys->allocate<uint64_t>(shellStart.size());
     sys->shellEntries_ = sys->allocate<uint64_t>(shellEntries.size());
-    sys->use_          = sys->allocate<char>(nblock);
     sys->isShell_      = sys->allocate<char>(isShell.size());
     sys->upload(sys->isShell_, isShell.data(), isShell.size());
-    sys->relax_        = sys->allocate<char>(2*nblock);
     sys->done_         = sys->allocate<char>(sys->nslotAll_);
     sys->dx_           = sys->allocate<float>(sys->nx_);
     sys->partF2_       = sys->allocate<double>(sys->nforcePart_);
@@ -1543,8 +1567,7 @@ void computeAll(System *sys, double *const *energies)
 void computeBlocks(System *sys, const char *use, double *const *energies, bool forces)
 {
     auto *queue = sys->queue_;
-    sys->upload(sys->use_, use, sys->nblock_);
-    auto  dU    = sys->use_;
+    auto  dU    = sys->deviceMask(use, sys->nblock_);
     auto  dB    = sys->blocks_;
     auto  dL    = sys->lists_;
     auto  dX    = sys->x_;
@@ -1561,137 +1584,143 @@ void computeBlocks(System *sys, const char *use, double *const *energies, bool f
     auto  dHLS  = sys->hintListSlot_;
     auto  dHAW  = sys->hintAtomWork_;
     uint32_t nb = sys->nblock_, nl = sys->nlist_;
-    // The energies of the blocks computed are stored one after the other,
-    // such that only those are copied to the host
-    auto    &eStart  = sys->energyStartHost_;
-    uint64_t nenergy = 0;
-    eStart.resize(nb);
-    for (uint32_t b = 0; b < nb; b++)
+    // Without energies only the forces, which the relaxation needs, without
+    // waiting for the GPU
+    const bool wantEnergies = energies != nullptr;
+    auto      &eStart       = sys->energyStartHost_;
+    uint64_t   nenergy      = 0;
+    if (wantEnergies)
     {
-        eStart[b] = nenergy;
-        if (use[b])
+        // The energies of the blocks computed are stored one after the other,
+        // such that only those are copied to the host
+        eStart.resize(nb);
+        for (uint32_t b = 0; b < nb; b++)
         {
-            const auto &db = sys->blocksHost_[b];
-            nenergy += static_cast<uint64_t>(db.nenergy)*pairEnergyTerms*db.stride;
+            eStart[b] = nenergy;
+            if (use[b])
+            {
+                const auto &db = sys->blocksHost_[b];
+                nenergy += static_cast<uint64_t>(db.nenergy)*pairEnergyTerms*db.stride;
+            }
         }
-    }
-    sys->upload(sys->energyStart_, eStart.data(), nb);
-    auto dES = sys->energyStart_;
-    uint64_t nwork = sys->nwork_, nlistSlot = sys->nlistSlot_;
-    // The energy of each interaction in each slot
-    if (nwork > 0)
-    {
-        queue->parallel_for(sycl::range<1>(nwork), [=](sycl::id<1> id)
+        sys->upload(sys->energyStart_, eStart.data(), nb);
+        auto dES = sys->energyStart_;
+        uint64_t nwork = sys->nwork_, nlistSlot = sys->nlistSlot_;
+        // The energy of each interaction in each slot
+        if (nwork > 0)
         {
-            uint64_t                 w  = id[0];
-            const DeviceList        &l  = dL[findRangeFrom(dL, nl, w, &DeviceList::workOffset, dHLW)];
-            const DeviceSystemBlock &b  = dB[l.block];
-            if (!dU[l.block])
+            queue->parallel_for(sycl::range<1>(nwork), [=](sycl::id<1> id)
             {
-                return;
-            }
-            uint64_t                 local = w - l.workOffset;
-            uint64_t                 e  = local / b.nslot;
-            uint64_t                 c  = local % b.nslot;
-            uint64_t                 st = b.stride;
-            const int64_t           *x  = dX + b.xOffset + c;
-            float en[pairEnergyTerms] = { 0, 0, 0 };
-            if (l.bonded)
-            {
-                const BondedEntry &be = dBo[l.entryOffset + e];
-                float r[3][3], f[4][3];
-                for (int k = 1; k < 4; k++)
+                uint64_t                 w  = id[0];
+                const DeviceList        &l  = dL[findRangeFrom(dL, nl, w, &DeviceList::workOffset, dHLW)];
+                const DeviceSystemBlock &b  = dB[l.block];
+                if (!dU[l.block])
                 {
-                    for (int d = 0; d < 3; d++)
+                    return;
+                }
+                uint64_t                 local = w - l.workOffset;
+                uint64_t                 e  = local / b.nslot;
+                uint64_t                 c  = local % b.nslot;
+                uint64_t                 st = b.stride;
+                const int64_t           *x  = dX + b.xOffset + c;
+                float en[pairEnergyTerms] = { 0, 0, 0 };
+                if (l.bonded)
+                {
+                    const BondedEntry &be = dBo[l.entryOffset + e];
+                    float r[3][3], f[4][3];
+                    for (int k = 1; k < 4; k++)
                     {
-                        r[k-1][d] = differenceNm(x[(3*be.a[k]+d)*st], x[(3*be.a[0]+d)*st]);
+                        for (int d = 0; d < 3; d++)
+                        {
+                            r[k-1][d] = differenceNm(x[(3*be.a[k]+d)*st], x[(3*be.a[0]+d)*st]);
+                        }
                     }
-                }
-                en[0] = bondedInteraction(static_cast<BondedKernel>(l.kernel), be.p, r, f);
-            }
-            else
-            {
-                const PairEntry &pe = dP[l.entryOffset + e];
-                float rsq = 0;
-                for (int d = 0; d < 3; d++)
-                {
-                    float dd = differenceNm(x[(3*pe.i+d)*st], x[(3*pe.j+d)*st]);
-                    rsq += dd*dd;
-                }
-                (void) pairInteraction(static_cast<PairKernel>(l.kernel), pe.p, rsq, en);
-            }
-            for (uint32_t t = 0; t < l.nterm; t++)
-            {
-                dEE[t*nwork + w] = en[t];
-            }
-        });
-    }
-    // The sums of each list in each slot, in the order of the interactions
-    if (nlistSlot > 0)
-    {
-        queue->parallel_for(sycl::range<1>(nlistSlot), [=](sycl::id<1> id)
-        {
-            uint64_t                 s = id[0];
-            const DeviceList        &l = dL[findRangeFrom(dL, nl, s, &DeviceList::listSlotOffset, dHLS)];
-            const DeviceSystemBlock &b = dB[l.block];
-            uint64_t                 c = s - l.listSlotOffset;
-            if (!dU[l.block])
-            {
-                return;
-            }
-            for (uint32_t t = 0; t < pairEnergyTerms; t++)
-            {
-                double sum = 0;
-                for (uint64_t e = 0; t < l.nterm && e < l.n; e++)
-                {
-                    sum += dEE[t*nwork + l.workOffset + e*b.nslot + c];
-                }
-                dELs[t*nlistSlot + s] = sum;
-            }
-        });
-    }
-    // The energy arrays of each block: the sums of its lists of the same
-    // interaction type, in their order
-    if (sys->nenergyWork_ > 0)
-    {
-        auto dEW = sys->energyWork_;
-        auto dFL = sys->firstListDev_;
-        queue->parallel_for(sycl::range<1>(sys->nenergyWork_), [=](sycl::id<1> id)
-        {
-            uint64_t w = id[0];
-            uint32_t lo = 0, hi = nb;
-            while (hi - lo > 1)
-            {
-                uint32_t mid = (lo + hi)/2;
-                if (dEW[mid] <= w)
-                {
-                    lo = mid;
+                    en[0] = bondedInteraction(static_cast<BondedKernel>(l.kernel), be.p, r, f);
                 }
                 else
                 {
-                    hi = mid;
+                    const PairEntry &pe = dP[l.entryOffset + e];
+                    float rsq = 0;
+                    for (int d = 0; d < 3; d++)
+                    {
+                        float dd = differenceNm(x[(3*pe.i+d)*st], x[(3*pe.j+d)*st]);
+                        rsq += dd*dd;
+                    }
+                    (void) pairInteraction(static_cast<PairKernel>(l.kernel), pe.p, rsq, en);
                 }
-            }
-            const DeviceSystemBlock &b = dB[lo];
-            if (!dU[lo])
-            {
-                return;
-            }
-            uint64_t local = w - dEW[lo];
-            uint64_t c     = local % b.nslot;
-            uint64_t et    = local / b.nslot;
-            uint32_t eidx  = et / pairEnergyTerms;
-            uint32_t t     = et % pairEnergyTerms;
-            double   sum   = 0;
-            for (uint32_t li = dFL[lo]; li < dFL[lo+1]; li++)
-            {
-                if (dL[li].energyIndex == eidx)
+                for (uint32_t t = 0; t < l.nterm; t++)
                 {
-                    sum += dELs[t*nlistSlot + dL[li].listSlotOffset + c];
+                    dEE[t*nwork + w] = en[t];
                 }
-            }
-            dE[dES[lo] + (eidx*pairEnergyTerms + t)*b.stride + c] = sum;
-        });
+            });
+        }
+        // The sums of each list in each slot, in the order of the interactions
+        if (nlistSlot > 0)
+        {
+            queue->parallel_for(sycl::range<1>(nlistSlot), [=](sycl::id<1> id)
+            {
+                uint64_t                 s = id[0];
+                const DeviceList        &l = dL[findRangeFrom(dL, nl, s, &DeviceList::listSlotOffset, dHLS)];
+                const DeviceSystemBlock &b = dB[l.block];
+                uint64_t                 c = s - l.listSlotOffset;
+                if (!dU[l.block])
+                {
+                    return;
+                }
+                for (uint32_t t = 0; t < pairEnergyTerms; t++)
+                {
+                    double sum = 0;
+                    for (uint64_t e = 0; t < l.nterm && e < l.n; e++)
+                    {
+                        sum += dEE[t*nwork + l.workOffset + e*b.nslot + c];
+                    }
+                    dELs[t*nlistSlot + s] = sum;
+                }
+            });
+        }
+        // The energy arrays of each block: the sums of its lists of the same
+        // interaction type, in their order
+        if (sys->nenergyWork_ > 0)
+        {
+            auto dEW = sys->energyWork_;
+            auto dFL = sys->firstListDev_;
+            queue->parallel_for(sycl::range<1>(sys->nenergyWork_), [=](sycl::id<1> id)
+            {
+                uint64_t w = id[0];
+                uint32_t lo = 0, hi = nb;
+                while (hi - lo > 1)
+                {
+                    uint32_t mid = (lo + hi)/2;
+                    if (dEW[mid] <= w)
+                    {
+                        lo = mid;
+                    }
+                    else
+                    {
+                        hi = mid;
+                    }
+                }
+                const DeviceSystemBlock &b = dB[lo];
+                if (!dU[lo])
+                {
+                    return;
+                }
+                uint64_t local = w - dEW[lo];
+                uint64_t c     = local % b.nslot;
+                uint64_t et    = local / b.nslot;
+                uint32_t eidx  = et / pairEnergyTerms;
+                uint32_t t     = et % pairEnergyTerms;
+                double   sum   = 0;
+                for (uint32_t li = dFL[lo]; li < dFL[lo+1]; li++)
+                {
+                    if (dL[li].energyIndex == eidx)
+                    {
+                        sum += dELs[t*nlistSlot + dL[li].listSlotOffset + c];
+                    }
+                }
+                dE[dES[lo] + (eidx*pairEnergyTerms + t)*b.stride + c] = sum;
+            });
+        }
     }
     // The forces on each particle in each slot, from all its interactions
     // in order, those of the interactions without shells also separately
@@ -1734,6 +1763,10 @@ void computeBlocks(System *sys, const char *use, double *const *energies, bool f
             }
         });
     }
+    if (!wantEnergies)
+    {
+        return;
+    }
     // The energies to the host
     double *hE = sys->energiesHost_.reserve(*queue, std::max<uint64_t>(sys->nenergyAll_, 1));
     if (nenergy > 0)
@@ -1757,9 +1790,8 @@ void resetShells(System *sys, const char *use)
     {
         return;
     }
-    sys->upload(sys->use_, use, sys->nblock_);
     auto     dB = sys->blocks_;
-    auto     dU = sys->use_;
+    auto     dU = sys->deviceMask(use, sys->nblock_);
     auto     dX = sys->x_;
     auto     dR = sys->resets_;
     uint32_t nb = sys->nblock_;
@@ -1795,9 +1827,8 @@ void keepShells(System *sys, const char *use, bool restore)
     {
         sys->keptShells_ = sys->allocate<int64_t>(sys->nx_);
     }
-    sys->upload(sys->use_, use, sys->nblock_);
     auto     dB = sys->blocks_;
-    auto     dU = sys->use_;
+    auto     dU = sys->deviceMask(use, sys->nblock_);
     auto     dX = sys->x_;
     auto     dK = sys->keptShells_;
     auto     dR = sys->resets_;
@@ -1856,11 +1887,10 @@ void relaxBlocks(System *sys, const char *use, const char *relax,
         sys->doneHistory_      = sys->allocate<char>(maxIter*nslotAll);
         sys->maxIterAllocated_ = maxIter;
     }
-    sys->upload(sys->use_, use, sys->nblock_);
-    sys->upload(sys->relax_, relax, 2*sys->nblock_);
+
     auto dB   = sys->blocks_;
-    auto dU   = sys->use_;
-    auto dRel = sys->relax_;
+    auto dU   = sys->deviceMask(use, sys->nblock_);
+    auto dRel = sys->deviceMask(relax, 2*sys->nblock_);
     auto dX   = sys->x_;
     auto dF   = sys->f_;
     auto dFF  = sys->fFixed_;

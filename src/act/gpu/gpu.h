@@ -663,7 +663,8 @@ void computeAll(System *system, double *const *energies);
  * As computeAll, for the blocks with use set, the others are not changed.
  * \param[in]  system   The system
  * \param[in]  use      Whether to compute each block
- * \param[out] energies The energies of each block computed
+ * \param[out] energies The energies of each block computed, or nullptr to
+ *                      compute only the forces, without waiting for the GPU
  * \param[in]  forces   Whether to compute the forces too, which relaxBlocks needs
  */
 void computeBlocks(System *system, const char *use, double *const *energies, bool forces = true);

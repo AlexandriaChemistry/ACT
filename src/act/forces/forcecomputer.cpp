@@ -1778,7 +1778,10 @@ void ForceComputer::computeRelaxedEnergiesGpu(MsgHandler                  *,
         gs.resetShells();
     }
     gs.constructVsites();
-    { ScopedTimer et(energyT); gs.compute(-1); }
+    // With the shells of the previous evaluation, the forces with the shells
+    // on their parents are not needed, only the energies, see setKeepShells
+    const bool restoreKept = keepShells && gs.haveKeptShells();
+    { ScopedTimer et(energyT); gs.compute(-1, !restoreKept); }
     // The energies before relaxing, to extract the induction
     for (auto molptr : allmols)
     {
@@ -1789,10 +1792,12 @@ void ForceComputer::computeRelaxedEnergiesGpu(MsgHandler                  *,
             backupEnergies(&energies);
         }
     }
-    if (keepShells && gs.restoreShells(-2))
+    // The energies of computeForces are not needed, they are computed
+    // after relaxing
+    if (restoreKept && gs.restoreShells(-2))
     {
         ScopedTimer et(energyT);
-        gs.compute(-2);
+        gs.computeForces(-2);
     }
     const bool all[2] = { true, true };
     { ScopedTimer rt(relaxT); size_t nf = 0; nShellIter_ += gs.relax(-1, all, settings, &nf); nShellConvergeFailed_ += nf; }
@@ -1822,7 +1827,7 @@ void ForceComputer::computeRelaxedEnergiesGpu(MsgHandler                  *,
             if (im > 0)
             {
                 gs.copyRelaxedMonomerShells();
-                { ScopedTimer et(energyT); gs.compute(2); }
+                { ScopedTimer et(energyT); gs.computeForces(2); }
             }
             const bool relaxMonomer[2] = { im == 0, im == 1 };
             { ScopedTimer rt(relaxT); size_t nf = 0; nShellIter_ += gs.relax(2, relaxMonomer, settings, &nf); nShellConvergeFailed_ += nf; }
@@ -1837,16 +1842,16 @@ void ForceComputer::computeRelaxedEnergiesGpu(MsgHandler                  *,
             }
         }
         gs.restoreDimers();
-        if (keepShells)
+        if (restoreKept)
         {
             gs.restoreShells(2);
         }
-        { ScopedTimer et(energyT); gs.compute(2); }
+        { ScopedTimer et(energyT); gs.computeForces(2); }
     }
-    else if (keepShells && gs.restoreShells(2))
+    else if (restoreKept && gs.restoreShells(2))
     {
         ScopedTimer et(energyT);
-        gs.compute(2);
+        gs.computeForces(2);
     }
     { ScopedTimer rt(relaxT); size_t nf = 0; nShellIter_ += gs.relax(2, all, settings, &nf); nShellConvergeFailed_ += nf; }
     { ScopedTimer et(energyT); gs.compute(2, false); }
