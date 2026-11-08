@@ -140,6 +140,8 @@ void BayesConfigHandler::add_options(std::vector<t_pargs>             *pargs,
           "Tolerance on the mean square force on the shells, in (kJ/mol nm)^2, for minimizing shell positions" },
         { "-shell_max_iter", FALSE, etINT, {&shellMaxIter_},
           "Max number of iterations for minimizing shell positions" },
+        { "-gpu_resident", FALSE, etBOOL, {&gpuResident_},
+          "With a GPU, in single precision builds, keep the molecules on the GPU and compute the energies, the charges and the shell positions there, for polarizable force fields of which the GPU supports the potentials. Otherwise the processor computes them." },
         { "-shell_keep", FALSE, etBOOL, {&shellKeep_},
           "Start minimizing the shell positions from those of the previous evaluation instead of from their cores, which needs far fewer iterations. With poor parameters, such as random initial ones, shells held at the maximum distance from their core can end in different minima depending on where they started, such that the results depend slightly on the order of the evaluations." },
     };

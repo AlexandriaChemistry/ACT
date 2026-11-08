@@ -215,6 +215,7 @@ void OptACM::initForceComputer()
     epsilonr = sii_->forcefield()->epsilonr();
     forceComp_->init(bch_.shellToler(), bch_.shellMaxIter(), epsilonr);
     forceComp_->setKeepShells(bch_.shellKeep());
+    forceComp_->setGpuResident(bch_.gpuResident());
 }
 
 //! \todo rename function and make a coupling between targets from the command line
@@ -1191,6 +1192,7 @@ int train_ff(int argc, char *argv[])
                                      opt.bch()->shellToler(),
                                      opt.bch()->shellMaxIter(),
                                      opt.bch()->shellKeep(),
+                                     opt.bch()->gpuResident(),
                                      compR.algorithm(),
                                      opt.gach()->lossFunction());
                     helper.run(opt.msgHandler());

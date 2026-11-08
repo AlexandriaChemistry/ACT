@@ -47,6 +47,11 @@ std::vector<std::string> devices()
     return {};
 }
 
+std::vector<DevicePeak> devicePeaks()
+{
+    return {};
+}
+
 int gpuIndex()
 {
     return -1;

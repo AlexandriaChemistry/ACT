@@ -506,9 +506,16 @@ void writeCodeInformation(gmx::TextWriter *writer)
         {
             writer->writeLine(gmx::formatString("GPU:                %s, no GPU found", gpuCode.c_str()));
         }
-        for (const auto &name : names)
+        auto peaks = gpu::devicePeaks();
+        for (size_t i = 0; i < names.size(); i++)
         {
-            writer->writeLine(gmx::formatString("GPU:                %s, %s", gpuCode.c_str(), name.c_str()));
+            writer->writeLine(gmx::formatString("GPU:                %s, %s", gpuCode.c_str(), names[i].c_str()));
+            if (i < peaks.size() && peaks[i].gflops > 0)
+            {
+                writer->writeLine(gmx::formatString("                    peak about %.1f TFlop/s single precision, estimated from",
+                                                    peaks[i].gflops*1e-3));
+                writer->writeLine(gmx::formatString("                    %s", peaks[i].basis.c_str()));
+            }
         }
         if (!names.empty() && !gpu::useGpu())
         {
@@ -524,9 +531,9 @@ void writeCodeInformation(gmx::TextWriter *writer)
                                                 gpu::gpuIndex()));
             writer->writeLine("                    spread over its GPUs. It computes the pair potentials of");
             writer->writeLine("                    many structures at once and relaxes their shells, in single");
-            writer->writeLine("                    precision with energies summed in double precision. With");
-            writer->writeLine("                    ACT_GPU_RESIDENT set, train_ff keeps the molecules on the GPU");
-            writer->writeLine("                    and computes all interactions, the charges and the shells there");
+            writer->writeLine("                    precision with energies summed in double precision. Unless");
+            writer->writeLine("                    -nogpu_resident is given, train_ff keeps the molecules on the");
+            writer->writeLine("                    GPU and computes all interactions, the charges and the shells there");
         }
     }
 }

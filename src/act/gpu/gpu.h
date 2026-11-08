@@ -59,6 +59,24 @@ std::string implementation();
  */
 std::vector<std::string> devices();
 
+//! An estimate of the peak performance of a GPU
+struct DevicePeak
+{
+    //! Single precision GFlop/s, 0 if not known
+    double      gflops = 0;
+    //! How it was estimated
+    std::string basis;
+};
+
+/*! \brief Estimate the peak single precision performance of the GPUs
+ * From the number of compute units and the maximum clock frequency that
+ * the programming model reports, times the number of single precision
+ * lanes of a compute unit, which depends on the vendor and the type of
+ * GPU, times two for fused multiply-add instructions.
+ * \return the estimates, in the order of devices
+ */
+std::vector<DevicePeak> devicePeaks();
+
 /*! \brief The GPU that this process uses
  * The processes on a node are spread over its GPUs: the number of the
  * process on the node, from the environment variables that Slurm and the
