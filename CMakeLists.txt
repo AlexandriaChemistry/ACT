@@ -264,6 +264,16 @@ else()
     set(GMX_DOUBLE_VALUE 0)
 endif()
 add_compile_definitions(GMX_DOUBLE=${GMX_DOUBLE_VALUE})
+
+# Counting the floating point operations for the timings costs some time,
+# in particular in molecular dynamics, it is meant for developers
+option(ACT_COUNT_FLOPS "Count floating point operations, to report GFlop/s in the timings" OFF)
+mark_as_advanced(ACT_COUNT_FLOPS)
+if(ACT_COUNT_FLOPS)
+    add_compile_definitions(ACT_COUNT_FLOPS=1)
+else()
+    add_compile_definitions(ACT_COUNT_FLOPS=0)
+endif()
 list(APPEND INSTALLED_HEADER_DEFINITIONS "-DGMX_DOUBLE=${GMX_DOUBLE_VALUE}")
 
 if(WIN32)

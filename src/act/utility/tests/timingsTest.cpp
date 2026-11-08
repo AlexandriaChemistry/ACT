@@ -98,6 +98,13 @@ void spin()
 TEST(TimingsTest, AddFlopsToInnermostRegion)
 {
     auto &timings = Timings::instance();
+    // Count the operations in this test, whatever ACT_COUNT_FLOPS is
+    struct CountFlops
+    {
+        bool before = Timings::instance().countFlops();
+        CountFlops() { Timings::instance().setCountFlops(true); }
+        ~CountFlops() { Timings::instance().setCountFlops(before); }
+    } countFlops;
     timings.reset();
     auto outer = timings.index("Test outer");
     auto inner = timings.index("Test inner");
@@ -123,6 +130,13 @@ TEST(TimingsTest, AddFlopsToInnermostRegion)
 TEST(TimingsTest, PerformanceInJson)
 {
     auto &timings = Timings::instance();
+    // Count the operations in this test, whatever ACT_COUNT_FLOPS is
+    struct CountFlops
+    {
+        bool before = Timings::instance().countFlops();
+        CountFlops() { Timings::instance().setCountFlops(true); }
+        ~CountFlops() { Timings::instance().setCountFlops(before); }
+    } countFlops;
     timings.reset();
     auto kernel = timings.index("Test kernel");
     timings.start(kernel);
@@ -172,6 +186,13 @@ TEST(TimingsTest, PerformanceInJson)
 TEST(TimingsTest, PerformanceOnlyIfCounted)
 {
     auto &timings = Timings::instance();
+    // Count the operations in this test, whatever ACT_COUNT_FLOPS is
+    struct CountFlops
+    {
+        bool before = Timings::instance().countFlops();
+        CountFlops() { Timings::instance().setCountFlops(true); }
+        ~CountFlops() { Timings::instance().setCountFlops(before); }
+    } countFlops;
     CommunicationRecord cr;
     cr.init(cr.size());
     auto region = timings.index("Test region");

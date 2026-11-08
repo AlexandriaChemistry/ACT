@@ -2439,7 +2439,10 @@ static inline void calcSome(MsgHandler                 *msghandler,
     }
     keepEnergies(energies.data(), energies.size(), MAX_ENER, 1, cached);
     // The forces are always computed here
-    Timings::instance().addFlops(ncompute*interactionFlops(mypot, topentries, atoms, true));
+    if (Timings::instance().countFlops())
+    {
+        Timings::instance().addFlops(ncompute*interactionFlops(mypot, topentries, atoms, true));
+    }
 }
 
 /*! \brief Compute one potential for all conformations
@@ -2628,7 +2631,10 @@ static bool calcConformations(Potential                        mypot,
     }
     keepEnergies(energies.data(), energies.size(), 1, ca->stride, cached);
     // The padding conformations are computed as well, but not counted
-    Timings::instance().addFlops(ca->ncomputed()*interactionFlops(mypot, topentries, atoms, forces));
+    if (Timings::instance().countFlops())
+    {
+        Timings::instance().addFlops(ca->ncomputed()*interactionFlops(mypot, topentries, atoms, forces));
+    }
     return true;
 }
 
@@ -2743,7 +2749,10 @@ static bool calcCoulombKernel(Potential                   mypot,
         cached->kernelStride        = st;
         // As computing the potential, where terms without charge are left
         // out, for the interactions computed
-        Timings::instance().addFlops(ca->nconf*interactionFlops(mypot, topentries, atoms, false)*ntodo/ne);
+        if (Timings::instance().countFlops())
+        {
+            Timings::instance().addFlops(ca->nconf*interactionFlops(mypot, topentries, atoms, false)*ntodo/ne);
+        }
     }
     if (newCoordinates || !sameShape)
     {
@@ -2840,7 +2849,10 @@ static void applyGpuResults(Potential                   mypot,
         storeEnergies(mypot, ca->nconf, nullptr, nullptr, cener, energies.data(), 1, ca->stride);
     }
     // The padding conformations are computed as well, but not counted
-    Timings::instance().addFlops(ca->ncomputed()*interactionFlops(mypot, entries, atoms, forces));
+    if (Timings::instance().countFlops())
+    {
+        Timings::instance().addFlops(ca->ncomputed()*interactionFlops(mypot, entries, atoms, forces));
+    }
 }
 
 /*! \brief Compute all potentials for all conformations of a topology
@@ -3719,9 +3731,12 @@ bool relaxShellsGpu(const ForceField            *pd,
             cener.setTermTypes(&energyTypes(m.potentials[b], m.itypes[b]));
             storeEnergies(m.potentials[b], confs.size(), confs.data(), slots.data(), &cener,
                           m.energies[b].data(), 1, ca.stride);
-            Timings::instance().addFlops(confs.size()*interactionFlops(m.potentials[b],
-                                                                       m.top->shellEntries(m.itypes[b], m.top->entry(m.itypes[b]), true),
-                                                                       m.top->atoms(), true));
+            if (Timings::instance().countFlops())
+            {
+                Timings::instance().addFlops(confs.size()*interactionFlops(m.potentials[b],
+                                                                           m.top->shellEntries(m.itypes[b], m.top->entry(m.itypes[b]), true),
+                                                                           m.top->atoms(), true));
+            }
         }
         cener.setAccumulate(false);
         cener.setTermTypes(nullptr);

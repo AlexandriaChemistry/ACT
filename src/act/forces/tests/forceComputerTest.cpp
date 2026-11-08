@@ -660,6 +660,13 @@ TEST_F(ForceComputerIntegrationTest, CountsFlops)
     std::vector<gmx::RVec>            forces(coords.size());
     std::map<InteractionType, double> energies;
     auto &timings = Timings::instance();
+    // Count the operations in this test, whatever ACT_COUNT_FLOPS is
+    struct CountFlops
+    {
+        bool before = Timings::instance().countFlops();
+        CountFlops() { Timings::instance().setCountFlops(true); }
+        ~CountFlops() { Timings::instance().setCountFlops(before); }
+    } countFlops;
     timings.reset();
     // One conformation, with forces
     fc.computeOnce(&msghandler_, pd, top, &coords, &forces, &energies, { 0, 0, 0 });
