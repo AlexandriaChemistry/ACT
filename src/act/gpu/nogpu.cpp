@@ -121,6 +121,10 @@ void resetShells(System *, const char *)
 {
 }
 
+void keepShells(System *, const char *, bool)
+{
+}
+
 void relaxBlocks(System *, const char *, const char *, const RelaxSettings &, size_t *nComputed, bool *notFinite,
                  size_t *nFailed)
 {

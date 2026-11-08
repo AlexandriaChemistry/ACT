@@ -512,6 +512,10 @@ public:
     char                           *isShell_ = nullptr;
     //! The kept coordinates of each block, see saveCoordinates
     std::vector<int64_t *>          saved_;
+    //! The kept shell coordinates of all blocks, in the layout of x_, see keepShells
+    int64_t                        *keptShells_ = nullptr;
+    //! Whether the shells of each slot converged in the last relaxation, see keepShells
+    char                           *converged_ = nullptr;
     int                             maxIterAllocated_ = 0;
 };
 
@@ -762,6 +766,8 @@ System *createSystem(const SystemBlock *blocks, size_t nblock)
     sys->partDxF_      = sys->allocate<double>(sys->nmovingPart_);
     sys->valid_        = sys->allocate<int>(1);
     sys->nfailed_      = sys->allocate<uint64_t>(1);
+    sys->converged_    = sys->allocate<char>(std::max<uint64_t>(sys->nslotAll_, 1));
+    sys->queue_->memset(sys->converged_, 0, std::max<uint64_t>(sys->nslotAll_, 1));
     sys->saved_.assign(nblock, nullptr);
     sys->upload(sys->forceShells_, forceShells.data(), forceShells.size());
     sys->upload(sys->movingShells_, movingShells.data(), movingShells.size());
@@ -1779,6 +1785,54 @@ void resetShells(System *sys, const char *use)
     });
 }
 
+void keepShells(System *sys, const char *use, bool restore)
+{
+    if (sys->nresetWork_ == 0)
+    {
+        return;
+    }
+    if (!sys->keptShells_)
+    {
+        sys->keptShells_ = sys->allocate<int64_t>(sys->nx_);
+    }
+    sys->upload(sys->use_, use, sys->nblock_);
+    auto     dB = sys->blocks_;
+    auto     dU = sys->use_;
+    auto     dX = sys->x_;
+    auto     dK = sys->keptShells_;
+    auto     dR = sys->resets_;
+    auto     dC = sys->converged_;
+    uint32_t nb = sys->nblock_;
+    sys->queue_->parallel_for(sycl::range<1>(sys->nresetWork_), [=](sycl::id<1> id)
+    {
+        uint64_t                 w  = id[0];
+        uint32_t                 bi = findRange(dB, nb, w, &DeviceSystemBlock::resetWorkOffset);
+        const DeviceSystemBlock &b  = dB[bi];
+        if (!dU[bi])
+        {
+            return;
+        }
+        uint64_t local = w - b.resetWorkOffset;
+        uint64_t k     = local / b.nslot;
+        uint64_t c     = local % b.nslot;
+        uint32_t shell = dR[2*(b.firstReset + k)];
+        uint64_t i     = b.xOffset + c + 3*shell*b.stride;
+        // The shells that did not converge start from their parent next time
+        uint64_t from  = dC[b.slotOffset + c] ? i : b.xOffset + c + 3*dR[2*(b.firstReset + k) + 1]*b.stride;
+        for (int m = 0; m < 3; m++)
+        {
+            if (restore)
+            {
+                dX[i + m*b.stride] = dK[i + m*b.stride];
+            }
+            else
+            {
+                dK[i + m*b.stride] = dX[from + m*b.stride];
+            }
+        }
+    });
+}
+
 void relaxBlocks(System *sys, const char *use, const char *relax,
                  const RelaxSettings &settings, size_t *nComputed, bool *notFinite,
                  size_t *nFailed)
@@ -2224,6 +2278,7 @@ void relaxBlocks(System *sys, const char *use, const char *relax,
     // The slots whose shells did not converge: those left after the last
     // iteration and those that stopped without progress
     auto dNF = sys->nfailed_;
+    auto dCv = sys->converged_;
     queue->memset(dNF, 0, sizeof(uint64_t));
     queue->parallel_for(sycl::range<1>(nslotAll), [=](sycl::id<1> id)
     {
@@ -2232,6 +2287,11 @@ void relaxBlocks(System *sys, const char *use, const char *relax,
         for (uint32_t fi = 0; fi < 2; fi++)
         {
             failed = failed || (stallIterations > 0 && dSt[2*s + fi].stall >= stallIterations);
+        }
+        uint32_t bi = findRangeFrom(dB, nb, s, &DeviceSystemBlock::slotOffset, dHS);
+        if (dU[bi])
+        {
+            dCv[s] = failed ? 0 : 1;
         }
         if (failed)
         {

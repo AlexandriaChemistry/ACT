@@ -338,6 +338,8 @@ private:
     real   shellToler_       = 1e-3;
     //! Maxiter for shell optimization
     int shellMaxIter_        = 25;
+    //! Whether to relax the shells starting from their previous positions
+    bool shellKeep_          = true;
 
 public:
     /*!
@@ -454,6 +456,9 @@ public:
 
     //! \return shell iterations
     int shellMaxIter() const { return shellMaxIter_; }
+
+    //! \return whether shells are relaxed from their previous positions, see ForceComputer::setKeepShells
+    bool shellKeep() const { return shellKeep_; }
 };
 
 //! \brief Enum for selecting the coordinate minimizer in simulate

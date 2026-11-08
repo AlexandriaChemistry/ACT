@@ -507,6 +507,8 @@ typedef struct
     std::string            dataFile;
     //! Relaxed coordinates, the coordinates are those of ConformationData::x
     std::vector<gmx::RVec> xrelax;
+    //! The shells of the previous relaxation, three components per shell, see ForceComputer::setKeepShells
+    std::vector<Coordinate> xkept;
     //! Observed forces
     std::vector<gmx::RVec> fobs;
     //! The QM energies, the ACT energies are in ConformationData::energies

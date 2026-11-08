@@ -171,6 +171,8 @@ private:
     double         msForceToler_     = 1e-6;
     //! Maximum number of iterations to spend on minimizing shells
     int            maxiter_          = 25;
+    //! Whether to start relaxing from the previous shells, see setKeepShells
+    bool           keepShells_       = false;
     //! Steps without progress after which the shells stop, 0 for never, see setStallIterations
     int            stallIterations_  = 0;
     //! Relative dielectric constant
@@ -589,6 +591,20 @@ private:
      *              convergence or the maximum number of iterations
      */
     void setStallIterations(int n) { stallIterations_ = n; }
+
+    /*! \brief Whether to start relaxing the shells from those of the previous relaxation
+     * In computeRelaxedEnergies the shells are still put on their parents
+     * for the energies before relaxation, from which the induction follows.
+     * The relaxation then starts from where the shells were relaxed the
+     * previous time, which needs far fewer iterations when the parameters
+     * changed little. The converged positions differ within the tolerance
+     * on the force, so a smaller tolerance is needed for the same precision.
+     * \param[in] keep Whether to keep the shells
+     */
+    void setKeepShells(bool keep) { keepShells_ = keep; }
+
+    //! \return whether the relaxation starts from the shells of the previous one
+    bool keepShells() const { return keepShells_; }
 
     /*! \brief Plot the potential functions
      * This plots the potential functions corresponding to

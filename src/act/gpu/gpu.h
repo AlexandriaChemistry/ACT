@@ -640,6 +640,16 @@ void computeBlocks(System *system, const char *use, double *const *energies, boo
  */
 void resetShells(System *system, const char *use);
 
+/*! \brief Keep the shell coordinates of some blocks, or put the kept ones back
+ * To start a relaxation from the shells of the previous one. For the slots
+ * whose shells did not converge in their last relaxation, see relaxBlocks,
+ * the positions of the parents are kept instead.
+ * \param[in] system  The system
+ * \param[in] use     Whether to do this for each block
+ * \param[in] restore Whether to put the kept shells back, otherwise keep them
+ */
+void keepShells(System *system, const char *use, bool restore);
+
 /*! \brief Relax the shells of some blocks, as relaxShells
  * The forces and coordinates are those on the GPU, the energies are not
  * computed, see computeBlocks.
