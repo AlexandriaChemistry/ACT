@@ -521,9 +521,14 @@ void writeCodeInformation(gmx::TextWriter *writer)
                 writer->writeLine(gmx::formatString("                    %s", peaks[i].basis.c_str()));
             }
         }
-        if (!names.empty() && !gpu::useGpu())
+        if (!names.empty() && gpu::gpuTurnedOff())
         {
-            writer->writeLine("                    turned off by ACT_NO_GPU");
+            writer->writeLine("                    turned off with -nogpu");
+        }
+        else if (!names.empty() && !gpu::useGpu())
+        {
+            writer->writeLine("                    could not be started, for instance since it takes no more");
+            writer->writeLine("                    processes, this process computes on the processor");
         }
         else if (!names.empty() && GMX_DOUBLE)
         {

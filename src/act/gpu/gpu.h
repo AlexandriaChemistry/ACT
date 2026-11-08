@@ -93,14 +93,23 @@ std::vector<DevicePeak> devicePeaks();
 int gpuIndex();
 
 /*! \brief Whether the GPU computes the potentials that it has kernels for
- * True if ACT was built with GPU support, a GPU was found and neither the
- * environment variable ACT_NO_GPU nor setUseGpu turned it off.
+ * True if ACT was built with GPU support, a GPU was found and neither
+ * turnOffGpu nor setUseGpu turned it off.
  * \return whether the GPU is used
  */
 bool useGpu();
 
+/*! \brief Never use the GPU in this process, see the option -nogpu of MsgHandler
+ * Called before the GPU is used, the GPU is not started at all, such that
+ * it takes no place among the processes a GPU may have.
+ */
+void turnOffGpu();
+
+//! \return whether turnOffGpu was called
+bool gpuTurnedOff();
+
 /*! \brief Turn the GPU on or off, for tests and comparisons
- * The GPU is only turned on if useGpu would return true without ACT_NO_GPU.
+ * The GPU is only turned on if useGpu would return true without turnOffGpu.
  * \param[in] use Whether to use the GPU
  * \return whether the GPU was used before
  */
