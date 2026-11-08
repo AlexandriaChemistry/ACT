@@ -214,6 +214,7 @@ void OptACM::initForceComputer()
     double epsilonr;
     epsilonr = sii_->forcefield()->epsilonr();
     forceComp_->init(bch_.shellToler(), bch_.shellMaxIter(), epsilonr);
+    forceComp_->setKeepShells(bch_.shellKeep());
 }
 
 //! \todo rename function and make a coupling between targets from the command line
@@ -775,10 +776,14 @@ bool OptACM::runMaster(bool               optimize,
                 fitComp_->compute(&msghandler_, &(it->second), it->first);
                 // Check for consistency (read: bugs)
                 double chi2 = it->second.fitness(it->first);
-                if (std::abs(chi2before - chi2) > 1e-3)
+                // Shells relaxed from those of the previous evaluation, see
+                // ForceComputer::setKeepShells, depend slightly on where they
+                // started, in particular with poor parameters.
+                double toler = bch_.shellKeep() ? 1e-3*std::max(1.0, std::abs(chi2before)) : 1e-3;
+                if (std::abs(chi2before - chi2) > toler)
                 {
                     msghandler_.msg(ACTStatus::Fatal,
-                                    gmx::formatString("Chi2 after training was %g, after recomputing it is %g.", chi2before, chi2));
+                                    gmx::formatString("Chi2 after training was %.10g, after recomputing it is %.10g.", chi2before, chi2));
                 }
                 tw->writeStringFormatted("Minimum chi2 for %s %g\n",
                                          iMolSelectName(it->first).c_str(), chi2);
@@ -1185,6 +1190,7 @@ int train_ff(int argc, char *argv[])
                     ACTHelper helper(opt.msgHandler(), opt.sii(), opt.mg(),
                                      opt.bch()->shellToler(),
                                      opt.bch()->shellMaxIter(),
+                                     opt.bch()->shellKeep(),
                                      compR.algorithm(),
                                      opt.gach()->lossFunction());
                     helper.run(opt.msgHandler());

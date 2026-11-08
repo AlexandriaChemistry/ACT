@@ -60,6 +60,7 @@ namespace alexandria
          * \param[in] mg               Information about this helpers molecules
          * \param[in] shellToler       Tolerance for minimizing shell positions
          * \param[in] shellMaxIter     Max # iterations for the same
+         * \param[in] shellKeep        Whether to start from the previous shells, see ForceComputer::setKeepShells
          * \param[in] algorithm        The charge generation algorithm
          * \param[in] lossFunction     The loss function to use
          */
@@ -68,6 +69,7 @@ namespace alexandria
                   MolGen                    *mg,
                   double                     shellToler,
                   int                        shellMaxIter,
+                  bool                       shellKeep,
                   ChargeGenerationAlgorithm  algorithm,
                   LossFunction               lossFunction);
         

@@ -4033,6 +4033,8 @@ void GpuTrainingSystem::updateParameters(const ForceField *, const ForceComputer
 std::pair<double, double> GpuTrainingSystem::chargeDifference() const { return { 0, 0 }; }
 void GpuTrainingSystem::copyChargesToMolecules() {}
 void GpuTrainingSystem::resetShells() {}
+void GpuTrainingSystem::keepShells() {}
+bool GpuTrainingSystem::restoreShells(int) { return false; }
 void GpuTrainingSystem::constructVsites() {}
 void GpuTrainingSystem::compute(int, bool) {}
 size_t GpuTrainingSystem::relax(int, const bool[2], const gpu::RelaxSettings &, size_t *nFailed) { *nFailed = 0; return 0; }
@@ -4063,6 +4065,10 @@ public:
     };
     std::vector<Block>    blocks;
     gpu::System          *system = nullptr;
+    //! Whether the shells of all blocks were kept, see keepShells
+    bool                  shellsKept = false;
+    //! Whether a displacement was not finite since the shells were kept
+    bool                  notFinite = false;
     std::vector<ACTMol *> mols;
     std::vector<size_t>   nconf;
     double                maxShellDistance2 = 0;
@@ -4224,6 +4230,9 @@ bool GpuTrainingSystem::prepare(const ForceField *pd, const std::vector<ACTMol *
         gpu::destroySystem(im.system);
         im.system = nullptr;
     }
+    // The kept shells were those of the old system
+    im.shellsKept = false;
+    im.notFinite  = false;
     im.blocks.clear();
     im.acmMols.clear();
     im.acmValues.clear();
@@ -4598,6 +4607,30 @@ void GpuTrainingSystem::resetShells()
     gpu::resetShells(impl_->system, u.data());
 }
 
+void GpuTrainingSystem::keepShells()
+{
+    auto &im = *impl_;
+    im.shellsKept = !im.notFinite;
+    im.notFinite  = false;
+    if (im.shellsKept)
+    {
+        auto u = im.use(-1);
+        gpu::keepShells(im.system, u.data(), false);
+    }
+}
+
+bool GpuTrainingSystem::restoreShells(int what)
+{
+    auto &im = *impl_;
+    if (!im.shellsKept)
+    {
+        return false;
+    }
+    auto u = im.use(what);
+    gpu::keepShells(im.system, u.data(), true);
+    return true;
+}
+
 void GpuTrainingSystem::constructVsites()
 {
     gpu::constructVsites(impl_->system);
@@ -4645,6 +4678,7 @@ size_t GpuTrainingSystem::relax(int what, const bool relaxMonomer[2], const gpu:
     gpu::relaxBlocks(im.system, u.data(), relax.data(), settings, &nComputed, &notFinite, nFailed);
     if (notFinite)
     {
+        im.notFinite = true;
         // As on the processor, see moveCoordinate
         moveCoordinate(0, std::numeric_limits<double>::quiet_NaN());
     }

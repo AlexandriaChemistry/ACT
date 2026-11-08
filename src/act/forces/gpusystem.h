@@ -92,6 +92,17 @@ public:
     //! Put the shells on their parents, as ForceComputer::computeRelaxedEnergies
     void resetShells();
 
+    /*! \brief Keep the shells of all topologies, for restoreShells
+     * Nothing is kept when a displacement was not finite since the last call.
+     */
+    void keepShells();
+
+    /*! \brief Put back the shells that keepShells kept, to start the relaxation there
+     * \param[in] what As for compute
+     * \return whether there were shells kept
+     */
+    bool restoreShells(int what);
+
     //! Construct the virtual sites
     void constructVsites();
 

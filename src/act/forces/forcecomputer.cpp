@@ -1225,6 +1225,111 @@ static bool vsitesIndependentOfShells(const Topology *top)
     return true;
 }
 
+//! A component in units of coordinateUnit, to copy it exactly
+struct CoordinateUnits
+{
+    //! The component
+    Coordinate value;
+    //! \return the component
+    Coordinate units() const { return value; }
+};
+
+/*! \brief Call a function for each conformation of each topology of the molecules
+ * \param[in] allmols The molecules
+ * \param[in] what    0 or 1 for a monomer, 2 for the dimers, -2 for both monomers
+ * \param[in] func    Called with the conformation data, its conformation and the topology
+ */
+template <typename F>
+static void forEachConformation(const std::vector<ACTMol *> &allmols, int what, F func)
+{
+    for(auto molptr : allmols)
+    {
+        auto &tops = molptr->fragmentHandler()->topologies();
+        for(int w = 0; w < 3; w++)
+        {
+            if (!(w == what || (what == -2 && w < 2)))
+            {
+                continue;
+            }
+            if ((w < 2 && static_cast<size_t>(w) >= tops.size()) || (w == 2 && !molptr->isDimer()))
+            {
+                continue;
+            }
+            const Topology *top   = (w < 2) ? &tops[w] : molptr->topology();
+            auto           *cdata = molptr->conformationData(w);
+            for(size_t c = 0; c < cdata->nconf(); c++)
+            {
+                func(cdata, c, top);
+            }
+        }
+    }
+}
+
+/*! \brief Keep the shells of the conformations that converged, see ForceComputer::setKeepShells
+ * \param[inout] allmols The molecules
+ */
+static void keepRelaxedShells(const std::vector<ACTMol *> &allmols)
+{
+    for(int what : { -2, 2 })
+    {
+        forEachConformation(allmols, what, [](ConformationData *cdata, size_t c, const Topology *top)
+        {
+            auto  x     = cdata->x(c);
+            auto &kept  = cdata->confs[c].xkept;
+            auto &atoms = top->atoms();
+            kept.clear();
+            // Shells that did not converge start from their parents next time
+            if (!cdata->confs[c].done)
+            {
+                return;
+            }
+            for(size_t i = 0; i < atoms.size(); i++)
+            {
+                if (atoms[i].pType() == ActParticle::Shell)
+                {
+                    for(int m = 0; m < DIM; m++)
+                    {
+                        kept.push_back(x[i][m].units());
+                    }
+                }
+            }
+        });
+    }
+}
+
+/*! \brief Put back the shells that keepRelaxedShells kept
+ * \param[inout] allmols The molecules
+ * \param[in]    what    As for forEachConformation
+ * \return whether shells were put back in any conformation
+ */
+static bool restoreRelaxedShells(const std::vector<ACTMol *> &allmols, int what)
+{
+    bool restored = false;
+    forEachConformation(allmols, what, [&restored](ConformationData *cdata, size_t c, const Topology *top)
+    {
+        auto        x     = cdata->x(c);
+        const auto &kept  = cdata->confs[c].xkept;
+        auto       &atoms = top->atoms();
+        size_t      k     = 0;
+        for(size_t i = 0; i < atoms.size(); i++)
+        {
+            if (atoms[i].pType() == ActParticle::Shell)
+            {
+                if (k + DIM > kept.size())
+                {
+                    return;
+                }
+                for(int m = 0; m < DIM; m++)
+                {
+                    x[i][m] = CoordinateUnits{ kept[k++] };
+                }
+            }
+        }
+        restored = restored || k > 0;
+    });
+    return restored;
+}
+
 /*! \brief Copy the relaxed monomer shell positions into the dimer
  * \param[inout] allmols The molecules
  */
@@ -1622,6 +1727,10 @@ void ForceComputer::computeRelaxedEnergiesGpu(MsgHandler                  *,
     static const size_t timer = Timings::instance().index("GPU resident evaluation");
     ScopedTimer         scoped(timer);
     auto &gs = *gpuSystem_;
+    // Start the relaxation from the shells of the previous evaluation, see
+    // setKeepShells. The energies before relaxing are still those with the
+    // shells on their parents.
+    const bool keepShells = keepShells_ && resetTheShells;
     gpu::RelaxSettings settings = { msForceToler_, gmx::square(shellMaxDistance(pd)), minShellStep, maxShellStep, maxiter_,
                                     stallIterations_, shellWallAngleTolerance };
     for (auto molptr : allmols)
@@ -1652,6 +1761,11 @@ void ForceComputer::computeRelaxedEnergiesGpu(MsgHandler                  *,
             energies.setBackups(true);
             backupEnergies(&energies);
         }
+    }
+    if (keepShells && gs.restoreShells(-2))
+    {
+        ScopedTimer et(energyT);
+        gs.compute(-2);
     }
     const bool all[2] = { true, true };
     { ScopedTimer rt(relaxT); size_t nf = 0; nShellIter_ += gs.relax(-1, all, settings, &nf); nShellConvergeFailed_ += nf; }
@@ -1696,10 +1810,23 @@ void ForceComputer::computeRelaxedEnergiesGpu(MsgHandler                  *,
             }
         }
         gs.restoreDimers();
+        if (keepShells)
+        {
+            gs.restoreShells(2);
+        }
         { ScopedTimer et(energyT); gs.compute(2); }
+    }
+    else if (keepShells && gs.restoreShells(2))
+    {
+        ScopedTimer et(energyT);
+        gs.compute(2);
     }
     { ScopedTimer rt(relaxT); size_t nf = 0; nShellIter_ += gs.relax(2, all, settings, &nf); nShellConvergeFailed_ += nf; }
     { ScopedTimer et(energyT); gs.compute(2, false); }
+    if (keepShells)
+    {
+        gs.keepShells();
+    }
     postProcessRelaxedEnergies(allmols, false, doInduc2, separateInductionCorrection, eInduc2);
     if (checkCharges)
     {
@@ -1903,6 +2030,12 @@ void ForceComputer::computeRelaxedEnergies(MsgHandler                  *msghandl
     // Now let's have a look whether we are polarizable
     if (pd->polarizable())
     {
+        // Start from the shells of the previous relaxation, see setKeepShells
+        if (keepShells_ && resetTheShells && restoreRelaxedShells(allmols, -2))
+        {
+            computeEnergies(msghandler, pd, allmols, 0, forces, false, intermolecular, allForces);
+            computeEnergies(msghandler, pd, allmols, 1, forces, false, intermolecular, allForces);
+        }
         for(size_t im = 0; im < 2; im++)
         {
             relaxMonomer(msghandler, pd, im, allmols, allForces);
@@ -1989,11 +2122,23 @@ void ForceComputer::computeRelaxedEnergies(MsgHandler                  *msghandl
                     cdata->x(i).assign(xdimer[k][i]);
                 }
             }
+            if (keepShells_ && resetTheShells)
+            {
+                (void) restoreRelaxedShells(allmols, 2);
+            }
+            computeEnergies(msghandler, pd, allmols, 2, true, false, false, allForces);
+        }
+        else if (keepShells_ && resetTheShells && restoreRelaxedShells(allmols, 2))
+        {
             computeEnergies(msghandler, pd, allmols, 2, true, false, false, allForces);
         }
         // Final, total energy
         bool ff[2] = { false, false };
         relaxDimer(msghandler, pd, ff, allmols, allForces);
+        if (keepShells_ && resetTheShells)
+        {
+            keepRelaxedShells(allmols);
+        }
     }
     
     postProcessRelaxedEnergies(allmols, intermolecular, doInduc2, separateInductionCorrection, eInduc2);

@@ -41,12 +41,14 @@ ACTHelper::ACTHelper(MsgHandler                *msghandler,
                      MolGen                    *mg,
                      double                     shellToler,
                      int                        shellMaxIter,
+                     bool                       shellKeep,
                      ChargeGenerationAlgorithm  algorithm,
                      LossFunction               lossFunction)
 {
     double epsilonr;
     epsilonr = sii->forcefield()->epsilonr();
     forceComp_.init(shellToler, shellMaxIter, epsilonr);
+    forceComp_.setKeepShells(shellKeep);
     fitComp_.init(msghandler, sii, mg, false, &forceComp_, algorithm, lossFunction);
 }
 
