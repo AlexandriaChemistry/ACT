@@ -59,6 +59,13 @@ std::string implementation();
  */
 std::vector<std::string> devices();
 
+/*! \brief Why no GPU was found, for the log file
+ * Looks at the backends of the programming model, the GPU device files of
+ * the node and the GPUs that the queue system gave the job.
+ * \return lines with the likely causes and what to do, empty with GPUs
+ */
+std::vector<std::string> noGpuReasons();
+
 //! An estimate of the peak performance of a GPU
 struct DevicePeak
 {

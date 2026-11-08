@@ -32,8 +32,11 @@
  */
 #include "gpu.h"
 
+#include <algorithm>
 #include <cstdio>
 #include <cstdlib>
+#include <filesystem>
+#include <fstream>
 
 #include <sycl/sycl.hpp>
 
@@ -66,6 +69,105 @@ std::vector<std::string> devices()
         names.clear();
     }
     return names;
+}
+
+/*! \brief The directory of the AdaptiveCpp runtime library this process loaded
+ * \return the directory, empty if not known, for instance on macOS
+ */
+static std::string acppLibraryDirectory()
+{
+    std::ifstream maps("/proc/self/maps");
+    std::string   line;
+    while (std::getline(maps, line))
+    {
+        auto pos = line.find('/');
+        if (pos != std::string::npos && line.find("libacpp-rt") != std::string::npos)
+        {
+            return std::filesystem::path(line.substr(pos)).parent_path().string();
+        }
+    }
+    return "";
+}
+
+/*! \brief The backends of AdaptiveCpp, the plugins next to its runtime library
+ * \param[in] libdir The directory of the runtime library
+ * \return the names of the backends, such as cuda, hip, ocl and omp
+ */
+static std::vector<std::string> acppBackends(const std::string &libdir)
+{
+    std::vector<std::string> names;
+    std::error_code          ec;
+    const std::string        prefix = "librt-backend-";
+    for (const auto &entry : std::filesystem::directory_iterator(libdir + "/hipSYCL", ec))
+    {
+        std::string file = entry.path().stem().string();
+        if (file.compare(0, prefix.size(), prefix) == 0)
+        {
+            names.push_back(file.substr(prefix.size()));
+        }
+    }
+    std::sort(names.begin(), names.end());
+    return names;
+}
+
+std::vector<std::string> noGpuReasons()
+{
+    std::vector<std::string> reasons;
+    auto exists = [](const char *file)
+    {
+        std::error_code ec;
+        return std::filesystem::exists(file, ec);
+    };
+    bool nvidia = exists("/dev/nvidiactl") || exists("/dev/nvidia0");
+    bool amd    = exists("/dev/kfd");
+    // A queue system that gives a job no GPU may hide them like this
+    for (const char *name : { "CUDA_VISIBLE_DEVICES", "ROCR_VISIBLE_DEVICES", "HIP_VISIBLE_DEVICES" })
+    {
+        const char *value = std::getenv(name);
+        if (value && (std::string(value).empty() || std::string(value) == "NoDevFiles" ||
+                      std::string(value) == "-1"))
+        {
+            reasons.push_back(std::string(name) + " is \"" + value + "\", the queue system gave this job no GPU,");
+            reasons.push_back("request one, for instance with sbatch --gres=gpu:1");
+        }
+    }
+    std::string libdir   = acppLibraryDirectory();
+    auto        backends = libdir.empty() ? std::vector<std::string>() : acppBackends(libdir);
+    auto        has      = [&backends](const char *name)
+    {
+        return std::find(backends.begin(), backends.end(), name) != backends.end();
+    };
+    std::string list;
+    for (const auto &b : backends)
+    {
+        list += (list.empty() ? "" : " ") + b;
+    }
+    if (!backends.empty())
+    {
+        if (nvidia && !has("cuda"))
+        {
+            reasons.push_back("this node has NVIDIA GPUs, but AdaptiveCpp has no CUDA backend, build");
+            reasons.push_back("ACT with an AdaptiveCpp that has one, for instance from conda-forge");
+            reasons.push_back("\"adaptivecpp=*=cuda*\", given with -DAdaptiveCpp_DIR");
+        }
+        if (amd && !has("hip"))
+        {
+            reasons.push_back("this node has AMD GPUs, but AdaptiveCpp has no HIP backend, build ACT");
+            reasons.push_back("with an AdaptiveCpp that has one, given with -DAdaptiveCpp_DIR");
+        }
+    }
+    if (!nvidia && !amd)
+    {
+        reasons.push_back("this node has no NVIDIA or AMD GPU device files (/dev/nvidiactl, /dev/kfd),");
+        reasons.push_back("run on a node with GPUs");
+    }
+    if (!libdir.empty())
+    {
+        reasons.push_back("AdaptiveCpp in " + libdir + " has the backends: " + (list.empty() ? "none" : list));
+    }
+    reasons.push_back("acpp-info -l lists the devices that AdaptiveCpp finds, and the environment");
+    reasons.push_back("variable ACPP_DEBUG_LEVEL=2 shows its messages");
+    return reasons;
 }
 
 /*! \brief The single precision lanes of a compute unit of a GPU

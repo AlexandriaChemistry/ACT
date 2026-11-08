@@ -504,7 +504,11 @@ void writeCodeInformation(gmx::TextWriter *writer)
         auto names = gpu::devices();
         if (names.empty())
         {
-            writer->writeLine(gmx::formatString("GPU:                %s, no GPU found", gpuCode.c_str()));
+            writer->writeLine(gmx::formatString("GPU:                %s, no GPU found:", gpuCode.c_str()));
+            for (const auto &reason : gpu::noGpuReasons())
+            {
+                writer->writeLine(gmx::formatString("                    %s", reason.c_str()));
+            }
         }
         auto peaks = gpu::devicePeaks();
         for (size_t i = 0; i < names.size(); i++)

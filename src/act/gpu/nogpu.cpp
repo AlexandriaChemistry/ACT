@@ -52,6 +52,11 @@ std::vector<DevicePeak> devicePeaks()
     return {};
 }
 
+std::vector<std::string> noGpuReasons()
+{
+    return {};
+}
+
 int gpuIndex()
 {
     return -1;
