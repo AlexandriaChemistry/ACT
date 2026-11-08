@@ -745,6 +745,13 @@ TEST_F(ForceComputerIntegrationTest, VsitesOfManyConformations)
     }
     VsiteHandler vsiteHandler;
     auto        &timings = Timings::instance();
+    // Count the operations in this test, whatever ACT_COUNT_FLOPS is
+    struct CountFlops
+    {
+        bool before = Timings::instance().countFlops();
+        CountFlops() { Timings::instance().setCountFlops(true); }
+        ~CountFlops() { Timings::instance().setCountFlops(before); }
+    } countFlops;
     timings.reset();
     vsiteHandler.constructPositions(top, xa.data(), stride, stride, nconf);
     EXPECT_EQ(34*nvsite*nconf, timings.flops()[timings.index("Virtual sites")]);
