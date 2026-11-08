@@ -73,13 +73,13 @@ endif()
 # GMX_SIMD_VECTORIZATION_C_FLAGS, GMX_SIMD_VECTORIZATION_CXX_FLAGS and
 # GMX_SIMD_VECTORIZATION_LINKER_FLAGS and added to the compiler flags in the
 # main CMakeLists.txt.
-option(GMX_OPENMP_SIMD "Enable OpenMP SIMD directives for compiler vectorization of loops" ON)
-option(GMX_VECTOR_MATH "Use a vector math library for math functions (exp, erf, ...) in vectorized loops" ON)
-mark_as_advanced(GMX_OPENMP_SIMD GMX_VECTOR_MATH)
+option(ACT_OPENMP_SIMD "Enable OpenMP SIMD directives for compiler vectorization of loops" ON)
+option(ACT_VECTOR_MATH "Use a vector math library for math functions (exp, erf, ...) in vectorized loops" ON)
+mark_as_advanced(ACT_OPENMP_SIMD ACT_VECTOR_MATH)
 set(GMX_SIMD_VECTORIZATION_C_FLAGS "")
 set(GMX_SIMD_VECTORIZATION_CXX_FLAGS "")
 set(GMX_SIMD_VECTORIZATION_LINKER_FLAGS "")
-if(GMX_OPENMP_SIMD)
+if(ACT_OPENMP_SIMD)
     include(CheckCXXCompilerFlag)
     include(CheckCXXSourceCompiles)
     # Flag for the OpenMP SIMD directives
@@ -111,7 +111,7 @@ if(GMX_OPENMP_SIMD)
             set(GMX_SIMD_VECTORIZATION_C_FLAGS   "${GMX_SIMD_VECTORIZATION_C_FLAGS} -fno-math-errno")
             set(GMX_SIMD_VECTORIZATION_CXX_FLAGS "${GMX_SIMD_VECTORIZATION_CXX_FLAGS} -fno-math-errno")
         endif()
-        if(GMX_VECTOR_MATH)
+        if(ACT_VECTOR_MATH)
             # Vector math library, the first one that compiles and links a
             # vectorized loop calling exp and erf is used.
             if(APPLE)
