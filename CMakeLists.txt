@@ -175,15 +175,25 @@ include(gmxOptionUtilities)
 set(CMAKE_COMPILE_WARNING_AS_ERROR ON)
 set(CMAKE_PREFIX_PATH "" CACHE STRING "Extra locations to search for external libraries and tools (give directory without lib, bin, or include)")
 
-gmx_set_boolean(GMX_DOUBLE_DEFAULT ON)
-option(GMX_DOUBLE "Use double precision (much slower, use only if you really need it)" ${GMX_DOUBLE_DEFAULT})
+# These options were called GMX_DOUBLE, GMX_MPI and GMX_OPENMP before. Their
+# values in existing build directories, or given with the old names, are used.
+foreach(_opt DOUBLE MPI OPENMP)
+    if(DEFINED GMX_${_opt} AND NOT DEFINED ACT_${_opt})
+        message(WARNING "GMX_${_opt} is now called ACT_${_opt}, using ACT_${_opt}=${GMX_${_opt}}")
+        set(ACT_${_opt} ${GMX_${_opt}} CACHE BOOL "")
+    endif()
+    unset(GMX_${_opt} CACHE)
+endforeach()
 
-option(GMX_MPI    "Build a parallel (message-passing) version of ACT" ON)
+gmx_set_boolean(GMX_DOUBLE_DEFAULT ON)
+option(ACT_DOUBLE "Use double precision (much slower, use only if you really need it)" ${GMX_DOUBLE_DEFAULT})
+
+option(ACT_MPI    "Build a parallel (message-passing) version of ACT" ON)
 gmx_dependent_option(
     GMX_MPI_IN_PLACE
     "Enable MPI_IN_PLACE for MPIs that have it defined"
     ON
-    GMX_MPI)
+    ACT_MPI)
 mark_as_advanced(GMX_MPI_IN_PLACE)
 
 # There is no GPU support, but the code tests for it
@@ -195,7 +205,7 @@ include(actManageGpu)
 option(GMX_BROKEN_CALLOC "Work around broken calloc()" OFF)
 mark_as_advanced(GMX_BROKEN_CALLOC)
 
-option(GMX_OPENMP "Enable OpenMP-based multithreading" OFF)
+option(ACT_OPENMP "Enable OpenMP-based multithreading" OFF)
 
 option(GMX_SKIP_DEFAULT_CFLAGS "Don't automatically add suggested/required Compiler flags." OFF)
 mark_as_advanced(GMX_SKIP_DEFAULT_CFLAGS)
@@ -248,7 +258,7 @@ gmx_test_compiler_problems()
 # robust than #ifdef. So, we put this value on the compiler command
 # line in all cases.
 
-if(GMX_DOUBLE)
+if(ACT_DOUBLE)
     set(GMX_DOUBLE_VALUE 1)
 else()
     set(GMX_DOUBLE_VALUE 0)
@@ -479,7 +489,7 @@ else()
     message("CMAKE_SHARED_LINKER_FLAGS: ${MPI_LINKER_FLAGS} ${GMX_SIMD_VECTORIZATION_LINKER_FLAGS}")
 endif()
 
-if(NOT GMX_OPENMP)
+if(NOT ACT_OPENMP)
     #Unset all OpenMP flags in case OpenMP was disabled either by the user
     #or because it was only partially detected (e.g. only for C but not C++ compiler)
     unset(OpenMP_C_FLAGS CACHE)

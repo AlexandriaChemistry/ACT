@@ -103,7 +103,8 @@
 #cmakedefine01 MPI_IN_PLACE_EXISTS
 
 /* Use OpenMP multithreading */
-#cmakedefine01 GMX_OPENMP
+#cmakedefine01 ACT_OPENMP
+#define GMX_OPENMP ACT_OPENMP
 
 /* Use the Portable Hardware Locality package (hwloc) */
 #cmakedefine01 GMX_USE_HWLOC

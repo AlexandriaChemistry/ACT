@@ -68,9 +68,9 @@ make -j4 install tests
 
 | Option | Typical value | Purpose |
 |---|---|---|
-| `GMX_DOUBLE` | `ON` | Use double precision (required for accuracy) |
-| `GMX_MPI` | `ON` | Enable MPI parallelism |
-| `GMX_OPENMP` | `OFF` | OpenMP (usually off) |
+| `ACT_DOUBLE` | `ON` | Use double precision (required for accuracy) |
+| `ACT_MPI` | `ON` | Enable MPI parallelism |
+| `ACT_OPENMP` | `OFF` | OpenMP (usually off) |
 | `BUILD_SHARED_LIBS` | `OFF` | Static linking |
 | `CMAKE_PREFIX_PATH` | conda env path | Finds RDKit, Boost, Eigen from conda |
 
@@ -247,8 +247,8 @@ Both: checkout → conda (RDKit, Boost, Eigen) → cmake build → `make install
 ## Common Pitfalls
 
 1. **`actpre.h` must be first** in every `.cpp`. Omitting it causes cryptic include-order errors.
-2. **Double precision** (`GMX_DOUBLE=ON`) is required. Single-precision builds are not supported.
-3. **MPI is required** (`GMX_MPI=ON`). Serial builds are not tested.
+2. **Double precision** (`ACT_DOUBLE=ON`) is required. Single-precision builds are not supported.
+3. **MPI is required** (`ACT_MPI=ON`). Serial builds are not tested.
 4. **Forces vector sizing**: `ForceComputer::compute` does not resize the forces vector; the caller must size it to `topology->atoms().size()` before calling.
 5. **Fragment bond indices** are 0-based within fragments and exclude shell particles. Use `nonFixed_[b.aI()]` for post-build atom positions.
 6. **JsonTree** always writes values as strings; do not expect numeric JSON types on read-back.
