@@ -72,6 +72,15 @@ bool setUseGpu(bool)
     return false;
 }
 
+void turnOffGpu()
+{
+}
+
+bool gpuTurnedOff()
+{
+    return false;
+}
+
 bool relaxShells(const RelaxMolecule *, size_t, const RelaxSettings &, size_t *, bool *)
 {
     return false;

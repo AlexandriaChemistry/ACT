@@ -39,6 +39,7 @@
 
 #include "act/basics/version.h"
 #include "act/forces/simd_information.h"
+#include "act/gpu/gpu.h"
 #include "act/utility/communicationrecord.h"
 #include "gromacs/commandline/filenm.h"
 #include "gromacs/utility/binaryinformation.h"
@@ -208,6 +209,8 @@ void MsgHandler::addOptions(std::vector<t_pargs>      *pargs,
     defaultLogName_ = defaultLogName;
     pargs->push_back( { "-v", FALSE, etINT, { &ilevel_ },
             "Verbosity level: 0 (Fatal), 1 (Error), 2 (Warning), 3 (Info), 4 (Verbose), 5 (Debug)" } );
+    pargs->push_back( { "-gpu", FALSE, etBOOL, { &useGpu_ },
+            "Use the GPU, if ACT was built with GPU support and finds one. With -nogpu everything is computed on the processor, for instance to compare." } );
 
     filenm->push_back( { efLOG, "-g", defaultLogName_.c_str(), ffWRITE }); 
 }
@@ -234,6 +237,11 @@ void MsgHandler::optionsFinished(const std::vector<t_filenm> &filenm,
         { 5, ACTStatus::Debug }
     };
 
+    // Before anything uses the GPU, and the log file reports it
+    if (!useGpu_)
+    {
+        gpu::turnOffGpu();
+    }
     auto i2 = i2s.find(ilevel_);
     if (i2s.end() != i2)
     {

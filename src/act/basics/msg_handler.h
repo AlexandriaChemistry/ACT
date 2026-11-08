@@ -174,6 +174,8 @@ class MsgHandler
         ACTStatus        printLevel_  = ACTStatus::Fatal;
         //! Level integer for command line selection of print level
         int              ilevel_      = 3;
+        //! Whether to use the GPU, see gpu::turnOffGpu
+        bool             useGpu_      = true;
         //! Lowest level of error encountered (lower is more severe)
         ACTStatus        status_      = ACTStatus::Debug;
         //! Last message reported

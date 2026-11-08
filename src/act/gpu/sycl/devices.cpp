@@ -314,13 +314,31 @@ sycl::queue *gpuQueue()
     return queue;
 }
 
+//! Whether turnOffGpu was called
+static bool &gpuOff()
+{
+    static bool off = false;
+    return off;
+}
+
 //! Whether the GPU is used, see useGpu and setUseGpu
 static bool &gpuInUse()
 {
     // Without starting the GPU when it is turned off, since a GPU may
     // only take a limited number of processes
-    static bool use = (std::getenv("ACT_NO_GPU") == nullptr && gpuQueue() != nullptr);
+    static bool use = (!gpuOff() && gpuQueue() != nullptr);
     return use;
+}
+
+void turnOffGpu()
+{
+    gpuOff()   = true;
+    gpuInUse() = false;
+}
+
+bool gpuTurnedOff()
+{
+    return gpuOff();
 }
 
 bool useGpu()
@@ -331,7 +349,7 @@ bool useGpu()
 bool setUseGpu(bool use)
 {
     bool before = gpuInUse();
-    gpuInUse()  = use && gpuQueue() != nullptr;
+    gpuInUse()  = use && !gpuOff() && gpuQueue() != nullptr;
     return before;
 }
 

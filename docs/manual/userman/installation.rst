@@ -263,7 +263,7 @@ Many processes per GPU keep it busy, since each process waits for the GPU part o
   mpirun ... alexandria train_ff ...
   echo quit | nvidia-cuda-mps-control
 
-The GPU gives the same results as the processor, within single precision. Setting the environment variable *ACT_NO_GPU* turns the GPU off. Source the *ACTRC* file before running, which sets *ACPP_DEBUG_LEVEL* such that AdaptiveCpp does not warn about the GPU backends it cannot load.
+The GPU gives the same results as the processor, within single precision. The option *-nogpu*, which all programs have, turns the GPU off, for instance to compare the run time with and without the GPU. Source the *ACTRC* file before running, which sets *ACPP_DEBUG_LEVEL* such that AdaptiveCpp does not warn about the GPU backends it cannot load.
 
 ============================
 Troubleshooting Installation
