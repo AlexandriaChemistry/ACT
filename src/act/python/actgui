@@ -15,6 +15,11 @@ from tkinter import messagebox
 from tkinter import ttk
 from PIL import ImageTk, Image
 
+# The ACT python modules of the installation. In the source tree, those next
+# to this script come first.
+sys.path.insert(1, "@ACT_PYTHON_LIB_PATH@")
+from actutils import act_library_filename
+
 # Some global variables
 Atom     = "Atom"
 HAtom    = "Hydrogen"
@@ -40,11 +45,7 @@ def labelFont(size:int=20):
     return ('Helvetica', size, 'bold')
 
 def library_file(filenm:str)->str:
-    if os.path.exists(filenm):
-        return filenm
-    actdata = "ACTDATA"
-    if actdata in os.environ:
-        filenm2 = ( "%s/%s" % ( os.environ[actdata], filenm ))
+    filenm2 = act_library_filename(filenm)
     if os.path.exists(filenm2):
         return filenm2
     print("Cannot find file '%s'" % filenm)

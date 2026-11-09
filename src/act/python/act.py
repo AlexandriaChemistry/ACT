@@ -3,6 +3,7 @@
 import os, shutil, sys
 from enum import Enum
 from get_csv_rows import *
+from actutils import actdata
 
 class Alg(Enum):
     GA     = 1
@@ -23,10 +24,7 @@ class ACT:
                  ChargesFile: str,
                  SelectionFile: str, 
                  verbose: bool=False):
-        try:
-            self.actdata = os.environ["ACTDATA"]
-        except:
-            sys.exit("You have not sourced the ACT environment")
+        self.actdata = actdata()
         self.verbose = verbose
         if self.verbose:
             print("Welcome to the Alexandria Chemistry Toolkit Python interface.")

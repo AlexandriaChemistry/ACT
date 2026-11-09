@@ -165,7 +165,7 @@ std::string findFullBinaryPath(const std::string            &invokedName,
 }
 
 /*! \brief
- * Returns whether given path contains files from `share/top/`.
+ * Returns whether given path contains the data files of ACT.
  *
  * Only checks for a single file that has an uncommon enough name.
  */
@@ -175,18 +175,18 @@ bool isAcceptableLibraryPath(const std::string &path)
 }
 
 /*! \brief
- * Returns whether given path prefix contains files from `share/top/`.
+ * Returns whether given path prefix contains the data files of ACT.
  *
  * \param[in]  path   Path prefix to check.
  * \returns  `true` if \p path contains the data files.
  *
- * Checks whether \p path could be the installation prefix where `share/top/`
+ * Checks whether \p path could be the installation prefix where the data
  * files have been installed:  appends the relative installation path of the
  * data files and calls isAcceptableLibraryPath().
  */
 bool isAcceptableLibraryPathPrefix(const std::string &path)
 {
-    std::string testPath = Path::join(path, ACT_INSTALL_ACTDATADIR, "top");
+    std::string testPath = Path::join(path, ACT_INSTALL_ACTDATADIR);
     return isAcceptableLibraryPath(testPath);
 }
 
@@ -225,7 +225,7 @@ std::string findFallbackInstallationPrefixPath()
  * \param[in]  binaryPath     Absolute path to the binary.
  * \param[out] bSourceLayout  Set to `true` if the binary is run from
  *     the build tree and the original source directory can be found.
- * \returns  Path to the `share/top/` data files.
+ * \returns  The installation prefix, or the source directory.
  *
  * The search based on the path only works if the binary is in the same
  * relative path as the installed \Gromacs binaries.  If the binary is
@@ -255,7 +255,7 @@ std::string findInstallationPrefixPath(const std::string &binaryPath,
 #endif
         if (Path::isEquivalent(searchPath, buildBinPath))
         {
-            std::string testPath = Path::join(CMAKE_SOURCE_DIR, "share/top");
+            std::string testPath = Path::join(CMAKE_SOURCE_DIR, "share");
             if (isAcceptableLibraryPath(testPath))
             {
                 *bSourceLayout = true;

@@ -4,10 +4,10 @@
 # https://github.com/dspoel/ACT
 #
 import argparse, sys
-#​
-# ACT python code
-# sys.path.insert(1, "@ACT_PYTHON_LIB_PATH@")
-#from /src/python/molprops import *
+
+# The ACT python modules of the installation. In the source tree, those next
+# to this script come first.
+sys.path.insert(1, "@ACT_PYTHON_LIB_PATH@")
 
 from molprops import *
 from get_mol_dict import *

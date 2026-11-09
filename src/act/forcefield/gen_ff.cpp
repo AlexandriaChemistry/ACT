@@ -269,8 +269,8 @@ int gen_ff(int argc, char*argv[])
         "columns [TT]:chargeVS:[tt], [TT]:zetaVS:[tt] and [TT]rowVS[tt]. Virtual",
         "sites of type VSITE1 that only carry a charge are replaced by such second",
         "charges as well.[PAR]"
-        "In order to work the ACTDATA environment variable should point to",
-        "the directory where some input files are located, namely:[BR]",
+        "Some input files are taken from the data directory of ACT, or from",
+        "the directory in the ACTDATA environment variable if that is set, namely:[BR]",
         "atomprops.csv - containing properties for atoms.[BR]",
         "symmetric_charges.csv - containing groups of atoms that should have symmetric charges (optional).",
     };

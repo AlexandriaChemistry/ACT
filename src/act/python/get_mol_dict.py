@@ -3,6 +3,7 @@
 # https://github.com/dspoel/ACT
 #
 import os, sys, tempfile, xmltodict
+from actutils import act_library_filename
 from rdkit import Chem
 from rdkit.Chem import rdMolDescriptors
 from rdkit.Chem import rdDetermineBonds
@@ -22,16 +23,10 @@ def get_order(order:str)->float:
 
 def get_atom_bond_xml()->list:
     xmlname = "atom_bond.xml"
-    # Match C++ lookup order: CWD first, then ACTDATA
-    if os.path.exists(xmlname):
-        dbname = xmlname
-    else:
-        actdata = "ACTDATA"
-        dbname  = None
-        if actdata in os.environ:
-            dbname = ("%s/%s" % ( os.environ[actdata], xmlname ))
-        if not dbname or not os.path.exists(dbname):
-            sys.exit("Cannot not find %s" % xmlname)
+    # Match C++ lookup order: CWD first, then the data directory
+    dbname = act_library_filename(xmlname)
+    if not os.path.exists(dbname):
+        sys.exit("Cannot find %s" % xmlname)
 
     with open(dbname) as fd:
         doc = xmltodict.parse(fd.read())
