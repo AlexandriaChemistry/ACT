@@ -2090,6 +2090,8 @@ TEST_F(PropertyDevComputerTest, GpuReplicasAsSeparateEvaluations)
     ForceComputer forceComputer;
     forceComputer.setGpuResident(true);
     forceComputer.setKeepShells(false);
+    // As many replicas as sets of parameters below
+    forceComputer.setGpuReplicas(3);
     MsgHandler    msghandler;
     ForceField    pd;
     readForceField(fileManager().getInputFilePath("PG-pol-ions.xml"), &pd);
@@ -2139,7 +2141,7 @@ TEST_F(PropertyDevComputerTest, GpuReplicasAsSeparateEvaluations)
         }
         return q;
     };
-    // Each set by itself
+    // Each set by itself, all replicas with the same parameters
     std::vector<std::vector<double>> energies, charges;
     for(size_t s = 0; s < factors.size(); s++)
     {
@@ -2150,8 +2152,9 @@ TEST_F(PropertyDevComputerTest, GpuReplicasAsSeparateEvaluations)
     EXPECT_NE(energies[0], energies[1]);
     EXPECT_NE(energies[0], energies[2]);
     // All at once
+    ASSERT_EQ(factors.size(), forceComputer.gpuReplicas());
     ASSERT_TRUE(forceComputer.computeRelaxedEnergiesReplicas(&msghandler, &pd, pointers(&mols),
-                                                             factors.size(), useSet, false));
+                                                             useSet, false));
     EXPECT_TRUE(msghandler.ok());
     for(size_t s = 0; s < factors.size(); s++)
     {

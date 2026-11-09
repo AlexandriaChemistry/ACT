@@ -28,6 +28,7 @@
 #ifndef ACT_FORCECOMPUTER_H
 #define ACT_FORCECOMPUTER_H
 
+#include <algorithm>
 #include <functional>
 #include <memory>
 #include <set>
@@ -176,6 +177,8 @@ private:
     bool           keepShells_       = false;
     //! Whether to compute on the GPU, see setGpuResident
     bool           gpuResident_      = false;
+    //! The number of parameter sets on the GPU, see setGpuReplicas
+    size_t         gpuReplicas_      = 1;
     //! Whether the GPU could not compute the molecules, see prepareGpuResident
     mutable bool   gpuResidentUnavailable_ = false;
     //! \return whether to try computing on the GPU, see setGpuResident
@@ -512,27 +515,34 @@ private:
      */
     void setGpuResident(bool resident) { gpuResident_ = resident; }
 
+    /*! \brief Set the number of parameter sets to compute at once on the GPU
+     * The molecules are on the GPU once for each, see GpuTrainingSystem and
+     * computeRelaxedEnergiesReplicas. Other evaluations compute all
+     * replicas with the same parameters.
+     * \param[in] nreplica The number of replicas, at least 1
+     */
+    void setGpuReplicas(size_t nreplica) { gpuReplicas_ = std::max<size_t>(1, nreplica); }
+
+    //! \return the number of replicas on the GPU, see setGpuReplicas
+    size_t gpuReplicas() const { return gpuReplicas_; }
+
     /*! \brief Make the system of these molecules on the GPU, see setGpuResident
      * If the GPU cannot compute them, the processor computes everything
      * from then on.
      * \param[in] pd       The force field
      * \param[in] allmols  The molecules
-     * \param[in] nreplica The number of parameter sets to compute at once,
-     *                     see computeRelaxedEnergiesReplicas
      * \return whether the GPU computes these molecules
      */
-    bool prepareGpuResident(const ForceField *pd, const std::vector<ACTMol *> &allmols,
-                            size_t nreplica = 1) const;
+    bool prepareGpuResident(const ForceField *pd, const std::vector<ACTMol *> &allmols) const;
 
     /*! \brief Compute the relaxed energies for several sets of parameters at once on the GPU
      * As computeRelaxedEnergies with the shells reset and without forces,
-     * for each replica of the molecules on the GPU, see GpuTrainingSystem.
+     * for each replica of the molecules on the GPU, see setGpuReplicas.
      * Afterwards, selectGpuReplica puts the energies and the charges of a
      * replica in the molecules.
      * \param[in]    msghandler  For messages
      * \param[in]    pd          The force field
      * \param[inout] allmols     The molecules
-     * \param[in]    nreplica    The number of replicas
      * \param[in]    stage       Puts the parameters of a replica in the force field and
      *                           the topologies of the molecules, and the fixed charges
      *                           in their atoms, called for each replica in order
@@ -542,7 +552,6 @@ private:
     bool computeRelaxedEnergiesReplicas(MsgHandler                          *msghandler,
                                         const ForceField                    *pd,
                                         const std::vector<ACTMol *>         &allmols,
-                                        size_t                               nreplica,
                                         const std::function<void(size_t)> &stage,
                                         bool                                 separateInductionCorrection) const;
 

@@ -124,6 +124,8 @@ private:
     bool evaluateTestset_ = false;
     //! Population size
     int popSize_ = 1;
+    //! The number of individuals that a middleman computes at once
+    int lockstep_ = 1;
     //! Amount of elites in the population
     int nElites_ = 0;
     //! Whether to initialize the individuals randomly
@@ -201,6 +203,9 @@ public:
 
     //! \return the size of the population
     int popSize() const { return popSize_; }
+
+    //! \return the number of individuals that a middleman computes at once, see -lockstep
+    int lockstep() const { return lockstep_; }
 
     /*! \brief Set the population size
      * \param[in] size The size

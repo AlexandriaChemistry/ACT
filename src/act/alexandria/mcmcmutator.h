@@ -140,27 +140,92 @@ private:
                           const int                     nsum,
                                 std::vector<double>    *sum_of_sq);
 
+    //! The state of mutate between its steps
+    struct MutateState
+    {
+        //! The chi squared of the current parameters, and that of the first ones
+        std::map<iMolSelect, double> prevEval, initEval;
+        //! Sums of the parameters and of their squares, for computeMeanSigma
+        std::vector<double>          sum, sumOfSquares;
+        //! The number of terms in the sums
+        int                          nsum       = 0;
+        //! Beta for annealing
+        double                       beta0      = 0;
+        //! Total iteration number in all generations prior to this one
+        int                          iterOffset = 0;
+    };
+
+    //! A change of one parameter, see proposeStep
+    struct Proposal
+    {
+        //! The parameter
+        size_t paramIndex = 0;
+        //! Its value before the change
+        double storeParam = 0;
+    };
+
     /*!
-     * \brief Take a step of MCMC by attempting to alter a parameter
+     * \brief Check whether the genome can be mutated, and prepare the sums
      * \param[in]  msghandler The message and status handler
-     * \param[inout] genome         pointer to a genome
-     * \param[out] bestGenome       pointer to the best genome, to be filled
-     * \param[in] prevEval          pointer to a map with the previous \f$ \chi^2 \f$
-     * \param[in] pp                index of inner loop over number of parameters
-     * \param[in] iter              current iteration number
-     * \param[in] iterOffset        total iteration number in all generations prior to this one
-     * \param[in] checkPoint        whether or not to checkpoint during optimization
-     * \param[in] beta0             pointer to beta for annealing
+     * \param[in]  genome     The genome
+     * \param[out] state      The state
+     * \return whether there is something to do
      */
-    void stepMCMC(MsgHandler                   *msghandler,
-                  ga::Genome                   *genome,
-                  ga::Genome                   *bestGenome,
-                  std::map<iMolSelect, double> *prevEval,
-                  size_t                        pp,
-                  int                           iter,
-                  int                           iterOffset,
-                  bool                          checkPoint,
-                  double                       *beta0);
+    bool checkMutate(MsgHandler *msghandler, const ga::Genome *genome, MutateState *state);
+
+    /*!
+     * \brief Start the steps, after the chi squared of the genome was computed
+     * \param[in]    msghandler The message and status handler
+     * \param[inout] state      The state, with the chi squared of the genome
+     * \param[in]    messages   Whether to print the annealing settings
+     */
+    void startMutate(MsgHandler *msghandler, MutateState *state, bool messages);
+
+    /*!
+     * \brief Change a random parameter, the first half of a step of MCMC
+     * \param[inout] genome The genome
+     * \return the change
+     */
+    Proposal proposeStep(ga::Genome *genome);
+
+    /*!
+     * \brief Accept or reject the change, the second half of a step of MCMC
+     * \param[in]    msghandler The message and status handler
+     * \param[inout] genome     The genome, its parameter is restored if rejected
+     * \param[inout] bestGenome The best genome, to be filled
+     * \param[inout] state      The state
+     * \param[in]    proposal   The change of proposeStep
+     * \param[in]    currEval   The chi squared with the change
+     * \param[in]    pp         Index of inner loop over number of parameters
+     * \param[in]    iter       Current iteration number
+     * \param[in]    lockstep   Whether the force field may have the parameters
+     *                          of another genome, see mutateLockstep
+     * \return whether the change was accepted
+     */
+    bool finishStep(MsgHandler                         *msghandler,
+                    ga::Genome                         *genome,
+                    ga::Genome                         *bestGenome,
+                    MutateState                        *state,
+                    const Proposal                     &proposal,
+                    const std::map<iMolSelect, double> &currEval,
+                    size_t                              pp,
+                    int                                 iter,
+                    bool                                lockstep);
+
+    /*!
+     * \brief Add the parameters to the sums in the second half of the iterations
+     * \param[in]    genome The genome
+     * \param[inout] state  The state
+     * \param[in]    iter   Current iteration number
+     */
+    void collectStep(const ga::Genome *genome, MutateState *state, int iter);
+
+    /*!
+     * \brief Finish the mutation
+     * \param[in]    bestGenome The best genome
+     * \param[inout] state      The state
+     */
+    void endMutate(const ga::Genome *bestGenome, MutateState *state);
 
 public:
     //! Set the generation, see ga::Mutator::setGeneration
@@ -198,6 +263,27 @@ public:
                         ga::Genome                *genome,
                         ga::Genome                *bestGenome,
                         double                     prMut);
+
+    //! \return whether the test set is evaluated during the steps, which mutateLockstep does not do
+    bool evaluateTestSet() const { return evaluateTestSet_; }
+
+    /*!
+     * \brief Run MCMC for several genomes at once, each with its own mutator
+     * The steps of all genomes are computed at once, see
+     * ACMFitnessComputer::calcDeviations. Each mutator draws the same random
+     * numbers as mutate, such that the result of each genome is that of
+     * mutate, except for where the relaxation of the shells starts from,
+     * see ForceComputer::setKeepShells. The mutators must not evaluate the
+     * test set.
+     * \param[in]    msghandler  The message and status handler
+     * \param[in]    mutators    The mutator of each genome, they share the fitness computer
+     * \param[inout] genomes     The genomes
+     * \param[out]   bestGenomes The best genome of each
+     */
+    static void mutateLockstep(MsgHandler                       *msghandler,
+                               const std::vector<MCMCMutator *> &mutators,
+                               const std::vector<ga::Genome *>  &genomes,
+                               const std::vector<ga::Genome *>  &bestGenomes);
 
     //! \return the number of calls to the objective function MCMCMutator::MCMC() routine
     size_t numberObjectiveFunctionCalls() const

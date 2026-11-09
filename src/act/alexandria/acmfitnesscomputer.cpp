@@ -35,6 +35,7 @@
 
 #include "acmfitnesscomputer.h"
 
+#include <functional>
 #include <limits>
 #include <set>
 
@@ -186,6 +187,73 @@ double ACMFitnessComputer::calcDeviation(MsgHandler   *msghandler,
     return finishDeviation(msghandler, &dt);
 }
 
+std::vector<double> ACMFitnessComputer::calcDeviations(MsgHandler                                     *msghandler,
+                                                       const std::vector<const std::vector<double> *> &params,
+                                                       iMolSelect                                      ims)
+{
+    std::vector<double> chi2;
+    if (params.empty())
+    {
+        return chi2;
+    }
+    const std::set<int> all;
+    auto useParameters = [this, msghandler, &all](const std::vector<double> *p)
+    {
+        sii_->updateForceField(msghandler, all, *p);
+    };
+    // All sets at once needs a replica for each on the GPU, and no helpers,
+    // which would compute their molecules one set at a time
+    const size_t nrep = forceComp_->gpuReplicas();
+    DeviationTask first;
+    bool batch = (params.size() > 1 && params.size() <= nrep &&
+                  !sii_->commRec()->isParallelCalc());
+    if (batch)
+    {
+        useParameters(params[0]);
+        batch = (prepareDeviation(msghandler, CalcDev::Compute, ims, &first) &&
+                 first.gpuCharges && !first.selected.empty());
+    }
+    if (batch)
+    {
+        // Each replica its own set, the ones without a set compute the last
+        // set again. The force field has the first set already.
+        std::vector<DeviationTask> dts(nrep);
+        dts[0] = first;
+        std::function<void(size_t)> stage = [&](size_t r)
+        {
+            if (r > 0)
+            {
+                useParameters(params[std::min(r, params.size() - 1)]);
+                (void) prepareDeviation(msghandler, CalcDev::Compute, ims, &dts[r]);
+            }
+        };
+        auto et = energyTask(first);
+        if (forceComp_->computeRelaxedEnergiesReplicas(msghandler, sii_->forcefield(), first.selected,
+                                                       stage, et.separateInductionCorrection))
+        {
+            for (size_t r = 0; r < params.size(); r++)
+            {
+                // The deviations from the energies and charges of each set,
+                // and the parameters of each, for instance for the bounds
+                useParameters(params[r]);
+                forceComp_->selectGpuReplica(r);
+                sii_->resetChiSquared(ims);
+                chi2.push_back(finishDeviation(msghandler, &dts[r]));
+            }
+            return chi2;
+        }
+    }
+    // One set at a time
+    for (auto p : params)
+    {
+        distributeTasks(CalcDev::Parameters);
+        distributeParameters(msghandler, p, all);
+        auto cd = distributeTasks(CalcDev::Compute);
+        chi2.push_back(calcDeviation(msghandler, cd, ims));
+    }
+    return chi2;
+}
+
 bool ACMFitnessComputer::prepareDeviation(MsgHandler    *msghandler,
                                           CalcDev        task,
                                           iMolSelect     ims,
@@ -250,6 +318,7 @@ bool ACMFitnessComputer::prepareDeviation(MsgHandler    *msghandler,
         gpuCharges  = (!needQProps && et.compute && !et.forces &&
                        forceComp_->gpuChargesOnly(sii_->forcefield()));
     }
+    dt->gpuCharges = gpuCharges;
     // Loop over molecules
     int ntrain = 0;
     int nlocal = 0;

@@ -36,6 +36,7 @@
 #include "act/basics/msg_handler.h"
 #include "act/utility/communicationrecord.h"
 #include "act/alexandria/acmfitnesscomputer.h"
+#include "act/alexandria/actmiddleman.h"
 #include "act/alexandria/staticindividualinfo.h"
 #include "act/ga/genome.h"
 #include "act/utility/timings.h"
@@ -127,15 +128,16 @@ void evaluate(MsgHandler              *msghandler,
             {
                 (*g.basesPtr())[change.first] = change.second;
             }
-            cr->send_data(workers[w]);
-            g.Send(cr, workers[w]);
-            cr->send(workers[w], TrainFFMiddlemanMode::FITNESS);
             if (cr->queue())
             {
                 // The random numbers and the generation, not used for a fitness
-                int zero = 0;
-                cr->send(workers[w], zero);
-                cr->send(workers[w], zero);
+                sendQueueWork(cr, workers[w], { &g }, TrainFFMiddlemanMode::FITNESS, { 0 }, 0);
+            }
+            else
+            {
+                cr->send_data(workers[w]);
+                g.Send(cr, workers[w]);
+                cr->send(workers[w], TrainFFMiddlemanMode::FITNESS);
             }
         }
         // The master computes the first one

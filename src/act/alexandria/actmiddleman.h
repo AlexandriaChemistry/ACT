@@ -52,6 +52,25 @@ namespace alexandria
     class ACMFitnessComputer;
     class ACMIndividual;
     class MolGen;
+    class MCMCMutator;
+
+    /*! \brief Send work from the queue to a middleman, see CommunicationRecord::queue
+     * After the signal to continue: the number of individuals, for each its
+     * genome, the mode and its seed, and then the generation, as
+     * ACTMiddleMan::run receives them.
+     * \param[in] cr         The communication record
+     * \param[in] dest       The middleman
+     * \param[in] genomes    The individuals
+     * \param[in] mode       What to do with them
+     * \param[in] seeds      The seed of each
+     * \param[in] generation The generation, from zero
+     */
+    void sendQueueWork(const CommunicationRecord             *cr,
+                       int                                    dest,
+                       const std::vector<const ga::Genome *> &genomes,
+                       TrainFFMiddlemanMode                   mode,
+                       const std::vector<int>                &seeds,
+                       int                                    generation);
    
     /*! \brief Class that manages the deviation calculations
      */
@@ -70,9 +89,17 @@ namespace alexandria
         ForceComputer                   forceComp_;
         //! My ID
         int                             id_;
+        //! The mutators of the other individuals computed at once, see -lockstep
+        std::vector<MCMCMutator *>      lockstepMutators_;
 
         //! \brief Stop my helpers
         void stopHelpers();
+
+        /*! \brief Receive individuals from the queue, compute them and send them back
+         * See sendQueueWork and CommunicationRecord::queue.
+         * \param[in] msghandler Message and status handler
+         */
+        void computeQueueWork(MsgHandler *msghandler);
 
     public:
         /*! \brief Constructor

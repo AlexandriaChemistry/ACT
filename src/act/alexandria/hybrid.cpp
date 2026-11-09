@@ -36,6 +36,7 @@
 #pragma GCC diagnostic pop
 
 #include "act/alexandria/acminitializer.h"
+#include "act/alexandria/actmiddleman.h"
 #include "act/alexandria/mcmcmutator.h"
 #include "act/alexandria/sensitivity_analysis.h"
 #include "act/alexandria/train_ff.h"
@@ -136,20 +137,24 @@ void HybridGAMC::runQueue(GenePool                     *pool,
     {
         seeds.push_back(alexandria::portableSeed(&gen));
     }
-    // The task of each middleman that has one
-    std::map<int, size_t> busy;
-    size_t                next = 0;
+    // The tasks of each middleman that has some, it gets as many as it
+    // computes at once, see -lockstep
+    std::map<int, std::vector<size_t>> busy;
+    size_t                             next = 0;
+    const size_t                       nAtOnce = std::max(1, gach_->lockstep());
     auto give = [&](int dest)
     {
-        const auto &task = tasks[next];
-        // II. Signify the middleman to continue, as in the loop of ACTMiddleMan::run
-        cr->send_data(dest);
-        pool->genomePtr(task.individual)->Send(cr, dest);
-        // III. What to do, with the random numbers and the generation
-        cr->send(dest, task.mode);
-        cr->send(dest, seeds[task.individual]);
-        cr->send(dest, generation);
-        busy[dest] = next++;
+        std::vector<const ga::Genome *> genomes;
+        std::vector<int>                taskSeeds;
+        auto                           &mine = busy[dest];
+        while (next < tasks.size() && mine.size() < nAtOnce &&
+               (mine.empty() || tasks[next].mode == tasks[mine[0]].mode))
+        {
+            genomes.push_back(pool->genomePtr(tasks[next].individual));
+            taskSeeds.push_back(seeds[tasks[next].individual]);
+            mine.push_back(next++);
+        }
+        alexandria::sendQueueWork(cr, dest, genomes, tasks[mine[0]].mode, taskSeeds, generation);
     };
     for (auto dest : cr->middlemen())
     {
@@ -167,17 +172,21 @@ void HybridGAMC::runQueue(GenePool                     *pool,
         {
             GMX_THROW(gmx::InternalError(gmx::formatString("Message from %d, which has no task", src).c_str()));
         }
-        const auto &task   = tasks[bt->second];
-        auto        genome = pool->genomePtr(task.individual);
-        if (task.mode == alexandria::TrainFFMiddlemanMode::FITNESS)
+        // The results in the order of the tasks
+        for (auto t : bt->second)
         {
-            double fitness;
-            cr->recv(src, &fitness);
-            genome->setFitness(iMolSelect::Train, fitness);
-        }
-        else
-        {
-            genome->Receive(cr, src);
+            const auto &task   = tasks[t];
+            auto        genome = pool->genomePtr(task.individual);
+            if (task.mode == alexandria::TrainFFMiddlemanMode::FITNESS)
+            {
+                double fitness;
+                cr->recv(src, &fitness);
+                genome->setFitness(iMolSelect::Train, fitness);
+            }
+            else
+            {
+                genome->Receive(cr, src);
+            }
         }
         busy.erase(bt);
         if (next < tasks.size())
@@ -665,12 +674,8 @@ bool HybridGAMC::evolve(alexandria::MsgHandler       *msghandler,
                 // The middlemen send them when asked, as they compute several individuals
                 for (auto dest : cr->middlemen())
                 {
-                    cr->send_data(dest);
-                    pool[pold]->genomePtr(0)->Send(cr, dest);
-                    cr->send(dest, alexandria::TrainFFMiddlemanMode::STATISTICS);
-                    int zero = 0;
-                    cr->send(dest, zero);
-                    cr->send(dest, zero);
+                    alexandria::sendQueueWork(cr, dest, { pool[pold]->genomePtr(0) },
+                                              alexandria::TrainFFMiddlemanMode::STATISTICS, { 0 }, 0);
                 }
                 nElites = 0;
             }

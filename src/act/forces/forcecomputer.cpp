@@ -1711,8 +1711,7 @@ bool ForceComputer::useGpuResident() const
     return (gpuResident_ || gpuResidentCheck()) && !gpuResidentUnavailable_;
 }
 
-bool ForceComputer::prepareGpuResident(const ForceField *pd, const std::vector<ACTMol *> &allmols,
-                                       size_t nreplica) const
+bool ForceComputer::prepareGpuResident(const ForceField *pd, const std::vector<ACTMol *> &allmols) const
 {
     if (!useGpuResident() || !pd->polarizable())
     {
@@ -1724,7 +1723,7 @@ bool ForceComputer::prepareGpuResident(const ForceField *pd, const std::vector<A
     {
         gpuSystem_ = std::make_shared<GpuTrainingSystem>();
     }
-    if (!gpuSystem_->prepare(pd, allmols, shellMaxDistance(pd), gpuCharges(pd), this, nreplica))
+    if (!gpuSystem_->prepare(pd, allmols, shellMaxDistance(pd), gpuCharges(pd), this, gpuReplicas_))
     {
         // The processor computes everything from now on
         gpuResidentUnavailable_ = true;
@@ -1916,11 +1915,10 @@ void ForceComputer::computeRelaxedEnergiesGpu(MsgHandler                        
 bool ForceComputer::computeRelaxedEnergiesReplicas(MsgHandler                          *msghandler,
                                                    const ForceField                    *pd,
                                                    const std::vector<ACTMol *>         &allmols,
-                                                   size_t                               nreplica,
                                                    const std::function<void(size_t)> &stage,
                                                    bool                                 separateInductionCorrection) const
 {
-    if (!prepareGpuResident(pd, allmols, nreplica))
+    if (!prepareGpuResident(pd, allmols))
     {
         return false;
     }
