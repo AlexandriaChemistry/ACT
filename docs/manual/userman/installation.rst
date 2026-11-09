@@ -64,6 +64,33 @@ For developers, please additionally install these packages::
 
 .. attention:: If you are installing ACT in a cluster we recommend to use the cluster-provided compilers and in particular the MPI library since it may be tuned to make optimal use of the communication hardware. High-performance computer centers typically provide compilers libraries using some kind of module system.
 
+Building on a cluster
+~~~~~~~~~~~~~~~~~~~~~
+On a cluster, use the MPI library of the cluster, which its administrators built for its network and queue system, and conda only for the libraries that the cluster does not provide, such as RDKit. Leave *openmpi* out of the conda environment, or tell *cmake* which MPI to use with the compiler wrappers of the module, for instance::
+
+  module load <compiler and MPI module of the cluster>
+  conda activate ACT
+  cmake .. -DMPI_C_COMPILER=$(which mpicc) -DMPI_CXX_COMPILER=$(which mpicxx) \
+           -DCMAKE_PREFIX_PATH=${CONDA_PREFIX} -DCMAKE_INSTALL_PREFIX=$HOME/tools
+
+The C and C++ compilers may be those of the cluster or those of conda. The compilers of conda link against a system root of their own, in which the linker also looks for the libraries that other libraries depend on. The MPI library of a cluster depends on libraries outside it, for instance those of the network, and of CUDA if it is GPU aware. For an MPI library outside the conda environment, *cmake* therefore gives the linker the library directories of the system, of the MPI library, and of *LIBRARY_PATH* and *LD_LIBRARY_PATH*, which modules set. The output of *cmake* tells when it does so.
+
+Start the programs with the launcher of the queue system, which places the processes on the nodes and cores of the job, for instance with Slurm::
+
+  srun --mpi=pmi2 alexandria train_ff ...
+
+Which *--mpi* option works depends on the MPI library, *srun --mpi=list* lists those that the cluster supports. The tests that use MPI are started with the *mpiexec* of the MPI library, unless *-DMPIEXEC_EXECUTABLE=srun* is given to *cmake*.
+
+For example, on the GH200 nodes of arrhenius (NAISS), with the GPU toolchain of the cluster (GCC 14.3, MPICH 4.3.2, CUDA 13.0) and the libraries and AdaptiveCpp from conda, in a job on such a node since the login node has another processor::
+
+  module load GPU/buildenv-gcccuda/2026.03-cu13.0
+  export PATH=<conda environment>/bin:$PATH
+  cmake .. -DACT_DOUBLE=OFF -DACT_GPU=SYCL -DCMAKE_PREFIX_PATH=<conda environment> \
+           -DAdaptiveCpp_DIR=<AdaptiveCpp environment>/lib/cmake/AdaptiveCpp \
+           -DMPI_C_COMPILER=$(which mpicc) -DMPI_CXX_COMPILER=$(which mpicxx)
+
+and the programs are started with *srun --mpi=pmi2*.
+
 ========================
 Running the Installation
 ========================
@@ -260,7 +287,7 @@ Many processes per GPU keep it busy, since each process waits for the GPU part o
   export CUDA_MPS_PIPE_DIRECTORY=/tmp/mps-$SLURM_JOB_ID CUDA_MPS_LOG_DIRECTORY=/tmp/mpslog-$SLURM_JOB_ID
   mkdir -p $CUDA_MPS_PIPE_DIRECTORY $CUDA_MPS_LOG_DIRECTORY
   nvidia-cuda-mps-control -d
-  mpirun ... alexandria train_ff ...
+  srun ... alexandria train_ff ...
   echo quit | nvidia-cuda-mps-control
 
 Each process uses one GPU of the node, chosen by its number on the node, and ACT lets it see only that one: if *CUDA_VISIBLE_DEVICES*, *ROCR_VISIBLE_DEVICES* or *HIP_VISIBLE_DEVICES* lists several GPUs, as Slurm sets them, only that of the process is kept, and without such a list on a node with several NVIDIA GPUs *CUDA_VISIBLE_DEVICES* is set to it. Otherwise the GPU runtime would make a context on each GPU in each process, and with several GPUs per node the multi-process service would run out of processes. The log file tells which GPU each process uses.
