@@ -382,6 +382,15 @@ public:
     bool calcDeviationGpu(const ForceComputer           *forceComputer,
                           std::map<eRMS, FittingTarget> *targets) const;
 
+    /*! \brief Add the deviations of the molecules to the targets
+     * As calcDeviationGpu, from the deviations of each molecule, computed
+     * on the GPU now or before, in the order of the molecules.
+     * \param[in]    molecules The deviations of each molecule
+     * \param[inout] targets   The fitting targets
+     */
+    void addGpuDeviations(const std::vector<const GpuMoleculeDeviations *> &molecules,
+                          std::map<eRMS, FittingTarget>                    *targets) const;
+
     /*! \brief Whether calcDeviation computes the energies
      * \param[in] compute If false, the caller computed them as energyTask
      *                    says, with ForceComputer::computeRelaxedEnergies

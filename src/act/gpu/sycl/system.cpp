@@ -581,7 +581,6 @@ public:
     uint64_t                        devNDimerConf_     = 0, devNMonoConf_ = 0;
     //! The sums of each dimer, and the results of computeDeviations
     double                         *devDimerSums_      = nullptr;
-    double                         *devSums_           = nullptr;
     HostArray<double>               devSumsHost_;
     int                             maxIterAllocated_ = 0;
 };
@@ -2599,7 +2598,6 @@ void createDeviations(System *sys, const DeviationSystem &d)
     sys->release(sys->devDimerSums_);
     sys->release(sys->devTerms_);
     sys->release(sys->devEpotTerms_);
-    sys->release(sys->devSums_);
     sys->dev_               = d;
     sys->devTypes_          = sys->allocate<DeviationType>(d.blockFirstType[nb]);
     sys->devBlockFirstType_ = sys->allocate<uint32_t>(nb + 1);
@@ -2620,7 +2618,6 @@ void createDeviations(System *sys, const DeviationSystem &d)
     sys->devNMonoConf_      = d.nmonomer > 0 ? d.monomers[d.nmonomer-1].confOffset + d.monomers[d.nmonomer-1].nconf : 0;
     sys->devTerms_          = sys->allocate<double>(2*sys->devNDimerConf_*d.ntarget);
     sys->devEpotTerms_      = sys->allocate<double>(2*sys->devNMonoConf_);
-    sys->devSums_           = sys->allocate<double>(2*d.nreplica*(d.ntarget + 1));
     sys->upload(sys->devTypes_, d.types, d.blockFirstType[nb]);
     sys->upload(sys->devBlockFirstType_, d.blockFirstType, nb + 1);
     sys->upload(sys->devSlotOfConf_, d.slotOfConf, nconf);
@@ -2675,9 +2672,10 @@ void keepEnergies(System *sys, const char *use, bool before)
     });
 }
 
-void computeDeviations(System *sys, double *sums)
+void computeDeviations(System *sys, const char *use, double *dimerSums, double *epotTerms)
 {
     const auto &d       = sys->dev_;
+    auto        dU      = sys->deviceMask(use, sys->nblock_);
     auto       *queue   = sys->queue_;
     auto        dB      = sys->blocks_;
     auto        dT      = sys->devTypes_;
@@ -2697,11 +2695,10 @@ void computeDeviations(System *sys, double *sums)
     auto        dTe     = sys->devTerms_;
     auto        dETe    = sys->devEpotTerms_;
     auto        dDS     = sys->devDimerSums_;
-    auto        dS      = sys->devSums_;
     auto        dFS     = sys->fixedStart_;
     auto        dA      = sys->energiesAfter_;
     auto        dBe     = sys->energiesBefore_;
-    uint32_t    ntarget = d.ntarget, nrep = d.nreplica;
+    uint32_t    ntarget = d.ntarget;
     uint32_t    nmono   = d.nmonomer, ndimer = d.ndimer;
     uint64_t    ndc     = sys->devNDimerConf_, nmc = sys->devNMonoConf_;
     int         lf      = d.lossFunction;
@@ -2730,6 +2727,10 @@ void computeDeviations(System *sys, double *sums)
                 }
             }
             const DeviationDimer    &dm  = dD[lo];
+            if (!dU[dm.dimer])
+            {
+                return;
+            }
             uint64_t                 c   = gc - dm.confOffset;
             const DeviceSystemBlock &bd  = dB[dm.dimer];
             uint32_t                 t0  = dBFT[dm.dimer];
@@ -2880,6 +2881,10 @@ void computeDeviations(System *sys, double *sums)
                 }
             }
             const DeviationMonomer  &mo = dMo[lo];
+            if (!dU[mo.block])
+            {
+                return;
+            }
             uint64_t                 c  = gc - mo.confOffset;
             const DeviceSystemBlock &bm = dB[mo.block];
             int                      ep = -1;
@@ -2914,6 +2919,10 @@ void computeDeviations(System *sys, double *sums)
             uint32_t              k  = id[0]/ntarget;
             uint32_t              j  = id[0]%ntarget;
             const DeviationDimer &dm = dD[k];
+            if (!dU[dm.dimer])
+            {
+                return;
+            }
             double                sw = 0, sl = 0;
             for (uint64_t c = 0; c < dm.nconf; c++)
             {
@@ -2924,47 +2933,21 @@ void computeDeviations(System *sys, double *sums)
             dDS[2*(k*ntarget + j) + 1] = sl;
         });
     }
-    // The sum over the dimers of each replica, in order, as the fitting
-    // targets add them, and the potential energies one conformation at a time
-    queue->parallel_for(sycl::range<1>(nrep*(ntarget + 1)), [=](sycl::id<1> id)
+    // The sums of the dimers and the terms of the potential energy to the host
+    size_t  nd = 2*static_cast<size_t>(ndimer)*ntarget;
+    size_t  ne = 2*nmc;
+    double *hS = sys->devSumsHost_.reserve(*queue, std::max<size_t>(nd + ne, 1));
+    if (nd > 0)
     {
-#if defined(__clang__)
-#pragma clang fp contract(off)
-#endif
-        uint32_t r = id[0]/(ntarget + 1);
-        uint32_t j = id[0]%(ntarget + 1);
-        double   sw = 0, sl = 0;
-        if (j < ntarget)
-        {
-            for (uint32_t k = 0; k < ndimer; k++)
-            {
-                if (dD[k].replica == r)
-                {
-                    sw += dDS[2*(k*ntarget + j)];
-                    sl += dDS[2*(k*ntarget + j) + 1];
-                }
-            }
-        }
-        else
-        {
-            for (uint32_t k = 0; k < nmono; k++)
-            {
-                const DeviationMonomer &mo = dMo[k];
-                for (uint64_t c = 0; c < mo.nconf && mo.replica == r; c++)
-                {
-                    sw += dETe[2*(mo.confOffset + c)];
-                    sl += dETe[2*(mo.confOffset + c) + 1];
-                }
-            }
-        }
-        dS[2*id[0]]     = sw;
-        dS[2*id[0] + 1] = sl;
-    });
-    size_t  n  = 2*nrep*(ntarget + 1);
-    double *hS = sys->devSumsHost_.reserve(*queue, n);
-    queue->memcpy(hS, dS, n*sizeof(double));
+        queue->memcpy(hS, dDS, nd*sizeof(double));
+    }
+    if (ne > 0)
+    {
+        queue->memcpy(hS + nd, dETe, ne*sizeof(double));
+    }
     queue->wait_and_throw();
-    std::copy(hS, hS + n, sums);
+    std::copy(hS, hS + nd, dimerSums);
+    std::copy(hS + nd, hS + nd + ne, epotTerms);
 }
 } // namespace gpu
 

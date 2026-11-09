@@ -184,7 +184,7 @@ void keepEnergies(System *, const char *, bool)
 {
 }
 
-void computeDeviations(System *, double *)
+void computeDeviations(System *, const char *, double *, double *)
 {
 }
 

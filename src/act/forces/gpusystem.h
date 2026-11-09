@@ -49,6 +49,22 @@ class ForceComputer;
 class ForceField;
 struct DeviationReference;
 
+/*! \brief The deviations of one molecule of one replica, see GpuTrainingSystem::moleculeDeviations
+ * The caller adds those of all molecules in their order, as
+ * ForceEnergyDevComputer::calcDeviationGpu.
+ */
+struct GpuMoleculeDeviations
+{
+    //! Whether it is a dimer with interaction energy targets
+    bool                dimer = false;
+    //! For each target, the sum of the weights and that of the losses over the conformations
+    std::vector<double> targets;
+    //! Whether its first topology has the potential energy target
+    bool                epot  = false;
+    //! For each conformation, the weight and the loss of the potential energy
+    std::vector<double> epotTerms;
+};
+
 /*! \brief The energy targets that GpuTrainingSystem::computeDeviations computes
  * As ForceEnergyDevComputer::calcDeviationCompact, with the induction
  * correction not separate and without forces.
@@ -216,11 +232,44 @@ public:
     void computeDeviations();
 
     /*! \brief The deviations of computeDeviations of the replica of selectReplica
+     * Of all molecules, which must all have been active, see setActiveMolecules.
      * \param[out] sums For each target of setDeviations and then for the potential
      *                  energy: the sum of the weights and that of the losses
      * \return false if there are none
      */
     bool deviationSums(std::vector<std::pair<double, double>> *sums) const;
+
+    /*! \brief The deviations of one molecule of the replica of selectReplica
+     * From the last computeDeviations, in which the molecule was active.
+     * \param[in]  mol The molecule, its index in the molecules of prepare
+     * \param[out] dev The deviations
+     * \return false if there are none
+     */
+    bool moleculeDeviations(size_t mol, GpuMoleculeDeviations *dev) const;
+
+    /*! \brief Compute only some molecules of a replica in the next evaluation
+     * Until the end of computeRelaxedEnergies, after which all are active
+     * again. The others keep their shells and are not staged, see stageParameters.
+     * \param[in] replica The replica, or -1 for all
+     * \param[in] active  Whether each molecule of prepare is computed
+     */
+    void setActiveMolecules(int replica, const std::vector<char> &active);
+
+    /*! \brief A signature of the parameters of each molecule as they go to the GPU
+     * Stages the parameters of all molecules of the first replica, from the
+     * force field and the molecules now. Molecules with the same signature
+     * get the same results.
+     * \param[in] pd The force field
+     * \param[in] fc To construct the virtual sites of the structures the charges are generated for
+     * \return a hash of the parameters of each molecule
+     */
+    std::vector<uint64_t> moleculeSignatures(const ForceField *pd, const ForceComputer *fc);
+
+    //! \return a number that changes when the system is made again, see prepare
+    size_t version() const;
+
+    //! \return a number that changes when the system or the deviations are made again, see setDeviations
+    size_t deviationsVersion() const;
 
     /*! \brief Compute all interactions, the energies go to the conformation data
      * \param[in] what   0 or 1 for a monomer, -2 for both, 2 for the dimers, -1 for all

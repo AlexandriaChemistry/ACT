@@ -567,6 +567,58 @@ private:
         return gpuSystem_ && gpuSystem_->deviationSums(sums);
     }
 
+    /*! \brief The deviations of one molecule in the last evaluation on the GPU
+     * See GpuTrainingSystem::moleculeDeviations.
+     * \param[in]  mol The index of the molecule in those on the GPU
+     * \param[out] dev The deviations
+     * \return false if there are none
+     */
+    bool gpuMoleculeDeviations(size_t mol, GpuMoleculeDeviations *dev) const
+    {
+        return gpuSystem_ && gpuSystem_->moleculeDeviations(mol, dev);
+    }
+
+    /*! \brief Compute only some molecules on the GPU in the next evaluation
+     * See GpuTrainingSystem::setActiveMolecules.
+     * \param[in] replica The replica, or -1 for all
+     * \param[in] active  Whether each molecule on the GPU is computed
+     */
+    void setGpuActiveMolecules(int replica, const std::vector<char> &active) const
+    {
+        if (gpuSystem_)
+        {
+            gpuSystem_->setActiveMolecules(replica, active);
+        }
+    }
+
+    /*! \brief A signature of the parameters of each molecule on the GPU
+     * See GpuTrainingSystem::moleculeSignatures.
+     * \param[in] pd The force field
+     * \return the signatures, empty without molecules on the GPU
+     */
+    std::vector<uint64_t> gpuMoleculeSignatures(const ForceField *pd) const
+    {
+        return gpuSystem_ ? gpuSystem_->moleculeSignatures(pd, this) : std::vector<uint64_t>();
+    }
+
+    //! \return a number that changes when the molecules on the GPU are made again
+    size_t gpuVersion() const
+    {
+        return gpuSystem_ ? gpuSystem_->version() : 0;
+    }
+
+    //! \return a number that changes when the molecules or the deviations on the GPU are made again
+    size_t gpuDeviationsVersion() const
+    {
+        return gpuSystem_ ? gpuSystem_->deviationsVersion() : 0;
+    }
+
+    //! \return whether the GPU computes the deviations of the energies, see setGpuDeviations
+    bool gpuDeviationsReady() const
+    {
+        return gpuSystem_ && gpuSystem_->deviationsReady();
+    }
+
     /*! \brief Make the system of these molecules on the GPU, see setGpuResident
      * If the GPU cannot compute them, the processor computes everything
      * from then on.
