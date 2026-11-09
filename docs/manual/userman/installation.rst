@@ -91,6 +91,16 @@ For example, on the GH200 nodes of arrhenius (NAISS), with the GPU toolchain of 
 
 and the programs are started with *srun --mpi=pmi2*.
 
+On a Cray system, such as dardel (PDC), the compiler wrappers *cc* and *CC* of the Cray programming environment include the MPI library of the cluster already. Give them as the compilers and *cmake* finds MPI through them, nothing else is needed. For example, on the AMD MI250X nodes of dardel, with the Cray compilers, the libxml2 of the cluster and the other libraries and AdaptiveCpp from conda::
+
+  cmake .. -DACT_DOUBLE=OFF -DACT_GPU=SYCL -DCMAKE_C_COMPILER=cc -DCMAKE_CXX_COMPILER=CC \
+           -DCMAKE_PREFIX_PATH=<conda environment> \
+           -DAdaptiveCpp_DIR=<conda environment>/lib/cmake/AdaptiveCpp \
+           -DLIBXML2_LIBRARY=/pdc/software/eb/software/libxml2/2.12.3/lib/libxml2.so \
+           -DLIBXML2_INCLUDE_DIR=/pdc/software/eb/software/libxml2/2.12.3/include/libxml2
+
+The programs are started with plain *srun*. This libxml2 needs the ICU libraries of the cluster, so load them with *module load icu/74.1* in the job script as well.
+
 ========================
 Running the Installation
 ========================
@@ -104,11 +114,11 @@ Once you have download ACT either as a release version or by cloning the git rep
 where the *CMAKE_INSTALL_PREFIX* flag points to the location where ACT will be installed and the *-j 8* flag instructs the make command to utilize 8 cores to speed up compilation.
 
 
-In order to start using the software, run the following command::
+The programs and python scripts find the data files of ACT, in *share/act* of the installation, by themselves, also when started from the build directory, in which case they use those in *share* of the source code. To use other data files, set the environment variable *ACTDATA* to their directory; files that are not there are still taken from the installation. All that remains is to add the directory of the programs to your *PATH*, or to run the following command, which does that as well::
 
   source $HOME/tools/bin/ACTRC
 
-or add it to your .bash_profile (or equivalent, for remote machines) or .bashrc (or equivalent, for local machines), and restart the shell or log in again.
+Put either in your .bash_profile (or equivalent, for remote machines) or .bashrc (or equivalent, for local machines), and restart the shell or log in again.
 Then you can run the alexandria executable using::
 
   alexandria -h
@@ -294,7 +304,7 @@ Each process uses one GPU of the node, chosen by its number on the node, and ACT
 
 With a population larger than the number of processes, each process can take several individuals at once with *train_ff -lockstep*. The GPU then computes the MCMC steps of these individuals together, in larger calculations, such that fewer processes use it as well or better. The result of each individual is the same as when it is computed by itself, except for where the relaxation of the shells starts, see *-shell_keep*. On a node with eight AMD MI250X GCDs and 64 cores (dardel), training with 480 individuals took 80 to 90 s with 48 processes and *-lockstep 4*, and about 90 s with 64 processes and *-lockstep 2*, against 119 s with 48 processes and 112 s with 64 processes without it. The run time of the same training varied by about 10% between runs. On an NVIDIA RTX A4500, *-lockstep* did not pay off. The best combination depends on the GPU and on the number of cores per GPU, so a short test with a few values is worthwhile.
 
-The GPU gives the same results as the processor, within single precision. The option *-nogpu*, which all programs have, turns the GPU off, for instance to compare the run time with and without the GPU. Source the *ACTRC* file before running, which sets *ACPP_DEBUG_LEVEL* such that AdaptiveCpp does not warn about the GPU backends it cannot load.
+The GPU gives the same results as the processor, within single precision. The option *-nogpu*, which all programs have, turns the GPU off, for instance to compare the run time with and without the GPU. The programs set *ACPP_DEBUG_LEVEL* to 1, unless it is set already, such that AdaptiveCpp does not warn about the GPU backends it cannot load. Set it to 2 to see the messages of AdaptiveCpp.
 
 ============================
 Troubleshooting Installation

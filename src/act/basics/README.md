@@ -13,7 +13,7 @@ This directory contains fundamental data types and infrastructure used throughou
 - **dataset.h / dataset.cpp** — Lightweight wrapper that associates a name and file path with a collection of molecular data.
 - **identifier.h / identifier.cpp** — `Identifier` class representing a named, typed entity (atom type, interaction type, etc.) used as a key throughout the codebase.
 - **interactiontype.h / interactiontype.cpp** — Central `InteractionType` enum listing all bonded and non-bonded interaction types (`BONDS`, `ANGLES`, `VDW`, `ELECTROSTATICS`, …) together with utility functions.
-- **libraryfile.h / libraryfile.cpp** — Locates ACT data files (force-field XMLs, CSV tables) at runtime via the install path or `ACTDATA` environment variable.
+- **libraryfile.h / libraryfile.cpp** — Locates ACT data files (force-field XMLs, CSV tables) at runtime: the current directory, the `ACTDATA` environment variable if set, then the data directory of the installation (or of the source tree for a binary in the build tree).
 - **coordinate.h** — The integer coordinates of the conformations: 64-bit integers in units of 2^-56 nm, up to 128 nm from the origin, with the conversions from and to nm and exact differences.
 - **msg_handler.h / msg_handler.cpp** — `MsgHandler` class for unified logging, warnings, and fatal-error reporting with configurable verbosity levels.
 - **mutability.h / mutability.cpp** — `Mutability` enum (`Fixed`, `Dependent`, `ACM`, `Bounded`) that controls whether a force-field parameter may be modified during optimisation.

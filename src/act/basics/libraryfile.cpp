@@ -35,12 +35,32 @@
 
 #include <cstdlib>
 #include <string>
+#include <vector>
 
+#include "buildinfo.h"
 #include "gromacs/utility/futil.h"
+#include "gromacs/utility/path.h"
+#include "gromacs/utility/programcontext.h"
 #include "gromacs/utility/stringutil.h"
 
 namespace alexandria
 {
+
+/*! \brief The data directory of the installation or source tree of the program
+ * The program context finds it from the location of the binary: the
+ * share/act directory of the installation, or the share directory of the
+ * source tree for a binary in the build tree.
+ * \return the directory, empty if not known
+ */
+static std::string installedDataDirectory()
+{
+    const gmx::InstallationPrefixInfo prefix = gmx::getProgramContext().installationPrefix();
+    if (gmx::isNullOrEmpty(prefix.path))
+    {
+        return std::string();
+    }
+    return gmx::Path::join(prefix.path, prefix.bSourceLayout ? "share" : ACT_INSTALL_ACTDATADIR);
+}
 
 std::string findLibrary(const std::string &filename,
                         bool               useCWD)
@@ -49,22 +69,27 @@ std::string findLibrary(const std::string &filename,
     {
         return filename;
     }
-    std::string libFile;
-    std::string actdir("ACTDATA");
-    auto actdata = std::getenv(actdir.c_str());
-    if (nullptr != actdata)
+    // The directory in the environment variable ACTDATA, if set, comes
+    // before that of the installation.
+    std::vector<std::string> dirs;
+    auto actdata = std::getenv("ACTDATA");
+    if (!gmx::isNullOrEmpty(actdata))
     {
-        libFile = gmx::formatString("%s/%s", actdata, filename.c_str());
-        if (!gmx_fexist(libFile))
+        dirs.push_back(actdata);
+    }
+    dirs.push_back(installedDataDirectory());
+    for (const auto &dir : dirs)
+    {
+        if (!dir.empty())
         {
-            libFile.clear();
+            std::string libFile = gmx::Path::join(dir, filename);
+            if (gmx_fexist(libFile))
+            {
+                return libFile;
+            }
         }
     }
-    else
-    {
-        fprintf(stderr, "Please set the environment variable '%s' to point to the correct directory. Maybe you should source the ACTRC file first.", actdir.c_str());
-    }
-    return libFile;
+    return std::string();
 }
 
 } // namespace

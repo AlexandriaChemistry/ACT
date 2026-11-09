@@ -54,7 +54,8 @@ std::string implementation();
  * The first call initializes the runtime of the programming model.
  * AdaptiveCpp warns about each backend that it cannot load, for instance
  * that of AMD GPUs on a computer with NVIDIA GPUs only, unless the
- * environment variable ACPP_DEBUG_LEVEL is 1 or 0, as ACTRC sets it.
+ * environment variable ACPP_DEBUG_LEVEL is 1 or 0, which the GPU library
+ * of ACT sets when it is loaded, unless it is set already.
  * \return the names of the GPUs, empty without GPU support or without GPUs
  */
 std::vector<std::string> devices();

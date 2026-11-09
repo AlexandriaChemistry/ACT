@@ -44,8 +44,11 @@ namespace alexandria
  * \param[in] useCWD   Whether to search in the current working directory
  * \return either the unmodified filename if present in the current working
  *         directory (if useCWD is true) or the filename in the ACT library
- *         directory (if present there). If the file is not present, an
- *         empty string is returned.
+ *         directory (if present there). The library directory is that in
+ *         the environment variable ACTDATA, if set, and otherwise, or if
+ *         the file is not there, the data directory of the installation
+ *         (share/act) or of the source tree (share) of the program.
+ *         If the file is not present, an empty string is returned.
  */
 std::string findLibrary(const std::string &filename,
                         bool               useCWD);

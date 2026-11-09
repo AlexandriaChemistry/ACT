@@ -239,6 +239,18 @@ std::vector<DevicePeak> devicePeaks()
  * zero if there is none.
  * \return the local rank
  */
+/*! \brief Let AdaptiveCpp report only errors, unless ACPP_DEBUG_LEVEL is set
+ * Otherwise it warns about each GPU backend that it cannot load, for instance
+ * that of AMD GPUs on a computer with NVIDIA GPUs only. A static object in the
+ * headers of AdaptiveCpp reads its settings when the static objects of this
+ * library are made, before main, so this runs before them, as a constructor
+ * with a priority.
+ */
+__attribute__((constructor(101))) static void quietAdaptiveCpp()
+{
+    setenv("ACPP_DEBUG_LEVEL", "1", 0);
+}
+
 static int localRank()
 {
     // Those of the MPI libraries first: mpirun in a Slurm job inherits the

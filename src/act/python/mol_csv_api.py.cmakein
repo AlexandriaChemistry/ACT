@@ -10,6 +10,7 @@ from pathlib     import Path
 
 # ACT python code
 sys.path.insert(1, "@ACT_PYTHON_LIB_PATH@")
+from actutils import actdata
 from get_csv_rows import *
 from get_mol_dict import *
 from molutils import *
@@ -19,12 +20,7 @@ try:
 except ImportError:
     print("Warning: pubchempy is not installed. Proceed at your own risk.")
 
-dbdir = "ACTDATA"
-try:
-    ACTDATA = os.environ[dbdir]
-except:
-    print("Please set the %s environment variable" % dbdir)
-    exit(1)
+ACTDATA = actdata()
 
 wtol    = 0.5 # a.m.u.
 debug   = 0
