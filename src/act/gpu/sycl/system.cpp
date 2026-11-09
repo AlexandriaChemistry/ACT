@@ -396,6 +396,19 @@ public:
         return p;
     }
 
+    //! Free memory of allocate before destroySystem, and set the pointer to nullptr
+    template <typename T>
+    void release(T *&p)
+    {
+        auto a = std::find(allocations_.begin(), allocations_.end(), static_cast<void *>(p));
+        if (p && a != allocations_.end())
+        {
+            sycl::free(p, *queue_);
+            allocations_.erase(a);
+        }
+        p = nullptr;
+    }
+
     //! Copy n elements to the device
     template <typename T>
     void upload(T *d, const T *h, size_t n)
@@ -562,6 +575,10 @@ public:
     double                         *devEpotWeights_    = nullptr;
     double                         *devEpotEqm_        = nullptr;
     char                           *devEpotHave_       = nullptr;
+    //! The weight and loss of each target of each conformation of the dimers, and of the topologies
+    double                         *devTerms_          = nullptr;
+    double                         *devEpotTerms_      = nullptr;
+    uint64_t                        devNDimerConf_     = 0, devNMonoConf_ = 0;
     //! The sums of each dimer, and the results of computeDeviations
     double                         *devDimerSums_      = nullptr;
     double                         *devSums_           = nullptr;
@@ -1607,7 +1624,36 @@ void computeBlocks(System *sys, const char *use, double *const *energies, bool f
     }
 }
 
+static void computeBlocksLow(System *sys, const char *use, bool wantEnergies, const double **energies, bool forces,
+                             double *keep = nullptr);
+
 void computeBlocksInPlace(System *sys, const char *use, const double **energies, bool forces)
+{
+    computeBlocksLow(sys, use, energies != nullptr, energies, forces);
+}
+
+void computeBlocksKeep(System *sys, const char *use, bool forces, bool before)
+{
+    if (!sys->fixedStart_)
+    {
+        computeBlocksLow(sys, use, false, nullptr, forces);
+        return;
+    }
+    // The energies go straight to where computeDeviations takes them
+    computeBlocksLow(sys, use, true, nullptr, forces, before ? sys->energiesBefore_ : sys->energiesAfter_);
+}
+
+/*! \brief Compute the interactions of some blocks, as computeBlocksInPlace
+ * \param[in]  sys          The system
+ * \param[in]  use          Whether to compute each block
+ * \param[in]  wantEnergies Whether to compute the energies
+ * \param[out] energies     If not nullptr, where the energies of each block are on the host
+ * \param[in]  forces       Whether to compute the forces too
+ * \param[out] keep         If not nullptr, the energies are written here at fixedStart_
+ *                          and stay on the GPU
+ */
+static void computeBlocksLow(System *sys, const char *use, bool wantEnergies, const double **energies, bool forces,
+                             double *keep)
 {
     auto *queue = sys->queue_;
     auto  dU    = sys->deviceMask(use, sys->nblock_);
@@ -1622,14 +1668,13 @@ void computeBlocksInPlace(System *sys, const char *use, const double **energies,
     auto  dAE   = sys->atomEntries_;
     auto  dEE   = sys->eEntry_;
     auto  dELs  = sys->eList_;
-    auto  dE    = sys->energies_;
+    auto  dE    = keep ? keep : sys->energies_;
     auto  dHLW  = sys->hintListWork_;
     auto  dHLS  = sys->hintListSlot_;
     auto  dHAW  = sys->hintAtomWork_;
     uint32_t nb = sys->nblock_, nl = sys->nlist_;
     // Without energies only the forces, which the relaxation needs, without
     // waiting for the GPU
-    const bool wantEnergies = energies != nullptr;
     auto      &eStart       = sys->energyStartHost_;
     uint64_t   nenergy      = 0;
     if (wantEnergies)
@@ -1646,8 +1691,11 @@ void computeBlocksInPlace(System *sys, const char *use, const double **energies,
                 nenergy += static_cast<uint64_t>(db.nenergy)*pairEnergyTerms*db.stride;
             }
         }
-        sys->upload(sys->energyStart_, eStart.data(), nb);
-        auto dES = sys->energyStart_;
+        if (!keep)
+        {
+            sys->upload(sys->energyStart_, eStart.data(), nb);
+        }
+        auto dES = keep ? sys->fixedStart_ : sys->energyStart_;
         uint64_t nwork = sys->nwork_, nlistSlot = sys->nlistSlot_;
         // The energy of each interaction in each slot
         if (nwork > 0)
@@ -1806,7 +1854,7 @@ void computeBlocksInPlace(System *sys, const char *use, const double **energies,
             }
         });
     }
-    if (!wantEnergies)
+    if (!wantEnergies || !energies)
     {
         return;
     }
@@ -2446,9 +2494,8 @@ void downloadBlock(System *sys, size_t block, int64_t *x, float *f)
 }
 
 
-//! The largest number of energy types of a block and of targets of computeDeviations
-constexpr uint32_t maxDeviationTypes   = 32;
-constexpr uint32_t maxDeviationTargets = 8;
+//! The largest number of energy types of a block in computeDeviations
+constexpr uint32_t maxDeviationTypes = 32;
 
 /*! \brief The loss of a deviation, as loss in loss_function.h with a scaling factor of one
  * \param[in] lf     The loss function, see DeviationSystem::lossFunction
@@ -2533,6 +2580,26 @@ void createDeviations(System *sys, const DeviationSystem &d)
         sys->upload(sys->fixedStart_, start.data(), nb + 1);
         sys->queue_->wait_and_throw();
     }
+    // The buffers of an earlier call
+    sys->queue_->wait_and_throw();
+    sys->release(sys->devTypes_);
+    sys->release(sys->devBlockFirstType_);
+    sys->release(sys->devSlotOfConf_);
+    sys->release(sys->devBlockFirstConf_);
+    sys->release(sys->devDimers_);
+    sys->release(sys->devMatches_);
+    sys->release(sys->devTargets_);
+    sys->release(sys->devWeights_);
+    sys->release(sys->devEqm_);
+    sys->release(sys->devHave_);
+    sys->release(sys->devMonomers_);
+    sys->release(sys->devEpotWeights_);
+    sys->release(sys->devEpotEqm_);
+    sys->release(sys->devEpotHave_);
+    sys->release(sys->devDimerSums_);
+    sys->release(sys->devTerms_);
+    sys->release(sys->devEpotTerms_);
+    sys->release(sys->devSums_);
     sys->dev_               = d;
     sys->devTypes_          = sys->allocate<DeviationType>(d.blockFirstType[nb]);
     sys->devBlockFirstType_ = sys->allocate<uint32_t>(nb + 1);
@@ -2549,6 +2616,10 @@ void createDeviations(System *sys, const DeviationSystem &d)
     sys->devEpotEqm_        = sys->allocate<double>(d.nepot);
     sys->devEpotHave_       = sys->allocate<char>(d.nepot);
     sys->devDimerSums_      = sys->allocate<double>(2*d.ndimer*d.ntarget);
+    sys->devNDimerConf_     = d.ndimer > 0 ? d.dimers[d.ndimer-1].confOffset + d.dimers[d.ndimer-1].nconf : 0;
+    sys->devNMonoConf_      = d.nmonomer > 0 ? d.monomers[d.nmonomer-1].confOffset + d.monomers[d.nmonomer-1].nconf : 0;
+    sys->devTerms_          = sys->allocate<double>(2*sys->devNDimerConf_*d.ntarget);
+    sys->devEpotTerms_      = sys->allocate<double>(2*sys->devNMonoConf_);
     sys->devSums_           = sys->allocate<double>(2*d.nreplica*(d.ntarget + 1));
     sys->upload(sys->devTypes_, d.types, d.blockFirstType[nb]);
     sys->upload(sys->devBlockFirstType_, d.blockFirstType, nb + 1);
@@ -2623,6 +2694,8 @@ void computeDeviations(System *sys, double *sums)
     auto        dEW     = sys->devEpotWeights_;
     auto        dEQ     = sys->devEpotEqm_;
     auto        dEH     = sys->devEpotHave_;
+    auto        dTe     = sys->devTerms_;
+    auto        dETe    = sys->devEpotTerms_;
     auto        dDS     = sys->devDimerSums_;
     auto        dS      = sys->devSums_;
     auto        dFS     = sys->fixedStart_;
@@ -2630,173 +2703,229 @@ void computeDeviations(System *sys, double *sums)
     auto        dBe     = sys->energiesBefore_;
     uint32_t    ntarget = d.ntarget, nrep = d.nreplica;
     uint32_t    nmono   = d.nmonomer, ndimer = d.ndimer;
+    uint64_t    ndc     = sys->devNDimerConf_, nmc = sys->devNMonoConf_;
     int         lf      = d.lossFunction;
     int32_t     allElecType = d.allElecType, exchIndType = d.exchIndType, inductionType = d.inductionType;
-    // The losses of each dimer, its conformations in order, as addLosses,
+    // The weight and loss of each target of each conformation of each dimer,
     // with the energies made as compactInteraction makes them
-    if (ndimer > 0 && ntarget > 0)
+    if (ndc > 0 && ntarget > 0)
     {
-        queue->parallel_for(sycl::range<1>(ndimer), [=](sycl::id<1> id)
+        queue->parallel_for(sycl::range<1>(ndc), [=](sycl::id<1> id)
         {
 #if defined(__clang__)
 #pragma clang fp contract(off)
 #endif
-            const DeviationDimer    &dm  = dD[id[0]];
+            uint64_t gc = id[0];
+            uint32_t lo = 0, hi = ndimer;
+            while (hi - lo > 1)
+            {
+                uint32_t mid = (lo + hi)/2;
+                if (dD[mid].confOffset <= gc)
+                {
+                    lo = mid;
+                }
+                else
+                {
+                    hi = mid;
+                }
+            }
+            const DeviationDimer    &dm  = dD[lo];
+            uint64_t                 c   = gc - dm.confOffset;
             const DeviceSystemBlock &bd  = dB[dm.dimer];
             uint32_t                 t0  = dBFT[dm.dimer];
             uint32_t                 nt  = dBFT[dm.dimer + 1] - t0;
+            uint32_t                 sD  = dSOC[dBFC[dm.dimer] + c];
             const double            *aD  = dA + dFS[dm.dimer];
             const double            *eD  = dBe + dFS[dm.dimer];
-            const uint32_t          *sD  = dSOC + dBFC[dm.dimer];
-            bool                     mv[2];
-            uint32_t                 tm[2], npm[2];
-            uint64_t                 stm[2], ncm[2];
-            const double            *am[2], *em[2];
-            const uint32_t          *sm[2];
-            for (int j = 0; j < 2; j++)
-            {
-                uint32_t m = dm.monomer[j];
-                mv[j]  = m != noBlock;
-                m      = mv[j] ? m : dm.dimer;
-                tm[j]  = dBFT[m];
-                npm[j] = dB[m].nenergy;
-                stm[j] = dB[m].stride;
-                ncm[j] = mv[j] ? dBFC[m + 1] - dBFC[m] : 0;
-                am[j]  = dA + dFS[m];
-                em[j]  = dBe + dFS[m];
-                sm[j]  = dSOC + dBFC[m];
-            }
             int indEntry = -1, corrEntry = -1;
             for (uint32_t i = 0; i < nt; i++)
             {
                 indEntry  = (dT[t0 + i].role & deviationInduction) ? static_cast<int>(i) : indEntry;
                 corrEntry = (dT[t0 + i].role & deviationInductionCorrection) ? static_cast<int>(i) : corrEntry;
             }
-            double sw[maxDeviationTargets], sl[maxDeviationTargets];
-            for (uint32_t j = 0; j < ntarget; j++)
+            double act[maxDeviationTypes], bef[maxDeviationTypes];
+            // subtractMonomers
+            for (uint32_t i = 0; i < nt; i++)
             {
-                sw[j] = 0;
-                sl[j] = 0;
+                const DeviationType &ty = dT[t0 + i];
+                double edim = deviationTypeEnergy(ty, aD, bd.stride, sD, bd.nenergy);
+                double edb4 = deviationTypeEnergy(ty, eD, bd.stride, sD, bd.nenergy);
+                for (int j = 0; j < 2; j++)
+                {
+                    uint32_t m  = dm.monomer[j];
+                    int32_t  mi = dM[dm.matchOffset + 2*i + j];
+                    if (m != noBlock && mi >= 0 && c < dBFC[m + 1] - dBFC[m])
+                    {
+                        edim -= deviationTypeEnergy(dT[dBFT[m] + mi], dA + dFS[m], dB[m].stride,
+                                                    dSOC[dBFC[m] + c], dB[m].nenergy);
+                    }
+                }
+                for (int j = 0; j < 2; j++)
+                {
+                    uint32_t m  = dm.monomer[j];
+                    int32_t  mi = dM[dm.matchOffset + 2*i + j];
+                    if (m != noBlock && mi >= 0 && c < dBFC[m + 1] - dBFC[m])
+                    {
+                        edb4 -= deviationTypeEnergy(dT[dBFT[m] + mi], dBe + dFS[m], dB[m].stride,
+                                                    dSOC[dBFC[m] + c], dB[m].nenergy);
+                    }
+                }
+                act[i] = edim;
+                bef[i] = edb4;
             }
-            for (uint32_t c = 0; c < dm.nconf; c++)
+            // calcInduction
+            bool   haveInduction = false;
+            double eInduction    = 0, eAllElec = 0, eExchInd = 0;
+            for (uint32_t i = 0; i < nt; i++)
             {
-                double act[maxDeviationTypes], bef[maxDeviationTypes];
-                // subtractMonomers
-                for (uint32_t i = 0; i < nt; i++)
+                uint32_t role = dT[t0 + i].role;
+                if (role & deviationElec)
                 {
-                    const DeviationType &ty = dT[t0 + i];
-                    double edim = deviationTypeEnergy(ty, aD, bd.stride, sD[c], bd.nenergy);
-                    double edb4 = deviationTypeEnergy(ty, eD, bd.stride, sD[c], bd.nenergy);
-                    for (int j = 0; j < 2; j++)
+                    if (bef[i] != act[i])
                     {
-                        int32_t mi = dM[dm.matchOffset + 2*i + j];
-                        if (mv[j] && mi >= 0 && c < ncm[j])
-                        {
-                            edim -= deviationTypeEnergy(dT[tm[j] + mi], am[j], stm[j], sm[j][c], npm[j]);
-                        }
+                        eInduction   += act[i] - bef[i];
+                        act[i]        = bef[i];
+                        haveInduction = true;
                     }
-                    for (int j = 0; j < 2; j++)
-                    {
-                        int32_t mi = dM[dm.matchOffset + 2*i + j];
-                        if (mv[j] && mi >= 0 && c < ncm[j])
-                        {
-                            edb4 -= deviationTypeEnergy(dT[tm[j] + mi], em[j], stm[j], sm[j][c], npm[j]);
-                        }
-                    }
-                    act[i] = edim;
-                    bef[i] = edb4;
+                    eAllElec += act[i];
                 }
-                // calcInduction
-                bool   haveInduction = false;
-                double eInduction    = 0, eAllElec = 0, eExchInd = 0;
-                for (uint32_t i = 0; i < nt; i++)
+                else if (role & deviationExchangeRole)
                 {
-                    uint32_t role = dT[t0 + i].role;
-                    if (role & deviationElec)
-                    {
-                        if (bef[i] != act[i])
-                        {
-                            eInduction   += act[i] - bef[i];
-                            act[i]        = bef[i];
-                            haveInduction = true;
-                        }
-                        eAllElec += act[i];
-                    }
-                    else if (role & deviationExchangeRole)
-                    {
-                        eExchInd += act[i];
-                    }
-                }
-                double induction     = indEntry >= 0 ? act[indEntry] : 0.0;
-                bool   haveInductionC = indEntry >= 0;
-                if (haveInduction)
-                {
-                    induction      = eInduction;
-                    haveInductionC = true;
-                    eAllElec      += eInduction;
-                    eExchInd      += eInduction;
-                }
-                else if (indEntry >= 0)
-                {
-                    eExchInd += induction;
-                }
-                // potentialCorrection and addCorrection, to the induction
-                if (corrEntry >= 0)
-                {
-                    double correction = act[corrEntry];
-                    eAllElec      += correction;
-                    eExchInd      += correction;
-                    induction      = (haveInductionC ? induction : 0.0) + correction;
-                    haveInductionC = true;
-                }
-                double w = dW[dm.refOffset + c];
-                for (uint32_t j = 0; j < ntarget; j++)
-                {
-                    int32_t tt   = dTg[j];
-                    double  v    = 0;
-                    bool    have = false;
-                    if (tt == allElecType)
-                    {
-                        v    = eAllElec;
-                        have = true;
-                    }
-                    else if (tt == exchIndType)
-                    {
-                        v    = eExchInd;
-                        have = true;
-                    }
-                    else if (tt == inductionType)
-                    {
-                        v    = induction;
-                        have = haveInductionC;
-                    }
-                    else
-                    {
-                        for (uint32_t i = 0; i < nt; i++)
-                        {
-                            if (dT[t0 + i].type == tt)
-                            {
-                                v    = act[i];
-                                have = static_cast<int>(i) != corrEntry;
-                            }
-                        }
-                    }
-                    uint64_t r   = dm.refOffset*ntarget + static_cast<uint64_t>(j)*dm.nconf + c;
-                    bool     use = have && dH[r] && sycl::isfinite(v);
-                    double   de  = use ? dQ[r] - v : 0.0;
-                    double   wi  = use ? w : 0.0;
-                    sl[j] += wi*deviationLoss(lf, de);
-                    sw[j] += wi;
+                    eExchInd += act[i];
                 }
             }
+            double induction      = indEntry >= 0 ? act[indEntry] : 0.0;
+            bool   haveInductionC = indEntry >= 0;
+            if (haveInduction)
+            {
+                induction      = eInduction;
+                haveInductionC = true;
+                eAllElec      += eInduction;
+                eExchInd      += eInduction;
+            }
+            else if (indEntry >= 0)
+            {
+                eExchInd += induction;
+            }
+            // potentialCorrection and addCorrection, to the induction
+            if (corrEntry >= 0)
+            {
+                double correction = act[corrEntry];
+                eAllElec      += correction;
+                eExchInd      += correction;
+                induction      = (haveInductionC ? induction : 0.0) + correction;
+                haveInductionC = true;
+            }
+            double w = dW[dm.refOffset + c];
             for (uint32_t j = 0; j < ntarget; j++)
             {
-                dDS[2*(id[0]*ntarget + j)]     = sw[j];
-                dDS[2*(id[0]*ntarget + j) + 1] = sl[j];
+                int32_t tt   = dTg[j];
+                double  v    = 0;
+                bool    have = false;
+                if (tt == allElecType)
+                {
+                    v    = eAllElec;
+                    have = true;
+                }
+                else if (tt == exchIndType)
+                {
+                    v    = eExchInd;
+                    have = true;
+                }
+                else if (tt == inductionType)
+                {
+                    v    = induction;
+                    have = haveInductionC;
+                }
+                else
+                {
+                    for (uint32_t i = 0; i < nt; i++)
+                    {
+                        if (dT[t0 + i].type == tt)
+                        {
+                            v    = act[i];
+                            have = static_cast<int>(i) != corrEntry;
+                        }
+                    }
+                }
+                uint64_t r   = dm.refOffset*ntarget + static_cast<uint64_t>(j)*dm.nconf + c;
+                bool     use = have && dH[r] && sycl::isfinite(v);
+                double   de  = use ? dQ[r] - v : 0.0;
+                double   wi  = use ? w : 0.0;
+                dTe[2*(gc*ntarget + j)]     = wi;
+                dTe[2*(gc*ntarget + j) + 1] = wi*deviationLoss(lf, de);
             }
         });
     }
-    // The sum over the dimers of each replica, in order, as the fitting targets add them
+    // The weight and loss of the potential energy of each conformation of each topology
+    if (nmc > 0)
+    {
+        queue->parallel_for(sycl::range<1>(nmc), [=](sycl::id<1> id)
+        {
+#if defined(__clang__)
+#pragma clang fp contract(off)
+#endif
+            uint64_t gc = id[0];
+            uint32_t lo = 0, hi = nmono;
+            while (hi - lo > 1)
+            {
+                uint32_t mid = (lo + hi)/2;
+                if (dMo[mid].confOffset <= gc)
+                {
+                    lo = mid;
+                }
+                else
+                {
+                    hi = mid;
+                }
+            }
+            const DeviationMonomer  &mo = dMo[lo];
+            uint64_t                 c  = gc - mo.confOffset;
+            const DeviceSystemBlock &bm = dB[mo.block];
+            int                      ep = -1;
+            for (uint32_t i = dBFT[mo.block]; i < dBFT[mo.block + 1]; i++)
+            {
+                ep = dT[i].kind == deviationEpot ? static_cast<int>(i) : ep;
+            }
+            double   wq = 0, lq = 0;
+            uint64_t q  = mo.refOffset + c;
+            if (ep >= 0)
+            {
+                double e = deviationTypeEnergy(dT[ep], dA + dFS[mo.block], bm.stride,
+                                               dSOC[dBFC[mo.block] + c], bm.nenergy);
+                if (dEH[q] && sycl::isfinite(e))
+                {
+                    wq = dEW[q];
+                    lq = dEW[q] * deviationLoss(lf, dEQ[q] - e);
+                }
+            }
+            dETe[2*gc]     = wq;
+            dETe[2*gc + 1] = lq;
+        });
+    }
+    // The sum over the conformations of each dimer in order, as addLosses
+    if (ndimer > 0 && ntarget > 0)
+    {
+        queue->parallel_for(sycl::range<1>(ndimer*ntarget), [=](sycl::id<1> id)
+        {
+#if defined(__clang__)
+#pragma clang fp contract(off)
+#endif
+            uint32_t              k  = id[0]/ntarget;
+            uint32_t              j  = id[0]%ntarget;
+            const DeviationDimer &dm = dD[k];
+            double                sw = 0, sl = 0;
+            for (uint64_t c = 0; c < dm.nconf; c++)
+            {
+                sw += dTe[2*((dm.confOffset + c)*ntarget + j)];
+                sl += dTe[2*((dm.confOffset + c)*ntarget + j) + 1];
+            }
+            dDS[2*(k*ntarget + j)]     = sw;
+            dDS[2*(k*ntarget + j) + 1] = sl;
+        });
+    }
+    // The sum over the dimers of each replica, in order, as the fitting
+    // targets add them, and the potential energies one conformation at a time
     queue->parallel_for(sycl::range<1>(nrep*(ntarget + 1)), [=](sycl::id<1> id)
     {
 #if defined(__clang__)
@@ -2818,33 +2947,13 @@ void computeDeviations(System *sys, double *sums)
         }
         else
         {
-            // The potential energy of each conformation of each topology,
-            // one at a time, as ForceEnergyDevComputer::calcDeviation
             for (uint32_t k = 0; k < nmono; k++)
             {
                 const DeviationMonomer &mo = dMo[k];
-                if (mo.replica != r)
+                for (uint64_t c = 0; c < mo.nconf && mo.replica == r; c++)
                 {
-                    continue;
-                }
-                const DeviceSystemBlock &bm = dB[mo.block];
-                uint32_t                 t0 = dBFT[mo.block], t1 = dBFT[mo.block + 1];
-                int                      ep = -1;
-                for (uint32_t i = t0; i < t1; i++)
-                {
-                    ep = dT[i].kind == deviationEpot ? static_cast<int>(i) : ep;
-                }
-                for (uint32_t c = 0; c < mo.nconf && ep >= 0; c++)
-                {
-                    double e = deviationTypeEnergy(dT[ep], dA + dFS[mo.block], bm.stride,
-                                                   dSOC[dBFC[mo.block] + c], bm.nenergy);
-                    uint64_t q = mo.refOffset + c;
-                    if (dEH[q] && sycl::isfinite(e))
-                    {
-                        double myloss = dEW[q] * deviationLoss(lf, dEQ[q] - e);
-                        sw += dEW[q];
-                        sl += myloss;
-                    }
+                    sw += dETe[2*(mo.confOffset + c)];
+                    sl += dETe[2*(mo.confOffset + c) + 1];
                 }
             }
         }

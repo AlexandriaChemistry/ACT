@@ -680,6 +680,16 @@ void computeBlocks(System *system, const char *use, double *const *energies, boo
  */
 void computeBlocksInPlace(System *system, const char *use, const double **energies, bool forces);
 
+/*! \brief Compute all interactions of the slots of some blocks, keeping the energies on the GPU
+ * As computeBlocksInPlace followed by keepEnergies, without copying the
+ * energies to the host and without waiting for the GPU, for computeDeviations.
+ * \param[in] system The system
+ * \param[in] use    Whether to compute each block
+ * \param[in] forces Whether to compute the forces too, which relaxBlocks needs
+ * \param[in] before Whether these are the energies before relaxing, see keepEnergies
+ */
+void computeBlocksKeep(System *system, const char *use, bool forces, bool before);
+
 /*! \brief Put the shells on their parents, see SystemBlock::shellParents
  * \param[in] system The system
  * \param[in] use    Whether to do this for each block
@@ -803,6 +813,8 @@ struct DeviationDimer
     uint64_t matchOffset = 0;
     //! The first reference conformation, see DeviationSystem::weights
     uint64_t refOffset   = 0;
+    //! The first conformation of this dimer among those of all dimers, in their order
+    uint64_t confOffset  = 0;
 };
 
 //! A topology of one replica with the reference potential energies, see DeviationSystem
@@ -816,6 +828,8 @@ struct DeviationMonomer
     uint32_t nconf     = 0;
     //! The first reference conformation, see DeviationSystem::epotWeights
     uint64_t refOffset = 0;
+    //! The first conformation of this topology among those of all, in their order
+    uint64_t confOffset = 0;
 };
 
 /*! \brief What computeDeviations needs, the energy types and the reference data

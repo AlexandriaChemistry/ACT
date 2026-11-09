@@ -210,6 +210,8 @@ public:
         int                            nlocal  = 0;
         //! Whether the GPU computes the energies and the charges, see ForceComputer::gpuChargesOnly
         bool                           gpuCharges = false;
+        //! Whether the GPU computed the deviations of the energies, and not the energies of the molecules
+        bool                           gpuDeviations = false;
     };
 
     /*! \brief Compute the deviations of several sets of parameters
@@ -251,10 +253,21 @@ public:
      * Energies of the molecules of several calculations can be computed at
      * once with ForceComputer::computeRelaxedEnergies, as energyTask says,
      * instead of this.
-     * \param[in] msghandler Message Handler
-     * \param[in] dt         The state of prepareDeviation
+     * \param[in]    msghandler Message Handler
+     * \param[inout] dt         The state of prepareDeviation, which tells whether the
+     *                          GPU computed only the deviations, see useGpuDeviations
      */
-    void computeEnergies(MsgHandler *msghandler, const DeviationTask &dt);
+    void computeEnergies(MsgHandler *msghandler, DeviationTask *dt);
+
+    /*! \brief Whether the GPU can compute the deviations of the energies of these molecules
+     * Instead of the energies of the molecules, see
+     * ForceEnergyDevComputer::setupGpuDeviations, for evaluations in
+     * training, not for ACT_GPU_DEVIATION_CHECK, which compares them, nor
+     * with ACT_NO_GPU_DEVIATIONS, for developers.
+     * \param[in] dt The state of prepareDeviation
+     * \return whether the deviations are set up on the GPU
+     */
+    bool useGpuDeviations(const DeviationTask &dt);
 
     /*! \brief For developers, let the GPU compute the energy deviations of these molecules
      * With ACT_GPU_DEVIATION_CHECK, see ForceEnergyDevComputer::setupGpuDeviations.

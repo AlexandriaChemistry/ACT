@@ -136,6 +136,10 @@ void computeBlocksInPlace(System *, const char *, const double **, bool)
 {
 }
 
+void computeBlocksKeep(System *, const char *, bool, bool)
+{
+}
+
 void computeBlocks(System *, const char *, double *const *, bool)
 {
 }

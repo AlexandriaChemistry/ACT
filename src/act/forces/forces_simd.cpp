@@ -4064,6 +4064,7 @@ void GpuTrainingSystem::setKeepEnergies(bool) {}
 bool GpuTrainingSystem::typeEnergies(const ACTMol *, int, std::vector<GpuTypeEnergies> *) const { return false; }
 bool GpuTrainingSystem::setDeviations(const GpuDeviationSetup &) { return false; }
 bool GpuTrainingSystem::deviationsReady() const { return false; }
+void GpuTrainingSystem::setDeviationsOnly(bool) {}
 void GpuTrainingSystem::computeDeviations() {}
 bool GpuTrainingSystem::deviationSums(std::vector<std::pair<double, double>> *) const { return false; }
 void GpuTrainingSystem::compute(int, bool, bool) {}
@@ -4189,6 +4190,8 @@ public:
     size_t              devTargets = 0;
     std::vector<double> devSums;
     bool                devComputed = false;
+    //! Whether compute keeps the energies on the GPU only, see setDeviationsOnly
+    bool                devOnly = false;
 
     //! Make blockIndex, after the blocks were made
     void indexBlocks()
@@ -5051,6 +5054,7 @@ bool GpuTrainingSystem::setDeviations(const GpuDeviationSetup &setup)
                 dm.replica     = r;
                 dm.nconf       = setup.interactionConfs[k];
                 dm.refOffset   = refOffset[k];
+                dm.confOffset  = dimers.empty() ? 0 : dimers.back().confOffset + dimers.back().nconf;
                 dm.matchOffset = matches.size();
                 for (int j = 0; j < 2; j++)
                 {
@@ -5084,7 +5088,8 @@ bool GpuTrainingSystem::setDeviations(const GpuDeviationSetup &setup)
                 mo.block     = mb;
                 mo.replica   = r;
                 mo.nconf     = setup.epotConfs[k];
-                mo.refOffset = epotOffset[k];
+                mo.refOffset  = epotOffset[k];
+                mo.confOffset = monomers.empty() ? 0 : monomers.back().confOffset + monomers.back().nconf;
                 monomers.push_back(mo);
             }
         }
@@ -5131,6 +5136,11 @@ bool GpuTrainingSystem::setDeviations(const GpuDeviationSetup &setup)
 bool GpuTrainingSystem::deviationsReady() const
 {
     return impl_->devReady;
+}
+
+void GpuTrainingSystem::setDeviationsOnly(bool only)
+{
+    impl_->devOnly = only && impl_->devReady;
 }
 
 void GpuTrainingSystem::computeDeviations()
@@ -5258,6 +5268,12 @@ void GpuTrainingSystem::compute(int what, bool forces, bool backup)
 {
     auto &im = *impl_;
     auto  u  = im.use(what);
+    if (im.devOnly)
+    {
+        // The energies stay on the GPU for computeDeviations
+        gpu::computeBlocksKeep(im.system, u.data(), forces, backup);
+        return;
+    }
     std::vector<const double *> eptr(im.blocks.size(), nullptr);
     gpu::computeBlocksInPlace(im.system, u.data(), eptr.data(), forces);
     if (im.devReady)

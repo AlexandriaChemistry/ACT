@@ -204,6 +204,12 @@ public:
     //! \return whether computeDeviations computes deviations, see setDeviations
     bool deviationsReady() const;
 
+    /*! \brief Keep the energies of compute on the GPU only, for computeDeviations
+     * Then compute does not copy the energies to the molecules, nor wait for the GPU.
+     * \param[in] only Whether to do so, needs setDeviations
+     */
+    void setDeviationsOnly(bool only);
+
     /*! \brief Compute the deviations of the energies of all replicas on the GPU
      * From the energies of the last calculations, as typeEnergies.
      */
