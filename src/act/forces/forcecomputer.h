@@ -28,6 +28,7 @@
 #ifndef ACT_FORCECOMPUTER_H
 #define ACT_FORCECOMPUTER_H
 
+#include <functional>
 #include <memory>
 #include <set>
 #include <vector>
@@ -204,13 +205,17 @@ private:
      * \param[in]    resetShells Whether to put the shells on their parents first
      * \param[in]    separateInductionCorrection Whether the induction correction is separate
      * \param[in]    checkCharges Whether to compare the charges of the GPU with those of the molecules
+     * \param[in]    stage       With several replicas, puts the parameters of a replica in
+     *                           the force field and the molecules, see computeRelaxedEnergiesReplicas,
+     *                           otherwise nullptr
      */
-    void computeRelaxedEnergiesGpu(MsgHandler                  *msghandler,
-                                   const ForceField            *pd,
-                                   const std::vector<ACTMol *> &allmols,
-                                   bool                         resetShells,
-                                   bool                         separateInductionCorrection,
-                                   bool                         checkCharges) const;
+    void computeRelaxedEnergiesGpu(MsgHandler                          *msghandler,
+                                   const ForceField                    *pd,
+                                   const std::vector<ACTMol *>         &allmols,
+                                   bool                                 resetShells,
+                                   bool                                 separateInductionCorrection,
+                                   bool                                 checkCharges,
+                                   const std::function<void(size_t)> *stage = nullptr) const;
     /*! \brief Update shell positions if needed.
      * This will work on a whole ACT mol or just one of its monomers.
      * The force constants of the shells are computed from the current
@@ -510,11 +515,42 @@ private:
     /*! \brief Make the system of these molecules on the GPU, see setGpuResident
      * If the GPU cannot compute them, the processor computes everything
      * from then on.
-     * \param[in] pd      The force field
-     * \param[in] allmols The molecules
+     * \param[in] pd       The force field
+     * \param[in] allmols  The molecules
+     * \param[in] nreplica The number of parameter sets to compute at once,
+     *                     see computeRelaxedEnergiesReplicas
      * \return whether the GPU computes these molecules
      */
-    bool prepareGpuResident(const ForceField *pd, const std::vector<ACTMol *> &allmols) const;
+    bool prepareGpuResident(const ForceField *pd, const std::vector<ACTMol *> &allmols,
+                            size_t nreplica = 1) const;
+
+    /*! \brief Compute the relaxed energies for several sets of parameters at once on the GPU
+     * As computeRelaxedEnergies with the shells reset and without forces,
+     * for each replica of the molecules on the GPU, see GpuTrainingSystem.
+     * Afterwards, selectGpuReplica puts the energies and the charges of a
+     * replica in the molecules.
+     * \param[in]    msghandler  For messages
+     * \param[in]    pd          The force field
+     * \param[inout] allmols     The molecules
+     * \param[in]    nreplica    The number of replicas
+     * \param[in]    stage       Puts the parameters of a replica in the force field and
+     *                           the topologies of the molecules, and the fixed charges
+     *                           in their atoms, called for each replica in order
+     * \param[in]    separateInductionCorrection Whether the induction correction is separate
+     * \return false if the GPU cannot compute these molecules, then nothing was computed
+     */
+    bool computeRelaxedEnergiesReplicas(MsgHandler                          *msghandler,
+                                        const ForceField                    *pd,
+                                        const std::vector<ACTMol *>         &allmols,
+                                        size_t                               nreplica,
+                                        const std::function<void(size_t)> &stage,
+                                        bool                                 separateInductionCorrection) const;
+
+    /*! \brief Put the energies and charges of a replica in the molecules
+     * See computeRelaxedEnergiesReplicas.
+     * \param[in] replica The replica
+     */
+    void selectGpuReplica(size_t replica) const;
 
     /*! \brief Whether the GPU generates the charges in computeRelaxedEnergies
      * With setGpuResident or ACT_GPU_RESIDENT_CHECK, a GPU, a polarizable

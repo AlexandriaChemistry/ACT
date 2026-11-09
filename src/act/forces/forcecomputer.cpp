@@ -1711,7 +1711,8 @@ bool ForceComputer::useGpuResident() const
     return (gpuResident_ || gpuResidentCheck()) && !gpuResidentUnavailable_;
 }
 
-bool ForceComputer::prepareGpuResident(const ForceField *pd, const std::vector<ACTMol *> &allmols) const
+bool ForceComputer::prepareGpuResident(const ForceField *pd, const std::vector<ACTMol *> &allmols,
+                                       size_t nreplica) const
 {
     if (!useGpuResident() || !pd->polarizable())
     {
@@ -1723,7 +1724,7 @@ bool ForceComputer::prepareGpuResident(const ForceField *pd, const std::vector<A
     {
         gpuSystem_ = std::make_shared<GpuTrainingSystem>();
     }
-    if (!gpuSystem_->prepare(pd, allmols, shellMaxDistance(pd), gpuCharges(pd), this))
+    if (!gpuSystem_->prepare(pd, allmols, shellMaxDistance(pd), gpuCharges(pd), this, nreplica))
     {
         // The processor computes everything from now on
         gpuResidentUnavailable_ = true;
@@ -1746,16 +1747,28 @@ bool ForceComputer::gpuChargesOnly(const ForceField *pd) const
     return !gpuResidentCheck() && gpuCharges(pd);
 }
 
-void ForceComputer::computeRelaxedEnergiesGpu(MsgHandler                  *,
-                                              const ForceField            *pd,
-                                              const std::vector<ACTMol *> &allmols,
-                                              bool                         resetTheShells,
-                                              bool                         separateInductionCorrection,
-                                              bool                         checkCharges) const
+void ForceComputer::computeRelaxedEnergiesGpu(MsgHandler                          *,
+                                              const ForceField                    *pd,
+                                              const std::vector<ACTMol *>         &allmols,
+                                              bool                                 resetTheShells,
+                                              bool                                 separateInductionCorrection,
+                                              bool                                 checkCharges,
+                                              const std::function<void(size_t)> *stage) const
 {
     static const size_t timer = Timings::instance().index("GPU resident evaluation");
     ScopedTimer         scoped(timer);
     auto &gs = *gpuSystem_;
+    // With several replicas, the work on the processor is done for each,
+    // with its energies in the molecules, see GpuTrainingSystem::selectReplica
+    const size_t nrep = gs.nreplica();
+    auto forEachReplica = [&gs, nrep](const std::function<void(size_t)> &work)
+    {
+        for (size_t r = 0; r < nrep; r++)
+        {
+            gs.selectReplica(r);
+            work(r);
+        }
+    };
     // Start the relaxation from the shells of the previous evaluation, see
     // setKeepShells. The energies before relaxing are still those with the
     // shells on their parents.
@@ -1765,7 +1778,7 @@ void ForceComputer::computeRelaxedEnergiesGpu(MsgHandler                  *,
     for (auto molptr : allmols)
     {
         auto &tops = molptr->fragmentHandler()->topologies();
-        nEval_ += molptr->conformationData(0)->nconf()*(tops.size() + (tops.size() > 1 ? 1 : 0));
+        nEval_ += nrep*molptr->conformationData(0)->nconf()*(tops.size() + (tops.size() > 1 ? 1 : 0));
     }
     static const size_t upload  = Timings::instance().index("GPU resident parameter upload");
     static const size_t relaxT  = Timings::instance().index("GPU resident relaxation");
@@ -1773,7 +1786,19 @@ void ForceComputer::computeRelaxedEnergiesGpu(MsgHandler                  *,
     // As computeRelaxedEnergies, with the coordinates on the GPU
     {
         ScopedTimer up(upload);
-        gs.updateParameters(pd, this);
+        if (stage)
+        {
+            for (size_t r = 0; r < nrep; r++)
+            {
+                (*stage)(r);
+                gs.stageParameters(r, pd, this);
+            }
+            gs.uploadParameters(pd);
+        }
+        else
+        {
+            gs.updateParameters(pd, this);
+        }
     }
     if (resetTheShells)
     {
@@ -1785,15 +1810,18 @@ void ForceComputer::computeRelaxedEnergiesGpu(MsgHandler                  *,
     const bool restoreKept = keepShells && gs.haveKeptShells();
     { ScopedTimer et(energyT); gs.compute(-1, !restoreKept); }
     // The energies before relaxing, to extract the induction
-    for (auto molptr : allmols)
+    forEachReplica([&allmols](size_t)
     {
-        for (size_t what = 0; what < 3; what++)
+        for (auto molptr : allmols)
         {
-            auto &energies = molptr->conformationData(what)->energies;
-            energies.setBackups(true);
-            backupEnergies(&energies);
+            for (size_t what = 0; what < 3; what++)
+            {
+                auto &energies = molptr->conformationData(what)->energies;
+                energies.setBackups(true);
+                backupEnergies(&energies);
+            }
         }
-    }
+    });
     // The energies of computeForces are not needed, they are computed
     // after relaxing
     if (restoreKept && gs.restoreShells(-2))
@@ -1805,25 +1833,32 @@ void ForceComputer::computeRelaxedEnergiesGpu(MsgHandler                  *,
     { ScopedTimer rt(relaxT); size_t nf = 0; nShellIter_ += gs.relax(-1, all, settings, &nf); nShellConvergeFailed_ += nf; }
     // Both monomers at once
     { ScopedTimer et(energyT); gs.compute(-2, false); }
-    std::vector<std::vector<double>> eInduc2(allmols.size());
+    // For each replica and molecule
+    std::vector<std::vector<std::vector<double>>> eInduc2(nrep, std::vector<std::vector<double>>(allmols.size()));
     bool doInduc2 = separateInductionCorrection;
     if (doInduc2)
     {
-        for (size_t k = 0; k < allmols.size(); k++)
+        for (size_t r = 0; r < nrep; r++)
         {
-            if (allmols[k]->isDimer())
+            for (size_t k = 0; k < allmols.size(); k++)
             {
-                eInduc2[k].resize(allmols[k]->dimerCoords()->size(), 0.0);
+                if (allmols[k]->isDimer())
+                {
+                    eInduc2[r][k].resize(allmols[k]->dimerCoords()->size(), 0.0);
+                }
             }
         }
         gs.saveDimers();
         gs.copyRelaxedMonomerShells();
         { ScopedTimer et(energyT); gs.compute(2); }
-        std::vector<std::vector<double>> eRef(allmols.size());
-        for (size_t k = 0; k < allmols.size(); k++)
+        std::vector<std::vector<std::vector<double>>> eRef(nrep, std::vector<std::vector<double>>(allmols.size()));
+        forEachReplica([&allmols, &eRef](size_t r)
         {
-            eRef[k] = sumElecTerms(&allmols[k]->conformationData(2)->energies);
-        }
+            for (size_t k = 0; k < allmols.size(); k++)
+            {
+                eRef[r][k] = sumElecTerms(&allmols[k]->conformationData(2)->energies);
+            }
+        });
         for (size_t im = 0; im < 2; im++)
         {
             if (im > 0)
@@ -1834,14 +1869,17 @@ void ForceComputer::computeRelaxedEnergiesGpu(MsgHandler                  *,
             const bool relaxMonomer[2] = { im == 0, im == 1 };
             { ScopedTimer rt(relaxT); size_t nf = 0; nShellIter_ += gs.relax(2, relaxMonomer, settings, &nf); nShellConvergeFailed_ += nf; }
             { ScopedTimer et(energyT); gs.compute(2, false); }
-            for (size_t k = 0; k < allmols.size(); k++)
+            forEachReplica([&allmols, &eRef, &eInduc2](size_t r)
             {
-                auto esum = sumElecTerms(&allmols[k]->conformationData(2)->energies);
-                for (size_t i = 0; i < eInduc2[k].size() && i < esum.size(); i++)
+                for (size_t k = 0; k < allmols.size(); k++)
                 {
-                    eInduc2[k][i] += esum[i] - eRef[k][i];
+                    auto esum = sumElecTerms(&allmols[k]->conformationData(2)->energies);
+                    for (size_t i = 0; i < eInduc2[r][k].size() && i < esum.size(); i++)
+                    {
+                        eInduc2[r][k][i] += esum[i] - eRef[r][k][i];
+                    }
                 }
-            }
+            });
         }
         gs.restoreDimers();
         if (restoreKept)
@@ -1861,7 +1899,10 @@ void ForceComputer::computeRelaxedEnergiesGpu(MsgHandler                  *,
     {
         gs.keepShells();
     }
-    postProcessRelaxedEnergies(allmols, false, doInduc2, separateInductionCorrection, eInduc2);
+    forEachReplica([&allmols, doInduc2, separateInductionCorrection, &eInduc2](size_t r)
+    {
+        postProcessRelaxedEnergies(allmols, false, doInduc2, separateInductionCorrection, eInduc2[r]);
+    });
     if (checkCharges)
     {
         auto dq = gs.chargeDifference();
@@ -1870,6 +1911,29 @@ void ForceComputer::computeRelaxedEnergiesGpu(MsgHandler                  *,
     }
     // The processor needs the charges too, for instance for the bounds
     gs.copyChargesToMolecules();
+}
+
+bool ForceComputer::computeRelaxedEnergiesReplicas(MsgHandler                          *msghandler,
+                                                   const ForceField                    *pd,
+                                                   const std::vector<ACTMol *>         &allmols,
+                                                   size_t                               nreplica,
+                                                   const std::function<void(size_t)> &stage,
+                                                   bool                                 separateInductionCorrection) const
+{
+    if (!prepareGpuResident(pd, allmols, nreplica))
+    {
+        return false;
+    }
+    computeRelaxedEnergiesGpu(msghandler, pd, allmols, true, separateInductionCorrection, false, &stage);
+    return true;
+}
+
+void ForceComputer::selectGpuReplica(size_t replica) const
+{
+    if (gpuSystem_)
+    {
+        gpuSystem_->selectReplica(replica);
+    }
 }
 
 void ForceComputer::computeRelaxedEnergies(MsgHandler                  *msghandler,

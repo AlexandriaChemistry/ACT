@@ -50,6 +50,13 @@ class ForceField;
 /*! \brief All topologies of the molecules of a process on the GPU
  * There is a block for each topology of each molecule: the monomers and,
  * for dimers, the dimer, as computeEnergies computes them.
+ *
+ * With several replicas, all blocks are there once for each replica, each
+ * with its own parameters, charges and shells, to compute the molecules
+ * for several sets of force field parameters at once: stageParameters
+ * takes the parameters of each replica, uploadParameters sends them all,
+ * and after computing, selectReplica puts the energies and charges of one
+ * replica in the molecules.
  */
 class GpuTrainingSystem
 {
@@ -67,17 +74,44 @@ public:
      *                             for the molecules that FragmentHandler::sqeOnGpu allows
      * \param[in] fc               To construct the virtual sites of the structures the
      *                             charges are generated for
+     * \param[in] nreplica         The number of replicas, at least 1
      * \return false if the GPU cannot compute these molecules, then nothing
      *         else may be called
      */
     bool prepare(const ForceField *pd, const std::vector<ACTMol *> &allmols, double maxShellDistance,
-                 bool charges, const ForceComputer *fc);
+                 bool charges, const ForceComputer *fc, size_t nreplica = 1);
+
+    //! \return the number of replicas, see prepare
+    size_t nreplica() const;
 
     /*! \brief Copy the parameters of the topologies to the GPU, and generate the charges there
+     * All replicas get the same parameters.
      * \param[in] pd The force field
      * \param[in] fc To construct the virtual sites of the structures the charges are generated for
      */
     void updateParameters(const ForceField *pd, const ForceComputer *fc);
+
+    /*! \brief Collect the parameters of one replica, for uploadParameters
+     * The parameters are those of the force field and of the topologies of
+     * the molecules, and the charges those of their atoms, now.
+     * \param[in] replica The replica
+     * \param[in] pd      The force field
+     * \param[in] fc      To construct the virtual sites of the structures the charges are generated for
+     */
+    void stageParameters(size_t replica, const ForceField *pd, const ForceComputer *fc);
+
+    /*! \brief Copy the parameters that stageParameters collected to the GPU,
+     * and generate the charges there
+     * \param[in] pd The force field, for the dielectric constant
+     */
+    void uploadParameters(const ForceField *pd);
+
+    /*! \brief Put the energies and the charges of a replica in the molecules
+     * The energies of the other replicas are kept here, compute stores
+     * the energies of each replica where they are.
+     * \param[in] replica The replica
+     */
+    void selectReplica(size_t replica);
 
     /*! \brief The largest difference between the charges on the GPU and those of the molecules
      * \return the difference and the charge, for ACT_GPU_RESIDENT_CHECK
@@ -85,7 +119,8 @@ public:
     std::pair<double, double> chargeDifference() const;
 
     /*! \brief Copy the charges generated on the GPU to the molecules and their fragments,
-     * for the processor, for instance for BoundsDevComputer
+     * for the processor, for instance for BoundsDevComputer, those of the
+     * replica of selectReplica
      */
     void copyChargesToMolecules();
 
