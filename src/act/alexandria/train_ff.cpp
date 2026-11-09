@@ -58,6 +58,7 @@
 #include "act/forcefield/forcefield.h"
 #include "act/forcefield/forcefield_tables.h"
 #include "act/forcefield/forcefield_xml.h"
+#include "act/gpu/gpu.h"
 #include "act/ga/penalizer.h"
 #include "act/molprop/molprop_util.h"
 #include "act/topology/actmol_low.h"
@@ -216,6 +217,15 @@ void OptACM::initForceComputer()
     forceComp_->init(bch_.shellToler(), bch_.shellMaxIter(), epsilonr);
     forceComp_->setKeepShells(bch_.shellKeep());
     forceComp_->setGpuResident(bch_.gpuResident());
+    if (bch_.gpuResident())
+    {
+        // Start the GPU now in all processes at once, not at the first
+        // evaluation. With many processes on one GPU this may take seconds,
+        // which is then not counted as part of an evaluation.
+        static const size_t timer = Timings::instance().index("GPU initialization");
+        ScopedTimer         scoped(timer);
+        (void) gpu::useGpu();
+    }
 }
 
 //! \todo rename function and make a coupling between targets from the command line
