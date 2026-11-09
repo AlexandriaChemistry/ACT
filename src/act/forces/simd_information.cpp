@@ -536,8 +536,12 @@ void writeCodeInformation(gmx::TextWriter *writer)
         }
         else if (!names.empty())
         {
-            writer->writeLine(gmx::formatString("                    this process uses GPU %d, the processes on a node are",
-                                                gpu::gpuIndex()));
+            auto chosen = gpu::gpuOfProcess();
+            writer->writeLine(chosen.empty() ?
+                              gmx::formatString("                    this process uses GPU %d, the processes on a node are",
+                                                gpu::gpuIndex()) :
+                              gmx::formatString("                    this process uses GPU %s, the processes on a node are",
+                                                chosen.c_str()));
             writer->writeLine("                    spread over its GPUs. It computes the pair potentials of");
             writer->writeLine("                    many structures at once and relaxes their shells, in single");
             writer->writeLine("                    precision with energies summed in double precision. Unless");

@@ -57,6 +57,15 @@ std::vector<std::string> noGpuReasons()
     return {};
 }
 
+void selectGpuOfProcess()
+{
+}
+
+std::string gpuOfProcess()
+{
+    return "";
+}
+
 int gpuIndex()
 {
     return -1;

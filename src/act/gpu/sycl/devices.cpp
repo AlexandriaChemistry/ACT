@@ -241,8 +241,10 @@ std::vector<DevicePeak> devicePeaks()
  */
 static int localRank()
 {
-    for (const char *name : { "SLURM_LOCALID", "OMPI_COMM_WORLD_LOCAL_RANK", "MPI_LOCALRANKID",
-                              "PMI_LOCAL_RANK", "MV2_COMM_WORLD_LOCAL_RANK" })
+    // Those of the MPI libraries first: mpirun in a Slurm job inherits the
+    // SLURM_LOCALID of the job script, which is then zero in all processes
+    for (const char *name : { "OMPI_COMM_WORLD_LOCAL_RANK", "MPI_LOCALRANKID", "PMI_LOCAL_RANK",
+                              "MV2_COMM_WORLD_LOCAL_RANK", "SLURM_LOCALID" })
     {
         const char *value = std::getenv(name);
         if (value && *value)
@@ -251,6 +253,67 @@ static int localRank()
         }
     }
     return 0;
+}
+
+//! The GPU of the node chosen by selectGpuOfProcess
+static std::string &chosenGpu()
+{
+    static std::string chosen;
+    return chosen;
+}
+
+void selectGpuOfProcess()
+{
+    int  rank   = localRank();
+    bool listed = false;
+    for (const char *name : { "CUDA_VISIBLE_DEVICES", "ROCR_VISIBLE_DEVICES", "HIP_VISIBLE_DEVICES" })
+    {
+        const char *value = std::getenv(name);
+        if (!value || !*value)
+        {
+            continue;
+        }
+        listed = true;
+        std::string              all(value);
+        std::vector<std::string> ids;
+        size_t                   start = 0;
+        while (start <= all.size())
+        {
+            size_t end = all.find(',', start);
+            end        = end == std::string::npos ? all.size() : end;
+            if (end > start)
+            {
+                ids.push_back(all.substr(start, end - start));
+            }
+            start = end + 1;
+        }
+        if (ids.size() > 1)
+        {
+            const std::string &id = ids[rank % ids.size()];
+            chosenGpu() = id + " of " + all;
+            setenv(name, id.c_str(), 1);
+        }
+    }
+    if (!listed)
+    {
+        // The NVIDIA GPUs of the node
+        int n = 0;
+        while (std::filesystem::exists("/dev/nvidia" + std::to_string(n)))
+        {
+            n++;
+        }
+        if (n > 1)
+        {
+            std::string id = std::to_string(rank % n);
+            chosenGpu()    = id + " of " + std::to_string(n);
+            setenv("CUDA_VISIBLE_DEVICES", id.c_str(), 1);
+        }
+    }
+}
+
+std::string gpuOfProcess()
+{
+    return chosenGpu();
 }
 
 int gpuIndex()

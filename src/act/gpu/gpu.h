@@ -84,10 +84,27 @@ struct DevicePeak
  */
 std::vector<DevicePeak> devicePeaks();
 
+/*! \brief Let this process see only the GPU of the node that it uses
+ * The processes on a node are spread over its GPUs by their number on the
+ * node, from the environment variables of the MPI libraries and Slurm.
+ * If CUDA_VISIBLE_DEVICES, ROCR_VISIBLE_DEVICES or HIP_VISIBLE_DEVICES
+ * lists several GPUs, as Slurm sets them, only that of this process is
+ * kept, and without such a list on a node with several NVIDIA GPUs,
+ * CUDA_VISIBLE_DEVICES is set to it. Otherwise, the GPU runtime makes a
+ * context on each GPU in each process, and the NVIDIA multi-process
+ * service takes only 48 processes per GPU. Must be called before anything
+ * else uses the GPU, at the start of main.
+ */
+void selectGpuOfProcess();
+
+//! \return the GPU of the node that selectGpuOfProcess chose, empty if it did not choose
+std::string gpuOfProcess();
+
 /*! \brief The GPU that this process uses
  * The processes on a node are spread over its GPUs: the number of the
- * process on the node, from the environment variables that Slurm and the
- * MPI libraries set, modulo the number of GPUs.
+ * process on the node, from the environment variables that the MPI
+ * libraries and Slurm set, modulo the number of GPUs. After
+ * selectGpuOfProcess, each process sees only its own.
  * \return the index in devices, -1 without GPU
  */
 int gpuIndex();
