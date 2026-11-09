@@ -38,6 +38,7 @@
 
 #include "act/alexandria/alex_modules.h"
 #include "act/basics/version.h"
+#include "act/gpu/gpu.h"
 #include "gromacs/commandline/cmdlineinit.h"
 #include "gromacs/commandline/cmdlinemodulemanager.h"
 #include "gromacs/gmxlib/network.h"
@@ -50,6 +51,8 @@
 int
 main(int argc, char *argv[])
 {
+    // Before anything uses the GPU, also before MPI
+    alexandria::gpu::selectGpuOfProcess();
     gmx::CommandLineProgramContext &context = gmx::initForCommandLine(&argc, &argv);
     try
     {
