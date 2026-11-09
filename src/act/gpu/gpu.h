@@ -748,6 +748,145 @@ void restoreCoordinates(System *system, size_t block);
  */
 void downloadBlock(System *system, size_t block, int64_t *x, float *f);
 
+//! How the energy of a type of a block is made from its energy arrays, see DeviationType
+enum DeviationKind : uint32_t
+{
+    //! One term of one energy array, DeviationType::source
+    deviationTerm     = 0,
+    //! The potential energy, the sum of all terms of all energy arrays in order
+    deviationEpot     = 1,
+    //! The exchange plus the van der Waals correction, DeviationType::source2
+    deviationExchange = 2,
+    //! Zero, the van der Waals correction once added to the exchange
+    deviationZero     = 3
+};
+
+//! What an energy type is for the deviations, flags of DeviationType::role
+enum DeviationRole : uint32_t
+{
+    //! An electrostatic term, of which the change by relaxing is induction
+    deviationElec                = 1,
+    //! The exchange
+    deviationExchangeRole        = 2,
+    //! An induction from a potential
+    deviationInduction           = 4,
+    //! An induction correction from a potential
+    deviationInductionCorrection = 8
+};
+
+//! An energy type of a block, see DeviationSystem
+struct DeviationType
+{
+    //! The interaction type, as an integer, increasing within a block
+    int32_t  type    = 0;
+    //! How it is made, DeviationKind
+    uint32_t kind    = deviationTerm;
+    //! Energy array times pairEnergyTerms plus term, -1 if none
+    int32_t  source  = -1;
+    //! For deviationExchange, the source of the van der Waals correction
+    int32_t  source2 = -1;
+    //! DeviationRole flags
+    uint32_t role    = 0;
+};
+
+//! A dimer of one replica with its reference data, see DeviationSystem
+struct DeviationDimer
+{
+    //! The blocks of the dimer and of its monomers, noBlock if none
+    uint32_t dimer      = 0;
+    uint32_t monomer[2] = { 0xffffffff, 0xffffffff };
+    //! The replica
+    uint32_t replica    = 0;
+    //! The conformations with a loss
+    uint32_t nconf      = 0;
+    //! For each type of the dimer the index of that type in each monomer, -1 if none, two per type
+    uint64_t matchOffset = 0;
+    //! The first reference conformation, see DeviationSystem::weights
+    uint64_t refOffset   = 0;
+};
+
+//! A topology of one replica with the reference potential energies, see DeviationSystem
+struct DeviationMonomer
+{
+    //! The block
+    uint32_t block     = 0;
+    //! The replica
+    uint32_t replica   = 0;
+    //! The conformations with a loss
+    uint32_t nconf     = 0;
+    //! The first reference conformation, see DeviationSystem::epotWeights
+    uint64_t refOffset = 0;
+};
+
+/*! \brief What computeDeviations needs, the energy types and the reference data
+ * As ForceEnergyDevComputer::calcDeviationCompact. The dimers and the
+ * monomers of each replica are in the order of the molecules.
+ */
+struct DeviationSystem
+{
+    //! The energy types of all blocks
+    const DeviationType    *types          = nullptr;
+    //! The first type of each block, and the number of types at the end
+    const uint32_t         *blockFirstType = nullptr;
+    //! The slot of each conformation of each block
+    const uint32_t         *slotOfConf     = nullptr;
+    //! The first conformation of each block in slotOfConf, and the number at the end
+    const uint64_t         *blockFirstConf = nullptr;
+    //! The dimers
+    const DeviationDimer   *dimers         = nullptr;
+    size_t                  ndimer         = 0;
+    //! The type matches of the dimers, see DeviationDimer::matchOffset
+    const int32_t          *matches        = nullptr;
+    size_t                  nmatch         = 0;
+    //! The targets, interaction types as integers
+    const int32_t          *targets        = nullptr;
+    size_t                  ntarget        = 0;
+    //! The interaction types of the sums and of the induction
+    int32_t                 allElecType    = 0;
+    int32_t                 exchIndType    = 0;
+    int32_t                 inductionType  = 0;
+    //! The weight of each reference conformation
+    const double           *weights        = nullptr;
+    size_t                  nweight        = 0;
+    //! The reference energy of each target of each conformation, at refOffset*ntarget + j*nconf + c
+    const double           *eqm            = nullptr;
+    //! Whether there is a reference energy, as eqm
+    const char             *have           = nullptr;
+    //! The topologies with the potential energy target, none if there is no such target
+    const DeviationMonomer *monomers       = nullptr;
+    size_t                  nmonomer       = 0;
+    //! Their weights, reference energies and whether there are those, per conformation
+    const double           *epotWeights    = nullptr;
+    const double           *epotEqm        = nullptr;
+    const char             *epotHave       = nullptr;
+    size_t                  nepot          = 0;
+    //! The number of replicas
+    size_t                  nreplica       = 1;
+    //! The loss function: 0 mean squared, 1 mean absolute, 2 Huber, 3 asinh
+    int                     lossFunction   = 0;
+};
+
+/*! \brief Copy what computeDeviations needs to the GPU, until the next call or destroySystem
+ * \param[in] system     The system
+ * \param[in] deviations The energy types and the reference data
+ */
+void createDeviations(System *system, const DeviationSystem &deviations);
+
+/*! \brief Keep the energies computed last on the GPU, for computeDeviations
+ * \param[in] system The system
+ * \param[in] use    The blocks computed last, see computeBlocksInPlace
+ * \param[in] before Whether these are the energies before relaxing, otherwise after
+ */
+void keepEnergies(System *system, const char *use, bool before);
+
+/*! \brief The deviations of the energies kept by keepEnergies, as ForceEnergyDevComputer::calcDeviationCompact
+ * \param[in]  system The system
+ * \param[out] sums   For each replica, for each target and then for the
+ *                    potential energy: the sum of the weights and that of
+ *                    the losses, 2*(ntarget + 1) values per replica
+ */
+void computeDeviations(System *system, double *sums);
+
 } // namespace gpu
 
 } // namespace alexandria

@@ -172,6 +172,18 @@ void downloadBlock(System *, size_t, int64_t *, float *)
 {
 }
 
+void createDeviations(System *, const DeviationSystem &)
+{
+}
+
+void keepEnergies(System *, const char *, bool)
+{
+}
+
+void computeDeviations(System *, double *)
+{
+}
+
 bool computePairBlocks(const PairBatchBlock *, size_t, bool)
 {
     return false;

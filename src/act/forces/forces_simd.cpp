@@ -4062,6 +4062,10 @@ bool GpuTrainingSystem::restoreShells(int) { return false; }
 void GpuTrainingSystem::constructVsites() {}
 void GpuTrainingSystem::setKeepEnergies(bool) {}
 bool GpuTrainingSystem::typeEnergies(const ACTMol *, int, std::vector<GpuTypeEnergies> *) const { return false; }
+bool GpuTrainingSystem::setDeviations(const GpuDeviationSetup &) { return false; }
+bool GpuTrainingSystem::deviationsReady() const { return false; }
+void GpuTrainingSystem::computeDeviations() {}
+bool GpuTrainingSystem::deviationSums(std::vector<std::pair<double, double>> *) const { return false; }
 void GpuTrainingSystem::compute(int, bool, bool) {}
 void GpuTrainingSystem::computeForces(int) {}
 bool GpuTrainingSystem::haveKeptShells() const { return false; }
@@ -4177,6 +4181,14 @@ public:
     std::vector<int> blockIndex;
     //! Whether to keep the energies as the GPU gives them, see setKeepEnergies
     bool             keepEnergies = false;
+    //! The deviations, see setDeviations: whether they are set, the setup, the number of targets and the results
+    bool                devReady = false;
+    GpuDeviationSetup   devSetup;
+    //! The inverse temperature and the version of the conformations of each reference, which change in place
+    std::vector<std::pair<double, size_t>> devRefState;
+    size_t              devTargets = 0;
+    std::vector<double> devSums;
+    bool                devComputed = false;
 
     //! Make blockIndex, after the blocks were made
     void indexBlocks()
@@ -4396,6 +4408,8 @@ bool GpuTrainingSystem::prepare(const ForceField *pd, const std::vector<ACTMol *
     im.acmCharges.clear();
     im.nacmAtomReplica = 0;
     im.chargesOf       = std::numeric_limits<size_t>::max();
+    im.devReady        = false;
+    im.devComputed     = false;
     im.mols  = allmols;
     im.nconf.clear();
     im.maxShellDistance2 = maxShellDistance*maxShellDistance;
@@ -4883,6 +4897,270 @@ bool GpuTrainingSystem::restoreShells(int what)
     return true;
 }
 
+bool GpuTrainingSystem::setDeviations(const GpuDeviationSetup &setup)
+{
+    auto &im = *impl_;
+    // The references are recomputed in place for another temperature or
+    // other conformations, see interactionReference in devcomputer.cpp
+    std::vector<std::pair<double, size_t>> refState;
+    for (const auto *refs : { &setup.interaction, &setup.epotReference })
+    {
+        for (const auto *ref : *refs)
+        {
+            refState.push_back(ref ? std::make_pair(ref->beta, ref->conformationVersion) : std::make_pair(0.0, size_t(0)));
+        }
+    }
+    if (im.devReady && refState == im.devRefState &&
+        setup.targets == im.devSetup.targets && setup.mols == im.devSetup.mols &&
+        setup.interaction == im.devSetup.interaction && setup.interactionConfs == im.devSetup.interactionConfs &&
+        setup.epot == im.devSetup.epot && setup.epotReference == im.devSetup.epotReference &&
+        setup.epotConfs == im.devSetup.epotConfs && setup.lossFunction == im.devSetup.lossFunction)
+    {
+        return true;
+    }
+    im.devReady    = false;
+    im.devComputed = false;
+    if (!im.system || setup.mols != std::vector<const ACTMol *>(im.mols.begin(), im.mols.end()) ||
+        setup.targets.size() > 8 || gpu::pairEnergyTerms != 3)
+    {
+        return false;
+    }
+    // The energy types of each block, as typeEnergies makes them
+    std::vector<gpu::DeviationType> types;
+    std::vector<uint32_t>           firstType;
+    std::vector<uint32_t>           slotOfConf;
+    std::vector<uint64_t>           firstConf;
+    for (const auto &bl : im.blocks)
+    {
+        std::map<InteractionType, gpu::DeviationType> bt;
+        auto &epot  = bt[InteractionType::EPOT];
+        epot.kind   = gpu::deviationEpot;
+        for (size_t e = 0; e < bl.desc.potentials.size(); e++)
+        {
+            const auto &itypes = energyTypes(bl.desc.potentials[e], bl.desc.itypes[e]);
+            for (size_t t = 0; t < itypes.size(); t++)
+            {
+                auto &dt  = bt[itypes[t]];
+                dt.kind   = gpu::deviationTerm;
+                dt.source = e*gpu::pairEnergyTerms + t;
+            }
+        }
+        auto vdw = bt.find(InteractionType::VDWCORRECTION);
+        if (vdw != bt.end())
+        {
+            auto ex    = bt.find(InteractionType::EXCHANGE);
+            int  exsrc = ex != bt.end() ? ex->second.source : -1;
+            auto &exch   = bt[InteractionType::EXCHANGE];
+            exch.kind    = gpu::deviationExchange;
+            exch.source  = exsrc;
+            exch.source2 = vdw->second.source;
+            vdw->second.kind = gpu::deviationZero;
+        }
+        if (bt.size() > 32)
+        {
+            return false;
+        }
+        firstType.push_back(types.size());
+        for (auto &t : bt)
+        {
+            t.second.type = static_cast<int32_t>(t.first);
+            switch (t.first)
+            {
+            case InteractionType::ELECTROSTATICS:
+            case InteractionType::POLARIZATION:
+            case InteractionType::CHARGETRANSFER:
+                t.second.role = gpu::deviationElec;
+                break;
+            case InteractionType::EXCHANGE:
+                t.second.role = gpu::deviationExchangeRole;
+                break;
+            case InteractionType::INDUCTION:
+                t.second.role = gpu::deviationInduction;
+                break;
+            case InteractionType::INDUCTIONCORRECTION:
+                t.second.role = gpu::deviationInductionCorrection;
+                break;
+            default:
+                t.second.role = 0;
+            }
+            types.push_back(t.second);
+        }
+        firstConf.push_back(slotOfConf.size());
+        for (auto s : bl.slotOfConf)
+        {
+            slotOfConf.push_back(s);
+        }
+    }
+    firstType.push_back(types.size());
+    firstConf.push_back(slotOfConf.size());
+    // The reference data of each molecule, the same for all replicas
+    size_t ntarget = setup.targets.size();
+    std::vector<double> weights, eqm, epotWeights, epotEqm;
+    std::vector<char>   have, epotHave;
+    std::vector<uint64_t> refOffset(im.mols.size(), 0), epotOffset(im.mols.size(), 0);
+    for (size_t k = 0; k < im.mols.size(); k++)
+    {
+        refOffset[k] = weights.size();
+        if (setup.interaction[k])
+        {
+            const auto &ref   = *setup.interaction[k];
+            size_t      nconf = setup.interactionConfs[k];
+            if (ref.weight.size() < nconf || ref.energy.size() != ntarget)
+            {
+                return false;
+            }
+            weights.insert(weights.end(), ref.weight.begin(), ref.weight.begin() + nconf);
+            eqm.resize(weights.size()*ntarget);
+            have.resize(weights.size()*ntarget);
+            for (size_t j = 0; j < ntarget; j++)
+            {
+                for (size_t c = 0; c < nconf; c++)
+                {
+                    eqm[refOffset[k]*ntarget + j*nconf + c]  = ref.energy[j][c];
+                    have[refOffset[k]*ntarget + j*nconf + c] = ref.have[j][c];
+                }
+            }
+        }
+        epotOffset[k] = epotWeights.size();
+        if (setup.epot && setup.epotReference[k])
+        {
+            const auto &ref   = *setup.epotReference[k];
+            size_t      nconf = setup.epotConfs[k];
+            if (ref.weight.size() < nconf || ref.energy.size() != 1)
+            {
+                return false;
+            }
+            epotWeights.insert(epotWeights.end(), ref.weight.begin(), ref.weight.begin() + nconf);
+            epotEqm.insert(epotEqm.end(), ref.energy[0].begin(), ref.energy[0].begin() + nconf);
+            epotHave.insert(epotHave.end(), ref.have[0].begin(), ref.have[0].begin() + nconf);
+        }
+    }
+    // The dimers and the topologies of the potential energy of each replica, in the order of the molecules
+    std::vector<gpu::DeviationDimer>   dimers;
+    std::vector<gpu::DeviationMonomer> monomers;
+    std::vector<int32_t>               matches;
+    for (size_t r = 0; r < im.nreplica; r++)
+    {
+        for (size_t k = 0; k < im.mols.size(); k++)
+        {
+            int db = im.find(k, 2, r);
+            if (setup.interaction[k] && db >= 0)
+            {
+                gpu::DeviationDimer dm;
+                dm.dimer       = db;
+                dm.replica     = r;
+                dm.nconf       = setup.interactionConfs[k];
+                dm.refOffset   = refOffset[k];
+                dm.matchOffset = matches.size();
+                for (int j = 0; j < 2; j++)
+                {
+                    int mb        = im.find(k, j, r);
+                    dm.monomer[j] = mb >= 0 ? static_cast<uint32_t>(mb) : gpu::noBlock;
+                }
+                for (uint32_t i = firstType[db]; i < firstType[db + 1]; i++)
+                {
+                    for (int j = 0; j < 2; j++)
+                    {
+                        int32_t m = -1;
+                        if (dm.monomer[j] != gpu::noBlock)
+                        {
+                            for (uint32_t i2 = firstType[dm.monomer[j]]; i2 < firstType[dm.monomer[j] + 1]; i2++)
+                            {
+                                if (types[i2].type == types[i].type)
+                                {
+                                    m = i2 - firstType[dm.monomer[j]];
+                                }
+                            }
+                        }
+                        matches.push_back(m);
+                    }
+                }
+                dimers.push_back(dm);
+            }
+            int mb = im.find(k, 0, r);
+            if (setup.epot && setup.epotReference[k] && mb >= 0)
+            {
+                gpu::DeviationMonomer mo;
+                mo.block     = mb;
+                mo.replica   = r;
+                mo.nconf     = setup.epotConfs[k];
+                mo.refOffset = epotOffset[k];
+                monomers.push_back(mo);
+            }
+        }
+    }
+    std::vector<int32_t> targets;
+    for (auto t : setup.targets)
+    {
+        targets.push_back(static_cast<int32_t>(t));
+    }
+    gpu::DeviationSystem d;
+    d.types          = types.data();
+    d.blockFirstType = firstType.data();
+    d.slotOfConf     = slotOfConf.data();
+    d.blockFirstConf = firstConf.data();
+    d.dimers         = dimers.data();
+    d.ndimer         = dimers.size();
+    d.matches        = matches.data();
+    d.nmatch         = matches.size();
+    d.targets        = targets.data();
+    d.ntarget        = targets.size();
+    d.allElecType    = static_cast<int32_t>(InteractionType::ALLELEC);
+    d.exchIndType    = static_cast<int32_t>(InteractionType::EXCHIND);
+    d.inductionType  = static_cast<int32_t>(InteractionType::INDUCTION);
+    d.weights        = weights.data();
+    d.nweight        = weights.size();
+    d.eqm            = eqm.data();
+    d.have           = have.data();
+    d.monomers       = monomers.data();
+    d.nmonomer       = monomers.size();
+    d.epotWeights    = epotWeights.data();
+    d.epotEqm        = epotEqm.data();
+    d.epotHave       = epotHave.data();
+    d.nepot          = epotWeights.size();
+    d.nreplica       = im.nreplica;
+    d.lossFunction   = setup.lossFunction;
+    gpu::createDeviations(im.system, d);
+    im.devSetup    = setup;
+    im.devRefState = std::move(refState);
+    im.devTargets = ntarget;
+    im.devReady   = true;
+    return true;
+}
+
+bool GpuTrainingSystem::deviationsReady() const
+{
+    return impl_->devReady;
+}
+
+void GpuTrainingSystem::computeDeviations()
+{
+    auto &im = *impl_;
+    if (!im.devReady)
+    {
+        return;
+    }
+    im.devSums.resize(2*im.nreplica*(im.devTargets + 1));
+    gpu::computeDeviations(im.system, im.devSums.data());
+    im.devComputed = true;
+}
+
+bool GpuTrainingSystem::deviationSums(std::vector<std::pair<double, double>> *sums) const
+{
+    const auto &im = *impl_;
+    sums->clear();
+    if (!im.devReady || !im.devComputed)
+    {
+        return false;
+    }
+    size_t n = im.devTargets + 1;
+    for (size_t j = 0; j < n; j++)
+    {
+        sums->push_back({ im.devSums[2*(im.resident*n + j)], im.devSums[2*(im.resident*n + j) + 1] });
+    }
+    return true;
+}
+
 void GpuTrainingSystem::setKeepEnergies(bool keep)
 {
     impl_->keepEnergies = keep;
@@ -4982,6 +5260,10 @@ void GpuTrainingSystem::compute(int what, bool forces, bool backup)
     auto  u  = im.use(what);
     std::vector<const double *> eptr(im.blocks.size(), nullptr);
     gpu::computeBlocksInPlace(im.system, u.data(), eptr.data(), forces);
+    if (im.devReady)
+    {
+        gpu::keepEnergies(im.system, u.data(), backup);
+    }
     for (size_t b = 0; b < im.blocks.size(); b++)
     {
         if (u[b] && eptr[b])

@@ -359,6 +359,29 @@ public:
                               std::map<eRMS, FittingTarget> *targets,
                               LossFunction                   lossFunction);
 
+    /*! \brief Let the GPU compute the deviations of the energy targets, as calcDeviationCompact
+     * In the evaluations of the molecules from now on, see
+     * ForceComputer::setGpuDeviations and calcDeviationGpu.
+     * \param[in]    forceComputer The force computer, with the molecules on the GPU
+     * \param[in]    actmols       The molecules
+     * \param[in]    targets       The fitting targets
+     * \param[in]    lossFunction  The loss function
+     * \return false if the GPU cannot compute them
+     */
+    bool setupGpuDeviations(const ForceComputer                 *forceComputer,
+                            const std::vector<ACTMol *>         &actmols,
+                            const std::map<eRMS, FittingTarget> &targets,
+                            LossFunction                         lossFunction);
+
+    /*! \brief Add the deviations that the GPU computed in the last evaluation to the targets
+     * As calcDeviationCompact, see setupGpuDeviations.
+     * \param[in]    forceComputer The force computer
+     * \param[inout] targets       The fitting targets
+     * \return false if there are none
+     */
+    bool calcDeviationGpu(const ForceComputer           *forceComputer,
+                          std::map<eRMS, FittingTarget> *targets) const;
+
     /*! \brief Whether calcDeviation computes the energies
      * \param[in] compute If false, the caller computed them as energyTask
      *                    says, with ForceComputer::computeRelaxedEnergies

@@ -89,6 +89,8 @@ private:
     std::vector<size_t>                            devTimers_;
     //! The evaluations compared and those that differed, see ACT_GPU_DEVIATION_CHECK in finishDeviation
     int                                            compactChecks_ = 0, compactDiffer_ = 0;
+    //! The same for the deviations computed on the GPU
+    int                                            gpuChecks_ = 0, gpuDiffer_ = 0;
     //! The loss function
     LossFunction lossFunction_;
 
@@ -253,6 +255,12 @@ public:
      * \param[in] dt         The state of prepareDeviation
      */
     void computeEnergies(MsgHandler *msghandler, const DeviationTask &dt);
+
+    /*! \brief For developers, let the GPU compute the energy deviations of these molecules
+     * With ACT_GPU_DEVIATION_CHECK, see ForceEnergyDevComputer::setupGpuDeviations.
+     * \param[in] dt The state of prepareDeviation
+     */
+    void setupGpuDeviations(const DeviationTask &dt);
 
     /*! \brief The last step of calcDeviation, from the energies computed
      * \param[in]    msghandler Message Handler
