@@ -1076,6 +1076,113 @@ static std::map<InteractionType, CompactTerm> compactInteraction(const std::vect
     return inter;
 }
 
+//! The energy targets of the deviations, as ForceEnergyDevComputer::calcDeviation selects them
+struct EnergyTargets
+{
+    //! Whether there are the potential energy and the force targets
+    bool                         epot   = false;
+    bool                         force2 = false;
+    //! The interaction energy targets and their interaction types
+    std::vector<eRMS>            rms;
+    std::vector<InteractionType> itypes;
+};
+
+/*! \brief Select the energy targets with a weight
+ * \param[in] targets The fitting targets
+ * \return the targets
+ */
+static EnergyTargets energyTargets(const std::map<eRMS, FittingTarget> &targets)
+{
+    EnergyTargets et;
+    auto te   = targets.find(eRMS::EPOT);
+    et.epot   = (te != targets.end() && te->second.weight() > 0);
+    auto tf   = targets.find(eRMS::Force2);
+    et.force2 = (tf != targets.end() && tf->second.weight() > 0);
+    const std::vector<std::pair<eRMS, InteractionType>> all = {
+        { eRMS::Interaction,    InteractionType::EPOT                },
+        { eRMS::Electrostatics, InteractionType::ELECTROSTATICS      },
+        { eRMS::Dispersion,     InteractionType::DISPERSION          },
+        { eRMS::Exchange,       InteractionType::EXCHANGE            },
+        { eRMS::Induction,      InteractionType::INDUCTION           },
+        { eRMS::DeltaHF,        InteractionType::INDUCTIONCORRECTION },
+        { eRMS::ExchInd,        InteractionType::EXCHIND             },
+        { eRMS::AllElec,        InteractionType::ALLELEC             }
+    };
+    for (const auto &r : all)
+    {
+        auto t = targets.find(r.first);
+        if (t != targets.end() && t->second.weight() > 0)
+        {
+            et.rms.push_back(r.first);
+            et.itypes.push_back(r.second);
+        }
+    }
+    return et;
+}
+
+bool ForceEnergyDevComputer::setupGpuDeviations(const ForceComputer                 *forceComputer,
+                                                const std::vector<ACTMol *>         &actmols,
+                                                const std::map<eRMS, FittingTarget> &targets,
+                                                LossFunction                         lossFunction)
+{
+    auto et = energyTargets(targets);
+    if (et.force2 || separateInductionCorrection_)
+    {
+        return false;
+    }
+    GpuDeviationSetup setup;
+    setup.targets      = et.itypes;
+    setup.epot         = et.epot;
+    setup.lossFunction = static_cast<int>(lossFunction);
+    double betaInter   = computeBeta(eRMS::Interaction);
+    double betaEpot    = computeBeta(eRMS::EPOT);
+    for (auto actmol : actmols)
+    {
+        setup.mols.push_back(actmol);
+        const DeviationReference *inter  = nullptr;
+        size_t                    nInter = 0;
+        if (!et.rms.empty() && actmol->isDimer())
+        {
+            auto *cdata = actmol->conformationData(2);
+            inter       = &interactionReference(cdata, et.itypes, betaInter, false);
+            nInter      = std::min(cdata->confs.size(), cdata->nconf());
+        }
+        setup.interaction.push_back(inter);
+        setup.interactionConfs.push_back(nInter);
+        const DeviationReference *epot  = nullptr;
+        size_t                    nEpot = 0;
+        if (et.epot)
+        {
+            auto *cdata = actmol->conformationData(0);
+            epot        = &epotReference(cdata, betaEpot);
+            nEpot       = std::min(cdata->confs.size(), cdata->nconf());
+        }
+        setup.epotReference.push_back(epot);
+        setup.epotConfs.push_back(nEpot);
+    }
+    return forceComputer->setGpuDeviations(setup);
+}
+
+bool ForceEnergyDevComputer::calcDeviationGpu(const ForceComputer           *forceComputer,
+                                              std::map<eRMS, FittingTarget> *targets) const
+{
+    std::vector<std::pair<double, double>> sums;
+    auto et = energyTargets(*targets);
+    if (!forceComputer->gpuDeviationSums(&sums) || sums.size() != et.rms.size() + 1)
+    {
+        return false;
+    }
+    for (size_t j = 0; j < et.rms.size(); j++)
+    {
+        targets->find(et.rms[j])->second.increase(sums[j].first, sums[j].second);
+    }
+    if (et.epot)
+    {
+        targets->find(eRMS::EPOT)->second.increase(sums.back().first, sums.back().second);
+    }
+    return true;
+}
+
 bool ForceEnergyDevComputer::calcDeviationCompact(const ForceComputer           *forceComputer,
                                                   const std::vector<ACTMol *>   &actmols,
                                                   std::map<eRMS, FittingTarget> *targets,

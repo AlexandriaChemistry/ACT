@@ -1887,6 +1887,8 @@ void ForceComputer::computeRelaxedEnergiesGpu(MsgHandler                        
     {
         gs.keepShells();
     }
+    // The deviations of the energies, if requested, see setGpuDeviations
+    gs.computeDeviations();
     forEachReplica([&allmols, doInduc2, separateInductionCorrection, &eInduc2](size_t r)
     {
         postProcessRelaxedEnergies(allmols, false, doInduc2, separateInductionCorrection, eInduc2[r]);

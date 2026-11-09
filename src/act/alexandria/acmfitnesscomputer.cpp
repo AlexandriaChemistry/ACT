@@ -61,10 +61,12 @@ bool ACMFitnessComputer::compactCheck()
 
 ACMFitnessComputer::~ACMFitnessComputer()
 {
-    if (compactChecks_ > 0)
+    if (compactChecks_ > 0 || gpuChecks_ > 0)
     {
         fprintf(stderr, "GPU deviation check: %d evaluations compared, %d differ\n",
                 compactChecks_, compactDiffer_);
+        fprintf(stderr, "GPU deviation check on the GPU: %d evaluations compared, %d differ\n",
+                gpuChecks_, gpuDiffer_);
     }
     for(auto &d : devComputers_)
     {
@@ -241,6 +243,7 @@ std::vector<double> ACMFitnessComputer::calcDeviations(MsgHandler               
             }
         };
         auto et = energyTask(first);
+        setupGpuDeviations(first);
         if (forceComp_->computeRelaxedEnergiesReplicas(msghandler, sii_->forcefield(), first.selected,
                                                        stage, et.separateInductionCorrection))
         {
@@ -490,9 +493,26 @@ ForceEnergyDevComputer::EnergyTask ACMFitnessComputer::energyTask(const Deviatio
     return ForceEnergyDevComputer::EnergyTask();
 }
 
+void ACMFitnessComputer::setupGpuDeviations(const DeviationTask &dt)
+{
+    if (!compactCheck() || !dt.targets)
+    {
+        return;
+    }
+    for (auto *mydev : devComputers_)
+    {
+        auto fe = dynamic_cast<ForceEnergyDevComputer *>(mydev);
+        if (fe)
+        {
+            (void) fe->setupGpuDeviations(forceComp_, dt.selected, *dt.targets, lossFunction_);
+        }
+    }
+}
+
 void ACMFitnessComputer::computeEnergies(MsgHandler *msghandler, const DeviationTask &dt)
 {
     auto et = energyTask(dt);
+    setupGpuDeviations(dt);
     if (et.compute)
     {
         forceComp_->computeRelaxedEnergies(msghandler, sii_->forcefield(), dt.selected, true,
@@ -529,9 +549,10 @@ double ACMFitnessComputer::finishDeviation(MsgHandler *msghandler, DeviationTask
         {
             fe->setComputeEnergies(false);
         }
-        // For developers, the same from the energies as the GPU gave them
-        std::map<eRMS, FittingTarget> compact;
-        bool                          haveCompact = false;
+        // For developers, the same from the energies as the GPU gave them,
+        // computed on the processor and on the GPU
+        std::map<eRMS, FittingTarget> compact, onGpu;
+        bool                          haveCompact = false, haveGpu = false;
         if (fe && compactCheck())
         {
             compact = *targets;
@@ -539,15 +560,17 @@ double ACMFitnessComputer::finishDeviation(MsgHandler *msghandler, DeviationTask
             {
                 t.second.reset();
             }
+            onGpu       = compact;
             haveCompact = fe->calcDeviationCompact(forceComp_, selected, &compact, lossFunction_);
+            haveGpu     = fe->calcDeviationGpu(forceComp_, &onGpu);
         }
         mydev->calcDeviation(msghandler, forceComp_, selected, targets,
                              sii_->forcefield(), lossFunction_);
-        if (haveCompact)
+        // Whether the energy targets are the same as those of calcDeviation
+        auto compare = [targets](const std::map<eRMS, FittingTarget> &other, const char *what, int *differ)
         {
-            compactChecks_ += 1;
             bool same = true;
-            for (const auto &t : compact)
+            for (const auto &t : other)
             {
                 if (t.first == eRMS::BOUNDS || t.first == eRMS::TOT)
                 {
@@ -557,15 +580,25 @@ double ACMFitnessComputer::finishDeviation(MsgHandler *msghandler, DeviationTask
                 if (r.chiSquared() != t.second.chiSquared() || r.totalWeight() != t.second.totalWeight())
                 {
                     same = false;
-                    if (compactDiffer_ < 10)
+                    if (*differ < 10)
                     {
-                        fprintf(stderr, "GPU deviation check: %s chi2 %.17g weight %.17g, compact %.17g %.17g\n",
-                                rmsName(t.first), r.chiSquared(), r.totalWeight(),
+                        fprintf(stderr, "GPU deviation check: %s chi2 %.17g weight %.17g, %s %.17g %.17g\n",
+                                rmsName(t.first), r.chiSquared(), r.totalWeight(), what,
                                 t.second.chiSquared(), t.second.totalWeight());
                     }
                 }
             }
-            compactDiffer_ += same ? 0 : 1;
+            *differ += same ? 0 : 1;
+        };
+        if (haveCompact)
+        {
+            compactChecks_ += 1;
+            compare(compact, "compact", &compactDiffer_);
+        }
+        if (haveGpu)
+        {
+            gpuChecks_ += 1;
+            compare(onGpu, "on the GPU", &gpuDiffer_);
         }
         if (fe)
         {

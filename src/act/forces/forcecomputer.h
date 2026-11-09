@@ -545,6 +545,26 @@ private:
         return gpuSystem_ && gpuSystem_->typeEnergies(mol, what, energies);
     }
 
+    /*! \brief Compute the deviations of these energy targets on the GPU, in the evaluations from now on
+     * See GpuTrainingSystem::setDeviations. The molecules must be on the GPU,
+     * see prepareGpuResident.
+     * \param[in] setup The targets
+     * \return false if the GPU cannot compute them
+     */
+    bool setGpuDeviations(const GpuDeviationSetup &setup) const
+    {
+        return gpuSystem_ && gpuSystem_->setDeviations(setup);
+    }
+
+    /*! \brief The deviations of the last evaluation on the GPU, see GpuTrainingSystem::deviationSums
+     * \param[out] sums The sums of the weights and of the losses of each target
+     * \return false if there are none
+     */
+    bool gpuDeviationSums(std::vector<std::pair<double, double>> *sums) const
+    {
+        return gpuSystem_ && gpuSystem_->deviationSums(sums);
+    }
+
     /*! \brief Make the system of these molecules on the GPU, see setGpuResident
      * If the GPU cannot compute them, the processor computes everything
      * from then on.

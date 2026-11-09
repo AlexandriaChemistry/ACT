@@ -47,6 +47,30 @@ namespace alexandria
 class ACTMol;
 class ForceComputer;
 class ForceField;
+struct DeviationReference;
+
+/*! \brief The energy targets that GpuTrainingSystem::computeDeviations computes
+ * As ForceEnergyDevComputer::calcDeviationCompact, with the induction
+ * correction not separate and without forces.
+ */
+struct GpuDeviationSetup
+{
+    //! The interaction energy targets of the dimers, in the order of the fitting targets
+    std::vector<InteractionType>            targets;
+    //! The molecules
+    std::vector<const ACTMol *>             mols;
+    //! The reference interaction energies of each molecule, nullptr if it is no dimer
+    std::vector<const DeviationReference *> interaction;
+    //! The number of conformations with a loss of each molecule
+    std::vector<size_t>                     interactionConfs;
+    //! Whether there is a potential energy target, of the first topology of each molecule
+    bool                                    epot = false;
+    //! The reference potential energies of each molecule, and the number of conformations with a loss
+    std::vector<const DeviationReference *> epotReference;
+    std::vector<size_t>                     epotConfs;
+    //! The loss function, as LossFunction
+    int                                     lossFunction = 0;
+};
 
 //! The energies of one interaction type of a topology, see GpuTrainingSystem::typeEnergies
 struct GpuTypeEnergies
@@ -168,6 +192,29 @@ public:
      * \return false if there are no energies of this topology
      */
     bool typeEnergies(const ACTMol *mol, int what, std::vector<GpuTypeEnergies> *energies) const;
+
+    /*! \brief Set what computeDeviations computes, the energy targets and their reference data
+     * The reference data are copied to the GPU, unless they are those of the
+     * last call. The energies are kept on the GPU from then on.
+     * \param[in] setup The targets
+     * \return false if the GPU cannot compute these, then computeDeviations does nothing
+     */
+    bool setDeviations(const GpuDeviationSetup &setup);
+
+    //! \return whether computeDeviations computes deviations, see setDeviations
+    bool deviationsReady() const;
+
+    /*! \brief Compute the deviations of the energies of all replicas on the GPU
+     * From the energies of the last calculations, as typeEnergies.
+     */
+    void computeDeviations();
+
+    /*! \brief The deviations of computeDeviations of the replica of selectReplica
+     * \param[out] sums For each target of setDeviations and then for the potential
+     *                  energy: the sum of the weights and that of the losses
+     * \return false if there are none
+     */
+    bool deviationSums(std::vector<std::pair<double, double>> *sums) const;
 
     /*! \brief Compute all interactions, the energies go to the conformation data
      * \param[in] what   0 or 1 for a monomer, -2 for both, 2 for the dimers, -1 for all

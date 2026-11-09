@@ -2176,8 +2176,9 @@ TEST_F(PropertyDevComputerTest, GpuReplicasAsSeparateEvaluations)
 }
 
 // Test: The deviations of the energies computed from the energies as the GPU
-// gives them, without the conformation data, are those of calcDeviation,
-// exactly, for all energy targets, loss functions and Boltzmann weighting.
+// gives them, without the conformation data, on the processor and on the
+// GPU, are those of calcDeviation, exactly, for all energy targets, loss
+// functions and Boltzmann weighting.
 TEST_F(PropertyDevComputerTest, CompactDeviationsAsCalcDeviation)
 {
     if (!gpu::useGpu())
@@ -2218,16 +2219,32 @@ TEST_F(PropertyDevComputerTest, CompactDeviationsAsCalcDeviation)
                 targets.find(erms)->second.setWeight(1);
             }
             auto compact = targets;
+            auto onGpu   = targets;
+            // The GPU computes the deviations with the energies
+            ASSERT_TRUE(computer.setupGpuDeviations(&forceComputer, pointers(&mols), targets, lf));
             MsgHandler mh;
             computer.calcDeviation(&mh, &forceComputer, pointers(&mols), &targets, &pd, lf);
             EXPECT_TRUE(mh.ok());
             ASSERT_TRUE(computer.calcDeviationCompact(&forceComputer, pointers(&mols), &compact, lf));
+            ASSERT_TRUE(computer.calcDeviationGpu(&forceComputer, &onGpu));
             for(auto erms : all)
             {
                 const auto &a = targets.find(erms)->second;
                 const auto &b = compact.find(erms)->second;
+                const auto &g = onGpu.find(erms)->second;
                 EXPECT_EQ(a.chiSquared(), b.chiSquared()) << rmsName(erms);
                 EXPECT_EQ(a.totalWeight(), b.totalWeight()) << rmsName(erms);
+                EXPECT_EQ(a.totalWeight(), g.totalWeight()) << rmsName(erms) << " on the GPU";
+                if (lf == LossFunction::MSE || lf == LossFunction::MAE)
+                {
+                    EXPECT_EQ(a.chiSquared(), g.chiSquared()) << rmsName(erms) << " on the GPU";
+                }
+                else
+                {
+                    // The square root and logarithm of the GPU may differ in the last bit
+                    EXPECT_NEAR(a.chiSquared(), g.chiSquared(), 1e-12*std::abs(a.chiSquared()))
+                        << rmsName(erms) << " on the GPU";
+                }
             }
             EXPECT_LT(0, targets.find(eRMS::AllElec)->second.totalWeight());
         }
