@@ -4043,8 +4043,12 @@ class GpuTrainingSystem::Impl
 
 GpuTrainingSystem::GpuTrainingSystem() : impl_(new Impl) {}
 GpuTrainingSystem::~GpuTrainingSystem() = default;
-bool GpuTrainingSystem::prepare(const ForceField *, const std::vector<ACTMol *> &, double, bool, const ForceComputer *) { return false; }
+bool GpuTrainingSystem::prepare(const ForceField *, const std::vector<ACTMol *> &, double, bool, const ForceComputer *, size_t) { return false; }
+size_t GpuTrainingSystem::nreplica() const { return 1; }
 void GpuTrainingSystem::updateParameters(const ForceField *, const ForceComputer *) {}
+void GpuTrainingSystem::stageParameters(size_t, const ForceField *, const ForceComputer *) {}
+void GpuTrainingSystem::uploadParameters(const ForceField *) {}
+void GpuTrainingSystem::selectReplica(size_t) {}
 std::pair<double, double> GpuTrainingSystem::chargeDifference() const { return { 0, 0 }; }
 void GpuTrainingSystem::copyChargesToMolecules() {}
 void GpuTrainingSystem::resetShells() {}
@@ -4070,6 +4074,8 @@ public:
         //! The molecule and 0, 1 for its monomers or 2 for the dimer
         size_t              mol  = 0;
         int                 what = 0;
+        //! The replica, see GpuTrainingSystem
+        size_t              replica = 0;
         GpuSystemTopology   desc;
         //! The shells, see relaxShellsGpu
         GpuRelaxMolecule    shells;
@@ -4098,6 +4104,28 @@ public:
     //! The values and coordinates last sent, and whether the charges were generated since copied
     std::vector<double>   acmLastValues, acmLastX;
     bool                  acmGenerated = false;
+    //! The number of replicas and of the blocks of each, those of a replica follow each other
+    size_t                nreplica = 1, nblockReplica = 0;
+    //! The replica whose energies are in the molecules, see selectReplica
+    size_t                resident = 0;
+    //! The energies of the replicas that are not in the molecules, three per molecule
+    std::vector<std::vector<ConformationEnergies>> replicaEnergies;
+    //! The parameters of each replica, see stageParameters
+    struct Staged
+    {
+        std::vector<float>            tables;
+        std::vector<double>           charges;
+        std::vector<gpu::MovingShell> shells;
+        std::vector<gpu::VsiteEntry>  vsites;
+        std::vector<double>           acmValues, acmX;
+    };
+    std::vector<Staged>   staged;
+    //! The charges generated on the GPU, of all replicas, see copyChargesToMolecules
+    std::vector<double>   acmCharges;
+    //! The number of atoms of the ACM molecules of a replica
+    size_t                nacmAtomReplica = 0;
+    //! The replica whose generated charges are in the molecules, none if larger than nreplica
+    size_t                chargesOf = std::numeric_limits<size_t>::max();
 
     //! The coordinates of the ACM particles, see gpu::AcmSystem::x
     std::vector<double> acmCoordinates(const ForceComputer *fc) const
@@ -4138,11 +4166,11 @@ public:
     }
 
     //! The index of the block of a molecule and topology, -1 if none
-    int find(size_t mol, int what) const
+    int find(size_t mol, int what, size_t replica = 0) const
     {
-        for (size_t b = 0; b < blocks.size(); b++)
+        for (size_t b = replica*nblockReplica; b < blocks.size(); b++)
         {
-            if (blocks[b].mol == mol && blocks[b].what == what)
+            if (blocks[b].mol == mol && blocks[b].what == what && blocks[b].replica == replica)
             {
                 return b;
             }
@@ -4181,11 +4209,50 @@ public:
         }
     }
 
+    //! The energies of a block, in its molecule if its replica is resident
+    ConformationEnergies &energiesOf(const Block &bl)
+    {
+        if (bl.replica == resident)
+        {
+            return mols[bl.mol]->conformationData(bl.what)->energies;
+        }
+        return replicaEnergies[bl.replica][3*bl.mol + bl.what];
+    }
+
+    //! The charges generated for a replica to the molecules and their fragments
+    void applyCharges(size_t replica)
+    {
+        if (acmCharges.empty() || chargesOf == replica)
+        {
+            return;
+        }
+        chargesOf    = replica;
+        size_t first = replica*nacmAtomReplica;
+        for (auto k : acmMols)
+        {
+            auto  molptr = mols[k];
+            auto  fh     = molptr->fragmentHandler();
+            auto &tops   = fh->topologiesPtr();
+            auto  atoms  = molptr->atoms();
+            for (size_t f = 0; f < tops.size(); f++)
+            {
+                auto   fatoms = tops[f].atomsPtr();
+                size_t start  = fh->atomStart()[f];
+                for (size_t a = 0; a < fatoms->size(); a++)
+                {
+                    (*fatoms)[a].setCharge(acmCharges[first + start + a]);
+                    (*atoms)[start + a].setCharge(acmCharges[first + start + a]);
+                }
+            }
+            first += atoms->size();
+        }
+    }
+
     //! The energies of a block to its conformation data, as lowComputeEnergiesT stores them
     void storeBlockEnergies(Block &bl)
     {
         auto       *cdata = mols[bl.mol]->conformationData(bl.what);
-        auto       &cener = cdata->energies;
+        auto       &cener = energiesOf(bl);
         size_t      nslot = bl.confOfSlot.size();
         size_t      st    = cdata->arrays.stride;
         cener.setNumberOfConformations(cdata->nconf());
@@ -4230,10 +4297,11 @@ GpuTrainingSystem::GpuTrainingSystem() : impl_(new Impl) {}
 GpuTrainingSystem::~GpuTrainingSystem() = default;
 
 bool GpuTrainingSystem::prepare(const ForceField *pd, const std::vector<ACTMol *> &allmols, double maxShellDistance,
-                                bool charges, const ForceComputer *fc)
+                                bool charges, const ForceComputer *fc, size_t nreplica)
 {
     auto &im = *impl_;
-    bool same = im.system && im.mols == allmols;
+    nreplica  = std::max<size_t>(1, nreplica);
+    bool same = im.system && im.mols == allmols && im.nreplica == nreplica;
     for (size_t k = 0; same && k < allmols.size(); k++)
     {
         same = im.nconf[k] == allmols[k]->conformationData(0)->nconf();
@@ -4257,6 +4325,16 @@ bool GpuTrainingSystem::prepare(const ForceField *pd, const std::vector<ACTMol *
     im.acmLastValues.clear();
     im.acmLastX.clear();
     im.acmGenerated = false;
+    // The energies of the other replicas are lost, those of the resident
+    // one are in the molecules
+    im.nreplica        = nreplica;
+    im.nblockReplica   = 0;
+    im.resident        = 0;
+    im.replicaEnergies.clear();
+    im.staged.assign(nreplica, Impl::Staged());
+    im.acmCharges.clear();
+    im.nacmAtomReplica = 0;
+    im.chargesOf       = std::numeric_limits<size_t>::max();
     im.mols  = allmols;
     im.nconf.clear();
     im.maxShellDistance2 = maxShellDistance*maxShellDistance;
@@ -4310,6 +4388,30 @@ bool GpuTrainingSystem::prepare(const ForceField *pd, const std::vector<ACTMol *
             im.blocks.push_back(std::move(bl));
         }
     }
+    // The blocks of the other replicas, which start with the energies that
+    // the molecules have now
+    im.nblockReplica = im.blocks.size();
+    for (size_t r = 1; r < nreplica; r++)
+    {
+        for (size_t b = 0; b < im.nblockReplica; b++)
+        {
+            Impl::Block copy = im.blocks[b];
+            copy.replica     = r;
+            im.blocks.push_back(std::move(copy));
+        }
+    }
+    im.replicaEnergies.resize(nreplica);
+    for (size_t r = 1; r < nreplica; r++)
+    {
+        for (auto molptr : allmols)
+        {
+            for (int what = 0; what < 3; what++)
+            {
+                im.replicaEnergies[r].push_back(molptr->conformationData(what)->energies);
+            }
+        }
+    }
+    im.replicaEnergies[0].resize(3*allmols.size());
     std::vector<gpu::SystemBlock> sblocks;
     for (auto &bl : im.blocks)
     {
@@ -4344,8 +4446,10 @@ bool GpuTrainingSystem::prepare(const ForceField *pd, const std::vector<ACTMol *
         std::vector<uint32_t>         ap, ab, pv, bv, fv;
         std::vector<double>           bfac;
         std::vector<int32_t>          sym;
+        // The values of each replica follow those of the previous one
         std::map<const ForceFieldParameter *, uint32_t> valueIndex;
-        auto valueOf = [&valueIndex, &im](const ForceFieldParameter *p)
+        size_t replica = 0;
+        auto valueOf = [&valueIndex, &im, &replica](const ForceFieldParameter *p)
         {
             if (!p)
             {
@@ -4357,10 +4461,16 @@ bool GpuTrainingSystem::prepare(const ForceField *pd, const std::vector<ACTMol *
                 vi = valueIndex.emplace(p, im.acmValues.size()).first;
                 im.acmValues.push_back(p);
             }
-            return vi->second;
+            return static_cast<uint32_t>(vi->second + replica*im.acmValues.size());
         };
-        for (size_t k = 0; k < allmols.size(); k++)
+        for (size_t kr = 0; kr < nreplica*allmols.size(); kr++)
         {
+            size_t      k      = kr % allmols.size();
+            replica            = kr / allmols.size();
+            if (replica > 0 && k == 0 && im.nacmAtomReplica == 0)
+            {
+                im.nacmAtomReplica = sym.size();
+            }
             auto        molptr = allmols[k];
             const auto *fh     = molptr->fragmentHandler();
             auto       &tops   = fh->topologies();
@@ -4373,11 +4483,11 @@ bool GpuTrainingSystem::prepare(const ForceField *pd, const std::vector<ACTMol *
             m.firstAtom     = sym.size();
             m.firstFragment = af.size();
             m.nfragment     = tops.size();
-            int dimer       = im.find(k, 2);
+            int dimer       = im.find(k, 2, replica);
             m.dimerBlock    = dimer >= 0 ? static_cast<uint32_t>(dimer) : gpu::noBlock;
             for (size_t f = 0; f < tops.size(); f++)
             {
-                int block = im.find(k, f);
+                int block = im.find(k, f, replica);
                 if (block < 0)
                 {
                     return false;
@@ -4431,10 +4541,22 @@ bool GpuTrainingSystem::prepare(const ForceField *pd, const std::vector<ACTMol *
                 sym.push_back(sc.size() == m.natom ? sc[i] : -1 - static_cast<int32_t>(i));
             }
             am.push_back(m);
-            im.acmMols.push_back(k);
-            im.acmVsites = im.acmVsites || molptr->topology()->hasVsites();
+            if (replica == 0)
+            {
+                im.acmMols.push_back(k);
+                im.acmVsites = im.acmVsites || molptr->topology()->hasVsites();
+            }
         }
-        auto xa = im.acmCoordinates(fc);
+        if (nreplica == 1)
+        {
+            im.nacmAtomReplica = sym.size();
+        }
+        std::vector<double> xa;
+        for (size_t r = 0; r < nreplica; r++)
+        {
+            auto xr = im.acmCoordinates(fc);
+            xa.insert(xa.end(), xr.begin(), xr.end());
+        }
         gpu::AcmSystem acm;
         acm.molecules      = am.data();
         acm.nmolecule      = am.size();
@@ -4450,7 +4572,7 @@ bool GpuTrainingSystem::prepare(const ForceField *pd, const std::vector<ACTMol *
         acm.bondFactors    = bfac.data();
         acm.fixedValues    = fv.data();
         acm.nfixed         = fv.size();
-        acm.nvalue         = im.acmValues.size();
+        acm.nvalue         = nreplica*im.acmValues.size();
         acm.symmetry       = sym.data();
         acm.gaussian       = pd->chargeDistribution() == ChargeDistributionType::Gaussian;
         acm.coulomb        = ONE_4PI_EPS0;
@@ -4460,18 +4582,34 @@ bool GpuTrainingSystem::prepare(const ForceField *pd, const std::vector<ACTMol *
     return im.system != nullptr;
 }
 
+size_t GpuTrainingSystem::nreplica() const
+{
+    return impl_->nreplica;
+}
+
 void GpuTrainingSystem::updateParameters(const ForceField *pd, const ForceComputer *fc)
+{
+    for (size_t r = 0; r < impl_->nreplica; r++)
+    {
+        stageParameters(r, pd, fc);
+    }
+    uploadParameters(pd);
+}
+
+void GpuTrainingSystem::stageParameters(size_t replica, const ForceField *pd, const ForceComputer *fc)
 {
     // Only the parameter tables, the charges, the shells and the virtual
     // sites are sent, the parameters of the interactions follow on the GPU
     auto  &im       = *impl_;
     double epsilonr = pd->epsilonr();
-    std::vector<float>            tables;
-    std::vector<double>           charges;
-    std::vector<gpu::MovingShell> shells;
-    std::vector<gpu::VsiteEntry>  vsites;
-    for (auto &bl : im.blocks)
+    auto  &st       = im.staged[replica];
+    st.tables.clear();
+    st.charges.clear();
+    st.shells.clear();
+    st.vsites.clear();
+    for (size_t b = replica*im.nblockReplica; b < (replica + 1)*im.nblockReplica; b++)
     {
+        auto           &bl     = im.blocks[b];
         auto           molptr = im.mols[bl.mol];
         auto          &tops   = molptr->fragmentHandler()->topologies();
         const Topology *top   = (bl.what < 2) ? &tops[bl.what] : molptr->topology();
@@ -4497,94 +4635,129 @@ void GpuTrainingSystem::updateParameters(const ForceField *pd, const ForceComput
                     }
                     std::copy(pe.p, pe.p + 8, p);
                 }
-                tables.insert(tables.end(), p, p + 8);
+                st.tables.insert(st.tables.end(), p, p + 8);
             }
         }
         for (const auto &a : atoms)
         {
-            charges.push_back(a.charge());
-            charges.push_back(a.chargeVS());
-            charges.push_back(a.zeta());
-            charges.push_back(a.zetaVS());
+            st.charges.push_back(a.charge());
+            st.charges.push_back(a.chargeVS());
+            st.charges.push_back(a.zeta());
+            st.charges.push_back(a.zetaVS());
         }
         // The force constants of the shells depend on their charges
         GpuRelaxMolecule sh;
         im.shellsOf(bl, &sh);
-        shells.insert(shells.end(), sh.movingShells.begin(), sh.movingShells.end());
+        st.shells.insert(st.shells.end(), sh.movingShells.begin(), sh.movingShells.end());
         for (size_t v = 0; v < d.vsiteEntries.size(); v++)
         {
             gpu::VsiteEntry ve;
             (void) gpuVsiteEntry(d.vsiteTypes[v], *d.vsiteEntries[v], &ve);
-            vsites.push_back(ve);
+            st.vsites.push_back(ve);
         }
     }
+    st.acmValues.clear();
+    st.acmX.clear();
     if (!im.acmMols.empty())
     {
         // Only the values of the parameters of the charge generation,
         // and the structures if the virtual sites may have moved
-        // The charges of the molecules are those generated last, see
-        // copyChargesToMolecules, unless the parameters changed
-        std::vector<double> values;
         for (auto p : im.acmValues)
         {
-            values.push_back(p->value());
-        }
-        if (values != im.acmLastValues)
-        {
-            gpu::updateAcm(im.system, values.data());
-            im.acmLastValues = std::move(values);
-            im.acmGenerated  = true;
+            st.acmValues.push_back(p->value());
         }
         if (im.acmVsites)
         {
-            auto xa = im.acmCoordinates(fc);
-            if (xa != im.acmLastX)
-            {
-                gpu::updateAcmCoordinates(im.system, xa.data());
-                im.acmLastX     = std::move(xa);
-                im.acmGenerated = true;
-            }
+            st.acmX = im.acmCoordinates(fc);
         }
     }
-    gpu::updateParameters(im.system, tables.data(), charges.data(), ONE_4PI_EPS0, epsilonr);
+}
+
+void GpuTrainingSystem::uploadParameters(const ForceField *pd)
+{
+    auto &im = *impl_;
+    // In the order of the blocks, those of a single replica as they are
+    Impl::Staged all;
+    for (size_t r = 0; r < im.nreplica && im.nreplica > 1; r++)
+    {
+        const auto &st = im.staged[r];
+        all.tables.insert(all.tables.end(), st.tables.begin(), st.tables.end());
+        all.charges.insert(all.charges.end(), st.charges.begin(), st.charges.end());
+        all.shells.insert(all.shells.end(), st.shells.begin(), st.shells.end());
+        all.vsites.insert(all.vsites.end(), st.vsites.begin(), st.vsites.end());
+        all.acmValues.insert(all.acmValues.end(), st.acmValues.begin(), st.acmValues.end());
+        all.acmX.insert(all.acmX.end(), st.acmX.begin(), st.acmX.end());
+    }
+    auto &up      = im.nreplica > 1 ? all : im.staged[0];
+    auto &tables  = up.tables;
+    auto &charges = up.charges;
+    auto &shells  = up.shells;
+    auto &vsites  = up.vsites;
+    auto &values  = up.acmValues;
+    auto &xa      = up.acmX;
+    if (!im.acmMols.empty())
+    {
+        // The charges of the molecules are those generated last, see
+        // copyChargesToMolecules, unless the parameters changed. With
+        // several replicas, the charges of the molecules are those of one
+        // replica, so the charges of all are generated each time.
+        bool every = im.nreplica > 1;
+        if (every || values != im.acmLastValues)
+        {
+            gpu::updateAcm(im.system, values.data());
+            im.acmLastValues = values;
+            im.acmGenerated  = true;
+        }
+        if (im.acmVsites && (every || xa != im.acmLastX))
+        {
+            gpu::updateAcmCoordinates(im.system, xa.data());
+            im.acmLastX     = xa;
+            im.acmGenerated = true;
+        }
+    }
+    gpu::updateParameters(im.system, tables.data(), charges.data(), ONE_4PI_EPS0, pd->epsilonr());
     gpu::updateMovingShells(im.system, shells.data(), shells.size());
     gpu::updateVsites(im.system, vsites.data(), vsites.size());
+}
+
+void GpuTrainingSystem::selectReplica(size_t replica)
+{
+    auto &im = *impl_;
+    if (replica != im.resident)
+    {
+        for (size_t k = 0; k < im.mols.size(); k++)
+        {
+            for (int what = 0; what < 3; what++)
+            {
+                auto &e = im.mols[k]->conformationData(what)->energies;
+                std::swap(e, im.replicaEnergies[im.resident][3*k + what]);
+                std::swap(e, im.replicaEnergies[replica][3*k + what]);
+            }
+        }
+        im.resident = replica;
+    }
+    // Only charges that were copied after they were generated, see copyChargesToMolecules
+    if (!im.acmGenerated)
+    {
+        im.applyCharges(replica);
+    }
 }
 
 void GpuTrainingSystem::copyChargesToMolecules()
 {
     auto &im = *impl_;
-    if (im.acmMols.empty() || !im.acmGenerated)
+    if (im.acmMols.empty())
     {
         return;
     }
-    im.acmGenerated = false;
-    size_t natom = 0;
-    for (auto k : im.acmMols)
+    if (im.acmGenerated)
     {
-        natom += im.mols[k]->atomsConst().size();
+        im.acmGenerated = false;
+        im.acmCharges.resize(im.nreplica*im.nacmAtomReplica);
+        gpu::downloadAcmCharges(im.system, im.acmCharges.data());
+        im.chargesOf    = std::numeric_limits<size_t>::max();
     }
-    std::vector<double> q(natom);
-    gpu::downloadAcmCharges(im.system, q.data());
-    size_t first = 0;
-    for (auto k : im.acmMols)
-    {
-        auto  molptr = im.mols[k];
-        auto  fh     = molptr->fragmentHandler();
-        auto &tops   = fh->topologiesPtr();
-        auto  atoms  = molptr->atoms();
-        for (size_t f = 0; f < tops.size(); f++)
-        {
-            auto   fatoms = tops[f].atomsPtr();
-            size_t start  = fh->atomStart()[f];
-            for (size_t a = 0; a < fatoms->size(); a++)
-            {
-                (*fatoms)[a].setCharge(q[first + start + a]);
-                (*atoms)[start + a].setCharge(q[first + start + a]);
-            }
-        }
-        first += atoms->size();
-    }
+    im.applyCharges(im.resident);
 }
 
 std::pair<double, double> GpuTrainingSystem::chargeDifference() const
@@ -4605,7 +4778,8 @@ std::pair<double, double> GpuTrainingSystem::chargeDifference() const
         auto           &tops   = molptr->fragmentHandler()->topologies();
         const Topology *top    = (bl.what < 2) ? &tops[bl.what] : molptr->topology();
         const auto     &atoms  = top->atoms();
-        for (size_t i = 0; i < atoms.size(); i++)
+        // The molecules have the charges of one replica
+        for (size_t i = 0; i < atoms.size() && bl.replica == im.resident; i++)
         {
             double d = std::abs(q[4*(off+i)] - atoms[i].charge());
             if (d > worst.first)
@@ -4729,7 +4903,7 @@ void GpuTrainingSystem::copyRelaxedMonomerShells()
         auto &astart = fh->atomStart();
         for (int f = 0; f < 2; f++)
         {
-            int mb = im.find(bl.mol, f);
+            int mb = im.find(bl.mol, f, bl.replica);
             if (mb < 0)
             {
                 continue;

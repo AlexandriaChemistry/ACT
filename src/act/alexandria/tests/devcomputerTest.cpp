@@ -45,6 +45,7 @@
 #include "act/forcefield/forcefield_xml.h"
 #include "act/forcefield/generate_dependent.h"
 #include "act/forces/conformationdata.h"
+#include "act/gpu/gpu.h"
 #include "act/qgen/qgen_resp.h"
 #include "act/qgen/qtype.h"
 #include "act/utility/timings.h"
@@ -2071,6 +2072,103 @@ TEST_F(PropertyDevComputerTest, ShellsRelaxedAfterChangingAlpha)
     for(size_t i = 0; i < fresh.size(); i++)
     {
         EXPECT_NEAR(fresh[i], after[i], 1e-10*(1 + std::abs(fresh[i]))) << i;
+    }
+}
+
+// Test: Several sets of parameters computed at once on the GPU, as replicas
+// of the molecules, give the same energies and charges as computing each set
+// by itself. The sets differ in the polarizabilities and in the
+// electronegativities, of which the GPU generates the charges with SQE.
+TEST_F(PropertyDevComputerTest, GpuReplicasAsSeparateEvaluations)
+{
+    if (!gpu::useGpu())
+    {
+        // Needs a GPU
+        fprintf(stderr, "GpuReplicasAsSeparateEvaluations: no GPU, nothing tested\n");
+        return;
+    }
+    ForceComputer forceComputer;
+    forceComputer.setGpuResident(true);
+    forceComputer.setKeepShells(false);
+    MsgHandler    msghandler;
+    ForceField    pd;
+    readForceField(fileManager().getInputFilePath("PG-pol-ions.xml"), &pd);
+    ASSERT_TRUE(pd.polarizable());
+    auto mpFile = fileManager().getInputFilePath("ion-water.xml");
+    auto mols   = prepareMolecules(&msghandler, &pd, &forceComputer, {}, mpFile);
+    ASSERT_FALSE(mols.empty());
+    // Needs a GPU that can compute these molecules, in single precision
+    if (!forceComputer.prepareGpuResident(&pd, pointers(&mols)))
+    {
+        fprintf(stderr, "GpuReplicasAsSeparateEvaluations: the GPU cannot compute these molecules, nothing tested\n");
+        return;
+    }
+    std::vector<std::pair<ForceFieldParameter *, double>> original;
+    for(auto itype : { InteractionType::POLARIZATION, InteractionType::ELECTRONEGATIVITYEQUALIZATION })
+    {
+        for(auto &param : *pd.findForces(itype)->parametersNoRemoval())
+        {
+            for(auto &pp : param.second)
+            {
+                if (pp.first == "alpha" || pp.first == "chi")
+                {
+                    original.push_back({ &pp.second, pp.second.value() });
+                }
+            }
+        }
+    }
+    ASSERT_FALSE(original.empty());
+    const std::vector<double> factors = { 1.0, 1.1, 0.95 };
+    std::function<void(size_t)> useSet = [&original, &factors, &pd, &mols](size_t s)
+    {
+        for(auto &o : original)
+        {
+            o.first->forceSetValue(o.second*factors[s]);
+        }
+        fillAll(&pd, &mols);
+    };
+    auto allCharges = [&mols]()
+    {
+        std::vector<double> q;
+        for(const auto &mol : mols)
+        {
+            for(const auto &a : mol.atomsConst())
+            {
+                q.push_back(a.charge());
+            }
+        }
+        return q;
+    };
+    // Each set by itself
+    std::vector<std::vector<double>> energies, charges;
+    for(size_t s = 0; s < factors.size(); s++)
+    {
+        useSet(s);
+        energies.push_back(computeAll(&forceComputer, &pd, &mols, false));
+        charges.push_back(allCharges());
+    }
+    EXPECT_NE(energies[0], energies[1]);
+    EXPECT_NE(energies[0], energies[2]);
+    // All at once
+    ASSERT_TRUE(forceComputer.computeRelaxedEnergiesReplicas(&msghandler, &pd, pointers(&mols),
+                                                             factors.size(), useSet, false));
+    EXPECT_TRUE(msghandler.ok());
+    for(size_t s = 0; s < factors.size(); s++)
+    {
+        SCOPED_TRACE(gmx::formatString("set %zu", s));
+        forceComputer.selectGpuReplica(s);
+        auto e = allEnergies(&mols);
+        auto q = allCharges();
+        ASSERT_EQ(energies[s].size(), e.size());
+        ASSERT_EQ(charges[s].size(), q.size());
+        for(size_t i = 0; i < e.size(); i++)
+        {
+            EXPECT_NEAR(energies[s][i], e[i], 1e-6*(1 + std::abs(e[i]))) << "energy " << i;
+        }
+        for(size_t i = 0; i < q.size(); i++)
+        {
+            EXPECT_NEAR(charges[s][i], q[i], 1e-7) << "charge " << i;
+        }
     }
 }
 
