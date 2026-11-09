@@ -566,8 +566,13 @@ else()
         foreach(_act_mpi_lib IN LISTS MPI_C_LIBRARIES)
             if(IS_ABSOLUTE "${_act_mpi_lib}")
                 get_filename_component(_act_mpi_dir "${_act_mpi_lib}" DIRECTORY)
-                list(APPEND CMAKE_INSTALL_RPATH "${_act_mpi_dir}")
-                list(APPEND CMAKE_BUILD_RPATH "${_act_mpi_dir}")
+                # Other directories are in the rpath already, and the linker
+                # of macOS warns about duplicates.
+                if(_act_mpi_dir IN_LIST CMAKE_C_IMPLICIT_LINK_DIRECTORIES OR
+                   _act_mpi_dir IN_LIST CMAKE_CXX_IMPLICIT_LINK_DIRECTORIES)
+                    list(APPEND CMAKE_INSTALL_RPATH "${_act_mpi_dir}")
+                    list(APPEND CMAKE_BUILD_RPATH "${_act_mpi_dir}")
+                endif()
             endif()
         endforeach()
         list(REMOVE_DUPLICATES CMAKE_INSTALL_RPATH)
