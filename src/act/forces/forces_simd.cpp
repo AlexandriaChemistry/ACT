@@ -1866,6 +1866,7 @@ static const std::vector<InteractionType> &energyTypes(Potential mypot, Interact
  * \param[inout] act        The energies, see ConformationEnergies::Term
  * \param[inout] before     The backups
  * \param[inout] have       Whether there is an energy
+ * \param[in]    backup     Whether the energy is its own backup as well, see backupEnergies
  */
 template<int nsum>
 static void storeTerm(size_t                     nslot,
@@ -1876,7 +1877,8 @@ static void storeTerm(size_t                     nslot,
                       bool                       add,
                       double       *gmx_restrict act,
                       double       *gmx_restrict before,
-                      char         *gmx_restrict have)
+                      char         *gmx_restrict have,
+                      bool                       backup = false)
 {
     const double *gmx_restrict e0 = e[0];
     const double *gmx_restrict e1 = e[nsum > 1 ? 1 : 0];
@@ -1891,9 +1893,10 @@ static void storeTerm(size_t                     nslot,
             ei = ei + e1[s] + e2[s];
         }
         double prev = (add && have[c]) ? act[c] : 0.0;
-        before[c]   = have[c] ? before[c] : 0.0;
+        double now  = prev + ei;
+        before[c]   = backup ? now : (have[c] ? before[c] : 0.0);
         have[c]     = 1;
-        act[c]      = prev + ei;
+        act[c]      = now;
     }
 }
 
@@ -1908,6 +1911,7 @@ static void storeTerm(size_t                     nslot,
  *                          at energies[i*confStride + k*termStride]
  * \param[in]    confStride Stride between slots
  * \param[in]    termStride Stride between energy terms
+ * \param[in]    backup     Whether the energies are their own backups as well
  */
 static void storeEnergies(Potential             mypot,
                           size_t                nslot,
@@ -1916,7 +1920,8 @@ static void storeEnergies(Potential             mypot,
                           ConformationEnergies *cener,
                           const double         *energies,
                           size_t                confStride,
-                          size_t                termStride)
+                          size_t                termStride,
+                          bool                  backup = false)
 {
     const auto &itypes = cener->termTypes() ? *cener->termTypes() : energyTypes(mypot);
     std::array<ConformationEnergies::Term, MAX_ENER> terms;
@@ -1932,10 +1937,10 @@ static void storeEnergies(Potential             mypot,
     {
         const double *ek[1] = { energies + k*termStride };
         storeTerm<1>(nslot, confs, slots, ek, confStride, accumulate,
-                     terms[k].act, terms[k].before, terms[k].have);
+                     terms[k].act, terms[k].before, terms[k].have, backup);
     }
     const double *eall[3] = { energies, energies + termStride, energies + 2*termStride };
-    storeTerm<3>(nslot, confs, slots, eall, confStride, true, eEpot.act, eEpot.before, eEpot.have);
+    storeTerm<3>(nslot, confs, slots, eall, confStride, true, eEpot.act, eEpot.before, eEpot.have, backup);
 }
 
 /*! \brief Whether a potential uses the charges of the atoms
@@ -4055,7 +4060,7 @@ void GpuTrainingSystem::resetShells() {}
 void GpuTrainingSystem::keepShells() {}
 bool GpuTrainingSystem::restoreShells(int) { return false; }
 void GpuTrainingSystem::constructVsites() {}
-void GpuTrainingSystem::compute(int, bool) {}
+void GpuTrainingSystem::compute(int, bool, bool) {}
 void GpuTrainingSystem::computeForces(int) {}
 bool GpuTrainingSystem::haveKeptShells() const { return false; }
 size_t GpuTrainingSystem::relax(int, const bool[2], const gpu::RelaxSettings &, size_t *nFailed) { *nFailed = 0; return 0; }
@@ -4083,8 +4088,7 @@ public:
         std::vector<uint32_t> resets;
         //! The conformation of each slot and the slot of each conformation
         std::vector<size_t> confOfSlot, slotOfConf;
-        //! The energies, see gpu::computeBlocks
-        std::vector<double> energies;
+
     };
     std::vector<Block>    blocks;
     gpu::System          *system = nullptr;
@@ -4165,17 +4169,33 @@ public:
         }
     }
 
+    //! The block of each molecule, topology and replica, see find
+    std::vector<int> blockIndex;
+
+    //! Make blockIndex, after the blocks were made
+    void indexBlocks()
+    {
+        blockIndex.assign(3*mols.size()*nreplica, -1);
+        for (size_t b = 0; b < blocks.size(); b++)
+        {
+            blockIndex[(blocks[b].replica*mols.size() + blocks[b].mol)*3 + blocks[b].what] = b;
+        }
+    }
+
     //! The index of the block of a molecule and topology, -1 if none
     int find(size_t mol, int what, size_t replica = 0) const
     {
-        for (size_t b = replica*nblockReplica; b < blocks.size(); b++)
+        return blockIndex[(replica*mols.size() + mol)*3 + what];
+    }
+
+    //! The energies of a molecule and topology of a replica, as energiesOf
+    ConformationEnergies &energiesOf(size_t mol, int what, size_t replica)
+    {
+        if (replica == resident)
         {
-            if (blocks[b].mol == mol && blocks[b].what == what && blocks[b].replica == replica)
-            {
-                return b;
-            }
+            return mols[mol]->conformationData(what)->energies;
         }
-        return -1;
+        return replicaEnergies[replica][3*mol + what];
     }
 
     //! Whether to use each block for what, -1 for all, -2 for the monomers
@@ -4248,8 +4268,13 @@ public:
         }
     }
 
-    //! The energies of a block to its conformation data, as lowComputeEnergiesT stores them
-    void storeBlockEnergies(Block &bl)
+    /*! \brief The energies of a block to its conformation data, as lowComputeEnergiesT stores them
+     * \param[in] bl       The block
+     * \param[in] energies Its energies, see gpu::computeBlocksInPlace
+     * \param[in] backup   Whether the energies are their backups as well, as
+     *                     backupEnergies makes them of the energies before relaxing
+     */
+    void storeBlockEnergies(const Block &bl, const double *energies, bool backup)
     {
         auto       *cdata = mols[bl.mol]->conformationData(bl.what);
         auto       &cener = energiesOf(bl);
@@ -4268,11 +4293,20 @@ public:
             eEpot.act[c]    = 0.0;
             eEpot.have[c]   = 1;
         }
+        // The types stored, which are their own backups with backup
+        std::vector<char> stored(static_cast<size_t>(InteractionType::EPOT) + 1, 0);
+        stored[static_cast<size_t>(InteractionType::EPOT)] = 1;
         for (size_t e = 0; e < bl.desc.potentials.size(); e++)
         {
-            cener.setTermTypes(&energyTypes(bl.desc.potentials[e], bl.desc.itypes[e]));
+            const auto &types = energyTypes(bl.desc.potentials[e], bl.desc.itypes[e]);
+            cener.setTermTypes(&types);
             storeEnergies(bl.desc.potentials[e], nslot, bl.confOfSlot.data(), slots.data(), &cener,
-                          bl.energies.data() + e*gpu::pairEnergyTerms*st, 1, st);
+                          energies + e*gpu::pairEnergyTerms*st, 1, st, backup);
+            for (auto t : types)
+            {
+                stored.resize(std::max(stored.size(), static_cast<size_t>(t) + 1), 0);
+                stored[static_cast<size_t>(t)] = 1;
+            }
         }
         cener.setTermTypes(nullptr);
         // The van der Waals correction is part of the exchange, as in lowComputeEnergiesT
@@ -4286,6 +4320,27 @@ public:
                 {
                     exchange.set(c, (exchange.has(c) ? exchange.act[c] : 0.0) + vdwCorr.act[c]);
                     vdwCorr.act[c] = 0;
+                }
+            }
+            // Backed up below, after the correction moved
+            for (auto t : { InteractionType::EXCHANGE, InteractionType::VDWCORRECTION })
+            {
+                if (static_cast<size_t>(t) < stored.size())
+                {
+                    stored[static_cast<size_t>(t)] = 0;
+                }
+            }
+        }
+        if (backup)
+        {
+            // The other types as backupEnergies backs them up
+            cener.setBackups(true);
+            for (auto t : cener.types())
+            {
+                if (static_cast<size_t>(t) >= stored.size() || !stored[static_cast<size_t>(t)])
+                {
+                    auto et = cener.find(t);
+                    std::copy(et.act, et.act + cener.nconf(), et.before);
                 }
             }
         }
@@ -4384,7 +4439,6 @@ bool GpuTrainingSystem::prepare(const ForceField *pd, const std::vector<ACTMol *
                 bl.confOfSlot[s] = ca.conformation(s);
                 bl.slotOfConf[ca.conformation(s)] = s;
             }
-            bl.energies.assign(bl.desc.potentials.size()*gpu::pairEnergyTerms*ca.stride, 0.0);
             im.blocks.push_back(std::move(bl));
         }
     }
@@ -4412,6 +4466,7 @@ bool GpuTrainingSystem::prepare(const ForceField *pd, const std::vector<ACTMol *
         }
     }
     im.replicaEnergies[0].resize(3*allmols.size());
+    im.indexBlocks();
     std::vector<gpu::SystemBlock> sblocks;
     for (auto &bl : im.blocks)
     {
@@ -4839,21 +4894,42 @@ bool GpuTrainingSystem::haveKeptShells() const
     return impl_->shellsKept;
 }
 
-void GpuTrainingSystem::compute(int what, bool forces)
+void GpuTrainingSystem::compute(int what, bool forces, bool backup)
 {
     auto &im = *impl_;
     auto  u  = im.use(what);
-    std::vector<double *> eptr;
-    for (auto &bl : im.blocks)
-    {
-        eptr.push_back(bl.energies.data());
-    }
-    gpu::computeBlocks(im.system, u.data(), eptr.data(), forces);
+    std::vector<const double *> eptr(im.blocks.size(), nullptr);
+    gpu::computeBlocksInPlace(im.system, u.data(), eptr.data(), forces);
     for (size_t b = 0; b < im.blocks.size(); b++)
     {
-        if (u[b])
+        if (u[b] && eptr[b])
         {
-            im.storeBlockEnergies(im.blocks[b]);
+            im.storeBlockEnergies(im.blocks[b], eptr[b], backup);
+        }
+    }
+    if (backup)
+    {
+        // The energies without a block are backed up as they are
+        for (size_t r = 0; r < im.nreplica; r++)
+        {
+            for (size_t k = 0; k < im.mols.size(); k++)
+            {
+                for (int w = 0; w < 3; w++)
+                {
+                    int b = im.find(k, w, r);
+                    if (b >= 0 && u[b] && eptr[b])
+                    {
+                        continue;
+                    }
+                    auto &cener = im.energiesOf(k, w, r);
+                    cener.setBackups(true);
+                    for (auto t : cener.types())
+                    {
+                        auto et = cener.find(t);
+                        std::copy(et.act, et.act + cener.nconf(), et.before);
+                    }
+                }
+            }
         }
     }
 }

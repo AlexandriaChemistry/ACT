@@ -669,6 +669,17 @@ void computeAll(System *system, double *const *energies);
  */
 void computeBlocks(System *system, const char *use, double *const *energies, bool forces = true);
 
+/*! \brief Compute all interactions of the slots of some blocks, with the energies where they arrive
+ * As computeBlocks with energies, without copying them: energies[b] points
+ * to those of block b, if it was computed, as they arrived on the host.
+ * They stay there until the next calculation of energies.
+ * \param[in]  system   The system
+ * \param[in]  use      Whether to compute each block
+ * \param[out] energies Where the energies of each block computed are, one pointer for each block
+ * \param[in]  forces   Whether to compute the forces too, which relaxBlocks needs
+ */
+void computeBlocksInPlace(System *system, const char *use, const double **energies, bool forces);
+
 /*! \brief Put the shells on their parents, see SystemBlock::shellParents
  * \param[in] system The system
  * \param[in] use    Whether to do this for each block

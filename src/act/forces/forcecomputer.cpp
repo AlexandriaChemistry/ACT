@@ -1807,20 +1807,8 @@ void ForceComputer::computeRelaxedEnergiesGpu(MsgHandler                        
     // With the shells of the previous evaluation, the forces with the shells
     // on their parents are not needed, only the energies, see setKeepShells
     const bool restoreKept = keepShells && gs.haveKeptShells();
-    { ScopedTimer et(energyT); gs.compute(-1, !restoreKept); }
-    // The energies before relaxing, to extract the induction
-    forEachReplica([&allmols](size_t)
-    {
-        for (auto molptr : allmols)
-        {
-            for (size_t what = 0; what < 3; what++)
-            {
-                auto &energies = molptr->conformationData(what)->energies;
-                energies.setBackups(true);
-                backupEnergies(&energies);
-            }
-        }
-    });
+    // The energies before relaxing are backed up, to extract the induction
+    { ScopedTimer et(energyT); gs.compute(-1, !restoreKept, true); }
     // The energies of computeForces are not needed, they are computed
     // after relaxing
     if (restoreKept && gs.restoreShells(-2))
