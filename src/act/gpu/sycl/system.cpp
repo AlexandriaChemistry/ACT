@@ -2112,12 +2112,16 @@ void relaxBlocks(System *sys, const char *use, const char *relax,
                 }
             });
         }
-        // The convergence and the step of each fragment in each slot
+        // The convergence and the step of each fragment in each slot, and
+        // which slots are done after this iteration in the history, which
+        // the host reads, without a copy per iteration
+        char *dH = dHist + nsubmitted*nslotAll;
         queue->parallel_for(sycl::range<1>(nslotAll), [=](sycl::id<1> id)
         {
             uint64_t s = id[0];
             if (dDone[s])
             {
+                dH[s] = dDone[s];
                 return;
             }
             uint32_t                 bi = findRangeFrom(dB, nb, s, &DeviceSystemBlock::slotOffset, dHS);
@@ -2211,8 +2215,8 @@ void relaxBlocks(System *sys, const char *use, const char *relax,
                 state.moving = 1;
             }
             dDone[s] = converged ? 1 : 0;
+            dH[s]    = dDone[s];
         });
-        queue->memcpy(dHist + nsubmitted*nslotAll, dDone, nslotAll);
         nsubmitted++;
         // Move the shells of the fragments that did not converge
         if (sys->nmovingPart_ > 0)
