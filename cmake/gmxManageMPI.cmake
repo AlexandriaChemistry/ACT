@@ -48,6 +48,56 @@ if(ACT_MPI)
 
   # If CMAKE_C_COMPILER is not a MPI wrapper. Try to find MPI using cmake module as fall-back.
   if(NOT MPI_FOUND)
+      # The compilers of conda link in a sysroot of their own, in which the
+      # linker also looks for the libraries that shared libraries depend on.
+      # The MPI library of a cluster depends on libraries of the system, such
+      # as those of the network and of CUDA, which the linker then does not
+      # find. For an MPI wrapper outside the installation of the compiler,
+      # their directories are given to the linker for this only: those of the
+      # system, the library directories of the wrapper, and those in
+      # LIBRARY_PATH and LD_LIBRARY_PATH, which the modules of clusters set.
+      execute_process(COMMAND ${CMAKE_C_COMPILER} -print-sysroot
+                      OUTPUT_VARIABLE _act_sysroot OUTPUT_STRIP_TRAILING_WHITESPACE ERROR_QUIET)
+      set(_act_mpicc "${MPI_C_COMPILER}")
+      if(NOT _act_mpicc)
+        find_program(_act_mpicc_found NAMES mpicc)
+        set(_act_mpicc "${_act_mpicc_found}")
+        unset(_act_mpicc_found CACHE)
+      endif()
+      get_filename_component(_act_cc_dir "${CMAKE_C_COMPILER}" DIRECTORY)
+      get_filename_component(_act_cc_prefix "${_act_cc_dir}" DIRECTORY)
+      if(_act_sysroot AND _act_mpicc AND NOT _act_mpicc MATCHES "^${_act_cc_prefix}/")
+        set(_act_dirs /usr/lib64 /usr/lib /lib64 /lib)
+        execute_process(COMMAND ${_act_mpicc} -show
+                        OUTPUT_VARIABLE _act_show OUTPUT_STRIP_TRAILING_WHITESPACE ERROR_QUIET)
+        if(NOT _act_show)
+          execute_process(COMMAND ${_act_mpicc} --showme:link
+                          OUTPUT_VARIABLE _act_show OUTPUT_STRIP_TRAILING_WHITESPACE ERROR_QUIET)
+        endif()
+        separate_arguments(_act_show UNIX_COMMAND "${_act_show}")
+        foreach(_act_arg IN LISTS _act_show)
+          if(_act_arg MATCHES "^-L(.+)$")
+            list(APPEND _act_dirs "${CMAKE_MATCH_1}")
+          endif()
+        endforeach()
+        foreach(_act_var LIBRARY_PATH LD_LIBRARY_PATH)
+          string(REPLACE ":" ";" _act_env "$ENV{${_act_var}}")
+          list(APPEND _act_dirs ${_act_env})
+        endforeach()
+        list(REMOVE_DUPLICATES _act_dirs)
+        set(_act_link "")
+        foreach(_act_dir IN LISTS _act_dirs)
+          if(_act_dir AND IS_DIRECTORY "${_act_dir}")
+            string(APPEND _act_link " -Wl,-rpath-link,${_act_dir}")
+          endif()
+        endforeach()
+        if(_act_link)
+          message(STATUS "MPI from ${_act_mpicc}, outside ${_act_cc_prefix}: its dependencies are looked for in the directories of the system and of the MPI library")
+          string(APPEND CMAKE_EXE_LINKER_FLAGS "${_act_link}")
+          string(APPEND CMAKE_SHARED_LINKER_FLAGS "${_act_link}")
+          string(APPEND CMAKE_MODULE_LINKER_FLAGS "${_act_link}")
+        endif()
+      endif()
       find_package(MPI COMPONENTS C)
       if(MPI_C_FOUND)
         # The imported target provides the flags and include directories

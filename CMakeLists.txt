@@ -558,6 +558,21 @@ else()
     endif()
     set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
     set(CMAKE_MACOSX_RPATH 1)
+    # The directories of the MPI libraries explicitly, in the build tree and
+    # installed: those in implicit link directories, such as LIBRARY_PATH
+    # which modules of clusters set, are left out of the link path above, but
+    # are not found at run time without LD_LIBRARY_PATH.
+    if(ACT_MPI AND MPI_C_LIBRARIES)
+        foreach(_act_mpi_lib IN LISTS MPI_C_LIBRARIES)
+            if(IS_ABSOLUTE "${_act_mpi_lib}")
+                get_filename_component(_act_mpi_dir "${_act_mpi_lib}" DIRECTORY)
+                list(APPEND CMAKE_INSTALL_RPATH "${_act_mpi_dir}")
+                list(APPEND CMAKE_BUILD_RPATH "${_act_mpi_dir}")
+            endif()
+        endforeach()
+        list(REMOVE_DUPLICATES CMAKE_INSTALL_RPATH)
+        list(REMOVE_DUPLICATES CMAKE_BUILD_RPATH)
+    endif()
 endif()
 
 #COPYING file: Only necessary for binary distributions.
