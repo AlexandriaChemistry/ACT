@@ -884,6 +884,313 @@ void ForceEnergyDevComputer::calcDeviation(MsgHandler                     *msgha
     }
 }
 
+//! The energies of one interaction type of all conformations, as ConformationEnergies::Term
+struct CompactTerm
+{
+    //! The energies
+    std::vector<double> act;
+    //! The backups
+    std::vector<double> before;
+    //! Whether there is an energy
+    std::vector<char>   have;
+};
+
+/*! \brief The interaction energies of a dimer as postProcessRelaxedEnergies makes them
+ * From the energies of the topologies as the GPU gives them: the monomers
+ * are subtracted from the dimer, then the induction and the sums are
+ * computed and the induction correction of a potential is moved to the
+ * induction, in the same order of operations as subtractMonomers,
+ * calcInduction, potentialCorrection and addCorrection in forcecomputer.cpp.
+ * The induction correction is not separate.
+ * \param[in]  dimer    The energies of the dimer, in increasing order of type
+ * \param[in]  monomers The energies of the monomers
+ * \return the energies of each type
+ */
+static std::map<InteractionType, CompactTerm> compactInteraction(const std::vector<GpuTypeEnergies> &dimer,
+                                                                 const std::vector<GpuTypeEnergies>  monomers[2])
+{
+    std::map<InteractionType, CompactTerm> inter;
+    size_t nconf = dimer.empty() ? 0 : dimer[0].act.size();
+    // subtractMonomers
+    for (const auto &d : dimer)
+    {
+        auto &term = inter[d.type];
+        term.act    = d.act;
+        term.before = d.before;
+        term.have.assign(nconf, 1);
+        const GpuTypeEnergies *em[2] = { nullptr, nullptr };
+        for (int j = 0; j < 2; j++)
+        {
+            for (const auto &m : monomers[j])
+            {
+                if (m.type == d.type)
+                {
+                    em[j] = &m;
+                }
+            }
+        }
+        for (size_t c = 0; c < nconf; c++)
+        {
+            double edim = term.act[c];
+            double edb4 = term.before[c];
+            for (int j = 0; j < 2; j++)
+            {
+                if (em[j] && c < em[j]->act.size())
+                {
+                    edim -= em[j]->act[c];
+                }
+            }
+            for (int j = 0; j < 2; j++)
+            {
+                if (em[j] && c < em[j]->act.size())
+                {
+                    edb4 -= em[j]->before[c];
+                }
+            }
+            term.act[c]    = edim;
+            term.before[c] = edb4;
+        }
+    }
+    // calcInduction, the terms in increasing order of type
+    auto isElec = [](InteractionType t)
+    {
+        return (InteractionType::ELECTROSTATICS == t || InteractionType::POLARIZATION == t ||
+                InteractionType::CHARGETRANSFER == t);
+    };
+    std::vector<std::pair<InteractionType, CompactTerm *>> terms;
+    for (auto &t : inter)
+    {
+        if (isElec(t.first) || InteractionType::EXCHANGE == t.first)
+        {
+            terms.push_back({ t.first, &t.second });
+        }
+    }
+    bool         haveInductionTerm = inter.count(InteractionType::INDUCTION) > 0;
+    CompactTerm  induction;
+    if (haveInductionTerm)
+    {
+        induction = inter[InteractionType::INDUCTION];
+    }
+    CompactTerm allElec, exchInd;
+    for (auto *sum : { &allElec, &exchInd })
+    {
+        sum->act.assign(nconf, 0.0);
+        sum->before.assign(nconf, 0.0);
+        sum->have.assign(nconf, 1);
+    }
+    for (size_t c = 0; c < nconf; c++)
+    {
+        bool   haveInduction = false;
+        double eInduction    = 0;
+        double eAllElec      = 0;
+        double eExchInd      = 0;
+        for (auto &tt : terms)
+        {
+            auto &et = *tt.second;
+            if (isElec(tt.first))
+            {
+                if (et.before[c] != et.act[c])
+                {
+                    eInduction   += et.act[c] - et.before[c];
+                    et.act[c]     = et.before[c];
+                    et.before[c]  = 0;
+                    haveInduction = true;
+                }
+                eAllElec += et.act[c];
+            }
+            else
+            {
+                eExchInd += et.act[c];
+            }
+        }
+        if (haveInduction)
+        {
+            if (!haveInductionTerm)
+            {
+                induction.act.assign(nconf, 0.0);
+                induction.before.assign(nconf, 0.0);
+                induction.have.assign(nconf, 0);
+                haveInductionTerm = true;
+            }
+            if (!induction.have[c])
+            {
+                induction.before[c] = 0;
+                induction.have[c]    = 1;
+            }
+            induction.act[c] = eInduction;
+            eAllElec        += eInduction;
+            eExchInd        += eInduction;
+        }
+        else if (haveInductionTerm && induction.have[c])
+        {
+            eExchInd += induction.act[c];
+        }
+        allElec.act[c] = eAllElec;
+        exchInd.act[c] = eExchInd;
+    }
+    // potentialCorrection and addCorrection, to the induction
+    auto icorr = inter.find(InteractionType::INDUCTIONCORRECTION);
+    if (icorr != inter.end())
+    {
+        std::vector<double> correction(nconf, 0.0);
+        for (size_t c = 0; c < nconf; c++)
+        {
+            if (icorr->second.have[c])
+            {
+                correction[c] = icorr->second.act[c];
+            }
+        }
+        for (size_t c = 0; c < nconf; c++)
+        {
+            allElec.act[c] += correction[c];
+            exchInd.act[c] += correction[c];
+        }
+        if (!haveInductionTerm)
+        {
+            induction.act.assign(nconf, 0.0);
+            induction.before.assign(nconf, 0.0);
+            induction.have.assign(nconf, 0);
+            haveInductionTerm = true;
+        }
+        for (size_t c = 0; c < nconf; c++)
+        {
+            if (icorr->second.have[c])
+            {
+                double e = (induction.have[c] ? induction.act[c] : 0.0) + correction[c];
+                if (!induction.have[c])
+                {
+                    induction.before[c] = 0;
+                    induction.have[c]    = 1;
+                }
+                induction.act[c]        = e;
+                icorr->second.have[c]   = 0;
+            }
+        }
+    }
+    if (haveInductionTerm)
+    {
+        inter[InteractionType::INDUCTION] = std::move(induction);
+    }
+    inter[InteractionType::ALLELEC] = std::move(allElec);
+    inter[InteractionType::EXCHIND] = std::move(exchInd);
+    return inter;
+}
+
+bool ForceEnergyDevComputer::calcDeviationCompact(const ForceComputer           *forceComputer,
+                                                  const std::vector<ACTMol *>   &actmols,
+                                                  std::map<eRMS, FittingTarget> *targets,
+                                                  LossFunction                   lossFunction)
+{
+    // The same targets as calcDeviation
+    auto te       = targets->find(eRMS::EPOT);
+    bool doEpot   = (te != targets->end() && te->second.weight() > 0);
+    auto tf       = targets->find(eRMS::Force2);
+    bool doForce2 = (tf != targets->end() && tf->second.weight() > 0);
+    struct RmsInter
+    {
+        eRMS            rms;
+        InteractionType itype;
+    };
+    std::vector<RmsInter> rmsE = {
+        { eRMS::Interaction,    InteractionType::EPOT                },
+        { eRMS::Electrostatics, InteractionType::ELECTROSTATICS      },
+        { eRMS::Dispersion,     InteractionType::DISPERSION          },
+        { eRMS::Exchange,       InteractionType::EXCHANGE            },
+        { eRMS::Induction,      InteractionType::INDUCTION           },
+        { eRMS::DeltaHF,        InteractionType::INDUCTIONCORRECTION },
+        { eRMS::ExchInd,        InteractionType::EXCHIND             },
+        { eRMS::AllElec,        InteractionType::ALLELEC             }
+    };
+    rmsE.erase(std::remove_if(rmsE.begin(), rmsE.end(),
+                              [targets](const RmsInter &r)
+                              {
+                                  auto ttt = targets->find(r.rms);
+                                  return ttt == targets->end() || ttt->second.weight() <= 0;
+                              }), rmsE.end());
+    bool doInter = !rmsE.empty();
+    // The separate induction correction needs more calculations, see
+    // ForceComputer::computeRelaxedEnergies, and the forces are not kept
+    if (doForce2 || separateInductionCorrection_)
+    {
+        return false;
+    }
+    std::vector<InteractionType> itypes;
+    for (const auto &r : rmsE)
+    {
+        itypes.push_back(r.itype);
+    }
+    for (auto actmol : actmols)
+    {
+        if (doInter)
+        {
+            std::vector<double> weight(rmsE.size(), 0.0), losses(rmsE.size(), 0.0);
+            double              beta  = computeBeta(eRMS::Interaction);
+            auto               *cdata = actmol->conformationData(2);
+            if (actmol->isDimer())
+            {
+                std::vector<GpuTypeEnergies> dimer, monomers[2];
+                if (!forceComputer->gpuTypeEnergies(actmol, 2, &dimer))
+                {
+                    return false;
+                }
+                for (int j = 0; j < 2; j++)
+                {
+                    (void) forceComputer->gpuTypeEnergies(actmol, j, &monomers[j]);
+                }
+                auto        inter = compactInteraction(dimer, monomers);
+                const auto &ref   = interactionReference(cdata, itypes, beta, false);
+                size_t      nconf = std::min(cdata->confs.size(), dimer.empty() ? 0 : dimer[0].act.size());
+                for (size_t j = 0; j < rmsE.size(); j++)
+                {
+                    auto eact = inter.find(rmsE[j].itype);
+                    if (eact != inter.end())
+                    {
+                        addLosses(lossFunction, nconf, ref.weight.data(), ref.energy[j].data(),
+                                  ref.have[j].data(), eact->second.act.data(), eact->second.have.data(),
+                                  &weight[j], &losses[j]);
+                    }
+                }
+            }
+            for (size_t j = 0; j < rmsE.size(); j++)
+            {
+                targets->find(rmsE[j].rms)->second.increase(weight[j], losses[j]);
+            }
+        }
+        if (doEpot)
+        {
+            std::vector<GpuTypeEnergies> monomer;
+            if (!forceComputer->gpuTypeEnergies(actmol, 0, &monomer))
+            {
+                return false;
+            }
+            const GpuTypeEnergies *epot = nullptr;
+            for (const auto &m : monomer)
+            {
+                if (m.type == InteractionType::EPOT)
+                {
+                    epot = &m;
+                }
+            }
+            double      beta  = computeBeta(eRMS::EPOT);
+            auto       *cdata = actmol->conformationData(0);
+            const auto &ref   = epotReference(cdata, beta);
+            const auto &eqm   = ref.energy[0];
+            const auto &have  = ref.have[0];
+            const auto &w     = ref.weight;
+            size_t      nconf = std::min(cdata->confs.size(), epot ? epot->act.size() : 0);
+            for (size_t i = 0; i < nconf; i++)
+            {
+                if (have[i] && std::isfinite(epot->act[i]))
+                {
+                    double myloss = w[i] * loss(lossFunction, 1, eqm[i]-epot->act[i]);
+                    te->second.increase(w[i], myloss);
+                }
+            }
+        }
+    }
+    return true;
+}
+
 /* * * * * * * * * * * * * * * * * * * * * *
 * END: ForceEnergyDevComputer              *
 * * * * * * * * * * * * * * * * * * * * * */

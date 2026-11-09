@@ -35,6 +35,8 @@
 
 #include "acmfitnesscomputer.h"
 
+#include <cstdio>
+#include <cstdlib>
 #include <functional>
 #include <limits>
 #include <set>
@@ -51,8 +53,19 @@ namespace alexandria
 /* * * * * * * * * * * * * * * * * * * *
 * BEGIN: ACMFitnessComputer            *
 * * * * * * * * * * * * * * * * * * * */
+bool ACMFitnessComputer::compactCheck()
+{
+    static const bool check = std::getenv("ACT_GPU_DEVIATION_CHECK") != nullptr;
+    return check;
+}
+
 ACMFitnessComputer::~ACMFitnessComputer()
 {
+    if (compactChecks_ > 0)
+    {
+        fprintf(stderr, "GPU deviation check: %d evaluations compared, %d differ\n",
+                compactChecks_, compactDiffer_);
+    }
     for(auto &d : devComputers_)
     {
         delete d;
@@ -516,8 +529,44 @@ double ACMFitnessComputer::finishDeviation(MsgHandler *msghandler, DeviationTask
         {
             fe->setComputeEnergies(false);
         }
+        // For developers, the same from the energies as the GPU gave them
+        std::map<eRMS, FittingTarget> compact;
+        bool                          haveCompact = false;
+        if (fe && compactCheck())
+        {
+            compact = *targets;
+            for (auto &t : compact)
+            {
+                t.second.reset();
+            }
+            haveCompact = fe->calcDeviationCompact(forceComp_, selected, &compact, lossFunction_);
+        }
         mydev->calcDeviation(msghandler, forceComp_, selected, targets,
                              sii_->forcefield(), lossFunction_);
+        if (haveCompact)
+        {
+            compactChecks_ += 1;
+            bool same = true;
+            for (const auto &t : compact)
+            {
+                if (t.first == eRMS::BOUNDS || t.first == eRMS::TOT)
+                {
+                    continue;
+                }
+                const auto &r = targets->find(t.first)->second;
+                if (r.chiSquared() != t.second.chiSquared() || r.totalWeight() != t.second.totalWeight())
+                {
+                    same = false;
+                    if (compactDiffer_ < 10)
+                    {
+                        fprintf(stderr, "GPU deviation check: %s chi2 %.17g weight %.17g, compact %.17g %.17g\n",
+                                rmsName(t.first), r.chiSquared(), r.totalWeight(),
+                                t.second.chiSquared(), t.second.totalWeight());
+                    }
+                }
+            }
+            compactDiffer_ += same ? 0 : 1;
+        }
         if (fe)
         {
             fe->setComputeEnergies(true);

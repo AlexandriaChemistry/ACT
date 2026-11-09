@@ -1757,6 +1757,7 @@ void ForceComputer::computeRelaxedEnergiesGpu(MsgHandler                        
     static const size_t timer = Timings::instance().index("GPU resident evaluation");
     ScopedTimer         scoped(timer);
     auto &gs = *gpuSystem_;
+    gs.setKeepEnergies(keepGpuEnergies_);
     // With several replicas, the work on the processor is done for each,
     // with its energies in the molecules, see GpuTrainingSystem::selectReplica
     const size_t nrep = gs.nreplica();

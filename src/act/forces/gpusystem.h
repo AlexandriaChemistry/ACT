@@ -38,6 +38,7 @@
 #include <memory>
 #include <vector>
 
+#include "act/basics/interactiontype.h"
 #include "act/gpu/gpu.h"
 
 namespace alexandria
@@ -46,6 +47,17 @@ namespace alexandria
 class ACTMol;
 class ForceComputer;
 class ForceField;
+
+//! The energies of one interaction type of a topology, see GpuTrainingSystem::typeEnergies
+struct GpuTypeEnergies
+{
+    //! The interaction type
+    InteractionType     type = InteractionType::EPOT;
+    //! The energy of each conformation after relaxing the shells
+    std::vector<double> act;
+    //! The energy of each conformation before relaxing, with the shells on their parents
+    std::vector<double> before;
+};
 
 /*! \brief All topologies of the molecules of a process on the GPU
  * There is a block for each topology of each molecule: the monomers and,
@@ -140,6 +152,22 @@ public:
 
     //! Construct the virtual sites
     void constructVsites();
+
+    /*! \brief Keep the energies of the calculations as the GPU gives them, for typeEnergies
+     * \param[in] keep Whether to keep them
+     */
+    void setKeepEnergies(bool keep);
+
+    /*! \brief The energies of each interaction type of a topology of a molecule
+     * As compute stores them in the conformation data, for the replica of
+     * selectReplica: those after relaxing are from the last calculation, those
+     * before relaxing from the last one with backup. Needs setKeepEnergies.
+     * \param[in]  mol      The molecule
+     * \param[in]  what     0 or 1 for a monomer, 2 for the dimer
+     * \param[out] energies The interaction types, in increasing order
+     * \return false if there are no energies of this topology
+     */
+    bool typeEnergies(const ACTMol *mol, int what, std::vector<GpuTypeEnergies> *energies) const;
 
     /*! \brief Compute all interactions, the energies go to the conformation data
      * \param[in] what   0 or 1 for a monomer, -2 for both, 2 for the dimers, -1 for all

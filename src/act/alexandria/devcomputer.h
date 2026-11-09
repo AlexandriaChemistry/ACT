@@ -340,6 +340,25 @@ public:
      */
     EnergyTask energyTask(const std::map<eRMS, FittingTarget> &targets) const;
 
+    /*! \brief The deviations of the energies from the energies as the GPU gives them
+     * As calcDeviation after ForceComputer::computeRelaxedEnergies on the
+     * GPU, without the energies of the conformation data: from
+     * ForceComputer::gpuTypeEnergies, with the post-processing of the
+     * energies done here. The losses are added to the targets in the same
+     * order, such that the results are the same.
+     * \param[in]    forceComputer The force computer, with the energies kept, see
+     *                             ForceComputer::setKeepGpuEnergies
+     * \param[in]    actmols       The molecules
+     * \param[inout] targets       The fitting targets
+     * \param[in]    lossFunction  The loss function
+     * \return false if this cannot be done for these targets or molecules,
+     *         then the targets may have changed
+     */
+    bool calcDeviationCompact(const ForceComputer           *forceComputer,
+                              const std::vector<ACTMol *>   &actmols,
+                              std::map<eRMS, FittingTarget> *targets,
+                              LossFunction                   lossFunction);
+
     /*! \brief Whether calcDeviation computes the energies
      * \param[in] compute If false, the caller computed them as energyTask
      *                    says, with ForceComputer::computeRelaxedEnergies

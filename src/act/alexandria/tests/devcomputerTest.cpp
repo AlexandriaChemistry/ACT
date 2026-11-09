@@ -2175,6 +2175,65 @@ TEST_F(PropertyDevComputerTest, GpuReplicasAsSeparateEvaluations)
     }
 }
 
+// Test: The deviations of the energies computed from the energies as the GPU
+// gives them, without the conformation data, are those of calcDeviation,
+// exactly, for all energy targets, loss functions and Boltzmann weighting.
+TEST_F(PropertyDevComputerTest, CompactDeviationsAsCalcDeviation)
+{
+    if (!gpu::useGpu())
+    {
+        // Needs a GPU
+        fprintf(stderr, "CompactDeviationsAsCalcDeviation: no GPU, nothing tested\n");
+        return;
+    }
+    ForceComputer forceComputer;
+    forceComputer.setGpuResident(true);
+    forceComputer.setKeepShells(false);
+    forceComputer.setKeepGpuEnergies(true);
+    MsgHandler    msghandler;
+    ForceField    pd;
+    readForceField(fileManager().getInputFilePath("PG-pol-ions.xml"), &pd);
+    auto mpFile = fileManager().getInputFilePath("ion-water.xml");
+    auto mols   = prepareMolecules(&msghandler, &pd, &forceComputer, {}, mpFile);
+    ASSERT_FALSE(mols.empty());
+    if (!forceComputer.prepareGpuResident(&pd, pointers(&mols)))
+    {
+        fprintf(stderr, "CompactDeviationsAsCalcDeviation: the GPU cannot compute these molecules, nothing tested\n");
+        return;
+    }
+    const std::vector<eRMS> all = { eRMS::EPOT, eRMS::Interaction, eRMS::Electrostatics,
+                                    eRMS::Dispersion, eRMS::Exchange, eRMS::Induction,
+                                    eRMS::DeltaHF, eRMS::ExchInd, eRMS::AllElec };
+    for(auto lf : { LossFunction::MSE, LossFunction::MAE, LossFunction::Huber, LossFunction::Asinh })
+    {
+        for(double T : { 0.0, 300.0 })
+        {
+            SCOPED_TRACE(gmx::formatString("loss function %d temperature %g", static_cast<int>(lf), T));
+            ForceEnergyDevComputer computer(sameTemperature({ eRMS::EPOT, eRMS::Interaction }, T));
+            computer.setSeparateInductionCorrection(false);
+            std::map<eRMS, FittingTarget> targets;
+            for(auto erms : all)
+            {
+                targets.insert({ erms, FittingTarget(erms, iMolSelect::Train) });
+                targets.find(erms)->second.setWeight(1);
+            }
+            auto compact = targets;
+            MsgHandler mh;
+            computer.calcDeviation(&mh, &forceComputer, pointers(&mols), &targets, &pd, lf);
+            EXPECT_TRUE(mh.ok());
+            ASSERT_TRUE(computer.calcDeviationCompact(&forceComputer, pointers(&mols), &compact, lf));
+            for(auto erms : all)
+            {
+                const auto &a = targets.find(erms)->second;
+                const auto &b = compact.find(erms)->second;
+                EXPECT_EQ(a.chiSquared(), b.chiSquared()) << rmsName(erms);
+                EXPECT_EQ(a.totalWeight(), b.totalWeight()) << rmsName(erms);
+            }
+            EXPECT_LT(0, targets.find(eRMS::AllElec)->second.totalWeight());
+        }
+    }
+}
+
 // Test: Without polarization and forces, the interaction energies of dimers
 // are computed from the intermolecular interactions only. They are the same
 // as the dimer energies minus those of the monomers, computed with forces.
