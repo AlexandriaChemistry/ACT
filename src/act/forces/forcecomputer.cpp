@@ -1752,12 +1752,17 @@ void ForceComputer::computeRelaxedEnergiesGpu(MsgHandler                        
                                               bool                                 resetTheShells,
                                               bool                                 separateInductionCorrection,
                                               bool                                 checkCharges,
-                                              const std::function<void(size_t)> *stage) const
+                                              const std::function<void(size_t)> *stage,
+                                              bool                                 deviationsOnly) const
 {
     static const size_t timer = Timings::instance().index("GPU resident evaluation");
     ScopedTimer         scoped(timer);
     auto &gs = *gpuSystem_;
     gs.setKeepEnergies(keepGpuEnergies_);
+    // Only the deviations, the energies stay on the GPU, which does the
+    // post-processing below as well, see GpuTrainingSystem::computeDeviations
+    deviationsOnly = deviationsOnly && gs.deviationsReady() && !separateInductionCorrection;
+    gs.setDeviationsOnly(deviationsOnly);
     // With several replicas, the work on the processor is done for each,
     // with its energies in the molecules, see GpuTrainingSystem::selectReplica
     const size_t nrep = gs.nreplica();
@@ -1889,10 +1894,14 @@ void ForceComputer::computeRelaxedEnergiesGpu(MsgHandler                        
     }
     // The deviations of the energies, if requested, see setGpuDeviations
     gs.computeDeviations();
-    forEachReplica([&allmols, doInduc2, separateInductionCorrection, &eInduc2](size_t r)
+    gs.setDeviationsOnly(false);
+    if (!deviationsOnly)
     {
-        postProcessRelaxedEnergies(allmols, false, doInduc2, separateInductionCorrection, eInduc2[r]);
-    });
+        forEachReplica([&allmols, doInduc2, separateInductionCorrection, &eInduc2](size_t r)
+        {
+            postProcessRelaxedEnergies(allmols, false, doInduc2, separateInductionCorrection, eInduc2[r]);
+        });
+    }
     if (checkCharges)
     {
         auto dq = gs.chargeDifference();
@@ -1907,13 +1916,27 @@ bool ForceComputer::computeRelaxedEnergiesReplicas(MsgHandler                   
                                                    const ForceField                    *pd,
                                                    const std::vector<ACTMol *>         &allmols,
                                                    const std::function<void(size_t)> &stage,
-                                                   bool                                 separateInductionCorrection) const
+                                                   bool                                 separateInductionCorrection,
+                                                   bool                                 deviationsOnly) const
 {
     if (!prepareGpuResident(pd, allmols))
     {
         return false;
     }
-    computeRelaxedEnergiesGpu(msghandler, pd, allmols, true, separateInductionCorrection, false, &stage);
+    computeRelaxedEnergiesGpu(msghandler, pd, allmols, true, separateInductionCorrection, false, &stage,
+                              deviationsOnly);
+    return true;
+}
+
+bool ForceComputer::computeGpuDeviations(MsgHandler                  *msghandler,
+                                         const ForceField            *pd,
+                                         const std::vector<ACTMol *> &allmols) const
+{
+    if (!prepareGpuResident(pd, allmols) || !gpuSystem_->deviationsReady())
+    {
+        return false;
+    }
+    computeRelaxedEnergiesGpu(msghandler, pd, allmols, true, false, false, nullptr, true);
     return true;
 }
 

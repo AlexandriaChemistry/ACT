@@ -2247,6 +2247,21 @@ TEST_F(PropertyDevComputerTest, CompactDeviationsAsCalcDeviation)
                 }
             }
             EXPECT_LT(0, targets.find(eRMS::AllElec)->second.totalWeight());
+            // Only the deviations, with the energies on the GPU
+            auto only = compact;
+            for(auto &t : only)
+            {
+                t.second.reset();
+            }
+            ASSERT_TRUE(forceComputer.computeGpuDeviations(&mh, &pd, pointers(&mols)));
+            ASSERT_TRUE(computer.calcDeviationGpu(&forceComputer, &only));
+            for(auto erms : all)
+            {
+                EXPECT_EQ(onGpu.find(erms)->second.chiSquared(), only.find(erms)->second.chiSquared())
+                    << rmsName(erms) << " deviations only";
+                EXPECT_EQ(onGpu.find(erms)->second.totalWeight(), only.find(erms)->second.totalWeight())
+                    << rmsName(erms) << " deviations only";
+            }
         }
     }
 }

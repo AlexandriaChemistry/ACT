@@ -198,7 +198,7 @@ double ACMFitnessComputer::calcDeviation(MsgHandler   *msghandler,
     {
         return 0;
     }
-    computeEnergies(msghandler, dt);
+    computeEnergies(msghandler, &dt);
     return finishDeviation(msghandler, &dt);
 }
 
@@ -244,9 +244,15 @@ std::vector<double> ACMFitnessComputer::calcDeviations(MsgHandler               
         };
         auto et = energyTask(first);
         setupGpuDeviations(first);
+        // Only the deviations if the GPU can compute them
+        bool onlyDeviations = useGpuDeviations(first);
         if (forceComp_->computeRelaxedEnergiesReplicas(msghandler, sii_->forcefield(), first.selected,
-                                                       stage, et.separateInductionCorrection))
+                                                       stage, et.separateInductionCorrection, onlyDeviations))
         {
+            for (auto &dt : dts)
+            {
+                dt.gpuDeviations = onlyDeviations;
+            }
             for (size_t r = 0; r < params.size(); r++)
             {
                 // The deviations from the energies and charges of each set,
@@ -509,13 +515,41 @@ void ACMFitnessComputer::setupGpuDeviations(const DeviationTask &dt)
     }
 }
 
-void ACMFitnessComputer::computeEnergies(MsgHandler *msghandler, const DeviationTask &dt)
+bool ACMFitnessComputer::useGpuDeviations(const DeviationTask &dt)
 {
-    auto et = energyTask(dt);
-    setupGpuDeviations(dt);
+    // For developers, to compare with computing the energies of the molecules
+    static const bool off = std::getenv("ACT_NO_GPU_DEVIATIONS") != nullptr;
+    if (off || compactCheck() || dt.task != CalcDev::Compute || !dt.gpuCharges || !dt.targets ||
+        dt.selected.empty())
+    {
+        return false;
+    }
+    for (auto *mydev : devComputers_)
+    {
+        auto fe = dynamic_cast<ForceEnergyDevComputer *>(mydev);
+        if (fe)
+        {
+            return fe->setupGpuDeviations(forceComp_, dt.selected, *dt.targets, lossFunction_);
+        }
+    }
+    return false;
+}
+
+void ACMFitnessComputer::computeEnergies(MsgHandler *msghandler, DeviationTask *dt)
+{
+    auto et = energyTask(*dt);
+    setupGpuDeviations(*dt);
+    dt->gpuDeviations = false;
     if (et.compute)
     {
-        forceComp_->computeRelaxedEnergies(msghandler, sii_->forcefield(), dt.selected, true,
+        // Only the deviations if the GPU can compute them
+        if (useGpuDeviations(*dt) &&
+            forceComp_->computeGpuDeviations(msghandler, sii_->forcefield(), dt->selected))
+        {
+            dt->gpuDeviations = true;
+            return;
+        }
+        forceComp_->computeRelaxedEnergies(msghandler, sii_->forcefield(), dt->selected, true,
                                            et.separateInductionCorrection, et.forces);
     }
 }
@@ -545,6 +579,15 @@ double ACMFitnessComputer::finishDeviation(MsgHandler *msghandler, DeviationTask
         ScopedTimer timer(devTimers_[d]);
         // The energies were computed, see computeEnergies
         auto fe = dynamic_cast<ForceEnergyDevComputer *>(mydev);
+        if (fe && dt->gpuDeviations)
+        {
+            // Only the deviations, the energies of the molecules were not computed
+            if (!fe->calcDeviationGpu(forceComp_, targets))
+            {
+                msghandler->fatal("The GPU did not compute the deviations of the energies");
+            }
+            continue;
+        }
         if (fe)
         {
             fe->setComputeEnergies(false);

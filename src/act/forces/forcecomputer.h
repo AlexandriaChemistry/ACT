@@ -213,6 +213,7 @@ private:
      * \param[in]    stage       With several replicas, puts the parameters of a replica in
      *                           the force field and the molecules, see computeRelaxedEnergiesReplicas,
      *                           otherwise nullptr
+     * \param[in]    deviationsOnly Whether only the deviations are needed, see computeGpuDeviations
      */
     void computeRelaxedEnergiesGpu(MsgHandler                          *msghandler,
                                    const ForceField                    *pd,
@@ -220,7 +221,8 @@ private:
                                    bool                                 resetShells,
                                    bool                                 separateInductionCorrection,
                                    bool                                 checkCharges,
-                                   const std::function<void(size_t)> *stage = nullptr) const;
+                                   const std::function<void(size_t)> *stage = nullptr,
+                                   bool                                 deviationsOnly = false) const;
     /*! \brief Update shell positions if needed.
      * This will work on a whole ACT mol or just one of its monomers.
      * The force constants of the shells are computed from the current
@@ -586,13 +588,29 @@ private:
      *                           the topologies of the molecules, and the fixed charges
      *                           in their atoms, called for each replica in order
      * \param[in]    separateInductionCorrection Whether the induction correction is separate
+     * \param[in]    deviationsOnly Whether only the deviations are needed, see computeGpuDeviations
      * \return false if the GPU cannot compute these molecules, then nothing was computed
      */
     bool computeRelaxedEnergiesReplicas(MsgHandler                          *msghandler,
                                         const ForceField                    *pd,
                                         const std::vector<ACTMol *>         &allmols,
                                         const std::function<void(size_t)> &stage,
-                                        bool                                 separateInductionCorrection) const;
+                                        bool                                 separateInductionCorrection,
+                                        bool                                 deviationsOnly = false) const;
+
+    /*! \brief Compute only the deviations of the energies on the GPU, see setGpuDeviations
+     * As computeRelaxedEnergies with the shells reset and without forces, but
+     * the energies stay on the GPU, which computes the deviations of the
+     * energy targets, see gpuDeviationSums. The energies of the molecules do
+     * not change, their charges do.
+     * \param[in]    msghandler For messages
+     * \param[in]    pd         The force field
+     * \param[inout] allmols    The molecules, with the deviations set up
+     * \return false if this is not possible, then nothing was computed
+     */
+    bool computeGpuDeviations(MsgHandler                  *msghandler,
+                              const ForceField            *pd,
+                              const std::vector<ACTMol *> &allmols) const;
 
     /*! \brief Put the energies and charges of a replica in the molecules
      * See computeRelaxedEnergiesReplicas.
