@@ -195,7 +195,23 @@ public:
         int                            ntrain  = 0;
         //! The number of these computed here
         int                            nlocal  = 0;
+        //! Whether the GPU computes the energies and the charges, see ForceComputer::gpuChargesOnly
+        bool                           gpuCharges = false;
     };
+
+    /*! \brief Compute the deviations of several sets of parameters
+     * As distributeParameters and calcDeviation for each set, at once on
+     * the GPU if the force computer has a replica for each, see
+     * ForceComputer::setGpuReplicas, and only energies are needed. The
+     * force field has the parameters of one of the sets afterwards.
+     * \param[in] msghandler Message Handler
+     * \param[in] params     The parameters of each set, all of them
+     * \param[in] ims        The dataset to do computations on
+     * \return the deviation of each set
+     */
+    std::vector<double> calcDeviations(MsgHandler                               *msghandler,
+                                       const std::vector<const std::vector<double> *> &params,
+                                       iMolSelect                                ims);
 
     /*! \brief The first step of calcDeviation, before computing energies
      * Receives or sends the dataset, resets the chi squared, updates the

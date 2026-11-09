@@ -260,6 +260,8 @@ void GAConfigHandler::add_options(std::vector<t_pargs>             *pargs,
           "Loss function to use" },
         { "-pop_size", FALSE, etINT, {&popSize_},
           "Population size for the GA and HYBRID algorithms (must be even) alternatively number of parallel MCMC calculations that will be performed (can be any integer number > 0 in this case). For GA and HYBRID it may be larger than the number of cores/threads, then each core/thread computes the next individual when it is done with one." },
+        { "-lockstep", FALSE, etINT, {&lockstep_},
+          "With a population larger than the number of cores/threads, the number of individuals that each core/thread computes at once. With -gpu_resident the GPU then computes the MCMC steps of these individuals together, which uses it better with fewer processes per GPU. Each individual gets the same result as by itself, except for where the relaxation of the shells starts, see -shell_keep." },
         { "-n_elites", FALSE, etINT, {&nElites_},
           "Amount of top individuals to be moved, unchanged, to the next generation." },
         { "-random_init", FALSE, etBOOL, {&randomInit_},
@@ -316,6 +318,7 @@ void GAConfigHandler::check_pargs(MsgHandler *msghandler)
     sensitivity_  = stringToSensitivityMode(sensitivityStr[0]);
 
     GMX_RELEASE_ASSERT(popSize_ > 0, "-pop_size must be positive.");
+    GMX_RELEASE_ASSERT(lockstep_ > 0, "-lockstep must be positive.");
     if (popSize_ % 2 != 0)  // If popSize is odd
     {
         GMX_RELEASE_ASSERT(OptimizerAlg::MCMC == optAlg_, "With odd population sizes, only the MCMC optimizer will work.");
