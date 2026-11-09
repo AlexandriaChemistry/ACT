@@ -1717,6 +1717,8 @@ bool ForceComputer::prepareGpuResident(const ForceField *pd, const std::vector<A
     {
         return false;
     }
+    static const size_t timer = Timings::instance().index("GPU resident setup");
+    ScopedTimer         scoped(timer);
     if (!gpuSystem_)
     {
         gpuSystem_ = std::make_shared<GpuTrainingSystem>();
