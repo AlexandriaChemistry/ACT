@@ -242,7 +242,12 @@ std::vector<double> ACMFitnessComputer::calcDeviations(MsgHandler               
         dts[0] = first;
         std::function<void(size_t)> stage = [&](size_t r)
         {
-            if (r > 0)
+            if (r >= params.size())
+            {
+                // A replica without a set of parameters computes nothing
+                forceComp_->setGpuActiveMolecules(r, std::vector<char>(first.selected.size(), 0));
+            }
+            else if (r > 0)
             {
                 useParameters(params[std::min(r, params.size() - 1)]);
                 dts[r].replica = r;

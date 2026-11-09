@@ -1783,11 +1783,19 @@ void ForceComputer::computeRelaxedEnergiesGpu(MsgHandler                        
     for (auto molptr : allmols)
     {
         auto &tops = molptr->fragmentHandler()->topologies();
-        nEval_ += nrep*molptr->conformationData(0)->nconf()*(tops.size() + (tops.size() > 1 ? 1 : 0));
+        nEval_ += (stage ? nrep : 1)*molptr->conformationData(0)->nconf()*(tops.size() + (tops.size() > 1 ? 1 : 0));
     }
     static const size_t upload  = Timings::instance().index("GPU resident parameter upload");
     static const size_t relaxT  = Timings::instance().index("GPU resident relaxation");
     static const size_t energyT = Timings::instance().index("GPU resident energies");
+    // With one set of parameters only the first replica is computed
+    if (!stage)
+    {
+        for (size_t r = 1; r < nrep; r++)
+        {
+            gs.setActiveMolecules(r, std::vector<char>(allmols.size(), 0));
+        }
+    }
     // As computeRelaxedEnergies, with the coordinates on the GPU
     {
         ScopedTimer up(upload);
@@ -1909,6 +1917,12 @@ void ForceComputer::computeRelaxedEnergiesGpu(MsgHandler                        
         auto dq = gs.chargeDifference();
         fprintf(stderr, "GPU resident check: %-22s largest difference %.2e (of %.6g)\n",
                 "charges", dq.first, dq.second);
+    }
+    // The energies and the charges of the first replica, the one computed
+    // with one set of parameters
+    if (!stage)
+    {
+        gs.selectReplica(0);
     }
     // The processor needs the charges too, for instance for the bounds
     gs.copyChargesToMolecules();
