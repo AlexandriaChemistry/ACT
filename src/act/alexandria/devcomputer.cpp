@@ -1183,6 +1183,39 @@ bool ForceEnergyDevComputer::calcDeviationGpu(const ForceComputer           *for
     return true;
 }
 
+void ForceEnergyDevComputer::addGpuDeviations(const std::vector<const GpuMoleculeDeviations *> &molecules,
+                                              std::map<eRMS, FittingTarget>                    *targets) const
+{
+    // In the order of GpuTrainingSystem::deviationSums
+    auto et = energyTargets(*targets);
+    for (size_t j = 0; j < et.rms.size(); j++)
+    {
+        double sw = 0, sl = 0;
+        for (const auto *dev : molecules)
+        {
+            if (dev->dimer)
+            {
+                sw += dev->targets[2*j];
+                sl += dev->targets[2*j + 1];
+            }
+        }
+        targets->find(et.rms[j])->second.increase(sw, sl);
+    }
+    if (et.epot)
+    {
+        double sw = 0, sl = 0;
+        for (const auto *dev : molecules)
+        {
+            for (size_t c = 0; dev->epot && c < dev->epotTerms.size(); c += 2)
+            {
+                sw += dev->epotTerms[c];
+                sl += dev->epotTerms[c + 1];
+            }
+        }
+        targets->find(eRMS::EPOT)->second.increase(sw, sl);
+    }
+}
+
 bool ForceEnergyDevComputer::calcDeviationCompact(const ForceComputer           *forceComputer,
                                                   const std::vector<ACTMol *>   &actmols,
                                                   std::map<eRMS, FittingTarget> *targets,

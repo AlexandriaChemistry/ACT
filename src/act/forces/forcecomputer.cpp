@@ -1895,6 +1895,8 @@ void ForceComputer::computeRelaxedEnergiesGpu(MsgHandler                        
     // The deviations of the energies, if requested, see setGpuDeviations
     gs.computeDeviations();
     gs.setDeviationsOnly(false);
+    // All molecules again in the next evaluation, unless told otherwise
+    gs.setActiveMolecules(-1, std::vector<char>(allmols.size(), 1));
     if (!deviationsOnly)
     {
         forEachReplica([&allmols, doInduc2, separateInductionCorrection, &eInduc2](size_t r)

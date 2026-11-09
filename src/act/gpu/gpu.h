@@ -894,12 +894,17 @@ void createDeviations(System *system, const DeviationSystem &deviations);
 void keepEnergies(System *system, const char *use, bool before);
 
 /*! \brief The deviations of the energies kept by keepEnergies, as ForceEnergyDevComputer::calcDeviationCompact
- * \param[in]  system The system
- * \param[out] sums   For each replica, for each target and then for the
- *                    potential energy: the sum of the weights and that of
- *                    the losses, 2*(ntarget + 1) values per replica
+ * Only of the dimers and topologies whose block is used. The sums over
+ * the conformations of a dimer and the terms of the conformations of a
+ * topology are added in their order by the caller.
+ * \param[in]  system    The system
+ * \param[in]  use       Whether to compute each block
+ * \param[out] dimerSums For each dimer and target, the sum of the weights and that
+ *                       of the losses over its conformations, in order, 2*ntarget per dimer
+ * \param[out] epotTerms For each conformation of each topology of DeviationSystem::monomers,
+ *                       the weight and the loss of the potential energy, 2 per conformation
  */
-void computeDeviations(System *system, double *sums);
+void computeDeviations(System *system, const char *use, double *dimerSums, double *epotTerms);
 
 } // namespace gpu
 

@@ -68,6 +68,12 @@ ACMFitnessComputer::~ACMFitnessComputer()
         fprintf(stderr, "GPU deviation check on the GPU: %d evaluations compared, %d differ\n",
                 gpuChecks_, gpuDiffer_);
     }
+    // For developers, how many molecules were computed and skipped, see prepareDeviation
+    if (std::getenv("ACT_GPU_SKIP_STATS") && nComputedMol_ + nSkippedMol_ > 0)
+    {
+        fprintf(stderr, "GPU skip statistics: %zu molecules computed, %zu skipped\n",
+                nComputedMol_, nSkippedMol_);
+    }
     for(auto &d : devComputers_)
     {
         delete d;
@@ -239,19 +245,32 @@ std::vector<double> ACMFitnessComputer::calcDeviations(MsgHandler               
             if (r > 0)
             {
                 useParameters(params[std::min(r, params.size() - 1)]);
+                dts[r].replica = r;
                 (void) prepareDeviation(msghandler, CalcDev::Compute, ims, &dts[r]);
+                if (dts[r].skipping)
+                {
+                    forceComp_->setGpuActiveMolecules(r, dts[r].active);
+                }
             }
         };
         auto et = energyTask(first);
         setupGpuDeviations(first);
         // Only the deviations if the GPU can compute them
         bool onlyDeviations = useGpuDeviations(first);
+        if (first.skipping)
+        {
+            forceComp_->setGpuActiveMolecules(0, first.active);
+        }
         if (forceComp_->computeRelaxedEnergiesReplicas(msghandler, sii_->forcefield(), first.selected,
                                                        stage, et.separateInductionCorrection, onlyDeviations))
         {
             for (auto &dt : dts)
             {
                 dt.gpuDeviations = onlyDeviations;
+                if (dt.skipping && !onlyDeviations)
+                {
+                    msghandler->fatal("Molecules were skipped, but the GPU could not compute the deviations of the others");
+                }
             }
             for (size_t r = 0; r < params.size(); r++)
             {
@@ -274,6 +293,171 @@ std::vector<double> ACMFitnessComputer::calcDeviations(MsgHandler               
         chi2.push_back(calcDeviation(msghandler, cd, ims));
     }
     return chi2;
+}
+
+void ACMFitnessComputer::updateMolecule(MsgHandler                      *msghandler,
+                                        ACTMol                          *actmol,
+                                        size_t                           imol,
+                                        const std::set<InteractionType> &itUpdate,
+                                        bool                             gpuCharges,
+                                        bool                             needQProps)
+{
+    {
+        // Now update the topology, only the interaction types of
+        // which parameters changed since the last time.
+        static const size_t timer = Timings::instance().index("Topology parameter update");
+        ScopedTimer         scoped(timer);
+        auto                &filled = filledVersion_[imol];
+        std::set<InteractionType> itFill;
+        for(auto itype : itUpdate)
+        {
+            auto fv = filled.find(itype);
+            if (filled.end() == fv || fv->second != sii_->parameterVersion(itype))
+            {
+                itFill.insert(itype);
+            }
+        }
+        if (!itFill.empty())
+        {
+            actmol->topologyPtr()->fillParameters(msghandler, sii_->forcefield(),
+                                                  missingParameters::Error, &itFill);
+            // Fill the fragments too if there are any
+            for(auto &ft : actmol->fragmentHandler()->topologiesPtr())
+            {
+                ft.fillParameters(msghandler, sii_->forcefield(), missingParameters::Error, &itFill);
+            }
+            for(auto itype : itFill)
+            {
+                filled[itype] = sii_->parameterVersion(itype);
+            }
+        }
+    }
+    if (chargeVersion_[imol] != sii_->chargeParameterVersion())
+    {
+        // Run charge generation including shell minimization,
+        // only if parameters changed that the charges depend on.
+        static const size_t timer = Timings::instance().index("Charge generation");
+        ScopedTimer         scoped(timer);
+        if (gpuCharges && actmol->fragmentHandler()->sqeOnGpu(sii_->forcefield()))
+        {
+            // The charges of the processor stay outdated, the next
+            // evaluation on the processor generates them
+            if (fixedChargeVersion_[imol] != sii_->chargeParameterVersion())
+            {
+                actmol->updateFixedCharges(sii_->forcefield(), algorithm_);
+                fixedChargeVersion_[imol] = sii_->chargeParameterVersion();
+            }
+        }
+        else
+        {
+            // The coordinates and forces are not used here, and the
+            // charge properties only for the ESP and multipoles
+            std::vector<gmx::RVec> forces(actmol->atomsConst().size(), { 0, 0, 0 });
+            std::vector<gmx::RVec> coords = actmol->xOriginal();
+            actmol->generateCharges(msghandler, sii_->forcefield(), forceComp_,
+                                    algorithm_, &coords, &forces, needQProps, false);
+            chargeVersion_[imol] = sii_->chargeParameterVersion();
+        }
+    }
+}
+
+std::vector<double> ACMFitnessComputer::parameterValues()
+{
+    std::vector<double> values;
+    for (auto &oi : *sii_->optIndexPtr())
+    {
+        auto p = oi.forceFieldParameter();
+        if (!p)
+        {
+            oi.findForceFieldParameter(sii_->forcefield());
+            p = oi.forceFieldParameter();
+        }
+        values.push_back(p ? p->value() : 0.0);
+    }
+    return values;
+}
+
+void ACMFitnessComputer::buildDependencies(MsgHandler                      *msghandler,
+                                           const std::vector<ACTMol *>     &selected,
+                                           const std::set<InteractionType> &itUpdate,
+                                           bool                             needQProps)
+{
+    static const size_t timer = Timings::instance().index("Parameter dependencies");
+    ScopedTimer         scoped(timer);
+    auto pd      = sii_->forcefield();
+    auto mymols  = molgen_->actmolsPtr();
+    auto refresh = [&]()
+    {
+        for (auto molptr : selected)
+        {
+            updateMolecule(msghandler, molptr, molptr - &(*mymols->begin()), itUpdate, true, needQProps);
+        }
+    };
+    // All parameters must be in the force field for updateForceField
+    std::vector<double> values;
+    {
+        std::set<int> all;
+        values = parameterValues();
+        sii_->updateForceField(msghandler, all, values);
+        refresh();
+    }
+    auto base = forceComp_->gpuMoleculeSignatures(pd);
+    molDeps_.assign(selected.size(), {});
+    if (base.size() != selected.size())
+    {
+        return;
+    }
+    size_t ndep    = 0;
+    auto  &optIndex = *sii_->optIndexPtr();
+    for (size_t k = 0; k < values.size(); k++)
+    {
+        // A small change within the bounds of the parameter
+        auto   p  = optIndex[k].forceFieldParameter();
+        double v  = values[k];
+        double d  = 1e-3*(std::abs(v) + 1e-3);
+        double nv = v + d;
+        if (p && nv > p->maximum())
+        {
+            nv = v - d;
+        }
+        if (p && nv < p->minimum())
+        {
+            nv = 0.5*(p->minimum() + p->maximum());
+        }
+        if (!p || nv == v)
+        {
+            // It cannot be changed here, to be safe all molecules depend on it
+            for (auto &deps : molDeps_)
+            {
+                deps.push_back(k);
+            }
+            ndep += selected.size();
+            continue;
+        }
+        auto changed = values;
+        changed[k]   = nv;
+        sii_->updateForceField(msghandler, { static_cast<int>(k) }, changed);
+        refresh();
+        auto sig = forceComp_->gpuMoleculeSignatures(pd);
+        for (size_t m = 0; m < selected.size(); m++)
+        {
+            if (sig[m] != base[m])
+            {
+                molDeps_[m].push_back(k);
+                ndep += 1;
+            }
+        }
+        sii_->updateForceField(msghandler, { static_cast<int>(k) }, values);
+    }
+    refresh();
+    depsMols_.assign(selected.begin(), selected.end());
+    depsVersion_ = forceComp_->gpuVersion();
+    molCache_.clear();
+    if (msghandler->info() && !values.empty())
+    {
+        msghandler->write(gmx::formatString("A change of one parameter changes %.1f of the %zu molecules on average, only those are computed again",
+                                            static_cast<double>(ndep)/values.size(), selected.size()));
+    }
 }
 
 bool ACMFitnessComputer::prepareDeviation(MsgHandler    *msghandler,
@@ -350,6 +534,30 @@ bool ACMFitnessComputer::prepareDeviation(MsgHandler    *msghandler,
     filledVersion_.resize(mymols->size());
     chargeVersion_.resize(mymols->size(), never);
     fixedChargeVersion_.resize(mymols->size(), never);
+    // Molecules whose parameters did not change can be skipped, if the GPU
+    // computes only the deviations, see useGpuDeviations, and the
+    // dependencies of the molecules on the parameters are known. For
+    // developers, ACT_NO_GPU_SKIP turns this off.
+    static const bool noSkip = std::getenv("ACT_NO_GPU_SKIP") != nullptr;
+    static const bool noDev  = std::getenv("ACT_NO_GPU_DEVIATIONS") != nullptr;
+    bool skipCandidate = (!noSkip && !noDev && !compactCheck() && task == CalcDev::Compute && gpuCharges);
+    bool haveDeps      = (skipCandidate && depsVersion_ != 0 && depsVersion_ == forceComp_->gpuVersion());
+    bool canSkip       = haveDeps && forceComp_->gpuDeviationsReady();
+    if (haveDeps && cacheVersion_ != forceComp_->gpuDeviationsVersion())
+    {
+        // The deviations of the molecules are those of other targets
+        molCache_.clear();
+        cacheVersion_ = forceComp_->gpuDeviationsVersion();
+    }
+    if (haveDeps && molCache_.size() <= dt->replica)
+    {
+        molCache_.resize(dt->replica + 1, std::vector<std::array<MolCacheEntry, 2>>(molDeps_.size()));
+    }
+    std::vector<double>   values = haveDeps ? parameterValues() : std::vector<double>();
+    std::vector<ACTMol *> skipped;
+    dt->active.clear();
+    dt->keys.clear();
+    dt->hit.clear();
     // The molecules in this dataset that this node computes
     std::vector<ACTMol *> selected;
     for (auto actmol = mymols->begin(); actmol < mymols->end(); ++actmol)
@@ -366,64 +574,37 @@ bool ACMFitnessComputer::prepareDeviation(MsgHandler    *msghandler,
             (task == CalcDev::ComputeAll && actmol->support() == eSupport::Remote))
         {
             size_t imol = actmol - mymols->begin();
+            // Molecules whose parameters did not change since they were
+            // computed are not computed again, see buildDependencies
+            size_t m      = selected.size();
+            bool   active = true;
+            int    hit    = -1;
+            std::vector<double> key;
+            if (haveDeps && m < molDeps_.size())
             {
-                // Now update the topology, only the interaction types of
-                // which parameters changed since the last time.
-                static const size_t timer = Timings::instance().index("Topology parameter update");
-                ScopedTimer         scoped(timer);
-                auto                &filled = filledVersion_[imol];
-                std::set<InteractionType> itFill;
-                for(auto itype : itUpdate)
+                for (auto k : molDeps_[m])
                 {
-                    auto fv = filled.find(itype);
-                    if (filled.end() == fv || fv->second != sii_->parameterVersion(itype))
+                    key.push_back(values[k]);
+                }
+                for (int e = 0; e < 2; e++)
+                {
+                    const auto &entry = molCache_[dt->replica][m][e];
+                    if (entry.valid && entry.key == key)
                     {
-                        itFill.insert(itype);
+                        hit = e;
                     }
                 }
-                if (!itFill.empty())
-                {
-                    actmol->topologyPtr()->fillParameters(msghandler, sii_->forcefield(),
-                                                          missingParameters::Error, &itFill);
-                    // Fill the fragments too if there are any
-                    for(auto &ft : actmol->fragmentHandler()->topologiesPtr())
-                    {
-                        ft.fillParameters(msghandler, sii_->forcefield(), missingParameters::Error, &itFill);
-                    }
-                    for(auto itype : itFill)
-                    {
-                        filled[itype] = sii_->parameterVersion(itype);
-                    }
-                }
+                active = !(canSkip && hit >= 0 &&
+                           actmol->fragmentHandler()->sqeOnGpu(sii_->forcefield()));
             }
-            if (chargeVersion_[imol] != sii_->chargeParameterVersion())
+            if (active)
             {
-                // Run charge generation including shell minimization,
-                // only if parameters changed that the charges depend on.
-                static const size_t timer = Timings::instance().index("Charge generation");
-                ScopedTimer         scoped(timer);
-                if (gpuCharges && actmol->fragmentHandler()->sqeOnGpu(sii_->forcefield()))
-                {
-                    // The charges of the processor stay outdated, the next
-                    // evaluation on the processor generates them
-                    if (fixedChargeVersion_[imol] != sii_->chargeParameterVersion())
-                    {
-                        actmol->updateFixedCharges(sii_->forcefield(), algorithm_);
-                        fixedChargeVersion_[imol] = sii_->chargeParameterVersion();
-                    }
-                }
-                else
-                {
-                    // The coordinates and forces are not used here, and the
-                    // charge properties only for the ESP and multipoles
-                    std::vector<gmx::RVec> forces(actmol->atomsConst().size(), { 0, 0, 0 });
-                    std::vector<gmx::RVec> coords = actmol->xOriginal();
-                    actmol->generateCharges(msghandler, sii_->forcefield(), forceComp_,
-                                            algorithm_, &coords, &forces, needQProps, false);
-                    chargeVersion_[imol] = sii_->chargeParameterVersion();
-                }
+                updateMolecule(msghandler, &(*actmol), imol, itUpdate, gpuCharges, needQProps);
             }
-
+            else
+            {
+                skipped.push_back(&(*actmol));
+            }
             // Check whether we have to disable this compound
             if (!msghandler->ok() && removeMol_)
             {
@@ -442,16 +623,39 @@ bool ACMFitnessComputer::prepareDeviation(MsgHandler    *msghandler,
             msghandler->writeDebug(gmx::formatString("CalcDev: rank %d mol %s #energies %zu tw %g\n",
                                                      cr->rank(), actmol->getMolname().c_str(), actmol->experimentConst().size(),
                                                      targets->find(eRMS::EPOT)->second.totalWeight()));
+            dt->active.push_back(active ? 1 : 0);
+            dt->keys.push_back(std::move(key));
+            dt->hit.push_back(hit);
             selected.push_back(&(*actmol));
             nlocal++;
         }
     }
+    // The molecules can only be skipped if they are those of the
+    // dependencies, otherwise they are updated after all
+    bool consistent = (haveDeps && selected.size() == depsMols_.size() &&
+                       std::equal(selected.begin(), selected.end(), depsMols_.begin()));
+    auto updateSkipped = [&]()
+    {
+        for (auto molptr : skipped)
+        {
+            updateMolecule(msghandler, molptr, molptr - &(*mymols->begin()), itUpdate, gpuCharges, needQProps);
+        }
+        skipped.clear();
+        std::fill(dt->active.begin(), dt->active.end(), 1);
+    };
+    if (!consistent)
+    {
+        updateSkipped();
+    }
     // If the GPU cannot compute these molecules after all, the processor
     // generates the charges that were left to it, and computes everything
     // from now on, see ForceComputer::prepareGpuResident
+    bool gpuOk = true;
     if (gpuCharges && !selected.empty() &&
         !forceComp_->prepareGpuResident(sii_->forcefield(), selected))
     {
+        gpuOk = false;
+        updateSkipped();
         static const size_t timer = Timings::instance().index("Charge generation");
         ScopedTimer         scoped(timer);
         std::vector<ACTMol *> kept;
@@ -476,6 +680,28 @@ bool ACMFitnessComputer::prepareDeviation(MsgHandler    *msghandler,
             kept.push_back(molptr);
         }
         selected = std::move(kept);
+    }
+    dt->skipping = canSkip && consistent && gpuOk;
+    if (!dt->skipping)
+    {
+        std::fill(dt->active.begin(), dt->active.end(), 1);
+    }
+    if (!(haveDeps && consistent && gpuOk))
+    {
+        // Without keys nothing is kept, see finishDeviation
+        for (auto &key : dt->keys)
+        {
+            key.clear();
+        }
+        std::fill(dt->hit.begin(), dt->hit.end(), -1);
+    }
+    dt->haveKeys = haveDeps && consistent && gpuOk;
+    // Which molecules depend on which parameters, once for the molecules on
+    // the GPU, but not while the parameters of the replicas are staged, see calcDeviations
+    if (skipCandidate && gpuOk && dt->replica == 0 && !selected.empty() &&
+        depsVersion_ != forceComp_->gpuVersion())
+    {
+        buildDependencies(msghandler, selected, itUpdate, needQProps);
     }
     dt->task     = task;
     dt->ims      = ims;
@@ -542,12 +768,21 @@ void ACMFitnessComputer::computeEnergies(MsgHandler *msghandler, DeviationTask *
     dt->gpuDeviations = false;
     if (et.compute)
     {
-        // Only the deviations if the GPU can compute them
+        // Only the deviations if the GPU can compute them, of the molecules
+        // whose parameters changed, see prepareDeviation
+        if (dt->skipping)
+        {
+            forceComp_->setGpuActiveMolecules(-1, dt->active);
+        }
         if (useGpuDeviations(*dt) &&
             forceComp_->computeGpuDeviations(msghandler, sii_->forcefield(), dt->selected))
         {
             dt->gpuDeviations = true;
             return;
+        }
+        if (dt->skipping)
+        {
+            msghandler->fatal("Molecules were skipped, but the GPU could not compute the deviations of the others");
         }
         forceComp_->computeRelaxedEnergies(msghandler, sii_->forcefield(), dt->selected, true,
                                            et.separateInductionCorrection, et.forces);
@@ -581,10 +816,47 @@ double ACMFitnessComputer::finishDeviation(MsgHandler *msghandler, DeviationTask
         auto fe = dynamic_cast<ForceEnergyDevComputer *>(mydev);
         if (fe && dt->gpuDeviations)
         {
-            // Only the deviations, the energies of the molecules were not computed
-            if (!fe->calcDeviationGpu(forceComp_, targets))
+            // Only the deviations, the energies of the molecules were not
+            // computed. Those of the molecules that were skipped are those
+            // kept for the same parameters, see prepareDeviation.
+            size_t nmol = selected.size();
+            std::vector<GpuMoleculeDeviations>         fresh(nmol);
+            std::vector<const GpuMoleculeDeviations *> devs(nmol, nullptr);
+            auto  &cache = molCache_.size() > dt->replica ? molCache_[dt->replica] : molCache_.emplace_back();
+            for (size_t m = 0; m < nmol; m++)
             {
-                msghandler->fatal("The GPU did not compute the deviations of the energies");
+                if (dt->skipping && !dt->active[m])
+                {
+                    devs[m] = &cache[m][dt->hit[m]].dev;
+                    nSkippedMol_ += 1;
+                }
+                else if (forceComp_->gpuMoleculeDeviations(m, &fresh[m]))
+                {
+                    devs[m] = &fresh[m];
+                    nComputedMol_ += 1;
+                }
+                else
+                {
+                    msghandler->fatal("The GPU did not compute the deviations of the energies");
+                }
+            }
+            fe->addGpuDeviations(devs, targets);
+            // Keep the new ones, and the last other one of each molecule
+            for (size_t m = 0; m < nmol && dt->haveKeys && m < cache.size(); m++)
+            {
+                auto &entries = cache[m];
+                if (dt->skipping && !dt->active[m])
+                {
+                    if (dt->hit[m] == 1)
+                    {
+                        std::swap(entries[0], entries[1]);
+                    }
+                }
+                else
+                {
+                    entries[1] = std::move(entries[0]);
+                    entries[0] = { true, dt->keys[m], std::move(fresh[m]) };
+                }
             }
             continue;
         }

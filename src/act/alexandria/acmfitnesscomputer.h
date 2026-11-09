@@ -36,6 +36,7 @@
 #ifndef ALEXANDRIA_ACMFITNESSCOMPUTER_H
 #define ALEXANDRIA_ACMFITNESSCOMPUTER_H
 
+#include <array>
 #include <map>
 #include <vector>
 
@@ -91,6 +92,59 @@ private:
     int                                            compactChecks_ = 0, compactDiffer_ = 0;
     //! The same for the deviations computed on the GPU
     int                                            gpuChecks_ = 0, gpuDiffer_ = 0;
+    //! The optimized parameters that each molecule on the GPU depends on, see buildDependencies
+    std::vector<std::vector<int>>                  molDeps_;
+    //! The molecules of molDeps_ and the version of the GPU system, see ForceComputer::gpuVersion
+    std::vector<const ACTMol *>                    depsMols_;
+    size_t                                         depsVersion_ = 0;
+    //! The deviations of a molecule for a set of the parameters it depends on
+    struct MolCacheEntry
+    {
+        bool                  valid = false;
+        std::vector<double>   key;
+        GpuMoleculeDeviations dev;
+    };
+    //! For each replica and molecule, the deviations of the last two sets of its parameters
+    std::vector<std::vector<std::array<MolCacheEntry, 2>>> molCache_;
+    //! The version of the deviations on the GPU of molCache_, see ForceComputer::gpuDeviationsVersion
+    size_t                                         cacheVersion_ = 0;
+    //! The number of molecules computed and skipped, for the log
+    size_t                                         nComputedMol_ = 0, nSkippedMol_ = 0;
+
+    /*! \brief Update the topology and the charges of a molecule for the parameters now
+     * As in prepareDeviation.
+     * \param[in]    msghandler Message Handler
+     * \param[inout] actmol     The molecule
+     * \param[in]    imol       Its index in the molecules of MolGen
+     * \param[in]    itUpdate   The interaction types that are optimized
+     * \param[in]    gpuCharges Whether the GPU generates the charges, see prepareDeviation
+     * \param[in]    needQProps Whether the charge properties are needed
+     */
+    void updateMolecule(MsgHandler                      *msghandler,
+                        ACTMol                          *actmol,
+                        size_t                           imol,
+                        const std::set<InteractionType> &itUpdate,
+                        bool                             gpuCharges,
+                        bool                             needQProps);
+
+    /*! \brief Find which molecules on the GPU each optimized parameter changes
+     * Each parameter is changed in turn, and the molecules of which the
+     * parameters on the GPU change depend on it, see
+     * ForceComputer::gpuMoleculeSignatures. Only those molecules have to be
+     * computed again when it changes. The parameters and molecules are
+     * restored.
+     * \param[in] msghandler Message Handler
+     * \param[in] selected   The molecules on the GPU
+     * \param[in] itUpdate   The interaction types that are optimized
+     * \param[in] needQProps Whether the charge properties are needed
+     */
+    void buildDependencies(MsgHandler                      *msghandler,
+                           const std::vector<ACTMol *>     &selected,
+                           const std::set<InteractionType> &itUpdate,
+                           bool                             needQProps);
+
+    //! \return the values of the optimized parameters in the force field now
+    std::vector<double> parameterValues();
     //! The loss function
     LossFunction lossFunction_;
 
@@ -212,6 +266,17 @@ public:
         bool                           gpuCharges = false;
         //! Whether the GPU computed the deviations of the energies, and not the energies of the molecules
         bool                           gpuDeviations = false;
+        //! The replica, for several sets of parameters at once, see calcDeviations
+        size_t                         replica = 0;
+        //! Whether molecules whose parameters did not change are skipped, see prepareDeviation
+        bool                           skipping = false;
+        //! For each molecule: whether it is computed, the values of the parameters
+        //! it depends on, and the entry of molCache_ with its deviations if it is not computed
+        std::vector<char>                active;
+        std::vector<std::vector<double>> keys;
+        std::vector<int>                 hit;
+        //! Whether the keys are known, such that the deviations can be kept
+        bool                             haveKeys = false;
     };
 
     /*! \brief Compute the deviations of several sets of parameters
