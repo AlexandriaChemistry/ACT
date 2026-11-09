@@ -56,6 +56,14 @@ target_sources(actLib
            train_ff.cpp
            train_utility.cpp          
 	)
+
+# The deviations from the reference data are summed without fusing
+# multiplications and additions, as the GPU sums them, see
+# gpu::computeDeviations, such that the results are the same with and
+# without GPU and with all compilers
+if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang|Cray")
+    set_source_files_properties(devcomputer.cpp TARGET_DIRECTORY actLib PROPERTIES COMPILE_OPTIONS "-ffp-contract=off")
+endif()
 	
 add_executable(alexandria alexandria.cpp)
 
