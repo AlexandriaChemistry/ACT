@@ -179,6 +179,8 @@ private:
     bool           gpuResident_      = false;
     //! The number of parameter sets on the GPU, see setGpuReplicas
     size_t         gpuReplicas_      = 1;
+    //! Whether to keep the energies as the GPU gives them, see setKeepGpuEnergies
+    bool           keepGpuEnergies_  = false;
     //! Whether the GPU could not compute the molecules, see prepareGpuResident
     mutable bool   gpuResidentUnavailable_ = false;
     //! \return whether to try computing on the GPU, see setGpuResident
@@ -525,6 +527,23 @@ private:
 
     //! \return the number of replicas on the GPU, see setGpuReplicas
     size_t gpuReplicas() const { return gpuReplicas_; }
+
+    /*! \brief Keep the energies of the calculations on the GPU, for gpuTypeEnergies
+     * \param[in] keep Whether to keep them
+     */
+    void setKeepGpuEnergies(bool keep) { keepGpuEnergies_ = keep; }
+
+    /*! \brief The energies of each interaction type of a topology from the last GPU evaluation
+     * See GpuTrainingSystem::typeEnergies, needs setKeepGpuEnergies.
+     * \param[in]  mol      The molecule
+     * \param[in]  what     0 or 1 for a monomer, 2 for the dimer
+     * \param[out] energies The interaction types, in increasing order
+     * \return false if there are none
+     */
+    bool gpuTypeEnergies(const ACTMol *mol, int what, std::vector<GpuTypeEnergies> *energies) const
+    {
+        return gpuSystem_ && gpuSystem_->typeEnergies(mol, what, energies);
+    }
 
     /*! \brief Make the system of these molecules on the GPU, see setGpuResident
      * If the GPU cannot compute them, the processor computes everything

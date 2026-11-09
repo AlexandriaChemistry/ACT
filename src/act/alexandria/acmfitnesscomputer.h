@@ -87,6 +87,8 @@ private:
     std::vector<size_t>                            fixedChargeVersion_;
     //! The timer of each DevComputer, see Timings
     std::vector<size_t>                            devTimers_;
+    //! The evaluations compared and those that differed, see ACT_GPU_DEVIATION_CHECK in finishDeviation
+    int                                            compactChecks_ = 0, compactDiffer_ = 0;
     //! The loss function
     LossFunction lossFunction_;
 
@@ -106,6 +108,11 @@ private:
                           bool        haveInductionCorrectionData);
 
 public:
+
+    /*! \brief Whether to compare ForceEnergyDevComputer::calcDeviationCompact with calcDeviation
+     * For developers, with the environment variable ACT_GPU_DEVIATION_CHECK.
+     */
+    static bool compactCheck();
 
     //! \brief Constructor
     ACMFitnessComputer() {}
@@ -132,6 +139,10 @@ public:
     {
         sii_          = sii;
         forceComp_    = forceComp;
+        if (compactCheck())
+        {
+            forceComp_->setKeepGpuEnergies(true);
+        }
         molgen_       = molgen;
         removeMol_    = removeMol;
         algorithm_    = algorithm;

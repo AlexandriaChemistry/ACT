@@ -4060,6 +4060,8 @@ void GpuTrainingSystem::resetShells() {}
 void GpuTrainingSystem::keepShells() {}
 bool GpuTrainingSystem::restoreShells(int) { return false; }
 void GpuTrainingSystem::constructVsites() {}
+void GpuTrainingSystem::setKeepEnergies(bool) {}
+bool GpuTrainingSystem::typeEnergies(const ACTMol *, int, std::vector<GpuTypeEnergies> *) const { return false; }
 void GpuTrainingSystem::compute(int, bool, bool) {}
 void GpuTrainingSystem::computeForces(int) {}
 bool GpuTrainingSystem::haveKeptShells() const { return false; }
@@ -4088,6 +4090,8 @@ public:
         std::vector<uint32_t> resets;
         //! The conformation of each slot and the slot of each conformation
         std::vector<size_t> confOfSlot, slotOfConf;
+        //! The energies as the GPU gave them, after and before relaxing, see setKeepEnergies
+        std::vector<double> rawAfter, rawBefore;
 
     };
     std::vector<Block>    blocks;
@@ -4171,6 +4175,8 @@ public:
 
     //! The block of each molecule, topology and replica, see find
     std::vector<int> blockIndex;
+    //! Whether to keep the energies as the GPU gives them, see setKeepEnergies
+    bool             keepEnergies = false;
 
     //! Make blockIndex, after the blocks were made
     void indexBlocks()
@@ -4877,6 +4883,82 @@ bool GpuTrainingSystem::restoreShells(int what)
     return true;
 }
 
+void GpuTrainingSystem::setKeepEnergies(bool keep)
+{
+    impl_->keepEnergies = keep;
+}
+
+bool GpuTrainingSystem::typeEnergies(const ACTMol *mol, int what, std::vector<GpuTypeEnergies> *energies) const
+{
+    const auto &im = *impl_;
+    energies->clear();
+    auto k = std::find(im.mols.begin(), im.mols.end(), mol);
+    if (k == im.mols.end())
+    {
+        return false;
+    }
+    int b = im.find(k - im.mols.begin(), what, im.resident);
+    if (b < 0 || im.blocks[b].rawAfter.empty() || im.blocks[b].rawBefore.empty())
+    {
+        return false;
+    }
+    const auto &bl    = im.blocks[b];
+    size_t      nconf = bl.confOfSlot.size();
+    size_t      st    = (*k)->conformationData(what)->arrays.stride;
+    // As storeBlockEnergies: the energy of a type is that of the last
+    // potential with it, the potential energy the sum of all
+    std::map<InteractionType, GpuTypeEnergies> types;
+    auto &epot = types[InteractionType::EPOT];
+    epot.type  = InteractionType::EPOT;
+    epot.act.assign(nconf, 0.0);
+    epot.before.assign(nconf, 0.0);
+    for (size_t e = 0; e < bl.desc.potentials.size(); e++)
+    {
+        const auto &itypes = energyTypes(bl.desc.potentials[e], bl.desc.itypes[e]);
+        size_t      off    = e*gpu::pairEnergyTerms*st;
+        for (size_t t = 0; t < itypes.size(); t++)
+        {
+            auto &te = types[itypes[t]];
+            te.type  = itypes[t];
+            te.act.resize(nconf);
+            te.before.resize(nconf);
+            for (size_t c = 0; c < nconf; c++)
+            {
+                size_t s     = off + t*st + bl.slotOfConf[c];
+                te.act[c]    = 0.0 + bl.rawAfter[s];
+                te.before[c] = 0.0 + bl.rawBefore[s];
+            }
+        }
+        for (size_t c = 0; c < nconf; c++)
+        {
+            size_t s      = off + bl.slotOfConf[c];
+            epot.act[c]    = epot.act[c] + (bl.rawAfter[s] + bl.rawAfter[s + st] + bl.rawAfter[s + 2*st]);
+            epot.before[c] = epot.before[c] + (bl.rawBefore[s] + bl.rawBefore[s + st] + bl.rawBefore[s + 2*st]);
+        }
+    }
+    // The van der Waals correction is part of the exchange
+    auto vdw = types.find(InteractionType::VDWCORRECTION);
+    if (vdw != types.end())
+    {
+        auto &exch = types[InteractionType::EXCHANGE];
+        exch.type  = InteractionType::EXCHANGE;
+        exch.act.resize(nconf, 0.0);
+        exch.before.resize(nconf, 0.0);
+        for (size_t c = 0; c < nconf; c++)
+        {
+            exch.act[c]          = exch.act[c] + vdw->second.act[c];
+            exch.before[c]       = exch.before[c] + vdw->second.before[c];
+            vdw->second.act[c]    = 0;
+            vdw->second.before[c] = 0;
+        }
+    }
+    for (auto &t : types)
+    {
+        energies->push_back(std::move(t.second));
+    }
+    return true;
+}
+
 void GpuTrainingSystem::constructVsites()
 {
     gpu::constructVsites(impl_->system);
@@ -4904,7 +4986,15 @@ void GpuTrainingSystem::compute(int what, bool forces, bool backup)
     {
         if (u[b] && eptr[b])
         {
-            im.storeBlockEnergies(im.blocks[b], eptr[b], backup);
+            auto &bl = im.blocks[b];
+            im.storeBlockEnergies(bl, eptr[b], backup);
+            if (im.keepEnergies)
+            {
+                size_t n   = bl.desc.potentials.size()*gpu::pairEnergyTerms*
+                    im.mols[bl.mol]->conformationData(bl.what)->arrays.stride;
+                auto  &raw = backup ? bl.rawBefore : bl.rawAfter;
+                raw.assign(eptr[b], eptr[b] + n);
+            }
         }
     }
     if (backup)
