@@ -132,6 +132,10 @@ void computeAll(System *, double *const *)
 {
 }
 
+void computeBlocksInPlace(System *, const char *, const double **, bool)
+{
+}
+
 void computeBlocks(System *, const char *, double *const *, bool)
 {
 }

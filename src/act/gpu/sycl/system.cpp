@@ -1566,6 +1566,25 @@ void computeAll(System *sys, double *const *energies)
 
 void computeBlocks(System *sys, const char *use, double *const *energies, bool forces)
 {
+    if (energies == nullptr)
+    {
+        computeBlocksInPlace(sys, use, nullptr, forces);
+        return;
+    }
+    std::vector<const double *> where(sys->nblock_, nullptr);
+    computeBlocksInPlace(sys, use, where.data(), forces);
+    for (size_t b = 0; b < sys->blocksHost_.size(); b++)
+    {
+        const auto &db = sys->blocksHost_[b];
+        if (use[b] && energies[b] && where[b])
+        {
+            std::copy(where[b], where[b] + db.nenergy*pairEnergyTerms*db.stride, energies[b]);
+        }
+    }
+}
+
+void computeBlocksInPlace(System *sys, const char *use, const double **energies, bool forces)
+{
     auto *queue = sys->queue_;
     auto  dU    = sys->deviceMask(use, sys->nblock_);
     auto  dB    = sys->blocks_;
@@ -1776,11 +1795,7 @@ void computeBlocks(System *sys, const char *use, double *const *energies, bool f
     queue->wait_and_throw();
     for (size_t b = 0; b < sys->blocksHost_.size(); b++)
     {
-        const auto &db = sys->blocksHost_[b];
-        if (use[b] && energies[b])
-        {
-            std::copy(hE + eStart[b], hE + eStart[b] + db.nenergy*pairEnergyTerms*db.stride, energies[b]);
-        }
+        energies[b] = use[b] ? hE + eStart[b] : nullptr;
     }
 }
 
