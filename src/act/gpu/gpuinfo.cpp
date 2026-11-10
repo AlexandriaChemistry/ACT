@@ -105,6 +105,36 @@ DevicePeak estimatePeak(const std::string &vendor, const std::string &name,
     return peak;
 }
 
+/*! \brief The message of OutOfMemory
+ * \param[in] device         The name of the GPU
+ * \param[in] totalBytes     Its memory
+ * \param[in] allocatedBytes What this process has allocated on it
+ * \param[in] requestedBytes What it asked for
+ * \return the message
+ */
+static std::string outOfMemoryMessage(const std::string &device, double totalBytes,
+                                      size_t allocatedBytes, size_t requestedBytes)
+{
+    char buf[1024];
+    std::snprintf(buf, sizeof(buf),
+                  "The GPU (%s, %.1f GB) has no memory left: this process had %.1f MB on it "
+                  "and asked for %.1f MB more. All processes that use the GPU share its memory. "
+                  "On NVIDIA GPUs, start the multi-process service when several processes share "
+                  "a GPU, otherwise each process makes a context of its own on it, which takes "
+                  "several hundred MB. Otherwise, use fewer processes per GPU or a smaller "
+                  "train_ff -lockstep, which keeps a copy of the molecules for each individual "
+                  "that a process computes at once. With -nogpu_resident the molecules are not "
+                  "kept on the GPU.",
+                  device.c_str(), totalBytes/1e9, allocatedBytes/1e6, requestedBytes/1e6);
+    return buf;
+}
+
+OutOfMemory::OutOfMemory(const std::string &device, double totalBytes,
+                         size_t allocatedBytes, size_t requestedBytes)
+    : message_(outOfMemoryMessage(device, totalBytes, allocatedBytes, requestedBytes))
+{
+}
+
 std::vector<std::string> explainNoGpu(const NoGpuFacts &facts)
 {
     std::vector<std::string> reasons;
