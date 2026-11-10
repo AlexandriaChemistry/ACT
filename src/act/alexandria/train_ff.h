@@ -169,6 +169,14 @@ public:
      */
     void initForceComputer();
 
+    /*! \brief Check how the master hands out the individuals from a queue
+     * Sets -lockstep to 1 if the GPU cannot compute several individuals at
+     * once, and notes if the middlemen share the individuals unevenly,
+     * with numbers of processes that share them evenly.
+     * \param[in] tw To write the notes to, as well as to stderr, may be nullptr
+     */
+    void balanceQueue(gmx::TextWriter *tw);
+
     /*! \brief Initialize charge generation
      * \param[in] ims The data set to do the work for
      */

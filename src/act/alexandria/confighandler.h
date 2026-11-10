@@ -207,6 +207,11 @@ public:
     //! \return the number of individuals that a middleman computes at once, see -lockstep
     int lockstep() const { return lockstep_; }
 
+    /*! \brief Set the number of individuals that a middleman computes at once
+     * \param[in] n The number
+     */
+    void setLockstep(int n) { lockstep_ = n; }
+
     /*! \brief Set the population size
      * \param[in] size The size
      */
