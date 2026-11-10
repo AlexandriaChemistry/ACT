@@ -191,17 +191,6 @@ private:
     void orderImproper(const ForceField  *pd,
                        std::vector<Bond> *bonds) const;
 
-    /*! Generate the non-bonded pair list based on just the atoms
-     * \param[in] msghandler Message handler
-     * \param[in] pd         Force field needed to set identifiers.
-     * \param[in] itype      The interaction type
-     * \param[in] exclusions The excluded particle pairs
-     */
-    void makePairs(MsgHandler                          *msghandler,
-                   const ForceField                    *pd,
-                   InteractionType                      itype,
-                   const std::vector<std::set<size_t>> &exclusions);
-
  public:
     //! Empty constructor, see init to fill it
     Topology()
@@ -422,6 +411,28 @@ private:
         }
         return TopologyEntryRange(entries).subspan(it->second);
     }
+
+    /*! \brief The interaction types that have interactions, bonded or non-bonded
+     * In the order of the interaction types.
+     * \return the types
+     */
+    std::vector<InteractionType> interactionTypes() const;
+
+    /*! \brief Whether there are interactions of a type, bonded or non-bonded
+     * \param[in] itype The interaction type
+     * \return whether there are
+     */
+    bool hasInteractions(InteractionType itype) const
+    {
+        auto e = entries_.find(itype);
+        return ((e != entries_.end() && !e->second.empty()) ||
+                (nonBonded_.hasType(itype) && !nonBonded_.range(itype).empty()));
+    }
+
+    /*! \brief Remove all interactions of a type, for instance to compute only the others
+     * \param[in] itype The interaction type
+     */
+    void removeInteractionType(InteractionType itype);
 
     /*! \brief Set the parameters of all non-bonded pairs of an interaction type
      * For instance for tests, the force field is not used.

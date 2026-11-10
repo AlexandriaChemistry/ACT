@@ -30,6 +30,8 @@
 #include <algorithm>
 #include <array>
 #include <limits>
+#include <optional>
+#include <string>
 #include <type_traits>
 
 #include "act/basics/msg_handler.h"
@@ -3156,20 +3158,17 @@ static void lowComputeEnergiesT(MsgHandler                *msghandler,
     };
     auto computePart = [&](Part part)
     {
-        for(const auto &entry : top->entries())
+        // All types with interactions, the non-bonded pairs are stored
+        // compactly, see NonBondedPairs
+        for(auto itype : top->interactionTypes())
         {
-            //! \todo Can we prevent this check?
-            if (entry.second.empty())
-            {
-                continue;
-            }
             // Not all potentials are available in the force field,
             // in particular restraint potentials.
             // The function we need to do the math
-            gmx_unused Potential mypot = pd->potential(entry.first);
+            gmx_unused Potential mypot = pd->potential(itype);
             if (Potential::NONE == mypot)
             {
-                mypot = defaultPotential(entry.first);
+                mypot = defaultPotential(itype);
             }
             // Virtual sites have no energy
             if (energyTypes(mypot).empty())
@@ -3177,31 +3176,32 @@ static void lowComputeEnergiesT(MsgHandler                *msghandler,
                 continue;
             }
             // The terms depend on the interaction type for some potentials
-            cener.setTermTypes(&energyTypes(mypot, entry.first));
+            cener.setTermTypes(&energyTypes(mypot, itype));
             // The interactions to compute, without intramolecular ones they
             // may be none, then the energies are zero. The non-bonded pairs
             // are stored compactly, see NonBondedPairs.
             const auto &nb = top->nonBondedPairs();
-            if (nb.hasType(entry.first))
+            if (nb.hasType(itype))
             {
-                PairRange pairs = (intermolecular ? nb.intermolecular(entry.first) : nb.range(entry.first));
+                PairRange pairs = (intermolecular ? nb.intermolecular(itype) : nb.range(itype));
                 if (Part::All != part)
                 {
-                    pairs = nb.shellEntries(entry.first, Part::Shells == part);
+                    pairs = nb.shellEntries(itype, Part::Shells == part);
                     if (Part::Shells == part && pairs.empty())
                     {
                         continue;
                     }
                 }
-                computeEntries(entry.first, mypot, pairs);
+                computeEntries(itype, mypot, pairs);
                 continue;
             }
+            const auto        &ev      = top->entry(itype);
             TopologyEntryRange entries = (intermolecular ?
-                                          top->intermolecular(entry.first, entry.second) :
-                                          TopologyEntryRange(entry.second));
+                                          top->intermolecular(itype, ev) :
+                                          TopologyEntryRange(ev));
             if (Part::All != part)
             {
-                entries = top->shellEntries(entry.first, entry.second, Part::Shells == part);
+                entries = top->shellEntries(itype, ev, Part::Shells == part);
                 // Types without entries with shells keep the energies
                 // of those without, the others are computed even if
                 // empty, such that their energies are zero.
@@ -3210,7 +3210,7 @@ static void lowComputeEnergiesT(MsgHandler                *msghandler,
                     continue;
                 }
             }
-            computeEntries(entry.first, mypot, entries);
+            computeEntries(itype, mypot, entries);
         }
     };
     if (collect)
@@ -3414,12 +3414,14 @@ void computeEnergies(MsgHandler                  *msghandler,
             auto       &mol   = *mi.first;
             const auto *top   = (what >= 2) ? mol.topology() : &mol.fragmentHandler()->topologies()[what];
             size_t      nconf = mol.conformationData(std::min<size_t>(what, 2))->nconf();
-            for(const auto &entry : top->entries())
+            for(auto itype : top->interactionTypes())
             {
-                Potential mypot = pd->potential(entry.first);
+                Potential mypot = pd->potential(itype);
                 if (GpuBatch::canCompute(mypot))
                 {
-                    work += entry.second.size()*nconf;
+                    size_t n = top->nonBondedPairs().hasType(itype) ?
+                        top->nonBondedPairs().range(itype).size() : top->entry(itype).size();
+                    work += n*nconf;
                 }
             }
         }
@@ -3546,45 +3548,56 @@ void addShellFragment(const Topology   *top,
 bool addShellEntries(const ForceField *pd, double epsilonr, GpuRelaxMolecule *m)
 {
     const auto &top = *m->top;
-    for (const auto &entry : top.entries())
+    for (auto itype : top.interactionTypes())
     {
-        if (entry.second.empty())
-        {
-            continue;
-        }
-        Potential mypot = pd->potential(entry.first);
+        Potential mypot = pd->potential(itype);
         if (Potential::NONE == mypot)
         {
-            mypot = defaultPotential(entry.first);
+            mypot = defaultPotential(itype);
         }
         if (energyTypes(mypot).empty())
         {
             continue;
         }
-        auto entries = top.shellEntries(entry.first, entry.second, true);
-        if (entries.empty())
+        // The non-bonded pairs are stored compactly, see NonBondedPairs
+        const auto &nb      = top.nonBondedPairs();
+        bool        isPairs = nb.hasType(itype);
+        auto        entries = isPairs ? TopologyEntryRange() : top.shellEntries(itype, top.entry(itype), true);
+        auto        pairs   = isPairs ? nb.shellEntries(itype, true) : PairRange();
+        if (isPairs ? pairs.empty() : entries.empty())
         {
             continue;
         }
         gpu::PairKernel kernel;
         if (!gpuPairKernel(mypot, &kernel) ||
-            energyTypes(mypot, entry.first).size() > static_cast<size_t>(gpu::pairEnergyTerms))
+            energyTypes(mypot, itype).size() > static_cast<size_t>(gpu::pairEnergyTerms))
         {
             return false;
         }
         std::vector<gpu::PairEntry> pe;
-        pe.reserve(entries.size());
-        for (const auto &b : entries)
+        auto addEntries = [&](const auto &range)
         {
-            gpu::PairEntry e;
-            if (gpuPairEntry(kernel, *b.operator->(), top.atoms(), epsilonr, &e))
+            pe.reserve(range.size());
+            for (const auto &b : range)
             {
-                pe.push_back(e);
+                gpu::PairEntry e;
+                if (gpuPairEntry(kernel, *b.operator->(), top.atoms(), epsilonr, &e))
+                {
+                    pe.push_back(e);
+                }
             }
+        };
+        if (isPairs)
+        {
+            addEntries(pairs);
+        }
+        else
+        {
+            addEntries(entries);
         }
         m->pairs.push_back(std::move(pe));
         m->potentials.push_back(mypot);
-        m->itypes.push_back(entry.first);
+        m->itypes.push_back(itype);
         gpu::PairBlock blk;
         blk.kernel = kernel;
         m->blocks.push_back(blk);
@@ -3808,8 +3821,16 @@ struct GpuSystemTopology
     std::vector<gpu::VsiteEntry>             vsites;
     //! For each list the row of each interaction in its parameter table, see gpu::updateParameters
     std::vector<std::vector<uint32_t>>       index;
+    //! An interaction with the parameters of a row of a parameter table
+    struct Row
+    {
+        //! A bonded interaction, or nullptr
+        const TopologyEntry    *entry = nullptr;
+        //! A non-bonded pair, if not entry
+        std::optional<PairView> pair;
+    };
     //! For each list an interaction of each row of its parameter table
-    std::vector<std::vector<const TopologyEntry *>> rows;
+    std::vector<std::vector<Row>>            rows;
     //! The kernel of each list
     std::vector<gpu::PairKernel>             pairKernels;
     std::vector<gpu::BondedKernel>           bondedKernels;
@@ -3846,31 +3867,27 @@ bool describeGpuTopology(const ForceField *pd, const Topology *top, Conformation
     t->top   = top;
     t->cdata = cdata;
     double epsilonr = pd->epsilonr();
-    for (const auto &entry : top->entries())
+    for (auto itype : top->interactionTypes())
     {
-        if (entry.second.empty())
+        if (isVsite(itype))
         {
-            continue;
-        }
-        if (isVsite(entry.first))
-        {
-            for (const auto &b : entry.second)
+            for (const auto &b : top->entry(itype))
             {
                 gpu::VsiteEntry ve;
-                if (!gpuVsiteEntry(entry.first, *b.operator->(), &ve))
+                if (!gpuVsiteEntry(itype, *b.operator->(), &ve))
                 {
                     return false;
                 }
                 t->vsites.push_back(ve);
                 t->vsiteEntries.push_back(b.operator->());
-                t->vsiteTypes.push_back(entry.first);
+                t->vsiteTypes.push_back(itype);
             }
             continue;
         }
-        Potential mypot = pd->potential(entry.first);
+        Potential mypot = pd->potential(itype);
         if (Potential::NONE == mypot)
         {
-            mypot = defaultPotential(entry.first);
+            mypot = defaultPotential(itype);
         }
         if (energyTypes(mypot).empty())
         {
@@ -3881,73 +3898,107 @@ bool describeGpuTopology(const ForceField *pd, const Topology *top, Conformation
         bool              pair   = gpuPairKernel(mypot, &pk);
         bool              bonded = !pair && gpuBondedKernel(mypot, &bk);
         if ((!pair && !bonded) ||
-            energyTypes(mypot, entry.first).size() > static_cast<size_t>(gpu::pairEnergyTerms))
+            energyTypes(mypot, itype).size() > static_cast<size_t>(gpu::pairEnergyTerms))
         {
             return false;
         }
         uint32_t energyIndex = t->potentials.size();
         t->potentials.push_back(mypot);
-        t->itypes.push_back(entry.first);
+        t->itypes.push_back(itype);
         // The entries without and with shells, which are all without if
-        // the topology does not split them
+        // the topology does not split them. The non-bonded pairs are
+        // stored compactly, see NonBondedPairs.
+        const auto &nb = top->nonBondedPairs();
         for (int part = 0; part < 2; part++)
         {
-            TopologyEntryRange entries = top->hasShellSplit() ?
-                top->shellEntries(entry.first, entry.second, part == 1) :
-                (part == 0 ? TopologyEntryRange(entry.second) : TopologyEntryRange());
-            gpu::InteractionList il;
-            il.bonded      = bonded;
-            il.kernel      = pair ? static_cast<uint32_t>(pk) : static_cast<uint32_t>(bk);
-            il.shells      = part == 1;
-            il.energyIndex = energyIndex;
-            il.nterm       = energyTypes(mypot, entry.first).size();
-            t->pairs.emplace_back();
-            t->bonds.emplace_back();
-            t->index.emplace_back();
-            t->rows.emplace_back();
-            t->pairKernels.push_back(pk);
-            t->bondedKernels.push_back(bk);
-            // The interactions of the same types have the same parameters,
-            // one row of the table each. Coulomb follows from the charges.
-            std::map<std::string, uint32_t> rowOfKey;
-            for (const auto &b : entries)
+            auto addList = [&](const auto &entries)
             {
-                if (!(pair && pk == gpu::PairKernel::Coulomb))
+                gpu::InteractionList il;
+                il.bonded      = bonded;
+                il.kernel      = pair ? static_cast<uint32_t>(pk) : static_cast<uint32_t>(bk);
+                il.shells      = part == 1;
+                il.energyIndex = energyIndex;
+                il.nterm       = energyTypes(mypot, itype).size();
+                t->pairs.emplace_back();
+                t->bonds.emplace_back();
+                t->index.emplace_back();
+                t->rows.emplace_back();
+                t->pairKernels.push_back(pk);
+                t->bondedKernels.push_back(bk);
+                // The interactions of the same types have the same parameters,
+                // one row of the table each. Coulomb follows from the charges.
+                std::map<std::string, uint32_t> rowOfKey;
+                for (const auto &b : entries)
                 {
-                    std::string key = b->id().id();
-                    for (auto ai : b->atomIndices())
+                    if (!(pair && pk == gpu::PairKernel::Coulomb))
                     {
-                        key += "|" + top->atoms()[ai].ffType();
+                        // A non-bonded pair has the type pair as key, which
+                        // stands for the same as the identifier and the
+                        // particle types of the entries
+                        std::string key;
+                        if constexpr (isPairRange<decltype(entries)>)
+                        {
+                            key = std::to_string(b.typeIndex());
+                        }
+                        else
+                        {
+                            key = b->id().id();
+                            for (auto ai : b->atomIndices())
+                            {
+                                key += "|" + top->atoms()[ai].ffType();
+                            }
+                        }
+                        auto rk = rowOfKey.find(key);
+                        if (rk == rowOfKey.end())
+                        {
+                            rk = rowOfKey.emplace(key, t->rows.back().size()).first;
+                            GpuSystemTopology::Row row;
+                            if constexpr (isPairRange<decltype(entries)>)
+                            {
+                                row.pair = b;
+                            }
+                            else
+                            {
+                                row.entry = b.operator->();
+                            }
+                            t->rows.back().push_back(row);
+                        }
+                        t->index.back().push_back(rk->second);
                     }
-                    auto rk = rowOfKey.find(key);
-                    if (rk == rowOfKey.end())
+                    if (pair)
                     {
-                        rk = rowOfKey.emplace(key, t->rows.back().size()).first;
-                        t->rows.back().push_back(b.operator->());
+                        // Interactions without parameters are kept, inactive,
+                        // such that the lists keep their length when the
+                        // parameters change, see gpu::PairEntry
+                        gpu::PairEntry pe;
+                        if (!gpuPairEntry(pk, *b.operator->(), top->atoms(), epsilonr, &pe))
+                        {
+                            pe.p[7] = 1;
+                        }
+                        t->pairs.back().push_back(pe);
                     }
-                    t->index.back().push_back(rk->second);
-                }
-                if (pair)
-                {
-                    // Interactions without parameters are kept, inactive,
-                    // such that the lists keep their length when the
-                    // parameters change, see gpu::PairEntry
-                    gpu::PairEntry pe;
-                    if (!gpuPairEntry(pk, *b.operator->(), top->atoms(), epsilonr, &pe))
+                    else if constexpr (!isPairRange<decltype(entries)>)
                     {
-                        pe.p[7] = 1;
+                        gpu::BondedEntry be;
+                        gpuBondedEntry(bk, *b.operator->(), &be);
+                        t->bonds.back().push_back(be);
                     }
-                    t->pairs.back().push_back(pe);
                 }
-                else
-                {
-                    gpu::BondedEntry be;
-                    gpuBondedEntry(bk, *b.operator->(), &be);
-                    t->bonds.back().push_back(be);
-                }
+                il.n = pair ? t->pairs.back().size() : t->bonds.back().size();
+                t->lists.push_back(il);
+            };
+            if (nb.hasType(itype))
+            {
+                addList(top->hasShellSplit() ? nb.shellEntries(itype, part == 1) :
+                        (part == 0 ? nb.range(itype) : PairRange()));
             }
-            il.n = pair ? t->pairs.back().size() : t->bonds.back().size();
-            t->lists.push_back(il);
+            else
+            {
+                const auto &ev = top->entry(itype);
+                addList(top->hasShellSplit() ?
+                        top->shellEntries(itype, ev, part == 1) :
+                        (part == 0 ? TopologyEntryRange(ev) : TopologyEntryRange()));
+            }
         }
     }
     t->setPointers();
@@ -4776,19 +4827,22 @@ static void stageBlock(const ACTMol                  *molptr,
     const auto     &atoms = top->atoms();
     for (size_t l = 0; l < d.lists.size(); l++)
     {
-        for (auto row : d.rows[l])
+        for (const auto &row : d.rows[l])
         {
             float p[8];
             if (d.lists[l].bonded)
             {
                 gpu::BondedEntry be;
-                gpuBondedEntry(d.bondedKernels[l], *row, &be);
+                gpuBondedEntry(d.bondedKernels[l], *row.entry, &be);
                 std::copy(be.p, be.p + 8, p);
             }
             else
             {
                 gpu::PairEntry pe;
-                if (!gpuPairEntry(d.pairKernels[l], *row, atoms, epsilonr, &pe))
+                bool           active = row.pair ?
+                    gpuPairEntry(d.pairKernels[l], *row.pair, atoms, epsilonr, &pe) :
+                    gpuPairEntry(d.pairKernels[l], *row.entry, atoms, epsilonr, &pe);
+                if (!active)
                 {
                     pe.p[7] = 1;
                 }

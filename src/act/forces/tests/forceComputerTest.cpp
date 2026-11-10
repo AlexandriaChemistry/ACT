@@ -682,13 +682,21 @@ TEST_F(ForceComputerIntegrationTest, CountsFlops)
     for (const auto &e : expected)
     {
         auto itype = std::get<1>(e);
-        ASSERT_TRUE(top->hasEntry(itype)) << std::get<0>(e);
         double n = 0;
-        for (const auto &b : top->entry(itype))
+        if (InteractionType::VDW == itype)
         {
-            auto &params = b->params();
-            n += (InteractionType::VDW != itype ||
-                  (params[lj14_7EPSILON] > 0 && params[lj14_7SIGMA] > 0)) ? 1 : 0;
+            // The non-bonded pairs are stored compactly, see NonBondedPairs
+            ASSERT_TRUE(top->nonBondedPairs().hasType(itype)) << std::get<0>(e);
+            for (const auto &b : top->nonBondedPairs().range(itype))
+            {
+                auto &params = b.params();
+                n += (params[lj14_7EPSILON] > 0 && params[lj14_7SIGMA] > 0) ? 1 : 0;
+            }
+        }
+        else
+        {
+            ASSERT_TRUE(top->hasEntry(itype)) << std::get<0>(e);
+            n = top->entry(itype).size();
         }
         EXPECT_GT(n, 0);
         EXPECT_EQ(std::get<2>(e)*n, timings.flops()[timings.index(std::get<0>(e))]) << std::get<0>(e);

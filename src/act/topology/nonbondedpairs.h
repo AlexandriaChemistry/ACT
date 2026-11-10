@@ -62,9 +62,11 @@ public:
      * \param[in] atoms  The two particles
      * \param[in] params The parameters of the type pair
      * \param[in] id     The identifier of the type pair
+     * \param[in] type   The index of the type pair, see PairTypes
      */
-    PairView(const std::array<int, 2> *atoms, const std::vector<double> *params, const Identifier *id)
-        : atoms_(atoms), params_(params), id_(id) {}
+    PairView(const std::array<int, 2> *atoms, const std::vector<double> *params, const Identifier *id,
+             uint32_t type = 0)
+        : atoms_(atoms), params_(params), id_(id), type_(type) {}
 
     //! \return the two particles
     const std::array<int, 2> &atomIndices() const { return *atoms_; }
@@ -78,6 +80,9 @@ public:
     //! \return the identifier of the pair of particle types, empty for Coulomb
     const Identifier &id() const { return *id_; }
 
+    //! \return the index of the type pair, see PairTypes, zero for Coulomb
+    uint32_t typeIndex() const { return type_; }
+
     //! \return this pair, such that a range element can be used like a BaseContainer<TopologyEntry>
     const PairView *operator->() const { return this; }
 
@@ -88,6 +93,8 @@ private:
     const std::vector<double> *params_;
     //! The identifier
     const Identifier          *id_;
+    //! The type pair
+    uint32_t                   type_;
 };
 
 /*! \brief The pairs of particle types of one interaction type, see NonBondedPairs
@@ -138,7 +145,7 @@ public:
         size_t e = begin_ + k;
         if (types_)
         {
-            return PairView(pairs_ + pos_[e], &types_->params[type_[e]], &types_->ids[type_[e]]);
+            return PairView(pairs_ + pos_[e], &types_->params[type_[e]], &types_->ids[type_[e]], type_[e]);
         }
         return PairView(pairs_ + pos_[e], &noParams_, &noId_);
     }
@@ -276,6 +283,9 @@ public:
 
     //! \return whether the interaction type has pairs
     bool hasType(InteractionType itype) const { return types_.find(itype) != types_.end(); }
+
+    //! Remove the pairs of an interaction type
+    void removeType(InteractionType itype) { types_.erase(itype); }
 
     //! \return the interaction types that have pairs
     std::vector<InteractionType> types() const;

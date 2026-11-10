@@ -1341,15 +1341,17 @@ void ACTMol::PrintTopology(MsgHandler                   *msg_handler,
     }
     if (msg_handler->verbose())
     {
-        for (const auto &entry : topology_.entries())
+        for (auto itype : topology_.interactionTypes())
         {
-            auto &fs = pd->findForcesConst(entry.first);
-            auto ftype = fs.potential();
-            if (entry.second.size() > 0)
+            if (!pd->interactionPresent(itype))
             {
-                printf("There are %4zu %s interactions\n", entry.second.size(),
-                       potentialToString(ftype).c_str());
+                continue;
             }
+            auto  &fs    = pd->findForcesConst(itype);
+            auto   ftype = fs.potential();
+            size_t n     = topology_.nonBondedPairs().hasType(itype) ?
+                topology_.nonBondedPairs().range(itype).size() : topology_.entry(itype).size();
+            printf("There are %4zu %s interactions\n", n, potentialToString(ftype).c_str());
         }
         for (auto i = commercials.begin(); (i < commercials.end()); ++i)
         {
