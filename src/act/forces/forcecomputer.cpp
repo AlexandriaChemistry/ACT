@@ -608,6 +608,7 @@ size_t ForceComputer::updateShells(const Topology            *top,
     auto  &disp       = state.disp;
     auto  &rcs        = state.rcs;
     auto  &relax      = state.relax;
+    auto  &moved      = state.moved;
     size_t nconf      = active ? active->size() : myCoords->size();
     size_t s0         = ca.nconf;
     size_t s1         = 0;
@@ -768,6 +769,7 @@ size_t ForceComputer::updateShells(const Topology            *top,
     dxForce.assign(ns, 0.0);
     disp.resize(DIM*ns);
     rcs.resize(ns);
+    moved.assign(ns, 0);
     // Loop over polarizabilities
     for(const auto &p : pols)
     {
@@ -857,6 +859,10 @@ size_t ForceComputer::updateShells(const Topology            *top,
                     flops  += 16;
                 }
             }
+            for(int m = 0; m < DIM; m++)
+            {
+                moved[j] = moved[j] || xs[j + m*stride] != xold[m];
+            }
             // Shells held at the maximum distance do not tell how far to step
             gmx::RVec dxj = { 0, 0, 0 };
             if (!clipped)
@@ -877,9 +883,22 @@ size_t ForceComputer::updateShells(const Topology            *top,
     }
     for(size_t j = 0; j < ns; j++)
     {
-        if (relax[j])
+        if (!relax[j])
         {
-            dxfPrev[j] = dxForce[j];
+            continue;
+        }
+        dxfPrev[j] = dxForce[j];
+        // The displacements of all shells were below the resolution of the
+        // coordinates, see coordinateUnit, so the shells did not move. The
+        // next steps would be the same, so the shells are as converged as
+        // the coordinates allow. With very stiff springs this happens above
+        // the tolerance on the force, for instance at 1e-4 kJ/mol nm with a
+        // force constant of 1e13 kJ/mol nm^2.
+        if (!moved[j])
+        {
+            (*myCoords)[ca.conformation(s0 + j)].done = true;
+            numberDone += 1;
+            relax[j]    = 0;
         }
     }
     Timings::instance().addFlops(flops);
