@@ -216,21 +216,20 @@ protected:
         cmd.addOption("-shelltoler", 1e-8);
         cmd.addOption("-shellMaxIter", 100);
         cmd.addOption("-block", block);
-        cmd.append("-json");
-        auto label = gmx::formatString("%s-%d", ffName.c_str(), nDimer);
+        auto label    = gmx::formatString("%s-%d", ffName.c_str(), nDimer);
+        auto jsonFile = fileManager().getTemporaryFilePath(label + "-b2.json");
+        cmd.addOption("-json", jsonFile);
         cmd.addOption("-b2", fileManager().getTemporaryFilePath(label + "-B2T.xvg"));
         cmd.addOption("-eh", fileManager().getTemporaryFilePath(label + "-mayer.xvg"));
         cmd.addOption("-g", fileManager().getTemporaryFilePath(label + "-b2.log"));
         EXPECT_EQ(0, b2(cmd.argc(), cmd.argv()));
         if (gmx_node_rank() == 0)
         {
-            // The b2 tool writes b2.json in the working directory
-            const char    *jsonFile = "b2.json";
-            std::ifstream  in(jsonFile);
+            // The file of -json
+            std::ifstream in(jsonFile);
             ASSERT_TRUE(in.good()) << "Cannot open " << jsonFile;
             auto json = nlohmann::json::parse(in);
             in.close();
-            std::remove(jsonFile);
             auto &b2json = json["SecondVirialCoefficient"]["Second virial coefficients"];
             ASSERT_TRUE(b2json.is_object());
             EXPECT_EQ("cm^3/mol", b2json["Unit"]);

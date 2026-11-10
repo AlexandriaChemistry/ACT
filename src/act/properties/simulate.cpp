@@ -87,7 +87,9 @@ int simulate(int argc, char *argv[])
         "and numbering should disregard shells and virtual sites if present",
         "in the model.[PAR]",
         "To obtain information on the used model, the final structure can be",
-        "store as a molprop file."
+        "store as a molprop file.[PAR]",
+        "With [TT]-json[tt], part of the output, such as the timings, is",
+        "written in json format to the given file, simulate.json by default."
     };
 
     std::vector<t_filenm>     fnm = {
@@ -96,16 +98,14 @@ int simulate(int argc, char *argv[])
         { efSTO, "-c",       "confout",    ffOPTWR },
         { efXVG, "-e",       "energy",     ffWRITE },
         { efNDX, "-freeze",  "freeze",     ffOPTRD },
-        { efXML, "-omp",     "molprop",    ffOPTWR }
+        { efXML, "-omp",     "molprop",    ffOPTWR },
+        { efJSON, "-json",   "simulate",   ffOPTWR }
     };
     gmx_output_env_t         *oenv;
     real                      shellToler = 1e-6;
-    bool                      json       = false;
     std::vector<t_pargs>      pa = {
         { "-shelltoler", FALSE, etREAL, {&shellToler},
-          "Tolerance for shell force optimization (mean square force)" },
-        { "-json", FALSE, etBOOL, {&json},
-          "Print part of the output in json format" }
+          "Tolerance for shell force optimization (mean square force)" }
     };
     SimulationConfigHandler  sch;
     sch.add_options(&pa, &fnm);
@@ -126,6 +126,9 @@ int simulate(int argc, char *argv[])
     CommunicationRecord cr;
     cr.init(cr.size());
     msghandler.optionsFinished(fnm, &cr);
+    // Part of the output in json format, in the file of -json if it is given
+    const char *jsonFile = opt2fn_null("-json", fnm.size(), fnm.data());
+    bool        json     = jsonFile != nullptr;
 
     sch.check_pargs(&msghandler);
     compR.optionsFinished(&msghandler, fnm);
@@ -344,7 +347,7 @@ int simulate(int argc, char *argv[])
     printTimings(&cr, msghandler.tw(), phase.wallTime(), json ? &jtree : nullptr, &peak);
     if (json)
     {
-        jtree.write("simulate.json", json);
+        jtree.write(jsonFile, json);
     }
     if (!msghandler.ok())
     {
