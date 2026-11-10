@@ -14,9 +14,9 @@ builds ACT in the build directory *build_Release_DOUBLE*, including the test pro
 
 The script does not configure the build directories, except the one without vectorization of *-\-novec*: it uses the *cmake* and *ctest* programs with which a directory was configured, and the MPI launcher found there. Configure them once, from the directory with the source code, with the compilers and libraries you normally use, for instance::
 
-  cmake -S . -B build_Release_DOUBLE -DCMAKE_BUILD_TYPE=Release -DGMX_DOUBLE=ON
-  cmake -S . -B build_Release_SINGLE -DCMAKE_BUILD_TYPE=Release -DGMX_DOUBLE=OFF
-  cmake -S . -B build_ASAN_DOUBLE -DCMAKE_BUILD_TYPE=ASAN -DGMX_DOUBLE=ON
+  cmake -S . -B build_Release_DOUBLE -DCMAKE_BUILD_TYPE=Release -DACT_DOUBLE=ON
+  cmake -S . -B build_Release_SINGLE -DCMAKE_BUILD_TYPE=Release -DACT_DOUBLE=OFF
+  cmake -S . -B build_ASAN_DOUBLE -DCMAKE_BUILD_TYPE=ASAN -DACT_DOUBLE=ON
 
 where the second one is needed for *-\-single* and the third one for *-\-asan*. Another directory than *build_Release_DOUBLE* can be given with *-b*; the directories of *-\-single* and *-\-asan* always have these names.
 
@@ -63,7 +63,7 @@ The build without vectorization shows whether a difference comes from vectorizat
 ==================
 The regression set
 ==================
-The tests check small parts of the code. The regression set checks whole calculations: training of the hydrogen fluoride dimer, of the halgren-PG force field for alcohols and water, of the polarizable alc-pol force field and of bonded parameters for monomers, as well as the second virial coefficient of the BK3, TIP5P and hydrogen fluoride models. These are small versions of the benchmarks of ACT and take about a minute together. They need the input files of the ACTdata repository, by default in *$HOME/Alexandria/ACTdata*, which can be changed with the environment variable *ACT_VERIFY_DATA*: the force fields, molecules and selections in *Performance/train_ff*, the dimer structures in *Performance/b2*, and the force fields *BK3.xml* and *TIP5P.xml* in *LegacyForceFields*. Each calculation is run with 8 MPI processes, with the MPI launcher found when the build directory was configured, so the build needs MPI (*GMX_MPI*, on by default).
+The tests check small parts of the code. The regression set checks whole calculations: training of the hydrogen fluoride dimer, of the halgren-PG force field for alcohols and water, of the polarizable alc-pol force field and of bonded parameters for monomers, as well as the second virial coefficient of the BK3, TIP5P and hydrogen fluoride models. These are small versions of the benchmarks of ACT and take about a minute together. They need the input files of the ACTdata repository, by default in *$HOME/Alexandria/ACTdata*, which can be changed with the environment variable *ACT_VERIFY_DATA*: the force fields, molecules and selections in *Performance/train_ff*, the dimer structures in *Performance/b2*, and the force fields *BK3.xml* and *TIP5P.xml* in *LegacyForceFields*. Each calculation is run with 8 MPI processes, with the MPI launcher found when the build directory was configured, so the build needs MPI (*ACT_MPI*, on by default).
 
 The regression set is useful for changes that should not change the results, such as making the code faster or easier to maintain. Before such a change, keep the results as the reference::
 
