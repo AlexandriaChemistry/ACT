@@ -1514,17 +1514,23 @@ void Topology::build(MsgHandler             *msghandler,
     exclusions_[InteractionType::ELECTROSTATICS] = exclusionList;
     makePairs(msghandler, pd, InteractionType::VDW, exclusions);
     makePairs(msghandler, pd, InteractionType::ELECTROSTATICS, exclusions);
+    // The same pairs once for all non-bonded types
+    nonBonded_.make(atoms_.size(), exclusions);
+    nonBonded_.addType(pd, InteractionType::VDW, atoms_);
+    nonBonded_.addType(pd, InteractionType::ELECTROSTATICS, atoms_);
     auto itqt = InteractionType::VDWCORRECTION;
     // If the interaction has no parameters even though it is present, ignore
     if (pd->interactionPresent(itqt) && !pd->findForcesConst(itqt).empty())
     {
         makePairs(msghandler, pd, itqt, exclusions);
+        nonBonded_.addType(pd, itqt, atoms_);
     }
     auto itic = InteractionType::INDUCTIONCORRECTION;
     // If the interaction has no parameters even though it is present, ignore
     if (pd->interactionPresent(itic) && !pd->findForcesConst(itic).empty())
     {
         makePairs(msghandler, pd, itic, exclusions);
+        nonBonded_.addType(pd, itic, atoms_);
     }
     if (missing != missingParameters::Generate)
     {
@@ -1546,6 +1552,12 @@ const TopologyEntryVector &Topology::entry(InteractionType itype) const
 
 void Topology::separateIntermolecular(size_t natom0)
 {
+    nonBonded_.separate([natom0](const std::array<int, 2> &p)
+                        {
+                            bool first  = static_cast<size_t>(p[0]) <  natom0 || static_cast<size_t>(p[1]) <  natom0;
+                            bool second = static_cast<size_t>(p[0]) >= natom0 || static_cast<size_t>(p[1]) >= natom0;
+                            return !(first && second);
+                        }, false);
     intermolecularStart_.clear();
     for(auto &entry : entries_)
     {
@@ -1581,6 +1593,10 @@ void Topology::separateShells()
     }
     // The order of separateIntermolecular is lost
     intermolecularStart_.clear();
+    nonBonded_.separate([&isShell](const std::array<int, 2> &p)
+                        {
+                            return !isShell[p[0]] && !isShell[p[1]];
+                        }, true);
     for(auto &entry : entries_)
     {
         auto &vec  = entry.second;
@@ -1963,6 +1979,13 @@ void Topology::fillParameters(MsgHandler                      *msghandler,
             {
                 vsiteVersion_ += 1;
             }
+        }
+    }
+    for (auto itype : nonBonded_.types())
+    {
+        if (pd->interactionPresent(itype) && !(itypes && itypes->find(itype) == itypes->end()))
+        {
+            (void) nonBonded_.fillParameters(msghandler, pd, itype, missing);
         }
     }
 }

@@ -51,6 +51,7 @@
 #include "act/topology/actatom.h"
 #include "act/topology/actatomlist.h"
 #include "act/topology/actmol_low.h"
+#include "act/topology/nonbondedpairs.h"
 #include "act/utility/communicationrecord.h"
 #include "gromacs/utility/exceptions.h"
 
@@ -85,6 +86,8 @@ private:
     std::map<InteractionType, size_t>                         intermolecularStart_;
     //! Position of the first entry with a shell of each interaction type, see separateShells
     std::map<InteractionType, size_t>                         shellStart_;
+    //! The non-bonded pairs, stored compactly, see NonBondedPairs
+    NonBondedPairs                                            nonBonded_;
 
     /*! Generate virtual sites for atoms.
      * \param[in] msghandler Message handler
@@ -419,6 +422,13 @@ private:
         }
         return TopologyEntryRange(entries).subspan(it->second);
     }
+
+    /*! \brief The non-bonded pairs, stored compactly
+     * The same pairs, in the same order, as the entries of the non-bonded
+     * interaction types, with the same separations.
+     * \return the pairs
+     */
+    const NonBondedPairs &nonBondedPairs() const { return nonBonded_; }
 
     //! \return Whether the intermolecular entries are known, see separateIntermolecular
     bool hasIntermolecular() const { return !intermolecularStart_.empty(); }

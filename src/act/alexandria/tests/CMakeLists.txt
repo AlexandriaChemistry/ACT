@@ -54,6 +54,7 @@ gmx_add_unit_test(
     optimizationindexTest.cpp
     queuebalanceTest.cpp
     mcmcmutatorTest.cpp
+    nonbondedpairsTest.cpp
     sensitivityTest.cpp
     sensitivityAnalysisTest.cpp
     trainffTest.cpp
