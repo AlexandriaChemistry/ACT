@@ -1397,14 +1397,18 @@ void Topology::build(MsgHandler             *msghandler,
     // Now there will be no more changes to the atomList and we can copy it back.
     std::vector<int> renumber(atomList.size(), 0);
     size_t atom = 0;
-    atoms_.clear();
+    // Exactly as many as needed, these are kept during the whole run
+    std::vector<ActAtom> atoms;
+    atoms.reserve(atomList.size());
     x->clear();
+    x->reserve(atomList.size());
     for(auto iter = atomList.begin(); iter != atomList.end(); iter = std::next(iter))
     {
-        atoms_.push_back(iter->atom());
+        atoms.push_back(iter->atom());
         (*x).push_back(iter->x());
         renumber[iter->index()] = atom++;
     }
+    atoms_ = std::move(atoms);
     // Renumber the list of real atoms
     for (size_t i = 0; i < realAtoms_.size(); i++)
     {

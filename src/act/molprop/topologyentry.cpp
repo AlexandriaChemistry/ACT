@@ -34,6 +34,9 @@
 
 #include "topologyentry.h"
 
+#include <mutex>
+#include <set>
+#include <tuple>
 #include <vector>
 
 #include "act/basics/interactiontype.h"
@@ -107,17 +110,38 @@ Bond Bond::swap() const
 
 void Angle::setBonds(const Bond &bij, const Bond &bjk)
 {
-    b_[0] = bij;
-    b_[1] = bjk;
-    if (b_[0].aJ() != b_[1].aI())
+    if (bij.aJ() != bjk.aI())
     {
         GMX_THROW(gmx::InvalidInputError("Incorrect bonds passed"));
     }
-    addAtom(b_[0].aI());
-    addAtom(b_[0].aJ());
-    addAtom(b_[1].aJ());
+    addAtom(bij.aI());
+    addAtom(bij.aJ());
+    addAtom(bjk.aJ());
     addBondOrder(bij.bondOrder());
     addBondOrder(bjk.bondOrder());
+}
+
+const Identifier *sharedIdentifier(const Identifier *id)
+{
+    static const Identifier empty;
+    if (nullptr == id)
+    {
+        return &empty;
+    }
+    // All of the identifier, unlike its comparison operator, which takes
+    // an identifier and its swapped one to be the same
+    struct Exact
+    {
+        bool operator()(const Identifier &a, const Identifier &b) const
+        {
+            return std::forward_as_tuple(a.canSwap(), a.ids(), a.atoms(), a.bondOrders()) <
+                std::forward_as_tuple(b.canSwap(), b.ids(), b.atoms(), b.bondOrders());
+        }
+    };
+    static std::set<Identifier, Exact> shared;
+    static std::mutex                   mutex;
+    std::lock_guard<std::mutex>         lock(mutex);
+    return &*shared.insert(*id).first;
 }
 
 CommunicationStatus TopologyEntry::BroadCast(const CommunicationRecord *cr,
@@ -248,69 +272,43 @@ Angle::Angle(const Bond bij, const Bond bjk)
     setBonds(bij, bjk);
 }
 
-void Angle::renumberAtoms(const std::vector<int> &renumber)
-{
-    b_[0].renumberAtoms(renumber);
-    b_[1].renumberAtoms(renumber);
-}
-
 Improper::Improper(const Bond &bij, const Bond &bik, const Bond &bil)
 {
-    b_[0] = bij;
-    b_[1] = bik;
-    b_[2] = bil;
-    if (b_[0].aI() != b_[1].aI())
+    if (bij.aI() != bik.aI())
     {
         GMX_THROW(gmx::InvalidInputError("Incorrect second bond passed"));
     }
-    if (b_[0].aI() != b_[2].aI())
+    if (bij.aI() != bil.aI())
     {
         GMX_THROW(gmx::InvalidInputError("Incorrect third bond passed"));
     }
-    addAtom(b_[0].aI());
-    addAtom(b_[0].aJ());
-    addAtom(b_[1].aJ());
-    addAtom(b_[2].aJ());
+    addAtom(bij.aI());
+    addAtom(bij.aJ());
+    addAtom(bik.aJ());
+    addAtom(bil.aJ());
     GMX_RELEASE_ASSERT(atomIndices().size() == 4, "Something weird with impropers");
     addBondOrder(bij.bondOrder());
     addBondOrder(bik.bondOrder());
     addBondOrder(bil.bondOrder());
 }
 
-void Improper::renumberAtoms(const std::vector<int> &renumber)
-{
-    b_[0].renumberAtoms(renumber);
-    b_[1].renumberAtoms(renumber);
-    b_[2].renumberAtoms(renumber);
-}
-
 Proper::Proper(const Bond &bij, const Bond &bjk, const Bond &bkl)
 {
-    b_[0] = bij;
-    b_[1] = bjk;
-    b_[2] = bkl;
-    if (b_[0].aJ() != b_[1].aI())
+    if (bij.aJ() != bjk.aI())
     {
         GMX_THROW(gmx::InvalidInputError("Incorrect second bond passed"));
     }
-    if (b_[1].aJ() != b_[2].aI())
+    if (bjk.aJ() != bkl.aI())
     {
         GMX_THROW(gmx::InvalidInputError("Incorrect third bond passed"));
     }
-    addAtom(b_[0].aI());
-    addAtom(b_[0].aJ());
-    addAtom(b_[1].aJ());
-    addAtom(b_[2].aJ());
+    addAtom(bij.aI());
+    addAtom(bij.aJ());
+    addAtom(bjk.aJ());
+    addAtom(bkl.aJ());
     addBondOrder(bij.bondOrder());
     addBondOrder(bjk.bondOrder());
     addBondOrder(bkl.bondOrder());
-}
-
-void Proper::renumberAtoms(const std::vector<int> &renumber)
-{
-    b_[0].renumberAtoms(renumber);
-    b_[1].renumberAtoms(renumber);
-    b_[2].renumberAtoms(renumber);
 }
 
 } // namespace
