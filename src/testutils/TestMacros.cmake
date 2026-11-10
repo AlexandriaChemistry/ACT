@@ -108,7 +108,10 @@ function (gmx_register_gtest_test NAME EXENAME)
         cmake_parse_arguments(ARG "${_options}" "${_one_value_args}" "" ${ARGN})
         set(_xml_path ${CMAKE_BINARY_DIR}/Testing/Temporary/${NAME}.xml)
         set(_labels GTest)
-        set(_timeout 30)
+        # Some unit tests take about 20 s on a recent processor, and 40 s on
+        # an older one such as a Xeon E5-2630 v4, or when several tests run
+        # at once
+        set(_timeout 120)
         if (ARG_INTEGRATION_TEST)
             list(APPEND _labels IntegrationTest)
             # Slow build configurations should have longer timeouts.
