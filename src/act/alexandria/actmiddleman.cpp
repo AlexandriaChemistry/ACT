@@ -208,7 +208,14 @@ void ACTMiddleMan::computeQueueWork(MsgHandler *msghandler)
             std::vector<ga::Genome> best = genomes;
             std::vector<bool>       minimum(n, false);
             auto mcmc = dynamic_cast<MCMCMutator *>(mutator_);
-            if (mcmc && n > 1 && lockstepMutators_.size() + 1 >= static_cast<size_t>(n))
+            // In lockstep only if the GPU computes the individuals together.
+            // Otherwise ACMFitnessComputer::calcDeviations computes them one
+            // after another, each time with all parameters changed, such that
+            // all molecules are computed again rather than those that the
+            // changed parameter affects. One after another then gives the same
+            // results, much faster.
+            if (mcmc && n > 1 && lockstepMutators_.size() + 1 >= static_cast<size_t>(n) &&
+                forceComp_.gpuCharges(ind_->sii()->forcefield()))
             {
                 std::vector<MCMCMutator *> mutators;
                 std::vector<ga::Genome *>  gptr, bptr;
