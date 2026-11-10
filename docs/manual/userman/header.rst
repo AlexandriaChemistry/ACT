@@ -8,6 +8,7 @@ User Manual
    installation
    verification
    using
+   performance
    simulation
    properties
 

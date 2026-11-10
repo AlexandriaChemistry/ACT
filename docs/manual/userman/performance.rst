@@ -1,0 +1,76 @@
+.. _sec-performance:
+
+*************************************
+Getting the best performance from ACT
+*************************************
+
+Training a force field takes most of the computer time spent with ACT, so this chapter is mainly about *alexandria train_ff*. The run times quoted are examples from our own tests. The best settings depend on the computer and on the training set, so the most useful advice is to do a short test run with a few settings before a long one, see :ref:`sec-measuring`.
+
+======================
+Building ACT for speed
+======================
+* Build in single precision, with *-DACT_DOUBLE=OFF*. The explicit SIMD routines then compute twice as many interactions per instruction, and a GPU can only be used in single precision builds. Energies are still summed in double precision.
+* On a cluster, set *ACT_SIMD* to the SIMD instructions of the compute nodes if you compile on a head node with another processor, and give the compiler the instructions of the compute nodes in *CMAKE_CXX_FLAGS*, for instance *-march=native* when compiling on a compute node.
+* For a GPU, build with *-DACT_GPU=SYCL*, see the installation chapter.
+
+The section *Code used* at the start of each log file tells which SIMD instructions, which precision and which GPU the program uses. Check it once on each new computer.
+
+===============================
+How train_ff uses the processes
+===============================
+One process, the master, runs the genetic algorithm. How the others work depends on the size of the population (*-pop_size*):
+
+* **Population no larger than the number of processes.** The processes are divided into one group per individual, a middleman and its helpers, and the molecules of the training set are divided over the processes of a group. Each individual needs the same number of processes, so use a multiple of the population size; otherwise the processes left over are idle, which *train_ff* warns about. Splitting the molecules over helpers stays efficient down to 4–5 molecules per process :cite:p:`Spoel2025b`.
+* **Population larger than the number of processes.** This is possible with the GA and HYBRID optimizers. Each process except the master is then a middleman that computes one individual at a time, and gets the next one from the master when it is done. The master itself computes no individuals.
+
+In the second case, a generation ends when the last individual is done. If the number of middlemen does not divide the population, the last round of individuals keeps only some of the middlemen busy, and the others wait. Choose the number of processes such that every middleman computes the same number of individuals: one more than a divisor of the population. For example, a training with a population of 256 on a node with 288 cores (arrhenius, GH200) took:
+
+.. table:: Run time of a training with a population of 256, by the number of processes.
+   :name: tab-processes
+
+   +-----------+------------+---------------------------+--------------+
+   | Processes | Middlemen  | Individuals per middleman | Run time (s) |
+   +===========+============+===========================+==============+
+   | 64        | 63         | 4 or 5                    | 89.1         |
+   +-----------+------------+---------------------------+--------------+
+   | 65        | 64         | 4                         | 82.0         |
+   +-----------+------------+---------------------------+--------------+
+   | 129       | 128        | 2                         | 40.9         |
+   +-----------+------------+---------------------------+--------------+
+
+With 64 processes, 4 middlemen compute a fifth individual in each generation while the 59 others wait. All three runs gave the same result, which does not depend on the number of processes. In general, use as many processes as there are physical cores, one more than a divisor of the population.
+
+=================
+Processor or GPU?
+=================
+The GPU computes the training only for **polarizable** force fields, in single precision builds, with *train_ff -gpu_resident* (the default). Each process then keeps its molecules on the GPU, which computes the interactions, the virtual sites, the relaxation of the shells and the deviations from the reference data, and the charges if they are generated with SQE. The relaxation of the shells repeats the force calculation many times in each evaluation, which is expensive on a processor, and this is where the GPU gains most.
+
+For force fields **without shells**, the processor computes everything, also in a build with GPU support. Such a training takes the same time with and without *-nogpu*. Without shells, ACT only recomputes the molecules that a changed parameter affects, and of a dimer only the interactions between its two molecules, so one evaluation is short: about a hundred microseconds on a core for a training set of small dimers in our tests. That is shorter than the time needed just to start the work on a GPU and wait for the result, so for these force fields, use all cores of the node rather than the GPUs.
+
+================
+Training on GPUs
+================
+* **Several processes per GPU.** Each process waits for the GPU part of the time, so several processes per GPU keep it busy. On NVIDIA GPUs, start the multi-process service in the job script when several processes share a GPU, see the installation chapter. The service takes at most 48 processes per GPU.
+* **-lockstep.** With a population larger than the number of processes, *-lockstep k* gives each middleman *k* individuals at once, which the GPU computes together. On a node with eight AMD MI250X GCDs and 64 cores (dardel), a training with 480 individuals took 79 s with 48 processes and *-lockstep 4*, against 119 s with 48 processes without it. On an NVIDIA RTX A4500 it did not pay off. Without the GPU, *-lockstep* has no effect on the run time, since the middleman then computes its individuals one after another.
+* **-shell_keep.** By default the relaxation of the shells starts from where the shells were the previous time, which needs fewer iterations when the parameters changed little. On an RTX A4500 this took a training from 179 s to 146 s. The relaxed shells differ within the tolerance on the forces, so the results differ slightly from those of *-noshell_keep*.
+* Molecules that a changed parameter does not affect are not computed again; this happens automatically, also on the GPU.
+
+The best number of processes per GPU and value of *-lockstep* depend on the GPU and on the number of cores per GPU. A short run with a few combinations, for instance 6 or 8 processes per GPU with *-lockstep* 1, 2 and 4, is worth the time.
+
+.. _sec-measuring:
+
+====================================
+Measuring and comparing the run time
+====================================
+At the end of the log file, *train_ff* prints how much time each part of the program took, summed over all processes and as an average per process for the master and for the middlemen, preceded by the wall time of the master. Useful lines are:
+
+* *MPI waiting in Middleman loop*: middlemen waiting for work, for instance at the end of each generation. A large share means that the processes are not used evenly, see :numref:`tab-processes`.
+* *MPI waiting in Genetic algorithm*: the master waiting for the middlemen, which is normal.
+* *GPU initialization* and *Startup*: one-time costs. In short test runs they can be a large part of the time; leave them out when comparing settings.
+* *GPU resident relaxation*, *GPU resident evaluation* and *Charge generation*: the computation itself.
+
+When comparing settings, keep in mind that:
+
+* The run time of the same training on a GPU can vary by about 10% between runs. Compare settings in one job, run them alternately, and repeat them.
+* The training may stop before *-max_generations* when the fitness of the test set no longer improves (*-max_test_generations*). Runs that differ in the last digits, for instance on different computers, may then run a different number of generations. Compare the time per generation, from the lines *Generation n/N* in the log file.
+* *Wall time of the master* starts after MPI has started. On some clusters starting MPI takes long, for instance about 0.7 s per process on the GH200 nodes of arrhenius, so the job takes longer than this time.
