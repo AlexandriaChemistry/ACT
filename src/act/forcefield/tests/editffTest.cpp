@@ -468,6 +468,32 @@ TEST_F(EditFFTest, ValidateWrites)
     expectRealEq(acm(ref, "h_z", "eta").value(), acm(pd, "h_z", "eta").value());
 }
 
+// Test: -nonneg no lets parameters of an interaction be negative, only
+// those that are selected, which removes the problem that -validate reports
+TEST_F(EditFFTest, NonNegativeCleared)
+{
+    auto broken = fileManager().getTemporaryFilePath("broken.xml");
+    writeBrokenForceField(input_, broken);
+    auto pd = read(run(broken, { { "-p", "chi" }, { "-a", "i_z" }, { "-nonneg", "no" } }));
+    EXPECT_FALSE(acm(pd, "i_z", "chi").nonNegative());
+    EXPECT_TRUE(acm(pd, "h_z", "chi").nonNegative());
+    EXPECT_TRUE(acm(pd, "i_z", "eta").nonNegative());
+    expectRealEq(-1, acm(pd, "i_z", "chi").value());
+    EXPECT_EQ(0u, countIssues(validateForceField(pd), ForceFieldIssue::Kind::Negative));
+}
+
+// Test: -nonneg yes makes all parameters of a type non-negative
+TEST_F(EditFFTest, NonNegativeSet)
+{
+    auto cleared = read(run(input_, { { "-p", "eta" }, { "-nonneg", "no" } }, "cleared.xml"));
+    EXPECT_FALSE(acm(cleared, "h_z", "eta").nonNegative());
+    EXPECT_FALSE(acm(cleared, "i_z", "eta").nonNegative());
+    auto set = read(run(fileManager().getTemporaryFilePath("cleared.xml"),
+                        { { "-p", "eta" }, { "-nonneg", "yes" } }, "set.xml"));
+    EXPECT_TRUE(acm(set, "h_z", "eta").nonNegative());
+    EXPECT_TRUE(acm(set, "i_z", "eta").nonNegative());
+}
+
 // Test: Without problems that reading repairs, -validate writes no file
 TEST_F(EditFFTest, ValidateNothingToWrite)
 {

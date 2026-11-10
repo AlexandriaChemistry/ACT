@@ -231,6 +231,9 @@ class ForceFieldParameter
         calculateInternalValue();
     }
 
+    //! Allow negative values again, the bounds and the value are not changed
+    void clearNonNegative() { nonNegative_ = false; }
+
     //! \return true if parameter should not be negative
     bool nonNegative() const { return nonNegative_; }
     

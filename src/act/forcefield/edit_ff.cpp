@@ -336,6 +336,77 @@ static void removeParticles(ForceField *pd,
     }
 }
 
+/*! \brief Set or clear the attribute nonnegative of parameters
+ * Parameters of interactions as for modifyForceField. Reading a force field
+ * makes all parameters of particle types non-negative, except the charge,
+ * so for those only setting it lasts.
+ * \param[inout] pd          The force field
+ * \param[in]    paramType   The type of parameter, such as bondenergy
+ * \param[in]    particle    The identifiers, all if empty
+ * \param[in]    nonNegative Whether the parameters may not be negative
+ * \return the number of parameters changed
+ */
+static int setNonNegative(ForceField        *pd,
+                          const std::string &paramType,
+                          const std::string &particle,
+                          bool               nonNegative)
+{
+    if (paramType.empty())
+    {
+        printf("Empty parameter type, use -p. Nothing to modify.\n");
+        return 0;
+    }
+    auto ids     = gmx::splitString(particle);
+    auto wanted  = [&ids](const std::string &id)
+    {
+        return ids.empty() || std::find(ids.begin(), ids.end(), id) != ids.end();
+    };
+    int  changed = 0;
+    auto change  = [nonNegative, &changed](ForceFieldParameter *p)
+    {
+        if (p->nonNegative() == nonNegative)
+        {
+            return;
+        }
+        if (nonNegative)
+        {
+            p->setNonNegative();
+        }
+        else
+        {
+            p->clearNonNegative();
+        }
+        changed += 1;
+    };
+    InteractionType itype;
+    if (pd->typeToInteractionType(paramType, &itype) && pd->interactionPresent(itype))
+    {
+        auto fs = pd->findForces(itype);
+        for (auto &entry : *fs->parameters())
+        {
+            auto param = entry.second.find(paramType);
+            if (wanted(entry.first.id()) && param != entry.second.end())
+            {
+                change(&param->second);
+            }
+        }
+    }
+    else
+    {
+        for (auto &pt : *pd->particleTypes())
+        {
+            auto param = pt.second.parameters()->find(paramType);
+            if (wanted(pt.first.id()) && param != pt.second.parameters()->end())
+            {
+                change(&param->second);
+            }
+        }
+    }
+    printf("Made %d parameter(s) of type %s %s.\n", changed, paramType.c_str(),
+           nonNegative ? "non-negative" : "allowed to be negative");
+    return changed;
+}
+
 //! \brief Modify everything that the user has requested
 static void modifyForceField(ForceField *pd,
                              const std::string &paramType,
@@ -810,7 +881,7 @@ static size_t printValidation(const ForceField  *pd,
     }
     if (issues.size() > nfixed)
     {
-        printf("%zu problem(s) have to be corrected by hand, for instance with edit_ff -p -a -min -max -val.\n",
+        printf("%zu problem(s) have to be corrected by hand, for instance with edit_ff -p -a -min -max -val -nonneg.\n",
                issues.size() - nfixed);
     }
     return nfixed;
@@ -871,6 +942,7 @@ int edit_ff(int argc, char*argv[])
     gmx_bool     forceWrite = false;
     gmx_bool     bounds     = false;
     gmx_bool     validate   = false;
+    const char  *nonneg[]   = { nullptr, "unchanged", "yes", "no", nullptr };
     gmx_bool     verbose    = false;
     gmx_bool     remove     = false;
     char        *missing    = (char *)"";
@@ -891,6 +963,8 @@ int edit_ff(int argc, char*argv[])
           "Scale the value of a parameter by this number, e.g. -scale 0.99." },
         { "-max",    FALSE, etREAL,  {&pmax},
           "Maximum value of parameter." },
+        { "-nonneg", FALSE, etENUM, {nonneg},
+          "Set (yes) or clear (no) the attribute nonnegative of the parameters given with -p and -a, which prevents setting a negative minimum. Parameters of particle types other than the charge are always non-negative." },
         { "-mut",    FALSE, etSTR,  {&mutability},
           "Set the mutability for the given parameters to the value. The following values are supported: Fixed, Bounded" },
         { "-del",    FALSE, etBOOL,  {&remove},
@@ -1029,13 +1103,24 @@ int edit_ff(int argc, char*argv[])
         {
             limits = 1.0/limits;
         }
-        modifyForceField(&pd, parameter, particle,
-                         opt2parg_bSet("-min", pa.size(), pa.data()), pmin,
-                         opt2parg_bSet("-val", pa.size(), pa.data()), pval,
-                         opt2parg_bSet("-max", pa.size(), pa.data()), pmax,
-                         opt2parg_bSet("-mut", pa.size(), pa.data()), mutability,
-                         opt2parg_bSet("-scale", pa.size(), pa.data()), scale,
-                         force, stretch, bLimits, limits);
+        bool bNonNeg = std::string(nonneg[0]) != "unchanged";
+        if (bNonNeg)
+        {
+            (void) setNonNegative(&pd, parameter, particle, std::string(nonneg[0]) == "yes");
+        }
+        bool other = (opt2parg_bSet("-min", pa.size(), pa.data()) || opt2parg_bSet("-val", pa.size(), pa.data()) ||
+                      opt2parg_bSet("-max", pa.size(), pa.data()) || opt2parg_bSet("-mut", pa.size(), pa.data()) ||
+                      opt2parg_bSet("-scale", pa.size(), pa.data()) || stretch || bLimits);
+        if (other || !bNonNeg)
+        {
+            modifyForceField(&pd, parameter, particle,
+                             opt2parg_bSet("-min", pa.size(), pa.data()), pmin,
+                             opt2parg_bSet("-val", pa.size(), pa.data()), pval,
+                             opt2parg_bSet("-max", pa.size(), pa.data()), pmax,
+                             opt2parg_bSet("-mut", pa.size(), pa.data()), mutability,
+                             opt2parg_bSet("-scale", pa.size(), pa.data()), scale,
+                             force, stretch, bLimits, limits);
+        }
     }
     // Fetch new combination rules if necessary
     std::map<InteractionType, ForceFieldParameterList *> its =

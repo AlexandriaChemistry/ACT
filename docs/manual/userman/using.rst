@@ -332,7 +332,11 @@ When a force field is read, values of trained parameters that are outside their 
 
   alexandria edit_ff -ff ff.xml -validate -o fixed.xml
 
-This also lists problems that have to be corrected by hand: values outside the bounds of parameters that may not be changed, a minimum larger than the maximum, and negative values of parameters that are marked as non-negative (attribute *nonnegative* in the file).
+This also lists problems that have to be corrected by hand: values outside the bounds of parameters that may not be changed, a minimum larger than the maximum, and negative values of parameters that are marked as non-negative (attribute *nonnegative* in the file). If the attribute is wrong, for instance for bond energies, which are negative, it can be cleared with::
+
+  alexandria edit_ff -ff fixed.xml -p bondenergy -nonneg no -o fixed2.xml
+
+where *-a* limits the change to some identifiers. Parameters of particle types other than the charge are always non-negative.
 
 .. _sec-parallel:
 
