@@ -756,6 +756,8 @@ struct ShellRelaxation
     std::vector<double> msForce, fmax, after, dxStep, disp, rcs;
     //! Likewise, whether the shells in each slot are relaxed
     std::vector<char>   relax;
+    //! Likewise, whether a shell in each slot moved in the last step
+    std::vector<char>   moved;
 
     /*! \brief Start the shell relaxation with full steps
      * \param[in] st    The stride of the arrays

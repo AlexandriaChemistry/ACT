@@ -2184,11 +2184,47 @@ static bool compareShellKeep(ForceField                                         
     {
         EXPECT_NEAR(reference[i], after[i], tolerance*(1 + std::abs(reference[i]))) << i;
     }
-    // In double precision a conformation may not converge, in both cases
-    EXPECT_LE(kept.numShellConvergenceFailed(), fromCores.numShellConvergenceFailed());
+    EXPECT_EQ(0u, fromCores.numShellConvergenceFailed());
+    EXPECT_EQ(0u, kept.numShellConvergenceFailed());
     EXPECT_GT(fromCores.numShellIterations(), 0u);
     EXPECT_LT(kept.numShellIterations(), fromCores.numShellIterations());
     return true;
+}
+
+// Test: The relaxation stops when the shells no longer move, since their
+// displacements are below the resolution of the coordinates. With the very
+// stiff spring of the shell of chloride (about 1e13 kJ/mol nm^2) this
+// happens at a force of about 1e-4 kJ/mol nm, above a tolerance of 1e-8 on
+// the mean square force. In double precision, the relaxation of one
+// conformation then went on until the maximum number of iterations. On the
+// processor.
+TEST_F(PropertyDevComputerTest, StiffShellsStopAtCoordinateResolution)
+{
+    ProcessorOnly cpu;
+    MsgHandler    msghandler;
+    ForceField    pd;
+    readForceField(fileManager().getInputFilePath("PG-pol-ions.xml"), &pd);
+    const int     maxiter = 100;
+    ForceComputer forceComputer(1e-8, maxiter, pd.epsilonr());
+    auto mols = prepareMolecules(&msghandler, &pd, &forceComputer, { "water#chloride" },
+                                 fileManager().getInputFilePath("ion-water.xml"));
+    ASSERT_EQ(1u, mols.size());
+    (void) computeAll(&forceComputer, &pd, &mols, false);
+    EXPECT_EQ(0u, forceComputer.numShellConvergenceFailed());
+    // Slightly larger polarizabilities, after which one conformation stalled
+    changeParameters(&pd, InteractionType::POLARIZATION, 1.02, true);
+    fillAll(&pd, &mols);
+    forceComputer.resetStatistics();
+    (void) computeAll(&forceComputer, &pd, &mols, false);
+    EXPECT_EQ(0u, forceComputer.numShellConvergenceFailed());
+    EXPECT_LT(forceComputer.numShellIterations(), static_cast<size_t>(maxiter));
+    for(size_t what = 0; what < 3; what++)
+    {
+        for(const auto &conf : mols[0].conformationData(what)->confs)
+        {
+            EXPECT_TRUE(conf.done);
+        }
+    }
 }
 
 // Test: -shell_keep on the processor gives the energies of starting from the
