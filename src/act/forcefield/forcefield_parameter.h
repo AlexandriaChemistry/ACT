@@ -100,24 +100,15 @@ class ForceFieldParameter
     {
         if (resetValue)
         {
-            if (mutability_ == Mutability::Bounded)
+            // The value is set to the nearest bound, which is recorded such
+            // that the force field can tell, see wasReset and
+            // validateForceField, rather than written for each parameter
+            if (mutability_ == Mutability::Bounded &&
+                (value_ < minimum_ || value_ > maximum_))
             {
-                if (value_ < minimum_)
-                {
-
-                    fprintf(stderr, "Resetting value %g (%s) to minimum allowed %g\n",
-                            value_, unit_.c_str(), minimum_);
-                    
-                    value_ = minimum_;
-                }
-                if (value_ > maximum_)
-                {
-
-                    fprintf(stderr, "Resetting value %g (%s) to maximum allowed %g\n",
-                            value_, unit_.c_str(), maximum_);
-                    
-                    value_ = maximum_;
-                }
+                reset_       = true;
+                valueBefore_ = value_;
+                value_       = (value_ < minimum_) ? minimum_ : maximum_;
             }
         }
         else if (value_ < minimum_ || value_ > maximum_)
@@ -133,6 +124,14 @@ class ForceFieldParameter
         calculateInternalValue();
     }
         
+    /*! \brief Whether the value was outside the bounds and was set to the nearest bound
+     * This happens when a force field is read, see the constructor.
+     */
+    bool wasReset() const { return reset_; }
+
+    //! \return the value before it was set to the nearest bound, see wasReset
+    double valueBeforeReset() const { return valueBefore_; }
+
     //! \brief Return unit of parameter
     const std::string &unit() const { return unit_; }
     
@@ -212,13 +211,22 @@ class ForceFieldParameter
         return false;
     }
     
-    //! Force non-negative values
+    /*! \brief Force non-negative values
+     * The value is also set to the nearest bound if it is outside the
+     * bounds, which is recorded, see wasReset.
+     */
     void setNonNegative()
     {
+        double before = value_;
         minimum_ = std::max(0.0, minimum_);
         maximum_ = std::max(minimum_, maximum_);
         value_   = std::max(minimum_, value_);
         value_   = std::min(maximum_, value_);
+        if (value_ != before && !reset_)
+        {
+            reset_       = true;
+            valueBefore_ = before;
+        }
         nonNegative_ = true;
         calculateInternalValue();
     }
@@ -294,6 +302,10 @@ class ForceFieldParameter
     double       internalValue_       = 0;
     //! The original value of the parameter
     double       originalValue_       = 0;
+    //! Whether the value was set to the nearest bound when it was read, see wasReset
+    bool         reset_               = false;
+    //! The value before that, see wasReset
+    double       valueBefore_         = 0;
     //! The current uncertainty in the parameter
     double       uncertainty_         = 0;
     //! The original value of the uncertainty

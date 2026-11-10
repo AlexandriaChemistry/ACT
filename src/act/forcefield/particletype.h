@@ -38,6 +38,7 @@
 
 #include <map>
 #include <string>
+#include <vector>
 
 #include "act/basics/act_particle.h"
 #include "act/basics/identifier.h"
@@ -159,13 +160,21 @@ class ParticleType
     void addForceFieldParameter(const std::string         &type,
                                 const ForceFieldParameter &param)
     {
-        parameterMap_.insert({type, param});
+        if (!parameterMap_.insert({type, param}).second)
+        {
+            // The first one is used, see duplicates
+            duplicates_.push_back(type);
+            return;
+        }
         if (type.compare("charge") != 0 && type.compare(chargeVSName) != 0)
         {
             parameterMap_.find(type)->second.setNonNegative();
         }
     }
     
+    //! \return the types of the parameters that were added more than once, of which the first is used
+    const std::vector<std::string> &duplicates() const { return duplicates_; }
+
     /*! \brief Return all parameters
      * \return Editable map of parameters
      */
@@ -284,6 +293,8 @@ class ParticleType
     std::map<std::string, std::string> option_;
     //! The force field parameters associated with this particle type
     ForceFieldParameterMap             parameterMap_;
+    //! The types of parameters added more than once, see duplicates
+    std::vector<std::string>           duplicates_;
 };
 
 } // namespace

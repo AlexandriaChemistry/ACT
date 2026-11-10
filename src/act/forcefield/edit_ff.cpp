@@ -48,6 +48,7 @@
 #include "act/forcefield/forcefield_parameter.h"
 #include "act/forcefield/forcefield_parametername.h"
 #include "act/forcefield/forcefield.h"
+#include "act/forcefield/forcefield_validation.h"
 #include "act/forcefield/forcefield_xml.h"
 #include "act/forcefield/generate_dependent.h"
 #include "gromacs/commandline/pargs.h"
@@ -763,6 +764,58 @@ static void compare_pd(ForceField *pd1,
     }
 }
 
+/*! \brief Print the problems with the parameters of a force field, see validateForceField
+ * \param[in] pd       The force field
+ * \param[in] fileName Its file
+ * \param[in] writing  Whether the force field will be written
+ * \return the number of problems that writing the force field removes
+ */
+static size_t printValidation(const ForceField  *pd,
+                              const std::string &fileName,
+                              bool               writing)
+{
+    auto issues = validateForceField(*pd);
+    const std::vector<std::pair<ForceFieldIssue::Kind, const char *>> kinds =
+    {
+        { ForceFieldIssue::Kind::ResetToBounds,       "Values outside their bounds, set to the nearest bound" },
+        { ForceFieldIssue::Kind::Duplicate,           "Parameters defined more than once, the first definition is used" },
+        { ForceFieldIssue::Kind::OutOfBounds,         "Values outside their bounds that may not be changed" },
+        { ForceFieldIssue::Kind::MinimumAboveMaximum, "Minimum larger than maximum" },
+        { ForceFieldIssue::Kind::Negative,            "Negative values of parameters that may not be negative" }
+    };
+    size_t nfixed = 0;
+    printf("Validation of %s: %zu problem(s)\n", fileName.c_str(), issues.size());
+    for (const auto &kind : kinds)
+    {
+        size_t n = 0;
+        for (const auto &issue : issues)
+        {
+            if (issue.kind != kind.first)
+            {
+                continue;
+            }
+            if (n++ == 0)
+            {
+                printf("\n%s:\n", kind.second);
+            }
+            printf("  %-28s %-24s %-12s %s\n", issue.where.c_str(), issue.identifier.c_str(),
+                   issue.parameter.c_str(), issue.text.c_str());
+            nfixed += issue.repaired ? 1 : 0;
+        }
+    }
+    if (nfixed > 0)
+    {
+        printf("\n%zu problem(s) %s by writing the force field with -o.\n", nfixed,
+               writing ? "are corrected" : "would be corrected");
+    }
+    if (issues.size() > nfixed)
+    {
+        printf("%zu problem(s) have to be corrected by hand, for instance with edit_ff -p -a -min -max -val.\n",
+               issues.size() - nfixed);
+    }
+    return nfixed;
+}
+
 /*! \brief Tool to manipulate force field files
  * \param[in] argc Number of arguments on the cmd line
  * \param[in] argv The actual arguments
@@ -784,7 +837,15 @@ int edit_ff(int argc, char*argv[])
         "input and output files and what parameters to change.",
         "If the value, the minimum",
         "or the maximum is to be changed, the actual value may be set to the",
-        "new minimum or maximum if it falls outside the new bounds."
+        "new minimum or maximum if it falls outside the new bounds.[PAR]",
+        "With [TT]-validate[tt] the parameters are checked: values have to be",
+        "within their bounds, the minimum must not be larger than the maximum,",
+        "parameters that may not be negative must not be, and each parameter",
+        "may be defined only once. Reading a force field sets values of trained",
+        "parameters outside their bounds to the nearest bound and uses the first",
+        "definition of a parameter that is defined more than once, so a force",
+        "field written with [TT]-o[tt] no longer has these problems. The others",
+        "are listed to be corrected by hand."
     };
     CombRuleUtil crule;
     crule.addInfo(&desc);
@@ -809,6 +870,7 @@ int edit_ff(int argc, char*argv[])
     gmx_bool     plot       = false;
     gmx_bool     forceWrite = false;
     gmx_bool     bounds     = false;
+    gmx_bool     validate   = false;
     gmx_bool     verbose    = false;
     gmx_bool     remove     = false;
     char        *missing    = (char *)"";
@@ -843,6 +905,8 @@ int edit_ff(int argc, char*argv[])
           "Analyze either the EEM, the BONDS or OTHER parameters in a simple manner" },
         { "-bounds", FALSE, etBOOL, {&bounds},
           "Check whether any parameter is hitting the wall, i.e. is at one of the boundaries." },
+        { "-validate", FALSE, etBOOL, {&validate},
+          "Check that the parameters are within their bounds and defined only once, and write the corrected force field with [TT]-o[tt], see above." },
         { "-copy_missing", FALSE, etSTR, {&missing},
           "Copy either the EEM, the BONDS or OTHER parameters from file two [TT]-f2[tt] that are missing from file one [TT]-f[tt] to another [TT]-o[tt]." },
         { "-replace", FALSE, etSTR, {&replace},
@@ -927,6 +991,13 @@ int edit_ff(int argc, char*argv[])
     else if (bounds)
     {
         analyzeForceField(&pd);
+    }
+    else if (validate)
+    {
+        auto nfixed = printValidation(&pd, opt2fn("-ff", fnm.size(), fnm.data()),
+                                      opt2bSet("-o", fnm.size(), fnm.data()));
+        // The corrections were made when reading, write them
+        forceWrite = forceWrite || nfixed > 0;
     }
     else if (strlen(analyze) > 0)
     {

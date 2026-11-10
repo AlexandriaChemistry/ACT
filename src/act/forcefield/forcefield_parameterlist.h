@@ -38,6 +38,7 @@
 #include <atomic>
 #include <map>
 #include <utility>
+#include <vector>
 
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/stringutil.h"
@@ -394,6 +395,12 @@ class ForceFieldParameterList
     //! \return The counter \p counter_ for index
     int counter() const { return counter_; };
 
+    /*! \brief The parameters that were added more than once
+     * Only the first one is used, see addParameter.
+     * \return the identifiers and types of the parameters added again
+     */
+    const std::vector<std::pair<Identifier, std::string>> &duplicates() const { return duplicates_; }
+
  private:
     //! The potential
     Potential    pot_ = Potential::NONE;
@@ -415,6 +422,8 @@ class ForceFieldParameterList
 
     //! Counter for index
     int counter_ = 0;
+    //! The parameters that were added again, see duplicates
+    std::vector<std::pair<Identifier, std::string>> duplicates_;
 };
 
 } // namespace
