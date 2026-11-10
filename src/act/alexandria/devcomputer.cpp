@@ -72,41 +72,48 @@ void BoundsDevComputer::calcDeviation(MsgHandler                    *,
     }
     for(auto mol : actmols)
     {
-        double bound = 0;
-        // Check ACM charges
-        const auto &atoms = mol->atomsConst();
-        for(const auto &atom: atoms)
+        mytarget->second.increase(1, moleculeBound(mol, forcefield, lossFunction));
+    }
+}
+
+double BoundsDevComputer::moleculeBound(const ACTMol     *mol,
+                                        const ForceField *forcefield,
+                                        LossFunction      lossFunction)
+{
+    double bound = 0;
+    // Check ACM charges
+    const auto &atoms = mol->atomsConst();
+    for(const auto &atom: atoms)
+    {
+        const auto &p = forcefield->findParticleType(atom.ffType())->parameterConst("charge");
+        if (p.mutability() == Mutability::ACM && p.maximum() > p.minimum())
         {
-            const auto &p = forcefield->findParticleType(atom.ffType())->parameterConst("charge");
-            if (p.mutability() == Mutability::ACM && p.maximum() > p.minimum())
+            // Including the second charge, if any
+            double q = atom.totalCharge();
+            // Add shell charge(s)
+            for(auto ss : atom.shells())
             {
-                // Including the second charge, if any
-                double q = atom.totalCharge();
-                // Add shell charge(s)
-                for(auto ss : atom.shells())
+                q += atoms[ss].charge();
+            }
+            // Add vsite 1 charge
+            for(auto vv : atom.vsites())
+            {
+                if (atoms[vv].parents().size() == 1)
                 {
-                    q += atoms[ss].charge();
-                }
-                // Add vsite 1 charge
-                for(auto vv : atom.vsites())
-                {
-                    if (atoms[vv].parents().size() == 1)
-                    {
-                        q += atoms[vv].charge();
-                }
-                }
-                if (q < p.minimum())
-                {
-                    bound += loss(lossFunction, 1, p.minimum() - q);
-                }
-                else if (q > p.maximum())
-                {
-                    bound += loss(lossFunction, 1, q - p.maximum());
+                    q += atoms[vv].charge();
                 }
             }
+            if (q < p.minimum())
+            {
+                bound += loss(lossFunction, 1, p.minimum() - q);
+            }
+            else if (q > p.maximum())
+            {
+                bound += loss(lossFunction, 1, q - p.maximum());
+            }
         }
-        mytarget->second.increase(1, bound);
     }
+    return bound;
 }
 
 /* * * * * * * * * * * * * * * * * * * * * *

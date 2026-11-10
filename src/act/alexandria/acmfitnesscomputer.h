@@ -103,6 +103,8 @@ private:
         bool                  valid = false;
         std::vector<double>   key;
         GpuMoleculeDeviations dev;
+        //! The penalty of the charges, see BoundsDevComputer::moleculeBound
+        double                bound = 0;
     };
     //! For each replica and molecule, the deviations of the last two sets of its parameters
     std::vector<std::vector<std::array<MolCacheEntry, 2>>> molCache_;
