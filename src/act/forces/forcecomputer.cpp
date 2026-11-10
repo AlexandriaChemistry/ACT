@@ -3019,7 +3019,7 @@ void ForceComputer::plot(MsgHandler        *msghandler,
                 MsgHandler buildHandler;
                 buildHandler.setPrintLevel(ACTStatus::Fatal);
                 top.build(&buildHandler, pd, coordinates, 175.0, 5.0, missingParameters::Error);
-                built = buildHandler.ok() && top.hasEntry(itype);
+                built = buildHandler.ok() && top.hasInteractions(itype);
                 forces.resize(top.nAtoms(), rvnul);
                 return built;
             };
@@ -3043,12 +3043,11 @@ void ForceComputer::plot(MsgHandler        *msghandler,
                     }
                     {
                         // Now remove everything except what we want to compute.
-                        std::map<InteractionType, TopologyEntryVector> *entries = top.entriesPtr();
                         for (const auto &ik : i2s)
                         {
                             if (itype != ik.first)
                             {
-                                entries->erase(ik.first);
+                                top.removeInteractionType(ik.first);
                             }
                         }
                     }

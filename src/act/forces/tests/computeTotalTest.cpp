@@ -340,22 +340,17 @@ protected:
         if (!correction.empty())
         {
             // In the dimer and in the monomers
-            std::vector<std::map<InteractionType, TopologyEntryVector> *> allEntries = { mol.topologyPtr()->entriesPtr() };
+            std::vector<Topology *> tops = { mol.topologyPtr() };
             for(auto &top : mol.fragmentHandler()->topologiesPtr())
             {
-                allEntries.push_back(top.entriesPtr());
+                tops.push_back(&top);
             }
-            for(auto entries : allEntries)
+            for(auto top : tops)
             {
                 // The monomers may have none, if all pairs are excluded
-                auto ee = entries->find(InteractionType::INDUCTIONCORRECTION);
-                if (entries->end() == ee)
+                if (top->nonBondedPairs().hasType(InteractionType::INDUCTIONCORRECTION))
                 {
-                    continue;
-                }
-                for(auto &e : ee->second)
-                {
-                    e->setParams(correction);
+                    top->setNonBondedParameters(InteractionType::INDUCTIONCORRECTION, correction);
                 }
             }
         }

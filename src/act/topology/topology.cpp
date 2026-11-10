@@ -510,33 +510,6 @@ void Topology::makeImpropers(MsgHandler                   *msghandler,
     }
 }
 
-void Topology::makePairs(MsgHandler                          *msghandler,
-                         const ForceField                    *pd,
-                         InteractionType                      itype,
-                         const std::vector<std::set<size_t>> &exclusions)
-{
-    TopologyEntryVector pairs{};
-    for(size_t i = 0; i < atoms_.size(); i++)
-    {
-        for(size_t j = i+1; j < atoms_.size(); j++)
-        {
-            if (exclusions[i].find(j) == exclusions[i].end())
-            {
-                pairs.push_back(AtomPair(i, j));
-            }
-        }
-    }
-    // Finally insert the identifiers
-    if (!pairs.empty())
-    {
-        entries_.insert({itype, std::move(pairs) });
-        if (pd)
-        {
-            setEntryIdentifiers(msghandler, pd, itype);
-        }
-    }
-}
-
 void Topology::makePropers(MsgHandler       *msghandler,
                            const ForceField *pd)
 {
@@ -1255,19 +1228,15 @@ void Topology::renumberAtoms(const std::vector<int> &renumber)
 
 void Topology::dumpPairlist(gmx::TextWriter *tw, InteractionType itype) const
 {
-    if (nullptr == tw)
+    if (nullptr == tw || !nonBonded_.hasType(itype))
     {
         return;
     }
-    if (!hasEntry(itype))
-    {
-        return;
-    }
-    for(const auto &pl : entry(itype))
+    for(const auto &pl : nonBonded_.range(itype))
     {
         tw->writeLine(gmx::formatString("PAIRLIST %s %d %d",
                                         interactionTypeToString(itype).c_str(),
-                                        pl->atomIndex(0), pl->atomIndex(1)));
+                                        pl.atomIndex(0), pl.atomIndex(1)));
     }
 }
 
@@ -1512,9 +1481,7 @@ void Topology::build(MsgHandler             *msghandler,
     }
     exclusions_[InteractionType::VDW]            = exclusionList;
     exclusions_[InteractionType::ELECTROSTATICS] = exclusionList;
-    makePairs(msghandler, pd, InteractionType::VDW, exclusions);
-    makePairs(msghandler, pd, InteractionType::ELECTROSTATICS, exclusions);
-    // The same pairs once for all non-bonded types
+    // The pairs once for all non-bonded types, see NonBondedPairs
     nonBonded_.make(atoms_.size(), exclusions);
     nonBonded_.addType(pd, InteractionType::VDW, atoms_);
     nonBonded_.addType(pd, InteractionType::ELECTROSTATICS, atoms_);
@@ -1522,14 +1489,12 @@ void Topology::build(MsgHandler             *msghandler,
     // If the interaction has no parameters even though it is present, ignore
     if (pd->interactionPresent(itqt) && !pd->findForcesConst(itqt).empty())
     {
-        makePairs(msghandler, pd, itqt, exclusions);
         nonBonded_.addType(pd, itqt, atoms_);
     }
     auto itic = InteractionType::INDUCTIONCORRECTION;
     // If the interaction has no parameters even though it is present, ignore
     if (pd->interactionPresent(itic) && !pd->findForcesConst(itic).empty())
     {
-        makePairs(msghandler, pd, itic, exclusions);
         nonBonded_.addType(pd, itic, atoms_);
     }
     if (missing != missingParameters::Generate)
@@ -1547,15 +1512,42 @@ void Topology::build(MsgHandler             *msghandler,
 
 void Topology::setNonBondedParameters(InteractionType itype, const std::vector<double> &params)
 {
-    auto ee = entries_.find(itype);
-    if (ee != entries_.end())
+    nonBonded_.setParameters(itype, params);
+    parameterVersion_[itype].update();
+}
+
+std::vector<InteractionType> Topology::interactionTypes() const
+{
+    // In the order of the interaction types, as entries_, such that the
+    // forces are added in the same order as before the pairs were stored
+    // separately
+    // Called for each energy calculation, so without a set: both are
+    // sorted, the non-bonded types are merged in
+    std::vector<InteractionType> itypes;
+    itypes.reserve(entries_.size() + 4);
+    for (const auto &entry : entries_)
     {
-        for (auto &e : ee->second)
+        if (!entry.second.empty())
         {
-            e->setParams(params);
+            itypes.push_back(entry.first);
         }
     }
-    nonBonded_.setParameters(itype, params);
+    size_t nbonded = itypes.size();
+    for (auto itype : nonBonded_.types())
+    {
+        if (!nonBonded_.range(itype).empty())
+        {
+            itypes.push_back(itype);
+        }
+    }
+    std::inplace_merge(itypes.begin(), itypes.begin() + nbonded, itypes.end());
+    return itypes;
+}
+
+void Topology::removeInteractionType(InteractionType itype)
+{
+    entries_.erase(itype);
+    nonBonded_.removeType(itype);
     parameterVersion_[itype].update();
 }
 
@@ -1997,9 +1989,11 @@ void Topology::fillParameters(MsgHandler                      *msghandler,
     }
     for (auto itype : nonBonded_.types())
     {
-        if (pd->interactionPresent(itype) && !(itypes && itypes->find(itype) == itypes->end()))
+        if (pd->interactionPresent(itype) && !(itypes && itypes->find(itype) == itypes->end()) &&
+            nonBonded_.fillParameters(msghandler, pd, itype, missing))
         {
-            (void) nonBonded_.fillParameters(msghandler, pd, itype, missing);
+            // The energies have to be computed again, see parameterVersion
+            parameterVersion_[itype].update();
         }
     }
 }
