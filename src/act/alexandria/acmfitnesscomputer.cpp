@@ -813,10 +813,39 @@ double ACMFitnessComputer::finishDeviation(MsgHandler *msghandler, DeviationTask
             devTimers_.push_back(Timings::instance().index("Deviation " + mydev->name()));
         }
     }
+    // The charges of the molecules that were skipped are not those of
+    // these parameters, but those of the replica staged last or of the
+    // other set kept, therefore their bounds are those kept with their
+    // deviations, see MolCacheEntry.
+    std::vector<double> molBound;
+    if (dt->gpuDeviations && targets->find(eRMS::BOUNDS) != targets->end())
+    {
+        molBound.resize(selected.size(), 0);
+        for (size_t m = 0; m < selected.size(); m++)
+        {
+            if (dt->skipping && !dt->active[m])
+            {
+                molBound[m] = molCache_[dt->replica][m][dt->hit[m]].bound;
+            }
+            else
+            {
+                molBound[m] = BoundsDevComputer::moleculeBound(selected[m], sii_->forcefield(), lossFunction_);
+            }
+        }
+    }
     for (size_t d = 0; d < devComputers_.size(); d++)
     {
         DevComputer *mydev = devComputers_[d];
         ScopedTimer timer(devTimers_[d]);
+        if (!molBound.empty() && dynamic_cast<BoundsDevComputer *>(mydev))
+        {
+            auto bounds = targets->find(eRMS::BOUNDS);
+            for (auto b : molBound)
+            {
+                bounds->second.increase(1, b);
+            }
+            continue;
+        }
         // The energies were computed, see computeEnergies
         auto fe = dynamic_cast<ForceEnergyDevComputer *>(mydev);
         if (fe && dt->gpuDeviations)
@@ -860,7 +889,7 @@ double ACMFitnessComputer::finishDeviation(MsgHandler *msghandler, DeviationTask
                 else
                 {
                     entries[1] = std::move(entries[0]);
-                    entries[0] = { true, dt->keys[m], std::move(fresh[m]) };
+                    entries[0] = { true, dt->keys[m], std::move(fresh[m]), m < molBound.size() ? molBound[m] : 0.0 };
                 }
             }
             continue;

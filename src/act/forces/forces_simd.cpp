@@ -4295,6 +4295,11 @@ public:
         }
         chargesOf    = replica;
         size_t first = replica*nacmAtomReplica;
+        // The fixed parts of the charges of the replica as it was staged,
+        // the second charge and the distribution widths. The molecules have
+        // those of the replica staged last, but the bounds, for instance,
+        // need the total charges of this one, see ActAtom::totalCharge.
+        const auto *st = replica < staged.size() && stagedAll[replica] ? &staged[replica] : nullptr;
         for (auto k : acmMols)
         {
             auto  molptr = mols[k];
@@ -4305,10 +4310,25 @@ public:
             {
                 auto   fatoms = tops[f].atomsPtr();
                 size_t start  = fh->atomStart()[f];
+                // Four values for each atom of the block of the fragment, see stageBlock
+                const double *q4 = nullptr;
+                int           b  = find(k, f);
+                if (st && b >= 0 && static_cast<size_t>(b) < segments.size() &&
+                    segments[b].ncharge == 4*fatoms->size())
+                {
+                    q4 = st->charges.data() + segments[b].charge;
+                }
                 for (size_t a = 0; a < fatoms->size(); a++)
                 {
-                    (*fatoms)[a].setCharge(acmCharges[first + start + a]);
-                    (*atoms)[start + a].setCharge(acmCharges[first + start + a]);
+                    for (auto atom : { &(*fatoms)[a], &(*atoms)[start + a] })
+                    {
+                        atom->setCharge(acmCharges[first + start + a]);
+                        if (q4)
+                        {
+                            atom->setChargeVS(q4[4*a + 1], q4[4*a + 3], atom->rowVS());
+                            atom->setZeta(q4[4*a + 2]);
+                        }
+                    }
                 }
             }
             first += atoms->size();

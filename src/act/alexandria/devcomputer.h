@@ -133,6 +133,15 @@ public:
                                const ForceField              *forcefield,
                                LossFunction                   lossFunction);
 
+    /*! \brief The penalty of one molecule, as calcDeviation adds it
+     * \param[in] mol          The molecule, with its charges
+     * \param[in] forcefield   The force field
+     * \param[in] lossFunction Functional form of the loss function
+     * \return The penalty
+     */
+    static double moleculeBound(const ACTMol     *mol,
+                                const ForceField *forcefield,
+                                LossFunction      lossFunction);
 };
 
 /*!
