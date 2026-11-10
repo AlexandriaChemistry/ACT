@@ -1007,18 +1007,21 @@ int b2(int argc, char *argv[])
         "of temperature.[PAR]",
         "To run the program you need to provide a pdb file with two monomeric",
         "compounds that have support in the force field and that are present",
-        "in the charges file."
+        "in the charges file.[PAR]",
+        "With [TT]-json[tt], part of the output, including the second virial",
+        "coefficients with all digits, is written in json format to the given",
+        "file, b2.json by default."
     };
 
     std::vector<t_filenm>     fnm = {
-        { efXML, "-ff",      "aff",     ffREAD  }
+        { efXML,  "-ff",     "aff",     ffREAD  },
+        { efJSON, "-json",   "b2",      ffOPTWR }
     };
     gmx_output_env_t         *oenv;
     char                     *molnm            = (char *)"";
     real                      shellToler       = 1e-6;
     int                       maxdimers        = 1024;
     int                       shellMaxIter     = 25;
-    bool                      json             = false;
     std::vector<t_pargs>      pa = {
         { "-name",   FALSE, etSTR,  {&molnm},
           "Name of your molecule." },
@@ -1027,9 +1030,7 @@ int b2(int argc, char *argv[])
         { "-shelltoler", FALSE, etREAL, {&shellToler},
           "Tolerance for shell force optimization (mean square force)." },
         { "-shellMaxIter", FALSE, etINT, {&shellMaxIter},
-          "Max number of iterations for minimizing shell positions" },
-        { "-json", FALSE, etBOOL, {&json},
-          "Print part of the output in json format to b2.json, including the second virial coefficients with all digits." }
+          "Max number of iterations for minimizing shell positions" }
     };
     CommunicationRecord cr;
     cr.init(cr.size());
@@ -1048,6 +1049,10 @@ int b2(int argc, char *argv[])
         return status;
     }
     msghandler.optionsFinished(fnm, &cr);
+    // Part of the output in json format, including the second virial
+    // coefficients with all digits, in the file of -json if it is given
+    const char *jsonFile = opt2fn_null("-json", fnm.size(), fnm.data());
+    bool        json     = jsonFile != nullptr;
     if (cr.isMaster())
     {
         print_header(msghandler.tw(), pa, fnm);
@@ -1125,7 +1130,7 @@ int b2(int argc, char *argv[])
                  writeJson ? &jtree : nullptr, &peak);
     if (writeJson)
     {
-        jtree.write("b2.json", json);
+        jtree.write(jsonFile, json);
     }
     return status;
 }

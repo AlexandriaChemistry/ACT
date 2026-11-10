@@ -27,6 +27,7 @@
  */
 #include <algorithm>
 #include <cmath>
+#include <cstdio>
 #include <cstdint>
 #include <fstream>
 #include <map>
@@ -41,6 +42,8 @@
 #include "act/molprop/molprop.h"
 #include "act/molprop/molprop_xml.h"
 #include "gromacs/math/units.h"
+
+#include <nlohmann/json.hpp>
 
 #include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"
@@ -530,6 +533,31 @@ TEST_F(SimulateTest, RerunShellsVsites)
         // The single point energy is printed with four decimals
         EXPECT_NEAR(singlePointEnergy(sp.log), epot[0], 1e-3) << model;
     }
+}
+
+// Test: With -json, part of the output is written in json format to the
+// given file, and without it no such file is written
+TEST_F(SimulateTest, JsonFile)
+{
+    auto ffFile = fileManager().getInputFilePath("SWM4-NDP.xml");
+    SimulateFiles sp;
+    auto cmd  = baseCommand("water_dimer.pdb", "json-sp", &sp, ffFile);
+    auto json = fileManager().getTemporaryFilePath("json-sp.json");
+    cmd.append("-sp");
+    cmd.addOption("-json", json);
+    ASSERT_EQ(0, run(&cmd));
+    std::ifstream in(json);
+    ASSERT_TRUE(in.good()) << "Cannot open " << json;
+    auto tree = nlohmann::json::parse(in);
+    EXPECT_TRUE(tree.contains("simulate")) << tree.dump();
+
+    // Left over from elsewhere, it would hide that it is written by default
+    std::remove("simulate.json");
+    SimulateFiles noJson;
+    auto cmd2 = baseCommand("water_dimer.pdb", "nojson-sp", &noJson, ffFile);
+    cmd2.append("-sp");
+    ASSERT_EQ(0, run(&cmd2));
+    EXPECT_FALSE(std::ifstream("simulate.json").good());
 }
 
 // Test: The initial temperature is the requested one, computed for
