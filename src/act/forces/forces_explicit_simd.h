@@ -50,6 +50,7 @@
 #include "act/forcefield/potential.h"
 #include "act/molprop/topologyentry.h"
 #include "act/topology/actatom.h"
+#include "act/topology/nonbondedpairs.h"
 
 namespace alexandria
 {
@@ -202,6 +203,50 @@ bool coulombKernelsExplicitSimd(TopologyEntryRange          entries,
  * multiple of explicitSimdWidth<float>().
  */
 bool coulombKernelsExplicitSimd(TopologyEntryRange          entries,
+                                const std::vector<ActAtom> &atoms,
+                                size_t                      stride,
+                                size_t                      nslot,
+                                const Coordinate           *x,
+                                const unsigned char        *terms,
+                                float                      *kernel);
+
+/*! \brief As computeExplicitSimd for TopologyEntry objects, for non-bonded pairs
+ * Only the non-bonded potentials are available, see NonBondedPairs.
+ */
+bool computeExplicitSimd(Potential                   mypot,
+                         const PairRange            &entries,
+                         const std::vector<ActAtom> &atoms,
+                         double                      epsilonr,
+                         size_t                      stride,
+                         size_t                      nslot,
+                         const Coordinate           *x,
+                         double                     *f,
+                         double                     *energies,
+                         bool                        forces);
+
+//! As computeExplicitSimd for TopologyEntry objects in single precision, for non-bonded pairs
+bool computeExplicitSimd(Potential                   mypot,
+                         const PairRange            &entries,
+                         const std::vector<ActAtom> &atoms,
+                         double                      epsilonr,
+                         size_t                      stride,
+                         size_t                      nslot,
+                         const Coordinate           *x,
+                         float                      *f,
+                         double                     *energies,
+                         bool                        forces);
+
+//! As coulombKernelsExplicitSimd for TopologyEntry objects, for non-bonded pairs
+bool coulombKernelsExplicitSimd(const PairRange            &entries,
+                                const std::vector<ActAtom> &atoms,
+                                size_t                      stride,
+                                size_t                      nslot,
+                                const Coordinate           *x,
+                                const unsigned char        *terms,
+                                double                     *kernel);
+
+//! As coulombKernelsExplicitSimd for TopologyEntry objects in single precision, for non-bonded pairs
+bool coulombKernelsExplicitSimd(const PairRange            &entries,
                                 const std::vector<ActAtom> &atoms,
                                 size_t                      stride,
                                 size_t                      nslot,

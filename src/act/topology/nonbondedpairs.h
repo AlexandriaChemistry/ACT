@@ -266,6 +266,14 @@ public:
      */
     void separate(const std::function<bool(const std::array<int, 2> &)> &keepFirst, bool shells);
 
+    /*! \brief Set the parameters of all type pairs of an interaction type
+     * For instance for tests. Pairs that were removed since they had no
+     * parameters stay removed.
+     * \param[in] itype  The interaction type, which has type pairs
+     * \param[in] params The parameters, in internal units
+     */
+    void setParameters(InteractionType itype, const std::vector<double> &params);
+
     //! \return whether the interaction type has pairs
     bool hasType(InteractionType itype) const { return types_.find(itype) != types_.end(); }
 

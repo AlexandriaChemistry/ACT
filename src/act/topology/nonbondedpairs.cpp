@@ -269,6 +269,20 @@ void NonBondedPairs::separate(const std::function<bool(const std::array<int, 2> 
     }
 }
 
+void NonBondedPairs::setParameters(InteractionType itype, const std::vector<double> &params)
+{
+    auto it = types_.find(itype);
+    if (it == types_.end() || !it->second.hasTypes)
+    {
+        GMX_THROW(gmx::InternalError(gmx::formatString("No type pairs of %s",
+                                                       interactionTypeToString(itype).c_str()).c_str()));
+    }
+    for (auto &p : it->second.types.params)
+    {
+        p = params;
+    }
+}
+
 std::vector<InteractionType> NonBondedPairs::types() const
 {
     std::vector<InteractionType> itypes;

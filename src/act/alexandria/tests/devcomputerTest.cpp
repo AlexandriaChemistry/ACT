@@ -43,6 +43,7 @@
 #include "act/alexandria/molgen.h"
 #include "act/forcefield/forcefield_utils.h"
 #include "act/forcefield/forcefield_xml.h"
+#include "act/forcefield/potential.h"
 #include "act/forcefield/generate_dependent.h"
 #include "act/forces/conformationdata.h"
 #include "act/gpu/gpu.h"
@@ -2795,23 +2796,20 @@ TEST_F(PropertyDevComputerTest, NonFiniteEnergiesIgnored)
     ASSERT_FALSE(mols.empty());
     // Van der Waals parameters that give no finite energies
     auto itype = InteractionType::VDW;
+    auto nparam = potprops.find(pd->potential(itype))->second.param.size();
+    std::vector<double> nan(nparam, std::numeric_limits<double>::quiet_NaN());
     for(auto &mol : mols)
     {
-        std::vector<std::map<InteractionType, TopologyEntryVector> *> allEntries = { mol.topologyPtr()->entriesPtr() };
+        std::vector<Topology *> tops = { mol.topologyPtr() };
         for(auto &top : mol.fragmentHandler()->topologiesPtr())
         {
-            allEntries.push_back(top.entriesPtr());
+            tops.push_back(&top);
         }
-        for(auto entries : allEntries)
+        for(auto top : tops)
         {
-            auto ee = entries->find(itype);
-            if (entries->end() == ee)
+            if (top->nonBondedPairs().hasType(itype))
             {
-                continue;
-            }
-            for(auto &e : ee->second)
-            {
-                e->setParams(std::vector<double>(e->params().size(), std::numeric_limits<double>::quiet_NaN()));
+                top->setNonBondedParameters(itype, nan);
             }
         }
     }
