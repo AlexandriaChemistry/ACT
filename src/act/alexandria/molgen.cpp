@@ -1245,7 +1245,22 @@ size_t MolGen::Read(MsgHandler                          *msghandler,
     // support for them, at least on the middlemen but may be needed everywhere.
     //! \todo Check that this is correct.
     checkDataSufficiency(msghandler, pd);
-    
+    // The atoms of each structure were needed for the topologies only, but
+    // take more memory than anything else read, in every process. Only the
+    // molprop file written after training needs them, see -mpout.
+    bool writeMolprops = std::any_of(filenms.begin(), filenms.end(), [](const t_filenm &f)
+                                     { return f.opt && std::string(f.opt) == "-mpout" && opt2bSet(f.opt, 1, &f); });
+    if (!writeMolprops)
+    {
+        for (auto &m : actmol_)
+        {
+            for (auto &exper : *m.experiment())
+            {
+                exper.releaseAtoms();
+            }
+        }
+    }
+
     // Some extra debug printing.
     if (msghandler->debug())
     {

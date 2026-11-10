@@ -194,6 +194,11 @@ public:
     
     //! Return mutable vector of calcatom
     std::vector<CalcAtom> *calcAtom() { return &catom_; }
+
+    /*! \brief Free the atoms, once the topology was made from them
+     * The coordinates and forces stay, see getCoordinates and getForces.
+     */
+    void releaseAtoms() { std::vector<CalcAtom>().swap(catom_); }
     
     //! Return iterator pointing to this particular atom or EndAtom() if not found
     CalcAtomIterator searchAtom(const CalcAtom &ca);
