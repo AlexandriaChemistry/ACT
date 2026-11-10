@@ -151,7 +151,8 @@ struct LJ12_6
      * \param[out] p        The parameters
      * \return false if there is no interaction
      */
-    static bool prepare(const TopologyEntry &b, const std::vector<ActAtom> &, double, double *p)
+    template <typename E>
+    static bool prepare(const E &b, const std::vector<ActAtom> &, double, double *p)
     {
         auto sig6 = gmx::power6(b.params()[lj12_6SIGMA]);
         p[0]      = 4*b.params()[lj12_6EPSILON]*sig6;
@@ -181,7 +182,8 @@ struct LJ12_6
 struct LJ12_6_4
 {
     //! \copydoc LJ12_6::prepare
-    static bool prepare(const TopologyEntry &b, const std::vector<ActAtom> &, double, double *p)
+    template <typename E>
+    static bool prepare(const E &b, const std::vector<ActAtom> &, double, double *p)
     {
         auto sig6 = gmx::power6(b.params()[lj12_6_4SIGMA]);
         p[0]      = 4*b.params()[lj12_6_4EPSILON]*sig6;
@@ -210,7 +212,8 @@ struct LJ12_6_4
 struct LJ8_6
 {
     //! \copydoc LJ12_6::prepare
-    static bool prepare(const TopologyEntry &b, const std::vector<ActAtom> &, double, double *p)
+    template <typename E>
+    static bool prepare(const E &b, const std::vector<ActAtom> &, double, double *p)
     {
         auto sigma = b.params()[lj8_6SIGMA];
         p[0]       = 4*b.params()[lj8_6EPSILON]*gmx::power6(sigma);
@@ -235,7 +238,8 @@ struct LJ8_6
 struct LJ14_7
 {
     //! \copydoc LJ12_6::prepare
-    static bool prepare(const TopologyEntry &b, const std::vector<ActAtom> &, double, double *p)
+    template <typename E>
+    static bool prepare(const E &b, const std::vector<ActAtom> &, double, double *p)
     {
         auto &params  = b.params();
         auto  sigma   = params[lj14_7SIGMA];
@@ -354,7 +358,8 @@ static S ttDispersion(double bDisp, const double *ctt, S r, S rinv, S *fscal)
 struct BornMayer
 {
     //! \copydoc LJ12_6::prepare
-    static bool prepare(const TopologyEntry &b, const std::vector<ActAtom> &, double, double *p)
+    template <typename E>
+    static bool prepare(const E &b, const std::vector<ActAtom> &, double, double *p)
     {
         // Charge transfer correction, according to Eqn. 20, Walker et al.
         // https://doi.org/10.1002/jcc.26954
@@ -376,7 +381,8 @@ struct BornMayer
 struct SlaterISA
 {
     //! \copydoc LJ12_6::prepare
-    static bool prepare(const TopologyEntry &b, const std::vector<ActAtom> &, double, double *p)
+    template <typename E>
+    static bool prepare(const E &b, const std::vector<ActAtom> &, double, double *p)
     {
         p[0] = b.params()[expA];
         p[1] = b.params()[expB];
@@ -396,7 +402,8 @@ struct SlaterISA
 struct DoubleExponential
 {
     //! \copydoc LJ12_6::prepare
-    static bool prepare(const TopologyEntry &b, const std::vector<ActAtom> &, double, double *p)
+    template <typename E>
+    static bool prepare(const E &b, const std::vector<ActAtom> &, double, double *p)
     {
         p[0] = b.params()[dexpA2] - b.params()[dexpA1];
         p[1] = b.params()[dexpB];
@@ -416,7 +423,8 @@ struct DoubleExponential
 struct WangBuckingham
 {
     //! \copydoc LJ12_6::prepare
-    static bool prepare(const TopologyEntry &b, const std::vector<ActAtom> &, double, double *p)
+    template <typename E>
+    static bool prepare(const E &b, const std::vector<ActAtom> &, double, double *p)
     {
         auto &params  = b.params();
         auto  sigma   = params[wbhSIGMA];
@@ -453,7 +461,8 @@ struct WangBuckingham
 struct Buckingham
 {
     //! \copydoc LJ12_6::prepare
-    static bool prepare(const TopologyEntry &b, const std::vector<ActAtom> &, double, double *p)
+    template <typename E>
+    static bool prepare(const E &b, const std::vector<ActAtom> &, double, double *p)
     {
         p[0] = b.params()[bhA];
         p[1] = b.params()[bhB];
@@ -478,7 +487,8 @@ struct Buckingham
 struct TangToennies
 {
     //! \copydoc LJ12_6::prepare
-    static bool prepare(const TopologyEntry &b, const std::vector<ActAtom> &, double, double *p)
+    template <typename E>
+    static bool prepare(const E &b, const std::vector<ActAtom> &, double, double *p)
     {
         auto &params = b.params();
         p[0] = params[ttA];
@@ -504,7 +514,8 @@ struct TangToennies
 struct TT2b
 {
     //! \copydoc LJ12_6::prepare
-    static bool prepare(const TopologyEntry &b, const std::vector<ActAtom> &, double, double *p)
+    template <typename E>
+    static bool prepare(const E &b, const std::vector<ActAtom> &, double, double *p)
     {
         auto &params = b.params();
         p[0] = params[tt2bA];
@@ -531,7 +542,8 @@ struct TT2b
 struct SlaterISATT
 {
     //! \copydoc LJ12_6::prepare
-    static bool prepare(const TopologyEntry &b, const std::vector<ActAtom> &, double, double *p)
+    template <typename E>
+    static bool prepare(const E &b, const std::vector<ActAtom> &, double, double *p)
     {
         auto &params = b.params();
         p[0] = params[SIttA];
@@ -584,7 +596,8 @@ struct Coulomb
      * stored as pairs of the charge product and the combined width. Terms
      * without charge are stored with a zero charge product, except the first.
      */
-    static bool prepare(const TopologyEntry &b, const std::vector<ActAtom> &atoms, double epsilonr, double *p)
+    template <typename E>
+    static bool prepare(const E &b, const std::vector<ActAtom> &atoms, double epsilonr, double *p)
     {
         auto &gindices = b.atomIndices();
         const auto &atomi = atoms[gindices[0]];
@@ -699,7 +712,8 @@ struct Coulomb
 struct Polarization
 {
     //! \copydoc LJ12_6::prepare
-    static bool prepare(const TopologyEntry &b, const std::vector<ActAtom> &atoms, double, double *p)
+    template <typename E>
+    static bool prepare(const E &b, const std::vector<ActAtom> &atoms, double, double *p)
     {
         auto &params = b.params();
         auto  alpha  = params[polALPHA];
@@ -740,7 +754,8 @@ struct Polarization
 struct HarmonicBond
 {
     //! \copydoc LJ12_6::prepare
-    static bool prepare(const TopologyEntry &b, const std::vector<ActAtom> &, double, double *p)
+    template <typename E>
+    static bool prepare(const E &b, const std::vector<ActAtom> &, double, double *p)
     {
         p[0] = b.params()[bondLENGTH];
         p[1] = b.params()[bondKB];
@@ -762,7 +777,8 @@ struct HarmonicBond
 struct CubicBond
 {
     //! \copydoc LJ12_6::prepare
-    static bool prepare(const TopologyEntry &b, const std::vector<ActAtom> &, double, double *p)
+    template <typename E>
+    static bool prepare(const E &b, const std::vector<ActAtom> &, double, double *p)
     {
         auto &params = b.params();
         p[0] = params[cubicLENGTH];
@@ -793,7 +809,8 @@ struct CubicBond
 struct MorseBond
 {
     //! \copydoc LJ12_6::prepare
-    static bool prepare(const TopologyEntry &b, const std::vector<ActAtom> &, double, double *p)
+    template <typename E>
+    static bool prepare(const E &b, const std::vector<ActAtom> &, double, double *p)
     {
         auto &params = b.params();
         p[0] = params[morseLENGTH];
@@ -820,7 +837,8 @@ struct MorseBond
 struct HuaBond
 {
     //! \copydoc LJ12_6::prepare
-    static bool prepare(const TopologyEntry &b, const std::vector<ActAtom> &, double, double *p)
+    template <typename E>
+    static bool prepare(const E &b, const std::vector<ActAtom> &, double, double *p)
     {
         auto &params = b.params();
         p[0] = params[huaLENGTH];
@@ -1020,8 +1038,8 @@ static void dispatchPairVariant(const PairParams &pp,
  * \param[inout] f        Forces, not used if Forces is false
  * \param[inout] energies Energies
  */
-template <typename Kernel, bool Forces, typename T>
-void computePairs(TopologyEntryRange          entries,
+template <typename Kernel, bool Forces, typename Range, typename T>
+void computePairs(const Range                &entries,
                   const std::vector<ActAtom> &atoms,
                   double                      epsilonr,
                   size_t                      stride,
@@ -1035,7 +1053,7 @@ void computePairs(TopologyEntryRange          entries,
     pairs.clear();
     for (const auto &b : entries)
     {
-        const TopologyEntry &entry = *b.operator->();
+        const auto          &entry = *b.operator->();
         PairParams           pp;
         pp.i = DIM*entry.atomIndices()[0]*stride;
         pp.j = DIM*entry.atomIndices()[1]*stride;
@@ -1411,9 +1429,9 @@ void computeImproperDihedrals(TopologyEntryRange         entries,
 /*! \brief Compute one potential for all conformations, see computeExplicitSimd
  * \tparam T The floating point type of the coordinates and forces, the energies are double
  */
-template <typename T>
+template <typename Range, typename T>
 bool computeExplicitSimdT(Potential                   mypot,
-                          TopologyEntryRange          entries,
+                          const Range                &entries,
                           const std::vector<ActAtom> &atoms,
                           double                      epsilonr,
                           size_t                      stride,
@@ -1451,50 +1469,62 @@ bool computeExplicitSimdT(Potential                   mypot,
     case Potential::SLATER_ISA_TT:        return pairs(SlaterISATT{});
     case Potential::COULOMB_POINT:
     case Potential::COULOMB_GAUSSIAN:     return pairs(Coulomb{});
-    case Potential::POLARIZATION:         return pairs(Polarization{});
-    case Potential::HARMONIC_BONDS:       return pairs(HarmonicBond{});
-    case Potential::CUBIC_BONDS:          return pairs(CubicBond{});
-    case Potential::MORSE_BONDS:          return pairs(MorseBond{});
-    case Potential::HUA_BONDS:            return pairs(HuaBond{});
-    case Potential::HARMONIC_ANGLES:
-        if (forces)
-        {
-            computeAngles<true>(entries, stride, nslot, x, f, energies);
-        }
-        else
-        {
-            computeAngles<false>(entries, stride, nslot, x, f, energies);
-        }
-        return true;
-    case Potential::FOURIER_DIHEDRALS:
-        if (forces)
-        {
-            computeFourierDihedrals<true>(entries, stride, nslot, x, f, energies);
-        }
-        else
-        {
-            computeFourierDihedrals<false>(entries, stride, nslot, x, f, energies);
-        }
-        return true;
-    case Potential::HARMONIC_DIHEDRALS:
-        if (forces)
-        {
-            computeImproperDihedrals<true>(entries, stride, nslot, x, f, energies);
-        }
-        else
-        {
-            computeImproperDihedrals<false>(entries, stride, nslot, x, f, energies);
-        }
-        return true;
     default:
-        return false;
-    }}
+        break;
+    }
+    // Bonded interactions, which are TopologyEntry objects
+    if constexpr (!std::is_same_v<std::remove_cvref_t<Range>, PairRange>)
+    {
+        switch (mypot)
+        {
+        case Potential::POLARIZATION:         return pairs(Polarization{});
+        case Potential::HARMONIC_BONDS:       return pairs(HarmonicBond{});
+        case Potential::CUBIC_BONDS:          return pairs(CubicBond{});
+        case Potential::MORSE_BONDS:          return pairs(MorseBond{});
+        case Potential::HUA_BONDS:            return pairs(HuaBond{});
+        case Potential::HARMONIC_ANGLES:
+            if (forces)
+            {
+                computeAngles<true>(entries, stride, nslot, x, f, energies);
+            }
+            else
+            {
+                computeAngles<false>(entries, stride, nslot, x, f, energies);
+            }
+            return true;
+        case Potential::FOURIER_DIHEDRALS:
+            if (forces)
+            {
+                computeFourierDihedrals<true>(entries, stride, nslot, x, f, energies);
+            }
+            else
+            {
+                computeFourierDihedrals<false>(entries, stride, nslot, x, f, energies);
+            }
+            return true;
+        case Potential::HARMONIC_DIHEDRALS:
+            if (forces)
+            {
+                computeImproperDihedrals<true>(entries, stride, nslot, x, f, energies);
+            }
+            else
+            {
+                computeImproperDihedrals<false>(entries, stride, nslot, x, f, energies);
+            }
+            return true;
+        default:
+            break;
+        }
+    }
+    return false;
+}
+
 
 /*! \brief The Coulomb energies for charges of one, see coulombKernelsExplicitSimd
  * \tparam T The floating point type of the coordinates and the energies
  */
-template <typename T>
-bool coulombKernelsExplicitSimdT(TopologyEntryRange          entries,
+template <typename Range, typename T>
+bool coulombKernelsExplicitSimdT(const Range                &entries,
                                  const std::vector<ActAtom> &atoms,
                                  size_t                      stride,
                                  size_t                      nslot,
@@ -1506,7 +1536,7 @@ bool coulombKernelsExplicitSimdT(TopologyEntryRange          entries,
     size_t e = 0;
     for (const auto &b : entries)
     {
-        const TopologyEntry &entry  = *b.operator->();
+        const auto          &entry  = *b.operator->();
         const auto          &ind    = entry.atomIndices();
         const double zi[2] = { atoms[ind[0]].zeta(), atoms[ind[0]].zetaVS() };
         const double zj[2] = { atoms[ind[1]].zeta(), atoms[ind[1]].zetaVS() };
@@ -1634,6 +1664,56 @@ bool coulombKernelsExplicitSimd(TopologyEntryRange          entries,
     return coulombKernelsExplicitSimdT(entries, atoms, stride, nslot, x, terms, kernel);
 }
 
+bool computeExplicitSimd(Potential                   mypot,
+                         const PairRange            &entries,
+                         const std::vector<ActAtom> &atoms,
+                         double                      epsilonr,
+                         size_t                      stride,
+                         size_t                      nslot,
+                         const Coordinate           *x,
+                         double                     *f,
+                         double                     *energies,
+                         bool                        forces)
+{
+    return computeExplicitSimdT(mypot, entries, atoms, epsilonr, stride, nslot, x, f, energies, forces);
+}
+
+bool computeExplicitSimd(Potential                   mypot,
+                         const PairRange            &entries,
+                         const std::vector<ActAtom> &atoms,
+                         double                      epsilonr,
+                         size_t                      stride,
+                         size_t                      nslot,
+                         const Coordinate           *x,
+                         float                      *f,
+                         double                     *energies,
+                         bool                        forces)
+{
+    return computeExplicitSimdT(mypot, entries, atoms, epsilonr, stride, nslot, x, f, energies, forces);
+}
+
+bool coulombKernelsExplicitSimd(const PairRange            &entries,
+                                const std::vector<ActAtom> &atoms,
+                                size_t                      stride,
+                                size_t                      nslot,
+                                const Coordinate           *x,
+                                const unsigned char        *terms,
+                                double                     *kernel)
+{
+    return coulombKernelsExplicitSimdT(entries, atoms, stride, nslot, x, terms, kernel);
+}
+
+bool coulombKernelsExplicitSimd(const PairRange            &entries,
+                                const std::vector<ActAtom> &atoms,
+                                size_t                      stride,
+                                size_t                      nslot,
+                                const Coordinate           *x,
+                                const unsigned char        *terms,
+                                float                      *kernel)
+{
+    return coulombKernelsExplicitSimdT(entries, atoms, stride, nslot, x, terms, kernel);
+}
+
 bool addB2TermsExplicitSimd(size_t        nT,
                             const double *beta,
                             double        energy,
@@ -1729,6 +1809,30 @@ bool coulombKernelsExplicitSimd(TopologyEntryRange, const std::vector<ActAtom> &
 }
 
 bool coulombKernelsExplicitSimd(TopologyEntryRange, const std::vector<ActAtom> &, size_t, size_t,
+                                const Coordinate *, const unsigned char *, float *)
+{
+    return false;
+}
+
+bool computeExplicitSimd(Potential, const PairRange &, const std::vector<ActAtom> &,
+                         double, size_t, size_t, const Coordinate *, double *, double *, bool)
+{
+    return false;
+}
+
+bool computeExplicitSimd(Potential, const PairRange &, const std::vector<ActAtom> &,
+                         double, size_t, size_t, const Coordinate *, float *, double *, bool)
+{
+    return false;
+}
+
+bool coulombKernelsExplicitSimd(const PairRange &, const std::vector<ActAtom> &, size_t, size_t,
+                                const Coordinate *, const unsigned char *, double *)
+{
+    return false;
+}
+
+bool coulombKernelsExplicitSimd(const PairRange &, const std::vector<ActAtom> &, size_t, size_t,
                                 const Coordinate *, const unsigned char *, float *)
 {
     return false;

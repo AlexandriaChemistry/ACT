@@ -501,12 +501,8 @@ TEST_F(ComputeTotalTest, InductionCorrectionPotential)
     ACTMol mol;
     ASSERT_TRUE(readMolecule(&msghandler_, pd, "water_dimer", &mol));
     auto itype   = InteractionType::INDUCTIONCORRECTION;
-    auto entries = mol.topologyPtr()->entriesPtr();
-    ASSERT_TRUE(entries->end() != entries->find(itype));
-    for(auto &e : entries->find(itype)->second)
-    {
-        e->setParams({ 2000.0, 1000.0, 20.0 });
-    }
+    ASSERT_TRUE(mol.topology()->nonBondedPairs().hasType(itype));
+    mol.topologyPtr()->setNonBondedParameters(itype, { 2000.0, 1000.0, 20.0 });
     auto top = mol.topology();
     std::vector<std::vector<gmx::RVec>> x = { displaced(mol.xOriginal(), 0),
                                               displaced(mol.xOriginal(), 1),

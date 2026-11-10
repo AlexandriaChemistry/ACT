@@ -1545,6 +1545,20 @@ void Topology::build(MsgHandler             *msghandler,
     }
 }
 
+void Topology::setNonBondedParameters(InteractionType itype, const std::vector<double> &params)
+{
+    auto ee = entries_.find(itype);
+    if (ee != entries_.end())
+    {
+        for (auto &e : ee->second)
+        {
+            e->setParams(params);
+        }
+    }
+    nonBonded_.setParameters(itype, params);
+    parameterVersion_[itype].update();
+}
+
 const TopologyEntryVector &Topology::entry(InteractionType itype) const
 {
     return entries_.find(itype)->second;

@@ -86,11 +86,15 @@ bool gpuPairKernel(Potential mypot, gpu::PairKernel *kernel)
     }
 }
 
-bool gpuPairEntry(gpu::PairKernel             kernel,
-                  const TopologyEntry        &b,
-                  const std::vector<ActAtom> &atoms,
-                  double                      epsilonr,
-                  gpu::PairEntry             *pe)
+/*! \brief The interaction of a pair for the GPU, see gpuPairEntry
+ * \tparam E TopologyEntry or PairView
+ */
+template <typename E>
+static bool gpuPairEntryT(gpu::PairKernel             kernel,
+                          const E                    &b,
+                          const std::vector<ActAtom> &atoms,
+                          double                      epsilonr,
+                          gpu::PairEntry             *pe)
 {
     const auto &ind    = b.atomIndices();
     pe->i = static_cast<uint32_t>(ind[0]);
@@ -212,6 +216,24 @@ bool gpuPairEntry(gpu::PairKernel             kernel,
     }
     }
     return false;
+}
+
+bool gpuPairEntry(gpu::PairKernel             kernel,
+                  const TopologyEntry        &b,
+                  const std::vector<ActAtom> &atoms,
+                  double                      epsilonr,
+                  gpu::PairEntry             *pe)
+{
+    return gpuPairEntryT(kernel, b, atoms, epsilonr, pe);
+}
+
+bool gpuPairEntry(gpu::PairKernel             kernel,
+                  const PairView             &b,
+                  const std::vector<ActAtom> &atoms,
+                  double                      epsilonr,
+                  gpu::PairEntry             *pe)
+{
+    return gpuPairEntryT(kernel, b, atoms, epsilonr, pe);
 }
 
 bool gpuBondedKernel(Potential mypot, gpu::BondedKernel *kernel)
@@ -352,8 +374,9 @@ bool gpuVsiteEntry(InteractionType itype, const TopologyEntry &b, gpu::VsiteEntr
  * \param[in]  epsilonr Relative dielectric constant
  * \param[out] pairs    The interactions for the GPU, without those that have none
  */
+template <typename Range>
 static void preparePairs(gpu::PairKernel              kernel,
-                         TopologyEntryRange           entries,
+                         const Range                 &entries,
                          const std::vector<ActAtom>  &atoms,
                          double                       epsilonr,
                          std::vector<gpu::PairEntry> *pairs)
@@ -410,13 +433,14 @@ void GpuBatch::clear()
     computed_ = false;
 }
 
-void GpuBatch::add(Potential                   mypot,
-                   TopologyEntryRange          entries,
-                   const std::vector<ActAtom> &atoms,
-                   double                      epsilonr,
-                   size_t                      stride,
-                   size_t                      nslot,
-                   const Coordinate           *x)
+template <typename Range>
+void GpuBatch::addT(Potential                   mypot,
+                    const Range                &entries,
+                    const std::vector<ActAtom> &atoms,
+                    double                      epsilonr,
+                    size_t                      stride,
+                    size_t                      nslot,
+                    const Coordinate           *x)
 {
     GMX_RELEASE_ASSERT(canCompute(mypot), "The GPU cannot compute this potential");
     if (ntask_ == tasks_.size())
@@ -431,6 +455,18 @@ void GpuBatch::add(Potential                   mypot,
     (void) gpuPairKernel(mypot, &t.kernel);
     preparePairs(t.kernel, entries, atoms, epsilonr, &t.pairs);
     computed_ = false;
+}
+
+void GpuBatch::add(Potential mypot, TopologyEntryRange entries, const std::vector<ActAtom> &atoms,
+                   double epsilonr, size_t stride, size_t nslot, const Coordinate *x)
+{
+    addT(mypot, entries, atoms, epsilonr, stride, nslot, x);
+}
+
+void GpuBatch::add(Potential mypot, const PairRange &entries, const std::vector<ActAtom> &atoms,
+                   double epsilonr, size_t stride, size_t nslot, const Coordinate *x)
+{
+    addT(mypot, entries, atoms, epsilonr, stride, nslot, x);
 }
 
 bool GpuBatch::compute(bool forces)
@@ -487,8 +523,12 @@ void GpuBatch::addResults(size_t k, float *f, double *energies) const
     }
 }
 
-bool computeGpu(Potential                   mypot,
-                TopologyEntryRange          entries,
+/*! \brief Compute a potential for all conformations on the GPU, see computeGpu
+ * \tparam Range TopologyEntryRange or PairRange
+ */
+template <typename Range>
+static bool computeGpuT(Potential                   mypot,
+                const Range                &entries,
                 const std::vector<ActAtom> &atoms,
                 double                      epsilonr,
                 size_t                      stride,
@@ -509,6 +549,20 @@ bool computeGpu(Potential                   mypot,
     gpu::PairBatchBlock block = { atoms.size(), stride, nslot, x, kernel, pairs.data(), pairs.size(),
                                   forces ? f : nullptr, energies };
     return gpu::computePairBlocks(&block, 1, forces);
+}
+
+bool computeGpu(Potential mypot, TopologyEntryRange entries, const std::vector<ActAtom> &atoms,
+                double epsilonr, size_t stride, size_t nslot, const Coordinate *x, float *f,
+                double *energies, bool forces)
+{
+    return computeGpuT(mypot, entries, atoms, epsilonr, stride, nslot, x, f, energies, forces);
+}
+
+bool computeGpu(Potential mypot, const PairRange &entries, const std::vector<ActAtom> &atoms,
+                double epsilonr, size_t stride, size_t nslot, const Coordinate *x, float *f,
+                double *energies, bool forces)
+{
+    return computeGpuT(mypot, entries, atoms, epsilonr, stride, nslot, x, f, energies, forces);
 }
 
 } // namespace alexandria

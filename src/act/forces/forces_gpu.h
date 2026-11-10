@@ -45,6 +45,7 @@
 #include "act/forcefield/potential.h"
 #include "act/molprop/topologyentry.h"
 #include "act/topology/actatom.h"
+#include "act/topology/nonbondedpairs.h"
 
 namespace alexandria
 {
@@ -93,6 +94,18 @@ bool computeGpu(Potential                   mypot,
                 double                     *energies,
                 bool                        forces);
 
+//! As computeGpu for TopologyEntry objects, for non-bonded pairs, see NonBondedPairs
+bool computeGpu(Potential                   mypot,
+                const PairRange            &entries,
+                const std::vector<ActAtom> &atoms,
+                double                      epsilonr,
+                size_t                      stride,
+                size_t                      nslot,
+                const Coordinate           *x,
+                float                      *f,
+                double                     *energies,
+                bool                        forces);
+
 /*! \brief The GPU kernel of a potential
  * \param[in]  mypot  The potential
  * \param[out] kernel The kernel
@@ -112,6 +125,13 @@ bool gpuPairKernel(Potential mypot, gpu::PairKernel *kernel);
  */
 bool gpuPairEntry(gpu::PairKernel             kernel,
                   const TopologyEntry        &b,
+                  const std::vector<ActAtom> &atoms,
+                  double                      epsilonr,
+                  gpu::PairEntry             *pe);
+
+//! As gpuPairEntry for a TopologyEntry, for a non-bonded pair, see NonBondedPairs
+bool gpuPairEntry(gpu::PairKernel             kernel,
+                  const PairView             &b,
                   const std::vector<ActAtom> &atoms,
                   double                      epsilonr,
                   gpu::PairEntry             *pe);
@@ -180,6 +200,15 @@ public:
              size_t                      nslot,
              const Coordinate           *x);
 
+    //! As add for TopologyEntry objects, for non-bonded pairs, see NonBondedPairs
+    void add(Potential                   mypot,
+             const PairRange            &entries,
+             const std::vector<ActAtom> &atoms,
+             double                      epsilonr,
+             size_t                      stride,
+             size_t                      nslot,
+             const Coordinate           *x);
+
     /*! \brief Compute all tasks on the GPU, if there is enough work, see gpuMinimumWork
      * \param[in] forces Whether to compute forces
      * \return whether the results were computed
@@ -202,6 +231,16 @@ public:
     void addResults(size_t k, float *f, double *energies) const;
 
 private:
+    //! The implementation of add, for TopologyEntryRange or PairRange
+    template <typename Range>
+    void addT(Potential                   mypot,
+              const Range                &entries,
+              const std::vector<ActAtom> &atoms,
+              double                      epsilonr,
+              size_t                      stride,
+              size_t                      nslot,
+              const Coordinate           *x);
+
     //! The interactions of one molecule
     struct Task
     {
@@ -227,6 +266,13 @@ private:
 /*! \brief Without arrays in single precision there are no GPU kernels
  * \return false
  */
+inline bool computeGpu(Potential, const PairRange &, const std::vector<ActAtom> &, double,
+                       size_t, size_t, const Coordinate *, double *, double *, bool)
+{
+    return false;
+}
+
+//! Without arrays in single precision there are no GPU kernels, see computeGpu
 inline bool computeGpu(Potential, TopologyEntryRange, const std::vector<ActAtom> &, double,
                        size_t, size_t, const Coordinate *, double *, double *, bool)
 {

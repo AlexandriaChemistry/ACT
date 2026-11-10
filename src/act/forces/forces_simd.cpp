@@ -160,10 +160,14 @@ static ACT_ALWAYS_INLINE void fbposreOne(gmx_unused MsgHandler *msghandler,
     }
 }
 
+//! Whether a range of interactions holds non-bonded pairs, see PairRange
+template <typename Range>
+constexpr bool isPairRange = std::is_same_v<std::remove_cvref_t<Range>, PairRange>;
+
 //! Lennard-Jones 12-6 for one pair
-template <typename I, typename X, typename F>
+template <typename E, typename I, typename X, typename F>
 static ACT_ALWAYS_INLINE void lj12_6One(gmx_unused MsgHandler *msghandler,
-                             const TopologyEntry   &b,
+                             const E               &b,
                              const I               &indices,
                              const X               &x,
                              F                     *forces,
@@ -201,9 +205,9 @@ static ACT_ALWAYS_INLINE void lj12_6One(gmx_unused MsgHandler *msghandler,
 }
 
 //! Lennard-Jones 12-6-4 for one pair
-template <typename I, typename X, typename F>
+template <typename E, typename I, typename X, typename F>
 static ACT_ALWAYS_INLINE void lj12_6_4One(gmx_unused MsgHandler *msghandler,
-                               const TopologyEntry   &b,
+                               const E               &b,
                                const I               &indices,
                                const X               &x,
                                F                     *forces,
@@ -248,9 +252,9 @@ static ACT_ALWAYS_INLINE void lj12_6_4One(gmx_unused MsgHandler *msghandler,
 }
 
 //! Lennard-Jones 8-6 for one pair
-template <typename I, typename X, typename F>
+template <typename E, typename I, typename X, typename F>
 static ACT_ALWAYS_INLINE void lj8_6One(gmx_unused MsgHandler *msghandler,
-                            const TopologyEntry   &b,
+                            const E               &b,
                             const I               &indices,
                             const X               &x,
                             F                     *forces,
@@ -294,9 +298,9 @@ static ACT_ALWAYS_INLINE T power7(T x)
 }
 
 //! Buffered 14-7 for one pair
-template <typename I, typename X, typename F>
+template <typename E, typename I, typename X, typename F>
 static ACT_ALWAYS_INLINE void lj14_7One(gmx_unused MsgHandler *msghandler,
-                             const TopologyEntry   &b,
+                             const E               &b,
                              const I               &indices,
                              const X               &x,
                              F                     *forces,
@@ -387,9 +391,9 @@ static ACT_ALWAYS_INLINE double lowBornMayer(gmx_unused MsgHandler *msghandler,
 }
 
 //! Born-Mayer for one pair
-template <typename I, typename X, typename F>
+template <typename E, typename I, typename X, typename F>
 static ACT_ALWAYS_INLINE void bornMayerOne(MsgHandler          *msghandler,
-                                const TopologyEntry &b,
+                                const E             &b,
                                 const I             &indices,
                                 const X             &x,
                                 F                   *forces,
@@ -451,9 +455,9 @@ static ACT_ALWAYS_INLINE double lowSlaterISA(gmx_unused MsgHandler *msghandler,
 }
 
 //! Slater-ISA for one pair
-template <typename I, typename X, typename F>
+template <typename E, typename I, typename X, typename F>
 static ACT_ALWAYS_INLINE void slaterISAOne(MsgHandler          *msghandler,
-                                const TopologyEntry &b,
+                                const E             &b,
                                 const I             &indices,
                                 const X             &x,
                                 F                   *forces,
@@ -465,9 +469,9 @@ static ACT_ALWAYS_INLINE void slaterISAOne(MsgHandler          *msghandler,
 }
 
 //! Double exponential for one pair
-template <typename I, typename X, typename F>
+template <typename E, typename I, typename X, typename F>
 static ACT_ALWAYS_INLINE void doubleExponentialOne(gmx_unused MsgHandler *msghandler,
-                                        const TopologyEntry   &b,
+                                        const E               &b,
                                         const I               &indices,
                                         const X               &x,
                                         F                     *forces,
@@ -537,9 +541,9 @@ static ACT_ALWAYS_INLINE void wang_buckingham(real sigma, real epsilon, real gam
 }
 
 //! Wang-Buckingham for one pair
-template <typename I, typename X, typename F>
+template <typename E, typename I, typename X, typename F>
 static ACT_ALWAYS_INLINE void wbhOne(gmx_unused MsgHandler *msghandler,
-                          const TopologyEntry   &b,
+                          const E               &b,
                           const I               &indices,
                           const X               &x,
                           F                     *forces,
@@ -574,9 +578,9 @@ static ACT_ALWAYS_INLINE void wbhOne(gmx_unused MsgHandler *msghandler,
 }
 
 //! Buckingham for one pair
-template <typename I, typename X, typename F>
+template <typename E, typename I, typename X, typename F>
 static ACT_ALWAYS_INLINE void buckinghamOne(gmx_unused MsgHandler *msghandler,
-                                 const TopologyEntry   &b,
+                                 const E               &b,
                                  const I               &indices,
                                  const X               &x,
                                  F                     *forces,
@@ -698,9 +702,9 @@ static ACT_ALWAYS_INLINE double TT_Dispersion(gmx_unused MsgHandler *msghandler,
 }
 
 //! Tang-Toennies for one pair
-template <typename I, typename X, typename F>
+template <typename E, typename I, typename X, typename F>
 static ACT_ALWAYS_INLINE void tangToenniesOne(MsgHandler          *msghandler,
-                                   const TopologyEntry &b,
+                                   const E             &b,
                                    const I             &indices,
                                    const X             &x,
                                    F                   *forces,
@@ -715,9 +719,9 @@ static ACT_ALWAYS_INLINE void tangToenniesOne(MsgHandler          *msghandler,
 }
 
 //! Tang-Toennies with separate exponents for one pair
-template <typename I, typename X, typename F>
+template <typename E, typename I, typename X, typename F>
 static ACT_ALWAYS_INLINE void tt2bOne(MsgHandler          *msghandler,
-                           const TopologyEntry &b,
+                           const E             &b,
                            const I             &indices,
                            const X             &x,
                            F                   *forces,
@@ -732,9 +736,9 @@ static ACT_ALWAYS_INLINE void tt2bOne(MsgHandler          *msghandler,
 }
 
 //! Slater-ISA exchange and Tang-Toennies dispersion for one pair
-template <typename I, typename X, typename F>
+template <typename E, typename I, typename X, typename F>
 static ACT_ALWAYS_INLINE void slaterISATTOne(MsgHandler          *msghandler,
-                                  const TopologyEntry &b,
+                                  const E             &b,
                                   const I             &indices,
                                   const X             &x,
                                   F                   *forces,
@@ -752,9 +756,9 @@ static ACT_ALWAYS_INLINE void slaterISATTOne(MsgHandler          *msghandler,
  * Source: Werhahn et al. Chem. Phys. Lett. 619 (2015) 133-138, Eqn. 6.
  * Code was double checked here https://github.com/AlexandriaChemistry/ACT/issues/1299
  */
-template <typename I, typename X, typename F>
+template <typename E, typename I, typename X, typename F>
 static ACT_ALWAYS_INLINE void generalizedBhamOne(gmx_unused MsgHandler *msghandler,
-                                      const TopologyEntry   &b,
+                                      const E               &b,
                                       const I               &indices,
                                       const X               &x,
                                       F                     *forces,
@@ -846,9 +850,9 @@ static ACT_ALWAYS_INLINE real gaussianForceOverR(real zeta, real rinv, real x, r
  * own width, see ActAtom::chargeVS, such that there are up to four terms.
  * Terms without charge are skipped, except the first one.
  */
-template <typename I, typename X, typename F>
+template <typename E, typename I, typename X, typename F>
 static ACT_ALWAYS_INLINE void coulombGaussianOne(gmx_unused MsgHandler      *msghandler,
-                                      const TopologyEntry        &b,
+                                      const E                    &b,
                                       const I                    &indices,
                                       const X                    &x,
                                       F                          *forces,
@@ -924,9 +928,9 @@ static ACT_ALWAYS_INLINE void coulombGaussianOne(gmx_unused MsgHandler      *msg
  * branches for non-zero widths are removed by the compiler, which matters
  * for vectorization.
  */
-template <typename I, typename X, typename F>
+template <typename E, typename I, typename X, typename F>
 static ACT_ALWAYS_INLINE void coulombPointOne(gmx_unused MsgHandler      *msghandler,
-                                              const TopologyEntry        &b,
+                                              const E                    &b,
                                               const I                    &indices,
                                               const X                    &x,
                                               F                          *forces,
@@ -956,9 +960,9 @@ static ACT_ALWAYS_INLINE void coulombPointOne(gmx_unused MsgHandler      *msghan
  * own width and row, see ActAtom::chargeVS, such that there are up to four
  * terms. Terms without charge are skipped, except the first one.
  */
-template <typename I, typename X, typename F>
+template <typename E, typename I, typename X, typename F>
 static ACT_ALWAYS_INLINE void coulombSlaterOne(gmx_unused MsgHandler      *msghandler,
-                                    const TopologyEntry        &b,
+                                    const E                    &b,
                                     const I                    &indices,
                                     const X                    &x,
                                     F                          *forces,
@@ -1683,9 +1687,9 @@ struct IsOneSelect<OneSelect<Use, One1, One2>> : std::true_type {};
  * \param[in] entry The interaction
  * \param[in] body  Function to call with the selected function
  */
-template <typename One, typename Body>
+template <typename One, typename E, typename Body>
 static ACT_ALWAYS_INLINE void withOne(const One           &one,
-                                      const TopologyEntry &entry,
+                                      const E             &entry,
                                       Body                 body)
 {
     if constexpr (IsOneSelect<One>::value)
@@ -1716,9 +1720,9 @@ static ACT_ALWAYS_INLINE void withOne(const One           &one,
  * \param[out]   energies    The energy per type
  * \param[in]    one         Function computing one interaction
  */
-template <typename One, typename X, typename F>
+template <typename Range, typename One, typename X, typename F>
 static inline void computeConformation(MsgHandler         *msghandler,
-                                       TopologyEntryRange  entries,
+                                       const Range        &entries,
                                        const X            &x,
                                        F                  *forces,
                                        double              energies[MAX_ENER],
@@ -1728,8 +1732,8 @@ static inline void computeConformation(MsgHandler         *msghandler,
     X      xe          = x;
     for (const auto &b : entries)
     {
-        const TopologyEntry &entry   = *b.operator->();
-        const auto          &indices = entry.atomIndices();
+        const auto &entry   = *b.operator->();
+        const auto &indices = entry.atomIndices();
         xe.setOrigin(indices.size() > 1 ? indices[0] : -1);
         withOne(one, entry, [&](const auto &o)
                 {
@@ -1746,17 +1750,17 @@ static inline void computeConformation(MsgHandler         *msghandler,
  * The name of the template is the argument of the macro.
  */
 #define ONE_INTERACTION(func) \
-    [](MsgHandler *mh, const TopologyEntry &b, const auto &idx, const auto &x, auto *f, double *e) \
+    [](MsgHandler *mh, const auto &b, const auto &idx, const auto &x, auto *f, double *e) \
     { func(mh, b, idx, x, f, e); }
 
 //! As ONE_INTERACTION, for functions that also need the atoms and epsilonr
 #define ONE_INTERACTION_ATOMS_EPSR(func) \
-    [&atoms, epsilonr](MsgHandler *mh, const TopologyEntry &b, const auto &idx, const auto &x, auto *f, double *e) \
+    [&atoms, epsilonr](MsgHandler *mh, const auto &b, const auto &idx, const auto &x, auto *f, double *e) \
     { func(mh, b, idx, x, f, e, atoms, epsilonr); }
 
 //! As ONE_INTERACTION, for functions that also need the atoms
 #define ONE_INTERACTION_ATOMS(func) \
-    [&atoms](MsgHandler *mh, const TopologyEntry &b, const auto &idx, const auto &x, auto *f, double *e) \
+    [&atoms](MsgHandler *mh, const auto &b, const auto &idx, const auto &x, auto *f, double *e) \
     { func(mh, b, idx, x, f, e, atoms); }
 
 
@@ -2040,7 +2044,8 @@ static bool sameCharges(Potential                   mypot,
  * \param[in] func     The function
  * \return false if the potential is not implemented
  */
-template <typename Func>
+//! \tparam Pairs Whether the interactions are non-bonded pairs, see PairRange, then only those potentials are available
+template <bool Pairs = false, typename Func>
 static bool dispatchPotential(Potential                   mypot,
                               const std::vector<ActAtom> &atoms,
                               double                      epsilonr,
@@ -2049,25 +2054,25 @@ static bool dispatchPotential(Potential                   mypot,
     switch(mypot)
     {
     case Potential::HARMONIC_BONDS:
-        func.template operator()<2, true>(ONE_INTERACTION(bondOne));
+        if constexpr (Pairs) { return false; } else { func.template operator()<2, true>(ONE_INTERACTION(bondOne)); }
         break;
     case Potential::MORSE_BONDS:
-        func.template operator()<2, true>(ONE_INTERACTION(morseOne));
+        if constexpr (Pairs) { return false; } else { func.template operator()<2, true>(ONE_INTERACTION(morseOne)); }
         break;
     case Potential::HUA_BONDS:
-        func.template operator()<2, true>(ONE_INTERACTION(huaOne));
+        if constexpr (Pairs) { return false; } else { func.template operator()<2, true>(ONE_INTERACTION(huaOne)); }
         break;
     case Potential::CUBIC_BONDS:
-        func.template operator()<2, true>(ONE_INTERACTION(cubicOne));
+        if constexpr (Pairs) { return false; } else { func.template operator()<2, true>(ONE_INTERACTION(cubicOne)); }
         break;
     case Potential::HARMONIC_ANGLES:
-        func.template operator()<3, true>(ONE_INTERACTION(angleOne));
+        if constexpr (Pairs) { return false; } else { func.template operator()<3, true>(ONE_INTERACTION(angleOne)); }
         break;
     case Potential::LINEAR_ANGLES:
-        func.template operator()<3, true>(ONE_INTERACTION(linearAngleOne));
+        if constexpr (Pairs) { return false; } else { func.template operator()<3, true>(ONE_INTERACTION(linearAngleOne)); }
         break;
     case Potential::UREY_BRADLEY_ANGLES:
-        func.template operator()<3, true>(ONE_INTERACTION(ureyBradleyOne));
+        if constexpr (Pairs) { return false; } else { func.template operator()<3, true>(ONE_INTERACTION(ureyBradleyOne)); }
         break;
     case Potential::LJ12_6:
         func.template operator()<2, true>(ONE_INTERACTION(lj12_6One));
@@ -2111,7 +2116,7 @@ static bool dispatchPotential(Potential                   mypot,
     case Potential::COULOMB_POINT:
     case Potential::COULOMB_GAUSSIAN:
         // Point charges are cheaper, in particular when vectorized
-        func.template operator()<2, true>(OneSelect { [&atoms](const TopologyEntry &b)
+        func.template operator()<2, true>(OneSelect { [&atoms](const auto &b)
                                                       { return (atoms[b.atomIndices()[0]].zeta() == 0 &&
                                                                 atoms[b.atomIndices()[1]].zeta() == 0 &&
                                                                 atoms[b.atomIndices()[0]].chargeVS() == 0 &&
@@ -2124,19 +2129,19 @@ static bool dispatchPotential(Potential                   mypot,
         func.template operator()<2, false>(ONE_INTERACTION_ATOMS_EPSR(coulombSlaterOne));
         break;
     case Potential::POLARIZATION:
-        func.template operator()<2, true>(ONE_INTERACTION_ATOMS(polarizationOne));
+        if constexpr (Pairs) { return false; } else { func.template operator()<2, true>(ONE_INTERACTION_ATOMS(polarizationOne)); }
         break;
     case Potential::HARMONIC_DIHEDRALS:
-        func.template operator()<4, true>(ONE_INTERACTION(improperOne));
+        if constexpr (Pairs) { return false; } else { func.template operator()<4, true>(ONE_INTERACTION(improperOne)); }
         break;
     case Potential::PROPER_DIHEDRALS:
-        func.template operator()<4, true>(ONE_INTERACTION(properOne));
+        if constexpr (Pairs) { return false; } else { func.template operator()<4, true>(ONE_INTERACTION(properOne)); }
         break;
     case Potential::FOURIER_DIHEDRALS:
-        func.template operator()<4, true>(ONE_INTERACTION(fourDihOne));
+        if constexpr (Pairs) { return false; } else { func.template operator()<4, true>(ONE_INTERACTION(fourDihOne)); }
         break;
     case Potential::POSITION_RESTRAINT:
-        func.template operator()<1, true>(ONE_INTERACTION(fbposreOne));
+        if constexpr (Pairs) { return false; } else { func.template operator()<1, true>(ONE_INTERACTION(fbposreOne)); }
         break;
     default:
         return false;
@@ -2182,8 +2187,9 @@ static size_t potentialTimer(Potential mypot)
  * \param[in] forces  Whether the forces are computed
  * \return the number of operations
  */
+template <typename Range>
 static double interactionFlops(Potential                   mypot,
-                               TopologyEntryRange          entries,
+                               const Range                &entries,
                                const std::vector<ActAtom> &atoms,
                                bool                        forces)
 {
@@ -2196,7 +2202,7 @@ static double interactionFlops(Potential                   mypot,
     const Cost pair     = { 9, 12 };
     // Some potentials leave out the interactions with parameters for which
     // they are zero, as the kernels do, these are not counted
-    auto computed = [mypot](const TopologyEntry &entry)
+    auto computed = [mypot](const auto &entry)
     {
         auto &params = entry.params();
         switch (mypot)
@@ -2265,7 +2271,7 @@ static double interactionFlops(Potential                   mypot,
             double n = 0;
             for (const auto &b : entries)
             {
-                const TopologyEntry &entry   = *b.operator->();
+                const auto          &entry   = *b.operator->();
                 const auto          &atomi   = atoms[entry.atomIndices()[0]];
                 const auto          &atomj   = atoms[entry.atomIndices()[1]];
                 const double         qi[2]   = { atomi.charge(), atomi.chargeVS() };
@@ -2298,7 +2304,7 @@ static double interactionFlops(Potential                   mypot,
             double n = 0;
             for (const auto &b : entries)
             {
-                const TopologyEntry &entry = *b.operator->();
+                const auto &entry = *b.operator->();
                 if (!computed(entry))
                 {
                     continue;
@@ -2318,7 +2324,7 @@ static double interactionFlops(Potential                   mypot,
             double n = 0;
             for (const auto &b : entries)
             {
-                const TopologyEntry &entry = *b.operator->();
+                const auto &entry = *b.operator->();
                 double nterm = std::min(entry.params().size(), static_cast<size_t>(fdihNR));
                 double extra = std::max(nterm - 1, 0.0);
                 n += 71 + 3*extra + (forces ? 67 + 2*extra : 0);
@@ -2394,9 +2400,10 @@ struct ConformationCoordinates
  * \param[in]    ncompute   The number of slots to compute
  * \param[out]   cached     If not nullptr, the energies are kept here
  */
+template <typename Range>
 static inline void calcSome(MsgHandler                 *msghandler,
                             Potential                   mypot,
-                            TopologyEntryRange          topentries,
+                            const Range                &topentries,
                             const std::vector<ActAtom> &atoms,
                             ConformationData           *cdata,
                             ConformationEnergies       *cener,
@@ -2426,7 +2433,7 @@ static inline void calcSome(MsgHandler                 *msghandler,
         ConformationCoordinates x = { cdata->x(c) };
         auto                    f = cdata->f(c);
         // The forces are cleared in lowComputeEnergies, since all potentials add to them
-        dispatchPotential(mypot, atoms, epsilonr,
+        dispatchPotential<isPairRange<Range>>(mypot, atoms, epsilonr,
                           [&]<int NATOM, bool Vectorize>(auto one)
                           {
                               computeConformation(msghandler, topentries, x, &f,
@@ -2468,8 +2475,8 @@ static inline void calcSome(MsgHandler                 *msghandler,
  * \param[inout] energies  Energies, term k of conformation c at energies[k*stride + c]
  * \param[in]    one       Function computing one interaction
  */
-template <int NATOM, bool Vectorize, bool Forces, typename One, typename T>
-static void computeConformations(TopologyEntryRange         entries,
+template <int NATOM, bool Vectorize, bool Forces, typename Range, typename One, typename T>
+static void computeConformations(const Range               &entries,
                                  ConformationArrays<T>     *ca,
                                  double                    *energies,
                                  One                        one)
@@ -2489,7 +2496,7 @@ static void computeConformations(TopologyEntryRange         entries,
     size_t nslot  = ca->nslot;
     for (const auto &b : entries)
     {
-        const TopologyEntry &entry = *b.operator->();
+        const auto &entry = *b.operator->();
         auto  &indices = entry.atomIndices();
         const Coordinate *xa[NATOM];
         T                *fa[NATOM];
@@ -2569,15 +2576,15 @@ static void computeConformations(TopologyEntryRange         entries,
  * \param[in]    epsilonr   Relative dielectric constant
  * \return false if the potential is not implemented
  */
-template <bool Forces, typename T>
+template <bool Forces, typename Range, typename T>
 static ACT_NOINLINE bool dispatchConformations(Potential                   mypot,
-                                               TopologyEntryRange          topentries,
+                                               const Range                &topentries,
                                                const std::vector<ActAtom> &atoms,
                                                ConformationArrays<T>      *ca,
                                                double                     *energies,
                                                double                      epsilonr)
 {
-    return dispatchPotential(mypot, atoms, epsilonr,
+    return dispatchPotential<isPairRange<Range>>(mypot, atoms, epsilonr,
                              [&]<int NATOM, bool Vectorize>(auto one)
                              {
                                  computeConformations<NATOM, Vectorize, Forces>(topentries, ca, energies, one);
@@ -2598,9 +2605,9 @@ static ACT_NOINLINE bool dispatchConformations(Potential                   mypot
  * \param[out]   cached     If not nullptr, the energies are kept here
  * \return false if this potential is not implemented this way
  */
-template <typename T>
+template <typename Range, typename T>
 static bool calcConformations(Potential                        mypot,
-                              TopologyEntryRange               topentries,
+                              const Range                     &topentries,
                               const std::vector<ActAtom>      &atoms,
                               ConformationArrays<T>           *ca,
                               ConformationEnergies            *cener,
@@ -2662,8 +2669,9 @@ static const size_t maxCoulombKernel = 4*1024*1024;
  * \param[inout] cached     The kernel, and the energies are kept here
  * \return false if this is not possible for the potential
  */
+template <typename Range>
 static bool calcCoulombKernel(Potential                   mypot,
-                              TopologyEntryRange          topentries,
+                              const Range                &topentries,
                               const std::vector<ActAtom> &atoms,
                               ConformationArrays<real>   *ca,
                               ConformationEnergies       *cener,
@@ -2800,9 +2808,9 @@ static bool calcCoulombKernel(Potential                   mypot,
 /*! \brief Without arrays in real precision there is no kernel, see calcCoulombKernel
  * \return false
  */
-template <typename T>
+template <typename T, typename Range>
 requires (!std::is_same_v<T, real>)
-static bool calcCoulombKernel(Potential, TopologyEntryRange, const std::vector<ActAtom> &,
+static bool calcCoulombKernel(Potential, const Range &, const std::vector<ActAtom> &,
                               ConformationArrays<T> *, ConformationEnergies *, double, size_t,
                               CachedEnergies *)
 {
@@ -2822,9 +2830,9 @@ static bool calcCoulombKernel(Potential, TopologyEntryRange, const std::vector<A
  *                         if nullptr
  * \param[in]    slots    The slot of each of active
  */
-template <typename T>
+template <typename Range, typename T>
 static void applyGpuResults(Potential                   mypot,
-                            TopologyEntryRange          entries,
+                            const Range                &entries,
                             const std::vector<ActAtom> &atoms,
                             const GpuBatch             &gpuBatch,
                             size_t                      task,
@@ -3065,6 +3073,87 @@ static void lowComputeEnergiesT(MsgHandler                *msghandler,
     bool forcesInArrays = true;
     // Which entries to compute
     enum class Part { All, NoShells, Shells };
+    // Compute the interactions of one type, given as TopologyEntryRange or PairRange
+    auto computeEntries = [&](InteractionType itype, Potential mypot, const auto &entries)
+    {
+        // On the GPU together with the other molecules, without the
+        // energies of the previous call, see gpuBatch
+        bool onGpu = (std::is_same_v<T, float> && gpuBatch && useArrays && !(reuse && !forces) &&
+                      GpuBatch::canCompute(mypot));
+        if (collect)
+        {
+            if (onGpu)
+            {
+                gpuBatch->add(mypot, entries, top->atoms(), epsilonr, ca.stride, ca.nslot, ca.x.data());
+            }
+            return;
+        }
+        if (onGpu && gpuBatch->computed())
+        {
+            if (forces && !forcesInArrays)
+            {
+                ca.copyForces(ra);
+                forcesInArrays = true;
+            }
+            applyGpuResults(mypot, entries, top->atoms(), *gpuBatch, (*gpuNext)++, &ca, &cener,
+                            forces, ndone > 0 ? &active : nullptr, &activeSlots);
+            return;
+        }
+        // Use the energies of the previous call if nothing changed. Forces
+        // are not kept, so this is only possible if they are not needed.
+        CachedEnergies *cached = nullptr;
+        if (reuse && !forces)
+        {
+            cached = &cdata->cache[itype];
+            if (cached->valid && cached->potential == mypot &&
+                cached->parameterVersion == top->parameterVersion(itype) &&
+                cached->coordinateVersion == cdata->coordinates.value() &&
+                cached->nentries == entries.size() &&
+                cached->nconf == coords->size() &&
+                sameCharges(mypot, top->atoms(), cached->charges))
+            {
+                static const size_t timer = Timings::instance().index("Energies used again");
+                ScopedTimer         scoped(timer);
+                storeEnergies(mypot, coords->size(), nullptr, nullptr, &cener, cached->energies.data(),
+                              cached->confStride, cached->termStride);
+                return;
+            }
+            cached->valid             = false;
+            cached->potential         = mypot;
+            cached->parameterVersion  = top->parameterVersion(itype);
+            cached->coordinateVersion = cdata->coordinates.value();
+            cached->nentries          = entries.size();
+            cached->nconf             = coords->size();
+            keepCharges(mypot, top->atoms(), &cached->charges);
+        }
+        if (useArrays)
+        {
+            if (forces && !forcesInArrays)
+            {
+                ca.copyForces(ra);
+                forcesInArrays = true;
+            }
+            // Without forces, only the charges may have changed
+            if (cached && ca.nconf == coords->size() &&
+                calcCoulombKernel(mypot, entries, top->atoms(), &ca, &cener, epsilonr,
+                                  cdata->coordinates.value(), cached))
+            {
+                return;
+            }
+            if (calcConformations(mypot, entries, top->atoms(), &ca, &cener, epsilonr, forces,
+                                  ndone > 0 ? &active : nullptr, &activeSlots, cached))
+            {
+                return;
+            }
+            if (forces && copied && forcesInArrays)
+            {
+                ca.storeForces(&ra);
+            }
+            forcesInArrays = !copied;
+        }
+        calcSome(msghandler, mypot, entries, top->atoms(), cdata, &cener, epsilonr,
+                 ca.ncomputed(), cached);
+    };
     auto computePart = [&](Part part)
     {
         for(const auto &entry : top->entries())
@@ -3090,7 +3179,23 @@ static void lowComputeEnergiesT(MsgHandler                *msghandler,
             // The terms depend on the interaction type for some potentials
             cener.setTermTypes(&energyTypes(mypot, entry.first));
             // The interactions to compute, without intramolecular ones they
-            // may be none, then the energies are zero.
+            // may be none, then the energies are zero. The non-bonded pairs
+            // are stored compactly, see NonBondedPairs.
+            const auto &nb = top->nonBondedPairs();
+            if (nb.hasType(entry.first))
+            {
+                PairRange pairs = (intermolecular ? nb.intermolecular(entry.first) : nb.range(entry.first));
+                if (Part::All != part)
+                {
+                    pairs = nb.shellEntries(entry.first, Part::Shells == part);
+                    if (Part::Shells == part && pairs.empty())
+                    {
+                        continue;
+                    }
+                }
+                computeEntries(entry.first, mypot, pairs);
+                continue;
+            }
             TopologyEntryRange entries = (intermolecular ?
                                           top->intermolecular(entry.first, entry.second) :
                                           TopologyEntryRange(entry.second));
@@ -3105,83 +3210,7 @@ static void lowComputeEnergiesT(MsgHandler                *msghandler,
                     continue;
                 }
             }
-            // On the GPU together with the other molecules, without the
-            // energies of the previous call, see gpuBatch
-            bool onGpu = (std::is_same_v<T, float> && gpuBatch && useArrays && !(reuse && !forces) &&
-                          GpuBatch::canCompute(mypot));
-            if (collect)
-            {
-                if (onGpu)
-                {
-                    gpuBatch->add(mypot, entries, top->atoms(), epsilonr, ca.stride, ca.nslot, ca.x.data());
-                }
-                continue;
-            }
-            if (onGpu && gpuBatch->computed())
-            {
-                if (forces && !forcesInArrays)
-                {
-                    ca.copyForces(ra);
-                    forcesInArrays = true;
-                }
-                applyGpuResults(mypot, entries, top->atoms(), *gpuBatch, (*gpuNext)++, &ca, &cener,
-                                forces, ndone > 0 ? &active : nullptr, &activeSlots);
-                continue;
-            }
-            // Use the energies of the previous call if nothing changed. Forces
-            // are not kept, so this is only possible if they are not needed.
-            CachedEnergies *cached = nullptr;
-            if (reuse && !forces)
-            {
-                cached = &cdata->cache[entry.first];
-                if (cached->valid && cached->potential == mypot &&
-                    cached->parameterVersion == top->parameterVersion(entry.first) &&
-                    cached->coordinateVersion == cdata->coordinates.value() &&
-                    cached->nentries == entries.size() &&
-                    cached->nconf == coords->size() &&
-                    sameCharges(mypot, top->atoms(), cached->charges))
-                {
-                    static const size_t timer = Timings::instance().index("Energies used again");
-                    ScopedTimer         scoped(timer);
-                    storeEnergies(mypot, coords->size(), nullptr, nullptr, &cener, cached->energies.data(),
-                                  cached->confStride, cached->termStride);
-                    continue;
-                }
-                cached->valid             = false;
-                cached->potential         = mypot;
-                cached->parameterVersion  = top->parameterVersion(entry.first);
-                cached->coordinateVersion = cdata->coordinates.value();
-                cached->nentries          = entries.size();
-                cached->nconf             = coords->size();
-                keepCharges(mypot, top->atoms(), &cached->charges);
-            }
-            if (useArrays)
-            {
-                if (forces && !forcesInArrays)
-                {
-                    ca.copyForces(ra);
-                    forcesInArrays = true;
-                }
-                // Without forces, only the charges may have changed
-                if (cached && ca.nconf == coords->size() &&
-                    calcCoulombKernel(mypot, entries, top->atoms(), &ca, &cener, epsilonr,
-                                      cdata->coordinates.value(), cached))
-                {
-                    continue;
-                }
-                if (calcConformations(mypot, entries, top->atoms(), &ca, &cener, epsilonr, forces,
-                                      ndone > 0 ? &active : nullptr, &activeSlots, cached))
-                {
-                    continue;
-                }
-                if (forces && copied && forcesInArrays)
-                {
-                    ca.storeForces(&ra);
-                }
-                forcesInArrays = !copied;
-            }
-            calcSome(msghandler, mypot, entries, top->atoms(), cdata, &cener, epsilonr,
-                     ca.ncomputed(), cached);
+            computeEntries(entry.first, mypot, entries);
         }
     };
     if (collect)

@@ -423,6 +423,13 @@ private:
         return TopologyEntryRange(entries).subspan(it->second);
     }
 
+    /*! \brief Set the parameters of all non-bonded pairs of an interaction type
+     * For instance for tests, the force field is not used.
+     * \param[in] itype  The interaction type, VDW, VDWCORRECTION or INDUCTIONCORRECTION
+     * \param[in] params The parameters, in internal units
+     */
+    void setNonBondedParameters(InteractionType itype, const std::vector<double> &params);
+
     /*! \brief The non-bonded pairs, stored compactly
      * The same pairs, in the same order, as the entries of the non-bonded
      * interaction types, with the same separations.
