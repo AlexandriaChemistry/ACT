@@ -36,6 +36,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace alexandria
@@ -77,13 +78,48 @@ struct DevicePeak
 };
 
 /*! \brief Estimate the peak single precision performance of the GPUs
- * From the number of compute units and the maximum clock frequency that
- * the programming model reports, times the number of single precision
- * lanes of a compute unit, which depends on the vendor and the type of
- * GPU, times two for fused multiply-add instructions.
+ * From what the programming model reports, see estimatePeak.
  * \return the estimates, in the order of devices
  */
 std::vector<DevicePeak> devicePeaks();
+
+/*! \brief Estimate the peak single precision performance of a GPU
+ * The number of compute units times the number of single precision lanes
+ * of a compute unit, which depends on the vendor and the type of GPU,
+ * times two for fused multiply-add instructions, times the clock frequency.
+ * NVIDIA streaming multiprocessors have 128 lanes, those of P100, V100,
+ * A100 and A30 64. AMD compute units have 64 lanes, without packed
+ * instructions.
+ * \param[in] vendor The vendor of the GPU
+ * \param[in] name   The name of the GPU
+ * \param[in] units  The number of compute units
+ * \param[in] ghz    The maximum clock frequency in GHz
+ * \return the estimate, with gflops 0 for other vendors or without
+ *         compute units or frequency
+ */
+DevicePeak estimatePeak(const std::string &vendor, const std::string &name,
+                        unsigned units, double ghz);
+
+//! What noGpuReasons looks at on a node without usable GPU, see explainNoGpu
+struct NoGpuFacts
+{
+    //! CUDA_VISIBLE_DEVICES, ROCR_VISIBLE_DEVICES and HIP_VISIBLE_DEVICES, those that are set, with their values
+    std::vector<std::pair<std::string, std::string>> visibleDevices;
+    //! Whether the node has the device files of NVIDIA GPUs
+    bool                                             nvidiaDevices = false;
+    //! Whether the node has the device file of AMD GPUs
+    bool                                             amdDevices    = false;
+    //! The directory of the AdaptiveCpp runtime library, empty if not known
+    std::string                                      runtimeDirectory;
+    //! The backends of AdaptiveCpp in that directory, such as cuda, hip, ocl and omp
+    std::vector<std::string>                         backends;
+};
+
+/*! \brief Why no GPU was found, from what the node and the job look like
+ * \param[in] facts What noGpuReasons found
+ * \return lines with the likely causes and what to do
+ */
+std::vector<std::string> explainNoGpu(const NoGpuFacts &facts);
 
 /*! \brief Let this process see only the GPU of the node that it uses
  * The processes on a node are spread over its GPUs by their number on the

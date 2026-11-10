@@ -112,90 +112,28 @@ static std::vector<std::string> acppBackends(const std::string &libdir)
 
 std::vector<std::string> noGpuReasons()
 {
-    std::vector<std::string> reasons;
-    auto exists = [](const char *file)
+    NoGpuFacts facts;
+    auto       exists = [](const char *file)
     {
         std::error_code ec;
         return std::filesystem::exists(file, ec);
     };
-    bool nvidia = exists("/dev/nvidiactl") || exists("/dev/nvidia0");
-    bool amd    = exists("/dev/kfd");
-    // A queue system that gives a job no GPU may hide them like this
+    facts.nvidiaDevices = exists("/dev/nvidiactl") || exists("/dev/nvidia0");
+    facts.amdDevices    = exists("/dev/kfd");
     for (const char *name : { "CUDA_VISIBLE_DEVICES", "ROCR_VISIBLE_DEVICES", "HIP_VISIBLE_DEVICES" })
     {
         const char *value = std::getenv(name);
-        if (value && (std::string(value).empty() || std::string(value) == "NoDevFiles" ||
-                      std::string(value) == "-1"))
+        if (value)
         {
-            reasons.push_back(std::string(name) + " is \"" + value + "\", the queue system gave this job no GPU,");
-            reasons.push_back("request one, for instance with sbatch --gres=gpu:1");
+            facts.visibleDevices.push_back({ name, value });
         }
     }
-    std::string libdir   = acppLibraryDirectory();
-    auto        backends = libdir.empty() ? std::vector<std::string>() : acppBackends(libdir);
-    auto        has      = [&backends](const char *name)
+    facts.runtimeDirectory = acppLibraryDirectory();
+    if (!facts.runtimeDirectory.empty())
     {
-        return std::find(backends.begin(), backends.end(), name) != backends.end();
-    };
-    std::string list;
-    for (const auto &b : backends)
-    {
-        list += (list.empty() ? "" : " ") + b;
+        facts.backends = acppBackends(facts.runtimeDirectory);
     }
-    if (!backends.empty())
-    {
-        if (nvidia && !has("cuda"))
-        {
-            reasons.push_back("this node has NVIDIA GPUs, but AdaptiveCpp has no CUDA backend, build");
-            reasons.push_back("ACT with an AdaptiveCpp that has one, for instance from conda-forge");
-            reasons.push_back("\"adaptivecpp=*=cuda*\", given with -DAdaptiveCpp_DIR");
-        }
-        if (amd && !has("hip"))
-        {
-            reasons.push_back("this node has AMD GPUs, but AdaptiveCpp has no HIP backend, build ACT");
-            reasons.push_back("with an AdaptiveCpp that has one, given with -DAdaptiveCpp_DIR");
-        }
-    }
-    if (!nvidia && !amd)
-    {
-        reasons.push_back("this node has no NVIDIA or AMD GPU device files (/dev/nvidiactl, /dev/kfd),");
-        reasons.push_back("run on a node with GPUs");
-    }
-    if (!libdir.empty())
-    {
-        reasons.push_back("AdaptiveCpp in " + libdir + " has the backends: " + (list.empty() ? "none" : list));
-    }
-    reasons.push_back("acpp-info -l lists the devices that AdaptiveCpp finds, and the environment");
-    reasons.push_back("variable ACPP_DEBUG_LEVEL=2 shows its messages");
-    return reasons;
-}
-
-/*! \brief The single precision lanes of a compute unit of a GPU
- * NVIDIA streaming multiprocessors have 128 lanes, those of P100, V100 and
- * A100 64. AMD compute units have 64 lanes, without packed instructions.
- * \param[in] vendor The vendor of the GPU
- * \param[in] name   The name of the GPU
- * \return the number of lanes, 0 if not known
- */
-static int lanesPerComputeUnit(const std::string &vendor, const std::string &name)
-{
-    auto has = [](const std::string &s, const char *part) { return s.find(part) != std::string::npos; };
-    if (has(vendor, "NVIDIA") || has(name, "NVIDIA"))
-    {
-        for (const char *model : { "P100", "V100", "A100", "A30" })
-        {
-            if (has(name, model))
-            {
-                return 64;
-            }
-        }
-        return 128;
-    }
-    if (has(vendor, "AMD") || has(name, "AMD") || has(name, "gfx"))
-    {
-        return 64;
-    }
-    return 0;
+    return explainNoGpu(facts);
 }
 
 std::vector<DevicePeak> devicePeaks()
@@ -205,26 +143,11 @@ std::vector<DevicePeak> devicePeaks()
     {
         for (const auto &d : sycl::device::get_devices(sycl::info::device_type::gpu))
         {
-            DevicePeak  peak;
             std::string name   = d.get_info<sycl::info::device::name>();
             std::string vendor = d.get_info<sycl::info::device::vendor>();
             unsigned    units  = d.get_info<sycl::info::device::max_compute_units>();
             double      ghz    = d.get_info<sycl::info::device::max_clock_frequency>()*1e-3;
-            int         lanes  = lanesPerComputeUnit(vendor, name);
-            if (units > 0 && ghz > 0 && lanes > 0)
-            {
-                peak.gflops = 2.0*lanes*units*ghz;
-                peak.basis  = std::to_string(units) + " compute units x " + std::to_string(lanes) +
-                              " lanes x 2 flop (FMA) x ";
-                char buf[32];
-                std::snprintf(buf, sizeof(buf), "%.2f GHz", ghz);
-                peak.basis += buf;
-            }
-            else
-            {
-                peak.basis = "unknown lanes or frequency";
-            }
-            peaks.push_back(peak);
+            peaks.push_back(estimatePeak(vendor, name, units, ghz));
         }
     }
     catch (const sycl::exception &)
@@ -234,11 +157,6 @@ std::vector<DevicePeak> devicePeaks()
     return peaks;
 }
 
-/*! \brief The number of this process among those on the same node
- * From the environment variables that Slurm and the MPI libraries set,
- * zero if there is none.
- * \return the local rank
- */
 /*! \brief Let AdaptiveCpp report only errors, unless ACPP_DEBUG_LEVEL is set
  * Otherwise it warns about each GPU backend that it cannot load, for instance
  * that of AMD GPUs on a computer with NVIDIA GPUs only. A static object in the
@@ -251,6 +169,11 @@ __attribute__((constructor(101))) static void quietAdaptiveCpp()
     setenv("ACPP_DEBUG_LEVEL", "1", 0);
 }
 
+/*! \brief The number of this process among those on the same node
+ * From the environment variables that Slurm and the MPI libraries set,
+ * zero if there is none.
+ * \return the local rank
+ */
 static int localRank()
 {
     // Those of the MPI libraries first: mpirun in a Slurm job inherits the

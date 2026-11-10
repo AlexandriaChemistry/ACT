@@ -42,6 +42,7 @@
 #include "../forces_simd.h"
 
 #include <cmath>
+#include <cstdio>
 #include <map>
 #include <set>
 
@@ -697,6 +698,15 @@ static std::vector<Interaction> dihedrals(const std::vector<double> &params)
     return { { { 0, 1, 2, 3 }, params }, { { 3, 2, 1, 0 }, params } };
 }
 
+/*! \brief Say that a GPU test tested nothing, such that a run without GPU shows it
+ * \param[in] why Why not
+ */
+static void nothingTested(const char *why)
+{
+    fprintf(stderr, "%s: %s, nothing tested\n",
+            ::testing::UnitTest::GetInstance()->current_test_info()->name(), why);
+}
+
 TEST_F(ForcesSimdTest, PositionRestraint)
 {
     // Force constant, radius and the center of the restraints
@@ -865,7 +875,7 @@ TEST_F(ForcesSimdTest, CoulombPointGpu)
 {
     if (!gpu::useGpu() || !useExplicitSimd())
     {
-        // Needs a GPU and explicit SIMD
+        nothingTested("no GPU or no explicit SIMD");
         return;
     }
     setWidths(pairs({ 0, 0 }));
@@ -876,7 +886,7 @@ TEST_F(ForcesSimdTest, CoulombGaussianGpu)
 {
     if (!gpu::useGpu() || !useExplicitSimd())
     {
-        // Needs a GPU and explicit SIMD
+        nothingTested("no GPU or no explicit SIMD");
         return;
     }
     setWidths(pairs({ 12, 9 }));
@@ -888,7 +898,7 @@ TEST_F(ForcesSimdTest, CoulombGaussianSecondChargesGpu)
 {
     if (!gpu::useGpu() || !useExplicitSimd())
     {
-        // Needs a GPU and explicit SIMD
+        nothingTested("no GPU or no explicit SIMD");
         return;
     }
     const std::vector<double> qvs   = { -0.8, 0.6, 0.0, -0.4, -1.1, 0.9, 0.0 };
@@ -906,7 +916,7 @@ TEST_F(ForcesSimdTest, PairPotentialsGpu)
 {
     if (!gpu::useGpu() || !useExplicitSimd())
     {
-        // Needs a GPU and explicit SIMD
+        nothingTested("no GPU or no explicit SIMD");
         return;
     }
     auto lj147 = pairs({ 0.3, 0.5, 0.12, 0.07 });
@@ -937,7 +947,7 @@ TEST_F(ForcesSimdTest, CoulombGaussianBatchGpu)
 {
     if (!gpu::useGpu())
     {
-        // Needs a GPU
+        nothingTested("no GPU");
         return;
     }
     setWidths(pairs({ 12, 9 }));
@@ -997,7 +1007,7 @@ TEST_F(ForcesSimdTest, CoulombGaussianOverlapGpu)
 {
     if (!gpu::useGpu() || !useExplicitSimd())
     {
-        // Needs a GPU and explicit SIMD
+        nothingTested("no GPU or no explicit SIMD");
         return;
     }
     for (size_t c = 0; c < nMany_; c++)
