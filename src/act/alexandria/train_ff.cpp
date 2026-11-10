@@ -52,6 +52,7 @@
 #include "act/alexandria/mcmcmutator.h"
 #include "act/alexandria/molgen.h"
 #include "act/alexandria/percentmutator.h"
+#include "act/alexandria/queuebalance.h"
 #include "act/alexandria/sensitivity.h"
 #include "act/alexandria/sensitivity_analysis.h"
 #include "act/alexandria/train_utility.h"
@@ -205,6 +206,50 @@ void OptACM::optionsFinished(const std::vector<t_filenm> &filenames)
     {
         outputFileName_.insert({iMolSelect::Train, opt2fn("-o", filenames.size(), filenames.data())});
         outputFileName_.insert({iMolSelect::Test, opt2fn("-otest", filenames.size(), filenames.data())});
+    }
+}
+
+void OptACM::balanceQueue(gmx::TextWriter *tw)
+{
+    auto note = [tw](const std::string &text)
+    {
+        if (tw)
+        {
+            tw->writeLine(text);
+        }
+        fprintf(stderr, "\n%s\n", text.c_str());
+    };
+    // Several individuals at once only help if the GPU computes them
+    // together, see ACMFitnessComputer::calcDeviations. Otherwise a middleman
+    // computes them one after another, and individuals handed out one at a
+    // time are shared more evenly over the middlemen.
+    if (gach_.lockstep() > 1 && !forceComp_->gpuCharges(sii_->forcefield()))
+    {
+        note(gmx::formatString("Note: -lockstep %d has no effect here, since only the GPU computes several individuals\n"
+                               "at once, for polarizable force fields with SQE charges in single precision builds.\n"
+                               "Each middleman gets one individual at a time instead.", gach_.lockstep()));
+        gach_.setLockstep(1);
+    }
+    size_t nmiddlemen = sii_->commRec()->middlemen().size();
+    auto   qb         = queueBalance(gach_.popSize(), gach_.lockstep(), nmiddlemen);
+    if (qb.idle >= 0.05)
+    {
+        std::string group = gach_.lockstep() > 1 ?
+            gmx::formatString("%zu groups of %d individuals", qb.groups, gach_.lockstep()) :
+            gmx::formatString("%zu individuals", qb.groups);
+        std::string text = gmx::formatString("Note: the %zu middlemen share the %s of each generation unevenly: some\n"
+                                             "compute %zu, while the others wait on average %.0f%% of the time. With %zu or %zu\n"
+                                             "processes (one more than the middlemen) nobody waits.",
+                                             nmiddlemen, group.c_str(), qb.rounds, 100*qb.idle,
+                                             qb.more + 1, qb.fewer + 1);
+        if (qb.fewer == 0)
+        {
+            text = gmx::formatString("Note: the %zu middlemen share the %s of each generation unevenly: some\n"
+                                     "compute %zu, while the others wait on average %.0f%% of the time. With %zu\n"
+                                     "processes (one more than the middlemen) nobody waits.",
+                                     nmiddlemen, group.c_str(), qb.rounds, 100*qb.idle, qb.more + 1);
+        }
+        note(text);
     }
 }
 
@@ -413,6 +458,10 @@ int OptACM::initMaster(const std::vector<t_filenm> &fnm,
             gach_.setCrossovers(1);
         }
 
+        if (sii_->commRec()->queue())
+        {
+            balanceQueue(tw);
+        }
         crossover_ = new ga::NPointCrossover(sii_->nParam(),
                                              gach_.nCrossovers(),
                                              portableSeed(&gen));

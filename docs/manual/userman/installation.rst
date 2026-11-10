@@ -399,4 +399,4 @@ The program *ctest* comes with *cmake*. On csb the *cmake* module does not work 
 
   srun -p CLUSTER-AMD --gres=gpu:1 -n 1 -c 8 bin/act-forces-test --gtest_filter='*Gpu*'
 
-The first run on a type of GPU takes longer, since AdaptiveCpp then compiles the GPU code, which it keeps in *~/.acpp* for later runs. If the MPI tests fail in the job because MPI programs are started differently there, run the others with *ctest -LE MpiTest*. Tests have a time limit, 30 s for most of them, and *ImportTests* takes about 18 s by itself on csb. With several tests at once on a node with few cores, it may exceed the limit; it then passes when run by itself with *ctest -R ImportTests*.
+The first run on a type of GPU takes longer, since AdaptiveCpp then compiles the GPU code, which it keeps in *~/.acpp* for later runs. If the MPI tests fail in the job because MPI programs are started differently there, run the others with *ctest -LE MpiTest*. Most tests have a time limit of 120 s, since some of them take 40 s on older processors.

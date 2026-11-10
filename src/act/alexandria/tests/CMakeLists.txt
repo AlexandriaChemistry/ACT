@@ -51,6 +51,7 @@ gmx_add_unit_test(
     molselectTest.cpp
     openmmTest.cpp
     optimizationindexTest.cpp
+    queuebalanceTest.cpp
     mcmcmutatorTest.cpp
     sensitivityTest.cpp
     sensitivityAnalysisTest.cpp
