@@ -37,8 +37,10 @@
 #include <cmath>
 #include <filesystem>
 #include <fstream>
+#include <iterator>
 #include <map>
 #include <string>
+#include <vector>
 
 #include <gtest/gtest.h>
 
@@ -46,6 +48,7 @@
 #include "act/basics/interactiontype.h"
 #include "act/basics/mutability.h"
 #include "act/forcefield/forcefield.h"
+#include "act/forcefield/forcefield_validation.h"
 #include "act/forcefield/forcefield_xml.h"
 
 #include "testutils/cmdlinetest.h"
@@ -349,6 +352,127 @@ static void writeSecondForceField(const std::string &input, const std::string &o
         eem->parameters()->erase(Identifier("i_z"));
     }
     writeForceField(output, &pd, false);
+}
+
+/*! \brief Write a force field with problems for -validate
+ * In the force field of the tests: chi of h_z above its maximum, eta of
+ * h_z twice, the charge of particle type h twice, the mass of h above a
+ * new maximum, chi of i_z negative while it is marked as non-negative, and
+ * eta of i_z, which is fixed, above a new maximum.
+ * \param[in] input  The force field to start from
+ * \param[in] output Where to write the result
+ */
+static void writeBrokenForceField(const std::string &input, const std::string &output)
+{
+    std::ifstream in(input);
+    std::string   text((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+    auto replace = [&text](const std::string &from, const std::string &to)
+    {
+        auto pos = text.find(from);
+        ASSERT_NE(std::string::npos, pos) << from;
+        ASSERT_EQ(std::string::npos, text.find(from, pos + 1)) << "not unique: " << from;
+        text.replace(pos, from.size(), to);
+    };
+    const std::string chi = "      <parameter type=\"chi\" unit=\"eV\" value=\"3.5\" uncertainty=\"0\" minimum=\"2.8\" maximum=\"4.375\" ntrain=\"1\" mutability=\"Bounded\" nonnegative=\"yes\"/>\n";
+    const std::string eta = "      <parameter type=\"eta\" unit=\"eV/e\" value=\"14\" uncertainty=\"0\" minimum=\"11.2\" maximum=\"17.5\" ntrain=\"1\" mutability=\"Bounded\" nonnegative=\"yes\"/>\n";
+    std::string eta13 = eta;
+    eta13.replace(eta13.find("value=\"14\""), 10, "value=\"13\"");
+    std::string chi5 = chi;
+    chi5.replace(chi5.find("value=\"3.5\""), 11, "value=\"5\"");
+    replace("<parameterlist identifier=\"h_z\">\n" + chi + eta,
+            "<parameterlist identifier=\"h_z\">\n" + chi5 + eta + eta13);
+    const std::string charge = "      <parameter type=\"charge\" unit=\"e\" value=\"0\" uncertainty=\"0\" minimum=\"-1\" maximum=\"1\" ntrain=\"0\" mutability=\"ACM\" nonnegative=\"no\"/>\n";
+    std::string charge05 = charge;
+    charge05.replace(charge05.find("value=\"0\""), 9, "value=\"0.5\"");
+    replace("<option key=\"vdwtype\" value=\"h\"/>\n" + charge,
+            "<option key=\"vdwtype\" value=\"h\"/>\n" + charge + charge05);
+    replace("value=\"1.0079\" uncertainty=\"0\" minimum=\"0.80632\" maximum=\"1.20948\"",
+            "value=\"1.0079\" uncertainty=\"0\" minimum=\"0.80632\" maximum=\"1\"");
+    replace("<parameterlist identifier=\"i_z\">\n"
+            "      <parameter type=\"chi\" unit=\"eV\" value=\"4\" uncertainty=\"0\" minimum=\"3.2\" maximum=\"5\" ntrain=\"1\" mutability=\"Bounded\" nonnegative=\"yes\"/>\n"
+            "      <parameter type=\"eta\" unit=\"eV/e\" value=\"10\" uncertainty=\"0\" minimum=\"8\" maximum=\"12.5\" ntrain=\"1\" mutability=\"Bounded\" nonnegative=\"yes\"/>\n",
+            "<parameterlist identifier=\"i_z\">\n"
+            "      <parameter type=\"chi\" unit=\"eV\" value=\"-1\" uncertainty=\"0\" minimum=\"-2\" maximum=\"5\" ntrain=\"1\" mutability=\"Bounded\" nonnegative=\"yes\"/>\n"
+            "      <parameter type=\"eta\" unit=\"eV/e\" value=\"10\" uncertainty=\"0\" minimum=\"8\" maximum=\"9\" ntrain=\"1\" mutability=\"Fixed\" nonnegative=\"yes\"/>\n");
+    std::ofstream out(output);
+    out << text;
+}
+
+//! \return the number of problems of a kind
+static size_t countIssues(const std::vector<ForceFieldIssue> &issues, ForceFieldIssue::Kind kind)
+{
+    return std::count_if(issues.begin(), issues.end(),
+                         [kind](const ForceFieldIssue &i) { return i.kind == kind; });
+}
+
+// Test: The force field of the tests has no problems
+TEST_F(EditFFTest, ValidateClean)
+{
+    auto issues = validateForceField(read(input_));
+    EXPECT_TRUE(issues.empty()) << issues.size() << " problems, the first: "
+                                << (issues.empty() ? "" : issues[0].identifier + " " + issues[0].text);
+    EXPECT_TRUE(repairedIssuesSummary(issues).empty());
+}
+
+// Test: Each kind of problem is found, with what reading did about it
+TEST_F(EditFFTest, ValidateFindsProblems)
+{
+    auto broken = fileManager().getTemporaryFilePath("broken.xml");
+    writeBrokenForceField(input_, broken);
+    auto pd     = read(broken);
+    auto issues = validateForceField(pd);
+    // The values of chi of h_z and of the mass of h were set to their maximum
+    EXPECT_EQ(2u, countIssues(issues, ForceFieldIssue::Kind::ResetToBounds));
+    EXPECT_EQ(2u, countIssues(issues, ForceFieldIssue::Kind::Duplicate));
+    EXPECT_EQ(1u, countIssues(issues, ForceFieldIssue::Kind::OutOfBounds));
+    EXPECT_EQ(1u, countIssues(issues, ForceFieldIssue::Kind::Negative));
+    EXPECT_EQ(0u, countIssues(issues, ForceFieldIssue::Kind::MinimumAboveMaximum));
+    EXPECT_EQ(6u, issues.size());
+    for (const auto &issue : issues)
+    {
+        SCOPED_TRACE(issue.identifier + " " + issue.parameter + ": " + issue.text);
+        bool byReading = (issue.kind == ForceFieldIssue::Kind::ResetToBounds ||
+                          issue.kind == ForceFieldIssue::Kind::Duplicate);
+        EXPECT_EQ(byReading, issue.repaired);
+    }
+    // Reading set chi to its maximum and used the first eta and charge
+    expectRealEq(4.375, acm(pd, "h_z", "chi").value());
+    EXPECT_TRUE(acm(pd, "h_z", "chi").wasReset());
+    expectRealEq(5, acm(pd, "h_z", "chi").valueBeforeReset());
+    expectRealEq(14, acm(pd, "h_z", "eta").value());
+    expectRealEq(0, particleCharge(pd, "h").value());
+    auto summary = repairedIssuesSummary(issues);
+    EXPECT_NE(std::string::npos, summary.find("2 parameter(s) were outside their bounds")) << summary;
+    EXPECT_NE(std::string::npos, summary.find("2 were defined more than once")) << summary;
+    EXPECT_NE(std::string::npos, summary.find("edit_ff -validate")) << summary;
+}
+
+// Test: edit_ff -validate writes a force field without the problems that
+// reading repairs, the others are left
+TEST_F(EditFFTest, ValidateWrites)
+{
+    auto broken = fileManager().getTemporaryFilePath("broken.xml");
+    writeBrokenForceField(input_, broken);
+    auto pd     = read(run(broken, { { "-validate", "" } }, "validated.xml"));
+    auto issues = validateForceField(pd);
+    EXPECT_EQ(2u, issues.size());
+    EXPECT_EQ(1u, countIssues(issues, ForceFieldIssue::Kind::OutOfBounds));
+    EXPECT_EQ(1u, countIssues(issues, ForceFieldIssue::Kind::Negative));
+    expectRealEq(4.375, acm(pd, "h_z", "chi").value());
+    EXPECT_FALSE(acm(pd, "h_z", "chi").wasReset());
+    expectRealEq(14, acm(pd, "h_z", "eta").value());
+    expectRealEq(1, pd.findParticleType("h")->parameterConst("mass").value());
+    // The rest of the force field is as before
+    auto ref = read(input_);
+    expectRealEq(acm(ref, "i_z", "eta").value(), acm(pd, "i_z", "eta").value());
+    expectRealEq(acm(ref, "h_z", "eta").value(), acm(pd, "h_z", "eta").value());
+}
+
+// Test: Without problems that reading repairs, -validate writes no file
+TEST_F(EditFFTest, ValidateNothingToWrite)
+{
+    auto out = run(input_, { { "-validate", "" } }, "unchanged.xml");
+    EXPECT_FALSE(std::filesystem::exists(out));
 }
 
 // Test: Parameters of a second force field that are missing in the first

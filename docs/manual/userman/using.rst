@@ -328,6 +328,12 @@ You can also do the reverse. When you are confident that the optimization is clo
 
 please check the on-line help ( *alexandria edit_ff -h* ) for more information.
 
+When a force field is read, values of trained parameters that are outside their bounds are set to the nearest bound, and of a parameter that is defined more than once the first definition is used. The programs then warn once, in the log file or on the terminal. To see which parameters these are, and to write a force field without these problems, use::
+
+  alexandria edit_ff -ff ff.xml -validate -o fixed.xml
+
+This also lists problems that have to be corrected by hand: values outside the bounds of parameters that may not be changed, a minimum larger than the maximum, and negative values of parameters that are marked as non-negative (attribute *nonnegative* in the file).
+
 .. _sec-parallel:
 
 ------------------------------------------

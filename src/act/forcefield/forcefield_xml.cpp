@@ -46,6 +46,7 @@
 #include "act/forcefield/forcefield.h"
 #include "act/forcefield/forcefield_parameter.h"
 #include "act/forcefield/forcefield_parameterlist.h"
+#include "act/forcefield/forcefield_validation.h"
 #include "act/forcefield/generate_dependent.h"
 #include "act/forcefield/symcharges.h"
 #include "act/basics/msg_handler.h"
@@ -612,6 +613,22 @@ void readForceField(const std::string &fileName,
     processTree(msgHandler, &entries, &xbuf, doc->children, 0, pd);
 
     xmlFreeDoc(doc);
+
+    // Reading sets values outside the bounds to the nearest bound and uses
+    // the first definition of a parameter, one warning for all of them
+    auto repaired = repairedIssuesSummary(validateForceField(*pd));
+    if (!repaired.empty())
+    {
+        repaired = fn2 + ": " + repaired;
+        if (msgHandler)
+        {
+            msgHandler->msg(ACTStatus::Warning, repaired);
+        }
+        else
+        {
+            fprintf(stderr, "Warning: %s\n", repaired.c_str());
+        }
+    }
 
     // The charge distributions of older files are stored in the particle types
     pd->convertCoulomb(msgHandler);

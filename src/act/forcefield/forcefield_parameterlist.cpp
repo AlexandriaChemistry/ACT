@@ -99,7 +99,8 @@ void ForceFieldParameterList::addParameter(const Identifier          &identifier
         }
         else
         {
-            fprintf(stderr, "Ignoring parameter with type %s defined for identifier %s since it exists already.\n", type.c_str(), identifier.id().c_str());
+            // The first definition is used, see duplicates
+            duplicates_.push_back({ identifier, type });
         }
     }
 }
