@@ -369,3 +369,34 @@ You can also run an individual test, like this bin/sobol-test which should give 
 
 Note that these tests are run every time a change in the ACT source code is uploaded to github, to prevent errors in the code from being introduced.
 
+
+Testing the GPU code
+~~~~~~~~~~~~~~~~~~~~
+The tests of the GPU code need a GPU, in a single precision build with *-DACT_GPU=SYCL*. Without a GPU they pass without testing anything, and print a line such as::
+
+  CoulombGaussianGpu: no GPU, nothing tested
+
+A test run on a computer without a GPU, such as the head node of a cluster, therefore does not test the GPU code, even when all tests pass. The tests with GPU parts are in *ACTForcesTests* (the pair potentials and the shell relaxation on the GPU) and *AlexandriaTests* (training with the molecules on the GPU, several sets of parameters at once, the deviations on the GPU and *-shell_keep*). *ACTGpuTests* checks the estimate of the peak performance and the explanation of why no GPU was found, which need no GPU.
+
+On a cluster, compile everything on the head node, the tests included, and run the tests in a job on a node with a GPU. The head node needs no GPU to compile, since AdaptiveCpp compiles the GPU code when a program first uses the GPU. Set *ACT_SIMD* to the SIMD instructions of the GPU nodes if their processors differ from that of the head node, see above. If the processors of the GPU nodes are of another type than that of the head node, for instance ARM against x86, compile in a job on a GPU node instead. On csb, for instance, after::
+
+  cd ACT/build_Release_SINGLE_SYCL
+  make -j 20 alexandria tests
+
+on the head node, a job script like this runs the tests on a GPU node, with the modules that were loaded for compiling::
+
+  #!/bin/bash -l
+  #SBATCH -p CLUSTER-AMD
+  #SBATCH -N 1 -n 8
+  #SBATCH --gres=gpu:1
+  #SBATCH -t 00:40:00
+  ml gcc/14 fftw openmpi/5.0.5
+  cd $HOME/ACT/build_Release_SINGLE_SYCL
+  $HOME/miniforge3/envs/ACT/bin/ctest -j 4 -V > ctest-gpu.log 2>&1
+  grep -E "tests passed|nothing tested|\*\*\*" ctest-gpu.log
+
+The program *ctest* comes with *cmake*. On csb the *cmake* module does not work on the compute nodes, therefore the script uses the *ctest* of the conda environment of ACT, which has *cmake* as well. The last line should report that all tests passed, and no test that tested nothing. Run *make tests* again after each change before submitting the job, since *make* by itself does not rebuild the test programs. To run a single test program on a GPU node interactively, for instance::
+
+  srun -p CLUSTER-AMD --gres=gpu:1 -n 1 -c 8 bin/act-forces-test --gtest_filter='*Gpu*'
+
+The first run on a type of GPU takes longer, since AdaptiveCpp then compiles the GPU code, which it keeps in *~/.acpp* for later runs. If the MPI tests fail in the job because MPI programs are started differently there, run the others with *ctest -LE MpiTest*. Tests have a time limit, 30 s for most of them, and *ImportTests* takes about 18 s by itself on csb. With several tests at once on a node with few cores, it may exceed the limit; it then passes when run by itself with *ctest -R ImportTests*.
