@@ -2831,6 +2831,74 @@ TEST_F(PropertyDevComputerTest, NonFiniteEnergiesIgnored)
     EXPECT_TRUE(std::isfinite(telec.chiSquared()));
 }
 
+// Test: The bounds of an ACM charge apply to the total charge of the
+// particle, its second charge and the charges of its shells included, see
+// BoundsDevComputer::moleculeBound. With -lockstep, the second charges were
+// once those of another individual.
+TEST_F(PropertyDevComputerTest, BoundsShellsAndSecondCharge)
+{
+    ForceComputer forceComputer;
+    MsgHandler    msghandler;
+    ForceField    pd;
+    readForceField(fileManager().getInputFilePath("ACS-pol.xml"), &pd);
+    // The ACM charge of the carbons, which have shells, gets a range
+    auto qparam = pd.findParticleType("c3")->parameter("charge");
+    ASSERT_EQ(Mutability::ACM, qparam->mutability());
+    qparam->setMaximum(qparam->minimum() + 1);
+    double qmin = qparam->minimum();
+    double qmax = qparam->maximum();
+    auto   mols = prepareMolecules(&msghandler, &pd, &forceComputer, { "water#1-butanol" },
+                                   fileManager().getInputFilePath("mpdimer.xml"));
+    ASSERT_EQ(1u, mols.size());
+    auto  &mol   = mols[0];
+    auto  *atoms = mol.atoms();
+    size_t core  = atoms->size();
+    for (size_t i = 0; i < atoms->size() && core == atoms->size(); i++)
+    {
+        if ((*atoms)[i].ffType() == "c3" && !(*atoms)[i].shells().empty())
+        {
+            core = i;
+        }
+    }
+    ASSERT_LT(core, atoms->size());
+    // All charges within their bounds, the ACM charges in the middle
+    for (auto &a : *atoms)
+    {
+        a.setChargeVS(0, a.zetaVS(), a.rowVS());
+        a.setCharge(0);
+        const auto &p = pd.findParticleType(a.ffType())->parameterConst("charge");
+        if (p.mutability() == Mutability::ACM)
+        {
+            a.setCharge(0.5*(p.minimum() + p.maximum()));
+        }
+    }
+    auto bound = [&mol, &pd](LossFunction lf)
+    {
+        return BoundsDevComputer::moleculeBound(&mol, &pd, lf);
+    };
+    EXPECT_EQ(0, bound(LossFunction::MSE));
+    // The second charge makes the total too large
+    auto  &c     = (*atoms)[core];
+    auto  &shell = (*atoms)[c.shells()[0]];
+    double d     = 0.25;
+    c.setChargeVS(qmax - c.charge() + d, c.zetaVS(), c.rowVS());
+    EXPECT_DOUBLE_EQ(d*d, bound(LossFunction::MSE));
+    EXPECT_DOUBLE_EQ(d, bound(LossFunction::MAE));
+    // The shell brings it back to the maximum
+    shell.setCharge(-d);
+    EXPECT_EQ(0, bound(LossFunction::MSE));
+    // and below the minimum
+    shell.setCharge(qmin - qmax - 2*d);
+    EXPECT_DOUBLE_EQ(d*d, bound(LossFunction::MSE));
+    // The deviation adds the bound of each molecule
+    std::map<eRMS, FittingTarget> targets;
+    targets.insert({ eRMS::BOUNDS, FittingTarget(eRMS::BOUNDS, iMolSelect::Train) });
+    targets.find(eRMS::BOUNDS)->second.setWeight(1);
+    BoundsDevComputer computer(nullptr);
+    computer.calcDeviation(&msghandler, &forceComputer, pointers(&mols), &targets, &pd, LossFunction::MSE);
+    EXPECT_DOUBLE_EQ(d*d, targets.find(eRMS::BOUNDS)->second.chiSquared());
+}
+
 // Test: ESP deviation, non-polarizable
 TEST_F(PropertyDevComputerTest, EspNonPolarizable)
 {
