@@ -35,12 +35,17 @@
 
 #include "actpre.h"
 
+#include <algorithm>
+#include <cstdio>
+#include <cstdlib>
 #include <string>
 #include <vector>
 
 #include <gtest/gtest.h>
 
 #include "trainffTestUtil.h"
+
+#include "act/gpu/gpu.h"
 
 #include "testutils/cmdlinetest.h"
 #include "testutils/refdata.h"
@@ -306,6 +311,115 @@ TEST_F(TrainFFMpiTest, HybridCurvature2D)
         EXPECT_TRUE(output.sensitivity["sensitivity"].contains("pairs"));
     }
     trainfftest::barrier();
+}
+
+//! \return whether each rank trains polarizable models on the GPU
+bool gpuTraining()
+{
+    int use = (!GMX_DOUBLE && gpu::useGpu()) ? 1 : 0;
+    int all = 0;
+    MPI_Allreduce(&use, &all, 1, MPI_INT, MPI_MIN, MPI_COMM_WORLD);
+    return all == 1;
+}
+
+//! Options for short HYBRID runs of a polarizable model, as the alcohol benchmarks
+Options polarizableOptions(int populationSize, int maxIter, const std::string &fit)
+{
+    return {
+        { "-seed", "219463979" },
+        { "-v", "3" },
+        { "-optimizer", "HYBRID" },
+        { "-pop_size", std::to_string(populationSize) },
+        { "-max_generations", "1" },
+        { "-random_init", "" },
+        { "-n_crossovers", "1" },
+        { "-max_iter", std::to_string(maxIter) },
+        { "-temp", "0.025" },
+        { "-fc_bound", "10000" },
+        { "-fc_inter", "1" },
+        { "-fit", fit }
+    };
+}
+
+/*! \brief Train on the GPU twice in ways that have to give the same result
+ * The shells are relaxed from the same positions each time, such that the
+ * energies of the same parameters are the same, see -shell_keep.
+ * \param[in] fileManager The test files
+ * \param[in] label       Prefix of the output files
+ * \param[in] options     The options of the first run
+ * \param[in] other       The options of the second run
+ * \param[in] otherEnv    The environment variable set during the second run, if any
+ */
+void compareGpuTrainings(gmx::test::TestFileManager *fileManager,
+                         const std::string          &label,
+                         const Options              &options,
+                         const Options              &other,
+                         const char                 *otherEnv = nullptr)
+{
+    auto first = trainfftest::runTrainFF(fileManager, label + "-1", "alc-pol-wbh.xml",
+                                         "booze-inter", options);
+    EXPECT_EQ(0, first.status);
+    if (otherEnv)
+    {
+        setenv(otherEnv, "1", 1);
+    }
+    auto second = trainfftest::runTrainFF(fileManager, label + "-2", "alc-pol-wbh.xml",
+                                          "booze-inter", other);
+    if (otherEnv)
+    {
+        unsetenv(otherEnv);
+    }
+    EXPECT_EQ(0, second.status);
+    if (gmx_node_rank() == 0)
+    {
+        for (const auto *output : { &first, &second })
+        {
+            EXPECT_TRUE(std::any_of(output->log.begin(), output->log.end(), [](const std::string &line)
+                                    { return line.find("GPU resident relaxation") != std::string::npos; }))
+                << "The GPU did not train";
+        }
+        ASSERT_GT(first.finalChi2, 0);
+        // The log has six significant digits
+        EXPECT_NEAR(first.finalChi2, second.finalChi2, 2e-5*first.finalChi2);
+    }
+    trainfftest::barrier();
+}
+
+// Test: With -lockstep, the GPU computes the individuals of a middleman
+// together, each with the bounds of its own charges, as one at a time. The
+// second charges of the polarizable model are trained with the charges, such
+// that they differ between the individuals.
+TEST_F(TrainFFMpiTest, GpuLockstepCharges)
+{
+    if (!gpuTraining())
+    {
+        // This googletest has no GTEST_SKIP
+        fprintf(stderr, "Not tested: needs a GPU and single precision\n");
+        return;
+    }
+    // Four individuals on each of the three middlemen
+    auto options = polarizableOptions(12, 2, "charge");
+    options.push_back({ "-noshell_keep", "" });
+    auto together = options, oneByOne = options;
+    together.push_back({ "-lockstep", "4" });
+    oneByOne.push_back({ "-lockstep", "1" });
+    compareGpuTrainings(&fileManager(), "lockstep", together, oneByOne);
+}
+
+// Test: The molecules whose parameters did not change are not computed again
+// on the GPU, their deviations, including the bounds of their charges, are
+// those kept from before. ACT_NO_GPU_SKIP computes all of them each time.
+TEST_F(TrainFFMpiTest, GpuSkippedMolecules)
+{
+    if (!gpuTraining())
+    {
+        fprintf(stderr, "Not tested: needs a GPU and single precision\n");
+        return;
+    }
+    // Two individuals on each middleman, one after the other
+    auto options = polarizableOptions(6, 6, "zeta charge alpha eta chi sigma epsilon gamma");
+    options.push_back({ "-noshell_keep", "" });
+    compareGpuTrainings(&fileManager(), "skipped", options, options, "ACT_NO_GPU_SKIP");
 }
 
 } // namespace

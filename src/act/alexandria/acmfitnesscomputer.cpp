@@ -542,8 +542,9 @@ bool ACMFitnessComputer::prepareDeviation(MsgHandler    *msghandler,
     // Molecules whose parameters did not change can be skipped, if the GPU
     // computes only the deviations, see useGpuDeviations, and the
     // dependencies of the molecules on the parameters are known. For
-    // developers, ACT_NO_GPU_SKIP turns this off.
-    static const bool noSkip = std::getenv("ACT_NO_GPU_SKIP") != nullptr;
+    // developers, ACT_NO_GPU_SKIP turns this off, read each time such that
+    // a test can compare with and without, see TrainFFMpiTest.
+    const bool        noSkip = std::getenv("ACT_NO_GPU_SKIP") != nullptr;
     static const bool noDev  = std::getenv("ACT_NO_GPU_DEVIATIONS") != nullptr;
     bool skipCandidate = (!noSkip && !noDev && !compactCheck() && task == CalcDev::Compute && gpuCharges);
     bool haveDeps      = (skipCandidate && depsVersion_ != 0 && depsVersion_ == forceComp_->gpuVersion());
