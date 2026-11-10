@@ -37,6 +37,8 @@
 
 #include <sycl/sycl.hpp>
 
+#include "gpu.h"
+
 namespace alexandria
 {
 
@@ -70,6 +72,14 @@ public:
             size_   = n + n/2;
             queue_  = &queue;
             data_   = sycl::malloc_device<T>(size_, queue);
+            if (!data_)
+            {
+                size_t bytes = size_*sizeof(T);
+                size_ = 0;
+                throw OutOfMemory(queue.get_device().get_info<sycl::info::device::name>(),
+                                  queue.get_device().get_info<sycl::info::device::global_mem_size>(),
+                                  0, bytes);
+            }
         }
         return data_;
     }
@@ -117,6 +127,14 @@ public:
             size_  = n + n/2;
             queue_ = &queue;
             data_  = sycl::malloc_host<T>(size_, queue);
+            if (!data_)
+            {
+                size_t bytes = size_*sizeof(T);
+                size_ = 0;
+                throw OutOfMemory("pinned host memory of " +
+                                  queue.get_device().get_info<sycl::info::device::name>(),
+                                  0, 0, bytes);
+            }
         }
         return data_;
     }

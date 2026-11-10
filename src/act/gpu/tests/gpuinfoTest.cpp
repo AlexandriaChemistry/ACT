@@ -197,6 +197,27 @@ TEST(NoGpuTest, NoBackends)
     EXPECT_TRUE(contains(reasons, "AdaptiveCpp in /opt/acpp/lib has the backends: none"));
 }
 
+// Test: The message of running out of GPU memory tells the sizes and what to
+// do, and the program stops with it as with other failed allocations
+TEST(GpuOutOfMemoryTest, Message)
+{
+    try
+    {
+        throw gpu::OutOfMemory("NVIDIA RTX A4500", 20.0e9, 350000000, 1200000000);
+    }
+    catch (const std::bad_alloc &ex)
+    {
+        std::string what = ex.what();
+        EXPECT_NE(std::string::npos, what.find("NVIDIA RTX A4500, 20.0 GB")) << what;
+        EXPECT_NE(std::string::npos, what.find("had 350.0 MB")) << what;
+        EXPECT_NE(std::string::npos, what.find("1200.0 MB more")) << what;
+        EXPECT_NE(std::string::npos, what.find("-lockstep")) << what;
+        EXPECT_NE(std::string::npos, what.find("multi-process service")) << what;
+        return;
+    }
+    FAIL() << "Not caught as std::bad_alloc";
+}
+
 // Test: What the log file shows about the GPUs of this computer is consistent:
 // a peak estimate for each GPU, reasons only without GPUs and only with GPU
 // support, and no GPU without GPU support

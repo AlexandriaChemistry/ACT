@@ -35,6 +35,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <new>
 #include <string>
 #include <utility>
 #include <vector>
@@ -99,6 +100,32 @@ std::vector<DevicePeak> devicePeaks();
  */
 DevicePeak estimatePeak(const std::string &vendor, const std::string &name,
                         unsigned units, double ghz);
+
+/*! \brief The GPU has no memory left for what a process puts on it
+ * Thrown by the GPU code instead of using an allocation that failed. The
+ * message tells how much memory the process has on the GPU and what to do.
+ * As a std::bad_alloc, the program stops with "Memory allocation failed"
+ * and this message.
+ */
+class OutOfMemory : public std::bad_alloc
+{
+public:
+    /*! \brief Constructor
+     * \param[in] device         The name of the GPU
+     * \param[in] totalBytes     Its memory
+     * \param[in] allocatedBytes What this process has allocated on it for the molecules
+     * \param[in] requestedBytes What it asked for
+     */
+    OutOfMemory(const std::string &device, double totalBytes,
+                size_t allocatedBytes, size_t requestedBytes);
+
+    //! \return the message
+    const char *what() const noexcept override { return message_.c_str(); }
+
+private:
+    //! The message, see the constructor
+    std::string message_;
+};
 
 //! What noGpuReasons looks at on a node without usable GPU, see explainNoGpu
 struct NoGpuFacts

@@ -48,6 +48,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <map>
+#include <memory>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -387,12 +388,26 @@ public:
         }
     }
 
-    //! Allocate device memory of n elements, freed with the system
+    /*! \brief Allocate device memory of n elements, freed with the system
+     * \throws OutOfMemory if the GPU has no memory left, since the
+     *         allocation then returns no memory, which the operations on
+     *         the GPU would write to
+     */
     template <typename T>
     T *allocate(size_t n)
     {
-        T *p = sycl::malloc_device<T>(std::max<size_t>(n, 1), *queue_);
+        size_t bytes = std::max<size_t>(n, 1)*sizeof(T);
+        T     *p     = sycl::malloc_device<T>(std::max<size_t>(n, 1), *queue_);
+        if (!p)
+        {
+            auto        device = queue_->get_device();
+            std::string name   = device.get_info<sycl::info::device::name>();
+            double      total  = device.get_info<sycl::info::device::global_mem_size>();
+            throw OutOfMemory(name, total, allocatedBytes_, bytes);
+        }
         allocations_.push_back(p);
+        allocationBytes_.push_back(bytes);
+        allocatedBytes_ += bytes;
         return p;
     }
 
@@ -404,6 +419,9 @@ public:
         if (p && a != allocations_.end())
         {
             sycl::free(p, *queue_);
+            size_t i         = a - allocations_.begin();
+            allocatedBytes_ -= allocationBytes_[i];
+            allocationBytes_.erase(allocationBytes_.begin() + i);
             allocations_.erase(a);
         }
         p = nullptr;
@@ -449,6 +467,9 @@ public:
 
     sycl::queue                    *queue_;
     std::vector<void *>             allocations_;
+    //! The size of each allocation in bytes, and their sum, see allocate
+    std::vector<size_t>             allocationBytes_;
+    size_t                          allocatedBytes_ = 0;
     std::vector<DeviceSystemBlock>  blocksHost_;
     std::vector<DeviceList>         listsHost_;
     //! The first list of each block
@@ -613,7 +634,9 @@ System *createSystem(const SystemBlock *blocks, size_t nblock)
     {
         return nullptr;
     }
-    auto *sys = new System(queue);
+    // The system is freed if the GPU has no memory left for it
+    std::unique_ptr<System> holder(new System(queue));
+    auto *sys = holder.get();
     std::vector<int64_t>     x;
     std::vector<PairEntry>   pairs;
     std::vector<BondedEntry> bonds;
@@ -894,7 +917,7 @@ System *createSystem(const SystemBlock *blocks, size_t nblock)
                     rowEntries.size(), q(0.5), q(0.9), q(0.99), maxEntries);
         }
     }
-    return sys;
+    return holder.release();
 }
 
 void destroySystem(System *system)
@@ -2446,6 +2469,13 @@ void copyCoordinates(System *sys, size_t from, size_t to, const uint32_t *pairs,
     }
     // The pairs and the slots, freed at the end of the call
     auto dPairs = sycl::malloc_device<uint32_t>(2*n + bt.nslot, *sys->queue_);
+    if (!dPairs)
+    {
+        auto device = sys->queue_->get_device();
+        throw OutOfMemory(device.get_info<sycl::info::device::name>(),
+                          device.get_info<sycl::info::device::global_mem_size>(),
+                          sys->allocatedBytes_, (2*n + bt.nslot)*sizeof(uint32_t));
+    }
     sys->queue_->memcpy(dPairs, pairs, 2*n*sizeof(uint32_t));
     sys->queue_->memcpy(dPairs + 2*n, slots, bt.nslot*sizeof(uint32_t));
     auto     dX    = sys->x_;
