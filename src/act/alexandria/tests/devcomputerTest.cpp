@@ -2075,6 +2075,206 @@ TEST_F(PropertyDevComputerTest, ShellsRelaxedAfterChangingAlpha)
     }
 }
 
+//! Computes on the processor while it exists, and then as before
+class ProcessorOnly
+{
+public:
+    ProcessorOnly() : before_(gpu::setUseGpu(false)) {}
+    ~ProcessorOnly() { (void) gpu::setUseGpu(before_); }
+private:
+    //! Whether the GPU was used before
+    bool before_;
+};
+
+/*! \brief Check which shells were kept, see ForceComputer::setKeepShells
+ * \param[in] mols The molecules
+ * \param[in] keep Whether the shells of the conformations that converged
+ *                 were to be kept, otherwise none
+ * \return the number of conformations with kept shells
+ */
+static size_t checkKeptShells(std::vector<ACTMol> *mols, bool keep)
+{
+    size_t nkept = 0;
+    for(auto &mol : *mols)
+    {
+        auto &tops = mol.fragmentHandler()->topologies();
+        for(size_t what = 0; what < 3; what++)
+        {
+            if ((what < 2 && what >= tops.size()) || (what == 2 && !mol.isDimer()))
+            {
+                continue;
+            }
+            const Topology *top    = (what < 2) ? &tops[what] : mol.topology();
+            size_t          nshell = 0;
+            for(const auto &a : top->atoms())
+            {
+                nshell += (a.pType() == ActParticle::Shell) ? 1 : 0;
+            }
+            auto *cdata = mol.conformationData(what);
+            for(size_t c = 0; c < cdata->nconf(); c++)
+            {
+                SCOPED_TRACE(gmx::formatString("%s what %zu conformation %zu", mol.getMolname().c_str(), what, c));
+                const auto &conf = cdata->confs[c];
+                // Shells that did not converge start from their cores next time
+                EXPECT_EQ(keep && conf.done ? DIM*nshell : 0, conf.xkept.size());
+                nkept += conf.xkept.empty() ? 0 : 1;
+            }
+        }
+    }
+    return nkept;
+}
+
+/*! \brief Compare starting the relaxation of the shells from where they were
+ * relaxed the previous time (train_ff -shell_keep) to starting from the cores
+ * The energies have to be the same within the tolerance on the forces, and
+ * fewer iterations are needed after a small change of the parameters, as in
+ * an MCMC step. Each force computer has its own molecules, since the
+ * conformations remember whether their shells converged.
+ * \param[in] pd        The force field, its polarizabilities are changed
+ * \param[in] makeMols  Makes the molecules
+ * \param[in] resident  Whether to compute on the GPU, see ForceComputer::setGpuResident
+ * \param[in] tolerance Relative tolerance for the energies after the change
+ * \return false if the GPU cannot compute the molecules, true otherwise
+ */
+static bool compareShellKeep(ForceField                                                   *pd,
+                             const std::function<std::vector<ACTMol>(const ForceComputer *)> &makeMols,
+                             bool                                                          resident,
+                             double                                                        tolerance)
+{
+    // A tight tolerance, since the kept shells converge to slightly other positions
+    ForceComputer fromCores(1e-8, 100, pd->epsilonr());
+    ForceComputer kept(1e-8, 100, pd->epsilonr());
+    kept.setKeepShells(true);
+    EXPECT_TRUE(kept.keepShells());
+    EXPECT_FALSE(fromCores.keepShells());
+    for(auto fc : { &fromCores, &kept })
+    {
+        fc->setGpuResident(resident);
+    }
+    auto molsCores = makeMols(&fromCores);
+    auto molsKept  = makeMols(&kept);
+    EXPECT_FALSE(molsCores.empty());
+    if (resident && (!fromCores.prepareGpuResident(pd, pointers(&molsCores)) ||
+                     !kept.prepareGpuResident(pd, pointers(&molsKept))))
+    {
+        return false;
+    }
+    // The first time both start from the cores
+    auto first     = computeAll(&fromCores, pd, &molsCores, false);
+    auto firstKept = computeAll(&kept, pd, &molsKept, false);
+    EXPECT_EQ(first, firstKept);
+    EXPECT_EQ(fromCores.numShellIterations(), kept.numShellIterations());
+    if (!resident)
+    {
+        // The GPU keeps the shells on the GPU
+        EXPECT_EQ(0u, checkKeptShells(&molsCores, false));
+        EXPECT_GT(checkKeptShells(&molsKept, true), 0u);
+    }
+    // Slightly larger polarizabilities
+    changeParameters(pd, InteractionType::POLARIZATION, 1.02, true);
+    fillAll(pd, &molsCores);
+    fillAll(pd, &molsKept);
+    kept.resetStatistics();
+    fromCores.resetStatistics();
+    auto reference = computeAll(&fromCores, pd, &molsCores, false);
+    auto after     = computeAll(&kept, pd, &molsKept, false);
+    EXPECT_NE(first, reference);
+    EXPECT_EQ(reference.size(), after.size());
+    for(size_t i = 0; i < reference.size() && i < after.size(); i++)
+    {
+        EXPECT_NEAR(reference[i], after[i], tolerance*(1 + std::abs(reference[i]))) << i;
+    }
+    // In double precision a conformation may not converge, in both cases
+    EXPECT_LE(kept.numShellConvergenceFailed(), fromCores.numShellConvergenceFailed());
+    EXPECT_GT(fromCores.numShellIterations(), 0u);
+    EXPECT_LT(kept.numShellIterations(), fromCores.numShellIterations());
+    return true;
+}
+
+// Test: -shell_keep on the processor gives the energies of starting from the
+// cores, with fewer iterations, and keeps the shells that converged
+TEST_F(PropertyDevComputerTest, ShellKeepSameEnergies)
+{
+    ProcessorOnly cpu;
+    ForceField    pd;
+    readForceField(fileManager().getInputFilePath("PG-pol-ions.xml"), &pd);
+    ASSERT_TRUE(pd.polarizable());
+    auto mpFile = fileManager().getInputFilePath("ion-water.xml");
+    auto make   = [this, &pd, &mpFile](const ForceComputer *fc)
+    {
+        MsgHandler msghandler;
+        return prepareMolecules(&msghandler, &pd, fc, {}, mpFile);
+    };
+    EXPECT_TRUE(compareShellKeep(&pd, make, false, 1e-6));
+}
+
+// Test: -shell_keep on the GPU gives the energies of starting from the cores,
+// within single precision, with fewer iterations
+TEST_F(PropertyDevComputerTest, ShellKeepSameEnergiesGpu)
+{
+    if (!gpu::useGpu())
+    {
+        // Needs a GPU
+        fprintf(stderr, "ShellKeepSameEnergiesGpu: no GPU, nothing tested\n");
+        return;
+    }
+    ForceField pd;
+    readForceField(fileManager().getInputFilePath("PG-pol-ions.xml"), &pd);
+    ASSERT_TRUE(pd.polarizable());
+    auto mpFile = fileManager().getInputFilePath("ion-water.xml");
+    auto make   = [this, &pd, &mpFile](const ForceComputer *fc)
+    {
+        MsgHandler msghandler;
+        return prepareMolecules(&msghandler, &pd, fc, {}, mpFile);
+    };
+    if (!compareShellKeep(&pd, make, true, 1e-5))
+    {
+        fprintf(stderr, "ShellKeepSameEnergiesGpu: the GPU cannot compute these molecules, nothing tested\n");
+    }
+}
+
+// Test: With -gpu_resident, molecules that the GPU cannot take are computed
+// on the processor, with the same energies as without -gpu_resident, and
+// from then on the processor computes everything. The GPU is turned off to
+// make it refuse the molecules, as without a GPU.
+TEST_F(PropertyDevComputerTest, GpuResidentFallsBackToProcessor)
+{
+    MsgHandler msghandler;
+    ForceField pd;
+    readForceField(fileManager().getInputFilePath("PG-pol-ions.xml"), &pd);
+    ASSERT_TRUE(pd.polarizable());
+    ForceComputer resident;
+    resident.setGpuResident(true);
+    resident.setKeepShells(false);
+    ForceComputer processor;
+    auto mpFile = fileManager().getInputFilePath("ion-water.xml");
+    auto mols   = prepareMolecules(&msghandler, &pd, &processor, {}, mpFile);
+    ASSERT_FALSE(mols.empty());
+    std::vector<double> energies, reference;
+    {
+        ProcessorOnly cpu;
+        EXPECT_FALSE(resident.gpuCharges(&pd));
+        EXPECT_FALSE(resident.prepareGpuResident(&pd, pointers(&mols)));
+        energies  = computeAll(&resident, &pd, &mols, true);
+        reference = computeAll(&processor, &pd, &mols, true);
+    }
+    EXPECT_EQ(reference, energies);
+    // Also when the GPU could be used again, the processor computes
+    EXPECT_FALSE(resident.prepareGpuResident(&pd, pointers(&mols)));
+    EXPECT_FALSE(resident.gpuCharges(&pd));
+    EXPECT_EQ(reference, computeAll(&resident, &pd, &mols, true));
+    // Without polarization the GPU is not used either
+    ForceField nonPolarizable;
+    readForceField(fileManager().getInputFilePath("ACS-g.xml"), &nonPolarizable);
+    ASSERT_FALSE(nonPolarizable.polarizable());
+    ForceComputer residentNonPol;
+    residentNonPol.setGpuResident(true);
+    auto monomers = prepareMolecules(&msghandler, &nonPolarizable, &residentNonPol);
+    ASSERT_FALSE(monomers.empty());
+    EXPECT_FALSE(residentNonPol.prepareGpuResident(&nonPolarizable, pointers(&monomers)));
+    EXPECT_FALSE(residentNonPol.gpuCharges(&nonPolarizable));
+}
+
 // Test: Several sets of parameters computed at once on the GPU, as replicas
 // of the molecules, give the same energies and charges as computing each set
 // by itself. The sets differ in the polarizabilities and in the
