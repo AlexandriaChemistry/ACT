@@ -52,6 +52,16 @@ namespace alexandria
 /*! \brief
  * Base class for topology components
  */
+/*! \brief The one copy of an identifier that all topology entries share
+ * Topologies have many entries with the same identifiers, each of which
+ * holds strings. The copies are kept until the end of the program; the
+ * identifiers that are the same, including the order of the atoms and
+ * the swapped id, share one.
+ * \param[in] id The identifier, nullptr for the empty one
+ * \return The shared copy
+ */
+const Identifier *sharedIdentifier(const Identifier *id);
+
 class TopologyEntry
 {
 private:
@@ -62,7 +72,7 @@ private:
     //! The bond orders
     std::vector<double>                         bondOrder_;
     //! The force field identifier belonging to this entry
-    Identifier                                  id_;
+    const Identifier                           *id_ = sharedIdentifier(nullptr);
     //! The gromacs topology index (in idef.ffparams)
     int                                         gromacsType_ = -1;
     //! The force field parameters of id_, see forceFieldParameters()
@@ -155,7 +165,7 @@ public:
      */
     void setId(const Identifier &id)
     {
-        id_       = id;
+        id_       = sharedIdentifier(&id);
         ffParams_ = nullptr;
     }
 
@@ -171,7 +181,7 @@ public:
         if (ffParams_ == nullptr || ffList_ != &fs || ffVersion_ != fs.structureVersion())
         {
             const auto &parameters = fs.parametersConst();
-            auto        ffiter     = parameters.find(id_);
+            auto        ffiter     = parameters.find(*id_);
             ffParams_  = parameters.end() == ffiter ? nullptr : &ffiter->second;
             ffList_    = &fs;
             ffVersion_ = fs.structureVersion();
@@ -200,7 +210,7 @@ public:
     const std::vector<double> &params() const { return params_; }
 
     //! \return my identifier(s)
-    const Identifier &id() const { return id_; }
+    const Identifier &id() const { return *id_; }
 
     /*! \brief Check whether this entry has nAtom atoms
      * \param[in] nAtom the expected number of atoms
@@ -420,8 +430,6 @@ using BondConstIterator = typename std::vector<Bond>::const_iterator;
 class Angle : public TopologyEntry
 {
  private:
-    //! The bonds
-    Bond             b_[2];
     //! Whether this is a linear angle
     bool             isLinear_ = false;
  public:
@@ -440,11 +448,11 @@ class Angle : public TopologyEntry
      */
     void setBonds(const Bond &bij, const Bond &bjk);
 
-    //! \return the first bond
-    const Bond &bij() const { return b_[0]; }
+    //! \return the first bond, from the atoms and bond orders of the angle
+    Bond bij() const { return Bond(atomIndex(0), atomIndex(1), bondOrder(0)); }
 
     //! \return the second bond
-    const Bond &bjk() const { return b_[1]; }
+    Bond bjk() const { return Bond(atomIndex(1), atomIndex(2), bondOrder(1)); }
 
     //! \return whether this is a linear angle
     bool isLinear() const { return isLinear_; }
@@ -453,24 +461,19 @@ class Angle : public TopologyEntry
      * \param[in] linear The value
      */
     void setLinear(bool linear) { isLinear_ = linear; }
-
-    //! @copydoc Bond::renumberAtoms
-    void renumberAtoms(const std::vector<int> &renumber);
 };
 
 /*! \brief
  * Improper dihedral defined by one central atom i and three bonds
  * bij, bik, bil in a molecule in a planar arrangement.
  * Atom i should be the first atom in all bonds.
+ * The bonds are not stored, but made from the atoms and the bond orders.
  *
  * \inpublicapi
  * \ingroup group_molprop
  */
 class Improper : public TopologyEntry
 {
- private:
-    //! The bonds
-    Bond             b_[3];
  public:
     //! Default constructor
     Improper() {}
@@ -483,16 +486,13 @@ class Improper : public TopologyEntry
     Improper(const Bond &bij, const Bond &bik, const Bond &bil);
 
     //! \return the first bond
-    const Bond &bij() const { return b_[0]; }
+    Bond bij() const { return Bond(atomIndex(0), atomIndex(1), bondOrder(0)); }
 
     //! \return the second bond
-    const Bond &bik() const { return b_[1]; }
+    Bond bik() const { return Bond(atomIndex(0), atomIndex(2), bondOrder(1)); }
 
     //! \return the third bond
-    const Bond &bil() const { return b_[2]; }
-
-    //! @copydoc Bond::renumberAtoms
-    void renumberAtoms(const std::vector<int> &renumber);
+    Bond bil() const { return Bond(atomIndex(0), atomIndex(3), bondOrder(2)); }
 };
 
 /*! \brief
@@ -504,9 +504,6 @@ class Improper : public TopologyEntry
  */
 class Proper : public TopologyEntry
 {
- private:
-    //! The bonds
-    Bond             b_[3];
  public:
     //! Default constructor
     Proper() {}
@@ -518,17 +515,14 @@ class Proper : public TopologyEntry
      */
     Proper(const Bond &bij, const Bond &bjk, const Bond &bkl);
 
-    //! \return the first bond
-    const Bond &bij() const { return b_[0]; }
+    //! \return the first bond, from the atoms and bond orders of the dihedral
+    Bond bij() const { return Bond(atomIndex(0), atomIndex(1), bondOrder(0)); }
 
     //! \return the second bond
-    const Bond &bjk() const { return b_[1]; }
+    Bond bjk() const { return Bond(atomIndex(1), atomIndex(2), bondOrder(1)); }
 
     //! \return the third bond
-    const Bond &bkl() const { return b_[2]; }
-
-    //! @copydoc Bond::renumberAtoms
-    void renumberAtoms(const std::vector<int> &renumber);
+    Bond bkl() const { return Bond(atomIndex(2), atomIndex(3), bondOrder(2)); }
 };
 
 /*! \brief

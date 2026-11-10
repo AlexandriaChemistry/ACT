@@ -188,6 +188,9 @@ class Identifier
     //! \brief Return the atoms, or rather the components of the id
     const std::vector<std::string> &atoms() const { return atoms_; }
 
+    //! \return the id and, if there is one, the swapped id, see id and swapped
+    const std::vector<std::string> &ids() const { return ids_; }
+
     /*! \brief Send the contents to another processor
      * \param[in] cr   Communication data structure
      * \param[in] dest Processor id to send the data to
