@@ -300,6 +300,8 @@ void GAConfigHandler::add_options(std::vector<t_pargs>             *pargs,
           "Fraction [0, 1] of the worst genomes to randomize when VolumeFractionPenalizer is triggered." },
         { "-cp_gen_interval", FALSE, etINT, {&cpGenInterval_},
           "Interval (in number of generations) between triggering the CatastrophePenalizer." },
+        { "-gpout_interval", FALSE, etINT, {&gpoutInterval_},
+          "Number of generations between writing the gene pool (-gpout). The file holds the population of the last generation that found a better individual for the training set, as written when it was found, and is also written at the end of the training. With 1 it is written in each generation that finds a better individual." },
         { "-cp_pop_frac", FALSE, etREAL, {&cpPopFrac_},
           "Fraction [0, 1] of the genomes to randomize when the CatastrophePenalizer is triggered." },
         { "-nstfitness", FALSE, etINT, {&nstFitness_},
@@ -370,6 +372,10 @@ void GAConfigHandler::check_pargs(MsgHandler *msghandler)
     }
     GMX_RELEASE_ASSERT(cpPopFrac_ >= 0 && cpPopFrac_ <= 1,
                        "-cp_pop_frac must be in [0, 1].");
+    if (gpoutInterval_ < 1)
+    {
+        msghandler->fatal("-gpout_interval must be at least 1");
+    }
 
     GMX_RELEASE_ASSERT(nstFitness_ > 0, "-nstfitness must be positive.");
 

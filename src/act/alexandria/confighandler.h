@@ -168,6 +168,8 @@ private:
     real cpPopFrac_ = 0.5;
     //! Number of fitness evaluations per individual between writing the fitness
     int nstFitness_ = 1;
+    //! Number of generations between writing the gene pool, see -gpout_interval
+    int gpoutInterval_ = 5;
 
 public:
 
@@ -299,6 +301,9 @@ public:
 
     //! \return for CatastrophePenalizer, the interval (in generations) between each penalty
     int cpGenInterval() const { return cpGenInterval_; }
+
+    //! \return the number of generations between writing the gene pool, see -gpout_interval
+    int gpoutInterval() const { return gpoutInterval_; }
 
     //! \return for CatastrophePenalizer, the fraction of genomes to reinitialize
     real cpPopFrac() const { return cpPopFrac_; }
