@@ -33,6 +33,7 @@
 #ifndef ACT_POLINFO_H
 #define ACT_POLINFO_H
 
+#include <cstddef>
 #include <vector>
 
 namespace alexandria
@@ -47,7 +48,7 @@ private:
     //! Is this particle a shell?
     std::vector<bool>              isShell_;
     //! Number of shells
-    size_t                         nShell_ = 0;
+    std::size_t                    nShell_ = 0;
 public:
     //! Constructor
     PolInfo() {}
@@ -62,7 +63,7 @@ public:
     //! \return the isShell data
     const std::vector<bool> isShell() const { return isShell_; }
     //! \return number of shells
-    size_t nShell() const { return nShell_; }
+    std::size_t nShell() const { return nShell_; }
 };
 
 } // namespace
