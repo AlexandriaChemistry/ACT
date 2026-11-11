@@ -31,10 +31,14 @@
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
+#include <algorithm>
 #include <cstdlib>
+#include <fstream>
 
 #include <map>
 #include <set>
+
+#include <nlohmann/json.hpp>
 
 #include "act/alexandria/alex_modules.h"
 #include "act/basics/atomprops.h"
@@ -126,44 +130,50 @@ static std::map<std::string, std::map<std::string, std::string>> read_atomtypes(
     return table;
 }
 
-//! \brief Add virtual sites to a force field
-static void add_vsites(const char *vsfile,
-                       ForceField *pd)
+/*! \brief The number of atoms that a virtual site of a type is constructed from
+ * \param[in] itype The interaction type
+ * \return the number, 0 if not a virtual site
+ */
+static size_t vsiteAtoms(InteractionType itype)
 {
-    if (nullptr == vsfile)
+    switch (itype)
     {
-        return;
+    case InteractionType::VSITE1:
+        return 1;
+    case InteractionType::VSITE2:
+    case InteractionType::VSITE2FD:
+        return 2;
+    case InteractionType::VSITE3:
+    case InteractionType::VSITE3S:
+    case InteractionType::VSITE3FD:
+    case InteractionType::VSITE3FAD:
+    case InteractionType::VSITE3OUT:
+    case InteractionType::VSITE3OUTS:
+        return 3;
+    case InteractionType::VSITE4:
+    case InteractionType::VSITE4S:
+    case InteractionType::VSITE4S3:
+        return 4;
+    default:
+        return 0;
     }
-    gmx::TextReader          tr(vsfile);
-    std::string              tmp;
-    std::vector<std::string> value;
-    int                      lineno = 1;
-    std::map<InteractionType, ForceFieldParameterList> i2f = {
-        { InteractionType::VSITE1,
-          ForceFieldParameterList(potentialToString(Potential::VSITE1),     CanSwap::Yes) },
-        { InteractionType::VSITE2,
-          ForceFieldParameterList(potentialToString(Potential::VSITE2),     CanSwap::Vsite2) },
-        { InteractionType::VSITE2FD,
-          ForceFieldParameterList(potentialToString(Potential::VSITE2FD),   CanSwap::Vsite2) },
-        { InteractionType::VSITE3,
-          ForceFieldParameterList(potentialToString(Potential::VSITE3),     CanSwap::Vsite3) },
-        { InteractionType::VSITE3S,
-          ForceFieldParameterList(potentialToString(Potential::VSITE3S),    CanSwap::Vsite3) },
-        { InteractionType::VSITE3FD,
-          ForceFieldParameterList(potentialToString(Potential::VSITE3FD),   CanSwap::No)     },
-        { InteractionType::VSITE3FAD,
-          ForceFieldParameterList(potentialToString(Potential::VSITE3FAD),  CanSwap::No)     },
-        { InteractionType::VSITE3OUT,
-          ForceFieldParameterList(potentialToString(Potential::VSITE3OUT),  CanSwap::No)     },
-        { InteractionType::VSITE3OUTS,
-          ForceFieldParameterList(potentialToString(Potential::VSITE3OUTS), CanSwap::No)     },
-        { InteractionType::VSITE4,
-          ForceFieldParameterList(potentialToString(Potential::VSITE4),     CanSwap::No) },
-        { InteractionType::VSITE4S,
-          ForceFieldParameterList(potentialToString(Potential::VSITE4S),    CanSwap::No) },
-        { InteractionType::VSITE4S3,
-          ForceFieldParameterList(potentialToString(Potential::VSITE4S3),   CanSwap::No) }
-    };
+}
+
+/*! \brief Add the virtual sites of JSON files to a force field
+ *
+ * Each file is an object with a list "virtual_sites", and optionally a
+ * "description". Each virtual site has its particle "type", the
+ * "interaction" type, the "atoms" it is constructed from and, except for
+ * VSITE1, the "min" and "max" of each of the "parameters" of its potential,
+ * by name. A parameter starts in the middle of its range.
+ * \param[in]    vsfiles The files
+ * \param[inout] pd      The force field
+ * \throws gmx::InvalidInputError for an invalid file
+ */
+static void add_vsites(const std::vector<std::string> &vsfiles,
+                       ForceField                     *pd)
+{
+    std::map<InteractionType, ForceFieldParameterList> i2f;
     // How the atoms in the identifiers of the virtual sites can be swapped
     std::map<InteractionType, CanSwap> vsiteSwap = {
         { InteractionType::VSITE1,     CanSwap::Yes },
@@ -179,67 +189,139 @@ static void add_vsites(const char *vsfile,
         { InteractionType::VSITE4S,    CanSwap::No },
         { InteractionType::VSITE4S3,   CanSwap::No }
     };
-    while (tr.readLine(&tmp))
+    // The potential of each type of virtual site
+    std::map<InteractionType, Potential> vsitePotential = {
+        { InteractionType::VSITE1,     Potential::VSITE1 },
+        { InteractionType::VSITE2,     Potential::VSITE2 },
+        { InteractionType::VSITE2FD,   Potential::VSITE2FD },
+        { InteractionType::VSITE3,     Potential::VSITE3 },
+        { InteractionType::VSITE3S,    Potential::VSITE3S },
+        { InteractionType::VSITE3FD,   Potential::VSITE3FD },
+        { InteractionType::VSITE3FAD,  Potential::VSITE3FAD },
+        { InteractionType::VSITE3OUT,  Potential::VSITE3OUT },
+        { InteractionType::VSITE3OUTS, Potential::VSITE3OUTS },
+        { InteractionType::VSITE4,     Potential::VSITE4 },
+        { InteractionType::VSITE4S,    Potential::VSITE4S },
+        { InteractionType::VSITE4S3,   Potential::VSITE4S3 }
+    };
+    // How the parameter lists can be swapped, as for the identifiers except VSITE3FD
+    std::map<InteractionType, CanSwap> listSwap = vsiteSwap;
+    listSwap[InteractionType::VSITE3FD] = CanSwap::No;
+    for (const auto &vsfile : vsfiles)
     {
-        auto ptr = split(gmx::stripString(tmp), '|');
-        // Empty lines and comments
-        if (ptr.empty() || ptr[0].empty() || ptr[0][0] == '#')
+        auto error = [&vsfile](size_t index, const std::string &what)
         {
-            lineno += 1;
-            continue;
-        }
-        if (ptr.size() < 3)
+            GMX_THROW(gmx::InvalidInputError(gmx::formatString("Virtual site %zu in file %s: %s",
+                                                               index + 1, vsfile.c_str(), what.c_str()).c_str()));
+        };
+        nlohmann::json js;
         {
-            GMX_THROW(gmx::InvalidInputError(gmx::formatString("Found %zu items on line %d in file %s, expected at least 3",
-                                                               ptr.size(), lineno, vsfile).c_str()));
-        }
-        Identifier vsid(ptr[0]);
-        if (!pd->hasParticleType(vsid))
-        {
-            GMX_THROW(gmx::InvalidInputError(gmx::formatString("Unknown vsite type %s on line %d in file %s",
-                                                               ptr[0].c_str(), lineno, vsfile).c_str()));
-        }
-        InteractionType itype;
-        if (!stringToInteractionType(ptr[1], &itype))
-        {
-            GMX_THROW(gmx::InvalidInputError(gmx::formatString("Invalid InteractionType '%s' on line %d in file %s",
-                                                               ptr[1].c_str(), lineno, vsfile).c_str()));
-        }
-        if (i2f.find(itype) == i2f.end())
-        {
-            fprintf(stderr, "Ignoring non-vsite interaction type %s\n", ptr[1].c_str());
-            lineno += 1;
-            continue;
-        }
-        auto       &fs = i2f[itype];
-        Identifier  vs(itype, ptr[2] + "!" + ptr[0], vsiteSwap[itype]);
-        auto        names = potentialToParameterName(fs.potential());
-        if (InteractionType::VSITE1 == itype)
-        {
-            // Not a lot of information here, but we need something for downstream processing.
-            fs.addParameter(vs, names[vsite1A],
-                            ForceFieldParameter("", 1, 0, 0, 1, 1, Mutability::Fixed, false, false));
-        }
-        else
-        {
-            // A minimum and a maximum for each parameter, the parameter
-            // starts in the middle
-            size_t nitems = 3 + 2*names.size();
-            if (ptr.size() < nitems)
+            std::ifstream in(vsfile);
+            if (!in)
             {
-                GMX_THROW(gmx::InvalidInputError(gmx::formatString("Found %zu items on line %d in file %s, expected at least %zu for %s",
-                                                                   ptr.size(), lineno, vsfile, nitems, ptr[1].c_str()).c_str()));
+                GMX_THROW(gmx::FileIOError(gmx::formatString("Cannot open file %s", vsfile.c_str()).c_str()));
             }
-            for (size_t i = 0; i < names.size(); i++)
+            try
             {
-                double pmin = my_atof(ptr[3+2*i], "vsite_parameter_min");
-                double pmax = my_atof(ptr[4+2*i], "vsite_parameter_max");
-                fs.addParameter(vs, names[i],
+                in >> js;
+            }
+            catch (const nlohmann::json::exception &ex)
+            {
+                GMX_THROW(gmx::InvalidInputError(gmx::formatString("File %s is not valid JSON: %s",
+                                                                   vsfile.c_str(), ex.what()).c_str()));
+            }
+        }
+        if (!js.is_object() || !js.contains("virtual_sites") || !js["virtual_sites"].is_array())
+        {
+            GMX_THROW(gmx::InvalidInputError(gmx::formatString("File %s has no list \"virtual_sites\"",
+                                                               vsfile.c_str()).c_str()));
+        }
+        const auto &sites = js["virtual_sites"];
+        for (size_t k = 0; k < sites.size(); k++)
+        {
+            const auto &site = sites[k];
+            for (const char *key : { "type", "interaction", "atoms" })
+            {
+                if (!site.is_object() || !site.contains(key))
+                {
+                    error(k, gmx::formatString("\"%s\" is missing", key));
+                }
+            }
+            if (!site["type"].is_string() || !site["interaction"].is_string() || !site["atoms"].is_array())
+            {
+                error(k, "\"type\" and \"interaction\" have to be strings and \"atoms\" a list");
+            }
+            auto       type  = site["type"].get<std::string>();
+            auto       inter = site["interaction"].get<std::string>();
+            Identifier vsid(type);
+            if (!pd->hasParticleType(vsid))
+            {
+                error(k, gmx::formatString("unknown particle type %s", type.c_str()));
+            }
+            InteractionType itype;
+            if (!stringToInteractionType(inter, &itype) || vsiteSwap.find(itype) == vsiteSwap.end())
+            {
+                error(k, gmx::formatString("%s is not an interaction type of virtual sites", inter.c_str()));
+            }
+            std::string atoms;
+            for (const auto &a : site["atoms"])
+            {
+                if (!a.is_string())
+                {
+                    error(k, "the atoms have to be strings");
+                }
+                atoms += (atoms.empty() ? "" : "~") + a.get<std::string>();
+            }
+            if (site["atoms"].size() != vsiteAtoms(itype))
+            {
+                error(k, gmx::formatString("%s has %zu atoms, not %zu", inter.c_str(),
+                                           vsiteAtoms(itype), site["atoms"].size()));
+            }
+            if (i2f.find(itype) == i2f.end())
+            {
+                i2f.emplace(itype, ForceFieldParameterList(potentialToString(vsitePotential[itype]), listSwap[itype]));
+            }
+            auto       &fs    = i2f.find(itype)->second;
+            Identifier  vs(itype, atoms + "!" + type, vsiteSwap[itype]);
+            auto        names = potentialToParameterName(fs.potential());
+            if (InteractionType::VSITE1 == itype)
+            {
+                // Not a lot of information here, but we need something for downstream processing.
+                fs.addParameter(vs, names[vsite1A],
+                                ForceFieldParameter("", 1, 0, 0, 1, 1, Mutability::Fixed, false, false));
+                continue;
+            }
+            if (!site.contains("parameters") || !site["parameters"].is_object())
+            {
+                error(k, "\"parameters\" is missing");
+            }
+            const auto &params = site["parameters"];
+            for (const auto &p : params.items())
+            {
+                if (std::find(names.begin(), names.end(), p.key()) == names.end())
+                {
+                    error(k, gmx::formatString("%s has no parameter %s", inter.c_str(), p.key().c_str()));
+                }
+            }
+            for (const std::string name : names)
+            {
+                if (!params.contains(name) || !params[name].is_object() ||
+                    !params[name].contains("min") || !params[name].contains("max") ||
+                    !params[name]["min"].is_number() || !params[name]["max"].is_number())
+                {
+                    error(k, gmx::formatString("parameter %s needs a \"min\" and a \"max\"", name.c_str()));
+                }
+                double pmin = params[name]["min"].get<double>();
+                double pmax = params[name]["max"].get<double>();
+                if (pmin > pmax)
+                {
+                    error(k, gmx::formatString("the minimum of %s is larger than its maximum", name.c_str()));
+                }
+                fs.addParameter(vs, name,
                                 ForceFieldParameter("", (pmin+pmax)/2, 0, 0, pmin, pmax,
                                                     Mutability::Bounded, false, false));
             }
         }
-        lineno += 1;
     }
     for(const auto &iii: i2f)
     {
@@ -262,8 +344,17 @@ int gen_ff(int argc, char*argv[])
         "gen_ff generates a new force field file based on a specification",
         "provided by the user in one or more csv files and command line options.[PAR]",
         "Most important is the atomtypes file which is generated by the ACT GUI.",
-        "In addition a file containing virtual sites can be provided.",
-        "with the [TT]-vs[tt] option. Default is not to add virtual sites.[PAR]",
+        "In addition one or more JSON files with virtual sites can be provided",
+        "with the [TT]-vs[tt] option. Default is not to add virtual sites.",
+        "Each file has a list [TT]virtual_sites[tt] and optionally a [TT]description[tt].",
+        "Each virtual site has its particle [TT]type[tt], the [TT]interaction[tt]",
+        "type, such as VSITE2, the [TT]atoms[tt] it is constructed from, and, except",
+        "for VSITE1, the [TT]min[tt] and [TT]max[tt] of each of the [TT]parameters[tt]",
+        "of its potential, by name, for instance[BR]",
+        "[TT]{ \"type\": \"v2f1\", \"interaction\": \"VSITE2\", \"atoms\": [\"f_b\", \"hf_b\"],",
+        "\"parameters\": { \"vs2a\": { \"min\": -1, \"max\": 0.5 } } }[tt][BR]",
+        "A parameter starts in the middle of its range. The data directory of ACT has",
+        "examples, such as vsite2_halogen_sigma_holes.json.[PAR]",
         "A distributed charge on top of an atom, for instance in point+Gaussian",
         "models, can be specified as a second charge of the atom type with the",
         "columns [TT]:chargeVS:[tt], [TT]:zetaVS:[tt] and [TT]rowVS[tt]. Virtual",
@@ -327,7 +418,7 @@ int gen_ff(int argc, char*argv[])
 
     std::vector<t_filenm> fnm = {
         { efCSV, "-f",   "atomtypes", ffREAD  },
-        { efCSV, "-vs",  "vsites",    ffOPTRD },
+        { efJSON, "-vs", "vsites",    ffOPTRDMULT },
         { efXML, "-o" ,  "ffout",     ffWRITE }
     };
     gmx_bool useVdwCorr = false;
@@ -644,7 +735,11 @@ int gen_ff(int argc, char*argv[])
     // Otherwise the force field cannot be used
     crule.addDefaults(&pd);
     // Virtual sites
-    add_vsites(opt2fn_null("-vs", fnm.size(), fnm.data()), &pd);
+    if (opt2bSet("-vs", fnm.size(), fnm.data()))
+    {
+        auto fns = opt2fns("-vs", fnm.size(), fnm.data());
+        add_vsites(std::vector<std::string>(fns.begin(), fns.end()), &pd);
+    }
     // The charge distributions and the options of COULOMB are those of the
     // particle types, and virtual sites on top of atoms that only carry a
     // charge are stored as second charges, as when reading a force field.

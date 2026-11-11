@@ -18,12 +18,12 @@ install(FILES
          excluded_molecules.csv
          residuetypes.dat 
          symmetric_charges.csv
-         vsite2_halogen_sigma_holes.csv
-         vsite2_water_sigma_holes.csv
-         vsite3_water_bisector.csv
-         vsite3_water_lone_pairs.csv
-         vsite3_alcohol_bisector.csv
-         vsite3_alcohol_lone_pairs.csv
-         vsite4_amine.csv
+         vsite2_halogen_sigma_holes.json
+         vsite2_water_sigma_holes.json
+         vsite3_water_bisector.json
+         vsite3_water_lone_pairs.json
+         vsite3_alcohol_bisector.json
+         vsite3_alcohol_lone_pairs.json
+         vsite4_amine.json
     DESTINATION ${ACT_INSTALL_ACTDATADIR}
     COMPONENT data)

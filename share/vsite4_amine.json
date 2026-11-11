@@ -1,0 +1,23 @@
+{
+  "description": "Lone pair on amine nitrogen",
+  "virtual_sites": [
+    {
+      "type": "v4n",
+      "interaction": "VSITE4S",
+      "atoms": ["n3_b", "c3_b", "hn_b", "hn_b"],
+      "parameters": {
+        "vs4sa": { "min": -0.5, "max": 0 },
+        "vs4sb": { "min": -0.5, "max": 0 }
+      }
+    },
+    {
+      "type": "v4n",
+      "interaction": "VSITE4S",
+      "atoms": ["n3_b", "hn_b", "c3_b", "c3_b"],
+      "parameters": {
+        "vs4sa": { "min": -0.5, "max": 0 },
+        "vs4sb": { "min": -0.5, "max": 0 }
+      }
+    }
+  ]
+}

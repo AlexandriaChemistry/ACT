@@ -1,0 +1,14 @@
+{
+  "description": "Site on the alcohol C-O-H bisector",
+  "virtual_sites": [
+    {
+      "type": "v3ba",
+      "interaction": "VSITE3",
+      "atoms": ["c3_b", "o3_b", "ho_b"],
+      "parameters": {
+        "vs3a": { "min": 0.05, "max": 0.25 },
+        "vs3b": { "min": 0.05, "max": 0.25 }
+      }
+    }
+  ]
+}

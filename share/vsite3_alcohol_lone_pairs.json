@@ -1,0 +1,15 @@
+{
+  "description": "Lone pairs on alcohol oxygen",
+  "virtual_sites": [
+    {
+      "type": "v3o3",
+      "interaction": "VSITE3OUT",
+      "atoms": ["c3_b", "o3_b", "ho_b"],
+      "parameters": {
+        "vs3out_a": { "min": 0, "max": 0.3 },
+        "vs3out_b": { "min": 0, "max": 0.3 },
+        "vs3out_c": { "min": -10, "max": -2 }
+      }
+    }
+  ]
+}

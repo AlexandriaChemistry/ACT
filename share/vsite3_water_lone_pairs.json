@@ -1,0 +1,14 @@
+{
+  "description": "Lone pairs on water oxygen",
+  "virtual_sites": [
+    {
+      "type": "v3ow",
+      "interaction": "VSITE3OUTS",
+      "atoms": ["hw_b", "ow_b", "hw_b"],
+      "parameters": {
+        "vs3outs_a": { "min": -0.3, "max": 0.3 },
+        "vs3outs_c": { "min": -12, "max": 12 }
+      }
+    }
+  ]
+}
