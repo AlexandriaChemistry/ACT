@@ -384,6 +384,10 @@ bool HybridGAMC::evolve(alexandria::MsgHandler       *msghandler,
     // time the individuals have done nstfitness fitness evaluations
     fprintFitness(*(pool[pold]));
     size_t evaluationsSinceWrite = 0;
+    // The population of the last generation with a better individual for
+    // train, written every gpoutInterval generations and at the end
+    ga::GenePool bestPool;
+    bool         bestPoolWritten = true;
 
     // When random initialization, assume a better minimum has been found no matter what
     bool bMinimum = gach_->randomInit() ? true : false;
@@ -644,7 +648,8 @@ bool HybridGAMC::evolve(alexandria::MsgHandler       *msghandler,
 
             if (gpout_)
             {
-                pool[pold]->write(gpout_);
+                bestPool        = *pool[pold];
+                bestPoolWritten = false;
             }
         }
         else
@@ -738,6 +743,11 @@ bool HybridGAMC::evolve(alexandria::MsgHandler       *msghandler,
         // of minimum will matter or not.
         stopTraining = terminate(msghandler->tw(), pool[pold],
                                  generation, minimum);
+        if (gpout_ && !bestPoolWritten && (stopTraining || generation % gach_->gpoutInterval() == 0))
+        {
+            bestPool.write(gpout_);
+            bestPoolWritten = true;
+        }
         if (msghandler->info())
         {
             msghandler->msg(alexandria::ACTStatus::Info, fcStats.report(stopTraining));

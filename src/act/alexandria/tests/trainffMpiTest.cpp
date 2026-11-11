@@ -38,6 +38,8 @@
 #include <algorithm>
 #include <cstdio>
 #include <cstdlib>
+#include <fstream>
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -208,6 +210,45 @@ TEST_F(TrainFFMpiTest, GAGenePool)
         // The fitness file has six decimals
         EXPECT_NEAR(first.finalChi2, best, 1e-6*first.finalChi2 + 1e-6);
         EXPECT_LE(second.finalChi2, first.finalChi2*(1 + 1e-6) + 1e-6);
+    }
+    trainfftest::barrier();
+}
+
+//! \return the contents of a file
+static std::string fileContents(const std::string &fileName)
+{
+    std::ifstream      in(fileName);
+    std::ostringstream ss;
+    ss << in.rdbuf();
+    return ss.str();
+}
+
+// Test: The gene pool written every five generations and at the end is that
+// written in each generation with a better individual. This training finds
+// better individuals in generations 1, 2, 5, 6 and 7, so the last one is
+// only written at the end.
+TEST_F(TrainFFMpiTest, GenePoolInterval)
+{
+    auto options = combine(gaOptions("HYBRID", 7), mcmcOptions(2));
+    options.push_back({ "-fit", "sigma epsilon" });
+    options.push_back({ "-fc_allelec", "1" });
+    options.push_back({ "-fc_exch", "1" });
+    options.push_back({ "-fc_disp", "1" });
+    auto each = options;
+    each.push_back({ "-gpout_interval", "1" });
+    auto five = options;
+    five.push_back({ "-gpout_interval", "5" });
+    auto first  = trainfftest::runTrainFF(&fileManager(), "each", "lj-pc.xml", "booze-inter", each);
+    auto second = trainfftest::runTrainFF(&fileManager(), "five", "lj-pc.xml", "booze-inter", five);
+    EXPECT_EQ(0, first.status);
+    EXPECT_EQ(0, second.status);
+    if (gmx_node_rank() == 0)
+    {
+        auto poolEach = fileContents(fileManager().getTemporaryFilePath("each-pool.csv"));
+        auto poolFive = fileContents(fileManager().getTemporaryFilePath("five-pool.csv"));
+        EXPECT_FALSE(poolEach.empty());
+        EXPECT_EQ(poolEach, poolFive);
+        EXPECT_EQ(first.finalChi2, second.finalChi2);
     }
     trainfftest::barrier();
 }
