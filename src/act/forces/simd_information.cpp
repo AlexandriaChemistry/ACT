@@ -523,7 +523,7 @@ void writeCodeInformation(gmx::TextWriter *writer)
         }
         if (!names.empty() && gpu::gpuTurnedOff())
         {
-            writer->writeLine("                    turned off with -nogpu");
+            writer->writeLine(gmx::formatString("                    turned off %s", gpu::gpuOffReason().c_str()));
         }
         else if (!names.empty() && !gpu::useGpu())
         {

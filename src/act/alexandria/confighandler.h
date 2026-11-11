@@ -352,6 +352,8 @@ private:
     bool shellKeep_          = true;
     //! Whether to compute the energies on the GPU, keeping the molecules there
     bool gpuResident_        = true;
+    //! Whether the master process uses the GPU too
+    bool gpuMaster_          = true;
 
 public:
     /*!
@@ -474,6 +476,9 @@ public:
 
     //! \return whether to compute on the GPU, see ForceComputer::setGpuResident
     bool gpuResident() const { return gpuResident_; }
+
+    //! \return whether the master process uses the GPU too, see train_ff -gpu_master
+    bool gpuMaster() const { return gpuMaster_; }
 };
 
 //! \brief Enum for selecting the coordinate minimizer in simulate

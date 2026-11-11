@@ -220,12 +220,16 @@ bool useGpu();
 
 /*! \brief Never use the GPU in this process, see the option -nogpu of MsgHandler
  * Called before the GPU is used, the GPU is not started at all, such that
- * it takes no place among the processes a GPU may have.
+ * it takes no place among the processes a GPU may have, and none of its memory.
+ * \param[in] reason Why, for the log file, completing "turned off ..."
  */
-void turnOffGpu();
+void turnOffGpu(const std::string &reason = "with -nogpu");
 
 //! \return whether turnOffGpu was called
 bool gpuTurnedOff();
+
+//! \return the reason given to turnOffGpu
+std::string gpuOffReason();
 
 /*! \brief Turn the GPU on or off, for tests and comparisons
  * The GPU is only turned on if useGpu would return true without turnOffGpu.

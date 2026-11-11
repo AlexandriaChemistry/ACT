@@ -213,6 +213,7 @@ TEST(GpuOutOfMemoryTest, Message)
         EXPECT_NE(std::string::npos, what.find("1200.0 MB more")) << what;
         EXPECT_NE(std::string::npos, what.find("-lockstep")) << what;
         EXPECT_NE(std::string::npos, what.find("-nogpu_resident")) << what;
+        EXPECT_NE(std::string::npos, what.find("-nogpu_master")) << what;
         return;
     }
     FAIL() << "Not caught as std::bad_alloc";

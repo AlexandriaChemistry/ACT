@@ -142,6 +142,8 @@ void BayesConfigHandler::add_options(std::vector<t_pargs>             *pargs,
           "Max number of iterations for minimizing shell positions" },
         { "-gpu_resident", FALSE, etBOOL, {&gpuResident_},
           "With a GPU, in single precision builds, keep the molecules on the GPU and compute the energies, the charges and the shell positions there, for polarizable force fields of which the GPU supports the potentials. Otherwise the processor computes them." },
+        { "-gpu_master", FALSE, etBOOL, {&gpuMaster_},
+          "Use the GPU also in the master process, which computes the evaluations for the output at the start and the end. With -nogpu_master and more than one process, the master computes those on the processor, which takes longer, but it then takes no place among the processes that a GPU takes (48 or 60 with the NVIDIA multi-process service) and none of its memory, some hundreds of MB." },
         { "-shell_keep", FALSE, etBOOL, {&shellKeep_},
           "Start minimizing the shell positions from those of the previous evaluation instead of from their cores, which needs far fewer iterations. With poor parameters, such as random initial ones, shells held at the maximum distance from their core can end in different minima depending on where they started, such that the results depend slightly on the order of the evaluations." },
     };

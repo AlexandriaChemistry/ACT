@@ -328,15 +328,28 @@ static bool &gpuInUse()
     return use;
 }
 
-void turnOffGpu()
+//! The reason given to turnOffGpu
+static std::string &offReason()
 {
-    gpuOff()   = true;
-    gpuInUse() = false;
+    static std::string reason;
+    return reason;
+}
+
+void turnOffGpu(const std::string &reason)
+{
+    gpuOff()     = true;
+    offReason()  = reason;
+    gpuInUse()   = false;
 }
 
 bool gpuTurnedOff()
 {
     return gpuOff();
+}
+
+std::string gpuOffReason()
+{
+    return offReason();
 }
 
 bool useGpu()
