@@ -143,54 +143,83 @@ bool NonBondedPairs::fillParameters(MsgHandler       *msghandler,
     }
     const auto &names = pp->second.param;
     bool        changed = false;
-    std::vector<char> hasParams(tp.types.ids.size(), 0);
-    for (size_t t = 0; t < tp.types.ids.size(); t++)
+    size_t      ntype   = tp.types.ids.size();
+    // The entries of the type pairs in the force field, found again only
+    // when pointers into its parameter map may have become invalid. Entries
+    // may be added without that, so those not found are looked for again.
+    const auto &ffparams = fs.parametersConst();
+    bool        refind   = tp.entriesVersion != fs.structureVersion() || tp.entries.size() != ntype;
+    if (refind)
+    {
+        tp.entries.assign(ntype, nullptr);
+        tp.entriesVersion = fs.structureVersion();
+    }
+    bool anyMissing = false;
+    for (size_t t = 0; t < ntype; t++)
     {
         // As fillParams in topology.cpp, for each type pair rather than each pair
-        std::vector<double> param;
-        auto ffiter = fs.parametersConst().find(tp.types.ids[t]);
-        if (fs.parametersConst().end() == ffiter)
+        auto &entry = tp.entries[t];
+        if (nullptr == entry)
+        {
+            auto ffiter = ffparams.find(tp.types.ids[t]);
+            if (ffparams.end() != ffiter)
+            {
+                entry = &ffiter->second;
+            }
+        }
+        auto &param = tp.types.params[t];
+        if (nullptr == entry)
         {
             if (missingParameters::Ignore != missing)
             {
                 msghandler->msg(ACTStatus::Error, ACTMessage::MissingFFParameter,
                                 potentialToString(fs.potential()) + " " + tp.types.ids[t].id());
             }
+            changed    = changed || !param.empty();
+            param.clear();
+            anyMissing = true;
+            continue;
         }
-        else
+        if (param.size() != names.size())
         {
-            param.resize(names.size(), 0);
-            size_t found = 0;
-            for (size_t i = 0; i < names.size(); i++)
-            {
-                auto fp = ffiter->second.find(names[i]);
-                if (ffiter->second.end() != fp)
-                {
-                    param[i] = fp->second.internalValue();
-                    found   += 1;
-                }
-            }
-            if (found != names.size())
-            {
-                msghandler->msg(ACTStatus::Warning, ACTMessage::MissingFFParameter,
-                                gmx::formatString("%s %s found %zu, expected %zu independent parameters",
-                                                  potentialToString(fs.potential()).c_str(),
-                                                  tp.types.ids[t].id().c_str(), found, names.size()));
-            }
-        }
-        hasParams[t] = param.empty() ? 0 : 1;
-        if (param != tp.types.params[t])
-        {
+            param.assign(names.size(), 0);
             changed = true;
         }
-        tp.types.params[t] = std::move(param);
+        size_t found = 0;
+        for (size_t i = 0; i < names.size(); i++)
+        {
+            double value = 0;
+            auto   fp    = entry->find(names[i]);
+            if (entry->end() != fp)
+            {
+                value  = fp->second.internalValue();
+                found += 1;
+            }
+            if (value != param[i])
+            {
+                param[i] = value;
+                changed  = true;
+            }
+        }
+        if (found != names.size())
+        {
+            msghandler->msg(ACTStatus::Warning, ACTMessage::MissingFFParameter,
+                            gmx::formatString("%s %s found %zu, expected %zu independent parameters",
+                                              potentialToString(fs.potential()).c_str(),
+                                              tp.types.ids[t].id().c_str(), found, names.size()));
+        }
     }
     // Pairs without parameters are left out, as are such TopologyEntry
-    // objects, which also keeps the positions of the separations right
+    // objects, which also keeps the positions of the separations right.
+    // Once all type pairs had parameters no pairs are left out any more.
+    if (!anyMissing && !tp.mayRemove)
+    {
+        return changed;
+    }
     size_t n = 0, intermolecularStart = tp.intermolecularStart, shellStart = tp.shellStart;
     for (size_t k = 0; k < tp.pos.size(); k++)
     {
-        if (hasParams[tp.type[k]])
+        if (!tp.types.params[tp.type[k]].empty())
         {
             tp.pos[n]  = tp.pos[k];
             tp.type[n] = tp.type[k];
@@ -207,6 +236,7 @@ bool NonBondedPairs::fillParameters(MsgHandler       *msghandler,
     tp.type.resize(n);
     tp.intermolecularStart = intermolecularStart;
     tp.shellStart          = shellStart;
+    tp.mayRemove           = anyMissing;
     return changed;
 }
 
