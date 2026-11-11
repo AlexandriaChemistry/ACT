@@ -685,6 +685,7 @@ void ForceField::convertVsite1(MsgHandler *msghandler)
             GMX_THROW(gmx::InternalError(gmx::formatString("Virtual site %s was only partly converted", vs.c_str())));
         }
         alexandria_.erase(Identifier(vs));
+        ptypeVersion_.update();
     }
     for(auto &fs : forces_)
     {
@@ -821,6 +822,7 @@ void ForceField::addParticleType(const ParticleType &ptp)
         GMX_THROW(gmx::InvalidInputError(gmx::formatString("Trying to add the same particle type %s twice", ptp.id().id().c_str()).c_str()));
     }
     alexandria_.insert({ptp.id(), ptp});
+    ptypeVersion_.update();
 }
 
 void ForceField::addForces(InteractionType                iType,
@@ -995,6 +997,7 @@ CommunicationStatus ForceField::BroadCast(const CommunicationRecord *cr,
                 if (CommunicationStatus::OK == cs)
                 {
                     alexandria_.insert({pt.id(), pt});
+                    ptypeVersion_.update();
                 }
             }
         }
@@ -1091,6 +1094,7 @@ CommunicationStatus ForceField::Receive(const CommunicationRecord *cr, int src,
         size_t nalexandria;
         cr->recv(src, &nalexandria);
         alexandria_.clear();
+        ptypeVersion_.update();
         for (size_t n = 0; (CommunicationStatus::OK == cs) && (n < nalexandria); n++)
         {
             ParticleType alexandria;

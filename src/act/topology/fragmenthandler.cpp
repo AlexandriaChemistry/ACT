@@ -212,6 +212,23 @@ const std::vector<int> &FragmentHandler::acmParticles(size_t ff) const
     return fixedQ_ ? none : QgenAcm_[ff].acmParticles();
 }
 
+const std::vector<const ParticleType *> &FragmentHandler::particleTypes(const ForceField *pd, size_t ff)
+{
+    if (ptypesVersion_ != pd->particleTypeVersion() || ptypes_.size() != topologies_.size())
+    {
+        ptypes_.assign(topologies_.size(), {});
+        for (size_t f = 0; f < topologies_.size(); f++)
+        {
+            for (const auto &a : topologies_[f].atoms())
+            {
+                ptypes_[f].push_back(pd->hasParticleType(a.ffType()) ? pd->findParticleType(a.ffType()) : nullptr);
+            }
+        }
+        ptypesVersion_ = pd->particleTypeVersion();
+    }
+    return ptypes_[ff];
+}
+
 void FragmentHandler::updateFixedCharges(const ForceField *pd, std::vector<ActAtom> *atoms)
 {
     for (size_t ff = 0; ff < topologies_.size(); ++ff)
@@ -221,15 +238,16 @@ void FragmentHandler::updateFixedCharges(const ForceField *pd, std::vector<ActAt
         {
             QgenAcm_[ff].updateFixedCharges(ta);
         }
+        const auto &ptypes = particleTypes(pd, ff);
         for (size_t a = 0; a < ta->size(); a++)
         {
             auto &fa = (*ta)[a];
             auto &ca = (*atoms)[atomStart_[ff]+a];
             ca.setCharge(fa.charge());
             ca.setChargeVS(fa.chargeVS(), fa.zetaVS(), fa.rowVS());
-            if (pd->hasParticleType(fa.ffType()))
+            if (ptypes[a])
             {
-                double zeta = pd->findParticleType(fa.ffType())->zeta();
+                double zeta = ptypes[a]->zeta();
                 fa.setZeta(zeta);
                 ca.setZeta(zeta);
             }
@@ -335,12 +353,13 @@ eQgen FragmentHandler::generateCharges(MsgHandler                   *msg_handler
     // types, which may have been trained, whatever the charges are
     for(size_t ff = 0; ff < topologies_.size(); ++ff)
     {
-        auto ta = topologies_[ff].atomsPtr();
+        auto        ta     = topologies_[ff].atomsPtr();
+        const auto &ptypes = particleTypes(pd, ff);
         for(size_t a = 0; a < ta->size(); a++)
         {
-            if (pd->hasParticleType((*ta)[a].ffType()))
+            if (ptypes[a])
             {
-                double zeta = pd->findParticleType((*ta)[a].ffType())->zeta();
+                double zeta = ptypes[a]->zeta();
                 (*ta)[a].setZeta(zeta);
                 (*atoms)[atomStart_[ff]+a].setZeta(zeta);
             }
