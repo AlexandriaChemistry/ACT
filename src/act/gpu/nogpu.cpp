@@ -81,13 +81,18 @@ bool setUseGpu(bool)
     return false;
 }
 
-void turnOffGpu()
+void turnOffGpu(const std::string &)
 {
 }
 
 bool gpuTurnedOff()
 {
     return false;
+}
+
+std::string gpuOffReason()
+{
+    return "";
 }
 
 bool relaxShells(const RelaxMolecule *, size_t, const RelaxSettings &, size_t *, bool *)

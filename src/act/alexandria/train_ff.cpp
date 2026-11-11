@@ -186,6 +186,12 @@ void OptACM::check_pargs(MsgHandler *)
 
 void OptACM::optionsFinished(const std::vector<t_filenm> &filenames)
 {
+    // With -nogpu_master the master does not start the GPU, before the log
+    // file reports it, leaving the GPU to the other processes
+    if (commRec_.isMaster() && commRec_.isParallel() && !bch_.gpuMaster())
+    {
+        gpu::turnOffGpu("in the master process with train_ff -nogpu_master");
+    }
     msghandler_.optionsFinished(filenames, &commRec_);
     mg_.optionsFinished(&msghandler_);
     const int nmiddlemen = gach_.popSize();  // MASTER now makes the work of a middleman too

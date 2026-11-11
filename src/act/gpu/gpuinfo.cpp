@@ -216,6 +216,7 @@ std::string outOfMemoryMessage(const std::string &device, double totalBytes,
         "(sbatch --gres=gpu:N, or more nodes);\n"
         "- use a smaller train_ff -lockstep, down to 1: a process keeps a copy of its "
         "molecules on the GPU for each individual that it computes at once;\n"
+        "- in train_ff, use -nogpu_master, such that the master process does not use the GPU;\n"
         "- or train with -nogpu_resident, which keeps no molecules on the GPU.";
     return message;
 }
