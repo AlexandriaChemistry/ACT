@@ -92,7 +92,7 @@ protected:
 
     //! \return the force field generated with the options and virtual sites, see commandLine
     ForceField generate(const std::vector<std::pair<std::string, std::string>> &options,
-                        const std::string &vsites = "forcefields/genff-vsites.csv")
+                        const std::string &vsites = "forcefields/genff-vsites.json")
     {
         auto output = fileManager().getTemporaryFilePath("generated.xml");
         auto cmd    = commandLine(options, vsites);
@@ -204,27 +204,51 @@ TEST_F(GenFFTest, WithoutVirtualSites)
 }
 
 
+//! \return the JSON of a virtual site of type v2f1
+static std::string vsite(const std::string &itype, const std::string &atoms, const std::string &params)
+{
+    return "{ \"type\": \"v2f1\", \"interaction\": \"" + itype + "\", \"atoms\": [" + atoms +
+        "], \"parameters\": { " + params + " } }";
+}
+
+//! \return a file of virtual sites with the JSON given
+static std::string vsiteFile(gmx::test::TestFileManager *fileManager, const std::string &name,
+                             const std::string &sites)
+{
+    auto vsfile = fileManager->getTemporaryFilePath(name);
+    std::ofstream out(vsfile);
+    out << "{ \"description\": \"Test\", \"virtual_sites\": [ " << sites << " ] }\n";
+    return vsfile;
+}
+
 // Test: All types of virtual sites with parameters, which start in the
-// middle of their range, and comments and empty lines in the file
+// middle of their range, from two files
 TEST_F(GenFFTest, VirtualSiteTypes)
 {
-    auto vsfile = fileManager().getTemporaryFilePath("vsites.csv");
-    {
-        std::ofstream out(vsfile);
-        out << "# Virtual sites\n"
-            << "v2f1|VSITE2FD|f_b~hf_b|0.1|0.3|||\n"
-            << "\n"
-            << "v2f1|VSITE3|f_b~c3_b~hf_b|0|0.2|0.2|0.6|\n"
-            << "v2f1|VSITE3S|f_b~c3_b~hf_b|0|0.2|0|0|||\n"
-            << "v2f1|VSITE3FD|f_b~c3_b~hf_b|0|0.2|0.2|0.6\n"
-            << "v2f1|VSITE3FAD|f_b~c3_b~hf_b|0|0.2|0.2|0.6\n"
-            << "v2f1|VSITE3OUT|f_b~c3_b~hf_b|0|0.2|0.2|0.6|-1|1\n"
-            << "v2f1|VSITE3OUTS|f_b~c3_b~hf_b|0|0.2|-1|1|1\n"
-            << "v2f1|VSITE4|f_b~c3_b~hf_b~h1_b|0|0.2|0.2|0.6|-1|1\n"
-            << "v2f1|VSITE4S|f_b~c3_b~hf_b~h1_b|0|0.2|0.2|0.6|||\n"
-            << "v2f1|VSITE4S3|f_b~c3_b~hf_b~h1_b|0|0.2|||\n";
-    }
-    auto pd = generate({}, vsfile);
+    const std::string f3  = "\"f_b\", \"c3_b\", \"hf_b\"";
+    const std::string f4  = "\"f_b\", \"c3_b\", \"hf_b\", \"h1_b\"";
+    const std::string a   = "{ \"min\": 0, \"max\": 0.2 }";
+    const std::string b   = "{ \"min\": 0.2, \"max\": 0.6 }";
+    const std::string c   = "{ \"min\": -1, \"max\": 1 }";
+    auto first = vsiteFile(&fileManager(), "vsites1.json",
+                           vsite("VSITE2FD", "\"f_b\", \"hf_b\"", "\"vs2fd_a\": { \"min\": 0.1, \"max\": 0.3 }") + ", " +
+                           vsite("VSITE3", f3, "\"vs3a\": " + a + ", \"vs3b\": " + b) + ", " +
+                           vsite("VSITE3S", f3, "\"vs3sa\": " + a) + ", " +
+                           vsite("VSITE3FD", f3, "\"vs3fd_a\": " + a + ", \"vs3fd_b\": " + b) + ", " +
+                           vsite("VSITE3FAD", f3, "\"vs3fad_a\": " + a + ", \"vs3fad_b\": " + b));
+    auto second = vsiteFile(&fileManager(), "vsites2.json",
+                            vsite("VSITE3OUT", f3, "\"vs3out_a\": " + a + ", \"vs3out_b\": " + b + ", \"vs3out_c\": " + c) + ", " +
+                            vsite("VSITE3OUTS", f3, "\"vs3outs_a\": " + a + ", \"vs3outs_c\": " + c) + ", " +
+                            vsite("VSITE4", f4, "\"vs4a\": " + a + ", \"vs4b\": " + b + ", \"vs4c\": " + c) + ", " +
+                            vsite("VSITE4S", f4, "\"vs4sa\": " + a + ", \"vs4sb\": " + b) + ", " +
+                            vsite("VSITE4S3", f4, "\"vs4s3a\": " + a));
+    auto cmd    = commandLine({}, first);
+    auto output = fileManager().getTemporaryFilePath("generated.xml");
+    cmd.append(second);
+    cmd.addOption("-o", output);
+    ASSERT_EQ(0, gen_ff(cmd.argc(), cmd.argv()));
+    ForceField pd;
+    readForceField(output, &pd);
     // The middle of the ranges 0-0.2, 0.2-0.6 and -1-1
     std::vector<double> middle = { 0.1, 0.4, 0 };
     std::map<InteractionType, size_t> nparam = {
@@ -261,19 +285,32 @@ TEST_F(GenFFTest, VirtualSiteTypes)
     EXPECT_NEAR(0.2, vs2fd.find("vs2fd_a")->second.value(), 1e-12);
 }
 
-// Test: Lines in the file of virtual sites with too few items are an error
-TEST_F(GenFFTest, VirtualSiteTooFewItems)
+// Test: Invalid virtual sites are an error: too few atoms, a parameter
+// missing or unknown, a minimum larger than the maximum, an unknown
+// interaction type, and a file that is not JSON
+TEST_F(GenFFTest, VirtualSiteErrors)
 {
-    for (const char *line : { "v2f1|VSITE3OUT|f_b~c3_b~hf_b|0|0.2|0.2|0.6", "v2f1|VSITE2" })
+    const std::string f2 = "\"f_b\", \"hf_b\"";
+    const std::string ok = "{ \"min\": 0, \"max\": 0.2 }";
+    for (const std::string &site : { vsite("VSITE3", f2, "\"vs3a\": " + ok + ", \"vs3b\": " + ok),
+                                     vsite("VSITE2", f2, ""),
+                                     vsite("VSITE2", f2, "\"vs2a\": " + ok + ", \"vs3a\": " + ok),
+                                     vsite("VSITE2", f2, "\"vs2a\": { \"min\": 1, \"max\": 0 }"),
+                                     vsite("VSITE2", f2, "\"vs2a\": { \"min\": 0 }"),
+                                     vsite("BONDS", f2, "\"vs2a\": " + ok),
+                                     std::string("{ \"interaction\": \"VSITE2\" }") })
     {
-        auto vsfile = fileManager().getTemporaryFilePath("vsites.csv");
-        {
-            std::ofstream out(vsfile);
-            out << line << "\n";
-        }
+        auto vsfile = vsiteFile(&fileManager(), "vsites.json", site);
         auto cmd = commandLine({ { "-o", fileManager().getTemporaryFilePath("generated.xml") } }, vsfile);
-        EXPECT_THROW(gen_ff(cmd.argc(), cmd.argv()), gmx::InvalidInputError) << line;
+        EXPECT_THROW(gen_ff(cmd.argc(), cmd.argv()), gmx::InvalidInputError) << site;
     }
+    auto vsfile = fileManager().getTemporaryFilePath("notjson.json");
+    {
+        std::ofstream out(vsfile);
+        out << "v2f1|VSITE2|f_b~hf_b|-1|0.5|||\n";
+    }
+    auto cmd = commandLine({ { "-o", fileManager().getTemporaryFilePath("generated.xml") } }, vsfile);
+    EXPECT_THROW(gen_ff(cmd.argc(), cmd.argv()), gmx::InvalidInputError);
 }
 } // namespace
 

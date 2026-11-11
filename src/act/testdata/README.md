@@ -9,7 +9,7 @@ in `src/buildinfo.h.cmakein`), so a test refers to a file as, for instance,
 
 | Directory     | Contents |
 |---------------|----------|
-| `forcefields` | Force fields (`alexandria_chemistry` XML files), and the CSV input of `gen_ff`. `getForceField("name")` reads `forcefields/name.xml`. |
+| `forcefields` | Force fields (`alexandria_chemistry` XML files), and the input of `gen_ff`: atom types (CSV) and virtual sites (JSON). `getForceField("name")` reads `forcefields/name.xml`. |
 | `molprop`     | Molprop files (`molecules` XML files) and their selection files (`.dat`), and `make_subsets.py`, which made the small molprop files of the `train_ff` tests. |
 | `molecules`   | Structures (SDF, PDB, XYZ) and Gaussian output files. |
 | `other`       | Gene pools of the GA tests, a table, and GROMACS files that no test uses. |

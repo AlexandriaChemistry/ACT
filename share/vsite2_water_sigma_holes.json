@@ -1,0 +1,13 @@
+{
+  "description": "Sigma-hole on water oxygen",
+  "virtual_sites": [
+    {
+      "type": "v2o1",
+      "interaction": "VSITE2",
+      "atoms": ["ow_b", "hw_b"],
+      "parameters": {
+        "vs2a": { "min": -1, "max": 0 }
+      }
+    }
+  ]
+}

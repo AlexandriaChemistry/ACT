@@ -1,0 +1,69 @@
+{
+  "description": "Sigma-holes on halogen atoms, see Kriz and van der Spoel, J. Phys. Chem. Lett. 15 (2024) 9974",
+  "virtual_sites": [
+    {
+      "type": "v2f1",
+      "interaction": "VSITE2",
+      "atoms": ["f_b", "hf_b"],
+      "parameters": {
+        "vs2a": { "min": -1, "max": 0.5 }
+      }
+    },
+    {
+      "type": "v2cl1",
+      "interaction": "VSITE2",
+      "atoms": ["cl_b", "hcl_b"],
+      "parameters": {
+        "vs2a": { "min": -1, "max": 0.5 }
+      }
+    },
+    {
+      "type": "v2br1",
+      "interaction": "VSITE2",
+      "atoms": ["br_b", "hbr_b"],
+      "parameters": {
+        "vs2a": { "min": -1, "max": 0.5 }
+      }
+    },
+    {
+      "type": "v2i1",
+      "interaction": "VSITE2",
+      "atoms": ["i_b", "hi_b"],
+      "parameters": {
+        "vs2a": { "min": -1, "max": 0.5 }
+      }
+    },
+    {
+      "type": "v2f1",
+      "interaction": "VSITE2",
+      "atoms": ["f_b", "c3_b"],
+      "parameters": {
+        "vs2a": { "min": -1, "max": 0.5 }
+      }
+    },
+    {
+      "type": "v2cl1",
+      "interaction": "VSITE2",
+      "atoms": ["cl_b", "c3_b"],
+      "parameters": {
+        "vs2a": { "min": -1, "max": 0.5 }
+      }
+    },
+    {
+      "type": "v2br1",
+      "interaction": "VSITE2",
+      "atoms": ["br_b", "c3_b"],
+      "parameters": {
+        "vs2a": { "min": -1, "max": 0.5 }
+      }
+    },
+    {
+      "type": "v2i1",
+      "interaction": "VSITE2",
+      "atoms": ["i_b", "c3_b"],
+      "parameters": {
+        "vs2a": { "min": -1, "max": 0.5 }
+      }
+    }
+  ]
+}

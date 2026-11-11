@@ -28,7 +28,7 @@
 # https://github.com/AlexandriaChemistry/ACT
 # Author: David van der Spoel
 
-import copy, os, subprocess, sys, tempfile, webbrowser, time
+import copy, json, os, subprocess, sys, tempfile, webbrowser, time
 import xml.etree.ElementTree as ET
 import tkinter as tk
 import tkinter.font as tkFont
@@ -448,13 +448,13 @@ class FFOptions:
     def __init__(self):
         self.shole = '\u03C3-holes'
         self.vsinfo = {
-            self.shole+" on halogen atoms": "vsite2_halogen_sigma_holes.csv",
-            self.shole+" on water": "vsite2_water_sigma_holes.csv",
-            "Site on water bisector": "vsite3_water_bisector.csv",
-            "Site on alcohol COH bisector": "vsite3_alcohol_bisector.csv",
-            "Lone pairs on water": "vsite3_water_lone_pairs.csv",
-            "Lone pairs on alcohol oxygen": "vsite3_alcohol_lone_pairs.csv",
-            "Lone pair on amine nitrogen": "vsite4_amine.csv"
+            self.shole+" on halogen atoms": "vsite2_halogen_sigma_holes.json",
+            self.shole+" on water": "vsite2_water_sigma_holes.json",
+            "Site on water bisector": "vsite3_water_bisector.json",
+            "Site on alcohol COH bisector": "vsite3_alcohol_bisector.json",
+            "Lone pairs on water": "vsite3_water_lone_pairs.json",
+            "Lone pairs on alcohol oxygen": "vsite3_alcohol_lone_pairs.json",
+            "Lone pair on amine nitrogen": "vsite4_amine.json"
         }
         self.user_vs     = []
         self.user_params = []
@@ -523,7 +523,7 @@ class FFOptions:
         show_info(helpstr)
 
     def addUserVsites(self):
-        newfn = openasfile("Virtual site definitions", ".csv")
+        newfn = openasfile("Virtual site definitions", ".json")
         if newfn:
             self.user_vs.append(newfn)
         
@@ -556,21 +556,24 @@ class FFOptions:
         vsites    = []
         atomtypes = {}
         def read_vs(filenm:str):
+            """ Read the virtual sites of a JSON file of gen_ff -vs """
             if not os.path.exists(filenm):
                 print("File %s does not exist, ignoring it." % filenm)
                 return
-            with open(filenm, "r") as inf:
-                for line in inf:
-                    if not line.startswith("#"):
-                        www = line.strip().split("|")
-                        if len(www) > 7:
-                            vsites.append(line.strip())
-                            exchcorr = False
-                            if self.exchcorr.get() and "sigma" in filenm:
-                                exchcorr = True
-                            atomtypes[www[0]] = { "exchcorr": exchcorr }
-                if len(vsites) == 0:
-                    show_info(f"No vsites in {filenm}\nCheck formatting")
+            try:
+                with open(filenm, "r") as inf:
+                    sites = json.load(inf).get("virtual_sites", [])
+            except (ValueError, AttributeError) as e:
+                show_info(f"Cannot read virtual sites from {filenm}: {e}\nCheck formatting")
+                return
+            for site in sites:
+                vsites.append(site)
+                exchcorr = False
+                if self.exchcorr.get() and "sigma" in filenm:
+                    exchcorr = True
+                atomtypes[site["type"]] = { "exchcorr": exchcorr }
+            if len(sites) == 0:
+                show_info(f"No vsites in {filenm}\nCheck formatting")
             
         for vs in self.vsinfo:
             if self.vsite_sel[vs].get():
@@ -1064,22 +1067,21 @@ class FFGenerator:
             # Yes!
             if self.saveIntermediates.get():
                 # Let user decide what file to save vsites in
-                self.vsite_file = saveasfile("File to save vsite definitions", ".csv")
+                self.vsite_file = saveasfile("File to save vsite definitions", ".json")
                 if self.vsite_file:
                     self.vs1f = open(self.vsite_file, "w")
                 else:
                     return False
             else:
                 # Open a temporary file
-                self.vs1f = tempfile.NamedTemporaryFile(suffix=".csv", mode='w')
+                self.vs1f = tempfile.NamedTemporaryFile(suffix=".json", mode='w')
                 self.vsite_file = self.vs1f.name
                 if not self.vsite_file:
                     return False
-            # Copy all the vsite info that user selected to a new file.
-            # If the user selected vsite1 as well, they will be added later.
-            if self.opt_vsites and len(self.opt_vsites) > 0:
-                for line in self.opt_vsites:
-                    self.vs1f.write("%s\n" % line)
+            # All the virtual sites that the user selected, written to the
+            # file before running gen_ff. If the user selected vsite1 as
+            # well, they will be added later.
+            self.vsite_entries = list(self.opt_vsites) if self.opt_vsites else []
 
         allData = {}
         # Convenience function
@@ -1183,7 +1185,8 @@ class FFGenerator:
                     # See above
                     btype    = atype_name
                     vs1btype = atp
-                    self.vs1f.write(f"{atype_name}|VSITE1|{vs1btype}|0|1||||\n")
+                    self.vsite_entries.append({ "type": atype_name, "interaction": "VSITE1",
+                                                "atoms": [ vs1btype ] })
                 elif vdwtp == Atom and haveVS1:
                     # Use P+S or P+G (in which case the row does not matter)
                     row = 0
@@ -1334,6 +1337,8 @@ class FFGenerator:
             # Make sure all info is in the files!
             self.tf.flush()
             if self.vsite_file:
+                json.dump({ "description": "Virtual sites selected in actgui",
+                            "virtual_sites": self.vsite_entries }, self.vs1f, indent=2)
                 self.vs1f.flush()
             status = os.system(cmd)
             self.closeCSV()

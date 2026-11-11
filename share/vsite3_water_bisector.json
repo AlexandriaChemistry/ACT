@@ -1,0 +1,13 @@
+{
+  "description": "Site on the water bisector",
+  "virtual_sites": [
+    {
+      "type": "v3bw",
+      "interaction": "VSITE3S",
+      "atoms": ["hw_b", "ow_b", "hw_b"],
+      "parameters": {
+        "vs3sa": { "min": 0.05, "max": 0.35 }
+      }
+    }
+  ]
+}
