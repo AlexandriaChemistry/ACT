@@ -71,6 +71,14 @@ namespace
 //! The work items of a wavefront on AMD, a multiple of a warp on NVIDIA
 constexpr uint32_t wavefrontSize = 64;
 
+/*! \brief The number of interactions whose energies one work item sums
+ * The energies of each chunk of a list in each slot are summed in order in
+ * double precision, and then those of the chunks in order, such that the
+ * energies do not depend on how the work items are scheduled, without
+ * storing the energy of each interaction in each slot.
+ */
+constexpr uint32_t energyChunk = 32;
+
 //! A block in the device arrays
 struct DeviceSystemBlock
 {
@@ -112,7 +120,7 @@ struct DeviceSystemBlock
 //! A list of interactions in the device arrays
 struct DeviceList
 {
-    //! Start of the interactions times slots
+    //! Start of the chunks of energyChunk interactions times slots
     uint64_t workOffset;
     //! Start of the lists times slots, for the sums of the energies
     uint64_t listSlotOffset;
@@ -531,7 +539,8 @@ public:
     uint64_t                        nenergyWork_ = 0;
     uint64_t                       *atomStart_ = nullptr;
     uint64_t                       *atomEntries_ = nullptr;
-    float                          *eEntry_   = nullptr;
+    //! The energy sums of each chunk of energyChunk interactions in each slot
+    double                         *eChunk_   = nullptr;
     double                         *eList_    = nullptr;
     //! The energies of the blocks computed last, one after the other, see computeBlocks
     double                         *energies_ = nullptr;
@@ -750,7 +759,7 @@ System *createSystem(const SystemBlock *blocks, size_t nblock)
             dl.nterm          = il.nterm;
             uint32_t listIndex = sys->listsHost_.size();
             sys->listsHost_.push_back(dl);
-            sys->nwork_     += il.n*sb.nslot;
+            sys->nwork_     += (il.n + energyChunk - 1)/energyChunk*sb.nslot;
             sys->nlistSlot_ += sb.nslot;
             for (size_t e = 0; e < il.n; e++)
             {
@@ -832,7 +841,7 @@ System *createSystem(const SystemBlock *blocks, size_t nblock)
     sys->energyWork_   = sys->allocate<uint64_t>(energyWork.size());
     sys->atomStart_   = sys->allocate<uint64_t>(atomStart.size());
     sys->atomEntries_ = sys->allocate<uint64_t>(atomEntries.size());
-    sys->eEntry_      = sys->allocate<float>(pairEnergyTerms*sys->nwork_);
+    sys->eChunk_      = sys->allocate<double>(pairEnergyTerms*sys->nwork_);
     sys->eList_       = sys->allocate<double>(pairEnergyTerms*sys->nlistSlot_);
     sys->energies_    = sys->allocate<double>(sys->nenergyAll_);
     sys->energyStart_ = sys->allocate<uint64_t>(nblock);
@@ -906,7 +915,7 @@ System *createSystem(const SystemBlock *blocks, size_t nblock)
             padded   += static_cast<uint64_t>(b.nshellRow)*b.nslotPad;
         }
         fprintf(stderr, "GPU system: %u blocks, %u lists, %lu slots, %lu pairs, %lu bonded, "
-                "%lu interaction-slots, %lu shell-row-slots (%lu padded), %lu shell interaction-slots (%lu padded)\n",
+                "%lu energy chunk-slots, %lu shell-row-slots (%lu padded), %lu shell interaction-slots (%lu padded)\n",
                 sys->nblock_, sys->nlist_, sys->nslotAll_, sys->npair_, sys->nbond_, sys->nwork_,
                 rowSlots, padded, shellEntryWork, shellEntryPadded);
         if (!rowEntries.empty())
@@ -1688,7 +1697,7 @@ static void computeBlocksLow(System *sys, const char *use, bool wantEnergies, co
     auto  dBo   = sys->bonds_;
     auto  dAS   = sys->atomStart_;
     auto  dAE   = sys->atomEntries_;
-    auto  dEE   = sys->eEntry_;
+    auto  dEC   = sys->eChunk_;
     auto  dELs  = sys->eList_;
     auto  dE    = keep ? keep : sys->energies_;
     auto  dHLW  = sys->hintListWork_;
@@ -1719,7 +1728,7 @@ static void computeBlocksLow(System *sys, const char *use, bool wantEnergies, co
         }
         auto dES = keep ? sys->fixedStart_ : sys->energyStart_;
         uint64_t nwork = sys->nwork_, nlistSlot = sys->nlistSlot_;
-        // The energy of each interaction in each slot
+        // The energy sums of each chunk of interactions in each slot
         if (nwork > 0)
         {
             queue->parallel_for(sycl::range<1>(nwork), [=](sycl::id<1> id)
@@ -1732,38 +1741,47 @@ static void computeBlocksLow(System *sys, const char *use, bool wantEnergies, co
                     return;
                 }
                 uint64_t                 local = w - l.workOffset;
-                uint64_t                 e  = local / b.nslot;
+                uint64_t                 first = local / b.nslot * energyChunk;
+                uint64_t                 last  = sycl::min<uint64_t>(first + energyChunk, l.n);
                 uint64_t                 c  = local % b.nslot;
                 uint64_t                 st = b.stride;
                 const int64_t           *x  = dX + b.xOffset + c;
-                float en[pairEnergyTerms] = { 0, 0, 0 };
-                if (l.bonded)
+                double sum[pairEnergyTerms] = { 0, 0, 0 };
+                for (uint64_t e = first; e < last; e++)
                 {
-                    const BondedEntry &be = dBo[l.entryOffset + e];
-                    float r[3][3], f[4][3];
-                    for (int k = 1; k < 4; k++)
+                    float en[pairEnergyTerms] = { 0, 0, 0 };
+                    if (l.bonded)
                     {
+                        const BondedEntry &be = dBo[l.entryOffset + e];
+                        float r[3][3], f[4][3];
+                        for (int k = 1; k < 4; k++)
+                        {
+                            for (int d = 0; d < 3; d++)
+                            {
+                                r[k-1][d] = differenceNm(x[(3*be.a[k]+d)*st], x[(3*be.a[0]+d)*st]);
+                            }
+                        }
+                        en[0] = bondedInteraction(static_cast<BondedKernel>(l.kernel), be.p, r, f);
+                    }
+                    else
+                    {
+                        const PairEntry &pe = dP[l.entryOffset + e];
+                        float rsq = 0;
                         for (int d = 0; d < 3; d++)
                         {
-                            r[k-1][d] = differenceNm(x[(3*be.a[k]+d)*st], x[(3*be.a[0]+d)*st]);
+                            float dd = differenceNm(x[(3*pe.i+d)*st], x[(3*pe.j+d)*st]);
+                            rsq += dd*dd;
                         }
+                        (void) pairInteraction(static_cast<PairKernel>(l.kernel), pe.p, rsq, en);
                     }
-                    en[0] = bondedInteraction(static_cast<BondedKernel>(l.kernel), be.p, r, f);
-                }
-                else
-                {
-                    const PairEntry &pe = dP[l.entryOffset + e];
-                    float rsq = 0;
-                    for (int d = 0; d < 3; d++)
+                    for (uint32_t t = 0; t < pairEnergyTerms; t++)
                     {
-                        float dd = differenceNm(x[(3*pe.i+d)*st], x[(3*pe.j+d)*st]);
-                        rsq += dd*dd;
+                        sum[t] += en[t];
                     }
-                    (void) pairInteraction(static_cast<PairKernel>(l.kernel), pe.p, rsq, en);
                 }
                 for (uint32_t t = 0; t < l.nterm; t++)
                 {
-                    dEE[t*nwork + w] = en[t];
+                    dEC[t*nwork + w] = sum[t];
                 }
             });
         }
@@ -1783,9 +1801,10 @@ static void computeBlocksLow(System *sys, const char *use, bool wantEnergies, co
                 for (uint32_t t = 0; t < pairEnergyTerms; t++)
                 {
                     double sum = 0;
-                    for (uint64_t e = 0; t < l.nterm && e < l.n; e++)
+                    uint64_t nchunk = (l.n + energyChunk - 1)/energyChunk;
+                    for (uint64_t k = 0; t < l.nterm && k < nchunk; k++)
                     {
-                        sum += dEE[t*nwork + l.workOffset + e*b.nslot + c];
+                        sum += dEC[t*nwork + l.workOffset + k*b.nslot + c];
                     }
                     dELs[t*nlistSlot + s] = sum;
                 }
