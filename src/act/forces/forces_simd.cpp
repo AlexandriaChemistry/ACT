@@ -4643,6 +4643,11 @@ bool GpuTrainingSystem::prepare(const ForceField *pd, const std::vector<ACTMol *
         sb.nfragment    = bl.shells.fragments.size();
         sb.shellParents = bl.resets.data();
         sb.nshellParent = bl.resets.size()/2;
+        // The other replicas share the interactions of the first on the GPU
+        if (bl.replica > 0)
+        {
+            sb.topologyOf = static_cast<int64_t>(sblocks.size() - bl.replica*im.nblockReplica);
+        }
         sblocks.push_back(sb);
     }
     im.system = gpu::createSystem(sblocks.data(), sblocks.size());

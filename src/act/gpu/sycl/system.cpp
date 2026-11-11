@@ -84,8 +84,13 @@ struct DeviceSystemBlock
 {
     //! Start of the coordinates and forces, rows of stride
     uint64_t xOffset;
-    //! Start of the particles, in atomStart
+    //! Start of the particles in the arrays of all particles of all blocks, such as the charges
     uint64_t atomOffset;
+    //! Start of the particles in atomStart and shellStart, that of the block whose
+    //! interactions this block shares, see SystemBlock::topologyOf
+    uint64_t entryAtomOffset;
+    //! What to add to the list of an interaction (pairList, bondList) for the list of this block
+    uint32_t listShift;
     //! Start of the particles times slots
     uint64_t atomWorkOffset;
     //! Start of the slots of all blocks
@@ -128,6 +133,9 @@ struct DeviceList
     uint64_t entryOffset;
     //! Start of the parameter table in the tables of all lists, see updateParameters
     uint64_t tableOffset;
+    //! Start of the parameters of its interactions in params_, if ownParams,
+    //! otherwise where those of the next list start, see entryParams
+    uint64_t paramOffset;
     //! Number of interactions
     uint64_t n;
     //! The block
@@ -142,6 +150,8 @@ struct DeviceList
     uint32_t energyIndex;
     //! Number of energy terms, the others are zero
     uint32_t nterm;
+    //! Whether its parameters are in params_, otherwise in its parameter table
+    uint32_t ownParams;
 };
 
 //! A virtual site in the device arrays
@@ -154,6 +164,45 @@ struct DeviceVsite
     //! The site
     VsiteEntry entry;
 };
+
+//! The particles of a pair interaction, its parameters are elsewhere, see entryParams
+struct DevicePair
+{
+    uint32_t i, j;
+};
+
+//! The particles of a bonded interaction, three for angles, see entryParams
+struct DeviceBond
+{
+    uint32_t a[4];
+};
+
+/*! \brief The interactions of a system, which the blocks of the replicas share
+ * The lists of each block have their own parameters: a row of their table,
+ * or for Coulomb, which follows from the charges, their own for each pair.
+ */
+struct EntryData
+{
+    const DevicePair *pairs;
+    const DeviceBond *bonds;
+    const DeviceList *lists;
+    //! The list of each interaction, of the block whose interactions are shared
+    const uint32_t   *pairList;
+    const uint32_t   *bondList;
+    //! The row of each interaction in the parameter table of its list
+    const uint32_t   *pairIndex;
+    const uint32_t   *bondIndex;
+    const float      *tables;
+    const float      *params;
+};
+
+//! The eight parameters of interaction idx of list l, with the rows of index
+inline const float *entryParams(const EntryData &d, const DeviceList &l, uint64_t idx, const uint32_t *index)
+{
+    return l.ownParams
+        ? d.params + 8*(l.paramOffset + idx - l.entryOffset)
+        : d.tables + 8*(l.tableOffset + index[idx]);
+}
 
 //! The element whose range holds index, by bisection
 template <typename T>
@@ -292,24 +341,20 @@ inline double fscale(double k1, double k2, double F0)
  * \param[in]  code  The interaction and the role of the particle, see atomEntries
  * \param[in]  x     The coordinates of the slot
  * \param[in]  st    The stride
- * \param[in]  pairs The pair interactions
- * \param[in]  bonds The bonded interactions
- * \param[in]  lists The lists
- * \param[in]  pairList The list of each pair
- * \param[in]  bondList The list of each bonded interaction
+ * \param[in]  d     The interactions
+ * \param[in]  listShift The DeviceSystemBlock::listShift of the block
  * \param[out] fa    The force
  * \return whether the interaction has shells
  */
-inline bool entryForce(uint64_t code, const int64_t *x, uint64_t st, const PairEntry *pairs,
-                       const BondedEntry *bonds, const DeviceList *lists,
-                       const uint32_t *pairList, const uint32_t *bondList, float *fa)
+inline bool entryForce(uint64_t code, const int64_t *x, uint64_t st, const EntryData &d,
+                       uint32_t listShift, float *fa)
 {
     uint64_t idx  = code >> indexShift;
     uint32_t role = code & roleMask;
     if (code & bondedFlag)
     {
-        const BondedEntry &be = bonds[idx];
-        const DeviceList  &l  = lists[bondList[idx]];
+        const DeviceBond &be = d.bonds[idx];
+        const DeviceList &l  = d.lists[d.bondList[idx] + listShift];
         float r[3][3], f[4][3];
         for (int k = 1; k < 4; k++)
         {
@@ -318,27 +363,27 @@ inline bool entryForce(uint64_t code, const int64_t *x, uint64_t st, const PairE
                 r[k-1][m] = differenceNm(x[(3*be.a[k]+m)*st], x[(3*be.a[0]+m)*st]);
             }
         }
-        (void) bondedInteraction(static_cast<BondedKernel>(l.kernel), be.p, r, f);
+        (void) bondedInteraction(static_cast<BondedKernel>(l.kernel), entryParams(d, l, idx, d.bondIndex), r, f);
         for (int m = 0; m < 3; m++)
         {
             fa[m] = f[role][m];
         }
         return l.shells != 0;
     }
-    const PairEntry  &pe = pairs[idx];
-    const DeviceList &l  = lists[pairList[idx]];
-    float d[3], rsq = 0;
+    const DevicePair &pe = d.pairs[idx];
+    const DeviceList &l  = d.lists[d.pairList[idx] + listShift];
+    float dx[3], rsq = 0;
     for (int m = 0; m < 3; m++)
     {
-        d[m] = differenceNm(x[(3*pe.i+m)*st], x[(3*pe.j+m)*st]);
-        rsq += d[m]*d[m];
+        dx[m] = differenceNm(x[(3*pe.i+m)*st], x[(3*pe.j+m)*st]);
+        rsq += dx[m]*dx[m];
     }
     float eu[pairEnergyTerms];
-    float fscal = pairInteraction(static_cast<PairKernel>(l.kernel), pe.p, rsq, eu);
+    float fscal = pairInteraction(static_cast<PairKernel>(l.kernel), entryParams(d, l, idx, d.pairIndex), rsq, eu);
     for (int m = 0; m < 3; m++)
     {
         // As the force of the pair on its first particle
-        float fp = rsq > 0 ? fscal*d[m] : 0.0f;
+        float fp = rsq > 0 ? fscal*dx[m] : 0.0f;
         fa[m] = role == 0 ? fp : -fp;
     }
     return l.shells != 0;
@@ -352,32 +397,31 @@ inline bool entryForce(uint64_t code, const int64_t *x, uint64_t st, const PairE
  * of entryForce.
  */
 inline void entryForceOn(uint64_t code, const int64_t own[3], const int64_t *x, uint64_t st,
-                         const PairEntry *pairs, const BondedEntry *bonds, const DeviceList *lists,
-                         const uint32_t *pairList, const uint32_t *bondList, float *fa)
+                         const EntryData &d, uint32_t listShift, float *fa)
 {
     if (code & bondedFlag)
     {
-        (void) entryForce(code, x, st, pairs, bonds, lists, pairList, bondList, fa);
+        (void) entryForce(code, x, st, d, listShift, fa);
         return;
     }
     uint64_t          idx     = code >> indexShift;
     uint32_t          role    = code & roleMask;
-    const PairEntry  &pe      = pairs[idx];
-    const DeviceList &l       = lists[pairList[idx]];
+    const DevicePair &pe      = d.pairs[idx];
+    const DeviceList &l       = d.lists[d.pairList[idx] + listShift];
     uint32_t          partner = role == 0 ? pe.j : pe.i;
-    float d[3], rsq = 0;
+    float dx[3], rsq = 0;
     for (int m = 0; m < 3; m++)
     {
         // The difference from the partner, which is that of entryForce for role 0
-        d[m] = differenceNm(own[m], x[(3*partner+m)*st]);
-        rsq += d[m]*d[m];
+        dx[m] = differenceNm(own[m], x[(3*partner+m)*st]);
+        rsq += dx[m]*dx[m];
     }
     float eu[pairEnergyTerms];
-    float fscal = pairInteraction(static_cast<PairKernel>(l.kernel), pe.p, rsq, eu);
+    float fscal = pairInteraction(static_cast<PairKernel>(l.kernel), entryParams(d, l, idx, d.pairIndex), rsq, eu);
     for (int m = 0; m < 3; m++)
     {
         // For role 1, entryForce gives -(fscal*(-d)), which is the same
-        fa[m] = rsq > 0 ? fscal*d[m] : 0.0f;
+        fa[m] = rsq > 0 ? fscal*dx[m] : 0.0f;
     }
 }
 
@@ -394,6 +438,12 @@ public:
         {
             sycl::free(p, *queue_);
         }
+    }
+
+    //! The interactions and their parameters, for the kernels
+    EntryData entryData() const
+    {
+        return { pairs_, bonds_, lists_, pairList_, bondList_, pairIndex_, bondIndex_, tables_, params_ };
     }
 
     /*! \brief Allocate device memory of n elements, freed with the system
@@ -491,8 +541,11 @@ public:
     int64_t                        *x_        = nullptr;
     float                          *f_        = nullptr;
     float                          *fFixed_   = nullptr;
-    PairEntry                      *pairs_    = nullptr;
-    BondedEntry                    *bonds_    = nullptr;
+    DevicePair                     *pairs_    = nullptr;
+    DeviceBond                     *bonds_    = nullptr;
+    //! The parameters of the interactions of the lists without parameter table, see entryParams
+    float                          *params_   = nullptr;
+    uint64_t                        nparam_   = 0;
     //! The parameter tables of all lists and their row for each interaction, see updateParameters
     float                          *tables_     = nullptr;
     uint32_t                       *pairIndex_  = nullptr;
@@ -647,8 +700,12 @@ System *createSystem(const SystemBlock *blocks, size_t nblock)
     std::unique_ptr<System> holder(new System(queue));
     auto *sys = holder.get();
     std::vector<int64_t>     x;
-    std::vector<PairEntry>   pairs;
-    std::vector<BondedEntry> bonds;
+    std::vector<DevicePair>  pairs;
+    std::vector<DeviceBond>  bonds;
+    // The parameter tables and the parameters of lists without table, from
+    // the interactions, which updateParameters changes
+    std::vector<float>       tables, params;
+    uint64_t                 natomAll = 0;
     std::vector<uint32_t>    pairList, bondList, firstList;
     std::vector<uint32_t>    pairIndex, bondIndex;
     std::vector<uint64_t>    energyWork;
@@ -663,10 +720,31 @@ System *createSystem(const SystemBlock *blocks, size_t nblock)
     std::vector<char>          isShell;
     for (size_t b = 0; b < nblock; b++)
     {
-        const auto        &sb = blocks[b];
+        const auto        &sb   = blocks[b];
+        // The block whose interactions this one shares, itself if none
+        size_t             base = sb.topologyOf >= 0 ? static_cast<size_t>(sb.topologyOf) : b;
+        if (base != b)
+        {
+            const auto &bb = blocks[base];
+            bool same = base < b && bb.topologyOf < 0 && bb.natom == sb.natom && bb.nlist == sb.nlist;
+            for (size_t l = 0; same && l < sb.nlist; l++)
+            {
+                same = (bb.lists[l].n == sb.lists[l].n && bb.lists[l].bonded == sb.lists[l].bonded &&
+                        bb.lists[l].kernel == sb.lists[l].kernel && bb.lists[l].shells == sb.lists[l].shells &&
+                        bb.lists[l].ntable == sb.lists[l].ntable &&
+                        (bb.lists[l].index == nullptr) == (sb.lists[l].index == nullptr));
+            }
+            if (!same)
+            {
+                throw std::runtime_error("createSystem: a block does not have the interactions of the block it shares them with");
+            }
+        }
         DeviceSystemBlock  db;
-        db.xOffset        = sys->nx_;
-        db.atomOffset     = atomStart.size() - 1;
+        db.xOffset         = sys->nx_;
+        db.atomOffset      = natomAll;
+        db.entryAtomOffset = base == b ? atomStart.size() - 1 : sys->blocksHost_[base].entryAtomOffset;
+        db.listShift       = base == b ? 0 : sys->listsHost_.size() - sys->firstList_[base];
+        natomAll          += sb.natom;
         db.atomWorkOffset = sys->natomWork_;
         db.natom          = sb.natom;
         db.stride         = sb.stride;
@@ -740,16 +818,23 @@ System *createSystem(const SystemBlock *blocks, size_t nblock)
         sys->nenergyAll_ += sb.nenergy*pairEnergyTerms*sb.stride;
         // The interactions of each particle, of all lists in their order,
         // and those of the lists with shells only
-        std::vector<std::vector<uint64_t>> perAtom(sb.natom), perAtomShells(sb.natom);
+        std::vector<std::vector<uint64_t>> perAtom(base == b ? sb.natom : 0), perAtomShells(base == b ? sb.natom : 0);
         for (size_t l = 0; l < sb.nlist; l++)
         {
             const auto &il = sb.lists[l];
             DeviceList  dl;
             dl.workOffset     = sys->nwork_;
             dl.listSlotOffset = sys->nlistSlot_;
-            dl.entryOffset    = il.bonded ? bonds.size() : pairs.size();
+            dl.entryOffset    = base == b ? (il.bonded ? bonds.size() : pairs.size())
+                                          : sys->listsHost_[sys->firstList_[base] + l].entryOffset;
             dl.tableOffset    = sys->ntable_;
             sys->ntable_     += il.ntable;
+            dl.paramOffset    = sys->nparam_;
+            dl.ownParams      = il.index ? 0 : 1;
+            if (!il.index)
+            {
+                sys->nparam_ += il.n;
+            }
             dl.n              = il.n;
             dl.block          = b;
             dl.kernel         = il.kernel;
@@ -761,8 +846,22 @@ System *createSystem(const SystemBlock *blocks, size_t nblock)
             sys->listsHost_.push_back(dl);
             sys->nwork_     += (il.n + energyChunk - 1)/energyChunk*sb.nslot;
             sys->nlistSlot_ += sb.nslot;
+            tables.resize(8*sys->ntable_, 0.0f);
             for (size_t e = 0; e < il.n; e++)
             {
+                const float *p = il.bonded ? il.bonds[e].p : il.pairs[e].p;
+                if (il.index)
+                {
+                    std::copy(p, p + 8, tables.begin() + 8*(dl.tableOffset + il.index[e]));
+                }
+                else
+                {
+                    params.insert(params.end(), p, p + 8);
+                }
+                if (base != b)
+                {
+                    continue;
+                }
                 if (il.bonded)
                 {
                     const auto &be  = il.bonds[e];
@@ -777,7 +876,7 @@ System *createSystem(const SystemBlock *blocks, size_t nblock)
                             perAtomShells[be.a[k]].push_back((idx << indexShift) | bondedFlag | k);
                         }
                     }
-                    bonds.push_back(be);
+                    bonds.push_back({ { be.a[0], be.a[1], be.a[2], be.a[3] } });
                     bondList.push_back(listIndex);
                     bondIndex.push_back(il.index ? il.index[e] : 0);
                 }
@@ -792,13 +891,13 @@ System *createSystem(const SystemBlock *blocks, size_t nblock)
                         perAtomShells[pe.i].push_back((idx << indexShift) | 0);
                         perAtomShells[pe.j].push_back((idx << indexShift) | 1);
                     }
-                    pairs.push_back(pe);
+                    pairs.push_back({ pe.i, pe.j });
                     pairList.push_back(listIndex);
                     pairIndex.push_back(il.index ? il.index[e] : 0);
                 }
             }
         }
-        for (size_t a = 0; a < sb.natom; a++)
+        for (size_t a = 0; a < perAtom.size(); a++)
         {
             atomEntries.insert(atomEntries.end(), perAtom[a].begin(), perAtom[a].end());
             atomStart.push_back(atomEntries.size());
@@ -826,14 +925,15 @@ System *createSystem(const SystemBlock *blocks, size_t nblock)
     sys->x_           = sys->allocate<int64_t>(sys->nx_);
     sys->f_           = sys->allocate<float>(sys->nx_);
     sys->fFixed_      = sys->allocate<float>(sys->nx_);
-    sys->pairs_       = sys->allocate<PairEntry>(sys->npair_);
-    sys->bonds_       = sys->allocate<BondedEntry>(sys->nbond_);
+    sys->pairs_       = sys->allocate<DevicePair>(sys->npair_);
+    sys->bonds_       = sys->allocate<DeviceBond>(sys->nbond_);
+    sys->params_      = sys->allocate<float>(8*sys->nparam_);
     firstList.push_back(sys->listsHost_.size());
     sys->pairList_     = sys->allocate<uint32_t>(pairList.size());
     sys->pairIndex_    = sys->allocate<uint32_t>(pairIndex.size());
     sys->bondIndex_    = sys->allocate<uint32_t>(bondIndex.size());
     sys->tables_       = sys->allocate<float>(8*sys->ntable_);
-    sys->ncharge_      = atomStart.size() - 1;
+    sys->ncharge_      = natomAll;
     sys->charges_      = sys->allocate<double>(4*sys->ncharge_);
     sys->vsitesHost_   = vsites;
     sys->bondList_     = sys->allocate<uint32_t>(bondList.size());
@@ -879,6 +979,8 @@ System *createSystem(const SystemBlock *blocks, size_t nblock)
     sys->upload(sys->x_, x.data(), x.size());
     sys->upload(sys->pairs_, pairs.data(), pairs.size());
     sys->upload(sys->bonds_, bonds.data(), bonds.size());
+    sys->upload(sys->params_, params.data(), params.size());
+    sys->upload(sys->tables_, tables.data(), tables.size());
     sys->upload(sys->pairList_, pairList.data(), pairList.size());
     sys->upload(sys->pairIndex_, pairIndex.data(), pairIndex.size());
     sys->upload(sys->bondIndex_, bondIndex.data(), bondIndex.size());
@@ -905,7 +1007,7 @@ System *createSystem(const SystemBlock *blocks, size_t nblock)
             for (uint32_t r = 0; r < b.nshellRow; r++)
             {
                 uint32_t a  = shellRows[b.firstShellRow + r];
-                uint64_t ne = shellStart[b.atomOffset + a + 1] - shellStart[b.atomOffset + a];
+                uint64_t ne = shellStart[b.entryAtomOffset + a + 1] - shellStart[b.entryAtomOffset + a];
                 shellEntryWork   += ne*b.nslot;
                 shellEntryPadded += ne*b.nslotPad;
                 maxEntries        = std::max(maxEntries, ne);
@@ -914,6 +1016,8 @@ System *createSystem(const SystemBlock *blocks, size_t nblock)
             rowSlots += static_cast<uint64_t>(b.nshellRow)*b.nslot;
             padded   += static_cast<uint64_t>(b.nshellRow)*b.nslotPad;
         }
+        fprintf(stderr, "GPU system: %.1f MB, %lu own parameters, %lu table rows\n",
+                sys->allocatedBytes_/1e6, sys->nparam_, sys->ntable_);
         fprintf(stderr, "GPU system: %u blocks, %u lists, %lu slots, %lu pairs, %lu bonded, "
                 "%lu energy chunk-slots, %lu shell-row-slots (%lu padded), %lu shell interaction-slots (%lu padded)\n",
                 sys->nblock_, sys->nlist_, sys->nslotAll_, sys->npair_, sys->nbond_, sys->nwork_,
@@ -932,24 +1036,6 @@ System *createSystem(const SystemBlock *blocks, size_t nblock)
 void destroySystem(System *system)
 {
     delete system;
-}
-
-void updateList(System *sys, size_t block, size_t list,
-                const PairEntry *pairs, const BondedEntry *bonds, size_t n)
-{
-    const auto &dl = sys->listsHost_[sys->firstList_[block] + list];
-    if (n != dl.n)
-    {
-        throw std::runtime_error("updateList: the number of interactions changed");
-    }
-    if (dl.bonded)
-    {
-        sys->upload(sys->bonds_ + dl.entryOffset, bonds, n);
-    }
-    else
-    {
-        sys->upload(sys->pairs_ + dl.entryOffset, pairs, n);
-    }
 }
 
 void updateShells(System *sys, size_t block, const MovingShell *shells, size_t n)
@@ -1505,62 +1591,42 @@ void updateParameters(System *sys, const float *tables, const double *charges,
     sys->upload(sys->tables_, tables, 8*sys->ntable_);
     sys->upload(sys->charges_, charges, 4*sys->ncharge_);
     generateAcmCharges(sys);
-    uint64_t npair = sys->npair_;
-    uint64_t ntot  = npair + sys->nbond_;
-    if (ntot == 0)
+    uint64_t nparam = sys->nparam_;
+    if (nparam == 0)
     {
         return;
     }
-    auto dL  = sys->lists_;
-    auto dB  = sys->blocks_;
-    auto dP  = sys->pairs_;
-    auto dBo = sys->bonds_;
-    auto dPL = sys->pairList_;
-    auto dBL = sys->bondList_;
-    auto dPI = sys->pairIndex_;
-    auto dBI = sys->bondIndex_;
-    auto dT  = sys->tables_;
-    auto dQ  = sys->charges_;
-    queue->parallel_for(sycl::range<1>(ntot), [=](sycl::id<1> id)
+    // The parameters of Coulomb, from the charges of the particles; the
+    // other lists without parameter table keep those they were created with
+    uint32_t nl  = sys->nlist_;
+    auto     dL  = sys->lists_;
+    auto     dB  = sys->blocks_;
+    auto     dP  = sys->pairs_;
+    auto     dPa = sys->params_;
+    auto     dQ  = sys->charges_;
+    queue->parallel_for(sycl::range<1>(nparam), [=](sycl::id<1> id)
     {
-        uint64_t e = id[0];
-        if (e < npair)
+        uint64_t w = id[0];
+        // The last list whose parameters start at or before w is that with
+        // them, the lists without own parameters before it start there too
+        const DeviceList &l = dL[findRange(dL, nl, w, &DeviceList::paramOffset)];
+        if (l.bonded || l.kernel != static_cast<uint32_t>(PairKernel::Coulomb))
         {
-            const DeviceList &l  = dL[dPL[e]];
-            PairEntry        &pe = dP[e];
-            if (l.kernel == static_cast<uint32_t>(PairKernel::Coulomb))
-            {
-                // As gpuPairEntry, from the charges of the particles
-                uint64_t      off = dB[l.block].atomOffset;
-                const double *qi  = dQ + 4*(off + pe.i);
-                const double *qj  = dQ + 4*(off + pe.j);
-                for (int a = 0; a < 2; a++)
-                {
-                    for (int c = 0; c < 2; c++)
-                    {
-                        int k       = 2*a + c;
-                        pe.p[k]     = static_cast<float>(coulomb*qi[a]*qj[c]/epsilonr);
-                        pe.p[4+k]   = static_cast<float>(combinedWidth(qi[2+a], qj[2+c]));
-                    }
-                }
-            }
-            else
-            {
-                const float *row = dT + 8*(l.tableOffset + dPI[e]);
-                for (int k = 0; k < 8; k++)
-                {
-                    pe.p[k] = row[k];
-                }
-            }
+            return;
         }
-        else
+        // As gpuPairEntry
+        const DevicePair &pe  = dP[l.entryOffset + w - l.paramOffset];
+        uint64_t          off = dB[l.block].atomOffset;
+        const double     *qi  = dQ + 4*(off + pe.i);
+        const double     *qj  = dQ + 4*(off + pe.j);
+        float            *p   = dPa + 8*w;
+        for (int a = 0; a < 2; a++)
         {
-            uint64_t          b   = e - npair;
-            const DeviceList &l   = dL[dBL[b]];
-            const float      *row = dT + 8*(l.tableOffset + dBI[b]);
-            for (int k = 0; k < 8; k++)
+            for (int c = 0; c < 2; c++)
             {
-                dBo[b].p[k] = row[k];
+                int k     = 2*a + c;
+                p[k]      = static_cast<float>(coulomb*qi[a]*qj[c]/epsilonr);
+                p[4+k]    = static_cast<float>(combinedWidth(qi[2+a], qj[2+c]));
             }
         }
     });
@@ -1693,8 +1759,7 @@ static void computeBlocksLow(System *sys, const char *use, bool wantEnergies, co
     auto  dX    = sys->x_;
     auto  dF    = sys->f_;
     auto  dFF   = sys->fFixed_;
-    auto  dP    = sys->pairs_;
-    auto  dBo   = sys->bonds_;
+    auto  dEnt  = sys->entryData();
     auto  dAS   = sys->atomStart_;
     auto  dAE   = sys->atomEntries_;
     auto  dEC   = sys->eChunk_;
@@ -1752,7 +1817,7 @@ static void computeBlocksLow(System *sys, const char *use, bool wantEnergies, co
                     float en[pairEnergyTerms] = { 0, 0, 0 };
                     if (l.bonded)
                     {
-                        const BondedEntry &be = dBo[l.entryOffset + e];
+                        const DeviceBond &be = dEnt.bonds[l.entryOffset + e];
                         float r[3][3], f[4][3];
                         for (int k = 1; k < 4; k++)
                         {
@@ -1761,18 +1826,20 @@ static void computeBlocksLow(System *sys, const char *use, bool wantEnergies, co
                                 r[k-1][d] = differenceNm(x[(3*be.a[k]+d)*st], x[(3*be.a[0]+d)*st]);
                             }
                         }
-                        en[0] = bondedInteraction(static_cast<BondedKernel>(l.kernel), be.p, r, f);
+                        en[0] = bondedInteraction(static_cast<BondedKernel>(l.kernel),
+                                                  entryParams(dEnt, l, l.entryOffset + e, dEnt.bondIndex), r, f);
                     }
                     else
                     {
-                        const PairEntry &pe = dP[l.entryOffset + e];
+                        const DevicePair &pe = dEnt.pairs[l.entryOffset + e];
                         float rsq = 0;
                         for (int d = 0; d < 3; d++)
                         {
                             float dd = differenceNm(x[(3*pe.i+d)*st], x[(3*pe.j+d)*st]);
                             rsq += dd*dd;
                         }
-                        (void) pairInteraction(static_cast<PairKernel>(l.kernel), pe.p, rsq, en);
+                        (void) pairInteraction(static_cast<PairKernel>(l.kernel),
+                                               entryParams(dEnt, l, l.entryOffset + e, dEnt.pairIndex), rsq, en);
                     }
                     for (uint32_t t = 0; t < pairEnergyTerms; t++)
                     {
@@ -1858,8 +1925,6 @@ static void computeBlocksLow(System *sys, const char *use, bool wantEnergies, co
     // in order, those of the interactions without shells also separately
     if (forces && sys->natomWork_ > 0)
     {
-        auto dPL = sys->pairList_;
-        auto dBL = sys->bondList_;
         queue->parallel_for(sycl::range<1>(sys->natomWork_), [=](sycl::id<1> id)
         {
             uint64_t                 w  = id[0];
@@ -1875,10 +1940,10 @@ static void computeBlocksLow(System *sys, const char *use, bool wantEnergies, co
                 return;
             }
             float fall[3] = { 0, 0, 0 }, ffix[3] = { 0, 0, 0 };
-            for (uint64_t k = dAS[b.atomOffset + a]; k < dAS[b.atomOffset + a + 1]; k++)
+            for (uint64_t k = dAS[b.entryAtomOffset + a]; k < dAS[b.entryAtomOffset + a + 1]; k++)
             {
                 float fa[3];
-                bool  shells = entryForce(dAE[k], x, st, dP, dBo, dL, dPL, dBL, fa);
+                bool  shells = entryForce(dAE[k], x, st, dEnt, b.listShift, fa);
                 for (int m = 0; m < 3; m++)
                 {
                     fall[m] += fa[m];
@@ -2042,11 +2107,7 @@ void relaxBlocks(System *sys, const char *use, const char *relax,
     auto dVal = sys->valid_;
     auto dSS  = sys->shellStart_;
     auto dSE  = sys->shellEntries_;
-    auto dP   = sys->pairs_;
-    auto dBo  = sys->bonds_;
-    auto dL   = sys->lists_;
-    auto dPL  = sys->pairList_;
-    auto dBL  = sys->bondList_;
+    auto dEnt = sys->entryData();
     uint32_t nb = sys->nblock_;
     const double toler    = settings.msForceToler;
     const int    stallIterations = settings.stallIterations;
@@ -2414,10 +2475,10 @@ void relaxBlocks(System *sys, const char *use, const char *relax,
                     fa[m]  = dFF[base + m*st];
                     own[m] = x[(3*a+m)*st];
                 }
-                for (uint64_t e = dSS[b.atomOffset + a]; e < dSS[b.atomOffset + a + 1]; e++)
+                for (uint64_t e = dSS[b.entryAtomOffset + a]; e < dSS[b.entryAtomOffset + a + 1]; e++)
                 {
                     float fe[3];
-                    entryForceOn(dSE[e], own, x, st, dP, dBo, dL, dPL, dBL, fe);
+                    entryForceOn(dSE[e], own, x, st, dEnt, b.listShift, fe);
                     for (int m = 0; m < 3; m++)
                     {
                         fa[m] += fe[m];

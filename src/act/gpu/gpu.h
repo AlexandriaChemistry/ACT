@@ -587,6 +587,12 @@ struct SystemBlock
     const uint32_t        *shellParents;
     //! Number of these shells
     size_t                 nshellParent;
+    /*! \brief An earlier block with the same particles and interactions, or -1
+     * Such a block, a copy for another parameter set, shares the
+     * interactions of that block on the GPU, and has its own parameters,
+     * coordinates and forces. Its lists have to match those of that block.
+     */
+    int64_t                topologyOf = -1;
 };
 
 //! The data of a system resident on the GPU, see createSystem
@@ -594,8 +600,9 @@ class System;
 
 /*! \brief Copy topologies and their conformations to the GPU
  * They stay there until destroySystem. The parameters of the interactions
- * can be changed with updateList, the coordinates of the slots are changed
- * on the GPU only, by virtual sites and shells.
+ * can be changed with updateParameters, the coordinates of the slots are
+ * changed on the GPU only, by virtual sites and shells. The interactions
+ * of a block with SystemBlock::topologyOf are stored only once.
  * \param[in] blocks The topologies
  * \param[in] nblock Number of these
  * \return the system, or nullptr if the GPU is not available
@@ -604,17 +611,6 @@ System *createSystem(const SystemBlock *blocks, size_t nblock);
 
 //! Free the memory of a system on the GPU
 void destroySystem(System *system);
-
-/*! \brief Replace the interactions of a list, with new parameters
- * \param[in] system The system
- * \param[in] block  The block
- * \param[in] list   The list of the block
- * \param[in] pairs  The pair interactions, if the list has pairs
- * \param[in] bonds  The bonded interactions, if the list has those
- * \param[in] n      Their number, which has to be that of createSystem
- */
-void updateList(System *system, size_t block, size_t list,
-                const PairEntry *pairs, const BondedEntry *bonds, size_t n);
 
 /*! \brief Replace the moving shells of a block, with new force constants
  * \param[in] system The system
