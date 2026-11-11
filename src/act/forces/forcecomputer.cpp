@@ -1805,6 +1805,7 @@ void ForceComputer::computeRelaxedEnergiesGpu(MsgHandler                        
         nEval_ += (stage ? nrep : 1)*molptr->conformationData(0)->nconf()*(tops.size() + (tops.size() > 1 ? 1 : 0));
     }
     static const size_t upload  = Timings::instance().index("GPU resident parameter upload");
+    static const size_t stageT  = Timings::instance().index("GPU resident parameter staging");
     static const size_t relaxT  = Timings::instance().index("GPU resident relaxation");
     static const size_t energyT = Timings::instance().index("GPU resident energies");
     // With one set of parameters only the first replica is computed
@@ -1817,19 +1818,32 @@ void ForceComputer::computeRelaxedEnergiesGpu(MsgHandler                        
     }
     // As computeRelaxedEnergies, with the coordinates on the GPU
     {
-        ScopedTimer up(upload);
         if (stage)
         {
-            for (size_t r = 0; r < nrep; r++)
             {
-                (*stage)(r);
-                gs.stageParameters(r, pd, this);
+                // The parameters of each replica, on the processor
+                ScopedTimer st(stageT);
+                for (size_t r = 0; r < nrep; r++)
+                {
+                    (*stage)(r);
+                    gs.stageParameters(r, pd, this);
+                }
             }
+            ScopedTimer up(upload);
             gs.uploadParameters(pd);
         }
         else
         {
-            gs.updateParameters(pd, this);
+            {
+                ScopedTimer st(stageT);
+                for (size_t r = 0; r < nrep; r++)
+                {
+                    gs.stageParameters(r, pd, this);
+                }
+            }
+            // As GpuTrainingSystem::updateParameters
+            ScopedTimer up(upload);
+            gs.uploadParameters(pd);
         }
     }
     if (resetTheShells)

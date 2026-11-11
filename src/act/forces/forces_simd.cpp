@@ -4182,6 +4182,11 @@ public:
         std::vector<size_t> confOfSlot, slotOfConf;
         //! The energies as the GPU gave them, after and before relaxing, see setKeepEnergies
         std::vector<double> rawAfter, rawBefore;
+        /*! \brief The Topology::parameterVersion of the interaction type of each
+         * list when its rows were staged last, 0 if they have to be made,
+         * see stageRows
+         */
+        std::vector<size_t> rowVersion;
 
     };
     std::vector<Block>    blocks;
@@ -4816,25 +4821,51 @@ void GpuTrainingSystem::updateParameters(const ForceField *pd, const ForceComput
     uploadParameters(pd);
 }
 
-//! The parameters of one block, appended, see GpuTrainingSystem::stageParameters
-static void stageBlock(const ACTMol                  *molptr,
-                       int                            what,
-                       const GpuSystemTopology       &d,
-                       const GpuRelaxMolecule        &sh,
-                       double                         epsilonr,
-                       std::vector<float>            *tables,
-                       std::vector<double>           *charges,
-                       std::vector<gpu::MovingShell> *shells,
-                       std::vector<gpu::VsiteEntry>  *vsites)
+//! The topology of a block, see GpuTrainingSystem::Impl::Block
+static const Topology *blockTopology(const ACTMol *molptr, int what)
 {
-    auto           &tops  = molptr->fragmentHandler()->topologies();
-    const Topology *top   = (what < 2) ? &tops[what] : molptr->topology();
+    auto &tops = molptr->fragmentHandler()->topologies();
+    return (what < 2) ? &tops[what] : molptr->topology();
+}
+
+/*! \brief The rows of the parameter tables of one block, see GpuTrainingSystem::stageParameters
+ *
+ * Only the lists of which the parameters may have changed since the
+ * versions in rowVersion are made, the others are left as they are in
+ * tables. The parameters of the rows of a list follow from those of its
+ * interaction type, which Topology::parameterVersion tells, except for the
+ * polarization pairs, which depend on the charges of the shells as well.
+ * \param[in]    molptr     The molecule
+ * \param[in]    what       The block of the molecule, see Block
+ * \param[in]    d          The description of the block
+ * \param[in]    epsilonr   The relative dielectric constant
+ * \param[inout] rowVersion The parameter version of each list when its rows were made
+ * \param[inout] tables     The rows of the block, 8 per row
+ */
+static void stageRows(const ACTMol            *molptr,
+                      int                      what,
+                      const GpuSystemTopology &d,
+                      double                   epsilonr,
+                      std::vector<size_t>     *rowVersion,
+                      float                   *tables)
+{
+    const Topology *top   = blockTopology(molptr, what);
     const auto     &atoms = top->atoms();
+    rowVersion->resize(d.lists.size(), 0);
+    size_t start = 0;
     for (size_t l = 0; l < d.lists.size(); l++)
     {
-        for (const auto &row : d.rows[l])
+        const auto &rows    = d.rows[l];
+        float      *p       = tables + 8*start;
+        start              += rows.size();
+        auto        version = top->parameterVersion(d.itypes[d.lists[l].energyIndex]);
+        bool        charges = !d.lists[l].bonded && d.pairKernels[l] == gpu::PairKernel::Polarization;
+        if (!charges && version == (*rowVersion)[l])
         {
-            float p[8];
+            continue;
+        }
+        for (const auto &row : rows)
+        {
             if (d.lists[l].bonded)
             {
                 gpu::BondedEntry be;
@@ -4853,9 +4884,33 @@ static void stageBlock(const ACTMol                  *molptr,
                 }
                 std::copy(pe.p, pe.p + 8, p);
             }
-            tables->insert(tables->end(), p, p + 8);
+            p += 8;
         }
+        (*rowVersion)[l] = version;
     }
+}
+
+//! \return the number of rows of the parameter tables of a block
+static size_t tableRows(const GpuSystemTopology &d)
+{
+    size_t n = 0;
+    for (const auto &rows : d.rows)
+    {
+        n += rows.size();
+    }
+    return n;
+}
+
+//! The parameters of one block except the rows of the tables, appended, see GpuTrainingSystem::stageParameters
+static void stageBlock(const ACTMol                  *molptr,
+                       int                            what,
+                       const GpuSystemTopology       &d,
+                       const GpuRelaxMolecule        &sh,
+                       std::vector<double>           *charges,
+                       std::vector<gpu::MovingShell> *shells,
+                       std::vector<gpu::VsiteEntry>  *vsites)
+{
+    const auto &atoms = blockTopology(molptr, what)->atoms();
     for (const auto &a : atoms)
     {
         charges->push_back(a.charge());
@@ -4907,7 +4962,11 @@ void GpuTrainingSystem::stageParameters(size_t replica, const ForceField *pd, co
             seg.charge = st.charges.size();
             seg.shell  = st.shells.size();
             seg.vsite  = st.vsites.size();
-            stageBlock(im.mols[bl.mol], bl.what, bl.desc, sh, epsilonr, &st.tables, &st.charges, &st.shells, &st.vsites);
+            st.tables.resize(st.tables.size() + 8*tableRows(bl.desc), 0.0f);
+            // All rows are made the first time
+            bl.rowVersion.assign(bl.desc.lists.size(), 0);
+            stageRows(im.mols[bl.mol], bl.what, bl.desc, epsilonr, &bl.rowVersion, st.tables.data() + seg.table);
+            stageBlock(im.mols[bl.mol], bl.what, bl.desc, sh, &st.charges, &st.shells, &st.vsites);
             seg.ntable  = st.tables.size() - seg.table;
             seg.ncharge = st.charges.size() - seg.charge;
             seg.nshell  = st.shells.size() - seg.shell;
@@ -4915,15 +4974,15 @@ void GpuTrainingSystem::stageParameters(size_t replica, const ForceField *pd, co
         }
         else
         {
-            std::vector<float>            tables;
+            // The rows in place, of the lists whose parameters changed
+            stageRows(im.mols[bl.mol], bl.what, bl.desc, epsilonr, &bl.rowVersion, st.tables.data() + seg.table);
             std::vector<double>           charges;
             std::vector<gpu::MovingShell> shells;
             std::vector<gpu::VsiteEntry>  vsites;
-            stageBlock(im.mols[bl.mol], bl.what, bl.desc, sh, epsilonr, &tables, &charges, &shells, &vsites);
-            GMX_RELEASE_ASSERT(tables.size() == seg.ntable && charges.size() == seg.ncharge &&
+            stageBlock(im.mols[bl.mol], bl.what, bl.desc, sh, &charges, &shells, &vsites);
+            GMX_RELEASE_ASSERT(charges.size() == seg.ncharge &&
                                shells.size() == seg.nshell && vsites.size() == seg.nvsite,
                                "The parameters of a block changed in size");
-            std::copy(tables.begin(), tables.end(), st.tables.begin() + seg.table);
             std::copy(charges.begin(), charges.end(), st.charges.begin() + seg.charge);
             std::copy(shells.begin(), shells.end(), st.shells.begin() + seg.shell);
             std::copy(vsites.begin(), vsites.end(), st.vsites.begin() + seg.vsite);
