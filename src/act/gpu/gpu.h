@@ -101,11 +101,49 @@ std::vector<DevicePeak> devicePeaks();
 DevicePeak estimatePeak(const std::string &vendor, const std::string &name,
                         unsigned units, double ghz);
 
+//! What the message of OutOfMemory says about the node, see outOfMemoryFacts
+struct OutOfMemoryFacts
+{
+    //! The number of processes on this node, 0 if not known
+    int  nodeProcesses = 0;
+    //! The number of GPUs on this node, 0 if not known
+    int  nodeGpus      = 0;
+    //! Whether the GPU is an NVIDIA GPU, for which the multi-process service exists
+    bool nvidia        = false;
+    //! Whether the NVIDIA multi-process service runs
+    bool mpsRuns       = false;
+};
+
+/*! \brief The facts about this node for the message of OutOfMemory
+ * The number of processes on the node comes from the environment variables
+ * of the MPI libraries and Slurm, that of the GPUs from what
+ * selectGpuOfProcess found or from the NVIDIA device files, and the
+ * multi-process service runs if the process in its file
+ * nvidia-cuda-mps-control.pid exists, in CUDA_MPS_PIPE_DIRECTORY or else
+ * in /tmp/nvidia-mps.
+ * \param[in] device The name of the GPU
+ * \return the facts
+ */
+OutOfMemoryFacts outOfMemoryFacts(const std::string &device);
+
+/*! \brief The message of OutOfMemory
+ * \param[in] device         The name of the GPU
+ * \param[in] totalBytes     Its memory
+ * \param[in] allocatedBytes What this process has allocated on it
+ * \param[in] requestedBytes What it asked for
+ * \param[in] facts          What is known about the node
+ * \return the message, in lines
+ */
+std::string outOfMemoryMessage(const std::string &device, double totalBytes,
+                               size_t allocatedBytes, size_t requestedBytes,
+                               const OutOfMemoryFacts &facts);
+
 /*! \brief The GPU has no memory left for what a process puts on it
  * Thrown by the GPU code instead of using an allocation that failed. The
- * message tells how much memory the process has on the GPU and what to do.
- * As a std::bad_alloc, the program stops with "Memory allocation failed"
- * and this message.
+ * message tells how much memory the process has on the GPU, how many
+ * processes share it, whether the NVIDIA multi-process service runs, and
+ * what to do, see outOfMemoryMessage. As a std::bad_alloc, the program
+ * stops with "Memory allocation failed" and this message.
  */
 class OutOfMemory : public std::bad_alloc
 {

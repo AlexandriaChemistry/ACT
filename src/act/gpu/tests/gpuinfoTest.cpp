@@ -212,10 +212,41 @@ TEST(GpuOutOfMemoryTest, Message)
         EXPECT_NE(std::string::npos, what.find("had 350.0 MB")) << what;
         EXPECT_NE(std::string::npos, what.find("1200.0 MB more")) << what;
         EXPECT_NE(std::string::npos, what.find("-lockstep")) << what;
-        EXPECT_NE(std::string::npos, what.find("multi-process service")) << what;
+        EXPECT_NE(std::string::npos, what.find("-nogpu_resident")) << what;
         return;
     }
     FAIL() << "Not caught as std::bad_alloc";
+}
+
+// Test: The message tells how many processes share each GPU, and how to start
+// the NVIDIA multi-process service only if it does not run on an NVIDIA GPU
+TEST(GpuOutOfMemoryTest, Facts)
+{
+    gpu::OutOfMemoryFacts facts;
+    facts.nodeProcesses = 33;
+    facts.nodeGpus      = 1;
+    facts.nvidia        = true;
+    auto noMps = gpu::outOfMemoryMessage("NVIDIA RTX A4500", 21.2e9, 63600000, 122900000, facts);
+    EXPECT_NE(std::string::npos, noMps.find("All 33 processes on this node use this GPU")) << noMps;
+    EXPECT_NE(std::string::npos, noMps.find("(MPS) does not run")) << noMps;
+    EXPECT_NE(std::string::npos, noMps.find("nvidia-cuda-mps-control -d")) << noMps;
+    EXPECT_NE(std::string::npos, noMps.find("a smaller -n of mpirun or srun")) << noMps;
+
+    facts.mpsRuns = true;
+    auto mps = gpu::outOfMemoryMessage("NVIDIA RTX A4500", 21.2e9, 63600000, 122900000, facts);
+    EXPECT_EQ(std::string::npos, mps.find("does not run")) << mps;
+
+    facts.nodeProcesses = 64;
+    facts.nodeGpus      = 8;
+    facts.nvidia        = false;
+    facts.mpsRuns       = false;
+    auto amd = gpu::outOfMemoryMessage("AMD Instinct MI250X", 68.7e9, 1, 1, facts);
+    EXPECT_NE(std::string::npos, amd.find("The 64 processes on this node share its 8 GPUs, up to 8 processes per GPU")) << amd;
+    EXPECT_EQ(std::string::npos, amd.find("MPS")) << amd;
+
+    facts.nodeProcesses = 0;
+    auto unknown = gpu::outOfMemoryMessage("AMD Instinct MI250X", 68.7e9, 1, 1, facts);
+    EXPECT_NE(std::string::npos, unknown.find("All processes that use this GPU share")) << unknown;
 }
 
 // Test: What the log file shows about the GPUs of this computer is consistent:

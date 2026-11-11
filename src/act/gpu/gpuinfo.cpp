@@ -37,6 +37,10 @@
 #include <algorithm>
 #include <cctype>
 #include <cstdio>
+#include <cstdlib>
+#include <filesystem>
+#include <fstream>
+#include <system_error>
 
 namespace alexandria
 {
@@ -105,33 +109,121 @@ DevicePeak estimatePeak(const std::string &vendor, const std::string &name,
     return peak;
 }
 
-/*! \brief The message of OutOfMemory
- * \param[in] device         The name of the GPU
- * \param[in] totalBytes     Its memory
- * \param[in] allocatedBytes What this process has allocated on it
- * \param[in] requestedBytes What it asked for
- * \return the message
+/*! \brief The first number in an environment variable
+ * \param[in] name The variable
+ * \return the number, 0 if the variable is not set or does not start with one,
+ *         such as SLURM_STEP_TASKS_PER_NODE, which can be "32(x2)"
  */
-static std::string outOfMemoryMessage(const std::string &device, double totalBytes,
-                                      size_t allocatedBytes, size_t requestedBytes)
+static int numberInEnvironment(const char *name)
 {
-    char buf[1024];
+    const char *value = std::getenv(name);
+    return value && std::isdigit(static_cast<unsigned char>(*value)) ? std::atoi(value) : 0;
+}
+
+OutOfMemoryFacts outOfMemoryFacts(const std::string &device)
+{
+    OutOfMemoryFacts facts;
+    // Those of the MPI libraries first, as in localRank
+    for (const char *name : { "OMPI_COMM_WORLD_LOCAL_SIZE", "MPI_LOCALNRANKS", "PMI_LOCAL_SIZE",
+                              "MV2_COMM_WORLD_LOCAL_SIZE", "SLURM_STEP_TASKS_PER_NODE" })
+    {
+        facts.nodeProcesses = numberInEnvironment(name);
+        if (facts.nodeProcesses > 0)
+        {
+            break;
+        }
+    }
+    // selectGpuOfProcess tells "1 of 0,1,2,3" or "1 of 4" if the node has several
+    auto chosen = gpuOfProcess();
+    auto of     = chosen.find(" of ");
+    if (of != std::string::npos)
+    {
+        auto list = chosen.substr(of + 4);
+        facts.nodeGpus = list.find(',') != std::string::npos
+            ? static_cast<int>(std::count(list.begin(), list.end(), ',')) + 1
+            : std::atoi(list.c_str());
+    }
+    else
+    {
+        std::error_code error;
+        while (std::filesystem::exists("/dev/nvidia" + std::to_string(facts.nodeGpus), error))
+        {
+            facts.nodeGpus++;
+        }
+    }
+    facts.nvidia = device.find("NVIDIA") != std::string::npos;
+    if (facts.nvidia)
+    {
+        // The control daemon writes its process id there while it runs; the
+        // pipes stay after it stopped
+        const char   *pipes = std::getenv("CUDA_MPS_PIPE_DIRECTORY");
+        std::ifstream pidFile(std::string(pipes && *pipes ? pipes : "/tmp/nvidia-mps") +
+                              "/nvidia-cuda-mps-control.pid");
+        long          pid = 0;
+        if (pidFile >> pid && pid > 0)
+        {
+            std::error_code error;
+            facts.mpsRuns = std::filesystem::exists("/proc/" + std::to_string(pid), error);
+        }
+    }
+    return facts;
+}
+
+std::string outOfMemoryMessage(const std::string &device, double totalBytes,
+                               size_t allocatedBytes, size_t requestedBytes,
+                               const OutOfMemoryFacts &facts)
+{
+    char buf[512];
     std::snprintf(buf, sizeof(buf),
                   "The GPU (%s, %.1f GB) has no memory left: this process had %.1f MB on it "
-                  "and asked for %.1f MB more. All processes that use the GPU share its memory. "
-                  "On NVIDIA GPUs, start the multi-process service when several processes share "
-                  "a GPU, otherwise each process makes a context of its own on it, which takes "
-                  "several hundred MB. Otherwise, use fewer processes per GPU or a smaller "
-                  "train_ff -lockstep, which keeps a copy of the molecules for each individual "
-                  "that a process computes at once. With -nogpu_resident the molecules are not "
-                  "kept on the GPU.",
+                  "and asked for %.1f MB more.",
                   device.c_str(), totalBytes/1e9, allocatedBytes/1e6, requestedBytes/1e6);
-    return buf;
+    std::string message(buf);
+    if (facts.nodeProcesses > 0)
+    {
+        int gpus = std::max(1, facts.nodeGpus);
+        int per  = (facts.nodeProcesses + gpus - 1)/gpus;
+        if (gpus == 1)
+        {
+            std::snprintf(buf, sizeof(buf), " All %d processes on this node use this GPU and share "
+                          "its memory.", facts.nodeProcesses);
+        }
+        else
+        {
+            std::snprintf(buf, sizeof(buf), " The %d processes on this node share its %d GPUs, "
+                          "up to %d processes per GPU.", facts.nodeProcesses, gpus, per);
+        }
+        message += buf;
+    }
+    else
+    {
+        message += " All processes that use this GPU share its memory.";
+    }
+    if (facts.nvidia && !facts.mpsRuns)
+    {
+        message += "\n\nThe NVIDIA multi-process service (MPS) does not run, so each process "
+            "makes a context of its own on the GPU, which takes several hundred MB. "
+            "Start MPS in the job script before mpirun or srun (see the section GPU support "
+            "with SYCL of the installation chapter of the manual):\n"
+            "  export CUDA_MPS_PIPE_DIRECTORY=/tmp/mps-$SLURM_JOB_ID\n"
+            "  export CUDA_MPS_LOG_DIRECTORY=/tmp/mpslog-$SLURM_JOB_ID\n"
+            "  mkdir -p $CUDA_MPS_PIPE_DIRECTORY $CUDA_MPS_LOG_DIRECTORY\n"
+            "  nvidia-cuda-mps-control -d\n"
+            "and stop it at the end with: echo quit | nvidia-cuda-mps-control";
+    }
+    message += "\n\nTo use less GPU memory:\n"
+        "- run fewer processes per GPU: a smaller -n of mpirun or srun, or more GPUs "
+        "(sbatch --gres=gpu:N, or more nodes);\n"
+        "- use a smaller train_ff -lockstep, down to 1: a process keeps a copy of its "
+        "molecules on the GPU for each individual that it computes at once;\n"
+        "- or train with -nogpu_resident, which keeps no molecules on the GPU.";
+    return message;
 }
 
 OutOfMemory::OutOfMemory(const std::string &device, double totalBytes,
                          size_t allocatedBytes, size_t requestedBytes)
-    : message_(outOfMemoryMessage(device, totalBytes, allocatedBytes, requestedBytes))
+    : message_(outOfMemoryMessage(device, totalBytes, allocatedBytes, requestedBytes,
+                                  outOfMemoryFacts(device)))
 {
 }
 
