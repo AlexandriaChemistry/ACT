@@ -64,6 +64,17 @@ private:
     bool                               fixedQ_ = false;
     //! Total number of atoms
     size_t                             natoms_ = 0;
+    //! The particle type of each atom of each fragment, nullptr if the force field has none
+    std::vector<std::vector<const ParticleType *>> ptypes_;
+    //! The ForceField::particleTypeVersion that ptypes_ are of, 0 if none
+    size_t                             ptypesVersion_ = 0;
+    /*! \brief The particle types of the atoms of a fragment, found again only
+     * when the particle types of the force field may have moved
+     * \param[in] pd The force field
+     * \param[in] ff The fragment
+     * \return the particle type of each atom, nullptr if the force field has none
+     */
+    const std::vector<const ParticleType *> &particleTypes(const ForceField *pd, size_t ff);
 public:
     //! Constructor does nothing
     FragmentHandler() {}

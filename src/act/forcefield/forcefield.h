@@ -143,6 +143,12 @@ class ForceField
         //! \return the number of particle types
         size_t getNatypes() const { return alexandria_.size(); }
 
+        /*! \return A number that changes whenever pointers to the particle
+         * types may have become invalid, unique for all force fields,
+         * see StructureVersion
+         */
+        size_t particleTypeVersion() const { return ptypeVersion_.value(); }
+
     /*! \brief Check whether particle type exists
      * \param[in] id The identifier of the particle type
      * \return true if ptype exists
@@ -221,7 +227,7 @@ class ForceField
     /*! \brief Return mutable vector \p alexandria_
      * \return pointer to the map of particle types
      */
-    std::map<Identifier, ParticleType> *particleTypes() { return &alexandria_; }
+    std::map<Identifier, ParticleType> *particleTypes() { ptypeVersion_.update(); return &alexandria_; }
 
     //! \return the number of particle types
     int nParticleTypes() const { return alexandria_.size(); }
@@ -489,6 +495,8 @@ private:
     std::string                           filename_;
     //! The particle types
     std::map<Identifier, ParticleType>    alexandria_;
+    //! Changes whenever pointers to the particle types may have become invalid
+    StructureVersion                      ptypeVersion_;
     //! The parameter lists per interaction type
     std::map<InteractionType, ForceFieldParameterList> forces_;
     //! The symmetric charges
