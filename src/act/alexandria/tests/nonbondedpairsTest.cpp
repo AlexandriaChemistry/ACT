@@ -228,35 +228,35 @@ protected:
 // Test: Without shells, with Gaussian charges
 TEST_F(NonBondedPairsTest, DimersNoShells)
 {
-    checkMolecules("ACS-g2.xml", "mpdimer.xml");
+    checkMolecules("forcefields/ACS-g2.xml", "molprop/mpdimer.xml");
 }
 
 // Test: Without shells, with virtual sites on the atoms
 TEST_F(NonBondedPairsTest, DimersVsites)
 {
-    checkMolecules("../../constraints/tests/PC+GV-elec.xml", "mpdimer.xml");
+    checkMolecules("forcefields/PC+GV-elec.xml", "molprop/mpdimer.xml");
 }
 
 // Test: With shells on ions and water
 TEST_F(NonBondedPairsTest, DimersShells)
 {
-    checkMolecules("PG-pol-ions.xml", "ion-water.xml");
+    checkMolecules("forcefields/PG-pol-ions.xml", "molprop/ion-water.xml");
 }
 
 // Test: With virtual sites on the ions and shells
 TEST_F(NonBondedPairsTest, DimersVsitesShells)
 {
-    checkMolecules("PG-pol-ions.xml", "ion-water.xml", false);
+    checkMolecules("forcefields/PG-pol-ions.xml", "molprop/ion-water.xml", false);
 }
 
 // Test: The pairs take much less memory than the entries
 TEST_F(NonBondedPairsTest, Memory)
 {
     ForceField pd;
-    readForceField(fileManager().getInputFilePath("ACS-g2.xml"), &pd);
+    readForceField(fileManager().getInputFilePath("forcefields/ACS-g2.xml"), &pd);
     std::vector<MolProp> mps;
     MsgHandler           msghandler;
-    MolPropRead(&msghandler, fileManager().getInputFilePath("mpdimer.xml").c_str(), &mps);
+    MolPropRead(&msghandler, fileManager().getInputFilePath("molprop/mpdimer.xml").c_str(), &mps);
     ASSERT_FALSE(mps.empty());
     ACTMol actmol;
     actmol.Merge(&mps[0]);

@@ -29,7 +29,7 @@
 /*! \internal \brief
  * Tests of fitting charges to the electrostatic potential with QgenResp,
  * using the quantum chemical potentials of the molecules in
- * src/act/molprop/tests/molprop.xml.
+ * src/act/testdata/molprop/molprop.xml.
  * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  */
 
@@ -110,7 +110,7 @@ protected:
         msghandler.setPrintLevel(ACTStatus::Warning);
         fit->pd = getForceField(ffName);
         std::vector<MolProp> mps;
-        auto mpFile = fileManager().getInputFilePath("../../molprop/tests/molprop.xml");
+        auto mpFile = fileManager().getInputFilePath("molprop/molprop.xml");
         MolPropRead(&msghandler, mpFile.c_str(), &mps);
         bool found = false;
         for(auto &mp : mps)

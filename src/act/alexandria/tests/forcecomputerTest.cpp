@@ -231,7 +231,7 @@ protected:
 
         // The molecule
         std::vector<ACTMol> mps;
-        std::string moldir("mols/");
+        std::string moldir("molecules/");
         moldir += molname;
         auto dataName = gmx::test::TestFileManager::getInputFilePath(moldir);
         initACTMol(&msghandler, dataName, pd, fcomp, &mps);
@@ -342,7 +342,7 @@ protected:
 
         // The molecule
         std::vector<ACTMol> mps;
-        std::string moldir("mols/");
+        std::string moldir("molecules/");
         moldir += molname;
         auto dataName = gmx::test::TestFileManager::getInputFilePath(moldir);
         initACTMol(&msghandler, dataName, pd, fcomp, &mps);
@@ -390,68 +390,68 @@ protected:
 
 TEST_F (ForceComputerTest, MethaneThiol)
 {
-    test("methanethiol.sdf", "ACS-g", false);
+    test("methanethiol.sdf", "ACS-g1", false);
 }
 
 TEST_F (ForceComputerTest, CarbonDioxide)
 {
-    test("carbon-dioxide.sdf", "ACS-g", false);
+    test("carbon-dioxide.sdf", "ACS-g1", false);
 }
 
 TEST_F (ForceComputerTest, HydrogenChloride)
 {
 
-    test("hydrogen-chloride.sdf", "ACS-g", false);
+    test("hydrogen-chloride.sdf", "ACS-g1", false);
 }
 
 TEST_F (ForceComputerTest, HydrogenChlorideStretch)
 {
-    test("hydrogen-chloride.sdf", "ACS-g", false, 0.98);
-    test("hydrogen-chloride.sdf", "ACS-g", false, 1);
-    test("hydrogen-chloride.sdf", "ACS-g", false, 1.02);
+    test("hydrogen-chloride.sdf", "ACS-g1", false, 0.98);
+    test("hydrogen-chloride.sdf", "ACS-g1", false, 1);
+    test("hydrogen-chloride.sdf", "ACS-g1", false, 1.02);
 }
 
 TEST_F (ForceComputerTest, Water)
 {
-    test("water-3-oep.log.pdb", "ACS-g", false);
+    test("water-3-oep.log.pdb", "ACS-g1", false);
 }
 
 TEST_F (ForceComputerTest, WaterStretch)
 {
-    test("water-3-oep.log.pdb", "ACS-g", false, 0.98);
-    test("water-3-oep.log.pdb", "ACS-g", false, 1.02);
+    test("water-3-oep.log.pdb", "ACS-g1", false, 0.98);
+    test("water-3-oep.log.pdb", "ACS-g1", false, 1.02);
 }
 
 TEST_F (ForceComputerTest, Acetone)
 {
-    test("acetone-3-oep.log.pdb", "ACS-g", false);
+    test("acetone-3-oep.log.pdb", "ACS-g1", false);
 }
 
 TEST_F (ForceComputerTest, AcetoneSdf)
 {
-    test("acetone.sdf", "ACS-g", false);
+    test("acetone.sdf", "ACS-g1", false);
 }
 
 TEST_F (ForceComputerTest, AcetoneStretch)
 {
-    test("acetone-3-oep.log.pdb", "ACS-g", false, 0.98);
-    test("acetone-3-oep.log.pdb", "ACS-g", false, 1.07);
+    test("acetone-3-oep.log.pdb", "ACS-g1", false, 0.98);
+    test("acetone-3-oep.log.pdb", "ACS-g1", false, 1.07);
 }
 
 TEST_F (ForceComputerTest, AcetoneNonPlanar)
 {
-    test("acetone-nonplanar.pdb", "ACS-g", false);
+    test("acetone-nonplanar.pdb", "ACS-g1", false);
 }
 
 TEST_F (ForceComputerTest, Uracil)
 {
-    test("uracil.sdf", "ACS-g", false);
+    test("uracil.sdf", "ACS-g1", false);
 }
 
 TEST_F (ForceComputerTest, UracilStretch)
 {
-    test("uracil.sdf", "ACS-g", false, 0.9);
-    test("uracil.sdf", "ACS-g", false, 1.1);
+    test("uracil.sdf", "ACS-g1", false, 0.9);
+    test("uracil.sdf", "ACS-g1", false, 1.1);
 }
 
 TEST_F (ForceComputerTest, AcetoneDih)
@@ -472,66 +472,66 @@ TEST_F (ForceComputerTest, WaterUB)
 
 TEST_F (ForceComputerTest, HydrogenChloridePolStretch)
 {
-    test("hydrogen-chloride.sdf", "ACS-pg", false, 0.98);
-    test("hydrogen-chloride.sdf", "ACS-pg", false, 1.05);
+    test("hydrogen-chloride.sdf", "ACS-pg1", false, 0.98);
+    test("hydrogen-chloride.sdf", "ACS-pg1", false, 1.05);
 }
 
 TEST_F (ForceComputerTest, WaterPol)
 {
-    test("water-3-oep.log.pdb", "ACS-pg", false);
+    test("water-3-oep.log.pdb", "ACS-pg1", false);
 }
 
 TEST_F (ForceComputerTest, WaterPolStretch)
 {
-    test("water-3-oep.log.pdb", "ACS-pg", false, 0.98);
-    test("water-3-oep.log.pdb", "ACS-pg", false, 1.04);
+    test("water-3-oep.log.pdb", "ACS-pg1", false, 0.98);
+    test("water-3-oep.log.pdb", "ACS-pg1", false, 1.04);
 }
 
 TEST_F (ForceComputerTest, AcetonePol)
 {
-    test("acetone-3-oep.log.pdb", "ACS-pg", false);
+    test("acetone-3-oep.log.pdb", "ACS-pg1", false);
 }
 
 TEST_F (ForceComputerTest, AcetonePolStretch)
 {
-    test("acetone-3-oep.log.pdb", "ACS-pg", false, 0.97);
-    test("acetone-3-oep.log.pdb", "ACS-pg", false, 1.01);
+    test("acetone-3-oep.log.pdb", "ACS-pg1", false, 0.97);
+    test("acetone-3-oep.log.pdb", "ACS-pg1", false, 1.01);
 }
 
 TEST_F (ForceComputerTest, AcetoneNonPlanarPol)
 {
-    test("acetone-nonplanar.pdb", "ACS-pg", false);
+    test("acetone-nonplanar.pdb", "ACS-pg1", false);
 }
 
 TEST_F (ForceComputerTest, UracilPol)
 {
-    test("uracil.sdf", "ACS-pg", false);
+    test("uracil.sdf", "ACS-pg1", false);
 }
 
 TEST_F (ForceComputerTest, UracilPolStretch)
 {
-    test("uracil.sdf", "ACS-pg", false, 0.99);
-    test("uracil.sdf", "ACS-pg", false, 1.06);
+    test("uracil.sdf", "ACS-pg1", false, 0.99);
+    test("uracil.sdf", "ACS-pg1", false, 1.06);
 }
 
 TEST_F (ForceComputerTest, CarbonDioxidePolarizability)
 {
-  test("carbon-dioxide.sdf", "ACS-pg", true);
+  test("carbon-dioxide.sdf", "ACS-pg1", true);
 }
 
 TEST_F (ForceComputerTest, HydrogenChloridePolarizability)
 {
-    test("hydrogen-chloride.sdf", "ACS-pg", true);
+    test("hydrogen-chloride.sdf", "ACS-pg1", true);
 }
 
 TEST_F (ForceComputerTest, WaterPolarizability)
 {
-    test("water-3-oep.log.pdb", "ACS-pg", true);
+    test("water-3-oep.log.pdb", "ACS-pg1", true);
 }
 
 TEST_F (ForceComputerTest, AcetonePolarizability)
 {
-    test("acetone-3-oep.log.pdb", "ACS-pg", true);
+    test("acetone-3-oep.log.pdb", "ACS-pg1", true);
 }
 
 TEST_F (ForceComputerTest, AcetonePolGbham)
@@ -546,24 +546,24 @@ TEST_F (ForceComputerTest, AcetonePolarizabilityGbham)
 
 TEST_F (ForceComputerTest, UracilPolarizability)
 {
-    test("uracil.sdf", "ACS-pg", true);
+    test("uracil.sdf", "ACS-pg1", true);
 }
 
 // These have to be last since they modify the force field that is shared,
 TEST_F (ForceComputerTest, MethaneThiolNexcl3)
 {
-    test("methanethiol.sdf", "ACS-g", false, 1, 3);
+    test("methanethiol.sdf", "ACS-g1", false, 1, 3);
 }
 
 TEST_F (ForceComputerTest, UracilPolNexcl3)
 {
-    test("uracil.sdf", "ACS-pg", false, 1, 3);
+    test("uracil.sdf", "ACS-pg1", false, 1, 3);
 }
 
 //! \return the energies of the uracil with nexcl 3, optionally without proper dihedrals
 static std::map<InteractionType, double> uracilEnergies(bool propers)
 {
-    ForceField pd = *getForceField("ACS-pg");
+    ForceField pd = *getForceField("ACS-pg1");
     for (auto &fs : *pd.forces())
     {
         if (fs.second.optionExists("nexcl"))
@@ -580,7 +580,7 @@ static std::map<InteractionType, double> uracilEnergies(bool propers)
     MsgHandler    msghandler;
     msghandler.setPrintLevel(ACTStatus::Warning);
     std::vector<ACTMol> mps;
-    initACTMol(&msghandler, gmx::test::TestFileManager::getInputFilePath("mols/uracil.sdf"),
+    initACTMol(&msghandler, gmx::test::TestFileManager::getInputFilePath("molecules/uracil.sdf"),
                &pd, &fcomp, &mps);
     EXPECT_EQ(1u, mps.size());
     auto                              xo = mps[0].xOriginal();

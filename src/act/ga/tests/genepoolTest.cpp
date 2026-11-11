@@ -110,7 +110,7 @@ protected:
     void read()
     {
         GenePool gp;
-        gp.read(gmx::test::TestFileManager::getInputFilePath("gp.csv"));
+        gp.read(gmx::test::TestFileManager::getInputFilePath("other/gp.csv"));
         compare(gp);
     }
 };
@@ -143,7 +143,7 @@ TEST_F (GenePoolTest, WritePrecision)
 TEST_F (GenePoolTest, WrongInput)
 {
     GenePool gp;
-    EXPECT_THROW(gp.read(gmx::test::TestFileManager::getInputFilePath("gpwrong.csv")), gmx::InvalidInputError);
+    EXPECT_THROW(gp.read(gmx::test::TestFileManager::getInputFilePath("other/gpwrong.csv")), gmx::InvalidInputError);
  }
 
 }

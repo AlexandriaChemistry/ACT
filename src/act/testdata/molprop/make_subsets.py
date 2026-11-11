@@ -35,7 +35,7 @@ ACTdata/Performance with
   make_subsets.py hf-hf/sapt2+aug-cc-pvtz-0.03H-rmin0.9-HF_mp2-hh.xml hf-hf.xml 10 'hydrogen-fluoride' 'hydrogen-fluoride#hydrogen-fluoride'
 
 The force fields lj-pc.xml, halgren-PG.xml, 4S-lj14-7-pg-hvdw.xml and
-alc-pol-wbh.xml are copied from the same benchmarks.
+alc-pol-wbh.xml in ../forcefields are copied from the same benchmarks.
 
 usage: make_subsets.py input.xml output.xml nconf molname [molname ...]
 """

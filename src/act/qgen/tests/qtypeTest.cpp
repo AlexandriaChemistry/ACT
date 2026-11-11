@@ -91,7 +91,7 @@ class QtypeTest : public gmx::test::CommandLineTestBase
                        const std::vector<double> &qcustom)
         {
             const char           *conf      = (char *)"minimum";
-            std::string           fileName(molname);
+            std::string           fileName("molecules/" + molname);
             std::vector<alexandria::MolProp> molprops;
             
             switch (inputformat)
@@ -200,7 +200,7 @@ class QtypeTest : public gmx::test::CommandLineTestBase
 TEST_F (QtypeTest, ButanolPDB)
 {
     std::vector<double> qcustom;
-    testQtype("ACS-g", inputFormat::PDB, "1-butanol", 0, qcustom);
+    testQtype("ACS-g4", inputFormat::PDB, "1-butanol", 0, qcustom);
 }
 
 TEST_F (QtypeTest, CustomButanolPDB)
@@ -222,7 +222,7 @@ TEST_F (QtypeTest, CustomButanolPDB)
         0.10143430364294093,
         -0.34806032890043453,
         0.20074934111138645 };
-    testQtype("ACS-g", inputFormat::PDB, "1-butanol", 0, qcustom);
+    testQtype("ACS-g4", inputFormat::PDB, "1-butanol", 0, qcustom);
 }
 
 TEST_F (QtypeTest, ButanolPDBCoQ)
@@ -230,25 +230,25 @@ TEST_F (QtypeTest, ButanolPDBCoQ)
     // Since butanol is dipolar only, the center of charge should have
     // no effect on the dipole but higher moments may be off more.
     std::vector<double> qcustom;
-    testQtype("ACS-g", inputFormat::PDB, "1-butanol", 0, qcustom);
+    testQtype("ACS-g4", inputFormat::PDB, "1-butanol", 0, qcustom);
 }
 
 TEST_F (QtypeTest, WaterPDB)
 {
     std::vector<double> qcustom;
-    testQtype("ACS-g", inputFormat::PDB, "water", 0, qcustom);
+    testQtype("ACS-g4", inputFormat::PDB, "water", 0, qcustom);
 }
 
 TEST_F (QtypeTest, WaterPDBCoQ)
 {
     std::vector<double> qcustom;
-    testQtype("ACS-g", inputFormat::PDB, "water", 0, qcustom);
+    testQtype("ACS-g4", inputFormat::PDB, "water", 0, qcustom);
 }
 
 TEST_F (QtypeTest, WaterPDBCustom)
 {
     std::vector<double> qcustom = { 0.33, -0.66, 0.33 };
-    testQtype("ACS-g", inputFormat::PDB, "water", 0, qcustom);
+    testQtype("ACS-g4", inputFormat::PDB, "water", 0, qcustom);
 }
 
 }

@@ -155,13 +155,13 @@ protected:
     ForceEnergyDevComputerTest() = default;
 
     //! \return the monomer test file
-    std::string monomerFile() { return fileManager().getInputFilePath("../../molprop/tests/molprop.xml"); }
+    std::string monomerFile() { return fileManager().getInputFilePath("molprop/molprop.xml"); }
 
     //! \return the dimer test file
-    std::string dimerFile() { return fileManager().getInputFilePath("mpdimer.xml"); }
+    std::string dimerFile() { return fileManager().getInputFilePath("molprop/mpdimer.xml"); }
 
     //! \return the dimer test file with induction correction
-    std::string deltaHFFile() { return fileManager().getInputFilePath("methanol-ethane-deltaHF.xml"); }
+    std::string deltaHFFile() { return fileManager().getInputFilePath("molprop/methanol-ethane-deltaHF.xml"); }
 
     //! Run the test with each Boltzmann key as a target with weight 1
     void testCalcDev(const std::string      &mpFile,
@@ -669,7 +669,7 @@ TEST_F(ForceEnergyDevComputerTest, CalcDevMonomerNoBoltz)
     {
         boltzmann.insert({erms, 0.0});
     }
-    std::string mpFile = fileManager().getInputFilePath("../../molprop/tests/molprop.xml");
+    std::string mpFile = fileManager().getInputFilePath("molprop/molprop.xml");
     testCalcDev(mpFile, "ACS-g2", boltzmann);
 }
 
@@ -683,7 +683,7 @@ TEST_F(ForceEnergyDevComputerTest, CalcDevMonomerLJ14_7)
     // The force field has all parameters for these molecules, water has a
     // VSITE3FD virtual site.
     opts.molecules          = { "1-butanol", "water" };
-    testCalcDev(monomerFile(), "../../forces/tests/ACS-v3fds", opts);
+    testCalcDev(monomerFile(), "ACS-v3fds", opts);
 }
 
 // Test: Forces of a molecule with a virtual site are compared atom by atom
@@ -694,8 +694,8 @@ TEST_F(ForceEnergyDevComputerTest, CalcDevMonomerForcesVsite)
     // Water with QM forces for four conformations and a VSITE3FD virtual site
     gmx::test::TestReferenceChecker checker(this->rootChecker());
     checker.setDefaultTolerance(gmx::test::relativeToleranceAsFloatingPoint(1.0, opts.tolerance));
-    auto results = computeDev(fileManager().getInputFilePath("water-forces.xml"),
-                              "../../forces/tests/ACS-v3fds", opts, &checker);
+    auto results = computeDev(fileManager().getInputFilePath("molprop/water-forces.xml"),
+                              "ACS-v3fds", opts, &checker);
     // Three atoms with three force components for each conformation
     EXPECT_EQ(4*3*DIM, results[resultKey("water", eRMS::Force2)].first);
 }
@@ -711,7 +711,7 @@ TEST_F(ForceEnergyDevComputerTest, CalcDevDimerNoBoltz)
     {
         boltzmann.insert({erms, 0.0});
     }
-    std::string mpFile = fileManager().getInputFilePath("mpdimer.xml");
+    std::string mpFile = fileManager().getInputFilePath("molprop/mpdimer.xml");
     testCalcDev(mpFile, "ACS-g2", boltzmann);
 }
 
@@ -724,7 +724,7 @@ TEST_F(ForceEnergyDevComputerTest, CalcDevMonomerBoltz)
     {
         boltzmann.insert({erms, 500.0});
     }
-    std::string mpFile = fileManager().getInputFilePath("../../molprop/tests/molprop.xml");
+    std::string mpFile = fileManager().getInputFilePath("molprop/molprop.xml");
     testCalcDev(mpFile, "ACS-g2", boltzmann);
 }
 
@@ -739,7 +739,7 @@ TEST_F(ForceEnergyDevComputerTest, CalcDevDimerBoltz)
     {
         boltzmann.insert({erms, 500.0});
     }
-    std::string mpFile = fileManager().getInputFilePath("mpdimer.xml");
+    std::string mpFile = fileManager().getInputFilePath("molprop/mpdimer.xml");
     testCalcDev(mpFile, "ACS-g2", boltzmann);
 }
 
@@ -754,7 +754,7 @@ TEST_F(ForceEnergyDevComputerTest, CalcDevDimerBoltzPol)
     {
         boltzmann.insert({erms, 500.0});
     }
-    std::string mpFile = fileManager().getInputFilePath("mpdimer.xml");
+    std::string mpFile = fileManager().getInputFilePath("molprop/mpdimer.xml");
     testCalcDev(mpFile, "ACS-pol", boltzmann);
 }
 
@@ -769,7 +769,7 @@ TEST_F(ForceEnergyDevComputerTest, CalcDevDimerNoBoltzPol)
     {
         boltzmann.insert({erms, 0.0});
     }
-    std::string mpFile = fileManager().getInputFilePath("mpdimer.xml");
+    std::string mpFile = fileManager().getInputFilePath("molprop/mpdimer.xml");
     testCalcDev(mpFile, "ACS-pol", boltzmann);
 }
 
@@ -786,7 +786,7 @@ TEST_F(ForceEnergyDevComputerTest, CalcDevDimerBoltzInductionCorrection)
     {
         boltzmann.insert({erms, 500.0});
     }
-    std::string mpFile = fileManager().getInputFilePath("methanol-ethane-deltaHF.xml");
+    std::string mpFile = fileManager().getInputFilePath("molprop/methanol-ethane-deltaHF.xml");
     testCalcDev(mpFile, "ACS-pol", boltzmann);
 }
 
@@ -803,7 +803,7 @@ TEST_F(ForceEnergyDevComputerTest, CalcDevDimerNoBoltzInductionCorrection)
     {
         boltzmann.insert({erms, 0.0});
     }
-    std::string mpFile = fileManager().getInputFilePath("methanol-ethane-deltaHF.xml");
+    std::string mpFile = fileManager().getInputFilePath("molprop/methanol-ethane-deltaHF.xml");
     testCalcDev(mpFile, "ACS-pol", boltzmann);
 }
 
@@ -1218,7 +1218,7 @@ protected:
     PropertyDevComputerTest() = default;
 
     //! \return the monomer test file
-    std::string monomerFile() { return fileManager().getInputFilePath("../../molprop/tests/molprop.xml"); }
+    std::string monomerFile() { return fileManager().getInputFilePath("molprop/molprop.xml"); }
 
     /*! \brief Read molecules, generate topologies and charges like MolGen does
      * \param[in] msghandler    For messages
@@ -1844,7 +1844,7 @@ protected:
         MsgHandler    msghandler;
         auto          pd   = getForceField(ffFile);
         auto          mols = prepareMolecules(&msghandler, pd, &forceComputer, {},
-                                              fileManager().getInputFilePath("mpdimer.xml"));
+                                              fileManager().getInputFilePath("molprop/mpdimer.xml"));
         ASSERT_FALSE(mols.empty());
         forceComputer.computeRelaxedEnergies(&msghandler, pd, pointers(&mols), true, true, true);
         double ncomponent = 0;
@@ -2021,7 +2021,7 @@ static double secondChargesTolerance()
 // forces as the second charges that replace them, see ForceField::convertVsite1
 TEST_F(PropertyDevComputerTest, SecondChargesAsVsites)
 {
-    compareSecondChargesToVsites("../../constraints/tests/PC+GV-elec.xml", "mpdimer.xml",
+    compareSecondChargesToVsites("forcefields/PC+GV-elec.xml", "molprop/mpdimer.xml",
                                  "v1ow", "ow", false, secondChargesTolerance());
 }
 
@@ -2029,7 +2029,7 @@ TEST_F(PropertyDevComputerTest, SecondChargesAsVsites)
 // which are excluded from their own second charge as from the virtual site.
 TEST_F(PropertyDevComputerTest, SecondChargesAsVsitesPolarizable)
 {
-    compareSecondChargesToVsites("PG-pol-ions.xml", "ion-water.xml",
+    compareSecondChargesToVsites("forcefields/PG-pol-ions.xml", "molprop/ion-water.xml",
                                  "v1Na+", "Na+", true, secondChargesTolerance());
 }
 
@@ -2037,7 +2037,7 @@ TEST_F(PropertyDevComputerTest, SecondChargesAsVsitesPolarizable)
 // polarizability in the force field file, such that they hardly move.
 TEST_F(PropertyDevComputerTest, SecondChargesAsVsitesPolarizableIons)
 {
-    compareSecondChargesToVsites("PG-pol-ions.xml", "ion-water.xml",
+    compareSecondChargesToVsites("forcefields/PG-pol-ions.xml", "molprop/ion-water.xml",
                                  "v1Na+", "Na+", true, secondChargesTolerance(),
                                  { { "Na+_s", 0.18 }, { "Cl-_s", 3.4 } });
 }
@@ -2049,9 +2049,9 @@ TEST_F(PropertyDevComputerTest, ShellsRelaxedAfterChangingAlpha)
     ForceComputer forceComputer;
     MsgHandler    msghandler;
     ForceField    pd;
-    readForceField(fileManager().getInputFilePath("PG-pol-ions.xml"), &pd);
+    readForceField(fileManager().getInputFilePath("forcefields/PG-pol-ions.xml"), &pd);
     ASSERT_TRUE(pd.polarizable());
-    auto mpFile  = fileManager().getInputFilePath("ion-water.xml");
+    auto mpFile  = fileManager().getInputFilePath("molprop/ion-water.xml");
     auto mols    = prepareMolecules(&msghandler, &pd, &forceComputer, {}, mpFile);
     ASSERT_FALSE(mols.empty());
     auto before  = computeAll(&forceComputer, &pd, &mols, false);
@@ -2204,11 +2204,11 @@ TEST_F(PropertyDevComputerTest, StiffShellsStopAtCoordinateResolution)
     ProcessorOnly cpu;
     MsgHandler    msghandler;
     ForceField    pd;
-    readForceField(fileManager().getInputFilePath("PG-pol-ions.xml"), &pd);
+    readForceField(fileManager().getInputFilePath("forcefields/PG-pol-ions.xml"), &pd);
     const int     maxiter = 100;
     ForceComputer forceComputer(1e-8, maxiter, pd.epsilonr());
     auto mols = prepareMolecules(&msghandler, &pd, &forceComputer, { "water#chloride" },
-                                 fileManager().getInputFilePath("ion-water.xml"));
+                                 fileManager().getInputFilePath("molprop/ion-water.xml"));
     ASSERT_EQ(1u, mols.size());
     (void) computeAll(&forceComputer, &pd, &mols, false);
     EXPECT_EQ(0u, forceComputer.numShellConvergenceFailed());
@@ -2234,9 +2234,9 @@ TEST_F(PropertyDevComputerTest, ShellKeepSameEnergies)
 {
     ProcessorOnly cpu;
     ForceField    pd;
-    readForceField(fileManager().getInputFilePath("PG-pol-ions.xml"), &pd);
+    readForceField(fileManager().getInputFilePath("forcefields/PG-pol-ions.xml"), &pd);
     ASSERT_TRUE(pd.polarizable());
-    auto mpFile = fileManager().getInputFilePath("ion-water.xml");
+    auto mpFile = fileManager().getInputFilePath("molprop/ion-water.xml");
     auto make   = [this, &pd, &mpFile](const ForceComputer *fc)
     {
         MsgHandler msghandler;
@@ -2256,9 +2256,9 @@ TEST_F(PropertyDevComputerTest, ShellKeepSameEnergiesGpu)
         return;
     }
     ForceField pd;
-    readForceField(fileManager().getInputFilePath("PG-pol-ions.xml"), &pd);
+    readForceField(fileManager().getInputFilePath("forcefields/PG-pol-ions.xml"), &pd);
     ASSERT_TRUE(pd.polarizable());
-    auto mpFile = fileManager().getInputFilePath("ion-water.xml");
+    auto mpFile = fileManager().getInputFilePath("molprop/ion-water.xml");
     auto make   = [this, &pd, &mpFile](const ForceComputer *fc)
     {
         MsgHandler msghandler;
@@ -2278,13 +2278,13 @@ TEST_F(PropertyDevComputerTest, GpuResidentFallsBackToProcessor)
 {
     MsgHandler msghandler;
     ForceField pd;
-    readForceField(fileManager().getInputFilePath("PG-pol-ions.xml"), &pd);
+    readForceField(fileManager().getInputFilePath("forcefields/PG-pol-ions.xml"), &pd);
     ASSERT_TRUE(pd.polarizable());
     ForceComputer resident;
     resident.setGpuResident(true);
     resident.setKeepShells(false);
     ForceComputer processor;
-    auto mpFile = fileManager().getInputFilePath("ion-water.xml");
+    auto mpFile = fileManager().getInputFilePath("molprop/ion-water.xml");
     auto mols   = prepareMolecules(&msghandler, &pd, &processor, {}, mpFile);
     ASSERT_FALSE(mols.empty());
     std::vector<double> energies, reference;
@@ -2302,7 +2302,7 @@ TEST_F(PropertyDevComputerTest, GpuResidentFallsBackToProcessor)
     EXPECT_EQ(reference, computeAll(&resident, &pd, &mols, true));
     // Without polarization the GPU is not used either
     ForceField nonPolarizable;
-    readForceField(fileManager().getInputFilePath("ACS-g.xml"), &nonPolarizable);
+    readForceField(fileManager().getInputFilePath("forcefields/ACS-g1.xml"), &nonPolarizable);
     ASSERT_FALSE(nonPolarizable.polarizable());
     ForceComputer residentNonPol;
     residentNonPol.setGpuResident(true);
@@ -2331,9 +2331,9 @@ TEST_F(PropertyDevComputerTest, GpuReplicasAsSeparateEvaluations)
     forceComputer.setGpuReplicas(3);
     MsgHandler    msghandler;
     ForceField    pd;
-    readForceField(fileManager().getInputFilePath("PG-pol-ions.xml"), &pd);
+    readForceField(fileManager().getInputFilePath("forcefields/PG-pol-ions.xml"), &pd);
     ASSERT_TRUE(pd.polarizable());
-    auto mpFile = fileManager().getInputFilePath("ion-water.xml");
+    auto mpFile = fileManager().getInputFilePath("molprop/ion-water.xml");
     auto mols   = prepareMolecules(&msghandler, &pd, &forceComputer, {}, mpFile);
     ASSERT_FALSE(mols.empty());
     // Needs a GPU that can compute these molecules, in single precision
@@ -2430,8 +2430,8 @@ TEST_F(PropertyDevComputerTest, CompactDeviationsAsCalcDeviation)
     forceComputer.setKeepGpuEnergies(true);
     MsgHandler    msghandler;
     ForceField    pd;
-    readForceField(fileManager().getInputFilePath("PG-pol-ions.xml"), &pd);
-    auto mpFile = fileManager().getInputFilePath("ion-water.xml");
+    readForceField(fileManager().getInputFilePath("forcefields/PG-pol-ions.xml"), &pd);
+    auto mpFile = fileManager().getInputFilePath("molprop/ion-water.xml");
     auto mols   = prepareMolecules(&msghandler, &pd, &forceComputer, {}, mpFile);
     ASSERT_FALSE(mols.empty());
     if (!forceComputer.prepareGpuResident(&pd, pointers(&mols)))
@@ -2568,11 +2568,11 @@ static void compareIntermolecular(const ForceField *pd, std::vector<ACTMol> *mol
 TEST_F(PropertyDevComputerTest, IntermolecularEnergies)
 {
     ForceField    pd;
-    readForceField(fileManager().getInputFilePath("../../constraints/tests/PC+GV-elec.xml"), &pd);
+    readForceField(fileManager().getInputFilePath("forcefields/PC+GV-elec.xml"), &pd);
     ForceComputer forceComputer;
     MsgHandler    msghandler;
     auto mols = prepareMolecules(&msghandler, &pd, &forceComputer, {},
-                                 fileManager().getInputFilePath("mpdimer.xml"));
+                                 fileManager().getInputFilePath("molprop/mpdimer.xml"));
     compareIntermolecular(&pd, &mols);
 }
 
@@ -2582,18 +2582,18 @@ TEST_F(PropertyDevComputerTest, IntermolecularEnergiesACSg2)
     ForceComputer forceComputer;
     MsgHandler    msghandler;
     auto mols = prepareMolecules(&msghandler, &pd, &forceComputer, {},
-                                 fileManager().getInputFilePath("mpdimer.xml"));
+                                 fileManager().getInputFilePath("molprop/mpdimer.xml"));
     compareIntermolecular(&pd, &mols);
 }
 
 // Test: The same with a virtual site, that only interacts in the dimer
 TEST_F(PropertyDevComputerTest, IntermolecularEnergiesVsite)
 {
-    ForceField    pd = *getForceField("../../forces/tests/ACS-v3fds");
+    ForceField    pd = *getForceField("ACS-v3fds");
     ForceComputer forceComputer;
     MsgHandler    msghandler;
     auto mols = prepareMolecules(&msghandler, &pd, &forceComputer, { "water#1-butanol" },
-                                 fileManager().getInputFilePath("water-butanol.xml"));
+                                 fileManager().getInputFilePath("molprop/water-butanol.xml"));
     compareIntermolecular(&pd, &mols);
 }
 
@@ -2607,7 +2607,7 @@ TEST_F(PropertyDevComputerTest, EnergiesUsedAgain)
 // Within water the virtual site has no interactions, in the dimer it has.
 TEST_F(PropertyDevComputerTest, EnergiesUsedAgainVsite)
 {
-    testEnergiesUsedAgain("../../forces/tests/ACS-v3fds", fileManager().getInputFilePath("water-butanol.xml"),
+    testEnergiesUsedAgain("ACS-v3fds", fileManager().getInputFilePath("molprop/water-butanol.xml"),
                           { "water#1-butanol" }, true);
 }
 
@@ -2669,7 +2669,7 @@ TEST_F(PropertyDevComputerTest, BoundsAboveMaximum)
 // Test: Shell charges are added to the core charge
 TEST_F(PropertyDevComputerTest, BoundsPolarizable)
 {
-    for(auto chi2 : testBounds("ACS-pg", true, 50, 100))
+    for(auto chi2 : testBounds("ACS-pg1", true, 50, 100))
     {
         EXPECT_GT(chi2, 0);
     }
@@ -2702,25 +2702,25 @@ TEST_F(PropertyDevComputerTest, MultipoleHexadecapole)
 // Test: Dipole, polarizable, shells are relaxed
 TEST_F(PropertyDevComputerTest, MultipoleDipolePol)
 {
-    testMultipole(MolPropObservable::DIPOLE, eRMS::MU, "ACS-pg");
+    testMultipole(MolPropObservable::DIPOLE, eRMS::MU, "ACS-pg1");
 }
 
 // Test: Quadrupole, polarizable, shells are relaxed
 TEST_F(PropertyDevComputerTest, MultipoleQuadrupolePol)
 {
-    testMultipole(MolPropObservable::QUADRUPOLE, eRMS::QUAD, "ACS-pg");
+    testMultipole(MolPropObservable::QUADRUPOLE, eRMS::QUAD, "ACS-pg1");
 }
 
 // Test: Octupole, polarizable, shells are relaxed
 TEST_F(PropertyDevComputerTest, MultipoleOctupolePol)
 {
-    testMultipole(MolPropObservable::OCTUPOLE, eRMS::OCT, "ACS-pg");
+    testMultipole(MolPropObservable::OCTUPOLE, eRMS::OCT, "ACS-pg1");
 }
 
 // Test: Hexadecapole, polarizable, shells are relaxed
 TEST_F(PropertyDevComputerTest, MultipoleHexadecapolePol)
 {
-    testMultipole(MolPropObservable::HEXADECAPOLE, eRMS::HEXADEC, "ACS-pg");
+    testMultipole(MolPropObservable::HEXADECAPOLE, eRMS::HEXADEC, "ACS-pg1");
 }
 
 // Test: An observable that is not a multipole throws
@@ -2760,7 +2760,7 @@ TEST_F(PropertyDevComputerTest, ForceEnergyAccumulates)
     MsgHandler    msghandler;
     auto          pd   = getForceField("ACS-pol");
     auto          mols = prepareMolecules(&msghandler, pd, &forceComputer, {},
-                                          fileManager().getInputFilePath("mpdimer.xml"));
+                                          fileManager().getInputFilePath("molprop/mpdimer.xml"));
     ForceEnergyDevComputer computer({});
     std::map<eRMS, FittingTarget> targets;
     for(auto erms : dimerTargets)
@@ -2792,7 +2792,7 @@ TEST_F(PropertyDevComputerTest, NonFiniteEnergiesIgnored)
     MsgHandler    msghandler;
     auto          pd   = getForceField("ACS-g2");
     auto          mols = prepareMolecules(&msghandler, pd, &forceComputer, {},
-                                          fileManager().getInputFilePath("mpdimer.xml"));
+                                          fileManager().getInputFilePath("molprop/mpdimer.xml"));
     ASSERT_FALSE(mols.empty());
     // Van der Waals parameters that give no finite energies
     auto itype = InteractionType::VDW;
@@ -2838,7 +2838,7 @@ TEST_F(PropertyDevComputerTest, BoundsShellsAndSecondCharge)
     ForceComputer forceComputer;
     MsgHandler    msghandler;
     ForceField    pd;
-    readForceField(fileManager().getInputFilePath("ACS-pol.xml"), &pd);
+    readForceField(fileManager().getInputFilePath("forcefields/ACS-pol.xml"), &pd);
     // The ACM charge of the carbons, which have shells, gets a range
     auto qparam = pd.findParticleType("c3")->parameter("charge");
     ASSERT_EQ(Mutability::ACM, qparam->mutability());
@@ -2846,7 +2846,7 @@ TEST_F(PropertyDevComputerTest, BoundsShellsAndSecondCharge)
     double qmin = qparam->minimum();
     double qmax = qparam->maximum();
     auto   mols = prepareMolecules(&msghandler, &pd, &forceComputer, { "water#1-butanol" },
-                                   fileManager().getInputFilePath("mpdimer.xml"));
+                                   fileManager().getInputFilePath("molprop/mpdimer.xml"));
     ASSERT_EQ(1u, mols.size());
     auto  &mol   = mols[0];
     auto  *atoms = mol.atoms();
@@ -2917,7 +2917,7 @@ TEST_F(PropertyDevComputerTest, EspCloudWidthsStayCurrent)
                 SCOPED_TRACE(::testing::Message() << "distribution " << static_cast<int>(distribution)
                                                    << " row " << row << " converted " << converted);
                 ForceField pd;
-                readForceField(fileManager().getInputFilePath("../../constraints/tests/PC+GV-elec.xml"),
+                readForceField(fileManager().getInputFilePath("forcefields/PC+GV-elec.xml"),
                                  &pd, nullptr, converted);
                 pd.setChargeDistribution(distribution);
                 auto cloud = pd.findParticleType(converted ? "ow" : "v1ow");
@@ -3038,7 +3038,7 @@ TEST_F(PropertyDevComputerTest, EspCloudWidthsStayCurrent)
 // Test: ESP deviation, polarizable, shells are relaxed first
 TEST_F(PropertyDevComputerTest, EspPolarizable)
 {
-    testEsp("ACS-pg");
+    testEsp("ACS-pg1");
 }
 
 // Test: The polarizability deviation is the sum of the squared differences
@@ -3048,7 +3048,7 @@ TEST_F(PropertyDevComputerTest, Polarizability)
 {
     ForceComputer forceComputer;
     MsgHandler    msghandler;
-    auto          pd   = getForceField("ACS-pg");
+    auto          pd   = getForceField("ACS-pg1");
     ASSERT_TRUE(pd->polarizable());
     auto          mols = prepareMolecules(&msghandler, pd, &forceComputer);
     PolarDevComputer computer;

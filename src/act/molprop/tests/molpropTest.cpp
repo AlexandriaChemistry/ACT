@@ -68,7 +68,7 @@ protected:
     //! Constructor that does initialization and reads an input file
     MolpropTest()
     {
-        std::string mpFile = fileManager().getInputFilePath("molprop.xml");
+        std::string mpFile = fileManager().getInputFilePath("molprop/molprop.xml");
         MolPropRead(nullptr, mpFile.c_str(), &mp_);
     }
 
@@ -247,7 +247,7 @@ TEST_F (MolpropTest, Validate){
 TEST(MergeXmlTest, DoubleEntries)
 {
     gmx::test::TestFileManager fileManager;
-    auto fileName = fileManager.getInputFilePath("molprop.xml");
+    auto fileName = fileManager.getInputFilePath("molprop/molprop.xml");
     MsgHandler msghandler;
     msghandler.setPrintLevel(ACTStatus::Warning);
     std::vector<MolProp> once;

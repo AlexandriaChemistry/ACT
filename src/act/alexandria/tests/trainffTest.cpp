@@ -379,7 +379,7 @@ static bool hasInitialComponent(const TrainOutput &output, const std::string &co
 // particle types, are trained, also those of shells, and reach the atoms
 TEST_F(TrainFFTest, ParticleZeta)
 {
-    auto ffFile = fileManager().getInputFilePath("ACS-pol.xml");
+    auto ffFile = fileManager().getInputFilePath("forcefields/ACS-pol.xml");
     auto output = trainfftest::runTrainFF(&fileManager(), "zeta", "", "booze-inter",
                                           combine(mcmcOptions(10),
                                                   { { "-fit", "zeta" }, { "-fc_allelec", "1" },
@@ -394,12 +394,12 @@ TEST_F(TrainFFTest, ParticleZeta)
 // trained on the induction and its correction
 TEST_F(TrainFFTest, PolarizabilityAndInductionCorrection)
 {
-    auto ffFile = fileManager().getInputFilePath("ACS-pol.xml");
+    auto ffFile = fileManager().getInputFilePath("forcefields/ACS-pol.xml");
     auto output = trainfftest::runTrainFF(&fileManager(), "induction", "", "",
                                           combine(mcmcOptions(10),
                                                   { { "-fit", "alpha a1dexp a2dexp bdexp" },
                                                     { "-fc_induc", "1" }, { "-fc_deltahf", "1" } }),
-                                          fileManager().getInputFilePath("methanol-ethane-deltaHF.xml"),
+                                          fileManager().getInputFilePath("molprop/methanol-ethane-deltaHF.xml"),
                                           trainSelection(&fileManager(), "induction", { "methanol#ethane" }),
                                           ffFile);
     std::set<std::pair<std::string, std::string>> expected = { { "c3_s", "alpha" }, { "o3_s", "alpha" } };
@@ -419,12 +419,12 @@ TEST_F(TrainFFTest, PolarizabilityAndInductionCorrection)
 // and induction together, and the total are training targets
 TEST_F(TrainFFTest, InteractionComponents)
 {
-    auto ffFile = fileManager().getInputFilePath("ACS-pol.xml");
+    auto ffFile = fileManager().getInputFilePath("forcefields/ACS-pol.xml");
     auto output = trainfftest::runTrainFF(&fileManager(), "components", "", "",
                                           combine(mcmcOptions(5),
                                                   { { "-fit", "zeta" }, { "-fc_elec", "1" },
                                                     { "-fc_exchind", "1" }, { "-fc_inter", "1" } }),
-                                          fileManager().getInputFilePath("mpdimer.xml"),
+                                          fileManager().getInputFilePath("molprop/mpdimer.xml"),
                                           trainSelection(&fileManager(), "components",
                                                          { "1-propanol#ethane", "water#1-butanol", "guanidinium#water" }),
                                           ffFile);
@@ -476,7 +476,7 @@ TEST_F(TrainFFTest, FrequenciesAndIntensities)
             expected.insert({ bond, ptype });
         }
     }
-    expectTrained(&fileManager(), output, fileManager().getInputFilePath("trainff/hh-intra.xml"), expected);
+    expectTrained(&fileManager(), output, fileManager().getInputFilePath("forcefields/hh-intra.xml"), expected);
     EXPECT_TRUE(hasInitialComponent(output, "FREQUENCY"));
     EXPECT_TRUE(hasInitialComponent(output, "INTENSITY"));
 }
@@ -516,7 +516,7 @@ TEST_F(TrainFFTest, ElectrostaticsAndFrequencies)
     {
         expected.insert({ vsite, "charge" });
     }
-    expectTrained(&fileManager(), output, fileManager().getInputFilePath("trainff/hh-intra.xml"), expected);
+    expectTrained(&fileManager(), output, fileManager().getInputFilePath("forcefields/hh-intra.xml"), expected);
     for (const char *component : { "MU", "QUAD", "FREQUENCY", "INTENSITY" })
     {
         double initial = componentChi2(output, component, false);
@@ -539,7 +539,7 @@ TEST_F(TrainFFTest, SecondCharges)
     ASSERT_FALSE(output.forceField.empty()) << "No force field written";
     // The input force field has virtual sites, which become second charges
     ForceField input, trained;
-    readForceField(fileManager().getInputFilePath("trainff/4S-lj14-7-pg-hvdw.xml"), &input);
+    readForceField(fileManager().getInputFilePath("forcefields/4S-lj14-7-pg-hvdw.xml"), &input);
     auto trainedFile = fileManager().getTemporaryFilePath("chargevs-trained.xml");
     {
         std::ofstream out(trainedFile);
@@ -885,8 +885,8 @@ TEST_F(TrainFFTest, ChargesEspPolarizability)
         f.second = fileManager().getTemporaryFilePath(f.second);
         options.push_back(f);
     }
-    auto output = trainfftest::runTrainFF(&fileManager(), "acm", "../ACS-pg.xml", "acm", options,
-                                          fileManager().getInputFilePath("../../molprop/tests/molprop.xml"),
+    auto output = trainfftest::runTrainFF(&fileManager(), "acm", "ACS-pg1.xml", "acm", options,
+                                          fileManager().getInputFilePath("molprop/molprop.xml"),
                                           selFile);
     ASSERT_EQ(0, output.status);
     for (const auto &f : files)

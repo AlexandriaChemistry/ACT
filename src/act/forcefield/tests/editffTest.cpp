@@ -69,7 +69,7 @@ protected:
     //! The force field the tests start from
     std::string input_;
 
-    EditFFTest() : input_(fileManager().getInputFilePath("ACM-g.xml")) {}
+    EditFFTest() : input_(fileManager().getInputFilePath("forcefields/ACM-g1.xml")) {}
 
     //! \return the mutability of chi for an ACM type
     static Mutability chiMutability(const ForceField &pd, const std::string &acmtype)
@@ -160,7 +160,7 @@ TEST_F(EditFFTest, MutabilityOfSeveralIdentifiers)
     auto output = fileManager().getTemporaryFilePath("edited.xml");
     gmx::test::CommandLine cmd;
     cmd.append("edit_ff");
-    cmd.addOption("-ff", fileManager().getInputFilePath("ACM-g.xml"));
+    cmd.addOption("-ff", fileManager().getInputFilePath("forcefields/ACM-g1.xml"));
     cmd.addOption("-o", output);
     cmd.addOption("-g", fileManager().getTemporaryFilePath("edit_ff.log"));
     cmd.addOption("-p", "chi");
@@ -594,7 +594,7 @@ static std::pair<double, double> minimum(const std::filesystem::path &xvg)
 TEST_F(EditFFTest, Plot)
 {
     int  status;
-    auto plots = plotInteractions(fileManager().getInputFilePath("../../properties/tests/SPCE.xml"),
+    auto plots = plotInteractions(fileManager().getInputFilePath("forcefields/SPCE.xml"),
                                   fileManager().getTemporaryFilePath("plots"), &status);
     ASSERT_EQ(0, status);
     auto bond = minimum(plots / "BONDS_h_b~o3_b.xvg");
@@ -613,7 +613,7 @@ TEST_F(EditFFTest, Plot)
 TEST_F(EditFFTest, PlotSkipsImpropersWithoutBonds)
 {
     int  status;
-    auto plots = plotInteractions(fileManager().getInputFilePath("../../alexandria/tests/ACS-g.xml"),
+    auto plots = plotInteractions(fileManager().getInputFilePath("forcefields/ACS-g1.xml"),
                                   fileManager().getTemporaryFilePath("plots"), &status);
     ASSERT_EQ(0, status);
     std::map<std::string, int> count;

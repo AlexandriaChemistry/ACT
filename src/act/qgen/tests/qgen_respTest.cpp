@@ -87,7 +87,7 @@ protected:
         int         nsymm    = 0;
 
         //Read input file for molprop
-        auto dataName   = gmx::test::TestFileManager::getInputFilePath("1-butanol-3-oep.log");
+        auto dataName   = gmx::test::TestFileManager::getInputFilePath("molecules/1-butanol-3-oep.log");
         bool   userqtot = false;
         double qtot     = 0;
         matrix box;

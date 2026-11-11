@@ -128,11 +128,11 @@ TEST(AllBondedsVsiteTest, ExtractGeometries)
     msghandler.setPrintLevel(ACTStatus::Warning);
     gmx::test::TestFileManager fileManager;
     ForceField pd;
-    readForceField(fileManager.getInputFilePath("../../forces/tests/ACS-pg-vs3.xml"), &pd);
+    readForceField(fileManager.getInputFilePath("forcefields/ACS-pg-vs3.xml"), &pd);
     // As in geometry_ff, such that there are no bonds to shells
     pd.setPolarizable(false);
     std::vector<MolProp> mps;
-    MolPropRead(&msghandler, fileManager.getInputFilePath("../../molprop/tests/molprop.xml").c_str(), &mps);
+    MolPropRead(&msghandler, fileManager.getInputFilePath("molprop/molprop.xml").c_str(), &mps);
     auto  selName = fileManager.getTemporaryFilePath("selection.dat");
     FILE *fp      = fopen(selName.c_str(), "w");
     for(const char *mol : { "1-butanol", "acetone", "water" })
@@ -218,11 +218,11 @@ void updateBondeds(const std::string              &ffName,
         pd->findForces(InteractionType::BONDS)->setFunction(bondFunction);
     }
     std::vector<MolProp> mps;
-    MolPropRead(&msghandler, fileManager.getInputFilePath("../../molprop/tests/molprop.xml").c_str(), &mps);
+    MolPropRead(&msghandler, fileManager.getInputFilePath("molprop/molprop.xml").c_str(), &mps);
     for (const auto &s : structures)
     {
         double qtot = 0;
-        importFile(&msghandler, pd, fileManager.getInputFilePath("mols/" + s), &mps, "",
+        importFile(&msghandler, pd, fileManager.getInputFilePath("molecules/" + s), &mps, "",
                    JobType::OPT, false, &qtot, false);
         ASSERT_TRUE(msghandler.ok()) << s;
         // The compound is named after its file
@@ -275,7 +275,7 @@ TEST(AllBondedsUpdateTest, BondFunctions)
     for (const auto &fn : defaults)
     {
         ForceField pd;
-        updateBondeds("ACS-g.xml", fn.first.c_str(), {}, &pd);
+        updateBondeds("forcefields/ACS-g1.xml", fn.first.c_str(), {}, &pd);
         auto &bonds = pd.findForcesConst(InteractionType::BONDS);
         EXPECT_EQ(fn.first, potentialToString(bonds.potential()));
         ASSERT_FALSE(bonds.parametersConst().empty()) << fn.first;
@@ -308,7 +308,7 @@ TEST(AllBondedsUpdateTest, BondFunctions)
 TEST(AllBondedsUpdateTest, UreyBradleyFourier)
 {
     ForceField pd;
-    updateBondeds("ACS-g-dih.xml", nullptr, {}, &pd);
+    updateBondeds("forcefields/ACS-g-dih.xml", nullptr, {}, &pd);
     auto &bonds  = pd.findForcesConst(InteractionType::BONDS);
     auto &angles = pd.findForcesConst(InteractionType::ANGLES);
     ASSERT_EQ(Potential::UREY_BRADLEY_ANGLES, angles.potential());
@@ -347,7 +347,7 @@ TEST(AllBondedsUpdateTest, UreyBradleyFourier)
 TEST(AllBondedsUpdateTest, LinearAngles)
 {
     ForceField pd;
-    updateBondeds("ACS-g.xml", nullptr, { "acetonitrile.sdf" }, &pd);
+    updateBondeds("forcefields/ACS-g1.xml", nullptr, { "acetonitrile.sdf" }, &pd);
     auto &bonds = pd.findForcesConst(InteractionType::BONDS);
     auto &lin   = pd.findForcesConst(InteractionType::LINEAR_ANGLES);
     ASSERT_EQ(1u, lin.parametersConst().size());

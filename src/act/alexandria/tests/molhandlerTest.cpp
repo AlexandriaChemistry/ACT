@@ -92,7 +92,7 @@ protected:
         
         // Get forcefield
         auto pd         = getForceField(forcefield);
-        std::string moldir("mols/");
+        std::string moldir("molecules/");
         moldir += molname;
         dataName        = gmx::test::TestFileManager::getInputFilePath(moldir);
         double qtot     = 0;
@@ -271,7 +271,7 @@ static void prepareMolecule(ForceField *pd, const char *file, const ForceCompute
     msghandler.setPrintLevel(ACTStatus::Warning);
     std::vector<alexandria::MolProp> molprops;
     double qtot = 0;
-    importFile(&msghandler, pd, gmx::test::TestFileManager::getInputFilePath(std::string("mols/") + file).c_str(),
+    importFile(&msghandler, pd, gmx::test::TestFileManager::getInputFilePath(std::string("molecules/") + file).c_str(),
                &molprops, "minimum", JobType::OPT, false, &qtot, true);
     ASSERT_TRUE(msghandler.ok());
     ASSERT_EQ(1u, molprops.size());
@@ -288,7 +288,7 @@ static void prepareMolecule(ForceField *pd, const char *file, const ForceCompute
 // the mean square force that they can reach
 TEST_F (MolHandlerTest, MinimizersAgree)
 {
-    auto pd = getForceField("ACS-g");
+    auto pd = getForceField("ACS-g1");
     MsgHandler msghandler;
     msghandler.setPrintLevel(ACTStatus::Warning);
     ForceComputer          forceComp(1e-10, 100, 1);
@@ -322,7 +322,7 @@ TEST_F (MolHandlerTest, MinimizersAgree)
  */
 TEST_F (MolHandlerTest, MinimizersConvergeWithShells)
 {
-    auto pd = getForceField("ACS-pg");
+    auto pd = getForceField("ACS-pg1");
     MsgHandler msghandler;
     msghandler.setPrintLevel(ACTStatus::Warning);
     // The shells converge within the precision of the forces
@@ -352,7 +352,7 @@ TEST_F (MolHandlerTest, MinimizersConvergeWithShells)
 static void testNormalModes(const char *file, size_t nvibration)
 {
     SCOPED_TRACE(file);
-    auto pd = getForceField("ACS-g");
+    auto pd = getForceField("ACS-g1");
     MsgHandler msghandler;
     msghandler.setPrintLevel(ACTStatus::Warning);
     ForceComputer          forceComp(1e-12, 100, 1);
@@ -401,54 +401,54 @@ TEST_F (MolHandlerTest, NormalModesWithoutRigidBody)
 
 TEST_F (MolHandlerTest, MethaneThiolNoFreq)
 {
-    test("methanethiol.sdf", "ACS-g", false, 1e-13);
+    test("methanethiol.sdf", "ACS-g1", false, 1e-13);
 }
 
 TEST_F (MolHandlerTest, CarbonDioxideNoFreq)
 {
-    test("carbon-dioxide.sdf", "ACS-g", false, 1e-6);
+    test("carbon-dioxide.sdf", "ACS-g1", false, 1e-6);
 }
 
 TEST_F (MolHandlerTest, HydrogenChlorideNoFreq)
 {
-    test("hydrogen-chloride.sdf", "ACS-g", false);
+    test("hydrogen-chloride.sdf", "ACS-g1", false);
 }
 
 TEST_F (MolHandlerTest, WaterNoFreq)
 {
-    test("water-3-oep.log.pdb", "ACS-g", false);
+    test("water-3-oep.log.pdb", "ACS-g1", false);
 }
 
 TEST_F (MolHandlerTest, AcetoneNoFreq)
 {
-    test("acetone-3-oep.log.pdb", "ACS-g", false);
+    test("acetone-3-oep.log.pdb", "ACS-g1", false);
 }
 
 TEST_F (MolHandlerTest, UracilNoFreq)
 {
-    test("uracil.sdf", "ACS-g", false, 1e-14);
+    test("uracil.sdf", "ACS-g1", false, 1e-14);
 }
 
 TEST_F (MolHandlerTest, CarbonDioxideNoFreqPol)
 {
-    test("carbon-dioxide.sdf", "ACS-pg", false, 1e-8);
+    test("carbon-dioxide.sdf", "ACS-pg1", false, 1e-8);
 }
 
 TEST_F (MolHandlerTest, HydrogenChlorideNoFreqPol)
 {
 
-    test("hydrogen-chloride.sdf", "ACS-pg", false, 1e-8);
+    test("hydrogen-chloride.sdf", "ACS-pg1", false, 1e-8);
 }
 
 TEST_F (MolHandlerTest, WaterNoFreqPol)
 {
 
-    test("water-3-oep.log.pdb", "ACS-pg", false, 1e-8);
+    test("water-3-oep.log.pdb", "ACS-pg1", false, 1e-8);
 }
 
 TEST_F (MolHandlerTest, AcetoneNoFreqPol)
 {
-    test("acetone-3-oep.log.pdb", "ACS-pg", false, 1e-12);
+    test("acetone-3-oep.log.pdb", "ACS-pg1", false, 1e-12);
 }
 
 TEST_F (MolHandlerTest, UracilNoFreqPol)
@@ -462,54 +462,54 @@ TEST_F (MolHandlerTest, UracilNoFreqPol)
     {
         return;
     }
-    test("uracil.sdf", "ACS-pg", false, 1e-12);
+    test("uracil.sdf", "ACS-pg1", false, 1e-12);
 }
 
 TEST_F (MolHandlerTest, CarbonDioxide)
 {
-    test("carbon-dioxide.sdf", "ACS-g", true, 1e-8);
+    test("carbon-dioxide.sdf", "ACS-g1", true, 1e-8);
 }
 
 TEST_F (MolHandlerTest, HydrogenChloride)
 {
 
-    test("hydrogen-chloride.sdf", "ACS-g", true);
+    test("hydrogen-chloride.sdf", "ACS-g1", true);
 }
 
 TEST_F (MolHandlerTest, Water)
 {
 
-    test("water-3-oep.log.pdb", "ACS-g", true);
+    test("water-3-oep.log.pdb", "ACS-g1", true);
 }
 
 TEST_F (MolHandlerTest, Acetone)
 {
-    test("acetone-3-oep.log.pdb", "ACS-g", true);
+    test("acetone-3-oep.log.pdb", "ACS-g1", true);
 }
 
 TEST_F (MolHandlerTest, Uracil)
 {
-    test("uracil.sdf", "ACS-g", true, 1e-14);
+    test("uracil.sdf", "ACS-g1", true, 1e-14);
 }
 
 TEST_F (MolHandlerTest, CarbonDioxidePol)
 {
-    test("carbon-dioxide.sdf", "ACS-pg", true, 1e-10);
+    test("carbon-dioxide.sdf", "ACS-pg1", true, 1e-10);
 }
 
 TEST_F (MolHandlerTest, HydrogenChloridePol)
 {
-    test("hydrogen-chloride.sdf", "ACS-pg", true, 1e-12);
+    test("hydrogen-chloride.sdf", "ACS-pg1", true, 1e-12);
 }
 
 TEST_F (MolHandlerTest, WaterPol)
 {
-    test("water-3-oep.log.pdb", "ACS-pg", true, 1e-12);
+    test("water-3-oep.log.pdb", "ACS-pg1", true, 1e-12);
 }
 
 TEST_F (MolHandlerTest, AcetonePol)
 {
-    test("acetone-3-oep.log.pdb", "ACS-pg", true, 1e-12);
+    test("acetone-3-oep.log.pdb", "ACS-pg1", true, 1e-12);
 }
 
 TEST_F (MolHandlerTest, UracilPol)
@@ -523,7 +523,7 @@ TEST_F (MolHandlerTest, UracilPol)
     {
         return;
     }
-    test("uracil.sdf", "ACS-pg", true, 1e-12);
+    test("uracil.sdf", "ACS-pg1", true, 1e-12);
 }
 
 // Test: Without a lower minimum the structure is usable and the message

@@ -293,7 +293,7 @@ TEST_F (CombinationRuleTest, GeneralizedMean_1_4_QuiteSmall)
 TEST(CombRuleUtilTest, Extract)
 {
     ForceField pd;
-    readForceField(gmx::test::TestFileManager::getInputFilePath("ACM-g.xml"), &pd);
+    readForceField(gmx::test::TestFileManager::getInputFilePath("forcefields/ACM-g1.xml"), &pd);
     auto count = [&pd](const char *rules)
     {
         CombRuleUtil         crule;

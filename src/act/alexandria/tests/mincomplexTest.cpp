@@ -110,8 +110,8 @@ protected:
 TEST_F(MinComplexTest, WaterDimer)
 {
     std::string log;
-    auto input = select("trainff/booze-inter.xml", "water#water");
-    ASSERT_EQ(0, run("trainff/halgren-PG.xml", input, &log));
+    auto input = select("molprop/booze-inter.xml", "water#water");
+    ASSERT_EQ(0, run("forcefields/halgren-PG.xml", input, &log));
     auto pos = log.find("water#water final energy:");
     ASSERT_NE(std::string::npos, pos) << log;
     double epot = 0, einter = 0, rmsd = 0;
@@ -156,8 +156,8 @@ static std::map<std::string, std::pair<double, double>> results(const std::strin
 TEST_F(MinComplexTest, TrainedForceField)
 {
     std::string log;
-    ASSERT_EQ(0, run("trainff/lj-pc-trained.xml",
-                     fileManager().getInputFilePath("trainff/booze-inter.xml"), &log));
+    ASSERT_EQ(0, run("forcefields/lj-pc-trained.xml",
+                     fileManager().getInputFilePath("molprop/booze-inter.xml"), &log));
     auto res = results(log);
     ASSERT_EQ(3u, res.size()) << log;
     for (const auto &r : res)
@@ -189,8 +189,8 @@ TEST_F(MinComplexTest, NewtonAndSteepestDescent)
         auto logName = fileManager().getTemporaryFilePath(std::string(alg) + ".log");
         gmx::test::CommandLine cmd;
         cmd.append("min_complex");
-        cmd.addOption("-ff", fileManager().getInputFilePath("trainff/lj-pc-trained.xml"));
-        cmd.addOption("-mp", fileManager().getInputFilePath("trainff/booze-inter.xml"));
+        cmd.addOption("-ff", fileManager().getInputFilePath("forcefields/lj-pc-trained.xml"));
+        cmd.addOption("-mp", fileManager().getInputFilePath("molprop/booze-inter.xml"));
         cmd.addOption("-g", logName);
         cmd.addOption("-minalg", alg);
         cmd.addOption("-maxiter", "10000");
@@ -229,8 +229,8 @@ TEST_F(MinComplexTest, NewtonDoesNotDiverge)
     auto logName = fileManager().getTemporaryFilePath("min_complex.log");
     gmx::test::CommandLine cmd;
     cmd.append("min_complex");
-    cmd.addOption("-ff", fileManager().getInputFilePath("trainff/halgren-PG.xml"));
-    cmd.addOption("-mp", fileManager().getInputFilePath("trainff/booze-inter.xml"));
+    cmd.addOption("-ff", fileManager().getInputFilePath("forcefields/halgren-PG.xml"));
+    cmd.addOption("-mp", fileManager().getInputFilePath("molprop/booze-inter.xml"));
     cmd.addOption("-g", logName);
     cmd.addOption("-minalg", "Newton");
     // The molecules separate slowly where there are almost no forces,
@@ -257,8 +257,8 @@ TEST_F(MinComplexTest, MissingAtomTypes)
 {
     std::string log;
     // ACS-g has no atom type for the hydrogens of water
-    auto input = select("trainff/booze-inter.xml", "water#water");
-    EXPECT_EQ(1, run("ACS-g.xml", input, &log));
+    auto input = select("molprop/booze-inter.xml", "water#water");
+    EXPECT_EQ(1, run("forcefields/ACS-g1.xml", input, &log));
     EXPECT_NE(std::string::npos, log.find("Skipping 'water#water'"));
 }
 

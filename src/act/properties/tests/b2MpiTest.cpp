@@ -109,7 +109,7 @@ class WaterB2Test : public gmx::test::CommandLineTestBase
 {
 protected:
     /*! \brief Run the b2 tool for the water dimer
-     * \param[in]  ffName   Force field file in this directory
+     * \param[in]  ffName   Force field file in src/act/testdata/forcefields
      * \param[in]  nDimer   Number of dimer orientations
      * \param[in]  sampling Options for sampling the orientations
      * \param[out] mayer    The Mayer functions, first column distance
@@ -122,8 +122,8 @@ protected:
     {
         gmx::test::CommandLine cmd;
         cmd.append("b2");
-        cmd.addOption("-ff", fileManager().getInputFilePath(ffName));
-        cmd.addOption("-f", fileManager().getInputFilePath("../../alexandria/tests/mols/water_dimer.pdb"));
+        cmd.addOption("-ff", fileManager().getInputFilePath("forcefields/" + ffName));
+        cmd.addOption("-f", fileManager().getInputFilePath("molecules/water_dimer.pdb"));
         // A short calculation: few distances and orientations
         cmd.addOption("-mindist", 0.1);
         cmd.addOption("-maxdist", 1.2);
@@ -193,8 +193,8 @@ protected:
      * output. With a tight tolerance, any change of the energies, forces,
      * torques, virtual sites, shells or sums of the second virial is
      * found, such that optimizations do not change the results unnoticed.
-     * \param[in] ffName  Force field file in this directory
-     * \param[in] molFile Dimer structure, relative to this directory
+     * \param[in] ffName  Force field file in src/act/testdata/forcefields
+     * \param[in] molFile Dimer structure in src/act/testdata/molecules
      * \param[in] nDimer  Number of dimer orientations
      * \param[in] block   Number of distances computed together, see b2 -block
      */
@@ -203,8 +203,8 @@ protected:
     {
         gmx::test::CommandLine cmd;
         cmd.append("b2");
-        cmd.addOption("-ff", fileManager().getInputFilePath(ffName));
-        cmd.addOption("-f", fileManager().getInputFilePath(molFile));
+        cmd.addOption("-ff", fileManager().getInputFilePath("forcefields/" + ffName));
+        cmd.addOption("-f", fileManager().getInputFilePath("molecules/" + molFile));
         cmd.addOption("-mindist", 0.15);
         cmd.addOption("-maxdist", 1.2);
         cmd.addOption("-ndist", 106);
@@ -366,39 +366,39 @@ TEST_F(WaterB2Test, SWM4NDP)
 // the shells and the sums over the orientations, also over MPI processes.
 TEST_F(WaterB2Test, ReferenceTIP5P)
 {
-    testReference("TIP5P.xml", "../../alexandria/tests/mols/water_dimer.pdb", 64);
+    testReference("TIP5P.xml", "water_dimer.pdb", 64);
 }
 
 TEST_F(WaterB2Test, ReferenceSWM3)
 {
-    testReference("SWM3.xml", "../../alexandria/tests/mols/water_dimer.pdb", 64);
+    testReference("SWM3.xml", "water_dimer.pdb", 64);
 }
 
 TEST_F(WaterB2Test, ReferenceSWM4NDP)
 {
-    testReference("SWM4-NDP.xml", "../../alexandria/tests/mols/water_dimer.pdb", 64);
+    testReference("SWM4-NDP.xml", "water_dimer.pdb", 64);
 }
 
 TEST_F(WaterB2Test, ReferenceBK3)
 {
-    testReference("BK3.xml", "../../alexandria/tests/mols/water_dimer.pdb", 64);
+    testReference("BK3.xml", "water_dimer.pdb", 64);
 }
 
 TEST_F(WaterB2Test, ReferenceSPCE)
 {
-    testReference("SPCE.xml", "../../alexandria/tests/mols/water_dimer.pdb", 64);
+    testReference("SPCE.xml", "water_dimer.pdb", 64);
 }
 
 // Test: Computing the distances of an orientation in blocks, the last one
 // smaller, gives the same results, the reference data are those above
 TEST_F(WaterB2Test, ReferenceTIP5PBlocks)
 {
-    testReference("TIP5P.xml", "../../alexandria/tests/mols/water_dimer.pdb", 64, 25);
+    testReference("TIP5P.xml", "water_dimer.pdb", 64, 25);
 }
 
 TEST_F(WaterB2Test, ReferenceBK3Blocks)
 {
-    testReference("BK3.xml", "../../alexandria/tests/mols/water_dimer.pdb", 64, 25);
+    testReference("BK3.xml", "water_dimer.pdb", 64, 25);
 }
 
 TEST_F(WaterB2Test, ReferenceHF14_7)
@@ -469,8 +469,8 @@ TEST_F(WaterB2Test, OutputDimers)
     auto output = fileManager().getTemporaryFilePath("dimers.xyz");
     gmx::test::CommandLine cmd;
     cmd.append("b2");
-    cmd.addOption("-ff", fileManager().getInputFilePath("SPCE.xml"));
-    cmd.addOption("-f", fileManager().getInputFilePath("../../alexandria/tests/mols/water_dimer.pdb"));
+    cmd.addOption("-ff", fileManager().getInputFilePath("forcefields/SPCE.xml"));
+    cmd.addOption("-f", fileManager().getInputFilePath("molecules/water_dimer.pdb"));
     cmd.addOption("-mindist", 0.2);
     cmd.addOption("-maxdist", 1.0);
     cmd.addOption("-ndist", nDist);

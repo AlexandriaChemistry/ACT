@@ -57,7 +57,7 @@ protected:
     
     void TestOne(const std::string &fileName)
     {
-        std::string dataName = gmx::test::TestFileManager::getInputFilePath(fileName+".xml");
+        std::string dataName = gmx::test::TestFileManager::getInputFilePath("forcefields/" + fileName + ".xml");
         auto pd      = getForceField(fileName);
         auto orig    = pd->checkSum();
         checker_.checkString(orig, "ForceField checksum");
@@ -69,11 +69,11 @@ protected:
 };
 
 TEST_F (ActCheckSumTest, ACM_g) {
-    TestOne("ACM-g");
+    TestOne("ACM-g1");
 }
 
 TEST_F (ActCheckSumTest, ACM_pg) {
-    TestOne("ACM-pg");
+    TestOne("ACM-pg1");
 }
 
 }

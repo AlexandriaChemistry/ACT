@@ -168,7 +168,7 @@ static bool setupMolecule(MsgHandler        *msghandler,
     bool   userqtot   = false;
     double qtot_babel = 0;
     const char  *conf     = "minimum";
-    std::string  fileName = gmx::formatString("%s.sdf", molName.c_str());
+    std::string  fileName = gmx::formatString("molecules/%s.sdf", molName.c_str());
     std::string  dataName = gmx::test::TestFileManager::getInputFilePath(fileName);
     importFile(msghandler, pd, dataName.c_str(), &molprops,
                conf, JobType::OPT, userqtot, &qtot_babel, true);
@@ -547,7 +547,7 @@ TEST_F(ForceComputerIntegrationTest, WaterDimerHyper)
 {
     std::map<InteractionType, double> energies;
 
-    auto result = runCompute("water_hyperpol", "water_dimer",
+    auto result = runCompute("water_hyperpol2", "water_dimer",
                              &energies);
     EXPECT_GT(0u, energies[InteractionType::INDUCTION]);
     EXPECT_TRUE(result);
@@ -570,7 +570,7 @@ TEST_F(ForceComputerIntegrationTest, NaClDimerHyper)
     // In single precision the forces on the shells of the ions, with
     // charges up to -6.7 e, are differences of large Coulomb forces, which
     // are too large for the tolerance
-    auto result = runCompute("ACS-pg-vs2", "../../alexandria/tests/mols/NaCl",
+    auto result = runCompute("ACS-pg-vs2", "NaCl",
                              &energies, GMX_DOUBLE);
     EXPECT_GT(0u, energies[InteractionType::INDUCTION]);
     EXPECT_TRUE(result);
@@ -578,10 +578,10 @@ TEST_F(ForceComputerIntegrationTest, NaClDimerHyper)
 
 TEST_F(ForceComputerIntegrationTest, ComputeStatisticsAreTrackedDimerHyper)
 {
-    auto pd = getForceField("water_hyperpol");
+    auto pd = getForceField("water_hyperpol2");
     ASSERT_NE(nullptr, pd);
     ACTMol mol;
-    ASSERT_TRUE(setupMolecule(&msghandler_, "water_hyperpol", "water_dimer", &mol));
+    ASSERT_TRUE(setupMolecule(&msghandler_, "water_hyperpol2", "water_dimer", &mol));
     auto coords = mol.xOriginal();
     std::vector<gmx::RVec> forces(coords.size(), { 0, 0, 0 });
     const auto *top = mol.topology();

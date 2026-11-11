@@ -120,7 +120,7 @@ protected:
         msghandler_.setPrintLevel(ACTStatus::Warning);
         cr_.init(cr_.size());
         sii_ = new StaticIndividualInfo(&cr_);
-        auto ffName = fileManager().getInputFilePath("ACS-g.xml");
+        auto ffName = fileManager().getInputFilePath("forcefields/ACS-g1.xml");
         sii_->fillForceField(&msghandler_, ffName.c_str());
         // All molecules are in the training set
         auto  selName = fileManager().getTemporaryFilePath("selection.dat");
@@ -137,7 +137,7 @@ protected:
         sii_->propagateWeightFittingTargets();
         molgen_ = new MolGen(&cr_);
         molgen_->addFitOption("chi");
-        auto mpName = fileManager().getInputFilePath("../../molprop/tests/molprop.xml");
+        auto mpName = fileManager().getInputFilePath("molprop/molprop.xml");
         std::vector<t_filenm> fnms = { { efXML, "-mp", nullptr, ffREAD, { mpName } } };
         CompoundReader        compR;
         EXPECT_EQ(3u, molgen_->Read(&msghandler_, fnms, sii_->forcefield(), gms,

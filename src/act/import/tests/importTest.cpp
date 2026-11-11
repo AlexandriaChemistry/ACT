@@ -69,7 +69,7 @@ private:
 public:   
     ImportTest()
     {
-        pd       = getForceField("../../alexandria/tests/gaff_hydrogen_types");
+        pd       = getForceField("gaff_hydrogen_types");
         molname  = std::get<0>(std::get<0>(GetParam()));
         qtot     = std::get<1>(std::get<0>(GetParam()));
         oneH     = std::get<1>(GetParam());
@@ -84,7 +84,7 @@ public:
         std::string                      dataName;
         std::vector<alexandria::MolProp> molprops;
 
-        std::string dirmolname("../../alexandria/tests/mols/");
+        std::string dirmolname("molecules/");
         dirmolname     += molname;
         dataName        = gmx::test::TestFileManager::getInputFilePath(dirmolname);
         bool       userqtot = false;
@@ -294,8 +294,8 @@ static std::vector<std::string> importTypes(const ForceField *pd, const std::str
 // types of the single compound.
 TEST(ImportBoxTest, ManyMatches)
 {
-    auto pd      = getForceField("../../alexandria/tests/gaff_hydrogen_types");
-    auto single  = gmx::test::TestFileManager::getInputFilePath("../../alexandria/tests/mols/acetone-3-oep.log.pdb");
+    auto pd      = getForceField("gaff_hydrogen_types");
+    auto single  = gmx::test::TestFileManager::getInputFilePath("molecules/acetone-3-oep.log.pdb");
     auto ref     = importTypes(pd, single);
     ASSERT_EQ(10u, ref.size());
     // Six hydrogens of the methyl groups in each copy
