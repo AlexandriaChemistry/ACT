@@ -42,6 +42,7 @@
 
 #include "act/basics/identifier.h"
 #include "act/basics/interactiontype.h"
+#include "act/forcefield/forcefield_parameter.h"
 #include "act/topology/actmol_low.h"
 
 namespace alexandria
@@ -331,6 +332,16 @@ private:
         size_t                intermolecularStart = 0;
         //! The first pair with a shell in pos, see separate
         size_t                shellStart = 0;
+        /*! \brief The force field entry of each type pair, nullptr if it has none
+         * Found once for a structure of the parameter list, see
+         * ForceFieldParameterList::structureVersion, which is unique
+         * for all lists, such that fillParameters only copies values.
+         */
+        std::vector<const ForceFieldParameterMap *> entries;
+        //! The structure version of the parameter list that entries are of, 0 if none
+        size_t                entriesVersion = 0;
+        //! Whether pairs without parameters may still have to be left out, see fillParameters
+        bool                  mayRemove = true;
     };
     //! The particles of each pair
     std::vector<std::array<int, 2>>        pairs_;
